@@ -1407,8 +1407,7 @@ window.TEUI.DependencyGraph = class DependencyGraph {
       floatingInfoPanel.style.boxShadow = "0 4px 8px rgba(0,0,0,0.2)";
       floatingInfoPanel.style.zIndex = "10000"; // Ensure it's on top
       floatingInfoPanel.style.maxWidth = "350px";
-      floatingInfoPanel.style.maxHeight = "300px";
-      floatingInfoPanel.style.overflowY = "auto";
+      // Removed maxHeight and overflowY to allow palette to expand to full content height
       floatingInfoPanel.style.display = "none"; // Start hidden initially
 
       // Create an always-visible info panel structure in fullscreen
@@ -1629,8 +1628,8 @@ window.TEUI.DependencyGraph = class DependencyGraph {
     legend.className = "dependency-graph-legend";
     legend.style.display = "none"; // Hidden by default
     legend.style.position = "absolute";
-    legend.style.bottom = "15px";
-    legend.style.left = "15px";
+    legend.style.bottom = "30px";
+    legend.style.right = "30px"; // Moved to lower right with extra margin to prevent clipping
     legend.style.background = "rgba(255, 255, 255, 0.9)";
     legend.style.padding = "10px";
     legend.style.borderRadius = "5px";

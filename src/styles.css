@@ -1201,8 +1201,7 @@ table.data-table select.form-select:hover {
 
 .dependency-info-panel {
   font-size: 0.9rem;
-  max-height: 200px; /* Increased height for more visible content */
-  overflow-y: auto; /* Allow scrolling if content overflows */
+  /* Removed max-height and overflow-y to allow full content display */
   padding: 12px; /* More internal spacing */
   margin-bottom: 15px; /* More space below panel */
   border-left: 3px solid #0d6efd; /* Add accent border */
@@ -1665,8 +1664,7 @@ body.viewing-reference-inputs .reference-input-display-locked select {
   top: 20px;
   left: 20px;
   max-width: 350px;
-  max-height: 400px; /* Increased height for more content */
-  overflow-y: auto;
+  /* Removed max-height and overflow-y to allow palette to expand to full content height */
   z-index: 10000; /* Ensure it's above everything else */
 }
 
@@ -1701,8 +1699,8 @@ body.viewing-reference-inputs .reference-input-display-locked select {
 /* Color legend styling */
 .dependency-graph-legend {
   position: absolute;
-  bottom: 20px;
-  left: 20px;
+  bottom: 30px;
+  right: 30px; /* Moved to lower right with extra margin to prevent clipping */
   background: rgba(255, 255, 255, 0.95);
   padding: 12px;
   border-radius: 8px;
