@@ -319,11 +319,7 @@ window.TEUI.DependencyGraph = class DependencyGraph {
 
     // Create main container for the graph itself (ensure it's added)
     const graphContainer = document.createElement("div");
-    graphContainer.className = "dependency-graph-svg-wrapper"; // More specific class
-    graphContainer.style.width = "100%";
-    graphContainer.style.height = "650px"; // Increased height for better visibility
-    graphContainer.style.border = "1px solid #ccc";
-    graphContainer.style.position = "relative"; // Needed for absolute positioning of legend/tooltip
+    graphContainer.className = "dependency-graph-svg-wrapper"; // Styled in CSS
     container.appendChild(graphContainer);
 
     // Check dimensions AFTER adding to DOM
@@ -486,24 +482,16 @@ window.TEUI.DependencyGraph = class DependencyGraph {
     }
 
     const controlsContainer = document.createElement("div");
-    controlsContainer.className = "dependency-graph-controls";
-    controlsContainer.style.display = "flex";
-    controlsContainer.style.flexWrap = "wrap";
-    controlsContainer.style.gap = "10px";
-    controlsContainer.style.marginBottom = "10px";
-    controlsContainer.style.padding = "10px";
-    controlsContainer.style.borderBottom = "1px solid #eee";
+    controlsContainer.className = "dependency-graph-controls"; // Styled in CSS
 
     // Create a search box
     const searchContainer = document.createElement("div");
-    searchContainer.style.flex = "1";
-    searchContainer.style.minWidth = "200px";
+    searchContainer.className = "dependency-graph-search-container"; // Styled in CSS
 
     const searchInput = document.createElement("input");
     searchInput.type = "text";
     searchInput.placeholder = "Search fields (e.g., d_119)";
-    searchInput.className = "form-control form-control-sm"; // Use Bootstrap classes
-    searchInput.style.width = "100%";
+    searchInput.className = "form-control form-control-sm";
     this.searchInput = searchInput; // Store reference
 
     searchContainer.appendChild(searchInput);
@@ -511,12 +499,10 @@ window.TEUI.DependencyGraph = class DependencyGraph {
 
     // Create group filter
     const groupFilterContainer = document.createElement("div");
-    groupFilterContainer.style.flex = "1";
-    groupFilterContainer.style.minWidth = "200px";
+    groupFilterContainer.className = "dependency-graph-group-filter"; // Styled in CSS
 
     const groupSelect = document.createElement("select");
-    groupSelect.className = "form-select form-select-sm"; // Use Bootstrap classes
-    groupSelect.style.width = "100%";
+    groupSelect.className = "form-select form-select-sm";
     this.groupSelect = groupSelect; // Store reference
 
     // Add "All Groups" option
@@ -532,9 +518,7 @@ window.TEUI.DependencyGraph = class DependencyGraph {
 
     // Add layout controls
     const layoutContainer = document.createElement("div");
-    layoutContainer.style.display = "flex";
-    layoutContainer.style.gap = "5px";
-    layoutContainer.style.alignItems = "center";
+    layoutContainer.className = "dependency-graph-layout-container"; // Styled in CSS
 
     // Force directed button
     const forceButton = document.createElement("button");
@@ -564,8 +548,7 @@ window.TEUI.DependencyGraph = class DependencyGraph {
     const fullscreenButton = document.createElement("button");
     fullscreenButton.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>'; // Bootstrap icon
     fullscreenButton.title = "Toggle Fullscreen";
-    fullscreenButton.className = "btn btn-outline-secondary btn-sm";
-    fullscreenButton.style.marginLeft = "auto"; // Push to the right
+    fullscreenButton.className = "btn btn-outline-secondary btn-sm dependency-graph-fullscreen-button"; // Styled in CSS
     this.fullscreenButton = fullscreenButton; // Store ref
 
     // Toggle legend button
@@ -599,24 +582,22 @@ window.TEUI.DependencyGraph = class DependencyGraph {
     }
 
     const infoPanel = document.createElement("div");
-    infoPanel.className = "dependency-info-panel alert alert-secondary"; // Use Bootstrap alert
-    infoPanel.style.marginBottom = "10px";
-    infoPanel.style.display = "none";
+    infoPanel.className = "dependency-info-panel alert alert-secondary"; // Styled in CSS
+    infoPanel.style.display = "none"; // Hidden by default, toggled by JS
     infoPanel.setAttribute("role", "alert");
 
     const title = document.createElement("h6"); // Use h6 for less emphasis
-    title.className = "info-title alert-heading";
-    title.style.marginBottom = "0.5rem";
+    title.className = "info-title alert-heading"; // Styled in CSS
     title.textContent = "Field Information";
 
     const value = document.createElement("p");
-    value.className = "info-value mb-1";
+    value.className = "info-value"; // Styled in CSS
 
     const dependencies = document.createElement("p");
-    dependencies.className = "info-dependencies mb-1";
+    dependencies.className = "info-dependencies"; // Styled in CSS
 
     const dependents = document.createElement("p");
-    dependents.className = "info-dependents mb-0"; // No margin bottom on last item
+    dependents.className = "info-dependents"; // Styled in CSS
 
     infoPanel.appendChild(title);
     infoPanel.appendChild(value);
@@ -1376,17 +1357,8 @@ window.TEUI.DependencyGraph = class DependencyGraph {
     );
     if (!floatingControls) {
       floatingControls = document.createElement("div");
-      floatingControls.className = "dependency-graph-floating-controls";
-      floatingControls.style.position = "absolute";
-      floatingControls.style.top = "20px";
-      floatingControls.style.right = "20px";
-      floatingControls.style.background = "rgba(255, 255, 255, 0.95)";
-      floatingControls.style.padding = "10px";
-      floatingControls.style.borderRadius = "5px";
-      floatingControls.style.boxShadow = "0 3px 6px rgba(0,0,0,0.2)";
-      floatingControls.style.zIndex = "9999";
-      floatingControls.style.display = "none"; // Hidden by default
-      // Append to graphWrapper instead of document.body
+      floatingControls.className = "dependency-graph-floating-controls"; // Styled in CSS
+      floatingControls.style.display = "none"; // Hidden by default, shown in fullscreen
       graphWrapper.appendChild(floatingControls);
     }
 
@@ -1397,18 +1369,8 @@ window.TEUI.DependencyGraph = class DependencyGraph {
     );
     if (!floatingInfoPanel) {
       floatingInfoPanel = document.createElement("div");
-      floatingInfoPanel.className = "dependency-graph-floating-info";
-      floatingInfoPanel.style.position = "absolute";
-      floatingInfoPanel.style.top = "20px";
-      floatingInfoPanel.style.left = "20px";
-      floatingInfoPanel.style.background = "rgba(255, 255, 255, 0.98)";
-      floatingInfoPanel.style.padding = "15px";
-      floatingInfoPanel.style.borderRadius = "8px";
-      floatingInfoPanel.style.boxShadow = "0 4px 8px rgba(0,0,0,0.2)";
-      floatingInfoPanel.style.zIndex = "10000"; // Ensure it's on top
-      floatingInfoPanel.style.maxWidth = "350px";
-      // Removed maxHeight and overflowY to allow palette to expand to full content height
-      floatingInfoPanel.style.display = "none"; // Start hidden initially
+      floatingInfoPanel.className = "dependency-graph-floating-info"; // Styled in CSS
+      floatingInfoPanel.style.display = "none"; // Hidden by default, shown in fullscreen
 
       // Create an always-visible info panel structure in fullscreen
       floatingInfoPanel.innerHTML = `
@@ -1625,33 +1587,18 @@ window.TEUI.DependencyGraph = class DependencyGraph {
 
     // Create the legend container
     const legend = document.createElement("div");
-    legend.className = "dependency-graph-legend";
-    legend.style.display = "none"; // Hidden by default
-    legend.style.position = "absolute";
-    legend.style.bottom = "30px";
-    legend.style.right = "30px"; // Moved to lower right with extra margin to prevent clipping
-    legend.style.background = "rgba(255, 255, 255, 0.9)";
-    legend.style.padding = "10px";
-    legend.style.borderRadius = "5px";
-    // Remove the box shadow for frameless appearance
-    legend.style.maxWidth = "250px";
-    legend.style.zIndex = "100";
-    legend.style.fontSize = "12px";
-    legend.style.fontFamily = "sans-serif";
+    legend.className = "dependency-graph-legend"; // Styled in CSS
+    legend.style.display = "none"; // Hidden by default, toggled by JS
 
     // Create legend title
     const title = document.createElement("div");
+    title.className = "dependency-graph-legend-title"; // Styled in CSS
     title.textContent = "Section Groups";
-    title.style.fontWeight = "bold";
-    title.style.marginBottom = "8px";
-    title.style.paddingBottom = "4px";
     legend.appendChild(title);
 
     // Add legend items
     const itemsContainer = document.createElement("div");
-    itemsContainer.style.display = "grid";
-    itemsContainer.style.gridTemplateColumns = "repeat(2, 1fr)";
-    itemsContainer.style.gap = "8px";
+    itemsContainer.className = "dependency-graph-legend-items"; // Styled in CSS
 
     // Sort color scheme entries for consistent display
     const entries = Object.entries(this.settings.colorScheme);
@@ -1665,22 +1612,15 @@ window.TEUI.DependencyGraph = class DependencyGraph {
     // Create legend items
     entries.forEach(([group, color]) => {
       const item = document.createElement("div");
-      item.style.display = "flex";
-      item.style.alignItems = "center";
+      item.className = "dependency-graph-legend-item"; // Styled in CSS
 
       const colorBox = document.createElement("span");
-      colorBox.style.display = "inline-block";
-      colorBox.style.width = "12px";
-      colorBox.style.height = "12px";
-      colorBox.style.backgroundColor = color;
-      colorBox.style.marginRight = "6px";
-      colorBox.style.borderRadius = "3px";
+      colorBox.className = "dependency-graph-legend-color-box"; // Styled in CSS
+      colorBox.style.backgroundColor = color; // Dynamic color from data
 
       const label = document.createElement("span");
+      label.className = "dependency-graph-legend-label"; // Styled in CSS
       label.textContent = group;
-      label.style.whiteSpace = "nowrap";
-      label.style.overflow = "hidden";
-      label.style.textOverflow = "ellipsis";
 
       item.appendChild(colorBox);
       item.appendChild(label);
@@ -1691,13 +1631,8 @@ window.TEUI.DependencyGraph = class DependencyGraph {
 
     // Add architectural layer legend section
     const archTitle = document.createElement("div");
+    archTitle.className = "dependency-graph-legend-arch-title"; // Styled in CSS
     archTitle.textContent = "Architectural Layers";
-    archTitle.style.fontWeight = "bold";
-    archTitle.style.marginTop = "12px";
-    archTitle.style.marginBottom = "8px";
-    archTitle.style.paddingBottom = "4px";
-    archTitle.style.borderTop = "1px solid #ccc";
-    archTitle.style.paddingTop = "8px";
     legend.appendChild(archTitle);
 
     // Add architectural layer items
@@ -1721,23 +1656,15 @@ window.TEUI.DependencyGraph = class DependencyGraph {
 
     archItems.forEach((item) => {
       const itemDiv = document.createElement("div");
-      itemDiv.style.display = "flex";
-      itemDiv.style.alignItems = "center";
-      itemDiv.style.marginBottom = "4px";
-      itemDiv.style.fontSize = "11px";
+      itemDiv.className = "dependency-graph-legend-arch-item"; // Styled in CSS
 
       const indicator = document.createElement("div");
-      indicator.style.width = "16px";
-      indicator.style.height = "16px";
-      indicator.style.border = `3px solid ${item.color}`;
-      indicator.style.borderRadius = "50%";
-      indicator.style.backgroundColor = "#f0f0f0";
-      indicator.style.marginRight = "8px";
-      indicator.style.flexShrink = "0";
+      indicator.className = "dependency-graph-legend-arch-indicator"; // Styled in CSS
+      indicator.style.border = `3px solid ${item.color}`; // Dynamic color from data
 
       const label = document.createElement("span");
+      label.className = "dependency-graph-legend-arch-label"; // Styled in CSS
       label.textContent = item.name;
-      label.style.fontWeight = "500";
 
       itemDiv.appendChild(indicator);
       itemDiv.appendChild(label);

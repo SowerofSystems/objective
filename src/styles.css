@@ -1180,11 +1180,15 @@ table.data-table select.form-select:hover {
 
 .dependency-graph-controls {
   /* Styles for the filter/button container */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   background-color: #f8f9fa; /* Light background */
   padding: 10px;
   border: 1px solid #dee2e6;
   border-radius: 0.25rem;
-  margin-bottom: 1rem;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #eee;
 }
 
 .dependency-graph-controls .form-control-sm,
@@ -1193,25 +1197,70 @@ table.data-table select.form-select:hover {
   font-size: 0.875rem; /* Match Bootstrap small size */
 }
 
+/* Search Container */
+.dependency-graph-search-container {
+  flex: 1;
+  min-width: 200px;
+}
+
+.dependency-graph-search-container .form-control {
+  width: 100%;
+}
+
+/* Group Filter Container */
+.dependency-graph-group-filter {
+  flex: 1;
+  min-width: 200px;
+}
+
+.dependency-graph-group-filter .form-select {
+  width: 100%;
+}
+
+/* Layout Buttons Container */
+.dependency-graph-layout-container {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
 .layout-button.active {
   background-color: #0d6efd; /* Bootstrap primary blue */
   color: white;
   border-color: #0d6efd;
 }
 
+/* Fullscreen Button */
+.dependency-graph-fullscreen-button {
+  margin-left: auto;
+}
+
 .dependency-info-panel {
   font-size: 0.9rem;
   /* Removed max-height and overflow-y to allow full content display */
   padding: 12px; /* More internal spacing */
-  margin-bottom: 15px; /* More space below panel */
+  margin-bottom: 10px; /* Space below panel */
   border-left: 3px solid #0d6efd; /* Add accent border */
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  display: none; /* Hidden by default, shown via JS */
 }
 
 .dependency-info-panel .info-title {
   color: #0d6efd; /* Blue title for emphasis */
-  margin-bottom: 10px; /* More space after title */
+  margin-bottom: 0.5rem; /* Space after title */
+}
+
+.dependency-info-panel .info-value {
+  margin-bottom: 0.25rem;
+}
+
+.dependency-info-panel .info-dependencies {
+  margin-bottom: 0.25rem;
+}
+
+.dependency-info-panel .info-dependents {
+  margin-bottom: 0;
 }
 
 .dependency-info-panel strong {
@@ -1711,8 +1760,71 @@ body.viewing-reference-inputs .reference-input-display-locked select {
   font-size: 12px;
   z-index: 100;
   transition: opacity 0.2s ease-in-out;
+  display: none; /* Hidden by default, shown via JS */
 }
 
+.dependency-graph-legend-title {
+  font-weight: bold;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  font-size: 14px;
+}
+
+.dependency-graph-legend-items {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.dependency-graph-legend-item {
+  display: flex;
+  align-items: center;
+}
+
+.dependency-graph-legend-color-box {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  border-radius: 3px;
+}
+
+.dependency-graph-legend-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dependency-graph-legend-arch-title {
+  font-weight: bold;
+  margin-top: 12px;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-top: 1px solid #ccc;
+  padding-top: 8px;
+}
+
+.dependency-graph-legend-arch-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+.dependency-graph-legend-arch-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.dependency-graph-legend-arch-label {
+  font-weight: 500;
+}
+
+/* Legacy selectors for backward compatibility */
 .dependency-graph-legend > div:first-child {
   font-weight: bold;
   margin-bottom: 10px;
