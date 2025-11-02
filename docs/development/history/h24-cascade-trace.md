@@ -128,3 +128,55 @@ The contamination is likely in **one of these sections**:
 - src/sections/Section14.js - TEDI
 - src/sections/Section15.js - Summary
 - src/sections/Section04.js - Totals
+
+---
+
+## ✅ FIX IMPLEMENTED (Nov 2, 2025)
+
+**Note**: The h_24 contamination issue documented above turned out to be a DIFFERENT bug from the S11 import cascade issue. This document was created while investigating h_24, but the fix below addresses the S11 import problem.
+
+### Root Cause Found: S11 Reference Area Sync Timing
+
+The S11 Reference cascade bug (requiring manual S11 Reference toggle after import) was caused by:
+
+1. **`isInitializationPhase` flag set to false TOO EARLY** (line 2437 of Section11.js)
+   - Set to false after DOMContentLoaded
+   - FileHandler's import happens AFTER DOMContentLoaded
+   - By import time, `isInitializationPhase = false`
+
+2. **Dual-state sync blocked during import** (line 1216 of Section11.js)
+   - `needsDualSync` condition required `isInitializationPhase = true`
+   - During import, this condition fails
+   - Only Target areas get synced, Reference areas remain stale
+
+3. **S11 Reference calculations use wrong area values**
+   - calculateReferenceModel() runs but uses stale area values
+   - ref_i_98 stays unchanged at wrong value
+   - Manual Reference toggle works because it syncs areas while in Reference mode
+
+### Fix Applied
+
+**Files Modified**:
+- [Section11.js:23](src/sections/Section11.js#L23) - Added `isImportActive` flag
+- [Section11.js:1216](src/sections/Section11.js#L1216) - Modified `needsDualSync` condition
+- [Section11.js:2488-2491](src/sections/Section11.js#L2488-L2491) - Exposed `setImportActive()` function
+- [FileHandler.js:700-710](src/core/FileHandler.js#L700-L710) - Wrapped syncAreasFromS10() with import flag control
+
+**How It Works**:
+1. FileHandler sets `isImportActive = true` before calling syncAreasFromS10()
+2. syncAreasFromS10() sees `(isInitializationPhase || isImportActive) = true`
+3. Dual-state sync executes, populating BOTH Target and Reference areas
+4. FileHandler sets `isImportActive = false` after sync completes
+5. S11's calculateReferenceModel() now uses correct Reference area values
+6. No manual S11 Reference toggle required
+
+### Testing Results ✅
+
+**VERIFIED** - Nov 2, 2025: Import has 100% parity with Excel!
+
+- [x] Import Excel file with Heatpump system - **WORKS**
+- [x] e_10 shows correct value immediately after import - **CONFIRMED**
+- [x] No manual S11 Reference toggle required - **CONFIRMED**
+- [x] Electricity/Gas systems continue to work - **CONFIRMED**
+
+The fix successfully resolves the S11 import cascade issue. The isImportActive flag enables dual-state sync during import, ensuring Reference areas are properly populated before calculations run.

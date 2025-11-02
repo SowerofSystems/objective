@@ -690,12 +690,25 @@
       console.log("[FileHandler] ✅ PHASE 2: Pattern A section sync complete");
 
       // ✅ FIX (Oct 10): Manually sync S11 window areas from S10 AFTER all imports complete
+      // ✅ FIX (Nov 2): Enable dual-state sync during import to populate Reference areas
       // S11's syncFromGlobalState() no longer calls this to prevent premature sync
       if (window.TEUI?.SectionModules?.sect11?.syncAreasFromS10) {
         console.log(
           "[FileHandler] 🔧 PHASE 2.5: Syncing S11 window areas from S10...",
         );
+
+        // Enable dual-state sync for import
+        if (window.TEUI?.SectionModules?.sect11?.setImportActive) {
+          window.TEUI.SectionModules.sect11.setImportActive(true);
+        }
+
         window.TEUI.SectionModules.sect11.syncAreasFromS10();
+
+        // Disable dual-state sync after import
+        if (window.TEUI?.SectionModules?.sect11?.setImportActive) {
+          window.TEUI.SectionModules.sect11.setImportActive(false);
+        }
+
         console.log(
           "[FileHandler] ✅ PHASE 2.5: S11 window area sync complete",
         );

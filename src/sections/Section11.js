@@ -20,6 +20,7 @@ window.TEUI.SectionModules.sect11 = (function () {
   let isSyncingFromS10 = false; // Prevents recursion in sync function
   let syncTimeout = null; // For debouncing rapid sync calls
   let isInitializationPhase = true; // ✅ FIX: Disable DUAL-STATE SYNC after initialization
+  let isImportActive = false; // ✅ FIX: Allow DUAL-STATE SYNC during import (set by FileHandler)
 
   // ✅ ANTI-PATTERN FIX: Type metadata only (no duplicate default values)
   // Component types for indicator calculation logic - values come from ReferenceState
@@ -1212,7 +1213,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         window.TEUI.StateManager.getValue("ref_d_73");
 
       const needsDualSync =
-        isInitializationPhase && // ✅ FIX: Only during initialization, not user edits
+        (isInitializationPhase || isImportActive) && // ✅ FIX: During initialization OR import, not user edits
         currentMode === "target" &&
         (refArea_d88 === undefined || refArea_d88 !== stateManager_refArea);
 
@@ -2482,6 +2483,12 @@ window.TEUI.SectionModules.sect11 = (function () {
 
     // ✅ FIX (Oct 10): Expose S10 area sync for FileHandler post-import call
     syncAreasFromS10: syncAreasFromS10,
+
+    // ✅ FIX (Nov 2): Expose import flag control for FileHandler
+    setImportActive: (active) => {
+      isImportActive = active;
+      console.log(`[S11 Area Sync] Import phase ${active ? "STARTED" : "ENDED"} - Dual-state sync ${active ? "ENABLED" : "DISABLED"}`);
+    },
   };
 })();
 

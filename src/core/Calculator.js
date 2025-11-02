@@ -490,9 +490,9 @@ TEUI.Calculator = (function () {
       "sect03", // Climate
       "sect08", // IAQ
       "sect09", // Internal Gains
-      "sect12", // Volume Metrics (defines areas for S10, S11)
       "sect10", // Radiant Gains (i80 for S15)
-      "sect11", // Transmission Losses
+      "sect11", // Transmission Losses (writes ref_i_98 for S12)
+      "sect12", // Volume Metrics (reads ref_i_98 from S11, defines areas used in totals)
       // "cooling", // MOVED: Now called directly by S13 to guarantee order
       "sect07", // Water Use (k51 for S15)
       "sect13", // Mechanical Loads (reads cooling values, calculates ventilation)
