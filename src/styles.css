@@ -1238,12 +1238,14 @@ table.data-table select.form-select:hover {
 .dependency-info-panel {
   font-size: 0.9rem;
   /* Removed max-height and overflow-y to allow full content display */
-  padding: 12px; /* More internal spacing */
-  margin-bottom: 10px; /* Space below panel */
+  padding: 12px !important; /* More internal spacing - !important to override Bootstrap */
+  margin-bottom: 10px !important; /* Space below panel - !important to override Bootstrap */
   border-left: 3px solid #0d6efd; /* Add accent border */
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  display: none; /* Hidden by default, shown via JS */
+  /* Display controlled by JS - no CSS default to avoid conflicts */
+  min-height: 50px; /* Ensure panel has minimum height */
+  background-color: #e2e3e5 !important; /* Bootstrap alert-secondary gray - ensure it shows */
 }
 
 .dependency-info-panel .info-title {
