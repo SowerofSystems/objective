@@ -77,7 +77,16 @@ TEUI.ReferenceToggle = (function () {
           typeof section.modeManager.switchMode === "function"
         ) {
           section.modeManager.switchMode(mode);
-          section.modeManager.updateCalculatedDisplayValues();
+
+          // Call updateCalculatedDisplayValues if it exists
+          if (typeof section.modeManager.updateCalculatedDisplayValues === "function") {
+            section.modeManager.updateCalculatedDisplayValues();
+          } else {
+            console.warn(
+              `[ReferenceToggle] ${section.id} has no updateCalculatedDisplayValues method`,
+            );
+          }
+
           switchedCount++;
         }
       } catch (error) {
