@@ -272,6 +272,9 @@ window.TEUI.SectionModules.sect15 = (function () {
       // ✅ CORRECTED: Only refresh UI, don't re-run calculations.
       this.refreshUI();
       this.updateCalculatedDisplayValues();
+
+      // ✅ NEW: Sync visual toggle UI when mode changes (from global or local toggle)
+      this.syncToggleUI(mode);
     },
 
     // Refresh UI based on current mode
@@ -412,6 +415,35 @@ window.TEUI.SectionModules.sect15 = (function () {
     getCurrentState: function () {
       return this.currentMode === "target" ? TargetState : ReferenceState;
     },
+
+    // ✅ NEW: Sync visual toggle switch and indicator to match current mode
+    // Called both when user clicks local toggle AND when global toggle switches mode
+    syncToggleUI: function (mode) {
+      if (!this._toggleElements) {
+        console.warn("[S15] Toggle elements not yet initialized, skipping UI sync");
+        return;
+      }
+
+      const { toggleSwitch, slider, stateIndicator } = this._toggleElements;
+      const isReference = mode === "reference";
+
+      // Update toggle switch visual state to match mode
+      toggleSwitch.classList.toggle("active", isReference);
+
+      if (isReference) {
+        slider.style.transform = "translateX(20px)";
+        toggleSwitch.style.backgroundColor = "#28a745";
+        stateIndicator.textContent = "REFERENCE";
+        stateIndicator.style.backgroundColor = "rgba(40, 167, 69, 0.7)";
+      } else {
+        slider.style.transform = "translateX(0px)";
+        toggleSwitch.style.backgroundColor = "#ccc";
+        stateIndicator.textContent = "TARGET";
+        stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
+      }
+
+      console.log(`[S15] Synced toggle UI to ${mode.toUpperCase()} mode`);
+    },
   };
 
   // MANDATORY: Global exposure for cross-section communication
@@ -478,23 +510,11 @@ window.TEUI.SectionModules.sect15 = (function () {
 
     toggleSwitch.appendChild(slider);
 
-    // Toggle Switch Click Handler
+    // ✅ REFACTORED: Just toggle mode, let switchMode() handle all UI updates via syncToggleUI()
     toggleSwitch.addEventListener("click", (event) => {
-      event.stopPropagation(); // ✅ FIX: Prevent header collapse
-      const isReference = toggleSwitch.classList.toggle("active");
-      if (isReference) {
-        slider.style.transform = "translateX(20px)";
-        toggleSwitch.style.backgroundColor = "#28a745";
-        stateIndicator.textContent = "REFERENCE";
-        stateIndicator.style.backgroundColor = "rgba(40, 167, 69, 0.7)";
-        ModeManager.switchMode("reference");
-      } else {
-        slider.style.transform = "translateX(0px)";
-        toggleSwitch.style.backgroundColor = "#ccc";
-        stateIndicator.textContent = "TARGET";
-        stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
-        ModeManager.switchMode("target");
-      }
+      event.stopPropagation();
+      const targetMode = ModeManager.currentMode === "target" ? "reference" : "target";
+      ModeManager.switchMode(targetMode);
     });
 
     // Assemble controls
@@ -502,6 +522,13 @@ window.TEUI.SectionModules.sect15 = (function () {
     controlsContainer.appendChild(stateIndicator);
     controlsContainer.appendChild(toggleSwitch);
     sectionHeader.appendChild(controlsContainer);
+
+    // ✅ NEW: Store references to toggle elements on ModeManager for global toggle sync
+    ModeManager._toggleElements = {
+      toggleSwitch: toggleSwitch,
+      slider: slider,
+      stateIndicator: stateIndicator
+    };
 
     console.log("✅ S15: Header controls injected successfully");
   }
