@@ -1,35 +1,50 @@
 # Reference System UI/Mode Switch Workplan
 
-> **Status**: In Progress - S02 Complete, S03-S15 Pending
+> **Status**: In Progress - S02-S08 Complete, S10-S15 Pending
 > **Goal**: Complete the global Reference mode display system by linking dropdown commands to section controls
 > **Scope**: UI/mode switching only - constrained to "Show Reference" and "Show Target" commands
-> **Last Updated**: 2025-11-02 (Updated after S02 implementation)
+> **Last Updated**: 2025-11-02 (Updated after S02-S08 completion)
 
 ---
 
 ## Implementation Status
 
-### ✅ Completed: Section 02 (Proof of Concept)
+### ✅ Completed: Sections 02-08 (All Pattern A sections with controls)
 
-**Commits:**
+**All Commits:**
 - `d2186b5` - Test: Add toggle UI sync to S02 for global Reference switch
 - `508752a` - Refactor: Remove duplicate UI code from S02 toggle handler
+- `670327a` - Feat: Apply toggle UI sync pattern to S03
+- `e149029` - Feat: Apply toggle UI sync pattern to S04
+- `f4a663d` - Feat: Apply toggle UI sync pattern to S05
+- `70a49ca` - Feat: Apply toggle UI sync pattern to S06
+- `e25a616` - Feat: Apply toggle UI sync pattern to S07
+- `58258ff` - Feat: Standardize S08 controls and apply toggle UI sync pattern
+- `9db5fcc` - Fix: Add S05-S07 to global Reference toggle section list
+- `00f7639` - Fix: Expose S05 and S06 ModeManager on window.TEUI namespace
 
 **Verified Working:**
-1. Global "Show Reference" → S02 shows Reference values + red toggle UI
-2. Global "Show Target" → S02 shows Target values + blue toggle UI
-3. Local S02 toggle → Syncs with global state
+1. Global "Show Reference" → All sections (S02-S08) show Reference values + red toggle UI
+2. Global "Show Target" → All sections (S02-S08) show Target values + blue toggle UI
+3. Local section toggles → Sync with global state
 4. No code duplication (single source of truth for UI updates)
 
-### ⏳ Pending: Sections 03, 04, 08, 10-15
+**Key Issues Resolved:**
+1. **Missing Sections in ReferenceToggle.js**: S05, S06, S07 were not listed in `getAllDualStateSections()` array
+2. **Inconsistent ModeManager Exposure**: S05, S06 only exposed ModeManager on `window.TEUI.SectionModules.sect0X` but ReferenceToggle expected `window.TEUI.sect0X`
+3. **S08 Standardization**: S08 had different control structure (missing Reset button, different function names)
 
-Apply the proven S02 pattern to remaining Pattern A sections.
+### ⏳ Pending: Sections 10-15
+
+**Note**: S09 does not use Pattern A dual-state architecture (no ModeManager).
+
+Apply the proven S02-S08 pattern to remaining Pattern A sections (S10-S15).
 
 ---
 
 ## Executive Summary
 
-The Reference system UI is **95% complete** with S02 fully working. The pattern has been proven and documented - just needs to be applied to remaining sections.
+The Reference system UI is **~80% complete** with S02-S08 fully working. The pattern has been proven and documented - just needs to be applied to remaining sections (S10-S15).
 
 ### What Works ✅
 
@@ -39,13 +54,19 @@ The Reference system UI is **95% complete** with S02 fully working. The pattern 
 4. **ReferenceToggle.js**: Core switching logic implemented with `switchAllSectionsMode()`
 5. **Button Event Handlers**: All dropdown buttons wired to appropriate functions
 6. **Global CSS Application**: Body-level classes apply/remove correctly
-7. **S02 Implementation**: Proven pattern for toggle UI sync
+7. **S02-S08 Implementation**: All sections with controls completed and tested
 
 ### What Remains 🔧
 
-1. **Apply S02 Pattern**: Replicate the proven implementation to sections 03, 04, 08, 10-15
-2. **Test Each Section**: Verify global toggle works for all sections
+1. **Apply Pattern to S10-S15**: Replicate the proven implementation to remaining 6 sections
+2. **Test Each Section**: Verify global toggle works (testing after each for S10-S13 due to complexity)
 3. **Optional Enhancement**: Keyboard shortcut (Ctrl+Shift+R)
+
+### Lessons Learned 📚
+
+1. **ModeManager Exposure Consistency**: All sections must expose ModeManager on `window.TEUI.sect0X` (not just `window.TEUI.SectionModules.sect0X`)
+2. **ReferenceToggle.js Section List**: All dual-state sections must be listed in `getAllDualStateSections()` array
+3. **Testing Strategy**: Test after each complex section (S10-S13) rather than batching, due to denser codebases
 
 ---
 
