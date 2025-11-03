@@ -2510,6 +2510,11 @@ window.TEUI.SectionModules.sect16 = (function () {
   };
 })();
 
+// CRITICAL: Expose ModeManager on window.TEUI.sect16 for ReferenceToggle compatibility
+// ReferenceToggle looks for window.TEUI.sect16.ModeManager, but the module returns to
+// window.TEUI.SectionModules.sect16, so we need to expose it in both places
+window.TEUI.sect16.ModeManager = window.TEUI.SectionModules.sect16.ModeManager;
+
 // Remove the custom teui-section-rendered listener for Section 16
 // document.addEventListener('teui-section-rendered', function(event) { ... });
 
