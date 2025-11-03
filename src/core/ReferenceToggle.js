@@ -61,6 +61,9 @@ TEUI.ReferenceToggle = (function () {
     return dualStateSections;
   }
 
+  // Track which sections have been warned about missing methods to avoid spam
+  const warnedSections = new Set();
+
   /**
    * PHASE 3: Master Display Toggle - Switch ALL sections with coordinated styling
    * UPDATED: Now applies existing CSS classes for global Reference styling
@@ -81,10 +84,12 @@ TEUI.ReferenceToggle = (function () {
           // Call updateCalculatedDisplayValues if it exists
           if (typeof section.modeManager.updateCalculatedDisplayValues === "function") {
             section.modeManager.updateCalculatedDisplayValues();
-          } else {
+          } else if (!warnedSections.has(section.id)) {
+            // Only warn once per section to avoid console spam
             console.warn(
               `[ReferenceToggle] ${section.id} has no updateCalculatedDisplayValues method`,
             );
+            warnedSections.add(section.id);
           }
 
           switchedCount++;

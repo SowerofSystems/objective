@@ -2084,74 +2084,8 @@ window.TEUI.SectionModules.sect16 = (function () {
     window.TEUI.sect16.initialized = true;
   }
 
-  function handleStateChange(newValue) {
-    // Sankey now only refreshes manually via refresh button
-    // No automatic re-rendering on state changes for better performance
-    if (window.TEUI.sect16.isActive) {
-      // console.log("Section 16: State changed, but Sankey will only refresh manually via button.");
-    }
-  }
-
-  // Add this function before fetchDataAndRenderSankey
-  function debugSankeyLinkValues() {
-    // console.warn("S16 DEBUG: Validating all link values...");
-
-    if (!sankeyInstance || !sankeyInstance._cleanDataInput) {
-      // console.warn("S16 DEBUG: No Sankey data available to validate.");
-      return;
-    }
-
-    // Log all link values from the current data
-    sankeyInstance._cleanDataInput.links.forEach((link) => {
-      let linkId = link.id || "Unknown";
-      let sourceNode =
-        typeof link.source === "object"
-          ? link.source.name
-          : sankeyInstance._cleanDataInput.nodes[link.source]?.name ||
-            "Unknown";
-      let targetNode =
-        typeof link.target === "object"
-          ? link.target.name
-          : sankeyInstance._cleanDataInput.nodes[link.target]?.name ||
-            "Unknown";
-
-      // console.warn(`S16 DEBUG: Link "${linkId}" (${sourceNode} → ${targetNode}) Value: ${link.value}`);
-    });
-
-    // Check specific envelope losses (TEL components) directly from StateManager
-    if (window.TEUI && window.TEUI.StateManager) {
-      // console.warn("S16 DEBUG: Checking TEL component values from StateManager:");
-
-      const telFields = [
-        "i_85",
-        "i_86",
-        "i_87",
-        "i_88",
-        "i_89",
-        "i_90",
-        "i_91",
-        "i_92",
-        "i_93",
-        "i_94",
-        "i_95",
-        "i_97",
-        "i_103",
-      ];
-      telFields.forEach((fieldId) => {
-        const value = getModeAwareValue(fieldId);
-        // console.warn(`S16 DEBUG: TEL Field: ${fieldId}, StateManager Value: ${value}`);
-      });
-
-      // Check Energy Interface fields
-      // console.warn("S16 DEBUG: Checking Energy Interface fields:");
-      ["d_114", "d_115", "d_127", "d_131", "l_113", "l_115"].forEach(
-        (fieldId) => {
-          const value = getModeAwareValue(fieldId);
-          // console.warn(`S16 DEBUG: Energy Interface Field: ${fieldId}, StateManager Value: ${value}`);
-        },
-      );
-    }
-  }
+  // Removed unused debug functions: handleStateChange() and debugSankeyLinkValues()
+  // These were used during development but are no longer needed
 
   /**
    * Mode-aware getValue helper - reads ref_ prefixed values when in Reference mode
@@ -2452,8 +2386,11 @@ window.TEUI.SectionModules.sect16 = (function () {
 })();
 
 // CRITICAL: Expose ModeManager on window.TEUI.sect16 for ReferenceToggle compatibility
-// ReferenceToggle looks for window.TEUI.sect16.ModeManager, but the module returns to
-// window.TEUI.SectionModules.sect16, so we need to expose it in both places
+// This dual-namespace exposure is REQUIRED for global Reference toggle to work:
+// - This module returns to: window.TEUI.SectionModules.sect16 (line 24)
+// - ReferenceToggle expects: window.TEUI.sect16.ModeManager (ReferenceToggle.js:53)
+// Without this line, S16 is invisible to the global toggle system (only 14 sections found instead of 15)
+// See commit 6bc0daa for the bug fix that discovered this requirement
 window.TEUI.sect16.ModeManager = window.TEUI.SectionModules.sect16.ModeManager;
 
 // Remove the custom teui-section-rendered listener for Section 16
