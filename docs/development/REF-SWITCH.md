@@ -1,31 +1,51 @@
 # Reference System UI/Mode Switch Workplan
 
-> **Status**: Planning Phase
+> **Status**: In Progress - S02 Complete, S03-S15 Pending
 > **Goal**: Complete the global Reference mode display system by linking dropdown commands to section controls
 > **Scope**: UI/mode switching only - constrained to "Show Reference" and "Show Target" commands
-> **Last Updated**: 2025-11-02
+> **Last Updated**: 2025-11-02 (Updated after S02 implementation)
+
+---
+
+## Implementation Status
+
+### ✅ Completed: Section 02 (Proof of Concept)
+
+**Commits:**
+- `d2186b5` - Test: Add toggle UI sync to S02 for global Reference switch
+- `508752a` - Refactor: Remove duplicate UI code from S02 toggle handler
+
+**Verified Working:**
+1. Global "Show Reference" → S02 shows Reference values + red toggle UI
+2. Global "Show Target" → S02 shows Target values + blue toggle UI
+3. Local S02 toggle → Syncs with global state
+4. No code duplication (single source of truth for UI updates)
+
+### ⏳ Pending: Sections 03, 04, 08, 10-15
+
+Apply the proven S02 pattern to remaining Pattern A sections.
 
 ---
 
 ## Executive Summary
 
-The Reference system UI is **90% complete** but needs final integration between global controls and section-based toggles. The infrastructure exists - we just need to wire it together properly.
+The Reference system UI is **95% complete** with S02 fully working. The pattern has been proven and documented - just needs to be applied to remaining sections.
 
 ### What Works ✅
 
 1. **CSS Styling System**: Complete red/blue theming for Reference/Target modes
 2. **Dropdown UI**: Well-organized dropdown with "Reference Setup", "Display Toggle", and "Legacy" sections
-3. **Section ModeManagers**: All Pattern A sections (sect02, sect03, sect04, sect08, sect10-sect15) have working dual-state architecture
+3. **Section ModeManagers**: All Pattern A sections have working dual-state architecture
 4. **ReferenceToggle.js**: Core switching logic implemented with `switchAllSectionsMode()`
 5. **Button Event Handlers**: All dropdown buttons wired to appropriate functions
-6. **Global CSS Application**: Body-level classes apply/remove correctly for application-wide styling
+6. **Global CSS Application**: Body-level classes apply/remove correctly
+7. **S02 Implementation**: Proven pattern for toggle UI sync
 
-### What's Missing 🔧
+### What Remains 🔧
 
-1. **Visual Feedback Gap**: Clicking "Show Reference" applies red CSS but sections still display Target values
-2. **Section Sync Issue**: Individual section toggles don't coordinate with master toggle
-3. **Missing Method Calls**: `updateCalculatedDisplayValues()` not being called on all sections after mode switch
-4. **Incomplete ModeManager Integration**: Some sections may not implement all required ModeManager methods
+1. **Apply S02 Pattern**: Replicate the proven implementation to sections 03, 04, 08, 10-15
+2. **Test Each Section**: Verify global toggle works for all sections
+3. **Optional Enhancement**: Keyboard shortcut (Ctrl+Shift+R)
 
 ---
 
@@ -207,9 +227,158 @@ From [styles.css:1398-1605](src/styles.css#L1398-L1605):
 
 ---
 
+## S02 Implementation Pattern (PROVEN - Apply to S03-S15)
+
+### Overview
+
+Section 02 now has a complete, working implementation that can be replicated to all other Pattern A sections. The pattern eliminates code duplication and ensures visual toggle UI stays in sync with mode state.
+
+### Step 1: Store Toggle Element References
+
+**Location**: In `injectHeaderControls()` function, after creating toggle elements
+
+**Code to Add** (at end of function, before final console.log):
+
+```javascript
+// ✅ NEW: Store references to toggle elements on ModeManager for global toggle sync
+ModeManager._toggleElements = {
+  toggleSwitch: toggleSwitch,
+  slider: slider,
+  stateIndicator: stateIndicator
+};
+```
+
+**Why**: Allows `ModeManager.syncToggleUI()` to access toggle elements without DOM queries.
+
+**Files**: Section02.js lines 757-762 ✅ (reference implementation)
+
+---
+
+### Step 2: Add `syncToggleUI()` Method to ModeManager
+
+**Location**: In `ModeManager` object definition, after `switchMode()` method
+
+**Code to Add**:
+
+```javascript
+// ✅ NEW: Sync visual toggle switch and indicator to match current mode
+// Called both when user clicks local toggle AND when global toggle switches mode
+syncToggleUI: function (mode) {
+  if (!this._toggleElements) {
+    console.warn("[S0X] Toggle elements not yet initialized, skipping UI sync");
+    return;
+  }
+
+  const { toggleSwitch, slider, stateIndicator } = this._toggleElements;
+  const isReference = mode === "reference";
+
+  // Update toggle switch visual state to match mode
+  toggleSwitch.classList.toggle("active", isReference);
+
+  if (isReference) {
+    slider.style.transform = "translateX(20px)";
+    toggleSwitch.style.backgroundColor = "#28a745";
+    stateIndicator.textContent = "REFERENCE";
+    stateIndicator.style.backgroundColor = "rgba(40, 167, 69, 0.7)";
+  } else {
+    slider.style.transform = "translateX(0px)";
+    toggleSwitch.style.backgroundColor = "#ccc";
+    stateIndicator.textContent = "TARGET";
+    stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
+  }
+
+  console.log(`[S0X] Synced toggle UI to ${mode.toUpperCase()} mode`);
+},
+```
+
+**Why**: Single source of truth for all toggle UI updates. Works for both local and global toggle.
+
+**Files**: Section02.js lines 1892-1919 ✅ (reference implementation)
+
+---
+
+### Step 3: Call `syncToggleUI()` from `switchMode()`
+
+**Location**: In `ModeManager.switchMode()` method, after `updateCalculatedDisplayValues()` call
+
+**Code to Add**:
+
+```javascript
+// ✅ NEW: Sync visual toggle UI when mode changes (from global or local toggle)
+this.syncToggleUI(mode);
+```
+
+**Why**: Ensures toggle UI updates whenever mode changes, regardless of source (local click or global command).
+
+**Files**: Section02.js line 1884 ✅ (reference implementation)
+
+---
+
+### Step 4: Simplify Local Toggle Click Handler
+
+**Location**: In `injectHeaderControls()` function, toggle click event listener
+
+**BEFORE** (14 lines, duplicate UI updates):
+```javascript
+toggleSwitch.addEventListener("click", (event) => {
+  event.stopPropagation();
+  const isReference = toggleSwitch.classList.toggle("active");
+  if (isReference) {
+    slider.style.transform = "translateX(20px)";
+    toggleSwitch.style.backgroundColor = "#28a745";
+    stateIndicator.textContent = "REFERENCE";
+    stateIndicator.style.backgroundColor = "rgba(40, 167, 69, 0.7)";
+    ModeManager.switchMode("reference");
+  } else {
+    slider.style.transform = "translateX(0px)";
+    toggleSwitch.style.backgroundColor = "#ccc";
+    stateIndicator.textContent = "TARGET";
+    stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
+    ModeManager.switchMode("target");
+  }
+});
+```
+
+**AFTER** (4 lines, no duplicate code):
+```javascript
+// ✅ REFACTORED: Just toggle mode, let switchMode() handle all UI updates via syncToggleUI()
+toggleSwitch.addEventListener("click", (event) => {
+  event.stopPropagation();
+  // Determine target mode by checking current mode (don't rely on classList)
+  const targetMode = ModeManager.currentMode === "target" ? "reference" : "target";
+  ModeManager.switchMode(targetMode);
+});
+```
+
+**Why**: Eliminates code duplication. All UI updates now happen in `syncToggleUI()` (single source of truth).
+
+**Files**: Section02.js lines 732-739 ✅ (reference implementation)
+
+---
+
 ## Implementation Plan
 
-### Phase 1: Fix `updateCalculatedDisplayValues()` Calls
+### Phase 1: Apply S02 Pattern to Remaining Sections ✅ S02 COMPLETE
+
+**Sections to Update**: S03, S04, S08, S10, S11, S12, S13, S14, S15
+
+**For Each Section**:
+1. Add `ModeManager._toggleElements` storage (Step 1)
+2. Add `syncToggleUI()` method to ModeManager (Step 2)
+3. Call `syncToggleUI()` from `switchMode()` (Step 3)
+4. Simplify local toggle click handler (Step 4)
+
+**Estimated Time**: ~15 minutes per section (total ~2 hours for all 9 sections)
+
+**Benefits**:
+- Global "Show Reference" switches ALL sections simultaneously
+- Visual toggle UI stays in sync with mode state
+- No code duplication across sections
+- Single source of truth for UI updates
+
+---
+
+### Phase 2: Fix `updateCalculatedDisplayValues()` Calls (OPTIONAL)
 
 **Problem**: Not all sections implement this method.
 
