@@ -40,6 +40,8 @@
 - `81ebd1d` - Feat: Add S16 Sankey Reference mode support with mode-aware value reading
 - `8a8bf93` - Debug: Add comprehensive logging to S16 Reference mode switching
 - `6bc0daa` - Fix: Expose S16 ModeManager on correct namespace for ReferenceToggle
+- `deb39eb` - Refactor: Remove debug logging from S16 Reference mode implementation
+- `e076b68` - Refactor: Centralize `ToggleUISync` utility (CTO - eliminates code duplication across all sections)
 
 **Verified Working:**
 1. ✅ Global "Show Reference" → All 15 sections (S02-S16) show Reference values + red toggle UI
@@ -849,6 +851,106 @@ function initialize() {
 - **Out of Scope**: "Mirror Target", "Mirror Target + Reference", and "Reference Independence" are separate features with their own implementation plans (see 4012-REFERENCE.md lines 421-713)
 - **Foundation**: All required infrastructure already exists - we're just wiring it together
 - **Philosophy**: KWW (Keep What Works) - use existing patterns, don't reinvent
+
+---
+
+## Known Issues
+
+### S16 Emission Node Labels Show 0.00 on First Render
+
+**Status**: 🔍 INVESTIGATING (Not blocking, workaround exists)
+
+**Symptom**: When emissions are toggled on in S16 Sankey diagram, emission node labels (E1 Scope 1, E2 Scope 2) show "(0.00 kg CO2e/yr)" on first render but display correct values after clicking "Refresh Sankey".
+
+**What Works**:
+- ✅ Link tooltips show correct emission values on first render
+- ✅ Link widths are correct (visual flow shows proper scale)
+- ✅ Node sizes are correct
+- ✅ All non-emission node labels render correctly on first pass
+- ✅ Second refresh shows correct emission values in node labels
+
+**Root Cause**: D3 sankey layout timing issue. When `formatNodeLabel()` is called during `_preRenderInvisible()`, D3 has processed the sankey data but the emission nodes' `targetLinks` arrays are empty or not yet populated. The function attempts to calculate emission totals from `node.targetLinks.reduce()` which returns 0.
+
+**Investigation Findings**:
+- Diagnostic logging shows `node.value` IS correctly set by D3 on first render (e.g., E2 has `value: 6821618.619388841`)
+- However, `node.targetLinks` array is empty (`targetLinks: 0`) when formatNodeLabel() runs
+- Link tooltips work because they read `link.value` directly from the bound link data
+- Node labels fail because they try to sum `node.targetLinks[].value`
+
+**Attempted Fix**: Changed `formatNodeLabel()` to use `node.value` instead of `targetLinks.reduce()` - this broke Reference mode emissions rendering entirely (emissions disappeared). Reverted immediately.
+
+**Proposed Solution**: Since link values are correct on first render, copy the emission value from the incoming link to the node label. For emission nodes, there's typically only one incoming link (Building → E1 Scope 1, Energy Input → E2 Scope 2), so the link value equals the node label value.
+
+**Implementation Approach**:
+```javascript
+formatNodeLabel(node) {
+  if (node.name && node.name.toLowerCase().includes("emissions")) {
+    // OPTION 1: Wait for targetLinks to populate (current behavior - works on refresh)
+    const totalEmissionsInGrams =
+      node.targetLinks?.reduce((sum, link) => sum + link.value, 0) || 0;
+
+    // OPTION 2: Use node.value directly (tried - broke Reference mode)
+    // const totalEmissionsInGrams = node.value || 0;
+
+    // OPTION 3: Find the incoming emission link and read its value
+    // For emission nodes, find the link where target === this node
+    // and isEmissions === true, then use that link's value
+
+    const kgValue = totalEmissionsInGrams / 1000;
+    return `${node.name} (${window.TEUI.formatNumber(kgValue, "number-2dp-comma")} kg CO2e/yr)`;
+  }
+  return node.name;
+}
+```
+
+**Next Steps**:
+1. Understand why using `node.value` broke Reference mode (need deeper investigation)
+2. Try Option 3: Search for the emission link in the links array and read its value
+3. Consider if this is a pre-render vs post-render timing issue that needs D3 lifecycle adjustment
+
+**Workaround**: Users can click "Refresh Sankey" to see correct emission values. Not ideal UX but functional.
+
+**Priority**: Low - does not block functionality, purely cosmetic on first render
+
+---
+
+## Code Refactoring Notes
+
+### ToggleUISync Centralization (Commit e076b68)
+
+**Author**: CTO (Mark Pavlidis)
+**Date**: 2025-11-03
+**Impact**: All sections S02-S16
+
+**Changes**:
+- Created centralized `src/core/ToggleUISync.js` utility
+- All sections now call `window.TEUI.ToggleUISync.syncToggleUI()` instead of local implementations
+- Eliminated ~262 lines of duplicated code across 15 sections
+- Added optional debug logging controlled by `window.TEUI.config.debugReferenceMode`
+
+**Benefits**:
+- Single source of truth for toggle UI behavior
+- Easier maintenance and bug fixes
+- Consistent behavior across all sections
+- Reduced codebase size
+- Optional centralized debug logging
+
+**Pattern**:
+```javascript
+// OLD (duplicated in each section)
+syncToggleUI: function (mode) {
+  if (!this._toggleElements) return;
+  const { toggleSwitch, slider, stateIndicator } = this._toggleElements;
+  // ... 20+ lines of duplicate UI update code ...
+}
+
+// NEW (delegates to centralized utility)
+syncToggleUI: function (mode) {
+  window.TEUI.ToggleUISync.syncToggleUI(this._toggleElements, mode, 'S16');
+}
+```
+
+**No Behavior Changes**: This is purely a refactoring for code quality - all functionality remains identical.
 
 ---
 
