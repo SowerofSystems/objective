@@ -132,6 +132,38 @@ window.TEUI.SectionModules.sect08 = (function () {
       // Both engines should already have calculated values stored in StateManager.
       this.updateUIForMode();
       this.updateCalculatedDisplayValues(); // This will handle the DOM updates.
+
+      // ✅ NEW: Sync visual toggle UI when mode changes (from global or local toggle)
+      this.syncToggleUI(newMode);
+    },
+
+    // ✅ NEW: Sync visual toggle switch and indicator to match current mode
+    // Called both when user clicks local toggle AND when global toggle switches mode
+    syncToggleUI: function (mode) {
+      if (!this._toggleElements) {
+        console.warn("[S08] Toggle elements not yet initialized, skipping UI sync");
+        return;
+      }
+
+      const { toggleSwitch, slider, stateIndicator } = this._toggleElements;
+      const isReference = mode === "reference";
+
+      // Update toggle switch visual state to match mode
+      toggleSwitch.classList.toggle("active", isReference);
+
+      if (isReference) {
+        slider.style.transform = "translateX(20px)";
+        toggleSwitch.style.backgroundColor = "#28a745";
+        stateIndicator.textContent = "REFERENCE";
+        stateIndicator.style.backgroundColor = "rgba(40, 167, 69, 0.7)";
+      } else {
+        slider.style.transform = "translateX(0px)";
+        toggleSwitch.style.backgroundColor = "#ccc";
+        stateIndicator.textContent = "TARGET";
+        stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
+      }
+
+      console.log(`[S08] Synced toggle UI to ${mode.toUpperCase()} mode`);
     },
     updateUIForMode: function () {
       const sectionElement = document.getElementById("indoorAirQuality");
@@ -417,20 +449,36 @@ window.TEUI.SectionModules.sect08 = (function () {
   //==========================================================================
   // SECTION-LOCAL TOGGLE (Unchanged)
   //==========================================================================
-  function injectLocalToggle() {
+  // ✅ RENAMED: injectLocalToggle → injectHeaderControls for consistency
+  function injectHeaderControls() {
     const sectionHeader = document.querySelector(
       "#indoorAirQuality .section-header",
     );
     if (
       !sectionHeader ||
-      sectionHeader.querySelector(".local-toggle-container")
+      sectionHeader.querySelector(".local-controls-container")
     )
       return;
 
-    const toggleContainer = document.createElement("div");
-    toggleContainer.className = "local-toggle-container";
-    toggleContainer.style.cssText =
+    const controlsContainer = document.createElement("div");
+    controlsContainer.className = "local-controls-container";
+    controlsContainer.style.cssText =
       "display: flex; align-items: center; margin-left: auto; gap: 10px;";
+
+    // ✅ NEW: Add Reset button to match other sections
+    const resetButton = document.createElement("button");
+    resetButton.textContent = "Reset";
+    resetButton.style.cssText =
+      "padding: 4px 8px; font-size: 12px; border: 1px solid #ccc; background: white; cursor: pointer; border-radius: 3px;";
+    resetButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (confirm("Reset all values to defaults?")) {
+        TargetState.setDefaults();
+        ReferenceState.setDefaults();
+        ModeManager.refreshUI();
+        console.log("S08: Reset to defaults");
+      }
+    });
 
     const stateIndicator = document.createElement("span");
     stateIndicator.textContent = "TARGET";
@@ -447,27 +495,24 @@ window.TEUI.SectionModules.sect08 = (function () {
 
     toggleSwitch.appendChild(slider);
 
+    // ✅ REFACTORED: Just toggle mode, let switchMode() handle all UI updates via syncToggleUI()
     toggleSwitch.addEventListener("click", (event) => {
       event.stopPropagation();
-      const isReference = toggleSwitch.classList.toggle("active");
-      if (isReference) {
-        slider.style.transform = "translateX(20px)";
-        toggleSwitch.style.backgroundColor = "#28a745";
-        stateIndicator.textContent = "REFERENCE";
-        stateIndicator.style.backgroundColor = "rgba(40, 167, 69, 0.7)";
-        ModeManager.switchMode("reference");
-      } else {
-        slider.style.transform = "translateX(0px)";
-        toggleSwitch.style.backgroundColor = "#ccc";
-        stateIndicator.textContent = "TARGET";
-        stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
-        ModeManager.switchMode("target");
-      }
+      const targetMode = ModeManager.currentMode === "target" ? "reference" : "target";
+      ModeManager.switchMode(targetMode);
     });
 
-    toggleContainer.appendChild(stateIndicator);
-    toggleContainer.appendChild(toggleSwitch);
-    sectionHeader.appendChild(toggleContainer);
+    controlsContainer.appendChild(resetButton);
+    controlsContainer.appendChild(stateIndicator);
+    controlsContainer.appendChild(toggleSwitch);
+    sectionHeader.appendChild(controlsContainer);
+
+    // ✅ NEW: Store references to toggle elements on ModeManager for global toggle sync
+    ModeManager._toggleElements = {
+      toggleSwitch: toggleSwitch,
+      slider: slider,
+      stateIndicator: stateIndicator
+    };
   }
 
   //==========================================================================
@@ -680,7 +725,7 @@ window.TEUI.SectionModules.sect08 = (function () {
   function onSectionRendered() {
     ModeManager.initialize();
     addStatusStyles();
-    injectLocalToggle();
+    injectHeaderControls(); // ✅ UPDATED: Function renamed from injectLocalToggle
     initializeEventHandlers();
 
     // ✅ CRITICAL: Setup S04 listeners for wood offset calculation
