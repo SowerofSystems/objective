@@ -1959,14 +1959,8 @@ window.TEUI.SectionModules.sect16 = (function () {
     _toggleElements: null,
 
     switchMode: function (mode) {
-      if (this.currentMode === mode) {
-        console.log(`[S16] Already in ${mode} mode`);
-        return;
-      }
+      if (this.currentMode === mode) return;
 
-      console.log(
-        `[S16] switchMode called: ${this.currentMode} → ${mode}`,
-      );
       this.currentMode = mode;
 
       // Update toggle UI to match new mode (do this FIRST)
@@ -1975,26 +1969,12 @@ window.TEUI.SectionModules.sect16 = (function () {
       // Re-fetch data and re-render Sankey with new mode's values
       // getModeAwareValue() reads ref_ prefixed values when currentMode === "reference"
       if (window.TEUI.sect16.isActive && window.TEUI.sect16.sankeyInstance) {
-        console.log(
-          `[S16] Sankey is active, re-rendering with ${mode} data`,
-        );
         fetchDataAndRenderSankey(false);
-      } else {
-        console.log(
-          `[S16] Sankey not active yet (isActive: ${window.TEUI.sect16.isActive}, instance: ${!!window.TEUI.sect16.sankeyInstance}), will render with ${mode} data when activated`,
-        );
       }
-
-      console.log(`[S16] Mode switch complete: now in ${mode.toUpperCase()} mode`);
     },
 
     syncToggleUI: function (mode) {
-      if (!this._toggleElements) {
-        console.warn(
-          "[S16] Toggle elements not yet initialized, skipping UI sync",
-        );
-        return;
-      }
+      if (!this._toggleElements) return;
 
       const { toggleSwitch, slider, stateIndicator } = this._toggleElements;
       const isReference = mode === "reference";
@@ -2013,8 +1993,6 @@ window.TEUI.SectionModules.sect16 = (function () {
         stateIndicator.textContent = "TARGET";
         stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
       }
-
-      console.log(`[S16] Synced toggle UI to ${mode.toUpperCase()} mode`);
     },
 
     /**
@@ -2022,20 +2000,9 @@ window.TEUI.SectionModules.sect16 = (function () {
      * S16 is visualization-only, so this just ensures Sankey renders with current mode's data
      */
     updateCalculatedDisplayValues: function () {
-      console.log(
-        `[S16] updateCalculatedDisplayValues called in ${this.currentMode} mode`,
-      );
-
       // If Sankey is active, re-render with current mode's data
       if (window.TEUI.sect16.isActive && window.TEUI.sect16.sankeyInstance) {
-        console.log(
-          `[S16] Re-rendering Sankey with ${this.currentMode} mode data`,
-        );
         fetchDataAndRenderSankey(false);
-      } else {
-        console.log(
-          `[S16] Sankey not active, will use ${this.currentMode} mode data when activated`,
-        );
       }
     },
   };
@@ -2216,19 +2183,10 @@ window.TEUI.SectionModules.sect16 = (function () {
 
     if (ModeManager.currentMode === "reference") {
       // Reference mode: Read ONLY ref_ prefixed values for perfect state isolation
-      const refValue = window.TEUI.StateManager.getValue(`ref_${fieldId}`);
-      // Debug log - enable to verify ref_ value reading
-      console.log(
-        `[S16] getModeAwareValue(${fieldId}): mode=${ModeManager.currentMode}, reading ref_${fieldId} = ${refValue}`,
-      );
-      return refValue;
+      return window.TEUI.StateManager.getValue(`ref_${fieldId}`);
     } else {
       // Target mode: Read unprefixed (standard) values
-      const targetValue = window.TEUI.StateManager.getValue(fieldId);
-      console.log(
-        `[S16] getModeAwareValue(${fieldId}): mode=${ModeManager.currentMode}, reading ${fieldId} = ${targetValue}`,
-      );
-      return targetValue;
+      return window.TEUI.StateManager.getValue(fieldId);
     }
   }
 
