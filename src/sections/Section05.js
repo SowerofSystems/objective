@@ -221,6 +221,38 @@ window.TEUI.SectionModules.sect05 = (function () {
       // Both engines should already have calculated values stored in StateManager
       this.refreshUI();
       this.updateCalculatedDisplayValues(); // Update calculated field displays only
+
+      // ✅ NEW: Sync visual toggle UI when mode changes (from global or local toggle)
+      this.syncToggleUI(mode);
+    },
+
+    // ✅ NEW: Sync visual toggle switch and indicator to match current mode
+    // Called both when user clicks local toggle AND when global toggle switches mode
+    syncToggleUI: function (mode) {
+      if (!this._toggleElements) {
+        console.warn("[S05] Toggle elements not yet initialized, skipping UI sync");
+        return;
+      }
+
+      const { toggleSwitch, slider, stateIndicator } = this._toggleElements;
+      const isReference = mode === "reference";
+
+      // Update toggle switch visual state to match mode
+      toggleSwitch.classList.toggle("active", isReference);
+
+      if (isReference) {
+        slider.style.transform = "translateX(20px)";
+        toggleSwitch.style.backgroundColor = "#28a745";
+        stateIndicator.textContent = "REFERENCE";
+        stateIndicator.style.backgroundColor = "rgba(40, 167, 69, 0.7)";
+      } else {
+        slider.style.transform = "translateX(0px)";
+        toggleSwitch.style.backgroundColor = "#ccc";
+        stateIndicator.textContent = "TARGET";
+        stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
+      }
+
+      console.log(`[S05] Synced toggle UI to ${mode.toUpperCase()} mode`);
     },
 
     refreshUI: function () {
@@ -1267,22 +1299,11 @@ window.TEUI.SectionModules.sect05 = (function () {
 
     toggleSwitch.appendChild(slider);
 
+    // ✅ REFACTORED: Just toggle mode, let switchMode() handle all UI updates via syncToggleUI()
     toggleSwitch.addEventListener("click", (event) => {
       event.stopPropagation();
-      const isReference = toggleSwitch.classList.toggle("active");
-      if (isReference) {
-        slider.style.transform = "translateX(20px)";
-        toggleSwitch.style.backgroundColor = "#28a745";
-        stateIndicator.textContent = "REFERENCE";
-        stateIndicator.style.backgroundColor = "rgba(40, 167, 69, 0.7)";
-        ModeManager.switchMode("reference");
-      } else {
-        slider.style.transform = "translateX(0px)";
-        toggleSwitch.style.backgroundColor = "#ccc";
-        stateIndicator.textContent = "TARGET";
-        stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
-        ModeManager.switchMode("target");
-      }
+      const targetMode = ModeManager.currentMode === "target" ? "reference" : "target";
+      ModeManager.switchMode(targetMode);
     });
 
     // Append all controls to the container, then the container to the header
@@ -1290,6 +1311,13 @@ window.TEUI.SectionModules.sect05 = (function () {
     controlsContainer.appendChild(stateIndicator);
     controlsContainer.appendChild(toggleSwitch);
     sectionHeader.appendChild(controlsContainer);
+
+    // ✅ NEW: Store references to toggle elements on ModeManager for global toggle sync
+    ModeManager._toggleElements = {
+      toggleSwitch: toggleSwitch,
+      slider: slider,
+      stateIndicator: stateIndicator
+    };
   }
 
   /**
