@@ -229,30 +229,8 @@ window.TEUI.SectionModules.sect05 = (function () {
     // ✅ NEW: Sync visual toggle switch and indicator to match current mode
     // Called both when user clicks local toggle AND when global toggle switches mode
     syncToggleUI: function (mode) {
-      if (!this._toggleElements) {
-        console.warn("[S05] Toggle elements not yet initialized, skipping UI sync");
-        return;
-      }
-
-      const { toggleSwitch, slider, stateIndicator } = this._toggleElements;
-      const isReference = mode === "reference";
-
-      // Update toggle switch visual state to match mode
-      toggleSwitch.classList.toggle("active", isReference);
-
-      if (isReference) {
-        slider.style.transform = "translateX(20px)";
-        toggleSwitch.style.backgroundColor = "#28a745";
-        stateIndicator.textContent = "REFERENCE";
-        stateIndicator.style.backgroundColor = "rgba(40, 167, 69, 0.7)";
-      } else {
-        slider.style.transform = "translateX(0px)";
-        toggleSwitch.style.backgroundColor = "#ccc";
-        stateIndicator.textContent = "TARGET";
-        stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
-      }
-
-      console.log(`[S05] Synced toggle UI to ${mode.toUpperCase()} mode`);
+      // Use centralized ToggleUISync utility
+      window.TEUI.ToggleUISync.syncToggleUI(this._toggleElements, mode, 'S05');
     },
 
     refreshUI: function () {

@@ -1974,25 +1974,8 @@ window.TEUI.SectionModules.sect16 = (function () {
     },
 
     syncToggleUI: function (mode) {
-      if (!this._toggleElements) return;
-
-      const { toggleSwitch, slider, stateIndicator } = this._toggleElements;
-      const isReference = mode === "reference";
-
-      // Update toggle switch visual state to match mode
-      toggleSwitch.classList.toggle("active", isReference);
-
-      if (isReference) {
-        slider.style.transform = "translateX(20px)";
-        toggleSwitch.style.backgroundColor = "#28a745";
-        stateIndicator.textContent = "REFERENCE";
-        stateIndicator.style.backgroundColor = "rgba(40, 167, 69, 0.7)";
-      } else {
-        slider.style.transform = "translateX(0px)";
-        toggleSwitch.style.backgroundColor = "#ccc";
-        stateIndicator.textContent = "TARGET";
-        stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
-      }
+      // Use centralized ToggleUISync utility
+      window.TEUI.ToggleUISync.syncToggleUI(this._toggleElements, mode, 'S16');
     },
 
     /**
