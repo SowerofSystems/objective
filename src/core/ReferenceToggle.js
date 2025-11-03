@@ -36,6 +36,7 @@ TEUI.ReferenceToggle = (function () {
       "sect06",
       "sect07",
       "sect08",
+      "sect09",
       "sect10",
       "sect11",
       "sect12",
