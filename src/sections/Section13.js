@@ -279,6 +279,9 @@ window.TEUI.SectionModules.sect13 = (function () {
       // UI toggle is for DISPLAY ONLY - values are already calculated
       // Removed calculateAll() - mode switch should only update display, not trigger calculations
       this.updateCalculatedDisplayValues();
+
+      // ✅ NEW: Sync visual toggle UI when mode changes (from global or local toggle)
+      this.syncToggleUI(mode);
     },
 
     // Update displayed calculated values based on current mode
@@ -483,6 +486,35 @@ window.TEUI.SectionModules.sect13 = (function () {
         handleHeatingSystemChangeForGhosting(currentHeatingSystem);
       }
     },
+
+    // ✅ NEW: Sync visual toggle switch and indicator to match current mode
+    // Called both when user clicks local toggle AND when global toggle switches mode
+    syncToggleUI: function (mode) {
+      if (!this._toggleElements) {
+        console.warn("[S13] Toggle elements not yet initialized, skipping UI sync");
+        return;
+      }
+
+      const { toggleSwitch, slider, stateIndicator } = this._toggleElements;
+      const isReference = mode === "reference";
+
+      // Update toggle switch visual state to match mode
+      toggleSwitch.classList.toggle("active", isReference);
+
+      if (isReference) {
+        slider.style.transform = "translateX(20px)";
+        toggleSwitch.style.backgroundColor = "#28a745";
+        stateIndicator.textContent = "REFERENCE";
+        stateIndicator.style.backgroundColor = "rgba(40, 167, 69, 0.7)";
+      } else {
+        slider.style.transform = "translateX(0px)";
+        toggleSwitch.style.backgroundColor = "#ccc";
+        stateIndicator.textContent = "TARGET";
+        stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
+      }
+
+      console.log(`[S13] Synced toggle UI to ${mode.toUpperCase()} mode`);
+    },
   };
 
   // MANDATORY: Global exposure
@@ -548,28 +580,24 @@ window.TEUI.SectionModules.sect13 = (function () {
 
     toggleSwitch.appendChild(slider);
 
+    // ✅ REFACTORED: Just toggle mode, let switchMode() handle all UI updates via syncToggleUI()
     toggleSwitch.addEventListener("click", (event) => {
       event.stopPropagation();
-      const isReference = toggleSwitch.classList.toggle("active");
-      if (isReference) {
-        slider.style.transform = "translateX(20px)";
-        toggleSwitch.style.backgroundColor = "#28a745";
-        stateIndicator.textContent = "REFERENCE";
-        stateIndicator.style.backgroundColor = "rgba(40, 167, 69, 0.7)";
-        ModeManager.switchMode("reference");
-      } else {
-        slider.style.transform = "translateX(0px)";
-        toggleSwitch.style.backgroundColor = "#ccc";
-        stateIndicator.textContent = "TARGET";
-        stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
-        ModeManager.switchMode("target");
-      }
+      const targetMode = ModeManager.currentMode === "target" ? "reference" : "target";
+      ModeManager.switchMode(targetMode);
     });
 
     controlsContainer.appendChild(resetButton);
     controlsContainer.appendChild(stateIndicator);
     controlsContainer.appendChild(toggleSwitch);
     sectionHeader.appendChild(controlsContainer);
+
+    // ✅ NEW: Store references to toggle elements on ModeManager for global toggle sync
+    ModeManager._toggleElements = {
+      toggleSwitch: toggleSwitch,
+      slider: slider,
+      stateIndicator: stateIndicator
+    };
   }
 
   //==========================================================================
