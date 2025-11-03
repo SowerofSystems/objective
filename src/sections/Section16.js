@@ -1084,11 +1084,9 @@ window.TEUI.SectionModules.sect16 = (function () {
         window.TEUI.StateManager &&
         window.TEUI.StateManager.getValue
       ) {
-        const teuiState = window.TEUI.StateManager;
-
-        // Get information about the heating systems
-        const primaryHeatingSystem = teuiState.getValue("d_113"); // M.1.0 Primary Heating System
-        const dhwSystem = teuiState.getValue("d_51"); // DHW System
+        // Get information about the heating systems - MODE AWARE
+        const primaryHeatingSystem = getModeAwareValue("d_113"); // M.1.0 Primary Heating System
+        const dhwSystem = getModeAwareValue("d_51"); // DHW System
         const isHeatingGasOrOil =
           primaryHeatingSystem === "Gas" || primaryHeatingSystem === "Oil";
         const isDhwGasOrOil = dhwSystem === "Gas" || dhwSystem === "Oil";
@@ -1111,8 +1109,8 @@ window.TEUI.SectionModules.sect16 = (function () {
         // Track total Scope 1 emissions for Building→Scope1 link
         let totalScope1EmissionsGrams = 0;
 
-        // Handle electricity emissions (Scope 2) - direct path to emissions node
-        const elecEmissionsKg = parseFloat(teuiState.getValue("k_27") || 0);
+        // Handle electricity emissions (Scope 2) - direct path to emissions node - MODE AWARE
+        const elecEmissionsKg = parseFloat(getModeAwareValue("k_27") || 0);
         if (elecEmissionsKg > 0) {
           const elecEmissionsGrams = elecEmissionsKg * 1000;
           if (elecEmissionsGrams > 0.0001) {
@@ -1126,9 +1124,9 @@ window.TEUI.SectionModules.sect16 = (function () {
           }
         }
 
-        // Handle Space Heating emissions (Scope 1) using dedicated field f_114
+        // Handle Space Heating emissions (Scope 1) using dedicated field f_114 - MODE AWARE
         const spaceHeatingEmissionsKg = parseFloat(
-          teuiState.getValue("f_114") || 0,
+          getModeAwareValue("f_114") || 0,
         );
         if (spaceHeatingEmissionsKg > 0 && isHeatingGasOrOil) {
           const spaceHeatingEmissionsGrams = spaceHeatingEmissionsKg * 1000;
@@ -1161,8 +1159,8 @@ window.TEUI.SectionModules.sect16 = (function () {
           }
         }
 
-        // Handle DHW/SHW emissions (Scope 1) using dedicated field k_49
-        const dhwEmissionsKg = parseFloat(teuiState.getValue("k_49") || 0);
+        // Handle DHW/SHW emissions (Scope 1) using dedicated field k_49 - MODE AWARE
+        const dhwEmissionsKg = parseFloat(getModeAwareValue("k_49") || 0);
         if (dhwEmissionsKg > 0 && isDhwGasOrOil && shwNetDemandIndex !== -1) {
           const dhwEmissionsGrams = dhwEmissionsKg * 1000;
           if (dhwEmissionsGrams > 0.0001) {
@@ -1952,6 +1950,124 @@ window.TEUI.SectionModules.sect16 = (function () {
     fetchDataAndRenderSankey(true);
   }
 
+  // ========================================
+  // MODE MANAGER: Target/Reference Toggle
+  // ========================================
+
+  const ModeManager = {
+    currentMode: "target",
+    _toggleElements: null,
+
+    switchMode: function (mode) {
+      if (this.currentMode === mode) {
+        console.log(`[S16] Already in ${mode} mode`);
+        return;
+      }
+
+      console.log(`[S16] Switching from ${this.currentMode} to ${mode}`);
+      this.currentMode = mode;
+
+      // Re-fetch data and re-render Sankey with new mode's values
+      // getModeAwareValue() reads ref_ prefixed values when currentMode === "reference"
+      if (window.TEUI.sect16.isActive && window.TEUI.sect16.sankeyInstance) {
+        fetchDataAndRenderSankey(false);
+      }
+
+      // Update toggle UI to match new mode
+      this.syncToggleUI(mode);
+
+      console.log(`[S16] Switched to ${mode.toUpperCase()} mode`);
+    },
+
+    syncToggleUI: function (mode) {
+      if (!this._toggleElements) {
+        console.warn("[S16] Toggle elements not yet initialized, skipping UI sync");
+        return;
+      }
+
+      const { toggleSwitch, slider, stateIndicator } = this._toggleElements;
+      const isReference = mode === "reference";
+
+      // Update toggle switch visual state to match mode
+      toggleSwitch.classList.toggle("active", isReference);
+
+      if (isReference) {
+        slider.style.transform = "translateX(20px)";
+        toggleSwitch.style.backgroundColor = "#28a745";
+        stateIndicator.textContent = "REFERENCE";
+        stateIndicator.style.backgroundColor = "rgba(40, 167, 69, 0.7)";
+      } else {
+        slider.style.transform = "translateX(0px)";
+        toggleSwitch.style.backgroundColor = "#ccc";
+        stateIndicator.textContent = "TARGET";
+        stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
+      }
+
+      console.log(`[S16] Synced toggle UI to ${mode.toUpperCase()} mode`);
+    },
+  };
+
+  // ========================================
+  // HEADER CONTROLS INJECTION
+  // ========================================
+
+  function injectHeaderControls() {
+    const sectionHeader = document.querySelector(
+      "#sankeyDiagram .section-header"
+    );
+    if (
+      !sectionHeader ||
+      sectionHeader.querySelector(".local-controls-container")
+    ) {
+      return; // Already setup or header not found
+    }
+
+    // Create controls container
+    const controlsContainer = document.createElement("div");
+    controlsContainer.className = "local-controls-container";
+    controlsContainer.style.cssText =
+      "display: flex; align-items: center; gap: 10px; margin-left: auto;";
+
+    // Create state indicator
+    const stateIndicator = document.createElement("div");
+    stateIndicator.textContent = "TARGET";
+    stateIndicator.style.cssText =
+      "padding: 4px 8px; font-size: 12px; font-weight: bold; color: white; background-color: rgba(0, 123, 255, 0.5); border-radius: 3px;";
+
+    // Create toggle switch
+    const toggleSwitch = document.createElement("div");
+    toggleSwitch.style.cssText =
+      "position: relative; width: 40px; height: 20px; background-color: #ccc; border-radius: 10px; cursor: pointer;";
+
+    const slider = document.createElement("div");
+    slider.style.cssText =
+      "position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background-color: white; border-radius: 50%; transition: transform 0.2s;";
+
+    toggleSwitch.appendChild(slider);
+
+    // Toggle Switch Click Handler
+    toggleSwitch.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const targetMode =
+        ModeManager.currentMode === "target" ? "reference" : "target";
+      ModeManager.switchMode(targetMode);
+    });
+
+    // Assemble controls
+    controlsContainer.appendChild(stateIndicator);
+    controlsContainer.appendChild(toggleSwitch);
+    sectionHeader.appendChild(controlsContainer);
+
+    // Store references to toggle elements on ModeManager for global toggle sync
+    ModeManager._toggleElements = {
+      toggleSwitch: toggleSwitch,
+      slider: slider,
+      stateIndicator: stateIndicator,
+    };
+
+    console.log("✅ S16: Header controls injected successfully");
+  }
+
   function onSectionRendered() {
     // console.log("Section 16: onSectionRendered called. Initialized flag:", window.TEUI.sect16.initialized);
 
@@ -1969,6 +2085,9 @@ window.TEUI.SectionModules.sect16 = (function () {
 
     // Setup event handlers after DOM is ready
     initializeEventHandlers();
+
+    // Inject header controls (Target/Reference toggle)
+    injectHeaderControls();
 
     // Set the placeholder text
     const loadingPlaceholder = document.getElementById("s16LoadingPlaceholder");
@@ -2018,7 +2137,6 @@ window.TEUI.SectionModules.sect16 = (function () {
 
     // Check specific envelope losses (TEL components) directly from StateManager
     if (window.TEUI && window.TEUI.StateManager) {
-      const teuiState = window.TEUI.StateManager;
       // console.warn("S16 DEBUG: Checking TEL component values from StateManager:");
 
       const telFields = [
@@ -2037,7 +2155,7 @@ window.TEUI.SectionModules.sect16 = (function () {
         "i_103",
       ];
       telFields.forEach((fieldId) => {
-        const value = teuiState.getValue(fieldId);
+        const value = getModeAwareValue(fieldId);
         // console.warn(`S16 DEBUG: TEL Field: ${fieldId}, StateManager Value: ${value}`);
       });
 
@@ -2045,10 +2163,33 @@ window.TEUI.SectionModules.sect16 = (function () {
       // console.warn("S16 DEBUG: Checking Energy Interface fields:");
       ["d_114", "d_115", "d_127", "d_131", "l_113", "l_115"].forEach(
         (fieldId) => {
-          const value = teuiState.getValue(fieldId);
+          const value = getModeAwareValue(fieldId);
           // console.warn(`S16 DEBUG: Energy Interface Field: ${fieldId}, StateManager Value: ${value}`);
         },
       );
+    }
+  }
+
+  /**
+   * Mode-aware getValue helper - reads ref_ prefixed values when in Reference mode
+   * This follows the same pattern as S02-S15 for explicit state isolation
+   *
+   * IMPORTANT: S16 uses the LOCAL ModeManager.currentMode (not global ReferenceToggle)
+   * because S16's ModeManager.switchMode() synchronizes with the global toggle.
+   * This ensures S16 reads the correct data based on its current display state.
+   */
+  function getModeAwareValue(fieldId) {
+    if (!window.TEUI?.StateManager) return null;
+
+    if (ModeManager.currentMode === "reference") {
+      // Reference mode: Read ONLY ref_ prefixed values for perfect state isolation
+      const refValue = window.TEUI.StateManager.getValue(`ref_${fieldId}`);
+      // Debug log to verify we're reading ref_ values
+      // console.log(`[S16] getModeAwareValue(${fieldId}): ref_${fieldId} = ${refValue}`);
+      return refValue;
+    } else {
+      // Target mode: Read unprefixed (standard) values
+      return window.TEUI.StateManager.getValue(fieldId);
     }
   }
 
@@ -2063,9 +2204,9 @@ window.TEUI.SectionModules.sect16 = (function () {
       return sankeyData;
     }
 
-    // Get system configurations
-    const primaryHeatingSystem = teuiState.getValue("d_113");
-    const dhwSystem = teuiState.getValue("d_51");
+    // Get system configurations - MODE AWARE
+    const primaryHeatingSystem = getModeAwareValue("d_113");
+    const dhwSystem = getModeAwareValue("d_51");
     const isPrimaryGasOrOil =
       primaryHeatingSystem === "Gas" || primaryHeatingSystem === "Oil";
     const isDhwGasOrOil = dhwSystem === "Gas" || dhwSystem === "Oil";
@@ -2127,25 +2268,25 @@ window.TEUI.SectionModules.sect16 = (function () {
         if (isPrimaryGasOrOil) {
           valueToAssign = 0.0001; // Minimal value in gas mode
         } else {
-          rawValueFromState = teuiState.getValue(teuiFieldId);
+          rawValueFromState = getModeAwareValue(teuiFieldId);
           valueToAssign = parseFloat(rawValueFromState) || 0.0001;
         }
       } else if (link.id === "HeatPumpElecToTED") {
         if (isPrimaryGasOrOil) {
           teuiFieldId = "d_115"; // Use gas input instead
         }
-        rawValueFromState = teuiState.getValue(teuiFieldId);
+        rawValueFromState = getModeAwareValue(teuiFieldId);
         valueToAssign = parseFloat(rawValueFromState) || 0.0001;
       } else if (link.id === "TEDToGasExhaust") {
         if (isPrimaryGasOrOil) {
-          rawValueFromState = teuiState.getValue(teuiFieldId);
+          rawValueFromState = getModeAwareValue(teuiFieldId);
           valueToAssign = parseFloat(rawValueFromState) || 0.0001;
         } else {
           valueToAssign = 0.0001; // Minimal value in non-gas mode
         }
       } else if (link.id === "SHWToGasExhaust") {
         if (isDhwGasOrOil) {
-          rawValueFromState = teuiState.getValue(teuiFieldId);
+          rawValueFromState = getModeAwareValue(teuiFieldId);
           valueToAssign = parseFloat(rawValueFromState) || 0.0001;
         } else {
           valueToAssign = 0.0001; // Minimal value in non-gas mode
@@ -2154,7 +2295,7 @@ window.TEUI.SectionModules.sect16 = (function () {
         valueToAssign = 0.0001; // Always minimal for this link
       } else if (teuiFieldId) {
         // Standard processing for most links
-        rawValueFromState = teuiState.getValue(teuiFieldId);
+        rawValueFromState = getModeAwareValue(teuiFieldId);
         if (rawValueFromState !== null && rawValueFromState !== undefined) {
           valueToAssign = parseFloat(rawValueFromState) || 0.0001;
         }
@@ -2326,6 +2467,7 @@ window.TEUI.SectionModules.sect16 = (function () {
       fetchDataAndRenderSankey(false);
     },
     activateSankey: activateSankey,
+    ModeManager: ModeManager, // Expose ModeManager for global Reference toggle
   };
 })();
 

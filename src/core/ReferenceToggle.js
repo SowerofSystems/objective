@@ -43,6 +43,7 @@ TEUI.ReferenceToggle = (function () {
       "sect13",
       "sect14",
       "sect15",
+      "sect16",
     ];
 
     const dualStateSections = sectionIds

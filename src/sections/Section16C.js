@@ -102,9 +102,21 @@ window.TEUI.CoolingSankey = (function () {
     }
 
     // Helper function to safely get state value and convert to number
+    // MODE AWARE: Reads ref_ prefixed values when S16 is in Reference mode
     // Critical: Must return valid number for D3, never NaN
     const getStateValue = (key) => {
-      const rawValue = teuiState.getValue(key);
+      let rawValue;
+
+      // Check if Section 16 is in Reference mode
+      const sect16ModeManager = window.TEUI?.sect16?.ModeManager;
+      if (sect16ModeManager && sect16ModeManager.currentMode === "reference") {
+        // Reference mode: Read ref_ prefixed values
+        rawValue = teuiState.getValue(`ref_${key}`);
+      } else {
+        // Target mode: Read unprefixed values
+        rawValue = teuiState.getValue(key);
+      }
+
       const numValue = parseFloat(rawValue);
       return typeof numValue === "number" && !isNaN(numValue) && numValue > 0
         ? numValue
@@ -247,7 +259,16 @@ window.TEUI.CoolingSankey = (function () {
     //   - If K value > 0: Energy GAINED (ground warmer than building)
     //   - If K value ≤ 0: Energy REMOVED (ground absorbs heat from building)
     const getRawStateValue = (key) => {
-      const rawValue = teuiState.getValue(key);
+      let rawValue;
+
+      // MODE AWARE: Same pattern as getStateValue
+      const sect16ModeManager = window.TEUI?.sect16?.ModeManager;
+      if (sect16ModeManager && sect16ModeManager.currentMode === "reference") {
+        rawValue = teuiState.getValue(`ref_${key}`);
+      } else {
+        rawValue = teuiState.getValue(key);
+      }
+
       const numValue = parseFloat(rawValue);
       return typeof numValue === "number" && !isNaN(numValue) ? numValue : 0;
     };
