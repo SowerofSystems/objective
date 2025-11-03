@@ -29,7 +29,7 @@ window.TEUI.CoolingSankey = (function () {
       { name: "G.8.3 Windows S", color: "#FFCC99" }, // [14] - South window solar
       { name: "G.8.4 Windows W", color: "#FFCC99" }, // [15] - West window solar
       { name: "B.19.6 Air Leakage", color: "#FFA07A" }, // [16] - Air infiltration gains
-      { name: "V.4.1 Incoming Ventil. Energy", color: "#FFDAB9" }, // [17] - Incoming ventilation
+      { name: "V.3.1 Incoming Ventil. Energy", color: "#FFDAB9" }, // [17] - Incoming ventilation
       { name: "B.12 TB Penalty", color: "#FFB6A3" }, // [18] - Thermal bridge penalty (conditional)
       { name: "G.1.2 Occupant Gains", color: "#FF8C69" }, // [19] - Internal gains from people
       { name: "Plug/Light/Eqpt. Subtotals", color: "#FFB6A3" }, // [20] - Equipment gains
@@ -232,7 +232,7 @@ window.TEUI.CoolingSankey = (function () {
         target: 0,
         value: getStateValue("d_122"),
         id: "IncomingVentGain",
-      }, // V.4.1 Incoming Ventilation
+      }, // V.3.1 Incoming Ventilation
       {
         source: 19,
         target: 0,

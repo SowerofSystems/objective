@@ -1,15 +1,15 @@
 # Reference System UI/Mode Switch Workplan
 
-> **Status**: ✅ COMPLETE - All sections S02-S15 implemented
+> **Status**: ✅ COMPLETE - All sections S02-S16 implemented
 > **Goal**: Complete the global Reference mode display system by linking dropdown commands to section controls
 > **Scope**: UI/mode switching only - constrained to "Show Reference" and "Show Target" commands
-> **Last Updated**: 2025-11-03 (Final completion)
+> **Last Updated**: 2025-11-03 (Final completion with S16 Sankey)
 
 ---
 
 ## Implementation Status
 
-### ✅ COMPLETE: All Pattern A Sections (S02-S15)
+### ✅ COMPLETE: All Pattern A Sections (S02-S16)
 
 **Phase 1 Commits (S02-S08):**
 - `d2186b5` - Test: Add toggle UI sync to S02 for global Reference switch
@@ -36,19 +36,26 @@
 - `fc4ab9c` - Docs: Update S13 header comments (user changes)
 - `2c2436f` - UI: Comment out incomplete Reference Setup methods in dropdown
 
+**Phase 3 Commits (S16 Sankey Diagram):**
+- `81ebd1d` - Feat: Add S16 Sankey Reference mode support with mode-aware value reading
+- `8a8bf93` - Debug: Add comprehensive logging to S16 Reference mode switching
+- `6bc0daa` - Fix: Expose S16 ModeManager on correct namespace for ReferenceToggle
+
 **Verified Working:**
-1. ✅ Global "Show Reference" → All 14 sections (S02-S15) show Reference values + red toggle UI
-2. ✅ Global "Show Target" → All 14 sections (S02-S15) show Target values + blue toggle UI
+1. ✅ Global "Show Reference" → All 15 sections (S02-S16) show Reference values + red toggle UI
+2. ✅ Global "Show Target" → All 15 sections (S02-S16) show Target values + blue toggle UI
 3. ✅ Local section toggles → Sync with global state perfectly
 4. ✅ No code duplication (single source of truth for UI updates)
 5. ✅ Reference and Target imports work perfectly across all sections
 6. ✅ System supports all value entry and reference overlay changes
+7. ✅ S16 Sankey diagrams (Heating, Cooling, Emissions) display correct Reference model data
 
 **Key Issues Resolved:**
 1. **Missing Sections in ReferenceToggle.js**: S05, S06, S07, S09 were not listed in `getAllDualStateSections()` array
 2. **Inconsistent ModeManager Exposure**: S05, S06 only exposed ModeManager on `window.TEUI.SectionModules.sect0X` but ReferenceToggle expected `window.TEUI.sect0X`
 3. **S08 Standardization**: S08 had different control structure (missing Reset button, different function names)
 4. **S09 Discovery**: Initially missed - documentation incorrectly stated S09 lacked Pattern A architecture
+5. **S16 Namespace Mismatch**: Module returned to `window.TEUI.SectionModules.sect16` but ReferenceToggle expected `window.TEUI.sect16.ModeManager`
 
 ---
 
