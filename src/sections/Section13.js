@@ -1,25 +1,6 @@
 /**
- * 4012-Section13.js.oct25 - OFFLINE VERSION (Taken out of calculation flow Oct 25, 2025)
+ * 4012-Section13.js - Needs Cooling.js Refinements for Parity w. Excel at fields D122, D123, D124, I122 and M124 (Days Mech Cooling Req'd) 
  *
- * ⚠️ FILE STATUS: DO NOT USE IN ACTIVE CALCULATIONS
- * This file has been renamed to .oct25 and removed from calculation flow.
- *
- * Why offline:
- * - Has BROKEN state isolation (significant state mixing across sections)
- * - Target changes contaminate Reference values
- * - Changes in other sections cause unwanted updates in both Target AND Reference models
- * - Architecture issue deeper than CSV export block (tested, not the cause)
- *
- * What it does well:
- * - Good e_10 initialization (~192.9, close to Excel parity)
- * - Good h_10 value (~93.7)
- * - Has CSV export for Reference fields
- *
- * This file contains the CSV export improvements and m_124 two-stage handling,
- * but the state mixing makes it unsuitable for production. Kept for reference
- * to understand what gives better e_10 initialization.
- *
- * Active file: 4012-Section13.js (backup version with good state isolation)
  */
 
 // Ensure namespace exists
