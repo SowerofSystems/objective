@@ -730,22 +730,12 @@ window.TEUI.SectionModules.sect02 = (function () {
     toggleSwitch.appendChild(slider);
 
     // Toggle Switch Click Handler
+    // ✅ REFACTORED: Just toggle mode, let switchMode() handle all UI updates via syncToggleUI()
     toggleSwitch.addEventListener("click", (event) => {
       event.stopPropagation();
-      const isReference = toggleSwitch.classList.toggle("active");
-      if (isReference) {
-        slider.style.transform = "translateX(20px)";
-        toggleSwitch.style.backgroundColor = "#28a745";
-        stateIndicator.textContent = "REFERENCE";
-        stateIndicator.style.backgroundColor = "rgba(40, 167, 69, 0.7)";
-        ModeManager.switchMode("reference");
-      } else {
-        slider.style.transform = "translateX(0px)";
-        toggleSwitch.style.backgroundColor = "#ccc";
-        stateIndicator.textContent = "TARGET";
-        stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
-        ModeManager.switchMode("target");
-      }
+      // Determine target mode by checking current mode (don't rely on classList)
+      const targetMode = ModeManager.currentMode === "target" ? "reference" : "target";
+      ModeManager.switchMode(targetMode);
     });
 
     // Assemble controls
