@@ -370,6 +370,9 @@ window.TEUI.SectionModules.sect05 = (function () {
   window.TEUI.SectionModules.sect05 = window.TEUI.SectionModules.sect05 || {};
   window.TEUI.SectionModules.sect05.ModeManager = ModeManager;
 
+  // ✅ PATTERN A: Expose ModeManager for ReferenceToggle global switching
+  window.TEUI.sect05 = { ModeManager: ModeManager };
+
   //==========================================================================
   // FIELD DEFINITIONS AND LAYOUT
   //==========================================================================
