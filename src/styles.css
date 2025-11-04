@@ -2054,8 +2054,9 @@ body.viewing-reference-inputs .reference-input-display-locked select {
 /* UNIVERSAL RULE 2: ALL TEXT CONTENT → LEFT ALIGNED */
 .data-table select,
 .data-table [data-type="text"],
-.data-table .section-subheader {
-  text-align: left;
+.data-table .section-subheader,
+.data-table .text-left {
+  text-align: left !important;
 }
 
 /* UNIVERSAL RULE 3: SLIDERS → CENTER ALIGNED (Visual Balance) */
