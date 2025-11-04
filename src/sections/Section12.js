@@ -260,10 +260,13 @@ window.TEUI.SectionModules.sect12 = (function () {
         let valueToDisplay;
 
         if (this.currentMode === "reference") {
-          // In Reference mode, try to show ref_ values, fallback to regular values
-          valueToDisplay =
-            window.TEUI.StateManager.getValue(`ref_${fieldId}`) ||
-            window.TEUI.StateManager.getValue(fieldId);
+          // ✅ STRICT MODE ISOLATION: Reference mode reads ONLY ref_ values
+          // Never fall back to Target values (Anti-Pattern 1 from CHEATSHEET)
+          valueToDisplay = window.TEUI.StateManager.getValue(`ref_${fieldId}`);
+          // If ref_ value doesn't exist, use 0 or safe default, NEVER the Target value
+          if (valueToDisplay === null || valueToDisplay === undefined) {
+            valueToDisplay = "0"; // Safe default for display
+          }
         } else {
           // In Target mode, show regular values
           valueToDisplay = window.TEUI.StateManager.getValue(fieldId);
