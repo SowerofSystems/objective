@@ -1309,21 +1309,39 @@ window.TEUI.SectionModules.sect07 = (function () {
       newStep = 2,
       newValue = 300;
 
+    // ✅ FIX (Nov 4, 2025): Preserve existing imported/user-modified values when switching system types
+    // Check if there's an existing value that should be preserved
+    let preservedValue = null;
+
     if (selectedSource === "Gas" || selectedSource === "Oil") {
+      // For Gas/Oil, check if k_52 (AFUE) already has a user/imported value
+      const existingAFUE = ModeManager.getValue("k_52");
+      if (existingAFUE) {
+        preservedValue = Math.round(parseFloat(existingAFUE) * 100); // Convert 0.94 → 94
+        console.log(`[S07] Preserving existing AFUE value: ${existingAFUE} (${preservedValue}%)`);
+      }
+
       newMinValue = 50;
       newMaxValue = 98;
       newStep = 1;
-      newValue = 90;
+      newValue = preservedValue || 90; // Use preserved value or default to 90
     } else if (selectedSource === "Electric") {
       newMinValue = 90;
       newMaxValue = 100;
       newStep = 1;
       newValue = 100;
     } else {
+      // For Heatpump, check if d_52 already has a user/imported value
+      const existingCOP = ModeManager.getValue("d_52");
+      if (existingCOP) {
+        preservedValue = parseInt(existingCOP);
+        console.log(`[S07] Preserving existing COP value: ${existingCOP}%`);
+      }
+
       newMinValue = 100;
       newMaxValue = 450;
       newStep = 10;
-      newValue = 300;
+      newValue = preservedValue || 300; // Use preserved value or default to 300
     }
 
     console.log(
