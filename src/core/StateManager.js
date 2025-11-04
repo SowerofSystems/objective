@@ -242,10 +242,12 @@ TEUI.StateManager = (function () {
     calculatedFields.clear();
     dirtyFields.clear();
     listeners.clear();
+    lastImportedState = {}; // ✅ FIX: Also clear imported state from memory
 
     // Also clear localStorage
     try {
       localStorage.removeItem("TEUI_Calculator_State");
+      localStorage.removeItem("TEUI_Last_Imported_State"); // ✅ FIX: Also clear imported state
       console.log("TEUI StateManager: Cleared state from localStorage");
 
       // ✅ NEW: Explicitly clear all dual-state section storage keys
@@ -588,6 +590,13 @@ TEUI.StateManager = (function () {
     // Save to localStorage
     try {
       localStorage.setItem("TEUI_Calculator_State", JSON.stringify(state));
+
+      // ✅ FIX (Nov 4, 2025): Also save lastImportedState separately for 3-tier reset
+      // This ensures imported state persists across page reloads
+      if (Object.keys(lastImportedState).length > 0) {
+        localStorage.setItem("TEUI_Last_Imported_State", JSON.stringify(lastImportedState));
+        console.log(`[StateManager] Saved ${Object.keys(lastImportedState).length} imported fields to localStorage`);
+      }
     } catch (error) {
       console.error("Error saving state to localStorage:", error);
     }
@@ -614,6 +623,14 @@ TEUI.StateManager = (function () {
         // CRITICAL FIX: Update UI to display loaded values
         updateUI(fieldId, field.value);
       });
+
+      // ✅ FIX (Nov 4, 2025): Restore lastImportedState from localStorage
+      // This ensures "Undo Changes" works after page reload
+      const importedStateJson = localStorage.getItem("TEUI_Last_Imported_State");
+      if (importedStateJson) {
+        lastImportedState = JSON.parse(importedStateJson);
+        console.log(`[StateManager] Restored ${Object.keys(lastImportedState).length} imported fields from localStorage`);
+      }
     } catch (error) {
       console.error("Error loading state from localStorage:", error);
     }
