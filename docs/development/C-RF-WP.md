@@ -248,9 +248,98 @@ Abandon tactical band-aid fixes on S08-RH% branch. Instead, complete the **strat
 - [Cooling.js](../src/core/Cooling.js) - Module requiring Pattern A refactor
 
 **NEXT STEPS**:
-1. Merge S08-RH% investigation to C-RF branch for context
-2. Proceed with Cooling.js Pattern A refactor (separate TargetState/ReferenceState)
+1. ✅ Merge S08-RH% investigation to C-RF branch for context
+2. ⏳ Proceed with Cooling.js Pattern A refactor (separate TargetState/ReferenceState)
 3. Apply lessons learned about shared state contamination to refactor design
+
+---
+
+## 📍 COOLING.JS PATTERN A REFACTOR (Nov 3, 2025) - Branch: C-RF
+
+**LAST UPDATED**: Nov 3, 2025 - Commit a8262ea
+
+**OBJECTIVE**: Refactor Cooling.js to Pattern A architecture with complete state isolation between Target and Reference models.
+
+**PHASE 1 COMPLETE** ✅ (Commit a8262ea):
+
+Refactored Stage 1 (free cooling) calculations to use separate TargetState and ReferenceState objects:
+
+**Key Changes**:
+- Created `TargetState` and `ReferenceState` objects via `createStateObject()` helper
+- Extracted physical constants to immutable `CONSTANTS` object
+- Added `getStateForMode(mode)` helper to select appropriate state
+- Refactored `getModeAwareValue(fieldId, default, mode)` to accept explicit mode parameter
+- Refactored `calculateStage1(mode)` to use isolated state objects (no shared state)
+- Refactored all Stage 1 helper functions to accept explicit `stateObj` parameter:
+  * `calculateLatentLoadFactor(stateObj)`
+  * `calculateWetBulbTemperature(stateObj)`
+  * `calculateAtmosphericValues(stateObj, mode)`
+  * `calculateHumidityRatios(stateObj)`
+  * `calculateFreeCoolingLimit(stateObj, mode)`
+  * `updateAtmosphericPressure(stateObj, mode)`
+- Refactored `updateStateManagerStage1(mode, stateObj)` with explicit parameters
+- Refactored `dispatchCoolingEvent(stage, mode)` to include mode
+
+**Testing Results**:
+- ✅ **Initialization**: No errors, all values load correctly
+- ✅ **Basic User Edits**: Predictable, expected results
+- ✅ **File Imports**: Working correctly
+- ⚠️ **State Mixing**: Still present with i_59 changes (expected - Stage 2 not yet refactored)
+
+**Architecture Changes**:
+```javascript
+// ❌ OLD: Single shared state
+const state = {
+  currentMode: "target",
+  indoorRH: 0.45,  // Last-write-wins contamination
+  latentLoadFactor: 0,
+  // ...
+};
+
+// ✅ NEW: Separate isolated states
+const TargetState = {
+  indoorRH: 0.45,        // Target-only
+  latentLoadFactor: 0,
+  // ...
+};
+
+const ReferenceState = {
+  indoorRH: 0.45,        // Reference-only
+  latentLoadFactor: 0,
+  // ...
+};
+
+// No more state.currentMode!
+function calculateStage1(mode) {
+  const stateObj = getStateForMode(mode);  // Explicit selection
+  // All calculations use stateObj, no shared state
+}
+```
+
+**REMAINING WORK** (Phase 2):
+- Stage 2 calculation functions still use shared state
+- Initialization functions need refactoring
+- Listener functions (d_129, h_24, etc.) need state isolation
+- `publishCoolingResults()` from previous fix attempt needs updating
+- Remove all remaining `state.currentMode` references
+- Full integration testing after complete refactor
+
+**FILES MODIFIED**:
+- [Cooling.js](../src/core/Cooling.js) - Stage 1 refactored to Pattern A (200 lines changed)
+
+**BENEFITS ACHIEVED**:
+- Target and Reference Stage 1 calculations completely isolated
+- No more last-write-wins contamination in Stage 1 functions
+- Each calculation engine operates on its own state object
+- Mode passed explicitly through entire call chain
+- Foundation laid for completing Stage 2 refactor
+
+**NEXT ACTIONS**:
+1. Continue Phase 2: Refactor Stage 2 functions (calculateStage2, calculateDaysActiveCooling, etc.)
+2. Refactor remaining listeners to use dual-state architecture
+3. Remove all legacy `state.currentMode` references
+4. Complete integration testing
+5. Verify state isolation with i_59 changes (should eliminate mixing)
 
 ---
 
