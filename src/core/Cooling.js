@@ -769,28 +769,36 @@ window.TEUI.CoolingCalculations = (function () {
    * 📊 STATEMANAGER INTEGRATION - STAGE 2: Publish active cooling results
    * Stage 2 publishes values that DEPEND on m_129 from S13
    * This includes: m_124 (days active cooling) and d_124 (free cooling percentage)
+   * ✅ PATTERN A REFACTOR: Accept explicit mode and state parameters
+   *
+   * @param {string} mode - "target" or "reference"
+   * @param {Object} stateObj - The state object (TargetState or ReferenceState)
    */
-  function updateStateManagerStage2() {
+  function updateStateManagerStage2(mode, stateObj) {
     if (typeof window.TEUI.StateManager === "undefined") return;
 
     const sm = window.TEUI.StateManager;
 
-    // ✅ MODE-AWARE: Add prefix for Reference mode
-    const prefix = state.currentMode === "reference" ? "ref_" : "";
+    // ✅ PATTERN A: Use explicit mode parameter (no shared state)
+    const prefix = mode === "reference" ? "ref_" : "";
     console.log(
-      `[Cooling Stage 2] 📊 Publishing results with prefix="${prefix}" (mode=${state.currentMode})`,
+      `[Cooling Stage 2] 📊 Publishing results with prefix="${prefix}" (mode=${mode})`,
     );
 
     // STAGE 2 OUTPUTS: Active cooling days and free cooling percentage
     sm.setValue(
       `${prefix}cooling_m_124`,
-      state.daysActiveCooling.toString(),
+      stateObj.daysActiveCooling.toString(),
       "calculated",
     ); // Days Active Cooling (m_124)
 
+    // Calculate d_124 (free cooling percentage) if we have cooling load
+    const m_129 = window.TEUI.parseNumeric(getModeAwareValue("m_129", "0", mode)) || 0;
+    const freeCoolingPercent = m_129 > 0 ? (stateObj.freeCoolingLimit / m_129) * 100 : 0;
+
     sm.setValue(
       `${prefix}cooling_d_124`,
-      ((state.freeCoolingLimit / state.coolingLoad) * 100).toString(),
+      freeCoolingPercent.toString(),
       "calculated",
     ); // Free Cooling %
   }
