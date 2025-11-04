@@ -107,10 +107,8 @@ window.TEUI.CoolingCalculations = (function () {
    * See: docs/development/C-RF-WP.md for refactoring workplan
    */
 
-  // Physical constants (shared - never change during calculation)
+  // Physical constants (truly immutable - never change during calculation)
   const CONSTANTS = {
-    nightTimeTemp: 20.43,         // A3 - TODO: Read from S03 l_20
-    coolingSeasonMeanRH: 0.5585,  // A4 - TODO: Read from S03 l_21
     groundTemp: 10,               // A7 - Ground temperature for radiant cooling
     airMass: 1.204,               // E3 - Mass of air kg/m³
     specificHeatCapacity: 1005,   // E4 - Specific heat capacity J/(kg•K)
@@ -126,6 +124,10 @@ window.TEUI.CoolingCalculations = (function () {
       buildingVolume: null,       // A9 - d_105 from S12
       buildingArea: null,         // A15 - h_15 from S02
       coolingDegreeDays: null,    // A21 - d_21 from S03
+
+      // ✅ NEW (Nov 3, 2025): Dynamic climate values from S03
+      nightTimeTemp: 20.43,       // A3 - l_20 from S03 (default, read from StateManager)
+      coolingSeasonMeanRH: 0.5585, // A4 - l_21 from S03 (default, read from StateManager)
 
       // Calculated intermediate values
       atmPressure: 101325,        // E13/E15 - Adjusted for elevation
@@ -192,7 +194,7 @@ window.TEUI.CoolingCalculations = (function () {
     const numerator =
       CONSTANTS.latentHeatVaporization * stateObj.humidityRatioDifference; // E6 × A63
     const denominator =
-      CONSTANTS.specificHeatCapacity * (CONSTANTS.nightTimeTemp - stateObj.coolingSetTemp); // E4 × (A49 - H27)
+      CONSTANTS.specificHeatCapacity * (stateObj.nightTimeTemp - stateObj.coolingSetTemp); // E4 × (A49 - H27)
 
     // Avoid division by zero
     if (denominator === 0) {
@@ -311,7 +313,7 @@ window.TEUI.CoolingCalculations = (function () {
 
     const Cp = CONSTANTS.specificHeatCapacity; // J/kg·K
     const T_indoor = stateObj.coolingSetTemp; // °C
-    const T_outdoor_night = CONSTANTS.nightTimeTemp; // °C
+    const T_outdoor_night = stateObj.nightTimeTemp; // °C (from S03 l_20)
     const coolingDays =
       window.TEUI.parseNumeric(getModeAwareValue("m_19", "120", mode)) || 120;
 
@@ -453,7 +455,7 @@ window.TEUI.CoolingCalculations = (function () {
 
     // COOLING-TARGET A16: Temp difference = A8 - A3 (indoor - outdoor night temp)
     const h_24 = window.TEUI.parseNumeric(getModeAwareValue("h_24", "24", mode)) || 24; // A8: Indoor setpoint
-    const A16_temp_diff = h_24 - CONSTANTS.nightTimeTemp; // A8 - A3
+    const A16_temp_diff = h_24 - stateObj.nightTimeTemp; // A8 - A3 (from S03 l_20)
 
     // COOLING-TARGET A31: Heat removal power = A30 * E4 * A16 (J/s or Watts)
     const A31_heat_removal_watts =
@@ -495,8 +497,8 @@ window.TEUI.CoolingCalculations = (function () {
   function calculateWetBulbTemperature(stateObj) {
     // Linear equation to obtain Twb from Tdb and RH% at 15h00 LST
     // Formula: = Tdb - (Tdb - (Tdb - (100 - RH)/5)) * (0.1 + 0.9 * (RH / 100))
-    const tdb = CONSTANTS.nightTimeTemp; // Using night-time temp as dry bulb
-    const rh = CONSTANTS.coolingSeasonMeanRH * 100; // Convert to percentage
+    const tdb = stateObj.nightTimeTemp; // Using night-time temp as dry bulb (from S03 l_20)
+    const rh = stateObj.coolingSeasonMeanRH * 100; // Convert to percentage (from S03 l_21)
 
     const twbSimple =
       tdb - (tdb - (tdb - (100 - rh) / 5)) * (0.1 + 0.9 * (rh / 100));
@@ -567,6 +569,13 @@ window.TEUI.CoolingCalculations = (function () {
 
       const i_59 = getModeAwareValue("i_59", "45", mode);
       stateObj.indoorRH = i_59 ? parseFloat(i_59) / 100 : 0.45;
+
+      // ✅ NEW (Nov 3, 2025): Read dynamic climate values from S03
+      const l_20 = getModeAwareValue("l_20", "20.43", mode);
+      stateObj.nightTimeTemp = l_20 ? parseFloat(l_20) : 20.43;
+
+      const l_21 = getModeAwareValue("l_21", "55.85", mode);
+      stateObj.coolingSeasonMeanRH = l_21 ? parseFloat(l_21) / 100 : 0.5585; // Convert from % to decimal
 
       // CRITICAL CALCULATION ORDER (matching Excel COOLING-TARGET.csv):
       // 1. Calculate wet bulb temp (E64) - needed for pSatAvg calculation
@@ -1126,6 +1135,54 @@ window.TEUI.CoolingCalculations = (function () {
 
       // ✅ DUAL-ENGINE: Atmospheric pressure affects humidity calculations in Stage 1 for BOTH modes
       calculateStage1("target");
+      calculateStage1("reference");
+    });
+
+    // ✅ NEW (Nov 3, 2025): Listen for l_20 (Target night-time temp) changes from S03
+    // Night-time temperature affects free cooling capacity calculations
+    console.log(
+      `[Cooling] 🔗 Registering l_20 listener for night-time temperature changes`,
+    );
+    sm.addListener("l_20", function (newValue) {
+      console.log(
+        `[Cooling] 🌡️ Target night-time temp changed: l_20=${newValue}°C → recalculating Stage 1 (Target mode)`,
+      );
+
+      // Night-time temp affects Stage 1 free cooling calculations
+      calculateStage1("target");
+    });
+
+    // ✅ NEW (Nov 3, 2025): Listen for ref_l_20 (Reference night-time temp) changes from S03
+    sm.addListener("ref_l_20", function (newValue) {
+      console.log(
+        `[Cooling] 🌡️ Reference night-time temp changed: ref_l_20=${newValue}°C → recalculating Stage 1 (Reference mode)`,
+      );
+
+      // Night-time temp affects Stage 1 free cooling calculations
+      calculateStage1("reference");
+    });
+
+    // ✅ NEW (Nov 3, 2025): Listen for l_21 (Target cooling season mean RH%) changes from S03
+    // Cooling season RH% affects latent load factor and humidity ratio calculations
+    console.log(
+      `[Cooling] 🔗 Registering l_21 listener for cooling season RH% changes`,
+    );
+    sm.addListener("l_21", function (newValue) {
+      console.log(
+        `[Cooling] 🌡️ Target cooling season RH% changed: l_21=${newValue}% → recalculating Stage 1 (Target mode)`,
+      );
+
+      // Cooling season RH% affects Stage 1 psychrometric calculations
+      calculateStage1("target");
+    });
+
+    // ✅ NEW (Nov 3, 2025): Listen for ref_l_21 (Reference cooling season mean RH%) changes from S03
+    sm.addListener("ref_l_21", function (newValue) {
+      console.log(
+        `[Cooling] 🌡️ Reference cooling season RH% changed: ref_l_21=${newValue}% → recalculating Stage 1 (Reference mode)`,
+      );
+
+      // Cooling season RH% affects Stage 1 psychrometric calculations
       calculateStage1("reference");
     });
   }
