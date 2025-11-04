@@ -39,7 +39,8 @@
       }
 
       if (exportBtn) {
-        exportBtn.addEventListener("click", () => {
+        exportBtn.addEventListener("click", (event) => {
+          event.preventDefault();
           this.exportToCSV();
         });
       }
@@ -848,7 +849,7 @@
           `[CSV Export] Exported ${userEditableFieldIds.length} fields (explicit list matching Excel import) with Target and Reference values`,
         );
 
-        // Trigger Download
+        // Trigger Download - should work in Safari when called synchronously from click event
         const blob = new Blob([csvContent], {
           type: "text/csv;charset=utf-8;",
         });
@@ -856,10 +857,11 @@
         const link = document.createElement("a");
         link.setAttribute("href", url);
         link.setAttribute("download", filename);
-        link.style.visibility = "hidden";
+        link.style.display = "none";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(url);
 
         this.showStatus(
           "Dual-state CSV export complete (Target + Reference).",
