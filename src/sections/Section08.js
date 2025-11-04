@@ -404,7 +404,7 @@ window.TEUI.SectionModules.sect08 = (function () {
       }
     });
 
-    // Listen to external dependencies via global StateManager
+    // ✅ Listen to external dependencies via global StateManager
     if (window.TEUI?.StateManager) {
       const sm = window.TEUI.StateManager;
       const dependencies = ["d_31", "k_31"];
@@ -412,15 +412,12 @@ window.TEUI.SectionModules.sect08 = (function () {
         sm.addListener(dep, calculateAll);
       });
 
-      // ✅ FIX: Add listener for the reference RH% slider (i_59)
-      // This bridges the global FieldManager update to the local ReferenceState,
-      // ensuring that changes to the slider in reference mode are captured.
-      sm.addListener("ref_i_59", (newValue) => {
-        ReferenceState.setValue("i_59", newValue);
-        console.log(
-          `S08 ReferenceState: Synced i_59 = ${newValue} from global StateManager (ref_i_59)`,
-        );
-      });
+      // ✅ ANTI-PATTERN 7 FIX: S08 should NOT listen to its own input fields (i_59, ref_i_59)
+      // - Slider changes: FieldManager now calls calculateAll() after ModeManager.setValue
+      // - ModeManager.setValue automatically syncs to TargetState/ReferenceState
+      //
+      // Removed ref_i_59 self-listener that caused state mixing by not calling calculateAll().
+      // The clean pattern is: FieldManager → ModeManager.setValue → calculateAll → publish results
     }
   }
 
