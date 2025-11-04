@@ -288,7 +288,7 @@
       cell: "F113",
       title: "HSPF Dictates COP, CEER",
       message:
-        "Enter Value Required by Reference Standard. _x000a_Typ. range is 7-14. Only applies when 'Heatpump' Option is Selected from the dropdown to the left. _x000a__x000a_This has an outsized influence on TEUI - Choose Well!",
+        "Enter Value Required by Reference Standard. Typ. range is 7-14. Only applies when 'Heatpump' Option is Selected from the dropdown to the left. _x000a__x000a_You may use the HSPF or HSPF2 equipment rating, noting HSPF2 is ~0.85 of HSPF due to harsher test conditions. This value an outsized influence on TEUI - Choose Well!",
     },
     e_49: {
       cell: "E49",

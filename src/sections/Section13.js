@@ -2359,9 +2359,13 @@ window.TEUI.SectionModules.sect13 = (function () {
     });
 
     // Listen for Cooling.js results to trigger S13 recalculations
-    sm.addListener("cooling_latentLoadFactor", calculateAndRefresh); // i_122 affects D122/D123
-    sm.addListener("cooling_h_124", calculateAndRefresh); // Free cooling capacity affects H124, D124
-    sm.addListener("cooling_m_124", calculateAndRefresh); // Days active cooling affects M124
+    // ✅ MODE-AWARE: Listen to BOTH Target and Reference cooling values
+    sm.addListener("cooling_latentLoadFactor", calculateAndRefresh); // Target i_122 affects D122/D123
+    sm.addListener("ref_cooling_latentLoadFactor", calculateAndRefresh); // Reference i_122 affects ref_D122/ref_D123
+    sm.addListener("cooling_h_124", calculateAndRefresh); // Target free cooling capacity affects H124, D124
+    sm.addListener("ref_cooling_h_124", calculateAndRefresh); // Reference free cooling capacity
+    sm.addListener("cooling_m_124", calculateAndRefresh); // Target days active cooling affects M124
+    sm.addListener("ref_cooling_m_124", calculateAndRefresh); // Reference days active cooling
 
     // Listen for S08 indoor RH% changes (affects cooling calculations)
     sm.addListener("i_59", calculateAndRefresh); // Target indoor RH%
@@ -2763,10 +2767,13 @@ window.TEUI.SectionModules.sect13 = (function () {
       ) || 8760;
     const occupancyFactor =
       totalHours_j63 > 0 ? occupiedHours_i63 / totalHours_j63 : 0;
-    // Read latent load factor from Cooling.js (will be 0 until Cooling.js works)
+    // Read latent load factor from Cooling.js with mode-aware prefix
+    // ✅ FIX (Nov 4, 2025): Use mode-aware read to prevent Target/Reference contamination
     const latentLoadFactor_i122 =
       window.TEUI.parseNumeric(
-        window.TEUI.StateManager.getValue("cooling_latentLoadFactor"),
+        window.TEUI.StateManager.getValue(
+          isReferenceCalculation ? "ref_cooling_latentLoadFactor" : "cooling_latentLoadFactor"
+        ),
       ) || 1.0;
     const summerBoostRawValue = ModeManager.getValue("l_119");
     const summerBoostFactor =

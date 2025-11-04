@@ -2363,44 +2363,13 @@ window.TEUI.SectionModules.sect03 = (function () {
       );
 
       // ✅ REMOVED: Self-listeners cause recursion anti-pattern per 4012-CHEATSHEET.md
-      // S03 should not listen to its own calculated values (d_20, h_24, d_22, etc.)
-      // User input changes trigger calculateAll() directly via dropdown/slider handlers
-      // Internal calculations (j_19, h_22, d_22) are handled within calculation engines
-
-      // ✅ CRITICAL: Bridge FieldManager slider updates to DualState
-      window.TEUI.StateManager.addListener("i_21", function (newValue) {
-        // When FieldManager updates StateManager, also update DualState for isolation
-        // This listener handles TARGET mode slider changes.
-        if (ModeManager.currentMode === "target") {
-          ModeManager.setValue("i_21", newValue, "user");
-          calculateAll(); // Recalculate everything as capacitance affects GF CDD
-          console.log(
-            `S03: TARGET slider updated via FieldManager - bridged to DualState: ${newValue}%`,
-          );
-        }
-      });
-
-      // ✅ FINAL FIX: Add a dedicated listener for REFERENCE mode slider changes.
-      window.TEUI.StateManager.addListener("ref_i_21", function (newValue) {
-        // This listener handles REFERENCE mode slider changes.
-        if (ModeManager.currentMode === "reference") {
-          ModeManager.setValue("i_21", newValue, "user");
-          calculateAll(); // Recalculate everything as capacitance affects GF CDD
-          console.log(
-            `S03: REFERENCE slider updated via FieldManager - bridged to DualState: ${newValue}%`,
-          );
-        }
-      });
-
-      // ✅ CRITICAL: Bridge capacitance dropdown (h_21) updates to DualState
-      window.TEUI.StateManager.addListener("h_21", function (newValue) {
-        // When dropdown updates StateManager, also update DualState for isolation
-        DualState.setValue("h_21", newValue, "user");
-        calculateAll(); // Recalculate GFCDD when capacitance setting changes
-        console.log(
-          `S03: Capacitance dropdown updated via StateManager - bridged to DualState: ${newValue}`,
-        );
-      });
+      // ✅ ANTI-PATTERN 7 FIX: S03 should NOT listen to its own input fields
+      // - Slider changes: FieldManager now calls calculateAll() after ModeManager.setValue
+      // - Dropdown changes: Direct event handlers call calculateAll() after ModeManager.setValue
+      // - Editable fields: handleEditableBlur calls calculateAll() after ModeManager.setValue
+      //
+      // Removed redundant self-listeners for i_21, ref_i_21, and h_21 that caused
+      // double calculations and violated the clean single-pass calculation flow.
     } else {
       console.warn("Section 03: StateManager not found, listeners not added.");
     }
