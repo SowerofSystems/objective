@@ -2182,3 +2182,12 @@ body.viewing-reference-inputs .reference-input-display-locked select {
 }
 
 /* =============== END ELEGANT USER INPUT BEHAVIOR =============== */
+
+/* =============== DEV ENVIRONMENT INDICATOR =============== */
+/* Red border for dev environment (applied via JavaScript) */
+body.dev-environment {
+  border: 5px solid red !important;
+  box-sizing: border-box;
+  min-height: 100vh;
+}
+/* =============== END DEV ENVIRONMENT INDICATOR =============== */
