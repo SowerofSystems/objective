@@ -35,6 +35,19 @@
 
     <link href="src/styles.css" rel="stylesheet" />
 
+    <!-- Dev environment detection -->
+    <script>
+      // Check if we're on dev domain and apply styling
+      if (window.location.hostname === 'dev-objective.openbuilding.ca' ||
+          window.location.hostname === 'localhost' ||
+          window.location.hostname === '127.0.0.1') {
+        document.addEventListener('DOMContentLoaded', function() {
+          document.body.classList.add('dev-environment');
+          document.title = '[DEV] ' + document.title;
+        });
+      }
+    </script>
+
     <!-- Mobile Detection Script (Must load before other scripts) -->
     <script src="src/core/MobileDetect.js"></script>
 
