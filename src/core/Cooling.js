@@ -366,21 +366,26 @@ window.TEUI.CoolingCalculations = (function () {
   /**
    * Calculate days of active cooling required
    * This implements the formula in cell E55 of COOLING-TARGET.csv
+   * ✅ PATTERN A REFACTOR: Accept explicit state parameter and mode
+   *
+   * @param {Object} stateObj - The state object (TargetState or ReferenceState)
+   * @param {string} mode - "target" or "reference" for mode-aware reads
+   * @returns {number} Days of active cooling required
    */
-  function calculateDaysActiveCooling() {
+  function calculateDaysActiveCooling(stateObj, mode = "target") {
     // ✅ EXCEL PARITY: Implement COOLING-TARGET.csv internal logic for E55 calculation
     // COOLING-TARGET E55: =E52/(E54*24) where E52=(E50-E51)
     // E50 = E37*E45 = (REPORT!M129 * REPORT!D21)
     // E51 = E36*E45 = (daily_free_cooling_kWh * REPORT!D21)
     // E54 = REPORT!M19 = cooling season days
 
-    // Get base values from StateManager - now MODE-AWARE!
+    // Get base values from StateManager with explicit mode parameter
     const m_129_annual =
-      window.TEUI.parseNumeric(getModeAwareValue("m_129", "0")) || 0; // Annual mitigated cooling load
+      window.TEUI.parseNumeric(getModeAwareValue("m_129", "0", mode)) || 0; // Annual mitigated cooling load
     const d_21 =
-      window.TEUI.parseNumeric(getModeAwareValue("d_21", "120")) || 120; // E45: CDD
+      window.TEUI.parseNumeric(getModeAwareValue("d_21", "120", mode)) || 120; // E45: CDD
     const m_19 =
-      window.TEUI.parseNumeric(getModeAwareValue("m_19", "120")) || 120; // E54: Cooling season days
+      window.TEUI.parseNumeric(getModeAwareValue("m_19", "120", mode)) || 120; // E54: Cooling season days
 
     // ✅ CRITICAL FIX: E37 should be daily mitigated cooling load, not annual
     // E37 = m_129 / CDD = daily cooling load that gets multiplied back by CDD in E50
@@ -388,7 +393,7 @@ window.TEUI.CoolingCalculations = (function () {
 
     // Calculate COOLING-TARGET internal values
     // E36 = A33 = Daily free cooling potential (kWh/day) - calculated from ventilation physics
-    const E36_daily_free_cooling_kWh = calculateDailyFreeCoolingPotential(); // A33 equivalent
+    const E36_daily_free_cooling_kWh = calculateDailyFreeCoolingPotential(stateObj, mode); // A33 equivalent
 
     // COOLING-TARGET E50: Seasonal cooling load = E37 * E45
     const E50_seasonal_cooling_load = E37_daily_mitigated_cooling * d_21;
@@ -411,23 +416,28 @@ window.TEUI.CoolingCalculations = (function () {
     // So we preserve the raw calculation (can be negative) as per Excel methodology
 
     console.log(
-      `[Cooling m_124 COOLING-TARGET] m_129_annual=${m_129_annual}, E37_daily=${E37_daily_mitigated_cooling}, E45(d_21)=${d_21}, E50=${E50_seasonal_cooling_load}, E51=${E51_seasonal_free_cooling}, E52=${E52_unmet_cooling_load}, E54(m_19)=${m_19}, E55(result)=${E55_days_active_cooling}`,
+      `[Cooling m_124 COOLING-TARGET (${mode})] m_129_annual=${m_129_annual}, E37_daily=${E37_daily_mitigated_cooling}, E45(d_21)=${d_21}, E50=${E50_seasonal_cooling_load}, E51=${E51_seasonal_free_cooling}, E52=${E52_unmet_cooling_load}, E54(m_19)=${m_19}, E55(result)=${E55_days_active_cooling}`,
     );
 
-    state.daysActiveCooling = E55_days_active_cooling;
+    stateObj.daysActiveCooling = E55_days_active_cooling;
     return E55_days_active_cooling; // Return exact COOLING-TARGET Excel calculation result
   }
 
   /**
    * Calculate daily free cooling potential (COOLING-TARGET A33/E36)
    * Implements the physics chain: A28→A29→A30→A31→A32→A33
+   * ✅ PATTERN A REFACTOR: Accept explicit state parameter and mode
+   *
+   * @param {Object} stateObj - The state object (TargetState or ReferenceState)
+   * @param {string} mode - "target" or "reference" for mode-aware reads
+   * @returns {number} Daily free cooling potential (kWh/day)
    */
-  function calculateDailyFreeCoolingPotential() {
+  function calculateDailyFreeCoolingPotential(stateObj, mode = "target") {
     // COOLING-TARGET A28: Ventilation Rate l/s (with summer boost)
     // =IF(REPORT!L119="None", REPORT!D120, REPORT!D120*REPORT!L119)
     const d_120 =
-      window.TEUI.parseNumeric(window.TEUI.StateManager.getValue("d_120")) || 0; // Base ventilation rate l/s
-    const l_119 = window.TEUI.StateManager.getValue("l_119") || "None"; // Summer boost factor
+      window.TEUI.parseNumeric(getModeAwareValue("d_120", "0", mode)) || 0; // Base ventilation rate l/s
+    const l_119 = getModeAwareValue("l_119", "None", mode) || "None"; // Summer boost factor
 
     let A28_ventilation_rate_ls = d_120;
     if (l_119 !== "None" && l_119 !== "") {
@@ -439,16 +449,15 @@ window.TEUI.CoolingCalculations = (function () {
     const A29_ventilation_rate_m3s = A28_ventilation_rate_ls / 1000;
 
     // COOLING-TARGET A30: Mass-Flow Rate = A29 * E3 (air density)
-    const A30_mass_flow_rate_kgs = A29_ventilation_rate_m3s * state.airMass; // E3 = 1.204 kg/m3
+    const A30_mass_flow_rate_kgs = A29_ventilation_rate_m3s * CONSTANTS.airMass; // E3 = 1.204 kg/m3
 
     // COOLING-TARGET A16: Temp difference = A8 - A3 (indoor - outdoor night temp)
-    // ✅ FIX (Oct 30, 2025): Use mode-aware read to prevent Reference contamination
-    const h_24 = window.TEUI.parseNumeric(getModeAwareValue("h_24", "24")) || 24; // A8: Indoor setpoint
-    const A16_temp_diff = h_24 - state.nightTimeTemp; // A8 - A3
+    const h_24 = window.TEUI.parseNumeric(getModeAwareValue("h_24", "24", mode)) || 24; // A8: Indoor setpoint
+    const A16_temp_diff = h_24 - CONSTANTS.nightTimeTemp; // A8 - A3
 
     // COOLING-TARGET A31: Heat removal power = A30 * E4 * A16 (J/s or Watts)
     const A31_heat_removal_watts =
-      A30_mass_flow_rate_kgs * state.specificHeatCapacity * A16_temp_diff;
+      A30_mass_flow_rate_kgs * CONSTANTS.specificHeatCapacity * A16_temp_diff;
 
     // COOLING-TARGET A32: Heat removed in one day (Joules) = A31 * 86400
     const A32_daily_heat_removal_joules = A31_heat_removal_watts * 86400;
@@ -457,7 +466,7 @@ window.TEUI.CoolingCalculations = (function () {
     const A33_daily_free_cooling_kWh = A32_daily_heat_removal_joules / 3600000;
 
     console.log(
-      `[Cooling A33 PHYSICS] d_120=${d_120}, l_119=${l_119}, A28=${A28_ventilation_rate_ls}, A29=${A29_ventilation_rate_m3s}, A30=${A30_mass_flow_rate_kgs}, A16=${A16_temp_diff}, A31=${A31_heat_removal_watts}, A32=${A32_daily_heat_removal_joules}, A33=${A33_daily_free_cooling_kWh}`,
+      `[Cooling A33 PHYSICS (${mode})] d_120=${d_120}, l_119=${l_119}, A28=${A28_ventilation_rate_ls}, A29=${A29_ventilation_rate_m3s}, A30=${A30_mass_flow_rate_kgs}, A16=${A16_temp_diff}, A31=${A31_heat_removal_watts}, A32=${A32_daily_heat_removal_joules}, A33=${A33_daily_free_cooling_kWh}`,
     );
 
     return A33_daily_free_cooling_kWh; // E36 equivalent
@@ -612,9 +621,16 @@ window.TEUI.CoolingCalculations = (function () {
    * Outputs: m_124 (days active cooling required)
    * @param {string} mode - "target" or "reference" to determine which state values to use
    */
+  /**
+   * ✅ PATTERN A REFACTOR: Use isolated state objects for Target and Reference
+   * @param {string} mode - "target" or "reference"
+   */
   function calculateStage2(mode = "target") {
-    // Recursion protection
-    if (state.calculatingStage2) {
+    // ✅ PATTERN A: Get the appropriate state object for this mode
+    const stateObj = getStateForMode(mode);
+
+    // Recursion protection (per-state)
+    if (stateObj.calculatingStage2) {
       console.log(
         `[Cooling Stage 2] ⚠️ Already calculating (mode=${mode}) - skipping to prevent recursion`,
       );
@@ -622,13 +638,13 @@ window.TEUI.CoolingCalculations = (function () {
     }
 
     // CRITICAL: Check if active cooling system exists
-    const d_116 = getModeAwareValue("d_116", "No Cooling");
+    const d_116 = getModeAwareValue("d_116", "No Cooling", mode);
     if (d_116 === "No Cooling") {
       console.log(
         `[Cooling Stage 2] ⏭️ Skipping - No active cooling system (d_116="${d_116}")`,
       );
       // Set m_124 to 0 since no active cooling
-      state.daysActiveCooling = 0;
+      stateObj.daysActiveCooling = 0;
       const prefix = mode === "reference" ? "ref_" : "";
       window.TEUI?.StateManager?.setValue(
         `${prefix}cooling_m_124`,
@@ -638,29 +654,26 @@ window.TEUI.CoolingCalculations = (function () {
       return;
     }
 
-    state.calculatingStage2 = true;
+    stateObj.calculatingStage2 = true;
     console.log(
       `[Cooling Stage 2] 🚀 Starting active cooling calculations (mode=${mode})...`,
     );
 
-    // Store current mode for mode-aware reads/writes
-    state.currentMode = mode;
-
     try {
-      // Calculate days of active cooling required (reads m_129 from StateManager)
-      calculateDaysActiveCooling();
+      // ✅ PATTERN A: Pass explicit state object and mode
+      calculateDaysActiveCooling(stateObj, mode);
 
-      // 📊 STATEMANAGER: Publish Stage 2 results
-      updateStateManagerStage2();
+      // 📊 STATEMANAGER: Publish Stage 2 results with explicit parameters
+      updateStateManagerStage2(mode, stateObj);
 
       // Dispatch event to notify S13 that Stage 2 cooling calculations are ready
-      dispatchCoolingEvent("stage2");
+      dispatchCoolingEvent("stage2", mode);
 
       console.log(
-        `[Cooling Stage 2] ✅ Complete: m_124=${state.daysActiveCooling.toFixed(2)} days`,
+        `[Cooling Stage 2] ✅ Complete (${mode}): m_124=${stateObj.daysActiveCooling.toFixed(2)} days`,
       );
     } finally {
-      state.calculatingStage2 = false;
+      stateObj.calculatingStage2 = false;
     }
   }
 
