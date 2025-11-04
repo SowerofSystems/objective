@@ -2767,10 +2767,13 @@ window.TEUI.SectionModules.sect13 = (function () {
       ) || 8760;
     const occupancyFactor =
       totalHours_j63 > 0 ? occupiedHours_i63 / totalHours_j63 : 0;
-    // Read latent load factor from Cooling.js (will be 0 until Cooling.js works)
+    // Read latent load factor from Cooling.js with mode-aware prefix
+    // ✅ FIX (Nov 4, 2025): Use mode-aware read to prevent Target/Reference contamination
     const latentLoadFactor_i122 =
       window.TEUI.parseNumeric(
-        window.TEUI.StateManager.getValue("cooling_latentLoadFactor"),
+        window.TEUI.StateManager.getValue(
+          isReferenceCalculation ? "ref_cooling_latentLoadFactor" : "cooling_latentLoadFactor"
+        ),
       ) || 1.0;
     const summerBoostRawValue = ModeManager.getValue("l_119");
     const summerBoostFactor =
