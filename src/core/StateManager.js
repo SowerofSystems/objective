@@ -1704,6 +1704,86 @@ TEUI.StateManager = (function () {
   }
 
   /**
+   * 3-TIER RESET SYSTEM
+   * Progressive reset functionality with state awareness
+   */
+
+  /**
+   * Determine the current reset tier based on state
+   * @returns {number} Reset tier (0 = fresh/defaults, 1 = user modifications, 2 = has import)
+   */
+  function getResetTier() {
+    // Check if there's imported data
+    if (Object.keys(lastImportedState).length > 0) {
+      return 2; // Has imported data
+    }
+
+    // Check if there are user modifications
+    let hasUserModifications = false;
+    fields.forEach((field) => {
+      if (field.state === VALUE_STATES.USER_MODIFIED) {
+        hasUserModifications = true;
+      }
+    });
+
+    if (hasUserModifications) {
+      return 1; // Has user modifications only
+    }
+
+    return 0; // Fresh/defaults
+  }
+
+  /**
+   * TIER 1 RESET: Undo user changes
+   * - If imported data exists, revert to lastImportedState
+   * - If no import, clear to defaults
+   */
+  function resetTier1_UndoChanges() {
+    const tier = getResetTier();
+
+    if (tier === 2) {
+      // Has imported data - revert to it
+      revertToLastImportedState();
+      console.log("[Reset Tier 1] Reverted to imported state");
+    } else if (tier === 1) {
+      // No imported data - clear to defaults
+      resetTier2_ClearImport();
+    } else {
+      console.log("[Reset Tier 1] Already at defaults, nothing to reset");
+    }
+  }
+
+  /**
+   * TIER 2 RESET: Clear imported data, return to defaults
+   * - Clear lastImportedState
+   * - Clear localStorage
+   * - Reload page
+   */
+  function resetTier2_ClearImport() {
+    lastImportedState = {};
+    clear(); // Existing method
+    console.log("[Reset Tier 2] Cleared import data and localStorage");
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
+  }
+
+  /**
+   * TIER 3 RESET: Factory reset (same as current behavior)
+   * - Clear everything
+   * - Reload page
+   */
+  function resetTier3_FactoryReset() {
+    clear(); // Existing method handles everything
+    console.log("[Reset Tier 3] Factory reset - all data cleared");
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
+  }
+
+  /**
    * DUAL-ENGINE EXPLICIT STATE GETTERS
    * These methods provide direct access to specific state repositories
    * for use in calculation engines, independent of current UI mode.
@@ -1864,6 +1944,12 @@ TEUI.StateManager = (function () {
     loadState: loadState,
     importState: importState,
     exportState: exportState,
+
+    // 3-Tier Reset System
+    getResetTier: getResetTier,
+    resetTier1_UndoChanges: resetTier1_UndoChanges,
+    resetTier2_ClearImport: resetTier2_ClearImport,
+    resetTier3_FactoryReset: resetTier3_FactoryReset,
 
     // Debugging
     getAllKeys: getAllKeys,
