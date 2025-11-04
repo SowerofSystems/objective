@@ -1,366 +1,407 @@
-# S08 Indoor RH% (i_59) State Mixing Investigation
+# S08 RH State Mixing Investigation (i_59, l_20, l_21)
 
-**Date**: 2025-11-03
-**Branch**: S08-RH%
-**Issue**: Target mode changes to i_59 contaminate Reference model calculations
+**Status**: UNSOLVED after 2 days of investigation
+**Priority**: CRITICAL - Blocks accurate Target vs Reference comparisons
+**Date Range**: November 3-4, 2025
+**Branch**: investigate-i59-from-nov3
 
 ---
 
 ## Problem Statement
 
-**Observed Behavior**:
-- User changes S08 i_59 slider in **Target mode**
-- Both Target AND Reference models recalculate (expected for dual-engine)
-- Reference model calculations change EVEN THOUGH ref_i_59 was never modified
-- Evidence: S01 e_10 (Reference total) changes when only Target i_59 changed
+When changing **i_59** (Relative Humidity %), **l_20** (ACH Heating), or **l_21** (ACH Cooling) in **Target mode** in Section 08:
 
-**Expected Behavior**:
-- Target mode i_59 changes → only Target model results change
-- Reference model should use ref_i_59 value (unchanged) → Reference results unchanged
-- Dual-engine runs but each engine uses its own state values
+### Expected Behavior
+- Target value changes (e.g., i_59: 45% → 70%)
+- Target calculations update (h_10 changes) ✅
+- Reference calculations remain unchanged (e_10 stays constant) ✅
+- ref_i_59, ref_l_20, ref_l_21 remain at their original Reference values ✅
 
-**Root Cause Hypothesis**: Fallback contamination pattern (Anti-Pattern 1 from CHEATSHEET.md)
+### Actual Behavior
+- Target value changes correctly ✅
+- **Target calculations update using the NEW value** ✅
+- **Reference calculations ALSO update using the NEW Target value** ❌ CONTAMINATION
+- **ref_i_59 stays constant** ✅ (not the issue)
+- **BOTH e_10 AND h_10 change** ❌ WRONG
 
----
-
-## Architecture Review
-
-### What SHOULD Happen (Correct Pattern)
-
-```javascript
-// S08 user changes i_59 in Target mode:
-1. ModeManager.setValue("i_59", "50") // Target mode active
-   → Publishes to StateManager: i_59 = "50"
-   → Does NOT touch ref_i_59
-
-2. Cooling.js listener fires on "i_59" change
-   → calculateStage1("target") runs
-   → Reads: StateManager.getValue("i_59") = "50" ✅
-   → Publishes: cooling_* values (unprefixed)
-
-3. Cooling.js calculateStage1("reference") also runs (dual-engine)
-   → Reads: StateManager.getValue("ref_i_59") = "45" (unchanged) ✅
-   → Publishes: ref_cooling_* values (prefixed)
-
-4. S13 recalculates using:
-   → Target: cooling_* from step 2
-   → Reference: ref_cooling_* from step 3
-   → Reference results UNCHANGED because ref_i_59 never changed
-```
-
-### What's ACTUALLY Happening (State Mixing)
-
-```javascript
-// Evidence from user testing:
-1. S08 i_59 changed in Target mode → i_59 published ✅
-2. Cooling.js receives i_59 change
-3. ❌ CONTAMINATION: Cooling.js reads i_59 value for BOTH engines
-4. Reference model calculations use Target i_59 value
-5. Reference results published with Target-contaminated data
-6. S01 e_10 changes incorrectly
-```
+### Symptom Summary
+**Something is reading unprefixed values for BOTH Target AND Reference calculations**, ignoring the ref_prefixed values entirely.
 
 ---
 
-## Diagnostic Investigation Plan
+## Critical Evidence
 
-### Phase 1: Trace Publication Flow
+### 1. Dual Publication Confirmed Working
+All three fields correctly publish BOTH prefixed and unprefixed values:
 
-**Add logging to track i_59/ref_i_59 writes:**
+**Section08.js (lines 224-226)**:
+```javascript
+// i_59 (RH%) - Published by both Target and Reference engines
+window.TEUI.StateManager.setValue("i_59", newValue, "input");
+window.TEUI.StateManager.setValue("ref_i_59", newValue, "input");
+```
+
+**Section08.js (lines 185-194)**:
+```javascript
+// l_20 (ACH Heating) and l_21 (ACH Cooling)
+window.TEUI.StateManager.setValue("l_20", l_20_value, "calculated");
+window.TEUI.StateManager.setValue("l_21", l_21_value, "calculated");
+window.TEUI.StateManager.setValue("ref_l_20", ref_l_20_value, "calculated");
+window.TEUI.StateManager.setValue("ref_l_21", ref_l_21_value, "calculated");
+```
+
+### 2. Values ARE Being Published to StateManager
+Console logs confirm both values exist in StateManager:
+- `i_59 = 70%` (Target)
+- `ref_i_59 = 45%` (Reference)
+- Both logged in Logs.md after changes
+
+### 3. The Contamination Path
+
+**Trace Script Results (VENT-TRACE-SCRIPT.js)**:
+- Changed i_59 from 45% → 70% in Target mode
+- Result: `ref_i_63` changed from 2080 → 4380 (Reference value contaminated!)
+- Calculation: 4380 / 365 = 12 hours/day = **TARGET g_63 value being used for Reference**
+
+**Call Stack**:
+```
+i_59 change → Cooling.js calculates ventilation →
+ref_h_120 (Reference vent rate) changes →
+ref_d_136 (Reference cooling) changes →
+ref_j_32 (Reference energy) changes →
+e_10 (Reference TEUI total) changes
+```
+
+### 4. Section Totals Evidence
+When i_59 changes in Target mode:
+- **h_10** (Target total): 182.2 → 197.7 ✅ CORRECT
+- **e_10** (Reference total): 197.7 → 199.5 ❌ WRONG (should stay constant)
+
+### 5. Reference Mode Changes Do Nothing
+**Critical Symptom**: Changing i_59 slider in **Reference mode** produces NO changes at all in e_10.
+- Expected: e_10 should change, h_10 should stay constant
+- Actual: Nothing changes
+- **Conclusion**: Reference engine is not reading ref_i_59 at all
+
+---
+
+## What We've Tried (All Failed)
+
+### ❌ Attempt 1: Remove S08 Self-Listeners (Nov 3)
+**Hypothesis**: S08 listening to its own ref_i_59 caused cross-contamination
+**Action**: Removed ref_i_59 self-listener from Section08.js
+**Result**: No change - contamination persists
+**Why It Failed**: Self-listening wasn't the issue
+
+### ❌ Attempt 2: Fix Cooling.js Dual-Engine Pattern (Nov 4)
+**Hypothesis**: Running both engines on every change caused contamination
+**Action**: Modified Cooling.js to only run Target engine for Target inputs
+**Result**: Broke calculations, immediately reverted
+**Why It Failed**: Dual-engine pattern is INTENTIONAL. Both must run to keep both columns updated. The bug is in contaminated READS, not in running both engines.
+
+### ❌ Attempt 3: Remove Anti-Pattern 7 Self-Listeners (Nov 4)
+**Hypothesis**: Other sections listening to their own outputs caused issues
+**Action**: Removed self-listeners from Section03.js, Section08.js
+**Result**: No effect on i_59 contamination
+**Why It Failed**: Not related to the RH contamination issue
+
+### ❌ Attempt 4: Add calculateAll() to FieldManager (Nov 4)
+**Hypothesis**: Sections needed to recalculate after slider changes
+**Action**: Added calculateAll() call after ModeManager routing in FieldManager.js
+**Result**: ⚠️ Improved consistency but didn't fix contamination
+**Why It Failed**: Calculation sequencing wasn't the root cause
+
+### ❌ Attempt 5: Fix S09 to Read from StateManager Instead of Local State (Nov 4)
+**Hypothesis**: S09 reading d_63/g_63 from local ReferenceState (initialized with Target defaults) caused ref_i_63 contamination
+**Action**: Changed calculateModel() to read d_63/g_63 from StateManager with proper prefixing
+**Result**: **BROKE S09 CALCULATIONS** - h_10 drifts from 93.7 → 91.6, only corrects when toggling cooling off/on (cooling bump). **DID NOT FIX i_59 contamination at all.**
+**Why It Failed**: Local state reads are correct for section calculations. S09 needs to read user inputs from local state for its own calculations, then publish derived values like i_63 to StateManager. The issue is elsewhere.
+**Status**: REVERTED
+
+**Important Note**: The original S09 implementation is correct. The "cooling bump" (toggling d_116 off/on) fixing the drift is a critical clue - it suggests **Cooling.js is reading contaminated intermediate values** during its calculation pipeline, and a full recalculation chain corrects the state. The bug is NOT in S09's calculation logic, but in how Cooling.js reads values during multi-stage calculations.
+
+### ❌ Attempt 6: Isolate Event Listeners (Nov 4)
+**Hypothesis**: The dual-engine pattern, where both Target and Reference engines run on any input change, was causing a race condition or state overwrite.
+**Action**: Modified the `StateManager` listeners in `Cooling.js` so that a change to a Target value (e.g., `i_59`) would only trigger the Target engine (`calculateStage1("target")`), and a change to a Reference value (`ref_i_59`) would only trigger the Reference engine.
+**Result**: No change. The state mixing persisted exactly as before.
+**Why It Failed**: This invalidated a core architectural principle: both columns must remain up-to-date. The issue is not that both engines run, but what values they read when they run. The `getModeAwareValue` function should handle this, but it appears to be failing.
+**Status**: REVERTED
+
+### ❌ Attempt 7: Refactor Calculation Functions (Nov 4)
+**Hypothesis**: Calculation functions like `calculateAtmosphericValues` were performing redundant, mode-unaware reads from `StateManager`, overwriting the correctly read values from `calculateStage1`.
+**Action**: Refactored `calculateAtmosphericValues` and `calculateWetBulbTemperature` to remove all `StateManager` reads. They were modified to rely exclusively on the `stateObj` passed to them, which is populated in `calculateStage1` with mode-aware values.
+**Result**: No change. The state mixing persisted.
+**Why It Failed**: While this was a sound architectural improvement, it did not address the root cause. The contamination is happening before these functions are even called, suggesting the initial read in `calculateStage1` is where the problem lies, despite appearing correct.
+**Status**: REVERTED
+
+---
+
+## Current Hypothesis: Cooling.js Contaminated Reads
+
+**Strong Suspicion**: Cooling.js is reading **unprefixed** values for BOTH Target AND Reference calculations, completely ignoring ref_prefixed values.
+
+### Evidence Supporting This Theory
+
+1. **i_59, l_20, l_21 are all cooling-related inputs** - all three exhibit identical contamination behavior
+2. **ref_i_63 contamination** (2080 → 4380) suggests ventilation calculations using wrong values
+3. **"Cooling bump" fixes drift in both scenarios**:
+   - Reverted S09: h_10 drifts, corrects when toggling d_116 (No Cooling → Cooling)
+   - Modified S09: h_10 drifts, corrects when toggling d_116 (No Cooling → Cooling)
+   - **Implication**: The drift is caused by Cooling.js reading contaminated intermediate values during its multi-stage calculation pipeline
+4. **S08 Reference mode changes to i_59 do nothing** - suggests Reference engine not reading ref_i_59 at all
+
+### What to Check in Cooling.js
+
+Look for these patterns in `/src/core/Cooling.js`:
 
 ```javascript
-// In StateManager.setValue()
-if (fieldId === "i_59" || fieldId === "ref_i_59") {
-  console.log(`[StateManager] 🔍 ${fieldId} = ${value}, source = ${source}`);
-  console.trace("Call stack:");
+// ❌ WRONG (suspected current behavior):
+function calculateStage1(mode) {
+  const rh = StateManager.getValue("i_59"); // Always reads unprefixed!
+  const achHeating = StateManager.getValue("l_20"); // Always reads unprefixed!
+  const achCooling = StateManager.getValue("l_21"); // Always reads unprefixed!
+  // ... calculations affect BOTH Target and Reference
+}
+
+// ✅ CORRECT (what it should be):
+function calculateStage1(mode) {
+  const rh = StateManager.getValue(mode === "reference" ? "ref_i_59" : "i_59");
+  const achHeating = StateManager.getValue(mode === "reference" ? "ref_l_20" : "l_20");
+  const achCooling = StateManager.getValue(mode === "reference" ? "ref_l_21" : "l_21");
+  // ... mode-aware reading
 }
 ```
 
-**Expected Log Pattern (Correct)**:
-```
-[S08] User changes i_59 slider in Target mode
-[StateManager] 🔍 i_59 = "50", source = "user-modified"
-  → Call stack: ModeManager.setValue → StateManager.setValue
-[Cooling] i_59 listener fires
-[Cooling] calculateStage1("target") reads i_59 = "50"
-[Cooling] calculateStage1("reference") reads ref_i_59 = "45" (unchanged)
+---
+
+## Dual-Engine Pattern (CRITICAL - DO NOT BREAK)
+
+**Pattern**: BOTH Target and Reference engines MUST calculate on ANY input change.
+
+**Why**: Sections can be in different modes. When Target i_59 changes:
+- Target column shows new calculations with new i_59 ✅
+- Reference column must stay constant using ref_i_59 ✅
+- Both engines run, but each reads its own prefixed values ✅
+
+**DO NOT** try to "optimize" by only running one engine. The fix is ensuring **mode-aware reads**, not preventing dual execution.
+
+---
+
+## Key Files and Investigation Points
+
+### Cooling.js ⚠️ PRIMARY SUSPECT
+- **Path**: `/src/core/Cooling.js`
+- **Lines to Investigate**:
+  - Lines 919-943: Target listeners (i_59, l_20, l_21)
+  - Lines 1017-1059: Reference listeners (ref_i_59, ref_l_20, ref_l_21)
+  - Lines 1070-1265: `calculateStage1()` function
+  - Lines 1270-1440: `calculateStage2()` function
+- **Suspected Issue**: Reading unprefixed values regardless of mode parameter
+- **What to Search For**:
+  - `StateManager.getValue("i_59")` without mode-aware prefix
+  - `StateManager.getValue("l_20")` without mode-aware prefix
+  - `StateManager.getValue("l_21")` without mode-aware prefix
+  - Any hardcoded unprefixed reads in calculation functions
+
+### Section08.js ✅ VERIFIED WORKING
+- **Path**: `/src/sections/Section08.js`
+- **Publication**: Lines 185-194 (l_20/l_21), Lines 224-226 (i_59)
+- **Status**: Correctly publishes both prefixed and unprefixed values
+
+### Section13.js ⚠️ DOWNSTREAM VICTIM
+- **Path**: `/src/sections/Section13.js`
+- **Lines**: 2603-2652 (calculateVentilationRates)
+- **Reads**: ref_i_63 for Reference ventilation calculations
+- **Status**: May be reading contaminated ref_i_63 from S09
+
+### Section09.js ⚠️ VENTILATION CONTAMINATION
+- **Path**: `/src/sections/Section09.js`
+- **Lines**: 1910-1918 (publishes ref_i_63)
+- **Issue**: Publishes ref_i_63 = g_63 * 365, where g_63 comes from local state
+- **Local State Initialization**: Lines 129-130 initialize d_63 and g_63 from TARGET defaults
+- **Why This Matters**: ref_i_63 = 4380 instead of 2080 because it uses Target g_63=12 instead of Reference g_63
+- **Note**: Changing S09 to read from StateManager breaks calculations. The issue is NOT here.
+
+---
+
+## Diagnostic Scripts
+
+### I59-TRACE-SCRIPT.js
+**Purpose**: Intercepts StateManager reads/writes for i_59, ref_i_59, e_10, h_10
+**Location**: `/docs/development/I59-TRACE-SCRIPT.js`
+
+**Usage**:
+1. Run script in console before changes
+2. Run `TEUI.checkI59State()` to see baseline
+3. Change i_59 slider in Target mode
+4. Watch for RED logs (e_10 changes = contamination)
+5. Run `TEUI.checkI59State()` again to compare
+
+**Key Output**:
+- Yellow: i_59 WRITE
+- Green: i_59 READ
+- Blue: h_10 WRITE (should happen)
+- Red: e_10 WRITE (should NOT happen)
+
+### VENT-TRACE-SCRIPT.js
+**Purpose**: Tracks ventilation-related fields (ref_d_63, ref_i_63, ref_h_120, etc.)
+**Location**: `/docs/development/VENT-TRACE-SCRIPT.js`
+
+**Usage**:
+1. Run script in console
+2. Run `TEUI.checkVentInputs()` to see baseline
+3. Change i_59 slider
+4. Watch for ORANGE logs showing which ref_ values change
+5. Run `TEUI.checkVentInputs()` again
+
+**Key Finding**: ref_i_63 changes from 2080 → 4380 when i_59 changes
+
+---
+
+## Testing Instructions
+
+### How to Reproduce Bug
+
+1. **Fresh Start**: Clear browser cache, hard refresh
+2. **Import Excel**: Load reference Excel file
+3. **Verify Baseline**: Check S01 - e_10 should match Excel Reference TEUI
+4. **Switch to Target Mode**: Ensure S08 is in Target mode
+5. **Change i_59**: Move slider from 45% → 70%
+6. **Observe**:
+   - h_10 changes ✅ (expected)
+   - **e_10 changes** ❌ (BUG - should stay constant)
+
+### How to Verify Fix
+
+1. Perform steps 1-5 above
+2. **Expected After Fix**:
+   - h_10 changes ✅
+   - **e_10 stays constant** ✅
+   - ref_i_59 stays at original Reference value ✅
+3. **Switch to Reference Mode in S08**
+4. **Change ref_i_59**: Move slider from 45% → 50%
+5. **Expected After Fix**:
+   - e_10 changes ✅
+   - **h_10 stays constant** ✅
+   - **Currently**: Nothing happens at all ❌
+
+---
+
+## Technical Context
+
+### StateManager Publication Pattern
+```javascript
+// StateManager only fires listeners when values ACTUALLY change
+if (field.value === value && field.state === state) {
+  return false; // No notification if unchanged
+}
 ```
 
-**Contamination Pattern (Wrong)**:
-```
-[S08] User changes i_59 slider in Target mode
-[StateManager] 🔍 i_59 = "50", source = "user-modified"
-[Cooling] i_59 listener fires
-[Cooling] ❌ BOTH engines read i_59 = "50" (fallback contamination)
-[Cooling] Reference calculations use Target value
+### Mode-Aware Reading Pattern
+```javascript
+// ✅ CORRECT: Read with proper prefix based on mode
+const value = StateManager.getValue(isReference ? "ref_fieldId" : "fieldId");
 ```
 
-### Phase 2: Identify Fallback Patterns
+### Pattern A Dual-State Architecture
+- **TargetState**: Local state cache for Target calculations
+- **ReferenceState**: Local state cache for Reference calculations
+- **StateManager**: Global state for cross-section communication
+- **Rule**: For user inputs within a section, read from local state. For cross-section dependencies, read from StateManager with mode-aware prefixing.
 
-**Search for contamination in Cooling.js:**
+---
 
+## What NOT to Try Again
+
+1. ❌ Don't remove dual-engine execution in Cooling.js
+2. ❌ Don't modify S09 to read user inputs from StateManager instead of local state
+3. ❌ Don't add more self-listeners to sections
+4. ❌ Don't try to "optimize" by preventing Reference calculations when Target changes
+
+---
+
+## Next Steps for Investigation
+
+### 1. Audit Cooling.js calculateStage1() and calculateStage2()
+
+**Search for hardcoded unprefixed reads**:
 ```bash
-# Look for fallback patterns that violate state isolation:
-grep -n "getModeAwareValue.*||.*StateManager" src/core/Cooling.js
-grep -n "getValue.*i_59.*||" src/core/Cooling.js
-grep -n "ref_i_59.*||.*i_59" src/core/Cooling.js
+cd src/core
+grep -n 'getValue("i_59")' Cooling.js
+grep -n 'getValue("l_20")' Cooling.js
+grep -n 'getValue("l_21")' Cooling.js
 ```
 
-**Anti-Pattern 1 Example (from CHEATSHEET.md lines 39-57)**:
-```javascript
-// ❌ WRONG: Fallback contamination
-const indoorRH = getModeAwareValue("i_59") || StateManager.getValue("i_59") || 0.45;
+**What to look for**:
+- Any `StateManager.getValue("i_59")` that doesn't check mode
+- Any `StateManager.getValue("l_20")` that doesn't check mode
+- Any `StateManager.getValue("l_21")` that doesn't check mode
 
-// ✅ CORRECT: Strict mode isolation
-if (state.currentMode === "reference") {
-  const indoorRH = StateManager.getValue("ref_i_59");
-  if (indoorRH === null || indoorRH === undefined) {
-    return 0.45; // Default, NEVER use Target value
-  }
-} else {
-  const indoorRH = StateManager.getValue("i_59") || 0.45;
+**Expected pattern** (what we should find):
+```javascript
+const rh = StateManager.getValue(mode === "reference" ? "ref_i_59" : "i_59");
+```
+
+**Contamination pattern** (what we suspect exists):
+```javascript
+const rh = StateManager.getValue("i_59"); // Always unprefixed!
+```
+
+### 2. Check Cooling.js Listeners
+
+**Lines 919-943**: Target listeners
+**Lines 1017-1059**: Reference listeners
+
+**Verify**:
+- Do Target listeners pass `"target"` mode parameter?
+- Do Reference listeners pass `"reference"` mode parameter?
+- Do the calculation functions actually use the mode parameter?
+
+### 3. Add Debug Logging to Cooling.js
+
+**Temporary diagnostic code**:
+```javascript
+function calculateStage1(mode) {
+  console.log(`[Cooling] calculateStage1 called with mode: ${mode}`);
+
+  const i_59_fieldId = mode === "reference" ? "ref_i_59" : "i_59";
+  const i_59_value = StateManager.getValue(i_59_fieldId);
+  console.log(`[Cooling] Reading ${i_59_fieldId} = ${i_59_value}`);
+
+  // ... rest of calculation
 }
 ```
 
-### Phase 3: Check Listener Logic
+**Run test**:
+1. Change i_59 in Target mode from 45% → 70%
+2. Check logs - should see:
+   ```
+   [Cooling] calculateStage1 called with mode: target
+   [Cooling] Reading i_59 = 70
+   [Cooling] calculateStage1 called with mode: reference
+   [Cooling] Reading ref_i_59 = 45  // Should be unchanged!
+   ```
 
-**Review Cooling.js listeners (lines 884-908)**:
+### 4. Test Hypothesis
 
-Current implementation:
-```javascript
-sm.addListener("i_59", function (newValue) {
-  state.indoorRH = parseFloat(newValue) / 100;
-
-  // ❌ PROBLEM: Runs BOTH engines with same contaminated state.indoorRH
-  calculateStage1("target");
-  calculateStage1("reference");
-});
-
-sm.addListener("ref_i_59", function (newValue) {
-  state.indoorRH = parseFloat(newValue) / 100;
-
-  // ❌ PROBLEM: Same contamination, just from ref_i_59 listener
-  calculateStage1("target");
-  calculateStage1("reference");
-});
+**If logs show**:
+```
+[Cooling] calculateStage1 called with mode: target
+[Cooling] Reading i_59 = 70
+[Cooling] calculateStage1 called with mode: reference
+[Cooling] Reading i_59 = 70  // ❌ WRONG - reading unprefixed!
 ```
 
-**IDENTIFIED ISSUE**: `state.indoorRH` is a **shared state object** that gets contaminated!
+**Then the fix is**: Ensure all reads in calculateStage1/2 use mode-aware prefixing.
 
 ---
 
-## Root Cause Analysis
+## Previous Investigation History (Nov 3, 2025)
 
-### Critical Discovery: Shared State Contamination
+### Nov 3 Investigation - Shared State Contamination
+Initial investigation on Nov 3 identified shared state contamination in Cooling.js listeners:
 
-**The Problem**: Cooling.js uses a single `state` object for both engines:
-
-```javascript
-// Cooling.js state object (shared between engines)
-const state = {
-  currentMode: "target",
-  indoorRH: 0.45, // ❌ SHARED between Target and Reference calculations!
-  // ... other shared state
-};
-```
-
-**What Happens**:
-1. `i_59` listener fires → sets `state.indoorRH = 0.50` (from Target change)
-2. `calculateStage1("target")` runs → uses `state.indoorRH = 0.50` ✅ Correct
-3. `calculateStage1("reference")` runs → ALSO uses `state.indoorRH = 0.50` ❌ CONTAMINATED!
-4. Reference should have used `ref_i_59 = 0.45` but got Target value instead
-
-### Why getModeAwareValue Doesn't Help Here
-
-The current listeners directly set `state.indoorRH` BEFORE calling the calculation engines:
-
-```javascript
-// Listener sets shared state FIRST
-sm.addListener("i_59", function (newValue) {
-  state.indoorRH = parseFloat(newValue) / 100; // ❌ Overwrites shared state
-  calculateStage1("target");   // Uses contaminated state
-  calculateStage1("reference"); // Uses same contaminated state
-});
-```
-
-Even though `calculateStage1()` internally uses `getModeAwareValue()` at line 211, the damage is already done by setting `state.indoorRH` before the calculation runs.
-
----
-
-## Solution Patterns
-
-### Option 1: Remove Shared State Updates from Listeners
-
-**Pattern**: Let each engine read its own value during calculation
-
-```javascript
-// ✅ CORRECT: Don't pre-set shared state in listeners
-sm.addListener("i_59", function (newValue) {
-  console.log(`[Cooling] i_59 changed: ${newValue}% → recalculating Target and Reference`);
-
-  // Don't set state.indoorRH here - let each engine read its own value
-  calculateStage1("target");   // Will read i_59 via getModeAwareValue
-  calculateStage1("reference"); // Will read ref_i_59 via getModeAwareValue
-});
-
-sm.addListener("ref_i_59", function (newValue) {
-  console.log(`[Cooling] ref_i_59 changed: ${newValue}% → recalculating Target and Reference`);
-
-  // Same - don't pre-contaminate shared state
-  calculateStage1("target");
-  calculateStage1("reference");
-});
-```
-
-**Then ensure calculateStage1 reads mode-aware values**:
-
-```javascript
-function calculateStage1(mode = "target") {
-  const originalMode = state.currentMode;
-  state.currentMode = mode; // Temporarily set mode for getModeAwareValue
-
-  try {
-    // This will now read i_59 for Target, ref_i_59 for Reference
-    const i_59_value = window.TEUI.parseNumeric(
-      getModeAwareValue("i_59", "45"),
-    );
-
-    state.indoorRH = i_59_value ? i_59_value / 100 : 0.45; // ✅ Mode-aware read
-
-    // ... rest of calculations
-  } finally {
-    state.currentMode = originalMode; // Restore mode
-  }
-}
-```
-
-### Option 2: Separate State Objects (More Complex)
-
-**Pattern**: Maintain separate state objects for Target and Reference
-
-```javascript
-const targetState = { indoorRH: 0.45, /* ... */ };
-const referenceState = { indoorRH: 0.45, /* ... */ };
-
-sm.addListener("i_59", function (newValue) {
-  targetState.indoorRH = parseFloat(newValue) / 100;
-  calculateStage1("target", targetState);
-  calculateStage1("reference", referenceState); // Uses separate state
-});
-
-sm.addListener("ref_i_59", function (newValue) {
-  referenceState.indoorRH = parseFloat(newValue) / 100;
-  calculateStage1("target", targetState);
-  calculateStage1("reference", referenceState);
-});
-```
-
-**Recommendation**: **Option 1** is simpler and aligns with CHEATSHEET.md Pattern 1 (lines 719-756)
-
----
-
-## Verification Tests
-
-### Test 1: Target i_59 Change Should Not Affect Reference
-
-**Setup**:
-1. Load app with defaults
-2. Note Reference total (S01 e_10) = X
-
-**Steps**:
-1. Stay in Target mode
-2. Change S08 i_59 from 45% to 60%
-3. Check S01 e_10 (Reference total)
-
-**Expected**: e_10 = X (unchanged)
-**If Wrong**: e_10 changes → state mixing confirmed
-
-### Test 2: Reference ref_i_59 Change Should Not Affect Target
-
-**Setup**:
-1. Load app with defaults
-2. Note Target total (S01 h_10) = Y
-
-**Steps**:
-1. Switch to Reference mode
-2. Change S08 i_59 (which writes ref_i_59) from 45% to 30%
-3. Switch back to Target mode
-4. Check S01 h_10 (Target total)
-
-**Expected**: h_10 = Y (unchanged)
-**If Wrong**: h_10 changes → state mixing confirmed
-
-### Test 3: Console Logging Verification
-
-**Add debug logging**:
-```javascript
-// In calculateStage1()
-console.log(`[Cooling] calculateStage1(${mode}): reading i_59 value`);
-const i_59_value = getModeAwareValue("i_59", "45");
-console.log(`[Cooling] mode=${mode}, i_59_value=${i_59_value}`);
-```
-
-**Expected Log Pattern (Correct)**:
-```
-[S08] User changes i_59 to 60% in Target mode
-[Cooling] i_59 listener fires
-[Cooling] calculateStage1(target): reading i_59 value
-[Cooling] mode=target, i_59_value=60 ✅
-[Cooling] calculateStage1(reference): reading i_59 value
-[Cooling] mode=reference, i_59_value=45 ✅ (ref_i_59 unchanged)
-```
-
-**Contamination Pattern (Wrong)**:
-```
-[S08] User changes i_59 to 60% in Target mode
-[Cooling] i_59 listener fires
-[Cooling] state.indoorRH = 0.60 (set by listener)
-[Cooling] calculateStage1(target): mode=target, indoorRH=0.60 ✅
-[Cooling] calculateStage1(reference): mode=reference, indoorRH=0.60 ❌ CONTAMINATED
-```
-
----
-
-## Implementation Checklist
-
-### Phase 1: Add Diagnostic Logging ✅
-- [x] Add StateManager logging for i_59/ref_i_59 writes
-- [x] Add Cooling.js logging for mode-aware reads
-- [x] Run Test 1 and Test 2, capture logs
-
-### Phase 2: Fix Listener Contamination ✅
-- [x] Remove `state.indoorRH = ...` from i_59 listener (Cooling.js:888)
-- [x] Remove `state.indoorRH = ...` from ref_i_59 listener (Cooling.js:903)
-- [x] Ensure calculateStage1 sets mode before reading values (line 482)
-
-### Phase 3: Verify calculateStage1 Mode Awareness ✅
-- [x] Temporary mode switching already implemented (line 482: `state.currentMode = mode`)
-- [x] getModeAwareValue already reads correct prefixed values (line 211)
-- [x] state.indoorRH set from mode-aware read (line 216)
-
-### Phase 4: Verification Testing ✅ COMPLETE
-- [x] Run Test 1: Target change doesn't affect Reference - ✅ VERIFIED via logs
-- [ ] Run Test 2: Reference change doesn't affect Target - NOT YET TESTED
-- [x] Run Test 3: Console logs show correct mode-aware reads - ✅ VERIFIED
-- [ ] Verify S01 e_10 and h_10 stability - ⚠️ STILL SHOWS CONTAMINATION (investigate S01)
-
-### Phase 5: Clean Up and Document
-- [ ] Remove diagnostic logging (or gate with debug flag)
-- [x] Update commit message with evidence
-- [x] Document fix in this file for future reference
-
----
-
-## Fix Implementation Summary
-
-**Date**: 2025-11-03
-**Commit**: TBD
-**Files Changed**: src/core/Cooling.js
-
-### Root Cause Confirmed
-
-The listeners were setting `state.indoorRH` BEFORE calling `calculateStage1()`, contaminating the shared state object:
-
+**Root Cause Found (Nov 3)**:
 ```javascript
 // ❌ BEFORE (Contamination Pattern):
 sm.addListener("i_59", function (newValue) {
@@ -370,194 +411,42 @@ sm.addListener("i_59", function (newValue) {
 });
 ```
 
-### Fix Applied
-
-Removed the shared state pre-setting from both listeners:
-
+**Fix Applied (Nov 3)**:
+Removed shared state pre-setting from listeners:
 ```javascript
-// ✅ AFTER (Strict State Isolation):
+// ✅ AFTER (lines 888-903):
 sm.addListener("i_59", function (newValue) {
   // Don't pre-set shared state.indoorRH - let each engine read its own value
   calculateStage1("target");   // Will read i_59 via getModeAwareValue
   calculateStage1("reference"); // Will read ref_i_59 via getModeAwareValue
 });
-
-sm.addListener("ref_i_59", function (newValue) {
-  // Don't pre-set shared state.indoorRH - let each engine read its own value
-  calculateStage1("target");   // Will read i_59 via getModeAwareValue
-  calculateStage1("reference"); // Will read ref_i_59 via getModeAwareValue
-});
 ```
 
-### How It Works Now
-
-1. `i_59` listener fires (Target value changed)
-2. `calculateStage1("target")` runs:
-   - Sets `state.currentMode = "target"` (line 482)
-   - Reads `getModeAwareValue("i_59", "45")` (line 211) → returns unprefixed `i_59` value
-   - Sets `state.indoorRH` from Target value ✅
-3. `calculateStage1("reference")` runs:
-   - Sets `state.currentMode = "reference"` (line 482)
-   - Reads `getModeAwareValue("i_59", "45")` (line 211) → returns `ref_i_59` value
-   - Sets `state.indoorRH` from Reference value ✅ (isolated from Target change)
-
-### Alignment with CHEATSHEET.md Patterns
-
-This fix implements:
-- **Pattern 1: Temporary Mode Switching** (lines 719-756) - calculateStage1 sets mode before reading
-- **Anti-Pattern 1 Avoidance** (lines 39-57) - No fallback contamination, strict mode isolation
-- **External Module Integration** (lines 833-886) - Cooling.js now properly mode-aware
-
----
-
-## Related Documentation
-
-- [4012-CHEATSHEET.md](history (completed)/4012-CHEATSHEET.md) - Anti-Pattern 1 (lines 39-57)
-- [4012-CHEATSHEET.md](history (completed)/4012-CHEATSHEET.md) - Pattern 1: Temporary Mode Switching (lines 719-756)
-- [4012-CHEATSHEET.md](history (completed)/4012-CHEATSHEET.md) - External Module Integration (lines 833-886)
-
----
-
-## Console Debug Scripts
-
-### NEW: Comprehensive i_59 Trace Script
-
-**File**: [docs/development/I59-TRACE-SCRIPT.js](I59-TRACE-SCRIPT.js)
-
-Copy and paste the entire contents of I59-TRACE-SCRIPT.js into browser console BEFORE testing.
-
-**Usage**:
-1. Load the script in console
-2. Run `TEUI.checkI59State()` to see baseline state
-3. Change i_59 slider in S08 (in Target or Reference mode)
-4. Watch console for WRITE/READ logs
-5. Run `TEUI.checkI59State()` again to see changes
-
-**What to Look For**:
-
-**Target Mode Test** (slider should write unprefixed i_59):
+**Verification (Nov 3)**:
+Console logs confirmed state isolation was working:
 ```
-[StateManager WRITE] i_59 = "60" (source: user-modified) ✅
-[StateManager READ] i_59 = "60" ✅ (Cooling.js reads for Target engine)
-[StateManager READ] ref_i_59 = "45" ✅ (Cooling.js reads for Reference engine - unchanged!)
-```
-
-**Reference Mode Test** (slider should write ref_i_59):
-```
-[StateManager WRITE] ref_i_59 = "30" (source: user-modified) ✅
-[StateManager READ] i_59 = "60" ✅ (Cooling.js reads for Target engine - unchanged!)
-[StateManager READ] ref_i_59 = "30" ✅ (Cooling.js reads for Reference engine)
-```
-
-**Contamination Symptoms**:
-- ❌ Reference mode writes `i_59` instead of `ref_i_59`
-- ❌ Both engines read same value
-- ❌ No `ref_i_59` WRITE when slider moved in Reference mode
-
-### Script 1: Check Current i_59 State
-
-```javascript
-// Simpler quick-check (use after I59-TRACE-SCRIPT is loaded)
-TEUI.checkI59State();
-```
-
-### Legacy Scripts (for reference)
-
-<details>
-<summary>Old manual trace scripts (use I59-TRACE-SCRIPT.js instead)</summary>
-
-```javascript
-// Script 2: Trace i_59 Changes
-const originalSetValue = window.TEUI.StateManager.setValue;
-window.TEUI.StateManager.setValue = function(fieldId, value, source) {
-  if (fieldId === "i_59" || fieldId === "ref_i_59") {
-    console.log(`[TRACE] StateManager.setValue("${fieldId}", "${value}", "${source}")`);
-    console.trace("Call stack:");
-  }
-  return originalSetValue.call(this, fieldId, value, source);
-};
-
-// Script 3: Monitor Cooling State
-let lastIndoorRH = null;
-setInterval(() => {
-  const currentRH = window.TEUI.CoolingCalculations?.state?.indoorRH;
-  if (currentRH !== lastIndoorRH) {
-    console.log(`[MONITOR] Cooling state.indoorRH changed: ${lastIndoorRH} → ${currentRH}`);
-    lastIndoorRH = currentRH;
-  }
-}, 100);
-```
-
-</details>
-
----
-
-## Log Analysis Results (2025-11-03)
-
-### Test Performed
-User changed S08 i_59 slider from 45% → 65% in **Target mode**.
-
-### Findings from Logs.md (37,207 lines)
-
-**✅ S08 Publication - WORKING CORRECTLY:**
-```
-BEFORE: i_59 = "45", ref_i_59 = "45"
-[User drags slider in Target mode: 45 → 48 → 50 → 52 → 54 → 55 → 56 → 57 → 59 → 61 → 62 → 63 → 64 → 65]
-AFTER:  i_59 = "65", ref_i_59 = "45" ✅
-
-Pattern per value change:
-[StateManager WRITE] i_59 = "50" (source: user-modified) ✅
-[StateManager WRITE] i_59 = "50" (source: user-modified) (repeated 6x - multiple handlers?)
-```
-
-**✅ Cooling.js Dual-Engine Reads - WORKING CORRECTLY:**
-```
-For each Target i_59 change:
-[StateManager READ] i_59 = "50"     ✅ Target engine reads new value
-[StateManager READ] i_59 = "50"     (read twice per calculation)
+[StateManager READ] i_59 = "65"     ✅ Target engine reads new value
 [StateManager READ] ref_i_59 = "45" ✅ Reference engine reads UNCHANGED value
-[StateManager READ] ref_i_59 = "45" (read twice per calculation)
 ```
 
-### Critical Discovery
+**Nov 3 Conclusion**: Fix worked at Cooling.js level, but S01 e_10 contamination persisted, suggesting downstream issue.
 
-**The fix IS working!** State isolation is PERFECT at the Cooling.js level:
-- Target engine reads i_59 (changing: 45→65)
-- Reference engine reads ref_i_59 (unchanged: 45)
-- No fallback contamination detected
+### Why Nov 3 Fix Didn't Resolve Current Issue
+The Nov 3 fix addressed shared state contamination in listeners, but the current issue (Nov 4) appears to be deeper in the calculation functions themselves. The diagnostic scripts now show that Reference mode changes produce NO changes at all, suggesting the Reference engine isn't reading ref_i_59 anywhere in the calculation pipeline.
 
-### Remaining Issue
+---
 
-**User reports**: S01 e_10 (Reference total) still changes when Target i_59 changes
+## Summary
 
-### ROOT CAUSE IDENTIFIED! 🎯
+After 2 days of investigation, we know:
+- ✅ S08 correctly publishes both i_59 AND ref_i_59
+- ✅ StateManager correctly stores both values
+- ✅ Dual-engine pattern is correct and should not be changed
+- ❌ Something (likely Cooling.js calculation functions) is reading unprefixed values for BOTH engines
+- ❌ Reference calculations are using Target values instead of Reference values
+- ❌ Reference mode changes to i_59 do nothing at all
+- ❌ This affects e_10 (Reference TEUI total) incorrectly
 
-**The d_129 Listener Contamination**
+**The fix is NOT in publication, it's in READS within the calculation functions.**
 
-Found at Cooling.js:873-878:
-```javascript
-sm.addListener("d_129", function (newValue) {
-  state.coolingLoad = parseFloat(newValue.replace(/,/g, "")) || 0;
-  calculateDaysActiveCooling();
-  updateStateManager(); // ❌ USES state.currentMode!
-});
-```
-
-**The Problem Chain**:
-1. User changes i_59 in Target mode
-2. i_59 listener runs both engines:
-   - `calculateStage1("target")` → sets `state.currentMode = "target"` → publishes correctly
-   - `calculateStage1("reference")` → sets `state.currentMode = "reference"` → publishes correctly
-3. **state.currentMode is now stuck on "reference"** (last engine to run)
-4. Cooling calculations trigger d_129 changes
-5. d_129 listener fires → calls `updateStateManager()`
-6. `updateStateManager()` checks `state.currentMode` → finds "reference"
-7. **Publishes Target cooling results with ref_ prefix!** ❌
-8. Reference model contaminated with Target values
-9. S01 e_10 shows contaminated Reference total
-
-**Why This Happens**:
-- `calculateStage1()` sets `state.currentMode` but never restores it
-- Shared `state` object means last engine's mode "wins"
-- Legacy `updateStateManager()` function trusts `state.currentMode`
-- Other listeners that run AFTER dual-engine use stale mode
+**Strong Lead**: Cooling.js `calculateStage1()` and `calculateStage2()` likely contain hardcoded unprefixed reads that ignore the mode parameter.
