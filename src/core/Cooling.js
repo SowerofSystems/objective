@@ -1016,20 +1016,25 @@ window.TEUI.CoolingCalculations = (function () {
     );
     sm.addListener("l_20", function (newValue) {
       console.log(
-        `[Cooling] 🌡️ Target night-time temp changed: l_20=${newValue}°C → recalculating Stage 1 (Target mode)`,
+        `[Cooling] 🌡️ Target night-time temp changed: l_20=${newValue}°C → recalculating Stage 1 for both engines`,
       );
 
-      // Night-time temp affects Stage 1 free cooling calculations
+      // ✅ DUAL-ENGINE: Recalculate BOTH modes because:
+      // - We don't know which sections are in Target vs Reference mode
+      // - Both columns (Target h_10 and Reference e_10) need to stay updated
+      // - Pattern A isolation ensures each engine reads its own values
       calculateStage1("target");
+      calculateStage1("reference");
     });
 
     // ✅ NEW (Nov 3, 2025): Listen for ref_l_20 (Reference night-time temp) changes from S03
     sm.addListener("ref_l_20", function (newValue) {
       console.log(
-        `[Cooling] 🌡️ Reference night-time temp changed: ref_l_20=${newValue}°C → recalculating Stage 1 (Reference mode)`,
+        `[Cooling] 🌡️ Reference night-time temp changed: ref_l_20=${newValue}°C → recalculating Stage 1 for both engines`,
       );
 
-      // Night-time temp affects Stage 1 free cooling calculations
+      // ✅ DUAL-ENGINE: Recalculate BOTH modes (same reason as l_20 listener above)
+      calculateStage1("target");
       calculateStage1("reference");
     });
 
@@ -1040,20 +1045,22 @@ window.TEUI.CoolingCalculations = (function () {
     );
     sm.addListener("l_21", function (newValue) {
       console.log(
-        `[Cooling] 🌡️ Target cooling season RH% changed: l_21=${newValue}% → recalculating Stage 1 (Target mode)`,
+        `[Cooling] 🌡️ Target cooling season RH% changed: l_21=${newValue}% → recalculating Stage 1 for both engines`,
       );
 
-      // Cooling season RH% affects Stage 1 psychrometric calculations
+      // ✅ DUAL-ENGINE: Recalculate BOTH modes (same reason as l_20 listener above)
       calculateStage1("target");
+      calculateStage1("reference");
     });
 
     // ✅ NEW (Nov 3, 2025): Listen for ref_l_21 (Reference cooling season mean RH%) changes from S03
     sm.addListener("ref_l_21", function (newValue) {
       console.log(
-        `[Cooling] 🌡️ Reference cooling season RH% changed: ref_l_21=${newValue}% → recalculating Stage 1 (Reference mode)`,
+        `[Cooling] 🌡️ Reference cooling season RH% changed: ref_l_21=${newValue}% → recalculating Stage 1 for both engines`,
       );
 
-      // Cooling season RH% affects Stage 1 psychrometric calculations
+      // ✅ DUAL-ENGINE: Recalculate BOTH modes (same reason as l_20 listener above)
+      calculateStage1("target");
       calculateStage1("reference");
     });
   }
