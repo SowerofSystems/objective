@@ -122,7 +122,24 @@ This suggests that either:
 
 ## DIAGNOSTIC RESULTS (Nov 4, 2025)
 
-### 🎯 ROOT CAUSE IDENTIFIED
+### ⚠️ CRITICAL FINDING: Storage Not Working!
+
+**User Test Results** (Nov 5, 2025):
+- Modified 11 fields after import: d_31, h_12, h_15, h_19, d_39, d_51, d_52, d_64, d_97, d_113, d_118
+- Clicked "Undo Changes" → **NOT ONE field restored to imported value!**
+- This confirms the problem is STORAGE/RESTORE, not calculations
+
+**Root Cause Hypothesis**: Pattern A sections use isolated state (TargetState/ReferenceState).
+These fields may NOT be going through `StateManager.setValue()` with state="imported" during import,
+so they never get saved to `lastImportedState`.
+
+### Investigation Tools
+
+**New Diagnostic**: `STORAGE-TRACE.js` - Intercepts setValue calls to track what gets stored
+- Run before import to see which fields are saved with "imported" state
+- Run `checkStoredFields()` after import to verify storage
+
+### 🎯 PREVIOUS (INCORRECT) ROOT CAUSE
 
 **Problem**: h_121, h_122, h_123, h_125 are ALL `null` across all 3 stages
 
