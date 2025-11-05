@@ -120,6 +120,63 @@ This suggests that either:
 
 ---
 
+## DIAGNOSTIC RESULTS (Nov 4, 2025)
+
+### 🎯 ROOT CAUSE IDENTIFIED
+
+**Problem**: h_121, h_122, h_123, h_125 are ALL `null` across all 3 stages
+
+```
+Stage 1 (After Import) | Stage 2 (After Mods) | Stage 3 (After Undo)
+h_121: null           | h_121: null          | h_121: null
+h_122: null           | h_122: null          | h_122: null
+h_123: null           | h_123: null          | h_123: null
+h_124: 36856.77 ✅    | h_124: 36856.77 ✅   | h_124: 36856.77 ✅
+h_125: null           | h_125: null          | h_125: null
+h_126: 83.50 ✅       | h_126: 83.50 ✅      | h_126: 83.50 ✅
+```
+
+**Impact**: TEUI calculation is wrong because 4 out of 6 components are missing!
+
+- Expected TEUI (manual): 3.31 ekWh/m²/yr (only h_124 + h_126)
+- Actual f_32: 5,678,628.43 ekWh/m²/yr (absurdly high)
+
+### Key Findings
+
+1. **✅ Import Works**: 249 fields saved to lastImportedState (more than ExcelMapper's 126!)
+   - This includes both Target and Reference fields (ref_* prefix)
+   - All imported fields match current state
+
+2. **✅ Revert Works**: All 249 fields restored correctly
+   - Stage 2 after mods: 7 mismatches (expected - these are user modifications)
+   - Stage 3 after undo: All 249 match again ✅
+
+3. **❌ S15 Calculations Not Running**: h_121, h_122, h_123, h_125 are `null`
+   - These should be populated by Section15.js TEUI component calculations
+   - h_124 and h_126 work (so partial calculation is happening)
+   - calculateAll() is called but S15 isn't calculating all fields
+
+### This is NOT a Reset Problem!
+
+The "Undo Changes" feature is working perfectly:
+- ✅ lastImportedState is saved
+- ✅ All fields are restored
+- ✅ calculateAll() is called
+- ✅ Pattern A sections are refreshed
+
+**The real problem**: Section 15 (TEUI components) is not calculating h_121, h_122, h_123, h_125.
+
+This is a **separate S15 calculation bug** that exists BEFORE the reset feature was even implemented!
+
+### Next Steps
+
+1. Investigate Section15.js to see why h_121, h_122, h_123, h_125 are not calculated
+2. Check if these fields are registered with StateManager
+3. Check if S15 calculate method is being called by Calculator.calculateAll()
+4. This should be a separate issue/branch, not part of reset implementation
+
+---
+
 ## Overview
 
 The current Reset button (`resetAllData()`) immediately clears all data and resets to defaults. This implementation plan outlines a 3-tier progressive reset system that provides better UX and data safety.
