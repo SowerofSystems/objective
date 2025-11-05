@@ -1699,6 +1699,40 @@ TEUI.StateManager = (function () {
       typeof window.TEUI.Calculator.calculateAll === "function"
     ) {
       window.TEUI.Calculator.calculateAll();
+
+      // ✅ FIX (Nov 4, 2025): Refresh ALL Pattern A section UIs after calculateAll
+      // Pattern A sections use isolated state - DOM must be refreshed to show updated values
+      // This matches the logic in FileHandler.js after import
+      console.log(
+        "[StateManager] 🔄 Refreshing Pattern A section UIs after revert...",
+      );
+      const patternASections = [
+        "sect02",
+        "sect03",
+        "sect04",
+        "sect05",
+        "sect06",
+        "sect07",
+        "sect08",
+        "sect09",
+        "sect10",
+        "sect11",
+        "sect12",
+        "sect13",
+        "sect15",
+      ];
+
+      patternASections.forEach((sectionId) => {
+        const section = window.TEUI?.SectionModules?.[sectionId];
+        if (section?.ModeManager?.refreshUI) {
+          section.ModeManager.refreshUI();
+          // ✅ Also update calculated display values (some sections need both calls)
+          if (section.ModeManager.updateCalculatedDisplayValues) {
+            section.ModeManager.updateCalculatedDisplayValues();
+          }
+          console.log(`[StateManager] ✅ ${sectionId} UI refreshed after revert`);
+        }
+      });
     } else {
       console.warn(
         "[StateManager] Calculator.calculateAll not available to trigger after reverting state.",
