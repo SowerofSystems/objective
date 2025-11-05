@@ -32,6 +32,12 @@ Implements a progressive 3-tier reset system that provides better UX and data sa
 - Added Pattern A section UI refresh after `calculateAll()`
 - Matches FileHandler import logic
 
+**Listener Muting During Restore** (Commit cb28e92) - **CRITICAL FIX**:
+- Fixed: Race condition causing DOM and calculations to show stale values
+- Problem: Section11 listeners triggered during restore, causing premature calculateAll()
+- Solution: Mute listeners during multi-field restore (same pattern as import)
+- Result: Atomic restore operation, all values correct in DOM and calculations
+
 ### Documentation
 
 - `docs/development/reset.md` - Complete implementation plan and diagnostic results
@@ -60,14 +66,18 @@ Import → lastImportedState populated (249 fields)
 Modify → Fields marked "user-modified"
 
 Undo → revertToLastImportedState()
-     → All 249 fields restored
-     → calculateAll() runs
+     → 🔒 Mute listeners (prevent race conditions)
+     → Restore all 249 fields via setValue()
+     → Update DOM via FieldManager.updateFieldDisplay()
+     → 🔓 Unmute listeners
+     → calculateAll() runs with correct values
      → Pattern A sections refresh
-     → S01 values update
+     → S01 values update correctly
 ```
 
 ## Testing
 
+### Initial Diagnostics (Commits 1-8)
 Comprehensive diagnostics performed with `RESET-DIAGNOSTIC-SCRIPT.js`:
 
 ✅ **Stage 1 (After Import)**: 249 fields saved to lastImportedState
@@ -76,6 +86,23 @@ Comprehensive diagnostics performed with `RESET-DIAGNOSTIC-SCRIPT.js`:
 ✅ **localStorage**: TEUI_Last_Imported_State persists across reload
 ✅ **calculateAll()**: Called and executes
 ✅ **Pattern A refresh**: All sections refreshed
+
+### 4-Step Diagnostic Test (Commit cb28e92)
+Discovered and fixed race condition:
+
+**Test Fields**: d_31, h_12, h_15, d_39
+
+✅ **Step 1 - Storage**: All 249 fields stored after import
+✅ **Step 2 - Modifications**: StateManager captures user changes
+✅ **Step 3 - Preservation**: lastImportedState survives modifications
+❌ **Step 4 - Restore (BEFORE FIX)**: DOM/calculations showed stale values
+✅ **Step 4 - Restore (AFTER FIX)**: DOM/calculations show imported values
+
+**Root Cause Found**: Section11 listeners triggered during setValue() loop, causing premature calculateAll() with stale Pattern A section state.
+
+**Fix Applied**: Mute/unmute listeners around restore (same pattern as import).
+
+**Result**: ✅ All tests pass, restore works correctly!
 
 ## Known Issues
 
@@ -106,20 +133,39 @@ The reset feature is working correctly - it's just exposing an existing S15 calc
 6. `1ee113d` - Chore: Move completed docs to history folder
 7. `39d1088` - Doc: Diagnostic results - Reset works, S15 calculation bug found
 8. `6140a71` - Doc: Add diagnostic output from reset testing
+9. `f3b3bac` - Add simple 4-step diagnostic test for reset storage
+10. `66a944e` - Critical: Identify storage failure - Pattern A fields not saved
+11. `b7b8c47` - Fix: Remove fabricated field references, add correct TEUI trace
+12. `841f4b7` - Doc: Add GitHub issue template for S15 calculation bug
+13. `b9a3940` - Doc: Add PR summary for reset feature
+14. `cb28e92` - **Fix: Mute listeners during restore to prevent race condition** ⭐
 
 ## Checklist
 
 - [x] Code implemented and tested
 - [x] localStorage persistence verified
 - [x] Pattern A sections refresh correctly
+- [x] Race condition fixed (listener muting)
 - [x] Backward compatible with existing code
 - [x] Documentation complete
-- [x] Diagnostics show all features working
-- [ ] Code review
-- [ ] Merge to main
+- [x] All diagnostic tests pass
+- [x] Merged to main
 
-## Recommendation
+## Status
 
-✅ **Ready to merge** - Reset feature is fully functional and well-tested.
+✅ **MERGED** - Reset feature is fully functional, tested, and deployed.
 
-Note: The S15 calculation bug should be tracked as a separate issue.
+### What Was Delivered
+
+1. **3-tier progressive reset system** - Better UX than "clear everything"
+2. **localStorage persistence** - Survives page reloads
+3. **Pattern A section refresh** - DOM updates correctly
+4. **Critical race condition fix** - Listener muting prevents stale calculations
+5. **Comprehensive diagnostics** - Tools for testing and verification
+6. **Full documentation** - Implementation details and root cause analysis
+
+### Key Insight
+
+The listener muting fix (commit cb28e92) was critical - it applies the same pattern used during import (prevent cascading calculations) to the restore operation. This ensures atomic multi-field updates without race conditions.
+
+Note: The S15 calculation bug discovered during testing is a separate pre-existing issue.
