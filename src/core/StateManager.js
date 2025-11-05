@@ -1655,6 +1655,12 @@ TEUI.StateManager = (function () {
     // console.log("[StateManager] Reverting to last imported state...");
     let revertedCount = 0;
 
+    // ✅ FIX (Nov 5, 2025): Mute listeners during restore to prevent cascading calculations
+    // Problem: During restore, setValue() triggers Section11 listeners which call syncAreasFromS10()
+    // which triggers calculateAll() with stale Pattern A section state, overwriting restored values
+    console.log("[StateManager] 🔒 Muting listeners during restore...");
+    muteListeners();
+
     Object.entries(lastImportedState).forEach(([fieldId, importedValue]) => {
       // Set the value in the main application state
       const valueChanged = setValue(
@@ -1691,6 +1697,10 @@ TEUI.StateManager = (function () {
         );
       }
     });
+
+    // ✅ FIX (Nov 5, 2025): Unmute listeners after all values restored but BEFORE calculations
+    console.log("[StateManager] 🔓 Unmuting listeners after restore complete");
+    unmuteListeners();
 
     // Trigger a full recalculation of all dependent fields
     if (

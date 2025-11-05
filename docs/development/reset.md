@@ -163,6 +163,152 @@ console.log("After restore:", ["d_31", "h_12", "h_15", "d_39"].map(f => `${f}=${
 - Run before import to see which fields are saved with "imported" state
 - Run `checkStoredFields()` after import to verify storage
 
+---
+
+## 🔬 4-STEP DIAGNOSTIC TEST RESULTS (Nov 5, 2025)
+
+### Test Configuration
+- **Test fields**: d_31, h_12, h_15, d_39
+- **Imported values**: d_31=0, h_12=2023, h_15=11167, d_39="Pt.3 Steel"
+- **Modified values**: d_31=5, h_12=2041, h_15=12167, d_39="Modelled Value"
+
+### Test Results
+
+**STEP 1 - Storage After Import: ✅ SUCCESS**
+```
+Fields in lastImportedState: 249
+Test fields: d_31=0, h_12=2023, h_15=11167, d_39=Pt.3 Steel
+```
+✅ Import mechanism works correctly
+✅ All 249 imported fields captured in localStorage
+
+**STEP 2 - StateManager After Modifications: ✅ SUCCESS**
+```
+Current StateManager values: d_31=5, h_12=2041, h_15=12167, d_39=Modelled Value
+```
+✅ User modifications captured correctly in StateManager
+
+**STEP 3 - Storage Preservation: ✅ SUCCESS**
+```
+Still in memory: d_31=0, h_12=2023, h_15=11167, d_39=Pt.3 Steel
+```
+✅ lastImportedState NOT overwritten by user modifications
+✅ Original imported values preserved intact
+
+**STEP 4 - After "Undo Changes": ❌ CRITICAL FAILURE**
+```
+StateManager values: d_31=0, h_12=2023, h_15=11167, d_39=Pt.3 Steel  ✅ (StateManager has correct values)
+DOM displays: d_31=5, h_12=2041, h_15=12167, d_39=Modelled Value     ❌ (UI shows old modified values)
+Calculations: h_10=519.0 (should be 511.4), k_10=509 (based on d_31=5, not 0)  ❌ (Calculations use wrong values)
+```
+
+### 🚨 ROOT CAUSE IDENTIFIED
+
+**The `revertToLastImportedState()` function is NOT being called!**
+
+Evidence from console logs:
+- ❌ Missing: `"[StateManager] 🔄 Refreshing Pattern A section UIs after revert..."`
+- ❌ Missing: `"[StateManager] ✅ sect02 UI refreshed after revert"`
+- ❌ Missing: `"[StateManager] Reverted to last imported state. 126 fields updated."`
+- ❌ Missing: `"[Reset Tier 1] Reverted to imported state"`
+
+What we DO see after clicking "Undo Changes":
+```
+Section11.js:1238 [S11 Area Sync] Starting sync in target mode
+... (S11 calculations)
+Section01.js:755 🔍 [S01DB] updateTEUIDisplay START
+... (S01 calculations using WRONG values)
+StateManager.js:598 [StateManager] Saved 249 imported fields to localStorage
+```
+
+### Analysis
+
+**Storage Works Perfectly** (Steps 1-3):
+- ✅ Import captures 249 fields correctly
+- ✅ Values survive user modifications
+- ✅ localStorage maintains original imported state
+
+**Restore Logic NEVER RUNS** (Step 4):
+- ✅ StateManager HAS correct restored values (console test shows this)
+- ❌ But `revertToLastImportedState()` function never executed
+- ❌ UI elements (DOM) never updated to show restored values
+- ❌ Pattern A sections (S02, S04, S05) never had `refreshUI()` called
+- ❌ Calculations ran with stale DOM values instead of restored StateManager values
+
+**The Problem**:
+The "Undo Changes" button click is not properly triggering the `resetTier1_UndoChanges()` → `revertToLastImportedState()` call chain.
+
+### Field Pattern Analysis
+
+Test fields by pattern:
+- `d_31` → Section04 (Pattern A - isolated state, needs refreshUI)
+- `h_12` → Section02 (Pattern A - isolated state, needs refreshUI)
+- `h_15` → Section01 (Pattern B - direct StateManager)
+- `d_39` → Section05 (Pattern A - isolated state, needs refreshUI)
+
+**3 out of 4 fields are Pattern A** - they REQUIRE `ModeManager.refreshUI()` to update DOM even if StateManager has correct values.
+
+### 🔧 THE FIX (Nov 5, 2025)
+
+**Root Cause:** Race condition between restore and Section11 listeners
+
+**The Problem Chain:**
+1. `revertToLastImportedState()` calls `setValue()` for each restored field
+2. `setValue()` triggers `notifyListeners()`
+3. Section11 has listeners on d_73-d_78 (Section10 area fields)
+4. These listeners call `debouncedSyncAreasFromS10()`
+5. Area Sync reads from **stale Pattern A section isolated state**
+6. Area Sync calls `calculateAll()` with stale values
+7. Calculations **overwrite** the just-restored StateManager values!
+
+**Evidence from logs:**
+```
+StateManager.js:1752 [StateManager] Reverted to last imported state. 126 fields updated.
+StateManager.js:1798 [Reset Tier 1] Reverted to imported state
+VM3364:7 🔍 TRACE: resetTier1_UndoChanges() FINISHED
+Section11.js:1238 [S11 Area Sync] Starting sync in target mode  ⚠️ PROBLEM!
+Section11.js:1300 [S11 Area Sync] Triggering recalculation...
+Section11.js:2085 [S11] calculateAll TRIGGERED
+... (calculations using stale values)
+Section01.js:924 🔍 [S01DB] UPDATING h_10: 519.0 (WRONG - should be 511.4)
+```
+
+**The Solution:** Mute StateManager listeners during restore
+
+Modified `revertToLastImportedState()` in [StateManager.js:1658-1703](../src/core/StateManager.js#L1658-L1703):
+
+```javascript
+// Mute listeners during restore
+console.log("[StateManager] 🔒 Muting listeners during restore...");
+muteListeners();
+
+// Restore all values (setValue() calls won't trigger listeners)
+Object.entries(lastImportedState).forEach(([fieldId, importedValue]) => {
+  setValue(fieldId, importedValue, "system_reverted_to_import");
+  // ... update UI display
+});
+
+// Unmute BEFORE calculateAll so listeners work normally during calculations
+console.log("[StateManager] 🔓 Unmuting listeners after restore complete");
+unmuteListeners();
+
+// NOW trigger calculations with correct restored values
+window.TEUI.Calculator.calculateAll();
+```
+
+**Why this works:**
+- Prevents premature listener-triggered calculations during multi-field restore
+- Ensures ALL values restored to StateManager before ANY calculations run
+- Pattern A sections refresh from correct StateManager values
+- Calculations see consistent restored state, not mix of old/new
+
+**Testing:**
+1. Import file → Modify fields → Click "Undo Changes"
+2. Expected: DOM shows imported values, calculations use imported values
+3. Console should show: `🔒 Muting listeners` → `🔓 Unmuting listeners` → calculations
+
+---
+
 ### 🎯 PREVIOUS (INCORRECT) ROOT CAUSE
 
 **Problem**: h_121, h_122, h_123, h_125 are ALL `null` across all 3 stages
