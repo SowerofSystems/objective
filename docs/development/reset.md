@@ -2,7 +2,121 @@
 
 **Branch**: `reset`
 **Date**: November 4, 2025
-**Status**: Planning Phase
+**Status**: Implementation + Debugging
+
+---
+
+## ISSUE: Incomplete Restore After Undo Changes (Nov 4, 2025)
+
+### Problem Description
+
+After importing a file and then using "Undo Changes" to revert to imported state:
+
+**Expected**: TEUI Target total should be 511.4 (the imported value)
+**Actual**: TEUI Target total shows 154.8 (incorrect)
+
+This suggests that either:
+1. Not all imported values are being saved to `lastImportedState` during import
+2. Not all imported values are being restored during revert
+3. `calculateAll()` is not running with the complete set of restored values
+
+### Symptoms
+
+- Imported values appear correctly in DOM after import
+- After "Undo Changes", some calculations are incorrect
+- S01 TEUI/TEDI totals do not match imported values
+- Pattern A sections may not be fully synced
+
+### Questions to Answer
+
+1. **What fields does ExcelMapper map?** - Read ExcelMapper.js to see all mapped fields
+2. **Are all mapped fields saved to lastImportedState?** - Check if FileHandler → StateManager saves all fields
+3. **Are all mapped fields in localStorage?** - Check TEUI_Last_Imported_State after import
+4. **Does revert restore all fields?** - Check if revertToLastImportedState() processes all saved fields
+5. **Does calculateAll() run completely?** - Check if all sections recalculate after revert
+
+### Diagnostic Script
+
+**Location**: `docs/development/RESET-DIAGNOSTIC-SCRIPT.js`
+
+**How to Use**:
+
+1. Open browser console
+2. Copy/paste the entire RESET-DIAGNOSTIC-SCRIPT.js file into console
+3. Run `resetDiagnostics.runAllDiagnostics()` at key moments:
+   - **After import** (before modifications)
+   - **After modifications**
+   - **After "Undo Changes"**
+
+**What to Look For**:
+
+| Diagnostic | Purpose | Expected Result | If Fails |
+|------------|---------|----------------|----------|
+| #1 Check lastImportedState | Verify imported state was saved | ~126 fields (matching ExcelMapper) | Missing fields → FileHandler not saving all imports |
+| #2 Check StateManager | Verify current state | Field counts by state type | Incorrect state labels → setValue() not using "imported" |
+| #3 Check TEUI Fields | Verify calculation inputs | h_121-h_126 values match import | Missing values → calculateAll() not running |
+| #4 Compare States | Find mismatches | All imported fields match current | Mismatches → revert not restoring all fields |
+| #5 Trace Revert | Watch revert execution | All fields restored, no errors | Errors → identify failing fields |
+
+**Specific Things to Check**:
+
+1. **Field Count**: ExcelMapper has ~126 mapped fields. Does lastImportedState have ~126 entries?
+2. **Key Fields**: Are h_15 (area), h_121-h_126 (TEUI components) in lastImportedState?
+3. **State Labels**: After import, are fields marked as "imported" or "user-modified"?
+4. **Restore Count**: Does revert restore all ~126 fields or only some?
+5. **Pattern A Sections**: Do S02-S15 refresh after revert?
+
+### Investigation Pathway
+
+```
+[STEP 1] Import file
+         ↓
+         ├─→ ExcelMapper.mapExcelToReportModel() returns ~126 fields
+         ├─→ FileHandler.updateStateFromImportData() processes each field
+         ├─→ StateManager.setValue(fieldId, value, "imported") called
+         │   └─→ ✅ CHECK: Is field added to lastImportedState? (line 396)
+         ├─→ StateManager.saveState() called (debounced)
+         │   └─→ ✅ CHECK: Is TEUI_Last_Imported_State written to localStorage?
+         └─→ Calculator.calculateAll() + Pattern A refresh
+
+[STEP 2] Make modifications
+         ↓
+         └─→ Modified fields get state "user-modified"
+
+[STEP 3] Undo Changes button
+         ↓
+         ├─→ StateManager.resetTier1_UndoChanges()
+         ├─→ StateManager.revertToLastImportedState()
+         │   ├─→ ✅ CHECK: Does lastImportedState have all fields?
+         │   ├─→ Loop through lastImportedState entries
+         │   │   └─→ setValue(fieldId, value, "system_reverted_to_import")
+         │   ├─→ Calculator.calculateAll()
+         │   │   └─→ ✅ CHECK: Do h_121-h_126 recalculate?
+         │   └─→ Pattern A section refresh
+         │       └─→ ✅ CHECK: Do S01 values update?
+         └─→ Expected: TEUI = 511.4
+             Actual: TEUI = 154.8 ❌
+```
+
+### Suspected Issues
+
+1. **Not all fields saved to lastImportedState**
+   - ExcelMapper maps ~126 fields
+   - FileHandler may skip some (Pattern A fields?)
+   - Check if S02-S15 fields are saved
+
+2. **Pattern A fields not in StateManager**
+   - Pattern A sections (S02-S15) use isolated state
+   - May not be in main StateManager.fields map
+   - syncPatternASections() may not save to lastImportedState
+
+3. **calculateAll() not recalculating everything**
+   - May need to force recalculation of all sections
+   - Pattern A sections may need explicit recalc
+
+4. **Pattern A refresh not updating DOM**
+   - refreshUI() and updateCalculatedDisplayValues() may not be sufficient
+   - May need to call section-specific calculate methods
 
 ---
 
