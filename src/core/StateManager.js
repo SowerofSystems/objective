@@ -242,10 +242,12 @@ TEUI.StateManager = (function () {
     calculatedFields.clear();
     dirtyFields.clear();
     listeners.clear();
+    lastImportedState = {}; // ✅ FIX: Also clear imported state from memory
 
     // Also clear localStorage
     try {
       localStorage.removeItem("TEUI_Calculator_State");
+      localStorage.removeItem("TEUI_Last_Imported_State"); // ✅ FIX: Also clear imported state
       console.log("TEUI StateManager: Cleared state from localStorage");
 
       // ✅ NEW: Explicitly clear all dual-state section storage keys
@@ -588,6 +590,13 @@ TEUI.StateManager = (function () {
     // Save to localStorage
     try {
       localStorage.setItem("TEUI_Calculator_State", JSON.stringify(state));
+
+      // ✅ FIX (Nov 4, 2025): Also save lastImportedState separately for 3-tier reset
+      // This ensures imported state persists across page reloads
+      if (Object.keys(lastImportedState).length > 0) {
+        localStorage.setItem("TEUI_Last_Imported_State", JSON.stringify(lastImportedState));
+        console.log(`[StateManager] Saved ${Object.keys(lastImportedState).length} imported fields to localStorage`);
+      }
     } catch (error) {
       console.error("Error saving state to localStorage:", error);
     }
@@ -614,6 +623,14 @@ TEUI.StateManager = (function () {
         // CRITICAL FIX: Update UI to display loaded values
         updateUI(fieldId, field.value);
       });
+
+      // ✅ FIX (Nov 4, 2025): Restore lastImportedState from localStorage
+      // This ensures "Undo Changes" works after page reload
+      const importedStateJson = localStorage.getItem("TEUI_Last_Imported_State");
+      if (importedStateJson) {
+        lastImportedState = JSON.parse(importedStateJson);
+        console.log(`[StateManager] Restored ${Object.keys(lastImportedState).length} imported fields from localStorage`);
+      }
     } catch (error) {
       console.error("Error loading state from localStorage:", error);
     }
@@ -1638,6 +1655,12 @@ TEUI.StateManager = (function () {
     // console.log("[StateManager] Reverting to last imported state...");
     let revertedCount = 0;
 
+    // ✅ FIX (Nov 5, 2025): Mute listeners during restore to prevent cascading calculations
+    // Problem: During restore, setValue() triggers Section11 listeners which call syncAreasFromS10()
+    // which triggers calculateAll() with stale Pattern A section state, overwriting restored values
+    console.log("[StateManager] 🔒 Muting listeners during restore...");
+    muteListeners();
+
     Object.entries(lastImportedState).forEach(([fieldId, importedValue]) => {
       // Set the value in the main application state
       const valueChanged = setValue(
@@ -1675,6 +1698,10 @@ TEUI.StateManager = (function () {
       }
     });
 
+    // ✅ FIX (Nov 5, 2025): Unmute listeners after all values restored but BEFORE calculations
+    console.log("[StateManager] 🔓 Unmuting listeners after restore complete");
+    unmuteListeners();
+
     // Trigger a full recalculation of all dependent fields
     if (
       window.TEUI &&
@@ -1682,6 +1709,40 @@ TEUI.StateManager = (function () {
       typeof window.TEUI.Calculator.calculateAll === "function"
     ) {
       window.TEUI.Calculator.calculateAll();
+
+      // ✅ FIX (Nov 4, 2025): Refresh ALL Pattern A section UIs after calculateAll
+      // Pattern A sections use isolated state - DOM must be refreshed to show updated values
+      // This matches the logic in FileHandler.js after import
+      console.log(
+        "[StateManager] 🔄 Refreshing Pattern A section UIs after revert...",
+      );
+      const patternASections = [
+        "sect02",
+        "sect03",
+        "sect04",
+        "sect05",
+        "sect06",
+        "sect07",
+        "sect08",
+        "sect09",
+        "sect10",
+        "sect11",
+        "sect12",
+        "sect13",
+        "sect15",
+      ];
+
+      patternASections.forEach((sectionId) => {
+        const section = window.TEUI?.SectionModules?.[sectionId];
+        if (section?.ModeManager?.refreshUI) {
+          section.ModeManager.refreshUI();
+          // ✅ Also update calculated display values (some sections need both calls)
+          if (section.ModeManager.updateCalculatedDisplayValues) {
+            section.ModeManager.updateCalculatedDisplayValues();
+          }
+          console.log(`[StateManager] ✅ ${sectionId} UI refreshed after revert`);
+        }
+      });
     } else {
       console.warn(
         "[StateManager] Calculator.calculateAll not available to trigger after reverting state.",
@@ -1701,6 +1762,86 @@ TEUI.StateManager = (function () {
     console.log(
       `[StateManager] Reverted to last imported state. ${revertedCount} fields updated.`,
     );
+  }
+
+  /**
+   * 3-TIER RESET SYSTEM
+   * Progressive reset functionality with state awareness
+   */
+
+  /**
+   * Determine the current reset tier based on state
+   * @returns {number} Reset tier (0 = fresh/defaults, 1 = user modifications, 2 = has import)
+   */
+  function getResetTier() {
+    // Check if there's imported data
+    if (Object.keys(lastImportedState).length > 0) {
+      return 2; // Has imported data
+    }
+
+    // Check if there are user modifications
+    let hasUserModifications = false;
+    fields.forEach((field) => {
+      if (field.state === VALUE_STATES.USER_MODIFIED) {
+        hasUserModifications = true;
+      }
+    });
+
+    if (hasUserModifications) {
+      return 1; // Has user modifications only
+    }
+
+    return 0; // Fresh/defaults
+  }
+
+  /**
+   * TIER 1 RESET: Undo user changes
+   * - If imported data exists, revert to lastImportedState
+   * - If no import, clear to defaults
+   */
+  function resetTier1_UndoChanges() {
+    const tier = getResetTier();
+
+    if (tier === 2) {
+      // Has imported data - revert to it
+      revertToLastImportedState();
+      console.log("[Reset Tier 1] Reverted to imported state");
+    } else if (tier === 1) {
+      // No imported data - clear to defaults
+      resetTier2_ClearImport();
+    } else {
+      console.log("[Reset Tier 1] Already at defaults, nothing to reset");
+    }
+  }
+
+  /**
+   * TIER 2 RESET: Clear imported data, return to defaults
+   * - Clear lastImportedState
+   * - Clear localStorage
+   * - Reload page
+   */
+  function resetTier2_ClearImport() {
+    lastImportedState = {};
+    clear(); // Existing method
+    console.log("[Reset Tier 2] Cleared import data and localStorage");
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
+  }
+
+  /**
+   * TIER 3 RESET: Factory reset (same as current behavior)
+   * - Clear everything
+   * - Reload page
+   */
+  function resetTier3_FactoryReset() {
+    clear(); // Existing method handles everything
+    console.log("[Reset Tier 3] Factory reset - all data cleared");
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
   }
 
   /**
@@ -1864,6 +2005,12 @@ TEUI.StateManager = (function () {
     loadState: loadState,
     importState: importState,
     exportState: exportState,
+
+    // 3-Tier Reset System
+    getResetTier: getResetTier,
+    resetTier1_UndoChanges: resetTier1_UndoChanges,
+    resetTier2_ClearImport: resetTier2_ClearImport,
+    resetTier3_FactoryReset: resetTier3_FactoryReset,
 
     // Debugging
     getAllKeys: getAllKeys,
