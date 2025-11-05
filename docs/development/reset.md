@@ -135,7 +135,31 @@ so they never get saved to `lastImportedState`.
 
 ### Investigation Tools
 
-**New Diagnostic**: `STORAGE-TRACE.js` - Intercepts setValue calls to track what gets stored
+**SIMPLE TEST** (Run in browser console):
+
+```javascript
+// STEP 1: After import (before any modifications)
+const importedState = JSON.parse(localStorage.getItem("TEUI_Last_Imported_State"));
+console.log("Fields in lastImportedState:", Object.keys(importedState).length);
+console.log("Test fields:", ["d_31", "h_12", "h_15", "d_39"].map(f => `${f}=${importedState[f]}`));
+
+// STEP 2: After you modify fields d_31, h_12, h_15, d_39
+console.log("Current StateManager values:", ["d_31", "h_12", "h_15", "d_39"].map(f => `${f}=${TEUI.StateManager.getValue(f)}`));
+
+// STEP 3: Check if lastImportedState still has original values
+const stillThere = JSON.parse(localStorage.getItem("TEUI_Last_Imported_State"));
+console.log("Still in memory:", ["d_31", "h_12", "h_15", "d_39"].map(f => `${f}=${stillThere[f]}`));
+
+// STEP 4: After clicking "Undo Changes"
+console.log("After restore:", ["d_31", "h_12", "h_15", "d_39"].map(f => `${f}=${TEUI.StateManager.getValue(f)}`));
+```
+
+**What this tells us:**
+- Step 1: Are imported values being stored to `lastImportedState`?
+- Step 3: Does `lastImportedState` survive user modifications?
+- Step 4: Are values actually restored, or do they stay at user-modified values?
+
+**Advanced Diagnostic**: `STORAGE-TRACE.js` - Intercepts setValue calls
 - Run before import to see which fields are saved with "imported" state
 - Run `checkStoredFields()` after import to verify storage
 
