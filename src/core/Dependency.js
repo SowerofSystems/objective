@@ -1080,7 +1080,17 @@ window.TEUI.DependencyGraph = class DependencyGraph {
 
   /** Apply dagre hierarchical layout */
   applyDagreLayout(callback) {
-    if (!this.data || !this.nodeGroups || !this.links) return;
+    console.log("[DependencyGraph] applyDagreLayout() called");
+    console.log("[DependencyGraph] - this.data:", !!this.data);
+    console.log("[DependencyGraph] - this.nodeGroups:", !!this.nodeGroups);
+    console.log("[DependencyGraph] - this.links:", !!this.links);
+
+    if (!this.data || !this.nodeGroups || !this.links) {
+      console.warn("[DependencyGraph] ❌ applyDagreLayout() aborted - missing data/elements");
+      return;
+    }
+
+    console.log("[DependencyGraph] ✅ Creating Dagre graph with", this.data.nodes.length, "nodes");
 
     // Create a new directed graph
     const g = new dagre.graphlib.Graph();
@@ -1130,9 +1140,14 @@ window.TEUI.DependencyGraph = class DependencyGraph {
     // Update link positions immediately
     this.ticked(); // This will update our curved paths
 
+    console.log("[DependencyGraph] ✅ Dagre layout applied successfully");
+
     // Call callback if provided (for fitGraphToContainer after layout complete)
     if (callback && typeof callback === "function") {
+      console.log("[DependencyGraph] ✅ Calling callback function");
       callback();
+    } else {
+      console.log("[DependencyGraph] ⚠️ No callback provided");
     }
   }
 
@@ -1923,11 +1938,26 @@ function initializeDependencyGraph() {
   initializeGraphInstanceAndUI();
 }
 
+// Track if graph has already been initialized to prevent double-initialization
+let graphInitialized = false;
+
 /**
  * Creates the graph instance, loads data, creates UI elements, and renders.
  */
 function initializeGraphInstanceAndUI() {
-  // console.log("[DependencyGraph] Initializing graph instance and UI...");
+  console.log("[DependencyGraph] 🔵 initializeGraphInstanceAndUI() called (stack trace follows)");
+  console.trace();
+  console.log("[DependencyGraph] - Already initialized?", graphInitialized);
+
+  // Prevent double initialization - just refresh if already initialized
+  if (graphInitialized && window.TEUI.teuiDependencyGraphInstance) {
+    console.log("[DependencyGraph] ⚠️ Graph already initialized, BLOCKING re-initialization");
+    console.log("[DependencyGraph] ℹ️ Use a refresh method instead of re-initialization");
+    return;
+  }
+
+  console.log("[DependencyGraph] ✅ Proceeding with initialization...");
+
   const graphContainer = document.querySelector(
     "#dependencyDiagram .section-content .dependency-graph-container",
   );
@@ -1964,28 +1994,59 @@ function initializeGraphInstanceAndUI() {
       const defaultLayout =
         teuiDependencyGraphInstance.settings.defaultLayout || "dagre";
 
-      if (defaultLayout === "dagre" && typeof dagre !== "undefined") {
-        // Apply dagre layout FIRST, then fit graph in callback
-        teuiDependencyGraphInstance.applyDagreLayout(() => {
-          // CRITICAL FIX: Fit graph to container AFTER layout is fully applied
-          // This ensures nodes are in their final positions before calculating viewport bounds
+      console.log("[DependencyGraph] Default layout:", defaultLayout);
+      console.log("[DependencyGraph] Dagre available:", typeof dagre !== "undefined");
+
+      // CRITICAL FIX: Wait for Dagre library to load before applying hierarchical layout
+      const applyLayout = () => {
+        if (defaultLayout === "dagre" && typeof dagre !== "undefined") {
+          console.log("[DependencyGraph] ✅ Applying Dagre layout on initialization...");
+          // Apply dagre layout FIRST, then fit graph in callback
+          teuiDependencyGraphInstance.applyDagreLayout(() => {
+            console.log("[DependencyGraph] ✅ Dagre layout complete, fitting graph to container...");
+            // CRITICAL FIX: Fit graph to container AFTER layout is fully applied
+            // This ensures nodes are in their final positions before calculating viewport bounds
+            teuiDependencyGraphInstance.fitGraphToContainer();
+          });
+          // Update button states
+          if (teuiDependencyGraphInstance.dagreButton)
+            teuiDependencyGraphInstance.dagreButton.classList.add("active");
+          if (teuiDependencyGraphInstance.forceButton)
+            teuiDependencyGraphInstance.forceButton.classList.remove("active");
+          console.log("[DependencyGraph] ✅ Applied Dagre layout on init.");
+        } else {
+          console.log("[DependencyGraph] ❌ Falling back to Force layout - dagre:", typeof dagre);
+          // Fallback to force layout
+          if (teuiDependencyGraphInstance.forceButton)
+            teuiDependencyGraphInstance.forceButton.classList.add("active");
+          if (teuiDependencyGraphInstance.dagreButton)
+            teuiDependencyGraphInstance.dagreButton.classList.remove("active");
+          // Fit graph for force layout too
           teuiDependencyGraphInstance.fitGraphToContainer();
-        });
-        // Update button states
-        if (teuiDependencyGraphInstance.dagreButton)
-          teuiDependencyGraphInstance.dagreButton.classList.add("active");
-        if (teuiDependencyGraphInstance.forceButton)
-          teuiDependencyGraphInstance.forceButton.classList.remove("active");
-        // console.log("[DependencyGraph] Applied Dagre layout on init.");
+          console.log("[DependencyGraph] Using Force layout on init.");
+        }
+      };
+
+      // If Dagre isn't loaded yet, wait for it (max 2 seconds)
+      if (defaultLayout === "dagre" && typeof dagre === "undefined") {
+        console.log("[DependencyGraph] ⏳ Waiting for Dagre library to load...");
+        let attempts = 0;
+        const maxAttempts = 20; // 20 attempts × 100ms = 2 seconds max
+        const checkDagre = setInterval(() => {
+          attempts++;
+          if (typeof dagre !== "undefined") {
+            console.log("[DependencyGraph] ✅ Dagre library loaded after", attempts * 100, "ms");
+            clearInterval(checkDagre);
+            applyLayout();
+          } else if (attempts >= maxAttempts) {
+            console.warn("[DependencyGraph] ⚠️ Dagre library failed to load after 2 seconds, using force layout");
+            clearInterval(checkDagre);
+            applyLayout(); // Will fall back to force layout
+          }
+        }, 100);
       } else {
-        // Fallback to force layout
-        if (teuiDependencyGraphInstance.forceButton)
-          teuiDependencyGraphInstance.forceButton.classList.add("active");
-        if (teuiDependencyGraphInstance.dagreButton)
-          teuiDependencyGraphInstance.dagreButton.classList.remove("active");
-        // Fit graph for force layout too
-        teuiDependencyGraphInstance.fitGraphToContainer();
-        // console.log("[DependencyGraph] Using Force layout on init.");
+        // Dagre is already loaded or not needed
+        applyLayout();
       }
 
       // Create the legend but keep it hidden
@@ -1993,6 +2054,10 @@ function initializeGraphInstanceAndUI() {
 
       // Setup event handlers
       teuiDependencyGraphInstance.setupEvents();
+
+      // Mark as initialized to prevent double-initialization
+      graphInitialized = true;
+      console.log("[DependencyGraph] ✅ Initialization complete, flag set to prevent re-init");
     } else {
       console.error("[DependencyGraph] SVG setup failed after data load.");
       teuiDependencyGraphInstance.showErrorMessage(
