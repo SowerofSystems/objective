@@ -1197,14 +1197,29 @@ table.data-table select.form-select:hover {
   font-size: 0.875rem; /* Match Bootstrap small size */
 }
 
+/* Activation Button - styled to fit in controls row */
+#s17ActivateBtn {
+  flex-shrink: 0;
+  margin-right: 10px;
+  min-width: 120px; /* Ensure button doesn't collapse */
+}
+
 /* Search Container */
 .dependency-graph-search-container {
-  flex: 1;
-  min-width: 200px;
+  flex: 0 1 250px; /* Narrower to make room for activation button */
+  min-width: 150px;
 }
 
 .dependency-graph-search-container .form-control {
   width: 100%;
+}
+
+/* Disabled controls styling - make them look inactive but visible */
+.dependency-graph-controls input:disabled,
+.dependency-graph-controls select:disabled,
+.dependency-graph-controls button:disabled:not(#s17ActivateBtn) {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Group Filter Container */

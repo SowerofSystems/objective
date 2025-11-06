@@ -1838,18 +1838,88 @@ window.TEUI.DependencyGraph = class DependencyGraph {
 let teuiDependencyGraphInstance = null;
 
 /**
- * Create activation button (following Section 16 pattern)
+ * Create initial controls row with activation button and placeholder controls
+ * All controls except Activate button are disabled until graph is activated
  */
-function createActivationButton(controlsContainer) {
+function createInitialControlsRow(controlsWrapper) {
+  // Create the controls container (same structure as full controls)
+  const controlsContainer = document.createElement("div");
+  controlsContainer.className = "dependency-graph-controls";
+
+  // Create activation button
   const activateBtn = document.createElement("button");
   activateBtn.id = "s17ActivateBtn";
   activateBtn.className = "btn btn-primary btn-sm";
   activateBtn.innerHTML = '<i class="bi bi-diagram-3"></i> Activate Graph';
-  activateBtn.style.cssText = "margin-right: 10px;";
-
   activateBtn.addEventListener("click", activateDependencyGraph);
 
+  // Create search container (disabled)
+  const searchContainer = document.createElement("div");
+  searchContainer.className = "dependency-graph-search-container";
+  const searchInput = document.createElement("input");
+  searchInput.type = "text";
+  searchInput.placeholder = "Search fields (e.g., d_119)";
+  searchInput.className = "form-control form-control-sm";
+  searchInput.disabled = true;
+  searchContainer.appendChild(searchInput);
+
+  // Create group filter (disabled)
+  const groupFilterContainer = document.createElement("div");
+  groupFilterContainer.className = "dependency-graph-group-filter";
+  const groupSelect = document.createElement("select");
+  groupSelect.className = "form-select form-select-sm";
+  groupSelect.disabled = true;
+  const allOption = document.createElement("option");
+  allOption.value = "all";
+  allOption.text = "All Groups";
+  groupSelect.appendChild(allOption);
+  groupFilterContainer.appendChild(groupSelect);
+
+  // Create layout controls container (disabled buttons)
+  const layoutContainer = document.createElement("div");
+  layoutContainer.className = "dependency-graph-layout-container";
+
+  const forceButton = document.createElement("button");
+  forceButton.textContent = "Force Layout";
+  forceButton.className = "btn btn-outline-secondary btn-sm layout-button";
+  forceButton.disabled = true;
+
+  const dagreButton = document.createElement("button");
+  dagreButton.textContent = "Hierarchical";
+  dagreButton.className = "btn btn-outline-secondary btn-sm layout-button active";
+  dagreButton.disabled = true;
+
+  const resetButton = document.createElement("button");
+  resetButton.textContent = "Re-Centre";
+  resetButton.className = "btn btn-outline-secondary btn-sm";
+  resetButton.title = "Centre and fit graph to viewport";
+  resetButton.disabled = true;
+
+  const legendToggleButton = document.createElement("button");
+  legendToggleButton.textContent = "Show Legend";
+  legendToggleButton.title = "Show/Hide Legend";
+  legendToggleButton.className = "btn btn-outline-secondary btn-sm";
+  legendToggleButton.disabled = true;
+
+  const fullscreenButton = document.createElement("button");
+  fullscreenButton.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
+  fullscreenButton.title = "Toggle Fullscreen";
+  fullscreenButton.className = "btn btn-outline-secondary btn-sm";
+  fullscreenButton.disabled = true;
+
+  layoutContainer.appendChild(forceButton);
+  layoutContainer.appendChild(dagreButton);
+  layoutContainer.appendChild(resetButton);
+  layoutContainer.appendChild(legendToggleButton);
+  layoutContainer.appendChild(fullscreenButton);
+
+  // Assemble controls row
   controlsContainer.appendChild(activateBtn);
+  controlsContainer.appendChild(searchContainer);
+  controlsContainer.appendChild(groupFilterContainer);
+  controlsContainer.appendChild(layoutContainer);
+
+  controlsWrapper.appendChild(controlsContainer);
 }
 
 /**
@@ -1878,8 +1948,9 @@ function activateDependencyGraph() {
 
   if (!graphContainer) return;
 
-  // Show graph container, hide placeholder
+  // Show graph container with proper height, hide placeholder
   graphContainer.style.display = "block";
+  graphContainer.style.height = "600px"; // Set height when activated
   if (placeholder) placeholder.style.display = "none";
 
   // Update button text
@@ -1896,6 +1967,12 @@ function activateDependencyGraph() {
       "#dependencyDiagram .dependency-graph-info-wrapper",
     );
 
+    // Remove the initial placeholder controls
+    const existingControls = controlsContainer.querySelector(".dependency-graph-controls");
+    if (existingControls) {
+      existingControls.remove();
+    }
+
     // Create the graph instance
     teuiDependencyGraphInstance = new window.TEUI.DependencyGraph();
 
@@ -1904,6 +1981,13 @@ function activateDependencyGraph() {
       teuiDependencyGraphInstance.createInfoPanel(infoPanelContainer);
       teuiDependencyGraphInstance.createFilterControls(controlsContainer);
       teuiDependencyGraphInstance.populateGroupFilter();
+
+      // Move activation button to the beginning of the new controls row
+      const controlsRow = controlsContainer.querySelector(".dependency-graph-controls");
+      if (controlsRow && activateBtn) {
+        controlsRow.insertBefore(activateBtn, controlsRow.firstChild);
+      }
+
       teuiDependencyGraphInstance.setupSvg();
 
       if (teuiDependencyGraphInstance.svg) {
@@ -1991,8 +2075,8 @@ function initializeGraphInstanceAndUI() {
     return;
   }
 
-  // Create activation button and placeholder (following Section 16 pattern)
-  createActivationButton(controlsContainer);
+  // Create initial controls row with disabled buttons and placeholder
+  createInitialControlsRow(controlsContainer);
   createLoadingPlaceholder(graphContainer);
 
   // Graph will be created when user clicks Activate button
