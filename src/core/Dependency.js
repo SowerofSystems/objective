@@ -1079,7 +1079,7 @@ window.TEUI.DependencyGraph = class DependencyGraph {
   }
 
   /** Apply dagre hierarchical layout */
-  applyDagreLayout() {
+  applyDagreLayout(callback) {
     if (!this.data || !this.nodeGroups || !this.links) return;
 
     // Create a new directed graph
@@ -1116,26 +1116,24 @@ window.TEUI.DependencyGraph = class DependencyGraph {
     // Run the layout algorithm
     dagre.layout(g);
 
-    // Apply the calculated positions with a transition
-    this.nodeGroups
-      .transition()
-      .duration(750)
-      .attr("transform", (d) => {
-        const nodeInfo = g.node(d.id);
-        if (nodeInfo) {
-          d.x = nodeInfo.x; // Update data positions
-          d.y = nodeInfo.y;
-          return `translate(${nodeInfo.x}, ${nodeInfo.y})`;
-        }
-        return `translate(${d.x || 0}, ${d.y || 0})`; // Fallback
-      });
+    // Apply the calculated positions immediately (no transition on initial load)
+    this.nodeGroups.attr("transform", (d) => {
+      const nodeInfo = g.node(d.id);
+      if (nodeInfo) {
+        d.x = nodeInfo.x; // Update data positions immediately
+        d.y = nodeInfo.y;
+        return `translate(${nodeInfo.x}, ${nodeInfo.y})`;
+      }
+      return `translate(${d.x || 0}, ${d.y || 0})`; // Fallback
+    });
 
-    // Update link positions after transition (or immediately)
-    // Using a delay might look smoother if nodes transition
-    setTimeout(() => {
-      // Update links with the new node positions
-      this.ticked(); // This will update our curved paths
-    }, 750);
+    // Update link positions immediately
+    this.ticked(); // This will update our curved paths
+
+    // Call callback if provided (for fitGraphToContainer after layout complete)
+    if (callback && typeof callback === "function") {
+      callback();
+    }
   }
 
   resetView() {
@@ -1966,12 +1964,13 @@ function initializeGraphInstanceAndUI() {
       const defaultLayout =
         teuiDependencyGraphInstance.settings.defaultLayout || "dagre";
 
-      // Force fit the graph to fill the container
-      teuiDependencyGraphInstance.fitGraphToContainer();
-
       if (defaultLayout === "dagre" && typeof dagre !== "undefined") {
-        // Apply dagre layout
-        teuiDependencyGraphInstance.applyDagreLayout();
+        // Apply dagre layout FIRST, then fit graph in callback
+        teuiDependencyGraphInstance.applyDagreLayout(() => {
+          // CRITICAL FIX: Fit graph to container AFTER layout is fully applied
+          // This ensures nodes are in their final positions before calculating viewport bounds
+          teuiDependencyGraphInstance.fitGraphToContainer();
+        });
         // Update button states
         if (teuiDependencyGraphInstance.dagreButton)
           teuiDependencyGraphInstance.dagreButton.classList.add("active");
@@ -1984,6 +1983,8 @@ function initializeGraphInstanceAndUI() {
           teuiDependencyGraphInstance.forceButton.classList.add("active");
         if (teuiDependencyGraphInstance.dagreButton)
           teuiDependencyGraphInstance.dagreButton.classList.remove("active");
+        // Fit graph for force layout too
+        teuiDependencyGraphInstance.fitGraphToContainer();
         // console.log("[DependencyGraph] Using Force layout on init.");
       }
 
