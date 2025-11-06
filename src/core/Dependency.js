@@ -1901,7 +1901,6 @@ let teuiDependencyGraphInstance = null;
 function initializeDependencyGraph() {
   // Prevent double initialization
   if (teuiDependencyGraphInstance) {
-    // console.log('[DependencyGraph] Already initialized.');
     return;
   }
 
@@ -1999,32 +1998,21 @@ function initializeGraphInstanceAndUI() {
 
 // --- Trigger Initialization ---
 
-// Attempt initialization when the DOM is ready
+// Initialize when DOM is ready
 document.addEventListener("DOMContentLoaded", () => {
-  // PERFORMANCE FIX: Use immediate execution with readiness check instead of arbitrary delay
-  // console.log(
-  //   "[DependencyGraph] DOMContentLoaded, attempting initialization...",
-  // );
-  // Check if the specific container exists, which implies the tab might be visible
   if (document.querySelector("#dependencyDiagram .section-content")) {
-    // PERFORMANCE FIX: Defer dependency graph initialization to prevent setTimeout violations (542ms)
-    // Heavy graph initialization needs significant delay to avoid blocking
+    // Defer initialization to prevent blocking
     setTimeout(() => {
       initializeDependencyGraph();
-    }, 800); // Longer delay prevents setTimeout performance violations
+    }, 800);
   }
 });
 
-// Also listen for tab visibility changes (assuming Bootstrap tabs)
+// Listen for tab visibility changes
 document.addEventListener("shown.bs.tab", function (event) {
   if (event.target.getAttribute("data-bs-target") === "#dependencyDiagram") {
-    // console.log("[DependencyGraph] Tab shown, ensuring initialization...");
     if (!teuiDependencyGraphInstance) {
-      // Initialize if not already done
       initializeDependencyGraph();
-    } else {
-      // Optional: Refresh or resize graph if needed when tab becomes visible
-      // teuiDependencyGraphInstance.resize();
     }
   }
 });
