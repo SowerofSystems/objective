@@ -526,9 +526,9 @@ window.TEUI.DependencyGraph = class DependencyGraph {
 
     // Reset View button - centers and fits graph to viewport
     const resetButton = document.createElement("button");
-    resetButton.textContent = "Reset View";
+    resetButton.textContent = "Re-Centre";
     resetButton.className = "btn btn-outline-secondary btn-sm";
-    resetButton.title = "Center and fit graph to viewport";
+    resetButton.title = "Centre and fit graph to viewport";
     resetButton.onclick = () => this.resetView();
     this.resetButton = resetButton;
 
@@ -741,6 +741,9 @@ window.TEUI.DependencyGraph = class DependencyGraph {
         "collision",
         d3.forceCollide().radius((d) => d.size * 2.5),
       ) // Use dynamic collision radius
+      // Add gentle centering forces to keep disconnected components closer
+      .force("x", d3.forceX(this.width / 2).strength(0.05))
+      .force("y", d3.forceY(this.height / 2).strength(0.05))
       .on("tick", () => this.ticked());
 
     // --- Links --- Use curved paths instead of straight lines
@@ -1046,6 +1049,9 @@ window.TEUI.DependencyGraph = class DependencyGraph {
           "collision",
           d3.forceCollide().radius(this.settings.nodeRadius * 2),
         )
+        // Add gentle centering forces to keep disconnected components closer
+        .force("x", d3.forceX(this.width / 2).strength(0.05))
+        .force("y", d3.forceY(this.height / 2).strength(0.05))
         .alpha(1) // Reheat the simulation
         .restart();
       console.log("[DependencyGraph] Switched to Force layout.");
