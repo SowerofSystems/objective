@@ -1248,37 +1248,35 @@ TEUI.StateManager = (function () {
    * @returns {string} The determined group name.
    */
   function getNodeGroup(nodeId, _fieldDef) {
-    // Updated to match the colorScheme's camelCase naming
-    if (nodeId.includes("_1") && nodeId.split("_").length > 1)
-      return "keyValues"; // Section 01
+    // Return user-facing section names to match legend display
     if (nodeId.includes("_2") && nodeId.split("_").length > 1)
-      return "buildingInfo"; // Section 02
+      return "02. Building Information";
     if (nodeId.includes("_3") && nodeId.split("_").length > 1)
-      return "climateCalculations"; // Section 03
+      return "03. Climate Calculations";
     if (nodeId.includes("_4") && nodeId.split("_").length > 1)
-      return "actualTargetEnergy"; // Section 04
+      return "04. Actual vs. Target";
     if (nodeId.includes("_5") && nodeId.split("_").length > 1)
-      return "co2eEmissions"; // Section 05
+      return "05. CO2e Emissions";
     if (nodeId.includes("_6") && nodeId.split("_").length > 1)
-      return "renewableEnergy"; // Section 06
+      return "06. Renewable Energy";
     if (nodeId.includes("_7") && nodeId.split("_").length > 1)
-      return "waterUse"; // Section 07
+      return "07. Water and DHW";
     if (nodeId.includes("_8") && nodeId.split("_").length > 1)
-      return "indoorAirQuality"; // Section 08
+      return "08. Indoor Air Quality";
     if (nodeId.includes("_9") && nodeId.split("_").length > 1)
-      return "occupantInternalGains"; // Section 09
+      return "09. Occupant & Internal Gains";
     if (nodeId.includes("_10") && nodeId.split("_").length > 1)
-      return "radiantGains"; // Section 10
+      return "10. Radiant Gains";
     if (nodeId.includes("_11") && nodeId.split("_").length > 1)
-      return "transmissionLosses"; // Section 11
+      return "11. Transmission Losses";
     if (nodeId.includes("_12") && nodeId.split("_").length > 1)
-      return "volumeSurfaceMetrics"; // Section 12
+      return "12. Volume and Surface";
     if (nodeId.includes("_13") && nodeId.split("_").length > 1)
-      return "mechanicalLoads"; // Section 13
+      return "13. Mechanical Loads";
     if (nodeId.includes("_14") && nodeId.split("_").length > 1)
-      return "tediSummary"; // Section 14
+      return "14. TEDI & TELI";
     if (nodeId.includes("_15") && nodeId.split("_").length > 1)
-      return "teuiSummary"; // Section 15
+      return "15. TEUI";
 
     return "Other"; // Default fallback
   }

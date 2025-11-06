@@ -61,22 +61,21 @@ window.TEUI.DependencyGraph = class DependencyGraph {
         "🧮 Coordination": "#4169E1", // Royal Blue - Coordination layer
         "🎯 Application": "#DC143C", // Crimson - Application layer sections
 
-        // === ACTUAL SECTION GROUPS (from codebase analysis) ===
-        keyValues: "#b07aa1", // Purple - Section 01 Key Values
-        buildingInfo: "#4e79a7", // Blue - Section 02 Building Information
-        climateCalculations: "#f28e2c", // Orange - Section 03 Climate
-        actualTargetEnergy: "#e15759", // Red - Section 04 Energy Input/Target
-        co2eEmissions: "#59a14f", // Green - Section 05 CO2e Emissions
-        renewableEnergy: "#59a14f", // Green - Section 06 Renewable Energy
-        waterUse: "#1170aa", // Dark Blue - Section 07 Water Use
-        indoorAirQuality: "#66c2a5", // Teal - Section 08 Indoor Air Quality
-        occupantInternalGains: "#ff9d9a", // Light Orange - Section 09 Occupant + Internal Gains
-        radiantGains: "#fdae6b", // Light Orange - Section 10 Radiant Gains
-        transmissionLosses: "#76b7b2", // Teal/Green - Section 11 Transmission Losses
-        volumeSurfaceMetrics: "#9c755f", // Brown - Section 12 Volume and Surface Metrics
-        mechanicalLoads: "#af7aa1", // Purple - Section 13 Mechanical Loads
-        tediSummary: "#bab0ab", // Grey - Section 14 TEDI & TELI
-        teuiSummary: "#b3b3cc", // Light Gray/Blue - Section 15 TEUI Summary
+        // === SECTION GROUPS (User-facing names) ===
+        "02. Building Information": "#4e79a7", // Blue
+        "03. Climate Calculations": "#f28e2c", // Orange
+        "04. Actual vs. Target": "#e15759", // Red
+        "05. CO2e Emissions": "#59a14f", // Green
+        "06. Renewable Energy": "#59a14f", // Green
+        "07. Water and DHW": "#1170aa", // Dark Blue
+        "08. Indoor Air Quality": "#66c2a5", // Teal
+        "09. Occupant & Internal Gains": "#ff9d9a", // Light Orange
+        "10. Radiant Gains": "#fdae6b", // Light Orange
+        "11. Transmission Losses": "#76b7b2", // Teal/Green
+        "12. Volume and Surface": "#9c755f", // Brown
+        "13. Mechanical Loads": "#af7aa1", // Purple
+        "14. TEDI & TELI": "#bab0ab", // Grey
+        "15. TEUI": "#b3b3cc", // Light Gray/Blue
         Other: "#8da0cb", // Light Blue/Grey Fallback
       },
       labelFontSize: 12, // Increased font size for better readability
