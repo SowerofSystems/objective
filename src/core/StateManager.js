@@ -1249,6 +1249,8 @@ TEUI.StateManager = (function () {
    */
   function getNodeGroup(nodeId, _fieldDef) {
     // Return user-facing section names to match legend display
+    if (nodeId.includes("_1") && nodeId.split("_").length > 1)
+      return "01. Totals";
     if (nodeId.includes("_2") && nodeId.split("_").length > 1)
       return "02. Building Information";
     if (nodeId.includes("_3") && nodeId.split("_").length > 1)

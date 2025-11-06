@@ -62,6 +62,7 @@ window.TEUI.DependencyGraph = class DependencyGraph {
         "🎯 Application": "#DC143C", // Crimson - Application layer sections
 
         // === SECTION GROUPS (User-facing names) ===
+        "01. Totals": "#b07aa1", // Purple
         "02. Building Information": "#4e79a7", // Blue
         "03. Climate Calculations": "#f28e2c", // Orange
         "04. Actual vs. Target": "#e15759", // Red
