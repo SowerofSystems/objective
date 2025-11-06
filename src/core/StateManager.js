@@ -1729,6 +1729,20 @@ TEUI.StateManager = (function () {
 
       patternASections.forEach((sectionId) => {
         const section = window.TEUI?.SectionModules?.[sectionId];
+
+        // ✅ FIX (Nov 6, 2025): Sync isolated state FROM restored StateManager values BEFORE refreshUI
+        // Pattern A sections have isolated TargetState/ReferenceState that must be synced
+        // from global StateManager before UI refresh, otherwise UI shows stale isolated state
+        if (section?.TargetState?.syncFromGlobalState) {
+          section.TargetState.syncFromGlobalState();
+          console.log(`[StateManager] 🔄 ${sectionId} TargetState synced from restored values`);
+        }
+        if (section?.ReferenceState?.syncFromGlobalState) {
+          section.ReferenceState.syncFromGlobalState();
+          console.log(`[StateManager] 🔄 ${sectionId} ReferenceState synced from restored values`);
+        }
+
+        // NOW refresh UI with correct isolated state
         if (section?.ModeManager?.refreshUI) {
           section.ModeManager.refreshUI();
           // ✅ Also update calculated display values (some sections need both calls)
