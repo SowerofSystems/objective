@@ -1478,6 +1478,7 @@ TEUI.FieldManager = (function () {
     getSections: function () {
       return sections;
     },
+    findSectionForField,
     getLayoutForSection,
 
     // Rendering

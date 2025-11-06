@@ -1247,33 +1247,34 @@ TEUI.StateManager = (function () {
    * @param {object | null} _fieldDef
    * @returns {string} The determined group name.
    */
-  function getNodeGroup(nodeId, _fieldDef) {
-    // Return user-facing section names to match legend display
-    // Extract section number from node ID pattern: prefix_sectionNum_fieldName
-    const parts = nodeId.split("_");
-    if (parts.length < 2) return "Other";
+  function getNodeGroup(nodeId, fieldDef) {
+    // Use FieldManager to find which section this field belongs to
+    const fieldManager = window.TEUI?.FieldManager;
+    if (!fieldManager) return "Other";
 
-    const sectionNum = parts[1]; // Section number is always at index 1
+    // Find section using FieldManager's internal method
+    const sectionId = fieldManager.findSectionForField(nodeId);
 
-    // Map section numbers to user-facing names
-    switch (sectionNum) {
-      case "1": return "01. Totals";
-      case "2": return "02. Building Information";
-      case "3": return "03. Climate Calculations";
-      case "4": return "04. Actual vs. Target";
-      case "5": return "05. CO2e Emissions";
-      case "6": return "06. Renewable Energy";
-      case "7": return "07. Water and DHW";
-      case "8": return "08. Indoor Air Quality";
-      case "9": return "09. Occupant & Internal Gains";
-      case "10": return "10. Radiant Gains";
-      case "11": return "11. Transmission Losses";
-      case "12": return "12. Volume and Surface";
-      case "13": return "13. Mechanical Loads";
-      case "14": return "14. TEDI & TELI";
-      case "15": return "15. TEUI";
-      default: return "Other";
-    }
+    // Map internal section IDs (sect01, sect02, etc.) to user-facing names
+    const sectionMap = {
+      "sect01": "01. Totals",
+      "sect02": "02. Building Information",
+      "sect03": "03. Climate Calculations",
+      "sect04": "04. Actual vs. Target",
+      "sect05": "05. CO2e Emissions",
+      "sect06": "06. Renewable Energy",
+      "sect07": "07. Water and DHW",
+      "sect08": "08. Indoor Air Quality",
+      "sect09": "09. Occupant & Internal Gains",
+      "sect10": "10. Radiant Gains",
+      "sect11": "11. Transmission Losses",
+      "sect12": "12. Volume and Surface",
+      "sect13": "13. Mechanical Loads",
+      "sect14": "14. TEDI & TELI",
+      "sect15": "15. TEUI",
+    };
+
+    return sectionMap[sectionId] || "Other";
   }
 
   /**
