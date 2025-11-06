@@ -248,6 +248,81 @@ Test fields by pattern:
 
 **3 out of 4 fields are Pattern A** - they REQUIRE `ModeManager.refreshUI()` to update DOM even if StateManager has correct values.
 
+### 🐛 NEW ISSUE FOUND: Section 13 d_113 Not Reverting (Nov 6, 2025)
+
+**Problem:** After import → edit → "Undo Changes", most fields revert correctly EXCEPT Section 13's `d_113` (Primary Heating System dropdown).
+
+**Test Case:**
+- Imported file has `d_113 = "Gas"`
+- User changes to `d_113 = "Heatpump"`
+- Click "Undo Changes"
+- **Expected:** Dropdown shows "Gas"
+- **Actual:** Dropdown still shows "Heatpump"
+
+**Root Cause:** Section 13 ReferenceState hardcodes default value during initialization
+
+From [Section13.js:110](../src/sections/Section13.js#L110):
+```javascript
+ReferenceState.initialize = function () {
+  this.state = {};
+  // Step 2: Apply Reference-specific overrides
+  this.state.d_113 = "Heatpump";  // ⚠️ HARDCODED!
+  // ...
+}
+```
+
+**The Problem Chain:**
+1. `revertToLastImportedState()` restores `d_113 = "Gas"` to StateManager ✅
+2. Unmutes listeners and calls `calculateAll()` ✅
+3. `calculateAll()` triggers Section 13 calculations
+4. Section 13's `calculateReferenceModel()` calls `ReferenceState.initialize()`
+5. `ReferenceState.initialize()` hardcodes `d_113 = "Heatpump"` ❌
+6. This overwrites the just-restored "Gas" value
+7. UI refresh shows "Heatpump" instead of "Gas"
+
+**Evidence from console logs:**
+```
+[StateManager] 🔒 Muting listeners during restore...
+[StateManager] Skipped listener for d_113 (quarantine active)
+[StateManager] 🔓 Unmuting listeners after restore complete
+[FieldManager] Routed d_113=Heatpump through sect13 ModeManager  ⚠️ WRONG!
+[StateManager] ✅ sect13 UI refreshed after revert
+```
+
+**The Solution Options:**
+
+**Option A:** Don't hardcode defaults in `ReferenceState.initialize()`
+- Read from StateManager instead: `this.state.d_113 = StateManager.getValue("ref_d_113") || "Heatpump"`
+- Benefits: Respects imported/restored values
+- Risk: May affect other initialization scenarios
+
+**Option B:** Call `syncFromGlobalState()` BEFORE `refreshUI()` during revert
+- In `revertToLastImportedState()`, before the Pattern A refresh loop, add:
+```javascript
+patternASections.forEach((sectionId) => {
+  const section = window.TEUI?.SectionModules?.[sectionId];
+  // Sync isolated state FROM restored StateManager values
+  if (section?.TargetState?.syncFromGlobalState) {
+    section.TargetState.syncFromGlobalState();
+  }
+  if (section?.ReferenceState?.syncFromGlobalState) {
+    section.ReferenceState.syncFromGlobalState();
+  }
+  // NOW refresh UI with correct isolated state
+  if (section?.ModeManager?.refreshUI) {
+    section.ModeManager.refreshUI();
+  }
+});
+```
+- Benefits: Ensures Pattern A isolated state syncs before UI refresh
+- Risk: None - this is the proper sequence
+
+**Recommended:** Option B - Add `syncFromGlobalState()` calls before `refreshUI()` in the revert process.
+
+**Status:** Identified, not yet implemented. Requires testing to ensure it doesn't break other sections.
+
+---
+
 ### 🔧 THE FIX (Nov 5, 2025)
 
 **Root Cause:** Race condition between restore and Section11 listeners
