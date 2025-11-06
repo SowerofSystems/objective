@@ -1,8 +1,25 @@
 # 3-Tier Reset System - Implementation Plan
 
-**Branch**: `reset`
-**Date**: November 4, 2025
-**Status**: Implementation + Debugging
+**Branch**: `reset` (original), `reset2` (Nov 6 fixes)
+**Date**: November 4-6, 2025
+**Status**: Implementation + Debugging + Missing Fixes Applied
+
+---
+
+## RESET2 BRANCH - MISSING FIXES APPLIED (Nov 6, 2025)
+
+**Current HEAD**: `107c700` - Fix: Add syncFromGlobalState() before refreshUI() in reset flow
+
+**Commits on reset2**:
+1. `9e394cd` - Fix: Add Section 14 to all Pattern A refresh lists
+2. `107c700` - Fix: Add syncFromGlobalState() before refreshUI() in reset flow
+
+**What Was Missing from Original PR**:
+- ❌ Section 14 missing from all Pattern A refresh lists (4 locations)
+- ❌ syncFromGlobalState() not called before refreshUI() (documented as "Option B" below but never implemented!)
+- ✅ Listener muting during restore (already present from cb28e92)
+
+**Testing Note**: User temporarily reverting to cb28e92 to verify original reset functionality before applying new fixes.
 
 ---
 
