@@ -1249,38 +1249,31 @@ TEUI.StateManager = (function () {
    */
   function getNodeGroup(nodeId, _fieldDef) {
     // Return user-facing section names to match legend display
-    if (nodeId.includes("_1") && nodeId.split("_").length > 1)
-      return "01. Totals";
-    if (nodeId.includes("_2") && nodeId.split("_").length > 1)
-      return "02. Building Information";
-    if (nodeId.includes("_3") && nodeId.split("_").length > 1)
-      return "03. Climate Calculations";
-    if (nodeId.includes("_4") && nodeId.split("_").length > 1)
-      return "04. Actual vs. Target";
-    if (nodeId.includes("_5") && nodeId.split("_").length > 1)
-      return "05. CO2e Emissions";
-    if (nodeId.includes("_6") && nodeId.split("_").length > 1)
-      return "06. Renewable Energy";
-    if (nodeId.includes("_7") && nodeId.split("_").length > 1)
-      return "07. Water and DHW";
-    if (nodeId.includes("_8") && nodeId.split("_").length > 1)
-      return "08. Indoor Air Quality";
-    if (nodeId.includes("_9") && nodeId.split("_").length > 1)
-      return "09. Occupant & Internal Gains";
-    if (nodeId.includes("_10") && nodeId.split("_").length > 1)
-      return "10. Radiant Gains";
-    if (nodeId.includes("_11") && nodeId.split("_").length > 1)
-      return "11. Transmission Losses";
-    if (nodeId.includes("_12") && nodeId.split("_").length > 1)
-      return "12. Volume and Surface";
-    if (nodeId.includes("_13") && nodeId.split("_").length > 1)
-      return "13. Mechanical Loads";
-    if (nodeId.includes("_14") && nodeId.split("_").length > 1)
-      return "14. TEDI & TELI";
-    if (nodeId.includes("_15") && nodeId.split("_").length > 1)
-      return "15. TEUI";
+    // Extract section number from node ID pattern: prefix_sectionNum_fieldName
+    const parts = nodeId.split("_");
+    if (parts.length < 2) return "Other";
 
-    return "Other"; // Default fallback
+    const sectionNum = parts[1]; // Section number is always at index 1
+
+    // Map section numbers to user-facing names
+    switch (sectionNum) {
+      case "1": return "01. Totals";
+      case "2": return "02. Building Information";
+      case "3": return "03. Climate Calculations";
+      case "4": return "04. Actual vs. Target";
+      case "5": return "05. CO2e Emissions";
+      case "6": return "06. Renewable Energy";
+      case "7": return "07. Water and DHW";
+      case "8": return "08. Indoor Air Quality";
+      case "9": return "09. Occupant & Internal Gains";
+      case "10": return "10. Radiant Gains";
+      case "11": return "11. Transmission Losses";
+      case "12": return "12. Volume and Surface";
+      case "13": return "13. Mechanical Loads";
+      case "14": return "14. TEDI & TELI";
+      case "15": return "15. TEUI";
+      default: return "Other";
+    }
   }
 
   /**
