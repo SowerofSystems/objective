@@ -7,7 +7,6 @@
 //
 // TODO - LOW PRIORITY UI/UX IMPROVEMENTS:
 // - Fix architectural module borders (green=Foundation, blue=Coordination, red=Application)
-// - Implement reset view button functionality (currently disabled)
 // - Add focusOnNode implementation for better navigation
 // - Optimize color mappings and legend organization
 // - Performance improvements for large dependency graphs
@@ -396,8 +395,8 @@ window.TEUI.DependencyGraph = class DependencyGraph {
       .attr("fill", "#666") // Darker gray for better visibility
       .style("stroke", "none");
 
-    // Create zoom behavior but don't apply it yet
-    const zoom = d3
+    // Create zoom behavior and store it for later use (e.g., resetView)
+    this.zoom = d3
       .zoom()
       .scaleExtent([0.1, 4])
       .on("zoom", (event) => {
@@ -413,7 +412,7 @@ window.TEUI.DependencyGraph = class DependencyGraph {
 
       // Apply zoom behavior to SVG
       this.svg
-        .call(zoom)
+        .call(this.zoom)
         .style("cursor", "grab") // Change cursor to indicate grab/pan is available
         .on("mousedown.cursor", function () {
           d3.select(this).style("cursor", "grabbing"); // Active grabbing cursor
@@ -454,7 +453,7 @@ window.TEUI.DependencyGraph = class DependencyGraph {
       ) {
         // Re-enable zoom in fullscreen mode without overlay
         this.svg.on(".zoom", null); // Remove existing zoom first
-        this.svg.call(zoom).style("cursor", "grab");
+        this.svg.call(this.zoom).style("cursor", "grab");
       }
     });
   }
@@ -525,13 +524,12 @@ window.TEUI.DependencyGraph = class DependencyGraph {
     dagreButton.onclick = () => this.switchLayout("dagre");
     this.dagreButton = dagreButton; // Store ref
 
-    // TODO: Reset button - RAINY DAY PROJECT
-    // Reset should: rebuild the entire graph AND fit it to view
-    // Button visible but functionality disabled to maintain layout
+    // Reset View button - centers and fits graph to viewport
     const resetButton = document.createElement("button");
     resetButton.textContent = "Reset View";
     resetButton.className = "btn btn-outline-secondary btn-sm";
-    // resetButton.onclick = () => this.resetView(); // DISABLED - broken functionality
+    resetButton.title = "Center and fit graph to viewport";
+    resetButton.onclick = () => this.resetView();
     this.resetButton = resetButton;
 
     // Fullscreen button
@@ -612,10 +610,8 @@ window.TEUI.DependencyGraph = class DependencyGraph {
       });
     }
 
-    // Reset button event - disabled functionality but button remains visible
-    if (this.resetButton) {
-      // this.resetButton.onclick = () => this.resetView(); // DISABLED - broken functionality
-    }
+    // Reset button event - enabled (already set in button creation)
+    // No need to reassign onclick here, it's set when button is created
 
     // Fullscreen button event
     if (this.fullscreenButton) {
@@ -1135,17 +1131,15 @@ window.TEUI.DependencyGraph = class DependencyGraph {
   }
 
   resetView() {
-    if (!this.svg) return;
-    // Also reset filters
+    if (!this.svg || !this.zoom) return;
+
+    // Clear filters to show all nodes
     if (this.searchInput) this.searchInput.value = "";
     if (this.groupSelect) this.groupSelect.value = "all";
     this.filterGraph("", "all");
 
-    // Reset zoom/pan
-    this.svg
-      .transition()
-      .duration(750)
-      .call(d3.zoom().transform, d3.zoomIdentity);
+    // Fit the graph to the current viewport (works in both normal and fullscreen)
+    this.fitGraphToContainer();
   }
 
   showNodeInfo(node) {
@@ -1446,12 +1440,12 @@ window.TEUI.DependencyGraph = class DependencyGraph {
                   dagreButton.onclick = () => this.switchLayout("dagre");
                 }
 
-                // Reset button in fullscreen - visible but non-functional
+                // Reset button in fullscreen
                 const resetButton = floatingControls.querySelector(
                   "button:nth-child(3)",
                 );
                 if (resetButton) {
-                  // resetButton.onclick = () => this.resetView(); // DISABLED - broken functionality
+                  resetButton.onclick = () => this.resetView();
                 }
 
                 const legendButton = floatingControls.querySelector(
@@ -1681,6 +1675,7 @@ window.TEUI.DependencyGraph = class DependencyGraph {
   fitGraphToContainer() {
     if (
       !this.svg ||
+      !this.zoom ||
       !this.data ||
       !this.data.nodes ||
       this.data.nodes.length === 0
@@ -1750,11 +1745,12 @@ window.TEUI.DependencyGraph = class DependencyGraph {
             // Step 3: Apply transform in third frame (allows D3 to optimize)
             requestAnimationFrame(() => {
               try {
+                // Use the stored zoom behavior's transform
                 this.svg
                   .transition()
                   .duration(750)
                   .call(
-                    d3.zoom().transform,
+                    this.zoom.transform,
                     d3.zoomIdentity
                       .translate(translateX, translateY)
                       .scale(scale),
