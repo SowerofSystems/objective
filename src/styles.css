@@ -1357,13 +1357,13 @@ table.data-table select.form-select:hover {
   width: 100%; /* Fill available width */
   height: 100%; /* Fill available height */
   border: none; /* Ensure no border */
-  padding: 20px; /* Add padding in fullscreen mode */
+  padding: 0; /* No padding - fill entire screen */
 }
 
 .dependency-graph-svg-wrapper:fullscreen svg {
-  /* Ensure SVG also fills with padding */
-  width: calc(100% - 40px);
-  height: calc(100% - 40px);
+  /* SVG fills entire screen */
+  width: 100%;
+  height: 100%;
 }
 
 .dependency-graph-svg-wrapper:-webkit-full-screen {
@@ -1371,12 +1371,12 @@ table.data-table select.form-select:hover {
   width: 100%;
   height: 100%;
   border: none;
-  padding: 20px;
+  padding: 0;
 }
 
 .dependency-graph-svg-wrapper:-webkit-full-screen svg {
-  width: calc(100% - 40px);
-  height: calc(100% - 40px);
+  width: 100%;
+  height: 100%;
 }
 
 .dependency-graph-svg-wrapper:-moz-full-screen {
@@ -1384,12 +1384,12 @@ table.data-table select.form-select:hover {
   width: 100%;
   height: 100%;
   border: none;
-  padding: 20px;
+  padding: 0;
 }
 
 .dependency-graph-svg-wrapper:-moz-full-screen svg {
-  width: calc(100% - 40px);
-  height: calc(100% - 40px);
+  width: 100%;
+  height: 100%;
 }
 
 .dependency-graph-svg-wrapper:-ms-fullscreen {
@@ -1397,12 +1397,12 @@ table.data-table select.form-select:hover {
   width: 100%;
   height: 100%;
   border: none;
-  padding: 20px;
+  padding: 0;
 }
 
 .dependency-graph-svg-wrapper:-ms-fullscreen svg {
-  width: calc(100% - 40px);
-  height: calc(100% - 40px);
+  width: 100%;
+  height: 100%;
 }
 
 /* Enhancement for text in fullscreen */
@@ -1757,7 +1757,7 @@ body.viewing-reference-inputs .reference-input-display-locked select {
   padding: 12px 36px; /* Increased horizontal padding (16px + 20px) for wider spacing */
   border-radius: 8px;
   /* Removed box-shadow for frameless appearance */
-  max-width: 380px; /* Increased to accommodate longer section names with wider padding */
+  max-width: 390px; /* Increased by 10px more to prevent text clipping */
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 12px;
