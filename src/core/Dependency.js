@@ -325,11 +325,8 @@ window.TEUI.DependencyGraph = class DependencyGraph {
     this.width = graphContainer.clientWidth;
     this.height = graphContainer.clientHeight;
 
+    // Use fallback dimensions if container hasn't been sized yet
     if (this.width === 0 || this.height === 0) {
-      console.warn(
-        "[DependencyGraph] Container has zero dimensions. Graph might not be visible.",
-      );
-      // Provide a fallback size if needed, though ideally CSS should handle this.
       this.width = container.clientWidth || 800;
       this.height = 650;
     }
@@ -445,8 +442,6 @@ window.TEUI.DependencyGraph = class DependencyGraph {
         .duration(1000)
         .style("opacity", 0)
         .remove();
-
-      console.log("[DependencyGraph] Zoom behavior activated");
     });
 
     // Listen for fullscreen changes to reapply zoom behavior
@@ -1080,17 +1075,10 @@ window.TEUI.DependencyGraph = class DependencyGraph {
 
   /** Apply dagre hierarchical layout */
   applyDagreLayout(callback) {
-    console.log("[DependencyGraph] applyDagreLayout() called");
-    console.log("[DependencyGraph] - this.data:", !!this.data);
-    console.log("[DependencyGraph] - this.nodeGroups:", !!this.nodeGroups);
-    console.log("[DependencyGraph] - this.links:", !!this.links);
-
     if (!this.data || !this.nodeGroups || !this.links) {
-      console.warn("[DependencyGraph] ❌ applyDagreLayout() aborted - missing data/elements");
+      console.warn("[DependencyGraph] Cannot apply Dagre layout - missing data/elements");
       return;
     }
-
-    console.log("[DependencyGraph] ✅ Creating Dagre graph with", this.data.nodes.length, "nodes");
 
     // Create a new directed graph
     const g = new dagre.graphlib.Graph();
@@ -1140,14 +1128,9 @@ window.TEUI.DependencyGraph = class DependencyGraph {
     // Update link positions immediately
     this.ticked(); // This will update our curved paths
 
-    console.log("[DependencyGraph] ✅ Dagre layout applied successfully");
-
-    // Call callback if provided (for fitGraphToContainer after layout complete)
+    // Call callback if provided
     if (callback && typeof callback === "function") {
-      console.log("[DependencyGraph] ✅ Calling callback function");
       callback();
-    } else {
-      console.log("[DependencyGraph] ⚠️ No callback provided");
     }
   }
 
@@ -1945,18 +1928,11 @@ let graphInitialized = false;
  * Creates the graph instance, loads data, creates UI elements, and renders.
  */
 function initializeGraphInstanceAndUI() {
-  console.log("[DependencyGraph] 🔵 initializeGraphInstanceAndUI() called (stack trace follows)");
-  console.trace();
-  console.log("[DependencyGraph] - Already initialized?", graphInitialized);
-
-  // Prevent double initialization - just refresh if already initialized
-  if (graphInitialized && window.TEUI.teuiDependencyGraphInstance) {
-    console.log("[DependencyGraph] ⚠️ Graph already initialized, BLOCKING re-initialization");
-    console.log("[DependencyGraph] ℹ️ Use a refresh method instead of re-initialization");
+  // Prevent double initialization
+  if (graphInitialized) {
+    console.log("[DependencyGraph] Already initialized, skipping re-initialization");
     return;
   }
-
-  console.log("[DependencyGraph] ✅ Proceeding with initialization...");
 
   const graphContainer = document.querySelector(
     "#dependencyDiagram .section-content .dependency-graph-container",
@@ -1990,11 +1966,6 @@ function initializeGraphInstanceAndUI() {
       // Render the graph first (create nodes/links)
       teuiDependencyGraphInstance.render();
 
-      // Let force layout render naturally on initialization
-      // Users can click "Hierarchical" button if they want Dagre layout
-      console.log("[DependencyGraph] Using force layout on initialization (natural behavior)");
-      console.log("[DependencyGraph] Click 'Hierarchical' button to switch to Dagre layout");
-
       // Set force button as active by default
       if (teuiDependencyGraphInstance.forceButton)
         teuiDependencyGraphInstance.forceButton.classList.add("active");
@@ -2003,9 +1974,8 @@ function initializeGraphInstanceAndUI() {
 
       // Fit graph to container after force simulation settles
       setTimeout(() => {
-        console.log("[DependencyGraph] Fitting graph to container after force simulation settled");
         teuiDependencyGraphInstance.fitGraphToContainer();
-      }, 1500); // Wait 1.5s for simulation to settle
+      }, 1500);
 
       // Create the legend but keep it hidden
       teuiDependencyGraphInstance.createLegend();
@@ -2015,7 +1985,6 @@ function initializeGraphInstanceAndUI() {
 
       // Mark as initialized to prevent double-initialization
       graphInitialized = true;
-      console.log("[DependencyGraph] ✅ Initialization complete, flag set to prevent re-init");
     } else {
       console.error("[DependencyGraph] SVG setup failed after data load.");
       teuiDependencyGraphInstance.showErrorMessage(
