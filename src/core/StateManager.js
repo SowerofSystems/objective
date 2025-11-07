@@ -1696,45 +1696,67 @@ TEUI.StateManager = (function () {
     console.log("[StateManager] 🔓 Unmuting listeners after restore complete");
     unmuteListeners();
 
-    // Trigger a full recalculation of all dependent fields
+    // ✅ CRITICAL FIX (Nov 6, 2025): Sync Pattern A isolated states BEFORE calculateAll
+    // Pattern A sections must have their isolated TargetState/ReferenceState synced from
+    // global StateManager BEFORE calculations run, otherwise calculations use stale isolated state
+    console.log(
+      "[StateManager] 🔄 Syncing Pattern A isolated states from restored StateManager...",
+    );
+    const patternASections = [
+      "sect02",
+      "sect03",
+      "sect04",
+      "sect05",
+      "sect06",
+      "sect07",
+      "sect08",
+      "sect09",
+      "sect10",
+      "sect11",
+      "sect12",
+      "sect13",
+      "sect14",
+      "sect15",
+    ];
+
+    patternASections.forEach((sectionId) => {
+      const section = window.TEUI?.SectionModules?.[sectionId];
+
+      // Sync isolated state FROM restored StateManager values
+      if (section?.TargetState?.syncFromGlobalState) {
+        section.TargetState.syncFromGlobalState();
+        console.log(`[StateManager] 🔄 ${sectionId} TargetState synced from restored values`);
+      }
+      if (section?.ReferenceState?.syncFromGlobalState) {
+        section.ReferenceState.syncFromGlobalState();
+        console.log(`[StateManager] 🔄 ${sectionId} ReferenceState synced from restored values`);
+      }
+    });
+
+    // NOW trigger calculations with correct synced isolated states
     if (
       window.TEUI &&
       window.TEUI.Calculator &&
       typeof window.TEUI.Calculator.calculateAll === "function"
     ) {
+      console.log("[StateManager] 🧮 Running calculateAll with synced states...");
       window.TEUI.Calculator.calculateAll();
 
-      // ✅ FIX (Nov 4, 2025): Refresh ALL Pattern A section UIs after calculateAll
-      // Pattern A sections use isolated state - DOM must be refreshed to show updated values
-      // This matches the logic in FileHandler.js after import
+      // Finally, refresh Pattern A section UIs to display calculated results
       console.log(
-        "[StateManager] 🔄 Refreshing Pattern A section UIs after revert...",
+        "[StateManager] 🔄 Refreshing Pattern A section UIs after calculations...",
       );
-      const patternASections = [
-        "sect02",
-        "sect03",
-        "sect04",
-        "sect05",
-        "sect06",
-        "sect07",
-        "sect08",
-        "sect09",
-        "sect10",
-        "sect11",
-        "sect12",
-        "sect13",
-        "sect15",
-      ];
-
       patternASections.forEach((sectionId) => {
         const section = window.TEUI?.SectionModules?.[sectionId];
+
+        // Refresh UI with calculated values
         if (section?.ModeManager?.refreshUI) {
           section.ModeManager.refreshUI();
           // ✅ Also update calculated display values (some sections need both calls)
           if (section.ModeManager.updateCalculatedDisplayValues) {
             section.ModeManager.updateCalculatedDisplayValues();
           }
-          console.log(`[StateManager] ✅ ${sectionId} UI refreshed after revert`);
+          console.log(`[StateManager] ✅ ${sectionId} UI refreshed after calculations`);
         }
       });
     } else {

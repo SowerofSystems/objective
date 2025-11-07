@@ -7,7 +7,6 @@
 //
 // TODO - LOW PRIORITY UI/UX IMPROVEMENTS:
 // - Fix architectural module borders (green=Foundation, blue=Coordination, red=Application)
-// - Implement reset view button functionality (currently disabled)
 // - Add focusOnNode implementation for better navigation
 // - Optimize color mappings and legend organization
 // - Performance improvements for large dependency graphs
@@ -341,40 +340,7 @@ window.TEUI.DependencyGraph = class DependencyGraph {
       .attr("preserveAspectRatio", "xMidYMid meet")
       .style("cursor", "pointer"); // Set pointer cursor to indicate it's clickable
 
-    // Add a click overlay for zoom activation message
-    const activationOverlay = this.svg
-      .append("g")
-      .attr("class", "zoom-activation-overlay")
-      .style("pointer-events", "all");
-
-    activationOverlay
-      .append("rect")
-      .attr("width", this.width)
-      .attr("height", this.height)
-      .attr("fill", "rgba(0,0,0,0.03)") // Very subtle background
-      .attr("rx", 8) // Rounded corners
-      .attr("ry", 8); // Rounded corners
-
-    activationOverlay
-      .append("text")
-      .attr("x", this.width / 2)
-      .attr("y", this.height / 2)
-      .attr("text-anchor", "middle")
-      .attr("dy", "-1em")
-      .attr("fill", "#666")
-      .style("font-size", "16px")
-      .style("font-weight", "500")
-      .text("Click to enable zoom & pan");
-
-    activationOverlay
-      .append("text")
-      .attr("x", this.width / 2)
-      .attr("y", this.height / 2)
-      .attr("text-anchor", "middle")
-      .attr("dy", "1em")
-      .attr("fill", "#999")
-      .style("font-size", "14px")
-      .text("(Page scrolling will be paused within graph area)");
+    // Zoom is now automatically enabled after activation (no overlay needed)
 
     // Create a group for the graph content (nodes and links)
     this.svg.append("g").attr("class", "graph-content");
@@ -396,8 +362,8 @@ window.TEUI.DependencyGraph = class DependencyGraph {
       .attr("fill", "#666") // Darker gray for better visibility
       .style("stroke", "none");
 
-    // Create zoom behavior but don't apply it yet
-    const zoom = d3
+    // Create zoom behavior and store it for later use (e.g., resetView)
+    this.zoom = d3
       .zoom()
       .scaleExtent([0.1, 4])
       .on("zoom", (event) => {
@@ -406,43 +372,16 @@ window.TEUI.DependencyGraph = class DependencyGraph {
           .attr("transform", event.transform);
       });
 
-    // Zoom activation logic - only enable after click
-    activationOverlay.on("click", () => {
-      // Remove the overlay
-      activationOverlay.transition().duration(300).style("opacity", 0).remove();
-
-      // Apply zoom behavior to SVG
-      this.svg
-        .call(zoom)
-        .style("cursor", "grab") // Change cursor to indicate grab/pan is available
-        .on("mousedown.cursor", function () {
-          d3.select(this).style("cursor", "grabbing"); // Active grabbing cursor
-        })
-        .on("mouseup.cursor", function () {
-          d3.select(this).style("cursor", "grab"); // Back to grab cursor
-        });
-
-      // Add a small message showing zoom is active
-      const zoomIndicator = this.svg
-        .append("text")
-        .attr("class", "zoom-indicator")
-        .attr("x", 10)
-        .attr("y", 20)
-        .attr("fill", "#666")
-        .style("font-size", "12px")
-        .style("opacity", 0)
-        .text("Zoom & pan activated");
-
-      zoomIndicator
-        .transition()
-        .duration(500)
-        .style("opacity", 1)
-        .transition()
-        .delay(2000)
-        .duration(1000)
-        .style("opacity", 0)
-        .remove();
-    });
+    // Apply zoom behavior immediately (activation button replaces overlay pattern)
+    this.svg
+      .call(this.zoom)
+      .style("cursor", "grab") // Indicate pan is available
+      .on("mousedown.cursor", function () {
+        d3.select(this).style("cursor", "grabbing");
+      })
+      .on("mouseup.cursor", function () {
+        d3.select(this).style("cursor", "grab");
+      });
 
     // Listen for fullscreen changes to reapply zoom behavior
     document.addEventListener("fullscreenchange", () => {
@@ -454,7 +393,7 @@ window.TEUI.DependencyGraph = class DependencyGraph {
       ) {
         // Re-enable zoom in fullscreen mode without overlay
         this.svg.on(".zoom", null); // Remove existing zoom first
-        this.svg.call(zoom).style("cursor", "grab");
+        this.svg.call(this.zoom).style("cursor", "grab");
       }
     });
   }
@@ -525,13 +464,12 @@ window.TEUI.DependencyGraph = class DependencyGraph {
     dagreButton.onclick = () => this.switchLayout("dagre");
     this.dagreButton = dagreButton; // Store ref
 
-    // TODO: Reset button - RAINY DAY PROJECT
-    // Reset should: rebuild the entire graph AND fit it to view
-    // Button visible but functionality disabled to maintain layout
+    // Reset View button - centers and fits graph to viewport
     const resetButton = document.createElement("button");
-    resetButton.textContent = "Reset View";
+    resetButton.textContent = "Re-Centre";
     resetButton.className = "btn btn-outline-secondary btn-sm";
-    // resetButton.onclick = () => this.resetView(); // DISABLED - broken functionality
+    resetButton.title = "Centre and fit graph to viewport";
+    resetButton.onclick = () => this.resetView();
     this.resetButton = resetButton;
 
     // Fullscreen button
@@ -612,10 +550,8 @@ window.TEUI.DependencyGraph = class DependencyGraph {
       });
     }
 
-    // Reset button event - disabled functionality but button remains visible
-    if (this.resetButton) {
-      // this.resetButton.onclick = () => this.resetView(); // DISABLED - broken functionality
-    }
+    // Reset button event - enabled (already set in button creation)
+    // No need to reassign onclick here, it's set when button is created
 
     // Fullscreen button event
     if (this.fullscreenButton) {
@@ -745,6 +681,9 @@ window.TEUI.DependencyGraph = class DependencyGraph {
         "collision",
         d3.forceCollide().radius((d) => d.size * 2.5),
       ) // Use dynamic collision radius
+      // Add gentle centering forces to keep disconnected components closer
+      .force("x", d3.forceX(this.width / 2).strength(0.05))
+      .force("y", d3.forceY(this.height / 2).strength(0.05))
       .on("tick", () => this.ticked());
 
     // --- Links --- Use curved paths instead of straight lines
@@ -1050,6 +989,9 @@ window.TEUI.DependencyGraph = class DependencyGraph {
           "collision",
           d3.forceCollide().radius(this.settings.nodeRadius * 2),
         )
+        // Add gentle centering forces to keep disconnected components closer
+        .force("x", d3.forceX(this.width / 2).strength(0.05))
+        .force("y", d3.forceY(this.height / 2).strength(0.05))
         .alpha(1) // Reheat the simulation
         .restart();
       console.log("[DependencyGraph] Switched to Force layout.");
@@ -1135,17 +1077,15 @@ window.TEUI.DependencyGraph = class DependencyGraph {
   }
 
   resetView() {
-    if (!this.svg) return;
-    // Also reset filters
+    if (!this.svg || !this.zoom) return;
+
+    // Clear filters to show all nodes
     if (this.searchInput) this.searchInput.value = "";
     if (this.groupSelect) this.groupSelect.value = "all";
     this.filterGraph("", "all");
 
-    // Reset zoom/pan
-    this.svg
-      .transition()
-      .duration(750)
-      .call(d3.zoom().transform, d3.zoomIdentity);
+    // Fit the graph to the current viewport (works in both normal and fullscreen)
+    this.fitGraphToContainer();
   }
 
   showNodeInfo(node) {
@@ -1446,12 +1386,12 @@ window.TEUI.DependencyGraph = class DependencyGraph {
                   dagreButton.onclick = () => this.switchLayout("dagre");
                 }
 
-                // Reset button in fullscreen - visible but non-functional
+                // Reset button in fullscreen
                 const resetButton = floatingControls.querySelector(
                   "button:nth-child(3)",
                 );
                 if (resetButton) {
-                  // resetButton.onclick = () => this.resetView(); // DISABLED - broken functionality
+                  resetButton.onclick = () => this.resetView();
                 }
 
                 const legendButton = floatingControls.querySelector(
@@ -1681,6 +1621,7 @@ window.TEUI.DependencyGraph = class DependencyGraph {
   fitGraphToContainer() {
     if (
       !this.svg ||
+      !this.zoom ||
       !this.data ||
       !this.data.nodes ||
       this.data.nodes.length === 0
@@ -1750,11 +1691,12 @@ window.TEUI.DependencyGraph = class DependencyGraph {
             // Step 3: Apply transform in third frame (allows D3 to optimize)
             requestAnimationFrame(() => {
               try {
+                // Use the stored zoom behavior's transform
                 this.svg
                   .transition()
                   .duration(750)
                   .call(
-                    d3.zoom().transform,
+                    this.zoom.transform,
                     d3.zoomIdentity
                       .translate(translateX, translateY)
                       .scale(scale),
@@ -1896,6 +1838,189 @@ window.TEUI.DependencyGraph = class DependencyGraph {
 let teuiDependencyGraphInstance = null;
 
 /**
+ * Create initial controls row with activation button and placeholder controls
+ * All controls except Activate button are disabled until graph is activated
+ */
+function createInitialControlsRow(controlsWrapper) {
+  // Create the controls container (same structure as full controls)
+  const controlsContainer = document.createElement("div");
+  controlsContainer.className = "dependency-graph-controls";
+
+  // Create activation button
+  const activateBtn = document.createElement("button");
+  activateBtn.id = "s17ActivateBtn";
+  activateBtn.className = "btn btn-primary btn-sm";
+  activateBtn.innerHTML = '<i class="bi bi-diagram-3"></i> Activate Graph';
+  activateBtn.addEventListener("click", activateDependencyGraph);
+
+  // Create search container (disabled)
+  const searchContainer = document.createElement("div");
+  searchContainer.className = "dependency-graph-search-container";
+  const searchInput = document.createElement("input");
+  searchInput.type = "text";
+  searchInput.placeholder = "Search fields (e.g., d_119)";
+  searchInput.className = "form-control form-control-sm";
+  searchInput.disabled = true;
+  searchContainer.appendChild(searchInput);
+
+  // Create group filter (disabled)
+  const groupFilterContainer = document.createElement("div");
+  groupFilterContainer.className = "dependency-graph-group-filter";
+  const groupSelect = document.createElement("select");
+  groupSelect.className = "form-select form-select-sm";
+  groupSelect.disabled = true;
+  const allOption = document.createElement("option");
+  allOption.value = "all";
+  allOption.text = "All Groups";
+  groupSelect.appendChild(allOption);
+  groupFilterContainer.appendChild(groupSelect);
+
+  // Create layout controls container (disabled buttons)
+  const layoutContainer = document.createElement("div");
+  layoutContainer.className = "dependency-graph-layout-container";
+
+  const forceButton = document.createElement("button");
+  forceButton.textContent = "Force Layout";
+  forceButton.className = "btn btn-outline-secondary btn-sm layout-button";
+  forceButton.disabled = true;
+
+  const dagreButton = document.createElement("button");
+  dagreButton.textContent = "Hierarchical";
+  dagreButton.className = "btn btn-outline-secondary btn-sm layout-button active";
+  dagreButton.disabled = true;
+
+  const resetButton = document.createElement("button");
+  resetButton.textContent = "Re-Centre";
+  resetButton.className = "btn btn-outline-secondary btn-sm";
+  resetButton.title = "Centre and fit graph to viewport";
+  resetButton.disabled = true;
+
+  const legendToggleButton = document.createElement("button");
+  legendToggleButton.textContent = "Show Legend";
+  legendToggleButton.title = "Show/Hide Legend";
+  legendToggleButton.className = "btn btn-outline-secondary btn-sm";
+  legendToggleButton.disabled = true;
+
+  const fullscreenButton = document.createElement("button");
+  fullscreenButton.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
+  fullscreenButton.title = "Toggle Fullscreen";
+  fullscreenButton.className = "btn btn-outline-secondary btn-sm";
+  fullscreenButton.disabled = true;
+
+  layoutContainer.appendChild(forceButton);
+  layoutContainer.appendChild(dagreButton);
+  layoutContainer.appendChild(resetButton);
+  layoutContainer.appendChild(legendToggleButton);
+  layoutContainer.appendChild(fullscreenButton);
+
+  // Assemble controls row
+  controlsContainer.appendChild(activateBtn);
+  controlsContainer.appendChild(searchContainer);
+  controlsContainer.appendChild(groupFilterContainer);
+  controlsContainer.appendChild(layoutContainer);
+
+  controlsWrapper.appendChild(controlsContainer);
+}
+
+/**
+ * Create loading placeholder message
+ */
+function createLoadingPlaceholder(graphContainer) {
+  const placeholder = document.createElement("div");
+  placeholder.id = "s17LoadingPlaceholder";
+  placeholder.className = "teui-loading-placeholder";
+  placeholder.innerHTML = "<p>Click 'Activate Graph' to visualize field dependencies and architectural relationships.</p>";
+  placeholder.style.cssText = "padding: 40px 20px; text-align: center; background: #f9f9f9; border-radius: 4px; color: #666;";
+
+  // Insert at the beginning of graph container
+  graphContainer.insertBefore(placeholder, graphContainer.firstChild);
+}
+
+/**
+ * Activate the dependency graph (show and render)
+ */
+function activateDependencyGraph() {
+  const graphContainer = document.querySelector(
+    "#dependencyDiagram .section-content .dependency-graph-container",
+  );
+  const placeholder = document.getElementById("s17LoadingPlaceholder");
+  const activateBtn = document.getElementById("s17ActivateBtn");
+
+  if (!graphContainer) return;
+
+  // Show graph container with proper height, hide placeholder
+  graphContainer.style.display = "block";
+  graphContainer.style.height = "600px"; // Set height when activated
+  if (placeholder) placeholder.style.display = "none";
+
+  // Update button text
+  if (activateBtn) {
+    activateBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh Graph';
+  }
+
+  // If graph not yet created, create it now
+  if (!teuiDependencyGraphInstance) {
+    const controlsContainer = document.querySelector(
+      "#dependencyDiagram .dependency-graph-controls-wrapper",
+    );
+    const infoPanelContainer = document.querySelector(
+      "#dependencyDiagram .dependency-graph-info-wrapper",
+    );
+
+    // Remove the initial placeholder controls
+    const existingControls = controlsContainer.querySelector(".dependency-graph-controls");
+    if (existingControls) {
+      existingControls.remove();
+    }
+
+    // Create the graph instance
+    teuiDependencyGraphInstance = new window.TEUI.DependencyGraph();
+
+    // Initialize and render
+    if (teuiDependencyGraphInstance.initialize()) {
+      teuiDependencyGraphInstance.createInfoPanel(infoPanelContainer);
+      teuiDependencyGraphInstance.createFilterControls(controlsContainer);
+      teuiDependencyGraphInstance.populateGroupFilter();
+
+      // Move activation button to the beginning of the new controls row
+      const controlsRow = controlsContainer.querySelector(".dependency-graph-controls");
+      if (controlsRow && activateBtn) {
+        controlsRow.insertBefore(activateBtn, controlsRow.firstChild);
+      }
+
+      teuiDependencyGraphInstance.setupSvg();
+
+      if (teuiDependencyGraphInstance.svg) {
+        teuiDependencyGraphInstance.render();
+
+        // Set force button as active by default
+        if (teuiDependencyGraphInstance.forceButton)
+          teuiDependencyGraphInstance.forceButton.classList.add("active");
+        if (teuiDependencyGraphInstance.dagreButton)
+          teuiDependencyGraphInstance.dagreButton.classList.remove("active");
+
+        // Fit graph after animation settles
+        setTimeout(() => {
+          teuiDependencyGraphInstance.fitGraphToContainer();
+        }, 1500);
+
+        // Create legend (hidden by default)
+        teuiDependencyGraphInstance.createLegend();
+        teuiDependencyGraphInstance.setupEvents();
+
+        graphInitialized = true;
+      }
+    }
+  } else {
+    // Graph already exists, just refresh it
+    teuiDependencyGraphInstance.render();
+    setTimeout(() => {
+      teuiDependencyGraphInstance.fitGraphToContainer();
+    }, 1500);
+  }
+}
+
+/**
  * Initialize the dependency graph visualization
  */
 function initializeDependencyGraph() {
@@ -1950,50 +2075,13 @@ function initializeGraphInstanceAndUI() {
     return;
   }
 
-  // Create the graph instance
-  teuiDependencyGraphInstance = new window.TEUI.DependencyGraph();
+  // Create initial controls row with disabled buttons and placeholder
+  createInitialControlsRow(controlsContainer);
+  createLoadingPlaceholder(graphContainer);
 
-  // Call initialize which gets data
-  if (teuiDependencyGraphInstance.initialize()) {
-    // initialize now returns true on success
-    // If data loaded successfully, THEN create UI and render
-    teuiDependencyGraphInstance.createInfoPanel(infoPanelContainer);
-    teuiDependencyGraphInstance.createFilterControls(controlsContainer); // Creates structure
-    teuiDependencyGraphInstance.populateGroupFilter(); // Populate dropdown NOW
-    teuiDependencyGraphInstance.setupSvg(); // Setup SVG container
-    if (teuiDependencyGraphInstance.svg) {
-      // Render the graph first (create nodes/links)
-      teuiDependencyGraphInstance.render();
-
-      // Set force button as active by default
-      if (teuiDependencyGraphInstance.forceButton)
-        teuiDependencyGraphInstance.forceButton.classList.add("active");
-      if (teuiDependencyGraphInstance.dagreButton)
-        teuiDependencyGraphInstance.dagreButton.classList.remove("active");
-
-      // Fit graph to container after force simulation settles
-      setTimeout(() => {
-        teuiDependencyGraphInstance.fitGraphToContainer();
-      }, 1500);
-
-      // Create the legend but keep it hidden
-      teuiDependencyGraphInstance.createLegend();
-
-      // Setup event handlers
-      teuiDependencyGraphInstance.setupEvents();
-
-      // Mark as initialized to prevent double-initialization
-      graphInitialized = true;
-    } else {
-      console.error("[DependencyGraph] SVG setup failed after data load.");
-      teuiDependencyGraphInstance.showErrorMessage(
-        "Graph rendering failed (SVG setup).",
-      );
-    }
-  } else {
-    console.error("[DependencyGraph] Initialization failed (data loading).");
-    // Error message is shown within initialize()
-  }
+  // Graph will be created when user clicks Activate button
+  // Mark setup as complete
+  graphInitialized = true;
 }
 
 // --- Trigger Initialization ---

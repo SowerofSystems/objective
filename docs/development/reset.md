@@ -1,8 +1,25 @@
 # 3-Tier Reset System - Implementation Plan
 
-**Branch**: `reset`
-**Date**: November 4, 2025
-**Status**: Implementation + Debugging
+**Branch**: `reset` (original), `reset2` (Nov 6 fixes)
+**Date**: November 4-6, 2025
+**Status**: Implementation + Debugging + Missing Fixes Applied
+
+---
+
+## RESET2 BRANCH - MISSING FIXES APPLIED (Nov 6, 2025)
+
+**Current HEAD**: `107c700` - Fix: Add syncFromGlobalState() before refreshUI() in reset flow
+
+**Commits on reset2**:
+1. `9e394cd` - Fix: Add Section 14 to all Pattern A refresh lists
+2. `107c700` - Fix: Add syncFromGlobalState() before refreshUI() in reset flow
+
+**What Was Missing from Original PR**:
+- ❌ Section 14 missing from all Pattern A refresh lists (4 locations)
+- ❌ syncFromGlobalState() not called before refreshUI() (documented as "Option B" below but never implemented!)
+- ✅ Listener muting during restore (already present from cb28e92)
+
+**Testing Note**: User temporarily reverting to cb28e92 to verify original reset functionality before applying new fixes.
 
 ---
 
@@ -247,6 +264,81 @@ Test fields by pattern:
 - `d_39` → Section05 (Pattern A - isolated state, needs refreshUI)
 
 **3 out of 4 fields are Pattern A** - they REQUIRE `ModeManager.refreshUI()` to update DOM even if StateManager has correct values.
+
+### 🐛 NEW ISSUE FOUND: Section 13 d_113 Not Reverting (Nov 6, 2025)
+
+**Problem:** After import → edit → "Undo Changes", most fields revert correctly EXCEPT Section 13's `d_113` (Primary Heating System dropdown).
+
+**Test Case:**
+- Imported file has `d_113 = "Gas"`
+- User changes to `d_113 = "Heatpump"`
+- Click "Undo Changes"
+- **Expected:** Dropdown shows "Gas"
+- **Actual:** Dropdown still shows "Heatpump"
+
+**Root Cause:** Section 13 ReferenceState hardcodes default value during initialization
+
+From [Section13.js:110](../src/sections/Section13.js#L110):
+```javascript
+ReferenceState.initialize = function () {
+  this.state = {};
+  // Step 2: Apply Reference-specific overrides
+  this.state.d_113 = "Heatpump";  // ⚠️ HARDCODED!
+  // ...
+}
+```
+
+**The Problem Chain:**
+1. `revertToLastImportedState()` restores `d_113 = "Gas"` to StateManager ✅
+2. Unmutes listeners and calls `calculateAll()` ✅
+3. `calculateAll()` triggers Section 13 calculations
+4. Section 13's `calculateReferenceModel()` calls `ReferenceState.initialize()`
+5. `ReferenceState.initialize()` hardcodes `d_113 = "Heatpump"` ❌
+6. This overwrites the just-restored "Gas" value
+7. UI refresh shows "Heatpump" instead of "Gas"
+
+**Evidence from console logs:**
+```
+[StateManager] 🔒 Muting listeners during restore...
+[StateManager] Skipped listener for d_113 (quarantine active)
+[StateManager] 🔓 Unmuting listeners after restore complete
+[FieldManager] Routed d_113=Heatpump through sect13 ModeManager  ⚠️ WRONG!
+[StateManager] ✅ sect13 UI refreshed after revert
+```
+
+**The Solution Options:**
+
+**Option A:** Don't hardcode defaults in `ReferenceState.initialize()`
+- Read from StateManager instead: `this.state.d_113 = StateManager.getValue("ref_d_113") || "Heatpump"`
+- Benefits: Respects imported/restored values
+- Risk: May affect other initialization scenarios
+
+**Option B:** Call `syncFromGlobalState()` BEFORE `refreshUI()` during revert
+- In `revertToLastImportedState()`, before the Pattern A refresh loop, add:
+```javascript
+patternASections.forEach((sectionId) => {
+  const section = window.TEUI?.SectionModules?.[sectionId];
+  // Sync isolated state FROM restored StateManager values
+  if (section?.TargetState?.syncFromGlobalState) {
+    section.TargetState.syncFromGlobalState();
+  }
+  if (section?.ReferenceState?.syncFromGlobalState) {
+    section.ReferenceState.syncFromGlobalState();
+  }
+  // NOW refresh UI with correct isolated state
+  if (section?.ModeManager?.refreshUI) {
+    section.ModeManager.refreshUI();
+  }
+});
+```
+- Benefits: Ensures Pattern A isolated state syncs before UI refresh
+- Risk: None - this is the proper sequence
+
+**Recommended:** Option B - Add `syncFromGlobalState()` calls before `refreshUI()` in the revert process.
+
+**Status:** Identified, not yet implemented. Requires testing to ensure it doesn't break other sections.
+
+---
 
 ### 🔧 THE FIX (Nov 5, 2025)
 
