@@ -899,6 +899,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           value: "7.50",
           section: "envelopeRadiantGains",
           classes: ["user-input", "col-medium"],
+          label: "S10: Doors: Area m²",
         },
         e: {
           fieldId: "e_73",
@@ -1015,6 +1016,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           value: "81.14",
           section: "envelopeRadiantGains",
           classes: ["user-input", "col-medium"],
+          label: "S10: Window Area North: Area m²",
         },
         e: {
           fieldId: "e_74",
@@ -1131,6 +1133,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           value: "3.83",
           section: "envelopeRadiantGains",
           classes: ["user-input"],
+          label: "S10: Window Area East: Area m²",
         },
         e: {
           fieldId: "e_75",
@@ -1243,6 +1246,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           value: "159.00",
           section: "envelopeRadiantGains",
           classes: ["user-input"],
+          label: "S10: Window Area South: Area m²",
         },
         e: {
           fieldId: "e_76",
@@ -1355,6 +1359,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           value: "100.66",
           section: "envelopeRadiantGains",
           classes: ["user-input"],
+          label: "S10: Window Area West: Area m²",
         },
         e: {
           fieldId: "e_77",
@@ -1467,6 +1472,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           value: "0.00",
           section: "envelopeRadiantGains",
           classes: ["user-input"],
+          label: "S10: Skylights: Area m²",
         },
         e: {
           fieldId: "e_78",
@@ -1676,7 +1682,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           section: "radiantGains",
           tooltip: true, // A Note on Methods
           dependencies: ["d_80"],
-          label: "n-Factor Value %",
+          label: "n-Factor Value % by Method",
         },
         h: { content: "" }, // Empty cell
         i: {
@@ -1685,7 +1691,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           value: "45,879.35",
           section: "radiantGains",
           dependencies: ["e_80", "g_80"],
-          label: "Usable Gains kWh/yr",
+          label: "Net Usable Gains kWh/yr",
         },
         j: {
           content: "G.3 nGains",
@@ -1736,7 +1742,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           section: "radiantGains",
           dependencies: ["e_81", "g_81"],
           classes: ["reference-value"], // Apply reference styling
-          label: "Net Usable Gains Reference kWh/yr",
+          label: "Net Usable Gains by PHPP Method kWh/yr",
         },
         j: {
           content: "G.4 nGains",
@@ -1759,6 +1765,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           value: "68,819.02",
           section: "radiantGains",
           dependencies: ["e_80", "i_80"],
+          label: "Net UN-usable Heating Gains kWh/yr",
         },
       },
     },
