@@ -979,6 +979,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "3.66",
           section: "mechanicalLoads",
           dependencies: ["d_113", "f_113"],
+          label: "COP Heat (Heating System)",
         },
         i: {
           content: "M.1.3 COPcool",
@@ -990,6 +991,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "2.7",
           section: "mechanicalLoads",
           dependencies: ["h_113"],
+          label: "COP Cool (Derived from Heat)",
         },
         k: {
           content: "M.1.4 Sink",
@@ -1001,6 +1003,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "86,642.65",
           section: "mechanicalLoads",
           dependencies: ["d_113", "d_114", "h_113"],
+          label: "Heat Pump Sink Energy: kWh/yr",
         },
         m: {
           fieldId: "m_113",
@@ -1008,6 +1011,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "176%",
           section: "mechanicalLoads",
           dependencies: ["f_113"],
+          label: "HSPF Ratio to Reference",
         },
         n: {},
       },
@@ -1025,7 +1029,9 @@ window.TEUI.SectionModules.sect13 = (function () {
           type: "calculated",
           value: "32,529.13",
           section: "mechanicalLoads",
-          dependencies: ["d_113", "d_127", "h_113"],
+          dependencies: ["d_113", "d_127"],
+          conditionalDeps: ["h_113"],
+          label: "Heating System Demand: kWh/yr",
         },
         e: {
           content: "Net Emissions",
@@ -1036,7 +1042,9 @@ window.TEUI.SectionModules.sect13 = (function () {
           type: "calculated",
           value: "0.00",
           section: "mechanicalLoads",
-          dependencies: ["d_113", "f_115", "l_30", "h_115", "l_28"],
+          dependencies: ["d_113"],
+          conditionalDeps: ["f_115", "l_30", "h_115", "l_28"],
+          label: "Net Emissions (Fuel): kgCO2e/yr",
         },
         g: {
           content: "kgCO2e/yr",
@@ -1053,6 +1061,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "9.1",
           section: "mechanicalLoads",
           dependencies: ["j_113"],
+          label: "CEER (Combined Energy Efficiency Ratio)",
         },
         k: {
           content: "M.1.6 Sink",
@@ -1063,7 +1072,9 @@ window.TEUI.SectionModules.sect13 = (function () {
           type: "calculated",
           value: "5,020.63",
           section: "mechanicalLoads",
-          dependencies: ["d_113", "d_116", "d_117", "j_113"],
+          dependencies: ["d_113"],
+          conditionalDeps: ["d_116", "d_117", "j_113"],
+          label: "Cooling Sink Energy: kWh/yr",
         },
         m: {},
         n: {},
@@ -1083,6 +1094,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "0.00",
           section: "mechanicalLoads",
           dependencies: ["d_113", "d_127", "j_115"],
+          label: "Heating Fuel Impact: ekWh/yr",
         },
         e: {
           content: "M.2.3 Oil l/yr",
@@ -1094,6 +1106,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "0.00",
           section: "mechanicalLoads",
           dependencies: ["d_115"],
+          label: "Oil Consumption: l/yr",
         },
         g: {
           content: "M.2.4 Gas m3/yr",
@@ -1105,6 +1118,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "0.00",
           section: "mechanicalLoads",
           dependencies: ["d_115"],
+          label: "Gas Consumption: m³/yr",
         },
         i: {
           content: "M.2.5 AFUE",
@@ -1115,6 +1129,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           type: "editable",
           value: "0.90",
           section: "mechanicalLoads",
+          label: "AFUE (Annual Fuel Utilization Efficiency)",
         },
         k: {
           content: "M.2.5 Exhaust",
@@ -1126,6 +1141,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "0.00",
           section: "mechanicalLoads",
           dependencies: ["d_113", "d_115", "d_114"],
+          label: "Fuel System Exhaust: ekWh/yr",
         },
         m: {
           fieldId: "m_115",
@@ -1133,6 +1149,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "109%",
           section: "mechanicalLoads",
           dependencies: ["j_115"],
+          label: "AFUE Ratio to Reference",
         },
         n: {},
       },
@@ -1174,6 +1191,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "2.66",
           section: "mechanicalLoads",
           classes: ["user-input", "editable"],
+          label: "COP Cool (Dedicated Cooling System)",
         },
         k: {
           content: "M.3.4 Sink",
@@ -1184,7 +1202,9 @@ window.TEUI.SectionModules.sect13 = (function () {
           type: "calculated",
           value: "5,009.95",
           section: "mechanicalLoads",
-          dependencies: ["d_116", "d_117", "j_116"],
+          dependencies: ["d_116"],
+          conditionalDeps: ["d_117", "j_116"],
+          label: "Dedicated Cooling Sink Energy: kWh/yr",
         },
         m: {
           fieldId: "m_116",
@@ -1192,6 +1212,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "124%",
           section: "mechanicalLoads",
           dependencies: ["j_116"],
+          label: "COPcool Ratio to Reference",
         },
         n: {},
       },
@@ -1209,7 +1230,9 @@ window.TEUI.SectionModules.sect13 = (function () {
           type: "calculated",
           value: "3,018.04",
           section: "mechanicalLoads",
-          dependencies: ["d_116", "d_113", "m_129", "j_113", "j_116"],
+          dependencies: ["d_116"],
+          conditionalDeps: ["d_113", "m_129", "j_113", "j_116"],
+          label: "Cooling Electrical Load: kWh/yr",
         },
         e: {},
         f: {
@@ -1218,6 +1241,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "2.11",
           section: "mechanicalLoads",
           dependencies: ["d_117", "h_15"],
+          label: "Cooling Load Intensity: kWh/m²/yr",
         },
         g: {
           content: "kWh/m2/yr",
@@ -1234,6 +1258,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "9.1",
           section: "mechanicalLoads",
           dependencies: ["j_116"],
+          label: "CEER (Cooling)",
         },
         k: {},
         l: {},
@@ -1243,6 +1268,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "4%",
           section: "mechanicalLoads",
           dependencies: ["f_117"],
+          label: "Cooling Intensity Ratio to Reference",
         },
         n: {},
       },
