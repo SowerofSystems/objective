@@ -1288,6 +1288,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           classes: ["user-input"],
           section: "mechanicalLoads",
           tooltip: true, // Typ. Range 50-90%
+          label: "HRV/ERV/MVHR Sensible Recovery Efficiency (SRE): %",
         },
         e: {},
         f: {
@@ -1307,6 +1308,7 @@ window.TEUI.SectionModules.sect13 = (function () {
             { value: "Occupant Constant", name: "Occupant Constant" },
             { value: "Occupant by Schedule", name: "Occupant by Schedule" },
           ],
+          label: "Ventilation Method (Volume or Occupant Based)",
         },
         h: {},
         i: {
@@ -1324,6 +1326,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "3.00",
           section: "mechanicalLoads",
           tooltip: true, // ACH Value
+          label: "ACH (Air Changes per Hour) for Volume-Based Ventilation",
         },
         m: {
           fieldId: "m_118",
@@ -1331,6 +1334,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "162%",
           section: "mechanicalLoads",
           dependencies: ["d_118"],
+          label: "SRE Ratio to Reference",
         },
         n: {},
       },
@@ -1349,6 +1353,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "14.00", // RESTORED default value
           section: "mechanicalLoads",
           tooltip: true, // Ventilation Guidance
+          label: "Per Person Ventilation Rate: l/s per person",
         },
         e: {
           content: "l/s per person",
@@ -1360,6 +1365,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "29.66",
           section: "mechanicalLoads",
           dependencies: ["d_119"],
+          label: "Per Person Ventilation Rate: cfm",
         },
         g: {
           content: "cfm",
@@ -1371,6 +1377,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "50.40",
           section: "mechanicalLoads",
           dependencies: ["d_119"],
+          label: "Per Person Ventilation Rate: m³/hr",
         },
         i: {
           content: "m3/hr",
@@ -1409,6 +1416,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "112%",
           section: "mechanicalLoads",
           dependencies: ["d_119"],
+          label: "Ventilation Rate Ratio to Reference",
         },
         n: {},
       },
@@ -1434,6 +1442,7 @@ window.TEUI.SectionModules.sect13 = (function () {
             "l_118", // ACH
             "d_119", // Per Person Ventilation Rate
           ],
+          label: "Volumetric Ventilation Rate: l/s",
         },
         e: {
           content: "l/s",
@@ -1445,6 +1454,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "7,062.93",
           section: "mechanicalLoads",
           dependencies: ["d_120"],
+          label: "Volumetric Ventilation Rate: cfm",
         },
         g: {
           content: "cfm",
@@ -1456,6 +1466,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "12,000.00",
           section: "mechanicalLoads",
           dependencies: ["d_120"],
+          label: "Volumetric Ventilation Rate: m³/hr",
         },
         i: {
           content: "m3/hr",
@@ -1492,6 +1503,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "445,280.00",
           section: "mechanicalLoads",
           dependencies: ["d_120", "d_20"],
+          label: "Heating Season Ventilation Energy: kWh/yr",
         },
         e: {
           content: "V.2.2",
@@ -1509,6 +1521,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "396,299.20",
           section: "mechanicalLoads",
           dependencies: ["d_121", "d_118"],
+          label: "Heating Ventilation Energy Recovered: kWh/yr",
         },
         j: {
           content: "V.2.3",
@@ -1525,6 +1538,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "48,980.80",
           section: "mechanicalLoads",
           dependencies: ["d_121", "i_121"],
+          label: "Net Heating Season Ventilation Losses: kWh/yr",
         },
         n: {},
       },
@@ -1554,6 +1568,7 @@ window.TEUI.SectionModules.sect13 = (function () {
             "d_120", //Volumetric Ventilation Rate
             "i_122", //Latent Load Factor (%)
           ],
+          label: "Incoming Cooling Season Ventilation Energy: kWh/yr",
         },
         e: {
           content: "V.3.2",
@@ -1571,6 +1586,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "159%",
           section: "mechanicalLoads",
           dependencies: ["cooling_latentLoadFactor"],
+          label: "Latent Load Factor (from Cooling Calculation): %",
         },
         j: {},
         k: {},
@@ -1596,6 +1612,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "26,929.06",
           section: "mechanicalLoads",
           dependencies: ["d_118", "d_122"],
+          label: "Outgoing Cooling Season Ventilation Energy: kWh/yr",
         },
         e: {},
         f: {},
@@ -1626,6 +1643,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "54%",
           section: "mechanicalLoads",
           dependencies: ["h_124", "d_129"],
+          label: "Ventilation Free Cooling Capacity: %",
         },
         e: {
           content: "V.4.2",
@@ -1641,7 +1659,9 @@ window.TEUI.SectionModules.sect13 = (function () {
           type: "calculated",
           value: "37,322.60",
           section: "mechanicalLoads",
-          dependencies: ["cooling_freeCoolingLimit", "m_19", "g_118", "k_120"], // Added g_118, k_120
+          dependencies: ["cooling_freeCoolingLimit", "m_19", "g_118"],
+          conditionalDeps: ["k_120"], // Only used when g_118 is by Schedule (not Constant)
+          label: "Free Cooling Limit: kWh/yr",
         },
         i: {
           content: "kWh/yr",
@@ -1660,6 +1680,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           section: "mechanicalLoads",
           tooltip: true, // Negative Values
           dependencies: ["cooling_daysActiveCooling", "h_124"], // Added h_124 dependency
+          label: "Days Active Cooling Required (from Cooling Calc)",
         },
         n: {},
       },
