@@ -220,8 +220,8 @@ window.TEUI.DependencyGraph = class DependencyGraph {
       formatType = "number-3dp"; // U-Values typically have 3 decimal places
     } else if (nodeId.startsWith("f_") && !nodeId.startsWith("f_32")) {
       formatType = "number-2dp"; // RSI values typically have 2 decimal places
-    } else if (nodeId.startsWith("d_1") && nodeId.endsWith("7")) {
-      formatType = "percent-2dp"; // Things like WWR are percentages
+    } else if (nodeId === "d_107") {
+      formatType = "percent-2dp"; // WWR (Window to Wall Ratio) is a percentage
     } else if (
       nodeId.startsWith("h_") &&
       parseFloat(value) <= 1 &&
