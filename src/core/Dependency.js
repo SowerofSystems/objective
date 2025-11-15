@@ -787,20 +787,18 @@ window.TEUI.DependencyGraph = class DependencyGraph {
           this.settings.colorScheme[d.group] || this.settings.colorScheme.Other;
         return color;
       })
-      .style("stroke", d => {
-        // Don't set inline stroke for architectural nodes - let CSS handle it via classes
+      .attr("stroke", d => {
+        // Use attr() instead of style() - CSS can override attributes
         if (d.isArchitectural) {
-          return null; // Remove inline stroke, let CSS take over
+          return d.architecturalLayer === "Foundation"
+            ? "#2E7D32"
+            : d.architecturalLayer === "Coordination"
+              ? "#1565C0"
+              : "#C62828";
         }
-        return "#fff"; // White border for regular nodes
+        return "#fff";
       })
-      .style("stroke-width", d => {
-        // Don't set inline stroke-width for architectural nodes - let CSS handle it
-        if (d.isArchitectural) {
-          return null; // Remove inline stroke-width, let CSS take over
-        }
-        return 2; // Regular border for field nodes
-      })
+      .attr("stroke-width", d => (d.isArchitectural ? 4 : 2))
       .style("filter", d => {
         if (d.isArchitectural) {
           return "drop-shadow(0px 0px 16px rgba(0,0,0,0.8))"; // Strong shadow for architectural modules
