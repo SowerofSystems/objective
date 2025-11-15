@@ -92,7 +92,7 @@ window.TEUI.SectionModules.sect02 = (function () {
           label: "Reporting Period",
           value: "2022",
           min: 2015,
-          max: 2041,
+          max: 2050,
           step: 1,
           section: "buildingInfo",
           tooltip: true, // Year Data Entered
