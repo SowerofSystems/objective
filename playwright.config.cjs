@@ -7,6 +7,7 @@ const { defineConfig, devices } = require("@playwright/test");
  */
 module.exports = defineConfig({
   testDir: "./test",
+  testMatch: "**/*.spec.cjs",
 
   // Maximum time one test can run
   timeout: 30 * 1000,
