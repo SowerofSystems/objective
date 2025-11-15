@@ -735,9 +735,9 @@ window.TEUI.DependencyGraph = class DependencyGraph {
               }
               return "";
             })
-            .style("stroke", "#fff")
-            .style("stroke-width", 2) // Thicker stroke for better definition
             .style("cursor", "pointer");
+            // Note: stroke and stroke-width are handled by CSS classes for architectural nodes
+            // and by .style() in the update section for regular nodes
 
           g.append("text")
             .attr("dx", d => d.size + 5) // Dynamic offset based on node size
@@ -788,17 +788,19 @@ window.TEUI.DependencyGraph = class DependencyGraph {
         return color;
       })
       .style("stroke", d => {
+        // Don't set inline stroke for architectural nodes - let CSS handle it via classes
         if (d.isArchitectural) {
-          // Use colored borders to indicate architectural layer
-          return d.architecturalLayer === "Foundation"
-            ? "#2E7D32" // Dark green border for Foundation
-            : d.architecturalLayer === "Coordination"
-              ? "#1565C0" // Dark blue border for Coordination
-              : "#C62828"; // Dark red border for Application
+          return null; // Remove inline stroke, let CSS take over
         }
         return "#fff"; // White border for regular nodes
       })
-      .style("stroke-width", d => (d.isArchitectural ? 4 : 2)) // Thicker border for modules
+      .style("stroke-width", d => {
+        // Don't set inline stroke-width for architectural nodes - let CSS handle it
+        if (d.isArchitectural) {
+          return null; // Remove inline stroke-width, let CSS take over
+        }
+        return 2; // Regular border for field nodes
+      })
       .style("filter", d => {
         if (d.isArchitectural) {
           return "drop-shadow(0px 0px 16px rgba(0,0,0,0.8))"; // Strong shadow for architectural modules
