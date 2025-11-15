@@ -1189,12 +1189,100 @@ TEUI.StateManager = (function () {
         description: "Dashboard, consumes S15 outputs",
       },
       {
+        id: "MODULE-Section02",
+        group: "🎯 Application",
+        type: "module",
+        architecturalLayer: "Application",
+        label: "Section 02 (Building Info)",
+        description: "Building metadata and configuration",
+      },
+      {
         id: "MODULE-Section03",
         group: "🎯 Application",
         type: "module",
         architecturalLayer: "Application",
         label: "Section 03 (Climate)",
         description: "Climate data, foundation calculations",
+      },
+      {
+        id: "MODULE-Section04",
+        group: "🎯 Application",
+        type: "module",
+        architecturalLayer: "Application",
+        label: "Section 04 (Actual/Target Energy)",
+        description: "Energy calculations and targets",
+      },
+      {
+        id: "MODULE-Section05",
+        group: "🎯 Application",
+        type: "module",
+        architecturalLayer: "Application",
+        label: "Section 05 (Emissions)",
+        description: "Carbon emissions calculations",
+      },
+      {
+        id: "MODULE-Section06",
+        group: "🎯 Application",
+        type: "module",
+        architecturalLayer: "Application",
+        label: "Section 06 (Renewable Energy)",
+        description: "On-site renewable energy generation",
+      },
+      {
+        id: "MODULE-Section07",
+        group: "🎯 Application",
+        type: "module",
+        architecturalLayer: "Application",
+        label: "Section 07 (Water Use)",
+        description: "Water consumption calculations",
+      },
+      {
+        id: "MODULE-Section08",
+        group: "🎯 Application",
+        type: "module",
+        architecturalLayer: "Application",
+        label: "Section 08 (Indoor Air Quality)",
+        description: "IAQ and ventilation requirements",
+      },
+      {
+        id: "MODULE-Section09",
+        group: "🎯 Application",
+        type: "module",
+        architecturalLayer: "Application",
+        label: "Section 09 (Internal Gains)",
+        description: "Occupant and equipment heat gains",
+      },
+      {
+        id: "MODULE-Section10",
+        group: "🎯 Application",
+        type: "module",
+        architecturalLayer: "Application",
+        label: "Section 10 (Radiant Gains)",
+        description: "Solar and radiant heat gains",
+      },
+      {
+        id: "MODULE-Section11",
+        group: "🎯 Application",
+        type: "module",
+        architecturalLayer: "Application",
+        label: "Section 11 (Transmission Losses)",
+        description: "Envelope heat transfer calculations",
+      },
+      {
+        id: "MODULE-Section12",
+        group: "🎯 Application",
+        type: "module",
+        architecturalLayer: "Application",
+        label: "Section 12 (Volume Metrics)",
+        description: "Building geometry and surface areas",
+      },
+      {
+        id: "MODULE-Section13",
+        group: "🎯 Application",
+        type: "module",
+        architecturalLayer: "Application",
+        label: "Section 13 (Mechanical Loads)",
+        description: "HVAC system load calculations",
       },
       {
         id: "MODULE-Section14",
@@ -1212,6 +1300,22 @@ TEUI.StateManager = (function () {
         label: "Section 15 (TEUI)",
         description: "Final energy summary, feeds S01",
       },
+      {
+        id: "MODULE-Section16",
+        group: "🎯 Application",
+        type: "module",
+        architecturalLayer: "Application",
+        label: "Section 16 (Sankey Diagram)",
+        description: "Energy flow visualization",
+      },
+      {
+        id: "MODULE-Section17",
+        group: "🎯 Application",
+        type: "module",
+        architecturalLayer: "Application",
+        label: "Section 17 (Dependency Graph)",
+        description: "System architecture visualization",
+      },
     ];
 
     // Add architectural module dependencies
@@ -1228,11 +1332,25 @@ TEUI.StateManager = (function () {
         target: "COORDINATION-ReferenceSystem",
       },
 
-      // Coordination dependencies
-      { source: "COORDINATION-Calculator", target: "MODULE-Section03" },
-      { source: "COORDINATION-Calculator", target: "MODULE-Section14" },
-      { source: "COORDINATION-Calculator", target: "MODULE-Section15" },
-      { source: "COORDINATION-Calculator", target: "MODULE-Section01" },
+      // Coordination dependencies - COORDINATION-Calculator orchestrates all sections via calculateAll()
+      // Order matches Calculator.js calcOrder array (lines 488-507)
+      { source: "COORDINATION-Calculator", target: "MODULE-Section02" }, // Building Info
+      { source: "COORDINATION-Calculator", target: "MODULE-Section03" }, // Climate
+      { source: "COORDINATION-Calculator", target: "MODULE-Section08" }, // IAQ
+      { source: "COORDINATION-Calculator", target: "MODULE-Section09" }, // Internal Gains
+      { source: "COORDINATION-Calculator", target: "MODULE-Section10" }, // Radiant Gains
+      { source: "COORDINATION-Calculator", target: "MODULE-Section11" }, // Transmission Losses
+      { source: "COORDINATION-Calculator", target: "MODULE-Section12" }, // Volume Metrics
+      { source: "COORDINATION-Calculator", target: "MODULE-Section07" }, // Water Use
+      { source: "COORDINATION-Calculator", target: "MODULE-Section13" }, // Mechanical Loads
+      { source: "COORDINATION-Calculator", target: "MODULE-Section06" }, // Renewable Energy
+      { source: "COORDINATION-Calculator", target: "MODULE-Section14" }, // TEDI Summary
+      { source: "COORDINATION-Calculator", target: "MODULE-Section04" }, // Actual/Target Energy
+      { source: "COORDINATION-Calculator", target: "MODULE-Section05" }, // Emissions
+      { source: "COORDINATION-Calculator", target: "MODULE-Section15" }, // TEUI Summary
+      { source: "COORDINATION-Calculator", target: "MODULE-Section16" }, // Sankey Diagram
+      { source: "COORDINATION-Calculator", target: "MODULE-Section17" }, // Dependency Graph
+      { source: "COORDINATION-Calculator", target: "MODULE-Section01" }, // Key Values (Dashboard)
       { source: "COORDINATION-ReferenceSystem", target: "MODULE-Section01" },
 
       // Section execution flow (from Calculator.js calculateAll order)
