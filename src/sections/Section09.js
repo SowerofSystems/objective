@@ -2503,8 +2503,40 @@ window.TEUI.SectionModules.sect09 = (function () {
       },
       {
         source: "d_12",
+        target: "d_67",
+        description: "Equipment density lookup based on building type",
+      },
+      {
+        source: "d_12",
         target: "h_67",
         description: "Equipment loads based on building type",
+      },
+      // Equipment efficiency dependencies (internal lookup table)
+      {
+        source: "g_67",
+        target: "d_67",
+        description: "Equipment density lookup based on efficiency type (Regular/Efficient)",
+      },
+      {
+        source: "g_67",
+        target: "h_67",
+        description: "Equipment energy affected by efficiency specification",
+      },
+      {
+        source: "d_68",
+        target: "d_67",
+        description: "Equipment density lookup based on elevator presence",
+      },
+      {
+        source: "d_68",
+        target: "h_67",
+        description: "Equipment energy affected by elevator loads",
+      },
+      // d_67 (equipment density) feeds into h_67 (annual energy)
+      {
+        source: "d_67",
+        target: "h_67",
+        description: "Equipment density determines annual energy consumption",
       },
       {
         source: "d_13",
