@@ -882,7 +882,7 @@ window.TEUI.SectionModules.sect14 = (function () {
   }
 
   //==========================================================================
-  // CALCULATIONS AND DEPENDENCIES (Refactored)
+  // CALCULATIONS AND DEPENDENCIES (Refactored)  - will be better if formatted as per FieldDefinition in Upstream Sections
   //==========================================================================
 
   /**
