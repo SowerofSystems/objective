@@ -1591,6 +1591,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           fieldId: "i_97",
           type: "calculated",
           value: "0.00",
+          section: "envelope",
           dependencies: ["i_98", "d_97"],
           label: "TB Penalty Heat Loss kWh/yr",
         },
@@ -1605,6 +1606,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           fieldId: "k_97",
           type: "calculated",
           value: "0.00",
+          section: "envelope",
           dependencies: ["h_21", "k_98", "d_97"],
           label: "TB Penalty Cooling Season Heat Gain kWh",
         },
@@ -1680,6 +1682,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           fieldId: "i_98",
           type: "calculated",
           value: "0.00",
+          section: "envelope",
           dependencies: [
             "i_85",
             "i_86",
@@ -1719,6 +1722,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           fieldId: "k_98",
           type: "calculated",
           value: "0.00",
+          section: "envelope",
           dependencies: [
             "k_85",
             "k_86",
