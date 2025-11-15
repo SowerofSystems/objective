@@ -689,6 +689,13 @@
           console.log(`[FileHandler] Syncing ${name} ReferenceState...`);
           section.ReferenceState.syncFromGlobalState();
         }
+
+        // ✅ CRITICAL: Refresh DOM after syncing state from imported values
+        // This updates editable fields (j_115, j_116, etc.) to show imported values
+        if (section?.ModeManager?.refreshUI) {
+          section.ModeManager.refreshUI();
+          console.log(`[FileHandler] ${name} DOM refreshed after sync`);
+        }
       });
 
       console.log("[FileHandler] ✅ PHASE 2: Pattern A section sync complete");
@@ -806,7 +813,7 @@
           "d_103", "g_103", "d_105", "d_108", "g_109",
 
           // Section 13: Mechanical Loads
-          "d_113", "f_113", "j_115", "d_116", "d_118", "g_118", "l_118", "d_119", "l_119", "k_120",
+          "d_113", "f_113", "j_115", "j_116", "d_116", "d_118", "g_118", "l_118", "d_119", "l_119", "k_120",
 
           // Section 15: Summary
           "d_142",
@@ -815,16 +822,79 @@
         const targetValues = [];
         const referenceValues = [];
 
+        // ✅ FIELD PRECISION FORMATTING: Apply specific decimal precision during export
+        // U-values (g_88-g_93): Minimum 3dp for thermal accuracy
+        const uValueFields = ["g_88", "g_89", "g_90", "g_91", "g_92", "g_93"];
+
+        // Coefficient fields that need 2dp precision
+        const coefficient2dpFields = ["j_115", "j_116", "k_52"];
+
+        // Format value based on field type
+        const formatExportValue = (fieldId, rawValue) => {
+          if (rawValue === "" || rawValue === null || rawValue === undefined) {
+            return "";
+          }
+
+          // Parse numeric value
+          const numVal = parseFloat(rawValue);
+          if (isNaN(numVal)) {
+            return rawValue; // Return as-is if not numeric
+          }
+
+          // U-values: 3dp minimum (e.g., "0.180", "0.250")
+          if (uValueFields.includes(fieldId)) {
+            return numVal.toFixed(3);
+          }
+
+          // Coefficients: 2dp (e.g., "0.90", "2.66")
+          if (coefficient2dpFields.includes(fieldId)) {
+            return numVal.toFixed(2);
+          }
+
+          // Default: return as-is (preserves existing precision)
+          return rawValue;
+        };
+
         // Get values for each field in the explicit list
         userEditableFieldIds.forEach((fieldId) => {
-          // Get target/application value
+          // ✅ CONDITIONAL EXPORT: Skip j_116 when d_113="Heatpump"
+          // When Heatpump, j_116 is calculated from j_113, not user-editable
+          // Exporting empty string ensures import won't overwrite calculated value
+          if (fieldId === "j_116") {
+            const d113Value = this.stateManager.getValue("d_113");
+            if (d113Value === "Heatpump") {
+              targetValues.push(""); // Export empty - j_116 is calculated
+              console.log("[FileHandler] j_116 export skipped (d_113=Heatpump, calculated field)");
+            } else {
+              const targetValue = this.stateManager.getValue(fieldId) ?? "";
+              const formattedTarget = formatExportValue(fieldId, targetValue);
+              targetValues.push(escapeCSV(formattedTarget));
+            }
+
+            // Same logic for Reference mode
+            const refD113Value = this.stateManager.getValue("ref_d_113");
+            if (refD113Value === "Heatpump") {
+              referenceValues.push(""); // Export empty - ref_j_116 is calculated
+              console.log("[FileHandler] ref_j_116 export skipped (ref_d_113=Heatpump, calculated field)");
+            } else {
+              const refFieldId = `ref_${fieldId}`;
+              const referenceValue = this.stateManager.getValue(refFieldId) ?? "";
+              const formattedReference = formatExportValue(fieldId, referenceValue);
+              referenceValues.push(escapeCSV(formattedReference));
+            }
+            return; // Skip normal export logic for j_116
+          }
+
+          // Normal export for all other fields
           const targetValue = this.stateManager.getValue(fieldId) ?? "";
-          targetValues.push(escapeCSV(targetValue));
+          const formattedTarget = formatExportValue(fieldId, targetValue);
+          targetValues.push(escapeCSV(formattedTarget));
 
           // Get reference value (with ref_ prefix)
           const refFieldId = `ref_${fieldId}`;
           const referenceValue = this.stateManager.getValue(refFieldId) ?? "";
-          referenceValues.push(escapeCSV(referenceValue));
+          const formattedReference = formatExportValue(fieldId, referenceValue); // Use base fieldId for formatting rules
+          referenceValues.push(escapeCSV(formattedReference));
         });
 
         // Construct CSV content:

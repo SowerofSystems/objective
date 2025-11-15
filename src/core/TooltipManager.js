@@ -3,7 +3,7 @@
  * Manages validation tooltips from Excel for TEUI Calculator fields
  *
  * Tooltip data extracted from TEUIv3042.xlsx REPORT sheet Data Validation
- * Last updated: Oct 8, 2025
+ * Last updated: Nov 8, 2025
  * Source: extract-validation.py script
  */
 
@@ -23,7 +23,13 @@
       cell: "D13",
       title: "Reference Standards",
       message:
-        "Select a Building Code Prescriptive Path option, or NECB Base Tier, or any other noted or 'Use Your Own' baseline scenario. References values in the 'ReferenceValues.js' file.",
+        "Select a Building Code Prescriptive Path option, or NECB Base Tier, or any other noted or 'Use Your Own' baseline scenario. References values in the 'ReferenceValues.js file_x000a_Then press 'Set Values' to over-write Insulation, Airtightness, and System Efficiencies as per the Code Minimums required by the Selected Standard",
+    },
+      e_13: {
+      cell: "E13",
+      title: "Set Defaults",
+      message:
+        "This will over-write Insulation, Airtightness, and System Efficiencies as per the Code Minimum required by the Selected Standard",
     },
     d_103: {
       cell: "D103",
@@ -437,6 +443,18 @@
       title: "Cooling Guidance",
       message:
         "ASHRAE may permit 26°C, where NBC 2025 may require 24°C. Residents will often set lower. Use 24°C as Default for design. ",
+    },
+    m_23: {
+      cell: "M23",
+      title: "OBC Required Heating Setpoint",
+      message:
+        "Thermostat Setpoint: This compares the Tset value determined by Major Occupancy, against the value set by the selected Reference Standard (ie. PH Classic). A fail/X just means there is a difference between the Building Code and the Reference Standard's Modelled value.",
+    },
+    m_24: {
+      cell: "M24",
+      title: "NBC Upper Cooling Limit",
+      message:
+        "NECB/NBC now establish an upper limit for Tset Cooling of 26ºC. Users often will set lower values in practice. A realistic value of 22ºC-24ºC as a typical cooling setpoint should be considered. Users can over-ride these values.",
     },
     h_35: {
       cell: "H35",

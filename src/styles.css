@@ -1087,6 +1087,38 @@ table.data-table select.form-select:hover {
   border: none !important;
 }
 
+/* Set Values button styling - matches dropdown appearance */
+.data-table #setValuesBtn {
+  width: 100%;
+  min-width: 100px;
+  border: 1px solid #ced4da !important; /* Match dropdown border color */
+  border-radius: 0.25rem !important;
+  padding: 0.375rem 0.75rem !important;
+  background-color: #fff !important;
+  color: var(--user-input-color) !important; /* Blue text like dropdowns */
+  font-weight: 500 !important; /* Match dropdown font weight */
+  font-size: inherit;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  margin: 2px 0;
+  height: calc(100% - 4px);
+}
+
+/* Set Values button hover - warning red */
+.data-table #setValuesBtn:hover {
+  border-color: #dc3545 !important; /* Red border on hover */
+  color: #dc3545 !important; /* Red text on hover */
+  background-color: #fff !important;
+}
+
+/* Ensure button cell has proper padding */
+.data-table td.button-cell {
+  padding: 2px 8px !important;
+  background: transparent !important;
+  border: none !important;
+}
+
 /* --- Utility Classes --- */
 /* Removed conflicting alignment utility classes - now handled by universal rules */
 
@@ -1766,13 +1798,15 @@ body.viewing-reference-inputs .reference-input-display-locked select {
 /* Color legend styling */
 .dependency-graph-legend {
   position: absolute;
-  bottom: 30px;
+  bottom: 40px; /* Raised by 10px to prevent bottom clipping */
   right: 50px; /* Increased right margin to prevent text clipping */
   background: rgba(255, 255, 255, 0.95);
-  padding: 12px 36px; /* Increased horizontal padding (16px + 20px) for wider spacing */
+  padding: 12px 36px 12px 36px; /* Balanced padding */
   border-radius: 8px;
   /* Removed box-shadow for frameless appearance */
   max-width: 390px; /* Increased by 10px more to prevent text clipping */
+  max-height: calc(100% - 80px); /* Ensure legend never exceeds container height minus margins */
+  overflow-y: auto; /* Allow scrolling if content is too tall */
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 12px;
@@ -2094,12 +2128,21 @@ body.viewing-reference-inputs .reference-input-display-locked select {
 
 /* =============== GLOBAL PASS/FAIL INDICATORS =============== */
 /* Standard checkmark/warning styles used across all sections */
+/*
+ * Vertical alignment note (Nov 9, 2025):
+ * Added vertical-align: middle to improve centering in table cells,
+ * particularly for rows with dropdowns (which are taller).
+ * Minimal improvement observed - checkmarks still appear slightly raised.
+ * TODO: Investigate if removing/adjusting padding would improve centering.
+ * For now, deferred for future investigation.
+ */
 .checkmark {
   color: #28a745;
   font-weight: bold;
   font-size: 1.2rem;
   margin-right: 5px;
   display: inline-block;
+  vertical-align: middle;
 }
 .warning {
   color: #dc3545;
@@ -2107,6 +2150,7 @@ body.viewing-reference-inputs .reference-input-display-locked select {
   font-size: 1.2rem;
   margin-right: 5px;
   display: inline-block;
+  vertical-align: middle;
 }
 
 /* =============== ELEGANT USER INPUT BEHAVIOR (OBC Matrix Pattern) =============== */

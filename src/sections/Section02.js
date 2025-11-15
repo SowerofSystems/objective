@@ -89,6 +89,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         h: {
           fieldId: "h_12",
           type: "year_slider",
+          label: "Reporting Period",
           value: "2022",
           min: 2015,
           max: 2041,
@@ -104,6 +105,7 @@ window.TEUI.SectionModules.sect02 = (function () {
           fieldId: "l_12",
           type: "editable",
           value: "$0.1300",
+          label: "Electricity Price", // Price per kWh
           section: "buildingInfo",
           tooltip: true, // Assume $0.13/kwh
         },
@@ -146,7 +148,14 @@ window.TEUI.SectionModules.sect02 = (function () {
             { value: "ADD YOUR OWN HERE", name: "ADD YOUR OWN HERE" },
           ],
         },
-        e: { content: "" }, // Empty but needed for alignment
+        e: {
+          type: "button",
+          buttonId: "setValuesBtn",
+          fieldId: "e_13", // Field ID for tooltip support
+          content: "Set Values",
+          classes: ["btn", "btn-sm", "btn-danger"],
+          tooltip: true, // Enable tooltip support
+        }, // Set Values button
         f: {
           content: "D.2",
           classes: ["label-prefix", "text-right", "no-wrap"],
@@ -158,6 +167,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         h: {
           fieldId: "h_13",
           type: "year_slider",
+          label: "Service Life",
           value: "50",
           min: 30,
           max: 100,
@@ -173,6 +183,7 @@ window.TEUI.SectionModules.sect02 = (function () {
           fieldId: "l_13",
           type: "editable",
           value: "$0.5070",
+          label: "Gas Price", // Price per m³
           section: "buildingInfo",
           tooltip: true, // Assume $0.507 (Ontario)
         },
@@ -212,6 +223,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         h: {
           fieldId: "h_14",
           type: "editable",
+          label: "Project Name",
           value: "Three Feathers Terrace",
           classes: ["wide-text", "no-wrap"],
           section: "buildingInfo",
@@ -225,6 +237,7 @@ window.TEUI.SectionModules.sect02 = (function () {
           fieldId: "l_14",
           type: "editable",
           value: "$1.6200",
+          label: "Propane Price", // Price per kg
           section: "buildingInfo",
           tooltip: true, // Assume $1.62 (Ontario)
         },
@@ -270,6 +283,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         h: {
           fieldId: "h_15",
           type: "editable",
+          label: "Conditioned Area",
           value: "1427.20", // ✅ FIXED: Raw value without comma for calculation stability
           classes: ["user-input", "editable"],
           section: "buildingInfo",
@@ -292,6 +306,7 @@ window.TEUI.SectionModules.sect02 = (function () {
           fieldId: "l_15",
           type: "editable",
           value: "$180.00",
+          label: "Wood Price", // Price per m³
           section: "buildingInfo",
           tooltip: true, // Assume $180/m3 (Ontario)
         }, // Restored: Field l_15 back in L
@@ -313,6 +328,8 @@ window.TEUI.SectionModules.sect02 = (function () {
           value: "345.82",
           section: "buildingInfo",
           tooltip: true, // S4. Targets
+          dependencies: ["d_15"], // Carbon benchmarking standard selection
+          conditionalDeps: ["i_39", "i_41"], // i_39 used when d_15="TGS4", i_41 used when d_15="Self Reported"
         },
         e: { content: "" }, // Empty but needed for alignment
         f: {
@@ -326,6 +343,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         h: {
           fieldId: "i_16",
           type: "editable",
+          label: "Certifier",
           value: "Thomson Architecture, Inc.",
           section: "buildingInfo",
           tooltip: true, // Certifier
@@ -338,6 +356,7 @@ window.TEUI.SectionModules.sect02 = (function () {
           fieldId: "l_16",
           type: "editable",
           value: "$1.5000",
+          label: "Oil Price", // Price per litre
           section: "buildingInfo",
           tooltip: true, // Assume $1.50 (Ontario)
         },
@@ -366,6 +385,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         h: {
           fieldId: "i_17",
           type: "editable",
+          label: "License Number",
           value: "8154",
           section: "buildingInfo",
           tooltip: true, // License or Authorization
@@ -416,6 +436,10 @@ window.TEUI.SectionModules.sect02 = (function () {
             fields[cell.fieldId].getOptions = cell.getOptions;
           if (cell.dependencies)
             fields[cell.fieldId].dependencies = cell.dependencies;
+          if (cell.conditionalDeps)
+            fields[cell.fieldId].conditionalDeps = cell.conditionalDeps;
+          if (cell.uiDeps)
+            fields[cell.fieldId].uiDeps = cell.uiDeps;
           if (cell.min !== undefined) fields[cell.fieldId].min = cell.min;
           if (cell.max !== undefined) fields[cell.fieldId].max = cell.max;
           if (cell.step !== undefined) fields[cell.fieldId].step = cell.step;
@@ -656,6 +680,8 @@ window.TEUI.SectionModules.sect02 = (function () {
   /**
    * Register calculations with StateManager
    * This is the standard approach from other working sections
+   *
+   * ✅ ENHANCED: Now uses field metadata (dependencies, conditionalDeps) for automatic registration
    */
   function registerCalculations() {
     if (!window.TEUI || !window.TEUI.StateManager) {
@@ -663,10 +689,27 @@ window.TEUI.SectionModules.sect02 = (function () {
     }
 
     try {
-      // Register dependencies - these must be registered AFTER the calculation
-      window.TEUI.StateManager.registerDependency("d_15", "d_16"); // d_16 depends on the standard selected
-      window.TEUI.StateManager.registerDependency("i_41", "d_16"); // d_16 depends on i_41 when standard is 'Self Reported' or default
-      window.TEUI.StateManager.registerDependency("i_39", "d_16"); // d_16 depends on i_39 when standard is 'TGS4'
+      // Get all fields with their metadata
+      const fields = getFields();
+
+      // Register dependencies from field definitions
+      Object.entries(fields).forEach(([fieldId, fieldDef]) => {
+        // Register standard dependencies
+        if (fieldDef.dependencies && Array.isArray(fieldDef.dependencies)) {
+          fieldDef.dependencies.forEach(depId => {
+            window.TEUI.StateManager.registerDependency(depId, fieldId);
+          });
+        }
+
+        // Register conditional dependencies (used in specific scenarios)
+        if (fieldDef.conditionalDeps && Array.isArray(fieldDef.conditionalDeps)) {
+          fieldDef.conditionalDeps.forEach(depId => {
+            window.TEUI.StateManager.registerDependency(depId, fieldId);
+          });
+        }
+      });
+
+      console.log("[S02] Registered dependencies from field metadata");
     } catch (_error) {
       // console.warn("Error registering calculations:", _error);
     }

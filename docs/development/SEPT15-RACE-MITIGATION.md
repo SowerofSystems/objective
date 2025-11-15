@@ -112,6 +112,8 @@ This plan avoids the pitfalls of the abandoned **IT-DEPENDS** branch (field-leve
 
 **🎯 COOLING BUMP MECHANISM DECODED (Sept 24, 2025)**: Complete forensic analysis reveals exact two-phase calculation sequence. **BREAKTHROUGH**: The "cooling bump" is NOT about cooling - it's a "complete recalculation button" that forces proper topological calculation order. **SEQUENCE DISCOVERED**: handleDropdownChange triggers dual-phase: (1) "No Cooling" → h_10=90.91, (2) "Cooling" → h_10=93.7. **CRITICAL INSIGHT**: Phase 2 forces complete S04 dual-engine calculations, proper j_32 energy totals propagation, and full S01/S05 display cascade using user-modified triggers (which work) instead of calculated triggers (which fail). **ROOT CAUSE CONFIRMED**: Normal initialization suffers partial calculation propagation with stale intermediate values, while cooling bump achieves complete calculation cascade with fresh state rebuild. **ARCHITECTURAL VALIDATION**: This confirms StateManager listener limitation diagnosis - user-modified triggers work perfectly, calculated triggers fail. **STRATEGIC CONCLUSION**: Solution requires replicating dropdown change calculation sequence during initialization, not S13-specific fixes. The cooling bump bypasses all broken StateManager calculated-value listener propagation and forces complete recalculation using proven user-modified trigger patterns.
 
+**🔥 G_63 LISTENER CASCADE STATE DRIFT (Nov 12, 2025)**: GitHub issue #16 returned as "zombie bug" - changing g_63 (Occupied Hours/Day) in cycles (12→10→12) causes h_10 to drift from 93.7→85.1→91.6, never returning to original without "cooling bump" workaround. **ROOT CAUSE CONFIRMED**: NOT duplicate event handlers (test showed single calculateAll() call), but massive listener cascade amplification. Single g_63 change triggers 1000+ log lines of S09→S10→S13→S14→Cooling calculation chains, with accumulated floating-point errors causing permanent state drift through circular dependency propagation. **ARCHITECTURAL PATTERN**: Identical to cooling bump issue - listener spaghetti creates calculation storms where each hop in the chain introduces micro-errors that compound through the cascade, never converging back to original values. **VALIDATION**: Affects BOTH Target and Reference modes. **WORKAROUND**: "Cooling Bump" (d_116 toggle) forces complete fresh recalculation using user-modified triggers, bypassing broken calculated-value listener chains. **STRATEGIC IMPLICATION**: Further evidence that orchestrator-based topological execution is required to replace chaotic listener propagation with deterministic single-pass calculation order.
+
 **Current Architecture Compatibility:**
 
 - ✅ **Section Autonomy Preserved**: Each section's `TargetState`/`ReferenceState` objects remain intact
@@ -1377,6 +1379,145 @@ Formula Source: FORMULAE.csv + Section 15 registerDependencies()
 **Dual Format Display**: Show both Excel format (from FORMULAE.csv) and JavaScript implementation for complete understanding
 
 This enhancement would make the dependency graph a **comprehensive calculation reference** tool, perfect for CTO review and developer understanding.
+
+### **🎨 DEPENDENCY GRAPH VISUALIZATION VS. ORCHESTRATION**
+
+**Issue Identified**: November 2025 - M/N Compliance Pattern Implementation
+
+**Context**: When implementing OBC/NBC compliance indicators (m_23, n_23, m_24, n_24 in S03), a design tension emerged between dependency graph visualization (S17) and calculation orchestration (future Orchestrator.js).
+
+**The Dual-Purpose Problem**:
+
+1. **Visual Dependency Graph (Section 17)**
+   - **Goal**: Help energy modelers understand energy flow logic
+   - **Audience**: Building designers, energy consultants
+   - **Need**: Clean, readable graph showing core energy calculations
+   - **Issue**: M/N compliance fields add visual noise without energy modeling insight
+
+2. **Calculation Orchestration (Orchestrator.js)**
+   - **Goal**: Topological sort for correct execution order
+   - **Audience**: Code execution engine
+   - **Need**: Complete, accurate dependency metadata for ALL calculated fields
+   - **Issue**: Missing M/N dependencies will break topological sort
+
+**Solution: Metadata Categorization + Filtering**
+
+**Field Categories** (implemented via `category` property):
+```javascript
+// Energy model core calculations
+category: "energy"        // d_20, h_23, h_24, d_21, etc.
+
+// Building code compliance checks (M/N columns)
+category: "compliance"    // m_23, n_23, m_24, n_24, etc.
+
+// Carbon calculations
+category: "carbon"        // h_8, k_8, i_39, etc.
+
+// UI/visualization only
+category: "visualization" // chart_data, graph_nodes, etc.
+```
+
+**Implementation Pattern**:
+
+```javascript
+// Section03.js - ALWAYS declare complete dependencies
+m_23: {
+  fieldId: "m_23",
+  type: "calculated",
+  dependencies: ["d_12"],      // ✅ Complete for topological sort
+  category: "compliance",      // 🎨 Tag for S17 filtering
+  label: "OBC Required Heating Setpoint",
+}
+
+m_24: {
+  fieldId: "m_24",
+  type: "calculated",
+  dependencies: [],            // ✅ Explicit empty - static value
+  category: "compliance",      // 🎨 Tag for S17 filtering
+  label: "NBC Upper Limit",
+}
+
+n_23: {
+  fieldId: "n_23",
+  type: "calculated",
+  dependencies: ["h_23", "m_23"], // ✅ Complete for orchestration
+  category: "compliance",         // 🎨 Tag for S17 filtering
+  label: "Heating Setpoint Compliance",
+}
+```
+
+**Section 17 Visualization** (filters by category):
+```javascript
+// Add UI toggle: "Show Compliance Indicators"
+const showCompliance = userPreference || false;
+
+const visibleNodes = allNodes.filter(node => {
+  if (node.category === "compliance" && !showCompliance) {
+    return false; // Hide M/N fields by default for clean energy model view
+  }
+  return true;
+});
+
+renderGraph(visibleNodes); // Clean graph for energy modelers
+```
+
+**Orchestrator.js Calculation** (uses complete data):
+```javascript
+// ALWAYS use complete dependency graph (no filtering)
+const allNodes = collectAllFields(); // Includes energy + compliance + carbon + viz
+const executionOrder = topologicalSort(allNodes); // Correct calculation order
+
+executionOrder.forEach(fieldId => {
+  calculateField(fieldId); // Each field runs once in dependency order
+});
+```
+
+**Key Architectural Principles**:
+
+1. ✅ **Dependencies MUST be complete** in field definitions (source of truth)
+2. ✅ **Visualization can filter** for clarity (presentation layer)
+3. ✅ **Orchestration uses everything** for correctness (execution layer)
+4. ✅ **Categories enable flexibility** (show/hide by purpose)
+
+**Related Work**:
+
+- **ZenMaster.js** (dependency2 branch): Runtime dependency validation tool
+  - Detects typos in dependency declarations (h_79 → i_79 corrections)
+  - Validates dependency completeness before topological sort implementation
+  - Exports dependency graph for analysis: `zen-dependencies-2025-11-08.json`
+
+- **Zen-Observations.md**: Documents ZenMaster findings
+  - 11 dependency typos fixed across S10, S13 (all were adjacent column errors)
+  - 210 nodes, 1544 dependency links traced
+  - M/N compliance fields documented with correct dependencies
+
+- **dependency-zen.md**: Dependency declaration standards
+  - Defines dependencies (what field READS) vs precedents (what fields USE this)
+  - Input fields have NO dependencies (source nodes)
+  - Only calculated fields declare dependencies
+  - Empty array (`dependencies: []`) explicitly marks "calculated but reads nothing"
+
+- **M-N-COMPLIANCE.md**: Implementation pattern guide
+  - 4 compliance patterns with examples
+  - Field definition requirements
+  - Tooltip guidelines
+  - Troubleshooting (e.g., "green X" issue from mode check)
+
+**Status**:
+- ✅ **S03 m_23/n_23/m_24/n_24** implemented with correct dependencies (Nov 2025)
+- 🔄 **ZenMaster validation** ongoing (dependency2 branch)
+- ⏸️ **Category tagging** deferred until Orchestrator.js implementation
+- ⏸️ **S17 filtering** deferred until category schema finalized
+
+**Future Implementation Priority**:
+
+1. ✅ **Fix remaining dependency typos** (ZenMaster findings)
+2. ✅ **Add empty arrays** to static value fields (m_24, etc.)
+3. 🔄 **Validate all dependencies** before topological sort
+4. ⏸️ **Add category property** when implementing Orchestrator.js
+5. ⏸️ **Implement S17 filtering** for clean visualization
+
+**Critical Insight**: This separation of concerns (complete metadata + presentation filtering) enables both human-readable graphs AND machine-executable orchestration without compromising either goal.
 
 ---
 

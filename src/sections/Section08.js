@@ -128,12 +128,12 @@ window.TEUI.SectionModules.sect08 = (function () {
       this.currentMode = newMode;
       console.log(`S08: Switched to ${this.currentMode.toUpperCase()} mode.`);
 
-      // ✅ CORRECTED: Only refresh UI, don't re-run calculations.
-      // Both engines should already have calculated values stored in StateManager.
+      // Both Target and Reference values are pre-computed during initialization
+      // Just update the UI to display the current mode's values
       this.updateUIForMode();
-      this.updateCalculatedDisplayValues(); // This will handle the DOM updates.
+      this.updateCalculatedDisplayValues();
 
-      // ✅ NEW: Sync visual toggle UI when mode changes (from global or local toggle)
+      // Sync visual toggle UI when mode changes (from global or local toggle)
       this.syncToggleUI(newMode);
     },
 
@@ -202,9 +202,17 @@ window.TEUI.SectionModules.sect08 = (function () {
           }
 
           const formatType = getFieldFormat(fieldId);
-          const formattedValue =
-            window.TEUI?.formatNumber?.(value, formatType) ?? value;
+          // Skip formatting for "raw" type fields (checkmarks, symbols)
+          const formattedValue = formatType === "raw"
+            ? value
+            : (window.TEUI?.formatNumber?.(value, formatType) ?? value);
           element.textContent = formattedValue;
+
+          // ✅ FIX: Reapply CSS classes for status fields (n_56, n_57, n_58, n_59)
+          if (fieldId.startsWith("n_") && formatType === "raw") {
+            element.classList.remove("checkmark", "warning");
+            element.classList.add(value === "✓" ? "checkmark" : "warning");
+          }
         }
       });
     },
@@ -242,7 +250,19 @@ window.TEUI.SectionModules.sect08 = (function () {
   }
 
   function setCalculatedValue(fieldId, rawValue) {
-    const valueToStore = isFinite(rawValue) ? rawValue.toString() : "N/A";
+    // ✅ FIX: Allow non-numeric values (like "✓" and "✗" symbols) to pass through
+    // Only use "N/A" for truly invalid numeric calculations (undefined, null, NaN)
+    let valueToStore;
+    if (typeof rawValue === "string") {
+      // String values (symbols, text) pass through as-is
+      valueToStore = rawValue;
+    } else if (rawValue == null || (typeof rawValue === "number" && !isFinite(rawValue))) {
+      // Only null/undefined/NaN/Infinity become "N/A"
+      valueToStore = "N/A";
+    } else {
+      // Valid numbers get converted to strings
+      valueToStore = rawValue.toString();
+    }
 
     // The calculation functions will be run for both models, so we need to know
     // which state to write to. We'll check the current UI mode for simplicity,
@@ -278,21 +298,37 @@ window.TEUI.SectionModules.sect08 = (function () {
     return formatMap[fieldId] || "number-0dp";
   }
 
-  function setElementClass(fieldId, className) {
-    if (ModeManager.currentMode !== "target") return;
+  function setElementClass(fieldId, isCompliant) {
+    // Apply styling in both Target and Reference modes for S08
     const element = document.querySelector(`[data-field-id="${fieldId}"]`);
     if (element) {
       element.classList.remove("checkmark", "warning");
-      if (className) element.classList.add(className);
+      element.classList.add(isCompliant ? "checkmark" : "warning");
     }
   }
 
   //==========================================================================
-  // CALCULATION LOGIC (Unchanged, now uses new helpers)
+  // CALCULATION LOGIC - Dual Engine Pattern (calculate BOTH Target and Reference)
   //==========================================================================
   function calculateAll() {
+    // Save current mode
+    const originalMode = ModeManager.currentMode;
+
+    // Calculate Target model
+    ModeManager.currentMode = "target";
     calculateWoodOffset();
     calculateAirQualityStatus();
+
+    // Calculate Reference model
+    ModeManager.currentMode = "reference";
+    calculateWoodOffset();
+    calculateAirQualityStatus();
+
+    // Restore original mode
+    ModeManager.currentMode = originalMode;
+
+    // Update DOM to show current mode's values
+    ModeManager.updateCalculatedDisplayValues();
   }
 
   function calculateWoodOffset() {
@@ -319,43 +355,50 @@ window.TEUI.SectionModules.sect08 = (function () {
   }
 
   function calculateAirQualityStatus() {
-    // ... (rest of the function is unchanged, it will now use the new helpers)
+    // Set hardcoded guidance limits (k columns)
     setCalculatedValue("k_56", 150);
     setCalculatedValue("k_57", 1000);
     setCalculatedValue("k_58", 400);
     setCalculatedValue("k_59", "30-60");
 
+    // Get current user input values (d columns)
     const radonValue = getNumericValue("d_56");
     const co2Value = getNumericValue("d_57");
     const tvocValue = getNumericValue("d_58");
     const heatingHumidity = getNumericValue("d_59");
     const coolingHumidity = getNumericValue("i_59");
 
+    // Row 56: Radon (m_56 = d_56/k_56, pass if ≤100%)
     const radonPercent = radonValue / 150;
-    setCalculatedValue("m_56", radonPercent);
-    setCalculatedValue("n_56", radonValue <= 150 ? "✓" : "✗");
-    setElementClass("n_56", radonValue <= 150 ? "checkmark" : "warning");
+    setCalculatedValue("m_56", radonPercent); // Store raw ratio, updateCalculatedDisplayValues will format it
+    const radonPass = radonPercent <= 1.0; // ≤100%
+    setCalculatedValue("n_56", radonPass ? "✓" : "✗");
+    setElementClass("n_56", radonPass);
 
+    // Row 57: CO2 (m_57 = d_57/k_57, pass if ≤100%)
     const co2Percent = co2Value / 1000;
     setCalculatedValue("m_57", co2Percent);
-    setCalculatedValue("n_57", co2Value <= 1000 ? "✓" : "✗");
-    setElementClass("n_57", co2Value <= 1000 ? "checkmark" : "warning");
+    const co2Pass = co2Percent <= 1.0;
+    setCalculatedValue("n_57", co2Pass ? "✓" : "✗");
+    setElementClass("n_57", co2Pass);
 
+    // Row 58: TVOC (m_58 = d_58/k_58, pass if ≤100%)
     const tvocPercent = tvocValue / 400;
     setCalculatedValue("m_58", tvocPercent);
-    setCalculatedValue("n_58", tvocValue <= 400 ? "✓" : "✗");
-    setElementClass("n_58", tvocValue <= 400 ? "checkmark" : "warning");
+    const tvocPass = tvocPercent <= 1.0;
+    setCalculatedValue("n_58", tvocPass ? "✓" : "✗");
+    setElementClass("n_58", tvocPass);
 
-    const averageHumidity = (heatingHumidity + coolingHumidity) / 2;
-    const humidityPercent = averageHumidity / 45;
-    setCalculatedValue("m_59", humidityPercent);
+    // Row 59: Humidity (m_59 = d_59/100, pass if 30-60 range for BOTH heating and cooling)
+    // Store as decimal ratio so percent-0dp formatter displays correctly (45 → 0.45 → 45%)
+    setCalculatedValue("m_59", heatingHumidity / 100);
     const isInRange =
       heatingHumidity >= 30 &&
       heatingHumidity <= 60 &&
       coolingHumidity >= 30 &&
       coolingHumidity <= 60;
     setCalculatedValue("n_59", isInRange ? "✓" : "✗");
-    setElementClass("n_59", isInRange ? "checkmark" : "warning");
+    setElementClass("n_59", isInRange);
   }
 
   //==========================================================================
@@ -525,16 +568,30 @@ window.TEUI.SectionModules.sect08 = (function () {
           type: "editable",
           value: "50",
           classes: ["user-input"],
+          label: "Radon Target: Bq/m³",
         },
         e: { content: "Bq/m³" },
-        k: { fieldId: "k_56", type: "calculated", value: "150" },
+        k: {
+          fieldId: "k_56",
+          type: "calculated",
+          value: "150",
+          label: "Radon Reference Limit: Bq/m³",
+        },
         l: { content: "Bq/m³" },
-        m: { fieldId: "m_56", type: "calculated", value: "0%" },
+        m: {
+          fieldId: "m_56",
+          type: "calculated",
+          value: "0%",
+          dependencies: ["d_56", "k_56"],
+          label: "Radon Compliance: %",
+        },
         n: {
           fieldId: "n_56",
           type: "calculated",
           value: "✓",
           classes: ["checkmark"],
+          dependencies: ["m_56"],
+          label: "Radon Compliance Status",
         },
       },
     },
@@ -548,16 +605,30 @@ window.TEUI.SectionModules.sect08 = (function () {
           type: "editable",
           value: "550",
           classes: ["user-input"],
+          label: "CO2 Target: ppm",
         },
         e: { content: "ppm" },
-        k: { fieldId: "k_57", type: "calculated", value: "1000" },
+        k: {
+          fieldId: "k_57",
+          type: "calculated",
+          value: "1000",
+          label: "CO2 Reference Limit: ppm",
+        },
         l: { content: "ppm" },
-        m: { fieldId: "m_57", type: "calculated", value: "0%" },
+        m: {
+          fieldId: "m_57",
+          type: "calculated",
+          value: "0%",
+          dependencies: ["d_57", "k_57"],
+          label: "CO2 Compliance: %",
+        },
         n: {
           fieldId: "n_57",
           type: "calculated",
           value: "✓",
           classes: ["checkmark"],
+          dependencies: ["m_57"],
+          label: "CO2 Compliance Status",
         },
       },
     },
@@ -571,16 +642,30 @@ window.TEUI.SectionModules.sect08 = (function () {
           type: "editable",
           value: "100",
           classes: ["user-input"],
+          label: "TVOC Target: ppm",
         },
         e: { content: "ppm" },
-        k: { fieldId: "k_58", type: "calculated", value: "400" },
+        k: {
+          fieldId: "k_58",
+          type: "calculated",
+          value: "400",
+          label: "TVOC Reference Limit: ppm",
+        },
         l: { content: "ppm" },
-        m: { fieldId: "m_58", type: "calculated", value: "0%" },
+        m: {
+          fieldId: "m_58",
+          type: "calculated",
+          value: "0%",
+          dependencies: ["d_58", "k_58"],
+          label: "TVOC Compliance: %",
+        },
         n: {
           fieldId: "n_58",
           type: "calculated",
           value: "✓",
           classes: ["checkmark"],
+          dependencies: ["m_58"],
+          label: "TVOC Compliance Status",
         },
       },
     },
@@ -598,6 +683,7 @@ window.TEUI.SectionModules.sect08 = (function () {
           step: 1,
           classes: ["user-input"],
           tooltip: true, // RH% Annual Average
+          label: "RH Heating Season Target: %",
         },
         e: { content: "% RH" },
         f: { content: "A.5.2" },
@@ -612,16 +698,30 @@ window.TEUI.SectionModules.sect08 = (function () {
           step: 1,
           classes: ["user-input"],
           tooltip: true, // RH% Annual Average
+          label: "RH Cooling Season Target: %",
         },
         j: { content: "% RH" },
-        k: { fieldId: "k_59", type: "calculated", value: "30-60" },
+        k: {
+          fieldId: "k_59",
+          type: "calculated",
+          value: "30-60",
+          label: "RH Reference Range: %",
+        },
         l: { content: "%" },
-        m: { fieldId: "m_59", type: "calculated", value: "0%" },
+        m: {
+          fieldId: "m_59",
+          type: "calculated",
+          value: "0%",
+          dependencies: ["d_59", "i_59"],
+          label: "RH Compliance: %",
+        },
         n: {
           fieldId: "n_59",
           type: "calculated",
           value: "✓",
           classes: ["checkmark"],
+          dependencies: ["m_59"],
+          label: "RH Compliance Status",
         },
       },
     },
@@ -635,6 +735,9 @@ window.TEUI.SectionModules.sect08 = (function () {
           type: "calculated",
           value: "0.00",
           tooltip: true,
+          dependencies: ["d_31", "k_31"],
+          conditionalDeps: ["k_31"], // Only read k_31 when d_31 > 0
+          label: "Atmospheric Offsets: MT/yr CO2e",
         },
         e: { content: "MT/yr CO2e" },
       },
@@ -649,10 +752,17 @@ window.TEUI.SectionModules.sect08 = (function () {
         if (cell.fieldId) {
           fields[cell.fieldId] = {
             type: cell.type,
-            label: cell.label || row.label,
+            label: cell.label || cell.content || row.label, // ✅ Proper label resolution
             defaultValue: cell.value || "",
             section: "indoorAirQuality",
           };
+          // Copy dependencies if present
+          if (cell.dependencies) {
+            fields[cell.fieldId].dependencies = cell.dependencies;
+          }
+          if (cell.conditionalDeps) {
+            fields[cell.fieldId].conditionalDeps = cell.conditionalDeps;
+          }
           if (cell.min !== undefined) fields[cell.fieldId].min = cell.min;
           if (cell.max !== undefined) fields[cell.fieldId].max = cell.max;
           if (cell.step !== undefined) fields[cell.fieldId].step = cell.step;
@@ -729,12 +839,12 @@ window.TEUI.SectionModules.sect08 = (function () {
     if (window.TEUI?.StateManager) {
       // Listen for S04's actual wood use (d_31)
       window.TEUI.StateManager.addListener("d_31", () => {
-        setTimeout(() => calculateWoodOffset(), 100); // Small delay to ensure S04 calculations complete
+        setTimeout(() => calculateAll(), 100); // Small delay to ensure S04 calculations complete
       });
 
       // Listen for S04's target wood emissions (k_31)
       window.TEUI.StateManager.addListener("k_31", () => {
-        setTimeout(() => calculateWoodOffset(), 100); // Small delay to ensure S04 calculations complete
+        setTimeout(() => calculateAll(), 100); // Small delay to ensure S04 calculations complete
       });
 
       console.log("[S08] S04 listeners setup complete");

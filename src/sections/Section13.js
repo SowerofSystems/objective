@@ -50,8 +50,39 @@ window.TEUI.SectionModules.sect13 = (function () {
     },
     setValue: function (fieldId, value, source = "user") {
       this.state[fieldId] = value;
+
+      // ✅ Mark fields as user-modified to preserve during d_13 changes
+      // CRITICAL: Treat "imported" values as user-modified to preserve them across mode switches
+      if (
+        (source === "user-modified" || source === "imported") &&
+        (fieldId === "f_113" || fieldId === "j_115" || fieldId === "j_116")
+      ) {
+        this.state[`${fieldId}_userModified`] = true;
+      }
+
       if (source === "user" || source === "user-modified") {
         this.saveState();
+
+        // ✅ CONVERGENCE FIX: Mirror ReferenceState pattern (lines 168-184)
+        // Trigger recalculations when key Target fields change in target mode
+        // This provides the second calculation pass needed for convergence
+        const criticalFields = [
+          "d_113",
+          "d_116",
+          "f_113",
+          "d_118",
+          "g_118",
+          "d_119",
+          "j_115",
+          "l_118",
+        ];
+        if (
+          criticalFields.includes(fieldId) &&
+          ModeManager.currentMode === "target"
+        ) {
+          calculateAll(); // Runs both models - efficient and keeps both current
+          ModeManager.updateCalculatedDisplayValues();
+        }
       }
     },
     getValue: function (fieldId) {
@@ -133,8 +164,8 @@ window.TEUI.SectionModules.sect13 = (function () {
       if (!this.state.j_115_userModified) {
         this.state.j_115 = referenceValues.j_115 || "0.90";
       }
-      // Always update system type (this determines calculation methodology)
-      this.state.d_113 = referenceValues.d_113 || "Gas";
+      // Update system type: use reference value if defined, otherwise revert to default
+      this.state.d_113 = referenceValues.d_113 || "Heatpump";
 
       this.saveState();
 
@@ -152,9 +183,10 @@ window.TEUI.SectionModules.sect13 = (function () {
       this.state[fieldId] = value;
 
       // Mark fields as user-modified to preserve during d_13 changes
+      // CRITICAL: Treat "imported" values as user-modified to preserve them across mode switches
       if (
-        source === "user-modified" &&
-        (fieldId === "f_113" || fieldId === "j_115")
+        (source === "user-modified" || source === "imported") &&
+        (fieldId === "f_113" || fieldId === "j_115" || fieldId === "j_116")
       ) {
         this.state[`${fieldId}_userModified`] = true;
       }
@@ -173,6 +205,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           "g_118",
           "d_119",
           "j_115",
+          "j_116", // ✅ ADDED: Match j_115 pattern for Reference mode DOM updates
           "l_118",
         ];
         if (
@@ -255,8 +288,11 @@ window.TEUI.SectionModules.sect13 = (function () {
       this.currentMode = mode;
 
       this.refreshUI();
-      // CRITICAL: Update ghosting for new mode's system
+      // ✅ S07 PATTERN: Update ghosting classes to match new mode's d_113/d_116 values
+      // After fixing handleHeatingSystemChangeForGhosting to ONLY set visual classes (no value writes),
+      // it's safe to call during mode switch to update ghosting based on the new mode's system type
       this.updateConditionalUI();
+
       // UI toggle is for DISPLAY ONLY - values are already calculated
       // Removed calculateAll() - mode switch should only update display, not trigger calculations
       this.updateCalculatedDisplayValues();
@@ -269,50 +305,42 @@ window.TEUI.SectionModules.sect13 = (function () {
     updateCalculatedDisplayValues: function () {
       if (!window.TEUI?.StateManager) return;
 
-      // ✅ FIX (Oct 6, 2025): Field-specific format map matching setFieldValue() calls
-      // Mirrors the format types used in calculation functions for consistency
+      // Field-specific format map for calculated fields
       const fieldFormats = {
-        // Percentages (0 decimal places)
-        m_115: "percent-0dp", // AFUE efficiency
-        m_116: "percent-0dp", // Cooling EUI ratio
-        m_117: "percent-0dp", // Cooling intensity
-        i_122: "percent-0dp", // Latent load factor
-        d_124: "percent-0dp", // Free cooling %
+        // Percentages (0dp)
+        m_115: "percent-0dp", m_116: "percent-0dp", m_117: "percent-0dp",
+        i_122: "percent-0dp", d_124: "percent-0dp",
 
-        // Numbers with comma separators (2 decimal places)
-        d_114: "number-2dp-comma", // Heating sink
-        l_113: "number-2dp-comma", // Heating demand
-        d_115: "number-2dp-comma", // Gas volume
-        f_115: "number-2dp-comma", // Oil volume
-        h_115: "number-2dp-comma", // Gas volume alt
-        l_115: "number-2dp-comma", // Heating sink alt
-        f_114: "number-2dp-comma", // Heating fuel impact
-        l_116: "number-2dp-comma", // Cooling sink
-        l_114: "number-2dp-comma", // Cooling sink alt
-        d_117: "number-2dp-comma", // Cooling load
-        d_120: "number-2dp-comma", // Vent rate L/s
-        f_120: "number-2dp-comma", // Vent rate CFM
-        h_120: "number-2dp-comma", // Vent rate m³/hr
-        d_121: "number-2dp-comma", // Heating vent energy
-        i_121: "number-2dp-comma", // Recovered energy
-        m_121: "number-2dp-comma", // Net heat loss
-        d_122: "number-2dp-comma", // Cooling vent energy
-        d_123: "number-2dp-comma", // Vent energy recovered
-        h_124: "number-2dp-comma", // Free cooling limit
-        m_129: "number-2dp-comma", // CED mitigated
-        d_129: "number-2dp-comma", // CED unmitigated
+        // Large numbers with commas (2dp)
+        d_114: "number-2dp-comma", l_113: "number-2dp-comma", d_115: "number-2dp-comma",
+        f_115: "number-2dp-comma", h_115: "number-2dp-comma", l_115: "number-2dp-comma",
+        f_114: "number-2dp-comma", l_116: "number-2dp-comma", l_114: "number-2dp-comma",
+        d_117: "number-2dp-comma", d_120: "number-2dp-comma", f_120: "number-2dp-comma",
+        h_120: "number-2dp-comma", d_121: "number-2dp-comma", i_121: "number-2dp-comma",
+        m_121: "number-2dp-comma", d_122: "number-2dp-comma", d_123: "number-2dp-comma",
+        h_124: "number-2dp-comma", m_129: "number-2dp-comma", d_129: "number-2dp-comma",
 
-        // Numbers without commas (2 decimal places) - COPs and smaller values
-        h_113: "number-2dp", // COP
-        j_113: "number-2dp", // COP
-        j_114: "number-2dp", // COP
-        j_116: "number-2dp", // COP cooling
-        f_117: "number-2dp", // Cooling factor
-        j_117: "number-2dp", // Cooling value
-        f_119: "number-2dp", // Per-person rate
-        h_119: "number-2dp", // Per-person rate
-        m_124: "number-2dp", // Active cooling days
+        // Small numbers without commas (2dp)
+        h_113: "number-2dp", j_113: "number-2dp", j_114: "number-2dp",
+        f_117: "number-2dp", j_117: "number-2dp", f_119: "number-2dp", h_119: "number-2dp",
+        m_124: "number-2dp",
       };
+
+      // ✅ FIX: Conditionally add j_116 when it's calculated (ghosted in Heatpump mode)
+      // Check if j_116 is currently ghosted (contenteditable="false") = calculated mode
+      const j116Element = document.querySelector('[data-field-id="j_116"]');
+      const isJ116Ghosted = j116Element?.getAttribute("contenteditable") === "false";
+
+      console.log(`[S13 updateCalc] j_116 check: element=${!!j116Element}, contenteditable="${j116Element?.getAttribute("contenteditable")}", isGhosted=${isJ116Ghosted}, mode=${this.currentMode}`);
+
+      if (isJ116Ghosted) {
+        // When ghosted (Heatpump mode), j_116 is calculated → should update from StateManager
+        fieldFormats.j_116 = "number-2dp";
+        console.log(`[S13 updateCalc] ✅ Added j_116 to fieldFormats`);
+      } else {
+        console.log(`[S13 updateCalc] ⏭️ Skipping j_116 (not ghosted)`);
+      }
+      // When NOT ghosted (Gas/Oil mode), j_116 is user-editable → skip (handled by refreshUI)
 
       const calculatedFields = Object.keys(fieldFormats);
 
@@ -334,7 +362,10 @@ window.TEUI.SectionModules.sect13 = (function () {
           const element = document.querySelector(
             `[data-field-id="${fieldId}"]`,
           );
-          if (element && !element.hasAttribute("contenteditable")) {
+          // ✅ FIX (NOV-13): Update calculated fields even if contenteditable exists
+          // The hasAttribute check was too strict - fields with contenteditable="false" (ghosted/calculated)
+          // were being skipped. Now we update unless explicitly contenteditable="true" (user-editable)
+          if (element && element.getAttribute("contenteditable") !== "true") {
             const numericValue = window.TEUI.parseNumeric(valueToDisplay);
             if (!isNaN(numericValue)) {
               // ✅ Use field-specific format from map (S10 pattern)
@@ -452,8 +483,14 @@ window.TEUI.SectionModules.sect13 = (function () {
           // Update dropdown selections for mode persistence
           dropdown.value = stateValue;
         } else if (element.getAttribute("contenteditable") === "true") {
-          // Update editable fields for mode persistence (d_119, j_115, j_116, l_118)
-          element.textContent = stateValue;
+          // Update editable fields for mode persistence (d_119, j_115, j_116, l_118, d_118)
+          // ✅ Apply 2dp formatting to preserve precision display
+          const numericValue = window.TEUI.parseNumeric(stateValue);
+          if (!isNaN(numericValue)) {
+            element.textContent = window.TEUI.formatNumber(numericValue, "number-2dp");
+          } else {
+            element.textContent = stateValue;
+          }
         }
       });
 
@@ -862,7 +899,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           fieldId: "d_113",
           type: "dropdown",
           dropdownId: "dd_d_113",
-          value: "Heatpump",
+          value: "Heatpump", // Default value - Should govern during Initialization
           section: "mechanicalLoads",
           tooltip: true, // Select Primary Heating System
           options: [
@@ -1175,11 +1212,9 @@ window.TEUI.SectionModules.sect13 = (function () {
         c: { label: "HRV/ERV/MVHR Efficiency (SRE)", classes: ["flex-cell"] },
         d: {
           fieldId: "d_118",
-          type: "percentage",
-          value: "89",
-          min: 0,
-          max: 100,
-          step: 1,
+          type: "editable",
+          value: "89.00",
+          classes: ["user-input"],
           section: "mechanicalLoads",
           tooltip: true, // Typ. Range 50-90%
         },
@@ -1215,7 +1250,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         l: {
           fieldId: "l_118",
           type: "editable",
-          value: "3",
+          value: "3.00",
           section: "mechanicalLoads",
           tooltip: true, // ACH Value
         },
@@ -1321,13 +1356,12 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "3,333.33",
           section: "mechanicalLoads",
           dependencies: [
-            "h_118",
-            "d_63",
-            "d_119",
-            "i_63",
-            "j_63",
-            "l_118",
-            "d_105",
+            "d_63",   // Occupants
+            "i_63",   // Hrs/Day
+            "d_105",  // Net Interior Volume
+            "g_118",  // Ventilation Method
+            "l_118",  // ACH
+            "d_119",  // Per Person Ventilation Rate
           ],
         },
         e: {
@@ -1441,13 +1475,13 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "30,257.37",
           section: "mechanicalLoads",
           dependencies: [
-            "h_118",
-            "l_119",
-            "d_120",
-            "d_21",
-            "i_63",
-            "j_63",
-            "i_122",
+            "d_21",   //CDD
+            "i_63",   //Hrs/Day
+            "d_116",  //Mech. Cooling Provided
+            "g_118",  //Ventilation Method
+            "l_119",  //Summer Boost
+            "d_120",  //Volumetric Ventilation Rate
+            "i_122",  //Latent Load Factor (%)
           ],
         },
         e: {
@@ -2073,6 +2107,19 @@ window.TEUI.SectionModules.sect13 = (function () {
         }
         if (fieldId === "j_116") {
           calculateAll();
+          ModeManager.updateCalculatedDisplayValues();
+          // ✅ Surgical DOM update: Re-apply formatted value from state after calculations
+          // refreshUI() is too aggressive and breaks mode persistence
+          const currentStateValue = ModeManager.getValue("j_116");
+          if (currentStateValue) {
+            const numericValue = window.TEUI.parseNumeric(currentStateValue);
+            if (!isNaN(numericValue)) {
+              this.textContent = window.TEUI.formatNumber(numericValue, "number-2dp");
+            }
+          }
+        }
+        if (fieldId === "d_118") {
+          calculateAll(); // HRV/ERV efficiency affects ventilation energy calcs
           ModeManager.updateCalculatedDisplayValues();
         }
         if (fieldId === "l_118") {
@@ -3577,101 +3624,18 @@ window.TEUI.SectionModules.sect13 = (function () {
     const shouldGhostJ116 = !isCoolingActive || isHP; // Ghost if No Cooling OR Heatpump
     setFieldGhosted("j_116", shouldGhostJ116);
 
-    // When switching TO non-Heatpump with Cooling active, ensure j_116 has user default
-    if (!isHP && isCoolingActive) {
-      const currentJ116 = ModeManager.getValue("j_116");
-      if (!currentJ116 || currentJ116 === "0") {
-        // Reset to field definition default if empty or 0
-        const defaultJ116 = getFieldDefault("j_116") || "2.66";
-        ModeManager.setValue("j_116", defaultJ116, "system-update");
-        const j116Element = document.querySelector('[data-field-id="j_116"]');
-        if (
-          j116Element &&
-          j116Element.getAttribute("contenteditable") === "true"
-        ) {
-          j116Element.textContent = window.TEUI.formatNumber(
-            parseFloat(defaultJ116),
-            "number-2dp",
-          );
-        }
-      }
-    }
+    // ✅ S07 PATTERN: Ghosting handler only sets visual ghosting classes, never writes values
+    // Values are set by d_113 dropdown change handler, NOT by ghosting function
+    // This prevents overwriting ref_j_116 during mode switches
 
     // Row 116 other fields: Ghost only when "No Cooling"
     setFieldGhosted("l_116", !isCoolingActive); // Sink - ghost when No Cooling
     setFieldGhosted("m_116", !isCoolingActive); // Reference % - ghost when No Cooling
 
-    if (isFossilFuel) {
-      const afueField = "j_115";
-      let newAFUEString = "0.90"; // Fallback default
-
-      if (
-        window.TEUI &&
-        window.TEUI.StateManager &&
-        window.TEUI.ReferenceValues
-      ) {
-        const currentD13 = window.TEUI.StateManager.getValue("d_13");
-        // Attempt to get AFUE from ReferenceValues based on d_13
-        // This assumes a structure like: ReferenceValues.getStandardData(standardKey).j_115
-        // Or ReferenceValues.getSpecificReferenceValue(standardKey, fieldId)
-        let referenceAFUE = undefined;
-        if (typeof window.TEUI.ReferenceValues.getStandardData === "function") {
-          const standardData =
-            window.TEUI.ReferenceValues.getStandardData(currentD13);
-          if (standardData && standardData.j_115) {
-            referenceAFUE = standardData.j_115;
-          }
-        } else if (
-          typeof window.TEUI.ReferenceValues.getSpecificReferenceValue ===
-          "function"
-        ) {
-          referenceAFUE = window.TEUI.ReferenceValues.getSpecificReferenceValue(
-            currentD13,
-            "j_115",
-          );
-        } else if (window.TEUI.ReferenceValues[currentD13]) {
-          // Direct access pattern
-          referenceAFUE = window.TEUI.ReferenceValues[currentD13].j_115;
-        }
-
-        if (referenceAFUE !== undefined) {
-          newAFUEString = referenceAFUE.toString();
-        } else {
-        }
-
-        // For now, this prioritizes ReferenceValue for the standard, then 0.90.
-      }
-
-      // ✅ MODE-AWARE: Set AFUE value using ModeManager instead of global StateManager
-      if (window.TEUI?.sect13?.ModeManager) {
-        window.TEUI.sect13.ModeManager.setValue(
-          afueField,
-          newAFUEString,
-          "system-update",
-        );
-
-        const afueElement = document.querySelector(
-          `[data-field-id="${afueField}"]`,
-        );
-        if (
-          afueElement &&
-          afueElement.getAttribute("contenteditable") === "true"
-        ) {
-          // Ensure newAFUEString is parsed as a number for formatting
-          afueElement.textContent = window.TEUI.formatNumber(
-            parseFloat(newAFUEString),
-            "number-2dp",
-          );
-        }
-      } else if (window.TEUI?.StateManager?.setValue) {
-        // Fallback to global StateManager
-        window.TEUI.StateManager.setValue(
-          afueField,
-          newAFUEString,
-          "system-update",
-        );
-      }
-    }
+    // ✅ S07 PATTERN: j_115 ghosting - ONLY set visual state, never write values
+    // The j_115 AFUE field is active only for Gas/Oil systems
+    // Values are managed by d_113 dropdown change handler and ReferenceState.onReferenceStandardChange()
+    // NOT by the ghosting function - this prevents overwriting imported/user values during mode switches
     // --- END ADDED / MODIFIED ---
 
     // Row 116 ghosting logic is already implemented above

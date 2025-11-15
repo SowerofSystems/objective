@@ -346,11 +346,13 @@ window.TEUI.SectionModules.sect03 = (function () {
         "h_23",
         "i_23",
         "m_23",
+        "n_23",
         "d_24",
         "e_24",
         "h_24",
         "i_24",
         "m_24",
+        "n_24",
       ];
 
       calculatedFields.forEach((fieldId) => {
@@ -480,6 +482,23 @@ window.TEUI.SectionModules.sect03 = (function () {
     // ❌ ANTI-PATTERN REMOVED: Direct DOM write from a calculation helper has been eliminated.
     // The `ModeManager.updateCalculatedDisplayValues()` function is now solely responsible
     // for reading from StateManager and updating the UI, ensuring a single source of truth.
+  }
+
+  /**
+   * Apply CSS class to DOM element for compliance indicators (S08 pattern)
+   * Only applies in Target mode - Reference mode should not override Target's visual indicators
+   * @param {string} fieldId - The field ID to target
+   * @param {string} className - The class name to add ("checkmark" or "warning")
+   */
+  function setElementClass(fieldId, className) {
+    // Only apply styling in Target mode (S08 pattern)
+    if (ModeManager.currentMode !== "target") return;
+
+    const element = document.querySelector(`[data-field-id="${fieldId}"]`);
+    if (element) {
+      element.classList.remove("checkmark", "warning");
+      if (className) element.classList.add(className);
+    }
   }
 
   //==========================================================================
@@ -683,6 +702,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         d: {
           fieldId: "d_19",
           type: "dropdown",
+          label: "Province",
           dropdownId: "dd_d_19",
           value: "ON",
           section: "climateCalculations",
@@ -701,6 +721,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         h: {
           fieldId: "h_19",
           type: "dropdown",
+          label: "City",
           dropdownId: "dd_h_19",
           value: "Alexandria",
           section: "climateCalculations",
@@ -726,6 +747,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         j: {
           fieldId: "j_19",
           type: "derived",
+          label: "Climate Zone",
           value: "6.0",
           section: "climateCalculations",
           dependencies: ["d_20"],
@@ -735,6 +757,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         m: {
           fieldId: "m_19",
           type: "editable",
+          label: "Days Cooling",
           value: "120",
           section: "climateCalculations",
           tooltip: true, // Cooling Days are Increasing
@@ -753,6 +776,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         d: {
           fieldId: "d_20",
           type: "derived",
+          label: "Heating Degree Days (HDD)",
           value: "4600",
           section: "climateCalculations",
           dependencies: ["d_19", "h_19"],
@@ -762,6 +786,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         h: {
           fieldId: "h_20",
           type: "dropdown",
+          label: "Current or Future Values",
           dropdownId: "dd_h_20",
           value: "Present",
           section: "climateCalculations",
@@ -779,6 +804,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         l: {
           fieldId: "l_20",
           type: "editable",
+          label: "Summer Night ºC",
           value: "20.43", // Default: Alexandria, ON summer night temp
           section: "climateCalculations",
           tooltip: true, // Night-time outdoor temp (cooling season mean)
@@ -802,6 +828,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         d: {
           fieldId: "d_21",
           type: "editable", // ✅ Changed from "derived" - always editable like g_88
+          label: "Cooling Degree Days (CDD)",
           value: "196",
           section: "climateCalculations",
           classes: ["user-input", "editable"], // ✅ Add styling for editable field
@@ -812,6 +839,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         h: {
           fieldId: "h_21",
           type: "dropdown",
+          label: "Capacitance Method",
           dropdownId: "dd_h_21",
           value: "Capacitance",
           section: "climateCalculations",
@@ -824,6 +852,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         i: {
           fieldId: "i_21",
           type: "percentage",
+          label: "Capacitance Factor %",
           value: "50",
           min: 0,
           max: 100,
@@ -831,6 +860,7 @@ window.TEUI.SectionModules.sect03 = (function () {
           section: "climateCalculations",
           tooltip: true, // Capacitance Factor
           defaultValue: "50",
+          conditionalDeps: ["h_21"], // Set to 0 when h_21="Static"
         },
         // NEW: Summer RH% field (l_21) - Cooling Refactor Phase 5.1.1
         // Replaces: j_21 "CDD Reference Lookup" and k "CDD - Energy Star"
@@ -840,6 +870,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         l: {
           fieldId: "l_21",
           type: "editable",
+          label: "Summer RH%",
           value: "55.85", // Default: Alexandria, ON cooling season mean RH at 15h00 LST
           section: "climateCalculations",
           tooltip: true, // Cooling season mean RH at 15h00 LST
@@ -859,6 +890,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         d: {
           fieldId: "d_22",
           type: "derived",
+          label: "Ground Facing GF HDD",
           value: "1960",
           section: "climateCalculations",
           dependencies: ["d_20"],
@@ -869,6 +901,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         h: {
           fieldId: "h_22",
           type: "calculated",
+          label: "Ground Facing CDD",
           value: "-1680",
           section: "climateCalculations",
           dependencies: ["d_21"],
@@ -879,9 +912,11 @@ window.TEUI.SectionModules.sect03 = (function () {
         l: {
           fieldId: "l_22",
           type: "editable",
+          label: "Elevation (ASL)",
           value: "80",
           section: "climateCalculations",
           classes: ["user-input", "editable"],
+          dependencies: ["d_19", "h_19"], // Populated from city climate data lookup
         },
         m: { content: "m", classes: ["unit-label"] },
       },
@@ -926,8 +961,20 @@ window.TEUI.SectionModules.sect03 = (function () {
         m: {
           fieldId: "m_23",
           type: "calculated",
-          value: "122%",
+          label: "OBC Required Heating Setpoint",
+          value: "22",
           section: "climateCalculations",
+          dependencies: ["d_12"], // Excel: =XLOOKUP(D12, OccType, MinIndoorTemp)
+          tooltip: true,
+        },
+        n: {
+          fieldId: "n_23",
+          type: "calculated",
+          label: "Heating Setpoint Compliance",
+          value: "✓",
+          section: "climateCalculations",
+          dependencies: ["h_23", "m_23"], // ✓ if h_23 >= m_23, ✗ if h_23 < m_23
+          tooltip: true,
         },
       },
     },
@@ -973,6 +1020,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         l: {
           fieldId: "l_24",
           type: "editable",
+          label: "Cooling Override",
           value: "24",
           section: "climateCalculations",
           classes: ["user-input", "editable"],
@@ -980,9 +1028,20 @@ window.TEUI.SectionModules.sect03 = (function () {
         m: {
           fieldId: "m_24",
           type: "calculated",
-          value: "108%",
+          label: "NBC Upper Limit",
+          value: "26",
           section: "climateCalculations",
-          dependencies: ["h_24", "l_24"],
+          dependencies: [], // Static value - NBC acceptable upper limit for cooling (replaces ASHRAE 90.1)
+          tooltip: true,
+        },
+        n: {
+          fieldId: "n_24",
+          type: "calculated",
+          label: "Cooling Setpoint Compliance",
+          value: "✓",
+          section: "climateCalculations",
+          dependencies: ["h_24", "m_24"], // ✓ if h_24 <= m_24, ✗ if h_24 > m_24
+          tooltip: true,
         },
       },
     },
@@ -1008,7 +1067,7 @@ window.TEUI.SectionModules.sect03 = (function () {
           // Create a field definition with relevant properties
           fields[cell.fieldId] = {
             type: cell.type,
-            label: cell.content || row.label,
+            label: cell.label || cell.content || row.label,
             defaultValue: cell.value || "",
             section: cell.section || "climateCalculations",
           };
@@ -1780,6 +1839,8 @@ window.TEUI.SectionModules.sect03 = (function () {
 
       // ✅ STEP 3: Run calculations that depend on climate data
       calculateHeatingSetpoint();
+      calculateOBCHeatingSetpoint(); // m_23: Building code baseline (no PH override)
+      calculateHeatingCompliance(); // n_23: Check h_23 >= m_23 compliance
       calculateCoolingSetpoint_h24();
       calculateTemperatures();
       calculateGroundFacing();
@@ -1849,6 +1910,8 @@ window.TEUI.SectionModules.sect03 = (function () {
 
       // ✅ STEP 3: Run calculations that depend on climate data
       calculateHeatingSetpoint();
+      calculateOBCHeatingSetpoint(); // m_23: Building code baseline (no PH override)
+      calculateHeatingCompliance(); // n_23: Check h_23 >= m_23 compliance
       calculateCoolingSetpoint_h24();
       calculateTemperatures();
       calculateGroundFacing();
@@ -1911,9 +1974,7 @@ window.TEUI.SectionModules.sect03 = (function () {
       }
     });
 
-    console.log(
-      "[S03] Reference CALCULATED results stored (climate data + setpoints - INPUT fields excluded)",
-    );
+    // console.log("[S03] Reference CALCULATED results stored (climate data + setpoints - INPUT fields excluded)");
   }
 
   /**
@@ -1941,9 +2002,7 @@ window.TEUI.SectionModules.sect03 = (function () {
       }
     });
 
-    console.log(
-      "[S03] Target CALCULATED results stored (setpoints + derived values only - climate data already published)",
-    );
+    // console.log("[S03] Target CALCULATED results stored (setpoints + derived values only - climate data already published)");
   }
 
   // --- New Calculation Functions ---
@@ -1957,7 +2016,8 @@ window.TEUI.SectionModules.sect03 = (function () {
     let heatingSetpoint;
 
     // Check if the reference standard indicates a Passive House related standard
-    if (referenceStandard.toUpperCase().includes("PH")) {
+    // Defensive: Check if referenceStandard exists and is a string before calling methods
+    if (referenceStandard && typeof referenceStandard === 'string' && referenceStandard.toUpperCase().includes("PH")) {
       // Case-insensitive check for "PH"
       heatingSetpoint = 18;
     } else {
@@ -1978,6 +2038,32 @@ window.TEUI.SectionModules.sect03 = (function () {
 
     setFieldValue("h_23", heatingSetpoint); // Update state and DOM via S03 local helper
     return heatingSetpoint; // Return value for potential chaining
+  }
+
+  /**
+   * Calculate OBC Required Heating Setpoint (m_23) based on Occupancy Type (d_12)
+   * This is the building code baseline - identical to h_23 but WITHOUT PH override
+   * Uses same occupancy logic: 22°C for Residential/Care, 18°C for others
+   */
+  function calculateOBCHeatingSetpoint() {
+    const occupancyType = getModeAwareGlobalValue("d_12"); // ✅ PHASE 2: Mode-aware external dependency
+    let obcHeatingSetpoint;
+
+    // OBC baseline logic (no PH override - that's only for h_23)
+    // 22°C for Residential or Care occupancies, else 18°C
+    if (
+      occupancyType === "C-Residential" ||
+      occupancyType === "B2-Care and Treatment" ||
+      occupancyType === "B3-Detention Care & Treatment" ||
+      occupancyType.includes("Care")
+    ) {
+      obcHeatingSetpoint = 22;
+    } else {
+      obcHeatingSetpoint = 18; // Default for other occupancies
+    }
+
+    setFieldValue("m_23", obcHeatingSetpoint); // Update state and DOM via S03 local helper
+    return obcHeatingSetpoint; // Return value for potential chaining
   }
 
   /**
@@ -2015,7 +2101,60 @@ window.TEUI.SectionModules.sect03 = (function () {
   }
 
   /**
-   * Update fields dependent on the effective cooling setpoint (i_24, m_24)
+   * Calculate NBC Cooling Upper Limit (m_24)
+   * Static value - NBC (National Building Code) acceptable upper limit for cooling setpoint
+   * Canada has adopted this standard, replacing previous ASHRAE 90.1 reference
+   */
+  function calculateNBCCoolingLimit() {
+    const nbcUpperLimit = 26; // NBC standard upper limit in °C
+    setFieldValue("m_24", nbcUpperLimit);
+    return nbcUpperLimit;
+  }
+
+  /**
+   * Calculate Heating Setpoint Compliance (n_23)
+   * Compares h_23 (actual heating setpoint) against m_23 (OBC requirement)
+   * Pass (✓) if h_23 >= m_23, Fail (✗) if h_23 < m_23
+   */
+  function calculateHeatingCompliance() {
+    const actualSetpoint = getNumericValue("h_23");
+    const obcRequirement = getNumericValue("m_23");
+
+    // Pass if actual >= required, fail if actual < required
+    const isCompliant = actualSetpoint >= obcRequirement;
+
+    // Set the symbol as text (S08 pattern)
+    setFieldValue("n_23", isCompliant ? "✓" : "✗");
+
+    // Apply CSS class directly to DOM element (S08 pattern)
+    setElementClass("n_23", isCompliant ? "checkmark" : "warning");
+
+    return isCompliant;
+  }
+
+  /**
+   * Calculate Cooling Setpoint Compliance (n_24)
+   * Compares h_24 (actual cooling setpoint) against m_24 (NBC upper limit)
+   * Pass (✓) if h_24 <= m_24, Fail (✗) if h_24 > m_24
+   */
+  function calculateCoolingCompliance() {
+    const actualSetpoint = getNumericValue("h_24");
+    const nbcUpperLimit = getNumericValue("m_24");
+
+    // Pass if actual <= limit, fail if actual > limit
+    const isCompliant = actualSetpoint <= nbcUpperLimit;
+
+    // Set the symbol as text (S08 pattern)
+    setFieldValue("n_24", isCompliant ? "✓" : "✗");
+
+    // Apply CSS class directly to DOM element (S08 pattern)
+    setElementClass("n_24", isCompliant ? "checkmark" : "warning");
+
+    return isCompliant;
+  }
+
+  /**
+   * Update fields dependent on the effective cooling setpoint (i_24)
    */
   function updateCoolingDependents() {
     const effectiveSetpointC = determineEffectiveCoolingSetpoint();
@@ -2026,12 +2165,11 @@ window.TEUI.SectionModules.sect03 = (function () {
       setFieldValue("i_24", effectiveSetpointF);
     }
 
-    // Update m_24 (Percentage calculation - Placeholder logic)
-    // Add the actual calculation logic for m_24 here when known
-    // Example placeholder:
-    const someBaseValueForM24 = 100; // Replace with actual dependency value
-    const m24Value = Math.round((effectiveSetpointC / 22) * 100); // Example calc
-    setFieldValue("m_24", `${m24Value}%`);
+    // Update m_24 (NBC upper limit - static value)
+    calculateNBCCoolingLimit();
+
+    // Update n_24 (cooling compliance check)
+    calculateCoolingCompliance();
   }
 
   /**
@@ -2359,6 +2497,26 @@ window.TEUI.SectionModules.sect03 = (function () {
 
           // ✅ CRITICAL FIX: Update critical flag display immediately (mode-aware)
           updateCriticalOccupancyFlag();
+        },
+      );
+
+      // ✅ NEW: Listener for d_13 (Target Reference Standard) changes
+      // Required for PH override logic in h_23 calculation
+      window.TEUI.StateManager.addListener(
+        "d_13",
+        function () {
+          // Trigger full recalculation to update h_23 based on PH override logic
+          calculateAll();
+        },
+      );
+
+      // ✅ NEW: Listener for ref_d_13 (Reference Reference Standard) changes
+      // Required for PH override logic in Reference mode h_23 calculation
+      window.TEUI.StateManager.addListener(
+        "ref_d_13",
+        function () {
+          // Trigger full recalculation to update ref_h_23 based on PH override logic
+          calculateAll();
         },
       );
 
