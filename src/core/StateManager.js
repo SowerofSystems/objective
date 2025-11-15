@@ -1157,12 +1157,52 @@ TEUI.StateManager = (function () {
         description: "Building code standards database",
       },
       {
+        id: "FOUNDATION-ClimateValues",
+        group: "🏗️ Foundation",
+        type: "module",
+        architecturalLayer: "Foundation",
+        label: "ClimateValues",
+        description: "Climate and weather data storage",
+      },
+      {
         id: "COORDINATION-Calculator",
         group: "🧮 Coordination",
         type: "module",
         architecturalLayer: "Coordination",
         label: "Calculator",
         description: "Traffic Cop coordination, orchestrates calculateAll()",
+      },
+      {
+        id: "COORDINATION-Orchestrator",
+        group: "🧮 Coordination",
+        type: "module",
+        architecturalLayer: "Coordination",
+        label: "Orchestrator",
+        description: "Dependency-ordered calculation execution",
+      },
+      {
+        id: "COORDINATION-ZenMaster",
+        group: "🧮 Coordination",
+        type: "module",
+        architecturalLayer: "Coordination",
+        label: "ZenMaster",
+        description: "Runtime dependency discovery & validation (Observer)",
+      },
+      {
+        id: "COORDINATION-Clock",
+        group: "🧮 Coordination",
+        type: "module",
+        architecturalLayer: "Coordination",
+        label: "Clock",
+        description: "Performance monitoring and timing",
+      },
+      {
+        id: "COORDINATION-Cooling",
+        group: "🧮 Coordination",
+        type: "module",
+        architecturalLayer: "Coordination",
+        label: "Cooling",
+        description: "Specialized cooling calculations module",
       },
       {
         id: "COORDINATION-ReferenceSystem",
@@ -1323,6 +1363,8 @@ TEUI.StateManager = (function () {
       // Foundation dependencies
       { source: "FOUNDATION-StateManager", target: "FOUNDATION-FieldManager" },
       { source: "FOUNDATION-StateManager", target: "COORDINATION-Calculator" },
+      { source: "FOUNDATION-StateManager", target: "COORDINATION-Orchestrator" },
+      { source: "FOUNDATION-StateManager", target: "COORDINATION-ZenMaster" },
       {
         source: "FOUNDATION-FieldManager",
         target: "COORDINATION-SectionIntegrator",
@@ -1331,6 +1373,17 @@ TEUI.StateManager = (function () {
         source: "FOUNDATION-ReferenceValues",
         target: "COORDINATION-ReferenceSystem",
       },
+      {
+        source: "FOUNDATION-ClimateValues",
+        target: "MODULE-Section03",
+      },
+
+      // Coordination layer internal dependencies
+      { source: "COORDINATION-Calculator", target: "COORDINATION-Clock" },
+      { source: "COORDINATION-Calculator", target: "COORDINATION-Cooling" },
+      { source: "COORDINATION-Orchestrator", target: "COORDINATION-Calculator" },
+      { source: "COORDINATION-ZenMaster", target: "COORDINATION-Clock" },
+      { source: "COORDINATION-Cooling", target: "MODULE-Section13" },
 
       // Coordination dependencies - COORDINATION-Calculator orchestrates all sections via calculateAll()
       // Order matches Calculator.js calcOrder array (lines 488-507)
