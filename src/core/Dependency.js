@@ -788,20 +788,17 @@ window.TEUI.DependencyGraph = class DependencyGraph {
         return color;
       })
       .attr("stroke", d => {
-        // Use attr() instead of style() - CSS can override attributes
-        if (d.isArchitectural) {
-          return d.architecturalLayer === "Foundation"
-            ? "#2E7D32"
-            : d.architecturalLayer === "Coordination"
-              ? "#1565C0"
-              : "#C62828";
-        }
-        return "#fff";
+        // Architectural nodes get styled via CSS classes, regular nodes get white stroke
+        return d.isArchitectural ? null : "#fff";
       })
-      .attr("stroke-width", d => (d.isArchitectural ? 4 : 2))
+      .attr("stroke-width", d => {
+        // Architectural nodes get styled via CSS classes, regular nodes get 2px stroke
+        return d.isArchitectural ? null : 2;
+      })
       .style("filter", d => {
+        // Filter also handled by CSS for architectural nodes
         if (d.isArchitectural) {
-          return "drop-shadow(0px 0px 16px rgba(0,0,0,0.8))"; // Strong shadow for architectural modules
+          return null;
         } else if (d.isInfluential) {
           return "drop-shadow(0px 0px 12px rgba(255,82,82,0.9))"; // Enhanced glow for influential field nodes
         } else {

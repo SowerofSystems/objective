@@ -1358,21 +1358,21 @@ table.data-table select.form-select:hover {
 
 /* Architectural layer styling - colored borders matching legend */
 .node circle.arch-foundation {
-  stroke: #2E7D32 !important; /* Dark green for Foundation */
-  stroke-width: 4px !important;
-  filter: drop-shadow(0px 0px 16px rgba(0, 0, 0, 0.8)) !important;
+  stroke: #2E7D32; /* Dark green for Foundation */
+  stroke-width: 4px;
+  filter: drop-shadow(0px 0px 16px rgba(0, 0, 0, 0.8));
 }
 
 .node circle.arch-coordination {
-  stroke: #1565C0 !important; /* Dark blue for Coordination */
-  stroke-width: 4px !important;
-  filter: drop-shadow(0px 0px 16px rgba(0, 0, 0, 0.8)) !important;
+  stroke: #1565C0; /* Dark blue for Coordination */
+  stroke-width: 4px;
+  filter: drop-shadow(0px 0px 16px rgba(0, 0, 0, 0.8));
 }
 
 .node circle.arch-application {
-  stroke: #C62828 !important; /* Dark red for Application */
-  stroke-width: 4px !important;
-  filter: drop-shadow(0px 0px 16px rgba(0, 0, 0, 0.8)) !important;
+  stroke: #C62828; /* Dark red for Application */
+  stroke-width: 4px;
+  filter: drop-shadow(0px 0px 16px rgba(0, 0, 0, 0.8));
 }
 
 .node-background {
