@@ -1436,7 +1436,8 @@ window.TEUI.SectionModules.sect13 = (function () {
           section: "mechanicalLoads",
           dependencies: [
             "d_63", // Occupants
-            "i_63", // Hrs/Day
+            "i_63", // Annual Occupied Hours
+            "j_63", // Total Hours in Year (8760) - constant used for schedule ratio
             "d_105", // Net Interior Volume
             "g_118", // Ventilation Method
             "l_118", // ACH

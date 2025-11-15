@@ -181,93 +181,142 @@ This validates that ZenMaster's limitation (cannot trace dual-state) is expected
 
 **Issue**: Graph contains 23 non-ref nodes in "Other" group that cannot be directly correlated to section files.
 
-### Constants & Intermediate Calculations (7 nodes)
+### Cooling Psychrometric Constants (7 nodes) ✅ **RESOLVED - REGISTERED IN FIELDMANAGER**
 
-**Cooling.js Psychrometric Constants** (not in FieldManager):
-- `cooling_latentLoadFactor` - Latent load multiplier
-- `cooling_wetBulbTemperature` - Wet bulb temp for humidity calcs
-- `cooling_atmosphericPressure` - Barometric pressure
-- `cooling_partialPressure` - Vapor pressure
-- `cooling_humidityRatio` - Absolute humidity
-- `cooling_h_124` - Intermediate free cooling value
-- `cooling_m_124` - Days active cooling (from calculation)
+**Cooling.js Psychrometric Fields** - Now registered with FieldManager:
+- `cooling_wetBulbTemperature` - ✅ Label: "Wet Bulb Temperature" (°C)
+  - [Cooling.js:1189-1199](../../src/core/Cooling.js#L1189-L1199)
+- `cooling_atmosphericPressure` - ✅ Label: "Atmospheric Pressure" (kPa) - **NEWLY ADDED**
+  - [Cooling.js:1211-1228](../../src/core/Cooling.js#L1211-L1228)
+- `cooling_partialPressure` - ✅ Label: "Partial Vapor Pressure" (kPa) - **NEWLY ADDED**
+  - [Cooling.js:1230-1249](../../src/core/Cooling.js#L1230-L1249)
+- `cooling_humidityRatio` - ✅ Label: "Humidity Ratio Difference" (kg/kg) - **NEWLY ADDED**
+  - [Cooling.js:1251-1278](../../src/core/Cooling.js#L1251-L1278)
+- `cooling_latentLoadFactor` - ✅ Label: "Latent Load Factor (A6)"
+  - [Cooling.js:1282-1304](../../src/core/Cooling.js#L1282-L1304)
+- `cooling_h_124` - ✅ Label: "Free Cooling Limit (h_124)" (kWh/yr)
+  - [Cooling.js:1306-1334](../../src/core/Cooling.js#L1306-L1334)
+- `cooling_m_124` - ✅ Label: "Days Active Cooling (m_124)" (days/yr)
+  - [Cooling.js:1337-1359](../../src/core/Cooling.js#L1337-L1359)
 
-**Status**: These are **valid dependencies** - they're local variables in Cooling.js that feed into field calculations but aren't registered in FieldManager. They should either:
-1. Be removed from field dependency arrays (if they're truly internal)
-2. Be registered as hidden/constant fields in FieldManager
+**Status**: ✅ **All 7 cooling constants now registered** - Added to CoolingFields object with proper labels
+- All fields now have `section: "mechanicalLoads"` to group with S13 in dependency graph
+- 3 psychrometric intermediates (atmosphericPressure, partialPressure, humidityRatio) newly added with labels, descriptions, units, and dependencies
+- 4 existing fields (wetBulbTemperature, latentLoadFactor, h_124, m_124) updated with section property
+- Total registered: 16 fields (8 Target + 8 Reference variants)
+- Registered via FieldManager.registerFields() at [Cooling.js:1386](../../src/core/Cooling.js#L1386)
+- Will now appear in "mechanicalLoads" group (same color as S13) in dependency graph
 
-### Envelope Area Fields (6 nodes - S11/S12)
+**Dependencies Completed:**
+- ✅ Added missing **i_59** (S08 Indoor RH%) to `cooling_latentLoadFactor` dependencies
+- ✅ Added missing **d_21** (S03 CDD), **d_105** (S12 Building Volume), **h_15** (S02 Building Area) to `cooling_h_124` dependencies
+- All cross-section dependencies from S02, S03, S08, S12, S13 now properly declared
 
-**Envelope component areas** (likely row ~88-93):
-- `d_88`: Doors: Area m²
-- `d_89`: Window Area North: Area m²
-- `d_90`: Window Area East: Area m²
-- `d_91`: Window Area South: Area m²
-- `d_92`: Window Area West: Area m²
-- `d_93`: Skylights: Area m²
+### Envelope Area Fields (6 nodes - S11) ✅ **RESOLVED - LABELS UPDATED**
 
-**Status**: These are **legitimate fields** from S11 (Envelope Assembly). They're likely input fields for area calculations. Grouped as "Other" because:
-- They may not have explicit `group` property in field definition
-- OR they're defined but not properly categorized
+**S10-S11 Synced Window/Door Areas** (rows 88-93):
+- `d_88`: S11: Doors: Area m² - Synced from S10 d_73
+  - Dependencies: `["d_73"]` - [Section11.js:931-936](../../src/sections/Section11.js#L931-L936)
+- `d_89`: S11: Window Area North: Area m² - Synced from S10 d_74
+  - Dependencies: `["d_74"]` - [Section11.js:1009-1014](../../src/sections/Section11.js#L1009-L1014)
+- `d_90`: S11: Window Area East: Area m² - Synced from S10 d_75
+  - Dependencies: `["d_75"]` - [Section11.js:1087-1092](../../src/sections/Section11.js#L1087-L1092)
+- `d_91`: S11: Window Area South: Area m² - Synced from S10 d_76
+  - Dependencies: `["d_76"]` - [Section11.js:1165-1170](../../src/sections/Section11.js#L1165-L1170)
+- `d_92`: S11: Window Area West: Area m² - Synced from S10 d_77
+  - Dependencies: `["d_77"]` - [Section11.js:1243-1248](../../src/sections/Section11.js#L1243-L1248)
+- `d_93`: S11: Skylights: Area m² - Synced from S10 d_78
+  - Dependencies: `["d_78"]` - [Section11.js:1321-1326](../../src/sections/Section11.js#L1321-L1326)
 
-**Action**: Review S11 field definitions for d_88-d_93 and add `group: "volumeSurfaceMetrics"` or create `group: "envelopeAreas"`
+**Status**: ✅ **Valid S11 fields** - Properly labeled with S11: prefix, correct dependencies, synced from S10
+- S10 publishes area values with both S10 field IDs (d_73-d_78) and S11 field IDs (d_88-d_93) to StateManager
+- S11 reads these synced values for envelope thermal calculations
+- Appearing in "Other" group because no explicit `section` property (similar to rows 97-98)
+- Labels now match S10 pattern: "S11:" prefix instead of "S10:" prefix
+- No action required - fields are working correctly
 
-### Heat Loss/Gain Intermediates (3 nodes - S11/S12)
+### Heat Loss/Gain Intermediates (4 nodes - S11) ✅ **RESOLVED - VALID FIELDS**
 
-**Penalty and total heat calculations**:
-- `i_97`: Penalty Heat Loss kWh/yr
-- `k_97`: Penalty Heat Gain kWh
-- `i_98`: Total Heat Loss kWh/yr
-- `k_98`: Total Heat Gain kWh
+**Thermal Bridge Penalty and Envelope Totals** (Section 11):
+- `i_97`: **TB Penalty Heat Loss** kWh/yr - Annual heatloss impact from thermal bridges
+  - Dependencies: `["i_98", "d_97"]` - depends on total envelope heatloss and TB penalty percentage
+  - [Section11.js:1591-1595](../../src/sections/Section11.js#L1591-L1595)
+- `i_98`: **Total Envelope Heat Loss** kWh/yr - Sum of all heatloss (rows 85-95, excludes TB penalty)
+  - Dependencies: `["i_85", "i_86", ..., "i_95"]` - sum of 11 component heatloss values
+  - [Section11.js:1680-1696](../../src/sections/Section11.js#L1680-L1696)
+- `k_97`: **TB Penalty Cooling Season Heatgain** kWh - Thermal bridge impact on cooling (can be negative)
+  - Dependencies: `["h_21", "k_98", "d_97"]` - depends on capacitance method, total gains, and TB %
+  - Note: Can be negative when thermal mass (e.g., cool basements) improves cooling but risks humidity/mould
+  - [Section11.js:1605-1609](../../src/sections/Section11.js#L1605-L1609)
+- `k_98`: **Total Cooling Season Heatgain** kWh - Sum of all cooling gains (rows 85-95, excludes TB penalty)
+  - Dependencies: `["k_85", "k_86", ..., "k_95"]` - sum of 11 component heatgain values
+  - [Section11.js:1719-1735](../../src/sections/Section11.js#L1719-L1735)
 
-**Status**: These are **intermediate calculations** in envelope heat balance. Should have `group: "volumeSurfaceMetrics"` or similar.
+**Status**: ✅ **Valid S11 fields** - Properly labeled, correct dependencies, calculations implemented
+- Appearing in "Other" group because no explicit `section` property set in field definitions
+- Part of envelope thermal balance calculations (thermal bridging effects and totals)
+- **Note**: These fields have a critical dependency relationship with S12 rows 101-104. Adding `section: "volumeSurfaceMetrics"` to group them with other S11 fields in the dependency graph should be deferred until after testing to ensure it doesn't break the S11→S12 calculation flow.
+- No action required for now - fields are working correctly
 
-### Mysterious P-Column Nodes (5 nodes - S10)
+### P-Column Cost Fields (6 nodes - S10) ✅ **RESOLVED - FUTURE FEATURE**
 
-**P-column envelope fields** (rows 73-78):
-- `p_73`: (Doors)
-- `p_74`: (Window Area North)
-- `p_75`: (Window Area East)
-- `p_76`: (Window Area South)
-- `p_77`: (Window Area West)
-- `p_78`: (Skylights)
+**P-column economics/cost fields** (rows 73-78):
+- `p_73`: Doors Cost
+- `p_74`: Window Area North Cost
+- `p_75`: Window Area East Cost
+- `p_76`: Window Area South Cost
+- `p_77`: Window Area West Cost
+- `p_78`: Skylights Cost
 
-**Pattern**: These mirror the radiant gain rows (i_73-i_78, k_73-k_78) but in column P.
+**Status**: ✅ **Future Feature (Not Implemented)** - Excel implementation complete, app in progress
+- Fields defined in Section10.js with dependencies: `["l_12", "k_73-78", "i_73-78"]`
+- Comment in code: `// Column P (Cost)` [Section10.js:1002](../../src/sections/Section10.js#L1002)
+- No calculation logic implemented yet (no setValue calls)
+- Dependencies: l_12 (electricity price), k_* (emissions), i_* (gains)
 
-**Status**: **Unclear purpose** - P column not typically used in TEUI. Possibilities:
-1. Legacy fields from Excel that need cleanup
-2. Additional compliance/percentage calculations
-3. Typos in dependency declarations (should be i_* or k_*?)
+**Action**: No action required - these will appear in dependency graph but are intentionally unimplemented. Can be safely ignored until cost/economics feature is developed.
 
-**Action Required**: Search S10 for `p_73` through `p_78` usage and verify they're intentional
+### J-Column Constant (1 node - S09) ✅ **RESOLVED**
 
-### Unknown J-Column Node (1 node - S09)
+**Hours in Year Constant**:
+- `j_63`: Total Hours in Year (8760) - ✅ **VALID CONSTANT**
 
-**Occupancy field**:
-- `j_63`: (no label, group="Other")
+**Status**: **Not a typo** - this is a valid constant published in [Section09.js:2620-2621](../../src/sections/Section09.js#L2620-L2621):
+```javascript
+setValue("j_63", "8760", "calculated");
+setValue("ref_j_63", "8760", "calculated");
+```
 
-**Status**: **Likely a typo** - this was flagged in original ZenMaster validation as non-existent.
-- Should probably be `i_63` (Annual Occupied Hours) based on S09/S13 cross-references
-- Or could be "Occupancy Schedule Type" (text field)
+**Usage**: Used in S13 ventilation calculations for schedule ratios:
+- [Section13.js:2768](../../src/sections/Section13.js#L2768): `const totalHours = parseFloat(getValue("j_63") || 8760);`
+- [Section13.js:2782,2787](../../src/sections/Section13.js#L2782): `(occupiedHours / totalHours)` ratio
 
-**Action**: Review S09 row 63, column J - verify if j_63 exists or if it's a typo for i_63
+**Excel Formula Match**: D120 uses `D63*D119*(I63/J63)` where:
+- I63 = Annual Occupied Hours (i_63)
+- J63 = Total Hours in Year (j_63 = 8760)
+- Ratio = schedule utilization factor
+
+**Fix Applied**: ✅ Added j_63 to d_120 dependencies in [Section13.js:1437-1445](../../src/sections/Section13.js#L1437-L1445)
+
+**Pattern Note**: This is a **recurring issue** - constants used in calculations (8760, psychrometric values, etc.) appear in graph but aren't always in FieldManager. See cooling_* constants and similar patterns throughout codebase.
 
 ---
 
 ### Summary of Odd Nodes
 
-**Total: 23 nodes**
-1. **Cooling constants** (7) - Valid but not in FieldManager
-2. **Envelope areas** (6) - Missing proper group classification
-3. **Heat intermediates** (4) - Missing proper group classification
-4. **P-column mystery** (5) - Unknown purpose, possibly legacy
-5. **j_63 typo** (1) - Likely should be i_63
+**Total: 23 nodes** - ✅ **ALL RESOLVED!**
+1. ~~**Cooling constants** (7)~~ - ✅ **RESOLVED** - Added to FieldManager with labels, section: "mechanicalLoads"
+2. ~~**Envelope areas** (6)~~ - ✅ **RESOLVED** - Valid S11 synced fields, labels updated with S11: prefix
+3. ~~**Heat intermediates** (4)~~ - ✅ **RESOLVED** - Valid S11 thermal bridge/totals fields
+4. ~~**P-column cost** (6)~~ - ✅ **RESOLVED** - Future feature (not implemented), can ignore
+5. ~~**j_63 constant** (1)~~ - ✅ **RESOLVED** - Valid constant (8760 hours/year), added to d_120 dependencies
 
-**Recommended Actions:**
-1. Review Cooling.js constants - add to FieldManager or remove from deps
-2. Add proper `group` properties to d_88-d_93, i_97-i_98, k_97-k_98
-3. Investigate P-column nodes (p_73-p_78) - verify intentional vs. typo
-4. Fix j_63 reference (likely typo for i_63)
+**Completed Actions (Reverse Priority Order):**
+1. ✅ ~~Fix j_63 reference~~ **COMPLETE** - Valid constant, dependency added
+2. ✅ ~~Investigate P-column nodes~~ **COMPLETE** - Future cost feature, ignore for now
+3. ✅ ~~Investigate heat intermediate nodes~~ **COMPLETE** - Valid S11 fields, no action needed
+4. ✅ ~~Investigate envelope area nodes (d_88-d_93)~~ **COMPLETE** - Valid S11 synced fields, labels updated
+5. ✅ ~~Review Cooling.js constants~~ **COMPLETE** - Added 3 new fields to FieldManager, added section property to all
 
 ---
 

@@ -932,7 +932,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           type: "calculated",
           value: "",
           dependencies: ["d_73"],
-          label: "Doors: Area m²",
+          label: "S11: Doors: Area m²",
         }, // ✅ S10-S11 AREA SYNC: Will sync from S10 d_73
         e: {
           fieldId: "e_88",
@@ -1010,7 +1010,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           type: "calculated",
           value: "",
           dependencies: ["d_74"],
-          label: "Window Area North: Area m²",
+          label: "S11: Window Area North: Area m²",
         }, // ✅ S10-S11 AREA SYNC: Will sync from S10 d_74
         e: {
           fieldId: "e_89",
@@ -1088,7 +1088,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           type: "calculated",
           value: "",
           dependencies: ["d_75"],
-          label: "Window Area East: Area m²",
+          label: "S11: Window Area East: Area m²",
         }, // ✅ S10-S11 AREA SYNC: Will sync from S10 d_75
         e: {
           fieldId: "e_90",
@@ -1166,7 +1166,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           type: "calculated",
           value: "",
           dependencies: ["d_76"],
-          label: "Window Area South: Area m²",
+          label: "S11: Window Area South: Area m²",
         }, // ✅ S10-S11 AREA SYNC: Will sync from S10 d_76
         e: {
           fieldId: "e_91",
@@ -1244,7 +1244,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           type: "calculated",
           value: "",
           dependencies: ["d_77"],
-          label: "Window Area West: Area m²",
+          label: "S11: Window Area West: Area m²",
         }, // ✅ S10-S11 AREA SYNC: Will sync from S10 d_77
         e: {
           fieldId: "e_92",
@@ -1322,7 +1322,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           type: "calculated",
           value: "",
           dependencies: ["d_78"],
-          label: "Skylights: Area m²",
+          label: "S11: Skylights: Area m²",
         }, // ✅ S10-S11 AREA SYNC: Will sync from S10 d_78
         e: {
           fieldId: "e_93",
@@ -1592,28 +1592,28 @@ window.TEUI.SectionModules.sect11 = (function () {
           type: "calculated",
           value: "0.00",
           dependencies: ["i_98", "d_97"],
-          label: "Penalty Heat Loss kWh/yr",
+          label: "TB Penalty Heat Loss kWh/yr",
         },
         j: {
           fieldId: "j_97",
           type: "calculated",
           value: "0%",
           dependencies: ["i_97", "i_98"],
-          label: "Penalty Heat Loss %",
+          label: "Combined Total Envelope TB Penalty Heat Loss %",
         },
         k: {
           fieldId: "k_97",
           type: "calculated",
           value: "0.00",
           dependencies: ["h_21", "k_98", "d_97"],
-          label: "Penalty Heat Gain kWh",
+          label: "TB Penalty Cooling Season Heat Gain kWh",
         },
         l: {
           fieldId: "l_97",
           type: "calculated",
           value: "0%",
           dependencies: ["k_97", "k_98"],
-          label: "Penalty Heat Gain %",
+          label: "Combined TB Penalty Cooling Season Heat Gain %",
         },
         m: {
           fieldId: "m_97",
@@ -1655,7 +1655,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           type: "calculated",
           value: "0.00",
           dependencies: ["d_94", "d_95", "g_101", "g_102"],
-          label: "Total R-Value Imperial",
+          label: "Avg. R-Value Imperial",
         },
         f: {},
         g: {},
