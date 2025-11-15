@@ -728,6 +728,13 @@ window.TEUI.DependencyGraph = class DependencyGraph {
           // Add main circle for node
           g.append("circle")
             .attr("r", d => d.size) // Use dynamic size
+            .attr("class", d => {
+              // Add architectural layer classes for CSS styling
+              if (d.isArchitectural && d.architecturalLayer) {
+                return `arch-${d.architecturalLayer.toLowerCase()}`;
+              }
+              return "";
+            })
             .style("stroke", "#fff")
             .style("stroke-width", 2) // Thicker stroke for better definition
             .style("cursor", "pointer");

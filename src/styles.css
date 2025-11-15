@@ -1356,6 +1356,25 @@ table.data-table select.form-select:hover {
   filter: drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.2));
 }
 
+/* Architectural layer styling - colored borders matching legend */
+.node circle.arch-foundation {
+  stroke: #2E7D32 !important; /* Dark green for Foundation */
+  stroke-width: 4px !important;
+  filter: drop-shadow(0px 0px 16px rgba(0, 0, 0, 0.8)) !important;
+}
+
+.node circle.arch-coordination {
+  stroke: #1565C0 !important; /* Dark blue for Coordination */
+  stroke-width: 4px !important;
+  filter: drop-shadow(0px 0px 16px rgba(0, 0, 0, 0.8)) !important;
+}
+
+.node circle.arch-application {
+  stroke: #C62828 !important; /* Dark red for Application */
+  stroke-width: 4px !important;
+  filter: drop-shadow(0px 0px 16px rgba(0, 0, 0, 0.8)) !important;
+}
+
 .node-background {
   fill: white;
   opacity: 0;
