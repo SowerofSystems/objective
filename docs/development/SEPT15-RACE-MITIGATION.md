@@ -27,7 +27,7 @@ _Incremental Migration Guide to Topological Orchestration_
 
 **🎯 REMEMBER**: This codebase has **Excel calculation parity** and **perfect dual-state isolation**. The ONLY issue is StateManager listener propagation for calculated values. **DO NOT FIX WHAT ISN'T BROKEN.**
 
-### **🏆 CURRENT CODEBASE STATUS (Sept 18, 2025)**
+### **🏆 CURRENT CODEBASE STATUS (Nov 15, 2025)**
 
 **✅ WHAT'S WORKING PERFECTLY:**
 
@@ -42,7 +42,7 @@ _Incremental Migration Guide to Topological Orchestration_
 
 - **Listener Propagation**: StateManager calculated values don't trigger addListener() callbacks
 - **Symptom**: S03 publishes d_20=7100, downstream sections read stale d_20=4600
-- **Impact**: Prevents automatic recalculation cascade when climate data changes
+- **Impact**: Prevents automatic recalculation cascade when climate data changes (bad example, this was fixed, but other changes ie. to S09, require 'Cooling Bump'(see line 113 below) to recalculate and fix calcuklation drift)
 
 **🎯 ORCHESTRATOR MISSION**: Solve the listener propagation issue WITHOUT changing any working architecture.
 
@@ -98,12 +98,12 @@ This plan avoids the pitfalls of the abandoned **IT-DEPENDS** branch (field-leve
 **Current Pain Points This Addresses:**
 
 - **Listener Spaghetti**: S10 has 20+ listeners, S15 has ~40 dependency pairs causing calculation storms
-- **Race Conditions**: Single changes trigger 7+ calculation engines simultaneously (2000ms delays)
-- **Calculation Storms**: Documented 58,000+ log infinite loops from circular listener dependencies
+- **Race Conditions**: Single changes trigger 7+ calculation engines simultaneously (100ms delays)
+- **Calculation Storms**: Documented sometimes 58,000+ log infinite loops from circular listener dependencies
 - **Manual Ordering**: Hardcoded `calcOrder` array in Calculator.js requires manual maintenance
 - **setTimeout Anti-Pattern**: Race condition workarounds using setTimeout violate CTO guidance [[memory:5204274]]
 - **Cascade Amplification**: Single field change triggers 7+ calculation engines (S09→S10→S15→S04→S01)
-- **Performance Degradation**: 2000ms delays unacceptable for user experience
+- **Performance Degradation**: >500ms delays unacceptable for user experience
 - **🚨 ROOT CAUSE CONFIRMED (Sept 18, 2025)**: StateManager architectural limitation definitively identified through systematic testing. **VERIFIED**: StateManager.setValue() with "calculated" state does NOT trigger wildcard or addListener() callbacks, only registerDependency() callbacks. **EVIDENCE**: S03 publishes climate data perfectly (d*20=7100 verified stored in StateManager), but Calculator.js wildcard listener never fires despite explicit logging. **PATTERN B CLEANUP**: Eliminated all target* prefixed antipatterns across S03, S11, S15, S05 (21 violations reduced to 0). **ARCHITECTURAL CONCLUSION**: Perfect dual-state architecture achieved at section level - remaining state contamination is StateManager infrastructure limitation requiring orchestrator-based coordination to replace listener-based reactivity for calculated value propagation.
 
 **🔧 S13 LISTENER FIX ATTEMPTED (Sept 22, 2025)**: Applied surgical fix to S13 climate listeners. **PROBLEM**: S13 used addListener() for S03 calculated values (d_23, h_23, etc.) which never fire due to StateManager limitation. **FIX ATTEMPTED**: Replaced addListener() with registerDependency() calls for S03 climate values. **RESULT**: Partial improvement but "cooling bump" still required - indicates deeper architectural issue beyond simple listener mechanism. **CONCLUSION**: Confirms need for complete orchestrator solution rather than piecemeal listener fixes. S13 represents the complexity that requires systematic orchestrator coordination as outlined in this document.
@@ -172,7 +172,9 @@ S03 calculates d_20=7100 → StateManager.setValue(d_20, "7100", "calculated") �
 
 ### **🎯 S13 PARALLEL DEVELOPMENT STRATEGY**
 
-**Recommendation**: **PROCEED IN PARALLEL** - Do not wait for S13 completion.
+**Recommendation**: **PROCEED IN PARALLEL** - Do not wait for S13 completion. 
+
+//**S13 and Cooling.js refactoring are in fact complete November 15, 2025. **
 
 **Rationale:**
 
@@ -985,67 +987,163 @@ The orchestrator should integrate with existing Clock.js performance measurement
 
 ---
 
-## 📋 **CONSOLIDATED IMPLEMENTATION CHECKLIST** _(Replaces Performance Optimization Guide)_
+## 📋 **CONSOLIDATED IMPLEMENTATION CHECKLIST** _(Current Status Update: 2025-11-15)_
 
-### **Phase 1: Foundation (Week 1)**
+### **Phase 1: Foundation - ✅ COMPLETE**
 
-**Choose Implementation Approach:**
+**Orchestrator Infrastructure:**
 
-**Option A: StateManager Surgical Fix**
+- ✅ **Create 4012-Orchestrator.js** - Complete with enhanced skeleton (Appendix A)
+  - Location: [src/core/Orchestrator.js](../../src/core/Orchestrator.js)
+  - Status: Phase 1A implementation complete (lines 1-332)
+  - Features: Registration, topological sort, runAll(), Traffic Cop integration
 
-- [ ] **Analyze StateManager.setValue()**: Understand why calculated values don't trigger listeners
-- [ ] **Surgical Modification**: Enable calculated value listener triggers with loop protection
-- [ ] **Test d_20 Propagation**: Verify S03→S11 fresh data flow
+- ✅ **Complete Chain Registration** - All 15 sections registered using proven dependencies
+  - Lines 163-274: Full Calculator.js calcOrder dependency chain
+  - Sections: sect02→sect03→sect08→sect09→sect12→sect10→sect11→sect07→sect13→sect06→sect14→sect04→sect05→sect15→sect01
 
-**Option B: Full Orchestrator** _(Requires CTO Review)_
+- ✅ **Dependency Data Collection** - ZenMaster validation complete
+  - 562 nodes, 1,047 dependency links discovered
+  - See [Zen-Observations.md](./Zen-Observations.md) for comprehensive analysis
 
-- [ ] **Create 4012-Orchestrator.js** with enhanced skeleton (Appendix A)
-- [ ] **Replace Calculator.js Triggers**: Modify existing calculation trigger points
-- [ ] **Complete Chain Registration**: Register all 15 sections using proven dependencies
+- ✅ **S17 Dependency Graph** - Fully functional visualization
+  - Interactive graph showing all 562 nodes
+  - Real-time dependency exploration
+  - Ready for orchestrator performance comparison
 
-**Option C: Smart Reactive System** ⭐ **RECOMMENDED**
+**Infrastructure Ready:**
 
-- [ ] **Create SmartReactiveCalculator**: Single entry point for all field changes
-- [ ] **Replace Listener Chaos**: Remove wildcard + individual listeners, use requestAnimationFrame batching
-- [ ] **Preserve Calculator.js**: Use existing `calcOrder` sequence for proven execution order
-- [ ] **QC Monitor Integration**: Enable `?qc=true` monitoring for development
-- [ ] **Timeout Audit**: `grep -r "setTimeout" sections/` - eliminate anti-pattern usage
+- ✅ **Clock.js**: Performance monitoring infrastructure in place (needs orchestrator integration)
+- ✅ **QC Monitor**: Available via `?qc=true` for development validation
+- ✅ **Traffic Cop**: Orchestrator respects existing `window.sectionCalculationInProgress` flag
+- ✅ **Dual-State Architecture**: Preserved throughout implementation
 
-### **Phase 2: Core Migration (Week 2-3)**
+**Decision Made: Orchestrator Approach** ⭐
 
-- [ ] **QC-Assisted Listener Documentation**: Use QCMonitor to catalog all `StateManager.addListener()` calls per section
-- [ ] **Dependency Categorization**: Critical vs Setup vs Rare listener classification using QC violation analysis
-- [ ] **Gradual Registration**: Add sections to orchestrator one by one with QC monitoring
-- [ ] **A/B Testing**: Run orchestrator vs manual execution side-by-side with QC violation comparison
+We chose **Option B: Full Orchestrator** over Smart Reactive System because:
+- Orchestrator.js already implemented and tested
+- Uses proven Calculator.js dependency chain
+- Preserves all existing section architecture
+- Provides foundation for future optimization phases
 
-### **Phase 3: Performance Integration (Week 3-4)**
+### **Phase 2: Testing & Performance Validation - 🔄 CURRENT PHASE**
 
-- [ ] **Debounced Dependencies**: Implement for non-critical listeners (h_15, d_19)
-- [ ] **Mode-Aware Calculation**: Only run necessary engine based on trigger source
-- [ ] **Transactional Updates**: Batch StateManager notifications during orchestrator runs
-- [ ] **QC Performance Validation**: Use QCMonitor to measure <500ms target achievement and detect new violations
+**⚠️ CRITICAL DISCOVERY (Nov 15, 2025): Orchestrator Running Alongside Listeners**
 
-### **Phase 4: Full Migration (Week 4-5)**
+Testing revealed that Orchestrator currently runs **in addition to** existing listeners, causing:
+- Calculation storms (22+ Clock.js triggers during S03 execution)
+- Section module registration issues (sect02, sect01 not found)
+- 200ms S03 execution (should be ~5ms if clean)
 
-- [ ] **All Sections Migrated**: Complete dependency chain under orchestrator control
-- [ ] **QC-Guided Legacy Removal**: Use QCMonitor violation analysis to safely eliminate old `addListener` hacks
-- [ ] **S13 Integration**: Migrate S13 last when orchestrator proven stable
-- [ ] **Final QC Validation**: Generate comprehensive QC report via Section 18 → Logs.md for Excel parity verification
+**This validates SEPT15-RACE-MITIGATION.md warning (line 321):**
+> "Orchestrator **replaces** broken listener propagation, doesn't run alongside it."
 
-### **Phase 5: Advanced Optimization (Future)**
+**🌉 BRIDGING STRATEGY: Incremental Testing Without Breaking Existing System**
+
+**Testing Philosophy:**
+- ✅ Don't replace listeners until orchestrator proven working
+- ✅ Test orchestrator in "shadow mode" (observe, don't execute)
+- ✅ Validate section-by-section with fallback safety
+- ✅ Use QC Monitor to detect regressions immediately
+
+**Immediate Next Steps:**
+
+- [x] **Fix Section Module Registration Issue** - PARTIALLY COMPLETE
+  - ✅ Fixed Orchestrator.js: Added `window.TEUI.SectionModules` namespace initialization
+  - ✅ Fixed Section02.js: Added SectionModules initialization and `calculateAll` export
+  - ⚠️ Section01 EXCLUDED: S01 is pure display consumer with debounced `runAllCalculations()`, not suitable for synchronous orchestrator execution
+  - ✅ Testing: 14/15 sections now execute successfully (sect02-sect15, excluding sect01)
+  - 📝 Decision: S01 should remain listener-based (display-only consumer, state-agnostic)
+
+- [ ] **Implement Shadow Mode Testing**
+  - Add "shadow mode" to Orchestrator.runAll(mode="shadow")
+  - Shadow mode: Log execution order, DON'T actually execute sections
+  - Capture StateManager snapshot before/after for validation
+  - Compare orchestrator order vs actual listener firing pattern
+
+- [ ] **Baseline Comparison Testing**
+  - Run Calculator.calculateAll() → capture StateManager values
+  - Run Orchestrator.runAll("live") → capture StateManager values
+  - Compare all calculated fields for parity
+  - Document any discrepancies in Logs.md
+
+- [ ] **Single-Section Isolated Test**
+  - Choose simple section (S08 or S06) for first test
+  - Temporarily disable that section's listeners
+  - Let orchestrator handle ONLY that section
+  - Validate calculations match baseline
+  - Re-enable listeners if issues found
+
+- [ ] **Integrate Clock.js with Orchestrator**
+  - Add Clock.js timing hooks to Orchestrator.runAll()
+  - Measure total execution time per orchestrator pass
+  - Track individual section timing within orchestrator execution
+  - Display orchestrator metrics in Key Values header feedback area
+
+- [ ] **Performance Comparison Baseline**
+  - Measure current Calculator.calculateAll() performance
+  - Measure Orchestrator.runAll() performance
+  - Compare total execution time, section timing breakdown
+  - Document performance characteristics in Logs.md
+
+- [ ] **QC Monitor Validation**
+  - Enable `?qc=true` during orchestrator testing
+  - Generate QC report before orchestrator integration
+  - Run orchestrator test passes
+  - Generate QC report after orchestrator passes
+  - Compare violation counts (should decrease)
+
+**Expected Outcomes:**
+- ✅ Orchestrator executes without errors
+- ✅ All sections calculate in correct dependency order
+- ✅ Performance metrics captured via Clock.js
+- ✅ QC violations stable or decreased
+- ✅ No regression in calculation accuracy
+
+### **Phase 3: Listener Migration Strategy (Future)**
+
+**Not Yet Started - Depends on Phase 2 Success**
+
+- [ ] **QC-Assisted Listener Documentation**: Catalog all `StateManager.addListener()` calls per section
+- [ ] **Dependency Categorization**: Critical vs Setup vs Rare listener classification
+- [ ] **Gradual Replacement**: Replace individual listeners with orchestrator coordination
+- [ ] **A/B Testing**: Run orchestrator vs listener system side-by-side
+
+### **Phase 4: Full Migration (Future)**
+
+**Not Yet Started - Depends on Phase 3 Success**
+
+- [ ] **Complete Listener Removal**: Eliminate old `addListener` hacks
+- [ ] **S13 Integration**: Verify orchestrator helps S13 calculation stability
+- [ ] **Production Deployment**: Replace Calculator.js with Orchestrator.js
+
+### **Phase 5: Advanced Optimization (Future - Optional)**
 
 - [ ] **Runloop Architecture**: Implement "needs update" flags for 60-80% performance gain
 - [ ] **Calculation Batching**: Group related calculations for efficiency
 - [ ] **Lazy Loading**: On-demand calculation for non-visible sections
 - [ ] **Caching Strategy**: Cache expensive calculations that don't change frequently
 
-### **Success Metrics Achieved:**
+### **Success Metrics Targets:**
 
-- ✅ **<500ms calculation time** (vs current 2000ms)
-- ✅ **Eliminated listener spaghetti** (40+ listeners → declarative dependencies)
-- ✅ **Stopped calculation storms** (58,000+ log loops eliminated)
-- ✅ **Preserved section autonomy** (Traffic Cop + dual-state architecture intact)
-- ✅ **S13 parallel development** (orchestrator helps rather than hinders S13 work)
+**Phase 1 Complete:**
+- ✅ **Orchestrator infrastructure built** (Orchestrator.js complete)
+- ✅ **All sections registered** (15 sections with proven dependencies)
+- ✅ **Dependency data validated** (562 nodes, 1,047 links via ZenMaster)
+- ✅ **Dual-state architecture preserved** (no breaking changes)
+- ✅ **S17 visualization ready** (graph shows all dependencies)
+
+**Phase 2 Targets (Current):**
+- 🎯 **Orchestrator executes successfully** (no errors during runAll())
+- 🎯 **Performance measured** (Clock.js integration complete)
+- 🎯 **Baseline comparison documented** (Orchestrator vs Calculator timing)
+- 🎯 **QC validation passed** (no new violations introduced)
+
+**Phase 3-5 Targets (Future):**
+- 🎯 **<500ms calculation time** (vs current 2000ms delays)
+- 🎯 **Eliminated listener spaghetti** (40+ listeners → orchestrator coordination)
+- 🎯 **Stopped calculation storms** (58,000+ log loops eliminated)
+- 🎯 **S13 stability improved** (orchestrator reduces external calculation chaos)
 
 ---
 
@@ -1522,3 +1620,484 @@ executionOrder.forEach(fieldId => {
 ---
 
 **🎯 This document now serves as the authoritative guide for both race condition mitigation AND performance optimization. The 4012-PERFORMANCE-OPTIMIZATION.md guide can be retired.**
+
+---
+
+## 📋 **SMART REACTIVE SYSTEM WORKPLAN** _(Field-Level Reactive Calculation Implementation)_
+
+### **🎯 STRATEGIC DECISION: Build Smart Reactive System, NOT Just Orchestrator**
+
+**Current Understanding:**
+- ✅ **Orchestrator.js exists** but is a "sledgehammer" approach (runs ALL 15 sections for any change)
+- ✅ **Dependency.js has 1,047 field-level links** enabling precise reactive calculation
+- ✅ **Current Orchestrator = Transitional safety net**, NOT the end goal
+
+**Goal:** Build field-level reactive calculation system that only recalculates affected fields
+
+### **Phase 1: Fix Orchestrator Module Export Issue** ⚡ **IMMEDIATE**
+
+**Problem Identified:**
+```javascript
+// Line 17: Creates TEUI.Orchestrator
+TEUI.Orchestrator = (function () { ... })();
+
+// Line 327: Tries to export TEUI.Orchestrator but creates circular reference
+window.TEUI.Orchestrator = TEUI.Orchestrator; // ❌ TEUI not defined in this scope
+```
+
+**Fix Required:**
+```javascript
+// Correct pattern - store result first, then export
+const Orchestrator = (function () {
+  // ... implementation ...
+  return {
+    registerSection,
+    runAll,
+    topoSort,
+    initialize,
+    getSections,
+    getDependencyOrder,
+    isRunning: () => isRunning,
+  };
+})();
+
+// Then export to global namespace
+window.TEUI = window.TEUI || {};
+window.TEUI.Orchestrator = Orchestrator;
+```
+
+**Testing:**
+- ✅ **Fix module export pattern in [src/core/Orchestrator.js](../../src/core/Orchestrator.js)** - Changed `TEUI.Orchestrator = (function()` to `const Orchestrator = (function()` and fixed export
+- ✅ **Add Orchestrator.js to index.html** - Added script tag at line 79 (after SectionIntegrator, before Calculator)
+- [ ] **Verify `window.TEUI.Orchestrator.runAll()` works in console** - USER TESTING REQUIRED: Refresh page, run in console
+- [ ] **Confirm all 15 sections execute in dependency order** - USER TESTING REQUIRED: Check console logs
+
+---
+
+### **Phase 2: Enhance StateManager with Field-Level Dependency Traversal** 🔧
+
+**Goal:** Add methods to StateManager to find affected fields from a changed field
+
+**Implementation:**
+
+```javascript
+// Add to StateManager (4011-StateManager.js)
+
+/**
+ * Get all fields that depend on this field (downstream propagation)
+ * @param {string} fieldId - The field that changed
+ * @param {string} mode - "target" or "reference"
+ * @returns {Set<string>} - Set of affected field IDs
+ */
+getDependentFields(fieldId, mode = "target") {
+  const visited = new Set();
+  const queue = [fieldId];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+
+    // Get fields that depend on current field
+    const dependents = this.dependencyGraph.links
+      .filter(link => {
+        const sourceField = link.source.id || link.source;
+        // For reference mode, check ref_ prefixed fields
+        return mode === "reference"
+          ? sourceField === `ref_${current}` || sourceField === current
+          : sourceField === current;
+      })
+      .map(link => link.target.id || link.target);
+
+    dependents.forEach(dep => {
+      if (!visited.has(dep)) {
+        visited.add(dep);
+        queue.push(dep);
+      }
+    });
+  }
+
+  return visited;
+}
+
+/**
+ * Get topologically sorted order for a subset of fields
+ * @param {Set<string>} fieldIds - Fields to sort
+ * @returns {Array<string>} - Sorted field IDs in execution order
+ */
+topologicalSortFields(fieldIds) {
+  const sorted = [];
+  const visited = new Set();
+  const visiting = new Set();
+
+  const visit = (fieldId) => {
+    if (visited.has(fieldId)) return;
+    if (visiting.has(fieldId)) {
+      throw new Error(`Circular dependency detected at ${fieldId}`);
+    }
+
+    visiting.add(fieldId);
+
+    // Get dependencies for this field
+    const field = this.getField(fieldId);
+    if (field?.dependencies) {
+      field.dependencies.forEach(dep => {
+        if (fieldIds.has(dep)) {
+          visit(dep);
+        }
+      });
+    }
+
+    visiting.delete(fieldId);
+    visited.add(fieldId);
+    sorted.push(fieldId);
+  };
+
+  fieldIds.forEach(fieldId => visit(fieldId));
+  return sorted;
+}
+```
+
+**Testing:**
+- [ ] Add methods to StateManager
+- [ ] Test with simple chain: d_85 → d_20 → i_104 → h_136
+- [ ] Verify topological sort returns correct order
+- [ ] Test with dual-state fields (ref_d_20, etc.)
+
+---
+
+### **Phase 3: Implement Field-Level Calculate Methods** 🎯
+
+**Current Problem:** Sections only have `calculateAll()` - need granular field calculation
+
+**Solution:** Add `calculateField(fieldId)` methods to each section
+
+**Example - Section 03:**
+
+```javascript
+// In Section03.js - add field-level calculation
+const fieldCalculators = {
+  d_20: function() {
+    // Heating Degree Days calculation
+    const location = getFieldValue("d_19");
+    const heatingSetpoint = getFieldValue("h_23");
+    return calculateHDD(location, heatingSetpoint);
+  },
+
+  d_21: function() {
+    // Cooling Degree Days calculation
+    const location = getFieldValue("d_19");
+    const coolingSetpoint = getFieldValue("h_24");
+    return calculateCDD(location, coolingSetpoint);
+  },
+
+  h_23: function() {
+    // Heating setpoint (user input, no calculation)
+    return getFieldValue("h_23");
+  },
+
+  // ... all other S03 calculated fields
+};
+
+/**
+ * Calculate a single field by ID
+ * @param {string} fieldId - Field to calculate
+ */
+function calculateField(fieldId) {
+  if (fieldCalculators[fieldId]) {
+    const result = fieldCalculators[fieldId]();
+    setCalculatedValue(fieldId, result);
+    return result;
+  }
+  console.warn(`[S03] No calculator for field ${fieldId}`);
+}
+```
+
+**Migration Strategy:**
+- [ ] Start with simple sections (S02, S08)
+- [ ] Extract field calculations from `calculateAll()` into individual functions
+- [ ] Test that `calculateField(fieldId)` produces same results as `calculateAll()`
+- [ ] Gradually migrate all 15 sections
+
+---
+
+### **Phase 4: Build Smart Reactive Calculator** ⭐ **CORE IMPLEMENTATION**
+
+**Goal:** Replace listener chaos with intelligent field-level recalculation
+
+**Implementation:**
+
+```javascript
+// New file: src/core/SmartReactiveCalculator.js
+
+window.TEUI = window.TEUI || {};
+
+window.TEUI.SmartReactiveCalculator = (function() {
+  let needsRecalculation = false;
+  let scheduledUpdate = null;
+  let changedFields = new Set();
+
+  /**
+   * Entry point for all field changes
+   * Replaces ALL existing listeners with single reactive system
+   */
+  function onFieldChange(fieldId, value, source) {
+    // 1. Store the change immediately
+    window.TEUI.StateManager.setValue(fieldId, value, source);
+
+    // 2. Track changed field
+    changedFields.add(fieldId);
+
+    // 3. Schedule single calculation pass (batches rapid changes)
+    if (!needsRecalculation) {
+      needsRecalculation = true;
+      scheduledUpdate = requestAnimationFrame(() => {
+        runSmartRecalculation();
+        needsRecalculation = false;
+        scheduledUpdate = null;
+        changedFields.clear();
+      });
+    }
+  }
+
+  /**
+   * Calculate only affected fields in topological order
+   */
+  function runSmartRecalculation() {
+    // Respect Traffic Cop
+    if (window.sectionCalculationInProgress) {
+      console.log("[SmartReactive] Calculation in progress, skipping");
+      return;
+    }
+
+    window.sectionCalculationInProgress = true;
+    const startTime = performance.now();
+
+    try {
+      // 1. Find all affected fields from changed fields
+      const affectedFields = new Set();
+      changedFields.forEach(fieldId => {
+        const dependents = window.TEUI.StateManager.getDependentFields(fieldId);
+        dependents.forEach(dep => affectedFields.add(dep));
+      });
+
+      console.log(`[SmartReactive] Changed: ${changedFields.size} fields, Affected: ${affectedFields.size} fields`);
+
+      // 2. Topologically sort affected fields
+      const executionOrder = window.TEUI.StateManager.topologicalSortFields(affectedFields);
+
+      // 3. Calculate each field in order
+      executionOrder.forEach(fieldId => {
+        const field = window.TEUI.StateManager.getField(fieldId);
+        if (field?.section) {
+          // Get section module and call field calculator
+          const sectionModule = window.TEUI.SectionModules?.[field.section];
+          if (sectionModule?.calculateField) {
+            sectionModule.calculateField(fieldId);
+          }
+        }
+      });
+
+      const totalTime = performance.now() - startTime;
+      console.log(`[SmartReactive] Calculated ${executionOrder.length} fields in ${totalTime.toFixed(1)}ms`);
+
+    } finally {
+      window.sectionCalculationInProgress = false;
+    }
+  }
+
+  /**
+   * Fallback to full recalculation (uses Orchestrator)
+   */
+  function runFullRecalculation() {
+    if (window.TEUI?.Orchestrator?.runAll) {
+      window.TEUI.Orchestrator.runAll();
+    } else {
+      console.warn("[SmartReactive] Orchestrator not available, using Calculator");
+      window.TEUI.Calculator.calculateAll();
+    }
+  }
+
+  return {
+    onFieldChange,
+    runSmartRecalculation,
+    runFullRecalculation,
+  };
+})();
+```
+
+**Testing:**
+- [ ] Create SmartReactiveCalculator.js
+- [ ] Test with simple chain (change d_85, verify only affected fields recalculate)
+- [ ] Measure performance improvement vs full recalculation
+- [ ] Verify no calculation errors or stale values
+
+---
+
+### **Phase 5: Replace Listener Chaos with Smart Reactive System** 🔄
+
+**Goal:** Remove ALL competing listener mechanisms, replace with single entry point
+
+**Current Listener Mechanisms to Replace:**
+1. ❌ Calculator.js wildcard listener: `addListener("*")`
+2. ❌ Individual section listeners (40+ across sections)
+3. ❌ setTimeout debouncing patterns
+4. ❌ SectionIntegrator forced updates
+
+**Replacement Pattern:**
+
+```javascript
+// BEFORE: Section listeners trigger calculateAll()
+StateManager.addListener("d_20", function(newValue) {
+  Section12.calculateAll(); // Recalculates ALL of S12
+});
+
+StateManager.addListener("d_20", function(newValue) {
+  Section11.calculateAll(); // Recalculates ALL of S11
+});
+
+// AFTER: Smart reactive triggers field-level calculation
+// Wire ALL user inputs to SmartReactiveCalculator
+document.querySelector("#climate-location").addEventListener("change", (e) => {
+  window.TEUI.SmartReactiveCalculator.onFieldChange("d_19", e.target.value, "user-modified");
+  // Automatically calculates: d_20 → i_104 → i_98 → h_136 (only affected fields)
+});
+```
+
+**Migration Strategy:**
+- [ ] Identify all `addListener()` calls across sections
+- [ ] Replace with `SmartReactiveCalculator.onFieldChange()` calls
+- [ ] Remove old listeners one section at a time
+- [ ] A/B test: verify smart reactive produces identical results
+
+---
+
+### **Phase 6: Performance Optimization & Validation** 📊
+
+**Goals:**
+- Measure performance improvement
+- Validate calculation accuracy
+- Integrate with Clock.js monitoring
+
+**Testing Scenarios:**
+
+1. **Single Field Change** (e.g., change d_85 in S02):
+   - ❌ **Old**: Runs all 15 sections (~1000+ calculations)
+   - ✅ **New**: Runs ~23 affected fields only
+   - 🎯 **Target**: <100ms (vs current 700ms)
+
+2. **Climate Location Change** (e.g., Toronto → Vancouver):
+   - ❌ **Old**: Full recalculation of all sections
+   - ✅ **New**: d_19 → d_20, d_21 → downstream only
+   - 🎯 **Target**: <200ms
+
+3. **Complex Cascade** (e.g., change g_67 occupant density):
+   - ❌ **Old**: Calculation storms, state drift (GitHub #16)
+   - ✅ **New**: Single-pass topological execution
+   - 🎯 **Target**: No state drift, deterministic results
+
+**Clock.js Integration:**
+```javascript
+// Add to SmartReactiveCalculator
+if (window.TEUI?.Clock) {
+  window.TEUI.Clock.logCalculation({
+    type: "smart-reactive",
+    changedFields: changedFields.size,
+    affectedFields: affectedFields.size,
+    duration: totalTime,
+  });
+}
+```
+
+**Validation:**
+- [ ] QC Monitor: Generate before/after reports
+- [ ] Performance: Measure 10-50x improvement for single-field changes
+- [ ] Accuracy: Verify calculations match Excel parity
+- [ ] State Drift: Test g_63 cycling (12→10→12) returns to 93.7
+
+---
+
+### **Phase 7: Hybrid System - Keep Orchestrator as Safety Net** 🛡️
+
+**Strategy:** Use smart reactive for user interactions, orchestrator for full recalc
+
+**Use Cases:**
+
+| Trigger | System | Reason |
+|---------|--------|--------|
+| User input change | Smart Reactive | Fast, precise, only affected fields |
+| Initial page load | Orchestrator | Ensure complete initialization |
+| "Recalculate All" button | Orchestrator | User-requested full refresh |
+| Mode toggle (Target ↔ Reference) | Smart Reactive | Display only, no calculation needed |
+| Cooling bump workaround | Orchestrator | Force complete recalculation |
+
+**Implementation:**
+```javascript
+// index.html - Add "Recalculate All" button for debugging
+document.querySelector("#recalculate-all").addEventListener("click", () => {
+  console.log("[Manual] Running full orchestrator recalculation");
+  window.TEUI.Orchestrator.runAll();
+});
+
+// On page load - use orchestrator for complete initialization
+document.addEventListener("DOMContentLoaded", () => {
+  // ... load data ...
+  window.TEUI.Orchestrator.runAll(); // Guarantee everything calculated
+});
+
+// User interactions - use smart reactive
+document.querySelectorAll("input, select").forEach(element => {
+  element.addEventListener("change", (e) => {
+    const fieldId = e.target.dataset.fieldId;
+    window.TEUI.SmartReactiveCalculator.onFieldChange(fieldId, e.target.value, "user-modified");
+  });
+});
+```
+
+---
+
+### **Success Metrics & Validation Criteria**
+
+**Performance Targets:**
+- ✅ **Single field change**: <100ms (vs current 700ms) = **7x improvement**
+- ✅ **Climate change**: <200ms (vs current 2000ms) = **10x improvement**
+- ✅ **Complex cascade**: <500ms (vs current calculation storms)
+
+**Correctness Targets:**
+- ✅ **Excel parity maintained**: All calculations match Excel model
+- ✅ **No state drift**: g_63 cycling test passes (GitHub #16 fixed)
+- ✅ **No "cooling bump" needed**: Initialization works first time
+- ✅ **QC violations reduced**: Fewer race conditions detected
+
+**Architecture Targets:**
+- ✅ **Listener chaos eliminated**: 40+ listeners → 1 smart reactive entry point
+- ✅ **Dual-state preserved**: Reference/Target isolation maintained
+- ✅ **Traffic Cop respected**: No conflicts with existing protection patterns
+- ✅ **Section autonomy preserved**: Sections still own their calculations
+
+---
+
+### **Current Status & Next Steps**
+
+**Completed:**
+- ✅ Orchestrator.js implemented (Phase 1A - section-level)
+- ✅ Dependency.js has 1,047 field-level links
+- ✅ ZenMaster validated dependencies
+- ✅ Strategic understanding: Field-level reactive is the goal
+
+**Immediate Next Steps:**
+1. ⚡ **Fix Orchestrator export** (Phase 1) - 15 minutes
+2. 🔧 **Add StateManager methods** (Phase 2) - 2 hours
+3. 🎯 **Implement field calculators for S03** (Phase 3) - 4 hours
+4. ⭐ **Build SmartReactiveCalculator.js** (Phase 4) - 1 day
+5. 🔄 **Replace S03 listeners** (Phase 5) - Test with climate changes
+
+**Timeline Estimate:**
+- **Phase 1**: 15 minutes (immediate fix)
+- **Phases 2-3**: 1 week (infrastructure + 1 section proof-of-concept)
+- **Phases 4-5**: 2 weeks (smart reactive system + listener migration)
+- **Phases 6-7**: 1 week (testing, optimization, hybrid system finalization)
+
+**Total**: ~4 weeks to complete field-level reactive calculation system
+
+---
+
+**🎯 KEY INSIGHT**: The 1,047 dependency links you mapped aren't just for visualization - they enable precise, field-level reactive calculation. Orchestrator is the safety net, Smart Reactive is the performance win.

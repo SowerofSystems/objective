@@ -105,7 +105,7 @@ window.TEUI.SectionModules.sect02 = (function () {
           fieldId: "l_12",
           type: "editable",
           value: "$0.1300",
-          label: "Electricity Price", // Price per kWh
+          label: "Electricity Price: $/kWh Avg.", // Price per kWh
           section: "buildingInfo",
           tooltip: true, // Assume $0.13/kwh
         },
@@ -167,7 +167,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         h: {
           fieldId: "h_13",
           type: "year_slider",
-          label: "Service Life",
+          label: "Service Life: yrs.",
           value: "50",
           min: 30,
           max: 100,
@@ -183,7 +183,7 @@ window.TEUI.SectionModules.sect02 = (function () {
           fieldId: "l_13",
           type: "editable",
           value: "$0.5070",
-          label: "Gas Price", // Price per m³
+          label: "Gas Price: $/m³", // Price per m³
           section: "buildingInfo",
           tooltip: true, // Assume $0.507 (Ontario)
         },
@@ -237,7 +237,7 @@ window.TEUI.SectionModules.sect02 = (function () {
           fieldId: "l_14",
           type: "editable",
           value: "$1.6200",
-          label: "Propane Price", // Price per kg
+          label: "Propane Price: $/kg", // Price per kg
           section: "buildingInfo",
           tooltip: true, // Assume $1.62 (Ontario)
         },
@@ -306,7 +306,7 @@ window.TEUI.SectionModules.sect02 = (function () {
           fieldId: "l_15",
           type: "editable",
           value: "$180.00",
-          label: "Wood Price", // Price per m³
+          label: "Wood Price: $/m³", // Price per m³
           section: "buildingInfo",
           tooltip: true, // Assume $180/m3 (Ontario)
         }, // Restored: Field l_15 back in L
@@ -319,9 +319,9 @@ window.TEUI.SectionModules.sect02 = (function () {
     16: {
       id: "S.4",
       rowId: "S.4",
-      label: "Embodied Carbon Target (kgCO₂e/m²)",
+      label: "Embodied Carbon Target: kgCO₂e/m²",
       cells: {
-        c: { label: "Embodied Carbon Target (kgCO₂e/m²)" },
+        c: { label: "Embodied Carbon Target: kgCO₂e/m²" },
         d: {
           fieldId: "d_16",
           type: "derived",
@@ -356,7 +356,7 @@ window.TEUI.SectionModules.sect02 = (function () {
           fieldId: "l_16",
           type: "editable",
           value: "$1.5000",
-          label: "Oil Price", // Price per litre
+          label: "Oil Price: $/litre", // Price per litre
           section: "buildingInfo",
           tooltip: true, // Assume $1.50 (Ontario)
         },
