@@ -292,7 +292,8 @@
       try {
         const rows = csvString.split(/\r?\n/).filter(row => row.trim() !== ""); // Split lines and remove empty ones
 
-        // Support legacy (2 rows), dual-state (3 rows), and labeled (4+ rows) formats
+        // Support legacy (2 rows) and dual-state (3 rows) formats
+        // Headers support both legacy "fieldId" and new "fieldId: Label" formats
         if (rows.length < 2) {
           throw new Error(
             `Expected at least 2 rows, but found ${rows.length}.`
@@ -302,8 +303,6 @@
         const headerRow = rows[0];
         const targetValueRow = rows[1]; // Target/Application values
         const referenceValueRow = rows.length >= 3 ? rows[2] : null; // Reference values (if present)
-        // Row 4 (labelRow) is optional and only for human readability - not imported
-        // Row 5+ reserved for future OBC Matrix data
 
         // Basic parsing for CSV row, handles quoted fields from our escapeCSV output
         const parseCSVRow = rowString => {
@@ -334,7 +333,13 @@
           return values;
         };
 
-        const fieldIds = parseCSVRow(headerRow);
+        // Parse header row and extract field IDs
+        // Headers may be in format "fieldId: Label" (new) or just "fieldId" (legacy)
+        const fieldIds = parseCSVRow(headerRow).map(header => {
+          // Split on first colon and take the field ID part
+          const colonIndex = header.indexOf(':');
+          return colonIndex !== -1 ? header.substring(0, colonIndex).trim() : header.trim();
+        });
         const targetValues = parseCSVRow(targetValueRow);
         const referenceValues = referenceValueRow
           ? parseCSVRow(referenceValueRow)
@@ -1006,26 +1011,25 @@
           referenceValues.push(escapeCSV(formattedReference));
         });
 
-        // Get natural language labels for each field
-        const labelRow = userEditableFieldIds.map(fieldId => {
-          const fieldDef = this.fieldManager.getField(fieldId);
-          const label = fieldDef?.label || fieldId; // Fallback to fieldId if no label
-          return escapeCSV(label);
-        });
-
         // Construct CSV content:
-        // Row 1: Field IDs (headers)
+        // Row 1: Combined headers (fieldId: Natural Language Label)
         // Row 2: Target/Application values
         // Row 3: Reference values
-        // Row 4: Natural language labels
-        // Row 5+: [Future] OBC Matrix placeholder
-        const headerRow = userEditableFieldIds.join(",");
+        // Row 4+: [Future] OBC Matrix placeholder
+        const headerRow = userEditableFieldIds
+          .map(fieldId => {
+            const fieldDef = this.fieldManager.getField(fieldId);
+            const label = fieldDef?.label || "";
+            // Format: "fieldId: Label" or just "fieldId" if no label
+            const combinedHeader = label ? `${fieldId}: ${label}` : fieldId;
+            return escapeCSV(combinedHeader);
+          })
+          .join(",");
         const targetRow = targetValues.join(",");
         const referenceRow = referenceValues.join(",");
-        const labelRowString = labelRow.join(",");
-        const csvContent = headerRow + "\n" + targetRow + "\n" + referenceRow + "\n" + labelRowString;
+        const csvContent = headerRow + "\n" + targetRow + "\n" + referenceRow;
 
-        // Future: Add OBC Matrix export here as additional rows (Row 5+)
+        // Future: Add OBC Matrix export here as additional rows (Row 4+)
         // const obcHeaderRow = "# OBC Matrix Data";
         // const obcDataRow = "...";
 
@@ -1037,7 +1041,7 @@
 
         console.log(`[CSV Export] Generated filename: ${filename}`);
         console.log(
-          `[CSV Export] Exported ${userEditableFieldIds.length} fields (explicit list matching Excel import) with Target, Reference values, and natural language labels`
+          `[CSV Export] Exported ${userEditableFieldIds.length} fields with combined headers (fieldId: Label format)`
         );
 
         // Trigger Download - should work in Safari when called synchronously from click event
@@ -1055,7 +1059,7 @@
         URL.revokeObjectURL(url);
 
         this.showStatus(
-          "Dual-state CSV export complete (Target + Reference + Labels).",
+          "Dual-state CSV export complete with labeled headers.",
           "success"
         );
       } catch (error) {
