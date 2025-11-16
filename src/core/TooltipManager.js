@@ -1,81 +1,34 @@
 /**
- * 4011-TooltipManager.js
+ * 4012-TooltipManager.js
  * Manages validation tooltips from Excel for TEUI Calculator fields
  *
- * Tooltip data extracted from TEUIv3042.xlsx REPORT sheet Data Validation
- * Last updated: Nov 8, 2025
- * Source: extract-validation.py script
+ * Tooltip data extracted from TEUIv3042.xlsx REPORT sheet Data Validation Nov 8, 2025
+ * Last updated: Nov 16, 2025 - manual edits for clarity with URI references for the nerds
+ * Source: extract-validation.py script (since deleted)
  */
 
 (function (window) {
   "use strict";
 
-  // Validation tooltip data (extracted from Excel Data Validation input messages)
-  // Comprehensive extraction from TEUIv3042.xlsx - 107 tooltips total
+  // Comprehensive extraction from TEUIv3042.xlsx - 110 tooltips total
   const VALIDATION_TOOLTIPS = {
     d_12: {
       cell: "D12",
       title: "Major Occupancy",
       message:
-        "Select a Major Occupancy from the Drop-Down_x000a_Affects: Tset Heating and Equipment Loads",
+        "Select a Major Occupancy (NBC Reference) from the Drop-Down_x000a_Affects: Tset Heating and Equipment Loads",
     },
     d_13: {
       cell: "D13",
       title: "Reference Standards",
       message:
-        "Select a Building Code Prescriptive Path option, or NECB Base Tier, or any other noted or 'Use Your Own' baseline scenario. References values in the 'ReferenceValues.js file_x000a_Then press 'Set Values' to over-write Insulation, Airtightness, and System Efficiencies as per the Code Minimums required by the Selected Standard",
-    },
-    e_13: {
-      cell: "E13",
-      title: "Set Defaults",
-      message:
-        "This will over-write Insulation, Airtightness, and System Efficiencies as per the Code Minimum required by the Selected Standard",
-    },
-    d_103: {
-      cell: "D103",
-      title: "Select Stories",
-      message:
-        "Only 3 stories per NRC Testing Data. Anything over 3 Stories is a theoretical extrapolation. ",
-    },
-    d_105: {
-      cell: "D105",
-      title: "Conditioned Volume ",
-      message:
-        "Measure this volume as bounded by the interiormost faces of all walls, roofs, floors facing Ae and Ag. Treat entire building as one-zone. ",
-    },
-    d_108: {
-      cell: "D108",
-      title: "A.2 NRL50 * Ae",
-      message:
-        "Select an Airtighness Level. 'Measured' will override defined targets from NECB/NBC. A-suffix = Guarded or Multi-Zone method, B-Suffix = Unguarded or One-Zone method per NBC 9.36.6.4. Use 'Measured' for Part 3 Buildings.",
-    },
-    d_113: {
-      cell: "D113",
-      title: "Select Primary Heating System",
-      message:
-        "Select Electric, Heatpump or Gas and note defined efficiency inputs (HSPF or AFUE). Electricity is assumed 100% efficient. ",
-    },
-    d_116: {
-      cell: "D116",
-      title: "Cooling Provided?",
-      message:
-        "No: No Cooling Provided_x000a_Yes: Cooling by Primary M.1.0 System _x000a_Yes: Dedicated Cooling System ",
-    },
-    d_118: {
-      cell: "D118",
-      title: "Typ. Range 50-90%",
-      message: "Refer to Reference Standard Requirements",
-    },
-    d_119: {
-      cell: "D119",
-      title: "Ventilation Guidance",
-      message: "8.33 l/s is Default, 12.5 l/s is considered best practice",
+        "Select a Building Code Prescriptive Path option, or NECB Base Tier, or any other baseline scenario. References values load from the 'ReferenceValues.js file_x000a_Then press 'Set Values' to over-write Insulation, Airtightness, and System Efficiencies as per the Code Minimums required by the Selected Standard",
     },
     d_14: {
       cell: "D14",
       title: "Select a Method",
       message:
-        "Targeted Use: All Design Phases_x000a_Utility Bills: Read from Meters, 12mos. Post-Occupancy",
+        "Targeted Use: All Design Phases - modelled values_x000a_Utility Bills: Read from Meters, 12mos. Post-Occupancy",
     },
     d_15: {
       cell: "D15",
@@ -87,7 +40,7 @@
       cell: "D16",
       title: "S4. Targets",
       message:
-        "IPCC AR6 EPC = Equal PerCapita method to limit to 1.5°C_x000a_IPCC AR6 EA = Equity-Adjusted method to limit to 1.5°C_x000a_(refer to Worksheet S.3 Carbon Standards)",
+        "IPCC AR6 EPC = Equal PerCapita method to limit to 1.5°C_x000a_IPCC AR6 EA = Equity-Adjusted method to limit to 1.5°C_x000a_(refer to: https://openbuilding.ca/2024/07/22/teui-s-3-carbon-benchmarking-standard/)",
     },
     d_19: {
       cell: "D19",
@@ -237,6 +190,58 @@
       message:
         "For PH projects enter min. 5% to account for Construction Error, Unaccounted for TB. Enter between 5- 70% depending on level of effort to mitigate Thermal Bridges.  ",
     },
+    d_103: {
+      cell: "D103",
+      title: "Select Stories",
+      message:
+        "Up to 3 stories per NRC Test Data. 4-6 storey options are theoretical extrapolations._x000a_(https://building-performance.org/bpa-journal/ach50-achnat/)",
+    },
+    d_105: {
+      cell: "D105",
+      title: "Conditioned Volume ",
+      message:
+        "Measure this volume as bounded by the interior-most faces of all walls, roofs, floors facing Ae and Ag. Treat entire building as one-zone.",
+    },
+    d_108: {
+      cell: "D108",
+      title: "A.2 NRL50 * Ae",
+      message:
+        "Select an Airtighness Level. 'Measured' will override defined targets from NECB/NBC. A-suffix = Guarded or Multi-Zone method, B-Suffix = Unguarded or One-Zone method per NBC 9.36.6.4. Use 'Measured' for Part 3 Buildings.",
+    },
+    d_113: {
+      cell: "D113",
+      title: "Select Primary Heating System",
+      message:
+        "Select Electric, Heatpump or Gas and note defined efficiency inputs (HSPF or AFUE). Electricity is assumed 100% efficient. ",
+    },
+    d_116: {
+      cell: "D116",
+      title: "Cooling Provided?",
+      message:
+        "No: No Cooling Provided_x000a_Yes: Cooling by Primary M.1.0 System _x000a_Yes: Dedicated Cooling System ",
+    },
+    d_118: {
+      cell: "D118",
+      title: "Typ. Range 50-90%",
+      message: "Refer to Reference Standard Requirements",
+    },
+    d_119: {
+      cell: "D119",
+      title: "Ventilation Guidance",
+      message: "8.33 l/s is Default, 12.5 l/s is considered best practice",
+    },
+    d_142: {
+      cell: "D142",
+      title: "Capital Cost Premium",
+      message:
+        "Add here the capital cost premium for Heatpump vs. Conventional Equipment",
+    },
+    e_13: {
+      cell: "E13",
+      title: "Set Defaults",
+      message:
+        "This will over-write Insulation, Airtightness, and System Efficiencies as per the Code Minimum required by the Selected Standard",
+    },
     e_49: {
       cell: "E49",
       title: "Litres/Per-Person/Day",
@@ -291,12 +296,6 @@
       message:
         "This determines average radiant gains based on the Solar Gains Factor in Column 'M'. Skylights are considered 'flat' (75kWh/m2/yr). If skylights are pitched Southwards, this Gains Factor may be closer to 100 kWh/m2/yr. ",
     },
-    f_113: {
-      cell: "F113",
-      title: "HSPF Dictates COP, CEER",
-      message:
-        "Enter Value Required by Reference Standard. Typ. range is 7-14. Only applies when 'Heatpump' Option is Selected from the dropdown to the left. _x000a__x000a_You may use the HSPF or HSPF2 equipment rating, noting HSPF2 is ~0.85 of HSPF due to harsher test conditions. This value an outsized influence on TEUI - Choose Well!",
-    },
     f_73: {
       cell: "F73",
       title: "Solar Heat Gain Coefficient",
@@ -333,28 +332,11 @@
       message:
         "0.5 = 50% Gain Permitted (Default)_x000a_Higher Numbers Increase Solar Heat Gain (Reduces Heating)_x000a_Lower Numbers Reduce Solar Heat Gain (Reduces Cooling)",
     },
-    g_103: {
-      cell: "G103",
-      title: "Exposure Level",
+    f_113: {
+      cell: "F113",
+      title: "HSPF Dictates COP, CEER",
       message:
-        "Select a level of wind exposure to simulate air-leakage effects due to pressure.",
-    },
-    g_109: {
-      cell: "G109",
-      title: "Calculation Dependency",
-      message:
-        "This field will not form part of calculations unless B.18.1 'Measured' is selected as the _x000a_Method. ",
-    },
-    g_110: {
-      cell: "G110",
-      title: "n-Factor Description",
-      message: "Naturalizes air leakage from pressure test results",
-    },
-    g_118: {
-      cell: "G118",
-      title: "Select Ventilation Method",
-      message:
-        "Volume Constant: Volume Rate 24/7_x000a_Volume by Schedule: Volume Rate * Schedule_x000a_Occupant: Occupant Rate 24/7_x000a_Occupant by Schedule: Occupant Rate * Schedule _x000a_(aka. Demand-Based, typ. CO2 Monitored)",
+        "Enter Value Required by Reference Standard. Typ. range is 7-14. Only applies when 'Heatpump' Option is Selected from the dropdown to the left. _x000a__x000a_You may use the HSPF or HSPF2 equipment rating, noting HSPF2 is ~0.85 of HSPF due to harsher test conditions. This value an outsized influence on TEUI - Choose Well!",
     },
     g_54: {
       cell: "G54",
@@ -380,11 +362,28 @@
       message:
         "NRC: 40-60% for Canadian Light-Wood Framed Buildings_x000a_PHPP: Calculated (use for PH projects). _x000a__x000a_Intermittent Occupancy and Low Mass buildings should enter 0%_x000a_High Mass Buildings with regular occupancy can use 60%",
     },
-    h_109: {
-      cell: "H109",
+    g_103: {
+      cell: "G103",
+      title: "Exposure Level",
+      message:
+        "Select a level of wind exposure to simulate air-leakage effects due to pressure.",
+    },
+    g_109: {
+      cell: "G109",
       title: "Calculation Dependency",
       message:
-        "This field will not form part of calculations unless B.18.1 'Measured' is selected as the Method. ",
+        "This field will not form part of calculations unless B.18.1 'Measured' is selected as the _x000a_Method. ",
+    },
+    g_110: {
+      cell: "G110",
+      title: "n-Factor Description",
+      message: "Naturalizes air leakage from pressure test results",
+    },
+    g_118: {
+      cell: "G118",
+      title: "Select Ventilation Method",
+      message:
+        "Volume Constant: Volume Rate 24/7_x000a_Volume by Schedule: Volume Rate * Schedule_x000a_Occupant: Occupant Rate 24/7_x000a_Occupant by Schedule: Occupant Rate * Schedule _x000a_(aka. Demand-Based, typ. CO2 Monitored)",
     },
     h_12: {
       cell: "H12",
@@ -408,7 +407,7 @@
       cell: "H15",
       title: "Net Conditioned Area",
       message:
-        "Net Conditioned Area is measured from the interior face of any construction assembly that separates the exterior interior conditioned volume from the exterior air or ground surfaces, this is required for consistency of all other area and volume calculatio",
+        "Net Conditioned Area is measured from the interior face of any wall. _x000a_https://openbuilding.ca/2024/06/23/teui-b-3-conditioned-area/ ",
     },
     h_19: {
       cell: "H19",
@@ -433,18 +432,6 @@
       message:
         "ASHRAE may permit 26°C, where NBC 2025 may require 24°C. Residents will often set lower. Use 24°C as Default for design. ",
     },
-    m_23: {
-      cell: "M23",
-      title: "OBC Required Heating Setpoint",
-      message:
-        "Thermostat Setpoint: This compares the Tset value determined by Major Occupancy, against the value set by the selected Reference Standard (ie. PH Classic). A fail/X just means there is a difference between the Building Code and the Reference Standard's Modelled value.",
-    },
-    m_24: {
-      cell: "M24",
-      title: "NBC Upper Cooling Limit",
-      message:
-        "NECB/NBC now establish an upper limit for Tset Cooling of 26ºC. Users often will set lower values in practice. A realistic value of 22ºC-24ºC as a typical cooling setpoint should be considered. Users can over-ride these values.",
-    },
     h_35: {
       cell: "H35",
       title: "PER Factors",
@@ -462,6 +449,12 @@
       title: "Gas Exhaust Energy",
       message:
         "Related to equipment efficiency, this takes the remainder of un-utilized energy in kWh and maps to a waste-flow. ie. 90% efficient equipment results in a 10% total net energy waste. Equipment efficienct is set at W.4 ",
+    },
+    h_109: {
+      cell: "H109",
+      title: "Calculation Dependency",
+      message:
+        "This field will not form part of calculations unless B.18.1 'Measured' is selected as the Method. ",
     },
     i_16: {
       cell: "H16",
@@ -493,6 +486,11 @@
       message:
         "This cell can report average annual RH% when available. Future development of OBJECTIVE will break this out into Seasonal Averages to better model heating and cooling loads, which, when combined w V.1.1 can have a significant effect on TEUI.",
     },
+    j_98: {
+      cell: "J98",
+      title: "Total Excludes B.12 TB Penalty",
+      message: "",
+    },
     j_104: {
       cell: "J104",
       title: "Checksum",
@@ -505,11 +503,6 @@
       message:
         "Most of Canada uses Zone 2. _x000a_Southern SK & MB use Zone 1. _x000a_Southern BC uses Zone 3. _x000a_refer to Map on NRL50 n-Factors tab if uncertain",
     },
-    j_98: {
-      cell: "J98",
-      title: "Total Excludes B.12 TB Penalty",
-      message: "",
-    },
     k_52: {
       cell: "K52",
       title: "AFUE",
@@ -520,23 +513,6 @@
       title: "Unoccupied Ventilation Setback %",
       message:
         "Per Engineer. Affects Free Cooling Capacity. ie. 90% = 90% of Occupied Ventilation Rate. ",
-    },
-    l_104: {
-      cell: "L104",
-      title: "Total Excludes B.12 TB Penalty",
-      message: "",
-    },
-    l_118: {
-      cell: "L118",
-      title: "ACH Value",
-      message:
-        "Refer to ASHRAE 90.1_x000a_Offices: 4-6_x000a_Schools: 3-6_x000a_Retail: 3-5_x000a_Healthcare: 6-15_x000a_Residential: 0.35-1.0",
-    },
-    l_119: {
-      cell: "L119",
-      title: "Summer Boost",
-      message:
-        "Multiply Cooling Season Ventilation to test effects of increased ventilation on reducing cooling loads - does it help?",
     },
     l_12: {
       cell: "L12",
@@ -614,29 +590,40 @@
       title: "Total Excludes B.12 TB Penalty",
       message: "",
     },
-    m_124: {
-      cell: "M124",
-      title: "Negative Values",
-      message:
-        "Negative Days Active Cooling Rewuired simply means no days require mechanical cooling - Passive Strategies for Free Cooling ie. Night-time ventilation *MAY* be adequate.",
+    l_104: {
+      cell: "L104",
+      title: "Total Excludes B.12 TB Penalty",
+      message: "",
     },
-    d_142: {
-      cell: "D142",
-      title: "Capital Cost Premium",
+    l_118: {
+      cell: "L118",
+      title: "ACH Value",
       message:
-        "Add here the capital cost premium for Heatpump vs. Conventional Equipment",
+        "Refer to ASHRAE 90.1_x000a_Offices: 4-6_x000a_Schools: 3-6_x000a_Retail: 3-5_x000a_Healthcare: 6-15_x000a_Residential: 0.35-1.0",
     },
-    m_141: {
-      cell: "M141",
-      title: "Assume $0.122 (Ontario)",
+    l_119: {
+      cell: "L119",
+      title: "Summer Boost",
       message:
-        "Adjust for Different Regions, be sure to add any tax & delivery to totals. ",
+        "Multiply Cooling Season Ventilation to test effects of increased ventilation on reducing cooling loads - does it help?",
     },
     m_19: {
       cell: "M19",
       title: "Cooling Days are Increasing",
       message:
         "120 is Typical in Canada, but with warming climate, this can add 20-40 days. This will affect both cooling setpoints and occupant schedules. ",
+    },
+    m_23: {
+      cell: "M23",
+      title: "OBC Required Heating Setpoint",
+      message:
+        "Thermostat Setpoint: This compares the Tset value determined by Major Occupancy, against the value set by the selected Reference Standard (ie. PH Classic). A fail/X just means there is a difference between the Building Code and the Reference Standard's Modelled value.",
+    },
+    m_24: {
+      cell: "M24",
+      title: "NBC Upper Cooling Limit",
+      message:
+        "NECB/NBC now establish an upper limit for Tset Cooling of 26ºC. Users often will set lower values in practice. A realistic value of 22ºC-24ºC as a typical cooling setpoint should be considered. Users can over-ride these values.",
     },
     m_43: {
       cell: "M43",
@@ -649,6 +636,18 @@
       title: "Gains Factor Derivation",
       message:
         "From Hourly Modelling for Toronto Latitude: 0.5 SHGC at Mid-wall placement self-shading and 40% DST and 52% TST Assumed",
+    },
+    m_124: {
+      cell: "M124",
+      title: "Negative Values",
+      message:
+        "Negative Days Active Cooling Rewuired simply means no days require mechanical cooling - Passive Strategies for Free Cooling ie. Night-time ventilation *MAY* be adequate.",
+    },
+    m_141: {
+      cell: "M141",
+      title: "Assume $0.122 (Ontario)",
+      message:
+        "Adjust for Different Regions, be sure to add any tax & delivery to totals. ",
     },
     o_84: {
       cell: "O84",
