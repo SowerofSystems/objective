@@ -65,12 +65,19 @@ All development work follows a feature branch workflow with proper PR etiquette:
    - Make atomic commits with clear messages
    - Follow commit format: `Type: Brief description`
    - Types: `Feat`, `Fix`, `Refactor`, `Docs`, `Improve`, `Clean`
-   - Include co-author footer:
-     ```
+   - **Always use HEREDOC syntax** for commit messages to ensure proper formatting:
+     ```bash
+     git commit -m "$(cat <<'EOF'
+     Type: Brief description of the change
+
      🤖 Co-Generated with [Claude Code](https://claude.com/claude-code)
 
      Co-Authored-By: Andy & Claude <andy@openbuilding.ca>
+     EOF
+     )"
      ```
+   - **Important**: Don't `git add` files that are already staged for deletion
+   - Skip `Logs.md` in commits (working file, not version-controlled)
 
 3. **Pushing to Remote**:
    ```bash
@@ -125,11 +132,19 @@ git push --force-with-lease origin NEW-FEATURE
 
 ## Development Guidelines
 
+### Critical Architecture Principle
+
+**Before making changes**: Review existing code patterns and architecture documents. **Don't reinvent** - the codebase has 8 months of careful architectural decisions. When in doubt about approach, ask the user or check existing implementations rather than creating new methods that may violate established patterns.
+
 ### When modifying calculations:
-1. Check both Target and Reference modes work correctly
-2. Verify downstream dependencies using `Dependency.js`
-3. Test with Reference toggle on/off
-4. Ensure Excel export maintains all values
+1. **DO NOT invent new calculation methods** - Use existing patterns only
+2. **Both engines ALWAYS run on value changes** - This is by design, not a bug
+3. **If wrong values appear**: The issue is reading from wrong state (fallback contamination), NOT both engines running
+4. **Never disable an engine** to "fix" calculation issues - Fix the state read/write instead
+5. Check both Target and Reference modes work correctly
+6. Verify downstream dependencies using `Dependency.js`
+7. Test with Reference toggle on/off
+8. Ensure UI/DOM maintains all expected values and Target/Reference Model isolation
 
 ### Field ID Convention:
 - Format: `[column]_[row]` (e.g., `d_12` for column D, row 12)
@@ -238,6 +253,9 @@ objective/                              ← Git repo root
 
 **Manual Process for Debugging**:
 - Human copies/pastes browser console logs into `docs/development/Logs.md`
+- This is a pasteboard file for console output review and analysis
+- **IMPORTANT**: Claude NEVER writes to Logs.md - it's user-maintained only
+- **IMPORTANT**: Skip Logs.md in commits - it's a working file, not version-controlled content
 - Agents cannot access browser console directly
 - When debugging, request logs from human, then analyze `Logs.md` content
 - Use cases: Forensic debugging, calculation sequence analysis, error tracking
@@ -248,6 +266,22 @@ When running commands:
 - Use quotes for paths with spaces: `"src/sections/Section10.js"`
 - Working directory may not persist between commands - verify with `pwd`
 - For git operations, ensure you're in repo root
+
+### Common Git Issues
+
+**Staged deletion conflicts**:
+- If a file is already staged for deletion (via `git rm`), don't include it in subsequent `git add` commands
+- Check staging status with `git status` before committing
+
+**Commit message formatting**:
+- Always use HEREDOC syntax for multi-line commit messages
+- Single quotes in `<<'EOF'` prevent variable expansion
+- Ensures co-author footer formats correctly
+
+**Force push safety**:
+- Use `--force-with-lease` instead of `--force`
+- Prevents accidentally overwriting others' work
+- Safe for rebasing your own feature branches
 
 ## Quick Orientation Commands
 
