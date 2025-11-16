@@ -4,11 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-The OBJECTIVE TEUI (Total Energy Use Intensity) Calculator is a web-based energy modeling tool for buildings in Ontario, Canada. The codebase has three main versions:
+The OBJECTIVE TEUI (Total Energy Use Intensity) Calculator is a web-based energy modeling tool for buildings in Canada. The codebase has two components:
 
-1. **4011RF** (Current stable) - Production-ready calculator with dual-state (Target/Reference) architecture
-2. **4012** (Framework rewrite) - Next-gen architecture using functional programming and modern CSS
-3. **OBC Matrix** - Ontario Building Code compliance matrix tool
+1. **4012** (pre-production deployment) - Next-gen architecture using functional programming and modern CSS
+2. **OBC Matrix** - Ontario Building Code compliance matrix tool for future integration pending regulator approval
 
 ## Commands
 
@@ -20,21 +19,20 @@ npm run format:check # Check Prettier formatting
 npm run format:write # Auto-format with Prettier
 
 # Open calculators locally
-open "OBJECTIVE 4011RF/index.html"     # Main calculator
-open "OBJECTIVE 4012/index.html"       # New framework version
-open "OBJECTIVE 4011RF/obc/indexobc.html" # OBC Matrix
+open "OBJECTIVE/index.html"     # Main calculator
+open "OBJECTIVE/src/obc/index.html" # OBC Matrix
 ```
 
 ## Architecture
 
-### 4011RF (Current Production)
-- **Entry**: `OBJECTIVE 4011RF/index.html`
+### OBJECTIVE 4.012 (Current Pre-Production)
+- **Entry**: `OBJECTIVE/index.html`
 - **Core**: StateManager handles dual-state (Target/Reference) calculations
-- **Sections**: 18 calculator sections in `sections/4011-Section*.js`
+- **Sections**: 18 calculator sections in `sections/Section*.js`
 - **State Flow**: Input → StateManager → Calculator → UI Update
-- **Key Pattern**: Every field has Target and Reference variants (e.g., `d_10_target`, `d_10_reference`)
+- **Key Pattern**: Every field has Target and Reference variants (e.g., `d_12`, `ref_d_12`)
 
-### 4012 Framework (Next Generation)
+### 4.012 Framework (Next Generation)
 - **Goal**: 50% code reduction, sub-100ms recalculation
 - **Pattern**: Tuple-based calculations returning `{target, reference}` pairs
 - **Structure**: 
@@ -43,10 +41,14 @@ open "OBJECTIVE 4011RF/obc/indexobc.html" # OBC Matrix
 - **No ES6 modules** - Uses IIFE pattern for browser compatibility
 
 ### Critical Files
-- `4011-StateManager.js` - Central state management for dual calculations
-- `4011-Calculator.js` - Core calculation engine
-- `4011-ReferenceValues.js` - Building code minimum values
-- `4011-FieldManager.js` - UI component creation and management
+- `StateManager.js` - Central state management for dual calculations
+- `Calculator.js` - Core calculation engine
+- `ReferenceValues.js` - Building code minimum values
+- `FieldManager.js` - UI component creation and management
+- `Dependency.js` - Complete dependency graph for all fields (visualized in Section 17)
+  - Future use: Topological sort for optimized calculation order
+  - Future use: Directed graph traversal for reactive calculations
+  - Current: Visualization and debugging tool
 
 ## Git Workflow & GitHub Etiquette
 
@@ -125,28 +127,32 @@ git push --force-with-lease origin NEW-FEATURE
 
 ### When modifying calculations:
 1. Check both Target and Reference modes work correctly
-2. Verify downstream dependencies using `4011-Dependency.js`
+2. Verify downstream dependencies using `Dependency.js`
 3. Test with Reference toggle on/off
 4. Ensure Excel export maintains all values
 
 ### Field ID Convention:
-- Format: `[column]_[row]` (e.g., `d_10` for column D, row 10)
-- Target variant: `d_10_target`
-- Reference variant: `d_10_reference`
+- Format: `[column]_[row]` (e.g., `d_12` for column D, row 12)
+- Target variant: `d_12`
+- Reference variant: `ref_d_10`
 
 ### State Management:
 ```javascript
 // Always use StateManager for values
-TEUI.StateManager.setValue('d_10', value);
-const value = TEUI.StateManager.getValue('d_10');
+TEUI.StateManager.setValue('d_12', value);
+const value = TEUI.StateManager.getValue('d_12');
 
 // For dual-state fields
-TEUI.StateManager.setTargetValue('d_10', targetValue);
-TEUI.StateManager.setReferenceValue('d_10', referenceValue);
+// Target fields use base field ID (e.g., 'd_12')
+TEUI.StateManager.setValue('d_12', targetValue);
+
+// Reference fields use 'ref_' prefix (e.g., 'ref_d_12')
+TEUI.StateManager.setValue('ref_d_12', referenceValue);
+const refValue = TEUI.StateManager.getValue('ref_d_12');
 ```
 
 ### Adding New Sections:
-1. Follow naming: `4011-Section[XX].js` or `4012-S[XX].js`
+1. Follow naming: `Section[XX].js` or `S[XX].js`
 2. Register with StateManager and SectionIntegrator
 3. Define field mappings in section's `fields` object
 4. Implement `calculate()` and `updateUI()` functions
@@ -154,29 +160,108 @@ TEUI.StateManager.setReferenceValue('d_10', referenceValue);
 ## Common Issues & Solutions
 
 ### Reference Values Not Updating:
-- Check `4011-ReferenceValues.js` for field mappings
+- Check `ReferenceValues.js` for field mappings
 - Verify dual-state architecture in section implementation
 - Ensure `updateReferenceIndicators()` is called after calculations
 
 ### Excel Import/Export Issues:
-- Field mappings in `4011-ExcelMapper.js`
+- Field mappings in `ExcelMapper.js`
 - Check cell references match Excel template
 - Verify data types (numeric vs string)
 
 ### Calculation Dependencies:
-- Use `4011-Dependency.js` to track field relationships
-- Ensure proper calculation order in `4011-Calculator.js`
+- Use `Dependency.js` to track field relationships (complete dependency graph)
+- Ensure proper calculation order in `Calculator.js`
 - Check for circular dependencies
+- Note: Convergence calculation loop currently handles stale values and calculation drift
+- Future: Replace with topological sort/directed graph for reactive calculations
 
 ## Testing Approach
 
-No formal test framework is configured. Testing is done manually:
-1. Compare calculations with Excel reference files in `data/`
-2. Test Reference mode toggle functionality
-3. Verify Excel import/export round-trip
-4. Check responsive design on mobile devices
+Automated testing with Playwright is configured (`playwright.config.cjs`). Testing includes:
+1. Automated: Playwright test suite in `tests/` directory
+2. Manual: Compare calculations with Excel reference files (`docs/source of truth/TEUIv3043.xlsx`)
+3. Manual: Test Reference mode toggle functionality
+4. Manual: Verify CSV/Excel import/export round-trip (confirmed working)
+5. Manual: Check responsive design on mobile devices (partial implementation)
 
 ## Data Sources
-- Climate data: `4011-ClimateValues.js`
-- Building codes: `sources of truth 3037/CODE-VALUES.csv`
-- Formulas: `sources of truth 3037/FORMULAE-3039.csv`
+- Climate data: `src/core/ClimateValues.js`
+- Excel formulas (CSV export): `docs/sources of truth 3037/TEUIv3043.csv`
+- Building code values: Embedded in `src/core/ReferenceValues.js`
+
+## Repository Structure & File Organization
+
+### Directory Structure
+```
+objective/                              ← Git repo root
+├── .git/                              ← Git metadata
+├── docs/
+│   ├── CLAUDE.md                      ← This file (primary AI guidance)
+│   ├── development/
+│   │   ├── Logs.md                    ← Debug logs & console output
+│   │   └── SEPT15-RACE-MITIGATION.md  ← Technical documentation
+│   └── sources of truth 3037/
+│       └── TEUIv3043.csv              ← Excel formulas (CSV export)
+├── src/
+│   ├── core/                          ← Core modules
+│   │   ├── StateManager.js           ← Central state management
+│   │   ├── Calculator.js             ← Main calculation engine
+│   │   ├── Dependency.js             ← Complete dependency graph
+│   │   ├── FieldManager.js           ← UI component management
+│   │   ├── FileHandler.js            ← CSV/Excel import/export
+│   │   ├── ExcelMapper.js            ← Excel cell mapping
+│   │   ├── ReferenceValues.js        ← Building code minimums
+│   │   ├── ReferenceManager.js       ← Reference mode coordination
+│   │   ├── ReferenceToggle.js        ← Toggle UI control
+│   │   ├── SectionIntegrator.js      ← Section coordination
+│   │   ├── Cooling.js                ← Cooling calculations module
+│   │   ├── ClimateValues.js          ← Climate data
+│   │   ├── Orchestrator.js           ← Module initialization
+│   │   ├── ZenMaster.js              ← Calculation monitoring
+│   │   ├── QCMonitor.js              ← Quality control checks
+│   │   ├── TooltipManager.js         ← Tooltip system
+│   │   └── init.js                   ← Application initialization
+│   ├── sections/                      ← Section modules (S01-S18)
+│   │   ├── Section01.js through Section18.js
+│   │   ├── Section16C.js             ← Sankey chart variant
+│   │   └── SectionXX.js              ← Template
+│   ├── styles/                        ← CSS files
+│   └── obc/                           ← OBC Matrix tool
+├── tests/                             ← Playwright test suite
+├── index.html                         ← Application entry point
+├── playwright.config.cjs              ← Test configuration
+└── package.json
+```
+
+### Logs.md Workflow
+
+**Manual Process for Debugging**:
+- Human copies/pastes browser console logs into `docs/development/Logs.md`
+- Agents cannot access browser console directly
+- When debugging, request logs from human, then analyze `Logs.md` content
+- Use cases: Forensic debugging, calculation sequence analysis, error tracking
+
+### Common Path Issues
+
+When running commands:
+- Use quotes for paths with spaces: `"src/sections/Section10.js"`
+- Working directory may not persist between commands - verify with `pwd`
+- For git operations, ensure you're in repo root
+
+## Quick Orientation Commands
+
+```bash
+# List main codebase
+ls -la src/
+
+# Check current sections
+ls -la src/sections/
+
+# View recent git activity
+git log --oneline -10
+
+# Check current branch and status
+git branch
+git status
+```
