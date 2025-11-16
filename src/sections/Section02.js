@@ -283,7 +283,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         h: {
           fieldId: "h_15",
           type: "editable",
-          label: "Conditioned Area",
+          label: "Conditioned Area: m²",
           value: "1427.20", // ✅ FIXED: Raw value without comma for calculation stability
           classes: ["user-input", "editable"],
           section: "buildingInfo",
