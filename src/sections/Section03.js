@@ -761,7 +761,7 @@ window.TEUI.SectionModules.sect03 = (function () {
           label: "Days Cooling",
           value: "120",
           section: "climateCalculations",
-          tooltip: true, // Cooling Days are Increasing
+          tooltip: true, // Cooling Days are Increasing, 120 to 140 in the GTHA
           classes: ["user-input", "editable"],
         },
       },
@@ -787,7 +787,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         h: {
           fieldId: "h_20",
           type: "dropdown",
-          label: "Current or Future Values",
+          label: "Current or Future Weather Values",
           dropdownId: "dd_h_20",
           value: "Present",
           section: "climateCalculations",
@@ -801,17 +801,19 @@ window.TEUI.SectionModules.sect03 = (function () {
         // Replaces: j_20 "HDD Reference Lookup" and k "HDD - Energy Star"
         // TODO: Add tooltips with links to HDD/CDD reference resources later
         j: { content: "L.2.0", classes: ["label-prefix"] },
-        k: { content: "Summer Night ºC", classes: ["label-main"] },
+        k: { content: "Summer Night Mean", classes: ["label-main"] }, // Mean Night-time Outdoor Temp
         l: {
           fieldId: "l_20",
           type: "editable",
-          label: "Summer Night ºC",
+          label: "Summer Night (Seasonal Mean) ºC",
           value: "20.43", // Default: Alexandria, ON summer night temp
           section: "climateCalculations",
           tooltip: true, // Night-time outdoor temp (cooling season mean)
           classes: ["user-input", "editable"],
           // NOTE: Currently user-editable for testing. Will be locked in future (calculated from climate data)
         },
+        m: { content: "ºC", classes: ["unit-label"]
+         },
       },
     },
 
@@ -868,16 +870,18 @@ window.TEUI.SectionModules.sect03 = (function () {
         // Replaces: j_21 "CDD Reference Lookup" and k "CDD - Energy Star"
         // TODO: Add tooltips with links to HDD/CDD reference resources later
         j: { content: "L.2.2", classes: ["label-prefix"] },
-        k: { content: "Summer RH%", classes: ["label-main"] },
+        k: { content: "Summer Mean RH", classes: ["label-main"] },
         l: {
           fieldId: "l_21",
           type: "editable",
-          label: "Summer RH%",
+          label: "Summer Mean RH%",
           value: "55.85", // Default: Alexandria, ON cooling season mean RH at 15h00 LST
           section: "climateCalculations",
           tooltip: true, // Cooling season mean RH at 15h00 LST
           classes: ["user-input", "editable"],
           // NOTE: Currently user-editable for testing. Will be locked in future (calculated from climate data)
+        },
+        m: { content: "%", classes: ["unit-label"]
         },
       },
     },
@@ -914,7 +918,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         l: {
           fieldId: "l_22",
           type: "editable",
-          label: "Elevation (ASL)",
+          label: "Elevation (ASL): metres",
           value: "80",
           section: "climateCalculations",
           classes: ["user-input", "editable"],

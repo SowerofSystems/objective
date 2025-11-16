@@ -555,7 +555,7 @@ window.TEUI.SectionModules.sect07 = (function () {
           value: "10,000.00",
           classes: ["user-input"],
           tooltip: true, // Occupancy-Dependent Calculation
-          label: "Engineer DHW Energy: kWh/yr",
+          label: "Engineer Defined SHW/DHW Energy: kWh/yr",
         },
         f: { content: "kWh/yr (IF By Engineer)", classes: ["text-left"] },
         h: {
