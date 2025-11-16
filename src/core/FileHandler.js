@@ -292,16 +292,18 @@
       try {
         const rows = csvString.split(/\r?\n/).filter(row => row.trim() !== ""); // Split lines and remove empty ones
 
-        // Support both legacy (2 rows) and new dual-state format (3 rows)
-        if (rows.length !== 2 && rows.length !== 3) {
+        // Support legacy (2 rows), dual-state (3 rows), and labeled (4+ rows) formats
+        if (rows.length < 2) {
           throw new Error(
-            `Expected 2 rows (legacy) or 3 rows (dual-state), but found ${rows.length}.`
+            `Expected at least 2 rows, but found ${rows.length}.`
           );
         }
 
         const headerRow = rows[0];
         const targetValueRow = rows[1]; // Target/Application values
-        const referenceValueRow = rows.length === 3 ? rows[2] : null; // Reference values (if present)
+        const referenceValueRow = rows.length >= 3 ? rows[2] : null; // Reference values (if present)
+        // Row 4 (labelRow) is optional and only for human readability - not imported
+        // Row 5+ reserved for future OBC Matrix data
 
         // Basic parsing for CSV row, handles quoted fields from our escapeCSV output
         const parseCSVRow = rowString => {
@@ -1004,17 +1006,26 @@
           referenceValues.push(escapeCSV(formattedReference));
         });
 
+        // Get natural language labels for each field
+        const labelRow = userEditableFieldIds.map(fieldId => {
+          const fieldDef = this.fieldManager.getField(fieldId);
+          const label = fieldDef?.label || fieldId; // Fallback to fieldId if no label
+          return escapeCSV(label);
+        });
+
         // Construct CSV content:
         // Row 1: Field IDs (headers)
         // Row 2: Target/Application values
         // Row 3: Reference values
-        // Row 4+: [Future] OBC Matrix placeholder
+        // Row 4: Natural language labels
+        // Row 5+: [Future] OBC Matrix placeholder
         const headerRow = userEditableFieldIds.join(",");
         const targetRow = targetValues.join(",");
         const referenceRow = referenceValues.join(",");
-        const csvContent = headerRow + "\n" + targetRow + "\n" + referenceRow;
+        const labelRowString = labelRow.join(",");
+        const csvContent = headerRow + "\n" + targetRow + "\n" + referenceRow + "\n" + labelRowString;
 
-        // Future: Add OBC Matrix export here as additional rows
+        // Future: Add OBC Matrix export here as additional rows (Row 5+)
         // const obcHeaderRow = "# OBC Matrix Data";
         // const obcDataRow = "...";
 
@@ -1026,7 +1037,7 @@
 
         console.log(`[CSV Export] Generated filename: ${filename}`);
         console.log(
-          `[CSV Export] Exported ${userEditableFieldIds.length} fields (explicit list matching Excel import) with Target and Reference values`
+          `[CSV Export] Exported ${userEditableFieldIds.length} fields (explicit list matching Excel import) with Target, Reference values, and natural language labels`
         );
 
         // Trigger Download - should work in Safari when called synchronously from click event
@@ -1044,7 +1055,7 @@
         URL.revokeObjectURL(url);
 
         this.showStatus(
-          "Dual-state CSV export complete (Target + Reference).",
+          "Dual-state CSV export complete (Target + Reference + Labels).",
           "success"
         );
       } catch (error) {
