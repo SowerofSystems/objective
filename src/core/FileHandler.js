@@ -337,8 +337,10 @@
         // Headers may be in format "fieldId: Label" (new) or just "fieldId" (legacy)
         const fieldIds = parseCSVRow(headerRow).map(header => {
           // Split on first colon and take the field ID part
-          const colonIndex = header.indexOf(':');
-          return colonIndex !== -1 ? header.substring(0, colonIndex).trim() : header.trim();
+          const colonIndex = header.indexOf(":");
+          return colonIndex !== -1
+            ? header.substring(0, colonIndex).trim()
+            : header.trim();
         });
         const targetValues = parseCSVRow(targetValueRow);
         const referenceValues = referenceValueRow

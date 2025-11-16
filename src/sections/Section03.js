@@ -812,8 +812,7 @@ window.TEUI.SectionModules.sect03 = (function () {
           classes: ["user-input", "editable"],
           // NOTE: Currently user-editable for testing. Will be locked in future (calculated from climate data)
         },
-        m: { content: "ºC", classes: ["unit-label"]
-         },
+        m: { content: "ºC", classes: ["unit-label"] },
       },
     },
 
@@ -881,8 +880,7 @@ window.TEUI.SectionModules.sect03 = (function () {
           classes: ["user-input", "editable"],
           // NOTE: Currently user-editable for testing. Will be locked in future (calculated from climate data)
         },
-        m: { content: "%", classes: ["unit-label"]
-        },
+        m: { content: "%", classes: ["unit-label"] },
       },
     },
 

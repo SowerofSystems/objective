@@ -1036,8 +1036,8 @@ window.TEUI.SectionModules.sect04 = (function () {
 
   //==========================================================================
   // ONTARIO GRID INTENSITY LOOKUP (Excel XLOOKUP Logic)
-  //Copyright © The Atmospheric Fund, 2025.(Updated Oct 2025) All rights reserved. 
-  //TAF would like to thank our endowment funders: the City of Toronto, Province of Ontario, and Government of Canada. 
+  //Copyright © The Atmospheric Fund, 2025.(Updated Oct 2025) All rights reserved.
+  //TAF would like to thank our endowment funders: the City of Toronto, Province of Ontario, and Government of Canada.
   //Views expressed here do not necessarily reflect the views of our funders. TAF is a proud member of the Low Carbon Cities Canada network.
   //==========================================================================
 

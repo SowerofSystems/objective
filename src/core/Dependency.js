@@ -736,8 +736,8 @@ window.TEUI.DependencyGraph = class DependencyGraph {
               return "";
             })
             .style("cursor", "pointer");
-            // Note: stroke and stroke-width are handled by CSS classes for architectural nodes
-            // and by .style() in the update section for regular nodes
+          // Note: stroke and stroke-width are handled by CSS classes for architectural nodes
+          // and by .style() in the update section for regular nodes
 
           g.append("text")
             .attr("dx", d => d.size + 5) // Dynamic offset based on node size
