@@ -48,6 +48,79 @@ open "OBJECTIVE 4011RF/obc/indexobc.html" # OBC Matrix
 - `4011-ReferenceValues.js` - Building code minimum values
 - `4011-FieldManager.js` - UI component creation and management
 
+## Git Workflow & GitHub Etiquette
+
+### Branch Strategy
+
+All development work follows a feature branch workflow with proper PR etiquette:
+
+1. **Creating Feature Branches**:
+   - Always branch from the current development branch (usually `dependency3` or latest feature branch)
+   - Use descriptive branch names: `FH-AUGMENT`, `S07-FIX`, `COOLING-CALC`, etc.
+   - Keep branches focused on a single feature or fix
+
+2. **Committing Changes**:
+   - Make atomic commits with clear messages
+   - Follow commit format: `Type: Brief description`
+   - Types: `Feat`, `Fix`, `Refactor`, `Docs`, `Improve`, `Clean`
+   - Include co-author footer:
+     ```
+     🤖 Co-Generated with [Claude Code](https://claude.com/claude-code)
+
+     Co-Authored-By: Andy & Claude <andy@openbuilding.ca>
+     ```
+
+3. **Pushing to Remote**:
+   ```bash
+   git push -u origin BRANCH-NAME
+   ```
+   - Push feature branches to remote for backup and visibility
+   - **Do NOT create PRs immediately** if there are open PRs pending review
+
+4. **Pull Request Protocol**:
+   - **NEVER merge your own PRs to main** - wait for CTO review
+   - **Respect the PR queue**: If PR#35 is open, don't create PR#36 until #35 is reviewed
+   - After existing PR is merged:
+     ```bash
+     # Rebase your feature branch onto updated main
+     git checkout main
+     git pull origin main
+     git checkout YOUR-BRANCH
+     git rebase main
+     git push --force-with-lease origin YOUR-BRANCH
+     ```
+   - Then create PR targeting `main`
+
+5. **Branch Lifecycle**:
+   - Keep feature branches small (ideally < 10 commits)
+   - Don't stack feature branches (branch from `main`, not from other feature branches)
+   - After merge: local branch can be deleted, remote branch preserved
+
+### Example Workflow
+
+```bash
+# Starting new feature
+git checkout dependency3          # or current dev branch
+git pull origin dependency3
+git checkout -b NEW-FEATURE
+
+# Work and commit
+git add .
+git commit -m "Feat: Add new capability"
+
+# Push to remote (but don't create PR yet if queue exists)
+git push -u origin NEW-FEATURE
+
+# After PR queue clears and base branch merges
+git checkout main
+git pull origin main
+git checkout NEW-FEATURE
+git rebase main
+git push --force-with-lease origin NEW-FEATURE
+
+# Now create PR via GitHub UI
+```
+
 ## Development Guidelines
 
 ### When modifying calculations:
