@@ -249,8 +249,8 @@ window.TEUI.SectionModules.sect01 = (function () {
         .cost-indicator { display: inline; font-size: 0.75rem; font-weight: bold; color: #555; margin-left: 5px; }
         .ref-cost { color: #8B0000; opacity: 0.9; }
         /* Note: checkmark/warning styles now defined globally in 4011-styles.css */
-        .linear-gauge-container { width: 92%; height: 12px; background-color: #f1f1f1; border-radius: 6px; overflow: hidden; margin: 3px 0 3px auto; position: relative; margin-right: 20px; }
-        .linear-gauge-bar { height: 100%; width: 0%; background-color: #5bc0de; transition: width 1s ease-in-out; border-radius: 6px; }
+        .linear-gauge-container { width: 92%; height: 6px; background-color: #f1f1f1; border-radius: 3px; overflow: hidden; margin: 3px 0 3px auto; position: relative; margin-right: 20px; }
+        .linear-gauge-bar { height: 100%; width: 0%; background-color: #5bc0de; transition: width 1s ease-in-out; border-radius: 3px; }
         .gauge-excellent { background-color: #28a745; }
         .gauge-good { background-color: #5bc0de; }
         .gauge-warning { background-color: #f0ad4e; }
