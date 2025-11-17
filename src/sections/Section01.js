@@ -244,7 +244,7 @@ window.TEUI.SectionModules.sect01 = (function () {
         .ref-value { color: #8B0000; }
         .percent-value { font-family: "Arial Black", Gadget, sans-serif; font-size: 2rem; font-weight: 900; color: #777; opacity: 0.5; text-align: right; display: block; padding-right: 10px; line-height: 1; margin: 0; white-space: nowrap; }
         .percent-value .checkmark,
-        .percent-value .warning { font-size: 1.2rem !important; }
+        .percent-value .warning { font-size: 1.2rem !important; font-family: Arial, sans-serif !important; }
         .tier-indicator { display: inline-block; font-size: 2rem; font-weight: 900; color: #777; margin-right: 8px; opacity: 0.5; vertical-align: baseline; }
         .t1-tag { color: #8B0000; }
         .t3-tag { color: #333; }
