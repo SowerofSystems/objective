@@ -900,6 +900,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           section: "envelopeRadiantGains",
           classes: ["user-input", "col-medium"],
           label: "S10: Doors Area: m²",
+          tooltip: true, // Area of Doors
         },
         e: {
           fieldId: "e_73",
@@ -1021,6 +1022,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           section: "envelopeRadiantGains",
           classes: ["user-input", "col-medium"],
           label: "S10: Window Area North: m²",
+          tooltip: true, // Area of Window North
         },
         e: {
           fieldId: "e_74",
@@ -1142,6 +1144,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           section: "envelopeRadiantGains",
           classes: ["user-input"],
           label: "S10: Window Area East: m²",
+          tooltip: true, // Area of Window East
         },
         e: {
           fieldId: "e_75",
@@ -1259,6 +1262,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           section: "envelopeRadiantGains",
           classes: ["user-input"],
           label: "S10: Window Area South: m²",
+          tooltip: true, // Area of Window South
         },
         e: {
           fieldId: "e_76",
@@ -1376,6 +1380,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           section: "envelopeRadiantGains",
           classes: ["user-input"],
           label: "S10: Window Area West: m²",
+          tooltip: true, // Area of Window West
         },
         e: {
           fieldId: "e_77",
@@ -1493,6 +1498,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           section: "envelopeRadiantGains",
           classes: ["user-input"],
           label: "S10: Skylights: m²",
+          tooltip: true, // Area of Skylights
         },
         e: {
           fieldId: "e_78",
