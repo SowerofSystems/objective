@@ -1,6 +1,6 @@
 /**
- * 4011-styles.css Refactored 2025.04.21 to consolidate column widths and improve readability
- * Core styles for TEUI Calculator 4.011
+ * 4012-styles.css Refactored 2025.04.21 to consolidate column widths and improve readability
+ * Core styles for TEUI Calculator 4.012 updated Nov 17, 2025
  * Clean foundation with essential styling only
  * 
  * STYLING PRIORITY NOTE:
@@ -113,16 +113,20 @@ body {
   height: 0;
 }
 
-/* In horizontal layout, add fixed spacing below tabs */
+/* In horizontal layout, add fixed spacing below tabs with scroll barrier */
 .horizontal-layout .section-spacer {
   display: block;
-  height: 15px;
-  min-height: 15px;
-  max-height: 15px;
+  height: 10px;
+  min-height: 10px;
+  max-height: 10px;
   width: 100%;
   background: transparent;
   margin: 0;
   padding: 0;
+  /* Make it a scroll barrier */
+  scroll-margin-top: calc(var(--key-values-height) + var(--tab-height));
+  position: relative;
+  z-index: 108;
 }
 
 /* Tab spacer - setting to zero height in horizontal layout */
@@ -891,18 +895,7 @@ td[colspan="2"] .form-select {
   border-top-right-radius: 0 !important;
 }
 
-/* Improve spacer to act as a scroll barrier */
-.horizontal-layout .section-spacer {
-  display: block;
-  height: 15px;
-  min-height: 15px;
-  width: 100%;
-  background: transparent;
-  /* Make it a scroll barrier */
-  scroll-margin-top: calc(var(--key-values-height) + var(--tab-height));
-  position: relative;
-  z-index: 108;
-}
+/* Duplicate .horizontal-layout .section-spacer rule removed - consolidated above at line 117 */
 
 /* Basic horizontal layout styling */
 .horizontal-layout {
