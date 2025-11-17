@@ -12,6 +12,7 @@
 
   // Comprehensive extraction from TEUIv3042.xlsx - 107 tooltips total
   const VALIDATION_TOOLTIPS = {
+    // Section 02 Project & Method Data
     d_12: {
       cell: "D12",
       title: "Major Occupancy",
@@ -52,7 +53,7 @@
       cell: "L13",
       title: "Assume $0.507 (Ontario)",
       message:
-        "Adjust for Different Regions, be sure to add any fees, charges, tax & delivery to totals. ",
+        "Adjust for Different Regions, be sure to add any regulatory or other fees, charges, tax & delivery to totals. ",
     },
     d_14: {
       cell: "D14",
@@ -70,7 +71,7 @@
       cell: "L14",
       title: "Assume $1.62 (Ontario)",
       message:
-        "Adjust for Different Regions, be sure to add any fees, charges, tax & delivery to totals. ",
+        "Adjust for Different Regions, be sure to add any regulatory or other fees, charges, tax & delivery to totals. ",
     },
     d_15: {
       cell: "D15",
@@ -114,6 +115,7 @@
       message:
         "Enter here the OAA CofP Number, or PEO issued Cert. of Auth here, or if BCIN the BCIN No. ",
     },
+    // Section 03 Climate & Location Data
     d_19: {
       cell: "D19",
       title: "Select a Province",
@@ -201,6 +203,7 @@
       message:
         "NECB/NBC now establish an upper limit for Tset Cooling of 26ºC. Users often will set lower values in practice. A realistic value of 22ºC-24ºC as a typical cooling setpoint should be considered. Users can over-ride these values.",
     },
+    // Section 04 Energy Use Data
     d_27: {
       cell: "D27",
       title: "Actual Electricity Use",
@@ -243,12 +246,14 @@
       message:
         "For 100% electric buildings in Canada, PHPP adds a PER of 1.5. 1.0 represents Site Energy or Site EUI. We would recommend entry of 1.0 UNLESS you are comparing your model to PHPP-generated results for side-by-side comparison.",
     },
+    // Section 05 Emissions Data
     d_39: {
       cell: "D39",
       title: "Building Typology",
       message:
         "Select a Building Typology_x000a_Or select 'Modelled Value' if you have calclated it with external software. ",
     },
+    //  Section 06 Renewable Energy Data
     i_41: {
       cell: "I41",
       title: "Externally Defined Value",
@@ -261,6 +266,7 @@
       message:
         "Only enter if planned outdoor loads are known, ie. Exterior Lighting, Pumps, Heat-Tracing, Snow-Melting, etc. ",
     },
+    // Section 07 Service or Domestic Hot Water Data
     d_49: {
       cell: "D49",
       title: "DHW/SHW Use Method (lpppd)",
@@ -331,6 +337,7 @@
       message:
         "Related to equipment efficiency, this takes the remainder of un-utilized energy in kWh and maps to a waste-flow. ie. 90% efficient equipment results in a 10% total net energy waste. Equipment efficienct is set at W.4 ",
     },
+    // Section 08 IAQ & Atmosphere Control Data
     d_59: {
       cell: "D59",
       title: "Interior Heating Season RH% Average",
@@ -349,6 +356,7 @@
       message:
         "If a form of Biomass thermal energy has been selected, the emissions will be offset automatically here, since according to IPCC and Canadian LULUCF methodologies, Biomass emissions are calculated based on forest inventories, and not as a scope 1 emission.",
     },
+    // Section 09 Internal Gains Data
     d_63: {
       cell: "D63",
       title: "Occupants",
@@ -393,11 +401,12 @@
       message:
         "Select Yes or No to indicate whether an elevator forms part of the Equipment load.",
     },
-    m_72: {
-      cell: "M72",
-      title: "Gains Factor Derivation",
+    // Section 10 Solar Gains Data
+      d_73: { //generic opening input tooltip, copy down to d_74 thru d_78
+      cell: "D73",
+      title: "Enter an Area in m²",
       message:
-        "From Hourly Modelling for Toronto Latitude: 0.5 SHGC at Mid-wall placement self-shading and 40% DST and 52% TST Assumed",
+        "Aggregate Area value of Openings by Type, for each orientation in m². Measured from Rough Opening Dimensions",
     },
     e_73: {
       cell: "E73",
@@ -411,6 +420,18 @@
       message:
         "0.5 = 50% Gain Permitted (Default)_x000a_Higher Numbers Increase Solar Heat Gain (Reduces Heating)_x000a_Lower Numbers Reduce Solar Heat Gain (Reduces Cooling)",
     },
+    m_73: {
+      cell: "M72",
+      title: "Gains Factor Derivation",
+      message:
+        "From Hourly Modelling for Toronto Latitude: 0.5 SHGC at Mid-wall placement self-shading and 40% DST and 52% TST Assumed",
+    },
+    d_74: { //generic opening input tooltip, copy down to d_74 thru d_78
+      cell: "D74",
+      title: "Enter an Area in m²",
+      message:
+        "Aggregate Area value of Openings by Type, for each orientation in m². Measured from Rough Opening Dimensions",
+    },
     e_74: {
       cell: "E74",
       title: "Select an Orientation",
@@ -422,6 +443,12 @@
       title: "Solar Heat Gain Coefficient",
       message:
         "0.5 = 50% Gain Permitted (Default)_x000a_Higher Numbers Increase Solar Heat Gain (Reduces Heating)_x000a_Lower Numbers Reduce Solar Heat Gain (Reduces Cooling)",
+    },
+    d_75: { //generic opening input tooltip, copy down to d_74 thru d_78
+      cell: "D75",
+      title: "Enter an Area in m²",
+      message:
+        "Aggregate Area value of Openings by Type, for each orientation in m². Measured from Rough Opening Dimensions",
     },
     e_75: {
       cell: "E75",
@@ -435,6 +462,12 @@
       message:
         "0.5 = 50% Gain Permitted (Default)_x000a_Higher Numbers Increase Solar Heat Gain (Reduces Heating)_x000a_Lower Numbers Reduce Solar Heat Gain (Reduces Cooling)",
     },
+    d_76: { //generic opening input tooltip, copy down to d_74 thru d_78
+      cell: "D76",
+      title: "Enter an Area in m²",
+      message:
+        "Aggregate Area value of Openings by Type, for each orientation in m². Measured from Rough Opening Dimensions",
+    },
     e_76: {
       cell: "E76",
       title: "Select an Orientation",
@@ -447,6 +480,12 @@
       message:
         "0.5 = 50% Gain Permitted (Default)_x000a_Higher Numbers Increase Solar Heat Gain (Reduces Heating)_x000a_Lower Numbers Reduce Solar Heat Gain (Reduces Cooling)",
     },
+    d_77: { //generic opening input tooltip, copy down to d_74 thru d_78
+      cell: "D77",
+      title: "Enter an Area in m²",
+      message:
+        "Aggregate Area value of Openings by Type, for each orientation in m². Measured from Rough Opening Dimensions",
+    },
     e_77: {
       cell: "E77",
       title: "Select an Orientation",
@@ -458,6 +497,12 @@
       title: "Solar Heat Gain Coefficient",
       message:
         "0.5 = 50% Gain Permitted (Default)_x000a_Higher Numbers Increase Solar Heat Gain (Reduces Heating)_x000a_Lower Numbers Reduce Solar Heat Gain (Reduces Cooling)",
+    },
+    d_78: { //generic opening input tooltip, copy down to d_74 thru d_78
+      cell: "D78",
+      title: "Enter an Area in m²",
+      message:
+        "Aggregate Area value of Openings by Type, for each orientation in m². Measured from Rough Opening Dimensions",
     },
     e_78: {
       cell: "E78",
@@ -489,6 +534,7 @@
       message:
         "Calculated Time in Hours for Interior to Reach Exterior Temperature in Heating and Cooling Peaks w/o Mechanical Intervention",
     },
+    // Section 11 Building Envelope Data
     d_96: {
       cell: "D96",
       title: "B.11 Interior Floors",
@@ -511,6 +557,7 @@
       title: "Total Excludes B.12 TB Penalty",
       message: "",
     },
+    // Section 12 Volume and Surface Metrics
     d_103: {
       cell: "D103",
       title: "Select Stories",
@@ -569,6 +616,7 @@
       message:
         "Most of Canada uses Zone 2. _x000a_Southern SK & MB use Zone 1. _x000a_Southern BC uses Zone 3. _x000a_refer to Map on NRL50 n-Factors tab if uncertain",
     },
+    // Section 13 Mechanical Loads 
     d_113: {
       cell: "D113",
       title: "Select Primary Heating System",
@@ -627,12 +675,14 @@
       message:
         "Negative Days Active Cooling Rewuired simply means no days require mechanical cooling - Passive Strategies for Free Cooling ie. Night-time ventilation *MAY* be adequate.",
     },
+    // Section 14 TEDI & TELI
     m_141: {
       cell: "M141",
       title: "Assume $0.122 (Ontario)",
       message:
         "Adjust for Different Regions, be sure to add any tax & delivery to totals. ",
     },
+    // Section 15 TEUI
     d_142: {
       cell: "D142",
       title: "Capital Cost Premium",
@@ -640,6 +690,7 @@
         "Add here the capital cost premium for Heatpump vs. Conventional Equipment",
     },
   };
+  // End of VALIDATION_TOOLTIPS
 
   class TooltipManager {
     constructor() {
