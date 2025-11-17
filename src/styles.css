@@ -33,7 +33,7 @@
   /* Layout dimensions */
   --key-values-height: 0px;
   --header-height: 60px;
-  --tab-height: 40px;
+  --tab-height: 36px;
   --tab-spacer-height: 15px; /* Fixed spacer height */
 
   /* Colors */
@@ -65,7 +65,7 @@
   --base-font-size: 0.85rem;
   --small-font-size: 0.8em;
   --smaller-font-size: 0.75em; /* Adjusted this for header rows */
-  --header-font-size: 1rem;
+  --header-font-size: 0.85rem;
   --key-values-font-size: 1.3rem;
 }
 
@@ -195,7 +195,7 @@ body {
 .section-header {
   background-color: var(--header-bg);
   color: white;
-  padding: 8px 12px;
+  padding: 6px 12px;
   font-weight: 500;
   font-size: var(--header-font-size);
   display: flex;

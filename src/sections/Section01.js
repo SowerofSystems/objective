@@ -182,9 +182,9 @@ window.TEUI.SectionModules.sect01 = (function () {
             margin-bottom: 8px;
         }
         #keyValues .section-header {
-            height: 40px !important;
-            min-height: 40px !important;
-            max-height: 40px !important;
+            height: 36px !important;
+            min-height: 36px !important;
+            max-height: 36px !important;
             display: flex !important;
             align-items: center !important;
         }
