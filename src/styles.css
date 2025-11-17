@@ -860,7 +860,7 @@ td[colspan="2"] .form-select {
   [contenteditable="true"],
   .editable,
   select.form-select {
-    -webkit-appearance: none;
+    -webkit-appearance: none; /* stylelint-disable-line property-no-vendor-prefix */
     border: 0;
     outline: none;
   }
@@ -908,12 +908,12 @@ td[colspan="2"] .form-select {
 /* Hide default number input spinners */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
+  -webkit-appearance: none; /* stylelint-disable-line property-no-vendor-prefix */
   margin: 0;
 }
 
 input[type="number"] {
-  -moz-appearance: textfield; /* Firefox */
+  -moz-appearance: textfield; /* stylelint-disable-line property-no-vendor-prefix */ /* Firefox */
 }
 
 /* Optional: Adjust padding if needed after removing spinners */
@@ -1564,7 +1564,7 @@ body.viewing-reference-inputs .reference-locked {
   /* Visually disable contenteditable */
   -webkit-user-modify: read-only !important;
   -moz-user-modify: read-only !important;
-  user-modify: read-only !important;
+  /* user-modify removed - deprecated property no longer needed */
 }
 
 /* Ensure user-input fields retain their blue color ONLY IF NOT locked - CHANGED TO viewing-reference-inputs */
@@ -1577,7 +1577,7 @@ body.viewing-reference-inputs .user-input:not(.reference-locked) {
   pointer-events: auto !important;
   -webkit-user-modify: read-write !important;
   -moz-user-modify: read-write !important;
-  user-modify: read-write !important;
+  /* user-modify removed - deprecated property no longer needed */
 }
 
 /* Style tab container in reference mode - CHANGED TO viewing-reference-inputs */
@@ -1711,11 +1711,7 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
 }
 /* --- END SUPER TARGETED OVERRIDES FOR INPUTS --- */
 
-/* Specifically for select elements to ensure arrow is visible if theme changes too much */
-body.viewing-reference-inputs .reference-input-display-locked select {
-  /* If your select arrow relies on background, you might need to ensure it's still visible */
-  /* For now, the general background above should apply. If an issue, add specific SVG here */
-}
+/* Empty ruleset removed - no specific select styling needed */
 
 /* Fallback style (grey) - keep this for cases where the class might be applied without the body class */
 /* This can be removed if .reference-input-display-locked is ONLY ever used with the body class */
