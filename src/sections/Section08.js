@@ -697,7 +697,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         e: { content: "% RH" },
         f: { content: "A.5.2" },
         g: { label: "" },
-        h: { content: "Indoor Cooling Season Avg." },
+        h: { content: "Indoor Heating Season Avg." },
         i: {
           fieldId: "i_59",
           type: "percentage",
@@ -706,7 +706,7 @@ window.TEUI.SectionModules.sect08 = (function () {
           max: 100,
           step: 1,
           classes: ["user-input"],
-          tooltip: true, // RH% Annual Average
+          tooltip: true, // RH% Cooling Season Average
           label: "RH Cooling Season Target: %",
         },
         j: { content: "% RH" },

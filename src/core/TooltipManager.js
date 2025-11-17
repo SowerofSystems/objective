@@ -34,13 +34,13 @@
       cell: "D15",
       title: "Carbon Benchmark",
       message:
-        "Enter relevant standard otherwise 'Self Reported'. If no A1-3 Embodied carbon has been calculated using another tool, select 'Not Reported' to use default values (Upset Limits from TGS4)",
+        "Enter relevant standard otherwise 'Self Reported'. If no A1-3 Embodied carbon has been calculated using another tool, select 'Not Reported' to use default values (Upset Limits from TGS4)_x000a_Reference: https://openbuilding.ca/2024/07/22/teui-s-3-carbon-benchmarking-standard/",
     },
     d_16: {
       cell: "D16",
       title: "S4. Targets",
       message:
-        "IPCC AR6 EPC = Equal PerCapita method to limit to 1.5°C_x000a_IPCC AR6 EA = Equity-Adjusted method to limit to 1.5°C_x000a_(refer to: https://openbuilding.ca/2024/07/22/teui-s-3-carbon-benchmarking-standard/)",
+        "IPCC AR6 EPC = Equal PerCapita method to limit to 1.5°C_x000a_IPCC AR6 EA = Equity-Adjusted method to limit to 1.5°C_x000a_Reference: https://openbuilding.ca/2024/07/22/teui-s-3-carbon-benchmarking-standard/",
     },
     d_19: {
       cell: "D19",
@@ -51,49 +51,49 @@
       cell: "D21",
       title: "Cooling Degree Days",
       message:
-        "If Unavailable, you can enter a value here. Click the Link on the CDD text left to find values from the Climate Atlas of Canada.",
+        "If Unavailable, you can enter a custom value here. Click the CDD link left to find values from ClimateAtlas.ca.",
     },
-    d_25: {
-      cell: "D25",
-      title: "Cooling Guidance",
+    h_24: {
+      cell: "H24",
+      title: "Cooling Setpoint °C",
       message:
         "ASHRAE may permit 26°C, where NBC 2025 may require 24°C. Residents will often set lower. Use 24°C as Default for design. ",
     },
+      l_24: {
+      cell: "L24",
+      title: "Cooling Override °C",
+      message:
+        "24°C as Default for design, you may enter a higher value to reduce cooling system loads.You may set a value lower than 24ºC to test the increase on cooling system loads ",
+    },
     d_27: {
       cell: "D27",
-      title: "Electricity",
+      title: "Actual Electricity Use",
       message:
         "Enter a number here only if you have Utility Bill data. If none are yet available, be sure to select 'S.2 Targeted Use' mode. ",
     },
     d_28: {
       cell: "D28",
-      title: "Gas",
+      title: "Actual Gas Use",
       message:
         "Enter a number here only if you have Utility Bill data. If none are yet available, be sure to select 'S.2 Targeted Use' mode. ",
     },
     d_29: {
       cell: "D29",
-      title: "Propane",
+      title: "Actual Propane Use",
       message:
-        "Enter a number here only if you have Utility Bill data. If none are yet available, be sure to select 'S.2 Targeted Use' mode. ",
+        "Enter a number here only if you have Utility Bill data. If none are yet available, be sure to select 'S.2 Targeted Use' mode._x000a_OBJECTIVE does not calculate Propane use as an energy source, use 'Gas' instead ",
     },
     d_30: {
       cell: "D30",
-      title: "Oil ",
+      title: "Actual Oil Use",
       message:
         "Enter a number here only if you have Utility Bill data. If none are yet available, be sure to select 'S.2 Targeted Use' mode. ",
     },
     d_31: {
       cell: "D31",
-      title: "Wood",
+      title: "Actual Wood Use",
       message:
-        "Enter a number here only if you have Utility Bill data. If none are yet available, be sure to select 'S.2 Targeted Use' mode. ",
-    },
-    d_32: {
-      cell: "D32",
-      title: "Biomass Guidance",
-      message:
-        "If a form of Biomass thermal energy has been selected, the emissions will be offset automatically here, since according to IPCC and Canadian LULUCF methodologies, Biomass emissions are calculated based on forest inventories, and not as a scope 1 emission.",
+        "Biomass Guidance: If a form of Biomass thermal energy has been selected, the emissions will be offset automatically here, since according to IPCC and Canadian LULUCF methodologies, Biomass emissions are calculated based on forest inventories, and not as a scope 1 emission._x000a_OBJECTIVE does not calculate Wood use as an energy supply option due to its generally imtermittent use. ",
     },
     d_39: {
       cell: "D39",
@@ -110,7 +110,7 @@
     d_51: {
       cell: "D51",
       title: "DHW/SHW Heating Source",
-      message: "Select DHW Energy Source",
+      message: "Select DHW Energy Source from the drop-down options and enther the efficiency accordingly.",
     },
     d_52: {
       cell: "D52",
@@ -120,19 +120,19 @@
     d_53: {
       cell: "D53",
       title: "Range of DWHR Efficiency",
-      message: "0-75%, with 40% a common Residential Unit Efficiency",
-    },
-    d_54: {
-      cell: "D54",
-      title: "Enter Percapita Metered Use",
-      message:
-        "Assume 220 litres/pp/day per NBC 9.36. Assume 40% of this is DHW or 88 litres/pp/day DHW. ",
+      message: "0-75%, with 40% a common Residential Unit Efficiency_x000a_This is considered a high impact energy conservation measure for DHW systems with rapid ROI and decarbonization impacts. ",
     },
     d_59: {
       cell: "D59",
-      title: "RH% Annual Average",
+      title: "Interior Heating Season RH% Average",
       message:
-        "This cell can report average annual RH% when available. Future development of OBJECTIVE will break this out into Seasonal Averages to better model heating and cooling loads, which, when combined w V.1.1 can have a significant effect on TEUI.",
+        "Enter the Interior Heating Season Average RH% when available. This presently has no impact on OBJECTIVE calculations.",
+    },
+      i_59: {
+      cell: "I59",
+      title: "Interior Cooling Season RH% Average",
+      message:
+        "Enter the Interior Cooling Season Average RH% when available. OBJECTIVE uses this in its dual Tetens formula calculations to determine the latent load on the Cooling system.",
     },
     d_60: {
       cell: "D60",
@@ -480,12 +480,6 @@
       message:
         "ONLY Select this option if Embodied Carbon must be calculated using an external tool. otherwise a guidance value will be calculated from the Building Construction Typology selected to the left. ",
     },
-    i_59: {
-      cell: "I59",
-      title: "RH% Annual Average",
-      message:
-        "This cell can report average annual RH% when available. Future development of OBJECTIVE will break this out into Seasonal Averages to better model heating and cooling loads, which, when combined w V.1.1 can have a significant effect on TEUI.",
-    },
     j_98: {
       cell: "J98",
       title: "Total Excludes B.12 TB Penalty",
@@ -563,12 +557,6 @@
     },
     l_23: {
       cell: "L23",
-      title: "Cooling Guidance",
-      message:
-        "ASHRAE may permit 26°C, where NBC 2025 may require 24°C. Residents will often set lower. Use 24°C as Default for design. ",
-    },
-    l_24: {
-      cell: "L24",
       title: "Cooling Guidance",
       message:
         "ASHRAE may permit 26°C, where NBC 2025 may require 24°C. Residents will often set lower. Use 24°C as Default for design. ",

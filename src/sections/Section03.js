@@ -1011,6 +1011,7 @@ window.TEUI.SectionModules.sect03 = (function () {
           type: "calculated",
           section: "climateCalculations",
           dependencies: ["d_12"],
+          tooltip: true, // automatic Cooling setpoint based on occupancy type
         },
         i: {
           fieldId: "i_24",
@@ -1028,6 +1029,7 @@ window.TEUI.SectionModules.sect03 = (function () {
           value: "24",
           section: "climateCalculations",
           classes: ["user-input", "editable"],
+          tooltip: true, // User-defined cooling setpoint override (ºC)
         },
         m: {
           fieldId: "m_24",
