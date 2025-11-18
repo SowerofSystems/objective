@@ -3,9 +3,9 @@
   "description": "OBJECTIVE TEUI Calculator - Total Energy Use Intensity calculator for Canadian buildings",
   "main": "index.html",
   "scripts": {
-    "test": "playwright test",
-    "test:ui": "playwright test --ui",
-    "test:debug": "playwright test --debug",
+    "test": "playwright test --config=playwright.config.cjs",
+    "test:ui": "playwright test --ui --config=playwright.config.cjs",
+    "test:debug": "playwright test --debug --config=playwright.config.cjs",
     "test:report": "playwright show-report playwright-report",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -51,5 +51,5 @@
     "doc": "docs",
     "test": "test"
   },
-  "type": "commonjs"
+  "type": "module"
 }

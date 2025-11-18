@@ -629,7 +629,7 @@ Select a province and city to view weather data.</pre
             ) {
               document
                 .querySelectorAll(".modal-backdrop")
-                .forEach((el) => el.remove());
+                .forEach(el => el.remove());
               document.body.classList.remove("modal-open");
               document.body.style.overflow = "";
               document.body.style.paddingRight = "";
@@ -644,6 +644,7 @@ Select a province and city to view weather data.</pre
 
     <!-- Initialize components on page load -->
     <script>
+      /* global OBC */
       document.addEventListener("DOMContentLoaded", function () {
         // Initialize FieldManager (core requirement for OBC Matrix)
         if (OBC && OBC.FieldManager) {
@@ -778,7 +779,7 @@ Select a province and city to view weather data.</pre
         // Update all section headers
         for (let i = 1; i <= 10; i++) {
           const sectionTitle = document.getElementById(
-            `section-${i.toString().padStart(2, "0")}-title`,
+            `section-${i.toString().padStart(2, "0")}-title`
           );
           if (sectionTitle) {
             const sectionNumber = i.toString().padStart(2, "0");
@@ -821,7 +822,7 @@ Select a province and city to view weather data.</pre
         loadSavedOBCPart();
 
         // Add click handlers to dropdown items
-        document.querySelectorAll("[data-part]").forEach((item) => {
+        document.querySelectorAll("[data-part]").forEach(item => {
           item.addEventListener("click", function (e) {
             e.preventDefault();
             const part = parseInt(this.getAttribute("data-part"));
@@ -834,7 +835,7 @@ Select a province and city to view weather data.</pre
       window.OBCPartSelector = {
         getCurrentPart: () => currentOBCPart,
         selectPart: selectOBCPart,
-        getPartInfo: (partNum) => OBC_PARTS[partNum] || null,
+        getPartInfo: partNum => OBC_PARTS[partNum] || null,
       };
     </script>
   </body>
