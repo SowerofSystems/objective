@@ -112,10 +112,10 @@ window.TEUI.SectionModules.sect14 = (function () {
       TargetState.initialize();
       ReferenceState.initialize();
 
-      // MANDATORY: Listen for reference standard changes
+      // PASSIVE: d_13 changes stored only - overlay applied by "Set Values" button
       if (window.TEUI?.StateManager?.addListener) {
         window.TEUI.StateManager.addListener("d_13", () => {
-          ReferenceState.onReferenceStandardChange();
+          // No automatic ReferenceState update - button triggers overlay
         });
       }
     },

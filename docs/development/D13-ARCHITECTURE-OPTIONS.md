@@ -1362,16 +1362,17 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 ## Progress Tracking
 
-**Current Status**: ✅ Phase 1 Complete - Ready for Phase 2 (Unwire d_13 triggers)
+**Current Status**: ✅ Phase 2 Complete - All d_13 Listeners Unwired (Ready for Phase 3)
 
-**Completed Tasks**: 2 / 50+ (Tasks 1.1, 1.2)
+**Completed Tasks**: 10 / 50+ (Tasks 1.1, 1.2, 2.1-2.8)
 
 **Last Updated**: 2025-11-18
 
 **Safe Revert Points**:
 - [x] **Baseline commit**: Documentation updated with Option 3 workplan (commit 3790e94)
-- [x] **Phase 1 complete**: Audit and verification (CURRENT - ready to commit)
-- [ ] After Phase 2 complete (unwire d_13 triggers)
+- [x] **Phase 1 complete**: Audit and verification (commit 17d88bb)
+- [x] **Phase 2 complete**: All d_13 listeners unwired - no automatic ReferenceState contamination (CURRENT - ready to commit)
+- [ ] After Phase 3 complete (ref_d_13 listeners added)
 - [ ] After Phase 4 complete (button wired for Reference mode)
 - [ ] After Phase 6 complete (TargetState methods added)
 - [ ] Final implementation complete (all tests pass)
@@ -1411,6 +1412,33 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 - ✅ Tooltip: Enabled
 - ✅ Location: Section02.js line 153-158
 - ✅ No existing click handler (confirmed - ready to wire)
+
+### Phase 2: Unwire d_13 Listeners (COMPLETED 2025-11-18)
+
+**All 7 sections successfully modified:**
+1. ✅ **Section05.js** (Line 192) - Made d_13 listener PASSIVE
+2. ✅ **Section06.js** (Line 173) - Made d_13 listener PASSIVE
+3. ✅ **Section09.js** (Line 2420) - Made d_13 listener PASSIVE (preserved calculateTargetModel + indicator updates)
+4. ✅ **Section11.js** (Line 389) - Made d_13 listener PASSIVE
+5. ✅ **Section12.js** (Line 191) - Made d_13 listener PASSIVE
+6. ✅ **Section13.js** (Line 293) - Made d_13 listener PASSIVE
+7. ✅ **Section14.js** (Line 117) - Made d_13 listener PASSIVE
+
+**Pattern applied consistently:**
+```javascript
+// PASSIVE: d_13 changes stored only - overlay applied by "Set Values" button
+window.TEUI.StateManager.addListener("d_13", () => {
+  // No automatic ReferenceState update - button triggers overlay
+});
+```
+
+**Verification results (Task 2.8):**
+- Grep search confirmed NO remaining `ReferenceState.onReferenceStandardChange()` calls in d_13 listeners
+- Only SectionXX.js (template file) retains old pattern - as expected
+- Section03.js and Section12.js have separate d_13 listeners for calculations only (not ReferenceState contamination)
+- All production sections now have perfect state isolation
+
+**Key achievement:** d_13 changes no longer automatically contaminate Reference model ✅
 
 ---
 

@@ -2416,15 +2416,9 @@ window.TEUI.SectionModules.sect09 = (function () {
     });
 
     // 4. Reference Standard (d_13 / ref_d_13)
+    // PASSIVE: d_13 changes stored only - overlay applied by "Set Values" button
     sm.addListener("d_13", () => {
-      // Update Reference State with new standard values
-      const newStandard = sm.getValue("d_13");
-      if (newStandard && ReferenceState.onReferenceStandardChange) {
-        ReferenceState.onReferenceStandardChange(newStandard);
-        if (ModeManager.currentMode === "reference") {
-          ModeManager.refreshUI();
-        }
-      }
+      // No automatic ReferenceState update - button triggers overlay
       calculateTargetModel();
       updateAllReferenceIndicators();
       ModeManager.updateCalculatedDisplayValues();
