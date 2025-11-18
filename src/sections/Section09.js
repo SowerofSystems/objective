@@ -2424,14 +2424,8 @@ window.TEUI.SectionModules.sect09 = (function () {
       ModeManager.updateCalculatedDisplayValues();
     });
     sm.addListener("ref_d_13", () => {
-      // Reference standard changes
-      const newStandard = sm.getValue("ref_d_13");
-      if (newStandard && ReferenceState.onReferenceStandardChange) {
-        ReferenceState.onReferenceStandardChange(newStandard);
-        if (ModeManager.currentMode === "reference") {
-          ModeManager.refreshUI();
-        }
-      }
+      // PASSIVE: ref_d_13 changes stored only - overlay applied by "Set Values" button
+      // Calculations and indicators still update for consistency
       calculateReferenceModel();
       updateAllReferenceIndicators();
       ModeManager.updateCalculatedDisplayValues();

@@ -191,6 +191,11 @@ window.TEUI.SectionModules.sect12 = (function () {
         window.TEUI.StateManager.addListener("d_13", () => {
           // No automatic ReferenceState update - button triggers overlay
         });
+
+        // PASSIVE: ref_d_13 changes stored only - overlay applied by "Set Values" button
+        window.TEUI.StateManager.addListener("ref_d_13", () => {
+          // No automatic ReferenceState update - button triggers overlay
+        });
       }
     },
     switchMode: function (mode) {
