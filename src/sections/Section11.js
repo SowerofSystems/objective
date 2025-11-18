@@ -182,6 +182,29 @@ window.TEUI.SectionModules.sect11 = (function () {
         "[S11 TargetState] Import sync complete (S10 sync deferred to FileHandler)"
       );
     },
+
+    /**
+     * ✅ PHASE 6: Apply code-minimum baseline values from ReferenceValues
+     * Called by "Set Values" button to overlay reference values onto Target model
+     * ⚠️ STATE ISOLATION SAFEGUARD: Only writes to unprefixed fields (Target model)
+     */
+    applyReferenceValues: function (standard) {
+      const referenceValues = window.TEUI?.ReferenceValues?.[standard] || {};
+
+      console.log(`[S11 TargetState] Applying code-minimum values from "${standard}"`);
+
+      Object.keys(referenceValues).forEach(fieldId => {
+        if (referenceValues[fieldId] !== undefined) {
+          // ✅ Writes to d_85, f_85, etc., NOT ref_d_85
+          this.state[fieldId] = referenceValues[fieldId];
+          console.log(`[S11 TargetState] ${fieldId} = ${referenceValues[fieldId]} (from ${standard})`);
+        }
+      });
+
+      this.saveState();
+      console.log(`[S11 TargetState] Code-minimum values from "${standard}" applied to Target model`);
+    },
+
     saveState: function () {
       localStorage.setItem("S11_TARGET_STATE", JSON.stringify(this.state));
     },

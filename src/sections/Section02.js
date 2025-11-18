@@ -1105,8 +1105,8 @@ window.TEUI.SectionModules.sect02 = (function () {
 
     console.log(`[S02] Applying ReferenceValues from "${standard}" to ${ModeManager.currentMode.toUpperCase()} model`);
 
-    // Apply to all sections with ReferenceValues
-    const sectionsWithReferenceValues = [5, 6, 9, 11, 12, 13, 14];
+    // Apply to all sections with ReferenceValues (S14/S15 excluded - they're data consumers only)
+    const sectionsWithReferenceValues = [5, 6, 9, 11, 12, 13];
 
     sectionsWithReferenceValues.forEach(sectionNum => {
       const sectionKey = `sect${String(sectionNum).padStart(2, '0')}`;

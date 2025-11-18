@@ -93,6 +93,29 @@ window.TEUI.SectionModules.sect09 = (function () {
         }
       });
     },
+
+    /**
+     * ✅ PHASE 6: Apply code-minimum baseline values from ReferenceValues
+     * Called by "Set Values" button to overlay reference values onto Target model
+     * ⚠️ STATE ISOLATION SAFEGUARD: Only writes to unprefixed fields (Target model)
+     */
+    applyReferenceValues: function (standard) {
+      const referenceValues = window.TEUI?.ReferenceValues?.[standard] || {};
+
+      console.log(`[S09 TargetState] Applying code-minimum values from "${standard}"`);
+
+      Object.keys(referenceValues).forEach(fieldId => {
+        if (referenceValues[fieldId] !== undefined) {
+          // ✅ Writes to d_65, d_66, etc., NOT ref_d_65
+          this.state[fieldId] = referenceValues[fieldId];
+          console.log(`[S09 TargetState] ${fieldId} = ${referenceValues[fieldId]} (from ${standard})`);
+        }
+      });
+
+      this.saveState();
+      console.log(`[S09 TargetState] Code-minimum values from "${standard}" applied to Target model`);
+    },
+
     saveState: function () {
       localStorage.setItem("S09_TARGET_STATE", JSON.stringify(this.state));
     },
