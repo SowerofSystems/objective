@@ -149,11 +149,11 @@ window.TEUI.SectionModules.sect13 = (function () {
       this.state.j_116 = referenceValues.j_116 || "2.66";
       this.state.l_118 = referenceValues.l_118 || "3.50"; // ACH gets over-written by ReferenceValues.js (expected)
     },
-    // MANDATORY: Include onReferenceStandardChange for d_13 changes
+    // MANDATORY: Include onReferenceStandardChange for ref_d_13 changes
     onReferenceStandardChange: function () {
       // ✅ S09 PATTERN: Selective update - preserve user-modified values
       const currentStandard =
-        window.TEUI?.StateManager?.getValue?.("d_13") || "OBC SB10 5.5-6 Z6";
+        window.TEUI?.StateManager?.getValue?.("ref_d_13") || "OBC SB10 5.5-6 Z6";
       const referenceValues =
         window.TEUI?.ReferenceValues?.[currentStandard] || {};
 
