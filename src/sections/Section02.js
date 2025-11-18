@@ -1093,11 +1093,81 @@ window.TEUI.SectionModules.sect02 = (function () {
   }
 
   /**
+   * ✅ PHASE 4: Apply ReferenceValues overlay to Target or Reference model
+   * Central function triggered by "Set Values" button
+   * Dual-purpose: Applies code-minimum baselines to either model based on current mode
+   */
+  function applyReferenceValuesOverlay() {
+    // Get the selected standard based on current mode
+    const standard = ModeManager.currentMode === "reference"
+      ? window.TEUI.StateManager.getValue("ref_d_13") || "OBC SB10 5.5-6 Z6"
+      : window.TEUI.StateManager.getValue("d_13") || "OBC SB10 5.5-6 Z6";
+
+    console.log(`[S02] Applying ReferenceValues from "${standard}" to ${ModeManager.currentMode.toUpperCase()} model`);
+
+    // Apply to all sections with ReferenceValues
+    const sectionsWithReferenceValues = [5, 6, 9, 11, 12, 13, 14];
+
+    sectionsWithReferenceValues.forEach(sectionNum => {
+      const sectionKey = `sect${String(sectionNum).padStart(2, '0')}`;
+      const sectionModule = window.TEUI.SectionModules?.[sectionKey];
+
+      if (!sectionModule) {
+        console.warn(`[S02] Section module ${sectionKey} not found`);
+        return;
+      }
+
+      if (ModeManager.currentMode === "reference") {
+        // Reference mode: Apply to Reference model (ref_ prefixed fields)
+        if (sectionModule.ReferenceState?.onReferenceStandardChange) {
+          sectionModule.ReferenceState.onReferenceStandardChange();
+          console.log(`[S02] Applied ReferenceValues to ${sectionKey} Reference model`);
+        }
+      } else {
+        // Target mode: Apply to Target model (unprefixed fields) - NEW BEHAVIOR
+        if (sectionModule.TargetState?.applyReferenceValues) {
+          sectionModule.TargetState.applyReferenceValues(standard);
+          console.log(`[S02] Applied ReferenceValues to ${sectionKey} Target model`);
+        } else {
+          console.warn(`[S02] ${sectionKey}.TargetState.applyReferenceValues() not found (will add in Phase 6)`);
+        }
+      }
+    });
+
+    // Recalculate and refresh UI
+    if (typeof calculateAll === 'function') {
+      calculateAll();
+    }
+
+    if (window.TEUI?.ModeManager?.refreshUI) {
+      window.TEUI.ModeManager.refreshUI();
+    }
+
+    if (window.TEUI?.ModeManager?.updateCalculatedDisplayValues) {
+      window.TEUI.ModeManager.updateCalculatedDisplayValues();
+    }
+
+    console.log(`[S02] ReferenceValues overlay complete for ${ModeManager.currentMode.toUpperCase()} model`);
+  }
+
+  /**
    * Initialize event handlers for this section
    */
   function initializeEventHandlers() {
     // Register calculations with StateManager
     registerCalculations();
+
+    // ✅ PHASE 4: Wire "Set Values" button to apply ReferenceValues overlay
+    const setValuesBtn = document.getElementById("setValuesBtn");
+    if (setValuesBtn) {
+      setValuesBtn.addEventListener("click", () => {
+        console.log(`[S02] "Set Values" button clicked in ${ModeManager.currentMode.toUpperCase()} mode`);
+        applyReferenceValuesOverlay();
+      });
+      console.log('[S02] "Set Values" button wired successfully');
+    } else {
+      console.warn('[S02] "Set Values" button not found - check button ID');
+    }
 
     // Set up dropdown handlers using event delegation on the section container
     const sectionElement = document.getElementById("buildingInfo");
