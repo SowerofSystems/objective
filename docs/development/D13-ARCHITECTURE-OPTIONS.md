@@ -1362,9 +1362,9 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 ## Progress Tracking
 
-**Current Status**: ✅ Phase 5 Complete - ReferenceState Methods Read ref_d_13 (Ready for Phase 6)
+**Current Status**: ✅ Phase 6 Complete - TargetState.applyReferenceValues() Added (Testing & Debugging)
 
-**Completed Tasks**: 17 / 50+ (Tasks 1.1, 1.2, 2.1-2.8, 3.1-3.2, 4.1-4.2, 5.1-5.3)
+**Completed Tasks**: 19 / 50+ (Tasks 1.1, 1.2, 2.1-2.8, 3.1-3.2, 4.1-4.2, 5.1-5.3, 6.1-6.2)
 
 **Last Updated**: 2025-11-18
 
@@ -1374,8 +1374,8 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 - [x] **Phase 2 complete**: All d_13 listeners unwired (commit 5471a0b)
 - [x] **Phase 3 complete**: All ref_d_13 listeners added - both dropdowns now passive (commit e9fc7c1)
 - [x] **Phase 4 complete**: "Set Values" button wired for Reference mode (commit e0f2dec)
-- [x] **Phase 5 complete**: ReferenceState methods read ref_d_13 (commits c43c7b5, 386a13e - CURRENT)
-- [ ] After Phase 6 complete (TargetState methods added)
+- [x] **Phase 5 complete**: ReferenceState methods read ref_d_13 (commits c43c7b5, 386a13e)
+- [x] **Phase 6 complete**: TargetState.applyReferenceValues() added (commits a1c63c0, bd06efc - CURRENT)
 - [ ] Final implementation complete (all tests pass)
 
 ---
@@ -1537,6 +1537,46 @@ window.TEUI.StateManager.addListener("ref_d_13", () => {
 - ✅ Reference model reads from ref_d_13 successfully
 - ✅ No cross-contamination between Target and Reference models
 - Ready to proceed with Phase 6
+
+### Phase 6: Add TargetState.applyReferenceValues() (COMPLETED 2025-11-18)
+
+**All 6 sections successfully updated with applyReferenceValues() method:**
+
+**Tasks 6.1-6.2: TargetState.applyReferenceValues() implementation (commits a1c63c0, bd06efc)**
+1. ✅ **Section05.js** (Lines 83-98) - Added applyReferenceValues() to TargetState
+2. ✅ **Section06.js** (Lines 74-89) - Added applyReferenceValues() to TargetState
+3. ✅ **Section09.js** (Lines 102-117) - Added applyReferenceValues() to TargetState
+4. ✅ **Section11.js** (Lines 191-206) - Added applyReferenceValues() to TargetState
+5. ✅ **Section12.js** (Lines 62-77) - Added applyReferenceValues() to TargetState
+6. ✅ **Section13.js** (Lines 124-139) - Added applyReferenceValues() to TargetState
+
+**Section14 excluded**: Data consumer only - removed from implementation after analysis
+
+**Updated Section02.applyReferenceValuesOverlay():**
+- Removed S14 from sectionsWithReferenceValues array (line 1109)
+- Added comment: "S14/S15 excluded - they're data consumers only"
+- Now correctly applies to only [5, 6, 9, 11, 12, 13]
+
+**Key features implemented:**
+- STATE ISOLATION SAFEGUARD: Methods only write to unprefixed fields (Target model)
+- Reads from window.TEUI.ReferenceValues[standard] parameter
+- Calls saveState() after applying values
+- Comprehensive console logging for debugging
+- Perfect separation from Reference model (no ref_ field access)
+
+**Key achievement:** Dual-purpose "Set Values" button architecture complete ✅
+- Target mode: Has applyReferenceValues() method (NEW feature)
+- Reference mode: Has onReferenceStandardChange() method (existing)
+
+**Testing (2025-11-18) - ISSUES DISCOVERED:**
+⚠️ **Issue 1**: "Set Values" button not applying ReferenceValues in Target mode as expected
+⚠️ **Issue 2**: d_13 dropdown changes sometimes trigger automatic ReferenceValues overlays without user clicking "Set Values" button
+- This contradicts Phase 2 work (d_13 listeners should be PASSIVE)
+- Suggests possible event listener leakage or calculation cascade triggering overlays
+- Need to investigate: Are calculations calling applyReferenceValues() indirectly?
+- Need to verify: Are d_13 listeners truly passive in all sections?
+
+**Status**: Phase 6 code complete, but functional testing reveals unexpected behavior. Holding at Phase 6 pending debugging investigation.
 
 ---
 
