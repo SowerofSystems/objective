@@ -459,7 +459,7 @@ window.TEUI.SectionModules.sect05 = (function () {
           fieldId: "d_39",
           type: "dropdown",
           dropdownId: "dd_d_39",
-          label: "Typology Selector",
+          label: "Typology Selection",
           value: "Pt.3 Mass Timber",
           section: "emissions",
           tooltip: true, // Building Typology
@@ -585,7 +585,7 @@ window.TEUI.SectionModules.sect05 = (function () {
           section: "emissions",
           classes: ["user-input"],
           tooltip: true, // Externally Defined Value
-          label: "Modelled Embodied Carbon (A1-3): kgCO2e/m²",
+          label: "User Modelled Embodied Carbon (A1-3): kgCO2e/m²",
           // ✅ IMPLEMENTED (Oct 1, 2025): Reference mode i_41 = i_39 (typology-based cap)
           // Target mode: User-defined modelled value (345.82 default)
           // Reference mode: Calculated from typology (Steel/Mass Timber/Concrete)

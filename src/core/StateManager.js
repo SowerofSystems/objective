@@ -1363,7 +1363,10 @@ TEUI.StateManager = (function () {
       // Foundation dependencies
       { source: "FOUNDATION-StateManager", target: "FOUNDATION-FieldManager" },
       { source: "FOUNDATION-StateManager", target: "COORDINATION-Calculator" },
-      { source: "FOUNDATION-StateManager", target: "COORDINATION-Orchestrator" },
+      {
+        source: "FOUNDATION-StateManager",
+        target: "COORDINATION-Orchestrator",
+      },
       { source: "FOUNDATION-StateManager", target: "COORDINATION-ZenMaster" },
       {
         source: "FOUNDATION-FieldManager",
@@ -1381,7 +1384,10 @@ TEUI.StateManager = (function () {
       // Coordination layer internal dependencies
       { source: "COORDINATION-Calculator", target: "COORDINATION-Clock" },
       { source: "COORDINATION-Calculator", target: "COORDINATION-Cooling" },
-      { source: "COORDINATION-Orchestrator", target: "COORDINATION-Calculator" },
+      {
+        source: "COORDINATION-Orchestrator",
+        target: "COORDINATION-Calculator",
+      },
       { source: "COORDINATION-ZenMaster", target: "COORDINATION-Clock" },
       { source: "COORDINATION-Cooling", target: "MODULE-Section13" },
 

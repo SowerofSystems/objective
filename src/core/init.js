@@ -831,24 +831,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Replace the scroll event listener with a much simpler approach
-  document.addEventListener(
-    "scroll",
-    function () {
-      // Only apply in horizontal layout
-      if (!document.body.classList.contains("horizontal-layout")) return;
-
-      // Get the spacer element
-      const spacer = document.getElementById("section-spacer");
-      if (!spacer) return;
-
-      // Ensure spacer is visible
-      spacer.style.display = "block";
-      spacer.style.height = "15px";
-      spacer.style.minHeight = "15px";
-    },
-    { passive: true }
-  );
+  // Spacer styling is now handled entirely by CSS (styles.css .horizontal-layout .section-spacer)
+  // Removed redundant scroll event listener that was overriding CSS with inline styles
 
   // Update key values height and tab container position
   function updateStickyElementHeights() {

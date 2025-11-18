@@ -2515,7 +2515,8 @@ window.TEUI.SectionModules.sect09 = (function () {
       {
         source: "g_67",
         target: "d_67",
-        description: "Equipment density lookup based on efficiency type (Regular/Efficient)",
+        description:
+          "Equipment density lookup based on efficiency type (Regular/Efficient)",
       },
       {
         source: "g_67",

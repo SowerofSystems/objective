@@ -899,7 +899,8 @@ window.TEUI.SectionModules.sect10 = (function () {
           value: "7.50",
           section: "envelopeRadiantGains",
           classes: ["user-input", "col-medium"],
-          label: "S10: Doors: Area m²",
+          label: "S10: Doors Area: m²",
+          tooltip: true, // Area of Doors
         },
         e: {
           fieldId: "e_73",
@@ -921,6 +922,7 @@ window.TEUI.SectionModules.sect10 = (function () {
             { value: "Skylight", name: "Skylight" },
           ],
           classes: ["col-medium"],
+          label: "Doors: Orientation",
         },
         f: {
           fieldId: "f_73",
@@ -932,6 +934,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           tooltip: true, // Solar Heat Gain Coefficient
           section: "envelopeRadiantGains",
           classes: ["col-small", "slider-container"],
+          label: "Door: SHGC",
         },
         g: {
           fieldId: "g_73",
@@ -942,6 +945,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           step: 1,
           section: "envelopeRadiantGains",
           classes: ["col-large", "slider-container"],
+          label: "Door: Winter Shading %",
         },
         h: {
           fieldId: "h_73",
@@ -952,6 +956,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           step: 1,
           section: "envelopeRadiantGains",
           classes: ["col-large", "slider-container"],
+          label: "Doors: Summer Shading %",
         },
         i: {
           fieldId: "i_73",
@@ -959,7 +964,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           value: "225.00",
           section: "envelopeRadiantGains",
           dependencies: ["d_73", "f_73", "g_73", "m_73"],
-          label: "Doors: Solar Gain Heating kWh/yr",
+          label: "Doors: Solar Gain Heating: kWh/yr",
         },
         j: {
           fieldId: "j_73",
@@ -1016,7 +1021,8 @@ window.TEUI.SectionModules.sect10 = (function () {
           value: "81.14",
           section: "envelopeRadiantGains",
           classes: ["user-input", "col-medium"],
-          label: "S10: Window Area North: Area m²",
+          label: "S10: Window Area North: m²",
+          tooltip: true, // Area of Window North
         },
         e: {
           fieldId: "e_74",
@@ -1038,6 +1044,7 @@ window.TEUI.SectionModules.sect10 = (function () {
             { value: "Skylight", name: "Skylight" },
           ],
           classes: ["col-medium"],
+          label: "Window North: Orientation",
         },
         f: {
           fieldId: "f_74",
@@ -1049,6 +1056,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           tooltip: true, // Solar Heat Gain Coefficient
           section: "envelopeRadiantGains",
           classes: ["col-small", "slider-container"],
+          label: "Window North: SHGC",
         },
         g: {
           fieldId: "g_74",
@@ -1059,6 +1067,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           step: 1,
           section: "envelopeRadiantGains",
           classes: ["col-large", "slider-container"],
+          label: "Window North: Winter Shading %",
         },
         h: {
           fieldId: "h_74",
@@ -1069,6 +1078,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           step: 1,
           section: "envelopeRadiantGains",
           classes: ["col-large", "slider-container"],
+          label: "Window North: Summer Shading %",
         },
         i: {
           fieldId: "i_74",
@@ -1133,7 +1143,8 @@ window.TEUI.SectionModules.sect10 = (function () {
           value: "3.83",
           section: "envelopeRadiantGains",
           classes: ["user-input"],
-          label: "S10: Window Area East: Area m²",
+          label: "S10: Window Area East: m²",
+          tooltip: true, // Area of Window East
         },
         e: {
           fieldId: "e_75",
@@ -1154,6 +1165,7 @@ window.TEUI.SectionModules.sect10 = (function () {
             { value: "Average", name: "Average" },
             { value: "Skylight", name: "Skylight" },
           ],
+          label: "Window East: Orientation",
         },
         f: {
           fieldId: "f_75",
@@ -1165,6 +1177,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           tooltip: true, // Solar Heat Gain Coefficient
           section: "envelopeRadiantGains",
           classes: ["col-small", "slider-container"],
+          label: "Window East: SHGC",
         },
         g: {
           fieldId: "g_75",
@@ -1174,6 +1187,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           max: 100,
           step: 1,
           section: "envelopeRadiantGains",
+          label: "Window East: Winter Shading %",
         },
         h: {
           fieldId: "h_75",
@@ -1183,6 +1197,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           max: 100,
           step: 1,
           section: "envelopeRadiantGains",
+          label: "Window East: Summer Shading %",
         },
         i: {
           fieldId: "i_75",
@@ -1246,7 +1261,8 @@ window.TEUI.SectionModules.sect10 = (function () {
           value: "159.00",
           section: "envelopeRadiantGains",
           classes: ["user-input"],
-          label: "S10: Window Area South: Area m²",
+          label: "S10: Window Area South: m²",
+          tooltip: true, // Area of Window South
         },
         e: {
           fieldId: "e_76",
@@ -1267,6 +1283,7 @@ window.TEUI.SectionModules.sect10 = (function () {
             { value: "Average", name: "Average" },
             { value: "Skylight", name: "Skylight" },
           ],
+          label: "Window South: Orientation",
         },
         f: {
           fieldId: "f_76",
@@ -1278,6 +1295,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           tooltip: true, // Solar Heat Gain Coefficient
           section: "envelopeRadiantGains",
           classes: ["col-small", "slider-container"],
+          label: "Window South: SHGC",
         },
         g: {
           fieldId: "g_76",
@@ -1287,6 +1305,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           max: 100,
           step: 1,
           section: "envelopeRadiantGains",
+          label: "Window South: Winter Shading %",
         },
         h: {
           fieldId: "h_76",
@@ -1296,6 +1315,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           max: 100,
           step: 1,
           section: "envelopeRadiantGains",
+          label: "Window South: Summer Shading %",
         },
         i: {
           fieldId: "i_76",
@@ -1359,7 +1379,8 @@ window.TEUI.SectionModules.sect10 = (function () {
           value: "100.66",
           section: "envelopeRadiantGains",
           classes: ["user-input"],
-          label: "S10: Window Area West: Area m²",
+          label: "S10: Window Area West: m²",
+          tooltip: true, // Area of Window West
         },
         e: {
           fieldId: "e_77",
@@ -1380,6 +1401,7 @@ window.TEUI.SectionModules.sect10 = (function () {
             { value: "Average", name: "Average" },
             { value: "Skylight", name: "Skylight" },
           ],
+          label: "Window West: Orientation",
         },
         f: {
           fieldId: "f_77",
@@ -1391,6 +1413,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           tooltip: true, // Solar Heat Gain Coefficient
           section: "envelopeRadiantGains",
           classes: ["col-small", "slider-container"],
+          label: "Window West: SHGC",
         },
         g: {
           fieldId: "g_77",
@@ -1400,6 +1423,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           max: 100,
           step: 1,
           section: "envelopeRadiantGains",
+          label: "Window West: Winter Shading %",
         },
         h: {
           fieldId: "h_77",
@@ -1409,6 +1433,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           max: 100,
           step: 1,
           section: "envelopeRadiantGains",
+          label: "Window West: Summer Shading %",
         },
         i: {
           fieldId: "i_77",
@@ -1472,7 +1497,8 @@ window.TEUI.SectionModules.sect10 = (function () {
           value: "0.00",
           section: "envelopeRadiantGains",
           classes: ["user-input"],
-          label: "S10: Skylights: Area m²",
+          label: "S10: Skylights: m²",
+          tooltip: true, // Area of Skylights
         },
         e: {
           fieldId: "e_78",
@@ -1493,6 +1519,7 @@ window.TEUI.SectionModules.sect10 = (function () {
             { value: "Average", name: "Average" },
             { value: "Skylight", name: "Skylight" },
           ],
+          label: "Skylight: Orientation",
         },
         f: {
           fieldId: "f_78",
@@ -1504,6 +1531,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           tooltip: true, // Solar Heat Gain Coefficient
           section: "envelopeRadiantGains",
           classes: ["col-small", "slider-container"],
+          label: "Skylight: SHGC",
         },
         g: {
           fieldId: "g_78",
@@ -1513,6 +1541,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           max: 100,
           step: 1,
           section: "envelopeRadiantGains",
+          label: "Skylights: Winter Shading %",
         },
         h: {
           fieldId: "h_78",
@@ -1522,6 +1551,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           max: 100,
           step: 1,
           section: "envelopeRadiantGains",
+          label: "Skylights: Summer Shading %",
         },
         i: {
           fieldId: "i_78",

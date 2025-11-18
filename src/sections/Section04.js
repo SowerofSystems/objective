@@ -67,7 +67,7 @@ window.TEUI.SectionModules.sect04 = (function () {
     27: {
       id: "T.3.1",
       rowId: "T.3.1",
-      label: "Total Electricity Use",
+      label: "Actual Total Electricity Use: kWh/yr",
       cells: {
         c: { label: "T.3.1 Total Electricity Use" },
         d: {
@@ -137,7 +137,7 @@ window.TEUI.SectionModules.sect04 = (function () {
     28: {
       id: "T.3.2",
       rowId: "T.3.2",
-      label: "Total Fossil Gas Use",
+      label: "Actual Total Fossil Gas Use: m³/yr",
       cells: {
         c: { label: "T.3.2 Total Fossil Gas Use" },
         d: {
@@ -208,7 +208,7 @@ window.TEUI.SectionModules.sect04 = (function () {
     29: {
       id: "T.3.3",
       rowId: "T.3.3",
-      label: "Total Propane Use",
+      label: "Actual Total Propane Use: kg/yr",
       cells: {
         c: { label: "T.3.3 Total Propane Use" },
         d: {
@@ -278,7 +278,7 @@ window.TEUI.SectionModules.sect04 = (function () {
     30: {
       id: "T.3.4",
       rowId: "T.3.4",
-      label: "Total Oil Use",
+      label: "Actual Total Oil Use: litres/yr",
       cells: {
         c: { label: "T.3.4 Total Oil Use" },
         d: {
@@ -349,7 +349,7 @@ window.TEUI.SectionModules.sect04 = (function () {
     31: {
       id: "T.3.5",
       rowId: "T.3.5",
-      label: "Total Wood Use",
+      label: "Actual Total Wood Use: m³/yr",
       cells: {
         c: { label: "T.3.5 Total Wood Use" },
         d: {
@@ -1036,8 +1036,8 @@ window.TEUI.SectionModules.sect04 = (function () {
 
   //==========================================================================
   // ONTARIO GRID INTENSITY LOOKUP (Excel XLOOKUP Logic)
-  //Copyright © The Atmospheric Fund, 2025.(Updated Oct 2025) All rights reserved. 
-  //TAF would like to thank our endowment funders: the City of Toronto, Province of Ontario, and Government of Canada. 
+  //Copyright © The Atmospheric Fund, 2025.(Updated Oct 2025) All rights reserved.
+  //TAF would like to thank our endowment funders: the City of Toronto, Province of Ontario, and Government of Canada.
   //Views expressed here do not necessarily reflect the views of our funders. TAF is a proud member of the Low Carbon Cities Canada network.
   //==========================================================================
 

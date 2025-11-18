@@ -182,9 +182,9 @@ window.TEUI.SectionModules.sect01 = (function () {
             margin-bottom: 8px;
         }
         #keyValues .section-header {
-            height: 40px !important;
-            min-height: 40px !important;
-            max-height: 40px !important;
+            height: 36px !important;
+            min-height: 36px !important;
+            max-height: 36px !important;
             display: flex !important;
             align-items: center !important;
         }
@@ -234,7 +234,7 @@ window.TEUI.SectionModules.sect01 = (function () {
         }
         .key-values-label-cell { width: 30%; padding-left: 0 !important; }
         .key-values-ref-cell, .key-values-target-cell, .key-values-actual-cell { width: 17%; position: relative; }
-        .key-values-percent-cell { width: 10%; position: relative; text-align: center; }
+        .key-values-percent-cell { width: 10%; position: relative; text-align: right; vertical-align: middle !important; }
         .key-title-combined { font-family: "Arial Black", Gadget, sans-serif; font-size: 1.5rem; font-weight: 900; line-height: 1.1; display: block; margin-bottom: 4px; text-align: left; margin-left: 20px; }
         .key-title-id { color: #7f7f7f; margin-right: 8px; }
         .key-explanation { font-size: 0.75rem; font-weight: bold; color: #555; margin-bottom: 4px; display: block; line-height: 1.1; text-align: right; padding-right: 10px; }
@@ -242,15 +242,17 @@ window.TEUI.SectionModules.sect01 = (function () {
         .ref-explanation { color: #8B0000; opacity: 0.9; }
         .key-value { font-family: "Arial Black", Gadget, sans-serif; font-size: 2rem; font-weight: 900; line-height: 1; display: block; text-align: right; margin: 0; padding: 0; white-space: nowrap; padding-right: 10px; }
         .ref-value { color: #8B0000; }
-        .percent-value { font-size: 1.3rem; color: #333; text-align: center; display: inline-block; }
+        .percent-value { font-family: "Arial Black", Gadget, sans-serif; font-size: 2rem; font-weight: 900; color: #777; opacity: 0.5; text-align: right; display: block; padding-right: 10px; line-height: 1; margin: 0; white-space: nowrap; }
+        .percent-value .checkmark,
+        .percent-value .warning { font-size: 1.2rem !important; font-family: Arial, sans-serif !important; }
         .tier-indicator { display: inline-block; font-size: 2rem; font-weight: 900; color: #777; margin-right: 8px; opacity: 0.5; vertical-align: baseline; }
         .t1-tag { color: #8B0000; }
         .t3-tag { color: #333; }
         .cost-indicator { display: inline; font-size: 0.75rem; font-weight: bold; color: #555; margin-left: 5px; }
         .ref-cost { color: #8B0000; opacity: 0.9; }
         /* Note: checkmark/warning styles now defined globally in 4011-styles.css */
-        .linear-gauge-container { width: 92%; height: 12px; background-color: #f1f1f1; border-radius: 6px; overflow: hidden; margin: 6px 0 6px auto; position: relative; margin-right: 20px; }
-        .linear-gauge-bar { height: 100%; width: 0%; background-color: #5bc0de; transition: width 1s ease-in-out; border-radius: 6px; }
+        .linear-gauge-container { width: 92%; height: 6px; background-color: #f1f1f1; border-radius: 3px; overflow: hidden; margin: 3px 0 3px auto; position: relative; margin-right: 20px; }
+        .linear-gauge-bar { height: 100%; width: 0%; background-color: #5bc0de; transition: width 1s ease-in-out; border-radius: 3px; }
         .gauge-excellent { background-color: #28a745; }
         .gauge-good { background-color: #5bc0de; }
         .gauge-warning { background-color: #f0ad4e; }

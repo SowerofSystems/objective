@@ -1,0 +1,63 @@
+# OBJECTIVE TEUI Calculator 4.012 - Claude Code Rules
+
+## Quick Reference
+- **Project**: Pre-production energy modeling calculator for Canadian buildings
+- **Architecture**: Dual-state (Target/Reference) with 18 calculator sections
+- **Documentation**: See @docs/CLAUDE.md for complete guidance
+
+## Critical Conventions
+
+### State Management
+- Target fields: `d_12` (base field ID)
+- Reference fields: `ref_d_12` (with prefix)
+- Always use: `TEUI.StateManager.setValue()` / `getValue()`
+
+### Git Workflow
+- **Branch from**: `dependency3` (current dev branch)
+- **Branch naming**: `FEATURE-NAME` (e.g., `FH-AUGMENT`, `S07-FIX`)
+- **Commit format**: `Type: Brief description`
+  - Types: `Feat`, `Fix`, `Refactor`, `Docs`, `Improve`, `Clean`
+- **Co-author**: `Andy & Claude <andy@openbuilding.ca>`
+
+### GitHub PR Etiquette
+- ✅ Push feature branches to remote for backup
+- ❌ Do NOT create PRs if queue exists (wait for PR#35 review)
+- ❌ NEVER merge your own PRs to main
+- ✅ Rebase onto main after existing PR merges
+
+### Critical Files
+- `StateManager.js` - Central state (dual Target/Reference)
+- `Calculator.js` - Calculation engine
+- `Dependency.js` - Complete dependency graph (Section 17 visualization)
+- `FieldManager.js` - UI component management
+- `FileHandler.js` - CSV/Excel import/export
+
+### Development Checklist
+When modifying code:
+1. ✅ Check both Target AND Reference modes work
+2. ✅ Verify dependencies using `Dependency.js`
+3. ✅ Test Reference toggle on/off
+4. ✅ Ensure import/export maintains all values
+
+### Common Patterns
+- Field IDs: `[column]_[row]` format (e.g., `d_12` = column D, row 12)
+- No ES6 modules - uses IIFE pattern for browser compatibility
+- Convergence loop handles calculation drift (future: topological sort)
+
+## File Structure
+```
+src/
+├── core/          ← 20+ core modules (StateManager, Calculator, etc.)
+├── sections/      ← Section01.js through Section18.js
+├── styles/        ← CSS files
+└── obc/           ← OBC Matrix tool
+
+docs/
+├── CLAUDE.md      ← Full documentation (reference this!)
+└── development/   ← Logs.md, technical docs
+```
+
+## Always Remember
+- Read @docs/CLAUDE.md for detailed architecture, workflows, and troubleshooting
+- Respect PR queue - proper GitHub etiquette is critical
+- Test dual-state functionality - never break Target/Reference isolation

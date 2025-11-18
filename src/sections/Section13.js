@@ -968,6 +968,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           section: "mechanicalLoads",
           tooltip: true, // HSPF Dictates COP, CEER
           // Removed classes: ["user-input", "editable"]
+          label: "Primary Heating System HSP or HSPF2",
         },
         g: {
           content: "M.1.2 COPheat",
@@ -1409,6 +1410,7 @@ window.TEUI.SectionModules.sect13 = (function () {
             { value: "1.90", name: "1.90x" },
             { value: "2.00", name: "2.00x" },
           ],
+          label: "Summer Boost Multiplier",
         },
         m: {
           fieldId: "m_119",
@@ -1484,6 +1486,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           section: "mechanicalLoads",
           tooltip: true, // Unoccupied Ventilation Setback %
           classes: ["col-small"],
+          label: "Unnoccupied Ventilation Setback (%)",
         },
         l: { content: "Unoccupied Setback", classes: ["label"] }, // Unoccupied Setback label
         m: {},
