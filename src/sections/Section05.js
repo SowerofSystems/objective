@@ -90,7 +90,7 @@ window.TEUI.SectionModules.sect05 = (function () {
     setDefaults: function () {
       // ✅ PHASE 5 FIX: Read base defaults from field definitions, then apply Reference overrides
       const currentStandard =
-        window.TEUI?.StateManager?.getValue?.("d_13") || "OBC SB10 5.5-6 Z6";
+        window.TEUI?.StateManager?.getValue?.("ref_d_13") || "OBC SB10 5.5-6 Z6";
       const referenceValues =
         window.TEUI?.ReferenceValues?.[currentStandard] || {};
 
