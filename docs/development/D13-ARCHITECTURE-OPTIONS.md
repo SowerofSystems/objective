@@ -1362,17 +1362,17 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 ## Progress Tracking
 
-**Current Status**: ✅ Phase 2 Complete - All d_13 Listeners Unwired (Ready for Phase 3)
+**Current Status**: ✅ Phase 3 Complete - All ref_d_13 Listeners Added (Ready for Phase 4)
 
-**Completed Tasks**: 10 / 50+ (Tasks 1.1, 1.2, 2.1-2.8)
+**Completed Tasks**: 12 / 50+ (Tasks 1.1, 1.2, 2.1-2.8, 3.1-3.2)
 
 **Last Updated**: 2025-11-18
 
 **Safe Revert Points**:
 - [x] **Baseline commit**: Documentation updated with Option 3 workplan (commit 3790e94)
 - [x] **Phase 1 complete**: Audit and verification (commit 17d88bb)
-- [x] **Phase 2 complete**: All d_13 listeners unwired - no automatic ReferenceState contamination (CURRENT - ready to commit)
-- [ ] After Phase 3 complete (ref_d_13 listeners added)
+- [x] **Phase 2 complete**: All d_13 listeners unwired (commit 5471a0b)
+- [x] **Phase 3 complete**: All ref_d_13 listeners added - both dropdowns now passive (commit e9fc7c1 - CURRENT)
 - [ ] After Phase 4 complete (button wired for Reference mode)
 - [ ] After Phase 6 complete (TargetState methods added)
 - [ ] Final implementation complete (all tests pass)
@@ -1439,6 +1439,39 @@ window.TEUI.StateManager.addListener("d_13", () => {
 - All production sections now have perfect state isolation
 
 **Key achievement:** d_13 changes no longer automatically contaminate Reference model ✅
+
+### Phase 3: Add ref_d_13 Listeners (COMPLETED 2025-11-18)
+
+**All 7 sections now have passive ref_d_13 listeners:**
+1. ✅ **Section05.js** (Line 197-199) - Added passive ref_d_13 listener
+2. ✅ **Section06.js** (Line 178-180) - Added passive ref_d_13 listener
+3. ✅ **Section09.js** (Line 2426-2432) - Fixed existing ref_d_13 listener (made passive)
+4. ✅ **Section11.js** (Line 394-396) - Added passive ref_d_13 listener
+5. ✅ **Section12.js** (Line 196-198) - Added passive ref_d_13 listener
+6. ✅ **Section13.js** (Line 298-300) - Added passive ref_d_13 listener
+7. ✅ **Section14.js** (Line 122-124) - Added passive ref_d_13 listener
+
+**Pattern applied consistently:**
+```javascript
+// PASSIVE: ref_d_13 changes stored only - overlay applied by "Set Values" button
+window.TEUI.StateManager.addListener("ref_d_13", () => {
+  // No automatic ReferenceState update - button triggers overlay
+});
+```
+
+**Section09 special case:**
+- Existing ref_d_13 listener (line 2426) was calling `ReferenceState.onReferenceStandardChange()`
+- Removed automatic overlay trigger
+- Preserved `calculateReferenceModel()` and `updateAllReferenceIndicators()` calls
+- Maintains calculation consistency without triggering overlay
+
+**Task 3.1 verification:**
+- ref_d_13 field confirmed working in StateManager
+- Fields auto-created on first use (no pre-registration required)
+- Section03.js and Section09.js already had ref_d_13 listeners
+- All other sections needed listeners added
+
+**Key achievement:** Both d_13 AND ref_d_13 are now completely passive - no automatic overlays ✅
 
 ---
 
