@@ -1497,6 +1497,15 @@ window.TEUI.StateManager.addListener("ref_d_13", () => {
 
 **Key achievement:** "Set Values" button now functional for Reference mode ✅
 
+**Testing results (Reference mode - 2025-11-18)**:
+- ✅ Button click successfully applies ReferenceValues to Reference model
+- ✅ Value changes confirmed in S11 and other sections with ReferenceValues
+- ✅ State isolation maintained (no Target contamination)
+- ⚠️ **Known issue**: S11 calculations can get "stuck" after overlay (see [Issue #29](https://github.com/openbuilding-ca/objective/issues/29))
+  - Root cause: Area sync issue from S10→S11 (unrelated to Phase 4 implementation)
+  - Workaround: Mode switch triggers recalculation and "releases" stuck values
+  - Note: ReferenceValues overlay IS working correctly - this is a pre-existing S10/S11 sync bug
+
 ---
 
 ## Quick Reference: Key Files to Modify
