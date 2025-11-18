@@ -1362,9 +1362,9 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 ## Progress Tracking
 
-**Current Status**: ✅ Phase 3 Complete - All ref_d_13 Listeners Added (Ready for Phase 4)
+**Current Status**: ✅ Phase 4 Complete - "Set Values" Button Wired (Ready for Phase 5)
 
-**Completed Tasks**: 12 / 50+ (Tasks 1.1, 1.2, 2.1-2.8, 3.1-3.2)
+**Completed Tasks**: 14 / 50+ (Tasks 1.1, 1.2, 2.1-2.8, 3.1-3.2, 4.1-4.2)
 
 **Last Updated**: 2025-11-18
 
@@ -1372,8 +1372,9 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 - [x] **Baseline commit**: Documentation updated with Option 3 workplan (commit 3790e94)
 - [x] **Phase 1 complete**: Audit and verification (commit 17d88bb)
 - [x] **Phase 2 complete**: All d_13 listeners unwired (commit 5471a0b)
-- [x] **Phase 3 complete**: All ref_d_13 listeners added - both dropdowns now passive (commit e9fc7c1 - CURRENT)
-- [ ] After Phase 4 complete (button wired for Reference mode)
+- [x] **Phase 3 complete**: All ref_d_13 listeners added - both dropdowns now passive (commit e9fc7c1)
+- [x] **Phase 4 complete**: "Set Values" button wired for Reference mode (commit e0f2dec - CURRENT)
+- [ ] After Phase 5 complete (ReferenceState.setDefaults updated)
 - [ ] After Phase 6 complete (TargetState methods added)
 - [ ] Final implementation complete (all tests pass)
 
@@ -1472,6 +1473,29 @@ window.TEUI.StateManager.addListener("ref_d_13", () => {
 - All other sections needed listeners added
 
 **Key achievement:** Both d_13 AND ref_d_13 are now completely passive - no automatic overlays ✅
+
+### Phase 4: Wire "Set Values" Button (COMPLETED 2025-11-18)
+
+**Function created: applyReferenceValuesOverlay() in Section02.js (Line 1100-1151)**
+- Dual-purpose function applies ReferenceValues to Target OR Reference model based on current mode
+- Reads appropriate standard: ref_d_13 (Reference mode) or d_13 (Target mode)
+- Iterates through sections [5, 6, 9, 11, 12, 13, 14] with ReferenceValues
+- Reference mode: Calls ReferenceState.onReferenceStandardChange() ✅
+- Target mode: Calls TargetState.applyReferenceValues() (will add in Phase 6)
+- Triggers full recalculation and UI refresh after overlay
+
+**Button wired in initializeEventHandlers() (Line 1160-1170)**
+- Button ID confirmed: `setValuesBtn`
+- Click handler reads ModeManager.currentMode and calls applyReferenceValuesOverlay()
+- Console logging for debugging button clicks and overlay application
+- Graceful error handling if button not found
+
+**Testing readiness**:
+- ✅ Reference mode: Ready to test immediately (ReferenceState.onReferenceStandardChange exists)
+- ⏳ Target mode: Will be functional after Phase 6 (TargetState.applyReferenceValues not yet implemented)
+- Console warns gracefully for missing Target mode methods until Phase 6
+
+**Key achievement:** "Set Values" button now functional for Reference mode ✅
 
 ---
 
