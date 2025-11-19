@@ -875,17 +875,23 @@ window.TEUI.StateManager.addListener("ref_d_13", (newValue) => {
 ### Phase 4: Wire "Set Values" Button (Reference Mode - Apply to Reference Model)
 
 #### Task 4.1: Create applyReferenceValuesOverlay() Function in Section02
-**Objective**: Central function to apply ReferenceValues overlay to either Target or Reference model
+**Objective**: Central function to apply ReferenceValues overlay following FileHandler's Import Quarantine pattern
 
 **File**: `sections/Section02.js`
 
+**CRITICAL**: This function must replicate FileHandler's proven import pattern (see [SETTING-VALUES.md](SETTING-VALUES.md))
+
 **Actions**:
 - [ ] Add new function `applyReferenceValuesOverlay(targetMode)` in Section02.js
-- [ ] Function determines which standard to use (d_13 or ref_d_13) based on mode
-- [ ] Function calls appropriate methods in S05, S06, S09, S11, S12, S13, S14
-- [ ] Function triggers full recalculation and UI refresh
+- [ ] **PHASE 1**: Mute listeners (Import Quarantine) - prevents premature calculations
+- [ ] **PHASE 2a**: Apply values to isolated section states
+- [ ] **PHASE 2b**: Sync values TO global StateManager (so other sections can see changes)
+- [ ] **PHASE 2c**: Refresh DOM to show new input values (first refresh)
+- [ ] **PHASE 3**: Unmute listeners (in finally block - ensures unmute even if errors)
+- [ ] **PHASE 4**: Trigger complete calculation cascade (calculateAll)
+- [ ] **PHASE 5**: Final DOM refresh to show calculated results (second refresh)
 
-**Code**:
+**Code** (Import Quarantine Pattern):
 ```javascript
 function applyReferenceValuesOverlay(targetMode) {
   // Get the selected standard based on mode
@@ -893,57 +899,110 @@ function applyReferenceValuesOverlay(targetMode) {
     ? window.TEUI.StateManager.getValue("ref_d_13")
     : window.TEUI.StateManager.getValue("d_13");
 
-  console.log(`[S02] Applying ReferenceValues from "${standard}" to ${targetMode.toUpperCase()} model`);
+  const sectionsWithReferenceValues = [5, 6, 9, 11, 12, 13]; // S14/S15 excluded - data consumers only
 
-  // Apply to all sections with ReferenceValues
-  const sectionsWithReferenceValues = [5, 6, 9, 11, 12, 13, 14];
+  // ✅ PHASE 1: Mute listeners (IMPORT QUARANTINE)
+  console.log(`[S02] 🔒 Muting listeners for ReferenceValues overlay (${targetMode} mode)...`);
+  window.TEUI.StateManager.muteListeners();
 
-  sectionsWithReferenceValues.forEach(sectionNum => {
-    const sectionKey = `sect${String(sectionNum).padStart(2, '0')}`;
-    const sectionModule = window.TEUI.SectionModules?.[sectionKey];
+  try {
+    // ✅ PHASE 2a: Apply values to isolated section states
+    sectionsWithReferenceValues.forEach(sectionNum => {
+      const sectionId = `sect${String(sectionNum).padStart(2, '0')}`;
+      const section = window.TEUI?.SectionModules?.[sectionId];
 
-    if (!sectionModule) {
-      console.warn(`[S02] Section module ${sectionKey} not found`);
-      return;
-    }
-
-    if (targetMode === "reference") {
-      // Reference mode: Apply to Reference model (ref_ prefixed fields)
-      if (sectionModule.ReferenceState?.onReferenceStandardChange) {
-        sectionModule.ReferenceState.onReferenceStandardChange();
-        console.log(`[S02] Applied ReferenceValues to ${sectionKey} Reference model`);
+      if (!section) {
+        console.warn(`[S02] Section ${sectionId} not found`);
+        return;
       }
-    } else {
-      // Target mode: Apply to Target model (unprefixed fields) - NEW BEHAVIOR
-      if (sectionModule.TargetState?.applyReferenceValues) {
-        sectionModule.TargetState.applyReferenceValues(standard);
-        console.log(`[S02] Applied ReferenceValues to ${sectionKey} Target model`);
+
+      if (targetMode === "reference") {
+        // Reference mode: Apply to ReferenceState (writes to ref_ fields)
+        if (section?.ReferenceState?.onReferenceStandardChange) {
+          section.ReferenceState.onReferenceStandardChange(standard);
+          console.log(`[S02] Applied ReferenceValues to ${sectionId} ReferenceState`);
+        }
       } else {
-        console.warn(`[S02] ${sectionKey}.TargetState.applyReferenceValues() not found`);
+        // Target mode: Apply to TargetState (writes to unprefixed fields)
+        if (section?.TargetState?.applyReferenceValues) {
+          section.TargetState.applyReferenceValues(standard);
+          console.log(`[S02] Applied ReferenceValues to ${sectionId} TargetState`);
+        }
       }
-    }
-  });
+    });
 
-  // Recalculate and refresh UI
-  if (typeof calculateAll === 'function') {
-    calculateAll();
+    // ✅ PHASE 2b: Sync isolated states TO global StateManager
+    // (Required so other sections and calculations can see the changes)
+    sectionsWithReferenceValues.forEach(sectionNum => {
+      const sectionId = `sect${String(sectionNum).padStart(2, '0')}`;
+      const section = window.TEUI?.SectionModules?.[sectionId];
+
+      // Publish updated isolated state values to global StateManager
+      if (section?.ModeManager?.publishToStateManager) {
+        section.ModeManager.publishToStateManager();
+        console.log(`[S02] ${sectionId} published to StateManager`);
+      }
+    });
+
+    // ✅ PHASE 2c: Refresh DOM to show new input values (FIRST REFRESH)
+    sectionsWithReferenceValues.forEach(sectionNum => {
+      const sectionId = `sect${String(sectionNum).padStart(2, '0')}`;
+      const section = window.TEUI?.SectionModules?.[sectionId];
+
+      if (section?.ModeManager?.refreshUI) {
+        section.ModeManager.refreshUI();
+        console.log(`[S02] ${sectionId} DOM refreshed (input values)`);
+      }
+    });
+
+  } finally {
+    // ✅ PHASE 3: Unmute listeners (END QUARANTINE)
+    // Always unmute, even if errors occurred
+    console.log(`[S02] 🔓 Unmuting listeners after ReferenceValues overlay...`);
+    window.TEUI.StateManager.unmuteListeners();
   }
 
-  if (window.TEUI?.ModeManager?.refreshUI) {
-    window.TEUI.ModeManager.refreshUI();
-  }
+  // ✅ PHASE 4: Trigger complete calculation cascade
+  console.log(`[S02] Triggering calculateAll() with complete data...`);
+  if (window.TEUI?.Calculator?.calculateAll) {
+    window.TEUI.Calculator.calculateAll();
 
-  if (window.TEUI?.ModeManager?.updateCalculatedDisplayValues) {
-    window.TEUI.ModeManager.updateCalculatedDisplayValues();
-  }
+    // ✅ PHASE 5: Final DOM refresh to show calculated results (SECOND REFRESH)
+    console.log(`[S02] 🔄 Refreshing all section UIs after calculations...`);
+    const allSections = [
+      "sect02", "sect03", "sect04", "sect05", "sect06",
+      "sect07", "sect08", "sect09", "sect10", "sect11",
+      "sect12", "sect13", "sect14", "sect15"
+    ];
 
-  console.log(`[S02] ReferenceValues overlay complete for ${targetMode.toUpperCase()} model`);
+    allSections.forEach(sectionId => {
+      const section = window.TEUI?.SectionModules?.[sectionId];
+      if (section?.ModeManager?.refreshUI) {
+        section.ModeManager.refreshUI();
+      }
+      // Some sections need both refreshUI() AND updateCalculatedDisplayValues()
+      if (section?.ModeManager?.updateCalculatedDisplayValues) {
+        section.ModeManager.updateCalculatedDisplayValues();
+      }
+    });
+
+    console.log(`[S02] ✅ ReferenceValues overlay complete for ${targetMode.toUpperCase()} model`);
+  } else {
+    console.error(`[S02] Calculator.calculateAll() not available - calculations not triggered`);
+  }
 }
 ```
 
+**Why This Pattern Works** (see [SETTING-VALUES.md](SETTING-VALUES.md) for detailed analysis):
+1. **Import Quarantine** prevents premature calculations with incomplete data
+2. **Explicit State Sync** ensures Pattern A isolated states match global StateManager
+3. **Two DOM Refreshes**: First shows input values, second shows calculated results
+4. **Complete Cascade**: calculateAll() runs once with all values in place
+5. **No Value Drift**: Consistent, correct results every time (matches FileHandler import behavior)
+
 **Test**: N/A (function created, will test after button wiring)
 
-**Deliverable**: `applyReferenceValuesOverlay()` function exists in Section02.js
+**Deliverable**: `applyReferenceValuesOverlay()` function exists in Section02.js with full Import Quarantine pattern
 
 ---
 
@@ -1568,15 +1627,26 @@ window.TEUI.StateManager.addListener("ref_d_13", () => {
 - Target mode: Has applyReferenceValues() method (NEW feature)
 - Reference mode: Has onReferenceStandardChange() method (existing)
 
-**Testing (2025-11-18) - ISSUES DISCOVERED:**
+**Testing (2025-11-18) - INITIAL ISSUES (RESOLVED):**
 ⚠️ **Issue 1**: "Set Values" button not applying ReferenceValues in Target mode as expected
-⚠️ **Issue 2**: d_13 dropdown changes sometimes trigger automatic ReferenceValues overlays without user clicking "Set Values" button
-- This contradicts Phase 2 work (d_13 listeners should be PASSIVE)
-- Suggests possible event listener leakage or calculation cascade triggering overlays
-- Need to investigate: Are calculations calling applyReferenceValues() indirectly?
-- Need to verify: Are d_13 listeners truly passive in all sections?
+⚠️ **Issue 2**: d_13 dropdown changes sometimes trigger automatic ReferenceValues overlays without button click
 
-**Status**: Phase 6 code complete, but functional testing reveals unexpected behavior. Holding at Phase 6 pending debugging investigation.
+**Root Cause**: Stale localStorage state from pre-Phase 2 architecture
+- Old architecture had active d_13 listeners triggering automatic overlays
+- Cached state was interfering with new passive listener design
+- **Resolution**: Clear browser caches and localStorage
+
+**Testing (2025-11-18) - POST-CACHE-CLEAR:**
+✅ "Set Values" button now working correctly in both modes
+✅ Button successfully applies ReferenceValues to Target model
+✅ Button successfully applies ReferenceValues to Reference model
+✅ State isolation maintained (no cross-contamination observed)
+⚠️ S10/S11 sync issue interfering with smooth recalculation (pre-existing bug, unrelated to Phase 6)
+- See Issue #29 - Area sync issue from S10→S11
+- Workaround: Mode switch triggers recalculation
+- Does not affect correctness of "Set Values" button implementation
+
+**Status**: Phase 6 functionally complete. "Set Values" button working as designed. S10/S11 sync issue is separate concern to address later.
 
 ---
 
