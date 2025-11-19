@@ -790,10 +790,17 @@
           const section = window.TEUI?.SectionModules?.[sectionId];
 
           if (targetMode === "reference") {
-            // Reference mode: Publish ReferenceState to StateManager (ref_ prefixed fields)
-            if (section?.ModeManager?.publishToStateManager) {
-              section.ModeManager.publishToStateManager();
-              console.log(`[FileHandler] ${sectionId} ReferenceState published to StateManager`);
+            // Reference mode: Sync ReferenceState to StateManager (ref_ prefixed fields)
+            // ReferenceState stores values locally but doesn't auto-sync to StateManager
+            // We need to manually copy each field from ReferenceState to StateManager with ref_ prefix
+            if (section?.ReferenceState?.state) {
+              Object.keys(section.ReferenceState.state).forEach(fieldId => {
+                const value = section.ReferenceState.state[fieldId];
+                if (value !== null && value !== undefined) {
+                  window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, "import");
+                }
+              });
+              console.log(`[FileHandler] ${sectionId} ReferenceState synced to StateManager`);
             }
           } else {
             // Target mode: Sync TargetState to StateManager (unprefixed fields)
