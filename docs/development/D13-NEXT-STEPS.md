@@ -2,13 +2,38 @@
 
 **Date**: November 19, 2025
 **Branch**: `D13-UPDATE`
-**Status**: ✅ Phase 4 COMPLETE - FileHandler delegation implemented
+**Status**: 🔄 ROLLBACK & REBUILD - Fixing Recursion at Root Cause
 
 ---
 
-## Implementation Summary (Nov 19, 2025)
+## CRITICAL UPDATE (Nov 19, 2025 - PM Session)
 
-**Phase 4 Complete**: "Set Values" button now delegates to FileHandler using Import Quarantine pattern
+**Problem Discovered**: Phase 5 listener changes (commits 15cdf65, bcae34c) broke calculation propagation
+- Removed `calculateAll()` from Section10/S14 listeners to fix recursion
+- ❌ **Unintended consequence**: Normal user interactions (d_80 dropdown, d_97 slider) no longer cascade
+- This is an **architecture violation** per CLAUDE.md: "Never disable an engine to fix calculation issues"
+
+**Root Cause Found**: ReferenceState.setDefaults() writes directly to StateManager during Import Quarantine
+- Section11.js lines 263-297: setDefaults() calls StateManager.setValue() 20+ times
+- This happens WHILE listeners are muted during FileHandler.applyReferenceValuesFromStandard()
+- Creates duplicate writes: setDefaults() writes → FileHandler syncs again → recursion after unmute
+
+**Correct Solution**: Make FileHandler.applyReferenceValuesFromStandard() work EXACTLY like CSV imports
+- Build importedData object from ReferenceValues.js (only fields that should be set)
+- Call `updateStateFromImportData()` - the proven, working method
+- Call `syncPatternASections()` - sync sections FROM StateManager
+- No section methods that write to StateManager internally
+- Exactly matches CSV import flow (which has NO recursion)
+
+**Status**: Rolled back to commit 1f59a1f (last known-good state)
+- ✅ Calculation propagation works perfectly
+- ✅ "Set Values" works in Target mode
+- ❌ "Set Values" doesn't work in Reference mode (applies to Target instead)
+- ⚠️ Has recursive calculateAll() during "Set Values" (262+ calls) - THIS IS WHAT WE'LL FIX
+
+---
+
+## Implementation Summary (Original - NOW DEPRECATED)
 
 ### What Was Implemented
 
@@ -55,75 +80,170 @@ Both modes now use symmetric sync pattern:
 
 ---
 
-## 🎯 Your Mission: 2 Simple Tasks
+## 🎯 REVISED WORKPLAN: Fix Recursion Without Breaking Cascade
 
-### Task 1: Add Method to FileHandler.js
+### Task 1: Fix Section02.js ModeManager Bug
 
-**File**: `src/core/FileHandler.js`
-**Where**: After existing import methods (~line 735+)
-**What**: Add new method `applyReferenceValuesFromStandard(standard, targetMode)`
+**File**: `src/sections/Section02.js`
+**Line**: 1101 (in applyReferenceValuesOverlay function)
 
-**Get complete code from**: [SETTING-VALUES.md](./SETTING-VALUES.md) lines 327-442
+**Problem**: `window.TEUI?.ModeManager?.currentMode` returns undefined (ModeManager is section-specific, not global)
 
-**Pattern**: 5-phase Import Quarantine
-1. Mute listeners
-2. Apply values (to TargetState or ReferenceState based on mode)
-3. Sync to StateManager
-4. Refresh DOM (shows inputs)
-5. Unmute listeners
-6. Trigger calculateAll()
-7. Refresh DOM again (shows calculated results)
+**Fix**:
+```javascript
+// BEFORE (BROKEN):
+const currentMode = window.TEUI?.ModeManager?.currentMode || "target";
+
+// AFTER (FIXED):
+const currentMode = ModeManager.currentMode || "target";  // Use local ModeManager
+```
+
+**Why this matters**: Reference mode "Set Values" currently applies to Target model because mode detection fails
 
 ---
 
-### Task 2: Simplify Section02.js Button Handler
+### Task 2: Rewrite FileHandler.applyReferenceValuesFromStandard() to Match CSV Import Pattern
 
-**File**: `src/sections/Section02.js`
-**What**: Replace entire `applyReferenceValuesOverlay()` function (lines 1070-1130)
-**New implementation**: ~15 lines that delegate to FileHandler
+**File**: `src/core/FileHandler.js`
+**Lines**: 744-860 (replace entire method)
 
-**Get complete code from**: [SETTING-VALUES.md](./SETTING-VALUES.md) lines 295-325
+**Current (BROKEN) approach**:
+1. Mute listeners
+2. Call `section.ReferenceState.onReferenceStandardChange()` ← **THIS WRITES TO STATEMANAGER INTERNALLY**
+3. Sync sections TO StateManager (duplicate writes!)
+4. Unmute
+5. Calculate → recursion because of duplicate StateManager writes
 
-**Simple approach**:
+**New (CORRECT) approach - Match CSV imports exactly**:
 ```javascript
-// In initializeEventHandlers()
-const setValuesBtn = document.getElementById("setValuesBtn");
-if (setValuesBtn) {
-  setValuesBtn.addEventListener("click", () => {
-    const currentMode = window.TEUI?.ModeManager?.currentMode || "target";
-    const standard = currentMode === "reference"
-      ? window.TEUI.StateManager.getValue("ref_d_13")
-      : window.TEUI.StateManager.getValue("d_13");
+applyReferenceValuesFromStandard(standard, targetMode) {
+  console.log(`[FileHandler] Applying ReferenceValues from "${standard}" to ${targetMode.toUpperCase()} model`);
 
-    // Delegate to FileHandler
-    window.TEUI.FileHandler.applyReferenceValuesFromStandard(standard, currentMode);
+  // Get reference values for the selected standard
+  const referenceValues = window.TEUI?.ReferenceValues?.[standard];
+  if (!referenceValues) {
+    console.error(`[FileHandler] No ReferenceValues found for standard: "${standard}"`);
+    return;
+  }
+
+  // BUILD IMPORTED DATA OBJECT (like CSV does)
+  const importedData = {};
+  Object.entries(referenceValues).forEach(([fieldId, value]) => {
+    // Add ref_ prefix if in Reference mode
+    const targetFieldId = targetMode === "reference" ? `ref_${fieldId}` : fieldId;
+    importedData[targetFieldId] = value;
   });
+
+  console.log(`[FileHandler] Built importedData with ${Object.keys(importedData).length} fields for ${targetMode} mode`);
+
+  // 🔒 PHASE 1: IMPORT QUARANTINE START - Mute listeners
+  console.log("[FileHandler] 🔒 IMPORT QUARANTINE START - Muting listeners");
+  window.TEUI.StateManager.muteListeners();
+
+  try {
+    // ✅ PHASE 2: Use the PROVEN import method (writes directly to StateManager)
+    this.updateStateFromImportData(importedData, 0, false);
+    console.log(`[FileHandler] Applied ${Object.keys(importedData).length} values via updateStateFromImportData`);
+
+    // ✅ PHASE 3: Sync Pattern A sections FROM StateManager
+    console.log("[FileHandler] Syncing Pattern A sections FROM StateManager...");
+    this.syncPatternASections();
+    console.log("[FileHandler] Pattern A sections synced");
+
+  } finally {
+    // 🔓 PHASE 4: IMPORT QUARANTINE END - Always unmute
+    window.TEUI.StateManager.unmuteListeners();
+    console.log("[FileHandler] 🔓 IMPORT QUARANTINE END - Unmuting listeners");
+  }
+
+  // ✅ PHASE 5: Trigger complete calculation cascade
+  console.log("[FileHandler] Triggering calculateAll() with complete data...");
+  if (this.calculator && typeof this.calculator.calculateAll === "function") {
+    this.calculator.calculateAll();
+
+    // ✅ PHASE 6: Final DOM refresh (show calculated results)
+    console.log("[FileHandler] 🔄 Refreshing all section UIs after calculations...");
+    const allSections = [
+      "sect02", "sect03", "sect04", "sect05", "sect06",
+      "sect07", "sect08", "sect09", "sect10", "sect11",
+      "sect12", "sect13", "sect14", "sect15"
+    ];
+
+    allSections.forEach(sectionId => {
+      const section = window.TEUI?.SectionModules?.[sectionId];
+      if (section?.ModeManager?.refreshUI) {
+        section.ModeManager.refreshUI();
+      }
+      if (section?.ModeManager?.updateCalculatedDisplayValues) {
+        section.ModeManager.updateCalculatedDisplayValues();
+      }
+    });
+
+    console.log("[FileHandler] ✅ ReferenceValues overlay complete");
+  } else {
+    console.error("[FileHandler] Calculator.calculateAll not available");
+  }
 }
 ```
+
+**Why this works**:
+- Uses EXACT same methods as CSV import (`updateStateFromImportData` + `syncPatternASections`)
+- NO section methods called that write to StateManager internally
+- Only ONE set of StateManager writes (during updateStateFromImportData with listeners muted)
+- After unmute, calculateAll() runs once with all values in place
+- NO recursion because no duplicate writes trigger listeners
+
+---
+
+### Task 3: (Future Enhancement) Handle Blank Fields Gracefully
+
+**File**: `src/core/FileHandler.js` (method: `updateStateFromImportData`)
+
+**Current behavior**: If CSV has blank field → sets to 0
+**Desired behavior**: If field is blank (not in import data) → leave existing StateManager value unchanged
+
+**Implementation note**: ReferenceValues.js only defines fields that SHOULD be set (no geometry), so this isn't needed for "Set Values" button. But would improve CSV import UX for partial imports.
+
+**Defer this** until after Task 1-2 are complete and tested.
 
 ---
 
 ## Test Your Implementation
 
-### Test 1: Target Mode
-1. Load app in Target mode
-2. Select d_13 = "PH Classic"
-3. Click "Set Values"
-4. **Expected**: d_66 changes to 1.1, DOM updates immediately
+### Test 1: Verify No Recursion
+1. Load app, open browser console
+2. Click "Set Values" in Target mode
+3. **Expected**:
+   - Console shows ONE `[FileHandler] Triggering calculateAll()` log
+   - NO Section10/S14 listener spam (no 114+ log entries)
+   - Clean, short log output
 
-### Test 2: Reference Mode
+### Test 2: Verify Calculation Propagation Still Works
+1. Change d_80 dropdown (NRC Gains Factor)
+2. **Expected**:
+   - S10 calculates
+   - Changes cascade to S11 → S12 → S13 → S14 → S01
+   - h_10 (TEUI grand total) updates
+3. Change d_97 slider (Thermal Bridge %)
+4. **Expected**:
+   - S11 calculates
+   - Changes cascade through heating/cooling loops
+   - All downstream sections update
+
+### Test 3: Reference Mode Works
 1. Switch to Reference mode
 2. Select ref_d_13 = "OBC SB10 5.5-6 Z6"
 3. Click "Set Values"
-4. **Expected**: ref_d_66 changes to 2.0, DOM updates immediately
+4. **Expected**:
+   - ref_d_66 changes to 2.0
+   - DOM updates immediately
+   - NO recursion in console logs
 
-### Test 3: State Isolation
-1. After Test 1-2, switch between modes
-2. **Expected**: Values don't contaminate each other (d_66=1.1, ref_d_66=2.0)
-
-### Test 4: Stability
-1. Repeat Test 1-2 multiple times
-2. **Expected**: No value drift, h_10 (S01 grand total) remains stable
+### Test 4: State Isolation
+1. Target mode: d_13 = "PH Classic", click "Set Values" → d_66 = 1.1
+2. Reference mode: ref_d_13 = "OBC SB10 5.5-6 Z6", click "Set Values" → ref_d_66 = 2.0
+3. Switch between modes
+4. **Expected**: Values don't contaminate (d_66=1.1, ref_d_66=2.0)
 
 ---
 
