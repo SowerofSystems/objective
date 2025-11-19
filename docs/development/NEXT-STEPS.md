@@ -28,28 +28,30 @@
 
 ---
 
-## ⚠️ Known Issues - Partial Implementation
+## ✅ Implementation Complete - Both Modes Working
 
-### ✅ Working: Target Mode
+### Target Mode ✅
 - Clicking "Set Values" in Target mode correctly applies values to Target model only
-- Reference model remains untouched ✅
-- Import/Export functionality fully restored ✅
+- Reference model remains untouched
+- Import/Export functionality fully restored
 
-### ❌ Bug: Reference Mode
-- Clicking "Set Values" in Reference mode incorrectly applies values to **Target model**
-- Reference model remains unaltered (no values applied) ❌
-- Root cause: `publishToStateManager()` only publishes ref_ fields, but doesn't trigger ReferenceState update in the same way TargetState does
+### Reference Mode ✅ (Fixed: Commit c72cf00)
+- Clicking "Set Values" in Reference mode now correctly applies values to Reference model only
+- Target model remains untouched
+- Fix: Manual sync of ReferenceState.state to StateManager with ref_ prefix (mirrors Target mode pattern)
 
 ### Critical Difference from FileHandler Import
 FileHandler's Excel import recalculates **both models** because it's importing user data.
 
 "Set Values" button is different:
-- Should only apply values to the **currently active model**
-- Must NOT overwrite defaults or user-defined values in the inactive model
+- Only applies values to the **currently active model**
+- Does NOT overwrite defaults or user-defined values in the inactive model
 - This prevents state contamination when switching between design scenarios
 
-### Fix Strategy (Deferred)
-Need to ensure ReferenceState changes properly sync and refresh in Reference mode, similar to how TargetState syncs in Target mode (lines 802-810).
+### Implementation Pattern (Lines 792-818)
+Both modes now use symmetric sync pattern:
+- **Reference mode**: `ReferenceState.state` → `StateManager` as `ref_{fieldId}`
+- **Target mode**: `TargetState.state` → `StateManager` as `{fieldId}`
 
 ---
 
@@ -141,11 +143,16 @@ if (setValuesBtn) {
    - Kept S03 listeners (Thermostat Setpoint updates) and S09 d_13 listener (Plug/Light/Equipment loads)
    - FileHandler now handles 100% of ReferenceValues application via "Set Values" button
 
-2. **Fix Reference Mode Bug** (Next Priority): Make "Set Values" work correctly in Reference mode
-   - Currently applies to wrong model (Target instead of Reference)
-   - Need to mirror the TargetState sync logic (lines 802-810) for ReferenceState
+2. **✅ Reference Mode Fix COMPLETE** (Commit: c72cf00)
+   - "Set Values" now works correctly in both Target and Reference modes
+   - Both modes use symmetric sync pattern: ReferenceState → ref_ fields, TargetState → unprefixed fields
+   - No state contamination between models
 
-3. **Phase 7: Integration Testing & Validation** - See [D13-ARCHITECTURE-OPTIONS.md](./D13-ARCHITECTURE-OPTIONS.md) line 1271
+3. **Phase 7: Integration Testing & Validation** (Next Priority)
+   - See [D13-ARCHITECTURE-OPTIONS.md](./D13-ARCHITECTURE-OPTIONS.md) line 1271
+   - Test "Set Values" in both modes with different building codes
+   - Verify state isolation when switching between modes
+   - Confirm no value drift on repeated button presses
 
 ---
 
