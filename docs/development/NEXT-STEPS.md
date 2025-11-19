@@ -2,15 +2,35 @@
 
 **Date**: November 19, 2025
 **Branch**: `D13-UPDATE`
-**Status**: Ready for implementation - 2 simple tasks remaining
+**Status**: ✅ Phase 4 COMPLETE - FileHandler delegation implemented
 
 ---
 
-## Quick Start (For Fresh Agent)
+## Implementation Summary (Nov 19, 2025)
 
-You're picking up work on the "Set Values" button feature. **Phases 1-6 are complete** (listener unwiring, state isolation, TargetState methods added).
+**Phase 4 Complete**: "Set Values" button now delegates to FileHandler using Import Quarantine pattern
 
-**What's left**: Fix Phase 4 by delegating to FileHandler instead of implementing in Section02.
+### What Was Implemented
+
+1. **FileHandler.applyReferenceValuesFromStandard()** - [src/core/FileHandler.js:736-844](../../src/core/FileHandler.js#L736-L844)
+   - Mode-aware: Only applies values to the currently active model (Target OR Reference, not both)
+   - Uses proven Import Quarantine pattern (mute → apply → sync → unmute → calculate → refresh)
+   - Treats ReferenceValues.js as internal import source (consistent with Excel import)
+
+2. **Section02.applyReferenceValuesOverlay()** - [src/sections/Section02.js:1095-1117](../../src/sections/Section02.js#L1095-L1117)
+   - Simplified from 56 lines to 17 lines
+   - Section02 now handles UI events only - delegates all logic to FileHandler
+
+### Key Fix: Mode-Aware Behavior
+- When "Set Values" is clicked in **Target mode**: Only applies to Target model (leaves Reference model untouched)
+- When "Set Values" is clicked in **Reference mode**: Only applies to Reference model (leaves Target model untouched)
+- This prevents state contamination and preserves default values in Target mode after initialization
+
+---
+
+## ⚠️ Known Issue to Address Next
+
+The current implementation correctly applies values to only the active model. Import/Export functionality is restored and working.
 
 ---
 
@@ -95,9 +115,10 @@ if (setValuesBtn) {
 
 ---
 
-## After Implementation is Complete
+## Next Steps
 
-Proceed to **Phase 7: Integration Testing & Validation** in [D13-ARCHITECTURE-OPTIONS.md](./D13-ARCHITECTURE-OPTIONS.md) line 1271
+1. **Phase 7: Integration Testing & Validation** - See [D13-ARCHITECTURE-OPTIONS.md](./D13-ARCHITECTURE-OPTIONS.md) line 1271
+2. **Phase 3 Cleanup**: Remove old d_13 change listeners from sections (values now applied at StateManager level)
 
 ---
 

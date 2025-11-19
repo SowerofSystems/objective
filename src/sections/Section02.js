@@ -1093,61 +1093,27 @@ window.TEUI.SectionModules.sect02 = (function () {
   }
 
   /**
-   * ✅ PHASE 4: Apply ReferenceValues overlay to Target or Reference model
-   * Central function triggered by "Set Values" button
-   * Dual-purpose: Applies code-minimum baselines to either model based on current mode
+   * ✅ PHASE 4: Apply ReferenceValues - SIMPLIFIED (delegates to FileHandler)
+   * FileHandler already has the proven Import Quarantine pattern from Excel imports
+   * No need to duplicate that logic here - Section02 handles UI events only
    */
   function applyReferenceValuesOverlay() {
-    // Get the selected standard based on current mode
-    const standard = ModeManager.currentMode === "reference"
-      ? window.TEUI.StateManager.getValue("ref_d_13") || "OBC SB10 5.5-6 Z6"
-      : window.TEUI.StateManager.getValue("d_13") || "OBC SB10 5.5-6 Z6";
+    const currentMode = window.TEUI?.ModeManager?.currentMode || "target";
 
-    console.log(`[S02] Applying ReferenceValues from "${standard}" to ${ModeManager.currentMode.toUpperCase()} model`);
+    // Get the selected standard for current mode
+    const standard = currentMode === "reference"
+      ? window.TEUI.StateManager.getValue("ref_d_13")
+      : window.TEUI.StateManager.getValue("d_13");
 
-    // Apply to all sections with ReferenceValues (S14/S15 excluded - they're data consumers only)
-    const sectionsWithReferenceValues = [5, 6, 9, 11, 12, 13];
+    console.log(`[S02] "Set Values" button clicked - delegating to FileHandler`);
+    console.log(`[S02] Mode: ${currentMode}, Standard: ${standard}`);
 
-    sectionsWithReferenceValues.forEach(sectionNum => {
-      const sectionKey = `sect${String(sectionNum).padStart(2, '0')}`;
-      const sectionModule = window.TEUI.SectionModules?.[sectionKey];
-
-      if (!sectionModule) {
-        console.warn(`[S02] Section module ${sectionKey} not found`);
-        return;
-      }
-
-      if (ModeManager.currentMode === "reference") {
-        // Reference mode: Apply to Reference model (ref_ prefixed fields)
-        if (sectionModule.ReferenceState?.onReferenceStandardChange) {
-          sectionModule.ReferenceState.onReferenceStandardChange();
-          console.log(`[S02] Applied ReferenceValues to ${sectionKey} Reference model`);
-        }
-      } else {
-        // Target mode: Apply to Target model (unprefixed fields) - NEW BEHAVIOR
-        if (sectionModule.TargetState?.applyReferenceValues) {
-          sectionModule.TargetState.applyReferenceValues(standard);
-          console.log(`[S02] Applied ReferenceValues to ${sectionKey} Target model`);
-        } else {
-          console.warn(`[S02] ${sectionKey}.TargetState.applyReferenceValues() not found (will add in Phase 6)`);
-        }
-      }
-    });
-
-    // Recalculate and refresh UI
-    if (typeof calculateAll === 'function') {
-      calculateAll();
+    // Delegate to FileHandler - it knows how to do this correctly!
+    if (window.TEUI?.FileHandler?.applyReferenceValuesFromStandard) {
+      window.TEUI.FileHandler.applyReferenceValuesFromStandard(standard, currentMode);
+    } else {
+      console.error("[S02] FileHandler.applyReferenceValuesFromStandard() not available");
     }
-
-    if (window.TEUI?.ModeManager?.refreshUI) {
-      window.TEUI.ModeManager.refreshUI();
-    }
-
-    if (window.TEUI?.ModeManager?.updateCalculatedDisplayValues) {
-      window.TEUI.ModeManager.updateCalculatedDisplayValues();
-    }
-
-    console.log(`[S02] ReferenceValues overlay complete for ${ModeManager.currentMode.toUpperCase()} model`);
   }
 
   /**

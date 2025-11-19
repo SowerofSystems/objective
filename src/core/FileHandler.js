@@ -733,6 +733,116 @@
       }
     }
 
+    /**
+     * Apply ReferenceValues from ReferenceValues.js using the proven Import Quarantine pattern
+     * This method is the "Set Values" button's backend - it treats ReferenceValues.js as an
+     * internal import source and applies values using the same pattern as Excel imports.
+     *
+     * @param {string} standard - The standard name (e.g., "PH Classic", "OBC SB10 5.5-6 Z6")
+     * @param {string} targetMode - Either "target" or "reference"
+     */
+    applyReferenceValuesFromStandard(standard, targetMode) {
+      console.log(`[FileHandler] Applying ReferenceValues from "${standard}" to ${targetMode.toUpperCase()} model`);
+
+      // Get reference values for the selected standard
+      const referenceValues = window.TEUI?.ReferenceValues?.[standard];
+      if (!referenceValues) {
+        console.error(`[FileHandler] No ReferenceValues found for standard: "${standard}"`);
+        return;
+      }
+
+      const sectionsWithReferenceValues = [5, 6, 9, 11, 12, 13]; // S14/S15 excluded - data consumers only
+
+      // 🔒 PHASE 1: IMPORT QUARANTINE START - Mute listeners
+      console.log("[FileHandler] 🔒 IMPORT QUARANTINE START - Muting listeners");
+      window.TEUI.StateManager.muteListeners();
+
+      try {
+        // ✅ PHASE 2a: Apply values to isolated section states
+        sectionsWithReferenceValues.forEach(sectionNum => {
+          const sectionId = `sect${String(sectionNum).padStart(2, '0')}`;
+          const section = window.TEUI?.SectionModules?.[sectionId];
+
+          if (!section) {
+            console.warn(`[FileHandler] Section ${sectionId} not found`);
+            return;
+          }
+
+          if (targetMode === "reference") {
+            // Reference mode: Apply to ReferenceState (writes to ref_ fields)
+            if (section?.ReferenceState?.onReferenceStandardChange) {
+              section.ReferenceState.onReferenceStandardChange(standard);
+              console.log(`[FileHandler] Applied ReferenceValues to ${sectionId} ReferenceState`);
+            }
+          } else {
+            // Target mode: Apply to TargetState (writes to unprefixed fields)
+            if (section?.TargetState?.applyReferenceValues) {
+              section.TargetState.applyReferenceValues(standard);
+              console.log(`[FileHandler] Applied ReferenceValues to ${sectionId} TargetState`);
+            }
+          }
+        });
+
+        // ✅ PHASE 2b: Sync isolated states TO global StateManager
+        // (Required so other sections and calculations can see the changes)
+        sectionsWithReferenceValues.forEach(sectionNum => {
+          const sectionId = `sect${String(sectionNum).padStart(2, '0')}`;
+          const section = window.TEUI?.SectionModules?.[sectionId];
+
+          // Publish updated isolated state values to global StateManager
+          if (section?.ModeManager?.publishToStateManager) {
+            section.ModeManager.publishToStateManager();
+            console.log(`[FileHandler] ${sectionId} published to StateManager`);
+          }
+        });
+
+        // ✅ PHASE 2c: First DOM refresh (show new input values)
+        sectionsWithReferenceValues.forEach(sectionNum => {
+          const sectionId = `sect${String(sectionNum).padStart(2, '0')}`;
+          const section = window.TEUI?.SectionModules?.[sectionId];
+
+          if (section?.ModeManager?.refreshUI) {
+            section.ModeManager.refreshUI();
+            console.log(`[FileHandler] ${sectionId} DOM refreshed (input values)`);
+          }
+        });
+
+      } finally {
+        // 🔓 PHASE 3: IMPORT QUARANTINE END - Always unmute, even if errors occur
+        console.log("[FileHandler] 🔓 IMPORT QUARANTINE END - Unmuting listeners");
+        window.TEUI.StateManager.unmuteListeners();
+      }
+
+      // ✅ PHASE 4: Trigger complete calculation cascade
+      console.log("[FileHandler] Triggering calculateAll() with complete data...");
+      if (this.calculator && typeof this.calculator.calculateAll === "function") {
+        this.calculator.calculateAll();
+
+        // ✅ PHASE 5: Final DOM refresh (show calculated results)
+        console.log("[FileHandler] 🔄 Refreshing all section UIs after calculations...");
+        const allSections = [
+          "sect02", "sect03", "sect04", "sect05", "sect06",
+          "sect07", "sect08", "sect09", "sect10", "sect11",
+          "sect12", "sect13", "sect14", "sect15"
+        ];
+
+        allSections.forEach(sectionId => {
+          const section = window.TEUI?.SectionModules?.[sectionId];
+          if (section?.ModeManager?.refreshUI) {
+            section.ModeManager.refreshUI();
+          }
+          // Some sections need both refreshUI() AND updateCalculatedDisplayValues()
+          if (section?.ModeManager?.updateCalculatedDisplayValues) {
+            section.ModeManager.updateCalculatedDisplayValues();
+          }
+        });
+
+        console.log(`[FileHandler] ✅ ReferenceValues from "${standard}" applied to ${targetMode.toUpperCase()} model`);
+      } else {
+        console.error("[FileHandler] Calculator.calculateAll() not available - calculations not triggered");
+      }
+    }
+
     // --- EXPORT LOGIC ---
 
     exportToCSV() {
