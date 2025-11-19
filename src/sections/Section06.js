@@ -190,17 +190,9 @@ window.TEUI.SectionModules.sect06 = (function () {
       }
 
       // Listen for reference standard changes
-      // PASSIVE: d_13 changes stored only - overlay applied by "Set Values" button
-      if (window.TEUI?.StateManager?.addListener) {
-        window.TEUI.StateManager.addListener("d_13", () => {
-          // No automatic ReferenceState update - button triggers overlay
-        });
-
-        // PASSIVE: ref_d_13 changes stored only - overlay applied by "Set Values" button
-        window.TEUI.StateManager.addListener("ref_d_13", () => {
-          // No automatic ReferenceState update - button triggers overlay
-        });
-      }
+      // ✅ PHASE 3 CLEANUP: d_13 listeners removed - FileHandler handles value application
+      // "Set Values" button in Section02 delegates to FileHandler.applyReferenceValuesFromStandard()
+      // which applies ReferenceValues using Import Quarantine pattern
     },
 
     getCurrentState: function () {

@@ -310,17 +310,9 @@ window.TEUI.SectionModules.sect13 = (function () {
         });
       }
 
-      // PASSIVE: d_13 changes stored only - overlay applied by "Set Values" button
-      if (window.TEUI?.StateManager?.addListener) {
-        window.TEUI.StateManager.addListener("d_13", () => {
-          // No automatic ReferenceState update - button triggers overlay
-        });
-
-        // PASSIVE: ref_d_13 changes stored only - overlay applied by "Set Values" button
-        window.TEUI.StateManager.addListener("ref_d_13", () => {
-          // No automatic ReferenceState update - button triggers overlay
-        });
-      }
+      // ✅ PHASE 3 CLEANUP: PASSIVE d_13/ref_d_13 listeners removed
+      // "Set Values" button handles value application via FileHandler
+      // Note: CRITICAL d_13 listener at line ~2512 will also be removed
     },
     switchMode: function (mode) {
       if (
@@ -2508,10 +2500,9 @@ window.TEUI.SectionModules.sect13 = (function () {
     sm.registerDependency("l_30", "f_114"); // Oil emissions factor
     sm.registerDependency("l_28", "f_114"); // Gas emissions factor
 
-    // CRITICAL: Listen for d_13 changes to update reference indicators
-    sm.addListener("d_13", () => {
-      updateAllReferenceIndicators();
-    });
+    // ✅ PHASE 3 CLEANUP: d_13 listener removed
+    // "Set Values" button now handles 100% of value application via FileHandler
+    // FileHandler.applyReferenceValuesFromStandard() triggers calculateAll() after value sync
 
     // Listen for Reference climate data changes to trigger recalculation
     sm.addListener("ref_d_20", newValue => {

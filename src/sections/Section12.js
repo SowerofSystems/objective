@@ -209,17 +209,9 @@ window.TEUI.SectionModules.sect12 = (function () {
       TargetState.initialize();
       ReferenceState.initialize();
 
-      // PASSIVE: d_13 changes stored only - overlay applied by "Set Values" button
-      if (window.TEUI?.StateManager?.addListener) {
-        window.TEUI.StateManager.addListener("d_13", () => {
-          // No automatic ReferenceState update - button triggers overlay
-        });
-
-        // PASSIVE: ref_d_13 changes stored only - overlay applied by "Set Values" button
-        window.TEUI.StateManager.addListener("ref_d_13", () => {
-          // No automatic ReferenceState update - button triggers overlay
-        });
-      }
+      // ✅ PHASE 3 CLEANUP: PASSIVE d_13/ref_d_13 listeners removed
+      // "Set Values" button handles value application via FileHandler
+      // Note: CRITICAL d_13 listener at line ~2927 will also be removed
     },
     switchMode: function (mode) {
       if (
@@ -2923,11 +2915,9 @@ window.TEUI.SectionModules.sect12 = (function () {
       );
     });
 
-    // CRITICAL: Listen for d_13 changes to trigger recalculation and then update indicators
-    window.TEUI.StateManager.addListener("d_13", () => {
-      calculateAll();
-      updateAllReferenceIndicators();
-    });
+    // ✅ PHASE 3 CLEANUP: d_13 listener removed
+    // "Set Values" button now handles 100% of value application via FileHandler
+    // FileHandler.applyReferenceValuesFromStandard() triggers calculateAll() after value sync
 
     // ✅ CRITICAL: Listen for Target climate data changes to trigger recalculation
     window.TEUI.StateManager.addListener("d_20", (newValue, oldValue) => {

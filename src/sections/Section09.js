@@ -2439,20 +2439,15 @@ window.TEUI.SectionModules.sect09 = (function () {
     });
 
     // 4. Reference Standard (d_13 / ref_d_13)
-    // PASSIVE: d_13 changes stored only - overlay applied by "Set Values" button
+    // ✅ CRITICAL: Keep d_13 listener for Plug/Light/Equipment loads recalculation
     sm.addListener("d_13", () => {
-      // No automatic ReferenceState update - button triggers overlay
       calculateTargetModel();
       updateAllReferenceIndicators();
       ModeManager.updateCalculatedDisplayValues();
     });
-    sm.addListener("ref_d_13", () => {
-      // PASSIVE: ref_d_13 changes stored only - overlay applied by "Set Values" button
-      // Calculations and indicators still update for consistency
-      calculateReferenceModel();
-      updateAllReferenceIndicators();
-      ModeManager.updateCalculatedDisplayValues();
-    });
+
+    // ✅ PHASE 3 CLEANUP: ref_d_13 listener removed
+    // "Set Values" button handles Reference model value application via FileHandler
 
     // 5. Cooling Days (m_19 / ref_m_19)
     sm.addListener("m_19", () => {
