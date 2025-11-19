@@ -280,78 +280,166 @@ applyReferenceValuesOverlay: function(mode) {
 
 ---
 
-## The Correct Pattern for "Set Values"
+## The Correct Pattern for "Set Values" - Delegate to FileHandler
+
+**Architectural Principle**: The "Set Values" button should delegate to FileHandler, which already has the proven Import Quarantine pattern. This eliminates code duplication and ensures consistency.
+
+### Why Delegate to FileHandler?
+
+✅ **Single Responsibility** - FileHandler owns all "bulk value application" operations
+✅ **Code Reuse** - Import Quarantine pattern exists in one place
+✅ **Maintainability** - Future fixes happen once, work everywhere
+✅ **Consistency** - ReferenceValues overlay behaves exactly like file import
+✅ **Proven Pattern** - Uses the same pattern that works perfectly for Excel imports
+
+### Section02 Responsibility: UI Event Handling Only
+
+**File**: `sections/Section02.js`
 
 ```javascript
-applyReferenceValuesOverlay: function(mode) {
-  const standard = mode === "target" ? this.state.d_13 : this.state.ref_d_13;
-  const sectionsWithReferenceValues = [5, 6, 9, 11, 12, 13];
+// In Section02.js initializeEventHandlers()
+const setValuesBtn = document.getElementById("setValuesBtn");
+if (setValuesBtn) {
+  setValuesBtn.addEventListener("click", () => {
+    const currentMode = window.TEUI?.ModeManager?.currentMode || "target";
 
-  // ✅ PHASE 1: Mute listeners (IMPORT QUARANTINE)
-  console.log("[S02] 🔒 Muting listeners for ReferenceValues overlay...");
+    // Get the selected standard for current mode
+    const standard = currentMode === "reference"
+      ? window.TEUI.StateManager.getValue("ref_d_13")
+      : window.TEUI.StateManager.getValue("d_13");
+
+    console.log(`[S02] "Set Values" button clicked - delegating to FileHandler`);
+    console.log(`[S02] Mode: ${currentMode}, Standard: ${standard}`);
+
+    // Delegate to FileHandler - it knows how to do this correctly!
+    if (window.TEUI?.FileHandler?.applyReferenceValuesFromStandard) {
+      window.TEUI.FileHandler.applyReferenceValuesFromStandard(standard, currentMode);
+    } else {
+      console.error("[S02] FileHandler.applyReferenceValuesFromStandard() not available");
+    }
+  });
+  console.log('[S02] "Set Values" button wired successfully');
+} else {
+  console.error('[S02] "Set Values" button not found - check button ID');
+}
+```
+
+### FileHandler Responsibility: Apply ReferenceValues Using Import Quarantine Pattern
+
+**File**: `src/core/FileHandler.js`
+
+Add this new method to FileHandler (around line 735+, after existing import methods):
+
+```javascript
+/**
+ * Apply ReferenceValues from ReferenceValues.js using the proven Import Quarantine pattern
+ * This method is the "Set Values" button's backend - it treats ReferenceValues.js as an
+ * internal import source and applies values using the same pattern as Excel imports.
+ *
+ * @param {string} standard - The standard name (e.g., "PH Classic", "OBC SB10 5.5-6 Z6")
+ * @param {string} targetMode - Either "target" or "reference"
+ */
+applyReferenceValuesFromStandard: function(standard, targetMode) {
+  console.log(`[FileHandler] Applying ReferenceValues from "${standard}" to ${targetMode.toUpperCase()} model`);
+
+  // Get reference values for the selected standard
+  const referenceValues = window.TEUI?.ReferenceValues?.[standard];
+  if (!referenceValues) {
+    console.error(`[FileHandler] No ReferenceValues found for standard: "${standard}"`);
+    return;
+  }
+
+  const sectionsWithReferenceValues = [5, 6, 9, 11, 12, 13]; // S14/S15 excluded - data consumers only
+
+  // 🔒 PHASE 1: IMPORT QUARANTINE START - Mute listeners
+  console.log("[FileHandler] 🔒 IMPORT QUARANTINE START - Muting listeners");
   window.TEUI.StateManager.muteListeners();
 
   try {
     // ✅ PHASE 2a: Apply values to isolated section states
     sectionsWithReferenceValues.forEach(sectionNum => {
-      const sectionId = `sect${String(sectionNum).padStart(2, "0")}`;
+      const sectionId = `sect${String(sectionNum).padStart(2, '0')}`;
       const section = window.TEUI?.SectionModules?.[sectionId];
 
-      if (mode === "target" && section?.TargetState?.applyReferenceValues) {
-        section.TargetState.applyReferenceValues(standard);
-      } else if (mode === "reference" && section?.ReferenceState?.onReferenceStandardChange) {
-        section.ReferenceState.onReferenceStandardChange(standard);
+      if (!section) {
+        console.warn(`[FileHandler] Section ${sectionId} not found`);
+        return;
+      }
+
+      if (targetMode === "reference") {
+        // Reference mode: Apply to ReferenceState (writes to ref_ fields)
+        if (section?.ReferenceState?.onReferenceStandardChange) {
+          section.ReferenceState.onReferenceStandardChange(standard);
+          console.log(`[FileHandler] Applied ReferenceValues to ${sectionId} ReferenceState`);
+        }
+      } else {
+        // Target mode: Apply to TargetState (writes to unprefixed fields)
+        if (section?.TargetState?.applyReferenceValues) {
+          section.TargetState.applyReferenceValues(standard);
+          console.log(`[FileHandler] Applied ReferenceValues to ${sectionId} TargetState`);
+        }
       }
     });
 
-    // ✅ PHASE 2b: Sync values TO global StateManager
-    // (So other sections and calculations can see the changes)
+    // ✅ PHASE 2b: Sync isolated states TO global StateManager
+    // (Required so other sections and calculations can see the changes)
     sectionsWithReferenceValues.forEach(sectionNum => {
-      const sectionId = `sect${String(sectionNum).padStart(2, "0")}`;
+      const sectionId = `sect${String(sectionNum).padStart(2, '0')}`;
       const section = window.TEUI?.SectionModules?.[sectionId];
 
+      // Publish updated isolated state values to global StateManager
       if (section?.ModeManager?.publishToStateManager) {
         section.ModeManager.publishToStateManager();
+        console.log(`[FileHandler] ${sectionId} published to StateManager`);
       }
     });
 
-    // ✅ PHASE 2c: Refresh DOM to show new input values
+    // ✅ PHASE 2c: First DOM refresh (show new input values)
     sectionsWithReferenceValues.forEach(sectionNum => {
-      const sectionId = `sect${String(sectionNum).padStart(2, "0")}`;
+      const sectionId = `sect${String(sectionNum).padStart(2, '0')}`;
       const section = window.TEUI?.SectionModules?.[sectionId];
 
       if (section?.ModeManager?.refreshUI) {
         section.ModeManager.refreshUI();
+        console.log(`[FileHandler] ${sectionId} DOM refreshed (input values)`);
       }
     });
 
   } finally {
-    // ✅ PHASE 3: Unmute listeners (END QUARANTINE)
-    console.log("[S02] 🔓 Unmuting listeners after ReferenceValues overlay...");
+    // 🔓 PHASE 3: IMPORT QUARANTINE END - Always unmute, even if errors occur
+    console.log("[FileHandler] 🔓 IMPORT QUARANTINE END - Unmuting listeners");
     window.TEUI.StateManager.unmuteListeners();
   }
 
   // ✅ PHASE 4: Trigger complete calculation cascade
-  console.log("[S02] Triggering calculateAll() after ReferenceValues overlay...");
-  if (window.TEUI?.Calculator?.calculateAll) {
-    window.TEUI.Calculator.calculateAll();
+  console.log("[FileHandler] Triggering calculateAll() with complete data...");
+  if (this.calculator && typeof this.calculator.calculateAll === "function") {
+    this.calculator.calculateAll();
 
-    // ✅ PHASE 5: Final DOM refresh to show calculated results
-    const allSections = ["sect02", "sect03", "sect04", "sect05", "sect06",
-                         "sect07", "sect08", "sect09", "sect10", "sect11",
-                         "sect12", "sect13", "sect14", "sect15"];
+    // ✅ PHASE 5: Final DOM refresh (show calculated results)
+    console.log("[FileHandler] 🔄 Refreshing all section UIs after calculations...");
+    const allSections = [
+      "sect02", "sect03", "sect04", "sect05", "sect06",
+      "sect07", "sect08", "sect09", "sect10", "sect11",
+      "sect12", "sect13", "sect14", "sect15"
+    ];
 
     allSections.forEach(sectionId => {
       const section = window.TEUI?.SectionModules?.[sectionId];
       if (section?.ModeManager?.refreshUI) {
         section.ModeManager.refreshUI();
       }
+      // Some sections need both refreshUI() AND updateCalculatedDisplayValues()
       if (section?.ModeManager?.updateCalculatedDisplayValues) {
         section.ModeManager.updateCalculatedDisplayValues();
       }
     });
+
+    console.log(`[FileHandler] ✅ ReferenceValues from "${standard}" applied to ${targetMode.toUpperCase()} model`);
+  } else {
+    console.error("[FileHandler] Calculator.calculateAll() not available - calculations not triggered");
   }
-}
+},
 ```
 
 ---
@@ -362,22 +450,31 @@ applyReferenceValuesOverlay: function(mode) {
    - Mute → Set → Sync → Unmute → Calculate
    - Prevents race conditions and partial calculations
 
-2. **Pattern A Sections Need Explicit Sync**
+2. **Delegate to FileHandler for All Bulk Value Operations**
+   - Don't duplicate Import Quarantine pattern in Section02
+   - "Set Values" button treats ReferenceValues.js as an internal import source
+   - FileHandler already has proven pattern that works perfectly
+
+3. **Pattern A Sections Need Explicit Sync**
    - Isolated states don't automatically see changes
    - Must sync TO and FROM global StateManager
 
-3. **DOM Refresh Happens Twice**
+4. **DOM Refresh Happens Twice**
    - Once after setting values (shows inputs)
    - Once after calculations (shows results)
 
-4. **StateManager is Source of Truth**
+5. **StateManager is Source of Truth**
    - All sections must publish changes to StateManager
    - Calculations read from StateManager, not isolated states
 
-5. **calculateAll() Runs Once with Complete Data**
+6. **calculateAll() Runs Once with Complete Data**
    - No premature calculations
    - No value drift
    - Consistent, correct results every time
+
+7. **Single Responsibility Principle**
+   - Section02: UI event handling only (thin layer)
+   - FileHandler: Data operations and bulk value application (expert layer)
 
 ---
 
@@ -385,11 +482,17 @@ applyReferenceValuesOverlay: function(mode) {
 
 | Component | File | Lines | Purpose |
 |-----------|------|-------|---------|
+| **Excel Import (Gold Standard)** |
 | Import quarantine start | FileHandler.js | 154-158 | Mute listeners before import |
-| Set values | FileHandler.js | 518-578 | Update StateManager with imported values |
+| Set values from Excel | FileHandler.js | 518-578 | Update StateManager with imported values |
 | Sync Pattern A sections | FileHandler.js | 659-734 | Sync isolated states from StateManager |
 | Import quarantine end | FileHandler.js | 184-190 | Unmute listeners after import |
 | Trigger calculations | FileHandler.js | 192-235 | Run calculateAll() and refresh UIs |
+| **"Set Values" Button (New)** |
+| Button click handler | Section02.js | TBD | Delegates to FileHandler.applyReferenceValuesFromStandard() |
+| Apply ReferenceValues | FileHandler.js | TBD (~735+) | NEW METHOD - Uses same Import Quarantine pattern |
+| ReferenceValues data source | ReferenceValues.js | 1-632 | Internal "import" source - code baseline values |
+| **StateManager Utilities** |
 | muteListeners() | StateManager.js | 2246-2249 | Disable listener notifications |
 | unmuteListeners() | StateManager.js | 2255-2260 | Enable listener notifications |
 | Restore pattern example | StateManager.js | 1914-1989 | Similar mute/unmute pattern for restore |
@@ -397,4 +500,7 @@ applyReferenceValuesOverlay: function(mode) {
 ---
 
 **Document Created:** 2025-11-18
+**Document Updated:** 2025-11-19
 **Purpose:** Guide implementation of correct "Set Values" button behavior based on proven FileHandler import pattern
+
+**Key Decision:** "Set Values" button delegates to FileHandler instead of duplicating Import Quarantine pattern in Section02. This treats ReferenceValues.js as an internal import source, ensuring consistency with Excel import behavior.

@@ -1,10 +1,76 @@
 # d_13 Reference Standard Architecture: Implementation Guide
 
-**Date**: 2025-11-10 (Updated: 2025-11-18)
-**Status**: ✅ **OPTION 3 SELECTED FOR IMPLEMENTATION**
+**Date**: 2025-11-10 (Updated: 2025-11-19)
+**Status**: ✅ **OPTION 3 SELECTED - PHASES 1-6 COMPLETE - PHASE 4 NEEDS ARCHITECTURAL FIX**
 **Branch**: `D13-UPDATE`
 **Purpose**: Originally presented three architectural approaches for CTO review - Now serves as implementation guide for Option 3
 **Context**: Resolving m_65 compliance calculation showing 238% instead of 100% (and all other M/N Target Model Value/Reference Model Value comparison calculations)
+
+---
+
+## 🎯 IMPLEMENTATION READY - START HERE (Fresh Agent Briefing)
+
+**Last Updated**: November 19, 2025
+**Current Status**: Phases 1-6 complete, Phase 4 needs architectural fix, then proceed to Phase 7
+
+### What's Been Accomplished (Phases 1-6)
+
+✅ **Phase 1**: Audited all d_13/ref_d_13 listener behavior across 7 sections
+✅ **Phase 2**: Made all d_13 listeners passive (no automatic ReferenceState updates)
+✅ **Phase 3**: Added passive ref_d_13 listeners to all sections
+✅ **Phase 4**: Wired "Set Values" button (BUT implementation is incomplete - see below)
+✅ **Phase 5**: Updated all ReferenceState methods to read ref_d_13 (not d_13)
+✅ **Phase 6**: Added TargetState.applyReferenceValues() methods to all sections
+
+### 🚨 CRITICAL: Phase 4 Needs Architectural Fix
+
+**The Problem**: Current `Section02.applyReferenceValuesOverlay()` implementation (lines 1070-1130) is missing the **Import Quarantine pattern**, causing:
+- DOM not updating with new values
+- Calculations firing prematurely
+- Value "drift" on repeated button clicks
+- Inconsistent h_10 (S01 grand total) results
+
+**The Solution**: **Delegate to FileHandler instead of implementing in Section02**
+
+### Why Delegate to FileHandler?
+
+✅ **Single Responsibility** - FileHandler owns all "bulk value application" operations
+✅ **Code Reuse** - Import Quarantine pattern already exists and works perfectly
+✅ **Maintainability** - One place to fix, not two
+✅ **Consistency** - "Set Values" button treats ReferenceValues.js as internal import source
+✅ **Proven** - FileHandler's Excel import works perfectly every time
+
+### What You Need to Implement (2 Simple Tasks)
+
+#### Task 1: Add Method to FileHandler.js
+**File**: `src/core/FileHandler.js`
+**Location**: After existing import methods (~line 735+)
+**Method Name**: `applyReferenceValuesFromStandard(standard, targetMode)`
+**Implementation**: Full 5-phase Import Quarantine pattern
+**Reference**: See [SETTING-VALUES.md](./SETTING-VALUES.md) lines 327-442 for complete code
+
+#### Task 2: Simplify Section02.js Button Handler
+**File**: `src/sections/Section02.js`
+**Action**: Replace existing `applyReferenceValuesOverlay()` function (lines 1070-1130)
+**New Implementation**: Simple delegation (~15 lines instead of 80+)
+**Reference**: See [SETTING-VALUES.md](./SETTING-VALUES.md) lines 295-325 for complete code
+
+### Test After Implementation
+
+1. **Target mode**: d_13 = "PH Classic", click "Set Values" → d_66 should become 1.1
+2. **Reference mode**: ref_d_13 = "OBC SB10 5.5-6 Z6", click "Set Values" → ref_d_66 should become 2.0
+3. **Verify isolation**: Switch modes - values should NOT contaminate each other
+4. **Verify stability**: Repeat steps 1-2 multiple times - no value drift, h_10 remains stable
+
+### Then Proceed to Phase 7 (Integration Testing)
+
+After Tasks 1-2 are complete and tested, proceed to **Phase 7: Integration Testing & Validation** (see section below at line 1271)
+
+### Key Reference Documents
+
+- **[SETTING-VALUES.md](./SETTING-VALUES.md)** - Complete implementation details, FileHandler's proven pattern
+- **[ReferenceValues.js](../../src/core/ReferenceValues.js)** - Internal import source (code baseline values by standard)
+- **Commit df1bf7e** - Where SETTING-VALUES.md was created with pattern analysis
 
 ---
 
@@ -872,126 +938,26 @@ window.TEUI.StateManager.addListener("ref_d_13", (newValue) => {
 
 ---
 
-### Phase 4: Wire "Set Values" Button (Reference Mode - Apply to Reference Model)
+### Phase 4: Wire "Set Values" Button - Delegate to FileHandler
 
-#### Task 4.1: Create applyReferenceValuesOverlay() Function in Section02
-**Objective**: Central function to apply ReferenceValues overlay following FileHandler's Import Quarantine pattern
+#### Task 4.1: Add applyReferenceValuesFromStandard() Method to FileHandler
+**Objective**: Add new method to FileHandler that applies ReferenceValues using proven Import Quarantine pattern
 
-**File**: `sections/Section02.js`
+**File**: `src/core/FileHandler.js`
 
-**CRITICAL**: This function must replicate FileHandler's proven import pattern (see [SETTING-VALUES.md](SETTING-VALUES.md))
+**CRITICAL**: This method treats ReferenceValues.js as an internal import source and uses the same pattern as Excel imports
 
 **Actions**:
-- [ ] Add new function `applyReferenceValuesOverlay(targetMode)` in Section02.js
+- [ ] Add new method `applyReferenceValuesFromStandard(standard, targetMode)` to FileHandler
 - [ ] **PHASE 1**: Mute listeners (Import Quarantine) - prevents premature calculations
-- [ ] **PHASE 2a**: Apply values to isolated section states
+- [ ] **PHASE 2a**: Apply values to isolated section states (TargetState or ReferenceState based on mode)
 - [ ] **PHASE 2b**: Sync values TO global StateManager (so other sections can see changes)
 - [ ] **PHASE 2c**: Refresh DOM to show new input values (first refresh)
 - [ ] **PHASE 3**: Unmute listeners (in finally block - ensures unmute even if errors)
 - [ ] **PHASE 4**: Trigger complete calculation cascade (calculateAll)
 - [ ] **PHASE 5**: Final DOM refresh to show calculated results (second refresh)
 
-**Code** (Import Quarantine Pattern):
-```javascript
-function applyReferenceValuesOverlay(targetMode) {
-  // Get the selected standard based on mode
-  const standard = targetMode === "reference"
-    ? window.TEUI.StateManager.getValue("ref_d_13")
-    : window.TEUI.StateManager.getValue("d_13");
-
-  const sectionsWithReferenceValues = [5, 6, 9, 11, 12, 13]; // S14/S15 excluded - data consumers only
-
-  // ✅ PHASE 1: Mute listeners (IMPORT QUARANTINE)
-  console.log(`[S02] 🔒 Muting listeners for ReferenceValues overlay (${targetMode} mode)...`);
-  window.TEUI.StateManager.muteListeners();
-
-  try {
-    // ✅ PHASE 2a: Apply values to isolated section states
-    sectionsWithReferenceValues.forEach(sectionNum => {
-      const sectionId = `sect${String(sectionNum).padStart(2, '0')}`;
-      const section = window.TEUI?.SectionModules?.[sectionId];
-
-      if (!section) {
-        console.warn(`[S02] Section ${sectionId} not found`);
-        return;
-      }
-
-      if (targetMode === "reference") {
-        // Reference mode: Apply to ReferenceState (writes to ref_ fields)
-        if (section?.ReferenceState?.onReferenceStandardChange) {
-          section.ReferenceState.onReferenceStandardChange(standard);
-          console.log(`[S02] Applied ReferenceValues to ${sectionId} ReferenceState`);
-        }
-      } else {
-        // Target mode: Apply to TargetState (writes to unprefixed fields)
-        if (section?.TargetState?.applyReferenceValues) {
-          section.TargetState.applyReferenceValues(standard);
-          console.log(`[S02] Applied ReferenceValues to ${sectionId} TargetState`);
-        }
-      }
-    });
-
-    // ✅ PHASE 2b: Sync isolated states TO global StateManager
-    // (Required so other sections and calculations can see the changes)
-    sectionsWithReferenceValues.forEach(sectionNum => {
-      const sectionId = `sect${String(sectionNum).padStart(2, '0')}`;
-      const section = window.TEUI?.SectionModules?.[sectionId];
-
-      // Publish updated isolated state values to global StateManager
-      if (section?.ModeManager?.publishToStateManager) {
-        section.ModeManager.publishToStateManager();
-        console.log(`[S02] ${sectionId} published to StateManager`);
-      }
-    });
-
-    // ✅ PHASE 2c: Refresh DOM to show new input values (FIRST REFRESH)
-    sectionsWithReferenceValues.forEach(sectionNum => {
-      const sectionId = `sect${String(sectionNum).padStart(2, '0')}`;
-      const section = window.TEUI?.SectionModules?.[sectionId];
-
-      if (section?.ModeManager?.refreshUI) {
-        section.ModeManager.refreshUI();
-        console.log(`[S02] ${sectionId} DOM refreshed (input values)`);
-      }
-    });
-
-  } finally {
-    // ✅ PHASE 3: Unmute listeners (END QUARANTINE)
-    // Always unmute, even if errors occurred
-    console.log(`[S02] 🔓 Unmuting listeners after ReferenceValues overlay...`);
-    window.TEUI.StateManager.unmuteListeners();
-  }
-
-  // ✅ PHASE 4: Trigger complete calculation cascade
-  console.log(`[S02] Triggering calculateAll() with complete data...`);
-  if (window.TEUI?.Calculator?.calculateAll) {
-    window.TEUI.Calculator.calculateAll();
-
-    // ✅ PHASE 5: Final DOM refresh to show calculated results (SECOND REFRESH)
-    console.log(`[S02] 🔄 Refreshing all section UIs after calculations...`);
-    const allSections = [
-      "sect02", "sect03", "sect04", "sect05", "sect06",
-      "sect07", "sect08", "sect09", "sect10", "sect11",
-      "sect12", "sect13", "sect14", "sect15"
-    ];
-
-    allSections.forEach(sectionId => {
-      const section = window.TEUI?.SectionModules?.[sectionId];
-      if (section?.ModeManager?.refreshUI) {
-        section.ModeManager.refreshUI();
-      }
-      // Some sections need both refreshUI() AND updateCalculatedDisplayValues()
-      if (section?.ModeManager?.updateCalculatedDisplayValues) {
-        section.ModeManager.updateCalculatedDisplayValues();
-      }
-    });
-
-    console.log(`[S02] ✅ ReferenceValues overlay complete for ${targetMode.toUpperCase()} model`);
-  } else {
-    console.error(`[S02] Calculator.calculateAll() not available - calculations not triggered`);
-  }
-}
-```
+**Code**: See [SETTING-VALUES.md](./SETTING-VALUES.md) for complete FileHandler method implementation (lines 327-442)
 
 **Why This Pattern Works** (see [SETTING-VALUES.md](SETTING-VALUES.md) for detailed analysis):
 1. **Import Quarantine** prevents premature calculations with incomplete data
@@ -999,54 +965,65 @@ function applyReferenceValuesOverlay(targetMode) {
 3. **Two DOM Refreshes**: First shows input values, second shows calculated results
 4. **Complete Cascade**: calculateAll() runs once with all values in place
 5. **No Value Drift**: Consistent, correct results every time (matches FileHandler import behavior)
+6. **Code Reuse**: Same proven pattern as Excel imports, maintained in one place
 
-**Test**: N/A (function created, will test after button wiring)
+**Test**: Will test after Task 4.2 (button wiring) is complete
 
-**Deliverable**: `applyReferenceValuesOverlay()` function exists in Section02.js with full Import Quarantine pattern
+**Deliverable**: `applyReferenceValuesFromStandard()` method exists in FileHandler.js with full Import Quarantine pattern
 
 ---
 
-#### Task 4.2: Wire "Set Values" Button Click Handler
-**Objective**: Connect button to `applyReferenceValuesOverlay()` function
+#### Task 4.2: Simplify Section02 Button Handler to Delegate to FileHandler
+**Objective**: Wire button to delegate to FileHandler instead of implementing logic in Section02
 
 **File**: `sections/Section02.js`
 
 **Actions**:
 - [ ] Locate `initializeEventHandlers()` in Section02.js
-- [ ] Find "Set Values" button by ID (likely `setValuesBtn` or `e_13`)
-- [ ] Add click event listener
-- [ ] Call `applyReferenceValuesOverlay()` with current mode
+- [ ] Find "Set Values" button by ID (`setValuesBtn`)
+- [ ] Replace existing `applyReferenceValuesOverlay()` function (lines 1070-1130) with simple delegation
+- [ ] Add click event listener that calls FileHandler method
 
-**Code**:
+**Code**: See [SETTING-VALUES.md](./SETTING-VALUES.md) for complete button handler implementation (lines 295-325)
+
+**Simplified approach**:
 ```javascript
 // In Section02.js initializeEventHandlers()
-const setValuesBtn = document.getElementById("setValuesBtn"); // Adjust ID if needed
+const setValuesBtn = document.getElementById("setValuesBtn");
 if (setValuesBtn) {
   setValuesBtn.addEventListener("click", () => {
     const currentMode = window.TEUI?.ModeManager?.currentMode || "target";
-    console.log(`[S02] "Set Values" button clicked in ${currentMode.toUpperCase()} mode`);
-    applyReferenceValuesOverlay(currentMode);
+    const standard = currentMode === "reference"
+      ? window.TEUI.StateManager.getValue("ref_d_13")
+      : window.TEUI.StateManager.getValue("d_13");
+
+    console.log(`[S02] "Set Values" button clicked - delegating to FileHandler`);
+
+    // Delegate to FileHandler - it knows how to do this correctly!
+    if (window.TEUI?.FileHandler?.applyReferenceValuesFromStandard) {
+      window.TEUI.FileHandler.applyReferenceValuesFromStandard(standard, currentMode);
+    } else {
+      console.error("[S02] FileHandler.applyReferenceValuesFromStandard() not available");
+    }
   });
-  console.log('[S02] "Set Values" button wired successfully');
-} else {
-  console.error('[S02] "Set Values" button not found - check button ID');
 }
 ```
 
-**Test** (Reference Mode - Phase 4 Focus):
+**Test** (Both Modes - Phase 4 Complete):
 1. Load application
-2. Switch to **Reference mode**
-3. Change ref_d_13 to "PH Classic"
-4. Click "Set Values" button
-5. **Expected**:
-   - Console logs show ReferenceValues being applied to Reference model
-   - ref_d_65 changes to 2.1 (PH Classic baseline)
-   - ref_d_113 changes to appropriate PH Classic value
-   - UI updates to show new Reference values
-6. Switch to Target mode
-7. **Expected**: Target values should be UNCHANGED (no contamination)
+2. **Target mode**: Change d_13 to "PH Classic", click "Set Values"
+   - **Expected**: Console shows FileHandler applying values to Target model
+   - d_66 changes to 1.1 (PH Classic lighting load)
+   - UI updates immediately
+3. Switch to **Reference mode**
+4. Change ref_d_13 to "OBC SB10 5.5-6 Z6", click "Set Values"
+   - **Expected**: Console shows FileHandler applying values to Reference model
+   - ref_d_66 changes to 2.0 (OBC baseline)
+   - UI updates immediately
+5. Switch back to Target mode
+   - **Expected**: Target values UNCHANGED (d_66 still 1.1, no contamination)
 
-**Deliverable**: Button click triggers `applyReferenceValuesOverlay("reference")` correctly
+**Deliverable**: Button successfully delegates to FileHandler.applyReferenceValuesFromStandard() in both modes
 
 ---
 
@@ -1210,9 +1187,9 @@ applyReferenceValues: function(standard) {
 
 ---
 
-### **⚠️ CRITICAL CORRECTION REQUIRED: Phase 4 Task 4.1 Implementation Issue**
+### **⚠️ ARCHITECTURAL IMPROVEMENT: Delegate to FileHandler Instead of Section02**
 
-**Status**: Phase 6 completed (commit df1bf7e) but Phase 4 Task 4.1 was implemented INCORRECTLY.
+**Status**: Phase 6 completed (commit df1bf7e) but Phase 4 Task 4.1 should be redesigned for better architecture.
 
 **Problem**: The current `Section02.applyReferenceValuesOverlay()` implementation (lines 1070-1130) is missing the **Import Quarantine pattern**, causing:
 - DOM not updating with new values in S09 and other sections
@@ -1228,31 +1205,43 @@ applyReferenceValues: function(standard) {
 - Included ReferenceValues.js changes (t_66→d_66, t_65 commented out)
 - Included TooltipManager.js tooltip clarifications
 
-**What Must Be Fixed**: Replace current `Section02.applyReferenceValuesOverlay()` implementation with correct 5-phase Import Quarantine pattern:
+**Architectural Decision (November 19, 2025)**: **Delegate to FileHandler instead of duplicating code in Section02**
 
-1. **Phase 1**: Mute listeners (prevent premature calculations)
-2. **Phase 2a**: Apply values to isolated section states
-3. **Phase 2b**: Sync isolated states TO global StateManager
-4. **Phase 2c**: First DOM refresh (show new input values)
-5. **Phase 3**: Unmute listeners (in finally block - ensures unmute even if errors occur)
-6. **Phase 4**: Trigger calculateAll() with complete data
-7. **Phase 5**: Second DOM refresh (show calculated results)
+### Why Delegate to FileHandler?
 
-**Correct Implementation**: See [SETTING-VALUES.md](./SETTING-VALUES.md) lines 283-356 for complete corrected code.
+✅ **Single Responsibility** - FileHandler owns all "bulk value application" operations
+✅ **Code Reuse** - Import Quarantine pattern exists in one place
+✅ **Maintainability** - Future fixes happen once, work everywhere
+✅ **Consistency** - ReferenceValues overlay behaves exactly like Excel import
+✅ **Proven Pattern** - FileHandler's import process works perfectly every time
+
+### What Must Be Implemented:
+
+**1. Add new method to FileHandler.js** (~line 735+):
+   - `applyReferenceValuesFromStandard(standard, targetMode)`
+   - Uses full 5-phase Import Quarantine pattern
+   - Treats ReferenceValues.js as internal import source
+
+**2. Simplify Section02.js button handler** (lines 1070-1130):
+   - Replace entire `applyReferenceValuesOverlay()` function
+   - Just delegate to `FileHandler.applyReferenceValuesFromStandard()`
+   - ~5 lines instead of 80+ lines
+
+**Complete Implementation**: See [SETTING-VALUES.md](./SETTING-VALUES.md) for full code examples
 
 **Files Requiring Updates**:
-- [Section02.js](../../src/sections/Section02.js) - Replace `applyReferenceValuesOverlay()` method
-- Additional cleanup may be required in other sections if state synchronization issues are found
+- [FileHandler.js](../../src/core/FileHandler.js) - Add new method `applyReferenceValuesFromStandard()`
+- [Section02.js](../../src/sections/Section02.js) - Simplify button handler to delegate to FileHandler
 
-**Test After Fix**:
+**Test After Implementation**:
 1. Target mode: Select d_13 = "PH Classic", click "Set Values"
-2. Verify S09 DOM updates with d_66 = 2.0 (currently fails)
+2. Verify S09 DOM updates with d_66 = 1.1 (PH Classic lighting load)
 3. Switch to d_13 = "OBC SB10 5.5-6 Z6", click "Set Values"
-4. Verify h_10 returns to consistent baseline value (currently drifts)
+4. Verify h_10 returns to consistent baseline value
 5. Repeat steps 1-4 multiple times
 6. **Expected**: No value drift, DOM updates correctly, h_10 remains stable
 
-**Action Required**: Complete this fix BEFORE proceeding to Phase 7 testing.
+**Action Required**: Complete this implementation BEFORE proceeding to Phase 7 testing.
 
 ---
 
