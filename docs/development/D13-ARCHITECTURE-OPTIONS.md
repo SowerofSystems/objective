@@ -1210,6 +1210,52 @@ applyReferenceValues: function(standard) {
 
 ---
 
+### **⚠️ CRITICAL CORRECTION REQUIRED: Phase 4 Task 4.1 Implementation Issue**
+
+**Status**: Phase 6 completed (commit df1bf7e) but Phase 4 Task 4.1 was implemented INCORRECTLY.
+
+**Problem**: The current `Section02.applyReferenceValuesOverlay()` implementation (lines 1070-1130) is missing the **Import Quarantine pattern**, causing:
+- DOM not updating with new values in S09 and other sections
+- Calculations firing prematurely or not at all
+- Value "drift" on repeated button presses and mode switches
+- Inconsistent h_10 (S01 grand total) results
+
+**Root Cause Analysis**: See [SETTING-VALUES.md](./SETTING-VALUES.md) for detailed analysis of FileHandler's proven Import Quarantine pattern that works perfectly every time.
+
+**Reference Commit**: df1bf7e (November 18, 2025)
+- Created SETTING-VALUES.md documenting FileHandler's gold standard pattern
+- Updated Task 4.1 code example with correct Import Quarantine pattern
+- Included ReferenceValues.js changes (t_66→d_66, t_65 commented out)
+- Included TooltipManager.js tooltip clarifications
+
+**What Must Be Fixed**: Replace current `Section02.applyReferenceValuesOverlay()` implementation with correct 5-phase Import Quarantine pattern:
+
+1. **Phase 1**: Mute listeners (prevent premature calculations)
+2. **Phase 2a**: Apply values to isolated section states
+3. **Phase 2b**: Sync isolated states TO global StateManager
+4. **Phase 2c**: First DOM refresh (show new input values)
+5. **Phase 3**: Unmute listeners (in finally block - ensures unmute even if errors occur)
+6. **Phase 4**: Trigger calculateAll() with complete data
+7. **Phase 5**: Second DOM refresh (show calculated results)
+
+**Correct Implementation**: See [SETTING-VALUES.md](./SETTING-VALUES.md) lines 283-356 for complete corrected code.
+
+**Files Requiring Updates**:
+- [Section02.js](../../src/sections/Section02.js) - Replace `applyReferenceValuesOverlay()` method
+- Additional cleanup may be required in other sections if state synchronization issues are found
+
+**Test After Fix**:
+1. Target mode: Select d_13 = "PH Classic", click "Set Values"
+2. Verify S09 DOM updates with d_66 = 2.0 (currently fails)
+3. Switch to d_13 = "OBC SB10 5.5-6 Z6", click "Set Values"
+4. Verify h_10 returns to consistent baseline value (currently drifts)
+5. Repeat steps 1-4 multiple times
+6. **Expected**: No value drift, DOM updates correctly, h_10 remains stable
+
+**Action Required**: Complete this fix BEFORE proceeding to Phase 7 testing.
+
+---
+
 ### Phase 7: Integration Testing & Validation
 
 #### Task 7.1: Test Dual-Purpose Button (Both Modes)
