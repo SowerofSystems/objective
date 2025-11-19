@@ -783,16 +783,31 @@
           }
         });
 
-        // ✅ PHASE 2b: Sync isolated states TO global StateManager
+        // ✅ PHASE 2b: Sync isolated states TO global StateManager (MODE-AWARE)
         // (Required so other sections and calculations can see the changes)
         sectionsWithReferenceValues.forEach(sectionNum => {
           const sectionId = `sect${String(sectionNum).padStart(2, '0')}`;
           const section = window.TEUI?.SectionModules?.[sectionId];
 
-          // Publish updated isolated state values to global StateManager
-          if (section?.ModeManager?.publishToStateManager) {
-            section.ModeManager.publishToStateManager();
-            console.log(`[FileHandler] ${sectionId} published to StateManager`);
+          if (targetMode === "reference") {
+            // Reference mode: Publish ReferenceState to StateManager (ref_ prefixed fields)
+            if (section?.ModeManager?.publishToStateManager) {
+              section.ModeManager.publishToStateManager();
+              console.log(`[FileHandler] ${sectionId} ReferenceState published to StateManager`);
+            }
+          } else {
+            // Target mode: Sync TargetState to StateManager (unprefixed fields)
+            // TargetState stores values locally but doesn't auto-sync to StateManager
+            // We need to manually copy each field from TargetState to StateManager
+            if (section?.TargetState?.state) {
+              Object.keys(section.TargetState.state).forEach(fieldId => {
+                const value = section.TargetState.state[fieldId];
+                if (value !== null && value !== undefined) {
+                  window.TEUI.StateManager.setValue(fieldId, value, "import");
+                }
+              });
+              console.log(`[FileHandler] ${sectionId} TargetState synced to StateManager`);
+            }
           }
         });
 
