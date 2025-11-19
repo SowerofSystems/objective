@@ -28,9 +28,28 @@
 
 ---
 
-## ⚠️ Known Issue to Address Next
+## ⚠️ Known Issues - Partial Implementation
 
-The current implementation correctly applies values to only the active model. Import/Export functionality is restored and working.
+### ✅ Working: Target Mode
+- Clicking "Set Values" in Target mode correctly applies values to Target model only
+- Reference model remains untouched ✅
+- Import/Export functionality fully restored ✅
+
+### ❌ Bug: Reference Mode
+- Clicking "Set Values" in Reference mode incorrectly applies values to **Target model**
+- Reference model remains unaltered (no values applied) ❌
+- Root cause: `publishToStateManager()` only publishes ref_ fields, but doesn't trigger ReferenceState update in the same way TargetState does
+
+### Critical Difference from FileHandler Import
+FileHandler's Excel import recalculates **both models** because it's importing user data.
+
+"Set Values" button is different:
+- Should only apply values to the **currently active model**
+- Must NOT overwrite defaults or user-defined values in the inactive model
+- This prevents state contamination when switching between design scenarios
+
+### Fix Strategy (Deferred)
+Need to ensure ReferenceState changes properly sync and refresh in Reference mode, similar to how TargetState syncs in Target mode (lines 802-810).
 
 ---
 
@@ -117,8 +136,16 @@ if (setValuesBtn) {
 
 ## Next Steps
 
-1. **Phase 7: Integration Testing & Validation** - See [D13-ARCHITECTURE-OPTIONS.md](./D13-ARCHITECTURE-OPTIONS.md) line 1271
-2. **Phase 3 Cleanup**: Remove old d_13 change listeners from sections (values now applied at StateManager level)
+1. **✅ Phase 3 Cleanup COMPLETE** (Commit: a9a488f)
+   - Removed obsolete PASSIVE d_13/ref_d_13 listeners from S05, S06, S09, S11, S12, S13, S14
+   - Kept S03 listeners (Thermostat Setpoint updates) and S09 d_13 listener (Plug/Light/Equipment loads)
+   - FileHandler now handles 100% of ReferenceValues application via "Set Values" button
+
+2. **Fix Reference Mode Bug** (Next Priority): Make "Set Values" work correctly in Reference mode
+   - Currently applies to wrong model (Target instead of Reference)
+   - Need to mirror the TargetState sync logic (lines 802-810) for ReferenceState
+
+3. **Phase 7: Integration Testing & Validation** - See [D13-ARCHITECTURE-OPTIONS.md](./D13-ARCHITECTURE-OPTIONS.md) line 1271
 
 ---
 
