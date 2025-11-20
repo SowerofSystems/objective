@@ -721,84 +721,7 @@ window.TEUI.SectionModules.sect02 = (function () {
   // DUAL-ENGINE ARCHITECTURE
   //==========================================================================
 
-  /**
-   * Inject Target/Reference toggle controls into section header
-   * Standard Pattern A implementation
-   */
-  function injectHeaderControls() {
-    const sectionHeader = document.querySelector(
-      "#buildingInfo .section-header"
-    );
-    if (
-      !sectionHeader ||
-      sectionHeader.querySelector(".local-controls-container")
-    ) {
-      return; // Already setup or header not found
-    }
-
-    // Create controls container
-    const controlsContainer = document.createElement("div");
-    controlsContainer.className = "local-controls-container";
-    controlsContainer.style.cssText =
-      "display: flex; align-items: center; gap: 10px; margin-left: auto;";
-
-    // Create Reset button
-    const resetButton = document.createElement("button");
-    resetButton.textContent = "Reset";
-    resetButton.style.cssText =
-      "padding: 4px 8px; font-size: 12px; border: 1px solid #ccc; background: white; cursor: pointer; border-radius: 3px;";
-    resetButton.addEventListener("click", event => {
-      event.stopPropagation();
-      if (confirm("Reset all values to defaults?")) {
-        TargetState.setDefaults();
-        ReferenceState.setDefaults();
-        ModeManager.refreshUI();
-        console.log("S02: Reset to defaults");
-      }
-    });
-
-    // Create state indicator
-    const stateIndicator = document.createElement("div");
-    stateIndicator.textContent = "TARGET";
-    stateIndicator.style.cssText =
-      "padding: 4px 8px; font-size: 12px; font-weight: bold; color: white; background-color: rgba(0, 123, 255, 0.5); border-radius: 3px;";
-
-    // Create toggle switch
-    const toggleSwitch = document.createElement("div");
-    toggleSwitch.style.cssText =
-      "position: relative; width: 40px; height: 20px; background-color: #ccc; border-radius: 10px; cursor: pointer;";
-
-    const slider = document.createElement("div");
-    slider.style.cssText =
-      "position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background-color: white; border-radius: 50%; transition: transform 0.2s;";
-
-    toggleSwitch.appendChild(slider);
-
-    // Toggle Switch Click Handler
-    // ✅ REFACTORED: Just toggle mode, let switchMode() handle all UI updates via syncToggleUI()
-    toggleSwitch.addEventListener("click", event => {
-      event.stopPropagation();
-      // Determine target mode by checking current mode (don't rely on classList)
-      const targetMode =
-        ModeManager.currentMode === "target" ? "reference" : "target";
-      ModeManager.switchMode(targetMode);
-    });
-
-    // Assemble controls
-    controlsContainer.appendChild(resetButton);
-    controlsContainer.appendChild(stateIndicator);
-    controlsContainer.appendChild(toggleSwitch);
-    sectionHeader.appendChild(controlsContainer);
-
-    // ✅ NEW: Store references to toggle elements on ModeManager for global toggle sync
-    ModeManager._toggleElements = {
-      toggleSwitch: toggleSwitch,
-      slider: slider,
-      stateIndicator: stateIndicator,
-    };
-
-    console.log("✅ S02: Header controls injected successfully");
-  }
+  // ✅ G-REF-ONLY: Removed injectHeaderControls() - Section02 now uses global toggle only
 
   /**
    * REFERENCE MODEL ENGINE: Calculate all values using Reference state.
@@ -1367,8 +1290,7 @@ window.TEUI.SectionModules.sect02 = (function () {
     // Initialize Pattern A Dual-State Module
     ModeManager.initialize();
 
-    // Inject header controls for Target/Reference toggle
-    injectHeaderControls();
+    // ✅ G-REF-ONLY: Removed injectHeaderControls() call - using global toggle only
 
     // ✅ PATTERN A: Defaults are now handled by TargetState.setDefaults() and ReferenceState.setDefaults()
     // No need to set defaults in StateManager - the dual-state architecture handles this
