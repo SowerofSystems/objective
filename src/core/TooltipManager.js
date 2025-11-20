@@ -35,13 +35,13 @@
       cell: "D13",
       title: "Reference Standards",
       message:
-        "Select a Building Code Prescriptive Path option, or NECB Base Tier, or any other baseline scenario. References values load from the 'ReferenceValues.js file_x000a_Then press 'Set Values' to over-write Insulation, Airtightness, and System Efficiencies as per the Code Minimums required by the Selected Standard",
+        "Select a Building Code Prescriptive Path option, or NECB Base Tier, or any other baseline scenario._x000a_Then press 'Set Values' to over-write Insulation, Airtightness, and System Efficiencies to the Code Minimums required by the Selected Standard",
     },
     e_13: {
       cell: "E13",
       title: "Set Defaults",
       message:
-        "This will over-write Insulation, Airtightness, and System Efficiencies as per the Code Minimum required by the Selected Standard",
+        "User may enter values higher than any Building-Code requied values with no penalty. _x000a_Pressing 'Set Values' will over-write any custom Insulation, Airtightness, and System Efficiencies to the Code Minimums required by the Selected Standard",
     },
     h_13: {
       cell: "H13",

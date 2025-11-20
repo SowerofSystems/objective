@@ -1,18 +1,103 @@
-# d_13 Reference Standard Architecture: Two Design Options
+# d_13 Reference Standard Architecture: Implementation Guide
 
-**Date**: 2025-11-10
-**Purpose**: Present two architectural approaches for CTO review
-**Context**: Resolving m_65 compliance calculation showing 238% instead of 100%
+**Date**: 2025-11-10 (Updated: 2025-11-19)
+**Status**: ✅ **OPTION 3 SELECTED - PHASES 1-6 COMPLETE - PHASE 4 NEEDS ARCHITECTURAL FIX**
+**Branch**: `D13-UPDATE`
+**Purpose**: Originally presented three architectural approaches for CTO review - Now serves as implementation guide for Option 3
+**Context**: Resolving m_65 compliance calculation showing 238% instead of 100% (and all other M/N Target Model Value/Reference Model Value comparison calculations)
+
+---
+
+## 🎯 IMPLEMENTATION READY - START HERE (Fresh Agent Briefing)
+
+**Last Updated**: November 19, 2025
+**Current Status**: Phases 1-6 complete, Phase 4 needs architectural fix, then proceed to Phase 7
+
+### What's Been Accomplished (Phases 1-6)
+
+✅ **Phase 1**: Audited all d_13/ref_d_13 listener behavior across 7 sections
+✅ **Phase 2**: Made all d_13 listeners passive (no automatic ReferenceState updates)
+✅ **Phase 3**: Added passive ref_d_13 listeners to all sections
+✅ **Phase 4**: Wired "Set Values" button (BUT implementation is incomplete - see below)
+✅ **Phase 5**: Updated all ReferenceState methods to read ref_d_13 (not d_13)
+✅ **Phase 6**: Added TargetState.applyReferenceValues() methods to all sections
+
+### 🚨 CRITICAL: Phase 4 Needs Architectural Fix
+
+**The Problem**: Current `Section02.applyReferenceValuesOverlay()` implementation (lines 1070-1130) is missing the **Import Quarantine pattern**, causing:
+- DOM not updating with new values
+- Calculations firing prematurely
+- Value "drift" on repeated button clicks
+- Inconsistent h_10 (S01 grand total) results
+
+**The Solution**: **Delegate to FileHandler instead of implementing in Section02**
+
+### Why Delegate to FileHandler?
+
+✅ **Single Responsibility** - FileHandler owns all "bulk value application" operations
+✅ **Code Reuse** - Import Quarantine pattern already exists and works perfectly
+✅ **Maintainability** - One place to fix, not two
+✅ **Consistency** - "Set Values" button treats ReferenceValues.js as internal import source
+✅ **Proven** - FileHandler's Excel import works perfectly every time
+
+### What You Need to Implement (2 Simple Tasks)
+
+#### Task 1: Add Method to FileHandler.js
+**File**: `src/core/FileHandler.js`
+**Location**: After existing import methods (~line 735+)
+**Method Name**: `applyReferenceValuesFromStandard(standard, targetMode)`
+**Implementation**: Full 5-phase Import Quarantine pattern
+**Reference**: See [SETTING-VALUES.md](./SETTING-VALUES.md) lines 327-442 for complete code
+
+#### Task 2: Simplify Section02.js Button Handler
+**File**: `src/sections/Section02.js`
+**Action**: Replace existing `applyReferenceValuesOverlay()` function (lines 1070-1130)
+**New Implementation**: Simple delegation (~15 lines instead of 80+)
+**Reference**: See [SETTING-VALUES.md](./SETTING-VALUES.md) lines 295-325 for complete code
+
+### Test After Implementation
+
+1. **Target mode**: d_13 = "PH Classic", click "Set Values" → d_66 should become 1.1
+2. **Reference mode**: ref_d_13 = "OBC SB10 5.5-6 Z6", click "Set Values" → ref_d_66 should become 2.0
+3. **Verify isolation**: Switch modes - values should NOT contaminate each other
+4. **Verify stability**: Repeat steps 1-2 multiple times - no value drift, h_10 remains stable
+
+### Then Proceed to Phase 7 (Integration Testing)
+
+After Tasks 1-2 are complete and tested, proceed to **Phase 7: Integration Testing & Validation** (see section below at line 1271)
+
+### Key Reference Documents
+
+- **[SETTING-VALUES.md](./SETTING-VALUES.md)** - Complete implementation details, FileHandler's proven pattern
+- **[ReferenceValues.js](../../src/core/ReferenceValues.js)** - Internal import source (code baseline values by standard)
+- **Commit df1bf7e** - Where SETTING-VALUES.md was created with pattern analysis
+
+---
+
+## 🎯 SELECTED APPROACH: Option 3 - Explicit "Set Values" Button
+
+**Decision Date**: 2025-11-18
+**Implementation Branch**: `D13-UPDATE`
+
+### Key Benefits of Option 3:
+- ✅ Perfect state isolation (d_13 and ref_d_13 completely independent)
+- ✅ Dual-purpose button: Applies ReferenceValues to Target OR Reference model
+- ✅ NEW behavior: Target mode can load code-minimum baseline values
+- ✅ User control: Explicit action required (no accidental contamination)
+- ✅ Fixes 238% bug architecturally (no cross-contamination possible)
+- ✅ Button infrastructure already built (commit 305f52f)
+
+See [Implementation Workplan](#implementation-workplan) at end of document for detailed task breakdown.
 
 ---
 
 ## Current Symptom
 
-**Test Case**: Set Target AND Reference d_13 to "PH Classic" (d_65 baseline = 2.1 W/m²)
+**Test Case**: Set Target AND Reference d_13 to "PH Classic" (d_65 baseline = 2.1 W/m², based on nested lookup in Section09.js, tied to Occupancy Selection at d_12)
 - **Expected**: m_65 = 100% when d_65 = 2.1 (perfect compliance)
-- **Actual**: Reference model m_65 = 238% (incorrect)
+- **Presently**: Reference model m_65 = 238% (incorrect)
 
-**Root Issue**: Unclear whether d_13 and ref_d_13 should be independent or synchronized.
+**Root Issue**: d_13 and ref_d_13 should be independent.
 
 ---
 
@@ -27,18 +112,38 @@
 - NO synchronization between them
 - Each model has sovereign control over its reference standard
 
-### How It Works
+### How It Should Work
 
+Example 1.
 ```
-Target Model (d_13 = "PH Classic"):
-├─ Uses PH Classic for Target calculations? (unclear if Target needs this)
-└─ User inputs: d_65 = 2.1
+Target Model Default (d_13 = "OBC SB10 5.5-6 Z6"):
+├─ Uses d_65 Default lookup based on Occupancy set at Section09.js (7 for A-Assembly)
+└─ Default: d_65 = 7
 
-Reference Model (ref_d_13 = "PHIUS 2021"):
-├─ Uses PHIUS 2021 code baseline from ReferenceValues.js
-└─ Code values: ref_d_65 = 3.2
+User sets Reference Model (ref_d_13 = "PH Classic"):
+├─ Uses 2.1 based on 'PH' in ref_d_13 selection
+└─ ref_d_65 = 2.1
 
-Compliance: m_65 = (2.1 / 3.2) * 100 = 65.6%
+Compliance: m_65 = d_65/ref_d_65 or (7 / 2.1) * 100 = 333% X FAIL
+d_65>ref_d_65 by ~333% receives a red X at n_65, and m_65 displays 333%
+```
+Example 2.
+```
+Target Model Default (d_13 = "OBC SB10 5.5-6 Z6"):
+├─ Uses f_85 Default or Imported or User-Modified value set at Section11.js (9.35 on Initialization), whichever value was last set.
+└─ Default: f_85 = 9.35
+└─ ReferenceValues.js: f_85 = 5.30
+User presses 'Set Values' and f_85 value of 9.35 gets over-written by 5.30
+
+Reference Model, user selects ref_d_13 = "PH Classic", then presses Reference Mode's 'Set Values' :
+├─ f_85 loads 4.87 based on ReferenceValues.js (PH standards do not set minimum insulation levels, so NBC level is used in ReferenceValues.js lookup for PH Classic Standard)
+└─ ref_f_85 = 4.87
+
+Target Compliance: m_85 = f_85/ref_f_85 or (5.30 / 4.87) * 100 = 109% ✓ PASS
+Green ✓ at n_85, and m_85 displays 109%
+
+Reference Compliance: ref_m_85 = ref_f_85/f_85 or (4.87 / 5.30) * 100 = 92% X FAIL
+Red X at ref_n_85, and ref_m_85 displays 109%. This shows that based on the standard selected in the Target model, the Reference Value is lower/inferior and must be remedied. The opposite may be true (Target worse than Reference) in which case user gets visual feedback that Target model value must be improved. 
 ```
 
 ### Implementation Requirements
@@ -53,15 +158,16 @@ const currentStandard =
 ```javascript
 // Target standard changes - affects Target only
 window.TEUI.StateManager.addListener("d_13", () => {
-  calculateTargetModel(); // Does Target even use d_13?
+  calculateTargetModel(); // Target only uses d_13 if a user presses 'Set Values'
 });
 
-// Reference standard changes - affects Reference only
+// Reference standard changes - affects Reference only when ref_d_13 is selected and 'Set Values' applies values from ReferenceValues.js
 window.TEUI.StateManager.addListener("ref_d_13", () => {
   ReferenceState.onReferenceStandardChange();
   calculateReferenceModel();
 });
 ```
+Update Note: Methods above must listen for 'Set Values' button-click at e_13, not d_13 dropdown changes 
 
 ### Pros
 
@@ -72,10 +178,7 @@ window.TEUI.StateManager.addListener("ref_d_13", () => {
 
 ### Cons
 
-❌ **Unclear Target usage** - Does Target model actually use d_13 for anything? (Yes, M/N code compliance IN Target mode)
-❌ **User confusion** - Why have two separate reference standard dropdowns? !IMPORTANT! This has been historically difficult to explain. 
 ❌ **Extra UI complexity** - Need to manage two dropdown selections
-❌ **Comparison scenarios** - Hard to compare same standard across models, M-N Compliance requires double Reference-Values.js lookup instead of just value/ref_value for % comparisons. 
 
 ### Current Status
 
@@ -90,7 +193,7 @@ window.TEUI.StateManager.addListener("ref_d_13", () => {
 
 ---
 
-## OPTION 2: "One D13 Setting" (Synchronized Reference Standard - current best candidate)
+## OPTION 2: "One D13 Setting" (Synchronized Reference Standard - current function, inconsistent application!)
 
 ### Architectural Principle
 
@@ -194,9 +297,9 @@ window.TEUI.StateManager.addListener("d_13", (newValue) => {
 
 ```
 Target Mode:
-├─ User changes d_13 dropdown → Updates d_13 value for M/N compliance calculation
+├─ User changes d_13 dropdown → Updates d_13 value only
 ├─ "Set Values" button VISIBLE and enabled (NEW: dual-purpose button!)
-├─ User clicks "Set Values" → TargetState receives values from ReferenceValues.js
+├─ User clicks "Set Values" → TargetState receives/applies values overlay from ReferenceValues.js and Target DOM refreshes UI
 ├─ Target model populated with code-minimum baseline values
 └─ User can see "what if we just built to code minimum?"
 
@@ -207,8 +310,8 @@ Reference Mode:
 └─ Reference model receives code baseline values
 
 M/N Compliance Calculation (Simple):
-├─ m_65 = (d_65 / ref_d_65) * 100
-├─ Just value/ref_value - no complex lookups
+├─ m_65 = (f_85 / ref_f_85) * 100 (sometimes this is ref_f_85/f_85, we can review on a field by field bassis)
+├─ Just value/ref_value - no complex additional lookups required
 └─ Works consistently regardless of how values were set
 ```
 
@@ -593,16 +696,1053 @@ Option 3 solves this by:
 
 **Two paths forward**:
 
-**Path A: Continue Dependency Mapping (S10-S14)**
-- Work is independent of d_13 cascade bug
-- Will benefit future development regardless
-- Process: map dependencies → explicit field labels → complete M/N per section
-- Can complete S10-S14 with known d_13 limitation
+**Path A: Continue Dependency Mapping (S10-S15)**
+- ✅ **COMPLETED** November 15, 2025
+- All sections S01-S15 have dependencies correctly mapped and labeled
+- S17 Dependency Graph perfectly represents the calculation model
+- Work completed with known d_13 limitation (acceptable for mapping exercise)
 
 **Path B: Shift to Option 3 Implementation**
+- ✅ **SELECTED** November 18, 2025
 - Fixes d_13 cascade bug architecturally
 - Will "radically simplify" M/N compliance work afterward
 - Button infrastructure already built (commit 305f52f)
 - Clean state isolation makes all dependency work easier
 
-**Recommendation**: Consider shifting to Option 3 implementation first, then returning to finish dependency mapping (S10-S14) with simplified architecture.
+**Decision**: Dependency mapping complete. Now implementing Option 3 to fix d_13 architecture issues.
+
+---
+
+## Implementation Workplan
+
+**Branch**: `D13-UPDATE`
+**Approach**: Incremental implementation with testing at each step
+**Sections to modify**: S02, S05, S06, S09, S11, S12, S13, S14
+
+---
+
+### Phase 1: Preparation & Investigation
+
+#### Task 1.1: Audit Current d_13 Listener Behavior
+**Objective**: Identify all locations where d_13 changes trigger ReferenceState updates
+
+**Actions**:
+- [ ] Search codebase for `addListener("d_13"` patterns
+- [ ] Document which sections call `ReferenceState.onReferenceStandardChange()` on d_13 change
+- [ ] Verify current behavior: does d_13 change automatically update Reference model?
+- [ ] List all sections with automatic d_13 → ReferenceState coupling
+
+**Expected sections**: S05, S06, S09, S11, S12, S13, S14
+
+**Test**: N/A (documentation task)
+
+**Deliverable**: List of files and line numbers with d_13 listener logic
+
+---
+
+#### Task 1.2: Verify Button Infrastructure
+**Objective**: Confirm "Set Values" button exists and is properly styled
+
+**Actions**:
+- [ ] Locate button in [Section02.html](../../sections/Section02.html) at row 13, column E
+- [ ] Verify button has ID `setValuesBtn` or similar
+- [ ] Check tooltip field ID (e_13) exists
+- [ ] Confirm button is visible in both Target and Reference modes
+- [ ] Verify no existing click handler is wired
+
+**Test**: Visual inspection in browser - button should be visible but non-functional
+
+**Deliverable**: Confirm button ID and readiness for wiring
+
+---
+
+### Phase 2: Unwire Automatic d_13 Triggers (Target → Reference Contamination Removal)
+
+#### Task 2.1: Remove d_13 → ReferenceState Automatic Trigger (Section 05)
+**Objective**: Make d_13 listener passive in S05 - no automatic ReferenceState updates
+
+**File**: `sections/Section05.js`
+
+**Actions**:
+- [ ] Locate d_13 listener in `initializeEventHandlers()` or similar
+- [ ] Comment out or remove `ReferenceState.onReferenceStandardChange()` call
+- [ ] Keep listener active (stores selection value in StateManager)
+- [ ] Add comment: `// PASSIVE: d_13 changes stored only - overlay applied by "Set Values" button`
+
+**Before**:
+```javascript
+window.TEUI.StateManager.addListener("d_13", () => {
+  ReferenceState.onReferenceStandardChange();  // ❌ Remove this
+  // other logic...
+});
+```
+
+**After**:
+```javascript
+window.TEUI.StateManager.addListener("d_13", () => {
+  // PASSIVE: d_13 changes stored only - overlay applied by "Set Values" button
+  // other logic... (if any)
+});
+```
+
+**Test**:
+1. Load application in browser
+2. Switch to Target mode
+3. Change d_13 dropdown from "OBC SB10 5.5-6 Z6" → "PH Classic"
+4. Switch to Reference mode
+5. **Expected**: Reference model values should NOT change (no automatic overlay)
+6. Verify ref_d_65, ref_d_113, etc. remain at previous values
+
+**Deliverable**: S05 d_13 listener is passive
+
+---
+
+#### Task 2.2: Remove d_13 → ReferenceState Automatic Trigger (Section 06)
+**Objective**: Make d_13 listener passive in S06
+
+**File**: `sections/Section06.js`
+
+**Actions**: Same as Task 2.1 for S06
+
+**Test**: Same as Task 2.1 (verify S06 Reference values don't auto-update)
+
+**Deliverable**: S06 d_13 listener is passive
+
+---
+
+#### Task 2.3: Remove d_13 → ReferenceState Automatic Trigger (Section 09)
+**Objective**: Make d_13 listener passive in S09
+
+**File**: `sections/Section09.js`
+
+**Actions**: Same as Task 2.1 for S09
+
+**Note**: S09 may already have ref_d_13 listener - verify and keep it
+
+**Test**: Same as Task 2.1 (verify S09 Reference values don't auto-update)
+
+**Deliverable**: S09 d_13 listener is passive
+
+---
+
+#### Task 2.4: Remove d_13 → ReferenceState Automatic Trigger (Section 11)
+**Objective**: Make d_13 listener passive in S11
+
+**File**: `sections/Section11.js`
+
+**Actions**: Same as Task 2.1 for S11
+
+**Test**: Same as Task 2.1 (verify S11 Reference values don't auto-update)
+
+**Deliverable**: S11 d_13 listener is passive
+
+---
+
+#### Task 2.5: Remove d_13 → ReferenceState Automatic Trigger (Section 12)
+**Objective**: Make d_13 listener passive in S12
+
+**File**: `sections/Section12.js`
+
+**Actions**: Same as Task 2.1 for S12
+
+**Test**: Same as Task 2.1 (verify S12 Reference values don't auto-update)
+
+**Deliverable**: S12 d_13 listener is passive
+
+---
+
+#### Task 2.6: Remove d_13 → ReferenceState Automatic Trigger (Section 13)
+**Objective**: Make d_13 listener passive in S13
+
+**File**: `sections/Section13.js`
+
+**Actions**: Same as Task 2.1 for S13
+
+**Test**: Same as Task 2.1 (verify S13 Reference values don't auto-update)
+
+**Deliverable**: S13 d_13 listener is passive
+
+---
+
+#### Task 2.7: Remove d_13 → ReferenceState Automatic Trigger (Section 14)
+**Objective**: Make d_13 listener passive in S14
+
+**File**: `sections/Section14.js`
+
+**Actions**: Same as Task 2.1 for S14
+
+**Test**: Same as Task 2.1 (verify S14 Reference values don't auto-update)
+
+**Deliverable**: S14 d_13 listener is passive
+
+---
+
+#### Task 2.8: Verify All d_13 Listeners Are Passive
+**Objective**: Comprehensive test across all sections
+
+**Test**:
+1. Load application
+2. Target mode: Change d_13 to "PH Classic"
+3. Switch to Reference mode
+4. Open browser console, run:
+   ```javascript
+   console.log('ref_d_65:', window.TEUI.StateManager.getValue('ref_d_65'));
+   console.log('ref_d_113:', window.TEUI.StateManager.getValue('ref_d_113'));
+   console.log('ref_f_85:', window.TEUI.StateManager.getValue('ref_f_85'));
+   // ... check other ref_ fields
+   ```
+5. **Expected**: All ref_ values should be UNCHANGED (still at defaults, not PH Classic values)
+
+**Deliverable**: Confirmation that d_13 changes no longer automatically affect Reference model
+
+---
+
+### Phase 3: Add ref_d_13 Listeners (Passive - Store Selection Only)
+
+#### Task 3.1: Verify ref_d_13 Exists in StateManager
+**Objective**: Confirm ref_d_13 field is registered in state system
+
+**Actions**:
+- [ ] Check if ref_d_13 is already defined in StateManager initialization
+- [ ] If missing, add ref_d_13 to state schema
+- [ ] Set default value: "OBC SB10 5.5-6 Z6"
+
+**Test**: Browser console - `window.TEUI.StateManager.getValue('ref_d_13')` should return default value
+
+**Deliverable**: ref_d_13 field exists in StateManager
+
+---
+
+#### Task 3.2: Add Passive ref_d_13 Listeners (All Sections)
+**Objective**: Add listeners that store ref_d_13 changes without triggering overlays
+
+**Files**: S05, S06, S09, S11, S12, S13, S14
+
+**Actions** (per section):
+- [ ] Add ref_d_13 listener in `initializeEventHandlers()`:
+```javascript
+window.TEUI.StateManager.addListener("ref_d_13", (newValue) => {
+  // PASSIVE: ref_d_13 changes stored only - overlay applied by "Set Values" button
+  console.log(`[S0X] ref_d_13 changed to: ${newValue} (no automatic overlay)`);
+});
+```
+
+**Test**:
+1. Load application
+2. Switch to Reference mode
+3. Change ref_d_13 dropdown from "OBC SB10 5.5-6 Z6" → "PH Classic"
+4. Check browser console for log message
+5. Verify ref_d_65, ref_d_113, etc. remain UNCHANGED (no overlay applied)
+
+**Deliverable**: ref_d_13 listeners are passive in all sections
+
+---
+
+### Phase 4: Wire "Set Values" Button - Delegate to FileHandler
+
+#### Task 4.1: Add applyReferenceValuesFromStandard() Method to FileHandler
+**Objective**: Add new method to FileHandler that applies ReferenceValues using proven Import Quarantine pattern
+
+**File**: `src/core/FileHandler.js`
+
+**CRITICAL**: This method treats ReferenceValues.js as an internal import source and uses the same pattern as Excel imports
+
+**Actions**:
+- [ ] Add new method `applyReferenceValuesFromStandard(standard, targetMode)` to FileHandler
+- [ ] **PHASE 1**: Mute listeners (Import Quarantine) - prevents premature calculations
+- [ ] **PHASE 2a**: Apply values to isolated section states (TargetState or ReferenceState based on mode)
+- [ ] **PHASE 2b**: Sync values TO global StateManager (so other sections can see changes)
+- [ ] **PHASE 2c**: Refresh DOM to show new input values (first refresh)
+- [ ] **PHASE 3**: Unmute listeners (in finally block - ensures unmute even if errors)
+- [ ] **PHASE 4**: Trigger complete calculation cascade (calculateAll)
+- [ ] **PHASE 5**: Final DOM refresh to show calculated results (second refresh)
+
+**Code**: See [SETTING-VALUES.md](./SETTING-VALUES.md) for complete FileHandler method implementation (lines 327-442)
+
+**Why This Pattern Works** (see [SETTING-VALUES.md](SETTING-VALUES.md) for detailed analysis):
+1. **Import Quarantine** prevents premature calculations with incomplete data
+2. **Explicit State Sync** ensures Pattern A isolated states match global StateManager
+3. **Two DOM Refreshes**: First shows input values, second shows calculated results
+4. **Complete Cascade**: calculateAll() runs once with all values in place
+5. **No Value Drift**: Consistent, correct results every time (matches FileHandler import behavior)
+6. **Code Reuse**: Same proven pattern as Excel imports, maintained in one place
+
+**Test**: Will test after Task 4.2 (button wiring) is complete
+
+**Deliverable**: `applyReferenceValuesFromStandard()` method exists in FileHandler.js with full Import Quarantine pattern
+
+---
+
+#### Task 4.2: Simplify Section02 Button Handler to Delegate to FileHandler
+**Objective**: Wire button to delegate to FileHandler instead of implementing logic in Section02
+
+**File**: `sections/Section02.js`
+
+**Actions**:
+- [ ] Locate `initializeEventHandlers()` in Section02.js
+- [ ] Find "Set Values" button by ID (`setValuesBtn`)
+- [ ] Replace existing `applyReferenceValuesOverlay()` function (lines 1070-1130) with simple delegation
+- [ ] Add click event listener that calls FileHandler method
+
+**Code**: See [SETTING-VALUES.md](./SETTING-VALUES.md) for complete button handler implementation (lines 295-325)
+
+**Simplified approach**:
+```javascript
+// In Section02.js initializeEventHandlers()
+const setValuesBtn = document.getElementById("setValuesBtn");
+if (setValuesBtn) {
+  setValuesBtn.addEventListener("click", () => {
+    const currentMode = window.TEUI?.ModeManager?.currentMode || "target";
+    const standard = currentMode === "reference"
+      ? window.TEUI.StateManager.getValue("ref_d_13")
+      : window.TEUI.StateManager.getValue("d_13");
+
+    console.log(`[S02] "Set Values" button clicked - delegating to FileHandler`);
+
+    // Delegate to FileHandler - it knows how to do this correctly!
+    if (window.TEUI?.FileHandler?.applyReferenceValuesFromStandard) {
+      window.TEUI.FileHandler.applyReferenceValuesFromStandard(standard, currentMode);
+    } else {
+      console.error("[S02] FileHandler.applyReferenceValuesFromStandard() not available");
+    }
+  });
+}
+```
+
+**Test** (Both Modes - Phase 4 Complete):
+1. Load application
+2. **Target mode**: Change d_13 to "PH Classic", click "Set Values"
+   - **Expected**: Console shows FileHandler applying values to Target model
+   - d_66 changes to 1.1 (PH Classic lighting load)
+   - UI updates immediately
+3. Switch to **Reference mode**
+4. Change ref_d_13 to "OBC SB10 5.5-6 Z6", click "Set Values"
+   - **Expected**: Console shows FileHandler applying values to Reference model
+   - ref_d_66 changes to 2.0 (OBC baseline)
+   - UI updates immediately
+5. Switch back to Target mode
+   - **Expected**: Target values UNCHANGED (d_66 still 1.1, no contamination)
+
+**Deliverable**: Button successfully delegates to FileHandler.applyReferenceValuesFromStandard() in both modes
+
+---
+
+### Phase 5: Update ReferenceState.setDefaults() and onReferenceStandardChange()
+
+#### Task 5.1: Update ReferenceState.setDefaults() to Read ref_d_13 (Section 05)
+**Objective**: Ensure ReferenceState initialization reads from ref_d_13, not d_13
+
+**File**: `sections/Section05.js`
+
+**Actions**:
+- [ ] Locate `ReferenceState.setDefaults()` method
+- [ ] Find line that reads standard: `const currentStandard = window.TEUI?.StateManager?.getValue?.("d_13")` ❌
+- [ ] Change to: `const currentStandard = window.TEUI?.StateManager?.getValue?.("ref_d_13") || "OBC SB10 5.5-6 Z6"` ✅
+
+**Before**:
+```javascript
+setDefaults: function() {
+  const currentStandard = window.TEUI?.StateManager?.getValue?.("d_13") || "OBC SB10 5.5-6 Z6"; // ❌ Wrong
+  // ...
+}
+```
+
+**After**:
+```javascript
+setDefaults: function() {
+  const currentStandard = window.TEUI?.StateManager?.getValue?.("ref_d_13") || "OBC SB10 5.5-6 Z6"; // ✅ Correct
+  // ...
+}
+```
+
+**Test**:
+1. Reload application (clears localStorage)
+2. Set ref_d_13 = "PH Classic"
+3. Switch to Reference mode
+4. Click "Set Values"
+5. **Expected**: Reference values initialize from PH Classic, not default
+
+**Deliverable**: S05 ReferenceState.setDefaults() reads ref_d_13
+
+---
+
+#### Task 5.2: Update ReferenceState.setDefaults() (Section 06, 09, 11, 12, 13, 14)
+**Objective**: Same as Task 5.1 for remaining sections
+
+**Files**: S06, S09, S11, S12, S13, S14
+
+**Actions**: Same as Task 5.1 for each section
+
+**Test**: Same as Task 5.1
+
+**Deliverable**: All ReferenceState.setDefaults() methods read ref_d_13
+
+---
+
+#### Task 5.3: Verify ReferenceState.onReferenceStandardChange() State Isolation
+**Objective**: Confirm ReferenceState methods ONLY write to ref_ prefixed fields
+
+**Files**: S05, S06, S09, S11, S12, S13, S14
+
+**Actions**:
+- [ ] Locate `ReferenceState.onReferenceStandardChange()` in each section
+- [ ] Verify method reads from `ref_d_13` (not d_13)
+- [ ] Verify method ONLY writes to ref_ prefixed fields (ref_d_65, ref_d_113, ref_f_85, etc.)
+- [ ] Add safeguard comments if missing
+
+**Expected Pattern**:
+```javascript
+onReferenceStandardChange: function() {
+  // ⚠️ STATE ISOLATION SAFEGUARD: Must ONLY write to ref_ prefixed fields
+  const standard = window.TEUI?.StateManager?.getValue?.("ref_d_13") || "OBC SB10 5.5-6 Z6";
+  const referenceValues = window.TEUI?.ReferenceValues?.[standard] || {};
+
+  Object.keys(referenceValues).forEach(fieldId => {
+    const refFieldId = `ref_${fieldId}`;  // ✅ ALWAYS prefix with ref_
+    if (referenceValues[fieldId] !== undefined) {
+      this.state[refFieldId] = referenceValues[fieldId];  // ✅ Writes to ref_d_65, NOT d_65
+    }
+  });
+
+  this.saveState();
+  console.log(`[ReferenceState] Applied values from ${standard} to Reference model`);
+}
+```
+
+**Test**:
+1. Reference mode: ref_d_13 = "PH Classic", click "Set Values"
+2. Browser console:
+   ```javascript
+   console.log('d_65:', window.TEUI.StateManager.getValue('d_65'));     // Should NOT be 2.1
+   console.log('ref_d_65:', window.TEUI.StateManager.getValue('ref_d_65')); // Should be 2.1
+   ```
+3. **Expected**: Only ref_ fields are modified, unprefixed fields untouched
+
+**Deliverable**: All ReferenceState.onReferenceStandardChange() methods have state isolation safeguards
+
+---
+
+### Phase 6: Add TargetState.applyReferenceValues() (NEW - Code-Minimum Scenario)
+
+#### Task 6.1: Add TargetState.applyReferenceValues() Method (Section 05)
+**Objective**: Create method to apply ReferenceValues to Target model (code-minimum baseline)
+
+**File**: `sections/Section05.js`
+
+**Actions**:
+- [ ] Add new method to TargetState object: `applyReferenceValues(standard)`
+- [ ] Method reads ReferenceValues from specified standard
+- [ ] Method ONLY writes to unprefixed fields (d_65, d_113, etc.) - NOT ref_ fields
+- [ ] Method calls saveState() and logs action
+
+**Code**:
+```javascript
+// In Section05.js TargetState object
+applyReferenceValues: function(standard) {
+  // ⚠️ STATE ISOLATION SAFEGUARD: Only write to unprefixed fields (Target model)
+  const referenceValues = window.TEUI?.ReferenceValues?.[standard] || {};
+
+  console.log(`[S05 TargetState] Applying code-minimum values from "${standard}"`);
+
+  Object.keys(referenceValues).forEach(fieldId => {
+    if (referenceValues[fieldId] !== undefined) {
+      // ✅ Writes to d_65, NOT ref_d_65
+      this.state[fieldId] = referenceValues[fieldId];
+      console.log(`[S05 TargetState] ${fieldId} = ${referenceValues[fieldId]} (from ${standard})`);
+    }
+  });
+
+  this.saveState();
+  console.log(`[S05 TargetState] Code-minimum values from "${standard}" applied to Target model`);
+},
+```
+
+**Test**:
+1. Load application
+2. **Target mode**: d_13 = "PH Classic"
+3. Note current Target values (e.g., d_65 might be 7.0)
+4. Click "Set Values" button
+5. **Expected**:
+   - Console logs show TargetState.applyReferenceValues() being called
+   - d_65 changes to 2.1 (PH Classic code-minimum)
+   - d_113 changes to PH Classic values
+   - UI updates to show new Target values
+6. Switch to Reference mode
+7. **Expected**: Reference values should be UNCHANGED (no contamination)
+
+**Deliverable**: S05 TargetState.applyReferenceValues() method works correctly
+
+---
+
+#### Task 6.2: Add TargetState.applyReferenceValues() (Section 06, 09, 11, 12, 13, 14)
+**Objective**: Same as Task 6.1 for remaining sections
+
+**Files**: S06, S09, S11, S12, S13, S14
+
+**Actions**: Same as Task 6.1 for each section
+
+**Test**: Same as Task 6.1
+
+**Deliverable**: All sections have TargetState.applyReferenceValues() method
+
+---
+
+### **⚠️ ARCHITECTURAL IMPROVEMENT: Delegate to FileHandler Instead of Section02**
+
+**Status**: Phase 6 completed (commit df1bf7e) but Phase 4 Task 4.1 should be redesigned for better architecture.
+
+**Problem**: The current `Section02.applyReferenceValuesOverlay()` implementation (lines 1070-1130) is missing the **Import Quarantine pattern**, causing:
+- DOM not updating with new values in S09 and other sections
+- Calculations firing prematurely or not at all
+- Value "drift" on repeated button presses and mode switches
+- Inconsistent h_10 (S01 grand total) results
+
+**Root Cause Analysis**: See [SETTING-VALUES.md](./SETTING-VALUES.md) for detailed analysis of FileHandler's proven Import Quarantine pattern that works perfectly every time.
+
+**Reference Commit**: df1bf7e (November 18, 2025)
+- Created SETTING-VALUES.md documenting FileHandler's gold standard pattern
+- Updated Task 4.1 code example with correct Import Quarantine pattern
+- Included ReferenceValues.js changes (t_66→d_66, t_65 commented out)
+- Included TooltipManager.js tooltip clarifications
+
+**Architectural Decision (November 19, 2025)**: **Delegate to FileHandler instead of duplicating code in Section02**
+
+### Why Delegate to FileHandler?
+
+✅ **Single Responsibility** - FileHandler owns all "bulk value application" operations
+✅ **Code Reuse** - Import Quarantine pattern exists in one place
+✅ **Maintainability** - Future fixes happen once, work everywhere
+✅ **Consistency** - ReferenceValues overlay behaves exactly like Excel import
+✅ **Proven Pattern** - FileHandler's import process works perfectly every time
+
+### What Must Be Implemented:
+
+**1. Add new method to FileHandler.js** (~line 735+):
+   - `applyReferenceValuesFromStandard(standard, targetMode)`
+   - Uses full 5-phase Import Quarantine pattern
+   - Treats ReferenceValues.js as internal import source
+
+**2. Simplify Section02.js button handler** (lines 1070-1130):
+   - Replace entire `applyReferenceValuesOverlay()` function
+   - Just delegate to `FileHandler.applyReferenceValuesFromStandard()`
+   - ~5 lines instead of 80+ lines
+
+**Complete Implementation**: See [SETTING-VALUES.md](./SETTING-VALUES.md) for full code examples
+
+**Files Requiring Updates**:
+- [FileHandler.js](../../src/core/FileHandler.js) - Add new method `applyReferenceValuesFromStandard()`
+- [Section02.js](../../src/sections/Section02.js) - Simplify button handler to delegate to FileHandler
+
+**Test After Implementation**:
+1. Target mode: Select d_13 = "PH Classic", click "Set Values"
+2. Verify S09 DOM updates with d_66 = 1.1 (PH Classic lighting load)
+3. Switch to d_13 = "OBC SB10 5.5-6 Z6", click "Set Values"
+4. Verify h_10 returns to consistent baseline value
+5. Repeat steps 1-4 multiple times
+6. **Expected**: No value drift, DOM updates correctly, h_10 remains stable
+
+**Action Required**: Complete this implementation BEFORE proceeding to Phase 7 testing.
+
+---
+
+### Phase 7: Integration Testing & Validation
+
+#### Task 7.1: Test Dual-Purpose Button (Both Modes)
+**Objective**: Verify button works correctly in both Target and Reference modes
+
+**Test Scenario A: Target Mode - Code-Minimum Population**
+1. Load application (Target mode)
+2. Set Target values manually: d_65 = 5.0, d_113 = 10.0
+3. Select d_13 = "PH Classic"
+4. Click "Set Values"
+5. **Expected**:
+   - d_65 overwrites to 2.1 (PH Classic code-minimum)
+   - d_113 overwrites to PH Classic value
+   - User sees "what if we just built to code minimum?"
+6. Switch to Reference mode
+7. **Expected**: Reference values unchanged (no contamination)
+
+**Test Scenario B: Reference Mode - Code Baseline Population**
+1. Switch to Reference mode
+2. Select ref_d_13 = "PHIUS 2021"
+3. Click "Set Values"
+4. **Expected**:
+   - ref_d_65 updates to 3.2 (PHIUS 2021 baseline)
+   - ref_d_113 updates to PHIUS values
+5. Switch to Target mode
+6. **Expected**: Target values unchanged (still showing PH Classic values from Scenario A)
+
+**Test Scenario C: Independent Standards (Core Validation)**
+1. Target mode: d_13 = "PH Classic", click "Set Values" → d_65 = 2.1
+2. Reference mode: ref_d_13 = "PHIUS 2021", click "Set Values" → ref_d_65 = 3.2
+3. Check M/N compliance: m_65 = (2.1 / 3.2) * 100 = 65.6% ✅
+4. Verify both models maintain independent values
+
+**Deliverable**: Button works correctly in both modes, perfect state isolation maintained
+
+---
+
+#### Task 7.2: Verify 238% Bug is Fixed
+**Objective**: Confirm original bug (m_65 = 238%) is resolved
+
+**Test**:
+1. Load application
+2. Target mode: d_13 = "PH Classic", click "Set Values" → d_65 = 2.1
+3. Reference mode: ref_d_13 = "PH Classic", click "Set Values" → ref_d_65 = 2.1
+4. Check browser console:
+   ```javascript
+   const d_65 = window.TEUI.StateManager.getValue('d_65');
+   const ref_d_65 = window.TEUI.StateManager.getValue('ref_d_65');
+   const m_65 = (d_65 / ref_d_65) * 100;
+   console.log(`m_65 = (${d_65} / ${ref_d_65}) * 100 = ${m_65}%`);
+   ```
+5. **Expected**: m_65 = 100% (perfect compliance) ✅
+6. Verify UI shows green ✓ at n_65 and m_65 displays 100%
+
+**Deliverable**: 238% bug is resolved - m_65 correctly shows 100% when d_65 = ref_d_65
+
+---
+
+#### Task 7.3: Cross-Section Validation (All M/N Fields)
+**Objective**: Verify compliance calculations work correctly across all sections
+
+**Test**:
+1. Set Target and Reference to same standard (e.g., "OBC SB10 5.5-6 Z6")
+2. Click "Set Values" in both modes
+3. Check all M/N fields across sections:
+   - S05: m_65 (Lighting Power Density)
+   - S06: m_113 (Plug Load Density)
+   - S09: (various occupancy-related metrics)
+   - S11: m_85, m_97, etc. (envelope metrics)
+   - S12: (mechanical metrics)
+   - S13: (renewable energy metrics)
+   - S14: (water metrics)
+4. **Expected**: All M/N values = 100% (perfect compliance)
+5. Change Target values manually
+6. **Expected**: M/N values recalculate correctly, green ✓ or red ✗ as appropriate
+
+**Deliverable**: All M/N compliance calculations work correctly across all sections
+
+---
+
+#### Task 7.4: Mode Switching Stability Test
+**Objective**: Verify state isolation maintained during mode switches
+
+**Test**:
+1. Target mode: Set d_13 = "PH Classic", click "Set Values"
+2. Reference mode: Set ref_d_13 = "PHIUS 2021", click "Set Values"
+3. Switch Target → Reference → Target → Reference (multiple cycles)
+4. **Expected**:
+   - Target values remain PH Classic (d_65 = 2.1)
+   - Reference values remain PHIUS 2021 (ref_d_65 = 3.2)
+   - No drift or contamination
+   - UI updates correctly on each switch
+
+**Deliverable**: Mode switching maintains perfect state isolation
+
+---
+
+### Phase 8: Documentation & Cleanup
+
+#### Task 8.1: Update 4012-CHEATSHEET.md
+**Objective**: Document the new d_13/ref_d_13 architecture pattern
+
+**File**: `docs/development/4012-CHEATSHEET.md`
+
+**Actions**:
+- [ ] Add section explaining d_13/ref_d_13 independence
+- [ ] Document "Set Values" button dual-purpose behavior
+- [ ] Add examples of code-minimum scenario (Target mode)
+- [ ] Add examples of code baseline scenario (Reference mode)
+- [ ] Update Anti-Pattern guidance if needed
+
+**Deliverable**: Cheatsheet updated with Option 3 architecture
+
+---
+
+#### Task 8.2: Add Implementation Notes to This Document
+**Objective**: Record any deviations, challenges, or discoveries during implementation
+
+**Actions**:
+- [ ] Document any unexpected issues encountered
+- [ ] Note any sections that behaved differently than expected
+- [ ] Record actual button IDs or DOM structure if different from assumptions
+- [ ] List any additional files modified beyond original plan
+
+**Deliverable**: Complete implementation record
+
+---
+
+#### Task 8.3: Code Comments and Console Logging
+**Objective**: Ensure code is well-documented and debuggable
+
+**Actions**:
+- [ ] Add STATE ISOLATION SAFEGUARD comments where critical
+- [ ] Ensure all console.log statements are informative
+- [ ] Add JSDoc comments to new methods (applyReferenceValues, applyReferenceValuesOverlay)
+- [ ] Verify no commented-out code left behind
+
+**Deliverable**: Clean, well-documented code
+
+---
+
+### Phase 9: Commit & Merge
+
+#### Task 9.1: Create Commit with Descriptive Message
+**Objective**: Commit changes with clear explanation
+
+**Commit Message Template**:
+```
+Feat: Implement Option 3 - Explicit "Set Values" Button Architecture
+
+- Unwired d_13 automatic triggers from ReferenceState (S05-S14)
+- Added passive ref_d_13 listeners (store selection only)
+- Wired "Set Values" button in S02 (dual-purpose: Target & Reference)
+- Added TargetState.applyReferenceValues() methods (NEW - code-minimum scenario)
+- Updated ReferenceState.setDefaults() to read ref_d_13 (not d_13)
+- Verified state isolation safeguards in ReferenceState.onReferenceStandardChange()
+
+Fixes:
+- ✅ 238% compliance bug resolved (m_65 now correctly shows 100%)
+- ✅ Perfect state isolation (d_13 and ref_d_13 fully independent)
+- ✅ No automatic contamination between Target and Reference models
+
+New Feature:
+- Target mode "Set Values" button now populates code-minimum baseline values
+- Users can explore "what if we just built to code minimum?" scenarios
+
+Sections modified: S02, S05, S06, S09, S11, S12, S13, S14
+
+🤖 Generated with Claude Code
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+**Actions**:
+- [ ] Stage all modified files
+- [ ] Run git status to verify changes
+- [ ] Commit with above message template
+- [ ] Verify commit includes all expected files
+
+**Deliverable**: Clean commit on `D13-UPDATE` branch
+
+---
+
+#### Task 9.2: Test on Clean Clone (Optional but Recommended)
+**Objective**: Verify implementation works on fresh checkout
+
+**Actions**:
+- [ ] Clone repository to new location
+- [ ] Checkout `D13-UPDATE` branch
+- [ ] Load application in browser
+- [ ] Run all Phase 7 integration tests
+- [ ] Verify no errors or warnings
+
+**Deliverable**: Confirmation that implementation is portable
+
+---
+
+#### Task 9.3: Merge to Main Branch
+**Objective**: Integrate changes into main codebase
+
+**Actions**:
+- [ ] Checkout main branch
+- [ ] Merge `D13-UPDATE` branch
+- [ ] Resolve any conflicts (unlikely if working alone)
+- [ ] Push to remote
+
+**Deliverable**: Option 3 implementation merged to main
+
+---
+
+## Progress Tracking
+
+**Current Status**: ✅ Phase 6 Complete - TargetState.applyReferenceValues() Added (Testing & Debugging)
+
+**Completed Tasks**: 19 / 50+ (Tasks 1.1, 1.2, 2.1-2.8, 3.1-3.2, 4.1-4.2, 5.1-5.3, 6.1-6.2)
+
+**Last Updated**: 2025-11-18
+
+**Safe Revert Points**:
+- [x] **Baseline commit**: Documentation updated with Option 3 workplan (commit 3790e94)
+- [x] **Phase 1 complete**: Audit and verification (commit 17d88bb)
+- [x] **Phase 2 complete**: All d_13 listeners unwired (commit 5471a0b)
+- [x] **Phase 3 complete**: All ref_d_13 listeners added - both dropdowns now passive (commit e9fc7c1)
+- [x] **Phase 4 complete**: "Set Values" button wired for Reference mode (commit e0f2dec)
+- [x] **Phase 5 complete**: ReferenceState methods read ref_d_13 (commits c43c7b5, 386a13e)
+- [x] **Phase 6 complete**: TargetState.applyReferenceValues() added (commits a1c63c0, bd06efc - CURRENT)
+- [ ] Final implementation complete (all tests pass)
+
+---
+
+## Notes & Discoveries
+
+### Task 1.1: Audit Results (COMPLETED 2025-11-18)
+
+**Sections with d_13 → ReferenceState.onReferenceStandardChange() coupling:**
+1. ✅ **Section05.js** (Line 191-193)
+2. ✅ **Section06.js** (Line 172-174)
+3. ✅ **Section09.js** (Line 2419-2424) - Also has ref_d_13 listener at line 2432!
+4. ✅ **Section11.js** (Line 388-390)
+5. ✅ **Section12.js** (Line 191-193)
+6. ✅ **Section13.js** (Line 293-295)
+7. ✅ **Section14.js** (Line 117-119)
+8. ✅ **SectionXX.js** (Line 642-643) - Template file
+
+**Additional d_13 listeners (non-ReferenceState):**
+- **Section03.js** (Line 2526): Calls `calculateAll()` for PH override logic
+- **Section03.js** (Line 2533): Already has `ref_d_13` listener! ✅
+- **Section12.js** (Line 2899): Calls `calculateAll()` + `updateAllReferenceIndicators()`
+- **Section13.js** (Line 2485): Calls `updateAllReferenceIndicators()`
+- **Section14.js** (Line 1470): Calls `updateReferenceIndicator()`
+
+**Total listeners to modify:** 7 sections (S05, S06, S09, S11, S12, S13, S14)
+
+### Task 1.2: Button Infrastructure (COMPLETED 2025-11-18)
+
+**Button confirmed in Section02.js:**
+- ✅ Button ID: `setValuesBtn`
+- ✅ Field ID: `e_13` (for tooltip support)
+- ✅ Content: "Set Values"
+- ✅ Classes: `["btn", "btn-sm", "btn-danger"]`
+- ✅ Tooltip: Enabled
+- ✅ Location: Section02.js line 153-158
+- ✅ No existing click handler (confirmed - ready to wire)
+
+### Phase 2: Unwire d_13 Listeners (COMPLETED 2025-11-18)
+
+**All 7 sections successfully modified:**
+1. ✅ **Section05.js** (Line 192) - Made d_13 listener PASSIVE
+2. ✅ **Section06.js** (Line 173) - Made d_13 listener PASSIVE
+3. ✅ **Section09.js** (Line 2420) - Made d_13 listener PASSIVE (preserved calculateTargetModel + indicator updates)
+4. ✅ **Section11.js** (Line 389) - Made d_13 listener PASSIVE
+5. ✅ **Section12.js** (Line 191) - Made d_13 listener PASSIVE
+6. ✅ **Section13.js** (Line 293) - Made d_13 listener PASSIVE
+7. ✅ **Section14.js** (Line 117) - Made d_13 listener PASSIVE
+
+**Pattern applied consistently:**
+```javascript
+// PASSIVE: d_13 changes stored only - overlay applied by "Set Values" button
+window.TEUI.StateManager.addListener("d_13", () => {
+  // No automatic ReferenceState update - button triggers overlay
+});
+```
+
+**Verification results (Task 2.8):**
+- Grep search confirmed NO remaining `ReferenceState.onReferenceStandardChange()` calls in d_13 listeners
+- Only SectionXX.js (template file) retains old pattern - as expected
+- Section03.js and Section12.js have separate d_13 listeners for calculations only (not ReferenceState contamination)
+- All production sections now have perfect state isolation
+
+**Key achievement:** d_13 changes no longer automatically contaminate Reference model ✅
+
+### Phase 3: Add ref_d_13 Listeners (COMPLETED 2025-11-18)
+
+**All 7 sections now have passive ref_d_13 listeners:**
+1. ✅ **Section05.js** (Line 197-199) - Added passive ref_d_13 listener
+2. ✅ **Section06.js** (Line 178-180) - Added passive ref_d_13 listener
+3. ✅ **Section09.js** (Line 2426-2432) - Fixed existing ref_d_13 listener (made passive)
+4. ✅ **Section11.js** (Line 394-396) - Added passive ref_d_13 listener
+5. ✅ **Section12.js** (Line 196-198) - Added passive ref_d_13 listener
+6. ✅ **Section13.js** (Line 298-300) - Added passive ref_d_13 listener
+7. ✅ **Section14.js** (Line 122-124) - Added passive ref_d_13 listener
+
+**Pattern applied consistently:**
+```javascript
+// PASSIVE: ref_d_13 changes stored only - overlay applied by "Set Values" button
+window.TEUI.StateManager.addListener("ref_d_13", () => {
+  // No automatic ReferenceState update - button triggers overlay
+});
+```
+
+**Section09 special case:**
+- Existing ref_d_13 listener (line 2426) was calling `ReferenceState.onReferenceStandardChange()`
+- Removed automatic overlay trigger
+- Preserved `calculateReferenceModel()` and `updateAllReferenceIndicators()` calls
+- Maintains calculation consistency without triggering overlay
+
+**Task 3.1 verification:**
+- ref_d_13 field confirmed working in StateManager
+- Fields auto-created on first use (no pre-registration required)
+- Section03.js and Section09.js already had ref_d_13 listeners
+- All other sections needed listeners added
+
+**Key achievement:** Both d_13 AND ref_d_13 are now completely passive - no automatic overlays ✅
+
+### Phase 4: Wire "Set Values" Button (COMPLETED 2025-11-18)
+
+**Function created: applyReferenceValuesOverlay() in Section02.js (Line 1100-1151)**
+- Dual-purpose function applies ReferenceValues to Target OR Reference model based on current mode
+- Reads appropriate standard: ref_d_13 (Reference mode) or d_13 (Target mode)
+- Iterates through sections [5, 6, 9, 11, 12, 13, 14] with ReferenceValues
+- Reference mode: Calls ReferenceState.onReferenceStandardChange() ✅
+- Target mode: Calls TargetState.applyReferenceValues() (will add in Phase 6)
+- Triggers full recalculation and UI refresh after overlay
+
+**Button wired in initializeEventHandlers() (Line 1160-1170)**
+- Button ID confirmed: `setValuesBtn`
+- Click handler reads ModeManager.currentMode and calls applyReferenceValuesOverlay()
+- Console logging for debugging button clicks and overlay application
+- Graceful error handling if button not found
+
+**Testing readiness**:
+- ✅ Reference mode: Ready to test immediately (ReferenceState.onReferenceStandardChange exists)
+- ⏳ Target mode: Will be functional after Phase 6 (TargetState.applyReferenceValues not yet implemented)
+- Console warns gracefully for missing Target mode methods until Phase 6
+
+**Key achievement:** "Set Values" button now functional for Reference mode ✅
+
+**Testing results (Reference mode - 2025-11-18)**:
+- ✅ Button click successfully applies ReferenceValues to Reference model
+- ✅ Value changes confirmed in S11 and other sections with ReferenceValues
+- ✅ State isolation maintained (no Target contamination)
+- ⚠️ **Known issue**: S11 calculations can get "stuck" after overlay (see [Issue #29](https://github.com/openbuilding-ca/objective/issues/29))
+  - Root cause: Area sync issue from S10→S11 (unrelated to Phase 4 implementation)
+  - Workaround: Mode switch triggers recalculation and "releases" stuck values
+  - Note: ReferenceValues overlay IS working correctly - this is a pre-existing S10/S11 sync bug
+
+### Phase 5: Update ReferenceState Methods (COMPLETED 2025-11-18)
+
+**All 7 sections successfully updated to read ref_d_13 instead of d_13:**
+
+**Tasks 5.1-5.2: ReferenceState.setDefaults() updates (commit c43c7b5)**
+1. ✅ **Section05.js** (Line 93) - Changed d_13 → ref_d_13 in setDefaults()
+2. ✅ **Section06.js** (Line 84) - Changed d_13 → ref_d_13 in setDefaults()
+3. ✅ **Section09.js** (Line 122) - Changed d_13 → ref_d_13 in setDefaults()
+4. ✅ **Section11.js** (Line 211) - Changed d_13 → ref_d_13 in setDefaults()
+5. ✅ **Section12.js** (Line 104) - Changed d_13 → ref_d_13 in setDefaults()
+6. ✅ **Section13.js** (Line 134) - Changed d_13 → ref_d_13 in setDefaults()
+7. ✅ **Section14.js** (Line 69) - Changed d_13 → ref_d_13 in setDefaults()
+
+**Task 5.3: ReferenceState.onReferenceStandardChange() verification (commit 386a13e)**
+- ✅ Section05: Calls setDefaults() (now reads ref_d_13) ✓
+- ✅ Section06: Calls setDefaults() (now reads ref_d_13) ✓
+- ✅ Section09: Receives standard as parameter (no fix needed) ✓
+- ✅ Section11: Calls setDefaults() (now reads ref_d_13) ✓
+- ✅ Section12: Calls setDefaults() (now reads ref_d_13) ✓
+- ✅ Section13: **FIXED** - Changed d_13 → ref_d_13 at line 156 ✓
+- ✅ Section14: Calls setDefaults() (now reads ref_d_13) ✓
+
+**Key achievement:** Perfect state isolation - ReferenceState methods now consistently read from Reference dropdown (ref_d_13) and write ONLY to ref_ prefixed fields ✅
+
+**Result:** Reference model initialization and updates are completely independent from Target model. No cross-contamination possible.
+
+**Testing (2025-11-18):**
+- ✅ Phase 5 changes tested locally - all working correctly
+- ✅ Reference model reads from ref_d_13 successfully
+- ✅ No cross-contamination between Target and Reference models
+- Ready to proceed with Phase 6
+
+### Phase 6: Add TargetState.applyReferenceValues() (COMPLETED 2025-11-18)
+
+**All 6 sections successfully updated with applyReferenceValues() method:**
+
+**Tasks 6.1-6.2: TargetState.applyReferenceValues() implementation (commits a1c63c0, bd06efc)**
+1. ✅ **Section05.js** (Lines 83-98) - Added applyReferenceValues() to TargetState
+2. ✅ **Section06.js** (Lines 74-89) - Added applyReferenceValues() to TargetState
+3. ✅ **Section09.js** (Lines 102-117) - Added applyReferenceValues() to TargetState
+4. ✅ **Section11.js** (Lines 191-206) - Added applyReferenceValues() to TargetState
+5. ✅ **Section12.js** (Lines 62-77) - Added applyReferenceValues() to TargetState
+6. ✅ **Section13.js** (Lines 124-139) - Added applyReferenceValues() to TargetState
+
+**Section14 excluded**: Data consumer only - removed from implementation after analysis
+
+**Updated Section02.applyReferenceValuesOverlay():**
+- Removed S14 from sectionsWithReferenceValues array (line 1109)
+- Added comment: "S14/S15 excluded - they're data consumers only"
+- Now correctly applies to only [5, 6, 9, 11, 12, 13]
+
+**Key features implemented:**
+- STATE ISOLATION SAFEGUARD: Methods only write to unprefixed fields (Target model)
+- Reads from window.TEUI.ReferenceValues[standard] parameter
+- Calls saveState() after applying values
+- Comprehensive console logging for debugging
+- Perfect separation from Reference model (no ref_ field access)
+
+**Key achievement:** Dual-purpose "Set Values" button architecture complete ✅
+- Target mode: Has applyReferenceValues() method (NEW feature)
+- Reference mode: Has onReferenceStandardChange() method (existing)
+
+**Testing (2025-11-18) - INITIAL ISSUES (RESOLVED):**
+⚠️ **Issue 1**: "Set Values" button not applying ReferenceValues in Target mode as expected
+⚠️ **Issue 2**: d_13 dropdown changes sometimes trigger automatic ReferenceValues overlays without button click
+
+**Root Cause**: Stale localStorage state from pre-Phase 2 architecture
+- Old architecture had active d_13 listeners triggering automatic overlays
+- Cached state was interfering with new passive listener design
+- **Resolution**: Clear browser caches and localStorage
+
+**Testing (2025-11-18) - POST-CACHE-CLEAR:**
+✅ "Set Values" button now working correctly in both modes
+✅ Button successfully applies ReferenceValues to Target model
+✅ Button successfully applies ReferenceValues to Reference model
+✅ State isolation maintained (no cross-contamination observed)
+⚠️ S10/S11 sync issue interfering with smooth recalculation (pre-existing bug, unrelated to Phase 6)
+- See Issue #29 - Area sync issue from S10→S11
+- Workaround: Mode switch triggers recalculation
+- Does not affect correctness of "Set Values" button implementation
+
+**Status**: Phase 6 functionally complete. "Set Values" button working as designed. S10/S11 sync issue is separate concern to address later.
+
+---
+
+## Quick Reference: Key Files to Modify
+
+| File | Tasks | Purpose |
+|------|-------|---------|
+| `sections/Section02.js` | 4.1, 4.2 | Wire "Set Values" button, add `applyReferenceValuesOverlay()` |
+| `sections/Section05.js` | 2.1, 3.2, 5.1, 5.3, 6.1 | Unwire d_13, add ref_d_13 listener, update ReferenceState, add TargetState method |
+| `sections/Section06.js` | 2.2, 3.2, 5.2, 5.3, 6.2 | Same as S05 |
+| `sections/Section09.js` | 2.3, 3.2, 5.2, 5.3, 6.2 | Same as S05 |
+| `sections/Section11.js` | 2.4, 3.2, 5.2, 5.3, 6.2 | Same as S05 |
+| `sections/Section12.js` | 2.5, 3.2, 5.2, 5.3, 6.2 | Same as S05 |
+| `sections/Section13.js` | 2.6, 3.2, 5.2, 5.3, 6.2 | Same as S05 |
+| `sections/Section14.js` | 2.7, 3.2, 5.2, 5.3, 6.2 | Same as S05 |
+| `docs/development/4012-CHEATSHEET.md` | 8.1 | Update architecture documentation |
+
+---
+
+## Success Criteria
+
+✅ **Architecture**:
+- [ ] d_13 and ref_d_13 are completely independent
+- [ ] No automatic ReferenceState updates on d_13 change
+- [ ] "Set Values" button is sole trigger for ReferenceValues overlay
+- [ ] Perfect state isolation maintained (Target vs Reference)
+
+✅ **Functionality**:
+- [ ] Target mode: Button populates code-minimum baseline values
+- [ ] Reference mode: Button populates code baseline values
+- [ ] M/N compliance calculations work correctly
+- [ ] 238% bug is resolved (m_65 = 100% when d_65 = ref_d_65)
+
+✅ **Testing**:
+- [ ] All Phase 7 integration tests pass
+- [ ] No console errors or warnings
+- [ ] Mode switching is stable
+- [ ] All sections work correctly
+
+✅ **Documentation**:
+- [ ] Cheatsheet updated
+- [ ] Implementation notes recorded
+- [ ] Code is well-commented
+- [ ] Commit message is descriptive
+
+---
+
+## Risk Mitigation
+
+**Risk**: Breaking existing functionality during unwiring
+**Mitigation**: Test after each section modification (Tasks 2.1-2.7)
+
+**Risk**: Button ID mismatch or DOM structure issues
+**Mitigation**: Verify button infrastructure first (Task 1.2)
+
+**Risk**: State contamination not fully eliminated
+**Mitigation**: Extensive integration testing (Phase 7), console logging
+
+**Risk**: Cascade failures (related to Nov 11 bug investigation)
+**Mitigation**: "Set Values" button triggers full recalculation (calculateAll())
+
+---
+
+**END OF IMPLEMENTATION WORKPLAN**

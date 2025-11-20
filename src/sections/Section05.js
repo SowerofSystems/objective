@@ -74,6 +74,28 @@ window.TEUI.SectionModules.sect05 = (function () {
         }
       });
     },
+
+    /**
+     * ✅ PHASE 6: Apply code-minimum baseline values from ReferenceValues
+     * Called by "Set Values" button to overlay reference values onto Target model
+     * ⚠️ STATE ISOLATION SAFEGUARD: Only writes to unprefixed fields (Target model)
+     */
+    applyReferenceValues: function (standard) {
+      const referenceValues = window.TEUI?.ReferenceValues?.[standard] || {};
+
+      console.log(`[S05 TargetState] Applying code-minimum values from "${standard}"`);
+
+      Object.keys(referenceValues).forEach(fieldId => {
+        if (referenceValues[fieldId] !== undefined) {
+          // ✅ Writes to d_39, i_41, etc., NOT ref_d_39
+          this.state[fieldId] = referenceValues[fieldId];
+          console.log(`[S05 TargetState] ${fieldId} = ${referenceValues[fieldId]} (from ${standard})`);
+        }
+      });
+
+      this.saveState();
+      console.log(`[S05 TargetState] Code-minimum values from "${standard}" applied to Target model`);
+    },
   };
 
   const ReferenceState = {
@@ -90,7 +112,7 @@ window.TEUI.SectionModules.sect05 = (function () {
     setDefaults: function () {
       // ✅ PHASE 5 FIX: Read base defaults from field definitions, then apply Reference overrides
       const currentStandard =
-        window.TEUI?.StateManager?.getValue?.("d_13") || "OBC SB10 5.5-6 Z6";
+        window.TEUI?.StateManager?.getValue?.("ref_d_13") || "OBC SB10 5.5-6 Z6";
       const referenceValues =
         window.TEUI?.ReferenceValues?.[currentStandard] || {};
 
@@ -187,11 +209,9 @@ window.TEUI.SectionModules.sect05 = (function () {
       }
 
       // Listen for reference standard changes
-      if (window.TEUI?.StateManager?.addListener) {
-        window.TEUI.StateManager.addListener("d_13", () => {
-          ReferenceState.onReferenceStandardChange();
-        });
-      }
+      // ✅ PHASE 3 CLEANUP: d_13 listeners removed - FileHandler handles value application
+      // "Set Values" button in Section02 delegates to FileHandler.applyReferenceValuesFromStandard()
+      // which applies ReferenceValues using Import Quarantine pattern
     },
 
     getCurrentState: function () {

@@ -733,6 +733,83 @@
       }
     }
 
+    /**
+     * Apply ReferenceValues from ReferenceValues.js using the proven Import Quarantine pattern
+     * This method is the "Set Values" button's backend - it treats ReferenceValues.js as an
+     * internal import source and applies values using the same pattern as Excel imports.
+     *
+     * @param {string} standard - The standard name (e.g., "PH Classic", "OBC SB10 5.5-6 Z6")
+     * @param {string} targetMode - Either "target" or "reference"
+     */
+    applyReferenceValuesFromStandard(standard, targetMode) {
+      console.log(`[FileHandler] Applying ReferenceValues from "${standard}" to ${targetMode.toUpperCase()} model`);
+
+      // Get reference values for the selected standard
+      const referenceValues = window.TEUI?.ReferenceValues?.[standard];
+      if (!referenceValues) {
+        console.error(`[FileHandler] No ReferenceValues found for standard: "${standard}"`);
+        return;
+      }
+
+      // BUILD IMPORTED DATA OBJECT (like CSV does)
+      // Add ref_ prefix if in Reference mode, otherwise use field as-is
+      const importedData = {};
+      Object.entries(referenceValues).forEach(([fieldId, value]) => {
+        const targetFieldId = targetMode === "reference" ? `ref_${fieldId}` : fieldId;
+        importedData[targetFieldId] = value;
+      });
+
+      console.log(`[FileHandler] Built importedData with ${Object.keys(importedData).length} fields for ${targetMode} mode`);
+
+      // 🔒 PHASE 1: IMPORT QUARANTINE START - Mute listeners
+      console.log("[FileHandler] 🔒 IMPORT QUARANTINE START - Muting listeners");
+      window.TEUI.StateManager.muteListeners();
+
+      try {
+        // ✅ PHASE 2: Use the PROVEN import method (writes directly to StateManager)
+        this.updateStateFromImportData(importedData, 0, false);
+        console.log(`[FileHandler] Applied ${Object.keys(importedData).length} values via updateStateFromImportData`);
+
+        // ✅ PHASE 3: Sync Pattern A sections FROM StateManager
+        console.log("[FileHandler] Syncing Pattern A sections FROM StateManager...");
+        this.syncPatternASections();
+        console.log("[FileHandler] Pattern A sections synced");
+
+      } finally {
+        // 🔓 PHASE 4: IMPORT QUARANTINE END - Always unmute
+        window.TEUI.StateManager.unmuteListeners();
+        console.log("[FileHandler] 🔓 IMPORT QUARANTINE END - Unmuting listeners");
+      }
+
+      // ✅ PHASE 5: Trigger complete calculation cascade
+      console.log("[FileHandler] Triggering calculateAll() with complete data...");
+      if (this.calculator && typeof this.calculator.calculateAll === "function") {
+        this.calculator.calculateAll();
+
+        // ✅ PHASE 6: Final DOM refresh (show calculated results)
+        console.log("[FileHandler] 🔄 Refreshing all section UIs after calculations...");
+        const allSections = [
+          "sect02", "sect03", "sect04", "sect05", "sect06",
+          "sect07", "sect08", "sect09", "sect10", "sect11",
+          "sect12", "sect13", "sect14", "sect15"
+        ];
+
+        allSections.forEach(sectionId => {
+          const section = window.TEUI?.SectionModules?.[sectionId];
+          if (section?.ModeManager?.refreshUI) {
+            section.ModeManager.refreshUI();
+          }
+          if (section?.ModeManager?.updateCalculatedDisplayValues) {
+            section.ModeManager.updateCalculatedDisplayValues();
+          }
+        });
+
+        console.log(`[FileHandler] ✅ ReferenceValues overlay complete`);
+      } else {
+        console.error("[FileHandler] Calculator.calculateAll() not available - calculations not triggered");
+      }
+    }
+
     // --- EXPORT LOGIC ---
 
     exportToCSV() {

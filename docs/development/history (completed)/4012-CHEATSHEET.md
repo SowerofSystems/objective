@@ -295,6 +295,73 @@ When Reference mode changes don't flow downstream:
 
 ---
 
+## ⚠️ **STATE CONTAMINATION: Bypassing Mode-Aware Write Methods**
+
+**Discovered:** November 19, 2025 (S09 d_13 PH standard state mixing bug)
+
+**The Problem:**
+When calculation engines write directly to `StateManager.setValue(fieldId, ...)` instead of using mode-aware helper functions (like `setCalculatedValue()`), they bypass namespace protection and contaminate the opposite model's state.
+
+**Example Bug (S09 calculateTargetModel, commit a1a0fbe):**
+
+```javascript
+// ❌ WRONG: Direct StateManager writes bypass mode-aware namespace handling
+function calculateTargetModel() {
+  const results = calculateModel(TargetState, false);
+
+  if (ModeManager.currentMode === "target") {
+    Object.entries(results).forEach(([fieldId, value]) => {
+      setCalculatedValue(fieldId, value); // ✅ Mode-aware writes
+    });
+  } else {
+    // ❌ BUG: Writes unprefixed Target values while in Reference mode
+    Object.entries(results).forEach(([fieldId, value]) => {
+      StateManager.setValue(fieldId, value, "calculated"); // Bypasses mode-awareness!
+    });
+  }
+}
+```
+
+**What Happened:**
+1. User changes `ref_d_13` to "PH Classic" in Reference mode
+2. `calculateTargetModel()` runs (dual-engine architecture - correct)
+3. Target calculates with unchanged inputs
+4. **BUG**: Writes to `d_65`, `d_66` (unprefixed) even in Reference mode
+5. StateManager sees Target values changed → triggers full recalculation
+6. `h_10` (Target grand total) changes incorrectly
+
+**The Fix (commit b057ae9):**
+
+```javascript
+// ✅ CORRECT: Always use mode-aware helper functions
+function calculateTargetModel() {
+  const results = calculateModel(TargetState, false);
+
+  // setCalculatedValue() handles mode-aware namespace writes:
+  // - Target mode: writes to StateManager as 'fieldId' (unprefixed)
+  // - Reference mode: writes to StateManager as 'ref_fieldId' (prefixed)
+  Object.entries(results).forEach(([fieldId, value]) => {
+    setCalculatedValue(fieldId, value);
+  });
+}
+```
+
+**Key Principle:**
+- ✅ **Both engines always run** (dual-engine architecture)
+- ✅ **Both engines can write to StateManager** (for cross-section dependencies)
+- ✅ **Each engine must write to its own namespace:**
+  - Target engine → unprefixed fields (`d_65`, `h_71`, etc.)
+  - Reference engine → prefixed fields (`ref_d_65`, `ref_h_71`, etc.)
+- ❌ **Never bypass mode-aware write helpers** - they exist to maintain namespace isolation
+
+**How to Avoid:**
+1. Use section-specific helper functions: `setCalculatedValue()`, `ModeManager.setValue()`, etc.
+2. These helpers check `ModeManager.currentMode` and add `ref_` prefix automatically
+3. Never call `StateManager.setValue(fieldId, ...)` directly from calculation engines
+4. Trust the architecture - dual engines running is correct, namespace contamination is the bug
+
+---
+
 ## 🏛️ **DEFAULTS IMPLEMENTATION PATTERN (CRITICAL)**
 
 ### **🚨 S02 LESSON LEARNED: DEFAULTS FIX CAUSES REGRESSION**

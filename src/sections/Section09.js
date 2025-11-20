@@ -93,6 +93,29 @@ window.TEUI.SectionModules.sect09 = (function () {
         }
       });
     },
+
+    /**
+     * ✅ PHASE 6: Apply code-minimum baseline values from ReferenceValues
+     * Called by "Set Values" button to overlay reference values onto Target model
+     * ⚠️ STATE ISOLATION SAFEGUARD: Only writes to unprefixed fields (Target model)
+     */
+    applyReferenceValues: function (standard) {
+      const referenceValues = window.TEUI?.ReferenceValues?.[standard] || {};
+
+      console.log(`[S09 TargetState] Applying code-minimum values from "${standard}"`);
+
+      Object.keys(referenceValues).forEach(fieldId => {
+        if (referenceValues[fieldId] !== undefined) {
+          // ✅ Writes to d_65, d_66, etc., NOT ref_d_65
+          this.state[fieldId] = referenceValues[fieldId];
+          console.log(`[S09 TargetState] ${fieldId} = ${referenceValues[fieldId]} (from ${standard})`);
+        }
+      });
+
+      this.saveState();
+      console.log(`[S09 TargetState] Code-minimum values from "${standard}" applied to Target model`);
+    },
+
     saveState: function () {
       localStorage.setItem("S09_TARGET_STATE", JSON.stringify(this.state));
     },
@@ -119,7 +142,7 @@ window.TEUI.SectionModules.sect09 = (function () {
     setDefaults: function () {
       // Get current reference standard for dynamic loading
       const currentStandard =
-        window.TEUI?.StateManager?.getValue?.("d_13") || "OBC SB10 5.5-6 Z6";
+        window.TEUI?.StateManager?.getValue?.("ref_d_13") || "OBC SB10 5.5-6 Z6";
       const referenceValues =
         window.TEUI?.ReferenceValues?.[currentStandard] || {};
 
@@ -2045,31 +2068,14 @@ window.TEUI.SectionModules.sect09 = (function () {
     try {
       const results = calculateModel(TargetState, false);
 
-      // ✅ CRITICAL FIX: Only call setCalculatedValue() when in Target mode
-      // This prevents Target calculations from overwriting Reference mode display
-      // console.log(`[S09DB] calculateTargetModel: currentMode=${ModeManager.currentMode}`);
-      if (ModeManager.currentMode === "target") {
-        // console.log(`[S09DB] calculateTargetModel: Updating DOM (Target mode)`);
-        Object.entries(results).forEach(([fieldId, value]) => {
-          setCalculatedValue(fieldId, value);
-        });
-      } else {
-        // console.log(`[S09DB] calculateTargetModel: Skipping DOM update (Reference mode)`);
-        // Still store in StateManager for backward compatibility, but don't update DOM
-        Object.entries(results).forEach(([fieldId, value]) => {
-          if (
-            window.TEUI?.StateManager &&
-            value !== null &&
-            value !== undefined
-          ) {
-            window.TEUI.StateManager.setValue(
-              fieldId,
-              String(value),
-              "calculated"
-            );
-          }
-        });
-      }
+      // ✅ ARCHITECTURALLY CORRECT: Always use setCalculatedValue() which has mode-aware StateManager writes
+      // setCalculatedValue() writes to correct namespace based on current mode:
+      // - Target mode: writes to StateManager as unprefixed fieldId
+      // - Reference mode: writes to StateManager as ref_{fieldId}
+      // This ensures Target calculations never contaminate Reference StateManager values
+      Object.entries(results).forEach(([fieldId, value]) => {
+        setCalculatedValue(fieldId, value);
+      });
 
       updatePercentages(results.i_71, results.k_71);
       updateAllReferenceIndicators();
@@ -2416,30 +2422,17 @@ window.TEUI.SectionModules.sect09 = (function () {
     });
 
     // 4. Reference Standard (d_13 / ref_d_13)
+    // ✅ CRITICAL: Keep d_13 listener for Plug/Light/Equipment loads recalculation
     sm.addListener("d_13", () => {
-      // Update Reference State with new standard values
-      const newStandard = sm.getValue("d_13");
-      if (newStandard && ReferenceState.onReferenceStandardChange) {
-        ReferenceState.onReferenceStandardChange(newStandard);
-        if (ModeManager.currentMode === "reference") {
-          ModeManager.refreshUI();
-        }
-      }
       calculateTargetModel();
       updateAllReferenceIndicators();
       ModeManager.updateCalculatedDisplayValues();
     });
+    // ✅ RESTORED: ref_d_13 listener needed for Reference model plug load recalculation
+    // When ref_d_13 changes (e.g., PH Classic selected), plug loads must be recalculated
+    // based on building standard rules (PH standards → 2.1 W/m², others → 5-7 W/m²)
     sm.addListener("ref_d_13", () => {
-      // Reference standard changes
-      const newStandard = sm.getValue("ref_d_13");
-      if (newStandard && ReferenceState.onReferenceStandardChange) {
-        ReferenceState.onReferenceStandardChange(newStandard);
-        if (ModeManager.currentMode === "reference") {
-          ModeManager.refreshUI();
-        }
-      }
       calculateReferenceModel();
-      updateAllReferenceIndicators();
       ModeManager.updateCalculatedDisplayValues();
     });
 

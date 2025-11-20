@@ -64,9 +64,9 @@ window.TEUI.SectionModules.sect14 = (function () {
       }
     },
     setDefaults: function () {
-      // ✅ DYNAMIC LOADING: Get current reference standard from dropdown d_13
+      // ✅ DYNAMIC LOADING: Get current reference standard from dropdown ref_d_13
       const currentStandard =
-        window.TEUI?.StateManager?.getValue?.("d_13") || "OBC SB10 5.5-6 Z6";
+        window.TEUI?.StateManager?.getValue?.("ref_d_13") || "OBC SB10 5.5-6 Z6";
       const referenceValues =
         window.TEUI?.ReferenceValues?.[currentStandard] || {};
 
@@ -112,12 +112,9 @@ window.TEUI.SectionModules.sect14 = (function () {
       TargetState.initialize();
       ReferenceState.initialize();
 
-      // MANDATORY: Listen for reference standard changes
-      if (window.TEUI?.StateManager?.addListener) {
-        window.TEUI.StateManager.addListener("d_13", () => {
-          ReferenceState.onReferenceStandardChange();
-        });
-      }
+      // ✅ PHASE 3 CLEANUP: PASSIVE d_13/ref_d_13 listeners removed
+      // "Set Values" button handles value application via FileHandler
+      // Note: CRITICAL d_13 listener at line ~1475 will also be removed
     },
     switchMode: function (mode) {
       if (
@@ -1466,11 +1463,9 @@ window.TEUI.SectionModules.sect14 = (function () {
       addCalculationListener(`ref_${field}`); // Add Reference versions too
     });
 
-    // CRITICAL: Listen for d_13 changes to update reference indicators
-    sm.addListener("d_13", () => {
-      console.log("[Section14] d_13 changed - updating reference indicators");
-      updateReferenceIndicator();
-    });
+    // ✅ PHASE 3 CLEANUP: d_13 listener removed
+    // "Set Values" button now handles value application via FileHandler
+    // Reference indicators will update via calculateAll() triggered by FileHandler
 
     console.log(
       `[Section14] ✅ Added comprehensive listeners for ${uniqueDependencies.length} dependencies + ${climateFields.length * 2} climate fields`

@@ -1093,11 +1093,47 @@ window.TEUI.SectionModules.sect02 = (function () {
   }
 
   /**
+   * ✅ PHASE 4: Apply ReferenceValues - SIMPLIFIED (delegates to FileHandler)
+   * FileHandler already has the proven Import Quarantine pattern from Excel imports
+   * No need to duplicate that logic here - Section02 handles UI events only
+   */
+  function applyReferenceValuesOverlay() {
+    const currentMode = ModeManager.currentMode || "target";
+
+    // Get the selected standard for current mode
+    const standard = currentMode === "reference"
+      ? window.TEUI.StateManager.getValue("ref_d_13")
+      : window.TEUI.StateManager.getValue("d_13");
+
+    console.log(`[S02] "Set Values" button clicked - delegating to FileHandler`);
+    console.log(`[S02] Mode: ${currentMode}, Standard: ${standard}`);
+
+    // Delegate to FileHandler - it knows how to do this correctly!
+    if (window.TEUI?.FileHandler?.applyReferenceValuesFromStandard) {
+      window.TEUI.FileHandler.applyReferenceValuesFromStandard(standard, currentMode);
+    } else {
+      console.error("[S02] FileHandler.applyReferenceValuesFromStandard() not available");
+    }
+  }
+
+  /**
    * Initialize event handlers for this section
    */
   function initializeEventHandlers() {
     // Register calculations with StateManager
     registerCalculations();
+
+    // ✅ PHASE 4: Wire "Set Values" button to apply ReferenceValues overlay
+    const setValuesBtn = document.getElementById("setValuesBtn");
+    if (setValuesBtn) {
+      setValuesBtn.addEventListener("click", () => {
+        console.log(`[S02] "Set Values" button clicked in ${ModeManager.currentMode.toUpperCase()} mode`);
+        applyReferenceValuesOverlay();
+      });
+      console.log('[S02] "Set Values" button wired successfully');
+    } else {
+      console.warn('[S02] "Set Values" button not found - check button ID');
+    }
 
     // Set up dropdown handlers using event delegation on the section container
     const sectionElement = document.getElementById("buildingInfo");

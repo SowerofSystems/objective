@@ -31,7 +31,7 @@ TEUI.ReferenceValues = {
     d_59: "45", // Ideal RH% averaged annually
     g_67: "Regular", // Required Eppt Efficienct Spec.
     t_65: "5.0", // Reference Plug Load (W/m²)
-    t_66: "2.0", // Reference Lighting Load (W/m²) - OBC baseline
+    d_66: "2.0", // Reference Lighting Load (W/m²) - OBC baseline
     f_73: "0.50", // SHGC of Glazing Max.
     f_74: "0.50", // SHGC of Glazing Max.
     f_75: "0.50", // SHGC of Glazing Max.
@@ -69,7 +69,7 @@ TEUI.ReferenceValues = {
     d_59: "45", // Ideal RH% averaged annually
     g_67: "Regular", // Required Eppt Efficienct Spec.
     t_65: "5.0", // Reference Plug Load (W/m²)
-    t_66: "2.0", // Reference Lighting Load (W/m²) - OBC baseline
+    d_66: "2.0", // Reference Lighting Load (W/m²) - OBC baseline
     f_73: "0.50", // SHGC of Glazing Max.
     f_74: "0.50", // SHGC of Glazing Max.
     f_75: "0.50", // SHGC of Glazing Max.
@@ -107,7 +107,7 @@ TEUI.ReferenceValues = {
     d_59: "45", // Ideal RH% averaged annually
     g_67: "Regular", // Required Eppt Efficienct Spec.
     t_65: "5.0", // Reference Plug Load (W/m²)
-    t_66: "2.0", // Reference Lighting Load (W/m²) - OBC baseline
+    d_66: "2.0", // Reference Lighting Load (W/m²) - OBC baseline
     f_73: "0.50", // SHGC of Glazing Max.
     f_74: "0.50", // SHGC of Glazing Max.
     f_75: "0.50", // SHGC of Glazing Max.
@@ -145,8 +145,8 @@ TEUI.ReferenceValues = {
     d_58: "150", // Max. CO2 per Health Canada ppm
     i_59: "45", // Ideal RH% averaged annually
     g_67: "Regular", // Default Eppt Efficienct Spec.
-    t_65: "7.0", // Reference Occupant Load (W/m²)
-    t_66: "2.0", // Reference Lighting Load (W/m²) - OBC baseline
+    //t_65: "7.0", // Reference Occupant Load (W/m²) set by occupancy
+    d_66: "2.0", // Reference Lighting Load (W/m²) - OBC baseline
     f_73: "0.50", // SHGC of Glazing Max.
     f_74: "0.50", // SHGC of Glazing Max.
     f_75: "0.50", // SHGC of Glazing Max.
@@ -183,8 +183,8 @@ TEUI.ReferenceValues = {
     d_58: "150", // Max. CO2 per Health Canada ppm
     d_59: "45", // Ideal RH% averaged annually
     g_67: "Regular", // Default Eppt Efficienct Spec.
-    t_65: "7.0", // Reference Occupant Load (W/m²)
-    t_66: "2.0", // Reference Lighting Load (W/m²) - OBC baseline
+    //t_65: "7.0", // Reference Occupant Load (W/m²) set by occupancy
+    d_66: "2.0", // Reference Lighting Load (W/m²) - OBC baseline
     f_73: "0.50", // SHGC of Glazing Max.
     f_74: "0.50", // SHGC of Glazing Max.
     f_75: "0.50", // SHGC of Glazing Max.
@@ -221,8 +221,8 @@ TEUI.ReferenceValues = {
     d_58: "150", // Max. CO2 per Health Canada ppm
     d_59: "45", // Ideal RH% averaged annually
     g_67: "Regular", // Default Eppt Efficienct Spec.
-    t_65: "7.0", // Reference Occupant Load (W/m²)
-    t_66: "2.0", // Reference Lighting Load (W/m²) - OBC baseline
+    //t_65: "7.0", // Reference Occupant Load (W/m²) set by occupancy
+    d_66: "2.0", // Reference Lighting Load (W/m²) - OBC baseline
     f_73: "0.50", // SHGC of Glazing Max.
     f_74: "0.50", // SHGC of Glazing Max.
     f_75: "0.50", // SHGC of Glazing Max.
@@ -259,8 +259,8 @@ TEUI.ReferenceValues = {
     d_58: "150", // Max. CO2 per Health Canada ppm
     d_59: "45", // Ideal RH% averaged annually
     g_67: "Regular", // Default Eppt Efficienct Spec.
-    t_65: "7.0", // Reference Occupant Load (W/m²)
-    t_66: "2.0", // Reference Lighting Load (W/m²) - OBC baseline
+    //t_65: "7.0", // Reference Occupant Load (W/m²) set by occupancy
+    d_66: "2.0", // Reference Lighting Load (W/m²) - OBC baseline
     f_73: "0.50", // SHGC of Glazing Max.
     f_74: "0.50", // SHGC of Glazing Max.
     f_75: "0.50", // SHGC of Glazing Max.
@@ -297,8 +297,8 @@ TEUI.ReferenceValues = {
     d_58: "150", // Max. CO2 per Health Canada ppm
     d_59: "45", // Ideal RH% averaged annually
     g_67: "Regular", // Default Eppt Efficienct Spec.
-    t_65: "7.0", // Reference Occupant Load (W/m²)
-    t_66: "2.0", // Reference Lighting Load (W/m²) - OBC baseline
+    //t_65: "7.0", // Reference Occupant Load (W/m²)
+    d_66: "2.0", // Reference Lighting Load (W/m²) - OBC baseline
     f_73: "0.50", // SHGC of Glazing Max.
     f_74: "0.50", // SHGC of Glazing Max.
     f_75: "0.50", // SHGC of Glazing Max.
@@ -335,8 +335,8 @@ TEUI.ReferenceValues = {
     d_58: "150", // Max. CO2 per Health Canada ppm
     d_59: "45", // Ideal RH% averaged annually
     g_67: "Regular", // Required Eppt Efficienct Spec.
-    t_65: "7.0", // Reference Plug Load (W/m²)
-    t_66: "2.0", // Reference Lighting Load (W/m²) - OBC baseline
+    //t_65: "7.0", // Reference Plug Load (W/m²)
+    d_66: "2.0", // Reference Lighting Load (W/m²) - OBC baseline
     f_73: "0.50", // SHGC of Glazing Max.
     f_74: "0.50", // SHGC of Glazing Max.
     f_75: "0.50", // SHGC of Glazing Max.
@@ -374,8 +374,8 @@ TEUI.ReferenceValues = {
     d_59: "45", // Ideal RH% averaged annually
     d_66: "1.1", // Max. Permissible Lighting Load
     g_67: "Efficient", // Default Eppt Efficienct Spec.
-    t_65: "5.0", // Reference Plug Load (W/m²)
-    t_66: "1.1", // Reference Lighting Load (W/m²)
+    //t_65: "5.0", // Reference Plug Load (W/m²)
+    d_66: "1.1", // Reference Lighting Load (W/m²)
     f_73: "0.50", // SHGC of Glazing Max.
     f_74: "0.50", // SHGC of Glazing Max.
     f_75: "0.50", // SHGC of Glazing Max.
@@ -395,7 +395,7 @@ TEUI.ReferenceValues = {
     f_94: "3.72", // Min. Permissible RSI by NBC/OBC
     f_95: "1.96", // Min. Permissible RSI Slab by NBC/OBC
     d_97: "5", // Default Thermal Bridge Penatly (Not Defined in Codes)
-    d_108: "PH Classic", // Airtightness Method (check this is in correct position per DOM and not in 109)
+    d_108: "PH_CLASSIC", // Airtightness Method (check this is in correct position per DOM and not in 109)
     j_115: "0.90", // Min. AFUE if Gas or Oil
     j_116: "3.3", // Min. COPc if Dedicated Cooling
     f_113: "7.1", // Min. HSPF if Heatpump
@@ -415,7 +415,7 @@ TEUI.ReferenceValues = {
     d_66: "1.1", // Max. Permissible Lighting Load
     g_67: "Efficient", // Default Eppt Efficienct Spec.
     t_65: "5.0", // Reference Plug Load (W/m²)
-    t_66: "1.1", // Reference Lighting Load (W/m²)
+    d_66: "1.1", // Reference Lighting Load (W/m²)
     f_73: "0.50", // SHGC of Glazing Max.
     f_74: "0.50", // SHGC of Glazing Max.
     f_75: "0.50", // SHGC of Glazing Max.
@@ -435,7 +435,7 @@ TEUI.ReferenceValues = {
     f_94: "3.72", // Min. Permissible RSI by NBC/OBC
     f_95: "1.96", // Min. Permissible RSI Slab by NBC/OBC
     d_97: "5", // Default Thermal Bridge Penatly (Not Defined in Codes)
-    d_108: "PH Classic", // Airtightness Method
+    d_108: "PH_PLUS", // Airtightness Method
     j_115: "0.90", // Min. AFUE if Gas or Oil
     j_116: "3.3", // Min. COPc if Dedicated Cooling
     f_113: "7.1", // Min. HSPF if Heatpump
@@ -455,7 +455,7 @@ TEUI.ReferenceValues = {
     d_66: "1.1", // Max. Permissible Lighting Load
     g_67: "Efficient", // Default Eppt Efficienct Spec.
     t_65: "5.0", // Reference Plug Load (W/m²)
-    t_66: "1.1", // Reference Lighting Load (W/m²)
+    d_66: "1.1", // Reference Lighting Load (W/m²)
     // t_67: "5.0", // Reference Equipment Load (W/m²) - THIS IS ESTABLISHED BY OCCUPANCY AT D13
     f_73: "0.50", // SHGC of Glazing Max.
     f_74: "0.50", // SHGC of Glazing Max.
@@ -476,7 +476,7 @@ TEUI.ReferenceValues = {
     f_94: "3.72", // Min. Permissible RSI by NBC/OBC
     f_95: "1.96", // Min. Permissible RSI Slab by NBC/OBC
     d_97: "5", // Default Thermal Bridge Penatly (Not Defined in Codes)
-    d_108: "PH Classic", // Airtightness Method
+    d_108: "PH_CLASSIC", // Airtightness Method
     j_115: "0.90", // Min. AFUE if Gas or Oil
     j_116: "3.3", // Min. COPc if Dedicated Cooling
     f_113: "7.1", // Min. HSPF if Heatpump
@@ -496,7 +496,7 @@ TEUI.ReferenceValues = {
     d_66: "2.0", // Max. Permissible Lighting Load
     g_67: "Efficient", // Required Eppt Efficienct Spec.
     t_65: "5.0", // Reference Occupant Load (W/m²)
-    t_66: "2.0", // Reference Lighting Load (W/m²)
+    d_66: "2.0", // Reference Lighting Load (W/m²)
     // t_67: "2.0", // Reference Equipment Load (W/m²) THIS IS ESTABLISHED BY OCCUPANCY AT D13
     f_73: "0.50", // SHGC of Glazing Max.
     f_74: "0.50", // SHGC of Glazing Max.
@@ -517,7 +517,7 @@ TEUI.ReferenceValues = {
     f_94: "3.72", // Min. Permissible RSI by NBC/OBC
     f_95: "1.96", // Min. Permissible RSI Slab by NBC/OBC
     d_97: "5", // Default Thermal Bridge Penatly (Not Defined in Codes)
-    d_108: "PH Low", // Airtightness Method
+    d_108: "PH_LOW", // Airtightness Method
     j_115: "0.90", // Min. AFUE if Gas or Oil
     j_116: "3.3", // Min. COPc if Dedicated Cooling
     f_113: "7.1", // Min. HSPF if Heatpump
@@ -537,7 +537,7 @@ TEUI.ReferenceValues = {
     d_66: "2.0", // Max. Permissible Lighting Load
     g_67: "Efficient", // Required Eppt Efficienct Spec.
     t_65: "5.0", // Reference Occupant Load (W/m²)
-    t_66: "2.0", // Reference Lighting Load (W/m²)
+    d_66: "2.0", // Reference Lighting Load (W/m²)
     // t_67: "2.0", // Reference Equipment Load (W/m²) THIS IS ESTABLISHED BY OCCUPANCY AT D13
     f_73: "0.50", // SHGC of Glazing Max.
     f_74: "0.50", // SHGC of Glazing Max.
@@ -558,7 +558,7 @@ TEUI.ReferenceValues = {
     f_94: "3.72", // Min. Permissible RSI by NBC/OBC
     f_95: "1.96", // Min. Permissible RSI Slab by NBC/OBC
     d_97: "5", // Default Thermal Bridge Penatly (Not Defined in Codes)
-    d_108: "PH Low", // Airtightness Method
+    d_108: "PH_LOW", // Airtightness Method
     j_115: "0.90", // Min. AFUE if Gas or Oil
     j_116: "3.3", // Min. COPc if Dedicated Cooling
     f_113: "7.1", // Min. HSPF if Heatpump
