@@ -822,7 +822,7 @@ Between line 2555 and line 2608:
 
 **StateManager showed "A-Assembly"** because it was never initialized from TargetState - it still had defaults or undefined.
 
-### Fix Applied ✅
+### Attempted Fix #1: Initialization Sync ❌ NOT SUFFICIENT
 
 **Location:** [Section02.js:1855-1881](../src/sections/Section02.js#L1855-L1881)
 
@@ -841,12 +841,61 @@ if (window.TEUI?.StateManager) {
 }
 ```
 
-This ensures StateManager is always in sync with TargetState after initialization, whether values come from:
-- Field definition defaults
-- localStorage (user's previous session)
-- Import operations
+**What This Fixed:**
+- StateManager now gets initialized with TargetState values on page load
+- Eliminated one source of state desync
 
-**Result:** Section03's h_23 calculation now reads correct d_12 value from StateManager!
+**What This Did NOT Fix:**
+- User changes to d_12 dropdown still don't persist in StateManager
+- Latest logs (37,586 lines) show h_23 still reading d_12="A-Assembly" even after user selects "C-Residential"
+- Symptoms persist: DOM shows "C-Residential", StateManager shows "A-Assembly"
+
+### Current Investigation: Why User Changes Don't Persist
+
+**Test Results (37,586 line log file):**
+1. User changed d_12 to "C-Residential" ✅ (visible in DOM)
+2. User changed d_13 between PH Classic and OBC SB10
+3. All h_23 calculations read d_12="A-Assembly" ❌ (StateManager has stale value)
+
+**Possible Causes:**
+1. **Section02's `handleMajorOccupancyChange()` not being called**
+   - Maybe FieldManager is intercepting the event?
+   - Maybe event delegation isn't working?
+
+2. **ModeManager.setValue() not writing to StateManager**
+   - Code looks correct (line 1935 calls StateManager.setValue)
+   - But maybe there's a condition preventing it?
+
+3. **StateManager value being overwritten immediately after**
+   - Something else writes "A-Assembly" right after user changes it
+   - FieldManager? Another section? refreshUI()?
+
+4. **localStorage corruption**
+   - User's previous session saved "A-Assembly"
+   - Every page load restores the wrong value
+   - User changes appear in DOM but don't persist across events
+
+**Next Steps:**
+- Need to add targeted logging to ModeManager.setValue() to confirm it's being called
+- Need to check if StateManager.getValue("d_12") returns correct value immediately after user change
+- Need to identify what (if anything) is overwriting StateManager AFTER the user change
+
+### BUG STATUS: UNRESOLVED ❌
+
+**Issue Tracking:** This will be added to GitHub Issues for remote tracking
+
+**Summary:**
+- **Root Cause:** StateManager and TargetState are out of sync for d_12
+- **Symptom:** h_23 doesn't update to 22°C when switching from PH to non-PH with Critical Occupancy
+- **Attempted Fix:** Initialization sync (partial improvement only)
+- **Remaining Work:** Identify why user changes to d_12 don't persist in StateManager
+
+**Impact:**
+- 37,586 console log lines generated from simple d_12/d_13 changes
+- Circular calculation cascade still occurring
+- User experience: h_23 appears "stuck" at wrong value
+
+---
 
 ### Fix Strategy (Original - No Longer Needed)
 
