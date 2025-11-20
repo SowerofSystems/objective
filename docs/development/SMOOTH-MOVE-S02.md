@@ -774,16 +774,81 @@ Between line 2555 and line 2608:
 4. Calculation reads d_12 = "A-Assembly" (correctly!)
 5. h_23 = 18°C (correct for A-Assembly, wrong expectation)
 
-### Root Cause: d_13 Change Triggers d_12 Reset
+### Root Cause Investigation: Enhanced Diagnostics
 
-**Hypothesis:** When d_13 changes, something is applying default values or resetting fields. Likely culprits:
+**Known Facts:**
+1. Field definition default for d_12 is "A-Assembly" ([Section02.js:60](../src/sections/Section02.js#L60))
+2. User selects "C-Residential" which persists correctly until d_13 changes
+3. When d_13 changes, d_12 reverts to "A-Assembly" (the field definition default)
+
+**Hypothesis:** When d_13 changes, something is re-applying field definition defaults. Likely culprits:
 
 1. **Section02's `handleBuildingCodeChange()`** might be calling something that resets dependent fields
-2. **ReferenceValues.js** might include d_12 defaults that overwrite user selection
-3. **Calculator.calculateAll()** might have initialization logic that resets d_12
-4. **Section02 state sync** might be reloading defaults when standard changes
+2. **TargetState.setDefaults()** or **ReferenceState.setDefaults()** might be called during calculation cascade
+3. **refreshUI()** might be reading from the wrong state or re-initializing state
 
-### Fix Strategy
+**Enhanced Diagnostics Added:**
+
+1. **[Section02.js:960-970](../src/sections/Section02.js#L960-L970)** - Track user d_12 changes in `handleMajorOccupancyChange()`
+2. **[Section02.js:1933-1956](../src/sections/Section02.js#L1933-L1956)** - Track ALL d_12 setValue() calls with stack traces
+3. **[Section02.js:1994-1997](../src/sections/Section02.js#L1994-L1997)** - Track refreshUI() d_12 dropdown sync
+
+**Test Procedure (Enhanced):**
+1. Open browser console
+2. Set d_12 to "C-Residential" → Should see `[S02 d_12 DEBUG] 🔵 USER CHANGED`
+3. Set d_13 to "PH Classic" → May see d_12 logs (expected)
+4. Change d_13 from "PH Classic" to "OBC SB10 5.5-6 Z6" → **Watch for d_12 logs!**
+5. Check if any `[S02 d_12 DEBUG] 🟡 ModeManager.setValue("d_12", "A-Assembly")` appears
+6. Examine stack trace to find WHERE the reset is coming from
+
+**Possible Sources of Reset:**
+- ReferenceValues.js might include d_12 defaults
+- Calculator.calculateAll() might have initialization logic
+- Section02 state sync might reload defaults when standard changes
+
+### ROOT CAUSE IDENTIFIED ✅
+
+**The Real Issue:** Section02's dual-state architecture (TargetState/ReferenceState) was NOT syncing to StateManager during initialization.
+
+**What was happening:**
+1. User loads page → Section02 initializes TargetState with field defaults (d_12 = "A-Assembly")
+2. TargetState loads from localStorage (might have saved user selections)
+3. **BUT StateManager was never updated with these values!**
+4. User changes d_12 to "C-Residential" → Saves to TargetState AND StateManager ✅
+5. User changes d_13 → Section02's calculateAll() runs
+6. Section03 reads d_12 from StateManager → Gets OLD/STALE value!
+
+**The DOM showed "C-Residential"** because TargetState had the correct value and refreshUI() synced it to the dropdown.
+
+**StateManager showed "A-Assembly"** because it was never initialized from TargetState - it still had defaults or undefined.
+
+### Fix Applied ✅
+
+**Location:** [Section02.js:1855-1881](../src/sections/Section02.js#L1855-L1881)
+
+Added Target state sync to StateManager during ModeManager.initialize():
+
+```javascript
+// ✅ FIX: Sync Target state to StateManager for downstream sections
+if (window.TEUI?.StateManager) {
+  ["d_12", "d_13", "d_14", "d_15", "h_12", "h_13", "h_14", "h_15",
+   "i_16", "i_17", "l_12", "l_13", "l_14", "l_15", "l_16"].forEach(id => {
+    const val = TargetState.getValue(id);
+    if (val != null && val !== "") {
+      window.TEUI.StateManager.setValue(id, val, "calculated");
+    }
+  });
+}
+```
+
+This ensures StateManager is always in sync with TargetState after initialization, whether values come from:
+- Field definition defaults
+- localStorage (user's previous session)
+- Import operations
+
+**Result:** Section03's h_23 calculation now reads correct d_12 value from StateManager!
+
+### Fix Strategy (Original - No Longer Needed)
 
 **Option 1: Preserve d_12 During d_13 Changes**
 - Before changing d_13, save current d_12 value
