@@ -83,18 +83,24 @@ window.TEUI.SectionModules.sect05 = (function () {
     applyReferenceValues: function (standard) {
       const referenceValues = window.TEUI?.ReferenceValues?.[standard] || {};
 
-      console.log(`[S05 TargetState] Applying code-minimum values from "${standard}"`);
+      console.log(
+        `[S05 TargetState] Applying code-minimum values from "${standard}"`
+      );
 
       Object.keys(referenceValues).forEach(fieldId => {
         if (referenceValues[fieldId] !== undefined) {
           // ✅ Writes to d_39, i_41, etc., NOT ref_d_39
           this.state[fieldId] = referenceValues[fieldId];
-          console.log(`[S05 TargetState] ${fieldId} = ${referenceValues[fieldId]} (from ${standard})`);
+          console.log(
+            `[S05 TargetState] ${fieldId} = ${referenceValues[fieldId]} (from ${standard})`
+          );
         }
       });
 
       this.saveState();
-      console.log(`[S05 TargetState] Code-minimum values from "${standard}" applied to Target model`);
+      console.log(
+        `[S05 TargetState] Code-minimum values from "${standard}" applied to Target model`
+      );
     },
   };
 
@@ -112,7 +118,8 @@ window.TEUI.SectionModules.sect05 = (function () {
     setDefaults: function () {
       // ✅ PHASE 5 FIX: Read base defaults from field definitions, then apply Reference overrides
       const currentStandard =
-        window.TEUI?.StateManager?.getValue?.("ref_d_13") || "OBC SB10 5.5-6 Z6";
+        window.TEUI?.StateManager?.getValue?.("ref_d_13") ||
+        "OBC SB10 5.5-6 Z6";
       const referenceValues =
         window.TEUI?.ReferenceValues?.[currentStandard] || {};
 

@@ -69,92 +69,78 @@ Located in index.html or core file:
 
 ## Implementation Plan
 
-### Phase 1: Audit and Understand (1 section)
+### Phase 0: MANDATORY - Read Architecture Guidelines
 
-**Section to test**: Section09 (already has state contamination fixes)
+**BEFORE STARTING ANY WORK**: Read `docs/CLAUDE.md` in full, especially:
 
-1. **Map all ModeManager references in S09**:
-   - Where `ModeManager.currentMode` is read
-   - Where `ModeManager.setValue()` is called
-   - Where `ModeManager.refreshUI()` is called
-   - Any toggle UI buttons in section header
-   - Any reset buttons in section header (development-only)
+> **Before making changes**: Review existing code patterns and architecture documents. **Don't reinvent** - the codebase has 8 months of careful architectural decisions.
 
-2. **Verify global ModeManager exists**:
-   - Check `window.TEUI.ModeManager` is available
-   - Confirm it has same methods: `setValue()`, `refreshUI()`, etc.
-   - Test that global toggle updates `window.TEUI.ModeManager.currentMode`
+**Key Principles - MINIMAL CHANGES ONLY**:
+- ✅ **DO**: Delete the `injectHeaderControls()` function (typically ~80 lines)
+- ✅ **DO**: Remove the call to `injectHeaderControls()` (typically in initialization)
+- ✅ **DO**: Keep EVERYTHING else - all ModeManager properties and methods
+- ❌ **DON'T**: Touch `ModeManager.currentMode` - the global toggle already syncs it via `switchMode()`
+- ❌ **DON'T**: Replace any `ModeManager.currentMode` reads with `window.TEUI.ModeManager.currentMode`
+- ❌ **DON'T**: Remove `currentMode` property, `switchMode()` method, or ANY helper functions
+- ❌ **DON'T**: Re-engineer calculation engines, mode-aware wrappers, or ANY working code
 
-3. **Create replacement pattern**:
-   - Replace `ModeManager.currentMode` → `window.TEUI.ModeManager.currentMode`
-   - Keep local helper methods if they provide value (setValue, refreshUI)
-   - OR: Delegate to global ModeManager methods entirely
+**THE ONLY CHANGE**: Remove the local header UI controls function and its call. That's it.
 
-4. **Test in S09**:
-   - Load app, verify global toggle works
-   - Test d_13 PH standard changes in both modes
-   - Verify no state contamination (d_65, h_10 isolation)
-   - Check that local toggle button is gone from S09 header
+**WHY THIS WORKS**: `ReferenceToggle.js` already calls `section.modeManager.switchMode(mode)` on each section's local ModeManager when the global toggle is clicked. The local `ModeManager.currentMode` IS the mode - it's synced by the global toggle, not replaced by it.
+
+### Phase 1: Test Pattern on One Section
+
+**Section to test**: Section02 (simple inputs section, good test case)
+
+1. **Find the header controls function**:
+   - Search for `injectHeaderControls` or similar function name
+   - Typically creates reset button, state indicator, toggle switch
+   - Usually 70-100 lines of DOM manipulation code
+
+2. **Delete the function**:
+   - Delete the entire `injectHeaderControls()` function
+   - Find where it's called (usually in initialization section)
+   - Delete that one line calling `injectHeaderControls()`
+
+3. **Test**:
+   - Load app, verify NO local toggle appears in section header
+   - Click global toggle (top of page) - verify section responds
+   - Test calculations in both Target and Reference modes
+   - Verify sliders, dropdowns, inputs all still work
+   - Check that "Set Values" button works in both modes
 
 ### Phase 2: Apply Pattern to All Sections (S02-S16)
 
 For each section (in order):
 
-**Sections**: S02, S03, S04, S05, S06, S07, S08, S09 ✅, S10, S11, S12, S13, S14, S15, S16
+**Sections**: S02, S03, S04, S05, S06, S07, S08, S09, S10, S11, S12, S13, S14, S15, S16
 
-**Per-Section Steps**:
+**Per-Section Steps** (REPEAT EXACTLY WHAT WORKED IN PHASE 1):
 
-1. **Find all `ModeManager.currentMode` reads**:
-   ```javascript
-   // BEFORE:
-   if (ModeManager.currentMode === "reference") { ... }
+1. **Find the header controls function**:
+   - Search for `injectHeaderControls` or similar
+   - Usually 70-100 lines creating toggle/reset UI
 
-   // AFTER:
-   if (window.TEUI.ModeManager.currentMode === "reference") { ... }
-   ```
+2. **Delete it**:
+   - Delete entire function
+   - Delete the one line that calls it
+   - **DO NOT TOUCH ANYTHING ELSE**
 
-2. **Update setValue() helper** (if section has custom implementation):
-   ```javascript
-   // Keep helper function but read from global mode
-   setValue: function(fieldId, value, state) {
-     const currentMode = window.TEUI.ModeManager.currentMode;
-     if (currentMode === "reference") {
-       ReferenceState.setValue(fieldId, value);
-       window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, state);
-     } else {
-       TargetState.setValue(fieldId, value);
-       window.TEUI.StateManager.setValue(fieldId, value, state);
-     }
-   }
-   ```
+3. **Test**:
+   - Load app, verify no local controls appear
+   - Test global toggle works for this section
+   - Quick check: one calculation in each mode
 
-3. **Remove local toggle UI** (if exists):
-   - Search for toggle button injection in section header
-   - Remove button creation code
-   - Remove `toggleMode()` method from ModeManager
-   - Remove local `currentMode` property
-   - **Remove local reset buttons** - these are also development-only features
-
-4. **Keep useful helper methods**:
-   - `initialize()` - needed for dual-state setup
-   - `setValue()` - convenience wrapper (now reads global mode)
-   - `getValue()` - convenience wrapper (now reads global mode)
-   - `refreshUI()` - section-specific UI updates
-   - `updateCalculatedDisplayValues()` - section-specific display logic
-
-5. **Test after each section**:
-   - Global toggle switches modes correctly
-   - Section calculations respect global mode
-   - No state contamination between models
-   - Import/Export still works
-   - "Set Values" button works in both modes
+4. **Commit**:
+   - Commit after EACH successful section
+   - Message: "Remove local toggle controls from SectionXX"
 
 ### Phase 3: Cleanup and Verification
 
-1. **Remove unused toggle infrastructure**:
-   - Check `src/core/ToggleUISync.js` - still needed?
-   - Check `src/core/ReferenceToggle.js` - global toggle implementation
-   - Remove any dead code for section-specific toggles
+1. **Check for unused utilities** (DO NOT DELETE WITHOUT USER APPROVAL):
+   - `src/core/ToggleUISync.js` - may still be used by something
+   - Search codebase for any remaining `injectHeaderControls` references
+   - **Ask user before deleting any core files**
 
 2. **Update documentation**:
    - CLAUDE.md - note that only global toggle exists
@@ -231,35 +217,33 @@ If issues arise:
 
 ## Code Pattern Reference
 
-### Before (Section-Specific Toggle):
+### What Gets Deleted:
 
 ```javascript
-const ModeManager = {
-  currentMode: "target",  // ❌ Local state
-
-  setValue: function(fieldId, value, state) {
-    if (this.currentMode === "reference") {  // ❌ Reads local
-      // ...
-    }
-  },
-
-  toggleMode: function() {  // ❌ Local toggle
-    this.currentMode = this.currentMode === "target" ? "reference" : "target";
-    this.refreshUI();
-  }
-};
+/**
+ * Inject Target/Reference toggle controls into section header
+ */
+function injectHeaderControls() {
+  const sectionHeader = document.querySelector("#sectionId .section-header");
+  // ... 70-100 lines creating reset button, toggle switch, state indicator ...
+  // DELETE ALL OF THIS
+}
 ```
 
-### After (Global Toggle Only):
+And the call to it:
+```javascript
+// DELETE THIS LINE:
+injectHeaderControls();
+```
+
+### What Stays EXACTLY THE SAME:
 
 ```javascript
 const ModeManager = {
-  // ❌ REMOVED: currentMode property
-  // ❌ REMOVED: toggleMode method
+  currentMode: "target",  // ✅ KEEP THIS - global toggle syncs it
 
   setValue: function(fieldId, value, state) {
-    const currentMode = window.TEUI.ModeManager.currentMode;  // ✅ Reads global
-    if (currentMode === "reference") {
+    if (this.currentMode === "reference") {  // ✅ KEEP THIS - still works
       ReferenceState.setValue(fieldId, value);
       window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, state);
     } else {
@@ -268,47 +252,54 @@ const ModeManager = {
     }
   },
 
-  refreshUI: function() {
-    const currentMode = window.TEUI.ModeManager.currentMode;  // ✅ Reads global
-    // Section-specific UI refresh logic...
+  switchMode: function(mode) {  // ✅ KEEP THIS - global toggle calls it
+    this.currentMode = mode;
+    this.refreshUI();
+    // ...
   },
 
-  // Keep other helper methods that provide value
-  initialize: function() { ... },
-  getValue: function(fieldId) { ... },
-  updateCalculatedDisplayValues: function() { ... }
+  refreshUI: function() { ... },  // ✅ KEEP THIS
+  initialize: function() { ... },  // ✅ KEEP THIS
+  getValue: function(fieldId) { ... },  // ✅ KEEP THIS
+  updateCalculatedDisplayValues: function() { ... }  // ✅ KEEP THIS
 };
+
+// ✅ KEEP ALL helper functions like:
+function getNumericValue() { ... }
+function setFieldValue() { ... }
+function getModeAwareGlobalValue() { ... }
+// etc.
 ```
 
 ---
 
-## Questions to Resolve
+## Architecture - How This Works
 
-1. **Does global ModeManager have all needed methods?**
-   - setValue(), getValue(), refreshUI(), etc.?
-   - Or do sections need to keep local helper wrappers?
+**Q: Why don't we need to replace `ModeManager.currentMode` with `window.TEUI.ModeManager.currentMode`?**
 
-2. **Where is global ModeManager defined?**
-   - index.html?
-   - Separate core file?
-   - Need to verify it's loaded before sections initialize
+**A**: Because `ReferenceToggle.js` (the global toggle) already syncs the local section ModeManagers:
 
-3. **Are there any sections without local toggles?**
-   - S01 might be different (summary section)
-   - S16, S17, S18 might have different patterns
+```javascript
+// From ReferenceToggle.js line 71-82:
+function switchAllSectionsMode(mode) {
+  const sections = getAllDualStateSections();
+  sections.forEach(section => {
+    if (section.modeManager && typeof section.modeManager.switchMode === "function") {
+      section.modeManager.switchMode(mode);  // ← Updates local ModeManager.currentMode
+      // ...
+    }
+  });
+}
+```
 
-4. **What about ReferenceToggle.js?**
-   - Is this the global toggle implementation?
-   - Does it sync with window.TEUI.ModeManager?
+When you click the global toggle, it calls `switchMode(mode)` on EACH section's local `ModeManager`, which updates their local `currentMode` property and refreshes their UI. The local `ModeManager.currentMode` IS the source of truth - it's just controlled by the global toggle instead of local toggle buttons.
+
+**Q: What sections have local toggles?**
+
+**A**: S02-S16 have the `injectHeaderControls()` pattern. S01 (summary) does not need changes.
 
 ---
 
-**Next Steps**:
-1. Answer questions above via code inspection
-2. Test S09 conversion first (tomorrow morning)
-3. Document working pattern for other sections
-4. Proceed incrementally through S02-S16
+**Estimated Time**: 15 sections × 5 minutes each = ~75 minutes
 
-**Estimated Time**: 1-2 hours (assuming pattern is consistent across sections)
-
-**Branch Strategy**: Create `global-ref-only` branch from current HEAD before starting
+**Branch**: Already on `G-REF-ONLY` branch

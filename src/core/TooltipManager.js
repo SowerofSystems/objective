@@ -402,7 +402,8 @@
         "Select Yes or No to indicate whether an elevator forms part of the Equipment load.",
     },
     // Section 10 Solar Gains Data
-      d_73: { //generic opening input tooltip, copy down to d_74 thru d_78
+    d_73: {
+      //generic opening input tooltip, copy down to d_74 thru d_78
       cell: "D73",
       title: "Enter an Area in m²",
       message:
@@ -426,7 +427,8 @@
       message:
         "From Hourly Modelling for Toronto Latitude: 0.5 SHGC at Mid-wall placement self-shading and 40% DST and 52% TST Assumed",
     },
-    d_74: { //generic opening input tooltip, copy down to d_74 thru d_78
+    d_74: {
+      //generic opening input tooltip, copy down to d_74 thru d_78
       cell: "D74",
       title: "Enter an Area in m²",
       message:
@@ -444,7 +446,8 @@
       message:
         "0.5 = 50% Gain Permitted (Default)_x000a_Higher Numbers Increase Solar Heat Gain (Reduces Heating)_x000a_Lower Numbers Reduce Solar Heat Gain (Reduces Cooling)",
     },
-    d_75: { //generic opening input tooltip, copy down to d_74 thru d_78
+    d_75: {
+      //generic opening input tooltip, copy down to d_74 thru d_78
       cell: "D75",
       title: "Enter an Area in m²",
       message:
@@ -462,7 +465,8 @@
       message:
         "0.5 = 50% Gain Permitted (Default)_x000a_Higher Numbers Increase Solar Heat Gain (Reduces Heating)_x000a_Lower Numbers Reduce Solar Heat Gain (Reduces Cooling)",
     },
-    d_76: { //generic opening input tooltip, copy down to d_74 thru d_78
+    d_76: {
+      //generic opening input tooltip, copy down to d_74 thru d_78
       cell: "D76",
       title: "Enter an Area in m²",
       message:
@@ -480,7 +484,8 @@
       message:
         "0.5 = 50% Gain Permitted (Default)_x000a_Higher Numbers Increase Solar Heat Gain (Reduces Heating)_x000a_Lower Numbers Reduce Solar Heat Gain (Reduces Cooling)",
     },
-    d_77: { //generic opening input tooltip, copy down to d_74 thru d_78
+    d_77: {
+      //generic opening input tooltip, copy down to d_74 thru d_78
       cell: "D77",
       title: "Enter an Area in m²",
       message:
@@ -498,7 +503,8 @@
       message:
         "0.5 = 50% Gain Permitted (Default)_x000a_Higher Numbers Increase Solar Heat Gain (Reduces Heating)_x000a_Lower Numbers Reduce Solar Heat Gain (Reduces Cooling)",
     },
-    d_78: { //generic opening input tooltip, copy down to d_74 thru d_78
+    d_78: {
+      //generic opening input tooltip, copy down to d_74 thru d_78
       cell: "D78",
       title: "Enter an Area in m²",
       message:
@@ -616,7 +622,7 @@
       message:
         "Most of Canada uses Zone 2. _x000a_Southern SK & MB use Zone 1. _x000a_Southern BC uses Zone 3. _x000a_refer to Map on NRL50 n-Factors tab if uncertain",
     },
-    // Section 13 Mechanical Loads 
+    // Section 13 Mechanical Loads
     d_113: {
       cell: "D113",
       title: "Select Primary Heating System",

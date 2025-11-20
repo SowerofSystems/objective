@@ -721,84 +721,7 @@ window.TEUI.SectionModules.sect02 = (function () {
   // DUAL-ENGINE ARCHITECTURE
   //==========================================================================
 
-  /**
-   * Inject Target/Reference toggle controls into section header
-   * Standard Pattern A implementation
-   */
-  function injectHeaderControls() {
-    const sectionHeader = document.querySelector(
-      "#buildingInfo .section-header"
-    );
-    if (
-      !sectionHeader ||
-      sectionHeader.querySelector(".local-controls-container")
-    ) {
-      return; // Already setup or header not found
-    }
-
-    // Create controls container
-    const controlsContainer = document.createElement("div");
-    controlsContainer.className = "local-controls-container";
-    controlsContainer.style.cssText =
-      "display: flex; align-items: center; gap: 10px; margin-left: auto;";
-
-    // Create Reset button
-    const resetButton = document.createElement("button");
-    resetButton.textContent = "Reset";
-    resetButton.style.cssText =
-      "padding: 4px 8px; font-size: 12px; border: 1px solid #ccc; background: white; cursor: pointer; border-radius: 3px;";
-    resetButton.addEventListener("click", event => {
-      event.stopPropagation();
-      if (confirm("Reset all values to defaults?")) {
-        TargetState.setDefaults();
-        ReferenceState.setDefaults();
-        ModeManager.refreshUI();
-        console.log("S02: Reset to defaults");
-      }
-    });
-
-    // Create state indicator
-    const stateIndicator = document.createElement("div");
-    stateIndicator.textContent = "TARGET";
-    stateIndicator.style.cssText =
-      "padding: 4px 8px; font-size: 12px; font-weight: bold; color: white; background-color: rgba(0, 123, 255, 0.5); border-radius: 3px;";
-
-    // Create toggle switch
-    const toggleSwitch = document.createElement("div");
-    toggleSwitch.style.cssText =
-      "position: relative; width: 40px; height: 20px; background-color: #ccc; border-radius: 10px; cursor: pointer;";
-
-    const slider = document.createElement("div");
-    slider.style.cssText =
-      "position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background-color: white; border-radius: 50%; transition: transform 0.2s;";
-
-    toggleSwitch.appendChild(slider);
-
-    // Toggle Switch Click Handler
-    // ✅ REFACTORED: Just toggle mode, let switchMode() handle all UI updates via syncToggleUI()
-    toggleSwitch.addEventListener("click", event => {
-      event.stopPropagation();
-      // Determine target mode by checking current mode (don't rely on classList)
-      const targetMode =
-        ModeManager.currentMode === "target" ? "reference" : "target";
-      ModeManager.switchMode(targetMode);
-    });
-
-    // Assemble controls
-    controlsContainer.appendChild(resetButton);
-    controlsContainer.appendChild(stateIndicator);
-    controlsContainer.appendChild(toggleSwitch);
-    sectionHeader.appendChild(controlsContainer);
-
-    // ✅ NEW: Store references to toggle elements on ModeManager for global toggle sync
-    ModeManager._toggleElements = {
-      toggleSwitch: toggleSwitch,
-      slider: slider,
-      stateIndicator: stateIndicator,
-    };
-
-    console.log("✅ S02: Header controls injected successfully");
-  }
+  // ✅ G-REF-ONLY: Removed injectHeaderControls() - Section02 now uses global toggle only
 
   /**
    * REFERENCE MODEL ENGINE: Calculate all values using Reference state.
@@ -1101,18 +1024,26 @@ window.TEUI.SectionModules.sect02 = (function () {
     const currentMode = ModeManager.currentMode || "target";
 
     // Get the selected standard for current mode
-    const standard = currentMode === "reference"
-      ? window.TEUI.StateManager.getValue("ref_d_13")
-      : window.TEUI.StateManager.getValue("d_13");
+    const standard =
+      currentMode === "reference"
+        ? window.TEUI.StateManager.getValue("ref_d_13")
+        : window.TEUI.StateManager.getValue("d_13");
 
-    console.log(`[S02] "Set Values" button clicked - delegating to FileHandler`);
+    console.log(
+      `[S02] "Set Values" button clicked - delegating to FileHandler`
+    );
     console.log(`[S02] Mode: ${currentMode}, Standard: ${standard}`);
 
     // Delegate to FileHandler - it knows how to do this correctly!
     if (window.TEUI?.FileHandler?.applyReferenceValuesFromStandard) {
-      window.TEUI.FileHandler.applyReferenceValuesFromStandard(standard, currentMode);
+      window.TEUI.FileHandler.applyReferenceValuesFromStandard(
+        standard,
+        currentMode
+      );
     } else {
-      console.error("[S02] FileHandler.applyReferenceValuesFromStandard() not available");
+      console.error(
+        "[S02] FileHandler.applyReferenceValuesFromStandard() not available"
+      );
     }
   }
 
@@ -1127,7 +1058,9 @@ window.TEUI.SectionModules.sect02 = (function () {
     const setValuesBtn = document.getElementById("setValuesBtn");
     if (setValuesBtn) {
       setValuesBtn.addEventListener("click", () => {
-        console.log(`[S02] "Set Values" button clicked in ${ModeManager.currentMode.toUpperCase()} mode`);
+        console.log(
+          `[S02] "Set Values" button clicked in ${ModeManager.currentMode.toUpperCase()} mode`
+        );
         applyReferenceValuesOverlay();
       });
       console.log('[S02] "Set Values" button wired successfully');
@@ -1357,8 +1290,7 @@ window.TEUI.SectionModules.sect02 = (function () {
     // Initialize Pattern A Dual-State Module
     ModeManager.initialize();
 
-    // Inject header controls for Target/Reference toggle
-    injectHeaderControls();
+    // ✅ G-REF-ONLY: Removed injectHeaderControls() call - using global toggle only
 
     // ✅ PATTERN A: Defaults are now handled by TargetState.setDefaults() and ReferenceState.setDefaults()
     // No need to set defaults in StateManager - the dual-state architecture handles this
@@ -1920,12 +1852,11 @@ window.TEUI.SectionModules.sect02 = (function () {
         ReferenceState.setDefaults();
         ReferenceState.loadState();
 
-        // ✅ CSV EXPORT FIX: Publish ALL Reference defaults to StateManager
-        // Without this, CSV export shows empty Reference values (89 out of 126 missing)
-        // FileHandler.exportToCSV() reads from StateManager, not from internal ReferenceState
-        // Pattern: Conditionally publish if value doesn't exist (import-safe, non-destructive)
+        // ✅ STATE SYNC FIX: Sync both Target AND Reference states to StateManager on initialization
+        // This ensures downstream sections (like Section03) read correct values immediately
+        // Root cause of h_23 bug: StateManager had stale/undefined values while internal state was correct
         if (window.TEUI?.StateManager) {
-          [
+          const fieldsToSync = [
             "d_12",
             "d_13",
             "d_14",
@@ -1941,15 +1872,22 @@ window.TEUI.SectionModules.sect02 = (function () {
             "l_14",
             "l_15",
             "l_16",
-          ].forEach(id => {
+          ];
+
+          // Sync Target values (unprefixed)
+          fieldsToSync.forEach(id => {
+            const val = TargetState.getValue(id);
+            if (val != null && val !== "") {
+              window.TEUI.StateManager.setValue(id, val, "default");
+            }
+          });
+
+          // Sync Reference values (ref_ prefixed)
+          fieldsToSync.forEach(id => {
             const refId = `ref_${id}`;
             const val = ReferenceState.getValue(id);
-            if (
-              !window.TEUI.StateManager.getValue(refId) &&
-              val != null &&
-              val !== ""
-            ) {
-              window.TEUI.StateManager.setValue(refId, val, "calculated");
+            if (val != null && val !== "") {
+              window.TEUI.StateManager.setValue(refId, val, "default");
             }
           });
         }
@@ -2000,11 +1938,19 @@ window.TEUI.SectionModules.sect02 = (function () {
 
       // ✅ CRITICAL BRIDGE: Sync Target changes to StateManager for downstream sections
       if (this.currentMode === "target" && window.TEUI?.StateManager) {
+        // 🔍 DIAGNOSTIC: Log d_12 writes to StateManager
+        if (fieldId === "d_12") {
+          console.log(`[S02 ModeManager] 🔵 Writing TARGET d_12="${value}" to StateManager (source: ${source})`);
+        }
         window.TEUI.StateManager.setValue(fieldId, value, source);
       }
 
       // ✅ CRITICAL BRIDGE: Sync Reference changes to StateManager with ref_ prefix
       if (this.currentMode === "reference" && window.TEUI?.StateManager) {
+        // 🔍 DIAGNOSTIC: Log d_12 writes to StateManager
+        if (fieldId === "d_12") {
+          console.log(`[S02 ModeManager] 🔵 Writing REFERENCE ref_d_12="${value}" to StateManager (source: ${source})`);
+        }
         window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, source);
       }
     },

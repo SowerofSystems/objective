@@ -4,6 +4,10 @@
  *
  * BREAKTHROUGH: Integrated proven Target/Reference state isolation
  * Using ClimateValues JSON for data lookup (no Excel import needed)
+ *
+ * ✅ SMOOTH-MOVE-S02: No d_13 listeners - PH values from ReferenceValues.js
+ * h_23 (Tset Heating) values come from ReferenceValues.js via "Set Values" button
+ * d_13 changes are passive until user triggers Import Quarantine workflow
  */
 
 // Ensure namespace exists
@@ -2031,6 +2035,9 @@ window.TEUI.SectionModules.sect03 = (function () {
     const occupancyType = getModeAwareGlobalValue("d_12"); // ✅ PHASE 2: Mode-aware external dependency
     let heatingSetpoint;
 
+    // 🔍 DIAGNOSTIC: Log what we're reading from StateManager
+    console.log(`[S03 h_23 DEBUG] CALCULATING: d_13="${referenceStandard}", d_12="${occupancyType}"`);
+
     // Check if the reference standard indicates a Passive House related standard
     // Defensive: Check if referenceStandard exists and is a string before calling methods
     if (
@@ -2040,6 +2047,7 @@ window.TEUI.SectionModules.sect03 = (function () {
     ) {
       // Case-insensitive check for "PH"
       heatingSetpoint = 18;
+      console.log(`[S03 h_23 DEBUG] ✅ PH standard detected → h_23 = 18°C`);
     } else {
       // Original logic if not a PH standard: 22°C for Residential or Care occupancies, else 18°C
       // Ensuring the occupancyType strings match those defined in Section02 d_12 options
@@ -2051,12 +2059,16 @@ window.TEUI.SectionModules.sect03 = (function () {
       ) {
         // Broader check for "Care" just in case of variations
         heatingSetpoint = 22;
+        console.log(`[S03 h_23 DEBUG] ✅ Critical occupancy (non-PH) → h_23 = 22°C`);
       } else {
         heatingSetpoint = 18; // Default for other non-PH, non-Care/Residential occupancies
+        console.log(`[S03 h_23 DEBUG] ✅ Other occupancy (non-PH) → h_23 = 18°C`);
       }
     }
 
+    console.log(`[S03 h_23 DEBUG] ⚡ SETTING h_23 = ${heatingSetpoint}`);
     setFieldValue("h_23", heatingSetpoint); // Update state and DOM via S03 local helper
+    console.log(`[S03 h_23 DEBUG] ✓ setFieldValue() completed`);
     return heatingSetpoint; // Return value for potential chaining
   }
 
@@ -2521,18 +2533,20 @@ window.TEUI.SectionModules.sect03 = (function () {
         }
       );
 
-      // ✅ NEW: Listener for d_13 (Target Reference Standard) changes
-      // Required for PH override logic in h_23 calculation
+      // ✅ h_23 BUG FIX: Restore d_13 listeners for h_23 temperature calculation
+      // h_23 (Tset Heating) depends on BOTH d_12 (occupancy) AND d_13 (standard)
+      // - PH standards: h_23 = 18°C (regardless of occupancy)
+      // - Non-PH + Critical Occupancy: h_23 = 22°C
+      // - Non-PH + Other Occupancy: h_23 = 18°C
+      // Without these listeners, h_23 doesn't update when switching between PH and non-PH standards
       window.TEUI.StateManager.addListener("d_13", function () {
-        // Trigger full recalculation to update h_23 based on PH override logic
-        calculateAll();
+        calculateAll(); // Recalculates h_23 based on current d_13 and d_12 values
+        ModeManager.updateCalculatedDisplayValues();
       });
 
-      // ✅ NEW: Listener for ref_d_13 (Reference Reference Standard) changes
-      // Required for PH override logic in Reference mode h_23 calculation
       window.TEUI.StateManager.addListener("ref_d_13", function () {
-        // Trigger full recalculation to update ref_h_23 based on PH override logic
-        calculateAll();
+        calculateAll(); // Recalculates ref_h_23 based on current ref_d_13 and ref_d_12 values
+        ModeManager.updateCalculatedDisplayValues();
       });
 
       // ✅ REMOVED: Self-listeners cause recursion anti-pattern per 4012-CHEATSHEET.md
