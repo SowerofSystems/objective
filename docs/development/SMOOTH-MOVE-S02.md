@@ -740,4 +740,77 @@ OR no logs at all (function not being called).
 
 ---
 
+## RESOLUTION: Root Cause Identified
+
+**Status:** ✅ Bug Found
+**Date:** 2025-11-20
+
+### Diagnostic Results from Logs.md
+
+The diagnostic logging revealed the TRUE root cause:
+
+**Line 2555 (when d_12 changed to C-Residential):**
+```
+[S03 h_23 DEBUG] CALCULATING: d_13="PH Classic", d_12="C-Residential"
+[S03 h_23 DEBUG] ✅ PH standard detected → h_23 = 18°C
+```
+
+**Line 2608 (when d_13 changed back to OBC):**
+```
+[S03 h_23 DEBUG] CALCULATING: d_13="OBC SB10 5.5-6 Z6", d_12="A-Assembly"  ← BUG!
+[S03 h_23 DEBUG] ✅ Other occupancy (non-PH) → h_23 = 18°C
+```
+
+### The Real Problem
+
+**d_12 is being RESET from "C-Residential" to "A-Assembly" when d_13 changes!**
+
+This is NOT a calculation bug or state persistence bug - it's a **user selection overwrite bug**.
+
+Between line 2555 and line 2608:
+1. User had selected d_12 = "C-Residential" ✅
+2. User changed d_13 from "PH Classic" to "OBC SB10"
+3. **Something reset d_12 to "A-Assembly"** ❌
+4. Calculation reads d_12 = "A-Assembly" (correctly!)
+5. h_23 = 18°C (correct for A-Assembly, wrong expectation)
+
+### Root Cause: d_13 Change Triggers d_12 Reset
+
+**Hypothesis:** When d_13 changes, something is applying default values or resetting fields. Likely culprits:
+
+1. **Section02's `handleBuildingCodeChange()`** might be calling something that resets dependent fields
+2. **ReferenceValues.js** might include d_12 defaults that overwrite user selection
+3. **Calculator.calculateAll()** might have initialization logic that resets d_12
+4. **Section02 state sync** might be reloading defaults when standard changes
+
+### Fix Strategy
+
+**Option 1: Preserve d_12 During d_13 Changes**
+- Before changing d_13, save current d_12 value
+- After d_13 change completes, restore d_12 if user had modified it
+- Mark d_12 as "user-modified" to prevent overwrites
+
+**Option 2: Remove d_12 from Standard Change Reset**
+- Find where d_12 is being reset when d_13 changes
+- Add d_12 to exclusion list (don't reset user selections)
+- Only reset calculated fields, not user inputs
+
+**Option 3: Add d_12 Protection Flag**
+- When user changes d_12, set flag: `d_12_user_modified = true`
+- In reset logic, check flag before overwriting d_12
+- Clear flag only on explicit user reset or file import
+
+### Recommended Fix: Option 2
+
+**Find and fix the reset source:**
+
+1. Search Section02 for where d_12 might be reset when d_13 changes
+2. Check if ReferenceValues.js includes d_12 (it shouldn't - occupancy is user choice)
+3. Look for initialization code in Calculator.calculateAll()
+4. Add safeguards to preserve user-modified input fields
+
+**The calculation logic is CORRECT - we just need to stop d_12 from being reset!**
+
+---
+
 **End of Document**
