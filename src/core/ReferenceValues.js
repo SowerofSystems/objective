@@ -395,7 +395,7 @@ TEUI.ReferenceValues = {
     f_94: "3.72", // Min. Permissible RSI by NBC/OBC
     f_95: "1.96", // Min. Permissible RSI Slab by NBC/OBC
     d_97: "5", // Default Thermal Bridge Penatly (Not Defined in Codes)
-    d_108: "PH Classic", // Airtightness Method (check this is in correct position per DOM and not in 109)
+    d_108: "PH_CLASSIC", // Airtightness Method (check this is in correct position per DOM and not in 109)
     j_115: "0.90", // Min. AFUE if Gas or Oil
     j_116: "3.3", // Min. COPc if Dedicated Cooling
     f_113: "7.1", // Min. HSPF if Heatpump
@@ -435,7 +435,7 @@ TEUI.ReferenceValues = {
     f_94: "3.72", // Min. Permissible RSI by NBC/OBC
     f_95: "1.96", // Min. Permissible RSI Slab by NBC/OBC
     d_97: "5", // Default Thermal Bridge Penatly (Not Defined in Codes)
-    d_108: "PH Classic", // Airtightness Method
+    d_108: "PH_PLUS", // Airtightness Method
     j_115: "0.90", // Min. AFUE if Gas or Oil
     j_116: "3.3", // Min. COPc if Dedicated Cooling
     f_113: "7.1", // Min. HSPF if Heatpump
@@ -476,7 +476,7 @@ TEUI.ReferenceValues = {
     f_94: "3.72", // Min. Permissible RSI by NBC/OBC
     f_95: "1.96", // Min. Permissible RSI Slab by NBC/OBC
     d_97: "5", // Default Thermal Bridge Penatly (Not Defined in Codes)
-    d_108: "PH Classic", // Airtightness Method
+    d_108: "PH_CLASSIC", // Airtightness Method
     j_115: "0.90", // Min. AFUE if Gas or Oil
     j_116: "3.3", // Min. COPc if Dedicated Cooling
     f_113: "7.1", // Min. HSPF if Heatpump
@@ -517,7 +517,7 @@ TEUI.ReferenceValues = {
     f_94: "3.72", // Min. Permissible RSI by NBC/OBC
     f_95: "1.96", // Min. Permissible RSI Slab by NBC/OBC
     d_97: "5", // Default Thermal Bridge Penatly (Not Defined in Codes)
-    d_108: "PH Low", // Airtightness Method
+    d_108: "PH_LOW", // Airtightness Method
     j_115: "0.90", // Min. AFUE if Gas or Oil
     j_116: "3.3", // Min. COPc if Dedicated Cooling
     f_113: "7.1", // Min. HSPF if Heatpump
@@ -558,7 +558,7 @@ TEUI.ReferenceValues = {
     f_94: "3.72", // Min. Permissible RSI by NBC/OBC
     f_95: "1.96", // Min. Permissible RSI Slab by NBC/OBC
     d_97: "5", // Default Thermal Bridge Penatly (Not Defined in Codes)
-    d_108: "PH Low", // Airtightness Method
+    d_108: "PH_LOW", // Airtightness Method
     j_115: "0.90", // Min. AFUE if Gas or Oil
     j_116: "3.3", // Min. COPc if Dedicated Cooling
     f_113: "7.1", // Min. HSPF if Heatpump
