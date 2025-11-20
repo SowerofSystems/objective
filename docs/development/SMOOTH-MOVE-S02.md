@@ -459,10 +459,42 @@ The ReferenceValues.js approach eliminates the problem at the root.
 
 ## ADDENDUM: h_23 (Tset) State Persistence Bug
 
-**Status:** Under Investigation
+**Status:** UNRESOLVED - Shelved for future investigation
 **Date:** 2025-11-20
+**Severity:** Low (most users won't encounter this workflow)
 
-### Problem Description
+---
+
+## EXECUTIVE SUMMARY
+
+**THE BUG:**
+h_23 (Tset Heating) gets stuck at 18°C when it should be 22°C for Critical Occupancy buildings using non-PH standards.
+
+**REQUIRED BEHAVIOR:**
+- IF d_12 = "C-Residential" OR any "Care" occupancy (Critical Occupancy)
+- AND d_13 = any NON-PH standard (e.g., "OBC SB10 5.5-6 Z6")
+- THEN h_23 MUST = 22°C
+- (Currently: h_23 stays stuck at 18°C)
+
+**TRIGGER:**
+User changes d_13 standard dropdown AFTER setting d_12 to Critical Occupancy
+
+**WORKAROUND:**
+Toggle d_12 dropdown to any value and back to Critical - unsticks h_23
+
+**LIKELY CAUSES:**
+1. State mixing: Something reads `ref_d_12` instead of `d_12` during d_13 calculations
+2. Fallback logic: Code falls back to "A-Assembly" default when d_12 lookup fails
+3. Timing: Section03 calculates before Section02's setValue() propagates
+
+**INVESTIGATION ARTIFACTS:**
+- 37,586 line console log showing d_12="A-Assembly" when DOM shows "C-Residential"
+- Diagnostic logging in Section03 (lines 2039-2071) - can be removed
+- Multiple failed fix attempts in commit history (reverted)
+
+---
+
+### Problem Description (Original)
 
 After removing d_13 listeners, a state persistence bug was discovered where h_23 (Tset Heating) does NOT update correctly when **switching FROM PH standards TO non-PH standards** with Critical Occupancy selected.
 
@@ -880,20 +912,45 @@ if (window.TEUI?.StateManager) {
 - Need to check if StateManager.getValue("d_12") returns correct value immediately after user change
 - Need to identify what (if anything) is overwriting StateManager AFTER the user change
 
-### BUG STATUS: UNRESOLVED ❌
+### BUG STATUS: UNRESOLVED ❌ (SHELVED FOR FUTURE)
 
-**Issue Tracking:** This will be added to GitHub Issues for remote tracking
+**Issue Tracking:** Will be added to GitHub Issues for remote tracking
 
-**Summary:**
-- **Root Cause:** StateManager and TargetState are out of sync for d_12
-- **Symptom:** h_23 doesn't update to 22°C when switching from PH to non-PH with Critical Occupancy
-- **Attempted Fix:** Initialization sync (partial improvement only)
-- **Remaining Work:** Identify why user changes to d_12 don't persist in StateManager
+**THE BUG (Simple Statement):**
+When `d_12` = Critical Occupancy (C-Residential or Care types) AND `d_13` = any NON-PH standard, `h_23` MUST be 22°C. Currently it gets stuck at 18°C after switching away from PH standards.
 
-**Impact:**
-- 37,586 console log lines generated from simple d_12/d_13 changes
-- Circular calculation cascade still occurring
-- User experience: h_23 appears "stuck" at wrong value
+**User Impact:**
+- **Severity:** Low - Most users set Occupancy first, then Standard, avoiding the bug
+- **Trigger:** Only occurs when user switches d_13 AFTER setting d_12 to Critical Occupancy
+- **Workaround:** User can toggle d_12 dropdown to "unstick" the value
+
+**Likely Root Causes (NOT the previous incorrect theory):**
+
+1. **State Mixing (ref_d_12 vs d_12)** ⭐ MOST LIKELY
+   - When d_13 changes, something reads `ref_d_12` instead of `d_12`
+   - Classic state contamination pattern (seen before in other sections)
+   - Check: Any code that reads d_12 during d_13 change calculations
+
+2. **Fallback Logic Reading Wrong Default** ⭐ ALSO LIKELY
+   - Code has `|| "A-Assembly"` fallback somewhere
+   - When StateManager.getValue("d_12") returns falsy, fallback kicks in
+   - Returns field definition default instead of user selection
+
+3. **Calculation Timing/Order Issue**
+   - Section03 calculates before Section02's setValue() propagates
+   - StateManager notification race condition
+
+**What We Know For Sure:**
+- Section02 DOES write d_12 to StateManager (downstream sections receive it)
+- The calculation logic in Section03 is CORRECT
+- DOM shows correct value, StateManager shows stale value
+- 37,586 console log lines from simple d_12/d_13 changes (cascade issue)
+
+**Next Investigation Steps:**
+1. Search for `ref_d_12` reads during d_13 change handling
+2. Search for fallback patterns: `getValue("d_12") || "A-Assembly"`
+3. Check calculation order in Calculator.calculateAll()
+4. Add targeted logging ONLY for d_12 reads (not writes)
 
 ---
 
