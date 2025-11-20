@@ -939,7 +939,8 @@ window.TEUI.SectionModules.sect04 = (function () {
         "h_34",
         "j_34", // Row 34 (per capita)
         "d_35",
-        "f_35", // Row 35 (primary energy)
+        "f_35",
+        "h_35", // Row 35 (primary energy + PER)
       ];
 
       calculatedFields.forEach(fieldId => {
@@ -1286,8 +1287,11 @@ window.TEUI.SectionModules.sect04 = (function () {
     // Read building standard from S02 (mode-aware via global state)
     const standard = getGlobalStringValue("d_13") || "";
 
+    console.log(`[S04 PER] 🔍 CALCULATING PER: d_13="${standard}", mode=${ModeManager.currentMode}`);
+
     // Check if PH standard
     if (!standard.toUpperCase().includes("PH")) {
+      console.log(`[S04 PER] ❌ Non-PH standard → PER = 1.00`);
       return 1.00; // Non-PH standard → PER = 1.00
     }
 
@@ -1302,11 +1306,15 @@ window.TEUI.SectionModules.sect04 = (function () {
     const d_114 = getGlobalNumericValue("d_114") || 0; // Space heating energy
     const d_117 = getGlobalNumericValue("d_117") || 0; // Space cooling energy
 
+    console.log(`[S04 PER] 📊 Energy values: j_27=${j_27}, j_28=${j_28}, j_29=${j_29}, j_30=${j_30}, j_31=${j_31}`);
+    console.log(`[S04 PER] 🌡️ S13 values: d_114=${d_114}, d_117=${d_117}`);
+
     // Calculate total energy
     const totalEnergy = j_27 + j_28 + j_29 + j_30 + j_31;
 
     // Check for zero total (avoid division by zero)
     if (totalEnergy === 0) {
+      console.log(`[S04 PER] ⚠️ Zero total energy → PER = 1.00`);
       return 1.00;
     }
 
@@ -1322,6 +1330,7 @@ window.TEUI.SectionModules.sect04 = (function () {
       j_31 * 1.1; // Renewables × 1.1
 
     const per = numerator / totalEnergy;
+    console.log(`[S04 PER] ✅ PH standard → PER = ${per.toFixed(2)} (numerator=${numerator.toFixed(2)}, total=${totalEnergy.toFixed(2)})`);
     return per;
   }
 
@@ -1660,6 +1669,11 @@ window.TEUI.SectionModules.sect04 = (function () {
       dependencies.forEach(fieldId => {
         window.TEUI.StateManager.addListener(fieldId, calculateAndRefresh);
       });
+
+      // ✅ PER CALCULATION: Listen for building standard changes (d_13)
+      // PER (h_35) depends on d_13 to determine if PH standard applies
+      window.TEUI.StateManager.addListener("d_13", calculateAndRefresh);
+      window.TEUI.StateManager.addListener("ref_d_13", calculateAndRefresh);
     }
   }
 
