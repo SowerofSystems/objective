@@ -455,4 +455,289 @@ The ReferenceValues.js approach eliminates the problem at the root.
 
 ---
 
+---
+
+## ADDENDUM: h_23 (Tset) State Persistence Bug
+
+**Status:** Under Investigation
+**Date:** 2025-11-20
+
+### Problem Description
+
+After removing d_13 listeners, a state persistence bug was discovered where h_23 (Tset Heating) does NOT update correctly when **switching FROM PH standards TO non-PH standards** with Critical Occupancy selected.
+
+**CLARIFICATION:** The issue is NOT that PH standards set h_23 to 18°C (this is correct and intentional). The bug is that when switching AWAY FROM PH to a non-PH standard, h_23 fails to restore occupancy-based logic (Critical Occupancy should get 22°C, not stay stuck at 18°C).
+
+### Bug Scenario
+
+**Steps to Reproduce:**
+1. App loads: d_13 = "OBC SB10", d_12 = "A2-Assembly" → h_23 = 18°C ✅
+2. User changes to PH: d_13 = "PH Classic" → h_23 = 18°C ✅
+3. User changes occupancy: d_12 = "C-Residential" (Critical) → h_23 stays 18°C ✅ (PH overrides, correct)
+4. User changes BACK to OBC: d_13 = "OBC SB10 5.5-6 Z6" → h_23 **STAYS 18°C** ❌ (should be 22°C!)
+
+**Expected:** h_23 should update to 22°C in step 4 (Critical Occupancy + non-PH standard = 22°C)
+**Actual:** h_23 remains 18°C (stuck at PH value even after switching away from PH)
+
+### Key Observation
+
+**This bug occurs regardless of whether Section02's `handleBuildingCodeChange()` calls `calculateAll()` or not.** The issue persists in both scenarios:
+- WITH `calculateAll()`: h_23 doesn't update
+- WITHOUT `calculateAll()`: h_23 doesn't update
+
+This suggests the problem is NOT with calculation triggering, but with HOW h_23 is calculated or stored.
+
+### Analysis: How h_23 Works
+
+**Location:** `Section03.js` lines 2033-2065
+
+#### Current Logic in `calculateHeatingSetpoint()`
+
+```javascript
+function calculateHeatingSetpoint() {
+  const referenceStandard = getModeAwareGlobalValue("d_13");  // Reads from StateManager
+  const occupancyType = getModeAwareGlobalValue("d_12");      // Reads from StateManager
+  let heatingSetpoint;
+
+  // Priority 1: Check if PH standard
+  if (referenceStandard && referenceStandard.toUpperCase().includes("PH")) {
+    heatingSetpoint = 18;  // PH always gets 18°C, regardless of occupancy
+  } else {
+    // Priority 2: Check occupancy type
+    if (occupancyType === "C-Residential" || occupancyType.includes("Care")) {
+      heatingSetpoint = 22;  // Critical occupancy
+    } else {
+      heatingSetpoint = 18;  // Other occupancies
+    }
+  }
+
+  setFieldValue("h_23", heatingSetpoint);  // Write to state
+  return heatingSetpoint;
+}
+```
+
+#### Decision Tree
+
+```
+d_13 contains "PH"?
+├─ YES → h_23 = 18°C (END, ignore d_12)
+└─ NO  → Check d_12
+         ├─ Critical Occupancy (Residential/Care) → h_23 = 22°C
+         └─ Other Occupancy → h_23 = 18°C
+```
+
+### The Logic is CORRECT
+
+The logic in `calculateHeatingSetpoint()` is actually **architecturally sound**:
+1. PH standards mandate 18°C regardless of occupancy (matches your ReferenceValues.js approach)
+2. Non-PH standards respect occupancy-based code requirements (22°C for Critical, 18°C for others)
+
+### Possible Root Causes
+
+#### Hypothesis 1: `calculateHeatingSetpoint()` Not Being Called
+**Test:** Add console.log in `calculateHeatingSetpoint()` when d_13 changes
+**Check:** Does it log when switching from PH → OBC?
+
+#### Hypothesis 2: StateManager Read Lag
+**Issue:** `getModeAwareGlobalValue("d_13")` might be reading the OLD value (cached)
+**Test:** Check what value `referenceStandard` has when switching from PH → OBC
+**Symptom:** If it reads "PH Classic" when d_13 has already changed to "OBC SB10", logic would fail
+
+#### Hypothesis 3: Calculation Order Issue
+**Issue:** Section03 calculates BEFORE Section02's `setValue()` completes
+**Flow:**
+1. Section02 dropdown changes
+2. Event handler calls `ModeManager.setValue("d_13", "OBC SB10")`
+3. Section02 calls `calculateAll()`
+4. Section03's `calculateHeatingSetpoint()` runs
+5. BUT: Did StateManager finish notifying listeners of d_13 change?
+
+#### Hypothesis 4: Value Overwrite from Another Source
+**Issue:** Something ELSE writes h_23 = 18°C AFTER `calculateHeatingSetpoint()` runs
+**Candidates:**
+- FileHandler applying values from ReferenceValues.js (but shouldn't happen without "Set Values")
+- Another section overwriting h_23
+- DOM-to-State sync overwriting calculated value
+
+### Investigation Needed
+
+**Add diagnostic logging to trace the issue:**
+
+```javascript
+function calculateHeatingSetpoint() {
+  const referenceStandard = getModeAwareGlobalValue("d_13");
+  const occupancyType = getModeAwareGlobalValue("d_12");
+
+  console.log(`[S03 h_23] CALCULATING: d_13="${referenceStandard}", d_12="${occupancyType}"`);
+
+  let heatingSetpoint;
+  if (referenceStandard && referenceStandard.toUpperCase().includes("PH")) {
+    heatingSetpoint = 18;
+    console.log(`[S03 h_23] PH detected → 18°C`);
+  } else {
+    if (occupancyType === "C-Residential" || occupancyType.includes("Care")) {
+      heatingSetpoint = 22;
+      console.log(`[S03 h_23] Critical occupancy → 22°C`);
+    } else {
+      heatingSetpoint = 18;
+      console.log(`[S03 h_23] Other occupancy → 18°C`);
+    }
+  }
+
+  console.log(`[S03 h_23] SETTING h_23 = ${heatingSetpoint}`);
+  setFieldValue("h_23", heatingSetpoint);
+  return heatingSetpoint;
+}
+```
+
+### Expected Console Output (Successful Scenario)
+
+```
+User changes d_13 from "PH Classic" to "OBC SB10" with d_12 = "C-Residential":
+[S03 h_23] CALCULATING: d_13="OBC SB10 5.5-6 Z6", d_12="C-Residential"
+[S03 h_23] Critical occupancy → 22°C
+[S03 h_23] SETTING h_23 = 22
+```
+
+### Expected Console Output (Bug Scenario)
+
+If Hypothesis 2 is correct (stale read):
+```
+[S03 h_23] CALCULATING: d_13="PH Classic", d_12="C-Residential"
+[S03 h_23] PH detected → 18°C
+[S03 h_23] SETTING h_23 = 18
+```
+
+### Architectural Implications
+
+This bug reveals a potential flaw in the SMOOTH-MOVE-S02 approach:
+
+**Original Design Assumption:**
+- d_13 changes should NOT trigger calculations
+- Values come from ReferenceValues.js via "Set Values" button only
+
+**Reality:**
+- h_23 MUST respond to BOTH d_13 AND d_12 changes dynamically
+- h_23 is NOT just a "standard override" - it's a **calculated field** with business logic
+- Removing d_13 calculations may have broken the dynamic recalculation loop
+
+### Potential Solutions
+
+#### Option A: Keep Section02's `calculateAll()` (Current State)
+**Pros:**
+- h_23 recalculates when d_13 changes (if bug is fixed)
+- Dynamic behavior preserved
+- No "stuck value" issues
+
+**Cons:**
+- Still triggers cascade through sections
+- May re-introduce some console noise (though much less than 48 cycles)
+
+#### Option B: Add d_12 Listener to Section03
+**Approach:** Listen to d_12 changes specifically to recalculate h_23
+**Pros:**
+- Targeted recalculation only for occupancy changes
+- d_13 remains passive
+
+**Cons:**
+- h_23 won't update when switching FROM PH to non-PH (unless d_12 also changes)
+- User must change occupancy dropdown to "unstick" h_23
+
+#### Option C: Make h_23 User-Editable with Smart Defaults
+**Approach:**
+- h_23 becomes editable field (like d_65/d_66)
+- Auto-calculates on d_13/d_12 changes
+- User can override manually
+- "Set Values" applies standard-specific override
+
+**Pros:**
+- Maximum flexibility
+- User control over Tset
+- Clear when value is from standard vs calculated vs user-modified
+
+**Cons:**
+- Increases UI complexity
+- May confuse users about which value to use
+
+#### Option D: Re-architect h_23 as Pure Lookup (Not Recommended)
+**Approach:** h_23 comes ONLY from ReferenceValues.js, no calculation logic
+**Pros:**
+- Simple, predictable
+- Consistent with d_65/d_66 pattern
+
+**Cons:**
+- Loses occupancy-based code compliance logic
+- Would need separate ReferenceValues entry for EVERY standard × occupancy combination
+- Not maintainable (combinatorial explosion)
+
+### Diagnostic Logging Added
+
+**Status:** ✅ Implemented (Section03.js lines 2039-2071)
+**Date:** 2025-11-20
+
+Added comprehensive console logging to `calculateHeatingSetpoint()` to trace:
+1. What values are read from StateManager (d_13, d_12)
+2. Which conditional branch executes (PH vs Critical vs Other)
+3. What value is calculated
+4. Confirmation that `setFieldValue()` completes
+
+**Log Tags:** All logs use `[S03 h_23 DEBUG]` prefix for easy filtering
+
+### Test Procedure
+
+**To reproduce and diagnose:**
+1. Open browser console
+2. Filter for: `[S03 h_23 DEBUG]`
+3. Perform scenario:
+   - Start: d_13 = "OBC SB10", d_12 = "A2-Assembly"
+   - Change to: d_13 = "PH Classic"
+   - Change to: d_12 = "C-Residential" (Critical)
+   - **Change BACK to: d_13 = "OBC SB10 5.5-6 Z6"** ← This is where bug occurs
+4. Check console for last `calculateHeatingSetpoint()` call
+
+**Expected Output (if working correctly):**
+```
+[S03 h_23 DEBUG] CALCULATING: d_13="OBC SB10 5.5-6 Z6", d_12="C-Residential"
+[S03 h_23 DEBUG] ✅ Critical occupancy (non-PH) → h_23 = 22°C
+[S03 h_23 DEBUG] ⚡ SETTING h_23 = 22
+[S03 h_23 DEBUG] ✓ setFieldValue() completed
+```
+
+**Bug Symptom (if broken):**
+```
+[S03 h_23 DEBUG] CALCULATING: d_13="PH Classic", d_12="C-Residential"  ← Stale d_13!
+[S03 h_23 DEBUG] ✅ PH standard detected → h_23 = 18°C
+[S03 h_23 DEBUG] ⚡ SETTING h_23 = 18
+[S03 h_23 DEBUG] ✓ setFieldValue() completed
+```
+
+OR no logs at all (function not being called).
+
+### Next Steps
+
+**After testing with diagnostic logs:**
+
+1. **If logs show correct values but h_23 doesn't update in DOM:**
+   - Problem is in `setFieldValue()` or StateManager → DOM sync
+   - Check if value is in StateManager but DOM not refreshing
+   - Fix: Investigate `ModeManager.updateCalculatedDisplayValues()`
+
+2. **If logs show stale d_13 value ("PH Classic" when should be "OBC"):**
+   - Problem is StateManager read lag or calculation timing
+   - Fix: Add `setTimeout()` or ensure StateManager.setValue completes before calculateAll()
+
+3. **If no logs appear:**
+   - Problem is `calculateHeatingSetpoint()` not being called
+   - Fix: Ensure Section02's `calculateAll()` triggers Section03 calculations
+   - OR: Add listener for d_13 changes specifically in Section03
+
+4. **If logs show h_23 = 22 but then DOM shows 18:**
+   - Problem is value overwrite from another source after calculation
+   - Check: FileHandler, other sections, DOM-to-State sync
+   - Fix: Identify and remove the overwrite source
+
+**Do NOT remove diagnostic logging until bug is confirmed fixed and tested.**
+
+---
+
 **End of Document**
