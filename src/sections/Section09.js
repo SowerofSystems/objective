@@ -4,6 +4,10 @@
  *
  * Uses the consolidated declarative approach where field definitions
  * are integrated directly into the layout structure.
+ *
+ * ✅ SMOOTH-MOVE-S02: No d_13 listeners - PH values from ReferenceValues.js
+ * d_65/d_66 (plug loads) come from ReferenceValues.js via "Set Values" button
+ * d_13 changes are passive until user triggers Import Quarantine workflow
  */
 
 // Ensure namespace exists
@@ -2429,19 +2433,11 @@ window.TEUI.SectionModules.sect09 = (function () {
     });
 
     // 4. Reference Standard (d_13 / ref_d_13)
-    // ✅ CRITICAL: Keep d_13 listener for Plug/Light/Equipment loads recalculation
-    sm.addListener("d_13", () => {
-      calculateTargetModel();
-      updateAllReferenceIndicators();
-      ModeManager.updateCalculatedDisplayValues();
-    });
-    // ✅ RESTORED: ref_d_13 listener needed for Reference model plug load recalculation
-    // When ref_d_13 changes (e.g., PH Classic selected), plug loads must be recalculated
-    // based on building standard rules (PH standards → 2.1 W/m², others → 5-7 W/m²)
-    sm.addListener("ref_d_13", () => {
-      calculateReferenceModel();
-      ModeManager.updateCalculatedDisplayValues();
-    });
+    // ✅ SMOOTH-MOVE-S02: d_13/ref_d_13 listeners REMOVED
+    // PH-specific plug load values (d_65, d_66) now come from ReferenceValues.js
+    // via "Set Values" button using Import Quarantine pattern
+    // This eliminates the 48-cycle cascade that generated 35,000+ log lines on d_13 change
+    // d_13 changes are now passive until user presses "Set Values"
 
     // 5. Cooling Days (m_19 / ref_m_19)
     sm.addListener("m_19", () => {
@@ -2454,7 +2450,7 @@ window.TEUI.SectionModules.sect09 = (function () {
     });
 
     console.log(
-      "[S09] ✅ Pattern A dual-engine listeners registered (5 Target/Reference pairs)"
+      "[S09] ✅ Pattern A dual-engine listeners registered (4 Target/Reference pairs - d_13 removed per SMOOTH-MOVE-S02)"
     );
   }
 

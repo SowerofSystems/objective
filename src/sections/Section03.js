@@ -4,6 +4,10 @@
  *
  * BREAKTHROUGH: Integrated proven Target/Reference state isolation
  * Using ClimateValues JSON for data lookup (no Excel import needed)
+ *
+ * ✅ SMOOTH-MOVE-S02: No d_13 listeners - PH values from ReferenceValues.js
+ * h_23 (Tset Heating) values come from ReferenceValues.js via "Set Values" button
+ * d_13 changes are passive until user triggers Import Quarantine workflow
  */
 
 // Ensure namespace exists
@@ -2521,19 +2525,10 @@ window.TEUI.SectionModules.sect03 = (function () {
         }
       );
 
-      // ✅ NEW: Listener for d_13 (Target Reference Standard) changes
-      // Required for PH override logic in h_23 calculation
-      window.TEUI.StateManager.addListener("d_13", function () {
-        // Trigger full recalculation to update h_23 based on PH override logic
-        calculateAll();
-      });
-
-      // ✅ NEW: Listener for ref_d_13 (Reference Reference Standard) changes
-      // Required for PH override logic in Reference mode h_23 calculation
-      window.TEUI.StateManager.addListener("ref_d_13", function () {
-        // Trigger full recalculation to update ref_h_23 based on PH override logic
-        calculateAll();
-      });
+      // ✅ SMOOTH-MOVE-S02: d_13/ref_d_13 listeners REMOVED
+      // PH-specific values (h_23) now come from ReferenceValues.js via "Set Values" button
+      // This eliminates the 48-cycle cascade that generated 35,000+ log lines on d_13 change
+      // d_13 changes are now passive until user presses "Set Values" (Import Quarantine pattern)
 
       // ✅ REMOVED: Self-listeners cause recursion anti-pattern per 4012-CHEATSHEET.md
       // ✅ ANTI-PATTERN 7 FIX: S03 should NOT listen to its own input fields
