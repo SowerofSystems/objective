@@ -223,9 +223,14 @@ TEUI.FieldManager = (function () {
         }
       } else {
         // Fallback: section exists but no ModeManager - direct StateManager write
-        console.warn(
-          `[FieldManager] Section ${sectionId} has no ModeManager - using direct write for ${fieldId}`
-        );
+        // This is normal for display-only sections like sect01 that don't have calculations
+        // Only log for non-display sections to reduce noise
+        const displayOnlySections = ["sect01"];
+        if (!displayOnlySections.includes(sectionId)) {
+          console.warn(
+            `[FieldManager] Section ${sectionId} has no ModeManager - using direct write for ${fieldId}`
+          );
+        }
         if (TEUI.StateManager && TEUI.StateManager.setValue) {
           TEUI.StateManager.setValue(fieldId, value, source);
         }
