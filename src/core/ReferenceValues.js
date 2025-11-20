@@ -366,6 +366,7 @@ TEUI.ReferenceValues = {
   },
   "PH Classic": {
     //"h_13": "90% less than NBC"
+    h_23: "18", // PH Tsetpoint in °C
     d_52: "100", // DWH System Efficiency when Electric
     k_52: "92", // DWH AFUE when Gas or Oil
     d_53: "0.42", // DWHR Efficiency 0 when OBC
@@ -373,6 +374,7 @@ TEUI.ReferenceValues = {
     d_57: "1000", // Max. CO2 per Health Canada ppm
     d_58: "150", // Max. CO2 per Health Canada ppm
     d_59: "45", // Ideal RH% averaged annually
+    d_65: "2.1", // PH Specific Plug Loads in W/m²
     d_66: "1.1", // Max. Permissible Lighting Load
     g_67: "Efficient", // Default Eppt Efficienct Spec.
     //t_65: "5.0", // Reference Plug Load (W/m²)
@@ -406,6 +408,7 @@ TEUI.ReferenceValues = {
   },
   "PH Plus": {
     //"h_13": "90% less than NBC"
+    h_23: "18", // PH Tsetpoint in °C
     d_52: "100", // DWH System Efficiency when Electric
     k_52: "92", // DWH AFUE when Gas or Oil
     d_53: "0.42", // DWHR Efficiency 0 when OBC
@@ -413,6 +416,7 @@ TEUI.ReferenceValues = {
     d_57: "1000", // Max. CO2 per Health Canada ppm
     d_58: "150", // Max. CO2 per Health Canada ppm
     d_59: "45", // Ideal RH% averaged annually
+    d_65: "2.1", // PH Specific Plug Loads in W/m²
     d_66: "1.1", // Max. Permissible Lighting Load
     g_67: "Efficient", // Default Eppt Efficienct Spec.
     t_65: "5.0", // Reference Plug Load (W/m²)
@@ -446,6 +450,7 @@ TEUI.ReferenceValues = {
   },
   "PH Premium": {
     //"h_13": "90% less than NBC"
+    h_23: "18", // PH Tsetpoint in °C
     d_52: "100", // DWH System Efficiency when Electric
     k_52: "92", // DWH AFUE when Gas or Oil
     d_53: "0.42", // DWHR Efficiency 0 when OBC
@@ -453,6 +458,7 @@ TEUI.ReferenceValues = {
     d_57: "1000", // Max. CO2 per Health Canada ppm
     d_58: "150", // Max. CO2 per Health Canada ppm
     d_59: "45", // Ideal RH% averaged annually
+    d_65: "2.1", // PH Specific Plug Loads in W/m²
     d_66: "1.1", // Max. Permissible Lighting Load
     g_67: "Efficient", // Default Eppt Efficienct Spec.
     t_65: "5.0", // Reference Plug Load (W/m²)
@@ -487,6 +493,7 @@ TEUI.ReferenceValues = {
   },
   EnerPHit: {
     //"h_13": "PH Renovations"
+    h_23: "18", // PH Tsetpoint in °C
     d_52: "100", // DWH System Efficiency when Electric
     k_52: "92", // DWH AFUE when Gas or Oil
     d_53: "0.42", // DWHR Efficiency 0 when OBC
@@ -494,6 +501,7 @@ TEUI.ReferenceValues = {
     d_57: "1000", // Max. CO2 per Health Canada ppm
     d_58: "150", // Max. CO2 per Health Canada ppm
     d_59: "45", // Ideal RH% averaged annually
+    d_65: "2.1", // PH Specific Plug Loads in W/m²
     d_66: "2.0", // Max. Permissible Lighting Load
     g_67: "Efficient", // Required Eppt Efficienct Spec.
     t_65: "5.0", // Reference Occupant Load (W/m²)
@@ -528,6 +536,7 @@ TEUI.ReferenceValues = {
   },
   "PH Low Energy": {
     //"h_13": "80% less than NBC"
+    h_23: "18", // PH Tsetpoint in °C  
     d_52: "100", // DWH System Efficiency when Electric
     k_52: "92", // DWH AFUE when Gas or Oil
     d_53: "0.42", // DWHR Efficiency 0 when OBC
@@ -535,6 +544,7 @@ TEUI.ReferenceValues = {
     d_57: "1000", // Max. CO2 per Health Canada ppm
     d_58: "150", // Max. CO2 per Health Canada ppm
     d_59: "45", // Ideal RH% averaged annually
+    d_65: "2.1", // PH Specific Plug Loads in W/m²
     d_66: "2.0", // Max. Permissible Lighting Load
     g_67: "Efficient", // Required Eppt Efficienct Spec.
     t_65: "5.0", // Reference Occupant Load (W/m²)
