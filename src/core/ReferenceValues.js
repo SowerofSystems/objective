@@ -1,3 +1,4 @@
+/* eslint-disable no-dupe-keys */
 /**
  * 4011-ReferenceValues.js
  *
