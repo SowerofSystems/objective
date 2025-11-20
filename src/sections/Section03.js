@@ -2533,10 +2533,21 @@ window.TEUI.SectionModules.sect03 = (function () {
         }
       );
 
-      // ✅ SMOOTH-MOVE-S02: d_13/ref_d_13 listeners REMOVED
-      // PH-specific values (h_23) now come from ReferenceValues.js via "Set Values" button
-      // This eliminates the 48-cycle cascade that generated 35,000+ log lines on d_13 change
-      // d_13 changes are now passive until user presses "Set Values" (Import Quarantine pattern)
+      // ✅ h_23 BUG FIX: Restore d_13 listeners for h_23 temperature calculation
+      // h_23 (Tset Heating) depends on BOTH d_12 (occupancy) AND d_13 (standard)
+      // - PH standards: h_23 = 18°C (regardless of occupancy)
+      // - Non-PH + Critical Occupancy: h_23 = 22°C
+      // - Non-PH + Other Occupancy: h_23 = 18°C
+      // Without these listeners, h_23 doesn't update when switching between PH and non-PH standards
+      window.TEUI.StateManager.addListener("d_13", function () {
+        calculateAll(); // Recalculates h_23 based on current d_13 and d_12 values
+        ModeManager.updateCalculatedDisplayValues();
+      });
+
+      window.TEUI.StateManager.addListener("ref_d_13", function () {
+        calculateAll(); // Recalculates ref_h_23 based on current ref_d_13 and ref_d_12 values
+        ModeManager.updateCalculatedDisplayValues();
+      });
 
       // ✅ REMOVED: Self-listeners cause recursion anti-pattern per 4012-CHEATSHEET.md
       // ✅ ANTI-PATTERN 7 FIX: S03 should NOT listen to its own input fields

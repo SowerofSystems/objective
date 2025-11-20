@@ -1852,12 +1852,11 @@ window.TEUI.SectionModules.sect02 = (function () {
         ReferenceState.setDefaults();
         ReferenceState.loadState();
 
-        // ✅ CSV EXPORT FIX: Publish ALL Reference defaults to StateManager
-        // Without this, CSV export shows empty Reference values (89 out of 126 missing)
-        // FileHandler.exportToCSV() reads from StateManager, not from internal ReferenceState
-        // Pattern: Conditionally publish if value doesn't exist (import-safe, non-destructive)
+        // ✅ STATE SYNC FIX: Sync both Target AND Reference states to StateManager on initialization
+        // This ensures downstream sections (like Section03) read correct values immediately
+        // Root cause of h_23 bug: StateManager had stale/undefined values while internal state was correct
         if (window.TEUI?.StateManager) {
-          [
+          const fieldsToSync = [
             "d_12",
             "d_13",
             "d_14",
@@ -1873,15 +1872,22 @@ window.TEUI.SectionModules.sect02 = (function () {
             "l_14",
             "l_15",
             "l_16",
-          ].forEach(id => {
+          ];
+
+          // Sync Target values (unprefixed)
+          fieldsToSync.forEach(id => {
+            const val = TargetState.getValue(id);
+            if (val != null && val !== "") {
+              window.TEUI.StateManager.setValue(id, val, "default");
+            }
+          });
+
+          // Sync Reference values (ref_ prefixed)
+          fieldsToSync.forEach(id => {
             const refId = `ref_${id}`;
             const val = ReferenceState.getValue(id);
-            if (
-              !window.TEUI.StateManager.getValue(refId) &&
-              val != null &&
-              val !== ""
-            ) {
-              window.TEUI.StateManager.setValue(refId, val, "calculated");
+            if (val != null && val !== "") {
+              window.TEUI.StateManager.setValue(refId, val, "default");
             }
           });
         }
@@ -1932,11 +1938,19 @@ window.TEUI.SectionModules.sect02 = (function () {
 
       // ✅ CRITICAL BRIDGE: Sync Target changes to StateManager for downstream sections
       if (this.currentMode === "target" && window.TEUI?.StateManager) {
+        // 🔍 DIAGNOSTIC: Log d_12 writes to StateManager
+        if (fieldId === "d_12") {
+          console.log(`[S02 ModeManager] 🔵 Writing TARGET d_12="${value}" to StateManager (source: ${source})`);
+        }
         window.TEUI.StateManager.setValue(fieldId, value, source);
       }
 
       // ✅ CRITICAL BRIDGE: Sync Reference changes to StateManager with ref_ prefix
       if (this.currentMode === "reference" && window.TEUI?.StateManager) {
+        // 🔍 DIAGNOSTIC: Log d_12 writes to StateManager
+        if (fieldId === "d_12") {
+          console.log(`[S02 ModeManager] 🔵 Writing REFERENCE ref_d_12="${value}" to StateManager (source: ${source})`);
+        }
         window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, source);
       }
     },
