@@ -924,21 +924,23 @@ When `d_12` = Critical Occupancy (C-Residential or Care types) AND `d_13` = any 
 - **Trigger:** Only occurs when user switches d_13 AFTER setting d_12 to Critical Occupancy
 - **Workaround:** User can toggle d_12 dropdown to "unstick" the value
 
-**Likely Root Causes (NOT the previous incorrect theory):**
+**Likely Root Causes (Narrowed Down):**
 
 1. **State Mixing (ref_d_12 vs d_12)** ⭐ MOST LIKELY
    - When d_13 changes, something reads `ref_d_12` instead of `d_12`
    - Classic state contamination pattern (seen before in other sections)
    - Check: Any code that reads d_12 during d_13 change calculations
 
-2. **Fallback Logic Reading Wrong Default** ⭐ ALSO LIKELY
-   - Code has `|| "A-Assembly"` fallback somewhere
-   - When StateManager.getValue("d_12") returns falsy, fallback kicks in
-   - Returns field definition default instead of user selection
+2. **Fallback Logic Reading Wrong Default** ❌ ELIMINATED
+   - Checked: All d_12 getValue() calls use `|| ""` fallback (empty string)
+   - No code has `|| "A-Assembly"` fallback pattern
+   - Section02.js lines 1225-1226: `|| ""`
+   - Section03.js lines 617, 621, 2215-2216: `|| ""`
 
-3. **Calculation Timing/Order Issue**
+3. **Calculation Timing/Order Issue** ⭐ POSSIBLE
    - Section03 calculates before Section02's setValue() propagates
    - StateManager notification race condition
+   - Calculator.calculateAll() order may cause stale reads
 
 **What We Know For Sure:**
 - Section02 DOES write d_12 to StateManager (downstream sections receive it)
