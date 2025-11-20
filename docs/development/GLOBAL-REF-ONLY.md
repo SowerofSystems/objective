@@ -88,32 +88,40 @@ Located in index.html or core file:
 
 **WHY THIS WORKS**: `ReferenceToggle.js` already calls `section.modeManager.switchMode(mode)` on each section's local ModeManager when the global toggle is clicked. The local `ModeManager.currentMode` IS the mode - it's synced by the global toggle, not replaced by it.
 
-### Phase 1: Test Pattern on One Section
+### Phase 1: Test Pattern on One Section ✅ COMPLETED
 
-**Section to test**: Section02 (simple inputs section, good test case)
+**Section02** - COMPLETED (November 20, 2025)
 
-1. **Find the header controls function**:
-   - Search for `injectHeaderControls` or similar function name
-   - Typically creates reset button, state indicator, toggle switch
-   - Usually 70-100 lines of DOM manipulation code
+Successfully removed `injectHeaderControls()` and verified:
+- ✅ No local toggle appears in section header
+- ✅ Global toggle controls Section02 mode
+- ✅ Calculations work in both Target and Reference modes
+- ✅ All inputs (sliders, dropdowns) work correctly
+- ✅ "Set Values" button works in both modes
 
-2. **Delete the function**:
-   - Delete the entire `injectHeaderControls()` function
-   - Find where it's called (usually in initialization section)
-   - Delete that one line calling `injectHeaderControls()`
+**Pattern Established:**
+1. Find and delete `injectHeaderControls()` function
+2. Delete the call to `injectHeaderControls()`
+3. Keep all ModeManager methods intact
+4. Test with global toggle
 
-3. **Test**:
-   - Load app, verify NO local toggle appears in section header
-   - Click global toggle (top of page) - verify section responds
-   - Test calculations in both Target and Reference modes
-   - Verify sliders, dropdowns, inputs all still work
-   - Check that "Set Values" button works in both modes
+### Phase 2: Apply Pattern to All Sections (S03-S16)
 
-### Phase 2: Apply Pattern to All Sections (S02-S16)
+**Sections Remaining**: S03, S04, S05, S06, S07, S08, S09, S10, S11, S12, S13, S14, S15, S16
 
-For each section (in order):
+**⚠️ SPECIAL CASE - Section03:**
+- **KEEP** the "Weather Data" button and its modal popup
+- **DELETE** the toggle controls and reset button
+- **PRESERVE** weather data functionality (it's useful and not mode-related)
+- Only remove mode-switching UI, not domain-specific features
 
-**Sections**: S02, S03, S04, S05, S06, S07, S08, S09, S10, S11, S12, S13, S14, S15, S16
+**📋 NEXT STEPS:**
+1. **Section03** - Remove toggle controls BUT preserve Weather Data button
+2. **Key Values Header Toggle** - Add global toggle to Key Values section
+   - Location: Between console message display and collapse controls (- and →)
+   - Same toggle UI as global toggle (Target/Reference switch)
+   - Syncs with global toggle state
+   - Provides convenient access without scrolling to top
 
 **Per-Section Steps** (REPEAT EXACTLY WHAT WORKED IN PHASE 1):
 
@@ -134,6 +142,33 @@ For each section (in order):
 4. **Commit**:
    - Commit after EACH successful section
    - Message: "Remove local toggle controls from SectionXX"
+
+### Phase 2.5: Add Key Values Header Toggle (NEW FEATURE)
+
+**Goal:** Add a second global toggle in the Key Values header for convenient mode switching without scrolling.
+
+**Location:** Key Values section header
+- Between: console message display (left) and collapse controls (- and → on right)
+- Similar to existing section header layout
+
+**Implementation:**
+1. Find Key Values section header in index.html or Section01
+2. Inject toggle button similar to global toggle
+3. Use same `window.TEUI.ModeManager` for state
+4. Sync with main global toggle (both update each other)
+5. Use `ReferenceToggle.js` methods to switch modes
+
+**UI Design:**
+- Same button group style as global toggle
+- Red "Reference" / Blue "Target" states
+- Positioned inline with other header controls
+- Responsive on mobile (collapse if needed)
+
+**Testing:**
+- Click Key Values toggle → verify all sections switch modes
+- Click main global toggle → verify Key Values toggle updates
+- Verify both toggles stay in sync
+- Test in both Target and Reference modes
 
 ### Phase 3: Cleanup and Verification
 
