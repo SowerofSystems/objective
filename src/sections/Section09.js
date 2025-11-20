@@ -2068,16 +2068,14 @@ window.TEUI.SectionModules.sect09 = (function () {
     try {
       const results = calculateModel(TargetState, false);
 
-      // ✅ MODE-AWARE WRITES: Only write to StateManager when in Target mode
-      // This prevents Target calculations from contaminating Reference mode state
-      // Per 4012-CHEATSHEET.md: "Calculation engines MUST ONLY update when their mode matches current UI mode"
-      if (ModeManager.currentMode === "target") {
-        Object.entries(results).forEach(([fieldId, value]) => {
-          setCalculatedValue(fieldId, value); // Writes to both DOM and StateManager
-        });
-      }
-      // ✅ CRITICAL: When in Reference mode, Target engine calculates but does NOT write to StateManager
-      // This prevents state contamination - Target values must not overwrite during Reference mode operations
+      // ✅ ARCHITECTURALLY CORRECT: Always use setCalculatedValue() which has mode-aware StateManager writes
+      // setCalculatedValue() writes to correct namespace based on current mode:
+      // - Target mode: writes to StateManager as unprefixed fieldId
+      // - Reference mode: writes to StateManager as ref_{fieldId}
+      // This ensures Target calculations never contaminate Reference StateManager values
+      Object.entries(results).forEach(([fieldId, value]) => {
+        setCalculatedValue(fieldId, value);
+      });
 
       updatePercentages(results.i_71, results.k_71);
       updateAllReferenceIndicators();
