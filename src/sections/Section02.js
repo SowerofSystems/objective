@@ -1101,18 +1101,26 @@ window.TEUI.SectionModules.sect02 = (function () {
     const currentMode = ModeManager.currentMode || "target";
 
     // Get the selected standard for current mode
-    const standard = currentMode === "reference"
-      ? window.TEUI.StateManager.getValue("ref_d_13")
-      : window.TEUI.StateManager.getValue("d_13");
+    const standard =
+      currentMode === "reference"
+        ? window.TEUI.StateManager.getValue("ref_d_13")
+        : window.TEUI.StateManager.getValue("d_13");
 
-    console.log(`[S02] "Set Values" button clicked - delegating to FileHandler`);
+    console.log(
+      `[S02] "Set Values" button clicked - delegating to FileHandler`
+    );
     console.log(`[S02] Mode: ${currentMode}, Standard: ${standard}`);
 
     // Delegate to FileHandler - it knows how to do this correctly!
     if (window.TEUI?.FileHandler?.applyReferenceValuesFromStandard) {
-      window.TEUI.FileHandler.applyReferenceValuesFromStandard(standard, currentMode);
+      window.TEUI.FileHandler.applyReferenceValuesFromStandard(
+        standard,
+        currentMode
+      );
     } else {
-      console.error("[S02] FileHandler.applyReferenceValuesFromStandard() not available");
+      console.error(
+        "[S02] FileHandler.applyReferenceValuesFromStandard() not available"
+      );
     }
   }
 
@@ -1127,7 +1135,9 @@ window.TEUI.SectionModules.sect02 = (function () {
     const setValuesBtn = document.getElementById("setValuesBtn");
     if (setValuesBtn) {
       setValuesBtn.addEventListener("click", () => {
-        console.log(`[S02] "Set Values" button clicked in ${ModeManager.currentMode.toUpperCase()} mode`);
+        console.log(
+          `[S02] "Set Values" button clicked in ${ModeManager.currentMode.toUpperCase()} mode`
+        );
         applyReferenceValuesOverlay();
       });
       console.log('[S02] "Set Values" button wired successfully');
