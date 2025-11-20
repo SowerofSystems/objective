@@ -1852,34 +1852,6 @@ window.TEUI.SectionModules.sect02 = (function () {
         ReferenceState.setDefaults();
         ReferenceState.loadState();
 
-        // ✅ FIX: Sync Target state to StateManager for downstream sections
-        // This ensures StateManager has all Target values after initialization
-        // Without this, sections reading from StateManager see stale/missing values
-        if (window.TEUI?.StateManager) {
-          [
-            "d_12",
-            "d_13",
-            "d_14",
-            "d_15",
-            "h_12",
-            "h_13",
-            "h_14",
-            "h_15",
-            "i_16",
-            "i_17",
-            "l_12",
-            "l_13",
-            "l_14",
-            "l_15",
-            "l_16",
-          ].forEach(id => {
-            const val = TargetState.getValue(id);
-            if (val != null && val !== "") {
-              window.TEUI.StateManager.setValue(id, val, "calculated");
-            }
-          });
-        }
-
         // ✅ CSV EXPORT FIX: Publish ALL Reference defaults to StateManager
         // Without this, CSV export shows empty Reference values (89 out of 126 missing)
         // FileHandler.exportToCSV() reads from StateManager, not from internal ReferenceState
