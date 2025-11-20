@@ -293,97 +293,72 @@ When Reference mode changes don't flow downstream:
 
 **Fixed in S12:** Commit `38da9c6` removed self-listeners, Reference mode now works correctly.
 
-### Anti-Pattern 8: Non-Mode-Aware StateManager Writes in Calculation Engines ⚠️ CRITICAL
+---
+
+## ⚠️ **STATE CONTAMINATION: Bypassing Mode-Aware Write Methods**
 
 **Discovered:** November 19, 2025 (S09 d_13 PH standard state mixing bug)
 
-**Description:** A calculation engine (e.g., `calculateTargetModel()`) writes its results to StateManager regardless of current mode, contaminating the opposite model's state during calculations.
+**The Problem:**
+When calculation engines write directly to `StateManager.setValue(fieldId, ...)` instead of using mode-aware helper functions (like `setCalculatedValue()`), they bypass namespace protection and contaminate the opposite model's state.
 
-**Symptom:** When user changes a Reference field (e.g., ref_d_13 to "PH Classic"), both Reference AND Target model values change. Target model plug loads (d_65) are overwritten with values calculated based on Reference inputs.
-
-**Example Bug:**
+**Example Bug (S09 calculateTargetModel, commit a1a0fbe):**
 
 ```javascript
-// ❌ WRONG: Target engine writes to StateManager even in Reference mode
+// ❌ WRONG: Direct StateManager writes bypass mode-aware namespace handling
 function calculateTargetModel() {
   const results = calculateModel(TargetState, false);
 
   if (ModeManager.currentMode === "target") {
-    // DOM update - correct, mode-aware
     Object.entries(results).forEach(([fieldId, value]) => {
-      setCalculatedValue(fieldId, value);
+      setCalculatedValue(fieldId, value); // ✅ Mode-aware writes
     });
   } else {
-    // ❌ WRONG: "backward compatibility" StateManager writes
+    // ❌ BUG: Writes unprefixed Target values while in Reference mode
     Object.entries(results).forEach(([fieldId, value]) => {
-      window.TEUI.StateManager.setValue(fieldId, value, "calculated");
+      StateManager.setValue(fieldId, value, "calculated"); // Bypasses mode-awareness!
     });
   }
 }
 ```
 
-**The Problem Chain:**
+**What Happened:**
+1. User changes `ref_d_13` to "PH Classic" in Reference mode
+2. `calculateTargetModel()` runs (dual-engine architecture - correct)
+3. Target calculates with unchanged inputs
+4. **BUG**: Writes to `d_65`, `d_66` (unprefixed) even in Reference mode
+5. StateManager sees Target values changed → triggers full recalculation
+6. `h_10` (Target grand total) changes incorrectly
 
-1. User changes ref_d_13 to "PH Classic" in Reference mode
-2. ref_d_13 StateManager listener fires → `calculateReferenceModel()` runs ✅
-3. Architecture requires `calculateAll()` → both engines run (for comparisons) ✅
-4. `calculateTargetModel()` calculates (correct), BUT...
-5. ❌ Writes Target results to StateManager (d_65, d_67, etc.) even in Reference mode
-6. Target model contaminated with stale/incorrect values during Reference operations
-
-**The Correct Pattern:**
-
-✅ **Target engine: ONLY write to StateManager when in Target mode**
-✅ **Reference engine: ALWAYS write to StateManager (with ref_ prefix) - needed by downstream sections**
+**The Fix (commit b057ae9):**
 
 ```javascript
-// ✅ CORRECT: Target engine respects current mode
+// ✅ CORRECT: Always use mode-aware helper functions
 function calculateTargetModel() {
   const results = calculateModel(TargetState, false);
 
-  // Only write to StateManager when in Target mode
-  if (ModeManager.currentMode === "target") {
-    Object.entries(results).forEach(([fieldId, value]) => {
-      setCalculatedValue(fieldId, value); // Writes to both DOM and StateManager
-    });
-  }
-  // When in Reference mode: Target calculates for comparisons but does NOT write
-  // This maintains strict state isolation
-}
-
-// ✅ CORRECT: Reference engine always publishes (downstream needs it)
-function calculateReferenceModel() {
-  const results = calculateModel(ReferenceState, true);
-
-  // Always write to StateManager with ref_ prefix (downstream sections need this)
+  // setCalculatedValue() handles mode-aware namespace writes:
+  // - Target mode: writes to StateManager as 'fieldId' (unprefixed)
+  // - Reference mode: writes to StateManager as 'ref_fieldId' (prefixed)
   Object.entries(results).forEach(([fieldId, value]) => {
-    window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, "calculated");
+    setCalculatedValue(fieldId, value);
   });
-
-  // Only update DOM when in Reference mode
-  if (ModeManager.currentMode === "reference") {
-    Object.entries(results).forEach(([fieldId, value]) => {
-      setCalculatedValue(fieldId, value);
-    });
-  }
 }
 ```
 
-**Why This Works:**
+**Key Principle:**
+- ✅ **Both engines always run** (dual-engine architecture)
+- ✅ **Both engines can write to StateManager** (for cross-section dependencies)
+- ✅ **Each engine must write to its own namespace:**
+  - Target engine → unprefixed fields (`d_65`, `h_71`, etc.)
+  - Reference engine → prefixed fields (`ref_d_65`, `ref_h_71`, etc.)
+- ❌ **Never bypass mode-aware write helpers** - they exist to maintain namespace isolation
 
-- Target engine calculates (for M/N comparisons) but doesn't contaminate StateManager in Reference mode
-- Reference engine always publishes to StateManager (downstream sections like S01, S10, S13 depend on ref_ values)
-- DOM updates are mode-aware for both engines (Principle #5)
-- State isolation maintained: changing ref_d_13 only affects Reference model values
-
-**Key Architectural Principle:**
-
-Per Core Principle #1: "Dual-Engine Calculations MUST run both engines on every data change"
-- Both engines calculate (for comparisons, indicators, etc.)
-- BUT only the mode-matching engine writes to StateManager
-- Exception: Reference engine always writes (with ref_ prefix) because downstream sections need it
-
-**Fixed in S09:** Commit `6da2607` removed non-mode-aware StateManager writes from `calculateTargetModel()`.
+**How to Avoid:**
+1. Use section-specific helper functions: `setCalculatedValue()`, `ModeManager.setValue()`, etc.
+2. These helpers check `ModeManager.currentMode` and add `ref_` prefix automatically
+3. Never call `StateManager.setValue(fieldId, ...)` directly from calculation engines
+4. Trust the architecture - dual engines running is correct, namespace contamination is the bug
 
 ---
 
