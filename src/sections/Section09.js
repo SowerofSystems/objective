@@ -2445,9 +2445,13 @@ window.TEUI.SectionModules.sect09 = (function () {
       updateAllReferenceIndicators();
       ModeManager.updateCalculatedDisplayValues();
     });
-
-    // ✅ PHASE 3 CLEANUP: ref_d_13 listener removed
-    // "Set Values" button handles Reference model value application via FileHandler
+    // ✅ RESTORED: ref_d_13 listener needed for Reference model plug load recalculation
+    // When ref_d_13 changes (e.g., PH Classic selected), plug loads must be recalculated
+    // based on building standard rules (PH standards → 2.1 W/m², others → 5-7 W/m²)
+    sm.addListener("ref_d_13", () => {
+      calculateReferenceModel();
+      ModeManager.updateCalculatedDisplayValues();
+    });
 
     // 5. Cooling Days (m_19 / ref_m_19)
     sm.addListener("m_19", () => {
