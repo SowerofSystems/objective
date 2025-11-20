@@ -1009,12 +1009,9 @@ window.TEUI.SectionModules.sect02 = (function () {
     // This ensures user changes persist when toggling between modes
     ModeManager.setValue(fieldId, selectedValue, "user-modified");
 
-    // ✅ SMOOTH-MOVE-S02: Do NOT call calculateAll() here
-    // d_13 changes should be passive - calculations happen when "Set Values" is pressed
-    // This prevents premature override of PH-specific values (h_23, d_65, d_66)
-    // and eliminates unnecessary calculation cascade
-
-    // Update DOM display only (no calculations)
+    // Recalculate all values after building code change
+    calculateAll();
+    // Update DOM with new calculated values
     ModeManager.updateCalculatedDisplayValues();
   }
 
