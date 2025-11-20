@@ -81,7 +81,7 @@ sm.addListener("ref_d_13", () => {
 
 **Section02** is correctly implemented - it has NO listeners causing this issue. The problem is that **Section03 and Section09 immediately react to d_13 changes** to apply Passive House (PH) standard-specific logic:
 
-- **Section03:** Sets h_23 (Tset Heating) to 20°C when "PH" is detected in d_13 standard name
+- **Section03:** Sets h_23 (Tset Heating) to 18°C when "PH" is detected in d_13 standard name
 - **Section09:** Sets d_65/d_66 plug loads to 2.1 W/m² when "PH" is detected in d_13 standard name
 
 These immediate calculations cascade through downstream sections (S10, S13, S14, Cooling) before the user presses "Set Values", creating unnecessary churn.
@@ -143,7 +143,7 @@ The **cleanest architectural solution** is to move ALL standard-specific value o
 **Add PH-specific values to ReferenceValues.js for all PH standards:**
 
 For each PH standard (e.g., "PH Classic", "PH Low Energy", etc.):
-- **h_23:** 20 (Tset Heating in °C)
+- **h_23:** 18 (Tset Heating in °C)
 - **d_65:** 2.1 (Plug load lighting W/m²)
 - **d_66:** 2.1 (Plug load equipment W/m²)
 
@@ -181,14 +181,14 @@ Add PH-specific values to ALL Passive House standards in the ReferenceValues obj
 ```javascript
 "PH Classic": {
   // ... existing values ...
-  h_23: 20,        // Tset Heating (°C) - PH override
-  d_65: 2.1,       // Plug load lighting (W/m²) - PH standard
+  h_23: 18,        // Tset Heating (°C) - PH override
+  d_65: 1.1,       // Load lighting (W/m²) - PH standard
   d_66: 2.1,       // Plug load equipment (W/m²) - PH standard
 },
 "PH Low Energy": {
   // ... existing values ...
   h_23: 20,
-  d_65: 2.1,
+  d_65: 1.1,
   d_66: 2.1,
 },
 // Repeat for all PH standards...
@@ -233,7 +233,7 @@ Look for code patterns like:
 // Check if PH is in the standard name
 const standard = getModeAwareGlobalValue("d_13");
 if (standard && standard.includes("PH")) {
-  h_23 = 20; // PH override
+  h_23 = 18; // PH override
 }
 ```
 
@@ -319,8 +319,8 @@ Update comments to reflect the new architecture:
  * Single source of truth for ALL standard-specific value overrides
  *
  * PH Standards include:
- * - h_23: Tset Heating override (20°C)
- * - d_65: Plug load lighting (2.1 W/m²)
+ * - h_23: Tset Heating override (18°C)
+ * - d_65: load lighting (1.1 W/m²)
  * - d_66: Plug load equipment (2.1 W/m²)
  *
  * Non-PH standards omit these fields, allowing section defaults to govern.
@@ -340,8 +340,8 @@ Update comments to reflect the new architecture:
 1. Select "PH Classic" at d_13
 2. Press "Set Values" button
 3. **Expected:**
-   - h_23 = 20°C
-   - d_65 = 2.1 W/m²
+   - h_23 = 18°C
+   - d_65 = 1.1 W/m²
    - d_66 = 2.1 W/m²
 4. **Check:** Values appear in Section03 and Section09, calculations complete in 2 rounds
 
@@ -349,8 +349,8 @@ Update comments to reflect the new architecture:
 1. Select "OBC SB10 5.5-6 Z6" at d_13
 2. Press "Set Values" button
 3. **Expected:**
-   - h_23 = (climate-based default, not 20°C)
-   - d_65 = (section default, not 2.1)
+   - h_23 = (occupancy/climate-based default, not 18°C)
+   - d_65 = (section default, not 1.1)
    - d_66 = (section default, not 2.1)
 4. **Check:** Default logic governs, no PH overrides applied
 
@@ -640,6 +640,8 @@ If Hypothesis 2 is correct (stale read):
 [S03 h_23] SETTING h_23 = 18
 ```
 
+OR no logs at all (function not being called).
+
 ### Architectural Implications
 
 This bug reveals a potential flaw in the SMOOTH-MOVE-S02 approach:
@@ -738,7 +740,7 @@ Added comprehensive console logging to `calculateHeatingSetpoint()` to trace:
 **Bug Symptom (if broken):**
 ```
 [S03 h_23 DEBUG] CALCULATING: d_13="PH Classic", d_12="C-Residential"  ← Stale d_13!
-[S03 h_23 DEBUG] ✅ PH standard detected → h_23 = 18°C
+[S03 h_23 DEBUG] PH detected → 18°C
 [S03 h_23 DEBUG] ⚡ SETTING h_23 = 18
 [S03 h_23 DEBUG] ✓ setFieldValue() completed
 ```
@@ -783,8 +785,8 @@ The diagnostic logging revealed the TRUE root cause:
 
 **Line 2555 (when d_12 changed to C-Residential):**
 ```
-[S03 h_23 DEBUG] CALCULATING: d_13="PH Classic", d_12="C-Residential"
-[S03 h_23 DEBUG] ✅ PH standard detected → h_23 = 18°C
+[S03 h_23 DEBUG] CALCULATING: d_13="OBC SB10 5.5-6 Z6", d_12="C-Residential"
+[S03 h_23 DEBUG] Critical occupancy → 22°C
 ```
 
 **Line 2608 (when d_13 changed back to OBC):**
@@ -811,10 +813,9 @@ Between line 2555 and line 2608:
 **Known Facts:**
 1. Field definition default for d_12 is "A-Assembly" ([Section02.js:60](../src/sections/Section02.js#L60))
 2. User selects "C-Residential" which persists correctly until d_13 changes
-3. When d_13 changes, d_12 reverts to "A-Assembly" (the field definition default)
+3. When d_13 changes, something is re-applying field definition defaults. Likely culprits:
 
-**Hypothesis:** When d_13 changes, something is re-applying field definition defaults. Likely culprits:
-
+**Hypothesis 1:** When d_13 changes, something is re-applying field definition defaults. Likely culprits:
 1. **Section02's `handleBuildingCodeChange()`** might be calling something that resets dependent fields
 2. **TargetState.setDefaults()** or **ReferenceState.setDefaults()** might be called during calculation cascade
 3. **refreshUI()** might be reading from the wrong state or re-initializing state
@@ -986,4 +987,51 @@ When `d_12` = Critical Occupancy (C-Residential or Care types) AND `d_13` = any 
 
 ---
 
-**End of Document**
+---
+
+## Proposed Solution: Robust State Synchronization from Section02
+
+**Status:** Proposed
+**Date:** 2025-11-20
+
+#### Architectural Principle
+The root cause is a desynchronization between Section02's internal state (`TargetState`/`ReferenceState`) and the global `StateManager`. The fix is to establish a clear, unidirectional data flow where **user-facing UI event handlers in Section02 are the single source of truth for updating the `StateManager`**. Other parts of the application should not implicitly reset user-selected values.
+
+#### Implementation Steps
+
+1.  **Enhance `handleMajorOccupancyChange` (for d_12):**
+    - **Location:** `Section02.js`
+    - **Action:** Ensure this function is the **only** place that writes `d_12` to the `StateManager` in response to a user selection.
+    - **Code Logic:**
+      ```javascript
+      // Inside handleMajorOccupancyChange(event)
+      const selectedOccupancy = event.target.value;
+      
+      // 1. Update Section02's internal state (as it does now)
+      ModeManager.setValue("d_12", selectedOccupancy, "user-modified");
+      
+      // 2. Explicitly and ALWAYS update the global StateManager
+      window.TEUI.StateManager.setValue("d_12", selectedOccupancy, "user-modified");
+      
+      // 3. Trigger a calculation if needed
+      // window.TEUI.Calculator.calculateAll(); 
+      ```
+    - **Goal:** Make the sync to `StateManager` explicit and immediate upon user interaction.
+
+2.  **Audit and Refactor `handleBuildingCodeChange` (for d_13):**
+    - **Location:** `Section02.js`
+    - **Action:** Review this function to ensure it **does not trigger any logic that resets `d_12`**. The `d_13` change should be treated as an independent event.
+    - **Remove:** Any calls to `setDefaults()` or similar functions that might re-initialize the `d_12` field. The user's choice of occupancy should persist across changes to the building standard.
+
+3.  **Verify State Initialization on Load:**
+    - **Location:** `Section02.js` initialization logic (`initialize` or `init` function).
+    - **Action:** On page load, after `TargetState` and `ReferenceState` are loaded (e.g., from `localStorage`), immediately synchronize all relevant values (including `d_12`) to the global `StateManager`. This prevents the initial state desync identified in the document. This seems to be what "Attempted Fix #1" tried to do, but it needs to be made robust.
+
+#### Expected Outcome
+- When a user selects an occupancy for `d_12`, that value is immediately pushed to the global `StateManager` and becomes the definitive state for the rest of the application.
+- Changing `d_13` will no longer cause `d_12` to revert to a default value, because no part of the `d_13` change logic will be allowed to overwrite the user's `d_12` selection.
+- `Section03`'s `calculateHeatingSetpoint` function will therefore receive the correct, user-selected `d_12` value from `StateManager` and calculate the correct `h_23` value (22°C for critical occupancies with non-PH standards).
+
+---
+
+**The calculation logic is CORRECT - we just need to stop d_12 from being reset!**
