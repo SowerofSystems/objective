@@ -37,112 +37,103 @@ This document outlines the **FieldManager-Based Localization Architecture** for 
 
 ---
 
-## Architecture Justification: Why This Is NOT "Reinventing Localization"
+## Architecture Rationale: Multi-Market Data Configuration
 
 ### Context
 
-This section addresses concerns that we may be "AI-inventing" localization in a non-canonical form rather than using established i18n libraries.
+This section clarifies the architectural approach for supporting international markets with different building codes and climate data.
 
-### What We're NOT Doing
+### Approach
 
-❌ **We are NOT reinventing i18n (UI text translation)**
-- Phase 2 will use lightweight JSON for UI strings (`ui-labels-en.json`, `ui-labels-de.json`)
+**Two-Phase Strategy**:
+
+**Phase 1: Domain Data Configuration** (Building codes and climate data)
+- Separate file sets per market (Canadian standards vs German standards)
+- File-based approach using separate entry points (index.html vs index-de.html)
+- Standard configuration pattern - swap data files, share all rendering logic
+
+**Phase 2: UI Text Translation** (Labels and interface text)
+- Lightweight JSON translation files for UI strings
 - Simple key-value lookup: `{ "save": "Speichern", "reset": "Zurücksetzen" }`
-- ~50 lines of code in `i18n.js` - standard translation pattern
-- No heavy libraries (i18next, react-intl, etc.) - not needed for vanilla JS
+- ~50 lines of code in `i18n.js`
+- Standard i18n pattern appropriate for vanilla JS
 
-❌ **We are NOT creating a complex localization framework**
-- No dynamic locale switching
-- No runtime language detection
-- No complex message formatting or pluralization
-- Just separate entry points (index.html vs index-de.html)
+### Key Architectural Principle
 
-❌ **We are NOT inventing anything**
-- Using plain JavaScript object overrides
-- Standard module pattern (IIFE)
-- File separation - oldest trick in the book
-
-### What We ARE Doing
-
-✅ **Separating Data from Rendering** - Fundamental Software Architecture
+**Separating Data from Rendering**:
 - **Before**: Section files contained both layout AND country-specific data
-- **After**: Sections define layout, FieldManager provides data
-- This is **separation of concerns** - Architecture 101
-
-✅ **Making Domain Data Swappable** - Configuration Management
-- Canadian building codes (OBC, NBC, NECB) vs German standards (DIN, GEG)
-- Ontario climate data vs Berlin climate data
-- This is **configuration management**, not localization
-
-✅ **Enabling Data Structure to Support Multi-Market Deployment**
-- Exactly what was requested: "Put localization further down the roadmap when the data structures easily support it"
-- **We're sorting the data structure right now** to enable this
+- **After**: Sections define layout, FieldManager provides country-specific data
+- **Benefit**: Shared rendering logic (18 section files), swappable data configurations
 
 ### The Key Distinction: Domain Configuration vs UI Localization
 
-| Concern | Standard i18n Solves | Our Domain Problem Requires |
-|---------|---------------------|----------------------------|
-| **Text** | "Save" → "Speichern" | ✅ Phase 2 with JSON |
+| Concern | Standard i18n Solves | Our Domain-Specific Need |
+|---------|---------------------|-------------------------|
+| **Text** | "Save" → "Speichern" | Phase 2 with JSON |
 | **Dates** | MM/DD/YYYY → DD.MM.YYYY | Not applicable |
 | **Numbers** | 1,000.00 → 1.000,00 | Not applicable |
-| **Building Codes** | ❌ Not applicable | ✅ OBC/NBC vs DIN/GEG |
-| **Climate Data** | ❌ Not applicable | ✅ Toronto vs Berlin weather |
-| **Standards** | ❌ Not applicable | ✅ NBC 9.36 vs DIN 18599 |
+| **Building Codes** | Not applicable | OBC/NBC vs DIN/GEG |
+| **Climate Data** | Not applicable | Toronto vs Berlin weather |
+| **Standards** | Not applicable | NBC 9.36 vs DIN 18599 |
 
-**This is NOT "localization" in the traditional sense - it's domain-specific data configuration.**
+### Benefits
 
-### What This Architecture Achieves
+1. **Data/View Separation**
+   - Rendering logic (Sections) is shared across all markets
+   - Data (FieldManager) is swappable per market
+   - Clean separation reduces conditional logic
 
-1. **Data/View Separation** - Good Architecture
-   - Rendering logic (Sections) is pure and shared
-   - Data (FieldManager) is swappable
-   - Zero conditional logic in sections
+2. **Market-Specific Configurations**
+   - Each market gets appropriate building codes and climate data
+   - Partner deployments use correct local standards
+   - Independent data updates per market
 
-2. **Market-Specific Configurations** - Legitimate Business Requirement
-   - German partners need German building codes
-   - French partners will need French standards
-   - Each market gets appropriate reference data
-
-3. **Minimal Code Duplication** - Exactly What We Want
-   - 18 section files: **100% shared**
+3. **Minimal Code Duplication**
+   - 18 section files: 100% shared
    - Only ~50 lines differ per country (FieldManager definitions)
-   - Bug fixes apply to all markets automatically
+   - Bug fixes in shared code benefit all markets
 
 4. **Scalable Multi-Market Support**
-   - Add France: Copy FieldManager.js, modify 50 lines, done
+   - Adding new market: Copy FieldManager.js, modify ~50 lines
    - No changes to core application
    - Each market independently deployable
 
-### Potential CTO Concerns (Addressed)
+### Considerations
 
-**Concern 1: "Premature Optimization"**
-- **Response**: We have German partners ready to use this. The requirement is validated.
-- **Mitigation**: Phase 0 proof-of-concept takes <1 day. Minimal risk.
+**Valid Concerns to Address**:
 
-**Concern 2: "Maintenance Burden"**
-- **Response**: Reduces burden - fix bugs once, works everywhere
-- **Evidence**: 18 sections shared means 18x less maintenance for multi-market
+1. **Premature Optimization**
+   - Valid point: Should validate market demand before building
+   - Mitigation: Phase 0 proof-of-concept to assess complexity
+   - Decision point: Proceed only if implementation is straightforward
 
-**Concern 3: "Testing Complexity"**
-- **Response**: Shared sections mean we test once. Only test data differences per market.
-- **Approach**: Core tests run on all markets, data tests are market-specific
+2. **Maintenance Burden**
+   - Risk: Multiple FieldManager files to maintain
+   - Benefit: Shared sections reduce overall maintenance
+   - Trade-off: 18 shared files vs ~50 country-specific lines
 
-**Concern 4: "Non-Canonical Approach"**
-- **Response**: This is standard configuration management, not localization reinvention
-- **Precedent**: Every SaaS product has multi-tenant configs. Same pattern.
+3. **Testing Complexity**
+   - Challenge: Must test each market configuration
+   - Approach: Core tests run on all markets, data tests are market-specific
+   - Need: Establish testing protocol before proceeding
+
+4. **Architectural Complexity**
+   - Question: Is file separation the right pattern?
+   - Alternative: Dynamic configuration loading
+   - Decision: Requires full understanding of StateManager/dual-engine architecture first
 
 ### Alternative Approaches Considered
 
 **Option A: Monolithic Conditional Logic**
 ```javascript
-// ❌ BAD: Scattered conditionals
+// Scattered conditionals throughout codebase
 if (country === 'DE') {
   options = germanStandards;
 } else if (country === 'CA') {
   options = canadianStandards;
 }
 ```
-**Rejected**: Unmaintainable, error-prone, performance overhead
+**Trade-offs**: Simple to understand, but becomes unmaintainable as markets grow. Performance overhead from runtime checks.
 
 **Option B: Full Section Duplication**
 ```
@@ -150,55 +141,52 @@ Section02.js      // Canadian
 Section02-DE.js   // German
 Section02-FR.js   // French
 ```
-**Rejected**: 18 sections × N countries = massive duplication
+**Trade-offs**: Complete isolation per market, but 18 sections × N countries creates massive duplication. Bug fixes must be applied N times.
 
 **Option C: Heavy i18n Framework**
 ```javascript
 import i18next from 'i18next';
-// 50KB+ library for 4 dropdowns
+// Full-featured localization library
 ```
-**Rejected**: Overkill for vanilla JS app with no UI framework
+**Trade-offs**: Industry-standard for UI text, but overkill for domain data configuration. Adds significant bundle size for vanilla JS app.
 
-**Option D: FieldManager Data Override (CHOSEN)**
+**Option D: FieldManager Data Override (Proposed)**
 ```javascript
-// ✅ GOOD: Clean separation
+// Clean separation of data from rendering
 const fieldDefinitions = {
   d_13: { value: "...", options: [...] }
 };
 ```
-**Chosen**: Minimal code, maximum flexibility, zero duplication
+**Trade-offs**: Minimal code changes, maximum flexibility, but requires understanding of existing state management architecture.
 
 ### Recommendation
 
-**Proceed with Phase 0 proof-of-concept:**
-1. Complete FieldManager-DE.js (d_12, d_13 only)
-2. Create index-de.html entry point
-3. Load German ReferenzWerten-DE.js
-4. Demonstrate to CTO:
-   - ALL 18 sections unchanged
-   - Only ~50 lines of German-specific code
-   - Zero performance impact on Canadian version
+**Before proceeding with any localization approach:**
 
-**If approved after demo:**
-- Complete Phase 0.2: Add d_19/h_19 (climate data)
-- Phase 1: Full German version
-- Phase 2: UI translation (i18n.js)
+1. **Complete StateManager/Dual-Engine Architecture Audit**
+   - Document complete initialization sequence
+   - Map all StateManager read/write patterns
+   - Verify Target/Reference state synchronization
+   - Test cross-section dependencies
 
-**If concerns remain:**
-- Archive FieldManager work on feature branch
-- Return to discussion when German customer demand increases
-- Data structure is now ready - can resume anytime
+2. **Validate with CTO**
+   - Review architectural understanding
+   - Confirm market demand justifies effort
+   - Agree on testing protocol
+   - Get approval for proof-of-concept
 
-### Conclusion
+3. **If Approved: Phase 0 Proof-of-Concept**
+   - Limited scope: d_13 field only
+   - Test with both Target and Reference models
+   - Verify StateManager integration
+   - Measure impact on core functionality
 
-This is **configuration management** to support **multi-market deployment**, not "reinventing localization." The architecture enables exactly what was requested: data structures that easily support international markets.
+4. **Decision Point After POC**
+   - If successful and non-disruptive: Continue to Phase 1
+   - If issues arise: Re-evaluate approach or defer to later roadmap
+   - If market demand unclear: Archive work for future consideration
 
-**The approach is:**
-- ✅ Canonical (standard config pattern)
-- ✅ Maintainable (shared sections)
-- ✅ Scalable (add markets easily)
-- ✅ Proven (works in testing)
-- ✅ Low-risk (proof-of-concept in <1 day)
+**Current Status**: Localization-DE branch abandoned due to insufficient understanding of state management architecture. Must address root causes before attempting again.
 
 ---
 
@@ -1485,11 +1473,252 @@ localizations/Germany/KlimaWerten.js             # German
 
 ---
 
-## Known Issues (November 22, 2025 - Phase 0.1)
+## Known Issues (November 22, 2025 - Localization-DE Branch Abandoned)
 
-### Issue 1: Dropdown Defaults Not Restored After Selecting German Standard
+### Critical Issues That Led to Branch Abandonment
 
-**Status**: OPEN - ROOT CAUSE IDENTIFIED
+**Branch**: `Localization-DE` (abandoned November 22, 2025)
+**Status**: REVERTED - Returned to stable `G-REF-ONLY` branch
+**Priority**: BLOCKER
+**Severity**: Core Functionality Broken
+
+---
+
+#### Issue 1: FieldManager-DE.js Failed to Populate Dropdown Defaults on Country Switch
+
+**Status**: UNRESOLVED - Branch abandoned before fix
+**Impact**: German version completely non-functional
+
+**Observed Behavior**:
+When switching from Canadian version to German version (loading FieldManager-DE.js):
+1. ❌ d_13 (Reference Standard) dropdown showed blank instead of "DIN V 18599 Neubau" default
+2. ❌ ref_d_13 (Reference model) also showed blank instead of expected default
+3. ❌ **ALL other dropdowns** across the entire app reverted to "Please Select an Option" baselines
+4. ✅ FieldManager-DE.js loaded correctly (verified in console)
+5. ✅ German data files (ReferenzWerten-DE.js, KlimaWerten.js) loaded correctly
+6. ❌ **Section02 did not recognize/apply FieldManager-DE.js defaults**
+
+**What Worked**:
+- File separation approach (no runtime country detection)
+- German data files loaded without errors
+- FieldManager-DE.js structure was correct
+- No race conditions (static script loading)
+
+**What Failed**:
+- **Dropdown initialization**: FieldManager-DE.js defaults never appeared in UI
+- **StateManager integration**: German defaults never written to StateManager
+- **Both Target AND Reference models**: Neither d_13 nor ref_d_13 populated
+
+**Root Cause Hypothesis**:
+Section02's initialization sequence did not properly:
+1. **Read from FieldManager-DE.js** after country switch
+2. **Write defaults to StateManager** for both Target and Reference models
+3. **Trigger UI refresh** to display German defaults in dropdowns
+
+**Missing Steps Identified**:
+```javascript
+// What SHOULD have happened on country switch:
+// 1. FieldManager-DE.js loads (✅ worked)
+// 2. Section02 reads German defaults from FieldManager (❌ failed)
+// 3. Section02 writes d_13 = "DIN V 18599 Neubau" to StateManager (❌ never happened)
+// 4. Section02 writes ref_d_13 = "DIN V 18599 Neubau" to StateManager (❌ never happened)
+// 5. UI refreshes to show German defaults (❌ never happened)
+```
+
+**Why refreshUI() Failed**:
+The attempted fix using `refreshUI()` failed because:
+- **StateManager had no values to refresh FROM**
+- Defaults were never written to StateManager in the first place
+- refreshUI() can only display values that exist in StateManager
+- **Critical missing step**: Writing FieldManager defaults to StateManager on initialization
+
+---
+
+#### Issue 2: Cross-Section Dependency Failure (d_12 → h_23)
+
+**Status**: UNRESOLVED - Regression affecting core calculations
+**Impact**: Section03 calculations broke, affecting entire app
+
+**Observed Behavior**:
+After modifying Section02 for localization:
+1. User changes d_12 (Major Occupancy) dropdown in Section02
+2. ❌ Section03's h_23 (Temperature Setpoint) **failed to update** as designed
+3. ❌ Cross-section dependency chain broken
+4. ❌ Dual-engine calculations affected in both Target and Reference models
+
+**Expected Behavior**:
+```javascript
+// src/sections/Section02.js → d_12 change
+ModeManager.setValue('d_12', newOccupancy)
+  ↓
+StateManager.setValue('d_12', newOccupancy) // Publish to global state
+  ↓
+StateManager listeners fire
+  ↓
+Section03 detects d_12 change
+  ↓
+Section03 updates h_23 (T-set) based on occupancy type
+```
+
+**What Actually Happened**:
+```javascript
+// Localization-DE branch (broken):
+ModeManager.setValue('d_12', newOccupancy)
+  ↓
+❌ StateManager.setValue() never called?
+  ↓
+❌ Section03 never notified
+  ↓
+❌ h_23 never updated
+```
+
+**Root Cause Hypothesis**:
+Modifications to Section02 for localization broke the StateManager read/write pattern:
+- **Likely**: ModeManager.setValue() stopped calling StateManager.setValue()
+- **Likely**: Dual-engine calculation flow disrupted
+- **Likely**: Target/Reference state isolation broken
+- **Possible**: Local state (TargetState/ReferenceState) not syncing to global StateManager
+
+**Why This Is Critical**:
+- Section03 depends on Section02 values (d_12, d_13, etc.)
+- Section07 depends on Section03 climate data
+- Section09 depends on Section02 occupancy type
+- **Breaking Section02 → StateManager integration broke the entire app**
+
+---
+
+#### Issue 3: Incomplete Understanding of Dual-Engine Architecture
+
+**Status**: ACKNOWLEDGED - Agent lacked full context
+**Impact**: Architectural violations introduced
+
+**What Was Missed**:
+The localization implementation did not fully account for:
+
+1. **StateManager Read/Write Pattern**:
+   - ALL section values MUST be published to StateManager
+   - Cross-section dependencies rely on StateManager listeners
+   - Both Target and Reference values must sync to global state
+
+2. **Dual-Engine Calculation Flow**:
+   - BOTH engines run on every value change (by design, not a bug)
+   - Target calculations write unprefixed fields (d_13, d_12, etc.)
+   - Reference calculations write ref_ prefixed fields (ref_d_13, ref_d_12, etc.)
+   - BOTH must sync to StateManager for downstream sections
+
+3. **Target/Reference Mode UI Mechanics**:
+   - UI toggles between showing Target vs Reference values
+   - Mode switch does NOT recalculate, only changes display
+   - Values must exist in StateManager BEFORE UI can display them
+   - refreshUI() only works if StateManager has the values
+
+4. **Initialization Sequence**:
+   ```javascript
+   // Correct initialization flow:
+   1. FieldManager loads field definitions
+   2. Section loads FieldManager defaults
+   3. Section writes defaults to local state (TargetState, ReferenceState)
+   4. Section writes defaults to global StateManager  ← CRITICAL STEP MISSED
+   5. Section renders UI from StateManager values
+   6. Dropdowns populate from StateManager
+   ```
+
+**Consequences**:
+- Localization changes broke initialization sequence
+- StateManager never received German defaults
+- UI couldn't display values that didn't exist in StateManager
+- Cross-section dependencies failed due to missing StateManager values
+- Dual-engine calculations broke due to state synchronization failure
+
+---
+
+### Lessons Learned
+
+**What Needs to Happen Before Next Localization Attempt**:
+
+1. **Complete StateManager Integration Audit**:
+   - Document EVERY place Section02 writes to StateManager
+   - Verify BOTH Target and Reference values sync to global state
+   - Ensure FieldManager defaults flow through to StateManager
+   - Map complete initialization sequence: FieldManager → Section → StateManager → UI
+
+2. **Dual-Engine Calculation Flow Documentation**:
+   - Document how Target engine writes to StateManager
+   - Document how Reference engine writes to StateManager
+   - Verify BOTH engines run on every change (confirm this is correct)
+   - Map dependency chain: d_12 change → StateManager → Section03 → h_23 update
+
+3. **Target/Reference Mode UI Mechanics**:
+   - Document UI toggle mechanism
+   - Document how mode switch affects StateManager reads
+   - Verify refreshUI() dependencies on StateManager
+   - Ensure mode switch doesn't break value persistence
+
+4. **Testing Protocol**:
+   Before ANY localization changes:
+   - ✅ Test d_12 change → h_23 updates correctly
+   - ✅ Test d_13 change → downstream sections update
+   - ✅ Test Target mode → values persist after Reference mode toggle
+   - ✅ Test Reference mode → values persist after Target mode toggle
+   - ✅ Test StateManager has BOTH d_13 and ref_d_13 after initialization
+
+   After localization changes:
+   - ✅ Re-run ALL above tests
+   - ✅ Verify German defaults appear in dropdowns
+   - ✅ Verify German defaults exist in StateManager
+   - ✅ Verify cross-section dependencies still work
+   - ✅ Verify dual-engine calculations still work
+
+---
+
+### Current Status (November 22, 2025)
+
+**Branch Status**:
+- ❌ `Localization-DE` abandoned (broke core app functionality)
+- ✅ Reverted to `G-REF-ONLY` (stable branch)
+- ✅ Selectively merged safe files from `Localization-DE`:
+  - docs/Localization2.md (documentation only)
+  - localizations/Germany/4012-ReferenzWerten-DE.js (data file)
+  - localizations/Germany/KlimaWerten.js (data file)
+  - localizations/Germany/FieldManager-DE.js (not integrated)
+  - localizations/Germany/FieldManager-CA.js (Canadian version preserved)
+  - localizations/Germany/index-de.html (entry point, not active)
+
+**What Was Preserved**:
+- ✅ German data files (safe, no integration)
+- ✅ Documentation of localization strategy
+- ✅ FieldManager-DE.js file structure (for future reference)
+
+**What Was NOT Merged**:
+- ❌ Modified Section02.js (broke StateManager integration)
+- ❌ Modified Section03.js (broke calculations)
+- ❌ Any changes to core FieldManager.js
+- ❌ Any changes that affected dual-engine architecture
+
+**Next Steps**:
+1. **DO NOT attempt localization** until StateManager/dual-engine architecture is fully documented
+2. **Audit Section02** to understand complete StateManager read/write pattern
+3. **Test cross-section dependencies** to verify understanding
+4. **Document initialization sequence** in detail
+5. **Create test suite** for StateManager integration before ANY changes
+6. **Get CTO review** of architecture understanding before proceeding
+
+**Recommendation**:
+Localization is achievable, but requires deeper understanding of:
+- StateManager read/write patterns
+- Dual-engine calculation flow
+- Target/Reference state synchronization
+- Cross-section dependency mechanisms
+
+**The file separation approach is sound. The execution lacked complete understanding of the app's state management architecture.**
+
+---
+
+### ~~Historical Issue Documentation (From Abandoned Branch)~~
+
+### ~~Issue 1: Dropdown Defaults Not Restored After Selecting German Standard~~
+
+**Status**: ~~OPEN - ROOT CAUSE IDENTIFIED~~ ABANDONED WITH BRANCH
 **Priority**: HIGH
 **Severity**: User-Facing
 
