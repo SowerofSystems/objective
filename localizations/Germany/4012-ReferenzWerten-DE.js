@@ -356,6 +356,267 @@ TEUI.ReferenceValues = {
     d_118: "85",            // WRG/ERV Effizienz %
     l_118: "0.45",          // Volumenstrom Lüftung (m³/h pro m²)
     d_119: "8.33"           // Volumenstrom pro Person (l/s)
+  },
+
+    "PH Classic": {
+    //"h_13": "90% less than NBC"
+    h_23: "18", // PH Tsetpoint in °C
+    d_52: "100", // DWH System Efficiency when Electric
+    k_52: "92", // DWH AFUE when Gas or Oil
+    d_53: "0.42", // DWHR Efficiency 0 when OBC
+    d_56: "150", // Max. Radon per Health Canada Bq/m3
+    d_57: "1000", // Max. CO2 per Health Canada ppm
+    d_58: "150", // Max. CO2 per Health Canada ppm
+    d_59: "45", // Ideal RH% averaged annually
+    d_65: "2.1", // PH Specific Plug Loads in W/m²
+    d_66: "1.1", // Max. Permissible Lighting Load
+    g_67: "Efficient", // Default Eppt Efficienct Spec.
+    //t_65: "5.0", // Reference Plug Load (W/m²)
+    d_66: "1.1", // Reference Lighting Load (W/m²)
+    f_73: "0.50", // SHGC of Glazing Max.
+    f_74: "0.50", // SHGC of Glazing Max.
+    f_75: "0.50", // SHGC of Glazing Max.
+    f_76: "0.50", // SHGC of Glazing Max.
+    f_77: "0.50", // SHGC of Glazing Max.
+    f_78: "0.50", // SHGC of Glazing Max.
+    d_80: "PH Method", // PH Method used for PHI models
+    f_85: "4.87", // Min. Permissible Roof RSI by NBC/OBC
+    f_86: "4.21", // Min. Permissible Wall RSI by NBC/OBC
+    f_87: "5.64", // Min. Permissible Floor RSI by NBC/OBC
+    g_88: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_89: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_90: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_91: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_92: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_93: "1.600", // Min. Permissible U-Value by NBC/OBC
+    f_94: "3.72", // Min. Permissible RSI by NBC/OBC
+    f_95: "1.96", // Min. Permissible RSI Slab by NBC/OBC
+    d_97: "5", // Default Thermal Bridge Penatly (Not Defined in Codes)
+    d_108: "PH_CLASSIC", // Airtightness Method (check this is in correct position per DOM and not in 109)
+    j_115: "0.90", // Min. AFUE if Gas or Oil
+    j_116: "3.3", // Min. COPc if Dedicated Cooling
+    f_113: "7.1", // Min. HSPF if Heatpump
+    d_118: "75", // Min. Permissible ERV/HRV SRE Efficiency%
+    l_118: "0.45", // Min. Volumetric Ventilation Rate if by Volume Method
+    d_119: "8.33", // Min. Permissible Vent. Rate Per Person in l/sec
+  },
+  "PH Plus": {
+    //"h_13": "90% less than NBC"
+    h_23: "18", // PH Tsetpoint in °C
+    d_52: "100", // DWH System Efficiency when Electric
+    k_52: "92", // DWH AFUE when Gas or Oil
+    d_53: "0.42", // DWHR Efficiency 0 when OBC
+    d_56: "150", // Max. Radon per Health Canada Bq/m3
+    d_57: "1000", // Max. CO2 per Health Canada ppm
+    d_58: "150", // Max. CO2 per Health Canada ppm
+    d_59: "45", // Ideal RH% averaged annually
+    d_65: "2.1", // PH Specific Plug Loads in W/m²
+    d_66: "1.1", // Max. Permissible Lighting Load
+    g_67: "Efficient", // Default Eppt Efficienct Spec.
+    t_65: "5.0", // Reference Plug Load (W/m²)
+    d_66: "1.1", // Reference Lighting Load (W/m²)
+    f_73: "0.50", // SHGC of Glazing Max.
+    f_74: "0.50", // SHGC of Glazing Max.
+    f_75: "0.50", // SHGC of Glazing Max.
+    f_76: "0.50", // SHGC of Glazing Max.
+    f_77: "0.50", // SHGC of Glazing Max.
+    f_78: "0.50", // SHGC of Glazing Max.
+    d_80: "PH Method", // PH Method used for PHI models
+    f_85: "4.87", // Min. Permissible Roof RSI by NBC/OBC
+    f_86: "4.21", // Min. Permissible Wall RSI by NBC/OBC
+    f_87: "5.64", // Min. Permissible Floor RSI by NBC/OBC
+    g_88: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_89: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_90: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_91: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_92: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_93: "1.600", // Min. Permissible U-Value by NBC/OBC
+    f_94: "3.72", // Min. Permissible RSI by NBC/OBC
+    f_95: "1.96", // Min. Permissible RSI Slab by NBC/OBC
+    d_97: "5", // Default Thermal Bridge Penatly (Not Defined in Codes)
+    d_108: "PH_PLUS", // Airtightness Method
+    j_115: "0.90", // Min. AFUE if Gas or Oil
+    j_116: "3.3", // Min. COPc if Dedicated Cooling
+    f_113: "7.1", // Min. HSPF if Heatpump
+    d_118: "75", // Min. Permissible ERV/HRV SRE Efficiency%
+    l_118: "0.45", // Min. Volumetric Ventilation Rate if by Volume Method
+    d_119: "8.33", // Min. Permissible Vent. Rate Per Person in l/sec
+  },
+  "PH Premium": {
+    //"h_13": "90% less than NBC"
+    h_23: "18", // PH Tsetpoint in °C
+    d_52: "100", // DWH System Efficiency when Electric
+    k_52: "92", // DWH AFUE when Gas or Oil
+    d_53: "0.42", // DWHR Efficiency 0 when OBC
+    d_56: "150", // Max. Radon per Health Canada Bq/m3
+    d_57: "1000", // Max. CO2 per Health Canada ppm
+    d_58: "150", // Max. CO2 per Health Canada ppm
+    d_59: "45", // Ideal RH% averaged annually
+    d_65: "2.1", // PH Specific Plug Loads in W/m²
+    d_66: "1.1", // Max. Permissible Lighting Load
+    g_67: "Efficient", // Default Eppt Efficienct Spec.
+    d_65: "5.0", // Reference Plug Load (W/m²)
+    d_66: "1.1", // Reference Lighting Load (W/m²)
+    // t_67: "5.0", // Reference Equipment Load (W/m²) - THIS IS ESTABLISHED BY OCCUPANCY AT D13
+    f_73: "0.50", // SHGC of Glazing Max.
+    f_74: "0.50", // SHGC of Glazing Max.
+    f_75: "0.50", // SHGC of Glazing Max.
+    f_76: "0.50", // SHGC of Glazing Max.
+    f_77: "0.50", // SHGC of Glazing Max.
+    f_78: "0.50", // SHGC of Glazing Max.
+    d_80: "PH Method", // PH Method used for PHI models
+    f_85: "4.87", // Min. Permissible Roof RSI by NBC/OBC
+    f_86: "4.21", // Min. Permissible Wall RSI by NBC/OBC
+    f_87: "5.64", // Min. Permissible Floor RSI by NBC/OBC
+    g_88: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_89: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_90: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_91: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_92: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_93: "1.600", // Min. Permissible U-Value by NBC/OBC
+    f_94: "3.72", // Min. Permissible RSI by NBC/OBC
+    f_95: "1.96", // Min. Permissible RSI Slab by NBC/OBC
+    d_97: "5", // Default Thermal Bridge Penatly (Not Defined in Codes)
+    d_108: "PH_CLASSIC", // Airtightness Method
+    j_115: "0.90", // Min. AFUE if Gas or Oil
+    j_116: "3.3", // Min. COPc if Dedicated Cooling
+    f_113: "7.1", // Min. HSPF if Heatpump
+    d_118: "75", // Min. Permissible ERV/HRV SRE Efficiency%
+    l_118: "0.45", // Min. Volumetric Ventilation Rate if by Volume Method
+    d_119: "8.33", // Min. Permissible Vent. Rate Per Person in l/sec
+  },
+  EnerPHit: {
+    //"h_13": "PH Renovations"
+    h_23: "18", // PH Tsetpoint in °C
+    d_52: "100", // DWH System Efficiency when Electric
+    k_52: "92", // DWH AFUE when Gas or Oil
+    d_53: "0.42", // DWHR Efficiency 0 when OBC
+    d_56: "150", // Max. Radon per Health Canada Bq/m3
+    d_57: "1000", // Max. CO2 per Health Canada ppm
+    d_58: "150", // Max. CO2 per Health Canada ppm
+    d_59: "45", // Ideal RH% averaged annually
+    d_65: "2.1", // PH Specific Plug Loads in W/m²
+    d_66: "2.0", // Max. Permissible Lighting Load
+    g_67: "Efficient", // Required Eppt Efficienct Spec.
+    t_65: "5.0", // Reference Occupant Load (W/m²)
+    d_66: "2.0", // Reference Lighting Load (W/m²)
+    // t_67: "2.0", // Reference Equipment Load (W/m²) THIS IS ESTABLISHED BY OCCUPANCY AT D13
+    f_73: "0.50", // SHGC of Glazing Max.
+    f_74: "0.50", // SHGC of Glazing Max.
+    f_75: "0.50", // SHGC of Glazing Max.
+    f_76: "0.50", // SHGC of Glazing Max.
+    f_77: "0.50", // SHGC of Glazing Max.
+    f_78: "0.50", // SHGC of Glazing Max.
+    d_80: "PH Method", // PH Method used for PHI models
+    f_85: "4.87", // Min. Permissible Roof RSI by NBC/OBC
+    f_86: "4.21", // Min. Permissible Wall RSI by NBC/OBC
+    f_87: "5.64", // Min. Permissible Floor RSI by NBC/OBC
+    g_88: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_89: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_90: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_91: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_92: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_93: "1.600", // Min. Permissible U-Value by NBC/OBC
+    f_94: "3.72", // Min. Permissible RSI by NBC/OBC
+    f_95: "1.96", // Min. Permissible RSI Slab by NBC/OBC
+    d_97: "5", // Default Thermal Bridge Penatly (Not Defined in Codes)
+    d_108: "PH_LOW", // Airtightness Method
+    j_115: "0.90", // Min. AFUE if Gas or Oil
+    j_116: "3.3", // Min. COPc if Dedicated Cooling
+    f_113: "7.1", // Min. HSPF if Heatpump
+    d_118: "75", // Min. Permissible ERV/HRV SRE Efficiency%
+    l_118: "0.45", // Min. Volumetric Ventilation Rate if by Volume Method
+    d_119: "8.33", // Min. Permissible Vent. Rate Per Person in l/sec
+  },
+  "PH Low Energy": {
+    //"h_13": "80% less than NBC"
+    h_23: "18", // PH Tsetpoint in °C  
+    d_52: "100", // DWH System Efficiency when Electric
+    k_52: "92", // DWH AFUE when Gas or Oil
+    d_53: "0.42", // DWHR Efficiency 0 when OBC
+    d_56: "150", // Max. Radon per Health Canada Bq/m3
+    d_57: "1000", // Max. CO2 per Health Canada ppm
+    d_58: "150", // Max. CO2 per Health Canada ppm
+    d_59: "45", // Ideal RH% averaged annually
+    d_65: "2.1", // PH Specific Plug Loads in W/m²
+    d_66: "2.0", // Max. Permissible Lighting Load
+    g_67: "Efficient", // Required Eppt Efficienct Spec.
+    t_65: "5.0", // Reference Occupant Load (W/m²)
+    d_66: "2.0", // Reference Lighting Load (W/m²)
+    // t_67: "2.0", // Reference Equipment Load (W/m²) THIS IS ESTABLISHED BY OCCUPANCY AT D13
+    f_73: "0.50", // SHGC of Glazing Max.
+    f_74: "0.50", // SHGC of Glazing Max.
+    f_75: "0.50", // SHGC of Glazing Max.
+    f_76: "0.50", // SHGC of Glazing Max.
+    f_77: "0.50", // SHGC of Glazing Max.
+    f_78: "0.50", // SHGC of Glazing Max.
+    d_80: "PH Method", // PH Method used for PHI models
+    f_85: "4.87", // Min. Permissible Roof RSI by NBC/OBC
+    f_86: "4.21", // Min. Permissible Wall RSI by NBC/OBC
+    f_87: "5.64", // Min. Permissible Floor RSI by NBC/OBC
+    g_88: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_89: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_90: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_91: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_92: "1.600", // Min. Permissible U-Value by NBC/OBC
+    g_93: "1.600", // Min. Permissible U-Value by NBC/OBC
+    f_94: "3.72", // Min. Permissible RSI by NBC/OBC
+    f_95: "1.96", // Min. Permissible RSI Slab by NBC/OBC
+    d_97: "5", // Default Thermal Bridge Penatly (Not Defined in Codes)
+    d_108: "PH_LOW", // Airtightness Method
+    j_115: "0.90", // Min. AFUE if Gas or Oil
+    j_116: "3.3", // Min. COPc if Dedicated Cooling
+    f_113: "7.1", // Min. HSPF if Heatpump
+    d_118: "75", // Min. Permissible ERV/HRV SRE Efficiency%
+    l_118: "0.45", // Min. Volumetric Ventilation Rate if by Volume Method
+    d_119: "8.33", // Min. Permissible Vent. Rate Per Person in l/sec
+  },
+
+  "Eigener Standard": { //ADD YOUR OWN - User-modifiable General Standard for NeuBau
+    h_23: "20", // Heiztemperatur-Sollwert nach GEG (typisch 20 °C)
+    d_52: "100", // Warmwasserbereitung elektrisch – Systemwirkungsgrad (%)
+    k_52: "92", // Warmwasser AFUE für Gas/Öl (%)
+    d_53: "0.00", // DWHR – in Deutschland kaum normativ berücksichtigt
+    d_56: "300", // Radon-Referenzwert in Deutschland (BfS: 300 Bq/m³)
+    d_57: "1000", // CO₂-Grenzwert Innenraum (EN 16798, Kategorie II)
+    d_58: "150", // CO-Grenzwert (weiterhin nach PH-Standard)
+    d_59: "45", // Relative Feuchte (Jahresmittel)
+    d_65: "2.1", // Leistungsdichte für Geräte (DIN 18599)
+    d_66: "1.1", // Beleuchtungsleistungsdichte (DIN 18599-4)
+    g_67: "Effizient", // Systemwirkungsgrad-Einstufung
+    f_73: "0.50", // g-Wert Obergrenze (SHGC)
+    f_74: "0.50",
+    f_75: "0.50",
+    f_76: "0.50",
+    f_77: "0.50",
+    f_78: "0.50",
+    d_80: "DIN 18599", // Berechnungsmethode für Neubau GEG - nGains
+
+    // --- Bauteile: RSI-Werte (m²K/W) aus GEG-Maximal-U-Werten ---
+    f_85: "5.000", // Mindest-RSI Dach (U=0.20 W/m²K)
+    f_86: "4.167", // Mindest-RSI Wand (U=0.24 W/m²K)
+    f_87: "3.333", // Mindest-RSI Bodenplatte/Decke gegen Erdreich (U=0.30 W/m²K)
+
+    // --- Fenster: max. U-Werte (W/m²K), alle auf 3 Dezimalstellen ---
+    g_88: "1.300", // Fenster Uw nach GEG Neubau
+    g_89: "1.300",
+    g_90: "1.300",
+    g_91: "1.300",
+    g_92: "1.300",
+    g_93: "1.300",
+
+    // --- Weitere RSI-Werte falls getrennt nötig ---
+    f_94: "3.333", // Boden/Platte (U=0.30)
+    f_95: "3.333", // Gleich wie oben
+
+    d_97: "5", // Wärmebrückenzuschlag (vereinfacht, DIN 4108 Beiblatt 2)
+    d_108: "GEG_n50", // Luftdichtheit: GEG n50 ≤ 3.0 (oder ≤1.5 mit Lüftungsanlage)
+    j_115: "0.90", // AFUE Heizen Gas/Öl Mindestwert (konservativ übernommen)
+    j_116: "3.0", // COP für Kühlung (DIN 18599 Mindestwert)
+    f_113: "3.5", // Heizungs-SCOP (typischer Wert für Luft-WP, DIN 18599)
+    d_118: "75", // Wärmerückgewinnungsgrad Lüftung (%)
+    l_118: "0.45", // Mindest-Volumenstrom pro Volumenmethode (l/(s·m²))
+    d_119: "8.33" // Mindest-Volumenstrom pro Person (l/s·Person)
   }
 };
 
