@@ -265,7 +265,34 @@ function updateToggleUI(toggleSwitch, slider, stateIndicator, mode) {
 - Test in both Target and Reference modes
 - Verify calculations in S01 reflect correct mode
 
-### Phase 3: Cleanup and Verification
+### Phase 3: Button Row Cleanup (S18 Debug Section)
+
+**Goal:** Clean up index.html button row by moving debug-related buttons to Section18 (Notes/Debug section)
+
+**Tasks:**
+
+1. **Move "Zen Mode" button to Section18 header**:
+   - Current location: index.html button row
+   - New location: Section18 header (alongside existing debug toggle)
+   - Pattern: Similar to Section03's Weather Data button
+   - Add `event.stopPropagation()` to prevent header collapse
+
+2. **Remove "DEBUG QC" button from index.html button row**:
+   - Current location: index.html button row
+   - Reason: Section18 already has a debug toggle that should serve the same purpose
+   - Action: Delete button, verify Section18 debug toggle works as expected
+   - **TODO**: Confirm DEBUG QC and Section18 debug toggle have same functionality before deleting
+
+3. **Verify Section18 debug toggle functionality**:
+   - Test what the current Section18 debug toggle does
+   - Compare with DEBUG QC button behavior
+   - Ensure no functionality is lost
+
+**Files to modify:**
+- `index.html` - Remove buttons from button row
+- `src/sections/Section18.js` - Add Zen Mode button to header
+
+### Phase 4: Final Cleanup and Verification
 
 1. **Check for unused utilities** (DO NOT DELETE WITHOUT USER APPROVAL):
    - `src/core/ToggleUISync.js` - may still be used by something
