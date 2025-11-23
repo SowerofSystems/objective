@@ -12,7 +12,7 @@ This document outlines the **FieldManager-Based Localization Architecture** for 
 
 - **Localizes data structures** (FieldManager) - not rendering logic (Sections)
 - **Shares ALL section files** (Section01-18) - zero duplication
-- **Localizes only 4 dropdowns** - minimal surface area for country-specific code
+- **Localizes only 4-6 dropdowns** - minimal surface area for country-specific code
 - **Translates UI text** via lightweight JSON - no heavy i18n libraries
 - **Maintains** Canadian version as primary codebase
 - **Enables** partner-friendly localization without breaking core logic
@@ -31,7 +31,7 @@ This document outlines the **FieldManager-Based Localization Architecture** for 
 - Complex initialization sequences
 - Performance overhead even for Canadian users
 
-**Critical Issue**: Screenshot showed "Bundesland wählen" (German) but Canadian provinces (Alberta, BC) in dropdown - race condition between label loading and data initialization.
+**Critical Issue**: Screenshot showed "Bundesland wählen" (German) but Canadian provinces (Alberta, BC) in dropdown - race condition between label loading and data initialization, state clusterfuck.
 
 **Decision**: Revert to clean commit, pursue file separation instead.
 
@@ -41,14 +41,14 @@ This document outlines the **FieldManager-Based Localization Architecture** for 
 
 ### Context
 
-This section clarifies the architectural approach for supporting international markets with different building codes and climate data.
+This section clarifies the refined 2nd attempt architectural approach for supporting international markets with different building codes and climate data.
 
 ### Approach
 
 **Two-Phase Strategy**:
 
 **Phase 1: Domain Data Configuration** (Building codes and climate data)
-- Separate file sets per market (Canadian standards vs German standards)
+- Separate file sets per market (Canadian standards/default load vs German standards under localizations/Germany, etc.)
 - File-based approach using separate entry points (index.html vs index-de.html)
 - Standard configuration pattern - swap data files, share all rendering logic
 
@@ -62,7 +62,7 @@ This section clarifies the architectural approach for supporting international m
 
 **Separating Data from Rendering**:
 - **Before**: Section files contained both layout AND country-specific data
-- **After**: Sections define layout, FieldManager provides country-specific data
+- **After**: Sections define layout, FieldManager provides country-specific data - EXISTING DUAL STATE METHODS MUST BE CAREFULLY RESPECTED per @4012-CHEATSHEET.md and @TECHNICAL.md
 - **Benefit**: Shared rendering logic (18 section files), swappable data configurations
 
 ### The Key Distinction: Domain Configuration vs UI Localization
@@ -83,7 +83,7 @@ This section clarifies the architectural approach for supporting international m
    - Data (FieldManager) is swappable per market
    - Clean separation reduces conditional logic
 
-2. **Market-Specific Configurations**
+2. **Market-Specific Configurations under localizations/**
    - Each market gets appropriate building codes and climate data
    - Partner deployments use correct local standards
    - Independent data updates per market
