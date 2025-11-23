@@ -460,3 +460,67 @@ When you click the global toggle, it calls `switchMode(mode)` on EACH section's 
 **Estimated Time**: 15 sections × 5 minutes each = ~75 minutes
 
 **Branch**: Already on `G-REF-ONLY` branch
+
+---
+
+## Console Logging Analysis - Initialization Spam
+
+**Date**: November 23, 2025
+**Analysis**: Reviewed console output during app initialization to identify noisy sections
+
+### Log Frequency by Section (Worst to Least)
+
+Based on analysis of initialization logs, the following sections generate excessive console output:
+
+1. **Section13 (Mechanical Loads)** - 833 log lines
+   - **Primary culprit**: Cooling.js integration with 515 log lines
+   - **Issue**: Trace logs with full stack traces (62 occurrences of `🔍 TRACE`)
+   - **Issue**: Published value logs (93 occurrences of `🔗 Published`)
+   - **Issue**: Recursion warnings (9 occurrences of "Already calculating")
+   - **Recommendation**: Remove trace stack traces from production, convert published value logs to debug-only
+
+2. **Section04 (Energy & Carbon)** - 427 log lines
+   - **Primary culprit**: PER (Primary Energy Ratio) calculation spam
+   - **Issue**: 368 instances of `[S04 PER] 🔍 CALCULATING PER` during initialization
+   - **Root cause**: PER calculation triggered repeatedly for both target and reference modes on every state change
+   - **Recommendation**: Add guard to prevent logging during initialization phase, or reduce to single summary log
+
+3. **Section12 (Volume Surface Metrics)** - 390 log lines
+   - **Issue**: Calculation cascade logs during initialization
+   - **Pattern**: Repeated `setCalculatedValue` and `calculateVolumeMetrics` calls
+   - **Recommendation**: Suppress verbose calculation logs during initialization
+
+4. **Section15 (TEUI Summary)** - 346 log lines
+   - **Issue**: Stack traces from calculation calls
+   - **Issue**: "Missing critical upstream Reference values" warnings during initialization (expected)
+   - **Recommendation**: Suppress initialization-phase dependency warnings
+
+5. **Section14 (TEDI Summary)** - 190 log lines
+   - **Issue**: Similar to S15, calculation cascade during initialization
+
+6. **Section11 (Transmission Losses)** - 151 log lines
+   - **Issue**: 80+ climate read logs and area sync messages
+   - **Pattern**: `[S11] 🔵 REF CLIMATE READ` and `[S11 Area Sync]` messages
+   - **Recommendation**: Reduce verbosity of climate reads and area sync during initialization
+
+7. **Section10 (Radiant Gains)** - 55 log lines
+   - **Issue**: 42 instances of `[S10 DEBUG] calculateAll() triggered`
+   - **Recommendation**: Convert DEBUG logs to conditional debug mode only
+
+### Recommendations Summary
+
+**High Priority (>300 lines):**
+- **S13/Cooling.js**: Remove stack trace logs, make published values debug-only
+- **S04**: Gate PER calculation logs during initialization
+- **S12**: Suppress calculation verbosity during init
+
+**Medium Priority (150-350 lines):**
+- **S15**: Suppress initialization-phase dependency warnings
+- **S14**: Reduce calculation cascade logging
+- **S11**: Make climate reads and area sync less verbose
+
+**Low Priority (<100 lines):**
+- **S10**: Convert DEBUG logs to conditional
+- **S03-S09**: Already relatively quiet (under 100 lines each)
+
+**Total Reduction Potential**: ~2000+ console log lines during initialization could be eliminated or gated behind debug flags.
