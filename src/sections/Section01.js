@@ -1307,14 +1307,14 @@ window.TEUI.SectionModules.sect01 = (function () {
       event.stopPropagation();
       if (
         confirm(
-          "⚠️ FACTORY RESET ⚠️\n\nThis will clear ALL data in ALL sections and reset the entire application to factory defaults.\n\nAre you sure you want to continue?"
+          "Factory reset? This will clear ALL data and cannot be undone."
         )
       ) {
         // Global factory reset - same as main reset button in index.html
-        if (window.TEUI?.FileHandler?.factoryReset) {
-          window.TEUI.FileHandler.factoryReset();
+        if (window.TEUI?.StateManager?.resetTier3_FactoryReset) {
+          window.TEUI.StateManager.resetTier3_FactoryReset();
         } else {
-          console.error("Factory reset function not available");
+          console.error("StateManager factory reset function not available");
         }
       }
     });
