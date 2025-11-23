@@ -143,13 +143,19 @@ Successfully removed `injectHeaderControls()` and verified:
    - Commit after EACH successful section
    - Message: "Remove local toggle controls from SectionXX"
 
-### Phase 2.5: Add Key Values Header Toggle (NEW FEATURE)
+### Phase 2.5: Add Key Values Header Toggle (NEW FEATURE) ✅ COMPLETED
 
 **Goal:** Add a second global toggle in the Key Values header for convenient mode switching without scrolling.
 
 **Location:** Key Values section header (`Section01.js`)
 - Between: console message display (left) and collapse controls (- and → on right)
 - Similar to existing section header layout
+
+**Status:** ✅ COMPLETED (November 23, 2025)
+- Global toggle added to Key Values header
+- Reset button calls `TEUI.StateManager.resetTier3_FactoryReset()` (same as main Factory Reset)
+- Both toggles sync bidirectionally via `ReferenceToggle.js`
+- Spacing adjusted for optimal layout (8px margin between controls and feedback area)
 
 **Implementation Details:**
 
