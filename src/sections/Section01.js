@@ -1294,7 +1294,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     const controlsContainer = document.createElement("div");
     controlsContainer.className = "local-controls-container";
     controlsContainer.style.cssText =
-      "display: flex; align-items: center; margin-left: auto; gap: 10px;";
+      "display: flex; align-items: center; gap: 10px; margin-left: 8px;";
 
     // --- Create Global Factory Reset Button ---
     const resetButton = document.createElement("button");
