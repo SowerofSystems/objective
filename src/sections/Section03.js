@@ -2281,7 +2281,8 @@ window.TEUI.SectionModules.sect03 = (function () {
   // --- End New Calculation Functions ---
 
   /**
-   * Creates and injects the Target/Reference toggle and Reset button into the section header.
+   * Creates and injects the Weather Data button into the section header.
+   * Note: Toggle/Reset controls removed - global toggle in index.html controls mode switching.
    */
   function injectHeaderControls() {
     const sectionHeader = document.querySelector(
@@ -2299,25 +2300,6 @@ window.TEUI.SectionModules.sect03 = (function () {
     controlsContainer.style.cssText =
       "display: flex; align-items: center; margin-left: auto; gap: 10px;";
 
-    // --- Create Reset Button ---
-    const resetButton = document.createElement("button");
-    resetButton.innerHTML = "🔄 Reset"; // Using an icon for clarity
-    resetButton.title = "Reset Section 3 to Defaults";
-    resetButton.style.cssText =
-      "padding: 4px 8px; font-size: 0.8em; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;";
-
-    resetButton.addEventListener("click", event => {
-      event.stopPropagation();
-      // Use a confirmation dialog to prevent accidental resets
-      if (
-        confirm(
-          "Are you sure you want to reset all inputs in this section to their defaults? This will clear any saved data for Section 3."
-        )
-      ) {
-        ModeManager.resetState();
-      }
-    });
-
     // --- Create Weather Data Button ---
     const weatherButton = document.createElement("button");
     weatherButton.textContent = "Weather Data";
@@ -2326,49 +2308,16 @@ window.TEUI.SectionModules.sect03 = (function () {
     weatherButton.style.cssText =
       "padding: 4px 8px; font-size: 0.8em; background-color: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer;";
 
-    weatherButton.addEventListener("click", function () {
+    weatherButton.addEventListener("click", function (event) {
+      event.stopPropagation(); // Prevent header collapse
       showWeatherData();
     });
 
-    // --- Create Toggle Switch ---
-    const stateIndicator = document.createElement("span");
-    stateIndicator.textContent = "TARGET";
-    stateIndicator.style.cssText =
-      "color: #fff; font-weight: bold; font-size: 0.8em; background-color: rgba(0, 123, 255, 0.5); padding: 2px 6px; border-radius: 4px;";
-
-    const toggleSwitch = document.createElement("div");
-    toggleSwitch.style.cssText =
-      "position: relative; width: 40px; height: 20px; background-color: #ccc; border-radius: 10px; cursor: pointer;";
-
-    const slider = document.createElement("div");
-    slider.style.cssText =
-      "position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background-color: white; border-radius: 50%; transition: transform 0.2s;";
-
-    toggleSwitch.appendChild(slider);
-
-    // ✅ REFACTORED: Just toggle mode, let switchMode() handle all UI updates via syncToggleUI()
-    toggleSwitch.addEventListener("click", event => {
-      event.stopPropagation();
-      const targetMode =
-        ModeManager.currentMode === "target" ? "reference" : "target";
-      ModeManager.switchMode(targetMode);
-    });
-
-    // Append all controls to the container, then the container to the header
-    controlsContainer.appendChild(resetButton);
+    // Append Weather Data button to container, then container to header
     controlsContainer.appendChild(weatherButton);
-    controlsContainer.appendChild(stateIndicator);
-    controlsContainer.appendChild(toggleSwitch);
     sectionHeader.appendChild(controlsContainer);
 
-    // ✅ NEW: Store references to toggle elements on ModeManager for global toggle sync
-    ModeManager._toggleElements = {
-      toggleSwitch: toggleSwitch,
-      slider: slider,
-      stateIndicator: stateIndicator,
-    };
-
-    console.log("S03: Header controls setup complete");
+    console.log("S03: Weather Data button setup complete");
   }
 
   /**

@@ -107,21 +107,18 @@ Successfully removed `injectHeaderControls()` and verified:
 
 ### Phase 2: Apply Pattern to All Sections (S03-S16)
 
-**Sections Remaining**: S03, S04, S05, S06, S07, S08, S09, S10, S11, S12, S13, S14, S15, S16
+**Sections Completed**: S02 ✅, S03 ✅
 
-**⚠️ SPECIAL CASE - Section03:**
-- **KEEP** the "Weather Data" button and its modal popup
-- **DELETE** the toggle controls and reset button
-- **PRESERVE** weather data functionality (it's useful and not mode-related)
-- Only remove mode-switching UI, not domain-specific features
+**Sections Remaining**: S04, S05, S06, S07, S08, S09, S10, S11, S12, S13, S14, S15, S16
 
-**📋 NEXT STEPS:**
-1. **Section03** - Remove toggle controls BUT preserve Weather Data button
-2. **Key Values Header Toggle** - Add global toggle to Key Values section
-   - Location: Between console message display and collapse controls (- and →)
-   - Same toggle UI as global toggle (Target/Reference switch)
-   - Syncs with global toggle state
-   - Provides convenient access without scrolling to top
+**⚠️ SPECIAL CASE - Section03:** ✅ COMPLETED (November 23, 2025)
+- ✅ Weather Data button preserved with `event.stopPropagation()` fix
+- ✅ Toggle controls and reset button removed
+- ✅ Global toggle controls mode switching
+- ✅ Calculations verified in both modes
+
+**📋 NEXT STEP:**
+1. **Section04** - Standard pattern (no special buttons to preserve)
 
 **Per-Section Steps** (REPEAT EXACTLY WHAT WORKED IN PHASE 1):
 
