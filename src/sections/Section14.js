@@ -248,80 +248,6 @@ window.TEUI.SectionModules.sect14 = (function () {
   // HEADER CONTROLS INJECTION
   //==========================================================================
 
-  /**
-   * Creates and injects the Target/Reference toggle and Reset button into the section header.
-   */
-  function injectHeaderControls() {
-    const sectionHeader = document.querySelector(
-      "#tediSummary .section-header, #tediSummary .section-title"
-    );
-    if (
-      !sectionHeader ||
-      sectionHeader.querySelector(".local-controls-container")
-    ) {
-      return; // Already setup or header not found
-    }
-
-    const controlsContainer = document.createElement("div");
-    controlsContainer.className = "local-controls-container";
-    controlsContainer.style.cssText =
-      "display: flex; align-items: center; margin-left: auto; gap: 10px;";
-
-    // Reset Button
-    const resetButton = document.createElement("button");
-    resetButton.innerHTML = "🔄 Reset";
-    resetButton.title = "Reset Section 14 to Defaults";
-    resetButton.style.cssText =
-      "padding: 4px 8px; font-size: 0.8em; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;";
-
-    resetButton.addEventListener("click", event => {
-      event.stopPropagation();
-      if (
-        confirm(
-          "Are you sure you want to reset all inputs in this section to their defaults? This will clear any saved data for Section 14."
-        )
-      ) {
-        ModeManager.resetState();
-      }
-    });
-
-    // Toggle Switch (exact copy from S13)
-    const stateIndicator = document.createElement("span");
-    stateIndicator.textContent = "TARGET";
-    stateIndicator.style.cssText =
-      "color: #fff; font-weight: bold; font-size: 0.8em; background-color: rgba(0, 123, 255, 0.5); padding: 2px 6px; border-radius: 4px;";
-
-    const toggleSwitch = document.createElement("div");
-    toggleSwitch.style.cssText =
-      "position: relative; width: 40px; height: 20px; background-color: #ccc; border-radius: 10px; cursor: pointer;";
-
-    const slider = document.createElement("div");
-    slider.style.cssText =
-      "position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background-color: white; border-radius: 50%; transition: transform 0.2s;";
-
-    toggleSwitch.appendChild(slider);
-
-    // ✅ REFACTORED: Just toggle mode, let switchMode() handle all UI updates via syncToggleUI()
-    toggleSwitch.addEventListener("click", event => {
-      event.stopPropagation();
-      const targetMode =
-        ModeManager.currentMode === "target" ? "reference" : "target";
-      ModeManager.switchMode(targetMode);
-    });
-
-    controlsContainer.appendChild(resetButton);
-    controlsContainer.appendChild(stateIndicator);
-    controlsContainer.appendChild(toggleSwitch);
-    sectionHeader.appendChild(controlsContainer);
-
-    // ✅ NEW: Store references to toggle elements on ModeManager for global toggle sync
-    ModeManager._toggleElements = {
-      toggleSwitch: toggleSwitch,
-      slider: slider,
-      stateIndicator: stateIndicator,
-    };
-  }
-
   //==========================================================================
   // HELPER FUNCTIONS (Copied from Section 15 Refactor)
   //==========================================================================
@@ -1485,7 +1411,6 @@ window.TEUI.SectionModules.sect14 = (function () {
     ModeManager.initialize();
 
     // 2. Setup the section-specific toggle switch in the header
-    injectHeaderControls();
 
     // 3. Register dependencies
     if (window.TEUI.StateManager) {
