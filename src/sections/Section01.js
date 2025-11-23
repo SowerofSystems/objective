@@ -1275,6 +1275,125 @@ window.TEUI.SectionModules.sect01 = (function () {
   }
 
   //==========================================================================
+  // GLOBAL HEADER CONTROLS (TARGET/REFERENCE TOGGLE + RESET)
+  //==========================================================================
+
+  /**
+   * Creates and injects the global Target/Reference toggle and Reset button into the Key Values header.
+   * This toggle controls ALL sections (global mode switch), unlike section-specific toggles.
+   */
+  function injectKeyValuesHeaderControls() {
+    const sectionHeader = document.querySelector("#keyValues .section-header");
+    if (
+      !sectionHeader ||
+      sectionHeader.querySelector(".local-controls-container")
+    ) {
+      return; // Already setup or header not found
+    }
+
+    const controlsContainer = document.createElement("div");
+    controlsContainer.className = "local-controls-container";
+    controlsContainer.style.cssText =
+      "display: flex; align-items: center; margin-left: auto; gap: 10px;";
+
+    // --- Create Global Factory Reset Button ---
+    const resetButton = document.createElement("button");
+    resetButton.innerHTML = "🔄 Reset";
+    resetButton.title = "Factory Reset - Clear ALL data and reset to defaults";
+    resetButton.style.cssText =
+      "padding: 4px 8px; font-size: 0.8em; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;";
+
+    resetButton.addEventListener("click", event => {
+      event.stopPropagation();
+      if (
+        confirm(
+          "⚠️ FACTORY RESET ⚠️\n\nThis will clear ALL data in ALL sections and reset the entire application to factory defaults.\n\nAre you sure you want to continue?"
+        )
+      ) {
+        // Global factory reset - same as main reset button in index.html
+        if (window.TEUI?.FileHandler?.factoryReset) {
+          window.TEUI.FileHandler.factoryReset();
+        } else {
+          console.error("Factory reset function not available");
+        }
+      }
+    });
+
+    // --- Create Global Toggle Switch ---
+    const stateIndicator = document.createElement("span");
+    stateIndicator.textContent = "TARGET";
+    stateIndicator.style.cssText =
+      "color: #fff; font-weight: bold; font-size: 0.8em; background-color: rgba(0, 123, 255, 0.5); padding: 2px 6px; border-radius: 4px;";
+
+    const toggleSwitch = document.createElement("div");
+    toggleSwitch.style.cssText =
+      "position: relative; width: 40px; height: 20px; background-color: #ccc; border-radius: 10px; cursor: pointer;";
+
+    const slider = document.createElement("div");
+    slider.style.cssText =
+      "position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background-color: white; border-radius: 50%; transition: transform 0.2s;";
+
+    toggleSwitch.appendChild(slider);
+
+    // ✅ CRITICAL: Use global toggle instead of local (affects ALL sections)
+    toggleSwitch.addEventListener("click", event => {
+      event.stopPropagation();
+
+      // Get current global mode
+      const currentMode =
+        window.TEUI.ReferenceToggle?.getCurrentMode?.() || "target";
+      const targetMode = currentMode === "target" ? "reference" : "target";
+
+      // Switch ALL sections via global toggle
+      if (window.TEUI.ReferenceToggle?.switchMode) {
+        window.TEUI.ReferenceToggle.switchMode(targetMode);
+      } else {
+        console.error("Global ReferenceToggle not available");
+      }
+    });
+
+    // ✅ CRITICAL: Listen for global mode changes to sync UI
+    // This ensures Key Values toggle updates when main global toggle is clicked
+    if (window.TEUI.ReferenceToggle) {
+      // Store reference for sync updates
+      window.TEUI.ReferenceToggle.keyValuesToggleElements = {
+        toggleSwitch: toggleSwitch,
+        slider: slider,
+        stateIndicator: stateIndicator,
+      };
+
+      // Initialize to current mode
+      const currentMode =
+        window.TEUI.ReferenceToggle.getCurrentMode?.() || "target";
+      updateKeyValuesToggleUI(toggleSwitch, slider, stateIndicator, currentMode);
+    }
+
+    // Append all controls to the container, then the container to the header
+    controlsContainer.appendChild(resetButton);
+    controlsContainer.appendChild(stateIndicator);
+    controlsContainer.appendChild(toggleSwitch);
+    sectionHeader.appendChild(controlsContainer);
+  }
+
+  /**
+   * Update Key Values toggle UI to match global mode state
+   * Called when global toggle switches modes
+   */
+  function updateKeyValuesToggleUI(toggleSwitch, slider, stateIndicator, mode) {
+    if (mode === "reference") {
+      slider.style.transform = "translateX(20px)";
+      toggleSwitch.style.backgroundColor = "#dc3545"; // Red
+      stateIndicator.textContent = "REFERENCE";
+      stateIndicator.style.backgroundColor = "rgba(220, 53, 69, 0.5)";
+    } else {
+      slider.style.transform = "translateX(0)";
+      toggleSwitch.style.backgroundColor = "#ccc"; // Gray
+      stateIndicator.textContent = "TARGET";
+      stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
+    }
+  }
+
+  //==========================================================================
   // INITIALIZATION
   //==========================================================================
 
@@ -1375,6 +1494,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     addCustomStyling();
     renderKeyValuesSection();
     removeToggleIcon();
+    injectKeyValuesHeaderControls(); // Add global toggle to Key Values header
     initializeEventHandlers();
   }
 
