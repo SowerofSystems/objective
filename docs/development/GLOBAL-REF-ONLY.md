@@ -147,28 +147,120 @@ Successfully removed `injectHeaderControls()` and verified:
 
 **Goal:** Add a second global toggle in the Key Values header for convenient mode switching without scrolling.
 
-**Location:** Key Values section header
+**Location:** Key Values section header (`Section01.js`)
 - Between: console message display (left) and collapse controls (- and → on right)
 - Similar to existing section header layout
 
-**Implementation:**
-1. Find Key Values section header in index.html or Section01
-2. Inject toggle button similar to global toggle
-3. Use same `window.TEUI.ModeManager` for state
-4. Sync with main global toggle (both update each other)
-5. Use `ReferenceToggle.js` methods to switch modes
+**Implementation Details:**
 
-**UI Design:**
-- Same button group style as global toggle
-- Red "Reference" / Blue "Target" states
-- Positioned inline with other header controls
-- Responsive on mobile (collapse if needed)
+1. **Copy visual pattern from Section05**:
+   - Use `injectHeaderControls()` function structure from Section05
+   - Reuse toggle switch HTML/CSS pattern (slider, state indicator)
+   - Include reset button (to be modified later per user request)
+
+2. **Make it GLOBAL instead of local**:
+   ```javascript
+   // Section05 (local toggle):
+   toggleSwitch.addEventListener("click", () => {
+     ModeManager.switchMode(targetMode); // Only affects S05
+   });
+
+   // Section01 (global toggle):
+   toggleSwitch.addEventListener("click", () => {
+     window.TEUI.ReferenceToggle.switchMode(targetMode); // Affects ALL sections
+   });
+   ```
+
+3. **Sync with main global toggle**:
+   - Listen for global mode changes via `window.TEUI.ModeManager`
+   - Update Key Values toggle UI when main toggle is clicked
+   - Both toggles stay in sync automatically
+
+4. **Reset button behavior** (placeholder for now):
+   - Include similar to Section05 pattern
+   - User will specify reset behavior later
+   - Options: global reset vs Section01-only reset
+
+**File to modify:**
+- `src/sections/Section01.js` - Add `injectKeyValuesHeaderControls()` function
+
+**Key architectural difference:**
+- Section05's toggle: Local mode switch (only S05)
+- Section01's toggle: Global mode switch (all sections via `ReferenceToggle.js`)
+
+**Code pattern:**
+```javascript
+function injectKeyValuesHeaderControls() {
+  const sectionHeader = document.querySelector("#keyValues .section-header");
+  if (!sectionHeader || sectionHeader.querySelector(".local-controls-container")) {
+    return; // Already setup or header not found
+  }
+
+  // Create controls container
+  const controlsContainer = document.createElement("div");
+  controlsContainer.className = "local-controls-container";
+
+  // Create reset button (placeholder)
+  const resetButton = document.createElement("button");
+  resetButton.innerHTML = "🔄 Reset";
+  // ... styling ...
+
+  // Create toggle switch and state indicator
+  const stateIndicator = document.createElement("span");
+  stateIndicator.textContent = "TARGET";
+
+  const toggleSwitch = document.createElement("div");
+  const slider = document.createElement("div");
+  toggleSwitch.appendChild(slider);
+
+  // ✅ CRITICAL: Use global toggle instead of local
+  toggleSwitch.addEventListener("click", event => {
+    event.stopPropagation();
+    const currentMode = window.TEUI.ReferenceToggle?.getCurrentMode?.() || "target";
+    const targetMode = currentMode === "target" ? "reference" : "target";
+
+    // Switch ALL sections via global toggle
+    if (window.TEUI.ReferenceToggle?.switchMode) {
+      window.TEUI.ReferenceToggle.switchMode(targetMode);
+    }
+  });
+
+  // ✅ CRITICAL: Listen for global mode changes to sync UI
+  if (window.TEUI.ModeManager) {
+    window.TEUI.ModeManager.addListener("mode", (newMode) => {
+      // Update toggle UI to match global state
+      updateToggleUI(toggleSwitch, slider, stateIndicator, newMode);
+    });
+  }
+
+  // Append controls to header
+  controlsContainer.appendChild(resetButton);
+  controlsContainer.appendChild(stateIndicator);
+  controlsContainer.appendChild(toggleSwitch);
+  sectionHeader.appendChild(controlsContainer);
+}
+
+function updateToggleUI(toggleSwitch, slider, stateIndicator, mode) {
+  if (mode === "reference") {
+    slider.style.transform = "translateX(20px)";
+    toggleSwitch.style.backgroundColor = "#dc3545"; // Red
+    stateIndicator.textContent = "REFERENCE";
+    stateIndicator.style.backgroundColor = "rgba(220, 53, 69, 0.5)";
+  } else {
+    slider.style.transform = "translateX(0)";
+    toggleSwitch.style.backgroundColor = "#ccc"; // Gray
+    stateIndicator.textContent = "TARGET";
+    stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
+  }
+}
+```
 
 **Testing:**
 - Click Key Values toggle → verify all sections switch modes
 - Click main global toggle → verify Key Values toggle updates
 - Verify both toggles stay in sync
 - Test in both Target and Reference modes
+- Verify calculations in S01 reflect correct mode
 
 ### Phase 3: Cleanup and Verification
 
