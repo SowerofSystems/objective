@@ -627,7 +627,7 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Table header - column labels align with graph axes above
     const thead = document.createElement("thead");
-    let headerHTML = '<tr><th style="width: 100px;"></th>'; // Empty cell for row labels
+    let headerHTML = '<tr><th style="width: 60px;"></th>'; // Empty cell for row labels
     axes.forEach(axis => {
       headerHTML += `<th class="text-center"><strong>${axis.label}</strong><br><small class="text-muted">${axis.unit}</small></th>`;
     });
