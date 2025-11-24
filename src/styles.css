@@ -1873,9 +1873,9 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
   margin-left: auto;
 }
 
-/* Parallel Coordinates Container - needs min-height for graph rendering */
+/* Parallel Coordinates Container - match S17 initial compact height */
 .parallel-coordinates-container {
-  min-height: 600px;
+  min-height: 150px;
 }
 
 /* ======================================
