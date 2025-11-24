@@ -26,7 +26,7 @@ window.TEUI.ParallelCoordinates = (function () {
       top: 60,                    // Space for axis labels
       right: 40,
       bottom: 20,
-      left: 70,                   // Increased for row label alignment (30px + original 40px)
+      left: 100,                  // Matches row label width for perfect alignment
     },
 
     // Visual styling

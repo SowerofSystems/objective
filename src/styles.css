@@ -1878,9 +1878,9 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
   min-height: 150px;
 }
 
-/* Parallel Coordinates Container - activated state (500px for graph + table + future rows) */
+/* Parallel Coordinates Container - activated state (550px for graph + 7 table rows) */
 .parallel-coordinates-container.activated {
-  height: 500px;
+  height: 550px;
   padding-bottom: 10px;
 }
 
