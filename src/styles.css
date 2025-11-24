@@ -1897,13 +1897,6 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
   margin-bottom: 0; /* Remove Bootstrap default margin */
 }
 
-/* Parallel Coordinates Table Cells - vertical alignment */
-.pc-data-table td,
-.pc-data-table th {
-  vertical-align: middle;
-  padding: 0.5rem; /* Consistent padding for all cells */
-}
-
 /* Parallel Coordinates Table Cells - Target color */
 .pc-data-table .pc-target-cell {
   color: #0d6efd; /* Bootstrap primary blue */
