@@ -95,6 +95,7 @@ document.addEventListener("DOMContentLoaded", function () {
     teuiSummary: "TEUI",
     sankeyDiagram: "Sankey",
     dependencyDiagram: "Depend",
+    parallelCoordinates: "Optimize",
     notes: "Notes",
   };
 
@@ -116,6 +117,7 @@ document.addEventListener("DOMContentLoaded", function () {
     teuiSummary: "TEUI Summary",
     sankeyDiagram: "Energy Flow Diagram",
     dependencyDiagram: "Dependencies Graph",
+    parallelCoordinates: "Optimization Analysis",
     notes: "Project Notes",
   };
 
