@@ -510,7 +510,7 @@ window.TEUI.ParallelCoordinates = (function () {
     const targetRow = document.createElement("tr");
     targetRow.innerHTML = `<td style="color: ${CONFIG.colors.target}"><strong>Target</strong></td>`;
     targetData.forEach(val => {
-      targetRow.innerHTML += `<td class="text-end" style="color: ${CONFIG.colors.target}">${val.toFixed(2)}</td>`;
+      targetRow.innerHTML += `<td class="text-center" style="color: ${CONFIG.colors.target}">${val.toFixed(2)}</td>`;
     });
     tbody.appendChild(targetRow);
 
@@ -518,7 +518,7 @@ window.TEUI.ParallelCoordinates = (function () {
     const referenceRow = document.createElement("tr");
     referenceRow.innerHTML = `<td style="color: ${CONFIG.colors.reference}"><strong>Reference</strong></td>`;
     referenceData.forEach(val => {
-      referenceRow.innerHTML += `<td class="text-end" style="color: ${CONFIG.colors.reference}">${val.toFixed(2)}</td>`;
+      referenceRow.innerHTML += `<td class="text-center" style="color: ${CONFIG.colors.reference}">${val.toFixed(2)}</td>`;
     });
     tbody.appendChild(referenceRow);
 
@@ -533,7 +533,7 @@ window.TEUI.ParallelCoordinates = (function () {
       } else if (axis.optimal === "lower") {
         deltaClass = delta < 0 ? "text-success" : "text-danger";
       }
-      deltaRow.innerHTML += `<td class="text-end ${deltaClass}">${delta >= 0 ? "+" : ""}${delta.toFixed(2)}</td>`;
+      deltaRow.innerHTML += `<td class="text-center ${deltaClass}">${delta >= 0 ? "+" : ""}${delta.toFixed(2)}</td>`;
     });
     tbody.appendChild(deltaRow);
 
@@ -550,7 +550,7 @@ window.TEUI.ParallelCoordinates = (function () {
       } else if (axis.optimal === "lower") {
         deltaClass = delta < 0 ? "text-success" : "text-danger";
       }
-      percentRow.innerHTML += `<td class="text-end ${deltaClass}">${percentDelta >= 0 ? "+" : ""}${percentDelta.toFixed(1)}%</td>`;
+      percentRow.innerHTML += `<td class="text-center ${deltaClass}">${percentDelta >= 0 ? "+" : ""}${percentDelta.toFixed(1)}%</td>`;
     });
     tbody.appendChild(percentRow);
 
