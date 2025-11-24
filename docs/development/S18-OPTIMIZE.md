@@ -223,25 +223,169 @@ const getStateValue = (key, mode = "target") => {
 
 ### Data Structure for Parallel Coordinates
 
-**Tomorrow's Input**: User will provide list of parameters to visualize
+**✅ USER PROVIDED**: November 23, 2025
 
-**Expected Format**:
+**Axes Configuration** (14 parameters):
+
 ```javascript
 const OPTIMIZATION_AXES = [
   {
-    id: "window_u_value",
-    label: "Window U-Value",
-    unit: "W/m²K",
-    targetField: "h_27",       // StateManager field ID
-    referenceField: "ref_h_27",
-    domain: [0.1, 0.5],         // Min/max range for axis
-    optimal: "lower",           // Direction of improvement
-    capitalCost: "low",         // Relative cost to optimize
-    impact: "high",             // Relative energy impact
+    id: "shw_efficiency",
+    label: "SHW%",
+    unit: "%",
+    targetField: "d_52",           // Electric/Heatpump path
+    targetFieldAlt: "k_52",        // Oil/Gas path
+    targetFieldSelector: "d_51",   // Conditional: Electric/Heatpump vs Oil/Gas
+    referenceField: "ref_d_52",
+    referenceFieldAlt: "ref_k_52",
+    referenceFieldSelector: "ref_d_51",
+    optimal: "higher",
+    description: "Service Hot Water efficiency - conditional on heating fuel type",
   },
-  // ... (user will provide complete list tomorrow)
+  {
+    id: "dwhr_efficiency",
+    label: "DWHR%",
+    unit: "%",
+    targetField: "d_53",
+    referenceField: "ref_d_53",
+    optimal: "higher",
+    description: "Drain Water Heat Recovery efficiency",
+  },
+  {
+    id: "net_gains",
+    label: "nGains%",
+    unit: "%",
+    targetField: "g_80",
+    referenceField: "ref_g_80",
+    optimal: "higher",
+    description: "Net internal gains utilization",
+  },
+  {
+    id: "thermal_bridge",
+    label: "TB%",
+    unit: "%",
+    targetField: "d_97",
+    referenceField: "ref_d_97",
+    optimal: "lower",
+    description: "Thermal bridging penalty",
+  },
+  {
+    id: "gross_floor_area",
+    label: "Ag",
+    unit: "m²",
+    targetField: "g_102",
+    referenceField: "ref_g_102",
+    optimal: "neutral",
+    description: "Gross floor area",
+  },
+  {
+    id: "envelope_area",
+    label: "Ae",
+    unit: "m²",
+    targetField: "g_101",
+    referenceField: "ref_g_101",
+    optimal: "lower",
+    description: "Envelope area (affects heat loss)",
+  },
+  {
+    id: "normalized_airtightness",
+    label: "NRL50",
+    unit: "L/s·m²",
+    targetField: "g_108",
+    referenceField: "ref_g_108",
+    optimal: "lower",
+    description: "Normalized air leakage rate at 50Pa",
+  },
+  {
+    id: "window_wall_ratio",
+    label: "WWR",
+    unit: "%",
+    targetField: "d_107",
+    referenceField: "ref_d_107",
+    optimal: "balanced",
+    description: "Window-to-wall ratio (affects gains vs losses)",
+  },
+  {
+    id: "heating_efficiency",
+    label: "HSPF",
+    unit: "Various",
+    targetField: "f_113",           // Heatpump path
+    targetFieldAlt: "h_113",        // Electricity path
+    targetFieldAlt2: "j_115",       // Oil/Gas path
+    targetFieldSelector: "d_113",   // Conditional: Heatpump/Electricity/Oil/Gas
+    referenceField: "ref_f_113",
+    referenceFieldAlt: "ref_h_113",
+    referenceFieldAlt2: "ref_j_115",
+    referenceFieldSelector: "ref_d_113",
+    optimal: "higher",
+    description: "Heating System Performance Factor - conditional on heating system type",
+  },
+  {
+    id: "mvhr_efficiency",
+    label: "MVHR%",
+    unit: "%",
+    targetField: "d_118",
+    referenceField: "ref_d_118",
+    optimal: "higher",
+    description: "Mechanical Ventilation Heat Recovery efficiency",
+  },
+  {
+    id: "tedi",
+    label: "TEDI",
+    unit: "kWh/m²·yr",
+    targetField: "h_127",
+    referenceField: "ref_h_127",
+    optimal: "lower",
+    description: "Thermal Energy Demand Intensity",
+  },
+  {
+    id: "teli",
+    label: "TELI",
+    unit: "kWh/m²·yr",
+    targetField: "h_131",
+    referenceField: "ref_h_131",
+    optimal: "lower",
+    description: "Thermal Energy Load Intensity",
+  },
+  {
+    id: "ghgi",
+    label: "GHGI",
+    unit: "kgCO2e/m²·yr",
+    targetField: "h_8",              // ⚠️ SPECIAL: Target uses h_8 (NOT d_8)
+    referenceField: "e_8",           // ⚠️ SPECIAL: Reference uses e_8 (NOT ref_e_8)
+    optimal: "lower",
+    description: "Greenhouse Gas Intensity",
+  },
+  {
+    id: "teui",
+    label: "TEUI",
+    unit: "kWh/m²·yr",
+    targetField: "h_10",             // ⚠️ SPECIAL: Target uses h_10 (NOT d_10)
+    referenceField: "e_10",          // ⚠️ SPECIAL: Reference uses e_10 (NOT ref_e_10)
+    optimal: "lower",
+    description: "Total Energy Use Intensity",
+  },
 ];
 ```
+
+**⚠️ CRITICAL NOTES**:
+
+1. **Conditional Fields** (Axes 1, 9):
+   - **SHW% (d_52/k_52)**: Field depends on heating fuel type (d_51)
+     - If `d_51 === "Electric" || d_51 === "Heatpump"` → use `d_52`
+     - If `d_51 === "Oil" || d_51 === "Gas"` → use `k_52`
+
+   - **HSPF (f_113/h_113/j_115)**: Field depends on heating system (d_113)
+     - If `d_113 === "Heatpump"` → use `f_113`
+     - If `d_113 === "Electricity"` → use `h_113`
+     - If `d_113 === "Oil" || d_113 === "Gas"` → use `j_115`
+
+2. **Special Field Naming** (Axes 13, 14):
+   - **GHGI**: Target = `h_8`, Reference = `e_8` (NOT `ref_e_8`)
+   - **TEUI**: Target = `h_10`, Reference = `e_10` (NOT `ref_e_10`)
+   - These do NOT follow the standard `ref_` prefix pattern
+
+3. **All Other Axes** (2-8, 10-12): Standard `ref_` prefix for Reference mode
 
 ### Two-Line Rendering
 
@@ -360,15 +504,20 @@ function renderParallelCoordinates(axes, targetData, referenceData) {
 - [x] Update navigation (tab label, icon, tooltip)
 - [x] Create minimal Section18.js module stub
 
-### Phase 2: Data Schema (WAITING ON USER INPUT)
-**Dependencies**: User to provide list of parameters tomorrow
+### Phase 2: Data Schema ✅ COMPLETED (November 23, 2025)
+**Dependencies**: ✅ User provided axis list
 
 **Tasks**:
-1. [ ] Receive list of axes/parameters from user
-2. [ ] Map each parameter to StateManager field IDs
-3. [ ] Define domain ranges (min/max) for each axis
+1. [x] Receive list of axes/parameters from user (14 axes)
+2. [x] Map each parameter to StateManager field IDs
+3. [ ] Define domain ranges (min/max) for each axis (requires data analysis)
 4. [ ] Classify by impact (high/medium/low) and cost (low/medium/high)
 5. [ ] Create `OPTIMIZATION_AXES` configuration object
+
+**Critical Implementation Notes**:
+- **2 Conditional axes** require runtime field selection (SHW%, HSPF)
+- **2 Special axes** use non-standard field naming (GHGI, TEUI)
+- **10 Standard axes** follow `ref_` prefix pattern
 
 **File**: Create `src/sections/ParallelCoordinatesConfig.js`
 
@@ -444,15 +593,29 @@ function renderParallelCoordinates(axes, targetData, referenceData) {
 
 ---
 
-## 9. Open Questions (To Resolve Tomorrow)
+## 9. Open Questions
 
-1. **Axis List**: Which parameters to visualize? (User to provide)
+1. ~~**Axis List**: Which parameters to visualize?~~ ✅ RESOLVED - 14 axes defined
 2. **Axis Order**: Left-to-right sequence by impact, cost, or category?
-3. **Normalization**: Should axes be normalized (0-1) or use actual units?
-4. **Interaction**: Should axes be draggable/reorderable?
-5. **Export**: PNG only, or also PDF/SVG/CSV?
-6. **Filtering**: Allow hiding/showing individual axes?
-7. **Comparison Mode**: Support more than 2 lines (e.g., multiple scenarios)?
+   - Current order: As provided by user (inputs → outputs)
+   - Alternative: Group by category (efficiency → geometry → performance)
+3. **Domain Ranges**: Min/max for each axis
+   - Need to analyze typical value ranges from StateManager
+   - Consider auto-scaling vs fixed ranges
+4. **Normalization**: Should axes be normalized (0-1) or use actual units?
+   - Recommendation: Keep actual units for clarity
+   - Use per-axis scaling (each axis independent)
+5. **Interaction**: Should axes be draggable/reorderable?
+   - Phase 3: No (fixed order)
+   - Phase 5: Optional enhancement
+6. **Export**: PNG only, or also PDF/SVG/CSV?
+   - Phase 3: PNG only
+   - Phase 5: Add CSV table export
+7. **Filtering**: Allow hiding/showing individual axes?
+   - Phase 5: Optional enhancement
+8. **Comparison Mode**: Support more than 2 lines (e.g., multiple scenarios)?
+   - Phase 3: No (Target vs Reference only)
+   - Future: Could add user-defined scenarios
 
 ---
 
@@ -533,8 +696,9 @@ objective/
 
 | Date | Status | Notes |
 |------|--------|-------|
-| 2025-11-23 | Planning | Workplan created, awaiting user parameter list |
-| 2025-11-24 | TBD | User to provide axis configuration |
+| 2025-11-23 | Planning | Workplan created |
+| 2025-11-23 | Phase 2 Complete | User provided 14-axis configuration with conditional logic |
+| 2025-11-24 | TBD | Begin Phase 3 implementation |
 
 ---
 
