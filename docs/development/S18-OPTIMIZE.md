@@ -233,11 +233,15 @@ const OPTIMIZATION_AXES = [
     id: "shw_efficiency",
     label: "SHW%",
     unit: "%",
-    targetField: "d_52",           // Electric/Heatpump path
-    targetFieldAlt: "k_52",        // Oil/Gas path
+    targetField: "d_52",           // Electric/Heatpump path (already %)
+    targetFieldAlt: "k_52",        // Oil/Gas AFUE path
+    targetFieldMultiplier: null,   // d_52 already in %
+    targetFieldAltMultiplier: 100, // k_52 * 100 to convert AFUE to %
     targetFieldSelector: "d_51",   // Conditional: Electric/Heatpump vs Oil/Gas
     referenceField: "ref_d_52",
     referenceFieldAlt: "ref_k_52",
+    referenceFieldMultiplier: null,
+    referenceFieldAltMultiplier: 100,
     referenceFieldSelector: "ref_d_51",
     optimal: "higher",
     description: "Service Hot Water efficiency - conditional on heating fuel type",
@@ -258,7 +262,7 @@ const OPTIMIZATION_AXES = [
     targetField: "g_80",
     referenceField: "ref_g_80",
     optimal: "higher",
-    description: "Net internal gains utilization",
+    description: "Net useable internal gains utilization",
   },
   {
     id: "thermal_bridge",
@@ -270,22 +274,22 @@ const OPTIMIZATION_AXES = [
     description: "Thermal bridging penalty",
   },
   {
-    id: "gross_floor_area",
+    id: "aggregate_ground_uvalue",
     label: "Ag",
-    unit: "m²",
+    unit: "W/m²K",
     targetField: "g_102",
     referenceField: "ref_g_102",
-    optimal: "neutral",
-    description: "Gross floor area",
+    optimal: "lower",
+    description: "Aggregate U-value for all elements facing ground",
   },
   {
-    id: "envelope_area",
+    id: "aggregate_air_uvalue",
     label: "Ae",
-    unit: "m²",
+    unit: "W/m²K",
     targetField: "g_101",
     referenceField: "ref_g_101",
     optimal: "lower",
-    description: "Envelope area (affects heat loss)",
+    description: "Aggregate U-value for all elements facing air",
   },
   {
     id: "normalized_airtightness",
@@ -307,18 +311,20 @@ const OPTIMIZATION_AXES = [
   },
   {
     id: "heating_efficiency",
-    label: "HSPF",
-    unit: "Various",
-    targetField: "f_113",           // Heatpump path
-    targetFieldAlt: "h_113",        // Electricity path
-    targetFieldAlt2: "j_115",       // Oil/Gas path
-    targetFieldSelector: "d_113",   // Conditional: Heatpump/Electricity/Oil/Gas
-    referenceField: "ref_f_113",
-    referenceFieldAlt: "ref_h_113",
-    referenceFieldAlt2: "ref_j_115",
+    label: "HEAT%",
+    unit: "%",
+    targetField: "h_113",           // Heatpump/Electric COP path
+    targetFieldMultiplier: 100,     // h_113 * 100 (COP 3.0 → 300%, Electric 1.0 → 100%)
+    targetFieldAlt: "j_115",        // Oil/Gas AFUE path
+    targetFieldAltMultiplier: 100,  // j_115 * 100 (AFUE 0.90 → 90%)
+    targetFieldSelector: "d_113",   // Conditional: Heatpump/Electricity vs Oil/Gas
+    referenceField: "ref_h_113",
+    referenceFieldMultiplier: 100,
+    referenceFieldAlt: "ref_j_115",
+    referenceFieldAltMultiplier: 100,
     referenceFieldSelector: "ref_d_113",
     optimal: "higher",
-    description: "Heating System Performance Factor - conditional on heating system type",
+    description: "Heating system efficiency - COP×100% for electric/heatpump, AFUE×100% for fossil fuels",
   },
   {
     id: "mvhr_efficiency",
@@ -336,7 +342,7 @@ const OPTIMIZATION_AXES = [
     targetField: "h_127",
     referenceField: "ref_h_127",
     optimal: "lower",
-    description: "Thermal Energy Demand Intensity",
+    description: "Thermal Energy Demand Intensity (per m² area)",
   },
   {
     id: "teli",
@@ -345,7 +351,7 @@ const OPTIMIZATION_AXES = [
     targetField: "h_131",
     referenceField: "ref_h_131",
     optimal: "lower",
-    description: "Thermal Energy Load Intensity",
+    description: "Thermal Envelope Loss Intensity (per m² area)",
   },
   {
     id: "ghgi",
@@ -370,22 +376,32 @@ const OPTIMIZATION_AXES = [
 
 **⚠️ CRITICAL NOTES**:
 
-1. **Conditional Fields** (Axes 1, 9):
-   - **SHW% (d_52/k_52)**: Field depends on heating fuel type (d_51)
-     - If `d_51 === "Electric" || d_51 === "Heatpump"` → use `d_52`
-     - If `d_51 === "Oil" || d_51 === "Gas"` → use `k_52`
+1. **Conditional Fields with Multipliers** (Axes 1, 9):
 
-   - **HSPF (f_113/h_113/j_115)**: Field depends on heating system (d_113)
-     - If `d_113 === "Heatpump"` → use `f_113`
-     - If `d_113 === "Electricity"` → use `h_113`
-     - If `d_113 === "Oil" || d_113 === "Gas"` → use `j_115`
+   **SHW% (Axis 1)**:
+   - Field depends on heating fuel type (d_51 / ref_d_51)
+   - If `Electric` or `Heatpump` → use `d_52` (already in %)
+   - If `Oil` or `Gas` → use `k_52 * 100` (AFUE → %)
+
+   **HEAT% (Axis 9)** - Unified heating efficiency:
+   - Field depends on heating system type (d_113 / ref_d_113)
+   - If `Heatpump` or `Electricity` → use `h_113 * 100` (COP → %)
+     - Example: COP 3.0 → 300%, Electric 1.0 → 100%
+   - If `Oil` or `Gas` → use `j_115 * 100` (AFUE → %)
+     - Example: AFUE 0.90 → 90%
+   - **Result**: All heating efficiencies displayed as percentages
 
 2. **Special Field Naming** (Axes 13, 14):
    - **GHGI**: Target = `h_8`, Reference = `e_8` (NOT `ref_e_8`)
    - **TEUI**: Target = `h_10`, Reference = `e_10` (NOT `ref_e_10`)
    - These do NOT follow the standard `ref_` prefix pattern
 
-3. **All Other Axes** (2-8, 10-12): Standard `ref_` prefix for Reference mode
+3. **Unit Corrections**:
+   - **Ag/Ae**: Not areas (m²), but aggregate U-values (W/m²K)
+   - **TELI**: Thermal **Envelope Loss** Intensity (not "Load")
+   - **nGains%**: Net **useable** internal gains
+
+4. **All Other Axes** (2-4, 7-8, 10-12): Standard `ref_` prefix for Reference mode
 
 ### Two-Line Rendering
 
