@@ -833,3 +833,31 @@ Instead of two-phase initialization, do a **single-phase** refactor:
 **Author**: Claude (AI Assistant) + Andrew Thomson
 **Branch**: S18-19-PARALLEL-COORDINATES
 **Status**: ⚠️ NEEDS REVERT - See recovery plan above
+
+
+---
+
+## REFACTOR ATTEMPT #2 - FAILED (November 24, 2025 - Late Session)
+
+### What Was Attempted
+- Added isActivated state flag  
+- Modified initialize() to create placeholder, NOT call refresh()
+- Refactored initializeControls() with button transformation  
+- Removed standalone button from index.html
+- Removed min-height from container
+
+### Why It Failed
+**Root Cause**: Section18.js.initializeEventHandlers() never called by init.js
+
+**Evidence**: Logs show modules load but initialize() never runs.
+
+### Action Taken
+Reverted to commit f25f3e4 (last stable state with CSS).
+
+### Next Session Priority
+1. Debug why initializeEventHandlers() not called
+2. Check init.js section registration  
+3. Once fixed, re-apply transformation pattern
+
+**Status**: ⚠️ REVERTED | Need to fix initializeEventHandlers() invocation
+
