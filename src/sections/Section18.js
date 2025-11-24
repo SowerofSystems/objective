@@ -26,13 +26,18 @@ window.TEUI.SectionModules.sect18 = (function () {
 
   function calculateAll() {
     console.log("[S18] calculateAll called - Parallel Coordinates refresh");
-    // TODO: Add initialization/refresh logic for Parallel Coordinates visualization
-    // This will be implemented when the D3 visualization module is created
+    // Refresh parallel coordinates visualization
+    if (window.TEUI?.ParallelCoordinates?.refresh) {
+      window.TEUI.ParallelCoordinates.refresh();
+    }
   }
 
   function initializeEventHandlers() {
     console.log("[S18] Initializing Parallel Coordinates controls");
-    // TODO: Add event handlers for controls (filters, axis selection, etc.)
+    // Initialize controls and visualization
+    if (window.TEUI?.ParallelCoordinates?.initialize) {
+      window.TEUI.ParallelCoordinates.initialize();
+    }
   }
 
   return {
