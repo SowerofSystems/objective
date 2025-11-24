@@ -1900,12 +1900,12 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
 }
 
 /* Parallel Coordinates Table Cells - Target color */
-.pc-data-table .pc-target-cell {
+.pc-data-table table td.pc-target-cell {
   color: #0d6efd; /* Bootstrap primary blue */
 }
 
 /* Parallel Coordinates Table Cells - Reference color */
-.pc-data-table .pc-reference-cell {
+.pc-data-table table td.pc-reference-cell {
   color: #dc3545; /* Bootstrap danger red */
 }
 
