@@ -720,11 +720,116 @@ objective/
 | 2025-11-23 | Planning | Workplan created |
 | 2025-11-23 | Phase 2 Complete | User provided 14-axis configuration with conditional logic |
 | 2025-11-24 | Phase 3 Complete | Created ppConfig.js (346 lines) and ParallelCoordinates.js (680 lines) |
-| 2025-11-24 | Phase 4 In Progress | Added imports, activate button. Ready for testing. Commit: 71ca7dc |
+| 2025-11-24 | Phase 4 In Progress | Added imports, activate button. Working state: Commit 64cf4a8 |
+| 2025-11-24 | Refactor Attempt | Attempted S17 two-phase pattern. Commits 5be5fd6, a2d581e - **NEEDS REVERT** |
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: November 23, 2025
+## NEXT SESSION: Recovery Plan
+
+### Current Situation (November 24, 2025 - Late Session)
+
+**Problem**: Attempted to refactor S18 to match S17's two-phase initialization pattern (activate button in controls row). Implementation became complex with:
+- Defensive retry logic (5 attempts)
+- DOM timing issues
+- S18 not rendering at all (blank section)
+
+**Last Known Working State**: Commit **64cf4a8** (or earlier: 71ca7dc, f13809c)
+- Basic implementation working
+- Separate activate button (not integrated in controls row)
+- Graph renders successfully when activated
+
+**What Worked Well**:
+- ✅ CSS styles added to `src/styles.css` (lines 1825-1952) - **Keep these!**
+- ✅ Single-row control layout pattern identified from S17
+- ✅ Control button styling (btn-sm, consistent gaps)
+
+**What Needs Reverting**:
+- ❌ Two-phase initialization in ParallelCoordinates.js
+- ❌ setupInitialState() with retry logic
+- ❌ activateVisualization() state management
+- ❌ Changes to Section18.js calling setupInitialState
+
+### Recovery Steps (Start of Next Session)
+
+**Step 1: Revert to Working State**
+```bash
+# Revert the two problematic commits
+git revert --no-commit a2d581e  # Retry logic
+git revert --no-commit 5be5fd6  # S17 pattern refactor
+git commit -m "Revert: Two-phase initialization - returning to simpler working pattern"
+
+# Or hard reset if preferred:
+git reset --hard 64cf4a8
+```
+
+**Step 2: Verify Working State**
+- Refresh browser
+- S18 should show standalone "Activate Optimization View" button
+- Graph should render when button clicked
+- Controls should appear and function
+
+**Step 3: Simple Control Row Integration (Low-Risk Approach)**
+
+Instead of two-phase initialization, do a **single-phase** refactor:
+
+1. Keep existing `initialize()` function that works
+2. Move CSS from inline styles to classes (already done ✅)
+3. Update `initializeControls()` to add activate button at start of row:
+   ```javascript
+   function initializeControls() {
+     const controlsContainer = document.createElement("div");
+     controlsContainer.className = "parallel-coordinates-controls";
+     // ... existing styling ...
+
+     // Add activate button IF not already activated
+     if (!isActivated) {
+       const activateBtn = createButton("bi-shuffle", "Activate", () => {
+         isActivated = true;
+         activateBtn.remove(); // Remove self after click
+         refresh(); // Render graph
+       });
+       activateBtn.classList.add("btn-primary");
+       controlsContainer.appendChild(activateBtn);
+     }
+
+     // Add other buttons...
+     const layoutContainer = document.createElement("div");
+     layoutContainer.style.cssText = "display: flex; gap: 5px; align-items: center; margin-left: auto;";
+     // ... rest of buttons ...
+   }
+   ```
+
+4. Update HTML: Remove standalone button, keep just the wrappers
+
+**Step 4: Test Incrementally**
+- First: Just move button into controls row (no removal logic)
+- Then: Add state flag and self-removal
+- Finally: Add placeholder message if desired
+
+### Key Lessons for Next Session
+
+1. **Don't over-engineer**: S17's pattern is complex because Dependency.js has its own DOMContentLoaded listener. S18 uses Section18.js which is simpler.
+
+2. **Single responsibility**: ParallelCoordinates.js should render, not manage initialization state
+
+3. **Keep it simple**: Button starts in controls row, removes itself when clicked. No retry logic needed.
+
+4. **Incremental changes**: Commit small working changes, not big refactors
+
+5. **Trust the working pattern**: The original 64cf4a8 approach was fine, just needed styling cleanup
+
+### Files to Review Next Session
+
+- `src/core/ParallelCoordinates.js` - Check for overly complex initialization
+- `src/sections/Section18.js` - Should be minimal (currently is ✅)
+- `index.html` - Verify container structure is clean
+- `src/styles.css` - Lines 1825-1952 are good, keep them
+
+---
+
+**Document Version**: 1.1
+**Last Updated**: November 24, 2025 (Late Session - Pre-Revert)
 **Author**: Claude (AI Assistant) + Andrew Thomson
 **Branch**: S18-19-PARALLEL-COORDINATES
+**Status**: ⚠️ NEEDS REVERT - See recovery plan above
