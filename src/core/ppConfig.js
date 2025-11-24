@@ -134,7 +134,9 @@ window.TEUI.OPTIMIZATION_AXES = [
     optimal: "balanced",
 
     targetField: "d_107",
+    targetFieldMultiplier: 100,      // d_107 is stored as decimal (0.33), display as % (33)
     referenceField: "ref_d_107",
+    referenceFieldMultiplier: 100,   // ref_d_107 is stored as decimal, display as %
 
     domain: [0, 100],
   },

@@ -388,6 +388,7 @@ window.TEUI.ParallelCoordinates = (function () {
       .range([0, width]);
 
     // Create vertical scale for each axis with dynamic domain adjustment
+    // For axes with optimal="higher", invert the range so higher values appear lower on screen
     const yScales = axes.map((axis, i) => {
       const targetVal = targetData[i];
       const refVal = referenceData[i];
@@ -407,10 +408,14 @@ window.TEUI.ParallelCoordinates = (function () {
         domainMax = dataMax * 1.1;
       }
 
+      // Invert range for "higher is better" axes (efficiency metrics)
+      // This makes higher efficiency values appear LOWER on screen (better visual)
+      const range = axis.optimal === "higher" ? [0, height] : [height, 0];
+
       return d3
         .scaleLinear()
         .domain([domainMin, domainMax])
-        .range([height, 0]);
+        .range(range);
     });
 
     // ====================================================================
