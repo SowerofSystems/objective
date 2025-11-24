@@ -180,8 +180,8 @@ window.TEUI.ParallelCoordinates = (function () {
 
     if (!container) return;
 
-    // Expand container to full height (match S17 pattern)
-    container.style.height = "600px";
+    // Add activated class to expand container (CSS: .activated { height: 500px })
+    container.classList.add("activated");
 
     // Hide placeholder
     if (placeholder) {

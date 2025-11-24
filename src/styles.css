@@ -1878,6 +1878,16 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
   min-height: 150px;
 }
 
+/* Parallel Coordinates Container - activated state (500px for graph + table + future rows) */
+.parallel-coordinates-container.activated {
+  height: 500px;
+}
+
+/* Parallel Coordinates Data Table - spacing below table */
+.pc-data-table {
+  margin-bottom: 15px;
+}
+
 /* ======================================
    SECTION 16 - SANKEY DIAGRAM STYLES
    ====================================== */

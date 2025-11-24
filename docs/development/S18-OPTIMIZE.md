@@ -1189,28 +1189,45 @@ Call `createLegend()` after `activateVisualization()`.
    - g_80 stored as decimal (0.40) now displays as percentage (40%)
    - Domain confirmed [0, 100] - always 0-100%, never more, never less
 
+### 📋 Polish & Final Refinements
+
+13. ✅ **Compact Initial Canvas Height** - [styles.css:1877-1884](src/styles.css#L1877-L1884), [ParallelCoordinates.js:184](src/core/ParallelCoordinates.js#L184)
+   - Changed `.parallel-coordinates-container` min-height to 150px
+   - Added `.parallel-coordinates-container.activated { height: 500px; }` in CSS
+   - JavaScript adds `activated` class on activation (single source of truth in CSS)
+   - Container expands to 500px on activation (reduced from 600px)
+   - 100px saved for future table rows (financial metrics planned)
+
+14. ✅ **Table Bottom Spacing** - [styles.css:1882-1884](src/styles.css#L1882-L1884)
+   - Added `.pc-data-table { margin-bottom: 5px; }`
+   - Prevents table from sitting directly on container border
+   - Clean visual separation
+
 ### 🎯 Current Success State
 
 **Graph Rendering:** ✅ Working perfectly
 - 14 axes rendering correctly with inverted efficiency scales
 - 2 lines (Target blue, Reference red)
-- Dimensions: 1226 x 370px
+- Initial: Compact 150px placeholder → Expands to 500px on activation
+- 100px reserved for future table rows (financial metrics)
 - Visual theme: Lower = Better (optimized Target line below Reference)
 
 **Controls:** ✅ Match S17 pattern
 - Activate → Refresh button transformation works
 - Legend inline with controls (Target/Reference)
 - Correct button order: Legend, Refresh, Export, Settings, Fullscreen
+- Compact initial state matching S17
 
-**Table:** ✅ Clean alignment
+**Table:** ✅ Clean alignment & spacing
 - Column headers with axis labels/units
 - No row labels (axes align with graph above)
 - 4 rows: Target, Reference, Delta (Δ), Percent Delta (%Δ)
+- 5px bottom margin for clean visual separation
 
 **Axis Scaling:** ✅ Accurate percentage display
-- WWR: 33% (not 0.33)
-- nGains: 40% (not 0.40)
-- DWHR: Realistic 0-80% range
+- WWR: 33% (not 0.33) - domain [0, 100]
+- nGains: 40% (not 0.40) - domain [0, 100]
+- DWHR: 0-80% range (realistic, few exceed 75%)
 - All efficiency axes inverted for "lower = better" visual
 
 ---
