@@ -239,13 +239,37 @@ window.TEUI.ParallelCoordinates = (function () {
     // Settings button (enabled)
     const settingsBtn = createButton("bi-gear", "Settings", () => alert("Settings panel coming soon!"));
 
+    // Create inline legend (in middle of controls row)
+    const legendContainer = document.createElement("div");
+    legendContainer.style.cssText = "display: flex; gap: 15px; align-items: center; margin-left: 20px; margin-right: 20px; padding-left: 20px; border-left: 1px solid #dee2e6;";
+
+    // Target legend
+    const targetLegend = document.createElement("div");
+    targetLegend.style.cssText = "display: flex; align-items: center; gap: 6px;";
+    targetLegend.innerHTML = `
+      <div style="width: 20px; height: 3px; background: ${CONFIG.colors.target};"></div>
+      <span style="font-size: 12px; font-weight: 500; color: ${CONFIG.colors.target};">Target</span>
+    `;
+
+    // Reference legend
+    const referenceLegend = document.createElement("div");
+    referenceLegend.style.cssText = "display: flex; align-items: center; gap: 6px;";
+    referenceLegend.innerHTML = `
+      <div style="width: 20px; height: 3px; background: ${CONFIG.colors.reference};"></div>
+      <span style="font-size: 12px; font-weight: 500; color: ${CONFIG.colors.reference};">Reference</span>
+    `;
+
+    legendContainer.appendChild(targetLegend);
+    legendContainer.appendChild(referenceLegend);
+
     // Fullscreen button (enabled) - added LAST so it's at far right
     const fullscreenBtn = createButton("bi-arrows-fullscreen", "Toggle Fullscreen", toggleFullscreen);
 
-    // Append buttons in order: Refresh, Export, Settings, Fullscreen (far right)
+    // Append in order: Refresh, Export, Settings, Legend, Fullscreen
     layoutContainer.appendChild(refreshBtn);
     layoutContainer.appendChild(exportBtn);
     layoutContainer.appendChild(settingsBtn);
+    layoutContainer.appendChild(legendContainer);
     layoutContainer.appendChild(fullscreenBtn);
 
     // Assemble controls row
@@ -316,7 +340,7 @@ window.TEUI.ParallelCoordinates = (function () {
       return;
     }
 
-    // Render graph and table
+    // Render graph and table (legend is in controls row)
     renderGraph();
     renderTable();
   }
@@ -534,52 +558,37 @@ window.TEUI.ParallelCoordinates = (function () {
     });
 
     // ====================================================================
-    // LEGEND
+    // LEGEND - MOVED TO INFO PANEL (see renderLegend() function)
     // ====================================================================
-
-    const legend = svg
-      .append("g")
-      .attr("class", "legend")
-      .attr("transform", `translate(${width - 150}, -50)`);
-
-    // Target legend
-    legend
-      .append("line")
-      .attr("x1", 0)
-      .attr("x2", 30)
-      .attr("y1", 0)
-      .attr("y2", 0)
-      .style("stroke", CONFIG.colors.target)
-      .style("stroke-width", CONFIG.lineWidth);
-
-    legend
-      .append("text")
-      .attr("x", 35)
-      .attr("y", 4)
-      .text("Target")
-      .style("font-size", "12px")
-      .style("fill", CONFIG.colors.axisText);
-
-    // Reference legend
-    legend
-      .append("line")
-      .attr("x1", 0)
-      .attr("x2", 30)
-      .attr("y1", 15)
-      .attr("y2", 15)
-      .style("stroke", CONFIG.colors.reference)
-      .style("stroke-width", CONFIG.lineWidth);
-
-    legend
-      .append("text")
-      .attr("x", 35)
-      .attr("y", 19)
-      .text("Reference")
-      .style("font-size", "12px")
-      .style("fill", CONFIG.colors.axisText);
+    // SVG legend commented out - now rendered as HTML in info wrapper
+    // Uncomment if need to restore SVG legend
+    // const legend = svg
+    //   .append("g")
+    //   .attr("class", "legend")
+    //   .attr("transform", `translate(${width - 150}, -50)`);
+    //
+    // legend.append("line")
+    //   .attr("x1", 0).attr("x2", 30).attr("y1", 0).attr("y2", 0)
+    //   .style("stroke", CONFIG.colors.target)
+    //   .style("stroke-width", CONFIG.lineWidth);
+    //
+    // legend.append("text")
+    //   .attr("x", 35).attr("y", 4).text("Target")
+    //   .style("font-size", "12px").style("fill", CONFIG.colors.axisText);
+    //
+    // legend.append("line")
+    //   .attr("x1", 0).attr("x2", 30).attr("y1", 15).attr("y2", 15)
+    //   .style("stroke", CONFIG.colors.reference)
+    //   .style("stroke-width", CONFIG.lineWidth);
+    //
+    // legend.append("text")
+    //   .attr("x", 35).attr("y", 19).text("Reference")
+    //   .style("font-size", "12px").style("fill", CONFIG.colors.axisText);
 
     console.log("[ParallelCoordinates] Graph rendered successfully");
   }
+
+  // Legend is now rendered inline in controls row (see initializeFullControls)
 
   /**
    * Render the data table below the graph
@@ -608,18 +617,19 @@ window.TEUI.ParallelCoordinates = (function () {
     table.className = "table table-sm table-striped table-hover";
     table.style.fontSize = "11px";
 
-    // Table header - transposed to match graph layout (axes as columns)
-    const thead = document.createElement("thead");
+    // Extract data
     const { axes, targetData, referenceData } = currentData;
 
-    // Build header row with axis labels
-    let headerHTML = '<tr><th></th>'; // Empty cell for row labels
-    axes.forEach(axis => {
-      headerHTML += `<th class="text-center"><strong>${axis.label}</strong><br><small class="text-muted">${axis.unit}</small></th>`;
-    });
-    headerHTML += '</tr>';
-    thead.innerHTML = headerHTML;
-    table.appendChild(thead);
+    // Table header - COMMENTED OUT: axes labels now align with graph above
+    // Uncomment if adding finance rows or need header back
+    // const thead = document.createElement("thead");
+    // let headerHTML = '<tr><th></th>'; // Empty cell for row labels
+    // axes.forEach(axis => {
+    //   headerHTML += `<th class="text-center"><strong>${axis.label}</strong><br><small class="text-muted">${axis.unit}</small></th>`;
+    // });
+    // headerHTML += '</tr>';
+    // thead.innerHTML = headerHTML;
+    // table.appendChild(thead);
 
     // Table body - transposed rows
     const tbody = document.createElement("tbody");
