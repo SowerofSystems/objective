@@ -1881,7 +1881,7 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
 /* Parallel Coordinates Container - activated state (500px for graph + table + future rows) */
 .parallel-coordinates-container.activated {
   height: 500px;
-  padding-bottom: 30px;
+  padding-bottom: 10px;
 }
 
 /* Parallel Coordinates Data Table Wrapper */

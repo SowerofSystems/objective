@@ -1257,13 +1257,31 @@ Call `createLegend()` after `activateVisualization()`.
 - Parallels performance metrics with economic metrics
 - Completes the "optimization story" (performance + cost)
 
+### 🎯 Priority: Data Point Tooltips
+
+**Goal:** Show axis values on hover over data points in the graph
+
+**Implementation:**
+- [ ] Add D3 tooltip on hover over data points (circles)
+- [ ] Display: Axis label, Target value, Reference value, Delta
+- [ ] Style: Floating tooltip following cursor
+- [ ] Color-coded: Blue background for Target point, Red for Reference point
+- [ ] Example: "SHW%: Target 300.00% | Reference 90.00% | Δ +210.00"
+
+**Rationale:**
+- Graph shows visual patterns but exact values require checking table
+- Tooltips provide instant value feedback on hover
+- Reduces need to look back and forth between graph and table
+- Enhances interactivity and user experience
+
 ### 🔮 Future Enhancements
 
 - [ ] Test responsive behavior (mobile/tablet)
-- [ ] Add hover interactions (show delta on hover)
-- [ ] Add tooltips for axes (explain parameter impact/cost)
-- [ ] Implement Settings panel functionality
+- [ ] Add hover interactions on lines (show all axis values for that line)
+- [ ] Add tooltips for axes (explain parameter impact/cost/calculations)
+- [ ] Implement Settings panel functionality (show/hide axes, reorder)
 - [ ] Add axis reordering (drag to rearrange)
+- [ ] Export functionality for graph (PNG with current settings)
 
 ---
 
