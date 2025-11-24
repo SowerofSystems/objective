@@ -1238,24 +1238,41 @@ Call `createLegend()` after `activateVisualization()`.
 
 **Goal:** Add 3 new table rows showing financial impact of optimization decisions
 
-**Phase 1: Table Structure (Blocking with Dummy Data)**
-- [ ] Add "Reference Cost" row (Red, $0.00 per axis)
-- [ ] Add "Target Cost" row (Blue, $0.00 per axis)
-- [ ] Add "Savings (Δ$)" row (Green for savings, $0.00 per axis)
-- [ ] Style with appropriate colors matching Target/Reference legend
-- [ ] Ensure proper alignment with existing 4 rows
+**Phase 1: Table Structure (Blocking with Dummy Data)** ✅ COMPLETE
+- ✅ Added "Ref Cost" row (Red, $0.00 per axis)
+- ✅ Added "Target Cost" row (Blue, $0.00 per axis)
+- ✅ Added "Savings" row (Green, $0.00 per axis)
+- ✅ Row labels added to all 7 rows (100px wide, left-aligned)
+- ✅ Graph left margin increased 40px→70px for alignment
 
-**Phase 2: Financial Calculations (Future Session)**
-- [ ] Implement cost calculation formulas per axis
+**Phase 2: Vertical Space & Alignment Fixes** 🚧 NEXT
+- [ ] **Vertical Space Issue:** Bottom "Savings" row is clipped
+  - Options:
+    - Increase container from 500px to 550px (add 50px)
+    - Reduce graph top margin to let it touch control row
+    - Reduce table font size slightly
+  - Current: Graph 55% (275px), Table 45% (225px + 10px padding)
+
+- [ ] **Column Alignment Issue:** Table columns don't perfectly align with graph axes
+  - Problem: Graph has 70px left margin, table has 100px row label column
+  - 30px mismatch causes slight horizontal offset
+  - Options:
+    - Adjust graph left margin to match table row label width (100px)
+    - Use CSS grid for table with fixed column widths matching graph x-positions
+    - Calculate exact axis positions and apply as inline widths
+  - **Recommended:** Graph left margin = row label width (both 100px)
+
+**Phase 3: Financial Calculations (Future Session)**
+- [ ] Implement cost calculation formulas per axis (formulas to be provided)
 - [ ] Wire up to StateManager financial fields
-- [ ] Add totals column (optional)
-- [ ] Format currency values (locale-aware)
+- [ ] Format currency values (locale-aware, CAD)
+- [ ] Add totals column (optional - sum across axes)
 
-**Rationale:**
-- 100px vertical space reserved in 500px container
-- Financial impact is critical for decision-making
-- Parallels performance metrics with economic metrics
-- Completes the "optimization story" (performance + cost)
+**Current Status:**
+- 7 rows total: Target, Reference, Δ, %Δ, Ref Cost, Target Cost, Savings
+- Row labels functional and color-coded
+- Graph/table alignment close but needs refinement
+- Vertical space insufficient for 7 rows without clipping
 
 ### 🎯 Priority: Data Point Tooltips
 
