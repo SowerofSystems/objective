@@ -1232,7 +1232,32 @@ Call `createLegend()` after `activateVisualization()`.
 
 ---
 
-## Next Steps (Future Enhancements)
+## Next Steps (Planned Features)
+
+### 🎯 Priority: Financial Metrics Rows
+
+**Goal:** Add 3 new table rows showing financial impact of optimization decisions
+
+**Phase 1: Table Structure (Blocking with Dummy Data)**
+- [ ] Add "Reference Cost" row (Red, $0.00 per axis)
+- [ ] Add "Target Cost" row (Blue, $0.00 per axis)
+- [ ] Add "Savings (Δ$)" row (Green for savings, $0.00 per axis)
+- [ ] Style with appropriate colors matching Target/Reference legend
+- [ ] Ensure proper alignment with existing 4 rows
+
+**Phase 2: Financial Calculations (Future Session)**
+- [ ] Implement cost calculation formulas per axis
+- [ ] Wire up to StateManager financial fields
+- [ ] Add totals column (optional)
+- [ ] Format currency values (locale-aware)
+
+**Rationale:**
+- 100px vertical space reserved in 500px container
+- Financial impact is critical for decision-making
+- Parallels performance metrics with economic metrics
+- Completes the "optimization story" (performance + cost)
+
+### 🔮 Future Enhancements
 
 - [ ] Test responsive behavior (mobile/tablet)
 - [ ] Add hover interactions (show delta on hover)
