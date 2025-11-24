@@ -2002,63 +2002,6 @@ window.TEUI.SectionModules.sect16 = (function () {
   // HEADER CONTROLS INJECTION
   // ========================================
 
-  function injectHeaderControls() {
-    const sectionHeader = document.querySelector(
-      "#sankeyDiagram .section-header"
-    );
-    if (
-      !sectionHeader ||
-      sectionHeader.querySelector(".local-controls-container")
-    ) {
-      return; // Already setup or header not found
-    }
-
-    // Create controls container
-    const controlsContainer = document.createElement("div");
-    controlsContainer.className = "local-controls-container";
-    controlsContainer.style.cssText =
-      "display: flex; align-items: center; gap: 10px; margin-left: auto;";
-
-    // Create state indicator
-    const stateIndicator = document.createElement("div");
-    stateIndicator.textContent = "TARGET";
-    stateIndicator.style.cssText =
-      "padding: 4px 8px; font-size: 12px; font-weight: bold; color: white; background-color: rgba(0, 123, 255, 0.5); border-radius: 3px;";
-
-    // Create toggle switch
-    const toggleSwitch = document.createElement("div");
-    toggleSwitch.style.cssText =
-      "position: relative; width: 40px; height: 20px; background-color: #ccc; border-radius: 10px; cursor: pointer;";
-
-    const slider = document.createElement("div");
-    slider.style.cssText =
-      "position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background-color: white; border-radius: 50%; transition: transform 0.2s;";
-
-    toggleSwitch.appendChild(slider);
-
-    // Toggle Switch Click Handler
-    toggleSwitch.addEventListener("click", event => {
-      event.stopPropagation();
-      const targetMode =
-        ModeManager.currentMode === "target" ? "reference" : "target";
-      ModeManager.switchMode(targetMode);
-    });
-
-    // Assemble controls
-    controlsContainer.appendChild(stateIndicator);
-    controlsContainer.appendChild(toggleSwitch);
-    sectionHeader.appendChild(controlsContainer);
-
-    // Store references to toggle elements on ModeManager for global toggle sync
-    ModeManager._toggleElements = {
-      toggleSwitch: toggleSwitch,
-      slider: slider,
-      stateIndicator: stateIndicator,
-    };
-
-    console.log("✅ S16: Header controls injected successfully");
-  }
-
   function onSectionRendered() {
     // console.log("Section 16: onSectionRendered called. Initialized flag:", window.TEUI.sect16.initialized);
 
@@ -2076,9 +2019,6 @@ window.TEUI.SectionModules.sect16 = (function () {
 
     // Setup event handlers after DOM is ready
     initializeEventHandlers();
-
-    // Inject header controls (Target/Reference toggle)
-    injectHeaderControls();
 
     // Set the placeholder text
     const loadingPlaceholder = document.getElementById("s16LoadingPlaceholder");

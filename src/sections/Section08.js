@@ -473,76 +473,6 @@ window.TEUI.SectionModules.sect08 = (function () {
   }
 
   //==========================================================================
-  // SECTION-LOCAL TOGGLE (Unchanged)
-  //==========================================================================
-  // ✅ RENAMED: injectLocalToggle → injectHeaderControls for consistency
-  function injectHeaderControls() {
-    const sectionHeader = document.querySelector(
-      "#indoorAirQuality .section-header"
-    );
-    if (
-      !sectionHeader ||
-      sectionHeader.querySelector(".local-controls-container")
-    )
-      return;
-
-    const controlsContainer = document.createElement("div");
-    controlsContainer.className = "local-controls-container";
-    controlsContainer.style.cssText =
-      "display: flex; align-items: center; margin-left: auto; gap: 10px;";
-
-    // ✅ NEW: Add Reset button to match other sections
-    const resetButton = document.createElement("button");
-    resetButton.textContent = "Reset";
-    resetButton.style.cssText =
-      "padding: 4px 8px; font-size: 12px; border: 1px solid #ccc; background: white; cursor: pointer; border-radius: 3px;";
-    resetButton.addEventListener("click", event => {
-      event.stopPropagation();
-      if (confirm("Reset all values to defaults?")) {
-        TargetState.setDefaults();
-        ReferenceState.setDefaults();
-        ModeManager.refreshUI();
-        console.log("S08: Reset to defaults");
-      }
-    });
-
-    const stateIndicator = document.createElement("span");
-    stateIndicator.textContent = "TARGET";
-    stateIndicator.style.cssText =
-      "color: #fff; font-weight: bold; font-size: 0.8em; background-color: rgba(0, 123, 255, 0.5); padding: 2px 6px; border-radius: 4px;";
-
-    const toggleSwitch = document.createElement("div");
-    toggleSwitch.style.cssText =
-      "position: relative; width: 40px; height: 20px; background-color: #ccc; border-radius: 10px; cursor: pointer;";
-
-    const slider = document.createElement("div");
-    slider.style.cssText =
-      "position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background-color: white; border-radius: 50%; transition: transform 0.2s;";
-
-    toggleSwitch.appendChild(slider);
-
-    // ✅ REFACTORED: Just toggle mode, let switchMode() handle all UI updates via syncToggleUI()
-    toggleSwitch.addEventListener("click", event => {
-      event.stopPropagation();
-      const targetMode =
-        ModeManager.currentMode === "target" ? "reference" : "target";
-      ModeManager.switchMode(targetMode);
-    });
-
-    controlsContainer.appendChild(resetButton);
-    controlsContainer.appendChild(stateIndicator);
-    controlsContainer.appendChild(toggleSwitch);
-    sectionHeader.appendChild(controlsContainer);
-
-    // ✅ NEW: Store references to toggle elements on ModeManager for global toggle sync
-    ModeManager._toggleElements = {
-      toggleSwitch: toggleSwitch,
-      slider: slider,
-      stateIndicator: stateIndicator,
-    };
-  }
-
-  //==========================================================================
   // LAYOUT & INITIALIZATION
   //==========================================================================
   const sectionRows = {
@@ -819,7 +749,6 @@ window.TEUI.SectionModules.sect08 = (function () {
   function onSectionRendered() {
     ModeManager.initialize();
     addStatusStyles();
-    injectHeaderControls(); // ✅ UPDATED: Function renamed from injectLocalToggle
     initializeEventHandlers();
 
     // ✅ CRITICAL: Setup S04 listeners for wood offset calculation

@@ -200,6 +200,21 @@ window.TEUI.SectionModules.sect18 = (function () {
       <option value="S15">S15 - TEUI</option>
     `;
 
+    // Create Zen Mode button
+    const zenButton = document.createElement("button");
+    zenButton.textContent = "🧘 Zen";
+    zenButton.title = "ZenMaster: Runtime dependency discovery & validation";
+    zenButton.style.cssText = `
+      padding: 6px 12px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 12px;
+    `;
+
     // Create QC report button
     const reportButton = document.createElement("button");
     reportButton.textContent = "Generate QC Report";
@@ -257,6 +272,30 @@ window.TEUI.SectionModules.sect18 = (function () {
       }
     });
 
+    // Add Zen button functionality
+    zenButton.addEventListener("click", function (event) {
+      event.stopPropagation();
+
+      // Toggle ZenMaster if available
+      if (window.TEUI?.zenMaster) {
+        const status = window.TEUI.zenMaster.getStatus();
+        if (status.enabled) {
+          window.TEUI.zenMaster.disable();
+          zenButton.style.backgroundColor = "#28a745";
+          zenButton.textContent = "🧘 Zen";
+          console.log("🧘 ZenMaster disabled from S18");
+          if (status.fieldsTracked > 0) {
+            window.TEUI.zenMaster.validateDependencies();
+          }
+        } else {
+          window.TEUI.zenMaster.enable();
+          zenButton.style.backgroundColor = "#218838";
+          zenButton.textContent = "🧘 Zen ON";
+          console.log("🧘 ZenMaster enabled from S18");
+        }
+      }
+    });
+
     // Add report button functionality
     reportButton.addEventListener("click", function (event) {
       event.stopPropagation();
@@ -279,6 +318,7 @@ window.TEUI.SectionModules.sect18 = (function () {
     toggleContainer.appendChild(statusIndicator);
     toggleContainer.appendChild(toggleDiv);
     toggleContainer.appendChild(sectionFilter);
+    toggleContainer.appendChild(zenButton);
     toggleContainer.appendChild(reportButton);
     toggleContainer.appendChild(copyModalButton);
 
@@ -307,11 +347,6 @@ window.TEUI.SectionModules.sect18 = (function () {
         setTimeout(() => {
           window.TEUI.QCMonitor.initializeMirrorTarget();
         }, 1000);
-
-        // Start periodic monitoring
-        setTimeout(() => {
-          performPeriodicChecks();
-        }, 2000);
       } else {
         console.error("[S18] QC Monitor failed to activate");
       }
@@ -340,16 +375,15 @@ window.TEUI.SectionModules.sect18 = (function () {
   }
 
   /**
-   * Perform periodic QC checks (called from enableQCMonitoring)
+   * Perform periodic QC checks (DISABLED - reports now generated on-demand only)
+   *
+   * Previous behavior: Auto-generated reports every 5 seconds
+   * New behavior: QC monitor runs silently in background, reports generated only when user clicks "Generate QC Report"
    */
   function performPeriodicChecks() {
-    if (!qcEnabled || !window.TEUI?.QCMonitor) return;
-
-    // Generate fresh report every 5 seconds when QC is active
-    generateAndDisplayQCReport();
-
-    // Schedule next check
-    setTimeout(performPeriodicChecks, 5000);
+    // DISABLED: Automatic periodic reports removed
+    // QC monitoring now passive - only generates reports on button click
+    // This prevents console spam and unnecessary overhead
   }
 
   /**
@@ -1265,17 +1299,11 @@ ${formatViolationsByType(filteredReport.violations)}`;
   }
 
   /**
-   * Calculate all (triggers QC report if enabled)
+   * Calculate all (no automatic QC reports)
    */
   function calculateAll() {
     // No calculations needed for Notes section
-    // But we can use this as a hook for periodic QC checks
-    if (qcEnabled && window.TEUI?.QCMonitor) {
-      // Trigger a fresh QC report if monitoring is active
-      setTimeout(() => {
-        generateAndDisplayQCReport();
-      }, 100);
-    }
+    // QC reports are now generated only on-demand via "Generate QC Report" button
   }
 
   // Public API

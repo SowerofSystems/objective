@@ -112,10 +112,65 @@ TEUI.ReferenceToggle = (function () {
     document.body.classList.toggle("reference-mode", isReference);
     document.documentElement.classList.toggle("reference-mode", isReference);
 
+    // ✅ NEW: Update Key Values header toggle UI to match global mode
+    updateKeyValuesToggleUI(mode);
+
     console.log(
       `🎨 Master Toggle: Switched ${switchedCount}/${sections.length} sections to ${mode.toUpperCase()} mode with global styling`
     );
     return switchedCount;
+  }
+
+  /**
+   * Update Key Values header toggle UI to match global mode
+   * Called when main global toggle switches modes
+   */
+  function updateKeyValuesToggleUI(mode) {
+    // Check if Key Values toggle elements exist
+    if (!window.TEUI.ReferenceToggle.keyValuesToggleElements) {
+      return; // Key Values toggle not yet initialized
+    }
+
+    const { toggleSwitch, slider, stateIndicator } =
+      window.TEUI.ReferenceToggle.keyValuesToggleElements;
+
+    if (mode === "reference") {
+      slider.style.transform = "translateX(20px)";
+      toggleSwitch.style.backgroundColor = "#dc3545"; // Red
+      stateIndicator.textContent = "REFERENCE";
+      stateIndicator.style.backgroundColor = "rgba(220, 53, 69, 0.5)";
+    } else {
+      slider.style.transform = "translateX(0)";
+      toggleSwitch.style.backgroundColor = "#ccc"; // Gray
+      stateIndicator.textContent = "TARGET";
+      stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
+    }
+  }
+
+  /**
+   * Get current global mode
+   * Used by Key Values toggle to determine mode before switching
+   */
+  function getCurrentMode() {
+    return isShowingReference ? "reference" : "target";
+  }
+
+  /**
+   * Switch mode (external API for toggles)
+   * Used by Key Values toggle to switch all sections
+   */
+  function switchMode(mode) {
+    isShowingReference = mode === "reference";
+    switchAllSectionsMode(mode);
+    updateAllCalculatedDisplays();
+
+    // Update main toggle button text if it exists
+    const runRefBtn = document.getElementById(RUN_REFERENCE_BUTTON_ID);
+    if (runRefBtn) {
+      runRefBtn.textContent = isShowingReference
+        ? BUTTON_TEXT_SHOW_TARGET
+        : BUTTON_TEXT_SHOW_REFERENCE;
+    }
   }
 
   /**
@@ -606,5 +661,8 @@ TEUI.ReferenceToggle = (function () {
     mirrorTarget,
     mirrorTargetWithReference,
     enableReferenceIndependence,
+    // ✅ NEW: Expose for Key Values header toggle
+    getCurrentMode, // Get current global mode
+    switchMode, // Switch all sections to a mode
   };
 })();
