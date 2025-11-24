@@ -938,17 +938,185 @@ ParallelCoordinates.js (autonomous)
 - ✅ [src/core/ParallelCoordinates.js](../../src/core/ParallelCoordinates.js) - Lines 64-254, 782-805 (S17 pattern)
 - ✅ [src/sections/Section18.js](../../src/sections/Section18.js) - Lines 35-39 (minimal pattern)
 
-### Next Steps
+### Current Status - SUCCESS ✅
 
-- [ ] **User Testing**: Load in browser and verify:
-  - S18 section appears correctly
-  - "Activate Optimization View" button shows in single row with disabled controls
-  - Clicking button transforms to "Refresh Graph" and enables controls
-  - Graph renders correctly
-  - All control buttons function (Fullscreen, Refresh, Export, Settings)
-- [ ] Update CSS if needed for button spacing/alignment
+**Commit**: `7664231` - Fix: S18 graph not rendering - container height fix
+
+**GRAPH NOW RENDERING SUCCESSFULLY!** 🎉
+
+✅ **Completed (Session 3)**:
+- S18 section registered in FieldManager
+- Button pattern matches S17 (single-row controls)
+- "Activate Optimization View" → "Refresh Graph" transformation works
+- Control buttons styled and positioned correctly (fullscreen at far right)
+- Graph renders with D3.js v7
+- Table renders below graph with 14 parameter rows
+- Container height fixed (min-height: 600px)
+
+**Known Issues Fixed**:
+- ✅ Container height was 0, causing negative SVG height (-80px)
+- ✅ Button state management (isActivated flag set before control recreation)
+- ✅ CSS styling matches S17 pattern
+
+---
+
+## AFTERNOON WORKPLAN - Graph Refinements
+
+**Status**: Ready for implementation
+**Priority**: High (visual/UX improvements)
+
+### Task 1: Remove Table Header Row
+**Goal**: Align graph axes directly with table parameter labels
+
+**Current**: Table has header row "SHW% | DWHR% | nGains% | ..." above data
+**Target**: Remove header, axes labels align directly with first table column
+
+**Files**: [ParallelCoordinates.js:renderTable()](../../src/core/ParallelCoordinates.js) (lines ~590-680)
+
+**Implementation**:
+- Remove `<thead>` creation in renderTable()
+- Start table directly with data rows (Target, Reference, Δ, %Δ)
+- Ensure axis labels in graph match table column positions
+
+---
+
+### Task 2: Flip Efficiency Axes (Invert Y-Scale)
+**Goal**: "Lower is better" visual theme - optimized Target line should be BELOW Reference line
+
+**Concept**: Higher efficiency % = lower energy loss = lower position on graph
+
+**Axes to Flip** (invert Y-scale):
+1. ✅ **SHW%** - Higher efficiency → Lower line
+2. ✅ **DWHR%** - Higher efficiency → Lower line
+3. ✅ **nGains%** - Higher utilization → Lower line
+4. ❌ **TB%** - Already correct (thermal bridging penalty, lower is better)
+5. **WWR** - Needs scale adjustment (see Task 2b)
+6. ✅ **HEAT%** - Higher efficiency → Lower line
+7. ✅ **MVHR%** - Higher efficiency → Lower line
+
+**Files**: [ParallelCoordinates.js:renderGraph()](../../src/core/ParallelCoordinates.js) (lines ~367-410)
+
+**Implementation**:
+```javascript
+// Current: y-scale normal (low value = bottom, high value = top)
+const yScale = d3.scaleLinear()
+  .domain([minVal, maxVal])
+  .range([graphHeight, 0]); // 0 = top
+
+// Flip for efficiency axes: invert range
+const yScale = d3.scaleLinear()
+  .domain([minVal, maxVal])
+  .range([0, graphHeight]); // 0 = bottom (INVERTED)
+```
+
+**Logic**:
+- Check axis `optimal` property in ppConfig.js
+- If `optimal: "higher"` AND axis is efficiency (contains "%") → invert scale
+- If `optimal: "lower"` → keep normal scale
+
+---
+
+### Task 2b: WWR Scale Adjustment
+**Goal**: Display WWR as proper percentage (0-100 scale)
+
+**Current**: WWR = 0.33 (ratio) displays at bottom of 0.0-1.0 scale
+**Target**: WWR = 33% (percentage) displays mid-range on 0-100 scale
+
+**Files**: [ppConfig.js:OPTIMIZATION_AXES](../../src/core/ppConfig.js) (lines ~304-312)
+
+**Current Config**:
+```javascript
+{
+  id: "window_wall_ratio",
+  label: "WWR",
+  unit: "%",
+  targetField: "d_107",
+  referenceField: "ref_d_107",
+  optimal: "balanced",
+  description: "Window-to-wall ratio (affects gains vs losses)",
+}
+```
+
+**Implementation**:
+- Add `multiplier: 100` to WWR axis config
+- Apply multiplier in data fetching: `value = rawValue * 100`
+- Display as 33% instead of 0.33
+- Y-scale domain: [0, 100] instead of [0, 1]
+
+---
+
+### Task 3: Move Legend to Controls Row
+**Goal**: Prevent legend from overlapping graph/table
+
+**Current**: Legend renders inside `.parallel-coordinates-container` (interferes with SVG)
+**Target**: Legend renders in controls row or separate container above graph
+
+**Files**:
+- [ParallelCoordinates.js:renderGraph()](../../src/core/ParallelCoordinates.js) - Legend creation
+- [index.html:649-652](../../index.html#L649-L652) - Info wrapper container
+
+**Options**:
+1. **Info Panel** (Recommended): Use `.parallel-coordinates-info-wrapper` (already exists)
+   - Render legend as simple HTML: `[Blue square] Target | [Red square] Reference`
+   - Position above graph, below controls
+
+2. **Inline in Controls**: Add legend to end of controls row
+   - Append after fullscreen button: `<span>Target</span> <span>Reference</span>`
+   - Less prominent, saves vertical space
+
+**Implementation (Option 1)**:
+```javascript
+function createLegend() {
+  const infoWrapper = document.querySelector('.parallel-coordinates-info-wrapper');
+  if (!infoWrapper) return;
+
+  infoWrapper.innerHTML = `
+    <div style="display: flex; gap: 20px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="width: 20px; height: 3px; background: #007bff;"></div>
+        <span>Target Model</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="width: 20px; height: 3px; background: #dc3545;"></div>
+        <span>Reference Model</span>
+      </div>
+    </div>
+  `;
+}
+```
+
+Call `createLegend()` after `activateVisualization()`.
+
+---
+
+### Implementation Order
+1. **Task 1** (Simple) - Remove table header
+2. **Task 2b** (Simple) - WWR multiplier in ppConfig.js
+3. **Task 2** (Moderate) - Flip efficiency axes Y-scales
+4. **Task 3** (Simple) - Move legend to info panel
+
+**Estimated Time**: 1-2 hours
+**Testing**: Visual inspection of graph/table alignment and "lower is better" theme
+
+---
+
+### Success Criteria
+- ✅ Graph axes align directly with table parameter labels (no header row)
+- ✅ WWR displays as 33% (not 0.33) on 0-100 scale
+- ✅ Efficiency axes inverted: Higher % = Lower line position
+- ✅ Target (blue) line visibly LOWER than Reference (red) line for optimized building
+- ✅ Legend positioned cleanly (no graph overlap)
+- ✅ Visual theme: "Lower = Better performance"
+
+---
+
+## Next Steps (Future Enhancements)
+
 - [ ] Test responsive behavior (mobile/tablet)
-- [ ] Add hover interactions (Phase 5 enhancement)
+- [ ] Add hover interactions (show delta on hover)
+- [ ] Add tooltips for axes (explain parameter impact/cost)
+- [ ] Implement Settings panel functionality
+- [ ] Add axis reordering (drag to rearrange)
 
 ---
 
