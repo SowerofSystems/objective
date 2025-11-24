@@ -620,23 +620,22 @@ window.TEUI.ParallelCoordinates = (function () {
     // Extract data
     const { axes, targetData, referenceData } = currentData;
 
-    // Table header - COMMENTED OUT: axes labels now align with graph above
-    // Uncomment if adding finance rows or need header back
-    // const thead = document.createElement("thead");
-    // let headerHTML = '<tr><th></th>'; // Empty cell for row labels
-    // axes.forEach(axis => {
-    //   headerHTML += `<th class="text-center"><strong>${axis.label}</strong><br><small class="text-muted">${axis.unit}</small></th>`;
-    // });
-    // headerHTML += '</tr>';
-    // thead.innerHTML = headerHTML;
-    // table.appendChild(thead);
+    // Table header - column labels align with graph axes above
+    const thead = document.createElement("thead");
+    let headerHTML = '<tr>';
+    axes.forEach(axis => {
+      headerHTML += `<th class="text-center"><strong>${axis.label}</strong><br><small class="text-muted">${axis.unit}</small></th>`;
+    });
+    headerHTML += '</tr>';
+    thead.innerHTML = headerHTML;
+    table.appendChild(thead);
 
     // Table body - transposed rows
     const tbody = document.createElement("tbody");
 
     // Target row
     const targetRow = document.createElement("tr");
-    targetRow.innerHTML = `<td style="color: ${CONFIG.colors.target}"><strong>Target</strong></td>`;
+    targetRow.innerHTML = '';
     targetData.forEach(val => {
       targetRow.innerHTML += `<td class="text-center" style="color: ${CONFIG.colors.target}">${val.toFixed(2)}</td>`;
     });
@@ -644,7 +643,7 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Reference row
     const referenceRow = document.createElement("tr");
-    referenceRow.innerHTML = `<td style="color: ${CONFIG.colors.reference}"><strong>Reference</strong></td>`;
+    referenceRow.innerHTML = '';
     referenceData.forEach(val => {
       referenceRow.innerHTML += `<td class="text-center" style="color: ${CONFIG.colors.reference}">${val.toFixed(2)}</td>`;
     });
@@ -652,7 +651,7 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Delta row
     const deltaRow = document.createElement("tr");
-    deltaRow.innerHTML = '<td><strong>Δ</strong></td>';
+    deltaRow.innerHTML = '';
     axes.forEach((axis, i) => {
       const delta = targetData[i] - referenceData[i];
       let deltaClass = "";
@@ -667,7 +666,7 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Percent Delta row
     const percentRow = document.createElement("tr");
-    percentRow.innerHTML = '<td><strong>%Δ</strong></td>';
+    percentRow.innerHTML = '';
     axes.forEach((axis, i) => {
       const delta = targetData[i] - referenceData[i];
       const reference = referenceData[i];
