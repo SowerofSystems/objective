@@ -73,6 +73,7 @@ document.addEventListener("DOMContentLoaded", function () {
     teuiSummary: "bi-outlet",
     sankeyDiagram: "bi-sliders2",
     dependencyDiagram: "bi-link-45deg",
+    parallelCoordinates: "bi-bar-chart-line",
     footer: "bi-info-square",
     notes: "bi-info-square",
   };
