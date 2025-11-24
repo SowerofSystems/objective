@@ -58,7 +58,7 @@ window.TEUI.OPTIMIZATION_AXES = [
     targetField: "d_53",
     referenceField: "ref_d_53",
 
-    domain: [0, 100],
+    domain: [0, 80],  // Few systems exceed 75% efficiency
   },
 
   {
@@ -69,9 +69,11 @@ window.TEUI.OPTIMIZATION_AXES = [
     optimal: "higher",
 
     targetField: "g_80",
+    targetFieldMultiplier: 100,      // g_80 is stored as decimal (0.40), display as % (40)
     referenceField: "ref_g_80",
+    referenceFieldMultiplier: 100,   // ref_g_80 is stored as decimal, display as %
 
-    domain: [0, 100],
+    domain: [0, 100],  // Always 0-100%, never more, never less
   },
 
   {
