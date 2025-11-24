@@ -67,139 +67,21 @@ window.TEUI.ParallelCoordinates = (function () {
   // ========================================================================
 
   /**
-   * Setup initial state on page load
-   * Creates activate button and placeholder, following S17 pattern
+   * Initialize the parallel coordinates visualization
+   * Called by Section18.js initializeEventHandlers()
    */
-  function setupInitialState() {
-    console.log("[ParallelCoordinates] Setting up initial state");
+  function initialize() {
+    console.log("[ParallelCoordinates] Initializing visualization");
 
-    const controlsWrapper = document.querySelector(CONFIG.controlsSelector);
-    const graphContainer = document.querySelector(CONFIG.containerSelector);
-
-    if (!controlsWrapper || !graphContainer) {
-      console.warn("[ParallelCoordinates] Required containers not found");
-      return;
-    }
-
-    // Create initial controls row with activate button
-    createInitialControlsRow(controlsWrapper);
-
-    // Create placeholder message
-    createLoadingPlaceholder(graphContainer);
-
-    console.log("[ParallelCoordinates] Initial state setup complete");
-  }
-
-  /**
-   * Create initial controls row with activation button and disabled placeholder controls
-   * Follows S17 pattern exactly
-   */
-  function createInitialControlsRow(controlsWrapper) {
-    // Create controls container
-    const controlsContainer = document.createElement("div");
-    controlsContainer.className = "parallel-coordinates-controls";
-    controlsContainer.style.cssText =
-      "display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; margin-bottom: 12px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;";
-
-    // Create Activate button (primary, enabled)
-    const activateBtn = document.createElement("button");
-    activateBtn.id = "s18ActivateBtn";
-    activateBtn.className = "btn btn-primary btn-sm";
-    activateBtn.innerHTML = '<i class="bi bi-shuffle"></i> Activate Optimization View';
-    activateBtn.onclick = activateVisualization;
-
-    // Create button group container for disabled controls (right side)
-    const layoutContainer = document.createElement("div");
-    layoutContainer.style.cssText = "display: flex; gap: 5px; align-items: center; margin-left: auto;";
-
-    // Disabled placeholder buttons
-    const refreshBtn = createButton("bi-arrow-clockwise", "Refresh Data", null);
-    refreshBtn.disabled = true;
-
-    const fullscreenBtn = createButton("bi-arrows-fullscreen", "Toggle Fullscreen", null);
-    fullscreenBtn.disabled = true;
-
-    const exportBtn = createButton("bi-download", "Export as PNG", null);
-    exportBtn.disabled = true;
-
-    const settingsBtn = createButton("bi-gear", "Settings", null);
-    settingsBtn.disabled = true;
-
-    // Append buttons to layout container
-    layoutContainer.appendChild(refreshBtn);
-    layoutContainer.appendChild(fullscreenBtn);
-    layoutContainer.appendChild(exportBtn);
-    layoutContainer.appendChild(settingsBtn);
-
-    // Add activate button and layout container to controls
-    controlsContainer.appendChild(activateBtn);
-    controlsContainer.appendChild(layoutContainer);
-
-    // Add controls to wrapper
-    controlsWrapper.appendChild(controlsContainer);
-  }
-
-  /**
-   * Create loading placeholder message in graph container
-   */
-  function createLoadingPlaceholder(graphContainer) {
-    const placeholder = document.createElement("div");
-    placeholder.id = "s18LoadingPlaceholder";
-    placeholder.className = "teui-loading-placeholder";
-    placeholder.innerHTML =
-      "<p>Click 'Activate Optimization View' to visualize the improvement path comparing Reference to Target models.</p>";
-    placeholder.style.cssText =
-      "padding: 40px 20px; text-align: center; background: #f9f9f9; border-radius: 4px; color: #666;";
-
-    // Insert at the beginning of graph container
-    graphContainer.insertBefore(placeholder, graphContainer.firstChild);
-  }
-
-  /**
-   * Activate the visualization (user clicks activate button)
-   * Replaces placeholder controls with full controls and renders graph
-   */
-  function activateVisualization() {
-    console.log("[ParallelCoordinates] Activating visualization");
-
-    const controlsWrapper = document.querySelector(CONFIG.controlsSelector);
-    const graphContainer = document.querySelector(CONFIG.containerSelector);
-    const placeholder = document.getElementById("s18LoadingPlaceholder");
-    const activateBtn = document.getElementById("s18ActivateBtn");
-
-    if (!controlsWrapper || !graphContainer) return;
-
-    // Show graph container with proper height, hide placeholder
-    graphContainer.style.display = "block";
-    graphContainer.style.minHeight = "600px"; // Set min-height when activated
-    if (placeholder) placeholder.style.display = "none";
-
-    // Update button text to "Refresh"
-    if (activateBtn) {
-      activateBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh Data';
-      activateBtn.onclick = refresh;
-      activateBtn.classList.remove("btn-primary");
-      activateBtn.classList.add("btn-outline-secondary");
-    }
-
-    // Remove the initial placeholder controls
-    const existingControls = controlsWrapper.querySelector(
-      ".parallel-coordinates-controls"
-    );
-    if (existingControls) {
-      existingControls.remove();
-    }
-
-    // Create full controls (with all buttons enabled)
+    // Setup control panel
     initializeControls();
 
-    // Render the visualization
+    // Initial render
     refresh();
   }
 
   /**
-   * Initialize full control panel after activation
-   * All buttons enabled and functional
+   * Setup control panel buttons
    */
   function initializeControls() {
     const controlsWrapper = document.querySelector(CONFIG.controlsSelector);
@@ -208,28 +90,26 @@ window.TEUI.ParallelCoordinates = (function () {
       return;
     }
 
-    // Create controls container
-    const controlsContainer = document.createElement("div");
-    controlsContainer.className = "parallel-coordinates-controls";
-    controlsContainer.style.cssText =
-      "display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; margin-bottom: 12px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;";
+    // Clear existing controls
+    controlsWrapper.innerHTML = "";
 
-    // Create button group container for layout controls (right side)
-    const layoutContainer = document.createElement("div");
-    layoutContainer.style.cssText = "display: flex; gap: 5px; align-items: center; margin-left: auto;";
-
-    // Refresh button
-    const refreshBtn = createButton(
-      "bi-arrow-clockwise",
-      "Refresh Data",
-      refresh
-    );
+    // Create button group
+    const buttonGroup = document.createElement("div");
+    buttonGroup.className = "btn-group btn-group-sm";
+    buttonGroup.setAttribute("role", "group");
 
     // Fullscreen button
     const fullscreenBtn = createButton(
       "bi-arrows-fullscreen",
       "Toggle Fullscreen",
       toggleFullscreen
+    );
+
+    // Refresh button
+    const refreshBtn = createButton(
+      "bi-arrow-clockwise",
+      "Refresh Data",
+      refresh
     );
 
     // Export PNG button
@@ -246,19 +126,15 @@ window.TEUI.ParallelCoordinates = (function () {
       () => alert("Settings panel coming soon!")
     );
 
-    // Append buttons to layout container
-    layoutContainer.appendChild(refreshBtn);
-    layoutContainer.appendChild(fullscreenBtn);
-    layoutContainer.appendChild(exportBtn);
-    layoutContainer.appendChild(settingsBtn);
+    // Append buttons
+    buttonGroup.appendChild(fullscreenBtn);
+    buttonGroup.appendChild(refreshBtn);
+    buttonGroup.appendChild(exportBtn);
+    buttonGroup.appendChild(settingsBtn);
 
-    // Add layout container to controls
-    controlsContainer.appendChild(layoutContainer);
+    controlsWrapper.appendChild(buttonGroup);
 
-    // Add controls to wrapper
-    controlsWrapper.appendChild(controlsContainer);
-
-    console.log("[ParallelCoordinates] Full controls initialized");
+    console.log("[ParallelCoordinates] Controls initialized");
   }
 
   /**
@@ -267,12 +143,10 @@ window.TEUI.ParallelCoordinates = (function () {
   function createButton(iconClass, tooltip, clickHandler) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "btn btn-outline-secondary btn-sm";
+    btn.className = "btn btn-outline-secondary";
     btn.setAttribute("title", tooltip);
     btn.innerHTML = `<i class="bi ${iconClass}"></i>`;
-    if (clickHandler) {
-      btn.addEventListener("click", clickHandler);
-    }
+    btn.addEventListener("click", clickHandler);
     return btn;
   }
 
@@ -790,11 +664,11 @@ window.TEUI.ParallelCoordinates = (function () {
   // ========================================================================
 
   return {
-    setupInitialState,    // Called on page load to create placeholder
-    activateVisualization, // Called when user clicks activate
-    refresh,              // Refresh data and re-render
-    toggleFullscreen,     // Toggle fullscreen mode
-    exportToPNG,          // Export as PNG
+    initialize,
+    refresh,
+    initializeControls,
+    toggleFullscreen,
+    exportToPNG,
   };
 })();
 
