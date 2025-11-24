@@ -70,15 +70,25 @@ window.TEUI.ParallelCoordinates = (function () {
    * Setup initial state on page load
    * Creates activate button and placeholder, following S17 pattern
    */
-  function setupInitialState() {
-    console.log("[ParallelCoordinates] Setting up initial state");
+  function setupInitialState(retryCount = 0) {
+    const maxRetries = 5;
+
+    console.log("[ParallelCoordinates] Setting up initial state (attempt " + (retryCount + 1) + ")");
 
     const controlsWrapper = document.querySelector(CONFIG.controlsSelector);
     const graphContainer = document.querySelector(CONFIG.containerSelector);
 
     if (!controlsWrapper || !graphContainer) {
-      console.warn("[ParallelCoordinates] Required containers not found");
-      return;
+      if (retryCount < maxRetries) {
+        console.warn("[ParallelCoordinates] Required containers not found, retrying in 200ms...");
+        setTimeout(() => setupInitialState(retryCount + 1), 200);
+        return;
+      } else {
+        console.error("[ParallelCoordinates] Failed to find containers after " + maxRetries + " attempts");
+        console.error("[ParallelCoordinates] controlsWrapper:", controlsWrapper);
+        console.error("[ParallelCoordinates] graphContainer:", graphContainer);
+        return;
+      }
     }
 
     // Create initial controls row with activate button
