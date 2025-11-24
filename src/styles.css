@@ -1823,6 +1823,57 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
 }
 
 /* ======================================
+   Parallel Coordinates Styles (Section 18)
+   ====================================== */
+
+.parallel-coordinates-controls-wrapper,
+.parallel-coordinates-info-wrapper {
+  /* Wrappers for placement above the SVG - match S17 styling */
+  padding-left: 1rem;
+  padding-right: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 0.25rem;
+}
+
+.parallel-coordinates-controls {
+  /* Styles for the control button container - match S17 styling */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  background-color: #f8f9fa;
+  padding: 10px;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+  margin-bottom: 10px;
+}
+
+.parallel-coordinates-controls .btn-sm {
+  font-size: 0.875rem;
+}
+
+/* Activation Button - styled to fit in controls row */
+#s18ActivateBtn {
+  flex-shrink: 0;
+  margin-right: 10px;
+  min-width: 160px; /* Slightly wider for "Activate Optimization View" */
+}
+
+/* Disabled controls styling - make them look inactive but visible */
+.parallel-coordinates-controls button:disabled:not(#s18ActivateBtn) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Layout Buttons Container - push to right with fullscreen at far right */
+.parallel-coordinates-controls > div:last-child {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* ======================================
    SECTION 16 - SANKEY DIAGRAM STYLES
    ====================================== */
 

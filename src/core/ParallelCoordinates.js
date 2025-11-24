@@ -99,10 +99,9 @@ window.TEUI.ParallelCoordinates = (function () {
     // Clear existing controls
     controlsWrapper.innerHTML = "";
 
-    // Create controls container
+    // Create controls container (CSS handles layout)
     const controlsContainer = document.createElement("div");
     controlsContainer.className = "parallel-coordinates-controls";
-    controlsContainer.style.cssText = "display: flex; gap: 10px; align-items: center; margin-bottom: 15px;";
 
     // Create activation button
     const activateBtn = document.createElement("button");
@@ -111,16 +110,8 @@ window.TEUI.ParallelCoordinates = (function () {
     activateBtn.innerHTML = '<i class="bi bi-shuffle"></i> Activate Optimization View';
     activateBtn.addEventListener("click", activateVisualization);
 
-    // Create layout container for other buttons (disabled)
+    // Create layout container for other buttons (disabled) - CSS handles margin-left: auto
     const layoutContainer = document.createElement("div");
-    layoutContainer.style.cssText = "display: flex; gap: 5px; align-items: center; margin-left: auto;";
-
-    // Fullscreen button (disabled)
-    const fullscreenBtn = document.createElement("button");
-    fullscreenBtn.className = "btn btn-outline-secondary btn-sm";
-    fullscreenBtn.title = "Toggle Fullscreen";
-    fullscreenBtn.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
-    fullscreenBtn.disabled = true;
 
     // Refresh button (disabled)
     const refreshBtn = document.createElement("button");
@@ -143,10 +134,18 @@ window.TEUI.ParallelCoordinates = (function () {
     settingsBtn.innerHTML = '<i class="bi bi-gear"></i>';
     settingsBtn.disabled = true;
 
-    layoutContainer.appendChild(fullscreenBtn);
+    // Fullscreen button (disabled) - added LAST so it's at far right
+    const fullscreenBtn = document.createElement("button");
+    fullscreenBtn.className = "btn btn-outline-secondary btn-sm";
+    fullscreenBtn.title = "Toggle Fullscreen";
+    fullscreenBtn.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
+    fullscreenBtn.disabled = true;
+
+    // Append buttons in order: Refresh, Export, Settings, Fullscreen (far right)
     layoutContainer.appendChild(refreshBtn);
     layoutContainer.appendChild(exportBtn);
     layoutContainer.appendChild(settingsBtn);
+    layoutContainer.appendChild(fullscreenBtn);
 
     // Assemble controls row
     controlsContainer.appendChild(activateBtn);
@@ -215,17 +214,12 @@ window.TEUI.ParallelCoordinates = (function () {
       existingControls.remove();
     }
 
-    // Create new controls container
+    // Create new controls container (CSS handles layout)
     const controlsContainer = document.createElement("div");
     controlsContainer.className = "parallel-coordinates-controls";
-    controlsContainer.style.cssText = "display: flex; gap: 10px; align-items: center; margin-bottom: 15px;";
 
-    // Create layout container for buttons
+    // Create layout container for buttons (CSS handles margin-left: auto)
     const layoutContainer = document.createElement("div");
-    layoutContainer.style.cssText = "display: flex; gap: 5px; align-items: center; margin-left: auto;";
-
-    // Fullscreen button (enabled)
-    const fullscreenBtn = createButton("bi-arrows-fullscreen", "Toggle Fullscreen", toggleFullscreen);
 
     // Refresh button (enabled)
     const refreshBtn = createButton("bi-arrow-clockwise", "Refresh Data", refresh);
@@ -236,10 +230,14 @@ window.TEUI.ParallelCoordinates = (function () {
     // Settings button (enabled)
     const settingsBtn = createButton("bi-gear", "Settings", () => alert("Settings panel coming soon!"));
 
-    layoutContainer.appendChild(fullscreenBtn);
+    // Fullscreen button (enabled) - added LAST so it's at far right
+    const fullscreenBtn = createButton("bi-arrows-fullscreen", "Toggle Fullscreen", toggleFullscreen);
+
+    // Append buttons in order: Refresh, Export, Settings, Fullscreen (far right)
     layoutContainer.appendChild(refreshBtn);
     layoutContainer.appendChild(exportBtn);
     layoutContainer.appendChild(settingsBtn);
+    layoutContainer.appendChild(fullscreenBtn);
 
     // Get the activate/refresh button
     const activateBtn = document.getElementById("s18ActivateBtn");
@@ -259,7 +257,7 @@ window.TEUI.ParallelCoordinates = (function () {
   function createButton(iconClass, tooltip, clickHandler) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "btn btn-outline-secondary";
+    btn.className = "btn btn-outline-secondary btn-sm";
     btn.setAttribute("title", tooltip);
     btn.innerHTML = `<i class="bi ${iconClass}"></i>`;
     btn.addEventListener("click", clickHandler);
