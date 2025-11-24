@@ -123,6 +123,9 @@
     <!-- Cooling Sankey Module -->
     <script src="src/sections/Section17.js"></script>
     <script src="src/sections/Section18.js"></script>
+    <!-- Parallel Coordinates Module -->
+    <script src="src/sections/Section19.js"></script>
+    <!-- Notes & Debug Module -->
   </head>
   <body>
     <!-- Main container -->
@@ -631,13 +634,34 @@
             </div>
           </div>
 
-          <!-- Section 18: Notes -->
+          <!-- Section 18: Parallel Coordinates -->
+          <div id="parallelCoordinates" class="section">
+            <div class="section-header">
+              <span class="section-icon"><i class="bi bi-graph-up"></i></span>
+              SECTION 18. Parallel Coordinates
+            </div>
+            <div class="section-content">
+              <!-- Container for Parallel Coordinates visualization -->
+              <div class="parallel-coordinates-controls-wrapper mb-3"></div>
+              <!-- Wrapper for controls -->
+              <div class="parallel-coordinates-info-wrapper mb-3"></div>
+              <!-- Wrapper for info panel -->
+              <div
+                class="parallel-coordinates-container"
+                style="width: 100%; border: 1px solid #eee"
+              >
+                <!-- SVG will be injected here by Section18.js -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 19: Notes -->
           <div id="notes" class="section">
             <div class="section-header">
               <span class="section-icon"
                 ><i class="bi bi-info-square"></i
               ></span>
-              SECTION 18. Notes
+              SECTION 19. Notes & Debug
             </div>
             <div class="section-content">
               <div data-render-section="notes"></div>
