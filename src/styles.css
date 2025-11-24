@@ -1881,11 +1881,30 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
 /* Parallel Coordinates Container - activated state (500px for graph + table + future rows) */
 .parallel-coordinates-container.activated {
   height: 500px;
+  padding-bottom: 15px;
 }
 
-/* Parallel Coordinates Data Table - spacing below table */
+/* Parallel Coordinates Data Table Wrapper */
 .pc-data-table {
-  margin-bottom: 15px;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 0; /* No margin - use container padding instead */
+}
+
+/* Parallel Coordinates Table - inside wrapper */
+.pc-data-table table {
+  font-size: 11px;
+  margin-bottom: 0; /* Remove Bootstrap default margin */
+}
+
+/* Parallel Coordinates Table Cells - Target color */
+.pc-data-table .pc-target-cell {
+  color: #0d6efd; /* Bootstrap primary blue */
+}
+
+/* Parallel Coordinates Table Cells - Reference color */
+.pc-data-table .pc-reference-cell {
+  color: #dc3545; /* Bootstrap danger red */
 }
 
 /* ======================================

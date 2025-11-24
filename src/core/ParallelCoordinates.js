@@ -617,13 +617,10 @@ window.TEUI.ParallelCoordinates = (function () {
     // Create table wrapper
     const tableWrapper = document.createElement("div");
     tableWrapper.className = "pc-data-table mt-3";
-    tableWrapper.style.maxHeight = "200px";
-    tableWrapper.style.overflowY = "auto";
 
     // Create table
     const table = document.createElement("table");
     table.className = "table table-sm table-striped table-hover";
-    table.style.fontSize = "11px";
 
     // Extract data
     const { axes, targetData, referenceData } = currentData;
@@ -645,7 +642,7 @@ window.TEUI.ParallelCoordinates = (function () {
     const targetRow = document.createElement("tr");
     targetRow.innerHTML = '';
     targetData.forEach(val => {
-      targetRow.innerHTML += `<td class="text-center" style="color: ${CONFIG.colors.target}">${val.toFixed(2)}</td>`;
+      targetRow.innerHTML += `<td class="text-center pc-target-cell">${val.toFixed(2)}</td>`;
     });
     tbody.appendChild(targetRow);
 
@@ -653,7 +650,7 @@ window.TEUI.ParallelCoordinates = (function () {
     const referenceRow = document.createElement("tr");
     referenceRow.innerHTML = '';
     referenceData.forEach(val => {
-      referenceRow.innerHTML += `<td class="text-center" style="color: ${CONFIG.colors.reference}">${val.toFixed(2)}</td>`;
+      referenceRow.innerHTML += `<td class="text-center pc-reference-cell">${val.toFixed(2)}</td>`;
     });
     tbody.appendChild(referenceRow);
 
