@@ -1166,41 +1166,57 @@ Call `createLegend()` after `activateVisualization()`.
    - Table header was redundant duplication, now removed
    - **No action needed** - this is correct behavior
 
-### 📋 Deferred Tasks (From Afternoon Workplan)
+### 📋 Afternoon Session #2 - Axis Scaling & Domain Refinements
 
-**Task 2: Flip Efficiency Axes (Lower = Better)**
-- Invert Y-scale for "higher is better" efficiency parameters
-- Makes Target line visually LOWER for optimized building
-- Theme: "Lower = Better performance"
+9. ✅ **Flipped Efficiency Axes (Task 2)** - [ParallelCoordinates.js:390-419](src/core/ParallelCoordinates.js#L390-L419)
+   - Inverted Y-scale for all axes with `optimal: "higher"`
+   - Conditional range: `axis.optimal === "higher" ? [0, height] : [height, 0]`
+   - Higher efficiency values now appear LOWER on screen
+   - Visual theme: "Lower = Better performance"
+   - Affected axes: SHW%, DWHR%, nGains%, HEAT%, HRV% (6 metrics)
 
-**Task 2b: WWR Scale Adjustment**
-- Multiply WWR values by 100 for display
-- Show as percentage (33%) instead of decimal (0.33)
-- Scale domain from [0,1] to [0,100]
+10. ✅ **WWR Scale Adjustment (Task 2b)** - [ppConfig.js:136-139](src/core/ppConfig.js#L136-L139)
+   - Added `targetFieldMultiplier: 100` and `referenceFieldMultiplier: 100`
+   - WWR displays as 33% instead of 0.33
+   - Domain already set to [0, 100]
+
+11. ✅ **DWHR Domain Adjustment** - [ppConfig.js:61](src/core/ppConfig.js#L61)
+   - Changed domain from [0, 100] to [0, 80]
+   - Few systems exceed 75% efficiency, realistic range
+
+12. ✅ **nGains Percentage Multiplier** - [ppConfig.js:72-74](src/core/ppConfig.js#L72-L74)
+   - Added `targetFieldMultiplier: 100` and `referenceFieldMultiplier: 100`
+   - g_80 stored as decimal (0.40) now displays as percentage (40%)
+   - Domain confirmed [0, 100] - always 0-100%, never more, never less
 
 ### 🎯 Current Success State
 
 **Graph Rendering:** ✅ Working perfectly
-- 14 axes rendering correctly
+- 14 axes rendering correctly with inverted efficiency scales
 - 2 lines (Target blue, Reference red)
 - Dimensions: 1226 x 370px
+- Visual theme: Lower = Better (optimized Target line below Reference)
 
 **Controls:** ✅ Match S17 pattern
 - Activate → Refresh button transformation works
-- Legend inline with controls
-- Correct button order with fullscreen at far right
+- Legend inline with controls (Target/Reference)
+- Correct button order: Legend, Refresh, Export, Settings, Fullscreen
 
 **Table:** ✅ Clean alignment
-- No header duplication
-- Axes labels in graph align with table columns
-- 3 rows: Target, Reference, Delta (with color coding)
+- Column headers with axis labels/units
+- No row labels (axes align with graph above)
+- 4 rows: Target, Reference, Delta (Δ), Percent Delta (%Δ)
+
+**Axis Scaling:** ✅ Accurate percentage display
+- WWR: 33% (not 0.33)
+- nGains: 40% (not 0.40)
+- DWHR: Realistic 0-80% range
+- All efficiency axes inverted for "lower = better" visual
 
 ---
 
 ## Next Steps (Future Enhancements)
 
-- [ ] Implement deferred Task 2: Flip efficiency axes (invert Y-scale)
-- [ ] Implement deferred Task 2b: WWR scale adjustment (multiply by 100)
 - [ ] Test responsive behavior (mobile/tablet)
 - [ ] Add hover interactions (show delta on hover)
 - [ ] Add tooltips for axes (explain parameter impact/cost)
