@@ -245,13 +245,31 @@ window.TEUI.ParallelCoordinates = (function () {
       .domain([0, numAxes - 1])
       .range([0, width]);
 
-    // Create vertical scale for each axis
-    const yScales = axes.map(axis =>
-      d3
+    // Create vertical scale for each axis with dynamic domain adjustment
+    const yScales = axes.map((axis, i) => {
+      const targetVal = targetData[i];
+      const refVal = referenceData[i];
+
+      // Get min/max from both data values
+      const dataMin = Math.min(targetVal, refVal);
+      const dataMax = Math.max(targetVal, refVal);
+
+      // Expand domain if data exceeds configured domain
+      let [domainMin, domainMax] = axis.domain;
+
+      // Add 10% padding to accommodate outliers
+      if (dataMin < domainMin) {
+        domainMin = dataMin * 0.9;
+      }
+      if (dataMax > domainMax) {
+        domainMax = dataMax * 1.1;
+      }
+
+      return d3
         .scaleLinear()
-        .domain(axis.domain)
-        .range([height, 0])
-    );
+        .domain([domainMin, domainMax])
+        .range([height, 0]);
+    });
 
     // ====================================================================
     // DRAW AXES
@@ -292,10 +310,11 @@ window.TEUI.ParallelCoordinates = (function () {
       .style("font-size", "10px")
       .text(d => d.unit);
 
-    // Draw axis ticks and labels (min/max)
+    // Draw axis ticks and labels (min/max) using dynamic domains
     axisGroup.each(function (axis, i) {
       const axisG = d3.select(this);
       const scale = yScales[i];
+      const [domainMin, domainMax] = scale.domain();
 
       // Min value (bottom)
       axisG
@@ -304,7 +323,7 @@ window.TEUI.ParallelCoordinates = (function () {
         .attr("text-anchor", "middle")
         .style("fill", CONFIG.colors.axisText)
         .style("font-size", "9px")
-        .text(axis.domain[0].toFixed(1));
+        .text(domainMin.toFixed(1));
 
       // Max value (top)
       axisG
@@ -313,29 +332,25 @@ window.TEUI.ParallelCoordinates = (function () {
         .attr("text-anchor", "middle")
         .style("fill", CONFIG.colors.axisText)
         .style("font-size", "9px")
-        .text(axis.domain[1].toFixed(1));
+        .text(domainMax.toFixed(1));
     });
 
     // ====================================================================
     // DRAW LINES
     // ====================================================================
 
-    // Line path generator
-    const linePath = (dataPoints) => {
-      const pathSegments = dataPoints.map((value, i) => {
-        const x = xScale(i);
-        const y = yScales[i](value);
-        return `${x},${y}`;
-      });
-      return "M" + pathSegments.join("L");
-    };
+    // Line path generator with curved splines
+    const line = d3.line()
+      .x((d, i) => xScale(i))
+      .y((d, i) => yScales[i](d))
+      .curve(d3.curveMonotoneX); // Smooth curved splines through points
 
     // Draw Reference line (behind)
     svg
       .append("path")
       .datum(referenceData)
       .attr("class", "reference-line")
-      .attr("d", linePath)
+      .attr("d", line)
       .style("stroke", CONFIG.colors.reference)
       .style("stroke-width", CONFIG.lineWidth)
       .style("fill", "none")
@@ -356,7 +371,7 @@ window.TEUI.ParallelCoordinates = (function () {
       .append("path")
       .datum(targetData)
       .attr("class", "target-line")
-      .attr("d", linePath)
+      .attr("d", line)
       .style("stroke", CONFIG.colors.target)
       .style("stroke-width", CONFIG.lineWidth)
       .style("fill", "none")
@@ -475,58 +490,69 @@ window.TEUI.ParallelCoordinates = (function () {
     table.className = "table table-sm table-striped table-hover";
     table.style.fontSize = "11px";
 
-    // Table header
+    // Table header - transposed to match graph layout (axes as columns)
     const thead = document.createElement("thead");
-    thead.innerHTML = `
-      <tr>
-        <th>Parameter</th>
-        <th>Unit</th>
-        <th class="text-end">Target</th>
-        <th class="text-end">Reference</th>
-        <th class="text-end">Δ</th>
-        <th class="text-end">%Δ</th>
-      </tr>
-    `;
-    table.appendChild(thead);
-
-    // Table body
-    const tbody = document.createElement("tbody");
-
     const { axes, targetData, referenceData } = currentData;
 
-    axes.forEach((axis, i) => {
-      const target = targetData[i];
-      const reference = referenceData[i];
-      const delta = target - reference;
-      const percentDelta = reference !== 0 ? ((delta / reference) * 100) : 0;
+    // Build header row with axis labels
+    let headerHTML = '<tr><th></th>'; // Empty cell for row labels
+    axes.forEach(axis => {
+      headerHTML += `<th class="text-center"><strong>${axis.label}</strong><br><small class="text-muted">${axis.unit}</small></th>`;
+    });
+    headerHTML += '</tr>';
+    thead.innerHTML = headerHTML;
+    table.appendChild(thead);
 
-      // Determine if improvement (based on optimal direction)
+    // Table body - transposed rows
+    const tbody = document.createElement("tbody");
+
+    // Target row
+    const targetRow = document.createElement("tr");
+    targetRow.innerHTML = `<td style="color: ${CONFIG.colors.target}"><strong>Target</strong></td>`;
+    targetData.forEach(val => {
+      targetRow.innerHTML += `<td class="text-end" style="color: ${CONFIG.colors.target}">${val.toFixed(2)}</td>`;
+    });
+    tbody.appendChild(targetRow);
+
+    // Reference row
+    const referenceRow = document.createElement("tr");
+    referenceRow.innerHTML = `<td style="color: ${CONFIG.colors.reference}"><strong>Reference</strong></td>`;
+    referenceData.forEach(val => {
+      referenceRow.innerHTML += `<td class="text-end" style="color: ${CONFIG.colors.reference}">${val.toFixed(2)}</td>`;
+    });
+    tbody.appendChild(referenceRow);
+
+    // Delta row
+    const deltaRow = document.createElement("tr");
+    deltaRow.innerHTML = '<td><strong>Δ</strong></td>';
+    axes.forEach((axis, i) => {
+      const delta = targetData[i] - referenceData[i];
       let deltaClass = "";
       if (axis.optimal === "higher") {
         deltaClass = delta > 0 ? "text-success" : "text-danger";
       } else if (axis.optimal === "lower") {
         deltaClass = delta < 0 ? "text-success" : "text-danger";
       }
-
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td><strong>${axis.label}</strong></td>
-        <td class="text-muted">${axis.unit}</td>
-        <td class="text-end" style="color: ${CONFIG.colors.target}">
-          ${target.toFixed(2)}
-        </td>
-        <td class="text-end" style="color: ${CONFIG.colors.reference}">
-          ${reference.toFixed(2)}
-        </td>
-        <td class="text-end ${deltaClass}">
-          ${delta >= 0 ? "+" : ""}${delta.toFixed(2)}
-        </td>
-        <td class="text-end ${deltaClass}">
-          ${percentDelta >= 0 ? "+" : ""}${percentDelta.toFixed(1)}%
-        </td>
-      `;
-      tbody.appendChild(row);
+      deltaRow.innerHTML += `<td class="text-end ${deltaClass}">${delta >= 0 ? "+" : ""}${delta.toFixed(2)}</td>`;
     });
+    tbody.appendChild(deltaRow);
+
+    // Percent Delta row
+    const percentRow = document.createElement("tr");
+    percentRow.innerHTML = '<td><strong>%Δ</strong></td>';
+    axes.forEach((axis, i) => {
+      const delta = targetData[i] - referenceData[i];
+      const reference = referenceData[i];
+      const percentDelta = reference !== 0 ? ((delta / reference) * 100) : 0;
+      let deltaClass = "";
+      if (axis.optimal === "higher") {
+        deltaClass = delta > 0 ? "text-success" : "text-danger";
+      } else if (axis.optimal === "lower") {
+        deltaClass = delta < 0 ? "text-success" : "text-danger";
+      }
+      percentRow.innerHTML += `<td class="text-end ${deltaClass}">${percentDelta >= 0 ? "+" : ""}${percentDelta.toFixed(1)}%</td>`;
+    });
+    tbody.appendChild(percentRow);
 
     table.appendChild(tbody);
     tableWrapper.appendChild(table);
