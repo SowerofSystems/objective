@@ -645,6 +645,16 @@
               SECTION 18. Optimize
             </div>
             <div class="section-content">
+              <!-- Activate button -->
+              <button
+                type="button"
+                class="btn btn-primary btn-sm mb-3"
+                id="activateParallelCoordinates"
+                onclick="if(window.TEUI?.ParallelCoordinates?.initialize) window.TEUI.ParallelCoordinates.initialize()"
+              >
+                <i class="bi bi-shuffle"></i> Activate Optimization View
+              </button>
+
               <!-- Container for Parallel Coordinates visualization -->
               <div class="parallel-coordinates-controls-wrapper mb-3"></div>
               <!-- Wrapper for controls -->
@@ -652,9 +662,12 @@
               <!-- Wrapper for info panel -->
               <div
                 class="parallel-coordinates-container"
-                style="width: 100%; border: 1px solid #eee"
+                style="width: 100%; border: 1px solid #eee; min-height: 400px"
               >
-                <!-- SVG will be injected here by Section18.js -->
+                <!-- SVG will be injected here by ParallelCoordinates.js -->
+                <p class="text-center text-muted mt-5">
+                  Click 'Activate Optimization View' to load the parallel coordinates graph
+                </p>
               </div>
             </div>
           </div>
