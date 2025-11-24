@@ -1895,6 +1895,8 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
 .pc-data-table table {
   font-size: 11px;
   margin-bottom: 0; /* Remove Bootstrap default margin */
+  table-layout: fixed; /* Equal width columns for alignment with graph axes */
+  width: 100%;
 }
 
 /* Parallel Coordinates Table Cells - Target color */

@@ -24,9 +24,9 @@ window.TEUI.ParallelCoordinates = (function () {
     tableHeightPercent: 0.45,     // 45% for table (225px + padding)
     margin: {
       top: 60,                    // Space for axis labels
-      right: 40,
+      right: 60,
       bottom: 20,
-      left: 100,                  // Matches row label width for perfect alignment
+      left: 125,                  // Matches row label width for perfect alignment
     },
 
     // Visual styling
