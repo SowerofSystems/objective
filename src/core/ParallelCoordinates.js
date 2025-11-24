@@ -177,7 +177,6 @@ window.TEUI.ParallelCoordinates = (function () {
 
     const container = document.querySelector(CONFIG.containerSelector);
     const placeholder = document.getElementById("s18LoadingPlaceholder");
-    const activateBtn = document.getElementById("s18ActivateBtn");
 
     if (!container) return;
 
@@ -186,17 +185,12 @@ window.TEUI.ParallelCoordinates = (function () {
       placeholder.style.display = "none";
     }
 
-    // Update button to Refresh
-    if (activateBtn) {
-      activateBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh Graph';
-      activateBtn.className = "btn btn-outline-secondary btn-sm";
-    }
+    // Mark as activated BEFORE recreating controls
+    isActivated = true;
 
     // Enable other controls and setup full control panel
+    // This will recreate the controls row with the button transformed to "Refresh Graph"
     initializeFullControls();
-
-    // Mark as activated
-    isActivated = true;
 
     // Initial render
     refresh();
@@ -217,6 +211,21 @@ window.TEUI.ParallelCoordinates = (function () {
     // Create new controls container (CSS handles layout)
     const controlsContainer = document.createElement("div");
     controlsContainer.className = "parallel-coordinates-controls";
+
+    // Create the activate/refresh button based on state
+    const mainBtn = document.createElement("button");
+    mainBtn.id = "s18ActivateBtn";
+    if (isActivated) {
+      // Already activated - show as Refresh button
+      mainBtn.className = "btn btn-outline-secondary btn-sm";
+      mainBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh Graph';
+      mainBtn.addEventListener("click", refresh);
+    } else {
+      // Not activated yet - show as Activate button
+      mainBtn.className = "btn btn-primary btn-sm";
+      mainBtn.innerHTML = '<i class="bi bi-shuffle"></i> Activate Optimization View';
+      mainBtn.addEventListener("click", activateVisualization);
+    }
 
     // Create layout container for buttons (CSS handles margin-left: auto)
     const layoutContainer = document.createElement("div");
@@ -239,13 +248,8 @@ window.TEUI.ParallelCoordinates = (function () {
     layoutContainer.appendChild(settingsBtn);
     layoutContainer.appendChild(fullscreenBtn);
 
-    // Get the activate/refresh button
-    const activateBtn = document.getElementById("s18ActivateBtn");
-
     // Assemble controls row
-    if (activateBtn) {
-      controlsContainer.appendChild(activateBtn);
-    }
+    controlsContainer.appendChild(mainBtn);
     controlsContainer.appendChild(layoutContainer);
 
     controlsWrapper.appendChild(controlsContainer);

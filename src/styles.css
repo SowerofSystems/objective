@@ -1873,6 +1873,11 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
   margin-left: auto;
 }
 
+/* Parallel Coordinates Container - needs min-height for graph rendering */
+.parallel-coordinates-container {
+  min-height: 600px;
+}
+
 /* ======================================
    SECTION 16 - SANKEY DIAGRAM STYLES
    ====================================== */
