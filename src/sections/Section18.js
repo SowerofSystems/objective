@@ -33,11 +33,9 @@ window.TEUI.SectionModules.sect18 = (function () {
   }
 
   function initializeEventHandlers() {
-    console.log("[S18] Initializing Parallel Coordinates controls");
-    // Initialize controls and visualization
-    if (window.TEUI?.ParallelCoordinates?.initialize) {
-      window.TEUI.ParallelCoordinates.initialize();
-    }
+    console.log("[S18] initializeEventHandlers called");
+    // ParallelCoordinates.js handles its own initialization via DOMContentLoaded
+    // (Similar pattern to Section17.js + Dependency.js)
   }
 
   return {

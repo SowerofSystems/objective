@@ -61,6 +61,7 @@ window.TEUI.ParallelCoordinates = (function () {
   let tableElement = null;
   let currentData = null;
   let isFullscreen = false;
+  let isActivated = false;  // Track whether visualization has been activated
 
   // ========================================================================
   // INITIALIZATION
@@ -68,73 +69,188 @@ window.TEUI.ParallelCoordinates = (function () {
 
   /**
    * Initialize the parallel coordinates visualization
-   * Called by Section18.js initializeEventHandlers()
+   * Called by DOMContentLoaded listener (similar to S17 pattern)
    */
   function initialize() {
-    console.log("[ParallelCoordinates] Initializing visualization");
+    console.log("[ParallelCoordinates] Setting up initial state");
 
-    // Setup control panel
-    initializeControls();
+    const container = document.querySelector(CONFIG.containerSelector);
+    const controlsWrapper = document.querySelector(CONFIG.controlsSelector);
+
+    if (!container || !controlsWrapper) {
+      console.warn("[ParallelCoordinates] Required containers not found");
+      return;
+    }
+
+    // Create initial controls row with activate button and disabled controls
+    createInitialControlsRow(controlsWrapper);
+
+    // Create loading placeholder message
+    createLoadingPlaceholder(container);
+
+    console.log("[ParallelCoordinates] Initial state ready");
+  }
+
+  /**
+   * Create initial controls row with activation button and placeholder controls
+   * All controls except Activate button are disabled until visualization is activated
+   */
+  function createInitialControlsRow(controlsWrapper) {
+    // Clear existing controls
+    controlsWrapper.innerHTML = "";
+
+    // Create controls container
+    const controlsContainer = document.createElement("div");
+    controlsContainer.className = "parallel-coordinates-controls";
+    controlsContainer.style.cssText = "display: flex; gap: 10px; align-items: center; margin-bottom: 15px;";
+
+    // Create activation button
+    const activateBtn = document.createElement("button");
+    activateBtn.id = "s18ActivateBtn";
+    activateBtn.className = "btn btn-primary btn-sm";
+    activateBtn.innerHTML = '<i class="bi bi-shuffle"></i> Activate Optimization View';
+    activateBtn.addEventListener("click", activateVisualization);
+
+    // Create layout container for other buttons (disabled)
+    const layoutContainer = document.createElement("div");
+    layoutContainer.style.cssText = "display: flex; gap: 5px; align-items: center; margin-left: auto;";
+
+    // Fullscreen button (disabled)
+    const fullscreenBtn = document.createElement("button");
+    fullscreenBtn.className = "btn btn-outline-secondary btn-sm";
+    fullscreenBtn.title = "Toggle Fullscreen";
+    fullscreenBtn.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
+    fullscreenBtn.disabled = true;
+
+    // Refresh button (disabled)
+    const refreshBtn = document.createElement("button");
+    refreshBtn.className = "btn btn-outline-secondary btn-sm";
+    refreshBtn.title = "Refresh Data";
+    refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i>';
+    refreshBtn.disabled = true;
+
+    // Export button (disabled)
+    const exportBtn = document.createElement("button");
+    exportBtn.className = "btn btn-outline-secondary btn-sm";
+    exportBtn.title = "Export as PNG";
+    exportBtn.innerHTML = '<i class="bi bi-download"></i>';
+    exportBtn.disabled = true;
+
+    // Settings button (disabled)
+    const settingsBtn = document.createElement("button");
+    settingsBtn.className = "btn btn-outline-secondary btn-sm";
+    settingsBtn.title = "Settings";
+    settingsBtn.innerHTML = '<i class="bi bi-gear"></i>';
+    settingsBtn.disabled = true;
+
+    layoutContainer.appendChild(fullscreenBtn);
+    layoutContainer.appendChild(refreshBtn);
+    layoutContainer.appendChild(exportBtn);
+    layoutContainer.appendChild(settingsBtn);
+
+    // Assemble controls row
+    controlsContainer.appendChild(activateBtn);
+    controlsContainer.appendChild(layoutContainer);
+
+    controlsWrapper.appendChild(controlsContainer);
+  }
+
+  /**
+   * Create loading placeholder message
+   */
+  function createLoadingPlaceholder(container) {
+    const placeholder = document.createElement("div");
+    placeholder.id = "s18LoadingPlaceholder";
+    placeholder.className = "teui-loading-placeholder";
+    placeholder.innerHTML = "<p>Click 'Activate Optimization View' to visualize optimization paths between Target and Reference configurations.</p>";
+    placeholder.style.cssText = "padding: 40px 20px; text-align: center; background: #f9f9f9; border-radius: 4px; color: #666;";
+
+    // Clear container and add placeholder
+    container.innerHTML = "";
+    container.appendChild(placeholder);
+  }
+
+  /**
+   * Activate the visualization (show and render)
+   */
+  function activateVisualization() {
+    console.log("[ParallelCoordinates] Activating visualization");
+
+    const container = document.querySelector(CONFIG.containerSelector);
+    const placeholder = document.getElementById("s18LoadingPlaceholder");
+    const activateBtn = document.getElementById("s18ActivateBtn");
+
+    if (!container) return;
+
+    // Hide placeholder
+    if (placeholder) {
+      placeholder.style.display = "none";
+    }
+
+    // Update button to Refresh
+    if (activateBtn) {
+      activateBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh Graph';
+      activateBtn.className = "btn btn-outline-secondary btn-sm";
+    }
+
+    // Enable other controls and setup full control panel
+    initializeFullControls();
+
+    // Mark as activated
+    isActivated = true;
 
     // Initial render
     refresh();
   }
 
   /**
-   * Setup control panel buttons
+   * Setup full control panel with enabled buttons
    */
-  function initializeControls() {
+  function initializeFullControls() {
     const controlsWrapper = document.querySelector(CONFIG.controlsSelector);
-    if (!controlsWrapper) {
-      console.warn("[ParallelCoordinates] Controls wrapper not found");
-      return;
+    if (!controlsWrapper) return;
+
+    const existingControls = controlsWrapper.querySelector(".parallel-coordinates-controls");
+    if (existingControls) {
+      existingControls.remove();
     }
 
-    // Clear existing controls
-    controlsWrapper.innerHTML = "";
+    // Create new controls container
+    const controlsContainer = document.createElement("div");
+    controlsContainer.className = "parallel-coordinates-controls";
+    controlsContainer.style.cssText = "display: flex; gap: 10px; align-items: center; margin-bottom: 15px;";
 
-    // Create button group
-    const buttonGroup = document.createElement("div");
-    buttonGroup.className = "btn-group btn-group-sm";
-    buttonGroup.setAttribute("role", "group");
+    // Create layout container for buttons
+    const layoutContainer = document.createElement("div");
+    layoutContainer.style.cssText = "display: flex; gap: 5px; align-items: center; margin-left: auto;";
 
-    // Fullscreen button
-    const fullscreenBtn = createButton(
-      "bi-arrows-fullscreen",
-      "Toggle Fullscreen",
-      toggleFullscreen
-    );
+    // Fullscreen button (enabled)
+    const fullscreenBtn = createButton("bi-arrows-fullscreen", "Toggle Fullscreen", toggleFullscreen);
 
-    // Refresh button
-    const refreshBtn = createButton(
-      "bi-arrow-clockwise",
-      "Refresh Data",
-      refresh
-    );
+    // Refresh button (enabled)
+    const refreshBtn = createButton("bi-arrow-clockwise", "Refresh Data", refresh);
 
-    // Export PNG button
-    const exportBtn = createButton(
-      "bi-download",
-      "Export as PNG",
-      exportToPNG
-    );
+    // Export button (enabled)
+    const exportBtn = createButton("bi-download", "Export as PNG", exportToPNG);
 
-    // Settings button (future enhancement)
-    const settingsBtn = createButton(
-      "bi-gear",
-      "Settings",
-      () => alert("Settings panel coming soon!")
-    );
+    // Settings button (enabled)
+    const settingsBtn = createButton("bi-gear", "Settings", () => alert("Settings panel coming soon!"));
 
-    // Append buttons
-    buttonGroup.appendChild(fullscreenBtn);
-    buttonGroup.appendChild(refreshBtn);
-    buttonGroup.appendChild(exportBtn);
-    buttonGroup.appendChild(settingsBtn);
+    layoutContainer.appendChild(fullscreenBtn);
+    layoutContainer.appendChild(refreshBtn);
+    layoutContainer.appendChild(exportBtn);
+    layoutContainer.appendChild(settingsBtn);
 
-    controlsWrapper.appendChild(buttonGroup);
+    // Get the activate/refresh button
+    const activateBtn = document.getElementById("s18ActivateBtn");
 
-    console.log("[ParallelCoordinates] Controls initialized");
+    // Assemble controls row
+    if (activateBtn) {
+      controlsContainer.appendChild(activateBtn);
+    }
+    controlsContainer.appendChild(layoutContainer);
+
+    controlsWrapper.appendChild(controlsContainer);
   }
 
   /**
@@ -666,10 +782,24 @@ window.TEUI.ParallelCoordinates = (function () {
   return {
     initialize,
     refresh,
-    initializeControls,
+    activateVisualization,
     toggleFullscreen,
     exportToPNG,
   };
 })();
 
 console.log("[ParallelCoordinates] Module loaded");
+
+// ========================================================================
+// INITIALIZATION TRIGGER (Similar to S17 Dependency.js pattern)
+// ========================================================================
+
+// Initialize when DOM is ready
+document.addEventListener("DOMContentLoaded", () => {
+  if (document.querySelector("#parallelCoordinates .section-content")) {
+    // Defer initialization to prevent blocking
+    setTimeout(() => {
+      window.TEUI.ParallelCoordinates.initialize();
+    }, 800);
+  }
+});
