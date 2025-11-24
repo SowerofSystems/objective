@@ -265,11 +265,11 @@ window.TEUI.ParallelCoordinates = (function () {
     // Fullscreen button (enabled) - added LAST so it's at far right
     const fullscreenBtn = createButton("bi-arrows-fullscreen", "Toggle Fullscreen", toggleFullscreen);
 
-    // Append in order: Refresh, Export, Settings, Legend, Fullscreen
+    // Append in order: Legend, Refresh, Export, Settings, Fullscreen
+    layoutContainer.appendChild(legendContainer);
     layoutContainer.appendChild(refreshBtn);
     layoutContainer.appendChild(exportBtn);
     layoutContainer.appendChild(settingsBtn);
-    layoutContainer.appendChild(legendContainer);
     layoutContainer.appendChild(fullscreenBtn);
 
     // Assemble controls row
