@@ -26,17 +26,18 @@ window.TEUI.SectionModules.sect18 = (function () {
 
   function calculateAll() {
     console.log("[S18] calculateAll called - Parallel Coordinates refresh");
-    // Refresh parallel coordinates visualization
+    // Refresh parallel coordinates visualization (only if already activated)
     if (window.TEUI?.ParallelCoordinates?.refresh) {
       window.TEUI.ParallelCoordinates.refresh();
     }
   }
 
   function initializeEventHandlers() {
-    console.log("[S18] Initializing Parallel Coordinates controls");
-    // Initialize controls and visualization
-    if (window.TEUI?.ParallelCoordinates?.initialize) {
-      window.TEUI.ParallelCoordinates.initialize();
+    console.log("[S18] Initializing Parallel Coordinates - setting up initial state");
+    // Setup initial state with activate button and placeholder
+    // Following S17 pattern: show controls before graph activation
+    if (window.TEUI?.ParallelCoordinates?.setupInitialState) {
+      window.TEUI.ParallelCoordinates.setupInitialState();
     }
   }
 
