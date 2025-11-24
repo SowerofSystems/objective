@@ -1907,6 +1907,15 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
   color: #dc3545; /* Bootstrap danger red */
 }
 
+/* Parallel Coordinates Table - Row Labels */
+.pc-data-table .pc-row-label {
+  width: 100px;
+  text-align: left;
+  padding-left: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 /* ======================================
    SECTION 16 - SANKEY DIAGRAM STYLES
    ====================================== */

@@ -26,7 +26,7 @@ window.TEUI.ParallelCoordinates = (function () {
       top: 60,                    // Space for axis labels
       right: 40,
       bottom: 20,
-      left: 40,
+      left: 70,                   // Increased for row label alignment (30px + original 40px)
     },
 
     // Visual styling
@@ -627,7 +627,7 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Table header - column labels align with graph axes above
     const thead = document.createElement("thead");
-    let headerHTML = '<tr>';
+    let headerHTML = '<tr><th style="width: 100px;"></th>'; // Empty cell for row labels
     axes.forEach(axis => {
       headerHTML += `<th class="text-center"><strong>${axis.label}</strong><br><small class="text-muted">${axis.unit}</small></th>`;
     });
@@ -640,7 +640,7 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Target row
     const targetRow = document.createElement("tr");
-    targetRow.innerHTML = '';
+    targetRow.innerHTML = `<td class="pc-row-label pc-target-cell"><strong>Target</strong></td>`;
     targetData.forEach(val => {
       targetRow.innerHTML += `<td class="text-center pc-target-cell">${val.toFixed(2)}</td>`;
     });
@@ -648,7 +648,7 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Reference row
     const referenceRow = document.createElement("tr");
-    referenceRow.innerHTML = '';
+    referenceRow.innerHTML = `<td class="pc-row-label pc-reference-cell"><strong>Reference</strong></td>`;
     referenceData.forEach(val => {
       referenceRow.innerHTML += `<td class="text-center pc-reference-cell">${val.toFixed(2)}</td>`;
     });
@@ -656,7 +656,7 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Delta row
     const deltaRow = document.createElement("tr");
-    deltaRow.innerHTML = '';
+    deltaRow.innerHTML = `<td class="pc-row-label"><strong>Δ</strong></td>`;
     axes.forEach((axis, i) => {
       const delta = targetData[i] - referenceData[i];
       let deltaClass = "";
@@ -671,7 +671,7 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Percent Delta row
     const percentRow = document.createElement("tr");
-    percentRow.innerHTML = '';
+    percentRow.innerHTML = `<td class="pc-row-label"><strong>%Δ</strong></td>`;
     axes.forEach((axis, i) => {
       const delta = targetData[i] - referenceData[i];
       const reference = referenceData[i];
@@ -685,6 +685,34 @@ window.TEUI.ParallelCoordinates = (function () {
       percentRow.innerHTML += `<td class="text-center ${deltaClass}">${percentDelta >= 0 ? "+" : ""}${percentDelta.toFixed(1)}%</td>`;
     });
     tbody.appendChild(percentRow);
+
+    // ========================================================================
+    // FINANCIAL ROWS (Dummy data - Phase 1)
+    // ========================================================================
+
+    // Reference Cost row
+    const refCostRow = document.createElement("tr");
+    refCostRow.innerHTML = `<td class="pc-row-label pc-reference-cell"><strong>Ref Cost</strong></td>`;
+    axes.forEach(() => {
+      refCostRow.innerHTML += `<td class="text-center pc-reference-cell">$0.00</td>`;
+    });
+    tbody.appendChild(refCostRow);
+
+    // Target Cost row
+    const targetCostRow = document.createElement("tr");
+    targetCostRow.innerHTML = `<td class="pc-row-label pc-target-cell"><strong>Target Cost</strong></td>`;
+    axes.forEach(() => {
+      targetCostRow.innerHTML += `<td class="text-center pc-target-cell">$0.00</td>`;
+    });
+    tbody.appendChild(targetCostRow);
+
+    // Savings row (Delta $)
+    const savingsRow = document.createElement("tr");
+    savingsRow.innerHTML = `<td class="pc-row-label text-success"><strong>Savings</strong></td>`;
+    axes.forEach(() => {
+      savingsRow.innerHTML += `<td class="text-center text-success">$0.00</td>`;
+    });
+    tbody.appendChild(savingsRow);
 
     table.appendChild(tbody);
     tableWrapper.appendChild(table);
