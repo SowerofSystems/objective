@@ -20,8 +20,8 @@ window.TEUI.ParallelCoordinates = (function () {
 
   const CONFIG = {
     // Layout
-    graphHeightPercent: 0.75,     // 75% for graph (adjusted from 80% to accommodate controls)
-    tableHeightPercent: 0.25,     // 25% for table
+    graphHeightPercent: 0.55,     // 55% for graph (275px of 500px container)
+    tableHeightPercent: 0.45,     // 45% for table (225px + padding)
     margin: {
       top: 60,                    // Space for axis labels
       right: 40,

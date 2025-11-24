@@ -1881,12 +1881,12 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
 /* Parallel Coordinates Container - activated state (500px for graph + table + future rows) */
 .parallel-coordinates-container.activated {
   height: 500px;
-  padding-bottom: 15px;
+  padding-bottom: 30px;
 }
 
 /* Parallel Coordinates Data Table Wrapper */
 .pc-data-table {
-  max-height: 200px;
+  max-height: 300px;
   overflow-y: auto;
   margin-bottom: 0; /* No margin - use container padding instead */
 }
