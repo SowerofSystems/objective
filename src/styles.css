@@ -1906,7 +1906,7 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
 
 /* Parallel Coordinates Table Cells - Reference color */
 .pc-data-table .pc-reference-cell {
-  color: #dc3545; /* Bootstrap danger red */
+  color: #dc3545 !important; /* Bootstrap danger red */
 }
 
 /* Parallel Coordinates Table - Row Labels */
