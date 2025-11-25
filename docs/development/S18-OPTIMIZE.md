@@ -1638,45 +1638,182 @@ savings = Target - Reference (if positive, otherwise $0)
 
 ---
 
-### ⚠️ OPEN QUESTION: nGains% Savings Logic (Nov 24 Late Evening)
+### ✅ CLARIFICATION: nGains% Savings Logic (Nov 24 Late Evening - RESOLVED)
 
-**Problem discovered:** nGains% is **percentage-based**, not absolute. This creates a paradox:
+**Initial confusion resolved:** nGains% is **thermal energy only**, not total electrical loads.
 
-**Scenario:**
+**Key insight from Andy:**
+> "nGains is dealing with thermal energy. And so it is correct that it can reduce thermal energy required, dependent on fuel type. Just because it is in kWh, increasing usable nGains will never for example, reduce plug loads. So the formula is correct to draw down heating THERMAL energy only, and not net electrical loads."
+
+**What this means:**
+- `i_80` represents **thermal kWh** that reduce **heating system demand** only
+- Internal gains offset heating fuel consumption (electric, gas, or oil for heating)
+- Internal gains do NOT reduce plug loads or other electrical consumption
+- The dollar value depends on the **heating fuel cost**, not total electrical cost
+
+**Scenario revisited (now makes sense):**
 - Both buildings have **40% nGains** (same percentage)
-- Reference building is "lossier" → needs MORE heating → 40% of larger number = **$31,438.26 avoided**
-- Target building is efficient → needs LESS heating → 40% of smaller number = **$29,225.29 avoided**
+- Reference building is "lossier" → needs MORE heating → 40% of larger demand = **$31,438.26 avoided heating cost**
+- Target building is efficient → needs LESS heating → 40% of smaller demand = **$29,225.29 avoided heating cost**
 
-**The paradox:**
-- Reference avoids MORE dollars (because it has more to avoid)
-- But Target is the BETTER building (needs less heating overall)
-- Current formula: Target - Reference = $29k - $31k = **-$2k → $0.00 savings shown**
+**Why this is correct:**
+- Reference building HAS more heating demand (worse envelope)
+- So its internal gains offset MORE heating fuel
+- Result: Reference gets MORE dollar value from the same 40% nGains
+- This accurately reflects that internal gains have more impact in leaky buildings!
 
-**Questions for Andy (to answer tomorrow):**
+**Savings calculation:**
+- Current formula: Target - Reference = $29k - $31k = **-$2k → $0.00 savings**
+- This is CORRECT because:
+  - When both have same nGains%, there's no additional benefit from optimization
+  - The Target's lower heating demand is already captured in other metrics (envelope, TB%, etc.)
+  - nGains% savings should show benefit of INCREASING nGains%, not reducing heating demand
 
-1. **Should savings be Ref - Target?**
-   - Would show $31k - $29k = $2k savings
-   - Interpretation: "Reference avoided $2k more than Target because it had more heating demand"
-   - But this is backwards from our "lower is better" principle
+**Testing scenarios:**
+- Target 50%, Reference 40% → Target avoids MORE from internal gains → Positive savings ✅
+- Target 40%, Reference 40% → Same nGains% → $0 savings (correct, as shown above) ✅
+- Target 30%, Reference 40% → Target avoids LESS from internal gains → $0 savings ✅
 
-2. **Should nGains% have NO savings calculation?**
-   - Just show Target Cost and Reference Cost rows
-   - Don't show Savings row for this metric
-   - Avoids the paradox entirely
-
-3. **Is there a different interpretation?**
-   - Maybe nGains% savings should compare the PERCENTAGE not the DOLLARS?
-   - Both at 40% = no delta = $0 savings (which current formula shows correctly!)
-
-**Current implementation:** Using reversed pattern (Target - Reference), but this may need revision.
-
-**Testing needed:** Try scenarios where:
-- Target has HIGHER nGains% than Reference (e.g., 50% vs 40%)
-- Target has LOWER nGains% than Reference (e.g., 30% vs 40%)
+**Current implementation:** ✅ CONFIRMED CORRECT - Using reversed pattern (Target - Reference)
 
 ---
 
-**Current Status:**
+## 📝 TB% Formula - READY TO IMPLEMENT
+
+**Formula: TB% (Thermal Bridging Penalty)**
+
+### What is TB%?
+
+TB% represents the **thermal bridging penalty** - additional heat loss through structural elements that bypass insulation:
+- Studs, joists, beams (wood or steel framing)
+- Window frames, door frames
+- Foundation connections
+- Balcony connections
+
+**The key concept:** Thermal bridges create "shortcuts" for heat to escape, increasing heating demand beyond what insulation alone would predict.
+
+**Value in dollars:** The value of thermal bridging loss (in kWh) × heating fuel cost.
+
+---
+
+### Implementation Logic
+
+**StateManager Fields:**
+- `i_97` / `ref_i_97` = Thermal bridging heat loss (kWh) - energy lost through thermal bridges
+- `d_114` / `ref_d_114` = Total heating system demand (thermal kWh)
+- `f_115` / `ref_f_115` = Oil heating volume (litres) - only populated if oil system
+- `l_12` / `ref_l_12` = Electricity rate ($/kWh)
+- `l_13` / `ref_l_13` = Gas rate ($/kWh)
+- `l_16` / `ref_l_16` = Oil rate ($/litre)
+
+---
+
+### Cost Calculation (Same Pattern as nGains%)
+
+**Thermal bridging loss is heating COST** (not benefit like nGains%). Lower TB% = less heat loss = better performance.
+
+**Savings calculation:**
+```
+Savings (kWh) = ref_i_97 - i_97
+```
+- Reference: i_97 = 1000 kWh lost → Target: i_97 = 500 kWh lost → Savings: 500 kWh avoided loss
+
+**Then convert kWh savings to dollars using heating fuel:**
+
+#### For Electric Heating:
+```javascript
+Cost = i_97 × l_12
+Savings = (ref_i_97 - i_97) × l_12
+```
+**Example:** (1000 - 500) kWh × $0.13/kWh = **$65 savings**
+
+#### For Gas Heating:
+```javascript
+Cost = i_97 × l_13
+Savings = (ref_i_97 - i_97) × l_13
+```
+**Example:** (1000 - 500) kWh × $0.075/kWh = **$37.50 savings**
+
+#### For Oil Heating:
+```javascript
+Cost = (i_97 / d_114) × f_115 × l_16
+Savings = ((ref_i_97 - i_97) / d_114) × f_115 × l_16
+```
+
+**Breaking it down:**
+1. `d_114` = Total heating demand (thermal kWh)
+2. `f_115` = Oil volume used for that heating (litres)
+3. `f_115 / d_114` = Litres of oil per thermal kWh (conversion ratio)
+4. `i_97 × (f_115 / d_114)` = Litres of oil for thermal bridging loss
+5. `Litres × l_16` = Dollar cost of thermal bridging
+
+**Example:**
+- ref_i_97 = 1,000 kWh bridging loss (Reference)
+- i_97 = 500 kWh bridging loss (Target)
+- d_114 = 10,000 kWh total heating demand
+- f_115 = 1,000 litres oil consumed
+- **Ratio** = 1,000 litres / 10,000 kWh = **0.1 litres/kWh**
+- **Ref oil for TB** = 1,000 kWh × 0.1 = **100 litres**
+- **Target oil for TB** = 500 kWh × 0.1 = **50 litres**
+- **Ref Cost** = 100 litres × $1.20/litre = **$120**
+- **Target Cost** = 50 litres × $1.20/litre = **$60**
+- **Savings** = $120 - $60 = **$60**
+
+---
+
+### Savings Logic (Standard Pattern)
+
+**TB% uses the STANDARD pattern** (like SHW%), NOT reversed (like DWHR% or nGains%).
+
+**Why standard?**
+- TB% represents a **COST** (heat loss), not a benefit
+- Lower TB% = LESS heat loss = LESS cost = better performance
+- Higher TB% = MORE heat loss = MORE cost = worse performance
+- This is the same as SHW% - we want lower costs
+
+**Formula:**
+```javascript
+savings = Reference - Target (if positive, otherwise $0)
+```
+
+**Examples:**
+
+**Example 1: Target is Better (Lower TB%)**
+- Reference: i_97 = 1000 kWh loss = $130 cost
+- Target: i_97 = 500 kWh loss = $65 cost
+- **Savings** = $130 - $65 = **$65**
+- Target has LESS thermal bridging → Lower cost → Positive savings ✅
+
+**Example 2: Reference is Better (Target has MORE TB%)**
+- Reference: i_97 = 500 kWh loss = $65 cost
+- Target: i_97 = 1000 kWh loss = $130 cost
+- **Savings** = $65 - $130 = -$65 → **$0**
+- Target has MORE thermal bridging → Higher cost → No positive savings ✅
+
+**Example 3: Same Performance**
+- Reference: i_97 = 750 kWh loss = $97.50 cost
+- Target: i_97 = 750 kWh loss = $97.50 cost
+- **Savings** = $97.50 - $97.50 = **$0**
+- Same thermal bridging → No savings ✅
+
+---
+
+### Summary: Pattern Classification (Updated)
+
+| Metric | Type | Savings Pattern | Reason |
+|--------|------|----------------|---------|
+| **SHW%** | Cost | Reference - Target | Lower energy cost is better |
+| **DWHR%** | Benefit | Target - Reference | Higher energy recovery is better |
+| **nGains%** | Benefit | Target - Reference | Higher avoided cost is better |
+| **TB%** | Cost | Reference - Target | Lower heat loss is better |
+
+**Rule of thumb:**
+- **Costs** (money spent on heating/energy loss): Standard pattern (Ref - Tar)
+  - Lower Target cost = savings
+- **Benefits** (money saved through efficiency/recovery): Reversed pattern (Tar - Ref)
+  - Higher Target benefit = savings
+
+---
 - 7 rows total: Target, Reference, Δ, %Δ, Ref Cost, Target Cost, Savings
 - Row labels functional and color-coded
 - Graph/table alignment fixed with table-layout: fixed

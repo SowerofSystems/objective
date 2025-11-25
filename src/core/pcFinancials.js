@@ -185,12 +185,64 @@ window.TEUI.pcFinancials = (function () {
 
     /**
      * TB% - Thermal Bridging Penalty
-     * TODO: Add formula when provided
+     * Cost = Value of heat loss through thermal bridges (kWh) in dollars
+     * Lower TB% = less heat loss = better performance
+     * Uses same fuel cost calculation as nGains%
      */
     thermal_bridge: {
-      target: () => 0,
-      reference: () => 0,
-      savings: () => 0
+      target: () => {
+        const thermalBridgingLoss = getValue('i_97');    // TB heat loss (thermal kWh) - TARGET
+        const heatingDemand = getValue('d_114');         // Total heating demand (kWh) - TARGET
+
+        if (heatingDemand === 0) return 0; // No heating system
+
+        // Get heating system fuel volume for oil (from Section 13)
+        const oilHeatingL = getValue('f_115');           // Oil heating (litres) - TARGET
+
+        // Get fuel rates (same as SHW% and nGains%)
+        const electricRate = getValue('l_12');           // $/kWh
+        const gasRate = getValue('l_13');                // $/kWh
+        const oilRate = getValue('l_16');                // $/litre
+
+        // Calculate cost based on heating fuel type (same pattern as nGains%)
+        // Whichever fuel is 0 contributes $0
+        const electricCost = thermalBridgingLoss * electricRate;
+        const gasCost = thermalBridgingLoss * gasRate;
+
+        // For oil: convert thermal kWh to litres, then apply rate
+        const oilLitresPerKWh = heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
+        const oilLitres = thermalBridgingLoss * oilLitresPerKWh;
+        const oilCost = oilLitres * oilRate;
+
+        // Sum all three (only one will be non-zero)
+        return electricCost + gasCost + oilCost;
+      },
+      reference: () => {
+        const thermalBridgingLoss = getValue('ref_i_97');
+        const heatingDemand = getValue('ref_d_114');
+
+        if (heatingDemand === 0) return 0;
+
+        const oilHeatingL = getValue('ref_f_115');
+        const electricRate = getValue('ref_l_12');
+        const gasRate = getValue('ref_l_13');
+        const oilRate = getValue('ref_l_16');
+
+        const electricCost = thermalBridgingLoss * electricRate;
+        const gasCost = thermalBridgingLoss * gasRate;
+
+        const oilLitresPerKWh = heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
+        const oilLitres = thermalBridgingLoss * oilLitresPerKWh;
+        const oilCost = oilLitres * oilRate;
+
+        return electricCost + gasCost + oilCost;
+      },
+      savings: function() {
+        // TB% represents heat LOSS (cost), not benefit
+        // Lower TB% = less cost = better, so use standard pattern (like SHW%)
+        const delta = this.reference() - this.target();
+        return delta > 0 ? delta : 0;
+      }
     },
 
     /**
