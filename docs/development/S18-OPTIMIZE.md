@@ -1853,6 +1853,444 @@ savings = Reference - Target (if positive, otherwise $0)
 
 ---
 
+## 🎮 INTERACTIVITY - Interactive Node Dragging (Future Feature)
+
+**Vision:** Allow users to click and drag nodes vertically to adjust parameter values in real-time, creating an interactive optimization exploration tool.
+
+### Feature Overview
+
+**The Concept:**
+- User clicks on an editable node (e.g., DWHR% efficiency)
+- Drags the node up/down along its vertical axis
+- Real-time modal shows the new percentage value as they drag
+- On release, the system updates StateManager and recalculates all dependent sections
+- Graph refreshes to show the impact of the change
+
+**Example Use Case:**
+- User drags DWHR% node from 0% to 50%
+- Modal shows "DWHR%: 50%" during drag
+- On release:
+  - Updates `d_52` (Target DWHR%) or `ref_d_52` (Reference DWHR%) in StateManager
+  - Triggers Section 7 recalculation
+  - Refreshes Section 18 Parallel Coordinates graph
+  - Updates all financial rows with new costs
+
+---
+
+### Technical Implementation Plan
+
+#### 1. Visual Design
+
+**Editable vs Non-Editable Nodes:**
+- **Editable nodes:** 2× size (radius = 8px instead of 4px)
+- **Non-editable nodes:** Normal size (radius = 4px)
+- **Visual indicators:**
+  - Editable nodes: Glow effect on hover (`filter: drop-shadow(0 0 4px color)`)
+  - Cursor changes to `grab` on hover, `grabbing` on drag
+  - Slightly transparent when dragging (opacity: 0.7)
+
+**Editable Axes (Initial Set):**
+- DWHR% (d_52 / ref_d_52) - Range: 0-70%
+- SHW% (conditional field - TBD)
+- HEAT% (conditional field - TBD)
+- MVHR% (conditional field - TBD)
+
+#### 2. D3.js Drag Behavior
+
+**✅ CRITICAL ARCHITECTURAL REQUIREMENTS:**
+
+1. **1-interval steps**: Values snap to whole numbers (1.00, 2.00, 3.00) matching S07 slider behavior
+2. **Both Target and Reference draggable**: Users can adjust parameters in both modes
+3. **OnRelease updates only**: Prevents calculation storms from streaming intermediate values
+4. **ModeManager integration**: Follows 4012-CHEATSHEET.md refreshUI() → calculateAll() → updateCalculatedDisplayValues() pattern
+5. **CSS styling only**: No inline styles - all styling in global styles.css Section 18 block
+
+```javascript
+// In ParallelCoordinates.js
+
+/**
+ * Configuration for editable axes
+ * Each axis defines fields, bounds, step size, and owning section
+ */
+const editableAxes = {
+  'dwhr_efficiency': {
+    targetField: 'd_52',        // Target DWHR%
+    refField: 'ref_d_52',       // Reference DWHR%
+    min: 0,
+    max: 70,
+    step: 1,                    // ✅ CRITICAL: 1-interval steps (matches S07 behavior)
+    unit: '%',
+    label: 'DWHR%',
+    owningSection: 'sect07'     // Section that owns this parameter
+  },
+  // Add more editable axes here
+};
+
+/**
+ * Initialize drag behavior for editable nodes
+ * Applies D3 drag handler to nodes where axis is marked editable
+ */
+function initializeDragBehavior() {
+  const drag = d3.drag()
+    .on('start', dragStarted)
+    .on('drag', dragging)
+    .on('end', dragEnded);
+
+  // Apply drag to editable nodes only
+  svg.selectAll('.data-point')
+    .filter(d => editableAxes[d.axisId])
+    .call(drag)
+    .classed('pc-editable-node', true);  // ✅ CSS class for styling (2× size, cursor, glow)
+}
+
+/**
+ * Drag start handler
+ * Shows modal and applies dragging visual state
+ */
+function dragStarted(event, d) {
+  d3.select(this)
+    .classed('pc-dragging', true);  // ✅ CSS class for dragging state (opacity, cursor)
+
+  showDragModal(d);
+}
+
+/**
+ * Drag handler (fires continuously during drag)
+ * Updates node position and modal display
+ * ⚠️ NO STATE UPDATES - only visual feedback
+ */
+function dragging(event, d) {
+  const axisConfig = editableAxes[d.axisId];
+  const axisScale = scales[d.axisId]; // Y-scale for this axis
+
+  // Constrain drag to axis bounds
+  const newY = Math.max(axisScale.range()[0], Math.min(axisScale.range()[1], event.y));
+
+  // Convert Y position back to value
+  let newValue = axisScale.invert(newY);
+
+  // ✅ CRITICAL: Snap to 1-interval steps (like S07 sliders)
+  newValue = Math.round(newValue / axisConfig.step) * axisConfig.step;
+
+  // Clamp to min/max
+  const clampedValue = Math.max(axisConfig.min, Math.min(axisConfig.max, newValue));
+
+  // Update node position (visual only)
+  d3.select(this).attr('cy', axisScale(clampedValue));
+
+  // Update modal display (visual only)
+  updateDragModal(axisConfig.label, clampedValue, axisConfig.unit);
+}
+
+/**
+ * Drag end handler (fires once on mouse release)
+ * Updates StateManager and triggers recalculation
+ * ✅ CRITICAL: OnRelease update only (no intermediate calculations)
+ */
+function dragEnded(event, d) {
+  d3.select(this)
+    .classed('pc-dragging', false);  // ✅ Remove dragging state
+
+  const axisConfig = editableAxes[d.axisId];
+  const axisScale = scales[d.axisId];
+
+  // Get final value with 1-interval snapping
+  let finalValue = axisScale.invert(event.y);
+  finalValue = Math.round(finalValue / axisConfig.step) * axisConfig.step;
+  const clampedValue = Math.max(axisConfig.min, Math.min(axisConfig.max, finalValue));
+
+  // ✅ CRITICAL: Update StateManager (triggers owning section's listeners)
+  const fieldId = d.mode === 'target' ? axisConfig.targetField : axisConfig.refField;
+  window.TEUI.StateManager.setValue(fieldId, clampedValue, 'user-modified');
+
+  // ✅ CRITICAL: Follow 4012-CHEATSHEET.md pattern
+  // 1. StateManager update triggers owning section's calculateAll() (both engines)
+  // 2. Then call refreshUI() to update input fields
+  // 3. Then call updateCalculatedDisplayValues() to update DOM
+  // 4. Finally refresh S18 to show new visualization
+  const section = window.TEUI.SectionModules[axisConfig.owningSection];
+  if (section) {
+    section.calculateAll();
+    if (section.ModeManager) {
+      section.ModeManager.refreshUI();
+      section.ModeManager.updateCalculatedDisplayValues();
+    }
+  }
+
+  // Refresh S18 Parallel Coordinates to show updated values
+  refresh();
+
+  // Hide modal
+  hideDragModal();
+}
+```
+
+**Key CSS Classes** (defined in `src/styles.css` Section 18 block):
+
+```css
+/* Editable nodes - 2× size (8px radius) */
+.pc-editable-node {
+  r: 8px;
+  cursor: grab;
+  filter: drop-shadow(0 0 2px rgba(0, 123, 255, 0.5)); /* Subtle glow */
+}
+
+.pc-editable-node:hover {
+  filter: drop-shadow(0 0 4px rgba(0, 123, 255, 0.8)); /* Stronger glow on hover */
+}
+
+/* Dragging state - reduced opacity, grabbing cursor */
+.pc-dragging {
+  cursor: grabbing !important;
+  opacity: 0.7;
+}
+```
+
+#### 3. Drag Modal Implementation
+
+```javascript
+function showDragModal(nodeData) {
+  const modal = document.createElement('div');
+  modal.id = 'pc-drag-modal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border: 2px solid #0d6efd;
+    border-radius: 8px;
+    padding: 20px 40px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    z-index: 10000;
+    font-size: 24px;
+    font-weight: bold;
+    color: #0d6efd;
+    pointer-events: none;
+  `;
+  document.body.appendChild(modal);
+}
+
+function updateDragModal(label, value, unit) {
+  const modal = document.getElementById('pc-drag-modal');
+  if (modal) {
+    modal.textContent = `${label}: ${value.toFixed(1)}${unit}`;
+  }
+}
+
+function hideDragModal() {
+  const modal = document.getElementById('pc-drag-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+```
+
+#### 4. Recalculation Flow
+
+```javascript
+function recalculateAndRefresh(fieldId) {
+  // 1. Determine which section owns this field
+  const sectionMap = {
+    'd_52': 'sect07',      // DWHR% Target
+    'ref_d_52': 'sect07',  // DWHR% Reference
+    // Add more field → section mappings
+  };
+
+  const sectionId = sectionMap[fieldId];
+
+  if (!sectionId) {
+    console.warn(`No section found for field ${fieldId}`);
+    return;
+  }
+
+  // 2. Recalculate the owning section
+  const section = window.TEUI.SectionModules[sectionId];
+  if (section && section.calculateAll) {
+    section.calculateAll();
+  }
+
+  // 3. Recalculate dependent sections (if any)
+  // Example: DWHR affects total energy, which affects other metrics
+  // This would be handled by FieldManager's dependency tracking
+
+  // 4. Refresh Section 18 Parallel Coordinates
+  refresh();
+
+  // 5. Optional: Show success notification
+  showNotification(`${fieldId} updated successfully`);
+}
+```
+
+#### 5. Integration with Existing Systems
+
+**StateManager Integration:**
+- Use existing `setValue()` to update values
+- Triggers existing recalculation chain
+- ReferenceToggle state determines which value to update (target vs reference)
+
+**Section 7 Integration:**
+- Section 7 already has `calculateAll()` for DWHR
+- Slider at `d_52` would automatically update when StateManager changes
+- Visual feedback: Slider moves to match the new value
+
+**Validation:**
+- Constrain drag to min/max bounds per axis
+- Prevent invalid values (negative percentages, etc.)
+- Show validation errors if needed
+
+#### 6. User Experience Enhancements
+
+**Before Drag:**
+- Tooltip on hover: "Click and drag to adjust DWHR%"
+- Editable nodes glow on hover
+
+**During Drag:**
+- Large modal shows current value
+- Node follows mouse vertically (constrained to axis)
+- Line connecting to node updates in real-time
+- Opacity reduces to show it's being edited
+
+**After Release:**
+- Node snaps to final position
+- Modal fades out
+- Success notification: "DWHR% updated to 50%"
+- All affected values recalculate and update
+
+**Undo/Redo (Optional):**
+- Store previous value before drag
+- Provide "Undo" button in notification
+- Could integrate with browser history API
+
+#### 7. Performance Considerations
+
+**Optimization Strategies:**
+- Throttle drag events (update every 50ms, not every frame)
+- Debounce final recalculation (wait 200ms after release)
+- Cache scale functions to avoid recalculation
+- Only refresh affected sections, not entire DOM
+
+**Large Datasets:**
+- For complex calculations, show loading spinner during recalculation
+- Consider web workers for heavy computation
+- Progressive rendering if needed
+
+---
+
+### Implementation Phases
+
+**Phase 1: Proof of Concept (Single Axis)**
+1. ✅ Identify DWHR% as first editable axis
+2. [ ] Add drag behavior to DWHR% nodes only
+3. [ ] Implement basic modal showing value during drag
+4. [ ] Update StateManager on release
+5. [ ] Trigger Section 7 recalculation
+6. [ ] Verify slider updates correctly
+
+**Phase 2: Multi-Axis Support**
+1. [ ] Define `editableAxes` configuration object
+2. [ ] Apply drag to all editable axes
+3. [ ] Visual distinction (2× size) for editable nodes
+4. [ ] Test with multiple efficiency axes (DWHR%, HEAT%, MVHR%)
+
+**Phase 3: Polish & UX**
+1. [ ] Add glow effect on hover
+2. [ ] Smooth animations (node movement, modal fade)
+3. [ ] Success notifications
+4. [ ] Error handling (invalid values, failed calculations)
+5. [ ] Loading states for slow recalculations
+
+**Phase 4: Advanced Features**
+1. [ ] Undo/redo functionality
+2. [ ] Keyboard support (arrow keys to adjust)
+3. [ ] Snap-to-grid option (5% increments)
+4. [ ] Batch updates (drag multiple nodes, apply all at once)
+
+---
+
+### Configuration Template
+
+**Adding a New Editable Axis:**
+
+```javascript
+// In pcConfig.js or ParallelCoordinates.js
+
+const editableAxes = {
+  'axis_id': {
+    targetField: 'field_id',      // StateManager field for Target
+    refField: 'ref_field_id',     // StateManager field for Reference
+    min: 0,                       // Minimum allowed value
+    max: 100,                     // Maximum allowed value
+    step: 1,                      // Optional: snap increment (e.g., 5% steps)
+    unit: '%',                    // Display unit
+    label: 'Axis Label',          // Display name
+    owningSection: 'sect07',      // Section to recalculate
+    validation: (val) => val >= 0 && val <= 100  // Optional custom validation
+  }
+};
+```
+
+---
+
+### Testing Checklist
+
+- [ ] Drag constrained to axis bounds (doesn't go off-screen)
+- [ ] Values clamp to min/max correctly
+- [ ] Modal updates smoothly during drag
+- [ ] StateManager updates on release
+- [ ] Section 7 recalculates correctly
+- [ ] S18 graph refreshes with new values
+- [ ] Financial costs update accordingly
+- [ ] Works for both Target and Reference nodes
+- [ ] Handles rapid dragging without lag
+- [ ] Multiple consecutive drags work correctly
+- [ ] Browser console shows no errors
+- [ ] Mobile/touch support (if applicable)
+
+---
+
+### Open Questions
+
+1. **Which axes should be editable initially?**
+   - DWHR% ✅ confirmed
+   - SHW%, HEAT%, MVHR%? (conditional axes - need field mapping)
+   - Envelope parameters (Ag, Ae)? (may be calculated, not direct inputs)
+
+2. ~~**Should Reference nodes be draggable?**~~ ✅ RESOLVED
+   - **Decision:** YES - Both Target and Reference nodes draggable
+   - Allows users to adjust baseline/code requirements for comparison
+   - ModeManager/StateManager handles ref_ prefix automatically
+
+3. ~~**Real-time vs On-Release updates?**~~ ✅ RESOLVED
+   - **Decision:** On-release with live modal preview
+   - OnRelease prevents calculation storms from streaming intermediate values
+   - Modal shows value during drag for immediate visual feedback
+   - Recalculation only triggers once on mouse release
+
+4. ~~**Step size for dragging?**~~ ✅ RESOLVED
+   - **Decision:** 1-interval steps (1.00, 2.00, 3.00)
+   - Matches Section 7 slider behavior for consistency
+   - Implemented via `Math.round(value / step) * step` snapping
+
+5. **Undo functionality priority?**
+   - High value for users exploring scenarios
+   - Could be Phase 2 or 4 feature
+
+---
+
+### Benefits of This Feature
+
+✅ **Interactive Exploration:** Users can instantly see impact of parameter changes
+✅ **Visual Feedback:** Graph updates in real-time show optimization paths
+✅ **Scenario Testing:** Quickly test "what-if" scenarios without navigating away
+✅ **Intuitive Interface:** Dragging is more natural than typing numbers
+✅ **Educational:** Helps users understand parameter relationships
+✅ **Pro Version Differentiator:** Advanced interactive feature for paid tier
+
+---
+
+**This feature would be PHENOMENAL for user engagement and making optimization tangible!** 🚀
+
 ## PREVIOUS ATTEMPTS (Historical Record)
 
 ### REFACTOR ATTEMPT #2 - FAILED (November 24, 2025 - Late Session)
