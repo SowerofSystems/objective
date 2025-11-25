@@ -2145,7 +2145,7 @@ Interactive node dragging in S18 is essentially a **remote control** for paramet
 │  User drags DWHR% node ────┐                            │
 │                             │                           │
 │  dragEnded():               │                           │
-│    setValue('d_52', 50) ────┼──→ StateManager           │
+│    setValue('d_53', 50) ────┼──→ StateManager           │
 │    refresh()                │         ↓                 │
 └─────────────────────────────┼─────────┼─────────────────┘
                               │         │
@@ -2155,7 +2155,7 @@ Interactive node dragging in S18 is essentially a **remote control** for paramet
 │  SECTION 7 (Water Use)      │         │                 │
 │                              │        │                 │
 │  Listener registered: ←──────┘        │                 │
-│    d_52 → calculateAll()              │                 │
+│    d_53 → calculateAll()              │                 │
 │         → refreshUI()                 │                 │
 │         → slider moves to 50% ←───────┘                 │
 │                                                         │

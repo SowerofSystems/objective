@@ -1071,21 +1071,41 @@ window.TEUI.ParallelCoordinates = (function () {
     const axisConfig = EDITABLE_AXES[d.axisId];
     const clampedValue = d.value; // Get final value from dragging
 
-    // Update StateManager AND owning section
-    const fieldId = d.mode === 'target' ? axisConfig.targetField : axisConfig.refField;
-    console.log(`[ParallelCoordinates] Drag ended: ${fieldId} = ${clampedValue}`);
+    // Determine field ID and state to update based on which node was dragged
+    const baseFieldId = axisConfig.targetField;
+    const isTarget = d.mode === 'target';
+    const fieldId = isTarget ? baseFieldId : `ref_${baseFieldId}`;
 
-    // 1. Update StateManager (triggers downstream dependencies)
-    if (window.TEUI?.StateManager) {
-      window.TEUI.StateManager.setValue(fieldId, clampedValue, 'user-modified');
-    }
+    console.log(`[ParallelCoordinates] Drag ended: ${fieldId} = ${clampedValue} (node mode: ${d.mode})`);
 
-    // 2. Directly call owning section's calculateAll() (Pattern A compliant)
-    // This is necessary because sections don't listen to their own fields
+    // Get owning section
     const owningSection = window.TEUI?.SectionModules?.[axisConfig.owningSection];
-    if (owningSection?.calculateAll) {
-      owningSection.calculateAll();
-      console.log(`[ParallelCoordinates] Called ${axisConfig.owningSection}.calculateAll()`);
+
+    if (owningSection) {
+      // 1. Update the appropriate internal state (TargetState or ReferenceState)
+      const targetState = isTarget ? owningSection.TargetState : owningSection.ReferenceState;
+      if (targetState) {
+        targetState.setValue(baseFieldId, clampedValue.toString());
+        console.log(`[ParallelCoordinates] Updated ${isTarget ? 'Target' : 'Reference'}State.${baseFieldId} = ${clampedValue}`);
+      }
+
+      // 2. Update StateManager (for cross-section communication)
+      if (window.TEUI?.StateManager) {
+        window.TEUI.StateManager.setValue(fieldId, clampedValue.toString(), 'user-modified');
+        console.log(`[ParallelCoordinates] Updated StateManager.${fieldId} = ${clampedValue}`);
+      }
+
+      // 3. Call calculateAll() to recalculate (Pattern A compliant)
+      if (owningSection.calculateAll) {
+        owningSection.calculateAll();
+        console.log(`[ParallelCoordinates] Called ${axisConfig.owningSection}.calculateAll()`);
+      }
+
+      // 4. Refresh UI to show updated slider position
+      if (owningSection.ModeManager) {
+        owningSection.ModeManager.refreshUI();
+        console.log(`[ParallelCoordinates] Called ${axisConfig.owningSection}.ModeManager.refreshUI()`);
+      }
     }
 
     // 3. Refresh S18 to show updated graph
