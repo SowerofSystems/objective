@@ -1388,7 +1388,9 @@ window.TEUI.ParallelCoordinates = (function () {
         console.log(`[ParallelCoordinates] Called ${axisConfig.owningSection}.calculateAll()`);
       }
 
-      // 4. Refresh UI to show updated slider position
+      // 4. Refresh UI to show updated values and dropdown state
+      // For ACH50: refreshUI() will update both d_108 dropdown and g_109 field,
+      // and call handleConditionalEditability() to enable/disable g_109 based on d_108
       if (owningSection.ModeManager) {
         owningSection.ModeManager.refreshUI();
         console.log(`[ParallelCoordinates] Called ${axisConfig.owningSection}.ModeManager.refreshUI()`);
