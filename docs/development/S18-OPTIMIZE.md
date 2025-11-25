@@ -1999,25 +1999,16 @@ function dragEnded(event, d) {
   finalValue = Math.round(finalValue / axisConfig.step) * axisConfig.step;
   const clampedValue = Math.max(axisConfig.min, Math.min(axisConfig.max, finalValue));
 
-  // ✅ CRITICAL: Update StateManager (triggers owning section's listeners)
+  // ✅ CRITICAL: Update StateManager - listeners handle the rest automatically!
+  // StateManager.setValue() triggers registered listeners in owning section:
+  //   1. Section's StateManager listener → calculateAll() (both Target & Reference engines)
+  //   2. ModeManager.refreshUI() → updates input fields (slider moves to new position)
+  //   3. updateCalculatedDisplayValues() → updates DOM with calculated results
+  // Example: d_52 change → S07 listener fires → S07.calculateAll() → slider updates
   const fieldId = d.mode === 'target' ? axisConfig.targetField : axisConfig.refField;
   window.TEUI.StateManager.setValue(fieldId, clampedValue, 'user-modified');
 
-  // ✅ CRITICAL: Follow 4012-CHEATSHEET.md pattern
-  // 1. StateManager update triggers owning section's calculateAll() (both engines)
-  // 2. Then call refreshUI() to update input fields
-  // 3. Then call updateCalculatedDisplayValues() to update DOM
-  // 4. Finally refresh S18 to show new visualization
-  const section = window.TEUI.SectionModules[axisConfig.owningSection];
-  if (section) {
-    section.calculateAll();
-    if (section.ModeManager) {
-      section.ModeManager.refreshUI();
-      section.ModeManager.updateCalculatedDisplayValues();
-    }
-  }
-
-  // Refresh S18 Parallel Coordinates to show updated values
+  // Refresh S18 Parallel Coordinates to show updated graph
   refresh();
 
   // Hide modal
@@ -2086,58 +2077,79 @@ function hideDragModal() {
 }
 ```
 
-#### 4. Recalculation Flow
+#### 4. Recalculation Flow (Automatic via StateManager Listeners)
+
+**✅ SIMPLIFIED ARCHITECTURE**: No manual recalculation needed!
+
+The existing StateManager listener system handles all recalculation automatically:
 
 ```javascript
+// ❌ OLD APPROACH (over-engineered, not needed):
 function recalculateAndRefresh(fieldId) {
-  // 1. Determine which section owns this field
-  const sectionMap = {
-    'd_52': 'sect07',      // DWHR% Target
-    'ref_d_52': 'sect07',  // DWHR% Reference
-    // Add more field → section mappings
-  };
-
-  const sectionId = sectionMap[fieldId];
-
-  if (!sectionId) {
-    console.warn(`No section found for field ${fieldId}`);
-    return;
-  }
-
-  // 2. Recalculate the owning section
-  const section = window.TEUI.SectionModules[sectionId];
-  if (section && section.calculateAll) {
-    section.calculateAll();
-  }
-
-  // 3. Recalculate dependent sections (if any)
-  // Example: DWHR affects total energy, which affects other metrics
-  // This would be handled by FieldManager's dependency tracking
-
-  // 4. Refresh Section 18 Parallel Coordinates
+  const section = window.TEUI.SectionModules['sect07'];
+  section.calculateAll();
+  section.ModeManager.refreshUI();
   refresh();
-
-  // 5. Optional: Show success notification
-  showNotification(`${fieldId} updated successfully`);
 }
+
+// ✅ NEW APPROACH (automatic via listeners):
+// Just update StateManager - listeners do the rest!
+window.TEUI.StateManager.setValue('d_52', newValue, 'user-modified');
+refresh(); // Only S18 needs explicit refresh
 ```
+
+**How StateManager Listeners Work:**
+
+1. **Registration** (happens during section initialization):
+   ```javascript
+   // In Section07.js (or any section)
+   window.TEUI.StateManager.addListener('d_52', (newValue) => {
+     TargetState.setValue('d_52', newValue);
+     calculateAll(); // Runs both Target and Reference engines
+   });
+   ```
+
+2. **Trigger** (happens when S18 updates the value):
+   ```javascript
+   // In ParallelCoordinates.js dragEnded()
+   window.TEUI.StateManager.setValue('d_52', 50, 'user-modified');
+   // ↓ StateManager publishes to all registered listeners
+   // ↓ Section 7's listener fires automatically
+   // ↓ calculateAll() runs
+   // ↓ ModeManager.refreshUI() updates the slider
+   // ↓ Done! No manual intervention needed.
+   ```
+
+3. **Result**:
+   - S07 slider moves to new position (50%)
+   - S07 calculations update with new DWHR value
+   - All dependent calculations cascade automatically
+   - S18 calls `refresh()` to redraw graph with new data
+
+**Benefits:**
+- ✅ Decoupled architecture (S18 doesn't need to know about S07)
+- ✅ No manual section lookup or calls needed
+- ✅ Works with any registered listener across all sections
+- ✅ Follows 4012-CHEATSHEET.md event-driven pattern
 
 #### 5. Integration with Existing Systems
 
 **StateManager Integration:**
-- Use existing `setValue()` to update values
-- Triggers existing recalculation chain
-- ReferenceToggle state determines which value to update (target vs reference)
+- ✅ Use existing `setValue()` - automatically triggers registered listeners
+- ✅ No manual section lookups or calls needed
+- ✅ Works for both Target (`d_52`) and Reference (`ref_d_52`) fields
 
-**Section 7 Integration:**
-- Section 7 already has `calculateAll()` for DWHR
-- Slider at `d_52` would automatically update when StateManager changes
-- Visual feedback: Slider moves to match the new value
+**Section 7 Integration (Example):**
+- ✅ S07 already has StateManager listener for `d_52` registered
+- ✅ Listener automatically calls `calculateAll()` when value changes
+- ✅ Slider updates automatically via `ModeManager.refreshUI()`
+- ✅ No additional code needed in S07!
 
 **Validation:**
-- Constrain drag to min/max bounds per axis
-- Prevent invalid values (negative percentages, etc.)
-- Show validation errors if needed
+- ✅ Drag constrained to axis Y-bounds (can't go off-screen)
+- ✅ Values clamped to min/max per axis config (0-70 for DWHR%)
+- ✅ 1-interval snapping prevents fractional values
+- ✅ Invalid states prevented by design (no negative percentages possible)
 
 #### 6. User Experience Enhancements
 
