@@ -643,19 +643,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // DRAW DATA POINTS (optional, for clarity)
     // ====================================================================
 
-    // Target points
-    axes.forEach((axis, i) => {
-      svg
-        .append("circle")
-        .attr("cx", xScale(i))
-        .attr("cy", yScales[i](targetData[i]))
-        .attr("r", 4)
-        .style("fill", CONFIG.colors.target)
-        .style("stroke", "white")
-        .style("stroke-width", 2);
-    });
-
-    // Reference points
+    // Reference points (draw first, so they're behind)
     axes.forEach((axis, i) => {
       svg
         .append("circle")
@@ -663,6 +651,18 @@ window.TEUI.ParallelCoordinates = (function () {
         .attr("cy", yScales[i](referenceData[i]))
         .attr("r", 4)
         .style("fill", CONFIG.colors.reference)
+        .style("stroke", "white")
+        .style("stroke-width", 2);
+    });
+
+    // Target points (draw last, so they're on top for easier clicking)
+    axes.forEach((axis, i) => {
+      svg
+        .append("circle")
+        .attr("cx", xScale(i))
+        .attr("cy", yScales[i](targetData[i]))
+        .attr("r", 4)
+        .style("fill", CONFIG.colors.target)
         .style("stroke", "white")
         .style("stroke-width", 2);
     });
