@@ -61,3 +61,21 @@ docs/
 - Read @docs/CLAUDE.md for detailed architecture, workflows, and troubleshooting
 - Respect PR queue - proper GitHub etiquette is critical
 - Test dual-state functionality - never break Target/Reference isolation
+- Follow user requests for commits and pushes, don't assume every code tweak needs a commit, don't assume every commit needs a push
+- the user prefers to test so broken code is not comimtted. 
+
+## Committing Changes
+   - Make atomic commits with clear messages
+   - Follow commit format: `Type: Brief description`
+   - Types: `Feat`, `Fix`, `Refactor`, `Docs`, `Improve`, `Clean`
+   - **Always use HEREDOC syntax** for commit messages to ensure proper formatting:
+     ```bash
+     git commit -m "$(cat <<'EOF'
+     Type: Brief description of the change
+
+     🤖 Co-Generated with [Claude Code](https://claude.com/claude-code)
+
+     Co-Authored-By: Andy & Claude <andy@openbuilding.ca>
+     EOF
+     )"
+     ```

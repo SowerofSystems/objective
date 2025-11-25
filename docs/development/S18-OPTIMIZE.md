@@ -2675,6 +2675,129 @@ The graph interaction must respect this constraint while providing intuitive dra
 
 **Note:** Lower TB% is better (less heat loss). Savings calculation already handles this correctly in pcFinancials.js.
 
+##### ACH50 (Air Changes per Hour at 50Pa) - Section 12 ✅ IMPLEMENTED ⚠️ KNOWN BUG
+
+**Implementation Date:** November 25, 2025
+
+```javascript
+'ach50': {
+  targetField: 'g_109',       // Write to measured value field
+  refField: 'ref_g_109',      // Reference measured value
+  dropdownField: 'd_108',     // Blower door method selector (will be set to "MEASURED")
+  refDropdownField: 'ref_d_108',
+  min: 0.10,                  // Super tight (Passive House level)
+  max: 10.0,                  // Very leaky
+  step: 0.10,                 // 0.10 intervals (0.10, 0.20, 0.30, ..., 1.30, ...)
+  isDecimal: true,            // Store with decimal precision (1.30, not 1)
+  unit: '',                   // No unit - label already says ACH50
+  label: 'ACH50',
+  owningSection: 'sect12'     // Section 12
+}
+```
+
+**Display Configuration (pcConfig.js):**
+```javascript
+{
+  id: "ach50",
+  label: "ACH50",
+  unit: "",
+  description: "Air Changes per Hour at 50Pa (airtightness)",
+  optimal: "lower",
+  targetField: "d_109",      // Display field (calculated) - NOT g_109
+  referenceField: "ref_d_109", // Reference display field - NOT ref_g_109
+  domain: [0, 10.0]
+}
+```
+
+**⚠️ IMPORTANT - Dual Field Pattern:**
+- **Write fields** (EDITABLE_AXES): `g_109` / `ref_g_109` (measured ACH50 input, only editable when d_108="MEASURED")
+- **Display fields** (pcConfig.js): `d_109` / `ref_d_109` (calculated ACH50 result, always readable)
+- Section 12 publishes **d_109/ref_d_109** to StateManager for other sections to read
+- ParallelCoordinates writes to **g_109/ref_g_109** and flips dropdown to "MEASURED"
+
+**Storage Format:**
+- **Decimal precision required** - stores as "1.30", not "1"
+- Uses `isDecimal: true` flag to trigger `.toFixed(2)` formatting
+- Avoids Math.round() which would lose precision (1.30 → 1)
+- Modal displays 2 decimal places for ACH50 vs 1 decimal for other axes
+
+**Interactive Behavior:**
+- Snaps to 0.10 intervals during drag (0.10, 0.20, 0.30, ..., 1.30, ...)
+- Lower ACH50 = tighter envelope = better airtightness
+- Modal shows red for Reference, blue for Target
+- Graph updates immediately on drag; section recalculates on release
+
+**Special Dropdown Flip Logic:**
+When ACH50 node is dragged, Section 18 automatically:
+1. Sets d_108 (or ref_d_108) dropdown to "MEASURED" method
+2. Updates TargetState or ReferenceState with dropdown change
+3. Updates StateManager with dropdown change
+4. This enables g_109 field to become editable (conditional editability)
+5. Writes the new ACH50 value to g_109 (or ref_g_109)
+6. Section 12's refreshUI() updates both dropdown and value
+
+**Pattern A Flow:**
+1. User drags ACH50 Target node to 1.30
+2. `dragEnded()` switches Section 12 to Target mode
+3. **Step 0.5 (Special):** Updates d_108 = "MEASURED" in TargetState and StateManager
+4. Updates TargetState with g_109 = "1.30"
+5. Updates StateManager with g_109 = "1.30"
+6. Calls `sect12.calculateAll()` to recalculate airtightness
+7. Calls `sect12.ModeManager.refreshUI()` to update dropdown and value
+8. Section 12 dropdown shows "MEASURED", g_109 shows 1.30, d_109 (calculated) reads from g_109
+
+**⚠️ KNOWN BUG - UI Refresh Cross-Contamination:**
+
+**Symptom:**
+- When dragging Reference ACH50 node, both Target AND Reference UI in Section 12 display the Reference value
+- When dragging Target ACH50 node, both Target AND Reference UI in Section 12 display the Target value
+- Last edited value appears in both modes, even though StateManager has correct separate values
+
+**What Works Correctly:**
+- ✅ Dropdown d_108 correctly flips to "MEASURED" in both Target and Reference modes
+- ✅ StateManager has correct separate values (ref_g_109 vs g_109)
+- ✅ Calculations in Section 01 use correct values (no cross-contamination)
+- ✅ Graph rendering in Section 18 uses correct values from d_109/ref_d_109
+
+**What's Broken:**
+- ❌ Section 12 UI displays g_109 value in both modes regardless of which was last edited
+- ❌ UI reads last written value instead of mode-aware value
+
+**Root Cause (Suspected):**
+The `baseFieldId` logic in `dragEnded()` (line 1301) always uses `axisConfig.targetField` for state updates. For ACH50, targetField is `g_109` for BOTH Target and Reference writes. When we update the internal state (TargetState/ReferenceState), we need to ensure we're using the base field name (without ref_ prefix) but the UI refresh needs to distinguish which mode's state to read from.
+
+**Example of Bug:**
+1. Start with Target g_109 = 1.00, Reference ref_g_109 = 2.00
+2. Drag Reference node to 1.30
+3. StateManager correctly has: g_109 = 1.00, ref_g_109 = 1.30 ✅
+4. Section 12 Target mode UI shows: 1.30 ❌ (should show 1.00)
+5. Section 12 Reference mode UI shows: 1.30 ✅ (correct)
+6. Switch back to Target mode, then drag Target node to 0.80
+7. StateManager correctly has: g_109 = 0.80, ref_g_109 = 1.30 ✅
+8. Section 12 Target mode UI shows: 0.80 ✅ (correct)
+9. Section 12 Reference mode UI shows: 0.80 ❌ (should show 1.30)
+
+**Impact:**
+- Low severity - only affects Section 12 UI display
+- Calculations remain accurate (StateManager has correct values)
+- Other sections reading from d_109/ref_d_109 work correctly
+- Does NOT affect financial calculations, TEUI/GHGI results, or graph rendering
+
+**Fix Needed:**
+Review how other sections handle mode-aware UI refresh when writing to the same base field from both Target and Reference contexts. The issue is likely in how Section 12's `refreshUI()` or `handleConditionalEditability()` reads the g_109 value - it should read from the current mode's state, not from the last written value.
+
+**Temporary Workaround:**
+Users should verify values by checking:
+1. StateManager values (correct) via console: `window.TEUI.StateManager.getValue('g_109')` and `window.TEUI.StateManager.getValue('ref_g_109')`
+2. Graph rendering (correct) - Section 18 reads from d_109/ref_d_109
+3. Section 01 calculations (correct) - uses StateManager values
+
+**Next Steps:**
+1. Document pattern used in other sections for write vs display field patterns
+2. Review Section 12's refreshUI() logic for mode-aware field reading
+3. Ensure TargetState/ReferenceState updates correctly distinguish base field names
+4. Test fix with other write/display field patterns if they exist
+
 ##### HEAT% (Heating System Efficiency) - Section 13
 ```javascript
 'heating_efficiency': {
