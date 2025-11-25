@@ -485,15 +485,25 @@ window.TEUI.ParallelCoordinates = (function () {
       const dataMin = Math.min(targetVal, refVal);
       const dataMax = Math.max(targetVal, refVal);
 
-      // Expand domain if data exceeds configured domain
+      // Check if this axis has conditional domain (like SHW%)
+      const axisConfig = EDITABLE_AXES[axis.id];
       let [domainMin, domainMax] = axis.domain;
 
-      // Add 10% padding to accommodate outliers
-      if (dataMin < domainMin) {
-        domainMin = dataMin * 0.9;
-      }
-      if (dataMax > domainMax) {
-        domainMax = dataMax * 1.1;
+      if (axisConfig && typeof axisConfig.getDomain === 'function') {
+        // Use conditional domain function for axes like SHW%
+        const conditionalDomain = axisConfig.getDomain();
+        domainMin = conditionalDomain.min;
+        domainMax = conditionalDomain.max;
+        console.log(`[ParallelCoordinates] Using conditional domain for ${axis.id}: [${domainMin}, ${domainMax}]`);
+      } else {
+        // Expand domain if data exceeds configured domain
+        // Add 10% padding to accommodate outliers
+        if (dataMin < domainMin) {
+          domainMin = dataMin * 0.9;
+        }
+        if (dataMax > domainMax) {
+          domainMax = dataMax * 1.1;
+        }
       }
 
       // Invert range for "higher is better" axes (efficiency metrics)
@@ -551,23 +561,30 @@ window.TEUI.ParallelCoordinates = (function () {
       const scale = yScales[i];
       const [domainMin, domainMax] = scale.domain();
 
-      // Min value (bottom)
+      // For "higher is better" axes, range is inverted [0, height]
+      // This means domainMax appears at y=0 (top) and domainMin at y=height (bottom)
+      // So we swap the labels to match visual position
+      const isInverted = axis.optimal === "higher";
+      const bottomValue = isInverted ? domainMax : domainMin;
+      const topValue = isInverted ? domainMin : domainMax;
+
+      // Bottom label
       axisG
         .append("text")
         .attr("y", height + 15)
         .attr("text-anchor", "middle")
         .style("fill", CONFIG.colors.axisText)
         .style("font-size", "9px")
-        .text(domainMin.toFixed(1));
+        .text(bottomValue.toFixed(1));
 
-      // Max value (top)
+      // Top label
       axisG
         .append("text")
         .attr("y", -40)
         .attr("text-anchor", "middle")
         .style("fill", CONFIG.colors.axisText)
         .style("font-size", "9px")
-        .text(domainMax.toFixed(1));
+        .text(topValue.toFixed(1));
     });
 
     // ====================================================================
@@ -967,7 +984,28 @@ window.TEUI.ParallelCoordinates = (function () {
 
     'shw_efficiency': {
       // Conditional axis - config depends on system type (d_51)
-      // Call getConfig(mode) to get current configuration
+      // getDomain() returns fixed domain for axis (union of Target + Reference ranges)
+      // getConfig(mode) returns per-mode config for drag constraints
+
+      getDomain: function() {
+        // Read BOTH Target and Reference system types
+        const targetSystem = window.TEUI?.StateManager?.getValue('d_51') || 'Heatpump';
+        const refSystem = window.TEUI?.StateManager?.getValue('ref_d_51') || 'Heatpump';
+
+        // Check if either uses Gas/Oil (k_52 decimal field)
+        const hasGasOil = (targetSystem === 'Gas' || targetSystem === 'Oil' ||
+                          refSystem === 'Gas' || refSystem === 'Oil');
+
+        if (hasGasOil) {
+          // If either uses Gas/Oil, use AFUE decimal range
+          return { min: 0.50, max: 0.98 };
+        } else {
+          // Otherwise both use d_52 percentage field
+          // Union of Electric (90-100) and Heatpump (100-450) = 90-450
+          return { min: 90, max: 450 };
+        }
+      },
+
       getConfig: function(mode) {
         // Read system type from StateManager (sole source of truth)
         const systemTypeField = mode === 'target' ? 'd_51' : 'ref_d_51';
@@ -979,8 +1017,8 @@ window.TEUI.ParallelCoordinates = (function () {
           return {
             targetField: 'd_52',
             refField: 'ref_d_52',
-            min: 100,
-            max: 450,
+            min: 100,  // Drag constraint for this mode
+            max: 450,  // Drag constraint for this mode
             step: 1,
             unit: '%',
             label: 'SHW',
@@ -991,8 +1029,8 @@ window.TEUI.ParallelCoordinates = (function () {
           return {
             targetField: 'd_52',
             refField: 'ref_d_52',
-            min: 90,
-            max: 100,
+            min: 90,   // Drag constraint for this mode
+            max: 100,  // Drag constraint for this mode
             step: 1,
             unit: '%',
             label: 'SHW',
@@ -1003,13 +1041,13 @@ window.TEUI.ParallelCoordinates = (function () {
           return {
             targetField: 'k_52',
             refField: 'ref_k_52',
-            min: 0.50,
-            max: 0.98,
+            min: 0.50, // Drag constraint for this mode
+            max: 0.98, // Drag constraint for this mode
             step: 0.01,
             unit: '',
             label: 'SHW AFUE',
             owningSection: 'sect07',
-            isDecimal: true // k_52 uses decimal format (0.90 not 90)
+            isDecimal: true
           };
         }
       },
@@ -1157,10 +1195,11 @@ window.TEUI.ParallelCoordinates = (function () {
 
     const clampedValue = d.value; // Get final value from dragging
 
-    // Determine field ID and state to update based on which node was dragged
-    const baseFieldId = axisConfig.targetField;
+    // Determine field ID based on which node was dragged
+    // For conditional axes like SHW%, targetField/refField may differ (d_52 vs k_52)
     const isTarget = d.mode === 'target';
-    const fieldId = isTarget ? baseFieldId : `ref_${baseFieldId}`;
+    const baseFieldId = axisConfig.targetField;  // Base field without ref_ prefix (e.g., d_52 or k_52)
+    const fieldId = isTarget ? baseFieldId : axisConfig.refField;  // Use refField for Reference (e.g., ref_d_52 or ref_k_52)
 
     // Format value for storage (decimal vs integer)
     const valueToStore = axisConfig.isDecimal
@@ -1181,9 +1220,10 @@ window.TEUI.ParallelCoordinates = (function () {
       }
 
       // 1. Update the appropriate internal state (TargetState or ReferenceState)
-      const targetState = isTarget ? owningSection.TargetState : owningSection.ReferenceState;
-      if (targetState) {
-        targetState.setValue(baseFieldId, valueToStore);
+      // Use baseFieldId (without ref_ prefix) for state updates
+      const stateToUpdate = isTarget ? owningSection.TargetState : owningSection.ReferenceState;
+      if (stateToUpdate) {
+        stateToUpdate.setValue(baseFieldId, valueToStore);
         console.log(`[ParallelCoordinates] Updated ${isTarget ? 'Target' : 'Reference'}State.${baseFieldId} = ${valueToStore}`);
       }
 

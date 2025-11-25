@@ -2555,25 +2555,47 @@ SHW% behavior depends on the value of `d_51` (DHW/SHW System Type):
 }
 ```
 
-**Listener Implementation:**
-```javascript
-// In ParallelCoordinates.js initialization
-if (window.TEUI?.StateManager) {
-  // Listen for system type changes (both Target and Reference)
-  window.TEUI.StateManager.addListener('d_51', () => {
-    // Update SHW% axis configuration
-    updateConditionalAxisConfig('shw_efficiency');
-    refresh(); // Redraw graph with new axis range
-  });
+**Actual Implementation (No Listeners Needed!):**
 
-  window.TEUI.StateManager.addListener('ref_d_51', () => {
-    updateConditionalAxisConfig('shw_efficiency');
-    refresh();
-  });
+The axis domain is calculated **once per render** by reading both `d_51` and `ref_d_51` from StateManager. No listeners are needed because:
+1. Graph refreshes when data changes (via refresh button or section updates)
+2. `getDomain()` reads current state at render time
+3. Domain is fixed for the render cycle (doesn't change during drags)
+
+```javascript
+getDomain: function() {
+  // Read BOTH Target and Reference system types
+  const targetSystem = window.TEUI?.StateManager?.getValue('d_51') || 'Heatpump';
+  const refSystem = window.TEUI?.StateManager?.getValue('ref_d_51') || 'Heatpump';
+
+  // Check if either uses Gas/Oil (k_52 decimal field)
+  const hasGasOil = (targetSystem === 'Gas' || targetSystem === 'Oil' ||
+                    refSystem === 'Gas' || refSystem === 'Oil');
+
+  if (hasGasOil) {
+    // If either uses Gas/Oil, use AFUE decimal range
+    return { min: 0.50, max: 0.98 };
+  } else {
+    // Otherwise both use d_52 percentage field
+    // Union of Electric (90-100) and Heatpump (100-450) = 90-450
+    return { min: 90, max: 450 };
+  }
 }
 ```
 
-**See Step 7 below for complete conditional axis implementation pattern.**
+**Graph Rendering Integration:**
+```javascript
+// In yScales calculation (line 492-497)
+if (axisConfig && typeof axisConfig.getDomain === 'function') {
+  // Use conditional domain function for axes like SHW%
+  const conditionalDomain = axisConfig.getDomain();
+  domainMin = conditionalDomain.min;
+  domainMax = conditionalDomain.max;
+  // Domain is now FIXED for this render cycle
+}
+```
+
+**Result:** Axis stays stable at 90-450% (or 0.50-0.98 for Gas/Oil) regardless of node dragging.
 
 ##### TB% (Thermal Bridging Penalty) - Section 11
 ```javascript
