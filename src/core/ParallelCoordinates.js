@@ -1126,6 +1126,7 @@ window.TEUI.ParallelCoordinates = (function () {
       min: 0.10,                  // Super tight (Passive House level)
       max: 10.0,                  // Very leaky
       step: 0.10,                 // 0.10 intervals (0.10, 0.20, 0.30, ..., 1.30, ...)
+      isDecimal: true,            // Store with decimal precision (1.30, not 1)
       unit: '',                   // No unit - label already says ACH50
       label: 'ACH50',
       owningSection: 'sect12'     // Section 12
