@@ -1408,32 +1408,95 @@ function renderFinancialRows(axes) {
 }
 ```
 
-**First Formula: SHW% (Service Hot Water Efficiency)** ✅ CONFIRMED
+**First Formula: SHW% (Service Hot Water Efficiency)** ✅ COMPLETE
+
+**Formula Pattern (Template for All Axes):**
+
+```javascript
+// pcFinancials.js - Axis calculation template
+axis_name: {
+  target: () => {
+    // Get StateManager values (use base field IDs)
+    const value1 = getValue('field_id');     // Auto-strips $ and commas
+    const value2 = getValue('field_id2');
+
+    // Calculate annual cost
+    return value1 * value2;  // Or more complex formula
+  },
+  reference: () => {
+    // Get StateManager values (use ref_ prefix)
+    const value1 = getValue('ref_field_id');
+    const value2 = getValue('ref_field_id2');
+
+    // Calculate annual cost
+    return value1 * value2;
+  },
+  savings: function() {
+    return this.reference() - this.target(); // Always ref - target
+  }
+}
+```
+
+**SHW% Implementation:**
 
 **StateManager Fields:**
-- **Target Cost:** `j_51` (Total SHW energy kWh) × `l_12` (Electricity cost $/kWh)
-- **Reference Cost:** `ref_j_51` (Ref Total SHW energy kWh) × `ref_l_12` (Ref Electricity cost $/kWh)
-- **Savings:** Reference Cost - Target Cost
+- **Target Cost:** `(k_51 × l_12) + (e_51 × l_13)`
+  - `k_51`: Net electric demand (kWh) - 0 when gas system
+  - `l_12`: Electricity rate ($/kWh) - stored as "$0.1300"
+  - `e_51`: Gas energy (kWh) - 0 when electric system
+  - `l_13`: Gas rate ($/kWh) - stored as "$0.0750"
+- **Reference Cost:** `(ref_k_51 × ref_l_12) + (ref_e_51 × ref_l_13)`
+- **Savings:** Reference Cost - Target Cost (positive = optimization working)
 
 **Field Naming Convention:** ✅ STANDARD
-- Target = base fields (`j_51`, `l_12`)
-- Reference = `ref_` prefix (`ref_j_51`, `ref_l_12`)
-- Savings = Positive when Target costs less than Reference (optimization success)
+- Target = base fields (`k_51`, `l_12`, `e_51`, `l_13`)
+- Reference = `ref_` prefix (`ref_k_51`, `ref_l_12`, `ref_e_51`, `ref_l_13`)
 
-**Tasks:**
-- [ ] Create `src/core/ppFinancials.js` with SHW% formula
-- [ ] Update `ParallelCoordinates.js` to check for ppFinancials module
-- [ ] Add currency formatting (CAD)
-- [ ] Test with real StateManager values
-- [ ] Add remaining 13 axis formulas (future)
-- [ ] Document Base/Pro build process
+**Critical Implementation Notes:**
+
+1. **Currency Parsing Fix** ⚠️ CRITICAL
+   - StateManager stores cost fields with currency formatting: `"$0.1300"`
+   - Must strip `$` and commas before `parseFloat()`
+   - `getValue()` helper handles this automatically:
+     ```javascript
+     const cleanVal = typeof val === 'string' ? val.replace(/[$,]/g, '') : val;
+     ```
+
+2. **Either/Or Logic Pattern**
+   - Electric system: `k_51 > 0`, `e_51 = 0` → Gas cost = 0
+   - Gas system: `k_51 = 0`, `e_51 > 0` → Electric cost = 0
+   - Formula handles both: `(electric × rate) + (gas × rate)`
+
+3. **ROI Term Multiplier** ✅ IMPLEMENTED
+   - User selects term in Settings modal (⚙ button): 1-5, 10, 15, 20, 30, 40, 50 years
+   - Stored in `CONFIG.roiTerm` (default: 1 year)
+   - Applied in ParallelCoordinates.js table rendering:
+     ```javascript
+     const annualizedCost = result.cost * roiMultiplier;
+     ```
+   - Example: $1,667.66/year × 20 years = $33,353.20
+
+**Completed Tasks:**
+- ✅ Created `src/core/pcFinancials.js` with SHW% formula
+- ✅ Updated `ParallelCoordinates.js` to conditionally use pcFinancials
+- ✅ Added CAD currency formatting (`Intl.NumberFormat`)
+- ✅ Added currency parsing fix (strip $ and commas)
+- ✅ Tested with real StateManager values (electric & gas scenarios)
+- ✅ Implemented ROI Term multiplier with settings modal
+- ✅ Renamed ppConfig.js → pcConfig.js for consistency
+- [ ] Add remaining 13 axis formulas (formulas to be provided)
 
 **Current Status:**
 - 7 rows total: Target, Reference, Δ, %Δ, Ref Cost, Target Cost, Savings
 - Row labels functional and color-coded
 - Graph/table alignment fixed with table-layout: fixed
 - Vertical space fixed at 550px container height
-- Financial rows showing $0.00 dummy data (ready for real formulas)
+- **Financial rows showing real calculated costs with ROI multiplier** ✅
+- SHW% working for both electric and gas fuel types
+
+**Test Results (November 24, 2025):**
+- Electric (Heatpump): Target $1,667.66/yr, Reference $5,558.86/yr, Savings $3,891.20/yr
+- Gas (Reference): Target $1,667.66/yr (electric), Reference $3,563.37/yr (gas), Savings $1,895.71/yr
 
 ### 🎯 Priority: Data Point Tooltips
 

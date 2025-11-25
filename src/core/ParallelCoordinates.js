@@ -29,6 +29,9 @@ window.TEUI.ParallelCoordinates = (function () {
       left: 115,                  // Matches row label width for perfect alignment
     },
 
+    // Financial settings
+    roiTerm: 1,                   // Default ROI term in years (multiplier for cost calculations)
+
     // Visual styling
     colors: {
       target: "#007bff",          // Blue for Target model
@@ -240,7 +243,7 @@ window.TEUI.ParallelCoordinates = (function () {
     const exportBtn = createButton("bi-download", "Export as PNG", exportToPNG);
 
     // Settings button (enabled)
-    const settingsBtn = createButton("bi-gear", "Settings", () => alert("Settings panel coming soon!"));
+    const settingsBtn = createButton("bi-gear", "Settings", showSettingsModal);
 
     // Create inline legend (in middle of controls row)
     const legendContainer = document.createElement("div");
@@ -293,6 +296,88 @@ window.TEUI.ParallelCoordinates = (function () {
     btn.innerHTML = `<i class="bi ${iconClass}"></i>`;
     btn.addEventListener("click", clickHandler);
     return btn;
+  }
+
+  /**
+   * Show settings modal for ROI Term configuration
+   */
+  function showSettingsModal() {
+    // Create modal backdrop
+    const backdrop = document.createElement("div");
+    backdrop.style.cssText = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;";
+
+    // Create modal dialog
+    const modal = document.createElement("div");
+    modal.style.cssText = "background: white; border-radius: 8px; padding: 20px; max-width: 400px; width: 90%; box-shadow: 0 4px 16px rgba(0,0,0,0.2);";
+
+    // Modal header
+    const header = document.createElement("h5");
+    header.textContent = "Financial Settings";
+    header.style.cssText = "margin: 0 0 15px 0; font-weight: 600;";
+
+    // ROI Term label
+    const label = document.createElement("label");
+    label.textContent = "ROI Term (Years):";
+    label.style.cssText = "display: block; margin-bottom: 8px; font-weight: 500;";
+
+    // ROI Term dropdown
+    const select = document.createElement("select");
+    select.className = "form-select";
+    select.style.cssText = "margin-bottom: 20px;";
+
+    const terms = [1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50];
+    terms.forEach(year => {
+      const option = document.createElement("option");
+      option.value = year;
+      option.textContent = `${year} year${year > 1 ? 's' : ''}`;
+      if (year === CONFIG.roiTerm) {
+        option.selected = true;
+      }
+      select.appendChild(option);
+    });
+
+    // Button container
+    const btnContainer = document.createElement("div");
+    btnContainer.style.cssText = "display: flex; gap: 10px; justify-content: flex-end;";
+
+    // Cancel button
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "btn btn-outline-secondary";
+    cancelBtn.textContent = "Cancel";
+    cancelBtn.addEventListener("click", () => {
+      document.body.removeChild(backdrop);
+    });
+
+    // Apply button
+    const applyBtn = document.createElement("button");
+    applyBtn.className = "btn btn-primary";
+    applyBtn.textContent = "Apply";
+    applyBtn.addEventListener("click", () => {
+      const newTerm = parseInt(select.value);
+      CONFIG.roiTerm = newTerm;
+      console.log(`[ParallelCoordinates] ROI Term updated to ${newTerm} years`);
+      refresh(); // Refresh table with new multiplier
+      document.body.removeChild(backdrop);
+    });
+
+    // Assemble modal
+    btnContainer.appendChild(cancelBtn);
+    btnContainer.appendChild(applyBtn);
+
+    modal.appendChild(header);
+    modal.appendChild(label);
+    modal.appendChild(select);
+    modal.appendChild(btnContainer);
+
+    backdrop.appendChild(modal);
+    document.body.appendChild(backdrop);
+
+    // Close on backdrop click
+    backdrop.addEventListener("click", (e) => {
+      if (e.target === backdrop) {
+        document.body.removeChild(backdrop);
+      }
+    });
   }
 
   // ========================================================================
@@ -703,13 +788,17 @@ window.TEUI.ParallelCoordinates = (function () {
       }).format(value);
     };
 
+    // Get ROI term multiplier
+    const roiMultiplier = CONFIG.roiTerm || 1;
+
     // Reference Cost row
     const refCostRow = document.createElement("tr");
     refCostRow.innerHTML = `<td class="pc-row-label pc-reference-cell"><strong>Ref Cost</strong></td>`;
     axes.forEach(axis => {
       if (hasPro) {
         const result = window.TEUI.pcFinancials.calculateFinancials(axis.id, 'reference');
-        refCostRow.innerHTML += `<td class="text-center pc-reference-cell">${formatCurrency(result.cost)}</td>`;
+        const annualizedCost = result.cost * roiMultiplier;
+        refCostRow.innerHTML += `<td class="text-center pc-reference-cell">${formatCurrency(annualizedCost)}</td>`;
       } else {
         refCostRow.innerHTML += `<td class="text-center pc-reference-cell">$0.00</td>`;
       }
@@ -722,7 +811,8 @@ window.TEUI.ParallelCoordinates = (function () {
     axes.forEach(axis => {
       if (hasPro) {
         const result = window.TEUI.pcFinancials.calculateFinancials(axis.id, 'target');
-        targetCostRow.innerHTML += `<td class="text-center pc-target-cell">${formatCurrency(result.cost)}</td>`;
+        const annualizedCost = result.cost * roiMultiplier;
+        targetCostRow.innerHTML += `<td class="text-center pc-target-cell">${formatCurrency(annualizedCost)}</td>`;
       } else {
         targetCostRow.innerHTML += `<td class="text-center pc-target-cell">$0.00</td>`;
       }
@@ -735,7 +825,8 @@ window.TEUI.ParallelCoordinates = (function () {
     axes.forEach(axis => {
       if (hasPro) {
         const result = window.TEUI.pcFinancials.calculateFinancials(axis.id, 'savings');
-        savingsRow.innerHTML += `<td class="text-center text-success">${formatCurrency(result.cost)}</td>`;
+        const annualizedSavings = result.cost * roiMultiplier;
+        savingsRow.innerHTML += `<td class="text-center text-success">${formatCurrency(annualizedSavings)}</td>`;
       } else {
         savingsRow.innerHTML += `<td class="text-center text-success">$0.00</td>`;
       }
