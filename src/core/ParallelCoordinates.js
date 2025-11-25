@@ -650,6 +650,7 @@ window.TEUI.ParallelCoordinates = (function () {
         .attr("cx", xScale(i))
         .attr("cy", yScales[i](referenceData[i]))
         .attr("r", 4)
+        .attr("data-mode", "reference")  // Mark for later filtering
         .style("fill", CONFIG.colors.reference)
         .style("stroke", "white")
         .style("stroke-width", 2);
@@ -662,6 +663,7 @@ window.TEUI.ParallelCoordinates = (function () {
         .attr("cx", xScale(i))
         .attr("cy", yScales[i](targetData[i]))
         .attr("r", 4)
+        .attr("data-mode", "target")  // Mark for later filtering
         .style("fill", CONFIG.colors.target)
         .style("stroke", "white")
         .style("stroke-width", 2);
@@ -1087,38 +1089,44 @@ window.TEUI.ParallelCoordinates = (function () {
       .on('drag', dragging)
       .on('end', dragEnded);
 
-    // Apply drag to Target nodes (blue)
+    // Apply drag to Reference nodes (red) - do this FIRST so they're behind in interaction order
     axes.forEach((axis, i) => {
       if (EDITABLE_AXES[axis.id]) {
         const node = svg.selectAll('circle')
           .filter(function() {
             const cx = parseFloat(d3.select(this).attr('cx'));
             const cy = parseFloat(d3.select(this).attr('cy'));
+            const mode = d3.select(this).attr('data-mode');
+            // Match position AND data-mode='reference' to uniquely identify Reference nodes
             return Math.abs(cx - xScale(i)) < 1 &&
-                   Math.abs(cy - yScales[i](targetData[i])) < 1;
+                   Math.abs(cy - yScales[i](referenceData[i])) < 1 &&
+                   mode === 'reference';
           });
 
         node
-          .datum({ axisId: axis.id, mode: 'target', axisIndex: i, value: targetData[i] })
+          .datum({ axisId: axis.id, mode: 'reference', axisIndex: i, value: referenceData[i] })
           .call(drag)
           .classed('pc-editable-node', true)
           .attr('r', 8); // 2× size for editable nodes
       }
     });
 
-    // Apply drag to Reference nodes (red)
+    // Apply drag to Target nodes (blue) - do this SECOND so they're on top in interaction order
     axes.forEach((axis, i) => {
       if (EDITABLE_AXES[axis.id]) {
         const node = svg.selectAll('circle')
           .filter(function() {
             const cx = parseFloat(d3.select(this).attr('cx'));
             const cy = parseFloat(d3.select(this).attr('cy'));
+            const mode = d3.select(this).attr('data-mode');
+            // Match position AND data-mode='target' to uniquely identify Target nodes
             return Math.abs(cx - xScale(i)) < 1 &&
-                   Math.abs(cy - yScales[i](referenceData[i])) < 1;
+                   Math.abs(cy - yScales[i](targetData[i])) < 1 &&
+                   mode === 'target';
           });
 
         node
-          .datum({ axisId: axis.id, mode: 'reference', axisIndex: i, value: referenceData[i] })
+          .datum({ axisId: axis.id, mode: 'target', axisIndex: i, value: targetData[i] })
           .call(drag)
           .classed('pc-editable-node', true)
           .attr('r', 8); // 2× size for editable nodes
