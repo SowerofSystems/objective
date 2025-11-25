@@ -70,7 +70,8 @@ window.TEUI.pcFinancials = (function () {
         return (electricEnergy * electricRate) + (gasEnergy * gasRate) + (oilVolume * oilRate);
       },
       savings: function() {
-        return this.reference() - this.target(); // Savings ($) - positive when optimized
+        const delta = this.reference() - this.target();
+        return delta > 0 ? delta : 0; // Only show positive savings, $0 if cost increases
       }
     },
 
@@ -103,7 +104,14 @@ window.TEUI.pcFinancials = (function () {
         return shwCost * (dwhrPercent / 100);
       },
       savings: function() {
-        return this.reference() - this.target(); // Savings ($) - positive when optimized
+        // For DWHR%, savings = additional recovery value in Target vs Reference
+        // Higher DWHR% = more recovery = lower energy cost
+        const targetRecovery = this.target();
+        const refRecovery = this.reference();
+
+        // If Target recovers more energy than Reference, show the additional savings
+        const delta = targetRecovery - refRecovery;
+        return delta > 0 ? delta : 0;
       }
     },
 

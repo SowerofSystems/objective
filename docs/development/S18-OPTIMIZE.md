@@ -1432,7 +1432,8 @@ axis_name: {
     return value1 * value2;
   },
   savings: function() {
-    return this.reference() - this.target(); // Always ref - target
+    const delta = this.reference() - this.target();
+    return delta > 0 ? delta : 0; // Only show positive savings, $0 if cost increases
   }
 }
 ```
@@ -1477,6 +1478,27 @@ axis_name: {
      const annualizedCost = result.cost * roiMultiplier;
      ```
    - Example: $1,667.66/year × 20 years = $33,353.20
+
+4. **Savings Edge Case Handling** ⚠️ STANDARD PATTERN
+   - Savings row shows **only positive savings** (when Reference > Target)
+   - When Target cost > Reference cost (no savings), display **$0.00**
+   - Rationale: Negative savings = cost increase, which shouldn't appear in "Savings" row
+   - Edge case: Target has worse performance than Reference (unusual but possible)
+   - Standard pattern: `return delta > 0 ? delta : 0;`
+
+5. **DWHR% Special Case** ⚠️ COUNTERINTUITIVE LOGIC
+   - **DWHR% represents energy RECOVERY** (higher % = more recovery = better)
+   - **Target Cost** = Energy recovered by Target's DWHR system
+   - **Reference Cost** = Energy recovered by Reference's DWHR system
+   - **Savings** = Target recovery - Reference recovery (REVERSED from normal cost pattern!)
+   - Examples:
+     - Reference 0%, Target 50% → Savings = $416.91 (Target recovers more)
+     - Reference 42%, Target 42% → Savings = $0.00 (same recovery)
+     - Reference 50%, Target 0% → Savings = $0.00 (Target is worse, no positive benefit)
+     - Reference 30%, Target 50% → Savings = positive (Target recovers more energy)
+   - Rationale: Savings shows **additional benefit** when Target has better DWHR than Reference
+   - Formula: `return (targetRecovery - refRecovery) > 0 ? (targetRecovery - refRecovery) : 0;`
+   - **Important:** This is the OPPOSITE of SHW% (where Reference - Target = savings)
 
 **Completed Tasks:**
 - ✅ Created `src/core/pcFinancials.js` with SHW% formula
