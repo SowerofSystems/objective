@@ -1093,6 +1093,21 @@ window.TEUI.ParallelCoordinates = (function () {
         if (value < 61) return 60;      // 55-60 → 60%
         return 70;                      // 61+ → PHPP (70 is key for valueMap)
       }
+    },
+
+    // TB% - Thermal Bridging Penalty (0-100%)
+    // Lower TB% = less heat loss = better performance
+    // Standard continuous slider in Section 10 (d_97, ref_d_97)
+    // Snaps to intervals of 5% (0, 5, 10, 15, 20, ...)
+    'thermal_bridge': {
+      targetField: 'd_97',
+      refField: 'ref_d_97',
+      min: 0,
+      max: 100,
+      step: 5,
+      unit: '%',
+      label: 'TB',
+      owningSection: 'sect10'
     }
   };
 
@@ -1222,10 +1237,18 @@ window.TEUI.ParallelCoordinates = (function () {
     // For discrete axes, show the snapped value
     // For Gas/Oil (storageMultiplier=0.01), clampedValue is already in display space (90)
     // For other axes, clampedValue is the actual value
-    const displayValue = clampedValue.toFixed(1);  // Always show one decimal (90.0% or 0.9)
+    let displayValue = clampedValue.toFixed(1);  // Always show one decimal (90.0% or 0.9)
+    let displayUnit = axisConfig.unit;
+
+    // ⚠️ SPECIAL CASE: nGains% PHPP Mode
+    // When nGains% is dragged to 70+ (PHPP), show "PHPP" instead of percentage
+    if (d.axisId === 'net_gains' && clampedValue >= 70) {
+      displayValue = 'PHPP';
+      displayUnit = '';  // No unit for PHPP label
+    }
 
     // Update modal display (visual only)
-    updateDragModal(axisConfig.label, displayValue, axisConfig.unit);
+    updateDragModal(axisConfig.label, displayValue, displayUnit);
 
     // Store current value for dragEnded
     d.value = clampedValue;
