@@ -975,7 +975,7 @@ window.TEUI.ParallelCoordinates = (function () {
       targetField: 'd_53',       // Target DWHR% field (NOTE: d_53, not d_52!)
       refField: 'ref_d_53',      // Reference DWHR% field
       min: 0,
-      max: 80,                   // DWHR domain is 0-80% per pcConfig.js
+      max: 70,                   // DWHR domain is 0-70% (S07 slider max)
       step: 1,                   // 1-interval steps (matches S07 slider behavior)
       unit: '%',
       label: 'DWHR',
