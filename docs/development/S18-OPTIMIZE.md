@@ -2131,26 +2131,35 @@ window.TEUI.StateManager.addListener('l_30', calculateAll);    // ✅ External: 
 - Sections don't need listeners for their own fields (would cause double calculation)
 - External modifications (like S18's drag) must call `calculateAll()` explicitly
 
-**Flow (with automatic mode switching):**
+**Flow (Pattern A compliant - NO mode switching):**
 
 1. **User drags blue Target DWHR% node to 50% in S18**
-2. **S18**: `ModeManager.switchMode('target')` → Switches S07 to Target mode
+2. **S18**: Determines which state to update based on node color (blue = Target, red = Reference)
 3. **S18**: `TargetState.setValue('d_53', 50)` → Updates S07's Target state
-4. **S18**: `StateManager.setValue('d_53', 50)` → Triggers downstream dependencies
+4. **S18**: `StateManager.setValue('d_53', 50)` → Publishes to global state with correct prefix
 5. **S18**: `calculateAll()` → Recalculates S07 (both engines)
-6. **S07**: `ModeManager.refreshUI()` → Slider moves to 50% in Target mode
+6. **S07**: `ModeManager.refreshUI()` → Updates UI based on **current mode** (user-selected, not forced)
 7. **S18**: `refresh()` → Graph redraws with new values
 
-**Mode Switching Behavior:**
-- Drag **blue node** → Section switches to **Target mode**
-- Drag **red node** → Section switches to **Reference mode**
-- This provides clear visual feedback about which model is being adjusted
+**⚠️ CRITICAL: No Mode Switching**
+- ❌ **DO NOT** switch section mode when updating from S18
+- ✅ **DO** update the appropriate state (TargetState or ReferenceState) based on which node was dragged
+- ✅ **DO** let the section stay in whatever mode the user selected via global toggle
+- ✅ **DO** let refreshUI() display values from the current mode's state
+
+**Example:**
+- User viewing **Target mode** (global toggle)
+- User drags **red Reference node** to 50%
+- S18 updates **ReferenceState.d_53 = 50** and **StateManager.ref_d_53 = 50**
+- Section stays in **Target mode**, continues displaying **TargetState values**
+- User switches to Reference mode later → sees the updated 50% value
 
 **Benefits:**
-- ✅ Pattern A compliant (direct state access)
-- ✅ Automatic mode switching (user sees what they're editing)
+- ✅ Pattern A compliant (direct state access, proper state isolation)
+- ✅ Respects user's mode selection (no forced mode switches)
 - ✅ Works for both Target and Reference parameters
-- ✅ Explicit and predictable (no hidden dependencies)
+- ✅ Prevents UI cross-contamination between modes
+- ✅ Explicit and predictable (no hidden mode changes)
 
 #### 5. Integration with Existing Systems
 
@@ -2384,6 +2393,35 @@ const editableAxes = {
 **Status:** DWHR% interactive dragging is COMPLETE and merged to S18-19-PARALLEL-COORDINATES branch (commit 3f11fe5).
 
 **Reference Implementation:** See [ParallelCoordinates.js:941-1165](../src/core/ParallelCoordinates.js#L941-L1165) for complete working code.
+
+---
+
+### ⚠️ CRITICAL PATTERN A RULE - NO MODE SWITCHING
+
+**The #1 Rule When Implementing Interactive Axes:**
+
+```javascript
+// ❌ NEVER DO THIS - DO NOT SWITCH SECTION MODE
+owningSection.ModeManager.switchMode(targetMode);
+
+// ✅ ALWAYS DO THIS - UPDATE STATE WITHOUT MODE SWITCH
+const stateToUpdate = isTarget ? owningSection.TargetState : owningSection.ReferenceState;
+stateToUpdate.setValue(fieldId, value);
+```
+
+**Why This Matters:**
+- Sections should stay in whatever mode the **user** selected via the global toggle
+- **S18 node dragging is a programmatic update**, not a user mode change
+- Forcing a mode switch causes **UI cross-contamination** where the last edited value appears in both modes
+- Pattern A architecture maintains separate TargetState and ReferenceState - respect this isolation
+
+**What Happens When You Update a Reference Node:**
+1. User viewing **Target mode** (global toggle)
+2. User drags **red Reference node** in S18
+3. ✅ **Correct:** Update ReferenceState, section stays in Target mode, displays Target values
+4. ❌ **Wrong:** Force section into Reference mode, user suddenly sees Reference values (confusing!)
+
+**This rule applies to ALL axes** - SHW%, DWHR%, nGains%, TB%, ACH50, and any future axes.
 
 ---
 
@@ -2775,13 +2813,13 @@ The graph interaction must respect this constraint while providing intuitive dra
 - Graph updates immediately on drag; section recalculates on release
 
 **Pattern A Flow:**
-1. User drags TB% node to 25%
-2. `dragEnded()` switches Section 11 to correct mode (Target/Reference)
-3. Updates TargetState or ReferenceState with d_97 = "25"
-4. Updates StateManager with d_97 or ref_d_97 = "25"
+1. User drags TB% Target node to 25%
+2. `dragEnded()` determines which state to update (Target/Reference) based on node color
+3. Updates TargetState with d_97 = "25" (no mode switch)
+4. Updates StateManager with d_97 = "25"
 5. Calls `sect11.calculateAll()` to recalculate heat loss
-6. Calls `sect11.ModeManager.refreshUI()` to update slider position
-7. Section 11 slider moves to 25%, thermal bridging loss recalculates
+6. Calls `sect11.ModeManager.refreshUI()` to update UI based on current mode
+7. If Section 11 is in Target mode, slider shows 25%; if in Reference mode, shows Reference value
 
 **Note:** Lower TB% is better (less heat loss). Savings calculation already handles this correctly in pcFinancials.js.
 
@@ -2848,13 +2886,13 @@ When ACH50 node is dragged, Section 18 automatically:
 
 **Pattern A Flow:**
 1. User drags ACH50 Target node to 1.30
-2. `dragEnded()` switches Section 12 to Target mode
+2. `dragEnded()` determines which state to update (Target) based on node color (no mode switch)
 3. **Step 0.5 (Special):** Updates d_108 = "MEASURED" in TargetState and StateManager
 4. Updates TargetState with g_109 = "1.30"
 5. Updates StateManager with g_109 = "1.30"
 6. Calls `sect12.calculateAll()` to recalculate airtightness
-7. Calls `sect12.ModeManager.refreshUI()` to update dropdown and value
-8. Section 12 dropdown shows "MEASURED", g_109 shows 1.30, d_109 (calculated) reads from g_109
+7. Calls `sect12.ModeManager.refreshUI()` to update UI based on current mode
+8. If Section 12 is in Target mode, shows "MEASURED" dropdown and g_109 = 1.30; if in Reference mode, shows Reference values
 
 **✅ BUG FIXED (November 25, 2025) - UI Refresh Cross-Contamination:**
 
@@ -3202,35 +3240,34 @@ function dragEnded(event, d) {
   const owningSection = window.TEUI?.SectionModules?.[axisConfig.owningSection];
 
   if (owningSection) {
-    // ✅ STEP 1: Switch section to correct mode
-    const targetMode = isTarget ? 'target' : 'reference';
-    if (owningSection.ModeManager && owningSection.ModeManager.currentMode !== targetMode) {
-      owningSection.ModeManager.switchMode(targetMode);
+    // ❌ DO NOT SWITCH MODE - Section stays in user-selected mode
+    // The section should remain in whatever mode the user has via global toggle
+    // We update the appropriate state but don't force a mode change
+
+    // ✅ STEP 1: Update appropriate internal state (TargetState or ReferenceState)
+    const stateToUpdate = isTarget ? owningSection.TargetState : owningSection.ReferenceState;
+    if (stateToUpdate) {
+      stateToUpdate.setValue(baseFieldId, clampedValue.toString());
     }
 
-    // ✅ STEP 2: Update appropriate internal state (TargetState or ReferenceState)
-    const targetState = isTarget ? owningSection.TargetState : owningSection.ReferenceState;
-    if (targetState) {
-      targetState.setValue(baseFieldId, clampedValue.toString());
-    }
-
-    // ✅ STEP 3: Update StateManager (triggers downstream dependencies)
+    // ✅ STEP 2: Update StateManager (triggers downstream dependencies)
     if (window.TEUI?.StateManager) {
       window.TEUI.StateManager.setValue(fieldId, clampedValue.toString(), 'user-modified');
     }
 
-    // ✅ STEP 4: Calculate owning section (CRITICAL - section doesn't listen to own fields)
+    // ✅ STEP 3: Calculate owning section (CRITICAL - section doesn't listen to own fields)
     if (owningSection.calculateAll) {
       owningSection.calculateAll();
     }
 
-    // ✅ STEP 5: Refresh owning section UI (slider moves to new position)
+    // ✅ STEP 4: Refresh owning section UI based on current mode
+    // refreshUI() will display values from current mode's state (user-selected, not forced)
     if (owningSection.ModeManager) {
       owningSection.ModeManager.refreshUI();
     }
   }
 
-  // ✅ STEP 6: Refresh S18 graph (with small delay for DOM updates)
+  // ✅ STEP 5: Refresh S18 graph (with small delay for DOM updates)
   setTimeout(() => {
     refresh();
   }, 100);
