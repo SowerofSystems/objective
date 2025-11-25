@@ -2118,19 +2118,26 @@ window.TEUI.StateManager.addListener('l_30', calculateAll);    // ✅ External: 
 - Sections don't need listeners for their own fields (would cause double calculation)
 - External modifications (like S18's drag) must call `calculateAll()` explicitly
 
-**Flow:**
+**Flow (with automatic mode switching):**
 
-1. **User drags DWHR% node to 50% in S18**
-2. **S18**: `StateManager.setValue('d_53', 50)` → Triggers downstream listeners (other sections that depend on DWHR%)
-3. **S18**: `SectionModules.sect07.calculateAll()` → Recalculates S07 (both Target & Reference engines)
-4. **S07**: `ModeManager.refreshUI()` → Slider moves to 50%
-5. **S18**: `refresh()` → Graph redraws with new values
+1. **User drags blue Target DWHR% node to 50% in S18**
+2. **S18**: `ModeManager.switchMode('target')` → Switches S07 to Target mode
+3. **S18**: `TargetState.setValue('d_53', 50)` → Updates S07's Target state
+4. **S18**: `StateManager.setValue('d_53', 50)` → Triggers downstream dependencies
+5. **S18**: `calculateAll()` → Recalculates S07 (both engines)
+6. **S07**: `ModeManager.refreshUI()` → Slider moves to 50% in Target mode
+7. **S18**: `refresh()` → Graph redraws with new values
+
+**Mode Switching Behavior:**
+- Drag **blue node** → Section switches to **Target mode**
+- Drag **red node** → Section switches to **Reference mode**
+- This provides clear visual feedback about which model is being adjusted
 
 **Benefits:**
-- ✅ Pattern A compliant (no self-listeners)
-- ✅ Works for fields without registered listeners
+- ✅ Pattern A compliant (direct state access)
+- ✅ Automatic mode switching (user sees what they're editing)
+- ✅ Works for both Target and Reference parameters
 - ✅ Explicit and predictable (no hidden dependencies)
-- ✅ Follows same pattern as user input handlers in sections
 
 #### 5. Integration with Existing Systems
 

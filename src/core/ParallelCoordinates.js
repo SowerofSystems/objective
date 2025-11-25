@@ -1126,12 +1126,18 @@ window.TEUI.ParallelCoordinates = (function () {
 
   /**
    * Show drag value modal
+   * Color: Blue for Target, Red for Reference
    */
   function showDragModal(nodeData) {
     const modal = document.createElement('div');
     modal.id = 'pc-drag-modal';
+    modal.setAttribute('data-mode', nodeData.mode); // 'target' or 'reference'
+
     const axisConfig = EDITABLE_AXES[nodeData.axisId];
-    modal.textContent = `${axisConfig.label}: ${nodeData.value.toFixed(1)}${axisConfig.unit}`;
+    // Remove % from label since value already shows it (e.g., "DWHR" not "DWHR%")
+    const labelText = axisConfig.label.replace('%', '').trim();
+    modal.textContent = `${labelText}: ${nodeData.value.toFixed(1)}${axisConfig.unit}`;
+
     document.body.appendChild(modal);
   }
 
@@ -1141,7 +1147,9 @@ window.TEUI.ParallelCoordinates = (function () {
   function updateDragModal(label, value, unit) {
     const modal = document.getElementById('pc-drag-modal');
     if (modal) {
-      modal.textContent = `${label}: ${value.toFixed(1)}${unit}`;
+      // Remove % from label since value already shows it
+      const labelText = label.replace('%', '').trim();
+      modal.textContent = `${labelText}: ${value.toFixed(1)}${unit}`;
     }
   }
 

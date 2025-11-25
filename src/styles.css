@@ -1943,16 +1943,25 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
   left: 50%;
   transform: translate(-50%, -50%);
   background: white;
-  border: 2px solid #0d6efd;
   border-radius: 8px;
   padding: 20px 40px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   z-index: 10000;
   font-size: 24px;
   font-weight: bold;
-  color: #0d6efd;
   pointer-events: none;
   user-select: none;
+}
+
+/* Modal color variants - set via data-mode attribute */
+#pc-drag-modal[data-mode="target"] {
+  border: 2px solid #0d6efd;
+  color: #0d6efd;
+}
+
+#pc-drag-modal[data-mode="reference"] {
+  border: 2px solid #dc3545;
+  color: #dc3545;
 }
 
 /* ======================================
