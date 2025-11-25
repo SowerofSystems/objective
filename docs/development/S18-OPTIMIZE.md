@@ -2470,25 +2470,110 @@ const EDITABLE_AXES = {
 
 **Here's the complete field mapping for planned axes:**
 
-##### SHW% (Service Hot Water Efficiency) - Section 07
+##### SHW% (Service Hot Water Efficiency) - Section 07 ⚠️ CONDITIONAL AXIS
+
+**⚠️ ADVANCED PATTERN: This axis has conditional configuration based on system type.**
+
+SHW% behavior depends on the value of `d_51` (DHW/SHW System Type):
+
+| System Type (d_51) | Field to Update | Min | Max | Format | Unit |
+|--------------------|----------------|-----|-----|--------|------|
+| `Heatpump` | `d_52` | 100 | 450 | Integer | % |
+| `Electric` | `d_52` | 90 | 100 | Integer | % |
+| `Gas` | `k_52` | 0.50 | 0.98 | Decimal | (none) |
+| `Oil` | `k_52` | 0.50 | 0.98 | Decimal | (none) |
+
+**Implementation Requirements:**
+
+1. **Dynamic Configuration Function:**
+   - Read `d_51` (or `ref_d_51` for Reference mode) to determine system type
+   - Return appropriate config object with correct field, min, max, step
+
+2. **State Manager Listener:**
+   - Register listener for `d_51` changes
+   - When system type changes, update axis configuration
+   - Refresh graph to show new axis range
+
+3. **Value Format Handling:**
+   - `d_52` (Electric/Heatpump): Store as integer percentage (100, 200, 300)
+   - `k_52` (Gas/Oil): Store as decimal (0.90, 0.95, 0.98)
+   - Modal display must handle both formats
+
+**Example Configuration:**
 ```javascript
 'shw_efficiency': {
-  targetField: 'd_52',      // DHW/SHW Efficiency Factor
-  refField: 'ref_d_52',
-  min: 50,                  // Dynamic: Gas/Oil=50-100, Heatpump=50-300
-  max: 300,                 // Use 300 as max, values auto-clamp by system type
-  step: 1,
-  unit: '%',
-  label: 'SHW',
+  // This function is called dynamically to get current config
+  getConfig: (mode) => {
+    const systemTypeField = mode === 'target' ? 'd_51' : 'ref_d_51';
+    const systemType = window.TEUI?.StateManager?.getValue(systemTypeField) || 'Heatpump';
+
+    if (systemType === 'Heatpump') {
+      return {
+        targetField: 'd_52',
+        refField: 'ref_d_52',
+        min: 100,
+        max: 450,
+        step: 1,
+        unit: '%',
+        label: 'SHW',
+        owningSection: 'sect07',
+        systemType: 'Heatpump'
+      };
+    } else if (systemType === 'Electric') {
+      return {
+        targetField: 'd_52',
+        refField: 'ref_d_52',
+        min: 90,
+        max: 100,
+        step: 1,
+        unit: '%',
+        label: 'SHW',
+        owningSection: 'sect07',
+        systemType: 'Electric'
+      };
+    } else { // Gas or Oil
+      return {
+        targetField: 'k_52',
+        refField: 'ref_k_52',
+        min: 0.50,
+        max: 0.98,
+        step: 0.01,
+        unit: '',
+        label: 'SHW AFUE',
+        owningSection: 'sect07',
+        systemType: systemType,
+        formatValue: (val) => val.toFixed(2), // Decimal format
+        parseValue: (val) => parseFloat(val)   // Parse from string
+      };
+    }
+  },
+
+  // Dependency field that triggers config updates
+  dependsOn: 'd_51',
+
   owningSection: 'sect07'
 }
 ```
 
-**⚠️ Special Case:** SHW% range varies by system type (field `d_51`):
-- **Gas/Oil:** 50-100% (AFUE efficiency)
-- **Heatpump:** 50-300% (COP × 100)
+**Listener Implementation:**
+```javascript
+// In ParallelCoordinates.js initialization
+if (window.TEUI?.StateManager) {
+  // Listen for system type changes (both Target and Reference)
+  window.TEUI.StateManager.addListener('d_51', () => {
+    // Update SHW% axis configuration
+    updateConditionalAxisConfig('shw_efficiency');
+    refresh(); // Redraw graph with new axis range
+  });
 
-The slider automatically constrains to valid ranges, so use max: 300 and let the system handle clamping.
+  window.TEUI.StateManager.addListener('ref_d_51', () => {
+    updateConditionalAxisConfig('shw_efficiency');
+    refresh();
+  });
+}
+```
+
+**See Step 7 below for complete conditional axis implementation pattern.**
 
 ##### TB% (Thermal Bridging Penalty) - Section 11
 ```javascript

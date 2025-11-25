@@ -673,7 +673,7 @@
       cell: "K120",
       title: "Unoccupied Ventilation Setback %",
       message:
-        "Per Engineer. Affects Free Cooling Capacity. ie. 90% = 90% of Occupied Ventilation Rate. ",
+        "Per Engineer. Affects Free Cooling Capacity. ie. 90% = 90% of Occupied Ventilation Rate applied to Unoccupied Hours. ",
     },
     m_124: {
       cell: "M124",

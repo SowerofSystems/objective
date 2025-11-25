@@ -1,6 +1,6 @@
 /**
  * ParallelCoordinates.js
- * Section 18 Parallel Coordinates Optimization Visualization
+ * Section 18 Interactive Parallel Coordinates Optimization Visualization
  *
  * Renders a two-line parallel coordinates graph comparing Target vs Reference
  * building configurations across 14 key performance parameters.
@@ -950,6 +950,8 @@ window.TEUI.ParallelCoordinates = (function () {
   /**
    * Configuration for editable axes
    * Each axis defines fields, bounds, step size, and owning section
+   *
+   * For conditional axes (like shw_efficiency), use getConfig function
    */
   const EDITABLE_AXES = {
     'dwhr_efficiency': {
@@ -959,10 +961,80 @@ window.TEUI.ParallelCoordinates = (function () {
       max: 80,                   // DWHR domain is 0-80% per pcConfig.js
       step: 1,                   // 1-interval steps (matches S07 slider behavior)
       unit: '%',
-      label: 'DWHR%',
+      label: 'DWHR',
       owningSection: 'sect07'    // Section that owns this parameter
+    },
+
+    'shw_efficiency': {
+      // Conditional axis - config depends on system type (d_51)
+      // Call getConfig(mode) to get current configuration
+      getConfig: function(mode) {
+        // Read system type from StateManager (sole source of truth)
+        const systemTypeField = mode === 'target' ? 'd_51' : 'ref_d_51';
+        const systemType = window.TEUI?.StateManager?.getValue(systemTypeField) || 'Heatpump';
+
+        console.log(`[ParallelCoordinates] SHW% config: mode=${mode}, systemType=${systemType} (from ${systemTypeField})`);
+
+        if (systemType === 'Heatpump') {
+          return {
+            targetField: 'd_52',
+            refField: 'ref_d_52',
+            min: 100,
+            max: 450,
+            step: 1,
+            unit: '%',
+            label: 'SHW',
+            owningSection: 'sect07',
+            isDecimal: false
+          };
+        } else if (systemType === 'Electric') {
+          return {
+            targetField: 'd_52',
+            refField: 'ref_d_52',
+            min: 90,
+            max: 100,
+            step: 1,
+            unit: '%',
+            label: 'SHW',
+            owningSection: 'sect07',
+            isDecimal: false
+          };
+        } else { // Gas or Oil
+          return {
+            targetField: 'k_52',
+            refField: 'ref_k_52',
+            min: 0.50,
+            max: 0.98,
+            step: 0.01,
+            unit: '',
+            label: 'SHW AFUE',
+            owningSection: 'sect07',
+            isDecimal: true // k_52 uses decimal format (0.90 not 90)
+          };
+        }
+      },
+      owningSection: 'sect07'
     }
   };
+
+  /**
+   * Get configuration for an axis (handles both static and conditional configs)
+   * @param {string} axisId - Axis identifier
+   * @param {string} mode - 'target' or 'reference'
+   * @returns {object} Axis configuration object
+   */
+  function getAxisConfig(axisId, mode) {
+    const axisEntry = EDITABLE_AXES[axisId];
+    if (!axisEntry) return null;
+
+    // If axis has getConfig function, it's conditional - call it
+    if (typeof axisEntry.getConfig === 'function') {
+      return axisEntry.getConfig(mode);
+    }
+
+    // Otherwise, return static config
+    return axisEntry;
+  }
 
   /**
    * Initialize drag behavior for editable nodes
@@ -1032,7 +1104,10 @@ window.TEUI.ParallelCoordinates = (function () {
    * NO STATE UPDATES - only visual feedback
    */
   function dragging(event, d) {
-    const axisConfig = EDITABLE_AXES[d.axisId];
+    // Get current axis config (handles conditional axes like SHW%)
+    const axisConfig = getAxisConfig(d.axisId, d.mode);
+    if (!axisConfig) return;
+
     const yScale = initializeDragBehavior.yScales[d.axisIndex];
 
     // Constrain drag to axis bounds
@@ -1044,7 +1119,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // Convert Y position back to value
     let newValue = yScale.invert(newY);
 
-    // Snap to 1-interval steps (like S07 sliders)
+    // Snap to step intervals (1 for percentages, 0.01 for decimals)
     newValue = Math.round(newValue / axisConfig.step) * axisConfig.step;
 
     // Clamp to min/max
@@ -1053,8 +1128,13 @@ window.TEUI.ParallelCoordinates = (function () {
     // Update node position (visual only)
     d3.select(this).attr('cy', yScale(clampedValue));
 
+    // Format value for display
+    const displayValue = axisConfig.isDecimal
+      ? clampedValue.toFixed(2)  // 0.95 for k_52 (Gas/Oil AFUE)
+      : clampedValue.toFixed(1);  // 100.0 for d_52 (percentages)
+
     // Update modal display (visual only)
-    updateDragModal(axisConfig.label, clampedValue, axisConfig.unit);
+    updateDragModal(axisConfig.label, displayValue, axisConfig.unit);
 
     // Store current value for dragEnded
     d.value = clampedValue;
@@ -1068,7 +1148,13 @@ window.TEUI.ParallelCoordinates = (function () {
   function dragEnded(event, d) {
     d3.select(this).classed('pc-dragging', false);
 
-    const axisConfig = EDITABLE_AXES[d.axisId];
+    // Get current axis config (handles conditional axes like SHW%)
+    const axisConfig = getAxisConfig(d.axisId, d.mode);
+    if (!axisConfig) {
+      hideDragModal();
+      return;
+    }
+
     const clampedValue = d.value; // Get final value from dragging
 
     // Determine field ID and state to update based on which node was dragged
@@ -1076,7 +1162,12 @@ window.TEUI.ParallelCoordinates = (function () {
     const isTarget = d.mode === 'target';
     const fieldId = isTarget ? baseFieldId : `ref_${baseFieldId}`;
 
-    console.log(`[ParallelCoordinates] Drag ended: ${fieldId} = ${clampedValue} (node mode: ${d.mode})`);
+    // Format value for storage (decimal vs integer)
+    const valueToStore = axisConfig.isDecimal
+      ? clampedValue.toFixed(2)  // "0.95" for k_52 (Gas/Oil AFUE)
+      : Math.round(clampedValue).toString();  // "100" for d_52 (percentages)
+
+    console.log(`[ParallelCoordinates] Drag ended: ${fieldId} = ${valueToStore} (node mode: ${d.mode}, axis: ${d.axisId})`);
 
     // Get owning section
     const owningSection = window.TEUI?.SectionModules?.[axisConfig.owningSection];
@@ -1092,14 +1183,14 @@ window.TEUI.ParallelCoordinates = (function () {
       // 1. Update the appropriate internal state (TargetState or ReferenceState)
       const targetState = isTarget ? owningSection.TargetState : owningSection.ReferenceState;
       if (targetState) {
-        targetState.setValue(baseFieldId, clampedValue.toString());
-        console.log(`[ParallelCoordinates] Updated ${isTarget ? 'Target' : 'Reference'}State.${baseFieldId} = ${clampedValue}`);
+        targetState.setValue(baseFieldId, valueToStore);
+        console.log(`[ParallelCoordinates] Updated ${isTarget ? 'Target' : 'Reference'}State.${baseFieldId} = ${valueToStore}`);
       }
 
       // 2. Update StateManager (for cross-section communication)
       if (window.TEUI?.StateManager) {
-        window.TEUI.StateManager.setValue(fieldId, clampedValue.toString(), 'user-modified');
-        console.log(`[ParallelCoordinates] Updated StateManager.${fieldId} = ${clampedValue}`);
+        window.TEUI.StateManager.setValue(fieldId, valueToStore, 'user-modified');
+        console.log(`[ParallelCoordinates] Updated StateManager.${fieldId} = ${valueToStore}`);
       }
 
       // 3. Call calculateAll() to recalculate (Pattern A compliant)
@@ -1133,23 +1224,37 @@ window.TEUI.ParallelCoordinates = (function () {
     modal.id = 'pc-drag-modal';
     modal.setAttribute('data-mode', nodeData.mode); // 'target' or 'reference'
 
-    const axisConfig = EDITABLE_AXES[nodeData.axisId];
+    // Get current axis config (handles conditional axes like SHW%)
+    const axisConfig = getAxisConfig(nodeData.axisId, nodeData.mode);
+    if (!axisConfig) return;
+
     // Remove % from label since value already shows it (e.g., "DWHR" not "DWHR%")
     const labelText = axisConfig.label.replace('%', '').trim();
-    modal.textContent = `${labelText}: ${nodeData.value.toFixed(1)}${axisConfig.unit}`;
+
+    // Format value based on decimal/integer type
+    const displayValue = axisConfig.isDecimal
+      ? nodeData.value.toFixed(2)
+      : nodeData.value.toFixed(1);
+
+    modal.textContent = `${labelText}: ${displayValue}${axisConfig.unit}`;
 
     document.body.appendChild(modal);
   }
 
   /**
    * Update drag modal with current value
+   * @param {string} label - Axis label
+   * @param {string|number} value - Value to display (already formatted if string)
+   * @param {string} unit - Unit symbol (%, etc.)
    */
   function updateDragModal(label, value, unit) {
     const modal = document.getElementById('pc-drag-modal');
     if (modal) {
       // Remove % from label since value already shows it
       const labelText = label.replace('%', '').trim();
-      modal.textContent = `${labelText}: ${value.toFixed(1)}${unit}`;
+      // If value is string (pre-formatted), use as-is; otherwise format it
+      const displayValue = typeof value === 'string' ? value : value.toFixed(1);
+      modal.textContent = `${labelText}: ${displayValue}${unit}`;
     }
   }
 
