@@ -1262,17 +1262,178 @@ Call `createLegend()` after `activateVisualization()`.
     - Calculate exact axis positions and apply as inline widths
   - **Recommended:** Graph left margin = row label width (both 100px)
 
-**Phase 3: Financial Calculations (Future Session)**
-- [ ] Implement cost calculation formulas per axis (formulas to be provided)
-- [ ] Wire up to StateManager financial fields
-- [ ] Format currency values (locale-aware, CAD)
-- [ ] Add totals column (optional - sum across axes)
+**Phase 3: Financial Calculations** 🚧 IN PROGRESS
+
+**Goal:** Calculate real financial impact (cost in CAD$) for each optimization axis
+
+**Architecture Decision - Base vs Pro Split:**
+
+Since financial formulas will be **Pro version only**, we need a clean separation strategy:
+
+**Option A: Separate Config Files** (Recommended)
+- Create `ppConfigBase.js` (no financial calculations)
+- Create `ppConfigPro.js` (extends Base with financial formulas)
+- ParallelCoordinates.js checks which config is loaded
+- Build process copies appropriate file
+
+**Option B: Feature Flag in Config**
+- Add `financialFormulas` object to ppConfig.js
+- Set to `null` in Base version, populated in Pro version
+- ParallelCoordinates.js checks if formulas exist before calculating
+
+**Option C: Separate Financial Module**
+- Keep ppConfig.js unchanged (data fields only)
+- Create `ppFinancials.js` (Pro-only module with all formulas)
+- ParallelCoordinates.js imports ppFinancials.js if available
+- Base version simply doesn't include the script tag
+
+**DECISION:** Option C - Separate Financial Module
+- ✅ Cleanest separation (one file to exclude for Base)
+- ✅ No config file duplication
+- ✅ ParallelCoordinates.js works with both versions
+- ✅ Easy to maintain (formulas in dedicated file)
+- ✅ No build process changes needed
+
+**Implementation Plan:**
+
+1. **Create `src/core/ppFinancials.js`** (Pro-only file)
+   - IIFE pattern: `window.TEUI.ppFinancials = (function() { ... })()`
+   - Export `calculateFinancials(axisId, mode)` function
+   - Returns `{ cost: number }` for given axis and mode (target/reference)
+   - Each axis has dedicated calculation function
+
+2. **Update `ParallelCoordinates.js`**
+   - Check if `window.TEUI.ppFinancials` exists
+   - If yes: Call financial calculations for each axis
+   - If no: Display $0.00 (Base version behavior)
+   - Format currency: `new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' })`
+
+3. **Update `index.html`**
+   - Add `<script src="src/core/ppFinancials.js"></script>` (Pro version)
+   - Comment out or omit in Base version
+
+**Financial Formula Structure:**
+
+```javascript
+// ppFinancials.js
+window.TEUI = window.TEUI || {};
+window.TEUI.ppFinancials = (function () {
+
+  const StateManager = window.TEUI.StateManager;
+
+  // Helper to get StateManager value
+  const getValue = (key) => {
+    const val = StateManager?.getValue(key);
+    return parseFloat(val) || 0;
+  };
+
+  // Financial calculation per axis
+  const calculations = {
+
+    shw_efficiency: {
+      // SHW% (Service Hot Water Efficiency)
+      target: () => {
+        const energy = getValue('j_51');        // Total SHW energy (kWh) - TARGET
+        const rate = getValue('l_12');          // Electricity cost ($/kWh) - TARGET
+        return energy * rate;                   // Target cost ($)
+      },
+      reference: () => {
+        const energy = getValue('ref_j_51');    // Total SHW energy (kWh) - REFERENCE
+        const rate = getValue('ref_l_12');      // Electricity cost ($/kWh) - REFERENCE
+        return energy * rate;                   // Reference cost ($)
+      },
+      savings: function() {
+        return this.reference() - this.target(); // Savings ($) - positive when optimized
+      }
+    },
+
+    // dwhr_efficiency: { ... },
+    // net_gains: { ... },
+    // ... (13 more axes)
+  };
+
+  // Public API
+  function calculateFinancials(axisId, mode = 'target') {
+    const calc = calculations[axisId];
+    if (!calc) return { cost: 0 };
+
+    if (mode === 'reference') {
+      return { cost: calc.reference() };
+    } else if (mode === 'target') {
+      return { cost: calc.target() };
+    } else if (mode === 'savings') {
+      return { cost: calc.savings() };
+    }
+
+    return { cost: 0 };
+  }
+
+  return {
+    calculateFinancials,
+  };
+})();
+```
+
+**Usage in ParallelCoordinates.js:**
+
+```javascript
+function renderFinancialRows(axes) {
+  // Check if Pro version
+  const hasPro = window.TEUI?.ppFinancials?.calculateFinancials;
+
+  if (!hasPro) {
+    // Base version: show $0.00
+    return renderDummyFinancialRows(axes);
+  }
+
+  // Pro version: calculate real costs
+  axes.forEach(axis => {
+    const refCost = window.TEUI.ppFinancials.calculateFinancials(axis.id, 'reference');
+    const targetCost = window.TEUI.ppFinancials.calculateFinancials(axis.id, 'target');
+    const savings = window.TEUI.ppFinancials.calculateFinancials(axis.id, 'savings');
+
+    // Format currency
+    const formatter = new Intl.NumberFormat('en-CA', {
+      style: 'currency',
+      currency: 'CAD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+
+    // Render cells with formatted values
+    refCostRow.innerHTML += `<td class="text-center pc-reference-cell">${formatter.format(refCost.cost)}</td>`;
+    targetCostRow.innerHTML += `<td class="text-center pc-target-cell">${formatter.format(targetCost.cost)}</td>`;
+    savingsRow.innerHTML += `<td class="text-center text-success">${formatter.format(savings.cost)}</td>`;
+  });
+}
+```
+
+**First Formula: SHW% (Service Hot Water Efficiency)** ✅ CONFIRMED
+
+**StateManager Fields:**
+- **Target Cost:** `j_51` (Total SHW energy kWh) × `l_12` (Electricity cost $/kWh)
+- **Reference Cost:** `ref_j_51` (Ref Total SHW energy kWh) × `ref_l_12` (Ref Electricity cost $/kWh)
+- **Savings:** Reference Cost - Target Cost
+
+**Field Naming Convention:** ✅ STANDARD
+- Target = base fields (`j_51`, `l_12`)
+- Reference = `ref_` prefix (`ref_j_51`, `ref_l_12`)
+- Savings = Positive when Target costs less than Reference (optimization success)
+
+**Tasks:**
+- [ ] Create `src/core/ppFinancials.js` with SHW% formula
+- [ ] Update `ParallelCoordinates.js` to check for ppFinancials module
+- [ ] Add currency formatting (CAD)
+- [ ] Test with real StateManager values
+- [ ] Add remaining 13 axis formulas (future)
+- [ ] Document Base/Pro build process
 
 **Current Status:**
 - 7 rows total: Target, Reference, Δ, %Δ, Ref Cost, Target Cost, Savings
 - Row labels functional and color-coded
-- Graph/table alignment close but needs refinement
-- Vertical space insufficient for 7 rows without clipping
+- Graph/table alignment fixed with table-layout: fixed
+- Vertical space fixed at 550px container height
+- Financial rows showing $0.00 dummy data (ready for real formulas)
 
 ### 🎯 Priority: Data Point Tooltips
 

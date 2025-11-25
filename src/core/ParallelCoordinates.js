@@ -687,30 +687,58 @@ window.TEUI.ParallelCoordinates = (function () {
     tbody.appendChild(percentRow);
 
     // ========================================================================
-    // FINANCIAL ROWS (Dummy data - Phase 1)
+    // FINANCIAL ROWS (Pro Version with pcFinancials.js)
     // ========================================================================
+
+    // Check if Pro version (pcFinancials module available)
+    const hasPro = window.TEUI?.pcFinancials?.calculateFinancials;
+
+    // Currency formatter (CAD)
+    const formatCurrency = (value) => {
+      return new Intl.NumberFormat('en-CA', {
+        style: 'currency',
+        currency: 'CAD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(value);
+    };
 
     // Reference Cost row
     const refCostRow = document.createElement("tr");
     refCostRow.innerHTML = `<td class="pc-row-label pc-reference-cell"><strong>Ref Cost</strong></td>`;
-    axes.forEach(() => {
-      refCostRow.innerHTML += `<td class="text-center pc-reference-cell">$0.00</td>`;
+    axes.forEach(axis => {
+      if (hasPro) {
+        const result = window.TEUI.pcFinancials.calculateFinancials(axis.id, 'reference');
+        refCostRow.innerHTML += `<td class="text-center pc-reference-cell">${formatCurrency(result.cost)}</td>`;
+      } else {
+        refCostRow.innerHTML += `<td class="text-center pc-reference-cell">$0.00</td>`;
+      }
     });
     tbody.appendChild(refCostRow);
 
     // Target Cost row
     const targetCostRow = document.createElement("tr");
     targetCostRow.innerHTML = `<td class="pc-row-label pc-target-cell"><strong>Target Cost</strong></td>`;
-    axes.forEach(() => {
-      targetCostRow.innerHTML += `<td class="text-center pc-target-cell">$0.00</td>`;
+    axes.forEach(axis => {
+      if (hasPro) {
+        const result = window.TEUI.pcFinancials.calculateFinancials(axis.id, 'target');
+        targetCostRow.innerHTML += `<td class="text-center pc-target-cell">${formatCurrency(result.cost)}</td>`;
+      } else {
+        targetCostRow.innerHTML += `<td class="text-center pc-target-cell">$0.00</td>`;
+      }
     });
     tbody.appendChild(targetCostRow);
 
     // Savings row (Delta $)
     const savingsRow = document.createElement("tr");
     savingsRow.innerHTML = `<td class="pc-row-label text-success"><strong>Savings</strong></td>`;
-    axes.forEach(() => {
-      savingsRow.innerHTML += `<td class="text-center text-success">$0.00</td>`;
+    axes.forEach(axis => {
+      if (hasPro) {
+        const result = window.TEUI.pcFinancials.calculateFinancials(axis.id, 'savings');
+        savingsRow.innerHTML += `<td class="text-center text-success">${formatCurrency(result.cost)}</td>`;
+      } else {
+        savingsRow.innerHTML += `<td class="text-center text-success">$0.00</td>`;
+      }
     });
     tbody.appendChild(savingsRow);
 
