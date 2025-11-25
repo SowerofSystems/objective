@@ -102,7 +102,7 @@
       - [DWHR% - Drain Water Heat Recovery ✅](#dwhr---drain-water-heat-recovery--implemented)
       - [nGains% - Net Useable Internal Gains ✅](#ngains---net-useable-internal-gains--implemented)
       - [TB% - Thermal Bridging Penalty ✅](#tb---thermal-bridging-penalty--section-11--implemented)
-      - [ACH50 - Air Changes per Hour at 50Pa ✅⚠️](#ach50---air-changes-per-hour-at-50pa---section-12--implemented--known-bug)
+      - [ACH50 - Air Changes per Hour at 50Pa ✅](#ach50---air-changes-per-hour-at-50pa---section-12--implemented)
       - [HEAT% - Heating System Efficiency](#heat---heating-system-efficiency---section-13)
       - [MVHR% - Mechanical Ventilation Heat Recovery](#mvhr---mechanical-ventilation-heat-recovery---section-13)
     - [Step 4: Verify CSS Styling](#step-4-verify-css-styling)
@@ -2785,7 +2785,7 @@ The graph interaction must respect this constraint while providing intuitive dra
 
 **Note:** Lower TB% is better (less heat loss). Savings calculation already handles this correctly in pcFinancials.js.
 
-##### ACH50 (Air Changes per Hour at 50Pa) - Section 12 ✅ IMPLEMENTED ⚠️ KNOWN BUG
+##### ACH50 (Air Changes per Hour at 50Pa) - Section 12 ✅ IMPLEMENTED
 
 **Implementation Date:** November 25, 2025
 
@@ -2856,57 +2856,45 @@ When ACH50 node is dragged, Section 18 automatically:
 7. Calls `sect12.ModeManager.refreshUI()` to update dropdown and value
 8. Section 12 dropdown shows "MEASURED", g_109 shows 1.30, d_109 (calculated) reads from g_109
 
-**⚠️ KNOWN BUG - UI Refresh Cross-Contamination:**
+**✅ BUG FIXED (November 25, 2025) - UI Refresh Cross-Contamination:**
 
-**Symptom:**
-- When dragging Reference ACH50 node, both Target AND Reference UI in Section 12 display the Reference value
-- When dragging Target ACH50 node, both Target AND Reference UI in Section 12 display the Target value
-- Last edited value appears in both modes, even though StateManager has correct separate values
+**Original Symptom:**
+- When dragging Reference ACH50 node, both Target AND Reference UI in Section 12 would display the Reference value
+- When dragging Target ACH50 node, both Target AND Reference UI in Section 12 would display the Target value
+- Last edited value appeared in both modes, even though StateManager had correct separate values
 
-**What Works Correctly:**
-- ✅ Dropdown d_108 correctly flips to "MEASURED" in both Target and Reference modes
-- ✅ StateManager has correct separate values (ref_g_109 vs g_109)
-- ✅ Calculations in Section 01 use correct values (no cross-contamination)
-- ✅ Graph rendering in Section 18 uses correct values from d_109/ref_d_109
+**Root Cause Found:**
+ParallelCoordinates.js `dragEnded()` function (lines 1345-1350) was **forcibly switching the section's mode** to match which node was dragged:
+- Drag Reference node → Forced Section 12 into Reference mode
+- Drag Target node → Forced Section 12 into Target mode
 
-**What's Broken:**
-- ❌ Section 12 UI displays g_109 value in both modes regardless of which was last edited
-- ❌ UI reads last written value instead of mode-aware value
+This violated the Pattern A architecture where sections should stay in whatever mode the user selected via the global toggle, not be forced into a mode by programmatic updates.
 
-**Root Cause (Suspected):**
-The `baseFieldId` logic in `dragEnded()` (line 1301) always uses `axisConfig.targetField` for state updates. For ACH50, targetField is `g_109` for BOTH Target and Reference writes. When we update the internal state (TargetState/ReferenceState), we need to ensure we're using the base field name (without ref_ prefix) but the UI refresh needs to distinguish which mode's state to read from.
+**The Fix:**
+Removed the forced mode switch in [ParallelCoordinates.js:1345-1356](../../../src/core/ParallelCoordinates.js#L1345-L1356). Now when dragging nodes from S18:
+1. Updates the appropriate state (TargetState or ReferenceState) based on which node was dragged ✅
+2. Updates StateManager with correct prefix (ref_ or no prefix) ✅
+3. Section stays in whatever mode the user currently has selected ✅
+4. refreshUI() displays values from the current mode's state ✅
 
-**Example of Bug:**
-1. Start with Target g_109 = 1.00, Reference ref_g_109 = 2.00
-2. Drag Reference node to 1.30
-3. StateManager correctly has: g_109 = 1.00, ref_g_109 = 1.30 ✅
-4. Section 12 Target mode UI shows: 1.30 ❌ (should show 1.00)
-5. Section 12 Reference mode UI shows: 1.30 ✅ (correct)
-6. Switch back to Target mode, then drag Target node to 0.80
-7. StateManager correctly has: g_109 = 0.80, ref_g_109 = 1.30 ✅
-8. Section 12 Target mode UI shows: 0.80 ✅ (correct)
-9. Section 12 Reference mode UI shows: 0.80 ❌ (should show 1.30)
+**Example - Correct Behavior After Fix:**
+User is in Target mode, drags Reference ACH50 node to 1.30:
+1. Updates ReferenceState.g_109 = "1.30" ✅
+2. Updates StateManager.ref_g_109 = "1.30" ✅
+3. Section 12 stays in Target mode ✅
+4. Section 12 UI displays TargetState.g_109 = "1.00" ✅ (no cross-contamination)
+5. User switches to Reference mode later ✅
+6. Section 12 UI now displays ReferenceState.g_109 = "1.30" ✅
 
-**Impact:**
-- Low severity - only affects Section 12 UI display
-- Calculations remain accurate (StateManager has correct values)
-- Other sections reading from d_109/ref_d_109 work correctly
-- Does NOT affect financial calculations, TEUI/GHGI results, or graph rendering
+**Why This Fix Works:**
+Pattern A sections maintain separate TargetState and ReferenceState objects, and refreshUI() reads from whichever state matches the current mode. By removing the forced mode switch, we let the section's display mode be controlled by the user (via global toggle), not by programmatic updates from other sections. This ensures proper state isolation and prevents UI cross-contamination.
 
-**Fix Needed:**
-Review how other sections handle mode-aware UI refresh when writing to the same base field from both Target and Reference contexts. The issue is likely in how Section 12's `refreshUI()` or `handleConditionalEditability()` reads the g_109 value - it should read from the current mode's state, not from the last written value.
-
-**Temporary Workaround:**
-Users should verify values by checking:
-1. StateManager values (correct) via console: `window.TEUI.StateManager.getValue('g_109')` and `window.TEUI.StateManager.getValue('ref_g_109')`
-2. Graph rendering (correct) - Section 18 reads from d_109/ref_d_109
-3. Section 01 calculations (correct) - uses StateManager values
-
-**Next Steps:**
-1. Document pattern used in other sections for write vs display field patterns
-2. Review Section 12's refreshUI() logic for mode-aware field reading
-3. Ensure TargetState/ReferenceState updates correctly distinguish base field names
-4. Test fix with other write/display field patterns if they exist
+**Verified:**
+- ✅ StateManager maintains correct separate values (ref_g_109 vs g_109)
+- ✅ Section 12 UI displays correct mode-specific values
+- ✅ Dropdown d_108 correctly flips to "MEASURED" in appropriate state
+- ✅ Calculations use correct values (no cross-contamination)
+- ✅ Graph rendering uses correct values from d_109/ref_d_109
 
 ##### HEAT% (Heating System Efficiency) - Section 13
 ```javascript

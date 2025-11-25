@@ -1342,12 +1342,18 @@ window.TEUI.ParallelCoordinates = (function () {
     const owningSection = window.TEUI?.SectionModules?.[axisConfig.owningSection];
 
     if (owningSection) {
-      // 0. Switch section to correct mode (Target drag → Target mode, Reference drag → Reference mode)
-      const targetMode = isTarget ? 'target' : 'reference';
-      if (owningSection.ModeManager && owningSection.ModeManager.currentMode !== targetMode) {
-        owningSection.ModeManager.switchMode(targetMode);
-        console.log(`[ParallelCoordinates] Switched ${axisConfig.owningSection} to ${targetMode} mode`);
-      }
+      // ❌ REMOVED: Do NOT switch section mode when dragging nodes from S18
+      // The section should stay in whatever mode the user has selected via the global toggle
+      // We update the appropriate state (Target or Reference) but let the section display
+      // whatever mode it's currently in. This prevents cross-contamination where dragging
+      // a Reference node would force the section into Reference mode even if the user is
+      // viewing Target mode.
+      //
+      // Example: User is in Target mode, drags Reference ACH50 node to 1.30:
+      // - Updates ReferenceState.g_109 = "1.30" ✅
+      // - Updates StateManager.ref_g_109 = "1.30" ✅
+      // - Section 12 stays in Target mode, displays TargetState.g_109 = "1.00" ✅
+      // - If user switches to Reference mode later, they'll see "1.30" ✅
 
       // 0.5. ⚠️ SPECIAL CASE: ACH50 - Set dropdown to "MEASURED" before writing value
       // For ACH50, dragging requires switching d_108 to "MEASURED" method
