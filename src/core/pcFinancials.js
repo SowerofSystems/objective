@@ -28,7 +28,12 @@ window.TEUI.pcFinancials = (function () {
       return 0;
     }
     const val = StateManager.getValue(key);
-    const numVal = parseFloat(val);
+
+    // Strip currency formatting ($, commas) before parsing
+    // Handles: "$0.1300", "$1,234.56", "12828.144"
+    const cleanVal = typeof val === 'string' ? val.replace(/[$,]/g, '') : val;
+
+    const numVal = parseFloat(cleanVal);
     return (typeof numVal === 'number' && !isNaN(numVal)) ? numVal : 0;
   };
 
