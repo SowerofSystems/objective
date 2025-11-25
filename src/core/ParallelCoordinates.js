@@ -1087,38 +1087,44 @@ window.TEUI.ParallelCoordinates = (function () {
       .on('drag', dragging)
       .on('end', dragEnded);
 
-    // Apply drag to Target nodes (blue)
+    // Apply drag to Reference nodes (red) - FIRST, so they're behind in interaction order
     axes.forEach((axis, i) => {
       if (EDITABLE_AXES[axis.id]) {
         const node = svg.selectAll('circle')
           .filter(function() {
             const cx = parseFloat(d3.select(this).attr('cx'));
             const cy = parseFloat(d3.select(this).attr('cy'));
+            const fill = d3.select(this).style('fill');
+            // Match position AND red color to uniquely identify Reference nodes
             return Math.abs(cx - xScale(i)) < 1 &&
-                   Math.abs(cy - yScales[i](targetData[i])) < 1;
+                   Math.abs(cy - yScales[i](referenceData[i])) < 1 &&
+                   fill === CONFIG.colors.reference;
           });
 
         node
-          .datum({ axisId: axis.id, mode: 'target', axisIndex: i, value: targetData[i] })
+          .datum({ axisId: axis.id, mode: 'reference', axisIndex: i, value: referenceData[i] })
           .call(drag)
           .classed('pc-editable-node', true)
           .attr('r', 8); // 2× size for editable nodes
       }
     });
 
-    // Apply drag to Reference nodes (red)
+    // Apply drag to Target nodes (blue) - SECOND, so they're on top in interaction order
     axes.forEach((axis, i) => {
       if (EDITABLE_AXES[axis.id]) {
         const node = svg.selectAll('circle')
           .filter(function() {
             const cx = parseFloat(d3.select(this).attr('cx'));
             const cy = parseFloat(d3.select(this).attr('cy'));
+            const fill = d3.select(this).style('fill');
+            // Match position AND blue color to uniquely identify Target nodes
             return Math.abs(cx - xScale(i)) < 1 &&
-                   Math.abs(cy - yScales[i](referenceData[i])) < 1;
+                   Math.abs(cy - yScales[i](targetData[i])) < 1 &&
+                   fill === CONFIG.colors.target;
           });
 
         node
-          .datum({ axisId: axis.id, mode: 'reference', axisIndex: i, value: referenceData[i] })
+          .datum({ axisId: axis.id, mode: 'target', axisIndex: i, value: targetData[i] })
           .call(drag)
           .classed('pc-editable-node', true)
           .attr('r', 8); // 2× size for editable nodes
