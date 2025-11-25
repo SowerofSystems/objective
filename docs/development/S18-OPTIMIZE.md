@@ -10,12 +10,16 @@
 
 Section 18 will implement a **Parallel Coordinates** visualization to show optimization paths between Target and Reference building configurations. The graph will display two lines (blue for Target, red for Reference) traversing across multiple vertical axes representing key performance parameters with the highest total influence for the least capital cost.
 
+Future development can show 'Runs' of energy models that the user chooses to save, together with the concurrent Target/Reference model pair. Feature TBD. 
+
 **Design Goals**:
 - Clean, unique visualization (not generic parallel coordinates)
 - 80% graph / 20% data table layout
 - Two-line comparison (Target vs Reference)
 - Focus on high-impact, low-cost parameters
 - Consistent with S16/S17 D3.js patterns
+- Will add 'Optimize' and 'Super Optimize' buttons in button row just right of 'Refresh Graph' button, similar bootstrap format
+- Will add 2 more rows, afrer existing Savings row, 8. Capital Cost Premium, 9. Target ROI (need to update name of 'Savings' to 'Targeted Savings') - Capital cost premium will be user editable and stored to StateManager as SHW_premium, DWHR_premium, etc. and shall only apply to the Target model, not the Reference model (so no ref_ counterparts). ROI shall be calculated as SHW_premium-SHW_TargetSavings and be in Years (2dp numberFormat)
 
 ---
 
@@ -44,7 +48,7 @@ Section 18 will implement a **Parallel Coordinates** visualization to show optim
 - **d3-selection**: DOM manipulation
 - **d3-brush**: Interactive axis brushing (optional feature)
 
-**No additional libraries needed!** D3.js v7 is self-sufficient for parallel coordinates.
+**No additional libraries needed!** D3.js v7 is self-sufficient for parallel coordinates. Tell human to download libraries for legacy functioning/local methods and archiving purposes. 
 
 ### Licensing ✅
 
@@ -110,7 +114,7 @@ Create new file: **`src/sections/ParallelCoordinates.js`** (similar to S16C.js p
 **Responsibilities**:
 - Graph rendering (D3.js v7)
 - Data fetching from StateManager (Target vs Reference)
-- Control panel setup (fullscreen, refresh, export)
+- Control panel setup (fullscreen, refresh, export, settings, Optimize, Super Optimize)
 - Table rendering (bottom 20%)
 - Interaction handlers (hover, click, brush)
 
@@ -157,28 +161,28 @@ Current HTML in [index.html:650-669](../index.html#L650-L669):
 ```
 ┌─────────────────────────────────────────────────────┐
 │ Controls Row:                                       │
-│ [Fullscreen] [Refresh] [Export PNG] [Settings]     │
+│ [Fullscreen] [Refresh] [Export PNG] [Settings]      │
 ├─────────────────────────────────────────────────────┤
 │                                                     │
 │                                                     │
 │         PARALLEL COORDINATES GRAPH                  │
 │         (80% of vertical space)                     │
 │                                                     │
-│    Axis1   Axis2   Axis3   Axis4   Axis5   Axis6   │
+│    Axis1   Axis2   Axis3   Axis4   Axis5   Axis6    │
 │      │      │      │      │      │      │      │    │
 │      │      │      │      │      │      │      │    │
-│    ──┴──────┴──────┴──────┴──────┴──────┴──────    │
+│    ──┴──────┴──────┴──────┴──────┴──────┴──────┴──  │
 │    [Blue Line: Target Model]                        │
 │    [Red Line: Reference Model]                      │
 │                                                     │
 ├─────────────────────────────────────────────────────┤
-│ DATA TABLE (20% of vertical space)                 │
+│ DATA TABLE (20% of vertical space)                  │
 │                                                     │
-│ Parameter    | Target  | Reference | Δ      | %Δ   │
-│──────────────┼─────────┼───────────┼────────┼──────│
-│ Window U-Val | 0.20    | 0.40      | -0.20  | -50% │
-│ Wall R-Value | 30      | 20        | +10    | +50% │
-│ ... (user-defined axes from tomorrow's list)       │
+│ Parameter    | Target  | Reference | Δ      | %Δ    │
+│──────────────┼─────────┼───────────┼────────┼────── │
+│ Window U-Val | 0.20    | 0.40      | -0.20  | -50%  │
+│ Wall R-Value | 30      | 20        | +10    | +50%  │
+│ ... (user-defined axes from tomorrow's list)        │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -188,12 +192,14 @@ Current HTML in [index.html:650-669](../index.html#L650-L669):
 1. **Fullscreen Toggle** (⛶) - Expand/collapse visualization
 2. **Refresh** (⟳) - Reload data from StateManager
 3. **Export PNG** (⬇) - Download graph as image
-4. **Settings** (⚙) - Toggle axis visibility, line colors, etc.
+4. **Settings** (⚙) - ROI modal popup, etc. 
 
-**Info Panel** (optional):
+**Info Panel** (same row as Buttons, as UI vert space is at a premium):
 - Active mode indicator (Target/Reference comparison)
 - Data timestamp
 - Quick stats (e.g., "6 parameters optimized")
+- Legend
+- Optimize, Super Optimize buttons
 
 ---
 
@@ -243,7 +249,7 @@ const OPTIMIZATION_AXES = [
     referenceFieldMultiplier: null,
     referenceFieldAltMultiplier: 100,
     referenceFieldSelector: "ref_d_51",
-    optimal: "higher",
+    optimal: "higher", // note: this can be counter-intuitive, lower hetaloss = higher performance
     description: "Service Hot Water efficiency - conditional on heating fuel type",
   },
   {
@@ -252,7 +258,7 @@ const OPTIMIZATION_AXES = [
     unit: "%",
     targetField: "d_53",
     referenceField: "ref_d_53",
-    optimal: "higher",
+    optimal: "higher", // higher value = higher performance = lower drain heatloss = lower costs, so higher value is at bottom of axis, but to 70% from 0% at top
     description: "Drain Water Heat Recovery efficiency",
   },
   {
@@ -261,7 +267,7 @@ const OPTIMIZATION_AXES = [
     unit: "%",
     targetField: "g_80",
     referenceField: "ref_g_80",
-    optimal: "higher",
+    optimal: "higher", // more usable gains, lower the line because lower the heating system demand, and lower costs for same
     description: "Net useable internal gains utilization",
   },
   {
@@ -270,7 +276,7 @@ const OPTIMIZATION_AXES = [
     unit: "%",
     targetField: "d_97",
     referenceField: "ref_d_97",
-    optimal: "lower",
+    optimal: "lower", //lower % is lower thermal transmission, lower heatloss, lower costs, lower line
     description: "Thermal bridging penalty",
   },
   {
@@ -397,13 +403,13 @@ const OPTIMIZATION_AXES = [
    - These do NOT follow the standard `ref_` prefix pattern
 
 3. **Unit Corrections**:
-   - **Ag/Ae**: Not areas (m²), but aggregate U-values (W/m²K)
-   - **TELI**: Thermal **Envelope Loss** Intensity (not "Load")
-   - **nGains%**: Net **useable** internal gains
+   - **Ag/Ae**: represent aggregate U-values (W/m²K), Ae surfaces to air, Ag surfaces to ground
+   - **TELI**: Thermal **Total Envelope Loss/m2 of Envelope** Intensity (not "Load")
+   - **nGains%**: Net **useable** internal gains, a function of mass, mass transfer effects, heat recovery, thermal storage, etc.
 
 4. **All Other Axes** (2-4, 7-8, 10-12): Standard `ref_` prefix for Reference mode
 
-### Two-Line Rendering
+### Two-Line Rendering (Target & Reference)
 
 ```javascript
 function renderParallelCoordinates(axes, targetData, referenceData) {
@@ -438,22 +444,22 @@ function renderParallelCoordinates(axes, targetData, referenceData) {
     .style("fill", "none");
 }
 ```
-
+*need to determine processor overhead burden of rubber-banding recalculations so line moves with node on interactive nodes for improved UX.
 ---
 
 ## 6. Styling and Differentiation
 
-### Making It Unique (Not Generic PC Graph)
+### Making It Unique (Not Generic PC Graph, but a clear representation of a worse Reference model and a better Target model)
 
 **Design Differentiators**:
 1. **Two-line focus** - Not cluttered with dozens of lines
 2. **Color-coded optimization** - Blue (Target) vs Red (Reference) clearly labeled
-3. **Contextual axes** - Only show high-impact, low-cost parameters
-4. **Integrated table** - Live data below graph (not separate)
+3. **Contextual axes** - Only show high-impact, low-capital cost parameters
+4. **Integrated table** - Live data below graph (not separate) with editable nodes that update all section inputs and updated totals in KeyValues (functional now for first 3 axes)
 5. **Minimalist aesthetic** - Clean, professional, not academic
 6. **Interactive highlights** - Hover to show delta values between lines
 
-**Visual Style**:
+**Visual Style**: Attempt to keep all styling in styles.css, not inline!
 ```css
 /* Clean, modern parallel coordinates */
 .parallel-coordinates-container {
@@ -570,14 +576,14 @@ function renderParallelCoordinates(axes, targetData, referenceData) {
 **Tasks**:
 1. [x] Add script imports to index.html (ppConfig.js + ParallelCoordinates.js in core section)
 2. [x] Add "Activate Optimization View" button following S16/S17 pattern
-3. [ ] Test data loading from StateManager
-4. [ ] Test control panel buttons
-5. [ ] Test fullscreen mode
+3. [x] Test data loading from StateManager
+4. [x] Test control panel buttons
+5. [x] Test fullscreen mode
 6. [ ] Test responsive layout (mobile/tablet/desktop)
-7. [ ] Verify table data matches graph
-8. [ ] Performance testing (render time < 500ms)
+7. [x] Verify table data matches graph
+8. [x] Performance testing (render time < 500ms) - recalcs are sub 100ms, render sub 60ms. Excellent!
 
-**Current Status**: Modules created and imported, activate button added. Ready for user testing.
+**Current Status**: Modules created and imported, activate button added. Tested, expanding interactivity and economics now.
 
 ### Phase 5: Polish & Documentation
 **Dependencies**: Phase 4 complete
@@ -587,7 +593,7 @@ function renderParallelCoordinates(axes, targetData, referenceData) {
 2. [ ] Add tooltips for axes (explain parameter impact/cost)
 3. [ ] Add loading state indicator
 4. [ ] Add error handling (missing StateManager values)
-5. [ ] Write inline code documentation
+5. [ ] Maintain this documentation as future User and Dev guide
 6. [ ] Update CLAUDE.md with S18 architecture notes
 7. [ ] Create user guide section in docs
 
@@ -597,13 +603,13 @@ function renderParallelCoordinates(axes, targetData, referenceData) {
 
 ### Browser Compatibility
 - **Target**: Modern browsers (Chrome 90+, Firefox 88+, Safari 14+)
-- **D3.js v7**: Requires ES6+ support (covered by target browsers)
+- **D3.js v7**: Requires ES6+ support (covered by target browsers)- seems fine using only local Filereader methods...
 
 ### Performance Targets
-- **Initial render**: < 500ms
-- **Refresh/update**: < 200ms
+- **Initial render**: < 200ms
+- **Refresh/update**: < 100ms
 - **Fullscreen toggle**: < 100ms
-- **Export PNG**: < 2s
+- **Export PNG**: < 2s - works but this should be a PDF report with graph and table, not just an image
 
 ### Accessibility
 - **Keyboard navigation**: Arrow keys to traverse axes
@@ -616,12 +622,11 @@ function renderParallelCoordinates(axes, targetData, referenceData) {
 ## 9. Open Questions
 
 1. ~~**Axis List**: Which parameters to visualize?~~ ✅ RESOLVED - 14 axes defined
-2. **Axis Order**: Left-to-right sequence by impact, cost, or category?
+2. **Axis Order**: Left-to-right sequence by Section Order and impact, category.
    - Current order: As provided by user (inputs → outputs)
-   - Alternative: Group by category (efficiency → geometry → performance)
 3. **Domain Ranges**: Min/max for each axis
    - Need to analyze typical value ranges from StateManager
-   - Consider auto-scaling vs fixed ranges
+   - Consider auto-scaling vs fixed ranges (depends on Axis/System)
 4. **Normalization**: Should axes be normalized (0-1) or use actual units?
    - Recommendation: Keep actual units for clarity
    - Use per-axis scaling (each axis independent)
@@ -690,7 +695,8 @@ objective/
 1. Complete core visualization (graph + table)
 2. Implement control panel
 3. Test and iterate
-4. Polish and document
+4. Add Interactive Features and Economics sections
+5. Polish and document
 
 ---
 
@@ -721,110 +727,7 @@ objective/
 | 2025-11-23 | Phase 2 Complete | User provided 14-axis configuration with conditional logic |
 | 2025-11-24 | Phase 3 Complete | Created ppConfig.js (346 lines) and ParallelCoordinates.js (680 lines) |
 | 2025-11-24 | Phase 4 In Progress | Added imports, activate button. Working state: Commit 64cf4a8 |
-| 2025-11-24 | Refactor Attempt | Attempted S17 two-phase pattern. Commits 5be5fd6, a2d581e - **NEEDS REVERT** |
-
----
-
-## NEXT SESSION: Recovery Plan
-
-### Current Situation (November 24, 2025 - Late Session)
-
-**Problem**: Attempted to refactor S18 to match S17's two-phase initialization pattern (activate button in controls row). Implementation became complex with:
-- Defensive retry logic (5 attempts)
-- DOM timing issues
-- S18 not rendering at all (blank section)
-
-**Last Known Working State**: Commit **64cf4a8** (or earlier: 71ca7dc, f13809c)
-- Basic implementation working
-- Separate activate button (not integrated in controls row)
-- Graph renders successfully when activated
-
-**What Worked Well**:
-- ✅ CSS styles added to `src/styles.css` (lines 1825-1952) - **Keep these!**
-- ✅ Single-row control layout pattern identified from S17
-- ✅ Control button styling (btn-sm, consistent gaps)
-
-**What Needs Reverting**:
-- ❌ Two-phase initialization in ParallelCoordinates.js
-- ❌ setupInitialState() with retry logic
-- ❌ activateVisualization() state management
-- ❌ Changes to Section18.js calling setupInitialState
-
-### Recovery Steps (Start of Next Session)
-
-**Step 1: Revert to Working State**
-```bash
-# Revert the two problematic commits
-git revert --no-commit a2d581e  # Retry logic
-git revert --no-commit 5be5fd6  # S17 pattern refactor
-git commit -m "Revert: Two-phase initialization - returning to simpler working pattern"
-
-# Or hard reset if preferred:
-git reset --hard 64cf4a8
-```
-
-**Step 2: Verify Working State**
-- Refresh browser
-- S18 should show standalone "Activate Optimization View" button
-- Graph should render when button clicked
-- Controls should appear and function
-
-**Step 3: Simple Control Row Integration (Low-Risk Approach)**
-
-Instead of two-phase initialization, do a **single-phase** refactor:
-
-1. Keep existing `initialize()` function that works
-2. Move CSS from inline styles to classes (already done ✅)
-3. Update `initializeControls()` to add activate button at start of row:
-   ```javascript
-   function initializeControls() {
-     const controlsContainer = document.createElement("div");
-     controlsContainer.className = "parallel-coordinates-controls";
-     // ... existing styling ...
-
-     // Add activate button IF not already activated
-     if (!isActivated) {
-       const activateBtn = createButton("bi-shuffle", "Activate", () => {
-         isActivated = true;
-         activateBtn.remove(); // Remove self after click
-         refresh(); // Render graph
-       });
-       activateBtn.classList.add("btn-primary");
-       controlsContainer.appendChild(activateBtn);
-     }
-
-     // Add other buttons...
-     const layoutContainer = document.createElement("div");
-     layoutContainer.style.cssText = "display: flex; gap: 5px; align-items: center; margin-left: auto;";
-     // ... rest of buttons ...
-   }
-   ```
-
-4. Update HTML: Remove standalone button, keep just the wrappers
-
-**Step 4: Test Incrementally**
-- First: Just move button into controls row (no removal logic)
-- Then: Add state flag and self-removal
-- Finally: Add placeholder message if desired
-
-### Key Lessons for Next Session
-
-1. **Don't over-engineer**: S17's pattern is complex because Dependency.js has its own DOMContentLoaded listener. S18 uses Section18.js which is simpler.
-
-2. **Single responsibility**: ParallelCoordinates.js should render, not manage initialization state
-
-3. **Keep it simple**: Button starts in controls row, removes itself when clicked. No retry logic needed.
-
-4. **Incremental changes**: Commit small working changes, not big refactors
-
-5. **Trust the working pattern**: The original 64cf4a8 approach was fine, just needed styling cleanup
-
-### Files to Review Next Session
-
-- `src/core/ParallelCoordinates.js` - Check for overly complex initialization
-- `src/sections/Section18.js` - Should be minimal (currently is ✅)
-- `index.html` - Verify container structure is clean
-- `src/styles.css` - Lines 1825-1952 are good, keep them
+| 2025-11-24 | Refactor Attempt | Attempted S17 two-phase pattern. Commits 5be5fd6, a2d581e - **UPDATE THIS TO REFLECT CURRENT STATE OF CODEBASE NOV 25** |
 
 ---
 

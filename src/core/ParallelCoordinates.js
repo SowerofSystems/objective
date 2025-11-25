@@ -1087,11 +1087,11 @@ window.TEUI.ParallelCoordinates = (function () {
 
       // Helper function to snap dragged value to nearest valid option
       snapValue: function(value) {
-        if (value < 20) return 0;
-        if (value < 45) return 40;
-        if (value < 55) return 50;
-        if (value < 60) return 60;
-        return 70; // 60+ triggers PHPP
+        if (value < 20) return 0;       // 0-19 → 0%
+        if (value < 45) return 40;      // 20-44 → 40%
+        if (value < 55) return 50;      // 45-54 → 50%
+        if (value < 61) return 60;      // 55-60 → 60%
+        return 70;                      // 61+ → PHPP (70 is key for valueMap)
       }
     }
   };
