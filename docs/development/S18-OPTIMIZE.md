@@ -2134,6 +2134,58 @@ refresh(); // Only S18 needs explicit refresh
 
 #### 5. Integration with Existing Systems
 
+**🎛️ S18 as a "Remote Control" for Other Sections**
+
+Interactive node dragging in S18 is essentially a **remote control** for parameters owned by other sections. S18 doesn't directly modify parameters—it publishes changes to StateManager, and the owning section responds automatically.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  SECTION 18 (Parallel Coordinates)                      │
+│                                                          │
+│  User drags DWHR% node ────┐                           │
+│                             │                           │
+│  dragEnded():               │                           │
+│    setValue('d_52', 50) ────┼──→ StateManager          │
+│    refresh()                │         ↓                 │
+└─────────────────────────────┼─────────┼─────────────────┘
+                              │         │
+                              │    Publishes to listeners
+                              │         ↓
+┌─────────────────────────────┼─────────┼─────────────────┐
+│  SECTION 7 (Water Use)      │         │                 │
+│                              │         │                 │
+│  Listener registered: ←──────┘         │                 │
+│    d_52 → calculateAll()               │                 │
+│         → refreshUI()                  │                 │
+│         → slider moves to 50% ←────────┘                 │
+│                                                          │
+│  ┌──────────────────────┐                               │
+│  │  DWHR%: [====○----]  │ ← Slider updates             │
+│  │         50%           │                              │
+│  └──────────────────────┘                               │
+└─────────────────────────────────────────────────────────┘
+```
+
+**What S18 doesn't need to know:**
+- ❌ How S07 is structured
+- ❌ Where the slider is located
+- ❌ What S07's `calculateAll()` does
+- ❌ What other sections depend on `d_52`
+
+**What S07 doesn't need to know:**
+- ❌ That S18 exists
+- ❌ Whether the change came from:
+  - Its own slider
+  - S18's drag interaction
+  - ReferenceValues.js overlay setting
+  - Imported file value
+  - Any other source
+- ❌ That it's being "remote controlled"
+
+**Result:** Clean, decoupled pub/sub messaging through StateManager. S18 is just another publisher, S07 is just a subscriber. ✅
+
+---
+
 **StateManager Integration:**
 - ✅ Use existing `setValue()` - automatically triggers registered listeners
 - ✅ No manual section lookups or calls needed
