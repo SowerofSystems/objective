@@ -45,18 +45,26 @@ window.TEUI.pcFinancials = (function () {
 
     /**
      * SHW% - Service Hot Water Efficiency
-     * Cost = Energy (kWh) × Electricity Rate ($/kWh)
+     * Cost = (Electric Energy × Electric Rate) + (Gas Energy × Gas Rate)
+     * k_51 = net electrical demand (0 when gas system)
+     * e_51 = gas energy demand (0 when electric system)
      */
     shw_efficiency: {
       target: () => {
-        const energy = getValue('j_51');      // Total SHW energy (kWh) - TARGET
-        const rate = getValue('l_12');        // Electricity cost ($/kWh) - TARGET
-        return energy * rate;                 // Target cost ($)
+        const electricEnergy = getValue('k_51');    // Net SHW electric demand (kWh) - TARGET
+        const electricRate = getValue('l_12');      // Electricity cost ($/kWh) - TARGET
+        const gasEnergy = getValue('e_51');         // SHW gas energy (kWh) - TARGET
+        const gasRate = getValue('l_13');           // Gas cost ($/kWh) - TARGET
+
+        return (electricEnergy * electricRate) + (gasEnergy * gasRate);
       },
       reference: () => {
-        const energy = getValue('ref_j_51');  // Total SHW energy (kWh) - REFERENCE
-        const rate = getValue('ref_l_12');    // Electricity cost ($/kWh) - REFERENCE
-        return energy * rate;                 // Reference cost ($)
+        const electricEnergy = getValue('ref_k_51'); // Net SHW electric demand (kWh) - REFERENCE
+        const electricRate = getValue('ref_l_12');   // Electricity cost ($/kWh) - REFERENCE
+        const gasEnergy = getValue('ref_e_51');      // SHW gas energy (kWh) - REFERENCE
+        const gasRate = getValue('ref_l_13');        // Gas cost ($/kWh) - REFERENCE
+
+        return (electricEnergy * electricRate) + (gasEnergy * gasRate);
       },
       savings: function() {
         return this.reference() - this.target(); // Savings ($) - positive when optimized
