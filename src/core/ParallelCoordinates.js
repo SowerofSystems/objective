@@ -651,6 +651,11 @@ window.TEUI.ParallelCoordinates = (function () {
     });
 
     // ====================================================================
+    // INTERACTIVE DRAGGING - Apply to editable nodes
+    // ====================================================================
+    initializeDragBehavior(svg, axes, xScale, yScales, targetData, referenceData);
+
+    // ====================================================================
     // LEGEND - MOVED TO INFO PANEL (see renderLegend() function)
     // ====================================================================
     // SVG legend commented out - now rendered as HTML in info wrapper
@@ -936,6 +941,191 @@ window.TEUI.ParallelCoordinates = (function () {
     };
 
     img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgString)));
+  }
+
+  // ========================================================================
+  // INTERACTIVE NODE DRAGGING
+  // ========================================================================
+
+  /**
+   * Configuration for editable axes
+   * Each axis defines fields, bounds, step size, and owning section
+   */
+  const EDITABLE_AXES = {
+    'dwhr_efficiency': {
+      targetField: 'd_53',       // Target DWHR% field (NOTE: d_53, not d_52!)
+      refField: 'ref_d_53',      // Reference DWHR% field
+      min: 0,
+      max: 80,                   // DWHR domain is 0-80% per pcConfig.js
+      step: 1,                   // 1-interval steps (matches S07 slider behavior)
+      unit: '%',
+      label: 'DWHR%',
+      owningSection: 'sect07'    // Section that owns this parameter
+    }
+  };
+
+  /**
+   * Initialize drag behavior for editable nodes
+   * Called from renderGraph() after nodes are created
+   */
+  function initializeDragBehavior(svg, axes, xScale, yScales, targetData, referenceData) {
+    const drag = d3.drag()
+      .on('start', dragStarted)
+      .on('drag', dragging)
+      .on('end', dragEnded);
+
+    // Apply drag to Target nodes (blue)
+    axes.forEach((axis, i) => {
+      if (EDITABLE_AXES[axis.id]) {
+        const node = svg.selectAll('circle')
+          .filter(function() {
+            const cx = parseFloat(d3.select(this).attr('cx'));
+            const cy = parseFloat(d3.select(this).attr('cy'));
+            return Math.abs(cx - xScale(i)) < 1 &&
+                   Math.abs(cy - yScales[i](targetData[i])) < 1;
+          });
+
+        node
+          .datum({ axisId: axis.id, mode: 'target', axisIndex: i, value: targetData[i] })
+          .call(drag)
+          .classed('pc-editable-node', true)
+          .attr('r', 8); // 2× size for editable nodes
+      }
+    });
+
+    // Apply drag to Reference nodes (red)
+    axes.forEach((axis, i) => {
+      if (EDITABLE_AXES[axis.id]) {
+        const node = svg.selectAll('circle')
+          .filter(function() {
+            const cx = parseFloat(d3.select(this).attr('cx'));
+            const cy = parseFloat(d3.select(this).attr('cy'));
+            return Math.abs(cx - xScale(i)) < 1 &&
+                   Math.abs(cy - yScales[i](referenceData[i])) < 1;
+          });
+
+        node
+          .datum({ axisId: axis.id, mode: 'reference', axisIndex: i, value: referenceData[i] })
+          .call(drag)
+          .classed('pc-editable-node', true)
+          .attr('r', 8); // 2× size for editable nodes
+      }
+    });
+
+    // Store scales for drag functions to use
+    initializeDragBehavior.xScale = xScale;
+    initializeDragBehavior.yScales = yScales;
+    initializeDragBehavior.svg = svg;
+  }
+
+  /**
+   * Drag start handler - shows modal and applies dragging visual state
+   */
+  function dragStarted(event, d) {
+    d3.select(this).classed('pc-dragging', true);
+    showDragModal(d);
+  }
+
+  /**
+   * Drag handler (fires continuously during drag)
+   * Updates node position and modal display
+   * NO STATE UPDATES - only visual feedback
+   */
+  function dragging(event, d) {
+    const axisConfig = EDITABLE_AXES[d.axisId];
+    const yScale = initializeDragBehavior.yScales[d.axisIndex];
+
+    // Constrain drag to axis bounds
+    const yRange = yScale.range();
+    const minY = Math.min(...yRange);
+    const maxY = Math.max(...yRange);
+    const newY = Math.max(minY, Math.min(maxY, event.y));
+
+    // Convert Y position back to value
+    let newValue = yScale.invert(newY);
+
+    // Snap to 1-interval steps (like S07 sliders)
+    newValue = Math.round(newValue / axisConfig.step) * axisConfig.step;
+
+    // Clamp to min/max
+    const clampedValue = Math.max(axisConfig.min, Math.min(axisConfig.max, newValue));
+
+    // Update node position (visual only)
+    d3.select(this).attr('cy', yScale(clampedValue));
+
+    // Update modal display (visual only)
+    updateDragModal(axisConfig.label, clampedValue, axisConfig.unit);
+
+    // Store current value for dragEnded
+    d.value = clampedValue;
+  }
+
+  /**
+   * Drag end handler (fires once on mouse release)
+   * Updates StateManager and triggers recalculation
+   * OnRelease update only (no intermediate calculations)
+   */
+  function dragEnded(event, d) {
+    d3.select(this).classed('pc-dragging', false);
+
+    const axisConfig = EDITABLE_AXES[d.axisId];
+    const clampedValue = d.value; // Get final value from dragging
+
+    // Update StateManager AND owning section
+    const fieldId = d.mode === 'target' ? axisConfig.targetField : axisConfig.refField;
+    console.log(`[ParallelCoordinates] Drag ended: ${fieldId} = ${clampedValue}`);
+
+    // 1. Update StateManager (triggers downstream dependencies)
+    if (window.TEUI?.StateManager) {
+      window.TEUI.StateManager.setValue(fieldId, clampedValue, 'user-modified');
+    }
+
+    // 2. Directly call owning section's calculateAll() (Pattern A compliant)
+    // This is necessary because sections don't listen to their own fields
+    const owningSection = window.TEUI?.SectionModules?.[axisConfig.owningSection];
+    if (owningSection?.calculateAll) {
+      owningSection.calculateAll();
+      console.log(`[ParallelCoordinates] Called ${axisConfig.owningSection}.calculateAll()`);
+    }
+
+    // 3. Refresh S18 to show updated graph
+    setTimeout(() => {
+      refresh();
+    }, 100); // Small delay to let calculations propagate
+
+    // Hide modal
+    hideDragModal();
+  }
+
+  /**
+   * Show drag value modal
+   */
+  function showDragModal(nodeData) {
+    const modal = document.createElement('div');
+    modal.id = 'pc-drag-modal';
+    const axisConfig = EDITABLE_AXES[nodeData.axisId];
+    modal.textContent = `${axisConfig.label}: ${nodeData.value.toFixed(1)}${axisConfig.unit}`;
+    document.body.appendChild(modal);
+  }
+
+  /**
+   * Update drag modal with current value
+   */
+  function updateDragModal(label, value, unit) {
+    const modal = document.getElementById('pc-drag-modal');
+    if (modal) {
+      modal.textContent = `${label}: ${value.toFixed(1)}${unit}`;
+    }
+  }
+
+  /**
+   * Hide drag modal
+   */
+  function hideDragModal() {
+    const modal = document.getElementById('pc-drag-modal');
+    if (modal) {
+      modal.remove();
+    }
   }
 
   // ========================================================================

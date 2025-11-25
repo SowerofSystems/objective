@@ -1920,6 +1920,41 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
   font-size: 10px;
 }
 
+/* Parallel Coordinates - Interactive Node Styles */
+.pc-editable-node {
+  cursor: grab;
+  transition: filter 0.2s ease;
+}
+
+.pc-editable-node:hover {
+  filter: drop-shadow(0 0 4px rgba(13, 110, 253, 0.8)); /* Blue glow on hover */
+}
+
+.pc-dragging {
+  cursor: grabbing !important;
+  opacity: 0.7;
+  filter: drop-shadow(0 0 6px rgba(13, 110, 253, 1)); /* Stronger glow while dragging */
+}
+
+/* Parallel Coordinates - Drag Value Modal */
+#pc-drag-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border: 2px solid #0d6efd;
+  border-radius: 8px;
+  padding: 20px 40px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  font-size: 24px;
+  font-weight: bold;
+  color: #0d6efd;
+  pointer-events: none;
+  user-select: none;
+}
+
 /* ======================================
    SECTION 16 - SANKEY DIAGRAM STYLES
    ====================================== */

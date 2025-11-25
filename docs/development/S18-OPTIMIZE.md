@@ -2077,60 +2077,60 @@ function hideDragModal() {
 }
 ```
 
-#### 4. Recalculation Flow (Automatic via StateManager Listeners)
+#### 4. Recalculation Flow (Pattern A Direct Call)
 
-**✅ SIMPLIFIED ARCHITECTURE**: No manual recalculation needed!
+**🔧 CORRECT ARCHITECTURE**: StateManager + Direct calculateAll() Call
 
-The existing StateManager listener system handles all recalculation automatically:
+Per 4012-CHEATSHEET.md, sections **do not listen to their own fields** - they only listen to external dependencies. Therefore, when S18 modifies a field owned by another section, we must:
+
+1. Update StateManager (triggers downstream dependencies)
+2. Directly call the owning section's `calculateAll()` (required for Pattern A compliance)
 
 ```javascript
-// ❌ OLD APPROACH (over-engineered, not needed):
-function recalculateAndRefresh(fieldId) {
-  const section = window.TEUI.SectionModules['sect07'];
-  section.calculateAll();
-  section.ModeManager.refreshUI();
+// ✅ CORRECT PATTERN (Pattern A compliant):
+function dragEnded(event, d) {
+  const fieldId = d.mode === 'target' ? axisConfig.targetField : axisConfig.refField;
+
+  // 1. Update StateManager (triggers downstream dependencies)
+  window.TEUI.StateManager.setValue(fieldId, clampedValue, 'user-modified');
+
+  // 2. Directly call owning section's calculateAll() (Pattern A compliant)
+  const owningSection = window.TEUI.SectionModules[axisConfig.owningSection];
+  owningSection.calculateAll();
+
+  // 3. Refresh S18
   refresh();
 }
-
-// ✅ NEW APPROACH (automatic via listeners):
-// Just update StateManager - listeners do the rest!
-window.TEUI.StateManager.setValue('d_52', newValue, 'user-modified');
-refresh(); // Only S18 needs explicit refresh
 ```
 
-**How StateManager Listeners Work:**
+**Why Direct Call is Required:**
 
-1. **Registration** (happens during section initialization):
-   ```javascript
-   // In Section07.js (or any section)
-   window.TEUI.StateManager.addListener('d_52', (newValue) => {
-     TargetState.setValue('d_52', newValue);
-     calculateAll(); // Runs both Target and Reference engines
-   });
-   ```
+**Sections only register StateManager listeners for EXTERNAL dependencies:**
+```javascript
+// In Section07.js initialization:
+window.TEUI.StateManager.addListener('d_63', calculateAll);    // ✅ External: Occupancy
+window.TEUI.StateManager.addListener('l_30', calculateAll);    // ✅ External: Oil emissions
+// ❌ NO LISTENER for d_53 (DWHR%) - it's owned by S07, not external!
+```
 
-2. **Trigger** (happens when S18 updates the value):
-   ```javascript
-   // In ParallelCoordinates.js dragEnded()
-   window.TEUI.StateManager.setValue('d_52', 50, 'user-modified');
-   // ↓ StateManager publishes to all registered listeners
-   // ↓ Section 7's listener fires automatically
-   // ↓ calculateAll() runs
-   // ↓ ModeManager.refreshUI() updates the slider
-   // ↓ Done! No manual intervention needed.
-   ```
+**Why?** Per 4012-CHEATSHEET.md Pattern A:
+- Sections manage their own fields directly through user input handlers
+- Sections don't need listeners for their own fields (would cause double calculation)
+- External modifications (like S18's drag) must call `calculateAll()` explicitly
 
-3. **Result**:
-   - S07 slider moves to new position (50%)
-   - S07 calculations update with new DWHR value
-   - All dependent calculations cascade automatically
-   - S18 calls `refresh()` to redraw graph with new data
+**Flow:**
+
+1. **User drags DWHR% node to 50% in S18**
+2. **S18**: `StateManager.setValue('d_53', 50)` → Triggers downstream listeners (other sections that depend on DWHR%)
+3. **S18**: `SectionModules.sect07.calculateAll()` → Recalculates S07 (both Target & Reference engines)
+4. **S07**: `ModeManager.refreshUI()` → Slider moves to 50%
+5. **S18**: `refresh()` → Graph redraws with new values
 
 **Benefits:**
-- ✅ Decoupled architecture (S18 doesn't need to know about S07)
-- ✅ No manual section lookup or calls needed
-- ✅ Works with any registered listener across all sections
-- ✅ Follows 4012-CHEATSHEET.md event-driven pattern
+- ✅ Pattern A compliant (no self-listeners)
+- ✅ Works for fields without registered listeners
+- ✅ Explicit and predictable (no hidden dependencies)
+- ✅ Follows same pattern as user input handlers in sections
 
 #### 5. Integration with Existing Systems
 
@@ -2141,11 +2141,11 @@ Interactive node dragging in S18 is essentially a **remote control** for paramet
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  SECTION 18 (Parallel Coordinates)                      │
-│                                                          │
-│  User drags DWHR% node ────┐                           │
+│                                                         │
+│  User drags DWHR% node ────┐                            │
 │                             │                           │
 │  dragEnded():               │                           │
-│    setValue('d_52', 50) ────┼──→ StateManager          │
+│    setValue('d_52', 50) ────┼──→ StateManager           │
 │    refresh()                │         ↓                 │
 └─────────────────────────────┼─────────┼─────────────────┘
                               │         │
@@ -2153,15 +2153,15 @@ Interactive node dragging in S18 is essentially a **remote control** for paramet
                               │         ↓
 ┌─────────────────────────────┼─────────┼─────────────────┐
 │  SECTION 7 (Water Use)      │         │                 │
-│                              │         │                 │
-│  Listener registered: ←──────┘         │                 │
-│    d_52 → calculateAll()               │                 │
-│         → refreshUI()                  │                 │
-│         → slider moves to 50% ←────────┘                 │
-│                                                          │
+│                              │        │                 │
+│  Listener registered: ←──────┘        │                 │
+│    d_52 → calculateAll()              │                 │
+│         → refreshUI()                 │                 │
+│         → slider moves to 50% ←───────┘                 │
+│                                                         │
 │  ┌──────────────────────┐                               │
-│  │  DWHR%: [====○----]  │ ← Slider updates             │
-│  │         50%           │                              │
+│  │  DWHR%: [====○----]  │ ← Slider updates              │
+│  │         50%          │                               │
 │  └──────────────────────┘                               │
 └─────────────────────────────────────────────────────────┘
 ```
