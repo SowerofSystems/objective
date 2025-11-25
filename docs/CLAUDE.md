@@ -78,13 +78,17 @@ All development work follows a feature branch workflow with proper PR etiquette:
      ```
    - **Important**: Don't `git add` files that are already staged for deletion
    - Skip `Logs.md` in commits (working file, not version-controlled)
+   - **Commit ONLY when explicitly directed by user** (e.g., "commit this", "commit and push")
+   - **Do NOT auto-commit** after making code changes - user prefers to test first
+   - User will verify functionality in browser before requesting commit
 
 3. **Pushing to Remote**:
    ```bash
    git push -u origin BRANCH-NAME
    ```
-   - Push feature branches to remote for backup and visibility
-   - **Do NOT create PRs immediately** if there are open PRs pending review
+   - **Push ONLY when explicitly directed by user** (e.g., "push to remote", "commit and push")
+   - User prefers to test code locally before pushing to remote
+   - Do NOT auto-push after commits unless specifically requested
 
 4. **Pull Request Protocol**:
    - **NEVER merge your own PRs to main** - wait for CTO review
@@ -259,6 +263,28 @@ objective/                              ← Git repo root
 - Agents cannot access browser console directly
 - When debugging, request logs from human, then analyze `Logs.md` content
 - Use cases: Forensic debugging, calculation sequence analysis, error tracking
+
+### Debugging Best Practices
+
+**Prefer Console Scripts Over Inline Logging**:
+- **DO**: Provide console scripts for user to run in browser console
+- **DON'T**: Add `console.log()` statements to source files (requires commit → test → revert cycle)
+- Console scripts are faster: user pastes → runs → copies output to Logs.md
+- Inline logging requires: code change → commit → push → refresh → test → revert → commit again
+- Exception: Permanent debug logging for critical production issues only
+
+**Example Console Script Pattern**:
+```javascript
+// Check module state
+console.log('Module loaded:', !!window.TEUI?.ModuleName);
+console.log('Field value:', window.TEUI.StateManager?.getValue('field_id'));
+
+// Test function
+if (window.TEUI?.ModuleName?.functionName) {
+  const result = window.TEUI.ModuleName.functionName('test');
+  console.log('Result:', result);
+}
+```
 
 ### Common Path Issues
 
