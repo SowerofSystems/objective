@@ -1112,7 +1112,7 @@ window.TEUI.ParallelCoordinates = (function () {
       owningSection: 'sect11'     // Section 11
     },
 
-    // ACH50 - Air Changes per Hour at 50Pa (0.10 - 10.0 ACH)
+    // ACH50 - Air Changes per Hour at 50Pa (0.10 - 10.0)
     // Lower ACH50 = tighter envelope = better performance
     // Unique pattern: Dragging flips d_108 to "MEASURED" and writes to g_109
     // Display field: d_109 (calculated ACH50 result)
@@ -1125,8 +1125,8 @@ window.TEUI.ParallelCoordinates = (function () {
       refDropdownField: 'ref_d_108',
       min: 0.10,                  // Super tight (Passive House level)
       max: 10.0,                  // Very leaky
-      step: 0.10,                 // 0.10 intervals (0.10, 0.20, 0.30, ...)
-      unit: 'ACH',
+      step: 0.10,                 // 0.10 intervals (0.10, 0.20, 0.30, ..., 1.30, ...)
+      unit: '',                   // No unit - label already says ACH50
       label: 'ACH50',
       owningSection: 'sect12'     // Section 12
     }
@@ -1258,7 +1258,9 @@ window.TEUI.ParallelCoordinates = (function () {
     // For discrete axes, show the snapped value
     // For Gas/Oil (storageMultiplier=0.01), clampedValue is already in display space (90)
     // For other axes, clampedValue is the actual value
-    let displayValue = clampedValue.toFixed(1);  // Always show one decimal (90.0% or 0.9)
+    // ACH50: Use 2 decimals to show values like 1.30
+    const decimals = (d.axisId === 'ach50') ? 2 : 1;
+    let displayValue = clampedValue.toFixed(decimals);
     let displayUnit = axisConfig.unit;
 
     // ⚠️ SPECIAL CASE: nGains% PHPP Mode

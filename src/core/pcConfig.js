@@ -124,7 +124,7 @@ window.TEUI.OPTIMIZATION_AXES = [
   {
     id: "ach50",
     label: "ACH50",
-    unit: "ACH",
+    unit: "",  // No unit needed - label already says ACH50
     description: "Air Changes per Hour at 50Pa (airtightness)",
     optimal: "lower",
 
