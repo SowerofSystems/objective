@@ -2633,19 +2633,45 @@ Section 10 doesn't have a continuous nGains% slider - it uses a **method selecti
 
 The graph interaction must respect this constraint while providing intuitive dragging UX.
 
-##### TB% (Thermal Bridging Penalty) - Section 11
+##### TB% (Thermal Bridging Penalty) - Section 11 ✅ IMPLEMENTED
+
+**Implementation Date:** November 25, 2025
+
 ```javascript
 'thermal_bridge': {
-  targetField: 'd_97',      // Thermal Bridge Penalty %
+  targetField: 'd_97',
   refField: 'ref_d_97',
-  min: 5,                   // Per Section11.js line 1609
-  max: 95,
-  step: 1,
+  min: 5,                   // Minimum 5% (Section 11 slider min)
+  max: 100,
+  step: 5,                  // 5% intervals (5, 10, 15, 20, ..., 100)
   unit: '%',
   label: 'TB',
   owningSection: 'sect11'
 }
 ```
+
+**Storage Format:**
+- **Section 11 slider** stores d_97 as **percentage string** ("5", "10", "20", etc.)
+- Similar to DWHR% pattern - no decimal conversion needed
+- ⚠️ **Important:** Section 11 has TWO input handlers:
+  - **Slider handler** (lines 3045-3092): Stores as percentage string ("20")
+  - **Text input handler** (lines 2976-3015): Stores as decimal ("0.20")
+  - Our dragging mimics **slider behavior** → use percentage string
+
+**Interactive Behavior:**
+- Snaps to 5% intervals during drag (5, 10, 15, 20, 25, ...)
+- Lower TB% = less thermal bridging = better performance
+- Modal shows red for Reference, blue for Target
+- Graph updates immediately on drag; section recalculates on release
+
+**Pattern A Flow:**
+1. User drags TB% node to 25%
+2. `dragEnded()` switches Section 11 to correct mode (Target/Reference)
+3. Updates TargetState or ReferenceState with d_97 = "25"
+4. Updates StateManager with d_97 or ref_d_97 = "25"
+5. Calls `sect11.calculateAll()` to recalculate heat loss
+6. Calls `sect11.ModeManager.refreshUI()` to update slider position
+7. Section 11 slider moves to 25%, thermal bridging loss recalculates
 
 **Note:** Lower TB% is better (less heat loss). Savings calculation already handles this correctly in pcFinancials.js.
 

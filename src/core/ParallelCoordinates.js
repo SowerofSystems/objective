@@ -1095,19 +1095,21 @@ window.TEUI.ParallelCoordinates = (function () {
       }
     },
 
-    // TB% - Thermal Bridging Penalty (0-100%)
+    // TB% - Thermal Bridging Penalty (5-100%)
     // Lower TB% = less heat loss = better performance
-    // Standard continuous slider in Section 10 (d_97, ref_d_97)
-    // Snaps to intervals of 5% (0, 5, 10, 15, 20, ...)
+    // Standard continuous slider in Section 11 (d_97, ref_d_97)
+    // Snaps to intervals of 5% (5, 10, 15, 20, ..., 100)
+    // Storage: d_97 stores as PERCENTAGE STRING (5% → "5", 20% → "20")
+    // ⚠️ NOTE: S11 slider stores as percentage, not decimal (unlike text input handler)
     'thermal_bridge': {
       targetField: 'd_97',
       refField: 'ref_d_97',
-      min: 0,
+      min: 5,                     // Minimum 5% (Section 11 slider min)
       max: 100,
-      step: 5,
+      step: 5,                    // 5% intervals
       unit: '%',
       label: 'TB',
-      owningSection: 'sect10'
+      owningSection: 'sect11'     // Section 11
     }
   };
 
