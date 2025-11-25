@@ -45,9 +45,8 @@ window.TEUI.pcFinancials = (function () {
 
     /**
      * SHW% - Service Hot Water Efficiency
-     * Cost = (Electric Energy × Electric Rate) + (Gas Energy × Gas Rate)
-     * k_51 = net electrical demand (0 when gas system)
-     * e_51 = gas energy demand (0 when electric system)
+     * Cost = (Electric × Rate) + (Gas × Rate) + (Oil × Rate)
+     * Handles all three fuel types - whichever is 0 contributes $0
      */
     shw_efficiency: {
       target: () => {
@@ -55,16 +54,20 @@ window.TEUI.pcFinancials = (function () {
         const electricRate = getValue('l_12');      // Electricity cost ($/kWh) - TARGET
         const gasEnergy = getValue('e_51');         // SHW gas energy (kWh) - TARGET
         const gasRate = getValue('l_13');           // Gas cost ($/kWh) - TARGET
+        const oilVolume = getValue('k_54');         // SHW oil volume (litres) - TARGET
+        const oilRate = getValue('l_16');           // Oil cost ($/litre) - TARGET
 
-        return (electricEnergy * electricRate) + (gasEnergy * gasRate);
+        return (electricEnergy * electricRate) + (gasEnergy * gasRate) + (oilVolume * oilRate);
       },
       reference: () => {
         const electricEnergy = getValue('ref_k_51'); // Net SHW electric demand (kWh) - REFERENCE
         const electricRate = getValue('ref_l_12');   // Electricity cost ($/kWh) - REFERENCE
         const gasEnergy = getValue('ref_e_51');      // SHW gas energy (kWh) - REFERENCE
         const gasRate = getValue('ref_l_13');        // Gas cost ($/kWh) - REFERENCE
+        const oilVolume = getValue('ref_k_54');      // SHW oil volume (litres) - REFERENCE
+        const oilRate = getValue('ref_l_16');        // Oil cost ($/litre) - REFERENCE
 
-        return (electricEnergy * electricRate) + (gasEnergy * gasRate);
+        return (electricEnergy * electricRate) + (gasEnergy * gasRate) + (oilVolume * oilRate);
       },
       savings: function() {
         return this.reference() - this.target(); // Savings ($) - positive when optimized
@@ -73,12 +76,35 @@ window.TEUI.pcFinancials = (function () {
 
     /**
      * DWHR% - Drain Water Heat Recovery
-     * TODO: Add formula when provided
+     * Cost = SHW Cost × (DWHR% / 100)
+     * Shows dollar value of energy RECOVERED by DWHR
+     * If DWHR = 0%, recovery = $0 (no benefit)
+     * If DWHR = 50%, recovery = 50% of SHW cost saved
      */
     dwhr_efficiency: {
-      target: () => 0,
-      reference: () => 0,
-      savings: () => 0
+      target: () => {
+        // Get SHW cost (same calculation as shw_efficiency.target)
+        const shwCost = calculations.shw_efficiency.target();
+
+        // Get DWHR efficiency (stored as percentage: 0-100)
+        const dwhrPercent = getValue('d_53'); // DWHR% - TARGET
+
+        // Calculate recovery value: cost = SHW cost × (DWHR%/100)
+        return shwCost * (dwhrPercent / 100);
+      },
+      reference: () => {
+        // Get SHW cost (same calculation as shw_efficiency.reference)
+        const shwCost = calculations.shw_efficiency.reference();
+
+        // Get DWHR efficiency (stored as percentage: 0-100)
+        const dwhrPercent = getValue('ref_d_53'); // DWHR% - REFERENCE
+
+        // Calculate recovery value: cost = SHW cost × (DWHR%/100)
+        return shwCost * (dwhrPercent / 100);
+      },
+      savings: function() {
+        return this.reference() - this.target(); // Savings ($) - positive when optimized
+      }
     },
 
     /**

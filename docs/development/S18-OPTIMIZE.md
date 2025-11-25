@@ -1440,17 +1440,19 @@ axis_name: {
 **SHW% Implementation:**
 
 **StateManager Fields:**
-- **Target Cost:** `(k_51 × l_12) + (e_51 × l_13)`
-  - `k_51`: Net electric demand (kWh) - 0 when gas system
+- **Target Cost:** `(k_51 × l_12) + (e_51 × l_13) + (k_54 × l_16)`
+  - `k_51`: Net electric demand (kWh) - 0 when gas/oil system
   - `l_12`: Electricity rate ($/kWh) - stored as "$0.1300"
-  - `e_51`: Gas energy (kWh) - 0 when electric system
+  - `e_51`: Gas energy (kWh) - 0 when electric/oil system
   - `l_13`: Gas rate ($/kWh) - stored as "$0.0750"
-- **Reference Cost:** `(ref_k_51 × ref_l_12) + (ref_e_51 × ref_l_13)`
+  - `k_54`: Oil volume (litres) - 0 when electric/gas system
+  - `l_16`: Oil price ($/litre) - stored as "$1.2000"
+- **Reference Cost:** `(ref_k_51 × ref_l_12) + (ref_e_51 × ref_l_13) + (ref_k_54 × ref_l_16)`
 - **Savings:** Reference Cost - Target Cost (positive = optimization working)
 
 **Field Naming Convention:** ✅ STANDARD
-- Target = base fields (`k_51`, `l_12`, `e_51`, `l_13`)
-- Reference = `ref_` prefix (`ref_k_51`, `ref_l_12`, `ref_e_51`, `ref_l_13`)
+- Target = base fields (`k_51`, `l_12`, `e_51`, `l_13`, `k_54`, `l_16`)
+- Reference = `ref_` prefix (`ref_k_51`, `ref_l_12`, `ref_e_51`, `ref_l_13`, `ref_k_54`, `ref_l_16`)
 
 **Critical Implementation Notes:**
 
