@@ -997,8 +997,10 @@ window.TEUI.ParallelCoordinates = (function () {
                           refSystem === 'Gas' || refSystem === 'Oil');
 
         if (hasGasOil) {
-          // If either uses Gas/Oil, use AFUE decimal range
-          return { min: 0.50, max: 0.98 };
+          // If either uses Gas/Oil, return DISPLAY range (already multiplied by 100 in pcConfig)
+          // pcConfig multiplies k_52 by 100, so 0.50 → 50, 0.98 → 98
+          // This ensures graph data (50-98) matches axis domain (50-98)
+          return { min: 50, max: 98 };
         } else {
           // Otherwise both use d_52 percentage field
           // Union of Electric (90-100) and Heatpump (100-450) = 90-450
@@ -1041,13 +1043,14 @@ window.TEUI.ParallelCoordinates = (function () {
           return {
             targetField: 'k_52',
             refField: 'ref_k_52',
-            min: 0.50, // Drag constraint for this mode
-            max: 0.98, // Drag constraint for this mode
-            step: 0.01,
-            unit: '',
+            min: 50,   // Drag constraint in DISPLAY space (pcConfig multiplies by 100)
+            max: 98,   // Drag constraint in DISPLAY space
+            step: 1,   // Step in display space (1% increments)
+            unit: '%',
             label: 'SHW AFUE',
             owningSection: 'sect07',
-            isDecimal: true
+            isDecimal: true,  // Flag that storage is decimal
+            storageMultiplier: 0.01  // Convert display (90) to storage (0.90)
           };
         }
       },
@@ -1166,10 +1169,10 @@ window.TEUI.ParallelCoordinates = (function () {
     // Update node position (visual only)
     d3.select(this).attr('cy', yScale(clampedValue));
 
-    // Format value for display
-    const displayValue = axisConfig.isDecimal
-      ? clampedValue.toFixed(2)  // 0.95 for k_52 (Gas/Oil AFUE)
-      : clampedValue.toFixed(1);  // 100.0 for d_52 (percentages)
+    // Format value for display in modal
+    // For Gas/Oil (storageMultiplier=0.01), clampedValue is already in display space (90)
+    // For other axes, clampedValue is the actual value
+    const displayValue = clampedValue.toFixed(1);  // Always show one decimal (90.0% or 0.9)
 
     // Update modal display (visual only)
     updateDragModal(axisConfig.label, displayValue, axisConfig.unit);
@@ -1193,7 +1196,7 @@ window.TEUI.ParallelCoordinates = (function () {
       return;
     }
 
-    const clampedValue = d.value; // Get final value from dragging
+    const clampedValue = d.value; // Get final value from dragging (in display space)
 
     // Determine field ID based on which node was dragged
     // For conditional axes like SHW%, targetField/refField may differ (d_52 vs k_52)
@@ -1201,10 +1204,18 @@ window.TEUI.ParallelCoordinates = (function () {
     const baseFieldId = axisConfig.targetField;  // Base field without ref_ prefix (e.g., d_52 or k_52)
     const fieldId = isTarget ? baseFieldId : axisConfig.refField;  // Use refField for Reference (e.g., ref_d_52 or ref_k_52)
 
-    // Format value for storage (decimal vs integer)
+    // Convert display value to storage value if needed
+    // For Gas/Oil: display=90 (%), storage=0.90 (decimal) → multiply by storageMultiplier (0.01)
+    // For others: display=90, storage=90 → no conversion needed
+    let storageValue = clampedValue;
+    if (axisConfig.storageMultiplier) {
+      storageValue = clampedValue * axisConfig.storageMultiplier;
+    }
+
+    // Format value for storage
     const valueToStore = axisConfig.isDecimal
-      ? clampedValue.toFixed(2)  // "0.95" for k_52 (Gas/Oil AFUE)
-      : Math.round(clampedValue).toString();  // "100" for d_52 (percentages)
+      ? storageValue.toFixed(2)  // "0.90" for k_52 (Gas/Oil AFUE)
+      : Math.round(storageValue).toString();  // "100" for d_52 (percentages)
 
     console.log(`[ParallelCoordinates] Drag ended: ${fieldId} = ${valueToStore} (node mode: ${d.mode}, axis: ${d.axisId})`);
 

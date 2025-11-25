@@ -2476,12 +2476,14 @@ const EDITABLE_AXES = {
 
 SHW% behavior depends on the value of `d_51` (DHW/SHW System Type):
 
-| System Type (d_51) | Field to Update | Min | Max | Format | Unit |
-|--------------------|----------------|-----|-----|--------|------|
-| `Heatpump` | `d_52` | 100 | 450 | Integer | % |
-| `Electric` | `d_52` | 90 | 100 | Integer | % |
-| `Gas` | `k_52` | 0.50 | 0.98 | Decimal | (none) |
-| `Oil` | `k_52` | 0.50 | 0.98 | Decimal | (none) |
+| System Type (d_51) | Field to Update | Storage Range | Display Range | Format | Unit |
+|--------------------|----------------|---------------|---------------|--------|------|
+| `Heatpump` | `d_52` | 100-450 | 100-450 | Integer | % |
+| `Electric` | `d_52` | 90-100 | 90-100 | Integer | % |
+| `Gas` | `k_52` | 0.50-0.98 | **50-98** | Decimal | % |
+| `Oil` | `k_52` | 0.50-0.98 | **50-98** | Decimal | % |
+
+**Note:** Gas/Oil storage uses decimals (0.90) but graph displays as percentages (90%). pcConfig multiplies by 100 for display, dragEnded divides by 100 for storage.
 
 **Implementation Requirements:**
 
@@ -2535,15 +2537,14 @@ SHW% behavior depends on the value of `d_51` (DHW/SHW System Type):
       return {
         targetField: 'k_52',
         refField: 'ref_k_52',
-        min: 0.50,
-        max: 0.98,
-        step: 0.01,
-        unit: '',
+        min: 50,   // Display space (pcConfig multiplies by 100)
+        max: 98,   // Display space
+        step: 1,   // 1% increments in display space
+        unit: '%',
         label: 'SHW AFUE',
         owningSection: 'sect07',
-        systemType: systemType,
-        formatValue: (val) => val.toFixed(2), // Decimal format
-        parseValue: (val) => parseFloat(val)   // Parse from string
+        isDecimal: true,  // Flag that storage is decimal
+        storageMultiplier: 0.01  // Convert display (90) → storage (0.90)
       };
     }
   },
@@ -2562,6 +2563,14 @@ The axis domain is calculated **once per render** by reading both `d_51` and `re
 2. `getDomain()` reads current state at render time
 3. Domain is fixed for the render cycle (doesn't change during drags)
 
+**⚠️ CRITICAL: Display Space vs Storage Space**
+
+Gas/Oil AFUE values are stored as **decimals** (0.90) in `k_52` but displayed as **percentages** (90%) in the graph. This is handled by:
+1. **pcConfig.js** multiplies by 100 when reading (0.90 → 90 for display)
+2. **getDomain()** returns display range (50-98, not 0.50-0.98)
+3. **getConfig()** uses display constraints (50-98, step=1, unit='%')
+4. **dragEnded()** applies `storageMultiplier` (0.01) to convert back (90 → 0.90 for storage)
+
 ```javascript
 getDomain: function() {
   // Read BOTH Target and Reference system types
@@ -2573,8 +2582,9 @@ getDomain: function() {
                     refSystem === 'Gas' || refSystem === 'Oil');
 
   if (hasGasOil) {
-    // If either uses Gas/Oil, use AFUE decimal range
-    return { min: 0.50, max: 0.98 };
+    // Return DISPLAY range (pcConfig multiplies k_52 by 100)
+    // k_52 = 0.90 → displayed as 90
+    return { min: 50, max: 98 };
   } else {
     // Otherwise both use d_52 percentage field
     // Union of Electric (90-100) and Heatpump (100-450) = 90-450
@@ -2595,7 +2605,29 @@ if (axisConfig && typeof axisConfig.getDomain === 'function') {
 }
 ```
 
-**Result:** Axis stays stable at 90-450% (or 0.50-0.98 for Gas/Oil) regardless of node dragging.
+**Complete Gas/Oil Data Flow:**
+
+```
+STORAGE → DISPLAY → USER DRAG → STORAGE
+(k_52)    (graph)    (modal)     (k_52)
+
+0.90   →    90     →    90     →   0.90
+  ↓          ↓          ↓          ↓
+Read    × 100     Display    × 0.01
+(pcConfig) (getDomain) (getConfig) (dragEnded)
+```
+
+**Step-by-Step Example (Gas system with 90% AFUE):**
+
+1. **Storage:** k_52 = "0.90" (decimal string)
+2. **pcConfig reads:** parseFloat("0.90") × 100 = 90
+3. **Graph renders:** Axis domain [50, 98], node at y-position for 90
+4. **User drags:** Node to new position, reads as 85 (display space)
+5. **dragEnded converts:** 85 × 0.01 = 0.85 (storage space)
+6. **Writes back:** k_52 = "0.85" (decimal string)
+7. **Next render:** pcConfig reads 0.85 × 100 = 85 (display space)
+
+**Result:** Axis stays stable at 50-98% for Gas/Oil (or 90-450% for Electric/Heatpump) regardless of node dragging.
 
 ##### TB% (Thermal Bridging Penalty) - Section 11
 ```javascript
