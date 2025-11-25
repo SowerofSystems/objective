@@ -1082,6 +1082,13 @@ window.TEUI.ParallelCoordinates = (function () {
     const owningSection = window.TEUI?.SectionModules?.[axisConfig.owningSection];
 
     if (owningSection) {
+      // 0. Switch section to correct mode (Target drag → Target mode, Reference drag → Reference mode)
+      const targetMode = isTarget ? 'target' : 'reference';
+      if (owningSection.ModeManager && owningSection.ModeManager.currentMode !== targetMode) {
+        owningSection.ModeManager.switchMode(targetMode);
+        console.log(`[ParallelCoordinates] Switched ${axisConfig.owningSection} to ${targetMode} mode`);
+      }
+
       // 1. Update the appropriate internal state (TargetState or ReferenceState)
       const targetState = isTarget ? owningSection.TargetState : owningSection.ReferenceState;
       if (targetState) {
