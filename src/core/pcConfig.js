@@ -68,10 +68,16 @@ window.TEUI.OPTIMIZATION_AXES = [
     description: "Net useable internal gains utilization",
     optimal: "higher",
 
+    // ⚠️ DISCRETE DROPDOWN PATTERN: nGains% uses dropdown (d_80), not slider
+    // Display value comes from calculated field (g_80)
     targetField: "g_80",
     targetFieldMultiplier: 100,      // g_80 is stored as decimal (0.40), display as % (40)
     referenceField: "ref_g_80",
     referenceFieldMultiplier: 100,   // ref_g_80 is stored as decimal, display as %
+
+    // Additional fields for dropdown control (not used for display, but needed for editing)
+    targetDropdownField: "d_80",     // Dropdown field that controls method
+    referenceDropdownField: "ref_d_80",
 
     domain: [0, 100],  // Always 0-100%, never more, never less
   },

@@ -1057,6 +1057,42 @@ window.TEUI.ParallelCoordinates = (function () {
         }
       },
       owningSection: 'sect07'
+    },
+
+    'net_gains': {
+      // ⚠️ DISCRETE DROPDOWN PATTERN: nGains% uses dropdown, not continuous slider
+      // Dropdown (d_80) maps to specific percentage values shown in calculated field (g_80)
+
+      targetField: 'd_80',      // Dropdown field (stores "NRC 40%", "PH Method", etc.)
+      refField: 'ref_d_80',
+      min: 0,
+      max: 100,
+      step: 10,                 // Large step for snapping to discrete values
+      unit: '%',
+      label: 'nGains',
+      owningSection: 'sect10',
+      isDiscrete: true,         // Flag indicating discrete value mapping
+
+      // Map display percentage to dropdown string value
+      valueMap: {
+        0: 'NRC 0%',
+        40: 'NRC 40%',
+        50: 'NRC 50%',
+        60: 'NRC 60%',
+        70: 'PH Method',        // Values 70-100 all map to PHPP
+        80: 'PH Method',
+        90: 'PH Method',
+        100: 'PH Method'
+      },
+
+      // Helper function to snap dragged value to nearest valid option
+      snapValue: function(value) {
+        if (value < 20) return 0;
+        if (value < 45) return 40;
+        if (value < 55) return 50;
+        if (value < 60) return 60;
+        return 70; // 60+ triggers PHPP
+      }
     }
   };
 
@@ -1172,12 +1208,18 @@ window.TEUI.ParallelCoordinates = (function () {
     newValue = Math.round(newValue / axisConfig.step) * axisConfig.step;
 
     // Clamp to min/max
-    const clampedValue = Math.max(axisConfig.min, Math.min(axisConfig.max, newValue));
+    let clampedValue = Math.max(axisConfig.min, Math.min(axisConfig.max, newValue));
+
+    // ⚠️ DISCRETE SNAPPING: For discrete axes (like nGains%), snap to valid values
+    if (axisConfig.isDiscrete && typeof axisConfig.snapValue === 'function') {
+      clampedValue = axisConfig.snapValue(clampedValue);
+    }
 
     // Update node position (visual only)
     d3.select(this).attr('cy', yScale(clampedValue));
 
     // Format value for display in modal
+    // For discrete axes, show the snapped value
     // For Gas/Oil (storageMultiplier=0.01), clampedValue is already in display space (90)
     // For other axes, clampedValue is the actual value
     const displayValue = clampedValue.toFixed(1);  // Always show one decimal (90.0% or 0.9)
@@ -1220,10 +1262,32 @@ window.TEUI.ParallelCoordinates = (function () {
       storageValue = clampedValue * axisConfig.storageMultiplier;
     }
 
+    // ⚠️ DISCRETE DROPDOWN: Map snapped percentage to dropdown string
+    // For nGains%: 40 → "NRC 40%", 70 → "PH Method"
+    if (axisConfig.isDiscrete && axisConfig.valueMap) {
+      const snappedKey = clampedValue; // Already snapped by dragging()
+      storageValue = axisConfig.valueMap[snappedKey];
+
+      if (!storageValue) {
+        console.error(`[ParallelCoordinates] No valueMap entry for ${snappedKey} on axis ${d.axisId}`);
+        hideDragModal();
+        return;
+      }
+
+      console.log(`[ParallelCoordinates] Discrete mapping: ${snappedKey}% → "${storageValue}"`);
+    }
+
     // Format value for storage
-    const valueToStore = axisConfig.isDecimal
-      ? storageValue.toFixed(2)  // "0.90" for k_52 (Gas/Oil AFUE)
-      : Math.round(storageValue).toString();  // "100" for d_52 (percentages)
+    let valueToStore;
+    if (axisConfig.isDiscrete) {
+      // Discrete dropdown: storageValue is already a string (e.g., "NRC 40%")
+      valueToStore = storageValue;
+    } else {
+      // Continuous slider: format number as string
+      valueToStore = axisConfig.isDecimal
+        ? storageValue.toFixed(2)  // "0.90" for k_52 (Gas/Oil AFUE)
+        : Math.round(storageValue).toString();  // "100" for d_52 (percentages)
+    }
 
     console.log(`[ParallelCoordinates] Drag ended: ${fieldId} = ${valueToStore} (node mode: ${d.mode}, axis: ${d.axisId})`);
 

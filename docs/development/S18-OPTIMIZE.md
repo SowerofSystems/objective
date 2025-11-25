@@ -2629,6 +2629,107 @@ Read    × 100     Display    × 0.01
 
 **Result:** Axis stays stable at 50-98% for Gas/Oil (or 90-450% for Electric/Heatpump) regardless of node dragging.
 
+##### nGains% (Net Useable Internal Gains) - Section 10 ⚠️ DISCRETE DROPDOWN PATTERN
+
+**⚠️ ADVANCED PATTERN: This axis uses discrete dropdown values, not a continuous slider.**
+
+Unlike other axes (sliders with continuous values), nGains% is controlled by a **dropdown** (d_80) that maps to specific percentage values. The calculated percentage appears in g_80.
+
+| Dropdown Value (d_80) | Display Value (g_80) | Graph Position |
+|----------------------|---------------------|----------------|
+| `"NRC 0%"` | 0.00% | 0% on axis |
+| `"NRC 40%"` | 40.00% | 40% on axis |
+| `"NRC 50%"` | 50.00% | 50% on axis |
+| `"NRC 60%"` | 60.00% | 60% on axis |
+| `"PH Method"` | **94.43%** (calculated) | 94.43% on axis |
+
+**Implementation Requirements:**
+
+1. **Discrete Value Mapping:**
+   - Dragging to 0-20% → Set d_80 = "NRC 0%"
+   - Dragging to 21-45% → Set d_80 = "NRC 40%"
+   - Dragging to 46-55% → Set d_80 = "NRC 50%"
+   - Dragging to 56-60% → Set d_80 = "NRC 60%"
+   - Dragging to 61-100% → Set d_80 = "PH Method"
+
+2. **Display Value Reading:**
+   - For NRC methods: Read g_80 (always matches dropdown percentage)
+   - For PHPP method: Read g_80 (calculated by Section 10, typically 90-100%)
+
+3. **Snap Behavior:**
+   - Modal shows nearest snap point during drag
+   - On release, sets dropdown to corresponding string value
+   - Section 10 recalculates → g_80 updates automatically
+
+**Example Configuration:**
+```javascript
+'net_gains': {
+  targetField: 'd_80',      // Dropdown field (not a slider!)
+  refField: 'ref_d_80',
+  min: 0,
+  max: 100,
+  step: 10,                 // Snap to nearest option
+  unit: '%',
+  label: 'nGains',
+  owningSection: 'sect10',
+  isDiscrete: true,         // Flag for discrete value mapping
+  valueMap: {               // Maps display % to dropdown string
+    0: 'NRC 0%',
+    40: 'NRC 40%',
+    50: 'NRC 50%',
+    60: 'NRC 60%',
+    70: 'PH Method'         // 70-100% all map to PHPP
+  },
+  displayField: 'g_80'      // Field to read for actual display value
+}
+```
+
+**Data Flow:**
+
+**Reading for Display (pcConfig.js):**
+```javascript
+// Map dropdown string to display percentage
+const dropdownValue = StateManager.getValue('d_80'); // e.g., "NRC 40%"
+if (dropdownValue === 'NRC 0%') return 0;
+if (dropdownValue === 'NRC 40%') return 40;
+if (dropdownValue === 'NRC 50%') return 50;
+if (dropdownValue === 'NRC 60%') return 60;
+if (dropdownValue === 'PH Method') {
+  // Read calculated value from g_80
+  const calculated = StateManager.getValue('g_80'); // e.g., "94.43"
+  return parseFloat(calculated); // 94.43
+}
+```
+
+**Writing from Drag (dragEnded):**
+```javascript
+// Round dragged value to nearest snap point
+let snappedValue;
+if (clampedValue < 20) snappedValue = 0;
+else if (clampedValue < 45) snappedValue = 40;
+else if (clampedValue < 55) snappedValue = 50;
+else if (clampedValue < 60) snappedValue = 60;
+else snappedValue = 70; // Triggers PHPP
+
+// Map snapped value to dropdown string
+const dropdownString = axisConfig.valueMap[snappedValue]; // e.g., "NRC 40%"
+
+// Write dropdown string to d_80
+StateManager.setValue('d_80', dropdownString, 'user-modified');
+
+// Section 10 recalculates → g_80 updates automatically
+// Next graph refresh reads new g_80 value
+```
+
+**Why This Pattern?**
+
+Section 10 doesn't have a continuous nGains% slider - it uses a **method selection dropdown**:
+- NRC methods (0%, 40%, 50%, 60%) are predefined percentages
+- PHPP method calculates percentage dynamically based on building parameters
+- Users can't set arbitrary percentages like 47% or 83% - only discrete options
+
+The graph interaction must respect this constraint while providing intuitive dragging UX.
+
 ##### TB% (Thermal Bridging Penalty) - Section 11
 ```javascript
 'thermal_bridge': {
