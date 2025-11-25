@@ -693,14 +693,6 @@ window.TEUI.ParallelCoordinates = (function () {
     // Check if Pro version (pcFinancials module available)
     const hasPro = window.TEUI?.pcFinancials?.calculateFinancials;
 
-    // Debug logging
-    console.log('ParallelCoordinates: pcFinancials check:', {
-      hasTEUI: !!window.TEUI,
-      haspcFinancials: !!window.TEUI?.pcFinancials,
-      hasCalculateFinancials: !!hasPro,
-      pcFinancialsModule: window.TEUI?.pcFinancials
-    });
-
     // Currency formatter (CAD)
     const formatCurrency = (value) => {
       return new Intl.NumberFormat('en-CA', {
