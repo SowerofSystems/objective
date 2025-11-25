@@ -2362,6 +2362,582 @@ const editableAxes = {
 
 **This feature would be PHENOMENAL for user engagement and making optimization tangible!** 🚀
 
+---
+
+## 📋 DEVELOPER HANDOFF GUIDE - Adding New Editable Axes
+
+**Purpose:** This guide enables a developer with NO conversation history or prior context to implement additional interactive node dragging axes following the proven DWHR% pattern.
+
+**Status:** DWHR% interactive dragging is COMPLETE and merged to S18-19-PARALLEL-COORDINATES branch (commit 3f11fe5).
+
+**Reference Implementation:** See [ParallelCoordinates.js:941-1165](../src/core/ParallelCoordinates.js#L941-L1165) for complete working code.
+
+---
+
+### Quick Reference: Axes to Implement
+
+| Axis ID | Label | Section | Field ID | Min | Max | Step | Unit | Status |
+|---------|-------|---------|----------|-----|-----|------|------|--------|
+| `dwhr_efficiency` | DWHR | S07 | `d_53` | 0 | 80 | 1 | % | ✅ DONE |
+| `shw_efficiency` | SHW | S07 | `d_52` | 50* | 300* | 1 | % | ⏳ TODO |
+| `thermal_bridge` | TB | S11 | `d_97` | 5 | 95 | 1 | % | ⏳ TODO |
+| `heating_efficiency` | HEAT | S13 | `f_113` | TBD | TBD | TBD | COP | ⏳ TODO |
+| `mvhr_efficiency` | MVHR | S13 | `d_118` | 0 | 100 | 1 | % | ⏳ TODO |
+
+*SHW% range varies by system type: Gas/Oil = 50-100%, Heatpump = 50-300%
+
+---
+
+### Step-by-Step Implementation Process
+
+#### Step 1: Identify Field Details
+
+Before coding, gather these details from the owning section's code:
+
+1. **Field ID:** The exact StateManager field name (e.g., `d_53`)
+2. **Owning Section:** Which section module owns this field (e.g., `sect07`)
+3. **Range:** Minimum and maximum values (check slider config or field definition)
+4. **Step Size:** Increment size for snapping (typically 1 for percentages)
+5. **Unit:** Display unit (%, COP, etc.)
+6. **Label:** Short display name (e.g., "DWHR" not "DWHR%" - value shows %)
+
+**Where to Find This Info:**
+- Open `/src/sections/Section##.js` where ## is the section number
+- Search for `fieldId: "field_id"` to find the field definition
+- Look for slider configuration or field schema for min/max/step
+- Check `type: "percentage"` or `type: "editable"` declarations
+
+**Example from Section07.js (DWHR%):**
+```javascript
+// Line 709 in Section07.js
+d: {
+  fieldId: "d_53",
+  type: "percentage",
+  value: "0",
+  min: 0,
+  max: 80,  // From pcConfig.js domain
+  step: 1,
+  // ...
+}
+```
+
+---
+
+#### Step 2: Add Configuration to EDITABLE_AXES
+
+**File:** `/src/core/ParallelCoordinates.js`
+**Location:** Lines 949-960 (inside INTERACTIVITY section)
+
+**Add your new axis to the `EDITABLE_AXES` object:**
+
+```javascript
+const EDITABLE_AXES = {
+  'dwhr_efficiency': {
+    targetField: 'd_53',
+    refField: 'ref_d_53',
+    min: 0,
+    max: 80,
+    step: 1,
+    unit: '%',
+    label: 'DWHR',
+    owningSection: 'sect07'
+  },
+
+  // 👇 ADD YOUR NEW AXIS HERE:
+  'your_axis_id': {  // Must match axisId from pcConfig.js
+    targetField: 'field_id',      // e.g., 'd_52'
+    refField: 'ref_field_id',     // e.g., 'ref_d_52'
+    min: 0,                       // From section field config
+    max: 100,                     // From section field config
+    step: 1,                      // Snapping increment (1 for whole numbers)
+    unit: '%',                    // Display unit
+    label: 'Display Name',        // Short label (strip % if in unit)
+    owningSection: 'sect##'       // e.g., 'sect07', 'sect11', 'sect13'
+  }
+};
+```
+
+**Critical Notes:**
+- `axisId` (object key) **must** match the axis ID used in `pcConfig.js`
+- `targetField` is the **base** field ID (no `ref_` prefix)
+- `refField` is the **same** field with `ref_` prefix
+- `label` should be SHORT - the value already includes the unit (e.g., "45%")
+- `owningSection` must match the module name in `window.TEUI.SectionModules`
+
+---
+
+#### Step 3: Field Mapping Reference
+
+**Here's the complete field mapping for planned axes:**
+
+##### SHW% (Service Hot Water Efficiency) - Section 07
+```javascript
+'shw_efficiency': {
+  targetField: 'd_52',      // DHW/SHW Efficiency Factor
+  refField: 'ref_d_52',
+  min: 50,                  // Dynamic: Gas/Oil=50-100, Heatpump=50-300
+  max: 300,                 // Use 300 as max, values auto-clamp by system type
+  step: 1,
+  unit: '%',
+  label: 'SHW',
+  owningSection: 'sect07'
+}
+```
+
+**⚠️ Special Case:** SHW% range varies by system type (field `d_51`):
+- **Gas/Oil:** 50-100% (AFUE efficiency)
+- **Heatpump:** 50-300% (COP × 100)
+
+The slider automatically constrains to valid ranges, so use max: 300 and let the system handle clamping.
+
+##### TB% (Thermal Bridging Penalty) - Section 11
+```javascript
+'thermal_bridge': {
+  targetField: 'd_97',      // Thermal Bridge Penalty %
+  refField: 'ref_d_97',
+  min: 5,                   // Per Section11.js line 1609
+  max: 95,
+  step: 1,
+  unit: '%',
+  label: 'TB',
+  owningSection: 'sect11'
+}
+```
+
+**Note:** Lower TB% is better (less heat loss). Savings calculation already handles this correctly in pcFinancials.js.
+
+##### HEAT% (Heating System Efficiency) - Section 13
+```javascript
+'heating_efficiency': {
+  targetField: 'f_113',     // Heating System COP
+  refField: 'ref_f_113',
+  min: 0.8,                 // Typical minimum for heat pumps
+  max: 10.0,                // High-efficiency heat pump max
+  step: 0.1,                // Decimal precision for COP
+  unit: '',                 // COP is unitless
+  label: 'HEAT COP',
+  owningSection: 'sect13'
+}
+```
+
+**Note:** HEAT uses COP (Coefficient of Performance), not percentage. Range 0.8-10.0 with 0.1 step increments.
+
+##### MVHR% (Mechanical Ventilation Heat Recovery) - Section 13
+```javascript
+'mvhr_efficiency': {
+  targetField: 'd_118',     // HRV/ERV/MVHR Efficiency (SRE)
+  refField: 'ref_d_118',
+  min: 0,
+  max: 100,
+  step: 1,
+  unit: '%',
+  label: 'MVHR',
+  owningSection: 'sect13'
+}
+```
+
+**Note:** Section 13 calls this "SRE" (Sensible Recovery Efficiency) internally, but user-facing label is MVHR%.
+
+---
+
+#### Step 4: Verify CSS Styling
+
+**No changes needed!** The existing CSS classes in `/src/styles.css` (lines 1923-1965) automatically apply to all editable nodes.
+
+**Just verify these classes exist:**
+```css
+/* Editable node styling with hover effects */
+.pc-editable-node {
+  cursor: grab;
+  transition: filter 0.2s ease;
+}
+
+.pc-editable-node:hover {
+  filter: drop-shadow(0 0 4px rgba(13, 110, 253, 0.8));
+}
+
+/* Dragging state styling */
+.pc-dragging {
+  cursor: grabbing !important;
+  opacity: 0.7;
+  filter: drop-shadow(0 0 6px rgba(13, 110, 253, 1));
+}
+
+/* Modal color variants */
+#pc-drag-modal[data-mode="target"] {
+  border: 2px solid #0d6efd;
+  color: #0d6efd;
+}
+
+#pc-drag-modal[data-mode="reference"] {
+  border: 2px solid #dc3545;
+  color: #dc3545;
+}
+```
+
+---
+
+#### Step 5: Test Your Implementation
+
+**Testing Checklist:**
+
+1. **Visual Tests:**
+   - [ ] Node is 2× normal size (editable indicator)
+   - [ ] Node glows blue on hover
+   - [ ] Cursor changes to `grab` on hover
+   - [ ] Cursor changes to `grabbing` during drag
+   - [ ] Node becomes semi-transparent (opacity: 0.7) when dragging
+
+2. **Drag Behavior Tests:**
+   - [ ] Modal appears when drag starts
+   - [ ] Modal shows correct label and value during drag
+   - [ ] Modal color: Blue for Target node, Red for Reference node
+   - [ ] Node position follows mouse vertically (constrained to axis)
+   - [ ] Values snap to whole numbers (or step size) during drag
+   - [ ] Modal disappears when drag ends
+
+3. **State Update Tests (Target Mode):**
+   - [ ] Drag blue Target node to new value
+   - [ ] Owning section switches to **Target mode** automatically
+   - [ ] Owning section's slider moves to new position
+   - [ ] StateManager updates with correct field ID (no `ref_` prefix)
+   - [ ] Section's `calculateAll()` runs automatically
+   - [ ] Section's DOM updates with new calculated values
+   - [ ] S18 graph refreshes with new node position
+
+4. **State Update Tests (Reference Mode):**
+   - [ ] Drag red Reference node to new value
+   - [ ] Owning section switches to **Reference mode** automatically
+   - [ ] Owning section's slider moves to new position
+   - [ ] StateManager updates with correct field ID (`ref_` prefix)
+   - [ ] Section's `calculateAll()` runs automatically
+   - [ ] Section's DOM updates with new calculated values
+   - [ ] S18 graph refreshes with new node position
+
+5. **Edge Case Tests:**
+   - [ ] Drag to minimum value (0% or field min) - works correctly
+   - [ ] Drag to maximum value (80% or field max) - works correctly
+   - [ ] Rapid consecutive drags - no lag or errors
+   - [ ] Drag beyond axis bounds - values clamp correctly
+   - [ ] Browser console shows no errors
+   - [ ] Financial costs update in S18 table (if applicable)
+
+6. **Cross-Section Tests:**
+   - [ ] Make change in owning section slider → S18 updates
+   - [ ] Make change in S18 drag → owning section updates
+   - [ ] Both directions work for Target values
+   - [ ] Both directions work for Reference values
+   - [ ] No double-calculation or infinite loops
+
+---
+
+#### Step 6: Common Pitfalls and Solutions
+
+**Pitfall 1: Wrong Field ID**
+- ❌ **Symptom:** Slider doesn't move after drag
+- ✅ **Solution:** Verify `targetField` matches **exact** field ID from section's field schema
+- 🔍 **Debug:** Search section file for `fieldId: "your_field"` to confirm
+
+**Example Error:**
+```javascript
+// ❌ WRONG - using display label
+targetField: 'DWHR%',
+
+// ✅ CORRECT - using actual field ID
+targetField: 'd_53',
+```
+
+**Pitfall 2: Forgot ref_ Prefix**
+- ❌ **Symptom:** Reference node drag doesn't work
+- ✅ **Solution:** Ensure `refField` has `ref_` prefix
+- 🔍 **Debug:** Check StateManager - Reference fields always stored with `ref_` prefix
+
+**Example Error:**
+```javascript
+// ❌ WRONG - missing ref_ prefix
+refField: 'd_53',
+
+// ✅ CORRECT - includes ref_ prefix
+refField: 'ref_d_53',
+```
+
+**Pitfall 3: Wrong owningSection**
+- ❌ **Symptom:** `calculateAll()` not found error in console
+- ✅ **Solution:** Verify section module name matches `window.TEUI.SectionModules` key
+- 🔍 **Debug:** Open browser console, type `Object.keys(window.TEUI.SectionModules)` to see valid names
+
+**Example Error:**
+```javascript
+// ❌ WRONG - incorrect module name
+owningSection: 'section07',  // "section" not "sect"
+
+// ✅ CORRECT - matches module registration
+owningSection: 'sect07',
+```
+
+**Pitfall 4: axisId Mismatch**
+- ❌ **Symptom:** Node not editable (no hover glow, no drag)
+- ✅ **Solution:** Ensure `EDITABLE_AXES` key matches `axisId` from `pcConfig.js`
+- 🔍 **Debug:** Search pcConfig.js for axis definition, copy exact ID
+
+**Example Error:**
+```javascript
+// In pcConfig.js:
+{ id: 'dwhr_efficiency', label: 'DWHR%', ... }
+
+// ❌ WRONG - ID doesn't match
+const EDITABLE_AXES = {
+  'dwhr': { ... }  // Won't match!
+};
+
+// ✅ CORRECT - exact match
+const EDITABLE_AXES = {
+  'dwhr_efficiency': { ... }
+};
+```
+
+**Pitfall 5: Mode Not Switching**
+- ❌ **Symptom:** Drag works but section shows wrong mode
+- ✅ **Solution:** This is handled automatically in `dragEnded()` - no action needed
+- 🔍 **Debug:** Check lines 2124-2134 in S18-OPTIMIZE.md for mode switching flow
+
+**Pitfall 6: Label Shows Duplicate %**
+- ❌ **Symptom:** Modal shows "DWHR%: 45%" (% appears twice)
+- ✅ **Solution:** Strip % from label - the value already includes it
+- 🔍 **Debug:** Check line 1148 in ParallelCoordinates.js
+
+**Example Error:**
+```javascript
+// ❌ WRONG - % in label
+label: 'DWHR%',  // Results in "DWHR%: 45%"
+
+// ✅ CORRECT - no % in label
+label: 'DWHR',   // Results in "DWHR: 45%"
+```
+
+---
+
+### Architecture Deep Dive
+
+**Why This Works: Pattern A Direct State Access**
+
+The interactive dragging uses **Pattern A** from 4012-CHEATSHEET.md. Here's why sections don't listen to their own fields:
+
+```javascript
+// ❌ ANTI-PATTERN: Sections listening to their own fields
+// In Section07.js initialization:
+StateManager.addListener('d_53', calculateAll);  // DON'T DO THIS!
+// Why? User drags slider → setValue('d_53') → listener fires → calculateAll()
+// Result: Calculation happens TWICE (once in slider handler, once in listener)
+```
+
+**Instead, Pattern A uses:**
+1. **Internal field changes:** Handled directly by user input handlers (no listener)
+2. **External field changes:** Require explicit method calls from external code
+
+**This is why S18's `dragEnded()` must:**
+1. Switch owning section to correct mode
+2. Update appropriate state (TargetState or ReferenceState)
+3. Update StateManager (for downstream dependencies)
+4. Call `calculateAll()` explicitly
+5. Call `refreshUI()` to update DOM
+
+**Complete Flow Diagram:**
+
+```
+User drags DWHR% node to 50% in S18
+         ↓
+[dragEnded() in ParallelCoordinates.js]
+         ↓
+   ┌────────────────────────────────────┐
+   │ 1. Switch S07 to Target mode       │
+   │    ModeManager.switchMode('target')│
+   └────────────────────────────────────┘
+         ↓
+   ┌────────────────────────────────────┐
+   │ 2. Update S07's Target state       │
+   │    TargetState.setValue('d_53', 50)│
+   └────────────────────────────────────┘
+         ↓
+   ┌────────────────────────────────────┐
+   │ 3. Update StateManager             │
+   │    StateManager.setValue('d_53',50)│  ←─ Triggers downstream listeners
+   └────────────────────────────────────┘      (e.g., S18, S14, etc.)
+         ↓
+   ┌────────────────────────────────────┐
+   │ 4. Calculate S07                   │
+   │    owningSection.calculateAll()    │  ←─ Required! S07 doesn't
+   └────────────────────────────────────┘      listen to d_53
+         ↓
+   ┌────────────────────────────────────┐
+   │ 5. Refresh S07 UI                  │
+   │    ModeManager.refreshUI()         │  ←─ Slider moves to 50%
+   └────────────────────────────────────┘
+         ↓
+   ┌────────────────────────────────────┐
+   │ 6. Refresh S18 graph               │
+   │    refresh()                       │  ←─ Graph redraws
+   └────────────────────────────────────┘
+```
+
+**Key Insight:** StateManager is pub/sub for **cross-section dependencies**, not for internal section state. Sections manage their own fields directly.
+
+---
+
+### Code Reference: Complete dragEnded() Implementation
+
+**Location:** [ParallelCoordinates.js:1068-1116](../src/core/ParallelCoordinates.js#L1068-L1116)
+
+This is the complete working code for DWHR%. Use this as a template:
+
+```javascript
+function dragEnded(event, d) {
+  // Remove dragging visual state
+  d3.select(this).classed('pc-dragging', false);
+
+  const axisConfig = EDITABLE_AXES[d.axisId];
+
+  // Get final value with step snapping
+  const axisScale = scales[d.axisId];
+  let finalValue = axisScale.invert(event.y);
+  finalValue = Math.round(finalValue / axisConfig.step) * axisConfig.step;
+  const clampedValue = Math.max(axisConfig.min, Math.min(axisConfig.max, finalValue));
+
+  // Determine which field to update (Target or Reference)
+  const baseFieldId = axisConfig.targetField;
+  const isTarget = d.mode === 'target';
+  const fieldId = isTarget ? baseFieldId : `ref_${baseFieldId}`;
+
+  // Get owning section module
+  const owningSection = window.TEUI?.SectionModules?.[axisConfig.owningSection];
+
+  if (owningSection) {
+    // ✅ STEP 1: Switch section to correct mode
+    const targetMode = isTarget ? 'target' : 'reference';
+    if (owningSection.ModeManager && owningSection.ModeManager.currentMode !== targetMode) {
+      owningSection.ModeManager.switchMode(targetMode);
+    }
+
+    // ✅ STEP 2: Update appropriate internal state (TargetState or ReferenceState)
+    const targetState = isTarget ? owningSection.TargetState : owningSection.ReferenceState;
+    if (targetState) {
+      targetState.setValue(baseFieldId, clampedValue.toString());
+    }
+
+    // ✅ STEP 3: Update StateManager (triggers downstream dependencies)
+    if (window.TEUI?.StateManager) {
+      window.TEUI.StateManager.setValue(fieldId, clampedValue.toString(), 'user-modified');
+    }
+
+    // ✅ STEP 4: Calculate owning section (CRITICAL - section doesn't listen to own fields)
+    if (owningSection.calculateAll) {
+      owningSection.calculateAll();
+    }
+
+    // ✅ STEP 5: Refresh owning section UI (slider moves to new position)
+    if (owningSection.ModeManager) {
+      owningSection.ModeManager.refreshUI();
+    }
+  }
+
+  // ✅ STEP 6: Refresh S18 graph (with small delay for DOM updates)
+  setTimeout(() => {
+    refresh();
+  }, 100);
+
+  // Hide modal
+  hideDragModal();
+}
+```
+
+**You don't need to modify this function!** Just add your axis config to `EDITABLE_AXES` and it works automatically.
+
+---
+
+### Verification Script
+
+**After adding a new axis, run this in browser console to verify setup:**
+
+```javascript
+// Verify axis configuration
+const axisId = 'your_axis_id';  // e.g., 'shw_efficiency'
+const config = window.TEUI?.ParallelCoordinates?.EDITABLE_AXES?.[axisId];
+
+if (!config) {
+  console.error(`❌ Axis "${axisId}" not found in EDITABLE_AXES`);
+} else {
+  console.log('✅ Axis configuration found:', config);
+
+  // Verify owning section exists
+  const section = window.TEUI?.SectionModules?.[config.owningSection];
+  if (!section) {
+    console.error(`❌ Section "${config.owningSection}" not found`);
+  } else {
+    console.log(`✅ Owning section "${config.owningSection}" exists`);
+
+    // Verify section has required methods
+    if (!section.calculateAll) {
+      console.error(`❌ Section missing calculateAll() method`);
+    } else {
+      console.log('✅ Section has calculateAll() method');
+    }
+
+    if (!section.ModeManager) {
+      console.error(`❌ Section missing ModeManager`);
+    } else {
+      console.log('✅ Section has ModeManager');
+    }
+
+    if (!section.TargetState || !section.ReferenceState) {
+      console.error(`❌ Section missing TargetState or ReferenceState`);
+    } else {
+      console.log('✅ Section has TargetState and ReferenceState');
+    }
+  }
+
+  // Verify field exists in StateManager
+  const targetValue = window.TEUI?.StateManager?.getValue(config.targetField);
+  const refValue = window.TEUI?.StateManager?.getValue(config.refField);
+
+  console.log(`Target field "${config.targetField}" value:`, targetValue);
+  console.log(`Reference field "${config.refField}" value:`, refValue);
+
+  // Verify axis exists in pcConfig
+  const pcConfig = window.TEUI?.pcConfig;
+  const axisExists = pcConfig?.axes?.some(a => a.id === axisId);
+
+  if (!axisExists) {
+    console.error(`❌ Axis "${axisId}" not found in pcConfig.js`);
+  } else {
+    console.log(`✅ Axis "${axisId}" exists in pcConfig.js`);
+  }
+}
+```
+
+---
+
+### Summary: What You Need to Do
+
+For each new editable axis, follow these **4 simple steps:**
+
+1. **Gather Info:** Find field ID, range, step, unit, owning section
+2. **Add Config:** Add entry to `EDITABLE_AXES` in ParallelCoordinates.js
+3. **Test:** Run through testing checklist
+4. **Verify:** Run verification script in browser console
+
+**That's it!** The existing infrastructure handles everything else automatically:
+- ✅ Drag behavior (already implemented)
+- ✅ Modal display (already implemented)
+- ✅ Mode switching (already implemented)
+- ✅ State updates (already implemented)
+- ✅ CSS styling (already implemented)
+- ✅ Section recalculation (already implemented)
+- ✅ Graph refresh (already implemented)
+
+**Total Time per Axis:** ~15 minutes (5 min research + 5 min config + 5 min testing)
+
+---
+
 ## PREVIOUS ATTEMPTS (Historical Record)
 
 ### REFACTOR ATTEMPT #2 - FAILED (November 24, 2025 - Late Session)
