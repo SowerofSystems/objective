@@ -1508,7 +1508,173 @@ axis_name: {
 - ✅ Tested with real StateManager values (electric & gas scenarios)
 - ✅ Implemented ROI Term multiplier with settings modal
 - ✅ Renamed ppConfig.js → pcConfig.js for consistency
-- [ ] Add remaining 13 axis formulas (formulas to be provided)
+- ✅ Implemented DWHR% with counterintuitive recovery logic
+- [ ] Add remaining 12 axis formulas (formulas to be provided)
+
+---
+
+## ✅ nGains% Formula - IMPLEMENTED (November 24, 2025 - Late Evening)
+
+**Formula: nGains% (Net Useable Internal Gains)**
+
+### What is nGains%?
+
+nGains% represents **internal heat gains** that reduce heating demand:
+- Occupants (body heat)
+- Appliances (equipment heat)
+- Solar gains (passive solar heating through windows)
+- Recovered ventilation heat
+
+**The key concept:** These gains are **"free heating"** - energy we DON'T need to buy because it's already present in the building.
+
+**Value in dollars:** The value of `i_80` (avoided heating in thermal kWh) depends on what fuel would have provided that heating.
+
+---
+
+### Implementation Logic
+
+**StateManager Fields:**
+- `i_80` / `ref_i_80` = Net useable internal gains (thermal kWh) - avoided heating energy
+- `d_114` / `ref_d_114` = Total heating system demand (thermal kWh)
+- `f_115` / `ref_f_115` = Oil heating volume (litres) - only populated if oil system
+- `h_115` / `ref_h_115` = Gas heating volume (m³) - only populated if gas system
+- If both oil and gas are 0 → Electric heating system
+
+**Fuel Rates:**
+- `l_12` / `ref_l_12` = Electricity rate ($/kWh)
+- `l_13` / `ref_l_13` = Gas rate ($/kWh)
+- `l_16` / `ref_l_16` = Oil rate ($/litre)
+
+---
+
+### Cost Calculation (Same Pattern as SHW%)
+
+**No fuel detection needed** - Just sum all three fuel costs. Whichever fuel is 0 contributes $0.
+
+#### For Electric Heating:
+```javascript
+Cost = i_80 × l_12
+```
+**Example:** 1,000 kWh × $0.13/kWh = **$130**
+
+#### For Gas Heating:
+```javascript
+Cost = i_80 × l_13
+```
+**Example:** 1,000 kWh × $0.075/kWh = **$75**
+
+#### For Oil Heating:
+```javascript
+Cost = (i_80 / d_114) × f_115 × l_16
+```
+
+**Breaking it down:**
+1. `d_114` = Total heating demand (thermal kWh)
+2. `f_115` = Oil volume used for that heating (litres)
+3. `f_115 / d_114` = **Litres of oil per thermal kWh** (conversion ratio)
+4. `i_80 × (f_115 / d_114)` = **Litres of oil avoided** by internal gains
+5. `Litres avoided × l_16` = **Dollar value** of avoided oil cost
+
+**Example:**
+- d_114 = 10,000 kWh total heating demand
+- f_115 = 1,000 litres oil consumed
+- i_80 = 1,000 kWh avoided by internal gains
+- **Ratio** = 1,000 litres / 10,000 kWh = **0.1 litres/kWh**
+- **Oil avoided** = 1,000 kWh × 0.1 = **100 litres**
+- **Cost** = 100 litres × $1.20/litre = **$120**
+
+---
+
+### Savings Logic (Reversed Pattern)
+
+**IMPORTANT:** nGains% uses the **reversed pattern** (like DWHR%), NOT the standard pattern (like SHW%).
+
+**Why reversed?**
+- nGains% represents a **BENEFIT** (avoided heating cost), not a direct cost
+- Higher nGains% = MORE benefit = MORE "free heating" = MORE savings
+- Lower nGains% = LESS benefit = LESS "free heating" = LESS savings
+- Standard pattern would show backwards results (making good performance look bad)
+
+**Formula:**
+```javascript
+savings = Target - Reference (if positive, otherwise $0)
+```
+
+**Examples:**
+
+**Example 1: Target is Better**
+- Reference building: 40% nGains = $500 avoided heating cost
+- Target building: 50% nGains = $750 avoided heating cost
+- **Savings** = $750 - $500 = **$250**
+- Target avoids MORE heating cost → Positive savings ✅
+
+**Example 2: Reference is Better**
+- Reference building: 50% nGains = $750 avoided heating cost
+- Target building: 40% nGains = $500 avoided heating cost
+- **Savings** = $500 - $750 = -$250 → **$0**
+- Target avoids LESS heating cost → No positive savings (show $0) ✅
+
+**Example 3: Same Performance**
+- Reference building: 45% nGains = $600 avoided heating cost
+- Target building: 45% nGains = $600 avoided heating cost
+- **Savings** = $600 - $600 = **$0**
+- Same benefit → No additional savings ✅
+
+---
+
+### Summary: Savings Pattern Classification
+
+| Metric | Type | Savings Pattern | Reason |
+|--------|------|----------------|---------|
+| **SHW%** | Cost | Reference - Target | Lower energy cost is better |
+| **DWHR%** | Benefit | Target - Reference | Higher energy recovery is better |
+| **nGains%** | Benefit | Target - Reference | Higher avoided cost is better |
+
+**Rule of thumb:**
+- **Costs** (money spent): Standard pattern (Ref - Tar)
+  - Lower Target cost = savings
+- **Benefits** (money saved): Reversed pattern (Tar - Ref)
+  - Higher Target benefit = savings
+
+---
+
+### ⚠️ OPEN QUESTION: nGains% Savings Logic (Nov 24 Late Evening)
+
+**Problem discovered:** nGains% is **percentage-based**, not absolute. This creates a paradox:
+
+**Scenario:**
+- Both buildings have **40% nGains** (same percentage)
+- Reference building is "lossier" → needs MORE heating → 40% of larger number = **$31,438.26 avoided**
+- Target building is efficient → needs LESS heating → 40% of smaller number = **$29,225.29 avoided**
+
+**The paradox:**
+- Reference avoids MORE dollars (because it has more to avoid)
+- But Target is the BETTER building (needs less heating overall)
+- Current formula: Target - Reference = $29k - $31k = **-$2k → $0.00 savings shown**
+
+**Questions for Andy (to answer tomorrow):**
+
+1. **Should savings be Ref - Target?**
+   - Would show $31k - $29k = $2k savings
+   - Interpretation: "Reference avoided $2k more than Target because it had more heating demand"
+   - But this is backwards from our "lower is better" principle
+
+2. **Should nGains% have NO savings calculation?**
+   - Just show Target Cost and Reference Cost rows
+   - Don't show Savings row for this metric
+   - Avoids the paradox entirely
+
+3. **Is there a different interpretation?**
+   - Maybe nGains% savings should compare the PERCENTAGE not the DOLLARS?
+   - Both at 40% = no delta = $0 savings (which current formula shows correctly!)
+
+**Current implementation:** Using reversed pattern (Target - Reference), but this may need revision.
+
+**Testing needed:** Try scenarios where:
+- Target has HIGHER nGains% than Reference (e.g., 50% vs 40%)
+- Target has LOWER nGains% than Reference (e.g., 30% vs 40%)
+
+---
 
 **Current Status:**
 - 7 rows total: Target, Reference, Δ, %Δ, Ref Cost, Target Cost, Savings

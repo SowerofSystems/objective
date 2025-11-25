@@ -117,12 +117,70 @@ window.TEUI.pcFinancials = (function () {
 
     /**
      * nGains% - Net Useable Internal Gains
-     * TODO: Add formula when provided
+     * Cost = Value of avoided heating energy (kWh) in dollars
+     * Higher nGains% = more avoided heating = more savings
+     * No fuel detection needed - whichever fuel is 0 contributes $0
      */
     net_gains: {
-      target: () => 0,
-      reference: () => 0,
-      savings: () => 0
+      target: () => {
+        const internalGains = getValue('i_80');    // Avoided heating (thermal kWh) - TARGET
+        const heatingDemand = getValue('d_114');   // Total heating demand (kWh) - TARGET
+
+        if (heatingDemand === 0) return 0; // No heating system
+
+        // Get heating system fuel volume for oil (from Section 13)
+        const oilHeatingL = getValue('f_115');     // Oil heating (litres) - TARGET
+
+        // Get fuel rates (same as SHW%)
+        const electricRate = getValue('l_12');     // $/kWh
+        const gasRate = getValue('l_13');          // $/kWh
+        const oilRate = getValue('l_16');          // $/litre
+
+        // Calculate avoided cost based on heating fuel type (same pattern as SHW%)
+        // Whichever fuel is 0 contributes $0
+        const electricCost = internalGains * electricRate;
+        const gasCost = internalGains * gasRate;
+
+        // For oil: convert thermal kWh to litres, then apply rate
+        // d_114 thermal kWh requires f_115 litres
+        const oilLitresPerKWh = heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
+        const oilLitres = internalGains * oilLitresPerKWh;
+        const oilCost = oilLitres * oilRate;
+
+        // Sum all three (only one will be non-zero)
+        return electricCost + gasCost + oilCost;
+      },
+      reference: () => {
+        const internalGains = getValue('ref_i_80');
+        const heatingDemand = getValue('ref_d_114');
+
+        if (heatingDemand === 0) return 0;
+
+        const oilHeatingL = getValue('ref_f_115');
+        const electricRate = getValue('ref_l_12');
+        const gasRate = getValue('ref_l_13');
+        const oilRate = getValue('ref_l_16');
+
+        const electricCost = internalGains * electricRate;
+        const gasCost = internalGains * gasRate;
+
+        const oilLitresPerKWh = heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
+        const oilLitres = internalGains * oilLitresPerKWh;
+        const oilCost = oilLitres * oilRate;
+
+        return electricCost + gasCost + oilCost;
+      },
+      savings: function() {
+        // TODO: VERIFY LOGIC WITH ANDY (Nov 24 late evening discovery)
+        // nGains% is percentage-based, not absolute
+        // Same % but different heating demands = different dollar amounts
+        // Example: Both 40% nGains, but Ref (lossy) avoids $31k, Target (efficient) avoids $29k
+        // Question: Should savings be Ref - Target (showing cost of lower heating demand)?
+        // Or should nGains% not have savings at all?
+        // Current implementation: Target - Reference (reversed pattern)
+        const delta = this.target() - this.reference();
+        return delta > 0 ? delta : 0;
+      }
     },
 
     /**
