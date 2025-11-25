@@ -1,5 +1,5 @@
 /**
- * ppConfig.js
+ * pcConfig.js
  * Configuration for Section 18 Parallel Coordinates Optimization Visualization
  *
  * This file defines the 14 axes used in the parallel coordinates graph,
