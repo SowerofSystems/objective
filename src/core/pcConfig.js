@@ -122,16 +122,16 @@ window.TEUI.OPTIMIZATION_AXES = [
   },
 
   {
-    id: "normalized_airtightness",
-    label: "NRL50",
-    unit: "L/s·m²",
-    description: "Normalized air leakage rate at 50Pa",
+    id: "ach50",
+    label: "ACH50",
+    unit: "ACH",
+    description: "Air Changes per Hour at 50Pa (airtightness)",
     optimal: "lower",
 
-    targetField: "g_108",
-    referenceField: "ref_g_108",
+    targetField: "d_109",
+    referenceField: "ref_d_109",
 
-    domain: [0, 5.0],  // Typical range for airtightness
+    domain: [0, 10.0],  // 0.10 (super tight) to 10.0 (very leaky)
   },
 
   {

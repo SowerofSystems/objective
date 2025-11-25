@@ -1110,6 +1110,25 @@ window.TEUI.ParallelCoordinates = (function () {
       unit: '%',
       label: 'TB',
       owningSection: 'sect11'     // Section 11
+    },
+
+    // ACH50 - Air Changes per Hour at 50Pa (0.10 - 10.0 ACH)
+    // Lower ACH50 = tighter envelope = better performance
+    // Unique pattern: Dragging flips d_108 to "MEASURED" and writes to g_109
+    // Display field: d_109 (calculated ACH50 result)
+    // Write field: g_109 (measured ACH50 input - only editable when d_108="MEASURED")
+    // Dropdown field: d_108 (blower door method selector)
+    'ach50': {
+      targetField: 'g_109',       // Write to measured value field
+      refField: 'ref_g_109',      // Reference measured value
+      dropdownField: 'd_108',     // Blower door method selector (will be set to "MEASURED")
+      refDropdownField: 'ref_d_108',
+      min: 0.10,                  // Super tight (Passive House level)
+      max: 10.0,                  // Very leaky
+      step: 0.10,                 // 0.10 intervals (0.10, 0.20, 0.30, ...)
+      unit: 'ACH',
+      label: 'ACH50',
+      owningSection: 'sect12'     // Section 12
     }
   };
 
@@ -1325,6 +1344,25 @@ window.TEUI.ParallelCoordinates = (function () {
       if (owningSection.ModeManager && owningSection.ModeManager.currentMode !== targetMode) {
         owningSection.ModeManager.switchMode(targetMode);
         console.log(`[ParallelCoordinates] Switched ${axisConfig.owningSection} to ${targetMode} mode`);
+      }
+
+      // 0.5. ⚠️ SPECIAL CASE: ACH50 - Set dropdown to "MEASURED" before writing value
+      // For ACH50, dragging requires switching d_108 to "MEASURED" method
+      // This enables g_109 field to become editable and accept the new value
+      if (axisConfig.dropdownField) {
+        const dropdownFieldId = axisConfig.dropdownField;  // d_108
+        const dropdownFieldIdWithPrefix = isTarget ? dropdownFieldId : axisConfig.refDropdownField;  // d_108 or ref_d_108
+        const stateToUpdate = isTarget ? owningSection.TargetState : owningSection.ReferenceState;
+
+        if (stateToUpdate) {
+          stateToUpdate.setValue(dropdownFieldId, "MEASURED");
+          console.log(`[ParallelCoordinates] Set ${isTarget ? 'Target' : 'Reference'}State.${dropdownFieldId} = "MEASURED"`);
+        }
+
+        if (window.TEUI?.StateManager) {
+          window.TEUI.StateManager.setValue(dropdownFieldIdWithPrefix, "MEASURED", 'user-modified');
+          console.log(`[ParallelCoordinates] Set StateManager.${dropdownFieldIdWithPrefix} = "MEASURED"`);
+        }
       }
 
       // 1. Update the appropriate internal state (TargetState or ReferenceState)
