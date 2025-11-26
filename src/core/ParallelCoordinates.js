@@ -278,26 +278,58 @@ window.TEUI.ParallelCoordinates = (function () {
     legendContainer.style.cssText =
       "display: flex; gap: 15px; align-items: center; margin-left: 20px; margin-right: 20px; padding-left: 20px; border-left: 1px solid #dee2e6;";
 
-    // Target legend
-    const targetLegend = document.createElement("div");
-    targetLegend.style.cssText =
-      "display: flex; align-items: center; gap: 6px;";
-    targetLegend.innerHTML = `
+    // Line legend (Target/Reference)
+    const lineLegendContainer = document.createElement("div");
+    lineLegendContainer.style.cssText = "display: flex; gap: 12px; align-items: center;";
+
+    // Target line legend
+    const targetLineLegend = document.createElement("div");
+    targetLineLegend.style.cssText = "display: flex; align-items: center; gap: 6px;";
+    targetLineLegend.innerHTML = `
       <div style="width: 20px; height: 3px; background: ${CONFIG.colors.target};"></div>
       <span style="font-size: 12px; font-weight: 500; color: ${CONFIG.colors.target};">Target</span>
     `;
 
-    // Reference legend
-    const referenceLegend = document.createElement("div");
-    referenceLegend.style.cssText =
-      "display: flex; align-items: center; gap: 6px;";
-    referenceLegend.innerHTML = `
+    // Reference line legend
+    const referenceLineLegend = document.createElement("div");
+    referenceLineLegend.style.cssText = "display: flex; align-items: center; gap: 6px;";
+    referenceLineLegend.innerHTML = `
       <div style="width: 20px; height: 3px; background: ${CONFIG.colors.reference};"></div>
       <span style="font-size: 12px; font-weight: 500; color: ${CONFIG.colors.reference};">Reference</span>
     `;
 
-    legendContainer.appendChild(targetLegend);
-    legendContainer.appendChild(referenceLegend);
+    lineLegendContainer.appendChild(targetLineLegend);
+    lineLegendContainer.appendChild(referenceLineLegend);
+
+    // Node legend (Calculated/Editable) - separator + node types
+    const nodeLegendContainer = document.createElement("div");
+    nodeLegendContainer.style.cssText = "display: flex; gap: 12px; align-items: center; padding-left: 15px; border-left: 1px solid #dee2e6;";
+
+    // Calculated node legend (small dot)
+    const calculatedNodeLegend = document.createElement("div");
+    calculatedNodeLegend.style.cssText = "display: flex; align-items: center; gap: 6px;";
+    calculatedNodeLegend.innerHTML = `
+      <svg width="16" height="16" style="display: block;">
+        <circle cx="8" cy="8" r="3" fill="${CONFIG.colors.target}" stroke="white" stroke-width="1"></circle>
+      </svg>
+      <span style="font-size: 12px; color: #666;">Calculated</span>
+    `;
+
+    // Editable node legend (large dot)
+    const editableNodeLegend = document.createElement("div");
+    editableNodeLegend.style.cssText = "display: flex; align-items: center; gap: 6px;";
+    editableNodeLegend.innerHTML = `
+      <svg width="16" height="16" style="display: block;">
+        <circle cx="8" cy="8" r="6" fill="${CONFIG.colors.target}" stroke="white" stroke-width="1.5"></circle>
+      </svg>
+      <span style="font-size: 12px; color: #666;">Editable</span>
+    `;
+
+    nodeLegendContainer.appendChild(calculatedNodeLegend);
+    nodeLegendContainer.appendChild(editableNodeLegend);
+
+    legendContainer.appendChild(lineLegendContainer);
+    legendContainer.appendChild(nodeLegendContainer);
 
     // Fullscreen button (enabled) - added LAST so it's at far right
     const fullscreenBtn = createButton(
