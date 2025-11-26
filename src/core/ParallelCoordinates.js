@@ -1167,16 +1167,19 @@ window.TEUI.ParallelCoordinates = (function () {
           return null; // Cannot drag electric nodes
         } else {
           // Gas or Oil - use AFUE (j_115)
+          // Allow dragging up to 586% to enable auto-switch to Heatpump
+          // (one-way transition: Gas/Oil → Heatpump, not reversible via slider)
           return {
             targetField: 'j_115',              // AFUE field
             refField: 'ref_j_115',
             min: 50,                           // 50% AFUE minimum
-            max: 100,                          // 100% AFUE maximum
-            step: 1,                           // 1% intervals
+            max: 586,                          // Allow dragging to Heatpump range
+            step: 5,                           // 5% intervals (matches Heatpump step)
             unit: '%',
             label: 'HEAT',
             owningSection: 'sect13',
-            storageMultiplier: 0.01            // Display 90%, store 0.90
+            storageMultiplier: 0.01,           // Display 90%, store 0.90
+            autoSwitchToHeatpump: true         // Flag to enable auto fuel-type switching
           };
         }
       }
@@ -1355,19 +1358,20 @@ window.TEUI.ParallelCoordinates = (function () {
     // For Gas/Oil: display=90 (%), storage=0.90 (decimal) → multiply by storageMultiplier (0.01)
     // For others: display=90, storage=90 → no conversion needed
     let storageValue = clampedValue;
-    if (axisConfig.storageMultiplier) {
-      storageValue = clampedValue * axisConfig.storageMultiplier;
-    }
 
     // ⚠️ HSPF INVERSION: Convert COP percentage to HSPF for heatpump systems
+    // Also applies when auto-switching from Gas/Oil to Heatpump (>100%)
     // User drags HEAT% node to 400% → COP 4.0 → HSPF 13.65 (stored in f_113)
     // Formula: HSPF = (percentage / 100) * 3.412
     // Section 13 will recalculate: h_113 = f_113 / 3.412 (display as COP)
-    if (axisConfig.isHeatpump) {
+    if (axisConfig.isHeatpump || (axisConfig.autoSwitchToHeatpump && clampedValue > 100)) {
       const cop = clampedValue / 100;           // 400% → 4.0
       const hspf = cop * 3.412;                 // 4.0 → 13.648
       storageValue = Math.round(hspf * 100) / 100;  // 13.65 (2 decimal places)
       console.log(`[HEAT% Heatpump] COP ${cop.toFixed(2)} (${clampedValue}%) → HSPF ${storageValue}`);
+    } else if (axisConfig.storageMultiplier) {
+      // Only apply storage multiplier if NOT doing HSPF conversion
+      storageValue = clampedValue * axisConfig.storageMultiplier;
     }
 
     // ⚠️ DISCRETE DROPDOWN: Map snapped percentage to dropdown string
@@ -1435,18 +1439,52 @@ window.TEUI.ParallelCoordinates = (function () {
         }
       }
 
+      // 0.6. ⚠️ SPECIAL CASE: HEAT% - Auto fuel-type switching when dragging past 100%
+      // When user drags HEAT% past 100% while in Gas/Oil mode:
+      // - Gas/Oil AFUE physically limited to 100% maximum
+      // - Auto-switch to Heatpump to allow efficiency > 100% (COP > 1.0)
+      // - This enables seamless exploration of efficiency ranges beyond AFUE limits
+      let fieldToWrite = baseFieldId;       // Default: use base field (e.g., j_115)
+      let fieldToWriteWithPrefix = fieldId; // Default: with ref_ prefix if needed
+
+      if (d.axisId === 'heating_efficiency' && clampedValue > 100) {
+        const selectorFieldId = 'd_113';  // Heating system type selector
+        const selectorFieldIdWithPrefix = isTarget ? selectorFieldId : 'ref_d_113';
+        const currentFuelType = window.TEUI?.StateManager?.getValue(selectorFieldIdWithPrefix);
+
+        // Only switch if currently Gas or Oil (not if already Heatpump or Electric)
+        if (currentFuelType === 'Gas' || currentFuelType === 'Oil') {
+          const stateToUpdate = isTarget ? owningSection.TargetState : owningSection.ReferenceState;
+
+          if (stateToUpdate) {
+            stateToUpdate.setValue(selectorFieldId, 'Heatpump');
+            console.log(`[HEAT% Auto-Switch] ${currentFuelType} → Heatpump (efficiency ${clampedValue}% > 100%)`);
+          }
+
+          if (window.TEUI?.StateManager) {
+            window.TEUI.StateManager.setValue(selectorFieldIdWithPrefix, 'Heatpump', 'user-modified');
+            console.log(`[ParallelCoordinates] Set StateManager.${selectorFieldIdWithPrefix} = "Heatpump"`);
+          }
+
+          // Switch field from j_115 (AFUE) to f_113 (HSPF)
+          fieldToWrite = 'f_113';
+          fieldToWriteWithPrefix = isTarget ? 'f_113' : 'ref_f_113';
+          console.log(`[HEAT% Auto-Switch] Field changed: ${baseFieldId} → ${fieldToWrite}`);
+        }
+      }
+
       // 1. Update the appropriate internal state (TargetState or ReferenceState)
-      // Use baseFieldId (without ref_ prefix) for state updates
+      // Use baseFieldId (without ref_ prefix) for state updates, or fieldToWrite if auto-switched
       const stateToUpdate = isTarget ? owningSection.TargetState : owningSection.ReferenceState;
       if (stateToUpdate) {
-        stateToUpdate.setValue(baseFieldId, valueToStore);
-        console.log(`[ParallelCoordinates] Updated ${isTarget ? 'Target' : 'Reference'}State.${baseFieldId} = ${valueToStore}`);
+        stateToUpdate.setValue(fieldToWrite, valueToStore);
+        console.log(`[ParallelCoordinates] Updated ${isTarget ? 'Target' : 'Reference'}State.${fieldToWrite} = ${valueToStore}`);
       }
 
       // 2. Update StateManager (for cross-section communication)
       if (window.TEUI?.StateManager) {
-        window.TEUI.StateManager.setValue(fieldId, valueToStore, 'user-modified');
-        console.log(`[ParallelCoordinates] Updated StateManager.${fieldId} = ${valueToStore}`);
+        window.TEUI.StateManager.setValue(fieldToWriteWithPrefix, valueToStore, 'user-modified');
+        console.log(`[ParallelCoordinates] Updated StateManager.${fieldToWriteWithPrefix} = ${valueToStore}`);
       }
 
       // 3. Call calculateAll() to recalculate (Pattern A compliant)
