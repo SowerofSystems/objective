@@ -855,7 +855,7 @@ window.TEUI.ParallelCoordinates = (function () {
             class="pc-capital-input"
             data-axis="${axis.id}"
             value="${formattedValue}"
-            style="width: 100px; text-align: center; border: 1px solid #dee2e6; border-radius: 4px; padding: 4px 8px; font-size: 14px;"
+            style="width: 85px; text-align: center;"
           />
         </td>
       `;
