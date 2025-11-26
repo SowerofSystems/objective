@@ -257,6 +257,40 @@ window.TEUI.ParallelCoordinates = (function () {
       mainBtn.addEventListener("click", activateVisualization);
     }
 
+    // Create action buttons (Decarbonize, Optimize, Super Optimize) - only when activated
+    let decarbonizeBtn, optimizeBtn, superOptimizeBtn;
+    if (isActivated) {
+      // Decarbonize button (green)
+      decarbonizeBtn = document.createElement("button");
+      decarbonizeBtn.className = "btn btn-success btn-sm";
+      decarbonizeBtn.innerHTML = "Decarbonize";
+      decarbonizeBtn.style.fontWeight = "500";
+      decarbonizeBtn.addEventListener("click", () => {
+        console.log("[ParallelCoordinates] Decarbonize action triggered");
+        // TODO: Wire up decarbonize logic
+      });
+
+      // Optimize button (teal)
+      optimizeBtn = document.createElement("button");
+      optimizeBtn.className = "btn btn-sm";
+      optimizeBtn.innerHTML = "Optimize";
+      optimizeBtn.style.cssText = "background-color: #20c997; color: white; border-color: #20c997; font-weight: 500;";
+      optimizeBtn.addEventListener("click", () => {
+        console.log("[ParallelCoordinates] Optimize action triggered");
+        // TODO: Wire up optimize logic
+      });
+
+      // Super Optimize button (orange)
+      superOptimizeBtn = document.createElement("button");
+      superOptimizeBtn.className = "btn btn-warning btn-sm";
+      superOptimizeBtn.innerHTML = "Super Optimize";
+      superOptimizeBtn.style.fontWeight = "500";
+      superOptimizeBtn.addEventListener("click", () => {
+        console.log("[ParallelCoordinates] Super Optimize action triggered");
+        // TODO: Wire up super optimize logic
+      });
+    }
+
     // Create layout container for buttons (CSS handles margin-left: auto)
     const layoutContainer = document.createElement("div");
 
@@ -347,6 +381,14 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Assemble controls row
     controlsContainer.appendChild(mainBtn);
+
+    // Add action buttons (only when activated) right after main button
+    if (isActivated && decarbonizeBtn && optimizeBtn && superOptimizeBtn) {
+      controlsContainer.appendChild(decarbonizeBtn);
+      controlsContainer.appendChild(optimizeBtn);
+      controlsContainer.appendChild(superOptimizeBtn);
+    }
+
     controlsContainer.appendChild(layoutContainer);
 
     controlsWrapper.appendChild(controlsContainer);
