@@ -1174,12 +1174,13 @@ window.TEUI.ParallelCoordinates = (function () {
             refField: 'ref_j_115',
             min: 50,                           // 50% AFUE minimum
             max: 586,                          // Allow dragging to Heatpump range
-            step: 5,                           // 5% intervals (matches Heatpump step)
+            step: 1,                           // 1% intervals for fine control in 50-100% range
             unit: '%',
             label: 'HEAT',
             owningSection: 'sect13',
             storageMultiplier: 0.01,           // Display 90%, store 0.90
-            autoSwitchToHeatpump: true         // Flag to enable auto fuel-type switching
+            autoSwitchToHeatpump: true,        // Flag to enable auto fuel-type switching
+            isDecimal: true                    // Store with decimal precision (0.90 not 1)
           };
         }
       }

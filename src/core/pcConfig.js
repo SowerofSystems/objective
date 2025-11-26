@@ -170,7 +170,7 @@ window.TEUI.OPTIMIZATION_AXES = [
     referenceFieldAltMultiplier: 100,
     referenceFieldSelector: "ref_d_113",
 
-    domain: [50, 586],  // 50% (Gas/Oil min AFUE) to 586% (Heatpump max COP 5.86)
+    domain: [0, 586],  // 0% to 586% (gives visual space for 50-100% AFUE range and full heatpump COP range)
   },
 
   {
