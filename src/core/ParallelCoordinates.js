@@ -1150,6 +1150,26 @@ window.TEUI.ParallelCoordinates = (function () {
       owningSection: 'sect12'     // Section 12
     },
 
+    // MVHR% - Mechanical Ventilation Heat Recovery Efficiency (0-100%)
+    // Higher MVHR% = more heat recovered from exhaust air = better performance
+    // Standard continuous slider in Section 13 (d_118, ref_d_118)
+    // Range: 0% to 100% (98% practical maximum)
+    // ⚠️ CRITICAL: 0.01 precision required to preserve Excel imported values (e.g., 4.81%)
+    // Storage: d_118 stores as percentage STRING (85% → "85", 4.81% → "4.81")
+    // Same pattern as DWHR% (d_53) - stores value directly as percentage
+    'mvhr_efficiency': {
+      targetField: 'd_118',
+      refField: 'ref_d_118',
+      min: 0,
+      max: 100,
+      step: 0.1,                  // 0.1% intervals for smooth dragging (84.9, 85.0, 85.1)
+      unit: '%',
+      label: 'MVHR',
+      owningSection: 'sect13',    // Section 13
+      isDecimal: true,            // Store with decimal precision (85.0, not 85; 4.81, not 5)
+      decimalPlaces: 2            // Store 2 decimals to preserve 0.1% precision (85.00, 4.81)
+    },
+
     // HEAT% - Heating System Efficiency (Multi-fuel conditional)
     // Uses conditional config based on heating fuel type
     // Display: h_113 (COP%) × 100 for visual percentage
@@ -1424,9 +1444,13 @@ window.TEUI.ParallelCoordinates = (function () {
       valueToStore = storageValue;
     } else {
       // Continuous slider: format number as string
-      valueToStore = axisConfig.isDecimal
-        ? storageValue.toFixed(2)  // "0.90" for k_52 (Gas/Oil AFUE)
-        : Math.round(storageValue).toString();  // "100" for d_52 (percentages)
+      if (axisConfig.isDecimal) {
+        // Use custom decimal places if specified (e.g., 4 for MVHR%), otherwise default to 2
+        const decimals = axisConfig.decimalPlaces || 2;
+        valueToStore = storageValue.toFixed(decimals);  // "0.90" for k_52 (Gas/Oil AFUE), "0.0481" for d_118 (MVHR%)
+      } else {
+        valueToStore = Math.round(storageValue).toString();  // "100" for d_52 (percentages)
+      }
     }
 
     console.log(`[ParallelCoordinates] Drag ended: ${fieldId} = ${valueToStore} (node mode: ${d.mode}, axis: ${d.axisId})`);

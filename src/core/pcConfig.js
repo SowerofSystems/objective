@@ -180,8 +180,8 @@ window.TEUI.OPTIMIZATION_AXES = [
     description: "Mechanical Ventilation Heat Recovery efficiency",
     optimal: "higher",
 
-    targetField: "d_118",
-    referenceField: "ref_d_118",
+    targetField: "d_118",            // d_118 stores as percentage (89 means 89%)
+    referenceField: "ref_d_118",     // ref_d_118 stores as percentage
 
     domain: [0, 100],
   },
