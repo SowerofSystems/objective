@@ -1154,20 +1154,20 @@ window.TEUI.ParallelCoordinates = (function () {
     // Higher MVHR% = more heat recovered from exhaust air = better performance
     // Standard continuous slider in Section 13 (d_118, ref_d_118)
     // Range: 0% to 100% (98% practical maximum)
-    // ⚠️ CRITICAL: 0.01 precision required to preserve Excel imported values (e.g., 4.81%)
-    // Storage: d_118 stores as percentage STRING (85% → "85", 4.81% → "4.81")
+    // Storage: d_118 stores as percentage STRING (85% → "85.50", 4.81% → "4.81")
     // Same pattern as DWHR% (d_53) - stores value directly as percentage
+    // Dragging: 0.5% intervals for easy control; S13 allows precise editing (e.g., 86.42%)
     'mvhr_efficiency': {
       targetField: 'd_118',
       refField: 'ref_d_118',
       min: 0,
       max: 100,
-      step: 0.1,                  // 0.1% intervals for smooth dragging (84.9, 85.0, 85.1)
+      step: 0.5,                  // 0.5% intervals (85.0, 85.5, 86.0, 86.5, 87.0)
       unit: '%',
       label: 'MVHR',
       owningSection: 'sect13',    // Section 13
-      isDecimal: true,            // Store with decimal precision (85.0, not 85; 4.81, not 5)
-      decimalPlaces: 2            // Store 2 decimals to preserve 0.1% precision (85.00, 4.81)
+      isDecimal: true,            // Store with decimal precision (85.5, not 86)
+      decimalPlaces: 2            // Store 2 decimals to preserve imported values (86.42 from Excel)
     },
 
     // HEAT% - Heating System Efficiency (Multi-fuel conditional)
