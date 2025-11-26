@@ -304,6 +304,12 @@ window.TEUI.ParallelCoordinates = (function () {
     // Settings button (enabled)
     const settingsBtn = createButton("bi-gear", "Settings", showSettingsModal);
 
+    // Create feedback console (in middle of controls row)
+    const feedbackConsole = document.createElement("span");
+    feedbackConsole.id = "s18-feedback-console";
+    feedbackConsole.style.cssText =
+      "color: #0dcaf0; font-size: 0.9rem; margin-left: 20px; margin-right: 20px; padding-left: 20px; border-left: 1px solid #dee2e6; min-width: 200px;";
+
     // Create inline legend (in middle of controls row)
     const legendContainer = document.createElement("div");
     legendContainer.style.cssText =
@@ -369,7 +375,8 @@ window.TEUI.ParallelCoordinates = (function () {
       toggleFullscreen
     );
 
-    // Append in order: Legend, Refresh, Export, Settings, Fullscreen
+    // Append in order: Feedback Console, Legend, Refresh, Export, Settings, Fullscreen
+    layoutContainer.appendChild(feedbackConsole);
     layoutContainer.appendChild(legendContainer);
     layoutContainer.appendChild(refreshBtn);
     layoutContainer.appendChild(exportBtn);
@@ -1187,6 +1194,30 @@ window.TEUI.ParallelCoordinates = (function () {
   // ========================================================================
 
   /**
+   * Show feedback message in S18 console
+   * @param {string} message - Message to display
+   * @param {number} duration - Duration in ms (default 5000)
+   */
+  function showFeedback(message, duration = 5000) {
+    const console = document.getElementById("s18-feedback-console");
+    if (!console) return;
+
+    console.textContent = message;
+    console.style.opacity = "1";
+
+    // Auto-fade after duration
+    setTimeout(() => {
+      console.style.transition = "opacity 1s";
+      console.style.opacity = "0";
+      setTimeout(() => {
+        console.textContent = "";
+        console.style.opacity = "1";
+        console.style.transition = "";
+      }, 1000);
+    }, duration);
+  }
+
+  /**
    * Decarbonize optimization
    * Minimize GHGI by switching fossil fuel systems to heat pumps
    */
@@ -1200,6 +1231,7 @@ window.TEUI.ParallelCoordinates = (function () {
     }
 
     let changesMade = false;
+    const changes = []; // Track what changed for user feedback
 
     // ========================================================================
     // Part 1: Service Hot Water (S07 - SHW%)
@@ -1211,6 +1243,7 @@ window.TEUI.ParallelCoordinates = (function () {
       stateManager.setValue("d_51", "Heatpump", "user-modified");
       stateManager.setValue("d_52", "300", "user-modified");
       console.log("[Decarbonize] SHW: " + d_51 + " → Heatpump @ 300% COP");
+      changes.push(d_51 + " SHW → Heatpump 300%");
       changesMade = true;
     } else if (d_51 === "Heatpump") {
       // Already Heatpump - ensure minimum 300% COP
@@ -1218,12 +1251,9 @@ window.TEUI.ParallelCoordinates = (function () {
       if (d_52 < 300) {
         stateManager.setValue("d_52", "300", "user-modified");
         console.log("[Decarbonize] SHW: Heatpump COP raised from " + d_52 + "% to 300%");
+        changes.push("SHW raised to 300%");
         changesMade = true;
-      } else {
-        console.log("[Decarbonize] SHW: Already Heatpump @ " + d_52 + "% (no change)");
       }
-    } else if (d_51 === "Electric") {
-      console.log("[Decarbonize] SHW: Electric resistance (no change needed)");
     }
 
     // ========================================================================
@@ -1236,6 +1266,7 @@ window.TEUI.ParallelCoordinates = (function () {
       stateManager.setValue("d_113", "Heatpump", "user-modified");
       stateManager.setValue("f_113", "12.5", "user-modified");
       console.log("[Decarbonize] Heating: " + d_113 + " → Heatpump @ HSPF 12.5 (COP 3.66)");
+      changes.push(d_113 + " Heating → Heatpump HSPF 12.5");
       changesMade = true;
     } else if (d_113 === "Heatpump") {
       // Already Heatpump - ensure minimum HSPF 12.5
@@ -1243,23 +1274,32 @@ window.TEUI.ParallelCoordinates = (function () {
       if (f_113 < 12.5) {
         stateManager.setValue("f_113", "12.5", "user-modified");
         console.log("[Decarbonize] Heating: Heatpump HSPF raised from " + f_113 + " to 12.5");
+        changes.push("Heating raised to HSPF 12.5");
         changesMade = true;
-      } else {
-        console.log("[Decarbonize] Heating: Already Heatpump @ HSPF " + f_113 + " (no change)");
       }
-    } else if (d_113 === "Electric") {
-      console.log("[Decarbonize] Heating: Electric resistance (no change needed)");
     }
 
     // ========================================================================
-    // Refresh graph to show updates
+    // Show user feedback and refresh graph
     // ========================================================================
     if (changesMade) {
+      const message = changes.join(", ");
+      showFeedback(message, 6000);
       console.log("[Decarbonize] Optimization complete - refreshing graph");
       setTimeout(() => {
         refresh();
       }, 100);
     } else {
+      // Check if already fully optimized
+      const isFullyOptimized =
+        (d_51 === "Heatpump" || d_51 === "Electric") &&
+        (d_113 === "Heatpump" || d_113 === "Electric");
+
+      if (isFullyOptimized) {
+        showFeedback("Nice! Your building is already zero emissions!", 6000);
+      } else {
+        showFeedback("No changes needed", 4000);
+      }
       console.log("[Decarbonize] No changes needed - already optimized");
     }
   }
