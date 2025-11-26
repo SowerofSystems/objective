@@ -912,10 +912,35 @@ window.TEUI.ParallelCoordinates = (function () {
     // Capital Budget row (user-editable inputs) - positioned before Simple ROI
     const capitalBudgetRow = document.createElement("tr");
     capitalBudgetRow.innerHTML = `<td class="pc-row-label"><strong>Capital Budget</strong></td>`;
+
+    // Default capital budget values (user-editable)
+    const defaultCapitalBudgets = {
+      'shw_efficiency': 10000,
+      'dwhr_efficiency': 5000,
+      'net_gains': 100000,
+      'thermal_bridge': 50000,
+      'aggregate_ground_uvalue': 20000,
+      'aggregate_air_uvalue': 100000,
+      'ach50': 30000,
+      'window_wall_ratio': 50000,
+      'heating_efficiency': 50000,
+      'mvhr_efficiency': 50000,
+      'tedi': 1,
+      'teli': 100000,
+      'ghgi': 0,
+      'teui': 0
+    };
+
     axes.forEach(axis => {
-      const savedValue = localStorage.getItem(`pc_capital_budget_${axis.id}`) || "0";
-      const numValue = parseFloat(savedValue);
+      const savedValue = localStorage.getItem(`pc_capital_budget_${axis.id}`);
+      const defaultValue = defaultCapitalBudgets[axis.id] || 0;
+      const numValue = savedValue !== null ? parseFloat(savedValue) : defaultValue;
       const formattedValue = formatCurrency(numValue);
+
+      // Save default value to localStorage if not already set
+      if (savedValue === null) {
+        localStorage.setItem(`pc_capital_budget_${axis.id}`, numValue.toString());
+      }
 
       capitalBudgetRow.innerHTML += `
         <td class="text-center">
@@ -924,7 +949,7 @@ window.TEUI.ParallelCoordinates = (function () {
             class="pc-capital-input"
             data-axis="${axis.id}"
             value="${formattedValue}"
-            style="width: 85px; text-align: center;"
+            style="width: 80px; text-align: center;"
           />
         </td>
       `;
@@ -949,8 +974,21 @@ window.TEUI.ParallelCoordinates = (function () {
 
         let roiDisplay;
         if (axis.id === 'ghgi') {
-          // GHGI is emissions, not financial - can't calculate financial ROI
-          roiDisplay = 'N/A';
+          // GHGI: Use capital budget as carbon price per MT ($/tCO2e)
+          // Convert kgCO2e savings to MT (metric tons) and calculate carbon cost savings
+          const carbonPricePerMT = capitalBudget; // User enters $/MT in capital budget field
+          const emissionsReductionKg = annualSavings; // kgCO2e/yr from pcFinancials
+          const emissionsReductionMT = emissionsReductionKg / 1000; // Convert to MT
+          const carbonCostSavings = emissionsReductionMT * carbonPricePerMT; // $/yr
+
+          if (carbonPricePerMT === 0) {
+            roiDisplay = 'N/A'; // No carbon price set
+          } else if (emissionsReductionKg <= 0) {
+            roiDisplay = 'N/A'; // No emissions reduction
+          } else {
+            // Show total carbon cost savings per year
+            roiDisplay = formatCurrency(carbonCostSavings);
+          }
         } else if (capitalBudget === 0) {
           roiDisplay = '-'; // No investment
         } else if (annualSavings <= 0) {
@@ -1030,7 +1068,19 @@ window.TEUI.ParallelCoordinates = (function () {
 
         let roiDisplay;
         if (axis.id === 'ghgi') {
-          roiDisplay = 'N/A';
+          // GHGI: Use capital budget as carbon price per MT ($/tCO2e)
+          const carbonPricePerMT = capitalBudget;
+          const emissionsReductionKg = annualSavings;
+          const emissionsReductionMT = emissionsReductionKg / 1000;
+          const carbonCostSavings = emissionsReductionMT * carbonPricePerMT;
+
+          if (carbonPricePerMT === 0) {
+            roiDisplay = 'N/A';
+          } else if (emissionsReductionKg <= 0) {
+            roiDisplay = 'N/A';
+          } else {
+            roiDisplay = formatCurrency(carbonCostSavings);
+          }
         } else if (capitalBudget === 0) {
           roiDisplay = '-';
         } else if (annualSavings <= 0) {
