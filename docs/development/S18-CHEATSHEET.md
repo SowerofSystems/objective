@@ -784,128 +784,524 @@ if (axis.id === 'ghgi') {
 
 ### Overview
 
-Three optimization buttons provide automated parameter adjustments:
-- **Decarbonize** (Green): Minimize GHGI by switching to heat pumps
-- **Optimize** (Teal): Balanced cost/performance optimization
-- **Super Optimize** (Orange): Aggressive multi-objective optimization
+Four optimization buttons provide automated parameter adjustments:
+- **Decarbonize** (Green): Minimize GHGI by switching fossil fuels to heat pumps
+- **Optimize** (Teal): Balanced cost/performance optimization (moderate efficiency improvements)
+- **Super Optimize** (Orange): Aggressive multi-objective optimization (high efficiency improvements)
+- **PassivHaus-ify** (Yellow/Red): Set values to achieve PH certification target (120 PER at f_35)
 
-### Decarbonize Button Logic
+---
+
+## Common Implementation Framework
+
+All optimization buttons follow the same architectural pattern to ensure consistency and reliability.
+
+### Core Pattern A Architecture
+
+**CRITICAL RULES:**
+1. ✅ **Pattern A Compliance**: Update `TargetState` + `StateManager` (NEVER force mode switching)
+2. ✅ **Conditional Field Switching**: Set dropdown FIRST, recalculate, THEN set efficiency value
+3. ✅ **Section Recalculation**: Call `calculateAll()` and `refreshUI()` after changes
+4. ✅ **User Feedback**: Show clear feedback console message with what changed
+5. ✅ **Graph Refresh**: Use `setTimeout()` with 200ms delay to let calculations propagate
+
+### Standard Implementation Template
+
+```javascript
+function handleOptimizationButton() {
+  console.log("[ParallelCoordinates] Button action triggered");
+
+  const stateManager = window.TEUI?.StateManager;
+  if (!stateManager) {
+    console.error("[ParallelCoordinates] StateManager not available");
+    return;
+  }
+
+  let changesMade = false;
+  const changes = []; // Track changes for user feedback
+
+  // ========================================================================
+  // For each field to set:
+  // ========================================================================
+  const sectionModule = window.TEUI?.SectionModules?.sectXX;
+
+  // Pattern 1: Simple value setting (no dropdown switching)
+  if (sectionModule?.TargetState) {
+    sectionModule.TargetState.setValue("field_id", "value");
+  }
+  stateManager.setValue("field_id", "value", "user-modified");
+  changes.push("Field description");
+  changesMade = true;
+
+  // Pattern 2: Conditional field switching (dropdown changes active field)
+  // Step 1: Set dropdown value FIRST
+  if (sectionModule?.TargetState) {
+    sectionModule.TargetState.setValue("dropdown_field", "new_option");
+  }
+  stateManager.setValue("dropdown_field", "new_option", "user-modified");
+
+  // Step 2: Recalculate to activate new field set
+  if (sectionModule?.calculateAll) {
+    sectionModule.calculateAll();
+  }
+
+  // Step 3: NOW set the efficiency value (field is active)
+  if (sectionModule?.TargetState) {
+    sectionModule.TargetState.setValue("efficiency_field", "value");
+  }
+  stateManager.setValue("efficiency_field", "value", "user-modified");
+  changes.push("Fuel type + efficiency change");
+  changesMade = true;
+
+  // Trigger section recalculation
+  if (sectionModule && changesMade) {
+    if (sectionModule.calculateAll) {
+      sectionModule.calculateAll();
+    }
+    if (sectionModule.ModeManager?.refreshUI) {
+      sectionModule.ModeManager.refreshUI();
+    }
+  }
+
+  // ========================================================================
+  // Show feedback and refresh graph
+  // ========================================================================
+  if (changesMade) {
+    const message = changes.join(", ");
+    showFeedback(message, 6000);
+    console.log("[Button] Optimization complete - refreshing graph");
+    setTimeout(() => {
+      refresh();
+    }, 200); // 200ms delay for section calculations
+  } else {
+    showFeedback("No changes needed", 4000);
+    console.log("[Button] No changes needed");
+  }
+}
+```
+
+---
+
+## Button 1: Decarbonize (Green)
 
 **Purpose:** Minimize greenhouse gas emissions by transitioning fossil fuel systems to heat pumps
 
-**Implementation Steps:**
+**Strategy:** Switch Gas/Oil → Heatpump (Electric stays unchanged)
+
+**Implementation:** ✅ **COMPLETE** - See [ParallelCoordinates.js:1237-1386](../../src/core/ParallelCoordinates.js#L1237-L1386)
+
+### Field Changes
+
+| Section | Field | Current Value | New Value | Notes |
+|---------|-------|---------------|-----------|-------|
+| S07 | d_51 | Oil/Gas | Heatpump | SHW fuel type dropdown |
+| S07 | d_52 | varies | 300 | SHW COP% (Heatpump only) |
+| S13 | d_113 | Oil/Gas | Heatpump | Heating fuel type dropdown |
+| S13 | f_113 | varies | 12.5 | HSPF (Heatpump only) |
+
+### Logic Flow
 
 1. **Service Hot Water (S07 - SHW%)**
    ```javascript
-   // Read current fuel type
-   const d_51 = StateManager.getValue('d_51'); // "Oil" | "Gas" | "Electric" | "Heatpump"
+   const d_51 = stateManager.getValue('d_51');
 
-   // Decision tree
    if (d_51 === "Oil" || d_51 === "Gas") {
-     // Switch to Heatpump with COP 3.0 (300%)
-     StateManager.setValue('d_51', 'Heatpump', 'user-modified');
-     StateManager.setValue('d_52', '300', 'user-modified'); // 300% efficiency
+     // CRITICAL: Dropdown FIRST, recalc, THEN efficiency
+     // Step 1: Set fuel type
+     sect07.TargetState.setValue("d_51", "Heatpump");
+     stateManager.setValue("d_51", "Heatpump", "user-modified");
+
+     // Step 2: Recalculate (switches from k_52 to d_52)
+     sect07.calculateAll();
+
+     // Step 3: Set efficiency (d_52 now active)
+     sect07.TargetState.setValue("d_52", "300");
+     stateManager.setValue("d_52", "300", "user-modified");
    } else if (d_51 === "Heatpump") {
      // Already Heatpump - ensure minimum 300% COP
-     const d_52 = parseFloat(StateManager.getValue('d_52')) || 0;
+     const d_52 = parseFloat(stateManager.getValue("d_52")) || 0;
      if (d_52 < 300) {
-       StateManager.setValue('d_52', '300', 'user-modified');
+       sect07.TargetState.setValue("d_52", "300");
+       stateManager.setValue("d_52", "300", "user-modified");
      }
-     // If already >= 300%, do nothing
-   } else if (d_51 === "Electric") {
-     // Electric resistance is already zero-carbon at source - no change needed
-     // (Note: Electricity may have emissions depending on grid mix,
-     //  but that's captured in GHGI calculation, not efficiency)
    }
+   // Electric: No change (already low carbon)
    ```
 
 2. **Space Heating (S13 - HEAT%)**
    ```javascript
-   // Read current fuel type
-   const d_113 = StateManager.getValue('d_113'); // "Oil" | "Gas" | "Electric" | "Heatpump"
+   const d_113 = stateManager.getValue('d_113');
 
-   // Decision tree
    if (d_113 === "Oil" || d_113 === "Gas") {
-     // Switch to Heatpump with HSPF 12.5 (COP ~3.66)
-     StateManager.setValue('d_113', 'Heatpump', 'user-modified');
-     StateManager.setValue('f_113', '12.5', 'user-modified'); // HSPF slider
-     // Section 13 will auto-calculate h_113 (COP) from f_113 (HSPF)
-     // Formula: h_113 = f_113 / 3.412 = 12.5 / 3.412 ≈ 3.66 COP (366%)
+     // CRITICAL: Dropdown FIRST, recalc, THEN efficiency
+     // Step 1: Set fuel type
+     sect13.TargetState.setValue("d_113", "Heatpump");
+     stateManager.setValue("d_113", "Heatpump", "user-modified");
+
+     // Step 2: Recalculate (switches from j_115 to f_113)
+     sect13.calculateAll();
+
+     // Step 3: Set efficiency (f_113 now active)
+     sect13.TargetState.setValue("f_113", "12.5");
+     stateManager.setValue("f_113", "12.5", "user-modified");
    } else if (d_113 === "Heatpump") {
      // Already Heatpump - ensure minimum HSPF 12.5
-     const f_113 = parseFloat(StateManager.getValue('f_113')) || 0;
+     const f_113 = parseFloat(stateManager.getValue("f_113")) || 0;
      if (f_113 < 12.5) {
-       StateManager.setValue('f_113', '12.5', 'user-modified');
+       sect13.TargetState.setValue("f_113", "12.5");
+       stateManager.setValue("f_113", "12.5", "user-modified");
      }
-     // If already >= 12.5, do nothing
-   } else if (d_113 === "Electric") {
-     // Electric resistance is already zero-carbon at source - no change needed
    }
+   // Electric: No change (already low carbon)
    ```
 
-3. **Trigger Recalculations**
-   ```javascript
-   // S07 recalculation (if changed)
-   if (window.TEUI?.SectionModules?.sect07) {
-     window.TEUI.SectionModules.sect07.calculateAll();
-     window.TEUI.SectionModules.sect07.ModeManager.refreshUI();
-   }
+### User Feedback Messages
 
-   // S13 recalculation (if changed)
-   if (window.TEUI?.SectionModules?.sect13) {
-     window.TEUI.SectionModules.sect13.calculateAll();
-     window.TEUI.SectionModules.sect13.ModeManager.refreshUI();
-   }
+- Oil/Gas SHW → Heatpump: `"Oil SHW → Heatpump 300%"`
+- Oil/Gas Heating → Heatpump: `"Gas Heating → Heatpump HSPF 12.5"`
+- Already optimized: `"Nice! Your building is already zero emissions!"`
 
-   // Refresh S18 graph
-   setTimeout(() => {
-     window.TEUI.ParallelCoordinates.refresh();
-   }, 100);
-   ```
+### Testing Checklist
 
-**Field Reference:**
+- [x] Oil SHW → Heatpump @ 300%
+- [x] Gas SHW → Heatpump @ 300%
+- [x] Electric SHW → No change
+- [x] Heatpump SHW < 300% → Raised to 300%
+- [x] Heatpump SHW >= 300% → No change
+- [x] Oil Heating → Heatpump @ HSPF 12.5
+- [x] Gas Heating → Heatpump @ HSPF 12.5
+- [x] Electric Heating → No change
+- [x] Heatpump Heating < 12.5 → Raised to HSPF 12.5
+- [x] Heatpump Heating >= 12.5 → No change
+- [x] Graph refreshes with new values
+- [x] GHGI axis shows reduction
+- [x] No mode switching occurs
+- [x] Feedback console shows changes
 
-| Section | Field | Type | Values | Notes |
-|---------|-------|------|--------|-------|
-| S07 | d_51 | Dropdown | Oil, Gas, Electric, Heatpump | SHW fuel type |
-| S07 | d_52 | Slider | 100-450 | SHW efficiency % (Heatpump/Electric) |
-| S07 | k_52 | Decimal | 0.50-0.98 | SHW AFUE (Oil/Gas) |
+---
+
+## Button 2: Optimize (Teal)
+
+**Purpose:** Balanced cost/performance optimization with moderate efficiency improvements
+
+**Strategy:** Set standard efficiency values across all editable parameters
+
+**Implementation:** ⏳ **IN PROGRESS** - Ready to code
+
+### Field Changes
+
+| Section | Field | Description | Value | Notes |
+|---------|-------|-------------|-------|-------|
+| S07 | d_51 / d_52 | SHW fuel + efficiency | Heatpump @ 300% | **Must switch to Heatpump first!** |
+| S07 | d_53 | DWHR recovery % | 50 | Standard slider |
+| S13 | d_113 / j_115 / f_113 | Heating efficiency | See below | Conditional logic |
+| S13 | d_120 | MVHR efficiency % | 75 | Standard slider |
+| S11 | d_88 | Thermal bridging % | 20 | Standard slider |
+| S12 | d_108 / g_109 | ACH50 | 1.00 | Dropdown flip + value |
+| S11 | d_80 | Net gains method | NRC 60% | Dropdown value |
+
+**SHW Efficiency Logic (300%):**
+- **CRITICAL:** 300% efficiency requires Heatpump (not Electric/Oil/Gas)
+- Step 1: IF d_51 ≠ "Heatpump" → Set d_51 = "Heatpump", recalculate
+- Step 2: Set d_52 = "300"
+
+**Heating Efficiency Logic:**
+- IF current fuel = Gas/Oil → Set j_115 (AFUE) = 0.98
+- ELSE IF current fuel = Heatpump → Set f_113 (HSPF) = 12.5
+- ELSE IF current fuel = Electric → No change
+
+### Implementation Placeholder
+
+```javascript
+function handleOptimize() {
+  console.log("[ParallelCoordinates] Optimize action triggered");
+
+  const stateManager = window.TEUI?.StateManager;
+  if (!stateManager) {
+    console.error("[ParallelCoordinates] StateManager not available");
+    return;
+  }
+
+  let changesMade = false;
+  const changes = [];
+
+  // ========================================================================
+  // Field changes will be added here
+  // ========================================================================
+  // Example pattern:
+  // const sectXX = window.TEUI?.SectionModules?.sectXX;
+  // if (sectXX?.TargetState) {
+  //   sectXX.TargetState.setValue("field_id", "value");
+  // }
+  // stateManager.setValue("field_id", "value", "user-modified");
+  // changes.push("Field description");
+  // changesMade = true;
+
+  // ========================================================================
+  // Section recalculations
+  // ========================================================================
+  // Add section recalculations as needed
+
+  // ========================================================================
+  // Feedback and refresh
+  // ========================================================================
+  if (changesMade) {
+    const message = changes.join(", ");
+    showFeedback(message, 6000);
+    setTimeout(() => { refresh(); }, 200);
+  } else {
+    showFeedback("No changes needed", 4000);
+  }
+}
+```
+
+### User Feedback Messages
+
+- TBD based on field changes
+
+---
+
+## Button 3: Super Optimize (Orange)
+
+**Purpose:** Aggressive multi-objective optimization with high efficiency improvements
+
+**Strategy:** Set high-performance efficiency values across all editable parameters
+
+**Implementation:** ⏳ **IN PROGRESS** - Ready to code
+
+### Field Changes
+
+| Section | Field | Description | Value | Notes |
+|---------|-------|-------------|-------|-------|
+| S07 | d_51 / d_52 | SHW fuel + efficiency | Heatpump @ 400% | **Must switch to Heatpump first!** |
+| S07 | d_53 | DWHR recovery % | 70 | Standard slider |
+| S13 | d_113 / j_115 / f_113 | Heating efficiency | See below | Conditional logic |
+| S13 | d_120 | MVHR efficiency % | 90 | Standard slider |
+| S11 | d_88 | Thermal bridging % | 5 | Standard slider |
+| S12 | d_108 / g_109 | ACH50 | 0.60 | Dropdown flip + value |
+| S11 | d_80 | Net gains method | PH Method | Dropdown switch to PHPP |
+
+**SHW Efficiency Logic (400%):**
+- **CRITICAL:** 400% efficiency requires Heatpump (not Electric/Oil/Gas)
+- Step 1: IF d_51 ≠ "Heatpump" → Set d_51 = "Heatpump", recalculate
+- Step 2: Set d_52 = "400"
+
+**Heating Efficiency Logic:**
+- IF current fuel = Gas/Oil → Set j_115 (AFUE) = 0.98
+- ELSE IF current fuel = Heatpump → Set f_113 (HSPF) = 15
+- ELSE IF current fuel = Electric → No change
+
+### Implementation Placeholder
+
+```javascript
+function handleSuperOptimize() {
+  console.log("[ParallelCoordinates] Super Optimize action triggered");
+
+  const stateManager = window.TEUI?.StateManager;
+  if (!stateManager) {
+    console.error("[ParallelCoordinates] StateManager not available");
+    return;
+  }
+
+  let changesMade = false;
+  const changes = [];
+
+  // ========================================================================
+  // Field changes will be added here (higher values than Optimize)
+  // ========================================================================
+  // Same pattern as Optimize, different values
+
+  // ========================================================================
+  // Section recalculations
+  // ========================================================================
+  // Add section recalculations as needed
+
+  // ========================================================================
+  // Feedback and refresh
+  // ========================================================================
+  if (changesMade) {
+    const message = changes.join(", ");
+    showFeedback(message, 6000);
+    setTimeout(() => { refresh(); }, 200);
+  } else {
+    showFeedback("No changes needed", 4000);
+  }
+}
+```
+
+### User Feedback Messages
+
+- TBD based on field changes
+
+---
+
+## Button 4: PassivHaus-ify (Yellow/Red)
+
+**Purpose:** Set values to achieve PassivHaus certification target (120 PER at f_35)
+
+**Strategy:** For now, applies same optimizations as Super Optimize. Sequential PER targeting to be added later.
+
+**Implementation:** ⏳ **IN PROGRESS** - Ready to code (Phase 1: Same as Super Optimize)
+
+### Phase 1: Field Changes (Same as Super Optimize)
+
+| Section | Field | Description | Value | Notes |
+|---------|-------|-------------|-------|-------|
+| S07 | d_51 / d_52 | SHW fuel + efficiency | Heatpump @ 400% | **Must switch to Heatpump first!** |
+| S07 | d_53 | DWHR recovery % | 70 | Standard slider |
+| S13 | d_113 / j_115 / f_113 | Heating efficiency | See below | Conditional logic |
+| S13 | d_120 | MVHR efficiency % | 90 | Standard slider |
+| S11 | d_88 | Thermal bridging % | 5 | Standard slider |
+| S12 | d_108 / g_109 | ACH50 | 0.60 | Dropdown flip + value |
+| S11 | d_80 | Net gains method | PH Method | Dropdown switch to PHPP |
+
+**SHW Efficiency Logic (400%):**
+- **CRITICAL:** 400% efficiency requires Heatpump (not Electric/Oil/Gas)
+- Step 1: IF d_51 ≠ "Heatpump" → Set d_51 = "Heatpump", recalculate
+- Step 2: Set d_52 = "400"
+
+**Heating Efficiency Logic:**
+- IF current fuel = Gas/Oil → Set j_115 (AFUE) = 0.98
+- ELSE IF current fuel = Heatpump → Set f_113 (HSPF) = 15
+- ELSE IF current fuel = Electric → No change
+
+### Phase 2: PER Targeting (Future Enhancement)
+
+**CRITICAL:** Will add sequential execution with intermediate recalculations to check progress toward PER target (f_35 ≤ 120).
+
+**Sequence Pattern:**
+```javascript
+function handlePassivHausIfy() {
+  console.log("[ParallelCoordinates] PassivHaus-ify action triggered");
+
+  const stateManager = window.TEUI?.StateManager;
+  if (!stateManager) {
+    console.error("[ParallelCoordinates] StateManager not available");
+    return;
+  }
+
+  let changesMade = false;
+  const changes = [];
+
+  // ========================================================================
+  // Step 1: Set initial field values
+  // ========================================================================
+  // TBD
+
+  // Recalculate and check f_35 (PER value)
+  // const f_35 = parseFloat(stateManager.getValue("f_35")) || 0;
+
+  // ========================================================================
+  // Step 2: Conditional adjustments based on f_35
+  // ========================================================================
+  // if (f_35 > 120) {
+  //   // Adjust additional fields
+  // }
+
+  // ========================================================================
+  // Step 3: Final validation
+  // ========================================================================
+  // const final_f_35 = parseFloat(stateManager.getValue("f_35")) || 0;
+  // if (final_f_35 <= 120) {
+  //   changes.push("PassivHaus target achieved (PER ≤ 120)");
+  // } else {
+  //   changes.push(`Close! PER = ${final_f_35.toFixed(1)}`);
+  // }
+
+  // ========================================================================
+  // Feedback and refresh
+  // ========================================================================
+  if (changesMade) {
+    const message = changes.join(", ");
+    showFeedback(message, 6000);
+    setTimeout(() => { refresh(); }, 200);
+  } else {
+    showFeedback("No changes needed", 4000);
+  }
+}
+```
+
+### Field Changes Template
+
+| Step | Section | Field | Description | Value | Notes |
+|------|---------|-------|-------------|-------|-------|
+| TBD | TBD | TBD | TBD | TBD | TBD |
+
+### User Feedback Messages
+
+- Success: `"PassivHaus target achieved! (PER ≤ 120)"`
+- Close: `"Close! PER = XXX (target: 120)"`
+- TBD based on sequential steps
+
+---
+
+## Field Reference for All Buttons
+
+### Common Field Reference
+
+| Section | Field | Type | Values/Range | Description |
+|---------|-------|------|--------------|-------------|
+| S05 | d_51 | Dropdown | Oil, Gas, Electric, Heatpump | SHW fuel type |
+| S05 | d_52 | Slider | 100-450 | SHW efficiency % (Heatpump/Electric) |
+| S05 | k_52 | Decimal | 0.50-0.98 | SHW AFUE (Oil/Gas) |
+| S05 | d_53 | Slider | 0-80 | DWHR% recovery |
+| S11 | d_80 | Dropdown | NRC 0%, 40%, 50%, 60%, PH Method | Net internal gains method |
+| S11 | d_88 | Slider | 0-50 | Thermal bridging % |
+| S11 | d_92 | Slider | 0.10-2.00 | Aggregate ground U-value (Ag) |
+| S11 | d_96 | Slider | 0.10-2.00 | Aggregate air U-value (Ae) |
+| S11 | d_104 | Slider | 10-90 | Window-to-wall ratio % (WWR) |
+| S12 | d_108 | Dropdown | NRC, MEASURED, PH (9999) | ACH50 test method |
+| S12 | g_109 | Decimal | 0.60-15.00 | ACH50 measured value |
 | S13 | d_113 | Dropdown | Oil, Gas, Electric, Heatpump | Heating fuel type |
 | S13 | f_113 | Slider | 6.8-20.0 | HSPF (Heatpump only) |
 | S13 | h_113 | Calculated | - | COP = f_113 ÷ 3.412 |
-| S13 | j_115 | Decimal | 0.50-1.00 | AFUE (Oil/Gas) |
+| S13 | j_115 | Decimal | 0.50-1.00 | Heating AFUE (Oil/Gas) |
+| S13 | d_120 | Slider | 0-100 | MVHR efficiency % |
+| S03 | f_35 | Calculated | - | PER (PassivHaus Energy Rating) |
 
-**Target Values:**
-- SHW Heatpump: 300% COP (d_52 = "300")
-- Heating Heatpump: HSPF 12.5 (f_113 = "12.5") → COP 3.66 (366%)
+### Storage Format Notes
 
-**Storage Format:**
-- `d_51`, `d_113`: String values ("Heatpump", "Electric", "Oil", "Gas")
-- `d_52`: String percentage ("300" = 300%)
-- `f_113`: String decimal ("12.5" = HSPF 12.5)
-- `k_52`, `j_115`: String decimal ("0.90" = 90% AFUE)
+- **Dropdown values**: Stored as exact string matches ("Heatpump", "Electric", "Oil", "Gas", "NRC 40%", etc.)
+- **Percentage sliders**: Stored as string numbers ("300" = 300%, "80" = 80%)
+- **Decimal sliders**: Stored as string decimals ("12.5", "1.30", "0.90")
+- **CRITICAL**: When setting dropdown-dependent fields, always set dropdown FIRST, recalculate, THEN set value
 
-**User Feedback:**
-```javascript
-console.log('[Decarbonize] SHW: Oil/Gas → Heatpump @ 300% COP');
-console.log('[Decarbonize] Heating: Gas → Heatpump @ HSPF 12.5 (COP 3.66)');
-console.log('[Decarbonize] Optimization complete');
+---
+
+## Next Steps for Implementation
+
+### For Optimize & Super Optimize Buttons
+
+**Awaiting:** Field values list in format:
+
+```
+| Section | Field | Description | Optimize Value | Super Optimize Value |
+|---------|-------|-------------|----------------|----------------------|
+| S05 | d_53 | DWHR% | 40 | 60 |
+| S11 | d_88 | TB% | 20 | 10 |
+| ... | ... | ... | ... | ... |
 ```
 
-**Testing Checklist:**
-- [ ] Oil SHW → Heatpump @ 300%
-- [ ] Gas SHW → Heatpump @ 300%
-- [ ] Electric SHW → No change
-- [ ] Heatpump SHW < 300% → Raised to 300%
-- [ ] Heatpump SHW >= 300% → No change
-- [ ] Oil Heating → Heatpump @ HSPF 12.5
-- [ ] Gas Heating → Heatpump @ HSPF 12.5
-- [ ] Electric Heating → No change
-- [ ] Heatpump Heating < 12.5 → Raised to HSPF 12.5
-- [ ] Heatpump Heating >= 12.5 → No change
-- [ ] Graph refreshes with new values
-- [ ] GHGI axis shows reduction
-- [ ] No mode switching occurs
+### For PassivHaus-ify Button
+
+**Awaiting:** Sequential steps with intermediate PER checks:
+
+```
+Step 1: Set fields A, B, C → recalculate → check f_35
+Step 2: If f_35 > 120, set fields D, E → recalculate → check f_35
+Step 3: If f_35 still > 120, set fields F, G → recalculate → final check
+```
+
+---
+
+## Implementation Tracking
+
+| Button | Status | Lines | Notes |
+|--------|--------|-------|-------|
+| Decarbonize | ✅ COMPLETE | [PC.js:1237-1386](../../src/core/ParallelCoordinates.js#L1237-L1386) | Fully tested, Pattern A compliant |
+| Optimize | ✅ COMPLETE | [PC.js:1394-1562](../../src/core/ParallelCoordinates.js#L1394-L1562) | Ready to test - includes SHW fuel switching |
+| Super Optimize | ✅ COMPLETE | [PC.js:1569-1746](../../src/core/ParallelCoordinates.js#L1569-L1746) | Ready to test - includes SHW fuel switching |
+| PassivHaus-ify | ✅ COMPLETE (Phase 1) | [PC.js:1754-1889](../../src/core/ParallelCoordinates.js#L1754-L1889) | Phase 1 done (= Super Optimize), Phase 2 (PER targeting) TBD |
 
 ---
 
@@ -916,6 +1312,8 @@ console.log('[Decarbonize] Optimization complete');
 | Nov 25, 2025 | 1.0 | Initial cheatsheet - 5 interactive axes, 4 financial formulas complete |
 | Nov 26, 2025 | 1.1 | Added Capital Budget & Simple ROI implementation guide |
 | Nov 26, 2025 | 1.2 | Added Decarbonize button logic specification |
+| Nov 26, 2025 | 1.3 | Complete optimization button framework - updated Decarbonize to match implementation, added templates for Optimize/Super Optimize/PassivHaus-ify |
+| Nov 26, 2025 | 1.4 | **ALL FOUR BUTTONS IMPLEMENTED** - Optimize, Super Optimize, PassivHaus-ify complete with critical SHW fuel-switching logic (Heatpump required for 300%/400%) |
 
 ---
 

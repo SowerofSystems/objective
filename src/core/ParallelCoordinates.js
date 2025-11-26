@@ -257,8 +257,8 @@ window.TEUI.ParallelCoordinates = (function () {
       mainBtn.addEventListener("click", activateVisualization);
     }
 
-    // Create action buttons (Decarbonize, Optimize, Super Optimize) - only when activated
-    let decarbonizeBtn, optimizeBtn, superOptimizeBtn;
+    // Create action buttons (Decarbonize, Optimize, Super Optimize, PassivHaus-ify) - only when activated
+    let decarbonizeBtn, optimizeBtn, superOptimizeBtn, passivhausBtn;
     if (isActivated) {
       // Decarbonize button (green)
       decarbonizeBtn = document.createElement("button");
@@ -272,20 +272,21 @@ window.TEUI.ParallelCoordinates = (function () {
       optimizeBtn.className = "btn btn-sm";
       optimizeBtn.innerHTML = "Optimize";
       optimizeBtn.style.cssText = "background-color: #20c997; color: white; border-color: #20c997; font-weight: 500;";
-      optimizeBtn.addEventListener("click", () => {
-        console.log("[ParallelCoordinates] Optimize action triggered");
-        // TODO: Wire up optimize logic
-      });
+      optimizeBtn.addEventListener("click", handleOptimize);
 
-      // Super Optimize button (orange)
+      // Super Optimize button (orange - like the fruit!)
       superOptimizeBtn = document.createElement("button");
-      superOptimizeBtn.className = "btn btn-warning btn-sm";
+      superOptimizeBtn.className = "btn btn-sm";
       superOptimizeBtn.innerHTML = "Super Optimize";
-      superOptimizeBtn.style.fontWeight = "500";
-      superOptimizeBtn.addEventListener("click", () => {
-        console.log("[ParallelCoordinates] Super Optimize action triggered");
-        // TODO: Wire up super optimize logic
-      });
+      superOptimizeBtn.style.cssText = "background-color: #ff8c00; color: white; border-color: #ff8c00; font-weight: 500;";
+      superOptimizeBtn.addEventListener("click", handleSuperOptimize);
+
+      // PassivHaus-ify button (yellow background with danger red text - PH logo colors)
+      passivhausBtn = document.createElement("button");
+      passivhausBtn.className = "btn btn-sm";
+      passivhausBtn.innerHTML = "PassivHaus-ify";
+      passivhausBtn.style.cssText = "background-color: #ffc107; color: #dc3545; border-color: #ffc107; font-weight: 500;";
+      passivhausBtn.addEventListener("click", handlePassivHausIfy);
     }
 
     // Create layout container for buttons (CSS handles margin-left: auto)
@@ -387,10 +388,11 @@ window.TEUI.ParallelCoordinates = (function () {
     controlsContainer.appendChild(mainBtn);
 
     // Add action buttons (only when activated) right after main button
-    if (isActivated && decarbonizeBtn && optimizeBtn && superOptimizeBtn) {
+    if (isActivated && decarbonizeBtn && optimizeBtn && superOptimizeBtn && passivhausBtn) {
       controlsContainer.appendChild(decarbonizeBtn);
       controlsContainer.appendChild(optimizeBtn);
       controlsContainer.appendChild(superOptimizeBtn);
+      controlsContainer.appendChild(passivhausBtn);
     }
 
     controlsContainer.appendChild(layoutContainer);
@@ -1372,6 +1374,559 @@ window.TEUI.ParallelCoordinates = (function () {
         showFeedback("No changes needed", 4000);
       }
       console.log("[Decarbonize] No changes needed - already optimized");
+    }
+  }
+
+  /**
+   * OPTIMIZE BUTTON HANDLER
+   * Applies balanced cost/performance optimization (moderate efficiency improvements)
+   * Pattern: Follow Pattern A architecture - update TargetState + StateManager + refresh sections
+   */
+  function handleOptimize() {
+    console.log("[ParallelCoordinates] Optimize action triggered");
+
+    const stateManager = window.TEUI?.StateManager;
+    if (!stateManager) {
+      console.error("[ParallelCoordinates] StateManager not available");
+      return;
+    }
+
+    let changesMade = false;
+    const changes = [];
+
+    // ========================================================================
+    // Part 1: Service Hot Water (S07) - SHW Efficiency 300%
+    // CRITICAL: Must switch to Heatpump if not already (like Decarbonize pattern)
+    // ========================================================================
+    const sect07 = window.TEUI?.SectionModules?.sect07;
+    const d_51 = stateManager.getValue("d_51");
+
+    // Step 1: Switch to Heatpump if needed (300%+ requires heatpump)
+    if (d_51 !== "Heatpump") {
+      if (sect07?.TargetState) {
+        sect07.TargetState.setValue("d_51", "Heatpump");
+      }
+      stateManager.setValue("d_51", "Heatpump", "user-modified");
+
+      // Step 2: Recalculate to switch from k_52 to d_52
+      if (sect07?.calculateAll) {
+        sect07.calculateAll();
+      }
+    }
+
+    // Step 3: Set efficiency (d_52 is now active)
+    if (sect07?.TargetState) {
+      sect07.TargetState.setValue("d_52", "300");
+    }
+    stateManager.setValue("d_52", "300", "user-modified");
+    changes.push("SHW 300%");
+    changesMade = true;
+
+    // ========================================================================
+    // Part 2: DWHR (S07) - 50%
+    // ========================================================================
+    if (sect07?.TargetState) {
+      sect07.TargetState.setValue("d_53", "50");
+    }
+    stateManager.setValue("d_53", "50", "user-modified");
+    changes.push("DWHR 50%");
+
+    // Trigger S07 recalculation
+    if (sect07) {
+      if (sect07.calculateAll) {
+        sect07.calculateAll();
+      }
+      if (sect07.ModeManager?.refreshUI) {
+        sect07.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 3: Heating Efficiency (S13) - Conditional on fuel type
+    // ========================================================================
+    const sect13 = window.TEUI?.SectionModules?.sect13;
+    const d_113 = stateManager.getValue("d_113");
+
+    if (d_113 === "Oil" || d_113 === "Gas") {
+      // Set AFUE to 0.98 for Gas/Oil
+      if (sect13?.TargetState) {
+        sect13.TargetState.setValue("j_115", "0.98");
+      }
+      stateManager.setValue("j_115", "0.98", "user-modified");
+      changes.push("Heating AFUE 98%");
+    } else if (d_113 === "Heatpump") {
+      // Set HSPF to 12.5 for Heatpump
+      if (sect13?.TargetState) {
+        sect13.TargetState.setValue("f_113", "12.5");
+      }
+      stateManager.setValue("f_113", "12.5", "user-modified");
+      changes.push("Heating HSPF 12.5");
+    }
+    // Electric: No change
+
+    // ========================================================================
+    // Part 4: MVHR (S13) - 75%
+    // ========================================================================
+    if (sect13?.TargetState) {
+      sect13.TargetState.setValue("d_120", "75");
+    }
+    stateManager.setValue("d_120", "75", "user-modified");
+    changes.push("MVHR 75%");
+
+    // Trigger S13 recalculation
+    if (sect13) {
+      if (sect13.calculateAll) {
+        sect13.calculateAll();
+      }
+      if (sect13.ModeManager?.refreshUI) {
+        sect13.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 5: Thermal Bridging (S11) - 20%
+    // ========================================================================
+    const sect11 = window.TEUI?.SectionModules?.sect11;
+    if (sect11?.TargetState) {
+      sect11.TargetState.setValue("d_88", "20");
+    }
+    stateManager.setValue("d_88", "20", "user-modified");
+    changes.push("TB 20%");
+
+    // ========================================================================
+    // Part 6: Net Gains (S11) - NRC 60%
+    // ========================================================================
+    if (sect11?.TargetState) {
+      sect11.TargetState.setValue("d_80", "NRC 60%");
+    }
+    stateManager.setValue("d_80", "NRC 60%", "user-modified");
+    changes.push("nGains 60%");
+
+    // Trigger S11 recalculation
+    if (sect11) {
+      if (sect11.calculateAll) {
+        sect11.calculateAll();
+      }
+      if (sect11.ModeManager?.refreshUI) {
+        sect11.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 7: ACH50 (S12) - 1.00 (dropdown flip pattern)
+    // ========================================================================
+    const sect12 = window.TEUI?.SectionModules?.sect12;
+
+    // Step 1: Set dropdown to MEASURED
+    if (sect12?.TargetState) {
+      sect12.TargetState.setValue("d_108", "MEASURED");
+    }
+    stateManager.setValue("d_108", "MEASURED", "user-modified");
+
+    // Step 2: Recalculate (enables g_109 field)
+    if (sect12?.calculateAll) {
+      sect12.calculateAll();
+    }
+
+    // Step 3: Set ACH50 value
+    if (sect12?.TargetState) {
+      sect12.TargetState.setValue("g_109", "1.00");
+    }
+    stateManager.setValue("g_109", "1.00", "user-modified");
+    changes.push("ACH50 1.00");
+
+    // Trigger S12 recalculation
+    if (sect12) {
+      if (sect12.calculateAll) {
+        sect12.calculateAll();
+      }
+      if (sect12.ModeManager?.refreshUI) {
+        sect12.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Show user feedback and refresh graph
+    // ========================================================================
+    if (changesMade) {
+      const message = "Optimized: " + changes.join(", ");
+      showFeedback(message, 6000);
+      console.log("[Optimize] Optimization complete - refreshing graph");
+      setTimeout(() => {
+        refresh();
+      }, 200);
+    } else {
+      showFeedback("No changes needed", 4000);
+      console.log("[Optimize] No changes needed");
+    }
+  }
+
+  /**
+   * SUPER OPTIMIZE BUTTON HANDLER
+   * Applies aggressive multi-objective optimization (high efficiency improvements)
+   * Pattern: Follow Pattern A architecture - update TargetState + StateManager + refresh sections
+   */
+  function handleSuperOptimize() {
+    console.log("[ParallelCoordinates] Super Optimize action triggered");
+
+    const stateManager = window.TEUI?.StateManager;
+    if (!stateManager) {
+      console.error("[ParallelCoordinates] StateManager not available");
+      return;
+    }
+
+    let changesMade = false;
+    const changes = [];
+
+    // ========================================================================
+    // Part 1: Service Hot Water (S07) - SHW Efficiency 400%
+    // CRITICAL: Must switch to Heatpump if not already (like Decarbonize pattern)
+    // ========================================================================
+    const sect07 = window.TEUI?.SectionModules?.sect07;
+    const d_51 = stateManager.getValue("d_51");
+
+    // Step 1: Switch to Heatpump if needed (400% requires heatpump)
+    if (d_51 !== "Heatpump") {
+      if (sect07?.TargetState) {
+        sect07.TargetState.setValue("d_51", "Heatpump");
+      }
+      stateManager.setValue("d_51", "Heatpump", "user-modified");
+
+      // Step 2: Recalculate to switch from k_52 to d_52
+      if (sect07?.calculateAll) {
+        sect07.calculateAll();
+      }
+    }
+
+    // Step 3: Set efficiency (d_52 is now active)
+    if (sect07?.TargetState) {
+      sect07.TargetState.setValue("d_52", "400");
+    }
+    stateManager.setValue("d_52", "400", "user-modified");
+    changes.push("SHW 400%");
+    changesMade = true;
+
+    // ========================================================================
+    // Part 2: DWHR (S07) - 70%
+    // ========================================================================
+    if (sect07?.TargetState) {
+      sect07.TargetState.setValue("d_53", "70");
+    }
+    stateManager.setValue("d_53", "70", "user-modified");
+    changes.push("DWHR 70%");
+
+    // Trigger S07 recalculation
+    if (sect07) {
+      if (sect07.calculateAll) {
+        sect07.calculateAll();
+      }
+      if (sect07.ModeManager?.refreshUI) {
+        sect07.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 3: Heating Efficiency (S13) - Conditional on fuel type
+    // ========================================================================
+    const sect13 = window.TEUI?.SectionModules?.sect13;
+    const d_113 = stateManager.getValue("d_113");
+
+    if (d_113 === "Oil" || d_113 === "Gas") {
+      // Set AFUE to 0.98 for Gas/Oil
+      if (sect13?.TargetState) {
+        sect13.TargetState.setValue("j_115", "0.98");
+      }
+      stateManager.setValue("j_115", "0.98", "user-modified");
+      changes.push("Heating AFUE 98%");
+    } else if (d_113 === "Heatpump") {
+      // Set HSPF to 15 for Heatpump
+      if (sect13?.TargetState) {
+        sect13.TargetState.setValue("f_113", "15");
+      }
+      stateManager.setValue("f_113", "15", "user-modified");
+      changes.push("Heating HSPF 15");
+    }
+    // Electric: No change
+
+    // ========================================================================
+    // Part 4: MVHR (S13) - 90%
+    // ========================================================================
+    if (sect13?.TargetState) {
+      sect13.TargetState.setValue("d_120", "90");
+    }
+    stateManager.setValue("d_120", "90", "user-modified");
+    changes.push("MVHR 90%");
+
+    // Trigger S13 recalculation
+    if (sect13) {
+      if (sect13.calculateAll) {
+        sect13.calculateAll();
+      }
+      if (sect13.ModeManager?.refreshUI) {
+        sect13.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 5: Thermal Bridging (S11) - 5%
+    // ========================================================================
+    const sect11 = window.TEUI?.SectionModules?.sect11;
+    if (sect11?.TargetState) {
+      sect11.TargetState.setValue("d_88", "5");
+    }
+    stateManager.setValue("d_88", "5", "user-modified");
+    changes.push("TB 5%");
+
+    // ========================================================================
+    // Part 6: Net Gains (S11) - PH Method
+    // ========================================================================
+    if (sect11?.TargetState) {
+      sect11.TargetState.setValue("d_80", "PH Method");
+    }
+    stateManager.setValue("d_80", "PH Method", "user-modified");
+    changes.push("nGains PHPP");
+
+    // Trigger S11 recalculation
+    if (sect11) {
+      if (sect11.calculateAll) {
+        sect11.calculateAll();
+      }
+      if (sect11.ModeManager?.refreshUI) {
+        sect11.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 7: ACH50 (S12) - 0.60 (dropdown flip pattern)
+    // ========================================================================
+    const sect12 = window.TEUI?.SectionModules?.sect12;
+
+    // Step 1: Set dropdown to MEASURED
+    if (sect12?.TargetState) {
+      sect12.TargetState.setValue("d_108", "MEASURED");
+    }
+    stateManager.setValue("d_108", "MEASURED", "user-modified");
+
+    // Step 2: Recalculate (enables g_109 field)
+    if (sect12?.calculateAll) {
+      sect12.calculateAll();
+    }
+
+    // Step 3: Set ACH50 value
+    if (sect12?.TargetState) {
+      sect12.TargetState.setValue("g_109", "0.60");
+    }
+    stateManager.setValue("g_109", "0.60", "user-modified");
+    changes.push("ACH50 0.60");
+
+    // Trigger S12 recalculation
+    if (sect12) {
+      if (sect12.calculateAll) {
+        sect12.calculateAll();
+      }
+      if (sect12.ModeManager?.refreshUI) {
+        sect12.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Show user feedback and refresh graph
+    // ========================================================================
+    if (changesMade) {
+      const message = "Super Optimized: " + changes.join(", ");
+      showFeedback(message, 6000);
+      console.log("[Super Optimize] Optimization complete - refreshing graph");
+      setTimeout(() => {
+        refresh();
+      }, 200);
+    } else {
+      showFeedback("No changes needed", 4000);
+      console.log("[Super Optimize] No changes needed");
+    }
+  }
+
+  /**
+   * PASSIVHAUS-IFY BUTTON HANDLER
+   * Phase 1: Apply same optimizations as Super Optimize
+   * Phase 2 (future): Add sequential PER targeting to achieve f_35 ≤ 120
+   * Pattern: Follow Pattern A architecture - update TargetState + StateManager + refresh sections
+   */
+  function handlePassivHausIfy() {
+    console.log("[ParallelCoordinates] PassivHaus-ify action triggered");
+
+    const stateManager = window.TEUI?.StateManager;
+    if (!stateManager) {
+      console.error("[ParallelCoordinates] StateManager not available");
+      return;
+    }
+
+    let changesMade = false;
+    const changes = [];
+
+    // ========================================================================
+    // Part 1: Service Hot Water (S07) - SHW Efficiency 400%
+    // CRITICAL: Must switch to Heatpump if not already (like Decarbonize pattern)
+    // ========================================================================
+    const sect07 = window.TEUI?.SectionModules?.sect07;
+    const d_51 = stateManager.getValue("d_51");
+
+    // Step 1: Switch to Heatpump if needed (400% requires heatpump)
+    if (d_51 !== "Heatpump") {
+      if (sect07?.TargetState) {
+        sect07.TargetState.setValue("d_51", "Heatpump");
+      }
+      stateManager.setValue("d_51", "Heatpump", "user-modified");
+
+      // Step 2: Recalculate to switch from k_52 to d_52
+      if (sect07?.calculateAll) {
+        sect07.calculateAll();
+      }
+    }
+
+    // Step 3: Set efficiency (d_52 is now active)
+    if (sect07?.TargetState) {
+      sect07.TargetState.setValue("d_52", "400");
+    }
+    stateManager.setValue("d_52", "400", "user-modified");
+    changes.push("SHW 400%");
+    changesMade = true;
+
+    // ========================================================================
+    // Part 2: DWHR (S07) - 70%
+    // ========================================================================
+    if (sect07?.TargetState) {
+      sect07.TargetState.setValue("d_53", "70");
+    }
+    stateManager.setValue("d_53", "70", "user-modified");
+    changes.push("DWHR 70%");
+
+    // Trigger S07 recalculation
+    if (sect07) {
+      if (sect07.calculateAll) {
+        sect07.calculateAll();
+      }
+      if (sect07.ModeManager?.refreshUI) {
+        sect07.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 3: Heating Efficiency (S13) - Conditional on fuel type
+    // ========================================================================
+    const sect13 = window.TEUI?.SectionModules?.sect13;
+    const d_113 = stateManager.getValue("d_113");
+
+    if (d_113 === "Oil" || d_113 === "Gas") {
+      // Set AFUE to 0.98 for Gas/Oil
+      if (sect13?.TargetState) {
+        sect13.TargetState.setValue("j_115", "0.98");
+      }
+      stateManager.setValue("j_115", "0.98", "user-modified");
+      changes.push("Heating AFUE 98%");
+    } else if (d_113 === "Heatpump") {
+      // Set HSPF to 15 for Heatpump
+      if (sect13?.TargetState) {
+        sect13.TargetState.setValue("f_113", "15");
+      }
+      stateManager.setValue("f_113", "15", "user-modified");
+      changes.push("Heating HSPF 15");
+    }
+    // Electric: No change
+
+    // ========================================================================
+    // Part 4: MVHR (S13) - 90%
+    // ========================================================================
+    if (sect13?.TargetState) {
+      sect13.TargetState.setValue("d_120", "90");
+    }
+    stateManager.setValue("d_120", "90", "user-modified");
+    changes.push("MVHR 90%");
+
+    // Trigger S13 recalculation
+    if (sect13) {
+      if (sect13.calculateAll) {
+        sect13.calculateAll();
+      }
+      if (sect13.ModeManager?.refreshUI) {
+        sect13.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 5: Thermal Bridging (S11) - 5%
+    // ========================================================================
+    const sect11 = window.TEUI?.SectionModules?.sect11;
+    if (sect11?.TargetState) {
+      sect11.TargetState.setValue("d_88", "5");
+    }
+    stateManager.setValue("d_88", "5", "user-modified");
+    changes.push("TB 5%");
+
+    // ========================================================================
+    // Part 6: Net Gains (S11) - PH Method
+    // ========================================================================
+    if (sect11?.TargetState) {
+      sect11.TargetState.setValue("d_80", "PH Method");
+    }
+    stateManager.setValue("d_80", "PH Method", "user-modified");
+    changes.push("nGains PHPP");
+
+    // Trigger S11 recalculation
+    if (sect11) {
+      if (sect11.calculateAll) {
+        sect11.calculateAll();
+      }
+      if (sect11.ModeManager?.refreshUI) {
+        sect11.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 7: ACH50 (S12) - 0.60 (dropdown flip pattern)
+    // ========================================================================
+    const sect12 = window.TEUI?.SectionModules?.sect12;
+
+    // Step 1: Set dropdown to MEASURED
+    if (sect12?.TargetState) {
+      sect12.TargetState.setValue("d_108", "MEASURED");
+    }
+    stateManager.setValue("d_108", "MEASURED", "user-modified");
+
+    // Step 2: Recalculate (enables g_109 field)
+    if (sect12?.calculateAll) {
+      sect12.calculateAll();
+    }
+
+    // Step 3: Set ACH50 value
+    if (sect12?.TargetState) {
+      sect12.TargetState.setValue("g_109", "0.60");
+    }
+    stateManager.setValue("g_109", "0.60", "user-modified");
+    changes.push("ACH50 0.60");
+
+    // Trigger S12 recalculation
+    if (sect12) {
+      if (sect12.calculateAll) {
+        sect12.calculateAll();
+      }
+      if (sect12.ModeManager?.refreshUI) {
+        sect12.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Show user feedback and refresh graph
+    // ========================================================================
+    if (changesMade) {
+      const message = "PassivHaus optimized: " + changes.join(", ");
+      showFeedback(message, 6000);
+      console.log("[PassivHaus-ify] Optimization complete - refreshing graph");
+      setTimeout(() => {
+        refresh();
+      }, 200);
+    } else {
+      showFeedback("No changes needed", 4000);
+      console.log("[PassivHaus-ify] No changes needed");
     }
   }
 
