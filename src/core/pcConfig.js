@@ -31,11 +31,11 @@ window.TEUI.OPTIMIZATION_AXES = [
     optimal: "higher",
 
     // Target mode fields
-    targetField: "d_52",                 // Electric/Heatpump path (already %)
-    targetFieldAlt: "k_52",              // Oil/Gas AFUE path
-    targetFieldMultiplier: null,         // d_52 already in %
-    targetFieldAltMultiplier: 100,       // k_52 * 100 to convert AFUE to %
-    targetFieldSelector: "d_51",         // Heating fuel type selector
+    targetField: "d_52", // Electric/Heatpump path (already %)
+    targetFieldAlt: "k_52", // Oil/Gas AFUE path
+    targetFieldMultiplier: null, // d_52 already in %
+    targetFieldAltMultiplier: 100, // k_52 * 100 to convert AFUE to %
+    targetFieldSelector: "d_51", // Heating fuel type selector
 
     // Reference mode fields
     referenceField: "ref_d_52",
@@ -58,7 +58,7 @@ window.TEUI.OPTIMIZATION_AXES = [
     targetField: "d_53",
     referenceField: "ref_d_53",
 
-    domain: [0, 80],  // Few systems exceed 75% efficiency
+    domain: [0, 80], // Few systems exceed 75% efficiency
   },
 
   {
@@ -71,15 +71,15 @@ window.TEUI.OPTIMIZATION_AXES = [
     // ⚠️ DISCRETE DROPDOWN PATTERN: nGains% uses dropdown (d_80), not slider
     // Display value comes from calculated field (g_80)
     targetField: "g_80",
-    targetFieldMultiplier: 100,      // g_80 is stored as decimal (0.40), display as % (40)
+    targetFieldMultiplier: 100, // g_80 is stored as decimal (0.40), display as % (40)
     referenceField: "ref_g_80",
-    referenceFieldMultiplier: 100,   // ref_g_80 is stored as decimal, display as %
+    referenceFieldMultiplier: 100, // ref_g_80 is stored as decimal, display as %
 
     // Additional fields for dropdown control (not used for display, but needed for editing)
-    targetDropdownField: "d_80",     // Dropdown field that controls method
+    targetDropdownField: "d_80", // Dropdown field that controls method
     referenceDropdownField: "ref_d_80",
 
-    domain: [0, 100],  // Always 0-100%, never more, never less
+    domain: [0, 100], // Always 0-100%, never more, never less
   },
 
   {
@@ -105,7 +105,7 @@ window.TEUI.OPTIMIZATION_AXES = [
     targetField: "g_102",
     referenceField: "ref_g_102",
 
-    domain: [0, 1.0],  // Typical range for U-values
+    domain: [0, 1.0], // Typical range for U-values
   },
 
   {
@@ -118,7 +118,7 @@ window.TEUI.OPTIMIZATION_AXES = [
     targetField: "g_101",
     referenceField: "ref_g_101",
 
-    domain: [0, 1.0],  // Typical range for U-values
+    domain: [0, 1.0], // Typical range for U-values
   },
 
   {
@@ -131,7 +131,7 @@ window.TEUI.OPTIMIZATION_AXES = [
     targetField: "d_109",
     referenceField: "ref_d_109",
 
-    domain: [0, 10.0],  // 0.10 (super tight) to 10.0 (very leaky)
+    domain: [0, 10.0], // 0.10 (super tight) to 10.0 (very leaky)
   },
 
   {
@@ -142,9 +142,9 @@ window.TEUI.OPTIMIZATION_AXES = [
     optimal: "balanced",
 
     targetField: "d_107",
-    targetFieldMultiplier: 100,      // d_107 is stored as decimal (0.33), display as % (33)
+    targetFieldMultiplier: 100, // d_107 is stored as decimal (0.33), display as % (33)
     referenceField: "ref_d_107",
-    referenceFieldMultiplier: 100,   // ref_d_107 is stored as decimal, display as %
+    referenceFieldMultiplier: 100, // ref_d_107 is stored as decimal, display as %
 
     domain: [0, 100],
   },
@@ -157,11 +157,11 @@ window.TEUI.OPTIMIZATION_AXES = [
     optimal: "higher",
 
     // Target mode fields
-    targetField: "h_113",                // Heatpump/Electric COP path
-    targetFieldMultiplier: 100,          // h_113 * 100 (COP 3.0 → 300%, Electric 1.0 → 100%)
-    targetFieldAlt: "j_115",             // Oil/Gas AFUE path
-    targetFieldAltMultiplier: 100,       // j_115 * 100 (AFUE 0.90 → 90%)
-    targetFieldSelector: "d_113",        // Heating system type selector
+    targetField: "h_113", // Heatpump/Electric COP path
+    targetFieldMultiplier: 100, // h_113 * 100 (COP 3.0 → 300%, Electric 1.0 → 100%)
+    targetFieldAlt: "j_115", // Oil/Gas AFUE path
+    targetFieldAltMultiplier: 100, // j_115 * 100 (AFUE 0.90 → 90%)
+    targetFieldSelector: "d_113", // Heating system type selector
 
     // Reference mode fields
     referenceField: "ref_h_113",
@@ -170,7 +170,7 @@ window.TEUI.OPTIMIZATION_AXES = [
     referenceFieldAltMultiplier: 100,
     referenceFieldSelector: "ref_d_113",
 
-    domain: [0, 586],  // 0% to 586% (gives visual space for 50-100% AFUE range and full heatpump COP range)
+    domain: [0, 586], // 0% to 586% (gives visual space for 50-100% AFUE range and full heatpump COP range)
   },
 
   {
@@ -180,8 +180,8 @@ window.TEUI.OPTIMIZATION_AXES = [
     description: "Mechanical Ventilation Heat Recovery efficiency",
     optimal: "higher",
 
-    targetField: "d_118",            // d_118 stores as percentage (89 means 89%)
-    referenceField: "ref_d_118",     // ref_d_118 stores as percentage
+    targetField: "d_118", // d_118 stores as percentage (89 means 89%)
+    referenceField: "ref_d_118", // ref_d_118 stores as percentage
 
     domain: [0, 100],
   },
@@ -196,7 +196,7 @@ window.TEUI.OPTIMIZATION_AXES = [
     targetField: "h_127",
     referenceField: "ref_h_127",
 
-    domain: [0, 200],  // Typical range, will be refined
+    domain: [0, 200], // Typical range, will be refined
   },
 
   {
@@ -209,7 +209,7 @@ window.TEUI.OPTIMIZATION_AXES = [
     targetField: "h_131",
     referenceField: "ref_h_131",
 
-    domain: [0, 200],  // Typical range, will be refined
+    domain: [0, 200], // Typical range, will be refined
   },
 
   {
@@ -220,10 +220,10 @@ window.TEUI.OPTIMIZATION_AXES = [
     optimal: "lower",
 
     // ⚠️ SPECIAL: These fields do NOT use the ref_ prefix pattern
-    targetField: "h_8",      // NOT d_8
-    referenceField: "e_8",   // NOT ref_e_8
+    targetField: "h_8", // NOT d_8
+    referenceField: "e_8", // NOT ref_e_8
 
-    domain: [0, 100],  // Typical range, will be refined
+    domain: [0, 100], // Typical range, will be refined
   },
 
   {
@@ -234,10 +234,10 @@ window.TEUI.OPTIMIZATION_AXES = [
     optimal: "lower",
 
     // ⚠️ SPECIAL: These fields do NOT use the ref_ prefix pattern
-    targetField: "h_10",     // NOT d_10
-    referenceField: "e_10",  // NOT ref_e_10
+    targetField: "h_10", // NOT d_10
+    referenceField: "e_10", // NOT ref_e_10
 
-    domain: [0, 300],  // Typical range, will be refined
+    domain: [0, 300], // Typical range, will be refined
   },
 ];
 
@@ -248,7 +248,7 @@ window.TEUI.OPTIMIZATION_AXES = [
  * @param {string} mode - "target" or "reference"
  * @returns {number|null} - Field value with multiplier applied, or null if unavailable
  */
-window.TEUI.getAxisValue = function(axis, mode = "target") {
+window.TEUI.getAxisValue = function (axis, mode = "target") {
   const stateManager = window.TEUI.StateManager;
   if (!stateManager) {
     console.warn("[ppConfig] StateManager not available");
@@ -256,11 +256,20 @@ window.TEUI.getAxisValue = function(axis, mode = "target") {
   }
 
   // Determine which field set to use based on mode
-  const primaryField = mode === "target" ? axis.targetField : axis.referenceField;
-  const altField = mode === "target" ? axis.targetFieldAlt : axis.referenceFieldAlt;
-  const selectorField = mode === "target" ? axis.targetFieldSelector : axis.referenceFieldSelector;
-  const primaryMultiplier = mode === "target" ? axis.targetFieldMultiplier : axis.referenceFieldMultiplier;
-  const altMultiplier = mode === "target" ? axis.targetFieldAltMultiplier : axis.referenceFieldAltMultiplier;
+  const primaryField =
+    mode === "target" ? axis.targetField : axis.referenceField;
+  const altField =
+    mode === "target" ? axis.targetFieldAlt : axis.referenceFieldAlt;
+  const selectorField =
+    mode === "target" ? axis.targetFieldSelector : axis.referenceFieldSelector;
+  const primaryMultiplier =
+    mode === "target"
+      ? axis.targetFieldMultiplier
+      : axis.referenceFieldMultiplier;
+  const altMultiplier =
+    mode === "target"
+      ? axis.targetFieldAltMultiplier
+      : axis.referenceFieldAltMultiplier;
 
   // Handle conditional fields (SHW%, HEAT%)
   if (selectorField && altField) {
@@ -315,7 +324,7 @@ window.TEUI.getAxisValue = function(axis, mode = "target") {
  * @param {object} axis - Axis configuration from OPTIMIZATION_AXES
  * @returns {object} - { target: number|null, reference: number|null }
  */
-window.TEUI.getAxisValuesForBothModes = function(axis) {
+window.TEUI.getAxisValuesForBothModes = function (axis) {
   return {
     target: window.TEUI.getAxisValue(axis, "target"),
     reference: window.TEUI.getAxisValue(axis, "reference"),
@@ -328,7 +337,7 @@ window.TEUI.getAxisValuesForBothModes = function(axis) {
  *
  * @returns {object} - { targetData: number[], referenceData: number[], axes: object[] }
  */
-window.TEUI.getParallelCoordinatesData = function() {
+window.TEUI.getParallelCoordinatesData = function () {
   const targetData = [];
   const referenceData = [];
   const axes = [];
@@ -353,4 +362,8 @@ window.TEUI.getParallelCoordinatesData = function() {
   };
 };
 
-console.log("[ppConfig] Configuration loaded with", window.TEUI.OPTIMIZATION_AXES.length, "axes");
+console.log(
+  "[ppConfig] Configuration loaded with",
+  window.TEUI.OPTIMIZATION_AXES.length,
+  "axes"
+);

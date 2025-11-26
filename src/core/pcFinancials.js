@@ -13,7 +13,7 @@
 window.TEUI = window.TEUI || {};
 
 window.TEUI.pcFinancials = (function () {
-  'use strict';
+  "use strict";
 
   const StateManager = window.TEUI.StateManager;
 
@@ -22,19 +22,19 @@ window.TEUI.pcFinancials = (function () {
    * @param {string} key - Field ID (e.g., 'j_51', 'ref_j_51')
    * @returns {number} Parsed float value or 0 if invalid
    */
-  const getValue = (key) => {
+  const getValue = key => {
     if (!StateManager) {
-      console.warn('pcFinancials: StateManager not available');
+      console.warn("pcFinancials: StateManager not available");
       return 0;
     }
     const val = StateManager.getValue(key);
 
     // Strip currency formatting ($, commas) before parsing
     // Handles: "$0.1300", "$1,234.56", "12828.144"
-    const cleanVal = typeof val === 'string' ? val.replace(/[$,]/g, '') : val;
+    const cleanVal = typeof val === "string" ? val.replace(/[$,]/g, "") : val;
 
     const numVal = parseFloat(cleanVal);
-    return (typeof numVal === 'number' && !isNaN(numVal)) ? numVal : 0;
+    return typeof numVal === "number" && !isNaN(numVal) ? numVal : 0;
   };
 
   /**
@@ -42,7 +42,6 @@ window.TEUI.pcFinancials = (function () {
    * Each axis has three functions: target(), reference(), savings()
    */
   const calculations = {
-
     /**
      * SHW% - Service Hot Water Efficiency
      * Cost = (Electric × Rate) + (Gas × Rate) + (Oil × Rate)
@@ -50,29 +49,37 @@ window.TEUI.pcFinancials = (function () {
      */
     shw_efficiency: {
       target: () => {
-        const electricEnergy = getValue('k_51');    // Net SHW electric demand (kWh) - TARGET
-        const electricRate = getValue('l_12');      // Electricity cost ($/kWh) - TARGET
-        const gasEnergy = getValue('e_51');         // SHW gas energy (kWh) - TARGET
-        const gasRate = getValue('l_13');           // Gas cost ($/kWh) - TARGET
-        const oilVolume = getValue('k_54');         // SHW oil volume (litres) - TARGET
-        const oilRate = getValue('l_16');           // Oil cost ($/litre) - TARGET
+        const electricEnergy = getValue("k_51"); // Net SHW electric demand (kWh) - TARGET
+        const electricRate = getValue("l_12"); // Electricity cost ($/kWh) - TARGET
+        const gasEnergy = getValue("e_51"); // SHW gas energy (kWh) - TARGET
+        const gasRate = getValue("l_13"); // Gas cost ($/kWh) - TARGET
+        const oilVolume = getValue("k_54"); // SHW oil volume (litres) - TARGET
+        const oilRate = getValue("l_16"); // Oil cost ($/litre) - TARGET
 
-        return (electricEnergy * electricRate) + (gasEnergy * gasRate) + (oilVolume * oilRate);
+        return (
+          electricEnergy * electricRate +
+          gasEnergy * gasRate +
+          oilVolume * oilRate
+        );
       },
       reference: () => {
-        const electricEnergy = getValue('ref_k_51'); // Net SHW electric demand (kWh) - REFERENCE
-        const electricRate = getValue('ref_l_12');   // Electricity cost ($/kWh) - REFERENCE
-        const gasEnergy = getValue('ref_e_51');      // SHW gas energy (kWh) - REFERENCE
-        const gasRate = getValue('ref_l_13');        // Gas cost ($/kWh) - REFERENCE
-        const oilVolume = getValue('ref_k_54');      // SHW oil volume (litres) - REFERENCE
-        const oilRate = getValue('ref_l_16');        // Oil cost ($/litre) - REFERENCE
+        const electricEnergy = getValue("ref_k_51"); // Net SHW electric demand (kWh) - REFERENCE
+        const electricRate = getValue("ref_l_12"); // Electricity cost ($/kWh) - REFERENCE
+        const gasEnergy = getValue("ref_e_51"); // SHW gas energy (kWh) - REFERENCE
+        const gasRate = getValue("ref_l_13"); // Gas cost ($/kWh) - REFERENCE
+        const oilVolume = getValue("ref_k_54"); // SHW oil volume (litres) - REFERENCE
+        const oilRate = getValue("ref_l_16"); // Oil cost ($/litre) - REFERENCE
 
-        return (electricEnergy * electricRate) + (gasEnergy * gasRate) + (oilVolume * oilRate);
+        return (
+          electricEnergy * electricRate +
+          gasEnergy * gasRate +
+          oilVolume * oilRate
+        );
       },
-      savings: function() {
+      savings: function () {
         const delta = this.reference() - this.target();
         return delta > 0 ? delta : 0; // Only show positive savings, $0 if cost increases
-      }
+      },
     },
 
     /**
@@ -88,7 +95,7 @@ window.TEUI.pcFinancials = (function () {
         const shwCost = calculations.shw_efficiency.target();
 
         // Get DWHR efficiency (stored as percentage: 0-100)
-        const dwhrPercent = getValue('d_53'); // DWHR% - TARGET
+        const dwhrPercent = getValue("d_53"); // DWHR% - TARGET
 
         // Calculate recovery value: cost = SHW cost × (DWHR%/100)
         return shwCost * (dwhrPercent / 100);
@@ -98,12 +105,12 @@ window.TEUI.pcFinancials = (function () {
         const shwCost = calculations.shw_efficiency.reference();
 
         // Get DWHR efficiency (stored as percentage: 0-100)
-        const dwhrPercent = getValue('ref_d_53'); // DWHR% - REFERENCE
+        const dwhrPercent = getValue("ref_d_53"); // DWHR% - REFERENCE
 
         // Calculate recovery value: cost = SHW cost × (DWHR%/100)
         return shwCost * (dwhrPercent / 100);
       },
-      savings: function() {
+      savings: function () {
         // For DWHR%, savings = additional recovery value in Target vs Reference
         // Higher DWHR% = more recovery = lower energy cost
         const targetRecovery = this.target();
@@ -112,7 +119,7 @@ window.TEUI.pcFinancials = (function () {
         // If Target recovers more energy than Reference, show the additional savings
         const delta = targetRecovery - refRecovery;
         return delta > 0 ? delta : 0;
-      }
+      },
     },
 
     /**
@@ -123,18 +130,18 @@ window.TEUI.pcFinancials = (function () {
      */
     net_gains: {
       target: () => {
-        const internalGains = getValue('i_80');    // Avoided heating (thermal kWh) - TARGET
-        const heatingDemand = getValue('d_114');   // Total heating demand (kWh) - TARGET
+        const internalGains = getValue("i_80"); // Avoided heating (thermal kWh) - TARGET
+        const heatingDemand = getValue("d_114"); // Total heating demand (kWh) - TARGET
 
         if (heatingDemand === 0) return 0; // No heating system
 
         // Get heating system fuel volume for oil (from Section 13)
-        const oilHeatingL = getValue('f_115');     // Oil heating (litres) - TARGET
+        const oilHeatingL = getValue("f_115"); // Oil heating (litres) - TARGET
 
         // Get fuel rates (same as SHW%)
-        const electricRate = getValue('l_12');     // $/kWh
-        const gasRate = getValue('l_13');          // $/kWh
-        const oilRate = getValue('l_16');          // $/litre
+        const electricRate = getValue("l_12"); // $/kWh
+        const gasRate = getValue("l_13"); // $/kWh
+        const oilRate = getValue("l_16"); // $/litre
 
         // Calculate avoided cost based on heating fuel type (same pattern as SHW%)
         // Whichever fuel is 0 contributes $0
@@ -143,7 +150,8 @@ window.TEUI.pcFinancials = (function () {
 
         // For oil: convert thermal kWh to litres, then apply rate
         // d_114 thermal kWh requires f_115 litres
-        const oilLitresPerKWh = heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
+        const oilLitresPerKWh =
+          heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
         const oilLitres = internalGains * oilLitresPerKWh;
         const oilCost = oilLitres * oilRate;
 
@@ -151,26 +159,27 @@ window.TEUI.pcFinancials = (function () {
         return electricCost + gasCost + oilCost;
       },
       reference: () => {
-        const internalGains = getValue('ref_i_80');
-        const heatingDemand = getValue('ref_d_114');
+        const internalGains = getValue("ref_i_80");
+        const heatingDemand = getValue("ref_d_114");
 
         if (heatingDemand === 0) return 0;
 
-        const oilHeatingL = getValue('ref_f_115');
-        const electricRate = getValue('ref_l_12');
-        const gasRate = getValue('ref_l_13');
-        const oilRate = getValue('ref_l_16');
+        const oilHeatingL = getValue("ref_f_115");
+        const electricRate = getValue("ref_l_12");
+        const gasRate = getValue("ref_l_13");
+        const oilRate = getValue("ref_l_16");
 
         const electricCost = internalGains * electricRate;
         const gasCost = internalGains * gasRate;
 
-        const oilLitresPerKWh = heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
+        const oilLitresPerKWh =
+          heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
         const oilLitres = internalGains * oilLitresPerKWh;
         const oilCost = oilLitres * oilRate;
 
         return electricCost + gasCost + oilCost;
       },
-      savings: function() {
+      savings: function () {
         // TODO: VERIFY LOGIC WITH ANDY (Nov 24 late evening discovery)
         // nGains% is percentage-based, not absolute
         // Same % but different heating demands = different dollar amounts
@@ -180,7 +189,7 @@ window.TEUI.pcFinancials = (function () {
         // Current implementation: Target - Reference (reversed pattern)
         const delta = this.target() - this.reference();
         return delta > 0 ? delta : 0;
-      }
+      },
     },
 
     /**
@@ -191,18 +200,18 @@ window.TEUI.pcFinancials = (function () {
      */
     thermal_bridge: {
       target: () => {
-        const thermalBridgingLoss = getValue('i_97');    // TB heat loss (thermal kWh) - TARGET
-        const heatingDemand = getValue('d_114');         // Total heating demand (kWh) - TARGET
+        const thermalBridgingLoss = getValue("i_97"); // TB heat loss (thermal kWh) - TARGET
+        const heatingDemand = getValue("d_114"); // Total heating demand (kWh) - TARGET
 
         if (heatingDemand === 0) return 0; // No heating system
 
         // Get heating system fuel volume for oil (from Section 13)
-        const oilHeatingL = getValue('f_115');           // Oil heating (litres) - TARGET
+        const oilHeatingL = getValue("f_115"); // Oil heating (litres) - TARGET
 
         // Get fuel rates (same as SHW% and nGains%)
-        const electricRate = getValue('l_12');           // $/kWh
-        const gasRate = getValue('l_13');                // $/kWh
-        const oilRate = getValue('l_16');                // $/litre
+        const electricRate = getValue("l_12"); // $/kWh
+        const gasRate = getValue("l_13"); // $/kWh
+        const oilRate = getValue("l_16"); // $/litre
 
         // Calculate cost based on heating fuel type (same pattern as nGains%)
         // Whichever fuel is 0 contributes $0
@@ -210,7 +219,8 @@ window.TEUI.pcFinancials = (function () {
         const gasCost = thermalBridgingLoss * gasRate;
 
         // For oil: convert thermal kWh to litres, then apply rate
-        const oilLitresPerKWh = heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
+        const oilLitresPerKWh =
+          heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
         const oilLitres = thermalBridgingLoss * oilLitresPerKWh;
         const oilCost = oilLitres * oilRate;
 
@@ -218,31 +228,32 @@ window.TEUI.pcFinancials = (function () {
         return electricCost + gasCost + oilCost;
       },
       reference: () => {
-        const thermalBridgingLoss = getValue('ref_i_97');
-        const heatingDemand = getValue('ref_d_114');
+        const thermalBridgingLoss = getValue("ref_i_97");
+        const heatingDemand = getValue("ref_d_114");
 
         if (heatingDemand === 0) return 0;
 
-        const oilHeatingL = getValue('ref_f_115');
-        const electricRate = getValue('ref_l_12');
-        const gasRate = getValue('ref_l_13');
-        const oilRate = getValue('ref_l_16');
+        const oilHeatingL = getValue("ref_f_115");
+        const electricRate = getValue("ref_l_12");
+        const gasRate = getValue("ref_l_13");
+        const oilRate = getValue("ref_l_16");
 
         const electricCost = thermalBridgingLoss * electricRate;
         const gasCost = thermalBridgingLoss * gasRate;
 
-        const oilLitresPerKWh = heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
+        const oilLitresPerKWh =
+          heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
         const oilLitres = thermalBridgingLoss * oilLitresPerKWh;
         const oilCost = oilLitres * oilRate;
 
         return electricCost + gasCost + oilCost;
       },
-      savings: function() {
+      savings: function () {
         // TB% represents heat LOSS (cost), not benefit
         // Lower TB% = less cost = better, so use standard pattern (like SHW%)
         const delta = this.reference() - this.target();
         return delta > 0 ? delta : 0;
-      }
+      },
     },
 
     /**
@@ -252,7 +263,7 @@ window.TEUI.pcFinancials = (function () {
     aggregate_ground_uvalue: {
       target: () => 0,
       reference: () => 0,
-      savings: () => 0
+      savings: () => 0,
     },
 
     /**
@@ -262,7 +273,7 @@ window.TEUI.pcFinancials = (function () {
     aggregate_air_uvalue: {
       target: () => 0,
       reference: () => 0,
-      savings: () => 0
+      savings: () => 0,
     },
 
     /**
@@ -272,7 +283,7 @@ window.TEUI.pcFinancials = (function () {
     normalized_airtightness: {
       target: () => 0,
       reference: () => 0,
-      savings: () => 0
+      savings: () => 0,
     },
 
     /**
@@ -282,7 +293,7 @@ window.TEUI.pcFinancials = (function () {
     window_wall_ratio: {
       target: () => 0,
       reference: () => 0,
-      savings: () => 0
+      savings: () => 0,
     },
 
     /**
@@ -292,7 +303,7 @@ window.TEUI.pcFinancials = (function () {
     heating_efficiency: {
       target: () => 0,
       reference: () => 0,
-      savings: () => 0
+      savings: () => 0,
     },
 
     /**
@@ -302,7 +313,7 @@ window.TEUI.pcFinancials = (function () {
     mvhr_efficiency: {
       target: () => 0,
       reference: () => 0,
-      savings: () => 0
+      savings: () => 0,
     },
 
     /**
@@ -312,7 +323,7 @@ window.TEUI.pcFinancials = (function () {
     tedi: {
       target: () => 0,
       reference: () => 0,
-      savings: () => 0
+      savings: () => 0,
     },
 
     /**
@@ -322,7 +333,7 @@ window.TEUI.pcFinancials = (function () {
     teli: {
       target: () => 0,
       reference: () => 0,
-      savings: () => 0
+      savings: () => 0,
     },
 
     /**
@@ -332,7 +343,7 @@ window.TEUI.pcFinancials = (function () {
     ghgi: {
       target: () => 0,
       reference: () => 0,
-      savings: () => 0
+      savings: () => 0,
     },
 
     /**
@@ -342,9 +353,8 @@ window.TEUI.pcFinancials = (function () {
     teui: {
       target: () => 0,
       reference: () => 0,
-      savings: () => 0
-    }
-
+      savings: () => 0,
+    },
   };
 
   /**
@@ -353,7 +363,7 @@ window.TEUI.pcFinancials = (function () {
    * @param {string} mode - Calculation mode: 'target', 'reference', or 'savings'
    * @returns {object} { cost: number } - Cost in CAD$
    */
-  function calculateFinancials(axisId, mode = 'target') {
+  function calculateFinancials(axisId, mode = "target") {
     const calc = calculations[axisId];
 
     if (!calc) {
@@ -362,18 +372,23 @@ window.TEUI.pcFinancials = (function () {
     }
 
     try {
-      if (mode === 'target') {
+      if (mode === "target") {
         return { cost: calc.target() };
-      } else if (mode === 'reference') {
+      } else if (mode === "reference") {
         return { cost: calc.reference() };
-      } else if (mode === 'savings') {
+      } else if (mode === "savings") {
         return { cost: calc.savings() };
       } else {
-        console.warn(`pcFinancials: Invalid mode "${mode}". Use 'target', 'reference', or 'savings'.`);
+        console.warn(
+          `pcFinancials: Invalid mode "${mode}". Use 'target', 'reference', or 'savings'.`
+        );
         return { cost: 0 };
       }
     } catch (error) {
-      console.error(`pcFinancials: Error calculating ${axisId} (${mode}):`, error);
+      console.error(
+        `pcFinancials: Error calculating ${axisId} (${mode}):`,
+        error
+      );
       return { cost: 0 };
     }
   }
@@ -382,5 +397,4 @@ window.TEUI.pcFinancials = (function () {
   return {
     calculateFinancials,
   };
-
 })();

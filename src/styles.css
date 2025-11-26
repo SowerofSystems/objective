@@ -1440,15 +1440,24 @@ body.viewing-reference-inputs .section-header {
 /* Style section subheaders (unit rows) in reference mode - CHANGED TO viewing-reference-inputs */
 body.viewing-reference-inputs .data-table tr td.section-subheader,
 body.viewing-reference-inputs .data-table tr:has(td.section-subheader) td {
-  background-color: rgba(var(--reference-value-color-rgb), 0.5) !important; /* 50% opacity of #8B0000 */
+  background-color: rgba(
+    var(--reference-value-color-rgb),
+    0.5
+  ) !important; /* 50% opacity of #8B0000 */
   color: #ffffff !important; /* White text for contrast */
-  border-bottom-color: rgba(var(--reference-value-color-rgb), 0.7) !important; /* Darker, semi-transparent border */
+  border-bottom-color: rgba(
+    var(--reference-value-color-rgb),
+    0.7
+  ) !important; /* Darker, semi-transparent border */
 }
 body.viewing-reference-inputs
   .data-table
   tr:has(td.section-subheader)
   td:empty {
-  background-color: rgba(var(--reference-value-color-rgb), 0.5) !important; /* Ensure empty cells match */
+  background-color: rgba(
+    var(--reference-value-color-rgb),
+    0.5
+  ) !important; /* Ensure empty cells match */
 }
 
 /* Example: Style locked fields in reference mode - CHANGED TO viewing-reference-inputs */
@@ -1528,7 +1537,10 @@ body.viewing-reference-inputs #keyValues .key-values-table tr {
 /* This applies when viewing cached reference inputs */
 body.viewing-reference-inputs .reference-input-display-locked {
   /* This rule primarily handles the background fill for PARENT elements like <td> */
-  background-color: rgba(var(--reference-value-color-rgb), 0.1) !important; /* Subtle 10% red overlay */
+  background-color: rgba(
+    var(--reference-value-color-rgb),
+    0.1
+  ) !important; /* Subtle 10% red overlay */
   /* Apply text styles here too, in case the class is on a non-input element that contains text */
   color: var(--reference-value-color) !important;
   font-weight: bold !important;
@@ -1543,7 +1555,10 @@ body.viewing-reference-inputs .user-input.reference-input-display-locked {
   color: var(--reference-value-color) !important;
   font-weight: bold !important;
   font-style: italic !important;
-  background-color: rgba(var(--reference-value-color-rgb), 0.1) !important; /* Ensure fill is also on the input */
+  background-color: rgba(
+    var(--reference-value-color-rgb),
+    0.1
+  ) !important; /* Ensure fill is also on the input */
   opacity: 0.95 !important; /* Slightly less dim to see text better */
   -webkit-text-fill-color: var(--reference-value-color) !important;
   pointer-events: none !important; /* Ensure it's not interactive */
@@ -1556,7 +1571,10 @@ body.viewing-reference-inputs
   color: var(--reference-value-color) !important;
   font-weight: bold !important;
   font-style: italic !important;
-  background-color: rgba(var(--reference-value-color-rgb), 0.1) !important; /* Ensure fill is also on the input */
+  background-color: rgba(
+    var(--reference-value-color-rgb),
+    0.1
+  ) !important; /* Ensure fill is also on the input */
   opacity: 0.95 !important;
   -webkit-text-fill-color: var(--reference-value-color) !important;
   pointer-events: none !important;
@@ -1568,7 +1586,10 @@ body.viewing-reference-inputs .reference-input-display-locked .user-input {
   color: var(--reference-value-color) !important;
   font-weight: bold !important;
   font-style: italic !important;
-  background-color: rgba(var(--reference-value-color-rgb), 0.1) !important; /* Ensure fill is also on the input */
+  background-color: rgba(
+    var(--reference-value-color-rgb),
+    0.1
+  ) !important; /* Ensure fill is also on the input */
   opacity: 0.95 !important;
   -webkit-text-fill-color: var(--reference-value-color) !important;
   pointer-events: none !important;
@@ -1933,7 +1954,9 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
 .pc-dragging {
   cursor: grabbing !important;
   opacity: 0.7;
-  filter: drop-shadow(0 0 6px rgba(13, 110, 253, 1)); /* Stronger glow while dragging */
+  filter: drop-shadow(
+    0 0 6px rgba(13, 110, 253, 1)
+  ); /* Stronger glow while dragging */
 }
 
 /* Parallel Coordinates - Drag Value Modal */

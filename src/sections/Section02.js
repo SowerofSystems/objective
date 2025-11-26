@@ -1940,7 +1940,9 @@ window.TEUI.SectionModules.sect02 = (function () {
       if (this.currentMode === "target" && window.TEUI?.StateManager) {
         // 🔍 DIAGNOSTIC: Log d_12 writes to StateManager
         if (fieldId === "d_12") {
-          console.log(`[S02 ModeManager] 🔵 Writing TARGET d_12="${value}" to StateManager (source: ${source})`);
+          console.log(
+            `[S02 ModeManager] 🔵 Writing TARGET d_12="${value}" to StateManager (source: ${source})`
+          );
         }
         window.TEUI.StateManager.setValue(fieldId, value, source);
       }
@@ -1949,7 +1951,9 @@ window.TEUI.SectionModules.sect02 = (function () {
       if (this.currentMode === "reference" && window.TEUI?.StateManager) {
         // 🔍 DIAGNOSTIC: Log d_12 writes to StateManager
         if (fieldId === "d_12") {
-          console.log(`[S02 ModeManager] 🔵 Writing REFERENCE ref_d_12="${value}" to StateManager (source: ${source})`);
+          console.log(
+            `[S02 ModeManager] 🔵 Writing REFERENCE ref_d_12="${value}" to StateManager (source: ${source})`
+          );
         }
         window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, source);
       }

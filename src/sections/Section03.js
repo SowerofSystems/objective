@@ -2036,7 +2036,9 @@ window.TEUI.SectionModules.sect03 = (function () {
     let heatingSetpoint;
 
     // 🔍 DIAGNOSTIC: Log what we're reading from StateManager
-    console.log(`[S03 h_23 DEBUG] CALCULATING: d_13="${referenceStandard}", d_12="${occupancyType}"`);
+    console.log(
+      `[S03 h_23 DEBUG] CALCULATING: d_13="${referenceStandard}", d_12="${occupancyType}"`
+    );
 
     // Check if the reference standard indicates a Passive House related standard
     // Defensive: Check if referenceStandard exists and is a string before calling methods
@@ -2059,10 +2061,14 @@ window.TEUI.SectionModules.sect03 = (function () {
       ) {
         // Broader check for "Care" just in case of variations
         heatingSetpoint = 22;
-        console.log(`[S03 h_23 DEBUG] ✅ Critical occupancy (non-PH) → h_23 = 22°C`);
+        console.log(
+          `[S03 h_23 DEBUG] ✅ Critical occupancy (non-PH) → h_23 = 22°C`
+        );
       } else {
         heatingSetpoint = 18; // Default for other non-PH, non-Care/Residential occupancies
-        console.log(`[S03 h_23 DEBUG] ✅ Other occupancy (non-PH) → h_23 = 18°C`);
+        console.log(
+          `[S03 h_23 DEBUG] ✅ Other occupancy (non-PH) → h_23 = 18°C`
+        );
       }
     }
 

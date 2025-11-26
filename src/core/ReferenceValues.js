@@ -540,7 +540,7 @@ TEUI.ReferenceValues = {
   },
   "PH Low Energy": {
     //"h_13": "80% less than NBC"
-    h_23: "18", // PH Tsetpoint in °C  
+    h_23: "18", // PH Tsetpoint in °C
     d_52: "100", // DWH System Efficiency when Electric
     k_52: "92", // DWH AFUE when Gas or Oil
     d_53: "0.42", // DWHR Efficiency 0 when OBC
