@@ -258,102 +258,448 @@ window.TEUI.pcFinancials = (function () {
 
     /**
      * Ag - Aggregate Ground U-value
-     * TODO: Add formula when provided
+     * Cost = Ground heat loss (i_102 kWh) × heating fuel rate
+     * Lower Ag = less heat loss = better performance
+     * Uses same fuel cost calculation as TB%
      */
     aggregate_ground_uvalue: {
-      target: () => 0,
-      reference: () => 0,
-      savings: () => 0,
+      target: () => {
+        const groundHeatLoss = getValue("i_102"); // Ground heat loss (thermal kWh) - TARGET
+        const heatingDemand = getValue("d_114"); // Total heating demand (kWh) - TARGET
+
+        if (heatingDemand === 0) return 0; // No heating system
+
+        const oilHeatingL = getValue("f_115"); // Oil heating (litres) - TARGET
+        const electricRate = getValue("l_12"); // $/kWh
+        const gasRate = getValue("l_13"); // $/kWh
+        const oilRate = getValue("l_16"); // $/litre
+
+        const electricCost = groundHeatLoss * electricRate;
+        const gasCost = groundHeatLoss * gasRate;
+
+        const oilLitresPerKWh =
+          heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
+        const oilLitres = groundHeatLoss * oilLitresPerKWh;
+        const oilCost = oilLitres * oilRate;
+
+        return electricCost + gasCost + oilCost;
+      },
+      reference: () => {
+        const groundHeatLoss = getValue("ref_i_102");
+        const heatingDemand = getValue("ref_d_114");
+
+        if (heatingDemand === 0) return 0;
+
+        const oilHeatingL = getValue("ref_f_115");
+        const electricRate = getValue("ref_l_12");
+        const gasRate = getValue("ref_l_13");
+        const oilRate = getValue("ref_l_16");
+
+        const electricCost = groundHeatLoss * electricRate;
+        const gasCost = groundHeatLoss * gasRate;
+
+        const oilLitresPerKWh =
+          heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
+        const oilLitres = groundHeatLoss * oilLitresPerKWh;
+        const oilCost = oilLitres * oilRate;
+
+        return electricCost + gasCost + oilCost;
+      },
+      savings: function () {
+        const delta = this.reference() - this.target();
+        return delta > 0 ? delta : 0;
+      },
     },
 
     /**
      * Ae - Aggregate Air U-value
-     * TODO: Add formula when provided
+     * Cost = Air heat loss (i_101 kWh) × heating fuel rate
+     * Lower Ae = less heat loss = better performance
+     * Uses same fuel cost calculation as TB%
      */
     aggregate_air_uvalue: {
-      target: () => 0,
-      reference: () => 0,
-      savings: () => 0,
+      target: () => {
+        const airHeatLoss = getValue("i_101"); // Air heat loss (thermal kWh) - TARGET
+        const heatingDemand = getValue("d_114"); // Total heating demand (kWh) - TARGET
+
+        if (heatingDemand === 0) return 0; // No heating system
+
+        const oilHeatingL = getValue("f_115"); // Oil heating (litres) - TARGET
+        const electricRate = getValue("l_12"); // $/kWh
+        const gasRate = getValue("l_13"); // $/kWh
+        const oilRate = getValue("l_16"); // $/litre
+
+        const electricCost = airHeatLoss * electricRate;
+        const gasCost = airHeatLoss * gasRate;
+
+        const oilLitresPerKWh =
+          heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
+        const oilLitres = airHeatLoss * oilLitresPerKWh;
+        const oilCost = oilLitres * oilRate;
+
+        return electricCost + gasCost + oilCost;
+      },
+      reference: () => {
+        const airHeatLoss = getValue("ref_i_101");
+        const heatingDemand = getValue("ref_d_114");
+
+        if (heatingDemand === 0) return 0;
+
+        const oilHeatingL = getValue("ref_f_115");
+        const electricRate = getValue("ref_l_12");
+        const gasRate = getValue("ref_l_13");
+        const oilRate = getValue("ref_l_16");
+
+        const electricCost = airHeatLoss * electricRate;
+        const gasCost = airHeatLoss * gasRate;
+
+        const oilLitresPerKWh =
+          heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
+        const oilLitres = airHeatLoss * oilLitresPerKWh;
+        const oilCost = oilLitres * oilRate;
+
+        return electricCost + gasCost + oilCost;
+      },
+      savings: function () {
+        const delta = this.reference() - this.target();
+        return delta > 0 ? delta : 0;
+      },
     },
 
     /**
-     * NRL50 - Normalized Airtightness
-     * TODO: Add formula when provided
+     * NRL50 - Normalized Airtightness (ACH50)
+     * Cost = Infiltration heat loss (i_103 kWh) × heating fuel rate
+     * Lower ACH50 = less infiltration = better performance
+     * Uses same fuel cost calculation as TB%
      */
     normalized_airtightness: {
-      target: () => 0,
-      reference: () => 0,
-      savings: () => 0,
+      target: () => {
+        const infiltrationLoss = getValue("i_103"); // Infiltration heat loss (thermal kWh) - TARGET
+        const heatingDemand = getValue("d_114"); // Total heating demand (kWh) - TARGET
+
+        if (heatingDemand === 0) return 0; // No heating system
+
+        const oilHeatingL = getValue("f_115"); // Oil heating (litres) - TARGET
+        const electricRate = getValue("l_12"); // $/kWh
+        const gasRate = getValue("l_13"); // $/kWh
+        const oilRate = getValue("l_16"); // $/litre
+
+        const electricCost = infiltrationLoss * electricRate;
+        const gasCost = infiltrationLoss * gasRate;
+
+        const oilLitresPerKWh =
+          heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
+        const oilLitres = infiltrationLoss * oilLitresPerKWh;
+        const oilCost = oilLitres * oilRate;
+
+        return electricCost + gasCost + oilCost;
+      },
+      reference: () => {
+        const infiltrationLoss = getValue("ref_i_103");
+        const heatingDemand = getValue("ref_d_114");
+
+        if (heatingDemand === 0) return 0;
+
+        const oilHeatingL = getValue("ref_f_115");
+        const electricRate = getValue("ref_l_12");
+        const gasRate = getValue("ref_l_13");
+        const oilRate = getValue("ref_l_16");
+
+        const electricCost = infiltrationLoss * electricRate;
+        const gasCost = infiltrationLoss * gasRate;
+
+        const oilLitresPerKWh =
+          heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
+        const oilLitres = infiltrationLoss * oilLitresPerKWh;
+        const oilCost = oilLitres * oilRate;
+
+        return electricCost + gasCost + oilCost;
+      },
+      savings: function () {
+        const delta = this.reference() - this.target();
+        return delta > 0 ? delta : 0;
+      },
     },
 
     /**
      * WWR - Window-to-Wall Ratio
-     * TODO: Add formula when provided
+     * Cost = Sum of window heat loss (i_88 + i_89 + i_90 + i_91 + i_92 + i_93) × heating fuel rate
+     * Lower WWR = less window area = less heat loss = better performance
+     * Uses same fuel cost calculation as TB%
      */
     window_wall_ratio: {
-      target: () => 0,
-      reference: () => 0,
-      savings: () => 0,
+      target: () => {
+        // Sum of all window heat loss components (thermal kWh) - TARGET
+        const windowHeatLoss =
+          getValue("i_88") +
+          getValue("i_89") +
+          getValue("i_90") +
+          getValue("i_91") +
+          getValue("i_92") +
+          getValue("i_93");
+
+        const heatingDemand = getValue("d_114"); // Total heating demand (kWh) - TARGET
+
+        if (heatingDemand === 0) return 0; // No heating system
+
+        const oilHeatingL = getValue("f_115"); // Oil heating (litres) - TARGET
+        const electricRate = getValue("l_12"); // $/kWh
+        const gasRate = getValue("l_13"); // $/kWh
+        const oilRate = getValue("l_16"); // $/litre
+
+        const electricCost = windowHeatLoss * electricRate;
+        const gasCost = windowHeatLoss * gasRate;
+
+        const oilLitresPerKWh =
+          heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
+        const oilLitres = windowHeatLoss * oilLitresPerKWh;
+        const oilCost = oilLitres * oilRate;
+
+        return electricCost + gasCost + oilCost;
+      },
+      reference: () => {
+        const windowHeatLoss =
+          getValue("ref_i_88") +
+          getValue("ref_i_89") +
+          getValue("ref_i_90") +
+          getValue("ref_i_91") +
+          getValue("ref_i_92") +
+          getValue("ref_i_93");
+
+        const heatingDemand = getValue("ref_d_114");
+
+        if (heatingDemand === 0) return 0;
+
+        const oilHeatingL = getValue("ref_f_115");
+        const electricRate = getValue("ref_l_12");
+        const gasRate = getValue("ref_l_13");
+        const oilRate = getValue("ref_l_16");
+
+        const electricCost = windowHeatLoss * electricRate;
+        const gasCost = windowHeatLoss * gasRate;
+
+        const oilLitresPerKWh =
+          heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
+        const oilLitres = windowHeatLoss * oilLitresPerKWh;
+        const oilCost = oilLitres * oilRate;
+
+        return electricCost + gasCost + oilCost;
+      },
+      savings: function () {
+        const delta = this.reference() - this.target();
+        return delta > 0 ? delta : 0;
+      },
     },
 
     /**
      * HEAT% - Heating System Efficiency
-     * TODO: Add formula when provided
+     * Cost = (Electric × Rate) + (Gas × Rate) + (Oil × Rate)
+     * Same pattern as SHW% - handles all three fuel types
+     * Higher HEAT% = more efficient = lower fuel consumption for same heat
      */
     heating_efficiency: {
-      target: () => 0,
-      reference: () => 0,
-      savings: () => 0,
+      target: () => {
+        const heatingDemand = getValue("d_114"); // Heating demand (kWh) - TARGET
+        const electricRate = getValue("l_12"); // Electricity cost ($/kWh) - TARGET
+        const gasVolume = getValue("h_115"); // Gas volume (m³) - TARGET
+        const gasRate = getValue("l_13"); // Gas cost ($/m³) - TARGET
+        const oilVolume = getValue("f_115"); // Oil volume (litres) - TARGET
+        const oilRate = getValue("l_16"); // Oil cost ($/litre) - TARGET
+
+        return (
+          heatingDemand * electricRate +
+          gasVolume * gasRate +
+          oilVolume * oilRate
+        );
+      },
+      reference: () => {
+        const heatingDemand = getValue("ref_d_114");
+        const electricRate = getValue("ref_l_12");
+        const gasVolume = getValue("ref_h_115");
+        const gasRate = getValue("ref_l_13");
+        const oilVolume = getValue("ref_f_115");
+        const oilRate = getValue("ref_l_16");
+
+        return (
+          heatingDemand * electricRate +
+          gasVolume * gasRate +
+          oilVolume * oilRate
+        );
+      },
+      savings: function () {
+        const delta = this.reference() - this.target();
+        return delta > 0 ? delta : 0;
+      },
     },
 
     /**
      * MVHR% - Mechanical Ventilation Heat Recovery
-     * TODO: Add formula when provided
+     * Cost = Ventilation heat loss (m_121 kWh) × heating fuel rate
+     * Higher MVHR% = more recovery = less net heat loss = better performance
+     * Uses same fuel cost calculation as TB%
      */
     mvhr_efficiency: {
-      target: () => 0,
-      reference: () => 0,
-      savings: () => 0,
+      target: () => {
+        const ventilationLoss = getValue("m_121"); // Net ventilation heat loss (thermal kWh) - TARGET
+        const heatingDemand = getValue("d_114"); // Total heating demand (kWh) - TARGET
+
+        if (heatingDemand === 0) return 0; // No heating system
+
+        const oilHeatingL = getValue("f_115"); // Oil heating (litres) - TARGET
+        const electricRate = getValue("l_12"); // $/kWh
+        const gasRate = getValue("l_13"); // $/kWh
+        const oilRate = getValue("l_16"); // $/litre
+
+        const electricCost = ventilationLoss * electricRate;
+        const gasCost = ventilationLoss * gasRate;
+
+        const oilLitresPerKWh =
+          heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
+        const oilLitres = ventilationLoss * oilLitresPerKWh;
+        const oilCost = oilLitres * oilRate;
+
+        return electricCost + gasCost + oilCost;
+      },
+      reference: () => {
+        const ventilationLoss = getValue("ref_m_121");
+        const heatingDemand = getValue("ref_d_114");
+
+        if (heatingDemand === 0) return 0;
+
+        const oilHeatingL = getValue("ref_f_115");
+        const electricRate = getValue("ref_l_12");
+        const gasRate = getValue("ref_l_13");
+        const oilRate = getValue("ref_l_16");
+
+        const electricCost = ventilationLoss * electricRate;
+        const gasCost = ventilationLoss * gasRate;
+
+        const oilLitresPerKWh =
+          heatingDemand > 0 ? oilHeatingL / heatingDemand : 0;
+        const oilLitres = ventilationLoss * oilLitresPerKWh;
+        const oilCost = oilLitres * oilRate;
+
+        return electricCost + gasCost + oilCost;
+      },
+      savings: function () {
+        const delta = this.reference() - this.target();
+        return delta > 0 ? delta : 0;
+      },
     },
 
     /**
      * TEDI - Thermal Energy Demand Intensity
-     * TODO: Add formula when provided
+     * Cost = Heating energy cost (based on fuel type from d_113)
+     * For Gas: h_115 (m³) × gas rate
+     * For Oil: f_115 (litres) × oil rate
+     * For Electric/Heatpump: d_114 (kWh) × electric rate
+     * Note: When Gas, d_114 = d_127, so h_115 × price works directly
      */
     tedi: {
-      target: () => 0,
-      reference: () => 0,
-      savings: () => 0,
+      target: () => {
+        const heatingDemand = getValue("d_114"); // Heating demand (kWh) - TARGET
+        const gasVolume = getValue("h_115"); // Gas volume (m³) - TARGET
+        const oilVolume = getValue("f_115"); // Oil volume (litres) - TARGET
+        const electricRate = getValue("l_12"); // $/kWh
+        const gasRate = getValue("l_13"); // $/m³
+        const oilRate = getValue("l_16"); // $/litre
+
+        return (
+          heatingDemand * electricRate +
+          gasVolume * gasRate +
+          oilVolume * oilRate
+        );
+      },
+      reference: () => {
+        const heatingDemand = getValue("ref_d_114");
+        const gasVolume = getValue("ref_h_115");
+        const oilVolume = getValue("ref_f_115");
+        const electricRate = getValue("ref_l_12");
+        const gasRate = getValue("ref_l_13");
+        const oilRate = getValue("ref_l_16");
+
+        return (
+          heatingDemand * electricRate +
+          gasVolume * gasRate +
+          oilVolume * oilRate
+        );
+      },
+      savings: function () {
+        const delta = this.reference() - this.target();
+        return delta > 0 ? delta : 0;
+      },
     },
 
     /**
      * TELI - Thermal Envelope Loss Intensity
-     * TODO: Add formula when provided
+     * Cost = TELI (d_131 ekWh/yr) × electricity rate
+     * Simple calculation for Electric/Heatpump buildings
+     * TODO: Add Gas/Oil fuel logic later (more complex, no direct equivalence)
      */
     teli: {
-      target: () => 0,
-      reference: () => 0,
-      savings: () => 0,
+      target: () => {
+        const teliEnergy = getValue("d_131"); // TELI (ekWh/yr) - TARGET
+        const electricRate = getValue("l_12"); // $/kWh - TARGET
+
+        return teliEnergy * electricRate;
+      },
+      reference: () => {
+        const teliEnergy = getValue("ref_d_131");
+        const electricRate = getValue("ref_l_12");
+
+        return teliEnergy * electricRate;
+      },
+      savings: function () {
+        const delta = this.reference() - this.target();
+        return delta > 0 ? delta : 0;
+      },
     },
 
     /**
      * GHGI - Greenhouse Gas Intensity
-     * TODO: Add formula when provided
+     * Returns kgCO2e/yr (not dollars) from k_32
+     * The getValue() helper already strips $ formatting
+     * This axis shows emissions, not financial cost
      */
     ghgi: {
-      target: () => 0,
-      reference: () => 0,
-      savings: () => 0,
+      target: () => {
+        const ghgEmissions = getValue("k_32"); // kgCO2e/yr - TARGET
+        return ghgEmissions;
+      },
+      reference: () => {
+        const ghgEmissions = getValue("ref_k_32"); // kgCO2e/yr - REFERENCE
+        return ghgEmissions;
+      },
+      savings: function () {
+        // Savings = emissions reduction (Reference - Target)
+        const delta = this.reference() - this.target();
+        return delta > 0 ? delta : 0;
+      },
     },
 
     /**
      * TEUI - Total Energy Use Intensity
-     * TODO: Add formula when provided
+     * Cost = TEUI (d_136 kWh/yr) × electricity rate
+     * Simple calculation for Electric/Heatpump buildings
+     * TODO: Add Gas/Oil fuel parsing later for mixed-fuel buildings
      */
     teui: {
-      target: () => 0,
-      reference: () => 0,
-      savings: () => 0,
+      target: () => {
+        const teuiEnergy = getValue("d_136"); // TEUI (kWh/yr) - TARGET
+        const electricRate = getValue("l_12"); // $/kWh - TARGET
+
+        return teuiEnergy * electricRate;
+      },
+      reference: () => {
+        const teuiEnergy = getValue("ref_d_136");
+        const electricRate = getValue("ref_l_12");
+
+        return teuiEnergy * electricRate;
+      },
+      savings: function () {
+        const delta = this.reference() - this.target();
+        return delta > 0 ? delta : 0;
+      },
     },
   };
 
