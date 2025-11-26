@@ -624,26 +624,62 @@ tbody.appendChild(roiRow);
 
 ### localStorage Management
 
+**Why localStorage and not StateManager?**
+- Capital budgets are **UI-specific settings** (like user preferences), not building model data
+- They have no Excel field equivalents (web-app only feature)
+- StateManager is for model fields that sync with Excel import/export
+- localStorage is appropriate for app settings that persist across sessions
+
 **Keys:**
 - `pc_capital_budget_shw_efficiency`
 - `pc_capital_budget_dwhr_efficiency`
 - `pc_capital_budget_net_gains`
-- ... (one per axis)
+- `pc_capital_budget_thermal_bridge`
+- `pc_capital_budget_ach50`
+- `pc_capital_budget_aggregate_ground_uvalue`
+- `pc_capital_budget_aggregate_air_uvalue`
+- `pc_capital_budget_window_wall_ratio`
+- `pc_capital_budget_heating_efficiency`
+- `pc_capital_budget_mvhr_efficiency`
+- `pc_capital_budget_tedi`
+- `pc_capital_budget_teli`
+- `pc_capital_budget_ghgi`
+- `pc_capital_budget_teui`
 
-**Clear on Reset:**
+**Default Values (hardcoded):**
+Applied only when localStorage key doesn't exist (first load or after clear):
 ```javascript
-// Add to global reset function
-function clearCapitalBudgets() {
-  const axes = ['shw_efficiency', 'dwhr_efficiency', 'net_gains', 'thermal_bridge',
-                'ach50', 'aggregate_ground_uvalue', 'aggregate_air_uvalue',
-                'window_wall_ratio', 'heating_efficiency', 'mvhr_efficiency',
-                'tedi', 'teli', 'ghgi', 'teui'];
-
-  axes.forEach(axisId => {
-    localStorage.removeItem(`pc_capital_budget_${axisId}`);
-  });
-}
+const defaultCapitalBudgets = {
+  'shw_efficiency': 10000,
+  'dwhr_efficiency': 5000,
+  'net_gains': 100000,
+  'thermal_bridge': 50000,
+  'aggregate_ground_uvalue': 20000,
+  'aggregate_air_uvalue': 100000,
+  'ach50': 30000,
+  'window_wall_ratio': 50000,
+  'heating_efficiency': 50000,
+  'mvhr_efficiency': 50000,
+  'tedi': 1,
+  'teli': 100000,
+  'ghgi': 0,
+  'teui': 0
+};
 ```
+
+**Clear on Global Reset:**
+✅ **Already implemented** in [StateManager.js:292-302](../../src/core/StateManager.js#L292-L302)
+- User clicks global reset button
+- All `pc_capital_budget_*` keys removed from localStorage
+- On next page load/refresh, hardcoded defaults return
+
+**Clear on File Import:**
+✅ **Implemented** in [FileHandler.js:160-171](../../src/core/FileHandler.js#L160-L171) & [FileHandler.js:414-425](../../src/core/FileHandler.js#L414-L425)
+- When user imports Excel/CSV file
+- All capital budgets set to $0.00 (not defaults)
+- New building = new costs, old budgets irrelevant
+- User can set new values after import
+- Applied to both `processImportedExcel()` and `processImportedCSV()`
 
 ### ROI Calculation Logic
 
@@ -665,14 +701,28 @@ Simple ROI = $3,000 ÷ $1,000/yr = 3.0 years ✅
 NOT: $3,000 ÷ $5,000 = 0.6 years ❌
 ```
 
-### GHGI Special Handling
+### GHGI Carbon Pricing Support
 
-**Issue:** GHGI shows emissions (kgCO2e/yr), not financial cost
+**NEW (Nov 26, 2025):** GHGI now supports carbon pricing for jurisdictions with carbon markets
 
-**Solution:**
-- Capital Budget input still available (cost to reduce emissions)
-- Simple ROI shows `N/A` (can't calculate financial ROI on emissions)
-- Alternative: Could show "$/tCO2e" cost-effectiveness metric (future enhancement)
+**How it works:**
+- GHGI Capital Budget field represents **carbon price per metric ton** ($/tCO2e)
+- Simple ROI row displays **annual carbon cost savings** instead of payback years
+- Formula: `Carbon Cost Savings = Emissions Reduction (MT) × Carbon Price ($/MT)`
+- Conversion: kgCO2e ÷ 1000 = Metric Tons (MT)
+
+**Example:**
+```
+Emissions Reduction: 7,000 kgCO2e/yr = 7.0 MT/yr
+Carbon Price: $50/MT (entered in GHGI Capital Budget field)
+Carbon Cost Savings: 7.0 × $50 = $350.00/yr
+
+Display: GHGI Simple ROI shows "$350.00" (not years)
+```
+
+**Jurisdictions:**
+- No carbon pricing (default): Leave GHGI Capital Budget at $0.00 → Shows "N/A"
+- With carbon pricing: Enter $/MT → Shows annual carbon cost savings
 
 ```javascript
 if (axis.id === 'ghgi') {
