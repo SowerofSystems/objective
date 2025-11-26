@@ -1991,8 +1991,8 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
 .pc-capital-input {
   border: 1px solid #dee2e6;
   border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 14px;
+  padding: 2px 4px;
+  font-size: 11px;
   background: #fff;
   transition: border-color 0.2s, box-shadow 0.2s;
 }

@@ -840,28 +840,6 @@ window.TEUI.ParallelCoordinates = (function () {
     // Get ROI term multiplier
     const roiMultiplier = CONFIG.roiTerm || 1;
 
-    // Capital Budget row (user-editable inputs)
-    const capitalBudgetRow = document.createElement("tr");
-    capitalBudgetRow.innerHTML = `<td class="pc-row-label"><strong>Capital Budget</strong></td>`;
-    axes.forEach(axis => {
-      const savedValue = localStorage.getItem(`pc_capital_budget_${axis.id}`) || "0";
-      const numValue = parseFloat(savedValue);
-      const formattedValue = formatCurrency(numValue);
-
-      capitalBudgetRow.innerHTML += `
-        <td class="text-center">
-          <input
-            type="text"
-            class="pc-capital-input"
-            data-axis="${axis.id}"
-            value="${formattedValue}"
-            style="width: 85px; text-align: center;"
-          />
-        </td>
-      `;
-    });
-    tbody.appendChild(capitalBudgetRow);
-
     // Reference Cost row
     const refCostRow = document.createElement("tr");
     refCostRow.innerHTML = `<td class="pc-row-label pc-reference-cell"><strong>Ref Cost</strong></td>`;
@@ -930,6 +908,28 @@ window.TEUI.ParallelCoordinates = (function () {
       }
     });
     tbody.appendChild(savingsRow);
+
+    // Capital Budget row (user-editable inputs) - positioned before Simple ROI
+    const capitalBudgetRow = document.createElement("tr");
+    capitalBudgetRow.innerHTML = `<td class="pc-row-label"><strong>Capital Budget</strong></td>`;
+    axes.forEach(axis => {
+      const savedValue = localStorage.getItem(`pc_capital_budget_${axis.id}`) || "0";
+      const numValue = parseFloat(savedValue);
+      const formattedValue = formatCurrency(numValue);
+
+      capitalBudgetRow.innerHTML += `
+        <td class="text-center">
+          <input
+            type="text"
+            class="pc-capital-input"
+            data-axis="${axis.id}"
+            value="${formattedValue}"
+            style="width: 85px; text-align: center;"
+          />
+        </td>
+      `;
+    });
+    tbody.appendChild(capitalBudgetRow);
 
     // Target Simple ROI row (payback period in years)
     const roiRow = document.createElement("tr");
