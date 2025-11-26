@@ -729,39 +729,9 @@ window.TEUI.ParallelCoordinates = (function () {
       referenceData
     );
 
-    // ====================================================================
-    // LEGEND - MOVED TO INFO PANEL (see renderLegend() function)
-    // ====================================================================
-    // SVG legend commented out - now rendered as HTML in info wrapper
-    // Uncomment if need to restore SVG legend
-    // const legend = svg
-    //   .append("g")
-    //   .attr("class", "legend")
-    //   .attr("transform", `translate(${width - 150}, -50)`);
-    //
-    // legend.append("line")
-    //   .attr("x1", 0).attr("x2", 30).attr("y1", 0).attr("y2", 0)
-    //   .style("stroke", CONFIG.colors.target)
-    //   .style("stroke-width", CONFIG.lineWidth);
-    //
-    // legend.append("text")
-    //   .attr("x", 35).attr("y", 4).text("Target")
-    //   .style("font-size", "12px").style("fill", CONFIG.colors.axisText);
-    //
-    // legend.append("line")
-    //   .attr("x1", 0).attr("x2", 30).attr("y1", 15).attr("y2", 15)
-    //   .style("stroke", CONFIG.colors.reference)
-    //   .style("stroke-width", CONFIG.lineWidth);
-    //
-    // legend.append("text")
-    //   .attr("x", 35).attr("y", 19).text("Reference")
-    //   .style("font-size", "12px").style("fill", CONFIG.colors.axisText);
-
     console.log("[ParallelCoordinates] Graph rendered successfully");
   }
-
-  // Legend is now rendered inline in controls row (see initializeFullControls)
-
+  
   /**
    * Render the data table below the graph
    */
@@ -904,9 +874,9 @@ window.TEUI.ParallelCoordinates = (function () {
     });
     tbody.appendChild(targetCostRow);
 
-    // Savings row (Delta $)
+    // Target Savings row (Delta $)
     const savingsRow = document.createElement("tr");
-    savingsRow.innerHTML = `<td class="pc-row-label text-success"><strong>Savings</strong></td>`;
+    savingsRow.innerHTML = `<td class="pc-row-label text-success"><strong>Target Savings</strong></td>`;
     axes.forEach(axis => {
       if (hasPro) {
         const result = window.TEUI.pcFinancials.calculateFinancials(
