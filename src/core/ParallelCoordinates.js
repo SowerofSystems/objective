@@ -1325,8 +1325,17 @@ window.TEUI.ParallelCoordinates = (function () {
       displayUnit = '';  // No unit for PHPP label
     }
 
+    // ⚠️ SPECIAL CASE: HEAT% Heatpump Mode
+    // When HEAT% exceeds 100%, show COP and HSPF conversion in subtitle
+    let subtitle = null;
+    if (d.axisId === 'heating_efficiency' && clampedValue > 100) {
+      const cop = clampedValue / 100;                    // 400% → 4.0
+      const hspf = cop * 3.412;                          // 4.0 → 13.648
+      subtitle = `COPh ${cop.toFixed(2)} | HSPF ${hspf.toFixed(1)}`;
+    }
+
     // Update modal display (visual only)
-    updateDragModal(axisConfig.label, displayValue, displayUnit);
+    updateDragModal(axisConfig.label, displayValue, displayUnit, subtitle);
 
     // Store current value for dragEnded
     d.value = clampedValue;
@@ -1544,14 +1553,26 @@ window.TEUI.ParallelCoordinates = (function () {
    * @param {string|number} value - Value to display (already formatted if string)
    * @param {string} unit - Unit symbol (%, etc.)
    */
-  function updateDragModal(label, value, unit) {
+  function updateDragModal(label, value, unit, subtitle = null) {
     const modal = document.getElementById('pc-drag-modal');
     if (modal) {
       // Remove % from label since value already shows it
       const labelText = label.replace('%', '').trim();
       // If value is string (pre-formatted), use as-is; otherwise format it
       const displayValue = typeof value === 'string' ? value : value.toFixed(1);
-      modal.textContent = `${labelText}: ${displayValue}${unit}`;
+
+      // Main value line
+      const mainLine = `${labelText}: ${displayValue}${unit}`;
+
+      // If subtitle provided (e.g., COP/HSPF conversion), add second line
+      if (subtitle) {
+        modal.innerHTML = `
+          <div>${mainLine}</div>
+          <div style="font-size: 0.85em; margin-top: 4px; opacity: 0.9;">${subtitle}</div>
+        `;
+      } else {
+        modal.textContent = mainLine;
+      }
     }
   }
 
