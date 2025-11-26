@@ -367,12 +367,12 @@ window.TEUI.pcFinancials = (function () {
     },
 
     /**
-     * NRL50 - Normalized Airtightness (ACH50)
+     * ACH50 - Air Changes per Hour at 50Pa
      * Cost = Infiltration heat loss (i_103 kWh) × heating fuel rate
      * Lower ACH50 = less infiltration = better performance
      * Uses same fuel cost calculation as TB%
      */
-    normalized_airtightness: {
+    ach50: {
       target: () => {
         const infiltrationLoss = getValue("i_103"); // Infiltration heat loss (thermal kWh) - TARGET
         const heatingDemand = getValue("d_114"); // Total heating demand (kWh) - TARGET
