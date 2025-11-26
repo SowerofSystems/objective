@@ -496,11 +496,244 @@ Priority order:
 
 ---
 
+## Capital Budget & Simple ROI - Implementation Guide
+
+### Overview
+
+**Purpose:** Allow users to enter capital cost premiums for Target improvements and calculate simple payback period (ROI in years).
+
+**Table Structure:**
+```
+Header Row
+Capital Budget Row        (NEW - user-editable inputs)
+Reference Cost Row
+Target Cost Row
+Target Savings Row
+Target Simple ROI Row     (NEW - calculated payback period)
+```
+
+### Capital Budget Row
+
+**Position:** Immediately after header row, before Reference Cost row
+
+**Features:**
+- User-editable `<input type="text">` fields for each axis
+- Format: `$0,000.00` with live formatting on blur
+- Storage: localStorage key `pc_capital_budget_{axisId}`
+- Cleared by: Global reset function
+- Label: "Capital Budget"
+
+**Implementation Pattern:**
+```javascript
+// Create Capital Budget row
+const capitalBudgetRow = document.createElement("tr");
+capitalBudgetRow.innerHTML = `<td class="pc-row-label"><strong>Capital Budget</strong></td>`;
+
+axes.forEach(axis => {
+  const savedValue = localStorage.getItem(`pc_capital_budget_${axis.id}`) || "0";
+  const formattedValue = formatCurrency(parseFloat(savedValue));
+
+  const inputHTML = `
+    <td class="text-center">
+      <input
+        type="text"
+        class="pc-capital-input"
+        data-axis="${axis.id}"
+        value="${formattedValue}"
+        style="width: 100px; text-align: center;"
+      />
+    </td>
+  `;
+  capitalBudgetRow.innerHTML += inputHTML;
+});
+
+tbody.appendChild(capitalBudgetRow);
+
+// Attach event listeners
+document.querySelectorAll('.pc-capital-input').forEach(input => {
+  input.addEventListener('blur', (e) => {
+    const axisId = e.target.dataset.axis;
+    const rawValue = e.target.value.replace(/[^0-9.]/g, '');
+    const numValue = parseFloat(rawValue) || 0;
+
+    // Save to localStorage
+    localStorage.setItem(`pc_capital_budget_${axisId}`, numValue.toString());
+
+    // Format display
+    e.target.value = formatCurrency(numValue);
+
+    // Recalculate ROI row
+    updateROIRow();
+  });
+});
+```
+
+### Target Simple ROI Row
+
+**Position:** After Target Savings row (last row in table)
+
+**Formula:**
+```javascript
+Simple ROI (years) = Capital Budget ÷ Annual Savings
+```
+
+**Key Requirements:**
+1. **Always use annual savings** (ROI Term = 1 year), NOT the multiplied savings shown in Target Savings row
+2. Display format: `X.X years` (1 decimal place)
+3. Special cases:
+   - If Capital Budget = 0: Display `-` (no investment)
+   - If Annual Savings = 0: Display `∞` (infinite payback)
+   - If Annual Savings < 0: Display `N/A` (negative savings, no ROI)
+
+**Implementation Pattern:**
+```javascript
+// Target Simple ROI row
+const roiRow = document.createElement("tr");
+roiRow.innerHTML = `<td class="pc-row-label"><strong>Target Simple ROI</strong></td>`;
+roiRow.classList.add('pc-roi-row'); // For easy updates
+
+axes.forEach(axis => {
+  const capitalBudget = parseFloat(localStorage.getItem(`pc_capital_budget_${axis.id}`) || "0");
+
+  if (hasPro) {
+    // Get ANNUAL savings (ROI Term = 1, not the multiplied display value)
+    const annualSavingsResult = window.TEUI.pcFinancials.calculateFinancials(
+      axis.id,
+      "savings"
+    );
+    const annualSavings = annualSavingsResult.cost; // Already annual (1yr term)
+
+    let roiDisplay;
+    if (capitalBudget === 0) {
+      roiDisplay = '-'; // No investment
+    } else if (annualSavings <= 0) {
+      roiDisplay = 'N/A'; // No savings or negative
+    } else {
+      const roiYears = capitalBudget / annualSavings;
+      roiDisplay = `${roiYears.toFixed(1)} yrs`;
+    }
+
+    roiRow.innerHTML += `<td class="text-center">${roiDisplay}</td>`;
+  } else {
+    roiRow.innerHTML += `<td class="text-center">-</td>`;
+  }
+});
+
+tbody.appendChild(roiRow);
+```
+
+### localStorage Management
+
+**Keys:**
+- `pc_capital_budget_shw_efficiency`
+- `pc_capital_budget_dwhr_efficiency`
+- `pc_capital_budget_net_gains`
+- ... (one per axis)
+
+**Clear on Reset:**
+```javascript
+// Add to global reset function
+function clearCapitalBudgets() {
+  const axes = ['shw_efficiency', 'dwhr_efficiency', 'net_gains', 'thermal_bridge',
+                'ach50', 'aggregate_ground_uvalue', 'aggregate_air_uvalue',
+                'window_wall_ratio', 'heating_efficiency', 'mvhr_efficiency',
+                'tedi', 'teli', 'ghgi', 'teui'];
+
+  axes.forEach(axisId => {
+    localStorage.removeItem(`pc_capital_budget_${axisId}`);
+  });
+}
+```
+
+### ROI Calculation Logic
+
+**Critical Rule:** Simple ROI always uses **annual savings** (1-year term), regardless of ROI Term setting in modal.
+
+**Why:**
+- Target Savings row displays cumulative savings over ROI Term (e.g., 5 years × $1,000 = $5,000)
+- But payback period is always in years, so we need annual rate
+- Simple ROI = Capital ÷ Annual Savings = $3,000 ÷ $1,000/yr = 3.0 years
+
+**Example:**
+```
+ROI Term Setting: 5 years
+Annual Savings: $1,000/yr
+Target Savings Row Shows: $5,000 (5 × $1,000)
+Capital Budget: $3,000
+
+Simple ROI = $3,000 ÷ $1,000/yr = 3.0 years ✅
+NOT: $3,000 ÷ $5,000 = 0.6 years ❌
+```
+
+### GHGI Special Handling
+
+**Issue:** GHGI shows emissions (kgCO2e/yr), not financial cost
+
+**Solution:**
+- Capital Budget input still available (cost to reduce emissions)
+- Simple ROI shows `N/A` (can't calculate financial ROI on emissions)
+- Alternative: Could show "$/tCO2e" cost-effectiveness metric (future enhancement)
+
+```javascript
+if (axis.id === 'ghgi') {
+  roiRow.innerHTML += `<td class="text-center">N/A</td>`;
+} else {
+  // Normal ROI calculation
+}
+```
+
+### CSS Styling
+
+**Capital Budget Input:**
+```css
+.pc-capital-input {
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 14px;
+  background: #fff;
+  transition: border-color 0.2s;
+}
+
+.pc-capital-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+```
+
+### Testing Checklist
+
+**Capital Budget Input:**
+- [ ] Enter value → formats to $X,XXX.XX on blur
+- [ ] Saves to localStorage correctly
+- [ ] Persists across page reloads
+- [ ] Clears on global reset
+- [ ] Handles decimal inputs (e.g., 1234.56)
+- [ ] Handles invalid inputs gracefully (defaults to 0)
+
+**Simple ROI Calculation:**
+- [ ] Capital = $3,000, Annual Savings = $1,000 → Shows "3.0 yrs"
+- [ ] Capital = $0 → Shows "-"
+- [ ] Annual Savings = $0 → Shows "∞" or "N/A"
+- [ ] Annual Savings < $0 → Shows "N/A"
+- [ ] GHGI column → Shows "N/A"
+- [ ] ROI updates when Capital Budget changes
+- [ ] ROI respects annual savings, NOT ROI Term multiplier
+
+**ROI Term Interaction:**
+- [ ] Set ROI Term = 1 year → Savings row shows $1,000, ROI = 3.0 yrs
+- [ ] Set ROI Term = 5 years → Savings row shows $5,000, ROI still = 3.0 yrs ✅
+- [ ] Change term → Savings row updates, ROI stays consistent
+
+---
+
 ## Version History
 
 | Date | Version | Changes |
 |------|---------|---------|
 | Nov 25, 2025 | 1.0 | Initial cheatsheet - 5 interactive axes, 4 financial formulas complete |
+| Nov 26, 2025 | 1.1 | Added Capital Budget & Simple ROI implementation guide |
 
 ---
 

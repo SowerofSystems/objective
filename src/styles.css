@@ -1987,6 +1987,26 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
   color: #dc3545;
 }
 
+/* Parallel Coordinates - Capital Budget Input Fields */
+.pc-capital-input {
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 14px;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pc-capital-input:hover {
+  border-color: #adb5bd;
+}
+
+.pc-capital-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
 /* ======================================
    SECTION 16 - SANKEY DIAGRAM STYLES
    ====================================== */

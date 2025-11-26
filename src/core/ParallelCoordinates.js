@@ -840,6 +840,28 @@ window.TEUI.ParallelCoordinates = (function () {
     // Get ROI term multiplier
     const roiMultiplier = CONFIG.roiTerm || 1;
 
+    // Capital Budget row (user-editable inputs)
+    const capitalBudgetRow = document.createElement("tr");
+    capitalBudgetRow.innerHTML = `<td class="pc-row-label"><strong>Capital Budget</strong></td>`;
+    axes.forEach(axis => {
+      const savedValue = localStorage.getItem(`pc_capital_budget_${axis.id}`) || "0";
+      const numValue = parseFloat(savedValue);
+      const formattedValue = formatCurrency(numValue);
+
+      capitalBudgetRow.innerHTML += `
+        <td class="text-center">
+          <input
+            type="text"
+            class="pc-capital-input"
+            data-axis="${axis.id}"
+            value="${formattedValue}"
+            style="width: 100px; text-align: center; border: 1px solid #dee2e6; border-radius: 4px; padding: 4px 8px; font-size: 14px;"
+          />
+        </td>
+      `;
+    });
+    tbody.appendChild(capitalBudgetRow);
+
     // Reference Cost row
     const refCostRow = document.createElement("tr");
     refCostRow.innerHTML = `<td class="pc-row-label pc-reference-cell"><strong>Ref Cost</strong></td>`;
@@ -909,17 +931,120 @@ window.TEUI.ParallelCoordinates = (function () {
     });
     tbody.appendChild(savingsRow);
 
+    // Target Simple ROI row (payback period in years)
+    const roiRow = document.createElement("tr");
+    roiRow.innerHTML = `<td class="pc-row-label"><strong>Target Simple ROI</strong></td>`;
+    roiRow.classList.add('pc-roi-row'); // For easy updates later
+
+    axes.forEach(axis => {
+      const capitalBudget = parseFloat(localStorage.getItem(`pc_capital_budget_${axis.id}`) || "0");
+
+      if (hasPro) {
+        // Get ANNUAL savings (not multiplied by ROI Term)
+        const annualSavingsResult = window.TEUI.pcFinancials.calculateFinancials(
+          axis.id,
+          "savings"
+        );
+        const annualSavings = annualSavingsResult.cost; // Already annual (1yr)
+
+        let roiDisplay;
+        if (axis.id === 'ghgi') {
+          // GHGI is emissions, not financial - can't calculate financial ROI
+          roiDisplay = 'N/A';
+        } else if (capitalBudget === 0) {
+          roiDisplay = '-'; // No investment
+        } else if (annualSavings <= 0) {
+          roiDisplay = 'N/A'; // No savings or negative savings
+        } else {
+          const roiYears = capitalBudget / annualSavings;
+          roiDisplay = `${roiYears.toFixed(1)} yrs`;
+        }
+
+        roiRow.innerHTML += `<td class="text-center">${roiDisplay}</td>`;
+      } else {
+        roiRow.innerHTML += `<td class="text-center">-</td>`;
+      }
+    });
+    tbody.appendChild(roiRow);
+
     table.appendChild(tbody);
     tableWrapper.appendChild(table);
     container.appendChild(tableWrapper);
 
     tableElement = tableWrapper;
 
+    // Attach event listeners to Capital Budget inputs
+    setTimeout(() => {
+      document.querySelectorAll('.pc-capital-input').forEach(input => {
+        input.addEventListener('blur', (e) => {
+          const axisId = e.target.dataset.axis;
+          const rawValue = e.target.value.replace(/[^0-9.]/g, '');
+          const numValue = parseFloat(rawValue) || 0;
+
+          // Save to localStorage
+          localStorage.setItem(`pc_capital_budget_${axisId}`, numValue.toString());
+
+          // Format display
+          e.target.value = formatCurrency(numValue);
+
+          // Recalculate and update ROI row
+          updateROIRow(axes, hasPro);
+        });
+
+        // Allow Enter key to blur (trigger save)
+        input.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            e.target.blur();
+          }
+        });
+      });
+    }, 0);
+
     console.log(
       "[ParallelCoordinates] Table rendered with",
       axes.length,
       "rows"
     );
+  }
+
+  /**
+   * Update ROI row after Capital Budget changes
+   */
+  function updateROIRow(axes, hasPro) {
+    const roiRow = document.querySelector('.pc-roi-row');
+    if (!roiRow) return;
+
+    // Get all ROI cells (skip first cell which is the label)
+    const roiCells = roiRow.querySelectorAll('td:not(.pc-row-label)');
+
+    axes.forEach((axis, index) => {
+      const capitalBudget = parseFloat(localStorage.getItem(`pc_capital_budget_${axis.id}`) || "0");
+
+      if (hasPro) {
+        // Get ANNUAL savings (not multiplied by ROI Term)
+        const annualSavingsResult = window.TEUI.pcFinancials.calculateFinancials(
+          axis.id,
+          "savings"
+        );
+        const annualSavings = annualSavingsResult.cost;
+
+        let roiDisplay;
+        if (axis.id === 'ghgi') {
+          roiDisplay = 'N/A';
+        } else if (capitalBudget === 0) {
+          roiDisplay = '-';
+        } else if (annualSavings <= 0) {
+          roiDisplay = 'N/A';
+        } else {
+          const roiYears = capitalBudget / annualSavings;
+          roiDisplay = `${roiYears.toFixed(1)} yrs`;
+        }
+
+        if (roiCells[index]) {
+          roiCells[index].textContent = roiDisplay;
+        }
+      }
+    });
   }
 
   /**
