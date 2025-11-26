@@ -1483,29 +1483,13 @@ window.TEUI.ParallelCoordinates = (function () {
       // getConfig(mode) returns per-mode config for drag constraints
 
       getDomain: function () {
-        // Read BOTH Target and Reference system types
-        const targetSystem =
-          window.TEUI?.StateManager?.getValue("d_51") || "Heatpump";
-        const refSystem =
-          window.TEUI?.StateManager?.getValue("ref_d_51") || "Heatpump";
-
-        // Check if either uses Gas/Oil (k_52 decimal field)
-        const hasGasOil =
-          targetSystem === "Gas" ||
-          targetSystem === "Oil" ||
-          refSystem === "Gas" ||
-          refSystem === "Oil";
-
-        if (hasGasOil) {
-          // If either uses Gas/Oil, return DISPLAY range (already multiplied by 100 in pcConfig)
-          // pcConfig multiplies k_52 by 100, so 0.50 → 50, 0.98 → 98
-          // This ensures graph data (50-98) matches axis domain (50-98)
-          return { min: 50, max: 98 };
-        } else {
-          // Otherwise both use d_52 percentage field
-          // Union of Electric (90-100) and Heatpump (100-450) = 90-450
-          return { min: 90, max: 450 };
-        }
+        // Fixed domain to accommodate ALL fuel types (Gas/Oil AFUE + Electric + Heatpump COP)
+        // Gas/Oil AFUE: 50-98% (via k_52 × 100 in pcConfig)
+        // Electric: 90-100%
+        // Heatpump: 100-450%
+        // Union: 0-450% (use 0 as min to accommodate dynamic switching)
+        // This prevents graph scale issues when switching fuel types via Decarbonize button
+        return { min: 0, max: 450 };
       },
 
       getConfig: function (mode) {
