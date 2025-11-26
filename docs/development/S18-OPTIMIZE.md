@@ -4,6 +4,12 @@
 **Branch**: S18-19-PARALLEL-COORDINATES
 **Status**: Planning Phase
 
+**📋 Quick Reference:** For fast implementation of interactive axes and financial calculations, see [S18-CHEATSHEET.md](./S18-CHEATSHEET.md) (650 lines)
+
+**Pending next features**: Decarbonize Button, Optimize Button, Super Optimize Button
+
+- 'Decarbonize', to right of 'Refresh Graph' button: when pressed, sets Target (no Reference model value setting) to have d_15=TGS4, d_39 conditionally as Pt.3 Mass Timber if d_12 is not C-Residential and Pt.9 Stick Frame if it is, then d_51 to 'Heatpump' with d_52 as 300%, and d_53 as 42%, then g_67 as 'Efficient', then d_113 as Heatpump and f_113 as 12.5. 'This button effectively removes carbon intensive fuels from systems and sets efficiencies at a value that makes the electrified equipment economical'. This is what the tooltip can say. 
+
 ---
 
 ## Table of Contents
@@ -2934,21 +2940,115 @@ Pattern A sections maintain separate TargetState and ReferenceState objects, and
 - ✅ Calculations use correct values (no cross-contamination)
 - ✅ Graph rendering uses correct values from d_109/ref_d_109
 
-##### HEAT% (Heating System Efficiency) - Section 13
+##### HEAT% (Heating System Efficiency) - Section 13 ⏳ TODO
+
+**Implementation Date:** TBD
+
 ```javascript
 'heating_efficiency': {
-  targetField: 'f_113',     // Heating System COP
-  refField: 'ref_f_113',
-  min: 0.8,                 // Typical minimum for heat pumps
-  max: 10.0,                // High-efficiency heat pump max
-  step: 0.1,                // Decimal precision for COP
-  unit: '',                 // COP is unitless
-  label: 'HEAT COP',
+  // ⚠️ MULTI-FUEL CONDITIONAL PATTERN (similar to SHW%)
+  // Display: Shows h_113 (calculated COP%) × 100 for display as percentage
+  // Edit: Writes to different fields based on fuel type
+
+  // Heatpump/Electric path (primary)
+  targetField: 'f_113',              // HSPF slider (user editable)
+  targetFieldMultiplier: null,       // No multiplier - HSPF → COP conversion happens in dragEnded()
+
+  // Oil/Gas AFUE path (alternative)
+  targetFieldAlt: 'j_115',           // Gas/Oil AFUE
+  targetFieldAltMultiplier: 100,     // j_115 * 100 (AFUE 0.90 → 90%)
+
+  targetFieldSelector: 'd_113',      // Heating system type selector
+
+  // Reference mode equivalents
+  referenceField: 'ref_f_113',
+  referenceFieldMultiplier: null,
+  referenceFieldAlt: 'ref_j_115',
+  referenceFieldAltMultiplier: 100,
+  referenceFieldSelector: 'ref_d_113',
+
+  min: 100,                          // 100% (COP 1.0 for electric resistance)
+  max: 586,                          // 586% (HSPF 20, COP 5.86) - highest efficient heatpump
+  step: 5,                           // 5% intervals (100, 105, 110, ..., 585, 586)
+  unit: '%',
+  label: 'HEAT',
   owningSection: 'sect13'
 }
 ```
 
-**Note:** HEAT uses COP (Coefficient of Performance), not percentage. Range 0.8-10.0 with 0.1 step increments.
+**⚠️ HSPF Inversion Formula (Heatpump Only):**
+
+Section 13 calculates `h_113` (COPh) from HSPF using Excel formula:
+```
+h_113 = IF(d_113="Heatpump", (f_113 / 3.412), 1)
+```
+
+To allow dragging in S18, we need to **invert** this formula to set HSPF from COP%:
+```javascript
+// User drags node to 400% (COP 4.0)
+const displayPercent = 400;
+const cop = displayPercent / 100;           // 4.0
+const hspf = cop * 3.412;                   // 13.648
+const hspfRounded = Math.round(hspf * 100) / 100;  // 13.65
+
+// Write hspfRounded to f_113 (or ref_f_113)
+// Section 13 will recalculate h_113 = 13.65 / 3.412 = 4.0
+```
+
+**Field Mapping:**
+
+| Fuel Type | Selector (d_113) | Display Field | Write Field | Formula |
+|-----------|------------------|---------------|-------------|---------|
+| Heatpump | "Heatpump" | h_113 (COPh) | f_113 (HSPF) | COP = HSPF / 3.412 |
+| Electric | "Electric" | h_113 = 1 | f_113 (N/A) | Fixed at 100% |
+| Gas | "Gas" | j_115 (AFUE) | j_115 | Direct AFUE |
+| Oil | "Oil" | j_115 (AFUE) | j_115 | Direct AFUE |
+
+**Storage Format:**
+- **Heatpump:** Display 400%, write HSPF 13.65 to f_113
+- **Electric:** Display 100%, h_113 = 1 (calculated, not editable)
+- **Gas/Oil:** Display 90%, write AFUE 0.90 to j_115
+
+**Interactive Behavior:**
+- Heatpump/Electric: Snaps to 5% intervals (100, 105, 110, ..., 585, 586)
+- Gas/Oil: Uses AFUE slider (50-100% in 1% intervals)
+- Modal shows current efficiency percentage
+- Higher HEAT% = better heating system efficiency
+
+**Special Handling in dragEnded():**
+
+```javascript
+// After determining clamped display value (e.g., 400%)
+if (fuelType === "Heatpump") {
+  const cop = clampedValue / 100;           // 4.0
+  const hspf = cop * 3.412;                 // 13.648
+  const hspfRounded = Math.round(hspf * 100) / 100;  // 13.65
+  valueToStore = hspfRounded.toString();    // "13.65"
+
+  // Write to f_113 (HSPF slider)
+  // Section 13 will recalculate h_113 = 13.65 / 3.412 = 4.0 (400%)
+} else if (fuelType === "Electric") {
+  // Electric resistance is fixed at COP 1.0 (100%)
+  // No user input needed, h_113 is calculated as 1
+  return; // Cannot edit electric
+} else {
+  // Gas/Oil: Use AFUE directly (j_115)
+  // Same pattern as SHW% Gas/Oil
+}
+```
+
+**Pattern A Flow:**
+1. User drags HEAT% Target node to 400%
+2. `dragEnded()` determines which state to update (Target) based on node color
+3. Checks fuel type from d_113 (e.g., "Heatpump")
+4. Converts COP% to HSPF: 400% → COP 4.0 → HSPF 13.65
+5. Updates TargetState with f_113 = "13.65"
+6. Updates StateManager with f_113 = "13.65"
+7. Calls `sect13.calculateAll()` to recalculate h_113 = 13.65 / 3.412 = 4.0
+8. Calls `sect13.ModeManager.refreshUI()` to update HSPF slider to 13.65
+9. If Section 13 is in Target mode, shows HSPF 13.65; if in Reference mode, shows Reference values
+
+**Note:** This pattern is similar to SHW% with multi-fuel conditional selection, but adds HSPF inversion for heatpump systems.
 
 ##### MVHR% (Mechanical Ventilation Heat Recovery) - Section 13
 ```javascript
