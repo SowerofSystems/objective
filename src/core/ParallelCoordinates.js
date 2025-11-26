@@ -1243,12 +1243,24 @@ window.TEUI.ParallelCoordinates = (function () {
 
     if (d_51 === "Oil" || d_51 === "Gas") {
       // Switch to Heatpump with COP 3.0 (300%)
-      // Pattern A: Update TargetState + StateManager + calculateAll + refreshUI
+      // CRITICAL: Set dropdown FIRST (d_51), recalculate, THEN set efficiency (d_52)
+      // This ensures field switching from k_52 (Oil/Gas AFUE) to d_52 (Heatpump COP)
+
+      // Step 1: Set fuel type to Heatpump
       if (sect07?.TargetState) {
         sect07.TargetState.setValue("d_51", "Heatpump");
-        sect07.TargetState.setValue("d_52", "300");
       }
       stateManager.setValue("d_51", "Heatpump", "user-modified");
+
+      // Step 2: Let section recalculate with new fuel type
+      if (sect07?.calculateAll) {
+        sect07.calculateAll();
+      }
+
+      // Step 3: Now set efficiency (d_52 is now the active field for Heatpump)
+      if (sect07?.TargetState) {
+        sect07.TargetState.setValue("d_52", "300");
+      }
       stateManager.setValue("d_52", "300", "user-modified");
 
       console.log("[Decarbonize] SHW: " + d_51 + " → Heatpump @ 300% COP");
@@ -1288,12 +1300,24 @@ window.TEUI.ParallelCoordinates = (function () {
 
     if (d_113 === "Oil" || d_113 === "Gas") {
       // Switch to Heatpump with HSPF 12.5 (COP ~3.66)
-      // Pattern A: Update TargetState + StateManager + calculateAll + refreshUI
+      // CRITICAL: Set dropdown FIRST (d_113), recalculate, THEN set efficiency (f_113)
+      // This ensures field switching from j_115 (Oil/Gas AFUE) to f_113 (Heatpump HSPF)
+
+      // Step 1: Set fuel type to Heatpump
       if (sect13?.TargetState) {
         sect13.TargetState.setValue("d_113", "Heatpump");
-        sect13.TargetState.setValue("f_113", "12.5");
       }
       stateManager.setValue("d_113", "Heatpump", "user-modified");
+
+      // Step 2: Let section recalculate with new fuel type
+      if (sect13?.calculateAll) {
+        sect13.calculateAll();
+      }
+
+      // Step 3: Now set efficiency (f_113 is now the active field for Heatpump)
+      if (sect13?.TargetState) {
+        sect13.TargetState.setValue("f_113", "12.5");
+      }
       stateManager.setValue("f_113", "12.5", "user-modified");
 
       console.log("[Decarbonize] Heating: " + d_113 + " → Heatpump @ HSPF 12.5 (COP 3.66)");
