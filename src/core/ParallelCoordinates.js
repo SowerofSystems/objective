@@ -1130,6 +1130,56 @@ window.TEUI.ParallelCoordinates = (function () {
       unit: '',                   // No unit - label already says ACH50
       label: 'ACH50',
       owningSection: 'sect12'     // Section 12
+    },
+
+    // HEAT% - Heating System Efficiency (Multi-fuel conditional)
+    // Uses conditional config based on heating fuel type
+    // Display: h_113 (COP%) × 100 for visual percentage
+    // Edit: f_113 (HSPF) for heatpump, j_115 (AFUE) for gas/oil
+    // Range: 100% (COP 1.0 electric) to 586% (HSPF 20, COP 5.86 heatpump)
+    // Special: HSPF inversion formula: HSPF = COP × 3.412
+    'heating_efficiency': {
+      // This is a conditional axis - config determined at runtime based on fuel type
+      getConfig: function(mode) {
+        const stateManager = window.TEUI.StateManager;
+        if (!stateManager) return null;
+
+        // Get heating system type from selector field
+        const selectorField = mode === 'target' ? 'd_113' : 'ref_d_113';
+        const fuelType = stateManager.getValue(selectorField);
+
+        // Return config based on fuel type
+        if (fuelType === 'Heatpump') {
+          return {
+            targetField: 'f_113',              // HSPF slider (user editable)
+            refField: 'ref_f_113',
+            min: 100,                          // 100% (COP 1.0)
+            max: 586,                          // 586% (HSPF 20, COP 5.86)
+            step: 5,                           // 5% intervals
+            unit: '%',
+            label: 'HEAT',
+            owningSection: 'sect13',
+            isHeatpump: true,                  // Flag for HSPF conversion
+            isDecimal: true                    // Store HSPF with decimal precision
+          };
+        } else if (fuelType === 'Electric') {
+          // Electric resistance is fixed at 100%, not editable
+          return null; // Cannot drag electric nodes
+        } else {
+          // Gas or Oil - use AFUE (j_115)
+          return {
+            targetField: 'j_115',              // AFUE field
+            refField: 'ref_j_115',
+            min: 50,                           // 50% AFUE minimum
+            max: 100,                          // 100% AFUE maximum
+            step: 1,                           // 1% intervals
+            unit: '%',
+            label: 'HEAT',
+            owningSection: 'sect13',
+            storageMultiplier: 0.01            // Display 90%, store 0.90
+          };
+        }
+      }
     }
   };
 
@@ -1307,6 +1357,17 @@ window.TEUI.ParallelCoordinates = (function () {
     let storageValue = clampedValue;
     if (axisConfig.storageMultiplier) {
       storageValue = clampedValue * axisConfig.storageMultiplier;
+    }
+
+    // ⚠️ HSPF INVERSION: Convert COP percentage to HSPF for heatpump systems
+    // User drags HEAT% node to 400% → COP 4.0 → HSPF 13.65 (stored in f_113)
+    // Formula: HSPF = (percentage / 100) * 3.412
+    // Section 13 will recalculate: h_113 = f_113 / 3.412 (display as COP)
+    if (axisConfig.isHeatpump) {
+      const cop = clampedValue / 100;           // 400% → 4.0
+      const hspf = cop * 3.412;                 // 4.0 → 13.648
+      storageValue = Math.round(hspf * 100) / 100;  // 13.65 (2 decimal places)
+      console.log(`[HEAT% Heatpump] COP ${cop.toFixed(2)} (${clampedValue}%) → HSPF ${storageValue}`);
     }
 
     // ⚠️ DISCRETE DROPDOWN: Map snapped percentage to dropdown string
