@@ -850,7 +850,13 @@ window.TEUI.ParallelCoordinates = (function () {
           "reference"
         );
         const annualizedCost = result.cost * roiMultiplier;
-        refCostRow.innerHTML += `<td class="text-center pc-reference-cell">${formatCurrency(annualizedCost)}</td>`;
+
+        // Special formatting for GHGI (emissions, not currency)
+        if (axis.id === 'ghgi') {
+          refCostRow.innerHTML += `<td class="text-center pc-reference-cell">${annualizedCost.toFixed(2)}</td>`;
+        } else {
+          refCostRow.innerHTML += `<td class="text-center pc-reference-cell">${formatCurrency(annualizedCost)}</td>`;
+        }
       } else {
         refCostRow.innerHTML += `<td class="text-center pc-reference-cell">$0.00</td>`;
       }
@@ -867,7 +873,13 @@ window.TEUI.ParallelCoordinates = (function () {
           "target"
         );
         const annualizedCost = result.cost * roiMultiplier;
-        targetCostRow.innerHTML += `<td class="text-center pc-target-cell">${formatCurrency(annualizedCost)}</td>`;
+
+        // Special formatting for GHGI (emissions, not currency)
+        if (axis.id === 'ghgi') {
+          targetCostRow.innerHTML += `<td class="text-center pc-target-cell">${annualizedCost.toFixed(2)}</td>`;
+        } else {
+          targetCostRow.innerHTML += `<td class="text-center pc-target-cell">${formatCurrency(annualizedCost)}</td>`;
+        }
       } else {
         targetCostRow.innerHTML += `<td class="text-center pc-target-cell">$0.00</td>`;
       }
@@ -884,7 +896,13 @@ window.TEUI.ParallelCoordinates = (function () {
           "savings"
         );
         const annualizedSavings = result.cost * roiMultiplier;
-        savingsRow.innerHTML += `<td class="text-center text-success">${formatCurrency(annualizedSavings)}</td>`;
+
+        // Special formatting for GHGI (emissions, not currency)
+        if (axis.id === 'ghgi') {
+          savingsRow.innerHTML += `<td class="text-center text-success">${annualizedSavings.toFixed(2)}</td>`;
+        } else {
+          savingsRow.innerHTML += `<td class="text-center text-success">${formatCurrency(annualizedSavings)}</td>`;
+        }
       } else {
         savingsRow.innerHTML += `<td class="text-center text-success">$0.00</td>`;
       }
