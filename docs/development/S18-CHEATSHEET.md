@@ -305,6 +305,28 @@ if (selectorValue === "Oil" || selectorValue === "Gas") {
 }
 ```
 
+### Pattern H: Auto Fuel-Type Switching
+
+**Used by:** HEAT% (Gas/Oil → Heatpump when dragging past 100%)
+
+```javascript
+// When user drags HEAT% node past 100% efficiency:
+// 1. Gas/Oil AFUE maxes out at 100% (physical limit)
+// 2. User drags to 105% → Auto-switch to Heatpump mode
+// 3. Selector field (d_113 or ref_d_113) changes to "Heatpump"
+// 4. HSPF inversion activates: 105% → COP 1.05 → HSPF 3.58
+// 5. Section 13 recalculates and displays new fuel type
+// 6. Graph refreshes with heatpump efficiency curve
+
+// Example flow:
+// Initial: Gas @ 90% (j_115 = 0.90)
+// User drags to 105%
+// → d_113 = "Heatpump"
+// → f_113 = 3.58 (HSPF)
+// → h_113 = 1.05 (COP)
+// → Display: 105%
+```
+
 ---
 
 ## Quick Field Reference

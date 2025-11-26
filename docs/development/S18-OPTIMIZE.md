@@ -2995,6 +2995,15 @@ const hspfRounded = Math.round(hspf * 100) / 100;  // 13.65
 // Section 13 will recalculate h_113 = 13.65 / 3.412 = 4.0
 ```
 
+**Auto Fuel-Type Switching:**
+
+When user drags HEAT% past 100% efficiency while in Gas/Oil mode:
+- Gas/Oil AFUE physically limited to 100% maximum
+- Dragging to 105% automatically switches d_113 (or ref_d_113) to "Heatpump"
+- HSPF inversion activates: 105% → COP 1.05 → HSPF 3.58
+- Section 13 recalculates and updates UI with new fuel type
+- Allows seamless exploration of efficiency ranges beyond AFUE limits
+
 **Field Mapping:**
 
 | Fuel Type | Selector (d_113) | Display Field | Write Field | Formula |
