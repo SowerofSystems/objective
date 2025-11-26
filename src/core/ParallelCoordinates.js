@@ -265,10 +265,7 @@ window.TEUI.ParallelCoordinates = (function () {
       decarbonizeBtn.className = "btn btn-success btn-sm";
       decarbonizeBtn.innerHTML = "Decarbonize";
       decarbonizeBtn.style.fontWeight = "500";
-      decarbonizeBtn.addEventListener("click", () => {
-        console.log("[ParallelCoordinates] Decarbonize action triggered");
-        // TODO: Wire up decarbonize logic
-      });
+      decarbonizeBtn.addEventListener("click", handleDecarbonize);
 
       // Optimize button (teal)
       optimizeBtn = document.createElement("button");
@@ -1188,6 +1185,84 @@ window.TEUI.ParallelCoordinates = (function () {
   // ========================================================================
   // CONTROL HANDLERS
   // ========================================================================
+
+  /**
+   * Decarbonize optimization
+   * Minimize GHGI by switching fossil fuel systems to heat pumps
+   */
+  function handleDecarbonize() {
+    console.log("[ParallelCoordinates] Decarbonize action triggered");
+
+    const stateManager = window.TEUI?.StateManager;
+    if (!stateManager) {
+      console.error("[ParallelCoordinates] StateManager not available");
+      return;
+    }
+
+    let changesMade = false;
+
+    // ========================================================================
+    // Part 1: Service Hot Water (S07 - SHW%)
+    // ========================================================================
+    const d_51 = stateManager.getValue("d_51"); // SHW fuel type
+
+    if (d_51 === "Oil" || d_51 === "Gas") {
+      // Switch to Heatpump with COP 3.0 (300%)
+      stateManager.setValue("d_51", "Heatpump", "user-modified");
+      stateManager.setValue("d_52", "300", "user-modified");
+      console.log("[Decarbonize] SHW: " + d_51 + " → Heatpump @ 300% COP");
+      changesMade = true;
+    } else if (d_51 === "Heatpump") {
+      // Already Heatpump - ensure minimum 300% COP
+      const d_52 = parseFloat(stateManager.getValue("d_52")) || 0;
+      if (d_52 < 300) {
+        stateManager.setValue("d_52", "300", "user-modified");
+        console.log("[Decarbonize] SHW: Heatpump COP raised from " + d_52 + "% to 300%");
+        changesMade = true;
+      } else {
+        console.log("[Decarbonize] SHW: Already Heatpump @ " + d_52 + "% (no change)");
+      }
+    } else if (d_51 === "Electric") {
+      console.log("[Decarbonize] SHW: Electric resistance (no change needed)");
+    }
+
+    // ========================================================================
+    // Part 2: Space Heating (S13 - HEAT%)
+    // ========================================================================
+    const d_113 = stateManager.getValue("d_113"); // Heating fuel type
+
+    if (d_113 === "Oil" || d_113 === "Gas") {
+      // Switch to Heatpump with HSPF 12.5 (COP ~3.66)
+      stateManager.setValue("d_113", "Heatpump", "user-modified");
+      stateManager.setValue("f_113", "12.5", "user-modified");
+      console.log("[Decarbonize] Heating: " + d_113 + " → Heatpump @ HSPF 12.5 (COP 3.66)");
+      changesMade = true;
+    } else if (d_113 === "Heatpump") {
+      // Already Heatpump - ensure minimum HSPF 12.5
+      const f_113 = parseFloat(stateManager.getValue("f_113")) || 0;
+      if (f_113 < 12.5) {
+        stateManager.setValue("f_113", "12.5", "user-modified");
+        console.log("[Decarbonize] Heating: Heatpump HSPF raised from " + f_113 + " to 12.5");
+        changesMade = true;
+      } else {
+        console.log("[Decarbonize] Heating: Already Heatpump @ HSPF " + f_113 + " (no change)");
+      }
+    } else if (d_113 === "Electric") {
+      console.log("[Decarbonize] Heating: Electric resistance (no change needed)");
+    }
+
+    // ========================================================================
+    // Refresh graph to show updates
+    // ========================================================================
+    if (changesMade) {
+      console.log("[Decarbonize] Optimization complete - refreshing graph");
+      setTimeout(() => {
+        refresh();
+      }, 100);
+    } else {
+      console.log("[Decarbonize] No changes needed - already optimized");
+    }
+  }
 
   /**
    * Toggle fullscreen mode

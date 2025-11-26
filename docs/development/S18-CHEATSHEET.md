@@ -778,12 +778,144 @@ if (axis.id === 'ghgi') {
 
 ---
 
+---
+
+## Optimization Button Logic
+
+### Overview
+
+Three optimization buttons provide automated parameter adjustments:
+- **Decarbonize** (Green): Minimize GHGI by switching to heat pumps
+- **Optimize** (Teal): Balanced cost/performance optimization
+- **Super Optimize** (Orange): Aggressive multi-objective optimization
+
+### Decarbonize Button Logic
+
+**Purpose:** Minimize greenhouse gas emissions by transitioning fossil fuel systems to heat pumps
+
+**Implementation Steps:**
+
+1. **Service Hot Water (S07 - SHW%)**
+   ```javascript
+   // Read current fuel type
+   const d_51 = StateManager.getValue('d_51'); // "Oil" | "Gas" | "Electric" | "Heatpump"
+
+   // Decision tree
+   if (d_51 === "Oil" || d_51 === "Gas") {
+     // Switch to Heatpump with COP 3.0 (300%)
+     StateManager.setValue('d_51', 'Heatpump', 'user-modified');
+     StateManager.setValue('d_52', '300', 'user-modified'); // 300% efficiency
+   } else if (d_51 === "Heatpump") {
+     // Already Heatpump - ensure minimum 300% COP
+     const d_52 = parseFloat(StateManager.getValue('d_52')) || 0;
+     if (d_52 < 300) {
+       StateManager.setValue('d_52', '300', 'user-modified');
+     }
+     // If already >= 300%, do nothing
+   } else if (d_51 === "Electric") {
+     // Electric resistance is already zero-carbon at source - no change needed
+     // (Note: Electricity may have emissions depending on grid mix,
+     //  but that's captured in GHGI calculation, not efficiency)
+   }
+   ```
+
+2. **Space Heating (S13 - HEAT%)**
+   ```javascript
+   // Read current fuel type
+   const d_113 = StateManager.getValue('d_113'); // "Oil" | "Gas" | "Electric" | "Heatpump"
+
+   // Decision tree
+   if (d_113 === "Oil" || d_113 === "Gas") {
+     // Switch to Heatpump with HSPF 12.5 (COP ~3.66)
+     StateManager.setValue('d_113', 'Heatpump', 'user-modified');
+     StateManager.setValue('f_113', '12.5', 'user-modified'); // HSPF slider
+     // Section 13 will auto-calculate h_113 (COP) from f_113 (HSPF)
+     // Formula: h_113 = f_113 / 3.412 = 12.5 / 3.412 ≈ 3.66 COP (366%)
+   } else if (d_113 === "Heatpump") {
+     // Already Heatpump - ensure minimum HSPF 12.5
+     const f_113 = parseFloat(StateManager.getValue('f_113')) || 0;
+     if (f_113 < 12.5) {
+       StateManager.setValue('f_113', '12.5', 'user-modified');
+     }
+     // If already >= 12.5, do nothing
+   } else if (d_113 === "Electric") {
+     // Electric resistance is already zero-carbon at source - no change needed
+   }
+   ```
+
+3. **Trigger Recalculations**
+   ```javascript
+   // S07 recalculation (if changed)
+   if (window.TEUI?.SectionModules?.sect07) {
+     window.TEUI.SectionModules.sect07.calculateAll();
+     window.TEUI.SectionModules.sect07.ModeManager.refreshUI();
+   }
+
+   // S13 recalculation (if changed)
+   if (window.TEUI?.SectionModules?.sect13) {
+     window.TEUI.SectionModules.sect13.calculateAll();
+     window.TEUI.SectionModules.sect13.ModeManager.refreshUI();
+   }
+
+   // Refresh S18 graph
+   setTimeout(() => {
+     window.TEUI.ParallelCoordinates.refresh();
+   }, 100);
+   ```
+
+**Field Reference:**
+
+| Section | Field | Type | Values | Notes |
+|---------|-------|------|--------|-------|
+| S07 | d_51 | Dropdown | Oil, Gas, Electric, Heatpump | SHW fuel type |
+| S07 | d_52 | Slider | 100-450 | SHW efficiency % (Heatpump/Electric) |
+| S07 | k_52 | Decimal | 0.50-0.98 | SHW AFUE (Oil/Gas) |
+| S13 | d_113 | Dropdown | Oil, Gas, Electric, Heatpump | Heating fuel type |
+| S13 | f_113 | Slider | 6.8-20.0 | HSPF (Heatpump only) |
+| S13 | h_113 | Calculated | - | COP = f_113 ÷ 3.412 |
+| S13 | j_115 | Decimal | 0.50-1.00 | AFUE (Oil/Gas) |
+
+**Target Values:**
+- SHW Heatpump: 300% COP (d_52 = "300")
+- Heating Heatpump: HSPF 12.5 (f_113 = "12.5") → COP 3.66 (366%)
+
+**Storage Format:**
+- `d_51`, `d_113`: String values ("Heatpump", "Electric", "Oil", "Gas")
+- `d_52`: String percentage ("300" = 300%)
+- `f_113`: String decimal ("12.5" = HSPF 12.5)
+- `k_52`, `j_115`: String decimal ("0.90" = 90% AFUE)
+
+**User Feedback:**
+```javascript
+console.log('[Decarbonize] SHW: Oil/Gas → Heatpump @ 300% COP');
+console.log('[Decarbonize] Heating: Gas → Heatpump @ HSPF 12.5 (COP 3.66)');
+console.log('[Decarbonize] Optimization complete');
+```
+
+**Testing Checklist:**
+- [ ] Oil SHW → Heatpump @ 300%
+- [ ] Gas SHW → Heatpump @ 300%
+- [ ] Electric SHW → No change
+- [ ] Heatpump SHW < 300% → Raised to 300%
+- [ ] Heatpump SHW >= 300% → No change
+- [ ] Oil Heating → Heatpump @ HSPF 12.5
+- [ ] Gas Heating → Heatpump @ HSPF 12.5
+- [ ] Electric Heating → No change
+- [ ] Heatpump Heating < 12.5 → Raised to HSPF 12.5
+- [ ] Heatpump Heating >= 12.5 → No change
+- [ ] Graph refreshes with new values
+- [ ] GHGI axis shows reduction
+- [ ] No mode switching occurs
+
+---
+
 ## Version History
 
 | Date | Version | Changes |
 |------|---------|---------|
 | Nov 25, 2025 | 1.0 | Initial cheatsheet - 5 interactive axes, 4 financial formulas complete |
 | Nov 26, 2025 | 1.1 | Added Capital Budget & Simple ROI implementation guide |
+| Nov 26, 2025 | 1.2 | Added Decarbonize button logic specification |
 
 ---
 
