@@ -6,6 +6,24 @@
  * building configurations across 14 key performance parameters.
  *
  * Architecture follows S16C.js pattern with D3.js v7 native support.
+ *
+ * @agent NOVA - November 25, 2025
+ * Named for the stellar explosion that transforms a star system at critical threshold,
+ * like our auto fuel-type switching where Gas/Oil becomes Heatpump at 100% efficiency.
+ * A nova represents dramatic transformation and the creation of something brighter.
+ *
+ * Key implementations by NOVA:
+ * - Interactive node dragging with Pattern A (mode-aware state updates)
+ * - Multi-fuel conditional editing (SHW%, HEAT%)
+ * - HSPF inversion formula for heatpump COP conversion
+ * - Auto fuel-type switching (Gas/Oil → Heatpump at >100%)
+ * - Real-time COP/HSPF modal display
+ * - Discrete dropdown pattern (nGains% PHPP method)
+ * - Dropdown flip pattern (ACH50 measured toggle)
+ * - Financial calculations integration (pcFinancials.js)
+ * - 5 interactive axes with 8 sophisticated patterns (A-H)
+ *
+ * Standing alongside: COSMO, HELIOS, ORIONIS, STELLARIA, ANDROMEDA, in Technical.md
  */
 
 // Ensure namespace exists
