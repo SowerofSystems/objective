@@ -1220,6 +1220,8 @@ window.TEUI.ParallelCoordinates = (function () {
   /**
    * Decarbonize optimization
    * Minimize GHGI by switching fossil fuel systems to heat pumps
+   *
+   * Pattern: Follow dragEnded() architecture - update TargetState + StateManager + refresh sections
    */
   function handleDecarbonize() {
     console.log("[ParallelCoordinates] Decarbonize action triggered");
@@ -1236,12 +1238,19 @@ window.TEUI.ParallelCoordinates = (function () {
     // ========================================================================
     // Part 1: Service Hot Water (S07 - SHW%)
     // ========================================================================
+    const sect07 = window.TEUI?.SectionModules?.sect07;
     const d_51 = stateManager.getValue("d_51"); // SHW fuel type
 
     if (d_51 === "Oil" || d_51 === "Gas") {
       // Switch to Heatpump with COP 3.0 (300%)
+      // Pattern A: Update TargetState + StateManager + calculateAll + refreshUI
+      if (sect07?.TargetState) {
+        sect07.TargetState.setValue("d_51", "Heatpump");
+        sect07.TargetState.setValue("d_52", "300");
+      }
       stateManager.setValue("d_51", "Heatpump", "user-modified");
       stateManager.setValue("d_52", "300", "user-modified");
+
       console.log("[Decarbonize] SHW: " + d_51 + " → Heatpump @ 300% COP");
       changes.push(d_51 + " SHW → Heatpump 300%");
       changesMade = true;
@@ -1249,33 +1258,71 @@ window.TEUI.ParallelCoordinates = (function () {
       // Already Heatpump - ensure minimum 300% COP
       const d_52 = parseFloat(stateManager.getValue("d_52")) || 0;
       if (d_52 < 300) {
+        if (sect07?.TargetState) {
+          sect07.TargetState.setValue("d_52", "300");
+        }
         stateManager.setValue("d_52", "300", "user-modified");
+
         console.log("[Decarbonize] SHW: Heatpump COP raised from " + d_52 + "% to 300%");
         changes.push("SHW raised to 300%");
         changesMade = true;
       }
     }
 
+    // Trigger S07 recalculation if changes were made
+    if (sect07 && changesMade) {
+      if (sect07.calculateAll) {
+        sect07.calculateAll();
+      }
+      if (sect07.ModeManager?.refreshUI) {
+        sect07.ModeManager.refreshUI();
+      }
+    }
+
     // ========================================================================
     // Part 2: Space Heating (S13 - HEAT%)
     // ========================================================================
+    const sect13 = window.TEUI?.SectionModules?.sect13;
     const d_113 = stateManager.getValue("d_113"); // Heating fuel type
+    let heatChangedMade = false;
 
     if (d_113 === "Oil" || d_113 === "Gas") {
       // Switch to Heatpump with HSPF 12.5 (COP ~3.66)
+      // Pattern A: Update TargetState + StateManager + calculateAll + refreshUI
+      if (sect13?.TargetState) {
+        sect13.TargetState.setValue("d_113", "Heatpump");
+        sect13.TargetState.setValue("f_113", "12.5");
+      }
       stateManager.setValue("d_113", "Heatpump", "user-modified");
       stateManager.setValue("f_113", "12.5", "user-modified");
+
       console.log("[Decarbonize] Heating: " + d_113 + " → Heatpump @ HSPF 12.5 (COP 3.66)");
       changes.push(d_113 + " Heating → Heatpump HSPF 12.5");
       changesMade = true;
+      heatChangedMade = true;
     } else if (d_113 === "Heatpump") {
       // Already Heatpump - ensure minimum HSPF 12.5
       const f_113 = parseFloat(stateManager.getValue("f_113")) || 0;
       if (f_113 < 12.5) {
+        if (sect13?.TargetState) {
+          sect13.TargetState.setValue("f_113", "12.5");
+        }
         stateManager.setValue("f_113", "12.5", "user-modified");
+
         console.log("[Decarbonize] Heating: Heatpump HSPF raised from " + f_113 + " to 12.5");
         changes.push("Heating raised to HSPF 12.5");
         changesMade = true;
+        heatChangedMade = true;
+      }
+    }
+
+    // Trigger S13 recalculation if changes were made
+    if (sect13 && heatChangedMade) {
+      if (sect13.calculateAll) {
+        sect13.calculateAll();
+      }
+      if (sect13.ModeManager?.refreshUI) {
+        sect13.ModeManager.refreshUI();
       }
     }
 
@@ -1288,7 +1335,7 @@ window.TEUI.ParallelCoordinates = (function () {
       console.log("[Decarbonize] Optimization complete - refreshing graph");
       setTimeout(() => {
         refresh();
-      }, 100);
+      }, 200); // Longer delay to let section calculations propagate
     } else {
       // Check if already fully optimized
       const isFullyOptimized =
