@@ -1,28 +1,10 @@
 /**
  * ParallelCoordinates.js
  * Section 18 Interactive Parallel Coordinates Optimization Visualization
- *
  * Renders a two-line parallel coordinates graph comparing Target vs Reference
  * building configurations across 14 key performance parameters.
  *
- * Architecture follows S16C.js pattern with D3.js v7 native support.
- *
  * @agent NOVA - November 25, 2025
- * Named for the stellar explosion that transforms a star system at critical threshold,
- * like our auto fuel-type switching where Gas/Oil becomes Heatpump at 100% efficiency.
- * A nova represents dramatic transformation and the creation of something brighter.
- *
- * Key implementations by NOVA:
- * - Interactive node dragging with Pattern A (mode-aware state updates)
- * - Multi-fuel conditional editing (SHW%, HEAT%)
- * - HSPF inversion formula for heatpump COP conversion
- * - Auto fuel-type switching (Gas/Oil → Heatpump at >100%)
- * - Real-time COP/HSPF modal display
- * - Discrete dropdown pattern (nGains% PHPP method)
- * - Dropdown flip pattern (ACH50 measured toggle)
- * - Financial calculations integration (pcFinancials.js)
- * - 5 interactive axes with 8 sophisticated patterns (A-H)
- *
  * Standing alongside: COSMO, HELIOS, ORIONIS, STELLARIA, ANDROMEDA, in Technical.md
  */
 
@@ -792,6 +774,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // ====================================================================
     // INTERACTIVE DRAGGING - Apply to editable nodes
     // ====================================================================
+
     initializeDragBehavior(
       svg,
       axes,
@@ -1232,6 +1215,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // ========================================================================
     // Part 1: Service Hot Water (S07 - SHW%)
     // ========================================================================
+
     const sect07 = window.TEUI?.SectionModules?.sect07;
     const d_51 = stateManager.getValue("d_51"); // SHW fuel type
 
@@ -1288,6 +1272,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // ========================================================================
     // Part 2: Space Heating (S13 - HEAT%)
     // ========================================================================
+
     const sect13 = window.TEUI?.SectionModules?.sect13;
     const d_113 = stateManager.getValue("d_113"); // Heating fuel type
     let heatChangedMade = false;
@@ -1347,6 +1332,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // ========================================================================
     // Show user feedback and refresh graph
     // ========================================================================
+
     if (changesMade) {
       const message = changes.join(", ");
       showFeedback(message, 6000);
@@ -1390,6 +1376,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // Part 1: Service Hot Water (S07) - SHW Efficiency 300%
     // CRITICAL: Must switch to Heatpump if not already (like Decarbonize pattern)
     // ========================================================================
+
     const sect07 = window.TEUI?.SectionModules?.sect07;
     const d_51 = stateManager.getValue("d_51");
 
@@ -1417,6 +1404,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // ========================================================================
     // Part 2: DWHR (S07) - 50%
     // ========================================================================
+
     if (sect07?.TargetState) {
       sect07.TargetState.setValue("d_53", "50");
     }
@@ -1436,6 +1424,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // ========================================================================
     // Part 3: Heating Efficiency (S13) - Conditional on fuel type
     // ========================================================================
+
     const sect13 = window.TEUI?.SectionModules?.sect13;
     const d_113 = stateManager.getValue("d_113");
 
@@ -1479,6 +1468,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // Part 5: Thermal Bridging (S11) - 20%
     // FIXED: d_97 is the TB% slider, not d_88 (which is Door area)
     // ========================================================================
+
     const sect11 = window.TEUI?.SectionModules?.sect11;
     if (sect11?.TargetState) {
       sect11.TargetState.setValue("d_97", "20");
@@ -1500,6 +1490,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // Part 6: Net Gains (S10) - NRC 60%
     // FIXED: d_80 belongs to Section 10, not Section 11
     // ========================================================================
+
     const sect10 = window.TEUI?.SectionModules?.sect10;
     if (sect10?.TargetState) {
       sect10.TargetState.setValue("d_80", "NRC 60%");
@@ -1553,6 +1544,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // ========================================================================
     // Show user feedback and refresh graph
     // ========================================================================
+
     if (changesMade) {
       const message = "Optimized: " + changes.join(", ");
       showFeedback(message, 6000);
@@ -1588,6 +1580,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // Part 1: Service Hot Water (S07) - SHW Efficiency 400%
     // CRITICAL: Must switch to Heatpump if not already (like Decarbonize pattern)
     // ========================================================================
+
     const sect07 = window.TEUI?.SectionModules?.sect07;
     const d_51 = stateManager.getValue("d_51");
 
@@ -1615,6 +1608,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // ========================================================================
     // Part 2: DWHR (S07) - 70%
     // ========================================================================
+
     if (sect07?.TargetState) {
       sect07.TargetState.setValue("d_53", "70");
     }
@@ -1634,6 +1628,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // ========================================================================
     // Part 3: Heating Efficiency (S13) - Conditional on fuel type
     // ========================================================================
+
     const sect13 = window.TEUI?.SectionModules?.sect13;
     const d_113 = stateManager.getValue("d_113");
 
@@ -1677,6 +1672,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // Part 5: Thermal Bridging (S11) - 10%
     // DIFFERENTIATED: Super Optimize uses 10%, PassivHaus-ify uses 5%
     // ========================================================================
+
     const sect11 = window.TEUI?.SectionModules?.sect11;
     if (sect11?.TargetState) {
       sect11.TargetState.setValue("d_97", "10");
@@ -1698,6 +1694,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // Part 6: Net Gains (S10) - PH Method
     // FIXED: d_80 belongs to Section 10, not Section 11
     // ========================================================================
+
     const sect10 = window.TEUI?.SectionModules?.sect10;
     if (sect10?.TargetState) {
       sect10.TargetState.setValue("d_80", "PH Method");
@@ -1718,6 +1715,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // ========================================================================
     // Part 7: ACH50 (S12) - 0.60 (dropdown flip pattern)
     // ========================================================================
+
     const sect12 = window.TEUI?.SectionModules?.sect12;
 
     // Step 1: Set dropdown to MEASURED
@@ -1751,6 +1749,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // ========================================================================
     // Show user feedback and refresh graph
     // ========================================================================
+
     if (changesMade) {
       const message = "Super Optimized: " + changes.join(", ");
       showFeedback(message, 6000);
@@ -1786,6 +1785,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // Part 1: Service Hot Water (S07) - SHW Efficiency 400%
     // CRITICAL: Must switch to Heatpump if not already (like Decarbonize pattern)
     // ========================================================================
+
     const sect07 = window.TEUI?.SectionModules?.sect07;
     const d_51 = stateManager.getValue("d_51");
 
@@ -1813,6 +1813,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // ========================================================================
     // Part 2: DWHR (S07) - 70%
     // ========================================================================
+
     if (sect07?.TargetState) {
       sect07.TargetState.setValue("d_53", "70");
     }
@@ -1832,6 +1833,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // ========================================================================
     // Part 3: Heating Efficiency (S13) - Conditional on fuel type
     // ========================================================================
+
     const sect13 = window.TEUI?.SectionModules?.sect13;
     const d_113 = stateManager.getValue("d_113");
 
@@ -1855,6 +1857,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // ========================================================================
     // Part 4: MVHR (S13) - 95%
     // ========================================================================
+
     if (sect13?.TargetState) {
       sect13.TargetState.setValue("d_118", "95");
     }
@@ -1875,6 +1878,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // Part 5: Thermal Bridging (S11) - 5%
     // FIXED: d_97 is the TB% slider, not d_88 (which is Door area)
     // ========================================================================
+
     const sect11 = window.TEUI?.SectionModules?.sect11;
     if (sect11?.TargetState) {
       sect11.TargetState.setValue("d_97", "5");
@@ -1896,6 +1900,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // Part 6: Net Gains (S10) - PH Method
     // FIXED: d_80 belongs to Section 10, not Section 11
     // ========================================================================
+
     const sect10 = window.TEUI?.SectionModules?.sect10;
     if (sect10?.TargetState) {
       sect10.TargetState.setValue("d_80", "PH Method");
@@ -1916,6 +1921,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // ========================================================================
     // Part 7: ACH50 (S12) - 0.60 (dropdown flip pattern)
     // ========================================================================
+
     const sect12 = window.TEUI?.SectionModules?.sect12;
 
     // Step 1: Set dropdown to MEASURED
@@ -1949,6 +1955,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // ========================================================================
     // Show user feedback and refresh graph
     // ========================================================================
+    
     if (changesMade) {
       const message = "PassivHaus optimized: " + changes.join(", ");
       showFeedback(message, 6000);
