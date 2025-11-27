@@ -1465,13 +1465,13 @@ window.TEUI.ParallelCoordinates = (function () {
     // Electric: No change
 
     // ========================================================================
-    // Part 4: MVHR (S13) - 75%
+    // Part 4: MVHR (S13) - 85%
     // ========================================================================
     if (sect13?.TargetState) {
-      sect13.TargetState.setValue("d_118", "75");
+      sect13.TargetState.setValue("d_118", "85");
     }
-    stateManager.setValue("d_118", "75", "user-modified");
-    changes.push("MVHR 75%");
+    stateManager.setValue("d_118", "85", "user-modified");
+    changes.push("MVHR 85%");
 
     // Trigger S13 recalculation
     if (sect13) {
@@ -1661,13 +1661,13 @@ window.TEUI.ParallelCoordinates = (function () {
     // Electric: No change
 
     // ========================================================================
-    // Part 4: MVHR (S13) - 90%
+    // Part 4: MVHR (S13) - 95%
     // ========================================================================
     if (sect13?.TargetState) {
-      sect13.TargetState.setValue("d_118", "90");
+      sect13.TargetState.setValue("d_118", "95");
     }
-    stateManager.setValue("d_118", "90", "user-modified");
-    changes.push("MVHR 90%");
+    stateManager.setValue("d_118", "95", "user-modified");
+    changes.push("MVHR 95%");
 
     // Trigger S13 recalculation
     if (sect13) {
@@ -1858,13 +1858,13 @@ window.TEUI.ParallelCoordinates = (function () {
     // Electric: No change
 
     // ========================================================================
-    // Part 4: MVHR (S13) - 90%
+    // Part 4: MVHR (S13) - 95%
     // ========================================================================
     if (sect13?.TargetState) {
-      sect13.TargetState.setValue("d_118", "90");
+      sect13.TargetState.setValue("d_118", "95");
     }
-    stateManager.setValue("d_118", "90", "user-modified");
-    changes.push("MVHR 90%");
+    stateManager.setValue("d_118", "95", "user-modified");
+    changes.push("MVHR 95%");
 
     // Trigger S13 recalculation
     if (sect13) {

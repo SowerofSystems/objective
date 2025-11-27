@@ -995,10 +995,10 @@ function handleOptimizationButton() {
 | S07 | d_51 / d_52 | SHW fuel + efficiency | Heatpump @ 300% | **Must switch to Heatpump first!** |
 | S07 | d_53 | DWHR recovery % | 50 | Standard slider |
 | S13 | d_113 / j_115 / f_113 | Heating efficiency | See below | Conditional logic |
-| S13 | d_118 | MVHR efficiency % | 75 | Standard slider |
+| S13 | d_118 | MVHR efficiency % | 85 | Standard slider |
 | S11 | d_88 | Thermal bridging % | 20 | Standard slider |
 | S12 | d_108 / g_109 | ACH50 | 1.00 | Dropdown flip + value |
-| S11 | d_80 | Net gains method | NRC 60% | Dropdown value |
+| S10 | d_80 | Net gains method | NRC 60% | Dropdown value |
 
 **SHW Efficiency Logic (300%):**
 - **CRITICAL:** 300% efficiency requires Heatpump (not Electric/Oil/Gas)
@@ -1076,10 +1076,10 @@ function handleOptimize() {
 | S07 | d_51 / d_52 | SHW fuel + efficiency | Heatpump @ 400% | **Must switch to Heatpump first!** |
 | S07 | d_53 | DWHR recovery % | 70 | Standard slider |
 | S13 | d_113 / j_115 / f_113 | Heating efficiency | See below | Conditional logic |
-| S13 | d_118 | MVHR efficiency % | 90 | Standard slider |
+| S13 | d_118 | MVHR efficiency % | 95 | Standard slider |
 | S11 | d_88 | Thermal bridging % | 5 | Standard slider |
 | S12 | d_108 / g_109 | ACH50 | 0.60 | Dropdown flip + value |
-| S11 | d_80 | Net gains method | PH Method | Dropdown switch to PHPP |
+| S10 | d_80 | Net gains method | PH Method | Dropdown switch to PHPP |
 
 **SHW Efficiency Logic (400%):**
 - **CRITICAL:** 400% efficiency requires Heatpump (not Electric/Oil/Gas)
@@ -1150,10 +1150,10 @@ function handleSuperOptimize() {
 | S07 | d_51 / d_52 | SHW fuel + efficiency | Heatpump @ 400% | **Must switch to Heatpump first!** |
 | S07 | d_53 | DWHR recovery % | 70 | Standard slider |
 | S13 | d_113 / j_115 / f_113 | Heating efficiency | See below | Conditional logic |
-| S13 | d_118 | MVHR efficiency % | 90 | Standard slider |
+| S13 | d_118 | MVHR efficiency % | 95 | Standard slider |
 | S11 | d_88 | Thermal bridging % | 5 | Standard slider |
 | S12 | d_108 / g_109 | ACH50 | 0.60 | Dropdown flip + value |
-| S11 | d_80 | Net gains method | PH Method | Dropdown switch to PHPP |
+| S10 | d_80 | Net gains method | PH Method | Dropdown switch to PHPP |
 
 **SHW Efficiency Logic (400%):**
 - **CRITICAL:** 400% efficiency requires Heatpump (not Electric/Oil/Gas)
