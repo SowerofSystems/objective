@@ -1468,9 +1468,9 @@ window.TEUI.ParallelCoordinates = (function () {
     // Part 4: MVHR (S13) - 75%
     // ========================================================================
     if (sect13?.TargetState) {
-      sect13.TargetState.setValue("d_120", "75");
+      sect13.TargetState.setValue("d_118", "75");
     }
-    stateManager.setValue("d_120", "75", "user-modified");
+    stateManager.setValue("d_118", "75", "user-modified");
     changes.push("MVHR 75%");
 
     // Trigger S13 recalculation
@@ -1652,9 +1652,9 @@ window.TEUI.ParallelCoordinates = (function () {
     // Part 4: MVHR (S13) - 90%
     // ========================================================================
     if (sect13?.TargetState) {
-      sect13.TargetState.setValue("d_120", "90");
+      sect13.TargetState.setValue("d_118", "90");
     }
-    stateManager.setValue("d_120", "90", "user-modified");
+    stateManager.setValue("d_118", "90", "user-modified");
     changes.push("MVHR 90%");
 
     // Trigger S13 recalculation
@@ -1837,9 +1837,9 @@ window.TEUI.ParallelCoordinates = (function () {
     // Part 4: MVHR (S13) - 90%
     // ========================================================================
     if (sect13?.TargetState) {
-      sect13.TargetState.setValue("d_120", "90");
+      sect13.TargetState.setValue("d_118", "90");
     }
-    stateManager.setValue("d_120", "90", "user-modified");
+    stateManager.setValue("d_118", "90", "user-modified");
     changes.push("MVHR 90%");
 
     // Trigger S13 recalculation
