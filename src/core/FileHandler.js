@@ -158,17 +158,31 @@
       window.TEUI.StateManager.muteListeners();
 
       // Clear Parallel Coordinates Capital Budget data (new building = new costs)
-      console.log("[FileHandler] Clearing Parallel Coordinates Capital Budget data...");
+      console.log(
+        "[FileHandler] Clearing Parallel Coordinates Capital Budget data..."
+      );
       const pcAxes = [
-        'shw_efficiency', 'dwhr_efficiency', 'net_gains', 'thermal_bridge',
-        'ach50', 'aggregate_ground_uvalue', 'aggregate_air_uvalue',
-        'window_wall_ratio', 'heating_efficiency', 'mvhr_efficiency',
-        'tedi', 'teli', 'ghgi', 'teui'
+        "shw_efficiency",
+        "dwhr_efficiency",
+        "net_gains",
+        "thermal_bridge",
+        "ach50",
+        "aggregate_ground_uvalue",
+        "aggregate_air_uvalue",
+        "window_wall_ratio",
+        "heating_efficiency",
+        "mvhr_efficiency",
+        "tedi",
+        "teli",
+        "ghgi",
+        "teui",
       ];
       pcAxes.forEach(axisId => {
         localStorage.setItem(`pc_capital_budget_${axisId}`, "0");
       });
-      console.log("[FileHandler] Capital budgets set to $0.00 for imported building.");
+      console.log(
+        "[FileHandler] Capital budgets set to $0.00 for imported building."
+      );
 
       try {
         // Import Target values (REPORT sheet)
@@ -412,17 +426,31 @@
         window.TEUI.StateManager.muteListeners();
 
         // Clear Parallel Coordinates Capital Budget data (new building = new costs)
-        console.log("[FileHandler] Clearing Parallel Coordinates Capital Budget data...");
+        console.log(
+          "[FileHandler] Clearing Parallel Coordinates Capital Budget data..."
+        );
         const pcAxes = [
-          'shw_efficiency', 'dwhr_efficiency', 'net_gains', 'thermal_bridge',
-          'ach50', 'aggregate_ground_uvalue', 'aggregate_air_uvalue',
-          'window_wall_ratio', 'heating_efficiency', 'mvhr_efficiency',
-          'tedi', 'teli', 'ghgi', 'teui'
+          "shw_efficiency",
+          "dwhr_efficiency",
+          "net_gains",
+          "thermal_bridge",
+          "ach50",
+          "aggregate_ground_uvalue",
+          "aggregate_air_uvalue",
+          "window_wall_ratio",
+          "heating_efficiency",
+          "mvhr_efficiency",
+          "tedi",
+          "teli",
+          "ghgi",
+          "teui",
         ];
         pcAxes.forEach(axisId => {
           localStorage.setItem(`pc_capital_budget_${axisId}`, "0");
         });
-        console.log("[FileHandler] Capital budgets set to $0.00 for imported building.");
+        console.log(
+          "[FileHandler] Capital budgets set to $0.00 for imported building."
+        );
 
         try {
           // Import all data (target + reference)

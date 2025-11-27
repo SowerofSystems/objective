@@ -1522,15 +1522,16 @@ For future button implementations, here's the field ownership map:
 ## UX Enhancement: D3 Animations & Tooltips
 
 **Date:** November 26-27, 2025
-**Status:** ✅ **PHASE 1 & 2 COMPLETE**
+**Status:** ✅ **ALL PHASES COMPLETE**
 **Priority:** High (essential UX improvement)
 
 ### Implementation Summary
 
 **Phase 1 (Nov 26):** Node tooltips + smooth line/node transitions
 **Phase 2 (Nov 27):** Ghost trails for Super Buttons + rubber band dragging
+**Phase 3 (Nov 27):** Live tooltip updates during drag (replaces modal)
 
-All enhancements tested and working perfectly on first implementation!
+All enhancements tested and working perfectly!
 
 ### Implemented Features
 
@@ -1903,3 +1904,241 @@ function updateWithStagger(newData) {
 - 500ms-1500ms fade-out transitions
 
 **Result:** Professional, polished UX that clearly communicates changes to users. All features tested and working perfectly on first implementation. Zero performance issues on 14-axis graph.
+
+---
+
+### Phase 3: Live Tooltip Updates During Drag ✅ **IMPLEMENTED**
+
+**Date:** November 27, 2025
+**Status:** ✅ **COMPLETE**
+**Priority:** High (UX improvement - retired modal in favor of tooltip)
+
+#### Implementation Details
+
+When dragging a node:
+- ✅ Tooltip stays visible and follows cursor during drag
+- ✅ Values update in real-time as node moves
+- ✅ HEAT% shows HSPF/COP conversion when >100%
+- ✅ nGains% shows "PHPP" label when at 70%
+- ✅ Tooltip fades out 500ms after drag ends
+- ✅ Modal completely removed (~100 lines of code cleaned up)
+
+#### Implementation Pattern
+
+```javascript
+// In dragging() function (ParallelCoordinates.js ~line 2600)
+
+function dragging(event, d) {
+  const axisConfig = getAxisConfig(d.axisId, d.mode);
+  if (!axisConfig) return;
+
+  const yScale = initializeDragBehavior.yScales[d.axisIndex];
+  const newY = Math.max(minY, Math.min(maxY, event.y));
+  let newValue = yScale.invert(newY);
+
+  // Snap to step intervals
+  newValue = Math.round(newValue / axisConfig.step) * axisConfig.step;
+  let clampedValue = Math.max(axisConfig.min, Math.min(axisConfig.max, newValue));
+
+  // Discrete snapping (for nGains%, etc.)
+  if (axisConfig.isDiscrete && typeof axisConfig.snapValue === "function") {
+    clampedValue = axisConfig.snapValue(clampedValue);
+  }
+
+  // Update node position
+  d3.select(this).attr("cy", yScale(clampedValue));
+
+  // ========================================================================
+  // NEW: Update tooltip with live value instead of modal
+  // ========================================================================
+
+  const tooltip = d3.select(".pc-node-tooltip");
+  const color = d.mode === "target" ? CONFIG.colors.target : CONFIG.colors.reference;
+  const label = d.mode === "target" ? "Target" : "Reference";
+
+  // Format display value
+  const decimals = d.axisId === "ach50" ? 2 : 1;
+  let displayValue = clampedValue.toFixed(decimals);
+  let displayUnit = axisConfig.unit;
+
+  // Special case: nGains% PHPP Mode
+  if (d.axisId === "net_gains" && clampedValue >= 70) {
+    displayValue = "PHPP";
+    displayUnit = "";
+  }
+
+  // Special case: HEAT% Heatpump Mode (show COP + HSPF)
+  let subtitle = null;
+  if (d.axisId === "heating_efficiency" && clampedValue > 100) {
+    const cop = clampedValue / 100; // 400% → 4.0
+    const hspf = cop * 3.412; // 4.0 → 13.648
+    subtitle = `COPh ${cop.toFixed(2)} | HSPF ${hspf.toFixed(1)}`;
+  }
+
+  // Update tooltip HTML with live value
+  tooltip
+    .html(`
+      <div style="color: ${color}; font-weight: 600; margin-bottom: 4px;">
+        ${axisConfig.label} - ${label}
+      </div>
+      <div style="font-size: 16px; margin-bottom: 2px; font-weight: 700;">
+        ${displayValue} ${displayUnit}
+      </div>
+      ${subtitle ? `<div style="font-size: 10px; color: #666; font-style: italic;">${subtitle}</div>` : ''}
+    `)
+    .style("left", event.pageX + 15 + "px")
+    .style("top", event.pageY - 40 + "px")
+    .style("opacity", 1); // Ensure visible during drag
+
+  // Update ghost line path (existing code)
+  if (d.ghostLine && !d.ghostLine.empty()) {
+    // ... existing ghost line update code ...
+  }
+
+  // Store current value for dragEnded
+  d.value = clampedValue;
+}
+```
+
+#### Changes Required
+
+**File:** [ParallelCoordinates.js](../../src/core/ParallelCoordinates.js)
+
+**1. Modify dragStarted() (line ~2531):**
+```javascript
+function dragStarted(event, d) {
+  d3.select(this).classed("pc-dragging", true);
+
+  // REMOVE: showDragModal(d);
+
+  // NEW: Keep tooltip visible and update to "dragging" state
+  const tooltip = d3.select(".pc-node-tooltip");
+  tooltip.style("opacity", 1); // Ensure visible
+
+  // Create ghost trail for the line being dragged
+  // ... existing ghost trail code ...
+}
+```
+
+**2. Update dragging() (line ~2570):**
+- Add tooltip update code (see pattern above)
+- Remove modal update calls: `updateDragModal()`
+
+**3. Modify dragEnded() (line ~2668):**
+```javascript
+function dragEnded(event, d) {
+  d3.select(this).classed("pc-dragging", false);
+
+  // Remove ghost line with fade-out transition
+  if (d.ghostLine && !d.ghostLine.empty()) {
+    d.ghostLine.transition().duration(500).style("opacity", 0).remove();
+    d.ghostLine = null;
+  }
+
+  // REMOVE: hideDragModal();
+
+  // NEW: Fade out tooltip after brief delay
+  const tooltip = d3.select(".pc-node-tooltip");
+  tooltip
+    .transition()
+    .delay(500) // Brief delay before hiding
+    .duration(300)
+    .style("opacity", 0);
+
+  // ... rest of existing code ...
+}
+```
+
+**4. Remove modal functions entirely:**
+- Delete `showDragModal()` function
+- Delete `updateDragModal()` function
+- Delete `hideDragModal()` function
+- Remove `#pc-drag-modal` DOM element creation
+
+**5. Update CSS (styles.css):**
+```css
+/* Remove or comment out modal styles */
+/*
+#pc-drag-modal {
+  // ... old modal styles ...
+}
+*/
+
+/* Enhance tooltip for dragging */
+.pc-node-tooltip {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  background: white;
+  border: 2px solid #ddd; /* Slightly thicker border */
+  border-radius: 6px;
+  padding: 10px 14px; /* Slightly larger padding for drag state */
+  font-size: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Stronger shadow during drag */
+  z-index: 10000;
+  transition: opacity 0.2s;
+  min-width: 120px; /* Ensure enough space for values */
+}
+```
+
+#### Benefits
+
+✅ **Less intrusive:** No modal blocking center of screen
+✅ **Contextual:** Tooltip stays near cursor and dragged node
+✅ **Cleaner code:** Remove ~100 lines of modal management code
+✅ **Consistent UX:** Same tooltip pattern for hover and drag
+✅ **Better visibility:** See graph changes while dragging, not blocked by modal
+✅ **Preserves features:** HEAT% HSPF/COP conversions still shown
+
+#### Testing Checklist
+
+**Live Tooltip Updates:**
+- [ ] Tooltip appears on drag start
+- [ ] Tooltip follows cursor during drag
+- [ ] Value updates in real-time as node moves
+- [ ] HEAT% shows COP/HSPF when >100%
+- [ ] nGains% shows "PHPP" when at 70%
+- [ ] Tooltip fades out 500ms after drag ends
+- [ ] No modal appears during drag
+- [ ] Ghost line still works correctly
+
+**Edge Cases:**
+- [ ] Rapid drag movements don't break tooltip positioning
+- [ ] Dragging near screen edges keeps tooltip visible
+- [ ] Tooltip doesn't flicker during discrete snapping (nGains%)
+- [ ] ACH50 shows 2 decimal places correctly
+
+#### Code Locations (Implemented)
+
+**Modal Removal (✅ Complete):**
+- `showDragModal()` - ✅ DELETED (was ~line 2938)
+- `updateDragModal()` - ✅ DELETED (was ~line 2943)
+- `hideDragModal()` - ✅ DELETED (was ~line 2969)
+
+**Tooltip Enhancement (✅ Complete):**
+- `dragStarted()` - ✅ Modified [ParallelCoordinates.js:2531-2536](../../src/core/ParallelCoordinates.js#L2531-L2536)
+- `dragging()` - ✅ Added live tooltip updates [ParallelCoordinates.js:2634-2676](../../src/core/ParallelCoordinates.js#L2634-L2676)
+- `dragEnded()` - ✅ Added tooltip fade-out [ParallelCoordinates.js:2697-2703](../../src/core/ParallelCoordinates.js#L2697-L2703)
+
+**CSS Updates (✅ Complete):**
+- [styles.css](../../src/styles.css) - ✅ Modal styles removed (lines 1962-1988 deleted)
+
+---
+
+### Implementation Notes
+
+**Why this is better:**
+- Modal was inherited from early prototype when tooltips weren't implemented
+- Tooltips are now fully functional with all needed features
+- Modal blocks view of graph during drag - poor UX for precision adjustments
+- Tooltip follows cursor naturally - better spatial relationship
+- Less code to maintain (remove ~100 lines of modal management)
+
+**Preserved functionality:**
+- HEAT% HSPF/COP conversion display (moves to tooltip subtitle)
+- nGains% "PHPP" label (already in tooltip pattern)
+- Color-coding by mode (blue/red - already in tooltip)
+- Value snapping and precision (unchanged)
+
+**Future enhancement:**
+Could add tooltip "lock" on click to keep it visible for comparison without dragging.
