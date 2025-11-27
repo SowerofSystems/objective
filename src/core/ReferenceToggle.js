@@ -203,34 +203,37 @@ TEUI.ReferenceToggle = (function () {
   }
 
   function initialize() {
-    // PHASE 4: Wire new dropdown buttons to setup functions
+    // ✅ NEW (2025-11-27): Wire three mirror function buttons
 
-    // Setup Reference Setup buttons
-    const mirrorTargetBtn = document.getElementById("mirrorTargetBtn");
-    if (mirrorTargetBtn) {
-      mirrorTargetBtn.addEventListener("click", e => {
+    // Button 1: Mirror Geometry (geometry/configuration only)
+    const mirrorGeometryBtn = document.getElementById("mirrorGeometryBtn");
+    if (mirrorGeometryBtn) {
+      mirrorGeometryBtn.addEventListener("click", e => {
         e.preventDefault();
-        mirrorTarget();
+        console.log("[ReferenceToggle] User clicked: Geometry");
+        mirrorGeometry();
       });
     }
 
-    const mirrorTargetReferenceBtn = document.getElementById(
-      "mirrorTargetReferenceBtn"
+    // Button 2: Mirror Geometry + Code (geometry + ReferenceValues overlay)
+    const mirrorGeometryPlusCodeBtn = document.getElementById(
+      "mirrorGeometryPlusCodeBtn"
     );
-    if (mirrorTargetReferenceBtn) {
-      mirrorTargetReferenceBtn.addEventListener("click", e => {
+    if (mirrorGeometryPlusCodeBtn) {
+      mirrorGeometryPlusCodeBtn.addEventListener("click", e => {
         e.preventDefault();
-        mirrorTargetWithReference();
+        console.log("[ReferenceToggle] User clicked: Geometry + Code");
+        mirrorGeometryPlusCode();
       });
     }
 
-    const referenceIndependenceBtn = document.getElementById(
-      "referenceIndependenceBtn"
-    );
-    if (referenceIndependenceBtn) {
-      referenceIndependenceBtn.addEventListener("click", e => {
+    // Button 3: Mirror All Inputs (perfect clone)
+    const mirrorAllInputsBtn = document.getElementById("mirrorAllInputsBtn");
+    if (mirrorAllInputsBtn) {
+      mirrorAllInputsBtn.addEventListener("click", e => {
         e.preventDefault();
-        enableReferenceIndependence();
+        console.log("[ReferenceToggle] User clicked: All Inputs");
+        mirrorAllInputs();
       });
     }
 
@@ -492,7 +495,296 @@ TEUI.ReferenceToggle = (function () {
   }
 
   /**
-   * 1. Mirror Target: Copy all Target values to Reference state
+   * Helper: Determine if a field should be copied based on mirror mode
+   * @param {string} fieldId - Field identifier (e.g., 'd_13', 'f_85')
+   * @param {string} mode - Mirror mode: 'geometry', 'geometry-plus-code', 'all'
+   * @returns {boolean} - True if field should be copied
+   */
+  function shouldCopyFieldForMode(fieldId, mode) {
+    // Explicit exclusions for ALL modes
+    if (fieldId === "d_13") return false; // Building standard - user sets independently
+
+    // Mode: 'all' - copy everything except d_13
+    if (mode === "all") return true;
+
+    // Mode: 'geometry' or 'geometry-plus-code' - exclude performance fields (Category 2)
+    // Performance field patterns based on CSV export analysis
+    const performancePatterns = [
+      /^[a-z]_(51|52|53)$/, // DHW system type, efficiency, DWHR
+      /^[a-z]_(66|67)$/, // Lighting density, equipment efficiency
+      /^f_(73|74|75|76|77|78)$/, // SHGC values (window/door solar heat gain)
+      /^[a-z]_80$/, // Gains utilization factor (n-Factor)
+      /^f_(85|86|87|94|95)$/, // RSI values (thermal resistance)
+      /^g_(88|89|90|91|92|93)$/, // U-values (window/door thermal transmittance)
+      /^[a-z]_97$/, // Thermal bridge penalty
+      /^[a-z]_(113|115|116|118|119|120)$/, // Equipment types and performance
+    ];
+
+    // Check if field matches any performance pattern
+    for (const pattern of performancePatterns) {
+      if (pattern.test(fieldId)) {
+        return false; // Exclude from geometry modes
+      }
+    }
+
+    // Default: include in geometry modes
+    return true;
+  }
+
+  /**
+   * 1. Mirror Geometry: Copy ONLY geometric/configuration fields from Target to Reference
+   * Excludes performance parameters (RSI values, equipment efficiencies, etc.)
+   * Use case: "Same building shape, different performance specs"
+   */
+  function mirrorGeometry() {
+    try {
+      const sections = getAllDualStateSections();
+      console.log(
+        `[ReferenceToggle] Mirror Geometry: Processing ${sections.length} sections`
+      );
+
+      let totalFieldsCopied = 0;
+      let totalFieldsSkipped = 0;
+
+      sections.forEach(section => {
+        console.log(`[ReferenceToggle] Processing ${section.id}...`);
+
+        // Get field IDs for this section
+        const fieldIds = getFieldIdsForSection(section.id);
+        console.log(
+          `[ReferenceToggle] Found ${fieldIds.length} fields for ${section.id}`
+        );
+
+        if (fieldIds.length === 0) {
+          console.warn(
+            `[ReferenceToggle] No fields found for ${section.id} - skipping`
+          );
+          return;
+        }
+
+        // Save current mode
+        const originalMode = section.modeManager.currentMode;
+
+        // Switch to target mode to read values
+        section.modeManager.switchMode("target");
+
+        // Read Target values, filtering to geometry fields only
+        const targetValues = {};
+        const skippedFields = [];
+        fieldIds.forEach(fieldId => {
+          if (shouldCopyFieldForMode(fieldId, "geometry")) {
+            const value = section.modeManager.getValue(fieldId);
+            if (value !== null && value !== undefined && value !== "") {
+              targetValues[fieldId] = value;
+            }
+          } else {
+            skippedFields.push(fieldId);
+          }
+        });
+
+        console.log(
+          `[ReferenceToggle] Geometry mode: ${Object.keys(targetValues).length} fields to copy, ${skippedFields.length} performance fields skipped`
+        );
+        if (skippedFields.length > 0 && skippedFields.length <= 10) {
+          console.log(
+            `[ReferenceToggle] Skipped performance fields: [${skippedFields.join(", ")}]`
+          );
+        }
+
+        // Switch to reference mode to write values
+        section.modeManager.switchMode("reference");
+
+        // Copy Target geometry values to Reference state
+        Object.entries(targetValues).forEach(([fieldId, value]) => {
+          section.modeManager.setValue(fieldId, value, "mirrored");
+          totalFieldsCopied++;
+        });
+        totalFieldsSkipped += skippedFields.length;
+
+        // Restore original mode and refresh UI
+        section.modeManager.switchMode(originalMode);
+        section.modeManager.refreshUI();
+
+        console.log(
+          `[ReferenceToggle] Copied ${Object.keys(targetValues).length} geometry values to Reference state for ${section.id}`
+        );
+      });
+
+      console.log(
+        `🔗 Mirror Geometry: Successfully copied ${totalFieldsCopied} geometry fields, skipped ${totalFieldsSkipped} performance fields`
+      );
+      console.log(
+        "✅ Geometry fields copied (areas, volumes, location, occupancy)"
+      );
+      console.log(
+        "❌ Performance fields skipped (RSI values, equipment efficiencies) - these should come from ReferenceValues or user edits"
+      );
+    } catch (error) {
+      console.error("[ReferenceToggle] Mirror Geometry failed:", error);
+    }
+  }
+
+  /**
+   * 2. Mirror Geometry + Code: Copy geometry fields, then overlay ReferenceValues.js
+   * Use case: "Compare my design vs building code minimums" (most common)
+   */
+  function mirrorGeometryPlusCode() {
+    try {
+      const standard =
+        window.TEUI?.StateManager?.getValue("ref_d_13") || // Use Reference model's standard
+        window.TEUI?.StateManager?.getValue("d_13") || // Fallback to Target standard
+        "OBC SB12 3.1.1.2.C1"; // Final fallback
+
+      const refValues = window.TEUI?.ReferenceValues?.[standard] || {};
+
+      console.log(
+        `[ReferenceToggle] Mirror Geometry + Code: Using Reference standard "${standard}"`
+      );
+      console.log(
+        `[ReferenceToggle] Found ${Object.keys(refValues).length} reference values for this standard`
+      );
+
+      // First execute Mirror Geometry to copy geometric fields only
+      mirrorGeometry();
+
+      // Then overlay ReferenceValues subset for building code compliance
+      const sections = getAllDualStateSections();
+      let totalOverlayFields = 0;
+
+      sections.forEach(section => {
+        console.log(
+          `[ReferenceToggle] Applying ReferenceValues overlay to ${section.id}...`
+        );
+
+        // Save current mode
+        const originalMode = section.modeManager.currentMode;
+
+        // Switch to reference mode to apply overlay
+        section.modeManager.switchMode("reference");
+
+        // Apply ReferenceValues overlay (building code minimums)
+        const appliedFields = [];
+        Object.entries(refValues).forEach(([fieldId, value]) => {
+          // Only apply if this section manages this field
+          const fieldIds = getFieldIdsForSection(section.id);
+          if (fieldIds.includes(fieldId)) {
+            section.modeManager.setValue(fieldId, value, "reference-standard");
+            appliedFields.push(fieldId);
+            totalOverlayFields++;
+          }
+        });
+
+        // Restore original mode and refresh UI
+        section.modeManager.switchMode(originalMode);
+        section.modeManager.refreshUI();
+
+        if (appliedFields.length > 0) {
+          console.log(
+            `[ReferenceToggle] Applied ${appliedFields.length} code minimum values to ${section.id}: [${appliedFields.join(", ")}]`
+          );
+        }
+      });
+
+      console.log(
+        `🔗 Mirror Geometry + Code: Applied ${totalOverlayFields} building code minimum values`
+      );
+      console.log(
+        `📋 Standard: "${standard}" - Reference model now uses Target geometry with code minimum performance`
+      );
+    } catch (error) {
+      console.error(
+        "[ReferenceToggle] Mirror Geometry + Code failed:",
+        error
+      );
+    }
+  }
+
+  /**
+   * 3. Mirror All Inputs: Copy ALL fields from Target to Reference (perfect clone)
+   * Excludes only d_13 (building standard - user sets independently)
+   * Use case: "Start with identical models, then tweak one specific parameter"
+   */
+  function mirrorAllInputs() {
+    try {
+      const sections = getAllDualStateSections();
+      console.log(
+        `[ReferenceToggle] Mirror All Inputs: Processing ${sections.length} sections`
+      );
+
+      let totalFieldsCopied = 0;
+
+      sections.forEach(section => {
+        console.log(`[ReferenceToggle] Processing ${section.id}...`);
+
+        // Get field IDs for this section
+        const fieldIds = getFieldIdsForSection(section.id);
+        console.log(
+          `[ReferenceToggle] Found ${fieldIds.length} fields for ${section.id}`
+        );
+
+        if (fieldIds.length === 0) {
+          console.warn(
+            `[ReferenceToggle] No fields found for ${section.id} - skipping`
+          );
+          return;
+        }
+
+        // Save current mode
+        const originalMode = section.modeManager.currentMode;
+
+        // Switch to target mode to read values
+        section.modeManager.switchMode("target");
+
+        // Read ALL Target values (except d_13)
+        const targetValues = {};
+        fieldIds.forEach(fieldId => {
+          if (shouldCopyFieldForMode(fieldId, "all")) {
+            const value = section.modeManager.getValue(fieldId);
+            if (value !== null && value !== undefined && value !== "") {
+              targetValues[fieldId] = value;
+            }
+          }
+        });
+
+        console.log(
+          `[ReferenceToggle] Read ${Object.keys(targetValues).length} Target values from ${section.id}`
+        );
+
+        // Switch to reference mode to write values
+        section.modeManager.switchMode("reference");
+
+        // Copy ALL Target values to Reference state
+        Object.entries(targetValues).forEach(([fieldId, value]) => {
+          section.modeManager.setValue(fieldId, value, "mirrored");
+          totalFieldsCopied++;
+        });
+
+        // Restore original mode and refresh UI
+        section.modeManager.switchMode(originalMode);
+        section.modeManager.refreshUI();
+
+        console.log(
+          `[ReferenceToggle] Copied ${Object.keys(targetValues).length} values to Reference state for ${section.id}`
+        );
+      });
+
+      console.log(
+        `🔗 Mirror All Inputs: Successfully copied ${totalFieldsCopied} total fields`
+      );
+      console.log(
+        "✅ Perfect clone created - Reference model is now identical to Target model"
+      );
+      console.log(
+        "ℹ️  Excluded: d_13 (building standard) - user can set Reference standard independently"
+      );
+    } catch (error) {
+      console.error("[ReferenceToggle] Mirror All Inputs failed:", error);
+    }
+  }
+
+  /**
+   * LEGACY: Mirror Target - Copy all Target values to Reference state
+   * @deprecated Use mirrorAllInputs() instead
    * CORRECTED: Uses proper ModeManager facade pattern
    */
   function mirrorTarget() {
@@ -657,9 +949,13 @@ TEUI.ReferenceToggle = (function () {
     toggleReferenceDisplay,
     switchAllSectionsMode, // Expose for external use
     getAllDualStateSections, // Expose for debugging
-    // New setup functions
-    mirrorTarget,
-    mirrorTargetWithReference,
+    // ✅ NEW: Three mirror functions (2025-11-27)
+    mirrorGeometry, // Copy geometry/configuration only
+    mirrorGeometryPlusCode, // Copy geometry + overlay ReferenceValues.js
+    mirrorAllInputs, // Copy everything (perfect clone)
+    // LEGACY: Old mirror functions (deprecated, keeping for backwards compatibility)
+    mirrorTarget, // @deprecated Use mirrorAllInputs() instead
+    mirrorTargetWithReference, // @deprecated Use mirrorGeometryPlusCode() instead
     enableReferenceIndependence,
     // ✅ NEW: Expose for Key Values header toggle
     getCurrentMode, // Get current global mode
