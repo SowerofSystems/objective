@@ -435,7 +435,11 @@ document.addEventListener("DOMContentLoaded", function () {
         const section = header.closest(".section");
         if (section.id === "keyValues") return;
 
-        if (collapsedSections[section.id]) {
+        // Special case: Section 19 (Notes & Debug) defaults to collapsed for cleaner UI
+        const shouldBeCollapsed =
+          collapsedSections[section.id] || section.id === "notes";
+
+        if (shouldBeCollapsed) {
           header.classList.add("collapsed");
           header.setAttribute("aria-expanded", "false");
         } else {
@@ -551,6 +555,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Restore user preferences
   restoreUserPreferences();
+
+  // Ensure Section 19 (Notes & Debug) starts collapsed for cleaner UI
+  // This runs after restoreUserPreferences to override any saved state
+  const notesSection = document.querySelector("#notes .section-header");
+  if (notesSection && !notesSection.classList.contains("collapsed")) {
+    notesSection.classList.add("collapsed");
+    notesSection.setAttribute("aria-expanded", "false");
+  }
 
   // Function to update tab display mode based on container width
   function updateTabDisplayMode() {

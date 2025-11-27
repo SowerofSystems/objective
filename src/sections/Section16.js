@@ -1381,12 +1381,20 @@ window.TEUI.SectionModules.sect16 = (function () {
     controlsContainer.style.cssText =
       "display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; margin-bottom: 12px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;";
 
-    // Create the activate button
-    const activateBtn = createStyledButton(
-      "s16ActivateBtn",
-      "bi bi-arrow-clockwise",
-      "Activate Sankey"
-    );
+    // Create the activate button - using Bootstrap classes to match S17/S18
+    const activateBtn = document.createElement("button");
+    activateBtn.id = "s16ActivateBtn";
+    activateBtn.className = "btn btn-primary btn-sm"; // Match S17 and S18 styling
+    activateBtn.style.cssText = "display: inline-flex; align-items: center; gap: 6px;";
+
+    const icon = document.createElement("i");
+    icon.className = "bi bi-arrow-clockwise";
+    activateBtn.appendChild(icon);
+
+    const textSpan = document.createElement("span");
+    textSpan.textContent = "Activate Sankey";
+    activateBtn.appendChild(textSpan);
+
     controlsContainer.appendChild(activateBtn);
 
     // Create mode toggle button (heating/cooling) - initially hidden

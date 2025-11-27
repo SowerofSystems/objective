@@ -595,7 +595,7 @@ window.TEUI.ParallelCoordinates = (function () {
     }
 
     // Check if this is first render or update
-    const isFirstRender = !svgElement;
+    let isFirstRender = !svgElement;
 
     // Calculate dimensions
     const containerWidth = container.clientWidth;
@@ -604,6 +604,26 @@ window.TEUI.ParallelCoordinates = (function () {
     const height = containerHeight - CONFIG.margin.top - CONFIG.margin.bottom;
 
     console.log("[ParallelCoordinates] Rendering graph:", width, "x", height);
+
+    // CRITICAL FIX: Detect dimension changes and force full re-render
+    // This prevents line drift bug when browser resizes
+    if (!isFirstRender && svgElement) {
+      const currentSvg = d3.select(container).select("svg");
+      const currentWidth = parseFloat(currentSvg.attr("width"));
+      const currentHeight = parseFloat(currentSvg.attr("height"));
+
+      // If dimensions changed significantly (>10px), force complete re-render
+      if (
+        Math.abs(currentWidth - containerWidth) > 10 ||
+        Math.abs(currentHeight - containerHeight) > 10
+      ) {
+        console.log(
+          "[ParallelCoordinates] Dimension change detected - forcing full re-render"
+        );
+        isFirstRender = true;
+        svgElement = null; // Clear cached SVG to trigger complete rebuild
+      }
+    }
 
     // Create or select SVG
     let svg;
@@ -622,7 +642,7 @@ window.TEUI.ParallelCoordinates = (function () {
         );
       svgElement = svg;
     } else {
-      // Update: use existing SVG
+      // Update: use existing SVG (no dimension change)
       svg = svgElement;
     }
 
