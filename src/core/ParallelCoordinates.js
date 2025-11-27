@@ -1485,12 +1485,13 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // ========================================================================
     // Part 5: Thermal Bridging (S11) - 20%
+    // FIXED: d_97 is the TB% slider, not d_88 (which is Door area)
     // ========================================================================
     const sect11 = window.TEUI?.SectionModules?.sect11;
     if (sect11?.TargetState) {
-      sect11.TargetState.setValue("d_88", "20");
+      sect11.TargetState.setValue("d_97", "20");
     }
-    stateManager.setValue("d_88", "20", "user-modified");
+    stateManager.setValue("d_97", "20", "user-modified");
     changes.push("TB 20%");
 
     // Trigger S11 recalculation
@@ -1681,12 +1682,13 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // ========================================================================
     // Part 5: Thermal Bridging (S11) - 5%
+    // FIXED: d_97 is the TB% slider, not d_88 (which is Door area)
     // ========================================================================
     const sect11 = window.TEUI?.SectionModules?.sect11;
     if (sect11?.TargetState) {
-      sect11.TargetState.setValue("d_88", "5");
+      sect11.TargetState.setValue("d_97", "5");
     }
-    stateManager.setValue("d_88", "5", "user-modified");
+    stateManager.setValue("d_97", "5", "user-modified");
     changes.push("TB 5%");
 
     // Trigger S11 recalculation
@@ -1878,12 +1880,13 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // ========================================================================
     // Part 5: Thermal Bridging (S11) - 5%
+    // FIXED: d_97 is the TB% slider, not d_88 (which is Door area)
     // ========================================================================
     const sect11 = window.TEUI?.SectionModules?.sect11;
     if (sect11?.TargetState) {
-      sect11.TargetState.setValue("d_88", "5");
+      sect11.TargetState.setValue("d_97", "5");
     }
-    stateManager.setValue("d_88", "5", "user-modified");
+    stateManager.setValue("d_97", "5", "user-modified");
     changes.push("TB 5%");
 
     // Trigger S11 recalculation

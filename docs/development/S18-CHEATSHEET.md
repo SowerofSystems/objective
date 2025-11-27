@@ -996,7 +996,7 @@ function handleOptimizationButton() {
 | S07 | d_53 | DWHR recovery % | 50 | Standard slider |
 | S13 | d_113 / j_115 / f_113 | Heating efficiency | See below | Conditional logic |
 | S13 | d_118 | MVHR efficiency % | 85 | Standard slider |
-| S11 | d_88 | Thermal bridging % | 20 | Standard slider |
+| S11 | d_97 | Thermal bridging % | 20 | Standard slider |
 | S12 | d_108 / g_109 | ACH50 | 1.00 | Dropdown flip + value |
 | S10 | d_80 | Net gains method | NRC 60% | Dropdown value |
 
@@ -1496,7 +1496,8 @@ For future button implementations, here's the field ownership map:
 |-------|-------------|----------------|-------------|
 | d_51, d_52, k_52, d_53 | SHW fuel/efficiency, DWHR | Section 05/07 | sect07 |
 | d_80 | Net gains method | **Section 10** | **sect10** ✅ |
-| d_88 | Thermal bridging % | Section 11 | sect11 |
+| d_88 | Door area (S10 sync) | Section 11 | sect11 |
+| d_97 | **Thermal bridging %** | **Section 11** | **sect11** ✅ |
 | d_92 | Aggregate ground U-value | Section 11 | sect11 |
 | d_96 | Aggregate air U-value | Section 11 | sect11 |
 | d_104 | Window-wall ratio | Section 11 | sect11 |
@@ -1504,7 +1505,9 @@ For future button implementations, here's the field ownership map:
 | d_113, f_113, j_115 | Heating fuel/efficiency | Section 13 | sect13 |
 | d_118 | MVHR efficiency | Section 13 | sect13 |
 
-**CRITICAL:** d_80 belongs to **Section 10**, not Section 11, even though both are in the thermal envelope group.
+**CRITICAL:**
+- d_80 belongs to **Section 10**, not Section 11
+- d_97 is the **Thermal Bridge %** slider, not d_88 (which is Door area from S10 sync)
 
 ---
 
