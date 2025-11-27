@@ -796,7 +796,8 @@ TEUI.ReferenceToggle = (function () {
       console.log('[ReferenceToggle] 🔗 Mirror Geometry: Starting...');
 
       // Get all field IDs using FieldManager (proven approach)
-      const allFields = window.TEUI?.FieldManager?.getAllUserEditableFields?.() || [];
+      const allFieldsObj = window.TEUI?.FieldManager?.getAllUserEditableFields?.() || {};
+      const allFields = Object.keys(allFieldsObj); // Convert object to array of field IDs
 
       if (allFields.length === 0) {
         console.error('[ReferenceToggle] Could not get field list from FieldManager');
@@ -876,7 +877,8 @@ TEUI.ReferenceToggle = (function () {
       console.log('[ReferenceToggle] 🔗 Mirror Geometry + Code: Starting...');
 
       // Step 1: Copy geometry fields (same as mirrorGeometry, but don't call it to track all fields for highlighting)
-      const allFields = window.TEUI?.FieldManager?.getAllUserEditableFields?.() || [];
+      const allFieldsObj = window.TEUI?.FieldManager?.getAllUserEditableFields?.() || {};
+      const allFields = Object.keys(allFieldsObj); // Convert object to array of field IDs
 
       if (allFields.length === 0) {
         console.error('[ReferenceToggle] Could not get field list from FieldManager');
@@ -970,7 +972,8 @@ TEUI.ReferenceToggle = (function () {
       console.log('[ReferenceToggle] 🔗 Mirror All Inputs: Starting...');
 
       // Get all field IDs using FieldManager (proven approach)
-      const allFields = window.TEUI?.FieldManager?.getAllUserEditableFields?.() || [];
+      const allFieldsObj = window.TEUI?.FieldManager?.getAllUserEditableFields?.() || {};
+      const allFields = Object.keys(allFieldsObj); // Convert object to array of field IDs
 
       if (allFields.length === 0) {
         console.error('[ReferenceToggle] Could not get field list from FieldManager');
