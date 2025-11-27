@@ -2116,6 +2116,27 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
   justify-content: flex-end;
 }
 
+/* Parallel Coordinates - Loading Placeholder */
+.teui-loading-placeholder {
+  padding: 40px 20px;
+  text-align: center;
+  background: #f9f9f9;
+  border-radius: 4px;
+  color: #666;
+}
+
+/* Parallel Coordinates - Fullscreen Mode */
+#parallelCoordinates.pc-fullscreen {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999 !important;
+  background: white !important;
+  overflow: auto !important;
+}
+
 /* ======================================
    SECTION 16 - SANKEY DIAGRAM STYLES
    ====================================== */

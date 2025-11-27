@@ -185,8 +185,6 @@ window.TEUI.ParallelCoordinates = (function () {
     placeholder.className = "teui-loading-placeholder";
     placeholder.innerHTML =
       "<p>Click 'Activate Optimization View' to visualize optimization paths between Target and Reference configurations.</p>";
-    placeholder.style.cssText =
-      "padding: 40px 20px; text-align: center; background: #f9f9f9; border-radius: 4px; color: #666;";
 
     // Clear container and add placeholder
     container.innerHTML = "";
@@ -1972,26 +1970,7 @@ window.TEUI.ParallelCoordinates = (function () {
     if (!section) return;
 
     isFullscreen = !isFullscreen;
-
-    if (isFullscreen) {
-      section.style.position = "fixed";
-      section.style.top = "0";
-      section.style.left = "0";
-      section.style.width = "100vw";
-      section.style.height = "100vh";
-      section.style.zIndex = "9999";
-      section.style.background = "white";
-      section.style.overflow = "auto";
-    } else {
-      section.style.position = "";
-      section.style.top = "";
-      section.style.left = "";
-      section.style.width = "";
-      section.style.height = "";
-      section.style.zIndex = "";
-      section.style.background = "";
-      section.style.overflow = "";
-    }
+    section.classList.toggle("pc-fullscreen", isFullscreen);
 
     // Re-render to adjust to new dimensions
     setTimeout(refresh, 100);
