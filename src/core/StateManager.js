@@ -288,6 +288,18 @@ TEUI.StateManager = (function () {
         console.log(`Global Reset: Cleared ${key}`);
       });
       console.log("Global Reset: All dual-state localStorage cleared.");
+
+      // Clear Parallel Coordinates Capital Budget data
+      const pcAxes = [
+        'shw_efficiency', 'dwhr_efficiency', 'net_gains', 'thermal_bridge',
+        'ach50', 'aggregate_ground_uvalue', 'aggregate_air_uvalue',
+        'window_wall_ratio', 'heating_efficiency', 'mvhr_efficiency',
+        'tedi', 'teli', 'ghgi', 'teui'
+      ];
+      pcAxes.forEach(axisId => {
+        localStorage.removeItem(`pc_capital_budget_${axisId}`);
+      });
+      console.log("Global Reset: Cleared Parallel Coordinates Capital Budget data.");
     } catch (e) {
       console.error("TEUI StateManager: Failed to clear localStorage:", e);
     }

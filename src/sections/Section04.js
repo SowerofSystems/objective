@@ -585,7 +585,16 @@ window.TEUI.SectionModules.sect04 = (function () {
           value: "1.00", // Calculated: PER (Primary Energy Renewable) - PH metric from PHPP 10.6
           section: "actualTargetEnergy",
           tooltip: true, // PER Factors
-          dependencies: ["d_13", "d_114", "d_117", "j_27", "j_28", "j_29", "j_30", "j_31"], // Building standard + energy values
+          dependencies: [
+            "d_13",
+            "d_114",
+            "d_117",
+            "j_27",
+            "j_28",
+            "j_29",
+            "j_30",
+            "j_31",
+          ], // Building standard + energy values
         },
         i: { content: "PER Factor" },
         j: { content: "" },
@@ -1287,12 +1296,9 @@ window.TEUI.SectionModules.sect04 = (function () {
     // Read building standard from S02 (mode-aware via global state)
     const standard = getGlobalStringValue("d_13") || "";
 
-    console.log(`[S04 PER] 🔍 CALCULATING PER: d_13="${standard}", mode=${ModeManager.currentMode}`);
-
     // Check if PH standard
     if (!standard.toUpperCase().includes("PH")) {
-      console.log(`[S04 PER] ❌ Non-PH standard → PER = 1.00`);
-      return 1.00; // Non-PH standard → PER = 1.00
+      return 1.0; // Non-PH standard → PER = 1.00
     }
 
     // Read energy values from current mode state (Section04 internal values)
@@ -1306,16 +1312,12 @@ window.TEUI.SectionModules.sect04 = (function () {
     const d_114 = getGlobalNumericValue("d_114") || 0; // Space heating energy
     const d_117 = getGlobalNumericValue("d_117") || 0; // Space cooling energy
 
-    console.log(`[S04 PER] 📊 Energy values: j_27=${j_27}, j_28=${j_28}, j_29=${j_29}, j_30=${j_30}, j_31=${j_31}`);
-    console.log(`[S04 PER] 🌡️ S13 values: d_114=${d_114}, d_117=${d_117}`);
-
     // Calculate total energy
     const totalEnergy = j_27 + j_28 + j_29 + j_30 + j_31;
 
     // Check for zero total (avoid division by zero)
     if (totalEnergy === 0) {
-      console.log(`[S04 PER] ⚠️ Zero total energy → PER = 1.00`);
-      return 1.00;
+      return 1.0;
     }
 
     // Calculate weighted numerator using PHPP 10.6 Canada factors
@@ -1330,7 +1332,6 @@ window.TEUI.SectionModules.sect04 = (function () {
       j_31 * 1.1; // Renewables × 1.1
 
     const per = numerator / totalEnergy;
-    console.log(`[S04 PER] ✅ PH standard → PER = ${per.toFixed(2)} (numerator=${numerator.toFixed(2)}, total=${totalEnergy.toFixed(2)})`);
     return per;
   }
 
@@ -1465,7 +1466,6 @@ window.TEUI.SectionModules.sect04 = (function () {
     });
     return rowDef;
   }
-
 
   function onSectionRendered() {
     ModeManager.initialize();

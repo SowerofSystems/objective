@@ -1306,9 +1306,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     resetButton.addEventListener("click", event => {
       event.stopPropagation();
       if (
-        confirm(
-          "Factory reset? This will clear ALL data and cannot be undone."
-        )
+        confirm("Factory reset? This will clear ALL data and cannot be undone.")
       ) {
         // Global factory reset - same as main reset button in index.html
         if (window.TEUI?.StateManager?.resetTier3_FactoryReset) {
@@ -1365,7 +1363,12 @@ window.TEUI.SectionModules.sect01 = (function () {
       // Initialize to current mode
       const currentMode =
         window.TEUI.ReferenceToggle.getCurrentMode?.() || "target";
-      updateKeyValuesToggleUI(toggleSwitch, slider, stateIndicator, currentMode);
+      updateKeyValuesToggleUI(
+        toggleSwitch,
+        slider,
+        stateIndicator,
+        currentMode
+      );
     }
 
     // Append all controls to the container, then the container to the header

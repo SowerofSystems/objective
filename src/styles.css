@@ -1440,15 +1440,24 @@ body.viewing-reference-inputs .section-header {
 /* Style section subheaders (unit rows) in reference mode - CHANGED TO viewing-reference-inputs */
 body.viewing-reference-inputs .data-table tr td.section-subheader,
 body.viewing-reference-inputs .data-table tr:has(td.section-subheader) td {
-  background-color: rgba(var(--reference-value-color-rgb), 0.5) !important; /* 50% opacity of #8B0000 */
+  background-color: rgba(
+    var(--reference-value-color-rgb),
+    0.5
+  ) !important; /* 50% opacity of #8B0000 */
   color: #ffffff !important; /* White text for contrast */
-  border-bottom-color: rgba(var(--reference-value-color-rgb), 0.7) !important; /* Darker, semi-transparent border */
+  border-bottom-color: rgba(
+    var(--reference-value-color-rgb),
+    0.7
+  ) !important; /* Darker, semi-transparent border */
 }
 body.viewing-reference-inputs
   .data-table
   tr:has(td.section-subheader)
   td:empty {
-  background-color: rgba(var(--reference-value-color-rgb), 0.5) !important; /* Ensure empty cells match */
+  background-color: rgba(
+    var(--reference-value-color-rgb),
+    0.5
+  ) !important; /* Ensure empty cells match */
 }
 
 /* Example: Style locked fields in reference mode - CHANGED TO viewing-reference-inputs */
@@ -1528,7 +1537,10 @@ body.viewing-reference-inputs #keyValues .key-values-table tr {
 /* This applies when viewing cached reference inputs */
 body.viewing-reference-inputs .reference-input-display-locked {
   /* This rule primarily handles the background fill for PARENT elements like <td> */
-  background-color: rgba(var(--reference-value-color-rgb), 0.1) !important; /* Subtle 10% red overlay */
+  background-color: rgba(
+    var(--reference-value-color-rgb),
+    0.1
+  ) !important; /* Subtle 10% red overlay */
   /* Apply text styles here too, in case the class is on a non-input element that contains text */
   color: var(--reference-value-color) !important;
   font-weight: bold !important;
@@ -1543,7 +1555,10 @@ body.viewing-reference-inputs .user-input.reference-input-display-locked {
   color: var(--reference-value-color) !important;
   font-weight: bold !important;
   font-style: italic !important;
-  background-color: rgba(var(--reference-value-color-rgb), 0.1) !important; /* Ensure fill is also on the input */
+  background-color: rgba(
+    var(--reference-value-color-rgb),
+    0.1
+  ) !important; /* Ensure fill is also on the input */
   opacity: 0.95 !important; /* Slightly less dim to see text better */
   -webkit-text-fill-color: var(--reference-value-color) !important;
   pointer-events: none !important; /* Ensure it's not interactive */
@@ -1556,7 +1571,10 @@ body.viewing-reference-inputs
   color: var(--reference-value-color) !important;
   font-weight: bold !important;
   font-style: italic !important;
-  background-color: rgba(var(--reference-value-color-rgb), 0.1) !important; /* Ensure fill is also on the input */
+  background-color: rgba(
+    var(--reference-value-color-rgb),
+    0.1
+  ) !important; /* Ensure fill is also on the input */
   opacity: 0.95 !important;
   -webkit-text-fill-color: var(--reference-value-color) !important;
   pointer-events: none !important;
@@ -1568,7 +1586,10 @@ body.viewing-reference-inputs .reference-input-display-locked .user-input {
   color: var(--reference-value-color) !important;
   font-weight: bold !important;
   font-style: italic !important;
-  background-color: rgba(var(--reference-value-color-rgb), 0.1) !important; /* Ensure fill is also on the input */
+  background-color: rgba(
+    var(--reference-value-color-rgb),
+    0.1
+  ) !important; /* Ensure fill is also on the input */
   opacity: 0.95 !important;
   -webkit-text-fill-color: var(--reference-value-color) !important;
   pointer-events: none !important;
@@ -1820,6 +1841,170 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
   filter: drop-shadow(
     0px 0px 20px rgba(255, 82, 82, 1)
   ) !important; /* Even stronger glow in fullscreen */
+}
+
+/* ======================================
+   Parallel Coordinates Styles (Section 18)
+   ====================================== */
+
+.parallel-coordinates-controls-wrapper,
+.parallel-coordinates-info-wrapper {
+  /* Wrappers for placement above the SVG - match S17 styling */
+  padding-left: 1rem;
+  padding-right: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 0.25rem;
+}
+
+.parallel-coordinates-controls {
+  /* Styles for the control button container - match S17 styling */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  background-color: #f8f9fa;
+  padding: 10px;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+  margin-bottom: 10px;
+}
+
+.parallel-coordinates-controls .btn-sm {
+  font-size: 0.875rem;
+}
+
+/* Activation Button - styled to fit in controls row */
+#s18ActivateBtn {
+  flex-shrink: 0;
+  margin-right: 10px;
+  min-width: 160px; /* Slightly wider for "Activate Optimization View" */
+}
+
+/* Disabled controls styling - make them look inactive but visible */
+.parallel-coordinates-controls button:disabled:not(#s18ActivateBtn) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Layout Buttons Container - push to right with fullscreen at far right */
+.parallel-coordinates-controls > div:last-child {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* Parallel Coordinates Container - match S17 initial compact height */
+.parallel-coordinates-container {
+  min-height: 150px;
+}
+
+/* Parallel Coordinates Container - activated state (650px for graph + 9 table rows: Header, Capital Budget, Ref Cost, Target Cost, Savings, Simple ROI) */
+.parallel-coordinates-container.activated {
+  height: 650px;
+  padding-bottom: 10px;
+}
+
+/* Parallel Coordinates Data Table Wrapper */
+.pc-data-table {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 0; /* No margin - use container padding instead */
+}
+
+/* Parallel Coordinates Table - inside wrapper */
+.pc-data-table table {
+  font-size: 11px;
+  margin-bottom: 0; /* Remove Bootstrap default margin */
+  table-layout: fixed; /* Equal width columns for alignment with graph axes */
+  width: 100%;
+}
+
+/* Parallel Coordinates Table Cells - Target color */
+.pc-data-table table td.pc-target-cell {
+  color: #0d6efd; /* Bootstrap primary blue */
+}
+
+/* Parallel Coordinates Table Cells - Reference color */
+.pc-data-table table td.pc-reference-cell {
+  color: #dc3545; /* Bootstrap danger red */
+}
+
+/* Parallel Coordinates Table - Row Labels */
+.pc-data-table .pc-row-label {
+  width: 60px;
+  text-align: left;
+  padding-left: 5px;
+  padding-right: 5px;
+  font-weight: 600;
+  white-space: nowrap;
+  font-size: 10px;
+}
+
+/* Parallel Coordinates - Interactive Node Styles */
+.pc-editable-node {
+  cursor: grab;
+  transition: filter 0.2s ease;
+}
+
+.pc-editable-node:hover {
+  filter: drop-shadow(0 0 4px rgba(13, 110, 253, 0.8)); /* Blue glow on hover */
+}
+
+.pc-dragging {
+  cursor: grabbing !important;
+  opacity: 0.7;
+  filter: drop-shadow(
+    0 0 6px rgba(13, 110, 253, 1)
+  ); /* Stronger glow while dragging */
+}
+
+/* Parallel Coordinates - Drag Value Modal */
+#pc-drag-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 8px;
+  padding: 20px 40px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  font-size: 24px;
+  font-weight: bold;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Modal color variants - set via data-mode attribute */
+#pc-drag-modal[data-mode="target"] {
+  border: 2px solid #0d6efd;
+  color: #0d6efd;
+}
+
+#pc-drag-modal[data-mode="reference"] {
+  border: 2px solid #dc3545;
+  color: #dc3545;
+}
+
+/* Parallel Coordinates - Capital Budget Input Fields */
+.pc-capital-input {
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 11px;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pc-capital-input:hover {
+  border-color: #adb5bd;
+}
+
+.pc-capital-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
 /* ======================================

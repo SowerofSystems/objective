@@ -97,6 +97,11 @@
     <!-- Cooling Calculations - Restored ARCHIVE chassis for S13 simplification -->
     <script src="src/core/Cooling.js"></script>
 
+    <!-- Parallel Coordinates Configuration (S18) -->
+    <script src="src/core/pcConfig.js"></script>
+    <script src="src/core/pcFinancials.js"></script> <!-- Pro version only -->
+    <script src="src/core/ParallelCoordinates.js"></script>
+
     <!-- Initialize everything AFTER core scripts are loaded -->
     <script src="src/core/init.js"></script>
 
@@ -123,6 +128,9 @@
     <!-- Cooling Sankey Module -->
     <script src="src/sections/Section17.js"></script>
     <script src="src/sections/Section18.js"></script>
+    <!-- Parallel Coordinates Module -->
+    <script src="src/sections/Section19.js"></script>
+    <!-- Notes & Debug Module -->
   </head>
   <body>
     <!-- Main container -->
@@ -631,13 +639,36 @@
             </div>
           </div>
 
-          <!-- Section 18: Notes -->
+          <!-- Section 18: Optimize -->
+          <div id="parallelCoordinates" class="section">
+            <div class="section-header">
+              <span class="section-icon"><i class="bi bi-shuffle"></i></span>
+              SECTION 18. Optimize
+            </div>
+            <div class="section-content">
+              <!-- Controls wrapper - ParallelCoordinates.js will inject controls here -->
+              <div class="parallel-coordinates-controls-wrapper mb-3"></div>
+
+              <!-- Info wrapper - ParallelCoordinates.js will inject info panel here -->
+              <div class="parallel-coordinates-info-wrapper mb-3"></div>
+
+              <!-- Graph container - ParallelCoordinates.js will inject SVG and placeholder here -->
+              <div
+                class="parallel-coordinates-container"
+                style="width: 100%; border: 1px solid #eee"
+              >
+                <!-- SVG and placeholder will be injected here by ParallelCoordinates.js -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 19: Notes -->
           <div id="notes" class="section">
             <div class="section-header">
               <span class="section-icon"
                 ><i class="bi bi-info-square"></i
               ></span>
-              SECTION 18. Notes
+              SECTION 19. Notes & Debug
             </div>
             <div class="section-content">
               <div data-render-section="notes"></div>

@@ -34,7 +34,8 @@ TEUI.FieldManager = (function () {
     teuiSummary: "sect15",
     sankeyDiagram: "sect16",
     dependencyDiagram: "sect17",
-    notes: "sect18",
+    parallelCoordinates: "sect18",
+    notes: "sect19",
   };
 
   // Combined field registry (populated from section modules)

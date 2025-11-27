@@ -73,6 +73,7 @@ document.addEventListener("DOMContentLoaded", function () {
     teuiSummary: "bi-outlet",
     sankeyDiagram: "bi-sliders2",
     dependencyDiagram: "bi-link-45deg",
+    parallelCoordinates: "bi-shuffle",
     footer: "bi-info-square",
     notes: "bi-info-square",
   };
@@ -95,6 +96,7 @@ document.addEventListener("DOMContentLoaded", function () {
     teuiSummary: "TEUI",
     sankeyDiagram: "Sankey",
     dependencyDiagram: "Depend",
+    parallelCoordinates: "Optimize",
     notes: "Notes",
   };
 
@@ -116,6 +118,7 @@ document.addEventListener("DOMContentLoaded", function () {
     teuiSummary: "TEUI Summary",
     sankeyDiagram: "Energy Flow Diagram",
     dependencyDiagram: "Dependencies Graph",
+    parallelCoordinates: "Optimization Analysis",
     notes: "Project Notes",
   };
 
