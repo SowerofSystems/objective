@@ -1067,7 +1067,9 @@ function handleOptimize() {
 
 **Strategy:** Set high-performance efficiency values across all editable parameters
 
-**Implementation:** ⏳ **IN PROGRESS** - Ready to code
+**Differentiation:** TB% is 10% (less aggressive than PassivHaus-ify's 5%)
+
+**Implementation:** ✅ **COMPLETE**
 
 ### Field Changes
 
@@ -1077,7 +1079,7 @@ function handleOptimize() {
 | S07 | d_53 | DWHR recovery % | 70 | Standard slider |
 | S13 | d_113 / j_115 / f_113 | Heating efficiency | See below | Conditional logic |
 | S13 | d_118 | MVHR efficiency % | 95 | Standard slider |
-| S11 | d_88 | Thermal bridging % | 5 | Standard slider |
+| S11 | d_97 | Thermal bridging % | 10 | **Differentiated from PassivHaus-ify (5%)** |
 | S12 | d_108 / g_109 | ACH50 | 0.60 | Dropdown flip + value |
 | S10 | d_80 | Net gains method | PH Method | Dropdown switch to PHPP |
 
@@ -1139,11 +1141,13 @@ function handleSuperOptimize() {
 
 **Purpose:** Set values to achieve PassivHaus certification target (120 PER at f_35)
 
-**Strategy:** For now, applies same optimizations as Super Optimize. Sequential PER targeting to be added later.
+**Strategy:** Most aggressive settings - targets PH certification standards. Sequential PER targeting to be added later.
 
-**Implementation:** ⏳ **IN PROGRESS** - Ready to code (Phase 1: Same as Super Optimize)
+**Differentiation:** TB% is 5% (more aggressive than Super Optimize's 10%)
 
-### Phase 1: Field Changes (Same as Super Optimize)
+**Implementation:** ✅ **COMPLETE** (Phase 1)
+
+### Phase 1: Field Changes
 
 | Section | Field | Description | Value | Notes |
 |---------|-------|-------------|-------|-------|
@@ -1151,7 +1155,7 @@ function handleSuperOptimize() {
 | S07 | d_53 | DWHR recovery % | 70 | Standard slider |
 | S13 | d_113 / j_115 / f_113 | Heating efficiency | See below | Conditional logic |
 | S13 | d_118 | MVHR efficiency % | 95 | Standard slider |
-| S11 | d_88 | Thermal bridging % | 5 | Standard slider |
+| S11 | d_97 | Thermal bridging % | 5 | **PassivHaus-grade (vs Super Optimize 10%)** |
 | S12 | d_108 / g_109 | ACH50 | 0.60 | Dropdown flip + value |
 | S10 | d_80 | Net gains method | PH Method | Dropdown switch to PHPP |
 

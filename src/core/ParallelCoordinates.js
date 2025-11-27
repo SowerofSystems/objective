@@ -1577,6 +1577,7 @@ window.TEUI.ParallelCoordinates = (function () {
   /**
    * SUPER OPTIMIZE BUTTON HANDLER
    * Applies aggressive multi-objective optimization (high efficiency improvements)
+   * Differentiated from PassivHaus-ify: TB% is 10% instead of 5%
    * Pattern: Follow Pattern A architecture - update TargetState + StateManager + refresh sections
    */
   function handleSuperOptimize() {
@@ -1681,15 +1682,15 @@ window.TEUI.ParallelCoordinates = (function () {
     }
 
     // ========================================================================
-    // Part 5: Thermal Bridging (S11) - 5%
-    // FIXED: d_97 is the TB% slider, not d_88 (which is Door area)
+    // Part 5: Thermal Bridging (S11) - 10%
+    // DIFFERENTIATED: Super Optimize uses 10%, PassivHaus-ify uses 5%
     // ========================================================================
     const sect11 = window.TEUI?.SectionModules?.sect11;
     if (sect11?.TargetState) {
-      sect11.TargetState.setValue("d_97", "5");
+      sect11.TargetState.setValue("d_97", "10");
     }
-    stateManager.setValue("d_97", "5", "user-modified");
-    changes.push("TB 5%");
+    stateManager.setValue("d_97", "10", "user-modified");
+    changes.push("TB 10%");
 
     // Trigger S11 recalculation
     if (sect11) {
