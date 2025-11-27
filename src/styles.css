@@ -2033,6 +2033,45 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
   font-weight: 500;
 }
 
+/* Parallel Coordinates - Feedback Console */
+#s18-feedback-console {
+  color: #0dcaf0;
+  font-size: 0.8rem;
+  font-family: monospace;
+  margin-left: 10px;
+}
+
+/* Parallel Coordinates - Legend Containers */
+.pc-legend-container {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  margin-left: 20px;
+  margin-right: 20px;
+  padding-left: 20px;
+  border-left: 1px solid #dee2e6;
+}
+
+.pc-line-legend {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.pc-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pc-node-legend {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding-left: 15px;
+  border-left: 1px solid #dee2e6;
+}
+
 /* ======================================
    SECTION 16 - SANKEY DIAGRAM STYLES
    ====================================== */

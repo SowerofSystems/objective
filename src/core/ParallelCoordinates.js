@@ -304,21 +304,18 @@ window.TEUI.ParallelCoordinates = (function () {
     // Create feedback console (will be injected into section header, matching S01 pattern)
     const feedbackConsole = document.createElement("span");
     feedbackConsole.id = "s18-feedback-console";
-    feedbackConsole.style.cssText =
-      "color: #0dcaf0; font-size: 0.8rem; font-family: monospace; margin-left: 10px;";
 
     // Create inline legend (in middle of controls row)
     const legendContainer = document.createElement("div");
-    legendContainer.style.cssText =
-      "display: flex; gap: 15px; align-items: center; margin-left: 20px; margin-right: 20px; padding-left: 20px; border-left: 1px solid #dee2e6;";
+    legendContainer.className = "pc-legend-container";
 
     // Line legend (Target/Reference)
     const lineLegendContainer = document.createElement("div");
-    lineLegendContainer.style.cssText = "display: flex; gap: 12px; align-items: center;";
+    lineLegendContainer.className = "pc-line-legend";
 
     // Target line legend
     const targetLineLegend = document.createElement("div");
-    targetLineLegend.style.cssText = "display: flex; align-items: center; gap: 6px;";
+    targetLineLegend.className = "pc-legend-item";
     targetLineLegend.innerHTML = `
       <div style="width: 20px; height: 3px; background: ${CONFIG.colors.target};"></div>
       <span style="font-size: 12px; font-weight: 500; color: ${CONFIG.colors.target};">Target</span>
@@ -326,7 +323,7 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Reference line legend
     const referenceLineLegend = document.createElement("div");
-    referenceLineLegend.style.cssText = "display: flex; align-items: center; gap: 6px;";
+    referenceLineLegend.className = "pc-legend-item";
     referenceLineLegend.innerHTML = `
       <div style="width: 20px; height: 3px; background: ${CONFIG.colors.reference};"></div>
       <span style="font-size: 12px; font-weight: 500; color: ${CONFIG.colors.reference};">Reference</span>
@@ -337,11 +334,11 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Node legend (Calculated/Editable) - separator + node types
     const nodeLegendContainer = document.createElement("div");
-    nodeLegendContainer.style.cssText = "display: flex; gap: 12px; align-items: center; padding-left: 15px; border-left: 1px solid #dee2e6;";
+    nodeLegendContainer.className = "pc-node-legend";
 
     // Calculated node legend (small dot)
     const calculatedNodeLegend = document.createElement("div");
-    calculatedNodeLegend.style.cssText = "display: flex; align-items: center; gap: 6px;";
+    calculatedNodeLegend.className = "pc-legend-item";
     calculatedNodeLegend.innerHTML = `
       <svg width="16" height="16" style="display: block;">
         <circle cx="8" cy="8" r="3" fill="${CONFIG.colors.target}" stroke="white" stroke-width="1"></circle>
@@ -351,7 +348,7 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Editable node legend (large dot)
     const editableNodeLegend = document.createElement("div");
-    editableNodeLegend.style.cssText = "display: flex; align-items: center; gap: 6px;";
+    editableNodeLegend.className = "pc-legend-item";
     editableNodeLegend.innerHTML = `
       <svg width="16" height="16" style="display: block;">
         <circle cx="8" cy="8" r="6" fill="${CONFIG.colors.target}" stroke="white" stroke-width="1.5"></circle>
