@@ -1493,15 +1493,6 @@ window.TEUI.ParallelCoordinates = (function () {
     stateManager.setValue("d_88", "20", "user-modified");
     changes.push("TB 20%");
 
-    // ========================================================================
-    // Part 6: Net Gains (S11) - NRC 60%
-    // ========================================================================
-    if (sect11?.TargetState) {
-      sect11.TargetState.setValue("d_80", "NRC 60%");
-    }
-    stateManager.setValue("d_80", "NRC 60%", "user-modified");
-    changes.push("nGains 60%");
-
     // Trigger S11 recalculation
     if (sect11) {
       if (sect11.calculateAll) {
@@ -1509,6 +1500,27 @@ window.TEUI.ParallelCoordinates = (function () {
       }
       if (sect11.ModeManager?.refreshUI) {
         sect11.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 6: Net Gains (S10) - NRC 60%
+    // FIXED: d_80 belongs to Section 10, not Section 11
+    // ========================================================================
+    const sect10 = window.TEUI?.SectionModules?.sect10;
+    if (sect10?.TargetState) {
+      sect10.TargetState.setValue("d_80", "NRC 60%");
+    }
+    stateManager.setValue("d_80", "NRC 60%", "user-modified");
+    changes.push("nGains 60%");
+
+    // Trigger S10 recalculation
+    if (sect10) {
+      if (sect10.calculateAll) {
+        sect10.calculateAll();
+      }
+      if (sect10.ModeManager?.refreshUI) {
+        sect10.ModeManager.refreshUI();
       }
     }
 
@@ -1677,15 +1689,6 @@ window.TEUI.ParallelCoordinates = (function () {
     stateManager.setValue("d_88", "5", "user-modified");
     changes.push("TB 5%");
 
-    // ========================================================================
-    // Part 6: Net Gains (S11) - PH Method
-    // ========================================================================
-    if (sect11?.TargetState) {
-      sect11.TargetState.setValue("d_80", "PH Method");
-    }
-    stateManager.setValue("d_80", "PH Method", "user-modified");
-    changes.push("nGains PHPP");
-
     // Trigger S11 recalculation
     if (sect11) {
       if (sect11.calculateAll) {
@@ -1693,6 +1696,27 @@ window.TEUI.ParallelCoordinates = (function () {
       }
       if (sect11.ModeManager?.refreshUI) {
         sect11.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 6: Net Gains (S10) - PH Method
+    // FIXED: d_80 belongs to Section 10, not Section 11
+    // ========================================================================
+    const sect10 = window.TEUI?.SectionModules?.sect10;
+    if (sect10?.TargetState) {
+      sect10.TargetState.setValue("d_80", "PH Method");
+    }
+    stateManager.setValue("d_80", "PH Method", "user-modified");
+    changes.push("nGains PHPP");
+
+    // Trigger S10 recalculation
+    if (sect10) {
+      if (sect10.calculateAll) {
+        sect10.calculateAll();
+      }
+      if (sect10.ModeManager?.refreshUI) {
+        sect10.ModeManager.refreshUI();
       }
     }
 
@@ -1862,15 +1886,6 @@ window.TEUI.ParallelCoordinates = (function () {
     stateManager.setValue("d_88", "5", "user-modified");
     changes.push("TB 5%");
 
-    // ========================================================================
-    // Part 6: Net Gains (S11) - PH Method
-    // ========================================================================
-    if (sect11?.TargetState) {
-      sect11.TargetState.setValue("d_80", "PH Method");
-    }
-    stateManager.setValue("d_80", "PH Method", "user-modified");
-    changes.push("nGains PHPP");
-
     // Trigger S11 recalculation
     if (sect11) {
       if (sect11.calculateAll) {
@@ -1878,6 +1893,27 @@ window.TEUI.ParallelCoordinates = (function () {
       }
       if (sect11.ModeManager?.refreshUI) {
         sect11.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 6: Net Gains (S10) - PH Method
+    // FIXED: d_80 belongs to Section 10, not Section 11
+    // ========================================================================
+    const sect10 = window.TEUI?.SectionModules?.sect10;
+    if (sect10?.TargetState) {
+      sect10.TargetState.setValue("d_80", "PH Method");
+    }
+    stateManager.setValue("d_80", "PH Method", "user-modified");
+    changes.push("nGains PHPP");
+
+    // Trigger S10 recalculation
+    if (sect10) {
+      if (sect10.calculateAll) {
+        sect10.calculateAll();
+      }
+      if (sect10.ModeManager?.refreshUI) {
+        sect10.ModeManager.refreshUI();
       }
     }
 
