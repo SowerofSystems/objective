@@ -2007,6 +2007,32 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
   box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
+/* Parallel Coordinates - Super Buttons (Optimization Actions) */
+.pc-btn-decarbonize {
+  font-weight: 500;
+}
+
+.pc-btn-optimize {
+  background-color: #20c997;
+  color: white;
+  border-color: #20c997;
+  font-weight: 500;
+}
+
+.pc-btn-super-optimize {
+  background-color: #ff8c00;
+  color: white;
+  border-color: #ff8c00;
+  font-weight: 500;
+}
+
+.pc-btn-passivhaus {
+  background-color: #ffc107;
+  color: #dc3545;
+  border-color: #ffc107;
+  font-weight: 500;
+}
+
 /* ======================================
    SECTION 16 - SANKEY DIAGRAM STYLES
    ====================================== */

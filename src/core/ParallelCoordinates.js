@@ -262,30 +262,26 @@ window.TEUI.ParallelCoordinates = (function () {
     if (isActivated) {
       // Decarbonize button (green)
       decarbonizeBtn = document.createElement("button");
-      decarbonizeBtn.className = "btn btn-success btn-sm";
+      decarbonizeBtn.className = "btn btn-success btn-sm pc-btn-decarbonize";
       decarbonizeBtn.innerHTML = "Decarbonize";
-      decarbonizeBtn.style.fontWeight = "500";
       decarbonizeBtn.addEventListener("click", handleDecarbonize);
 
       // Optimize button (teal)
       optimizeBtn = document.createElement("button");
-      optimizeBtn.className = "btn btn-sm";
+      optimizeBtn.className = "btn btn-sm pc-btn-optimize";
       optimizeBtn.innerHTML = "Optimize";
-      optimizeBtn.style.cssText = "background-color: #20c997; color: white; border-color: #20c997; font-weight: 500;";
       optimizeBtn.addEventListener("click", handleOptimize);
 
       // Super Optimize button (orange - like the fruit!)
       superOptimizeBtn = document.createElement("button");
-      superOptimizeBtn.className = "btn btn-sm";
+      superOptimizeBtn.className = "btn btn-sm pc-btn-super-optimize";
       superOptimizeBtn.innerHTML = "Super Optimize";
-      superOptimizeBtn.style.cssText = "background-color: #ff8c00; color: white; border-color: #ff8c00; font-weight: 500;";
       superOptimizeBtn.addEventListener("click", handleSuperOptimize);
 
       // PassivHaus-ify button (yellow background with danger red text - PH logo colors)
       passivhausBtn = document.createElement("button");
-      passivhausBtn.className = "btn btn-sm";
+      passivhausBtn.className = "btn btn-sm pc-btn-passivhaus";
       passivhausBtn.innerHTML = "PassivHaus-ify";
-      passivhausBtn.style.cssText = "background-color: #ffc107; color: #dc3545; border-color: #ffc107; font-weight: 500;";
       passivhausBtn.addEventListener("click", handlePassivHausIfy);
     }
 
