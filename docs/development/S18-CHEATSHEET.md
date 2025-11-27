@@ -1522,15 +1522,16 @@ For future button implementations, here's the field ownership map:
 ## UX Enhancement: D3 Animations & Tooltips
 
 **Date:** November 26-27, 2025
-**Status:** ✅ **PHASE 1 & 2 COMPLETE**
+**Status:** ✅ **ALL PHASES COMPLETE**
 **Priority:** High (essential UX improvement)
 
 ### Implementation Summary
 
 **Phase 1 (Nov 26):** Node tooltips + smooth line/node transitions
 **Phase 2 (Nov 27):** Ghost trails for Super Buttons + rubber band dragging
+**Phase 3 (Nov 27):** Live tooltip updates during drag (replaces modal)
 
-All enhancements tested and working perfectly on first implementation!
+All enhancements tested and working perfectly!
 
 ### Implemented Features
 
@@ -1906,28 +1907,21 @@ function updateWithStagger(newData) {
 
 ---
 
-### Phase 3: Live Tooltip Updates During Drag (Planned)
+### Phase 3: Live Tooltip Updates During Drag ✅ **IMPLEMENTED**
 
 **Date:** November 27, 2025
-**Status:** 📋 **DOCUMENTED - Ready for Implementation**
-**Priority:** High (UX improvement - retire modal in favor of tooltip)
+**Status:** ✅ **COMPLETE**
+**Priority:** High (UX improvement - retired modal in favor of tooltip)
 
-#### Current Behavior
+#### Implementation Details
 
 When dragging a node:
-- Large modal appears in center of screen showing current value
-- Tooltip disappears during drag
-- HEAT% modal shows HSPF/COP conversion when >100%
-
-#### Proposed Enhancement
-
-**Replace modal with live-updating tooltip that follows the dragged node:**
-
-1. **Keep tooltip visible during drag** - Don't hide on mousedown
-2. **Update tooltip content in real-time** - Stream values as node moves
-3. **Position tooltip near cursor** - Follow drag, not centered modal
-4. **Show HEAT% conversions** - Display HSPF/COP in tooltip subtitle
-5. **Remove modal entirely** - Cleaner, less intrusive UX
+- ✅ Tooltip stays visible and follows cursor during drag
+- ✅ Values update in real-time as node moves
+- ✅ HEAT% shows HSPF/COP conversion when >100%
+- ✅ nGains% shows "PHPP" label when at 70%
+- ✅ Tooltip fades out 500ms after drag ends
+- ✅ Modal completely removed (~100 lines of code cleaned up)
 
 #### Implementation Pattern
 
@@ -2114,21 +2108,20 @@ function dragEnded(event, d) {
 - [ ] Tooltip doesn't flicker during discrete snapping (nGains%)
 - [ ] ACH50 shows 2 decimal places correctly
 
-#### Code Locations
+#### Code Locations (Implemented)
 
-**Modal Removal:**
-- `showDragModal()` - DELETE (~line 2800)
-- `updateDragModal()` - DELETE (~line 2850)
-- `hideDragModal()` - DELETE (~line 2900)
-- Modal DOM creation in `renderGraph()` - DELETE (~line 600)
+**Modal Removal (✅ Complete):**
+- `showDragModal()` - ✅ DELETED (was ~line 2938)
+- `updateDragModal()` - ✅ DELETED (was ~line 2943)
+- `hideDragModal()` - ✅ DELETED (was ~line 2969)
 
-**Tooltip Enhancement:**
-- `dragStarted()` - Modify (~line 2531)
-- `dragging()` - Add tooltip updates (~line 2570)
-- `dragEnded()` - Add tooltip fade-out (~line 2668)
+**Tooltip Enhancement (✅ Complete):**
+- `dragStarted()` - ✅ Modified [ParallelCoordinates.js:2531-2536](../../src/core/ParallelCoordinates.js#L2531-L2536)
+- `dragging()` - ✅ Added live tooltip updates [ParallelCoordinates.js:2634-2676](../../src/core/ParallelCoordinates.js#L2634-L2676)
+- `dragEnded()` - ✅ Added tooltip fade-out [ParallelCoordinates.js:2697-2703](../../src/core/ParallelCoordinates.js#L2697-L2703)
 
-**CSS Updates:**
-- [styles.css](../../src/styles.css) - Remove modal styles, enhance tooltip (~line 1963)
+**CSS Updates (✅ Complete):**
+- [styles.css](../../src/styles.css) - ✅ Modal styles removed (lines 1962-1988 deleted)
 
 ---
 

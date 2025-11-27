@@ -1959,34 +1959,6 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
   ); /* Stronger glow while dragging */
 }
 
-/* Parallel Coordinates - Drag Value Modal */
-#pc-drag-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: white;
-  border-radius: 8px;
-  padding: 20px 40px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  z-index: 10000;
-  font-size: 24px;
-  font-weight: bold;
-  pointer-events: none;
-  user-select: none;
-}
-
-/* Modal color variants - set via data-mode attribute */
-#pc-drag-modal[data-mode="target"] {
-  border: 2px solid #0d6efd;
-  color: #0d6efd;
-}
-
-#pc-drag-modal[data-mode="reference"] {
-  border: 2px solid #dc3545;
-  color: #dc3545;
-}
-
 /* Parallel Coordinates - Capital Budget Input Fields */
 .pc-capital-input {
   border: 1px solid #dee2e6;
@@ -1994,7 +1966,9 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
   padding: 2px 4px;
   font-size: 11px;
   background: #fff;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .pc-capital-input:hover {

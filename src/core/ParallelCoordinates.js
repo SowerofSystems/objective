@@ -358,8 +358,13 @@ window.TEUI.ParallelCoordinates = (function () {
     layoutContainer.appendChild(fullscreenBtn);
 
     // Inject feedback console into section header (matching S01 pattern)
-    const sectionHeader = document.querySelector("#parallelCoordinates .section-header");
-    if (sectionHeader && !sectionHeader.querySelector("#s18-feedback-console")) {
+    const sectionHeader = document.querySelector(
+      "#parallelCoordinates .section-header"
+    );
+    if (
+      sectionHeader &&
+      !sectionHeader.querySelector("#s18-feedback-console")
+    ) {
       sectionHeader.appendChild(feedbackConsole);
     }
 
@@ -367,7 +372,13 @@ window.TEUI.ParallelCoordinates = (function () {
     controlsContainer.appendChild(mainBtn);
 
     // Add action buttons (only when activated) right after main button
-    if (isActivated && decarbonizeBtn && optimizeBtn && superOptimizeBtn && passivhausBtn) {
+    if (
+      isActivated &&
+      decarbonizeBtn &&
+      optimizeBtn &&
+      superOptimizeBtn &&
+      passivhausBtn
+    ) {
       controlsContainer.appendChild(decarbonizeBtn);
       controlsContainer.appendChild(optimizeBtn);
       controlsContainer.appendChild(superOptimizeBtn);
@@ -505,6 +516,22 @@ window.TEUI.ParallelCoordinates = (function () {
     );
     return data;
   }
+
+  // ========================================================================
+  // HELPER FUNCTIONS
+  // ========================================================================
+
+  /**
+   * Format currency values (CAD)
+   */
+  const formatCurrency = value => {
+    return new Intl.NumberFormat("en-CA", {
+      style: "currency",
+      currency: "CAD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
 
   // ========================================================================
   // RENDERING
@@ -840,7 +867,8 @@ window.TEUI.ParallelCoordinates = (function () {
       const axis = axes[axisIndex];
       const axisConfig = EDITABLE_AXES[axis.id];
       const isEditable = !!axisConfig;
-      const color = mode === "target" ? CONFIG.colors.target : CONFIG.colors.reference;
+      const color =
+        mode === "target" ? CONFIG.colors.target : CONFIG.colors.reference;
       const label = mode === "target" ? "Target" : "Reference";
 
       selection
@@ -944,7 +972,7 @@ window.TEUI.ParallelCoordinates = (function () {
 
     console.log("[ParallelCoordinates] Graph rendered successfully");
   }
-  
+
   /**
    * Render the data table below the graph
    */
@@ -1040,16 +1068,6 @@ window.TEUI.ParallelCoordinates = (function () {
     // Check if Pro version (pcFinancials module available)
     const hasPro = window.TEUI?.pcFinancials?.calculateFinancials;
 
-    // Currency formatter (CAD)
-    const formatCurrency = value => {
-      return new Intl.NumberFormat("en-CA", {
-        style: "currency",
-        currency: "CAD",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(value);
-    };
-
     // Get ROI term multiplier
     const roiMultiplier = CONFIG.roiTerm || 1;
 
@@ -1065,7 +1083,7 @@ window.TEUI.ParallelCoordinates = (function () {
         const annualizedCost = result.cost * roiMultiplier;
 
         // Special formatting for GHGI (emissions, not currency)
-        if (axis.id === 'ghgi') {
+        if (axis.id === "ghgi") {
           refCostRow.innerHTML += `<td class="text-center pc-reference-cell">${annualizedCost.toFixed(2)}</td>`;
         } else {
           refCostRow.innerHTML += `<td class="text-center pc-reference-cell">${formatCurrency(annualizedCost)}</td>`;
@@ -1088,7 +1106,7 @@ window.TEUI.ParallelCoordinates = (function () {
         const annualizedCost = result.cost * roiMultiplier;
 
         // Special formatting for GHGI (emissions, not currency)
-        if (axis.id === 'ghgi') {
+        if (axis.id === "ghgi") {
           targetCostRow.innerHTML += `<td class="text-center pc-target-cell">${annualizedCost.toFixed(2)}</td>`;
         } else {
           targetCostRow.innerHTML += `<td class="text-center pc-target-cell">${formatCurrency(annualizedCost)}</td>`;
@@ -1111,7 +1129,7 @@ window.TEUI.ParallelCoordinates = (function () {
         const annualizedSavings = result.cost * roiMultiplier;
 
         // Special formatting for GHGI (emissions, not currency)
-        if (axis.id === 'ghgi') {
+        if (axis.id === "ghgi") {
           savingsRow.innerHTML += `<td class="text-center text-success">${annualizedSavings.toFixed(2)}</td>`;
         } else {
           savingsRow.innerHTML += `<td class="text-center text-success">${formatCurrency(annualizedSavings)}</td>`;
@@ -1128,31 +1146,35 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Default capital budget values (user-editable)
     const defaultCapitalBudgets = {
-      'shw_efficiency': 10000,
-      'dwhr_efficiency': 5000,
-      'net_gains': 100000,
-      'thermal_bridge': 50000,
-      'aggregate_ground_uvalue': 20000,
-      'aggregate_air_uvalue': 100000,
-      'ach50': 30000,
-      'window_wall_ratio': 50000,
-      'heating_efficiency': 50000,
-      'mvhr_efficiency': 50000,
-      'tedi': 1,
-      'teli': 100000,
-      'ghgi': 0,
-      'teui': 0
+      shw_efficiency: 10000,
+      dwhr_efficiency: 5000,
+      net_gains: 100000,
+      thermal_bridge: 50000,
+      aggregate_ground_uvalue: 20000,
+      aggregate_air_uvalue: 100000,
+      ach50: 30000,
+      window_wall_ratio: 50000,
+      heating_efficiency: 50000,
+      mvhr_efficiency: 50000,
+      tedi: 1,
+      teli: 100000,
+      ghgi: 0,
+      teui: 0,
     };
 
     axes.forEach(axis => {
       const savedValue = localStorage.getItem(`pc_capital_budget_${axis.id}`);
       const defaultValue = defaultCapitalBudgets[axis.id] || 0;
-      const numValue = savedValue !== null ? parseFloat(savedValue) : defaultValue;
+      const numValue =
+        savedValue !== null ? parseFloat(savedValue) : defaultValue;
       const formattedValue = formatCurrency(numValue);
 
       // Save default value to localStorage if not already set
       if (savedValue === null) {
-        localStorage.setItem(`pc_capital_budget_${axis.id}`, numValue.toString());
+        localStorage.setItem(
+          `pc_capital_budget_${axis.id}`,
+          numValue.toString()
+        );
       }
 
       capitalBudgetRow.innerHTML += `
@@ -1172,21 +1194,21 @@ window.TEUI.ParallelCoordinates = (function () {
     // Target Simple ROI row (payback period in years)
     const roiRow = document.createElement("tr");
     roiRow.innerHTML = `<td class="pc-row-label"><strong>Target Simple ROI</strong></td>`;
-    roiRow.classList.add('pc-roi-row'); // For easy updates later
+    roiRow.classList.add("pc-roi-row"); // For easy updates later
 
     axes.forEach(axis => {
-      const capitalBudget = parseFloat(localStorage.getItem(`pc_capital_budget_${axis.id}`) || "0");
+      const capitalBudget = parseFloat(
+        localStorage.getItem(`pc_capital_budget_${axis.id}`) || "0"
+      );
 
       if (hasPro) {
         // Get ANNUAL savings (not multiplied by ROI Term)
-        const annualSavingsResult = window.TEUI.pcFinancials.calculateFinancials(
-          axis.id,
-          "savings"
-        );
+        const annualSavingsResult =
+          window.TEUI.pcFinancials.calculateFinancials(axis.id, "savings");
         const annualSavings = annualSavingsResult.cost; // Already annual (1yr)
 
         let roiDisplay;
-        if (axis.id === 'ghgi') {
+        if (axis.id === "ghgi") {
           // GHGI: Use capital budget as carbon price per MT ($/tCO2e)
           // Convert kgCO2e savings to MT (metric tons) and calculate carbon cost savings
           const carbonPricePerMT = capitalBudget; // User enters $/MT in capital budget field
@@ -1195,17 +1217,17 @@ window.TEUI.ParallelCoordinates = (function () {
           const carbonCostSavings = emissionsReductionMT * carbonPricePerMT; // $/yr
 
           if (carbonPricePerMT === 0) {
-            roiDisplay = 'N/A'; // No carbon price set
+            roiDisplay = "N/A"; // No carbon price set
           } else if (emissionsReductionKg <= 0) {
-            roiDisplay = 'N/A'; // No emissions reduction
+            roiDisplay = "N/A"; // No emissions reduction
           } else {
             // Show total carbon cost savings per year
             roiDisplay = formatCurrency(carbonCostSavings);
           }
         } else if (capitalBudget === 0) {
-          roiDisplay = '-'; // No investment
+          roiDisplay = "-"; // No investment
         } else if (annualSavings <= 0) {
-          roiDisplay = 'N/A'; // No savings or negative savings
+          roiDisplay = "N/A"; // No savings or negative savings
         } else {
           const roiYears = capitalBudget / annualSavings;
           roiDisplay = `${roiYears.toFixed(1)} yrs`;
@@ -1226,14 +1248,17 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Attach event listeners to Capital Budget inputs
     setTimeout(() => {
-      document.querySelectorAll('.pc-capital-input').forEach(input => {
-        input.addEventListener('blur', (e) => {
+      document.querySelectorAll(".pc-capital-input").forEach(input => {
+        input.addEventListener("blur", e => {
           const axisId = e.target.dataset.axis;
-          const rawValue = e.target.value.replace(/[^0-9.]/g, '');
+          const rawValue = e.target.value.replace(/[^0-9.]/g, "");
           const numValue = parseFloat(rawValue) || 0;
 
           // Save to localStorage
-          localStorage.setItem(`pc_capital_budget_${axisId}`, numValue.toString());
+          localStorage.setItem(
+            `pc_capital_budget_${axisId}`,
+            numValue.toString()
+          );
 
           // Format display
           e.target.value = formatCurrency(numValue);
@@ -1243,8 +1268,8 @@ window.TEUI.ParallelCoordinates = (function () {
         });
 
         // Allow Enter key to blur (trigger save)
-        input.addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') {
+        input.addEventListener("keypress", e => {
+          if (e.key === "Enter") {
             e.target.blur();
           }
         });
@@ -1262,25 +1287,25 @@ window.TEUI.ParallelCoordinates = (function () {
    * Update ROI row after Capital Budget changes
    */
   function updateROIRow(axes, hasPro) {
-    const roiRow = document.querySelector('.pc-roi-row');
+    const roiRow = document.querySelector(".pc-roi-row");
     if (!roiRow) return;
 
     // Get all ROI cells (skip first cell which is the label)
-    const roiCells = roiRow.querySelectorAll('td:not(.pc-row-label)');
+    const roiCells = roiRow.querySelectorAll("td:not(.pc-row-label)");
 
     axes.forEach((axis, index) => {
-      const capitalBudget = parseFloat(localStorage.getItem(`pc_capital_budget_${axis.id}`) || "0");
+      const capitalBudget = parseFloat(
+        localStorage.getItem(`pc_capital_budget_${axis.id}`) || "0"
+      );
 
       if (hasPro) {
         // Get ANNUAL savings (not multiplied by ROI Term)
-        const annualSavingsResult = window.TEUI.pcFinancials.calculateFinancials(
-          axis.id,
-          "savings"
-        );
+        const annualSavingsResult =
+          window.TEUI.pcFinancials.calculateFinancials(axis.id, "savings");
         const annualSavings = annualSavingsResult.cost;
 
         let roiDisplay;
-        if (axis.id === 'ghgi') {
+        if (axis.id === "ghgi") {
           // GHGI: Use capital budget as carbon price per MT ($/tCO2e)
           const carbonPricePerMT = capitalBudget;
           const emissionsReductionKg = annualSavings;
@@ -1288,16 +1313,16 @@ window.TEUI.ParallelCoordinates = (function () {
           const carbonCostSavings = emissionsReductionMT * carbonPricePerMT;
 
           if (carbonPricePerMT === 0) {
-            roiDisplay = 'N/A';
+            roiDisplay = "N/A";
           } else if (emissionsReductionKg <= 0) {
-            roiDisplay = 'N/A';
+            roiDisplay = "N/A";
           } else {
             roiDisplay = formatCurrency(carbonCostSavings);
           }
         } else if (capitalBudget === 0) {
-          roiDisplay = '-';
+          roiDisplay = "-";
         } else if (annualSavings <= 0) {
-          roiDisplay = 'N/A';
+          roiDisplay = "N/A";
         } else {
           const roiYears = capitalBudget / annualSavings;
           roiDisplay = `${roiYears.toFixed(1)} yrs`;
@@ -1411,7 +1436,9 @@ window.TEUI.ParallelCoordinates = (function () {
         }
         stateManager.setValue("d_52", "300", "user-modified");
 
-        console.log("[Decarbonize] SHW: Heatpump COP raised from " + d_52 + "% to 300%");
+        console.log(
+          "[Decarbonize] SHW: Heatpump COP raised from " + d_52 + "% to 300%"
+        );
         changes.push("SHW raised to 300%");
         changesMade = true;
       }
@@ -1457,7 +1484,9 @@ window.TEUI.ParallelCoordinates = (function () {
       }
       stateManager.setValue("f_113", "12.5", "user-modified");
 
-      console.log("[Decarbonize] Heating: " + d_113 + " → Heatpump @ HSPF 12.5 (COP 3.66)");
+      console.log(
+        "[Decarbonize] Heating: " + d_113 + " → Heatpump @ HSPF 12.5 (COP 3.66)"
+      );
       changes.push(d_113 + " Heating → Heatpump HSPF 12.5");
       changesMade = true;
       heatChangedMade = true;
@@ -1470,7 +1499,11 @@ window.TEUI.ParallelCoordinates = (function () {
         }
         stateManager.setValue("f_113", "12.5", "user-modified");
 
-        console.log("[Decarbonize] Heating: Heatpump HSPF raised from " + f_113 + " to 12.5");
+        console.log(
+          "[Decarbonize] Heating: Heatpump HSPF raised from " +
+            f_113 +
+            " to 12.5"
+        );
         changes.push("Heating raised to HSPF 12.5");
         changesMade = true;
         heatChangedMade = true;
@@ -2113,7 +2146,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // ========================================================================
     // Show user feedback and refresh graph
     // ========================================================================
-    
+
     if (changesMade) {
       const message = "PassivHaus optimized: " + changes.join(", ");
       showFeedback(message, 6000);
@@ -2526,17 +2559,22 @@ window.TEUI.ParallelCoordinates = (function () {
   }
 
   /**
-   * Drag start handler - shows modal and applies dragging visual state
+   * Drag start handler - keeps tooltip visible and applies dragging visual state
    */
   function dragStarted(event, d) {
     d3.select(this).classed("pc-dragging", true);
-    showDragModal(d);
+
+    // Keep tooltip visible during drag (don't hide it)
+    const tooltip = d3.select(".pc-node-tooltip");
+    tooltip.style("opacity", 1);
 
     // Create ghost trail for the line being dragged
     const svg = initializeDragBehavior.svg;
     const lineClass = d.mode === "target" ? ".target-line" : ".reference-line";
-    const ghostClass = d.mode === "target" ? "ghost-line-drag-target" : "ghost-line-drag-ref";
-    const color = d.mode === "target" ? CONFIG.colors.target : CONFIG.colors.reference;
+    const ghostClass =
+      d.mode === "target" ? "ghost-line-drag-target" : "ghost-line-drag-ref";
+    const color =
+      d.mode === "target" ? CONFIG.colors.target : CONFIG.colors.reference;
 
     // Get current line path
     const currentPath = svg.select(lineClass).attr("d");
@@ -2608,7 +2646,8 @@ window.TEUI.ParallelCoordinates = (function () {
       const yScales = initializeDragBehavior.yScales;
 
       // Get current data from the correct line
-      const lineClass = d.mode === "target" ? ".target-line" : ".reference-line";
+      const lineClass =
+        d.mode === "target" ? ".target-line" : ".reference-line";
       const lineData = svg.select(lineClass).datum();
 
       if (lineData) {
@@ -2628,33 +2667,49 @@ window.TEUI.ParallelCoordinates = (function () {
       }
     }
 
-    // Format value for display in modal
-    // For discrete axes, show the snapped value
-    // For Gas/Oil (storageMultiplier=0.01), clampedValue is already in display space (90)
-    // For other axes, clampedValue is the actual value
-    // ACH50: Use 2 decimals to show values like 1.30
+    // ========================================================================
+    // Live tooltip update during drag (replaces modal)
+    // ========================================================================
+    const tooltip = d3.select(".pc-node-tooltip");
+    const color =
+      d.mode === "target" ? CONFIG.colors.target : CONFIG.colors.reference;
+    const label = d.mode === "target" ? "Target" : "Reference";
+
+    // Format value for display
     const decimals = d.axisId === "ach50" ? 2 : 1;
     let displayValue = clampedValue.toFixed(decimals);
     let displayUnit = axisConfig.unit;
 
     // ⚠️ SPECIAL CASE: nGains% PHPP Mode
-    // When nGains% is dragged to 70+ (PHPP), show "PHPP" instead of percentage
     if (d.axisId === "net_gains" && clampedValue >= 70) {
       displayValue = "PHPP";
-      displayUnit = ""; // No unit for PHPP label
+      displayUnit = "";
     }
 
-    // ⚠️ SPECIAL CASE: HEAT% Heatpump Mode
-    // When HEAT% exceeds 100%, show COP and HSPF conversion in subtitle
+    // ⚠️ SPECIAL CASE: HEAT% Heatpump Mode - show COP/HSPF conversion
     let subtitle = null;
     if (d.axisId === "heating_efficiency" && clampedValue > 100) {
-      const cop = clampedValue / 100; // 400% → 4.0
-      const hspf = cop * 3.412; // 4.0 → 13.648
+      const cop = clampedValue / 100;
+      const hspf = cop * 3.412;
       subtitle = `COPh ${cop.toFixed(2)} | HSPF ${hspf.toFixed(1)}`;
     }
 
-    // Update modal display (visual only)
-    updateDragModal(axisConfig.label, displayValue, displayUnit, subtitle);
+    // Update tooltip with live value
+    tooltip
+      .html(
+        `
+        <div style="color: ${color}; font-weight: 600; margin-bottom: 4px;">
+          ${axisConfig.label} - ${label}
+        </div>
+        <div style="font-size: 16px; margin-bottom: 2px; font-weight: 700;">
+          ${displayValue} ${displayUnit}
+        </div>
+        ${subtitle ? `<div style="font-size: 10px; color: #666; font-style: italic;">${subtitle}</div>` : ""}
+      `
+      )
+      .style("left", event.pageX + 15 + "px")
+      .style("top", event.pageY - 40 + "px")
+      .style("opacity", 1);
 
     // Store current value for dragEnded
     d.value = clampedValue;
@@ -2670,18 +2725,17 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Remove ghost line with fade-out transition
     if (d.ghostLine && !d.ghostLine.empty()) {
-      d.ghostLine
-        .transition()
-        .duration(500)
-        .style("opacity", 0)
-        .remove();
+      d.ghostLine.transition().duration(500).style("opacity", 0).remove();
       d.ghostLine = null;
     }
+
+    // Fade out tooltip after brief delay
+    const tooltip = d3.select(".pc-node-tooltip");
+    tooltip.transition().delay(500).duration(300).style("opacity", 0);
 
     // Get current axis config (handles conditional axes like SHW%)
     const axisConfig = getAxisConfig(d.axisId, d.mode);
     if (!axisConfig) {
-      hideDragModal();
       return;
     }
 
@@ -2728,7 +2782,6 @@ window.TEUI.ParallelCoordinates = (function () {
         console.error(
           `[ParallelCoordinates] No valueMap entry for ${snappedKey} on axis ${d.axisId}`
         );
-        hideDragModal();
         return;
       }
 
@@ -2903,74 +2956,6 @@ window.TEUI.ParallelCoordinates = (function () {
     setTimeout(() => {
       refresh();
     }, 100); // Small delay to let calculations propagate
-
-    // Hide modal
-    hideDragModal();
-  }
-
-  /**
-   * Show drag value modal
-   * Color: Blue for Target, Red for Reference
-   */
-  function showDragModal(nodeData) {
-    const modal = document.createElement("div");
-    modal.id = "pc-drag-modal";
-    modal.setAttribute("data-mode", nodeData.mode); // 'target' or 'reference'
-
-    // Get current axis config (handles conditional axes like SHW%)
-    const axisConfig = getAxisConfig(nodeData.axisId, nodeData.mode);
-    if (!axisConfig) return;
-
-    // Remove % from label since value already shows it (e.g., "DWHR" not "DWHR%")
-    const labelText = axisConfig.label.replace("%", "").trim();
-
-    // Format value based on decimal/integer type
-    const displayValue = axisConfig.isDecimal
-      ? nodeData.value.toFixed(2)
-      : nodeData.value.toFixed(1);
-
-    modal.textContent = `${labelText}: ${displayValue}${axisConfig.unit}`;
-
-    document.body.appendChild(modal);
-  }
-
-  /**
-   * Update drag modal with current value
-   * @param {string} label - Axis label
-   * @param {string|number} value - Value to display (already formatted if string)
-   * @param {string} unit - Unit symbol (%, etc.)
-   */
-  function updateDragModal(label, value, unit, subtitle = null) {
-    const modal = document.getElementById("pc-drag-modal");
-    if (modal) {
-      // Remove % from label since value already shows it
-      const labelText = label.replace("%", "").trim();
-      // If value is string (pre-formatted), use as-is; otherwise format it
-      const displayValue = typeof value === "string" ? value : value.toFixed(1);
-
-      // Main value line
-      const mainLine = `${labelText}: ${displayValue}${unit}`;
-
-      // If subtitle provided (e.g., COP/HSPF conversion), add second line
-      if (subtitle) {
-        modal.innerHTML = `
-          <div>${mainLine}</div>
-          <div style="font-size: 0.85em; margin-top: 4px; opacity: 0.9;">${subtitle}</div>
-        `;
-      } else {
-        modal.textContent = mainLine;
-      }
-    }
-  }
-
-  /**
-   * Hide drag modal
-   */
-  function hideDragModal() {
-    const modal = document.getElementById("pc-drag-modal");
-    if (modal) {
-      modal.remove();
-    }
   }
 
   // ========================================================================
