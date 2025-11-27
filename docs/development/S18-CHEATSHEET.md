@@ -1516,3 +1516,363 @@ For future button implementations, here's the field ownership map:
 ---
 
 **End of Architectural Analysis**
+
+---
+
+## UX Enhancement: D3 Animations & Tooltips
+
+**Date:** November 26, 2025
+**Status:** Planned for future implementation
+**Priority:** Medium (polish/UX improvement)
+
+### Current State
+
+When Super Buttons are pressed, the parallel coordinates graph updates **instantly** - lines and nodes jump to new positions. This is fast and performant, but can be jarring for users, especially when multiple values change simultaneously. Users lose track of which values changed and by how much.
+
+### Proposed Enhancements
+
+All three enhancements are **viable and commonly used** in D3 visualizations:
+
+#### 1. Smooth Line Transitions ✅ **High Priority**
+
+**Problem:** Lines instantly jump to new positions when Super Buttons are clicked.
+
+**Solution:** Use D3's built-in `.transition()` to smoothly interpolate line paths.
+
+**Implementation Pattern:**
+```javascript
+// Current (instant update):
+svg.selectAll('.target-line')
+  .attr('d', line(newData));
+
+// Proposed (smooth transition):
+svg.selectAll('.target-line')
+  .transition()
+  .duration(1000) // 1 second animation
+  .ease(d3.easeCubicInOut) // Smooth acceleration/deceleration
+  .attr('d', line(newData));
+
+// Same for nodes:
+svg.selectAll('circle[data-mode="target"]')
+  .transition()
+  .duration(1000)
+  .ease(d3.easeCubicInOut)
+  .attr('cy', (d, i) => yScales[i](newData[i]));
+```
+
+**Benefits:**
+- Users can **follow the movement** of lines
+- Shows **direction of change** (up/down on each axis)
+- Less cognitive load - brain processes smooth motion better than instant jumps
+
+**Recommended Settings:**
+- Duration: 800-1200ms (1 second is ideal - not too slow, not too fast)
+- Easing: `d3.easeCubicInOut` (smooth S-curve) or `d3.easeQuadInOut` (gentler)
+- Apply to: Both lines AND nodes (keep synchronized)
+
+**Where to Apply:**
+- Super Button clicks (Decarbonize, Optimize, Super Optimize, PassivHaus-ify)
+- Node drag release (already instant, could add subtle 100ms ease-out)
+- Graph refresh after section updates
+
+---
+
+#### 2. Fading Ghost Trails ✨ **Medium Priority**
+
+**Problem:** Users can't see where values came from - no visual history of change.
+
+**Solution:** Leave semi-transparent "ghost" copies of old line/node positions that fade out during transition.
+
+**Implementation Pattern:**
+```javascript
+function updateWithGhostTrail(newData) {
+  // Step 1: Clone current line as ghost
+  const currentPath = svg.select('.target-line').attr('d');
+
+  const ghostLine = svg.insert('path', '.target-line') // Insert behind
+    .attr('d', currentPath) // Start at current position
+    .attr('class', 'ghost-line')
+    .style('stroke', CONFIG.colors.target)
+    .style('stroke-width', CONFIG.lineWidth)
+    .style('opacity', 0.3) // Semi-transparent
+    .style('pointer-events', 'none') // Don't interfere with interaction
+    .style('stroke-dasharray', '5,5'); // Optional: dashed line for distinction
+
+  // Step 2: Fade out ghost while new line animates in
+  ghostLine.transition()
+    .duration(1500) // Slightly longer than main animation
+    .style('opacity', 0)
+    .remove(); // Clean up after transition completes
+
+  // Step 3: Animate main line to new position
+  svg.select('.target-line')
+    .transition()
+    .duration(1000)
+    .ease(d3.easeCubicInOut)
+    .attr('d', line(newData));
+}
+```
+
+**Alternative: Multiple Ghosts for History**
+```javascript
+// Show last 3 positions with progressively fainter opacity:
+const ghostOpacities = [0.3, 0.2, 0.1];
+ghostOpacities.forEach((opacity, i) => {
+  // Create ghost at previous position
+  // Fade out over time
+});
+```
+
+**Benefits:**
+- **Visual history** of optimization path
+- Users see **trajectory** of changes
+- Helps understanding of multi-step optimization (e.g., PassivHaus-ify)
+
+**Considerations:**
+- May be too much visual noise if overused
+- Best for Super Button actions (big changes), not drag operations
+- Could make toggleable via settings modal
+
+---
+
+#### 3. Node Tooltips on Hover ✅ **High Priority (Essential UX)**
+
+**Problem:** Users can't see exact values when hovering over nodes. Critical for understanding current state.
+
+**Solution:** D3 tooltip pattern - show axis name, value, unit, and mode on mouseover.
+
+**Implementation Pattern:**
+```javascript
+// ========================================================================
+// Step 1: Create tooltip div (once during initialization)
+// ========================================================================
+const tooltip = d3.select('body').append('div')
+  .attr('class', 'pc-node-tooltip')
+  .style('position', 'absolute')
+  .style('opacity', 0)
+  .style('pointer-events', 'none')
+  .style('background', 'white')
+  .style('border', '1px solid #ddd')
+  .style('border-radius', '4px')
+  .style('padding', '8px 12px')
+  .style('font-size', '12px')
+  .style('box-shadow', '0 2px 8px rgba(0,0,0,0.15)')
+  .style('z-index', '10000');
+
+// ========================================================================
+// Step 2: Attach tooltip to nodes
+// ========================================================================
+axes.forEach((axis, i) => {
+  svg.selectAll(`circle[data-mode="target"]`)
+    .filter((d, idx) => idx === i)
+    .on('mouseover', function(event, d) {
+      const axisConfig = EDITABLE_AXES[axis.id];
+      const isEditable = !!axisConfig;
+
+      tooltip.transition()
+        .duration(200)
+        .style('opacity', 1);
+
+      tooltip.html(`
+        <div style="color: ${CONFIG.colors.target}; font-weight: 600; margin-bottom: 4px;">
+          ${axis.label} - Target
+        </div>
+        <div style="font-size: 14px; margin-bottom: 2px;">
+          ${targetData[i].toFixed(2)} ${axis.unit}
+        </div>
+        ${isEditable ? '<div style="font-size: 10px; color: #666; font-style: italic;">Drag to edit</div>' : ''}
+      `)
+      .style('left', (event.pageX + 10) + 'px')
+      .style('top', (event.pageY - 28) + 'px');
+    })
+    .on('mousemove', function(event) {
+      tooltip
+        .style('left', (event.pageX + 10) + 'px')
+        .style('top', (event.pageY - 28) + 'px');
+    })
+    .on('mouseout', function() {
+      tooltip.transition()
+        .duration(500)
+        .style('opacity', 0);
+    });
+});
+
+// Repeat for Reference nodes (with red color)
+```
+
+**Tooltip Content:**
+- **Line 1:** Axis label + mode (Target/Reference) in color
+- **Line 2:** Current value with unit (large text)
+- **Line 3 (optional):** Editable hint or field ID for debugging
+
+**CSS Styling:**
+```css
+/* Add to styles.css S18 section */
+.pc-node-tooltip {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  transition: opacity 0.2s;
+}
+```
+
+**Benefits:**
+- Users can **verify exact values** without clicking
+- Shows **which nodes are editable** (drag hint)
+- Reduces need to cross-reference with table below
+- Standard interaction pattern (familiar UX)
+
+---
+
+#### 4. Bonus: Staggered Animations ✨ **Low Priority (Polish)**
+
+**Problem:** When many values change, simultaneous animation can be overwhelming.
+
+**Solution:** Animate each axis with a slight delay (left-to-right cascade).
+
+**Implementation Pattern:**
+```javascript
+function updateWithStagger(newData) {
+  // Animate each axis sequentially with 50ms delay
+  axes.forEach((axis, i) => {
+    // Animate node
+    svg.selectAll(`circle[data-mode="target"]`)
+      .filter((d, idx) => idx === i)
+      .transition()
+      .delay(i * 50) // 50ms stagger per axis
+      .duration(800)
+      .ease(d3.easeCubicInOut)
+      .attr('cy', yScales[i](newData[i]));
+  });
+
+  // Animate line (after all nodes start moving)
+  svg.select('.target-line')
+    .transition()
+    .delay(100) // Start after first few nodes
+    .duration(1000)
+    .ease(d3.easeCubicInOut)
+    .attr('d', line(newData));
+}
+```
+
+**Benefits:**
+- **Visual flow** from left to right
+- Easier to track individual changes
+- Feels more "intelligent" (not robotic)
+
+**Considerations:**
+- Total animation time increases (14 axes × 50ms = 700ms delay)
+- May feel sluggish if overdone
+- Best for Super Button clicks, not drag operations
+
+---
+
+### Implementation Priority
+
+**Phase 1: Essential (Immediate Impact)**
+1. ✅ **Node Tooltips** - Critical for usability, users need to see exact values
+2. ✅ **Smooth Line Transitions** - Massive UX improvement, low implementation cost
+
+**Phase 2: Polish (Nice-to-Have)**
+3. ✨ **Fading Ghost Trails** - Visual delight, helps understanding optimization paths
+4. ✨ **Staggered Animations** - Final polish, may not be needed if smooth transitions work well
+
+---
+
+### Code Locations for Implementation
+
+**File:** [ParallelCoordinates.js](../../src/core/ParallelCoordinates.js)
+
+**Functions to Modify:**
+
+1. **Node Tooltips:**
+   - `renderGraph()` (line ~569) - Add tooltip creation
+   - `initializeDragBehavior()` (line ~2320) - Attach tooltip handlers to nodes
+
+2. **Smooth Transitions:**
+   - `refresh()` (line ~548) - Replace immediate `.attr()` with `.transition()`
+   - `handleDecarbonize()`, `handleOptimize()`, `handleSuperOptimize()`, `handlePassivHausIfy()` - Add transition after state updates
+
+3. **Ghost Trails:**
+   - Create helper function `updateWithGhostTrail()`
+   - Call from Super Button handlers
+
+**CSS Updates:**
+- Add `.pc-node-tooltip` class to [styles.css](../../src/styles.css) S18 section
+- Add `.ghost-line` class (optional, for dashed ghost lines)
+
+---
+
+### Testing Checklist
+
+**Smooth Transitions:**
+- [ ] Lines animate smoothly when Super Buttons clicked
+- [ ] Nodes move in sync with lines
+- [ ] Animation duration feels natural (not too fast/slow)
+- [ ] No flickering or visual glitches
+- [ ] Graph remains interactive during animation
+
+**Node Tooltips:**
+- [ ] Tooltip appears on mouseover
+- [ ] Shows correct values for Target nodes (blue)
+- [ ] Shows correct values for Reference nodes (red)
+- [ ] Tooltip follows mouse cursor
+- [ ] Tooltip disappears on mouseout
+- [ ] "Drag to edit" hint shows for editable nodes only
+- [ ] Tooltip doesn't interfere with drag operations
+
+**Ghost Trails (if implemented):**
+- [ ] Ghost line appears at old position
+- [ ] Ghost fades out smoothly
+- [ ] Ghost is removed after animation
+- [ ] No performance issues with multiple ghosts
+- [ ] Ghost doesn't interfere with interaction
+
+**Performance:**
+- [ ] No lag on older machines
+- [ ] Smooth 60fps animation
+- [ ] Memory cleaned up after transitions
+- [ ] No ghost DOM elements accumulating
+
+---
+
+### Performance Considerations
+
+**D3 Transitions are Highly Performant:**
+- Uses requestAnimationFrame internally (60fps smooth)
+- GPU-accelerated transforms where possible
+- Efficient DOM manipulation (batched updates)
+
+**Potential Issues:**
+- Too many simultaneous transitions (>100 elements) - not a problem for S18 (14 axes)
+- Complex path interpolation - D3 handles this natively for line charts
+- Memory leaks from orphaned transitions - use `.remove()` to clean up ghosts
+
+**Best Practices:**
+- Limit ghost trail history (max 3 previous positions)
+- Use `.interrupt()` to cancel in-progress transitions before starting new ones
+- Debounce rapid Super Button clicks (prevent animation stacking)
+
+---
+
+### References
+
+**D3 Transition Documentation:**
+- [D3 Transitions](https://github.com/d3/d3-transition) - Official docs
+- [D3 Easing Functions](https://github.com/d3/d3-ease) - Visual comparison of easing curves
+- [Observable: Smooth Transitions](https://observablehq.com/@d3/smooth-zooming) - Examples
+
+**Parallel Coordinates Animation Examples:**
+- [Brushing on Parallel Coordinates](https://observablehq.com/@d3/parallel-coordinates) - Animated filtering
+- [Interactive Parallel Coordinates](https://syntagmatic.github.io/parallel-coordinates/) - Industry standard library with transitions
+
+---
+
+**Next Session:** Implement Phase 1 (Node Tooltips + Smooth Transitions)
