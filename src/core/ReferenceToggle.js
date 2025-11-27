@@ -661,7 +661,7 @@ TEUI.ReferenceToggle = (function () {
       if (highlightCount > 0) {
         setupHighlightRemovalListener();
       }
-    }, 100); // 100ms delay to ensure DOM updates are complete
+    }, 300); // 300ms delay to ensure Pattern A section UIs have refreshed
   }
 
   /**
@@ -760,262 +760,201 @@ TEUI.ReferenceToggle = (function () {
   }
 
   /**
+   * HELPER: Refresh Pattern A section UIs after bulk StateManager operations
+   * Uses same pattern as FileHandler.js:488-520
+   */
+  function refreshPatternAUIs() {
+    const patternASections = [
+      'sect02', 'sect03', 'sect04', 'sect05', 'sect06',
+      'sect07', 'sect08', 'sect09', 'sect10', 'sect11',
+      'sect12', 'sect13', 'sect14', 'sect15'
+    ];
+
+    patternASections.forEach(sectionId => {
+      const section = window.TEUI?.SectionModules?.[sectionId];
+      if (section?.ModeManager?.refreshUI) {
+        section.ModeManager.refreshUI();
+        // Also update calculated display values (some sections need both calls)
+        if (section.ModeManager.updateCalculatedDisplayValues) {
+          section.ModeManager.updateCalculatedDisplayValues();
+        }
+      }
+    });
+
+    console.log('[ReferenceToggle] ✅ Pattern A section UIs refreshed');
+  }
+
+  /**
    * 1. Mirror Geometry: Copy ONLY geometric/configuration fields from Target to Reference
    * Excludes performance parameters (RSI values, equipment efficiencies, etc.)
    * Use case: "Same building shape, different performance specs"
+   *
+   * REWRITTEN 2025-11-27: Uses FileHandler/StateManager pattern instead of section-level operations
    */
   function mirrorGeometry() {
     try {
-      const sections = getAllDualStateSections();
-      console.log(
-        `[ReferenceToggle] Mirror Geometry: Processing ${sections.length} sections`
-      );
+      console.log('[ReferenceToggle] 🔗 Mirror Geometry: Starting...');
 
-      let totalFieldsCopied = 0;
-      let totalFieldsSkipped = 0;
-      const copiedFieldIds = []; // Track all copied field IDs for highlighting
+      // Get all field IDs using FieldManager (proven approach)
+      const allFields = window.TEUI?.FieldManager?.getAllUserEditableFields?.() || [];
 
-      sections.forEach(section => {
-        console.log(`[ReferenceToggle] Processing ${section.id}...`);
-
-        // Get field IDs for this section
-        const fieldIds = getFieldIdsForSection(section.id);
-        console.log(
-          `[ReferenceToggle] Found ${fieldIds.length} fields for ${section.id}`
-        );
-
-        if (fieldIds.length === 0) {
-          console.warn(
-            `[ReferenceToggle] No fields found for ${section.id} - skipping`
-          );
-          return;
-        }
-
-        // Save current mode
-        const originalMode = section.modeManager.currentMode;
-
-        // Switch to target mode to read values
-        section.modeManager.switchMode("target");
-
-        // Read Target values, filtering to geometry fields only
-        const targetValues = {};
-        const skippedFields = [];
-        fieldIds.forEach(fieldId => {
-          if (shouldCopyFieldForMode(fieldId, "geometry")) {
-            const value = section.modeManager.getValue(fieldId);
-            if (value !== null && value !== undefined && value !== "") {
-              targetValues[fieldId] = value;
-            }
-          } else {
-            skippedFields.push(fieldId);
-          }
-        });
-
-        console.log(
-          `[ReferenceToggle] Geometry mode: ${Object.keys(targetValues).length} fields to copy, ${skippedFields.length} performance fields skipped`
-        );
-        if (skippedFields.length > 0 && skippedFields.length <= 10) {
-          console.log(
-            `[ReferenceToggle] Skipped performance fields: [${skippedFields.join(", ")}]`
-          );
-        }
-
-        // Switch to reference mode to write values
-        section.modeManager.switchMode("reference");
-
-        // Copy Target geometry values to Reference state
-        Object.entries(targetValues).forEach(([fieldId, value]) => {
-          section.modeManager.setValue(fieldId, value, "imported"); // Use "imported" for highest priority
-          totalFieldsCopied++;
-          copiedFieldIds.push(fieldId); // Track for highlighting
-        });
-        totalFieldsSkipped += skippedFields.length;
-
-        // Restore original mode and refresh UI
-        section.modeManager.switchMode(originalMode);
-        section.modeManager.refreshUI();
-
-        console.log(
-          `[ReferenceToggle] Copied ${Object.keys(targetValues).length} geometry values to Reference state for ${section.id}`
-        );
-      });
-
-      console.log(
-        `🔗 Mirror Geometry: Successfully copied ${totalFieldsCopied} geometry fields, skipped ${totalFieldsSkipped} performance fields`
-      );
-      console.log(
-        "✅ Geometry fields copied (areas, volumes, location, occupancy)"
-      );
-      console.log(
-        "❌ Performance fields skipped (RSI values, equipment efficiencies) - these should come from ReferenceValues or user edits"
-      );
-
-      // Trigger automatic recalculation (like Tilt button)
-      console.log("[ReferenceToggle] Triggering automatic recalculation...");
-      if (window.TEUI?.Calculator?.calculateAll) {
-        window.TEUI.Calculator.calculateAll();
-
-        // Update all section displays
-        sections.forEach(section => {
-          if (
-            section.modeManager &&
-            typeof section.modeManager.updateCalculatedDisplayValues ===
-              "function"
-          ) {
-            section.modeManager.updateCalculatedDisplayValues();
-          }
-        });
-
-        console.log(
-          "[ReferenceToggle] ✅ Automatic recalculation complete - e_10 should now reflect mirrored values"
-        );
-      } else {
-        console.warn(
-          "[ReferenceToggle] Calculator not available - manual Tilt may be needed"
-        );
+      if (allFields.length === 0) {
+        console.error('[ReferenceToggle] Could not get field list from FieldManager');
+        return;
       }
 
-      // Apply mirror highlights to copied fields
-      applyMirrorHighlights(copiedFieldIds, "geometry");
+      // Filter to geometry fields only (exclude performance fields)
+      const geometryFields = allFields.filter(fieldId => {
+        return shouldCopyFieldForMode(fieldId, 'geometry');
+      });
+
+      const skippedCount = allFields.length - geometryFields.length;
+      console.log(`[ReferenceToggle] Copying ${geometryFields.length} geometry fields, skipping ${skippedCount} performance fields`);
+
+      // QUARANTINE START - Use FileHandler pattern
+      window.TEUI.StateManager.muteListeners();
+
+      try {
+        let copiedCount = 0;
+        geometryFields.forEach(fieldId => {
+          if (fieldId === 'd_13') return; // Never copy building standard
+
+          const targetValue = window.TEUI.StateManager.getValue(fieldId);
+          if (targetValue !== null && targetValue !== undefined && targetValue !== '') {
+            // Write to Reference state with ref_ prefix
+            window.TEUI.StateManager.setValue(`ref_${fieldId}`, targetValue, 'mirror');
+            copiedCount++;
+          }
+        });
+
+        console.log(`[ReferenceToggle] ✅ Copied ${copiedCount} geometry values to Reference state via StateManager`);
+
+        // Sync Pattern A sections (critical for UI updates!)
+        if (window.TEUI?.FileHandler?.syncPatternASections) {
+          window.TEUI.FileHandler.syncPatternASections();
+        } else {
+          console.warn('[ReferenceToggle] FileHandler.syncPatternASections not available - UI may not update');
+        }
+
+      } finally {
+        // QUARANTINE END - Always unmute
+        window.TEUI.StateManager.unmuteListeners();
+      }
+
+      // Clean recalculation
+      if (window.TEUI?.Calculator?.calculateAll) {
+        window.TEUI.Calculator.calculateAll();
+      }
+
+      // Refresh Pattern A section UIs
+      refreshPatternAUIs();
+
+      // Apply highlights
+      applyMirrorHighlights(geometryFields, 'geometry');
+
+      console.log('🔗 Mirror Geometry: Complete');
+      console.log('✅ Geometry fields copied (areas, volumes, location, occupancy)');
+      console.log('❌ Performance fields skipped (RSI values, equipment efficiencies)');
+
     } catch (error) {
-      console.error("[ReferenceToggle] Mirror Geometry failed:", error);
+      console.error('[ReferenceToggle] Mirror Geometry failed:', error);
+      // Ensure listeners are unmuted even on error
+      if (window.TEUI?.StateManager?.unmuteListeners) {
+        window.TEUI.StateManager.unmuteListeners();
+      }
     }
   }
 
   /**
    * 2. Mirror Geometry + Code: Copy geometry fields, then overlay ReferenceValues.js
    * Use case: "Compare my design vs building code minimums" (most common)
+   *
+   * REWRITTEN 2025-11-27: Uses FileHandler/StateManager pattern instead of section-level operations
    */
   function mirrorGeometryPlusCode() {
     try {
-      const standard =
-        window.TEUI?.StateManager?.getValue("ref_d_13") || // Use Reference model's standard
-        window.TEUI?.StateManager?.getValue("d_13") || // Fallback to Target standard
-        "OBC SB12 3.1.1.2.C1"; // Final fallback
+      console.log('[ReferenceToggle] 🔗 Mirror Geometry + Code: Starting...');
 
-      const refValues = window.TEUI?.ReferenceValues?.[standard] || {};
+      // Step 1: Copy geometry fields (same as mirrorGeometry, but don't call it to track all fields for highlighting)
+      const allFields = window.TEUI?.FieldManager?.getAllUserEditableFields?.() || [];
 
-      console.log(
-        `[ReferenceToggle] Mirror Geometry + Code: Using Reference standard "${standard}"`
-      );
-      console.log(
-        `[ReferenceToggle] Found ${Object.keys(refValues).length} reference values for this standard`
-      );
-
-      // NOTE: We don't call mirrorGeometry() here because we need to collect
-      // all copied field IDs (G + C) for highlighting with "geometry-plus-code" mode
-      // Instead, we'll copy geometry fields manually and track them
-
-      const sections = getAllDualStateSections();
-      let totalFieldsCopied = 0;
-      const copiedFieldIds = []; // Track G + C fields for highlighting
-
-      // First: Copy geometry fields (same as mirrorGeometry)
-      sections.forEach(section => {
-        const fieldIds = getFieldIdsForSection(section.id);
-        if (fieldIds.length === 0) return;
-
-        const originalMode = section.modeManager.currentMode;
-        section.modeManager.switchMode("target");
-
-        const targetValues = {};
-        fieldIds.forEach(fieldId => {
-          if (shouldCopyFieldForMode(fieldId, "geometry")) {
-            const value = section.modeManager.getValue(fieldId);
-            if (value !== null && value !== undefined && value !== "") {
-              targetValues[fieldId] = value;
-            }
-          }
-        });
-
-        section.modeManager.switchMode("reference");
-        Object.entries(targetValues).forEach(([fieldId, value]) => {
-          section.modeManager.setValue(fieldId, value, "imported"); // Use "imported" for highest priority
-          totalFieldsCopied++;
-          copiedFieldIds.push(fieldId);
-        });
-
-        section.modeManager.switchMode(originalMode);
-        section.modeManager.refreshUI();
-      });
-
-      // Then overlay ReferenceValues subset for building code compliance
-      let totalOverlayFields = 0;
-
-      sections.forEach(section => {
-        console.log(
-          `[ReferenceToggle] Applying ReferenceValues overlay to ${section.id}...`
-        );
-
-        // Save current mode
-        const originalMode = section.modeManager.currentMode;
-
-        // Switch to reference mode to apply overlay
-        section.modeManager.switchMode("reference");
-
-        // Apply ReferenceValues overlay (building code minimums)
-        const appliedFields = [];
-        Object.entries(refValues).forEach(([fieldId, value]) => {
-          // Only apply if this section manages this field
-          const fieldIds = getFieldIdsForSection(section.id);
-          if (fieldIds.includes(fieldId)) {
-            section.modeManager.setValue(fieldId, value, "imported"); // Use "imported" for highest priority
-            appliedFields.push(fieldId);
-            copiedFieldIds.push(fieldId); // Track C fields for highlighting
-            totalOverlayFields++;
-          }
-        });
-
-        // Restore original mode and refresh UI
-        section.modeManager.switchMode(originalMode);
-        section.modeManager.refreshUI();
-
-        if (appliedFields.length > 0) {
-          console.log(
-            `[ReferenceToggle] Applied ${appliedFields.length} code minimum values to ${section.id}: [${appliedFields.join(", ")}]`
-          );
-        }
-      });
-
-      console.log(
-        `🔗 Mirror Geometry + Code: Applied ${totalOverlayFields} building code minimum values`
-      );
-      console.log(
-        `📋 Standard: "${standard}" - Reference model now uses Target geometry with code minimum performance`
-      );
-
-      // Trigger automatic recalculation (like Tilt button)
-      console.log("[ReferenceToggle] Triggering automatic recalculation...");
-      if (window.TEUI?.Calculator?.calculateAll) {
-        window.TEUI.Calculator.calculateAll();
-
-        // Update all section displays
-        sections.forEach(section => {
-          if (
-            section.modeManager &&
-            typeof section.modeManager.updateCalculatedDisplayValues ===
-              "function"
-          ) {
-            section.modeManager.updateCalculatedDisplayValues();
-          }
-        });
-
-        console.log(
-          "[ReferenceToggle] ✅ Automatic recalculation complete - e_10 should now reflect mirrored values with code minimums"
-        );
-      } else {
-        console.warn(
-          "[ReferenceToggle] Calculator not available - manual Tilt may be needed"
-        );
+      if (allFields.length === 0) {
+        console.error('[ReferenceToggle] Could not get field list from FieldManager');
+        return;
       }
 
-      // Apply mirror highlights to copied fields (G + C)
-      applyMirrorHighlights(copiedFieldIds, "geometry-plus-code");
+      const geometryFields = allFields.filter(fieldId => {
+        return shouldCopyFieldForMode(fieldId, 'geometry');
+      });
+
+      console.log(`[ReferenceToggle] Step 1: Copying ${geometryFields.length} geometry fields`);
+
+      // QUARANTINE START
+      window.TEUI.StateManager.muteListeners();
+
+      try {
+        // Copy geometry fields
+        let geomCopiedCount = 0;
+        geometryFields.forEach(fieldId => {
+          if (fieldId === 'd_13') return; // Never copy building standard
+
+          const targetValue = window.TEUI.StateManager.getValue(fieldId);
+          if (targetValue !== null && targetValue !== undefined && targetValue !== '') {
+            window.TEUI.StateManager.setValue(`ref_${fieldId}`, targetValue, 'mirror');
+            geomCopiedCount++;
+          }
+        });
+
+        console.log(`[ReferenceToggle] ✅ Copied ${geomCopiedCount} geometry values`);
+
+        // Step 2: Overlay ReferenceValues.js code minimums
+        const standard =
+          window.TEUI.StateManager.getValue('ref_d_13') ||
+          window.TEUI.StateManager.getValue('d_13') ||
+          'OBC SB12 3.1.1.2.C1';
+
+        const refValues = window.TEUI?.ReferenceValues?.[standard] || {};
+
+        console.log(`[ReferenceToggle] Step 2: Applying code minimums from "${standard}"`);
+
+        let codeCopiedCount = 0;
+        Object.entries(refValues).forEach(([fieldId, value]) => {
+          window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, 'reference');
+          codeCopiedCount++;
+        });
+
+        console.log(`[ReferenceToggle] ✅ Applied ${codeCopiedCount} code minimum values`);
+
+        // Sync Pattern A sections
+        if (window.TEUI?.FileHandler?.syncPatternASections) {
+          window.TEUI.FileHandler.syncPatternASections();
+        }
+
+      } finally {
+        // QUARANTINE END - Always unmute
+        window.TEUI.StateManager.unmuteListeners();
+      }
+
+      // Clean recalculation
+      if (window.TEUI?.Calculator?.calculateAll) {
+        window.TEUI.Calculator.calculateAll();
+      }
+
+      // Refresh Pattern A section UIs
+      refreshPatternAUIs();
+
+      // Highlight G + C fields
+      applyMirrorHighlights(allFields, 'geometry-plus-code');
+
+      console.log('🔗 Mirror Geometry + Code: Complete');
+      console.log('📋 Reference model now uses Target geometry with code minimum performance');
+
     } catch (error) {
-      console.error(
-        "[ReferenceToggle] Mirror Geometry + Code failed:",
-        error
-      );
+      console.error('[ReferenceToggle] Mirror Geometry + Code failed:', error);
+      // Ensure listeners are unmuted even on error
+      if (window.TEUI?.StateManager?.unmuteListeners) {
+        window.TEUI.StateManager.unmuteListeners();
+      }
     }
   }
 
@@ -1023,112 +962,74 @@ TEUI.ReferenceToggle = (function () {
    * 3. Mirror All Inputs: Copy ALL fields from Target to Reference (perfect clone)
    * Excludes only d_13 (building standard - user sets independently)
    * Use case: "Start with identical models, then tweak one specific parameter"
+   *
+   * REWRITTEN 2025-11-27: Uses FileHandler/StateManager pattern instead of section-level operations
    */
   function mirrorAllInputs() {
     try {
-      const sections = getAllDualStateSections();
-      console.log(
-        `[ReferenceToggle] Mirror All Inputs: Processing ${sections.length} sections`
-      );
+      console.log('[ReferenceToggle] 🔗 Mirror All Inputs: Starting...');
 
-      let totalFieldsCopied = 0;
-      const copiedFieldIds = []; // Track all copied field IDs for highlighting
+      // Get all field IDs using FieldManager (proven approach)
+      const allFields = window.TEUI?.FieldManager?.getAllUserEditableFields?.() || [];
 
-      sections.forEach(section => {
-        console.log(`[ReferenceToggle] Processing ${section.id}...`);
-
-        // Get field IDs for this section
-        const fieldIds = getFieldIdsForSection(section.id);
-        console.log(
-          `[ReferenceToggle] Found ${fieldIds.length} fields for ${section.id}`
-        );
-
-        if (fieldIds.length === 0) {
-          console.warn(
-            `[ReferenceToggle] No fields found for ${section.id} - skipping`
-          );
-          return;
-        }
-
-        // Save current mode
-        const originalMode = section.modeManager.currentMode;
-
-        // Switch to target mode to read values
-        section.modeManager.switchMode("target");
-
-        // Read ALL Target values (except d_13)
-        const targetValues = {};
-        fieldIds.forEach(fieldId => {
-          if (shouldCopyFieldForMode(fieldId, "all")) {
-            const value = section.modeManager.getValue(fieldId);
-            if (value !== null && value !== undefined && value !== "") {
-              targetValues[fieldId] = value;
-            }
-          }
-        });
-
-        console.log(
-          `[ReferenceToggle] Read ${Object.keys(targetValues).length} Target values from ${section.id}`
-        );
-
-        // Switch to reference mode to write values
-        section.modeManager.switchMode("reference");
-
-        // Copy ALL Target values to Reference state
-        Object.entries(targetValues).forEach(([fieldId, value]) => {
-          section.modeManager.setValue(fieldId, value, "imported"); // Use "imported" for highest priority
-          totalFieldsCopied++;
-          copiedFieldIds.push(fieldId); // Track for highlighting
-        });
-
-        // Restore original mode and refresh UI
-        section.modeManager.switchMode(originalMode);
-        section.modeManager.refreshUI();
-
-        console.log(
-          `[ReferenceToggle] Copied ${Object.keys(targetValues).length} values to Reference state for ${section.id}`
-        );
-      });
-
-      console.log(
-        `🔗 Mirror All Inputs: Successfully copied ${totalFieldsCopied} total fields`
-      );
-      console.log(
-        "✅ Perfect clone created - Reference model is now identical to Target model"
-      );
-      console.log(
-        "ℹ️  Excluded: d_13 (building standard) - user can set Reference standard independently"
-      );
-
-      // Trigger automatic recalculation (like Tilt button)
-      console.log("[ReferenceToggle] Triggering automatic recalculation...");
-      if (window.TEUI?.Calculator?.calculateAll) {
-        window.TEUI.Calculator.calculateAll();
-
-        // Update all section displays
-        sections.forEach(section => {
-          if (
-            section.modeManager &&
-            typeof section.modeManager.updateCalculatedDisplayValues ===
-              "function"
-          ) {
-            section.modeManager.updateCalculatedDisplayValues();
-          }
-        });
-
-        console.log(
-          "[ReferenceToggle] ✅ Automatic recalculation complete - e_10 should now equal h_10"
-        );
-      } else {
-        console.warn(
-          "[ReferenceToggle] Calculator not available - manual Tilt may be needed"
-        );
+      if (allFields.length === 0) {
+        console.error('[ReferenceToggle] Could not get field list from FieldManager');
+        return;
       }
 
-      // Apply mirror highlights to all copied fields (G + C + A)
-      applyMirrorHighlights(copiedFieldIds, "all");
+      console.log(`[ReferenceToggle] Copying ${allFields.length} fields (excluding d_13)`);
+
+      // QUARANTINE START - Use FileHandler pattern
+      window.TEUI.StateManager.muteListeners();
+
+      try {
+        let copiedCount = 0;
+        allFields.forEach(fieldId => {
+          if (fieldId === 'd_13') return; // Never copy building standard
+
+          const targetValue = window.TEUI.StateManager.getValue(fieldId);
+          if (targetValue !== null && targetValue !== undefined && targetValue !== '') {
+            // Write to Reference state with ref_ prefix
+            window.TEUI.StateManager.setValue(`ref_${fieldId}`, targetValue, 'mirror');
+            copiedCount++;
+          }
+        });
+
+        console.log(`[ReferenceToggle] ✅ Perfect clone: ${copiedCount} fields copied to Reference state via StateManager`);
+
+        // Sync Pattern A sections (critical for UI updates!)
+        if (window.TEUI?.FileHandler?.syncPatternASections) {
+          window.TEUI.FileHandler.syncPatternASections();
+        } else {
+          console.warn('[ReferenceToggle] FileHandler.syncPatternASections not available - UI may not update');
+        }
+
+      } finally {
+        // QUARANTINE END - Always unmute
+        window.TEUI.StateManager.unmuteListeners();
+      }
+
+      // Clean recalculation
+      if (window.TEUI?.Calculator?.calculateAll) {
+        window.TEUI.Calculator.calculateAll();
+      }
+
+      // Refresh Pattern A section UIs
+      refreshPatternAUIs();
+
+      // Apply highlights to all fields
+      applyMirrorHighlights(allFields, 'all');
+
+      console.log('🔗 Mirror All Inputs: Complete');
+      console.log('✅ Perfect clone created - Reference model is now identical to Target model');
+      console.log('ℹ️  Excluded: d_13 (building standard) - user can set Reference standard independently');
+
     } catch (error) {
-      console.error("[ReferenceToggle] Mirror All Inputs failed:", error);
+      console.error('[ReferenceToggle] Mirror All Inputs failed:', error);
+      // Ensure listeners are unmuted even on error
+      if (window.TEUI?.StateManager?.unmuteListeners) {
+        window.TEUI.StateManager.unmuteListeners();
+      }
     }
   }
 
