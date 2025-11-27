@@ -1302,7 +1302,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     resetIcon.className = "bi bi-bootstrap-reboot";
     resetIcon.title = "Factory Reset - Clear ALL data and reset to defaults";
     resetIcon.style.cssText =
-      "color: white; font-size: 1.5em; cursor: pointer; margin-left: 15px; margin-right: 12px;";
+      "z-index: 111; position: relative; color: white; font-size: 1.5em; cursor: pointer; margin-left: 15px; margin-right: 12px;";
 
     resetIcon.addEventListener("click", event => {
       event.stopPropagation();
@@ -1321,7 +1321,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     // --- Create Global Toggle Switch (no label - UI color scheme shows mode) ---
     const toggleSwitch = document.createElement("div");
     toggleSwitch.style.cssText =
-      "position: relative; width: 40px; height: 20px; background-color: #ccc; border-radius: 10px; cursor: pointer; margin-left: 15px; margin-right: 15px;";
+      "z-index: 111; position: relative; width: 40px; height: 20px; background-color: #ccc; border-radius: 10px; cursor: pointer; margin-left: 15px; margin-right: 15px;";
 
     const slider = document.createElement("div");
     slider.style.cssText =
