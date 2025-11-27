@@ -773,7 +773,47 @@ window.TEUI.ParallelCoordinates = (function () {
             .style("opacity", CONFIG.lineOpacity);
         });
     } else {
-      // Update: animate lines to new positions
+      // Update: animate lines with ghost trails
+
+      // Create ghost trail for Reference line
+      const refLinePath = svg.select(".reference-line").attr("d");
+      if (refLinePath) {
+        svg
+          .insert("path", ".reference-line") // Insert behind main line
+          .attr("d", refLinePath) // Start at current position
+          .attr("class", "ghost-line-ref")
+          .style("stroke", CONFIG.colors.reference)
+          .style("stroke-width", CONFIG.lineWidth)
+          .style("fill", "none")
+          .style("opacity", 0.3) // Semi-transparent
+          .style("pointer-events", "none") // Don't interfere with interaction
+          .style("stroke-dasharray", "5,5") // Dashed line for distinction
+          .transition()
+          .duration(1500) // Slightly longer than main animation
+          .style("opacity", 0)
+          .remove(); // Clean up after transition
+      }
+
+      // Create ghost trail for Target line
+      const targetLinePath = svg.select(".target-line").attr("d");
+      if (targetLinePath) {
+        svg
+          .insert("path", ".target-line") // Insert behind main line
+          .attr("d", targetLinePath) // Start at current position
+          .attr("class", "ghost-line-target")
+          .style("stroke", CONFIG.colors.target)
+          .style("stroke-width", CONFIG.lineWidth)
+          .style("fill", "none")
+          .style("opacity", 0.3) // Semi-transparent
+          .style("pointer-events", "none")
+          .style("stroke-dasharray", "5,5")
+          .transition()
+          .duration(1500)
+          .style("opacity", 0)
+          .remove();
+      }
+
+      // Animate main lines to new positions
       svg
         .select(".reference-line")
         .datum(referenceData)
@@ -2491,6 +2531,35 @@ window.TEUI.ParallelCoordinates = (function () {
   function dragStarted(event, d) {
     d3.select(this).classed("pc-dragging", true);
     showDragModal(d);
+
+    // Create ghost trail for the line being dragged
+    const svg = initializeDragBehavior.svg;
+    const lineClass = d.mode === "target" ? ".target-line" : ".reference-line";
+    const ghostClass = d.mode === "target" ? "ghost-line-drag-target" : "ghost-line-drag-ref";
+    const color = d.mode === "target" ? CONFIG.colors.target : CONFIG.colors.reference;
+
+    // Get current line path
+    const currentPath = svg.select(lineClass).attr("d");
+
+    if (currentPath) {
+      // Remove any existing drag ghost (in case of rapid clicks)
+      svg.selectAll(`.${ghostClass}`).remove();
+
+      // Create dashed ghost line that will follow the drag
+      svg
+        .insert("path", lineClass) // Insert behind main line
+        .attr("d", currentPath)
+        .attr("class", ghostClass)
+        .style("stroke", color)
+        .style("stroke-width", CONFIG.lineWidth)
+        .style("fill", "none")
+        .style("opacity", 0.3)
+        .style("pointer-events", "none")
+        .style("stroke-dasharray", "5,5");
+
+      // Store ghost reference for dragging updates
+      d.ghostLine = svg.select(`.${ghostClass}`);
+    }
   }
 
   /**
@@ -2531,6 +2600,34 @@ window.TEUI.ParallelCoordinates = (function () {
     // Update node position (visual only)
     d3.select(this).attr("cy", yScale(clampedValue));
 
+    // Update ghost line to follow the dragged node (rubber band effect)
+    if (d.ghostLine && !d.ghostLine.empty()) {
+      // Rebuild line path with updated Y value for this axis
+      const svg = initializeDragBehavior.svg;
+      const xScale = initializeDragBehavior.xScale;
+      const yScales = initializeDragBehavior.yScales;
+
+      // Get current data from the correct line
+      const lineClass = d.mode === "target" ? ".target-line" : ".reference-line";
+      const lineData = svg.select(lineClass).datum();
+
+      if (lineData) {
+        // Clone data and update the dragged axis value
+        const updatedData = [...lineData];
+        updatedData[d.axisIndex] = clampedValue;
+
+        // Regenerate line path
+        const line = d3
+          .line()
+          .x((_val, i) => xScale(i))
+          .y((_val, i) => yScales[i](updatedData[i]))
+          .curve(d3.curveMonotoneX);
+
+        // Update ghost line path
+        d.ghostLine.attr("d", line(updatedData));
+      }
+    }
+
     // Format value for display in modal
     // For discrete axes, show the snapped value
     // For Gas/Oil (storageMultiplier=0.01), clampedValue is already in display space (90)
@@ -2570,6 +2667,16 @@ window.TEUI.ParallelCoordinates = (function () {
    */
   function dragEnded(event, d) {
     d3.select(this).classed("pc-dragging", false);
+
+    // Remove ghost line with fade-out transition
+    if (d.ghostLine && !d.ghostLine.empty()) {
+      d.ghostLine
+        .transition()
+        .duration(500)
+        .style("opacity", 0)
+        .remove();
+      d.ghostLine = null;
+    }
 
     // Get current axis config (handles conditional axes like SHW%)
     const axisConfig = getAxisConfig(d.axisId, d.mode);
