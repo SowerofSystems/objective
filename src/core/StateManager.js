@@ -2152,8 +2152,9 @@ TEUI.StateManager = (function () {
     setTimeout(() => {
       // Safari fix: Force hard reload to bypass cache and rebuild stacking contexts
       // This prevents z-index bugs where controls become unclickable after reset
-      // Modern approach: Use cache-busting timestamp instead of deprecated reload(true)
-      window.location.href = window.location.href.split('?')[0] + '?cache=' + Date.now();
+      // Use cache-busting URL redirect (preserves hash, cleans query params)
+      const cleanUrl = window.location.origin + window.location.pathname + window.location.hash;
+      window.location.replace(cleanUrl + '?_=' + Date.now());
     }, 100);
   }
 
