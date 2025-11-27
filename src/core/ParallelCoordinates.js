@@ -418,29 +418,25 @@ window.TEUI.ParallelCoordinates = (function () {
   function showSettingsModal() {
     // Create modal backdrop
     const backdrop = document.createElement("div");
-    backdrop.style.cssText =
-      "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;";
+    backdrop.className = "pc-modal-backdrop";
 
     // Create modal dialog
     const modal = document.createElement("div");
-    modal.style.cssText =
-      "background: white; border-radius: 8px; padding: 20px; max-width: 400px; width: 90%; box-shadow: 0 4px 16px rgba(0,0,0,0.2);";
+    modal.className = "pc-modal-dialog";
 
     // Modal header
     const header = document.createElement("h5");
     header.textContent = "Financial Settings";
-    header.style.cssText = "margin: 0 0 15px 0; font-weight: 600;";
+    header.className = "pc-modal-header";
 
     // ROI Term label
     const label = document.createElement("label");
     label.textContent = "ROI Term (Years):";
-    label.style.cssText =
-      "display: block; margin-bottom: 8px; font-weight: 500;";
+    label.className = "pc-modal-label";
 
     // ROI Term dropdown
     const select = document.createElement("select");
-    select.className = "form-select";
-    select.style.cssText = "margin-bottom: 20px;";
+    select.className = "form-select pc-modal-select";
 
     const terms = [1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50];
     terms.forEach(year => {
@@ -455,8 +451,7 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Button container
     const btnContainer = document.createElement("div");
-    btnContainer.style.cssText =
-      "display: flex; gap: 10px; justify-content: flex-end;";
+    btnContainer.className = "pc-modal-actions";
 
     // Cancel button
     const cancelBtn = document.createElement("button");
