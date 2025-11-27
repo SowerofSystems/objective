@@ -534,6 +534,7 @@ window.TEUI.ParallelCoordinates = (function () {
 
   /**
    * Render the parallel coordinates graph using D3.js v7
+   * Uses D3 update pattern for smooth transitions
    */
   function renderGraph() {
     const container = document.querySelector(CONFIG.containerSelector);
@@ -542,8 +543,32 @@ window.TEUI.ParallelCoordinates = (function () {
       return;
     }
 
-    // Clear existing SVG
-    container.innerHTML = "";
+    // ====================================================================
+    // CREATE TOOLTIP (D3 Pattern - inline styles, no CSS needed)
+    // ====================================================================
+
+    // Create tooltip div once (reuse if exists)
+    let tooltip = d3.select("body").select(".pc-node-tooltip");
+    if (tooltip.empty()) {
+      tooltip = d3
+        .select("body")
+        .append("div")
+        .attr("class", "pc-node-tooltip")
+        .style("position", "absolute")
+        .style("opacity", 0)
+        .style("pointer-events", "none")
+        .style("background", "white")
+        .style("border", "1px solid #ddd")
+        .style("border-radius", "4px")
+        .style("padding", "8px 12px")
+        .style("font-size", "12px")
+        .style("box-shadow", "0 2px 8px rgba(0,0,0,0.15)")
+        .style("z-index", "10000")
+        .style("transition", "opacity 0.2s");
+    }
+
+    // Check if this is first render or update
+    const isFirstRender = !svgElement;
 
     // Calculate dimensions
     const containerWidth = container.clientWidth;
@@ -553,19 +578,26 @@ window.TEUI.ParallelCoordinates = (function () {
 
     console.log("[ParallelCoordinates] Rendering graph:", width, "x", height);
 
-    // Create SVG
-    const svg = d3
-      .select(container)
-      .append("svg")
-      .attr("width", containerWidth)
-      .attr("height", containerHeight)
-      .append("g")
-      .attr(
-        "transform",
-        `translate(${CONFIG.margin.left},${CONFIG.margin.top})`
-      );
-
-    svgElement = svg;
+    // Create or select SVG
+    let svg;
+    if (isFirstRender) {
+      // First render: create new SVG
+      container.innerHTML = "";
+      svg = d3
+        .select(container)
+        .append("svg")
+        .attr("width", containerWidth)
+        .attr("height", containerHeight)
+        .append("g")
+        .attr(
+          "transform",
+          `translate(${CONFIG.margin.left},${CONFIG.margin.top})`
+        );
+      svgElement = svg;
+    } else {
+      // Update: use existing SVG
+      svg = svgElement;
+    }
 
     // Extract data
     const { axes, targetData, referenceData } = currentData;
@@ -689,7 +721,7 @@ window.TEUI.ParallelCoordinates = (function () {
     });
 
     // ====================================================================
-    // DRAW LINES
+    // DRAW LINES (with smooth transitions on update)
     // ====================================================================
 
     // Line path generator with curved splines
@@ -699,90 +731,176 @@ window.TEUI.ParallelCoordinates = (function () {
       .y((d, i) => yScales[i](d))
       .curve(d3.curveMonotoneX); // Smooth curved splines through points
 
-    // Draw Reference line (behind)
-    svg
-      .append("path")
-      .datum(referenceData)
-      .attr("class", "reference-line")
-      .attr("d", line)
-      .style("stroke", CONFIG.colors.reference)
-      .style("stroke-width", CONFIG.lineWidth)
-      .style("fill", "none")
-      .style("opacity", CONFIG.lineOpacity)
-      .on("mouseover", function () {
-        d3.select(this)
-          .style("stroke-width", CONFIG.lineWidthHover)
-          .style("opacity", CONFIG.lineOpacityHover);
-      })
-      .on("mouseout", function () {
-        d3.select(this)
-          .style("stroke-width", CONFIG.lineWidth)
-          .style("opacity", CONFIG.lineOpacity);
-      });
-
-    // Draw Target line (in front)
-    svg
-      .append("path")
-      .datum(targetData)
-      .attr("class", "target-line")
-      .attr("d", line)
-      .style("stroke", CONFIG.colors.target)
-      .style("stroke-width", CONFIG.lineWidth)
-      .style("fill", "none")
-      .style("opacity", CONFIG.lineOpacity)
-      .on("mouseover", function () {
-        d3.select(this)
-          .style("stroke-width", CONFIG.lineWidthHover)
-          .style("opacity", CONFIG.lineOpacityHover);
-      })
-      .on("mouseout", function () {
-        d3.select(this)
-          .style("stroke-width", CONFIG.lineWidth)
-          .style("opacity", CONFIG.lineOpacity);
-      });
-
-    // ====================================================================
-    // DRAW DATA POINTS (optional, for clarity)
-    // ====================================================================
-
-    // Reference points (draw first, so they're behind)
-    axes.forEach((axis, i) => {
+    if (isFirstRender) {
+      // First render: create lines immediately
       svg
-        .append("circle")
-        .attr("cx", xScale(i))
-        .attr("cy", yScales[i](referenceData[i]))
-        .attr("r", 4)
-        .attr("data-mode", "reference") // Mark for later filtering
-        .style("fill", CONFIG.colors.reference)
-        .style("stroke", "white")
-        .style("stroke-width", 2);
-    });
+        .append("path")
+        .datum(referenceData)
+        .attr("class", "reference-line")
+        .attr("d", line)
+        .style("stroke", CONFIG.colors.reference)
+        .style("stroke-width", CONFIG.lineWidth)
+        .style("fill", "none")
+        .style("opacity", CONFIG.lineOpacity)
+        .on("mouseover", function () {
+          d3.select(this)
+            .style("stroke-width", CONFIG.lineWidthHover)
+            .style("opacity", CONFIG.lineOpacityHover);
+        })
+        .on("mouseout", function () {
+          d3.select(this)
+            .style("stroke-width", CONFIG.lineWidth)
+            .style("opacity", CONFIG.lineOpacity);
+        });
 
-    // Target points (draw last, so they're on top for easier clicking)
-    axes.forEach((axis, i) => {
       svg
-        .append("circle")
-        .attr("cx", xScale(i))
-        .attr("cy", yScales[i](targetData[i]))
-        .attr("r", 4)
-        .attr("data-mode", "target") // Mark for later filtering
-        .style("fill", CONFIG.colors.target)
-        .style("stroke", "white")
-        .style("stroke-width", 2);
-    });
+        .append("path")
+        .datum(targetData)
+        .attr("class", "target-line")
+        .attr("d", line)
+        .style("stroke", CONFIG.colors.target)
+        .style("stroke-width", CONFIG.lineWidth)
+        .style("fill", "none")
+        .style("opacity", CONFIG.lineOpacity)
+        .on("mouseover", function () {
+          d3.select(this)
+            .style("stroke-width", CONFIG.lineWidthHover)
+            .style("opacity", CONFIG.lineOpacityHover);
+        })
+        .on("mouseout", function () {
+          d3.select(this)
+            .style("stroke-width", CONFIG.lineWidth)
+            .style("opacity", CONFIG.lineOpacity);
+        });
+    } else {
+      // Update: animate lines to new positions
+      svg
+        .select(".reference-line")
+        .datum(referenceData)
+        .transition()
+        .duration(1000)
+        .ease(d3.easeCubicInOut)
+        .attr("d", line);
+
+      svg
+        .select(".target-line")
+        .datum(targetData)
+        .transition()
+        .duration(1000)
+        .ease(d3.easeCubicInOut)
+        .attr("d", line);
+    }
 
     // ====================================================================
-    // INTERACTIVE DRAGGING - Apply to editable nodes
+    // DRAW DATA POINTS (with smooth transitions on update)
     // ====================================================================
 
-    initializeDragBehavior(
-      svg,
-      axes,
-      xScale,
-      yScales,
-      targetData,
-      referenceData
-    );
+    // Helper function to attach tooltip handlers
+    const attachTooltipHandlers = (selection, mode, data, axisIndex) => {
+      const axis = axes[axisIndex];
+      const axisConfig = EDITABLE_AXES[axis.id];
+      const isEditable = !!axisConfig;
+      const color = mode === "target" ? CONFIG.colors.target : CONFIG.colors.reference;
+      const label = mode === "target" ? "Target" : "Reference";
+
+      selection
+        .on("mouseover", function (event) {
+          tooltip.transition().duration(200).style("opacity", 1);
+          tooltip
+            .html(
+              `
+              <div style="color: ${color}; font-weight: 600; margin-bottom: 4px;">
+                ${axis.label} - ${label}
+              </div>
+              <div style="font-size: 14px; margin-bottom: 2px;">
+                ${data[axisIndex].toFixed(2)} ${axis.unit}
+              </div>
+              ${isEditable ? '<div style="font-size: 10px; color: #666; font-style: italic;">Drag to edit</div>' : ""}
+            `
+            )
+            .style("left", event.pageX + 10 + "px")
+            .style("top", event.pageY - 28 + "px");
+        })
+        .on("mousemove", function (event) {
+          tooltip
+            .style("left", event.pageX + 10 + "px")
+            .style("top", event.pageY - 28 + "px");
+        })
+        .on("mouseout", function () {
+          tooltip.transition().duration(500).style("opacity", 0);
+        });
+    };
+
+    if (isFirstRender) {
+      // First render: create nodes immediately
+      axes.forEach((_axis, i) => {
+        // Reference nodes
+        const refNode = svg
+          .append("circle")
+          .attr("class", `node-ref-${i}`)
+          .attr("cx", xScale(i))
+          .attr("cy", yScales[i](referenceData[i]))
+          .attr("r", 4)
+          .attr("data-mode", "reference")
+          .style("fill", CONFIG.colors.reference)
+          .style("stroke", "white")
+          .style("stroke-width", 2);
+        attachTooltipHandlers(refNode, "reference", referenceData, i);
+
+        // Target nodes
+        const targetNode = svg
+          .append("circle")
+          .attr("class", `node-target-${i}`)
+          .attr("cx", xScale(i))
+          .attr("cy", yScales[i](targetData[i]))
+          .attr("r", 4)
+          .attr("data-mode", "target")
+          .style("fill", CONFIG.colors.target)
+          .style("stroke", "white")
+          .style("stroke-width", 2);
+        attachTooltipHandlers(targetNode, "target", targetData, i);
+      });
+    } else {
+      // Update: animate nodes to new positions
+      axes.forEach((_axis, i) => {
+        svg
+          .select(`.node-ref-${i}`)
+          .transition()
+          .duration(1000)
+          .ease(d3.easeCubicInOut)
+          .attr("cy", yScales[i](referenceData[i]));
+
+        svg
+          .select(`.node-target-${i}`)
+          .transition()
+          .duration(1000)
+          .ease(d3.easeCubicInOut)
+          .attr("cy", yScales[i](targetData[i]));
+
+        // Update tooltip data bindings
+        svg.select(`.node-ref-${i}`).each(function () {
+          attachTooltipHandlers(d3.select(this), "reference", referenceData, i);
+        });
+        svg.select(`.node-target-${i}`).each(function () {
+          attachTooltipHandlers(d3.select(this), "target", targetData, i);
+        });
+      });
+    }
+
+    // ====================================================================
+    // INTERACTIVE DRAGGING - Apply to editable nodes (first render only)
+    // ====================================================================
+
+    if (isFirstRender) {
+      initializeDragBehavior(
+        svg,
+        axes,
+        xScale,
+        yScales,
+        targetData,
+        referenceData
+      );
+    }
 
     console.log("[ParallelCoordinates] Graph rendered successfully");
   }
