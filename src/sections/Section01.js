@@ -1284,10 +1284,7 @@ window.TEUI.SectionModules.sect01 = (function () {
    */
   function injectKeyValuesHeaderControls() {
     const sectionHeader = document.querySelector("#keyValues .section-header");
-    if (
-      !sectionHeader ||
-      sectionHeader.querySelector("#s01-reset-icon")
-    ) {
+    if (!sectionHeader || sectionHeader.querySelector("#s01-reset-icon")) {
       return; // Already setup or header not found
     }
 
