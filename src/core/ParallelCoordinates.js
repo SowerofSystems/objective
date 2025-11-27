@@ -305,11 +305,11 @@ window.TEUI.ParallelCoordinates = (function () {
     // Settings button (enabled)
     const settingsBtn = createButton("bi-gear", "Settings", showSettingsModal);
 
-    // Create feedback console (in middle of controls row)
+    // Create feedback console (will be injected into section header, matching S01 pattern)
     const feedbackConsole = document.createElement("span");
     feedbackConsole.id = "s18-feedback-console";
     feedbackConsole.style.cssText =
-      "color: #0dcaf0; font-size: 0.9rem; margin-left: 20px; margin-right: 20px; padding-left: 20px; border-left: 1px solid #dee2e6; min-width: 200px;";
+      "color: #0dcaf0; font-size: 0.8rem; font-family: monospace; margin-left: 10px;";
 
     // Create inline legend (in middle of controls row)
     const legendContainer = document.createElement("div");
@@ -376,13 +376,19 @@ window.TEUI.ParallelCoordinates = (function () {
       toggleFullscreen
     );
 
-    // Append in order: Feedback Console, Legend, Refresh, Export, Settings, Fullscreen
-    layoutContainer.appendChild(feedbackConsole);
+    // Append in order: Legend, Refresh, Export, Settings, Fullscreen
+    // (Feedback console moved to section header, matching S01 pattern)
     layoutContainer.appendChild(legendContainer);
     layoutContainer.appendChild(refreshBtn);
     layoutContainer.appendChild(exportBtn);
     layoutContainer.appendChild(settingsBtn);
     layoutContainer.appendChild(fullscreenBtn);
+
+    // Inject feedback console into section header (matching S01 pattern)
+    const sectionHeader = document.querySelector("#parallelCoordinates .section-header");
+    if (sectionHeader && !sectionHeader.querySelector("#s18-feedback-console")) {
+      sectionHeader.appendChild(feedbackConsole);
+    }
 
     // Assemble controls row
     controlsContainer.appendChild(mainBtn);
