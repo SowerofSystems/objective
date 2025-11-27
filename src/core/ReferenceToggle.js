@@ -510,6 +510,7 @@ TEUI.ReferenceToggle = (function () {
     // Mode: 'geometry' or 'geometry-plus-code' - exclude performance fields (Category 2)
     // Performance field patterns based on CSV export analysis
     const performancePatterns = [
+      /^[a-z]_(39|41)$/, // Typology selection, User modelled embodied carbon (code/performance features)
       /^[a-z]_(51|52|53)$/, // DHW system type, efficiency, DWHR
       /^[a-z]_(66|67)$/, // Lighting density, equipment efficiency
       /^f_(73|74|75|76|77|78)$/, // SHGC values (window/door solar heat gain)
@@ -619,6 +620,31 @@ TEUI.ReferenceToggle = (function () {
       console.log(
         "❌ Performance fields skipped (RSI values, equipment efficiencies) - these should come from ReferenceValues or user edits"
       );
+
+      // Trigger automatic recalculation (like Tilt button)
+      console.log("[ReferenceToggle] Triggering automatic recalculation...");
+      if (window.TEUI?.Calculator?.calculateAll) {
+        window.TEUI.Calculator.calculateAll();
+
+        // Update all section displays
+        sections.forEach(section => {
+          if (
+            section.modeManager &&
+            typeof section.modeManager.updateCalculatedDisplayValues ===
+              "function"
+          ) {
+            section.modeManager.updateCalculatedDisplayValues();
+          }
+        });
+
+        console.log(
+          "[ReferenceToggle] ✅ Automatic recalculation complete - e_10 should now reflect mirrored values"
+        );
+      } else {
+        console.warn(
+          "[ReferenceToggle] Calculator not available - manual Tilt may be needed"
+        );
+      }
     } catch (error) {
       console.error("[ReferenceToggle] Mirror Geometry failed:", error);
     }
@@ -691,6 +717,31 @@ TEUI.ReferenceToggle = (function () {
       console.log(
         `📋 Standard: "${standard}" - Reference model now uses Target geometry with code minimum performance`
       );
+
+      // Trigger automatic recalculation (like Tilt button)
+      console.log("[ReferenceToggle] Triggering automatic recalculation...");
+      if (window.TEUI?.Calculator?.calculateAll) {
+        window.TEUI.Calculator.calculateAll();
+
+        // Update all section displays
+        sections.forEach(section => {
+          if (
+            section.modeManager &&
+            typeof section.modeManager.updateCalculatedDisplayValues ===
+              "function"
+          ) {
+            section.modeManager.updateCalculatedDisplayValues();
+          }
+        });
+
+        console.log(
+          "[ReferenceToggle] ✅ Automatic recalculation complete - e_10 should now reflect mirrored values with code minimums"
+        );
+      } else {
+        console.warn(
+          "[ReferenceToggle] Calculator not available - manual Tilt may be needed"
+        );
+      }
     } catch (error) {
       console.error(
         "[ReferenceToggle] Mirror Geometry + Code failed:",
@@ -777,6 +828,31 @@ TEUI.ReferenceToggle = (function () {
       console.log(
         "ℹ️  Excluded: d_13 (building standard) - user can set Reference standard independently"
       );
+
+      // Trigger automatic recalculation (like Tilt button)
+      console.log("[ReferenceToggle] Triggering automatic recalculation...");
+      if (window.TEUI?.Calculator?.calculateAll) {
+        window.TEUI.Calculator.calculateAll();
+
+        // Update all section displays
+        sections.forEach(section => {
+          if (
+            section.modeManager &&
+            typeof section.modeManager.updateCalculatedDisplayValues ===
+              "function"
+          ) {
+            section.modeManager.updateCalculatedDisplayValues();
+          }
+        });
+
+        console.log(
+          "[ReferenceToggle] ✅ Automatic recalculation complete - e_10 should now equal h_10"
+        );
+      } else {
+        console.warn(
+          "[ReferenceToggle] Calculator not available - manual Tilt may be needed"
+        );
+      }
     } catch (error) {
       console.error("[ReferenceToggle] Mirror All Inputs failed:", error);
     }

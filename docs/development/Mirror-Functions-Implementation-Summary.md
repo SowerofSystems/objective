@@ -1,8 +1,23 @@
 # Mirror Functions - Implementation Summary
 
 **Date**: 2025-11-27
-**Status**: ✅ Implementation Complete, Ready for Testing
+**Status**: 🔄 Core Implementation Complete, Diff Highlighting Pending
 **Branch**: 2025-11-27-UI-TWEAKS
+
+---
+
+## Implementation Status (2025-11-27)
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Three Mirror Functions | ✅ Complete | Geometry, Geometry+Code, All Inputs |
+| Field Classification (d_39, i_41 exclusion) | ✅ Complete | Added to performance patterns |
+| Automatic Calculation Trigger | ✅ Complete | Tilt-button pattern implemented |
+| G/C/A Field Classification System | ✅ Documented | See Field-Classification-GCA.md |
+| Neon Yellow Diff Highlighting | ⏳ Pending | Spec complete, awaiting implementation |
+
+**Ready for:** Testing of core mirror functions (first two refinements)
+**Next:** Implement diff highlighting based on G/C/A classification
 
 ---
 
@@ -61,6 +76,7 @@
 **Created:**
 - [Mirror-Target-Field-Analysis.md](./Mirror-Target-Field-Analysis.md) - Planning document
 - [Field-Classification-for-Mirroring.md](./Field-Classification-for-Mirroring.md) - Complete field categorization
+- [Field-Classification-GCA.md](./Field-Classification-GCA.md) - G/C/A system from CSV metadata (2025-11-27)
 - [Mirror-Functions-Implementation-Summary.md](./Mirror-Functions-Implementation-Summary.md) - This file
 
 ---
@@ -204,14 +220,58 @@ Console output:
 
 ---
 
+## TODO: Refinements Needed (2025-11-27)
+
+### 1. ✅ Field Classification Fixes (COMPLETE)
+- **Exclude from Geometry mode**: `d_39` (Typology Selection) and `i_41` (User Modelled Embodied Carbon)
+  - ✅ Rationale: These are code/performance features, not geometry
+  - ✅ Updated `shouldCopyFieldForMode()` to exclude these fields from "Geometry" mode
+  - ✅ Added pattern: `/^[a-z]_(39|41)$/` to performance exclusions in ReferenceToggle.js:513
+
+### 2. 🔄 Diff Highlighting (HIGH PRIORITY - SPECIFICATION COMPLETE, READY FOR IMPLEMENTATION)
+- **Add neon yellow highlighting** for fields that were copied during mirror operation
+
+  **Field Classification System** (from CSV metadata row 4):
+  - `G` = Geometry fields (areas, volumes, location, occupancy)
+  - `C` = Code/Performance fields (RSI values, equipment efficiencies, SHGC, U-values)
+  - `A` = All other fields (everything not in G or C)
+
+  **Highlight Behavior**:
+  - ✅ Only highlight fields in **Reference model** (not Target)
+  - ✅ Highlight **only the fields that were actually copied** in that mirror operation
+  - ✅ Apply neon yellow background to the field fill area (input/select elements)
+  - ✅ **Auto-dismiss**: Highlights dissolve after next user interaction with app (any click/input/change event)
+
+  **Per-Method Highlighting**:
+  - **"Geometry" button**: Highlight only `G` fields in Reference model
+  - **"Geometry + Code" button**: Highlight `G` + `C` fields in Reference model
+  - **"All Inputs" button**: Highlight `G` + `C` + `A` fields in Reference model (everything except d_13)
+
+  **Technical Implementation Plan**:
+  1. Create field classification mapping from CSV row 4 (G/C/A metadata)
+  2. Add `.mirror-highlight` CSS class with neon yellow background
+  3. After each mirror operation, apply class to copied fields in Reference DOM
+  4. Add one-time event listener to remove highlights on next user interaction
+  5. Ensure highlights only appear in Reference mode, cleared when switching modes
+
+### 3. ✅ Calculation Protocol After Mirroring (COMPLETE)
+- ✅ **Fixed**: Added automatic `TEUI.Calculator.calculateAll()` trigger after each mirror function
+- ✅ **Implementation**: Added Tilt-button pattern to all three mirror functions:
+  - `mirrorGeometry()` - ReferenceToggle.js:624-646
+  - `mirrorGeometryPlusCode()` - ReferenceToggle.js:695-718
+  - `mirrorAllInputs()` - ReferenceToggle.js:781-804
+- ✅ **Result**: `e_10` (Reference TEUI) now reflects settled/recalculated values immediately
+- ✅ **Console feedback**: Shows "✅ Automatic recalculation complete" after each mirror operation
+
+---
+
 ## Future Enhancements (Nice to Have)
 
 1. **User Confirmation Dialog**: "Are you sure you want to copy X fields from Target to Reference?"
 2. **Progress Indicator**: Show "Copying fields... 50/120" during operation
 3. **Success Toast Notification**: "✅ Copied 120 geometry fields to Reference model"
-4. **Diff Highlighting**: Automatically highlight fields that differ between Target/Reference after mirroring
-5. **Undo Last Mirror**: Store previous Reference state, allow one-click undo
-6. **Selective Mirror**: Allow user to choose which sections to mirror (checkboxes)
+4. **Undo Last Mirror**: Store previous Reference state, allow one-click undo
+5. **Selective Mirror**: Allow user to choose which sections to mirror (checkboxes)
 
 ---
 
