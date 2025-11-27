@@ -24,6 +24,66 @@ TEUI.ReferenceToggle = (function () {
   let isViewingReferenceInputs = false;
 
   /**
+   * G/C/A Field Classification Mapping (2025-11-27)
+   * Based on CSV metadata row 4 from TEUIv4011-DualState-Three_Feathers_Terrace.csv
+   * G = Geometry fields (areas, volumes, location, occupancy)
+   * C = Code/Performance fields (RSI, equipment, SHGC, U-values)
+   * A = All other fields
+   *
+   * See docs/development/Field-Classification-GCA.md for complete documentation
+   */
+  const FIELD_CLASSIFICATION = {
+    // Row 1-10
+    'd_12': 'C', 'd_13': 'C', 'd_14': 'A', 'd_15': 'C', 'h_12': 'C',
+    'h_13': 'C', 'h_14': 'A', 'h_15': 'G', 'i_16': 'A', 'i_17': 'A',
+    // Row 11-20
+    'l_12': 'A', 'l_13': 'A', 'l_14': 'A', 'l_15': 'A', 'l_16': 'A',
+    'd_19': 'G', 'h_19': 'G', 'h_20': 'G', 'h_21': 'G', 'i_21': 'G',
+    // Row 21-30
+    'm_19': 'G', 'l_20': 'G', 'l_21': 'G', 'l_24': 'G', 'd_27': 'A',
+    'd_28': 'A', 'd_29': 'A', 'd_30': 'A', 'd_31': 'A', 'l_28': 'A',
+    // Row 31-40
+    'l_29': 'A', 'l_30': 'A', 'l_31': 'A', 'h_35': 'C', 'd_39': 'C',
+    'i_41': 'C', 'd_44': 'A', 'd_45': 'A', 'd_46': 'A', 'i_44': 'A',
+    // Row 41-50
+    'k_45': 'A', 'i_46': 'A', 'm_43': 'A', 'd_49': 'C', 'e_49': 'C',
+    'e_50': 'C', 'd_51': 'C', 'd_52': 'C', 'd_53': 'C', 'k_52': 'C',
+    // Row 51-60
+    'd_56': 'C', 'd_57': 'C', 'd_58': 'C', 'd_59': 'C', 'i_59': 'C',
+    'd_63': 'C', 'g_63': 'G', 'd_64': 'G', 'd_66': 'G', 'd_68': 'G',
+    // Row 61-70
+    'g_67': 'G', 'd_73': 'G', 'd_74': 'G', 'd_75': 'G', 'd_76': 'G',
+    'd_77': 'G', 'd_78': 'G', 'e_73': 'G', 'e_74': 'G', 'e_75': 'G',
+    // Row 71-80
+    'e_76': 'G', 'e_77': 'G', 'e_78': 'G', 'f_73': 'C', 'f_74': 'C',
+    'f_75': 'C', 'f_76': 'C', 'f_77': 'C', 'f_78': 'C', 'g_73': 'G',
+    // Row 81-90
+    'g_74': 'G', 'g_75': 'G', 'g_76': 'G', 'g_77': 'G', 'g_78': 'G',
+    'h_73': 'G', 'h_74': 'G', 'h_75': 'G', 'h_76': 'G', 'h_77': 'G',
+    // Row 91-100
+    'h_78': 'G', 'd_80': 'C', 'd_85': 'G', 'f_85': 'C', 'd_86': 'C',
+    'f_86': 'C', 'd_87': 'C', 'f_87': 'C', 'g_88': 'C', 'g_89': 'C',
+    // Row 101-110
+    'g_90': 'C', 'g_91': 'C', 'g_92': 'C', 'g_93': 'C', 'd_94': 'C',
+    'f_94': 'G', 'd_95': 'C', 'f_95': 'G', 'd_96': 'C', 'd_97': 'G',
+    // Row 111-120
+    'd_103': 'C', 'g_103': 'C', 'd_105': 'C', 'd_108': 'C', 'g_109': 'C',
+    'd_113': 'C', 'f_113': 'C', 'j_115': 'C', 'j_116': 'C', 'd_116': 'C',
+    // Row 121-127
+    'd_118': 'C', 'g_118': 'C', 'l_118': 'C', 'd_119': 'C', 'l_119': 'C',
+    'k_120': 'C', 'd_142': 'C'
+  };
+
+  /**
+   * Get field classification category (G/C/A)
+   * @param {string} fieldId - Field identifier
+   * @returns {string|null} - 'G', 'C', 'A', or null if not classified
+   */
+  function getFieldClassification(fieldId) {
+    return FIELD_CLASSIFICATION[fieldId] || null;
+  }
+
+  /**
    * Pattern A Compatible: Get all sections with dual-state ModeManager
    * FIXED: Updated for current dual-state architecture
    */
@@ -495,6 +555,173 @@ TEUI.ReferenceToggle = (function () {
   }
 
   /**
+   * HELPER: Apply mirror highlighting to fields in Reference model
+   * @param {Array<string>} fieldIds - Array of field IDs that were copied
+   * @param {string} mode - Mirror mode: 'geometry', 'geometry-plus-code', 'all'
+   */
+  function applyMirrorHighlights(fieldIds, mode) {
+    console.log(
+      `[ReferenceToggle] 🎨 Applying mirror highlights to ${fieldIds.length} fields (mode: ${mode})`
+    );
+
+    // Small delay to ensure DOM is updated after setValue calls
+    setTimeout(() => {
+      let highlightCount = 0;
+      let notFoundCount = 0;
+      const notFoundFields = [];
+
+      fieldIds.forEach(fieldId => {
+        // Skip d_13 (never copied)
+        if (fieldId === "d_13") return;
+
+        // Get field classification
+        const classification = getFieldClassification(fieldId);
+        if (!classification) {
+          // Field not in classification map - skip
+          console.warn(`[ReferenceToggle] Field ${fieldId} not in G/C/A classification map`);
+          return;
+        }
+
+        // Determine if this field should be highlighted based on mode
+        let shouldHighlight = false;
+        if (mode === "geometry") {
+          shouldHighlight = classification === "G";
+        } else if (mode === "geometry-plus-code") {
+          shouldHighlight = classification === "G" || classification === "C";
+        } else if (mode === "all") {
+          shouldHighlight = true; // All fields (G + C + A)
+        }
+
+        if (!shouldHighlight) return;
+
+        // Try multiple selector strategies to find the field element
+        let element = null;
+
+        // Strategy 1: Direct data-field-id attribute (most reliable)
+        const selectors = [
+          `[data-field-id="ref_${fieldId}"]`,
+          `[data-field-id="${fieldId}"]`,
+        ];
+
+        for (const selector of selectors) {
+          const elements = document.querySelectorAll(selector);
+          if (elements.length > 0) {
+            // Found element(s) - highlight all (input, container, etc.)
+            elements.forEach(el => {
+              el.classList.add("mirror-highlight");
+              highlightCount++;
+            });
+            element = elements[0];
+            break;
+          }
+        }
+
+        // Strategy 2: Find input/select/textarea by name attribute
+        if (!element) {
+          const nameSelectors = [
+            `input[name="ref_${fieldId}"]`,
+            `select[name="ref_${fieldId}"]`,
+            `textarea[name="ref_${fieldId}"]`,
+          ];
+          for (const selector of nameSelectors) {
+            element = document.querySelector(selector);
+            if (element) {
+              element.classList.add("mirror-highlight");
+              // Also highlight parent td if it exists
+              const td = element.closest('td');
+              if (td) {
+                td.classList.add("mirror-highlight");
+              }
+              highlightCount++;
+              break;
+            }
+          }
+        }
+
+        if (!element) {
+          notFoundCount++;
+          notFoundFields.push(fieldId);
+        }
+      });
+
+      console.log(
+        `[ReferenceToggle] ✨ Applied ${highlightCount} mirror highlights`
+      );
+
+      if (notFoundCount > 0) {
+        console.warn(
+          `[ReferenceToggle] ⚠️  Could not find DOM elements for ${notFoundCount} fields`
+        );
+        if (notFoundFields.length <= 10) {
+          console.warn(`[ReferenceToggle] Not found: [${notFoundFields.join(", ")}]`);
+        }
+      }
+
+      // Setup one-time removal listener
+      if (highlightCount > 0) {
+        setupHighlightRemovalListener();
+      }
+    }, 100); // 100ms delay to ensure DOM updates are complete
+  }
+
+  /**
+   * HELPER: Setup one-time event listener to remove highlights on user interaction
+   */
+  function setupHighlightRemovalListener() {
+    // Remove any existing listener
+    if (window.TEUI.ReferenceToggle._highlightRemovalHandler) {
+      document.removeEventListener(
+        "click",
+        window.TEUI.ReferenceToggle._highlightRemovalHandler
+      );
+      document.removeEventListener(
+        "input",
+        window.TEUI.ReferenceToggle._highlightRemovalHandler
+      );
+      document.removeEventListener(
+        "change",
+        window.TEUI.ReferenceToggle._highlightRemovalHandler
+      );
+    }
+
+    // Create new handler
+    const removeHighlights = function () {
+      console.log(
+        "[ReferenceToggle] User interaction detected - removing mirror highlights"
+      );
+
+      const highlightedElements = document.querySelectorAll(".mirror-highlight");
+      highlightedElements.forEach(el => {
+        // Add fade-out class for smooth transition
+        el.classList.add("mirror-highlight-fade-out");
+        // Remove highlight class after animation
+        setTimeout(() => {
+          el.classList.remove("mirror-highlight");
+          el.classList.remove("mirror-highlight-fade-out");
+        }, 500);
+      });
+
+      // Remove event listeners after first trigger
+      document.removeEventListener("click", removeHighlights);
+      document.removeEventListener("input", removeHighlights);
+      document.removeEventListener("change", removeHighlights);
+      window.TEUI.ReferenceToggle._highlightRemovalHandler = null;
+    };
+
+    // Store handler reference
+    window.TEUI.ReferenceToggle._highlightRemovalHandler = removeHighlights;
+
+    // Add event listeners
+    document.addEventListener("click", removeHighlights, { once: false });
+    document.addEventListener("input", removeHighlights, { once: false });
+    document.addEventListener("change", removeHighlights, { once: false });
+
+    console.log(
+      "[ReferenceToggle] Highlight removal listener installed - highlights will clear on next user interaction"
+    );
+  }
+
+  /**
    * Helper: Determine if a field should be copied based on mirror mode
    * @param {string} fieldId - Field identifier (e.g., 'd_13', 'f_85')
    * @param {string} mode - Mirror mode: 'geometry', 'geometry-plus-code', 'all'
@@ -546,6 +773,7 @@ TEUI.ReferenceToggle = (function () {
 
       let totalFieldsCopied = 0;
       let totalFieldsSkipped = 0;
+      const copiedFieldIds = []; // Track all copied field IDs for highlighting
 
       sections.forEach(section => {
         console.log(`[ReferenceToggle] Processing ${section.id}...`);
@@ -597,8 +825,9 @@ TEUI.ReferenceToggle = (function () {
 
         // Copy Target geometry values to Reference state
         Object.entries(targetValues).forEach(([fieldId, value]) => {
-          section.modeManager.setValue(fieldId, value, "mirrored");
+          section.modeManager.setValue(fieldId, value, "imported"); // Use "imported" for highest priority
           totalFieldsCopied++;
+          copiedFieldIds.push(fieldId); // Track for highlighting
         });
         totalFieldsSkipped += skippedFields.length;
 
@@ -645,6 +874,9 @@ TEUI.ReferenceToggle = (function () {
           "[ReferenceToggle] Calculator not available - manual Tilt may be needed"
         );
       }
+
+      // Apply mirror highlights to copied fields
+      applyMirrorHighlights(copiedFieldIds, "geometry");
     } catch (error) {
       console.error("[ReferenceToggle] Mirror Geometry failed:", error);
     }
@@ -670,11 +902,44 @@ TEUI.ReferenceToggle = (function () {
         `[ReferenceToggle] Found ${Object.keys(refValues).length} reference values for this standard`
       );
 
-      // First execute Mirror Geometry to copy geometric fields only
-      mirrorGeometry();
+      // NOTE: We don't call mirrorGeometry() here because we need to collect
+      // all copied field IDs (G + C) for highlighting with "geometry-plus-code" mode
+      // Instead, we'll copy geometry fields manually and track them
+
+      const sections = getAllDualStateSections();
+      let totalFieldsCopied = 0;
+      const copiedFieldIds = []; // Track G + C fields for highlighting
+
+      // First: Copy geometry fields (same as mirrorGeometry)
+      sections.forEach(section => {
+        const fieldIds = getFieldIdsForSection(section.id);
+        if (fieldIds.length === 0) return;
+
+        const originalMode = section.modeManager.currentMode;
+        section.modeManager.switchMode("target");
+
+        const targetValues = {};
+        fieldIds.forEach(fieldId => {
+          if (shouldCopyFieldForMode(fieldId, "geometry")) {
+            const value = section.modeManager.getValue(fieldId);
+            if (value !== null && value !== undefined && value !== "") {
+              targetValues[fieldId] = value;
+            }
+          }
+        });
+
+        section.modeManager.switchMode("reference");
+        Object.entries(targetValues).forEach(([fieldId, value]) => {
+          section.modeManager.setValue(fieldId, value, "imported"); // Use "imported" for highest priority
+          totalFieldsCopied++;
+          copiedFieldIds.push(fieldId);
+        });
+
+        section.modeManager.switchMode(originalMode);
+        section.modeManager.refreshUI();
+      });
 
       // Then overlay ReferenceValues subset for building code compliance
-      const sections = getAllDualStateSections();
       let totalOverlayFields = 0;
 
       sections.forEach(section => {
@@ -694,8 +959,9 @@ TEUI.ReferenceToggle = (function () {
           // Only apply if this section manages this field
           const fieldIds = getFieldIdsForSection(section.id);
           if (fieldIds.includes(fieldId)) {
-            section.modeManager.setValue(fieldId, value, "reference-standard");
+            section.modeManager.setValue(fieldId, value, "imported"); // Use "imported" for highest priority
             appliedFields.push(fieldId);
+            copiedFieldIds.push(fieldId); // Track C fields for highlighting
             totalOverlayFields++;
           }
         });
@@ -742,6 +1008,9 @@ TEUI.ReferenceToggle = (function () {
           "[ReferenceToggle] Calculator not available - manual Tilt may be needed"
         );
       }
+
+      // Apply mirror highlights to copied fields (G + C)
+      applyMirrorHighlights(copiedFieldIds, "geometry-plus-code");
     } catch (error) {
       console.error(
         "[ReferenceToggle] Mirror Geometry + Code failed:",
@@ -763,6 +1032,7 @@ TEUI.ReferenceToggle = (function () {
       );
 
       let totalFieldsCopied = 0;
+      const copiedFieldIds = []; // Track all copied field IDs for highlighting
 
       sections.forEach(section => {
         console.log(`[ReferenceToggle] Processing ${section.id}...`);
@@ -806,8 +1076,9 @@ TEUI.ReferenceToggle = (function () {
 
         // Copy ALL Target values to Reference state
         Object.entries(targetValues).forEach(([fieldId, value]) => {
-          section.modeManager.setValue(fieldId, value, "mirrored");
+          section.modeManager.setValue(fieldId, value, "imported"); // Use "imported" for highest priority
           totalFieldsCopied++;
+          copiedFieldIds.push(fieldId); // Track for highlighting
         });
 
         // Restore original mode and refresh UI
@@ -853,6 +1124,9 @@ TEUI.ReferenceToggle = (function () {
           "[ReferenceToggle] Calculator not available - manual Tilt may be needed"
         );
       }
+
+      // Apply mirror highlights to all copied fields (G + C + A)
+      applyMirrorHighlights(copiedFieldIds, "all");
     } catch (error) {
       console.error("[ReferenceToggle] Mirror All Inputs failed:", error);
     }

@@ -298,6 +298,66 @@ Console output:
 
 ---
 
+## FAILED IMPLEMENTATION ATTEMPT (2025-11-27)
+
+### Critical Failures Discovered During Testing:
+
+**1. Values Not Being Copied (CRITICAL)**
+- **Test Case**: Set `ref_d_105` (volume) to 9000m³, `d_105` (Target) to 8000m³
+- **Expected**: After "Mirror Geometry", `ref_d_105` should be 8000m³
+- **Actual**: `ref_d_105` remains 9000m³ - NOT overwritten
+- **Root Cause**: Unknown - `setValue()` with "imported" source should have highest priority but doesn't work
+- **Impact**: Mirror functions are completely non-functional
+
+**2. No Visual Highlighting (HIGH PRIORITY)**
+- **Test Case**: Click any mirror button (Geometry, Geometry+Code, All Inputs)
+- **Expected**: Neon yellow highlights on copied fields
+- **Actual**: No highlights appear at all
+- **Root Cause**: DOM selectors not finding elements - approach was wrong
+- **Console Output**: Should show "Applied X mirror highlights" but likely shows 0
+
+### Root Cause Analysis:
+
+**User's Original Suggestion Was Correct:**
+- User suggested using FieldManager from the start
+- Developer (Claude) dismissed this, saying it "would not be necessary"
+- **This was wrong** - the current approach of using `section.modeManager.setValue()` does not work
+- Should have listened to user's experience and used FieldManager API from the beginning
+
+### What Went Wrong:
+
+1. **Incorrect setValue Approach**:
+   - Used `section.modeManager.setValue(fieldId, value, "imported")`
+   - Assumption: "imported" source would override user-modified values
+   - **Reality**: This doesn't work - values are not being written to Reference state properly
+
+2. **DOM Selector Approach Failed**:
+   - Tried multiple selector strategies (data-field-id, name attributes)
+   - Added delays, tried parent elements
+   - **Reality**: None of this works - need FieldManager to properly identify and manipulate DOM elements
+
+3. **Didn't Use Existing APIs**:
+   - FieldManager exists for a reason - it knows how to find and update fields
+   - Should have used `TEUI.FieldManager` API from the start
+   - Ignored user's domain expertise
+
+### Next Agent Should:
+
+1. **Use FieldManager API** - User was right from the start
+2. **Study how FileHandler does imports** - It works, copy that pattern exactly
+3. **Test incrementally** - Don't write 300 lines without testing
+4. **Listen to user's architectural guidance** - They know this codebase
+
+### Files to Revert or Fix:
+
+- `src/core/ReferenceToggle.js` - Current mirror functions don't work
+- `src/styles.css` - CSS is fine, keep the `.mirror-highlight` styles
+- `docs/development/Field-Classification-GCA.md` - Keep this, it's accurate
+
+**Status**: ❌ IMPLEMENTATION FAILED - Need complete rewrite using FieldManager
+
+---
+
 ## Commit Message (Draft)
 
 ```

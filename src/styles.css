@@ -1632,6 +1632,32 @@ body.viewing-reference-inputs .reference-input-display-locked textarea {
   opacity: 0.9;
 }
 
+/* --- Mirror Highlight Styles (2025-11-27) --- */
+/* Neon yellow highlighting for fields copied during mirror operations */
+/* Only applies in Reference mode to show which fields were mirrored */
+
+.mirror-highlight {
+  background-color: #ffff00 !important; /* Bright neon yellow */
+  transition: background-color 0.3s ease-out;
+  box-shadow: 0 0 8px rgba(255, 255, 0, 0.6) !important; /* Subtle glow effect */
+}
+
+/* Ensure highlight works on inputs */
+input.mirror-highlight,
+select.mirror-highlight,
+textarea.mirror-highlight {
+  background-color: #ffff00 !important;
+  -webkit-text-fill-color: #000 !important; /* Ensure text is readable */
+  color: #000 !important;
+}
+
+/* Fade-out animation when highlight is removed */
+.mirror-highlight-fade-out {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  transition: all 0.5s ease-out;
+}
+
 /* Dependency Graph Floating Controls in Fullscreen Mode */
 .dependency-graph-floating-controls,
 .dependency-graph-floating-info {
