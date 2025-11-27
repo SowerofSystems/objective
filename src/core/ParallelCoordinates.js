@@ -1,28 +1,10 @@
 /**
  * ParallelCoordinates.js
  * Section 18 Interactive Parallel Coordinates Optimization Visualization
- *
  * Renders a two-line parallel coordinates graph comparing Target vs Reference
  * building configurations across 14 key performance parameters.
  *
- * Architecture follows S16C.js pattern with D3.js v7 native support.
- *
  * @agent NOVA - November 25, 2025
- * Named for the stellar explosion that transforms a star system at critical threshold,
- * like our auto fuel-type switching where Gas/Oil becomes Heatpump at 100% efficiency.
- * A nova represents dramatic transformation and the creation of something brighter.
- *
- * Key implementations by NOVA:
- * - Interactive node dragging with Pattern A (mode-aware state updates)
- * - Multi-fuel conditional editing (SHW%, HEAT%)
- * - HSPF inversion formula for heatpump COP conversion
- * - Auto fuel-type switching (Gas/Oil → Heatpump at >100%)
- * - Real-time COP/HSPF modal display
- * - Discrete dropdown pattern (nGains% PHPP method)
- * - Dropdown flip pattern (ACH50 measured toggle)
- * - Financial calculations integration (pcFinancials.js)
- * - 5 interactive axes with 8 sophisticated patterns (A-H)
- *
  * Standing alongside: COSMO, HELIOS, ORIONIS, STELLARIA, ANDROMEDA, in Technical.md
  */
 
@@ -185,8 +167,6 @@ window.TEUI.ParallelCoordinates = (function () {
     placeholder.className = "teui-loading-placeholder";
     placeholder.innerHTML =
       "<p>Click 'Activate Optimization View' to visualize optimization paths between Target and Reference configurations.</p>";
-    placeholder.style.cssText =
-      "padding: 40px 20px; text-align: center; background: #f9f9f9; border-radius: 4px; color: #666;";
 
     // Clear container and add placeholder
     container.innerHTML = "";
@@ -257,38 +237,32 @@ window.TEUI.ParallelCoordinates = (function () {
       mainBtn.addEventListener("click", activateVisualization);
     }
 
-    // Create action buttons (Decarbonize, Optimize, Super Optimize) - only when activated
-    let decarbonizeBtn, optimizeBtn, superOptimizeBtn;
+    // Create action buttons (Decarbonize, Optimize, Super Optimize, PassivHaus-ify) - only when activated
+    let decarbonizeBtn, optimizeBtn, superOptimizeBtn, passivhausBtn;
     if (isActivated) {
       // Decarbonize button (green)
       decarbonizeBtn = document.createElement("button");
-      decarbonizeBtn.className = "btn btn-success btn-sm";
+      decarbonizeBtn.className = "btn btn-success btn-sm pc-btn-decarbonize";
       decarbonizeBtn.innerHTML = "Decarbonize";
-      decarbonizeBtn.style.fontWeight = "500";
-      decarbonizeBtn.addEventListener("click", () => {
-        console.log("[ParallelCoordinates] Decarbonize action triggered");
-        // TODO: Wire up decarbonize logic
-      });
+      decarbonizeBtn.addEventListener("click", handleDecarbonize);
 
       // Optimize button (teal)
       optimizeBtn = document.createElement("button");
-      optimizeBtn.className = "btn btn-sm";
+      optimizeBtn.className = "btn btn-sm pc-btn-optimize";
       optimizeBtn.innerHTML = "Optimize";
-      optimizeBtn.style.cssText = "background-color: #20c997; color: white; border-color: #20c997; font-weight: 500;";
-      optimizeBtn.addEventListener("click", () => {
-        console.log("[ParallelCoordinates] Optimize action triggered");
-        // TODO: Wire up optimize logic
-      });
+      optimizeBtn.addEventListener("click", handleOptimize);
 
-      // Super Optimize button (orange)
+      // Super Optimize button (orange - like the fruit!)
       superOptimizeBtn = document.createElement("button");
-      superOptimizeBtn.className = "btn btn-warning btn-sm";
+      superOptimizeBtn.className = "btn btn-sm pc-btn-super-optimize";
       superOptimizeBtn.innerHTML = "Super Optimize";
-      superOptimizeBtn.style.fontWeight = "500";
-      superOptimizeBtn.addEventListener("click", () => {
-        console.log("[ParallelCoordinates] Super Optimize action triggered");
-        // TODO: Wire up super optimize logic
-      });
+      superOptimizeBtn.addEventListener("click", handleSuperOptimize);
+
+      // PassivHaus-ify button (yellow background with danger red text - PH logo colors)
+      passivhausBtn = document.createElement("button");
+      passivhausBtn.className = "btn btn-sm pc-btn-passivhaus";
+      passivhausBtn.innerHTML = "PassivHaus-ify";
+      passivhausBtn.addEventListener("click", handlePassivHausIfy);
     }
 
     // Create layout container for buttons (CSS handles margin-left: auto)
@@ -307,18 +281,21 @@ window.TEUI.ParallelCoordinates = (function () {
     // Settings button (enabled)
     const settingsBtn = createButton("bi-gear", "Settings", showSettingsModal);
 
+    // Create feedback console (will be injected into section header, matching S01 pattern)
+    const feedbackConsole = document.createElement("span");
+    feedbackConsole.id = "s18-feedback-console";
+
     // Create inline legend (in middle of controls row)
     const legendContainer = document.createElement("div");
-    legendContainer.style.cssText =
-      "display: flex; gap: 15px; align-items: center; margin-left: 20px; margin-right: 20px; padding-left: 20px; border-left: 1px solid #dee2e6;";
+    legendContainer.className = "pc-legend-container";
 
     // Line legend (Target/Reference)
     const lineLegendContainer = document.createElement("div");
-    lineLegendContainer.style.cssText = "display: flex; gap: 12px; align-items: center;";
+    lineLegendContainer.className = "pc-line-legend";
 
     // Target line legend
     const targetLineLegend = document.createElement("div");
-    targetLineLegend.style.cssText = "display: flex; align-items: center; gap: 6px;";
+    targetLineLegend.className = "pc-legend-item";
     targetLineLegend.innerHTML = `
       <div style="width: 20px; height: 3px; background: ${CONFIG.colors.target};"></div>
       <span style="font-size: 12px; font-weight: 500; color: ${CONFIG.colors.target};">Target</span>
@@ -326,7 +303,7 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Reference line legend
     const referenceLineLegend = document.createElement("div");
-    referenceLineLegend.style.cssText = "display: flex; align-items: center; gap: 6px;";
+    referenceLineLegend.className = "pc-legend-item";
     referenceLineLegend.innerHTML = `
       <div style="width: 20px; height: 3px; background: ${CONFIG.colors.reference};"></div>
       <span style="font-size: 12px; font-weight: 500; color: ${CONFIG.colors.reference};">Reference</span>
@@ -337,11 +314,11 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Node legend (Calculated/Editable) - separator + node types
     const nodeLegendContainer = document.createElement("div");
-    nodeLegendContainer.style.cssText = "display: flex; gap: 12px; align-items: center; padding-left: 15px; border-left: 1px solid #dee2e6;";
+    nodeLegendContainer.className = "pc-node-legend";
 
     // Calculated node legend (small dot)
     const calculatedNodeLegend = document.createElement("div");
-    calculatedNodeLegend.style.cssText = "display: flex; align-items: center; gap: 6px;";
+    calculatedNodeLegend.className = "pc-legend-item";
     calculatedNodeLegend.innerHTML = `
       <svg width="16" height="16" style="display: block;">
         <circle cx="8" cy="8" r="3" fill="${CONFIG.colors.target}" stroke="white" stroke-width="1"></circle>
@@ -351,7 +328,7 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Editable node legend (large dot)
     const editableNodeLegend = document.createElement("div");
-    editableNodeLegend.style.cssText = "display: flex; align-items: center; gap: 6px;";
+    editableNodeLegend.className = "pc-legend-item";
     editableNodeLegend.innerHTML = `
       <svg width="16" height="16" style="display: block;">
         <circle cx="8" cy="8" r="6" fill="${CONFIG.colors.target}" stroke="white" stroke-width="1.5"></circle>
@@ -373,20 +350,28 @@ window.TEUI.ParallelCoordinates = (function () {
     );
 
     // Append in order: Legend, Refresh, Export, Settings, Fullscreen
+    // (Feedback console moved to section header, matching S01 pattern)
     layoutContainer.appendChild(legendContainer);
     layoutContainer.appendChild(refreshBtn);
     layoutContainer.appendChild(exportBtn);
     layoutContainer.appendChild(settingsBtn);
     layoutContainer.appendChild(fullscreenBtn);
 
+    // Inject feedback console into section header (matching S01 pattern)
+    const sectionHeader = document.querySelector("#parallelCoordinates .section-header");
+    if (sectionHeader && !sectionHeader.querySelector("#s18-feedback-console")) {
+      sectionHeader.appendChild(feedbackConsole);
+    }
+
     // Assemble controls row
     controlsContainer.appendChild(mainBtn);
 
     // Add action buttons (only when activated) right after main button
-    if (isActivated && decarbonizeBtn && optimizeBtn && superOptimizeBtn) {
+    if (isActivated && decarbonizeBtn && optimizeBtn && superOptimizeBtn && passivhausBtn) {
       controlsContainer.appendChild(decarbonizeBtn);
       controlsContainer.appendChild(optimizeBtn);
       controlsContainer.appendChild(superOptimizeBtn);
+      controlsContainer.appendChild(passivhausBtn);
     }
 
     controlsContainer.appendChild(layoutContainer);
@@ -413,29 +398,25 @@ window.TEUI.ParallelCoordinates = (function () {
   function showSettingsModal() {
     // Create modal backdrop
     const backdrop = document.createElement("div");
-    backdrop.style.cssText =
-      "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;";
+    backdrop.className = "pc-modal-backdrop";
 
     // Create modal dialog
     const modal = document.createElement("div");
-    modal.style.cssText =
-      "background: white; border-radius: 8px; padding: 20px; max-width: 400px; width: 90%; box-shadow: 0 4px 16px rgba(0,0,0,0.2);";
+    modal.className = "pc-modal-dialog";
 
     // Modal header
     const header = document.createElement("h5");
     header.textContent = "Financial Settings";
-    header.style.cssText = "margin: 0 0 15px 0; font-weight: 600;";
+    header.className = "pc-modal-header";
 
     // ROI Term label
     const label = document.createElement("label");
     label.textContent = "ROI Term (Years):";
-    label.style.cssText =
-      "display: block; margin-bottom: 8px; font-weight: 500;";
+    label.className = "pc-modal-label";
 
     // ROI Term dropdown
     const select = document.createElement("select");
-    select.className = "form-select";
-    select.style.cssText = "margin-bottom: 20px;";
+    select.className = "form-select pc-modal-select";
 
     const terms = [1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50];
     terms.forEach(year => {
@@ -450,8 +431,7 @@ window.TEUI.ParallelCoordinates = (function () {
 
     // Button container
     const btnContainer = document.createElement("div");
-    btnContainer.style.cssText =
-      "display: flex; gap: 10px; justify-content: flex-end;";
+    btnContainer.className = "pc-modal-actions";
 
     // Cancel button
     const cancelBtn = document.createElement("button");
@@ -794,6 +774,7 @@ window.TEUI.ParallelCoordinates = (function () {
     // ====================================================================
     // INTERACTIVE DRAGGING - Apply to editable nodes
     // ====================================================================
+
     initializeDragBehavior(
       svg,
       axes,
@@ -1190,6 +1171,805 @@ window.TEUI.ParallelCoordinates = (function () {
   // ========================================================================
 
   /**
+   * Show feedback message in S18 console
+   * @param {string} message - Message to display
+   * @param {number} duration - Duration in ms (default 5000)
+   */
+  function showFeedback(message, duration = 5000) {
+    const console = document.getElementById("s18-feedback-console");
+    if (!console) return;
+
+    console.textContent = message;
+    console.style.opacity = "1";
+
+    // Auto-fade after duration
+    setTimeout(() => {
+      console.style.transition = "opacity 1s";
+      console.style.opacity = "0";
+      setTimeout(() => {
+        console.textContent = "";
+        console.style.opacity = "1";
+        console.style.transition = "";
+      }, 1000);
+    }, duration);
+  }
+
+  /**
+   * Decarbonize optimization
+   * Minimize GHGI by switching fossil fuel systems to heat pumps
+   *
+   * Pattern: Follow dragEnded() architecture - update TargetState + StateManager + refresh sections
+   */
+  function handleDecarbonize() {
+    console.log("[ParallelCoordinates] Decarbonize action triggered");
+
+    const stateManager = window.TEUI?.StateManager;
+    if (!stateManager) {
+      console.error("[ParallelCoordinates] StateManager not available");
+      return;
+    }
+
+    let changesMade = false;
+    const changes = []; // Track what changed for user feedback
+
+    // ========================================================================
+    // Part 1: Service Hot Water (S07 - SHW%)
+    // ========================================================================
+
+    const sect07 = window.TEUI?.SectionModules?.sect07;
+    const d_51 = stateManager.getValue("d_51"); // SHW fuel type
+
+    if (d_51 === "Oil" || d_51 === "Gas") {
+      // Switch to Heatpump with COP 3.0 (300%)
+      // CRITICAL: Set dropdown FIRST (d_51), recalculate, THEN set efficiency (d_52)
+      // This ensures field switching from k_52 (Oil/Gas AFUE) to d_52 (Heatpump COP)
+
+      // Step 1: Set fuel type to Heatpump
+      if (sect07?.TargetState) {
+        sect07.TargetState.setValue("d_51", "Heatpump");
+      }
+      stateManager.setValue("d_51", "Heatpump", "user-modified");
+
+      // Step 2: Let section recalculate with new fuel type
+      if (sect07?.calculateAll) {
+        sect07.calculateAll();
+      }
+
+      // Step 3: Now set efficiency (d_52 is now the active field for Heatpump)
+      if (sect07?.TargetState) {
+        sect07.TargetState.setValue("d_52", "300");
+      }
+      stateManager.setValue("d_52", "300", "user-modified");
+
+      console.log("[Decarbonize] SHW: " + d_51 + " → Heatpump @ 300% COP");
+      changes.push(d_51 + " SHW → Heatpump 300%");
+      changesMade = true;
+    } else if (d_51 === "Heatpump") {
+      // Already Heatpump - ensure minimum 300% COP
+      const d_52 = parseFloat(stateManager.getValue("d_52")) || 0;
+      if (d_52 < 300) {
+        if (sect07?.TargetState) {
+          sect07.TargetState.setValue("d_52", "300");
+        }
+        stateManager.setValue("d_52", "300", "user-modified");
+
+        console.log("[Decarbonize] SHW: Heatpump COP raised from " + d_52 + "% to 300%");
+        changes.push("SHW raised to 300%");
+        changesMade = true;
+      }
+    }
+
+    // Trigger S07 recalculation if changes were made
+    if (sect07 && changesMade) {
+      if (sect07.calculateAll) {
+        sect07.calculateAll();
+      }
+      if (sect07.ModeManager?.refreshUI) {
+        sect07.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 2: Space Heating (S13 - HEAT%)
+    // ========================================================================
+
+    const sect13 = window.TEUI?.SectionModules?.sect13;
+    const d_113 = stateManager.getValue("d_113"); // Heating fuel type
+    let heatChangedMade = false;
+
+    if (d_113 === "Oil" || d_113 === "Gas") {
+      // Switch to Heatpump with HSPF 12.5 (COP ~3.66)
+      // CRITICAL: Set dropdown FIRST (d_113), recalculate, THEN set efficiency (f_113)
+      // This ensures field switching from j_115 (Oil/Gas AFUE) to f_113 (Heatpump HSPF)
+
+      // Step 1: Set fuel type to Heatpump
+      if (sect13?.TargetState) {
+        sect13.TargetState.setValue("d_113", "Heatpump");
+      }
+      stateManager.setValue("d_113", "Heatpump", "user-modified");
+
+      // Step 2: Let section recalculate with new fuel type
+      if (sect13?.calculateAll) {
+        sect13.calculateAll();
+      }
+
+      // Step 3: Now set efficiency (f_113 is now the active field for Heatpump)
+      if (sect13?.TargetState) {
+        sect13.TargetState.setValue("f_113", "12.5");
+      }
+      stateManager.setValue("f_113", "12.5", "user-modified");
+
+      console.log("[Decarbonize] Heating: " + d_113 + " → Heatpump @ HSPF 12.5 (COP 3.66)");
+      changes.push(d_113 + " Heating → Heatpump HSPF 12.5");
+      changesMade = true;
+      heatChangedMade = true;
+    } else if (d_113 === "Heatpump") {
+      // Already Heatpump - ensure minimum HSPF 12.5
+      const f_113 = parseFloat(stateManager.getValue("f_113")) || 0;
+      if (f_113 < 12.5) {
+        if (sect13?.TargetState) {
+          sect13.TargetState.setValue("f_113", "12.5");
+        }
+        stateManager.setValue("f_113", "12.5", "user-modified");
+
+        console.log("[Decarbonize] Heating: Heatpump HSPF raised from " + f_113 + " to 12.5");
+        changes.push("Heating raised to HSPF 12.5");
+        changesMade = true;
+        heatChangedMade = true;
+      }
+    }
+
+    // Trigger S13 recalculation if changes were made
+    if (sect13 && heatChangedMade) {
+      if (sect13.calculateAll) {
+        sect13.calculateAll();
+      }
+      if (sect13.ModeManager?.refreshUI) {
+        sect13.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Show user feedback and refresh graph
+    // ========================================================================
+
+    if (changesMade) {
+      const message = changes.join(", ");
+      showFeedback(message, 6000);
+      console.log("[Decarbonize] Optimization complete - refreshing graph");
+      setTimeout(() => {
+        refresh();
+      }, 200); // Longer delay to let section calculations propagate
+    } else {
+      // Check if already fully optimized
+      const isFullyOptimized =
+        (d_51 === "Heatpump" || d_51 === "Electric") &&
+        (d_113 === "Heatpump" || d_113 === "Electric");
+
+      if (isFullyOptimized) {
+        showFeedback("Nice! Your building is already zero emissions!", 6000);
+      } else {
+        showFeedback("No changes needed", 4000);
+      }
+      console.log("[Decarbonize] No changes needed - already optimized");
+    }
+  }
+
+  /**
+   * OPTIMIZE BUTTON HANDLER
+   * Applies balanced cost/performance optimization (moderate efficiency improvements)
+   * Pattern: Follow Pattern A architecture - update TargetState + StateManager + refresh sections
+   */
+  function handleOptimize() {
+    console.log("[ParallelCoordinates] Optimize action triggered");
+
+    const stateManager = window.TEUI?.StateManager;
+    if (!stateManager) {
+      console.error("[ParallelCoordinates] StateManager not available");
+      return;
+    }
+
+    let changesMade = false;
+    const changes = [];
+
+    // ========================================================================
+    // Part 1: Service Hot Water (S07) - SHW Efficiency 300%
+    // CRITICAL: Must switch to Heatpump if not already (like Decarbonize pattern)
+    // ========================================================================
+
+    const sect07 = window.TEUI?.SectionModules?.sect07;
+    const d_51 = stateManager.getValue("d_51");
+
+    // Step 1: Switch to Heatpump if needed (300%+ requires heatpump)
+    if (d_51 !== "Heatpump") {
+      if (sect07?.TargetState) {
+        sect07.TargetState.setValue("d_51", "Heatpump");
+      }
+      stateManager.setValue("d_51", "Heatpump", "user-modified");
+
+      // Step 2: Recalculate to switch from k_52 to d_52
+      if (sect07?.calculateAll) {
+        sect07.calculateAll();
+      }
+    }
+
+    // Step 3: Set efficiency (d_52 is now active)
+    if (sect07?.TargetState) {
+      sect07.TargetState.setValue("d_52", "300");
+    }
+    stateManager.setValue("d_52", "300", "user-modified");
+    changes.push("SHW 300%");
+    changesMade = true;
+
+    // ========================================================================
+    // Part 2: DWHR (S07) - 50%
+    // ========================================================================
+
+    if (sect07?.TargetState) {
+      sect07.TargetState.setValue("d_53", "50");
+    }
+    stateManager.setValue("d_53", "50", "user-modified");
+    changes.push("DWHR 50%");
+
+    // Trigger S07 recalculation
+    if (sect07) {
+      if (sect07.calculateAll) {
+        sect07.calculateAll();
+      }
+      if (sect07.ModeManager?.refreshUI) {
+        sect07.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 3: Heating Efficiency (S13) - Conditional on fuel type
+    // ========================================================================
+
+    const sect13 = window.TEUI?.SectionModules?.sect13;
+    const d_113 = stateManager.getValue("d_113");
+
+    if (d_113 === "Oil" || d_113 === "Gas") {
+      // Set AFUE to 0.98 for Gas/Oil
+      if (sect13?.TargetState) {
+        sect13.TargetState.setValue("j_115", "0.98");
+      }
+      stateManager.setValue("j_115", "0.98", "user-modified");
+      changes.push("Heating AFUE 98%");
+    } else if (d_113 === "Heatpump") {
+      // Set HSPF to 12.5 for Heatpump
+      if (sect13?.TargetState) {
+        sect13.TargetState.setValue("f_113", "12.5");
+      }
+      stateManager.setValue("f_113", "12.5", "user-modified");
+      changes.push("Heating HSPF 12.5");
+    }
+    // Electric: No change
+
+    // ========================================================================
+    // Part 4: MVHR (S13) - 85%
+    // ========================================================================
+    if (sect13?.TargetState) {
+      sect13.TargetState.setValue("d_118", "85");
+    }
+    stateManager.setValue("d_118", "85", "user-modified");
+    changes.push("MVHR 85%");
+
+    // Trigger S13 recalculation
+    if (sect13) {
+      if (sect13.calculateAll) {
+        sect13.calculateAll();
+      }
+      if (sect13.ModeManager?.refreshUI) {
+        sect13.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 5: Thermal Bridging (S11) - 20%
+    // FIXED: d_97 is the TB% slider, not d_88 (which is Door area)
+    // ========================================================================
+
+    const sect11 = window.TEUI?.SectionModules?.sect11;
+    if (sect11?.TargetState) {
+      sect11.TargetState.setValue("d_97", "20");
+    }
+    stateManager.setValue("d_97", "20", "user-modified");
+    changes.push("TB 20%");
+
+    // Trigger S11 recalculation
+    if (sect11) {
+      if (sect11.calculateAll) {
+        sect11.calculateAll();
+      }
+      if (sect11.ModeManager?.refreshUI) {
+        sect11.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 6: Net Gains (S10) - NRC 60%
+    // FIXED: d_80 belongs to Section 10, not Section 11
+    // ========================================================================
+
+    const sect10 = window.TEUI?.SectionModules?.sect10;
+    if (sect10?.TargetState) {
+      sect10.TargetState.setValue("d_80", "NRC 60%");
+    }
+    stateManager.setValue("d_80", "NRC 60%", "user-modified");
+    changes.push("nGains 60%");
+
+    // Trigger S10 recalculation
+    if (sect10) {
+      if (sect10.calculateAll) {
+        sect10.calculateAll();
+      }
+      if (sect10.ModeManager?.refreshUI) {
+        sect10.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 7: ACH50 (S12) - 1.00 (dropdown flip pattern)
+    // ========================================================================
+    const sect12 = window.TEUI?.SectionModules?.sect12;
+
+    // Step 1: Set dropdown to MEASURED
+    if (sect12?.TargetState) {
+      sect12.TargetState.setValue("d_108", "MEASURED");
+    }
+    stateManager.setValue("d_108", "MEASURED", "user-modified");
+
+    // Step 2: Recalculate (enables g_109 field)
+    if (sect12?.calculateAll) {
+      sect12.calculateAll();
+    }
+
+    // Step 3: Set ACH50 value
+    if (sect12?.TargetState) {
+      sect12.TargetState.setValue("g_109", "1.00");
+    }
+    stateManager.setValue("g_109", "1.00", "user-modified");
+    changes.push("ACH50 1.00");
+
+    // Trigger S12 recalculation
+    if (sect12) {
+      if (sect12.calculateAll) {
+        sect12.calculateAll();
+      }
+      if (sect12.ModeManager?.refreshUI) {
+        sect12.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Show user feedback and refresh graph
+    // ========================================================================
+
+    if (changesMade) {
+      const message = "Optimized: " + changes.join(", ");
+      showFeedback(message, 6000);
+      console.log("[Optimize] Optimization complete - refreshing graph");
+      setTimeout(() => {
+        refresh();
+      }, 200);
+    } else {
+      showFeedback("No changes needed", 4000);
+      console.log("[Optimize] No changes needed");
+    }
+  }
+
+  /**
+   * SUPER OPTIMIZE BUTTON HANDLER
+   * Applies aggressive multi-objective optimization (high efficiency improvements)
+   * Differentiated from PassivHaus-ify: TB% is 10% instead of 5%
+   * Pattern: Follow Pattern A architecture - update TargetState + StateManager + refresh sections
+   */
+  function handleSuperOptimize() {
+    console.log("[ParallelCoordinates] Super Optimize action triggered");
+
+    const stateManager = window.TEUI?.StateManager;
+    if (!stateManager) {
+      console.error("[ParallelCoordinates] StateManager not available");
+      return;
+    }
+
+    let changesMade = false;
+    const changes = [];
+
+    // ========================================================================
+    // Part 1: Service Hot Water (S07) - SHW Efficiency 400%
+    // CRITICAL: Must switch to Heatpump if not already (like Decarbonize pattern)
+    // ========================================================================
+
+    const sect07 = window.TEUI?.SectionModules?.sect07;
+    const d_51 = stateManager.getValue("d_51");
+
+    // Step 1: Switch to Heatpump if needed (400% requires heatpump)
+    if (d_51 !== "Heatpump") {
+      if (sect07?.TargetState) {
+        sect07.TargetState.setValue("d_51", "Heatpump");
+      }
+      stateManager.setValue("d_51", "Heatpump", "user-modified");
+
+      // Step 2: Recalculate to switch from k_52 to d_52
+      if (sect07?.calculateAll) {
+        sect07.calculateAll();
+      }
+    }
+
+    // Step 3: Set efficiency (d_52 is now active)
+    if (sect07?.TargetState) {
+      sect07.TargetState.setValue("d_52", "400");
+    }
+    stateManager.setValue("d_52", "400", "user-modified");
+    changes.push("SHW 400%");
+    changesMade = true;
+
+    // ========================================================================
+    // Part 2: DWHR (S07) - 70%
+    // ========================================================================
+
+    if (sect07?.TargetState) {
+      sect07.TargetState.setValue("d_53", "70");
+    }
+    stateManager.setValue("d_53", "70", "user-modified");
+    changes.push("DWHR 70%");
+
+    // Trigger S07 recalculation
+    if (sect07) {
+      if (sect07.calculateAll) {
+        sect07.calculateAll();
+      }
+      if (sect07.ModeManager?.refreshUI) {
+        sect07.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 3: Heating Efficiency (S13) - Conditional on fuel type
+    // ========================================================================
+
+    const sect13 = window.TEUI?.SectionModules?.sect13;
+    const d_113 = stateManager.getValue("d_113");
+
+    if (d_113 === "Oil" || d_113 === "Gas") {
+      // Set AFUE to 0.98 for Gas/Oil
+      if (sect13?.TargetState) {
+        sect13.TargetState.setValue("j_115", "0.98");
+      }
+      stateManager.setValue("j_115", "0.98", "user-modified");
+      changes.push("Heating AFUE 98%");
+    } else if (d_113 === "Heatpump") {
+      // Set HSPF to 15 for Heatpump
+      if (sect13?.TargetState) {
+        sect13.TargetState.setValue("f_113", "15");
+      }
+      stateManager.setValue("f_113", "15", "user-modified");
+      changes.push("Heating HSPF 15");
+    }
+    // Electric: No change
+
+    // ========================================================================
+    // Part 4: MVHR (S13) - 95%
+    // ========================================================================
+    if (sect13?.TargetState) {
+      sect13.TargetState.setValue("d_118", "95");
+    }
+    stateManager.setValue("d_118", "95", "user-modified");
+    changes.push("MVHR 95%");
+
+    // Trigger S13 recalculation
+    if (sect13) {
+      if (sect13.calculateAll) {
+        sect13.calculateAll();
+      }
+      if (sect13.ModeManager?.refreshUI) {
+        sect13.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 5: Thermal Bridging (S11) - 10%
+    // DIFFERENTIATED: Super Optimize uses 10%, PassivHaus-ify uses 5%
+    // ========================================================================
+
+    const sect11 = window.TEUI?.SectionModules?.sect11;
+    if (sect11?.TargetState) {
+      sect11.TargetState.setValue("d_97", "10");
+    }
+    stateManager.setValue("d_97", "10", "user-modified");
+    changes.push("TB 10%");
+
+    // Trigger S11 recalculation
+    if (sect11) {
+      if (sect11.calculateAll) {
+        sect11.calculateAll();
+      }
+      if (sect11.ModeManager?.refreshUI) {
+        sect11.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 6: Net Gains (S10) - PH Method
+    // FIXED: d_80 belongs to Section 10, not Section 11
+    // ========================================================================
+
+    const sect10 = window.TEUI?.SectionModules?.sect10;
+    if (sect10?.TargetState) {
+      sect10.TargetState.setValue("d_80", "PH Method");
+    }
+    stateManager.setValue("d_80", "PH Method", "user-modified");
+    changes.push("nGains PHPP");
+
+    // Trigger S10 recalculation
+    if (sect10) {
+      if (sect10.calculateAll) {
+        sect10.calculateAll();
+      }
+      if (sect10.ModeManager?.refreshUI) {
+        sect10.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 7: ACH50 (S12) - 0.60 (dropdown flip pattern)
+    // ========================================================================
+
+    const sect12 = window.TEUI?.SectionModules?.sect12;
+
+    // Step 1: Set dropdown to MEASURED
+    if (sect12?.TargetState) {
+      sect12.TargetState.setValue("d_108", "MEASURED");
+    }
+    stateManager.setValue("d_108", "MEASURED", "user-modified");
+
+    // Step 2: Recalculate (enables g_109 field)
+    if (sect12?.calculateAll) {
+      sect12.calculateAll();
+    }
+
+    // Step 3: Set ACH50 value
+    if (sect12?.TargetState) {
+      sect12.TargetState.setValue("g_109", "0.60");
+    }
+    stateManager.setValue("g_109", "0.60", "user-modified");
+    changes.push("ACH50 0.60");
+
+    // Trigger S12 recalculation
+    if (sect12) {
+      if (sect12.calculateAll) {
+        sect12.calculateAll();
+      }
+      if (sect12.ModeManager?.refreshUI) {
+        sect12.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Show user feedback and refresh graph
+    // ========================================================================
+
+    if (changesMade) {
+      const message = "Super Optimized: " + changes.join(", ");
+      showFeedback(message, 6000);
+      console.log("[Super Optimize] Optimization complete - refreshing graph");
+      setTimeout(() => {
+        refresh();
+      }, 200);
+    } else {
+      showFeedback("No changes needed", 4000);
+      console.log("[Super Optimize] No changes needed");
+    }
+  }
+
+  /**
+   * PASSIVHAUS-IFY BUTTON HANDLER
+   * Phase 1: Apply same optimizations as Super Optimize
+   * Phase 2 (future): Add sequential PER targeting to achieve f_35 ≤ 120
+   * Pattern: Follow Pattern A architecture - update TargetState + StateManager + refresh sections
+   */
+  function handlePassivHausIfy() {
+    console.log("[ParallelCoordinates] PassivHaus-ify action triggered");
+
+    const stateManager = window.TEUI?.StateManager;
+    if (!stateManager) {
+      console.error("[ParallelCoordinates] StateManager not available");
+      return;
+    }
+
+    let changesMade = false;
+    const changes = [];
+
+    // ========================================================================
+    // Part 1: Service Hot Water (S07) - SHW Efficiency 400%
+    // CRITICAL: Must switch to Heatpump if not already (like Decarbonize pattern)
+    // ========================================================================
+
+    const sect07 = window.TEUI?.SectionModules?.sect07;
+    const d_51 = stateManager.getValue("d_51");
+
+    // Step 1: Switch to Heatpump if needed (400% requires heatpump)
+    if (d_51 !== "Heatpump") {
+      if (sect07?.TargetState) {
+        sect07.TargetState.setValue("d_51", "Heatpump");
+      }
+      stateManager.setValue("d_51", "Heatpump", "user-modified");
+
+      // Step 2: Recalculate to switch from k_52 to d_52
+      if (sect07?.calculateAll) {
+        sect07.calculateAll();
+      }
+    }
+
+    // Step 3: Set efficiency (d_52 is now active)
+    if (sect07?.TargetState) {
+      sect07.TargetState.setValue("d_52", "400");
+    }
+    stateManager.setValue("d_52", "400", "user-modified");
+    changes.push("SHW 400%");
+    changesMade = true;
+
+    // ========================================================================
+    // Part 2: DWHR (S07) - 70%
+    // ========================================================================
+
+    if (sect07?.TargetState) {
+      sect07.TargetState.setValue("d_53", "70");
+    }
+    stateManager.setValue("d_53", "70", "user-modified");
+    changes.push("DWHR 70%");
+
+    // Trigger S07 recalculation
+    if (sect07) {
+      if (sect07.calculateAll) {
+        sect07.calculateAll();
+      }
+      if (sect07.ModeManager?.refreshUI) {
+        sect07.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 3: Heating Efficiency (S13) - Conditional on fuel type
+    // ========================================================================
+
+    const sect13 = window.TEUI?.SectionModules?.sect13;
+    const d_113 = stateManager.getValue("d_113");
+
+    if (d_113 === "Oil" || d_113 === "Gas") {
+      // Set AFUE to 0.98 for Gas/Oil
+      if (sect13?.TargetState) {
+        sect13.TargetState.setValue("j_115", "0.98");
+      }
+      stateManager.setValue("j_115", "0.98", "user-modified");
+      changes.push("Heating AFUE 98%");
+    } else if (d_113 === "Heatpump") {
+      // Set HSPF to 15 for Heatpump
+      if (sect13?.TargetState) {
+        sect13.TargetState.setValue("f_113", "15");
+      }
+      stateManager.setValue("f_113", "15", "user-modified");
+      changes.push("Heating HSPF 15");
+    }
+    // Electric: No change
+
+    // ========================================================================
+    // Part 4: MVHR (S13) - 95%
+    // ========================================================================
+
+    if (sect13?.TargetState) {
+      sect13.TargetState.setValue("d_118", "95");
+    }
+    stateManager.setValue("d_118", "95", "user-modified");
+    changes.push("MVHR 95%");
+
+    // Trigger S13 recalculation
+    if (sect13) {
+      if (sect13.calculateAll) {
+        sect13.calculateAll();
+      }
+      if (sect13.ModeManager?.refreshUI) {
+        sect13.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 5: Thermal Bridging (S11) - 5%
+    // FIXED: d_97 is the TB% slider, not d_88 (which is Door area)
+    // ========================================================================
+
+    const sect11 = window.TEUI?.SectionModules?.sect11;
+    if (sect11?.TargetState) {
+      sect11.TargetState.setValue("d_97", "5");
+    }
+    stateManager.setValue("d_97", "5", "user-modified");
+    changes.push("TB 5%");
+
+    // Trigger S11 recalculation
+    if (sect11) {
+      if (sect11.calculateAll) {
+        sect11.calculateAll();
+      }
+      if (sect11.ModeManager?.refreshUI) {
+        sect11.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 6: Net Gains (S10) - PH Method
+    // FIXED: d_80 belongs to Section 10, not Section 11
+    // ========================================================================
+
+    const sect10 = window.TEUI?.SectionModules?.sect10;
+    if (sect10?.TargetState) {
+      sect10.TargetState.setValue("d_80", "PH Method");
+    }
+    stateManager.setValue("d_80", "PH Method", "user-modified");
+    changes.push("nGains PHPP");
+
+    // Trigger S10 recalculation
+    if (sect10) {
+      if (sect10.calculateAll) {
+        sect10.calculateAll();
+      }
+      if (sect10.ModeManager?.refreshUI) {
+        sect10.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Part 7: ACH50 (S12) - 0.60 (dropdown flip pattern)
+    // ========================================================================
+
+    const sect12 = window.TEUI?.SectionModules?.sect12;
+
+    // Step 1: Set dropdown to MEASURED
+    if (sect12?.TargetState) {
+      sect12.TargetState.setValue("d_108", "MEASURED");
+    }
+    stateManager.setValue("d_108", "MEASURED", "user-modified");
+
+    // Step 2: Recalculate (enables g_109 field)
+    if (sect12?.calculateAll) {
+      sect12.calculateAll();
+    }
+
+    // Step 3: Set ACH50 value
+    if (sect12?.TargetState) {
+      sect12.TargetState.setValue("g_109", "0.60");
+    }
+    stateManager.setValue("g_109", "0.60", "user-modified");
+    changes.push("ACH50 0.60");
+
+    // Trigger S12 recalculation
+    if (sect12) {
+      if (sect12.calculateAll) {
+        sect12.calculateAll();
+      }
+      if (sect12.ModeManager?.refreshUI) {
+        sect12.ModeManager.refreshUI();
+      }
+    }
+
+    // ========================================================================
+    // Show user feedback and refresh graph
+    // ========================================================================
+    
+    if (changesMade) {
+      const message = "PassivHaus optimized: " + changes.join(", ");
+      showFeedback(message, 6000);
+      console.log("[PassivHaus-ify] Optimization complete - refreshing graph");
+      setTimeout(() => {
+        refresh();
+      }, 200);
+    } else {
+      showFeedback("No changes needed", 4000);
+      console.log("[PassivHaus-ify] No changes needed");
+    }
+  }
+
+  /**
    * Toggle fullscreen mode
    */
   function toggleFullscreen() {
@@ -1197,26 +1977,7 @@ window.TEUI.ParallelCoordinates = (function () {
     if (!section) return;
 
     isFullscreen = !isFullscreen;
-
-    if (isFullscreen) {
-      section.style.position = "fixed";
-      section.style.top = "0";
-      section.style.left = "0";
-      section.style.width = "100vw";
-      section.style.height = "100vh";
-      section.style.zIndex = "9999";
-      section.style.background = "white";
-      section.style.overflow = "auto";
-    } else {
-      section.style.position = "";
-      section.style.top = "";
-      section.style.left = "";
-      section.style.width = "";
-      section.style.height = "";
-      section.style.zIndex = "";
-      section.style.background = "";
-      section.style.overflow = "";
-    }
+    section.classList.toggle("pc-fullscreen", isFullscreen);
 
     // Re-render to adjust to new dimensions
     setTimeout(refresh, 100);
@@ -1297,29 +2058,13 @@ window.TEUI.ParallelCoordinates = (function () {
       // getConfig(mode) returns per-mode config for drag constraints
 
       getDomain: function () {
-        // Read BOTH Target and Reference system types
-        const targetSystem =
-          window.TEUI?.StateManager?.getValue("d_51") || "Heatpump";
-        const refSystem =
-          window.TEUI?.StateManager?.getValue("ref_d_51") || "Heatpump";
-
-        // Check if either uses Gas/Oil (k_52 decimal field)
-        const hasGasOil =
-          targetSystem === "Gas" ||
-          targetSystem === "Oil" ||
-          refSystem === "Gas" ||
-          refSystem === "Oil";
-
-        if (hasGasOil) {
-          // If either uses Gas/Oil, return DISPLAY range (already multiplied by 100 in pcConfig)
-          // pcConfig multiplies k_52 by 100, so 0.50 → 50, 0.98 → 98
-          // This ensures graph data (50-98) matches axis domain (50-98)
-          return { min: 50, max: 98 };
-        } else {
-          // Otherwise both use d_52 percentage field
-          // Union of Electric (90-100) and Heatpump (100-450) = 90-450
-          return { min: 90, max: 450 };
-        }
+        // Fixed domain to accommodate ALL fuel types (Gas/Oil AFUE + Electric + Heatpump COP)
+        // Gas/Oil AFUE: 50-98% (via k_52 × 100 in pcConfig)
+        // Electric: 90-100%
+        // Heatpump: 100-450%
+        // Union: 0-450% (use 0 as min to accommodate dynamic switching)
+        // This prevents graph scale issues when switching fuel types via Decarbonize button
+        return { min: 0, max: 450 };
       },
 
       getConfig: function (mode) {

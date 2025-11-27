@@ -1286,24 +1286,28 @@ window.TEUI.SectionModules.sect01 = (function () {
     const sectionHeader = document.querySelector("#keyValues .section-header");
     if (
       !sectionHeader ||
-      sectionHeader.querySelector(".local-controls-container")
+      sectionHeader.querySelector("#s01-reset-icon")
     ) {
       return; // Already setup or header not found
     }
 
-    const controlsContainer = document.createElement("div");
-    controlsContainer.className = "local-controls-container";
-    controlsContainer.style.cssText =
-      "display: flex; align-items: center; gap: 10px; margin-left: 8px;";
+    // Find the existing container with expand/collapse buttons
+    const rightContainer = sectionHeader.querySelector(".ms-auto");
+    if (!rightContainer) return;
 
-    // --- Create Global Factory Reset Button ---
-    const resetButton = document.createElement("button");
-    resetButton.innerHTML = "🔄 Reset";
-    resetButton.title = "Factory Reset - Clear ALL data and reset to defaults";
-    resetButton.style.cssText =
-      "padding: 4px 8px; font-size: 0.8em; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;";
+    // Find the expand-collapse-all button to insert before it
+    const expandBtn = sectionHeader.querySelector("#expand-collapse-all");
+    if (!expandBtn) return;
 
-    resetButton.addEventListener("click", event => {
+    // --- Create Global Factory Reset Icon (minimal, no button frame) ---
+    const resetIcon = document.createElement("i");
+    resetIcon.id = "s01-reset-icon";
+    resetIcon.className = "bi bi-bootstrap-reboot";
+    resetIcon.title = "Factory Reset - Clear ALL data and reset to defaults";
+    resetIcon.style.cssText =
+      "color: white; font-size: 1.5em; cursor: pointer; margin-left: 15px; margin-right: 12px;";
+
+    resetIcon.addEventListener("click", event => {
       event.stopPropagation();
       if (
         confirm("Factory reset? This will clear ALL data and cannot be undone.")
@@ -1317,15 +1321,10 @@ window.TEUI.SectionModules.sect01 = (function () {
       }
     });
 
-    // --- Create Global Toggle Switch ---
-    const stateIndicator = document.createElement("span");
-    stateIndicator.textContent = "TARGET";
-    stateIndicator.style.cssText =
-      "color: #fff; font-weight: bold; font-size: 0.8em; background-color: rgba(0, 123, 255, 0.5); padding: 2px 6px; border-radius: 4px;";
-
+    // --- Create Global Toggle Switch (no label - UI color scheme shows mode) ---
     const toggleSwitch = document.createElement("div");
     toggleSwitch.style.cssText =
-      "position: relative; width: 40px; height: 20px; background-color: #ccc; border-radius: 10px; cursor: pointer;";
+      "position: relative; width: 40px; height: 20px; background-color: #ccc; border-radius: 10px; cursor: pointer; margin-left: 15px; margin-right: 15px;";
 
     const slider = document.createElement("div");
     slider.style.cssText =
@@ -1357,42 +1356,31 @@ window.TEUI.SectionModules.sect01 = (function () {
       window.TEUI.ReferenceToggle.keyValuesToggleElements = {
         toggleSwitch: toggleSwitch,
         slider: slider,
-        stateIndicator: stateIndicator,
       };
 
       // Initialize to current mode
       const currentMode =
         window.TEUI.ReferenceToggle.getCurrentMode?.() || "target";
-      updateKeyValuesToggleUI(
-        toggleSwitch,
-        slider,
-        stateIndicator,
-        currentMode
-      );
+      updateKeyValuesToggleUI(toggleSwitch, slider, currentMode);
     }
 
-    // Append all controls to the container, then the container to the header
-    controlsContainer.appendChild(resetButton);
-    controlsContainer.appendChild(stateIndicator);
-    controlsContainer.appendChild(toggleSwitch);
-    sectionHeader.appendChild(controlsContainer);
+    // Insert controls before the expand/collapse button
+    // Order: Toggle → Reset → +/- → →
+    rightContainer.insertBefore(toggleSwitch, expandBtn);
+    rightContainer.insertBefore(resetIcon, expandBtn);
   }
 
   /**
    * Update Key Values toggle UI to match global mode state
    * Called when global toggle switches modes
    */
-  function updateKeyValuesToggleUI(toggleSwitch, slider, stateIndicator, mode) {
+  function updateKeyValuesToggleUI(toggleSwitch, slider, mode) {
     if (mode === "reference") {
       slider.style.transform = "translateX(20px)";
       toggleSwitch.style.backgroundColor = "#dc3545"; // Red
-      stateIndicator.textContent = "REFERENCE";
-      stateIndicator.style.backgroundColor = "rgba(220, 53, 69, 0.5)";
     } else {
       slider.style.transform = "translateX(0)";
       toggleSwitch.style.backgroundColor = "#ccc"; // Gray
-      stateIndicator.textContent = "TARGET";
-      stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
     }
   }
 
