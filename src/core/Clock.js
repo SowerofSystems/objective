@@ -133,6 +133,17 @@ window.TEUI.Clock = {
   markCalculationEnd() {
     const isInitial = window.TEUI.timing.isInitialLoad && !this.initDisplayed;
     this.endTiming(isInitial);
+
+    // Fire calculation complete callbacks (e.g., for mirror highlight removal)
+    if (this._calculationCompleteCallbacks && this._calculationCompleteCallbacks.length > 0) {
+      this._calculationCompleteCallbacks.forEach(callback => {
+        try {
+          callback();
+        } catch (error) {
+          console.error('[Clock] Error in calculation complete callback:', error);
+        }
+      });
+    }
   },
 
   /**

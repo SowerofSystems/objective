@@ -665,29 +665,25 @@ TEUI.ReferenceToggle = (function () {
   }
 
   /**
-   * HELPER: Setup one-time event listener to remove highlights on user interaction
+   * HELPER: Setup one-time listener to remove highlights on next calculation
+   * Highlights persist until user edits a field (triggering recalculation)
    */
   function setupHighlightRemovalListener() {
     // Remove any existing listener
     if (window.TEUI.ReferenceToggle._highlightRemovalHandler) {
-      document.removeEventListener(
-        "click",
-        window.TEUI.ReferenceToggle._highlightRemovalHandler
-      );
-      document.removeEventListener(
-        "input",
-        window.TEUI.ReferenceToggle._highlightRemovalHandler
-      );
-      document.removeEventListener(
-        "change",
-        window.TEUI.ReferenceToggle._highlightRemovalHandler
-      );
+      if (window.TEUI?.Clock) {
+        // Try to remove from Clock if it exists
+        window.TEUI.Clock._calculationCompleteCallbacks =
+          (window.TEUI.Clock._calculationCompleteCallbacks || [])
+            .filter(cb => cb !== window.TEUI.ReferenceToggle._highlightRemovalHandler);
+      }
+      window.TEUI.ReferenceToggle._highlightRemovalHandler = null;
     }
 
     // Create new handler
     const removeHighlights = function () {
       console.log(
-        "[ReferenceToggle] User interaction detected - removing mirror highlights"
+        "[ReferenceToggle] Calculation complete - removing mirror highlights"
       );
 
       const highlightedElements = document.querySelectorAll(".mirror-highlight");
@@ -698,27 +694,39 @@ TEUI.ReferenceToggle = (function () {
         setTimeout(() => {
           el.classList.remove("mirror-highlight");
           el.classList.remove("mirror-highlight-fade-out");
-        }, 500);
+        }, 300);
       });
 
-      // Remove event listeners after first trigger
-      document.removeEventListener("click", removeHighlights);
-      document.removeEventListener("input", removeHighlights);
-      document.removeEventListener("change", removeHighlights);
+      // Remove this callback after firing once
+      if (window.TEUI?.Clock?._calculationCompleteCallbacks) {
+        window.TEUI.Clock._calculationCompleteCallbacks =
+          window.TEUI.Clock._calculationCompleteCallbacks.filter(cb => cb !== removeHighlights);
+      }
       window.TEUI.ReferenceToggle._highlightRemovalHandler = null;
     };
 
-    // Store handler reference
+    // Store handler reference for cleanup
     window.TEUI.ReferenceToggle._highlightRemovalHandler = removeHighlights;
 
-    // Add event listeners
-    document.addEventListener("click", removeHighlights, { once: false });
-    document.addEventListener("input", removeHighlights, { once: false });
-    document.addEventListener("change", removeHighlights, { once: false });
-
-    console.log(
-      "[ReferenceToggle] Highlight removal listener installed - highlights will clear on next user interaction"
-    );
+    // Hook into Clock's calculation complete event (if available)
+    if (window.TEUI?.Clock) {
+      // Initialize callbacks array if it doesn't exist
+      if (!window.TEUI.Clock._calculationCompleteCallbacks) {
+        window.TEUI.Clock._calculationCompleteCallbacks = [];
+      }
+      window.TEUI.Clock._calculationCompleteCallbacks.push(removeHighlights);
+      console.log(
+        "[ReferenceToggle] Highlight removal listener installed - highlights will clear on next calculation"
+      );
+    } else {
+      // Fallback: If Clock not available, use StateManager listener as proxy for field changes
+      console.warn("[ReferenceToggle] Clock not available - using StateManager listener as fallback");
+      const stateChangeHandler = () => {
+        removeHighlights();
+        window.TEUI.StateManager.removeListener(stateChangeHandler);
+      };
+      window.TEUI.StateManager.addListener(stateChangeHandler);
+    }
   }
 
   /**
