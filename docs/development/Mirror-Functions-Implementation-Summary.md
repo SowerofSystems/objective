@@ -1,23 +1,76 @@
-# Mirror Functions - Implementation Summary
+# Mirror Functions - Repair & Completion Guide
 
-**Date**: 2025-11-27
-**Status**: 🔄 Core Implementation Complete, Diff Highlighting Pending
+**Date Created**: 2025-11-27 (Original Implementation)
+**Date Updated**: 2025-11-27 (Comprehensive Repair Plan)
+**Status**: ❌ FAILED IMPLEMENTATION - Complete Rewrite Required
 **Branch**: 2025-11-27-UI-TWEAKS
+**Current Commit**: b65ec5f "Docs: Document failed mirror function implementation attempt"
 
 ---
 
-## Implementation Status (2025-11-27)
+## Executive Summary: What Went Wrong
+
+The previous agent implemented mirror functions using a **section-by-section approach with ModeManager setValue()** that fundamentally does not work:
+
+### Critical Failures
+
+1. **❌ Values Not Being Copied** (BLOCKING)
+   - Test: Set `ref_d_105=9000`, `d_105=8000`, click "Mirror Geometry"
+   - Expected: `ref_d_105` becomes 8000
+   - Actual: `ref_d_105` remains 9000 (unchanged)
+   - Root Cause: `section.modeManager.setValue(fieldId, value, "imported")` does NOT write to Reference state properly
+
+2. **❌ Visual Highlighting Broken** (HIGH PRIORITY)
+   - Expected: Neon yellow highlights on copied fields
+   - Actual: No highlights appear
+   - Root Cause: DOM selectors fail to find elements - wrong architectural approach
+
+3. **❌ User's Guidance Ignored**
+   - User suggested: "Use FieldManager from the start"
+   - Agent dismissed: "Would not be necessary"
+   - **This was wrong** - we should have listened to domain expertise
+
+### The Correct Approach (FileHandler Pattern)
+
+FileHandler successfully imports bulk values using this proven pattern:
+
+```javascript
+// PROVEN WORKING PATTERN from FileHandler.js:422-476
+window.TEUI.StateManager.muteListeners(); // Quarantine
+try {
+  Object.entries(importedData).forEach(([fieldId, value]) => {
+    window.TEUI.StateManager.setValue(fieldId, value, "import");
+  });
+  this.syncPatternASections(); // Sync Pattern A sections
+} finally {
+  window.TEUI.StateManager.unmuteListeners(); // Always unmute
+}
+calculator.calculateAll(); // Clean recalculation
+// Refresh Pattern A section UIs (FileHandler.js:488-520)
+```
+
+**Why this works:**
+- ✅ Direct StateManager operations (not section-level)
+- ✅ Quarantine pattern prevents calculation storms
+- ✅ Pattern A section sync ensures UI updates
+- ✅ Centralized - no section file modifications
+- ✅ Proven in production for Excel/CSV imports
+
+---
+
+## Implementation Status (Current Reality)
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Three Mirror Functions | ✅ Complete | Geometry, Geometry+Code, All Inputs |
-| Field Classification (d_39, i_41 exclusion) | ✅ Complete | Added to performance patterns |
-| Automatic Calculation Trigger | ✅ Complete | Tilt-button pattern implemented |
-| G/C/A Field Classification System | ✅ Documented | See Field-Classification-GCA.md |
-| Neon Yellow Diff Highlighting | ⏳ Pending | Spec complete, awaiting implementation |
+| Three Mirror Functions | ❌ BROKEN | Values not copying, must rewrite |
+| Field Classification (d_39, i_41) | ✅ CORRECT | Performance patterns accurate |
+| Automatic Calculation Trigger | ⚠️ INCOMPLETE | Pattern exists but functions broken |
+| G/C/A Field Classification System | ✅ CORRECT | See Field-Classification-GCA.md |
+| Neon Yellow Diff Highlighting | ❌ BROKEN | DOM selector approach failed |
+| CSS Styles | ✅ KEEP | `.mirror-highlight` styles are good |
 
-**Ready for:** Testing of core mirror functions (first two refinements)
-**Next:** Implement diff highlighting based on G/C/A classification
+**Current State:** ~300 lines of non-functional code in ReferenceToggle.js
+**Next Steps:** Complete rewrite using FileHandler/StateManager pattern
 
 ---
 
@@ -298,89 +351,501 @@ Console output:
 
 ---
 
-## FAILED IMPLEMENTATION ATTEMPT (2025-11-27)
+## COMPLETE REWRITE PLAN: FileHandler/StateManager Pattern
 
-### Critical Failures Discovered During Testing:
+### Architecture: Why FileHandler Pattern Works
 
-**1. Values Not Being Copied (CRITICAL)**
-- **Test Case**: Set `ref_d_105` (volume) to 9000m³, `d_105` (Target) to 8000m³
-- **Expected**: After "Mirror Geometry", `ref_d_105` should be 8000m³
-- **Actual**: `ref_d_105` remains 9000m³ - NOT overwritten
-- **Root Cause**: Unknown - `setValue()` with "imported" source should have highest priority but doesn't work
-- **Impact**: Mirror functions are completely non-functional
+FileHandler successfully imports hundreds of values (Target + Reference) from Excel/CSV files. This is **exactly** what mirror functions need to do: bulk copy values from Target → Reference.
 
-**2. No Visual Highlighting (HIGH PRIORITY)**
-- **Test Case**: Click any mirror button (Geometry, Geometry+Code, All Inputs)
-- **Expected**: Neon yellow highlights on copied fields
-- **Actual**: No highlights appear at all
-- **Root Cause**: DOM selectors not finding elements - approach was wrong
-- **Console Output**: Should show "Applied X mirror highlights" but likely shows 0
+#### Key Components of FileHandler Success:
 
-### Root Cause Analysis:
+1. **StateManager-Level Operations** (FileHandler.js:422-476)
+   - Direct `window.TEUI.StateManager.setValue()` calls
+   - NO section-level manipulation
+   - NO ModeManager involvement
+   - Centralized, clean, proven
 
-**User's Original Suggestion Was Correct:**
-- User suggested using FieldManager from the start
-- Developer (Claude) dismissed this, saying it "would not be necessary"
-- **This was wrong** - the current approach of using `section.modeManager.setValue()` does not work
-- Should have listened to user's experience and used FieldManager API from the beginning
+2. **Quarantine Pattern** (prevent calculation storms)
+   ```javascript
+   window.TEUI.StateManager.muteListeners();
+   try {
+     // Bulk value writes here
+   } finally {
+     window.TEUI.StateManager.unmuteListeners(); // Always unmute
+   }
+   ```
 
-### What Went Wrong:
+3. **Pattern A Section Sync** (FileHandler.js:462-469)
+   ```javascript
+   this.syncPatternASections(); // Critical for UI updates
+   ```
 
-1. **Incorrect setValue Approach**:
-   - Used `section.modeManager.setValue(fieldId, value, "imported")`
-   - Assumption: "imported" source would override user-modified values
-   - **Reality**: This doesn't work - values are not being written to Reference state properly
+4. **Clean Recalculation** (FileHandler.js:478-486)
+   ```javascript
+   calculator.calculateAll(); // After all values loaded
+   ```
 
-2. **DOM Selector Approach Failed**:
-   - Tried multiple selector strategies (data-field-id, name attributes)
-   - Added delays, tried parent elements
-   - **Reality**: None of this works - need FieldManager to properly identify and manipulate DOM elements
+5. **Pattern A UI Refresh** (FileHandler.js:488-520)
+   ```javascript
+   patternASections.forEach(sectionId => {
+     const section = window.TEUI?.SectionModules?.[sectionId];
+     if (section?.ModeManager?.refreshUI) {
+       section.ModeManager.refreshUI();
+       if (section.ModeManager.updateCalculatedDisplayValues) {
+         section.ModeManager.updateCalculatedDisplayValues();
+       }
+     }
+   });
+   ```
 
-3. **Didn't Use Existing APIs**:
-   - FieldManager exists for a reason - it knows how to find and update fields
-   - Should have used `TEUI.FieldManager` API from the start
-   - Ignored user's domain expertise
+### Step-by-Step Rewrite Instructions
 
-### Next Agent Should:
+#### PHASE 1: Get All Field IDs (Use FieldManager)
 
-1. **Use FieldManager API** - User was right from the start
-2. **Study how FileHandler does imports** - It works, copy that pattern exactly
-3. **Test incrementally** - Don't write 300 lines without testing
-4. **Listen to user's architectural guidance** - They know this codebase
+**Goal:** Get complete list of all Target input field IDs
 
-### Files to Revert or Fix:
+**Method 1: Use FieldManager.getAllUserEditableFields()**
+```javascript
+const allFields = window.TEUI.FieldManager.getAllUserEditableFields();
+// Returns array of field IDs: ['d_12', 'd_13', 'h_15', ...]
+```
 
-- `src/core/ReferenceToggle.js` - Current mirror functions don't work
-- `src/styles.css` - CSS is fine, keep the `.mirror-highlight` styles
-- `docs/development/Field-Classification-GCA.md` - Keep this, it's accurate
+**Method 2: Query StateManager directly**
+```javascript
+const stateKeys = Object.keys(window.TEUI.StateManager.state);
+const targetFields = stateKeys.filter(key => !key.startsWith('ref_'));
+```
 
-**Status**: ❌ IMPLEMENTATION FAILED - Need complete rewrite using FieldManager
+**Method 3: Use section modules (current broken approach - DON'T USE)**
+```javascript
+// ❌ BROKEN - Don't use this approach
+sections.forEach(section => {
+  const fieldIds = getFieldIdsForSection(section.id);
+  // This approach failed because section.modeManager.setValue() doesn't work
+});
+```
+
+#### PHASE 2: Implement Three Mirror Functions (StateManager Pattern)
+
+**Function 1: mirrorGeometry()**
+```javascript
+function mirrorGeometry() {
+  console.log('[ReferenceToggle] 🔗 Mirror Geometry: Starting...');
+
+  // Get all field IDs
+  const allFields = window.TEUI.FieldManager.getAllUserEditableFields();
+
+  // Filter to geometry fields only (exclude performance fields)
+  const geometryFields = allFields.filter(fieldId => {
+    return shouldCopyFieldForMode(fieldId, 'geometry');
+  });
+
+  console.log(`[ReferenceToggle] Copying ${geometryFields.length} geometry fields`);
+
+  // QUARANTINE START
+  window.TEUI.StateManager.muteListeners();
+
+  try {
+    let copiedCount = 0;
+    geometryFields.forEach(fieldId => {
+      if (fieldId === 'd_13') return; // Never copy building standard
+
+      const targetValue = window.TEUI.StateManager.getValue(fieldId);
+      if (targetValue !== null && targetValue !== undefined && targetValue !== '') {
+        // Write to Reference state with ref_ prefix
+        window.TEUI.StateManager.setValue(`ref_${fieldId}`, targetValue, 'mirror');
+        copiedCount++;
+      }
+    });
+
+    console.log(`[ReferenceToggle] ✅ Copied ${copiedCount} geometry values to Reference state`);
+
+    // Sync Pattern A sections (critical!)
+    if (window.TEUI.FileHandler?.syncPatternASections) {
+      window.TEUI.FileHandler.syncPatternASections();
+    }
+
+  } finally {
+    // QUARANTINE END - Always unmute
+    window.TEUI.StateManager.unmuteListeners();
+  }
+
+  // Clean recalculation
+  if (window.TEUI?.Calculator?.calculateAll) {
+    window.TEUI.Calculator.calculateAll();
+  }
+
+  // Refresh Pattern A section UIs
+  refreshPatternAUIs();
+
+  // Apply highlights
+  applyMirrorHighlights(geometryFields, 'geometry');
+
+  console.log('🔗 Mirror Geometry: Complete');
+}
+```
+
+**Function 2: mirrorGeometryPlusCode()**
+```javascript
+function mirrorGeometryPlusCode() {
+  // Step 1: Copy geometry fields (same as mirrorGeometry)
+  mirrorGeometry();
+
+  // Step 2: Overlay ReferenceValues.js code minimums
+  const standard = window.TEUI.StateManager.getValue('ref_d_13') || 'OBC SB12 3.1.1.2.C1';
+  const refValues = window.TEUI.ReferenceValues?.[standard] || {};
+
+  console.log(`[ReferenceToggle] 🔗 Applying code minimums from "${standard}"`);
+
+  window.TEUI.StateManager.muteListeners();
+  try {
+    Object.entries(refValues).forEach(([fieldId, value]) => {
+      window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, 'reference');
+    });
+
+    if (window.TEUI.FileHandler?.syncPatternASections) {
+      window.TEUI.FileHandler.syncPatternASections();
+    }
+  } finally {
+    window.TEUI.StateManager.unmuteListeners();
+  }
+
+  if (window.TEUI?.Calculator?.calculateAll) {
+    window.TEUI.Calculator.calculateAll();
+  }
+
+  refreshPatternAUIs();
+
+  // Highlight G + C fields
+  const allFields = window.TEUI.FieldManager.getAllUserEditableFields();
+  applyMirrorHighlights(allFields, 'geometry-plus-code');
+}
+```
+
+**Function 3: mirrorAllInputs()**
+```javascript
+function mirrorAllInputs() {
+  console.log('[ReferenceToggle] 🔗 Mirror All Inputs: Starting...');
+
+  const allFields = window.TEUI.FieldManager.getAllUserEditableFields();
+
+  window.TEUI.StateManager.muteListeners();
+  try {
+    let copiedCount = 0;
+    allFields.forEach(fieldId => {
+      if (fieldId === 'd_13') return; // Never copy building standard
+
+      const targetValue = window.TEUI.StateManager.getValue(fieldId);
+      if (targetValue !== null && targetValue !== undefined && targetValue !== '') {
+        window.TEUI.StateManager.setValue(`ref_${fieldId}`, targetValue, 'mirror');
+        copiedCount++;
+      }
+    });
+
+    console.log(`[ReferenceToggle] ✅ Perfect clone: ${copiedCount} fields copied`);
+
+    if (window.TEUI.FileHandler?.syncPatternASections) {
+      window.TEUI.FileHandler.syncPatternASections();
+    }
+  } finally {
+    window.TEUI.StateManager.unmuteListeners();
+  }
+
+  if (window.TEUI?.Calculator?.calculateAll) {
+    window.TEUI.Calculator.calculateAll();
+  }
+
+  refreshPatternAUIs();
+  applyMirrorHighlights(allFields, 'all');
+}
+```
+
+#### PHASE 3: Fix Visual Highlighting (Use FieldManager)
+
+**Problem:** Previous approach used DOM selectors which failed
+
+**Solution:** Use FieldManager to access field elements or trigger UI updates
+
+**Option 1: Leverage Pattern A refreshUI (RECOMMENDED)**
+```javascript
+function applyMirrorHighlights(fieldIds, mode) {
+  // After refreshPatternAUIs(), DOM should be updated
+  // Add highlights to visible fields in Reference mode
+
+  setTimeout(() => {
+    // Check if we're in Reference mode
+    const isReferenceMode = window.TEUI.ReferenceToggle?.isReferenceMode?.() || false;
+    if (!isReferenceMode) {
+      console.log('[ReferenceToggle] Not in Reference mode - skipping highlights');
+      return;
+    }
+
+    fieldIds.forEach(fieldId => {
+      if (fieldId === 'd_13') return;
+
+      const classification = getFieldClassification(fieldId);
+      let shouldHighlight = false;
+
+      if (mode === 'geometry') shouldHighlight = (classification === 'G');
+      else if (mode === 'geometry-plus-code') shouldHighlight = (classification === 'G' || classification === 'C');
+      else if (mode === 'all') shouldHighlight = true;
+
+      if (!shouldHighlight) return;
+
+      // Try to find field element (this may still need refinement)
+      const refFieldId = `ref_${fieldId}`;
+      const element = document.querySelector(`[data-field-id="${refFieldId}"]`) ||
+                      document.querySelector(`input[name="${refFieldId}"]`) ||
+                      document.querySelector(`select[name="${refFieldId}"]`);
+
+      if (element) {
+        element.classList.add('mirror-highlight');
+      }
+    });
+
+    setupHighlightRemovalListener();
+  }, 200); // Delay to ensure UI refresh completes
+}
+```
+
+**Option 2: Skip visual highlighting initially, focus on working copy**
+- Get mirror functions working FIRST
+- Add highlighting as polish later
+- User can verify copy by inspecting values in UI
+
+#### PHASE 4: Helper Function - Refresh Pattern A UIs
+
+```javascript
+function refreshPatternAUIs() {
+  const patternASections = [
+    'sect02', 'sect03', 'sect04', 'sect05', 'sect06',
+    'sect07', 'sect08', 'sect09', 'sect10', 'sect11',
+    'sect12', 'sect13', 'sect14', 'sect15'
+  ];
+
+  patternASections.forEach(sectionId => {
+    const section = window.TEUI?.SectionModules?.[sectionId];
+    if (section?.ModeManager?.refreshUI) {
+      section.ModeManager.refreshUI();
+      if (section.ModeManager.updateCalculatedDisplayValues) {
+        section.ModeManager.updateCalculatedDisplayValues();
+      }
+    }
+  });
+
+  console.log('[ReferenceToggle] ✅ Pattern A section UIs refreshed');
+}
+```
+
+### Testing Protocol (CRITICAL - Test Incrementally!)
+
+**Test 1: Single Field Copy (Smoke Test)**
+```javascript
+// In browser console
+window.TEUI.StateManager.setValue('d_105', 8000, 'user'); // Set Target volume
+window.TEUI.StateManager.setValue('ref_d_105', 9000, 'user'); // Set Reference volume
+console.log('Before:', window.TEUI.StateManager.getValue('ref_d_105')); // Should show 9000
+
+// Test direct StateManager write
+window.TEUI.StateManager.setValue('ref_d_105', 8000, 'mirror');
+console.log('After:', window.TEUI.StateManager.getValue('ref_d_105')); // Should show 8000
+
+// If this works, the approach is valid
+// If this fails, StateManager itself has issues
+```
+
+**Test 2: Geometry Function (Core Functionality)**
+```javascript
+// Set distinct values in Target vs Reference
+window.TEUI.StateManager.setValue('d_105', 8000, 'user');
+window.TEUI.StateManager.setValue('ref_d_105', 9000, 'user');
+window.TEUI.StateManager.setValue('h_15', 500, 'user'); // Area
+window.TEUI.StateManager.setValue('ref_h_15', 600, 'user');
+
+// Call mirror function
+window.TEUI.ReferenceToggle.mirrorGeometry();
+
+// Verify values copied
+console.log('Volume:', window.TEUI.StateManager.getValue('ref_d_105')); // Should be 8000
+console.log('Area:', window.TEUI.StateManager.getValue('ref_h_15')); // Should be 500
+```
+
+**Test 3: UI Updates (Visual Verification)**
+- Switch to Reference mode
+- Verify fields show new values in DOM
+- Verify calculations updated (e_10 should change)
+
+**Test 4: Performance Fields Excluded**
+```javascript
+// Set performance field
+window.TEUI.StateManager.setValue('f_85', 5.0, 'user'); // Roof RSI
+window.TEUI.StateManager.setValue('ref_f_85', 3.0, 'user');
+
+// Call mirror geometry
+window.TEUI.ReferenceToggle.mirrorGeometry();
+
+// Verify f_85 NOT copied (should still be 3.0)
+console.log('Roof RSI:', window.TEUI.StateManager.getValue('ref_f_85')); // Should be 3.0 (unchanged)
+```
+
+### Files to Modify
+
+1. **src/core/ReferenceToggle.js**
+   - Replace current broken mirror functions (lines ~767-1000)
+   - Use StateManager pattern (FileHandler approach)
+   - Keep field classification helper `shouldCopyFieldForMode()` (lines ~730-760)
+   - Keep G/C/A classification `getFieldClassification()` if it exists
+
+2. **src/styles.css**
+   - ✅ Keep existing `.mirror-highlight` styles (these are fine)
+
+3. **index.html**
+   - ✅ Button wiring already correct (no changes needed)
+
+### What to Keep from Current Implementation
+
+✅ **KEEP:**
+- Field classification patterns (d_39, i_41 exclusion)
+- G/C/A classification system (Field-Classification-GCA.md)
+- CSS `.mirror-highlight` styles
+- Button UI structure in index.html
+- `shouldCopyFieldForMode()` helper function
+- Highlight removal listener logic
+
+❌ **DELETE/REPLACE:**
+- All three mirror functions (mirrorGeometry, mirrorGeometryPlusCode, mirrorAllInputs)
+- `getFieldIdsForSection()` helper (use FieldManager instead)
+- `applyMirrorHighlights()` DOM selector approach (rewrite using Pattern A refresh)
 
 ---
 
-## Commit Message (Draft)
+## Documentation Consolidation Required
+
+### Current Documentation Files (Conflicting/Redundant)
+
+1. **Mirror-Functions-Implementation-Summary.md** (this file)
+   - ✅ KEEP as primary implementation guide
+   - ✅ NOW contains complete repair plan with FileHandler pattern
+   - ✅ Consolidates all lessons learned
+
+2. **Field-Classification-GCA.md**
+   - ✅ KEEP - Accurate G/C/A field classification from CSV metadata
+   - Referenced by this document
+   - No changes needed
+
+3. **Mirror-Target-Field-Analysis.md**
+   - ⚠️ OUTDATED - Original planning document
+   - Contains section-by-section approach (proven wrong)
+   - **ACTION:** Move to `history (completed)/` folder with date prefix
+   - **NEW NAME:** `2025-11-27-Mirror-Target-Field-Analysis-OUTDATED.md`
+
+4. **2025-01-13-Mirror-Target-Postmortem.md** (in history folder)
+   - ✅ KEEP - Documents earlier failed attempt (different approach)
+   - Already in correct location
+   - Provides historical context
+
+### Consolidation Actions
+
+```bash
+# Move outdated planning doc to history
+mv docs/development/Mirror-Target-Field-Analysis.md \
+   docs/development/history\ \(completed\)/2025-11-27-Mirror-Target-Field-Analysis-OUTDATED.md
+```
+
+### Primary Documentation Hierarchy
+
+After consolidation:
 
 ```
-Feature: Three mirror functions for copying Target → Reference
+docs/development/
+├── Mirror-Functions-Implementation-Summary.md  ← PRIMARY (this file)
+├── Field-Classification-GCA.md               ← REFERENCE (field metadata)
+└── history (completed)/
+    ├── 2025-01-13-Mirror-Target-Postmortem.md     ← Historical failure #1
+    └── 2025-11-27-Mirror-Target-Field-Analysis-OUTDATED.md  ← Historical planning (section approach)
+```
 
-Implemented three new mirror functions to save users time:
-1. Geometry - Copy building size, areas, location only (~120 fields)
-2. Geometry + Code - Copy geometry + overlay building code minimums
-3. All Inputs - Perfect clone of Target model (~160 fields)
+---
 
-Field classification helper excludes performance parameters (RSI values,
-equipment efficiencies) from Geometry mode, allowing users to compare
-same building with different performance specs.
+## Summary: Path Forward
 
-Updated Reference dropdown menu with clearer labels:
-- "Mirror Target" → "Geometry"
-- "Mirror Target + Reference" → "Geometry + Code"
-- "Reference Independence" → "All Inputs"
+### What Failed
+- ❌ Section-by-section approach with `section.modeManager.setValue()`
+- ❌ DOM selector approach for highlighting
+- ❌ Not using FileHandler pattern as reference
+- ❌ Not testing incrementally
+
+### What Works (Proven)
+- ✅ FileHandler's StateManager bulk operations (FileHandler.js:422-476)
+- ✅ Quarantine pattern (mute/unmute listeners)
+- ✅ Pattern A section sync
+- ✅ Clean recalculation after bulk writes
+- ✅ Field classification logic (d_39, i_41 exclusions)
+
+### Implementation Checklist
+
+- [ ] **Test 1:** Verify `StateManager.setValue('ref_fieldId', value, 'mirror')` works in console
+- [ ] **Code:** Rewrite `mirrorGeometry()` using StateManager pattern (30 lines)
+- [ ] **Code:** Rewrite `mirrorGeometryPlusCode()` using StateManager pattern (40 lines)
+- [ ] **Code:** Rewrite `mirrorAllInputs()` using StateManager pattern (30 lines)
+- [ ] **Code:** Add `refreshPatternAUIs()` helper function (20 lines)
+- [ ] **Test 2:** Verify values copy correctly in StateManager
+- [ ] **Test 3:** Verify UI updates after mirror operation
+- [ ] **Test 4:** Verify calculations update (e_10 changes)
+- [ ] **Test 5:** Verify performance fields excluded in Geometry mode
+- [ ] **Polish:** Fix highlighting (use Pattern A refresh or defer)
+- [ ] **Docs:** Move Mirror-Target-Field-Analysis.md to history folder
+- [ ] **Commit:** Using .clinerules format with Co-Author line
+
+### Estimated Effort (Correct Approach)
+
+- **Code rewrite:** 2-3 hours (100 lines total, mostly copy-paste from FileHandler pattern)
+- **Testing:** 1 hour (incremental testing prevents wasted time)
+- **Highlighting fix:** 1 hour (or defer as polish)
+- **Total:** 4-5 hours vs. days of debugging broken approach
+
+### Key Success Factors
+
+1. **Use proven patterns** - FileHandler already solved this problem
+2. **Test incrementally** - Single field → Function → UI → Calculations
+3. **Listen to user** - They suggested FieldManager/StateManager from start
+4. **Focus on core first** - Get copy working, polish highlighting later
+5. **No section modifications** - Centralized StateManager operations only
+
+---
+
+## Commit Message (After Successful Rewrite)
+
+```bash
+git commit -m "$(cat <<'EOF'
+Feat: Implement mirror functions using FileHandler/StateManager pattern
+
+Three new mirror functions to copy Target → Reference values:
+1. Geometry - Copy geometric fields only (~35 G fields)
+2. Geometry + Code - Copy geometry + overlay building code minimums (~103 G+C fields)
+3. All Inputs - Perfect clone except d_13 (~126 fields)
+
+Uses proven FileHandler pattern:
+- Direct StateManager.setValue() operations (not section-level)
+- Quarantine pattern (mute/unmute listeners)
+- Pattern A section sync for UI updates
+- Clean recalculation after bulk writes
+
+Field classification excludes performance parameters (RSI values,
+equipment efficiencies, d_39, i_41) from Geometry mode, allowing
+users to compare same building with different performance specs.
 
 Files modified:
-- src/core/ReferenceToggle.js (~300 lines added)
-- index.html (uncommented and renamed dropdown buttons)
-- docs/development/ (3 new documentation files)
+- src/core/ReferenceToggle.js (rewrite mirror functions, ~150 lines)
+- docs/development/Mirror-Functions-Implementation-Summary.md (repair plan)
+
+References:
+- FileHandler.js:422-520 (import pattern)
+- Field-Classification-GCA.md (G/C/A metadata)
+
+🤖 Co-Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Andy & Claude <andy@openbuilding.ca>
+EOF
+)"
 ```
