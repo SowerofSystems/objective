@@ -391,77 +391,29 @@ USER OPTIMIZES (Reference mode):
 - ✅ Prevents TypeError during mode toggle
 - ❌ **BUT** error was symptom, not cause - h_10 recalculation persists
 
-**Actual Root Cause Identified from Logs.md**:
+**REVISED ROOT CAUSE THEORY (2025-11-28)**:
 
-```
-Section01.js:943 🔍 [S01DB] UPDATING h_10: 167.0 (from j_32=1864716.6687405566, area=11167)
-```
+The bug is NOT in Section01. Previous analysis incorrectly blamed S01's `updateTEUIDisplay()`.
 
-**The Real Problem**: `Section01.updateTEUIDisplay()` is **recalculating AND writing** h_10 back to StateManager during mode toggle.
+**New Finding**: The issue is in **how S18 reads values for the graph**, not how it sets them.
 
-**Call Chain**:
-1. Mode toggle occurs (Target ↔ Reference)
-2. Some listener fires → calls `Section01.runAllCalculations()`
-3. `runAllCalculations()` → calls `updateTEUIDisplay()` (line 1254)
-4. `updateTEUIDisplay()` → recalculates h_10 from j_32 and area
-5. `updateTEUIDisplay()` → calls `updateDisplayValue("h_10", h10Formatted)` (line 945)
-6. `updateDisplayValue()` → likely calls `StateManager.setValue("h_10", ...)` with source that triggers listeners
-7. **h_10 value changes during what should be view-only mode toggle**
+**Reproduction Pattern**:
+1. Import file with Target/Reference both Gas (`d_51="Gas"`, `k_52=0.94`, `ref_d_51="Gas"`, `ref_k_52=0.90`)
+2. Manually set Target to Heatpump in Section07 UI (`d_51="Heatpump"`, `d_52=300`)
+3. View S18 graph in Target mode → ✅ Works correctly
+4. Toggle S18 view to Reference mode → ❌ **Target line plunges to near-zero** (shows ~9000% instead of 300%)
+5. **KEY**: h_10 remains stable during mode toggle (no state mixing from manual edits)
 
-**Why This Violates Architecture**:
-- `updateTEUIDisplay()` claims to be "PURE DISPLAY CONSUMER" (comment at line 759)
-- **But** it's actually a calculator that writes back to StateManager
-- Should only read state and update DOM, NEVER write state during display update
-- Mode toggle should be pure view operation - no calculations, no state writes
+**Critical Insight**:
+- Manual user edits in Section07 do NOT cause h_10 state mixing
+- But S18 graph **displays Target line incorrectly** when viewing in Reference mode
+- This suggests S18's **value reading logic** is broken, which then causes S18's **Decarbonize button** to set wrong values (because it reads wrong values first)
 
-**Why S13 Edit Works But S18 Doesn't**:
-- **S13 direct edit**: User changes d_113 → Section13 handles calculation → h_10 stabilizes before mode toggle
-- **S18 optimization**: Sets d_113 → Some code path leaves listeners in unstable state → Every mode toggle retrigggers `runAllCalculations()` → h_10 recalculates indefinitely
-
-**The Fix Required**:
-
-Section01's `updateTEUIDisplay()` must be split into two separate functions:
-
-```javascript
-// OPTION 1: Calculate h_10 during Calculator.calculateAll() chain
-function calculateTEUIValues() {
-  // Called BY Calculator, not by display updates
-  // Calculates h_10 from j_32/area
-  // Writes to StateManager with 'calculated' source
-  const targetEnergy = getGlobalNumericValue("j_32") || 0;
-  const targetArea = getGlobalNumericValue("h_15") || 1427.2;
-  const h_10 = Math.round((targetEnergy / targetArea) * 10) / 10;
-
-  window.TEUI.StateManager.setValue("h_10", h_10, "calculated");
-}
-
-// OPTION 2: Pure display - reads from StateManager, updates DOM only
-function updateTEUIDisplay() {
-  // PURE CONSUMER: No calculations, no setState writes
-  // Just reads h_10 from StateManager and updates DOM
-  const h_10 = window.TEUI.StateManager.getValue("h_10");
-  const h10Element = document.querySelector('[data-field-id="h_10"]');
-  if (h10Element) {
-    h10Element.textContent = h_10;
-  }
-}
-```
-
-**Current Antipattern**:
-```javascript
-// Section01.js:763 - Claims "PURE DISPLAY CONSUMER" but calculates AND writes
-function updateTEUIDisplay() {
-  // Reads j_32, area
-  const targetEnergy = getGlobalNumericValue("j_32") || 0;
-  const targetArea = getGlobalNumericValue("h_15") || 1427.2;
-
-  // Calculates h_10 (should be in Calculator, not display function)
-  const h_10 = Math.round((targetEnergy / targetArea) * 10) / 10;
-
-  // ❌ WRITES BACK TO STATE (antipattern for "display consumer")
-  updateDisplayValue("h_10", h_10); // Likely calls setState()
-}
-```
+**The Chain of Failure**:
+1. S18 graph reads Target SHW% value incorrectly when in Reference viewing mode
+2. Displays Target at 9000% (reading 0.90 instead of 300)
+3. When Decarbonize button clicked, S18 uses these **incorrectly read values**
+4. S18 sets values based on wrong reads → **THIS** causes state mixing and h_10 issues
 
 ---
 
@@ -762,36 +714,126 @@ console.log('[DEBUG-S18] After Decarbonize - Reference (should be unchanged):', 
 
 ---
 
-## Next Steps After Debug
+## S18 Graph Value Reading Analysis
 
-Based on logging results:
-1. If DOM contamination: Fix code to read from StateManager, not DOM
-2. If field prefix error: Fix `getSectionNumericValue()` to respect `isReferenceCalculation` parameter
-3. If sync failure: Fix S18 to not call `calculateAll()` between setting system type and efficiency
-4. If calculation error: Fix conditional logic to correctly select efficiency field
+**Code Path for Reading SHW% Values** ([pcConfig.js:251-319](../../src/core/pcConfig.js#L251-L319)):
 
-**Related Files**:
-- [FileHandler.js:589-598](../../src/core/FileHandler.js#L589-L598) - Import bug location
-- [FileHandler.js:1133-1156](../../src/core/FileHandler.js#L1133-L1156) - Export logic (correct reference)
-- [Section13.js](../../src/sections/Section13.js) - Calculates `j_116` based on `d_113`
+The `getAxisValue(axis, mode)` function correctly implements conditional field selection:
 
-**Why This Matters**:
-- Violates "mode toggle is view-only" principle - calculations should NEVER trigger during toggle
-- State mixing causes unpredictable behavior and wrong results
-- Affects ACTUAL TEUI calculations (critical for building compliance)
-- Pattern problem: Any conditionally-calculated field could have same bug
+```javascript
+// Lines 258-264: Determine fields based on mode
+const selectorField = mode === "target" ? axis.targetFieldSelector : axis.referenceFieldSelector;
+// For Target: selectorField = "d_51"
+// For Reference: selectorField = "ref_d_51"
+
+// Lines 283-288: Conditional logic for SHW%
+if (axis.id === "shw_efficiency") {
+  if (selectorValue === "Oil" || selectorValue === "Gas") {
+    fieldToUse = altField;  // Use k_52 (AFUE) for Gas/Oil
+    multiplierToUse = altMultiplier;  // Multiply by 100 to convert to %
+  }
+}
+```
+
+**Axis Configuration** ([pcConfig.js:27-49](../../src/core/pcConfig.js#L27-L49)):
+
+```javascript
+{
+  id: "shw_efficiency",
+  targetFieldSelector: "d_51",        // ✅ Reads Target system type
+  referenceFieldSelector: "ref_d_51", // ✅ Reads Reference system type
+  targetField: "d_52",                // Heatpump COP (%)
+  targetFieldAlt: "k_52",             // Gas/Oil AFUE (decimal)
+  targetFieldAltMultiplier: 100,      // Convert 0.90 → 90%
+  referenceField: "ref_d_52",
+  referenceFieldAlt: "ref_k_52",
+  referenceFieldAltMultiplier: 100,
+}
+```
+
+**Expected Behavior**:
+
+When reading Target SHW% (`mode="target"`):
+- Reads `d_51` to check system type
+- If `d_51="Heatpump"` → reads `d_52` (300)
+- If `d_51="Gas"` → reads `k_52` × 100 (0.94 × 100 = 94)
+
+When reading Reference SHW% (`mode="reference"`):
+- Reads `ref_d_51` to check system type
+- If `ref_d_51="Heatpump"` → reads `ref_d_52` (300)
+- If `ref_d_51="Gas"` → reads `ref_k_52` × 100 (0.90 × 100 = 90)
+
+**This logic appears CORRECT!**
+
+---
+
+## Critical Questions for Debugging
+
+### 1. Mode Confusion in S18 Graph Display
+
+**Question**: When you toggle the **S18 viewing mode** to Reference (not the global mode toggle), does Section07's `ModeManager.currentMode` also switch to "reference"?
+
+**Why This Matters**: If S18's viewing mode affects Section07's state, then S18 might be reading from `Section07.ReferenceState` instead of reading via `StateManager` with proper field prefixes.
+
+### 2. S18 Graph Data Fetching During Mode Toggle
+
+**Question**: When S18 graph is in Reference viewing mode and displays both lines:
+- Does it call `getAxisValue(axis, "target")` for the blue Target line?
+- Or does it somehow read from Section07's currently active state based on viewing mode?
+
+**Test**: Add logging to `getAxisValue` in [pcConfig.js:251](../../src/core/pcConfig.js#L251):
+```javascript
+window.TEUI.getAxisValue = function (axis, mode = "target") {
+  console.log(`[pcConfig] getAxisValue: axis=${axis.id}, mode=${mode}`);
+
+  const selectorField = mode === "target" ? axis.targetFieldSelector : axis.referenceFieldSelector;
+  const selectorValue = stateManager.getValue(selectorField);
+
+  console.log(`[pcConfig]   selectorField=${selectorField}, selectorValue=${selectorValue}`);
+
+  // ... rest of function
+}
+```
+
+Then reproduce the bug and check console output.
+
+### 3. StateManager vs Section State Reads
+
+**Question**: Does S18's graph reading code bypass `StateManager` and read directly from `Section07.TargetState` / `Section07.ReferenceState`?
+
+**Evidence Needed**:
+- Check if `getAxisValue()` always uses `window.TEUI.StateManager.getValue()` (line 276, 298)
+- Or if there's a code path where S18 reads from section-local state
+
+### 4. Viewing Mode vs Data Mode
+
+**Question**: Is there a difference between:
+- **Viewing mode**: What S18 graph is currently displaying (controlled by some UI toggle?)
+- **Data mode**: The `mode` parameter passed to `getAxisValue("target" | "reference")`
+
+**If they're separate**: S18 viewing mode might incorrectly affect which section state gets read, even though `getAxisValue` is called with correct `mode` parameter.
+
+---
+
+## Diagnostic Steps
+
+1. **Add logging to pcConfig.js `getAxisValue()`** (lines 251-319)
+2. **Import file** with Target/Reference both Gas
+3. **Manually set** Target to Heatpump in Section07
+4. **View S18 graph** in Target viewing mode → Check console logs
+5. **Toggle S18 to Reference viewing mode** → Check if logs show correct mode parameters
+6. **Look for**:
+   - Is `mode="target"` passed correctly when reading Target line?
+   - Does `selectorField` correctly resolve to `"d_51"` (not `"ref_d_51"`)?
+   - Does `selectorValue` read correct system type (`"Heatpump"` not `"Gas"`)?
+   - Does final `fieldToUse` correctly resolve to `"d_52"` (not `"k_52"`)?
 
 ---
 
 ## References
 
-- **FileHandler Pattern**: [src/core/FileHandler.js:422-520](../../src/core/FileHandler.js#L422-L520)
-- **FieldManager API**: [src/core/FieldManager.js:314-350](../../src/core/FieldManager.js#L314-L350)
-- **Field Classification**: [Field-Classification-GCA.md](Field-Classification-GCA.md)
-- **Failed Attempt History**: [history (completed)/2025-11-27-Mirror-Target-Field-Analysis-OUTDATED.md](history (completed)/2025-11-27-Mirror-Target-Field-Analysis-OUTDATED.md)
-
-From Chat:
-
-runAllCalculations() at line 1219 is triggering updateTEUIDisplay(). This function is called by listeners. The issue is that mode toggle is triggering these listeners, causing h_10 to recalculate. The problem: When you toggle modes, some section (likely S13 or the mode toggle itself) is calling setState() with a source that triggers listeners, which then calls runAllCalculations() → updateTEUIDisplay() → recalculates and writes h_10 back to StateManager. The key issue from your log line 943:
-updateDisplayValue("h_10", h10Formatted, calculatedTier);
-This is calling updateDisplayValue() which likely does StateManager.setValue(), triggering the cascade! The actual root cause: updateTEUIDisplay() should be display-only (updating DOM), but it's calling updateDisplayValue() which writes back to StateManager, creating a calculation loop. This is beyond the scope of the current session, but the fix would be to ensure updateTEUIDisplay() only updates DOM elements, never calls setState() with a source that triggers listeners. The function should be truly "display consumer" as its comment claims, not a "calculator + writer". Should I document this finding for future work?
+- **S18 Value Reading**: [pcConfig.js:251-319](../../src/core/pcConfig.js#L251-L319)
+- **S18 Axis Config**: [pcConfig.js:27-49](../../src/core/pcConfig.js#L27-L49)
+- **S18 Decarbonize**: [ParallelCoordinates.js:1406-1567](../../src/core/ParallelCoordinates.js#L1406-L1567)
+- **Section07 calculateHeatingSystem**: [Section07.js:1045-1098](../../src/sections/Section07.js#L1045-L1098)
+- **Section07 ModeManager**: [Section07.js:173-449](../../src/sections/Section07.js#L173-L449)
