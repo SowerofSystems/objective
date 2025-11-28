@@ -813,6 +813,34 @@ Then reproduce the bug and check console output.
 
 **If they're separate**: S18 viewing mode might incorrectly affect which section state gets read, even though `getAxisValue` is called with correct `mode` parameter.
 
+### 5. The Smoking Gun - Read-Write Causality Chain ⭐
+
+**CRITICAL OBSERVATION**:
+- ✅ **User manually edits S07**: Sets `d_51="Heatpump"`, `d_52=300` → h_10 remains stable on mode toggle
+- ❌ **S18 Decarbonize edits S07**: Sets same values → h_10 changes on every mode toggle (state mixing)
+
+**The Causal Chain**:
+1. S18 graph **READS** Target SHW% incorrectly
+   - Displays Target line at 9000% when viewing graph (any mode)
+   - This means it's reading `ref_k_52` (0.90) instead of `d_52` (300)
+   - **AND treating it as if it was `k_52`** (missing the `ref_` prefix awareness)
+2. When Decarbonize button clicked, S18 **WRITES** based on these wrong reads
+   - Uses incorrect value (0.90) to calculate what to set
+   - Writes wrong values to StateManager
+3. These wrong writes **CAUSE** the h_10 state mixing during mode toggle
+
+**The Smoking Gun Evidence**:
+- S18 does NOT have/need a Reference/Target viewing mode toggle
+- S18 is **state-agnostic** - it always shows:
+  - Blue line = Target model (reads via `mode="target"`)
+  - Red line = Reference model (reads via `mode="reference"`)
+- The fact that Target line shows Reference value (`ref_k_52`) **as if it was Target value (`k_52`)** proves S18 is reading the wrong field
+- Specifically: Reading `ref_k_52=0.90` but treating it as `k_52` (wrong field, wrong interpretation)
+
+**Key Question**: Why does S18's `getAxisValue(axis, "target")` read `ref_k_52` instead of checking `d_51` and reading `d_52`?
+
+**Hypothesis**: When Section07's `ModeManager.currentMode="reference"`, does StateManager return Reference values even when asked for Target field IDs?
+
 ---
 
 ## Diagnostic Steps
