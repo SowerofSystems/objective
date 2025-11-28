@@ -491,13 +491,108 @@ USER OPTIMIZES (Reference mode):
   - Are there other fields that change from editable → calculated based on control field values?
   - Apply same two-layer protection (import skip + runtime override)
 
-**Testing**:
-1. Export file with `d_113="Heatpump"`
-2. Verify CSV has empty `j_116` column
-3. Re-import the file
-4. Check `ref_j_116` in StateManager - should be empty/calculated, not imported
-5. Toggle Target ↔ Reference modes
-6. Verify `h_10`/`k_10` values do NOT change during toggle
+**Testing Results (2025-11-27 - Commit 01b062f)**:
+
+**Initial Test - Import with d_113="Heatpump" conversion**:
+1. ✅ Exported file with `d_113="Gas"`, `j_116=0.90`
+2. ✅ Re-imported file
+3. ✅ User changed `d_113` to "Heatpump" in app
+4. ✅ Toggled Target ↔ Reference modes multiple times
+
+**Partial Success**:
+- ✅ **Actual TEUI stabilized**: `e_10` (Actual kWh/yr) and `k_10` (Actual TEUI kWh/m²) no longer change on mode toggle
+- ❌ **Target TEUI still recalculates**: `h_10` (Target TEUI kWh/m²) changes value on every mode toggle
+
+**Implications**:
+- Two-pass import successfully prevents Reference field state mixing for j_116
+- Additional investigation needed: Target calculation cascade during mode toggle
+- Likely causes:
+  1. Section13 or dependent section triggering calculations during refreshUI()
+  2. Pattern A refreshUI() inadvertently calling setValue() → Calculator cascade
+  3. Mode toggle listener calling calculateAll() when it should only update display
+
+**Diagnostic Script** (paste in console to log mode toggle behavior):
+
+```javascript
+// Mode Toggle Diagnostic Logger
+(function() {
+  const log = [];
+  const startTime = Date.now();
+
+  // Capture h_10 before toggle
+  const h10Before = window.TEUI.StateManager.getValue('h_10');
+  const e10Before = window.TEUI.StateManager.getValue('e_10');
+  const k10Before = window.TEUI.StateManager.getValue('k_10');
+
+  log.push(`=== MODE TOGGLE DIAGNOSTIC START ===`);
+  log.push(`Time: ${new Date().toISOString()}`);
+  log.push(`BEFORE TOGGLE:`);
+  log.push(`  h_10 (Target TEUI): ${h10Before}`);
+  log.push(`  e_10 (Actual kWh):  ${e10Before}`);
+  log.push(`  k_10 (Actual TEUI): ${k10Before}`);
+  log.push(``);
+
+  // Hook into StateManager setValue to catch what changes h_10
+  const originalSetValue = window.TEUI.StateManager.setValue;
+  window.TEUI.StateManager.setValue = function(fieldId, value, source) {
+    if (fieldId === 'h_10' || fieldId === 'e_10' || fieldId === 'k_10') {
+      const stack = new Error().stack;
+      const caller = stack.split('\n')[2]?.trim() || 'unknown';
+      log.push(`🔴 ${fieldId} CHANGED → ${value} (source: ${source})`);
+      log.push(`   Called from: ${caller}`);
+    }
+    return originalSetValue.call(this, fieldId, value, source);
+  };
+
+  // Hook into Calculator.calculateAll
+  const originalCalculateAll = window.TEUI.Calculator.calculateAll;
+  window.TEUI.Calculator.calculateAll = function() {
+    log.push(`⚡ Calculator.calculateAll() CALLED`);
+    const stack = new Error().stack;
+    const caller = stack.split('\n')[2]?.trim() || 'unknown';
+    log.push(`   Called from: ${caller}`);
+    return originalCalculateAll.call(this);
+  };
+
+  console.log('✅ Diagnostic logger active. Toggle mode, then run: window.TEUI_DIAGNOSTIC_DUMP()');
+
+  // Dump function
+  window.TEUI_DIAGNOSTIC_DUMP = function() {
+    const h10After = window.TEUI.StateManager.getValue('h_10');
+    const e10After = window.TEUI.StateManager.getValue('e_10');
+    const k10After = window.TEUI.StateManager.getValue('k_10');
+
+    log.push(``);
+    log.push(`AFTER TOGGLE:`);
+    log.push(`  h_10 (Target TEUI): ${h10After} ${h10After !== h10Before ? '⚠️ CHANGED' : '✅ stable'}`);
+    log.push(`  e_10 (Actual kWh):  ${e10After} ${e10After !== e10Before ? '⚠️ CHANGED' : '✅ stable'}`);
+    log.push(`  k_10 (Actual TEUI): ${k10After} ${k10After !== k10Before ? '⚠️ CHANGED' : '✅ stable'}`);
+    log.push(``);
+    log.push(`Duration: ${Date.now() - startTime}ms`);
+    log.push(`=== MODE TOGGLE DIAGNOSTIC END ===`);
+
+    // Restore original functions
+    window.TEUI.StateManager.setValue = originalSetValue;
+    window.TEUI.Calculator.calculateAll = originalCalculateAll;
+
+    // Output
+    const output = log.join('\n');
+    console.log(output);
+    return output; // Return for copy/paste to Logs.md
+  };
+})();
+```
+
+**Usage**:
+1. Paste script in console → Activates logger
+2. Toggle Target ↔ Reference mode ONCE
+3. Run `window.TEUI_DIAGNOSTIC_DUMP()` in console
+4. Copy output and paste into Logs.md for analysis
+
+**Next Steps**:
+- Identify which section/function triggers h_10 recalculation during mode toggle
+- Add guardrails to prevent calculations during view-only operations
+- Ensure refreshUI() only updates DOM, never triggers setValue() with 'user' source
 
 **Related Files**:
 - [FileHandler.js:589-598](../../src/core/FileHandler.js#L589-L598) - Import bug location
