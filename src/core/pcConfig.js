@@ -255,6 +255,12 @@ window.TEUI.getAxisValue = function (axis, mode = "target") {
     return null;
   }
 
+  // 🔍 DIAGNOSTIC: Log entry for SHW% and HEAT% axes
+  const isDebugAxis = axis.id === "shw_efficiency" || axis.id === "heating_efficiency";
+  if (isDebugAxis) {
+    console.log(`[pcConfig] getAxisValue: axis="${axis.id}", mode="${mode}"`);
+  }
+
   // Determine which field set to use based on mode
   const primaryField =
     mode === "target" ? axis.targetField : axis.referenceField;
@@ -274,6 +280,11 @@ window.TEUI.getAxisValue = function (axis, mode = "target") {
   // Handle conditional fields (SHW%, HEAT%)
   if (selectorField && altField) {
     const selectorValue = stateManager.getValue(selectorField);
+
+    if (isDebugAxis) {
+      console.log(`[pcConfig]   selectorField="${selectorField}", selectorValue="${selectorValue}"`);
+      console.log(`[pcConfig]   primaryField="${primaryField}", altField="${altField}"`);
+    }
 
     // Determine which field to use based on selector value
     let fieldToUse = primaryField;
@@ -297,6 +308,12 @@ window.TEUI.getAxisValue = function (axis, mode = "target") {
 
     const rawValue = stateManager.getValue(fieldToUse);
     const numValue = parseFloat(rawValue);
+
+    if (isDebugAxis) {
+      console.log(`[pcConfig]   fieldToUse="${fieldToUse}", rawValue="${rawValue}", multiplier=${multiplierToUse}`);
+      const finalValue = multiplierToUse ? numValue * multiplierToUse : numValue;
+      console.log(`[pcConfig]   → RETURN: ${finalValue}`);
+    }
 
     if (typeof numValue === "number" && !isNaN(numValue)) {
       // Apply multiplier if specified
