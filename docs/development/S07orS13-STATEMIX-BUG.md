@@ -25,6 +25,21 @@ When S18 Optimize converts SHW system from Gas → Heatpump:
 
 **Pattern**: Multiple sections have **conditional efficiency fields** that change based on system type, but field selection logic may not properly update during S18 optimization
 
+**🎯 CRITICAL DISCOVERY - S18 "Decarbonize" Button is the Trigger**:
+- State mixing is **introduced by S18's "Decarbonize" button**
+- After clicking Decarbonize, calculations remain **permanently broken** until page reload or re-import
+- This strongly suggests S18 is:
+  1. Setting field values incorrectly during optimization
+  2. Skipping required field updates when switching system types
+  3. Not triggering proper recalculation after state changes
+  4. Leaving StateManager in inconsistent state (mixed old/new values)
+
+**Why This Matters**:
+- Bug is **not in import logic** (that works correctly for 8 months)
+- Bug is **not in S01 display** (that also worked correctly for 8 months)
+- Bug is **in S18 optimization** when it updates system type dropdowns
+- S18 needs to update BOTH the system type AND clear/recalculate conditional efficiency fields
+
 ---
 
 ## S07 Evidence: SHW% Delta of +9900%
@@ -436,18 +451,32 @@ function updateTEUIDisplay() {
 }
 ```
 
-**Next Steps** (NEW SESSION):
-1. **Audit Section01.js**: Identify all calculations in `updateTEUIDisplay()`
-2. **Move calculations to Calculator**: h_10, e_10, k_10 should calculate in Calculator.calculateAll() chain
-3. **Make display pure**: `updateTEUIDisplay()` should ONLY read state and update DOM
-4. **Fix listeners**: Ensure mode toggle doesn't trigger calculation listeners
-5. **Investigate S18**: Why does S18 optimization path leave system in state where mode toggle triggers calculations?
+**Next Steps** (REVISED FOCUS - S18 Decarbonize Button):
+1. ~~**Audit Section01.js**~~ - S01 is working correctly, not the source of bug
+2. ~~**Fix import logic**~~ - Import has worked for 8 months, not the source of bug
+3. **INVESTIGATE S18 Decarbonize Button** - THIS IS THE BUG SOURCE:
+   - What does "Decarbonize" button do when it changes system types?
+   - When it sets `d_51="Heatpump"` (SHW), does it also update `d_52` and clear `k_52`?
+   - When it sets `d_113="Heatpump"` (Heating), does it update `f_113` and clear `j_115`?
+   - Does it trigger proper recalculation after changing fields?
+   - Does it set values with correct source parameter for StateManager?
+
+4. **Audit S18 field update logic**:
+   - Find "Decarbonize" button handler in Section18.js or ParallelCoordinates.js
+   - Check if it updates conditional efficiency fields when changing system types
+   - Verify it clears old efficiency values to prevent state mixing
+   - Ensure it triggers Calculator.calculateAll() after updates
+
+5. **Fix S18 to update ALL related fields when changing system type**:
+   - When changing d_51 (DHW type) → update both d_52 AND k_52
+   - When changing d_113 (Heating type) → update f_113, j_115, AND j_116
+   - Clear stale values to prevent reading wrong efficiency field
 
 **Files to Investigate**:
-- [Section01.js:763-948](../../src/sections/Section01.js#L763-L948) - `updateTEUIDisplay()` function
-- [Section01.js:1219-1269](../../src/sections/Section01.js#L1219-L1269) - `runAllCalculations()` listener
-- [Section01.js:945](../../src/sections/Section01.js#L945) - `updateDisplayValue()` call that writes h_10
-- Section18.js - Optimization code path that sets d_113
+- Section18.js - Find "Decarbonize" button handler
+- ParallelCoordinates.js - Optimization logic
+- Look for: `d_51`, `d_52`, `k_52` field updates
+- Look for: `d_113`, `f_113`, `j_115`, `j_116` field updates
 
 **Priority**: HIGH - This breaks "mode toggle is view-only" principle, causing h_10 to drift over time
 
