@@ -563,13 +563,21 @@
       }
 
       console.log(
-        "[FileHandler DEBUG] Passed validation checks, starting forEach loop..."
+        "[FileHandler DEBUG] Passed validation checks, starting TWO-PASS import..."
       );
       this.showStatus("Updating application state...", "info");
       let updatedCount = 0;
       let skippedValidationCount = 0;
 
-      Object.entries(importedData).forEach(([fieldId, value]) => {
+      // 🔒 TWO-PASS IMPORT: Ensure control fields imported before dependent fields
+      // Pass 1: Import control fields (d_113, ref_d_113, f_113, ref_f_113, d_116, ref_d_116)
+      // Pass 2: Import all other fields (including j_116, ref_j_116) with conditional logic
+      const controlFields = ['d_113', 'ref_d_113', 'f_113', 'ref_f_113', 'd_116', 'ref_d_116'];
+      const allEntries = Object.entries(importedData);
+
+      // PASS 1: Control fields
+      console.log("[FileHandler] 🔒 PASS 1: Importing control fields...");
+      allEntries.filter(([fieldId]) => controlFields.includes(fieldId)).forEach(([fieldId, value]) => {
         // ✅ CRITICAL: Reference fields (ref_*) don't need FieldManager definitions
         // They share Target DOM elements and are handled by section-level dual-state architecture
         const isReferenceField = fieldId.startsWith("ref_");
@@ -577,7 +585,7 @@
         const fieldDef = this.fieldManager.getField(baseFieldId);
 
         if (!fieldDef && !isReferenceField) {
-          console.warn(`Skipping import for unknown fieldId: ${fieldId}`);
+          console.warn(`[P1] Skipping import for unknown fieldId: ${fieldId}`);
           skippedValidationCount++;
           return; // Use return to continue to next iteration of forEach
         }
@@ -586,13 +594,14 @@
         let isValid = true;
 
         try {
+          // PASS 1: Import control fields unconditionally (no j_116 checks - that's Pass 2)
           // ✅ Reference fields: Store directly in StateManager without validation
           // Validation was already done by ExcelMapper normalization
           if (isReferenceField) {
             this.stateManager.setValue(fieldId, parsedValue, "imported");
             updatedCount++;
             console.log(
-              `[FileHandler] Reference field imported: ${fieldId} = ${parsedValue}`
+              `[FileHandler] [P1] Control field imported: ${fieldId} = ${parsedValue}`
             );
             return; // Done with this reference field
           }
@@ -667,6 +676,132 @@
           isValid = false; // Ensure isValid is false on error
         }
       });
+
+      // PASS 2: All other fields (excluding control fields already imported in Pass 1)
+      console.log("[FileHandler] 🔓 PASS 2: Importing remaining fields with conditional logic...");
+      allEntries.filter(([fieldId]) => !controlFields.includes(fieldId)).forEach(([fieldId, value]) => {
+        // ✅ CRITICAL: Reference fields (ref_*) don't need FieldManager definitions
+        // They share Target DOM elements and are handled by section-level dual-state architecture
+        const isReferenceField = fieldId.startsWith("ref_");
+        const baseFieldId = isReferenceField ? fieldId.substring(4) : fieldId;
+        const fieldDef = this.fieldManager.getField(baseFieldId);
+
+        if (!fieldDef && !isReferenceField) {
+          console.warn(`Skipping import for unknown fieldId: ${fieldId}`);
+          skippedValidationCount++;
+          return; // Use return to continue to next iteration of forEach
+        }
+
+        let parsedValue = value;
+        let isValid = true;
+
+        try {
+          // ✅ Reference fields: Store directly in StateManager without validation
+          // Validation was already done by ExcelMapper normalization
+          if (isReferenceField) {
+            // 🔒 CONDITIONAL IMPORT: Skip j_116 when heating system is Heatpump/Electric
+            // In these modes, j_116 (COPc) is CALCULATED from f_113 (HSPF), not user-editable
+            if (fieldId === "ref_j_116") {
+              const refD113Value = this.stateManager.getValue("ref_d_113");
+              if (refD113Value === "Heatpump" || refD113Value === "Electric") {
+                console.log(
+                  `[FileHandler] ⏭️  Skipping ref_j_116 import (ref_d_113="${refD113Value}", calculated field)`
+                );
+                return; // Skip import - will be calculated by Section13
+              }
+            }
+
+            this.stateManager.setValue(fieldId, parsedValue, "imported");
+            updatedCount++;
+            console.log(
+              `[FileHandler] Reference field imported: ${fieldId} = ${parsedValue}`
+            );
+            return; // Done with this reference field
+          }
+
+          // 🔒 CONDITIONAL IMPORT: Same check for Target mode j_116
+          if (fieldId === "j_116") {
+            const d113Value = this.stateManager.getValue("d_113");
+            if (d113Value === "Heatpump" || d113Value === "Electric") {
+              console.log(
+                `[FileHandler] ⏭️  Skipping j_116 import (d_113="${d113Value}", calculated field)`
+              );
+              return; // Skip import - will be calculated by Section13
+            }
+          }
+
+          // Target fields: Validate and update DOM
+          // ✅ CRITICAL: Skip validation for S03 location fields (d_19, h_19)
+          // These are Pattern A fields managed by S03's isolated state, not FieldManager
+          const isS03LocationField = ["d_19", "h_19"].includes(fieldId);
+
+          if (
+            fieldDef.type === "editable" ||
+            fieldDef.type === "year_slider" ||
+            fieldDef.type === "percentage" ||
+            fieldDef.type === "coefficient"
+          ) {
+            const numericValue = window.TEUI.parseNumeric(value, NaN);
+            if (!isNaN(numericValue)) {
+              parsedValue = numericValue.toString();
+            } else if (fieldDef.type !== "editable") {
+              isValid = false;
+            }
+          } else if (fieldDef.type === "dropdown" && !isS03LocationField) {
+            const options = this.fieldManager.getDropdownOptions(
+              fieldDef.dropdownId,
+              { parentValue: null }
+            );
+            const validValues = options.map(opt =>
+              typeof opt === "object" ? String(opt.value) : String(opt)
+            );
+            if (!validValues.includes(String(value))) {
+              isValid = false;
+            }
+          }
+
+          if (isValid) {
+            this.stateManager.setValue(fieldId, parsedValue, "imported");
+            updatedCount++;
+            if (
+              window.TEUI &&
+              window.TEUI.FieldManager &&
+              typeof window.TEUI.FieldManager.updateFieldDisplay === "function"
+            ) {
+              try {
+                window.TEUI.FieldManager.updateFieldDisplay(
+                  fieldId,
+                  parsedValue,
+                  fieldDef
+                );
+              } catch (e) {
+                console.error(
+                  `[FileHandler] Error calling FieldManager.updateFieldDisplay for ${fieldId}:`,
+                  e
+                );
+              }
+            } else {
+              console.warn(
+                `[FileHandler] TEUI.FieldManager.updateFieldDisplay is not available. UI for ${fieldId} may not update visually.`
+              );
+            }
+          } else {
+            console.warn(
+              `Skipping import for field ${fieldId}: Invalid value "${value}" for type ${fieldDef.type}.`
+            );
+            skippedValidationCount++;
+          }
+        } catch (error) {
+          console.error(
+            `Error processing field ${fieldId} with value "${value}":`,
+            error
+          );
+          skippedValidationCount++;
+          isValid = false; // Ensure isValid is false on error
+        }
+      });
+
+      console.log(`[FileHandler] ✅ TWO-PASS IMPORT COMPLETE: ${updatedCount} fields imported`);
 
       // Skip recalculation and reference data loading when importing reference fields
       if (skipRecalculation) {
