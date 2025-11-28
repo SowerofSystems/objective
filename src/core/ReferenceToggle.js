@@ -194,6 +194,12 @@ TEUI.ReferenceToggle = (function () {
     const { toggleSwitch, slider, stateIndicator } =
       window.TEUI.ReferenceToggle.keyValuesToggleElements;
 
+    // ✅ Guard against undefined elements
+    if (!toggleSwitch || !slider || !stateIndicator) {
+      console.warn('[ReferenceToggle] Key Values toggle elements not fully initialized');
+      return;
+    }
+
     if (mode === "reference") {
       slider.style.transform = "translateX(20px)";
       toggleSwitch.style.backgroundColor = "#dc3545"; // Red
