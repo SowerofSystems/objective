@@ -1,11 +1,76 @@
-#### CRITICAL BUG: State Mixing on Import - `d_113`/`j_116` Conditional Logic Bypass
+#### CRITICAL BUG: State Mixing in S07 (and possibly S13) - Dual Efficiency Field Confusion
 
 **Discovered**: 2025-11-27
 **Priority**: HIGH
-**Affects**: CSV/Excel import, mode toggling after import
-**Symptom**: When heating system at `d_113` is Heatpump or Electric, toggling between Target/Reference modes triggers unexpected recalculations, causing `h_10` (Target TEUI) and `k_10` (Actual TEUI) to change values
+**Affects**: S07 Water Use efficiency calculations, S18 Optimize graph, TEUI calculations
+**Symptom**: When S18 converts SHW system from Gas → Heatpump, efficiency value reads from wrong field, causing SHW% to be extremely low (off-chart in S18 graph, delta of +9900%)
 
-**Root Cause**:
+**REVISED THEORY - S07 Dual Efficiency Fields**:
+Section 07 defines **two different efficiency fields**:
+- `d_52`: DHW EF/COP (Slider) - Used for **Heatpump** systems (COP values, e.g., 3.0)
+- `k_52`: SHW AFUE (Editable Number) - Used for **Gas/Oil** systems (AFUE values, e.g., 0.90)
+
+**The Problem**:
+When S18 Optimize converts SHW system from Gas → Heatpump:
+- System should flip from reading `k_52` (AFUE, ~0.90) to `d_52` (COP, ~3.0)
+- BUT system reads the **wrong field** after conversion
+- Result: SHW efficiency dramatically incorrect (9900% delta in S18 graph)
+- Cascades to wrong TEUI calculations in S01
+
+**Similar Issue in S13**:
+- `d_113`: Primary Heating System dropdown (Gas/Heatpump/etc.)
+- `j_115`: AFUE for Gas/Oil systems
+- `f_113`: HSPF for Heatpump systems
+- `j_116`: Cooling COP (conditionally calculated vs. editable)
+
+**Pattern**: Multiple sections have **conditional efficiency fields** that change based on system type, but field selection logic may not properly update during S18 optimization
+
+---
+
+## S07 Evidence: SHW% Delta of +9900%
+
+**Observed in S18 Optimize Graph**:
+- After "Refresh Graph" with SHW system converted to Heatpump
+- SHW% value so low it appears **off-chart** (below visible range)
+- Delta calculation shows **+9900%** increase
+- This indicates efficiency value is reading ~100x lower than expected
+
+**Expected Behavior**:
+```
+Gas SHW System:
+  d_51 = "Gas"
+  k_52 = 0.90 (AFUE)
+  System reads k_52 for efficiency → 90% efficient
+
+Heatpump SHW System:
+  d_51 = "Heatpump"
+  d_52 = 300 (COP 3.0 stored as percentage)
+  System should read d_52 for efficiency → 300% efficient (COP 3.0)
+```
+
+**Actual Behavior (BUG)**:
+```
+After S18 converts Gas → Heatpump:
+  d_51 = "Heatpump" ✅ (updated correctly)
+  d_52 = 300 ✅ (COP value set correctly)
+  k_52 = 0.90 ⚠️ (old AFUE value still present)
+
+  System reads k_52 instead of d_52 → 0.90 instead of 300
+  Result: SHW efficiency appears 333x LOWER than expected
+  Delta: (300 - 0.90) / 0.90 = 332.22 = +33,222%
+  (Screenshot shows +9900%, suggesting partial calculation error)
+```
+
+**Impact on TEUI**:
+- S07 calculates domestic hot water energy use
+- Wrong efficiency (0.90 vs 300) → energy use calculated 333x higher
+- Cascades to S04 energy totals (j_32)
+- Cascades to S01 TEUI calculation (h_10 = j_32 / h_15)
+- **Result**: h_10 shows 159 instead of expected 511
+
+---
+
+## Root Cause (HYPOTHESIS):
 FileHandler.js import logic (lines 589-598) bypasses conditional field logic for Reference fields:
 
 ```javascript
