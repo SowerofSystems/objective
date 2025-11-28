@@ -172,7 +172,6 @@ window.TEUI.SectionModules.sect07 = (function () {
   // Mode manager for UI state switching (display-only)
   const ModeManager = {
     currentMode: "target", // "target" or "reference"
-    _isRefreshing: false, // ✅ FIX: Prevent dropdown change events during programmatic UI updates
 
     switchMode: function (mode) {
       console.log(
@@ -199,9 +198,6 @@ window.TEUI.SectionModules.sect07 = (function () {
       console.log(
         `🔄 [S07] refreshUI: Starting refresh for mode=${this.currentMode}`
       );
-
-      // ✅ FIX: Set flag to prevent dropdown change events during programmatic UI updates
-      this._isRefreshing = true;
 
       // Update input fields to show current mode's values
       const fields = getFields();
@@ -323,9 +319,6 @@ window.TEUI.SectionModules.sect07 = (function () {
           }
         }
       });
-
-      // ✅ FIX: Clear flag after UI updates complete
-      this._isRefreshing = false;
 
       console.log(
         `✅ [S07] refreshUI: Completed refresh for mode=${this.currentMode}`
@@ -1539,13 +1532,6 @@ window.TEUI.SectionModules.sect07 = (function () {
   }
 
   function handleGenericDropdownChange(e) {
-    // ✅ FIX: Ignore events during programmatic refreshUI() updates
-    // This prevents dropdown value changes during mode toggle from triggering calculations
-    if (ModeManager._isRefreshing) {
-      console.log(`⏭️ [S07] handleGenericDropdownChange: Skipping event during refreshUI()`);
-      return;
-    }
-
     const fieldId =
       e.target.getAttribute("data-field-id") ||
       e.target.getAttribute("data-dropdown-id");
@@ -1576,11 +1562,6 @@ window.TEUI.SectionModules.sect07 = (function () {
   }
 
   function handleSliderChange(e) {
-    // ✅ FIX: Ignore events during programmatic refreshUI() updates
-    if (ModeManager._isRefreshing) {
-      return; // Silent return for sliders - avoid log spam
-    }
-
     const fieldId = e.target.getAttribute("data-field-id");
     const value = e.target.value;
     const displaySpan = document.querySelector(
