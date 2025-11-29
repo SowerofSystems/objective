@@ -233,11 +233,14 @@ window.TEUI.OPTIMIZATION_AXES = [
     description: "Total Energy Use Intensity",
     optimal: "lower",
 
-    // ⚠️ SPECIAL: These fields do NOT use the ref_ prefix pattern
-    targetField: "h_10", // NOT d_10
-    referenceField: "e_10", // NOT ref_e_10
+    // 🔥 FIX (Nov 29): Use j_35 from S04 instead of h_10 from S01
+    // This breaks potential circular reference loop between S18 ↔ S01 ↔ S13
+    // j_35 is calculated upstream in dependency chain (S04 Row 35)
+    // j_35 = j_32 (total target energy) / h_15 (conditioned area)
+    targetField: "j_35", // S04 Row 35 - Target TEUI (calculated earlier in chain)
+    referenceField: "ref_j_35", // S04 publishes ref_j_35 in Reference mode
 
-    domain: [0, 300], // Typical range, will be refined
+    domain: [0, 999], // Typical range, generally between 0-800, may be negative if net zero or better
   },
 ];
 
