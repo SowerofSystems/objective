@@ -1477,6 +1477,13 @@ window.TEUI.ParallelCoordinates = (function () {
       if (debugEnabled) console.log("[Decarbonize] Step 1b: Setting StateManager.d_51 = 'Heatpump'");
       stateManager.setValue("d_51", "Heatpump", "user-modified");
 
+      // Step 1b: 🔥 FIX: Update field lock states (enable d_52, disable k_52)
+      // This mimics what happens when user manually changes the dropdown
+      const currentWaterMethod = stateManager.getValue("d_49") || "User Defined";
+      if (sect07?.updateSection7Visibility) {
+        sect07.updateSection7Visibility(currentWaterMethod, "Heatpump");
+      }
+
       // Step 2: Let section recalculate with new fuel type
       if (debugEnabled) console.log("[Decarbonize] Step 2: Calling sect07.calculateAll()");
       if (sect07?.calculateAll) {
@@ -1539,6 +1546,12 @@ window.TEUI.ParallelCoordinates = (function () {
         sect13.TargetState.setValue("d_113", "Heatpump");
       }
       stateManager.setValue("d_113", "Heatpump", "user-modified");
+
+      // Step 1b: 🔥 FIX: Update field lock states (enable f_113, disable j_115)
+      // This mimics what happens when user manually changes the dropdown
+      if (sect13?.handleHeatingSystemChangeForGhosting) {
+        sect13.handleHeatingSystemChangeForGhosting("Heatpump");
+      }
 
       // Step 2: Let section recalculate with new fuel type
       if (sect13?.calculateAll) {
