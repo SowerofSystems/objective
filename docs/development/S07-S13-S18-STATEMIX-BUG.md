@@ -378,6 +378,66 @@ The Logs.md diagnostic (lines 273-285) was run BEFORE this fix. Need new diagnos
 
 ---
 
+## 🎯 BREAKTHROUGH: Bug Isolated to S13 Mode Switch (2025-11-29)
+
+**Critical Discovery**: The bug is NOT about Import or S18 Decarbonize!
+
+### Reproduction Steps WITHOUT Import or Decarbonize
+
+1. **Start with default state** (d_113="Heatpump")
+2. **Manually change d_113 to "Gas"** in Target mode via S13 dropdown
+3. **Toggle to Reference mode**
+4. **Result**: h_10 state mixing appears! ❌
+
+**Conclusion**:
+- Import is NOT the issue
+- S18 Decarbonize is NOT the issue
+- **S13 mode switching itself has a fundamental flaw**
+- The contamination happens during `ModeManager.switchMode()` / `refreshUI()`
+
+### What This Means
+
+**The _isRefreshing guard (commit 70dd307) may have worked!**
+- The diagnostic logs (Logs.md) were captured BEFORE the guard was added
+- Need new diagnostic run to confirm if guard prevents the d_113 contamination
+- If guard worked but bug persists, contamination is through a different code path
+
+**S13 needs to work more like S07**:
+- S07 has proper guards and mode isolation
+- S07 doesn't exhibit this state mixing behavior
+- S13's ModeManager implementation differs from S07's pattern
+
+### Next Steps
+
+1. **Re-run diagnostic** with _isRefreshing guard in place
+2. **Compare S13 vs S07** ModeManager implementations line-by-line
+3. **Investigate circular reference**: h_10 may be causing calculation loops
+4. **Consider j_35 (Row 35)** as alternative metric for S18 Parallel Coordinates
+
+### Circular Reference Hypothesis
+
+**Potential Issue**: S18 Parallel Coordinates reading h_10 (Row 10, calculated final TEUI) may create circular dependencies:
+- S18 reads h_10 for TEUI axis display
+- h_10 depends on calculations from S13 (j_32 heating energy)
+- S13 calculations may trigger during mode switches
+- This could cause h_10 to recalculate during S18 graph updates
+- Recalculation during mode toggle could contaminate state
+
+**Proposed Solution** (pcConfig.js lines 237-238):
+- Use `j_35` (S04 Row 35) instead of `h_10` (S01 Row 10) for TEUI axis
+- j_35 is upstream, calculated earlier in dependency chain
+- Breaks potential circular reference loop
+- Faster, more direct access to TEUI value
+- Reference mode would use `ref_j_35` instead of `e_10`
+
+**Preparation Work Needed**:
+- Verify j_35 contains same/equivalent value as h_10
+- Check if ref_j_35 exists and is properly populated
+- Ensure j_35 is calculated before S18 graph renders
+- Test that j_35 updates correctly during mode switches
+
+---
+
 ## Investigation Focus: S18 Value-Setting
 
 ### Questions to Answer
