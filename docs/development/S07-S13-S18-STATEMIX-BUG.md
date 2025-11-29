@@ -137,13 +137,138 @@ stateManager.setValue("f_113", "12.5", "user-modified");
 **S18 Decarbonize needs to trigger UI field lock updates** after setValue():
 
 Option A: Trigger the dropdown change event programmatically
-Option B: Call S13's field enable/disable logic directly
+Option B: Call S13's field enable/disable logic directly ✅ **IMPLEMENTED**
 Option C: Have StateManager notify UI of changes (observer pattern)
 
-The next agent should investigate Section13.js to understand:
-1. How dropdown changes trigger field lock updates
-2. What function controls j_115/f_113 enable/disable logic
-3. How to call that logic from S18 after Decarbonize setValue()
+---
+
+## 🔧 PARTIAL FIX IMPLEMENTED (2025-11-29)
+
+**Commit**: `b9d3dd7` - "Fix: S18 Decarbonize now triggers field lock updates for S07/S13"
+
+**What was fixed**: S18 Decarbonize now calls field lock update functions after setValue()
+
+```javascript
+// ParallelCoordinates.js - S07 SHW System
+stateManager.setValue("d_51", "Heatpump", "user-modified");
+
+// 🔥 NEW: Update field lock states
+const currentWaterMethod = stateManager.getValue("d_49") || "User Defined";
+if (sect07?.updateSection7Visibility) {
+  sect07.updateSection7Visibility(currentWaterMethod, "Heatpump");
+}
+
+// ParallelCoordinates.js - S13 Heating System
+stateManager.setValue("d_113", "Heatpump", "user-modified");
+
+// 🔥 NEW: Update field lock states
+if (sect13?.handleHeatingSystemChangeForGhosting) {
+  sect13.handleHeatingSystemChangeForGhosting("Heatpump");
+}
+```
+
+**Result**:
+- ✅ S18 Decarbonize button now properly enables/disables fields
+- ❌ **BUG STILL OCCURS** - Import workflow has same issue!
+
+---
+
+## 🚨 REMAINING ISSUE: Import Field Lock Bug
+
+**New Discovery (2025-11-29)**: The bug persists because **Excel/CSV import has the same field lock issue as S18 Decarbonize had**.
+
+### The Import Problem
+
+**Scenario**:
+1. Default state: d_113="Heatpump", f_113 enabled, j_115 disabled ✅
+2. Import Excel with d_113="Gas", j_115=0.90
+3. FileHandler.updateStateFromImportData() calls:
+   ```javascript
+   stateManager.setValue("d_113", "Gas", "imported");
+   stateManager.setValue("j_115", "0.90", "imported");
+   ```
+4. **BUG**: j_115 field remains **locked/disabled** after import ❌
+5. User cannot edit j_115 even though d_113="Gas"
+6. S18 Decarbonize converts d_113 back to "Heatpump"
+7. Field lock states are still wrong from import → state mixing occurs
+
+**Root Cause**: FileHandler.updateStateFromImportData() writes values directly to StateManager without triggering S13's `handleHeatingSystemChangeForGhosting()` function.
+
+### What FileHandler Needs to Do
+
+**After importing d_113 (both Target and Reference modes)**:
+
+```javascript
+// In FileHandler.updateStateFromImportData() or syncPatternASections()
+
+// For S07 (SHW system)
+const d_51 = stateManager.getValue("d_51");
+const d_49 = stateManager.getValue("d_49") || "User Defined";
+if (sect07?.updateSection7Visibility) {
+  sect07.updateSection7Visibility(d_49, d_51);
+}
+
+// For S13 (Heating system) - TARGET mode
+const d_113 = stateManager.getValue("d_113");
+if (sect13?.handleHeatingSystemChangeForGhosting) {
+  sect13.handleHeatingSystemChangeForGhosting(d_113);
+}
+
+// For S13 (Heating system) - REFERENCE mode
+// Need to trigger field lock updates for Reference mode too!
+const ref_d_113 = stateManager.getValue("ref_d_113");
+if (sect13?.handleHeatingSystemChangeForGhosting) {
+  // Question: Does handleHeatingSystemChangeForGhosting() work for Reference mode?
+  // Or does it only update the current mode's field locks?
+  // May need a separate call or mode switch before calling
+}
+```
+
+### ✅ COMPLETE FIX IMPLEMENTED (2025-11-29)
+
+**Location**: `FileHandler.syncPatternASections()` - PHASE 2.5 (after Pattern A sync, before S11 window sync)
+
+**Implementation**:
+```javascript
+// FileHandler.js - Line ~899-935
+
+// Update S07 field locks based on imported d_51 (SHW system)
+const sect07 = window.TEUI?.SectionModules?.sect07;
+if (sect07?.updateSection7Visibility) {
+  const d_51 = this.stateManager.getValue("d_51");
+  const d_49 = this.stateManager.getValue("d_49") || "User Defined";
+  if (d_51) {
+    sect07.updateSection7Visibility(d_49, d_51);
+  }
+}
+
+// Update S13 field locks based on imported d_113 (Heating system)
+const sect13 = window.TEUI?.SectionModules?.sect13;
+if (sect13?.handleHeatingSystemChangeForGhosting) {
+  const d_113 = this.stateManager.getValue("d_113");
+  if (d_113) {
+    sect13.handleHeatingSystemChangeForGhosting(d_113);
+  }
+}
+```
+
+**Key Insights**:
+1. ✅ `handleHeatingSystemChangeForGhosting()` is **NOT mode-aware**
+   - It directly manipulates DOM elements by `data-field-id`
+   - These DOM elements are **shared** between Target and Reference modes
+   - Only need to call once (uses Target d_113 value, updates shared fields)
+
+2. ✅ Placement in `syncPatternASections()` is correct
+   - Runs AFTER both Target and Reference imports complete
+   - Runs BEFORE `calculateAll()` (which needs correct field lock states)
+   - Runs in IMPORT QUARANTINE (listeners still muted, safe to update DOM)
+
+3. ✅ Import sequence now matches manual workflow:
+   - Import: StateManager.setValue("d_113", "Gas") → handleHeatingSystemChangeForGhosting("Gas")
+   - Manual: Dropdown change event → StateManager.setValue("d_113", "Gas") → handleHeatingSystemChangeForGhosting("Gas")
+   - S18 Decarbonize: StateManager.setValue("d_113", "Heatpump") → handleHeatingSystemChangeForGhosting("Heatpump")
+
+**Expected Result**: Import → Decarbonize → Mode Toggle should now work without state mixing! 🎯
 
 ---
 

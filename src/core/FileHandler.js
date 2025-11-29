@@ -896,6 +896,44 @@
 
       console.log("[FileHandler] ✅ PHASE 2: Pattern A section sync complete");
 
+      // ✅ FIX (Nov 29): Update field lock states after import (same as S18 Decarbonize fix)
+      // Import sets d_113/d_51 via StateManager.setValue() which bypasses UI event handlers
+      // Must explicitly call ghosting/visibility functions to enable/disable conditional fields
+      console.log(
+        "[FileHandler] 🔧 PHASE 2.5: Updating field lock states for imported system types..."
+      );
+
+      // Update S07 field locks based on imported d_51 (SHW system)
+      const sect07 = window.TEUI?.SectionModules?.sect07;
+      if (sect07?.updateSection7Visibility) {
+        const d_51 = this.stateManager.getValue("d_51");
+        const d_49 = this.stateManager.getValue("d_49") || "User Defined";
+        if (d_51) {
+          sect07.updateSection7Visibility(d_49, d_51);
+          console.log(
+            `[FileHandler] S07 field locks updated for d_51="${d_51}", d_49="${d_49}"`
+          );
+        }
+      }
+
+      // Update S13 field locks based on imported d_113 (Heating system)
+      // handleHeatingSystemChangeForGhosting() is NOT mode-aware - it updates shared DOM elements
+      // So we only need to call it once with the Target mode value (fields are shared)
+      const sect13 = window.TEUI?.SectionModules?.sect13;
+      if (sect13?.handleHeatingSystemChangeForGhosting) {
+        const d_113 = this.stateManager.getValue("d_113");
+        if (d_113) {
+          sect13.handleHeatingSystemChangeForGhosting(d_113);
+          console.log(
+            `[FileHandler] S13 field locks updated for d_113="${d_113}"`
+          );
+        }
+      }
+
+      console.log(
+        "[FileHandler] ✅ PHASE 2.5: Field lock states updated"
+      );
+
       // ✅ FIX (Oct 10): Manually sync S11 window areas from S10 AFTER all imports complete
       // ✅ FIX (Nov 2): Enable dual-state sync during import to populate Reference areas
       // S11's syncFromGlobalState() no longer calls this to prevent premature sync
