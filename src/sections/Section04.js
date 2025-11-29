@@ -499,11 +499,11 @@ window.TEUI.SectionModules.sect04 = (function () {
         k: { content: "Nuclear Waste" },
         l: {
           fieldId: "l_33",
-          type: "calculated",
-          label: "Nuclear Waste Factor (Ontario only)",
-          value: "0",
+          type: "editable",
+          value: "0.0096",
+          classes: ["user-input", "editable"],
           section: "actualTargetEnergy",
-          dependencies: ["d_19"], // Excel: =IF(D19="ON", 0.0096, 0)
+          tooltip: true, // Nuclear Waste Factor (optional override) ☢️
         },
         m: { content: "g/kWh" },
         n: {},
@@ -560,6 +560,7 @@ window.TEUI.SectionModules.sect04 = (function () {
           value: "0",
           section: "actualTargetEnergy",
           dependencies: ["d_14", "j_27", "f_27", "l_33"], // Excel: =IFS(D14="Targeted Use", J27*L33/1000, D14="Utility Bills", F27*L33/1000)
+          tooltip: true, // Nuclear Waste Factor Total ☢️
         },
         m: { content: "kgHLNW/yr" },
         n: {},
@@ -685,7 +686,7 @@ window.TEUI.SectionModules.sect04 = (function () {
     setDefaults: function () {
       // ✅ ANTI-PATTERN FIX: Field definitions are single source of truth - no hardcoded fallbacks
       this.data = {
-        // User input fields - utility bill data (D27-D31) + emission factors (L28-L31)
+        // User input fields - utility bill data (D27-D31) + emission factors (L28-L31) + nuclear waste factor (L33)
         d_27: getFieldDefault("d_27"), // Electricity kWh/yr
         d_28: getFieldDefault("d_28"), // Gas m³/yr
         d_29: getFieldDefault("d_29"), // Propane kg/yr
@@ -695,6 +696,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         l_29: getFieldDefault("l_29"), // Propane Emission Factor (optional override)
         l_30: getFieldDefault("l_30"), // Oil Emission Factor (optional override)
         l_31: getFieldDefault("l_31"), // Wood Emission Factor (optional override)
+        l_33: getFieldDefault("l_33"), // Nuclear Waste Factor (optional override)
         // Note: l_35 (PER Factor) is now calculated, not user input
       };
     },
@@ -771,6 +773,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         l_29: getFieldDefault("l_29"), // Propane Emission Factor (optional override)
         l_30: getFieldDefault("l_30"), // Oil Emission Factor (optional override)
         l_31: getFieldDefault("l_31"), // Wood Emission Factor (optional override)
+        l_33: getFieldDefault("l_33"), // Nuclear Waste Factor (optional override)
         // Note: l_35 (PER Factor) is now calculated, not user input
       };
     },
@@ -848,6 +851,7 @@ window.TEUI.SectionModules.sect04 = (function () {
           "l_29",
           "l_30",
           "l_31",
+          "l_33",
           // Note: h_35 removed - PER Factor moved to l_35 (calculated, not user input)
         ].forEach(id => {
           const refId = `ref_${id}`;
@@ -924,6 +928,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         "l_29",
         "l_30",
         "l_31",
+        "l_33", // Nuclear Waste Factor (editable, province-aware)
         // h_35 removed - now calculated (PER from PHPP 10.6)
       ];
 
@@ -952,6 +957,15 @@ window.TEUI.SectionModules.sect04 = (function () {
             if (numericValue >= 0) {
               const formattedValue =
                 window.TEUI?.formatNumber?.(numericValue, "integer") ??
+                stateValue;
+              element.textContent = formattedValue;
+            }
+          } else if (fieldId === "l_33") {
+            // Nuclear waste factor: display with 4 decimal places
+            const numericValue = window.TEUI?.parseNumeric?.(stateValue, 0);
+            if (numericValue >= 0) {
+              const formattedValue =
+                window.TEUI?.formatNumber?.(numericValue, "number-4dp") ??
                 stateValue;
               element.textContent = formattedValue;
             }
@@ -998,8 +1012,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         "j_32",
         "k_32", // Row 32 (subtotals)
         "d_33",
-        "h_33",
-        "l_33", // Row 33 (GJ totals + nuclear waste factor)
+        "h_33", // Row 33 (GJ totals)
         "d_34",
         "f_34",
         "h_34",
@@ -1427,17 +1440,6 @@ window.TEUI.SectionModules.sect04 = (function () {
   }
 
   /**
-   * Calculate Row 33 nuclear waste factor (l_33)
-   * Excel: =IF(D19="ON", 0.0096, 0)
-   * Ontario-specific nuclear waste factor
-   */
-  function calculateRow33NuclearWaste() {
-    const province = getGlobalStringValue("d_19") || "";
-    const l_33 = province === "ON" ? 0.0096 : 0;
-    setFieldValue("l_33", l_33);
-  }
-
-  /**
    * Calculate Row 34 high level nuclear waste (l_34)
    * Excel: =IFS(D14="Targeted Use", J27*L33/1000, D14="Utility Bills", F27*L33/1000)
    * Mode-dependent calculation using actual vs target electricity
@@ -1485,7 +1487,6 @@ window.TEUI.SectionModules.sect04 = (function () {
     calculateRow31(); // Wood
     calculateRow32(); // ✅ CRITICAL: Subtotals for S01 consumption
     calculateRow33(); // Net Energy (GJ)
-    calculateRow33NuclearWaste(); // Nuclear Waste Factor (l_33)
     calculateRow34(); // Per Capita
     calculateRow34NuclearWaste(); // High Level Nuclear Waste (l_34)
     calculateRow35(); // Primary Energy
@@ -1500,7 +1501,6 @@ window.TEUI.SectionModules.sect04 = (function () {
     calculateRow31(); // Same as Target (user-controlled)
     calculateRow32(); // ✅ CRITICAL: Reference subtotals with ref_d_60 wood offset
     calculateRow33(); // Uses ref_d_43, ref_i_43
-    calculateRow33NuclearWaste(); // Nuclear Waste Factor (l_33) - Reference
     calculateRow34(); // Uses ref_d_63
     calculateRow34NuclearWaste(); // High Level Nuclear Waste (l_34) - Reference
     calculateRow35(); // Uses ref_d_14, ref_h_15
@@ -1644,10 +1644,16 @@ window.TEUI.SectionModules.sect04 = (function () {
             // Parse and validate
             const numericValue = window.TEUI.parseNumeric(newValue, NaN);
             if (!isNaN(numericValue)) {
+              // Determine format type based on field
+              let formatType = "number-2dp-comma";
+              if (fieldId === "l_33") {
+                formatType = "number-4dp"; // Nuclear waste factor needs 4 decimals
+              }
+
               // Format and store
               const formattedValue = window.TEUI.formatNumber(
                 numericValue,
-                "number-2dp-comma"
+                formatType
               );
               this.textContent = formattedValue;
               ModeManager.setValue(
@@ -1655,6 +1661,17 @@ window.TEUI.SectionModules.sect04 = (function () {
                 numericValue.toString(),
                 "user-modified"
               );
+
+              // Track that l_33 has been manually edited (prevents auto-update on province change)
+              // Mode-aware: separate flags for Target and Reference
+              if (fieldId === "l_33") {
+                if (ModeManager.currentMode === "target") {
+                  window.TEUI.StateManager.setValue("_l_33_user_edited", "true", "calculated");
+                } else {
+                  window.TEUI.StateManager.setValue("_ref_l_33_user_edited", "true", "calculated");
+                }
+              }
+
               calculateAll();
               ModeManager.updateCalculatedDisplayValues();
             } else {
@@ -1733,6 +1750,65 @@ window.TEUI.SectionModules.sect04 = (function () {
       // PER (h_35) depends on d_13 to determine if PH standard applies
       window.TEUI.StateManager.addListener("d_13", calculateAndRefresh);
       window.TEUI.StateManager.addListener("ref_d_13", calculateAndRefresh);
+
+      // ✅ NUCLEAR WASTE FACTOR: Auto-update l_33 when province changes
+      // Default to 0.0096 for Ontario, 0 for other provinces (user can override)
+      // Mode-aware: separate handling for Target and Reference
+
+      const updateNuclearWasteFactorTarget = () => {
+        const province = window.TEUI.StateManager.getValue("d_19") || "";
+        const newValue = province === "ON" ? "0.0096" : "0";
+        const userEditedFlag = window.TEUI.StateManager.getValue("_l_33_user_edited");
+
+        if (!userEditedFlag) {
+          // Update Target state
+          TargetState.setValue("l_33", newValue, "calculated");
+          window.TEUI.StateManager.setValue("l_33", newValue, "calculated");
+
+          // Update display if in Target mode
+          if (ModeManager.currentMode === "target") {
+            const element = document.querySelector('[data-field-id="l_33"]');
+            if (element) {
+              element.textContent = window.TEUI.formatNumber(
+                window.TEUI.parseNumeric(newValue),
+                "number-4dp"
+              );
+            }
+          }
+
+          calculateAll();
+          ModeManager.updateCalculatedDisplayValues();
+        }
+      };
+
+      const updateNuclearWasteFactorReference = () => {
+        const province = window.TEUI.StateManager.getValue("ref_d_19") || "";
+        const newValue = province === "ON" ? "0.0096" : "0";
+        const userEditedFlag = window.TEUI.StateManager.getValue("_ref_l_33_user_edited");
+
+        if (!userEditedFlag) {
+          // Update Reference state
+          ReferenceState.setValue("l_33", newValue, "calculated");
+          window.TEUI.StateManager.setValue("ref_l_33", newValue, "calculated");
+
+          // Update display if in Reference mode
+          if (ModeManager.currentMode === "reference") {
+            const element = document.querySelector('[data-field-id="l_33"]');
+            if (element) {
+              element.textContent = window.TEUI.formatNumber(
+                window.TEUI.parseNumeric(newValue),
+                "number-4dp"
+              );
+            }
+          }
+
+          calculateAll();
+          ModeManager.updateCalculatedDisplayValues();
+        }
+      };
+
+      window.TEUI.StateManager.addListener("d_19", updateNuclearWasteFactorTarget);
+      window.TEUI.StateManager.addListener("ref_d_19", updateNuclearWasteFactorReference);
     }
   }
 
