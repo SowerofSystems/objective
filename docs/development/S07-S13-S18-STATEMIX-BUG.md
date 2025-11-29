@@ -438,6 +438,92 @@ The Logs.md diagnostic (lines 273-285) was run BEFORE this fix. Need new diagnos
 
 ---
 
+## ✅ PARTIAL SUCCESS: j_35 Circular Reference Fix (2025-11-29) - Commit f27168d
+
+**Implementation**: Changed S18 Parallel Coordinates TEUI axis from h_10 (S01) to j_35 (S04)
+
+### What Was Changed
+
+**pcConfig.js TEUI axis** (lines 229-244):
+```javascript
+{
+  id: "teui",
+  label: "TEUI",
+  unit: "kWh/m²·yr",
+  description: "Total Energy Use Intensity",
+  optimal: "lower",
+
+  // 🔥 FIX (Nov 29): Use j_35 from S04 instead of h_10 from S01
+  // This breaks potential circular reference loop between S18 ↔ S01 ↔ S13
+  // j_35 is calculated upstream in dependency chain (S04 Row 35)
+  // j_35 = j_32 (total target energy) / h_15 (conditioned area)
+  targetField: "j_35", // S04 Row 35 - Target TEUI (calculated earlier in chain)
+  referenceField: "ref_j_35", // S04 publishes ref_j_35 in Reference mode
+
+  domain: [0, 999],
+},
+```
+
+**Previous Implementation**:
+- targetField: "h_10" (S01 Row 10 - calculated downstream)
+- referenceField: "e_10" (S01 Row 10 - Reference GHGI, WRONG FIELD!)
+
+**New Implementation**:
+- targetField: "j_35" (S04 Row 35 - calculated upstream)
+- referenceField: "ref_j_35" (S04 Row 35 - proper ref_ prefix pattern)
+
+### Verification
+
+**S04 Publication**: Section04.js properly publishes j_35 to StateManager:
+- Lines 1100-1123: `setFieldValue()` function publishes with ref_ prefix in Reference mode
+- Lines 1434-1439: `j_35 = j_32 / h_15` calculation and publication
+- ✅ Both j_35 and ref_j_35 are available to S18
+
+**Dependency Chain**:
+- S04 (upstream) → calculates j_35 from j_32 and h_15
+- S13 (mid-chain) → calculates heating/cooling energy
+- S01 (downstream) → calculates final carbon intensity h_10
+- S18 now reads j_35 instead of h_10, breaking circular reference loop
+
+### Improvements Achieved ✅
+
+1. **S18 Table TEUI Display Fixed**:
+   - TEUI axis in Parallel Coordinates table now shows correct values
+   - No longer reading wrong field (e_10 was Reference GHGI, not TEUI!)
+   - Now properly displays j_35 (Target TEUI) and ref_j_35 (Reference TEUI)
+
+2. **Graph Stability Improved**:
+   - Graph no longer nosedives at SHW% axis when refreshed in Reference mode
+   - Broken circular reference loop: S18 → h_10 → S01 → j_32 → S13 calculations
+   - More performant: j_35 calculated earlier in dependency chain
+
+3. **Proper Field Naming**:
+   - Fixed incorrect referenceField from "e_10" (GHGI) to "ref_j_35" (TEUI)
+   - Now follows standard ref_ prefix pattern consistently
+
+### Limitations - Bug Still Persists ❌
+
+**Core State Mixing Issue Remains**:
+- h_10 oscillation between 248.9 and 167.0 STILL OCCURS after Import → Mode Toggle
+- The j_35 fix improved S18 display and graph stability
+- BUT did NOT fix the underlying S13 mode switching contamination issue
+- The bug is in S13's mode switching mechanism, not in S18's field selection
+
+**What This Tells Us**:
+- The circular reference hypothesis was partially correct (it DID affect S18 display)
+- But circular reference was NOT the root cause of state mixing
+- Root cause remains in S13 ModeManager's refreshUI() / mode switching logic
+- Need to continue investigating S13's mode isolation mechanism
+
+### Next Investigation Steps
+
+1. **Re-run diagnostic script** with j_35 fix in place to see if contamination pattern changes
+2. **Compare j_35 vs h_10** values during mode toggles to verify they track correctly
+3. **Continue S13 investigation**: The _isRefreshing guard may not be sufficient
+4. **Explore S07 vs S13** ModeManager differences - why does S07 work correctly?
+
+---
+
 ## Investigation Focus: S18 Value-Setting
 
 ### Questions to Answer
