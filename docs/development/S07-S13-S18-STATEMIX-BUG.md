@@ -465,8 +465,8 @@ The Logs.md diagnostic (lines 273-285) was run BEFORE this fix. Need new diagnos
 ```
 
 **Previous Implementation**:
-- targetField: "h_10" (S01 Row 10 - calculated downstream)
-- referenceField: "e_10" (S01 Row 10 - Reference GHGI, WRONG FIELD!)
+- targetField: "h_10" (S01 Row 10 - Target TEUI, calculated downstream)
+- referenceField: "e_10" (S01 Row 10 - Reference TEUI, correct field but wrong pattern)
 
 **New Implementation**:
 - targetField: "j_35" (S04 Row 35 - calculated upstream)
@@ -489,8 +489,8 @@ The Logs.md diagnostic (lines 273-285) was run BEFORE this fix. Need new diagnos
 
 1. **S18 Table TEUI Display Fixed**:
    - TEUI axis in Parallel Coordinates table now shows correct values
-   - No longer reading wrong field (e_10 was Reference GHGI, not TEUI!)
-   - Now properly displays j_35 (Target TEUI) and ref_j_35 (Reference TEUI)
+   - e_10 was correct (Reference TEUI) but does not need ref_ prefix as S01 is state agnostic. 
+   - Now uses j_35 (Target TEUI) and ref_j_35 (Reference TEUI) from upstream S04, which results in accurate TEUI display in the TEUI table coumn values (was broken before)
 
 2. **Graph Stability Improved**:
    - Graph no longer nosedives at SHW% axis when refreshed in Reference mode
