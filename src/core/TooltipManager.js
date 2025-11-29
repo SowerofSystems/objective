@@ -701,6 +701,31 @@
       message:
         "Add here the capital cost premium for Heatpump vs. Conventional Equipment",
     },
+    // Section 18 Parallel Coordinates - Optimization Buttons
+    s18_decarbonize: {
+      cell: "S18",
+      title: "Decarbonize",
+      message:
+        "Eliminate Scope 1 Emissions (on-site fuel combustion) by switching fossil fuel systems for Service Hot Water (SHW) and Space Heat to Heat pumps._x000a__x000a_SHW → Heatpump 300%, Heating → Heatpump HSPF 12.5",
+    },
+    s18_optimize: {
+      cell: "S18",
+      title: "Optimize",
+      message:
+        "Apply balanced cost/performance optimization with moderate efficiency improvements. Improves envelope, ventilation, and system efficiencies to practical high-performance levels. Will not remove or 'Decarbonize' any existing fossil-fuel burning equipment, but will upgrade systems if they are gas or are already electrified._x000a__x000a_SHW 300%, DWHR 50%, Heating HSPF 12.5 (if Heatpump) or AFUE 98% (if Gas), MVHR 85%, TB 20%, nGains 60%, ACH50 1.00",
+    },
+    s18_super_optimize: {
+      cell: "S18",
+      title: "Super Optimize",
+      message:
+        "Apply aggressive multi-objective optimization with high efficiency improvements. Pushes Ventilation, and System Efficiencies to near-maximum practical levels._x000a__x000a_SHW 400%, DWHR 70%, Heating HSPF 15 or AFUE 98%, MVHR 95%, TB 10%, nGains PHPP, ACH50 0.60",
+    },
+    s18_passivhaus: {
+      cell: "S18",
+      title: "PassivHaus-ify",
+      message:
+        "Apply PassivHaus-level optimization targeting PER ≤ 120 kWh/m²/yr (may not be met w/o RSI increases). Applies maximum efficiency equipment improvements with low 5% thermal bridge penalty. Future enhancement: loop to arrive at PER targeting._x000a__x000a_SHW 400%, DWHR 70%, Heating HSPF 15 or AFUE 98%, MVHR 95%, TB 5%, nGains PHPP-method, ACH50 0.60",
+    },
   };
   // End of VALIDATION_TOOLTIPS
 
@@ -769,11 +794,16 @@
 
       // Initialize Bootstrap popover
       try {
-        new bootstrap.Popover(element, {
+        const popover = new bootstrap.Popover(element, {
           delay: { show: 500, hide: 100 },
           container: "body",
           sanitize: false, // Allow HTML content
         });
+
+        // If tooltips are currently disabled, disable this popover immediately
+        if (!this.enabled) {
+          popover.disable();
+        }
       } catch (error) {
         console.error(
           `[TooltipManager] Error initializing popover for ${fieldId}:`,

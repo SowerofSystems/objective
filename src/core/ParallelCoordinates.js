@@ -263,6 +263,15 @@ window.TEUI.ParallelCoordinates = (function () {
       passivhausBtn.className = "btn btn-sm pc-btn-passivhaus";
       passivhausBtn.innerHTML = "PassivHaus-ify";
       passivhausBtn.addEventListener("click", handlePassivHausIfy);
+
+      // Apply tooltips to action buttons (tooltip content defined in TooltipManager.js)
+      const tooltipManager = window.TEUI?.TooltipManager;
+      if (tooltipManager) {
+        tooltipManager.applyTooltip(decarbonizeBtn, "s18_decarbonize");
+        tooltipManager.applyTooltip(optimizeBtn, "s18_optimize");
+        tooltipManager.applyTooltip(superOptimizeBtn, "s18_super_optimize");
+        tooltipManager.applyTooltip(passivhausBtn, "s18_passivhaus");
+      }
     }
 
     // Create layout container for buttons (CSS handles margin-left: auto)
