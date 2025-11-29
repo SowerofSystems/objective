@@ -238,7 +238,13 @@
       cell: "L33",
       title: "High Level Nuclear Waste",
       message:
-        "Waste factor considers amount of high-level nuclear waste generated on a kWh basis for Ontario, with a grid mix of ~60% nuclear averaged on a given year. This waste requires long-term storage of 500 to 1,000,000 yrs to be rendered 'safe' for all life. ",
+        "Waste factor considers amount of high-level nuclear waste generated on a kWh basis for Ontario, with a grid mix of ~60% nuclear averaged on a given year. This waste requires long-term storage of 500 to 1,000,000 yrs to be rendered 'safe' for all life. ☢️ ",
+    },
+      l_34: {
+      cell: "L34",
+      title: "High Level Nuclear Waste",
+      message:
+        "Waste factor considers amount of high-level nuclear waste generated on a kWh basis for Ontario, with a grid mix of ~60% nuclear averaged on a given year. This waste requires long-term storage of 500 to 1,000,000 yrs to be rendered 'safe' for all life. ☢️ ",
     },
     h_35: {
       cell: "H35",

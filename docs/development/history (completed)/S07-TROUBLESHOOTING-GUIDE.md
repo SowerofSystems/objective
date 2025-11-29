@@ -1,5 +1,9 @@
 # Section 07 (Water Use) Troubleshooting Guide
 
+> **⚠️ UPDATE 2025-11-29**: The state mixing bug after S18 Decarbonize is **NOT caused by S07**.
+> Extensive testing with multiple files confirms S07 works correctly. The bug is isolated to **S13 (d_113 field)**.
+> See: [S07-S13-S18-STATEMIX-BUG.md](../S07-S13-S18-STATEMIX-BUG.md) for current investigation.
+
 ## Current Status ✅❌
 
 ### ✅ **RESOLVED ISSUES**
