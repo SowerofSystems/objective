@@ -84,6 +84,69 @@ stateManager.setValue("f_113", "12.5", "user-modified");
 
 ---
 
+## 🔥 BREAKTHROUGH: Field Lock Issue Identified (2025-11-29)
+
+**Root Cause Hypothesis**: j_115 field remains locked/non-editable after S18 Decarbonize
+
+### The Problem Sequence
+
+1. **Import file** with d_113="Gas" and j_115=0.90
+   - After import, j_115 field is **locked/non-editable** (user cannot change it)
+   - This is correct for the initial import state
+
+2. **Manual d_113 change works correctly**:
+   - User manually changes d_113 dropdown from "Heatpump" to "Gas" in S13 UI
+   - Dropdown change event fires
+   - j_115 field **becomes editable** ✅ (correct behavior)
+   - f_113 field becomes disabled
+   - This is the expected UI behavior
+
+3. **S18 Decarbonize d_113 change fails**:
+   - S18 uses `stateManager.setValue("d_113", "Heatpump")` to bypass UI
+   - **No dropdown change event fires** ❌
+   - j_115 field **remains locked/non-editable** ❌ (BUG!)
+   - f_113 field does not become properly enabled
+   - State says d_113="Heatpump" but UI field lock states haven't updated
+
+### Why This Causes State Mixing
+
+**The calculation error cascade**:
+
+1. S18 Decarbonize sets d_113="Heatpump" and f_113="12.5" in StateManager ✅
+2. But j_115 field remains locked/disabled in the UI ❌
+3. When calculations run and check which efficiency field to use:
+   - d_113="Heatpump" → should use f_113 (HSPF 12.5, COP 3.66)
+   - But f_113 field is still disabled/locked ❌
+   - Falls back to reading j_115=0.90 (Gas AFUE) ❌
+4. Result: Target model calculates with Gas efficiency instead of Heatpump efficiency
+5. This manifests as:
+   - h_10 = 167.0 instead of 248.9 (wrong carbon intensity)
+   - j_32 = 1.86M instead of 2.78M (wrong energy consumption)
+
+**Key insight**: The bug is not about StateManager values being wrong. The StateManager has the correct values! The bug is that **UI field lock states** (contenteditable/disabled attributes) don't update when S18 writes directly to StateManager, causing calculation logic to read from the wrong efficiency field.
+
+### Comparison: Manual vs S18 Changes
+
+| Action | d_113 Write Method | Dropdown Event? | j_115 Lock State | Result |
+|--------|-------------------|-----------------|------------------|--------|
+| **User manual edit** | Dropdown change → event handler → StateManager | ✅ Fires | ✅ Updates correctly | ✅ Works |
+| **S18 Decarbonize** | S18 → StateManager.setValue() directly | ❌ Bypassed | ❌ Stuck in old state | ❌ Bug |
+
+### The Fix Direction
+
+**S18 Decarbonize needs to trigger UI field lock updates** after setValue():
+
+Option A: Trigger the dropdown change event programmatically
+Option B: Call S13's field enable/disable logic directly
+Option C: Have StateManager notify UI of changes (observer pattern)
+
+The next agent should investigate Section13.js to understand:
+1. How dropdown changes trigger field lock updates
+2. What function controls j_115/f_113 enable/disable logic
+3. How to call that logic from S18 after Decarbonize setValue()
+
+---
+
 ## Investigation Focus: S18 Value-Setting
 
 ### Questions to Answer
