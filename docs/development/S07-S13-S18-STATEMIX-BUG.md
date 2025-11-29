@@ -272,6 +272,112 @@ if (sect13?.handleHeatingSystemChangeForGhosting) {
 
 ---
 
+## 🚨 ACTUAL ROOT CAUSE DISCOVERED (2025-11-29) - Diagnostic Logs Analysis
+
+### Diagnostic Evidence from Logs.md
+
+**Critical Discovery**: The diagnostic script revealed that **S13 does NOT have a `refreshUI()` guard** to prevent dropdown change events during mode switches!
+
+**Smoking Gun Evidence** (Logs.md lines 273-285):
+
+After toggling to Reference mode:
+```
+🎛️  HEATING SYSTEM SELECTOR:
+   d_113 (Target):     Gas          ❌ OVERWRITTEN!
+   ref_d_113 (Ref):    Gas          ✅ Correct
+   S13 Mode:           reference
+
+⚡ EFFICIENCY FIELDS:
+   f_113 (HSPF - Target):    7.1    ❌ OVERWRITTEN!
+   ref_f_113 (HSPF - Ref):   7.1    ✅ Correct
+```
+
+**What should have happened**: Target d_113 should remain "Heatpump" (unchanged).
+
+**What actually happened**: When S13.refreshUI() switched to Reference mode and updated the dropdown to show "Gas", the dropdown change event fired and **OVERWROTE the global StateManager's Target d_113 value**!
+
+### The Mechanism
+
+1. **Initial State**: d_113 (Target) = "Heatpump", ref_d_113 (Ref) = "Gas"
+2. **User toggles to Reference mode**
+3. **S13.refreshUI() executes**:
+   - Reads ref_d_113 = "Gas" from ReferenceState ✅
+   - Updates DOM dropdown element to show "Gas" ✅
+   - **Dropdown change event fires** ❌
+   - Event handler calls `ModeManager.setValue("d_113", "Gas")` ❌
+   - **Overwrites global StateManager's TARGET d_113!** ❌
+4. **Result**: Target d_113 now = "Gas" (contaminated with Reference value)
+
+### Why h_113 (COPheat) Doesn't Change
+
+**Key observation** (Logs.md line 285, 557):
+```
+h_113 (COPheat - Target): 3.663540445486518  ← ALWAYS 3.66!
+```
+
+The calculated efficiency **never changes** because the calculation has already run and cached the value. The contamination doesn't affect calculations until the NEXT recalculation cycle (which happens on the next mode toggle).
+
+### Pattern Comparison with S07
+
+**S07 works correctly** (Lines 133-137, 413-417) because it properly updates dropdowns during mode switches without contamination. S07 must have guards that S13 lacks.
+
+### The Required Fix
+
+**S13 needs the SAME `_isRefreshing` guard pattern that protects dropdown change events during refreshUI()!**
+
+```javascript
+// S13 needs this pattern (like S07 has):
+const ModeManager = {
+  currentMode: "target",
+  _isRefreshing: false,  // 🔥 ADD THIS
+
+  refreshUI: function() {
+    this._isRefreshing = true;  // 🔥 SET FLAG
+    // ... update dropdowns
+    this._isRefreshing = false; // 🔥 CLEAR FLAG
+  }
+}
+
+// In dropdown change handler:
+function handleDropdownChange(e) {
+  if (ModeManager._isRefreshing) {  // 🔥 CHECK FLAG
+    return; // Ignore events during UI refresh
+  }
+  // ... normal handling
+}
+```
+
+This prevents dropdown change events from firing during mode switches, eliminating state contamination.
+
+### ❌ FIX ATTEMPT FAILED (2025-11-29) - Commit 70dd307
+
+**What was implemented**: Added `_isRefreshing` guard pattern to S13 ModeManager
+
+**Changes made**:
+1. Added `ModeManager._isRefreshing = false` flag (line 291)
+2. Set `_isRefreshing = true` at start of `refreshUI()` (line 488)
+3. Clear `_isRefreshing = false` at end of `refreshUI()` (line 578)
+4. Added guard check in `handleDropdownChange()`: `if (ModeManager._isRefreshing) return;` (line 2339)
+
+**Expected Result**: Prevent dropdown change events during mode switches, eliminating d_113 contamination
+
+**Actual Result**: ❌ **BUG PERSISTS** - State mixing still occurs after Import → Decarbonize → Mode Toggle
+
+**New Diagnostic Evidence After Fix**:
+The Logs.md diagnostic (lines 273-285) was run BEFORE this fix. Need new diagnostic run to see:
+- Does d_113 still change from "Heatpump" to "Gas" after Reference toggle?
+- If YES: The guard isn't working (events still firing)
+- If NO but bug persists: The contamination mechanism is different than we thought
+
+**Hypothesis**: Either:
+1. The guard pattern isn't sufficient (events bypass the check somehow)
+2. The contamination happens through a different mechanism than dropdown change events
+3. There's another code path writing to d_113 during mode switches that we haven't identified
+
+**Next Investigation Step**: Run diagnostic script again with the guard in place to see if the contamination pattern changes.
+
+---
+
 ## Investigation Focus: S18 Value-Setting
 
 ### Questions to Answer
