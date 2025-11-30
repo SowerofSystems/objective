@@ -1350,11 +1350,7 @@ window.TEUI.PCRendering = (function () {
       });
     }, 0);
 
-    console.log(
-      "[pcRendering] Table rendered with",
-      axes.length,
-      "columns"
-    );
+    console.log("[pcRendering] Table rendered with", axes.length, "columns");
   }
 
   /**

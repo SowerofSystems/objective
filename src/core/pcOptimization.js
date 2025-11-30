@@ -37,7 +37,7 @@ window.TEUI.PCOptimization = (function () {
           section: "sect07",
           field: "d_51",
           value: "Heatpump",
-          condition: (sm) =>
+          condition: sm =>
             sm.getValue("d_51") === "Oil" || sm.getValue("d_51") === "Gas",
           preCalc: true, // Recalculate before setting next field
           visibilityUpdate: (section, sm) => {
@@ -46,13 +46,13 @@ window.TEUI.PCOptimization = (function () {
               section.updateSection7Visibility(currentWaterMethod, "Heatpump");
             }
           },
-          label: (sm) => `${sm.getValue("d_51")} SHW → Heatpump`,
+          label: sm => `${sm.getValue("d_51")} SHW → Heatpump`,
         },
         {
           section: "sect07",
           field: "d_52",
           value: "300",
-          condition: (sm) => {
+          condition: sm => {
             const d_51 = sm.getValue("d_51");
             if (d_51 === "Heatpump") {
               const d_52 = parseFloat(sm.getValue("d_52")) || 0;
@@ -60,7 +60,7 @@ window.TEUI.PCOptimization = (function () {
             }
             return d_51 === "Oil" || d_51 === "Gas"; // Will be Heatpump after previous step
           },
-          label: (sm) => {
+          label: sm => {
             const d_52 = parseFloat(sm.getValue("d_52")) || 0;
             return d_52 > 0 && d_52 < 300
               ? `SHW raised to 300%`
@@ -73,21 +73,21 @@ window.TEUI.PCOptimization = (function () {
           section: "sect13",
           field: "d_113",
           value: "Heatpump",
-          condition: (sm) =>
+          condition: sm =>
             sm.getValue("d_113") === "Oil" || sm.getValue("d_113") === "Gas",
           preCalc: true,
-          visibilityUpdate: (section) => {
+          visibilityUpdate: section => {
             if (section?.handleHeatingSystemChangeForGhosting) {
               section.handleHeatingSystemChangeForGhosting("Heatpump");
             }
           },
-          label: (sm) => `${sm.getValue("d_113")} Heating → Heatpump`,
+          label: sm => `${sm.getValue("d_113")} Heating → Heatpump`,
         },
         {
           section: "sect13",
           field: "f_113",
           value: "12.5",
-          condition: (sm) => {
+          condition: sm => {
             const d_113 = sm.getValue("d_113");
             if (d_113 === "Heatpump") {
               const f_113 = parseFloat(sm.getValue("f_113")) || 0;
@@ -95,7 +95,7 @@ window.TEUI.PCOptimization = (function () {
             }
             return d_113 === "Oil" || d_113 === "Gas"; // Will be Heatpump after previous step
           },
-          label: (sm) => {
+          label: sm => {
             const f_113 = parseFloat(sm.getValue("f_113")) || 0;
             return f_113 > 0 && f_113 < 12.5
               ? `Heating raised to HSPF 12.5`
@@ -130,19 +130,29 @@ window.TEUI.PCOptimization = (function () {
           section: "sect07",
           field: "d_51",
           value: "Heatpump",
-          condition: (sm) => sm.getValue("d_51") !== "Heatpump",
+          condition: sm => sm.getValue("d_51") !== "Heatpump",
           preCalc: true,
           label: () => "SHW → Heatpump",
         },
-        { section: "sect07", field: "d_52", value: "300", label: () => "SHW 300%" },
-        { section: "sect07", field: "d_53", value: "50", label: () => "DWHR 50%" },
+        {
+          section: "sect07",
+          field: "d_52",
+          value: "300",
+          label: () => "SHW 300%",
+        },
+        {
+          section: "sect07",
+          field: "d_53",
+          value: "50",
+          label: () => "DWHR 50%",
+        },
 
         // Heating: Conditional on fuel type
         {
           section: "sect13",
           field: "j_115",
           value: "0.98",
-          condition: (sm) => {
+          condition: sm => {
             const d_113 = sm.getValue("d_113");
             return d_113 === "Oil" || d_113 === "Gas";
           },
@@ -152,15 +162,25 @@ window.TEUI.PCOptimization = (function () {
           section: "sect13",
           field: "f_113",
           value: "12.5",
-          condition: (sm) => sm.getValue("d_113") === "Heatpump",
+          condition: sm => sm.getValue("d_113") === "Heatpump",
           label: () => "Heating HSPF 12.5",
         },
 
         // MVHR
-        { section: "sect13", field: "d_118", value: "85", label: () => "MVHR 85%" },
+        {
+          section: "sect13",
+          field: "d_118",
+          value: "85",
+          label: () => "MVHR 85%",
+        },
 
         // Thermal Bridging
-        { section: "sect11", field: "d_97", value: "20", label: () => "TB 20%" },
+        {
+          section: "sect11",
+          field: "d_97",
+          value: "20",
+          label: () => "TB 20%",
+        },
 
         // Net Gains
         {
@@ -185,7 +205,7 @@ window.TEUI.PCOptimization = (function () {
           label: () => "ACH50 1.00",
         },
       ],
-      successMessage: (changes) => `Optimized: ${changes.join(", ")}`,
+      successMessage: changes => `Optimized: ${changes.join(", ")}`,
     },
 
     /**
@@ -201,19 +221,29 @@ window.TEUI.PCOptimization = (function () {
           section: "sect07",
           field: "d_51",
           value: "Heatpump",
-          condition: (sm) => sm.getValue("d_51") !== "Heatpump",
+          condition: sm => sm.getValue("d_51") !== "Heatpump",
           preCalc: true,
           label: () => "SHW → Heatpump",
         },
-        { section: "sect07", field: "d_52", value: "400", label: () => "SHW 400%" },
-        { section: "sect07", field: "d_53", value: "70", label: () => "DWHR 70%" },
+        {
+          section: "sect07",
+          field: "d_52",
+          value: "400",
+          label: () => "SHW 400%",
+        },
+        {
+          section: "sect07",
+          field: "d_53",
+          value: "70",
+          label: () => "DWHR 70%",
+        },
 
         // Heating: Conditional on fuel type
         {
           section: "sect13",
           field: "j_115",
           value: "0.98",
-          condition: (sm) => {
+          condition: sm => {
             const d_113 = sm.getValue("d_113");
             return d_113 === "Oil" || d_113 === "Gas";
           },
@@ -223,15 +253,25 @@ window.TEUI.PCOptimization = (function () {
           section: "sect13",
           field: "f_113",
           value: "15",
-          condition: (sm) => sm.getValue("d_113") === "Heatpump",
+          condition: sm => sm.getValue("d_113") === "Heatpump",
           label: () => "Heating HSPF 15",
         },
 
         // MVHR
-        { section: "sect13", field: "d_118", value: "95", label: () => "MVHR 95%" },
+        {
+          section: "sect13",
+          field: "d_118",
+          value: "95",
+          label: () => "MVHR 95%",
+        },
 
         // Thermal Bridging: 10% (KEY DIFFERENCE from PassivHaus)
-        { section: "sect11", field: "d_97", value: "10", label: () => "TB 10%" },
+        {
+          section: "sect11",
+          field: "d_97",
+          value: "10",
+          label: () => "TB 10%",
+        },
 
         // Net Gains: PHPP Method
         {
@@ -256,7 +296,7 @@ window.TEUI.PCOptimization = (function () {
           label: () => "ACH50 0.60",
         },
       ],
-      successMessage: (changes) => `Super Optimized: ${changes.join(", ")}`,
+      successMessage: changes => `Super Optimized: ${changes.join(", ")}`,
     },
 
     /**
@@ -272,19 +312,29 @@ window.TEUI.PCOptimization = (function () {
           section: "sect07",
           field: "d_51",
           value: "Heatpump",
-          condition: (sm) => sm.getValue("d_51") !== "Heatpump",
+          condition: sm => sm.getValue("d_51") !== "Heatpump",
           preCalc: true,
           label: () => "SHW → Heatpump",
         },
-        { section: "sect07", field: "d_52", value: "400", label: () => "SHW 400%" },
-        { section: "sect07", field: "d_53", value: "70", label: () => "DWHR 70%" },
+        {
+          section: "sect07",
+          field: "d_52",
+          value: "400",
+          label: () => "SHW 400%",
+        },
+        {
+          section: "sect07",
+          field: "d_53",
+          value: "70",
+          label: () => "DWHR 70%",
+        },
 
         // Heating: Conditional on fuel type
         {
           section: "sect13",
           field: "j_115",
           value: "0.98",
-          condition: (sm) => {
+          condition: sm => {
             const d_113 = sm.getValue("d_113");
             return d_113 === "Oil" || d_113 === "Gas";
           },
@@ -294,12 +344,17 @@ window.TEUI.PCOptimization = (function () {
           section: "sect13",
           field: "f_113",
           value: "15",
-          condition: (sm) => sm.getValue("d_113") === "Heatpump",
+          condition: sm => sm.getValue("d_113") === "Heatpump",
           label: () => "Heating HSPF 15",
         },
 
         // MVHR
-        { section: "sect13", field: "d_118", value: "95", label: () => "MVHR 95%" },
+        {
+          section: "sect13",
+          field: "d_118",
+          value: "95",
+          label: () => "MVHR 95%",
+        },
 
         // Thermal Bridging: 5% (KEY DIFFERENCE from SuperOptimize)
         { section: "sect11", field: "d_97", value: "5", label: () => "TB 5%" },
@@ -327,7 +382,7 @@ window.TEUI.PCOptimization = (function () {
           label: () => "ACH50 0.60",
         },
       ],
-      successMessage: (changes) => `PassivHaus: ${changes.join(", ")}`,
+      successMessage: changes => `PassivHaus: ${changes.join(", ")}`,
     },
   };
 
@@ -396,8 +451,7 @@ window.TEUI.PCOptimization = (function () {
     }
 
     // 🔍 DIAGNOSTIC: Capture state BEFORE optimization (if debug enabled)
-    const debugEnabled =
-      preset.debugFlag && window[preset.debugFlag] === true;
+    const debugEnabled = preset.debugFlag && window[preset.debugFlag] === true;
     let stateBefore = null;
 
     if (debugEnabled) {
@@ -445,7 +499,7 @@ window.TEUI.PCOptimization = (function () {
     }
 
     // Force final recalculation for all modified sections
-    sectionsModified.forEach((sectionId) => {
+    sectionsModified.forEach(sectionId => {
       const section = window.TEUI?.SectionModules?.[sectionId];
       if (section?.calculateAll) {
         section.calculateAll();
