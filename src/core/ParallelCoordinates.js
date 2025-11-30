@@ -1056,14 +1056,6 @@ window.TEUI.ParallelCoordinates = (function () {
     // Table body - transposed rows
     const tbody = document.createElement("tbody");
 
-    // Target row
-    const targetRow = document.createElement("tr");
-    targetRow.innerHTML = `<td class="pc-row-label pc-target-cell"><strong>Target</strong></td>`;
-    targetData.forEach(val => {
-      targetRow.innerHTML += `<td class="text-center pc-target-cell">${val.toFixed(2)}</td>`;
-    });
-    tbody.appendChild(targetRow);
-
     // Reference row
     const referenceRow = document.createElement("tr");
     referenceRow.innerHTML = `<td class="pc-row-label pc-reference-cell"><strong>Reference</strong></td>`;
@@ -1072,7 +1064,15 @@ window.TEUI.ParallelCoordinates = (function () {
     });
     tbody.appendChild(referenceRow);
 
-    // Delta row
+    // Target row
+    const targetRow = document.createElement("tr");
+    targetRow.innerHTML = `<td class="pc-row-label pc-target-cell"><strong>Target</strong></td>`;
+    targetData.forEach(val => {
+      targetRow.innerHTML += `<td class="text-center pc-target-cell">${val.toFixed(2)}</td>`;
+    });
+    tbody.appendChild(targetRow);
+
+    // Delta row (Target - Reference)
     const deltaRow = document.createElement("tr");
     deltaRow.innerHTML = `<td class="pc-row-label"><strong>Δ</strong></td>`;
     axes.forEach((axis, i) => {
@@ -1187,7 +1187,7 @@ window.TEUI.ParallelCoordinates = (function () {
     const capitalBudgetRow = document.createElement("tr");
     capitalBudgetRow.innerHTML = `<td class="pc-row-label"><strong>Capital Budget</strong></td>`;
 
-    // Default capital budget values (user-editable)
+    // Default capital budget cost values (user-editable) - sets to $0 when file data imports
     const defaultCapitalBudgets = {
       shw_efficiency: 10000,
       dwhr_efficiency: 5000,
