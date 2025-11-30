@@ -589,40 +589,50 @@ window.TEUI.pcFinancials = (function () {
 
     /**
      * TEDI - Thermal Energy Demand Intensity
-     * Cost = Heating energy cost (based on fuel type from d_113)
-     * For Gas: h_115 (m³) × gas rate
-     * For Oil: f_115 (litres) × oil rate
-     * For Electric/Heatpump: d_114 (kWh) × electric rate
-     * Note: When Gas, d_114 = d_127, so h_115 × price works directly
+     * Cost = Heating fuel cost from Section 13
+     * CRITICAL: Only use ONE fuel volume to avoid double-counting
+     * - d_114 is ALWAYS calculated (thermal demand kWh) for all systems
+     * - h_115 and f_115 are conditionally zero based on system type (d_113)
+     * - Gas system: Use h_115 × l_13 ONLY (ignore d_114)
+     * - Oil system: Use f_115 × l_16 ONLY (ignore d_114)
+     * - Electric/Heatpump: Use d_114 × l_12 (h_115 and f_115 are zero)
      */
     tedi: {
       target: () => {
-        const heatingDemand = getValue("d_114"); // Heating demand (kWh) - TARGET
-        const gasVolume = getValue("h_115"); // Gas volume (m³) - TARGET
-        const oilVolume = getValue("f_115"); // Oil volume (litres) - TARGET
-        const electricRate = getValue("l_12"); // $/kWh
-        const gasRate = getValue("l_13"); // $/m³
-        const oilRate = getValue("l_16"); // $/litre
+        const electricHeating = getValue("d_114") || 0; // Thermal demand (kWh) - TARGET
+        const gasHeating = getValue("h_115") || 0; // Gas volume (m³) - TARGET
+        const oilHeating = getValue("f_115") || 0; // Oil volume (litres) - TARGET
 
-        return (
-          heatingDemand * electricRate +
-          gasVolume * gasRate +
-          oilVolume * oilRate
-        );
+        const electricRate = getValue("l_12") || 0; // $/kWh
+        const gasRate = getValue("l_13") || 0; // $/m³
+        const oilRate = getValue("l_16") || 0; // $/litre
+
+        // Only use the non-zero fuel volume to avoid double-counting
+        if (gasHeating > 0) {
+          return gasHeating * gasRate; // Gas system: m³ × $/m³
+        } else if (oilHeating > 0) {
+          return oilHeating * oilRate; // Oil system: litres × $/litre
+        } else {
+          return electricHeating * electricRate; // Electric/Heatpump: kWh × $/kWh
+        }
       },
       reference: () => {
-        const heatingDemand = getValue("ref_d_114");
-        const gasVolume = getValue("ref_h_115");
-        const oilVolume = getValue("ref_f_115");
-        const electricRate = getValue("ref_l_12");
-        const gasRate = getValue("ref_l_13");
-        const oilRate = getValue("ref_l_16");
+        const electricHeating = getValue("ref_d_114") || 0; // Thermal demand (kWh) - REFERENCE
+        const gasHeating = getValue("ref_h_115") || 0; // Gas volume (m³) - REFERENCE
+        const oilHeating = getValue("ref_f_115") || 0; // Oil volume (litres) - REFERENCE
 
-        return (
-          heatingDemand * electricRate +
-          gasVolume * gasRate +
-          oilVolume * oilRate
-        );
+        const electricRate = getValue("ref_l_12") || 0; // $/kWh
+        const gasRate = getValue("ref_l_13") || 0; // $/m³
+        const oilRate = getValue("ref_l_16") || 0; // $/litre
+
+        // Only use the non-zero fuel volume to avoid double-counting
+        if (gasHeating > 0) {
+          return gasHeating * gasRate; // Gas system: m³ × $/m³
+        } else if (oilHeating > 0) {
+          return oilHeating * oilRate; // Oil system: litres × $/litre
+        } else {
+          return electricHeating * electricRate; // Electric/Heatpump: kWh × $/kWh
+        }
       },
       savings: function () {
         const delta = this.reference() - this.target();
@@ -632,22 +642,27 @@ window.TEUI.pcFinancials = (function () {
 
     /**
      * TELI - Thermal Envelope Loss Intensity
-     * Cost = TELI (d_131 ekWh/yr) × electricity rate
-     * Simple calculation for Electric/Heatpump buildings
-     * TODO: Add Gas/Oil fuel logic later (more complex, no direct equivalence)
+     * Cost = TEDI cost × TELI/TEDI Ratio (m_131)
+     *
+     * Pro-rating approach:
+     * - m_131 = TELI ÷ TEDI (calculated in Section 14)
+     * - TELI cost = TEDI cost × m_131
+     *
+     * This automatically handles all fuel types (Gas, Oil, Electric/Heatpump)
+     * by leveraging the TEDI cost calculation which already has conditional fuel logic
      */
     teli: {
       target: () => {
-        const teliEnergy = getValue("d_131"); // TELI (ekWh/yr) - TARGET
-        const electricRate = getValue("l_12"); // $/kWh - TARGET
+        const tediCost = calculations.tedi.target(); // TEDI cost (already handles all fuel types)
+        const teliTediRatio = getValue("m_131") || 0; // TELI/TEDI ratio - TARGET
 
-        return teliEnergy * electricRate;
+        return tediCost * teliTediRatio;
       },
       reference: () => {
-        const teliEnergy = getValue("ref_d_131");
-        const electricRate = getValue("ref_l_12");
+        const tediCost = calculations.tedi.reference(); // TEDI cost (already handles all fuel types)
+        const teliTediRatio = getValue("ref_m_131") || 0; // TELI/TEDI ratio - REFERENCE
 
-        return teliEnergy * electricRate;
+        return tediCost * teliTediRatio;
       },
       savings: function () {
         const delta = this.reference() - this.target();
@@ -679,22 +694,55 @@ window.TEUI.pcFinancials = (function () {
 
     /**
      * TEUI - Total Energy Use Intensity
-     * Cost = TEUI (d_136 kWh/yr) × electricity rate
-     * Simple calculation for Electric/Heatpump buildings
-     * TODO: Add Gas/Oil fuel parsing later for mixed-fuel buildings
+     * Cost = Sum of all fuel costs from Section 04
+     * Handles mixed-fuel buildings (electricity, gas, propane, oil, wood)
      */
     teui: {
       target: () => {
-        const teuiEnergy = getValue("d_136"); // TEUI (kWh/yr) - TARGET
-        const electricRate = getValue("l_12"); // $/kWh - TARGET
+        // Sum all fuel costs from S04 Target columns
+        const electricEnergy = getValue("h_27") || 0; // Electricity (kWh/yr)
+        const gasVolume = getValue("h_28") || 0; // Gas (m³/yr)
+        const propaneVolume = getValue("h_29") || 0; // Propane (kg/yr)
+        const oilVolume = getValue("h_30") || 0; // Oil (litres/yr)
+        const woodVolume = getValue("h_31") || 0; // Wood (m³/yr)
 
-        return teuiEnergy * electricRate;
+        // Get energy prices from S01
+        const electricRate = getValue("l_12") || 0; // $/kWh
+        const gasRate = getValue("l_13") || 0; // $/m³
+        const propaneRate = getValue("l_14") || 0; // $/kg
+        const oilRate = getValue("l_16") || 0; // $/litre
+        const woodRate = getValue("l_15") || 0; // $/m³
+
+        return (
+          electricEnergy * electricRate +
+          gasVolume * gasRate +
+          propaneVolume * propaneRate +
+          oilVolume * oilRate +
+          woodVolume * woodRate
+        );
       },
       reference: () => {
-        const teuiEnergy = getValue("ref_d_136");
-        const electricRate = getValue("ref_l_12");
+        // Sum all fuel costs from S04 Reference columns
+        const electricEnergy = getValue("ref_h_27") || 0; // Electricity (kWh/yr)
+        const gasVolume = getValue("ref_h_28") || 0; // Gas (m³/yr)
+        const propaneVolume = getValue("ref_h_29") || 0; // Propane (kg/yr)
+        const oilVolume = getValue("ref_h_30") || 0; // Oil (litres/yr)
+        const woodVolume = getValue("ref_h_31") || 0; // Wood (m³/yr)
 
-        return teuiEnergy * electricRate;
+        // Get energy prices from S01 Reference
+        const electricRate = getValue("ref_l_12") || 0; // $/kWh
+        const gasRate = getValue("ref_l_13") || 0; // $/m³
+        const propaneRate = getValue("ref_l_14") || 0; // $/kg
+        const oilRate = getValue("ref_l_16") || 0; // $/litre
+        const woodRate = getValue("ref_l_15") || 0; // $/m³
+
+        return (
+          electricEnergy * electricRate +
+          gasVolume * gasRate +
+          propaneVolume * propaneRate +
+          oilVolume * oilRate +
+          woodVolume * woodRate
+        );
       },
       savings: function () {
         const delta = this.reference() - this.target();

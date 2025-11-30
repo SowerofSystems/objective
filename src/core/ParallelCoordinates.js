@@ -240,9 +240,15 @@ window.TEUI.ParallelCoordinates = (function () {
       mainBtn.addEventListener("click", activateVisualization);
     }
 
-    // Create action buttons (Decarbonize, Optimize, Super Optimize, PassivHaus-ify) - only when activated
-    let decarbonizeBtn, optimizeBtn, superOptimizeBtn, passivhausBtn;
+    // Create action buttons (Restore Baseline, Decarbonize, Optimize, Super Optimize, PassivHaus-ify) - only when activated
+    let restoreBaselineBtn, decarbonizeBtn, optimizeBtn, superOptimizeBtn, passivhausBtn;
     if (isActivated) {
+      // Restore Baseline button (pebble grey)
+      restoreBaselineBtn = document.createElement("button");
+      restoreBaselineBtn.className = "btn btn-secondary btn-sm";
+      restoreBaselineBtn.innerHTML = "Restore Baseline";
+      restoreBaselineBtn.addEventListener("click", handleRestoreBaseline);
+
       // Decarbonize button (green)
       decarbonizeBtn = document.createElement("button");
       decarbonizeBtn.className = "btn btn-success btn-sm pc-btn-decarbonize";
@@ -386,11 +392,13 @@ window.TEUI.ParallelCoordinates = (function () {
     // Add action buttons (only when activated) right after main button
     if (
       isActivated &&
+      restoreBaselineBtn &&
       decarbonizeBtn &&
       optimizeBtn &&
       superOptimizeBtn &&
       passivhausBtn
     ) {
+      controlsContainer.appendChild(restoreBaselineBtn);
       controlsContainer.appendChild(decarbonizeBtn);
       controlsContainer.appendChild(optimizeBtn);
       controlsContainer.appendChild(superOptimizeBtn);
@@ -1048,14 +1056,6 @@ window.TEUI.ParallelCoordinates = (function () {
     // Table body - transposed rows
     const tbody = document.createElement("tbody");
 
-    // Target row
-    const targetRow = document.createElement("tr");
-    targetRow.innerHTML = `<td class="pc-row-label pc-target-cell"><strong>Target</strong></td>`;
-    targetData.forEach(val => {
-      targetRow.innerHTML += `<td class="text-center pc-target-cell">${val.toFixed(2)}</td>`;
-    });
-    tbody.appendChild(targetRow);
-
     // Reference row
     const referenceRow = document.createElement("tr");
     referenceRow.innerHTML = `<td class="pc-row-label pc-reference-cell"><strong>Reference</strong></td>`;
@@ -1064,7 +1064,15 @@ window.TEUI.ParallelCoordinates = (function () {
     });
     tbody.appendChild(referenceRow);
 
-    // Delta row
+    // Target row
+    const targetRow = document.createElement("tr");
+    targetRow.innerHTML = `<td class="pc-row-label pc-target-cell"><strong>Target</strong></td>`;
+    targetData.forEach(val => {
+      targetRow.innerHTML += `<td class="text-center pc-target-cell">${val.toFixed(2)}</td>`;
+    });
+    tbody.appendChild(targetRow);
+
+    // Delta row (Target - Reference)
     const deltaRow = document.createElement("tr");
     deltaRow.innerHTML = `<td class="pc-row-label"><strong>Δ</strong></td>`;
     axes.forEach((axis, i) => {
@@ -1179,7 +1187,7 @@ window.TEUI.ParallelCoordinates = (function () {
     const capitalBudgetRow = document.createElement("tr");
     capitalBudgetRow.innerHTML = `<td class="pc-row-label"><strong>Capital Budget</strong></td>`;
 
-    // Default capital budget values (user-editable)
+    // Default capital budget cost values (user-editable) - sets to $0 when file data imports
     const defaultCapitalBudgets = {
       shw_efficiency: 10000,
       dwhr_efficiency: 5000,
@@ -1191,7 +1199,7 @@ window.TEUI.ParallelCoordinates = (function () {
       window_wall_ratio: 50000,
       heating_efficiency: 50000,
       mvhr_efficiency: 50000,
-      tedi: 1,
+      tedi: 50000,
       teli: 100000,
       ghgi: 0,
       teui: 0,
@@ -1411,6 +1419,30 @@ window.TEUI.ParallelCoordinates = (function () {
         console.style.transition = "";
       }, 1000);
     }, duration);
+  }
+
+  /**
+   * Restore Baseline handler
+   * Calls StateManager's resetTier1_UndoChanges() to restore user to imported state (or defaults)
+   * Automatically refreshes graph after restoration completes
+   */
+  function handleRestoreBaseline() {
+    console.log("[ParallelCoordinates] Restore Baseline action triggered");
+
+    // Call StateManager's Tier 1 reset (undo user changes, restore to import/defaults)
+    if (window.TEUI?.StateManager?.resetTier1_UndoChanges) {
+      window.TEUI.StateManager.resetTier1_UndoChanges();
+      showFeedback("Baseline restored - reverted to imported data", 3000);
+
+      // Auto-refresh graph after reset completes (with delay to let state settle)
+      setTimeout(() => {
+        refresh();
+        console.log("[ParallelCoordinates] Graph auto-refreshed after baseline restore");
+      }, 200);
+    } else {
+      console.error("[ParallelCoordinates] StateManager.resetTier1_UndoChanges not found");
+      showFeedback("Error: Reset function not available", 3000);
+    }
   }
 
   /**
