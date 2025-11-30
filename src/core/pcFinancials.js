@@ -589,39 +589,41 @@ window.TEUI.pcFinancials = (function () {
 
     /**
      * TEDI - Thermal Energy Demand Intensity
-     * Cost = Heating energy cost (based on fuel type from d_113)
-     * For Gas: h_115 (m³) × gas rate
-     * For Oil: f_115 (litres) × oil rate
-     * For Electric/Heatpump: d_114 (kWh) × electric rate
-     * Note: When Gas, d_114 = d_127, so h_115 × price works directly
+     * Cost = Heating fuel cost from Section 13
+     * Uses actual fuel volumes, inherently conditional (only one fuel type active)
+     * - Electric/Heatpump: d_114 (kWh) × l_12 ($/kWh)
+     * - Gas: h_115 (m³) × l_13 ($/m³)
+     * - Oil: f_115 (litres) × l_16 ($/litre)
      */
     tedi: {
       target: () => {
-        const heatingDemand = getValue("d_114"); // Heating demand (kWh) - TARGET
-        const gasVolume = getValue("h_115"); // Gas volume (m³) - TARGET
-        const oilVolume = getValue("f_115"); // Oil volume (litres) - TARGET
-        const electricRate = getValue("l_12"); // $/kWh
-        const gasRate = getValue("l_13"); // $/m³
-        const oilRate = getValue("l_16"); // $/litre
+        const electricHeating = getValue("d_114") || 0; // Electric heating (kWh) - TARGET
+        const gasHeating = getValue("h_115") || 0; // Gas heating (m³) - TARGET
+        const oilHeating = getValue("f_115") || 0; // Oil heating (litres) - TARGET
+
+        const electricRate = getValue("l_12") || 0; // $/kWh
+        const gasRate = getValue("l_13") || 0; // $/m³
+        const oilRate = getValue("l_16") || 0; // $/litre
 
         return (
-          heatingDemand * electricRate +
-          gasVolume * gasRate +
-          oilVolume * oilRate
+          electricHeating * electricRate +
+          gasHeating * gasRate +
+          oilHeating * oilRate
         );
       },
       reference: () => {
-        const heatingDemand = getValue("ref_d_114");
-        const gasVolume = getValue("ref_h_115");
-        const oilVolume = getValue("ref_f_115");
-        const electricRate = getValue("ref_l_12");
-        const gasRate = getValue("ref_l_13");
-        const oilRate = getValue("ref_l_16");
+        const electricHeating = getValue("ref_d_114") || 0; // Electric heating (kWh) - REFERENCE
+        const gasHeating = getValue("ref_h_115") || 0; // Gas heating (m³) - REFERENCE
+        const oilHeating = getValue("ref_f_115") || 0; // Oil heating (litres) - REFERENCE
+
+        const electricRate = getValue("ref_l_12") || 0; // $/kWh
+        const gasRate = getValue("ref_l_13") || 0; // $/m³
+        const oilRate = getValue("ref_l_16") || 0; // $/litre
 
         return (
-          heatingDemand * electricRate +
-          gasVolume * gasRate +
-          oilVolume * oilRate
+          electricHeating * electricRate +
+          gasHeating * gasRate +
+          oilHeating * oilRate
         );
       },
       savings: function () {
@@ -679,22 +681,55 @@ window.TEUI.pcFinancials = (function () {
 
     /**
      * TEUI - Total Energy Use Intensity
-     * Cost = TEUI (d_136 kWh/yr) × electricity rate
-     * Simple calculation for Electric/Heatpump buildings
-     * TODO: Add Gas/Oil fuel parsing later for mixed-fuel buildings
+     * Cost = Sum of all fuel costs from Section 04
+     * Handles mixed-fuel buildings (electricity, gas, propane, oil, wood)
      */
     teui: {
       target: () => {
-        const teuiEnergy = getValue("d_136"); // TEUI (kWh/yr) - TARGET
-        const electricRate = getValue("l_12"); // $/kWh - TARGET
+        // Sum all fuel costs from S04 Target columns
+        const electricEnergy = getValue("h_27") || 0; // Electricity (kWh/yr)
+        const gasVolume = getValue("h_28") || 0; // Gas (m³/yr)
+        const propaneVolume = getValue("h_29") || 0; // Propane (kg/yr)
+        const oilVolume = getValue("h_30") || 0; // Oil (litres/yr)
+        const woodVolume = getValue("h_31") || 0; // Wood (m³/yr)
 
-        return teuiEnergy * electricRate;
+        // Get energy prices from S01
+        const electricRate = getValue("l_12") || 0; // $/kWh
+        const gasRate = getValue("l_13") || 0; // $/m³
+        const propaneRate = getValue("l_14") || 0; // $/kg
+        const oilRate = getValue("l_16") || 0; // $/litre
+        const woodRate = getValue("l_15") || 0; // $/m³
+
+        return (
+          electricEnergy * electricRate +
+          gasVolume * gasRate +
+          propaneVolume * propaneRate +
+          oilVolume * oilRate +
+          woodVolume * woodRate
+        );
       },
       reference: () => {
-        const teuiEnergy = getValue("ref_d_136");
-        const electricRate = getValue("ref_l_12");
+        // Sum all fuel costs from S04 Reference columns
+        const electricEnergy = getValue("ref_h_27") || 0; // Electricity (kWh/yr)
+        const gasVolume = getValue("ref_h_28") || 0; // Gas (m³/yr)
+        const propaneVolume = getValue("ref_h_29") || 0; // Propane (kg/yr)
+        const oilVolume = getValue("ref_h_30") || 0; // Oil (litres/yr)
+        const woodVolume = getValue("ref_h_31") || 0; // Wood (m³/yr)
 
-        return teuiEnergy * electricRate;
+        // Get energy prices from S01 Reference
+        const electricRate = getValue("ref_l_12") || 0; // $/kWh
+        const gasRate = getValue("ref_l_13") || 0; // $/m³
+        const propaneRate = getValue("ref_l_14") || 0; // $/kg
+        const oilRate = getValue("ref_l_16") || 0; // $/litre
+        const woodRate = getValue("ref_l_15") || 0; // $/m³
+
+        return (
+          electricEnergy * electricRate +
+          gasVolume * gasRate +
+          propaneVolume * propaneRate +
+          oilVolume * oilRate +
+          woodVolume * woodRate
+        );
       },
       savings: function () {
         const delta = this.reference() - this.target();
