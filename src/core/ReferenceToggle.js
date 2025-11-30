@@ -34,44 +34,145 @@ TEUI.ReferenceToggle = (function () {
    */
   const FIELD_CLASSIFICATION = {
     // Row 1-10
-    'd_12': 'C', 'd_13': 'C', 'd_14': 'A', 'd_15': 'C', 'h_12': 'C',
-    'h_13': 'C', 'h_14': 'A', 'h_15': 'G', 'i_16': 'A', 'i_17': 'A',
+    d_12: "C",
+    d_13: "C",
+    d_14: "A",
+    d_15: "C",
+    h_12: "C",
+    h_13: "C",
+    h_14: "A",
+    h_15: "G",
+    i_16: "A",
+    i_17: "A",
     // Row 11-20
-    'l_12': 'A', 'l_13': 'A', 'l_14': 'A', 'l_15': 'A', 'l_16': 'A',
-    'd_19': 'G', 'h_19': 'G', 'h_20': 'G', 'h_21': 'G', 'i_21': 'G',
+    l_12: "A",
+    l_13: "A",
+    l_14: "A",
+    l_15: "A",
+    l_16: "A",
+    d_19: "G",
+    h_19: "G",
+    h_20: "G",
+    h_21: "G",
+    i_21: "G",
     // Row 21-30
-    'm_19': 'G', 'l_20': 'G', 'l_21': 'G', 'l_24': 'G', 'd_27': 'A',
-    'd_28': 'A', 'd_29': 'A', 'd_30': 'A', 'd_31': 'A', 'l_28': 'A',
+    m_19: "G",
+    l_20: "G",
+    l_21: "G",
+    l_24: "G",
+    d_27: "A",
+    d_28: "A",
+    d_29: "A",
+    d_30: "A",
+    d_31: "A",
+    l_28: "A",
     // Row 31-40
-    'l_29': 'A', 'l_30': 'A', 'l_31': 'A', 'h_35': 'C', 'd_39': 'C',
-    'i_41': 'C', 'd_44': 'A', 'd_45': 'A', 'd_46': 'A', 'i_44': 'A',
+    l_29: "A",
+    l_30: "A",
+    l_31: "A",
+    h_35: "C",
+    d_39: "C",
+    i_41: "C",
+    d_44: "A",
+    d_45: "A",
+    d_46: "A",
+    i_44: "A",
     // Row 41-50
-    'k_45': 'A', 'i_46': 'A', 'm_43': 'A', 'd_49': 'C', 'e_49': 'C',
-    'e_50': 'C', 'd_51': 'C', 'd_52': 'C', 'd_53': 'C', 'k_52': 'C',
+    k_45: "A",
+    i_46: "A",
+    m_43: "A",
+    d_49: "C",
+    e_49: "C",
+    e_50: "C",
+    d_51: "C",
+    d_52: "C",
+    d_53: "C",
+    k_52: "C",
     // Row 51-60
-    'd_56': 'C', 'd_57': 'C', 'd_58': 'C', 'd_59': 'C', 'i_59': 'C',
-    'd_63': 'C', 'g_63': 'G', 'd_64': 'G', 'd_66': 'G', 'd_68': 'G',
+    d_56: "C",
+    d_57: "C",
+    d_58: "C",
+    d_59: "C",
+    i_59: "C",
+    d_63: "C",
+    g_63: "G",
+    d_64: "G",
+    d_66: "G",
+    d_68: "G",
     // Row 61-70
-    'g_67': 'G', 'd_73': 'G', 'd_74': 'G', 'd_75': 'G', 'd_76': 'G',
-    'd_77': 'G', 'd_78': 'G', 'e_73': 'G', 'e_74': 'G', 'e_75': 'G',
+    g_67: "G",
+    d_73: "G",
+    d_74: "G",
+    d_75: "G",
+    d_76: "G",
+    d_77: "G",
+    d_78: "G",
+    e_73: "G",
+    e_74: "G",
+    e_75: "G",
     // Row 71-80
-    'e_76': 'G', 'e_77': 'G', 'e_78': 'G', 'f_73': 'C', 'f_74': 'C',
-    'f_75': 'C', 'f_76': 'C', 'f_77': 'C', 'f_78': 'C', 'g_73': 'G',
+    e_76: "G",
+    e_77: "G",
+    e_78: "G",
+    f_73: "C",
+    f_74: "C",
+    f_75: "C",
+    f_76: "C",
+    f_77: "C",
+    f_78: "C",
+    g_73: "G",
     // Row 81-90
-    'g_74': 'G', 'g_75': 'G', 'g_76': 'G', 'g_77': 'G', 'g_78': 'G',
-    'h_73': 'G', 'h_74': 'G', 'h_75': 'G', 'h_76': 'G', 'h_77': 'G',
+    g_74: "G",
+    g_75: "G",
+    g_76: "G",
+    g_77: "G",
+    g_78: "G",
+    h_73: "G",
+    h_74: "G",
+    h_75: "G",
+    h_76: "G",
+    h_77: "G",
     // Row 91-100
-    'h_78': 'G', 'd_80': 'C', 'd_85': 'G', 'f_85': 'C', 'd_86': 'C',
-    'f_86': 'C', 'd_87': 'C', 'f_87': 'C', 'g_88': 'C', 'g_89': 'C',
+    h_78: "G",
+    d_80: "C",
+    d_85: "G",
+    f_85: "C",
+    d_86: "C",
+    f_86: "C",
+    d_87: "C",
+    f_87: "C",
+    g_88: "C",
+    g_89: "C",
     // Row 101-110
-    'g_90': 'C', 'g_91': 'C', 'g_92': 'C', 'g_93': 'C', 'd_94': 'G',
-    'f_94': 'C', 'd_95': 'G', 'f_95': 'C', 'd_96': 'G', 'd_97': 'C',
+    g_90: "C",
+    g_91: "C",
+    g_92: "C",
+    g_93: "C",
+    d_94: "G",
+    f_94: "C",
+    d_95: "G",
+    f_95: "C",
+    d_96: "G",
+    d_97: "C",
     // Row 111-120
-    'd_103': 'C', 'g_103': 'C', 'd_105': 'G', 'd_108': 'C', 'g_109': 'C',
-    'd_113': 'C', 'f_113': 'C', 'j_115': 'C', 'j_116': 'C', 'd_116': 'C',
+    d_103: "C",
+    g_103: "C",
+    d_105: "G",
+    d_108: "C",
+    g_109: "C",
+    d_113: "C",
+    f_113: "C",
+    j_115: "C",
+    j_116: "C",
+    d_116: "C",
     // Row 121-127
-    'd_118': 'C', 'g_118': 'C', 'l_118': 'C', 'd_119': 'C', 'l_119': 'C',
-    'k_120': 'C', 'd_142': 'C'
+    d_118: "C",
+    g_118: "C",
+    l_118: "C",
+    d_119: "C",
+    l_119: "C",
+    k_120: "C",
+    d_142: "C",
   };
 
   /**
@@ -578,7 +679,9 @@ TEUI.ReferenceToggle = (function () {
         const classification = getFieldClassification(fieldId);
         if (!classification) {
           // Field not in classification map - skip
-          console.warn(`[ReferenceToggle] Field ${fieldId} not in G/C/A classification map`);
+          console.warn(
+            `[ReferenceToggle] Field ${fieldId} not in G/C/A classification map`
+          );
           return;
         }
 
@@ -628,7 +731,7 @@ TEUI.ReferenceToggle = (function () {
             if (element) {
               element.classList.add("mirror-highlight");
               // Also highlight parent td if it exists
-              const td = element.closest('td');
+              const td = element.closest("td");
               if (td) {
                 td.classList.add("mirror-highlight");
               }
@@ -653,7 +756,9 @@ TEUI.ReferenceToggle = (function () {
           `[ReferenceToggle] ⚠️  Could not find DOM elements for ${notFoundCount} fields`
         );
         if (notFoundFields.length <= 10) {
-          console.warn(`[ReferenceToggle] Not found: [${notFoundFields.join(", ")}]`);
+          console.warn(
+            `[ReferenceToggle] Not found: [${notFoundFields.join(", ")}]`
+          );
         }
       }
 
@@ -673,9 +778,11 @@ TEUI.ReferenceToggle = (function () {
     if (window.TEUI.ReferenceToggle._highlightRemovalHandler) {
       if (window.TEUI?.Clock) {
         // Try to remove from Clock if it exists
-        window.TEUI.Clock._calculationCompleteCallbacks =
-          (window.TEUI.Clock._calculationCompleteCallbacks || [])
-            .filter(cb => cb !== window.TEUI.ReferenceToggle._highlightRemovalHandler);
+        window.TEUI.Clock._calculationCompleteCallbacks = (
+          window.TEUI.Clock._calculationCompleteCallbacks || []
+        ).filter(
+          cb => cb !== window.TEUI.ReferenceToggle._highlightRemovalHandler
+        );
       }
       window.TEUI.ReferenceToggle._highlightRemovalHandler = null;
     }
@@ -686,7 +793,8 @@ TEUI.ReferenceToggle = (function () {
         "[ReferenceToggle] Calculation complete - removing mirror highlights"
       );
 
-      const highlightedElements = document.querySelectorAll(".mirror-highlight");
+      const highlightedElements =
+        document.querySelectorAll(".mirror-highlight");
       highlightedElements.forEach(el => {
         // Add fade-out class for smooth transition
         el.classList.add("mirror-highlight-fade-out");
@@ -700,7 +808,9 @@ TEUI.ReferenceToggle = (function () {
       // Remove this callback after firing once
       if (window.TEUI?.Clock?._calculationCompleteCallbacks) {
         window.TEUI.Clock._calculationCompleteCallbacks =
-          window.TEUI.Clock._calculationCompleteCallbacks.filter(cb => cb !== removeHighlights);
+          window.TEUI.Clock._calculationCompleteCallbacks.filter(
+            cb => cb !== removeHighlights
+          );
       }
       window.TEUI.ReferenceToggle._highlightRemovalHandler = null;
     };
@@ -720,7 +830,9 @@ TEUI.ReferenceToggle = (function () {
       );
     } else {
       // Fallback: If Clock not available, use StateManager listener as proxy for field changes
-      console.warn("[ReferenceToggle] Clock not available - using StateManager listener as fallback");
+      console.warn(
+        "[ReferenceToggle] Clock not available - using StateManager listener as fallback"
+      );
       const stateChangeHandler = () => {
         removeHighlights();
         window.TEUI.StateManager.removeListener(stateChangeHandler);
@@ -773,9 +885,20 @@ TEUI.ReferenceToggle = (function () {
    */
   function refreshPatternAUIs() {
     const patternASections = [
-      'sect02', 'sect03', 'sect04', 'sect05', 'sect06',
-      'sect07', 'sect08', 'sect09', 'sect10', 'sect11',
-      'sect12', 'sect13', 'sect14', 'sect15'
+      "sect02",
+      "sect03",
+      "sect04",
+      "sect05",
+      "sect06",
+      "sect07",
+      "sect08",
+      "sect09",
+      "sect10",
+      "sect11",
+      "sect12",
+      "sect13",
+      "sect14",
+      "sect15",
     ];
 
     patternASections.forEach(sectionId => {
@@ -789,7 +912,7 @@ TEUI.ReferenceToggle = (function () {
       }
     });
 
-    console.log('[ReferenceToggle] ✅ Pattern A section UIs refreshed');
+    console.log("[ReferenceToggle] ✅ Pattern A section UIs refreshed");
   }
 
   /**
@@ -801,24 +924,29 @@ TEUI.ReferenceToggle = (function () {
    */
   function mirrorGeometry() {
     try {
-      console.log('[ReferenceToggle] 🔗 Mirror Geometry: Starting...');
+      console.log("[ReferenceToggle] 🔗 Mirror Geometry: Starting...");
 
       // Get all field IDs using FieldManager (proven approach)
-      const allFieldsObj = window.TEUI?.FieldManager?.getAllUserEditableFields?.() || {};
+      const allFieldsObj =
+        window.TEUI?.FieldManager?.getAllUserEditableFields?.() || {};
       const allFields = Object.keys(allFieldsObj); // Convert object to array of field IDs
 
       if (allFields.length === 0) {
-        console.error('[ReferenceToggle] Could not get field list from FieldManager');
+        console.error(
+          "[ReferenceToggle] Could not get field list from FieldManager"
+        );
         return;
       }
 
       // Filter to geometry fields only (exclude performance fields)
       const geometryFields = allFields.filter(fieldId => {
-        return shouldCopyFieldForMode(fieldId, 'geometry');
+        return shouldCopyFieldForMode(fieldId, "geometry");
       });
 
       const skippedCount = allFields.length - geometryFields.length;
-      console.log(`[ReferenceToggle] Copying ${geometryFields.length} geometry fields, skipping ${skippedCount} performance fields`);
+      console.log(
+        `[ReferenceToggle] Copying ${geometryFields.length} geometry fields, skipping ${skippedCount} performance fields`
+      );
 
       // QUARANTINE START - Use FileHandler pattern
       window.TEUI.StateManager.muteListeners();
@@ -826,25 +954,36 @@ TEUI.ReferenceToggle = (function () {
       try {
         let copiedCount = 0;
         geometryFields.forEach(fieldId => {
-          if (fieldId === 'd_13') return; // Never copy building standard
+          if (fieldId === "d_13") return; // Never copy building standard
 
           const targetValue = window.TEUI.StateManager.getValue(fieldId);
-          if (targetValue !== null && targetValue !== undefined && targetValue !== '') {
+          if (
+            targetValue !== null &&
+            targetValue !== undefined &&
+            targetValue !== ""
+          ) {
             // Write to Reference state with ref_ prefix
-            window.TEUI.StateManager.setValue(`ref_${fieldId}`, targetValue, 'mirror');
+            window.TEUI.StateManager.setValue(
+              `ref_${fieldId}`,
+              targetValue,
+              "mirror"
+            );
             copiedCount++;
           }
         });
 
-        console.log(`[ReferenceToggle] ✅ Copied ${copiedCount} geometry values to Reference state via StateManager`);
+        console.log(
+          `[ReferenceToggle] ✅ Copied ${copiedCount} geometry values to Reference state via StateManager`
+        );
 
         // Sync Pattern A sections (critical for UI updates!)
         if (window.TEUI?.FileHandler?.syncPatternASections) {
           window.TEUI.FileHandler.syncPatternASections();
         } else {
-          console.warn('[ReferenceToggle] FileHandler.syncPatternASections not available - UI may not update');
+          console.warn(
+            "[ReferenceToggle] FileHandler.syncPatternASections not available - UI may not update"
+          );
         }
-
       } finally {
         // QUARANTINE END - Always unmute
         window.TEUI.StateManager.unmuteListeners();
@@ -859,14 +998,17 @@ TEUI.ReferenceToggle = (function () {
       refreshPatternAUIs();
 
       // Apply highlights
-      applyMirrorHighlights(geometryFields, 'geometry');
+      applyMirrorHighlights(geometryFields, "geometry");
 
-      console.log('🔗 Mirror Geometry: Complete');
-      console.log('✅ Geometry fields copied (areas, volumes, location, occupancy)');
-      console.log('❌ Performance fields skipped (RSI values, equipment efficiencies)');
-
+      console.log("🔗 Mirror Geometry: Complete");
+      console.log(
+        "✅ Geometry fields copied (areas, volumes, location, occupancy)"
+      );
+      console.log(
+        "❌ Performance fields skipped (RSI values, equipment efficiencies)"
+      );
     } catch (error) {
-      console.error('[ReferenceToggle] Mirror Geometry failed:', error);
+      console.error("[ReferenceToggle] Mirror Geometry failed:", error);
       // Ensure listeners are unmuted even on error
       if (window.TEUI?.StateManager?.unmuteListeners) {
         window.TEUI.StateManager.unmuteListeners();
@@ -882,22 +1024,27 @@ TEUI.ReferenceToggle = (function () {
    */
   function mirrorGeometryPlusCode() {
     try {
-      console.log('[ReferenceToggle] 🔗 Mirror Geometry + Code: Starting...');
+      console.log("[ReferenceToggle] 🔗 Mirror Geometry + Code: Starting...");
 
       // Step 1: Copy geometry fields (same as mirrorGeometry, but don't call it to track all fields for highlighting)
-      const allFieldsObj = window.TEUI?.FieldManager?.getAllUserEditableFields?.() || {};
+      const allFieldsObj =
+        window.TEUI?.FieldManager?.getAllUserEditableFields?.() || {};
       const allFields = Object.keys(allFieldsObj); // Convert object to array of field IDs
 
       if (allFields.length === 0) {
-        console.error('[ReferenceToggle] Could not get field list from FieldManager');
+        console.error(
+          "[ReferenceToggle] Could not get field list from FieldManager"
+        );
         return;
       }
 
       const geometryFields = allFields.filter(fieldId => {
-        return shouldCopyFieldForMode(fieldId, 'geometry');
+        return shouldCopyFieldForMode(fieldId, "geometry");
       });
 
-      console.log(`[ReferenceToggle] Step 1: Copying ${geometryFields.length} geometry fields`);
+      console.log(
+        `[ReferenceToggle] Step 1: Copying ${geometryFields.length} geometry fields`
+      );
 
       // QUARANTINE START
       window.TEUI.StateManager.muteListeners();
@@ -906,40 +1053,57 @@ TEUI.ReferenceToggle = (function () {
         // Copy geometry fields
         let geomCopiedCount = 0;
         geometryFields.forEach(fieldId => {
-          if (fieldId === 'd_13') return; // Never copy building standard
+          if (fieldId === "d_13") return; // Never copy building standard
 
           const targetValue = window.TEUI.StateManager.getValue(fieldId);
-          if (targetValue !== null && targetValue !== undefined && targetValue !== '') {
-            window.TEUI.StateManager.setValue(`ref_${fieldId}`, targetValue, 'mirror');
+          if (
+            targetValue !== null &&
+            targetValue !== undefined &&
+            targetValue !== ""
+          ) {
+            window.TEUI.StateManager.setValue(
+              `ref_${fieldId}`,
+              targetValue,
+              "mirror"
+            );
             geomCopiedCount++;
           }
         });
 
-        console.log(`[ReferenceToggle] ✅ Copied ${geomCopiedCount} geometry values`);
+        console.log(
+          `[ReferenceToggle] ✅ Copied ${geomCopiedCount} geometry values`
+        );
 
         // Step 2: Overlay ReferenceValues.js code minimums
         const standard =
-          window.TEUI.StateManager.getValue('ref_d_13') ||
-          window.TEUI.StateManager.getValue('d_13') ||
-          'OBC SB12 3.1.1.2.C1';
+          window.TEUI.StateManager.getValue("ref_d_13") ||
+          window.TEUI.StateManager.getValue("d_13") ||
+          "OBC SB12 3.1.1.2.C1";
 
         const refValues = window.TEUI?.ReferenceValues?.[standard] || {};
 
-        console.log(`[ReferenceToggle] Step 2: Applying code minimums from "${standard}"`);
+        console.log(
+          `[ReferenceToggle] Step 2: Applying code minimums from "${standard}"`
+        );
 
         let codeCopiedCount = 0;
         Object.entries(refValues).forEach(([fieldId, value]) => {
-          window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, 'reference');
+          window.TEUI.StateManager.setValue(
+            `ref_${fieldId}`,
+            value,
+            "reference"
+          );
           codeCopiedCount++;
         });
 
-        console.log(`[ReferenceToggle] ✅ Applied ${codeCopiedCount} code minimum values`);
+        console.log(
+          `[ReferenceToggle] ✅ Applied ${codeCopiedCount} code minimum values`
+        );
 
         // Sync Pattern A sections
         if (window.TEUI?.FileHandler?.syncPatternASections) {
           window.TEUI.FileHandler.syncPatternASections();
         }
-
       } finally {
         // QUARANTINE END - Always unmute
         window.TEUI.StateManager.unmuteListeners();
@@ -954,13 +1118,14 @@ TEUI.ReferenceToggle = (function () {
       refreshPatternAUIs();
 
       // Highlight G + C fields
-      applyMirrorHighlights(allFields, 'geometry-plus-code');
+      applyMirrorHighlights(allFields, "geometry-plus-code");
 
-      console.log('🔗 Mirror Geometry + Code: Complete');
-      console.log('📋 Reference model now uses Target geometry with code minimum performance');
-
+      console.log("🔗 Mirror Geometry + Code: Complete");
+      console.log(
+        "📋 Reference model now uses Target geometry with code minimum performance"
+      );
     } catch (error) {
-      console.error('[ReferenceToggle] Mirror Geometry + Code failed:', error);
+      console.error("[ReferenceToggle] Mirror Geometry + Code failed:", error);
       // Ensure listeners are unmuted even on error
       if (window.TEUI?.StateManager?.unmuteListeners) {
         window.TEUI.StateManager.unmuteListeners();
@@ -977,18 +1142,23 @@ TEUI.ReferenceToggle = (function () {
    */
   function mirrorAllInputs() {
     try {
-      console.log('[ReferenceToggle] 🔗 Mirror All Inputs: Starting...');
+      console.log("[ReferenceToggle] 🔗 Mirror All Inputs: Starting...");
 
       // Get all field IDs using FieldManager (proven approach)
-      const allFieldsObj = window.TEUI?.FieldManager?.getAllUserEditableFields?.() || {};
+      const allFieldsObj =
+        window.TEUI?.FieldManager?.getAllUserEditableFields?.() || {};
       const allFields = Object.keys(allFieldsObj); // Convert object to array of field IDs
 
       if (allFields.length === 0) {
-        console.error('[ReferenceToggle] Could not get field list from FieldManager');
+        console.error(
+          "[ReferenceToggle] Could not get field list from FieldManager"
+        );
         return;
       }
 
-      console.log(`[ReferenceToggle] Copying ${allFields.length} fields (excluding d_13)`);
+      console.log(
+        `[ReferenceToggle] Copying ${allFields.length} fields (excluding d_13)`
+      );
 
       // QUARANTINE START - Use FileHandler pattern
       window.TEUI.StateManager.muteListeners();
@@ -996,25 +1166,36 @@ TEUI.ReferenceToggle = (function () {
       try {
         let copiedCount = 0;
         allFields.forEach(fieldId => {
-          if (fieldId === 'd_13') return; // Never copy building standard
+          if (fieldId === "d_13") return; // Never copy building standard
 
           const targetValue = window.TEUI.StateManager.getValue(fieldId);
-          if (targetValue !== null && targetValue !== undefined && targetValue !== '') {
+          if (
+            targetValue !== null &&
+            targetValue !== undefined &&
+            targetValue !== ""
+          ) {
             // Write to Reference state with ref_ prefix
-            window.TEUI.StateManager.setValue(`ref_${fieldId}`, targetValue, 'mirror');
+            window.TEUI.StateManager.setValue(
+              `ref_${fieldId}`,
+              targetValue,
+              "mirror"
+            );
             copiedCount++;
           }
         });
 
-        console.log(`[ReferenceToggle] ✅ Perfect clone: ${copiedCount} fields copied to Reference state via StateManager`);
+        console.log(
+          `[ReferenceToggle] ✅ Perfect clone: ${copiedCount} fields copied to Reference state via StateManager`
+        );
 
         // Sync Pattern A sections (critical for UI updates!)
         if (window.TEUI?.FileHandler?.syncPatternASections) {
           window.TEUI.FileHandler.syncPatternASections();
         } else {
-          console.warn('[ReferenceToggle] FileHandler.syncPatternASections not available - UI may not update');
+          console.warn(
+            "[ReferenceToggle] FileHandler.syncPatternASections not available - UI may not update"
+          );
         }
-
       } finally {
         // QUARANTINE END - Always unmute
         window.TEUI.StateManager.unmuteListeners();
@@ -1029,14 +1210,17 @@ TEUI.ReferenceToggle = (function () {
       refreshPatternAUIs();
 
       // Apply highlights to all fields
-      applyMirrorHighlights(allFields, 'all');
+      applyMirrorHighlights(allFields, "all");
 
-      console.log('🔗 Mirror All Inputs: Complete');
-      console.log('✅ Perfect clone created - Reference model is now identical to Target model');
-      console.log('ℹ️  Excluded: d_13 (building standard) - user can set Reference standard independently');
-
+      console.log("🔗 Mirror All Inputs: Complete");
+      console.log(
+        "✅ Perfect clone created - Reference model is now identical to Target model"
+      );
+      console.log(
+        "ℹ️  Excluded: d_13 (building standard) - user can set Reference standard independently"
+      );
     } catch (error) {
-      console.error('[ReferenceToggle] Mirror All Inputs failed:', error);
+      console.error("[ReferenceToggle] Mirror All Inputs failed:", error);
       // Ensure listeners are unmuted even on error
       if (window.TEUI?.StateManager?.unmuteListeners) {
         window.TEUI.StateManager.unmuteListeners();

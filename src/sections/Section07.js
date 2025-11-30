@@ -1127,14 +1127,18 @@ window.TEUI.SectionModules.sect07 = (function () {
       // 0.0373 GJ/m³ × 277.7778 kWh/GJ = 10.357 kWh/m³
       const conversionFactor = 0.0373 * 277.7778;
       gasVolume =
-        efficiency > 0 ? netDemandAfterRecovery / (conversionFactor * efficiency) : 0;
+        efficiency > 0
+          ? netDemandAfterRecovery / (conversionFactor * efficiency)
+          : 0;
       console.log(
         `[S07] 🔥 Gas calc: demand=${netDemandAfterRecovery}, efficiency=${efficiency} → e_51=${gasVolume}, k_54=0 (cleared)`
       );
     } else if (systemType === "Oil") {
       const conversionFactor = 10.18; // 36.72 * 0.2777778
       oilVolume =
-        efficiency > 0 ? netDemandAfterRecovery / (conversionFactor * efficiency) : 0;
+        efficiency > 0
+          ? netDemandAfterRecovery / (conversionFactor * efficiency)
+          : 0;
       console.log(
         `[S07] 🛢️ Oil calc: demand=${netDemandAfterRecovery}, efficiency=${efficiency} → k_54=${oilVolume}, e_51=0 (cleared)`
       );
@@ -1554,8 +1558,13 @@ window.TEUI.SectionModules.sect07 = (function () {
         const numValue = parseFloat(value);
 
         // ✅ Enforce Gas/Oil limits (defensive validation - slider already constrained by min/max)
-        if ((systemType === "Gas" || systemType === "Oil") && (numValue < 50 || numValue > 98)) {
-          console.warn(`[S07] ${systemType} efficiency ${numValue}% outside allowed range (50-98%)`);
+        if (
+          (systemType === "Gas" || systemType === "Oil") &&
+          (numValue < 50 || numValue > 98)
+        ) {
+          console.warn(
+            `[S07] ${systemType} efficiency ${numValue}% outside allowed range (50-98%)`
+          );
         }
       }
 
@@ -1603,7 +1612,9 @@ window.TEUI.SectionModules.sect07 = (function () {
 
       // ✅ NEW: Validate preserved value is within Gas/Oil range
       if (preservedValue && (preservedValue < 50 || preservedValue > 98)) {
-        console.warn(`[S07] Preserved value ${preservedValue}% outside Gas/Oil range (50-98%), resetting to 90%`);
+        console.warn(
+          `[S07] Preserved value ${preservedValue}% outside Gas/Oil range (50-98%), resetting to 90%`
+        );
         newValue = 90;
       }
     } else if (selectedSource === "Electric") {

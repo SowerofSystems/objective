@@ -559,14 +559,16 @@ class ExcelMapper {
             // ✅ S07 CONSOLIDATION: Legacy k_52 (AFUE) → d_52 (%) conversion for Gas/Oil systems
             if (fieldId === "k_52" && extractedValue) {
               // Check if d_51 (system type) indicates Gas or Oil
-              const d_51Value = mappedData["d_51"];
+              const d_51Value = importedData["d_51"];
               if (d_51Value === "Gas" || d_51Value === "Oil") {
                 // Convert AFUE decimal (0.94) to percentage (94%) for d_52 slider
                 const k_52Decimal = parseFloat(extractedValue);
                 if (!isNaN(k_52Decimal)) {
                   const d_52Percentage = Math.round(k_52Decimal * 100);
-                  mappedData["d_52"] = d_52Percentage.toString();
-                  console.log(`[ExcelMapper] Legacy k_52=${extractedValue} converted to d_52=${d_52Percentage}% for ${d_51Value} system`);
+                  importedData["d_52"] = d_52Percentage.toString();
+                  console.log(
+                    `[ExcelMapper] Legacy k_52=${extractedValue} converted to d_52=${d_52Percentage}% for ${d_51Value} system`
+                  );
                 }
               }
               // Note: k_52 will still be stored but ignored by Section07 calculations
@@ -903,14 +905,16 @@ class ExcelMapper {
             // ✅ S07 CONSOLIDATION: Legacy ref_k_52 (AFUE) → ref_d_52 (%) conversion for Gas/Oil systems
             if (baseFieldId === "k_52" && extractedValue) {
               // Check if ref_d_51 (system type) indicates Gas or Oil
-              const ref_d_51Value = referenceMappedData["d_51"];
+              const ref_d_51Value = importedData["ref_d_51"];
               if (ref_d_51Value === "Gas" || ref_d_51Value === "Oil") {
                 // Convert AFUE decimal (0.90) to percentage (90%) for ref_d_52 slider
                 const ref_k_52Decimal = parseFloat(extractedValue);
                 if (!isNaN(ref_k_52Decimal)) {
                   const ref_d_52Percentage = Math.round(ref_k_52Decimal * 100);
-                  referenceMappedData["d_52"] = ref_d_52Percentage.toString();
-                  console.log(`[ExcelMapper] Legacy ref_k_52=${extractedValue} converted to ref_d_52=${ref_d_52Percentage}% for ${ref_d_51Value} system`);
+                  importedData["ref_d_52"] = ref_d_52Percentage.toString();
+                  console.log(
+                    `[ExcelMapper] Legacy ref_k_52=${extractedValue} converted to ref_d_52=${ref_d_52Percentage}% for ${ref_d_51Value} system`
+                  );
                 }
               }
               // Note: ref_k_52 will still be stored but ignored by Section07 calculations

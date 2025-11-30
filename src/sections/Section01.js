@@ -1323,7 +1323,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     toggleSwitch.style.cssText =
       "z-index: 111; position: relative; width: 40px; height: 20px; background-color: #ccc; border-radius: 10px; cursor: pointer; margin-left: 15px; margin-right: 15px;";
 
-      // Add tooltip
+    // Add tooltip
     toggleSwitch.title = "Reference / Display Toggle";
 
     const slider = document.createElement("div");

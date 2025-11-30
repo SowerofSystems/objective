@@ -135,12 +135,18 @@ window.TEUI.Clock = {
     this.endTiming(isInitial);
 
     // Fire calculation complete callbacks (e.g., for mirror highlight removal)
-    if (this._calculationCompleteCallbacks && this._calculationCompleteCallbacks.length > 0) {
+    if (
+      this._calculationCompleteCallbacks &&
+      this._calculationCompleteCallbacks.length > 0
+    ) {
       this._calculationCompleteCallbacks.forEach(callback => {
         try {
           callback();
         } catch (error) {
-          console.error('[Clock] Error in calculation complete callback:', error);
+          console.error(
+            "[Clock] Error in calculation complete callback:",
+            error
+          );
         }
       });
     }

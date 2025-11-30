@@ -627,7 +627,7 @@ window.TEUI.SectionModules.sect04 = (function () {
       },
     },
 
-        // Row 36: T.3.9 Primary Energy Intensity
+    // Row 36: T.3.9 Primary Energy Intensity
     36: {
       id: "T.3.9",
       rowId: "T.3.9",
@@ -1451,9 +1451,8 @@ window.TEUI.SectionModules.sect04 = (function () {
     const l_33 = window.TEUI.parseNumeric(ModeManager.getValue("l_33")) || 0;
 
     // Excel IFS logic
-    const l_34 = d_14 === "Targeted Use"
-      ? (j_27 * l_33) / 1000
-      : (f_27 * l_33) / 1000;
+    const l_34 =
+      d_14 === "Targeted Use" ? (j_27 * l_33) / 1000 : (f_27 * l_33) / 1000;
 
     setFieldValue("l_34", l_34);
   }
@@ -1666,9 +1665,17 @@ window.TEUI.SectionModules.sect04 = (function () {
               // Mode-aware: separate flags for Target and Reference
               if (fieldId === "l_33") {
                 if (ModeManager.currentMode === "target") {
-                  window.TEUI.StateManager.setValue("_l_33_user_edited", "true", "calculated");
+                  window.TEUI.StateManager.setValue(
+                    "_l_33_user_edited",
+                    "true",
+                    "calculated"
+                  );
                 } else {
-                  window.TEUI.StateManager.setValue("_ref_l_33_user_edited", "true", "calculated");
+                  window.TEUI.StateManager.setValue(
+                    "_ref_l_33_user_edited",
+                    "true",
+                    "calculated"
+                  );
                 }
               }
 
@@ -1758,7 +1765,8 @@ window.TEUI.SectionModules.sect04 = (function () {
       const updateNuclearWasteFactorTarget = () => {
         const province = window.TEUI.StateManager.getValue("d_19") || "";
         const newValue = province === "ON" ? "0.0096" : "0";
-        const userEditedFlag = window.TEUI.StateManager.getValue("_l_33_user_edited");
+        const userEditedFlag =
+          window.TEUI.StateManager.getValue("_l_33_user_edited");
 
         if (!userEditedFlag) {
           // Update Target state
@@ -1784,7 +1792,9 @@ window.TEUI.SectionModules.sect04 = (function () {
       const updateNuclearWasteFactorReference = () => {
         const province = window.TEUI.StateManager.getValue("ref_d_19") || "";
         const newValue = province === "ON" ? "0.0096" : "0";
-        const userEditedFlag = window.TEUI.StateManager.getValue("_ref_l_33_user_edited");
+        const userEditedFlag = window.TEUI.StateManager.getValue(
+          "_ref_l_33_user_edited"
+        );
 
         if (!userEditedFlag) {
           // Update Reference state
@@ -1807,8 +1817,14 @@ window.TEUI.SectionModules.sect04 = (function () {
         }
       };
 
-      window.TEUI.StateManager.addListener("d_19", updateNuclearWasteFactorTarget);
-      window.TEUI.StateManager.addListener("ref_d_19", updateNuclearWasteFactorReference);
+      window.TEUI.StateManager.addListener(
+        "d_19",
+        updateNuclearWasteFactorTarget
+      );
+      window.TEUI.StateManager.addListener(
+        "ref_d_19",
+        updateNuclearWasteFactorReference
+      );
     }
   }
 

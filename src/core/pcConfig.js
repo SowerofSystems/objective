@@ -258,7 +258,8 @@ window.TEUI.getAxisValue = function (axis, mode = "target") {
 
   // 🔍 DIAGNOSTIC: Log entry for SHW% and HEAT% axes
   // Enable with: window.TEUI_DEBUG_AXIS_READS = true
-  const isDebugAxis = axis.id === "shw_efficiency" || axis.id === "heating_efficiency";
+  const isDebugAxis =
+    axis.id === "shw_efficiency" || axis.id === "heating_efficiency";
   const debugEnabled = window.TEUI_DEBUG_AXIS_READS === true;
   if (isDebugAxis && debugEnabled) {
     console.log(`[pcConfig] getAxisValue: axis="${axis.id}", mode="${mode}"`);
@@ -285,8 +286,12 @@ window.TEUI.getAxisValue = function (axis, mode = "target") {
     const selectorValue = stateManager.getValue(selectorField);
 
     if (isDebugAxis && debugEnabled) {
-      console.log(`[pcConfig]   selectorField="${selectorField}", selectorValue="${selectorValue}"`);
-      console.log(`[pcConfig]   primaryField="${primaryField}", altField="${altField}"`);
+      console.log(
+        `[pcConfig]   selectorField="${selectorField}", selectorValue="${selectorValue}"`
+      );
+      console.log(
+        `[pcConfig]   primaryField="${primaryField}", altField="${altField}"`
+      );
     }
 
     // Determine which field to use based on selector value
@@ -313,8 +318,12 @@ window.TEUI.getAxisValue = function (axis, mode = "target") {
     const numValue = parseFloat(rawValue);
 
     if (isDebugAxis && debugEnabled) {
-      console.log(`[pcConfig]   fieldToUse="${fieldToUse}", rawValue="${rawValue}", multiplier=${multiplierToUse}`);
-      const finalValue = multiplierToUse ? numValue * multiplierToUse : numValue;
+      console.log(
+        `[pcConfig]   fieldToUse="${fieldToUse}", rawValue="${rawValue}", multiplier=${multiplierToUse}`
+      );
+      const finalValue = multiplierToUse
+        ? numValue * multiplierToUse
+        : numValue;
       console.log(`[pcConfig]   → RETURN: ${finalValue}`);
     }
 

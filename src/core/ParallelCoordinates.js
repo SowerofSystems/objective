@@ -1385,7 +1385,7 @@ window.TEUI.ParallelCoordinates = (function () {
   }
 
   // ════════════════════════════════════════════════════════════════════════
-  // SECTION 7: OPTIMIZATION ACTION HANDLERS  
+  // SECTION 7: OPTIMIZATION ACTION HANDLERS
   // Button click handlers for Decarbonize, Optimize, Super Optimize, PassivHaus-ify
   // ════════════════════════════════════════════════════════════════════════
 
@@ -1440,31 +1440,38 @@ window.TEUI.ParallelCoordinates = (function () {
 
     if (debugEnabled) {
       console.log("[Decarbonize] === DIAGNOSTIC START ===");
-      console.log(`[Decarbonize] S07 ModeManager.currentMode = "${sect07?.ModeManager?.currentMode || 'N/A'}"`);
+      console.log(
+        `[Decarbonize] S07 ModeManager.currentMode = "${sect07?.ModeManager?.currentMode || "N/A"}"`
+      );
     }
 
-    const stateBefore = debugEnabled ? {
-      target: {
-        d_51: stateManager.getValue("d_51"),
-        d_52: stateManager.getValue("d_52"),
-        k_52: stateManager.getValue("k_52"),
-        d_113: stateManager.getValue("d_113"),
-        f_113: stateManager.getValue("f_113"),
-        j_115: stateManager.getValue("j_115")
-      },
-      reference: {
-        ref_d_51: stateManager.getValue("ref_d_51"),
-        ref_d_52: stateManager.getValue("ref_d_52"),
-        ref_k_52: stateManager.getValue("ref_k_52"),
-        ref_d_113: stateManager.getValue("ref_d_113"),
-        ref_f_113: stateManager.getValue("ref_f_113"),
-        ref_j_115: stateManager.getValue("ref_j_115")
-      }
-    } : null;
+    const stateBefore = debugEnabled
+      ? {
+          target: {
+            d_51: stateManager.getValue("d_51"),
+            d_52: stateManager.getValue("d_52"),
+            k_52: stateManager.getValue("k_52"),
+            d_113: stateManager.getValue("d_113"),
+            f_113: stateManager.getValue("f_113"),
+            j_115: stateManager.getValue("j_115"),
+          },
+          reference: {
+            ref_d_51: stateManager.getValue("ref_d_51"),
+            ref_d_52: stateManager.getValue("ref_d_52"),
+            ref_k_52: stateManager.getValue("ref_k_52"),
+            ref_d_113: stateManager.getValue("ref_d_113"),
+            ref_f_113: stateManager.getValue("ref_f_113"),
+            ref_j_115: stateManager.getValue("ref_j_115"),
+          },
+        }
+      : null;
 
     if (debugEnabled && stateBefore) {
       console.log("[Decarbonize] STATE BEFORE - Target:", stateBefore.target);
-      console.log("[Decarbonize] STATE BEFORE - Reference:", stateBefore.reference);
+      console.log(
+        "[Decarbonize] STATE BEFORE - Reference:",
+        stateBefore.reference
+      );
     }
 
     // ========================================================================
@@ -1487,31 +1494,43 @@ window.TEUI.ParallelCoordinates = (function () {
 
       // Step 1: Set fuel type to Heatpump
       if (sect07?.TargetState) {
-        if (debugEnabled) console.log("[Decarbonize] Step 1a: Setting sect07.TargetState.d_51 = 'Heatpump'");
+        if (debugEnabled)
+          console.log(
+            "[Decarbonize] Step 1a: Setting sect07.TargetState.d_51 = 'Heatpump'"
+          );
         sect07.TargetState.setValue("d_51", "Heatpump");
       }
-      if (debugEnabled) console.log("[Decarbonize] Step 1b: Setting StateManager.d_51 = 'Heatpump'");
+      if (debugEnabled)
+        console.log(
+          "[Decarbonize] Step 1b: Setting StateManager.d_51 = 'Heatpump'"
+        );
       stateManager.setValue("d_51", "Heatpump", "user-modified");
 
       // Step 1b: 🔥 FIX: Update field lock states (enable d_52, disable k_52)
       // This mimics what happens when user manually changes the dropdown
-      const currentWaterMethod = stateManager.getValue("d_49") || "User Defined";
+      const currentWaterMethod =
+        stateManager.getValue("d_49") || "User Defined";
       if (sect07?.updateSection7Visibility) {
         sect07.updateSection7Visibility(currentWaterMethod, "Heatpump");
       }
 
       // Step 2: Let section recalculate with new fuel type
-      if (debugEnabled) console.log("[Decarbonize] Step 2: Calling sect07.calculateAll()");
+      if (debugEnabled)
+        console.log("[Decarbonize] Step 2: Calling sect07.calculateAll()");
       if (sect07?.calculateAll) {
         sect07.calculateAll();
       }
 
       // Step 3: Now set efficiency (d_52 is now the active field for Heatpump)
       if (sect07?.TargetState) {
-        if (debugEnabled) console.log("[Decarbonize] Step 3a: Setting sect07.TargetState.d_52 = '300'");
+        if (debugEnabled)
+          console.log(
+            "[Decarbonize] Step 3a: Setting sect07.TargetState.d_52 = '300'"
+          );
         sect07.TargetState.setValue("d_52", "300");
       }
-      if (debugEnabled) console.log("[Decarbonize] Step 3b: Setting StateManager.d_52 = '300'");
+      if (debugEnabled)
+        console.log("[Decarbonize] Step 3b: Setting StateManager.d_52 = '300'");
       stateManager.setValue("d_52", "300", "user-modified");
 
       console.log("[Decarbonize] SHW: " + d_51 + " → Heatpump @ 300% COP");
@@ -1627,7 +1646,7 @@ window.TEUI.ParallelCoordinates = (function () {
           k_52: stateManager.getValue("k_52"),
           d_113: stateManager.getValue("d_113"),
           f_113: stateManager.getValue("f_113"),
-          j_115: stateManager.getValue("j_115")
+          j_115: stateManager.getValue("j_115"),
         },
         reference: {
           ref_d_51: stateManager.getValue("ref_d_51"),
@@ -1635,16 +1654,23 @@ window.TEUI.ParallelCoordinates = (function () {
           ref_k_52: stateManager.getValue("ref_k_52"),
           ref_d_113: stateManager.getValue("ref_d_113"),
           ref_f_113: stateManager.getValue("ref_f_113"),
-          ref_j_115: stateManager.getValue("ref_j_115")
-        }
+          ref_j_115: stateManager.getValue("ref_j_115"),
+        },
       };
       console.log("[Decarbonize] STATE AFTER - Target:", stateAfter.target);
-      console.log("[Decarbonize] STATE AFTER - Reference (should be UNCHANGED):", stateAfter.reference);
+      console.log(
+        "[Decarbonize] STATE AFTER - Reference (should be UNCHANGED):",
+        stateAfter.reference
+      );
 
       // Check if Reference state was modified (BUG if true)
-      const refChanged = JSON.stringify(stateBefore.reference) !== JSON.stringify(stateAfter.reference);
+      const refChanged =
+        JSON.stringify(stateBefore.reference) !==
+        JSON.stringify(stateAfter.reference);
       if (refChanged) {
-        console.error("[Decarbonize] ⚠️  BUG DETECTED: Reference state was modified!");
+        console.error(
+          "[Decarbonize] ⚠️  BUG DETECTED: Reference state was modified!"
+        );
         console.error("[Decarbonize] Reference BEFORE:", stateBefore.reference);
         console.error("[Decarbonize] Reference AFTER:", stateAfter.reference);
       } else {
@@ -2295,7 +2321,7 @@ window.TEUI.ParallelCoordinates = (function () {
 
   // ════════════════════════════════════════════════════════════════════════
   // SECTION 8: EXPORT & FULLSCREEN
-  // PNG export and fullscreen toggle functionality  
+  // PNG export and fullscreen toggle functionality
   // ════════════════════════════════════════════════════════════════════════
 
   /**
