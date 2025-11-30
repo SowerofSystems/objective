@@ -19,8 +19,9 @@ window.TEUI = window.TEUI || {};
  * - Display properties (label, unit, optimal direction)
  *
  * SPECIAL CASES:
- * - Axes 1 (SHW%) and 9 (HEAT%): Require conditional field selection based on fuel type
+ * - Axis 9 (HEAT%): Requires conditional field selection based on fuel type
  * - Axes 13 (GHGI) and 14 (TEUI): Use non-standard field naming (no ref_ prefix)
+ * - Axis 1 (SHW%): Now unified - d_52 used for all fuel types (50-450% range)
  */
 window.TEUI.OPTIMIZATION_AXES = [
   {
@@ -30,22 +31,19 @@ window.TEUI.OPTIMIZATION_AXES = [
     description: "Service Hot Water efficiency",
     optimal: "higher",
 
+    // ✅ S07 CONSOLIDATION: d_52 now unified for all fuel types (Heatpump/Electric/Gas/Oil)
     // Target mode fields
-    targetField: "d_52", // Electric/Heatpump path (already %)
-    targetFieldAlt: "k_52", // Oil/Gas AFUE path
+    targetField: "d_52", // All fuel types use d_52 slider (50-450% range)
     targetFieldMultiplier: null, // d_52 already in %
-    targetFieldAltMultiplier: 100, // k_52 * 100 to convert AFUE to %
-    targetFieldSelector: "d_51", // Heating fuel type selector
+    targetFieldSelector: null, // No conditional logic needed - all fuels use d_52
 
     // Reference mode fields
     referenceField: "ref_d_52",
-    referenceFieldAlt: "ref_k_52",
     referenceFieldMultiplier: null,
-    referenceFieldAltMultiplier: 100,
-    referenceFieldSelector: "ref_d_51",
+    referenceFieldSelector: null,
 
     // Domain will be determined during data analysis
-    domain: [0, 100],
+    domain: [0, 450], // Updated to reflect heatpump range (50-450%)
   },
 
   {
