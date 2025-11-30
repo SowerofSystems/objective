@@ -308,11 +308,7 @@
       title: "If Heatpump Selected",
       message: "EF can be greater than 100%, ie. COP 1.5 = 150%",
     },
-    k_52: {
-      cell: "K52",
-      title: "AFUE",
-      message: "Enter AFUE Efficiency for Gas or Oil fired equipment here.",
-    },
+    // ✅ k_52 RETIRED: Field removed after S07 efficiency consolidation (all fuel types now use d_52 slider)
     d_53: {
       cell: "D53",
       title: "Range of DWHR Efficiency",

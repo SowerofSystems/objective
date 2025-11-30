@@ -1171,7 +1171,6 @@
           "d_51",
           "d_52",
           "d_53",
-          "k_52",
 
           // Section 08: Indoor Air Quality
           "d_56",
@@ -1273,7 +1272,7 @@
         const uValueFields = ["g_88", "g_89", "g_90", "g_91", "g_92", "g_93"];
 
         // Coefficient fields that need 2dp precision
-        const coefficient2dpFields = ["j_115", "j_116", "k_52"];
+        const coefficient2dpFields = ["j_115", "j_116"];
 
         // Format value based on field type
         const formatExportValue = (fieldId, rawValue) => {

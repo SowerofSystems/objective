@@ -427,7 +427,6 @@ TEUI.QCMonitor = (function () {
       "j_52",
       "k_50",
       "k_51",
-      "k_52",
 
       // Calculated fields that may be zero in early stages
       "i_98",
@@ -478,7 +477,6 @@ TEUI.QCMonitor = (function () {
       "ref_j_52",
       "ref_k_50",
       "ref_k_51",
-      "ref_k_52",
       "ref_i_98",
       "ref_i_99",
       "ref_i_100",
