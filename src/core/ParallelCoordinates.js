@@ -240,9 +240,15 @@ window.TEUI.ParallelCoordinates = (function () {
       mainBtn.addEventListener("click", activateVisualization);
     }
 
-    // Create action buttons (Decarbonize, Optimize, Super Optimize, PassivHaus-ify) - only when activated
-    let decarbonizeBtn, optimizeBtn, superOptimizeBtn, passivhausBtn;
+    // Create action buttons (Restore Baseline, Decarbonize, Optimize, Super Optimize, PassivHaus-ify) - only when activated
+    let restoreBaselineBtn, decarbonizeBtn, optimizeBtn, superOptimizeBtn, passivhausBtn;
     if (isActivated) {
+      // Restore Baseline button (pebble grey)
+      restoreBaselineBtn = document.createElement("button");
+      restoreBaselineBtn.className = "btn btn-secondary btn-sm";
+      restoreBaselineBtn.innerHTML = "Restore Baseline";
+      restoreBaselineBtn.addEventListener("click", handleRestoreBaseline);
+
       // Decarbonize button (green)
       decarbonizeBtn = document.createElement("button");
       decarbonizeBtn.className = "btn btn-success btn-sm pc-btn-decarbonize";
@@ -386,11 +392,13 @@ window.TEUI.ParallelCoordinates = (function () {
     // Add action buttons (only when activated) right after main button
     if (
       isActivated &&
+      restoreBaselineBtn &&
       decarbonizeBtn &&
       optimizeBtn &&
       superOptimizeBtn &&
       passivhausBtn
     ) {
+      controlsContainer.appendChild(restoreBaselineBtn);
       controlsContainer.appendChild(decarbonizeBtn);
       controlsContainer.appendChild(optimizeBtn);
       controlsContainer.appendChild(superOptimizeBtn);
@@ -1411,6 +1419,17 @@ window.TEUI.ParallelCoordinates = (function () {
         console.style.transition = "";
       }, 1000);
     }, duration);
+  }
+
+  /**
+   * Restore Baseline handler
+   * Placeholder function - to be wired up by user
+   */
+  function handleRestoreBaseline() {
+    console.log("[ParallelCoordinates] Restore Baseline action triggered");
+
+    // TODO: Wire up baseline restoration logic
+    showFeedback("Restore Baseline - awaiting implementation", 4000);
   }
 
   /**
