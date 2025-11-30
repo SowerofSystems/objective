@@ -50,9 +50,10 @@ The four optimization handlers contain **~850 lines of nearly identical code**:
 - Optimize: SHW 300%, DWHR 50%, MVHR 85%, TB 20%, nGains 60%, ACH50 1.00
 - SuperOptimize: SHW 400%, DWHR 70%, MVHR 95%, TB **10%**, nGains PHPP, ACH50 0.60
 - PassivHaus: SHW 400%, DWHR 70%, MVHR 95%, TB **5%**, nGains PHPP, ACH50 0.60
+- Note effiency limits are capped by systems (ie. 98% max if gas and 100% max if electric) in all but the 'Decarbonize' method which switches systems to Heatpumps and allows higher efficiencies. 
 
 ### 3. Development Artifacts
-- Inconsistent "Part 1, Part 2, Part 3" comments throughout
+- Inconsistent "Part 1, Part 2, Part 3" comments throughout and are out of order to the casual reader
 - Diagnostic code blocks that could be cleaner
 - Redundant comments explaining the same pattern multiple times
 

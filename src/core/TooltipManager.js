@@ -557,12 +557,12 @@
     },
     j_98: {
       cell: "J98",
-      title: "Total Excludes B.12 TB Penalty",
+      title: "Total % Excludes B.12 TB Penalty", //understand why these fail per console
       message: "",
     },
     l_98: {
       cell: "L98",
-      title: "Total Excludes B.12 TB Penalty",
+      title: "Total % Excludes B.12 TB Penalty", //understand why these fail per console
       message: "",
     },
     // Section 12 Volume and Surface Metrics

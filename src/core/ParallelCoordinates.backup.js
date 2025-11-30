@@ -14,9 +14,10 @@ window.TEUI = window.TEUI || {};
 window.TEUI.ParallelCoordinates = (function () {
   "use strict";
 
-  // ========================================================================
-  // CONFIGURATION
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════
+  // SECTION 1: CONFIGURATION
+  // All configuration constants for layout, styling, and visualization settings
+  // ════════════════════════════════════════════════════════════════════════
 
   const CONFIG = {
     // Layout
@@ -56,9 +57,10 @@ window.TEUI.ParallelCoordinates = (function () {
     infoSelector: ".parallel-coordinates-info-wrapper",
   };
 
-  // ========================================================================
-  // STATE
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════
+  // SECTION 2: STATE MANAGEMENT
+  // Module-level state variables
+  // ════════════════════════════════════════════════════════════════════════
 
   let svgElement = null;
   let tableElement = null;
@@ -66,9 +68,10 @@ window.TEUI.ParallelCoordinates = (function () {
   let isFullscreen = false;
   let isActivated = false; // Track whether visualization has been activated
 
-  // ========================================================================
-  // INITIALIZATION
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════
+  // SECTION 3: UI INITIALIZATION & CONTROLS
+  // Functions for setting up the initial UI state and control panels
+  // ════════════════════════════════════════════════════════════════════════
 
   /**
    * Initialize the parallel coordinates visualization
@@ -237,9 +240,15 @@ window.TEUI.ParallelCoordinates = (function () {
       mainBtn.addEventListener("click", activateVisualization);
     }
 
-    // Create action buttons (Decarbonize, Optimize, Super Optimize, PassivHaus-ify) - only when activated
-    let decarbonizeBtn, optimizeBtn, superOptimizeBtn, passivhausBtn;
+    // Create action buttons (Restore Baseline, Decarbonize, Optimize, Super Optimize, PassivHaus-ify) - only when activated
+    let restoreBaselineBtn, decarbonizeBtn, optimizeBtn, superOptimizeBtn, passivhausBtn;
     if (isActivated) {
+      // Restore Baseline button (pebble grey)
+      restoreBaselineBtn = document.createElement("button");
+      restoreBaselineBtn.className = "btn btn-secondary btn-sm";
+      restoreBaselineBtn.innerHTML = "Restore Baseline";
+      restoreBaselineBtn.addEventListener("click", handleRestoreBaseline);
+
       // Decarbonize button (green)
       decarbonizeBtn = document.createElement("button");
       decarbonizeBtn.className = "btn btn-success btn-sm pc-btn-decarbonize";
@@ -383,11 +392,13 @@ window.TEUI.ParallelCoordinates = (function () {
     // Add action buttons (only when activated) right after main button
     if (
       isActivated &&
+      restoreBaselineBtn &&
       decarbonizeBtn &&
       optimizeBtn &&
       superOptimizeBtn &&
       passivhausBtn
     ) {
+      controlsContainer.appendChild(restoreBaselineBtn);
       controlsContainer.appendChild(decarbonizeBtn);
       controlsContainer.appendChild(optimizeBtn);
       controlsContainer.appendChild(superOptimizeBtn);
@@ -493,9 +504,10 @@ window.TEUI.ParallelCoordinates = (function () {
     });
   }
 
-  // ========================================================================
-  // DATA FETCHING
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════
+  // SECTION 4: DATA MANAGEMENT
+  // Data fetching and validation logic
+  // ════════════════════════════════════════════════════════════════════════
 
   /**
    * Fetch current data from StateManager via ParallelCoordinatesConfig
@@ -526,9 +538,10 @@ window.TEUI.ParallelCoordinates = (function () {
     return data;
   }
 
-  // ========================================================================
-  // HELPER FUNCTIONS
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════
+  // SECTION 5: UTILITY FUNCTIONS
+  // Helper functions for formatting and UI feedback
+  // ════════════════════════════════════════════════════════════════════════
 
   /**
    * Format currency values (CAD)
@@ -542,9 +555,10 @@ window.TEUI.ParallelCoordinates = (function () {
     }).format(value);
   };
 
-  // ========================================================================
-  // RENDERING
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════
+  // SECTION 6: RENDERING - GRAPH & TABLE
+  // D3.js graph rendering and data table generation
+  // ════════════════════════════════════════════════════════════════════════
 
   /**
    * Main refresh function - fetches data and re-renders visualization
@@ -1042,14 +1056,6 @@ window.TEUI.ParallelCoordinates = (function () {
     // Table body - transposed rows
     const tbody = document.createElement("tbody");
 
-    // Target row
-    const targetRow = document.createElement("tr");
-    targetRow.innerHTML = `<td class="pc-row-label pc-target-cell"><strong>Target</strong></td>`;
-    targetData.forEach(val => {
-      targetRow.innerHTML += `<td class="text-center pc-target-cell">${val.toFixed(2)}</td>`;
-    });
-    tbody.appendChild(targetRow);
-
     // Reference row
     const referenceRow = document.createElement("tr");
     referenceRow.innerHTML = `<td class="pc-row-label pc-reference-cell"><strong>Reference</strong></td>`;
@@ -1058,7 +1064,15 @@ window.TEUI.ParallelCoordinates = (function () {
     });
     tbody.appendChild(referenceRow);
 
-    // Delta row
+    // Target row
+    const targetRow = document.createElement("tr");
+    targetRow.innerHTML = `<td class="pc-row-label pc-target-cell"><strong>Target</strong></td>`;
+    targetData.forEach(val => {
+      targetRow.innerHTML += `<td class="text-center pc-target-cell">${val.toFixed(2)}</td>`;
+    });
+    tbody.appendChild(targetRow);
+
+    // Delta row (Target - Reference)
     const deltaRow = document.createElement("tr");
     deltaRow.innerHTML = `<td class="pc-row-label"><strong>Δ</strong></td>`;
     axes.forEach((axis, i) => {
@@ -1173,7 +1187,7 @@ window.TEUI.ParallelCoordinates = (function () {
     const capitalBudgetRow = document.createElement("tr");
     capitalBudgetRow.innerHTML = `<td class="pc-row-label"><strong>Capital Budget</strong></td>`;
 
-    // Default capital budget values (user-editable)
+    // Default capital budget cost values (user-editable) - sets to $0 when file data imports
     const defaultCapitalBudgets = {
       shw_efficiency: 10000,
       dwhr_efficiency: 5000,
@@ -1185,7 +1199,7 @@ window.TEUI.ParallelCoordinates = (function () {
       window_wall_ratio: 50000,
       heating_efficiency: 50000,
       mvhr_efficiency: 50000,
-      tedi: 1,
+      tedi: 50000,
       teli: 100000,
       ghgi: 0,
       teui: 0,
@@ -1378,9 +1392,10 @@ window.TEUI.ParallelCoordinates = (function () {
     `;
   }
 
-  // ========================================================================
-  // CONTROL HANDLERS
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════
+  // SECTION 7: OPTIMIZATION ACTION HANDLERS
+  // Button click handlers for Decarbonize, Optimize, Super Optimize, PassivHaus-ify
+  // ════════════════════════════════════════════════════════════════════════
 
   /**
    * Show feedback message in S18 console
@@ -1404,6 +1419,30 @@ window.TEUI.ParallelCoordinates = (function () {
         console.style.transition = "";
       }, 1000);
     }, duration);
+  }
+
+  /**
+   * Restore Baseline handler
+   * Calls StateManager's resetTier1_UndoChanges() to restore user to imported state (or defaults)
+   * Automatically refreshes graph after restoration completes
+   */
+  function handleRestoreBaseline() {
+    console.log("[ParallelCoordinates] Restore Baseline action triggered");
+
+    // Call StateManager's Tier 1 reset (undo user changes, restore to import/defaults)
+    if (window.TEUI?.StateManager?.resetTier1_UndoChanges) {
+      window.TEUI.StateManager.resetTier1_UndoChanges();
+      showFeedback("Baseline restored - reverted to imported data", 3000);
+
+      // Auto-refresh graph after reset completes (with delay to let state settle)
+      setTimeout(() => {
+        refresh();
+        console.log("[ParallelCoordinates] Graph auto-refreshed after baseline restore");
+      }, 200);
+    } else {
+      console.error("[ParallelCoordinates] StateManager.resetTier1_UndoChanges not found");
+      showFeedback("Error: Reset function not available", 3000);
+    }
   }
 
   /**
@@ -1433,31 +1472,38 @@ window.TEUI.ParallelCoordinates = (function () {
 
     if (debugEnabled) {
       console.log("[Decarbonize] === DIAGNOSTIC START ===");
-      console.log(`[Decarbonize] S07 ModeManager.currentMode = "${sect07?.ModeManager?.currentMode || 'N/A'}"`);
+      console.log(
+        `[Decarbonize] S07 ModeManager.currentMode = "${sect07?.ModeManager?.currentMode || "N/A"}"`
+      );
     }
 
-    const stateBefore = debugEnabled ? {
-      target: {
-        d_51: stateManager.getValue("d_51"),
-        d_52: stateManager.getValue("d_52"),
-        k_52: stateManager.getValue("k_52"),
-        d_113: stateManager.getValue("d_113"),
-        f_113: stateManager.getValue("f_113"),
-        j_115: stateManager.getValue("j_115")
-      },
-      reference: {
-        ref_d_51: stateManager.getValue("ref_d_51"),
-        ref_d_52: stateManager.getValue("ref_d_52"),
-        ref_k_52: stateManager.getValue("ref_k_52"),
-        ref_d_113: stateManager.getValue("ref_d_113"),
-        ref_f_113: stateManager.getValue("ref_f_113"),
-        ref_j_115: stateManager.getValue("ref_j_115")
-      }
-    } : null;
+    const stateBefore = debugEnabled
+      ? {
+          target: {
+            d_51: stateManager.getValue("d_51"),
+            d_52: stateManager.getValue("d_52"),
+            k_52: stateManager.getValue("k_52"),
+            d_113: stateManager.getValue("d_113"),
+            f_113: stateManager.getValue("f_113"),
+            j_115: stateManager.getValue("j_115"),
+          },
+          reference: {
+            ref_d_51: stateManager.getValue("ref_d_51"),
+            ref_d_52: stateManager.getValue("ref_d_52"),
+            ref_k_52: stateManager.getValue("ref_k_52"),
+            ref_d_113: stateManager.getValue("ref_d_113"),
+            ref_f_113: stateManager.getValue("ref_f_113"),
+            ref_j_115: stateManager.getValue("ref_j_115"),
+          },
+        }
+      : null;
 
     if (debugEnabled && stateBefore) {
       console.log("[Decarbonize] STATE BEFORE - Target:", stateBefore.target);
-      console.log("[Decarbonize] STATE BEFORE - Reference:", stateBefore.reference);
+      console.log(
+        "[Decarbonize] STATE BEFORE - Reference:",
+        stateBefore.reference
+      );
     }
 
     // ========================================================================
@@ -1480,31 +1526,43 @@ window.TEUI.ParallelCoordinates = (function () {
 
       // Step 1: Set fuel type to Heatpump
       if (sect07?.TargetState) {
-        if (debugEnabled) console.log("[Decarbonize] Step 1a: Setting sect07.TargetState.d_51 = 'Heatpump'");
+        if (debugEnabled)
+          console.log(
+            "[Decarbonize] Step 1a: Setting sect07.TargetState.d_51 = 'Heatpump'"
+          );
         sect07.TargetState.setValue("d_51", "Heatpump");
       }
-      if (debugEnabled) console.log("[Decarbonize] Step 1b: Setting StateManager.d_51 = 'Heatpump'");
+      if (debugEnabled)
+        console.log(
+          "[Decarbonize] Step 1b: Setting StateManager.d_51 = 'Heatpump'"
+        );
       stateManager.setValue("d_51", "Heatpump", "user-modified");
 
       // Step 1b: 🔥 FIX: Update field lock states (enable d_52, disable k_52)
       // This mimics what happens when user manually changes the dropdown
-      const currentWaterMethod = stateManager.getValue("d_49") || "User Defined";
+      const currentWaterMethod =
+        stateManager.getValue("d_49") || "User Defined";
       if (sect07?.updateSection7Visibility) {
         sect07.updateSection7Visibility(currentWaterMethod, "Heatpump");
       }
 
       // Step 2: Let section recalculate with new fuel type
-      if (debugEnabled) console.log("[Decarbonize] Step 2: Calling sect07.calculateAll()");
+      if (debugEnabled)
+        console.log("[Decarbonize] Step 2: Calling sect07.calculateAll()");
       if (sect07?.calculateAll) {
         sect07.calculateAll();
       }
 
       // Step 3: Now set efficiency (d_52 is now the active field for Heatpump)
       if (sect07?.TargetState) {
-        if (debugEnabled) console.log("[Decarbonize] Step 3a: Setting sect07.TargetState.d_52 = '300'");
+        if (debugEnabled)
+          console.log(
+            "[Decarbonize] Step 3a: Setting sect07.TargetState.d_52 = '300'"
+          );
         sect07.TargetState.setValue("d_52", "300");
       }
-      if (debugEnabled) console.log("[Decarbonize] Step 3b: Setting StateManager.d_52 = '300'");
+      if (debugEnabled)
+        console.log("[Decarbonize] Step 3b: Setting StateManager.d_52 = '300'");
       stateManager.setValue("d_52", "300", "user-modified");
 
       console.log("[Decarbonize] SHW: " + d_51 + " → Heatpump @ 300% COP");
@@ -1620,7 +1678,7 @@ window.TEUI.ParallelCoordinates = (function () {
           k_52: stateManager.getValue("k_52"),
           d_113: stateManager.getValue("d_113"),
           f_113: stateManager.getValue("f_113"),
-          j_115: stateManager.getValue("j_115")
+          j_115: stateManager.getValue("j_115"),
         },
         reference: {
           ref_d_51: stateManager.getValue("ref_d_51"),
@@ -1628,16 +1686,23 @@ window.TEUI.ParallelCoordinates = (function () {
           ref_k_52: stateManager.getValue("ref_k_52"),
           ref_d_113: stateManager.getValue("ref_d_113"),
           ref_f_113: stateManager.getValue("ref_f_113"),
-          ref_j_115: stateManager.getValue("ref_j_115")
-        }
+          ref_j_115: stateManager.getValue("ref_j_115"),
+        },
       };
       console.log("[Decarbonize] STATE AFTER - Target:", stateAfter.target);
-      console.log("[Decarbonize] STATE AFTER - Reference (should be UNCHANGED):", stateAfter.reference);
+      console.log(
+        "[Decarbonize] STATE AFTER - Reference (should be UNCHANGED):",
+        stateAfter.reference
+      );
 
       // Check if Reference state was modified (BUG if true)
-      const refChanged = JSON.stringify(stateBefore.reference) !== JSON.stringify(stateAfter.reference);
+      const refChanged =
+        JSON.stringify(stateBefore.reference) !==
+        JSON.stringify(stateAfter.reference);
       if (refChanged) {
-        console.error("[Decarbonize] ⚠️  BUG DETECTED: Reference state was modified!");
+        console.error(
+          "[Decarbonize] ⚠️  BUG DETECTED: Reference state was modified!"
+        );
         console.error("[Decarbonize] Reference BEFORE:", stateBefore.reference);
         console.error("[Decarbonize] Reference AFTER:", stateAfter.reference);
       } else {
@@ -2286,6 +2351,11 @@ window.TEUI.ParallelCoordinates = (function () {
     }
   }
 
+  // ════════════════════════════════════════════════════════════════════════
+  // SECTION 8: EXPORT & FULLSCREEN
+  // PNG export and fullscreen toggle functionality
+  // ════════════════════════════════════════════════════════════════════════
+
   /**
    * Toggle fullscreen mode
    */
@@ -2357,6 +2427,11 @@ window.TEUI.ParallelCoordinates = (function () {
    *
    * For conditional axes (like shw_efficiency), use getConfig function
    */
+  // ════════════════════════════════════════════════════════════════════════
+  // AXIS CONFIGURATION
+  // Editable axis definitions with constraints and conditional logic
+  // ════════════════════════════════════════════════════════════════════════
+
   const EDITABLE_AXES = {
     dwhr_efficiency: {
       targetField: "d_53", // Target DWHR% field (NOTE: d_53, not d_52!)
@@ -2603,6 +2678,11 @@ window.TEUI.ParallelCoordinates = (function () {
     // Otherwise, return static config
     return axisEntry;
   }
+
+  // ════════════════════════════════════════════════════════════════════════
+  // SECTION 9: DRAG & DROP INTERACTIONS
+  // Interactive drag behavior for manipulating axis values on the graph
+  // ════════════════════════════════════════════════════════════════════════
 
   /**
    * Initialize drag behavior for editable nodes
@@ -3087,6 +3167,11 @@ window.TEUI.ParallelCoordinates = (function () {
   // ========================================================================
   // PUBLIC API
   // ========================================================================
+
+  // ════════════════════════════════════════════════════════════════════════
+  // SECTION 10: PUBLIC API
+  // Exported functions for external module access
+  // ════════════════════════════════════════════════════════════════════════
 
   return {
     initialize,
