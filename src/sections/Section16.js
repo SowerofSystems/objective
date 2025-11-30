@@ -1385,7 +1385,8 @@ window.TEUI.SectionModules.sect16 = (function () {
     const activateBtn = document.createElement("button");
     activateBtn.id = "s16ActivateBtn";
     activateBtn.className = "btn btn-primary btn-sm"; // Match S17 and S18 styling
-    activateBtn.style.cssText = "display: inline-flex; align-items: center; gap: 6px;";
+    activateBtn.style.cssText =
+      "display: inline-flex; align-items: center; gap: 6px;";
 
     const icon = document.createElement("i");
     icon.className = "bi bi-arrow-clockwise";

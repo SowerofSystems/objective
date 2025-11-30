@@ -184,9 +184,9 @@ class ExcelMapper {
       // Section 13: Mechanical Loads (REPORT! Sheet)
       D113: "d_113", // Primary Heating System (Dropdown)
       F113: "f_113", // HSPF (Slider/Coefficient -> Number)
-      J115: "j_115", // AFUE (Editable Number)
+      J115: "j_115", // AFUE (Editable Number when system is not Heatpump or Electric)
       D116: "d_116", // Cooling System (Dropdown)
-      J116: "j_116", // Cooling COP (Editable Number)
+      J116: "j_116", // Cooling COP (Editable Number, skipped on import if system is Heatpump which sets COPc automatically)
       D118: "d_118", // HRV/ERV SRE % (Percentage Slider -> Number 0-100)
       G118: "g_118", // Ventilation Method (Dropdown)
       L118: "l_118", // ACH (Editable Number)
@@ -555,6 +555,24 @@ class ExcelMapper {
               const defaults = { k_52: "0.90", j_115: "0.90" };
               extractedValue = defaults[fieldId] || "0.90";
             }
+
+            // ✅ S07 CONSOLIDATION: Legacy k_52 (AFUE) → d_52 (%) conversion for Gas/Oil systems
+            if (fieldId === "k_52" && extractedValue) {
+              // Check if d_51 (system type) indicates Gas or Oil
+              const d_51Value = importedData["d_51"];
+              if (d_51Value === "Gas" || d_51Value === "Oil") {
+                // Convert AFUE decimal (0.94) to percentage (94%) for d_52 slider
+                const k_52Decimal = parseFloat(extractedValue);
+                if (!isNaN(k_52Decimal)) {
+                  const d_52Percentage = Math.round(k_52Decimal * 100);
+                  importedData["d_52"] = d_52Percentage.toString();
+                  console.log(
+                    `[ExcelMapper] Legacy k_52=${extractedValue} converted to d_52=${d_52Percentage}% for ${d_51Value} system`
+                  );
+                }
+              }
+              // Note: k_52 will still be stored but ignored by Section07 calculations
+            }
           }
 
           // ✅ ARRAY-BASED NORMALIZATION: Standard 2dp Numeric Fields (store as "3.50")
@@ -882,6 +900,24 @@ class ExcelMapper {
             } else {
               const defaults = { k_52: "0.90", j_115: "0.90" };
               extractedValue = defaults[baseFieldId] || "0.90";
+            }
+
+            // ✅ S07 CONSOLIDATION: Legacy ref_k_52 (AFUE) → ref_d_52 (%) conversion for Gas/Oil systems
+            if (baseFieldId === "k_52" && extractedValue) {
+              // Check if ref_d_51 (system type) indicates Gas or Oil
+              const ref_d_51Value = importedData["ref_d_51"];
+              if (ref_d_51Value === "Gas" || ref_d_51Value === "Oil") {
+                // Convert AFUE decimal (0.90) to percentage (90%) for ref_d_52 slider
+                const ref_k_52Decimal = parseFloat(extractedValue);
+                if (!isNaN(ref_k_52Decimal)) {
+                  const ref_d_52Percentage = Math.round(ref_k_52Decimal * 100);
+                  importedData["ref_d_52"] = ref_d_52Percentage.toString();
+                  console.log(
+                    `[ExcelMapper] Legacy ref_k_52=${extractedValue} converted to ref_d_52=${ref_d_52Percentage}% for ${ref_d_51Value} system`
+                  );
+                }
+              }
+              // Note: ref_k_52 will still be stored but ignored by Section07 calculations
             }
           }
 

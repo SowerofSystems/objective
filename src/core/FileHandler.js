@@ -563,110 +563,267 @@
       }
 
       console.log(
-        "[FileHandler DEBUG] Passed validation checks, starting forEach loop..."
+        "[FileHandler DEBUG] Passed validation checks, starting TWO-PASS import..."
       );
       this.showStatus("Updating application state...", "info");
       let updatedCount = 0;
       let skippedValidationCount = 0;
 
-      Object.entries(importedData).forEach(([fieldId, value]) => {
-        // ✅ CRITICAL: Reference fields (ref_*) don't need FieldManager definitions
-        // They share Target DOM elements and are handled by section-level dual-state architecture
-        const isReferenceField = fieldId.startsWith("ref_");
-        const baseFieldId = isReferenceField ? fieldId.substring(4) : fieldId;
-        const fieldDef = this.fieldManager.getField(baseFieldId);
+      // 🔒 TWO-PASS IMPORT: Ensure control fields imported before dependent fields
+      // Pass 1: Import control fields (d_113, ref_d_113, f_113, ref_f_113, d_116, ref_d_116)
+      // Pass 2: Import all other fields (including j_116, ref_j_116) with conditional logic
+      const controlFields = [
+        "d_113",
+        "ref_d_113",
+        "f_113",
+        "ref_f_113",
+        "d_116",
+        "ref_d_116",
+      ];
+      const allEntries = Object.entries(importedData);
 
-        if (!fieldDef && !isReferenceField) {
-          console.warn(`Skipping import for unknown fieldId: ${fieldId}`);
-          skippedValidationCount++;
-          return; // Use return to continue to next iteration of forEach
-        }
+      // PASS 1: Control fields
+      console.log("[FileHandler] 🔒 PASS 1: Importing control fields...");
+      allEntries
+        .filter(([fieldId]) => controlFields.includes(fieldId))
+        .forEach(([fieldId, value]) => {
+          // ✅ CRITICAL: Reference fields (ref_*) don't need FieldManager definitions
+          // They share Target DOM elements and are handled by section-level dual-state architecture
+          const isReferenceField = fieldId.startsWith("ref_");
+          const baseFieldId = isReferenceField ? fieldId.substring(4) : fieldId;
+          const fieldDef = this.fieldManager.getField(baseFieldId);
 
-        let parsedValue = value;
-        let isValid = true;
-
-        try {
-          // ✅ Reference fields: Store directly in StateManager without validation
-          // Validation was already done by ExcelMapper normalization
-          if (isReferenceField) {
-            this.stateManager.setValue(fieldId, parsedValue, "imported");
-            updatedCount++;
-            console.log(
-              `[FileHandler] Reference field imported: ${fieldId} = ${parsedValue}`
+          if (!fieldDef && !isReferenceField) {
+            console.warn(
+              `[P1] Skipping import for unknown fieldId: ${fieldId}`
             );
-            return; // Done with this reference field
+            skippedValidationCount++;
+            return; // Use return to continue to next iteration of forEach
           }
 
-          // Target fields: Validate and update DOM
-          // ✅ CRITICAL: Skip validation for S03 location fields (d_19, h_19)
-          // These are Pattern A fields managed by S03's isolated state, not FieldManager
-          const isS03LocationField = ["d_19", "h_19"].includes(fieldId);
+          let parsedValue = value;
+          let isValid = true;
 
-          if (
-            fieldDef.type === "editable" ||
-            fieldDef.type === "year_slider" ||
-            fieldDef.type === "percentage" ||
-            fieldDef.type === "coefficient"
-          ) {
-            const numericValue = window.TEUI.parseNumeric(value, NaN);
-            if (!isNaN(numericValue)) {
-              parsedValue = numericValue.toString();
-            } else if (fieldDef.type !== "editable") {
-              isValid = false;
+          try {
+            // PASS 1: Import control fields unconditionally (no j_116 checks - that's Pass 2)
+            // ✅ Reference fields: Store directly in StateManager without validation
+            // Validation was already done by ExcelMapper normalization
+            if (isReferenceField) {
+              this.stateManager.setValue(fieldId, parsedValue, "imported");
+              updatedCount++;
+              console.log(
+                `[FileHandler] [P1] Control field imported: ${fieldId} = ${parsedValue}`
+              );
+              return; // Done with this reference field
             }
-          } else if (fieldDef.type === "dropdown" && !isS03LocationField) {
-            const options = this.fieldManager.getDropdownOptions(
-              fieldDef.dropdownId,
-              { parentValue: null }
-            );
-            const validValues = options.map(opt =>
-              typeof opt === "object" ? String(opt.value) : String(opt)
-            );
-            if (!validValues.includes(String(value))) {
-              isValid = false;
-            }
-          }
 
-          if (isValid) {
-            this.stateManager.setValue(fieldId, parsedValue, "imported");
-            updatedCount++;
+            // Target fields: Validate and update DOM
+            // ✅ CRITICAL: Skip validation for S03 location fields (d_19, h_19)
+            // These are Pattern A fields managed by S03's isolated state, not FieldManager
+            const isS03LocationField = ["d_19", "h_19"].includes(fieldId);
+
             if (
-              window.TEUI &&
-              window.TEUI.FieldManager &&
-              typeof window.TEUI.FieldManager.updateFieldDisplay === "function"
+              fieldDef.type === "editable" ||
+              fieldDef.type === "year_slider" ||
+              fieldDef.type === "percentage" ||
+              fieldDef.type === "coefficient"
             ) {
-              try {
-                window.TEUI.FieldManager.updateFieldDisplay(
-                  fieldId,
-                  parsedValue,
-                  fieldDef
-                );
-              } catch (e) {
-                console.error(
-                  `[FileHandler] Error calling FieldManager.updateFieldDisplay for ${fieldId}:`,
-                  e
+              const numericValue = window.TEUI.parseNumeric(value, NaN);
+              if (!isNaN(numericValue)) {
+                parsedValue = numericValue.toString();
+              } else if (fieldDef.type !== "editable") {
+                isValid = false;
+              }
+            } else if (fieldDef.type === "dropdown" && !isS03LocationField) {
+              const options = this.fieldManager.getDropdownOptions(
+                fieldDef.dropdownId,
+                { parentValue: null }
+              );
+              const validValues = options.map(opt =>
+                typeof opt === "object" ? String(opt.value) : String(opt)
+              );
+              if (!validValues.includes(String(value))) {
+                isValid = false;
+              }
+            }
+
+            if (isValid) {
+              this.stateManager.setValue(fieldId, parsedValue, "imported");
+              updatedCount++;
+              if (
+                window.TEUI &&
+                window.TEUI.FieldManager &&
+                typeof window.TEUI.FieldManager.updateFieldDisplay ===
+                  "function"
+              ) {
+                try {
+                  window.TEUI.FieldManager.updateFieldDisplay(
+                    fieldId,
+                    parsedValue,
+                    fieldDef
+                  );
+                } catch (e) {
+                  console.error(
+                    `[FileHandler] Error calling FieldManager.updateFieldDisplay for ${fieldId}:`,
+                    e
+                  );
+                }
+              } else {
+                console.warn(
+                  `[FileHandler] TEUI.FieldManager.updateFieldDisplay is not available. UI for ${fieldId} may not update visually.`
                 );
               }
             } else {
               console.warn(
-                `[FileHandler] TEUI.FieldManager.updateFieldDisplay is not available. UI for ${fieldId} may not update visually.`
+                `Skipping import for field ${fieldId}: Invalid value "${value}" for type ${fieldDef.type}.`
               );
+              skippedValidationCount++;
             }
-          } else {
-            console.warn(
-              `Skipping import for field ${fieldId}: Invalid value "${value}" for type ${fieldDef.type}.`
+          } catch (error) {
+            console.error(
+              `Error processing field ${fieldId} with value "${value}":`,
+              error
             );
             skippedValidationCount++;
+            isValid = false; // Ensure isValid is false on error
           }
-        } catch (error) {
-          console.error(
-            `Error processing field ${fieldId} with value "${value}":`,
-            error
-          );
-          skippedValidationCount++;
-          isValid = false; // Ensure isValid is false on error
-        }
-      });
+        });
+
+      // PASS 2: All other fields (excluding control fields already imported in Pass 1)
+      console.log(
+        "[FileHandler] 🔓 PASS 2: Importing remaining fields with conditional logic..."
+      );
+      allEntries
+        .filter(([fieldId]) => !controlFields.includes(fieldId))
+        .forEach(([fieldId, value]) => {
+          // ✅ CRITICAL: Reference fields (ref_*) don't need FieldManager definitions
+          // They share Target DOM elements and are handled by section-level dual-state architecture
+          const isReferenceField = fieldId.startsWith("ref_");
+          const baseFieldId = isReferenceField ? fieldId.substring(4) : fieldId;
+          const fieldDef = this.fieldManager.getField(baseFieldId);
+
+          if (!fieldDef && !isReferenceField) {
+            console.warn(`Skipping import for unknown fieldId: ${fieldId}`);
+            skippedValidationCount++;
+            return; // Use return to continue to next iteration of forEach
+          }
+
+          let parsedValue = value;
+          let isValid = true;
+
+          try {
+            // ✅ Reference fields: Store directly in StateManager without validation
+            // Validation was already done by ExcelMapper normalization
+            if (isReferenceField) {
+              // 🔒 CONDITIONAL IMPORT: Skip j_116 when heating system is Heatpump/Electric
+              // In these modes, j_116 (COPc) is CALCULATED from f_113 (HSPF), not user-editable
+              if (fieldId === "ref_j_116") {
+                const refD113Value = this.stateManager.getValue("ref_d_113");
+                if (
+                  refD113Value === "Heatpump" ||
+                  refD113Value === "Electric"
+                ) {
+                  console.log(
+                    `[FileHandler] ⏭️  Skipping ref_j_116 import (ref_d_113="${refD113Value}", calculated field)`
+                  );
+                  return; // Skip import - will be calculated by Section13
+                }
+              }
+
+              this.stateManager.setValue(fieldId, parsedValue, "imported");
+              updatedCount++;
+              console.log(
+                `[FileHandler] Reference field imported: ${fieldId} = ${parsedValue}`
+              );
+              return; // Done with this reference field
+            }
+
+            // 🔒 CONDITIONAL IMPORT: Same check for Target mode j_116
+            if (fieldId === "j_116") {
+              const d113Value = this.stateManager.getValue("d_113");
+              if (d113Value === "Heatpump" || d113Value === "Electric") {
+                console.log(
+                  `[FileHandler] ⏭️  Skipping j_116 import (d_113="${d113Value}", calculated field)`
+                );
+                return; // Skip import - will be calculated by Section13
+              }
+            }
+
+            // Target fields: Validate and update DOM
+            // ✅ CRITICAL: Skip validation for S03 location fields (d_19, h_19)
+            // These are Pattern A fields managed by S03's isolated state, not FieldManager
+            const isS03LocationField = ["d_19", "h_19"].includes(fieldId);
+
+            if (
+              fieldDef.type === "editable" ||
+              fieldDef.type === "year_slider" ||
+              fieldDef.type === "percentage" ||
+              fieldDef.type === "coefficient"
+            ) {
+              const numericValue = window.TEUI.parseNumeric(value, NaN);
+              if (!isNaN(numericValue)) {
+                parsedValue = numericValue.toString();
+              } else if (fieldDef.type !== "editable") {
+                isValid = false;
+              }
+            } else if (fieldDef.type === "dropdown" && !isS03LocationField) {
+              const options = this.fieldManager.getDropdownOptions(
+                fieldDef.dropdownId,
+                { parentValue: null }
+              );
+              const validValues = options.map(opt =>
+                typeof opt === "object" ? String(opt.value) : String(opt)
+              );
+              if (!validValues.includes(String(value))) {
+                isValid = false;
+              }
+            }
+
+            if (isValid) {
+              this.stateManager.setValue(fieldId, parsedValue, "imported");
+              updatedCount++;
+              if (
+                window.TEUI &&
+                window.TEUI.FieldManager &&
+                typeof window.TEUI.FieldManager.updateFieldDisplay ===
+                  "function"
+              ) {
+                try {
+                  window.TEUI.FieldManager.updateFieldDisplay(
+                    fieldId,
+                    parsedValue,
+                    fieldDef
+                  );
+                } catch (e) {
+                  console.error(
+                    `[FileHandler] Error calling FieldManager.updateFieldDisplay for ${fieldId}:`,
+                    e
+                  );
+                }
+              } else {
+                console.warn(
+                  `[FileHandler] TEUI.FieldManager.updateFieldDisplay is not available. UI for ${fieldId} may not update visually.`
+                );
+              }
+            } else {
+              console.warn(
+                `Skipping import for field ${fieldId}: Invalid value "${value}" for type ${fieldDef.type}.`
+              );
+              skippedValidationCount++;
+            }
+          } catch (error) {
+            console.error(
+              `Error processing field ${fieldId} with value "${value}":`,
+              error
+            );
+            skippedValidationCount++;
+            isValid = false; // Ensure isValid is false on error
+          }
+        });
+
+      console.log(
+        `[FileHandler] ✅ TWO-PASS IMPORT COMPLETE: ${updatedCount} fields imported`
+      );
 
       // Skip recalculation and reference data loading when importing reference fields
       if (skipRecalculation) {
@@ -760,6 +917,42 @@
       });
 
       console.log("[FileHandler] ✅ PHASE 2: Pattern A section sync complete");
+
+      // ✅ FIX (Nov 29): Update field lock states after import (same as S18 Decarbonize fix)
+      // Import sets d_113/d_51 via StateManager.setValue() which bypasses UI event handlers
+      // Must explicitly call ghosting/visibility functions to enable/disable conditional fields
+      console.log(
+        "[FileHandler] 🔧 PHASE 2.5: Updating field lock states for imported system types..."
+      );
+
+      // Update S07 field locks based on imported d_51 (SHW system)
+      const sect07 = window.TEUI?.SectionModules?.sect07;
+      if (sect07?.updateSection7Visibility) {
+        const d_51 = this.stateManager.getValue("d_51");
+        const d_49 = this.stateManager.getValue("d_49") || "User Defined";
+        if (d_51) {
+          sect07.updateSection7Visibility(d_49, d_51);
+          console.log(
+            `[FileHandler] S07 field locks updated for d_51="${d_51}", d_49="${d_49}"`
+          );
+        }
+      }
+
+      // Update S13 field locks based on imported d_113 (Heating system)
+      // handleHeatingSystemChangeForGhosting() is NOT mode-aware - it updates shared DOM elements
+      // So we only need to call it once with the Target mode value (fields are shared)
+      const sect13 = window.TEUI?.SectionModules?.sect13;
+      if (sect13?.handleHeatingSystemChangeForGhosting) {
+        const d_113 = this.stateManager.getValue("d_113");
+        if (d_113) {
+          sect13.handleHeatingSystemChangeForGhosting(d_113);
+          console.log(
+            `[FileHandler] S13 field locks updated for d_113="${d_113}"`
+          );
+        }
+      }
+
+      console.log("[FileHandler] ✅ PHASE 2.5: Field lock states updated");
 
       // ✅ FIX (Oct 10): Manually sync S11 window areas from S10 AFTER all imports complete
       // ✅ FIX (Nov 2): Enable dual-state sync during import to populate Reference areas
@@ -998,7 +1191,6 @@
           "d_51",
           "d_52",
           "d_53",
-          "k_52",
 
           // Section 08: Indoor Air Quality
           "d_56",
@@ -1100,7 +1292,7 @@
         const uValueFields = ["g_88", "g_89", "g_90", "g_91", "g_92", "g_93"];
 
         // Coefficient fields that need 2dp precision
-        const coefficient2dpFields = ["j_115", "j_116", "k_52"];
+        const coefficient2dpFields = ["j_115", "j_116"];
 
         // Format value based on field type
         const formatExportValue = (fieldId, rawValue) => {

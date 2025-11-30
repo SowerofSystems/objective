@@ -19,8 +19,9 @@ window.TEUI = window.TEUI || {};
  * - Display properties (label, unit, optimal direction)
  *
  * SPECIAL CASES:
- * - Axes 1 (SHW%) and 9 (HEAT%): Require conditional field selection based on fuel type
+ * - Axis 9 (HEAT%): Requires conditional field selection based on fuel type
  * - Axes 13 (GHGI) and 14 (TEUI): Use non-standard field naming (no ref_ prefix)
+ * - Axis 1 (SHW%): Now unified - d_52 used for all fuel types (50-450% range)
  */
 window.TEUI.OPTIMIZATION_AXES = [
   {
@@ -30,22 +31,19 @@ window.TEUI.OPTIMIZATION_AXES = [
     description: "Service Hot Water efficiency",
     optimal: "higher",
 
+    // ✅ S07 CONSOLIDATION: d_52 now unified for all fuel types (Heatpump/Electric/Gas/Oil)
     // Target mode fields
-    targetField: "d_52", // Electric/Heatpump path (already %)
-    targetFieldAlt: "k_52", // Oil/Gas AFUE path
+    targetField: "d_52", // All fuel types use d_52 slider (50-450% range)
     targetFieldMultiplier: null, // d_52 already in %
-    targetFieldAltMultiplier: 100, // k_52 * 100 to convert AFUE to %
-    targetFieldSelector: "d_51", // Heating fuel type selector
+    targetFieldSelector: null, // No conditional logic needed - all fuels use d_52
 
     // Reference mode fields
     referenceField: "ref_d_52",
-    referenceFieldAlt: "ref_k_52",
     referenceFieldMultiplier: null,
-    referenceFieldAltMultiplier: 100,
-    referenceFieldSelector: "ref_d_51",
+    referenceFieldSelector: null,
 
     // Domain will be determined during data analysis
-    domain: [0, 100],
+    domain: [0, 450], // Updated to reflect heatpump range (50-450%)
   },
 
   {
@@ -233,11 +231,14 @@ window.TEUI.OPTIMIZATION_AXES = [
     description: "Total Energy Use Intensity",
     optimal: "lower",
 
-    // ⚠️ SPECIAL: These fields do NOT use the ref_ prefix pattern
-    targetField: "h_10", // NOT d_10
-    referenceField: "e_10", // NOT ref_e_10
+    // 🔥 FIX (Nov 29): Use j_35 from S04 instead of h_10 from S01
+    // This breaks potential circular reference loop between S18 ↔ S01 ↔ S13
+    // j_35 is calculated upstream in dependency chain (S04 Row 35)
+    // j_35 = j_32 (total target energy) / h_15 (conditioned area)
+    targetField: "j_35", // S04 Row 35 - Target TEUI (calculated earlier in chain)
+    referenceField: "ref_j_35", // S04 publishes ref_j_35 in Reference mode
 
-    domain: [0, 300], // Typical range, will be refined
+    domain: [0, 999], // Typical range, generally between 0-800, may be negative if net zero or better
   },
 ];
 
@@ -253,6 +254,15 @@ window.TEUI.getAxisValue = function (axis, mode = "target") {
   if (!stateManager) {
     console.warn("[ppConfig] StateManager not available");
     return null;
+  }
+
+  // 🔍 DIAGNOSTIC: Log entry for SHW% and HEAT% axes
+  // Enable with: window.TEUI_DEBUG_AXIS_READS = true
+  const isDebugAxis =
+    axis.id === "shw_efficiency" || axis.id === "heating_efficiency";
+  const debugEnabled = window.TEUI_DEBUG_AXIS_READS === true;
+  if (isDebugAxis && debugEnabled) {
+    console.log(`[pcConfig] getAxisValue: axis="${axis.id}", mode="${mode}"`);
   }
 
   // Determine which field set to use based on mode
@@ -274,6 +284,15 @@ window.TEUI.getAxisValue = function (axis, mode = "target") {
   // Handle conditional fields (SHW%, HEAT%)
   if (selectorField && altField) {
     const selectorValue = stateManager.getValue(selectorField);
+
+    if (isDebugAxis && debugEnabled) {
+      console.log(
+        `[pcConfig]   selectorField="${selectorField}", selectorValue="${selectorValue}"`
+      );
+      console.log(
+        `[pcConfig]   primaryField="${primaryField}", altField="${altField}"`
+      );
+    }
 
     // Determine which field to use based on selector value
     let fieldToUse = primaryField;
@@ -297,6 +316,16 @@ window.TEUI.getAxisValue = function (axis, mode = "target") {
 
     const rawValue = stateManager.getValue(fieldToUse);
     const numValue = parseFloat(rawValue);
+
+    if (isDebugAxis && debugEnabled) {
+      console.log(
+        `[pcConfig]   fieldToUse="${fieldToUse}", rawValue="${rawValue}", multiplier=${multiplierToUse}`
+      );
+      const finalValue = multiplierToUse
+        ? numValue * multiplierToUse
+        : numValue;
+      console.log(`[pcConfig]   → RETURN: ${finalValue}`);
+    }
 
     if (typeof numValue === "number" && !isNaN(numValue)) {
       // Apply multiplier if specified

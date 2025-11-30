@@ -2,10 +2,6 @@
 
 ## Lightweight Implementation Plan for Global Reference System
 
-> **Status**: Implementation-Ready Specification  
-> **Current Issue**: "Show Reference" button crashes due to architecture mismatch (fixed, doesn't crash now)
-> **Goal**: Minimal-code solution leveraging existing dual-state architecture and CSS system  
-> **Key Principle**: Maximum reuse of existing patterns, zero architectural changes
 
 ---
 
@@ -64,11 +60,11 @@
 - **Single Source of Truth**: StateManager is the only valid source for all values
 - **Proper Value Reading**: Use `StateManager.getValue()` for all data access
 - **No Direct Access**: Never read values directly from DOM or other sources
-- **Reference Prefix**: Reference values stored with `ref_` prefix (e.g., `ref_j_32`)
+- **Reference Prefix**: Reference values stored with `ref_` prefix (e.g., `ref_j_32`), Target valuea are unprefixed ie. j_32.
 
 #### **4. CSS-Only Styling**
 
-- **Existing CSS System**: Use only the existing CSS classes in `4011-styles.css`
+- **Existing CSS System**: Use only the existing CSS classes in `styles.css`
 - **No New CSS**: Do not create new CSS rules or modify existing ones
 - **Class Application**: Apply/remove existing CSS classes only
 - **Global Styling**: Use body-level CSS classes for application-wide theming
@@ -105,7 +101,7 @@
 
 #### **1. Core Architecture (MANDATORY)**
 
-- **`README.md`** (Lines 15-200): Common pitfalls, StateManager patterns, anti-patterns
+- **`TECHNICAL.md`** (Lines 15-200): Common pitfalls, StateManager patterns, anti-patterns
 - **`DUAL-STATE-CHEATSHEET.md`**: Pattern A implementation, state isolation rules
 - **`DUAL-STATE-IMPLEMENTATION-GUIDE.md`** (Lines 1638-1782): Reference setup modes
 
@@ -117,7 +113,7 @@
 
 #### **3. CSS System Documentation**
 
-- **`4011-styles.css`** (Lines 1398-1605): Existing Reference styling system
+- **`styles.css`** (Lines 1398-1605): Existing Reference styling system
 - **CSS Classes**: `viewing-reference-inputs`, `viewing-reference-values`, `reference-mode`
 
 #### **4. Current State Analysis**
@@ -173,20 +169,20 @@ const dependencies = [
 
 #### **Three Reference Model Scenarios Enabled**:
 
-1. **Mirror Target**: Start with identical building (Set Reference model to Match TArget model INPUT Values), user can subsequently customize specific fileds and maintain Reference and Target model isolation, ie.
+1. **Mirror Target**: Start with identical building (Set Reference model to Match Target model GEOMETRIC INPUT Values), user can subsequently customize specific fileds and maintain Reference and Target model isolation, ie.
 
-   - Target: 1500m² Toronto heatpump building
-   - Reference: 1500m² Toronto heatpump building (initially identical)
+   - Target: 1500m² (h_15) Toronto building
+   - Reference: 1500m² (ref_h_15) Toronto building (initially identical)
    - User edits: Change specific Reference values to test variations
-   - This must set all Reference model input values to be the same as the Target model. This could use the FileHandler methods we use for importing values, where a script imports and maps target values to the Reference values in a kind of internal round-trip then caclulateAll run. Or it could simply look up Target values and set Reference values to the same... then allow calculations. Calculated cells in both models would thus derive the same results
+   - This must set all geometric Reference model input values to be the same as the Target model. This could use the FileHandler methods we use for importing values, where a script imports and maps target values to the Reference values in a kind of internal round-trip then caclulateAll run. Or it could simply look up Target values and set Reference values to the same... then allow calculations. Calculated cells in both models would thus derive the same results
 
-2. **Mirror Target + Reference**: Match Target model input values BUT with an overlay for relevant building code standards mapped via ReferenceValues.js, based on what Reference System is set at ref_d_13 in S02.
+2. **Mirror Target + Reference**: Match Target model input values BUT also with an overlay for relevant building code standards mapped via ReferenceValues.js, based on what Reference System is set at ref_d_13 in S02. (note we do this now with the explicit 'Set Values' button in S01 for each model, Target and Reference, independently, 2025.11.27, we don't need this as a separate function now.)
 
    - Target: 1500m² Toronto heatpump building (actual design)
    - Reference: 1500m² Toronto building with code minimum insulation values and equipment efficiencies from ReferenceValues.js
    - Comparison: Actual design vs code compliance
 
-3. **Independent Models**: Complete freedom - any building vs any building
+3. **Independent Models**: Complete freedom - any building vs any building (this is what we allow now, it does not need to be a command in the Reference button dropdown)
 
    - Target: 1500m² Toronto heatpump building in 2024
    - Reference: 2000m² Vancouver gas building in 2030

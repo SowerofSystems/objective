@@ -288,6 +288,7 @@ window.TEUI.SectionModules.sect13 = (function () {
   // PATTERN 2: The ModeManager Facade
   const ModeManager = {
     currentMode: "target",
+    _isRefreshing: false, // 🔥 FIX: Guard flag to prevent dropdown events during refreshUI()
     initialize: function () {
       TargetState.initialize();
       ReferenceState.initialize();
@@ -483,8 +484,14 @@ window.TEUI.SectionModules.sect13 = (function () {
       }
     },
     refreshUI: function () {
+      // 🔥 FIX: Set guard flag to prevent dropdown change events during UI refresh
+      this._isRefreshing = true;
+
       const sectionElement = document.getElementById("mechanicalLoads");
-      if (!sectionElement) return;
+      if (!sectionElement) {
+        this._isRefreshing = false;
+        return;
+      }
 
       const currentState = this.getCurrentState();
 
@@ -566,6 +573,9 @@ window.TEUI.SectionModules.sect13 = (function () {
       });
 
       this.updateCalculatedDisplayValues();
+
+      // 🔥 FIX: Clear guard flag after UI refresh completes
+      this._isRefreshing = false;
     },
 
     // CRITICAL: Mode-aware conditional UI updates
@@ -2325,6 +2335,11 @@ window.TEUI.SectionModules.sect13 = (function () {
    * ✅ CRITICAL: Store dropdown changes in current state via ModeManager
    */
   function handleDropdownChange(e) {
+    // 🔥 FIX: Ignore dropdown events during refreshUI() to prevent state contamination
+    if (ModeManager._isRefreshing) {
+      return;
+    }
+
     const fieldId = e.target.getAttribute("data-field-id");
     if (!fieldId) return;
 
