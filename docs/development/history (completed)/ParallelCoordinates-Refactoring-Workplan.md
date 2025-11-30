@@ -50,9 +50,10 @@ The four optimization handlers contain **~850 lines of nearly identical code**:
 - Optimize: SHW 300%, DWHR 50%, MVHR 85%, TB 20%, nGains 60%, ACH50 1.00
 - SuperOptimize: SHW 400%, DWHR 70%, MVHR 95%, TB **10%**, nGains PHPP, ACH50 0.60
 - PassivHaus: SHW 400%, DWHR 70%, MVHR 95%, TB **5%**, nGains PHPP, ACH50 0.60
+- Note effiency limits are capped by systems (ie. 98% max if gas and 100% max if electric) in all but the 'Decarbonize' method which switches systems to Heatpumps and allows higher efficiencies. 
 
 ### 3. Development Artifacts
-- Inconsistent "Part 1, Part 2, Part 3" comments throughout
+- Inconsistent "Part 1, Part 2, Part 3" comments throughout and are out of order to the casual reader
 - Diagnostic code blocks that could be cleaner
 - Redundant comments explaining the same pattern multiple times
 
@@ -428,3 +429,153 @@ When starting tomorrow:
 4. Allocate 2.5 hours uninterrupted
 5. Have browser dev tools ready for testing
 6. Begin with Phase 1: Structure Reorganization
+
+---
+
+## ✅ REFACTORING COMPLETED - November 30, 2025
+
+**Completion Time:** ~2 hours  
+**Branch:** PC-RF  
+**Commits:** 3 commits (b8ee7ec, 7e8a7d5, dbb4fdf)  
+**Status:** ✅ Ready for browser testing
+
+### Final Results
+
+| Metric | Original | Refactored | Change |
+|--------|----------|------------|--------|
+| Main File Size | 3,199 lines | 712 lines | **-77.7%** ✅ |
+| Total Code | 3,199 lines | 3,115 lines | -84 lines |
+| Modules | 1 file | 4 files | Modular ✅ |
+| Code Duplication | ~850 lines | ~0 lines | **Eliminated** ✅ |
+
+**Exceeded target:** Originally planned for ~2,000 lines, achieved **712 lines** (77.7% reduction)!
+
+### Module Architecture
+
+**4-Module System:**
+
+1. **[pcConfig.js](../../src/core/pcConfig.js)** - 399 lines
+   - OPTIMIZATION_AXES configuration (14 axes)
+   - Conditional field logic (SHW%, HEAT%)
+   - Data fetcher: getParallelCoordinatesData()
+
+2. **[pcOptimization.js](../../src/core/pcOptimization.js)** - 581 lines ⭐ NEW
+   - OPTIMIZATION_PRESETS (data-driven configuration)
+   - updateField() helper
+   - applyOptimizationPreset() unified handler
+   - 4 wrappers: Decarbonize, Optimize, SuperOptimize, PassivHausIfy
+   - **Replaced ~850 duplicate lines with ~150 lines of logic**
+
+3. **[pcRendering.js](../../src/core/pcRendering.js)** - 1,423 lines ⭐ NEW
+   - renderGraph() - Complete D3 visualization
+   - renderTable() - Financial calculations
+   - EDITABLE_AXES configuration
+   - Drag interaction (dragStarted, dragging, dragEnded)
+   - State updates (Pattern A compliant)
+
+4. **[ParallelCoordinates.js](../../src/core/ParallelCoordinates.js)** - 712 lines ⭐ REFACTORED
+   - Lightweight orchestrator
+   - UI initialization & controls
+   - Settings modal (ROI Term)
+   - Delegates to modules:
+     - Data fetching → pcConfig
+     - Rendering → pcRendering
+     - Optimizations → pcOptimization
+   - Export & Fullscreen
+
+### Browser Testing Checklist
+
+**READY FOR TESTING - Use this checklist:**
+
+#### Module Loading ✅
+- [ ] All 5 scripts load without errors (console)
+- [ ] Load order: pcConfig → pcFinancials → pcOptimization → pcRendering → ParallelCoordinates
+
+#### Basic Functionality ✅
+- [ ] Page loads, no console errors
+- [ ] "Activate Optimization View" button present
+- [ ] Activation expands container, renders graph
+- [ ] 14 axes displayed (Target blue, Reference red)
+- [ ] Table has all rows (Reference, Target, Δ, %Δ, costs, ROI)
+- [ ] Legend visible (Target/Reference, Calculated/Editable)
+
+#### Optimization Buttons ✅
+- [ ] **Restore Baseline** - Calls StateManager.resetTier1_UndoChanges()
+- [ ] **Decarbonize** - SHW/Heating → Heatpump, feedback message
+- [ ] **Optimize** - 8 params (TB=20%)
+- [ ] **Super Optimize** - 8 params (TB=10%)
+- [ ] **PassivHaus-ify** - 8 params (TB=5%)
+- [ ] Feedback console shows messages
+- [ ] Ghost trail animation on graph refresh
+
+#### Interactive Dragging ✅
+- [ ] Editable nodes are 2× size
+- [ ] Drag updates position, snaps to steps
+- [ ] Live tooltip during drag
+- [ ] Ghost line follows drag (rubber band)
+- [ ] StateManager updates on drag end
+- [ ] Sections recalculate (S07, S10, S11, S12, S13)
+- [ ] Special cases:
+  - [ ] SHW% auto fuel switch (>100% → Heatpump)
+  - [ ] HEAT% auto fuel switch + HSPF conversion
+  - [ ] nGains% discrete snap (0, 40, 50, 60, PHPP)
+  - [ ] ACH50 dropdown flip (d_108 = "MEASURED")
+
+#### Export & Settings ✅
+- [ ] Export PNG works
+- [ ] Fullscreen toggle works
+- [ ] Settings modal (ROI Term)
+- [ ] ROI Term changes update table
+- [ ] Capital budget editable (localStorage)
+
+#### Regression Tests ✅
+- [ ] Target/Reference isolation (no mixing)
+- [ ] S07 mode switching works
+- [ ] Console.log debugging preserved
+
+### Rollback Plan 🔄
+
+If issues found:
+
+**Option 1 - File Restore:**
+```bash
+mv src/core/ParallelCoordinates.old.js src/core/ParallelCoordinates.js
+# Remove new module <script> tags from index.html
+```
+
+**Option 2 - Git Reset:**
+```bash
+git reset --hard b8ee7ec  # Baseline commit before split
+```
+
+**Backups available:**
+- `src/core/ParallelCoordinates.old.js` (full 3,199 lines)
+- `src/core/ParallelCoordinates.backup.js` (previous backup)
+- Git history: commits b8ee7ec, 7e8a7d5, dbb4fdf
+
+### Commit History 📝
+
+```
+b8ee7ec - Refactor: Establish PC-RF baseline before split
+7e8a7d5 - Refactor: Extract optimization and rendering modules from PC
+dbb4fdf - Refactor: Complete PC.js modularization - 77.7% size reduction
+```
+
+### Next Steps 🚀
+
+1. **Test in browser** (use checklist above)
+2. **Fix any issues** found during testing
+3. **Verify all 4 optimization buttons** work identically to before
+4. **Test interactive dragging** on all editable axes
+5. **Merge PC-RF → main** once all tests pass
+6. **Delete backup files** after successful merge:
+   - `src/core/ParallelCoordinates.old.js`
+   - `src/core/ParallelCoordinates.backup.js`
+7. **Update [CLAUDE.md](../CLAUDE.md)** with new architecture (optional)
+
+---
+
+**Refactoring completed by:** Andy & Claude  
+**Date:** November 30, 2025  
+**Total time:** ~2 hours  
+**Success Metrics:** ✅ All targets exceeded (77.7% vs 35% target reduction)
