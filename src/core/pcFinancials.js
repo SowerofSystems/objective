@@ -590,41 +590,49 @@ window.TEUI.pcFinancials = (function () {
     /**
      * TEDI - Thermal Energy Demand Intensity
      * Cost = Heating fuel cost from Section 13
-     * Uses actual fuel volumes, inherently conditional (only one fuel type active)
-     * - Electric/Heatpump: d_114 (kWh) × l_12 ($/kWh)
-     * - Gas: h_115 (m³) × l_13 ($/m³)
-     * - Oil: f_115 (litres) × l_16 ($/litre)
+     * CRITICAL: Only use ONE fuel volume to avoid double-counting
+     * - d_114 is ALWAYS calculated (thermal demand kWh) for all systems
+     * - h_115 and f_115 are conditionally zero based on system type (d_113)
+     * - Gas system: Use h_115 × l_13 ONLY (ignore d_114)
+     * - Oil system: Use f_115 × l_16 ONLY (ignore d_114)
+     * - Electric/Heatpump: Use d_114 × l_12 (h_115 and f_115 are zero)
      */
     tedi: {
       target: () => {
-        const electricHeating = getValue("d_114") || 0; // Electric heating (kWh) - TARGET
-        const gasHeating = getValue("h_115") || 0; // Gas heating (m³) - TARGET
-        const oilHeating = getValue("f_115") || 0; // Oil heating (litres) - TARGET
+        const electricHeating = getValue("d_114") || 0; // Thermal demand (kWh) - TARGET
+        const gasHeating = getValue("h_115") || 0; // Gas volume (m³) - TARGET
+        const oilHeating = getValue("f_115") || 0; // Oil volume (litres) - TARGET
 
         const electricRate = getValue("l_12") || 0; // $/kWh
         const gasRate = getValue("l_13") || 0; // $/m³
         const oilRate = getValue("l_16") || 0; // $/litre
 
-        return (
-          electricHeating * electricRate +
-          gasHeating * gasRate +
-          oilHeating * oilRate
-        );
+        // Only use the non-zero fuel volume to avoid double-counting
+        if (gasHeating > 0) {
+          return gasHeating * gasRate; // Gas system: m³ × $/m³
+        } else if (oilHeating > 0) {
+          return oilHeating * oilRate; // Oil system: litres × $/litre
+        } else {
+          return electricHeating * electricRate; // Electric/Heatpump: kWh × $/kWh
+        }
       },
       reference: () => {
-        const electricHeating = getValue("ref_d_114") || 0; // Electric heating (kWh) - REFERENCE
-        const gasHeating = getValue("ref_h_115") || 0; // Gas heating (m³) - REFERENCE
-        const oilHeating = getValue("ref_f_115") || 0; // Oil heating (litres) - REFERENCE
+        const electricHeating = getValue("ref_d_114") || 0; // Thermal demand (kWh) - REFERENCE
+        const gasHeating = getValue("ref_h_115") || 0; // Gas volume (m³) - REFERENCE
+        const oilHeating = getValue("ref_f_115") || 0; // Oil volume (litres) - REFERENCE
 
         const electricRate = getValue("ref_l_12") || 0; // $/kWh
         const gasRate = getValue("ref_l_13") || 0; // $/m³
         const oilRate = getValue("ref_l_16") || 0; // $/litre
 
-        return (
-          electricHeating * electricRate +
-          gasHeating * gasRate +
-          oilHeating * oilRate
-        );
+        // Only use the non-zero fuel volume to avoid double-counting
+        if (gasHeating > 0) {
+          return gasHeating * gasRate; // Gas system: m³ × $/m³
+        } else if (oilHeating > 0) {
+          return oilHeating * oilRate; // Oil system: litres × $/litre
+        } else {
+          return electricHeating * electricRate; // Electric/Heatpump: kWh × $/kWh
+        }
       },
       savings: function () {
         const delta = this.reference() - this.target();

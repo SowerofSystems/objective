@@ -21,24 +21,43 @@ Reference Cost = Same formula using ref_ prefixed fields
 
 ---
 
-### ✅ TEDI: COMPLETED
-**Issue**: Code was correct but variable names could be clearer.
+### ✅ TEDI: FIXED - Double Counting Resolved!
+**Issue Discovered & Fixed**: Previous implementation double-counted heating costs for Gas/Oil systems.
 
-**Fix Applied**: Updated variable naming for clarity:
+**The Problem (OLD CODE)**:
 ```javascript
-Cost = (electricHeating × l_12) + (gasHeating × l_13) + (oilHeating × l_16)
-       where electricHeating=d_114, gasHeating=h_115, oilHeating=f_115
+// WRONG - Summed all three values
+return (
+  d_114 * electricRate +  // ❌ d_114 is ALWAYS calculated (thermal kWh demand)
+  h_115 * gasRate +        // ⚠️ h_115 = 0 if not Gas
+  f_115 * oilRate          // ⚠️ f_115 = 0 if not Oil
+);
 ```
 
-**Why This Works**: Implicit fuel conditioning
-- Only ONE heating fuel is active per building (no multi-fuel systems)
-- Electric/Heatpump: d_114 > 0, h_115 = 0, f_115 = 0 → only electric cost
-- Gas: d_114 = 0, h_115 > 0, f_115 = 0 → only gas cost
-- Oil: d_114 = 0, h_115 = 0, f_115 > 0 → only oil cost
+**Why It Was WRONG**:
+- `d_114` (thermal demand in kWh) is **ALWAYS calculated**, regardless of fuel type at `d_113`
+- `h_115` and `f_115` are conditionally set to 0 based on fuel type
+- **For Gas system**: `d_114 ≠ 0` AND `h_115 ≠ 0` → **DOUBLE COUNTED** cost!
+- **For Oil system**: `d_114 ≠ 0` AND `f_115 ≠ 0` → **DOUBLE COUNTED** cost!
 
-**Confirmed**: `l_13` is $/m³ (volumetric pricing), so `h_115 × l_13` gives correct cost in dollars
+**Example of Double Counting (Gas System)**:
+- Thermal demand: 50,000 kWh/yr → `d_114 = 50,000`
+- Gas volume needed: 5,000 m³ → `h_115 = 5,000`
+- Electric rate: $0.13/kWh, Gas rate: $0.51/m³
+- **WRONG**: (50,000 × $0.13) + (5,000 × $0.51) = $6,500 + $2,550 = **$9,050**
+- **CORRECT**: 5,000 × $0.51 = **$2,550**
 
-**Propane/Wood**: Not calculated by S13 (supplemental only, not primary heating)
+**Fix Applied**:
+```javascript
+// ✅ CORRECT - Conditional logic to use only ONE fuel volume
+if (gasHeating > 0) {
+  return gasHeating * gasRate;  // Gas system only
+} else if (oilHeating > 0) {
+  return oilHeating * oilRate;  // Oil system only
+} else {
+  return electricHeating * electricRate;  // Electric/Heatpump only
+}
+```
 
 ---
 
@@ -95,11 +114,18 @@ if (tediValue > 0) {
 - **Critical**: Only ONE fuel type is active per building (no multi-fuel systems)
 
 **Heating Fuel Volumes** (calculated by Section 13):
-- `d_114` / `ref_d_114`: **Electricity** (kWh) - Active when system type = "Heatpump" or "Electric"
-  - Auto-calculated from thermal demand and COP/efficiency
-- `h_115` / `ref_h_115`: **Gas** (m³) - Active when system type = "Gas"
-- `f_115` / `ref_f_115`: **Oil** (litres) - Active when system type = "Oil"
+- `d_114` / `ref_d_114`: **Thermal Demand** (kWh) - **⚠️ ALWAYS CALCULATED for all system types!**
+  - Shows thermal energy needed regardless of fuel type
+  - For Electric/Heatpump: This IS the electricity consumed
+  - For Gas/Oil: This is thermal demand, NOT the fuel volume
+- `h_115` / `ref_h_115`: **Gas Volume** (m³) - Only non-zero when system type = "Gas"
+- `f_115` / `ref_f_115`: **Oil Volume** (litres) - Only non-zero when system type = "Oil"
 - **Note**: Propane and Wood are NOT calculated by S13 (supplemental only, not primary heating)
+
+**CRITICAL**: For cost calculations:
+- Electric/Heatpump: Use `d_114 × l_12` (kWh × $/kWh)
+- Gas: Use `h_115 × l_13` (m³ × $/m³) - **IGNORE d_114**
+- Oil: Use `f_115 × l_16` (litres × $/litre) - **IGNORE d_114**
 
 ### Section 04: Energy Totals (All End Uses)
 
@@ -423,14 +449,15 @@ The `d_136` (TEUI kWh/yr) field is useful for energy intensity, but:
 
 ## 🔬 Detailed Analysis: TEDI, TELI, and Heating Costs
 
-### Current TEDI Implementation ([pcFinancials.js:598-631](../../src/core/pcFinancials.js#L598-L631))
+### Current TEDI Implementation ([pcFinancials.js:598-633](../../src/core/pcFinancials.js#L598-L633))
 
-**Status**: ✅ **Correct** - Uses implicit fuel conditioning
+**Status**: 🚨 **BROKEN** - **DOUBLE COUNTS** heating costs for Gas/Oil systems!
 
 ```javascript
+// CURRENT CODE (WRONG!)
 tedi: {
   target: () => {
-    const heatingDemand = getValue("d_114"); // Electric heating (kWh) - TARGET
+    const heatingDemand = getValue("d_114"); // ❌ ALWAYS has value (thermal demand kWh)
     const gasVolume = getValue("h_115");     // Gas heating (m³) - TARGET
     const oilVolume = getValue("f_115");     // Oil heating (litres) - TARGET
     const electricRate = getValue("l_12");   // $/kWh
@@ -438,19 +465,19 @@ tedi: {
     const oilRate = getValue("l_16");        // $/litre
 
     return (
-      heatingDemand * electricRate +  // $0 if Gas/Oil system
-      gasVolume * gasRate +            // $0 if Electric/Oil system
-      oilVolume * oilRate              // $0 if Electric/Gas system
+      heatingDemand * electricRate +  // ❌ NOT $0 for Gas/Oil! Always calculated!
+      gasVolume * gasRate +            // ✅ $0 if not Gas
+      oilVolume * oilRate              // ✅ $0 if not Oil
     );
   }
 }
 ```
 
-**Why This Works**:
-- **Electric/Heatpump**: `d_114 = 5000 kWh`, `h_115 = 0`, `f_115 = 0` → Cost = `5000 × $0.13 = $650`
-- **Gas**: `d_114 = 0`, `h_115 = 500 m³`, `f_115 = 0` → Cost = `500 × $0.51 = $255`
-- **Oil**: `d_114 = 0`, `h_115 = 0`, `f_115 = 300 L` → Cost = `300 × $1.50 = $450`
-- Only ONE term is non-zero, so sum = active fuel cost ✅
+**Why This Is BROKEN**:
+- **Electric/Heatpump**: `d_114 = 5000 kWh`, `h_115 = 0`, `f_115 = 0` → Cost = `5000 × $0.13 = $650` ✅ CORRECT
+- **Gas**: `d_114 = 5000 kWh`, `h_115 = 500 m³`, `f_115 = 0` → Cost = `(5000 × $0.13) + (500 × $0.51) = $905` ❌ WRONG (should be $255)
+- **Oil**: `d_114 = 5000 kWh`, `h_115 = 0`, `f_115 = 300 L` → Cost = `(5000 × $0.13) + (300 × $1.50) = $1,100` ❌ WRONG (should be $450)
+- **Double counting** occurs because `d_114` is not conditionally zero!
 
 ### Current TELI Implementation ([pcFinancials.js:639-656](../../src/core/pcFinancials.js#L639-L656))
 
@@ -543,13 +570,69 @@ teli: {
 
 ---
 
-## ✅ Implementation Status Summary
+## ✅ Implementation Status Summary - UPDATED
 
-| Metric | Current Status | Fuel Handling | Next Steps |
-|--------|---------------|---------------|------------|
-| **TEUI** | ✅ Complete | Sums all 5 fuels from S04 | Test with mixed-fuel buildings |
-| **TEDI** | ✅ Complete | Sums 3 heating fuels from S13 | Test with Gas/Oil systems |
-| **TELI** | ⚠️ Future | Electric-only (awaiting pro-rating approach) | Design TELI/TEDI ratio method |
+| Metric | Current Status | Issue | Next Steps |
+|--------|---------------|-------|------------|
+| **TEUI** | ✅ Fixed | None | Test with mixed-fuel buildings |
+| **TEDI** | ✅ Fixed | None | Test with Gas/Oil systems |
+| **TELI** | ⚠️ Future | Electric-only | Awaiting S14 data explanation |
+
+---
+
+## 🔧 Required Fix for TEDI
+
+### Correct Implementation
+
+```javascript
+tedi: {
+  target: () => {
+    // Get all fuel volumes
+    const electricHeating = getValue("d_114") || 0; // Thermal demand (kWh)
+    const gasHeating = getValue("h_115") || 0;       // Gas volume (m³)
+    const oilHeating = getValue("f_115") || 0;       // Oil volume (litres)
+
+    // Get fuel rates
+    const electricRate = getValue("l_12") || 0; // $/kWh
+    const gasRate = getValue("l_13") || 0;      // $/m³
+    const oilRate = getValue("l_16") || 0;      // $/litre
+
+    // ✅ CORRECT: Only use the non-zero fuel volume
+    // Gas and Oil systems: h_115 or f_115 will be non-zero, use those ONLY
+    // Electric systems: h_115 and f_115 are zero, use d_114
+
+    if (gasHeating > 0) {
+      return gasHeating * gasRate;  // Gas system: use m³ × $/m³
+    } else if (oilHeating > 0) {
+      return oilHeating * oilRate;  // Oil system: use litres × $/litre
+    } else {
+      return electricHeating * electricRate;  // Electric/Heatpump: use kWh × $/kWh
+    }
+  },
+  reference: () => {
+    // Same pattern with ref_ prefix
+    const electricHeating = getValue("ref_d_114") || 0;
+    const gasHeating = getValue("ref_h_115") || 0;
+    const oilHeating = getValue("ref_f_115") || 0;
+
+    const electricRate = getValue("ref_l_12") || 0;
+    const gasRate = getValue("ref_l_13") || 0;
+    const oilRate = getValue("ref_l_16") || 0;
+
+    if (gasHeating > 0) {
+      return gasHeating * gasRate;
+    } else if (oilHeating > 0) {
+      return oilHeating * oilRate;
+    } else {
+      return electricHeating * electricRate;
+    }
+  },
+  savings: function () {
+    const delta = this.reference() - this.target();
+    return delta > 0 ? delta : 0;
+  },
+}
+```
 
 ---
 
@@ -557,28 +640,32 @@ teli: {
 
 ### Changes Made to [pcFinancials.js](../../src/core/pcFinancials.js)
 
-1. **TEUI (lines 685-736)** - ✅ Fixed
+1. **TEUI (lines 685-736)** - ✅ Fixed & Complete
    - **Before**: Only used electricity rate (`d_136 × l_12`)
    - **After**: Sums all 5 fuel costs from S04 (`h_27` to `h_31`)
    - **Impact**: Accurate total operating costs for all fuel types
+   - **Status**: ✅ Ready for testing
 
-2. **TEDI (lines 598-633)** - ✅ Enhanced
-   - **Before**: Correct logic but unclear variable names
-   - **After**: Clearer naming (`electricHeating`, `gasHeating`, `oilHeating`)
-   - **Confirmed**: `l_13` is $/m³, calculation is correct
+2. **TEDI (lines 600-641)** - ✅ Fixed & Complete
+   - **Before**: Double-counted costs by summing `d_114 + h_115 + f_115`
+   - **Problem**: `d_114` is NOT zero for Gas/Oil systems
+   - **Fix Applied**: Conditional logic to use only ONE fuel volume
+   - **Status**: ✅ Ready for testing
 
-3. **TELI (lines 639-656)** - ⚠️ Deferred
+3. **TELI (lines 643-656)** - ⚠️ Future Enhancement
    - **Current**: Electric-only
    - **Proposed**: Pro-rate TEDI cost by TELI/TEDI ratio
-   - **Status**: Awaiting architectural analysis
+   - **Status**: Awaiting Section 14 data explanation
 
 ---
 
 **Confirmed Gas Price Unit**: `l_13` = $/m³ (volumetric pricing, NOT $/kWh thermal)
 
-**Next Testing Steps**:
-1. Test TEUI with all-electric building
-2. Test TEUI with gas heating building
-3. Test TEDI with gas system (verify `h_115 × l_13` gives correct cost)
-4. Test TEDI with oil system (verify `f_115 × l_16` gives correct cost)
-5. Verify ROI calculations use correct cost values
+**Action Items**:
+1. ✅ **TEUI** - Fixed and ready for testing
+2. ✅ **TEDI** - Fixed with conditional logic
+3. 🔄 **Commit** changes locally
+4. 🧪 **TEST** TEUI with all-electric building
+5. 🧪 **TEST** TEDI with Gas system (verify no double-counting)
+6. 🧪 **TEST** TEDI with Oil system (verify no double-counting)
+7. 💡 **TELI** - Review Section 14 data for implementation approach
