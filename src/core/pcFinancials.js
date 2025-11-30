@@ -642,22 +642,27 @@ window.TEUI.pcFinancials = (function () {
 
     /**
      * TELI - Thermal Envelope Loss Intensity
-     * Cost = TELI (d_131 ekWh/yr) × electricity rate
-     * Simple calculation for Electric/Heatpump buildings
-     * TODO: Add Gas/Oil fuel logic later (more complex, no direct equivalence)
+     * Cost = TEDI cost × TELI/TEDI Ratio (m_131)
+     *
+     * Pro-rating approach:
+     * - m_131 = TELI ÷ TEDI (calculated in Section 14)
+     * - TELI cost = TEDI cost × m_131
+     *
+     * This automatically handles all fuel types (Gas, Oil, Electric/Heatpump)
+     * by leveraging the TEDI cost calculation which already has conditional fuel logic
      */
     teli: {
       target: () => {
-        const teliEnergy = getValue("d_131"); // TELI (ekWh/yr) - TARGET
-        const electricRate = getValue("l_12"); // $/kWh - TARGET
+        const tediCost = calculations.tedi.target(); // TEDI cost (already handles all fuel types)
+        const teliTediRatio = getValue("m_131") || 0; // TELI/TEDI ratio - TARGET
 
-        return teliEnergy * electricRate;
+        return tediCost * teliTediRatio;
       },
       reference: () => {
-        const teliEnergy = getValue("ref_d_131");
-        const electricRate = getValue("ref_l_12");
+        const tediCost = calculations.tedi.reference(); // TEDI cost (already handles all fuel types)
+        const teliTediRatio = getValue("ref_m_131") || 0; // TELI/TEDI ratio - REFERENCE
 
-        return teliEnergy * electricRate;
+        return tediCost * teliTediRatio;
       },
       savings: function () {
         const delta = this.reference() - this.target();

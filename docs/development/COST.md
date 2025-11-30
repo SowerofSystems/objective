@@ -61,40 +61,46 @@ if (gasHeating > 0) {
 
 ---
 
-### ⚠️ TELI: UNDER CONSIDERATION
-**Current Issue**: Only uses electricity rate, should convert thermal losses to fuel costs based on active heating system.
+### ✅ TELI: COMPLETED - Pro-Rating Approach Implemented
+**Issue**: Only used electricity rate, needed to handle all fuel types (Gas, Oil, Electric/Heatpump).
 
-**Challenge**: TELI vs TEDI relationship is nuanced
-- TELI is often slightly different than TEDI
+**Solution**: Pro-rating based on TELI/TEDI ratio
 - TELI = envelope losses only (walls, roof, floor, windows)
 - TEDI = total heating demand (envelope + ventilation + system losses)
-- Using raw S13 thermal values would not accurately represent envelope-specific costs
+- TELI/TEDI ratio captures the proportion of heating costs attributable to envelope
 
-**Proposed Approach**: Pro-rating based on TELI/TEDI ratio
+**Implementation**:
+1. Added new field `m_131` to Section 14 (row 131):
+   - Label: "TELI/TEDI Ratio (used for costs)"
+   - ID: "T.5.2a"
+   - Formula: `m_131 = h_131 / h_127` (TELI ÷ TEDI)
+   - Calculated for both Target and Reference models
+
+2. Updated pcFinancials.js TELI calculation:
 ```javascript
-// If TELI is 10% lower than TEDI: TELI cost = TEDI cost / 1.10
-// If TELI is 10% higher than TEDI: TELI cost = TEDI cost × 1.10
-
-const tediValue = getValue("d_130");  // TEDI (kWh/m²/yr)
-const teliValue = getValue("d_131");  // TELI (kWh/m²/yr)
-const tediCost = calculations.tedi.target(); // Already calculated
-
-if (tediValue > 0) {
-  const ratio = teliValue / tediValue;
-  return tediCost * ratio;
-} else {
-  return 0;
+// TELI cost = TEDI cost × TELI/TEDI ratio
+target: () => {
+  const tediCost = calculations.tedi.target(); // Already handles all fuel types
+  const teliTediRatio = getValue("m_131") || 0;
+  return tediCost * teliTediRatio;
 }
 ```
 
-**Status**: Awaiting further analysis before implementation
+**Benefits**:
+- Automatically handles all fuel types by leveraging TEDI's conditional fuel logic
+- Accurately represents envelope-specific costs as a proportion of total heating costs
+- Simple, maintainable calculation with clear semantic meaning
+
+**Status**: ✅ COMPLETED
 
 ### Scope
 - **Primary**: ✅ COMPLETED - Fix TEUI row in S18 Parallel Coordinates table
-- **Secondary**: ✅ COMPLETED - Clarify TEDI implementation
-- **Future**: ⚠️ TELI enhancement (pro-rating approach, awaiting analysis)
-- **Files**: [pcFinancials.js](../../src/core/pcFinancials.js) only
-- **Time**: 45 minutes (TEUI + TEDI complete)
+- **Secondary**: ✅ COMPLETED - Clarify TEDI implementation (fixed double-counting bug)
+- **Tertiary**: ✅ COMPLETED - TELI enhancement (pro-rating approach implemented)
+- **Files Modified**:
+  - [src/core/pcFinancials.js](../../src/core/pcFinancials.js) - Updated TEUI, TEDI, and TELI calculations
+  - [src/sections/Section14.js](../../src/sections/Section14.js) - Added m_131 field and calculations
+- **Total Time**: ~90 minutes (all three metrics complete)
 
 ### Key Insight: Implicit Fuel Conditioning
 ✅ **Summing all fuel types is inherently conditional** because:

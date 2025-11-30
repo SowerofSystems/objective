@@ -148,6 +148,7 @@ window.TEUI.SectionModules.sect14 = (function () {
         "h_130",
         "d_131",
         "h_131",
+        "m_131",
         "d_132",
         "h_132",
       ];
@@ -418,13 +419,11 @@ window.TEUI.SectionModules.sect14 = (function () {
           classes: ["calculated-value"],
           section: "tediSummary",
         },
-        i: {
-          content:
-            "Includes V.5 Net Ventilation Losses, Excludes T.7.3 CEDI Ae",
-          classes: ["note-text"],
-        },
+        i: { content: "" },
         j: { content: "" },
-        k: { content: "" },
+        k: { content: "T.4.1 Includes V.5 Net Vent'l. & T.7.3 CEDI Ae Losses",
+             classes: ["label-prefix", "text-left", "no-wrap"],
+         },
         l: { content: "" },
         m: { content: "" },
         n: { content: "" },
@@ -506,10 +505,12 @@ window.TEUI.SectionModules.sect14 = (function () {
         },
         i: { content: "" },
         j: {
-          content: "T.5.2 less Free Cool. & Vent. Exhaust",
-          classes: ["note-text"],
+          content: "T.5.2",
+          classes: ["label-prefix", "text-left", "no-wrap"],
         },
-        k: { content: "" },
+        k: { content: "less Free Cool. & Vent. Exhaust",
+             classes: ["label-prefix", "text-left", "no-wrap"],
+         },
         l: { content: "" },
         m: {
           fieldId: "m_129",
@@ -594,10 +595,23 @@ window.TEUI.SectionModules.sect14 = (function () {
           section: "tediSummary",
         },
         i: { content: "" },
-        j: { content: "" },
-        k: { content: "" },
+        j: {
+          content: "T.5.2",
+          classes: ["label-prefix", "text-left", "no-wrap"],
+        },
+        k: {
+          content: "TELI/TEDI Ratio (used for costs)",
+          classes: ["label-main", "text-left", "no-wrap"],
+        },
         l: { content: "" },
-        m: { content: "" },
+        m: {
+          fieldId: "m_131",
+          type: "calculated",
+          value: "0.00",
+          label: "TELI/TEDI Ratio",
+          classes: ["calculated-value"],
+          section: "tediSummary",
+        },
         n: { content: "" },
       },
     },
@@ -867,6 +881,10 @@ window.TEUI.SectionModules.sect14 = (function () {
     sm.registerDependency("d_131", "h_131");
     sm.registerDependency("h_15", "h_131");
 
+    // m_131: TELI/TEDI Ratio
+    sm.registerDependency("h_131", "m_131");
+    sm.registerDependency("h_127", "m_131");
+
     // d_132 & h_132: CEG and CEGI
     // Excel formula: =SUM(K97:K98)+K103
     ["k_97", "k_98", "k_103"].forEach(dep =>
@@ -1043,6 +1061,14 @@ window.TEUI.SectionModules.sect14 = (function () {
         "calculated"
       );
 
+      // ref_m_131: TELI/TEDI Ratio (for cost pro-rating)
+      const ref_m_131 = ref_tedi_h127 > 0 ? ref_teli_h131 / ref_tedi_h127 : 0;
+      window.TEUI?.StateManager?.setValue(
+        "ref_m_131",
+        ref_m_131.toString(),
+        "calculated"
+      );
+
       // d_132 & h_132: CEG and CEGI
       const ref_cegHeatgain_d132 = k97 + k98 + k103;
       window.TEUI?.StateManager?.setValue(
@@ -1166,6 +1192,10 @@ window.TEUI.SectionModules.sect14 = (function () {
       // h_131: TELI Heatloss Intensity W/m2
       const teli_h131 = area > 0 ? telHeatloss_d131 / area : 0;
       setCalculatedValue("h_131", teli_h131);
+
+      // m_131: TELI/TEDI Ratio (for cost pro-rating)
+      const m_131 = tedi_h127 > 0 ? teli_h131 / tedi_h127 : 0;
+      setCalculatedValue("m_131", m_131);
 
       // d_132 & h_132: CEG and CEGI
       // Excel formula: =SUM(K97:K98)+K103

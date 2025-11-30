@@ -1199,7 +1199,7 @@ window.TEUI.ParallelCoordinates = (function () {
       window_wall_ratio: 50000,
       heating_efficiency: 50000,
       mvhr_efficiency: 50000,
-      tedi: 1,
+      tedi: 50000,
       teli: 100000,
       ghgi: 0,
       teui: 0,
