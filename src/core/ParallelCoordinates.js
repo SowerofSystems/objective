@@ -1423,13 +1423,26 @@ window.TEUI.ParallelCoordinates = (function () {
 
   /**
    * Restore Baseline handler
-   * Placeholder function - to be wired up by user
+   * Calls StateManager's resetTier1_UndoChanges() to restore user to imported state (or defaults)
+   * Automatically refreshes graph after restoration completes
    */
   function handleRestoreBaseline() {
     console.log("[ParallelCoordinates] Restore Baseline action triggered");
 
-    // TODO: Wire up baseline restoration logic
-    showFeedback("Restore Baseline - awaiting implementation", 4000);
+    // Call StateManager's Tier 1 reset (undo user changes, restore to import/defaults)
+    if (window.TEUI?.StateManager?.resetTier1_UndoChanges) {
+      window.TEUI.StateManager.resetTier1_UndoChanges();
+      showFeedback("Baseline restored - reverted to imported data", 3000);
+
+      // Auto-refresh graph after reset completes (with delay to let state settle)
+      setTimeout(() => {
+        refresh();
+        console.log("[ParallelCoordinates] Graph auto-refreshed after baseline restore");
+      }, 200);
+    } else {
+      console.error("[ParallelCoordinates] StateManager.resetTier1_UndoChanges not found");
+      showFeedback("Error: Reset function not available", 3000);
+    }
   }
 
   /**
