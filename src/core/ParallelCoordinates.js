@@ -713,7 +713,7 @@ if (document.readyState === "loading") {
           window.TEUI.ParallelCoordinates.activate();
           localStorage.setItem("s18_ever_activated", "true");
         }
-      }, 800); // Delay to ensure S18 tab is active and visible
+      }, 1800); // Delay increased to 1800ms to allow S12 calculations (g_101, g_102) to complete
     }
   });
 } else {
@@ -727,7 +727,7 @@ if (document.readyState === "loading") {
         window.TEUI.ParallelCoordinates.activate();
         localStorage.setItem("s18_ever_activated", "true");
       }
-    }, 800); // Delay to ensure S18 tab is active and visible
+    }, 1800); // Delay increased to 1800ms to allow S12 calculations (g_101, g_102) to complete
   }
 }
 
