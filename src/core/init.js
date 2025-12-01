@@ -123,11 +123,11 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   // State variables
-  let isVerticalLayout = false; // Default to horizontal for better first impression
+  let isVerticalLayout = true;
   let allExpanded = true;
 
-  // Initialize with horizontal layout (showcase S18 Optimize graph)
-  body.classList.add("horizontal-layout");
+  // Initialize with vertical layout
+  body.classList.add("vertical-layout");
 
   // Add toggle icons to section headers if missing
   document.querySelectorAll(".section-header").forEach(header => {
@@ -223,17 +223,11 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     });
 
-    // Activate Section 18 (Optimize) by default to showcase visual features
-    const s18Tab = tabContainer.querySelector('[data-section-id="parallelCoordinates"]');
-    if (s18Tab) {
-      activateTab("parallelCoordinates");
-    } else {
-      // Fallback to first tab if S18 doesn't exist (shouldn't happen)
-      const firstTab = tabContainer.querySelector(".tab");
-      if (firstTab) {
-        const sectionId = firstTab.getAttribute("data-section-id");
-        activateTab(sectionId);
-      }
+    // Activate first tab by default (for horizontal layout)
+    const firstTab = tabContainer.querySelector(".tab");
+    if (firstTab) {
+      const sectionId = firstTab.getAttribute("data-section-id");
+      activateTab(sectionId);
     }
 
     // Set initial tab display mode based on viewport width
@@ -463,32 +457,25 @@ document.addEventListener("DOMContentLoaded", function () {
     // Restore layout mode
     const savedLayout = localStorage.getItem("layoutMode");
 
-    // If user has explicitly saved vertical preference, respect it
-    if (savedLayout === "vertical") {
-      isVerticalLayout = true;
-      body.classList.add("vertical-layout");
-      body.classList.remove("horizontal-layout");
-      layoutToggleButton.innerHTML = '<i class="bi bi-arrow-right-circle"></i>';
-      restoreCollapsedState();
-    } else {
-      // Default to horizontal layout for first-time users + showcase S18
+    if (savedLayout === "horizontal") {
       isVerticalLayout = false;
       body.classList.add("horizontal-layout");
       body.classList.remove("vertical-layout");
       layoutToggleButton.innerHTML = '<i class="bi bi-arrow-down-circle"></i>';
       initializeTabs();
 
-      // Restore active section if user has a saved preference
+      // Restore active section
       const savedActiveSection = localStorage.getItem("activeSection");
       if (savedActiveSection) {
         activateTab(savedActiveSection);
-      } else {
-        // First-time user - activate S18 to showcase features
-        activateTab("parallelCoordinates");
       }
 
       // Update sticky element heights
       updateStickyElementHeights();
+    } else {
+      // Default to vertical layout
+      isVerticalLayout = true;
+      restoreCollapsedState();
     }
 
     // Set initial expand/collapse all button state
