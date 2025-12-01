@@ -467,7 +467,6 @@ window.TEUI.SectionModules.sect05 = (function () {
           fieldId: "n_38",
           type: "calculated",
           value: "✓",
-          classes: ["checkmark"],
           section: "emissions",
           dependencies: ["m_38"],
           label: "Operational Compliance Status",
@@ -528,7 +527,6 @@ window.TEUI.SectionModules.sect05 = (function () {
           fieldId: "n_39",
           type: "calculated",
           value: "✓",
-          classes: ["checkmark"],
           section: "emissions",
           dependencies: ["m_39"],
           label: "Typology Compliance Status",
@@ -578,7 +576,6 @@ window.TEUI.SectionModules.sect05 = (function () {
           fieldId: "n_40",
           type: "calculated",
           value: "✓",
-          classes: ["checkmark"],
           section: "emissions",
           dependencies: ["m_40"],
           label: "Embedded Compliance Status",
@@ -631,7 +628,6 @@ window.TEUI.SectionModules.sect05 = (function () {
           fieldId: "n_41",
           type: "calculated",
           value: "✓",
-          classes: ["checkmark"],
           section: "emissions",
           dependencies: ["m_41"],
           label: "Modelled Compliance Status",
@@ -1174,7 +1170,9 @@ window.TEUI.SectionModules.sect05 = (function () {
     const element = document.querySelector(`[data-field-id="${fieldId}"]`);
     if (element) {
       element.classList.remove("checkmark", "warning");
-      element.classList.add(isCompliant ? "checkmark" : "warning");
+      const className = isCompliant ? "checkmark" : "warning";
+      element.classList.add(className);
+      console.log(`[S05] ${fieldId}: isCompliant=${isCompliant}, class=${className}, classList=${element.classList.toString()}`);
     }
   }
 

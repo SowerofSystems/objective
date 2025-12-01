@@ -2299,21 +2299,18 @@ textarea.mirror-highlight {
  * TODO: Investigate if removing/adjusting padding would improve centering.
  * For now, deferred for future investigation.
  */
-.checkmark {
-  color: #28a745;
+/* Column N: Compliance indicators - prevent vertical expansion in tall rows */
+.data-table td.col-n {
+  vertical-align: middle;
   font-weight: bold;
   font-size: 1.2rem;
-  margin-right: 5px;
-  display: inline-block;
-  vertical-align: middle;
+}
+
+.checkmark {
+  color: #28a745;
 }
 .warning {
   color: #dc3545;
-  font-weight: bold;
-  font-size: 1.2rem;
-  margin-right: 5px;
-  display: inline-block;
-  vertical-align: middle;
 }
 
 /* =============== ELEGANT USER INPUT BEHAVIOR (OBC Matrix Pattern) =============== */

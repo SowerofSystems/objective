@@ -243,6 +243,7 @@ n: {
 
 **Key Points**:
 - **DO NOT** add `htmlContent: true` - we apply CSS classes directly to DOM
+- **DO NOT** add `classes` array to N column field definitions - let JavaScript apply dynamically
 - **DO** include both compared fields in `dependencies` array
 - **DO** use descriptive labels explaining what's being compared
 
@@ -253,22 +254,23 @@ n: {
 Already defined globally - **do not redefine in sections**:
 
 ```css
-.checkmark {
-  color: #28a745;      /* Green */
+/* Column N: Compliance indicators - prevent vertical expansion in tall rows */
+.data-table td.col-n {
+  vertical-align: middle;
   font-weight: bold;
   font-size: 1.2rem;
-  margin-right: 5px;
-  display: inline-block;
+}
+
+.checkmark {
+  color: #28a745;      /* Green */
 }
 
 .warning {
   color: #dc3545;      /* Red */
-  font-weight: bold;
-  font-size: 1.2rem;
-  margin-right: 5px;
-  display: inline-block;
 }
 ```
+
+**CRITICAL**: Keep CSS simple - do NOT use `!important`, `display`, `margin`, or other layout properties on `.checkmark`/`.warning`. These caused false positives (red checkmarks, green X's). The minimal approach above is the most reliable pattern tested across S05, S08, S11.
 
 ---
 
@@ -390,11 +392,14 @@ Compares your heating setpoint (h_23) against OBC requirements (m_23).
 
 **Symptoms**: Symbol shows ✗ but in green color instead of red.
 
+**CRITICAL RULE**: ✗ is ALWAYS red (`.warning`), ✓ is ALWAYS green (`.checkmark`)
+
 **Root Causes**:
-1. **❗ MOST COMMON**: Missing mode check in `setElementClass()` - Reference mode overwrites Target styling
-2. **Inverted logic**: `isCompliant` boolean is backwards
-3. **Class not applied**: `setElementClass()` not called or called with wrong parameter
-4. **Timing issue**: Class applied before DOM element exists
+1. **❗ MOST COMMON**: Hardcoded `classes: ["checkmark"]` in N column field definition
+2. **Missing mode check**: Missing mode check in `setElementClass()` - Reference mode overwrites Target styling
+3. **Inverted logic**: `isCompliant` boolean is backwards
+4. **Class not applied**: `setElementClass()` not called or called with wrong parameter
+5. **Timing issue**: Class applied before DOM element exists
 
 **Debug Steps**:
 ```javascript
@@ -418,10 +423,39 @@ function calculateHeatingCompliance() {
 ```
 
 **Solutions**:
-1. **ADD MODE CHECK** to `setElementClass()` (see Required Components section)
-2. Verify comparison logic matches "Higher/Lower is Better" pattern
-3. Ensure `setElementClass()` is called AFTER `setFieldValue()`
-4. Check console logs to confirm Reference mode is overwriting Target styling
+1. **REMOVE HARDCODED CLASSES** from N column field definitions - see [Section11.js](../src/sections/Section11.js) as reference
+   ```javascript
+   // ❌ WRONG - hardcoded class prevents dynamic styling:
+   n: { fieldId: "n_38", type: "calculated", value: "✓", classes: ["checkmark"], ... }
+
+   // ✅ CORRECT - no classes array, JavaScript applies dynamically:
+   n: { fieldId: "n_38", type: "calculated", value: "✓", ... }
+   ```
+2. **ADD MODE CHECK** to `setElementClass()` (see Required Components section)
+3. Verify comparison logic matches "Higher/Lower is Better" pattern
+4. Ensure `setElementClass()` is called AFTER `setFieldValue()`
+5. Check console logs to confirm Reference mode is overwriting Target styling
+
+**Real Example from S05 (Dec 2025)**:
+```
+Issue 1: ✗ symbol at 260% displays in green instead of red
+Root Cause: Field definitions had `classes: ["checkmark"]` hardcoded
+Effect: CSS couldn't apply .warning class because .checkmark was baked into field definition
+Fix: Removed classes array from n_38, n_39, n_40, n_41 field definitions
+Result: Underline artifact fixed, JavaScript can now apply correct classes dynamically
+
+Issue 2: Underline artifact appeared in taller rows (with dropdowns)
+Root Cause: Complex CSS with display/margin/flex properties
+Fix: Simplified to minimal CSS - just color on .checkmark/.warning, styling on .col-n parent
+Result: Clean vertical centering, no artifacts
+
+Issue 3: Using !important caused red checkmarks (false positives)
+Root Cause: !important forced colors regardless of which class was applied
+Fix: Removed !important, let CSS cascade work naturally
+Result: ✓ is green, ✗ is red - working perfectly
+
+Reference: Section11.js has correct implementation (no hardcoded classes)
+```
 
 **Real Example from S03 (Nov 2025)**:
 ```
@@ -487,14 +521,19 @@ When implementing M-N compliance:
 
 ### ✅ Completed Sections
 - **S03** (Climate Calculations): Code-based comparison (m_23/n_23, m_24/n_24)
-- **S05** (Envelope): Component performance comparison
+- **S05** (Envelope): Reference model comparison (m_38-41/n_38-41) - Uses `calculateComplianceRatio()` helper pattern, Reference mode = 100%
 - **S07** (Lighting): Lighting performance comparison
 - **S08** (Indoor Air Quality): Health threshold comparison (m_56-59/n_56-59)
+- **S11** (Embodied Carbon): Reference model comparison (m_85-95/n_85-95) - Good styling reference example
 
 ### 🚧 Pending Implementation
+- **S06** (Envelope - remaining rows): Additional M/N fields may be needed
 - **S09** (Renewables): M/N compliance not yet implemented
-- **S11** (Embodied Carbon): Reference model comparison (m_85-95/n_85-95) - partial implementation
+- **S10** (Water): M/N compliance not yet implemented
+- **S12** (Operational Carbon): M/N compliance not yet implemented
 - **S13** (Costs): Cost comparison - not yet implemented
+- **S14** (Life Cycle): M/N compliance not yet implemented
+- **S15** (Schedule): M/N compliance not yet implemented
 
 ### ❌ Not Applicable
 - **S01, S02, S04, S06, S10, S12**: Do not require M/N compliance fields
