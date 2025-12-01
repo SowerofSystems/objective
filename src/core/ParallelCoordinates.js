@@ -704,9 +704,31 @@ window.TEUI.ParallelCoordinates = (function () {
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
     window.TEUI.ParallelCoordinates.initialize();
+
+    // Auto-activate on first page load to showcase visualization
+    if (!localStorage.getItem("s18_ever_activated")) {
+      setTimeout(() => {
+        if (window.TEUI?.ParallelCoordinates?.activate) {
+          console.log("[ParallelCoordinates] First-time activation - showcasing graph");
+          window.TEUI.ParallelCoordinates.activate();
+          localStorage.setItem("s18_ever_activated", "true");
+        }
+      }, 800); // Delay to ensure S18 tab is active and visible
+    }
   });
 } else {
   window.TEUI.ParallelCoordinates.initialize();
+
+  // Auto-activate on first page load to showcase visualization
+  if (!localStorage.getItem("s18_ever_activated")) {
+    setTimeout(() => {
+      if (window.TEUI?.ParallelCoordinates?.activate) {
+        console.log("[ParallelCoordinates] First-time activation - showcasing graph");
+        window.TEUI.ParallelCoordinates.activate();
+        localStorage.setItem("s18_ever_activated", "true");
+      }
+    }, 800); // Delay to ensure S18 tab is active and visible
+  }
 }
 
 console.log("[ParallelCoordinates] Module loaded (Refactored Nov 30, 2025)");
