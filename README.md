@@ -136,6 +136,7 @@ Supported by the Ontario Association of Architects (OAA).
 
 - Dr. Ted Kesik, P.Eng
 - Evelyne Bouchard, OAQ, CPHD
+- Grant Walkin, P.Eng
 
 **Peer Review:**
 
@@ -143,6 +144,7 @@ Supported by the Ontario Association of Architects (OAA).
 - Tandem Architecture
 - Pamela DeMelo, P.Eng.
 - Stephen Pope, OAA, FRAIC
+- Sheena Sharp, OAA, MRAIC
 
 ---
 
