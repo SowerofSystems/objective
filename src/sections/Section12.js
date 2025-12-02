@@ -276,9 +276,10 @@ window.TEUI.SectionModules.sect12 = (function () {
         "l_102",
         "l_103",
         "l_104",
-        "l_107",
-        "l_109",
-        "l_110",
+        "m_104",
+        "m_107",
+        "m_109",
+        "m_110",
         "d_109",
         "d_110",
       ];
@@ -792,8 +793,23 @@ window.TEUI.SectionModules.sect12 = (function () {
           dependencies: ["l_101", "l_102", "l_103"],
           label: "Total Heat Loss Percentage (Should Equal 100%)",
         },
-        m: { content: "N/A", classes: ["reference-value", "total-row-text"] },
-        n: { content: "" },
+        m: {
+          fieldId: "m_104",
+          type: "calculated",
+          value: "N/A",
+          section: "volumeSurfaceMetrics",
+          classes: ["reference-value", "total-row-text"],
+          label: "Passive House Compliance Percentage",
+        },
+        n: {
+          fieldId: "n_104",
+          type: "calculated",
+          value: "✓",
+          section: "volumeSurfaceMetrics",
+          classes: ["total-row-text"],
+          dependencies: ["m_104"],
+          label: "Passive House Compliance Status",
+        },
       },
     },
     105: {
@@ -889,8 +905,9 @@ window.TEUI.SectionModules.sect12 = (function () {
         i: {},
         j: {},
         k: {},
-        l: {
-          fieldId: "l_107",
+        l: {},
+        m: {
+          fieldId: "m_107",
           type: "calculated",
           value: "61%",
           section: "volumeSurfaceMetrics",
@@ -898,8 +915,14 @@ window.TEUI.SectionModules.sect12 = (function () {
           dependencies: ["d_107"],
           label: "WWR Ratio to Reference Standard",
         },
-        m: {},
-        n: {},
+        n: {
+          fieldId: "n_107",
+          type: "calculated",
+          value: "✓",
+          section: "volumeSurfaceMetrics",
+          dependencies: ["m_107"],
+          label: "WWR Compliance Status",
+        },
       },
     },
     108: {
@@ -979,8 +1002,9 @@ window.TEUI.SectionModules.sect12 = (function () {
         i: {},
         j: {},
         k: {},
-        l: {
-          fieldId: "l_109",
+        l: {},
+        m: {
+          fieldId: "m_109",
           type: "calculated",
           value: "115%",
           section: "volumeSurfaceMetrics",
@@ -988,8 +1012,14 @@ window.TEUI.SectionModules.sect12 = (function () {
           dependencies: ["g_109", "d_109"],
           label: "ACH₅₀ Ratio (Measured/Target)",
         },
-        m: {},
-        n: {},
+        n: {
+          fieldId: "n_109",
+          type: "calculated",
+          value: "✓",
+          section: "volumeSurfaceMetrics",
+          dependencies: ["m_109"],
+          label: "ACH₅₀ Compliance Status",
+        },
       },
     },
     110: {
@@ -1028,8 +1058,9 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         j: {},
         k: {},
-        l: {
-          fieldId: "l_110",
+        l: {},
+        m: {
+          fieldId: "m_110",
           type: "calculated",
           value: "173%",
           section: "volumeSurfaceMetrics",
@@ -1037,8 +1068,14 @@ window.TEUI.SectionModules.sect12 = (function () {
           dependencies: ["d_110"],
           label: "ELA₁₀ Ratio to Reference Standard",
         },
-        m: {},
-        n: {},
+        n: {
+          fieldId: "n_110",
+          type: "calculated",
+          value: "✓",
+          section: "volumeSurfaceMetrics",
+          dependencies: ["m_110"],
+          label: "ELA₁₀ Compliance Status",
+        },
       },
     },
   };
@@ -1281,9 +1318,10 @@ window.TEUI.SectionModules.sect12 = (function () {
       determinedFormatType = "percent-2dp"; // Heatloss component %
     } else if (
       fieldId === "l_104" ||
-      fieldId === "l_107" ||
-      fieldId === "l_109" ||
-      fieldId === "l_110"
+      fieldId === "m_104" ||
+      fieldId === "m_107" ||
+      fieldId === "m_109" ||
+      fieldId === "m_110"
     ) {
       determinedFormatType = "percent-0dp"; // Total or reference % (no decimals)
     } else if (
@@ -1769,11 +1807,11 @@ window.TEUI.SectionModules.sect12 = (function () {
     const l107 = refWWR > 0 ? wwr / refWWR : 0;
 
     // Update ratio value with standard formatter
-    setCalculatedValue("l_107", l107, "percent-0dp", isReferenceCalculation);
+    setCalculatedValue("m_107", l107, "percent-0dp", isReferenceCalculation);
 
     return {
       d_107: wwr,
-      l_107: l107,
+      m_107: l107,
     };
   }
 
@@ -1857,12 +1895,12 @@ window.TEUI.SectionModules.sect12 = (function () {
     const l109 = targetACH > 0 ? measuredACH / targetACH : 0;
 
     // Update ratio with standard formatter
-    setCalculatedValue("l_109", l109, "percent-0dp", isReferenceCalculation);
+    setCalculatedValue("m_109", l109, "percent-0dp", isReferenceCalculation);
 
     return {
       g_108: g108_nrl50Target,
       d_109: ach50Target,
-      l_109: l109,
+      m_109: l109,
     };
   }
 
@@ -1891,11 +1929,11 @@ window.TEUI.SectionModules.sect12 = (function () {
     const l110 = refAe10 > 0 ? ae10 / refAe10 : 0;
 
     // Update ratio with standard formatter
-    setCalculatedValue("l_110", l110, "percent-0dp", isReferenceCalculation);
+    setCalculatedValue("m_110", l110, "percent-0dp", isReferenceCalculation);
 
     return {
       d_110: ae10,
-      l_110: l110,
+      m_110: l110,
     };
   }
 
