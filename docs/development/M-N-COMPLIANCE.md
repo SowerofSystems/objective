@@ -1038,6 +1038,132 @@ setElementClass("n_65", isCompliant ? "checkmark" : "warning");
 
 ---
 
-**Last Updated**: 2025-12-02
+---
+
+## Dec 2, 2025 REVISED: Format-Stable Dead Simple Solution
+
+**Baseline Commit**: `e97fe23` (M-N-COMPLIANCE branch)
+
+### Root Cause Analysis: Format Fighting
+
+**Problem identified**: Previous sessions achieved correct calculations (100% in Reference mode, actual ratios in Target mode) but encountered number format conflicts:
+- M columns stored as **decimal ratios** (0.85, 1.0) but displayed as **percentages** ("85%", "100%")
+- `updateCalculatedDisplayValues()` attempted to re-format already-formatted strings
+- `setCalculatedValue()` using `"percent-auto"` format created ambiguity
+
+### S07 Solution Pattern (Lines 1206-1332, 345-406, 905-935)
+
+**Key insight from Section07.js**:
+
+1. **Format ONCE during calculation** (lines 1222-1232):
+   ```javascript
+   // Calculate as decimal ratio
+   const m_49_percent = calculateComplianceRatio("h_49", "ref_h_49", isReferenceCalculation);
+
+   // Format IMMEDIATELY to string
+   const m_49_formatted = window.TEUI?.formatNumber?.(m_49_percent, "percent-0dp") ?? "0%";
+
+   // Store formatted string to BOTH StateManager AND local state
+   window.TEUI.StateManager.setValue("m_49", m_49_formatted, "calculated");
+   setSectionValue("m_49", m_49_formatted, isReferenceCalculation);
+   ```
+
+2. **Mark M/N fields as "raw" format** (lines 923-932):
+   ```javascript
+   function getFieldFormat(fieldId) {
+     const formatMap = {
+       // ... other fields ...
+       // M columns: already formatted as percentages, return as-is
+       m_49: "raw",
+       m_50: "raw",
+       // N columns: checkmarks/warnings, no formatting needed
+       n_49: "raw",
+       n_50: "raw",
+     };
+     return formatMap[fieldId] || "number-2dp-comma";
+   }
+   ```
+
+3. **Skip re-formatting in updateCalculatedDisplayValues** (lines 392-396):
+   ```javascript
+   if (fieldId.startsWith("m_") || fieldId.startsWith("n_")) {
+     formattedValue = displayValue; // Already formatted percentages or checkmarks
+   } else {
+     const formatType = getFieldFormat(fieldId);
+     formattedValue = window.TEUI?.formatNumber?.(displayValue, formatType) ?? displayValue;
+   }
+   ```
+
+### Revised S09 Implementation Strategy
+
+**Critical changes from original "Dead Simple" approach**:
+
+1. ❌ **DON'T** use `setCalculatedValue("m_65", percentOfReference, "percent-auto")`
+   - This causes format ambiguity (is it 0.85 or 85%?)
+
+2. ✅ **DO** format immediately and store as string:
+   ```javascript
+   // Calculate as decimal ratio
+   const percentOfReference = (referenceValue / currentValue) * 100;
+
+   // Format to string IMMEDIATELY
+   const m_65_formatted = window.TEUI?.formatNumber?.(percentOfReference / 100, "percent-0dp") ?? "100%";
+
+   // Store formatted string
+   setCalculatedValue("m_65", m_65_formatted, "raw");
+   ```
+
+3. ✅ **DO** add M/N fields to `getFieldFormat()` map (if it exists in S09):
+   ```javascript
+   // If S09 has getFieldFormat, add:
+   m_65: "raw",
+   m_66: "raw",
+   m_67: "raw",
+   n_65: "raw",
+   n_66: "raw",
+   n_67: "raw",
+   ```
+
+4. ✅ **DO** update `updateCalculatedDisplayValues()` to skip M/N re-formatting:
+   ```javascript
+   calculatedFields.forEach(fieldId => {
+     // ... get value logic ...
+
+     // Format based on field type
+     let formatType = "number";
+     if (fieldId === "d_65" || fieldId === "d_67") {
+       formatType = "number-1dp";
+     } else if (fieldId.startsWith("m_") || fieldId.startsWith("n_")) {
+       formatType = "raw"; // ✅ CRITICAL: Already formatted, use as-is
+     } else if (/* ... other conditions ... */) {
+       formatType = fieldId === "i_63" ? "raw" : "number-2dp-comma";
+     }
+
+     const formattedValue = window.TEUI.formatNumber(value, formatType);
+     element.textContent = formattedValue;
+   });
+   ```
+
+### Implementation Checklist
+
+- [ ] **Step 1**: Add `getFieldFormat()` helper function (if missing) with M/N → "raw" mappings
+- [ ] **Step 2**: Update `calculatePlugLoads()` to format m_65 as string immediately
+- [ ] **Step 3**: Update `calculateLightingLoads()` to format m_66 as string immediately
+- [ ] **Step 4**: Update `calculateEquipmentLoads()` to format m_67 as string immediately
+- [ ] **Step 5**: Update `updateCalculatedDisplayValues()` to skip M/N re-formatting
+- [ ] **Step 6**: Verify N column checkmarks use "raw" format for status symbols
+
+### Expected Outcome
+
+After implementation:
+- ✅ M columns display "100%" in Reference mode, actual ratios in Target mode
+- ✅ Format remains stable across mode toggles (no "1" → "100%" flashing)
+- ✅ No format ambiguity (values are always stored as formatted strings)
+- ✅ Performance identical to S07 (format once, display many)
+
+---
+
+**Last Updated**: 2025-12-02 (Revised with format-stable solution)
+**Baseline Commit**: e97fe23
 **Sections Using Pattern**: S03, S05, S07, S08
 **Global CSS Defined**: src/styles.css lines 2097-2112
