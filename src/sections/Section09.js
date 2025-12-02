@@ -2042,7 +2042,11 @@ window.TEUI.SectionModules.sect09 = (function () {
       }
 
       // ✅ S07 PATTERN: Calculate M-N compliance AFTER densities are published
-      calculateCompliance(true);
+      // CRITICAL: Only update compliance display if we're in Reference mode
+      // Don't overwrite Target mode display when Reference engine runs in background
+      if (ModeManager.currentMode === "reference") {
+        calculateCompliance(true);
+      }
     } catch (error) {
       console.error("[S09] Error in Reference Model calculations:", error);
     }
@@ -2076,6 +2080,12 @@ window.TEUI.SectionModules.sect09 = (function () {
     const m_66_formatted = window.TEUI?.formatNumber?.(m_66_ratio, "percent-0dp") ?? "100%";
     const m_67_formatted = window.TEUI?.formatNumber?.(m_67_ratio, "percent-0dp") ?? "100%";
 
+    console.log(`[S09 M-N FORMAT] isRef=${isReferenceCalculation}, mode=${ModeManager.currentMode}`);
+    console.log(`[S09 M-N FORMAT] Ratios: m_65=${m_65_ratio}, m_66=${m_66_ratio}, m_67=${m_67_ratio}`);
+    console.log(`[S09 M-N FORMAT] Formatted: m_65="${m_65_formatted}" (type=${typeof m_65_formatted})`);
+    console.log(`[S09 M-N FORMAT] Formatted: m_66="${m_66_formatted}" (type=${typeof m_66_formatted})`);
+    console.log(`[S09 M-N FORMAT] Formatted: m_67="${m_67_formatted}" (type=${typeof m_67_formatted})`);
+
     // Calculate N column checkmarks
     const n_65_value = m_65_ratio <= 1.0 ? "✓" : "✗";
     const n_66_value = m_66_ratio <= 1.0 ? "✓" : "✗";
@@ -2083,6 +2093,7 @@ window.TEUI.SectionModules.sect09 = (function () {
 
     // Store to StateManager and local state
     if (isReferenceCalculation) {
+      console.log(`[S09 M-N STORE] Storing to StateManager: ref_m_65="${m_65_formatted}", ref_m_66="${m_66_formatted}", ref_m_67="${m_67_formatted}"`);
       window.TEUI.StateManager.setValue("ref_m_65", m_65_formatted, "calculated");
       window.TEUI.StateManager.setValue("ref_m_66", m_66_formatted, "calculated");
       window.TEUI.StateManager.setValue("ref_m_67", m_67_formatted, "calculated");
@@ -2125,7 +2136,7 @@ window.TEUI.SectionModules.sect09 = (function () {
     }
 
     // Update DOM display
-    updateCalculatedDisplayValues();
+    ModeManager.updateCalculatedDisplayValues();
   }
 
   /**
@@ -2179,7 +2190,11 @@ window.TEUI.SectionModules.sect09 = (function () {
       updateAllReferenceIndicators();
 
       // ✅ S07 PATTERN: Calculate M-N compliance AFTER densities are published
-      calculateCompliance(false);
+      // CRITICAL: Only update compliance display if we're in Target mode
+      // Don't overwrite Reference mode display when Target engine runs in background
+      if (ModeManager.currentMode === "target") {
+        calculateCompliance(false);
+      }
     } catch (error) {
       console.error("[S09] Error in Target Model calculations:", error);
     }
