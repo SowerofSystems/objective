@@ -2351,12 +2351,14 @@ window.TEUI.SectionModules.sect09 = (function () {
    * Replaces the original calculateAll function
    */
   function calculateAll() {
-    // console.log('[S09DB] calculateAll() triggered - running dual-engine calculations...');
+    // 🔍 PERFORMANCE DEBUG: Track what triggers calculateAll()
+    console.log('[S09 PERF] calculateAll() triggered');
+    console.trace('[S09 PERF] calculateAll() stack trace');
 
     calculateReferenceModel();
     calculateTargetModel();
 
-    // console.log('[S09DB] calculateAll() complete - both engines ran');
+    console.log('[S09 PERF] calculateAll() complete');
   }
 
   /**
