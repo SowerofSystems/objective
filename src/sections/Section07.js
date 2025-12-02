@@ -530,7 +530,6 @@ window.TEUI.SectionModules.sect07 = (function () {
           fieldId: "n_49",
           type: "calculated",
           value: "✓",
-          classes: ["checkmark"],
           dependencies: ["m_49"],
           label: "Water Use Compliance Status",
         },
@@ -584,7 +583,6 @@ window.TEUI.SectionModules.sect07 = (function () {
           fieldId: "n_50",
           type: "calculated",
           value: "✓",
-          classes: ["checkmark"],
           dependencies: ["m_50"],
           label: "DHW Use Compliance Status",
         },
@@ -680,7 +678,6 @@ window.TEUI.SectionModules.sect07 = (function () {
           fieldId: "n_52",
           type: "calculated",
           value: "✓",
-          classes: ["checkmark"],
           dependencies: ["m_52"],
           label: "Efficiency Compliance Status",
         },
@@ -731,7 +728,6 @@ window.TEUI.SectionModules.sect07 = (function () {
           fieldId: "n_53",
           type: "calculated",
           value: "✓",
-          classes: ["checkmark"],
           dependencies: ["m_53"],
           label: "DWHR Compliance Status",
         },
@@ -1190,40 +1186,38 @@ window.TEUI.SectionModules.sect07 = (function () {
     }
   }
 
+  /**
+   * Helper function to calculate compliance ratio with proper dual-mode handling
+   * @param {string} targetField - The Target field ID (e.g., "h_49")
+   * @param {string} refField - The Reference field ID (e.g., "ref_h_49")
+   * @param {boolean} isReferenceCalculation - True if calculating Reference mode
+   * @returns {number} - Ratio (1.0 for Reference mode = 100%, actual ratio for Target mode)
+   */
+  function calculateComplianceRatio(targetField, refField, isReferenceCalculation) {
+    if (isReferenceCalculation) {
+      return 1.0; // Reference mode: Always 100% (self-comparison)
+    } else {
+      const targetValue = window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(targetField)) || 0;
+      const refValue = window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(refField)) || 0;
+      return refValue > 0 ? targetValue / refValue : 0;
+    }
+  }
+
   function calculateCompliance(isReferenceCalculation = false) {
     // ✅ S05 PATTERN: Target/Reference comparison with M (percentage) and N (checkmark) columns
-    // ALWAYS use Target numerators and Reference denominators (lower is better for water/energy)
+    // Reference mode: Always shows 100% (comparing to itself)
+    // Target mode: Shows actual Target/Reference ratio
 
-    // Target values (numerators)
-    const target_h_49 =
-      window.TEUI.parseNumeric(window.TEUI.StateManager.getValue("h_49")) || 0;
-    const target_h_50 =
-      window.TEUI.parseNumeric(window.TEUI.StateManager.getValue("h_50")) || 0;
-    const target_d_52 =
-      window.TEUI.parseNumeric(window.TEUI.StateManager.getValue("d_52")) ||
-      100;
-    const target_d_53 =
-      window.TEUI.parseNumeric(window.TEUI.StateManager.getValue("d_53")) || 0;
-
-    // Reference values (denominators)
-    const ref_h_49 =
-      window.TEUI.parseNumeric(window.TEUI.StateManager.getValue("ref_h_49")) ||
-      275;
-    const ref_h_50 =
-      window.TEUI.parseNumeric(window.TEUI.StateManager.getValue("ref_h_50")) ||
-      110;
-    const ref_d_52 =
-      window.TEUI.parseNumeric(window.TEUI.StateManager.getValue("ref_d_52")) ||
-      90;
+    // Check if ref_d_53 exists (for m_53 N/A handling)
     const ref_d_53 =
       window.TEUI.parseNumeric(window.TEUI.StateManager.getValue("ref_d_53")) ||
       0;
 
-    // Calculate percentages: Target / Reference (lower is better - passing means <100%)
-    const m_49_percent = ref_h_49 !== 0 ? target_h_49 / ref_h_49 : 0;
-    const m_50_percent = ref_h_50 !== 0 ? target_h_50 / ref_h_50 : 0;
-    const m_52_percent = ref_d_52 !== 0 ? target_d_52 / ref_d_52 : 1;
-    const m_53_percent = ref_d_53 !== 0 ? target_d_53 / ref_d_53 : 0;
+    // Calculate percentages using helper (Reference mode = 100%, Target mode = actual ratio)
+    const m_49_percent = calculateComplianceRatio("h_49", "ref_h_49", isReferenceCalculation);
+    const m_50_percent = calculateComplianceRatio("h_50", "ref_h_50", isReferenceCalculation);
+    const m_52_percent = calculateComplianceRatio("d_52", "ref_d_52", isReferenceCalculation);
+    const m_53_percent = ref_d_53 !== 0 ? calculateComplianceRatio("d_53", "ref_d_53", isReferenceCalculation) : 0;
 
     // Format percentage results for M columns
     const m_49_formatted =
@@ -1423,8 +1417,9 @@ window.TEUI.SectionModules.sect07 = (function () {
   }
 
   function calculateAll() {
-    calculateTargetModel();
+    // ✅ S11 PATTERN: Calculate Reference first so ref_* values exist before Target compliance runs
     calculateReferenceModel();
+    calculateTargetModel();
   }
 
   //==========================================================================
