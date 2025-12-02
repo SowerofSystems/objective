@@ -383,6 +383,12 @@ window.TEUI.SectionModules.sect09 = (function () {
         "h_71",
         "i_71",
         "k_71",
+        "m_65", // ✅ M-N-COMPLIANCE: M/N columns (already formatted strings)
+        "m_66",
+        "m_67",
+        "n_65",
+        "n_66",
+        "n_67",
       ];
 
       calculatedFields.forEach(fieldId => {
@@ -399,19 +405,16 @@ window.TEUI.SectionModules.sect09 = (function () {
         }
 
         if (value !== undefined && value !== null) {
-          // Format value for display based on field type
-          let formatType = "number";
-          if (fieldId === "d_65" || fieldId === "d_67") {
-            formatType = "number-1dp"; // Density values with 1 decimal place
-          } else if (
-            fieldId.startsWith("h_") ||
-            fieldId.startsWith("i_") ||
-            fieldId.startsWith("k_")
-          ) {
-            formatType = fieldId === "i_63" ? "raw" : "number-2dp-comma";
+          // ✅ S07 PATTERN: Use getFieldFormat() for consistent formatting
+          const formatType = getFieldFormat(fieldId);
+
+          let formattedValue;
+          if (formatType === "raw") {
+            formattedValue = value; // Already formatted string, don't re-format
+          } else {
+            formattedValue = window.TEUI.formatNumber(value, formatType);
           }
 
-          const formattedValue = window.TEUI.formatNumber(value, formatType);
           element.textContent = formattedValue;
         }
       });
@@ -2093,6 +2096,13 @@ window.TEUI.SectionModules.sect09 = (function () {
       ReferenceState.setValue("n_65", n_65_value);
       ReferenceState.setValue("n_66", n_66_value);
       ReferenceState.setValue("n_67", n_67_value);
+
+      // Apply CSS classes for N columns (Reference mode)
+      if (ModeManager.currentMode === "reference") {
+        setElementClass("n_65", n_65_value === "✓" ? "checkmark" : "warning");
+        setElementClass("n_66", n_66_value === "✓" ? "checkmark" : "warning");
+        setElementClass("n_67", n_67_value === "✓" ? "checkmark" : "warning");
+      }
     } else {
       window.TEUI.StateManager.setValue("m_65", m_65_formatted, "calculated");
       window.TEUI.StateManager.setValue("m_66", m_66_formatted, "calculated");
@@ -2109,9 +2119,9 @@ window.TEUI.SectionModules.sect09 = (function () {
       TargetState.setValue("n_67", n_67_value);
 
       // Apply CSS classes for N columns (Target mode only)
-      setElementClass("n_65", n_65_value === "✓");
-      setElementClass("n_66", n_66_value === "✓");
-      setElementClass("n_67", n_67_value === "✓");
+      setElementClass("n_65", n_65_value === "✓" ? "checkmark" : "warning");
+      setElementClass("n_66", n_66_value === "✓" ? "checkmark" : "warning");
+      setElementClass("n_67", n_67_value === "✓" ? "checkmark" : "warning");
     }
 
     // Update DOM display
