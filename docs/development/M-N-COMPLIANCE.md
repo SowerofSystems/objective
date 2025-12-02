@@ -2,6 +2,8 @@
 
 **Purpose**: This document provides a standardized pattern for implementing compliance checks in columns M (comparison/reference values) and N (pass/fail indicators) across all TEUI sections.
 
+**Status Update (2025-01-12)**: S01-S07 completed and verified. S07 uses Reference model comparison pattern with proper "lower is better" logic for water/energy metrics. Next: S08, S09, S12, S13. 
+
 ## Overview
 
 The M-N compliance pattern allows sections to compare calculated or user-input values against reference standards, code requirements, or reference model values, providing visual pass/fail feedback, especially useful for plans examiners/OBOA or other Building Code Officials, as well as designers, as visual feedback on compliance divergence. 
@@ -577,7 +579,7 @@ When implementing M-N compliance:
 ### ✅ Completed Sections
 - **S03** (Climate Calculations): Code-based comparison (m_23/n_23, m_24/n_24)
 - **S05** (Envelope): Reference model comparison (m_38-41/n_38-41) - Uses `calculateComplianceRatio()` helper pattern, Reference mode = 100%
-- **S07** (Water): Reference model comparison (m_49-50, m_52-53/n_49-50, n_52-53) - Uses `calculateComplianceRatio()` helper + correct Reference-first calculation order (snappier performance than S05)
+- **S07** (Water): ✅ **VERIFIED 2025-01-12** - Reference model comparison (m_49-50, m_52-53/n_49-50, n_52-53) with proper "lower is better" logic for water/energy metrics. Formula `h_49/ref_h_49` correctly shows >100% as fail (excessive use), ≤100% as pass. Uses `calculateComplianceRatio()` helper + correct Reference-first calculation order.
 - **S08** (Indoor Air Quality): Health threshold comparison (m_56-59/n_56-59)
 - **S11** (Embodied Carbon): Reference model comparison (m_85-95/n_85-95) - Good styling reference example
 
