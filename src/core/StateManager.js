@@ -383,23 +383,25 @@ TEUI.StateManager = (function () {
     // }
 
     // 🔍 DEBUG: Track ref_h_15 to catch who overwrites imported value
-    if (fieldId === "ref_h_15") {
-      console.log(
-        `[StateManager DEBUG] ref_h_15 setValue: "${value}" (state: ${state}, prev: ${fields.get(fieldId)?.value})`
-      );
-      console.trace("[StateManager] ref_h_15 setValue stack trace:");
-    }
+    // COMMENTED OUT: Debug logging removed for performance testing
+    // if (fieldId === "ref_h_15") {
+    //   console.log(
+    //     `[StateManager DEBUG] ref_h_15 setValue: "${value}" (state: ${state}, prev: ${fields.get(fieldId)?.value})`
+    //   );
+    //   console.trace("[StateManager] ref_h_15 setValue stack trace:");
+    // }
 
     // 🔍 DEBUG: Track ref_m_* to catch who overwrites formatted percentages
-    if (fieldId === "ref_m_65" || fieldId === "ref_m_66" || fieldId === "ref_m_67") {
-      console.log(
-        `[StateManager DEBUG] ${fieldId} setValue: "${value}" (type=${typeof value}, state: ${state}, prev: ${fields.get(fieldId)?.value})`
-      );
-      // If someone is writing "1" instead of "100%", show stack trace
-      if (value === "1" || value === 1) {
-        console.trace(`[StateManager DEBUG] WHO IS WRITING "1" to ${fieldId}?`);
-      }
-    }
+    // COMMENTED OUT: Debug logging removed for performance testing
+    // if (fieldId === "ref_m_65" || fieldId === "ref_m_66" || fieldId === "ref_m_67") {
+    //   console.log(
+    //     `[StateManager DEBUG] ${fieldId} setValue: "${value}" (type=${typeof value}, state: ${state}, prev: ${fields.get(fieldId)?.value})`
+    //   );
+    //   // If someone is writing "1" instead of "100%", show stack trace
+    //   if (value === "1" || value === 1) {
+    //     console.trace(`[StateManager DEBUG] WHO IS WRITING "1" to ${fieldId}?`);
+    //   }
+    // }
 
     // Check if we're in Reference Mode and this is an independently editable field
     if (

@@ -2351,14 +2351,12 @@ window.TEUI.SectionModules.sect09 = (function () {
    * Replaces the original calculateAll function
    */
   function calculateAll() {
-    // 🔍 PERFORMANCE DEBUG: Track what triggers calculateAll()
-    console.log('[S09 PERF] calculateAll() triggered');
-    console.trace('[S09 PERF] calculateAll() stack trace');
+    // console.log('[S09DB] calculateAll() triggered - running dual-engine calculations...');
 
     calculateReferenceModel();
     calculateTargetModel();
 
-    console.log('[S09 PERF] calculateAll() complete');
+    // console.log('[S09DB] calculateAll() complete - both engines ran');
   }
 
   /**
@@ -2388,6 +2386,12 @@ window.TEUI.SectionModules.sect09 = (function () {
           // Get and clean the value
           const newValue = this.textContent.trim();
 
+          // 🔍 PERFORMANCE FIX: Check if value actually changed before recalculating
+          const oldValue = ModeManager?.getValue(fieldId);
+          const oldNumeric = window.TEUI.parseNumeric(oldValue);
+          const newNumeric = window.TEUI.parseNumeric(newValue);
+          const valueChanged = oldNumeric !== newNumeric;
+
           // Store via ModeManager (dual-state aware)
           if (ModeManager && typeof ModeManager.setValue === "function") {
             ModeManager.setValue(fieldId, newValue, "user-modified");
@@ -2412,9 +2416,11 @@ window.TEUI.SectionModules.sect09 = (function () {
             }
           }
 
-          // Recalculate
-          calculateAll();
-          ModeManager.updateCalculatedDisplayValues();
+          // ✅ PERFORMANCE FIX: Only recalculate if value actually changed
+          if (valueChanged) {
+            calculateAll();
+            ModeManager.updateCalculatedDisplayValues();
+          }
         }
       });
 
