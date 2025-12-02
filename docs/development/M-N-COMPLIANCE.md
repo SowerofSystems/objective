@@ -465,6 +465,61 @@ Result: Green checkmark displayed instead of red X
 Fix: Added `if (ModeManager.currentMode !== "target") return;` to setElementClass()
 ```
 
+---
+
+### Issue: M/N columns show 0% on initial app load
+
+**Symptoms**: On initial page load, compliance percentages show "0%" and checkmarks/X's appear incorrectly, then flash to correct values after a moment.
+
+**CRITICAL RULE**: In dual-engine sections, **Reference calculations must run BEFORE Target calculations** in `calculateAll()`.
+
+**Root Cause**: Target mode compliance calculations need Reference values (e.g., `ref_h_49`, `ref_h_50`) to exist in StateManager before they can calculate the ratio. If Target runs first, these values don't exist yet and compliance reads 0.
+
+**Example from S07 (Dec 2025)**:
+```javascript
+// ❌ WRONG - Target runs first, ref_h_49 doesn't exist yet:
+function calculateAll() {
+  calculateTargetModel();      // Calls calculateCompliance(false)
+                                // Tries to read ref_h_49 → doesn't exist → 0%
+  calculateReferenceModel();   // NOW publishes ref_h_49 to StateManager
+}
+
+// ✅ CORRECT - Reference runs first, publishes values before Target needs them:
+function calculateAll() {
+  // ✅ S11 PATTERN: Calculate Reference first so ref_* values exist before Target compliance runs
+  calculateReferenceModel();   // Publishes ref_h_49, ref_h_50, etc. to StateManager
+  calculateTargetModel();      // NOW can read ref_h_49 for compliance calculation
+}
+```
+
+**Why This Happens**:
+1. `calculateReferenceModel()` calculates values (e.g., `h_49 = 40`) and stores to ReferenceState
+2. Then publishes to StateManager as `ref_h_49` for cross-mode access
+3. `calculateTargetModel()` calls `calculateCompliance()` which needs `ref_h_49` from StateManager
+4. If Reference hasn't run yet, `ref_h_49` is undefined → parseNumeric returns 0 → ratio is 0%
+
+**Solution**:
+```javascript
+function calculateAll() {
+  calculateReferenceModel();  // Reference FIRST
+  calculateTargetModel();      // Target SECOND
+}
+```
+
+**Performance Note**: S07 is noticeably snappier than S05 with this fix because there's no flash/reflow from 0% → correct values. The calculations run in the correct order on first render.
+
+**Real Example from S07 (Dec 2025)**:
+```
+Issue: M columns showing 0%, 0%, 333%, N/A on initialization
+Root Cause: calculateAll() ran Target before Reference
+Effect: Target compliance calculated before ref_h_49/ref_h_50 existed in StateManager
+Fix: Swapped order to calculateReferenceModel() → calculateTargetModel()
+Result: Clean initialization, no flashing, snappier than S05
+Pattern Source: Section11.js (lines 2907-2908) uses this order
+```
+
+---
+
 ### Issue: Compliance doesn't update when dependencies change
 
 **Symptoms**: M or N values don't recalculate when related fields change.
@@ -522,7 +577,7 @@ When implementing M-N compliance:
 ### ✅ Completed Sections
 - **S03** (Climate Calculations): Code-based comparison (m_23/n_23, m_24/n_24)
 - **S05** (Envelope): Reference model comparison (m_38-41/n_38-41) - Uses `calculateComplianceRatio()` helper pattern, Reference mode = 100%
-- **S07** (Lighting): Lighting performance comparison
+- **S07** (Water): Reference model comparison (m_49-50, m_52-53/n_49-50, n_52-53) - Uses `calculateComplianceRatio()` helper + correct Reference-first calculation order (snappier performance than S05)
 - **S08** (Indoor Air Quality): Health threshold comparison (m_56-59/n_56-59)
 - **S11** (Embodied Carbon): Reference model comparison (m_85-95/n_85-95) - Good styling reference example
 
