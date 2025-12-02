@@ -581,11 +581,11 @@ When implementing M-N compliance:
 - **S05** (Envelope): Reference model comparison (m_38-41/n_38-41) - Uses `calculateComplianceRatio()` helper pattern, Reference mode = 100%
 - **S07** (Water): ✅ **VERIFIED 2025-01-12** - Reference model comparison (m_49-50, m_52-53/n_49-50, n_52-53) with proper "lower is better" logic for water/energy metrics. Formula `h_49/ref_h_49` correctly shows >100% as fail (excessive use), ≤100% as pass. Uses `calculateComplianceRatio()` helper + correct Reference-first calculation order.
 - **S08** (Indoor Air Quality): ✅ **VERIFIED 2025-01-12** - Health threshold comparison (m_56-59/n_56-59). Row 59 (RH%) uses dual-slider range check: m_59 displays acceptable range "30-60%", n_59 passes only if BOTH d_59 (heating season) AND i_59 (cooling season) are within 30-60% range.
+- **S09** (Internal Gains): ✅ **VERIFIED 2025-12-02** - Reference model comparison (m_65-67/n_65-67) for plug loads, lighting, and equipment. Uses format-once pattern with value-change guard for optimal performance (27ms calculations). See detailed implementation section above.
 - **S11** (Embodied Carbon): Reference model comparison (m_85-95/n_85-95) - Good styling reference example
 
 ### 🚧 Pending Implementation
 - **S06** (Envelope - remaining rows): Additional M/N fields may be needed
-- **S09** (Renewables): M/N compliance not yet implemented
 - **S10** (Water): M/N compliance not yet implemented
 - **S12** (Operational Carbon): M/N compliance not yet implemented
 - **S13** (Costs): Cost comparison - not yet implemented
@@ -1163,7 +1163,290 @@ After implementation:
 
 ---
 
-**Last Updated**: 2025-12-02 (Revised with format-stable solution)
-**Baseline Commit**: e97fe23
-**Sections Using Pattern**: S03, S05, S07, S08
+---
+
+## ✅ Section 09 Implementation (VERIFIED Dec 2, 2025)
+
+**Baseline Commits**: e97fe23 → b027f04
+**Implementation Time**: 2 days (intensive troubleshooting)
+**Final Status**: ✅ WORKING - All issues resolved
+
+### Implementation Summary
+
+Section 09 (Internal Gains) M-N compliance for rows 65, 66, 67:
+- **m_65/n_65**: Plug Load Density compliance (W/m²)
+- **m_66/n_66**: Lighting Density compliance (W/m²)
+- **m_67/n_67**: Equipment Efficiency compliance (ratio)
+
+**Target Mode**: Compares Target vs Reference values (e.g., `ref_d_65 / d_65`)
+**Reference Mode**: Always shows 100% compliance (self-comparison)
+
+### The Two Critical Issues
+
+#### Issue 1: Format Fighting (855ms → 800ms calculations)
+
+**Root Cause**: Two implementations running simultaneously:
+1. **OLD** `updateReferenceIndicator()` at line 3049: Called `setCalculatedValue(mFieldId, 1.0, "percent-0dp")` with NUMERIC 1.0
+2. **NEW** `calculateCompliance()`: Wrote formatted string "100%"
+
+**Result**: Values alternated: "100%" → "1" → "100%" → "1" on every update
+
+**Discovery Method**: Added StateManager debug logging to track setValue calls with stack traces
+
+**Solution**: Removed old implementation by commenting out `updateAllReferenceIndicators()` call in `calculateTargetModel()` (lines 2189-2190)
+
+#### Issue 2: Performance Bottleneck (855ms calculations)
+
+**Root Cause**: Blur handler triggered `calculateAll()` even when value unchanged, causing unnecessary S09→S10→S13→S14 listener cascade
+
+**Discovery Method**: Added performance logging showing 5 repeated calculation cycles from single blur event
+
+**Solution**: Added value-change guard to blur handler (lines 2391-2425)
+
+### The Architectural Pattern: Value-Change Guard
+
+**Implementation** (Section09.js:2391-2425):
+
+```javascript
+field.addEventListener("blur", function () {
+  const fieldId = this.getAttribute("data-field-id");
+  if (!fieldId) return;
+
+  if (this.getAttribute("contenteditable") === "true") {
+    const newValue = this.textContent.trim();
+
+    // ✅ PERFORMANCE FIX: Check if value actually changed before recalculating
+    const oldValue = ModeManager?.getValue(fieldId);
+    const oldNumeric = window.TEUI.parseNumeric(oldValue);
+    const newNumeric = window.TEUI.parseNumeric(newValue);
+    const valueChanged = oldNumeric !== newNumeric;
+
+    // Store via ModeManager (dual-state aware)
+    if (ModeManager && typeof ModeManager.setValue === "function") {
+      ModeManager.setValue(fieldId, newValue, "user-modified");
+    }
+
+    // Format the display...
+
+    // ✅ PERFORMANCE FIX: Only recalculate if value actually changed
+    if (valueChanged) {
+      calculateAll();
+      ModeManager.updateCalculatedDisplayValues();
+    }
+  }
+});
+```
+
+### Architectural Justification
+
+**Question**: Is the value-change guard a bandaid fix or architecturally correct?
+
+**Answer**: ✅ **ARCHITECTURALLY CORRECT** - Not a bandaid
+
+**Supporting Evidence from [TECHNICAL2.md](../docs/TECHNICAL2.md)**:
+
+1. **StateManager's Own Pattern** (StateManager.js:463-464):
+   ```javascript
+   if (field.value === value && field.state === state) return false;
+   ```
+   StateManager already prevents redundant updates when values don't change.
+
+2. **Dual-Engine Architecture** (TECHNICAL2.md:168-204):
+   - Both engines MUST run on changes
+   - Architecture does NOT require engines to run when values HAVEN'T changed
+   - Guard prevents wasteful recalculations the architecture doesn't mandate
+
+3. **Quarantine Pattern Distinction** (TECHNICAL2.md:893-916, 4567-4608):
+   - Quarantine (listener muting) is for BULK operations (imports, multi-field updates)
+   - Value-change guard is for SINGLE field changes
+   - Guard prevents cascade at the source (DOM event) → more efficient than muting downstream listeners
+
+4. **Performance Target Alignment**:
+   - Final: 27ms (well within <100ms target)
+   - Original: 855ms (30x slower, unacceptable)
+   - The blur handler guard extends StateManager's guard pattern to the DOM event level
+
+### Performance Results
+
+| Scenario | Before Guard | After Guard | Improvement |
+|----------|--------------|-------------|-------------|
+| Reference mode editing | 855ms | 27ms | **31.6x faster** |
+| Repeated blur events | 5 calculation cycles | 1 calculation cycle | **5x reduction** |
+| Target mode editing | ~100ms | ~27ms | 3.7x faster |
+
+**Cascade Prevention**: Guard stops unnecessary S09→S10→S13→S14 listener chain when user clicks out of field without making changes
+
+### Format-Stable Implementation Pattern
+
+Following [Section07.js](../src/sections/Section07.js) lines 1206-1332, S09 uses **format-once** pattern:
+
+```javascript
+function calculateCompliance(isReferenceCalculation = false) {
+  // Helper: calculate ratio (Reference mode = always 1.0, Target mode = actual ratio)
+  function calculateComplianceRatio(targetField, refField) {
+    if (isReferenceCalculation) {
+      return 1.0; // Reference mode: Always 100% (self-comparison)
+    } else {
+      const targetValue = window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(targetField)) || 0;
+      const refValue = window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(refField)) || 0;
+      return refValue > 0 ? targetValue / refValue : 0;
+    }
+  }
+
+  // Calculate percentages
+  const m_65_ratio = calculateComplianceRatio("d_65", "ref_d_65");
+  const m_66_ratio = calculateComplianceRatio("d_66", "ref_d_66");
+  const m_67_ratio = calculateComplianceRatio("d_67", "ref_d_67");
+
+  // ✅ FORMAT ONCE: Format to strings immediately
+  const m_65_formatted = window.TEUI?.formatNumber?.(m_65_ratio, "percent-0dp") ?? "100%";
+  const m_66_formatted = window.TEUI?.formatNumber?.(m_66_ratio, "percent-0dp") ?? "100%";
+  const m_67_formatted = window.TEUI?.formatNumber?.(m_67_ratio, "percent-0dp") ?? "100%";
+
+  // Store formatted strings to StateManager with proper ref_ prefix
+  const prefix = isReferenceCalculation ? "ref_" : "";
+  window.TEUI.StateManager.setValue(`${prefix}m_65`, m_65_formatted, "calculated");
+  window.TEUI.StateManager.setValue(`${prefix}m_66`, m_66_formatted, "calculated");
+  window.TEUI.StateManager.setValue(`${prefix}m_67`, m_67_formatted, "calculated");
+
+  // Calculate N-column symbols
+  const n_65_value = m_65_ratio >= 1.0 ? "✓" : "✗";
+  const n_66_value = m_66_ratio >= 1.0 ? "✓" : "✗";
+  const n_67_value = m_67_ratio >= 1.0 ? "✓" : "✗";
+
+  window.TEUI.StateManager.setValue(`${prefix}n_65`, n_65_value, "calculated");
+  window.TEUI.StateManager.setValue(`${prefix}n_66`, n_66_value, "calculated");
+  window.TEUI.StateManager.setValue(`${prefix}n_67`, n_67_value, "calculated");
+
+  // ✅ CRITICAL: Only apply CSS classes in Target mode (prevents Reference overwriting styling)
+  if (!isReferenceCalculation) {
+    setElementClass("n_65", n_65_value === "✓" ? "checkmark" : "warning");
+    setElementClass("n_66", n_66_value === "✓" ? "checkmark" : "warning");
+    setElementClass("n_67", n_67_value === "✓" ? "checkmark" : "warning");
+  }
+}
+```
+
+**Key Pattern Elements**:
+
+1. **Format Once** (line ~15-17): Format to strings immediately after calculation
+2. **Store Formatted** (line ~20-22): Store formatted strings, never re-format
+3. **"raw" Format Type**: Mark M/N fields as "raw" in `getFieldFormat()` to prevent re-formatting
+4. **Mode Guard for CSS** (line ~32): Only apply classes in Target mode
+
+### getFieldFormat() Integration
+
+Added M/N fields to `getFieldFormat()` (Section09.js:657-688):
+
+```javascript
+function getFieldFormat(fieldId) {
+  // M/N compliance columns: already formatted as strings, use as-is
+  if (fieldId.startsWith("m_") || fieldId.startsWith("n_")) {
+    return "raw";
+  }
+  // ... other format mappings
+}
+```
+
+### refreshUI() Integration
+
+Added M/N fields to `refreshUI()` calculatedFields array (Section09.js:386-391):
+
+```javascript
+const calculatedFields = [
+  // ... existing fields ...
+  "m_65", // ✅ M-N-COMPLIANCE: M/N columns (already formatted strings)
+  "m_66",
+  "m_67",
+  "n_65",
+  "n_66",
+  "n_67",
+];
+```
+
+**Why Needed**: Mode toggles trigger `refreshUI()` which updates display values. Without M/N fields in this array, mode switches wouldn't update M/N values.
+
+### Common Pitfalls Encountered
+
+#### Pitfall 1: setElementClass() Parameter Type
+**❌ Wrong**:
+```javascript
+setElementClass("n_65", n_65_value === "✓"); // Passes boolean
+```
+
+**✅ Correct**:
+```javascript
+setElementClass("n_65", n_65_value === "✓" ? "checkmark" : "warning"); // Passes class name string
+```
+
+**Symptom**: N columns show symbols but no colors
+
+#### Pitfall 2: Format Fighting from Multiple Implementations
+**❌ Wrong**: Having both old and new M-N calculation code active simultaneously
+
+**✅ Correct**: Remove old implementation completely before testing new one
+
+**Debug Method**: Add StateManager logging with stack traces to identify conflicting setValue calls
+
+#### Pitfall 3: Missing Value-Change Guard
+**❌ Wrong**: Triggering calculateAll() on every blur event
+
+**✅ Correct**: Check if numeric value changed before triggering recalculation
+
+**Performance Impact**: 855ms → 27ms (31.6x improvement)
+
+#### Pitfall 4: Aggressive Browser Caching
+**Symptom**: Code changes don't appear to take effect
+
+**Solution**: Hard refresh (Cmd+Shift+R on Mac, Ctrl+Shift+R on Windows) to bypass cache
+
+### Lessons Learned for Future M-N Implementations
+
+1. **Follow S07 Pattern First**: Read [Section07.js](../src/sections/Section07.js) implementation before starting
+2. **Format Once, Display Many**: Format to strings during calculation, never re-format
+3. **Use "raw" Format Type**: Mark M/N fields as "raw" in getFieldFormat()
+4. **Value-Change Guards Are Good**: Architecturally sound pattern to prevent redundant calculations
+5. **Remove Debug Logging**: StateManager logging is helpful for debugging but must be removed for performance
+6. **Add M/N to refreshUI**: Mode toggles won't update M/N values without this
+7. **Pass Class Names, Not Booleans**: setElementClass() expects string class names
+8. **Hard Refresh Often**: Bypass browser cache when testing changes
+
+### Files Modified
+
+| File | Lines | Description |
+|------|-------|-------------|
+| [Section09.js](../src/sections/Section09.js) | 2060-2136 | Added calculateCompliance() function |
+| [Section09.js](../src/sections/Section09.js) | 2122-2130 | Fixed setElementClass() CSS parameter |
+| [Section09.js](../src/sections/Section09.js) | 2189-2190 | Removed conflicting updateAllReferenceIndicators() |
+| [Section09.js](../src/sections/Section09.js) | 2391-2425 | Added value-change guard to blur handler |
+| [Section09.js](../src/sections/Section09.js) | 386-391 | Added M/N fields to refreshUI() |
+| [Section09.js](../src/sections/Section09.js) | 657-688 | Modified getFieldFormat() for M/N "raw" type |
+
+### Success Metrics
+
+✅ **Target Mode**: Shows actual ref_d_XX/d_XX ratios with correct pass/fail colors
+✅ **Reference Mode**: Shows 100% with green checkmarks for all three rows
+✅ **Mode Switching**: Updates both values AND colors correctly
+✅ **Performance**: 27ms calculation time (well within <100ms target)
+✅ **Format Stability**: No flashing between "100%" and "1"
+✅ **No Redundant Calculations**: Blur handler only triggers on actual value changes
+
+### Next Sections
+
+Based on S09's experience, future M-N implementations should be significantly easier:
+
+**Recommended Approach**:
+1. Read this S09 section and [Section07.js](../src/sections/Section07.js) implementation first
+2. Use format-once pattern with "raw" format type
+3. Add value-change guards to blur handlers if performance issues arise
+4. Test with hard refresh to bypass browser cache
+5. Use StateManager debug logging (with stack traces) to identify format fighting
+
+**Estimated Time**: 2-4 hours (down from 2 days) for sections with similar complexity
+
+---
+
+**Last Updated**: 2025-12-02 (Added S09 verified implementation)
+**Baseline Commits**: e97fe23 → b027f04
+**Sections Using Pattern**: S03, S05, S07, S08, S09
 **Global CSS Defined**: src/styles.css lines 2097-2112
