@@ -318,9 +318,9 @@ window.TEUI.SectionModules.sect05 = (function () {
         "n_40",
         "n_41", // N column: status checkmarks
       ];
-      console.log(
-        `🔄 [S05] updateCalculatedDisplayValues: mode=${this.currentMode}`
-      );
+      // console.log(
+      //   `🔄 [S05] updateCalculatedDisplayValues: mode=${this.currentMode}`
+      // );
 
       calculatedFields.forEach(fieldId => {
         const element = document.querySelector(`[data-field-id="${fieldId}"]`);

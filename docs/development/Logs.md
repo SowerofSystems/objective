@@ -1,1847 +1,986 @@
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_49 = "User Defined"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_49, default=User Defined, valueToShow=User Defined, elementType=SELECT
-Section07.js:250 🔽 [S07] refreshUI: Setting dropdown d_49 from "User Defined" to "User Defined" (mode=target)
-Section07.js:254 🔽 [S07] refreshUI: Dropdown d_49 now shows "User Defined"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_49, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_49 = "40.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_49, default=40.00, valueToShow=40.00, elementType=TD
-Section07.js:245 ✏️ [S07] refreshUI: Setting contenteditable e_49 = "40.00"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=h_49, storedValue=40, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=h_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for h_49 = "40.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=h_49, default=40.00, valueToShow=40, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=i_49, storedValue=1839600, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=i_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for i_49 = "1,839,600"
-Section07.js:237 📋 [S07] refreshUI: fieldId=i_49, default=1,839,600, valueToShow=1839600, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=k_49, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=k_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for k_49 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=k_49, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_49, storedValue=100%, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_49 = "15%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_49, default=15%, valueToShow=100%, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_49, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_49 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_49, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_50, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_50 = "10,000.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_50, default=10,000.00, valueToShow=10,000.00, elementType=TD
-Section07.js:245 ✏️ [S07] refreshUI: Setting contenteditable e_50 = "10,000.00"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=h_50, storedValue=16, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=h_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for h_50 = "16.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=h_50, default=16.00, valueToShow=16, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=i_50, storedValue=735840, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=i_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for i_50 = "735,840"
-Section07.js:237 📋 [S07] refreshUI: fieldId=i_50, default=735,840, valueToShow=735840, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_50, storedValue=38484.432, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_50 = "38,484.43"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_50, default=38,484.43, valueToShow=38484.432, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_50, storedValue=100%, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_50 = "15%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_50, default=15%, valueToShow=100%, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_50, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_50 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_50, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_51, storedValue=Heatpump, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_51 = "Heatpump"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_51, default=Heatpump, valueToShow=Heatpump, elementType=SELECT
-Section07.js:250 🔽 [S07] refreshUI: Setting dropdown d_51 from "Electric" to "Heatpump" (mode=target)
-Section07.js:254 🔽 [S07] refreshUI: Dropdown d_51 now shows "Heatpump"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_51, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_51 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_51, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_51, storedValue=12828.144, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_51 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_51, default=12,828.14, valueToShow=12828.144, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=k_51, storedValue=12828.144, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=k_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for k_51 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=k_51, default=12,828.14, valueToShow=12828.144, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_52, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_52 = "300"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_52, default=300, valueToShow=300, elementType=range
-Section07.js:268 🎚️ [S07] refreshUI: Setting slider d_52 = "300"
-Section07.js:275 🎚️ [S07] refreshUI: Updating d_52 slider range for system="Heatpump"
-Section07.js:294 🎚️ [S07] refreshUI: d_52 slider range updated to min=100, max=450, step=10
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_52, storedValue=3, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_52 = "3.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_52, default=3.00, valueToShow=3, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_52, storedValue=12828.144, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_52 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_52, default=12,828.14, valueToShow=12828.144, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_52, storedValue=333%, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_52 = "100%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_52, default=100%, valueToShow=333%, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_52, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_52 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_52, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_53, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_53 = "0"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_53, default=0, valueToShow=0, elementType=range
-Section07.js:268 🎚️ [S07] refreshUI: Setting slider d_53 = "0"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_53, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_53 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_53, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_53, storedValue=12828.144, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_53 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_53, default=12,828.14, valueToShow=12828.144, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_53, storedValue=N/A, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_53 = "0%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_53, default=0%, valueToShow=N/A, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_53, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_53 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_53, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_54, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_54
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_54 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_54, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_54, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_54
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_54 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_54, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=k_54, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=k_54
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for k_54 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=k_54, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:317 ✅ [S07] refreshUI: Completed refresh for mode=target
-Section07.js:181 ✅ [S07] switchMode: Switch to "target" completed
-Section08.js:133 S08: Switched to TARGET mode.
-Section09.js:258 S09: Switched to TARGET mode
-Section09.js:422 S09: UI refreshed for target mode
-Section09.js:491 [S09 DISPLAY UPDATE] m_65: mode=target, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_66: mode=target, value="75%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_67: mode=target, value="71%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_65: mode=target, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_66: mode=target, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_67: mode=target, value="✓" (type=string), format=raw
-Section09.js:504 [S09] Updated calculated display values for target mode
-Section09.js:491 [S09 DISPLAY UPDATE] m_65: mode=target, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_66: mode=target, value="75%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_67: mode=target, value="71%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_65: mode=target, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_66: mode=target, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_67: mode=target, value="✓" (type=string), format=raw
-Section09.js:504 [S09] Updated calculated display values for target mode
-Section10.js:307 [S10 DEBUG] Mode switch: reference → TARGET
-Section10.js:313 [S10 DEBUG] Calling updateCalculatedDisplayValues() for target mode
-Section11.js:428 S11: Switched to TARGET mode
-Section11.js:2055 [S11 Area Sync] Starting sync in target mode
-Section11.js:2101 [S11 Area Sync] d_88 = 7.50 (from d_73)
-Section11.js:2101 [S11 Area Sync] d_89 = 81.14 (from d_74)
-Section11.js:2101 [S11 Area Sync] d_90 = 3.83 (from d_75)
-Section11.js:2101 [S11 Area Sync] d_91 = 159.00 (from d_76)
-Section11.js:2101 [S11 Area Sync] d_92 = 100.66 (from d_77)
-Section11.js:2101 [S11 Area Sync] d_93 = 0.00 (from d_78)
-Section11.js:2113 [S11 Area Sync] Refreshing UI...
-Section11.js:2117 [S11 Area Sync] Triggering recalculation...
-Section11.js:2902 [S11] calculateAll TRIGGERED. isReferenceMode: false
-Section11.js:2341 [S11] 🔵 REF CLIMATE READ: h_22=-1680
-Section11.js:2341 [S11] 🔵 REF CLIMATE READ: h_22=-1680
-Section11.js:2413 [S11] REF TB%=50% → ref_i_97=59532.29, ref_k_97=-947.70
-Section11.js:2597 [S11] Writing ref penalty: ref_i_97=59532.29, ref_k_97=-947.70
-Section11.js:2346 [S11] 🎯 TGT CLIMATE READ: h_22=-1680
-Section11.js:2346 [S11] 🎯 TGT CLIMATE READ: h_22=-1680
-Section11.js:2120 [S11 Area Sync] Sync completed successfully
-Section12.js:230 S12: Switched to TARGET mode
-Clock.js:163 [CLOCK] 🎯 User interaction started - timing to h_10 settlement
-Section12.js:354 [Section12] Calculated display values updated for target mode
-Clock.js:163 [CLOCK] 🎯 User interaction started - timing to h_10 settlement
-Section12.js:354 [Section12] Calculated display values updated for target mode
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=target
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=target
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=target
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section14.js:127 S14: Switched to TARGET mode
-ReferenceToggle.js:306 Uncaught TypeError: Cannot set properties of undefined (setting 'textContent')
-    at updateKeyValuesToggleUI (ReferenceToggle.js:306:34)
-    at switchAllSectionsMode (ReferenceToggle.js:277:5)
-    at Object.switchMode (ReferenceToggle.js:325:5)
-    at HTMLDivElement.<anonymous> (Section01.js:1346:37)Understand this errorAI
-ReferenceToggle.js:218 [ReferenceToggle] Found 15 dual-state sections: Array(15)
-Section02.js:1906 [S02] Switched to REFERENCE mode
-Section02.js:1964 [S02] Refreshing UI for REFERENCE mode
-Section02.js:2022 [S02] Updated h_12 (reporting year) slider = "2022" (reference mode)
-Section02.js:2039 [S02] Updated h_13 (service life) slider = "50" (reference mode)
-Section02.js:2089 [S02] Updated h_15 = "1,427.20" (reference mode)
-Section02.js:2089 [S02] Updated i_17 = "8154" (reference mode)
-Section02.js:2089 [S02] Updated l_12 = "$0.1300" (reference mode)
-Section02.js:2089 [S02] Updated l_13 = "$0.5070" (reference mode)
-Section02.js:2089 [S02] Updated l_14 = "$1.6200" (reference mode)
-Section02.js:2089 [S02] Updated l_15 = "$180.00" (reference mode)
-Section02.js:2089 [S02] Updated l_16 = "$1.5000" (reference mode)
-Section03.js:1256 Section03: Province selected: ON
-Clock.js:163 [CLOCK] 🎯 User interaction started - timing to h_10 settlement
-Clock.js:163 [CLOCK] 🎯 User interaction started - timing to h_10 settlement
-Section03.js:1317 City dropdown updated for ON - selected: Alexandria
-Section05.js:253 S05: Switched to REFERENCE mode
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section06.js:233 S06: Switched to REFERENCE mode
-Section06.js:285 🔄 [S06] updateCalculatedDisplayValues: mode=reference
-Section06.js:285 🔄 [S06] updateCalculatedDisplayValues: mode=reference
-Section07.js:171 🔄 [S07] switchMode: Switching from "target" to "reference"
-Section07.js:192 🔄 [S07] refreshUI: Starting refresh for mode=reference
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_49, storedValue=User Defined, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_49 = "User Defined"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_49, default=User Defined, valueToShow=User Defined, elementType=SELECT
-Section07.js:250 🔽 [S07] refreshUI: Setting dropdown d_49 from "User Defined" to "User Defined" (mode=reference)
-Section07.js:254 🔽 [S07] refreshUI: Dropdown d_49 now shows "User Defined"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_49, storedValue=40.00, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_49 = "40.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_49, default=40.00, valueToShow=40.00, elementType=TD
-Section07.js:245 ✏️ [S07] refreshUI: Setting contenteditable e_49 = "40.00"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=h_49, storedValue=40, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=h_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for h_49 = "40.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=h_49, default=40.00, valueToShow=40, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=i_49, storedValue=1839600, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=i_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for i_49 = "1,839,600"
-Section07.js:237 📋 [S07] refreshUI: fieldId=i_49, default=1,839,600, valueToShow=1839600, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=k_49, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=k_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for k_49 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=k_49, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_49, storedValue=100%, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_49 = "15%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_49, default=15%, valueToShow=100%, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_49, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_49 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_49, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_50, storedValue=10,000.00, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_50 = "10,000.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_50, default=10,000.00, valueToShow=10,000.00, elementType=TD
-Section07.js:245 ✏️ [S07] refreshUI: Setting contenteditable e_50 = "10,000.00"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=h_50, storedValue=16, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=h_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for h_50 = "16.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=h_50, default=16.00, valueToShow=16, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=i_50, storedValue=735840, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=i_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for i_50 = "735,840"
-Section07.js:237 📋 [S07] refreshUI: fieldId=i_50, default=735,840, valueToShow=735840, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_50, storedValue=38484.432, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_50 = "38,484.43"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_50, default=38,484.43, valueToShow=38484.432, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_50, storedValue=100%, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_50 = "15%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_50, default=15%, valueToShow=100%, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_50, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_50 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_50, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_51, storedValue=Electric, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_51 = "Heatpump"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_51, default=Heatpump, valueToShow=Electric, elementType=SELECT
-Section07.js:250 🔽 [S07] refreshUI: Setting dropdown d_51 from "Heatpump" to "Electric" (mode=reference)
-Section07.js:254 🔽 [S07] refreshUI: Dropdown d_51 now shows "Electric"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_51, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_51 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_51, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_51, storedValue=42760.48, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_51 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_51, default=12,828.14, valueToShow=42760.48, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=k_51, storedValue=42760.48, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=k_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for k_51 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=k_51, default=12,828.14, valueToShow=42760.48, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_52, storedValue=90, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_52 = "300"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_52, default=300, valueToShow=90, elementType=range
-Section07.js:268 🎚️ [S07] refreshUI: Setting slider d_52 = "90"
-Section07.js:275 🎚️ [S07] refreshUI: Updating d_52 slider range for system="Electric"
-Section07.js:294 🎚️ [S07] refreshUI: d_52 slider range updated to min=90, max=100, step=1
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_52, storedValue=0.9, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_52 = "3.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_52, default=3.00, valueToShow=0.9, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_52, storedValue=42760.48, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_52 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_52, default=12,828.14, valueToShow=42760.48, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_52, storedValue=100%, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_52 = "100%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_52, default=100%, valueToShow=100%, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_52, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_52 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_52, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_53, storedValue=0, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_53 = "0"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_53, default=0, valueToShow=0, elementType=range
-Section07.js:268 🎚️ [S07] refreshUI: Setting slider d_53 = "0"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_53, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_53 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_53, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_53, storedValue=42760.48, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_53 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_53, default=12,828.14, valueToShow=42760.48, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_53, storedValue=N/A, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_53 = "0%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_53, default=0%, valueToShow=N/A, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_53, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_53 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_53, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_54, storedValue=3848.4432, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_54
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_54 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_54, default=0.00, valueToShow=3848.4432, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_54, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_54
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_54 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_54, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=k_54, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=k_54
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for k_54 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=k_54, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:317 ✅ [S07] refreshUI: Completed refresh for mode=reference
-Section07.js:181 ✅ [S07] switchMode: Switch to "reference" completed
-Section08.js:133 S08: Switched to REFERENCE mode.
-Section09.js:258 S09: Switched to REFERENCE mode
-Section09.js:422 S09: UI refreshed for reference mode
-Section09.js:491 [S09 DISPLAY UPDATE] m_65: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_66: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_67: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_65: mode=reference, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_66: mode=reference, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_67: mode=reference, value="✓" (type=string), format=raw
-Section09.js:504 [S09] Updated calculated display values for reference mode
-Section09.js:491 [S09 DISPLAY UPDATE] m_65: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_66: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_67: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_65: mode=reference, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_66: mode=reference, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_67: mode=reference, value="✓" (type=string), format=raw
-Section09.js:504 [S09] Updated calculated display values for reference mode
-Section10.js:307 [S10 DEBUG] Mode switch: target → REFERENCE
-Section10.js:313 [S10 DEBUG] Calling updateCalculatedDisplayValues() for reference mode
-Section11.js:428 S11: Switched to REFERENCE mode
-Section11.js:2055 [S11 Area Sync] Starting sync in reference mode
-Section11.js:2101 [S11 Area Sync] d_88 = 7.50 (from ref_d_73)
-Section11.js:2101 [S11 Area Sync] d_89 = 81.14 (from ref_d_74)
-Section11.js:2101 [S11 Area Sync] d_90 = 3.83 (from ref_d_75)
-Section11.js:2101 [S11 Area Sync] d_91 = 159.00 (from ref_d_76)
-Section11.js:2101 [S11 Area Sync] d_92 = 100.66 (from ref_d_77)
-Section11.js:2101 [S11 Area Sync] d_93 = 0.00 (from ref_d_78)
-Section11.js:2113 [S11 Area Sync] Refreshing UI...
-Section11.js:2117 [S11 Area Sync] Triggering recalculation...
-Section11.js:2902 [S11] calculateAll TRIGGERED. isReferenceMode: true
-Section11.js:2341 [S11] 🔵 REF CLIMATE READ: h_22=-1680
-Section11.js:2341 [S11] 🔵 REF CLIMATE READ: h_22=-1680
-Section11.js:2413 [S11] REF TB%=50% → ref_i_97=59532.29, ref_k_97=-947.70
-Section11.js:2597 [S11] Writing ref penalty: ref_i_97=59532.29, ref_k_97=-947.70
-Section11.js:2346 [S11] 🎯 TGT CLIMATE READ: h_22=-1680
-Section11.js:2346 [S11] 🎯 TGT CLIMATE READ: h_22=-1680
-Section11.js:2120 [S11 Area Sync] Sync completed successfully
-Section12.js:230 S12: Switched to REFERENCE mode
-Section12.js:354 [Section12] Calculated display values updated for reference mode
-Section12.js:354 [Section12] Calculated display values updated for reference mode
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section14.js:127 S14: Switched to REFERENCE mode
-ReferenceToggle.js:301 Uncaught TypeError: Cannot set properties of undefined (setting 'textContent')
-    at updateKeyValuesToggleUI (ReferenceToggle.js:301:34)
-    at switchAllSectionsMode (ReferenceToggle.js:277:5)
-    at Object.switchMode (ReferenceToggle.js:325:5)
-    at HTMLDivElement.<anonymous> (Section01.js:1346:37)Understand this errorAI
-ReferenceToggle.js:218 [ReferenceToggle] Found 15 dual-state sections: Array(15)
-Section02.js:1906 [S02] Switched to TARGET mode
-Section02.js:1964 [S02] Refreshing UI for TARGET mode
-Section02.js:2022 [S02] Updated h_12 (reporting year) slider = "2022" (target mode)
-Section02.js:2039 [S02] Updated h_13 (service life) slider = "50" (target mode)
-Section02.js:2089 [S02] Updated h_15 = "1,427.20" (target mode)
-Section02.js:2089 [S02] Updated i_17 = "8154" (target mode)
-Section02.js:2089 [S02] Updated l_12 = "$0.1300" (target mode)
-Section02.js:2089 [S02] Updated l_13 = "$0.5070" (target mode)
-Section02.js:2089 [S02] Updated l_14 = "$1.6200" (target mode)
-Section02.js:2089 [S02] Updated l_15 = "$180.00" (target mode)
-Section02.js:2089 [S02] Updated l_16 = "$1.5000" (target mode)
-Section03.js:1256 Section03: Province selected: ON
-Clock.js:163 [CLOCK] 🎯 User interaction started - timing to h_10 settlement
-Clock.js:163 [CLOCK] 🎯 User interaction started - timing to h_10 settlement
-Section03.js:1317 City dropdown updated for ON - selected: Alexandria
-Section05.js:253 S05: Switched to TARGET mode
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=target
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=target
-Section06.js:233 S06: Switched to TARGET mode
-Section06.js:285 🔄 [S06] updateCalculatedDisplayValues: mode=target
-Section06.js:285 🔄 [S06] updateCalculatedDisplayValues: mode=target
-Section07.js:171 🔄 [S07] switchMode: Switching from "reference" to "target"
-Section07.js:192 🔄 [S07] refreshUI: Starting refresh for mode=target
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_49, storedValue=User Defined, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_49 = "User Defined"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_49, default=User Defined, valueToShow=User Defined, elementType=SELECT
-Section07.js:250 🔽 [S07] refreshUI: Setting dropdown d_49 from "User Defined" to "User Defined" (mode=target)
-Section07.js:254 🔽 [S07] refreshUI: Dropdown d_49 now shows "User Defined"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_49, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_49 = "40.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_49, default=40.00, valueToShow=40.00, elementType=TD
-Section07.js:245 ✏️ [S07] refreshUI: Setting contenteditable e_49 = "40.00"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=h_49, storedValue=40, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=h_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for h_49 = "40.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=h_49, default=40.00, valueToShow=40, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=i_49, storedValue=1839600, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=i_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for i_49 = "1,839,600"
-Section07.js:237 📋 [S07] refreshUI: fieldId=i_49, default=1,839,600, valueToShow=1839600, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=k_49, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=k_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for k_49 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=k_49, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_49, storedValue=100%, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_49 = "15%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_49, default=15%, valueToShow=100%, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_49, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_49 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_49, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_50, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_50 = "10,000.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_50, default=10,000.00, valueToShow=10,000.00, elementType=TD
-Section07.js:245 ✏️ [S07] refreshUI: Setting contenteditable e_50 = "10,000.00"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=h_50, storedValue=16, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=h_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for h_50 = "16.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=h_50, default=16.00, valueToShow=16, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=i_50, storedValue=735840, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=i_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for i_50 = "735,840"
-Section07.js:237 📋 [S07] refreshUI: fieldId=i_50, default=735,840, valueToShow=735840, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_50, storedValue=38484.432, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_50 = "38,484.43"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_50, default=38,484.43, valueToShow=38484.432, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_50, storedValue=100%, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_50 = "15%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_50, default=15%, valueToShow=100%, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_50, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_50 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_50, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_51, storedValue=Heatpump, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_51 = "Heatpump"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_51, default=Heatpump, valueToShow=Heatpump, elementType=SELECT
-Section07.js:250 🔽 [S07] refreshUI: Setting dropdown d_51 from "Electric" to "Heatpump" (mode=target)
-Section07.js:254 🔽 [S07] refreshUI: Dropdown d_51 now shows "Heatpump"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_51, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_51 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_51, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_51, storedValue=12828.144, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_51 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_51, default=12,828.14, valueToShow=12828.144, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=k_51, storedValue=12828.144, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=k_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for k_51 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=k_51, default=12,828.14, valueToShow=12828.144, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_52, storedValue=300, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_52 = "300"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_52, default=300, valueToShow=300, elementType=range
-Section07.js:268 🎚️ [S07] refreshUI: Setting slider d_52 = "300"
-Section07.js:275 🎚️ [S07] refreshUI: Updating d_52 slider range for system="Heatpump"
-Section07.js:294 🎚️ [S07] refreshUI: d_52 slider range updated to min=100, max=450, step=10
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_52, storedValue=3, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_52 = "3.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_52, default=3.00, valueToShow=3, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_52, storedValue=12828.144, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_52 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_52, default=12,828.14, valueToShow=12828.144, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_52, storedValue=333%, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_52 = "100%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_52, default=100%, valueToShow=333%, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_52, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_52 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_52, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_53, storedValue=0, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_53 = "0"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_53, default=0, valueToShow=0, elementType=range
-Section07.js:268 🎚️ [S07] refreshUI: Setting slider d_53 = "0"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_53, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_53 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_53, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_53, storedValue=12828.144, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_53 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_53, default=12,828.14, valueToShow=12828.144, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_53, storedValue=N/A, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_53 = "0%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_53, default=0%, valueToShow=N/A, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_53, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_53 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_53, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_54, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_54
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_54 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_54, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_54, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_54
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_54 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_54, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=k_54, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=k_54
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for k_54 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=k_54, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:317 ✅ [S07] refreshUI: Completed refresh for mode=target
-Section07.js:181 ✅ [S07] switchMode: Switch to "target" completed
-Section08.js:133 S08: Switched to TARGET mode.
-Section09.js:258 S09: Switched to TARGET mode
-Section09.js:422 S09: UI refreshed for target mode
-Section09.js:491 [S09 DISPLAY UPDATE] m_65: mode=target, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_66: mode=target, value="75%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_67: mode=target, value="71%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_65: mode=target, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_66: mode=target, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_67: mode=target, value="✓" (type=string), format=raw
-Section09.js:504 [S09] Updated calculated display values for target mode
-Section09.js:491 [S09 DISPLAY UPDATE] m_65: mode=target, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_66: mode=target, value="75%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_67: mode=target, value="71%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_65: mode=target, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_66: mode=target, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_67: mode=target, value="✓" (type=string), format=raw
-Section09.js:504 [S09] Updated calculated display values for target mode
-Section10.js:307 [S10 DEBUG] Mode switch: reference → TARGET
-Section10.js:313 [S10 DEBUG] Calling updateCalculatedDisplayValues() for target mode
-Section11.js:428 S11: Switched to TARGET mode
-Section11.js:2055 [S11 Area Sync] Starting sync in target mode
-Section11.js:2101 [S11 Area Sync] d_88 = 7.50 (from d_73)
-Section11.js:2101 [S11 Area Sync] d_89 = 81.14 (from d_74)
-Section11.js:2101 [S11 Area Sync] d_90 = 3.83 (from d_75)
-Section11.js:2101 [S11 Area Sync] d_91 = 159.00 (from d_76)
-Section11.js:2101 [S11 Area Sync] d_92 = 100.66 (from d_77)
-Section11.js:2101 [S11 Area Sync] d_93 = 0.00 (from d_78)
-Section11.js:2113 [S11 Area Sync] Refreshing UI...
-Section11.js:2117 [S11 Area Sync] Triggering recalculation...
-Section11.js:2902 [S11] calculateAll TRIGGERED. isReferenceMode: false
-Section11.js:2341 [S11] 🔵 REF CLIMATE READ: h_22=-1680
-Section11.js:2341 [S11] 🔵 REF CLIMATE READ: h_22=-1680
-Section11.js:2413 [S11] REF TB%=50% → ref_i_97=59532.29, ref_k_97=-947.70
-Section11.js:2597 [S11] Writing ref penalty: ref_i_97=59532.29, ref_k_97=-947.70
-Section11.js:2346 [S11] 🎯 TGT CLIMATE READ: h_22=-1680
-Section11.js:2346 [S11] 🎯 TGT CLIMATE READ: h_22=-1680
-Section11.js:2120 [S11 Area Sync] Sync completed successfully
-Section12.js:230 S12: Switched to TARGET mode
-Clock.js:163 [CLOCK] 🎯 User interaction started - timing to h_10 settlement
-Section12.js:354 [Section12] Calculated display values updated for target mode
-Clock.js:163 [CLOCK] 🎯 User interaction started - timing to h_10 settlement
-Section12.js:354 [Section12] Calculated display values updated for target mode
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=target
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=target
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=target
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section14.js:127 S14: Switched to TARGET mode
-ReferenceToggle.js:306 Uncaught TypeError: Cannot set properties of undefined (setting 'textContent')
-    at updateKeyValuesToggleUI (ReferenceToggle.js:306:34)
-    at switchAllSectionsMode (ReferenceToggle.js:277:5)
-    at Object.switchMode (ReferenceToggle.js:325:5)
-    at HTMLDivElement.<anonymous> (Section01.js:1346:37)Understand this errorAI
-ReferenceToggle.js:218 [ReferenceToggle] Found 15 dual-state sections: Array(15)
-Section02.js:1906 [S02] Switched to REFERENCE mode
-Section02.js:1964 [S02] Refreshing UI for REFERENCE mode
-Section02.js:2022 [S02] Updated h_12 (reporting year) slider = "2022" (reference mode)
-Section02.js:2039 [S02] Updated h_13 (service life) slider = "50" (reference mode)
-Section02.js:2089 [S02] Updated h_15 = "1,427.20" (reference mode)
-Section02.js:2089 [S02] Updated i_17 = "8154" (reference mode)
-Section02.js:2089 [S02] Updated l_12 = "$0.1300" (reference mode)
-Section02.js:2089 [S02] Updated l_13 = "$0.5070" (reference mode)
-Section02.js:2089 [S02] Updated l_14 = "$1.6200" (reference mode)
-Section02.js:2089 [S02] Updated l_15 = "$180.00" (reference mode)
-Section02.js:2089 [S02] Updated l_16 = "$1.5000" (reference mode)
-Section03.js:1256 Section03: Province selected: ON
-Clock.js:163 [CLOCK] 🎯 User interaction started - timing to h_10 settlement
-Clock.js:163 [CLOCK] 🎯 User interaction started - timing to h_10 settlement
-Section03.js:1317 City dropdown updated for ON - selected: Alexandria
-Section05.js:253 S05: Switched to REFERENCE mode
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section06.js:233 S06: Switched to REFERENCE mode
-Section06.js:285 🔄 [S06] updateCalculatedDisplayValues: mode=reference
-Section06.js:285 🔄 [S06] updateCalculatedDisplayValues: mode=reference
-Section07.js:171 🔄 [S07] switchMode: Switching from "target" to "reference"
-Section07.js:192 🔄 [S07] refreshUI: Starting refresh for mode=reference
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_49, storedValue=User Defined, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_49 = "User Defined"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_49, default=User Defined, valueToShow=User Defined, elementType=SELECT
-Section07.js:250 🔽 [S07] refreshUI: Setting dropdown d_49 from "User Defined" to "User Defined" (mode=reference)
-Section07.js:254 🔽 [S07] refreshUI: Dropdown d_49 now shows "User Defined"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_49, storedValue=40.00, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_49 = "40.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_49, default=40.00, valueToShow=40.00, elementType=TD
-Section07.js:245 ✏️ [S07] refreshUI: Setting contenteditable e_49 = "40.00"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=h_49, storedValue=40, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=h_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for h_49 = "40.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=h_49, default=40.00, valueToShow=40, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=i_49, storedValue=1839600, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=i_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for i_49 = "1,839,600"
-Section07.js:237 📋 [S07] refreshUI: fieldId=i_49, default=1,839,600, valueToShow=1839600, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=k_49, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=k_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for k_49 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=k_49, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_49, storedValue=100%, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_49 = "15%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_49, default=15%, valueToShow=100%, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_49, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_49 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_49, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_50, storedValue=10,000.00, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_50 = "10,000.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_50, default=10,000.00, valueToShow=10,000.00, elementType=TD
-Section07.js:245 ✏️ [S07] refreshUI: Setting contenteditable e_50 = "10,000.00"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=h_50, storedValue=16, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=h_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for h_50 = "16.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=h_50, default=16.00, valueToShow=16, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=i_50, storedValue=735840, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=i_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for i_50 = "735,840"
-Section07.js:237 📋 [S07] refreshUI: fieldId=i_50, default=735,840, valueToShow=735840, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_50, storedValue=38484.432, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_50 = "38,484.43"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_50, default=38,484.43, valueToShow=38484.432, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_50, storedValue=100%, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_50 = "15%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_50, default=15%, valueToShow=100%, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_50, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_50 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_50, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_51, storedValue=Electric, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_51 = "Heatpump"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_51, default=Heatpump, valueToShow=Electric, elementType=SELECT
-Section07.js:250 🔽 [S07] refreshUI: Setting dropdown d_51 from "Heatpump" to "Electric" (mode=reference)
-Section07.js:254 🔽 [S07] refreshUI: Dropdown d_51 now shows "Electric"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_51, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_51 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_51, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_51, storedValue=42760.48, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_51 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_51, default=12,828.14, valueToShow=42760.48, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=k_51, storedValue=42760.48, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=k_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for k_51 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=k_51, default=12,828.14, valueToShow=42760.48, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_52, storedValue=90, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_52 = "300"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_52, default=300, valueToShow=90, elementType=range
-Section07.js:268 🎚️ [S07] refreshUI: Setting slider d_52 = "90"
-Section07.js:275 🎚️ [S07] refreshUI: Updating d_52 slider range for system="Electric"
-Section07.js:294 🎚️ [S07] refreshUI: d_52 slider range updated to min=90, max=100, step=1
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_52, storedValue=0.9, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_52 = "3.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_52, default=3.00, valueToShow=0.9, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_52, storedValue=42760.48, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_52 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_52, default=12,828.14, valueToShow=42760.48, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_52, storedValue=100%, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_52 = "100%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_52, default=100%, valueToShow=100%, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_52, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_52 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_52, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_53, storedValue=0, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_53 = "0"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_53, default=0, valueToShow=0, elementType=range
-Section07.js:268 🎚️ [S07] refreshUI: Setting slider d_53 = "0"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_53, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_53 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_53, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_53, storedValue=42760.48, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_53 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_53, default=12,828.14, valueToShow=42760.48, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_53, storedValue=N/A, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_53 = "0%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_53, default=0%, valueToShow=N/A, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_53, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_53 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_53, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_54, storedValue=3848.4432, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_54
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_54 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_54, default=0.00, valueToShow=3848.4432, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_54, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_54
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_54 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_54, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=k_54, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=k_54
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for k_54 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=k_54, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:317 ✅ [S07] refreshUI: Completed refresh for mode=reference
-Section07.js:181 ✅ [S07] switchMode: Switch to "reference" completed
-Section08.js:133 S08: Switched to REFERENCE mode.
-Section09.js:258 S09: Switched to REFERENCE mode
-Section09.js:422 S09: UI refreshed for reference mode
-Section09.js:491 [S09 DISPLAY UPDATE] m_65: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_66: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_67: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_65: mode=reference, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_66: mode=reference, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_67: mode=reference, value="✓" (type=string), format=raw
-Section09.js:504 [S09] Updated calculated display values for reference mode
-Section09.js:491 [S09 DISPLAY UPDATE] m_65: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_66: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_67: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_65: mode=reference, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_66: mode=reference, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_67: mode=reference, value="✓" (type=string), format=raw
-Section09.js:504 [S09] Updated calculated display values for reference mode
-Section10.js:307 [S10 DEBUG] Mode switch: target → REFERENCE
-Section10.js:313 [S10 DEBUG] Calling updateCalculatedDisplayValues() for reference mode
-Section11.js:428 S11: Switched to REFERENCE mode
-Section11.js:2055 [S11 Area Sync] Starting sync in reference mode
-Section11.js:2101 [S11 Area Sync] d_88 = 7.50 (from ref_d_73)
-Section11.js:2101 [S11 Area Sync] d_89 = 81.14 (from ref_d_74)
-Section11.js:2101 [S11 Area Sync] d_90 = 3.83 (from ref_d_75)
-Section11.js:2101 [S11 Area Sync] d_91 = 159.00 (from ref_d_76)
-Section11.js:2101 [S11 Area Sync] d_92 = 100.66 (from ref_d_77)
-Section11.js:2101 [S11 Area Sync] d_93 = 0.00 (from ref_d_78)
-Section11.js:2113 [S11 Area Sync] Refreshing UI...
-Section11.js:2117 [S11 Area Sync] Triggering recalculation...
-Section11.js:2902 [S11] calculateAll TRIGGERED. isReferenceMode: true
-Section11.js:2341 [S11] 🔵 REF CLIMATE READ: h_22=-1680
-Section11.js:2341 [S11] 🔵 REF CLIMATE READ: h_22=-1680
-Section11.js:2413 [S11] REF TB%=50% → ref_i_97=59532.29, ref_k_97=-947.70
-Section11.js:2597 [S11] Writing ref penalty: ref_i_97=59532.29, ref_k_97=-947.70
-Section11.js:2346 [S11] 🎯 TGT CLIMATE READ: h_22=-1680
-Section11.js:2346 [S11] 🎯 TGT CLIMATE READ: h_22=-1680
-Section11.js:2120 [S11 Area Sync] Sync completed successfully
-Section12.js:230 S12: Switched to REFERENCE mode
-Section12.js:354 [Section12] Calculated display values updated for reference mode
-Section12.js:354 [Section12] Calculated display values updated for reference mode
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section14.js:127 S14: Switched to REFERENCE mode
-ReferenceToggle.js:301 Uncaught TypeError: Cannot set properties of undefined (setting 'textContent')
-    at updateKeyValuesToggleUI (ReferenceToggle.js:301:34)
-    at switchAllSectionsMode (ReferenceToggle.js:277:5)
-    at Object.switchMode (ReferenceToggle.js:325:5)
-    at HTMLDivElement.<anonymous> (Section01.js:1346:37)Understand this errorAI
-ReferenceToggle.js:218 [ReferenceToggle] Found 15 dual-state sections: Array(15)
-Section02.js:1906 [S02] Switched to TARGET mode
-Section02.js:1964 [S02] Refreshing UI for TARGET mode
-Section02.js:2022 [S02] Updated h_12 (reporting year) slider = "2022" (target mode)
-Section02.js:2039 [S02] Updated h_13 (service life) slider = "50" (target mode)
-Section02.js:2089 [S02] Updated h_15 = "1,427.20" (target mode)
-Section02.js:2089 [S02] Updated i_17 = "8154" (target mode)
-Section02.js:2089 [S02] Updated l_12 = "$0.1300" (target mode)
-Section02.js:2089 [S02] Updated l_13 = "$0.5070" (target mode)
-Section02.js:2089 [S02] Updated l_14 = "$1.6200" (target mode)
-Section02.js:2089 [S02] Updated l_15 = "$180.00" (target mode)
-Section02.js:2089 [S02] Updated l_16 = "$1.5000" (target mode)
-Section03.js:1256 Section03: Province selected: ON
-Clock.js:163 [CLOCK] 🎯 User interaction started - timing to h_10 settlement
-Clock.js:163 [CLOCK] 🎯 User interaction started - timing to h_10 settlement
-Section03.js:1317 City dropdown updated for ON - selected: Alexandria
-Section05.js:253 S05: Switched to TARGET mode
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=target
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=target
-Section06.js:233 S06: Switched to TARGET mode
-Section06.js:285 🔄 [S06] updateCalculatedDisplayValues: mode=target
-Section06.js:285 🔄 [S06] updateCalculatedDisplayValues: mode=target
-Section07.js:171 🔄 [S07] switchMode: Switching from "reference" to "target"
-Section07.js:192 🔄 [S07] refreshUI: Starting refresh for mode=target
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_49, storedValue=User Defined, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_49 = "User Defined"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_49, default=User Defined, valueToShow=User Defined, elementType=SELECT
-Section07.js:250 🔽 [S07] refreshUI: Setting dropdown d_49 from "User Defined" to "User Defined" (mode=target)
-Section07.js:254 🔽 [S07] refreshUI: Dropdown d_49 now shows "User Defined"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_49, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_49 = "40.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_49, default=40.00, valueToShow=40.00, elementType=TD
-Section07.js:245 ✏️ [S07] refreshUI: Setting contenteditable e_49 = "40.00"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=h_49, storedValue=40, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=h_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for h_49 = "40.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=h_49, default=40.00, valueToShow=40, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=i_49, storedValue=1839600, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=i_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for i_49 = "1,839,600"
-Section07.js:237 📋 [S07] refreshUI: fieldId=i_49, default=1,839,600, valueToShow=1839600, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=k_49, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=k_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for k_49 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=k_49, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_49, storedValue=100%, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_49 = "15%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_49, default=15%, valueToShow=100%, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_49, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_49 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_49, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_50, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_50 = "10,000.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_50, default=10,000.00, valueToShow=10,000.00, elementType=TD
-Section07.js:245 ✏️ [S07] refreshUI: Setting contenteditable e_50 = "10,000.00"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=h_50, storedValue=16, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=h_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for h_50 = "16.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=h_50, default=16.00, valueToShow=16, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=i_50, storedValue=735840, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=i_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for i_50 = "735,840"
-Section07.js:237 📋 [S07] refreshUI: fieldId=i_50, default=735,840, valueToShow=735840, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_50, storedValue=38484.432, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_50 = "38,484.43"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_50, default=38,484.43, valueToShow=38484.432, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_50, storedValue=100%, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_50 = "15%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_50, default=15%, valueToShow=100%, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_50, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_50 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_50, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_51, storedValue=Heatpump, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_51 = "Heatpump"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_51, default=Heatpump, valueToShow=Heatpump, elementType=SELECT
-Section07.js:250 🔽 [S07] refreshUI: Setting dropdown d_51 from "Electric" to "Heatpump" (mode=target)
-Section07.js:254 🔽 [S07] refreshUI: Dropdown d_51 now shows "Heatpump"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_51, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_51 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_51, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_51, storedValue=12828.144, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_51 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_51, default=12,828.14, valueToShow=12828.144, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=k_51, storedValue=12828.144, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=k_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for k_51 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=k_51, default=12,828.14, valueToShow=12828.144, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_52, storedValue=300, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_52 = "300"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_52, default=300, valueToShow=300, elementType=range
-Section07.js:268 🎚️ [S07] refreshUI: Setting slider d_52 = "300"
-Section07.js:275 🎚️ [S07] refreshUI: Updating d_52 slider range for system="Heatpump"
-Section07.js:294 🎚️ [S07] refreshUI: d_52 slider range updated to min=100, max=450, step=10
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_52, storedValue=3, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_52 = "3.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_52, default=3.00, valueToShow=3, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_52, storedValue=12828.144, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_52 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_52, default=12,828.14, valueToShow=12828.144, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_52, storedValue=333%, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_52 = "100%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_52, default=100%, valueToShow=333%, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_52, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_52 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_52, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_53, storedValue=0, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_53 = "0"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_53, default=0, valueToShow=0, elementType=range
-Section07.js:268 🎚️ [S07] refreshUI: Setting slider d_53 = "0"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_53, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_53 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_53, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_53, storedValue=12828.144, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_53 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_53, default=12,828.14, valueToShow=12828.144, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_53, storedValue=N/A, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_53 = "0%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_53, default=0%, valueToShow=N/A, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_53, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_53 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_53, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_54, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_54
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_54 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_54, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_54, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_54
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_54 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_54, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=k_54, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=k_54
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for k_54 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=k_54, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:317 ✅ [S07] refreshUI: Completed refresh for mode=target
-Section07.js:181 ✅ [S07] switchMode: Switch to "target" completed
-Section08.js:133 S08: Switched to TARGET mode.
-Section09.js:258 S09: Switched to TARGET mode
-Section09.js:422 S09: UI refreshed for target mode
-Section09.js:491 [S09 DISPLAY UPDATE] m_65: mode=target, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_66: mode=target, value="75%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_67: mode=target, value="71%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_65: mode=target, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_66: mode=target, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_67: mode=target, value="✓" (type=string), format=raw
-Section09.js:504 [S09] Updated calculated display values for target mode
-Section09.js:491 [S09 DISPLAY UPDATE] m_65: mode=target, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_66: mode=target, value="75%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_67: mode=target, value="71%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_65: mode=target, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_66: mode=target, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_67: mode=target, value="✓" (type=string), format=raw
-Section09.js:504 [S09] Updated calculated display values for target mode
-Section10.js:307 [S10 DEBUG] Mode switch: reference → TARGET
-Section10.js:313 [S10 DEBUG] Calling updateCalculatedDisplayValues() for target mode
-Section11.js:428 S11: Switched to TARGET mode
-Section11.js:2055 [S11 Area Sync] Starting sync in target mode
-Section11.js:2101 [S11 Area Sync] d_88 = 7.50 (from d_73)
-Section11.js:2101 [S11 Area Sync] d_89 = 81.14 (from d_74)
-Section11.js:2101 [S11 Area Sync] d_90 = 3.83 (from d_75)
-Section11.js:2101 [S11 Area Sync] d_91 = 159.00 (from d_76)
-Section11.js:2101 [S11 Area Sync] d_92 = 100.66 (from d_77)
-Section11.js:2101 [S11 Area Sync] d_93 = 0.00 (from d_78)
-Section11.js:2113 [S11 Area Sync] Refreshing UI...
-Section11.js:2117 [S11 Area Sync] Triggering recalculation...
-Section11.js:2902 [S11] calculateAll TRIGGERED. isReferenceMode: false
-Section11.js:2341 [S11] 🔵 REF CLIMATE READ: h_22=-1680
-Section11.js:2341 [S11] 🔵 REF CLIMATE READ: h_22=-1680
-Section11.js:2413 [S11] REF TB%=50% → ref_i_97=59532.29, ref_k_97=-947.70
-Section11.js:2597 [S11] Writing ref penalty: ref_i_97=59532.29, ref_k_97=-947.70
-Section11.js:2346 [S11] 🎯 TGT CLIMATE READ: h_22=-1680
-Section11.js:2346 [S11] 🎯 TGT CLIMATE READ: h_22=-1680
-Section11.js:2120 [S11 Area Sync] Sync completed successfully
-Section12.js:230 S12: Switched to TARGET mode
-Clock.js:163 [CLOCK] 🎯 User interaction started - timing to h_10 settlement
-Section12.js:354 [Section12] Calculated display values updated for target mode
-Clock.js:163 [CLOCK] 🎯 User interaction started - timing to h_10 settlement
-Section12.js:354 [Section12] Calculated display values updated for target mode
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=target
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=target
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=target
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section14.js:127 S14: Switched to TARGET mode
-ReferenceToggle.js:306 Uncaught TypeError: Cannot set properties of undefined (setting 'textContent')
-    at updateKeyValuesToggleUI (ReferenceToggle.js:306:34)
-    at switchAllSectionsMode (ReferenceToggle.js:277:5)
-    at Object.switchMode (ReferenceToggle.js:325:5)
-    at HTMLDivElement.<anonymous> (Section01.js:1346:37)Understand this errorAI
-ReferenceToggle.js:218 [ReferenceToggle] Found 15 dual-state sections: (15) ['sect02', 'sect03', 'sect04', 'sect05', 'sect06', 'sect07', 'sect08', 'sect09', 'sect10', 'sect11', 'sect12', 'sect13', 'sect14', 'sect15', 'sect16']
-Section02.js:1906 [S02] Switched to REFERENCE mode
-Section02.js:1964 [S02] Refreshing UI for REFERENCE mode
-Section02.js:2022 [S02] Updated h_12 (reporting year) slider = "2022" (reference mode)
-Section02.js:2039 [S02] Updated h_13 (service life) slider = "50" (reference mode)
-Section02.js:2089 [S02] Updated h_15 = "1,427.20" (reference mode)
-Section02.js:2089 [S02] Updated i_17 = "8154" (reference mode)
-Section02.js:2089 [S02] Updated l_12 = "$0.1300" (reference mode)
-Section02.js:2089 [S02] Updated l_13 = "$0.5070" (reference mode)
-Section02.js:2089 [S02] Updated l_14 = "$1.6200" (reference mode)
-Section02.js:2089 [S02] Updated l_15 = "$180.00" (reference mode)
-Section02.js:2089 [S02] Updated l_16 = "$1.5000" (reference mode)
-Section03.js:1256 Section03: Province selected: ON
-Clock.js:163 [CLOCK] 🎯 User interaction started - timing to h_10 settlement
-Clock.js:163 [CLOCK] 🎯 User interaction started - timing to h_10 settlement
-Section03.js:1317 City dropdown updated for ON - selected: Alexandria
-Section05.js:253 S05: Switched to REFERENCE mode
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section06.js:233 S06: Switched to REFERENCE mode
-Section06.js:285 🔄 [S06] updateCalculatedDisplayValues: mode=reference
-Section06.js:285 🔄 [S06] updateCalculatedDisplayValues: mode=reference
-Section07.js:171 🔄 [S07] switchMode: Switching from "target" to "reference"
-Section07.js:192 🔄 [S07] refreshUI: Starting refresh for mode=reference
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_49, storedValue=User Defined, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_49 = "User Defined"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_49, default=User Defined, valueToShow=User Defined, elementType=SELECT
-Section07.js:250 🔽 [S07] refreshUI: Setting dropdown d_49 from "User Defined" to "User Defined" (mode=reference)
-Section07.js:254 🔽 [S07] refreshUI: Dropdown d_49 now shows "User Defined"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_49, storedValue=40.00, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_49 = "40.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_49, default=40.00, valueToShow=40.00, elementType=TD
-Section07.js:245 ✏️ [S07] refreshUI: Setting contenteditable e_49 = "40.00"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=h_49, storedValue=40, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=h_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for h_49 = "40.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=h_49, default=40.00, valueToShow=40, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=i_49, storedValue=1839600, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=i_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for i_49 = "1,839,600"
-Section07.js:237 📋 [S07] refreshUI: fieldId=i_49, default=1,839,600, valueToShow=1839600, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=k_49, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=k_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for k_49 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=k_49, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_49, storedValue=100%, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_49 = "15%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_49, default=15%, valueToShow=100%, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_49, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_49
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_49 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_49, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_50, storedValue=10,000.00, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_50 = "10,000.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_50, default=10,000.00, valueToShow=10,000.00, elementType=TD
-Section07.js:245 ✏️ [S07] refreshUI: Setting contenteditable e_50 = "10,000.00"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=h_50, storedValue=16, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=h_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for h_50 = "16.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=h_50, default=16.00, valueToShow=16, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=i_50, storedValue=735840, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=i_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for i_50 = "735,840"
-Section07.js:237 📋 [S07] refreshUI: fieldId=i_50, default=735,840, valueToShow=735840, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_50, storedValue=38484.432, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_50 = "38,484.43"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_50, default=38,484.43, valueToShow=38484.432, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_50, storedValue=100%, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_50 = "15%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_50, default=15%, valueToShow=100%, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_50, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_50
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_50 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_50, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_51, storedValue=Electric, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_51 = "Heatpump"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_51, default=Heatpump, valueToShow=Electric, elementType=SELECT
-Section07.js:250 🔽 [S07] refreshUI: Setting dropdown d_51 from "Heatpump" to "Electric" (mode=reference)
-Section07.js:254 🔽 [S07] refreshUI: Dropdown d_51 now shows "Electric"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_51, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_51 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_51, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_51, storedValue=42760.48, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_51 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_51, default=12,828.14, valueToShow=42760.48, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=k_51, storedValue=42760.48, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=k_51
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for k_51 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=k_51, default=12,828.14, valueToShow=42760.48, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_52, storedValue=90, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_52 = "300"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_52, default=300, valueToShow=90, elementType=range
-Section07.js:268 🎚️ [S07] refreshUI: Setting slider d_52 = "90"
-Section07.js:275 🎚️ [S07] refreshUI: Updating d_52 slider range for system="Electric"
-Section07.js:294 🎚️ [S07] refreshUI: d_52 slider range updated to min=90, max=100, step=1
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_52, storedValue=0.9, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_52 = "3.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_52, default=3.00, valueToShow=0.9, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_52, storedValue=42760.48, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_52 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_52, default=12,828.14, valueToShow=42760.48, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_52, storedValue=100%, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_52 = "100%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_52, default=100%, valueToShow=100%, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_52, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_52
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_52 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_52, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_53, storedValue=0, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_53 = "0"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_53, default=0, valueToShow=0, elementType=range
-Section07.js:268 🎚️ [S07] refreshUI: Setting slider d_53 = "0"
-Section07.js:204 🔍 [S07] refreshUI: fieldId=e_53, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=e_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for e_53 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=e_53, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_53, storedValue=42760.48, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_53 = "12,828.14"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_53, default=12,828.14, valueToShow=42760.48, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=m_53, storedValue=N/A, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=m_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for m_53 = "0%"
-Section07.js:237 📋 [S07] refreshUI: fieldId=m_53, default=0%, valueToShow=N/A, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=n_53, storedValue=✓, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=n_53
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for n_53 = "✓"
-Section07.js:237 📋 [S07] refreshUI: fieldId=n_53, default=✓, valueToShow=✓, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=d_54, storedValue=3848.4432, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=d_54
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for d_54 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=d_54, default=0.00, valueToShow=3848.4432, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=j_54, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=j_54
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for j_54 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=j_54, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:204 🔍 [S07] refreshUI: fieldId=k_54, storedValue=null, elementFound=true
-Section07.js:324 🔍 [S07] getFieldDefault: Looking for default for fieldId=k_54
-Section07.js:333 ✅ [S07] getFieldDefault: Found default for k_54 = "0.00"
-Section07.js:237 📋 [S07] refreshUI: fieldId=k_54, default=0.00, valueToShow=0.00, elementType=TD
-Section07.js:317 ✅ [S07] refreshUI: Completed refresh for mode=reference
-Section07.js:181 ✅ [S07] switchMode: Switch to "reference" completed
-Section08.js:133 S08: Switched to REFERENCE mode.
-Section09.js:258 S09: Switched to REFERENCE mode
-Section09.js:422 S09: UI refreshed for reference mode
-Section09.js:491 [S09 DISPLAY UPDATE] m_65: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_66: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_67: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_65: mode=reference, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_66: mode=reference, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_67: mode=reference, value="✓" (type=string), format=raw
-Section09.js:504 [S09] Updated calculated display values for reference mode
-Section09.js:491 [S09 DISPLAY UPDATE] m_65: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_66: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_67: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_65: mode=reference, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_66: mode=reference, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_67: mode=reference, value="✓" (type=string), format=raw
-Section09.js:504 [S09] Updated calculated display values for reference mode
-Section10.js:307 [S10 DEBUG] Mode switch: target → REFERENCE
-Section10.js:313 [S10 DEBUG] Calling updateCalculatedDisplayValues() for reference mode
-Section11.js:428 S11: Switched to REFERENCE mode
-Section11.js:2055 [S11 Area Sync] Starting sync in reference mode
-Section11.js:2101 [S11 Area Sync] d_88 = 7.50 (from ref_d_73)
-Section11.js:2101 [S11 Area Sync] d_89 = 81.14 (from ref_d_74)
-Section11.js:2101 [S11 Area Sync] d_90 = 3.83 (from ref_d_75)
-Section11.js:2101 [S11 Area Sync] d_91 = 159.00 (from ref_d_76)
-Section11.js:2101 [S11 Area Sync] d_92 = 100.66 (from ref_d_77)
-Section11.js:2101 [S11 Area Sync] d_93 = 0.00 (from ref_d_78)
-Section11.js:2113 [S11 Area Sync] Refreshing UI...
-Section11.js:2117 [S11 Area Sync] Triggering recalculation...
-Section11.js:2902 [S11] calculateAll TRIGGERED. isReferenceMode: true
-Section11.js:2341 [S11] 🔵 REF CLIMATE READ: h_22=-1680
-Section11.js:2341 [S11] 🔵 REF CLIMATE READ: h_22=-1680
-Section11.js:2413 [S11] REF TB%=50% → ref_i_97=59532.29, ref_k_97=-947.70
-Section11.js:2597 [S11] Writing ref penalty: ref_i_97=59532.29, ref_k_97=-947.70
-Section11.js:2346 [S11] 🎯 TGT CLIMATE READ: h_22=-1680
-Section11.js:2346 [S11] 🎯 TGT CLIMATE READ: h_22=-1680
-Section11.js:2120 [S11 Area Sync] Sync completed successfully
-Section12.js:230 S12: Switched to REFERENCE mode
-Section12.js:354 [Section12] Calculated display values updated for reference mode
-Section12.js:354 [Section12] Calculated display values updated for reference mode
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section14.js:127 S14: Switched to REFERENCE mode
-ReferenceToggle.js:301 Uncaught TypeError: Cannot set properties of undefined (setting 'textContent')
-    at updateKeyValuesToggleUI (ReferenceToggle.js:301:34)
-    at switchAllSectionsMode (ReferenceToggle.js:277:5)
-    at Object.switchMode (ReferenceToggle.js:325:5)
-    at HTMLDivElement.<anonymous> (Section01.js:1346:37)
-updateKeyValuesToggleUI @ ReferenceToggle.js:301
-switchAllSectionsMode @ ReferenceToggle.js:277
-switchMode @ ReferenceToggle.js:325
-(anonymous) @ Section01.js:1346Understand this errorAI
-Clock.js:163 [CLOCK] 🎯 User interaction started - timing to h_10 settlement
-Section09.js:2355 [S09 PERF] calculateAll() triggered
-Section09.js:2356 [S09 PERF] calculateAll() stack trace
-calculateAll @ Section09.js:2356
-(anonymous) @ Section09.js:2416
-(anonymous) @ Section09.js:2425
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section10.js:2990 S10: Reference listener triggered by ref_i_71, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=76676.63 kWh/yr for Reference CED mitigated calc
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
+ Desktop device detected
+ 
+🧘 ZenMaster loaded. Use these commands to discover true dependencies:
+
+  zenEnable()         - Start tracing all getValue() calls
+  zenDisable()        - Stop tracing and restore original methods
+  zenReset()          - Clear all traced data
+  zenReport()         - Print discovered dependencies
+  zenValidate()       - Compare discovered vs declared dependencies
+  zenLabels()         - Find fields missing labels (for graph viz & debugging)
+  zenTypos()          - Detect potential typos in dependency declarations
+  zenExport()         - Export dependency graph JSON to console
+  zenExportFile()     - Download dependency graph as JSON file
+  zenExportSections() - Generate code snippets for section definitions
+  zenStatus()         - Show current tracing status
+
+Example workflow:
+  1. zenEnable()
+  2. Interact with the app (change values, trigger calculations)
+  3. zenValidate()      // Find MISSING deps & conditional patterns
+  4. zenLabels()        // Find unlabeled fields for graph viz
+  5. zenTypos()         // Find likely typos in dependency declarations
+  6. zenExportFile()    // Download for use in Dependency.js
+  7. zenDisable()
+
+ [ppConfig] Configuration loaded with 14 axes
+ [pcOptimization] Optimization module loaded
+ [pcRendering] Rendering module loaded
+ [ParallelCoordinates] Module loaded (Refactored Nov 30, 2025)
+ [S18] Parallel Coordinates section loaded
+ [S02] Registered dependencies from field metadata
+ [S02] "Set Values" button wired successfully
+ S02: Target defaults set from field definitions - single source of truth
+ S02: Reference defaults set from field definitions - single source of truth with mode overrides
+ [S02] Registered dependencies from field metadata
+ [S02] "Set Values" button wired successfully
+ [S02] Area updated to 1427.2 - letting downstream sections handle calculations
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Refreshing UI for TARGET mode
+ [S02] Updated h_12 (reporting year) slider = "2022" (target mode)
+ [S02] Updated h_13 (service life) slider = "50" (target mode)
+ [S02] Updated h_15 = "1,427.20" (target mode)
+ [S02] Updated i_17 = "8154" (target mode)
+ [S02] Updated l_12 = "$0.1300" (target mode)
+ [S02] Updated l_13 = "$0.5070" (target mode)
+ [S02] Updated l_14 = "$1.6200" (target mode)
+ [S02] Updated l_15 = "$180.00" (target mode)
+ [S02] Updated l_16 = "$1.5000" (target mode)
+ S03: Sliders initialized via FieldManager
+ S03: Section rendered - initializing Self-Contained State Module.
+ S03: Target defaults set from field definitions - single source of truth
+ S03: Reference defaults set from field definitions - single source of truth
+ S03: Weather Data button setup complete
+ S03: ModeManager exposed globally for cross-section integration.
+ S03: Checking climate data availability (attempt 1/10)
+ S03: Climate data available Array(13)
+ S03: Synced province "ON" to StateManager for cross-section communication
+ City dropdown updated for ON - selected: Alexandria
+ S03: Sliders initialized via FieldManager
+ Section03: Province selected: ON
+ City dropdown updated for ON - selected: Alexandria
+ S12: Section rendered - initializing Pattern A Dual-State Module.
+ S12: Reference defaults loaded from standard: OBC SB10 5.5-6 Z6
+ [S12] ✅ CLIMATE LISTENERS ADDED - Ready for d_20/d_21 changes
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S12: Pattern A initialization complete.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S03: Self-Contained State Module initialization complete
+ S05: Reference defaults loaded from standard: OBC SB10 5.5-6 Z6
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ S06: Pattern A initialization starting...
+ S06: Reference defaults loaded from standard: OBC SB10 5.5-6 Z6
+ 🟢 [S06-TAR] Storing d_43 = 0 (from d_44=0, d_45=0, d_46=0, i_46=0)
+ 🔵 [S06-REF] Storing ref_d_43 = 0 (from d_44=0, d_45=0, d_46=0, i_46=0)
+ 🔄 [S06] updateCalculatedDisplayValues: mode=target
+ S06: Pattern A initialization complete.
+ 🚀 [S07] onSectionRendered: Initializing state defaults from FieldDefinitions
+ 🔧 [S07] TargetState.setDefaults: Initializing from FieldDefinitions
+ ✅ [S07] TargetState.setDefaults: d_49="User Defined", d_51="Heatpump"
+ 🌐 [S07] TargetState.setDefaults: Published to StateManager
+ 🔧 [S07] ReferenceState.setDefaults: Initializing Reference-specific defaults
+ ✅ [S07] ReferenceState.setDefaults: All 6 field defaults loaded
+ 🔗 [S07] ReferenceState.setDefaults: Published all 6 Reference defaults with ref_ prefix
+ [S08] S04 listeners setup complete
+ [S09] ✅ Pattern A dual-engine listeners registered (4 Target/Reference pairs - d_13 removed per SMOOTH-MOVE-S02)
+ S09: Target defaults loaded from field definitions
+ S09: Reference defaults loaded from standard: OBC SB10 5.5-6 Z6, lighting: 2.0
+ [S09] 🔗 Published initial ref_d_63=126 for S07
+ [S09] 🔗 Published j_63=8760 and ref_j_63=8760 for S13
+ [S09] ✅ Pattern A dual-engine listeners registered (4 Target/Reference pairs - d_13 removed per SMOOTH-MOVE-S02)
+ S09: UI refreshed for target mode
+ [S09] 🔗 Published ref_i_63=4380 for S13
+ [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+ [S09] Updated calculated display values for target mode
+ [S09] 🔗 Published ref_i_63=4380 for S13
+ [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+ [S09] Updated calculated display values for target mode
+ [S09] 🔗 Published initial ref_d_63=126 for S07
+ [S09] 🔗 Published j_63=8760 and ref_j_63=8760 for S13
+ [S09] ✅ Pattern A dual-engine listeners registered (4 Target/Reference pairs - d_13 removed per SMOOTH-MOVE-S02)
+ S09: UI refreshed for target mode
+ [S09] 🔗 Published ref_i_63=4380 for S13
+ [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+ [S09] Updated calculated display values for target mode
+ [S09] 🔗 Published ref_i_63=4380 for S13
+ [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+ [S09] Updated calculated display values for target mode
+ S10: Section rendered - initializing Self-Contained State Module.
+ S10: Simplified global StateManager listeners added
+ S10: ModeManager exposed globally for cross-section integration.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [S11] Setting up S10 area listeners...
+ [S11] ✅ S10 area listeners registered for both modes
+ S11: Section rendered - initializing Self-Contained State Module.
+ [S11 REF DEFAULTS] Published ref_d_85=1411.52 to StateManager
+ [S11 REF DEFAULTS] Published ref_d_86=712.97 to StateManager
+ [S11 REF DEFAULTS] Published ref_d_87=0.00 to StateManager
+ [S11 REF DEFAULTS] Published ref_d_94=0.00 to StateManager
+ [S11 REF DEFAULTS] Published ref_d_95=1100.42 to StateManager
+ [S11 REF DEFAULTS] Published ref_d_96=29.70 to StateManager
+ S10: Reference listener triggered by ref_i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [S11] Listener: ref_d_97 changed → recalculating (src=default)
+ S10: Reference listener triggered by ref_i_98, recalculating all.
+ S10: Reference listener triggered by ref_i_97, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [S11] Listener: ref_d_97 changed → recalculating (src=calculated)
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_97, recalculating all.
+ S10: Target listener triggered by i_98, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [S11 REF DEFAULTS] Published ref_d_97=50 to StateManager
+ [S11 REF DEFAULTS] Published ref_f_85=5.3 to StateManager
+ [S11 REF DEFAULTS] Published ref_f_86=4.1 to StateManager
+ [S11 REF DEFAULTS] Published ref_f_87=6.6 to StateManager
+ [S11 REF DEFAULTS] Published ref_f_94=1.8 to StateManager
+ [S11 REF DEFAULTS] Published ref_f_95=3.5 to StateManager
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [S11 REF DEFAULTS] Published ref_g_88=1.99 to StateManager
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [S11 REF DEFAULTS] Published ref_g_89=1.42 to StateManager
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [S11 REF DEFAULTS] Published ref_g_90=1.42 to StateManager
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [S11 REF DEFAULTS] Published ref_g_91=1.42 to StateManager
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [S11 REF DEFAULTS] Published ref_g_92=1.42 to StateManager
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [S11 REF DEFAULTS] Published ref_g_93=1.42 to StateManager
+ S11: Reference defaults loaded from standard: OBC SB10 5.5-6 Z6
+ [S11] Setting up S10 area listeners...
+ [S11] ✅ S10 area listeners registered for both modes
+ S11: ModeManager exposed globally for cross-section integration.
+ [S11 Area Sync] S11 initialization complete - sync functions now enabled
+ [S11 Area Sync] DUAL-STATE SYNC - populating BOTH Target and Reference states
+ [S11 Area Sync] Reason: d_88=undefined, ref_d_73 in StateManager=7.50
+ [S11 Area Sync] d_88 REFERENCE = 7.50
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [S11 Area Sync] d_89 REFERENCE = 81.14
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [S11 Area Sync] d_90 REFERENCE = 3.83
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [S11 Area Sync] d_91 REFERENCE = 159.00
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [S11 Area Sync] d_92 REFERENCE = 100.66
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [S11 Area Sync] d_93 REFERENCE = 0.00
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [S11 Area Sync] Refreshing UI...
+ [S11 Area Sync] Triggering recalculation...
+ S10: Reference listener triggered by ref_i_98, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Reference listener triggered by ref_i_97, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_97, recalculating all.
+ S10: Target listener triggered by i_98, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [S11 Area Sync] Sync completed successfully
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ [S11 Area Sync] Initialization phase complete - DUAL-STATE SYNC disabled
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by m_121, recalculating all.
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 2] ⏭️ Skipping - No active cooling system (d_116="No Cooling")
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 2] ⏭️ Skipping - No active cooling system (d_116="No Cooling")
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 2] ⏭️ Skipping - No active cooling system (d_116="No Cooling")
+ [Cooling Stage 2] ⏭️ Skipping - No active cooling system (d_116="No Cooling")
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ [Cooling Stage 2] ⏭️ Skipping - No active cooling system (d_116="No Cooling")
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ [Cooling Stage 2] ⏭️ Skipping - No active cooling system (d_116="No Cooling")
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ [Cooling Stage 2] ⏭️ Skipping - No active cooling system (d_116="No Cooling")
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ [Cooling Stage 2] ⏭️ Skipping - No active cooling system (d_116="No Cooling")
+ [Section14] ✅ Added comprehensive listeners for 26 dependencies + 8 climate fields
+ S14: Section rendered - initializing Pattern A Dual-State Module.
+ S14: Reference defaults loaded from standard: OBC SB10 5.5-6 Z6
+ [Section14] ✅ Added comprehensive listeners for 26 dependencies + 8 climate fields
+ [Cooling Stage 2] ⏭️ Skipping - No active cooling system (d_116="No Cooling")
+ [Cooling Stage 2] ⏭️ Skipping - No active cooling system (d_116="No Cooling")
+ [Cooling Stage 2] ⏭️ Skipping - No active cooling system (d_116="No Cooling")
+ [Cooling Stage 2] ⏭️ Skipping - No active cooling system (d_116="No Cooling")
+ S14: Pattern A initialization complete.
+ [S19] Notes section rendered
+ [S19] Notes & QC Monitor section loaded
+ [S02] Registered dependencies from field metadata
+ [S02] "Set Values" button wired successfully
+ S02: Target defaults set from field definitions - single source of truth
+ S02: Loaded and merged Target state from localStorage
+ S02: Reference defaults set from field definitions - single source of truth with mode overrides
+ [S02] Registered dependencies from field metadata
+ [S02] "Set Values" button wired successfully
+ [S02] Area updated to 1427.2 - letting downstream sections handle calculations
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Refreshing UI for TARGET mode
+ [S02] Updated h_12 (reporting year) slider = "2022" (target mode)
+ [S02] Updated h_13 (service life) slider = "50" (target mode)
+ [S02] Updated h_15 = "1,427.20" (target mode)
+ [S02] Updated i_17 = "8154" (target mode)
+ [S02] Updated l_12 = "$0.1300" (target mode)
+ [S02] Updated l_13 = "$0.5070" (target mode)
+ [S02] Updated l_14 = "$1.6200" (target mode)
+ [S02] Updated l_15 = "$180.00" (target mode)
+ [S02] Updated l_16 = "$1.5000" (target mode)
+ S03: Sliders initialized via FieldManager
+ S03: Section rendered - initializing Self-Contained State Module.
+ S03: ModeManager exposed globally for cross-section integration.
+ S03: Checking climate data availability (attempt 1/10)
+ S03: Climate data available Array(13)
+ S03: Synced province "ON" to StateManager for cross-section communication
+ City dropdown updated for ON - selected: Alexandria
+ S03: Sliders initialized via FieldManager
+ Section03: Province selected: ON
+ City dropdown updated for ON - selected: Alexandria
+ S03: Self-Contained State Module initialization complete
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ S06: Pattern A initialization starting...
+ S06: Reference defaults loaded from standard: OBC SB10 5.5-6 Z6
+ 🟢 [S06-TAR] Storing d_43 = 0 (from d_44=0, d_45=0, d_46=0, i_46=0)
+ 🔵 [S06-REF] Storing ref_d_43 = 0 (from d_44=0, d_45=0, d_46=0, i_46=0)
+ 🔄 [S06] updateCalculatedDisplayValues: mode=target
+ S06: Pattern A initialization complete.
+ 🚀 [S07] onSectionRendered: Initializing state defaults from FieldDefinitions
+ 🔧 [S07] TargetState.setDefaults: Initializing from FieldDefinitions
+ ✅ [S07] TargetState.setDefaults: d_49="User Defined", d_51="Heatpump"
+ 🌐 [S07] TargetState.setDefaults: Published to StateManager
+ 🔧 [S07] ReferenceState.setDefaults: Initializing Reference-specific defaults
+ ✅ [S07] ReferenceState.setDefaults: All 6 field defaults loaded
+ 🔗 [S07] ReferenceState.setDefaults: Published all 6 Reference defaults with ref_ prefix
+ [S08] S04 listeners setup complete
+ [S09] ✅ Pattern A dual-engine listeners registered (4 Target/Reference pairs - d_13 removed per SMOOTH-MOVE-S02)
+ [S09] 🔗 Published initial ref_d_63=126 for S07
+ [S09] 🔗 Published j_63=8760 and ref_j_63=8760 for S13
+ [S09] ✅ Pattern A dual-engine listeners registered (4 Target/Reference pairs - d_13 removed per SMOOTH-MOVE-S02)
+ S09: UI refreshed for target mode
+ [S09] 🔗 Published ref_i_63=4380 for S13
+ [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+ [S09] Updated calculated display values for target mode
+ [S09] 🔗 Published ref_i_63=4380 for S13
+ [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+ [S09] Updated calculated display values for target mode
+ [S09] 🔗 Published initial ref_d_63=126 for S07
+ [S09] 🔗 Published j_63=8760 and ref_j_63=8760 for S13
+ [S09] ✅ Pattern A dual-engine listeners registered (4 Target/Reference pairs - d_13 removed per SMOOTH-MOVE-S02)
+ S09: UI refreshed for target mode
+ [S09] 🔗 Published ref_i_63=4380 for S13
+ [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+ [S09] Updated calculated display values for target mode
+ [S09] 🔗 Published ref_i_63=4380 for S13
+ [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+ [S09] Updated calculated display values for target mode
+ S10: Section rendered - initializing Self-Contained State Module.
+ S10: Simplified global StateManager listeners added
+ S10: ModeManager exposed globally for cross-section integration.
+ [S11] Setting up S10 area listeners...
+ [S11] ✅ S10 area listeners registered for both modes
+ S11: Section rendered - initializing Self-Contained State Module.
+ [S11] Setting up S10 area listeners...
+ [S11] ✅ S10 area listeners registered for both modes
+ S11: ModeManager exposed globally for cross-section integration.
+ [S11 Area Sync] S11 initialization complete - sync functions now enabled
+ [S11 Area Sync] Starting sync in target mode
+ [S11 Area Sync] d_88 = 7.50 (from d_73)
+ [S11 Area Sync] d_89 = 81.14 (from d_74)
+ [S11 Area Sync] d_90 = 3.83 (from d_75)
+ [S11 Area Sync] d_91 = 159.00 (from d_76)
+ [S11 Area Sync] d_92 = 100.66 (from d_77)
+ [S11 Area Sync] d_93 = 0.00 (from d_78)
+ [S11 Area Sync] Refreshing UI...
+ [S11 Area Sync] Triggering recalculation...
+ S10: Reference listener triggered by ref_i_98, recalculating all.
+ S10: Reference listener triggered by ref_i_97, recalculating all.
+ [S11] Listener: ref_d_97 changed → recalculating (src=calculated)
+ S10: Target listener triggered by i_97, recalculating all.
+ S10: Target listener triggered by i_98, recalculating all.
+ [S11] Listener: ref_d_97 changed → recalculating (src=calculated)
+ [S11 Area Sync] Sync completed successfully
+ [S11 Area Sync] Initialization phase complete - DUAL-STATE SYNC disabled
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Target listener triggered by m_121, recalculating all.
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ [Section14] ✅ Added comprehensive listeners for 26 dependencies + 8 climate fields
+ S14: Section rendered - initializing Pattern A Dual-State Module.
+ S14: Reference defaults loaded from standard: OBC SB10 5.5-6 Z6
+ [Section14] ✅ Added comprehensive listeners for 26 dependencies + 8 climate fields
+ S14: Pattern A initialization complete.
+ [S19] Notes section rendered
+ [S19] Notes & QC Monitor section loaded
+ Section03: Province selected: ON
+ City dropdown updated for ON - selected: Alexandria
+ [CLOCK] Performance monitoring initialized
+ [ParallelCoordinates] Setting up initial state
+ [ParallelCoordinates] Initial state ready
+ [S02] Registered dependencies from field metadata
+ [S02] "Set Values" button wired successfully
+ S02: Target defaults set from field definitions - single source of truth
+ S02: Loaded and merged Target state from localStorage
+ S02: Reference defaults set from field definitions - single source of truth with mode overrides
+ [S02] Registered dependencies from field metadata
+ [S02] "Set Values" button wired successfully
+ [S02] Area updated to 1427.2 - letting downstream sections handle calculations
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Refreshing UI for TARGET mode
+ [S02] Updated h_12 (reporting year) slider = "2022" (target mode)
+ [S02] Updated h_13 (service life) slider = "50" (target mode)
+ [S02] Updated h_15 = "1,427.20" (target mode)
+ [S02] Updated i_17 = "8154" (target mode)
+ [S02] Updated l_12 = "$0.1300" (target mode)
+ [S02] Updated l_13 = "$0.5070" (target mode)
+ [S02] Updated l_14 = "$1.6200" (target mode)
+ [S02] Updated l_15 = "$180.00" (target mode)
+ [S02] Updated l_16 = "$1.5000" (target mode)
+ S03: Sliders initialized via FieldManager
+ S03: Section rendered - initializing Self-Contained State Module.
+ S03: ModeManager exposed globally for cross-section integration.
+ S03: Checking climate data availability (attempt 1/10)
+ S03: Climate data available Array(13)
+ S03: Synced province "ON" to StateManager for cross-section communication
+ City dropdown updated for ON - selected: Alexandria
+ S03: Sliders initialized via FieldManager
+ Section03: Province selected: ON
+ City dropdown updated for ON - selected: Alexandria
+ S03: Self-Contained State Module initialization complete
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ S06: Pattern A initialization starting...
+ S06: Reference defaults loaded from standard: OBC SB10 5.5-6 Z6
+ 🟢 [S06-TAR] Storing d_43 = 0 (from d_44=0, d_45=0, d_46=0, i_46=0)
+ 🔵 [S06-REF] Storing ref_d_43 = 0 (from d_44=0, d_45=0, d_46=0, i_46=0)
+ 🔄 [S06] updateCalculatedDisplayValues: mode=target
+ S06: Pattern A initialization complete.
+ 🚀 [S07] onSectionRendered: Initializing state defaults from FieldDefinitions
+ 🔧 [S07] TargetState.setDefaults: Initializing from FieldDefinitions
+ ✅ [S07] TargetState.setDefaults: d_49="User Defined", d_51="Heatpump"
+ 🌐 [S07] TargetState.setDefaults: Published to StateManager
+ 🔧 [S07] ReferenceState.setDefaults: Initializing Reference-specific defaults
+ ✅ [S07] ReferenceState.setDefaults: All 6 field defaults loaded
+ 🔗 [S07] ReferenceState.setDefaults: Published all 6 Reference defaults with ref_ prefix
+ [S08] S04 listeners setup complete
+ [S09] ✅ Pattern A dual-engine listeners registered (4 Target/Reference pairs - d_13 removed per SMOOTH-MOVE-S02)
+ [S09] 🔗 Published initial ref_d_63=126 for S07
+ [S09] 🔗 Published j_63=8760 and ref_j_63=8760 for S13
+ [S09] ✅ Pattern A dual-engine listeners registered (4 Target/Reference pairs - d_13 removed per SMOOTH-MOVE-S02)
+ S09: UI refreshed for target mode
+ [S09] 🔗 Published ref_i_63=4380 for S13
+ [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+ [S09] Updated calculated display values for target mode
+ [S09] 🔗 Published ref_i_63=4380 for S13
+ [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+ [S09] Updated calculated display values for target mode
+ [S09] 🔗 Published initial ref_d_63=126 for S07
+ [S09] 🔗 Published j_63=8760 and ref_j_63=8760 for S13
+ [S09] ✅ Pattern A dual-engine listeners registered (4 Target/Reference pairs - d_13 removed per SMOOTH-MOVE-S02)
+ S09: UI refreshed for target mode
+ [S09] 🔗 Published ref_i_63=4380 for S13
+ [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+ [S09] Updated calculated display values for target mode
+ [S09] 🔗 Published ref_i_63=4380 for S13
+ [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+ [S09] Updated calculated display values for target mode
+ S10: Section rendered - initializing Self-Contained State Module.
+ S10: Simplified global StateManager listeners added
+ S10: ModeManager exposed globally for cross-section integration.
+ [S11] Setting up S10 area listeners...
+ [S11] ✅ S10 area listeners registered for both modes
+ S11: Section rendered - initializing Self-Contained State Module.
+ [S11] Setting up S10 area listeners...
+ [S11] ✅ S10 area listeners registered for both modes
+ S11: ModeManager exposed globally for cross-section integration.
+ [S11 Area Sync] S11 initialization complete - sync functions now enabled
+ [S11 Area Sync] Starting sync in target mode
+ [S11 Area Sync] d_88 = 7.50 (from d_73)
+ [S11 Area Sync] d_89 = 81.14 (from d_74)
+ [S11 Area Sync] d_90 = 3.83 (from d_75)
+ [S11 Area Sync] d_91 = 159.00 (from d_76)
+ [S11 Area Sync] d_92 = 100.66 (from d_77)
+ [S11 Area Sync] d_93 = 0.00 (from d_78)
+ [S11 Area Sync] Refreshing UI...
+ [S11 Area Sync] Triggering recalculation...
+ S10: Reference listener triggered by ref_i_98, recalculating all.
+ S10: Reference listener triggered by ref_i_97, recalculating all.
+ [S11] Listener: ref_d_97 changed → recalculating (src=calculated)
+ S10: Target listener triggered by i_97, recalculating all.
+ S10: Target listener triggered by i_98, recalculating all.
+ [S11] Listener: ref_d_97 changed → recalculating (src=calculated)
+ [S11 Area Sync] Sync completed successfully
+ [S11 Area Sync] Initialization phase complete - DUAL-STATE SYNC disabled
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Target listener triggered by m_121, recalculating all.
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ [Section14] ✅ Added comprehensive listeners for 26 dependencies + 8 climate fields
+ S14: Section rendered - initializing Pattern A Dual-State Module.
+ S14: Reference defaults loaded from standard: OBC SB10 5.5-6 Z6
+ [Section14] ✅ Added comprehensive listeners for 26 dependencies + 8 climate fields
+ S14: Pattern A initialization complete.
+ [S19] Notes section rendered
+ [S19] Notes & QC Monitor section loaded
+ Section03: Province selected: ON
+ City dropdown updated for ON - selected: Alexandria
+ [ReferenceToggle] Master Reference Toggle initialization complete
+ [S02] Registered dependencies from field metadata
+ [S02] "Set Values" button wired successfully
+ S02: Target defaults set from field definitions - single source of truth
+ S02: Loaded and merged Target state from localStorage
+ S02: Reference defaults set from field definitions - single source of truth with mode overrides
+ [S02] Registered dependencies from field metadata
+ [S02] "Set Values" button wired successfully
+ [S02] Area updated to 1427.2 - letting downstream sections handle calculations
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Refreshing UI for TARGET mode
+ [S02] Updated h_12 (reporting year) slider = "2022" (target mode)
+ [S02] Updated h_13 (service life) slider = "50" (target mode)
+ [S02] Updated h_15 = "1,427.20" (target mode)
+ [S02] Updated i_17 = "8154" (target mode)
+ [S02] Updated l_12 = "$0.1300" (target mode)
+ [S02] Updated l_13 = "$0.5070" (target mode)
+ [S02] Updated l_14 = "$1.6200" (target mode)
+ [S02] Updated l_15 = "$180.00" (target mode)
+ [S02] Updated l_16 = "$1.5000" (target mode)
+ S03: Sliders initialized via FieldManager
+ S03: Section rendered - initializing Self-Contained State Module.
+ S03: ModeManager exposed globally for cross-section integration.
+ S03: Checking climate data availability (attempt 1/10)
+ S03: Climate data available Array(13)
+ S03: Synced province "ON" to StateManager for cross-section communication
+ City dropdown updated for ON - selected: Alexandria
+ S03: Sliders initialized via FieldManager
+ Section03: Province selected: ON
+ City dropdown updated for ON - selected: Alexandria
+ S03: Self-Contained State Module initialization complete
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ S06: Pattern A initialization starting...
+ S06: Reference defaults loaded from standard: OBC SB10 5.5-6 Z6
+ 🟢 [S06-TAR] Storing d_43 = 0 (from d_44=0, d_45=0, d_46=0, i_46=0)
+ 🔵 [S06-REF] Storing ref_d_43 = 0 (from d_44=0, d_45=0, d_46=0, i_46=0)
+ 🔄 [S06] updateCalculatedDisplayValues: mode=target
+ S06: Pattern A initialization complete.
+ 🚀 [S07] onSectionRendered: Initializing state defaults from FieldDefinitions
+ 🔧 [S07] TargetState.setDefaults: Initializing from FieldDefinitions
+ ✅ [S07] TargetState.setDefaults: d_49="User Defined", d_51="Heatpump"
+ 🌐 [S07] TargetState.setDefaults: Published to StateManager
+ 🔧 [S07] ReferenceState.setDefaults: Initializing Reference-specific defaults
+ ✅ [S07] ReferenceState.setDefaults: All 6 field defaults loaded
+ 🔗 [S07] ReferenceState.setDefaults: Published all 6 Reference defaults with ref_ prefix
+ [S08] S04 listeners setup complete
+ [S09] ✅ Pattern A dual-engine listeners registered (4 Target/Reference pairs - d_13 removed per SMOOTH-MOVE-S02)
+ [S09] 🔗 Published initial ref_d_63=126 for S07
+ [S09] 🔗 Published j_63=8760 and ref_j_63=8760 for S13
+ [S09] ✅ Pattern A dual-engine listeners registered (4 Target/Reference pairs - d_13 removed per SMOOTH-MOVE-S02)
+ S09: UI refreshed for target mode
+ [S09] 🔗 Published ref_i_63=4380 for S13
+ [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+ [S09] Updated calculated display values for target mode
+ [S09] 🔗 Published ref_i_63=4380 for S13
+ [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+ [S09] Updated calculated display values for target mode
+ [S09] 🔗 Published initial ref_d_63=126 for S07
+ [S09] 🔗 Published j_63=8760 and ref_j_63=8760 for S13
+ [S09] ✅ Pattern A dual-engine listeners registered (4 Target/Reference pairs - d_13 removed per SMOOTH-MOVE-S02)
+ S09: UI refreshed for target mode
+ [S09] 🔗 Published ref_i_63=4380 for S13
+ [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+ [S09] Updated calculated display values for target mode
+ [S09] 🔗 Published ref_i_63=4380 for S13
+ [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+ [S09] Updated calculated display values for target mode
+ S10: Section rendered - initializing Self-Contained State Module.
+ S10: Simplified global StateManager listeners added
+ S10: ModeManager exposed globally for cross-section integration.
+ [S11] Setting up S10 area listeners...
+ [S11] ✅ S10 area listeners registered for both modes
+ S11: Section rendered - initializing Self-Contained State Module.
+ [S11] Setting up S10 area listeners...
+ [S11] ✅ S10 area listeners registered for both modes
+ S11: ModeManager exposed globally for cross-section integration.
+ [S11 Area Sync] S11 initialization complete - sync functions now enabled
+ [S11 Area Sync] Starting sync in target mode
+ [S11 Area Sync] d_88 = 7.50 (from d_73)
+ [S11 Area Sync] d_89 = 81.14 (from d_74)
+ [S11 Area Sync] d_90 = 3.83 (from d_75)
+ [S11 Area Sync] d_91 = 159.00 (from d_76)
+ [S11 Area Sync] d_92 = 100.66 (from d_77)
+ [S11 Area Sync] d_93 = 0.00 (from d_78)
+ [S11 Area Sync] Refreshing UI...
+ [S11 Area Sync] Triggering recalculation...
+ S10: Reference listener triggered by ref_i_98, recalculating all.
+ S10: Reference listener triggered by ref_i_97, recalculating all.
+ [S11] Listener: ref_d_97 changed → recalculating (src=calculated)
+ S10: Target listener triggered by i_97, recalculating all.
+ S10: Target listener triggered by i_98, recalculating all.
+ [S11] Listener: ref_d_97 changed → recalculating (src=calculated)
+ [S11 Area Sync] Sync completed successfully
+ [S11 Area Sync] Initialization phase complete - DUAL-STATE SYNC disabled
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Target listener triggered by m_121, recalculating all.
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ [Section14] ✅ Added comprehensive listeners for 26 dependencies + 8 climate fields
+ S14: Section rendered - initializing Pattern A Dual-State Module.
+ S14: Reference defaults loaded from standard: OBC SB10 5.5-6 Z6
+ [Section14] ✅ Added comprehensive listeners for 26 dependencies + 8 climate fields
+ S14: Pattern A initialization complete.
+ [S19] Notes section rendered
+ [S19] Notes & QC Monitor section loaded
+ Section03: Province selected: ON
+ City dropdown updated for ON - selected: Alexandria
+ Section03: Province selected: ON
+ City dropdown updated for ON - selected: Alexandria
+ [S02] Registered dependencies from field metadata
+ [S02] "Set Values" button wired successfully
+ S02: Target defaults set from field definitions - single source of truth
+ S02: Loaded and merged Target state from localStorage
+ S02: Reference defaults set from field definitions - single source of truth with mode overrides
+ [S02] Registered dependencies from field metadata
+ [S02] "Set Values" button wired successfully
+ [S02] Area updated to 1427.2 - letting downstream sections handle calculations
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Refreshing UI for TARGET mode
+ [S02] Updated h_12 (reporting year) slider = "2022" (target mode)
+ [S02] Updated h_13 (service life) slider = "50" (target mode)
+ [S02] Updated h_15 = "1,427.20" (target mode)
+ [S02] Updated i_17 = "8154" (target mode)
+ [S02] Updated l_12 = "$0.1300" (target mode)
+ [S02] Updated l_13 = "$0.5070" (target mode)
+ [S02] Updated l_14 = "$1.6200" (target mode)
+ [S02] Updated l_15 = "$180.00" (target mode)
+ [S02] Updated l_16 = "$1.5000" (target mode)
+ S03: Sliders initialized via FieldManager
+ S03: Section rendered - initializing Self-Contained State Module.
+ S03: ModeManager exposed globally for cross-section integration.
+ S03: Checking climate data availability (attempt 1/10)
+ S03: Climate data available Array(13)
+ S03: Synced province "ON" to StateManager for cross-section communication
+ City dropdown updated for ON - selected: Alexandria
+ S03: Sliders initialized via FieldManager
+ Section03: Province selected: ON
+ City dropdown updated for ON - selected: Alexandria
+ S03: Self-Contained State Module initialization complete
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ [S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)
+ S06: Pattern A initialization starting...
+ S06: Reference defaults loaded from standard: OBC SB10 5.5-6 Z6
+ 🟢 [S06-TAR] Storing d_43 = 0 (from d_44=0, d_45=0, d_46=0, i_46=0)
+ 🔵 [S06-REF] Storing ref_d_43 = 0 (from d_44=0, d_45=0, d_46=0, i_46=0)
+ 🔄 [S06] updateCalculatedDisplayValues: mode=target
+ S06: Pattern A initialization complete.
+ 🚀 [S07] onSectionRendered: Initializing state defaults from FieldDefinitions
+ 🔧 [S07] TargetState.setDefaults: Initializing from FieldDefinitions
+ ✅ [S07] TargetState.setDefaults: d_49="User Defined", d_51="Heatpump"
+ 🌐 [S07] TargetState.setDefaults: Published to StateManager
+ 🔧 [S07] ReferenceState.setDefaults: Initializing Reference-specific defaults
+ ✅ [S07] ReferenceState.setDefaults: All 6 field defaults loaded
+ 🔗 [S07] ReferenceState.setDefaults: Published all 6 Reference defaults with ref_ prefix
+ [S08] S04 listeners setup complete
+ [S09] ✅ Pattern A dual-engine listeners registered (4 Target/Reference pairs - d_13 removed per SMOOTH-MOVE-S02)
+ [S09] 🔗 Published initial ref_d_63=126 for S07
+ [S09] 🔗 Published j_63=8760 and ref_j_63=8760 for S13
+ [S09] ✅ Pattern A dual-engine listeners registered (4 Target/Reference pairs - d_13 removed per SMOOTH-MOVE-S02)
+ S09: UI refreshed for target mode
+ [S09] 🔗 Published ref_i_63=4380 for S13
+ [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+ [S09] Updated calculated display values for target mode
+ [S09] 🔗 Published ref_i_63=4380 for S13
+ [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+ [S09] Updated calculated display values for target mode
+ [S09] 🔗 Published initial ref_d_63=126 for S07
+ [S09] 🔗 Published j_63=8760 and ref_j_63=8760 for S13
+ [S09] ✅ Pattern A dual-engine listeners registered (4 Target/Reference pairs - d_13 removed per SMOOTH-MOVE-S02)
+ S09: UI refreshed for target mode
+ [S09] 🔗 Published ref_i_63=4380 for S13
+ [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+ [S09] Updated calculated display values for target mode
+ [S09] 🔗 Published ref_i_63=4380 for S13
+ [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+ [S09] Updated calculated display values for target mode
+ S10: Section rendered - initializing Self-Contained State Module.
+ S10: Simplified global StateManager listeners added
+ S10: ModeManager exposed globally for cross-section integration.
+ [S11] Setting up S10 area listeners...
+ [S11] ✅ S10 area listeners registered for both modes
+ S11: Section rendered - initializing Self-Contained State Module.
+ [S11] Setting up S10 area listeners...
+ [S11] ✅ S10 area listeners registered for both modes
+ S11: ModeManager exposed globally for cross-section integration.
+ [S11 Area Sync] S11 initialization complete - sync functions now enabled
+ [S11 Area Sync] Starting sync in target mode
+ [S11 Area Sync] d_88 = 7.50 (from d_73)
+ [S11 Area Sync] d_89 = 81.14 (from d_74)
+ [S11 Area Sync] d_90 = 3.83 (from d_75)
+ [S11 Area Sync] d_91 = 159.00 (from d_76)
+ [S11 Area Sync] d_92 = 100.66 (from d_77)
+ [S11 Area Sync] d_93 = 0.00 (from d_78)
+ [S11 Area Sync] Refreshing UI...
+ [S11 Area Sync] Triggering recalculation...
+ S10: Reference listener triggered by ref_i_98, recalculating all.
+ S10: Reference listener triggered by ref_i_97, recalculating all.
+ [S11] Listener: ref_d_97 changed → recalculating (src=calculated)
+ S10: Target listener triggered by i_97, recalculating all.
+ S10: Target listener triggered by i_98, recalculating all.
+ [S11] Listener: ref_d_97 changed → recalculating (src=calculated)
+ [S11 Area Sync] Sync completed successfully
+ [S11 Area Sync] Initialization phase complete - DUAL-STATE SYNC disabled
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Target listener triggered by m_121, recalculating all.
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ [Section14] ✅ Added comprehensive listeners for 26 dependencies + 8 climate fields
+ S14: Section rendered - initializing Pattern A Dual-State Module.
+ S14: Reference defaults loaded from standard: OBC SB10 5.5-6 Z6
+ [Section14] ✅ Added comprehensive listeners for 26 dependencies + 8 climate fields
+ S14: Pattern A initialization complete.
+ [S19] Notes section rendered
+ [S19] Notes & QC Monitor section loaded
+ Section03: Province selected: ON
+ City dropdown updated for ON - selected: Alexandria
+ Section03: Province selected: ON
+ City dropdown updated for ON - selected: Alexandria
+ TEUI Calculator 4.011 initialization complete
+ [CLOCK] Performance monitoring initialized
+ [TooltipManager] Empty tooltip message for field: l_104
+applyTooltip @ TooltipManager.js:777Understand this warningAI
+ [QCMonitor] QC monitoring disabled. Add ?qc=true to URL to activate.
+ [TooltipManager] Empty tooltip message for field: j_98
+applyTooltip @ TooltipManager.js:777Understand this warningAI
+ [TooltipManager] Empty tooltip message for field: l_98
+applyTooltip @ TooltipManager.js:777Understand this warningAI
+ [TooltipManager] Empty tooltip message for field: j_98
+applyTooltip @ TooltipManager.js:777Understand this warningAI
+ [TooltipManager] Empty tooltip message for field: l_98
+applyTooltip @ TooltipManager.js:777Understand this warningAI
+ [TooltipManager] Empty tooltip message for field: j_98
+applyTooltip @ TooltipManager.js:777Understand this warningAI
+ [TooltipManager] Empty tooltip message for field: l_98
+applyTooltip @ TooltipManager.js:777Understand this warningAI
+ [TooltipManager] Empty tooltip message for field: j_98
+applyTooltip @ TooltipManager.js:777Understand this warningAI
+ [TooltipManager] Empty tooltip message for field: l_98
+applyTooltip @ TooltipManager.js:777Understand this warningAI
+ 🔍 [S01DB] updateTEUIDisplay START: e_10=341.2, h_10=93.88345196516993, useType=Utility Bills
+ 🔍 [S01] T.1 Calculation: e_6=22.3 (ref), h_6=11.7 (target) → reduction should be 48%
+ 🔍 [S01DB] UPDATING h_10: 93.9 (from j_32=133990.46264469053, area=1427.2)
+ 🔍 [S01] h_6 explanation: target=11.7, ref=22.3, reduction=0.4753363228699552, percent=48%
+ ✅ [S01] CALCULATION CHAIN COMPLETE - All values finalized including h_10
+ S10: Reference listener triggered by ref_i_103, recalculating all.
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
+ [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
+ [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
+ [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
+ [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
+ S10: Reference listener triggered by ref_m_121, recalculating all.
+ [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
+ [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
+ [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+ S10: Target listener triggered by i_103, recalculating all.
+ [Cooling Stage 2] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 2] ⚠️ Already calculating (mode=target) - skipping to prevent recursion
+ [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
 Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
 Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=76676.63 kWh/yr for Reference CED mitigated calc
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=76676.63 kWh/yr for Reference CED mitigated calc
+Cooling.js:523 [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
 Cooling.js:618 [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
+Section10.js:2975 S10: Reference listener triggered by ref_m_121, recalculating all.
+Section10.js:2975 S10: Reference listener triggered by ref_m_121, recalculating all.
+Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
+Cooling.js:523 [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
 Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
 Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=76676.63 kWh/yr for Reference CED mitigated calc
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=76676.63 kWh/yr for Reference CED mitigated calc
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section09.js:304 [S09] ✅ ref_h_71 updated: 187316.91960000002 (for S15/S04 debugging)
-Section09.js:2037 [S09] 🔗 Published ref_i_63=4380 for S13
-Section09.js:2044 [S09] 🔗 Published ref_i_71=125733.2748 for S10
-Section09.js:2082 [S09 M-N FORMAT] isRef=true, mode=reference
-Section09.js:2083 [S09 M-N FORMAT] Ratios: m_65=1, m_66=1, m_67=1
-Section09.js:2084 [S09 M-N FORMAT] Formatted: m_65="100%" (type=string)
-Section09.js:2085 [S09 M-N FORMAT] Formatted: m_66="100%" (type=string)
-Section09.js:2086 [S09 M-N FORMAT] Formatted: m_67="100%" (type=string)
-Section09.js:2095 [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
-StateManager.js:395 [StateManager DEBUG] ref_m_65 setValue: "100%" (type=string, state: calculated, prev: 100%)
-StateManager.js:395 [StateManager DEBUG] ref_m_66 setValue: "100%" (type=string, state: calculated, prev: 100%)
-StateManager.js:395 [StateManager DEBUG] ref_m_67 setValue: "100%" (type=string, state: calculated, prev: 100%)
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section10.js:2990 S10: Reference listener triggered by ref_i_71, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=82842.13 kWh/yr for Reference CED mitigated calc
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=82842.13 kWh/yr for Reference CED mitigated calc
 Cooling.js:618 [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
+Section10.js:2975 S10: Reference listener triggered by ref_m_121, recalculating all.
+Section10.js:2975 S10: Reference listener triggered by ref_m_121, recalculating all.
 Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
 Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
+Cooling.js:523 [Cooling Stage 1] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
 Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
 Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=82842.13 kWh/yr for Reference CED mitigated calc
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=82842.13 kWh/yr for Reference CED mitigated calc
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=82842.13 kWh/yr for Reference CED mitigated calc
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section09.js:2082 [S09 M-N FORMAT] isRef=false, mode=reference
-Section09.js:2083 [S09 M-N FORMAT] Ratios: m_65=1, m_66=0.3, m_67=1
-Section09.js:2084 [S09 M-N FORMAT] Formatted: m_65="100%" (type=string)
-Section09.js:2085 [S09 M-N FORMAT] Formatted: m_66="30%" (type=string)
-Section09.js:2086 [S09 M-N FORMAT] Formatted: m_67="100%" (type=string)
-Section09.js:2361 [S09 PERF] calculateAll() complete
-Section09.js:491 [S09 DISPLAY UPDATE] m_65: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_66: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_67: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_65: mode=reference, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_66: mode=reference, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_67: mode=reference, value="✓" (type=string), format=raw
-Section09.js:504 [S09] Updated calculated display values for reference mode
-Clock.js:163 [CLOCK] 🎯 User interaction started - timing to h_10 settlement
-Section09.js:2355 [S09 PERF] calculateAll() triggered
-Section09.js:2356 [S09 PERF] calculateAll() stack trace
-calculateAll @ Section09.js:2356
-(anonymous) @ Section09.js:2416
-(anonymous) @ Section09.js:2425
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section10.js:2990 S10: Reference listener triggered by ref_i_71, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=70273.47 kWh/yr for Reference CED mitigated calc
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=70273.47 kWh/yr for Reference CED mitigated calc
 Cooling.js:618 [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
+Section10.js:2975 S10: Reference listener triggered by ref_m_121, recalculating all.
+Section10.js:2975 S10: Reference listener triggered by ref_m_121, recalculating all.
 Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
 Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
+Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
+Section10.js:2975 S10: Reference listener triggered by ref_m_121, recalculating all.
 Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
 Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
+Section10.js:2975 S10: Reference listener triggered by ref_m_121, recalculating all.
 Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
 Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
 Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
 Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=70273.47 kWh/yr for Reference CED mitigated calc
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=70273.47 kWh/yr for Reference CED mitigated calc
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=70273.47 kWh/yr for Reference CED mitigated calc
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section09.js:304 [S09] ✅ ref_h_71 updated: 187316.91960000002 (for S15/S04 debugging)
-Section09.js:2037 [S09] 🔗 Published ref_i_63=4380 for S13
-Section09.js:2044 [S09] 🔗 Published ref_i_71=125733.2748 for S10
-Section09.js:2082 [S09 M-N FORMAT] isRef=true, mode=reference
-Section09.js:2083 [S09 M-N FORMAT] Ratios: m_65=1, m_66=1, m_67=1
-Section09.js:2084 [S09 M-N FORMAT] Formatted: m_65="100%" (type=string)
-Section09.js:2085 [S09 M-N FORMAT] Formatted: m_66="100%" (type=string)
-Section09.js:2086 [S09 M-N FORMAT] Formatted: m_67="100%" (type=string)
-Section09.js:2095 [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
-StateManager.js:395 [StateManager DEBUG] ref_m_65 setValue: "100%" (type=string, state: calculated, prev: 100%)
-StateManager.js:395 [StateManager DEBUG] ref_m_66 setValue: "100%" (type=string, state: calculated, prev: 100%)
-StateManager.js:395 [StateManager DEBUG] ref_m_67 setValue: "100%" (type=string, state: calculated, prev: 100%)
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section10.js:2990 S10: Reference listener triggered by ref_i_71, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=82842.13 kWh/yr for Reference CED mitigated calc
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=82842.13 kWh/yr for Reference CED mitigated calc
+Section10.js:2975 S10: Reference listener triggered by ref_m_121, recalculating all.
 Cooling.js:618 [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
+Section10.js:2975 S10: Reference listener triggered by ref_m_121, recalculating all.
 Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
 Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
+Section10.js:2975 S10: Reference listener triggered by ref_m_121, recalculating all.
 Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
 Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=82842.13 kWh/yr for Reference CED mitigated calc
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=82842.13 kWh/yr for Reference CED mitigated calc
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=82842.13 kWh/yr for Reference CED mitigated calc
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section09.js:2082 [S09 M-N FORMAT] isRef=false, mode=reference
-Section09.js:2083 [S09 M-N FORMAT] Ratios: m_65=1, m_66=0.3, m_67=1
-Section09.js:2084 [S09 M-N FORMAT] Formatted: m_65="100%" (type=string)
-Section09.js:2085 [S09 M-N FORMAT] Formatted: m_66="30%" (type=string)
-Section09.js:2086 [S09 M-N FORMAT] Formatted: m_67="100%" (type=string)
-Section09.js:2361 [S09 PERF] calculateAll() complete
-Section09.js:491 [S09 DISPLAY UPDATE] m_65: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_66: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_67: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_65: mode=reference, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_66: mode=reference, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_67: mode=reference, value="✓" (type=string), format=raw
-Section09.js:504 [S09] Updated calculated display values for reference mode
-Clock.js:163 [CLOCK] 🎯 User interaction started - timing to h_10 settlement
-Section09.js:2355 [S09 PERF] calculateAll() triggered
-Section09.js:2356 [S09 PERF] calculateAll() stack trace
-calculateAll @ Section09.js:2356
-(anonymous) @ Section09.js:2416
-(anonymous) @ Section09.js:2425
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section10.js:2990 S10: Reference listener triggered by ref_i_71, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=70273.47 kWh/yr for Reference CED mitigated calc
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=70273.47 kWh/yr for Reference CED mitigated calc
-Cooling.js:618 [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=70273.47 kWh/yr for Reference CED mitigated calc
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=70273.47 kWh/yr for Reference CED mitigated calc
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=70273.47 kWh/yr for Reference CED mitigated calc
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section09.js:304 [S09] ✅ ref_h_71 updated: 187316.91960000002 (for S15/S04 debugging)
-Section09.js:2037 [S09] 🔗 Published ref_i_63=4380 for S13
-Section09.js:2044 [S09] 🔗 Published ref_i_71=125733.2748 for S10
-Section09.js:2082 [S09 M-N FORMAT] isRef=true, mode=reference
-Section09.js:2083 [S09 M-N FORMAT] Ratios: m_65=1, m_66=1, m_67=1
-Section09.js:2084 [S09 M-N FORMAT] Formatted: m_65="100%" (type=string)
-Section09.js:2085 [S09 M-N FORMAT] Formatted: m_66="100%" (type=string)
-Section09.js:2086 [S09 M-N FORMAT] Formatted: m_67="100%" (type=string)
-Section09.js:2095 [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
-StateManager.js:395 [StateManager DEBUG] ref_m_65 setValue: "100%" (type=string, state: calculated, prev: 100%)
-StateManager.js:395 [StateManager DEBUG] ref_m_66 setValue: "100%" (type=string, state: calculated, prev: 100%)
-StateManager.js:395 [StateManager DEBUG] ref_m_67 setValue: "100%" (type=string, state: calculated, prev: 100%)
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section10.js:2990 S10: Reference listener triggered by ref_i_71, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=82842.13 kWh/yr for Reference CED mitigated calc
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=82842.13 kWh/yr for Reference CED mitigated calc
-Cooling.js:618 [Cooling Stage 2] ⚠️ Already calculating (mode=reference) - skipping to prevent recursion
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=82842.13 kWh/yr for Reference CED mitigated calc
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section05.js:321 🔄 [S05] updateCalculatedDisplayValues: mode=reference
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=82842.13 kWh/yr for Reference CED mitigated calc
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section13.js:2796 [S13] 🔗 Published ref_d_120=3888.89 L/s for Reference ventilation energy calc
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:2980 [S13] 🔗 Published ref_d_122=17886.04 kWh/yr for Reference CED calc
-Section13.js:3036 [S13] 🔗 Published ref_d_129=82842.13 kWh/yr for Reference CED mitigated calc
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section10.js:2990 S10: Reference listener triggered by ref_m_121, recalculating all.
-Section10.js:2048 [S10 DEBUG] calculateAll() triggered in reference mode - running both engines
-Section10.js:2056 [S10 DEBUG] Dual-engine calculations complete in reference mode
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section14.js:1402 [S14 LISTENER] 🔥 ref_d_122 changed - triggering calculateAll() + UI update
-Section13.js:401 [S13 updateCalc] j_116 check: element=true, contenteditable="false", isGhosted=true, mode=reference
-Section13.js:408 [S13 updateCalc] ✅ Added j_116 to fieldFormats
-Section09.js:2082 [S09 M-N FORMAT] isRef=false, mode=reference
-Section09.js:2083 [S09 M-N FORMAT] Ratios: m_65=1, m_66=0.3, m_67=1
-Section09.js:2084 [S09 M-N FORMAT] Formatted: m_65="100%" (type=string)
-Section09.js:2085 [S09 M-N FORMAT] Formatted: m_66="30%" (type=string)
-Section09.js:2086 [S09 M-N FORMAT] Formatted: m_67="100%" (type=string)
-Section09.js:2361 [S09 PERF] calculateAll() complete
-Section09.js:491 [S09 DISPLAY UPDATE] m_65: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_66: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] m_67: mode=reference, value="100%" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_65: mode=reference, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_66: mode=reference, value="✓" (type=string), format=raw
-Section09.js:491 [S09 DISPLAY UPDATE] n_67: mode=reference, value="✓" (type=string), format=raw
-Section09.js:504 [S09] Updated calculated display values for reference mode
-Section01.js:773 🔍 [S01DB] updateTEUIDisplay START: e_10=197.5, h_10=93.68427304759112, useType=Utility Bills
-Section01.js:843 🔍 [S01] T.1 Calculation: e_6=22.8 (ref), h_6=11.7 (target) → reduction should be 49%
+TooltipManager.js:777 [TooltipManager] Empty tooltip message for field: j_98
+applyTooltip @ TooltipManager.js:777Understand this warningAI
+TooltipManager.js:777 [TooltipManager] Empty tooltip message for field: l_98
+applyTooltip @ TooltipManager.js:777Understand this warningAI
+Clock.js:41 [CLOCK] Starting initial load timing
+Section09.js:2034 [S09] 🔗 Published ref_i_63=4380 for S13
+Section09.js:2086 [S09 M-N STORE] Storing to StateManager: ref_m_65="100%", ref_m_66="100%", ref_m_67="100%"
+Section12.js:2478 [Section12] Reference results cached. Publishing will occur at the end of calculateAll.
+Section06.js:599 🟢 [S06-TAR] Storing d_43 = 0 (from d_44=0, d_45=0, d_46=0, i_46=0)
+Section06.js:594 🔵 [S06-REF] Storing ref_d_43 = 0 (from d_44=0, d_45=0, d_46=0, i_46=0)
+Dependency.js:2091 [DependencyGraph] Already initialized, skipping re-initialization
+Section01.js:773 🔍 [S01DB] updateTEUIDisplay START: e_10=182.2, h_10=93.68427304759112, useType=Utility Bills
+Section01.js:843 🔍 [S01] T.1 Calculation: e_6=23.1 (ref), h_6=11.7 (target) → reduction should be 49%
 Section01.js:942 🔍 [S01DB] UPDATING h_10: 93.7 (from j_32=133706.19449352205, area=1427.2)
-Section01.js:529 🔍 [S01] h_6 explanation: target=11.7, ref=22.8, reduction=0.48684210526315796, percent=49%
-Clock.js:65 🕐 [CLOCK] ⚡ CALCULATION COMPLETE: 855ms (subsequent update)
-Clock.js:178 🕐 [CLOCK] ⚡ USER INTERACTION COMPLETE: 855ms (interaction → h_10 settlement)
+Section01.js:529 🔍 [S01] h_6 explanation: target=11.7, ref=23.1, reduction=0.49350649350649356, percent=49%
+Clock.js:59 🕐 [CLOCK] ⭐ INITIALIZATION COMPLETE: 215ms (all calculations finalized)
 Section01.js:1267 ✅ [S01] CALCULATION CHAIN COMPLETE - All values finalized including h_10

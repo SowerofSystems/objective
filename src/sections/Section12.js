@@ -351,9 +351,9 @@ window.TEUI.SectionModules.sect12 = (function () {
         }
       });
 
-      console.log(
-        `[Section12] Calculated display values updated for ${this.currentMode} mode`
-      );
+      // console.log(
+      //   `[Section12] Calculated display values updated for ${this.currentMode} mode`
+      // );
     },
     resetState: function () {
       console.log("S12: Resetting state and clearing localStorage.");
@@ -1364,7 +1364,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         element.classList.remove("user-input", "editable", "PendingValue");
         element.removeAttribute("contenteditable");
       } else {
-        console.warn("DOM element not found for calculated field:", fieldId);
+        // console.warn("DOM element not found for calculated field:", fieldId);
       }
     }
     // Reference calculations store values only; DOM updates handled by ModeManager.updateCalculatedDisplayValues()
