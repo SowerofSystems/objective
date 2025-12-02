@@ -2037,9 +2037,85 @@ window.TEUI.SectionModules.sect09 = (function () {
         window.TEUI.StateManager.setValue("ref_i_71", ref_i_71, "calculated");
         console.log(`[S09] 🔗 Published ref_i_71=${ref_i_71} for S10`);
       }
+
+      // ✅ S07 PATTERN: Calculate M-N compliance AFTER densities are published
+      calculateCompliance(true);
     } catch (error) {
       console.error("[S09] Error in Reference Model calculations:", error);
     }
+  }
+
+  /**
+   * ✅ S07 PATTERN: Calculate M-N compliance indicators
+   * Reference mode: Always 100% (self-comparison)
+   * Target mode: Compare Target/Reference ratios
+   * Called AFTER d_65, ref_d_65, d_66, ref_d_66, d_67, ref_d_67 are published to StateManager
+   */
+  function calculateCompliance(isReferenceCalculation = false) {
+    // Helper: calculate ratio (Reference mode = always 1.0, Target mode = actual ratio)
+    function calculateComplianceRatio(targetField, refField) {
+      if (isReferenceCalculation) {
+        return 1.0; // Reference mode: Always 100% (self-comparison)
+      } else {
+        const targetValue = window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(targetField)) || 0;
+        const refValue = window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(refField)) || 0;
+        return refValue > 0 ? targetValue / refValue : 0;
+      }
+    }
+
+    // Calculate percentages
+    const m_65_ratio = calculateComplianceRatio("d_65", "ref_d_65");
+    const m_66_ratio = calculateComplianceRatio("d_66", "ref_d_66");
+    const m_67_ratio = calculateComplianceRatio("d_67", "ref_d_67");
+
+    // Format as percentages
+    const m_65_formatted = window.TEUI?.formatNumber?.(m_65_ratio, "percent-0dp") ?? "100%";
+    const m_66_formatted = window.TEUI?.formatNumber?.(m_66_ratio, "percent-0dp") ?? "100%";
+    const m_67_formatted = window.TEUI?.formatNumber?.(m_67_ratio, "percent-0dp") ?? "100%";
+
+    // Calculate N column checkmarks
+    const n_65_value = m_65_ratio <= 1.0 ? "✓" : "✗";
+    const n_66_value = m_66_ratio <= 1.0 ? "✓" : "✗";
+    const n_67_value = m_67_ratio <= 1.0 ? "✓" : "✗";
+
+    // Store to StateManager and local state
+    if (isReferenceCalculation) {
+      window.TEUI.StateManager.setValue("ref_m_65", m_65_formatted, "calculated");
+      window.TEUI.StateManager.setValue("ref_m_66", m_66_formatted, "calculated");
+      window.TEUI.StateManager.setValue("ref_m_67", m_67_formatted, "calculated");
+      window.TEUI.StateManager.setValue("ref_n_65", n_65_value, "calculated");
+      window.TEUI.StateManager.setValue("ref_n_66", n_66_value, "calculated");
+      window.TEUI.StateManager.setValue("ref_n_67", n_67_value, "calculated");
+
+      ReferenceState.setValue("m_65", m_65_formatted);
+      ReferenceState.setValue("m_66", m_66_formatted);
+      ReferenceState.setValue("m_67", m_67_formatted);
+      ReferenceState.setValue("n_65", n_65_value);
+      ReferenceState.setValue("n_66", n_66_value);
+      ReferenceState.setValue("n_67", n_67_value);
+    } else {
+      window.TEUI.StateManager.setValue("m_65", m_65_formatted, "calculated");
+      window.TEUI.StateManager.setValue("m_66", m_66_formatted, "calculated");
+      window.TEUI.StateManager.setValue("m_67", m_67_formatted, "calculated");
+      window.TEUI.StateManager.setValue("n_65", n_65_value, "calculated");
+      window.TEUI.StateManager.setValue("n_66", n_66_value, "calculated");
+      window.TEUI.StateManager.setValue("n_67", n_67_value, "calculated");
+
+      TargetState.setValue("m_65", m_65_formatted);
+      TargetState.setValue("m_66", m_66_formatted);
+      TargetState.setValue("m_67", m_67_formatted);
+      TargetState.setValue("n_65", n_65_value);
+      TargetState.setValue("n_66", n_66_value);
+      TargetState.setValue("n_67", n_67_value);
+
+      // Apply CSS classes for N columns (Target mode only)
+      setElementClass("n_65", n_65_value === "✓");
+      setElementClass("n_66", n_66_value === "✓");
+      setElementClass("n_67", n_67_value === "✓");
+    }
+
+    // Update DOM display
+    updateCalculatedDisplayValues();
   }
 
   /**
@@ -2089,15 +2165,11 @@ window.TEUI.SectionModules.sect09 = (function () {
         setCalculatedValue(fieldId, value);
       });
 
-      // ✅ M-N-COMPLIANCE.md: Apply CSS classes for N column compliance indicators (Target mode only)
-      if (ModeManager.currentMode === "target") {
-        setElementClass("n_65", results.n_65 === "✓");
-        setElementClass("n_66", results.n_66 === "✓");
-        setElementClass("n_67", results.n_67 === "✓");
-      }
-
       updatePercentages(results.i_71, results.k_71);
       updateAllReferenceIndicators();
+
+      // ✅ S07 PATTERN: Calculate M-N compliance AFTER densities are published
+      calculateCompliance(false);
     } catch (error) {
       console.error("[S09] Error in Target Model calculations:", error);
     }
@@ -2247,27 +2319,8 @@ window.TEUI.SectionModules.sect09 = (function () {
     results.i_71 = results.i_70 + results.i_64 + results.i_69;
     results.k_71 = results.k_70 + results.k_64 + results.k_69;
 
-    // ✅ M-N-COMPLIANCE.md: Calculate M/N compliance indicators (format-stable pattern)
-    // Get reference values (always from ReferenceState for comparison)
-    const ref_d_65 = window.TEUI.parseNumeric(ReferenceState.getValue("d_65")) || 7;
-    const ref_d_66 = window.TEUI.parseNumeric(ReferenceState.getValue("d_66")) || 2.0;
-    const ref_d_67 = window.TEUI.parseNumeric(ReferenceState.getValue("d_67")) || equipmentDensity;
-
-    // M_65: Plug Load Compliance
-    const m_65_ratio = ref_d_65 > 0 ? plugLoadDensity / ref_d_65 : 0;
-    results.m_65 = window.TEUI?.formatNumber?.(m_65_ratio, "percent-0dp") ?? "100%";
-    results.n_65 = m_65_ratio <= 1.0 ? "✓" : "✗";
-
-    // M_66: Lighting Compliance
-    const lightingDensity = window.TEUI.parseNumeric(state.getValue("d_66")) || 1.5;
-    const m_66_ratio = ref_d_66 > 0 ? lightingDensity / ref_d_66 : 0;
-    results.m_66 = window.TEUI?.formatNumber?.(m_66_ratio, "percent-0dp") ?? "100%";
-    results.n_66 = m_66_ratio <= 1.0 ? "✓" : "✗";
-
-    // M_67: Equipment Compliance
-    const m_67_ratio = ref_d_67 > 0 ? equipmentDensity / ref_d_67 : 0;
-    results.m_67 = window.TEUI?.formatNumber?.(m_67_ratio, "percent-0dp") ?? "100%";
-    results.n_67 = m_67_ratio <= 1.0 ? "✓" : "✗";
+    // ✅ M-N compliance now calculated separately in calculateCompliance() function
+    // (following S07 pattern - called AFTER densities are published to StateManager)
 
     return results;
   }
