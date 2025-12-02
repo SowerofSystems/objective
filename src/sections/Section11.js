@@ -1761,7 +1761,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           label: "Total Heat Gain %",
         },
         m: {},
-        n: { fieldId: "n_98", type: "calculated", value: "✓" },
+        n: {},
       },
     },
   };
@@ -3043,10 +3043,19 @@ window.TEUI.SectionModules.sect11 = (function () {
     }
     fieldElement.textContent = displayValue;
 
+    // ✅ PERFORMANCE: Check if value actually changed before recalculating
+    const oldValue = ModeManager?.getValue(currentFieldId);
+    const oldNumeric = window.TEUI.parseNumeric(oldValue);
+    const newNumeric = window.TEUI.parseNumeric(rawValueToStore);
+    const valueChanged = oldNumeric !== newNumeric;
+
     // ✅ DUAL-STATE: Store value using the ModeManager facade.
     ModeManager.setValue(currentFieldId, rawValueToStore, "user-modified");
 
-    calculateAll();
+    // ✅ PERFORMANCE: Only recalculate if value actually changed
+    if (valueChanged) {
+      calculateAll();
+    }
   }
 
   function initializeEventHandlers() {
