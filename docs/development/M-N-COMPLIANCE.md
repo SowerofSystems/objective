@@ -811,6 +811,233 @@ This pattern applies to any section where:
 
 ---
 
-**Last Updated**: 2025-11-10
+## S09 Implementation Task (For Tomorrow's Agent)
+
+**CRITICAL: Follow Pattern 3 + Dual-Mode Styling Pattern EXACTLY**
+
+### Task Overview
+Implement M-N compliance for Section 09 (Internal Gains) rows 65, 66, 67:
+- m_65/n_65: Plug Load Compliance
+- m_66/n_66: Lighting Compliance
+- m_67/n_67: Equipment Compliance
+
+**Problem**: Currently M-N fields show same values in both Target (values correct) and Reference (values = Target, when they must be 100%) modes. Reference mode must ALWAYS show 100%.
+
+### Step-by-Step Implementation
+
+**STEP 1: Study S11's Working Pattern First**
+- Read `src/sections/Section11.js` lines ~2700-2900
+- Find the `updateReferenceIndicators()` function - this is the pattern to copy
+- Note how it handles mode-aware calculations and CSS class application
+
+**STEP 2: Formula Requirements**
+- **Target mode**: m_65 = ref_d_65 / d_65, m_66 = ref_d_66 / d_66, m_67 = ref_d_67 / d_67
+- **Reference mode**: m_65 = ref_d_65 / ref_d_65 = 100%, same for m_66, m_67
+- **Pass threshold**: ratio ≥ 1.0 (100%) = green ✓, ratio < 1.0 = red ✗
+- **Logic**: "Lower is better" - if target uses less than reference, compliance > 100% = pass
+
+**STEP 3: Check for Existing Infrastructure**
+Search S09 for:
+- `updateReferenceIndicators` function (may already exist)
+- `updateCalculatedDisplayValues` function (needed for dual-mode styling)
+- `setElementClass` helper (should exist)
+
+**STEP 4: Implementation Pattern (from docs lines 737-770)**
+```javascript
+// Use Option 3: Force 100% in Reference Mode
+if (ModeManager.currentMode === "reference") {
+  // Reference mode: Always 100%
+  setCalculatedValue("m_65", 1.0, "percent");
+  setCalculatedValue("n_65", "✓");
+
+  // Apply class (S08 Dual-Mode Pattern from lines 631-635)
+  const element = document.querySelector('[data-field-id="n_65"]');
+  if (element) {
+    element.classList.remove("checkmark", "warning");
+    element.classList.add("checkmark");
+  }
+} else {
+  // Target mode: Calculate actual ratio
+  const refValue = window.TEUI.parseNumeric(window.TEUI.StateManager.getValue("ref_d_65")) || 0;
+  const targetValue = window.TEUI.parseNumeric(window.TEUI.StateManager.getValue("d_65")) || 0;
+  const compliance = targetValue > 0 ? refValue / targetValue : 0;
+
+  setCalculatedValue("m_65", compliance, "percent");
+  setCalculatedValue("n_65", compliance >= 1.0 ? "✓" : "✗");
+
+  const element = document.querySelector('[data-field-id="n_65"]');
+  if (element) {
+    element.classList.remove("checkmark", "warning");
+    element.classList.add(compliance >= 1.0 ? "checkmark" : "warning");
+  }
+}
+```
+
+Repeat for m_66, m_67.
+
+**STEP 5: Dual-Mode Styling (CRITICAL - lines 600-645)**
+Update `updateCalculatedDisplayValues()` to reapply CSS classes when switching modes:
+```javascript
+if (fieldId.startsWith("n_") && formatType === "raw") {
+  element.classList.remove("checkmark", "warning");
+  element.classList.add(value === "✓" ? "checkmark" : "warning");
+}
+```
+
+**STEP 6: Remove Mode Check from setElementClass()**
+Per line 643: If using dual-mode styling pattern, REMOVE the `if (ModeManager.currentMode !== "target") return;` check from `setElementClass()`.
+
+**STEP 7: Verify Field Definitions**
+Check that n_65, n_66, n_67 field definitions do NOT have hardcoded `classes: ["checkmark"]` arrays (lines 428-435).
+
+### What NOT to Do
+❌ Do NOT create new standalone functions without first checking S11's pattern
+❌ Do NOT try to call from calculateTargetModel/calculateReferenceModel without understanding existing architecture
+❌ Do NOT add M-N values to the results object in calculateModel()
+❌ Do NOT over-engineer - use the simplest working pattern from S11
+❌ Do NOT skip reading S11's implementation first
+
+### Success Criteria
+✅ Target mode shows actual ref_d_XX/d_XX ratios with correct pass/fail colors
+✅ Reference mode shows 100% with green checkmarks for all three rows
+✅ Switching between modes updates both values AND colors correctly
+✅ No hardcoded classes in field definitions
+✅ Pattern matches S11's implementation style
+
+### If You Get Stuck
+1. Re-read S11's `updateReferenceIndicators()` function
+2. Re-read "Advanced Pattern: Dual-Mode Styling" (lines 600-645)
+3. Re-read "Option 3: Force 100% in Reference Mode" (lines 737-770)
+4. Ask user for clarification - don't invent solutions
+
+---
+
+## Dec 2, 2025 Solution: The Dead Simple Formula
+
+**Analysis of Current S09 Implementation**:
+
+### m_65 (Plug Loads) - Lines 1610-1624
+- **Current approach**: Hardcoded conditional logic based on building type string matching
+- Hardcoded values: 5 W/m² for residential/care, 7 W/m² for others
+- Formula: `currentValue / hardcodedReference * 100`
+- **Problem**: Not mode-aware, doesn't use ReferenceState
+
+### m_66 (Lighting Loads) - Lines 1664-1669
+- **Current approach**: Partially using `ReferenceState.getValue("d_66")`
+- Formula: `currentValue / ReferenceState.getValue("d_66") * 100`
+- **Problem**: Uses same ReferenceState value in both modes (no mode awareness)
+
+### m_67 (Equipment Loads) - Line 1739
+- **Current approach**: Hardcoded to 100%
+- **Problem**: No actual comparison performed
+
+### The Dead Simple Fix
+
+All three functions already use `getFieldValueModeAware()` to get the **current** value (which correctly returns Target or Reference state depending on mode). The fix is to also get the **reference** value mode-aware:
+
+```javascript
+// Get current value (mode-aware via getFieldValueModeAware)
+const currentValue = getFieldValueModeAware("d_65");
+
+// Get reference value (always from ReferenceState, regardless of current mode)
+const referenceValue = ReferenceState.getValue("d_65");
+
+// Calculate ratio
+const percentOfReference = (currentValue / referenceValue) * 100;
+```
+
+**Why this works**:
+- **Target mode**: `TargetState.d_65 / ReferenceState.d_65` → actual comparison
+- **Reference mode**: `ReferenceState.d_65 / ReferenceState.d_65` → 100%
+
+**Zero conditionals needed**. The mode awareness is already built into `getFieldValueModeAware()`.
+
+### Comparison: S07 vs S11 Approaches
+
+**S07 Approach** ([Section07.js:1196-1203](../src/sections/Section07.js)):
+```javascript
+function calculateComplianceRatio(targetField, refField, isReferenceCalculation) {
+  if (isReferenceCalculation) {
+    return 1.0; // Reference mode: Always 100% (self-comparison)
+  } else {
+    const targetValue = window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(targetField)) || 0;
+    const refValue = window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(refField)) || 0;
+    return refValue > 0 ? targetValue / refValue : 0;
+  }
+}
+```
+- **Verbosity**: 9 lines + boolean parameter
+- **Requires**: Passing `isReferenceCalculation` flag to every call
+- **Performance**: One conditional check per field
+- **Readability**: Explicit mode handling, clear intent
+
+**S11 Approach** ([Section11.js:2438-2514](../src/sections/Section11.js)):
+```javascript
+function updateReferenceIndicators(rowId) {
+  // Early return for Reference mode
+  if (ModeManager.currentMode === "reference") {
+    referencePercent = 100;
+    isGood = true;
+    setCalculatedValue(mFieldId, 1.0, "percent");
+    // ... set checkmark ...
+    return;
+  }
+
+  // Target mode: Get values and calculate
+  const currentValue = getNumericValue(valueSourceFieldId);
+  const referenceValue = ReferenceState.getValue(referenceFieldId);
+  const referenceNumeric = window.TEUI.parseNumeric(referenceValue) || 0;
+
+  // Calculate percentage based on component type
+  if (componentType === "rsi") {
+    referencePercent = (currentValue / referenceNumeric) * 100;
+    isGood = currentValue >= referenceNumeric;
+  } // ... other types ...
+}
+```
+- **Verbosity**: ~80 lines for full implementation (includes RSI/U-value/penalty logic)
+- **Requires**: Single mode check at function start, early return pattern
+- **Performance**: One conditional check per update call (not per field)
+- **Readability**: Clear separation between Reference (always 100%) and Target (actual calc)
+
+**S09 "Dead Simple" Approach** (Implemented):
+```javascript
+// Inside calculatePlugLoads(), calculateLightingLoads(), calculateEquipmentLoads():
+const currentValue = getFieldValueModeAware("d_65"); // Mode-aware current
+const referenceValue = ReferenceState.getValue("d_65"); // Always Reference
+
+// ⚠️ IMPORTANT: S09 uses "lower is better" logic (like S07 water/energy)
+const percentOfReference = (referenceValue / currentValue) * 100; // INVERTED ratio
+const isCompliant = percentOfReference >= 100; // Pass if target ≤ reference
+
+setCalculatedValue("m_65", percentOfReference, "percent-auto");
+setCalculatedValue("n_65", isCompliant ? "✓" : "✗", "raw");
+setElementClass("n_65", isCompliant ? "checkmark" : "warning");
+```
+- **Verbosity**: 3 lines inline in existing calculation functions
+- **Requires**: Nothing - leverages existing `getFieldValueModeAware()` helper
+- **Performance**: Zero explicit conditionals (mode check happens inside helper)
+- **Readability**: Self-documenting formula matches mathematical definition
+- **Formula Direction**: Reference/Target (lower is better, like S07)
+
+### Recommendation: Use S09 "Dead Simple" Approach
+
+**Winner**: S09's inline approach is the **most performant and least verbose** because:
+
+1. **No extra functions**: Calculation happens inline in existing `calculatePlugLoads()`, `calculateLightingLoads()`, `calculateEquipmentLoads()`
+2. **No boolean flags**: No need to pass `isReferenceCalculation` parameter
+3. **No mode checks**: Mode awareness built into `getFieldValueModeAware()` helper
+4. **Self-documenting**: Formula reads exactly like the mathematical definition
+5. **Minimal changes**: Just fix the reference value source (ReferenceState instead of hardcoded/conditional logic)
+
+**When to use S07 approach**: When you need a reusable helper for many similar fields (S07 has 4 water metrics)
+
+**When to use S11 approach**: When you need different comparison logic per component type (RSI vs U-value vs penalty)
+
+**When to use S09 approach**: When each field has unique calculation logic but same comparison pattern (plug/lighting/equipment are different calculations)
+
+---
+
+**Last Updated**: 2025-12-02
 **Sections Using Pattern**: S03, S05, S07, S08
 **Global CSS Defined**: src/styles.css lines 2097-2112
