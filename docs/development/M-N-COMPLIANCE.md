@@ -1446,7 +1446,318 @@ Based on S09's experience, future M-N implementations should be significantly ea
 
 ---
 
-**Last Updated**: 2025-12-02 (Added S09 verified implementation)
-**Baseline Commits**: e97fe23 → b027f04
+## 🔍 Format Fighting Audit & Refactoring Guide (Dec 2, 2025)
+
+### Purpose
+
+After discovering S09's format fighting issues (dual implementations causing "100%" ↔ "1" flickering), this section documents:
+1. **What to look for** when auditing M-N implementations for format fighting
+2. **Current status** of all sections with M-N compliance
+3. **Refactoring roadmap** for remaining sections
+
+### The Format Fighting Anti-Patterns
+
+Based on S09's 2-day troubleshooting experience, these patterns indicate potential format fighting:
+
+#### 🔴 Critical Red Flag: `setCalculatedValue()` with Format Parameters
+
+**The Problem:**
+```javascript
+// ❌ BAD - Stores NUMERIC value with format parameter
+setCalculatedValue("m_85", referencePercent / 100, "percent");
+setCalculatedValue("m_49", 1.0, "percent-0dp");
+```
+
+This stores a numeric value (e.g., `1.0`) and relies on the format parameter to display it. If another code path writes a formatted string (e.g., `"100%"`), you get format fighting.
+
+**Why it's dangerous:**
+- Ambiguous storage: Is `m_85` storing `0.85` or `"85%"`?
+- Multiple code paths can write different formats
+- `updateCalculatedDisplayValues()` may try to re-format already-formatted strings
+- Results in flickering: "100%" → "1" → "100%" → "1"
+
+**The Fix:**
+```javascript
+// ✅ GOOD - Format ONCE, store formatted string
+const m_85_formatted = window.TEUI?.formatNumber?.(referencePercent, "percent-0dp") ?? "100%";
+window.TEUI.StateManager.setValue("m_85", m_85_formatted, "calculated");
+```
+
+**Where Found:**
+- ❌ **S11 (Embodied Carbon)**: Lines 2453, 2511 - Uses old pattern
+- ✅ **S03, S05, S07, S08, S09**: Use format-once pattern
+
+---
+
+#### 🟡 Moderate Warning: Multiple Functions Writing to Same M/N Fields
+
+**The Problem:** Two or more functions writing to the same M/N field:
+- Old `updateReferenceIndicator()` function (legacy implementation)
+- New `calculateCompliance()` function (format-once pattern)
+- Both active simultaneously → format fighting
+
+**How to Check:**
+```bash
+# Search for all places writing to a specific M field
+grep -n "m_65" Section09.js | grep -E "(setCalculatedValue|setValue)"
+```
+
+**Where Found:**
+- ❌ **S09 (before fix)**: Had both `updateAllReferenceIndicators()` AND `calculateCompliance()`
+- ⚠️ **S11**: Has `updateReferenceIndicators()` - needs audit for conflicts
+
+---
+
+#### 🟢 Low Risk: Missing "raw" Format Type for M/N Fields
+
+**The Problem:** If M/N fields aren't marked as "raw" in `getFieldFormat()`, `updateCalculatedDisplayValues()` will try to re-format them.
+
+**What to Look For:**
+```javascript
+function getFieldFormat(fieldId) {
+  // ✅ GOOD - M/N fields return "raw"
+  if (fieldId.startsWith("m_") || fieldId.startsWith("n_")) {
+    return "raw";
+  }
+
+  // ❌ BAD - M/N fields missing or have other format types
+  const formatMap = {
+    m_49: "percent",  // Will try to re-format already formatted strings
+    m_50: "number",   // Wrong format type
+  };
+}
+```
+
+**Where Found:**
+- ✅ **S07**: Has "raw" format (lines 924-927)
+- ✅ **S09**: Has "raw" format (lines 657-688)
+- ⚠️ **S11**: Need to check if `getFieldFormat()` exists
+
+---
+
+### Section-by-Section Audit Results
+
+#### ✅ S03 (Climate Calculations) - CLEAN
+**M/N Fields:** m_23, m_24, n_23, n_24
+**Pattern:** Stores numeric values via `setFieldValue()`
+**Format Fighting Risk:** ❌ None - single code path, no format parameters
+**Refactoring Needed:** None
+
+---
+
+#### ✅ S05 (Envelope) - CLEAN
+**M/N Fields:** m_38, m_39, m_40, m_41, n_38, n_39, n_40, n_41
+**Pattern:** Format-once with `StateManager.setValue()`
+**Code Example (lines 1088-1102):**
+```javascript
+percentFields.forEach(({ field, value }) => {
+  const formattedValue = window.TEUI.formatNumber
+    ? window.TEUI.formatNumber(value, "percent-0dp")
+    : Math.round(value * 100) + "%";
+
+  if (isReferenceCalculation) {
+    window.TEUI.StateManager.setValue(`ref_${field}`, formattedValue, "calculated");
+  } else {
+    window.TEUI.StateManager.setValue(field, formattedValue, "calculated");
+  }
+});
+```
+**Format Fighting Risk:** ❌ None - uses format-once pattern correctly
+**Refactoring Needed:** None
+
+---
+
+#### ✅ S07 (Water) - CLEAN
+**M/N Fields:** m_49, m_50, m_52, m_53, n_49, n_50, n_52, n_53
+**Pattern:** Format-once with `StateManager.setValue()`
+**Code Example (lines 1222-1240):**
+```javascript
+// Format percentage results for M columns
+const m_49_formatted = window.TEUI?.formatNumber?.(m_49_percent, "percent-0dp") ?? "0%";
+
+// Store M column percentages (to both StateManager and local state)
+if (isReferenceCalculation) {
+  window.TEUI.StateManager.setValue("ref_m_49", m_49_formatted, "calculated");
+} else {
+  window.TEUI.StateManager.setValue("m_49", m_49_formatted, "calculated");
+}
+```
+**getFieldFormat():** Has "raw" entries for M/N fields (lines 924-927)
+**Format Fighting Risk:** ❌ None - exemplar implementation
+**Refactoring Needed:** None
+
+---
+
+#### ⚠️ S08 (Indoor Air Quality) - MOSTLY CLEAN
+**M/N Fields:** m_56, m_57, m_58, m_59, n_56, n_57, n_58, n_59
+**Pattern:** Stores raw ratios via `setCalculatedValue()` WITHOUT format parameter
+**Code Example (lines 380-381):**
+```javascript
+const radonPercent = radonValue / 150;
+setCalculatedValue("m_56", radonPercent); // Store raw ratio, updateCalculatedDisplayValues will format it
+```
+**Format Fighting Risk:** 🟡 Low - relies on downstream formatting, but no conflicting implementations found
+**Refactoring Needed:** Optional - could migrate to format-once pattern for consistency
+
+---
+
+#### ✅ S09 (Internal Gains) - REFACTORED
+**M/N Fields:** m_65, m_66, m_67, n_65, n_66, n_67
+**Pattern:** Format-once with `StateManager.setValue()` (after 2-day refactoring)
+**Format Fighting Risk:** ❌ None - old implementation removed
+**Refactoring Needed:** ✅ Complete (verified Dec 2, 2025)
+
+---
+
+#### ⚠️ S11 (Embodied Carbon) - NEEDS REFACTORING
+
+**M/N Fields:** m_85, m_86, m_87, m_88, m_89, m_90, m_91, m_92, m_93, m_94, m_95 (11 fields)
+**N Fields:** n_85, n_86, n_87, n_88, n_89, n_90, n_91, n_92, n_93, n_94, n_95 (11 fields)
+
+**Current Pattern:** `updateReferenceIndicators()` function using OLD pattern
+
+**Problems Found:**
+1. **Line 2453:** `setCalculatedValue(mFieldId, 1.0, "percent")` - NUMERIC with format parameter
+2. **Line 2511:** `setCalculatedValue(mFieldId, referencePercent / 100, "percent")` - NUMERIC with format parameter
+
+**Code Example (lines 2448-2460):**
+```javascript
+// ✅ REFERENCE MODE: Perfect Compliance (Always 100% and ✓)
+if (ModeManager.currentMode === "reference") {
+  referencePercent = 100;
+  isGood = true;
+
+  setCalculatedValue(mFieldId, 1.0, "percent"); // ❌ PROBLEM: Numeric with format parameter
+  const nElement = document.querySelector(`[data-field-id="${nFieldId}"]`);
+  if (nElement) nElement.textContent = "✓";
+  setElementClass(nFieldId, true);
+  return;
+}
+```
+
+**Refactoring Strategy:**
+1. Replace `setCalculatedValue(mFieldId, ratio, "percent")` with format-once pattern
+2. Format to string immediately: `window.TEUI.formatNumber(ratio, "percent-0dp")`
+3. Store formatted string via `StateManager.setValue()`
+4. Add `getFieldFormat()` with "raw" entries for M/N fields (if missing)
+5. Ensure M/N fields in `refreshUI()` calculatedFields array
+
+**Estimated Time:** 2-4 hours (following S09 lessons learned)
+
+---
+
+#### 🚧 S12 (Operational Carbon) - PENDING
+
+**M/N Fields:** m_100, m_101, m_102, m_104 (3 + 1 fields)
+**N Fields:** n_100, n_101, n_102, n_104
+
+**Special Case - m_104:** Passive House "likelihood of passing" check
+**Status:** M-N compliance not yet implemented
+**Estimated Time:** 2-3 hours (simpler than S11, only 4 fields)
+
+---
+
+#### 🚧 S13 (Costs) - PENDING
+
+**M/N Fields:** m_??? (7 fields - specific rows TBD)
+**N Fields:** n_??? (7 fields)
+
+**Type:** Cost comparison
+**Status:** M-N compliance not yet implemented
+**Estimated Time:** 3-4 hours (7 fields, may need special cost formatting)
+
+---
+
+#### 🚧 S15 (Schedule) - PENDING
+
+**M/N Fields:** m_140 (1 field)
+**N Fields:** n_140 (1 field)
+
+**Status:** M-N compliance not yet implemented
+**Estimated Time:** 1-2 hours (single field, simplest case)
+
+---
+
+### Refactoring Checklist (For S11, S12, S13, S15)
+
+When refactoring M-N compliance implementations, follow this checklist:
+
+#### Step 1: Audit Current Implementation
+- [ ] Search for `setCalculatedValue("m_XX", ..., "percent")` patterns
+- [ ] Search for `updateReferenceIndicator` functions
+- [ ] Check if multiple code paths write to same M/N fields
+- [ ] Verify `getFieldFormat()` has "raw" entries for M/N fields
+
+#### Step 2: Apply Format-Once Pattern
+- [ ] Calculate ratio as decimal (e.g., `0.85`)
+- [ ] Format IMMEDIATELY to string: `window.TEUI.formatNumber(ratio, "percent-0dp")`
+- [ ] Store formatted string via `StateManager.setValue()`
+- [ ] Remove any old `setCalculatedValue()` calls with format parameters
+
+#### Step 3: Update Helper Functions
+- [ ] Add/update `getFieldFormat()` to return "raw" for M/N fields
+- [ ] Add M/N fields to `refreshUI()` calculatedFields array
+- [ ] Ensure `setElementClass()` receives string class names, not booleans
+
+#### Step 4: Remove Old Implementations
+- [ ] Comment out or remove old `updateReferenceIndicator()` functions
+- [ ] Search for any remaining `setCalculatedValue()` calls on M/N fields
+- [ ] Remove debug logging added during troubleshooting
+
+#### Step 5: Test & Verify
+- [ ] Hard refresh browser (Cmd+Shift+R) to bypass cache
+- [ ] Test Target mode: M columns show actual ratios, N columns show correct colors
+- [ ] Test Reference mode: M columns show 100%, N columns show green checkmarks
+- [ ] Test mode switching: Values and colors update correctly
+- [ ] Check performance: Calculation time <100ms
+
+---
+
+### Search Commands for Auditing
+
+Use these commands to quickly audit a section file:
+
+```bash
+# Find all setCalculatedValue calls on M columns with format parameters
+grep -n 'setCalculatedValue("m_' Section11.js | grep -E '(percent|number)'
+
+# Find updateReferenceIndicator functions
+grep -n 'updateReferenceIndicator' Section11.js
+
+# Check if getFieldFormat exists and has "raw" entries
+grep -A20 'function getFieldFormat' Section11.js | grep -E '(m_|n_)'
+
+# Find all places writing to a specific M field
+grep -n '"m_85"' Section11.js | grep -E '(setCalculatedValue|setValue)'
+```
+
+---
+
+### Priority Order for Refactoring
+
+Based on complexity and field count:
+
+1. **S11 (Embodied Carbon)** - 11 fields, uses old pattern, highest priority
+2. **S13 (Costs)** - 7 fields, not yet implemented
+3. **S12 (Operational Carbon)** - 4 fields, includes special PH check
+4. **S15 (Schedule)** - 1 field, simplest case
+
+**Total Estimated Time:** 8-13 hours for all four sections
+
+---
+
+### Key Lessons from S09
+
+1. **Format Once, Display Many**: The golden rule - format to strings during calculation, store formatted strings, never re-format
+2. **Use "raw" Format Type**: Mark M/N fields as "raw" in getFieldFormat() to prevent downstream re-formatting
+3. **Remove Old Code**: Don't let old and new implementations coexist - causes format fighting
+4. **Hard Refresh Often**: Browser caching can hide changes - refresh aggressively during testing
+5. **Stack Traces Are Your Friend**: Add debug logging with stack traces to identify conflicting setValue calls
+6. **Follow S07 Pattern**: Section07.js is the exemplar implementation to copy
+
+---
+
+**Last Updated**: 2025-12-02 (Added Format Fighting Audit section)
+**Next Refactoring Target**: S11 (Embodied Carbon) - 11 M/N field pairs
 **Sections Using Pattern**: S03, S05, S07, S08, S09
 **Global CSS Defined**: src/styles.css lines 2097-2112
