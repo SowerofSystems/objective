@@ -2338,12 +2338,12 @@ window.TEUI.SectionModules.sect11 = (function () {
           // Reference calculations: read ref_ prefixed climate data
           const ref_h22 = getGlobalNumericValue("ref_h_22") || 0;
           heatgainMultiplier = capacitanceFactor_i21 * ref_h22 * 24;
-          console.log(`[S11] 🔵 REF CLIMATE READ: h_22=${ref_h22}`);
+          // console.log(`[S11] 🔵 REF CLIMATE READ: h_22=${ref_h22}`);
         } else {
           // ✅ FIXED: Target calculations read unprefixed climate data (Pattern A)
           const h22_value = getGlobalNumericValue("h_22") || 0;
           heatgainMultiplier = capacitanceFactor_i21 * h22_value * 24;
-          console.log(`[S11] 🎯 TGT CLIMATE READ: h_22=${h22_value}`);
+          // console.log(`[S11] 🎯 TGT CLIMATE READ: h_22=${h22_value}`);
         }
       }
 
@@ -2410,11 +2410,11 @@ window.TEUI.SectionModules.sect11 = (function () {
 
       // For Reference calculations, return the calculated values (stored elsewhere)
       if (isReferenceCalculation) {
-        console.log(
-          `[S11] REF TB%=${penaltyPercent}% → ref_i_97=${penaltyHeatloss.toFixed(
-            2
-          )}, ref_k_97=${penaltyHeatgain.toFixed(2)}`
-        );
+        // console.log(
+        //   `[S11] REF TB%=${penaltyPercent}% → ref_i_97=${penaltyHeatloss.toFixed(
+        //     2
+        //   )}, ref_k_97=${penaltyHeatgain.toFixed(2)}`
+        // );
       }
       if (isReferenceCalculation) {
         return { heatloss: penaltyHeatloss, heatgain: penaltyHeatgain };
@@ -2594,11 +2594,11 @@ window.TEUI.SectionModules.sect11 = (function () {
         );
 
         // Penalty values
-        console.log(
-          `[S11] Writing ref penalty: ref_i_97=${penaltyHeatlossI.toFixed(2)}, ref_k_97=${penaltyHeatgainK.toFixed(
-            2
-          )}`
-        );
+        // console.log(
+        //   `[S11] Writing ref penalty: ref_i_97=${penaltyHeatlossI.toFixed(2)}, ref_k_97=${penaltyHeatgainK.toFixed(
+        //     2
+        //   )}`
+        // );
         window.TEUI.StateManager.setValue(
           "ref_i_97",
           penaltyHeatlossI.toString(),
@@ -2899,10 +2899,10 @@ window.TEUI.SectionModules.sect11 = (function () {
   let lastReferenceResults = {};
 
   function calculateAll() {
-    console.log(
-      `%c[S11] calculateAll TRIGGERED. isReferenceMode: ${window.TEUI?.ReferenceToggle?.isReferenceMode?.()}`,
-      "color: #f0f; font-weight: bold;"
-    );
+    // console.log(
+    //   `%c[S11] calculateAll TRIGGERED. isReferenceMode: ${window.TEUI?.ReferenceToggle?.isReferenceMode?.()}`,
+    //   "color: #f0f; font-weight: bold;"
+    // );
 
     calculateReferenceModel();
     calculateTargetModel();

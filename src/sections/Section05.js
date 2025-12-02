@@ -1172,7 +1172,7 @@ window.TEUI.SectionModules.sect05 = (function () {
       element.classList.remove("checkmark", "warning");
       const className = isCompliant ? "checkmark" : "warning";
       element.classList.add(className);
-      console.log(`[S05] ${fieldId}: isCompliant=${isCompliant}, class=${className}, classList=${element.classList.toString()}`);
+      // console.log(`[S05] ${fieldId}: isCompliant=${isCompliant}, class=${className}, classList=${element.classList.toString()}`);
     }
   }
 

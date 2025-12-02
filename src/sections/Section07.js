@@ -321,24 +321,24 @@ window.TEUI.SectionModules.sect07 = (function () {
 
     // Helper function to get field defaults from sectionRows definition
     getFieldDefault: function (fieldId) {
-      console.log(
-        `🔍 [S07] getFieldDefault: Looking for default for fieldId=${fieldId}`
-      );
+      // console.log(
+      //   `🔍 [S07] getFieldDefault: Looking for default for fieldId=${fieldId}`
+      // );
       for (const rowKey in sectionRows) {
         const row = sectionRows[rowKey];
         if (row.cells) {
           for (const cellKey in row.cells) {
             const cell = row.cells[cellKey];
             if (cell.fieldId === fieldId && cell.value !== undefined) {
-              console.log(
-                `✅ [S07] getFieldDefault: Found default for ${fieldId} = "${cell.value}"`
-              );
+              // console.log(
+              //   `✅ [S07] getFieldDefault: Found default for ${fieldId} = "${cell.value}"`
+              // );
               return cell.value;
             }
           }
         }
       }
-      console.log(`❌ [S07] getFieldDefault: No default found for ${fieldId}`);
+      // console.log(`❌ [S07] getFieldDefault: No default found for ${fieldId}`);
       return null;
     },
 
@@ -1094,9 +1094,9 @@ window.TEUI.SectionModules.sect07 = (function () {
       systemType = window.TEUI?.StateManager?.getValue("d_51") || "Heatpump";
     }
 
-    console.log(
-      `[S07] calculateEmissionsAndLosses: systemType="${systemType}" (${isReferenceCalculation ? "REF" : "TGT"})`
-    );
+    // console.log(
+    //   `[S07] calculateEmissionsAndLosses: systemType="${systemType}" (${isReferenceCalculation ? "REF" : "TGT"})`
+    // );
     const netDemandAfterRecovery = getSectionNumericValue(
       "j_52",
       0,
@@ -1135,14 +1135,14 @@ window.TEUI.SectionModules.sect07 = (function () {
         efficiency > 0
           ? netDemandAfterRecovery / (conversionFactor * efficiency)
           : 0;
-      console.log(
-        `[S07] 🛢️ Oil calc: demand=${netDemandAfterRecovery}, efficiency=${efficiency} → k_54=${oilVolume}, e_51=0 (cleared)`
-      );
-    } else {
-      console.log(
-        `[S07] ⚡ Non-fossil fuel: ${systemType} → e_51=0, k_54=0 (both cleared)`
-      );
-    }
+      // console.log(
+      //   `[S07] 🛢️ Oil calc: demand=${netDemandAfterRecovery}, efficiency=${efficiency} → k_54=${oilVolume}, e_51=0 (cleared)`
+      // );
+    } // else {
+      // console.log(
+      //   `[S07] ⚡ Non-fossil fuel: ${systemType} → e_51=0, k_54=0 (both cleared)`
+      // );
+    // }
 
     // 🔧 CRITICAL: Always set BOTH values - zero out the non-selected fuel to prevent contamination
     setSectionValue("e_51", gasVolume, isReferenceCalculation);

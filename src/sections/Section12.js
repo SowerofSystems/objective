@@ -1720,11 +1720,11 @@ window.TEUI.SectionModules.sect12 = (function () {
       d102_areaGround > 0 ? (sumProductGround / d102_areaGround) * tbFactor : 0;
 
     // 🔎 DEBUG: concise trace for U-aggregation behavior per pass
-    console.log(
-      `[S12] U-agg ${useRef ? "REF" : "TGT"}: TB%=${d97_tbPenaltyPercent} → g_101=${g101_uAir.toFixed(
-        6
-      )}, g_102=${g102_uGround.toFixed(6)}`
-    );
+    // console.log(
+    //   `[S12] U-agg ${useRef ? "REF" : "TGT"}: TB%=${d97_tbPenaltyPercent} → g_101=${g101_uAir.toFixed(
+    //     6
+    //   )}, g_102=${g102_uGround.toFixed(6)}`
+    // );
 
     const totalArea = parseFloat(d101_areaAir) + parseFloat(d102_areaGround);
     const d104_uCombined =
@@ -2066,16 +2066,16 @@ window.TEUI.SectionModules.sect12 = (function () {
       // ✅ FIXED: Reference calculations read ONLY ref_ prefixed values
       d20_hdd = getGlobalNumericValue("ref_d_20");
       d21_cdd = getGlobalNumericValue("ref_d_21");
-      console.log(
-        `[S12] 🔵 REF CLIMATE READ: d_20=${d20_hdd}, d_21=${d21_cdd}`
-      );
+      // console.log(
+      //   `[S12] 🔵 REF CLIMATE READ: d_20=${d20_hdd}, d_21=${d21_cdd}`
+      // );
     } else {
       // ✅ PATTERN A: Target calculations read unprefixed values
       d20_hdd = getGlobalNumericValue("d_20");
       d21_cdd = getGlobalNumericValue("d_21");
-      console.log(
-        `[S12] 🎯 TGT CLIMATE READ: d_20=${d20_hdd}, d_21=${d21_cdd}`
-      );
+      // console.log(
+      //   `[S12] 🎯 TGT CLIMATE READ: d_20=${d20_hdd}, d_21=${d21_cdd}`
+      // );
     }
 
     const d101_areaAir = volumeResults.d_101;
@@ -2138,22 +2138,12 @@ window.TEUI.SectionModules.sect12 = (function () {
       d21_cdd = getGlobalNumericValue("ref_d_21") || 0;
       d22_gfHDD = getGlobalNumericValue("ref_d_22") || 0;
       h22_gfCDD = getGlobalNumericValue("ref_h_22") || 0;
-
-      // [S12DB] Debug Reference climate reading
-      console.log(
-        `[S12DB] REF CLIMATE: d_20=${d20_hdd}, d_21=${d21_cdd}, d_22=${d22_gfHDD}, h_22=${h22_gfCDD}`
-      );
     } else {
       // ✅ PATTERN A: Clean external dependencies via getGlobalNumericValue
       d20_hdd = getGlobalNumericValue("d_20");
       d21_cdd = getGlobalNumericValue("d_21");
       d22_gfHDD = getGlobalNumericValue("d_22");
       h22_gfCDD = getGlobalNumericValue("h_22");
-
-      // [S12DB] Debug Target climate reading
-      console.log(
-        `[S12DB] TGT CLIMATE: d_20=${d20_hdd}, d_21=${d21_cdd}, d_22=${d22_gfHDD}, h_22=${h22_gfCDD}`
-      );
     }
 
     // Constants
@@ -2165,23 +2155,6 @@ window.TEUI.SectionModules.sect12 = (function () {
     const i101_heatlossAir = h101_lossRateAir * d101_areaAir;
     const j101_gainRateAir = (g101_uAir * d21_cdd * hoursPerDay) / wattsToKw;
     const k101_heatgainAir = j101_gainRateAir * d101_areaAir;
-
-    // [S12DB] Debug h_101 calculation (Excel: =(D$20*G101*24)/1000)
-    if (isReferenceCalculation) {
-      console.log(
-        `[S12DB] REF h_101 calc: (${d20_hdd}*${g101_uAir}*${hoursPerDay})/${wattsToKw} = ${h101_lossRateAir}`
-      );
-      console.log(
-        `[S12DB] REF i_101 result: ${h101_lossRateAir} * ${d101_areaAir} = ${i101_heatlossAir}`
-      );
-    } else {
-      console.log(
-        `[S12DB] TGT h_101 calc: (${d20_hdd}*${g101_uAir}*${hoursPerDay})/${wattsToKw} = ${h101_lossRateAir}`
-      );
-      console.log(
-        `[S12DB] TGT i_101 result: ${h101_lossRateAir} * ${d101_areaAir} = ${i101_heatlossAir}`
-      );
-    }
 
     // Ground-facing envelope calculations (maintain full precision)
     const h102_lossRateGround =
@@ -2321,17 +2294,6 @@ window.TEUI.SectionModules.sect12 = (function () {
     const g104_weightedUValue =
       (g101_uAir * d101_areaAir + g102_uGround * d102_areaGround) / totalArea;
 
-    // [S12DB] Debug g_104 weighted average calculation
-    if (isReferenceCalculation) {
-      console.log(
-        `[S12DB] REF g_104 calc: (${g101_uAir}*${d101_areaAir} + ${g102_uGround}*${d102_areaGround})/${totalArea} = ${g104_weightedUValue}`
-      );
-    } else {
-      console.log(
-        `[S12DB] TGT g_104 calc: (${g101_uAir}*${d101_areaAir} + ${g102_uGround}*${d102_areaGround})/${totalArea} = ${g104_weightedUValue}`
-      );
-    }
-
     // Calculate total loss with full precision (Excel: =SUM(I101:I103))
     const i104_totalLoss = i101 + i102 + i103;
 
@@ -2343,23 +2305,6 @@ window.TEUI.SectionModules.sect12 = (function () {
     } else {
       // Use SUM(K101:K102) - Air + Ground transmission gain only (exclude leakage k_103)
       k104_totalGain = k101 + k102;
-    }
-
-    // [S12DB] Debug Row 104 subtotal calculations
-    if (isReferenceCalculation) {
-      console.log(
-        `[S12DB] REF ROW104: i_101=${i101}, i_102=${i102}, i_103=${i103} → i_104=${i104_totalLoss}`
-      );
-      console.log(
-        `[S12DB] REF ROW104: h_21="${h21_capacitanceSetting}", k_98=${k98_totalEnvelopeGainS11} → k_104=${k104_totalGain}`
-      );
-    } else {
-      console.log(
-        `[S12DB] TGT ROW104: i_101=${i101}, i_102=${i102}, i_103=${i103} → i_104=${i104_totalLoss}`
-      );
-      console.log(
-        `[S12DB] TGT ROW104: h_21="${h21_capacitanceSetting}", k_98=${k98_totalEnvelopeGainS11} → k_104=${k104_totalGain}`
-      );
     }
 
     // ✅ MODE-AWARE: setCalculatedValue() now handles Reference vs Target appropriately

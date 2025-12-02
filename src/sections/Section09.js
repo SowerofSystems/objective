@@ -487,9 +487,6 @@ window.TEUI.SectionModules.sect09 = (function () {
           let formattedValue;
           if (formatType === "raw") {
             formattedValue = value; // Already formatted string, don't re-format
-            if (fieldId.startsWith("m_") || fieldId.startsWith("n_")) {
-              console.log(`[S09 DISPLAY UPDATE] ${fieldId}: mode=${this.currentMode}, value="${value}" (type=${typeof value}), format=raw`);
-            }
           } else {
             formattedValue = window.TEUI.formatNumber(value, formatType);
           }
@@ -2078,12 +2075,6 @@ window.TEUI.SectionModules.sect09 = (function () {
     const m_65_formatted = window.TEUI?.formatNumber?.(m_65_ratio, "percent-0dp") ?? "100%";
     const m_66_formatted = window.TEUI?.formatNumber?.(m_66_ratio, "percent-0dp") ?? "100%";
     const m_67_formatted = window.TEUI?.formatNumber?.(m_67_ratio, "percent-0dp") ?? "100%";
-
-    console.log(`[S09 M-N FORMAT] isRef=${isReferenceCalculation}, mode=${ModeManager.currentMode}`);
-    console.log(`[S09 M-N FORMAT] Ratios: m_65=${m_65_ratio}, m_66=${m_66_ratio}, m_67=${m_67_ratio}`);
-    console.log(`[S09 M-N FORMAT] Formatted: m_65="${m_65_formatted}" (type=${typeof m_65_formatted})`);
-    console.log(`[S09 M-N FORMAT] Formatted: m_66="${m_66_formatted}" (type=${typeof m_66_formatted})`);
-    console.log(`[S09 M-N FORMAT] Formatted: m_67="${m_67_formatted}" (type=${typeof m_67_formatted})`);
 
     // Calculate N column checkmarks
     const n_65_value = m_65_ratio <= 1.0 ? "✓" : "✗";
