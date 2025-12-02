@@ -52,87 +52,149 @@ open "OBJECTIVE/src/obc/index.html" # OBC Matrix
 
 ## Git Workflow & GitHub Etiquette
 
-### Branch Strategy
+### The Correct Workflow (CTO-Approved)
 
-All development work follows a feature branch workflow with proper PR etiquette:
-
-1. **Creating Feature Branches**:
-   - Always branch from the current development branch (usually `dependency3` or latest feature branch)
-   - Use descriptive branch names: `FH-AUGMENT`, `S07-FIX`, `COOLING-CALC`, etc.
-   - Keep branches focused on a single feature or fix
-
-2. **Committing Changes**:
-   - Make atomic commits with clear messages
-   - Follow commit format: `Type: Brief description`
-   - Types: `Feat`, `Fix`, `Refactor`, `Docs`, `Improve`, `Clean`
-   - **Always use HEREDOC syntax** for commit messages to ensure proper formatting:
-     ```bash
-     git commit -m "$(cat <<'EOF'
-     Type: Brief description of the change
-
-     🤖 Co-Generated with [Claude Code](https://claude.com/claude-code)
-
-     Co-Authored-By: Andy & Claude <andy@openbuilding.ca>
-     EOF
-     )"
-     ```
-   - **Important**: Don't `git add` files that are already staged for deletion
-   - Skip `Logs.md` in commits (working file, not version-controlled)
-   - **Commit ONLY when explicitly directed by user** (e.g., "commit this", "commit and push")
-   - **Do NOT auto-commit** after making code changes - user prefers to test first
-   - User will verify functionality in browser before requesting commit
-
-3. **Pushing to Remote**:
-   ```bash
-   git push -u origin BRANCH-NAME
-   ```
-   - **Push ONLY when explicitly directed by user** (e.g., "push to remote", "commit and push")
-   - User prefers to test code locally before pushing to remote
-   - Do NOT auto-push after commits unless specifically requested
-
-4. **Pull Request Protocol**:
-   - **NEVER merge your own PRs to main** - wait for CTO review
-   - **Respect the PR queue**: If PR#35 is open, don't create PR#36 until #35 is reviewed
-   - After existing PR is merged:
-     ```bash
-     # Rebase your feature branch onto updated main
-     git checkout main
-     git pull origin main
-     git checkout YOUR-BRANCH
-     git rebase main
-     git push --force-with-lease origin YOUR-BRANCH
-     ```
-   - Then create PR targeting `main`
-
-5. **Branch Lifecycle**:
-   - Keep feature branches small (ideally < 10 commits)
-   - Don't stack feature branches (branch from `main`, not from other feature branches)
-   - After merge: local branch can be deleted, remote branch preserved
-
-### Example Workflow
+**Standard feature branch workflow with PR review:**
 
 ```bash
-# Starting new feature
-git checkout dependency3          # or current dev branch
-git pull origin dependency3
-git checkout -b NEW-FEATURE
-
-# Work and commit
-git add .
-git commit -m "Feat: Add new capability"
-
-# Push to remote (but don't create PR yet if queue exists)
-git push -u origin NEW-FEATURE
-
-# After PR queue clears and base branch merges
+# 1. START: Pull latest main
 git checkout main
 git pull origin main
-git checkout NEW-FEATURE
-git rebase main
-git push --force-with-lease origin NEW-FEATURE
 
-# Now create PR via GitHub UI
+# 2. CREATE: New feature branch from main
+git checkout -b FEATURE-NAME
+
+# 3. WORK: Make changes and test locally
+# ... edit files ...
+# ... test in browser ...
+
+# 4. COMMIT: Only after local testing passes
+git add .
+git commit -m "$(cat <<'EOF'
+Type: Brief description
+
+🤖 Co-Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Andy & Claude <andy@openbuilding.ca>
+EOF
+)"
+
+# 5. PUSH: Backup work to remote (creates backup + enables PR)
+git push -u origin FEATURE-NAME
+
+# 6. PR: Create pull request via GitHub UI
+# - Wait for CTO review
+# - NEVER merge your own PR
+# - CTO merges when approved
+
+# 7. AFTER MERGE: Start next feature
+git checkout main
+git pull origin main  # Gets your merged changes
+git checkout -b NEXT-FEATURE  # Fresh branch from updated main
 ```
+
+### Critical Rules
+
+1. **⚠️ ALWAYS push before switching branches**:
+   ```bash
+   # ✅ SAFE - Work backed up to remote
+   git push -u origin FEATURE-BRANCH
+   git checkout main  # Safe to switch
+
+   # ❌ DANGER - Unpushed work can be lost!
+   git checkout main  # Abandons unpushed commits
+   ```
+
+2. **Before switching branches, verify safety**:
+   ```bash
+   # Check for unpushed commits
+   git log origin/BRANCH-NAME..HEAD
+   # If output shows commits → PUSH FIRST!
+
+   # Check tracking status
+   git branch -vv | grep "*"
+   # Should show [origin/BRANCH-NAME]
+   ```
+
+3. **Branch from main, not from other feature branches**:
+   ```bash
+   # ✅ CORRECT
+   git checkout main
+   git checkout -b NEW-FEATURE
+
+   # ❌ WRONG - Creates dependency chain
+   git checkout FEATURE-A
+   git checkout -b FEATURE-B  # Don't do this!
+   ```
+
+4. **Commit timing**:
+   - **Commit ONLY when explicitly directed by user**
+   - User prefers to test locally before commits
+   - **Do NOT auto-commit** after making code changes
+   - **Push ONLY when explicitly directed by user**
+
+5. **Commit message format**:
+   - Always use HEREDOC syntax for proper formatting
+   - Types: `Feat`, `Fix`, `Refactor`, `Docs`, `Improve`, `Clean`
+   - Skip `Logs.md` in commits (working file, not version-controlled)
+
+### When Rebase Is Needed
+
+**Only rebase if your feature branch is stale:**
+
+```bash
+# Your branch is stale if main has new commits since you branched
+git checkout main
+git pull origin main
+git checkout YOUR-BRANCH
+
+# Check if rebase needed
+git log main..HEAD  # Shows your commits
+git log HEAD..main  # Shows main's new commits
+
+# If main has new commits, rebase
+git rebase main
+git push --force-with-lease origin YOUR-BRANCH
+```
+
+**You do NOT need to rebase if:**
+- Your branch is fresh from main
+- No one else has committed to main since you branched
+- You're ready to create PR immediately after pushing
+
+### PR Queue Etiquette
+
+- **Respect the queue**: If PR#35 is open, wait for CTO review before creating PR#36
+- **NEVER merge your own PRs** - CTO approval required
+- After your PR is merged by CTO:
+  - Pull main to get your changes
+  - Start fresh branch from main
+  - Previous feature branch can be deleted locally
+
+### Emergency: Recovering Lost Work
+
+If you switched branches without pushing:
+
+```bash
+# 1. Find orphaned commits
+git reflog  # Shows all HEAD movements
+
+# 2. View the commit
+git show COMMIT-HASH
+
+# 3. Recover work (choose one):
+git cherry-pick COMMIT-HASH  # Add to current branch
+git checkout -b recovery-branch COMMIT-HASH  # New branch from commit
+```
+
+**Git keeps orphaned commits for ~90 days, but don't rely on this!**
+
+### Branch Lifecycle
+
+- Keep feature branches small (< 10 commits ideal)
+- Focus on single feature or fix per branch
+- After CTO merges: delete local branch, remote preserved automatically
+- Fresh branch from main for each new feature
 
 ## Development Guidelines
 
