@@ -487,6 +487,9 @@ window.TEUI.SectionModules.sect09 = (function () {
           let formattedValue;
           if (formatType === "raw") {
             formattedValue = value; // Already formatted string, don't re-format
+            if (fieldId.startsWith("m_") || fieldId.startsWith("n_")) {
+              console.log(`[S09 DISPLAY UPDATE] ${fieldId}: mode=${this.currentMode}, value="${value}" (type=${typeof value}), format=raw`);
+            }
           } else {
             formattedValue = window.TEUI.formatNumber(value, formatType);
           }
@@ -2042,11 +2045,7 @@ window.TEUI.SectionModules.sect09 = (function () {
       }
 
       // ✅ S07 PATTERN: Calculate M-N compliance AFTER densities are published
-      // CRITICAL: Only update compliance display if we're in Reference mode
-      // Don't overwrite Target mode display when Reference engine runs in background
-      if (ModeManager.currentMode === "reference") {
-        calculateCompliance(true);
-      }
+      calculateCompliance(true);
     } catch (error) {
       console.error("[S09] Error in Reference Model calculations:", error);
     }
@@ -2135,8 +2134,8 @@ window.TEUI.SectionModules.sect09 = (function () {
       setElementClass("n_67", n_67_value === "✓" ? "checkmark" : "warning");
     }
 
-    // Update DOM display
-    ModeManager.updateCalculatedDisplayValues();
+    // DOM updates handled by calculateTargetModel/calculateReferenceModel
+    // Don't call updateCalculatedDisplayValues here to avoid overwriting wrong mode
   }
 
   /**
@@ -2187,14 +2186,11 @@ window.TEUI.SectionModules.sect09 = (function () {
       });
 
       updatePercentages(results.i_71, results.k_71);
-      updateAllReferenceIndicators();
+      // ❌ REMOVED: Old M-N implementation that conflicts with new calculateCompliance()
+      // updateAllReferenceIndicators();
 
       // ✅ S07 PATTERN: Calculate M-N compliance AFTER densities are published
-      // CRITICAL: Only update compliance display if we're in Target mode
-      // Don't overwrite Reference mode display when Target engine runs in background
-      if (ModeManager.currentMode === "target") {
-        calculateCompliance(false);
-      }
+      calculateCompliance(false);
     } catch (error) {
       console.error("[S09] Error in Target Model calculations:", error);
     }
