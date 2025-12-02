@@ -2,7 +2,7 @@
 
 **Purpose**: This document provides a standardized pattern for implementing compliance checks in columns M (comparison/reference values) and N (pass/fail indicators) across all TEUI sections.
 
-**Status Update (2025-01-12)**: S01-S07 completed and verified. S07 uses Reference model comparison pattern with proper "lower is better" logic for water/energy metrics. Next: S08, S09, S12, S13. 
+**Status Update (2025-01-12)**: S01-S08 completed and verified. S07 uses Reference model comparison with "lower is better" logic. S08 row 59 (RH%) updated to show acceptable range "30-60%" in m_59, with dual-slider range check (both d_59 and i_59 must be within range). Next: S09, S12, S13. 
 
 ## Overview
 
@@ -580,7 +580,7 @@ When implementing M-N compliance:
 - **S03** (Climate Calculations): Code-based comparison (m_23/n_23, m_24/n_24)
 - **S05** (Envelope): Reference model comparison (m_38-41/n_38-41) - Uses `calculateComplianceRatio()` helper pattern, Reference mode = 100%
 - **S07** (Water): ✅ **VERIFIED 2025-01-12** - Reference model comparison (m_49-50, m_52-53/n_49-50, n_52-53) with proper "lower is better" logic for water/energy metrics. Formula `h_49/ref_h_49` correctly shows >100% as fail (excessive use), ≤100% as pass. Uses `calculateComplianceRatio()` helper + correct Reference-first calculation order.
-- **S08** (Indoor Air Quality): Health threshold comparison (m_56-59/n_56-59)
+- **S08** (Indoor Air Quality): ✅ **VERIFIED 2025-01-12** - Health threshold comparison (m_56-59/n_56-59). Row 59 (RH%) uses dual-slider range check: m_59 displays acceptable range "30-60%", n_59 passes only if BOTH d_59 (heating season) AND i_59 (cooling season) are within 30-60% range.
 - **S11** (Embodied Carbon): Reference model comparison (m_85-95/n_85-95) - Good styling reference example
 
 ### 🚧 Pending Implementation
