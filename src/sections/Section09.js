@@ -454,12 +454,6 @@ window.TEUI.SectionModules.sect09 = (function () {
         "h_71",
         "i_71",
         "k_71",
-        "m_65", // ✅ M-N COMPLIANCE: Percentage values
-        "m_66",
-        "m_67",
-        "n_65", // ✅ M-N COMPLIANCE: Pass/fail indicators
-        "n_66",
-        "n_67",
       ];
 
       calculatedFields.forEach(fieldId => {
@@ -481,10 +475,6 @@ window.TEUI.SectionModules.sect09 = (function () {
           let formatType = "number";
           if (fieldId === "d_65" || fieldId === "d_67") {
             formatType = "number-1dp"; // Density values with 1 decimal place
-          } else if (fieldId.startsWith("m_")) {
-            formatType = "raw"; // M-column: already formatted as "100%" strings (S07 pattern)
-          } else if (fieldId.startsWith("n_")) {
-            formatType = "raw"; // N-column symbols (✓/✗)
           } else if (
             fieldId.startsWith("h_") ||
             fieldId.startsWith("i_") ||
@@ -495,12 +485,6 @@ window.TEUI.SectionModules.sect09 = (function () {
 
           const formattedValue = window.TEUI.formatNumber(value, formatType);
           element.textContent = formattedValue;
-
-          // ✅ CRITICAL: Reapply CSS classes for compliance indicators after updating text (Dual-Mode Styling Pattern)
-          if (fieldId.startsWith("n_") && formatType === "raw") {
-            element.classList.remove("checkmark", "warning");
-            element.classList.add(value === "✓" ? "checkmark" : "warning");
-          }
         } else {
           // If value doesn't exist, show 0 or field default - NEVER cross-contaminate
           element.textContent = "0";
@@ -1623,7 +1607,30 @@ window.TEUI.SectionModules.sect09 = (function () {
     setCalculatedValue("i_65", energy * heatingRatio, "number"); // Use dynamic heating ratio
     setCalculatedValue("k_65", energy * coolingRatio, "number"); // Use dynamic cooling ratio
 
-    // ✅ M-N COMPLIANCE: Moved to calculateModel() to run in both Target and Reference engines
+    // Calculate percentage against reference value
+    // Reference is 5 W/m² for residential/care or 7 W/m² for others
+    const referenceStandard = getFieldValueModeAware("d_13") || "";
+    const buildingType = getFieldValueModeAware("d_12") || "";
+
+    const isResidentialOrCare =
+      buildingType === "C - Residential" ||
+      buildingType === "B1 - Detention" ||
+      buildingType === "B2 - Care and Treatment" ||
+      buildingType === "B3 - Detention Care & Treatment";
+
+    const referencePlugLoad = isResidentialOrCare ? 5 : 7;
+
+    const percentOfReference = (plugLoadDensity / referencePlugLoad) * 100;
+    setCalculatedValue("m_65", percentOfReference, "percent-auto");
+
+    // Set checkmark or X based on whether it's below reference
+    if (plugLoadDensity <= referencePlugLoad) {
+      setCalculatedValue("n_65", "✓", "raw"); // Store raw checkmark
+      setElementClass("n_65", "checkmark"); // Keep direct class manipulation for this specific UI
+    } else {
+      setCalculatedValue("n_65", "✗", "raw"); // Store raw X
+      setElementClass("n_65", "warning"); // Keep direct class manipulation
+    }
 
     return energy;
   }
@@ -1654,7 +1661,21 @@ window.TEUI.SectionModules.sect09 = (function () {
     setCalculatedValue("i_66", energy * heatingRatio, "number"); // Use dynamic heating ratio
     setCalculatedValue("k_66", energy * coolingRatio, "number"); // Use dynamic cooling ratio
 
-    // ✅ M-N COMPLIANCE: Moved to calculateModel() to run in both Target and Reference engines
+    // Calculate percentage against reference value
+    // Use dynamic reference value from ReferenceState
+    const referenceLightingLoad =
+      window.TEUI.parseNumeric(ReferenceState.getValue("d_66")) || 2.0;
+    const percentOfReference = (lightingDensity / referenceLightingLoad) * 100;
+    setCalculatedValue("m_66", percentOfReference, "percent-auto");
+
+    // Set checkmark or X based on standard comparison
+    if (percentOfReference <= 133) {
+      setCalculatedValue("n_66", "✓", "raw");
+      setElementClass("n_66", "checkmark");
+    } else {
+      setCalculatedValue("n_66", "✗", "raw");
+      setElementClass("n_66", "warning");
+    }
 
     return energy;
   }
@@ -1714,7 +1735,10 @@ window.TEUI.SectionModules.sect09 = (function () {
       setCalculatedValue("i_67", heatingPortion, "number");
       setCalculatedValue("k_67", coolingPortion, "number");
 
-      // ✅ M-N COMPLIANCE: Moved to calculateModel() to run in both Target and Reference engines
+      // Equipment loads typically show 100% compliance since they're from lookup tables
+      setCalculatedValue("m_67", 100, "percent-auto");
+      setCalculatedValue("n_67", "✓", "raw");
+      setElementClass("n_67", "checkmark");
 
       // Update percentages and totals
       calculateTotals();
@@ -1885,14 +1909,9 @@ window.TEUI.SectionModules.sect09 = (function () {
       // Store all results in StateManager with "ref_" prefix
       Object.entries(results).forEach(([fieldId, value]) => {
         if (value !== null && value !== undefined) {
-          // ✅ M-N COMPLIANCE: Keep pre-formatted strings as-is (S07 pattern)
-          const valueToStore = (fieldId.startsWith("m_") || fieldId.startsWith("n_"))
-            ? value // Keep strings like "100%" and "✓" as-is
-            : String(value); // Convert numbers to strings
-
           window.TEUI.StateManager.setValue(
             prefix + fieldId,
-            valueToStore,
+            String(value),
             "calculated"
           );
         }
@@ -1902,8 +1921,8 @@ window.TEUI.SectionModules.sect09 = (function () {
       if (ModeManager.currentMode === "reference") {
         // console.log(`[S09DB] calculateReferenceModel: Updating DOM (Reference mode)`);
         Object.entries(results).forEach(([fieldId, value]) => {
-          // ✅ M-N COMPLIANCE: Store to ReferenceState preserving string format
-          ReferenceState.setValue(fieldId, value);
+          // Use ModeManager.setValue to update both state and DOM
+          ModeManager.setValue(fieldId, String(value), "calculated");
         });
       } else {
         // console.log(`[S09DB] calculateReferenceModel: Skipping DOM update (Target mode)`);
@@ -1989,31 +2008,8 @@ window.TEUI.SectionModules.sect09 = (function () {
       // - Reference mode: writes to StateManager as ref_{fieldId}
       // This ensures Target calculations never contaminate Reference StateManager values
       Object.entries(results).forEach(([fieldId, value]) => {
-        // ✅ M-N COMPLIANCE: Bypass setCalculatedValue() for pre-formatted strings (S07 pattern)
-        if (fieldId.startsWith("m_") || fieldId.startsWith("n_")) {
-          // Store pre-formatted strings directly to StateManager (bypass parseNumeric)
-          TargetState.setValue(fieldId, value);
-          window.TEUI.StateManager.setValue(fieldId, value, "calculated");
-
-          // Update DOM directly for Target mode
-          if (ModeManager.currentMode === "target") {
-            const element = document.querySelector(`[data-field-id="${fieldId}"]`);
-            if (element) {
-              element.textContent = value;
-            }
-          }
-        } else {
-          // Normal numeric fields use setCalculatedValue
-          setCalculatedValue(fieldId, value);
-        }
+        setCalculatedValue(fieldId, value);
       });
-
-      // ✅ M-N COMPLIANCE: Apply CSS classes for compliance indicators (Target mode only)
-      if (ModeManager.currentMode === "target") {
-        setElementClass("n_65", results.n_65 === "✓" ? "checkmark" : "warning");
-        setElementClass("n_66", results.n_66 === "✓" ? "checkmark" : "warning");
-        setElementClass("n_67", results.n_67 === "✓" ? "checkmark" : "warning");
-      }
 
       updatePercentages(results.i_71, results.k_71);
       updateAllReferenceIndicators();
@@ -2165,32 +2161,6 @@ window.TEUI.SectionModules.sect09 = (function () {
     results.h_71 = totalEnergy;
     results.i_71 = results.i_70 + results.i_64 + results.i_69;
     results.k_71 = results.k_70 + results.k_64 + results.k_69;
-
-    // ✅ M-N COMPLIANCE: Calculate for both Target and Reference models
-    // Dead Simple Pattern: Reference/Target ratio (lower is better)
-    // Get reference values for comparison (always from ReferenceState)
-    const refPlugLoad = window.TEUI?.parseNumeric?.(ReferenceState.getValue("d_65")) ?? 7;
-    const refLightingLoad = window.TEUI?.parseNumeric?.(ReferenceState.getValue("d_66")) ?? 2.0;
-    const refEquipmentDensity = window.TEUI?.parseNumeric?.(ReferenceState.getValue("d_67")) ?? 5.0;
-
-    // Calculate compliance ratios (as decimals for formatNumber)
-    // Target mode: ReferenceState.d_XX / TargetState.d_XX → actual comparison
-    // Reference mode: ReferenceState.d_XX / ReferenceState.d_XX → 100%
-    const m_65_percent = plugLoadDensity > 0 ? (refPlugLoad / plugLoadDensity) : 1.0;
-    const m_66_percent = (window.TEUI?.parseNumeric?.(state.getValue("d_66")) ?? 1) > 0
-      ? (refLightingLoad / window.TEUI.parseNumeric(state.getValue("d_66")))
-      : 1.0;
-    const m_67_percent = equipmentDensity > 0 ? (refEquipmentDensity / equipmentDensity) : 1.0;
-
-    // Format as strings with "percent-0dp" (S07 pattern: pre-format, store as raw strings)
-    results.m_65 = window.TEUI?.formatNumber?.(m_65_percent, "percent-0dp") ?? "100%";
-    results.m_66 = window.TEUI?.formatNumber?.(m_66_percent, "percent-0dp") ?? "100%";
-    results.m_67 = window.TEUI?.formatNumber?.(m_67_percent, "percent-0dp") ?? "100%";
-
-    // Pass if ratio >= 100% (target uses less than or equal to reference)
-    results.n_65 = m_65_percent >= 1.0 ? "✓" : "✗";
-    results.n_66 = m_66_percent >= 1.0 ? "✓" : "✗";
-    results.n_67 = m_67_percent >= 1.0 ? "✓" : "✗";
 
     return results;
   }
