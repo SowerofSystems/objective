@@ -582,7 +582,7 @@ When implementing M-N compliance:
 - **S07** (Water): ✅ **VERIFIED 2025-01-12** - Reference model comparison (m_49-50, m_52-53/n_49-50, n_52-53) with proper "lower is better" logic for water/energy metrics. Formula `h_49/ref_h_49` correctly shows >100% as fail (excessive use), ≤100% as pass. Uses `calculateComplianceRatio()` helper + correct Reference-first calculation order.
 - **S08** (Indoor Air Quality): ✅ **VERIFIED 2025-01-12** - Health threshold comparison (m_56-59/n_56-59). Row 59 (RH%) uses dual-slider range check: m_59 displays acceptable range "30-60%", n_59 passes only if BOTH d_59 (heating season) AND i_59 (cooling season) are within 30-60% range.
 - **S09** (Internal Gains): ✅ **VERIFIED 2025-12-02** - Reference model comparison (m_65-67/n_65-67) for plug loads, lighting, and equipment. Uses format-once pattern with value-change guard for optimal performance (27ms calculations). See detailed implementation section above.
-- **S11** (Embodied Carbon): Reference model comparison (m_85-95/n_85-95) - Good styling reference example
+- **S11** (Transmission Losses): ✅ **VERIFIED 2025-12-02** - Reference model comparison (m_85-95, m_97/n_85-95, n_97) for RSI, U-values, and thermal bridge penalty. 12 M/N field pairs with comprehensive `getFieldFormat()` helper. Format-once pattern with dual-engine integration. Performance: 262ms Target, 559ms Reference (2.1x due to dual calculations - expected). See detailed implementation section above.
 
 ### 🚧 Pending Implementation
 - **S06** (Envelope - remaining rows): Additional M/N fields may be needed
@@ -1609,40 +1609,35 @@ setCalculatedValue("m_56", radonPercent); // Store raw ratio, updateCalculatedDi
 
 ---
 
-#### ⚠️ S11 (Embodied Carbon) - NEEDS REFACTORING
+#### ✅ S11 (Transmission Losses) - REFACTORED
 
-**M/N Fields:** m_85, m_86, m_87, m_88, m_89, m_90, m_91, m_92, m_93, m_94, m_95 (11 fields)
-**N Fields:** n_85, n_86, n_87, n_88, n_89, n_90, n_91, n_92, n_93, n_94, n_95 (11 fields)
+**M/N Fields:** m_85, m_86, m_87, m_88, m_89, m_90, m_91, m_92, m_93, m_94, m_95, m_97 (12 fields)
+**N Fields:** n_85, n_86, n_87, n_88, n_89, n_90, n_91, n_92, n_93, n_94, n_95, n_97 (12 fields)
 
-**Current Pattern:** `updateReferenceIndicators()` function using OLD pattern
+**Pattern:** Format-once with `StateManager.setValue()` following S07/S09 pattern
+**Commits:** e74ca35, c846719 (Dec 2, 2025)
 
-**Problems Found:**
-1. **Line 2453:** `setCalculatedValue(mFieldId, 1.0, "percent")` - NUMERIC with format parameter
-2. **Line 2511:** `setCalculatedValue(mFieldId, referencePercent / 100, "percent")` - NUMERIC with format parameter
+**Implementation Details:**
+1. **Added `getFieldFormat()` helper** (Section11.js:2442-2484): Returns "raw" for M/N fields, comprehensive format mapping for all field types
+2. **Refactored `updateReferenceIndicators()`** (Section11.js:2486-2582):
+   - Reads from StateManager with `ref_` prefix instead of local ReferenceState
+   - Format-once pattern: `window.TEUI.formatNumber(ratio, "percent-0dp")` → `StateManager.setValue()`
+   - Stores to `ref_m_85` in Reference mode, `m_85` in Target mode
+3. **Updated `updateCalculatedDisplayValues()`** (Section11.js:579-625): Added M/N fields to calculated fields array with "raw" format handling
+4. **Dual-engine integration** (Section11.js:2754-2758): Calls `updateReferenceIndicators()` from both `calculateReferenceModel()` and `calculateTargetModel()`
+5. **Performance optimization** (Section11.js:3046-3058): Added value-change guard to blur handler
 
-**Code Example (lines 2448-2460):**
-```javascript
-// ✅ REFERENCE MODE: Perfect Compliance (Always 100% and ✓)
-if (ModeManager.currentMode === "reference") {
-  referencePercent = 100;
-  isGood = true;
+**Formulas:**
+- **RSI (rows 85-87, 94-95)**: `currentValue / referenceNumeric` (higher is better)
+- **U-value (rows 88-93)**: `referenceNumeric / currentValue` (lower is better)
+- **Thermal Bridge Penalty (row 97)**: `referenceNumeric / currentValue` (lower is better)
 
-  setCalculatedValue(mFieldId, 1.0, "percent"); // ❌ PROBLEM: Numeric with format parameter
-  const nElement = document.querySelector(`[data-field-id="${nFieldId}"]`);
-  if (nElement) nElement.textContent = "✓";
-  setElementClass(nFieldId, true);
-  return;
-}
-```
+**Performance:** 262ms Target mode, 559ms Reference mode (2.1x slower due to dual-engine calculations - expected)
 
-**Refactoring Strategy:**
-1. Replace `setCalculatedValue(mFieldId, ratio, "percent")` with format-once pattern
-2. Format to string immediately: `window.TEUI.formatNumber(ratio, "percent-0dp")`
-3. Store formatted string via `StateManager.setValue()`
-4. Add `getFieldFormat()` with "raw" entries for M/N fields (if missing)
-5. Ensure M/N fields in `refreshUI()` calculatedFields array
+**Code Quality:** Net +35 lines (128 added, 93 removed) - more maintainable with comprehensive `getFieldFormat()` helper
 
-**Estimated Time:** 2-4 hours (following S09 lessons learned)
+**Format Fighting Risk:** ❌ None - uses format-once pattern correctly
+**Display:** ✅ Correct formatting (percent with 0 decimal places), correct symbols in Column N
 
 ---
 
@@ -1678,7 +1673,7 @@ if (ModeManager.currentMode === "reference") {
 
 ---
 
-### Refactoring Checklist (For S11, S12, S13, S15)
+### Refactoring Checklist (For S12, S13, S15)
 
 When refactoring M-N compliance implementations, follow this checklist:
 
@@ -1737,12 +1732,12 @@ grep -n '"m_85"' Section11.js | grep -E '(setCalculatedValue|setValue)'
 
 Based on complexity and field count:
 
-1. **S11 (Embodied Carbon)** - 11 fields, uses old pattern, highest priority
-2. **S13 (Costs)** - 7 fields, not yet implemented
-3. **S12 (Operational Carbon)** - 4 fields, includes special PH check
+1. ~~**S11 (Transmission Losses)** - 12 fields~~ ✅ **COMPLETE** (Dec 2, 2025)
+2. **S12 (Operational Carbon)** - 4 fields, includes special PH check - **NEXT**
+3. **S13 (Costs)** - 7 fields, not yet implemented
 4. **S15 (Schedule)** - 1 field, simplest case
 
-**Total Estimated Time:** 8-13 hours for all four sections
+**Total Estimated Time:** 6-9 hours for remaining three sections
 
 ---
 
@@ -1757,7 +1752,7 @@ Based on complexity and field count:
 
 ---
 
-**Last Updated**: 2025-12-02 (Added Format Fighting Audit section)
-**Next Refactoring Target**: S11 (Embodied Carbon) - 11 M/N field pairs
-**Sections Using Pattern**: S03, S05, S07, S08, S09
+**Last Updated**: 2025-12-02 (Completed S11 Transmission Losses refactoring)
+**Next Refactoring Target**: S12 (Operational Carbon) - 4 M/N field pairs
+**Sections Using Pattern**: S03, S05, S07, S08, S09, S11
 **Global CSS Defined**: src/styles.css lines 2097-2112
