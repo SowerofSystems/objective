@@ -312,6 +312,12 @@ window.TEUI.SectionModules.sect12 = (function () {
             if (fieldId === "m_104" || fieldId.startsWith("n_")) {
               // Raw text fields - display as-is
               element.textContent = valueToDisplay;
+
+              // ✅ FIX: Reapply CSS classes for n_* status fields on mode switch
+              if (fieldId.startsWith("n_")) {
+                element.classList.remove("checkmark", "warning");
+                element.classList.add(valueToDisplay === "✓" ? "checkmark" : "warning");
+              }
             } else {
               // Numeric fields - parse and format
               const numericValue = window.TEUI.parseNumeric(valueToDisplay);
