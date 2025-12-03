@@ -2087,10 +2087,13 @@ grep -n 'setCalculatedValue.*"percent"' src/sections/Section13.js
 - [x] Added comprehensive header explaining why code was replaced (lines 741-755)
 - [x] Documented 4 key issues with old implementation
 
-#### Step 1.3: Verify Baseline
-- [ ] Hard refresh browser (Cmd+Shift+R)
-- [ ] Check that M/N columns show default values or are blank (not 100%/checkmarks yet)
-- [ ] Verify j_116 Fallback Trap fix still works (toggle Cooling/No Cooling)
+#### Step 1.3: Verify Baseline ✅
+- [x] Hard refresh browser (Cmd+Shift+R)
+- [x] Check that M/N columns show residual values (111%, 126%, 2%, 162%) - will be replaced
+- [x] N columns empty (fields not yet defined - need to add in Phase 2)
+- [x] Verify j_116 Fallback Trap fix still works (COPcool 2.66, Days Active Cooling -19.86)
+
+**Discovery**: N field definitions (n_113, n_115, n_116, n_117, n_118, n_119, n_124) need to be added to sectionRows. Currently showing `n: {}` placeholders. Will add in Phase 2 Step 2.4.
 
 ### Phase 2: Infrastructure Setup (45 min)
 
@@ -2205,6 +2208,84 @@ Add to `src/styles.css` (after existing `.warning` class):
 **Checklist**:
 - [ ] Add CSS class to styles.css
 - [ ] Test color contrast for visibility
+
+#### Step 2.4: Add N Field Definitions to sectionRows
+
+Update each row to include N field definitions (following S07 pattern):
+
+```javascript
+// Row 113 - HSPF
+n: {
+  fieldId: "n_113",
+  type: "calculated",
+  value: "✓",
+  section: "mechanicalLoads",
+  label: "HSPF Pass/Fail",
+},
+
+// Row 115 - AFUE
+n: {
+  fieldId: "n_115",
+  type: "calculated",
+  value: "✓",
+  section: "mechanicalLoads",
+  label: "AFUE Pass/Fail",
+},
+
+// Row 116 - COPc
+n: {
+  fieldId: "n_116",
+  type: "calculated",
+  value: "✓",
+  section: "mechanicalLoads",
+  label: "COPc Pass/Fail",
+},
+
+// Row 117 - Cooling Intensity
+n: {
+  fieldId: "n_117",
+  type: "calculated",
+  value: "✓",
+  section: "mechanicalLoads",
+  label: "Cooling Intensity Pass/Fail",
+},
+
+// Row 118 - HRV/ERV SRE
+n: {
+  fieldId: "n_118",
+  type: "calculated",
+  value: "✓",
+  section: "mechanicalLoads",
+  label: "SRE Pass/Fail",
+},
+
+// Row 119 - Ventilation Rate
+n: {
+  fieldId: "n_119",
+  type: "calculated",
+  value: "✓",
+  section: "mechanicalLoads",
+  label: "Vent Rate Pass/Fail",
+},
+
+// Row 124 - Days Mech Cooling (special yellow checkmark)
+n: {
+  fieldId: "n_124",
+  type: "calculated",
+  value: "✓",
+  section: "mechanicalLoads",
+  label: "Mech Cooling Days Indicator",
+},
+```
+
+**Checklist**:
+- [ ] Add n_113 field definition to row 113
+- [ ] Add n_115 field definition to row 115
+- [ ] Add n_116 field definition to row 116
+- [ ] Add n_117 field definition to row 117
+- [ ] Add n_118 field definition to row 118
+- [ ] Add n_119 field definition to row 119
+- [ ] Add n_124 field definition to row 124
 
 ### Phase 3: M-N Calculation Function (60 min)
 
