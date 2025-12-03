@@ -311,9 +311,9 @@ window.TEUI.SectionModules.sect12 = (function () {
           if (element && !element.hasAttribute("contenteditable")) {
             // Only update calculated fields, not user-editable ones
 
-            // ✅ M-N-COMPLIANCE: Handle raw format fields (m_104, n_* columns)
-            if (fieldId === "m_104" || fieldId.startsWith("n_")) {
-              // Raw text fields - display as-is
+            // ✅ M-N-COMPLIANCE: Handle raw format fields (m_104, m_107, m_109, m_110, n_* columns)
+            if (fieldId === "m_104" || fieldId === "m_107" || fieldId === "m_109" || fieldId === "m_110" || fieldId.startsWith("n_")) {
+              // Raw text fields - display as-is (already formatted strings)
               element.textContent = valueToDisplay;
 
               // ✅ FIX: Reapply CSS classes for n_* status fields on mode switch
@@ -344,9 +344,9 @@ window.TEUI.SectionModules.sect12 = (function () {
                     numericValue,
                     "percent-2dp"
                   );
-                } else if (fieldId.startsWith("l_") || fieldId.startsWith("m_")) {
+                } else if (fieldId.startsWith("l_")) {
                   // Match the precision used in setCalculatedValue()
-                  // l_101, l_102, l_103 use 2dp, l_104+ and m_ use 0dp
+                  // l_101, l_102, l_103 use 2dp, l_104+ uses 0dp
                   const percentFormat =
                     fieldId === "l_101" ||
                     fieldId === "l_102" ||
@@ -1831,6 +1831,7 @@ window.TEUI.SectionModules.sect12 = (function () {
   }
 
   function calculateACH50Target(isReferenceCalculation = false, volumeResults) {
+    const mode = isReferenceCalculation ? "Reference" : "Target";
     // ✅ DUAL-ENGINE: Use correct state based on calculation context
     const d108_method = getSectionValue("d_108", isReferenceCalculation);
 
@@ -1846,6 +1847,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         getSectionValue("d_105", isReferenceCalculation)
       ) || 0
     );
+    console.log(`[ACH50] ${mode}: d108_method="${d108_method}", g109_measured=${g109_measured}, d101_areaAir=${d101_areaAir}, d105_vol=${d105_vol}`);
 
     // Target values for different methods
     let g108_nrl50Target = 0;
@@ -1894,6 +1896,7 @@ window.TEUI.SectionModules.sect12 = (function () {
       d105_vol > 0 && d101_areaAir > 0
         ? g108_nrl50Target * (d101_areaAir / d105_vol) * 3.6
         : 0;
+    console.log(`[ACH50] ${mode}: g108_nrl50Target=${g108_nrl50Target}, ach50Target = ${g108_nrl50Target} * (${d101_areaAir} / ${d105_vol}) * 3.6 = ${ach50Target}`);
 
     // Update ACH50 target with standard formatter
     setCalculatedValue(
@@ -1902,20 +1905,14 @@ window.TEUI.SectionModules.sect12 = (function () {
       "number-2dp",
       isReferenceCalculation
     );
+    console.log(`[ACH50] ${mode}: Published d_109=${ach50Target} to StateManager`);
 
-    // Calculate ratio with full precision
-    const targetACH = ach50Target;
-    const measuredACH =
-      d108_method === "MEASURED" ? g109_measured : ach50Target;
-    const l109 = targetACH > 0 ? measuredACH / targetACH : 0;
-
-    // Update ratio with standard formatter
-    setCalculatedValue("m_109", l109, "percent-0dp", isReferenceCalculation);
+    // ✅ M-N-COMPLIANCE: m_109 now calculated by calculateOperationalCompliance()
+    // Old ratio calculation removed to prevent format fighting
 
     return {
       g_108: g108_nrl50Target,
       d_109: ach50Target,
-      m_109: l109,
     };
   }
 
@@ -1939,16 +1936,11 @@ window.TEUI.SectionModules.sect12 = (function () {
     // Update with standard formatter
     setCalculatedValue("d_110", ae10, "number-3dp", isReferenceCalculation);
 
-    // Calculate ratio with full precision
-    const refAe10 = 1.68; // Placeholder reference T110
-    const l110 = refAe10 > 0 ? ae10 / refAe10 : 0;
-
-    // Update ratio with standard formatter
-    setCalculatedValue("m_110", l110, "percent-0dp", isReferenceCalculation);
+    // ✅ M-N-COMPLIANCE: m_110 now calculated by calculateOperationalCompliance()
+    // Old ratio calculation removed to prevent format fighting
 
     return {
       d_110: ae10,
-      m_110: l110,
     };
   }
 
@@ -2158,23 +2150,36 @@ window.TEUI.SectionModules.sect12 = (function () {
    * m_110: ref_d_110 / d_110 (lower is better)
    */
   function calculateOperationalCompliance(isReferenceCalculation = false) {
+    const mode = isReferenceCalculation ? "Reference" : "Target";
+    console.log(`[M-N-COMPLIANCE] calculateOperationalCompliance(${mode}) starting...`);
+
     // Get occupancy type from StateManager (mode-aware)
     const occupancyFieldId = isReferenceCalculation ? "ref_d_12" : "d_12";
     const occupancyType = window.TEUI.StateManager.getValue(occupancyFieldId) || "";
 
-    // m_107: WWR Compliance - show d_107 value directly (already formatted)
+    // m_107: WWR Compliance - show d_107 value directly
+    // Read raw numeric value from StateManager (stored as decimal, e.g., 0.3306 for 33.06%)
     const d107FieldId = isReferenceCalculation ? "ref_d_107" : "d_107";
     const d107Str = window.TEUI.StateManager.getValue(d107FieldId);
     const d107 = window.TEUI.parseNumeric(d107Str) || 0;
+    console.log(`[M-N-COMPLIANCE] ${mode}: d107Str="${d107Str}", d107=${d107}`);
 
-    // d_107 is already formatted as percentage string by calculateWWR, use as-is
-    // Just ensure it has 0dp for M column display
-    const m107Text = window.TEUI.formatNumber(d107, "percent-0dp");
+    // ✅ FORMAT ONCE: Format to percentage string immediately with 0dp
+    let m107Text;
+    if (window.TEUI?.formatNumber) {
+      m107Text = window.TEUI.formatNumber(d107, "percent-0dp");
+    } else {
+      // Fallback if formatNumber not available
+      m107Text = Math.round(d107 * 100) + "%";
+    }
 
+    // Store formatted string to StateManager
     if (isReferenceCalculation) {
       window.TEUI.StateManager.setValue("ref_m_107", m107Text, "calculated");
+      console.log(`[M-N-COMPLIANCE] ${mode}: Wrote ref_m_107="${m107Text}" to StateManager`);
     } else {
       window.TEUI.StateManager.setValue("m_107", m107Text, "calculated");
+      console.log(`[M-N-COMPLIANCE] ${mode}: Wrote m_107="${m107Text}" to StateManager`);
     }
 
     // n_107: Check thresholds based on occupancy type
@@ -2192,83 +2197,98 @@ window.TEUI.SectionModules.sect12 = (function () {
       window.TEUI.StateManager.setValue("ref_n_107", n107Symbol, "calculated");
     } else {
       window.TEUI.StateManager.setValue("n_107", n107Symbol, "calculated");
+      // ✅ Apply CSS class in Target mode only
+      setElementClass("n_107", wwrPass ? "checkmark" : "warning", ["checkmark", "warning"]);
     }
 
-    // m_109: ACH50 Ratio (ref_d_109 / d_109) - lower is better
+    // m_109: ACH50 Compliance Ratio - Excel: =REFERENCE!D109/D109
+    // Formula: ref_d_109 / d_109
+    // Passing grade is >= 100% (Reference must be >= Target to pass)
     // In Reference mode: ref_d_109 / ref_d_109 = 100%
-    // In Target mode: ref_d_109 / d_109 = actual ratio
+    // In Target mode: ref_d_109 / d_109 (e.g., 1.5/1.0 = 150% PASS, 1.5/2.0 = 75% FAIL)
     const refD109Str = window.TEUI.StateManager.getValue("ref_d_109");
     const d109FieldId = isReferenceCalculation ? "ref_d_109" : "d_109";
     const d109Str = window.TEUI.StateManager.getValue(d109FieldId);
 
     const refD109 = window.TEUI.parseNumeric(refD109Str) || 0;
     const d109 = window.TEUI.parseNumeric(d109Str) || 0;
+    console.log(`[M-N-COMPLIANCE] ${mode}: refD109Str="${refD109Str}", refD109=${refD109}`);
+    console.log(`[M-N-COMPLIANCE] ${mode}: d109Str="${d109Str}", d109=${d109}`);
 
-    const m109Ratio = d109 > 0 ? refD109 / d109 : 1.0;
-    const m109Text = window.TEUI.formatNumber(m109Ratio, "percent-0dp");
+    // ✅ Excel formula: ref_d_109 / d_109
+    const m109Ratio = d109 > 0 ? refD109 / d109 : 0;
+    console.log(`[M-N-COMPLIANCE] ${mode}: m109Ratio = ${refD109} / ${d109} = ${m109Ratio}`);
+
+    // ✅ FORMAT ONCE: Format to percentage string immediately with 0dp
+    let m109Text;
+    if (window.TEUI?.formatNumber) {
+      m109Text = window.TEUI.formatNumber(m109Ratio, "percent-0dp");
+    } else {
+      // Fallback if formatNumber not available
+      m109Text = Math.round(m109Ratio * 100) + "%";
+    }
 
     if (isReferenceCalculation) {
       window.TEUI.StateManager.setValue("ref_m_109", m109Text, "calculated");
+      console.log(`[M-N-COMPLIANCE] ${mode}: Wrote ref_m_109="${m109Text}" to StateManager`);
     } else {
       window.TEUI.StateManager.setValue("m_109", m109Text, "calculated");
+      console.log(`[M-N-COMPLIANCE] ${mode}: Wrote m_109="${m109Text}" to StateManager`);
     }
 
+    // ✅ Pass if ratio >= 100% (Reference >= Target)
     const ach50Pass = m109Ratio >= 1.0;
     const n109Symbol = ach50Pass ? "✓" : "✗";
+    console.log(`[M-N-COMPLIANCE] ${mode}: n109Symbol="${n109Symbol}" (pass=${ach50Pass})`);
 
     if (isReferenceCalculation) {
       window.TEUI.StateManager.setValue("ref_n_109", n109Symbol, "calculated");
     } else {
       window.TEUI.StateManager.setValue("n_109", n109Symbol, "calculated");
+      // ✅ Apply CSS class in Target mode only
+      setElementClass("n_109", ach50Pass ? "checkmark" : "warning", ["checkmark", "warning"]);
     }
 
-    // m_110: ELA Ratio (ref_d_110 / d_110) - lower is better
+    // m_110: ELA Ratio (d_110 / ref_d_110) - lower is better (Target vs Reference)
     // In Reference mode: ref_d_110 / ref_d_110 = 100%
-    // In Target mode: ref_d_110 / d_110 = actual ratio
+    // In Target mode: d_110 / ref_d_110 = actual ratio
     const refD110Str = window.TEUI.StateManager.getValue("ref_d_110");
     const d110FieldId = isReferenceCalculation ? "ref_d_110" : "d_110";
     const d110Str = window.TEUI.StateManager.getValue(d110FieldId);
 
     const refD110 = window.TEUI.parseNumeric(refD110Str) || 0;
     const d110 = window.TEUI.parseNumeric(d110Str) || 0;
+    console.log(`[M-N-COMPLIANCE] ${mode}: refD110Str="${refD110Str}", refD110=${refD110}`);
+    console.log(`[M-N-COMPLIANCE] ${mode}: d110Str="${d110Str}", d110=${d110}`);
 
-    const m110Ratio = d110 > 0 ? refD110 / d110 : 1.0;
-    const m110Text = window.TEUI.formatNumber(m110Ratio, "percent-0dp");
+    const m110Ratio = refD110 > 0 ? d110 / refD110 : 1.0;
+    // ✅ FORMAT ONCE: Format to percentage string immediately with 0dp
+    let m110Text;
+    if (window.TEUI?.formatNumber) {
+      m110Text = window.TEUI.formatNumber(m110Ratio, "percent-0dp");
+    } else {
+      // Fallback if formatNumber not available
+      m110Text = Math.round(m110Ratio * 100) + "%";
+    }
 
     if (isReferenceCalculation) {
       window.TEUI.StateManager.setValue("ref_m_110", m110Text, "calculated");
+      console.log(`[M-N-COMPLIANCE] ${mode}: Wrote ref_m_110="${m110Text}" (ratio=${m110Ratio}) to StateManager`);
     } else {
       window.TEUI.StateManager.setValue("m_110", m110Text, "calculated");
+      console.log(`[M-N-COMPLIANCE] ${mode}: Wrote m_110="${m110Text}" (ratio=${m110Ratio}) to StateManager`);
     }
 
-    const elaPass = m110Ratio >= 1.0;
+    // ✅ Lower is better for ELA: passes if Target <= Reference (ratio <= 1.0)
+    const elaPass = m110Ratio <= 1.0;
     const n110Symbol = elaPass ? "✓" : "✗";
 
     if (isReferenceCalculation) {
       window.TEUI.StateManager.setValue("ref_n_110", n110Symbol, "calculated");
     } else {
       window.TEUI.StateManager.setValue("n_110", n110Symbol, "calculated");
-    }
-
-    // Apply CSS classes (only in Target mode to avoid overwriting)
-    if (!isReferenceCalculation) {
-      const n107Element = document.querySelector('[data-field-id="n_107"]');
-      if (n107Element) {
-        n107Element.classList.remove("checkmark", "warning");
-        n107Element.classList.add(wwrPass ? "checkmark" : "warning");
-      }
-
-      const n109Element = document.querySelector('[data-field-id="n_109"]');
-      if (n109Element) {
-        n109Element.classList.remove("checkmark", "warning");
-        n109Element.classList.add(ach50Pass ? "checkmark" : "warning");
-      }
-
-      const n110Element = document.querySelector('[data-field-id="n_110"]');
-      if (n110Element) {
-        n110Element.classList.remove("checkmark", "warning");
-        n110Element.classList.add(elaPass ? "checkmark" : "warning");
-      }
+      // ✅ Apply CSS class in Target mode only
+      setElementClass("n_110", elaPass ? "checkmark" : "warning", ["checkmark", "warning"]);
     }
 
     return {
@@ -2613,6 +2633,12 @@ window.TEUI.SectionModules.sect12 = (function () {
       });
     }
 
+    // ✅ M-N-COMPLIANCE: Calculate operational compliance AFTER Reference values are published
+    // This ensures ref_d_109 and ref_d_110 are available when Target mode reads them
+    console.log("[calculateAll] Reference values published. Now calculating M-N compliance...");
+    calculateOperationalCompliance(true);  // Reference mode: ref_m_109, ref_m_110
+    calculateOperationalCompliance(false); // Target mode: m_109, m_110 (reads ref_d_109, ref_d_110)
+
     // console.log(`[S12DEBUG] Dual-engine calculations complete`);
     // Always refresh displayed calculated values after a calculation pass
     ModeManager.updateCalculatedDisplayValues?.();
@@ -2655,8 +2681,8 @@ window.TEUI.SectionModules.sect12 = (function () {
       // ✅ M-N-COMPLIANCE: Calculate Passive House compliance (ref_m_104/n_104)
       calculatePassiveHouseCompliance(true);
 
-      // ✅ M-N-COMPLIANCE: Calculate WWR, ACH50, ELA compliance (m_107-110/n_107-110)
-      calculateOperationalCompliance(true);
+      // ⚠️ M-N-COMPLIANCE: calculateOperationalCompliance() moved to calculateAll()
+      // to ensure ref_d_109/ref_d_110 are published before Target reads them
 
       // Store Reference Model results with ref_ prefix for downstream sections
       storeReferenceResults(
@@ -2754,8 +2780,8 @@ window.TEUI.SectionModules.sect12 = (function () {
       // ✅ M-N-COMPLIANCE: Calculate Passive House compliance (m_104/n_104)
       calculatePassiveHouseCompliance(false);
 
-      // ✅ M-N-COMPLIANCE: Calculate WWR, ACH50, ELA compliance (m_107-110/n_107-110)
-      calculateOperationalCompliance(false);
+      // ⚠️ M-N-COMPLIANCE: calculateOperationalCompliance() moved to calculateAll()
+      // to ensure ref_d_109/ref_d_110 are published before Target reads them
 
       // Update reference indicators after all calculations
       updateAllReferenceIndicators();
