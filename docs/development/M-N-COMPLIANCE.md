@@ -646,6 +646,82 @@ updateCalculatedDisplayValues: function () {
 
 ---
 
+## 🐛 CRITICAL BUGFIX: N-Column CSS Classes Must Be Reapplied on Display Update
+
+### The Bug (Discovered Dec 2, 2025 - S12 Implementation)
+
+**Symptoms**:
+- Checkmark/X symbols display correctly
+- Text content updates correctly on mode switch
+- **BUT colors are wrong/stale** - green X or black symbols instead of red X
+
+**Example**:
+- Reference mode shows X (correct symbol) but in green or unstyled (wrong color)
+- Should be red via `.warning` class
+
+**Root Cause**:
+CSS classes (`.checkmark` or `.warning`) are applied during calculation via `setElementClass()`, but when `updateCalculatedDisplayValues()` runs (on mode switches, UI refreshes), it updates `element.textContent` but does NOT reapply the CSS classes. The symbol changes (✓ → ✗) but the old class remains.
+
+**Why This Happens**:
+```javascript
+// During calculation (works fine):
+calculatePassiveHouseCompliance() {
+  // ... calculate isGood ...
+  const nElement = document.querySelector('[data-field-id="n_104"]');
+  nElement.classList.add(isGood ? "checkmark" : "warning"); // ✅ Applied
+}
+
+// During mode switch (BUG - doesn't reapply classes):
+updateCalculatedDisplayValues() {
+  element.textContent = valueToDisplay; // ✅ Updates symbol
+  // ❌ MISSING: No classList manipulation - old class persists!
+}
+```
+
+### The Fix (S08/S12 Pattern)
+
+**Add CSS class reapplication INSIDE updateCalculatedDisplayValues()** after updating text content:
+
+```javascript
+// ✅ M-N-COMPLIANCE: Handle raw format fields (m_104, n_* columns)
+if (fieldId === "m_104" || fieldId.startsWith("n_")) {
+  // Raw text fields - display as-is
+  element.textContent = valueToDisplay;
+
+  // ✅ FIX: Reapply CSS classes for n_* status fields on mode switch
+  if (fieldId.startsWith("n_")) {
+    element.classList.remove("checkmark", "warning");
+    element.classList.add(valueToDisplay === "✓" ? "checkmark" : "warning");
+  }
+}
+```
+
+**Why This Works**:
+- `updateCalculatedDisplayValues()` runs on EVERY display update (mode switches, refreshUI, etc.)
+- By checking the symbol value (✓ vs ✗), we always apply the correct class
+- Removes stale classes first, then adds correct class based on current symbol
+- Matches S08 pattern (lines 216-220 in Section08.js)
+
+**Where This Pattern Is Needed**:
+- ✅ **S08** (Indoor Air Quality): Has this pattern (reference implementation)
+- ✅ **S12** (Operational Carbon): Fixed Dec 2, 2025 (commit bc22639)
+- ⚠️ **S11** (Transmission Losses): May need this pattern - audit needed
+- ⚠️ **S05, S07, S09**: May need this pattern - audit needed
+
+**Testing Checklist**:
+- [ ] Target mode: ✓ is green, ✗ is red
+- [ ] Reference mode: ✓ is green, ✗ is red
+- [ ] Toggle Target → Reference: colors update correctly
+- [ ] Toggle Reference → Target: colors update correctly
+- [ ] Hard refresh browser: colors persist correctly
+
+**Related Issues**:
+- Green X instead of red X → Missing CSS reapplication
+- Black/unstyled symbols → Missing CSS reapplication
+- Colors correct in one mode but wrong in other → Missing CSS reapplication
+
+---
+
 ## Advanced Pattern: Reference Mode User Overrides (S09 Challenge)
 
 ### The Problem

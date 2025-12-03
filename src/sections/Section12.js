@@ -279,8 +279,11 @@ window.TEUI.SectionModules.sect12 = (function () {
         "m_104",
         "n_104", // ✅ M-N-COMPLIANCE: Passive House compliance checkmark
         "m_107",
+        "n_107", // ✅ M-N-COMPLIANCE: WWR compliance checkmark
         "m_109",
+        "n_109", // ✅ M-N-COMPLIANCE: ACH50 compliance checkmark
         "m_110",
+        "n_110", // ✅ M-N-COMPLIANCE: ELA compliance checkmark
         "d_109",
         "d_110",
       ];
@@ -1331,15 +1334,16 @@ window.TEUI.SectionModules.sect12 = (function () {
       fieldId === "l_103"
     ) {
       determinedFormatType = "percent-2dp"; // Heatloss component %
-    } else if (fieldId === "m_104" || fieldId.startsWith("n_")) {
-      determinedFormatType = "raw"; // M_104 text and N columns: already formatted, use as-is
     } else if (
-      fieldId === "l_104" ||
+      fieldId === "m_104" ||
       fieldId === "m_107" ||
       fieldId === "m_109" ||
-      fieldId === "m_110"
+      fieldId === "m_110" ||
+      fieldId.startsWith("n_")
     ) {
-      determinedFormatType = "percent-0dp"; // Total or reference % (no decimals)
+      determinedFormatType = "raw"; // M-N compliance columns: already formatted, use as-is
+    } else if (fieldId === "l_104") {
+      determinedFormatType = "percent-0dp"; // Total % (no decimals)
     } else if (
       [
         "d_101",
@@ -2152,6 +2156,131 @@ window.TEUI.SectionModules.sect12 = (function () {
     };
   }
 
+  /**
+   * ✅ M-N-COMPLIANCE: Calculate compliance for WWR, ACH50, and ELA ratios
+   * m_107: Shows d_107 value with occupancy-based thresholds
+   * m_109: ref_d_109 / d_109 (lower is better)
+   * m_110: ref_d_110 / d_110 (lower is better)
+   */
+  function calculateOperationalCompliance(isReferenceCalculation = false) {
+    // Get occupancy type from StateManager (mode-aware)
+    const occupancyFieldId = isReferenceCalculation ? "ref_d_12" : "d_12";
+    const occupancyType = window.TEUI.StateManager.getValue(occupancyFieldId) || "";
+
+    // m_107: WWR Compliance - show d_107 value, check against occupancy thresholds
+    const d107FieldId = isReferenceCalculation ? "ref_d_107" : "d_107";
+    const d107Str = window.TEUI.StateManager.getValue(d107FieldId);
+    const d107 = window.TEUI.parseNumeric(d107Str) || 0;
+
+    // Store d_107 value to m_107 (as formatted percentage)
+    const m107Text = window.TEUI.formatNumber(d107, "percent-2dp");
+
+    if (isReferenceCalculation) {
+      window.TEUI.StateManager.setValue("ref_m_107", m107Text, "calculated");
+    } else {
+      window.TEUI.StateManager.setValue("m_107", m107Text, "calculated");
+    }
+
+    // n_107: Check thresholds based on occupancy type
+    let wwrThreshold;
+    if (occupancyType === "C-Residential") {
+      wwrThreshold = 0.22; // 22%
+    } else {
+      wwrThreshold = 0.40; // 40%
+    }
+
+    const wwrPass = d107 <= wwrThreshold;
+    const n107Symbol = wwrPass ? "✓" : "✗";
+
+    if (isReferenceCalculation) {
+      window.TEUI.StateManager.setValue("ref_n_107", n107Symbol, "calculated");
+    } else {
+      window.TEUI.StateManager.setValue("n_107", n107Symbol, "calculated");
+    }
+
+    // m_109: ACH50 Ratio (ref_d_109 / d_109) - lower is better
+    const d109FieldId = isReferenceCalculation ? "ref_d_109" : "d_109";
+    const refD109Str = window.TEUI.StateManager.getValue("ref_d_109");
+    const d109Str = window.TEUI.StateManager.getValue(d109FieldId);
+
+    const refD109 = window.TEUI.parseNumeric(refD109Str) || 0;
+    const d109 = window.TEUI.parseNumeric(d109Str) || 0;
+
+    const m109Ratio = d109 > 0 ? refD109 / d109 : 1.0;
+    const m109Text = window.TEUI.formatNumber(m109Ratio, "percent-0dp");
+
+    if (isReferenceCalculation) {
+      window.TEUI.StateManager.setValue("ref_m_109", m109Text, "calculated");
+    } else {
+      window.TEUI.StateManager.setValue("m_109", m109Text, "calculated");
+    }
+
+    const ach50Pass = m109Ratio >= 1.0;
+    const n109Symbol = ach50Pass ? "✓" : "✗";
+
+    if (isReferenceCalculation) {
+      window.TEUI.StateManager.setValue("ref_n_109", n109Symbol, "calculated");
+    } else {
+      window.TEUI.StateManager.setValue("n_109", n109Symbol, "calculated");
+    }
+
+    // m_110: ELA Ratio (ref_d_110 / d_110) - lower is better
+    const d110FieldId = isReferenceCalculation ? "ref_d_110" : "d_110";
+    const refD110Str = window.TEUI.StateManager.getValue("ref_d_110");
+    const d110Str = window.TEUI.StateManager.getValue(d110FieldId);
+
+    const refD110 = window.TEUI.parseNumeric(refD110Str) || 0;
+    const d110 = window.TEUI.parseNumeric(d110Str) || 0;
+
+    const m110Ratio = d110 > 0 ? refD110 / d110 : 1.0;
+    const m110Text = window.TEUI.formatNumber(m110Ratio, "percent-0dp");
+
+    if (isReferenceCalculation) {
+      window.TEUI.StateManager.setValue("ref_m_110", m110Text, "calculated");
+    } else {
+      window.TEUI.StateManager.setValue("m_110", m110Text, "calculated");
+    }
+
+    const elaPass = m110Ratio >= 1.0;
+    const n110Symbol = elaPass ? "✓" : "✗";
+
+    if (isReferenceCalculation) {
+      window.TEUI.StateManager.setValue("ref_n_110", n110Symbol, "calculated");
+    } else {
+      window.TEUI.StateManager.setValue("n_110", n110Symbol, "calculated");
+    }
+
+    // Apply CSS classes (only in Target mode to avoid overwriting)
+    if (!isReferenceCalculation) {
+      const n107Element = document.querySelector('[data-field-id="n_107"]');
+      if (n107Element) {
+        n107Element.classList.remove("checkmark", "warning");
+        n107Element.classList.add(wwrPass ? "checkmark" : "warning");
+      }
+
+      const n109Element = document.querySelector('[data-field-id="n_109"]');
+      if (n109Element) {
+        n109Element.classList.remove("checkmark", "warning");
+        n109Element.classList.add(ach50Pass ? "checkmark" : "warning");
+      }
+
+      const n110Element = document.querySelector('[data-field-id="n_110"]');
+      if (n110Element) {
+        n110Element.classList.remove("checkmark", "warning");
+        n110Element.classList.add(elaPass ? "checkmark" : "warning");
+      }
+    }
+
+    return {
+      m_107: m107Text,
+      n_107: n107Symbol,
+      m_109: m109Text,
+      n_109: n109Symbol,
+      m_110: m110Text,
+      n_110: n110Symbol,
+    };
+  }
+
   function calculateAirLeakageHeatLoss(
     isReferenceCalculation = false,
     volumeResults,
@@ -2526,6 +2655,9 @@ window.TEUI.SectionModules.sect12 = (function () {
       // ✅ M-N-COMPLIANCE: Calculate Passive House compliance (ref_m_104/n_104)
       calculatePassiveHouseCompliance(true);
 
+      // ✅ M-N-COMPLIANCE: Calculate WWR, ACH50, ELA compliance (m_107-110/n_107-110)
+      calculateOperationalCompliance(true);
+
       // Store Reference Model results with ref_ prefix for downstream sections
       storeReferenceResults(
         volumeResults,
@@ -2621,6 +2753,9 @@ window.TEUI.SectionModules.sect12 = (function () {
 
       // ✅ M-N-COMPLIANCE: Calculate Passive House compliance (m_104/n_104)
       calculatePassiveHouseCompliance(false);
+
+      // ✅ M-N-COMPLIANCE: Calculate WWR, ACH50, ELA compliance (m_107-110/n_107-110)
+      calculateOperationalCompliance(false);
 
       // Update reference indicators after all calculations
       updateAllReferenceIndicators();
