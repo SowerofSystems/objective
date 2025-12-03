@@ -2162,13 +2162,14 @@ window.TEUI.SectionModules.sect12 = (function () {
     const occupancyFieldId = isReferenceCalculation ? "ref_d_12" : "d_12";
     const occupancyType = window.TEUI.StateManager.getValue(occupancyFieldId) || "";
 
-    // m_107: WWR Compliance - show d_107 value, check against occupancy thresholds
+    // m_107: WWR Compliance - show d_107 value directly (already formatted)
     const d107FieldId = isReferenceCalculation ? "ref_d_107" : "d_107";
     const d107Str = window.TEUI.StateManager.getValue(d107FieldId);
     const d107 = window.TEUI.parseNumeric(d107Str) || 0;
 
-    // Store d_107 value to m_107 (as formatted percentage)
-    const m107Text = window.TEUI.formatNumber(d107, "percent-2dp");
+    // d_107 is already formatted as percentage string by calculateWWR, use as-is
+    // Just ensure it has 0dp for M column display
+    const m107Text = window.TEUI.formatNumber(d107, "percent-0dp");
 
     if (isReferenceCalculation) {
       window.TEUI.StateManager.setValue("ref_m_107", m107Text, "calculated");
