@@ -1828,7 +1828,174 @@ Based on complexity and field count:
 
 ---
 
-**Last Updated**: 2025-12-02 (Completed S11 Transmission Losses refactoring)
-**Next Refactoring Target**: S12 (Operational Carbon) - 4 M/N field pairs
-**Sections Using Pattern**: S03, S05, S07, S08, S09, S11
+## 🐛 CRITICAL: The Fallback Trap - Aggressive Zeroing (S12 Pattern, Dec 2025)
+
+### The Problem Pattern
+
+**Symptoms**: Calculated values show as 0 or 0% when toggling conditional fields, even though valid values exist in state.
+
+**Root Cause**: Two anti-patterns working together:
+
+#### Anti-Pattern 1: `|| 0` Fallbacks in Calculations
+
+```javascript
+// ❌ BAD - Masks failures with silent default to 0
+const g109_measured = parseFloat(
+  window.TEUI.parseNumeric(
+    getSectionValue("g_109", isReferenceCalculation)
+  ) || 0  // ⚠️ DEVIL FALLBACK - masks when g_109 is actually invalid
+);
+```
+
+**Why This Is Dangerous**:
+- If `getSectionValue()` returns `null`, `undefined`, or unparseable value → `|| 0` kicks in
+- Calculation proceeds with `0` instead of erroring hard
+- Results in `d_109 = 0`, which makes `m_109 = ref_d_109 / 0 = 0` → displays as "0%"
+- **Masks the real issue**: You don't know if g_109 is legitimately 0 or if there's a data problem
+
+#### Anti-Pattern 2: Aggressive `setValue("0")` in Conditional Else Block
+
+```javascript
+if (isMeasured) {
+  // ... make field editable, set value ...
+} else {
+  g109Cell.textContent = "N/A";
+  ModeManager.setValue("g_109", "0", "calculated"); // ⚠️ AGGRESSIVE ZEROING
+}
+```
+
+**Why This Is Dangerous**:
+- When user toggles away from "MEASURED" mode, field value is set to "0" in state
+- If user toggles back to "MEASURED", state now has "0" instead of previous valid value
+- Combined with `|| 0` fallback in calculation, you get cascading zeros
+
+### Real Example: S12 g_109 Field (Section12.js)
+
+**Context**: Field g_109 (measured ACH50 value) is conditionally editable based on d_108 dropdown:
+- When d_108 = "MEASURED" → g_109 is editable
+- When d_108 = any other method → g_109 is locked, shows "N/A"
+
+**The Bug**:
+1. User starts with d_108 = "AL-1B" → g_109 shows "N/A", state has "1.50" (default)
+2. User switches to d_108 = "MEASURED" → g_109 becomes editable, shows "1.50"
+3. User switches back to d_108 = "AL-1B" → `ModeManager.setValue("g_109", "0")` is called
+4. Calculations run: `g109_measured = parseFloat(...) || 0` → gets 0
+5. Result: d_109 = 0, m_109 = 0%, even though no user input was invalid
+
+### The S12 Solution (Verified Dec 2025)
+
+**Fix 1: Remove `|| 0` Fallbacks - Error Hard**
+
+```javascript
+// ✅ GOOD - Let NaN propagate if g_109 is invalid
+const g109_measured = parseFloat(
+  window.TEUI.parseNumeric(
+    getSectionValue("g_109", isReferenceCalculation)
+  )
+  // NO || 0 fallback!
+);
+```
+
+**Result**: If g_109 is truly invalid, `g109_measured` will be `NaN`, calculations will fail visibly, and you'll see the issue in console logs instead of silently masking it with 0.
+
+**Fix 2: Preserve Value in State, Only Lock UI**
+
+```javascript
+} else {
+  g109Cell.setAttribute("contenteditable", "false");
+  g109Cell.classList.add("disabled-input", "ghosted");
+  g109Cell.textContent = "N/A";
+  // ✅ DON'T set g_109 to "0" - preserve the value in state
+  // The N/A display is enough to show the field is not used
+  console.log(`[g_109] Locked (not MEASURED mode), preserving state value`);
+}
+```
+
+**Result**: When user toggles away from MEASURED, the value stays in state. If they toggle back, the value is still there.
+
+**Fix 3: Use Sensible Hardcoded Default**
+
+```javascript
+// ✅ HARDCODED DEFAULT: Use 1.30 to match typical AL-1B calculation
+const defaultValue = "1.30";
+const rawValue = currentValue || defaultValue;
+console.log(`[g_109 Default] currentValue="${currentValue}", using rawValue="${rawValue}"`);
+```
+
+**Result**: If state truly has no value, use a sensible default (1.30 matches AL-1B calculation result) instead of 0.
+
+### S13 Application: j_116 (COPc) Field
+
+**User Report**: "COPc zeroing on changes (else block/0 fallback) at j_116 of S13 after Cooling/No Cooling is toggled at d_116"
+
+**Diagnosis**: Same pattern as S12 g_109:
+1. d_116 dropdown toggles between "Cooling" and "No Cooling"
+2. j_116 (COPc - Coefficient of Performance for cooling) is conditionally editable
+3. Likely has `|| 0` fallback in calculation
+4. Likely has `setValue("j_116", "0")` in else block when "No Cooling" is selected
+
+**Solution (For Next Agent)**:
+
+1. **Find the calculation** using j_116:
+   ```bash
+   grep -n "j_116" src/sections/Section13.js | grep -E "(parseFloat|parseNumeric)"
+   ```
+
+2. **Remove || 0 fallbacks**:
+   ```javascript
+   // ❌ BEFORE:
+   const copC = parseFloat(window.TEUI.parseNumeric(getValue("j_116")) || 0);
+
+   // ✅ AFTER:
+   const copC = parseFloat(window.TEUI.parseNumeric(getValue("j_116")));
+   ```
+
+3. **Find conditional editability handler**:
+   ```bash
+   grep -n "d_116" src/sections/Section13.js | grep -A10 "addEventListener"
+   ```
+
+4. **Remove aggressive zeroing in else block**:
+   ```javascript
+   // ❌ BEFORE:
+   } else {
+     j116Cell.textContent = "N/A";
+     ModeManager.setValue("j_116", "0", "calculated"); // Remove this!
+   }
+
+   // ✅ AFTER:
+   } else {
+     j116Cell.textContent = "N/A";
+     // Preserve value in state - only lock UI
+     console.log(`[j_116] Locked (No Cooling mode), preserving state value`);
+   }
+   ```
+
+5. **Add sensible default** (if appropriate):
+   - Research typical COPc values for residential cooling
+   - Use that as hardcoded default instead of 0
+
+### Detection Checklist for This Pattern
+
+When auditing sections for this issue, look for:
+
+- [ ] Conditional fields (editable in one mode, locked in another)
+- [ ] `|| 0` fallbacks when reading conditional field values
+- [ ] `setValue(fieldId, "0")` in else blocks of conditional logic
+- [ ] User reports of "values zeroing" when toggling dropdowns
+- [ ] M-N compliance showing 0% when it should show valid ratios
+
+### Philosophy: Error Hard, Don't Mask Failures
+
+**Core Principle**: Fallbacks are the devil. Let invalid data cause visible errors (NaN, console errors) rather than silently defaulting to 0 and masking the real issue.
+
+**When to Use Fallbacks**: Only when 0 is a legitimate semantic value for "not applicable" (rare). Most conditional fields should preserve their value in state even when UI is locked.
+
+**Related Sections**: S12 (g_109), S13 (j_116 - pending fix)
+
+---
+
+**Last Updated**: 2025-12-03 (S12 fallback removal, g_109 fixes committed)
+**Next Refactoring Target**: S13 (j_116 COPc zeroing issue)
+**Sections Using Pattern**: S03, S05, S07, S08, S09, S11, S12
 **Global CSS Defined**: src/styles.css lines 2097-2112
