@@ -2102,8 +2102,9 @@ window.TEUI.SectionModules.sect12 = (function () {
    * Thresholds: <0.15 = "PH level", <0.20 = "Very Good", <0.30 = "Good", >=0.30 = "Meh"
    */
   function calculatePassiveHouseCompliance(isReferenceCalculation = false) {
-    // Get g_104 (combined U-value) from the appropriate state
-    const g104Str = getSectionValue("g_104", isReferenceCalculation);
+    // Get g_104 (combined U-value) from StateManager (mode-aware)
+    const fieldId = isReferenceCalculation ? "ref_g_104" : "g_104";
+    const g104Str = window.TEUI.StateManager.getValue(fieldId);
     const g104 = window.TEUI.parseNumeric(g104Str) || 0;
 
     let complianceText = "Meh";
