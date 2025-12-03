@@ -743,6 +743,21 @@ window.TEUI.SectionModules.sect13 = (function () {
   //==========================================================================
 
   /**
+   * Set CSS class on an element for M-N compliance indicators
+   * @param {string} fieldId - The field ID to target
+   * @param {string} className - The CSS class to apply ("checkmark", "warning", "yellow-checkmark")
+   */
+  function setElementClass(fieldId, className) {
+    const element = document.querySelector(`[data-field-id="${fieldId}"]`);
+    if (element) {
+      element.classList.remove("checkmark", "warning", "yellow-checkmark");
+      if (className) {
+        element.classList.add(className);
+      }
+    }
+  }
+
+  /**
    * Update DOM elements with calculated display values (S07/S09/S11 pattern)
    * ONLY handles M/N compliance fields (raw format, CSS class reapplication)
    * Other calculated fields are handled by their field definitions
