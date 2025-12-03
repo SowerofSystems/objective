@@ -318,9 +318,9 @@ window.TEUI.SectionModules.sect05 = (function () {
         "n_40",
         "n_41", // N column: status checkmarks
       ];
-      console.log(
-        `🔄 [S05] updateCalculatedDisplayValues: mode=${this.currentMode}`
-      );
+      // console.log(
+      //   `🔄 [S05] updateCalculatedDisplayValues: mode=${this.currentMode}`
+      // );
 
       calculatedFields.forEach(fieldId => {
         const element = document.querySelector(`[data-field-id="${fieldId}"]`);
@@ -467,7 +467,6 @@ window.TEUI.SectionModules.sect05 = (function () {
           fieldId: "n_38",
           type: "calculated",
           value: "✓",
-          classes: ["checkmark"],
           section: "emissions",
           dependencies: ["m_38"],
           label: "Operational Compliance Status",
@@ -528,7 +527,6 @@ window.TEUI.SectionModules.sect05 = (function () {
           fieldId: "n_39",
           type: "calculated",
           value: "✓",
-          classes: ["checkmark"],
           section: "emissions",
           dependencies: ["m_39"],
           label: "Typology Compliance Status",
@@ -578,7 +576,6 @@ window.TEUI.SectionModules.sect05 = (function () {
           fieldId: "n_40",
           type: "calculated",
           value: "✓",
-          classes: ["checkmark"],
           section: "emissions",
           dependencies: ["m_40"],
           label: "Embedded Compliance Status",
@@ -631,7 +628,6 @@ window.TEUI.SectionModules.sect05 = (function () {
           fieldId: "n_41",
           type: "calculated",
           value: "✓",
-          classes: ["checkmark"],
           section: "emissions",
           dependencies: ["m_41"],
           label: "Modelled Compliance Status",
@@ -989,37 +985,40 @@ window.TEUI.SectionModules.sect05 = (function () {
   }
 
   /**
+   * Helper function to calculate compliance ratio for M-N columns
+   * Reference mode: Always 100% (comparing to itself)
+   * Target mode: Compare Target value vs Reference value
+   *
+   * @param {string} targetField - Field ID for Target value (e.g., "i_39")
+   * @param {string} refField - Field ID for Reference value (e.g., "ref_i_39")
+   * @param {boolean} isReferenceCalculation - True if calculating for Reference mode
+   * @returns {number} Ratio value (0.0 to 1.0+)
+   */
+  function calculateComplianceRatio(targetField, refField, isReferenceCalculation) {
+    if (isReferenceCalculation) {
+      // Reference mode: Always 100% (self-comparison)
+      return 1.0;
+    } else {
+      // Target mode: Compare Target vs Reference
+      const targetValue = window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(targetField)) || 0;
+      const refValue = window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(refField)) || 0;
+      return refValue > 0 ? targetValue / refValue : 0;
+    }
+  }
+
+  /**
    * Calculate percentage compliance (M columns) comparing Target vs Reference
-   * M columns show: Target value / Reference value (as percentage)
+   * M columns show:
+   *   - Reference mode: 100% (baseline is always compliant with itself)
+   *   - Target mode: Target value / Reference value (as percentage)
    */
   function calculatePercentages(isReferenceCalculation = false) {
-    // ALWAYS use Target numerators and Reference denominators
-    // Target values (numerators)
-    const target_i_39 =
-      window.TEUI.parseNumeric(window.TEUI.StateManager.getValue("i_39")) ||
-      350;
+    // Get target value for i_40 to check N/A case
     const target_i_40 = window.TEUI.parseNumeric(
       window.TEUI.StateManager.getValue("i_40")
     );
-    const target_d_40 =
-      window.TEUI.parseNumeric(window.TEUI.StateManager.getValue("d_40")) || 0;
-    const target_i_41 =
-      window.TEUI.parseNumeric(getSectionValue("i_41", false)) || 0;
 
-    // Reference values (denominators)
-    const ref_i_39 =
-      window.TEUI.parseNumeric(window.TEUI.StateManager.getValue("ref_i_39")) ||
-      650;
-    const ref_i_40 = window.TEUI.parseNumeric(
-      window.TEUI.StateManager.getValue("ref_i_40")
-    );
-    const ref_d_40 =
-      window.TEUI.parseNumeric(window.TEUI.StateManager.getValue("ref_d_40")) ||
-      0;
-    const ref_i_41 =
-      window.TEUI.parseNumeric(getSectionValue("i_41", true)) || 0;
-
-    // Handle N/A case for i_40 (carbonTarget)
+    // Handle N/A case for i_40 (carbonTarget) - when no carbon standard is selected
     if (target_i_40 === "N/A" || isNaN(target_i_40)) {
       const naFields = ["m_39", "m_40", "m_41"];
       const okFields = ["n_38", "n_39", "n_40", "n_41"];
@@ -1048,29 +1047,36 @@ window.TEUI.SectionModules.sect05 = (function () {
         }
       });
 
-      // m_38 when N/A
-      const m_38_result = isReferenceCalculation ? "100%" : "N/A";
+      // m_38: Still calculate ratio even when carbon target is N/A (operational emissions always exist)
+      const m_38_percent = calculateComplianceRatio("g_38", "ref_g_38", isReferenceCalculation);
+      const m_38_formatted = window.TEUI.formatNumber
+        ? window.TEUI.formatNumber(m_38_percent, "percent-0dp")
+        : Math.round(m_38_percent * 100) + "%";
+
       if (isReferenceCalculation) {
-        window.TEUI.StateManager.setValue(
-          "ref_m_38",
-          m_38_result,
-          "calculated"
-        );
+        window.TEUI.StateManager.setValue("ref_m_38", m_38_formatted, "calculated");
       } else {
-        window.TEUI.StateManager.setValue("m_38", m_38_result, "calculated");
+        window.TEUI.StateManager.setValue("m_38", m_38_formatted, "calculated");
       }
       return;
     }
 
-    // Calculate percentages: Target / Reference (lower is better for carbon)
-    // m_39: target_i_39 / ref_i_39 (Typology Cap compliance)
-    const m_39_percent = ref_i_39 !== 0 ? target_i_39 / ref_i_39 : 0;
+    // Calculate percentages using helper (lower is better for carbon)
+    // m_39: Typology Cap compliance (i_39 vs ref_i_39)
+    const m_39_percent = calculateComplianceRatio("i_39", "ref_i_39", isReferenceCalculation);
 
-    // m_40: target_d_40 / ref_d_40 (Total Emitted compliance)
-    const m_40_percent = ref_d_40 !== 0 ? target_d_40 / ref_d_40 : 0;
+    // m_40: Total Emitted compliance (d_40 vs ref_d_40)
+    const m_40_percent = calculateComplianceRatio("d_40", "ref_d_40", isReferenceCalculation);
 
-    // m_41: target_i_41 / ref_i_41 (Modelled Value compliance)
-    const m_41_percent = ref_i_41 !== 0 ? target_i_41 / ref_i_41 : 0;
+    // m_41: Modelled Value compliance (i_41 vs ref_i_41)
+    // Note: i_41 uses getSectionValue for proper state isolation
+    const m_41_percent = isReferenceCalculation
+      ? 1.0  // Reference mode: Always 100%
+      : (() => {
+          const target_i_41 = window.TEUI.parseNumeric(getSectionValue("i_41", false)) || 0;
+          const ref_i_41 = window.TEUI.parseNumeric(getSectionValue("i_41", true)) || 0;
+          return ref_i_41 > 0 ? target_i_41 / ref_i_41 : 0;
+        })();
 
     // Store percentage results in M column
     const percentFields = [
@@ -1095,12 +1101,16 @@ window.TEUI.SectionModules.sect05 = (function () {
       }
     });
 
-    // m_38 compliance (still hardcoded for now)
-    const m_38_result = isReferenceCalculation ? "100%" : "N/A";
+    // m_38: Operational Emissions compliance (g_38 vs ref_g_38)
+    const m_38_percent = calculateComplianceRatio("g_38", "ref_g_38", isReferenceCalculation);
+    const m_38_formatted = window.TEUI.formatNumber
+      ? window.TEUI.formatNumber(m_38_percent, "percent-0dp")
+      : Math.round(m_38_percent * 100) + "%";
+
     if (isReferenceCalculation) {
-      window.TEUI.StateManager.setValue("ref_m_38", m_38_result, "calculated");
+      window.TEUI.StateManager.setValue("ref_m_38", m_38_formatted, "calculated");
     } else {
-      window.TEUI.StateManager.setValue("m_38", m_38_result, "calculated");
+      window.TEUI.StateManager.setValue("m_38", m_38_formatted, "calculated");
     }
 
     // Set checkmarks/X for status columns (N column) with CSS styling
@@ -1160,7 +1170,9 @@ window.TEUI.SectionModules.sect05 = (function () {
     const element = document.querySelector(`[data-field-id="${fieldId}"]`);
     if (element) {
       element.classList.remove("checkmark", "warning");
-      element.classList.add(isCompliant ? "checkmark" : "warning");
+      const className = isCompliant ? "checkmark" : "warning";
+      element.classList.add(className);
+      // console.log(`[S05] ${fieldId}: isCompliant=${isCompliant}, class=${className}, classList=${element.classList.toString()}`);
     }
   }
 

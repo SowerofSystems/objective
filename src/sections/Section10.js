@@ -304,15 +304,9 @@ window.TEUI.SectionModules.sect10 = (function () {
         return;
       const oldMode = this.currentMode;
       this.currentMode = mode;
-      console.log(
-        `[S10 DEBUG] Mode switch: ${oldMode} → ${mode.toUpperCase()}`
-      );
 
       // ✅ PATTERN A: UI toggle only switches display, values should already be calculated
       this.refreshUI();
-      console.log(
-        `[S10 DEBUG] Calling updateCalculatedDisplayValues() for ${mode} mode`
-      );
       this.updateCalculatedDisplayValues(); // ✅ ADD: Update calculated field displays for new mode
 
       // ✅ NEW: Sync visual toggle UI when mode changes (from global or local toggle)
@@ -2044,18 +2038,9 @@ window.TEUI.SectionModules.sect10 = (function () {
    * Includes orientation gains (73-78), subtotals (79), and utilization factors (80-82)
    */
   function calculateAll() {
-    // 🔍 DEBUG: Track dual-engine triggers
-    console.log(
-      `[S10 DEBUG] calculateAll() triggered in ${ModeManager.currentMode} mode - running both engines`
-    );
-
     // ✅ DUAL-ENGINE PATTERN: Always run BOTH Target and Reference calculations
     calculateTargetModel(); // Calculate Target model values
     calculateReferenceModel(); // Calculate Reference model values
-
-    console.log(
-      `[S10 DEBUG] Dual-engine calculations complete in ${ModeManager.currentMode} mode`
-    );
   }
 
   /**

@@ -398,17 +398,17 @@ window.TEUI.SectionModules.sect13 = (function () {
       const isJ116Ghosted =
         j116Element?.getAttribute("contenteditable") === "false";
 
-      console.log(
-        `[S13 updateCalc] j_116 check: element=${!!j116Element}, contenteditable="${j116Element?.getAttribute("contenteditable")}", isGhosted=${isJ116Ghosted}, mode=${this.currentMode}`
-      );
+      // console.log(
+      //   `[S13 updateCalc] j_116 check: element=${!!j116Element}, contenteditable="${j116Element?.getAttribute("contenteditable")}", isGhosted=${isJ116Ghosted}, mode=${this.currentMode}`
+      // );
 
       if (isJ116Ghosted) {
         // When ghosted (Heatpump mode), j_116 is calculated → should update from StateManager
         fieldFormats.j_116 = "number-2dp";
-        console.log(`[S13 updateCalc] ✅ Added j_116 to fieldFormats`);
-      } else {
-        console.log(`[S13 updateCalc] ⏭️ Skipping j_116 (not ghosted)`);
-      }
+        // console.log(`[S13 updateCalc] ✅ Added j_116 to fieldFormats`);
+      } // else {
+        // console.log(`[S13 updateCalc] ⏭️ Skipping j_116 (not ghosted)`);
+      // }
       // When NOT ghosted (Gas/Oil mode), j_116 is user-editable → skip (handled by refreshUI)
 
       const calculatedFields = Object.keys(fieldFormats);
@@ -2793,9 +2793,9 @@ window.TEUI.SectionModules.sect13 = (function () {
         ventilationRateM3h_h120.toString(),
         "calculated"
       );
-      console.log(
-        `[S13] 🔗 Published ref_d_120=${ventilationRateLs_d120.toFixed(2)} L/s for Reference ventilation energy calc`
-      );
+      // console.log(
+      //   `[S13] 🔗 Published ref_d_120=${ventilationRateLs_d120.toFixed(2)} L/s for Reference ventilation energy calc`
+      // );
     }
 
     // ✅ PATTERN 1: Mode-aware reading (automatic with temporary mode switching)
@@ -2977,9 +2977,9 @@ window.TEUI.SectionModules.sect13 = (function () {
         ventEnergyRecovered_d123.toString(),
         "calculated"
       );
-      console.log(
-        `[S13] 🔗 Published ref_d_122=${ventEnergyCoolingIncoming_d122.toFixed(2)} kWh/yr for Reference CED calc`
-      );
+      // console.log(
+      //   `[S13] 🔗 Published ref_d_122=${ventEnergyCoolingIncoming_d122.toFixed(2)} kWh/yr for Reference CED calc`
+      // );
     }
 
     return {
@@ -3033,9 +3033,9 @@ window.TEUI.SectionModules.sect13 = (function () {
         cedUnmitigated.toString(),
         "calculated"
       );
-      console.log(
-        `[S13] 🔗 Published ref_d_129=${cedUnmitigated.toFixed(2)} kWh/yr for Reference CED mitigated calc`
-      );
+      // console.log(
+      //   `[S13] 🔗 Published ref_d_129=${cedUnmitigated.toFixed(2)} kWh/yr for Reference CED mitigated calc`
+      // );
     }
 
     return { d_129: cedUnmitigated };
@@ -3179,10 +3179,10 @@ window.TEUI.SectionModules.sect13 = (function () {
           : window.TEUI.StateManager.getValue("m_19");
 
         m_124_raw = m_19_fallback || 120; // Default to 120 days if m_19 also unavailable
-        console.warn(
-          "[S13] cooling_m_124 not available, using m_19 fallback:",
-          m_124_raw
-        );
+        // console.warn(
+        //   "[S13] cooling_m_124 not available, using m_19 fallback:",
+        //   m_124_raw
+        // );
       }
 
       const activeCoolingDays = window.TEUI.parseNumeric(m_124_raw);

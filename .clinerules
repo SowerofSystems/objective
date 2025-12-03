@@ -12,18 +12,28 @@
 - Reference fields: `ref_d_12` (with prefix)
 - Always use: `TEUI.StateManager.setValue()` / `getValue()`
 
-### Git Workflow
-- **Branch from**: `dependency3` (current dev branch)
-- **Branch naming**: `FEATURE-NAME` (e.g., `FH-AUGMENT`, `S07-FIX`)
-- **Commit format**: `Type: Brief description`
-  - Types: `Feat`, `Fix`, `Refactor`, `Docs`, `Improve`, `Clean`
-- **Co-author**: `Andy & Claude <andy@openbuilding.ca>`
+### Git Workflow (CTO-Approved)
+**Standard flow**: Pull main → Branch → Work → Test → Commit → Push → PR → CTO merges → Repeat
 
-### GitHub PR Etiquette
-- ✅ Push feature branches to remote for backup
-- ❌ Do NOT create PRs if queue exists (wait for PR#35 review)
-- ❌ NEVER merge your own PRs to main
-- ✅ Rebase onto main after existing PR merges
+1. **Start**: `git checkout main && git pull origin main`
+2. **Branch**: `git checkout -b FEATURE-NAME` (from main, not other branches!)
+3. **Work & Test**: Edit code → Test in browser
+4. **Commit**: Only when user directs (after local testing passes)
+5. **Push**: `git push -u origin FEATURE-NAME` (⚠️ ALWAYS before switching!)
+6. **PR**: Create via GitHub UI → Wait for CTO review
+7. **After merge**: Pull main → New branch from main
+
+### Critical Git Rules
+- ⚠️ **ALWAYS push before switching branches** (unpushed = can be lost!)
+- ✅ **Branch from main only** (never from feature branches)
+- ❌ **NEVER merge your own PRs** (CTO approval required)
+- ✅ **Respect PR queue** (wait for existing PRs to be reviewed)
+- ✅ **Rebase only if stale** (fresh branches don't need it)
+
+### Commit/Push Timing
+- **Commit**: Only when explicitly directed by user
+- **Push**: Only when explicitly directed by user
+- User prefers to test locally before commits/pushes
 
 ### Critical Files
 - `StateManager.js` - Central state (dual Target/Reference)

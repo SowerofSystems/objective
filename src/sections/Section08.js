@@ -297,7 +297,7 @@ window.TEUI.SectionModules.sect08 = (function () {
       m_56: "percent-0dp",
       m_57: "percent-0dp",
       m_58: "percent-0dp",
-      m_59: "percent-0dp",
+      m_59: "raw", // Shows "30-60%" range text
       n_56: "raw",
       n_57: "raw",
       n_58: "raw",
@@ -397,9 +397,8 @@ window.TEUI.SectionModules.sect08 = (function () {
     setCalculatedValue("n_58", tvocPass ? "✓" : "✗");
     setElementClass("n_58", tvocPass);
 
-    // Row 59: Humidity (m_59 = d_59/100, pass if 30-60 range for BOTH heating and cooling)
-    // Store as decimal ratio so percent-0dp formatter displays correctly (45 → 0.45 → 45%)
-    setCalculatedValue("m_59", heatingHumidity / 100);
+    // Row 59: Humidity (m_59 shows acceptable range, n_59 checks BOTH d_59 and i_59 within 30-60%)
+    setCalculatedValue("m_59", "30-60%");
     const isInRange =
       heatingHumidity >= 30 &&
       heatingHumidity <= 60 &&
@@ -650,9 +649,9 @@ window.TEUI.SectionModules.sect08 = (function () {
         m: {
           fieldId: "m_59",
           type: "calculated",
-          value: "0%",
+          value: "30-60%",
           dependencies: ["d_59", "i_59"],
-          label: "RH Compliance: %",
+          label: "RH Acceptable Range",
         },
         n: {
           fieldId: "n_59",

@@ -298,13 +298,19 @@ TEUI.ReferenceToggle = (function () {
     if (mode === "reference") {
       slider.style.transform = "translateX(20px)";
       toggleSwitch.style.backgroundColor = "#dc3545"; // Red
-      stateIndicator.textContent = "REFERENCE";
-      stateIndicator.style.backgroundColor = "rgba(220, 53, 69, 0.5)";
+      // Key Values toggle doesn't have stateIndicator element, only main global toggle does
+      if (stateIndicator) {
+        stateIndicator.textContent = "REFERENCE";
+        stateIndicator.style.backgroundColor = "rgba(220, 53, 69, 0.5)";
+      }
     } else {
       slider.style.transform = "translateX(0)";
       toggleSwitch.style.backgroundColor = "#ccc"; // Gray
-      stateIndicator.textContent = "TARGET";
-      stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
+      // Key Values toggle doesn't have stateIndicator element, only main global toggle does
+      if (stateIndicator) {
+        stateIndicator.textContent = "TARGET";
+        stateIndicator.style.backgroundColor = "rgba(0, 123, 255, 0.5)";
+      }
     }
   }
 
