@@ -2292,7 +2292,7 @@ n: {
 - [x] Add n_124 field definition to row 124
 - [x] Updated M field dependencies to include ref_ fields
 
-### Phase 3: M-N Calculation Function (60 min)
+### Phase 3: M-N Calculation Function ✅ COMPLETE (60 min)
 
 **Objective**: Create format-once compliance calculation following S07/S09 pattern
 
@@ -2398,10 +2398,10 @@ function calculateMechanicalCompliance(isReferenceCalculation = false) {
 ```
 
 **Checklist**:
-- [ ] Add function after calculation functions (near `calculateAll()`)
-- [ ] Verify ratio formulas match specifications
-- [ ] Verify m_117 uses INVERTED ratio (ref/target, not target/ref)
-- [ ] Verify n_124 special logic (yellow checkmark)
+- [x] Add function after calculation functions (line 3318, before calculateAll)
+- [x] Verify ratio formulas match specifications (all 6 ratios correct)
+- [x] Verify m_117 uses INVERTED ratio (ref/target, not target/ref) ✅
+- [x] Verify n_124 special logic (yellow checkmark when >0) ✅
 
 #### Step 3.2: Integrate into `calculateAll()`
 
@@ -2427,11 +2427,13 @@ function calculateAll() {
 ```
 
 **Checklist**:
-- [ ] Add `calculateMechanicalCompliance(true)` after `calculateReferenceModel()`
-- [ ] Add `calculateMechanicalCompliance(false)` after `calculateTargetModel()`
-- [ ] Verify order: Reference calculations BEFORE Target (prevents 0% flash)
+- [x] Add `calculateMechanicalCompliance(true)` in calculateReferenceModel() (line 3514)
+- [x] Add `calculateMechanicalCompliance(false)` in calculateTargetModel() (line 3585)
+- [x] Verify order: Reference calculations BEFORE Target (prevents 0% flash)
 
-### Phase 4: Field Definitions Update (30 min)
+**Note**: S13 uses dual-engine pattern - both Reference and Target calculate in parallel within calculateAll(), so calls are inside each engine function, not in calculateAll() directly.
+
+### Phase 4: Field Definitions Update ✅ COMPLETE (Done in Phase 2)
 
 **Objective**: Add M/N field definitions to `sectionRows` (if missing)
 
