@@ -2131,13 +2131,13 @@ window.TEUI.SectionModules.sect12 = (function () {
     } else {
       window.TEUI.StateManager.setValue("m_104", complianceText, "calculated");
       window.TEUI.StateManager.setValue("n_104", checkmark, "calculated");
+    }
 
-      // Apply CSS class for n_104 (only in Target mode)
-      const nElement = document.querySelector('[data-field-id="n_104"]');
-      if (nElement) {
-        nElement.classList.remove("checkmark", "warning");
-        nElement.classList.add(isGood ? "checkmark" : "warning");
-      }
+    // Apply CSS class for n_104 (both modes need styling)
+    const nElement = document.querySelector('[data-field-id="n_104"]');
+    if (nElement) {
+      nElement.classList.remove("checkmark", "warning");
+      nElement.classList.add(isGood ? "checkmark" : "warning");
     }
 
     return {
