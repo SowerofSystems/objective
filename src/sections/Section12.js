@@ -1316,9 +1316,10 @@ window.TEUI.SectionModules.sect12 = (function () {
       fieldId === "l_103"
     ) {
       determinedFormatType = "percent-2dp"; // Heatloss component %
+    } else if (fieldId === "m_104" || fieldId.startsWith("n_")) {
+      determinedFormatType = "raw"; // M_104 text and N columns: already formatted, use as-is
     } else if (
       fieldId === "l_104" ||
-      fieldId === "m_104" ||
       fieldId === "m_107" ||
       fieldId === "m_109" ||
       fieldId === "m_110"
@@ -2088,6 +2089,57 @@ window.TEUI.SectionModules.sect12 = (function () {
     };
   }
 
+  /**
+   * ✅ M-N-COMPLIANCE: Calculate Passive House compliance based on g_104 U-value
+   * Thresholds: <0.15 = "PH level", <0.20 = "Very Good", <0.30 = "Good", >=0.30 = "Meh"
+   */
+  function calculatePassiveHouseCompliance(isReferenceCalculation = false) {
+    // Get g_104 (combined U-value) from the appropriate state
+    const g104Str = getSectionValue("g_104", isReferenceCalculation);
+    const g104 = window.TEUI.parseNumeric(g104Str) || 0;
+
+    let complianceText = "Meh";
+    let isGood = false;
+
+    if (g104 < 0.15) {
+      complianceText = "PH level";
+      isGood = true;
+    } else if (g104 < 0.20) {
+      complianceText = "Very Good";
+      isGood = true;
+    } else if (g104 < 0.30) {
+      complianceText = "Good";
+      isGood = true;
+    }
+
+    // Store the compliance text to m_104
+    if (isReferenceCalculation) {
+      window.TEUI.StateManager.setValue("ref_m_104", complianceText, "calculated");
+    } else {
+      window.TEUI.StateManager.setValue("m_104", complianceText, "calculated");
+    }
+
+    // Update DOM for n_104 checkmark
+    const nElement = document.querySelector('[data-field-id="n_104"]');
+    if (nElement) {
+      nElement.textContent = isGood ? "✓" : "✗";
+    }
+
+    // Apply CSS class for n_104 (only in Target mode to avoid overwriting)
+    if (!isReferenceCalculation) {
+      const nElement104 = document.querySelector('[data-field-id="n_104"]');
+      if (nElement104) {
+        nElement104.classList.remove("checkmark", "warning");
+        nElement104.classList.add(isGood ? "checkmark" : "warning");
+      }
+    }
+
+    return {
+      m_104: complianceText,
+      n_104: isGood ? "✓" : "✗",
+    };
+  }
+
   function calculateAirLeakageHeatLoss(
     isReferenceCalculation = false,
     volumeResults,
@@ -2459,6 +2511,9 @@ window.TEUI.SectionModules.sect12 = (function () {
         envelopeResults
       );
 
+      // ✅ M-N-COMPLIANCE: Calculate Passive House compliance (ref_m_104/n_104)
+      calculatePassiveHouseCompliance(true);
+
       // Store Reference Model results with ref_ prefix for downstream sections
       storeReferenceResults(
         volumeResults,
@@ -2551,6 +2606,9 @@ window.TEUI.SectionModules.sect12 = (function () {
         airLeakageResults,
         envelopeResults
       );
+
+      // ✅ M-N-COMPLIANCE: Calculate Passive House compliance (m_104/n_104)
+      calculatePassiveHouseCompliance(false);
 
       // Update reference indicators after all calculations
       updateAllReferenceIndicators();
