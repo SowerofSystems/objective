@@ -3377,13 +3377,23 @@ window.TEUI.SectionModules.sect13 = (function () {
     const m_118_formatted = window.TEUI?.formatNumber?.(m_118_ratio, "percent-0dp") ?? "100%";
     const m_119_formatted = window.TEUI?.formatNumber?.(m_119_ratio, "percent-0dp") ?? "100%";
 
-    // Store formatted strings to StateManager
+    // Store formatted strings to StateManager AND update DOM
     window.TEUI.StateManager.setValue(`${prefix}m_113`, m_113_formatted, "calculated");
     window.TEUI.StateManager.setValue(`${prefix}m_115`, m_115_formatted, "calculated");
     window.TEUI.StateManager.setValue(`${prefix}m_116`, m_116_formatted, "calculated");
     window.TEUI.StateManager.setValue(`${prefix}m_117`, m_117_formatted, "calculated");
     window.TEUI.StateManager.setValue(`${prefix}m_118`, m_118_formatted, "calculated");
     window.TEUI.StateManager.setValue(`${prefix}m_119`, m_119_formatted, "calculated");
+
+    // Update M column DOM elements (mode-aware display)
+    if (!isReferenceCalculation) {
+      document.querySelector('[data-field-id="m_113"]').textContent = m_113_formatted;
+      document.querySelector('[data-field-id="m_115"]').textContent = m_115_formatted;
+      document.querySelector('[data-field-id="m_116"]').textContent = m_116_formatted;
+      document.querySelector('[data-field-id="m_117"]').textContent = m_117_formatted;
+      document.querySelector('[data-field-id="m_118"]').textContent = m_118_formatted;
+      document.querySelector('[data-field-id="m_119"]').textContent = m_119_formatted;
+    }
 
     // Calculate N-column symbols (pass/fail logic)
     const n_113_value = m_113_ratio >= 1.0 ? "✓" : "✗"; // Higher is better
@@ -3399,7 +3409,7 @@ window.TEUI.SectionModules.sect13 = (function () {
     );
     const n_124_value = m_124_value <= 0 ? "✓" : "⚠"; // ✓ if no cooling needed, ⚠ if cooling required
 
-    // Store N-column symbols
+    // Store N-column symbols to StateManager AND update DOM
     window.TEUI.StateManager.setValue(`${prefix}n_113`, n_113_value, "calculated");
     window.TEUI.StateManager.setValue(`${prefix}n_115`, n_115_value, "calculated");
     window.TEUI.StateManager.setValue(`${prefix}n_116`, n_116_value, "calculated");
@@ -3407,6 +3417,17 @@ window.TEUI.SectionModules.sect13 = (function () {
     window.TEUI.StateManager.setValue(`${prefix}n_118`, n_118_value, "calculated");
     window.TEUI.StateManager.setValue(`${prefix}n_119`, n_119_value, "calculated");
     window.TEUI.StateManager.setValue(`${prefix}n_124`, n_124_value, "calculated");
+
+    // Update N column DOM elements (mode-aware display)
+    if (!isReferenceCalculation) {
+      document.querySelector('[data-field-id="n_113"]').textContent = n_113_value;
+      document.querySelector('[data-field-id="n_115"]').textContent = n_115_value;
+      document.querySelector('[data-field-id="n_116"]').textContent = n_116_value;
+      document.querySelector('[data-field-id="n_117"]').textContent = n_117_value;
+      document.querySelector('[data-field-id="n_118"]').textContent = n_118_value;
+      document.querySelector('[data-field-id="n_119"]').textContent = n_119_value;
+      document.querySelector('[data-field-id="n_124"]').textContent = n_124_value;
+    }
 
     // ✅ CRITICAL: Only apply CSS classes in Target mode (S09 pattern)
     if (!isReferenceCalculation) {
