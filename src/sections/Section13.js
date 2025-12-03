@@ -2663,8 +2663,8 @@ window.TEUI.SectionModules.sect13 = (function () {
 
     // Only update DOM for Target calculations
     if (!isReferenceCalculation) {
-      // J116: ALWAYS set (0 for No Cooling, j_113 for Heatpump, user value for dedicated)
-      setFieldValue("j_116", j_116_display, "number-2dp");
+      // ✅ NOTE: j_116 write is handled by updateTargetModelDOMValues() (line 3437)
+      // Don't write here to avoid double-writes
 
       setFieldValue("l_116", coolingSink_l116, "number-2dp-comma");
       setFieldValue("l_114", coolingSink_l114, "number-2dp-comma");
@@ -3417,8 +3417,36 @@ window.TEUI.SectionModules.sect13 = (function () {
       setFieldValue("f_114", heatingResults.f_114, "number-2dp-comma");
 
     // Cooling System Results
-    if (coolingResults.j_116 !== undefined)
-      setFieldValue("j_116", coolingResults.j_116, "number-2dp");
+    // ✅ FALLBACK TRAP FIX: Only write j_116 to state when it's a calculated/valid value
+    // DON'T write when "No Cooling" (j_116=0) - preserve user's value for toggle-back
+    const coolingSystemType = ModeManager.getValue("d_116") || "No Cooling";
+    const heatingSystemType = ModeManager.getValue("d_113");
+
+    if (coolingResults.j_116 !== undefined) {
+      if (coolingSystemType === "No Cooling") {
+        // Just update DOM, don't write 0 to state
+        const j116Element = document.querySelector('[data-field-id="j_116"]');
+        if (j116Element) {
+          j116Element.textContent = "0.00";
+        }
+      } else if (heatingSystemType === "Heatpump") {
+        // Heatpump: j_116 is calculated, write to state
+        setFieldValue("j_116", coolingResults.j_116, "number-2dp");
+      } else {
+        // Gas/Oil with Cooling: j_116 is user-editable, preserve state
+        // Just update DOM if value exists in state
+        const stateValue = ModeManager.getValue("j_116");
+        if (stateValue) {
+          const j116Element = document.querySelector('[data-field-id="j_116"]');
+          if (j116Element) {
+            j116Element.textContent = window.TEUI.formatNumber(
+              window.TEUI.parseNumeric(stateValue),
+              "number-2dp"
+            );
+          }
+        }
+      }
+    }
     if (coolingResults.l_116 !== undefined)
       setFieldValue("l_116", coolingResults.l_116, "number-2dp-comma");
     if (coolingResults.l_114 !== undefined)

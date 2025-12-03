@@ -1991,11 +1991,46 @@ When auditing sections for this issue, look for:
 
 **When to Use Fallbacks**: Only when 0 is a legitimate semantic value for "not applicable" (rare). Most conditional fields should preserve their value in state even when UI is locked.
 
-**Related Sections**: S12 (g_109), S13 (j_116 - pending fix)
+**Related Sections**: S12 (g_109 - fixed), S13 (j_116 - in progress)
 
 ---
 
-**Last Updated**: 2025-12-03 (S12 fallback removal, g_109 fixes committed)
-**Next Refactoring Target**: S13 (j_116 COPc zeroing issue)
+### 🔧 S13 j_116 Fix Attempt #1 (FAILED - 2025-12-03)
+
+**Attempted Solution** (Section13.js lines 2666-2684):
+```javascript
+// Split j_116 handling into three cases:
+if (coolingSystemType === "No Cooling") {
+  // Only update DOM, don't write to state
+  j116Element.textContent = "0.00";
+} else if (heatingSystemType === "Heatpump") {
+  // Write calculated value to state
+  setFieldValue("j_116", j_116_display, "number-2dp");
+} else {
+  // Just update DOM display
+  j116Element.textContent = formatNumber(j_116_display, "number-2dp");
+}
+```
+
+**Why It Failed**:
+- j_116 still shows 0 when toggling "No Cooling" → "Cooling"
+- d_117 (cooling load) calculates as 0 (proves j_116=0 is being used)
+- User's 2.66 value not preserved/restored
+- Possible causes:
+  1. setFieldValue() writes to BOTH DOM and StateManager even in "No Cooling" path
+  2. Other code paths overwriting j_116 with 0
+  3. State not being read correctly when toggling back to "Cooling"
+  4. calculateCoolingSystem() being called multiple times with stale values
+
+**Next Investigation Steps**:
+1. Search for ALL places j_116 gets written (not just calculateCoolingSystem)
+2. Check if dropdown change handler has aggressive zeroing
+3. Verify state read path in line 2615: `getSectionValue("j_116", isReferenceCalculation)`
+4. Add logging to track j_116 value through toggle sequence
+
+---
+
+**Last Updated**: 2025-12-03 (S12 complete, S13 j_116 attempt #1 failed)
+**Next Refactoring Target**: S13 (j_116 COPc zeroing issue - needs deeper investigation)
 **Sections Using Pattern**: S03, S05, S07, S08, S09, S11, S12
 **Global CSS Defined**: src/styles.css lines 2097-2112
