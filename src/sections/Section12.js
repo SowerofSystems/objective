@@ -1836,16 +1836,18 @@ window.TEUI.SectionModules.sect12 = (function () {
     const d108_method = getSectionValue("d_108", isReferenceCalculation);
 
     // Get numeric values with full precision
+    // ✅ NO FALLBACKS: Let NaN propagate if g_109 is invalid - error hard, don't mask failures
     const g109_measured = parseFloat(
       window.TEUI.parseNumeric(
         getSectionValue("g_109", isReferenceCalculation)
-      ) || 0
+      )
     );
     const d101_areaAir = volumeResults.d_101;
+    // ✅ NO FALLBACKS: Let NaN propagate if d_105 is invalid
     const d105_vol = parseFloat(
       window.TEUI.parseNumeric(
         getSectionValue("d_105", isReferenceCalculation)
-      ) || 0
+      )
     );
     console.log(`[ACH50] ${mode}: d108_method="${d108_method}", g109_measured=${g109_measured}, d101_areaAir=${d101_areaAir}, d105_vol=${d105_vol}`);
 
@@ -2161,7 +2163,8 @@ window.TEUI.SectionModules.sect12 = (function () {
     // Read raw numeric value from StateManager (stored as decimal, e.g., 0.3306 for 33.06%)
     const d107FieldId = isReferenceCalculation ? "ref_d_107" : "d_107";
     const d107Str = window.TEUI.StateManager.getValue(d107FieldId);
-    const d107 = window.TEUI.parseNumeric(d107Str) || 0;
+    // ✅ NO FALLBACKS: Let NaN propagate if d_107 is invalid
+    const d107 = window.TEUI.parseNumeric(d107Str);
     console.log(`[M-N-COMPLIANCE] ${mode}: d107Str="${d107Str}", d107=${d107}`);
 
     // ✅ FORMAT ONCE: Format to percentage string immediately with 0dp
@@ -2210,8 +2213,9 @@ window.TEUI.SectionModules.sect12 = (function () {
     const d109FieldId = isReferenceCalculation ? "ref_d_109" : "d_109";
     const d109Str = window.TEUI.StateManager.getValue(d109FieldId);
 
-    const refD109 = window.TEUI.parseNumeric(refD109Str) || 0;
-    const d109 = window.TEUI.parseNumeric(d109Str) || 0;
+    // ✅ NO FALLBACKS: Let NaN propagate if d_109 values are invalid - error hard!
+    const refD109 = window.TEUI.parseNumeric(refD109Str);
+    const d109 = window.TEUI.parseNumeric(d109Str);
     console.log(`[M-N-COMPLIANCE] ${mode}: refD109Str="${refD109Str}", refD109=${refD109}`);
     console.log(`[M-N-COMPLIANCE] ${mode}: d109Str="${d109Str}", d109=${d109}`);
 
@@ -2256,8 +2260,9 @@ window.TEUI.SectionModules.sect12 = (function () {
     const d110FieldId = isReferenceCalculation ? "ref_d_110" : "d_110";
     const d110Str = window.TEUI.StateManager.getValue(d110FieldId);
 
-    const refD110 = window.TEUI.parseNumeric(refD110Str) || 0;
-    const d110 = window.TEUI.parseNumeric(d110Str) || 0;
+    // ✅ NO FALLBACKS: Let NaN propagate if d_110 values are invalid - error hard!
+    const refD110 = window.TEUI.parseNumeric(refD110Str);
+    const d110 = window.TEUI.parseNumeric(d110Str);
     console.log(`[M-N-COMPLIANCE] ${mode}: refD110Str="${refD110Str}", refD110=${refD110}`);
     console.log(`[M-N-COMPLIANCE] ${mode}: d110Str="${d110Str}", d110=${d110}`);
 
@@ -2924,15 +2929,17 @@ window.TEUI.SectionModules.sect12 = (function () {
       // ✅ FIX: Read from current state instead of hardcoding Target default
       const currentValue = ModeManager.getValue("g_109");
 
-      // If the cell is empty or N/A when switching to Measured, restore from state or use mode-specific default
+      // If the cell is empty or N/A when switching to Measured, restore from state or use hardcoded default
       if (
         !g109Cell.textContent.trim() ||
         g109Cell.textContent.trim() === "N/A"
       ) {
-        // Use value from state, or fallback to mode-specific default (1.50 Target, 2.00 Reference)
-        const rawValue =
-          currentValue ||
-          (ModeManager.currentMode === "reference" ? "2.00" : "1.50");
+        // ✅ HARDCODED DEFAULT: Use 1.30 for both Target and Reference to match typical AL-1B calculation
+        // This prevents calculations from changing when switching to MEASURED mode
+        // User can manually override this value if needed
+        const defaultValue = "1.30";
+        const rawValue = currentValue || defaultValue;
+        console.log(`[g_109 Default] currentValue="${currentValue}", using rawValue="${rawValue}"`);
 
         // ✅ FIX: Format to 2dp for consistency
         const numericValue = window.TEUI.parseNumeric(rawValue);
@@ -2942,9 +2949,10 @@ window.TEUI.SectionModules.sect12 = (function () {
         );
         g109Cell.textContent = displayValue;
 
-        // Only setValue if we're using a fallback (not already in state)
+        // Only setValue if we're using the default (not already in state)
         if (!currentValue) {
-          ModeManager.setValue("g_109", rawValue, "calculated");
+          ModeManager.setValue("g_109", defaultValue, "calculated");
+          console.log(`[g_109 Default] Set g_109 to default: ${defaultValue}`);
         }
       } else {
         // ✅ FIX: Even if cell has content, ensure it's formatted to 2dp
@@ -2963,7 +2971,10 @@ window.TEUI.SectionModules.sect12 = (function () {
       g109Cell.style.backgroundColor = "#f8f9fa";
       g109Cell.style.color = "#6c757d";
       g109Cell.textContent = "N/A";
-      ModeManager.setValue("g_109", "0", "calculated");
+      // ✅ DON'T set g_109 to "0" - preserve the value in state
+      // This way, if user switches back to MEASURED, the value is still there
+      // The N/A display is enough to show the field is not used
+      console.log(`[g_109] Locked (not MEASURED mode), preserving state value`);
     }
   }
 
