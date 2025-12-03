@@ -743,76 +743,14 @@ window.TEUI.SectionModules.sect13 = (function () {
   //==========================================================================
 
   /**
-   * Get format type for a field ID (S11/S09 pattern)
-   * M/N compliance fields return "raw" (already formatted as strings)
-   * All other fields use their specific format from the map below
-   * @param {string} fieldId - The field ID to get format for
-   * @returns {string} Format type string (e.g., "percent-0dp", "number-2dp-comma", "raw")
-   */
-  function getFieldFormat(fieldId) {
-    // M/N compliance columns: already formatted as strings, use as-is
-    if (fieldId.startsWith("m_") || fieldId.startsWith("n_")) {
-      return "raw";
-    }
-
-    // Field-specific format map (copied from existing setFieldValue calls)
-    const formatMap = {
-      // Percentages (0dp)
-      i_122: "percent-0dp",
-      d_124: "percent-0dp",
-
-      // Percentages (1dp)
-      j_117: "number-1dp",
-
-      // Numbers with 2dp and commas
-      d_113: "number-2dp-comma",
-      d_114: "number-2dp-comma",
-      h_113: "number-2dp-comma",
-      l_113: "number-2dp-comma",
-      d_115: "number-2dp-comma",
-      h_115: "number-2dp-comma",
-      l_115: "number-2dp-comma",
-      f_114: "number-2dp-comma",
-      d_116: "number-2dp-comma",
-      d_117: "number-2dp-comma",
-      f_117: "number-2dp",
-      l_116: "number-2dp-comma",
-      d_121: "number-2dp-comma",
-      d_122: "number-2dp-comma",
-      h_124: "number-2dp-comma",
-      f_119: "number-2dp",
-      h_119: "number-2dp",
-      m_124: "number-2dp",
-
-      // Integers
-      d_118: "integer",
-      d_119: "integer",
-      d_120: "integer",
-      l_119: "integer",
-      f_121: "integer",
-      m_121: "integer",
-    };
-
-    return formatMap[fieldId] || "number-2dp-comma"; // Default format
-  }
-
-  /**
    * Update DOM elements with calculated display values (S07/S09/S11 pattern)
-   * Handles M/N fields specially (raw format, CSS class reapplication)
-   * This function is called after mode switches to refresh displayed values
+   * ONLY handles M/N compliance fields (raw format, CSS class reapplication)
+   * Other calculated fields are handled by their field definitions
+   * This function is called after mode switches to refresh M/N display values
    */
   function updateCalculatedDisplayValues() {
-    const calculatedFields = [
-      // Standard calculated fields
-      "d_113", "d_114", "h_113", "l_113",
-      "d_115", "h_115", "l_115", "f_114",
-      "d_116", "d_117", "f_117", "j_117", "l_116",
-      "d_118", "d_119", "d_120", "l_119",
-      "d_121", "d_122", "i_122", "f_121", "m_121",
-      "h_124", "d_124", "m_124",
-      "f_119", "h_119",
-
-      // M/N compliance fields (formatted as strings)
+    // ONLY M/N compliance fields need special handling
+    const mnFields = [
       "m_113", "n_113",
       "m_115", "n_115",
       "m_116", "n_116",
@@ -822,39 +760,32 @@ window.TEUI.SectionModules.sect13 = (function () {
       "m_124", "n_124",
     ];
 
-    calculatedFields.forEach(fieldId => {
+    mnFields.forEach(fieldId => {
       const valueToDisplay = ModeManager.getValue(fieldId);
       const element = document.querySelector(`[data-field-id="${fieldId}"]`);
       if (!element) return;
 
-      // M/N fields: Use raw format (already formatted strings)
-      if (fieldId.startsWith("m_") || fieldId.startsWith("n_")) {
-        element.textContent = valueToDisplay;
+      // Set text content (already formatted string)
+      element.textContent = valueToDisplay;
 
-        // ✅ FIX: Reapply CSS classes for n_* status fields on mode switch
-        if (fieldId.startsWith("n_")) {
-          element.classList.remove("checkmark", "warning", "yellow-checkmark");
+      // Reapply CSS classes for n_* status fields on mode switch
+      if (fieldId.startsWith("n_")) {
+        element.classList.remove("checkmark", "warning", "yellow-checkmark");
 
-          // Special handling for n_124 (yellow checkmark when >0)
-          if (fieldId === "n_124") {
-            const daysValue = window.TEUI.parseNumeric(
-              ModeManager.getValue("m_124")
-            );
-            if (daysValue <= 0) {
-              element.classList.add("checkmark"); // Green ✓
-            } else {
-              element.classList.add("yellow-checkmark"); // Yellow ⚠
-            }
+        // Special handling for n_124 (yellow checkmark when >0)
+        if (fieldId === "n_124") {
+          const daysValue = window.TEUI.parseNumeric(
+            ModeManager.getValue("m_124")
+          );
+          if (daysValue <= 0) {
+            element.classList.add("checkmark"); // Green ✓
           } else {
-            // Standard checkmark/warning logic
-            element.classList.add(valueToDisplay === "✓" ? "checkmark" : "warning");
+            element.classList.add("yellow-checkmark"); // Yellow ⚠
           }
+        } else {
+          // Standard checkmark/warning logic
+          element.classList.add(valueToDisplay === "✓" ? "checkmark" : "warning");
         }
-      } else {
-        // Standard formatting for non-M/N fields
-        const formatType = getFieldFormat(fieldId);
-        const formattedValue = window.TEUI?.formatNumber?.(valueToDisplay, formatType) ?? valueToDisplay;
-        element.textContent = formattedValue;
       }
     });
   }

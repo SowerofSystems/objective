@@ -2095,11 +2095,13 @@ grep -n 'setCalculatedValue.*"percent"' src/sections/Section13.js
 
 **Discovery**: N field definitions (n_113, n_115, n_116, n_117, n_118, n_119, n_124) need to be added to sectionRows. Currently showing `n: {}` placeholders. Will add in Phase 2 Step 2.4.
 
-### Phase 2: Infrastructure Setup (45 min)
+### Phase 2: Infrastructure Setup ✅ COMPLETE (45 min)
 
 **Objective**: Add format-once pattern infrastructure (S07/S09/S11 proven pattern)
 
-#### Step 2.1: Add `getFieldFormat()` Helper (if missing)
+**Note**: S13 already has comprehensive field format definitions, so getFieldFormat() helper was NOT needed. Only updateCalculatedDisplayValues() for M/N fields.
+
+#### Step 2.1: Add `getFieldFormat()` Helper ~~(SKIPPED - not needed)~~
 
 Follow S11 pattern (Section11.js:2442-2484):
 
@@ -2190,12 +2192,14 @@ updateCalculatedDisplayValues: function () {
 ```
 
 **Checklist**:
-- [ ] Add M/N fields to `calculatedFields` array
-- [ ] Add M/N raw format handling
-- [ ] Add CSS class reapplication for n_* fields
-- [ ] Add special yellow checkmark logic for n_124
+- [x] Add M/N fields to `calculatedFields` array (simplified to only M/N fields)
+- [x] Add M/N raw format handling (already formatted strings)
+- [x] Add CSS class reapplication for n_* fields
+- [x] Add special yellow checkmark logic for n_124
 
-#### Step 2.3: Add Yellow Checkmark CSS (for n_124)
+**Simplified**: Removed getFieldFormat() dependency - S13 field definitions already handle all formatting. updateCalculatedDisplayValues() only handles M/N fields.
+
+#### Step 2.3: Add Yellow Checkmark CSS (for n_124) ✅
 
 Add to `src/styles.css` (after existing `.warning` class):
 
@@ -2206,10 +2210,10 @@ Add to `src/styles.css` (after existing `.warning` class):
 ```
 
 **Checklist**:
-- [ ] Add CSS class to styles.css
-- [ ] Test color contrast for visibility
+- [x] Add CSS class to styles.css
+- [x] Verified color (#ffc107 - amber/yellow)
 
-#### Step 2.4: Add N Field Definitions to sectionRows
+#### Step 2.4: Add N Field Definitions to sectionRows ✅
 
 Update each row to include N field definitions (following S07 pattern):
 
@@ -2279,13 +2283,14 @@ n: {
 ```
 
 **Checklist**:
-- [ ] Add n_113 field definition to row 113
-- [ ] Add n_115 field definition to row 115
-- [ ] Add n_116 field definition to row 116
-- [ ] Add n_117 field definition to row 117
-- [ ] Add n_118 field definition to row 118
-- [ ] Add n_119 field definition to row 119
-- [ ] Add n_124 field definition to row 124
+- [x] Add n_113 field definition to row 113
+- [x] Add n_115 field definition to row 115
+- [x] Add n_116 field definition to row 116
+- [x] Add n_117 field definition to row 117
+- [x] Add n_118 field definition to row 118
+- [x] Add n_119 field definition to row 119
+- [x] Add n_124 field definition to row 124
+- [x] Updated M field dependencies to include ref_ fields
 
 ### Phase 3: M-N Calculation Function (60 min)
 
