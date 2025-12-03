@@ -312,14 +312,22 @@ window.TEUI.SectionModules.sect12 = (function () {
             // Only update calculated fields, not user-editable ones
 
             // ✅ M-N-COMPLIANCE: Handle raw format fields (m_104, m_107, m_109, m_110, n_* columns)
-            if (fieldId === "m_104" || fieldId === "m_107" || fieldId === "m_109" || fieldId === "m_110" || fieldId.startsWith("n_")) {
+            if (
+              fieldId === "m_104" ||
+              fieldId === "m_107" ||
+              fieldId === "m_109" ||
+              fieldId === "m_110" ||
+              fieldId.startsWith("n_")
+            ) {
               // Raw text fields - display as-is (already formatted strings)
               element.textContent = valueToDisplay;
 
               // ✅ FIX: Reapply CSS classes for n_* status fields on mode switch
               if (fieldId.startsWith("n_")) {
                 element.classList.remove("checkmark", "warning");
-                element.classList.add(valueToDisplay === "✓" ? "checkmark" : "warning");
+                element.classList.add(
+                  valueToDisplay === "✓" ? "checkmark" : "warning"
+                );
               }
             } else {
               // Numeric fields - parse and format
@@ -1837,16 +1845,12 @@ window.TEUI.SectionModules.sect12 = (function () {
     // Get numeric values with full precision
     // ✅ NO FALLBACKS: Let NaN propagate if g_109 is invalid - error hard, don't mask failures
     const g109_measured = parseFloat(
-      window.TEUI.parseNumeric(
-        getSectionValue("g_109", isReferenceCalculation)
-      )
+      window.TEUI.parseNumeric(getSectionValue("g_109", isReferenceCalculation))
     );
     const d101_areaAir = volumeResults.d_101;
     // ✅ NO FALLBACKS: Let NaN propagate if d_105 is invalid
     const d105_vol = parseFloat(
-      window.TEUI.parseNumeric(
-        getSectionValue("d_105", isReferenceCalculation)
-      )
+      window.TEUI.parseNumeric(getSectionValue("d_105", isReferenceCalculation))
     );
 
     // Target values for different methods
@@ -2109,10 +2113,10 @@ window.TEUI.SectionModules.sect12 = (function () {
     if (g104 < 0.15) {
       complianceText = "PH level";
       isGood = true;
-    } else if (g104 < 0.20) {
+    } else if (g104 < 0.2) {
       complianceText = "Very Good";
       isGood = true;
-    } else if (g104 < 0.30) {
+    } else if (g104 < 0.3) {
       complianceText = "Good";
       isGood = true;
     }
@@ -2121,7 +2125,11 @@ window.TEUI.SectionModules.sect12 = (function () {
     const checkmark = isGood ? "✓" : "✗";
 
     if (isReferenceCalculation) {
-      window.TEUI.StateManager.setValue("ref_m_104", complianceText, "calculated");
+      window.TEUI.StateManager.setValue(
+        "ref_m_104",
+        complianceText,
+        "calculated"
+      );
       window.TEUI.StateManager.setValue("ref_n_104", checkmark, "calculated");
     } else {
       window.TEUI.StateManager.setValue("m_104", complianceText, "calculated");
@@ -2150,7 +2158,8 @@ window.TEUI.SectionModules.sect12 = (function () {
   function calculateOperationalCompliance(isReferenceCalculation = false) {
     // Get occupancy type from StateManager (mode-aware)
     const occupancyFieldId = isReferenceCalculation ? "ref_d_12" : "d_12";
-    const occupancyType = window.TEUI.StateManager.getValue(occupancyFieldId) || "";
+    const occupancyType =
+      window.TEUI.StateManager.getValue(occupancyFieldId) || "";
 
     // m_107: WWR Compliance - show d_107 value directly
     // Read raw numeric value from StateManager (stored as decimal, e.g., 0.3306 for 33.06%)
@@ -2180,7 +2189,7 @@ window.TEUI.SectionModules.sect12 = (function () {
     if (occupancyType === "C-Residential") {
       wwrThreshold = 0.22; // 22%
     } else {
-      wwrThreshold = 0.40; // 40%
+      wwrThreshold = 0.4; // 40%
     }
 
     const wwrPass = d107 <= wwrThreshold;
@@ -2191,7 +2200,10 @@ window.TEUI.SectionModules.sect12 = (function () {
     } else {
       window.TEUI.StateManager.setValue("n_107", n107Symbol, "calculated");
       // ✅ Apply CSS class in Target mode only
-      setElementClass("n_107", wwrPass ? "checkmark" : "warning", ["checkmark", "warning"]);
+      setElementClass("n_107", wwrPass ? "checkmark" : "warning", [
+        "checkmark",
+        "warning",
+      ]);
     }
 
     // m_109: ACH50 Compliance Ratio - Excel: =REFERENCE!D109/D109
@@ -2235,7 +2247,10 @@ window.TEUI.SectionModules.sect12 = (function () {
     } else {
       window.TEUI.StateManager.setValue("n_109", n109Symbol, "calculated");
       // ✅ Apply CSS class in Target mode only
-      setElementClass("n_109", ach50Pass ? "checkmark" : "warning", ["checkmark", "warning"]);
+      setElementClass("n_109", ach50Pass ? "checkmark" : "warning", [
+        "checkmark",
+        "warning",
+      ]);
     }
 
     // m_110: ELA Ratio (d_110 / ref_d_110) - lower is better (Target vs Reference)
@@ -2275,7 +2290,10 @@ window.TEUI.SectionModules.sect12 = (function () {
     } else {
       window.TEUI.StateManager.setValue("n_110", n110Symbol, "calculated");
       // ✅ Apply CSS class in Target mode only
-      setElementClass("n_110", elaPass ? "checkmark" : "warning", ["checkmark", "warning"]);
+      setElementClass("n_110", elaPass ? "checkmark" : "warning", [
+        "checkmark",
+        "warning",
+      ]);
     }
 
     return {
@@ -2622,8 +2640,10 @@ window.TEUI.SectionModules.sect12 = (function () {
 
     // ✅ M-N-COMPLIANCE: Calculate operational compliance AFTER Reference values are published
     // This ensures ref_d_109 and ref_d_110 are available when Target mode reads them
-    console.log("[calculateAll] Reference values published. Now calculating M-N compliance...");
-    calculateOperationalCompliance(true);  // Reference mode: ref_m_109, ref_m_110
+    console.log(
+      "[calculateAll] Reference values published. Now calculating M-N compliance..."
+    );
+    calculateOperationalCompliance(true); // Reference mode: ref_m_109, ref_m_110
     calculateOperationalCompliance(false); // Target mode: m_109, m_110 (reads ref_d_109, ref_d_110)
 
     // console.log(`[S12DEBUG] Dual-engine calculations complete`);
@@ -2921,7 +2941,9 @@ window.TEUI.SectionModules.sect12 = (function () {
         // User can manually override this value if needed
         const defaultValue = "1.30";
         const rawValue = currentValue || defaultValue;
-        console.log(`[g_109 Default] currentValue="${currentValue}", using rawValue="${rawValue}"`);
+        console.log(
+          `[g_109 Default] currentValue="${currentValue}", using rawValue="${rawValue}"`
+        );
 
         // ✅ FIX: Format to 2dp for consistency
         const numericValue = window.TEUI.parseNumeric(rawValue);
