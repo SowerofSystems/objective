@@ -277,6 +277,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         "l_103",
         "l_104",
         "m_104",
+        "n_104", // ✅ M-N-COMPLIANCE: Passive House compliance checkmark
         "m_107",
         "m_109",
         "m_110",
@@ -2121,25 +2122,21 @@ window.TEUI.SectionModules.sect12 = (function () {
       isGood = true;
     }
 
-    // Store the compliance text to m_104
+    // ✅ M-N-COMPLIANCE: Store to StateManager for mode-aware display
+    const checkmark = isGood ? "✓" : "✗";
+
     if (isReferenceCalculation) {
       window.TEUI.StateManager.setValue("ref_m_104", complianceText, "calculated");
+      window.TEUI.StateManager.setValue("ref_n_104", checkmark, "calculated");
     } else {
       window.TEUI.StateManager.setValue("m_104", complianceText, "calculated");
-    }
+      window.TEUI.StateManager.setValue("n_104", checkmark, "calculated");
 
-    // Update DOM for n_104 checkmark
-    const nElement = document.querySelector('[data-field-id="n_104"]');
-    if (nElement) {
-      nElement.textContent = isGood ? "✓" : "✗";
-    }
-
-    // Apply CSS class for n_104 (only in Target mode to avoid overwriting)
-    if (!isReferenceCalculation) {
-      const nElement104 = document.querySelector('[data-field-id="n_104"]');
-      if (nElement104) {
-        nElement104.classList.remove("checkmark", "warning");
-        nElement104.classList.add(isGood ? "checkmark" : "warning");
+      // Apply CSS class for n_104 (only in Target mode)
+      const nElement = document.querySelector('[data-field-id="n_104"]');
+      if (nElement) {
+        nElement.classList.remove("checkmark", "warning");
+        nElement.classList.add(isGood ? "checkmark" : "warning");
       }
     }
 
