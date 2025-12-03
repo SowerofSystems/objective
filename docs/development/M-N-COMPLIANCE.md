@@ -2030,7 +2030,531 @@ if (coolingSystemType === "No Cooling") {
 
 ---
 
-**Last Updated**: 2025-12-03 (S12 complete, S13 j_116 attempt #1 failed)
-**Next Refactoring Target**: S13 (j_116 COPc zeroing issue - needs deeper investigation)
+**Last Updated**: 2025-12-03 (S12 complete, S13 j_116 Fallback Trap fixed)
+**Next Implementation Target**: S13 M-N Compliance (7 fields - workplan below)
 **Sections Using Pattern**: S03, S05, S07, S08, S09, S11, S12
 **Global CSS Defined**: src/styles.css lines 2097-2112
+
+---
+
+## 🚀 S13 (Mechanical Loads) M-N Compliance Workplan (Dec 3, 2025)
+
+### Overview
+
+**Status**: j_116 Fallback Trap fixed (commit 9dd1b6a), now ready for full M-N implementation
+**Target Fields**: 7 M/N field pairs (m_113-119, m_124 / n_113-119, n_124)
+**Estimated Time**: 4-5 hours (based on S11 refactoring experience)
+**Pattern Source**: S07 (format-once), S09 (value-change guard), S11 (getFieldFormat helper)
+
+### Field Specifications
+
+| Row | M Column | N Column | Formula | Logic | Special Notes |
+|-----|----------|----------|---------|-------|---------------|
+| 113 | m_113 | n_113 | `f_113 / ref_f_113` | Higher is better | HSPF (Heating System Performance Factor) |
+| 115 | m_115 | n_115 | `j_115 / ref_j_115` | Higher is better | AFUE (Annual Fuel Utilization Efficiency) |
+| 116 | m_116 | n_116 | `j_116 / ref_j_116` | Higher is better | COPc (Coefficient of Performance - Cooling) |
+| 117 | m_117 | n_117 | `ref_f_117 / f_117` | Lower is better | Cooling Load Intensity (kWh/m²/yr) |
+| 118 | m_118 | n_118 | `d_118 / ref_d_118` | Higher is better | HRV/ERV SRE % (Sensible Recovery Efficiency) |
+| 119 | m_119 | n_119 | `d_119 / ref_d_119` | Higher is better | Ventilation Rate (l/s per person) |
+| 124 | m_124 | n_124 | *(existing formula OK)* | Special | Days Mech Cooling Req'd: <0 = ✓ green, >0 = ⚠ yellow |
+
+### Phase 1: Audit & Cleanup ✅ COMPLETE (30 min)
+
+**Objective**: Find and disable OLD M-N implementation code to prevent format fighting
+
+#### Step 1.1: Search for Old Implementations ✅
+```bash
+# Search for any existing M-N calculation functions
+grep -n "updateReferenceIndicator" src/sections/Section13.js
+grep -n "calculateCompliance" src/sections/Section13.js
+grep -n "m_113\|m_115\|m_116\|m_117\|m_118\|m_119\|m_124" src/sections/Section13.js | grep -E "(setCalculatedValue|setValue)"
+
+# Check for format parameters (red flag pattern from S09)
+grep -n 'setCalculatedValue.*"percent"' src/sections/Section13.js
+```
+
+**Results**:
+- Found `referenceComparisons` config object (lines 742-768)
+- Found `updateAllReferenceIndicators()` function (lines 773-781)
+- Found `updateReferenceIndicator(fieldId)` function (lines 787-849)
+- Found call to `updateAllReferenceIndicators()` at line 3371
+- Identified issues: missing m_117 & m_124, T-cell pattern, format parameters
+
+#### Step 1.2: Comment Out Old Code ✅
+- [x] Commented out `referenceComparisons`, `updateAllReferenceIndicators()`, `updateReferenceIndicator()`
+- [x] Verified j_116 Fallback Trap fix is separate (kept intact at lines 606-738)
+- [x] Commented out call at line 3371 in `calculateTargetModel()`
+- [x] Added comprehensive header explaining why code was replaced (lines 741-755)
+- [x] Documented 4 key issues with old implementation
+
+#### Step 1.3: Verify Baseline
+- [ ] Hard refresh browser (Cmd+Shift+R)
+- [ ] Check that M/N columns show default values or are blank (not 100%/checkmarks yet)
+- [ ] Verify j_116 Fallback Trap fix still works (toggle Cooling/No Cooling)
+
+### Phase 2: Infrastructure Setup (45 min)
+
+**Objective**: Add format-once pattern infrastructure (S07/S09/S11 proven pattern)
+
+#### Step 2.1: Add `getFieldFormat()` Helper (if missing)
+
+Follow S11 pattern (Section11.js:2442-2484):
+
+```javascript
+/**
+ * Get format type for a field ID (S11/S09 pattern)
+ * M/N fields return "raw" (already formatted strings)
+ */
+function getFieldFormat(fieldId) {
+  // M/N compliance columns: already formatted as strings, use as-is
+  if (fieldId.startsWith("m_") || fieldId.startsWith("n_")) {
+    return "raw";
+  }
+
+  // Field-specific format map
+  const formatMap = {
+    // Percentages (0dp)
+    m_115: "raw", // Already formatted
+    m_116: "raw",
+    m_117: "raw",
+    i_122: "percent-0dp",
+    d_124: "percent-0dp",
+
+    // Large numbers with commas (2dp)
+    d_114: "number-2dp-comma",
+    l_113: "number-2dp-comma",
+    // ... (copy existing format map from updateCalculatedDisplayValues)
+
+    // Small numbers without commas (2dp)
+    h_113: "number-2dp",
+    j_113: "number-2dp",
+    j_116: "number-2dp", // ✅ Keep from j_116 fix
+    // ...
+  };
+
+  return formatMap[fieldId] || "number-2dp-comma";
+}
+```
+
+**Checklist**:
+- [ ] Add function above `updateCalculatedDisplayValues()`
+- [ ] Verify all existing field formats are preserved
+- [ ] Add M/N fields as "raw" format
+
+#### Step 2.2: Update `updateCalculatedDisplayValues()` for M/N
+
+Follow S12 pattern (Section12.js:564-584):
+
+```javascript
+updateCalculatedDisplayValues: function () {
+  // ... existing code ...
+
+  calculatedFields.forEach(fieldId => {
+    // ... get valueToDisplay ...
+
+    // ✅ M-N-COMPLIANCE: Handle raw format fields (m_*, n_* columns)
+    if (fieldId.startsWith("m_") || fieldId.startsWith("n_")) {
+      // Raw text fields - display as-is
+      element.textContent = valueToDisplay;
+
+      // ✅ FIX: Reapply CSS classes for n_* status fields on mode switch
+      if (fieldId.startsWith("n_")) {
+        element.classList.remove("checkmark", "warning", "yellow-checkmark");
+
+        // Special handling for n_124 (yellow checkmark when >0)
+        if (fieldId === "n_124") {
+          const daysValue = window.TEUI.parseNumeric(
+            window.TEUI.StateManager.getValue("m_124")
+          );
+          if (daysValue <= 0) {
+            element.classList.add("checkmark"); // Green ✓
+          } else {
+            element.classList.add("yellow-checkmark"); // Yellow ⚠
+          }
+        } else {
+          // Standard checkmark/warning logic
+          element.classList.add(valueToDisplay === "✓" ? "checkmark" : "warning");
+        }
+      }
+    } else {
+      // Standard formatting for non-M/N fields
+      const formatType = getFieldFormat(fieldId);
+      const formattedValue = window.TEUI?.formatNumber?.(valueToDisplay, formatType) ?? valueToDisplay;
+      element.textContent = formattedValue;
+    }
+  });
+}
+```
+
+**Checklist**:
+- [ ] Add M/N fields to `calculatedFields` array
+- [ ] Add M/N raw format handling
+- [ ] Add CSS class reapplication for n_* fields
+- [ ] Add special yellow checkmark logic for n_124
+
+#### Step 2.3: Add Yellow Checkmark CSS (for n_124)
+
+Add to `src/styles.css` (after existing `.warning` class):
+
+```css
+.yellow-checkmark {
+  color: #ffc107;  /* Yellow/Amber - warning but not failure */
+}
+```
+
+**Checklist**:
+- [ ] Add CSS class to styles.css
+- [ ] Test color contrast for visibility
+
+### Phase 3: M-N Calculation Function (60 min)
+
+**Objective**: Create format-once compliance calculation following S07/S09 pattern
+
+#### Step 3.1: Create `calculateMechanicalCompliance()` Function
+
+```javascript
+/**
+ * Calculate M-N compliance for mechanical loads (S13)
+ * Uses format-once pattern (S07/S09/S11 proven approach)
+ * @param {boolean} isReferenceCalculation - Whether calculating for Reference model
+ */
+function calculateMechanicalCompliance(isReferenceCalculation = false) {
+  // ✅ S07 PATTERN: Helper for ratio calculation with mode awareness
+  function calculateComplianceRatio(targetField, refField) {
+    if (isReferenceCalculation) {
+      return 1.0; // Reference mode: Always 100% (self-comparison)
+    } else {
+      const targetValue = window.TEUI.parseNumeric(
+        window.TEUI.StateManager.getValue(targetField)
+      );
+      const refValue = window.TEUI.parseNumeric(
+        window.TEUI.StateManager.getValue(refField)
+      );
+      return refValue > 0 ? targetValue / refValue : 0;
+    }
+  }
+
+  // Calculate ratios for each field
+  const m_113_ratio = calculateComplianceRatio("f_113", "ref_f_113"); // HSPF
+  const m_115_ratio = calculateComplianceRatio("j_115", "ref_j_115"); // AFUE
+  const m_116_ratio = calculateComplianceRatio("j_116", "ref_j_116"); // COPc
+
+  // m_117: INVERTED ratio (lower is better for cooling intensity)
+  const m_117_ratio = isReferenceCalculation
+    ? 1.0
+    : (() => {
+        const targetValue = window.TEUI.parseNumeric(
+          window.TEUI.StateManager.getValue("f_117")
+        );
+        const refValue = window.TEUI.parseNumeric(
+          window.TEUI.StateManager.getValue("ref_f_117")
+        );
+        return targetValue > 0 ? refValue / targetValue : 0;
+      })();
+
+  const m_118_ratio = calculateComplianceRatio("d_118", "ref_d_118"); // SRE %
+  const m_119_ratio = calculateComplianceRatio("d_119", "ref_d_119"); // Vent Rate
+
+  // ✅ FORMAT ONCE: Format to strings immediately (S07 pattern)
+  const prefix = isReferenceCalculation ? "ref_" : "";
+
+  const m_113_formatted = window.TEUI?.formatNumber?.(m_113_ratio, "percent-0dp") ?? "100%";
+  const m_115_formatted = window.TEUI?.formatNumber?.(m_115_ratio, "percent-0dp") ?? "100%";
+  const m_116_formatted = window.TEUI?.formatNumber?.(m_116_ratio, "percent-0dp") ?? "100%";
+  const m_117_formatted = window.TEUI?.formatNumber?.(m_117_ratio, "percent-0dp") ?? "100%";
+  const m_118_formatted = window.TEUI?.formatNumber?.(m_118_ratio, "percent-0dp") ?? "100%";
+  const m_119_formatted = window.TEUI?.formatNumber?.(m_119_ratio, "percent-0dp") ?? "100%";
+
+  // Store formatted strings to StateManager
+  window.TEUI.StateManager.setValue(`${prefix}m_113`, m_113_formatted, "calculated");
+  window.TEUI.StateManager.setValue(`${prefix}m_115`, m_115_formatted, "calculated");
+  window.TEUI.StateManager.setValue(`${prefix}m_116`, m_116_formatted, "calculated");
+  window.TEUI.StateManager.setValue(`${prefix}m_117`, m_117_formatted, "calculated");
+  window.TEUI.StateManager.setValue(`${prefix}m_118`, m_118_formatted, "calculated");
+  window.TEUI.StateManager.setValue(`${prefix}m_119`, m_119_formatted, "calculated");
+
+  // Calculate N-column symbols (pass/fail logic)
+  const n_113_value = m_113_ratio >= 1.0 ? "✓" : "✗"; // Higher is better
+  const n_115_value = m_115_ratio >= 1.0 ? "✓" : "✗";
+  const n_116_value = m_116_ratio >= 1.0 ? "✓" : "✗";
+  const n_117_value = m_117_ratio >= 1.0 ? "✓" : "✗"; // Inverted: higher % = better
+  const n_118_value = m_118_ratio >= 1.0 ? "✓" : "✗";
+  const n_119_value = m_119_ratio >= 1.0 ? "✓" : "✗";
+
+  // n_124: Special case - read from m_124 (days mech cooling)
+  const m_124_value = window.TEUI.parseNumeric(
+    window.TEUI.StateManager.getValue(`${prefix}m_124`)
+  );
+  const n_124_value = m_124_value <= 0 ? "✓" : "⚠"; // ✓ if no cooling needed, ⚠ if cooling required
+
+  // Store N-column symbols
+  window.TEUI.StateManager.setValue(`${prefix}n_113`, n_113_value, "calculated");
+  window.TEUI.StateManager.setValue(`${prefix}n_115`, n_115_value, "calculated");
+  window.TEUI.StateManager.setValue(`${prefix}n_116`, n_116_value, "calculated");
+  window.TEUI.StateManager.setValue(`${prefix}n_117`, n_117_value, "calculated");
+  window.TEUI.StateManager.setValue(`${prefix}n_118`, n_118_value, "calculated");
+  window.TEUI.StateManager.setValue(`${prefix}n_119`, n_119_value, "calculated");
+  window.TEUI.StateManager.setValue(`${prefix}n_124`, n_124_value, "calculated");
+
+  // ✅ CRITICAL: Only apply CSS classes in Target mode (S09 pattern)
+  if (!isReferenceCalculation) {
+    setElementClass("n_113", n_113_value === "✓" ? "checkmark" : "warning");
+    setElementClass("n_115", n_115_value === "✓" ? "checkmark" : "warning");
+    setElementClass("n_116", n_116_value === "✓" ? "checkmark" : "warning");
+    setElementClass("n_117", n_117_value === "✓" ? "checkmark" : "warning");
+    setElementClass("n_118", n_118_value === "✓" ? "checkmark" : "warning");
+    setElementClass("n_119", n_119_value === "✓" ? "checkmark" : "warning");
+
+    // n_124: Yellow checkmark when mechanical cooling required
+    setElementClass("n_124", m_124_value <= 0 ? "checkmark" : "yellow-checkmark");
+  }
+}
+```
+
+**Checklist**:
+- [ ] Add function after calculation functions (near `calculateAll()`)
+- [ ] Verify ratio formulas match specifications
+- [ ] Verify m_117 uses INVERTED ratio (ref/target, not target/ref)
+- [ ] Verify n_124 special logic (yellow checkmark)
+
+#### Step 3.2: Integrate into `calculateAll()`
+
+Follow S11 pattern (calculate Reference first, then Target):
+
+```javascript
+function calculateAll() {
+  // ✅ S11 PATTERN: Calculate Reference FIRST so ref_* values exist
+  calculateReferenceModel();
+
+  // ✅ NEW: Calculate M-N compliance for Reference mode
+  calculateMechanicalCompliance(true); // isReferenceCalculation = true
+
+  // Calculate Target model
+  calculateTargetModel();
+
+  // ✅ NEW: Calculate M-N compliance for Target mode
+  calculateMechanicalCompliance(false); // isReferenceCalculation = false
+
+  // Update displays
+  ModeManager.updateCalculatedDisplayValues();
+}
+```
+
+**Checklist**:
+- [ ] Add `calculateMechanicalCompliance(true)` after `calculateReferenceModel()`
+- [ ] Add `calculateMechanicalCompliance(false)` after `calculateTargetModel()`
+- [ ] Verify order: Reference calculations BEFORE Target (prevents 0% flash)
+
+### Phase 4: Field Definitions Update (30 min)
+
+**Objective**: Add M/N field definitions to `sectionRows` (if missing)
+
+#### Step 4.1: Verify M/N Cells Exist in Row Definitions
+
+Check rows 113, 115, 116, 117, 118, 119, 124 have `m:` and `n:` cell definitions.
+
+Example from row 113:
+```javascript
+113: {
+  // ... existing cells ...
+  m: {
+    fieldId: "m_113",
+    type: "calculated",
+    value: "100%", // Default
+    section: "mechanicalLoads",
+    dependencies: ["f_113", "ref_f_113"],
+    label: "HSPF Ratio to Reference",
+    tooltip: true, // ✅ Add tooltip explaining comparison
+  },
+  n: {
+    fieldId: "n_113",
+    type: "calculated",
+    value: "✓", // Default to pass
+    section: "mechanicalLoads",
+    dependencies: ["m_113"],
+    label: "HSPF Compliance",
+    tooltip: true,
+    // ❌ DO NOT add classes: ["checkmark"] - let JS apply dynamically!
+  },
+}
+```
+
+**Checklist**:
+- [ ] Add/verify m_113, n_113 cells
+- [ ] Add/verify m_115, n_115 cells
+- [ ] Add/verify m_116, n_116 cells
+- [ ] Add/verify m_117, n_117 cells
+- [ ] Add/verify m_118, n_118 cells
+- [ ] Add/verify m_119, n_119 cells
+- [ ] Add/verify m_124, n_124 cells
+- [ ] Verify NO hardcoded `classes: ["checkmark"]` in N column definitions
+
+### Phase 5: Testing & Verification (60 min)
+
+**Objective**: Comprehensive testing across all scenarios
+
+#### Step 5.1: Basic Functionality Tests
+
+**Target Mode**:
+- [ ] All M columns show actual ratios (e.g., 176% for HSPF if f_113 > ref_f_113)
+- [ ] All N columns show ✓ (green) when ratio ≥ 100%
+- [ ] All N columns show ✗ (red) when ratio < 100%
+- [ ] n_124 shows ✓ (green) when m_124 ≤ 0
+- [ ] n_124 shows ⚠ (yellow) when m_124 > 0
+- [ ] m_117 ratio is INVERTED (lower cooling intensity = higher %)
+
+**Reference Mode**:
+- [ ] All M columns show 100%
+- [ ] All N columns show ✓ (green checkmark)
+- [ ] n_124 shows ✓ (green) - Reference model should have no cooling
+
+#### Step 5.2: Mode Toggle Tests
+
+- [ ] Toggle Target → Reference: All values update correctly
+- [ ] Toggle Reference → Target: All values update correctly
+- [ ] Toggle Target → Reference → Target: Colors persist (no green X)
+- [ ] Hard refresh (Cmd+Shift+R): M/N values persist correctly
+
+#### Step 5.3: Import/Export Tests
+
+- [ ] Import CSV with custom f_113: M/N values recalculate correctly
+- [ ] Import with both Target and Reference values: Both modes preserve correctly
+- [ ] Export CSV: M/N values included with proper formatting
+- [ ] Re-import exported CSV: Values match original
+
+#### Step 5.4: Edge Cases
+
+- [ ] Change d_113 (Heating System): M/N values update (if applicable)
+- [ ] Change d_116 (Cooling System): m_116, n_116, m_117, n_117, m_124, n_124 update
+- [ ] Toggle Cooling/No Cooling: j_116 Fallback Trap fix still works (doesn't zero)
+- [ ] Set f_113 very low (e.g., 3.5): n_113 shows red ✗
+- [ ] Set f_117 very high (e.g., 50): n_117 shows red ✗ (worse cooling intensity)
+
+#### Step 5.5: Performance Tests
+
+- [ ] Calculation time < 100ms (use browser DevTools Performance tab)
+- [ ] No format fighting (M columns don't flicker "100%" ↔ "1")
+- [ ] No redundant calculations on blur without value change (S09 value-change guard)
+
+### Phase 6: Documentation (30 min)
+
+**Objective**: Update M-N-COMPLIANCE.md with S13 implementation
+
+#### Step 6.1: Update Implementation Status
+
+Move S13 from "Pending" to "Completed":
+
+```markdown
+### ✅ Completed Sections
+- **S13** (Mechanical Loads): ✅ **VERIFIED 2025-12-03** - Reference model comparison (m_113, m_115, m_116, m_117, m_118, m_119, m_124 / n_113-119, n_124) for HSPF, AFUE, COPc, cooling intensity, SRE, vent rate, and days mech cooling. Special yellow checkmark (⚠) for n_124 when mechanical cooling required (>0 days). Format-once pattern with proper inverted ratio for m_117 (lower is better). Fixed j_116 Fallback Trap (commit 9dd1b6a) before M-N implementation.
+```
+
+#### Step 6.2: Add S13 Implementation Section
+
+Add detailed implementation notes after S12 section:
+
+```markdown
+## ✅ Section 13 Implementation (VERIFIED Dec 3, 2025)
+
+**Baseline Commits**: 9dd1b6a (j_116 Fallback Trap fix) → [final commit hash]
+**Implementation Time**: 4-5 hours (includes testing)
+**Final Status**: ✅ WORKING - All 7 M/N field pairs operational
+
+### Field Summary
+
+| Field | Comparison | Logic | Notes |
+|-------|------------|-------|-------|
+| m_113 | f_113 / ref_f_113 | Higher is better | HSPF heating efficiency |
+| m_115 | j_115 / ref_j_115 | Higher is better | AFUE fuel efficiency |
+| m_116 | j_116 / ref_j_116 | Higher is better | COPc cooling efficiency |
+| m_117 | ref_f_117 / f_117 | Lower is better | Cooling load intensity (INVERTED ratio) |
+| m_118 | d_118 / ref_d_118 | Higher is better | HRV/ERV efficiency |
+| m_119 | d_119 / ref_d_119 | Higher is better | Ventilation rate |
+| m_124 | (existing formula) | Special | Days mech cooling: ≤0 = ✓ green, >0 = ⚠ yellow |
+
+### Special Patterns
+
+**Yellow Checkmark for n_124**:
+- Mechanical cooling required (>0 days) is not a "failure" per se
+- Uses amber/yellow color (`.yellow-checkmark`) to indicate awareness, not compliance failure
+- Green ✓ only when passive cooling sufficient (≤0 days)
+
+**Inverted Ratio for m_117**:
+- Cooling load intensity: Lower kWh/m²/yr = Better performance
+- Formula: `ref_f_117 / f_117` (opposite of typical higher-is-better)
+- If Target uses 2.11 kWh/m²/yr and Reference uses 4.22 kWh/m²/yr → 200% (pass)
+
+### Integration Points
+
+1. **j_116 Fallback Trap Fix**: Completed before M-N implementation (commit 9dd1b6a)
+   - Removed `|| 0` fallbacks from COPc calculations
+   - Preserved j_116 state when toggling Cooling/No Cooling
+   - M-N compliance built on stable j_116 foundation
+
+2. **Format-Once Pattern**: Follows S07/S09/S11 proven approach
+   - Calculate ratios as decimals
+   - Format to strings immediately via `window.TEUI.formatNumber()`
+   - Store formatted strings to StateManager
+   - Mark M/N fields as "raw" in `getFieldFormat()`
+
+3. **Dual-Engine Integration**: S11 calculation order pattern
+   - `calculateReferenceModel()` → `calculateMechanicalCompliance(true)`
+   - `calculateTargetModel()` → `calculateMechanicalCompliance(false)`
+   - Prevents 0% flash on initialization
+
+### Files Modified
+
+| File | Description |
+|------|-------------|
+| Section13.js | Added `calculateMechanicalCompliance()` function |
+| Section13.js | Updated `getFieldFormat()` with M/N "raw" mappings |
+| Section13.js | Updated `updateCalculatedDisplayValues()` for M/N handling |
+| Section13.js | Integrated into `calculateAll()` dual-engine flow |
+| Section13.js | Added M/N field definitions to `sectionRows` |
+| styles.css | Added `.yellow-checkmark` class for n_124 |
+
+### Success Metrics
+
+✅ **7 M/N field pairs**: All operational with correct formulas
+✅ **Inverted ratio**: m_117 correctly uses ref/target (lower is better)
+✅ **Yellow checkmark**: n_124 shows amber when mech cooling required
+✅ **Format stability**: No "100%" ↔ "1" flickering
+✅ **Mode switching**: Correct values and colors in both modes
+✅ **Import/export**: M/N values persist correctly
+✅ **Performance**: <100ms calculation time
+```
+
+### Estimated Timeline
+
+| Phase | Duration | Dependencies |
+|-------|----------|--------------|
+| Phase 1: Audit & Cleanup | 30 min | None |
+| Phase 2: Infrastructure | 45 min | Phase 1 complete |
+| Phase 3: Calculations | 60 min | Phase 2 complete |
+| Phase 4: Field Definitions | 30 min | Phase 3 complete |
+| Phase 5: Testing | 60 min | Phase 4 complete |
+| Phase 6: Documentation | 30 min | Phase 5 complete |
+| **Total** | **4-5 hours** | Sequential execution |
+
+### Success Criteria
+
+- [ ] All 7 M/N field pairs calculate correctly in both modes
+- [ ] m_117 uses inverted ratio (ref/target, not target/ref)
+- [ ] n_124 shows yellow ⚠ when mech cooling required
+- [ ] No format fighting (stable "100%" display)
+- [ ] Mode toggles update both values AND colors
+- [ ] Import/export preserves M/N values
+- [ ] Performance < 100ms
+- [ ] No console errors or warnings
+- [ ] Documentation updated in M-N-COMPLIANCE.md
+
+### Critical Gotchas to Avoid
+
+1. **Don't forget m_117 inverted ratio**: ref/target, not target/ref (lower cooling intensity is better)
+2. **Yellow checkmark CSS**: Add `.yellow-checkmark` class to styles.css
+3. **n_124 special logic**: Uses m_124 value, not its own calculation
+4. **Comment out old code FIRST**: Prevent format fighting from dual implementations
+5. **getFieldFormat() for ALL fields**: Copy existing format map, don't break non-M/N fields
+6. **NO hardcoded classes in N fields**: Remove `classes: ["checkmark"]` if present
+
+---

@@ -738,6 +738,23 @@ window.TEUI.SectionModules.sect13 = (function () {
 
   // --- Integrated Cooling Calculation State & Logic ---
 
+  //==========================================================================
+  // OLD M-N IMPLEMENTATION - COMMENTED OUT 2025-12-03
+  //==========================================================================
+  // This old implementation is being replaced with the new Format-Once pattern
+  // following the successful S07/S09/S11/S12 implementations.
+  //
+  // Issues with old implementation:
+  // 1. Missing m_117 (cooling intensity, inverted ratio) and m_124 (yellow checkmark)
+  // 2. Uses T-cell comparison instead of ref_ prefix pattern
+  // 3. Uses format parameters (not Format-Once pattern) - causes format fighting
+  // 4. Re-formats values on every update instead of storing formatted strings
+  //
+  // New implementation will use calculateMechanicalCompliance() function
+  // following the proven dual-state architecture pattern.
+  //==========================================================================
+
+  /*
   // T-cell comparison configuration for Section 13
   const referenceComparisons = {
     f_113: {
@@ -767,9 +784,6 @@ window.TEUI.SectionModules.sect13 = (function () {
     },
   };
 
-  /**
-   * Update reference indicators for all configured fields
-   */
   function updateAllReferenceIndicators() {
     try {
       Object.keys(referenceComparisons).forEach(fieldId => {
@@ -780,10 +794,6 @@ window.TEUI.SectionModules.sect13 = (function () {
     }
   }
 
-  /**
-   * Update reference indicator (M and N columns) for a specific field
-   * @param {string} fieldId - The application field ID to update
-   */
   function updateReferenceIndicator(fieldId) {
     const config = referenceComparisons[fieldId];
     if (!config) return;
@@ -802,7 +812,6 @@ window.TEUI.SectionModules.sect13 = (function () {
     const nFieldId = `n_${rowId}`;
 
     if (!referenceValue && referenceValue !== 0) {
-      // console.warn(`No reference value found for ${fieldId} - showing N/A`); // Ensure this is commented
       setFieldValue(mFieldId, "N/A", "raw");
 
       const nElement = document.querySelector(`[data-field-id="${nFieldId}"]`);
@@ -821,12 +830,10 @@ window.TEUI.SectionModules.sect13 = (function () {
       const currentValueNum = parseFloat(currentValue);
 
       if (config.type === "lower-is-better") {
-        // For values where lower is better
         referencePercent =
           currentValueNum > 0 ? refValueNum / currentValueNum : 0;
         isGood = currentValueNum <= refValueNum;
       } else if (config.type === "higher-is-better") {
-        // For values where higher is better (e.g., HSPF, AFUE, COP)
         referencePercent = refValueNum > 0 ? currentValueNum / refValueNum : 0;
         isGood = currentValueNum >= refValueNum;
       }
@@ -847,6 +854,7 @@ window.TEUI.SectionModules.sect13 = (function () {
       );
     }
   }
+  */
 
   //==========================================================================
   // CONSOLIDATED FIELD DEFINITIONS AND LAYOUT
@@ -3367,8 +3375,9 @@ window.TEUI.SectionModules.sect13 = (function () {
         mitigatedResults
       );
 
-      // Update reference indicators after calculations
-      updateAllReferenceIndicators();
+      // OLD M-N update call - commented out 2025-12-03
+      // This will be replaced by calculateMechanicalCompliance() in Phase 3
+      // updateAllReferenceIndicators();
     } catch (error) {
       console.error("[Section13] Error in Target Model calculations:", error);
     } finally {
