@@ -350,11 +350,10 @@ window.TEUI.SectionModules.sect13 = (function () {
       if (!window.TEUI?.StateManager) return;
 
       // Field-specific format map for calculated fields
+      // NOTE: M-column fields (m_113, m_115-m_119) are NOT included here
+      // They use format-once pattern and are handled by standalone updateCalculatedDisplayValues() at line 766
       const fieldFormats = {
         // Percentages (0dp)
-        m_115: "percent-0dp",
-        m_116: "percent-0dp",
-        m_117: "percent-0dp",
         i_122: "percent-0dp",
         d_124: "percent-0dp",
 
