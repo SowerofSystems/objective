@@ -306,47 +306,55 @@ window.TEUI.SectionModules.sect12 = (function () {
           );
           if (element && !element.hasAttribute("contenteditable")) {
             // Only update calculated fields, not user-editable ones
-            const numericValue = window.TEUI.parseNumeric(valueToDisplay);
-            if (!isNaN(numericValue)) {
-              let formattedValue;
-              // Use appropriate formatting based on field type
-              if (
-                fieldId.startsWith("g_") &&
-                (fieldId.includes("101") ||
-                  fieldId.includes("102") ||
-                  fieldId === "g_104")
-              ) {
-                formattedValue = formatNumber(numericValue, "W/m2");
-              } else if (
-                fieldId === "g_105" ||
-                fieldId === "i_105" ||
-                fieldId === "d_107"
-              ) {
-                // Volume/Area ratio, Area/Volume ratio, and WWR as percentages with 2dp
-                formattedValue = window.TEUI.formatNumber(
-                  numericValue,
-                  "percent-2dp"
-                );
-              } else if (fieldId.startsWith("l_")) {
-                // Match the precision used in setCalculatedValue()
-                // l_101, l_102, l_103 use 2dp, l_104+ use 0dp
-                const percentFormat =
-                  fieldId === "l_101" ||
-                  fieldId === "l_102" ||
-                  fieldId === "l_103"
-                    ? "percent-2dp"
-                    : "percent-0dp";
-                formattedValue = window.TEUI.formatNumber(
-                  numericValue,
-                  percentFormat
-                );
-              } else {
-                formattedValue = window.TEUI.formatNumber(
-                  numericValue,
-                  "number-2dp"
-                );
+
+            // ✅ M-N-COMPLIANCE: Handle raw format fields (m_104, n_* columns)
+            if (fieldId === "m_104" || fieldId.startsWith("n_")) {
+              // Raw text fields - display as-is
+              element.textContent = valueToDisplay;
+            } else {
+              // Numeric fields - parse and format
+              const numericValue = window.TEUI.parseNumeric(valueToDisplay);
+              if (!isNaN(numericValue)) {
+                let formattedValue;
+                // Use appropriate formatting based on field type
+                if (
+                  fieldId.startsWith("g_") &&
+                  (fieldId.includes("101") ||
+                    fieldId.includes("102") ||
+                    fieldId === "g_104")
+                ) {
+                  formattedValue = formatNumber(numericValue, "W/m2");
+                } else if (
+                  fieldId === "g_105" ||
+                  fieldId === "i_105" ||
+                  fieldId === "d_107"
+                ) {
+                  // Volume/Area ratio, Area/Volume ratio, and WWR as percentages with 2dp
+                  formattedValue = window.TEUI.formatNumber(
+                    numericValue,
+                    "percent-2dp"
+                  );
+                } else if (fieldId.startsWith("l_") || fieldId.startsWith("m_")) {
+                  // Match the precision used in setCalculatedValue()
+                  // l_101, l_102, l_103 use 2dp, l_104+ and m_ use 0dp
+                  const percentFormat =
+                    fieldId === "l_101" ||
+                    fieldId === "l_102" ||
+                    fieldId === "l_103"
+                      ? "percent-2dp"
+                      : "percent-0dp";
+                  formattedValue = window.TEUI.formatNumber(
+                    numericValue,
+                    percentFormat
+                  );
+                } else {
+                  formattedValue = window.TEUI.formatNumber(
+                    numericValue,
+                    "number-2dp"
+                  );
+                }
+                element.textContent = formattedValue;
               }
-              element.textContent = formattedValue;
             }
           }
         }
