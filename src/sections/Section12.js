@@ -1822,16 +1822,11 @@ window.TEUI.SectionModules.sect12 = (function () {
     // Update WWR value with standard formatter
     setCalculatedValue("d_107", wwr, "percent-2dp", isReferenceCalculation);
 
-    // Calculate ratio to reference WWR with full precision
-    const refWWR = 0.4; // Placeholder for reference value T107/T108
-    const l107 = refWWR > 0 ? wwr / refWWR : 0;
-
-    // Update ratio value with standard formatter
-    setCalculatedValue("m_107", l107, "percent-0dp", isReferenceCalculation);
+    // ✅ M-N-COMPLIANCE: m_107/n_107 now calculated by calculateOperationalCompliance()
+    // Old placeholder calculation removed
 
     return {
       d_107: wwr,
-      m_107: l107,
     };
   }
 
@@ -2199,8 +2194,10 @@ window.TEUI.SectionModules.sect12 = (function () {
     }
 
     // m_109: ACH50 Ratio (ref_d_109 / d_109) - lower is better
-    const d109FieldId = isReferenceCalculation ? "ref_d_109" : "d_109";
+    // In Reference mode: ref_d_109 / ref_d_109 = 100%
+    // In Target mode: ref_d_109 / d_109 = actual ratio
     const refD109Str = window.TEUI.StateManager.getValue("ref_d_109");
+    const d109FieldId = isReferenceCalculation ? "ref_d_109" : "d_109";
     const d109Str = window.TEUI.StateManager.getValue(d109FieldId);
 
     const refD109 = window.TEUI.parseNumeric(refD109Str) || 0;
@@ -2225,8 +2222,10 @@ window.TEUI.SectionModules.sect12 = (function () {
     }
 
     // m_110: ELA Ratio (ref_d_110 / d_110) - lower is better
-    const d110FieldId = isReferenceCalculation ? "ref_d_110" : "d_110";
+    // In Reference mode: ref_d_110 / ref_d_110 = 100%
+    // In Target mode: ref_d_110 / d_110 = actual ratio
     const refD110Str = window.TEUI.StateManager.getValue("ref_d_110");
+    const d110FieldId = isReferenceCalculation ? "ref_d_110" : "d_110";
     const d110Str = window.TEUI.StateManager.getValue(d110FieldId);
 
     const refD110 = window.TEUI.parseNumeric(refD110Str) || 0;
