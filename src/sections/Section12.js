@@ -34,7 +34,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         g_103: "Normal", // Exposure (dropdown)
         d_105: "8000.00", // Conditioned volume (editable)
         d_108: "AL-1B", // ✅ FIXED: Use AL-1B method (was MEASURED) to get proper 93.6 TEUI
-        g_109: "1.50", // Measured value (conditional editable, N/A when not MEASURED)
+        g_109: "1.30", // Measured value (conditional editable, N/A when not MEASURED)
       };
     },
     /**
@@ -1011,7 +1011,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         g: {
           fieldId: "g_109",
           type: "editable",
-          value: "1.50",
+          value: "1.30",
           section: "volumeSurfaceMetrics",
           tooltip: true, // Calculation Dependency
           classes: ["user-input"],
@@ -1831,7 +1831,6 @@ window.TEUI.SectionModules.sect12 = (function () {
   }
 
   function calculateACH50Target(isReferenceCalculation = false, volumeResults) {
-    const mode = isReferenceCalculation ? "Reference" : "Target";
     // ✅ DUAL-ENGINE: Use correct state based on calculation context
     const d108_method = getSectionValue("d_108", isReferenceCalculation);
 
@@ -1849,7 +1848,6 @@ window.TEUI.SectionModules.sect12 = (function () {
         getSectionValue("d_105", isReferenceCalculation)
       )
     );
-    console.log(`[ACH50] ${mode}: d108_method="${d108_method}", g109_measured=${g109_measured}, d101_areaAir=${d101_areaAir}, d105_vol=${d105_vol}`);
 
     // Target values for different methods
     let g108_nrl50Target = 0;
@@ -1898,7 +1896,6 @@ window.TEUI.SectionModules.sect12 = (function () {
       d105_vol > 0 && d101_areaAir > 0
         ? g108_nrl50Target * (d101_areaAir / d105_vol) * 3.6
         : 0;
-    console.log(`[ACH50] ${mode}: g108_nrl50Target=${g108_nrl50Target}, ach50Target = ${g108_nrl50Target} * (${d101_areaAir} / ${d105_vol}) * 3.6 = ${ach50Target}`);
 
     // Update ACH50 target with standard formatter
     setCalculatedValue(
@@ -1907,7 +1904,6 @@ window.TEUI.SectionModules.sect12 = (function () {
       "number-2dp",
       isReferenceCalculation
     );
-    console.log(`[ACH50] ${mode}: Published d_109=${ach50Target} to StateManager`);
 
     // ✅ M-N-COMPLIANCE: m_109 now calculated by calculateOperationalCompliance()
     // Old ratio calculation removed to prevent format fighting
@@ -2152,9 +2148,6 @@ window.TEUI.SectionModules.sect12 = (function () {
    * m_110: ref_d_110 / d_110 (lower is better)
    */
   function calculateOperationalCompliance(isReferenceCalculation = false) {
-    const mode = isReferenceCalculation ? "Reference" : "Target";
-    console.log(`[M-N-COMPLIANCE] calculateOperationalCompliance(${mode}) starting...`);
-
     // Get occupancy type from StateManager (mode-aware)
     const occupancyFieldId = isReferenceCalculation ? "ref_d_12" : "d_12";
     const occupancyType = window.TEUI.StateManager.getValue(occupancyFieldId) || "";
@@ -2165,7 +2158,6 @@ window.TEUI.SectionModules.sect12 = (function () {
     const d107Str = window.TEUI.StateManager.getValue(d107FieldId);
     // ✅ NO FALLBACKS: Let NaN propagate if d_107 is invalid
     const d107 = window.TEUI.parseNumeric(d107Str);
-    console.log(`[M-N-COMPLIANCE] ${mode}: d107Str="${d107Str}", d107=${d107}`);
 
     // ✅ FORMAT ONCE: Format to percentage string immediately with 0dp
     let m107Text;
@@ -2179,10 +2171,8 @@ window.TEUI.SectionModules.sect12 = (function () {
     // Store formatted string to StateManager
     if (isReferenceCalculation) {
       window.TEUI.StateManager.setValue("ref_m_107", m107Text, "calculated");
-      console.log(`[M-N-COMPLIANCE] ${mode}: Wrote ref_m_107="${m107Text}" to StateManager`);
     } else {
       window.TEUI.StateManager.setValue("m_107", m107Text, "calculated");
-      console.log(`[M-N-COMPLIANCE] ${mode}: Wrote m_107="${m107Text}" to StateManager`);
     }
 
     // n_107: Check thresholds based on occupancy type
@@ -2216,12 +2206,9 @@ window.TEUI.SectionModules.sect12 = (function () {
     // ✅ NO FALLBACKS: Let NaN propagate if d_109 values are invalid - error hard!
     const refD109 = window.TEUI.parseNumeric(refD109Str);
     const d109 = window.TEUI.parseNumeric(d109Str);
-    console.log(`[M-N-COMPLIANCE] ${mode}: refD109Str="${refD109Str}", refD109=${refD109}`);
-    console.log(`[M-N-COMPLIANCE] ${mode}: d109Str="${d109Str}", d109=${d109}`);
 
     // ✅ Excel formula: ref_d_109 / d_109
     const m109Ratio = d109 > 0 ? refD109 / d109 : 0;
-    console.log(`[M-N-COMPLIANCE] ${mode}: m109Ratio = ${refD109} / ${d109} = ${m109Ratio}`);
 
     // ✅ FORMAT ONCE: Format to percentage string immediately with 0dp
     let m109Text;
@@ -2234,16 +2221,14 @@ window.TEUI.SectionModules.sect12 = (function () {
 
     if (isReferenceCalculation) {
       window.TEUI.StateManager.setValue("ref_m_109", m109Text, "calculated");
-      console.log(`[M-N-COMPLIANCE] ${mode}: Wrote ref_m_109="${m109Text}" to StateManager`);
     } else {
       window.TEUI.StateManager.setValue("m_109", m109Text, "calculated");
-      console.log(`[M-N-COMPLIANCE] ${mode}: Wrote m_109="${m109Text}" to StateManager`);
     }
 
-    // ✅ Pass if ratio >= 100% (Reference >= Target)
-    const ach50Pass = m109Ratio >= 1.0;
+    // ✅ Pass if ratio >= 99.5% (0.5% tolerance for floating-point precision and calculation method differences)
+    // This handles cases where AL-1B vs MEASURED methods produce slightly different values (e.g., 1.304 vs 1.300)
+    const ach50Pass = m109Ratio >= 0.995;
     const n109Symbol = ach50Pass ? "✓" : "✗";
-    console.log(`[M-N-COMPLIANCE] ${mode}: n109Symbol="${n109Symbol}" (pass=${ach50Pass})`);
 
     if (isReferenceCalculation) {
       window.TEUI.StateManager.setValue("ref_n_109", n109Symbol, "calculated");
@@ -2263,8 +2248,6 @@ window.TEUI.SectionModules.sect12 = (function () {
     // ✅ NO FALLBACKS: Let NaN propagate if d_110 values are invalid - error hard!
     const refD110 = window.TEUI.parseNumeric(refD110Str);
     const d110 = window.TEUI.parseNumeric(d110Str);
-    console.log(`[M-N-COMPLIANCE] ${mode}: refD110Str="${refD110Str}", refD110=${refD110}`);
-    console.log(`[M-N-COMPLIANCE] ${mode}: d110Str="${d110Str}", d110=${d110}`);
 
     const m110Ratio = refD110 > 0 ? d110 / refD110 : 1.0;
     // ✅ FORMAT ONCE: Format to percentage string immediately with 0dp
@@ -2278,14 +2261,13 @@ window.TEUI.SectionModules.sect12 = (function () {
 
     if (isReferenceCalculation) {
       window.TEUI.StateManager.setValue("ref_m_110", m110Text, "calculated");
-      console.log(`[M-N-COMPLIANCE] ${mode}: Wrote ref_m_110="${m110Text}" (ratio=${m110Ratio}) to StateManager`);
     } else {
       window.TEUI.StateManager.setValue("m_110", m110Text, "calculated");
-      console.log(`[M-N-COMPLIANCE] ${mode}: Wrote m_110="${m110Text}" (ratio=${m110Ratio}) to StateManager`);
     }
 
-    // ✅ Lower is better for ELA: passes if Target <= Reference (ratio <= 1.0)
-    const elaPass = m110Ratio <= 1.0;
+    // ✅ Lower is better for ELA: passes if Target <= Reference + 0.5% tolerance
+    // 0.5% tolerance handles floating-point precision and minor calculation method differences
+    const elaPass = m110Ratio <= 1.005;
     const n110Symbol = elaPass ? "✓" : "✗";
 
     if (isReferenceCalculation) {

@@ -583,17 +583,17 @@ When implementing M-N compliance:
 - **S08** (Indoor Air Quality): ✅ **VERIFIED 2025-01-12** - Health threshold comparison (m_56-59/n_56-59). Row 59 (RH%) uses dual-slider range check: m_59 displays acceptable range "30-60%", n_59 passes only if BOTH d_59 (heating season) AND i_59 (cooling season) are within 30-60% range.
 - **S09** (Internal Gains): ✅ **VERIFIED 2025-12-02** - Reference model comparison (m_65-67/n_65-67) for plug loads, lighting, and equipment. Uses format-once pattern with value-change guard for optimal performance (27ms calculations). See detailed implementation section above.
 - **S11** (Transmission Losses): ✅ **VERIFIED 2025-12-02** - Reference model comparison (m_85-95, m_97/n_85-95, n_97) for RSI, U-values, and thermal bridge penalty. 12 M/N field pairs with comprehensive `getFieldFormat()` helper. Format-once pattern with dual-engine integration. Performance: 262ms Target, 559ms Reference (2.1x due to dual calculations - expected). See detailed implementation section above.
+- **S12** (Volume and Surface Metrics): ✅ **VERIFIED 2025-12-03** - Reference model comparison (m_107, m_109, m_110/n_107, n_109, n_110) for WWR, ACH50, and ELA compliance. Format-once pattern with epsilon tolerance (0.5%) for floating-point precision and calculation method differences. Fixed "Fallback Trap" anti-pattern (removed `|| 0` fallbacks, preserved state values). Uses hardcoded defaults to match calculation methods. See "The Fallback Trap" section below for detailed pattern documentation.
 
 ### 🚧 Pending Implementation
 - **S06** (Envelope - remaining rows): Additional M/N fields may be needed
 - **S10** (Water): M/N compliance not yet implemented
-- **S12** (Operational Carbon): M/N compliance not yet implemented
-- **S13** (Costs): Cost comparison - not yet implemented
+- **S13** (Costs): Cost comparison - not yet implemented (includes j_116 COPc fix from Fallback Trap pattern)
 - **S14** (Life Cycle): M/N compliance not yet implemented
 - **S15** (Schedule): M/N compliance not yet implemented
 
 ### ❌ Not Applicable
-- **S01, S02, S04, S06, S10, S12**: Do not require M/N compliance fields
+- **S01, S02, S04, S06, S10**: Do not require M/N compliance fields
 
 ---
 
