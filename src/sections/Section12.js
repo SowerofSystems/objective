@@ -2924,18 +2924,33 @@ window.TEUI.SectionModules.sect12 = (function () {
       // ✅ FIX: Read from current state instead of hardcoding Target default
       const currentValue = ModeManager.getValue("g_109");
 
-      // If the cell is empty or N/A when switching to Measured, restore from state or use mode-specific default
+      // If the cell is empty or N/A when switching to Measured, restore from state or use d_109 as default
       if (
         !g109Cell.textContent.trim() ||
         g109Cell.textContent.trim() === "N/A"
       ) {
-        // Use value from state, or fallback to mode-specific default (1.50 Target, 2.00 Reference)
-        const rawValue =
-          currentValue ||
-          (ModeManager.currentMode === "reference" ? "2.00" : "1.50");
+        // ✅ Use current d_109 value as default for g_109 when switching to MEASURED
+        // This ensures that switching to MEASURED doesn't change the calculated results
+        let defaultValue = currentValue;
+
+        if (!defaultValue) {
+          // Read current d_109 value (mode-aware)
+          const d109FieldId = ModeManager.currentMode === "reference" ? "ref_d_109" : "d_109";
+          const d109Value = window.TEUI.StateManager.getValue(d109FieldId);
+          const d109Numeric = window.TEUI.parseNumeric(d109Value);
+
+          // Use d_109 if available, otherwise fallback to 1.50 (Target) or 2.00 (Reference)
+          if (d109Numeric && d109Numeric > 0) {
+            defaultValue = String(d109Numeric);
+            console.log(`[g_109 Default] Using d_109 value: ${defaultValue}`);
+          } else {
+            defaultValue = ModeManager.currentMode === "reference" ? "2.00" : "1.50";
+            console.log(`[g_109 Default] Using fallback: ${defaultValue}`);
+          }
+        }
 
         // ✅ FIX: Format to 2dp for consistency
-        const numericValue = window.TEUI.parseNumeric(rawValue);
+        const numericValue = window.TEUI.parseNumeric(defaultValue);
         const displayValue = window.TEUI.formatNumber(
           numericValue,
           "number-2dp"
@@ -2944,7 +2959,7 @@ window.TEUI.SectionModules.sect12 = (function () {
 
         // Only setValue if we're using a fallback (not already in state)
         if (!currentValue) {
-          ModeManager.setValue("g_109", rawValue, "calculated");
+          ModeManager.setValue("g_109", defaultValue, "calculated");
         }
       } else {
         // ✅ FIX: Even if cell has content, ensure it's formatted to 2dp
