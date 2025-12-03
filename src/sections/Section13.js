@@ -3305,6 +3305,108 @@ window.TEUI.SectionModules.sect13 = (function () {
     return finalFreeCoolingLimit;
   }
 
+  //==========================================================================
+  // M-N COMPLIANCE CALCULATION (Format-Once Pattern)
+  //==========================================================================
+
+  /**
+   * Calculate M-N compliance for mechanical loads (S13)
+   * Uses format-once pattern (S07/S09/S11 proven approach)
+   * Called after all field calculations are complete
+   * @param {boolean} isReferenceCalculation - Whether calculating for Reference model
+   */
+  function calculateMechanicalCompliance(isReferenceCalculation = false) {
+    // ✅ S07 PATTERN: Helper for ratio calculation with mode awareness
+    function calculateComplianceRatio(targetField, refField) {
+      if (isReferenceCalculation) {
+        return 1.0; // Reference mode: Always 100% (self-comparison)
+      } else {
+        const targetValue = window.TEUI.parseNumeric(
+          window.TEUI.StateManager.getValue(targetField)
+        );
+        const refValue = window.TEUI.parseNumeric(
+          window.TEUI.StateManager.getValue(refField)
+        );
+        return refValue > 0 ? targetValue / refValue : 0;
+      }
+    }
+
+    // Calculate ratios for each field
+    const m_113_ratio = calculateComplianceRatio("f_113", "ref_f_113"); // HSPF
+    const m_115_ratio = calculateComplianceRatio("j_115", "ref_j_115"); // AFUE
+    const m_116_ratio = calculateComplianceRatio("j_116", "ref_j_116"); // COPc
+
+    // m_117: INVERTED ratio (lower is better for cooling intensity)
+    const m_117_ratio = isReferenceCalculation
+      ? 1.0
+      : (() => {
+          const targetValue = window.TEUI.parseNumeric(
+            window.TEUI.StateManager.getValue("f_117")
+          );
+          const refValue = window.TEUI.parseNumeric(
+            window.TEUI.StateManager.getValue("ref_f_117")
+          );
+          return targetValue > 0 ? refValue / targetValue : 0;
+        })();
+
+    const m_118_ratio = calculateComplianceRatio("d_118", "ref_d_118"); // SRE %
+    const m_119_ratio = calculateComplianceRatio("d_119", "ref_d_119"); // Vent Rate
+
+    // ✅ FORMAT ONCE: Format to strings immediately (S07 pattern)
+    const prefix = isReferenceCalculation ? "ref_" : "";
+
+    const m_113_formatted = window.TEUI?.formatNumber?.(m_113_ratio, "percent-0dp") ?? "100%";
+    const m_115_formatted = window.TEUI?.formatNumber?.(m_115_ratio, "percent-0dp") ?? "100%";
+    const m_116_formatted = window.TEUI?.formatNumber?.(m_116_ratio, "percent-0dp") ?? "100%";
+    const m_117_formatted = window.TEUI?.formatNumber?.(m_117_ratio, "percent-0dp") ?? "100%";
+    const m_118_formatted = window.TEUI?.formatNumber?.(m_118_ratio, "percent-0dp") ?? "100%";
+    const m_119_formatted = window.TEUI?.formatNumber?.(m_119_ratio, "percent-0dp") ?? "100%";
+
+    // Store formatted strings to StateManager
+    window.TEUI.StateManager.setValue(`${prefix}m_113`, m_113_formatted, "calculated");
+    window.TEUI.StateManager.setValue(`${prefix}m_115`, m_115_formatted, "calculated");
+    window.TEUI.StateManager.setValue(`${prefix}m_116`, m_116_formatted, "calculated");
+    window.TEUI.StateManager.setValue(`${prefix}m_117`, m_117_formatted, "calculated");
+    window.TEUI.StateManager.setValue(`${prefix}m_118`, m_118_formatted, "calculated");
+    window.TEUI.StateManager.setValue(`${prefix}m_119`, m_119_formatted, "calculated");
+
+    // Calculate N-column symbols (pass/fail logic)
+    const n_113_value = m_113_ratio >= 1.0 ? "✓" : "✗"; // Higher is better
+    const n_115_value = m_115_ratio >= 1.0 ? "✓" : "✗";
+    const n_116_value = m_116_ratio >= 1.0 ? "✓" : "✗";
+    const n_117_value = m_117_ratio >= 1.0 ? "✓" : "✗"; // Inverted: higher % = better
+    const n_118_value = m_118_ratio >= 1.0 ? "✓" : "✗";
+    const n_119_value = m_119_ratio >= 1.0 ? "✓" : "✗";
+
+    // n_124: Special case - read from m_124 (days mech cooling)
+    const m_124_value = window.TEUI.parseNumeric(
+      window.TEUI.StateManager.getValue(`${prefix}m_124`)
+    );
+    const n_124_value = m_124_value <= 0 ? "✓" : "⚠"; // ✓ if no cooling needed, ⚠ if cooling required
+
+    // Store N-column symbols
+    window.TEUI.StateManager.setValue(`${prefix}n_113`, n_113_value, "calculated");
+    window.TEUI.StateManager.setValue(`${prefix}n_115`, n_115_value, "calculated");
+    window.TEUI.StateManager.setValue(`${prefix}n_116`, n_116_value, "calculated");
+    window.TEUI.StateManager.setValue(`${prefix}n_117`, n_117_value, "calculated");
+    window.TEUI.StateManager.setValue(`${prefix}n_118`, n_118_value, "calculated");
+    window.TEUI.StateManager.setValue(`${prefix}n_119`, n_119_value, "calculated");
+    window.TEUI.StateManager.setValue(`${prefix}n_124`, n_124_value, "calculated");
+
+    // ✅ CRITICAL: Only apply CSS classes in Target mode (S09 pattern)
+    if (!isReferenceCalculation) {
+      setElementClass("n_113", n_113_value === "✓" ? "checkmark" : "warning");
+      setElementClass("n_115", n_115_value === "✓" ? "checkmark" : "warning");
+      setElementClass("n_116", n_116_value === "✓" ? "checkmark" : "warning");
+      setElementClass("n_117", n_117_value === "✓" ? "checkmark" : "warning");
+      setElementClass("n_118", n_118_value === "✓" ? "checkmark" : "warning");
+      setElementClass("n_119", n_119_value === "✓" ? "checkmark" : "warning");
+
+      // n_124: Yellow checkmark when mechanical cooling required
+      setElementClass("n_124", m_124_value <= 0 ? "checkmark" : "yellow-checkmark");
+    }
+  }
+
   /**
    * Calculate all values for this section
    * ✅ INCLUDES S11 PERSISTENCE PATTERN: Prevents Reference value race conditions
@@ -3407,6 +3509,9 @@ window.TEUI.SectionModules.sect13 = (function () {
         coolingVentilationResults,
         freeCoolingResults
       );
+
+      // Calculate M-N compliance for Reference model (always 100%)
+      calculateMechanicalCompliance(true);
     } catch (error) {
       console.error(
         "[Section13] Error in Reference Model calculations:",
@@ -3476,9 +3581,8 @@ window.TEUI.SectionModules.sect13 = (function () {
         mitigatedResults
       );
 
-      // OLD M-N update call - commented out 2025-12-03
-      // This will be replaced by calculateMechanicalCompliance() in Phase 3
-      // updateAllReferenceIndicators();
+      // Calculate M-N compliance for Target model (actual ratios and pass/fail)
+      calculateMechanicalCompliance(false);
     } catch (error) {
       console.error("[Section13] Error in Target Model calculations:", error);
     } finally {
