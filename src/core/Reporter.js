@@ -447,7 +447,7 @@ TEUI.Reporter = (function () {
   }
 
   /**
-   * Download both Target and Reference model PDFs
+   * Download combined PDF with both Target and Reference models
    */
   async function downloadReports() {
     try {
@@ -474,16 +474,9 @@ TEUI.Reporter = (function () {
 
       // Generate Target Model PDF
       console.log("[Reporter] Generating Target Model PDF...");
-      const targetPDF = generatePDF(targetData, "Target");
+      const combinedPDF = generatePDF(targetData, "Target");
 
-      // Download Target PDF
-      const timestamp = new Date().toISOString().slice(0, 10);
-      const projectName =
-        targetData.projectName.replace(/[^a-z0-9]/gi, "_").substring(0, 30) ||
-        "OBJECTIVE";
-      targetPDF.save(`${projectName}_Target_${timestamp}.pdf`);
-
-      console.log("[Reporter] Target Model PDF downloaded");
+      console.log("[Reporter] Target Model added to PDF");
 
       // Switch to Reference mode
       console.log("[Reporter] Switching to Reference Mode...");
@@ -496,14 +489,11 @@ TEUI.Reporter = (function () {
       console.log("[Reporter] Extracting Reference Model data...");
       const referenceData = extractReportData();
 
-      // Generate Reference Model PDF with comparison
-      console.log("[Reporter] Generating Reference Model PDF...");
-      const referencePDF = generatePDF(referenceData, "Reference", targetData);
+      // Add Reference Model to the same PDF
+      console.log("[Reporter] Adding Reference Model to PDF...");
+      appendReferenceToPDF(combinedPDF, referenceData, targetData);
 
-      // Download Reference PDF
-      referencePDF.save(`${projectName}_Reference_${timestamp}.pdf`);
-
-      console.log("[Reporter] Reference Model PDF downloaded");
+      console.log("[Reporter] Reference Model added to PDF");
 
       // Restore original mode
       if (!isReferenceMode) {
@@ -511,12 +501,220 @@ TEUI.Reporter = (function () {
         await new Promise(resolve => setTimeout(resolve, 300));
       }
 
-      console.log("[Reporter] PDF generation complete!");
+      // Download combined PDF
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const projectName =
+        targetData.projectName.replace(/[^a-z0-9]/gi, "_").substring(0, 30) ||
+        "OBJECTIVE";
+      combinedPDF.save(`${projectName}_Report_${timestamp}.pdf`);
+
+      console.log("[Reporter] Combined PDF downloaded successfully!");
       return true;
     } catch (error) {
       console.error("[Reporter] PDF generation failed:", error);
-      alert(`Failed to generate PDF reports: ${error.message}`);
+      alert(`Failed to generate PDF report: ${error.message}`);
       return false;
+    }
+  }
+
+  /**
+   * Append Reference Model content to existing PDF
+   * @param {Object} pdf - Existing jsPDF instance with Target Model
+   * @param {Object} referenceData - Reference model data
+   * @param {Object} targetData - Target model data (for comparison)
+   */
+  function appendReferenceToPDF(pdf, referenceData, targetData) {
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 0.5;
+    const leftMargin = margin;
+    const rightMargin = pageWidth - margin;
+    const topMargin = margin;
+    const bottomMargin = pageHeight - margin;
+
+    const lineHeight = 0.15;
+    const sectionSpacing = 0.3;
+
+    // Add new page for Reference Model title sheet
+    pdf.addPage();
+
+    // Generate Reference Model title sheet
+    const buildingInfo = getBuildingInfo();
+    const centerX = pageWidth / 2;
+    const centerY = pageHeight / 2;
+
+    // Project name - large and bold at vertical center
+    pdf.setFontSize(24);
+    pdf.setFont(undefined, "bold");
+    pdf.text(buildingInfo.projectName, centerX, centerY - 1, {
+      align: "center",
+    });
+
+    // Reference Model indicator in grey
+    pdf.setFontSize(16);
+    pdf.setFont(undefined, "normal");
+    pdf.setTextColor("#888888");
+    pdf.text("Reference Model Report", centerX, centerY - 0.3, {
+      align: "center",
+    });
+
+    // Building information below title
+    pdf.setFontSize(11);
+    pdf.setTextColor("#000000");
+    let yPos = centerY + 0.5;
+    const lineSpacing = 0.25;
+
+    const infoLines = [
+      buildingInfo.location ? `Location: ${buildingInfo.location}` : null,
+      buildingInfo.climateZone
+        ? `Climate Zone: ${buildingInfo.climateZone}`
+        : null,
+      buildingInfo.occupancy ? `Occupancy: ${buildingInfo.occupancy}` : null,
+      buildingInfo.standard ? `Standard: ${buildingInfo.standard}` : null,
+      buildingInfo.reportingPeriod
+        ? `Reporting Period: ${buildingInfo.reportingPeriod}`
+        : null,
+      buildingInfo.conditionedArea
+        ? `Conditioned Area: ${buildingInfo.conditionedArea} m²`
+        : null,
+    ].filter(Boolean);
+
+    infoLines.forEach(line => {
+      pdf.text(line, centerX, yPos, { align: "center" });
+      yPos += lineSpacing;
+    });
+
+    // Footer with generation date
+    pdf.setFontSize(9);
+    pdf.setTextColor("#666666");
+    pdf.text(
+      `Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
+      centerX,
+      pageHeight - 0.5,
+      { align: "center" }
+    );
+    pdf.text("OBJECTIVE TEUI Calculator | openbuilding.ca", centerX, pageHeight - 0.3, {
+      align: "center",
+    });
+
+    // Add new page for Reference Model content
+    pdf.addPage();
+
+    yPos = topMargin;
+
+    // Helper function to check if we need a new page
+    function checkPageBreak(requiredSpace = 0.5) {
+      if (yPos + requiredSpace > bottomMargin) {
+        pdf.addPage();
+        yPos = topMargin;
+        return true;
+      }
+      return false;
+    }
+
+    // Iterate through Reference Model sections
+    referenceData.sections.forEach((section, sectionIndex) => {
+      // Check if section will fit, otherwise start new page
+      checkPageBreak(1.0);
+
+      // Section header
+      pdf.setFontSize(12);
+      pdf.setFont(undefined, "bold");
+      pdf.setTextColor("#000000");
+      pdf.text(section.title, leftMargin, yPos);
+      yPos += lineHeight * 1.5;
+
+      // Draw underline for section header
+      pdf.setDrawColor("#CCCCCC");
+      pdf.setLineWidth(0.01);
+      pdf.line(leftMargin, yPos - lineHeight * 0.3, rightMargin, yPos - lineHeight * 0.3);
+
+      // Section rows
+      section.rows.forEach((row, rowIndex) => {
+        checkPageBreak(lineHeight * 2);
+
+        // Row number (small grey text)
+        pdf.setFontSize(7);
+        pdf.setTextColor("#999999");
+        pdf.setFont(undefined, "normal");
+        const rowNumberText = `${section.title.split(".")[0]}.${rowIndex + 1}`;
+        pdf.text(rowNumberText, leftMargin, yPos);
+
+        // Row ID (Column B)
+        pdf.setFontSize(8);
+        pdf.setTextColor("#666666");
+        const rowIdCell = row.cells[1]; // Column B
+        if (rowIdCell && rowIdCell.content) {
+          pdf.text(rowIdCell.content, leftMargin + 0.3, yPos);
+        }
+
+        // Description (Column C) - in grey for Reference Model
+        const descCell = row.cells[2];
+        if (descCell && descCell.content) {
+          pdf.setFontSize(9);
+          pdf.setTextColor("#888888"); // Grey for Reference
+          pdf.setFont(undefined, descCell.isBold ? "bold" : "normal");
+          pdf.text(descCell.content, leftMargin + 0.8, yPos);
+        }
+
+        // Value columns (D onwards) - horizontal layout
+        let xPos = leftMargin + 4.5;
+        const columnWidth = 1.2;
+
+        row.cells.slice(3).forEach((cell, cellIndex) => {
+          if (cell.content && cell.colSpan === 1) {
+            pdf.setFontSize(9);
+
+            // Apply grey color for Reference Model, red for differences
+            // TODO: Implement difference detection by comparing with targetData
+            pdf.setTextColor("#888888");
+
+            // Apply bold if user input or calculated
+            pdf.setFont(
+              undefined,
+              cell.isBold || cell.isUserInput ? "bold" : "normal"
+            );
+
+            // Render cell content
+            const cellText = cell.content.substring(0, 20); // Limit length
+            pdf.text(cellText, xPos, yPos);
+          }
+
+          xPos += columnWidth;
+        });
+
+        yPos += lineHeight;
+
+        // Light grey row separator
+        pdf.setDrawColor("#E0E0E0");
+        pdf.setLineWidth(0.005);
+        pdf.line(leftMargin + 0.3, yPos - lineHeight * 0.2, rightMargin, yPos - lineHeight * 0.2);
+      });
+
+      yPos += sectionSpacing;
+    });
+
+    // Update page numbers for all pages (including new Reference pages)
+    const pageCount = pdf.internal.getNumberOfPages();
+    for (let i = 2; i <= pageCount; i++) {
+      pdf.setPage(i);
+      pdf.setFontSize(8);
+      pdf.setTextColor("#666666");
+
+      // Determine which model this page belongs to
+      const modelType = i <= Math.ceil(pageCount / 2) ? "Target" : "Reference";
+
+      pdf.text(
+        `${buildingInfo.projectName} - ${modelType} Model`,
+        leftMargin,
+        topMargin - 0.2
+      );
+      pdf.text(
+        `Page ${i - 1}`,
+        rightMargin,
+        topMargin - 0.2,
+        { align: "right" }
+      );
     }
   }
 
