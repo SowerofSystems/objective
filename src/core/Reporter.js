@@ -192,20 +192,55 @@ TEUI.Reporter = (function () {
 
   /**
    * Get building information data for title sheet
-   * @returns {Object} Building info for title sheet
+   * Uses proper field labels from Section02 field definitions
+   * @returns {Object} Building info for title sheet with labels and values
    */
   function getBuildingInfo() {
     return {
+      // h_14: Project Name (field label from Section02)
       projectTitle: TEUI.StateManager?.getValue("h_14") || "Untitled Project",
-      projectName: TEUI.StateManager?.getValue("d_11") || "",
-      location: TEUI.StateManager?.getValue("d_14") || "",
-      climateZone: TEUI.StateManager?.getValue("d_15") || "",
-      occupancy: TEUI.StateManager?.getValue("d_12") || "",
-      standard: TEUI.StateManager?.getValue("d_13") || "",
-      reportingPeriod: TEUI.StateManager?.getValue("h_12") || "",
-      conditionedArea: TEUI.StateManager?.getValue("h_15") || "",
-      certifier: TEUI.StateManager?.getValue("h_16") || "",
-      licenseNo: TEUI.StateManager?.getValue("h_17") || "",
+
+      // Fields with their proper labels from Section02
+      fields: [
+        {
+          label: "Major Occupancy",
+          value: TEUI.StateManager?.getValue("d_12") || "", // d_12: Major Occupancy
+        },
+        {
+          label: "Reference Standard",
+          value: TEUI.StateManager?.getValue("d_13") || "", // d_13: Reference Standard
+        },
+        {
+          label: "Actual (Bills) or Targeted (Design) Use",
+          value: TEUI.StateManager?.getValue("d_14") || "", // d_14: Method (Utility Bills/Targeted Use)
+        },
+        {
+          label: "Carbon Benchmarking Standard",
+          value: TEUI.StateManager?.getValue("d_15") || "", // d_15: Carbon Standard
+        },
+        {
+          label: "Reporting Period",
+          value: TEUI.StateManager?.getValue("h_12") || "", // h_12: Year
+        },
+        {
+          label: "Service Life (yrs)",
+          value: TEUI.StateManager?.getValue("h_13") || "", // h_13: Service Life
+        },
+        {
+          label: "Conditioned Area",
+          value: TEUI.StateManager?.getValue("h_15")
+            ? `${TEUI.StateManager.getValue("h_15")} m²`
+            : "", // h_15: Area
+        },
+        {
+          label: "Certifier",
+          value: TEUI.StateManager?.getValue("i_16") || "", // i_16: Certifier
+        },
+        {
+          label: "License No.",
+          value: TEUI.StateManager?.getValue("i_17") || "", // i_17: License
+        },
+      ].filter(field => field.value), // Only include fields with values
     };
   }
 
@@ -260,32 +295,16 @@ TEUI.Reporter = (function () {
     const lineHeight = 0.25;
     const labelWidth = 2.0; // Width for label column
 
-    // Helper function to render label: value pairs
-    function renderField(label, value) {
-      if (!value) return false;
-
+    // Render fields from the fields array
+    buildingInfo.fields.forEach(field => {
       pdf.setFont(undefined, "bold");
-      pdf.text(label + ":", leftMargin, yPos);
+      pdf.text(field.label + ":", leftMargin, yPos);
 
       pdf.setFont(undefined, "normal");
-      pdf.text(value, leftMargin + labelWidth, yPos);
+      pdf.text(field.value, leftMargin + labelWidth, yPos);
 
       yPos += lineHeight;
-      return true;
-    }
-
-    // Render fields with proper labels
-    renderField("Project Name", buildingInfo.projectName);
-    renderField("Location", buildingInfo.location);
-    renderField("Climate Zone", buildingInfo.climateZone);
-    renderField("Occupancy", buildingInfo.occupancy);
-    renderField("Standard", buildingInfo.standard);
-    renderField("Reporting Period", buildingInfo.reportingPeriod);
-    if (buildingInfo.conditionedArea) {
-      renderField("Conditioned Area", `${buildingInfo.conditionedArea} m²`);
-    }
-    renderField("Certifier", buildingInfo.certifier);
-    renderField("License No.", buildingInfo.licenseNo);
+    });
 
     // Footer with generation date in metric format
     pdf.setFontSize(9);
@@ -595,32 +614,16 @@ TEUI.Reporter = (function () {
     const lineSpacing = 0.25;
     const labelWidth = 2.0; // Width for label column
 
-    // Helper function to render label: value pairs
-    function renderField(label, value) {
-      if (!value) return false;
-
+    // Render fields from the fields array
+    buildingInfo.fields.forEach(field => {
       pdf.setFont(undefined, "bold");
-      pdf.text(label + ":", leftMarg, yPos);
+      pdf.text(field.label + ":", leftMarg, yPos);
 
       pdf.setFont(undefined, "normal");
-      pdf.text(value, leftMarg + labelWidth, yPos);
+      pdf.text(field.value, leftMarg + labelWidth, yPos);
 
       yPos += lineSpacing;
-      return true;
-    }
-
-    // Render fields with proper labels
-    renderField("Project Name", buildingInfo.projectName);
-    renderField("Location", buildingInfo.location);
-    renderField("Climate Zone", buildingInfo.climateZone);
-    renderField("Occupancy", buildingInfo.occupancy);
-    renderField("Standard", buildingInfo.standard);
-    renderField("Reporting Period", buildingInfo.reportingPeriod);
-    if (buildingInfo.conditionedArea) {
-      renderField("Conditioned Area", `${buildingInfo.conditionedArea} m²`);
-    }
-    renderField("Certifier", buildingInfo.certifier);
-    renderField("License No.", buildingInfo.licenseNo);
+    });
 
     // Footer with generation date in metric format
     pdf.setFontSize(9);
