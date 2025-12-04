@@ -219,10 +219,6 @@ TEUI.Reporter = (function () {
           })(),
         },
         {
-          label: "Carbon Benchmarking Standard",
-          value: TEUI.StateManager?.getValue("d_15") || "", // d_15: Carbon Standard
-        },
-        {
           label: "Reporting Period",
           value: TEUI.StateManager?.getValue("h_12") || "", // h_12: Year
         },
@@ -275,22 +271,18 @@ TEUI.Reporter = (function () {
     const centerY = pageHeight / 2;
     const leftMargin = 1.5; // Left-justified text block
 
-    // Project Title - large and bold at vertical center
+    // Project Title - large, bold, and LEFT-JUSTIFIED
     pdf.setFontSize(24);
     pdf.setFont(undefined, "bold");
     pdf.setTextColor("#000000");
-    pdf.text(buildingInfo.projectTitle, centerX, centerY - 1, {
-      align: "center",
-    });
+    pdf.text(buildingInfo.projectTitle, leftMargin, centerY - 1);
 
-    // Model type indicator
+    // Model type indicator - LEFT-JUSTIFIED
     pdf.setFontSize(16);
     pdf.setFont(undefined, "normal");
     const modelColor = modelType === "Reference" ? "#888888" : "#000000";
     pdf.setTextColor(modelColor);
-    pdf.text(`${modelType} Model Report`, centerX, centerY - 0.3, {
-      align: "center",
-    });
+    pdf.text(`${modelType} Model Report`, leftMargin, centerY - 0.3);
 
     // Building information - left-justified with labels
     pdf.setFontSize(11);
@@ -310,18 +302,31 @@ TEUI.Reporter = (function () {
       yPos += lineHeight;
     });
 
-    // Footer with generation date in metric format
+    // Footer with logos and generation date
     pdf.setFontSize(9);
     pdf.setTextColor("#666666");
+
+    // Add logos to footer
+    const logoY = pageHeight - 0.8;
+    const logoHeight = 0.4;
+
+    // OpenBuilding logo (left side)
+    const obLogoPath = "src/assets/imageOB.png";
+    const obLogoWidth = logoHeight; // Square logo
+    pdf.addImage(obLogoPath, "PNG", leftMargin, logoY, obLogoWidth, logoHeight);
+
+    // OBJECTIVE logo (next to OB logo)
+    const objLogoPath = "src/assets/image014.png";
+    const objLogoWidth = logoHeight * 4; // Wide logo (approximate aspect ratio)
+    pdf.addImage(objLogoPath, "PNG", leftMargin + obLogoWidth + 0.2, logoY, objLogoWidth, logoHeight);
+
+    // Generation timestamp (right-aligned)
     pdf.text(
       `Generated: ${getMetricTimestamp()}`,
-      centerX,
+      pageWidth - leftMargin,
       pageHeight - 0.5,
-      { align: "center" }
+      { align: "right" }
     );
-    pdf.text("OBJECTIVE TEUI Calculator | openbuilding.ca", centerX, pageHeight - 0.3, {
-      align: "center",
-    });
   }
 
   /**
@@ -591,25 +596,20 @@ TEUI.Reporter = (function () {
 
     // Generate Reference Model title sheet
     const buildingInfo = getBuildingInfo();
-    const centerX = pageWidth / 2;
     const centerY = pageHeight / 2;
     const leftMarg = 1.5; // Left-justified text block
 
-    // Project Title - large and bold at vertical center
+    // Project Title - large, bold, and LEFT-JUSTIFIED
     pdf.setFontSize(24);
     pdf.setFont(undefined, "bold");
     pdf.setTextColor("#000000");
-    pdf.text(buildingInfo.projectTitle, centerX, centerY - 1, {
-      align: "center",
-    });
+    pdf.text(buildingInfo.projectTitle, leftMarg, centerY - 1);
 
-    // Reference Model indicator in grey
+    // Reference Model indicator in grey - LEFT-JUSTIFIED
     pdf.setFontSize(16);
     pdf.setFont(undefined, "normal");
     pdf.setTextColor("#888888");
-    pdf.text("Reference Model Report", centerX, centerY - 0.3, {
-      align: "center",
-    });
+    pdf.text("Reference Model Report", leftMarg, centerY - 0.3);
 
     // Building information - left-justified with labels
     pdf.setFontSize(11);
@@ -629,18 +629,31 @@ TEUI.Reporter = (function () {
       yPos += lineSpacing;
     });
 
-    // Footer with generation date in metric format
+    // Footer with logos and generation date
     pdf.setFontSize(9);
     pdf.setTextColor("#666666");
+
+    // Add logos to footer
+    const logoY = pageHeight - 0.8;
+    const logoHeight = 0.4;
+
+    // OpenBuilding logo (left side)
+    const obLogoPath = "src/assets/imageOB.png";
+    const obLogoWidth = logoHeight; // Square logo
+    pdf.addImage(obLogoPath, "PNG", leftMarg, logoY, obLogoWidth, logoHeight);
+
+    // OBJECTIVE logo (next to OB logo)
+    const objLogoPath = "src/assets/image014.png";
+    const objLogoWidth = logoHeight * 4; // Wide logo (approximate aspect ratio)
+    pdf.addImage(objLogoPath, "PNG", leftMarg + obLogoWidth + 0.2, logoY, objLogoWidth, logoHeight);
+
+    // Generation timestamp (right-aligned)
     pdf.text(
       `Generated: ${getMetricTimestamp()}`,
-      centerX,
+      pageWidth - leftMarg,
       pageHeight - 0.5,
-      { align: "center" }
+      { align: "right" }
     );
-    pdf.text("OBJECTIVE TEUI Calculator | openbuilding.ca", centerX, pageHeight - 0.3, {
-      align: "center",
-    });
 
     // Add new page for Reference Model content
     pdf.addPage();
