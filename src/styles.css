@@ -2312,6 +2312,9 @@ textarea.mirror-highlight {
 .warning {
   color: #dc3545;
 }
+.yellow-checkmark {
+  color: #ffc107; /* Yellow/Amber - awareness indicator, not failure */
+}
 
 /* =============== ELEGANT USER INPUT BEHAVIOR (OBC Matrix Pattern) =============== */
 /* EXACT COPY from working OBC Matrix styles */

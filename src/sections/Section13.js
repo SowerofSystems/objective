@@ -341,6 +341,9 @@ window.TEUI.SectionModules.sect13 = (function () {
       // Removed calculateAll() - mode switch should only update display, not trigger calculations
       this.updateCalculatedDisplayValues();
 
+      // ✅ CRITICAL: Also update M/N compliance fields (standalone function at line 765)
+      updateCalculatedDisplayValues();
+
       // ✅ NEW: Sync visual toggle UI when mode changes (from global or local toggle)
       this.syncToggleUI(mode);
     },
@@ -350,11 +353,10 @@ window.TEUI.SectionModules.sect13 = (function () {
       if (!window.TEUI?.StateManager) return;
 
       // Field-specific format map for calculated fields
+      // NOTE: M-column fields (m_113, m_115-m_119) are NOT included here
+      // They use format-once pattern and are handled by standalone updateCalculatedDisplayValues() at line 766
       const fieldFormats = {
         // Percentages (0dp)
-        m_115: "percent-0dp",
-        m_116: "percent-0dp",
-        m_117: "percent-0dp",
         i_122: "percent-0dp",
         d_124: "percent-0dp",
 
@@ -407,7 +409,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         fieldFormats.j_116 = "number-2dp";
         // console.log(`[S13 updateCalc] ✅ Added j_116 to fieldFormats`);
       } // else {
-        // console.log(`[S13 updateCalc] ⏭️ Skipping j_116 (not ghosted)`);
+      // console.log(`[S13 updateCalc] ⏭️ Skipping j_116 (not ghosted)`);
       // }
       // When NOT ghosted (Gas/Oil mode), j_116 is user-editable → skip (handled by refreshUI)
 
@@ -738,114 +740,92 @@ window.TEUI.SectionModules.sect13 = (function () {
 
   // --- Integrated Cooling Calculation State & Logic ---
 
-  // T-cell comparison configuration for Section 13
-  const referenceComparisons = {
-    f_113: {
-      type: "higher-is-better",
-      tCell: "t_113",
-      description: "Heating HSPF",
-    },
-    j_115: {
-      type: "higher-is-better",
-      tCell: "t_115",
-      description: "AFUE Gas/Oil",
-    },
-    j_116: {
-      type: "higher-is-better",
-      tCell: "t_116",
-      description: "Cooling COP",
-    },
-    d_118: {
-      type: "higher-is-better",
-      tCell: "t_118",
-      description: "HRV/ERV SRE %",
-    },
-    d_119: {
-      type: "higher-is-better",
-      tCell: "t_119",
-      description: "Vent Rate L/s per person",
-    },
-  };
+  //==========================================================================
+  // FORMAT-ONCE PATTERN HELPERS (S07/S09/S11 Pattern)
+  //==========================================================================
 
   /**
-   * Update reference indicators for all configured fields
+   * Set CSS class on an element for M-N compliance indicators
+   * @param {string} fieldId - The field ID to target
+   * @param {string} className - The CSS class to apply ("checkmark", "warning", "yellow-checkmark")
    */
-  function updateAllReferenceIndicators() {
-    try {
-      Object.keys(referenceComparisons).forEach(fieldId => {
-        updateReferenceIndicator(fieldId);
-      });
-    } catch (error) {
-      console.error("Error updating reference indicators:", error);
+  function setElementClass(fieldId, className) {
+    const element = document.querySelector(`[data-field-id="${fieldId}"]`);
+    if (element) {
+      element.classList.remove("checkmark", "warning", "yellow-checkmark");
+      if (className) {
+        element.classList.add(className);
+      }
     }
   }
 
   /**
-   * Update reference indicator (M and N columns) for a specific field
-   * @param {string} fieldId - The application field ID to update
+   * Update DOM elements with calculated display values (S07/S09/S11 pattern)
+   * ONLY handles M/N compliance fields (raw format, CSS class reapplication)
+   * Other calculated fields are handled by their field definitions
+   * This function is called after mode switches to refresh M/N display values
    */
-  function updateReferenceIndicator(fieldId) {
-    const config = referenceComparisons[fieldId];
-    if (!config) return;
+  function updateCalculatedDisplayValues() {
+    // ONLY M/N compliance fields need special handling
+    const mnFields = [
+      "m_113",
+      "n_113",
+      "m_115",
+      "n_115",
+      "m_116",
+      "n_116",
+      "m_117",
+      "n_117",
+      "m_118",
+      "n_118",
+      "m_119",
+      "n_119",
+      "m_124",
+      "n_124",
+    ];
 
-    const currentValue =
-      window.TEUI?.parseNumeric?.(getFieldValue(fieldId)) || 0;
-
-    const referenceValue =
-      window.TEUI?.StateManager?.getTCellValue?.(fieldId) ||
-      window.TEUI?.StateManager?.getReferenceValue?.(config.tCell);
-
-    const rowId = fieldId.match(/\d+$/)?.[0];
-    if (!rowId) return;
-
-    const mFieldId = `m_${rowId}`;
-    const nFieldId = `n_${rowId}`;
-
-    if (!referenceValue && referenceValue !== 0) {
-      // console.warn(`No reference value found for ${fieldId} - showing N/A`); // Ensure this is commented
-      setFieldValue(mFieldId, "N/A", "raw");
-
-      const nElement = document.querySelector(`[data-field-id="${nFieldId}"]`);
-      if (nElement) {
-        nElement.textContent = "–";
-        setElementClass(nFieldId, ""); // No special class
-      }
-      return;
-    }
-
-    try {
-      let referencePercent = 1;
-      let isGood = true;
-
-      const refValueNum = parseFloat(referenceValue);
-      const currentValueNum = parseFloat(currentValue);
-
-      if (config.type === "lower-is-better") {
-        // For values where lower is better
-        referencePercent =
-          currentValueNum > 0 ? refValueNum / currentValueNum : 0;
-        isGood = currentValueNum <= refValueNum;
-      } else if (config.type === "higher-is-better") {
-        // For values where higher is better (e.g., HSPF, AFUE, COP)
-        referencePercent = refValueNum > 0 ? currentValueNum / refValueNum : 0;
-        isGood = currentValueNum >= refValueNum;
+    mnFields.forEach(fieldId => {
+      // ✅ MODE-AWARE: Read from StateManager with ref_ prefix in Reference mode
+      // Matches ModeManager.updateCalculatedDisplayValues() pattern (lines 418-427)
+      let valueToDisplay;
+      if (ModeManager.currentMode === "reference") {
+        valueToDisplay = window.TEUI.StateManager.getValue(`ref_${fieldId}`);
+      } else {
+        valueToDisplay = window.TEUI.StateManager.getValue(fieldId);
       }
 
-      // Update Column M (Reference %)
-      setFieldValue(mFieldId, referencePercent, "percent-0dp");
+      const element = document.querySelector(`[data-field-id="${fieldId}"]`);
+      if (!element) return;
 
-      // Update Column N (Pass/Fail checkmark)
-      const nElement = document.querySelector(`[data-field-id="${nFieldId}"]`);
-      if (nElement) {
-        nElement.textContent = isGood ? "✓" : "✗";
-        setElementClass(nFieldId, isGood ? "checkmark" : "warning");
+      // Set text content (already formatted string)
+      element.textContent = valueToDisplay;
+
+      // Reapply CSS classes for n_* status fields on mode switch
+      if (fieldId.startsWith("n_")) {
+        element.classList.remove("checkmark", "warning", "yellow-checkmark");
+
+        // Special handling for n_124 (yellow checkmark when >0)
+        if (fieldId === "n_124") {
+          // ✅ MODE-AWARE: Read m_124 value with same ref_ prefix logic
+          const m124Value =
+            ModeManager.currentMode === "reference"
+              ? window.TEUI.StateManager.getValue("ref_m_124")
+              : window.TEUI.StateManager.getValue("m_124");
+          const daysValue = window.TEUI.parseNumeric(m124Value);
+
+          if (daysValue <= 0) {
+            element.classList.add("checkmark"); // Green ✓
+          } else {
+            element.classList.add("yellow-checkmark"); // Yellow ⚠
+          }
+        } else {
+          // Standard checkmark/warning logic
+          element.classList.add(
+            valueToDisplay === "✓" ? "checkmark" : "warning"
+          );
+        }
       }
-    } catch (error) {
-      console.error(
-        `Error updating reference indicators for ${fieldId}:`,
-        error
-      );
-    }
+    });
   }
 
   //==========================================================================
@@ -974,10 +954,17 @@ window.TEUI.SectionModules.sect13 = (function () {
           type: "calculated",
           value: "176%",
           section: "mechanicalLoads",
-          dependencies: ["f_113"],
+          dependencies: ["f_113", "ref_f_113"],
           label: "HSPF Ratio to Reference",
         },
-        n: {},
+        n: {
+          fieldId: "n_113",
+          type: "calculated",
+          value: "✓",
+          section: "mechanicalLoads",
+          dependencies: ["m_113"],
+          label: "HSPF Pass/Fail",
+        },
       },
     },
 
@@ -1112,10 +1099,17 @@ window.TEUI.SectionModules.sect13 = (function () {
           type: "calculated",
           value: "109%",
           section: "mechanicalLoads",
-          dependencies: ["j_115"],
+          dependencies: ["j_115", "ref_j_115"],
           label: "AFUE Ratio to Reference",
         },
-        n: {},
+        n: {
+          fieldId: "n_115",
+          type: "calculated",
+          value: "✓",
+          section: "mechanicalLoads",
+          dependencies: ["m_115"],
+          label: "AFUE Pass/Fail",
+        },
       },
     },
 
@@ -1175,10 +1169,17 @@ window.TEUI.SectionModules.sect13 = (function () {
           type: "calculated",
           value: "124%",
           section: "mechanicalLoads",
-          dependencies: ["j_116"],
+          dependencies: ["j_116", "ref_j_116"],
           label: "COPcool Ratio to Reference",
         },
-        n: {},
+        n: {
+          fieldId: "n_116",
+          type: "calculated",
+          value: "✓",
+          section: "mechanicalLoads",
+          dependencies: ["m_116"],
+          label: "COPcool Pass/Fail",
+        },
       },
     },
 
@@ -1231,10 +1232,17 @@ window.TEUI.SectionModules.sect13 = (function () {
           type: "calculated",
           value: "4%",
           section: "mechanicalLoads",
-          dependencies: ["f_117"],
+          dependencies: ["f_117", "ref_f_117"],
           label: "Cooling Intensity Ratio to Reference",
         },
-        n: {},
+        n: {
+          fieldId: "n_117",
+          type: "calculated",
+          value: "✓",
+          section: "mechanicalLoads",
+          dependencies: ["m_117"],
+          label: "Cooling Intensity Pass/Fail",
+        },
       },
     },
 
@@ -1297,10 +1305,17 @@ window.TEUI.SectionModules.sect13 = (function () {
           type: "calculated",
           value: "162%",
           section: "mechanicalLoads",
-          dependencies: ["d_118"],
+          dependencies: ["d_118", "ref_d_118"],
           label: "SRE Ratio to Reference",
         },
-        n: {},
+        n: {
+          fieldId: "n_118",
+          type: "calculated",
+          value: "✓",
+          section: "mechanicalLoads",
+          dependencies: ["m_118"],
+          label: "SRE Pass/Fail",
+        },
       },
     },
 
@@ -1380,10 +1395,17 @@ window.TEUI.SectionModules.sect13 = (function () {
           type: "calculated",
           value: "112%",
           section: "mechanicalLoads",
-          dependencies: ["d_119"],
+          dependencies: ["d_119", "ref_d_119"],
           label: "Ventilation Rate Ratio to Reference",
         },
-        n: {},
+        n: {
+          fieldId: "n_119",
+          type: "calculated",
+          value: "✓",
+          section: "mechanicalLoads",
+          dependencies: ["m_119"],
+          label: "Ventilation Rate Pass/Fail",
+        },
       },
     },
 
@@ -1649,7 +1671,14 @@ window.TEUI.SectionModules.sect13 = (function () {
           dependencies: ["cooling_daysActiveCooling", "h_124"], // Added h_124 dependency
           label: "Days Active Cooling Required (from Cooling Calc)",
         },
-        n: {},
+        n: {
+          fieldId: "n_124",
+          type: "calculated",
+          value: "✓",
+          section: "mechanicalLoads",
+          dependencies: ["m_124"],
+          label: "Mech Cooling Days Indicator",
+        },
       },
     },
   };
@@ -2663,8 +2692,8 @@ window.TEUI.SectionModules.sect13 = (function () {
 
     // Only update DOM for Target calculations
     if (!isReferenceCalculation) {
-      // J116: ALWAYS set (0 for No Cooling, j_113 for Heatpump, user value for dedicated)
-      setFieldValue("j_116", j_116_display, "number-2dp");
+      // ✅ NOTE: j_116 write is handled by updateTargetModelDOMValues() (line 3437)
+      // Don't write here to avoid double-writes
 
       setFieldValue("l_116", coolingSink_l116, "number-2dp-comma");
       setFieldValue("l_114", coolingSink_l114, "number-2dp-comma");
@@ -3196,6 +3225,198 @@ window.TEUI.SectionModules.sect13 = (function () {
     return finalFreeCoolingLimit;
   }
 
+  //==========================================================================
+  // M-N COMPLIANCE CALCULATION (Format-Once Pattern)
+  //==========================================================================
+
+  /**
+   * Calculate M-N compliance for mechanical loads (S13)
+   * Uses format-once pattern (S07/S09/S11 proven approach)
+   * Called after all field calculations are complete
+   * @param {boolean} isReferenceCalculation - Whether calculating for Reference model
+   */
+  function calculateMechanicalCompliance(isReferenceCalculation = false) {
+    // ✅ S07 PATTERN: Helper for ratio calculation with mode awareness
+    function calculateComplianceRatio(targetField, refField) {
+      if (isReferenceCalculation) {
+        return 1.0; // Reference mode: Always 100% (self-comparison)
+      } else {
+        const targetValue = window.TEUI.parseNumeric(
+          window.TEUI.StateManager.getValue(targetField)
+        );
+        const refValue = window.TEUI.parseNumeric(
+          window.TEUI.StateManager.getValue(refField)
+        );
+        return refValue > 0 ? targetValue / refValue : 0;
+      }
+    }
+
+    // Calculate ratios for each field
+    const m_113_ratio = calculateComplianceRatio("f_113", "ref_f_113"); // HSPF
+    const m_115_ratio = calculateComplianceRatio("j_115", "ref_j_115"); // AFUE
+    const m_116_ratio = calculateComplianceRatio("j_116", "ref_j_116"); // COPc
+
+    // m_117: INVERTED ratio (lower is better for cooling intensity)
+    const m_117_ratio = isReferenceCalculation
+      ? 1.0
+      : (() => {
+          const targetValue = window.TEUI.parseNumeric(
+            window.TEUI.StateManager.getValue("f_117")
+          );
+          const refValue = window.TEUI.parseNumeric(
+            window.TEUI.StateManager.getValue("ref_f_117")
+          );
+          return targetValue > 0 ? refValue / targetValue : 0;
+        })();
+
+    const m_118_ratio = calculateComplianceRatio("d_118", "ref_d_118"); // SRE %
+    const m_119_ratio = calculateComplianceRatio("d_119", "ref_d_119"); // Vent Rate
+
+    // ✅ FORMAT ONCE: Format to strings immediately (S07 pattern)
+    const prefix = isReferenceCalculation ? "ref_" : "";
+    const currentState = isReferenceCalculation ? ReferenceState : TargetState;
+
+    const m_113_formatted =
+      window.TEUI?.formatNumber?.(m_113_ratio, "percent-0dp") ?? "100%";
+    const m_115_formatted =
+      window.TEUI?.formatNumber?.(m_115_ratio, "percent-0dp") ?? "100%";
+    const m_116_formatted =
+      window.TEUI?.formatNumber?.(m_116_ratio, "percent-0dp") ?? "100%";
+    const m_117_formatted =
+      window.TEUI?.formatNumber?.(m_117_ratio, "percent-0dp") ?? "100%";
+    const m_118_formatted =
+      window.TEUI?.formatNumber?.(m_118_ratio, "percent-0dp") ?? "100%";
+    const m_119_formatted =
+      window.TEUI?.formatNumber?.(m_119_ratio, "percent-0dp") ?? "100%";
+
+    // Store formatted strings to LOCAL STATE (prevents format fighting)
+    currentState.setValue("m_113", m_113_formatted, "calculated");
+    currentState.setValue("m_115", m_115_formatted, "calculated");
+    currentState.setValue("m_116", m_116_formatted, "calculated");
+    currentState.setValue("m_117", m_117_formatted, "calculated");
+    currentState.setValue("m_118", m_118_formatted, "calculated");
+    currentState.setValue("m_119", m_119_formatted, "calculated");
+
+    // Store formatted strings to StateManager (for cross-section use)
+    window.TEUI.StateManager.setValue(
+      `${prefix}m_113`,
+      m_113_formatted,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}m_115`,
+      m_115_formatted,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}m_116`,
+      m_116_formatted,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}m_117`,
+      m_117_formatted,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}m_118`,
+      m_118_formatted,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}m_119`,
+      m_119_formatted,
+      "calculated"
+    );
+
+    // ❌ REMOVED: Direct DOM updates caused race condition
+    // Since calculateTargetModel() runs after calculateReferenceModel(),
+    // Target values were overwriting Reference 100% values in DOM.
+    // DOM updates now handled ONLY by updateCalculatedDisplayValues() (line 765)
+    // which is mode-aware and reads from correct state (ref_ prefix in Reference mode).
+
+    // Calculate N-column symbols (pass/fail logic)
+    const n_113_value = m_113_ratio >= 1.0 ? "✓" : "✗"; // Higher is better
+    const n_115_value = m_115_ratio >= 1.0 ? "✓" : "✗";
+    const n_116_value = m_116_ratio >= 1.0 ? "✓" : "✗";
+    const n_117_value = m_117_ratio >= 1.0 ? "✓" : "✗"; // Inverted: higher % = better
+    const n_118_value = m_118_ratio >= 1.0 ? "✓" : "✗";
+    const n_119_value = m_119_ratio >= 1.0 ? "✓" : "✗";
+
+    // n_124: Special case - read from m_124 (days mech cooling)
+    const m_124_value = window.TEUI.parseNumeric(
+      window.TEUI.StateManager.getValue(`${prefix}m_124`)
+    );
+    const n_124_value = m_124_value <= 0 ? "✓" : "⚠"; // ✓ if no cooling needed, ⚠ if cooling required
+
+    // Store N-column symbols to LOCAL STATE (prevents format fighting)
+    currentState.setValue("n_113", n_113_value, "calculated");
+    currentState.setValue("n_115", n_115_value, "calculated");
+    currentState.setValue("n_116", n_116_value, "calculated");
+    currentState.setValue("n_117", n_117_value, "calculated");
+    currentState.setValue("n_118", n_118_value, "calculated");
+    currentState.setValue("n_119", n_119_value, "calculated");
+    currentState.setValue("n_124", n_124_value, "calculated");
+
+    // Store N-column symbols to StateManager (for cross-section use)
+    window.TEUI.StateManager.setValue(
+      `${prefix}n_113`,
+      n_113_value,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}n_115`,
+      n_115_value,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}n_116`,
+      n_116_value,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}n_117`,
+      n_117_value,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}n_118`,
+      n_118_value,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}n_119`,
+      n_119_value,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}n_124`,
+      n_124_value,
+      "calculated"
+    );
+
+    // ❌ REMOVED: Direct DOM updates caused race condition
+    // N-column symbols were being overwritten by Target calculations.
+    // DOM updates now handled ONLY by updateCalculatedDisplayValues() (line 765)
+    // which reapplies CSS classes correctly based on current mode.
+
+    // ✅ CRITICAL: Only apply CSS classes in Target mode (S09 pattern)
+    if (!isReferenceCalculation) {
+      setElementClass("n_113", n_113_value === "✓" ? "checkmark" : "warning");
+      setElementClass("n_115", n_115_value === "✓" ? "checkmark" : "warning");
+      setElementClass("n_116", n_116_value === "✓" ? "checkmark" : "warning");
+      setElementClass("n_117", n_117_value === "✓" ? "checkmark" : "warning");
+      setElementClass("n_118", n_118_value === "✓" ? "checkmark" : "warning");
+      setElementClass("n_119", n_119_value === "✓" ? "checkmark" : "warning");
+
+      // n_124: Yellow checkmark when mechanical cooling required
+      setElementClass(
+        "n_124",
+        m_124_value <= 0 ? "checkmark" : "yellow-checkmark"
+      );
+    }
+  }
+
   /**
    * Calculate all values for this section
    * ✅ INCLUDES S11 PERSISTENCE PATTERN: Prevents Reference value race conditions
@@ -3232,6 +3453,10 @@ window.TEUI.SectionModules.sect13 = (function () {
           // Non-reference mode - no additional logic needed
         }
       }
+
+      // ✅ CRITICAL: Update M/N column DOM after both engines complete
+      // This ensures correct mode-aware display (100% in Reference, actual ratios in Target)
+      updateCalculatedDisplayValues();
     } catch (error) {
       console.error("[Section13] ❌ ERROR in calculateAll:", error);
     }
@@ -3298,6 +3523,25 @@ window.TEUI.SectionModules.sect13 = (function () {
         coolingVentilationResults,
         freeCoolingResults
       );
+
+      // Calculate M-N compliance for Reference model (always 100%)
+      calculateMechanicalCompliance(true);
+
+      // ✅ CRITICAL: Add M/N compliance values to lastReferenceResults
+      // This ensures S11 persistence pattern doesn't overwrite formatted percentages
+      lastReferenceResults.m_113 = "100%";
+      lastReferenceResults.m_115 = "100%";
+      lastReferenceResults.m_116 = "100%";
+      lastReferenceResults.m_117 = "100%";
+      lastReferenceResults.m_118 = "100%";
+      lastReferenceResults.m_119 = "100%";
+      lastReferenceResults.n_113 = "✓";
+      lastReferenceResults.n_115 = "✓";
+      lastReferenceResults.n_116 = "✓";
+      lastReferenceResults.n_117 = "✓";
+      lastReferenceResults.n_118 = "✓";
+      lastReferenceResults.n_119 = "✓";
+      lastReferenceResults.n_124 = "✓"; // Reference always has no cooling days
     } catch (error) {
       console.error(
         "[Section13] Error in Reference Model calculations:",
@@ -3367,8 +3611,8 @@ window.TEUI.SectionModules.sect13 = (function () {
         mitigatedResults
       );
 
-      // Update reference indicators after calculations
-      updateAllReferenceIndicators();
+      // Calculate M-N compliance for Target model (actual ratios and pass/fail)
+      calculateMechanicalCompliance(false);
     } catch (error) {
       console.error("[Section13] Error in Target Model calculations:", error);
     } finally {
@@ -3417,8 +3661,36 @@ window.TEUI.SectionModules.sect13 = (function () {
       setFieldValue("f_114", heatingResults.f_114, "number-2dp-comma");
 
     // Cooling System Results
-    if (coolingResults.j_116 !== undefined)
-      setFieldValue("j_116", coolingResults.j_116, "number-2dp");
+    // ✅ FALLBACK TRAP FIX: Only write j_116 to state when it's a calculated/valid value
+    // DON'T write when "No Cooling" (j_116=0) - preserve user's value for toggle-back
+    const coolingSystemType = ModeManager.getValue("d_116") || "No Cooling";
+    const heatingSystemType = ModeManager.getValue("d_113");
+
+    if (coolingResults.j_116 !== undefined) {
+      if (coolingSystemType === "No Cooling") {
+        // Just update DOM, don't write 0 to state
+        const j116Element = document.querySelector('[data-field-id="j_116"]');
+        if (j116Element) {
+          j116Element.textContent = "0.00";
+        }
+      } else if (heatingSystemType === "Heatpump") {
+        // Heatpump: j_116 is calculated, write to state
+        setFieldValue("j_116", coolingResults.j_116, "number-2dp");
+      } else {
+        // Gas/Oil with Cooling: j_116 is user-editable, preserve state
+        // Just update DOM if value exists in state
+        const stateValue = ModeManager.getValue("j_116");
+        if (stateValue) {
+          const j116Element = document.querySelector('[data-field-id="j_116"]');
+          if (j116Element) {
+            j116Element.textContent = window.TEUI.formatNumber(
+              window.TEUI.parseNumeric(stateValue),
+              "number-2dp"
+            );
+          }
+        }
+      }
+    }
     if (coolingResults.l_116 !== undefined)
       setFieldValue("l_116", coolingResults.l_116, "number-2dp-comma");
     if (coolingResults.l_114 !== undefined)
@@ -3543,6 +3815,10 @@ window.TEUI.SectionModules.sect13 = (function () {
   //==========================================================================
   // SIMPLIFIED REFERENCE MODEL FUNCTIONS (Pattern 2 - Like S14/S15)
   //==========================================================================
+  // ⚠️ DO NOT DELETE: These functions appear unused (ESLint warns, no direct calls found),
+  // but removing them breaks calculations. Possibly used by Cooling.js or called dynamically.
+  // Tested Dec 3, 2025: Deletion caused calculation regression, revert restored parity.
+  // Keep until usage path is fully traced.
 
   /**
    * REFERENCE MODEL: Calculate heating system values using Reference inputs
