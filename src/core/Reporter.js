@@ -302,27 +302,16 @@ TEUI.Reporter = (function () {
       yPos += lineHeight;
     });
 
-    // Footer with logos and generation date
+    // Footer with generation date
     pdf.setFontSize(9);
     pdf.setTextColor("#666666");
-
-    // Add logos to footer
-    const logoY = pageHeight - 0.8;
-    const logoHeight = 0.4;
-
-    // OpenBuilding logo (left side)
-    const obLogoPath = "src/assets/imageOB.png";
-    const obLogoWidth = logoHeight; // Square logo
-    pdf.addImage(obLogoPath, "PNG", leftMargin, logoY, obLogoWidth, logoHeight);
-
-    // OBJECTIVE logo (next to OB logo)
-    const objLogoPath = "src/assets/image014.png";
-    const objLogoWidth = logoHeight * 4; // Wide logo (approximate aspect ratio)
-    pdf.addImage(objLogoPath, "PNG", leftMargin + obLogoWidth + 0.2, logoY, objLogoWidth, logoHeight);
-
-    // Generation timestamp (right-aligned)
     pdf.text(
       `Generated: ${getMetricTimestamp()}`,
+      leftMargin,
+      pageHeight - 0.5
+    );
+    pdf.text(
+      "OBJECTIVE TEUI Calculator | openbuilding.ca",
       pageWidth - leftMargin,
       pageHeight - 0.5,
       { align: "right" }
@@ -629,27 +618,16 @@ TEUI.Reporter = (function () {
       yPos += lineSpacing;
     });
 
-    // Footer with logos and generation date
+    // Footer with generation date
     pdf.setFontSize(9);
     pdf.setTextColor("#666666");
-
-    // Add logos to footer
-    const logoY = pageHeight - 0.8;
-    const logoHeight = 0.4;
-
-    // OpenBuilding logo (left side)
-    const obLogoPath = "src/assets/imageOB.png";
-    const obLogoWidth = logoHeight; // Square logo
-    pdf.addImage(obLogoPath, "PNG", leftMarg, logoY, obLogoWidth, logoHeight);
-
-    // OBJECTIVE logo (next to OB logo)
-    const objLogoPath = "src/assets/image014.png";
-    const objLogoWidth = logoHeight * 4; // Wide logo (approximate aspect ratio)
-    pdf.addImage(objLogoPath, "PNG", leftMarg + obLogoWidth + 0.2, logoY, objLogoWidth, logoHeight);
-
-    // Generation timestamp (right-aligned)
     pdf.text(
       `Generated: ${getMetricTimestamp()}`,
+      leftMarg,
+      pageHeight - 0.5
+    );
+    pdf.text(
+      "OBJECTIVE TEUI Calculator | openbuilding.ca",
       pageWidth - leftMarg,
       pageHeight - 0.5,
       { align: "right" }

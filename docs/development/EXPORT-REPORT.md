@@ -2,7 +2,7 @@
 
 **Feature**: Download Report (PDF) button
 **Goal**: Export clean, professional PDF of calculator data without UI chrome
-**Status**: Planning (Dec 3, 2025)
+**Status**: In Progress (Dec 4, 2025)
 
 ## Overview
 
@@ -416,13 +416,103 @@ document.addEventListener('DOMContentLoaded', initializeReportDownload);
 - [ ] Handle errors gracefully
 - [ ] Test download functionality
 
+## Completed Work (Dec 4, 2025)
+
+### ✅ Phase 4B: Text-Based PDF Generation (COMPLETED)
+- **File Created**: `src/core/Reporter.js` (802 lines)
+- **Approach**: Text-based jsPDF (not html2canvas)
+- **Features Implemented**:
+  - Dual-report generation (Target + Reference models combined into single PDF)
+  - Professional title sheets for both models with left-aligned layout
+  - Building information from Section02 field definitions (proper labels)
+  - Location field combining City + Province (h_19, d_19)
+  - Metric timestamp format (YYYY.MM.DD, HHhMM)
+  - Text-based footer with generation timestamp and attribution
+  - Multi-page layout with automatic page breaks
+  - Section headers with proper formatting
+  - Row numbering in format "02.1" (Section.Row)
+  - Data extraction from DOM with formatting preservation
+
+### ✅ Phase 5: Data Extraction (COMPLETED)
+- **Function**: `extractReportData()` in Reporter.js
+- Extracts sections S01-S15 (skips graphics S16-S18)
+- Captures cell content, formatting (bold/italic), field IDs, classes
+- Handles dropdowns, sliders, number inputs, and text content
+- Mode-aware extraction (Target vs Reference)
+
+### ✅ Phase 6: UI Integration (COMPLETED)
+- **File Modified**: `src/core/init.js` (lines 702-739)
+- Wired up "Download Report" button
+- Loading state during PDF generation ("Generating PDFs...")
+- Error handling with user alerts
+- Null-safety checks for optional buttons (teui-factsheet, tedi-factsheet)
+
+### ✅ Library Integration (COMPLETED)
+- **File Modified**: `index.html` (lines 65-67, 89-90)
+- Added jsPDF 2.5.1 via CDN
+- Added html2canvas 1.4.1 via CDN (for future use)
+- Registered Reporter.js module in load order
+
+### Title Sheet Details (COMPLETED)
+- **Layout**: Landscape Letter (11" × 8.5"), 0.5" margins
+- **Project Title**: Large (24pt), bold, left-justified at vertical center
+- **Model Type**: "Target Model Report" or "Reference Model Report" (16pt, grey for Reference)
+- **Building Info**: Left-justified label: value pairs using proper field labels:
+  - Major Occupancy (d_12)
+  - Reference Standard (d_13)
+  - Location (h_19, d_19) - "City, Province" format
+  - Reporting Period (h_12)
+  - Service Life (h_13)
+  - Conditioned Area (h_15)
+  - Certifier (i_16)
+  - License No. (i_17)
+  - ~~Carbon Benchmarking Standard~~ (removed to reduce clutter)
+- **Footer**: Generation timestamp (left) + "OBJECTIVE TEUI Calculator | openbuilding.ca" (right)
+- **Logo Attempts**: PNG and SVG logos attempted but removed due to:
+  - PNG corruption errors
+  - SVG plugin requirement
+  - ~33ms load time regression
+  - Decision: Text-only footer for performance
+
+### Current Issues
+1. **Horizontal Layout** (IN PROGRESS):
+   - Excessive whitespace after row numbers
+   - Content clipping on right edge of page
+   - Need to optimize column widths for landscape layout
+   - Screenshot analysis shows wasted space in row number column
+
+2. **Performance**:
+   - Minor load time regression (~33ms)
+   - May be related to CDN/Cloudflare for jsPDF libraries
+   - Need to test if removing logos improved performance
+
+### Next Steps
+1. **Fix horizontal layout** (HIGH PRIORITY):
+   - Reduce row number column width
+   - Optimize content column spacing
+   - Ensure all data fits within page width
+   - Test with various section widths
+
+2. **Reference Model Styling** (MEDIUM PRIORITY):
+   - Implement grey text for Reference model content
+   - Add red highlighting for values differing from Target
+   - Use `targetData` parameter in `generatePDF()` for comparison
+
+3. **Testing** (HIGH PRIORITY):
+   - Test all 15 sections render correctly
+   - Verify no content clipping
+   - Check page breaks are intelligent
+   - Test with different data sets
+
 ## File Structure
 
 ```
 src/core/
-  ├── ReportGenerator.js       (NEW - main export logic)
-  ├── FileHandler.js            (MODIFY - add report download init)
+  ├── Reporter.js              ✅ NEW - PDF export logic (802 lines)
+  ├── init.js                  ✅ MODIFIED - wired up Download Report button
   └── ...
+
+index.html                     ✅ MODIFIED - added jsPDF/html2canvas CDN links
 
 docs/development/
   └── EXPORT-REPORT.md          (This file)
