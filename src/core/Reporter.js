@@ -121,9 +121,22 @@ TEUI.Reporter = (function () {
           tdElements.forEach((td, cellIndex) => {
             // Column mapping: 0=A, 1=B (ID), 2=C (Description), 3+=D-N (Values)
             const colLetter = String.fromCharCode(97 + cellIndex); // a, b, c, etc.
+            const colLetterUpper = colLetter.toUpperCase();
+
+            // Skip ID columns to save horizontal space (redundant with row numbering)
+            // Column B (index 1): Skip in ALL sections
+            // Column F (index 5): Skip in sections 02, 03, 05, 06, 08, 14, 15
+            // Column J (index 9): Skip in sections 02, 03
+            const sectionNumber = sectionId.replace('section', '');
+            const shouldSkipColumn =
+              colLetterUpper === 'B' || // Skip column B in all sections
+              (colLetterUpper === 'F' && ['02', '03', '05', '06', '08', '14', '15'].includes(sectionNumber)) ||
+              (colLetterUpper === 'J' && ['02', '03'].includes(sectionNumber));
+
+            if (shouldSkipColumn) return; // Skip this column entirely
 
             const cellData = {
-              column: colLetter.toUpperCase(),
+              column: colLetterUpper,
               content: "",
               fieldId: td.getAttribute("data-field-id"),
               classes: Array.from(td.classList),
@@ -412,8 +425,8 @@ TEUI.Reporter = (function () {
         // Skip subheader row if present
         if (row.isSubheaderRow) return;
 
-        // Row description (Column C)
-        const descCell = row.cells[2];
+        // Row description (Column C, now index 1 after skipping Column B)
+        const descCell = row.cells[1]; // Column C (was index 2, now index 1 after skipping B)
         if (descCell && descCell.content) {
           pdf.setFontSize(12);
           pdf.setTextColor("#666666");
@@ -422,10 +435,10 @@ TEUI.Reporter = (function () {
         }
 
         // Row values - show multiple columns horizontally
-        let xPos = leftMargin + 3.5;
+        let xPos = leftMargin + 3.0; // Start closer (was 3.5)
         const colWidth = 1.2;
 
-        row.cells.slice(3).forEach((cell, cellIndex) => {
+        row.cells.slice(2).forEach((cell, cellIndex) => { // Index 2+ (was 3+ before skipping B)
           if (cell.content && cell.colSpan === 1) {
             pdf.setFontSize(14);
             pdf.setTextColor("#000000");
@@ -441,8 +454,8 @@ TEUI.Reporter = (function () {
 
     // Helper function to calculate dynamic column widths for a section
     function calculateColumnWidths(section) {
-      const availableWidth = rightMargin - leftMargin - 3.5; // Space after description column
-      const valueCells = section.rows[0]?.cells.slice(3) || []; // Columns D onwards
+      const availableWidth = rightMargin - leftMargin - 3.0; // Space after description column
+      const valueCells = section.rows[0]?.cells.slice(2) || []; // Columns D onwards (now index 2+ after skipping B)
       const numColumns = valueCells.length;
 
       if (numColumns === 0) return [];
@@ -451,7 +464,7 @@ TEUI.Reporter = (function () {
       const columnMaxLengths = valueCells.map((_, colIdx) => {
         let maxLen = 0;
         section.rows.forEach(row => {
-          const cell = row.cells[3 + colIdx];
+          const cell = row.cells[2 + colIdx]; // Index 2+ (was 3+ before skipping B)
           if (cell && cell.content) {
             // For subheader rows, account for line breaks
             if (row.isSubheaderRow && cell.content.includes("\n")) {
@@ -523,16 +536,8 @@ TEUI.Reporter = (function () {
         const rowNumberText = `${section.title.split(".")[0]}.${rowIndex + 1}`;
         pdf.text(rowNumberText, leftMargin, yPos);
 
-        // Row ID (Column B) - closer to row number
-        pdf.setFontSize(8);
-        pdf.setTextColor("#666666");
-        const rowIdCell = row.cells[1]; // Column B
-        if (rowIdCell && rowIdCell.content) {
-          pdf.text(rowIdCell.content, leftMargin + 0.25, yPos);
-        }
-
-        // Description (Column C) - closer to row ID (Comment #4: trim more horizontal area)
-        const descCell = row.cells[2];
+        // Description (Column C, now index 1 after skipping Column B) - start closer to left
+        const descCell = row.cells[1]; // Column C (was index 2, now index 1 after skipping B)
         if (descCell && descCell.content) {
           pdf.setFontSize(9);
           pdf.setTextColor("#000000");
@@ -542,13 +547,13 @@ TEUI.Reporter = (function () {
           const descText = descCell.content.length > maxDescWidth
             ? descCell.content.substring(0, maxDescWidth) + "..."
             : descCell.content;
-          pdf.text(descText, leftMargin + 0.6, yPos);
+          pdf.text(descText, leftMargin + 0.25, yPos); // Moved closer to row number (was 0.6)
         }
 
-        // Value columns (D onwards) - use dynamic widths
-        let xPos = leftMargin + 3.5; // Start position for value columns
+        // Value columns (D onwards, now index 2+ after skipping B and optionally F/J) - use dynamic widths
+        let xPos = leftMargin + 3.0; // Start position for value columns (was 3.5, now 3.0)
 
-        row.cells.slice(3).forEach((cell, cellIndex) => {
+        row.cells.slice(2).forEach((cell, cellIndex) => {
           if (cell.content && cell.colSpan === 1) {
             const colWidth = columnWidths[cellIndex] || 0.85;
 
@@ -803,7 +808,7 @@ TEUI.Reporter = (function () {
       section.rows.forEach(row => {
         if (row.isSubheaderRow) return;
 
-        const descCell = row.cells[2];
+        const descCell = row.cells[1]; // Column C (was index 2, now index 1 after skipping B)
         if (descCell && descCell.content) {
           pdf.setFontSize(12);
           pdf.setTextColor(modelType === "Reference" ? "#888888" : "#666666");
@@ -811,10 +816,10 @@ TEUI.Reporter = (function () {
           pdf.text(descCell.content, leftMargin, yPos);
         }
 
-        let xPos = leftMargin + 3.5;
+        let xPos = leftMargin + 3.0; // Start closer (was 3.5)
         const colWidth = 1.2;
 
-        row.cells.slice(3).forEach(cell => {
+        row.cells.slice(2).forEach(cell => { // Index 2+ (was 3+ before skipping B)
           if (cell.content && cell.colSpan === 1) {
             pdf.setFontSize(14);
             pdf.setTextColor(modelType === "Reference" ? "#888888" : "#000000");
@@ -830,7 +835,7 @@ TEUI.Reporter = (function () {
 
     // Helper function to calculate dynamic column widths for a section (same as Target)
     function calculateColumnWidthsRef(section) {
-      const valueCells = section.rows[0]?.cells.slice(3) || [];
+      const valueCells = section.rows[0]?.cells.slice(2) || []; // Index 2+ (was 3+ before skipping B)
       const numColumns = valueCells.length;
 
       if (numColumns === 0) return [];
@@ -838,7 +843,7 @@ TEUI.Reporter = (function () {
       const columnMaxLengths = valueCells.map((_, colIdx) => {
         let maxLen = 0;
         section.rows.forEach(row => {
-          const cell = row.cells[3 + colIdx];
+          const cell = row.cells[2 + colIdx]; // Index 2+ (was 3+ before skipping B)
           if (cell && cell.content) {
             if (row.isSubheaderRow && cell.content.includes("\n")) {
               const lines = cell.content.split("\n");
@@ -904,32 +909,24 @@ TEUI.Reporter = (function () {
         const rowNumberText = `${section.title.split(".")[0]}.${rowIndex + 1}`;
         pdf.text(rowNumberText, leftMargin, yPos);
 
-        // Row ID (Column B) - closer to row number
-        pdf.setFontSize(8);
-        pdf.setTextColor("#666666");
-        const rowIdCell = row.cells[1]; // Column B
-        if (rowIdCell && rowIdCell.content) {
-          pdf.text(rowIdCell.content, leftMargin + 0.25, yPos);
-        }
-
-        // Description (Column C) - in grey for Reference Model, closer to row ID
-        const descCell = row.cells[2];
+        // Description (Column C, now index 1 after skipping Column B) - start closer to left, grey for Reference
+        const descCell = row.cells[1]; // Column C (was index 2, now index 1 after skipping B)
         if (descCell && descCell.content) {
           pdf.setFontSize(9);
           pdf.setTextColor("#888888"); // Grey for Reference
           pdf.setFont(undefined, descCell.isBold ? "bold" : "normal");
-          // Truncate long descriptions to fit
-          const maxDescWidth = 35; // characters
+          // Truncate long descriptions to fit - reduced from 35 to 28 characters (match Target)
+          const maxDescWidth = 28; // characters
           const descText = descCell.content.length > maxDescWidth
             ? descCell.content.substring(0, maxDescWidth) + "..."
             : descCell.content;
-          pdf.text(descText, leftMargin + 0.6, yPos);
+          pdf.text(descText, leftMargin + 0.25, yPos); // Moved closer to row number (was 0.6)
         }
 
-        // Value columns (D onwards) - use dynamic widths
-        let xPos = leftMargin + 3.5; // Start position for value columns
+        // Value columns (D onwards, now index 2+ after skipping B and optionally F/J) - use dynamic widths
+        let xPos = leftMargin + 3.0; // Start position for value columns (was 3.5, now 3.0)
 
-        row.cells.slice(3).forEach((cell, cellIndex) => {
+        row.cells.slice(2).forEach((cell, cellIndex) => {
           if (cell.content && cell.colSpan === 1) {
             const colWidth = columnWidths[cellIndex] || 0.85;
 
