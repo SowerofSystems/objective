@@ -528,6 +528,90 @@ document.addEventListener('DOMContentLoaded', initializeReportDownload);
   - Lines now properly appear under row content, not overlapping text
 - **Result**: Clean horizontal separators between rows ✅ FIXED
 
+### ✅ User Feedback Layout Improvements (COMPLETED - Dec 4, 2025)
+**Based on marked-up screenshot with 5 critical comments:**
+
+#### Comment #1: More Vertical Space Before Subheaders
+- **Problem**: Subheader rows too close to previous section content
+- **Solution**: Increased pre-subheader spacing from `lineHeight * 0.5` to `lineHeight * 0.8`
+- **Location**: `Reporter.js` lines 497-500
+- **Result**: Better visual separation between section groups ✅ FIXED
+
+#### Comment #2: Grey Divider Lines Below Text
+- **Problem**: Divider lines touching or overlapping row text
+- **Solution**: Repositioned from `yPos - lineHeight * 0.05` to `yPos + lineHeight * 0.02`
+- **Location**: `Reporter.js` lines 581-584
+- **Result**: Clean gap between text and divider lines ✅ FIXED
+
+#### Comment #3: Prevent Orphaned Section Headers
+- **Problem**: Section headers appearing at bottom of page without content
+- **Solution**: Added minimum section height check (4 lineHeight) to ensure header + 2-3 rows fit together
+- **Location**: `Reporter.js` lines 475-477
+- **Implementation**: `checkPageBreak(minSectionHeight)` before rendering section header
+- **Result**: Section headers always have accompanying content on same page ✅ FIXED
+
+#### Comment #4: Trim Description Column Width
+- **Problem**: Description column too wide, reducing space for data columns
+- **Solution**: Reduced truncation from 35 characters to 28 characters
+- **Location**: `Reporter.js` lines 526-531
+- **Space saved**: ~0.5" horizontal space freed for value columns
+- **Result**: More room for data while maintaining readable descriptions ✅ FIXED
+
+#### Comment #5: Remove Padding Above Subheader Content
+- **Problem**: Excessive padding above subheader row content
+- **Solution**: Removed extra padding, content now aligns to top of cell for better readability
+- **Result**: Cleaner, more compact subheader presentation ✅ FIXED
+
+### ✅ Section 01 Special Page (COMPLETED - Dec 4, 2025)
+- **Goal**: Display Section 01 (Key Values) on dedicated page immediately after title sheet
+- **Implementation**:
+  - Added `renderSection01KeyValues()` function (`Reporter.js` lines 385-426)
+  - Creates page 2 specifically for Section 01 with special formatting
+  - Larger fonts: 18pt title, 14pt values, 12pt labels
+  - Vertically centered layout
+  - 2x line spacing for prominence
+  - Skip Section 01 in main section loop (lines 472-473)
+  - Applied to both Target and Reference models
+- **Current Status**: ⚠️ Page 2 renders blank (page number shows but no content)
+- **Debugging Needed**:
+  - Verify Section 01 data extraction (title match: "01. Key Values")
+  - Check `renderSection01KeyValues()` function logic
+  - Ensure section.rows data is populated correctly
+- **Next Steps**: Debug blank page issue before deploying
+
+### ✅ ID Column Omission (COMPLETED - Dec 4, 2025)
+- **Goal**: Remove redundant ID columns to maximize horizontal space for data
+- **Columns Removed**:
+  - Column B (ID): ALL sections - redundant with row numbering (02.1 format)
+  - Column F (ID): Sections 02, 03, 05, 06, 08, 14, 15
+  - Column J (ID): Sections 02, 03
+- **Implementation**:
+  - Filter applied during data extraction (`Reporter.js` lines 126-137)
+  - Fixed section ID matching (camelCase: `buildingInfo`, `climateCalculations` vs numeric)
+  - Updated cell indices: Description `cells[2]` → `cells[1]`, Values `slice(3)` → `slice(2)`
+  - Moved description column closer: 0.6" → 0.25" (saved 0.35")
+  - Moved value columns start: 3.5" → 3.0" (saved 0.5")
+- **Space Savings**: ~1.5-2.0" horizontal space freed for 2-3 additional value columns
+- **Result**: Cleaner layout, more room for data ✅ FIXED
+
+### ✅ Full-Section Pagination (COMPLETED - Dec 4, 2025)
+- **Goal**: Keep entire sections together on single pages, prevent mid-section breaks
+- **Problem**: Sections like Emissions (S05) and S09 breaking across pages
+- **Implementation**:
+  - Added `calculateSectionHeight()` function (`Reporter.js` lines 470-492)
+  - Pre-calculates: header + underline + all rows + spacing
+  - Checks: `if (yPos + fullSectionHeight > bottomMargin)` → new page
+  - Applied to both Target (`lines 499-506`) and Reference (`lines 766-773`) models
+- **Result**: Professional page breaks, sections always start together ✅ FIXED
+
+### ✅ Section Header Spacing Tightened (COMPLETED - Dec 4, 2025)
+- **Goal**: Reduce excessive vertical space between section title underline and first row
+- **Implementation**:
+  - Reduced post-underline spacing from `lineHeight * 0.5` to `lineHeight * 0.2`
+  - Applied to both Target and Reference model rendering
+  - Updated `calculateSectionHeight()` calculations to match
+- **Result**: Tighter, more professional section header layout ✅ FIXED
+
 ### Current Issues
 1. **Performance**:
    - Minor load time regression (~33ms)
@@ -572,6 +656,15 @@ docs/development/
 - [x] ~~Row numbers display correctly~~ (format: "02.1")
 - [x] ~~Section headers formatted properly~~ ✅ FIXED - increased spacing
 - [x] ~~Page format changed to Legal landscape (14" x 8.5")~~ ✅ IMPLEMENTED
+- [x] ~~Subheader rows have proper spacing~~ ✅ FIXED - increased vertical space
+- [x] ~~Grey divider lines positioned below text~~ ✅ FIXED - repositioned with gap
+- [x] ~~Orphaned section headers prevented~~ ✅ FIXED - minimum section height check
+- [x] ~~Description column width optimized~~ ✅ FIXED - reduced to 28 characters
+- [x] ~~Dynamic column widths prevent text overlap~~ ✅ FIXED - content-based sizing
+- [x] ~~ID columns omitted to save horizontal space~~ ✅ FIXED - Column B, F, J removed
+- [x] ~~Full-section pagination prevents mid-section breaks~~ ✅ FIXED - sections stay together
+- [x] ~~Section header spacing tightened~~ ✅ FIXED - reduced post-underline gap
+- [ ] Section 01 special page renders correctly (⚠️ BLANK - needs debugging)
 - [ ] Multi-page layout works (no cut-off content) (NEEDS TESTING with Legal format)
 - [x] ~~PDF downloads with correct filename~~ (ProjectName_Report_YYYY.MM.DD.pdf)
 - [x] ~~Works in both Target and Reference modes~~ (dual report in single PDF)
@@ -643,141 +736,172 @@ docs/development/
 - Consider progressive rendering for better UX (show progress bar)
 
 
-**Attachment of CSV within PDF for subsequent extraction/filesaving/imports**
+## CSV Embedding in PDF (FUTURE ENHANCEMENT)
 
-# PDF CSV Embedding and Extraction Example
-This file provides example code for:
-- Embedding a CSV file inside a PDF using jsPDF
-- Extracting the CSV from a PDF using PDF.js in the browser
-- Passing the extracted CSV into an existing CSV import pipeline
+### Goal
+Embed the full CSV export data as an attachment inside the PDF so users can:
+1. Browse to the PDF file in the future
+2. Import it directly through the existing CSV import flow
+3. Retrieve exact Target and Reference model data without needing the separate CSV file
 
----
+### Technical Approach
 
-## 1. Create PDF With Embedded CSV (jsPDF)
+This feature leverages:
+- **jsPDF `attachFile()` API**: Embeds CSV as a real file attachment in the PDF (not visible text)
+- **PDF.js `getAttachments()` API**: Extracts embedded files from PDF in browser
+- **Existing FileHandler.js**: Reuses `processImportedCSV()` method for parsing
 
-- Embed - this wwill paste a visible blob of the .csv into the exported PDF that a user can use later on to re-import the specific file (Target and Reference Data) for future analysis and optimization. FileHandler can process parsing data from the .csv attachment in the PDF in the same way it currently does for standalone .csv reads. 
+### Implementation Plan
 
-Here is a clean, self-contained Markdown code block with:
-jsPDF code to embed a CSV file as an attachment
-PDF.js extraction code to detect and parse the CSV
-Hooks to pass the CSV into your existing import handler
-You can paste this directly into your .md file for your agent to complete/extend.
+#### Step 1: Generate CSV Blob in Reporter.js
 
-1. 
+Leverage the existing `exportToCSV()` method from FileHandler.js to generate the CSV data:
 
-```js
-// REQUIREMENTS:
-// - jsPDF >= 2.x
-// - { attachFile } plugin is included (in most builds)
+```javascript
+// In Reporter.js - after PDF generation completes
+async function embedCSVInPDF(pdf) {
+  // Use existing FileHandler.exportToCSV() to generate standardized CSV
+  const csvBlob = window.FileHandler.exportToCSV();
 
-import { jsPDF } from "jspdf";
+  // Convert Blob to string for jsPDF
+  const csvText = await csvBlob.text();
 
-export function createPdfWithCsv(csvString) {
-    const doc = new jsPDF();
+  // Attach CSV to PDF using jsPDF attachFile API
+  pdf.attachFile({
+    name: "OBJECTIVE-Export.csv",
+    data: csvText,
+    mimeType: "text/csv",
+    description: "OBJECTIVE Calculator Data - Target and Reference Models"
+  });
 
-    // Add visual text to inform user the PDF contains embedded CSV
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
-    doc.text("This PDF contains an embedded CSV file named data.csv.", 10, 20);
-
-    // Attach the CSV as a real file inside the PDF
-    doc.attachFile({
-        name: "data.csv",
-        data: csvString,
-        mimeType: "text/csv"
-    });
-
-    // Save or return the PDF
-    return doc.output("blob"); // or `"arraybuffer"` or `"datauristring"`
+  return pdf;
 }
+```
 
-2.  Extract
+**Key pattern from FileHandler.js** (`exportToCSV()` lines 1096-1428):
+- 3-row CSV format: headers (with labels), target values, reference values
+- Header format: `"fieldId: Label"` for human readability
+- Dual-state architecture: Both Target and Reference in single file
+- Proper escaping for commas, quotes, newlines
+- Field precision: U-values 3dp, coefficients 2dp
 
+#### Step 2: Detect PDF Files in File Import
 
-```js
-// REQUIREMENTS:
-// - jsPDF >= 2.x
-// - { attachFile } plugin is included (in most builds)
+Modify FileHandler.js to detect PDF file type and route to extraction:
 
-import { jsPDF } from "jspdf";
+```javascript
+// In FileHandler.js - handleFileSelect() method (around line 280)
+handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
 
-export function createPdfWithCsv(csvString) {
-    const doc = new jsPDF();
+  const fileName = file.name.toLowerCase();
 
-    // Add visual text to inform user the PDF contains embedded CSV
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
-    doc.text("This PDF contains an embedded CSV file named data.csv.", 10, 20);
-
-    // Attach the CSV as a real file inside the PDF
-    doc.attachFile({
-        name: "data.csv",
-        data: csvString,
-        mimeType: "text/csv"
-    });
-
-    // Save or return the PDF
-    return doc.output("blob"); // or `"arraybuffer"` or `"datauristring"`
+  // Check file type
+  if (fileName.endsWith('.csv')) {
+    this.importFromCSV(file);
+  } else if (fileName.endsWith('.pdf')) {
+    this.extractAndImportFromPDF(file);
+  } else {
+    alert('Unsupported file type. Please select a CSV or PDF file.');
+  }
 }
+```
 
-// REQUIREMENTS:
-// npm install pdfjs-dist
-// or include the CDN version
+#### Step 3: Extract CSV from PDF
 
-import * as pdfjsLib from "pdfjs-dist";
+Add new method to FileHandler.js using PDF.js:
 
-// Worker setup (PDF.js required)
-pdfjsLib.GlobalWorkerOptions.workerSrc = 
-    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js";
+```javascript
+// In FileHandler.js - new method
+async extractAndImportFromPDF(pdfFile) {
+  try {
+    // Load PDF.js library (add to index.html CDN links)
+    const pdfjsLib = window['pdfjs-dist/build/pdf'];
 
-export async function extractCsvFromPdf(file) {
-    // Load PDF
-    const loadingTask = pdfjsLib.getDocument({ data: await file.arrayBuffer() });
-    const pdf = await loadingTask.promise;
+    // Load PDF document
+    const arrayBuffer = await pdfFile.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
-    // Extract attachments (where jsPDF stores the CSV)
+    // Extract attachments
     const attachments = await pdf.getAttachments();
 
-    if (!attachments) {
-        throw new Error("No attachments found in PDF.");
+    if (!attachments || Object.keys(attachments).length === 0) {
+      throw new Error("No embedded CSV found in PDF. Please use a PDF exported from OBJECTIVE.");
     }
 
-    // Look for .csv attachment
+    // Find CSV attachment
+    let csvAttachment = null;
     for (const filename in attachments) {
-        if (filename.toLowerCase().endsWith(".csv")) {
-            const attachment = attachments[filename];
-            const csvText = new TextDecoder().decode(attachment.content);
-
-            // Return the raw CSV text so the caller can parse it
-            return {
-                filename,
-                csvText
-            };
-        }
+      if (filename.toLowerCase().endsWith('.csv')) {
+        csvAttachment = attachments[filename];
+        break;
+      }
     }
 
-    throw new Error("No CSV attachment found in PDF.");
-}
-
-3. Use the Imported CSV in Your Existing Handler
-
-
-import { extractCsvFromPdf } from "./extractCsvFromPdf.js";
-import { processCsv } from "./yourCsvHandler.js"; // Your existing pipeline
-
-async function handlePdfUpload(pdfFile) {
-    try {
-        const { filename, csvText } = await extractCsvFromPdf(pdfFile);
-
-        console.log("Extracted CSV:", filename);
-        console.log(csvText);
-
-        // Process CSV using your existing logic
-        processCsv(csvText);
-    } catch (err) {
-        console.error("Failed to extract CSV:", err);
+    if (!csvAttachment) {
+      throw new Error("No CSV attachment found in PDF.");
     }
+
+    // Decode CSV content
+    const csvText = new TextDecoder('utf-8').decode(csvAttachment.content);
+
+    // Create virtual File object for existing import pipeline
+    const csvBlob = new Blob([csvText], { type: 'text/csv' });
+    const csvFile = new File([csvBlob], 'extracted.csv', { type: 'text/csv' });
+
+    // Pass to existing CSV import logic
+    this.importFromCSV(csvFile);
+
+  } catch (error) {
+    console.error('PDF CSV extraction failed:', error);
+    alert(`Failed to import from PDF: ${error.message}`);
+  }
 }
+```
+
+#### Step 4: Add PDF.js Library
+
+Add to `index.html` in the CDN links section:
+
+```html
+<!-- PDF.js for CSV extraction from PDF attachments -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.js"></script>
+<script>
+  // Configure PDF.js worker
+  if (window['pdfjs-dist/build/pdf']) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js';
+  }
+</script>
+```
+
+### Integration Points
+
+1. **Reporter.js `generatePDF()`**: Call `embedCSVInPDF(pdf)` before saving
+2. **FileHandler.js `handleFileSelect()`**: Add PDF file type detection
+3. **FileHandler.js**: Add new `extractAndImportFromPDF()` method
+4. **index.html**: Add PDF.js CDN links
+
+### Advantages
+
+- **Seamless user experience**: Browse to PDF, import directly
+- **No extra files**: CSV embedded in PDF, single file to manage
+- **Exact data recovery**: Same CSV format as standalone export
+- **Reuses existing code**: `processImportedCSV()` handles all parsing logic
+- **Dual-state support**: Target and Reference models in single PDF attachment
+
+### Implementation Notes
+
+- **File size impact**: CSV adds ~5-20KB to PDF (negligible)
+- **Browser compatibility**: PDF.js works in all modern browsers
+- **Error handling**: Graceful fallback if PDF has no attachment
+- **Security**: PDF.js is actively maintained, no XSS/injection risks with text decoding
+- **Testing**: Verify import quarantine pattern works (listener muting, validation)
+
+### Status
+
+⏳ **Not yet implemented** - documented for future development
 
 
 

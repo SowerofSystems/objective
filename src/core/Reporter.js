@@ -501,7 +501,7 @@ TEUI.Reporter = (function () {
 
       // Section header height
       height += lineHeight * 2.2; // Title
-      height += lineHeight * 0.5; // Post-underline space
+      height += lineHeight * 0.2; // Post-underline space (reduced from 0.5)
 
       // Row heights
       section.rows.forEach(row => {
@@ -547,7 +547,7 @@ TEUI.Reporter = (function () {
       pdf.setDrawColor("#CCCCCC");
       pdf.setLineWidth(0.01);
       pdf.line(leftMargin, yPos - lineHeight * 0.8, rightMargin, yPos - lineHeight * 0.8); // Underline positioned higher
-      yPos += lineHeight * 0.5; // Add extra space after underline before content
+      yPos += lineHeight * 0.2; // Reduced from 0.5 to 0.2 for tighter spacing
 
       // Section rows
       section.rows.forEach((row, rowIndex) => {
@@ -903,7 +903,7 @@ TEUI.Reporter = (function () {
 
       // Section header height
       height += lineHeight * 2.2; // Title
-      height += lineHeight * 0.5; // Post-underline space
+      height += lineHeight * 0.2; // Post-underline space (reduced from 0.5)
 
       // Row heights
       section.rows.forEach(row => {
@@ -949,7 +949,7 @@ TEUI.Reporter = (function () {
       pdf.setDrawColor("#CCCCCC");
       pdf.setLineWidth(0.01);
       pdf.line(leftMargin, yPos - lineHeight * 0.8, rightMargin, yPos - lineHeight * 0.8); // Underline positioned higher
-      yPos += lineHeight * 0.5; // Add extra space after underline before content
+      yPos += lineHeight * 0.2; // Reduced from 0.5 to 0.2 for tighter spacing
 
       // Section rows
       section.rows.forEach((row, rowIndex) => {
