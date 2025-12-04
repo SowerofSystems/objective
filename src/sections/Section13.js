@@ -3404,14 +3404,11 @@ window.TEUI.SectionModules.sect13 = (function () {
     window.TEUI.StateManager.setValue(`${prefix}m_118`, m_118_formatted, "calculated");
     window.TEUI.StateManager.setValue(`${prefix}m_119`, m_119_formatted, "calculated");
 
-    // ✅ CRITICAL: Update DOM in BOTH modes (not just Target)
-    // This ensures Reference mode shows 100% values immediately
-    document.querySelector('[data-field-id="m_113"]').textContent = m_113_formatted;
-    document.querySelector('[data-field-id="m_115"]').textContent = m_115_formatted;
-    document.querySelector('[data-field-id="m_116"]').textContent = m_116_formatted;
-    document.querySelector('[data-field-id="m_117"]').textContent = m_117_formatted;
-    document.querySelector('[data-field-id="m_118"]').textContent = m_118_formatted;
-    document.querySelector('[data-field-id="m_119"]').textContent = m_119_formatted;
+    // ❌ REMOVED: Direct DOM updates caused race condition
+    // Since calculateTargetModel() runs after calculateReferenceModel(),
+    // Target values were overwriting Reference 100% values in DOM.
+    // DOM updates now handled ONLY by updateCalculatedDisplayValues() (line 765)
+    // which is mode-aware and reads from correct state (ref_ prefix in Reference mode).
 
     // Calculate N-column symbols (pass/fail logic)
     const n_113_value = m_113_ratio >= 1.0 ? "✓" : "✗"; // Higher is better
@@ -3445,15 +3442,10 @@ window.TEUI.SectionModules.sect13 = (function () {
     window.TEUI.StateManager.setValue(`${prefix}n_119`, n_119_value, "calculated");
     window.TEUI.StateManager.setValue(`${prefix}n_124`, n_124_value, "calculated");
 
-    // ✅ CRITICAL: Update DOM in BOTH modes (not just Target)
-    // This ensures Reference mode shows checkmarks immediately
-    document.querySelector('[data-field-id="n_113"]').textContent = n_113_value;
-    document.querySelector('[data-field-id="n_115"]').textContent = n_115_value;
-    document.querySelector('[data-field-id="n_116"]').textContent = n_116_value;
-    document.querySelector('[data-field-id="n_117"]').textContent = n_117_value;
-    document.querySelector('[data-field-id="n_118"]').textContent = n_118_value;
-    document.querySelector('[data-field-id="n_119"]').textContent = n_119_value;
-    document.querySelector('[data-field-id="n_124"]').textContent = n_124_value;
+    // ❌ REMOVED: Direct DOM updates caused race condition
+    // N-column symbols were being overwritten by Target calculations.
+    // DOM updates now handled ONLY by updateCalculatedDisplayValues() (line 765)
+    // which reapplies CSS classes correctly based on current mode.
 
     // ✅ CRITICAL: Only apply CSS classes in Target mode (S09 pattern)
     if (!isReferenceCalculation) {
@@ -3505,6 +3497,10 @@ window.TEUI.SectionModules.sect13 = (function () {
           // Non-reference mode - no additional logic needed
         }
       }
+
+      // ✅ CRITICAL: Update M/N column DOM after both engines complete
+      // This ensures correct mode-aware display (100% in Reference, actual ratios in Target)
+      updateCalculatedDisplayValues();
     } catch (error) {
       console.error("[Section13] ❌ ERROR in calculateAll:", error);
     }
