@@ -724,17 +724,19 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
 
-  document
-    .getElementById("teui-factsheet")
-    .addEventListener("click", function () {
+  const teuiFactsheetBtn = document.getElementById("teui-factsheet");
+  if (teuiFactsheetBtn) {
+    teuiFactsheetBtn.addEventListener("click", function () {
       // This will be implemented later
     });
+  }
 
-  document
-    .getElementById("tedi-factsheet")
-    .addEventListener("click", function () {
+  const tediFactsheetBtn = document.getElementById("tedi-factsheet");
+  if (tediFactsheetBtn) {
+    tediFactsheetBtn.addEventListener("click", function () {
       // This will be implemented later
     });
+  }
 
   // Initialize ExcelLocationHandler if it exists
   if (TEUI.ExcelLocationHandler) {
