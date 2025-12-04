@@ -499,6 +499,17 @@ document.addEventListener('DOMContentLoaded', initializeReportDownload);
 - **Result**: Clear separation between section headers and data rows ✅ FIXED
 - **Applied to**: Both `generatePDF()` and `appendReferenceToPDF()` functions
 
+### ✅ Subheader Row Spacing Fix (COMPLETED - Dec 4, 2025)
+- **Problem**: Column header rows (subheaders) cramped, multi-line text overlapping
+- **Solution**: Added special handling for rows with `section-subheader` class
+  - Detection: Flag rows containing cells with `section-subheader` class during extraction
+  - Pre-spacing: Added `lineHeight * 0.5` before subheader rows
+  - Row height: Increased from `lineHeight * 1.0` to `lineHeight * 1.8` for subheaders
+  - Multi-line support: Split on `\n` and render each line with `lineHeight * 0.8` spacing
+  - Font size: Reduced to 7pt for subheader cells (vs 9pt for data)
+- **Result**: Column headers legible with proper 2-line wrapping support ✅ FIXED
+- **Applied to**: Both Target and Reference model rendering in `generatePDF()` and `appendReferenceToPDF()`
+
 ### Current Issues
 1. **Performance**:
    - Minor load time regression (~33ms)

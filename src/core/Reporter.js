@@ -161,15 +161,20 @@ TEUI.Reporter = (function () {
             cellData.isBold = computedStyle.fontWeight >= 600;
             cellData.isItalic = computedStyle.fontStyle === "italic";
             cellData.color = computedStyle.color;
+            cellData.isSubheader = td.classList.contains("section-subheader");
 
             cells.push(cellData);
           });
+
+          // Check if this is a subheader row (column header row)
+          const isSubheaderRow = cells.some(cell => cell.isSubheader);
 
           if (cells.length > 0) {
             sectionData.rows.push({
               rowId,
               rowNumber: rowIndex + 1,
               cells,
+              isSubheaderRow, // Flag for special rendering
             });
           }
         });
@@ -402,7 +407,13 @@ TEUI.Reporter = (function () {
 
       // Section rows
       section.rows.forEach((row, rowIndex) => {
-        checkPageBreak(lineHeight * 2);
+        // Add extra space before subheader rows for breathing room
+        if (row.isSubheaderRow) {
+          yPos += lineHeight * 0.5; // Extra space before column headers
+          checkPageBreak(lineHeight * 3); // More space needed for multi-line headers
+        } else {
+          checkPageBreak(lineHeight * 2);
+        }
 
         // Row number (small grey text) - compact format
         pdf.setFontSize(7);
@@ -439,7 +450,8 @@ TEUI.Reporter = (function () {
 
         row.cells.slice(3).forEach((cell, cellIndex) => {
           if (cell.content && cell.colSpan === 1) {
-            pdf.setFontSize(9);
+            // Use smaller font for subheaders
+            pdf.setFontSize(row.isSubheaderRow ? 7 : 9);
 
             // For reference model, apply grey color except for differences
             if (modelType === "Reference" && targetData) {
@@ -455,15 +467,24 @@ TEUI.Reporter = (function () {
               cell.isBold || cell.isUserInput ? "bold" : "normal"
             );
 
-            // Render cell content
-            const cellText = cell.content.substring(0, 20); // Limit length
-            pdf.text(cellText, xPos, yPos);
+            // Handle multi-line text for subheaders (newline character support)
+            if (row.isSubheaderRow && cell.content.includes("\n")) {
+              const lines = cell.content.split("\n");
+              lines.forEach((line, lineIdx) => {
+                pdf.text(line.substring(0, 15), xPos, yPos + (lineIdx * lineHeight * 0.8));
+              });
+            } else {
+              // Render cell content
+              const cellText = cell.content.substring(0, 20); // Limit length
+              pdf.text(cellText, xPos, yPos);
+            }
           }
 
           xPos += columnWidth;
         });
 
-        yPos += lineHeight;
+        // Use taller line height for subheader rows to accommodate multi-line text
+        yPos += row.isSubheaderRow ? lineHeight * 1.8 : lineHeight;
 
         // Light grey row separator
         pdf.setDrawColor("#E0E0E0");
@@ -674,7 +695,13 @@ TEUI.Reporter = (function () {
 
       // Section rows
       section.rows.forEach((row, rowIndex) => {
-        checkPageBreak(lineHeight * 2);
+        // Add extra space before subheader rows for breathing room
+        if (row.isSubheaderRow) {
+          yPos += lineHeight * 0.5; // Extra space before column headers
+          checkPageBreak(lineHeight * 3); // More space needed for multi-line headers
+        } else {
+          checkPageBreak(lineHeight * 2);
+        }
 
         // Row number (small grey text) - compact format
         pdf.setFontSize(7);
@@ -711,7 +738,8 @@ TEUI.Reporter = (function () {
 
         row.cells.slice(3).forEach((cell, cellIndex) => {
           if (cell.content && cell.colSpan === 1) {
-            pdf.setFontSize(9);
+            // Use smaller font for subheaders
+            pdf.setFontSize(row.isSubheaderRow ? 7 : 9);
 
             // Apply grey color for Reference Model, red for differences
             // TODO: Implement difference detection by comparing with targetData
@@ -723,15 +751,24 @@ TEUI.Reporter = (function () {
               cell.isBold || cell.isUserInput ? "bold" : "normal"
             );
 
-            // Render cell content
-            const cellText = cell.content.substring(0, 20); // Limit length
-            pdf.text(cellText, xPos, yPos);
+            // Handle multi-line text for subheaders (newline character support)
+            if (row.isSubheaderRow && cell.content.includes("\n")) {
+              const lines = cell.content.split("\n");
+              lines.forEach((line, lineIdx) => {
+                pdf.text(line.substring(0, 15), xPos, yPos + (lineIdx * lineHeight * 0.8));
+              });
+            } else {
+              // Render cell content
+              const cellText = cell.content.substring(0, 20); // Limit length
+              pdf.text(cellText, xPos, yPos);
+            }
           }
 
           xPos += columnWidth;
         });
 
-        yPos += lineHeight;
+        // Use taller line height for subheader rows to accommodate multi-line text
+        yPos += row.isSubheaderRow ? lineHeight * 1.8 : lineHeight;
 
         // Light grey row separator
         pdf.setDrawColor("#E0E0E0");
