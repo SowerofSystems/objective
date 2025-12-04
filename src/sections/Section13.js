@@ -3815,6 +3815,10 @@ window.TEUI.SectionModules.sect13 = (function () {
   //==========================================================================
   // SIMPLIFIED REFERENCE MODEL FUNCTIONS (Pattern 2 - Like S14/S15)
   //==========================================================================
+  // ⚠️ DO NOT DELETE: These functions appear unused (ESLint warns, no direct calls found),
+  // but removing them breaks calculations. Possibly used by Cooling.js or called dynamically.
+  // Tested Dec 3, 2025: Deletion caused calculation regression, revert restored parity.
+  // Keep until usage path is fully traced.
 
   /**
    * REFERENCE MODEL: Calculate heating system values using Reference inputs
