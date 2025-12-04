@@ -464,7 +464,9 @@ TEUI.Reporter = (function () {
       // Extract Target Model data
       if (isReferenceMode) {
         // Switch to Target mode temporarily
-        await TEUI.ReferenceToggle.setTargetMode();
+        TEUI.ReferenceToggle.switchMode("target");
+        // Wait for UI to update
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
 
       console.log("[Reporter] Extracting Target Model data...");
@@ -485,7 +487,7 @@ TEUI.Reporter = (function () {
 
       // Switch to Reference mode
       console.log("[Reporter] Switching to Reference Mode...");
-      await TEUI.ReferenceToggle.setReferenceMode();
+      TEUI.ReferenceToggle.switchMode("reference");
 
       // Wait for UI to update
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -505,7 +507,8 @@ TEUI.Reporter = (function () {
 
       // Restore original mode
       if (!isReferenceMode) {
-        await TEUI.ReferenceToggle.setTargetMode();
+        TEUI.ReferenceToggle.switchMode("target");
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
 
       console.log("[Reporter] PDF generation complete!");
