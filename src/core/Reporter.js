@@ -200,7 +200,7 @@ TEUI.Reporter = (function () {
       // h_14: Project Name (field label from Section02)
       projectTitle: TEUI.StateManager?.getValue("h_14") || "Untitled Project",
 
-      // Fields with their proper labels from Section02
+      // Fields with their proper labels from Section02 and Section03
       fields: [
         {
           label: "Major Occupancy",
@@ -211,8 +211,12 @@ TEUI.Reporter = (function () {
           value: TEUI.StateManager?.getValue("d_13") || "", // d_13: Reference Standard
         },
         {
-          label: "Actual (Bills) or Targeted (Design) Use",
-          value: TEUI.StateManager?.getValue("d_14") || "", // d_14: Method (Utility Bills/Targeted Use)
+          label: "Location",
+          value: (() => {
+            const city = TEUI.StateManager?.getValue("h_19") || ""; // h_19: City
+            const province = TEUI.StateManager?.getValue("d_19") || ""; // d_19: Province
+            return city && province ? `${city}, ${province}` : city || province;
+          })(),
         },
         {
           label: "Carbon Benchmarking Standard",
