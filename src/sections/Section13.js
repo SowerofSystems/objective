@@ -341,6 +341,9 @@ window.TEUI.SectionModules.sect13 = (function () {
       // Removed calculateAll() - mode switch should only update display, not trigger calculations
       this.updateCalculatedDisplayValues();
 
+      // ✅ CRITICAL: Also update M/N compliance fields (standalone function at line 765)
+      updateCalculatedDisplayValues();
+
       // ✅ NEW: Sync visual toggle UI when mode changes (from global or local toggle)
       this.syncToggleUI(mode);
     },
