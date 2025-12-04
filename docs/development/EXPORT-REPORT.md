@@ -510,6 +510,24 @@ document.addEventListener('DOMContentLoaded', initializeReportDownload);
 - **Result**: Column headers legible with proper 2-line wrapping support ✅ FIXED
 - **Applied to**: Both Target and Reference model rendering in `generatePDF()` and `appendReferenceToPDF()`
 
+### ✅ Dynamic Column Width Calculation (COMPLETED - Dec 4, 2025)
+- **Problem**: Fixed column widths causing text overlap, labels overwriting field data
+- **Solution**: Implemented flexible column width calculation based on content
+  - `calculateColumnWidths()`: Analyzes all rows in section to find max content length per column
+  - Character-based sizing: ~0.065" per character + 0.15" padding
+  - Min/max constraints: 0.5" minimum, 1.5" maximum per column
+  - Handles multi-line subheader text when calculating widths
+  - Removed content truncation (was `substring(0, 20)`)
+- **Result**: Professional horizontal layout maintained, no text overlap ✅ FIXED
+- **Applied to**: Both Target and Reference model rendering
+
+### ✅ Row Separator Line Position Fix (COMPLETED - Dec 4, 2025)
+- **Problem**: Horizontal grey lines drawn through text instead of below rows
+- **Solution**: Moved line rendering to after `yPos` advancement
+  - Changed position from `yPos - lineHeight * 0.2` to `yPos - lineHeight * 0.05`
+  - Lines now properly appear under row content, not overlapping text
+- **Result**: Clean horizontal separators between rows ✅ FIXED
+
 ### Current Issues
 1. **Performance**:
    - Minor load time regression (~33ms)
@@ -623,3 +641,143 @@ docs/development/
 - Test memory usage during canvas rendering
 - Fallback to CSV export if PDF fails
 - Consider progressive rendering for better UX (show progress bar)
+
+
+**Attachment of CSV within PDF for subsequent extraction/filesaving/imports**
+
+# PDF CSV Embedding and Extraction Example
+This file provides example code for:
+- Embedding a CSV file inside a PDF using jsPDF
+- Extracting the CSV from a PDF using PDF.js in the browser
+- Passing the extracted CSV into an existing CSV import pipeline
+
+---
+
+## 1. Create PDF With Embedded CSV (jsPDF)
+
+- Embed - this wwill paste a visible blob of the .csv into the exported PDF that a user can use later on to re-import the specific file (Target and Reference Data) for future analysis and optimization. FileHandler can process parsing data from the .csv attachment in the PDF in the same way it currently does for standalone .csv reads. 
+
+Here is a clean, self-contained Markdown code block with:
+jsPDF code to embed a CSV file as an attachment
+PDF.js extraction code to detect and parse the CSV
+Hooks to pass the CSV into your existing import handler
+You can paste this directly into your .md file for your agent to complete/extend.
+
+1. 
+
+```js
+// REQUIREMENTS:
+// - jsPDF >= 2.x
+// - { attachFile } plugin is included (in most builds)
+
+import { jsPDF } from "jspdf";
+
+export function createPdfWithCsv(csvString) {
+    const doc = new jsPDF();
+
+    // Add visual text to inform user the PDF contains embedded CSV
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
+    doc.text("This PDF contains an embedded CSV file named data.csv.", 10, 20);
+
+    // Attach the CSV as a real file inside the PDF
+    doc.attachFile({
+        name: "data.csv",
+        data: csvString,
+        mimeType: "text/csv"
+    });
+
+    // Save or return the PDF
+    return doc.output("blob"); // or `"arraybuffer"` or `"datauristring"`
+}
+
+2.  Extract
+
+
+```js
+// REQUIREMENTS:
+// - jsPDF >= 2.x
+// - { attachFile } plugin is included (in most builds)
+
+import { jsPDF } from "jspdf";
+
+export function createPdfWithCsv(csvString) {
+    const doc = new jsPDF();
+
+    // Add visual text to inform user the PDF contains embedded CSV
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
+    doc.text("This PDF contains an embedded CSV file named data.csv.", 10, 20);
+
+    // Attach the CSV as a real file inside the PDF
+    doc.attachFile({
+        name: "data.csv",
+        data: csvString,
+        mimeType: "text/csv"
+    });
+
+    // Save or return the PDF
+    return doc.output("blob"); // or `"arraybuffer"` or `"datauristring"`
+}
+
+// REQUIREMENTS:
+// npm install pdfjs-dist
+// or include the CDN version
+
+import * as pdfjsLib from "pdfjs-dist";
+
+// Worker setup (PDF.js required)
+pdfjsLib.GlobalWorkerOptions.workerSrc = 
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js";
+
+export async function extractCsvFromPdf(file) {
+    // Load PDF
+    const loadingTask = pdfjsLib.getDocument({ data: await file.arrayBuffer() });
+    const pdf = await loadingTask.promise;
+
+    // Extract attachments (where jsPDF stores the CSV)
+    const attachments = await pdf.getAttachments();
+
+    if (!attachments) {
+        throw new Error("No attachments found in PDF.");
+    }
+
+    // Look for .csv attachment
+    for (const filename in attachments) {
+        if (filename.toLowerCase().endsWith(".csv")) {
+            const attachment = attachments[filename];
+            const csvText = new TextDecoder().decode(attachment.content);
+
+            // Return the raw CSV text so the caller can parse it
+            return {
+                filename,
+                csvText
+            };
+        }
+    }
+
+    throw new Error("No CSV attachment found in PDF.");
+}
+
+3. Use the Imported CSV in Your Existing Handler
+
+
+import { extractCsvFromPdf } from "./extractCsvFromPdf.js";
+import { processCsv } from "./yourCsvHandler.js"; // Your existing pipeline
+
+async function handlePdfUpload(pdfFile) {
+    try {
+        const { filename, csvText } = await extractCsvFromPdf(pdfFile);
+
+        console.log("Extracted CSV:", filename);
+        console.log(csvText);
+
+        // Process CSV using your existing logic
+        processCsv(csvText);
+    } catch (err) {
+        console.error("Failed to extract CSV:", err);
+    }
+}
+
+
+

@@ -355,7 +355,16 @@ TEUI.Reporter = (function () {
     const buildingInfo = getBuildingInfo();
     generateTitleSheet(pdf, buildingInfo, modelType);
 
-    // Add new page for content
+    // Add new page for Section 01 (Key Values) - Special treatment
+    pdf.addPage();
+
+    // Render Section 01 on its own page with special formatting
+    const section01 = reportData.sections.find(s => s.title === "01. Key Values");
+    if (section01) {
+      renderSection01KeyValues(pdf, section01, modelType, leftMargin, topMargin, pageWidth, pageHeight, lineHeight);
+    }
+
+    // Add new page for remaining content
     pdf.addPage();
 
     let yPos = topMargin;
@@ -387,10 +396,102 @@ TEUI.Reporter = (function () {
       );
     }
 
-    // Iterate through sections
+    // Helper function to render Section 01 (Key Values) with special formatting
+    function renderSection01KeyValues(pdf, section, modelType, leftMargin, topMargin, pageWidth, pageHeight, lineHeight) {
+      let yPos = pageHeight / 2 - 2; // Center vertically with offset
+
+      // Section title - larger and prominent
+      pdf.setFontSize(18);
+      pdf.setFont(undefined, "bold");
+      pdf.setTextColor("#000000");
+      pdf.text(section.title, leftMargin, yPos);
+      yPos += lineHeight * 2.5;
+
+      // Render rows with larger font and spacing
+      section.rows.forEach((row, rowIndex) => {
+        // Skip subheader row if present
+        if (row.isSubheaderRow) return;
+
+        // Row description (Column C)
+        const descCell = row.cells[2];
+        if (descCell && descCell.content) {
+          pdf.setFontSize(12);
+          pdf.setTextColor("#666666");
+          pdf.setFont(undefined, "normal");
+          pdf.text(descCell.content, leftMargin, yPos);
+        }
+
+        // Row values - show multiple columns horizontally
+        let xPos = leftMargin + 3.5;
+        const colWidth = 1.2;
+
+        row.cells.slice(3).forEach((cell, cellIndex) => {
+          if (cell.content && cell.colSpan === 1) {
+            pdf.setFontSize(14);
+            pdf.setTextColor("#000000");
+            pdf.setFont(undefined, cell.isBold || cell.isUserInput ? "bold" : "normal");
+            pdf.text(cell.content, xPos, yPos);
+            xPos += colWidth;
+          }
+        });
+
+        yPos += lineHeight * 2; // Extra spacing between key value rows
+      });
+    }
+
+    // Helper function to calculate dynamic column widths for a section
+    function calculateColumnWidths(section) {
+      const availableWidth = rightMargin - leftMargin - 3.5; // Space after description column
+      const valueCells = section.rows[0]?.cells.slice(3) || []; // Columns D onwards
+      const numColumns = valueCells.length;
+
+      if (numColumns === 0) return [];
+
+      // Calculate max content length for each column across all rows
+      const columnMaxLengths = valueCells.map((_, colIdx) => {
+        let maxLen = 0;
+        section.rows.forEach(row => {
+          const cell = row.cells[3 + colIdx];
+          if (cell && cell.content) {
+            // For subheader rows, account for line breaks
+            if (row.isSubheaderRow && cell.content.includes("\n")) {
+              const lines = cell.content.split("\n");
+              maxLen = Math.max(maxLen, ...lines.map(l => l.length));
+            } else {
+              maxLen = Math.max(maxLen, cell.content.length);
+            }
+          }
+        });
+        return maxLen;
+      });
+
+      // Calculate total character width needed
+      const totalChars = columnMaxLengths.reduce((sum, len) => sum + len, 0);
+
+      // Distribute available width proportionally, with min/max constraints
+      const minColWidth = 0.5; // Minimum column width in inches
+      const maxColWidth = 1.5; // Maximum column width in inches
+
+      return columnMaxLengths.map(charLen => {
+        // Approximate: 1 character ≈ 0.06 inches at 9pt font
+        const charWidthFactor = 0.065;
+        let width = (charLen * charWidthFactor) + 0.15; // Add padding
+        width = Math.max(minColWidth, Math.min(maxColWidth, width));
+        return width;
+      });
+    }
+
+    // Iterate through sections (skip Section 01 - already rendered)
     reportData.sections.forEach((section, sectionIndex) => {
-      // Check if section will fit, otherwise start new page
-      checkPageBreak(1.0);
+      // Skip Section 01 (Key Values) - rendered on its own page after title sheet
+      if (section.title === "01. Key Values") return;
+
+      // Check if section header + at least 3 rows will fit (Comment #3: prevent orphaned headers)
+      const minSectionHeight = lineHeight * 4; // Header + underline + 2-3 data rows
+      checkPageBreak(minSectionHeight);
+
+      // Calculate dynamic column widths for this section
+      const columnWidths = calculateColumnWidths(section);
 
       // Section header
       pdf.setFontSize(12);
@@ -407,9 +508,9 @@ TEUI.Reporter = (function () {
 
       // Section rows
       section.rows.forEach((row, rowIndex) => {
-        // Add extra space before subheader rows for breathing room
+        // Add extra space before subheader rows for breathing room (Comment #1)
         if (row.isSubheaderRow) {
-          yPos += lineHeight * 0.5; // Extra space before column headers
+          yPos += lineHeight * 0.8; // Increased from 0.5 to 0.8 for more vertical space
           checkPageBreak(lineHeight * 3); // More space needed for multi-line headers
         } else {
           checkPageBreak(lineHeight * 2);
@@ -430,26 +531,27 @@ TEUI.Reporter = (function () {
           pdf.text(rowIdCell.content, leftMargin + 0.25, yPos);
         }
 
-        // Description (Column C) - closer to row ID
+        // Description (Column C) - closer to row ID (Comment #4: trim more horizontal area)
         const descCell = row.cells[2];
         if (descCell && descCell.content) {
           pdf.setFontSize(9);
           pdf.setTextColor("#000000");
           pdf.setFont(undefined, descCell.isBold ? "bold" : "normal");
-          // Truncate long descriptions to fit
-          const maxDescWidth = 35; // characters
+          // Truncate long descriptions to fit - reduced from 35 to 28 characters
+          const maxDescWidth = 28; // characters
           const descText = descCell.content.length > maxDescWidth
             ? descCell.content.substring(0, maxDescWidth) + "..."
             : descCell.content;
           pdf.text(descText, leftMargin + 0.6, yPos);
         }
 
-        // Value columns (D onwards) - start much earlier, smaller column width
-        let xPos = leftMargin + 3.5; // Moved from 4.5 to 3.5
-        const columnWidth = 0.85; // Reduced from 1.2 to 0.85
+        // Value columns (D onwards) - use dynamic widths
+        let xPos = leftMargin + 3.5; // Start position for value columns
 
         row.cells.slice(3).forEach((cell, cellIndex) => {
           if (cell.content && cell.colSpan === 1) {
+            const colWidth = columnWidths[cellIndex] || 0.85;
+
             // Use smaller font for subheaders
             pdf.setFontSize(row.isSubheaderRow ? 7 : 9);
 
@@ -471,25 +573,29 @@ TEUI.Reporter = (function () {
             if (row.isSubheaderRow && cell.content.includes("\n")) {
               const lines = cell.content.split("\n");
               lines.forEach((line, lineIdx) => {
-                pdf.text(line.substring(0, 15), xPos, yPos + (lineIdx * lineHeight * 0.8));
+                pdf.text(line, xPos, yPos + (lineIdx * lineHeight * 0.8));
               });
             } else {
-              // Render cell content
-              const cellText = cell.content.substring(0, 20); // Limit length
-              pdf.text(cellText, xPos, yPos);
+              // Render cell content without truncation
+              pdf.text(cell.content, xPos, yPos);
             }
-          }
 
-          xPos += columnWidth;
+            xPos += colWidth;
+          } else if (cell.colSpan === 1) {
+            // Empty cell, still advance position
+            const colWidth = columnWidths[cellIndex] || 0.85;
+            xPos += colWidth;
+          }
         });
 
         // Use taller line height for subheader rows to accommodate multi-line text
-        yPos += row.isSubheaderRow ? lineHeight * 1.8 : lineHeight;
+        const rowHeight = row.isSubheaderRow ? lineHeight * 1.8 : lineHeight;
+        yPos += rowHeight;
 
-        // Light grey row separator
+        // Light grey row separator - draw below text with small gap (Comment #2)
         pdf.setDrawColor("#E0E0E0");
         pdf.setLineWidth(0.005);
-        pdf.line(leftMargin + 0.3, yPos - lineHeight * 0.2, rightMargin, yPos - lineHeight * 0.2);
+        pdf.line(leftMargin + 0.3, yPos + lineHeight * 0.02, rightMargin, yPos + lineHeight * 0.02);
       });
 
       yPos += sectionSpacing;
@@ -660,7 +766,16 @@ TEUI.Reporter = (function () {
       { align: "right" }
     );
 
-    // Add new page for Reference Model content
+    // Add new page for Reference Model Section 01
+    pdf.addPage();
+
+    // Render Reference Section 01 on its own page with special formatting
+    const refSection01 = referenceData.sections.find(s => s.title === "01. Key Values");
+    if (refSection01) {
+      renderSection01KeyValues(pdf, refSection01, "Reference", leftMargin, topMargin, pageWidth, pageHeight, lineHeight);
+    }
+
+    // Add new page for remaining Reference Model content
     pdf.addPage();
 
     yPos = topMargin;
@@ -675,10 +790,89 @@ TEUI.Reporter = (function () {
       return false;
     }
 
-    // Iterate through Reference Model sections
+    // Helper function to render Section 01 for Reference (reuse from Target)
+    function renderSection01KeyValues(pdf, section, modelType, leftMargin, topMargin, pageWidth, pageHeight, lineHeight) {
+      let yPos = pageHeight / 2 - 2;
+
+      pdf.setFontSize(18);
+      pdf.setFont(undefined, "bold");
+      pdf.setTextColor("#000000");
+      pdf.text(section.title, leftMargin, yPos);
+      yPos += lineHeight * 2.5;
+
+      section.rows.forEach(row => {
+        if (row.isSubheaderRow) return;
+
+        const descCell = row.cells[2];
+        if (descCell && descCell.content) {
+          pdf.setFontSize(12);
+          pdf.setTextColor(modelType === "Reference" ? "#888888" : "#666666");
+          pdf.setFont(undefined, "normal");
+          pdf.text(descCell.content, leftMargin, yPos);
+        }
+
+        let xPos = leftMargin + 3.5;
+        const colWidth = 1.2;
+
+        row.cells.slice(3).forEach(cell => {
+          if (cell.content && cell.colSpan === 1) {
+            pdf.setFontSize(14);
+            pdf.setTextColor(modelType === "Reference" ? "#888888" : "#000000");
+            pdf.setFont(undefined, cell.isBold || cell.isUserInput ? "bold" : "normal");
+            pdf.text(cell.content, xPos, yPos);
+            xPos += colWidth;
+          }
+        });
+
+        yPos += lineHeight * 2;
+      });
+    }
+
+    // Helper function to calculate dynamic column widths for a section (same as Target)
+    function calculateColumnWidthsRef(section) {
+      const valueCells = section.rows[0]?.cells.slice(3) || [];
+      const numColumns = valueCells.length;
+
+      if (numColumns === 0) return [];
+
+      const columnMaxLengths = valueCells.map((_, colIdx) => {
+        let maxLen = 0;
+        section.rows.forEach(row => {
+          const cell = row.cells[3 + colIdx];
+          if (cell && cell.content) {
+            if (row.isSubheaderRow && cell.content.includes("\n")) {
+              const lines = cell.content.split("\n");
+              maxLen = Math.max(maxLen, ...lines.map(l => l.length));
+            } else {
+              maxLen = Math.max(maxLen, cell.content.length);
+            }
+          }
+        });
+        return maxLen;
+      });
+
+      const minColWidth = 0.5;
+      const maxColWidth = 1.5;
+
+      return columnMaxLengths.map(charLen => {
+        const charWidthFactor = 0.065;
+        let width = (charLen * charWidthFactor) + 0.15;
+        width = Math.max(minColWidth, Math.min(maxColWidth, width));
+        return width;
+      });
+    }
+
+    // Iterate through Reference Model sections (skip Section 01 - already rendered)
     referenceData.sections.forEach((section, sectionIndex) => {
-      // Check if section will fit, otherwise start new page
-      checkPageBreak(1.0);
+      // Skip Section 01 (Key Values) - rendered on its own page after title sheet
+      if (section.title === "01. Key Values") return;
+
+      // Check if section header + at least 3 rows will fit (Comment #3: prevent orphaned headers)
+      const minSectionHeight = lineHeight * 4;
+      checkPageBreak(minSectionHeight);
+
+      // Calculate dynamic column widths for this section
+      const columnWidths = calculateColumnWidthsRef(section);
 
       // Section header
       pdf.setFontSize(12);
@@ -695,9 +889,9 @@ TEUI.Reporter = (function () {
 
       // Section rows
       section.rows.forEach((row, rowIndex) => {
-        // Add extra space before subheader rows for breathing room
+        // Add extra space before subheader rows for breathing room (Comment #1)
         if (row.isSubheaderRow) {
-          yPos += lineHeight * 0.5; // Extra space before column headers
+          yPos += lineHeight * 0.8; // Increased from 0.5 to 0.8 for more vertical space
           checkPageBreak(lineHeight * 3); // More space needed for multi-line headers
         } else {
           checkPageBreak(lineHeight * 2);
@@ -732,12 +926,13 @@ TEUI.Reporter = (function () {
           pdf.text(descText, leftMargin + 0.6, yPos);
         }
 
-        // Value columns (D onwards) - start much earlier, smaller column width
-        let xPos = leftMargin + 3.5; // Moved from 4.5 to 3.5
-        const columnWidth = 0.85; // Reduced from 1.2 to 0.85
+        // Value columns (D onwards) - use dynamic widths
+        let xPos = leftMargin + 3.5; // Start position for value columns
 
         row.cells.slice(3).forEach((cell, cellIndex) => {
           if (cell.content && cell.colSpan === 1) {
+            const colWidth = columnWidths[cellIndex] || 0.85;
+
             // Use smaller font for subheaders
             pdf.setFontSize(row.isSubheaderRow ? 7 : 9);
 
@@ -755,25 +950,29 @@ TEUI.Reporter = (function () {
             if (row.isSubheaderRow && cell.content.includes("\n")) {
               const lines = cell.content.split("\n");
               lines.forEach((line, lineIdx) => {
-                pdf.text(line.substring(0, 15), xPos, yPos + (lineIdx * lineHeight * 0.8));
+                pdf.text(line, xPos, yPos + (lineIdx * lineHeight * 0.8));
               });
             } else {
-              // Render cell content
-              const cellText = cell.content.substring(0, 20); // Limit length
-              pdf.text(cellText, xPos, yPos);
+              // Render cell content without truncation
+              pdf.text(cell.content, xPos, yPos);
             }
-          }
 
-          xPos += columnWidth;
+            xPos += colWidth;
+          } else if (cell.colSpan === 1) {
+            // Empty cell, still advance position
+            const colWidth = columnWidths[cellIndex] || 0.85;
+            xPos += colWidth;
+          }
         });
 
         // Use taller line height for subheader rows to accommodate multi-line text
-        yPos += row.isSubheaderRow ? lineHeight * 1.8 : lineHeight;
+        const rowHeight = row.isSubheaderRow ? lineHeight * 1.8 : lineHeight;
+        yPos += rowHeight;
 
-        // Light grey row separator
+        // Light grey row separator - draw below text with small gap (Comment #2)
         pdf.setDrawColor("#E0E0E0");
         pdf.setLineWidth(0.005);
-        pdf.line(leftMargin + 0.3, yPos - lineHeight * 0.2, rightMargin, yPos - lineHeight * 0.2);
+        pdf.line(leftMargin + 0.3, yPos + lineHeight * 0.02, rightMargin, yPos + lineHeight * 0.02);
       });
 
       yPos += sectionSpacing;
