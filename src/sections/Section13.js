@@ -409,7 +409,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         fieldFormats.j_116 = "number-2dp";
         // console.log(`[S13 updateCalc] ✅ Added j_116 to fieldFormats`);
       } // else {
-        // console.log(`[S13 updateCalc] ⏭️ Skipping j_116 (not ghosted)`);
+      // console.log(`[S13 updateCalc] ⏭️ Skipping j_116 (not ghosted)`);
       // }
       // When NOT ghosted (Gas/Oil mode), j_116 is user-editable → skip (handled by refreshUI)
 
@@ -768,13 +768,20 @@ window.TEUI.SectionModules.sect13 = (function () {
   function updateCalculatedDisplayValues() {
     // ONLY M/N compliance fields need special handling
     const mnFields = [
-      "m_113", "n_113",
-      "m_115", "n_115",
-      "m_116", "n_116",
-      "m_117", "n_117",
-      "m_118", "n_118",
-      "m_119", "n_119",
-      "m_124", "n_124",
+      "m_113",
+      "n_113",
+      "m_115",
+      "n_115",
+      "m_116",
+      "n_116",
+      "m_117",
+      "n_117",
+      "m_118",
+      "n_118",
+      "m_119",
+      "n_119",
+      "m_124",
+      "n_124",
     ];
 
     mnFields.forEach(fieldId => {
@@ -800,9 +807,10 @@ window.TEUI.SectionModules.sect13 = (function () {
         // Special handling for n_124 (yellow checkmark when >0)
         if (fieldId === "n_124") {
           // ✅ MODE-AWARE: Read m_124 value with same ref_ prefix logic
-          const m124Value = ModeManager.currentMode === "reference"
-            ? window.TEUI.StateManager.getValue("ref_m_124")
-            : window.TEUI.StateManager.getValue("m_124");
+          const m124Value =
+            ModeManager.currentMode === "reference"
+              ? window.TEUI.StateManager.getValue("ref_m_124")
+              : window.TEUI.StateManager.getValue("m_124");
           const daysValue = window.TEUI.parseNumeric(m124Value);
 
           if (daysValue <= 0) {
@@ -812,7 +820,9 @@ window.TEUI.SectionModules.sect13 = (function () {
           }
         } else {
           // Standard checkmark/warning logic
-          element.classList.add(valueToDisplay === "✓" ? "checkmark" : "warning");
+          element.classList.add(
+            valueToDisplay === "✓" ? "checkmark" : "warning"
+          );
         }
       }
     });
@@ -3384,12 +3394,18 @@ window.TEUI.SectionModules.sect13 = (function () {
     const prefix = isReferenceCalculation ? "ref_" : "";
     const currentState = isReferenceCalculation ? ReferenceState : TargetState;
 
-    const m_113_formatted = window.TEUI?.formatNumber?.(m_113_ratio, "percent-0dp") ?? "100%";
-    const m_115_formatted = window.TEUI?.formatNumber?.(m_115_ratio, "percent-0dp") ?? "100%";
-    const m_116_formatted = window.TEUI?.formatNumber?.(m_116_ratio, "percent-0dp") ?? "100%";
-    const m_117_formatted = window.TEUI?.formatNumber?.(m_117_ratio, "percent-0dp") ?? "100%";
-    const m_118_formatted = window.TEUI?.formatNumber?.(m_118_ratio, "percent-0dp") ?? "100%";
-    const m_119_formatted = window.TEUI?.formatNumber?.(m_119_ratio, "percent-0dp") ?? "100%";
+    const m_113_formatted =
+      window.TEUI?.formatNumber?.(m_113_ratio, "percent-0dp") ?? "100%";
+    const m_115_formatted =
+      window.TEUI?.formatNumber?.(m_115_ratio, "percent-0dp") ?? "100%";
+    const m_116_formatted =
+      window.TEUI?.formatNumber?.(m_116_ratio, "percent-0dp") ?? "100%";
+    const m_117_formatted =
+      window.TEUI?.formatNumber?.(m_117_ratio, "percent-0dp") ?? "100%";
+    const m_118_formatted =
+      window.TEUI?.formatNumber?.(m_118_ratio, "percent-0dp") ?? "100%";
+    const m_119_formatted =
+      window.TEUI?.formatNumber?.(m_119_ratio, "percent-0dp") ?? "100%";
 
     // Store formatted strings to LOCAL STATE (prevents format fighting)
     currentState.setValue("m_113", m_113_formatted, "calculated");
@@ -3400,12 +3416,36 @@ window.TEUI.SectionModules.sect13 = (function () {
     currentState.setValue("m_119", m_119_formatted, "calculated");
 
     // Store formatted strings to StateManager (for cross-section use)
-    window.TEUI.StateManager.setValue(`${prefix}m_113`, m_113_formatted, "calculated");
-    window.TEUI.StateManager.setValue(`${prefix}m_115`, m_115_formatted, "calculated");
-    window.TEUI.StateManager.setValue(`${prefix}m_116`, m_116_formatted, "calculated");
-    window.TEUI.StateManager.setValue(`${prefix}m_117`, m_117_formatted, "calculated");
-    window.TEUI.StateManager.setValue(`${prefix}m_118`, m_118_formatted, "calculated");
-    window.TEUI.StateManager.setValue(`${prefix}m_119`, m_119_formatted, "calculated");
+    window.TEUI.StateManager.setValue(
+      `${prefix}m_113`,
+      m_113_formatted,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}m_115`,
+      m_115_formatted,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}m_116`,
+      m_116_formatted,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}m_117`,
+      m_117_formatted,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}m_118`,
+      m_118_formatted,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}m_119`,
+      m_119_formatted,
+      "calculated"
+    );
 
     // ❌ REMOVED: Direct DOM updates caused race condition
     // Since calculateTargetModel() runs after calculateReferenceModel(),
@@ -3437,13 +3477,41 @@ window.TEUI.SectionModules.sect13 = (function () {
     currentState.setValue("n_124", n_124_value, "calculated");
 
     // Store N-column symbols to StateManager (for cross-section use)
-    window.TEUI.StateManager.setValue(`${prefix}n_113`, n_113_value, "calculated");
-    window.TEUI.StateManager.setValue(`${prefix}n_115`, n_115_value, "calculated");
-    window.TEUI.StateManager.setValue(`${prefix}n_116`, n_116_value, "calculated");
-    window.TEUI.StateManager.setValue(`${prefix}n_117`, n_117_value, "calculated");
-    window.TEUI.StateManager.setValue(`${prefix}n_118`, n_118_value, "calculated");
-    window.TEUI.StateManager.setValue(`${prefix}n_119`, n_119_value, "calculated");
-    window.TEUI.StateManager.setValue(`${prefix}n_124`, n_124_value, "calculated");
+    window.TEUI.StateManager.setValue(
+      `${prefix}n_113`,
+      n_113_value,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}n_115`,
+      n_115_value,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}n_116`,
+      n_116_value,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}n_117`,
+      n_117_value,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}n_118`,
+      n_118_value,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}n_119`,
+      n_119_value,
+      "calculated"
+    );
+    window.TEUI.StateManager.setValue(
+      `${prefix}n_124`,
+      n_124_value,
+      "calculated"
+    );
 
     // ❌ REMOVED: Direct DOM updates caused race condition
     // N-column symbols were being overwritten by Target calculations.
@@ -3460,7 +3528,10 @@ window.TEUI.SectionModules.sect13 = (function () {
       setElementClass("n_119", n_119_value === "✓" ? "checkmark" : "warning");
 
       // n_124: Yellow checkmark when mechanical cooling required
-      setElementClass("n_124", m_124_value <= 0 ? "checkmark" : "yellow-checkmark");
+      setElementClass(
+        "n_124",
+        m_124_value <= 0 ? "checkmark" : "yellow-checkmark"
+      );
     }
   }
 
