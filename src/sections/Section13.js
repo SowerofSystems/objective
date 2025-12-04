@@ -3813,6 +3813,102 @@ window.TEUI.SectionModules.sect13 = (function () {
   /**
 
   //==========================================================================
+  // SIMPLIFIED REFERENCE MODEL FUNCTIONS (Pattern 2 - Like S14/S15)
+  //==========================================================================
+
+  /**
+   * REFERENCE MODEL: Calculate heating system values using Reference inputs
+   * SIMPLIFIED: No boolean parameters, dedicated Reference function
+   */
+  function calculateReferenceModelHeatingSystem() {
+    // Use exact S13-BACKUP methodology - same formulas, Reference state inputs
+    const systemType = ReferenceState.getValue("d_113");
+    const tedReference =
+      parseFloat(window.TEUI?.StateManager?.getValue("ref_d_127")) || 0; // Read Reference TED from S14
+    const hspf =
+      window.TEUI.parseNumeric(ReferenceState.getValue("f_113")) || 3.5;
+
+    // TEMPORARY DEBUG: Check what we're actually reading for ref_d_127
+    const directRead = window.TEUI?.StateManager?.getValue("ref_d_127");
+    const fallbackRead = window.TEUI?.StateManager?.getReferenceValue("d_127");
+    const domRead = window.TEUI.parseNumeric(
+      document.getElementById("d_127")?.value
+    );
+
+    // Reading reference TED value (debug logging removed)
+
+    let heatingDemand_d114 = 0;
+    let heatingSink_l113 = 0;
+    let isHeatpump = systemType === "Heatpump";
+
+    if (isHeatpump) {
+      const local_copheat = hspf > 0 ? hspf / 3.412 : 1;
+      if (local_copheat > 0) {
+        heatingDemand_d114 = tedReference / local_copheat;
+        heatingSink_l113 = heatingDemand_d114 * (local_copheat - 1);
+      } else {
+        heatingDemand_d114 = tedReference;
+        heatingSink_l113 = 0;
+      }
+    } else {
+      heatingDemand_d114 = tedReference;
+      heatingSink_l113 = 0;
+    }
+
+    // Calculate fuel impact for Reference
+    const fuelImpactResults = calculateReferenceModelHeatingFuelImpact(
+      systemType,
+      tedReference,
+      heatingDemand_d114
+    );
+
+    return {
+      d_114: heatingDemand_d114,
+      l_113: heatingSink_l113,
+      ...fuelImpactResults,
+    };
+  }
+
+  /**
+   * REFERENCE MODEL: Calculate heating fuel impact for gas and oil systems
+   */
+  function calculateReferenceModelHeatingFuelImpact(
+    systemType,
+    tedReference,
+    heatingDemand_d114
+  ) {
+    const afue =
+      window.TEUI.parseNumeric(ReferenceState.getValue("j_115")) || 1;
+
+    let fuelImpact = 0,
+      oilLitres = 0,
+      gasM3 = 0,
+      exhaust = 0;
+
+    if ((systemType === "Gas" || systemType === "Oil") && afue > 0) {
+      fuelImpact = tedReference / afue;
+      exhaust = fuelImpact - heatingDemand_d114;
+
+      if (systemType === "Gas") {
+        gasM3 = fuelImpact / 10.36;
+      } else {
+        oilLitres = fuelImpact / 10.2;
+      }
+    }
+
+    // Space heating emissions now calculated inline or via different method
+    const emissions = 0; // Placeholder - emissions calculation handled elsewhere
+
+    return {
+      d_115: fuelImpact,
+      f_115: oilLitres,
+      h_115: gasM3,
+      l_115: exhaust,
+      m_115: afue > 0 ? 1 / afue : 0,
+    };
+  }
+
+  //==========================================================================
   // GHOSTING FUNCTIONS (Must be defined BEFORE return statement)
   //==========================================================================
 
