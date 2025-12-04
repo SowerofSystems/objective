@@ -196,14 +196,31 @@ TEUI.Reporter = (function () {
    */
   function getBuildingInfo() {
     return {
-      projectName: TEUI.StateManager?.getValue("d_11") || "Untitled Project",
+      projectTitle: TEUI.StateManager?.getValue("h_14") || "Untitled Project",
+      projectName: TEUI.StateManager?.getValue("d_11") || "",
       location: TEUI.StateManager?.getValue("d_14") || "",
       climateZone: TEUI.StateManager?.getValue("d_15") || "",
       occupancy: TEUI.StateManager?.getValue("d_12") || "",
       standard: TEUI.StateManager?.getValue("d_13") || "",
       reportingPeriod: TEUI.StateManager?.getValue("h_12") || "",
       conditionedArea: TEUI.StateManager?.getValue("h_15") || "",
+      certifier: TEUI.StateManager?.getValue("h_16") || "",
+      licenseNo: TEUI.StateManager?.getValue("h_17") || "",
     };
+  }
+
+  /**
+   * Format timestamp in metric format: YYYY.MM.DD, HHhMM
+   * @returns {string} Formatted timestamp
+   */
+  function getMetricTimestamp() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    return `${year}.${month}.${day}, ${hours}h${minutes}`;
   }
 
   /**
@@ -217,11 +234,13 @@ TEUI.Reporter = (function () {
     const pageHeight = pdf.internal.pageSize.getHeight();
     const centerX = pageWidth / 2;
     const centerY = pageHeight / 2;
+    const leftMargin = 1.5; // Left-justified text block
 
-    // Project name - large and bold at vertical center
+    // Project Title - large and bold at vertical center
     pdf.setFontSize(24);
     pdf.setFont(undefined, "bold");
-    pdf.text(buildingInfo.projectName, centerX, centerY - 1, {
+    pdf.setTextColor("#000000");
+    pdf.text(buildingInfo.projectTitle, centerX, centerY - 1, {
       align: "center",
     });
 
@@ -234,37 +253,45 @@ TEUI.Reporter = (function () {
       align: "center",
     });
 
-    // Building information below title
+    // Building information - left-justified with labels
     pdf.setFontSize(11);
     pdf.setTextColor("#000000");
     let yPos = centerY + 0.5;
     const lineHeight = 0.25;
+    const labelWidth = 2.0; // Width for label column
 
-    const infoLines = [
-      buildingInfo.location ? `Location: ${buildingInfo.location}` : null,
-      buildingInfo.climateZone
-        ? `Climate Zone: ${buildingInfo.climateZone}`
-        : null,
-      buildingInfo.occupancy ? `Occupancy: ${buildingInfo.occupancy}` : null,
-      buildingInfo.standard ? `Standard: ${buildingInfo.standard}` : null,
-      buildingInfo.reportingPeriod
-        ? `Reporting Period: ${buildingInfo.reportingPeriod}`
-        : null,
-      buildingInfo.conditionedArea
-        ? `Conditioned Area: ${buildingInfo.conditionedArea} m²`
-        : null,
-    ].filter(Boolean);
+    // Helper function to render label: value pairs
+    function renderField(label, value) {
+      if (!value) return false;
 
-    infoLines.forEach(line => {
-      pdf.text(line, centerX, yPos, { align: "center" });
+      pdf.setFont(undefined, "bold");
+      pdf.text(label + ":", leftMargin, yPos);
+
+      pdf.setFont(undefined, "normal");
+      pdf.text(value, leftMargin + labelWidth, yPos);
+
       yPos += lineHeight;
-    });
+      return true;
+    }
 
-    // Footer with generation date
+    // Render fields with proper labels
+    renderField("Project Name", buildingInfo.projectName);
+    renderField("Location", buildingInfo.location);
+    renderField("Climate Zone", buildingInfo.climateZone);
+    renderField("Occupancy", buildingInfo.occupancy);
+    renderField("Standard", buildingInfo.standard);
+    renderField("Reporting Period", buildingInfo.reportingPeriod);
+    if (buildingInfo.conditionedArea) {
+      renderField("Conditioned Area", `${buildingInfo.conditionedArea} m²`);
+    }
+    renderField("Certifier", buildingInfo.certifier);
+    renderField("License No.", buildingInfo.licenseNo);
+
+    // Footer with generation date in metric format
     pdf.setFontSize(9);
     pdf.setTextColor("#666666");
     pdf.text(
-      `Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
+      `Generated: ${getMetricTimestamp()}`,
       centerX,
       pageHeight - 0.5,
       { align: "center" }
@@ -431,7 +458,7 @@ TEUI.Reporter = (function () {
       pdf.setFontSize(8);
       pdf.setTextColor("#666666");
       pdf.text(
-        `${buildingInfo.projectName} - ${modelType} Model`,
+        `${buildingInfo.projectTitle} - ${modelType} Model`,
         leftMargin,
         topMargin - 0.2
       );
@@ -501,12 +528,13 @@ TEUI.Reporter = (function () {
         await new Promise(resolve => setTimeout(resolve, 300));
       }
 
-      // Download combined PDF
-      const timestamp = new Date().toISOString().slice(0, 10);
-      const projectName =
-        targetData.projectName.replace(/[^a-z0-9]/gi, "_").substring(0, 30) ||
-        "OBJECTIVE";
-      combinedPDF.save(`${projectName}_Report_${timestamp}.pdf`);
+      // Download combined PDF with metric timestamp
+      const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, ".");
+      const projectTitle =
+        (TEUI.StateManager?.getValue("h_14") || "OBJECTIVE")
+          .replace(/[^a-z0-9]/gi, "_")
+          .substring(0, 30);
+      combinedPDF.save(`${projectTitle}_Report_${timestamp}.pdf`);
 
       console.log("[Reporter] Combined PDF downloaded successfully!");
       return true;
@@ -542,11 +570,13 @@ TEUI.Reporter = (function () {
     const buildingInfo = getBuildingInfo();
     const centerX = pageWidth / 2;
     const centerY = pageHeight / 2;
+    const leftMarg = 1.5; // Left-justified text block
 
-    // Project name - large and bold at vertical center
+    // Project Title - large and bold at vertical center
     pdf.setFontSize(24);
     pdf.setFont(undefined, "bold");
-    pdf.text(buildingInfo.projectName, centerX, centerY - 1, {
+    pdf.setTextColor("#000000");
+    pdf.text(buildingInfo.projectTitle, centerX, centerY - 1, {
       align: "center",
     });
 
@@ -558,37 +588,45 @@ TEUI.Reporter = (function () {
       align: "center",
     });
 
-    // Building information below title
+    // Building information - left-justified with labels
     pdf.setFontSize(11);
     pdf.setTextColor("#000000");
     let yPos = centerY + 0.5;
     const lineSpacing = 0.25;
+    const labelWidth = 2.0; // Width for label column
 
-    const infoLines = [
-      buildingInfo.location ? `Location: ${buildingInfo.location}` : null,
-      buildingInfo.climateZone
-        ? `Climate Zone: ${buildingInfo.climateZone}`
-        : null,
-      buildingInfo.occupancy ? `Occupancy: ${buildingInfo.occupancy}` : null,
-      buildingInfo.standard ? `Standard: ${buildingInfo.standard}` : null,
-      buildingInfo.reportingPeriod
-        ? `Reporting Period: ${buildingInfo.reportingPeriod}`
-        : null,
-      buildingInfo.conditionedArea
-        ? `Conditioned Area: ${buildingInfo.conditionedArea} m²`
-        : null,
-    ].filter(Boolean);
+    // Helper function to render label: value pairs
+    function renderField(label, value) {
+      if (!value) return false;
 
-    infoLines.forEach(line => {
-      pdf.text(line, centerX, yPos, { align: "center" });
+      pdf.setFont(undefined, "bold");
+      pdf.text(label + ":", leftMarg, yPos);
+
+      pdf.setFont(undefined, "normal");
+      pdf.text(value, leftMarg + labelWidth, yPos);
+
       yPos += lineSpacing;
-    });
+      return true;
+    }
 
-    // Footer with generation date
+    // Render fields with proper labels
+    renderField("Project Name", buildingInfo.projectName);
+    renderField("Location", buildingInfo.location);
+    renderField("Climate Zone", buildingInfo.climateZone);
+    renderField("Occupancy", buildingInfo.occupancy);
+    renderField("Standard", buildingInfo.standard);
+    renderField("Reporting Period", buildingInfo.reportingPeriod);
+    if (buildingInfo.conditionedArea) {
+      renderField("Conditioned Area", `${buildingInfo.conditionedArea} m²`);
+    }
+    renderField("Certifier", buildingInfo.certifier);
+    renderField("License No.", buildingInfo.licenseNo);
+
+    // Footer with generation date in metric format
     pdf.setFontSize(9);
     pdf.setTextColor("#666666");
     pdf.text(
-      `Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
+      `Generated: ${getMetricTimestamp()}`,
       centerX,
       pageHeight - 0.5,
       { align: "center" }
@@ -705,7 +743,7 @@ TEUI.Reporter = (function () {
       const modelType = i <= Math.ceil(pageCount / 2) ? "Target" : "Reference";
 
       pdf.text(
-        `${buildingInfo.projectName} - ${modelType} Model`,
+        `${buildingInfo.projectTitle} - ${modelType} Model`,
         leftMargin,
         topMargin - 0.2
       );
