@@ -6,32 +6,33 @@
 
 ## Overview
 
-Export the OBJECTIVE calculator data as a clean PDF report that mirrors the DOM content but removes UI controls and adds professional formatting. Uses client-side PDF generation to avoid backend dependencies.
+Export the OBJECTIVE calculator data as a clean PDF report that mirrors the DOM content but removes UI controls and adds professional formatting. Uses client-side PDF generation to avoid backend dependencies. Disclaimer and license for use at end of printed document. 
 
 ## Requirements
 
 ### Included Content
-- **All 19 sections** (S01-S19) with data exactly as displayed in DOM
+- **15/19 sections** (S01-S15) with data exactly as displayed in DOM
 - **Preserve formatting**: Bold, italic, font sizes from current display
 - **Row numbers**: Small grey font on left margin for reference
 - **Light grey horizontal dividers**: Between rows for readability
 - **Section headers**: Keep section icons and titles
-- **Current mode**: Export whichever mode is active (Target or Reference)
+- **Both Models**: Export 2 reports, Target Model AND Reference Model. Reference report will have ALL text in light grey except bold warning red colour font for values that differ from the Target model for clarity. Reference report can have mostly black text except grey where ghosted, line numbers, etc.
+- **Title sheet**  : to be 50% whitespace, large/bold Project name as title, and S02 Building information data under the title which is at the vertical centre of the page. 
 
 ### Excluded Content
-- **UI Controls**: Buttons, sliders, input controls, dropdowns
+- **UI Controls**: Buttons, sliders (we can simply show values), input controls, dropdowns - just the relevant text for the selected values and options. 
 - **Interactive Elements**: Toggles, modals, navigation tabs
-- **Graphics Sections**: Skip S16 (Sankey), S17 (Dependency Graph), S18 (Optimize) for now
+- **Graphics Sections**: Skip S16 (Sankey), S17 (Dependency Graph), S18 (Optimize) and S19 (Debug/Dev/Notes) for now
 - **Action Buttons**: Import/Export, Reset, Tilt, etc.
 - **Section expand/collapse controls**
 
 ### PDF Specifications
 - **Page Size**: US Letter (8.5" x 11") or Legal (8.5" x 14")
-- **Orientation**: Landscape preferred (wider tables fit better)
+- **Orientation**: Landscape preferred (wider tables fit better), but portrait should be considered (more standard)
 - **Margins**: 0.5" all sides
 - **Font**: Match DOM (system sans-serif stack)
-- **Colors**: Minimize - use greys for structure, black for data
-- **Layout**: Auto-flow sections across pages, intelligent page breaks
+- **Colors**: Minimize - use greys for structure, black for data, blue/bold for user inputs, dark red for reference user inputs
+- **Layout**: Auto-flow sections across pages, intelligent page breaks - ideally at start/end of sections. 
 
 ## Technical Approach
 
@@ -480,16 +481,16 @@ docs/development/
 5. Polish Phase 2 (styling) for final look
 6. Test extensively across browsers
 
-## Future Enhancements
+## First Draft Enhancements
 
-- [ ] Add cover page with project details
-- [ ] Include report generation date/time
+- [ ] Add cover page with project details 
+- [ ] Include report generation date/time 
 - [ ] Add page numbers in footer
-- [ ] Support for graphics sections (S16-S18) as embedded images
-- [ ] Custom paper sizes (Tabloid, A4)
-- [ ] Option to include/exclude specific sections
-- [ ] Export to Word/DOCX format
-- [ ] Email PDF directly from app
+- [ ] FUTURE: Support for graphics sections (S16-S18) as embedded images
+- [ ] FUTURE: Custom paper sizes (Tabloid, A4)
+- [ ] FUTURE: Option to include/exclude specific sections
+- [ ] No Wod Doc, prefer to not offer editable formats which could falsify results
+- [ ] FUTURE: Email PDF directly from app
 
 ## References
 
