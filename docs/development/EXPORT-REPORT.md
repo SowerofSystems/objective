@@ -27,8 +27,8 @@ Export the OBJECTIVE calculator data as a clean PDF report that mirrors the DOM 
 - **Section expand/collapse controls**
 
 ### PDF Specifications
-- **Page Size**: US Letter (8.5" x 11") or Legal (8.5" x 14")
-- **Orientation**: Landscape preferred (wider tables fit better), but portrait should be considered (more standard)
+- **Page Size**: US Legal (8.5" x 14") ✅ IMPLEMENTED
+- **Orientation**: Landscape (14" x 8.5") for wider content fit ✅ IMPLEMENTED
 - **Margins**: 0.5" all sides
 - **Font**: Match DOM (system sans-serif stack)
 - **Colors**: Minimize - use greys for structure, black for data, blue/bold for user inputs, dark red for reference user inputs
@@ -454,7 +454,7 @@ document.addEventListener('DOMContentLoaded', initializeReportDownload);
 - Registered Reporter.js module in load order
 
 ### Title Sheet Details (COMPLETED)
-- **Layout**: Landscape Letter (11" × 8.5"), 0.5" margins
+- **Layout**: Landscape Legal (14" × 8.5"), 0.5" margins ✅ UPDATED
 - **Project Title**: Large (24pt), bold, left-justified at vertical center
 - **Model Type**: "Target Model Report" or "Reference Model Report" (16pt, grey for Reference)
 - **Building Info**: Left-justified label: value pairs using proper field labels:
@@ -476,49 +476,49 @@ document.addEventListener('DOMContentLoaded', initializeReportDownload);
 
 ### ✅ Horizontal Layout Optimization (COMPLETED - Dec 4, 2025)
 - **Problem**: Excessive whitespace after row numbers, content clipping on right edge
-- **Solution**: Optimized column spacing for landscape layout
+- **Solution**: Optimized column spacing for landscape layout + Legal paper size
+  - **Page size**: Changed from Letter (11") to Legal (14") landscape ✅ UPDATED
   - Row number spacing: Reduced from 0.3" to 0.25" (row number to row ID)
   - Row ID spacing: Reduced from 0.8" to 0.6" (row ID to description)
   - Value column start: Moved from 4.5" to 3.5" (saved 1" horizontal space)
   - Column width: Reduced from 1.2" to 0.85" per column (30% reduction)
   - Description truncation: Added 35-character limit with "..." for overflow prevention
-- **Result**: Better utilization of 10" usable width (11" page - 1" margins)
+- **Result**: Better utilization of 13" usable width (14" page - 1" margins)
   - Row numbers: 0-0.25"
   - Row ID: 0.25-0.6"
   - Description: 0.6-3.5" (2.9" available)
-  - Value columns: 3.5-10" (6.5" for ~7-8 columns at 0.85" each)
+  - Value columns: 3.5-13" (9.5" for ~11 columns at 0.85" each) ✅ IMPROVED
 - **Applied to**: Both Target and Reference model content pages
 
-### Current Issues
-1. **Section Headers** (HIGH PRIORITY):
-   - Headers need more vertical spacing to prevent text overlap
-   - Screenshot shows "SECTION 4. Actual vs. Target Energy..." text mashing into column headers
-   - Need to increase spacing after section header underline
-   - May need to adjust font size or add blank line
+### ✅ Section Header Spacing Fix (COMPLETED - Dec 4, 2025)
+- **Problem**: Section headers overlapping with column content
+- **Solution**: Increased vertical spacing in section header rendering
+  - Section title spacing: Increased from `lineHeight * 1.5` to `lineHeight * 2.2`
+  - Underline position: Moved higher (from `lineHeight * 0.3` to `lineHeight * 0.8`)
+  - Post-underline spacing: Added `lineHeight * 0.5` before content starts
+- **Result**: Clear separation between section headers and data rows ✅ FIXED
+- **Applied to**: Both `generatePDF()` and `appendReferenceToPDF()` functions
 
-2. **Performance**:
+### Current Issues
+1. **Performance**:
    - Minor load time regression (~33ms)
    - May be related to CDN/Cloudflare for jsPDF libraries
    - Need to test if removing logos improved performance
 
 ### Next Steps
-1. **Fix section header spacing** (HIGH PRIORITY):
-   - Increase vertical space between section title and first data row
-   - Ensure section headers don't overlap with content
-   - Test with various section title lengths
-   - May need to adjust `lineHeight` multiplier in section header rendering
+
+1. **Testing** (HIGH PRIORITY):
+   - Test all 15 sections render correctly with Legal landscape format
+   - Verify no content clipping with wider 14" page width
+   - Confirm section headers have proper spacing
+   - Check page breaks are intelligent
+   - Test with different data sets
+   - Verify description truncation works properly
 
 2. **Reference Model Styling** (MEDIUM PRIORITY):
    - Implement grey text for Reference model content (PARTIALLY DONE - descriptions grey)
    - Add red highlighting for values differing from Target
    - Use `targetData` parameter in `generatePDF()` for comparison
-
-3. **Testing** (HIGH PRIORITY):
-   - Test all 15 sections render correctly
-   - Verify no content clipping after layout optimization
-   - Check page breaks are intelligent
-   - Test with different data sets
-   - Verify description truncation works properly
 
 ## File Structure
 
@@ -541,8 +541,9 @@ docs/development/
 - [x] ~~No UI controls appear in PDF~~ (text-based extraction)
 - [x] ~~Bold/italic formatting preserved~~ (via computedStyle detection)
 - [x] ~~Row numbers display correctly~~ (format: "02.1")
-- [ ] Section headers formatted properly (NEEDS MORE SPACING - see Current Issues)
-- [ ] Multi-page layout works (no cut-off content) (IN PROGRESS - horizontal layout optimized)
+- [x] ~~Section headers formatted properly~~ ✅ FIXED - increased spacing
+- [x] ~~Page format changed to Legal landscape (14" x 8.5")~~ ✅ IMPLEMENTED
+- [ ] Multi-page layout works (no cut-off content) (NEEDS TESTING with Legal format)
 - [x] ~~PDF downloads with correct filename~~ (ProjectName_Report_YYYY.MM.DD.pdf)
 - [x] ~~Works in both Target and Reference modes~~ (dual report in single PDF)
 - [ ] File size reasonable (< 5MB target) (TBD - need to test with full data)

@@ -328,11 +328,11 @@ TEUI.Reporter = (function () {
   function generatePDF(reportData, modelType, targetData = null) {
     const { jsPDF } = window.jspdf;
 
-    // Create PDF in landscape Letter (11" x 8.5")
+    // Create PDF in landscape Legal (14" x 8.5") for better content fit
     const pdf = new jsPDF({
       orientation: "landscape",
       unit: "in",
-      format: "letter",
+      format: "legal",
     });
 
     const pageWidth = pdf.internal.pageSize.getWidth();
@@ -392,44 +392,50 @@ TEUI.Reporter = (function () {
       pdf.setFont(undefined, "bold");
       pdf.setTextColor("#000000");
       pdf.text(section.title, leftMargin, yPos);
-      yPos += lineHeight * 1.5;
+      yPos += lineHeight * 2.2; // Increased from 1.5 to 2.2 for better spacing
 
       // Draw underline for section header
       pdf.setDrawColor("#CCCCCC");
       pdf.setLineWidth(0.01);
-      pdf.line(leftMargin, yPos - lineHeight * 0.3, rightMargin, yPos - lineHeight * 0.3);
+      pdf.line(leftMargin, yPos - lineHeight * 0.8, rightMargin, yPos - lineHeight * 0.8); // Underline positioned higher
+      yPos += lineHeight * 0.5; // Add extra space after underline before content
 
       // Section rows
       section.rows.forEach((row, rowIndex) => {
         checkPageBreak(lineHeight * 2);
 
-        // Row number (small grey text)
+        // Row number (small grey text) - compact format
         pdf.setFontSize(7);
         pdf.setTextColor("#999999");
         pdf.setFont(undefined, "normal");
         const rowNumberText = `${section.title.split(".")[0]}.${rowIndex + 1}`;
         pdf.text(rowNumberText, leftMargin, yPos);
 
-        // Row ID (Column B)
+        // Row ID (Column B) - closer to row number
         pdf.setFontSize(8);
         pdf.setTextColor("#666666");
         const rowIdCell = row.cells[1]; // Column B
         if (rowIdCell && rowIdCell.content) {
-          pdf.text(rowIdCell.content, leftMargin + 0.3, yPos);
+          pdf.text(rowIdCell.content, leftMargin + 0.25, yPos);
         }
 
-        // Description (Column C)
+        // Description (Column C) - closer to row ID
         const descCell = row.cells[2];
         if (descCell && descCell.content) {
           pdf.setFontSize(9);
           pdf.setTextColor("#000000");
           pdf.setFont(undefined, descCell.isBold ? "bold" : "normal");
-          pdf.text(descCell.content, leftMargin + 0.8, yPos);
+          // Truncate long descriptions to fit
+          const maxDescWidth = 35; // characters
+          const descText = descCell.content.length > maxDescWidth
+            ? descCell.content.substring(0, maxDescWidth) + "..."
+            : descCell.content;
+          pdf.text(descText, leftMargin + 0.6, yPos);
         }
 
-        // Value columns (D onwards) - horizontal layout
-        let xPos = leftMargin + 4.5;
-        const columnWidth = 1.2;
+        // Value columns (D onwards) - start much earlier, smaller column width
+        let xPos = leftMargin + 3.5; // Moved from 4.5 to 3.5
+        const columnWidth = 0.85; // Reduced from 1.2 to 0.85
 
         row.cells.slice(3).forEach((cell, cellIndex) => {
           if (cell.content && cell.colSpan === 1) {
@@ -658,44 +664,50 @@ TEUI.Reporter = (function () {
       pdf.setFont(undefined, "bold");
       pdf.setTextColor("#000000");
       pdf.text(section.title, leftMargin, yPos);
-      yPos += lineHeight * 1.5;
+      yPos += lineHeight * 2.2; // Increased from 1.5 to 2.2 for better spacing
 
       // Draw underline for section header
       pdf.setDrawColor("#CCCCCC");
       pdf.setLineWidth(0.01);
-      pdf.line(leftMargin, yPos - lineHeight * 0.3, rightMargin, yPos - lineHeight * 0.3);
+      pdf.line(leftMargin, yPos - lineHeight * 0.8, rightMargin, yPos - lineHeight * 0.8); // Underline positioned higher
+      yPos += lineHeight * 0.5; // Add extra space after underline before content
 
       // Section rows
       section.rows.forEach((row, rowIndex) => {
         checkPageBreak(lineHeight * 2);
 
-        // Row number (small grey text)
+        // Row number (small grey text) - compact format
         pdf.setFontSize(7);
         pdf.setTextColor("#999999");
         pdf.setFont(undefined, "normal");
         const rowNumberText = `${section.title.split(".")[0]}.${rowIndex + 1}`;
         pdf.text(rowNumberText, leftMargin, yPos);
 
-        // Row ID (Column B)
+        // Row ID (Column B) - closer to row number
         pdf.setFontSize(8);
         pdf.setTextColor("#666666");
         const rowIdCell = row.cells[1]; // Column B
         if (rowIdCell && rowIdCell.content) {
-          pdf.text(rowIdCell.content, leftMargin + 0.3, yPos);
+          pdf.text(rowIdCell.content, leftMargin + 0.25, yPos);
         }
 
-        // Description (Column C) - in grey for Reference Model
+        // Description (Column C) - in grey for Reference Model, closer to row ID
         const descCell = row.cells[2];
         if (descCell && descCell.content) {
           pdf.setFontSize(9);
           pdf.setTextColor("#888888"); // Grey for Reference
           pdf.setFont(undefined, descCell.isBold ? "bold" : "normal");
-          pdf.text(descCell.content, leftMargin + 0.8, yPos);
+          // Truncate long descriptions to fit
+          const maxDescWidth = 35; // characters
+          const descText = descCell.content.length > maxDescWidth
+            ? descCell.content.substring(0, maxDescWidth) + "..."
+            : descCell.content;
+          pdf.text(descText, leftMargin + 0.6, yPos);
         }
 
-        // Value columns (D onwards) - horizontal layout
-        let xPos = leftMargin + 4.5;
-        const columnWidth = 1.2;
+        // Value columns (D onwards) - start much earlier, smaller column width
+        let xPos = leftMargin + 3.5; // Moved from 4.5 to 3.5
+        const columnWidth = 0.85; // Reduced from 1.2 to 0.85
 
         row.cells.slice(3).forEach((cell, cellIndex) => {
           if (cell.content && cell.colSpan === 1) {
