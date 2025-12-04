@@ -3573,6 +3573,22 @@ window.TEUI.SectionModules.sect13 = (function () {
 
       // Calculate M-N compliance for Reference model (always 100%)
       calculateMechanicalCompliance(true);
+
+      // ✅ CRITICAL: Add M/N compliance values to lastReferenceResults
+      // This ensures S11 persistence pattern doesn't overwrite formatted percentages
+      lastReferenceResults.m_113 = "100%";
+      lastReferenceResults.m_115 = "100%";
+      lastReferenceResults.m_116 = "100%";
+      lastReferenceResults.m_117 = "100%";
+      lastReferenceResults.m_118 = "100%";
+      lastReferenceResults.m_119 = "100%";
+      lastReferenceResults.n_113 = "✓";
+      lastReferenceResults.n_115 = "✓";
+      lastReferenceResults.n_116 = "✓";
+      lastReferenceResults.n_117 = "✓";
+      lastReferenceResults.n_118 = "✓";
+      lastReferenceResults.n_119 = "✓";
+      lastReferenceResults.n_124 = "✓"; // Reference always has no cooling days
     } catch (error) {
       console.error(
         "[Section13] Error in Reference Model calculations:",
