@@ -127,11 +127,12 @@ TEUI.Reporter = (function () {
             // Column B (index 1): Skip in ALL sections
             // Column F (index 5): Skip in sections 02, 03, 05, 06, 08, 14, 15
             // Column J (index 9): Skip in sections 02, 03
-            const sectionNumber = sectionId.replace('section', '');
+            const sectionsWithColumnF = ['buildingInfo', 'climateCalculations', 'emissions', 'onSiteEnergy', 'indoorAirQuality', 'tediSummary', 'teuiSummary'];
+            const sectionsWithColumnJ = ['buildingInfo', 'climateCalculations'];
             const shouldSkipColumn =
               colLetterUpper === 'B' || // Skip column B in all sections
-              (colLetterUpper === 'F' && ['02', '03', '05', '06', '08', '14', '15'].includes(sectionNumber)) ||
-              (colLetterUpper === 'J' && ['02', '03'].includes(sectionNumber));
+              (colLetterUpper === 'F' && sectionsWithColumnF.includes(sectionId)) ||
+              (colLetterUpper === 'J' && sectionsWithColumnJ.includes(sectionId));
 
             if (shouldSkipColumn) return; // Skip this column entirely
 
@@ -494,14 +495,43 @@ TEUI.Reporter = (function () {
       });
     }
 
+    // Helper function to calculate total section height
+    function calculateSectionHeight(section) {
+      let height = 0;
+
+      // Section header height
+      height += lineHeight * 2.2; // Title
+      height += lineHeight * 0.5; // Post-underline space
+
+      // Row heights
+      section.rows.forEach(row => {
+        if (row.isSubheaderRow) {
+          height += lineHeight * 0.8; // Pre-subheader spacing
+          height += lineHeight * 1.8; // Subheader row height
+        } else {
+          height += lineHeight; // Normal row height
+        }
+      });
+
+      // Section spacing
+      height += sectionSpacing;
+
+      return height;
+    }
+
     // Iterate through sections (skip Section 01 - already rendered)
     reportData.sections.forEach((section, sectionIndex) => {
       // Skip Section 01 (Key Values) - rendered on its own page after title sheet
       if (section.title === "01. Key Values") return;
 
-      // Check if section header + at least 3 rows will fit (Comment #3: prevent orphaned headers)
-      const minSectionHeight = lineHeight * 4; // Header + underline + 2-3 data rows
-      checkPageBreak(minSectionHeight);
+      // Calculate full section height to check if entire section fits on current page
+      const fullSectionHeight = calculateSectionHeight(section);
+
+      // If entire section doesn't fit on current page, move to next page
+      if (yPos + fullSectionHeight > bottomMargin) {
+        pdf.addPage();
+        yPos = topMargin;
+      }
 
       // Calculate dynamic column widths for this section
       const columnWidths = calculateColumnWidths(section);
@@ -867,14 +897,43 @@ TEUI.Reporter = (function () {
       });
     }
 
+    // Helper function to calculate total section height (reuse from Target)
+    function calculateSectionHeightRef(section) {
+      let height = 0;
+
+      // Section header height
+      height += lineHeight * 2.2; // Title
+      height += lineHeight * 0.5; // Post-underline space
+
+      // Row heights
+      section.rows.forEach(row => {
+        if (row.isSubheaderRow) {
+          height += lineHeight * 0.8; // Pre-subheader spacing
+          height += lineHeight * 1.8; // Subheader row height
+        } else {
+          height += lineHeight; // Normal row height
+        }
+      });
+
+      // Section spacing
+      height += sectionSpacing;
+
+      return height;
+    }
+
     // Iterate through Reference Model sections (skip Section 01 - already rendered)
     referenceData.sections.forEach((section, sectionIndex) => {
       // Skip Section 01 (Key Values) - rendered on its own page after title sheet
       if (section.title === "01. Key Values") return;
 
-      // Check if section header + at least 3 rows will fit (Comment #3: prevent orphaned headers)
-      const minSectionHeight = lineHeight * 4;
-      checkPageBreak(minSectionHeight);
+      // Calculate full section height to check if entire section fits on current page
+      const fullSectionHeight = calculateSectionHeightRef(section);
+
+      // If entire section doesn't fit on current page, move to next page
+      if (yPos + fullSectionHeight > bottomMargin) {
+        pdf.addPage();
+        yPos = topMargin;
+      }
 
       // Calculate dynamic column widths for this section
       const columnWidths = calculateColumnWidthsRef(section);
