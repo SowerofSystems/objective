@@ -775,7 +775,15 @@ window.TEUI.SectionModules.sect13 = (function () {
     ];
 
     mnFields.forEach(fieldId => {
-      const valueToDisplay = ModeManager.getValue(fieldId);
+      // ✅ MODE-AWARE: Read from StateManager with ref_ prefix in Reference mode
+      // Matches ModeManager.updateCalculatedDisplayValues() pattern (lines 418-427)
+      let valueToDisplay;
+      if (ModeManager.currentMode === "reference") {
+        valueToDisplay = window.TEUI.StateManager.getValue(`ref_${fieldId}`);
+      } else {
+        valueToDisplay = window.TEUI.StateManager.getValue(fieldId);
+      }
+
       const element = document.querySelector(`[data-field-id="${fieldId}"]`);
       if (!element) return;
 
@@ -788,9 +796,12 @@ window.TEUI.SectionModules.sect13 = (function () {
 
         // Special handling for n_124 (yellow checkmark when >0)
         if (fieldId === "n_124") {
-          const daysValue = window.TEUI.parseNumeric(
-            ModeManager.getValue("m_124")
-          );
+          // ✅ MODE-AWARE: Read m_124 value with same ref_ prefix logic
+          const m124Value = ModeManager.currentMode === "reference"
+            ? window.TEUI.StateManager.getValue("ref_m_124")
+            : window.TEUI.StateManager.getValue("m_124");
+          const daysValue = window.TEUI.parseNumeric(m124Value);
+
           if (daysValue <= 0) {
             element.classList.add("checkmark"); // Green ✓
           } else {
