@@ -2542,11 +2542,11 @@ Move S13 from "Pending" to "Completed":
 Add detailed implementation notes after S12 section:
 
 ```markdown
-## ✅ Section 13 Implementation (VERIFIED Dec 3, 2025)
+## ✅ Section 13 Implementation (COMPLETED Dec 3, 2025)
 
-**Baseline Commits**: 9dd1b6a (j_116 Fallback Trap fix) → [final commit hash]
-**Implementation Time**: 4-5 hours (includes testing)
-**Final Status**: ✅ WORKING - All 7 M/N field pairs operational
+**Baseline Commits**: 9dd1b6a (j_116 Fallback Trap fix) → 397a066 (Final fix)
+**Implementation Time**: ~6 hours (includes debugging race conditions)
+**Final Status**: ✅ WORKING - All 7 M/N field pairs operational in both modes with value editing resilience
 
 ### Field Summary
 
@@ -2608,8 +2608,31 @@ Add detailed implementation notes after S12 section:
 ✅ **Yellow checkmark**: n_124 shows amber when mech cooling required
 ✅ **Format stability**: No "100%" ↔ "1" flickering
 ✅ **Mode switching**: Correct values and colors in both modes
+✅ **Value editing resilience**: Reference mode shows 100% even when user edits Reference fields
 ✅ **Import/export**: M/N values persist correctly
 ✅ **Performance**: <100ms calculation time
+
+### Implementation Challenges & Solutions
+
+**Challenge 1: Direct DOM Updates Race Condition**
+- **Issue**: calculateMechanicalCompliance() updated DOM directly. Since calculateTargetModel() runs after calculateReferenceModel(), Target values overwrote Reference 100% in DOM.
+- **Solution**: Removed all direct DOM updates from calculateMechanicalCompliance(). Created standalone updateCalculatedDisplayValues() function that reads mode-aware from StateManager (ref_ prefix in Reference mode).
+- **Commits**: c89d89a, 5cfb4f2
+
+**Challenge 2: Mode Toggle Not Updating M/N Fields**
+- **Issue**: ModeManager.switchMode() only called this.updateCalculatedDisplayValues() (ModeManager method), which explicitly excludes M/N fields per line 354 comment. Standalone updateCalculatedDisplayValues() at line 765 never called.
+- **Solution**: Added updateCalculatedDisplayValues() call in switchMode() after ModeManager's version.
+- **Commit**: 212e133
+
+**Challenge 3: S11 Persistence Pattern Overwriting Formatted Values**
+- **Issue**: When user edits Reference field (e.g., HSPF slider), calculateAll() runs. S11 persistence pattern re-writes all ref_ values from lastReferenceResults using value.toString(). But M/N values weren't in lastReferenceResults (calculated AFTER storeReferenceResults()), so persistence was overwriting formatted "100%" with stale/raw decimals (1.111, 1.635, etc.).
+- **Solution**: After calculateMechanicalCompliance(true), explicitly add M/N formatted strings to lastReferenceResults so persistence pattern preserves them. Reference M/N always: M="100%", N="✓".
+- **Commit**: 397a066
+
+**Challenge 4: Mode-Aware StateManager Reads**
+- **Issue**: updateCalculatedDisplayValues() was using ModeManager.getValue() which doesn't add ref_ prefix for StateManager reads.
+- **Solution**: Read directly from StateManager with conditional prefix: if (ModeManager.currentMode === "reference") getValue("ref_${fieldId}") else getValue(fieldId).
+- **Commit**: 2cd31d4
 ```
 
 ### Estimated Timeline
