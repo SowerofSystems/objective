@@ -474,12 +474,27 @@ document.addEventListener('DOMContentLoaded', initializeReportDownload);
   - ~33ms load time regression
   - Decision: Text-only footer for performance
 
+### ✅ Horizontal Layout Optimization (COMPLETED - Dec 4, 2025)
+- **Problem**: Excessive whitespace after row numbers, content clipping on right edge
+- **Solution**: Optimized column spacing for landscape layout
+  - Row number spacing: Reduced from 0.3" to 0.25" (row number to row ID)
+  - Row ID spacing: Reduced from 0.8" to 0.6" (row ID to description)
+  - Value column start: Moved from 4.5" to 3.5" (saved 1" horizontal space)
+  - Column width: Reduced from 1.2" to 0.85" per column (30% reduction)
+  - Description truncation: Added 35-character limit with "..." for overflow prevention
+- **Result**: Better utilization of 10" usable width (11" page - 1" margins)
+  - Row numbers: 0-0.25"
+  - Row ID: 0.25-0.6"
+  - Description: 0.6-3.5" (2.9" available)
+  - Value columns: 3.5-10" (6.5" for ~7-8 columns at 0.85" each)
+- **Applied to**: Both Target and Reference model content pages
+
 ### Current Issues
-1. **Horizontal Layout** (IN PROGRESS):
-   - Excessive whitespace after row numbers
-   - Content clipping on right edge of page
-   - Need to optimize column widths for landscape layout
-   - Screenshot analysis shows wasted space in row number column
+1. **Section Headers** (HIGH PRIORITY):
+   - Headers need more vertical spacing to prevent text overlap
+   - Screenshot shows "SECTION 4. Actual vs. Target Energy..." text mashing into column headers
+   - Need to increase spacing after section header underline
+   - May need to adjust font size or add blank line
 
 2. **Performance**:
    - Minor load time regression (~33ms)
@@ -487,22 +502,23 @@ document.addEventListener('DOMContentLoaded', initializeReportDownload);
    - Need to test if removing logos improved performance
 
 ### Next Steps
-1. **Fix horizontal layout** (HIGH PRIORITY):
-   - Reduce row number column width
-   - Optimize content column spacing
-   - Ensure all data fits within page width
-   - Test with various section widths
+1. **Fix section header spacing** (HIGH PRIORITY):
+   - Increase vertical space between section title and first data row
+   - Ensure section headers don't overlap with content
+   - Test with various section title lengths
+   - May need to adjust `lineHeight` multiplier in section header rendering
 
 2. **Reference Model Styling** (MEDIUM PRIORITY):
-   - Implement grey text for Reference model content
+   - Implement grey text for Reference model content (PARTIALLY DONE - descriptions grey)
    - Add red highlighting for values differing from Target
    - Use `targetData` parameter in `generatePDF()` for comparison
 
 3. **Testing** (HIGH PRIORITY):
    - Test all 15 sections render correctly
-   - Verify no content clipping
+   - Verify no content clipping after layout optimization
    - Check page breaks are intelligent
    - Test with different data sets
+   - Verify description truncation works properly
 
 ## File Structure
 
@@ -520,18 +536,18 @@ docs/development/
 
 ## Testing Checklist
 
-- [ ] All sections (S01-S15, S19) appear in PDF
-- [ ] Graphics sections (S16-S18) excluded correctly
-- [ ] No UI controls appear in PDF
-- [ ] Bold/italic formatting preserved
-- [ ] Row numbers display correctly
-- [ ] Section headers formatted properly
-- [ ] Multi-page layout works (no cut-off content)
-- [ ] PDF downloads with correct filename
-- [ ] Works in both Target and Reference modes
-- [ ] File size reasonable (< 5MB target)
-- [ ] Text is selectable (not rasterized)
-- [ ] Renders correctly on mobile/tablet
+- [x] ~~All sections (S01-S15) appear in PDF~~ (S19 Notes TBD)
+- [x] ~~Graphics sections (S16-S18) excluded correctly~~
+- [x] ~~No UI controls appear in PDF~~ (text-based extraction)
+- [x] ~~Bold/italic formatting preserved~~ (via computedStyle detection)
+- [x] ~~Row numbers display correctly~~ (format: "02.1")
+- [ ] Section headers formatted properly (NEEDS MORE SPACING - see Current Issues)
+- [ ] Multi-page layout works (no cut-off content) (IN PROGRESS - horizontal layout optimized)
+- [x] ~~PDF downloads with correct filename~~ (ProjectName_Report_YYYY.MM.DD.pdf)
+- [x] ~~Works in both Target and Reference modes~~ (dual report in single PDF)
+- [ ] File size reasonable (< 5MB target) (TBD - need to test with full data)
+- [x] ~~Text is selectable (not rasterized)~~ (text-based jsPDF)
+- [ ] Renders correctly on mobile/tablet (TBD - desktop only for now)
 
 ## Recommended Approach: Text-Based PDF (jsPDF)
 
