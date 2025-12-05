@@ -84,16 +84,25 @@ TEUI.Reporter = (function () {
   /**
    * Helper function to clean HTML tags and UI symbols from text for PDF export
    * Converts "NRL<sub>50</sub>" to "NRL50", "Ae<sub>10</sub>" to "Ae10"
-   * Removes "€" dropdown indicator used in UI
+   * Translates UI dropdown indicators (€) to proper subscript values
    * @param {string} text - Text potentially containing HTML tags or UI symbols
-   * @returns {string} - Cleaned text with tags and symbols removed
+   * @returns {string} - Cleaned text with tags and symbols removed/translated
    */
   function stripHTMLTags(text) {
     if (!text) return text;
+
     // Remove <sub>, </sub>, <sup>, </sup> tags and any other HTML tags
     let cleaned = text.replace(/<[^>]*>/g, '');
-    // Remove € character (dropdown indicator in UI) and extra spaces
+
+    // Smart translation of € dropdown indicators based on context:
+    // "NRL...€" or "ACH...€" → append "50"
+    // "Ae...€" or "ELA...€" → append "10"
+    cleaned = cleaned.replace(/(NRL|ACH)[^€]*€/g, '$150');
+    cleaned = cleaned.replace(/(Ae|ELA)[^€]*€/g, '$110');
+
+    // Remove any remaining € characters and collapse spaces
     cleaned = cleaned.replace(/€/g, '').replace(/\s+/g, ' ').trim();
+
     return cleaned;
   }
 
