@@ -689,6 +689,13 @@ TEUI.Reporter = (function () {
 
       // Gap to next row group (after value line)
       yPos += 0.5; // Spacing between row groups
+
+      // Draw hairline divider between rows (skip after last row)
+      if (rowIndex < section.rows.filter(r => !r.isSubheaderRow).length - 1) {
+        pdf.setDrawColor("#E0E0E0");
+        pdf.setLineWidth(0.003); // Hairline
+        pdf.line(labelXPos, yPos - 0.25, percentXPos + colWidth, yPos - 0.25);
+      }
     });
   }
 
@@ -941,10 +948,10 @@ TEUI.Reporter = (function () {
         const rowHeight = row.isSubheaderRow ? lineHeight * 1.8 : lineHeight;
         yPos += rowHeight;
 
-        // Light grey row separator - draw below text with padding (Comment #2)
+        // Light grey row separator - draw below text with small gap (Comment #2)
         pdf.setDrawColor("#E0E0E0");
         pdf.setLineWidth(0.005);
-        pdf.line(leftMargin + 0.3, yPos + 0.08, rightMargin, yPos + 0.08); // 0.08" padding under text
+        pdf.line(leftMargin + 0.3, yPos + lineHeight * 0.02, rightMargin, yPos + lineHeight * 0.02);
       });
 
       yPos += sectionSpacing;
@@ -1304,10 +1311,10 @@ TEUI.Reporter = (function () {
         const rowHeight = row.isSubheaderRow ? lineHeight * 1.8 : lineHeight;
         yPos += rowHeight;
 
-        // Light grey row separator - draw below text with padding (Comment #2)
+        // Light grey row separator - draw below text with small gap (Comment #2)
         pdf.setDrawColor("#E0E0E0");
         pdf.setLineWidth(0.005);
-        pdf.line(leftMargin + 0.3, yPos + 0.08, rightMargin, yPos + 0.08); // 0.08" padding under text
+        pdf.line(leftMargin + 0.3, yPos + lineHeight * 0.02, rightMargin, yPos + lineHeight * 0.02);
       });
 
       yPos += sectionSpacing;
