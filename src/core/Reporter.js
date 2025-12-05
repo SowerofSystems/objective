@@ -110,47 +110,89 @@ TEUI.Reporter = (function () {
 
         // Section 01 (Key Values) uses a different DOM structure - extract from key-values-table
         if (sectionId === 'keyValues') {
-          const keyValuesTable = sectionElement.querySelector(".key-values-table tbody");
+          const keyValuesTable = sectionElement.querySelector(".key-values-table");
           console.log(`[Reporter] Section 01 extraction: table found=${!!keyValuesTable}`);
 
           if (keyValuesTable) {
-            const tableRows = keyValuesTable.querySelectorAll("tr");
-            console.log(`[Reporter] Section 01: found ${tableRows.length} rows in tbody`);
-
-            tableRows.forEach((row, rowIndex) => {
-              const cells = [];
-
-              // Get all td elements
-              const tds = row.querySelectorAll("td");
-
-              tds.forEach((td, tdIndex) => {
-                // Extract text - look for .key-value spans or direct text
-                const keyValueSpan = td.querySelector(".key-value");
-                const percentSpan = td.querySelector(".percent-value");
-                const content = keyValueSpan ? keyValueSpan.textContent.trim() :
-                               percentSpan ? percentSpan.textContent.trim() :
-                               td.textContent.trim();
-
-                cells.push({
-                  column: String.fromCharCode(67 + tdIndex), // C, D, E, F, etc.
-                  content,
-                  type: "text",
-                  isBold: !!keyValueSpan, // Values in .key-value spans are bold
-                  isUserInput: false,
-                  isCalculated: !!keyValueSpan,
+            // Extract column headers from .key-explanation spans (more reliable than thead)
+            const columnHeaders = [];
+            const firstRow = keyValuesTable.querySelector("tbody tr");
+            if (firstRow) {
+              const explanationSpans = firstRow.querySelectorAll(".key-explanation");
+              explanationSpans.forEach(span => {
+                columnHeaders.push({
+                  content: span.textContent.trim(),
                   colSpan: 1
                 });
               });
+            }
+            sectionData.columnHeaders = columnHeaders;
+            console.log(`[Reporter] Section 01: extracted ${columnHeaders.length} column headers`);
 
-              if (cells.length > 0) {
-                sectionData.rows.push({
-                  rowId: row.getAttribute("data-field-id") || `keyValue_${rowIndex}`,
-                  rowNumber: rowIndex + 1,
-                  cells,
-                  isSubheaderRow: false
+            // Extract rows from tbody
+            const tbody = keyValuesTable.querySelector("tbody");
+            if (tbody) {
+              const tableRows = tbody.querySelectorAll("tr");
+              console.log(`[Reporter] Section 01: found ${tableRows.length} rows in tbody`);
+
+              tableRows.forEach((row, rowIndex) => {
+                const cells = [];
+                const tds = row.querySelectorAll("td");
+
+                // Extract description and row label from first td
+                let description = "";
+                let rowLabel = "";
+
+                if (tds[0]) {
+                  // First td contains: <span class="title-explanation">...</span> and <span class="key-title-combined">...</span>
+                  const titleExplanation = tds[0].querySelector(".title-explanation");
+                  const keyTitleCombined = tds[0].querySelector(".key-title-combined");
+
+                  if (titleExplanation) {
+                    description = titleExplanation.textContent.trim();
+                  }
+
+                  if (keyTitleCombined) {
+                    // Extract text content, removing the mode text span
+                    const clone = keyTitleCombined.cloneNode(true);
+                    const modeTextClone = clone.querySelector(".key-title-mode-text");
+                    if (modeTextClone) modeTextClone.remove();
+                    rowLabel = clone.textContent.trim();
+                  }
+                }
+
+                // Process all td elements for cell data
+                tds.forEach((td, tdIndex) => {
+                  // Extract text - look for .key-value spans or direct text
+                  const keyValueSpan = td.querySelector(".key-value");
+                  const percentSpan = td.querySelector(".percent-value");
+                  const content = keyValueSpan ? keyValueSpan.textContent.trim() :
+                                 percentSpan ? percentSpan.textContent.trim() :
+                                 td.textContent.trim();
+
+                  cells.push({
+                    column: String.fromCharCode(67 + tdIndex), // C, D, E, F, etc.
+                    content,
+                    type: "text",
+                    isBold: !!keyValueSpan, // Values in .key-value spans are bold
+                    isUserInput: false,
+                    isCalculated: !!keyValueSpan,
+                    colSpan: 1
+                  });
                 });
-              }
-            });
+
+                if (cells.length > 0) {
+                  sectionData.rows.push({
+                    rowId: row.getAttribute("data-field-id") || `keyValue_${rowIndex}`,
+                    rowNumber: rowIndex + 1,
+                    description,  // NEW: Full technical description
+                    rowLabel,     // NEW: Row ID label (e.g., "T.1 Lifetime Carbon Actual")
+                    cells,
+                    isSubheaderRow: false
+                  });
+                }
+              });
+            }
           }
 
           if (sectionData.rows.length > 0) {
@@ -391,12 +433,13 @@ TEUI.Reporter = (function () {
   /**
    * Helper function to render Section 01 (Key Values) with special formatting
    * Moved to module scope so both generatePDF and appendReferenceToPDF can use it
-   * REDESIGNED V2: JUMBO fonts, proper hierarchy, massive breathing room
+   * REDESIGNED V3: Full visual hierarchy with descriptions, row labels, and column headers
    */
   function renderSection01KeyValues(pdf, section, modelType, leftMargin, topMargin, pageWidth, pageHeight, lineHeight) {
     console.log("[Reporter] renderSection01KeyValues called with:", {
       sectionTitle: section.title,
       rowCount: section.rows.length,
+      columnHeaderCount: section.columnHeaders?.length || 0,
       modelType,
       pageHeight
     });
@@ -415,6 +458,8 @@ TEUI.Reporter = (function () {
     const targetColor = "#0066CC"; // Blue
     const actualColor = "#28a745"; // Green
     const tierGrey = "#999999"; // Lighter grey for tiers
+    const descGrey = "#666666"; // Description text
+    const headerGrey = "#888888"; // Column headers
 
     // Column positions - SPREAD OUT
     const labelXPos = leftMargin;
@@ -423,18 +468,58 @@ TEUI.Reporter = (function () {
     const actualXPos = leftMargin + 8.5;
     const percentXPos = leftMargin + 11.5;
 
-    // Render rows with JUMBO fonts
+    // Column header positions (centered above values)
+    const refHeaderX = refXPos + 0.3;
+    const targetHeaderX = targetXPos + 0.3;
+    const actualHeaderX = actualXPos + 0.3;
+
+    // Render rows with JUMBO fonts and full hierarchy
     section.rows.forEach((row, rowIndex) => {
       if (row.isSubheaderRow) return;
 
-      // ROW LABEL - small, grey, ABOVE the values
-      const titleCell = row.cells[0];
-      if (titleCell && titleCell.content) {
-        pdf.setFontSize(10);
-        pdf.setTextColor("#666666");
+      // 1. ROW DESCRIPTION - small grey text ABOVE row label (new!)
+      if (row.description) {
+        pdf.setFontSize(9);
+        pdf.setTextColor(descGrey);
         pdf.setFont(undefined, "normal");
-        pdf.text(titleCell.content, labelXPos, yPos);
-        yPos += 0.25; // Small gap before massive numbers
+        pdf.text(row.description, labelXPos, yPos);
+        yPos += 0.2; // Small gap before row label
+      }
+
+      // 2. ROW LABEL + COLUMN HEADERS - same horizontal line
+      if (row.rowLabel) {
+        // Row label on left (e.g., "T.1 Lifetime Carbon Actual")
+        pdf.setFontSize(10);
+        pdf.setTextColor("#000000");
+        pdf.setFont(undefined, "normal");
+        pdf.text(row.rowLabel, labelXPos, yPos);
+
+        // Column headers above value positions (if available)
+        if (section.columnHeaders && section.columnHeaders.length >= 3) {
+          pdf.setFontSize(8);
+          pdf.setTextColor(headerGrey);
+          pdf.setFont(undefined, "normal");
+
+          // Reference column header (index 0)
+          if (section.columnHeaders[0]) {
+            pdf.text(section.columnHeaders[0].content, refHeaderX, yPos, { align: "center", maxWidth: 2.5 });
+          }
+
+          // Target column header (index 1)
+          if (section.columnHeaders[1]) {
+            pdf.text(section.columnHeaders[1].content, targetHeaderX, yPos, { align: "center", maxWidth: 2.5 });
+          }
+
+          // Actual column header (index 2)
+          if (section.columnHeaders[2]) {
+            pdf.text(section.columnHeaders[2].content, actualHeaderX, yPos, { align: "center", maxWidth: 2.5 });
+          }
+        }
+
+        yPos += 0.35; // Gap before values
+      } else {
+        // Fallback if no rowLabel - just small gap
+        yPos += 0.25;
       }
 
       // COLUMN E: Reference (JUMBO 48pt Red)

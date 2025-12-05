@@ -860,7 +860,45 @@ sectionData = {
 6. Adjust vertical spacing and positioning (20 min)
 7. Test with both Target and Reference models (30 min)
 
-**Status**: 🔄 READY FOR IMPLEMENTATION
+**Status**: ✅ IMPLEMENTED (Dec 4, 2025)
+
+#### 8. Implementation Completed
+
+**Code Changes Made:**
+
+**File**: `src/core/Reporter.js`
+
+**Change 1**: `extractReportData()` - Lines 111-201
+- ✅ Extract column headers from `.key-explanation` spans in DOM
+- ✅ Parse row descriptions from `.title-explanation` spans
+- ✅ Parse row labels from `.key-title-combined` spans
+- ✅ Store `columnHeaders[]`, `description`, and `rowLabel` in section data structure
+- ✅ Added console logging for debugging extraction
+
+**Change 2**: `renderSection01KeyValues()` - Lines 433-523
+- ✅ Added rendering of row descriptions (9pt #666666 grey) above row labels
+- ✅ Added rendering of row labels (10pt black) on left side
+- ✅ Added rendering of column headers (8pt #888888 grey) centered above value columns
+- ✅ Maintained existing JUMBO value rendering (48pt colored with tier support)
+- ✅ Adjusted vertical spacing:
+  - +0.2" gap after description
+  - +0.35" gap after row label + column headers
+  - Total: ~0.55" overhead per row (fits within existing 1.1" row spacing)
+
+**Visual Hierarchy Achieved:**
+```
+Section Title (24pt bold)
+↓ 0.6"
+FOR EACH ROW:
+  Row Description (9pt grey) - e.g., "Lifetime Emissions Intensity kgCO2e/m²/Service Life (Yrs)"
+  ↓ 0.2"
+  Row Label (10pt black) + Column Headers (8pt grey, centered above values)
+  ↓ 0.35"
+  Tier Labels (18pt grey, optional) + JUMBO Values (48pt colored)
+  ↓ 1.1"
+```
+
+**Ready for Testing**: User should test PDF export in both Target and Reference models to verify visual hierarchy matches app dashboard
 
 ### ✅ ID Column Omission (COMPLETED - Dec 4, 2025)
 - **Goal**: Remove redundant ID columns to maximize horizontal space for data
