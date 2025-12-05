@@ -586,6 +586,282 @@ document.addEventListener('DOMContentLoaded', initializeReportDownload);
   - Applied to both Target and Reference models
 - **Status**: ✅ ENHANCED - visually matches app's Key Values table with color-coding and large fonts
 
+### 🔄 Section 01 Visual Hierarchy Enhancement (IN PROGRESS - Dec 4, 2025)
+
+**Problem Identified from Screenshots:**
+Comparing App Dashboard vs PDF Export reveals missing information hierarchy:
+
+**App Dashboard Structure (Screenshot 1):**
+```
+Row 1:
+  Description: "Lifetime Emissions Intensity kgCO2e/m²/Service Life (Yrs)"
+  Row ID: "T.1 Lifetime Carbon Actual"
+  Column Headers: "Reference 100% (Baseline)" | "Targeted (Design) 49% Reduction" | "Actual (Utility Bills) 49% Reduction"
+  Values: 23.1 | 11.7 | 11.7 | N/A
+
+Row 2:
+  Description: "Annual Operational Emissions Intensity kgCO2e/m²"
+  Row ID: "T.2 Annual Carbon Actual"
+  Column Headers: "Reference 100% (Baseline)" | "Targeted (Design) 52% Reduction" | "Actual (Utility Bills) 52% Reduction"
+  Values: 10.1 | 4.8 | 4.8 | ✓48%
+
+Row 3:
+  Description: "Total Annual Operational Energy Use Intensity kWh/m²/yr"
+  Row ID: "T.3 TEUI Actual"
+  Column Headers: "Reference 100% (Baseline)" | "Targeted (Design) 53% Reduction" | "Actual (Utility Bills) 53% Reduction"
+  Values: tier1 197.5 | tier3 93.7 | 93.1 | ✓47%
+```
+
+**Current PDF Export Issues (Screenshot 2):**
+- ❌ Missing: Full row descriptions (long technical descriptions not showing)
+- ❌ Missing: Column headers above values ("Reference 100% (Baseline)", "Targeted (Design) XX% Reduction", etc.)
+- ❌ Cramped: Row IDs merged with descriptions instead of being separate
+- ✅ Present: Color-coded values, tier indicators, checkmarks
+
+**Required Enhancements:**
+
+#### 1. Add Column Headers Above Each Row
+**Goal**: Show context for what each column represents (matching app dashboard)
+
+**Data to Extract:**
+- Column D header: "Reference 100% (Baseline)"
+- Column H header: "Targeted (Design) XX% Reduction" (dynamic percentage from calculations)
+- Column K header: "Actual (Utility Bills) XX% Reduction" (dynamic percentage from calculations)
+- Column M header: (Percentage column - no header needed)
+
+**Implementation Approach:**
+```javascript
+// In extractReportData() for Section 01:
+// Extract column headers from row with class "section-subheader"
+const headerRow = sectionElement.querySelector(".key-values-table thead tr");
+const columnHeaders = [];
+if (headerRow) {
+  const headerCells = headerRow.querySelectorAll("th");
+  headerCells.forEach(th => {
+    columnHeaders.push({
+      content: th.textContent.trim(),
+      colSpan: th.colSpan || 1
+    });
+  });
+}
+
+// Store in section data:
+sectionData.columnHeaders = columnHeaders;
+```
+
+**Rendering Approach:**
+```javascript
+// In renderSection01KeyValues():
+// For each row, render column headers ABOVE the values
+// Small grey text, 8pt, positioned above each value column
+// Format:
+//   - Row description: 9pt grey, left-justified above row ID
+//   - Row ID: 10pt black, positioned below description
+//   - Column headers: 8pt grey, centered above each value
+//   - Values: 48pt bold colored (existing)
+```
+
+#### 2. Add Row Descriptions Above Row IDs
+**Goal**: Show full technical descriptions like in app dashboard
+
+**Data to Extract:**
+- Row 1: "Lifetime Emissions Intensity kgCO2e/m²/Service Life (Yrs)"
+- Row 2: "Annual Operational Emissions Intensity kgCO2e/m²"
+- Row 3: "Total Annual Operational Energy Use Intensity kWh/m²/yr"
+
+**Implementation Approach:**
+```javascript
+// In extractReportData() for Section 01:
+// Look for description in Column A (first td in tbody rows)
+const descriptionCell = row.querySelector("td:first-child");
+if (descriptionCell) {
+  rowData.description = descriptionCell.textContent.trim();
+}
+```
+
+**Rendering Approach:**
+```javascript
+// In renderSection01KeyValues():
+// Render description ABOVE row ID:
+//   1. Description: 9pt grey, left-justified at labelXPos
+//   2. Small vertical gap (0.15")
+//   3. Row ID: 10pt black, same x position
+//   4. Small vertical gap (0.25")
+//   5. Values: 48pt colored (existing)
+```
+
+#### 3. Improved Visual Hierarchy
+**Layout Structure (top to bottom):**
+```
+1. Section Title: "01. Key Values" (24pt bold) - existing ✅
+2. Vertical gap: 0.6" - existing ✅
+
+FOR EACH ROW:
+3. Row Description: 9pt grey (e.g., "Lifetime Emissions Intensity kgCO2e/m²/Service Life (Yrs)")
+4. Gap: 0.15"
+5. Row ID + Column Headers row:
+   - Left: Row ID (e.g., "T.1 Lifetime Carbon Actual") 10pt black
+   - Above values: Column headers (8pt grey, centered)
+6. Gap: 0.25"
+7. Values row: 48pt colored (Reference: red, Target: blue, Actual: green, Percent: grey)
+   - Tiers above values: 18pt grey (existing ✅)
+8. Gap: 1.1" to next row - existing ✅
+```
+
+**Typography Specs:**
+- Row descriptions: 9pt, normal weight, #666666 (grey)
+- Column headers: 8pt, normal weight, #888888 (lighter grey)
+- Row IDs: 10pt, normal weight, #000000 (black)
+- Tier labels: 18pt, bold, #999999 (existing ✅)
+- Values: 48pt, bold, colored (existing ✅)
+
+**Positioning:**
+```javascript
+// Column positions for reference:
+const labelXPos = leftMargin;              // 0.5" (descriptions and row IDs)
+const refXPos = leftMargin + 2.5;          // 3.0" (Reference values)
+const targetXPos = leftMargin + 5.5;       // 6.0" (Target values)
+const actualXPos = leftMargin + 8.5;       // 9.0" (Actual values)
+const percentXPos = leftMargin + 11.5;     // 12.0" (Percentage values)
+
+// Column header positioning (centered above values):
+const refHeaderX = refXPos + 0.3;          // Centered above reference value
+const targetHeaderX = targetXPos + 0.3;    // Centered above target value
+const actualHeaderX = actualXPos + 0.3;    // Centered above actual value
+```
+
+#### 4. Code Changes Required
+
+**File**: `src/core/Reporter.js`
+
+**Function 1**: `extractReportData()` - Lines 111-159 (Section 01 extraction)
+```javascript
+// CHANGES NEEDED:
+// 1. Extract description from Column A (first td)
+// 2. Extract column headers from thead row
+// 3. Store both in sectionData structure
+
+// NEW STRUCTURE:
+sectionData = {
+  id: 'keyValues',
+  title: '01. Key Values',
+  columnHeaders: [
+    { content: 'Reference 100% (Baseline)', colSpan: 1 },
+    { content: 'Targeted (Design) 49% Reduction', colSpan: 1 },
+    { content: 'Actual (Utility Bills) 49% Reduction', colSpan: 1 },
+    { content: '', colSpan: 1 } // Percentage column
+  ],
+  rows: [
+    {
+      rowId: 'h_61',
+      description: 'Lifetime Emissions Intensity kgCO2e/m²/Service Life (Yrs)',
+      rowLabel: 'T.1 Lifetime Carbon Actual',
+      cells: [/* existing cell data */]
+    },
+    // ... more rows
+  ]
+}
+```
+
+**Function 2**: `renderSection01KeyValues()` - Lines 396-536
+```javascript
+// CHANGES NEEDED:
+// 1. Add rendering of row.description above row.rowLabel
+// 2. Add rendering of columnHeaders above value columns
+// 3. Adjust vertical spacing to accommodate new elements
+
+// RENDERING ORDER (per row):
+// yPos = 1.5 (start position)
+//
+// ROW LOOP:
+//   1. Render row.description at (labelXPos, yPos) - 9pt grey
+//      yPos += 0.2
+//
+//   2. Render row.rowLabel at (labelXPos, yPos) - 10pt black
+//      AND render column headers:
+//        - columnHeaders[0] at (refHeaderX, yPos) - 8pt grey
+//        - columnHeaders[1] at (targetHeaderX, yPos) - 8pt grey
+//        - columnHeaders[2] at (actualHeaderX, yPos) - 8pt grey
+//      yPos += 0.35
+//
+//   3. Render tier labels (if present) at tier positions - 18pt grey
+//      yPos += 0.0 (tiers render above values)
+//
+//   4. Render values at value positions - 48pt colored
+//      yPos += 0.45
+//
+//   5. Gap to next row:
+//      yPos += 1.1
+```
+
+#### 5. DOM Structure to Extract From
+
+**HTML Structure in App:**
+```html
+<section id="keyValues">
+  <table class="key-values-table">
+    <thead>
+      <tr>
+        <th><!-- Row labels --></th>
+        <th colspan="1">Reference 100% (Baseline)</th>
+        <th colspan="1">Targeted (Design) 49% Reduction</th>
+        <th colspan="1">Actual (Utility Bills) 49% Reduction</th>
+        <th><!-- Percentage --></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr data-field-id="h_61">
+        <td>Lifetime Emissions Intensity kgCO2e/m²/Service Life (Yrs)<br>
+            <strong>T.1 Lifetime Carbon</strong> <em>Actual</em></td>
+        <td class="key-value">23.1</td>
+        <td class="key-value">11.7</td>
+        <td class="key-value">11.7</td>
+        <td class="percent-value">N/A</td>
+      </tr>
+      <!-- More rows -->
+    </tbody>
+  </table>
+</section>
+```
+
+**Extraction Strategy:**
+```javascript
+// 1. Extract thead th elements for column headers
+// 2. For each tbody tr:
+//    - First td contains TWO parts:
+//      a) Text before <br> or <strong> = description
+//      b) <strong> + <em> content = row label (T.1 Lifetime Carbon Actual)
+//    - Parse first td to separate description and rowLabel
+```
+
+#### 6. Testing Checklist
+
+- [ ] Column headers appear above values in correct positions
+- [ ] Row descriptions appear above row IDs
+- [ ] Full technical descriptions visible (not truncated)
+- [ ] Vertical spacing maintains JUMBO font impact
+- [ ] Color scheme preserved (red/blue/green/grey)
+- [ ] Tier labels still render correctly above values
+- [ ] Checkmarks/X marks in percentage column preserved
+- [ ] Layout works for both Target and Reference models
+- [ ] Page 2 remains dedicated to Section 01
+- [ ] No overlap between text elements
+
+#### 7. Implementation Timeline
+
+**Estimated Time**: 2-3 hours
+
+**Steps**:
+1. Update `extractReportData()` to parse description + rowLabel from first td (30 min)
+2. Extract column headers from thead (20 min)
+3. Update data structure to include new fields (10 min)
+4. Modify `renderSection01KeyValues()` to render descriptions (30 min)
+5. Add column header rendering above values (30 min)
+6. Adjust vertical spacing and positioning (20 min)
+7. Test with both Target and Reference models (30 min)
+
+**Status**: 🔄 READY FOR IMPLEMENTATION
+
 ### ✅ ID Column Omission (COMPLETED - Dec 4, 2025)
 - **Goal**: Remove redundant ID columns to maximize horizontal space for data
 - **Columns Removed**:
