@@ -442,14 +442,14 @@ TEUI.Reporter = (function () {
     const contentWidth = rightMargin - leftMargin;
 
     // Title
-    pdf.setFontSize(8);
+    pdf.setFontSize(16); // Doubled from 8
     pdf.setTextColor("#000000");
     pdf.setFont(undefined, "bold");
     pdf.text("DISCLAIMER", leftMargin, yPos);
-    yPos += 0.18;
+    yPos += 0.36; // Doubled from 0.18
 
-    // Disclaimer text from LICENSE lines 33-51 - reduced font size to fit on one page
-    pdf.setFontSize(5);
+    // Disclaimer text from LICENSE lines 33-51 - doubled font size for legibility
+    pdf.setFontSize(10); // Doubled from 5
     pdf.setTextColor("#333333");
     pdf.setFont(undefined, "italic");
 
@@ -457,32 +457,32 @@ TEUI.Reporter = (function () {
 
     const disclaimerLines = pdf.splitTextToSize(disclaimerText, contentWidth);
     pdf.text(disclaimerLines, leftMargin, yPos);
-    yPos += disclaimerLines.length * 0.075 + 0.2;
+    yPos += disclaimerLines.length * 0.15 + 0.4; // Doubled line spacing
 
     // License section
-    pdf.setFontSize(7);
+    pdf.setFontSize(14); // Doubled from 7
     pdf.setFont(undefined, "bold");
     pdf.setTextColor("#000000");
     pdf.text("License", leftMargin, yPos);
-    yPos += 0.15;
+    yPos += 0.3; // Doubled from 0.15
 
-    pdf.setFontSize(5);
+    pdf.setFontSize(10); // Doubled from 5
     pdf.setFont(undefined, "normal");
     const licenseText = `Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International\n(CC BY-NC-ND 4.0)\n\n© OpenBuilding, Inc., 2025\n\nThis work is licensed for non-commercial use only. See LICENSE for full terms.\nSupported by the Ontario Association of Architects (OAA).`;
     const licenseLines = pdf.splitTextToSize(licenseText, contentWidth);
     pdf.text(licenseLines, leftMargin, yPos);
-    yPos += licenseLines.length * 0.075 + 0.2;
+    yPos += licenseLines.length * 0.15 + 0.4; // Doubled line spacing
 
     // Credits section
-    pdf.setFontSize(7);
+    pdf.setFontSize(14); // Doubled from 7
     pdf.setFont(undefined, "bold");
     pdf.setTextColor("#000000");
     pdf.text("Credits", leftMargin, yPos);
-    yPos += 0.15;
+    yPos += 0.3; // Doubled from 0.15
 
-    pdf.setFontSize(5);
+    pdf.setFontSize(10); // Doubled from 5
     pdf.setFont(undefined, "normal");
-    const creditsText = `Created by: Andy Thomson, OpenBuilding, Inc., OAA\n\nContributors: Mark H Pavlidis\n\nMentors & Advisors:\n- Dr. Ted Kesik, P.Eng\n- Evelyne Bouchard, OAQ, CPHD\n- Grant Walkin, P.Eng\n\nPeer Review:\n- INVISIJ Architects\n- Tandem Architecture\n- Pamela DeMelo, P.Eng.\n- Stephen Pope, OAA, FRAIC\n- Sheena Sharp, OAA, MRAIC`;
+    const creditsText = `Created by: Andy Thomson, OAA, OpenBuilding, Inc.\n\nContributors: Mark H Pavlidis\n\nMentors, Advisors & Peer Review:\n- Evelyne Bouchard, OAQ, CPHD\n- Pamela DeMelo, P.Eng.\n- INVISIJ Architects\n- Dr. Ted Kesik, P.Eng\n- Joanne McCallum, OAA, FRAIC\n- Stephen Pope, OAA, FRAIC\n- Sheena Sharp, OAA, MRAIC\n- Tandem Architecture\n- Grant Walkin, P.Eng`;
     const creditsLines = pdf.splitTextToSize(creditsText, contentWidth);
     pdf.text(creditsLines, leftMargin, yPos);
   }
