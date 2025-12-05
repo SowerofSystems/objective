@@ -461,12 +461,12 @@ TEUI.Reporter = (function () {
     const descGrey = "#666666"; // Description text
     const headerGrey = "#888888"; // Column headers
 
-    // Column positions - SPREAD OUT
+    // Column positions - SHIFTED RIGHT to make room for T.1, T.2, T.3 on value line
     const labelXPos = leftMargin;
-    const refXPos = leftMargin + 2.5;
-    const targetXPos = leftMargin + 5.5;
-    const actualXPos = leftMargin + 8.5;
-    const percentXPos = leftMargin + 11.5;
+    const refXPos = leftMargin + 3.2; // Shifted right from 2.5
+    const targetXPos = leftMargin + 6.2; // Shifted right from 5.5
+    const actualXPos = leftMargin + 9.2; // Shifted right from 8.5
+    const percentXPos = leftMargin + 12.2; // Shifted right from 11.5
 
     // Render rows with THREE-LINE structure per row group
     section.rows.forEach((row, rowIndex) => {
@@ -503,10 +503,10 @@ TEUI.Reporter = (function () {
         }
       }
 
-      yPos += 0.15; // Small gap to next line
+      yPos += 0.55; // Gap to value line (combines old line 2 + line 3 gaps)
 
-      // ===== LINE 2: TITLE LINE (LARGE row labels) =====
-      // T.1, T.2, T.3 - TRIPLED in size
+      // ===== LINE 2: VALUE LINE (T.1/T.2/T.3 + JUMBO colored numbers on SAME baseline) =====
+      // T.1, T.2, T.3 - LARGE labels on LEFT, same baseline as values
       if (row.rowLabel) {
         pdf.setFontSize(36); // TRIPLED from 12pt
         pdf.setTextColor("#000000");
@@ -514,9 +514,7 @@ TEUI.Reporter = (function () {
         pdf.text(row.rowLabel, labelXPos, yPos);
       }
 
-      yPos += 0.4; // Gap before value line
-
-      // ===== LINE 3: VALUE LINE (JUMBO colored numbers) =====
+      // VALUES on RIGHT side of same line:
       // COLUMN E: Reference (JUMBO 48pt Red) - TIER ON SAME LINE
       const refCell = row.cells[1];
       if (refCell && refCell.content) {
