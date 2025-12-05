@@ -108,7 +108,58 @@ TEUI.Reporter = (function () {
           rows: [],
         };
 
-        // Find all table rows in this section
+        // Section 01 (Key Values) uses a different DOM structure - extract from key-values-table
+        if (sectionId === 'keyValues') {
+          const keyValuesTable = sectionElement.querySelector(".key-values-table tbody");
+          console.log(`[Reporter] Section 01 extraction: table found=${!!keyValuesTable}`);
+
+          if (keyValuesTable) {
+            const tableRows = keyValuesTable.querySelectorAll("tr");
+            console.log(`[Reporter] Section 01: found ${tableRows.length} rows in tbody`);
+
+            tableRows.forEach((row, rowIndex) => {
+              const cells = [];
+
+              // Get all td elements
+              const tds = row.querySelectorAll("td");
+
+              tds.forEach((td, tdIndex) => {
+                // Extract text - look for .key-value spans or direct text
+                const keyValueSpan = td.querySelector(".key-value");
+                const percentSpan = td.querySelector(".percent-value");
+                const content = keyValueSpan ? keyValueSpan.textContent.trim() :
+                               percentSpan ? percentSpan.textContent.trim() :
+                               td.textContent.trim();
+
+                cells.push({
+                  column: String.fromCharCode(67 + tdIndex), // C, D, E, F, etc.
+                  content,
+                  type: "text",
+                  isBold: !!keyValueSpan, // Values in .key-value spans are bold
+                  isUserInput: false,
+                  isCalculated: !!keyValueSpan,
+                  colSpan: 1
+                });
+              });
+
+              if (cells.length > 0) {
+                sectionData.rows.push({
+                  rowId: row.getAttribute("data-field-id") || `keyValue_${rowIndex}`,
+                  rowNumber: rowIndex + 1,
+                  cells,
+                  isSubheaderRow: false
+                });
+              }
+            });
+          }
+
+          if (sectionData.rows.length > 0) {
+            sections.push(sectionData);
+          }
+          return; // Skip the standard table extraction for keyValues
+        }
+
+        // Find all table rows in this section (standard sections)
         const tableRows = sectionElement.querySelectorAll(".data-table tbody tr");
 
         tableRows.forEach((row, rowIndex) => {
@@ -338,6 +389,153 @@ TEUI.Reporter = (function () {
   }
 
   /**
+   * Helper function to render Section 01 (Key Values) with special formatting
+   * Moved to module scope so both generatePDF and appendReferenceToPDF can use it
+   * REDESIGNED V2: JUMBO fonts, proper hierarchy, massive breathing room
+   */
+  function renderSection01KeyValues(pdf, section, modelType, leftMargin, topMargin, pageWidth, pageHeight, lineHeight) {
+    console.log("[Reporter] renderSection01KeyValues called with:", {
+      sectionTitle: section.title,
+      rowCount: section.rows.length,
+      modelType,
+      pageHeight
+    });
+
+    let yPos = 1.5; // Start higher on page
+
+    // Section title - JUMBO
+    pdf.setFontSize(24);
+    pdf.setFont(undefined, "bold");
+    pdf.setTextColor("#000000");
+    pdf.text(section.title, leftMargin, yPos);
+    yPos += 0.6; // Breathing room after title
+
+    // Define visual theme - BOLD colors
+    const refColor = "#8B0000"; // Dark red
+    const targetColor = "#0066CC"; // Blue
+    const actualColor = "#28a745"; // Green
+    const tierGrey = "#999999"; // Lighter grey for tiers
+
+    // Column positions - SPREAD OUT
+    const labelXPos = leftMargin;
+    const refXPos = leftMargin + 2.5;
+    const targetXPos = leftMargin + 5.5;
+    const actualXPos = leftMargin + 8.5;
+    const percentXPos = leftMargin + 11.5;
+
+    // Render rows with JUMBO fonts
+    section.rows.forEach((row, rowIndex) => {
+      if (row.isSubheaderRow) return;
+
+      // ROW LABEL - small, grey, ABOVE the values
+      const titleCell = row.cells[0];
+      if (titleCell && titleCell.content) {
+        pdf.setFontSize(10);
+        pdf.setTextColor("#666666");
+        pdf.setFont(undefined, "normal");
+        pdf.text(titleCell.content, labelXPos, yPos);
+        yPos += 0.25; // Small gap before massive numbers
+      }
+
+      // COLUMN E: Reference (JUMBO 48pt Red)
+      const refCell = row.cells[1];
+      if (refCell && refCell.content) {
+        const tierMatch = refCell.content.match(/^(tier\d+)\s+(.+)$/);
+
+        if (tierMatch) {
+          // Tier - smaller, grey, ABOVE value
+          pdf.setFontSize(18);
+          pdf.setFont(undefined, "bold");
+          pdf.setTextColor(tierGrey);
+          pdf.text(tierMatch[1], refXPos, yPos);
+
+          // Value - JUMBO red BELOW tier
+          pdf.setFontSize(48);
+          pdf.setFont(undefined, "bold");
+          pdf.setTextColor(refColor);
+          pdf.text(tierMatch[2], refXPos, yPos + 0.45);
+        } else {
+          // No tier - JUMBO red
+          pdf.setFontSize(48);
+          pdf.setFont(undefined, "bold");
+          pdf.setTextColor(refColor);
+          pdf.text(refCell.content, refXPos, yPos + 0.45);
+        }
+      }
+
+      // COLUMN H: Target (JUMBO 48pt Blue)
+      const targetCell = row.cells[2];
+      if (targetCell && targetCell.content) {
+        const tierMatch = targetCell.content.match(/^(tier\d+)\s+(.+)$/);
+
+        if (tierMatch) {
+          // Tier - smaller, grey, ABOVE value
+          pdf.setFontSize(18);
+          pdf.setFont(undefined, "bold");
+          pdf.setTextColor(tierGrey);
+          pdf.text(tierMatch[1], targetXPos, yPos);
+
+          // Value - JUMBO blue BELOW tier
+          pdf.setFontSize(48);
+          pdf.setFont(undefined, "bold");
+          pdf.setTextColor(targetColor);
+          pdf.text(tierMatch[2], targetXPos, yPos + 0.45);
+        } else {
+          // No tier - JUMBO blue
+          pdf.setFontSize(48);
+          pdf.setFont(undefined, "bold");
+          pdf.setTextColor(targetColor);
+          pdf.text(targetCell.content, targetXPos, yPos + 0.45);
+        }
+      }
+
+      // COLUMN K: Actual (JUMBO 48pt Green or N/A)
+      const actualCell = row.cells[3];
+      if (actualCell && actualCell.content && actualCell.content !== "N/A") {
+        pdf.setFontSize(48);
+        pdf.setFont(undefined, "bold");
+        pdf.setTextColor(actualColor);
+        pdf.text(actualCell.content, actualXPos, yPos + 0.45);
+      } else if (actualCell && actualCell.content === "N/A") {
+        pdf.setFontSize(36);
+        pdf.setFont(undefined, "normal");
+        pdf.setTextColor("#CCCCCC");
+        pdf.text("N/A", actualXPos, yPos + 0.35);
+      }
+
+      // COLUMN M: Percentage (36pt Grey with colored checkmark)
+      const percentCell = row.cells[4];
+      if (percentCell && percentCell.content) {
+        pdf.setFontSize(36);
+        pdf.setFont(undefined, "bold");
+
+        if (percentCell.content.includes("✓")) {
+          const percentText = percentCell.content.replace("✓", "").trim();
+          // Green checkmark
+          pdf.setTextColor("#28a745");
+          pdf.text("✓", percentXPos, yPos + 0.35);
+          // Grey percentage
+          pdf.setTextColor("#999999");
+          pdf.text(percentText, percentXPos + 0.35, yPos + 0.35);
+        } else if (percentCell.content.includes("✗")) {
+          const percentText = percentCell.content.replace("✗", "").trim();
+          // Red X
+          pdf.setTextColor("#d9534f");
+          pdf.text("✗", percentXPos, yPos + 0.35);
+          // Grey percentage
+          pdf.setTextColor("#999999");
+          pdf.text(percentText, percentXPos + 0.35, yPos + 0.35);
+        } else {
+          pdf.setTextColor("#999999");
+          pdf.text(percentCell.content, percentXPos, yPos + 0.35);
+        }
+      }
+
+      yPos += 1.1; // MASSIVE vertical spacing between rows
+    });
+  }
+
+  /**
    * Generate PDF report using text-based jsPDF approach
    * @param {Object} reportData - Extracted report data
    * @param {string} modelType - "Target" or "Reference"
@@ -374,6 +572,8 @@ TEUI.Reporter = (function () {
 
     // Render Section 01 on its own page with special formatting
     const section01 = reportData.sections.find(s => s.title === "01. Key Values");
+    console.log("[Reporter] Section 01 lookup:", section01 ? `Found with ${section01.rows.length} rows` : "NOT FOUND");
+    console.log("[Reporter] Available sections:", reportData.sections.map(s => s.title));
     if (section01) {
       renderSection01KeyValues(pdf, section01, modelType, leftMargin, topMargin, pageWidth, pageHeight, lineHeight);
     }
@@ -408,49 +608,6 @@ TEUI.Reporter = (function () {
         topMargin - 0.2,
         { align: "right" }
       );
-    }
-
-    // Helper function to render Section 01 (Key Values) with special formatting
-    function renderSection01KeyValues(pdf, section, modelType, leftMargin, topMargin, pageWidth, pageHeight, lineHeight) {
-      let yPos = pageHeight / 2 - 2; // Center vertically with offset
-
-      // Section title - larger and prominent
-      pdf.setFontSize(18);
-      pdf.setFont(undefined, "bold");
-      pdf.setTextColor("#000000");
-      pdf.text(section.title, leftMargin, yPos);
-      yPos += lineHeight * 2.5;
-
-      // Render rows with larger font and spacing
-      section.rows.forEach((row, rowIndex) => {
-        // Skip subheader row if present
-        if (row.isSubheaderRow) return;
-
-        // Row description (Column C, now index 1 after skipping Column B)
-        const descCell = row.cells[1]; // Column C (was index 2, now index 1 after skipping B)
-        if (descCell && descCell.content) {
-          pdf.setFontSize(12);
-          pdf.setTextColor("#666666");
-          pdf.setFont(undefined, "normal");
-          pdf.text(descCell.content, leftMargin, yPos);
-        }
-
-        // Row values - show multiple columns horizontally
-        let xPos = leftMargin + 3.0; // Start closer (was 3.5)
-        const colWidth = 1.2;
-
-        row.cells.slice(2).forEach((cell, cellIndex) => { // Index 2+ (was 3+ before skipping B)
-          if (cell.content && cell.colSpan === 1) {
-            pdf.setFontSize(14);
-            pdf.setTextColor("#000000");
-            pdf.setFont(undefined, cell.isBold || cell.isUserInput ? "bold" : "normal");
-            pdf.text(cell.content, xPos, yPos);
-            xPos += colWidth;
-          }
-        });
-
-        yPos += lineHeight * 2; // Extra spacing between key value rows
-      });
     }
 
     // Helper function to calculate dynamic column widths for a section
@@ -825,43 +982,8 @@ TEUI.Reporter = (function () {
       return false;
     }
 
-    // Helper function to render Section 01 for Reference (reuse from Target)
-    function renderSection01KeyValues(pdf, section, modelType, leftMargin, topMargin, pageWidth, pageHeight, lineHeight) {
-      let yPos = pageHeight / 2 - 2;
-
-      pdf.setFontSize(18);
-      pdf.setFont(undefined, "bold");
-      pdf.setTextColor("#000000");
-      pdf.text(section.title, leftMargin, yPos);
-      yPos += lineHeight * 2.5;
-
-      section.rows.forEach(row => {
-        if (row.isSubheaderRow) return;
-
-        const descCell = row.cells[1]; // Column C (was index 2, now index 1 after skipping B)
-        if (descCell && descCell.content) {
-          pdf.setFontSize(12);
-          pdf.setTextColor(modelType === "Reference" ? "#888888" : "#666666");
-          pdf.setFont(undefined, "normal");
-          pdf.text(descCell.content, leftMargin, yPos);
-        }
-
-        let xPos = leftMargin + 3.0; // Start closer (was 3.5)
-        const colWidth = 1.2;
-
-        row.cells.slice(2).forEach(cell => { // Index 2+ (was 3+ before skipping B)
-          if (cell.content && cell.colSpan === 1) {
-            pdf.setFontSize(14);
-            pdf.setTextColor(modelType === "Reference" ? "#888888" : "#000000");
-            pdf.setFont(undefined, cell.isBold || cell.isUserInput ? "bold" : "normal");
-            pdf.text(cell.content, xPos, yPos);
-            xPos += colWidth;
-          }
-        });
-
-        yPos += lineHeight * 2;
-      });
-    }
+    // Helper function to render Section 01 for Reference (REMOVED - uses outer scope function)
+    // The renderSection01KeyValues function is defined in the outer scope and handles both Target and Reference modes
 
     // Helper function to calculate dynamic column widths for a section (same as Target)
     function calculateColumnWidthsRef(section) {

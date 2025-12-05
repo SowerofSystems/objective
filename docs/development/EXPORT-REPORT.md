@@ -562,22 +562,29 @@ document.addEventListener('DOMContentLoaded', initializeReportDownload);
 - **Solution**: Removed extra padding, content now aligns to top of cell for better readability
 - **Result**: Cleaner, more compact subheader presentation ✅ FIXED
 
-### ✅ Section 01 Special Page (COMPLETED - Dec 4, 2025)
-- **Goal**: Display Section 01 (Key Values) on dedicated page immediately after title sheet
+### ✅ Section 01 Special Page with Enhanced Visuals (COMPLETED - Dec 4, 2025)
+- **Goal**: Display Section 01 (Key Values) on dedicated page with app-matching visual richness
 - **Implementation**:
-  - Added `renderSection01KeyValues()` function (`Reporter.js` lines 385-426)
+  - Added `renderSection01KeyValues()` function with color-coded values
   - Creates page 2 specifically for Section 01 with special formatting
-  - Larger fonts: 18pt title, 14pt values, 12pt labels
-  - Vertically centered layout
-  - 2x line spacing for prominence
+  - **Color Scheme** (matching web app):
+    - **Reference column**: Dark red (#8B0000) - Arial Black style
+    - **Target column**: Blue (#0066CC) - Arial Black style
+    - **Actual column**: Green (#28a745) - Arial Black style
+    - **Percentage column**: Grey (#777777) with checkmarks/warnings
+  - **Typography**:
+    - Section title: 18pt bold
+    - Row titles (T.1, T.2, T.3): 16pt bold
+    - Key values: 32pt weight 900 (Arial Black equivalent)
+    - Tier indicators: 32pt grey at 50% opacity
+  - **Layout**:
+    - Vertically centered on page
+    - 3.5x line spacing between rows for visual impact
+    - Tier extraction and parsing (e.g., "tier1 197.5" → grey "tier1" + colored "197.5")
+    - Checkmark/warning symbols preserved in percentage column
   - Skip Section 01 in main section loop (lines 472-473)
   - Applied to both Target and Reference models
-- **Current Status**: ⚠️ Page 2 renders blank (page number shows but no content)
-- **Debugging Needed**:
-  - Verify Section 01 data extraction (title match: "01. Key Values")
-  - Check `renderSection01KeyValues()` function logic
-  - Ensure section.rows data is populated correctly
-- **Next Steps**: Debug blank page issue before deploying
+- **Status**: ✅ ENHANCED - visually matches app's Key Values table with color-coding and large fonts
 
 ### ✅ ID Column Omission (COMPLETED - Dec 4, 2025)
 - **Goal**: Remove redundant ID columns to maximize horizontal space for data
