@@ -514,30 +514,33 @@ TEUI.Reporter = (function () {
         pdf.text(row.rowLabel, labelXPos, yPos);
       }
 
-      // VALUES on RIGHT side of same line:
+      // VALUES on RIGHT side of same line - RIGHT JUSTIFIED like accounting spreadsheet
       // COLUMN E: Reference (JUMBO 48pt Red) - TIER ON SAME LINE
       const refCell = row.cells[1];
       if (refCell && refCell.content) {
         const tierMatch = refCell.content.match(/^(tier\d+)\s+(.+)$/);
 
         if (tierMatch) {
-          // Tier + Value on SAME line
+          // Tier + Value on SAME line - RIGHT JUSTIFIED
           pdf.setFontSize(24); // Smaller tier text
           pdf.setFont(undefined, "bold");
           pdf.setTextColor(tierGrey);
-          pdf.text(tierMatch[1], refXPos, yPos);
+          // Position tier to left of right-justified value
+          const tierWidth = pdf.getTextWidth(tierMatch[1]);
+          const valueWidth = pdf.getTextWidth(tierMatch[2]);
+          pdf.text(tierMatch[1], refXPos + 2.5 - tierWidth - valueWidth - 0.15, yPos);
 
-          // Value immediately after tier (same baseline)
+          // Value RIGHT JUSTIFIED at column edge
           pdf.setFontSize(48);
           pdf.setFont(undefined, "bold");
           pdf.setTextColor(refColor);
-          pdf.text(tierMatch[2], refXPos + 0.65, yPos); // Offset to right of tier
+          pdf.text(tierMatch[2], refXPos + 2.5, yPos, { align: "right" });
         } else {
-          // No tier - JUMBO red
+          // No tier - JUMBO red RIGHT JUSTIFIED
           pdf.setFontSize(48);
           pdf.setFont(undefined, "bold");
           pdf.setTextColor(refColor);
-          pdf.text(refCell.content, refXPos, yPos);
+          pdf.text(refCell.content, refXPos + 2.5, yPos, { align: "right" });
         }
       }
 
@@ -547,41 +550,44 @@ TEUI.Reporter = (function () {
         const tierMatch = targetCell.content.match(/^(tier\d+)\s+(.+)$/);
 
         if (tierMatch) {
-          // Tier + Value on SAME line
+          // Tier + Value on SAME line - RIGHT JUSTIFIED
           pdf.setFontSize(24); // Smaller tier text
           pdf.setFont(undefined, "bold");
           pdf.setTextColor(tierGrey);
-          pdf.text(tierMatch[1], targetXPos, yPos);
+          // Position tier to left of right-justified value
+          const tierWidth = pdf.getTextWidth(tierMatch[1]);
+          const valueWidth = pdf.getTextWidth(tierMatch[2]);
+          pdf.text(tierMatch[1], targetXPos + 2.5 - tierWidth - valueWidth - 0.15, yPos);
 
-          // Value immediately after tier (same baseline)
+          // Value RIGHT JUSTIFIED at column edge
           pdf.setFontSize(48);
           pdf.setFont(undefined, "bold");
           pdf.setTextColor(targetColor);
-          pdf.text(tierMatch[2], targetXPos + 0.65, yPos); // Offset to right of tier
+          pdf.text(tierMatch[2], targetXPos + 2.5, yPos, { align: "right" });
         } else {
-          // No tier - JUMBO blue
+          // No tier - JUMBO blue RIGHT JUSTIFIED
           pdf.setFontSize(48);
           pdf.setFont(undefined, "bold");
           pdf.setTextColor(targetColor);
-          pdf.text(targetCell.content, targetXPos, yPos);
+          pdf.text(targetCell.content, targetXPos + 2.5, yPos, { align: "right" });
         }
       }
 
-      // COLUMN K: Actual (JUMBO 48pt Green or N/A)
+      // COLUMN K: Actual (JUMBO 48pt Green or N/A) - RIGHT JUSTIFIED
       const actualCell = row.cells[3];
       if (actualCell && actualCell.content && actualCell.content !== "N/A") {
         pdf.setFontSize(48);
         pdf.setFont(undefined, "bold");
         pdf.setTextColor(actualColor);
-        pdf.text(actualCell.content, actualXPos, yPos);
+        pdf.text(actualCell.content, actualXPos + 2.5, yPos, { align: "right" });
       } else if (actualCell && actualCell.content === "N/A") {
         pdf.setFontSize(36);
         pdf.setFont(undefined, "normal");
         pdf.setTextColor("#CCCCCC");
-        pdf.text("N/A", actualXPos, yPos - 0.05);
+        pdf.text("N/A", actualXPos + 2.5, yPos - 0.05, { align: "right" });
       }
 
-      // COLUMN M: Percentage (30pt Grey with colored checkmark)
+      // COLUMN M: Percentage (30pt Grey with colored checkmark) - RIGHT JUSTIFIED
       const percentCell = row.cells[4];
       if (percentCell && percentCell.content) {
         pdf.setFontSize(30); // Slightly smaller to match app proportions
@@ -589,23 +595,29 @@ TEUI.Reporter = (function () {
 
         if (percentCell.content.includes("✓")) {
           const percentText = percentCell.content.replace("✓", "").trim();
-          // Green checkmark
-          pdf.setTextColor("#28a745");
-          pdf.text("✓", percentXPos, yPos - 0.05);
-          // Grey percentage
+          // Calculate widths for right alignment
           pdf.setTextColor("#999999");
-          pdf.text(percentText, percentXPos + 0.3, yPos - 0.05);
+          const percentWidth = pdf.getTextWidth(percentText);
+          // Green checkmark positioned to left of percentage
+          pdf.setTextColor("#28a745");
+          pdf.text("✓", percentXPos + 1.5 - percentWidth - 0.3, yPos - 0.05);
+          // Grey percentage RIGHT JUSTIFIED
+          pdf.setTextColor("#999999");
+          pdf.text(percentText, percentXPos + 1.5, yPos - 0.05, { align: "right" });
         } else if (percentCell.content.includes("✗")) {
           const percentText = percentCell.content.replace("✗", "").trim();
-          // Red X
-          pdf.setTextColor("#d9534f");
-          pdf.text("✗", percentXPos, yPos - 0.05);
-          // Grey percentage
+          // Calculate widths for right alignment
           pdf.setTextColor("#999999");
-          pdf.text(percentText, percentXPos + 0.3, yPos - 0.05);
+          const percentWidth = pdf.getTextWidth(percentText);
+          // Red X positioned to left of percentage
+          pdf.setTextColor("#d9534f");
+          pdf.text("✗", percentXPos + 1.5 - percentWidth - 0.3, yPos - 0.05);
+          // Grey percentage RIGHT JUSTIFIED
+          pdf.setTextColor("#999999");
+          pdf.text(percentText, percentXPos + 1.5, yPos - 0.05, { align: "right" });
         } else {
           pdf.setTextColor("#999999");
-          pdf.text(percentCell.content, percentXPos, yPos - 0.05);
+          pdf.text(percentCell.content, percentXPos + 1.5, yPos - 0.05, { align: "right" });
         }
       }
 
