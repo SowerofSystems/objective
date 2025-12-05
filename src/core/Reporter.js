@@ -461,12 +461,13 @@ TEUI.Reporter = (function () {
     const descGrey = "#666666"; // Description text
     const headerGrey = "#888888"; // Column headers
 
-    // Column positions - SHIFTED RIGHT to make room for T.1, T.2, T.3 on value line
+    // Column positions - TIGHTER spacing, close up whitespace
     const labelXPos = leftMargin;
-    const refXPos = leftMargin + 3.2; // Shifted right from 2.5
-    const targetXPos = leftMargin + 6.2; // Shifted right from 5.5
-    const actualXPos = leftMargin + 9.2; // Shifted right from 8.5
-    const percentXPos = leftMargin + 12.2; // Shifted right from 11.5
+    const colWidth = 2.2; // Reduced column width to close up spacing
+    const refXPos = leftMargin + 2.8;
+    const targetXPos = refXPos + colWidth;
+    const actualXPos = targetXPos + colWidth;
+    const percentXPos = actualXPos + colWidth;
 
     // Render rows with THREE-LINE structure per row group
     section.rows.forEach((row, rowIndex) => {
@@ -481,116 +482,116 @@ TEUI.Reporter = (function () {
         pdf.text(row.description, labelXPos, yPos);
       }
 
-      // Column headers directly above value columns (not centered, left-aligned at value position)
+      // Column headers directly above value columns - RIGHT ALIGNED
       if (section.columnHeaders && section.columnHeaders.length >= 3) {
         pdf.setFontSize(7);
         pdf.setTextColor(headerGrey);
         pdf.setFont(undefined, "normal");
 
-        // Reference column header (index 0)
+        // Reference column header (index 0) - RIGHT ALIGNED
         if (section.columnHeaders[0]) {
-          pdf.text(section.columnHeaders[0].content, refXPos, yPos, { maxWidth: 2.5 });
+          pdf.text(section.columnHeaders[0].content, refXPos + colWidth, yPos, { align: "right", maxWidth: colWidth });
         }
 
-        // Target column header (index 1)
+        // Target column header (index 1) - RIGHT ALIGNED
         if (section.columnHeaders[1]) {
-          pdf.text(section.columnHeaders[1].content, targetXPos, yPos, { maxWidth: 2.5 });
+          pdf.text(section.columnHeaders[1].content, targetXPos + colWidth, yPos, { align: "right", maxWidth: colWidth });
         }
 
-        // Actual column header (index 2)
+        // Actual column header (index 2) - RIGHT ALIGNED
         if (section.columnHeaders[2]) {
-          pdf.text(section.columnHeaders[2].content, actualXPos, yPos, { maxWidth: 2.5 });
+          pdf.text(section.columnHeaders[2].content, actualXPos + colWidth, yPos, { align: "right", maxWidth: colWidth });
         }
       }
 
       yPos += 0.55; // Gap to value line (combines old line 2 + line 3 gaps)
 
       // ===== LINE 2: VALUE LINE (T.1/T.2/T.3 + JUMBO colored numbers on SAME baseline) =====
-      // T.1, T.2, T.3 - LARGE labels on LEFT, same baseline as values
+      // T.1, T.2, T.3 - REDUCED size labels on LEFT, same baseline as values
       if (row.rowLabel) {
-        pdf.setFontSize(36); // TRIPLED from 12pt
+        pdf.setFontSize(27); // Reduced from 36pt (75% of original)
         pdf.setTextColor("#000000");
         pdf.setFont(undefined, "bold");
         pdf.text(row.rowLabel, labelXPos, yPos);
       }
 
-      // VALUES on RIGHT side of same line - RIGHT JUSTIFIED like accounting spreadsheet
-      // COLUMN E: Reference (JUMBO 48pt Red) - TIER ON SAME LINE
+      // VALUES on RIGHT side of same line - RIGHT JUSTIFIED, REDUCED SIZE (75%)
+      // COLUMN E: Reference (36pt Red) - TIER ON SAME LINE, MOVED AWAY
       const refCell = row.cells[1];
       if (refCell && refCell.content) {
         const tierMatch = refCell.content.match(/^(tier\d+)\s+(.+)$/);
 
         if (tierMatch) {
-          // Tier + Value on SAME line - RIGHT JUSTIFIED
-          pdf.setFontSize(24); // Smaller tier text
+          // Tier + Value on SAME line - RIGHT JUSTIFIED, MORE SPACING
+          pdf.setFontSize(18); // Reduced from 24pt (75%)
           pdf.setFont(undefined, "bold");
           pdf.setTextColor(tierGrey);
-          // Position tier to left of right-justified value
+          // Position tier FURTHER LEFT of right-justified value
           const tierWidth = pdf.getTextWidth(tierMatch[1]);
           const valueWidth = pdf.getTextWidth(tierMatch[2]);
-          pdf.text(tierMatch[1], refXPos + 2.5 - tierWidth - valueWidth - 0.15, yPos);
+          pdf.text(tierMatch[1], refXPos + colWidth - tierWidth - valueWidth - 0.25, yPos); // Increased gap from 0.15 to 0.25
 
           // Value RIGHT JUSTIFIED at column edge
-          pdf.setFontSize(48);
+          pdf.setFontSize(36); // Reduced from 48pt (75%)
           pdf.setFont(undefined, "bold");
           pdf.setTextColor(refColor);
-          pdf.text(tierMatch[2], refXPos + 2.5, yPos, { align: "right" });
+          pdf.text(tierMatch[2], refXPos + colWidth, yPos, { align: "right" });
         } else {
-          // No tier - JUMBO red RIGHT JUSTIFIED
-          pdf.setFontSize(48);
+          // No tier - REDUCED red RIGHT JUSTIFIED
+          pdf.setFontSize(36); // Reduced from 48pt (75%)
           pdf.setFont(undefined, "bold");
           pdf.setTextColor(refColor);
-          pdf.text(refCell.content, refXPos + 2.5, yPos, { align: "right" });
+          pdf.text(refCell.content, refXPos + colWidth, yPos, { align: "right" });
         }
       }
 
-      // COLUMN H: Target (JUMBO 48pt Blue) - TIER ON SAME LINE
+      // COLUMN H: Target (36pt Blue) - TIER ON SAME LINE, MOVED AWAY
       const targetCell = row.cells[2];
       if (targetCell && targetCell.content) {
         const tierMatch = targetCell.content.match(/^(tier\d+)\s+(.+)$/);
 
         if (tierMatch) {
-          // Tier + Value on SAME line - RIGHT JUSTIFIED
-          pdf.setFontSize(24); // Smaller tier text
+          // Tier + Value on SAME line - RIGHT JUSTIFIED, MORE SPACING
+          pdf.setFontSize(18); // Reduced from 24pt (75%)
           pdf.setFont(undefined, "bold");
           pdf.setTextColor(tierGrey);
-          // Position tier to left of right-justified value
+          // Position tier FURTHER LEFT of right-justified value
           const tierWidth = pdf.getTextWidth(tierMatch[1]);
           const valueWidth = pdf.getTextWidth(tierMatch[2]);
-          pdf.text(tierMatch[1], targetXPos + 2.5 - tierWidth - valueWidth - 0.15, yPos);
+          pdf.text(tierMatch[1], targetXPos + colWidth - tierWidth - valueWidth - 0.25, yPos); // Increased gap from 0.15 to 0.25
 
           // Value RIGHT JUSTIFIED at column edge
-          pdf.setFontSize(48);
+          pdf.setFontSize(36); // Reduced from 48pt (75%)
           pdf.setFont(undefined, "bold");
           pdf.setTextColor(targetColor);
-          pdf.text(tierMatch[2], targetXPos + 2.5, yPos, { align: "right" });
+          pdf.text(tierMatch[2], targetXPos + colWidth, yPos, { align: "right" });
         } else {
-          // No tier - JUMBO blue RIGHT JUSTIFIED
-          pdf.setFontSize(48);
+          // No tier - REDUCED blue RIGHT JUSTIFIED
+          pdf.setFontSize(36); // Reduced from 48pt (75%)
           pdf.setFont(undefined, "bold");
           pdf.setTextColor(targetColor);
-          pdf.text(targetCell.content, targetXPos + 2.5, yPos, { align: "right" });
+          pdf.text(targetCell.content, targetXPos + colWidth, yPos, { align: "right" });
         }
       }
 
-      // COLUMN K: Actual (JUMBO 48pt Green or N/A) - RIGHT JUSTIFIED
+      // COLUMN K: Actual (36pt Green or N/A) - RIGHT JUSTIFIED
       const actualCell = row.cells[3];
       if (actualCell && actualCell.content && actualCell.content !== "N/A") {
-        pdf.setFontSize(48);
+        pdf.setFontSize(36); // Reduced from 48pt (75%)
         pdf.setFont(undefined, "bold");
         pdf.setTextColor(actualColor);
-        pdf.text(actualCell.content, actualXPos + 2.5, yPos, { align: "right" });
+        pdf.text(actualCell.content, actualXPos + colWidth, yPos, { align: "right" });
       } else if (actualCell && actualCell.content === "N/A") {
-        pdf.setFontSize(36);
+        pdf.setFontSize(27); // Reduced from 36pt (75%)
         pdf.setFont(undefined, "normal");
         pdf.setTextColor("#CCCCCC");
-        pdf.text("N/A", actualXPos + 2.5, yPos - 0.05, { align: "right" });
+        pdf.text("N/A", actualXPos + colWidth, yPos - 0.05, { align: "right" });
       }
 
-      // COLUMN M: Percentage (30pt Grey with colored checkmark) - RIGHT JUSTIFIED
+      // COLUMN M: Percentage (22pt Grey with colored checkmark) - RIGHT JUSTIFIED, REDUCED SIZE
       const percentCell = row.cells[4];
       if (percentCell && percentCell.content) {
-        pdf.setFontSize(30); // Slightly smaller to match app proportions
+        pdf.setFontSize(22); // Reduced from 30pt (73%)
         pdf.setFont(undefined, "bold");
 
         if (percentCell.content.includes("✓")) {
@@ -600,10 +601,10 @@ TEUI.Reporter = (function () {
           const percentWidth = pdf.getTextWidth(percentText);
           // Green checkmark positioned to left of percentage
           pdf.setTextColor("#28a745");
-          pdf.text("✓", percentXPos + 1.5 - percentWidth - 0.3, yPos - 0.05);
+          pdf.text("✓", percentXPos + colWidth - percentWidth - 0.3, yPos - 0.05);
           // Grey percentage RIGHT JUSTIFIED
           pdf.setTextColor("#999999");
-          pdf.text(percentText, percentXPos + 1.5, yPos - 0.05, { align: "right" });
+          pdf.text(percentText, percentXPos + colWidth, yPos - 0.05, { align: "right" });
         } else if (percentCell.content.includes("✗")) {
           const percentText = percentCell.content.replace("✗", "").trim();
           // Calculate widths for right alignment
@@ -611,13 +612,13 @@ TEUI.Reporter = (function () {
           const percentWidth = pdf.getTextWidth(percentText);
           // Red X positioned to left of percentage
           pdf.setTextColor("#d9534f");
-          pdf.text("✗", percentXPos + 1.5 - percentWidth - 0.3, yPos - 0.05);
+          pdf.text("✗", percentXPos + colWidth - percentWidth - 0.3, yPos - 0.05);
           // Grey percentage RIGHT JUSTIFIED
           pdf.setTextColor("#999999");
-          pdf.text(percentText, percentXPos + 1.5, yPos - 0.05, { align: "right" });
+          pdf.text(percentText, percentXPos + colWidth, yPos - 0.05, { align: "right" });
         } else {
           pdf.setTextColor("#999999");
-          pdf.text(percentCell.content, percentXPos + 1.5, yPos - 0.05, { align: "right" });
+          pdf.text(percentCell.content, percentXPos + colWidth, yPos - 0.05, { align: "right" });
         }
       }
 
