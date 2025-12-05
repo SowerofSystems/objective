@@ -523,13 +523,13 @@ TEUI.Reporter = (function () {
 
         if (tierMatch) {
           // Tier + Value on SAME line - RIGHT JUSTIFIED, MORE SPACING
-          pdf.setFontSize(18); // Reduced from 24pt (75%)
+          pdf.setFontSize(20); // Reduced from 24pt (75%)
           pdf.setFont(undefined, "bold");
-          pdf.setTextColor(tierGrey);
+          pdf.setTextColor(refColor); // Match tier to Reference red color
           // Position tier FURTHER LEFT of right-justified value
           const tierWidth = pdf.getTextWidth(tierMatch[1]);
           const valueWidth = pdf.getTextWidth(tierMatch[2]);
-          pdf.text(tierMatch[1], refXPos + colWidth - tierWidth - valueWidth - 0.25, yPos); // Increased gap from 0.15 to 0.25
+          pdf.text(tierMatch[1], refXPos + colWidth - tierWidth - valueWidth - 0.6, yPos); // Increased Tier-Key gap from 0.15 to 0.6
 
           // Value RIGHT JUSTIFIED at column edge
           pdf.setFontSize(36); // Reduced from 48pt (75%)
@@ -552,13 +552,13 @@ TEUI.Reporter = (function () {
 
         if (tierMatch) {
           // Tier + Value on SAME line - RIGHT JUSTIFIED, MORE SPACING
-          pdf.setFontSize(18); // Reduced from 24pt (75%)
+          pdf.setFontSize(20); // Reduced from 24pt (75%)
           pdf.setFont(undefined, "bold");
-          pdf.setTextColor(tierGrey);
+          pdf.setTextColor(targetColor); // Match tier to Target blue color
           // Position tier FURTHER LEFT of right-justified value
           const tierWidth = pdf.getTextWidth(tierMatch[1]);
           const valueWidth = pdf.getTextWidth(tierMatch[2]);
-          pdf.text(tierMatch[1], targetXPos + colWidth - tierWidth - valueWidth - 0.25, yPos); // Increased gap from 0.15 to 0.25
+          pdf.text(tierMatch[1], targetXPos + colWidth - tierWidth - valueWidth - 0.6, yPos); // Increased Tier-Key gap from 0.15 to 0.6
 
           // Value RIGHT JUSTIFIED at column edge
           pdf.setFontSize(36); // Reduced from 48pt (75%)
