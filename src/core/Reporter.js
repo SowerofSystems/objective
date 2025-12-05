@@ -1202,16 +1202,14 @@ TEUI.Reporter = (function () {
       { align: "right" }
     );
 
-    // Add new page for Reference Model Section 01
-    pdf.addPage();
+    // ✅ REMOVED: Section 01 for Reference Model
+    // Section 01 is model-agnostic (shows both Target and Reference results in same table)
+    // Only rendered once in Target model section to avoid:
+    // 1. Redundancy - same data already shown in Target section
+    // 2. Animation frame capture bug - DOM reads during Target→Reference transition
+    //    captured in-between animation frames, showing incorrect values for h_6, h_8, h_10
 
-    // Render Reference Section 01 on its own page with special formatting
-    const refSection01 = referenceData.sections.find(s => s.title === "01. Key Values");
-    if (refSection01) {
-      renderSection01KeyValues(pdf, refSection01, "Reference", leftMargin, topMargin, pageWidth, pageHeight, lineHeight);
-    }
-
-    // Add new page for remaining Reference Model content
+    // Add new page for Reference Model content (starts with Section 02)
     pdf.addPage();
 
     yPos = topMargin;

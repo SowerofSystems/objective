@@ -1072,6 +1072,20 @@ FOR EACH ROW:
        - "Other Energy€" → "Other Energy"
 - **Result**: Clean title pages with proper color-coding, and clean text without HTML artifacts or UI symbols in PDF ✅ FIXED
 
+### ✅ Section 01 Duplication Removed (COMPLETED - Dec 5, 2025)
+- **Problem**: Section 01 was rendered twice (once in Target, once in Reference)
+- **Issues caused**:
+  1. **Redundancy**: Section 01 is model-agnostic - displays both Target and Reference values in same table
+  2. **Animation frame capture bug**: During PDF export, app transitions from Target→Reference mode
+     - DOM reads for Section 01 occurred mid-animation
+     - Captured in-between frame values for h_6 (TEUI Target), h_8 (Emissions Target), h_10 (TEUI Reference)
+     - Resulted in incorrect values being written to Reference section PDF pages
+- **Solution**: Removed Section 01 from Reference model export (lines 1205-1210 deleted)
+  - Section 01 now only rendered once in Target model section
+  - All values correctly sourced from Target model's DOM state
+  - Reference model export starts with Section 02
+- **Result**: No duplication, no animation frame bugs, cleaner PDF structure ✅ FIXED
+
 ### Known Limitations
 
 1. **Section 12 text extraction** (rows 108-111):
