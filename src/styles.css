@@ -2425,10 +2425,20 @@ body.dev-environment {
  */
 
 @media print {
-  /* Page setup */
+  /* Page setup - minimal margins for maximum usable width */
   @page {
     size: landscape;
-    margin: 0.5in;
+    margin: 0.25in; /* Reduced from 0.5in to maximize content space */
+  }
+
+  /* CRITICAL FIX: Allow horizontal overflow to prevent content clipping */
+  .section {
+    overflow: visible !important;
+    border: none !important; /* Remove borders for cleaner print */
+  }
+
+  .section-content {
+    overflow: visible !important;
   }
 
   /* Hide all UI elements */
@@ -2539,6 +2549,34 @@ body.dev-environment {
   #section01:first-child {
     page-break-before: auto;
     break-before: auto;
+  }
+
+  /* REFINEMENT 1: Remove borders from Section 1 key-values-table for consistency */
+  #keyValues .key-values-table,
+  #keyValues table {
+    border: none !important;
+  }
+
+  /* REFINEMENT 2: Center Sankey diagram and use full available width */
+  #section16 .section-content,
+  #sankeySection16Container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  #section16 svg {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* REFINEMENT 3: Completely hide collapsed sections (don't print empty frames) */
+  .section-header.collapsed {
+    display: none !important;
+  }
+
+  .section-header.collapsed + .section-content {
+    display: none !important;
   }
 }
 /* =============== END PRINT STYLES =============== */

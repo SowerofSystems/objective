@@ -538,19 +538,77 @@ Test first with just `overflow: visible`. Only add scaling if content still exce
 - [x] No preparation needed - CSS handles everything
 - [x] No cleanup needed - browser handles it
 
-### Step 3: Fix Horizontal Clipping Issues ⏳ READY TO IMPLEMENT
+### Step 3: Fix Horizontal Clipping Issues ✅ IMPLEMENTED
 
-**Sub-step 3.1: Core Fix - Allow Overflow** (styles.css @media print)
-- [ ] Add `.section { overflow: visible !important }`
-- [ ] Add `.section-content { overflow: visible !important }`
-- [ ] Change `@page { margin: 0.5in }` → `margin: 0.25in` (maximize usable space)
-- [ ] Add `.section { border: none !important }` (remove borders for clean print)
+**Sub-step 3.1: Core Fix - Allow Overflow** (styles.css @media print) ✅ DONE
+- [x] Add `.section { overflow: visible !important }` (styles.css:2435-2438)
+- [x] Add `.section-content { overflow: visible !important }` (styles.css:2440-2442)
+- [x] Change `@page { margin: 0.5in }` → `margin: 0.25in` (styles.css:2431)
+- [x] Add `.section { border: none !important }` (styles.css:2437)
 
-**Sub-step 3.2: Test Without Scaling First**
+**Implementation Notes:**
+```css
+/* Page setup - minimal margins for maximum usable width */
+@page {
+  size: landscape;
+  margin: 0.25in; /* Reduced from 0.5in to maximize content space */
+}
+
+/* CRITICAL FIX: Allow horizontal overflow to prevent content clipping */
+.section {
+  overflow: visible !important;
+  border: none !important; /* Remove borders for cleaner print */
+}
+
+.section-content {
+  overflow: visible !important;
+}
+```
+
+**Sub-step 3.2: Refinements** ✅ DONE
+- [x] Remove borders from Section 1 (Key Values) table for consistency (styles.css:2554-2558)
+- [x] Center Sankey diagram to use full available width (styles.css:2560-2571)
+- [x] Hide collapsed sections completely in print (styles.css:2573-2580)
+
+**Refinement Details:**
+```css
+/* REFINEMENT 1: Remove borders from Section 1 key-values-table for consistency */
+#keyValues .key-values-table,
+#keyValues table {
+  border: none !important;
+}
+
+/* REFINEMENT 2: Center Sankey diagram and use full available width */
+#section16 .section-content,
+#sankeySection16Container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#section16 svg {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+/* REFINEMENT 3: Completely hide collapsed sections (don't print empty frames) */
+.section-header.collapsed {
+  display: none !important;
+}
+
+.section-header.collapsed + .section-content {
+  display: none !important;
+}
+```
+
+**Sub-step 3.3: Initial Testing** ⏳ READY FOR USER
+- [x] All core fixes implemented
+- [x] All refinements implemented
 - [ ] Test Section 13 on **Letter landscape** - check if all columns visible
-- [ ] Test Section 16 on **Letter landscape** - check if Sankey complete
+- [ ] Test Section 16 on **Letter landscape** - check if Sankey complete and centered
 - [ ] Test Section 11 on **Letter landscape** - check if all columns visible
-- [ ] If content still clips → proceed to Sub-step 3.3
+- [ ] Test collapsed sections (S17, S19) - verify they don't print at all
+- [ ] If content still clips → proceed to conditional scaling
 
 **Sub-step 3.3: Add Conditional Scaling (ONLY IF NEEDED)**
 - [ ] If Section 13 still clips: Add `#section13.section { transform: scale(0.95) }`
