@@ -938,9 +938,9 @@ TEUI.Reporter = (function () {
         });
 
         // Use taller line height for subheader rows to accommodate multi-line text
-        // Add extra spacing (1mm = ~0.04") so text sits above the divider line
+        // Add extra spacing (3mm = ~0.12") so text sits well above the divider line
         const rowHeight = row.isSubheaderRow ? lineHeight * 1.8 : lineHeight;
-        yPos += rowHeight + 0.04; // 1mm extra spacing
+        yPos += rowHeight + 0.12; // 3mm extra spacing
 
         // Light grey row separator - draw below text with small gap (Comment #2)
         pdf.setDrawColor("#E0E0E0");
@@ -1302,9 +1302,9 @@ TEUI.Reporter = (function () {
         });
 
         // Use taller line height for subheader rows to accommodate multi-line text
-        // Add extra spacing (1mm = ~0.04") so text sits above the divider line
+        // Add extra spacing (3mm = ~0.12") so text sits well above the divider line
         const rowHeight = row.isSubheaderRow ? lineHeight * 1.8 : lineHeight;
-        yPos += rowHeight + 0.04; // 1mm extra spacing
+        yPos += rowHeight + 0.12; // 3mm extra spacing
 
         // Light grey row separator - draw below text with small gap (Comment #2)
         pdf.setDrawColor("#E0E0E0");
