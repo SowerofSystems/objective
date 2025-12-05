@@ -153,27 +153,28 @@ function printReport() {
 3. Let sections flow naturally with `height: auto`
 4. Add page breaks between sections if needed
 
-### Issue 3: Background Graphics Control
+### Issue 3: Color Preservation
 
-**Problem**: Need to disable UI backgrounds while keeping S16-18 graphics
+**Problem**: Need to preserve meaningful colors (blue = user inputs, red = reference values, green = actual values)
 
-**Solutions**:
-1. Use class-based targeting:
+**Solution**: Use `print-color-adjust: exact` globally
    ```css
    @media print {
-     /* Disable UI backgrounds */
-     .section-container:not(.graphics-section) {
-       background: white !important;
+     /* Preserve ALL colors - they're data, not decoration */
+     * {
+       print-color-adjust: exact;
+       -webkit-print-color-adjust: exact;
+       color-adjust: exact;
      }
 
-     /* Preserve graphics sections */
-     .graphics-section {
-       print-color-adjust: exact;
+     /* White backgrounds for sections, but preserve text colors */
+     .section-container:not(.graphics-section) {
+       background: white !important;
      }
    }
    ```
 
-2. Or rely on user manually unchecking "Background graphics" in print dialog
+**Result**: All meaningful color coding preserved in print output
 
 ## Implementation Plan
 

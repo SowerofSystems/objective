@@ -2508,20 +2508,18 @@ body.dev-environment {
     background: white !important;
   }
 
-  /* Ensure text is black for readability */
-  body,
-  p,
-  span,
-  td,
-  th {
-    color: black !important;
+  /* Preserve ALL meaningful colors - they convey important information */
+  /* Blue = user inputs, Red = reference values, Green = actual values, etc. */
+  /* Color is data, not decoration! */
+  * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
   }
 
-  /* Preserve user input colors (blue) and calculated values */
-  .user-input,
-  input[readonly],
-  .calculated-value {
-    color: inherit !important;
+  /* Ensure body background is white, but preserve all text/element colors */
+  body {
+    background: white !important;
   }
 
   /* Links should be underlined in print */
