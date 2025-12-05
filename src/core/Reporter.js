@@ -583,11 +583,15 @@ TEUI.Reporter = (function () {
           pdf.setFontSize(20); // Reduced from 24pt (75%)
           pdf.setFont(undefined, "bold");
           pdf.setTextColor(refColor); // Match tier to Reference red color
+          // Set 50% opacity for tier text
+          pdf.setGState(new pdf.GState({ opacity: 0.5 }));
           // Position tier FURTHER LEFT of right-justified value
           const tierWidth = pdf.getTextWidth(tierMatch[1]);
           const valueWidth = pdf.getTextWidth(tierMatch[2]);
           pdf.text(tierMatch[1], refXPos + colWidth - tierWidth - valueWidth - 0.6, yPos); // Increased Tier-Key gap from 0.15 to 0.6
 
+          // Reset to full opacity for value
+          pdf.setGState(new pdf.GState({ opacity: 1.0 }));
           // Value RIGHT JUSTIFIED at column edge
           pdf.setFontSize(36); // Reduced from 48pt (75%)
           pdf.setFont(undefined, "bold");
@@ -612,11 +616,15 @@ TEUI.Reporter = (function () {
           pdf.setFontSize(20); // Reduced from 24pt (75%)
           pdf.setFont(undefined, "bold");
           pdf.setTextColor(targetColor); // Match tier to Target blue color
+          // Set 50% opacity for tier text
+          pdf.setGState(new pdf.GState({ opacity: 0.5 }));
           // Position tier FURTHER LEFT of right-justified value
           const tierWidth = pdf.getTextWidth(tierMatch[1]);
           const valueWidth = pdf.getTextWidth(tierMatch[2]);
           pdf.text(tierMatch[1], targetXPos + colWidth - tierWidth - valueWidth - 0.6, yPos); // Increased Tier-Key gap from 0.15 to 0.6
 
+          // Reset to full opacity for value
+          pdf.setGState(new pdf.GState({ opacity: 1.0 }));
           // Value RIGHT JUSTIFIED at column edge
           pdf.setFontSize(36); // Reduced from 48pt (75%)
           pdf.setFont(undefined, "bold");
