@@ -473,30 +473,30 @@ TEUI.Reporter = (function () {
     const targetHeaderX = targetXPos + 0.3;
     const actualHeaderX = actualXPos + 0.3;
 
-    // Render rows with JUMBO fonts and full hierarchy
+    // Render rows with JUMBO fonts and full hierarchy - COMPACT LAYOUT
     section.rows.forEach((row, rowIndex) => {
       if (row.isSubheaderRow) return;
 
-      // 1. ROW DESCRIPTION - small grey text ABOVE row label (new!)
+      // 1. ROW DESCRIPTION - small grey text ABOVE row label
       if (row.description) {
         pdf.setFontSize(9);
         pdf.setTextColor(descGrey);
         pdf.setFont(undefined, "normal");
         pdf.text(row.description, labelXPos, yPos);
-        yPos += 0.2; // Small gap before row label
+        yPos += 0.18; // Tight gap before row label
       }
 
       // 2. ROW LABEL + COLUMN HEADERS - same horizontal line
       if (row.rowLabel) {
-        // Row label on left (e.g., "T.1 Lifetime Carbon Actual")
-        pdf.setFontSize(10);
+        // Row label on left - LARGER and BOLD like app (e.g., "T.1 Lifetime Carbon Actual")
+        pdf.setFontSize(12);
         pdf.setTextColor("#000000");
-        pdf.setFont(undefined, "normal");
+        pdf.setFont(undefined, "bold");
         pdf.text(row.rowLabel, labelXPos, yPos);
 
-        // Column headers above value positions (if available)
+        // Column headers above value positions - SMALLER to match app
         if (section.columnHeaders && section.columnHeaders.length >= 3) {
-          pdf.setFontSize(8);
+          pdf.setFontSize(7);
           pdf.setTextColor(headerGrey);
           pdf.setFont(undefined, "normal");
 
@@ -516,61 +516,58 @@ TEUI.Reporter = (function () {
           }
         }
 
-        yPos += 0.35; // Gap before values
-      } else {
-        // Fallback if no rowLabel - just small gap
-        yPos += 0.25;
+        yPos += 0.28; // Tight gap before values
       }
 
-      // COLUMN E: Reference (JUMBO 48pt Red)
+      // COLUMN E: Reference (JUMBO 48pt Red) - TIER ON SAME LINE
       const refCell = row.cells[1];
       if (refCell && refCell.content) {
         const tierMatch = refCell.content.match(/^(tier\d+)\s+(.+)$/);
 
         if (tierMatch) {
-          // Tier - smaller, grey, ABOVE value
-          pdf.setFontSize(18);
+          // Tier + Value on SAME line
+          pdf.setFontSize(24); // Smaller tier text
           pdf.setFont(undefined, "bold");
           pdf.setTextColor(tierGrey);
           pdf.text(tierMatch[1], refXPos, yPos);
 
-          // Value - JUMBO red BELOW tier
+          // Value immediately after tier (same baseline)
           pdf.setFontSize(48);
           pdf.setFont(undefined, "bold");
           pdf.setTextColor(refColor);
-          pdf.text(tierMatch[2], refXPos, yPos + 0.45);
+          pdf.text(tierMatch[2], refXPos + 0.65, yPos); // Offset to right of tier
         } else {
           // No tier - JUMBO red
           pdf.setFontSize(48);
           pdf.setFont(undefined, "bold");
           pdf.setTextColor(refColor);
-          pdf.text(refCell.content, refXPos, yPos + 0.45);
+          pdf.text(refCell.content, refXPos, yPos);
         }
       }
 
-      // COLUMN H: Target (JUMBO 48pt Blue)
+      // COLUMN H: Target (JUMBO 48pt Blue) - TIER ON SAME LINE
       const targetCell = row.cells[2];
       if (targetCell && targetCell.content) {
         const tierMatch = targetCell.content.match(/^(tier\d+)\s+(.+)$/);
 
         if (tierMatch) {
-          // Tier - smaller, grey, ABOVE value
-          pdf.setFontSize(18);
+          // Tier + Value on SAME line
+          pdf.setFontSize(24); // Smaller tier text
           pdf.setFont(undefined, "bold");
           pdf.setTextColor(tierGrey);
           pdf.text(tierMatch[1], targetXPos, yPos);
 
-          // Value - JUMBO blue BELOW tier
+          // Value immediately after tier (same baseline)
           pdf.setFontSize(48);
           pdf.setFont(undefined, "bold");
           pdf.setTextColor(targetColor);
-          pdf.text(tierMatch[2], targetXPos, yPos + 0.45);
+          pdf.text(tierMatch[2], targetXPos + 0.65, yPos); // Offset to right of tier
         } else {
           // No tier - JUMBO blue
           pdf.setFontSize(48);
           pdf.setFont(undefined, "bold");
           pdf.setTextColor(targetColor);
-          pdf.text(targetCell.content, targetXPos, yPos + 0.45);
+          pdf.text(targetCell.content, targetXPos, yPos);
         }
       }
 
@@ -580,43 +577,43 @@ TEUI.Reporter = (function () {
         pdf.setFontSize(48);
         pdf.setFont(undefined, "bold");
         pdf.setTextColor(actualColor);
-        pdf.text(actualCell.content, actualXPos, yPos + 0.45);
+        pdf.text(actualCell.content, actualXPos, yPos);
       } else if (actualCell && actualCell.content === "N/A") {
         pdf.setFontSize(36);
         pdf.setFont(undefined, "normal");
         pdf.setTextColor("#CCCCCC");
-        pdf.text("N/A", actualXPos, yPos + 0.35);
+        pdf.text("N/A", actualXPos, yPos - 0.05);
       }
 
-      // COLUMN M: Percentage (36pt Grey with colored checkmark)
+      // COLUMN M: Percentage (30pt Grey with colored checkmark)
       const percentCell = row.cells[4];
       if (percentCell && percentCell.content) {
-        pdf.setFontSize(36);
+        pdf.setFontSize(30); // Slightly smaller to match app proportions
         pdf.setFont(undefined, "bold");
 
         if (percentCell.content.includes("✓")) {
           const percentText = percentCell.content.replace("✓", "").trim();
           // Green checkmark
           pdf.setTextColor("#28a745");
-          pdf.text("✓", percentXPos, yPos + 0.35);
+          pdf.text("✓", percentXPos, yPos - 0.05);
           // Grey percentage
           pdf.setTextColor("#999999");
-          pdf.text(percentText, percentXPos + 0.35, yPos + 0.35);
+          pdf.text(percentText, percentXPos + 0.3, yPos - 0.05);
         } else if (percentCell.content.includes("✗")) {
           const percentText = percentCell.content.replace("✗", "").trim();
           // Red X
           pdf.setTextColor("#d9534f");
-          pdf.text("✗", percentXPos, yPos + 0.35);
+          pdf.text("✗", percentXPos, yPos - 0.05);
           // Grey percentage
           pdf.setTextColor("#999999");
-          pdf.text(percentText, percentXPos + 0.35, yPos + 0.35);
+          pdf.text(percentText, percentXPos + 0.3, yPos - 0.05);
         } else {
           pdf.setTextColor("#999999");
-          pdf.text(percentCell.content, percentXPos, yPos + 0.35);
+          pdf.text(percentCell.content, percentXPos, yPos - 0.05);
         }
       }
 
-      yPos += 1.1; // MASSIVE vertical spacing between rows
+      yPos += 0.85; // TIGHTER vertical spacing between rows (was 1.1)
     });
   }
 
