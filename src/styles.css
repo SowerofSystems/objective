@@ -2416,3 +2416,133 @@ body.dev-environment {
   min-height: 100vh;
 }
 /* =============== END DEV ENVIRONMENT INDICATOR =============== */
+
+/* =============== PRINT STYLES (REPORT2 APPROACH) =============== */
+/**
+ * Browser native print styles for high-quality PDF export
+ * Triggered by: Print Report (PDF) menu item → window.print()
+ * See: docs/development/EXPORT-REPORT2.md for implementation details
+ */
+
+@media print {
+  /* Page setup */
+  @page {
+    size: landscape;
+    margin: 0.5in;
+  }
+
+  /* Hide all UI elements */
+  header,
+  nav,
+  .navbar,
+  .toolbar,
+  #header,
+  .reference-toggle,
+  .help-button,
+  .btn,
+  button,
+  #help-button,
+  #reference-toggle,
+  #tilt-button,
+  #import-export-dropdown,
+  #obc-matrix-btn,
+  .dropdown,
+  .dropdown-menu {
+    display: none !important;
+  }
+
+  /* Reset body for print */
+  body {
+    background: white !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Remove dev environment border */
+  body.dev-environment {
+    border: none !important;
+  }
+
+  /* Section containers - prevent page breaks inside */
+  .section-container {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 1in;
+  }
+
+  /* Section headers */
+  .section-header {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* Tables - prevent breaks inside rows */
+  table {
+    page-break-inside: auto;
+    break-inside: auto;
+  }
+
+  thead {
+    display: table-header-group; /* Repeat headers on each page */
+  }
+
+  tbody tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Preserve graphics sections (S16-18) with full color */
+  .graphics-section,
+  .graphics-section canvas,
+  .graphics-section svg,
+  #section16,
+  #section17,
+  #section18 {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
+  }
+
+  /* Remove unnecessary backgrounds for cleaner print */
+  .section-container:not(.graphics-section) {
+    background: white !important;
+  }
+
+  /* Ensure text is black for readability */
+  body,
+  p,
+  span,
+  td,
+  th {
+    color: black !important;
+  }
+
+  /* Preserve user input colors (blue) and calculated values */
+  .user-input,
+  input[readonly],
+  .calculated-value {
+    color: inherit !important;
+  }
+
+  /* Links should be underlined in print */
+  a {
+    text-decoration: underline;
+  }
+
+  /* Page breaks between major sections */
+  #section01,
+  #section02,
+  #section16,
+  #section17,
+  #section18 {
+    page-break-before: always;
+    break-before: page;
+  }
+
+  /* First section shouldn't force page break */
+  #section01:first-child {
+    page-break-before: auto;
+    break-before: auto;
+  }
+}
+/* =============== END PRINT STYLES =============== */

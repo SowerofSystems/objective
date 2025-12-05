@@ -724,6 +724,20 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
 
+  // Setup print button action (uses browser's native print dialog)
+  document
+    .getElementById("printReport")
+    .addEventListener("click", function (e) {
+      e.preventDefault();
+
+      console.log("[Init] Opening print dialog for report");
+
+      // Trigger browser's native print dialog
+      // User can choose "Save as PDF" from the destination dropdown
+      // @media print styles in styles.css will be applied
+      window.print();
+    });
+
   const teuiFactsheetBtn = document.getElementById("teui-factsheet");
   if (teuiFactsheetBtn) {
     teuiFactsheetBtn.addEventListener("click", function () {
