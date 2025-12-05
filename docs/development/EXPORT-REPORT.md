@@ -1001,6 +1001,14 @@ FOR EACH ROW:
    - May be related to CDN/Cloudflare for jsPDF libraries
    - Need to test if removing logos improved performance
 
+2. **Subscript Rendering** (Dec 5, 2025):
+   - **Problem**: HTML subscript tags breaking jsPDF text formatting in Section 12
+   - **Affected Rows**: S12 rows 108, 109, 110 (contain subscript in descriptions)
+   - **Symptom**: Text positioning/spacing incorrect when subscript present
+   - **Note**: Superscript renders fine, only subscript affected
+   - **Workaround**: May need to strip subscript tags or use Unicode subscript characters
+   - **Status**: ⚠️ KNOWN ISSUE - requires jsPDF text extraction improvement
+
 ### Next Steps
 
 1. **Testing** (HIGH PRIORITY):

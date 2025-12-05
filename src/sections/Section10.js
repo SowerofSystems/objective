@@ -853,7 +853,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           style: "white-space: pre-line;",
         },
         i: {
-          content: "Heatgain kWh/Cooling Season",
+          content: "Heatgain\nkWh/Heating Season",
           classes: ["section-subheader", "align-right"],
           style: "white-space: pre-line;",
         },
@@ -863,7 +863,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           style: "white-space: pre-line;",
         },
         k: {
-          content: "Heatgain kWh/Cooling Season",
+          content: "Heatgain\nkWh/Cool Season",
           classes: ["section-subheader", "align-right"],
           style: "white-space: pre-line;",
         },

@@ -667,7 +667,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           classes: ["section-subheader", "align-center"],
         },
         i: {
-          content: "Heatloss kWh/yr",
+          content: "Heatloss\nkWh/Htg. Season",
           classes: ["section-subheader", "align-center"],
         },
         j: {
@@ -675,7 +675,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           classes: ["section-subheader", "align-center"],
         },
         k: {
-          content: "Heatgain kWh/Cool Season",
+          content: "Heatgain\nkWh/Cool Season",
           classes: ["section-subheader", "align-center"],
         },
         l: {

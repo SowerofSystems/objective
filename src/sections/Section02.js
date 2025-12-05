@@ -37,7 +37,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         j: { content: "J", classes: ["section-subheader"] },
         k: { content: "K", classes: ["section-subheader"] },
         l: {
-          content: "T.10 Cost of Energy by Source",
+          content: "T.10 Cost of Energy\nby Source",
           classes: ["section-subheader", "text-center"],
           colspan: 3,
         },
