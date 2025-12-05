@@ -468,57 +468,55 @@ TEUI.Reporter = (function () {
     const actualXPos = leftMargin + 8.5;
     const percentXPos = leftMargin + 11.5;
 
-    // Column header positions (centered above values)
-    const refHeaderX = refXPos + 0.3;
-    const targetHeaderX = targetXPos + 0.3;
-    const actualHeaderX = actualXPos + 0.3;
-
-    // Render rows with JUMBO fonts and full hierarchy - COMPACT LAYOUT
+    // Render rows with THREE-LINE structure per row group
     section.rows.forEach((row, rowIndex) => {
       if (row.isSubheaderRow) return;
 
-      // 1. ROW DESCRIPTION - small grey text ABOVE row label
+      // ===== LINE 1: HEADER LINE (1/5 of row height) =====
+      // Description on left + Column headers above values
       if (row.description) {
-        pdf.setFontSize(9);
+        pdf.setFontSize(8);
         pdf.setTextColor(descGrey);
         pdf.setFont(undefined, "normal");
         pdf.text(row.description, labelXPos, yPos);
-        yPos += 0.18; // Tight gap before row label
       }
 
-      // 2. ROW LABEL + COLUMN HEADERS - same horizontal line
+      // Column headers directly above value columns (not centered, left-aligned at value position)
+      if (section.columnHeaders && section.columnHeaders.length >= 3) {
+        pdf.setFontSize(7);
+        pdf.setTextColor(headerGrey);
+        pdf.setFont(undefined, "normal");
+
+        // Reference column header (index 0)
+        if (section.columnHeaders[0]) {
+          pdf.text(section.columnHeaders[0].content, refXPos, yPos, { maxWidth: 2.5 });
+        }
+
+        // Target column header (index 1)
+        if (section.columnHeaders[1]) {
+          pdf.text(section.columnHeaders[1].content, targetXPos, yPos, { maxWidth: 2.5 });
+        }
+
+        // Actual column header (index 2)
+        if (section.columnHeaders[2]) {
+          pdf.text(section.columnHeaders[2].content, actualXPos, yPos, { maxWidth: 2.5 });
+        }
+      }
+
+      yPos += 0.15; // Small gap to next line
+
+      // ===== LINE 2: TITLE LINE (LARGE row labels) =====
+      // T.1, T.2, T.3 - TRIPLED in size
       if (row.rowLabel) {
-        // Row label on left - LARGER and BOLD like app (e.g., "T.1 Lifetime Carbon Actual")
-        pdf.setFontSize(12);
+        pdf.setFontSize(36); // TRIPLED from 12pt
         pdf.setTextColor("#000000");
         pdf.setFont(undefined, "bold");
         pdf.text(row.rowLabel, labelXPos, yPos);
-
-        // Column headers above value positions - SMALLER to match app
-        if (section.columnHeaders && section.columnHeaders.length >= 3) {
-          pdf.setFontSize(7);
-          pdf.setTextColor(headerGrey);
-          pdf.setFont(undefined, "normal");
-
-          // Reference column header (index 0)
-          if (section.columnHeaders[0]) {
-            pdf.text(section.columnHeaders[0].content, refHeaderX, yPos, { align: "center", maxWidth: 2.5 });
-          }
-
-          // Target column header (index 1)
-          if (section.columnHeaders[1]) {
-            pdf.text(section.columnHeaders[1].content, targetHeaderX, yPos, { align: "center", maxWidth: 2.5 });
-          }
-
-          // Actual column header (index 2)
-          if (section.columnHeaders[2]) {
-            pdf.text(section.columnHeaders[2].content, actualHeaderX, yPos, { align: "center", maxWidth: 2.5 });
-          }
-        }
-
-        yPos += 0.28; // Tight gap before values
       }
 
+      yPos += 0.4; // Gap before value line
+
+      // ===== LINE 3: VALUE LINE (JUMBO colored numbers) =====
       // COLUMN E: Reference (JUMBO 48pt Red) - TIER ON SAME LINE
       const refCell = row.cells[1];
       if (refCell && refCell.content) {
@@ -613,7 +611,8 @@ TEUI.Reporter = (function () {
         }
       }
 
-      yPos += 0.85; // TIGHTER vertical spacing between rows (was 1.1)
+      // Gap to next row group (after value line)
+      yPos += 0.5; // Spacing between row groups
     });
   }
 
@@ -1261,6 +1260,13 @@ TEUI.Reporter = (function () {
       );
     }
   }
+    // Final TODOs:
+    // 1. Need to add section for Disclaimer from LICENSE.txt in fine italic print
+    // 2. Credits and version info could added after disclaimer in same fine italic print
+    // 3. Add CSV Embed Function for user convenience - at most appropriate place
+    // 4. Add styling Blue for Reference inputs and Red for differences in Reference model per FileHandler .csv exported fields array as template
+    // 5. Add more space between text rows so text is not on the lines
+    // 6. Test with S18 render (Graphics)
 
   // Public API
   return {
