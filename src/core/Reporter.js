@@ -892,14 +892,14 @@ TEUI.Reporter = (function () {
       let height = 0;
 
       // Section header height
-      height += lineHeight * 2.2; // Title
-      height += lineHeight * 0.2; // Post-underline space (reduced from 0.5)
+      height += lineHeight * 1.3; // Title (reduced from 2.2)
+      height += lineHeight * 0.2; // Post-underline space
 
       // Row heights
       section.rows.forEach(row => {
         if (row.isSubheaderRow) {
-          height += lineHeight * 0.8; // Pre-subheader spacing
-          height += lineHeight * 2.2; // Subheader row height (increased from 1.8)
+          height += lineHeight * 0.4; // Pre-subheader spacing (reduced from 0.8)
+          height += lineHeight * 1.5; // Subheader row height (reduced from 2.2)
         } else {
           height += lineHeight; // Normal row height
         }
@@ -933,19 +933,19 @@ TEUI.Reporter = (function () {
       pdf.setFont(undefined, "bold");
       pdf.setTextColor("#000000");
       pdf.text(section.title, leftMargin, yPos);
-      yPos += lineHeight * 2.2; // Increased from 1.5 to 2.2 for better spacing
+      yPos += lineHeight * 1.3; // Reduced from 2.2 to 1.3 for tighter section header spacing
 
       // Draw underline for section header
       pdf.setDrawColor("#CCCCCC");
       pdf.setLineWidth(0.01);
-      pdf.line(leftMargin, yPos - lineHeight * 0.8, rightMargin, yPos - lineHeight * 0.8); // Underline positioned higher
-      yPos += lineHeight * 0.2; // Reduced from 0.5 to 0.2 for tighter spacing
+      pdf.line(leftMargin, yPos - lineHeight * 0.5, rightMargin, yPos - lineHeight * 0.5); // Underline closer to title
+      yPos += lineHeight * 0.2; // Post-underline spacing
 
       // Section rows
       section.rows.forEach((row, rowIndex) => {
-        // Add extra space before subheader rows for breathing room (Comment #1)
+        // Add extra space before subheader rows for breathing room
         if (row.isSubheaderRow) {
-          yPos += lineHeight * 0.8; // Increased from 0.5 to 0.8 for more vertical space
+          yPos += lineHeight * 0.4; // Reduced from 0.8 to 0.4 for tighter spacing
           checkPageBreak(lineHeight * 3); // More space needed for multi-line headers
         } else {
           checkPageBreak(lineHeight * 2);
@@ -954,7 +954,7 @@ TEUI.Reporter = (function () {
         // ✅ VERTICAL CENTERING FIX: Calculate text baseline position for centered alignment
         // Text should be rendered in the MIDDLE of the allocated row space (between divider lines)
         // Normal row height is lineHeight (0.15"), so center text at lineHeight * 0.6 offset
-        const rowHeight = row.isSubheaderRow ? lineHeight * 2.2 : lineHeight; // Increased subheader from 1.8 to 2.2
+        const rowHeight = row.isSubheaderRow ? lineHeight * 1.5 : lineHeight; // Reduced from 2.2 to 1.5 for tighter subheaders
         const textBaseline = yPos + (rowHeight * 0.65); // Adjusted from 0.6 to 0.65 to lower text position
 
         // Row number (small grey text) - compact format
@@ -1266,14 +1266,14 @@ TEUI.Reporter = (function () {
       let height = 0;
 
       // Section header height
-      height += lineHeight * 2.2; // Title
-      height += lineHeight * 0.2; // Post-underline space (reduced from 0.5)
+      height += lineHeight * 1.3; // Title (reduced from 2.2)
+      height += lineHeight * 0.2; // Post-underline space
 
       // Row heights
       section.rows.forEach(row => {
         if (row.isSubheaderRow) {
-          height += lineHeight * 0.8; // Pre-subheader spacing
-          height += lineHeight * 2.2; // Subheader row height (increased from 1.8)
+          height += lineHeight * 0.4; // Pre-subheader spacing (reduced from 0.8)
+          height += lineHeight * 1.5; // Subheader row height (reduced from 2.2)
         } else {
           height += lineHeight; // Normal row height
         }
@@ -1307,19 +1307,19 @@ TEUI.Reporter = (function () {
       pdf.setFont(undefined, "bold");
       pdf.setTextColor("#000000");
       pdf.text(section.title, leftMargin, yPos);
-      yPos += lineHeight * 2.2; // Increased from 1.5 to 2.2 for better spacing
+      yPos += lineHeight * 1.3; // Reduced from 2.2 to 1.3 for tighter section header spacing
 
       // Draw underline for section header
       pdf.setDrawColor("#CCCCCC");
       pdf.setLineWidth(0.01);
-      pdf.line(leftMargin, yPos - lineHeight * 0.8, rightMargin, yPos - lineHeight * 0.8); // Underline positioned higher
-      yPos += lineHeight * 0.2; // Reduced from 0.5 to 0.2 for tighter spacing
+      pdf.line(leftMargin, yPos - lineHeight * 0.5, rightMargin, yPos - lineHeight * 0.5); // Underline closer to title
+      yPos += lineHeight * 0.2; // Post-underline spacing
 
       // Section rows
       section.rows.forEach((row, rowIndex) => {
-        // Add extra space before subheader rows for breathing room (Comment #1)
+        // Add extra space before subheader rows for breathing room
         if (row.isSubheaderRow) {
-          yPos += lineHeight * 0.8; // Increased from 0.5 to 0.8 for more vertical space
+          yPos += lineHeight * 0.4; // Reduced from 0.8 to 0.4 for tighter spacing
           checkPageBreak(lineHeight * 3); // More space needed for multi-line headers
         } else {
           checkPageBreak(lineHeight * 2);
@@ -1328,7 +1328,7 @@ TEUI.Reporter = (function () {
         // ✅ VERTICAL CENTERING FIX: Calculate text baseline position for centered alignment
         // Text should be rendered in the MIDDLE of the allocated row space (between divider lines)
         // Normal row height is lineHeight (0.15"), so center text at lineHeight * 0.6 offset
-        const rowHeight = row.isSubheaderRow ? lineHeight * 2.2 : lineHeight; // Increased subheader from 1.8 to 2.2
+        const rowHeight = row.isSubheaderRow ? lineHeight * 1.5 : lineHeight; // Reduced from 2.2 to 1.5 for tighter subheaders
         const textBaseline = yPos + (rowHeight * 0.65); // Adjusted from 0.6 to 0.65 to lower text position
 
         // Row number (small grey text) - compact format

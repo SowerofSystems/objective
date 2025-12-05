@@ -1033,15 +1033,20 @@ FOR EACH ROW:
      - All text elements (row numbers, descriptions, values) render at `textBaseline` instead of `yPos`
      - Divider lines draw at exact bottom of row space (`yPos` after advancement)
      - Creates balanced spacing: ~0.117" above text, ~0.063" below text (optimal for 9pt font)
-  3. **Increased subheader row height**: Subheader multiplier increased from 1.8 to 2.2
-     - Prevents multi-line subheader text from colliding with divider lines below
-     - Subheaders now have 0.396" (2.2 × 0.18) total row height vs 0.324" before
+  3. **Balanced subheader row height**: Subheader multiplier set to 1.5
+     - Provides adequate space for multi-line subheader text without excessive whitespace
+     - Subheaders have 0.27" (1.5 × 0.18) total row height
+     - Pre-subheader spacing: 0.072" (0.4 × 0.18) - reduced from 0.144"
      - Applied to section height calculations for accurate page break logic
+  4. **Tightened section header spacing**: Section title to underline reduced from 2.2× to 1.3×
+     - Section title spacing: 0.234" (1.3 × 0.18) vs 0.396" before
+     - Underline positioned 0.09" below title (0.5 × 0.18)
+     - Creates compact, professional section headers without excessive whitespace
 - **Implementation**:
-  - Applied to both Target (lines 922-1002) and Reference (lines 1298-1378) models
+  - Applied to both Target (lines 936-948) and Reference (lines 1312-1324) models
   - `lineHeight` constant updated in both `generatePDF()` (line 766) and `appendReferenceToPDF()` (line 1107)
-  - Section height calculations updated (lines 867-870, 1231-1234)
-- **Result**: Text optimally positioned between divider lines with comfortable spacing on both sides ✅ FIXED
+  - Section height calculations updated (lines 897-905, 1268-1276)
+- **Result**: Text optimally positioned between divider lines with comfortable spacing, compact section headers ✅ FIXED
 
 ### ✅ Title Page Color-Coding & HTML Tag Cleanup (COMPLETED - Dec 5, 2025)
 - **Problem 1**: Title page headers ("Target Model Report" / "Reference Model Report") not color-coded
