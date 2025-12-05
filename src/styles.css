@@ -2500,7 +2500,6 @@ body.dev-environment {
   #section18 {
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
-    color-adjust: exact;
   }
 
   /* Remove unnecessary backgrounds for cleaner print */
@@ -2514,7 +2513,6 @@ body.dev-environment {
   * {
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
-    color-adjust: exact;
   }
 
   /* Ensure body background is white, but preserve all text/element colors */

@@ -1,12 +1,32 @@
 # EXPORT-REPORT2.md - Browser Native Print Approach
 
-**Status**: Exploration Phase
+**Status**: ⚠️ Fixing Clipping Issues
 **Branch**: REPORT2
 **Created**: December 5, 2025
+**Last Updated**: December 5, 2025
+
+## 📋 Quick Status
+
+**What Works**: ✅
+- Print button functional ([index.html:346-348](../../../index.html#L346-L348), [init.js:727-739](../../src/init.js#L727-L739))
+- Basic print styles implemented ([styles.css:2420-2548](../../src/styles.css#L2420-L2548))
+- Color preservation (blue/red/green fields maintain meaning)
+- Superior text quality vs jsPDF
+
+**Current Issues**: ❌
+- **Section 13 (Mechanical Loads)**: Wide table rows clip at **right margin** - columns cut off horizontally
+- **Section 16 (Sankey Diagram)**: SVG graphics clip at **right/bottom edges** of container
+- Root cause: `.section { overflow: hidden }` (styles.css:173) clips wide content at container boundaries
+
+**Solution Ready**: 🎯
+- Comprehensive analysis complete (see [Recommended Solution Summary](#-recommended-solution-summary))
+- CSS fix identified: Change `overflow: hidden` → `overflow: visible` for print, or scale content to fit page width
+- Three approaches analyzed: allow overflow, scale down content, or reduce font/spacing
+- Ready for implementation testing
 
 ## Overview
 
-Exploring browser's native `window.print()` → "Save as PDF" as a superior alternative to jsPDF manual rendering (REPORT branch). Initial testing shows dramatically better quality with some layout challenges to solve.
+Exploring browser's native `window.print()` → "Save as PDF" as a superior alternative to jsPDF manual rendering (REPORT branch). Initial testing shows dramatically better quality with critical layout challenges identified and solutions formulated.
 
 ## Comparison: Browser Print vs jsPDF
 
@@ -133,27 +153,354 @@ function printReport() {
 
 ## Known Issues & Solutions
 
-### Issue 1: Table Clipping
+### Issue 1: Horizontal Content Clipping ⚠️ ACTIVE ISSUE
 
-**Problem**: Tables with many rows get clipped at page boundaries
+**Problem**: Wide tables and graphics clip at the **right margin** (horizontal overflow hidden)
 
-**Solutions to explore**:
-1. Use `page-break-inside: avoid` on table rows
-2. Break large tables into smaller sub-tables at logical boundaries
-3. Use CSS `max-height` with `overflow: visible` for print
-4. Implement custom pagination logic for tables > 1 page
+**Example Sections Affected**:
+- Section 13 (Mechanical Loads) - Wide table rows cut off at right edge
+- Section 16 (Sankey Diagram) - SVG graphics clip at right/bottom edges
 
-### Issue 2: Section Frame Overflow
+**Root Cause Analysis**:
+- **Screen layout**: `.section { overflow: hidden }` ([styles.css:173](../../src/styles.css#L173))
+- **Screen layout**: `.section-content { overflow: hidden; overflow-x: auto }` ([styles.css:201-202](../../src/styles.css#L201-L202))
+- **Purpose**: On screen, creates scrollable containers for wide content
+- **Problem in print**: `overflow: hidden` clips content instead of allowing it to flow
+- **Result**: Wide tables/graphics get cut off at section container boundaries
 
-**Problem**: Content overflows section frame borders
+**Key Insight**: Browser handles **vertical** pagination perfectly (content flows to next page). The issue is **horizontal** clipping at container edges.
 
-**Solutions to explore**:
-1. Remove decorative borders in print styles
-2. Use `padding` instead of fixed heights
-3. Let sections flow naturally with `height: auto`
-4. Add page breaks between sections if needed
+---
 
-### Issue 3: Color Preservation
+**Solution Options** (ranked by feasibility):
+
+**Option A: Allow Overflow in Print (SIMPLEST)** ✅ RECOMMENDED
+```css
+@media print {
+  /* Allow content to overflow section boundaries */
+  .section {
+    overflow: visible !important;
+  }
+
+  .section-content {
+    overflow: visible !important;
+  }
+}
+```
+**Pros**:
+- Simple 2-line CSS change
+- No content loss
+- Content can spill outside section borders if needed
+- Browser will handle what fits on page
+
+**Cons**:
+- Content may overlap section borders/frames visually
+- May look less "contained" than screen view
+- Wide content might still exceed page width (need Option B or C)
+
+**Status**: ⚠️ May need combination with scaling if content > page width
+
+---
+
+**Option B: Scale Down Wide Sections to Fit Page** ✅ RECOMMENDED (combined with A)
+```css
+@media print {
+  /* Allow overflow first */
+  .section {
+    overflow: visible !important;
+  }
+
+  /* Scale down specific wide sections to fit landscape page */
+  #section13.section, /* Mechanical Loads - wide table */
+  #section16.section, /* Sankey Diagram */
+  #section11.section  /* Envelope Transmission */
+  {
+    transform: scale(0.9); /* Scale to 90% */
+    transform-origin: top left;
+  }
+
+  /* Alternative: Scale down table specifically */
+  #section13 .data-table {
+    font-size: 10px; /* Reduce from default */
+  }
+}
+```
+**Pros**:
+- Content fits within page width
+- Combined with `overflow: visible` ensures nothing clips
+- Can target specific sections that need it
+
+**Cons**:
+- Smaller text (may affect readability)
+- Need to test scale factor for each section
+- Trial-and-error to find right scale
+
+---
+
+**Option C: Reduce Font Size & Spacing for Print**
+```css
+@media print {
+  /* Allow overflow */
+  .section {
+    overflow: visible !important;
+  }
+
+  /* Reduce table font and spacing */
+  .data-table {
+    font-size: 9px !important; /* Smaller than screen */
+  }
+
+  .data-table td,
+  .data-table th {
+    padding: 2px 4px !important; /* Tighter spacing */
+  }
+
+  /* Narrower column labels */
+  .data-table th {
+    font-size: 8px !important;
+  }
+}
+```
+**Pros**:
+- More content fits per row
+- Uniform reduction across all sections
+- No scaling distortion
+
+**Cons**:
+- May be harder to read when printed
+- Loses visual consistency with screen
+- Requires testing for readability
+
+---
+
+**Option D: Hide Non-Essential Columns**
+```css
+@media print {
+  /* Hide less critical columns to save space */
+  .data-table .col-reference,
+  .data-table .col-notes {
+    display: none;
+  }
+}
+```
+**Pros**:
+- Reduces table width significantly
+- Keeps important data visible
+- Font size stays readable
+
+**Cons**:
+- Loses information in print output
+- User may want all columns
+- Not a general solution
+
+---
+
+**RECOMMENDATION**: **Use Option A + Option B together**
+
+**Step 1**: Change `overflow: hidden` → `overflow: visible`
+```css
+@media print {
+  .section,
+  .section-content {
+    overflow: visible !important;
+  }
+}
+```
+
+**Step 2**: Test which sections still exceed page width
+
+**Step 3**: Selectively scale down problematic sections
+```css
+@media print {
+  /* Scale only sections that exceed page width after overflow:visible */
+  #section13.section {
+    transform: scale(0.92);
+    transform-origin: top left;
+  }
+}
+```
+
+**Why this works**:
+1. `overflow: visible` fixes the immediate clipping
+2. Scaling fixes content that's legitimately too wide for page
+3. Only scale what needs it - preserve readability elsewhere
+
+---
+
+### Issue 2: Graphics Section Clipping (SAME ROOT CAUSE)
+
+**Problem**: Sankey Diagram (Section 16) clips at right/bottom edges
+
+**Root Cause**: Same as Issue 1 - `.section { overflow: hidden }`
+
+**Solution**: Apply Option A (overflow: visible) + ensure SVG scales responsively
+
+```css
+@media print {
+  /* Fix clipping (same as Issue 1) */
+  .section {
+    overflow: visible !important;
+  }
+
+  /* Ensure SVGs scale to fit page */
+  #section16 svg,
+  #section17 svg,
+  #section18 svg {
+    max-width: 100% !important;
+    max-height: 7in !important; /* Landscape page ~8.5" - margins */
+    width: auto !important;
+    height: auto !important;
+  }
+}
+```
+
+**Why this works**:
+- `overflow: visible` allows SVG to escape clipping boundaries
+- `max-width/max-height` ensures SVG doesn't exceed printable area
+- SVG scales proportionally to fit
+
+---
+
+### Issue 3: Section Border Visual Appearance (MINOR)
+
+**Problem**: With `overflow: visible`, content may visually escape section borders
+
+**Root Cause**:
+- Section borders defined by `.section { border: 2px solid ... }`
+- With `overflow: visible`, wide content can extend beyond visual frame
+
+**Solution Options**:
+
+**Option A: Remove section borders for print** (cleaner look)
+```css
+@media print {
+  .section {
+    border: none !important;
+  }
+}
+```
+
+**Option B: Keep borders, accept overflow** (user sees full content even if outside box)
+```css
+@media print {
+  .section {
+    overflow: visible !important;
+    border: 1px solid #ccc; /* Thinner border for print */
+  }
+}
+```
+
+**RECOMMENDATION**: Option A - remove borders for cleaner print output
+
+---
+
+## 🎯 RECOMMENDED SOLUTION SUMMARY
+
+Based on the analysis above, here's the comprehensive fix for **horizontal clipping** issues:
+
+### Core Fix: Allow Horizontal Overflow
+
+**The Problem**: `.section { overflow: hidden }` clips wide content at container edges
+
+**The Solution**: Change to `overflow: visible` for print
+
+```css
+@media print {
+  /* PRIMARY FIX: Allow content to overflow section boundaries */
+  .section,
+  .section-content {
+    overflow: visible !important;
+  }
+
+  /* Remove section borders for cleaner appearance */
+  .section {
+    border: none !important;
+  }
+
+  /* Minimal margins for maximum usable width */
+  @page {
+    size: landscape;
+    margin: 0.25in; /* L/R/T/B margins */
+  }
+}
+```
+
+---
+
+### Page Width Sizing (User-Selectable)
+
+Content automatically adapts to user's page size choice in print dialog:
+
+**Letter Landscape (11" × 8.5")** - Default
+- Usable width: 11" - 0.5" margins = **10.5" wide**
+- Usable height: 8.5" - 0.5" margins = **8" tall**
+
+**Legal Landscape (14" × 8.5")** - User selects
+- Usable width: 14" - 0.5" margins = **13.5" wide** (30% more space!)
+- Usable height: 8.5" - 0.5" margins = **8" tall**
+
+**Tabloid Landscape (17" × 11")** - User selects
+- Usable width: 17" - 0.5" margins = **16.5" wide** (57% more space!)
+- Usable height: 11" - 0.5" margins = **10.5" tall** (30% more height!)
+
+**Key Strategy**: With `overflow: visible`, content naturally uses available space. No need for page-size-specific CSS!
+
+---
+
+### Conditional Scaling (Only If Needed)
+
+Test first with just `overflow: visible`. Only add scaling if content still exceeds Letter landscape:
+
+```css
+@media print {
+  /* Core fix (try this first) */
+  .section,
+  .section-content {
+    overflow: visible !important;
+  }
+
+  /* ONLY add if Section 13 still clips on Letter landscape */
+  #section13.section {
+    transform: scale(0.95);
+    transform-origin: top left;
+  }
+
+  /* Graphics: constrain to page dimensions */
+  #section16 svg,
+  #section17 svg,
+  #section18 svg {
+    max-width: 100% !important;
+    max-height: 8in !important; /* Letter height - margins */
+    width: auto !important;
+    height: auto !important;
+  }
+}
+```
+
+---
+
+### Expected Results:
+✅ **Letter (11×8.5)**: All content visible, may be tight
+✅ **Legal (14×8.5)**: More breathing room horizontally
+✅ **Tabloid (17×11)**: Spacious, everything comfortable
+✅ Section 13 - All columns visible to right edge
+✅ Section 16 - Complete Sankey (scales to fit page height)
+✅ No clipping at section container boundaries
+✅ Content adapts automatically to user's paper choice
+
+### Testing Checklist:
+- [ ] **Letter landscape**: All content visible (primary test)
+- [ ] **Legal landscape**: Content uses extra 3" width
+- [ ] **Tabloid landscape**: Content uses extra 6" width + 2.5" height
+- [ ] Section 13: All table columns visible
+- [ ] Section 16: Complete Sankey diagram (not clipped)
+- [ ] No content clipping at right margins
+- [ ] Color preservation maintained
+- [ ] Test with Reference model toggle
+
+---
+
+### Issue 5: Color Preservation (RESOLVED) ✅
 
 **Problem**: Need to preserve meaningful colors (blue = user inputs, red = reference values, green = actual values)
 
@@ -191,21 +538,43 @@ function printReport() {
 - [x] No preparation needed - CSS handles everything
 - [x] No cleanup needed - browser handles it
 
-### Step 3: Section-Specific Handling ⏳ IN PROGRESS
-- [x] Section 01: Large key values - page break before
-- [x] Sections 02-15: Table row breaks avoided
-- [x] Sections 16-18: Graphics - color preservation with `print-color-adjust: exact`
-- [ ] **TODO**: Fine-tune table clipping issues
-- [ ] **TODO**: Test with Reference model toggle
+### Step 3: Fix Horizontal Clipping Issues ⏳ READY TO IMPLEMENT
 
-### Step 4: Testing ⏳ NEXT
-- [ ] Test on Chrome (most common)
-- [ ] Test on Safari (WebKit differences)
-- [ ] Test on Firefox (Gecko differences)
-- [ ] Verify all sections render correctly
-- [ ] Check page breaks are intelligent
-- [ ] Ensure graphics sections maintain quality
-- [ ] Test with "Background graphics" checkbox ON/OFF
+**Sub-step 3.1: Core Fix - Allow Overflow** (styles.css @media print)
+- [ ] Add `.section { overflow: visible !important }`
+- [ ] Add `.section-content { overflow: visible !important }`
+- [ ] Change `@page { margin: 0.5in }` → `margin: 0.25in` (maximize usable space)
+- [ ] Add `.section { border: none !important }` (remove borders for clean print)
+
+**Sub-step 3.2: Test Without Scaling First**
+- [ ] Test Section 13 on **Letter landscape** - check if all columns visible
+- [ ] Test Section 16 on **Letter landscape** - check if Sankey complete
+- [ ] Test Section 11 on **Letter landscape** - check if all columns visible
+- [ ] If content still clips → proceed to Sub-step 3.3
+
+**Sub-step 3.3: Add Conditional Scaling (ONLY IF NEEDED)**
+- [ ] If Section 13 still clips: Add `#section13.section { transform: scale(0.95) }`
+- [ ] If Section 16 still clips: Add SVG max-height constraint
+- [ ] Test again on Letter landscape
+
+**Sub-step 3.4: Multi-Page Size Testing**
+- [ ] Test on **Letter landscape (11×8.5)** - content should fit (primary target)
+- [ ] Test on **Legal landscape (14×8.5)** - content should have more space
+- [ ] Test on **Tabloid landscape (17×11)** - content should be very comfortable
+- [ ] Verify content adapts automatically to each page size
+
+**Sub-step 3.5: Final Validation**
+- [ ] All sections: No horizontal clipping at right margin
+- [ ] Section 13: All table columns visible through to right edge
+- [ ] Section 16: Complete Sankey diagram (not cut off)
+- [ ] Color preservation: Blue/red/green fields maintain meaning
+- [ ] Test with Reference model toggle (dual export)
+
+### Step 4: Cross-Browser Testing ⏳ NEXT
+- [ ] **Chrome** (primary) - test all 3 page sizes
+- [ ] **Safari** (WebKit) - test Letter landscape minimum
+- [ ] **Firefox** (Gecko) - test Letter landscape minimum
+- [ ] **Edge** (Chromium) - test Letter landscape minimum
 
 ## Comparison Table
 
@@ -270,13 +639,95 @@ break-inside: avoid | auto;
 5. Iterate on styling until quality matches/exceeds jsPDF
 6. Document browser compatibility findings
 
+## Additional Considerations
+
+### Page Size Options
+
+The current implementation uses landscape orientation with standard margins. For different content densities, consider these alternatives:
+
+**Option A: Tabloid (11x17 landscape)** - More space for graphics
+```css
+@page {
+  size: 11in 17in landscape;
+  margin: 0.5in;
+}
+```
+**Printable area**: 16" wide × 10" tall
+**Best for**: Dense tables, large graphics
+**Trade-off**: Less common paper size
+
+**Option B: Letter (8.5x11 landscape)** - Current default
+```css
+@page {
+  size: landscape;
+  margin: 0.5in;
+}
+```
+**Printable area**: 10" wide × 7" tall
+**Best for**: Standard printing, common paper size
+**Trade-off**: May need more pages
+
+**Option C: Legal (8.5x14 landscape)** - Compromise
+```css
+@page {
+  size: legal landscape;
+  margin: 0.5in;
+}
+```
+**Printable area**: 13" wide × 7" tall
+**Best for**: Wide tables, reasonable paper size
+**Trade-off**: Less common than Letter
+
+**Recommendation**: Start with Letter (current), add Tabloid option for complex projects
+
+### SVG Scaling by Page Size
+
+Adjust `max-height` based on page size:
+
+```css
+@media print {
+  /* Letter landscape: 8.5" - 1" margins = 7.5" usable */
+  @page { size: landscape; margin: 0.5in; }
+
+  #section16 svg,
+  #section17 svg,
+  #section18 svg {
+    max-height: 7in; /* Conservative to avoid clipping */
+  }
+}
+
+/* Alternative for Tabloid */
+@media print and (min-width: 16in) {
+  @page { size: 11in 17in landscape; margin: 0.5in; }
+
+  #section16 svg,
+  #section17 svg,
+  #section18 svg {
+    max-height: 10in; /* Tabloid height - margins */
+  }
+}
+```
+
 ## Questions to Answer
 
-1. Can we programmatically control "Background graphics" setting?
-2. How to handle Reference model rendering (separate print call)?
-3. Best way to handle very long tables (>1 page)?
-4. Should we create a "Print Preview" mode first?
-5. Can we add custom headers/footers with page numbers?
+1. ✅ Can we programmatically control "Background graphics" setting?
+   - **Answer**: No direct control. Use `print-color-adjust: exact` + white backgrounds for sections
+
+2. 🔄 How to handle Reference model rendering (separate print call)?
+   - **Current**: User manually enables Reference toggle before printing
+   - **Future**: Could add "Print Reference Model" menu item that enables toggle → prints → disables toggle
+
+3. ✅ Best way to handle very long tables (>1 page)?
+   - **Answer**: Use `page-break-inside: auto` on tables + `avoid` on rows (see Issue 1, Option A)
+
+4. ⏳ Should we create a "Print Preview" mode first?
+   - **Option**: Add CSS class `.print-preview` that applies same styles as `@media print`
+   - **Benefit**: See layout before printing
+   - **Implementation**: Button that adds class to body, shows in browser
+
+5. ⏳ Can we add custom headers/footers with page numbers?
+   - **Limited**: `@page` margins + `content` property (browser support varies)
+   - **Alternative**: Let browser handle via print dialog settings
 
 ## Resources
 
