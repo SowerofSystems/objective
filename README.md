@@ -128,23 +128,21 @@ Supported by the Ontario Association of Architects (OAA).
 
 ## Credits
 
-**Created by:** Andy Thomson, OpenBuilding, Inc., OAA
+**Created by:** Andy Thomson, OAA,  OpenBuilding, Inc.
 
 **Contributors:** Mark H Pavlidis
 
-**Mentors & Advisors:**
+**Mentors, Advisors & Peer Review:**
 
-- Dr. Ted Kesik, P.Eng
 - Evelyne Bouchard, OAQ, CPHD
-- Grant Walkin, P.Eng
-
-**Peer Review:**
-
-- INVISIJ Architects
-- Tandem Architecture
 - Pamela DeMelo, P.Eng.
+- INVISIJ Architects
+- Dr. Ted Kesik, P.Eng
+- Joanne McCallum, OAA, FRAIC
 - Stephen Pope, OAA, FRAIC
 - Sheena Sharp, OAA, MRAIC
+- Tandem Architecture
+- Grant Walkin, P.Eng
 
 ---
 

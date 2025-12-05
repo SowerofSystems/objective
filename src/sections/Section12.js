@@ -497,31 +497,31 @@ window.TEUI.SectionModules.sect12 = (function () {
         f: { content: "", classes: ["section-subheader"] },
         g: {
           content: "U-Value\nW/m²·K",
-          classes: ["section-subheader", "align-center"],
+          classes: ["section-subheader", "align-right"],
         },
         h: {
           content: "Loss Rate\nkWh/m²",
-          classes: ["section-subheader", "align-center"],
+          classes: ["section-subheader", "align-right"],
         },
         i: {
-          content: "Heatloss\nHtg Season\nkWh/yr",
-          classes: ["section-subheader", "align-center"],
+          content: "Heatloss\nkWh/Htg. Season",
+          classes: ["section-subheader", "align-right"],
         },
         j: {
           content: "Gain Rate\nkWh/m²",
-          classes: ["section-subheader", "align-center"],
+          classes: ["section-subheader", "align-right"],
         },
         k: {
-          content: "Heatgain\nCool Season\nkWh/yr",
-          classes: ["section-subheader", "align-center"],
+          content: "Heatgain\nkWh/Cool Season",
+          classes: ["section-subheader", "align-right"],
         },
         l: {
           content: "Heatloss %",
-          classes: ["section-subheader", "align-center"],
+          classes: ["section-subheader", "align-right"],
         },
         m: {
           content: "Reference",
-          classes: ["section-subheader", "align-center"],
+          classes: ["section-subheader", "align-right"],
         },
         n: { content: "N", classes: ["section-subheader", "align-center"] },
       },

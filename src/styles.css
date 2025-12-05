@@ -979,7 +979,7 @@ input[type=number].form-control {
   font-weight: 600; /* Bold - removed !important */
   padding: 3px 6px; /* Tighter padding - removed !important */
   border-bottom: 1px solid #d0d0d0; /* Separator line - removed !important */
-  text-align: center; /* Center align by default */
+  /* text-align: center; - REMOVED: Let column classes define alignment */
   white-space: pre-line; /* Allow wrapping on explicit newlines */
 }
 
