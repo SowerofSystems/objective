@@ -900,6 +900,68 @@ FOR EACH ROW:
 
 **Ready for Testing**: User should test PDF export in both Target and Reference models to verify visual hierarchy matches app dashboard
 
+### ✅ Section 01 Visual Polish - December 5, 2025 (COMPLETED)
+
+#### Tier Text Opacity Adjustment
+- **Goal**: Create subtle visual hierarchy between tier labels and values
+- **Implementation**:
+  - Applied 50% opacity to tier text (tier1, tier2, tier3) using `pdf.setGState({ opacity: 0.5 })`
+  - Reference tier: Red (#8B0000) at 50% opacity
+  - Target tier: Blue (#0066CC) at 50% opacity
+  - Values remain at 100% opacity for maximum readability
+- **Location**: `Reporter.js` lines 586-594, 619-627
+- **Result**: Tier labels more subtle, key numbers stand out prominently ✅ FIXED
+
+#### Hairline Dividers Between Rows
+- **Goal**: Add subtle visual separation between T.1, T.2, T.3 rows
+- **Implementation**:
+  - Light grey (#E0E0E0) hairline separators between key value rows
+  - Line width: 0.003" (hairline thickness)
+  - Spans full width from labels to percentage column
+  - Positioned 0.25" above next row (within 0.5" row gap)
+  - Last row skips divider for clean bottom edge
+- **Location**: `Reporter.js` lines 693-698
+- **Result**: Clear row separation without overwhelming the design ✅ FIXED
+
+#### Disclaimer Page Enhancement
+- **Goal**: Add professional disclaimer, license, and credits to final page
+- **Implementation**:
+  - New `addDisclaimerPage()` function at end of PDF (lines 433-488)
+  - **Disclaimer section**: Full LICENSE text (lines 33-51), 7.5pt italic font
+  - **License section**: CC BY-NC-ND 4.0 summary, 7.5pt normal font
+  - **Credits section**:
+    - Created by: Andy Thomson, OAA, OpenBuilding, Inc.
+    - Contributors: Mark H Pavlidis
+    - Mentors, Advisors & Peer Review: (consolidated list, alphabetical)
+      - Evelyne Bouchard, OAQ, CPHD
+      - Pamela DeMelo, P.Eng.
+      - INVISIJ Architects
+      - Dr. Ted Kesik, P.Eng
+      - Joanne McCallum, OAA, FRAIC
+      - Stephen Pope, OAA, FRAIC
+      - Sheena Sharp, OAA, MRAIC
+      - Tandem Architecture
+      - Grant Walkin, P.Eng
+  - Font sizes: Title 12pt, section headers 10.5pt, body 7.5pt
+  - Line spacing adjusted to fit all content on single page
+- **Location**: `Reporter.js` lines 433-488, called at line 1310
+- **Result**: Professional legal footer, proper attribution ✅ FIXED
+
+#### Section 01 Layout Refinements
+- **Visual Redesign V3**: Full visual hierarchy implementation
+  - Row descriptions (8pt grey) above row labels
+  - Row labels (27pt bold) - tripled in size for prominence
+  - Column headers (7pt grey) right-aligned above values
+  - JUMBO values (36pt bold, colored): Reference red, Target blue, Actual green
+  - Tier text (20pt, 50% opacity) positioned left of values with 0.6" gap
+  - Percentage column (22pt grey) with colored checkmarks
+  - Right-justified accounting-style number alignment
+  - Tightened column spacing: 2.2" uniform width
+- **Font Size Reduction**: All text reduced to 75% for better page fit
+- **Color Matching**: Tier text colors match their value column colors
+- **Location**: `Reporter.js` lines 495-699
+- **Result**: Professional, app-matching Key Values presentation ✅ FIXED
+
 ### ✅ ID Column Omission (COMPLETED - Dec 4, 2025)
 - **Goal**: Remove redundant ID columns to maximize horizontal space for data
 - **Columns Removed**:
