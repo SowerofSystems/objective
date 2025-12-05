@@ -831,9 +831,9 @@ window.TEUI.SectionModules.sect10 = (function () {
       label: "RG-Unts",
       cells: {
         c: { content: "" }, // Empty column for row labels
-        d: { content: "AREA m² " }, // Empty column for row labels
+        d: { content: "Area m² (RO)" }, // Empty column for row labels
         e: {
-          content: "ORIENTATION",
+          content: "Orientation",
           classes: ["section-subheader", "align-center"],
           style: "white-space: pre-line;",
         },
@@ -843,38 +843,38 @@ window.TEUI.SectionModules.sect10 = (function () {
           style: "white-space: pre-line;",
         },
         g: {
-          content: "WINTER SHADING",
+          content: "Winter Shading",
           classes: ["section-subheader", "align-center"],
           style: "white-space: pre-line;",
         },
         h: {
-          content: "SUMMER SHADING",
+          content: "Summer Shading",
           classes: ["section-subheader", "align-center"],
           style: "white-space: pre-line;",
         },
         i: {
-          content: "HTG GAIN kWh/yr",
-          classes: ["section-subheader", "align-center"],
+          content: "Heatgain kWh/Cooling Season",
+          classes: ["section-subheader", "align-right"],
           style: "white-space: pre-line;",
         },
         j: {
-          content: "HTG GAIN %",
-          classes: ["section-subheader", "align-center"],
+          content: "Heatgain %",
+          classes: ["section-subheader", "align-right"],
           style: "white-space: pre-line;",
         },
         k: {
-          content: "COOL GAIN kWh/yr",
-          classes: ["section-subheader", "align-center"],
+          content: "Heatgain kWh/Cooling Season",
+          classes: ["section-subheader", "align-right"],
           style: "white-space: pre-line;",
         },
         l: {
-          content: "COOL GAIN %",
-          classes: ["section-subheader", "align-center"],
+          content: "Heatgain %",
+          classes: ["section-subheader", "align-right"],
           style: "white-space: pre-line;",
         },
         m: {
-          content: "G-FACTOR kWh/m²/yr",
-          classes: ["section-subheader", "align-center"],
+          content: "G-Factor kWh/m²/yr",
+          classes: ["section-subheader", "align-right"],
           style: "white-space: pre-line;",
         },
       },
