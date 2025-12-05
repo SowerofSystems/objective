@@ -82,6 +82,61 @@ TEUI.Reporter = (function () {
   };
 
   /**
+   * Helper function to clean HTML tags and UI symbols from text for PDF export
+   * Converts "NRL<sub>50</sub>" to "NRL50", "Ae<sub>10</sub>" to "Ae10"
+   * Removes "€" dropdown indicator used in UI
+   * @param {string} text - Text potentially containing HTML tags or UI symbols
+   * @returns {string} - Cleaned text with tags and symbols removed
+   */
+  function stripHTMLTags(text) {
+    if (!text) return text;
+    // Remove <sub>, </sub>, <sup>, </sup> tags and any other HTML tags
+    let cleaned = text.replace(/<[^>]*>/g, '');
+    // Remove € character (dropdown indicator in UI) and extra spaces
+    cleaned = cleaned.replace(/€/g, '').replace(/\s+/g, ' ').trim();
+    return cleaned;
+  }
+
+  // ✅ USER-EDITABLE FIELDS: Authoritative list from FileHandler.js (lines 1133-1285)
+  // These fields get color-coding in PDF: BLUE BOLD (Target), WARNING RED BOLD (Reference)
+  const USER_EDITABLE_FIELDS = new Set([
+    // Section 02: Building Information
+    "d_12", "d_13", "d_14", "d_15", "h_12", "h_13", "h_14", "h_15", "i_16", "i_17",
+    "l_12", "l_13", "l_14", "l_15", "l_16",
+    // Section 03: Climate
+    "d_19", "h_19", "h_20", "h_21", "i_21", "m_19", "l_20", "l_21", "l_24",
+    // Section 04: Actual Energy
+    "d_27", "d_28", "d_29", "d_30", "d_31", "l_28", "l_29", "l_30", "l_31", "h_35",
+    // Section 05: Emissions
+    "d_39", "i_41",
+    // Section 06: Renewable Energy
+    "d_44", "d_45", "d_46", "i_44", "k_45", "i_46", "m_43",
+    // Section 07: Water Use
+    "d_49", "e_49", "e_50", "d_51", "d_52", "d_53",
+    // Section 08: Indoor Air Quality
+    "d_56", "d_57", "d_58", "d_59", "i_59",
+    // Section 09: Occupant Gains
+    "d_63", "g_63", "d_64", "d_66", "d_68", "g_67",
+    // Section 10: Radiant Gains
+    "d_73", "d_74", "d_75", "d_76", "d_77", "d_78",
+    "e_73", "e_74", "e_75", "e_76", "e_77", "e_78",
+    "f_73", "f_74", "f_75", "f_76", "f_77", "f_78",
+    "g_73", "g_74", "g_75", "g_76", "g_77", "g_78",
+    "h_73", "h_74", "h_75", "h_76", "h_77", "h_78", "d_80",
+    // Section 11: Transmission Losses
+    "d_85", "f_85", "d_86", "f_86", "d_87", "f_87",
+    "g_88", "g_89", "g_90", "g_91", "g_92", "g_93",
+    "d_94", "f_94", "d_95", "f_95", "d_96", "d_97",
+    // Section 12: Volume Metrics
+    "d_103", "g_103", "d_105", "d_108", "g_109",
+    // Section 13: Mechanical Loads
+    "d_113", "f_113", "j_115", "j_116", "d_116",
+    "d_118", "g_118", "l_118", "d_119", "l_119", "k_120",
+    // Section 15: Summary
+    "d_142"
+  ]);
+
+  /**
    * Extract structured report data from DOM
    * @returns {Object} Report data structure
    */
@@ -120,8 +175,9 @@ TEUI.Reporter = (function () {
             if (firstRow) {
               const explanationSpans = firstRow.querySelectorAll(".key-explanation");
               explanationSpans.forEach(span => {
+                // Clean HTML tags from column headers (e.g., subscripts)
                 columnHeaders.push({
-                  content: span.textContent.trim(),
+                  content: stripHTMLTags(span.textContent.trim()),
                   colSpan: 1
                 });
               });
@@ -149,7 +205,8 @@ TEUI.Reporter = (function () {
                   const keyTitleCombined = tds[0].querySelector(".key-title-combined");
 
                   if (titleExplanation) {
-                    description = titleExplanation.textContent.trim();
+                    // Clean HTML tags from description (e.g., NRL<sub>50</sub> → NRL50)
+                    description = stripHTMLTags(titleExplanation.textContent.trim());
                   }
 
                   if (keyTitleCombined) {
@@ -157,7 +214,8 @@ TEUI.Reporter = (function () {
                     const clone = keyTitleCombined.cloneNode(true);
                     const modeTextClone = clone.querySelector(".key-title-mode-text");
                     if (modeTextClone) modeTextClone.remove();
-                    rowLabel = clone.textContent.trim();
+                    // Clean HTML tags from row label (e.g., Ae<sub>10</sub> → Ae10)
+                    rowLabel = stripHTMLTags(clone.textContent.trim());
                   }
                 }
 
@@ -166,9 +224,11 @@ TEUI.Reporter = (function () {
                   // Extract text - look for .key-value spans or direct text
                   const keyValueSpan = td.querySelector(".key-value");
                   const percentSpan = td.querySelector(".percent-value");
-                  const content = keyValueSpan ? keyValueSpan.textContent.trim() :
-                                 percentSpan ? percentSpan.textContent.trim() :
-                                 td.textContent.trim();
+                  // Clean HTML tags from all content sources
+                  const rawContent = keyValueSpan ? keyValueSpan.textContent.trim() :
+                                     percentSpan ? percentSpan.textContent.trim() :
+                                     td.textContent.trim();
+                  const content = stripHTMLTags(rawContent);
 
                   cells.push({
                     column: String.fromCharCode(67 + tdIndex), // C, D, E, F, etc.
@@ -258,8 +318,9 @@ TEUI.Reporter = (function () {
               cellData.content = input.value;
               cellData.type = "number";
             } else {
-              // Text content
-              cellData.content = td.textContent.trim();
+              // Text content - clean HTML tags (e.g., subscripts like NRL<sub>50</sub>)
+              const rawText = td.textContent.trim();
+              cellData.content = stripHTMLTags(rawText);
               cellData.type = "text";
             }
 
@@ -389,10 +450,11 @@ TEUI.Reporter = (function () {
     pdf.setTextColor("#000000");
     pdf.text(buildingInfo.projectTitle, leftMargin, centerY - 1);
 
-    // Model type indicator - LEFT-JUSTIFIED
+    // Model type indicator - LEFT-JUSTIFIED with color-coding
     pdf.setFontSize(16);
-    pdf.setFont(undefined, "normal");
-    const modelColor = modelType === "Reference" ? "#888888" : "#000000";
+    pdf.setFont(undefined, "bold"); // Changed to bold to match report styling
+    // Blue for Target (#0066CC), Warning Red for Reference (#8B0000)
+    const modelColor = modelType === "Reference" ? "#8B0000" : "#0066CC";
     pdf.setTextColor(modelColor);
     pdf.text(`${modelType} Model Report`, leftMargin, centerY - 0.3);
 
@@ -724,7 +786,7 @@ TEUI.Reporter = (function () {
     const topMargin = margin;
     const bottomMargin = pageHeight - margin;
 
-    const lineHeight = 0.15;
+    const lineHeight = 0.18; // Increased from 0.15 to 0.18 for better text spacing between divider lines
     const sectionSpacing = 0.3;
 
     // Generate title sheet
@@ -828,7 +890,7 @@ TEUI.Reporter = (function () {
       section.rows.forEach(row => {
         if (row.isSubheaderRow) {
           height += lineHeight * 0.8; // Pre-subheader spacing
-          height += lineHeight * 1.8; // Subheader row height
+          height += lineHeight * 2.2; // Subheader row height (increased from 1.8)
         } else {
           height += lineHeight; // Normal row height
         }
@@ -880,12 +942,18 @@ TEUI.Reporter = (function () {
           checkPageBreak(lineHeight * 2);
         }
 
+        // ✅ VERTICAL CENTERING FIX: Calculate text baseline position for centered alignment
+        // Text should be rendered in the MIDDLE of the allocated row space (between divider lines)
+        // Normal row height is lineHeight (0.15"), so center text at lineHeight * 0.6 offset
+        const rowHeight = row.isSubheaderRow ? lineHeight * 2.2 : lineHeight; // Increased subheader from 1.8 to 2.2
+        const textBaseline = yPos + (rowHeight * 0.65); // Adjusted from 0.6 to 0.65 to lower text position
+
         // Row number (small grey text) - compact format
         pdf.setFontSize(7);
         pdf.setTextColor("#999999");
         pdf.setFont(undefined, "normal");
         const rowNumberText = `${section.title.split(".")[0]}.${rowIndex + 1}`;
-        pdf.text(rowNumberText, leftMargin, yPos);
+        pdf.text(rowNumberText, leftMargin, textBaseline);
 
         // Description (Column C, now index 1 after skipping Column B) - start closer to left
         const descCell = row.cells[1]; // Column C (was index 2, now index 1 after skipping B)
@@ -898,7 +966,7 @@ TEUI.Reporter = (function () {
           const descText = descCell.content.length > maxDescWidth
             ? descCell.content.substring(0, maxDescWidth) + "..."
             : descCell.content;
-          pdf.text(descText, leftMargin + 0.25, yPos); // Moved closer to row number (was 0.6)
+          pdf.text(descText, leftMargin + 0.25, textBaseline); // Moved closer to row number (was 0.6)
         }
 
         // Value columns (D onwards, now index 2+ after skipping B and optionally F/J) - use dynamic widths
@@ -911,29 +979,33 @@ TEUI.Reporter = (function () {
             // Use smaller font for subheaders
             pdf.setFontSize(row.isSubheaderRow ? 7 : 9);
 
-            // For reference model, apply grey color except for differences
-            if (modelType === "Reference" && targetData) {
-              // TODO: Compare with target data to highlight differences in red
-              pdf.setTextColor("#888888");
-            } else {
-              pdf.setTextColor("#000000");
-            }
+            // ✅ COLOR-CODING FOR USER-EDITABLE FIELDS
+            // Check if this cell corresponds to a user-editable field
+            const isUserEditableField = cell.fieldId && USER_EDITABLE_FIELDS.has(cell.fieldId);
 
-            // Apply bold if user input or calculated
-            pdf.setFont(
-              undefined,
-              cell.isBold || cell.isUserInput ? "bold" : "normal"
-            );
+            if (isUserEditableField) {
+              // User-editable fields: BLUE BOLD for Target model
+              pdf.setTextColor("#0066CC"); // Blue
+              pdf.setFont(undefined, "bold");
+            } else if (cell.isBold || cell.isUserInput) {
+              // Non-user-editable but bold: Keep black bold
+              pdf.setTextColor("#000000");
+              pdf.setFont(undefined, "bold");
+            } else {
+              // Regular fields: Black normal
+              pdf.setTextColor("#000000");
+              pdf.setFont(undefined, "normal");
+            }
 
             // Handle multi-line text for subheaders (newline character support)
             if (row.isSubheaderRow && cell.content.includes("\n")) {
               const lines = cell.content.split("\n");
               lines.forEach((line, lineIdx) => {
-                pdf.text(line, xPos, yPos + (lineIdx * lineHeight * 0.8));
+                pdf.text(line, xPos, textBaseline + (lineIdx * lineHeight * 0.8));
               });
             } else {
               // Render cell content without truncation
-              pdf.text(cell.content, xPos, yPos);
+              pdf.text(cell.content, xPos, textBaseline);
             }
 
             xPos += colWidth;
@@ -944,14 +1016,13 @@ TEUI.Reporter = (function () {
           }
         });
 
-        // Use taller line height for subheader rows to accommodate multi-line text
-        const rowHeight = row.isSubheaderRow ? lineHeight * 1.8 : lineHeight;
+        // Advance yPos by full row height
         yPos += rowHeight;
 
-        // Light grey row separator - draw below text with small gap (Comment #2)
+        // Light grey row separator - draw at bottom of row space
         pdf.setDrawColor("#E0E0E0");
         pdf.setLineWidth(0.005);
-        pdf.line(leftMargin + 0.3, yPos + lineHeight * 0.02, rightMargin, yPos + lineHeight * 0.02);
+        pdf.line(leftMargin + 0.3, yPos, rightMargin, yPos);
       });
 
       yPos += sectionSpacing;
@@ -1066,7 +1137,7 @@ TEUI.Reporter = (function () {
     const topMargin = margin;
     const bottomMargin = pageHeight - margin;
 
-    const lineHeight = 0.15;
+    const lineHeight = 0.18; // Increased from 0.15 to 0.18 for better text spacing between divider lines
     const sectionSpacing = 0.3;
 
     // Add new page for Reference Model title sheet
@@ -1083,10 +1154,10 @@ TEUI.Reporter = (function () {
     pdf.setTextColor("#000000");
     pdf.text(buildingInfo.projectTitle, leftMarg, centerY - 1);
 
-    // Reference Model indicator in grey - LEFT-JUSTIFIED
+    // Reference Model indicator - LEFT-JUSTIFIED with color-coding
     pdf.setFontSize(16);
-    pdf.setFont(undefined, "normal");
-    pdf.setTextColor("#888888");
+    pdf.setFont(undefined, "bold"); // Changed to bold to match Target title
+    pdf.setTextColor("#8B0000"); // Warning red for Reference model
     pdf.text("Reference Model Report", leftMarg, centerY - 0.3);
 
     // Building information - left-justified with labels
@@ -1195,7 +1266,7 @@ TEUI.Reporter = (function () {
       section.rows.forEach(row => {
         if (row.isSubheaderRow) {
           height += lineHeight * 0.8; // Pre-subheader spacing
-          height += lineHeight * 1.8; // Subheader row height
+          height += lineHeight * 2.2; // Subheader row height (increased from 1.8)
         } else {
           height += lineHeight; // Normal row height
         }
@@ -1247,12 +1318,18 @@ TEUI.Reporter = (function () {
           checkPageBreak(lineHeight * 2);
         }
 
+        // ✅ VERTICAL CENTERING FIX: Calculate text baseline position for centered alignment
+        // Text should be rendered in the MIDDLE of the allocated row space (between divider lines)
+        // Normal row height is lineHeight (0.15"), so center text at lineHeight * 0.6 offset
+        const rowHeight = row.isSubheaderRow ? lineHeight * 2.2 : lineHeight; // Increased subheader from 1.8 to 2.2
+        const textBaseline = yPos + (rowHeight * 0.65); // Adjusted from 0.6 to 0.65 to lower text position
+
         // Row number (small grey text) - compact format
         pdf.setFontSize(7);
         pdf.setTextColor("#999999");
         pdf.setFont(undefined, "normal");
         const rowNumberText = `${section.title.split(".")[0]}.${rowIndex + 1}`;
-        pdf.text(rowNumberText, leftMargin, yPos);
+        pdf.text(rowNumberText, leftMargin, textBaseline);
 
         // Description (Column C, now index 1 after skipping Column B) - start closer to left, grey for Reference
         const descCell = row.cells[1]; // Column C (was index 2, now index 1 after skipping B)
@@ -1265,7 +1342,7 @@ TEUI.Reporter = (function () {
           const descText = descCell.content.length > maxDescWidth
             ? descCell.content.substring(0, maxDescWidth) + "..."
             : descCell.content;
-          pdf.text(descText, leftMargin + 0.25, yPos); // Moved closer to row number (was 0.6)
+          pdf.text(descText, leftMargin + 0.25, textBaseline); // Moved closer to row number (was 0.6)
         }
 
         // Value columns (D onwards, now index 2+ after skipping B and optionally F/J) - use dynamic widths
@@ -1278,25 +1355,33 @@ TEUI.Reporter = (function () {
             // Use smaller font for subheaders
             pdf.setFontSize(row.isSubheaderRow ? 7 : 9);
 
-            // Apply grey color for Reference Model, red for differences
-            // TODO: Implement difference detection by comparing with targetData
-            pdf.setTextColor("#888888");
+            // ✅ COLOR-CODING FOR USER-EDITABLE FIELDS (REFERENCE MODEL)
+            // Check if this cell corresponds to a user-editable field
+            const isUserEditableField = cell.fieldId && USER_EDITABLE_FIELDS.has(cell.fieldId);
 
-            // Apply bold if user input or calculated
-            pdf.setFont(
-              undefined,
-              cell.isBold || cell.isUserInput ? "bold" : "normal"
-            );
+            if (isUserEditableField) {
+              // User-editable fields: WARNING RED BOLD for Reference model
+              pdf.setTextColor("#8B0000"); // Dark red (matches Section 01 Reference color)
+              pdf.setFont(undefined, "bold");
+            } else if (cell.isBold || cell.isUserInput) {
+              // Non-user-editable but bold: Grey bold
+              pdf.setTextColor("#888888");
+              pdf.setFont(undefined, "bold");
+            } else {
+              // Regular fields: Grey normal
+              pdf.setTextColor("#888888");
+              pdf.setFont(undefined, "normal");
+            }
 
             // Handle multi-line text for subheaders (newline character support)
             if (row.isSubheaderRow && cell.content.includes("\n")) {
               const lines = cell.content.split("\n");
               lines.forEach((line, lineIdx) => {
-                pdf.text(line, xPos, yPos + (lineIdx * lineHeight * 0.8));
+                pdf.text(line, xPos, textBaseline + (lineIdx * lineHeight * 0.8));
               });
             } else {
               // Render cell content without truncation
-              pdf.text(cell.content, xPos, yPos);
+              pdf.text(cell.content, xPos, textBaseline);
             }
 
             xPos += colWidth;
@@ -1307,14 +1392,13 @@ TEUI.Reporter = (function () {
           }
         });
 
-        // Use taller line height for subheader rows to accommodate multi-line text
-        const rowHeight = row.isSubheaderRow ? lineHeight * 1.8 : lineHeight;
+        // Advance yPos by full row height
         yPos += rowHeight;
 
-        // Light grey row separator - draw below text with small gap (Comment #2)
+        // Light grey row separator - draw at bottom of row space
         pdf.setDrawColor("#E0E0E0");
         pdf.setLineWidth(0.005);
-        pdf.line(leftMargin + 0.3, yPos + lineHeight * 0.02, rightMargin, yPos + lineHeight * 0.02);
+        pdf.line(leftMargin + 0.3, yPos, rightMargin, yPos);
       });
 
       yPos += sectionSpacing;
@@ -1347,12 +1431,12 @@ TEUI.Reporter = (function () {
     }
   }
     // Final TODOs:
-    // 1. Need to add section for Disclaimer from LICENSE.txt in fine italic print
-    // 2. Credits and version info could added after disclaimer in same fine italic print
-    // 3. Add CSV Embed Function for user convenience - at most appropriate place
-    // 4. Add styling Blue for Reference inputs and Red for differences in Reference model per FileHandler .csv exported fields array as template
-    // 5. Add more space between text rows so text is not on the lines
-    // 6. Test with S18 render (Graphics)
+    // 1. ✅ DONE (Dec 4): Added disclaimer page with LICENSE text, credits, and version info
+    // 2. ✅ DONE (Dec 4): Credits and version info added to disclaimer page
+    // 3. FUTURE: Add CSV Embed Function for user convenience (see EXPORT-REPORT.md lines 1130-1296)
+    // 4. ✅ DONE (Dec 5): Blue bold for Target user-editable fields, Warning red bold for Reference user-editable fields
+    // 5. ✅ DONE (Dec 4): Improved spacing with divider line positioning fixes
+    // 6. FUTURE: Test with S18 render (Graphics sections currently excluded)
 
   // Public API
   return {

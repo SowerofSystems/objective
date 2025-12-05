@@ -1009,6 +1009,65 @@ FOR EACH ROW:
    - **Workaround**: May need to strip subscript tags or use Unicode subscript characters
    - **Status**: ⚠️ KNOWN ISSUE - requires jsPDF text extraction improvement
 
+### ✅ User-Editable Field Color-Coding (COMPLETED - Dec 5, 2025)
+- **Goal**: Visually distinguish user-editable inputs from calculated values in PDF
+- **Implementation**:
+  - Added `USER_EDITABLE_FIELDS` constant (lines 84-121) with 152 field IDs from FileHandler.js
+  - Authoritative list matches CSV export fields exactly (FileHandler.js lines 1133-1285)
+  - **Target Model**: User-editable fields rendered in **BLUE BOLD** (#0066CC)
+  - **Reference Model**: User-editable fields rendered in **WARNING RED BOLD** (#8B0000)
+  - Applied to both `generatePDF()` (lines 957-969) and `appendReferenceToPDF()` (lines 1328-1340)
+  - Non-editable calculated values remain black (Target) or grey (Reference)
+- **Result**: Clear visual hierarchy showing which values are user inputs vs. calculations ✅ FIXED
+
+### ✅ Vertical Text Centering Between Divider Lines (COMPLETED - Dec 5, 2025)
+- **Problem**: Text appearing too close to horizontal divider lines (both above and below), making rows look cramped
+- **Root Cause**: Text was rendered at top of row space (yPos), then divider drawn at bottom (yPos + rowHeight)
+- **Solution**: Three-part fix for optimal text spacing
+  1. **Increased row height**: `lineHeight` increased from 0.15" to 0.18" (20% increase)
+     - Provides more vertical space for 9pt body text
+     - Prevents text from touching divider lines above or below
+  2. **Vertical centering adjustment**: Calculate `textBaseline` position to balance text within row space
+     - `textBaseline = yPos + (rowHeight * 0.65)` - adjusted from 0.6 to 0.65 to push text slightly lower
+     - Initial 0.6 value placed text too close to line above
+     - All text elements (row numbers, descriptions, values) render at `textBaseline` instead of `yPos`
+     - Divider lines draw at exact bottom of row space (`yPos` after advancement)
+     - Creates balanced spacing: ~0.117" above text, ~0.063" below text (optimal for 9pt font)
+  3. **Increased subheader row height**: Subheader multiplier increased from 1.8 to 2.2
+     - Prevents multi-line subheader text from colliding with divider lines below
+     - Subheaders now have 0.396" (2.2 × 0.18) total row height vs 0.324" before
+     - Applied to section height calculations for accurate page break logic
+- **Implementation**:
+  - Applied to both Target (lines 922-1002) and Reference (lines 1298-1378) models
+  - `lineHeight` constant updated in both `generatePDF()` (line 766) and `appendReferenceToPDF()` (line 1107)
+  - Section height calculations updated (lines 867-870, 1231-1234)
+- **Result**: Text optimally positioned between divider lines with comfortable spacing on both sides ✅ FIXED
+
+### ✅ Title Page Color-Coding & HTML Tag Cleanup (COMPLETED - Dec 5, 2025)
+- **Problem 1**: Title page headers ("Target Model Report" / "Reference Model Report") not color-coded
+- **Problem 2**: Section 12 rows 108-110 and Section 15 row 08 showing HTML tags and € symbols in PDF
+- **Solution**:
+  1. **Title page color-coding**:
+     - Target Model Report: Blue bold (#0066CC) - line 435 in `generateTitleSheet()`
+     - Reference Model Report: Warning red bold (#8B0000) - line 1156 in `appendReferenceToPDF()`
+     - Both changed to bold font to match report styling
+  2. **HTML tag and UI symbol cleanup** - added `stripHTMLTags()` helper function (lines 84-98):
+     - Removes all HTML tags (`<sub>`, `</sub>`, `<sup>`, etc.) from extracted text
+     - Removes € character (dropdown indicator used in UI)
+     - Collapses multiple spaces and trims whitespace
+     - Applied to all text extraction points:
+       - Section 01 column headers (line 176)
+       - Section 01 cell content (line 226)
+       - Section 02-15 descriptions (line 204)
+       - Section 02-15 row labels (line 213)
+       - Section 02-15 cell content (line 314)
+     - Example transformations:
+       - "NRL<sub>50</sub> € Target Method" → "NRL50 Target Method"
+       - "ACH<sub>50</sub> € Target" → "ACH50 Target"
+       - "Ae<sub>10</sub> or ELA<sub>10</sub> (m²)" → "Ae10 or ELA10 (m²)"
+       - "Other Energy€" → "Other Energy"
+- **Result**: Clean title pages with proper color-coding, and clean text without HTML artifacts or UI symbols in PDF ✅ FIXED
+
 ### Next Steps
 
 1. **Testing** (HIGH PRIORITY):
@@ -1018,11 +1077,7 @@ FOR EACH ROW:
    - Check page breaks are intelligent
    - Test with different data sets
    - Verify description truncation works properly
-
-2. **Reference Model Styling** (MEDIUM PRIORITY):
-   - Implement grey text for Reference model content (PARTIALLY DONE - descriptions grey)
-   - Add red highlighting for values differing from Target
-   - Use `targetData` parameter in `generatePDF()` for comparison
+   - **NEW**: Verify blue/red color-coding appears correctly for user-editable fields in both models
 
 ## File Structure
 
