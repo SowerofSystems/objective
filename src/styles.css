@@ -110,6 +110,11 @@ body {
   z-index: 108;
 }
 
+/* Print-only elements (hidden on screen, shown in print) */
+.print-only {
+  display: none;
+}
+
 /* Tab spacer - setting to zero height in horizontal layout */
 .tab-spacer {
   height: 0;
@@ -2583,6 +2588,53 @@ body.dev-environment {
 
   .section-header.collapsed + .section-content {
     display: none !important;
+  }
+
+  /* DISCLAIMER PAGE: Show print-only disclaimer after sections */
+  #print-disclaimer-page {
+    display: block !important;
+    page-break-before: always; /* Start on new page after sections */
+    /* No page-break-after - allow footer to follow on same page if it fits */
+    padding: 0.75in 0.5in;
+    max-width: 100%;
+  }
+
+  .disclaimer-content h2 {
+    font-size: 20pt;
+    font-weight: bold;
+    margin-bottom: 0.8em;
+    text-align: center;
+    color: #000;
+  }
+
+  .disclaimer-content .alert {
+    border: 3px solid #ffc107;
+    padding: 0.8em;
+    margin: 0.8em 0;
+    background: #fff9e6;
+    border-radius: 4px;
+  }
+
+  .disclaimer-content .alert strong {
+    color: #856404;
+  }
+
+  .disclaimer-content p {
+    font-size: 11pt;
+    line-height: 1.6;
+    margin-bottom: 0.8em;
+    color: #000;
+  }
+
+  .disclaimer-content hr {
+    margin: 1.2em 0;
+    border: none;
+    border-top: 2px solid #ccc;
+  }
+
+  .disclaimer-content a {
+    color: #0066cc;
+    text-decoration: underline;
   }
 }
 /* =============== END PRINT STYLES =============== */
