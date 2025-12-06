@@ -2631,6 +2631,12 @@ body.dev-environment {
     text-align: justify;
   }
 
+  .disclaimer-content .disclaimer-text {
+    font-size: 8pt;
+    line-height: 1.5;
+    margin-bottom: 1em;
+  }
+
   .disclaimer-content hr {
     margin: 1.2em 0;
     border: none;
