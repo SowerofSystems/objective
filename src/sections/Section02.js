@@ -37,7 +37,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         j: { content: "J", classes: ["section-subheader"] },
         k: { content: "K", classes: ["section-subheader"] },
         l: {
-          content: "T.10 Cost of Energy\nby Source",
+          content: "Prices of Energy",
           classes: ["section-subheader", "text-center"],
           colspan: 3,
         },
@@ -96,7 +96,6 @@ window.TEUI.SectionModules.sect02 = (function () {
           step: 1,
           section: "buildingInfo",
           tooltip: true, // Year Data Entered
-          span: 2,
         },
         i: { content: "" }, // Empty but needed for alignment
         j: { content: "" }, // Empty but needed for alignment
@@ -174,7 +173,6 @@ window.TEUI.SectionModules.sect02 = (function () {
           step: 10,
           section: "buildingInfo",
           tooltip: true, // Select a period in Years
-          span: 2,
         },
         i: { content: "" }, // Empty but needed for alignment
         j: { content: "" }, // Empty but needed for alignment
@@ -228,7 +226,6 @@ window.TEUI.SectionModules.sect02 = (function () {
           classes: ["wide-text", "no-wrap"],
           section: "buildingInfo",
           tooltip: true, // Project Name
-          span: 2,
         },
         i: { content: "" }, // Empty but needed for alignment
         j: { content: "" }, // Empty but needed for alignment
@@ -289,19 +286,9 @@ window.TEUI.SectionModules.sect02 = (function () {
           section: "buildingInfo",
           tooltip: true, // Net Conditioned Area
         },
-        i: {
-          fieldId: "i_15_slider",
-          type: "generic_slider",
-          min: -500, // Adjustment range min (+/- 500)
-          max: 500, // Adjustment range max (+/- 500)
-          step: 10,
-          value: "0",
-          controlsField: "h_15",
-          section: "buildingInfo",
-          classes: ["area-adjust-slider"], // Optional class for specific styling
-        },
+        i: { content: "" }, // Empty but needed for alignment
         j: { content: "" }, // Empty but needed for alignment
-        k: { content: "Wood", span: 2, classes: ["text-end"] }, // Restored: Wood label back in K, added span:2 to fix alignment
+        k: { content: "Wood", classes: ["text-end"] },
         l: {
           fieldId: "l_15",
           type: "editable",
@@ -347,7 +334,6 @@ window.TEUI.SectionModules.sect02 = (function () {
           value: "Thomson Architecture, Inc.",
           section: "buildingInfo",
           tooltip: true, // Certifier
-          span: 2,
         },
         i: { content: "" }, // Empty but needed for alignment
         j: { content: "" }, // Empty but needed for alignment
@@ -389,7 +375,6 @@ window.TEUI.SectionModules.sect02 = (function () {
           value: "8154",
           section: "buildingInfo",
           tooltip: true, // License or Authorization
-          span: 2,
         },
         i: { content: "" }, // Empty but needed for alignment
         j: { content: "" }, // Empty but needed for alignment
@@ -1103,12 +1088,7 @@ window.TEUI.SectionModules.sect02 = (function () {
       });
     }
 
-    // Area adjustment slider events
-    const areaSlider = document.querySelector('[data-field-id="i_15_slider"]');
-    if (areaSlider) {
-      areaSlider.addEventListener("input", handleAreaSliderInput);
-      areaSlider.addEventListener("change", handleAreaSliderChange);
-    }
+    // Area adjustment slider removed - now using direct numeric input
 
     // ✅ PATTERN A: Year slider events (h_12 - reporting year)
     const yearSlider = document.querySelector('input[data-field-id="h_12"]');
@@ -1482,94 +1462,7 @@ window.TEUI.SectionModules.sect02 = (function () {
     }
   }
 
-  /**
-   * Handle Area Slider input (live updates while dragging)
-   */
-  function handleAreaSliderInput(event) {
-    const areaField = document.querySelector('[data-field-id="h_15"]');
-    const slider = event.target;
-
-    if (!areaField || !slider) return;
-
-    try {
-      // ✅ CRITICAL FIX: Get original area value from current mode's state for maximum reliability
-      const originalAreaStr =
-        ModeManager.getValue("h_15") ||
-        slider.dataset.originalArea ||
-        areaField.dataset.originalValue ||
-        areaField.textContent.trim() ||
-        "1427.20"; // Fallback to field definition default
-
-      let originalArea = window.TEUI?.parseNumeric?.(originalAreaStr, 0) ?? 0;
-
-      // Get adjustment value from slider's current position
-      const adjustment = parseFloat(slider.value);
-      if (isNaN(adjustment)) return;
-
-      // Calculate potential new area
-      let newArea = Math.max(10, originalArea + adjustment);
-
-      // Update the text field display ONLY (formatted using global helper)
-      areaField.textContent =
-        window.TEUI?.formatNumber?.(newArea, "number-2dp-comma") ??
-        newArea.toString();
-
-      // Store the original value if it's not already stored for the 'change' event
-      if (!slider.dataset.originalArea) {
-        slider.dataset.originalArea = originalAreaStr;
-      }
-    } catch (_error) {
-      // console.warn("Error handling area slider input:", _error);
-    }
-  }
-
-  /**
-   * Handle Area Slider change (final value on release)
-   */
-  function handleAreaSliderChange(event) {
-    const areaField = document.querySelector('[data-field-id="h_15"]');
-    const slider = event.target;
-
-    if (!areaField || !slider) return;
-
-    try {
-      // Get current area value using global helper
-      const currentAreaText = areaField.textContent.trim();
-      let currentArea = window.TEUI?.parseNumeric?.(currentAreaText, 0) ?? 0;
-
-      if (currentArea === 0) {
-        // ✅ CRITICAL FIX: Try getting from current mode's state as a fallback
-        const stateArea = ModeManager.getValue("h_15") || "1427.20"; // Fallback to field definition default
-        currentArea = window.TEUI?.parseNumeric?.(stateArea, 0) ?? 0;
-      }
-
-      // Get adjustment value from slider's FINAL position
-      const adjustment = parseFloat(slider.value);
-      if (isNaN(adjustment)) return;
-
-      // Calculate new area, ensuring it doesn't go below a minimum (e.g., 10)
-      let newArea = Math.max(10, currentArea + adjustment);
-
-      // Update the text field display using global helper
-      areaField.textContent =
-        window.TEUI?.formatNumber?.(newArea, "number-2dp-comma") ??
-        newArea.toString();
-
-      // Mark this as a user interaction
-      window.TEUI.sect02.userInteracted = true;
-
-      // ✅ PATTERN A: Save to current state (Target or Reference) via ModeManager
-      ModeManager.setValue("h_15", newArea.toString(), "user-modified");
-
-      // Reset the slider value back to 0 after applying the adjustment
-      slider.value = 0;
-
-      // Clear the stored original area value
-      delete slider.dataset.originalArea;
-    } catch (_error) {
-      // console.warn("Error handling area slider change:", _error);
-    }
-  }
+  // Area adjustment slider functions removed - now using direct numeric input
 
   /**
    * Sync cost field displays with proper CAD formatting
