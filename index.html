@@ -86,8 +86,9 @@
     <!-- ExcelLocationHandler.js RETIRED - Weather data now handled by ClimateValues.js -->
     <script src="src/core/ExcelMapper.js"></script>
     <script src="src/core/FileHandler.js"></script>
-    <script src="src/core/Reporter.js"></script>
-    <!-- Reporter: PDF export functionality -->
+    <!-- <script src="src/core/Reporter.js"></script> -->
+    <!-- Reporter.js DISABLED - Using browser native print (window.print) instead of jsPDF -->
+    <!-- Reporter.js preserved in repo for potential future use -->
     <script src="src/core/TooltipManager.js"></script>
     <!-- TooltipManager loads validation tooltips from Excel -->
     <script src="src/core/Dependency.js"></script>
@@ -337,11 +338,7 @@
                   >
                 </li>
                 <li><hr class="dropdown-divider" /></li>
-                <li>
-                  <a class="dropdown-item" href="#" id="downloadReport"
-                    ><i class="bi bi-file-pdf me-2"></i>Download Report (PDF)</a
-                  >
-                </li>
+                <!-- Download Report (PDF) button removed - jsPDF/Reporter.js disabled in favor of browser print -->
                 <li>
                   <a class="dropdown-item" href="#" id="printReport"
                     ><i class="bi bi-printer me-2"></i>Print Report (PDF)</a

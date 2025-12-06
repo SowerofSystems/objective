@@ -698,31 +698,8 @@ document.addEventListener("DOMContentLoaded", function () {
       localStorage.setItem("disclaimerSeen", "true");
     });
 
-  // Setup download button actions
-  document
-    .getElementById("downloadReport")
-    .addEventListener("click", async function (e) {
-      e.preventDefault();
-
-      // Show loading state
-      const originalText = this.textContent;
-      this.textContent = "Generating PDFs...";
-      this.classList.add("disabled");
-
-      try {
-        // Generate and download both Target and Reference PDFs
-        await TEUI.Reporter.downloadReports();
-
-        console.log("[Init] PDF reports generated successfully");
-      } catch (error) {
-        console.error("[Init] Failed to generate PDF reports:", error);
-        alert(`Failed to generate PDF reports: ${error.message}`);
-      } finally {
-        // Restore button state
-        this.textContent = originalText;
-        this.classList.remove("disabled");
-      }
-    });
+  // Download Report (PDF) button removed - jsPDF/Reporter.js disabled in favor of browser print
+  // Event listener code removed to prevent errors when Reporter.js is not loaded
 
   // Setup print button action (uses browser's native print dialog)
   document
