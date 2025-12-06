@@ -353,7 +353,7 @@ window.TEUI.SectionModules.sect13 = (function () {
       if (!window.TEUI?.StateManager) return;
 
       // Field-specific format map for calculated fields
-      // NOTE: M-column fields (m_113, m_115-m_119) are NOT included here
+      // NOTE: M-column fields (m_113, m_115-m_119, m_124) are NOT included here
       // They use format-once pattern and are handled by standalone updateCalculatedDisplayValues() at line 766
       const fieldFormats = {
         // Percentages (0dp)
@@ -391,7 +391,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         j_117: "number-2dp",
         f_119: "number-2dp",
         h_119: "number-2dp",
-        m_124: "number-2dp",
+        // m_124: REMOVED - uses format-once pattern (M/N compliance field)
       };
 
       // ✅ FIX: Conditionally add j_116 when it's calculated (ghosted in Heatpump mode)
@@ -3218,7 +3218,13 @@ window.TEUI.SectionModules.sect13 = (function () {
       }
 
       const activeCoolingDays = window.TEUI.parseNumeric(m_124_raw);
-      setFieldValue("m_124", activeCoolingDays, "number-2dp");
+
+      // ✅ FORMAT ONCE: Format to integer string (0dp) for M/N compliance pattern
+      // Prevents decimal precision fight during convergence loops
+      const m_124_formatted = window.TEUI?.formatNumber?.(activeCoolingDays, "integer") ?? Math.round(activeCoolingDays).toString();
+
+      // Store as formatted string (not raw number) to match other M/N fields
+      setFieldValue("m_124", m_124_formatted, "integer");
     } catch (error) {
       console.error("[S13 Error] Error during calculateFreeCooling:", error);
       finalFreeCoolingLimit = 0;
