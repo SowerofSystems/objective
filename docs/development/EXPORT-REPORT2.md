@@ -869,4 +869,342 @@ For best results, select:
 
 ---
 
+## Feature Request: Disclaimer Page in Print Output
+
+**Requested**: December 6, 2025
+**Status**: ⏳ Planned - Awaiting Implementation
+
+### Objective
+
+Add a disclaimer page to the print output that appears **after Section 18 and before the footer**. This page should:
+- Use the same content as the existing disclaimer modal ([index.html:763-814](../../index.html#L763-L814))
+- Not create a new visible section in the UI
+- Only appear when printing (via `@media print`)
+- Include proper page break to appear on its own page
+
+### Current Disclaimer Content Location
+
+The disclaimer content already exists in the DOM as a Bootstrap modal:
+- **Modal ID**: `disclaimerModal` ([index.html:745](../../index.html#L745))
+- **Content Location**: `.modal-body` ([index.html:763-814](../../index.html#L763-L814))
+- **Includes**:
+  - Demo warning (OBJECTIVE 4.012 is IN DEVELOPMENT)
+  - Usage instructions (blue inputs, black calculated fields)
+  - Accuracy disclaimer (energy modeling limitations)
+  - Canadian projects notice
+
+### Implementation Approach
+
+**Option A: Clone Modal Content for Print (RECOMMENDED)** ✅
+
+Create a hidden print-only container that duplicates the disclaimer content:
+
+```html
+<!-- Add after Section 18, before footer -->
+<div id="print-disclaimer-page" class="print-only">
+  <div class="disclaimer-content">
+    <!-- Clone content from disclaimerModal .modal-body -->
+  </div>
+</div>
+```
+
+**CSS**:
+```css
+/* Hide from screen view */
+#print-disclaimer-page {
+  display: none;
+}
+
+/* Show only in print, force new page */
+@media print {
+  #print-disclaimer-page {
+    display: block !important;
+    page-break-before: always; /* Start on new page */
+    page-break-after: always;  /* Footer starts on next page */
+    padding: 1in;
+  }
+
+  .disclaimer-content {
+    font-size: 11pt;
+    line-height: 1.6;
+  }
+
+  .disclaimer-content h2 {
+    font-size: 18pt;
+    margin-bottom: 1em;
+  }
+
+  .disclaimer-content .alert {
+    border: 2px solid #ffc107;
+    padding: 1em;
+    margin-bottom: 1em;
+    background: #fff3cd;
+  }
+}
+```
+
+**Pros**:
+- Simple implementation
+- Content is duplicated so modal can change independently
+- Full control over print formatting
+- No JavaScript needed
+
+**Cons**:
+- Content duplication (need to update in two places if changed)
+- Adds ~2KB to HTML size
+
+---
+
+**Option B: Clone Modal Content Dynamically (JavaScript)**
+
+Use JavaScript to clone the modal content into a print container when print is triggered:
+
+```javascript
+// In init.js before window.print()
+function preparePrintDisclaimer() {
+  // Check if print disclaimer already exists
+  let printDisclaimer = document.getElementById('print-disclaimer-page');
+
+  if (!printDisclaimer) {
+    // Create container
+    printDisclaimer = document.createElement('div');
+    printDisclaimer.id = 'print-disclaimer-page';
+    printDisclaimer.className = 'print-only';
+
+    // Clone modal content
+    const modalBody = document.querySelector('#disclaimerModal .modal-body');
+    if (modalBody) {
+      const contentClone = modalBody.cloneNode(true);
+      printDisclaimer.appendChild(contentClone);
+    }
+
+    // Insert before footer
+    const footer = document.querySelector('footer');
+    if (footer) {
+      footer.parentNode.insertBefore(printDisclaimer, footer);
+    }
+  }
+}
+
+// Update print handler
+document.getElementById('printReport').addEventListener('click', function() {
+  preparePrintDisclaimer();
+  window.print();
+});
+```
+
+**Pros**:
+- Single source of truth (modal content)
+- No content duplication
+- Dynamic - always uses latest modal content
+
+**Cons**:
+- Requires JavaScript modification
+- Slightly more complex
+- Need to handle cleanup (or leave in DOM after first print)
+
+---
+
+**Option C: Show Modal in Print, Hide Elsewhere**
+
+Use the existing modal but style it to appear as a page in print:
+
+```css
+@media print {
+  /* Show modal as regular page content */
+  #disclaimerModal {
+    display: block !important;
+    position: static !important;
+    page-break-before: always;
+  }
+
+  #disclaimerModal .modal-dialog {
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  #disclaimerModal .modal-content {
+    border: none !important;
+    background: white !important;
+  }
+
+  /* Hide modal chrome */
+  #disclaimerModal .modal-header,
+  #disclaimerModal .modal-footer {
+    display: none !important;
+  }
+}
+```
+
+**Pros**:
+- Zero HTML changes
+- Single source of truth
+- Simplest implementation
+
+**Cons**:
+- Relies on Bootstrap modal structure
+- Modal might have unexpected print styles
+- Less control over page formatting
+
+---
+
+### Recommended Implementation Plan
+
+**Phase 1: HTML Structure** ([index.html](../../index.html))
+- [ ] Create `#print-disclaimer-page` div after Section 18 (Parallel Coordinates)
+- [ ] Position before `<footer>` element
+- [ ] Add class `.print-only` for styling hook
+- [ ] Clone disclaimer content from modal body (lines 763-814)
+
+```html
+<!-- Add after Section 18, before footer (around line 676) -->
+<div id="print-disclaimer-page" class="print-only">
+  <div class="disclaimer-content">
+    <h2>Using this calculator</h2>
+
+    <div class="alert alert-warning">
+      <strong>⚠️ DEMO ONLY</strong> - OBJECTIVE 4.012 is under active
+      development and debugging.
+      <strong>DO NOT USE for real projects yet.</strong>
+      For production work, download:
+      <a href="https://openbuilding.ca/product/objective-v3/">
+        https://openbuilding.ca/product/objective-v3/
+      </a>
+    </div>
+
+    <p>
+      This tool helps you calculate the Total Energy Use Intensity
+      (TEUI) & Thermal Energy Demand Intensity (TEDI) of a building or
+      home using its own proprietary methods.
+    </p>
+
+    <p>
+      Enter your information (Blue inputs). Default values from an A2
+      Event Centre exist to speed up the process, but you must
+      over-write them with relevant values from your own project.
+      Results will be calculated automatically (all Black text fields).
+    </p>
+
+    <hr />
+
+    <p>
+      <strong>Disclaimer:</strong> OBJECTIVE 4.012 is software IN
+      DEVELOPMENT. IT IS NOT YET COMPLETE! As such it is not fit for any
+      purpose, and is meant for demonstration only. Our team has made
+      every effort to have OBJECTIVE's Targeted Energy Use match
+      real-world values by reviewing a wide range of actual building
+      types and their utility bills, but **no** energy model can
+      accurately predict energy use due to hundreds of influences beyond
+      the ability to model, among other things, exact weather in a given
+      year, user behaviours, or actual commissioned equipment or
+      envelope efficiencies. This modelling tool aims to set Targets in
+      a way that is consistent with measured results, but our experience
+      has shown that with correct use, we can arrive at values very
+      close to real-world, utility-bill values for total energy use.
+      'Accuracy of results' has been our primary focus, not 'similarity
+      of methods' to other energy modelling tools.
+    </p>
+
+    <p>
+      Only for Canadian projects. If you are interested in a
+      localization for your own country, please contact OBJECTIVE
+      support at andy@openbuilding.ca
+    </p>
+  </div>
+</div>
+```
+
+**Phase 2: CSS Styles** ([styles.css](../../src/styles.css))
+- [ ] Hide `.print-only` from screen view
+- [ ] Add `@media print` styles for disclaimer page
+- [ ] Add page breaks before/after
+- [ ] Format content for print readability
+
+```css
+/* Add to general styles (around line 100) */
+.print-only {
+  display: none;
+}
+
+/* Add to @media print block (around line 2550) */
+@media print {
+  /* Display disclaimer page */
+  #print-disclaimer-page {
+    display: block !important;
+    page-break-before: always; /* New page */
+    page-break-after: always;  /* Footer on next page */
+    padding: 1in 0.5in;
+  }
+
+  .disclaimer-content h2 {
+    font-size: 20pt;
+    font-weight: bold;
+    margin-bottom: 1em;
+    text-align: center;
+  }
+
+  .disclaimer-content .alert {
+    border: 3px solid #ffc107;
+    padding: 1em;
+    margin: 1em 0;
+    background: #fff9e6;
+    border-radius: 4px;
+  }
+
+  .disclaimer-content p {
+    font-size: 11pt;
+    line-height: 1.6;
+    margin-bottom: 1em;
+  }
+
+  .disclaimer-content hr {
+    margin: 1.5em 0;
+    border: none;
+    border-top: 2px solid #ccc;
+  }
+
+  .disclaimer-content a {
+    color: #0066cc;
+    text-decoration: underline;
+  }
+}
+```
+
+**Phase 3: Testing**
+- [ ] Verify disclaimer appears after Section 18
+- [ ] Verify disclaimer is on its own page (page break before)
+- [ ] Verify footer appears on page after disclaimer (page break after)
+- [ ] Verify disclaimer is NOT visible in screen view
+- [ ] Test on Letter/Legal/Tabloid page sizes
+- [ ] Cross-browser testing (Chrome, Safari, Firefox)
+
+### Expected Result
+
+**Screen View**:
+- No change - disclaimer only in modal as before
+- New container hidden via `display: none`
+
+**Print View**:
+- Section 18 (Optimize/Parallel Coordinates) ends on its page
+- **New page**: Disclaimer page with full content
+- **New page**: Footer with logos and credits
+
+**Page Count Impact**: +1 page to print output (typically page 7 or 8)
+
+### Maintenance Considerations
+
+**Content Sync**: Disclaimer content exists in two places:
+1. Modal ([index.html:763-814](../../index.html#L763-L814)) - for screen view
+2. Print container (new) - for print view
+
+**If content changes**: Update BOTH locations to keep in sync
+
+**Alternative**: Use Option B (JavaScript cloning) to maintain single source of truth, at cost of added complexity
+
+---
+
+**Status**: ⏳ Ready for implementation when requested
+
+---
+
 **Status**: Ready to start implementation on REPORT2 branch
