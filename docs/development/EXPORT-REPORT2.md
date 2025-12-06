@@ -17,6 +17,10 @@
 - **Section 13 (Mechanical Loads)**: Wide table rows clip at **right margin** - columns cut off horizontally
 - **Section 16 (Sankey Diagram)**: SVG graphics clip at **right/bottom edges** of container
 - Root cause: `.section { overflow: hidden }` (styles.css:173) clips wide content at container boundaries
+- **Field m_124 (Days Active Cooling)**: Displays with excessive decimal places (e.g., `-19.857636219843394` instead of `-20`)
+  - Negative values are intentional (indicate excess free cooling capacity)
+  - Multiple competing format specifications cause decimal overflow
+  - **Deferred**: Attempted fixes created tech debt without solving root cause
 
 **Solution Ready**: 🎯
 - Comprehensive analysis complete (see [Recommended Solution Summary](#-recommended-solution-summary))
@@ -765,6 +769,75 @@ Adjust `max-height` based on page size:
   }
 }
 ```
+
+## Known Behavior: Print Dialog Page Size Persistence
+
+**Observation** (December 5, 2025): Browser print dialog remembers the **last-used page size** across print sessions, causing inconsistent initial rendering:
+
+### Optimal Workflow (Best Results)
+1. User opens Print dialog
+2. Selects **Tabloid (11×17) Landscape**
+3. Content renders perfectly with all columns visible
+4. Subsequent prints start with Tabloid → **optimal formatting maintained**
+
+### Degraded Workflow (Progressive Quality Loss)
+1. **Starting with Tabloid** → switches to **Legal (8.5×14)** → still good quality
+2. **Starting with Legal** → switches to **Letter (8.5×11)** → acceptable but tight
+3. **Starting with Letter** → ⚠️ **scrollbars appear, half of formatted values truncated**
+
+### Root Cause
+- Browser persists page size selection in `window.print()` state
+- No CSS `@page` rule can override user's previous selection
+- Initial render uses cached page size, causing layout before user can adjust
+
+### Attempted Solutions
+
+**Option A: CSS @page Hint (Limited Browser Support)** ❌
+```css
+@media print {
+  @page {
+    size: 11in 17in landscape; /* Tabloid */
+  }
+}
+```
+- **Issue**: Browsers treat this as a *suggestion*, not enforcement
+- User's saved preference **always wins**
+- Chrome/Safari/Firefox all ignore this when user has cached Letter
+
+**Option B: JavaScript PageSetup API** ❌
+- **No API exists** to programmatically set page size before `window.print()`
+- `window.print()` is intentionally sandboxed for security
+- Cannot detect or modify print settings via JavaScript
+
+**Option C: Pre-Print Instructions to User** ⚠️ Partial Solution
+Display modal before print with recommendation:
+```
+For best results, select:
+- Paper: Tabloid (11×17)
+- Orientation: Landscape
+- Destination: Save as PDF
+```
+- **Pros**: Sets user expectations
+- **Cons**: Extra friction, can't guarantee compliance
+
+### Recommended Approach (Deferred)
+
+**Phase 1**: Document current behavior (✅ **Done**)
+**Phase 2**: Add instructional modal with "Don't show again" checkbox
+**Phase 3**: Investigate CSS Grid/Flexbox responsive scaling to gracefully degrade on Letter
+**Phase 4**: Consider dynamic `transform: scale()` based on `@media print and (max-width: 11in)`
+
+### Testing Matrix
+
+| Starting Page Size | Initial Quality | After Switching to Tabloid | After Switching to Legal | After Switching to Letter |
+|-------------------|-----------------|----------------------------|--------------------------|---------------------------|
+| **Tabloid** | ✅ Perfect | ✅ Perfect | ✅ Good | ⚠️ Tight but acceptable |
+| **Legal** | ✅ Good | ✅ Perfect | ✅ Good | ⚠️ Tight but acceptable |
+| **Letter** | ❌ **Scrollbars + truncation** | ✅ Perfect | ✅ Good | ❌ Scrollbars + truncation |
+
+**Conclusion**: Browser print dialog persistence creates path-dependent quality. No programmatic solution exists to force Tabloid/Landscape/PDF defaults.
+
+---
 
 ## Questions to Answer
 
