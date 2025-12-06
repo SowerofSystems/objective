@@ -1239,7 +1239,7 @@ window.TEUI.CoolingFields = {
     unit: "",
     excelRef: "COOLING-TARGET A6",
     dependencies: ["l_20", "l_21", "h_24", "i_59"],
-    consumedBy: ["i_122"],
+    consumedBy: ["h_122"],
     stage: 1,
   },
   ref_cooling_latentLoadFactor: {
@@ -1250,7 +1250,7 @@ window.TEUI.CoolingFields = {
     format: "number-3dp",
     unit: "",
     dependencies: ["ref_l_20", "ref_l_21", "ref_h_24", "ref_i_59"],
-    consumedBy: ["ref_i_122"],
+    consumedBy: ["ref_h_122"],
     stage: 1,
   },
 
