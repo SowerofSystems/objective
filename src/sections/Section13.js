@@ -353,11 +353,11 @@ window.TEUI.SectionModules.sect13 = (function () {
       if (!window.TEUI?.StateManager) return;
 
       // Field-specific format map for calculated fields
-      // NOTE: M-column fields (m_113, m_115-m_119) are NOT included here
+      // NOTE: M-column fields (m_113, m_115-m_119, m_124) are NOT included here
       // They use format-once pattern and are handled by standalone updateCalculatedDisplayValues() at line 766
       const fieldFormats = {
         // Percentages (0dp)
-        i_122: "percent-0dp",
+        h_122: "percent-0dp",
         d_124: "percent-0dp",
 
         // Large numbers with commas (2dp)
@@ -375,7 +375,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         f_120: "number-2dp-comma",
         h_120: "number-2dp-comma",
         d_121: "number-2dp-comma",
-        i_121: "number-2dp-comma",
+        h_121: "number-2dp-comma",
         m_121: "number-2dp-comma",
         d_122: "number-2dp-comma",
         d_123: "number-2dp-comma",
@@ -391,7 +391,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         j_117: "number-2dp",
         f_119: "number-2dp",
         h_119: "number-2dp",
-        m_124: "number-2dp",
+        // m_124: REMOVED - uses format-once pattern (M/N compliance field)
       };
 
       // ✅ FIX: Conditionally add j_116 when it's calculated (ghosted in Heatpump mode)
@@ -1117,10 +1117,10 @@ window.TEUI.SectionModules.sect13 = (function () {
     116: {
       id: "M.3.0",
       rowId: "M.3.0",
-      label: "Heatpump or Dedicated Cooling System",
+      label: "Select Cooling System",
       cells: {
         c: {
-          label: "Heatpump or Dedicated Cooling System",
+          label: "Select Cooling System",
           classes: ["flex-cell"],
         },
         d: {
@@ -1483,35 +1483,36 @@ window.TEUI.SectionModules.sect13 = (function () {
     121: {
       id: "V.2.1",
       rowId: "V.2.1",
-      label: "Heating Season Ventil. Energy",
+      label: "Ventilation Heating Load",
       cells: {
-        c: { label: "Heating Season Ventil. Energy", classes: ["flex-cell"] },
+        c: { label: "Ventilation Heating Load", classes: ["flex-cell"] },
         d: {
           fieldId: "d_121",
           type: "calculated",
           value: "445,280.00",
           section: "mechanicalLoads",
           dependencies: ["d_120", "d_20"],
-          label: "Heating Season Ventilation Energy: kWh/yr",
+          label: "Ventilation Heating Load: kWh/yr",
+          tooltip: true, // Fresh Air Load
         },
         e: {
           content: "V.2.2",
           classes: ["label-prefix", "flex-cell"],
         },
         f: {
-          content: "Htg. Vent. Energy Recovered",
+          content: "Ventilation Energy Recovered",
           classes: ["label", "flex-cell"],
         },
         g: {},
-        h: {},
-        i: {
-          fieldId: "i_121",
+        h: {
+          fieldId: "h_121",
           type: "calculated",
           value: "396,299.20",
           section: "mechanicalLoads",
           dependencies: ["d_121", "d_118"],
           label: "Heating Ventilation Energy Recovered: kWh/yr",
         },
+        i: { content: "kWh/yr" },
         j: {
           content: "V.2.3",
           classes: ["label-prefix", "flex-cell"],
@@ -1526,7 +1527,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           type: "calculated",
           value: "48,980.80",
           section: "mechanicalLoads",
-          dependencies: ["d_121", "i_121"],
+          dependencies: ["d_121", "h_121"],
           label: "Net Heating Season Ventilation Losses: kWh/yr",
         },
         n: {},
@@ -1537,10 +1538,10 @@ window.TEUI.SectionModules.sect13 = (function () {
     122: {
       id: "V.3.1",
       rowId: "V.3.1",
-      label: "Incoming Cooling Season Ventil. Energy",
+      label: "Ventilation Cooling Load",
       cells: {
         c: {
-          label: "Incoming Cooling Season Ventil. Energy",
+          label: "Ventilation Cooling Load",
           classes: ["flex-cell"],
         },
         d: {
@@ -1555,28 +1556,29 @@ window.TEUI.SectionModules.sect13 = (function () {
             "g_118", //Ventilation Method
             "l_119", //Summer Boost
             "d_120", //Volumetric Ventilation Rate
-            "i_122", //Latent Load Factor (%)
+            "h_122", //Latent Load Factor (%)
           ],
-          label: "Incoming Cooling Season Ventilation Energy: kWh/yr",
+          tooltip: true, // Fresh Air Load
+          label: "Ventilation Cooling Load: kWh/Cooling Season",
         },
         e: {
           content: "V.3.2",
           classes: ["label-prefix", "flex-cell"],
         },
         f: {
-          content: "Latent Load Factor (Calc'd)",
+          content: "Latent Load Factor",
           classes: ["label", "flex-cell"],
         },
         g: {},
-        h: {},
-        i: {
-          fieldId: "i_122",
+        h: {
+          fieldId: "h_122",
           type: "calculated",
           value: "159%",
           section: "mechanicalLoads",
           dependencies: ["cooling_latentLoadFactor"],
           label: "Latent Load Factor (from Cooling Calculation): %",
         },
+        i: {},
         j: {},
         k: {},
         l: {},
@@ -1589,10 +1591,10 @@ window.TEUI.SectionModules.sect13 = (function () {
     123: {
       id: "V.3.3",
       rowId: "V.3.3",
-      label: "Outgoing Cooling Season Ventil. Energy",
+      label: "Ventilation Heat Removal",
       cells: {
         c: {
-          label: "Outgoing Cooling Season Ventil. Energy",
+          label: "Ventilation Heat Removal",
           classes: ["flex-cell"],
         },
         d: {
@@ -1601,7 +1603,8 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "26,929.06",
           section: "mechanicalLoads",
           dependencies: ["d_118", "d_122"],
-          label: "Outgoing Cooling Season Ventilation Energy: kWh/yr",
+          tooltip: true, // Ventilation Heat Removal
+          label: "Ventilation Heat Removal: kWh/Cooling Season",
         },
         e: {},
         f: {},
@@ -1620,10 +1623,10 @@ window.TEUI.SectionModules.sect13 = (function () {
     124: {
       id: "V.4.1",
       rowId: "V.4.1",
-      label: "Ventilation Free Cooling/Vent Capacity",
+      label: "Ventilation Free Cooling Capacity",
       cells: {
         c: {
-          label: "Ventilation Free Cooling/Vent Capacity",
+          label: "Free Cooling Capacity",
           classes: ["flex-cell"],
         },
         d: {
@@ -2502,8 +2505,8 @@ window.TEUI.SectionModules.sect13 = (function () {
 
     // Listen for Cooling.js results to trigger S13 recalculations
     // ✅ MODE-AWARE: Listen to BOTH Target and Reference cooling values
-    sm.addListener("cooling_latentLoadFactor", calculateAndRefresh); // Target i_122 affects D122/D123
-    sm.addListener("ref_cooling_latentLoadFactor", calculateAndRefresh); // Reference i_122 affects ref_D122/ref_D123
+    sm.addListener("cooling_latentLoadFactor", calculateAndRefresh); // Target h_122 affects D122/D123
+    sm.addListener("ref_cooling_latentLoadFactor", calculateAndRefresh); // Reference h_122 affects ref_D122/ref_D123
     sm.addListener("cooling_h_124", calculateAndRefresh); // Target free cooling capacity affects H124, D124
     sm.addListener("ref_cooling_h_124", calculateAndRefresh); // Reference free cooling capacity
     sm.addListener("cooling_m_124", calculateAndRefresh); // Target days active cooling affects M124
@@ -2879,14 +2882,14 @@ window.TEUI.SectionModules.sect13 = (function () {
     // Only update DOM for Target calculations
     if (!isReferenceCalculation) {
       setFieldValue("d_121", heatingVentEnergy, "number-2dp-comma");
-      setFieldValue("i_121", recoveredEnergy, "number-2dp-comma");
+      setFieldValue("h_121", recoveredEnergy, "number-2dp-comma");
       setFieldValue("m_121", netHeatLoss, "number-2dp-comma");
     }
 
     // Return calculated values for Reference engine storage
     return {
       d_121: heatingVentEnergy,
-      i_121: recoveredEnergy,
+      h_121: recoveredEnergy,
       m_121: netHeatLoss,
     };
   }
@@ -2982,7 +2985,7 @@ window.TEUI.SectionModules.sect13 = (function () {
     // Previously only stored Target values, causing Reference CED calculations to use Target d_122
     if (!isReferenceCalculation) {
       // Target: Update DOM
-      setFieldValue("i_122", latentLoadFactor_i122, "percent-0dp");
+      setFieldValue("h_122", latentLoadFactor_i122, "percent-0dp");
       setFieldValue(
         "d_122",
         ventEnergyCoolingIncoming_d122,
@@ -2992,7 +2995,7 @@ window.TEUI.SectionModules.sect13 = (function () {
     } else {
       // Reference: Store with ref_ prefix for CED calculations
       window.TEUI.StateManager.setValue(
-        "ref_i_122",
+        "ref_h_122",
         latentLoadFactor_i122.toString(),
         "calculated"
       );
@@ -3014,7 +3017,7 @@ window.TEUI.SectionModules.sect13 = (function () {
     return {
       incoming: ventEnergyCoolingIncoming_d122,
       recovered: ventEnergyRecovered_d123,
-      i_122: latentLoadFactor_i122,
+      h_122: latentLoadFactor_i122,
       d_122: ventEnergyCoolingIncoming_d122,
       d_123: ventEnergyRecovered_d123,
     };
@@ -3215,7 +3218,15 @@ window.TEUI.SectionModules.sect13 = (function () {
       }
 
       const activeCoolingDays = window.TEUI.parseNumeric(m_124_raw);
-      setFieldValue("m_124", activeCoolingDays, "number-2dp");
+
+      // ✅ FORMAT ONCE: Format to integer string (0dp) for M/N compliance pattern
+      // Prevents decimal precision fight during convergence loops
+      const m_124_formatted =
+        window.TEUI?.formatNumber?.(activeCoolingDays, "integer") ??
+        Math.round(activeCoolingDays).toString();
+
+      // Store as formatted string (not raw number) to match other M/N fields
+      setFieldValue("m_124", m_124_formatted, "integer");
     } catch (error) {
       console.error("[S13 Error] Error during calculateFreeCooling:", error);
       finalFreeCoolingLimit = 0;
@@ -3725,10 +3736,10 @@ window.TEUI.SectionModules.sect13 = (function () {
         ventilationEnergyResults.d_121,
         "number-2dp-comma"
       );
-    if (ventilationEnergyResults.i_121 !== undefined)
+    if (ventilationEnergyResults.h_121 !== undefined)
       setFieldValue(
-        "i_121",
-        ventilationEnergyResults.i_121,
+        "h_121",
+        ventilationEnergyResults.h_121,
         "number-2dp-comma"
       );
     if (ventilationEnergyResults.m_121 !== undefined)
@@ -3739,8 +3750,8 @@ window.TEUI.SectionModules.sect13 = (function () {
       );
 
     // Cooling Ventilation Results
-    if (coolingVentilationResults.i_122 !== undefined)
-      setFieldValue("i_122", coolingVentilationResults.i_122, "percent-0dp");
+    if (coolingVentilationResults.h_122 !== undefined)
+      setFieldValue("h_122", coolingVentilationResults.h_122, "percent-0dp");
     if (coolingVentilationResults.d_122 !== undefined)
       setFieldValue(
         "d_122",

@@ -1670,13 +1670,16 @@ window.TEUI.SectionModules.sect09 = (function () {
     const currentValue = plugLoadDensity;
 
     // Get reference value (always from ReferenceState, regardless of current mode)
-    const referenceValue = window.TEUI.parseNumeric(ReferenceState.getValue("d_65")) || 7;
+    const referenceValue =
+      window.TEUI.parseNumeric(ReferenceState.getValue("d_65")) || 7;
 
     // Calculate ratio (Reference/Target for "lower is better" logic)
-    const complianceRatio = referenceValue > 0 ? currentValue / referenceValue : 0;
+    const complianceRatio =
+      referenceValue > 0 ? currentValue / referenceValue : 0;
 
     // ✅ FORMAT ONCE: Convert to string immediately (S07 pattern)
-    const m_65_formatted = window.TEUI?.formatNumber?.(complianceRatio, "percent-0dp") ?? "100%";
+    const m_65_formatted =
+      window.TEUI?.formatNumber?.(complianceRatio, "percent-0dp") ?? "100%";
 
     // Store formatted string (not a number)
     setCalculatedValue("m_65", m_65_formatted, "raw");
@@ -1722,13 +1725,16 @@ window.TEUI.SectionModules.sect09 = (function () {
     const currentValue = lightingDensity;
 
     // Get reference value (always from ReferenceState, regardless of current mode)
-    const referenceValue = window.TEUI.parseNumeric(ReferenceState.getValue("d_66")) || 2.0;
+    const referenceValue =
+      window.TEUI.parseNumeric(ReferenceState.getValue("d_66")) || 2.0;
 
     // Calculate ratio (Target/Reference for "lower is better" logic)
-    const complianceRatio = referenceValue > 0 ? currentValue / referenceValue : 0;
+    const complianceRatio =
+      referenceValue > 0 ? currentValue / referenceValue : 0;
 
     // ✅ FORMAT ONCE: Convert to string immediately (S07 pattern)
-    const m_66_formatted = window.TEUI?.formatNumber?.(complianceRatio, "percent-0dp") ?? "100%";
+    const m_66_formatted =
+      window.TEUI?.formatNumber?.(complianceRatio, "percent-0dp") ?? "100%";
 
     // Store formatted string (not a number)
     setCalculatedValue("m_66", m_66_formatted, "raw");
@@ -1803,13 +1809,17 @@ window.TEUI.SectionModules.sect09 = (function () {
       const currentValue = densityValue;
 
       // Get reference value (always from ReferenceState, regardless of current mode)
-      const referenceValue = window.TEUI.parseNumeric(ReferenceState.getValue("d_67")) || densityValue;
+      const referenceValue =
+        window.TEUI.parseNumeric(ReferenceState.getValue("d_67")) ||
+        densityValue;
 
       // Calculate ratio (Target/Reference for "lower is better" logic)
-      const complianceRatio = referenceValue > 0 ? currentValue / referenceValue : 0;
+      const complianceRatio =
+        referenceValue > 0 ? currentValue / referenceValue : 0;
 
       // ✅ FORMAT ONCE: Convert to string immediately (S07 pattern)
-      const m_67_formatted = window.TEUI?.formatNumber?.(complianceRatio, "percent-0dp") ?? "100%";
+      const m_67_formatted =
+        window.TEUI?.formatNumber?.(complianceRatio, "percent-0dp") ?? "100%";
 
       // Store formatted string (not a number)
       setCalculatedValue("m_67", m_67_formatted, "raw");
@@ -2060,8 +2070,14 @@ window.TEUI.SectionModules.sect09 = (function () {
       if (isReferenceCalculation) {
         return 1.0; // Reference mode: Always 100% (self-comparison)
       } else {
-        const targetValue = window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(targetField)) || 0;
-        const refValue = window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(refField)) || 0;
+        const targetValue =
+          window.TEUI.parseNumeric(
+            window.TEUI.StateManager.getValue(targetField)
+          ) || 0;
+        const refValue =
+          window.TEUI.parseNumeric(
+            window.TEUI.StateManager.getValue(refField)
+          ) || 0;
         return refValue > 0 ? targetValue / refValue : 0;
       }
     }
@@ -2072,9 +2088,12 @@ window.TEUI.SectionModules.sect09 = (function () {
     const m_67_ratio = calculateComplianceRatio("d_67", "ref_d_67");
 
     // Format as percentages
-    const m_65_formatted = window.TEUI?.formatNumber?.(m_65_ratio, "percent-0dp") ?? "100%";
-    const m_66_formatted = window.TEUI?.formatNumber?.(m_66_ratio, "percent-0dp") ?? "100%";
-    const m_67_formatted = window.TEUI?.formatNumber?.(m_67_ratio, "percent-0dp") ?? "100%";
+    const m_65_formatted =
+      window.TEUI?.formatNumber?.(m_65_ratio, "percent-0dp") ?? "100%";
+    const m_66_formatted =
+      window.TEUI?.formatNumber?.(m_66_ratio, "percent-0dp") ?? "100%";
+    const m_67_formatted =
+      window.TEUI?.formatNumber?.(m_67_ratio, "percent-0dp") ?? "100%";
 
     // Calculate N column checkmarks
     const n_65_value = m_65_ratio <= 1.0 ? "✓" : "✗";
@@ -2083,10 +2102,24 @@ window.TEUI.SectionModules.sect09 = (function () {
 
     // Store to StateManager and local state
     if (isReferenceCalculation) {
-      console.log(`[S09 M-N STORE] Storing to StateManager: ref_m_65="${m_65_formatted}", ref_m_66="${m_66_formatted}", ref_m_67="${m_67_formatted}"`);
-      window.TEUI.StateManager.setValue("ref_m_65", m_65_formatted, "calculated");
-      window.TEUI.StateManager.setValue("ref_m_66", m_66_formatted, "calculated");
-      window.TEUI.StateManager.setValue("ref_m_67", m_67_formatted, "calculated");
+      console.log(
+        `[S09 M-N STORE] Storing to StateManager: ref_m_65="${m_65_formatted}", ref_m_66="${m_66_formatted}", ref_m_67="${m_67_formatted}"`
+      );
+      window.TEUI.StateManager.setValue(
+        "ref_m_65",
+        m_65_formatted,
+        "calculated"
+      );
+      window.TEUI.StateManager.setValue(
+        "ref_m_66",
+        m_66_formatted,
+        "calculated"
+      );
+      window.TEUI.StateManager.setValue(
+        "ref_m_67",
+        m_67_formatted,
+        "calculated"
+      );
       window.TEUI.StateManager.setValue("ref_n_65", n_65_value, "calculated");
       window.TEUI.StateManager.setValue("ref_n_66", n_66_value, "calculated");
       window.TEUI.StateManager.setValue("ref_n_67", n_67_value, "calculated");

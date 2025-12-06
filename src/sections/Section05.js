@@ -994,14 +994,23 @@ window.TEUI.SectionModules.sect05 = (function () {
    * @param {boolean} isReferenceCalculation - True if calculating for Reference mode
    * @returns {number} Ratio value (0.0 to 1.0+)
    */
-  function calculateComplianceRatio(targetField, refField, isReferenceCalculation) {
+  function calculateComplianceRatio(
+    targetField,
+    refField,
+    isReferenceCalculation
+  ) {
     if (isReferenceCalculation) {
       // Reference mode: Always 100% (self-comparison)
       return 1.0;
     } else {
       // Target mode: Compare Target vs Reference
-      const targetValue = window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(targetField)) || 0;
-      const refValue = window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(refField)) || 0;
+      const targetValue =
+        window.TEUI.parseNumeric(
+          window.TEUI.StateManager.getValue(targetField)
+        ) || 0;
+      const refValue =
+        window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(refField)) ||
+        0;
       return refValue > 0 ? targetValue / refValue : 0;
     }
   }
@@ -1048,13 +1057,21 @@ window.TEUI.SectionModules.sect05 = (function () {
       });
 
       // m_38: Still calculate ratio even when carbon target is N/A (operational emissions always exist)
-      const m_38_percent = calculateComplianceRatio("g_38", "ref_g_38", isReferenceCalculation);
+      const m_38_percent = calculateComplianceRatio(
+        "g_38",
+        "ref_g_38",
+        isReferenceCalculation
+      );
       const m_38_formatted = window.TEUI.formatNumber
         ? window.TEUI.formatNumber(m_38_percent, "percent-0dp")
         : Math.round(m_38_percent * 100) + "%";
 
       if (isReferenceCalculation) {
-        window.TEUI.StateManager.setValue("ref_m_38", m_38_formatted, "calculated");
+        window.TEUI.StateManager.setValue(
+          "ref_m_38",
+          m_38_formatted,
+          "calculated"
+        );
       } else {
         window.TEUI.StateManager.setValue("m_38", m_38_formatted, "calculated");
       }
@@ -1063,18 +1080,28 @@ window.TEUI.SectionModules.sect05 = (function () {
 
     // Calculate percentages using helper (lower is better for carbon)
     // m_39: Typology Cap compliance (i_39 vs ref_i_39)
-    const m_39_percent = calculateComplianceRatio("i_39", "ref_i_39", isReferenceCalculation);
+    const m_39_percent = calculateComplianceRatio(
+      "i_39",
+      "ref_i_39",
+      isReferenceCalculation
+    );
 
     // m_40: Total Emitted compliance (d_40 vs ref_d_40)
-    const m_40_percent = calculateComplianceRatio("d_40", "ref_d_40", isReferenceCalculation);
+    const m_40_percent = calculateComplianceRatio(
+      "d_40",
+      "ref_d_40",
+      isReferenceCalculation
+    );
 
     // m_41: Modelled Value compliance (i_41 vs ref_i_41)
     // Note: i_41 uses getSectionValue for proper state isolation
     const m_41_percent = isReferenceCalculation
-      ? 1.0  // Reference mode: Always 100%
+      ? 1.0 // Reference mode: Always 100%
       : (() => {
-          const target_i_41 = window.TEUI.parseNumeric(getSectionValue("i_41", false)) || 0;
-          const ref_i_41 = window.TEUI.parseNumeric(getSectionValue("i_41", true)) || 0;
+          const target_i_41 =
+            window.TEUI.parseNumeric(getSectionValue("i_41", false)) || 0;
+          const ref_i_41 =
+            window.TEUI.parseNumeric(getSectionValue("i_41", true)) || 0;
           return ref_i_41 > 0 ? target_i_41 / ref_i_41 : 0;
         })();
 
@@ -1102,13 +1129,21 @@ window.TEUI.SectionModules.sect05 = (function () {
     });
 
     // m_38: Operational Emissions compliance (g_38 vs ref_g_38)
-    const m_38_percent = calculateComplianceRatio("g_38", "ref_g_38", isReferenceCalculation);
+    const m_38_percent = calculateComplianceRatio(
+      "g_38",
+      "ref_g_38",
+      isReferenceCalculation
+    );
     const m_38_formatted = window.TEUI.formatNumber
       ? window.TEUI.formatNumber(m_38_percent, "percent-0dp")
       : Math.round(m_38_percent * 100) + "%";
 
     if (isReferenceCalculation) {
-      window.TEUI.StateManager.setValue("ref_m_38", m_38_formatted, "calculated");
+      window.TEUI.StateManager.setValue(
+        "ref_m_38",
+        m_38_formatted,
+        "calculated"
+      );
     } else {
       window.TEUI.StateManager.setValue("m_38", m_38_formatted, "calculated");
     }

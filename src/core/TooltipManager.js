@@ -639,9 +639,9 @@
     },
     d_116: {
       cell: "D116",
-      title: "Cooling Provided?",
+      title: "Select Cooling System",
       message:
-        "No: No Cooling Provided_x000a_Yes: Cooling by Primary M.1.0 System _x000a_Yes: Dedicated Cooling System ",
+        "No: No Cooling Provided_x000a_Yes: Cooling by Primary M.1.0 System if Heatpump otherwise;_x000a_Yes: Dedicated Cooling System (When Electricity/Gas/Oil) ",
     },
     d_118: {
       cell: "D118",
@@ -676,6 +676,24 @@
       title: "Unoccupied Ventilation Setback %",
       message:
         "Per Engineer. Affects Free Cooling Capacity. ie. 90% = 90% of Occupied Ventilation Rate applied to Unoccupied Hours. ",
+    },
+    d_121: {
+      cell: "D121",
+      title: "Ventilation Heating Load",
+      message:
+        "Heating Season Fresh Air Load: This is the burden of heating system load related to bringing in ventilation air from outside that is both colder than, and less humid than indoor air, and so has both sensible and a latent cooling load components. Mitigated by MVHR Efficiency %.",
+    },
+    d_122: {
+      cell: "D122",
+      title: "Ventilation Cooling Load",
+      message:
+        "aka. Incomining Cooling Season Ventilation Load from Outside Air. aka. Fresh Air Load: This is the burden of heat gain related to bringing in ventilation air from outside that is both warmer than, and more humid than indoor air, and so has both sensible and a latent cooling load components. ",
+    },
+    d_123: {
+      cell: "D123",
+      title: "Ventilation Heat Removal",
+      message:
+        "This is the amount of thermal energy that can be dumped by ventilation alone, noting what goes out must come in. Free cooling design optimizes ventilation overnight when outdoor air is generally less humid and cooler, flushing warm, humid air building from daytime activity. Consider NOT setting back ventilation rate overnight for cooling season to maximize this benefit. ",
     },
     m_124: {
       cell: "M124",

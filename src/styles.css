@@ -110,6 +110,11 @@ body {
   z-index: 108;
 }
 
+/* Print-only elements (hidden on screen, shown in print) */
+.print-only {
+  display: none;
+}
+
 /* Tab spacer - setting to zero height in horizontal layout */
 .tab-spacer {
   height: 0;
@@ -566,30 +571,7 @@ td[colspan="2"] .form-select {
 }
 
 /* =============== Print Styling =============== */
-
-@media print {
-  .tab-container,
-  .tab-spacer,
-  .layout-toggle-btn,
-  .expand-collapse-all,
-  #layout-toggle {
-    display: none !important;
-  }
-
-  .section {
-    display: block !important;
-    page-break-inside: avoid;
-  }
-
-  .section-content {
-    max-height: none !important;
-    opacity: 1 !important;
-  }
-
-  #keyValues {
-    position: static;
-  }
-}
+/* Consolidated into comprehensive REPORT2 print styles at end of file (line 2425+) */
 
 /* =============== Responsive Adjustments =============== */
 
@@ -2433,15 +2415,26 @@ body.dev-environment {
 
   /* CRITICAL FIX: Allow horizontal overflow to prevent content clipping */
   .section {
+    display: block !important; /* Ensure sections are visible */
     overflow: visible !important;
     border: none !important; /* Remove borders for cleaner print */
+    page-break-inside: avoid; /* Try to keep sections together */
   }
 
   .section-content {
     overflow: visible !important;
+    max-height: none !important; /* Remove height restrictions */
+    opacity: 1 !important; /* Ensure full visibility */
   }
 
-  /* Hide all UI elements */
+  /* Restore Section 01 (Key Values) border to emphasize summary block */
+  #keyValues {
+    position: static; /* Reset positioning for print layout */
+    border: 2px solid var(--header-bg) !important;
+    border-radius: var(--border-radius) !important;
+  }
+
+  /* Hide all UI elements and controls */
   header,
   nav,
   .navbar,
@@ -2457,7 +2450,12 @@ body.dev-environment {
   #import-export-dropdown,
   #obc-matrix-btn,
   .dropdown,
-  .dropdown-menu {
+  .dropdown-menu,
+  .tab-container,
+  .tab-spacer,
+  .layout-toggle-btn,
+  .expand-collapse-all,
+  #layout-toggle {
     display: none !important;
   }
 
@@ -2577,6 +2575,64 @@ body.dev-environment {
 
   .section-header.collapsed + .section-content {
     display: none !important;
+  }
+
+  /* DISCLAIMER PAGE: Show print-only disclaimer after sections */
+  #print-disclaimer-page {
+    display: block !important;
+    page-break-before: always; /* Start on new page after sections */
+    /* No page-break-after - allow footer to follow on same page if it fits */
+    padding: 0.75in 0.5in;
+    max-width: 100%;
+  }
+
+  .disclaimer-content h2 {
+    font-size: 20pt;
+    font-weight: bold;
+    margin-bottom: 0.5em;
+    text-align: center;
+    color: #000;
+  }
+
+  .disclaimer-content h3 {
+    font-size: 14pt;
+    font-weight: bold;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+    color: #000;
+  }
+
+  .disclaimer-content .disclaimer-date {
+    font-size: 9pt;
+    font-style: italic;
+    text-align: center;
+    margin-bottom: 1em;
+    color: #666;
+  }
+
+  .disclaimer-content p {
+    font-size: 10pt;
+    line-height: 1.6;
+    margin-bottom: 0.8em;
+    color: #000;
+    text-align: justify;
+  }
+
+  .disclaimer-content .disclaimer-text {
+    font-size: 10pt;
+    line-height: 1.6;
+    margin-bottom: 1em;
+  }
+
+  .disclaimer-content hr {
+    margin: 1.2em 0;
+    border: none;
+    border-top: 2px solid #ccc;
+  }
+
+  .disclaimer-content a {
+    color: #0066cc;
+    text-decoration: underline;
   }
 }
 /* =============== END PRINT STYLES =============== */
