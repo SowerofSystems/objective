@@ -1483,23 +1483,24 @@ window.TEUI.SectionModules.sect13 = (function () {
     121: {
       id: "V.2.1",
       rowId: "V.2.1",
-      label: "Heating Season Ventil. Energy",
+      label: "Ventilation Heating Load",
       cells: {
-        c: { label: "Heating Season Ventil. Energy", classes: ["flex-cell"] },
+        c: { label: "Ventilation Heating Load", classes: ["flex-cell"] },
         d: {
           fieldId: "d_121",
           type: "calculated",
           value: "445,280.00",
           section: "mechanicalLoads",
           dependencies: ["d_120", "d_20"],
-          label: "Heating Season Ventilation Energy: kWh/yr",
+          label: "Ventilation Heating Load: kWh/yr",
+          tooltip: true, // Fresh Air Load
         },
         e: {
           content: "V.2.2",
           classes: ["label-prefix", "flex-cell"],
         },
         f: {
-          content: "Htg. Energy Recovered",
+          content: "Ventilation Energy Recovered",
           classes: ["label", "flex-cell"],
         },
         g: {},
@@ -1565,7 +1566,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           classes: ["label-prefix", "flex-cell"],
         },
         f: {
-          content: "Latent Load Factor (Calc'd)",
+          content: "Latent Load Factor",
           classes: ["label", "flex-cell"],
         },
         g: {},
@@ -1602,6 +1603,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "26,929.06",
           section: "mechanicalLoads",
           dependencies: ["d_118", "d_122"],
+          tooltip: true, // Ventilation Heat Removal
           label: "Ventilation Heat Removal: kWh/Cooling Season",
         },
         e: {},
