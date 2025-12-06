@@ -421,9 +421,10 @@ window.TEUI.SectionModules.sect14 = (function () {
         },
         i: { content: "" },
         j: { content: "" },
-        k: { content: "T.4.1 Includes V.5 Net Vent'l. & T.7.3 CEDI Ae Losses",
-             classes: ["label-prefix", "text-left", "no-wrap"],
-         },
+        k: {
+          content: "T.4.1 Includes V.5 Net Vent'l. & T.7.3 CEDI Ae Losses",
+          classes: ["label-prefix", "text-left", "no-wrap"],
+        },
         l: { content: "" },
         m: { content: "" },
         n: { content: "" },
@@ -508,9 +509,10 @@ window.TEUI.SectionModules.sect14 = (function () {
           content: "T.5.2",
           classes: ["label-prefix", "text-left", "no-wrap"],
         },
-        k: { content: "less Free Cool. & Vent. Exhaust",
-             classes: ["label-prefix", "text-left", "no-wrap"],
-         },
+        k: {
+          content: "less Free Cool. & Vent. Exhaust",
+          classes: ["label-prefix", "text-left", "no-wrap"],
+        },
         l: { content: "" },
         m: {
           fieldId: "m_129",

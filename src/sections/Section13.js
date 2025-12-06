@@ -3221,7 +3221,9 @@ window.TEUI.SectionModules.sect13 = (function () {
 
       // ✅ FORMAT ONCE: Format to integer string (0dp) for M/N compliance pattern
       // Prevents decimal precision fight during convergence loops
-      const m_124_formatted = window.TEUI?.formatNumber?.(activeCoolingDays, "integer") ?? Math.round(activeCoolingDays).toString();
+      const m_124_formatted =
+        window.TEUI?.formatNumber?.(activeCoolingDays, "integer") ??
+        Math.round(activeCoolingDays).toString();
 
       // Store as formatted string (not raw number) to match other M/N fields
       setFieldValue("m_124", m_124_formatted, "integer");

@@ -1139,9 +1139,9 @@ window.TEUI.SectionModules.sect07 = (function () {
       //   `[S07] 🛢️ Oil calc: demand=${netDemandAfterRecovery}, efficiency=${efficiency} → k_54=${oilVolume}, e_51=0 (cleared)`
       // );
     } // else {
-      // console.log(
-      //   `[S07] ⚡ Non-fossil fuel: ${systemType} → e_51=0, k_54=0 (both cleared)`
-      // );
+    // console.log(
+    //   `[S07] ⚡ Non-fossil fuel: ${systemType} → e_51=0, k_54=0 (both cleared)`
+    // );
     // }
 
     // 🔧 CRITICAL: Always set BOTH values - zero out the non-selected fuel to prevent contamination
@@ -1193,12 +1193,21 @@ window.TEUI.SectionModules.sect07 = (function () {
    * @param {boolean} isReferenceCalculation - True if calculating Reference mode
    * @returns {number} - Ratio (1.0 for Reference mode = 100%, actual ratio for Target mode)
    */
-  function calculateComplianceRatio(targetField, refField, isReferenceCalculation) {
+  function calculateComplianceRatio(
+    targetField,
+    refField,
+    isReferenceCalculation
+  ) {
     if (isReferenceCalculation) {
       return 1.0; // Reference mode: Always 100% (self-comparison)
     } else {
-      const targetValue = window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(targetField)) || 0;
-      const refValue = window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(refField)) || 0;
+      const targetValue =
+        window.TEUI.parseNumeric(
+          window.TEUI.StateManager.getValue(targetField)
+        ) || 0;
+      const refValue =
+        window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(refField)) ||
+        0;
       return refValue > 0 ? targetValue / refValue : 0;
     }
   }
@@ -1214,10 +1223,25 @@ window.TEUI.SectionModules.sect07 = (function () {
       0;
 
     // Calculate percentages using helper (Reference mode = 100%, Target mode = actual ratio)
-    const m_49_percent = calculateComplianceRatio("h_49", "ref_h_49", isReferenceCalculation);
-    const m_50_percent = calculateComplianceRatio("h_50", "ref_h_50", isReferenceCalculation);
-    const m_52_percent = calculateComplianceRatio("d_52", "ref_d_52", isReferenceCalculation);
-    const m_53_percent = ref_d_53 !== 0 ? calculateComplianceRatio("d_53", "ref_d_53", isReferenceCalculation) : 0;
+    const m_49_percent = calculateComplianceRatio(
+      "h_49",
+      "ref_h_49",
+      isReferenceCalculation
+    );
+    const m_50_percent = calculateComplianceRatio(
+      "h_50",
+      "ref_h_50",
+      isReferenceCalculation
+    );
+    const m_52_percent = calculateComplianceRatio(
+      "d_52",
+      "ref_d_52",
+      isReferenceCalculation
+    );
+    const m_53_percent =
+      ref_d_53 !== 0
+        ? calculateComplianceRatio("d_53", "ref_d_53", isReferenceCalculation)
+        : 0;
 
     // Format percentage results for M columns
     const m_49_formatted =

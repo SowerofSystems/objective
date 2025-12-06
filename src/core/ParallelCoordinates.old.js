@@ -241,7 +241,11 @@ window.TEUI.ParallelCoordinates = (function () {
     }
 
     // Create action buttons (Restore Baseline, Decarbonize, Optimize, Super Optimize, PassivHaus-ify) - only when activated
-    let restoreBaselineBtn, decarbonizeBtn, optimizeBtn, superOptimizeBtn, passivhausBtn;
+    let restoreBaselineBtn,
+      decarbonizeBtn,
+      optimizeBtn,
+      superOptimizeBtn,
+      passivhausBtn;
     if (isActivated) {
       // Restore Baseline button (pebble grey)
       restoreBaselineBtn = document.createElement("button");
@@ -1437,10 +1441,14 @@ window.TEUI.ParallelCoordinates = (function () {
       // Auto-refresh graph after reset completes (with delay to let state settle)
       setTimeout(() => {
         refresh();
-        console.log("[ParallelCoordinates] Graph auto-refreshed after baseline restore");
+        console.log(
+          "[ParallelCoordinates] Graph auto-refreshed after baseline restore"
+        );
       }, 200);
     } else {
-      console.error("[ParallelCoordinates] StateManager.resetTier1_UndoChanges not found");
+      console.error(
+        "[ParallelCoordinates] StateManager.resetTier1_UndoChanges not found"
+      );
       showFeedback("Error: Reset function not available", 3000);
     }
   }

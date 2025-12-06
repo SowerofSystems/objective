@@ -128,7 +128,7 @@ Supported by the Ontario Association of Architects (OAA).
 
 ## Credits
 
-**Created by:** Andy Thomson, OAA,  OpenBuilding, Inc.
+**Created by:** Andy Thomson, OAA, OpenBuilding, Inc.
 
 **Contributors:** Mark H Pavlidis
 
