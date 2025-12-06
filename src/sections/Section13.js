@@ -1117,10 +1117,10 @@ window.TEUI.SectionModules.sect13 = (function () {
     116: {
       id: "M.3.0",
       rowId: "M.3.0",
-      label: "Heatpump or Dedicated Cooling System",
+      label: "Select Cooling System",
       cells: {
         c: {
-          label: "Heatpump or Dedicated Cooling System",
+          label: "Select Cooling System",
           classes: ["flex-cell"],
         },
         d: {
@@ -1499,7 +1499,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           classes: ["label-prefix", "flex-cell"],
         },
         f: {
-          content: "Htg. Vent. Energy Recovered",
+          content: "Htg. Energy Recovered",
           classes: ["label", "flex-cell"],
         },
         g: {},
@@ -1537,10 +1537,10 @@ window.TEUI.SectionModules.sect13 = (function () {
     122: {
       id: "V.3.1",
       rowId: "V.3.1",
-      label: "Incoming Cooling Season Ventil. Energy",
+      label: "Ventilation Cooling Load",
       cells: {
         c: {
-          label: "Incoming Cooling Season Ventil. Energy",
+          label: "Ventilation Cooling Load",
           classes: ["flex-cell"],
         },
         d: {
@@ -1557,7 +1557,8 @@ window.TEUI.SectionModules.sect13 = (function () {
             "d_120", //Volumetric Ventilation Rate
             "i_122", //Latent Load Factor (%)
           ],
-          label: "Incoming Cooling Season Ventilation Energy: kWh/yr",
+          tooltip: true, // Fresh Air Load
+          label: "Ventilation Cooling Load: kWh/Cooling Season",
         },
         e: {
           content: "V.3.2",
@@ -1589,10 +1590,10 @@ window.TEUI.SectionModules.sect13 = (function () {
     123: {
       id: "V.3.3",
       rowId: "V.3.3",
-      label: "Outgoing Cooling Season Ventil. Energy",
+      label: "Ventilation Heat Removal",
       cells: {
         c: {
-          label: "Outgoing Cooling Season Ventil. Energy",
+          label: "Ventilation Heat Removal",
           classes: ["flex-cell"],
         },
         d: {
@@ -1601,7 +1602,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           value: "26,929.06",
           section: "mechanicalLoads",
           dependencies: ["d_118", "d_122"],
-          label: "Outgoing Cooling Season Ventilation Energy: kWh/yr",
+          label: "Ventilation Heat Removal: kWh/Cooling Season",
         },
         e: {},
         f: {},
@@ -1620,10 +1621,10 @@ window.TEUI.SectionModules.sect13 = (function () {
     124: {
       id: "V.4.1",
       rowId: "V.4.1",
-      label: "Ventilation Free Cooling/Vent Capacity",
+      label: "Ventilation Free Cooling Capacity",
       cells: {
         c: {
-          label: "Ventilation Free Cooling/Vent Capacity",
+          label: "Free Cooling Capacity",
           classes: ["flex-cell"],
         },
         d: {
