@@ -2441,6 +2441,12 @@ body.dev-environment {
     overflow: visible !important;
   }
 
+  /* Restore Section 01 (Key Values) border to emphasize summary block */
+  #keyValues {
+    border: 2px solid var(--header-bg) !important;
+    border-radius: var(--border-radius) !important;
+  }
+
   /* Hide all UI elements */
   header,
   nav,
