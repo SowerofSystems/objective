@@ -5845,3 +5845,191 @@ This section documents current limitations, known bugs, and planned future enhan
 **Note on Pattern A Migration**: S01, S16-S19 do NOT need Pattern A migration. These sections are **state-agnostic data consumers/graphics** that display both Target and Reference models simultaneously in their UI. They read from StateManager but don't require isolated state objects. Pattern A architecture is only needed for sections with user-editable fields that toggle between Target/Reference modes (S02-S15).
 
 ---
+
+## 4.013 Refactor Plan: Template Refinement & Pattern Documentation
+
+**Analysis Date**: 2025.12.06
+**Purpose**: Refine SectionXX.js template based on operational section analysis
+
+### Template Applicability Assessment
+
+Analysis of S02, S03, and S04 reveals **three distinct section patterns** in the codebase:
+
+#### Pattern A-Calc: Calculation-Heavy Sections
+**Characteristics**: Heavy calculations, minimal UI logic, external dependencies from multiple sections, M-N compliance patterns
+**Examples**: S04, S07, S11, S13
+**Template Fit**: ✅ **SectionXX.js is ideal** - designed for this pattern
+
+#### Pattern A-Lookup: Data Lookup + Calculation Hybrid
+**Characteristics**: External data lookup (JSON/API), cascading dropdown dependencies, calculation + lookup hybrid
+**Examples**: S03 (Climate with ClimateValues.js lookup)
+**Template Fit**: ⚠️ **Partially applicable** - needs lookup pattern documentation addendum
+
+#### Pattern B: Master Data Input
+**Characteristics**: Master data input, minimal calculations, heavy UI/event management, cost formatting, validation
+**Examples**: S02 (Building Information)
+**Template Fit**: ❌ **Not applicable** - needs separate Pattern B documentation
+
+### SectionXX.js Template Refinements (Based on S04 Analysis)
+
+The following patterns from [Section04.js](../src/sections/Section04.js) (87% code reduction, zero fallback contamination) should be incorporated into SectionXX.js template:
+
+#### 1. External Dependency Helpers (Mode-Aware)
+
+Add to **Block 5: Helper Functions**:
+
+```javascript
+// Mode-aware external dependency readers
+function getGlobalNumericValue(fieldId) {
+  let rawValue;
+  if (ModeManager.currentMode === "reference") {
+    rawValue = window.TEUI?.StateManager?.getValue(`ref_${fieldId}`);
+  } else {
+    rawValue = window.TEUI?.StateManager?.getValue(fieldId);
+  }
+  return window.TEUI?.parseNumeric?.(rawValue, 0) ?? 0;
+}
+
+function getGlobalStringValue(fieldId) {
+  let rawValue;
+  if (ModeManager.currentMode === "reference") {
+    rawValue = window.TEUI?.StateManager?.getValue(`ref_${fieldId}`);
+  } else {
+    rawValue = window.TEUI?.StateManager?.getValue(fieldId);
+  }
+  return rawValue ? rawValue.toString() : "";
+}
+```
+
+#### 2. Dual-Mode calculateAll() Pattern
+
+Update **Block 6: Calculation Engines**:
+
+```javascript
+function calculateAll() {
+  const originalMode = ModeManager.currentMode;
+
+  // CRITICAL: For M-N compliance sections, Reference FIRST
+  // (so ref_* values exist before Target compliance calculations need them)
+  ModeManager.currentMode = "reference";
+  calculateReferenceModel();
+
+  ModeManager.currentMode = "target";
+  calculateTargetModel();
+
+  ModeManager.currentMode = originalMode;
+}
+```
+
+#### 3. CSV Export Fix Pattern
+
+Add to **ModeManager.initialize()** in **Block 4**:
+
+```javascript
+// ✅ CSV EXPORT FIX: Publish ALL Reference defaults to StateManager
+// Without this, CSV export shows empty Reference values
+if (window.TEUI?.StateManager) {
+  ["d_27", "d_28", "l_28"].forEach(id => {  // Replace with actual field IDs
+    const refId = `ref_${id}`;
+    const val = ReferenceState.getValue(id);
+    if (!window.TEUI.StateManager.getValue(refId) && val != null && val !== "") {
+      window.TEUI.StateManager.setValue(refId, val, "calculated");
+    }
+  });
+}
+```
+
+#### 4. Mode-Aware Dependency Listener Pattern
+
+Add to **Block 8: Event Handling**:
+
+```javascript
+// Listen to BOTH Target and Reference external dependencies
+if (window.TEUI?.StateManager?.addListener) {
+  const calculateAndRefresh = () => {
+    calculateAll();
+    ModeManager.updateCalculatedDisplayValues();
+  };
+
+  const dependencies = [
+    "d_63", "ref_d_63",  // Example: upstream dependency
+    "h_15", "ref_h_15",  // Example: another dependency
+  ];
+
+  dependencies.forEach(fieldId => {
+    window.TEUI.StateManager.addListener(fieldId, calculateAndRefresh);
+  });
+}
+```
+
+### Pattern Variant Documentation
+
+Add to **Section 5: Module Architecture** subsection after Pattern A Template:
+
+#### Pattern A Variants
+
+**Pattern A-Calc** (S04, S07, S11, S13):
+- Calculation-heavy with minimal UI logic
+- Multiple external dependencies from upstream sections
+- M-N compliance patterns (Target/Reference ratio calculations)
+- **Use SectionXX.js template directly**
+
+**Pattern A-Lookup** (S03):
+- External data lookup (JSON files, APIs, lookup tables)
+- Cascading dropdown dependencies (e.g., Province → City → Climate data)
+- Calculation + lookup hybrid workflow
+- **Use SectionXX.js template + add lookup block** between Helpers and Calculations:
+
+```javascript
+// 5.5. Data Lookup Functions (Pattern A-Lookup variant)
+function lookupClimateData(province, city, timeframe) {
+  const climateDB = window.TEUI?.ClimateValues?.data;
+  return climateDB?.[province]?.[city]?.[timeframe] || getDefaults();
+}
+```
+
+**Pattern B** (S02):
+- Master data input with minimal calculations
+- Heavy UI management (cost formatting, critical flags, validation)
+- Complex event handling (multiple dropdowns, batch operations)
+- **Separate pattern** - not applicable to SectionXX.js template
+- Future: Create SectionXX-PatternB.js template for input-heavy sections
+
+### Implementation Priority
+
+**Phase 1: Template Refinement** (Immediate)
+1. Update SectionXX.js with S04 external dependency helpers
+2. Add dual-mode calculateAll() pattern with Reference-first ordering note
+3. Add CSV export fix pattern to ModeManager.initialize()
+4. Update TECHNICAL2.md Section 5 with pattern variant documentation
+
+**Phase 2: Pattern Documentation** (Next sprint)
+1. Document Pattern A-Lookup variant with S03 as reference
+2. Create Pattern B documentation (S02 Master Data pattern)
+3. Add pattern decision flowchart to TECHNICAL2.md
+
+**Phase 3: Template Validation** (Future)
+1. Refactor S05, S06, S08, S09, S10, S12, S14, S15 using refined SectionXX.js
+2. Validate M-N compliance pattern consistency across S05, S07, S11
+3. Performance audit: ensure all sections maintain sub-100ms recalculation
+
+### Key Principles (Do NOT Change)
+
+These architectural principles are **proven and must remain unchanged**:
+
+1. **Dual-engine calculations** - Both Target and Reference ALWAYS run (not conditional)
+2. **UI toggle is display-only** - switchMode() NEVER triggers calculations
+3. **State sovereignty** - TargetState/ReferenceState remain isolated (no fallbacks)
+4. **Reference-first for M-N compliance** - Essential for correct ratio calculations
+5. **Single source of truth** - Field definitions, not hardcoded defaults
+
+### Success Criteria
+
+Template refinement is complete when:
+- ✅ SectionXX.js includes S04 external dependency helpers
+- ✅ calculateAll() pattern documents Reference-first ordering for M-N sections
+- ✅ CSV export fix prevents empty Reference values
+- ✅ TECHNICAL2.md documents three pattern variants (A-Calc, A-Lookup, B)
+- ✅ All refactored sections maintain sub-100ms recalculation performance
+
+---
