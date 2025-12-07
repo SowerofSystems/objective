@@ -13,6 +13,8 @@
 2. [Core Principles](#core-principles)
 3. [State Management](#state-management)
 4. [Calculation Engine](#calculation-engine)
+   - 4.013 [Refactor Plan: Template Refinement & Pattern Documentation](#4013-refactor-plan-template-refinement--pattern-documentation)
+   - 4.014 [Sections 13-15 + Cooling.js Refactor Assessment](#4014-sections-13-15--coolingjs-refactor-assessment)
 5. [Module Architecture](#module-architecture)
 6. [Graphical Sections](#graphical-sections)
 7. [Developer Tools](#developer-tools)
