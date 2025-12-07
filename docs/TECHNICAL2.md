@@ -1,5 +1,5 @@
 # OBJECTIVE TEUI 4.012 - Technical Documentation
-- (updated 2025.12.01 for M-N compliance patterns)
+- (updated 2025.12.06 for streamlined Pattern A template - SectionXX.js refactored)
 
 > **Active Development Branch: `M-N-COMPLIANCE`**
 >
@@ -67,14 +67,15 @@ src/
 │       ├── pcOptimization.js       # Optimization algorithms
 │       └── pcFinancials.js         # Financial calculations (Pro)
 │
-├── sections/                # Calculator sections (19 modules)
+├── sections/                # Calculator sections (19 modules + template)
+│   ├── SectionXX.js         # TEMPLATE: Pattern A dual-state template (refactored 2025.12.06)
 │   ├── Section01.js         # S01: Key Values
 │   ├── Section02.js         # S02: Building Information
 │   ├── Section03.js         # S03: Climate Calculations
 │   ├── Section04.js         # S04: Actual vs Target Energy & Carbon
 │   ├── Section05.js         # S05: CO2e Emissions
 │   ├── Section06.js         # S06: Renewable Energy
-│   ├── Section07.js         # S07: Water Use
+│   ├── Section07.js         # S07: Water Use (refactored Pattern A reference)
 │   ├── Section08.js         # S08: Indoor Air Quality
 │   ├── Section09.js         # S09: Occupant + Internal Gains
 │   ├── Section10.js         # S10: Radiant Gains
@@ -1431,6 +1432,35 @@ const elapsed = performance.now() - start;
 ## 5. Module Architecture
 
 Section modules are the building blocks of the calculator. Each section is a **self-contained IIFE (Immediately Invoked Function Expression)** that encapsulates its own state, calculations, and UI management.
+
+### Pattern A Template (SectionXX.js)
+
+**Updated: 2025.12.06** - The canonical template for new section modules is [src/sections/SectionXX.js](../src/sections/SectionXX.js).
+
+**Key Features** (728 lines, streamlined from 1353):
+- **Modern structure**: 9 logical blocks (Field Definitions → Lifecycle)
+- **Section07 best practices**: Proven dual-state patterns from Water Use module
+- **47% reduction**: Removed verbose tutorial comments, kept critical architecture notes
+- **Working reference**: Copy-paste ready with example field types (dropdown, editable, slider, M-N compliance)
+- **Progressive disclosure**: Critical code first, implementation details follow
+
+**Structure Overview**:
+```
+1. Field Definitions (sectionRows)     - Single source of truth
+2. Accessor Methods                    - FieldManager integration
+3. State Objects                       - TargetState/ReferenceState (slim, focused)
+4. Mode Manager                        - Facade coordination
+5. Helper Functions                    - Grouped by purpose (section/global/compliance)
+6. Calculation Engines                 - Dual-engine pattern (Reference-first for M-N)
+7. UI Management                       - Ghosting/visibility
+8. Event Handling                      - All handlers together
+9. Lifecycle & Public API              - Clean exports
+```
+
+**Reference Implementations**:
+- [Section07.js](../src/sections/Section07.js) - Latest refactored Pattern A (Water Use, M-N compliance)
+- [Section11.js](../src/sections/Section11.js) - Complex calculations (Envelope)
+- [Section13.js](../src/sections/Section13.js) - Multi-mode calculations (Mechanical Loads)
 
 ### IIFE Module Pattern
 
