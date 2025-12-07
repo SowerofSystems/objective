@@ -6033,3 +6033,243 @@ Template refinement is complete when:
 - ✅ All refactored sections maintain sub-100ms recalculation performance
 
 ---
+
+## Sections 09-12 Refactor Assessment
+
+**Analysis Date**: 2025.12.06
+**Purpose**: Evaluate S09, S10, S11, S12 for SectionXX.js template applicability
+
+### Summary Statistics
+
+| Section | Lines | Calc Functions | M-N Compliance | External Deps | Pattern | Priority |
+|---------|-------|----------------|----------------|---------------|---------|----------|
+| **S09** | 3,218 | 15 | **3 fields** (plug, lighting, equipment) | 10 | A-Calc | ✅ HIGH |
+| **S10** | 3,121 | 10 | None | Moderate | A-Calc | ✅ HIGH |
+| **S11** | 3,363 | 5 | Candidate | Moderate | A-Calc | ⚠️ MEDIUM |
+| **S12** | 3,229 | 14 | **4 fields** (PH, WWR, ACH50, ELA) | Moderate | A-Calc | ✅ HIGH |
+
+---
+
+### Section 09: Occupant + Internal Gains
+
+**Current State**: 3,218 lines, Pattern A dual-state
+
+**Characteristics**:
+- **70% Calculations** - Occupancy, plug loads, lighting, elevators, internal gains
+- **20% State Management** - Dropdowns, editable fields, ReferenceValues integration
+- **10% UI Management** - Field ghosting, critical occupancy flags
+- **3 M-N compliance fields** - m_65/n_65 (plug loads), m_66/n_66 (lighting), m_67/n_67 (equipment efficiency)
+- **External dependencies** - S02 (occupancy type, floor area), minimal cross-section reads
+
+**M-N Compliance Pattern** (S07-style):
+```javascript
+// m_65: Plug load density ratio (Target/Reference)
+// n_65: Checkmark if Target ≤ Reference (ratio ≤ 1.0)
+const complianceRatio = currentValue / referenceValue;
+setCalculatedValue("m_65", formatNumber(complianceRatio, "percent-0dp"), "raw");
+setCalculatedValue("n_65", complianceRatio <= 1.0 ? "✓" : "✗", "raw");
+```
+
+**Refactor Assessment**: ✅ **EXCELLENT CANDIDATE**
+
+**Strengths**:
+- Already uses Pattern A correctly
+- Clean calculation structure (15 focused functions)
+- M-N compliance follows S07 pattern (Reference-first ordering already implemented)
+- syncFromGlobalState() implemented
+- applyReferenceValues() for Set Values button
+
+**Estimated Reduction**: **30%** (3,218 → ~2,250 lines)
+
+**Recommended Actions**:
+1. Reorder using XX template 9-block structure
+2. Remove verbose comments (keep M-N compliance architecture notes)
+3. Add external dependency helpers (getGlobalNumericValue/String from S04)
+4. CSV export fix pattern (publish Reference defaults to StateManager)
+5. Verify Reference-first calculateAll() ordering (already correct for M-N compliance)
+
+---
+
+### Section 10: Radiant Gains
+
+**Current State**: 3,121 lines, Pattern A dual-state
+
+**Characteristics**:
+- **75% Calculations** - 6 orientations (Average, N, E, S, W, Skylight) × solar gain calculations
+- **15% State Management** - Area fields, orientation dropdowns, SHGC values, shading percentages
+- **10% UI Management** - Conditional field visibility, nGains utilization dropdown
+- **No M-N compliance** - Pure solar gain physics calculations
+- **External dependencies** - S03 (climate data, solar radiation), S02 (geometry)
+
+**Unique Pattern**: Repetitive orientation-based calculations (DRY opportunity)
+
+**Refactor Assessment**: ✅ **EXCELLENT CANDIDATE**
+
+**Strengths**:
+- Already uses Pattern A correctly
+- **Already has CSV export fix** (publishToStateManager pattern from S04)
+- Repetitive structure (6 orientations) ideal for consolidation
+- Clean separation of concerns
+- syncFromGlobalState() implemented
+
+**Estimated Reduction**: **34%** (3,121 → ~2,050 lines)
+
+**Recommended Actions**:
+1. Reorder using XX template 9-block structure
+2. **Consolidate repetitive orientation calculations** (DRY pattern for 6 orientations)
+3. Remove verbose comments
+4. Add external dependency helpers
+5. Already has S04 CSV export pattern - keep it
+
+---
+
+### Section 11: Transmission Losses (Envelope)
+
+**Current State**: 3,363 lines, Pattern A dual-state
+
+**Characteristics**:
+- **60% Calculations** - Envelope heat loss, thermal bridge penalties, RSI/U-value handling
+- **25% State Management** - Area fields, RSI/U-value inputs, component types
+- **15% Area Sync Logic** - S10→S11 synchronization with crash prevention guards
+- **M-N compliance candidate** - Could compare envelope performance vs code minimum (not currently implemented)
+- **External dependencies** - S10 (glazing areas), S03 (climate data), S12 (geometry)
+
+**Critical Complexity**: S10-S11 area sync with recursion prevention
+
+**RSI vs U-value Design Decision** (Intentional):
+- **Windows/Doors**: U-value (assembly ratings) - industry standard practice
+- **Walls/Roof/Foundation**: RSI (built-up layers) - architect designs thermal resistance serially
+- **Rationale**: Numerical precision (RSI larger rational numbers vs U-value decimal expansion)
+- **DO NOT universalize** - mixing is intentional for different component types
+
+**Refactor Assessment**: ⚠️ **MEDIUM PRIORITY (Complex)**
+
+**Strengths**:
+- Already uses Pattern A correctly
+- applyReferenceValues() for Set Values button
+- syncFromGlobalState() implemented
+- Clear component type metadata (air-facing, ground-facing, penalty)
+
+**Complexity Factors**:
+- S10-S11 area sync requires crash prevention logic (recursion guards, debouncing)
+- RSI/U-value mixing intentional (DO NOT refactor numerical precision patterns)
+- Multiple component types with different physics
+
+**Estimated Reduction**: **18%** (3,363 → ~2,750 lines) - lower due to necessary complexity
+
+**Recommended Actions**:
+1. **Phase 1**: Reorder blocks only (DO NOT touch area sync logic)
+2. **Phase 2**: Add external dependency helpers
+3. **Phase 3**: Consider M-N compliance pattern (if comparing envelope to code minimum becomes requirement)
+4. **Preserve**: RSI/U-value distinction, area sync guards, component type logic
+5. **Test thoroughly** - area sync has crash prevention for a reason
+
+---
+
+### Section 12: Volume & Surface Metrics
+
+**Current State**: 3,229 lines, Pattern A dual-state
+
+**Characteristics**:
+- **65% Calculations** - Volumes, surface areas, compactness ratios, blower door methods (AL-1B, MEASURED)
+- **25% State Management** - Dropdowns (stories, exposure, blower door method), conditional visibility
+- **10% UI Management** - Method-dependent field activation
+- **4 M-N compliance fields**:
+  - m_104/n_104: Passive House U-value compliance (thresholds: <0.15 "PH level", <0.20 "Very Good", <0.30 "Good")
+  - m_107/n_107: WWR compliance (occupancy-based thresholds)
+  - m_109/n_109: ACH50 compliance ratio (ref_d_109 / d_109, lower is better)
+  - m_110/n_110: ELA compliance ratio (ref_d_110 / d_110, lower is better)
+- **External dependencies** - S02 (geometry, occupancy type), S11 (envelope areas)
+
+**M-N Compliance Patterns**:
+```javascript
+// Passive House threshold compliance
+function calculatePassiveHouseCompliance(isReferenceCalculation) {
+  const g104 = parseNumeric(getValue("g_104")) || 0;
+  const complianceText = g104 < 0.15 ? "PH level" :
+                         g104 < 0.20 ? "Very Good" :
+                         g104 < 0.30 ? "Good" : "Meh";
+  const checkmark = g104 < 0.30 ? "✓" : "✗";
+  setCalculatedValue("m_104", complianceText, "raw", isReferenceCalculation);
+  setCalculatedValue("n_104", checkmark, "raw", isReferenceCalculation);
+}
+
+// Ratio-based compliance (ACH50, ELA)
+function calculateOperationalCompliance(isReferenceCalculation) {
+  // m_109: ref_d_109 / d_109 (passing grade >= 100%)
+  const ratio = ref_d_109 / d_109;
+  const pass = ratio >= 1.0;
+  setCalculatedValue("m_109", formatNumber(ratio, "percent-0dp"), "raw");
+  setCalculatedValue("n_109", pass ? "✓" : "✗", "raw");
+}
+```
+
+**Refactor Assessment**: ✅ **EXCELLENT CANDIDATE**
+
+**Strengths**:
+- Already uses Pattern A correctly
+- **Already has S04 patterns** (CSV export fix, applyReferenceValues)
+- Clean calculation structure (14 focused functions)
+- M-N compliance follows S07/S09 pattern (Reference-first ordering)
+- onReferenceStandardChange() for d_13 updates
+- Conditional field logic (blower door methods) well-organized
+
+**Estimated Reduction**: **30%** (3,229 → ~2,250 lines)
+
+**Recommended Actions**:
+1. Reorder using XX template 9-block structure
+2. Remove verbose comments (keep M-N compliance architecture notes)
+3. Add external dependency helpers (getGlobalNumericValue/String)
+4. Already has S04 CSV export fix - keep it
+5. Verify Reference-first calculateAll() ordering (already correct for M-N compliance)
+
+---
+
+### Refactor Priority Ranking
+
+**Tier 1: Immediate Refactor** (High Value, Low Risk)
+1. **Section 10** - Already has S04 patterns, repetitive structure (6 orientations) perfect for DRY consolidation
+2. **Section 09** - Clean structure, M-N compliance correctly implemented, minimal UI complexity
+3. **Section 12** - Already has S04 patterns, 4 M-N compliance fields, clean separation of concerns
+
+**Tier 2: Next Sprint** (High Value, Moderate Risk)
+4. **Section 11** - Complex area sync logic (DO NOT touch), RSI/U-value distinction intentional (DO NOT universalize)
+
+---
+
+### Estimated Code Reduction
+
+| Section | Current | Post-Refactor | Reduction | Notes |
+|---------|---------|---------------|-----------|-------|
+| S09 | 3,218 | ~2,250 | **30%** (968 lines) | M-N compliance preserved |
+| S10 | 3,121 | ~2,050 | **34%** (1,071 lines) | DRY orientation consolidation |
+| S11 | 3,363 | ~2,750 | **18%** (613 lines) | Lower due to area sync complexity |
+| S12 | 3,229 | ~2,250 | **30%** (979 lines) | 4 M-N compliance fields preserved |
+| **Total** | **12,931** | **~9,300** | **28%** (3,631 lines) | Performance maintained |
+
+---
+
+### Key Architectural Principles (DO NOT CHANGE)
+
+1. **RSI vs U-value distinction** (S11) - Windows/Doors use U-value (assembly), Walls/Roof use RSI (built-up)
+2. **S10-S11 area sync** (S11) - Recursion guards, debouncing, crash prevention MUST be preserved
+3. **M-N compliance Reference-first** (S09, S12) - Reference calculations MUST run before Target for correct ratios
+4. **Component type metadata** (S11) - Air-facing, ground-facing, penalty types have different physics
+5. **Blower door methods** (S12) - Conditional field visibility based on method selection
+
+---
+
+### Success Criteria
+
+Refactoring is complete when:
+- ✅ All four sections follow SectionXX.js 9-block structure
+- ✅ M-N compliance patterns preserved (S09: 3 fields, S12: 4 fields)
+- ✅ S11 RSI/U-value distinction maintained (DO NOT universalize)
+- ✅ S11 area sync guards preserved (recursion prevention, debouncing)
+- ✅ S10 orientation calculations consolidated (DRY pattern)
+- ✅ External dependency helpers added (getGlobalNumericValue/String from S04)
+- ✅ CSV export fixes applied (S09, S11 need it; S10, S12 already have it)
+- ✅ Sub-100ms recalculation performance maintained
+- ✅ 28% code reduction achieved (~3,631 lines eliminated)
+
+---
