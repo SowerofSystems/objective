@@ -14,6 +14,7 @@ window.TEUI.sect13.userInteracted = false;
 // Add initialization for recursion flags
 window.TEUI.sect13.calculatingFreeCooling = false;
 window.TEUI.sect13.freeCalculationInProgress = false;
+window.TEUI.sect13.isCalculating = false; // ✅ (2025.12.06) Prevent calculateAll() cascade
 
 // Section 13: Mechanical Loads Module
 window.TEUI.SectionModules.sect13 = (function () {
@@ -3433,6 +3434,13 @@ window.TEUI.SectionModules.sect13 = (function () {
    * ✅ INCLUDES S11 PERSISTENCE PATTERN: Prevents Reference value race conditions
    */
   function calculateAll() {
+    // ✅ RECURSION PROTECTION (2025.12.06): Prevent cascading recalculations
+    // Fixes 22x listener cascade when S14 triggers S13 which triggers S14 again
+    if (window.TEUI.sect13.isCalculating) {
+      return; // Skip if already calculating
+    }
+    window.TEUI.sect13.isCalculating = true;
+
     // Prevent race conditions from mode changes during calculation
     const modeAtCalculationStart = ModeManager.currentMode;
 
@@ -3470,6 +3478,9 @@ window.TEUI.SectionModules.sect13 = (function () {
       updateCalculatedDisplayValues();
     } catch (error) {
       console.error("[Section13] ❌ ERROR in calculateAll:", error);
+    } finally {
+      // ✅ RECURSION PROTECTION (2025.12.06): Always reset flag
+      window.TEUI.sect13.isCalculating = false;
     }
   }
 
