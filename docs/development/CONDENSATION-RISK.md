@@ -283,26 +283,37 @@ updateCalculatedDisplayValues: function() {
 
 ## Part 2: Section11 Condensation Risk Indicators
 
-**Status**: Ready for implementation
+**Status**: Ready for implementation (pending user testing availability)
 
 ### 2.1 Overview
 
-Section11 calculates interior surface temperatures for each envelope assembly (rows 85-95) and displays a water droplet icon (💧) in Column G (U-value) when condensation risk is detected (surface temperature < 15°C).
+Section11 calculates interior surface temperatures for each envelope assembly (rows 85-95) and displays them in **Column O** with condensation risk icons (💧 for risk, 🌵 for safe).
 
 **Key Design Decisions**:
-- Surface temperatures calculated but **not displayed** (hidden Column O in Excel)
-- Values stored in StateManager for future use (can expose Column O later if desired)
-- Visual indicator only: water droplet in Column G when o_[row] < 15°C
+- **Column O is VISIBLE** in the table (rendered in DOM)
+- **Non-alphabetical column order**: A, B, C, D, E, F, G, H, **O**, I, J, K, L, M, N
+  - Column O positioned between H (U-value) and I (Peak Heat Loss)
+  - Displays interior surface temperature in °C
+- **Visual indicators prepended to Column O values**:
+  - 🌵 (cactus) when temp ≥ 15°C (no condensation risk)
+  - 💧 (water droplet) when temp < 15°C (condensation risk detected)
+- **Display format**: `[icon] [temperature]` e.g., "💧 12.3" or "🌵 18.5"
 - Uses winter average temperature (d_25) for realistic seasonal assessment
 - Mode-aware: works correctly in both Target and Reference models
 
+**Benefits of Column O approach**:
+- Users see **both** the diagnostic (surface temp) and indicator (icon)
+- Cleaner than attaching icons to Column G (U-value)
+- More informative than icon-only approach
+- Standard field rendering with icon decoration
+
 ---
 
-### 2.2 Add Hidden Field Definitions (Column O)
+### 2.2 Add Column O Field Definitions
 
 **Location**: `src/sections/Section11.js` - Update each row's cell definitions (rows 85-95)
 
-Add Column O field to each assembly row (not rendered in DOM by default):
+Add Column O field to each assembly row (**visible** column, positioned after Column H):
 
 ```javascript
 // Example: Row 85 (Roof)
@@ -311,23 +322,27 @@ Add Column O field to each assembly row (not rendered in DOM by default):
   rowId: "B.4",
   label: "Roof",
   cells: {
-    // ... existing cells c through n ...
+    // ... existing cells c through h ...
 
-    // ✅ NEW: Hidden surface temperature field (Column O)
+    // ✅ NEW: Surface temperature field (Column O - visible, positioned after H)
     o: {
       fieldId: "o_85",
       type: "calculated",
       value: "0.00",
       dependencies: ["d_85", "g_85", "h_23", "d_25"],
       label: "Roof: Interior Surface Temperature (°C)",
-      tooltip: true,  // "Temp Surface and Condensate Risk: T_si = T_interior - (U × ΔT × R_si)"
-      hidden: true    // Not rendered in DOM (for future use)
-    }
+      tooltip: true,  // "Surface temp: T_si = T_interior - (U × ΔT × R_si)"
+      // No 'hidden: true' - this field IS rendered in DOM
+    },
+
+    // ... existing cells i through n ...
   }
 }
 ```
 
-**Repeat for all rows**: 85-95 (each with appropriate row-specific dependencies)
+**Column order in DOM**: A, B, C, D, E, F, G, H, **O**, I, J, K, L, M, N
+
+**Repeat for all rows**: 85-95 (each with appropriate row-specific dependencies and R_si values)
 
 ---
 

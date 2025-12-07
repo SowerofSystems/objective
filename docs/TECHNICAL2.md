@@ -1392,6 +1392,60 @@ TEUI uses consistent RSI-based field naming:
 
 **No U-value fields in StateManager** - all thermal resistance stored as RSI.
 
+#### User Input Expectations: Effective RSI Values
+
+**CRITICAL**: Users are expected to provide **effective RSI values** that already include surface film resistances (R_si and R_se) for the specific assembly orientation.
+
+**Typical workflow:**
+1. Users model assemblies in external software (e.g., **[Ubakus.de](https://ubakus.de/)** - a detailed 2D parallel path thermal bridge calculator)
+2. External software calculates effective RSI including:
+   - Assembly materials (insulation, framing, cladding, etc.)
+   - Interior surface resistance (R_si) - orientation-specific
+   - Exterior surface resistance (R_se)
+   - Thermal bridging effects (framing, fasteners)
+3. Users enter the **total effective RSI value** into TEUI (Column F in Section11)
+
+**Example - Wall Assembly:**
+```
+Ubakus.de calculates:
+- Insulation RSI: 5.28 m²·K/W (R-30 insulation)
+- Interior surface film: 0.13 m²·K/W (horizontal heat flow)
+- Exterior surface film: 0.03 m²·K/W
+- Framing thermal bridge adjustment: -0.24 m²·K/W
+= Effective RSI: 5.20 m²·K/W (user enters this in TEUI)
+```
+
+**Why this matters:**
+- TEUI calculations use: `Heat Loss = Area × ΔT / RSI_effective`
+- The effective RSI already accounts for all resistances
+- **No additional R_si is applied in TEUI heat loss calculations**
+- This differs from condensation risk calculations (see below)
+
+**Condensation Risk Calculations (Section11 Feature):**
+
+For interior surface temperature calculations (condensation risk assessment), TEUI applies surface resistance **separately** because we need to find the temperature **at the interior surface**, not through the entire assembly:
+
+```javascript
+// Condensation formula uses R_si explicitly:
+T_surface = T_interior - (U × ΔT × R_si)
+
+// Where:
+// - U = 1/RSI_effective (user's effective RSI input)
+// - R_si = 0.10, 0.13, or 0.17 depending on orientation
+```
+
+**Physics explanation:**
+- Heat flux through assembly: `q = U_effective × ΔT` (uses user's effective RSI)
+- Temperature drop across interior film: `ΔT_surface = q × R_si`
+- Surface temperature: `T_si = T_interior - ΔT_surface`
+
+Even though the user's RSI input includes R_si, we apply it again in the surface temperature formula because we're calculating the temperature drop **across that specific layer**, not the entire assembly.
+
+**Summary:**
+- **Heat loss calculations**: Use effective RSI directly (no additional R_si)
+- **Condensation calculations**: Apply R_si to find temperature at interior surface
+- Users should provide effective RSI values from tools like Ubakus.de that account for real-world thermal bridging and orientation-specific surface resistances
+
 #### Performance Implications
 
 **Numerical stability improves performance:**
