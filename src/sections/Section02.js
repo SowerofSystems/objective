@@ -810,10 +810,6 @@ window.TEUI.SectionModules.sect02 = (function () {
         );
       }
     });
-
-    console.log(
-      "[S02] Reference CALCULATED results stored (d_16 only - INPUT fields excluded)"
-    );
   }
 
   /**

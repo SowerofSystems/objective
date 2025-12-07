@@ -2972,9 +2972,6 @@ window.TEUI.SectionModules.sect10 = (function () {
 
         // ✅ ADD: Listen for Reference external dependencies
         window.TEUI.StateManager.addListener(`ref_${fieldId}`, function () {
-          console.log(
-            `S10: Reference listener triggered by ref_${fieldId}, recalculating all.`
-          );
           calculateAll();
           ModeManager.updateCalculatedDisplayValues(); // ✅ ADD: Update DOM after calculations
         });

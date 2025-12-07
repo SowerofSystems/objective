@@ -2640,9 +2640,6 @@ window.TEUI.SectionModules.sect12 = (function () {
 
     // ✅ M-N-COMPLIANCE: Calculate operational compliance AFTER Reference values are published
     // This ensures ref_d_109 and ref_d_110 are available when Target mode reads them
-    console.log(
-      "[calculateAll] Reference values published. Now calculating M-N compliance..."
-    );
     calculateOperationalCompliance(true); // Reference mode: ref_m_109, ref_m_110
     calculateOperationalCompliance(false); // Target mode: m_109, m_110 (reads ref_d_109, ref_d_110)
 
@@ -2744,10 +2741,6 @@ window.TEUI.SectionModules.sect12 = (function () {
 
     // ✅ S11 PATTERN: Store results for later re-writing
     lastReferenceResults = { ...allResults };
-
-    console.log(
-      "[Section12] Reference results cached. Publishing will occur at the end of calculateAll."
-    );
   }
 
   /**
