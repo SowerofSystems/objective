@@ -357,6 +357,8 @@ window.TEUI.SectionModules.sect03 = (function () {
         "i_24",
         "m_24",
         "n_24",
+        "d_25",
+        "e_25",
       ];
 
       calculatedFields.forEach(fieldId => {
@@ -396,7 +398,7 @@ window.TEUI.SectionModules.sect03 = (function () {
                 ].includes(fieldId)
               ) {
                 formatType = "integer";
-              } else if (["e_23", "i_23", "e_24", "i_24"].includes(fieldId)) {
+              } else if (["e_23", "i_23", "e_24", "i_24", "e_25"].includes(fieldId)) {
                 formatType = "integer-nocomma";
               } else if (fieldId === "j_19") {
                 formatType = "number-1dp";
@@ -1052,6 +1054,32 @@ window.TEUI.SectionModules.sect03 = (function () {
           section: "climateCalculations",
           dependencies: ["h_24", "m_24"], // ✓ if h_24 <= m_24, ✗ if h_24 > m_24
           tooltip: true,
+        },
+      },
+    },
+
+    // Row 25: Winter Average Temperature (for condensation risk assessment)
+    25: {
+      id: "L.3.3",
+      rowId: "L.3.3",
+      label: "Winter Average Temp. (Location Specific)",
+      cells: {
+        b: { content: "L.3.3", classes: ["label-prefix"] },
+        c: { content: "Winter Average Temp. (Location Specific)", type: "label" },
+        d: {
+          fieldId: "d_25",
+          type: "calculated",
+          value: "0",
+          section: "climateCalculations",
+          dependencies: ["d_20", "m_19"],
+          tooltip: true, // Winter average temperature calculated from HDD and heating season days
+        },
+        e: {
+          fieldId: "e_25",
+          type: "calculated",
+          value: "32",
+          section: "climateCalculations",
+          dependencies: ["d_25"],
         },
       },
     },
@@ -1805,6 +1833,39 @@ window.TEUI.SectionModules.sect03 = (function () {
   }
 
   /**
+   * Calculate Winter Average Temperature for condensation risk assessment
+   * Formula: d_25 = 18 - (HDD / heating_season_days)
+   * where heating_season_days = 365 - cooling_days
+   */
+  function calculateWinterAverageTemperature() {
+    const hdd18 = getNumericValue("d_20"); // HDD from climate data
+    const coolingDays = getNumericValue("m_19"); // User-set cooling days
+
+    // Calculate heating season days
+    const heatingDays = 365 - coolingDays;
+
+    // Prevent division by zero
+    if (heatingDays <= 0) {
+      console.warn("[S03] Invalid heating days calculation - defaulting to 0°C");
+      setFieldValue("d_25", 0);
+      setFieldValue("e_25", 32);
+      return 0;
+    }
+
+    // Calculate winter average: base temp - (HDD / heating days)
+    const winterAvgC = 18 - (hdd18 / heatingDays);
+    const winterAvgC_rounded = Math.round(winterAvgC * 100) / 100;
+
+    setFieldValue("d_25", winterAvgC_rounded);
+
+    // Convert to Fahrenheit
+    const winterAvgF = Math.round((winterAvgC_rounded * 9) / 5 + 32);
+    setFieldValue("e_25", winterAvgF);
+
+    return winterAvgC_rounded;
+  }
+
+  /**
    * Calculate all values - DUAL-ENGINE PATTERN
    * Runs both Target and Reference calculations for complete downstream data
    */
@@ -1858,6 +1919,7 @@ window.TEUI.SectionModules.sect03 = (function () {
       calculateHeatingCompliance(); // n_23: Check h_23 >= m_23 compliance
       calculateCoolingSetpoint_h24();
       calculateTemperatures();
+      calculateWinterAverageTemperature(); // d_25, e_25: Winter average for condensation risk
       calculateGroundFacing();
       updateCoolingDependents();
       updateCriticalOccupancyFlag();
@@ -1934,6 +1996,7 @@ window.TEUI.SectionModules.sect03 = (function () {
       calculateHeatingCompliance(); // n_23: Check h_23 >= m_23 compliance
       calculateCoolingSetpoint_h24();
       calculateTemperatures();
+      calculateWinterAverageTemperature(); // d_25, e_25: Winter average for condensation risk
       calculateGroundFacing();
       updateCoolingDependents();
 
@@ -1981,6 +2044,8 @@ window.TEUI.SectionModules.sect03 = (function () {
       h_24: ReferenceState.getValue("h_24"), // Reference cooling setpoint (CALCULATED) ✅
       d_22: ReferenceState.getValue("d_22"), // Reference GF HDD (CALCULATED) ✅
       h_22: ReferenceState.getValue("h_22"), // Reference GF CDD (CALCULATED) ✅
+      d_25: ReferenceState.getValue("d_25"), // Reference winter average temp (CALCULATED for condensation risk) ✅
+      e_25: ReferenceState.getValue("e_25"), // Reference winter average temp °F (CALCULATED) ✅
     };
 
     // Store with ref_ prefix for downstream sections
@@ -2013,6 +2078,8 @@ window.TEUI.SectionModules.sect03 = (function () {
       h_24: TargetState.getValue("h_24"), // Target cooling setpoint (CALCULATED from occupancy) ✅
       d_22: TargetState.getValue("d_22"), // Target GF HDD (CALCULATED from h_23) ✅ - This was missing!
       h_22: TargetState.getValue("h_22"), // Target GF CDD (CALCULATED from h_24) ✅ - This was missing!
+      d_25: TargetState.getValue("d_25"), // Target winter average temp (CALCULATED for condensation risk) ✅
+      e_25: TargetState.getValue("e_25"), // Target winter average temp °F (CALCULATED) ✅
     };
 
     // Store unprefixed for downstream sections (Target mode)
