@@ -69,7 +69,7 @@ This feature calculates interior surface temperatures for building envelope asse
 **Notes**:
 - `b_25`: Row ID is "L.3.3" (Location category)
 - `c_25`: Label describes the calculated value
-- `d_25`: Celsius value (calculated from HDD and cooling days)
+- `d_25`: Celsius value (primary: from ClimateValues.js `Winter_Tdb_Avg`, fallback: calculated from HDD and cooling days)
 - `e_25`: Fahrenheit conversion (calculated from d_25)
 - Remaining cells (f-n) are empty placeholders for table alignment
 
@@ -84,30 +84,50 @@ This feature calculates interior surface temperatures for building envelope asse
 ```javascript
 /**
  * Calculate Winter Average Temperature (d_25) - For condensation risk assessment
- * Excel Formula: =18 - (D20 / (365 - M19))
+ *
+ * PRIORITY 1: Use Winter_Tdb_Avg from ClimateValues.js (direct weather data)
+ * PRIORITY 2 (Fallback): Calculate from HDD formula =18 - (D20 / (365 - M19))
+ *
  * Where:
- *   - 18°C is the HDD base temperature
+ *   - Winter_Tdb_Avg = Direct winter average from climate database
+ *   - 18°C is the HDD base temperature (fallback calculation)
  *   - D20 is HDD18 (Heating Degree Days)
  *   - M19 is Cooling Days
  *   - (365 - M19) is the heating season length in days
  */
 function calculateWinterAverageTemperature() {
-  const hdd18 = getNumericValue("d_20");         // HDD from climate data
-  const coolingDays = getNumericValue("m_19");   // User-set cooling days
+  // PRIORITY 1: Try to get Winter_Tdb_Avg from selected climate location
+  const selectedLocation = getNumericValue("j_19"); // Location index
+  let winterAvgC = null;
 
-  // Calculate heating season days
-  const heatingDays = 365 - coolingDays;
-
-  // Prevent division by zero
-  if (heatingDays <= 0) {
-    console.warn("[S03] Invalid heating days calculation - defaulting to 0°C");
-    setFieldValue("d_25", 0);
-    setFieldValue("e_25", 32);  // 0°C = 32°F
-    return 0;
+  if (window.TEUI?.ClimateValues && selectedLocation !== null) {
+    const locationData = window.TEUI.ClimateValues[selectedLocation];
+    if (locationData?.Winter_Tdb_Avg !== undefined && locationData.Winter_Tdb_Avg !== null) {
+      winterAvgC = locationData.Winter_Tdb_Avg;
+      console.log(`[S03] Using Winter_Tdb_Avg from ClimateValues: ${winterAvgC}°C`);
+    }
   }
 
-  // Calculate winter average: base temp - (HDD / heating days)
-  const winterAvgC = 18 - (hdd18 / heatingDays);
+  // PRIORITY 2 (Fallback): Calculate from HDD and cooling days if not available
+  if (winterAvgC === null) {
+    const hdd18 = getNumericValue("d_20");         // HDD from climate data
+    const coolingDays = getNumericValue("m_19");   // User-set cooling days
+
+    // Calculate heating season days
+    const heatingDays = 365 - coolingDays;
+
+    // Prevent division by zero
+    if (heatingDays <= 0) {
+      console.warn("[S03] Invalid heating days calculation - defaulting to 0°C");
+      setFieldValue("d_25", 0);
+      setFieldValue("e_25", 32);  // 0°C = 32°F
+      return 0;
+    }
+
+    // Calculate winter average: base temp - (HDD / heating days)
+    winterAvgC = 18 - (hdd18 / heatingDays);
+    console.log(`[S03] Calculated Winter Average from HDD formula: ${winterAvgC}°C`);
+  }
 
   // Round to 2 decimal places for storage
   const winterAvgC_rounded = Math.round(winterAvgC * 100) / 100;
@@ -124,8 +144,9 @@ function calculateWinterAverageTemperature() {
 ```
 
 **Key Points**:
-- Uses HDD base of 18°C (Canadian standard)
-- Calculates actual heating season length from user's cooling days setting
+- **Primary source**: `Winter_Tdb_Avg` from ClimateValues.js (available for all Canadian locations)
+- **Fallback only**: HDD-derived calculation if `Winter_Tdb_Avg` not available
+- Uses HDD base of 18°C (Canadian standard) for fallback
 - Provides more realistic condensation risk than peak cold temperature
 - Returns rounded value for consistency
 
@@ -776,7 +797,16 @@ updateCalculatedDisplayValues: function() {
 
 ## Notes
 
-**Excel Formula Reference**:
+**Winter Average Temperature Data Source**:
+- **Primary**: `Winter_Tdb_Avg` field from ClimateValues.js (src/core/ClimateValues.js)
+  - Available for all Canadian locations in climate database
+  - Direct weather station data for winter seasonal average
+  - Example: Alexandria, ON has `Winter_Tdb_Avg: -8` (line 9299)
+- **Fallback**: HDD-derived calculation only if `Winter_Tdb_Avg` not available
+  - Formula: `D25 = 18 - (D20 / (365 - M19))`
+  - Provides reasonable estimate from heating degree days
+
+**Excel Formula Reference** (fallback calculation):
 ```
 D25: =18 - (D20 / (365 - M19))
 E25: =D25 * (9/5) + 32
@@ -784,7 +814,7 @@ E25: =D25 * (9/5) + 32
 
 **Why Winter Average vs Peak Cold**:
 - Peak cold (-24°C) represents extreme 2.5% design condition
-- Winter average (~0°C to -5°C) is more realistic for condensation assessment
+- Winter average (~0°C to -8°C) is more realistic for condensation assessment
 - Assemblies may show condensation at average temps but not at peak (due to lower RH)
 - Provides better guidance for typical operating conditions vs. rare extremes
 
