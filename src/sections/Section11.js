@@ -120,7 +120,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         d_87: "0.00",
         f_87: "9.52", // Floor Exposed
         d_88: "7.50", // Door area (matches S10 Target default)
-        g_88: "0.900", // Doors U-value (Target default, not ReferenceValues)
+        g_88: "1.500", // Doors U-value (Target default, not ReferenceValues)
         d_89: "81.14", // Window North area (matches S10 Target default)
         g_89: "0.900", // Window North U-value (Target default, not ReferenceValues)
         d_90: "3.83", // Window East area (matches S10 Target default)
