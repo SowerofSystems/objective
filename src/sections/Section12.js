@@ -248,6 +248,7 @@ window.TEUI.SectionModules.sect12 = (function () {
       const calculatedFields = [
         "d_101",
         "d_102",
+        "d_104",
         // d_105 removed - it's USER INPUT (editable), not calculated
         "d_106",
         "d_107",
@@ -812,8 +813,16 @@ window.TEUI.SectionModules.sect12 = (function () {
             "Building U-Value Combined Total & Transmission Losses & Gains",
           classes: ["total-row-text"],
         },
-        d: {},
-        e: { content: "", classes: ["unit-label"] },
+        d: {
+          fieldId: "d_104",
+          type: "calculated",
+          value: "3577.04",
+          section: "volumeSurfaceMetrics",
+          dependencies: ["d_101", "d_102"],
+          classes: ["total-row-text"],
+          label: "Total Envelope Area (Air + Ground): m²",
+        },
+        e: { content: "m²", classes: ["unit-label"] },
         f: {},
         g: {
           fieldId: "g_104",
@@ -1641,6 +1650,7 @@ window.TEUI.SectionModules.sect12 = (function () {
     // Calculate with full precision
     const d101_areaAir = d85 + d86 + d87 + d88 + d89 + d90 + d91 + d92 + d93;
     const d102_areaGround = d94 + d95 === 0 ? 0.0000001 : d94 + d95;
+    const d104_totalArea = d101_areaAir + d102_areaGround;
     const d106_floorArea = d87 + d95 + d96;
 
     // Calculate ratios with full precision
@@ -1657,6 +1667,12 @@ window.TEUI.SectionModules.sect12 = (function () {
     setCalculatedValue(
       "d_102",
       d102_areaGround,
+      "number-2dp-comma",
+      isReferenceCalculation
+    );
+    setCalculatedValue(
+      "d_104",
+      d104_totalArea,
       "number-2dp-comma",
       isReferenceCalculation
     );
@@ -1688,6 +1704,7 @@ window.TEUI.SectionModules.sect12 = (function () {
     return {
       d_101: d101_areaAir,
       d_102: d102_areaGround,
+      d_104: d104_totalArea,
       // d_105: Removed from return - it's user input, not calculated
       d_106: d106_floorArea,
       g_105: g105_volAreaRatio,
@@ -3251,9 +3268,9 @@ window.TEUI.SectionModules.sect12 = (function () {
       "j_19", // Climate Zone (for N-Factor)
       "h_21", // Capacitance Setting (for k_104)
     ];
-    // ✅ OPTIMIZED: Listen only to Reference U-values (not RSI) per g_101 formula needs
+    // ✅ OPTIMIZED: Listen to Reference U-values AND areas per g_101 formula needs
     // Formula: g_101 = (SUMPRODUCT(g_85:g_95, d_85:d_95) / SUM(d_85:d_95)) × (1 + d_97/100)
-    // We read U-values from S11.ReferenceState (sovereign), so only listen to published values for recalc trigger
+    // We read values from S11.ReferenceState (sovereign), so listen to published values for recalc trigger
     const referenceUValueDeps = [
       "ref_g_85",
       "ref_g_86",
@@ -3269,6 +3286,22 @@ window.TEUI.SectionModules.sect12 = (function () {
       // Note: ref_f_XX (RSI) listeners removed - S12 reads U-values directly from S11.ReferenceState
       // S11 converts RSI→U internally, so we don't need to listen to both
       "ref_d_97", // Reference TB% when stored with prefix
+    ];
+
+    // ✅ FIX: Listen to Reference area changes (d_101, d_102, d_104 depend on these)
+    const referenceAreaDeps = [
+      "ref_d_85", // Roof area
+      "ref_d_86", // Walls AG area
+      "ref_d_87", // Floor Exp area
+      "ref_d_88", // Doors area
+      "ref_d_89", // Win N area
+      "ref_d_90", // Win E area
+      "ref_d_91", // Win S area
+      "ref_d_92", // Win W area
+      "ref_d_93", // Skylights area
+      "ref_d_94", // Walls BG area
+      "ref_d_95", // Floor Slab area
+      "ref_d_96", // Interior Floor area
     ];
     // Ensure both Target and Reference TB% changes trigger S12
     window.TEUI.StateManager.addListener("d_97", newValue => {
@@ -3293,8 +3326,20 @@ window.TEUI.SectionModules.sect12 = (function () {
       );
     });
 
-    // Add reference-prefixed listeners
+    // Add reference-prefixed U-value listeners
     referenceUValueDeps.forEach(depId => {
+      window.TEUI.StateManager.addListener(
+        depId,
+        (newValue, oldValue, eventFieldId, state) => {
+          if (eventFieldId === depId) {
+            calculateAll();
+          }
+        }
+      );
+    });
+
+    // ✅ FIX: Add reference-prefixed area listeners (was missing - caused bug where ref_d_86 changes didn't update d_101)
+    referenceAreaDeps.forEach(depId => {
       window.TEUI.StateManager.addListener(
         depId,
         (newValue, oldValue, eventFieldId, state) => {
