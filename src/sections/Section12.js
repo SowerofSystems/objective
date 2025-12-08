@@ -3344,12 +3344,16 @@ window.TEUI.SectionModules.sect12 = (function () {
     });
 
     // ✅ FIX: Add reference-prefixed area listeners (was missing - caused bug where ref_d_86 changes didn't update d_101)
+    // ✅ PERFORMANCE FIX: Explicit DOM refresh after calculateAll() for immediate UI update (S13 pattern)
     referenceAreaDeps.forEach(depId => {
       window.TEUI.StateManager.addListener(
         depId,
         (newValue, oldValue, eventFieldId, state) => {
           if (eventFieldId === depId) {
             calculateAll();
+            // ✅ CRITICAL: Explicit DOM refresh ensures immediate UI update in Reference mode
+            // Without this, updates lag behind by one calculation cycle
+            ModeManager.updateCalculatedDisplayValues?.();
           }
         }
       );
