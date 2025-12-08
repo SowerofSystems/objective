@@ -387,6 +387,27 @@ window.TEUI.SectionModules.sect12 = (function () {
                     numericValue,
                     percentFormat
                   );
+                } else if (
+                  // ✅ FIX: Large values (areas, kWh) should use commas for readability
+                  [
+                    "d_101",
+                    "d_102",
+                    "d_104",
+                    "d_106",
+                    "i_101",
+                    "i_102",
+                    "i_103",
+                    "i_104",
+                    "k_101",
+                    "k_102",
+                    "k_103",
+                    "k_104",
+                  ].includes(fieldId)
+                ) {
+                  formattedValue = window.TEUI.formatNumber(
+                    numericValue,
+                    "number-2dp-comma"
+                  );
                 } else {
                   formattedValue = window.TEUI.formatNumber(
                     numericValue,
