@@ -506,6 +506,29 @@ window.TEUI.SectionModules.sect11 = (function () {
           );
         }
         window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, writeSource);
+
+        // ✅ CRITICAL: Force S12 REFERENCE-ONLY recalculation (robot fingers pattern)
+        // MATCHES TARGET MODE PATTERN (lines 477-496) for equal performance
+        // IMPORTANT: Only trigger Reference engine to preserve state isolation
+        // PERFORMANCE: Only trigger for user-modified changes, not calculated cascades
+        if (
+          (fieldId.startsWith("d_") || // Areas (d_85, d_86, etc.)
+            fieldId.startsWith("f_") || // RSI values
+            fieldId.startsWith("g_") || // U-values
+            fieldId === "d_97") &&      // Thermal bridge penalty
+          (source === "user-modified" || source === "user")
+        ) {
+          if (window.TEUI?.SectionModules?.sect12?.calculateReferenceModel) {
+            window.TEUI.SectionModules.sect12.calculateReferenceModel();
+            // Update DOM display after Reference-only calculation
+            if (
+              window.TEUI.SectionModules.sect12.ModeManager
+                ?.updateCalculatedDisplayValues
+            ) {
+              window.TEUI.SectionModules.sect12.ModeManager.updateCalculatedDisplayValues();
+            }
+          }
+        }
       }
     },
     refreshUI: function () {
