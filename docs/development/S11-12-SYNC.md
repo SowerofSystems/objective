@@ -237,9 +237,23 @@ if (this.currentMode === "reference") {
 - `b982b1d` - Added Reference area listeners to S12 (fixed listener issue, but not DOM update)
 - `0a9ab38` - Fixed S12 to read global Reference toggle state (fixed namespace reading)
 - `6f4cdd6` - Added explicit DOM refresh to Reference area listeners (partial fix, still had lag)
-- `d976165` - **FINAL FIX**: Added robot fingers to S11 Reference mode (instant updates) ✅
+- `d976165` - Added robot fingers to S11 Reference mode (implementation complete)
+- `a0466e5` - **CRITICAL**: Exported calculateReferenceModel from S12 (enables robot fingers) ✅
 - Reference: CHEATSHEET Anti-Pattern 1 (State Contamination via Fallbacks)
 - Reference: CHEATSHEET Section on Mode-Aware DOM Updates
+
+## Critical Discovery: Missing Module Export
+
+The robot fingers pattern in S11 (commit `d976165`) called:
+```javascript
+window.TEUI.SectionModules.sect12.calculateReferenceModel();
+```
+
+But S12 module did **not export** `calculateReferenceModel`! It exported `calculateTargetModel` for Target mode robot fingers, but the Reference equivalent was missing.
+
+**Error**: `Uncaught TypeError: Cannot read properties of undefined (reading 'call')`
+
+**Fix** (commit `a0466e5`): Added `calculateReferenceModel` to S12's public API exports at line 3434, matching the pattern used for `calculateTargetModel`.
 
 ## Debug Tools
 
@@ -249,6 +263,7 @@ if (this.currentMode === "reference") {
 
 - `src/sections/Section11.js` - Lines 510-531
   - Added Reference mode robot fingers (direct S12 trigger)
-- `src/sections/Section12.js` - Lines 298, 3356
+- `src/sections/Section12.js` - Lines 298, 3356, 3434
   - Line 298: Read global Reference toggle state
   - Line 3356: Explicit DOM refresh in Reference area listeners (kept for cross-section listener support)
+  - Line 3434: Export calculateReferenceModel (enables robot fingers to work)
