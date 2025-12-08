@@ -1,24 +1,26 @@
 # Condensation Risk Feature - Implementation Workplan
 
-**Status**: Draft Workplan
-**Date**: 2025-12-07
-**Feature**: Surface condensation risk detection and warning system
+**Status**: ✅ Part 1 Complete | ✅ Part 2 Complete | 🚧 Part 3 In Planning
+**Date Started**: 2025-12-07
+**Last Updated**: 2025-12-08
+**Feature**: Surface condensation risk detection and MRT calculation system
 
 ---
 
 ## Overview
 
-This feature calculates interior surface temperatures for building envelope assemblies and warns users when condensation risk exists. The implementation follows the dual-state architecture with calculations in Section03 (Climate) and visual indicators in Section11 (Transmission Losses).
+This feature calculates interior surface temperatures for building envelope assemblies and warns users when condensation risk exists. The implementation follows the dual-state architecture with calculations in Section03 (Climate) and visual indicators in Section11 (Transmission Losses) and Section12 (Mean Radiant Temperature).
 
 ### User Value
 - **Early warning**: Identifies condensation-prone assemblies during design phase
-- **Visual feedback**: Water droplet icon (💧) in U-value column when risk detected
+- **Visual feedback**: Emoji indicators (💧/🌵) in Column O showing risk status
 - **Climate-aware**: Uses winter seasonal average temperature instead of peak cold for realistic assessment
 - **Mode-aware**: Works correctly in both Target and Reference models
+- **MRT calculation**: Mean Radiant Temperature for thermal comfort assessment (Section 12)
 
 ---
 
-## Part 1: Section03 Climate Calculations
+## ✅ Part 1: Section03 Climate Calculations (COMPLETE)
 
 ### 1.1 Add Row 25 to Field Definitions
 
@@ -302,33 +304,114 @@ updateCalculatedDisplayValues: function() {
 
 ---
 
-## Part 2: Section11 Condensation Risk Indicators
+## ✅ Part 2: Section11 Condensation Risk Indicators (COMPLETE)
 
-**Status**: Ready for implementation (pending user testing availability)
+**Status**: ✅ Implemented and tested (2025-12-08)
+**Commit**: `0ad02fe` - "Feat: Add S11 condensation risk surface temperature calculations with visual indicators"
 
-### 2.1 Overview
+### Implementation Summary
 
-Section11 calculates interior surface temperatures for each envelope assembly (rows 85-95) and displays them in **Column O** with condensation risk icons (💧 for risk, 🌵 for safe).
+**What was built:**
+1. **Column O** added to Section 11 with "Surface °C" header (positioned after Column N as last column)
+2. **Field definitions** o_85 through o_95 for all 11 assembly rows
+3. **Three calculation helper functions:**
+   - `calculateSurfaceTemperature()` - Formula: T_si = T_interior - (U × ΔT × R_si)
+   - `hasCondensationRisk()` - Threshold check: surface temp < 15°C
+   - `calculateAllSurfaceTemperatures()` - Batch processor for all assemblies
+4. **Visual indicators** prepended to temperature values:
+   - 🌵 (cactus) when temp ≥ 15°C (safe)
+   - 💧 (water droplet) when temp < 15°C (condensation risk)
+5. **Integration** into both Target and Reference calculation engines
+6. **Infrastructure updates:**
+   - Added `<col class="col-o">` to FieldManager.js colgroup
+   - Added col-o width rules (80px) and padding (12px right) to styles.css
 
-**Key Design Decisions**:
-- **Column O is VISIBLE** in the table (rendered in DOM)
-- **Non-alphabetical column order**: A, B, C, D, E, F, G, H, **O**, I, J, K, L, M, N
-  - Column O positioned between H (U-value) and I (Peak Heat Loss)
-  - Displays interior surface temperature in °C
-- **Visual indicators prepended to Column O values**:
-  - 🌵 (cactus) when temp ≥ 15°C (no condensation risk)
-  - 💧 (water droplet) when temp < 15°C (condensation risk detected)
-- **Display format**: `[icon] [temperature]` e.g., "💧 12.3" or "🌵 18.5"
-- Uses winter average temperature (d_25) for realistic seasonal assessment
-- Mode-aware: works correctly in both Target and Reference models
+**R_si values used:**
+- Roof/Skylights (upward heat flow): 0.10 m²K/W
+- Walls/Doors/Windows (horizontal heat flow): 0.13 m²K/W
+- Floors (downward heat flow): 0.17 m²K/W
 
-**Benefits of Column O approach**:
-- Users see **both** the diagnostic (surface temp) and indicator (icon)
-- Cleaner than attaching icons to Column G (U-value)
-- More informative than icon-only approach
-- Standard field rendering with icon decoration
+**Exterior temperature sources:**
+- Air-facing assemblies (rows 85-93): d_25 (winter average temp from Section03)
+- Ground-facing assemblies (rows 94-95): 10°C constant
 
 ---
+
+## 🚧 Part 3: Section12 Mean Radiant Temperature (MRT) (IN PLANNING)
+
+**Status**: Design phase - awaiting implementation
+**Purpose**: Calculate Mean Radiant Temperature (MRT) for thermal comfort assessment
+
+### 3.1 Overview
+
+Section 12 will calculate MRT for the building envelope by computing area-weighted average surface temperatures for floors and aggregate envelope (roof + walls). This extends the surface temperature calculation system from Section 11 to provide a whole-building thermal comfort metric.
+
+**Key Design Decisions**:
+- **Column O** added to Section 12 (same infrastructure as Section 11)
+- **Column O header**: "MRT °C" (Mean Radiant Temperature)
+- **Field locations**: o_101 (Floor Slab), o_102 (Floor Basement), o_104 (Aggregate envelope)
+- **Uses same styling**: 80px width, 12px right padding (`.data-table td.col-o`)
+- **Ground temperature constant**: 10°C (same as Section 11 ground-facing assemblies)
+
+### 3.2 Calculation Formulas
+
+**Surface Temperature Formula** (same as Section 11):
+```
+T_si = T_interior - (U × ΔT × R_si)
+```
+
+**Specific Implementations**:
+
+| Row | Field | Assembly | Formula | R_si | Exterior Temp |
+|-----|-------|----------|---------|------|---------------|
+| 101 | o_101 | Floor Slab | `=IF(D101=0, "", $H$23 - (G101 * ($H$23 - 10) * 0.17))` | 0.17 | 10°C (ground) |
+| 102 | o_102 | Floor Basement | `=IF(D102=0, "", $H$23 - (G102 * ($H$23 - 10) * 0.17))` | 0.17 | 10°C (ground) |
+| 104 | o_104 | Aggregate Envelope | `=IF(SUM(D101:D102)=0, "", $H$23 - (G104 * ($H$23 - 10) * R_si_weighted))` | **TBD** | 10°C (ground) |
+
+**Note**: Row 104 (Aggregate Envelope) requires a **weighted R_si** calculation based on roof and wall areas/U-values.
+
+### 3.3 Weighted R_si Calculation Challenge
+
+**Problem**: The aggregate envelope (row 104) combines surfaces with different R_si values:
+- Roof/Skylights: R_si = 0.10 (upward heat flow)
+- Walls/Doors/Windows: R_si = 0.13 (horizontal heat flow)
+- Floors: R_si = 0.17 (downward heat flow)
+
+**Proposed Solution**: Calculate area-weighted average R_si for row 104:
+
+```javascript
+// Pseudo-code for weighted R_si calculation
+const roofArea = d_85; // From Section 11
+const wallsArea = d_86 + d_88; // Walls + Doors (from Section 11)
+const totalArea = roofArea + wallsArea;
+
+const R_si_weighted = totalArea > 0
+  ? (roofArea * 0.10 + wallsArea * 0.13) / totalArea
+  : 0.13; // Default to walls if no area
+```
+
+**Decision needed**:
+- Should we include window areas in the weighted R_si calculation?
+- Should we use Section 11's calculated U-values or just areas for weighting?
+- Alternative: Use a fixed R_si value (e.g., 0.13 for walls as the dominant surface)?
+
+### 3.4 Implementation Steps
+
+1. **Add Column O field definitions** to Section12 rows 101, 102, 104
+2. **Add helper function** `calculateWeightedRsi()` for aggregate envelope
+3. **Add calculation function** `calculateMRTSurfaceTemperatures()` for Section 12
+4. **Integrate** into Section 12's calculation engines
+5. **Add to display updates** in Section 12's `updateCalculatedDisplayValues()`
+6. **Update styles** (already done - col-o styling applies globally)
+
+### 3.5 Deferred Items
+
+- **Emoji indicators**: Section 12 MRT values likely won't need condensation risk indicators (no 💧/🌵)
+- **Visual differentiation**: Consider different formatting if MRT should be distinguished from Section 11 surface temps
+
+---
+
+### Old Part 2 Content (Retained for Reference)
 
 ### 2.2 Add Column O Field Definitions
 
