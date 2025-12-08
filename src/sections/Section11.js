@@ -119,17 +119,18 @@ window.TEUI.SectionModules.sect11 = (function () {
         f_86: "6.69", // Walls Above Grade
         d_87: "0.00",
         f_87: "9.52", // Floor Exposed
-        d_88: "7.50", // Door area (matches S10 Target default)
+        // ✅ DRY CLEANUP: Area defaults d_88-d_93 removed - populated by syncAreasFromS10() only
+        // d_88: "7.50", // Door area (matches S10 Target default)
         g_88: "1.500", // Doors U-value (Target default, not ReferenceValues)
-        d_89: "81.14", // Window North area (matches S10 Target default)
+        // d_89: "81.14", // Window North area (matches S10 Target default)
         g_89: "0.900", // Window North U-value (Target default, not ReferenceValues)
-        d_90: "3.83", // Window East area (matches S10 Target default)
+        // d_90: "3.83", // Window East area (matches S10 Target default)
         g_90: "0.900", // Window East U-value (Target default, not ReferenceValues)
-        d_91: "159.00", // Window South area (matches S10 Target default)
+        // d_91: "159.00", // Window South area (matches S10 Target default)
         g_91: "0.900", // Window South U-value (Target default, not ReferenceValues)
-        d_92: "100.66", // Window West area (matches S10 Target default)
+        // d_92: "100.66", // Window West area (matches S10 Target default)
         g_92: "0.900", // Window West U-value (Target default, not ReferenceValues)
-        d_93: "0.00", // Skylights area (matches S10 Target default)
+        // d_93: "0.00", // Skylights area (matches S10 Target default)
         g_93: "0.900", // Skylights U-value (Target default, not ReferenceValues)
         d_94: "0.00",
         f_94: "4.00", // Walls Below Grade
