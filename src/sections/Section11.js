@@ -717,7 +717,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           classes: ["section-subheader", "align-center"],
         },
         i: {
-          content: "Heatloss\nkWh/Htg. Season",
+          content: "Heatloss\nkWh/Heating",
           classes: ["section-subheader", "align-center"],
         },
         j: {
@@ -725,7 +725,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           classes: ["section-subheader", "align-center"],
         },
         k: {
-          content: "Heatgain\nkWh/Cool Season",
+          content: "Heatgain\nkWh/Cooling",
           classes: ["section-subheader", "align-center"],
         },
         l: {
@@ -740,6 +740,10 @@ window.TEUI.SectionModules.sect11 = (function () {
           content: "Status",
           classes: ["section-subheader", "align-center"],
         }, // Updated label
+        o: {
+          content: "Surface °C",
+          classes: ["section-subheader", "align-center"],
+        },
       },
     },
     85: {
@@ -817,6 +821,14 @@ window.TEUI.SectionModules.sect11 = (function () {
           label: "Roof: Reference Compliance Ratio",
         },
         n: { fieldId: "n_85", type: "calculated", value: "✓" },
+        o: {
+          fieldId: "o_85",
+          type: "calculated",
+          value: "0.00",
+          dependencies: ["d_85", "g_85", "h_23", "d_25"],
+          label: "Roof: Interior Surface Temperature °C",
+          tooltip: true,
+        },
       },
     },
     86: {
@@ -894,6 +906,14 @@ window.TEUI.SectionModules.sect11 = (function () {
           label: "Walls Above Grade: Reference Compliance Ratio",
         },
         n: { fieldId: "n_86", type: "calculated", value: "✓" },
+        o: {
+          fieldId: "o_86",
+          type: "calculated",
+          value: "0.00",
+          dependencies: ["d_86", "g_86", "h_23", "d_25"],
+          label: "Walls Above Grade: Interior Surface Temperature °C",
+          tooltip: true,
+        },
       },
     },
     87: {
@@ -971,6 +991,14 @@ window.TEUI.SectionModules.sect11 = (function () {
           label: "Floor Exposed: Reference Compliance Ratio",
         },
         n: { fieldId: "n_87", type: "calculated", value: "✓" },
+        o: {
+          fieldId: "o_87",
+          type: "calculated",
+          value: "0.00",
+          dependencies: ["d_87", "g_87", "h_23", "d_25"],
+          label: "Floor Exposed: Interior Surface Temperature °C",
+          tooltip: true,
+        },
       },
     },
     88: {
@@ -1049,6 +1077,14 @@ window.TEUI.SectionModules.sect11 = (function () {
           label: "Doors: Reference Compliance Ratio",
         },
         n: { fieldId: "n_88", type: "calculated", value: "✓" },
+        o: {
+          fieldId: "o_88",
+          type: "calculated",
+          value: "0.00",
+          dependencies: ["d_88", "g_88", "h_23", "d_25"],
+          label: "Doors: Interior Surface Temperature °C",
+          tooltip: true,
+        },
       },
     },
     89: {
@@ -1127,6 +1163,14 @@ window.TEUI.SectionModules.sect11 = (function () {
           label: "Window Area North: Reference Compliance Ratio",
         },
         n: { fieldId: "n_89", type: "calculated", value: "✓" },
+        o: {
+          fieldId: "o_89",
+          type: "calculated",
+          value: "0.00",
+          dependencies: ["d_89", "g_89", "h_23", "d_25"],
+          label: "Window North: Interior Surface Temperature °C",
+          tooltip: true,
+        },
       },
     },
     90: {
@@ -1205,6 +1249,14 @@ window.TEUI.SectionModules.sect11 = (function () {
           label: "Window Area East: Reference Compliance Ratio",
         },
         n: { fieldId: "n_90", type: "calculated", value: "✓" },
+        o: {
+          fieldId: "o_90",
+          type: "calculated",
+          value: "0.00",
+          dependencies: ["d_90", "g_90", "h_23", "d_25"],
+          label: "Window East: Interior Surface Temperature °C",
+          tooltip: true,
+        },
       },
     },
     91: {
@@ -1283,6 +1335,14 @@ window.TEUI.SectionModules.sect11 = (function () {
           label: "Window Area South: Reference Compliance Ratio",
         },
         n: { fieldId: "n_91", type: "calculated", value: "✓" },
+        o: {
+          fieldId: "o_91",
+          type: "calculated",
+          value: "0.00",
+          dependencies: ["d_91", "g_91", "h_23", "d_25"],
+          label: "Window South: Interior Surface Temperature °C",
+          tooltip: true,
+        },
       },
     },
     92: {
@@ -1361,6 +1421,14 @@ window.TEUI.SectionModules.sect11 = (function () {
           label: "Window Area West: Reference Compliance Ratio",
         },
         n: { fieldId: "n_92", type: "calculated", value: "✓" },
+        o: {
+          fieldId: "o_92",
+          type: "calculated",
+          value: "0.00",
+          dependencies: ["d_92", "g_92", "h_23", "d_25"],
+          label: "Window West: Interior Surface Temperature °C",
+          tooltip: true,
+        },
       },
     },
     93: {
@@ -1439,6 +1507,14 @@ window.TEUI.SectionModules.sect11 = (function () {
           label: "Skylights: Reference Compliance Ratio",
         },
         n: { fieldId: "n_93", type: "calculated", value: "✓" },
+        o: {
+          fieldId: "o_93",
+          type: "calculated",
+          value: "0.00",
+          dependencies: ["d_93", "g_93", "h_23", "d_25"],
+          label: "Skylights: Interior Surface Temperature °C",
+          tooltip: true,
+        },
       },
     },
     94: {
@@ -1516,6 +1592,14 @@ window.TEUI.SectionModules.sect11 = (function () {
           label: "Walls Below Grade: Reference Compliance Ratio",
         },
         n: { fieldId: "n_94", type: "calculated", value: "✓" },
+        o: {
+          fieldId: "o_94",
+          type: "calculated",
+          value: "0.00",
+          dependencies: ["d_94", "g_94", "h_23"],
+          label: "Walls Below Grade: Interior Surface Temperature °C",
+          tooltip: true,
+        },
       },
     },
     95: {
@@ -1593,6 +1677,14 @@ window.TEUI.SectionModules.sect11 = (function () {
           label: "Floor Slab: Reference Compliance Ratio",
         },
         n: { fieldId: "n_95", type: "calculated", value: "✓" },
+        o: {
+          fieldId: "o_95",
+          type: "calculated",
+          value: "0.00",
+          dependencies: ["d_95", "g_95", "h_23"],
+          label: "Floor Slab: Interior Surface Temperature °C",
+          tooltip: true,
+        },
       },
     },
     96: {
@@ -1618,6 +1710,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         l: { content: "-" },
         m: {},
         n: {},
+        o: {},
       },
     },
     97: {
@@ -1868,6 +1961,7 @@ window.TEUI.SectionModules.sect11 = (function () {
       "l",
       "m",
       "n",
+      "o", // Surface Temperature (condensation risk feature)
     ];
     columns.forEach(col => {
       const cell = row.cells?.[col] ? { ...row.cells[col] } : {};
