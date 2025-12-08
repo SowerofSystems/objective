@@ -2079,6 +2079,12 @@ window.TEUI.SectionModules.sect11 = (function () {
         console.log(`[S11 Area Sync] Starting sync in ${currentMode} mode`);
       }
 
+      // ✅ PERFORMANCE: Batch state updates to prevent listener cascade
+      // Collect all updates first, then apply them in one pass
+      const targetUpdates = [];
+      const refUpdates = [];
+      const domUpdates = [];
+
       Object.entries(areaSourceMap).forEach(([s11Field, s10Field]) => {
         // Determine source fields
         const targetSourceField = s10Field;
@@ -2091,20 +2097,18 @@ window.TEUI.SectionModules.sect11 = (function () {
 
         // ✅ FIX: During dual-state sync, populate BOTH states
         if (needsDualSync) {
-          // Sync Target state
+          // Queue Target state update
           if (targetValue !== null && targetValue !== undefined) {
-            TargetState.setValue(s11Field, targetValue);
-            console.log(`[S11 Area Sync] ${s11Field} TARGET = ${targetValue}`);
+            targetUpdates.push({ field: s11Field, value: targetValue });
           }
 
-          // Sync Reference state (THIS IS THE FIX - ensures ref areas available for first calc)
+          // Queue Reference state update (ensures ref areas available for first calc)
           if (refValue !== null && refValue !== undefined) {
-            ReferenceState.setValue(s11Field, refValue);
-            console.log(`[S11 Area Sync] ${s11Field} REFERENCE = ${refValue}`);
+            refUpdates.push({ field: s11Field, value: refValue });
           }
 
-          // Update DOM with Target value (we're in Target mode)
-          setCalculatedValue(s11Field, targetValue, "number");
+          // Queue DOM update with Target value (we're in Target mode)
+          domUpdates.push({ field: s11Field, value: targetValue });
         } else {
           // Normal mode-aware sync
           const sourceFieldId =
@@ -2112,19 +2116,15 @@ window.TEUI.SectionModules.sect11 = (function () {
           const areaValue = window.TEUI.StateManager.getValue(sourceFieldId);
 
           if (areaValue !== null && areaValue !== undefined) {
-            // Write to appropriate S11 state
+            // Queue state update
             if (currentMode === "target") {
-              TargetState.setValue(s11Field, areaValue);
+              targetUpdates.push({ field: s11Field, value: areaValue });
             } else {
-              ReferenceState.setValue(s11Field, areaValue);
+              refUpdates.push({ field: s11Field, value: areaValue });
             }
 
-            // Update display element
-            setCalculatedValue(s11Field, areaValue, "number");
-
-            console.log(
-              `[S11 Area Sync] ${s11Field} = ${areaValue} (from ${sourceFieldId})`
-            );
+            // Queue DOM update
+            domUpdates.push({ field: s11Field, value: areaValue });
           } else {
             console.warn(
               `[S11 Area Sync] ${sourceFieldId} is null/undefined, skipping ${s11Field}`
@@ -2133,12 +2133,34 @@ window.TEUI.SectionModules.sect11 = (function () {
         }
       });
 
+      // ✅ PERFORMANCE: Apply all state updates silently (no StateManager publication yet)
+      console.log(`[S11 Area Sync] Applying ${targetUpdates.length} target updates, ${refUpdates.length} reference updates`);
+
+      targetUpdates.forEach(({ field, value }) => {
+        TargetState.setValue(field, value, "calculated"); // Direct state update, no global publish yet
+      });
+
+      refUpdates.forEach(({ field, value }) => {
+        ReferenceState.setValue(field, value, "calculated");
+      });
+
+      // ✅ PERFORMANCE: Update DOM elements directly without triggering ModeManager.setValue
+      domUpdates.forEach(({ field, value }) => {
+        const formattedValue = formatNumber(value, "number");
+        const element = document.querySelector(`[data-field-id="${field}"]`);
+        if (element) {
+          element.textContent = formattedValue;
+          element.classList.toggle("negative-value", value < 0);
+        }
+      });
+
       // Force UI refresh to show synced values in DOM
       console.log("[S11 Area Sync] Refreshing UI...");
       ModeManager.refreshUI();
 
-      // Trigger full recalculation to update dependent fields
-      console.log("[S11 Area Sync] Triggering recalculation...");
+      // ✅ PERFORMANCE: Trigger single recalculation after all updates complete
+      // This replaces ~40 individual S10 listener triggers with 1 batch calculation
+      console.log("[S11 Area Sync] Triggering single batch recalculation...");
       calculateAll();
 
       console.log("[S11 Area Sync] Sync completed successfully");
