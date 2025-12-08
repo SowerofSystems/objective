@@ -286,6 +286,9 @@ window.TEUI.SectionModules.sect12 = (function () {
         "n_110", // ✅ M-N-COMPLIANCE: ELA compliance checkmark
         "d_109",
         "d_110",
+        "o_101", // ✅ MRT: Air-facing aggregate surface temperature
+        "o_102", // ✅ MRT: Ground-facing aggregate surface temperature
+        "o_104", // ✅ MRT: Total building aggregate surface temperature
       ];
 
       calculatedFields.forEach(fieldId => {
@@ -328,6 +331,19 @@ window.TEUI.SectionModules.sect12 = (function () {
                 element.classList.add(
                   valueToDisplay === "✓" ? "checkmark" : "warning"
                 );
+              }
+            } else if (fieldId.startsWith("o_")) {
+              // ✅ MRT: Surface temperature fields with condensation risk indicators
+              const numericValue = window.TEUI.parseNumeric(valueToDisplay);
+              if (numericValue !== 0 && !isNaN(numericValue)) {
+                // Get interior temperature from Section03 for Passivhaus threshold calculation
+                const interiorTemp = getGlobalNumericValue("h_23");
+                const hasRisk = hasCondensationRisk(numericValue, interiorTemp);
+                const emoji = hasRisk ? "💧" : "🌵";
+                const formattedTemp = formatNumber(numericValue, "number");
+                element.textContent = `${emoji} ${formattedTemp}`;
+              } else {
+                element.textContent = "";
               }
             } else {
               // Numeric fields - parse and format
@@ -524,6 +540,10 @@ window.TEUI.SectionModules.sect12 = (function () {
           classes: ["section-subheader", "align-right"],
         },
         n: { content: "N", classes: ["section-subheader", "align-center"] },
+        o: {
+          content: "MRT °C",
+          classes: ["section-subheader", "align-right"],
+        },
       },
     },
     101: {
@@ -624,6 +644,14 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         m: { content: "", classes: ["reference-value"] },
         n: { content: "" },
+        o: {
+          fieldId: "o_101",
+          type: "calculated",
+          value: "0.00",
+          dependencies: ["g_101", "h_23", "d_25", "d_101"],
+          label: "Air-facing Aggregate: Interior Surface Temperature °C",
+          tooltip: true,
+        },
       },
     },
     102: {
@@ -695,6 +723,14 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         m: { content: "", classes: ["reference-value"] },
         n: { content: "" },
+        o: {
+          fieldId: "o_102",
+          type: "calculated",
+          value: "0.00",
+          dependencies: ["g_102", "h_23", "d_102"],
+          label: "Ground-facing Aggregate: Interior Surface Temperature °C",
+          tooltip: true,
+        },
       },
     },
     103: {
@@ -835,6 +871,15 @@ window.TEUI.SectionModules.sect12 = (function () {
           classes: ["total-row-text"],
           dependencies: ["m_104"],
           label: "Passive House Compliance Status",
+        },
+        o: {
+          fieldId: "o_104",
+          type: "calculated",
+          value: "0.00",
+          dependencies: ["g_104", "h_23", "d_25", "d_101", "d_102"],
+          label: "Total Building Aggregate: Interior Surface Temperature °C",
+          tooltip: true,
+          classes: ["total-row-text"],
         },
       },
     },
@@ -1182,6 +1227,7 @@ window.TEUI.SectionModules.sect12 = (function () {
       "l",
       "m",
       "n",
+      "o", // MRT Surface Temperature (condensation risk feature)
     ];
     columns.forEach(col => {
       if (row.cells && row.cells[col]) {
@@ -2607,6 +2653,113 @@ window.TEUI.SectionModules.sect12 = (function () {
     };
   }
 
+  /**
+   * Calculate Mean Radiant Temperature (MRT) surface temperatures for Section 12
+   * Uses same formula as Section 11: T_si = T_interior - (U × ΔT × R_si)
+   * @param {boolean} isReferenceCalculation - Whether this is a Reference calculation
+   */
+  function calculateMRTSurfaceTemperatures(isReferenceCalculation = false) {
+    const interiorTemp = getGlobalNumericValue("h_23");
+    const winterAvgTemp = getGlobalNumericValue("d_25");
+    const groundTemp = 10;
+
+    // Get values from current calculation context
+    const d101_areaAir = isReferenceCalculation
+      ? parseFloat(getGlobalNumericValue("ref_d_101")) || 0
+      : parseFloat(getGlobalNumericValue("d_101")) || 0;
+
+    const d102_areaGround = isReferenceCalculation
+      ? parseFloat(getGlobalNumericValue("ref_d_102")) || 0
+      : parseFloat(getGlobalNumericValue("d_102")) || 0;
+
+    const g101_uAir = isReferenceCalculation
+      ? parseFloat(getGlobalNumericValue("ref_g_101")) || 0
+      : parseFloat(getGlobalNumericValue("g_101")) || 0;
+
+    const g102_uGround = isReferenceCalculation
+      ? parseFloat(getGlobalNumericValue("ref_g_102")) || 0
+      : parseFloat(getGlobalNumericValue("g_102")) || 0;
+
+    const g104_uCombined = isReferenceCalculation
+      ? parseFloat(getGlobalNumericValue("ref_g_104")) || 0
+      : parseFloat(getGlobalNumericValue("g_104")) || 0;
+
+    // Calculate o_101: Air-facing aggregate
+    // Formula: T_si = T_interior - (U × ΔT × R_si)
+    // R_si = 0.13 (wall-dominated, conservative choice)
+    let o101_surfaceTemp = null;
+    if (d101_areaAir > 0) {
+      const deltaT_air = interiorTemp - winterAvgTemp;
+      o101_surfaceTemp = interiorTemp - (g101_uAir * deltaT_air * 0.13);
+      o101_surfaceTemp = Math.round(o101_surfaceTemp * 100) / 100;
+    }
+
+    // Calculate o_102: Ground-facing aggregate
+    // Formula: T_si = T_interior - (U × ΔT × R_si)
+    // R_si = 0.17 (downward heat flow)
+    let o102_surfaceTemp = null;
+    if (d102_areaGround > 0) {
+      const deltaT_ground = interiorTemp - groundTemp;
+      o102_surfaceTemp = interiorTemp - (g102_uGround * deltaT_ground * 0.17);
+      o102_surfaceTemp = Math.round(o102_surfaceTemp * 100) / 100;
+    }
+
+    // Calculate o_104: Total building aggregate
+    // Uses area-weighted temperature difference
+    // Formula: T_si = T_interior - (U × ΔT_weighted × R_si)
+    // R_si = 0.13 (conservative choice for mixed aggregate)
+    let o104_surfaceTemp = null;
+    const totalArea = d101_areaAir + d102_areaGround;
+    if (totalArea > 0) {
+      const deltaT_air = interiorTemp - winterAvgTemp;
+      const deltaT_ground = interiorTemp - groundTemp;
+      const deltaT_weighted =
+        ((deltaT_air * d101_areaAir) + (deltaT_ground * d102_areaGround)) / totalArea;
+      o104_surfaceTemp = interiorTemp - (g104_uCombined * deltaT_weighted * 0.13);
+      o104_surfaceTemp = Math.round(o104_surfaceTemp * 100) / 100;
+    }
+
+    // Set calculated values
+    if (o101_surfaceTemp !== null) {
+      setCalculatedValue("o_101", o101_surfaceTemp, "number", isReferenceCalculation);
+    } else {
+      setCalculatedValue("o_101", "", "number", isReferenceCalculation);
+    }
+
+    if (o102_surfaceTemp !== null) {
+      setCalculatedValue("o_102", o102_surfaceTemp, "number", isReferenceCalculation);
+    } else {
+      setCalculatedValue("o_102", "", "number", isReferenceCalculation);
+    }
+
+    if (o104_surfaceTemp !== null) {
+      setCalculatedValue("o_104", o104_surfaceTemp, "number", isReferenceCalculation);
+    } else {
+      setCalculatedValue("o_104", "", "number", isReferenceCalculation);
+    }
+
+    return {
+      o_101: o101_surfaceTemp,
+      o_102: o102_surfaceTemp,
+      o_104: o104_surfaceTemp,
+    };
+  }
+
+  /**
+   * Determine if surface temperature indicates condensation risk
+   * Per Passivhaus standard: Risk threshold = T_interior - 4.2°C
+   * @param {number|null} surfaceTemp - Interior surface temperature (°C)
+   * @param {number} interiorTemp - Indoor setpoint h_23 (°C)
+   * @returns {boolean} - True if surface temp < (T_interior - 4.2°C) (condensation risk)
+   */
+  function hasCondensationRisk(surfaceTemp, interiorTemp) {
+    if (surfaceTemp === null || surfaceTemp === undefined) {
+      return false;
+    }
+    const riskThreshold = interiorTemp - 4.2;
+    return surfaceTemp < riskThreshold;
+  }
+
   function calculateAll() {
     // ✅ DUAL-ENGINE: Always run BOTH engines as per DUAL-STATE-CHEATSHEET mandate
     calculateReferenceModel(); // Reads ReferenceState → stores ref_ prefixed
@@ -2688,6 +2841,9 @@ window.TEUI.SectionModules.sect12 = (function () {
       // ⚠️ M-N-COMPLIANCE: calculateOperationalCompliance() moved to calculateAll()
       // to ensure ref_d_109/ref_d_110 are published before Target reads them
 
+      // ✅ MRT: Calculate Mean Radiant Temperature surface temperatures
+      const mrtResults = calculateMRTSurfaceTemperatures(true);
+
       // Store Reference Model results with ref_ prefix for downstream sections
       storeReferenceResults(
         volumeResults,
@@ -2698,7 +2854,8 @@ window.TEUI.SectionModules.sect12 = (function () {
         ae10Results,
         airLeakageResults,
         envelopeResults,
-        envelopeTotalsResults
+        envelopeTotalsResults,
+        mrtResults
       );
 
       // Update reference indicators after all calculations
@@ -2722,7 +2879,8 @@ window.TEUI.SectionModules.sect12 = (function () {
     ae10Results,
     airLeakageResults,
     envelopeResults,
-    envelopeTotalsResults
+    envelopeTotalsResults,
+    mrtResults
   ) {
     if (!window.TEUI?.StateManager) return;
 
@@ -2737,6 +2895,7 @@ window.TEUI.SectionModules.sect12 = (function () {
       ...airLeakageResults,
       ...envelopeResults,
       ...envelopeTotalsResults, // ✅ FIX: Include envelope totals (i_104, k_104, etc.)
+      ...mrtResults, // ✅ MRT: Include MRT surface temperatures
     };
 
     // ✅ S11 PATTERN: Store results for later re-writing
@@ -2782,6 +2941,9 @@ window.TEUI.SectionModules.sect12 = (function () {
 
       // ⚠️ M-N-COMPLIANCE: calculateOperationalCompliance() moved to calculateAll()
       // to ensure ref_d_109/ref_d_110 are published before Target reads them
+
+      // ✅ MRT: Calculate Mean Radiant Temperature surface temperatures
+      calculateMRTSurfaceTemperatures(false);
 
       // Update reference indicators after all calculations
       updateAllReferenceIndicators();

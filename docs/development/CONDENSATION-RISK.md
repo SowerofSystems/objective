@@ -1,6 +1,6 @@
 # Condensation Risk Feature - Implementation Workplan
 
-**Status**: ✅ Part 1 Complete | ✅ Part 2 Complete | 🚧 Part 3 In Planning
+**Status**: ✅ Part 1 Complete | ✅ Part 2 Complete | ✅ Part 3 Complete
 **Date Started**: 2025-12-07
 **Last Updated**: 2025-12-08
 **Feature**: Surface condensation risk detection and MRT calculation system
@@ -337,14 +337,14 @@ updateCalculatedDisplayValues: function() {
 
 ---
 
-## 🚧 Part 3: Section12 Mean Radiant Temperature (MRT) (IN PLANNING)
+## ✅ Part 3: Section12 Mean Radiant Temperature (MRT) (COMPLETE)
 
-**Status**: Design phase - awaiting implementation
+**Status**: ✅ Implemented and tested (2025-12-08)
 **Purpose**: Calculate Mean Radiant Temperature (MRT) for thermal comfort assessment
 
 ### 3.1 Overview
 
-Section 12 will calculate MRT surface temperatures for the building envelope aggregates. This extends the surface temperature calculation system from Section 11 to provide whole-building thermal comfort metrics.
+Section 12 calculates MRT surface temperatures for the building envelope aggregates. This extends the surface temperature calculation system from Section 11 to provide whole-building thermal comfort metrics.
 
 **Key Design Decisions**:
 - **Column O** added to Section 12 (same infrastructure as Section 11)
@@ -378,44 +378,69 @@ T_si = T_interior - (U × ΔT × R_si)
 - Row 102 uses R_si = 0.17 (downward heat flow for ground contact)
 - Row 104 uses area-weighted temperature difference for combined air + ground surfaces
 
-### 3.3 Weighted R_si Calculation Challenge
+### 3.3 Implementation Summary
 
-**Problem**: The aggregate envelope (row 104) combines surfaces with different R_si values:
-- Roof/Skylights: R_si = 0.10 (upward heat flow)
-- Walls/Doors/Windows: R_si = 0.13 (horizontal heat flow)
-- Floors: R_si = 0.17 (downward heat flow)
+**What was built:**
 
-**Proposed Solution**: Calculate area-weighted average R_si for row 104:
+1. **Column O field definitions** added to Section12 rows 101, 102, 104:
+   - o_101: Air-facing aggregate surface temperature
+   - o_102: Ground-facing aggregate surface temperature
+   - o_104: Total building aggregate surface temperature
+   - Added "MRT °C" header to Section 12
 
-```javascript
-// Pseudo-code for weighted R_si calculation
-const roofArea = d_85; // From Section 11
-const wallsArea = d_86 + d_88; // Walls + Doors (from Section 11)
-const totalArea = roofArea + wallsArea;
+2. **Calculation functions** (Section12.js lines 2640-2745):
+   - `calculateMRTSurfaceTemperatures()` - Calculates surface temps for all three aggregate fields
+   - `hasCondensationRisk()` - Reused from Section 11 for Passivhaus threshold check
+   - Uses area-weighted temperature difference for o_104 (not area-weighted R_si)
 
-const R_si_weighted = totalArea > 0
-  ? (roofArea * 0.10 + wallsArea * 0.13) / totalArea
-  : 0.13; // Default to walls if no area
-```
+3. **Engine integration**:
+   - Added MRT calculations to `calculateReferenceModel()`
+   - Added MRT calculations to `calculateTargetModel()`
+   - Updated `storeReferenceResults()` to include mrtResults
 
-**Decision needed**:
-- Should we include window areas in the weighted R_si calculation?
-- Should we use Section 11's calculated U-values or just areas for weighting?
-- Alternative: Use a fixed R_si value (e.g., 0.13 for walls as the dominant surface)?
+4. **Visual indicators** (Section12.js lines 335-347):
+   - 🌵 (cactus) when temp ≥ (h_23 - 4.2°C) - safe, no condensation risk
+   - 💧 (water droplet) when temp < (h_23 - 4.2°C) - condensation risk per Passivhaus standard
+   - Added o_101, o_102, o_104 to `updateCalculatedDisplayValues()` calculatedFields array
 
-### 3.4 Implementation Steps
+5. **Column infrastructure**:
+   - Added "o" to columns array in `createLayoutRow()` function
+   - Existing col-o CSS from Section 11 applies globally (already in place)
 
-1. **Add Column O field definitions** to Section12 rows 101, 102, 104
-2. **Add helper function** `calculateWeightedRsi()` for aggregate envelope
-3. **Add calculation function** `calculateMRTSurfaceTemperatures()` for Section 12
-4. **Integrate** into Section 12's calculation engines
-5. **Add to display updates** in Section 12's `updateCalculatedDisplayValues()`
-6. **Update styles** (already done - col-o styling applies globally)
+**Design decisions made:**
+- Used **fixed R_si values** instead of area-weighted R_si for simplicity:
+  - o_101: R_si = 0.13 (wall-dominated, conservative)
+  - o_102: R_si = 0.17 (downward heat flow)
+  - o_104: R_si = 0.13 (conservative for mixed aggregate)
+- Used **area-weighted temperature difference** for o_104 instead of weighted R_si
+- Included **emoji indicators** (not deferred) - users want visual feedback at aggregate level too
 
-### 3.5 Deferred Items
+### 3.4 Understanding the Physics: Why Bad Insulation = Colder Surfaces
 
-- **Emoji indicators**: Section 12 MRT values likely won't need condensation risk indicators (no 💧/🌵)
-- **Visual differentiation**: Consider different formatting if MRT should be distinguished from Section 11 surface temps
+**The counterintuitive result**: When insulation gets WORSE (U-value increases), the interior surface temperature DECREASES (gets colder), not warmer.
+
+**The formula**: `T_si = T_interior - (U × ΔT × R_si)`
+
+**Example scenario** (T_interior = 21°C, T_exterior = -5°C, ΔT = 26°C, R_si = 0.13):
+
+| Insulation Quality | U-value | Calculation | Surface Temp | Threshold | Result |
+|-------------------|---------|-------------|--------------|-----------|--------|
+| **Good** (wall) | 0.15 | 21 - (0.15 × 26 × 0.13) | 20.49°C | 16.8°C | 🌵 Safe |
+| **Bad** (poor wall) | 1.0 | 21 - (1.0 × 26 × 0.13) | 17.62°C | 16.8°C | 🌵 Safe |
+| **Terrible** (uninsulated) | 2.0 | 21 - (2.0 × 26 × 0.13) | 14.24°C | 16.8°C | 💧 Risk |
+| **Window** (typical) | 1.5 | 21 - (1.5 × 26 × 0.13) | 15.93°C | 16.8°C | 💧 Risk |
+
+**Why this happens**:
+- **Poor insulation** allows more heat to flow through the assembly (higher U-value = higher heat flow)
+- More heat escapes from inside → outside
+- The **interior surface gets colder** because it's losing heat faster to the exterior
+- The cold exterior temperature "pulls" the surface temperature down
+
+**Key insights**:
+- **Good insulation** keeps the surface close to room temperature (warm and safe)
+- **Bad insulation** causes the surface to drop toward exterior temperature (cold and risky)
+- **Windows fail often** because their U-values (1.5-2.5) are 5-10x worse than insulated walls (0.15-0.30)
+- **Opaque assemblies need to be terrible** (U > 1.5) to show condensation risk, which is why properly insulated walls almost never have this problem
 
 ---
 
