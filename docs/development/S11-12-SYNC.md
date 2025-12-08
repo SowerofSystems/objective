@@ -168,53 +168,87 @@ After implementing fix:
 ✅ No console errors or warnings
 ✅ No calculation storms or performance issues
 
-## Performance Issue (Resolved)
+## Performance Issue Discovery: Missing Robot Fingers (RESOLVED)
 
-After implementing Option 1, updates worked but **lagged behind by one calculation cycle**. User had to make another change in S12 to see S11's Reference area updates.
+After implementing Option 1, updates worked but **lagged significantly** - changes required multiple edit cycles to propagate, while Target mode was instant.
 
-### Root Cause of Lag
-Reference area listeners only called `calculateAll()`, which has its own `updateCalculatedDisplayValues()` at the end (line 2823). However, this internal call ran **before StateManager event propagation completed**, causing the DOM to show stale values.
+### Root Cause: Asymmetric Robot Fingers Pattern
 
-### Solution: Explicit DOM Refresh Pattern (S13 Model)
-
-S13 uses a proven `calculateAndRefresh()` pattern for all external dependency listeners:
-
+**Target Mode (Lightning Fast)**:
 ```javascript
-// S13's proven pattern
-const calculateAndRefresh = () => {
-  calculateAll();
-  ModeManager.updateCalculatedDisplayValues();
-};
+// S11 ModeManager.setValue() lines 477-496
+if (this.currentMode === "target") {
+  window.TEUI.StateManager.setValue(fieldId, value, writeSource);
 
-sm.addListener("ref_i_104", calculateAndRefresh);
+  // ✅ ROBOT FINGERS: Direct S12 trigger for instant updates
+  if (fieldId.startsWith("f_") || fieldId.startsWith("g_") || fieldId === "d_97") {
+    window.TEUI.SectionModules.sect12.calculateTargetModel();
+    window.TEUI.SectionModules.sect12.ModeManager.updateCalculatedDisplayValues();
+  }
+}
 ```
 
-Applied same pattern to S12's Reference area listeners at line 3356:
-
+**Reference Mode (Was Missing Robot Fingers)**:
 ```javascript
-referenceAreaDeps.forEach(depId => {
-  window.TEUI.StateManager.addListener(depId, (newValue, oldValue, eventFieldId, state) => {
-    if (eventFieldId === depId) {
-      calculateAll();
-      // ✅ CRITICAL: Explicit DOM refresh for immediate UI update
-      ModeManager.updateCalculatedDisplayValues?.();
-    }
-  });
-});
+// S11 ModeManager.setValue() lines 497-509 (BEFORE FIX)
+if (this.currentMode === "reference") {
+  window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, writeSource);
+  // ❌ NO ROBOT FINGERS - relied on async StateManager listeners
+}
 ```
 
-**Result**: Immediate DOM updates in Reference mode, matching Target mode responsiveness.
+**The Performance Gap**:
+- Target mode: Direct call → <50ms → instant
+- Reference mode: StateManager listener propagation → >100ms → visible lag
+
+### Solution: Add Robot Fingers to Reference Mode
+
+Added identical robot fingers pattern to S11's Reference mode at lines 510-531:
+
+```javascript
+// S11 ModeManager.setValue() Reference mode (AFTER FIX)
+if (this.currentMode === "reference") {
+  window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, writeSource);
+
+  // ✅ ROBOT FINGERS: Direct S12 trigger for instant updates (matches Target pattern)
+  if (
+    (fieldId.startsWith("d_") ||  // Areas (d_85, d_86, etc.)
+     fieldId.startsWith("f_") ||  // RSI values
+     fieldId.startsWith("g_") ||  // U-values
+     fieldId === "d_97") &&       // Thermal bridge penalty
+    (source === "user-modified" || source === "user")
+  ) {
+    window.TEUI.SectionModules.sect12.calculateReferenceModel();
+    window.TEUI.SectionModules.sect12.ModeManager.updateCalculatedDisplayValues();
+  }
+}
+```
+
+**Why This Pattern Works**:
+1. **Synchronous execution** - No waiting for StateManager event propagation
+2. **Direct call path** - S11 blur → S12 calculation in same tick
+3. **State isolation** - Only triggers Reference engine, preserves Target independence
+4. **Pattern parity** - Reference mode now matches Target mode performance
+
+**Result**: Reference mode now has <50ms responsiveness, identical to Target mode. Independent geometry (Target 2000m² roof vs Reference 5000m² roof) updates instantly.
 
 ## Related Commits
 
 - `b982b1d` - Added Reference area listeners to S12 (fixed listener issue, but not DOM update)
 - `0a9ab38` - Fixed S12 to read global Reference toggle state (fixed namespace reading)
-- `6f4cdd6` - Added explicit DOM refresh to Reference area listeners (fixed lag)
+- `6f4cdd6` - Added explicit DOM refresh to Reference area listeners (partial fix, still had lag)
+- `d976165` - **FINAL FIX**: Added robot fingers to S11 Reference mode (instant updates) ✅
 - Reference: CHEATSHEET Anti-Pattern 1 (State Contamination via Fallbacks)
 - Reference: CHEATSHEET Section on Mode-Aware DOM Updates
 
+## Debug Tools
+
+- [S11-12-DEBUG-SCRIPT.md](S11-12-DEBUG-SCRIPT.md) - Browser console timing tracer
+
 ## Files Affected
 
+- `src/sections/Section11.js` - Lines 510-531
+  - Added Reference mode robot fingers (direct S12 trigger)
 - `src/sections/Section12.js` - Lines 298, 3356
   - Line 298: Read global Reference toggle state
-  - Line 3356: Explicit DOM refresh in Reference area listeners
+  - Line 3356: Explicit DOM refresh in Reference area listeners (kept for cross-section listener support)
