@@ -3431,6 +3431,7 @@ window.TEUI.SectionModules.sect12 = (function () {
     onSectionRendered: onSectionRendered,
     calculateAll: calculateAll,
     calculateTargetModel: calculateTargetModel, // ✅ CRITICAL: Expose for state-isolated forced recalculation
+    calculateReferenceModel: calculateReferenceModel, // ✅ CRITICAL: Expose for S11 robot fingers in Reference mode
     calculateCombinedUValue: calculateCombinedUValue,
     ModeManager: ModeManager, // ✅ CRITICAL FIX: Enable FieldManager integration
     // ✅ PHASE 2: Expose state objects for import sync
