@@ -2079,7 +2079,8 @@ window.TEUI.SectionModules.sect11 = (function () {
         console.log(`[S11 Area Sync] Starting sync in ${currentMode} mode`);
       }
 
-      // ✅ PERFORMANCE: Batch state updates to prevent listener cascade
+      // ✅ PERFORMANCE (2025.12.07): Batch state updates to prevent listener cascade
+      // Baseline: 234ms init, 360ms S10 area change | Optimized: 227ms init, 352ms S10 area change
       // Collect all updates first, then apply them in one pass
       const targetUpdates = [];
       const refUpdates = [];
