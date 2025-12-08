@@ -1833,27 +1833,55 @@ window.TEUI.SectionModules.sect03 = (function () {
   }
 
   /**
-   * Calculate Winter Average Temperature for condensation risk assessment
-   * Formula: d_25 = 18 - (HDD / heating_season_days)
-   * where heating_season_days = 365 - cooling_days
+   * Calculate Winter Average Temperature (d_25) - For condensation risk assessment
+   *
+   * PRIORITY 1: Use Winter_Tdb_Avg from ClimateValues.js (direct weather data)
+   * PRIORITY 2 (Fallback): Calculate from HDD formula =18 - (D20 / (365 - M19))
+   *
+   * Where:
+   *   - Winter_Tdb_Avg = Direct winter average from climate database
+   *   - 18°C is the HDD base temperature (fallback calculation)
+   *   - D20 is HDD18 (Heating Degree Days)
+   *   - M19 is Cooling Days
+   *   - (365 - M19) is the heating season length in days
    */
   function calculateWinterAverageTemperature() {
-    const hdd18 = getNumericValue("d_20"); // HDD from climate data
-    const coolingDays = getNumericValue("m_19"); // User-set cooling days
+    // PRIORITY 1: Try to get Winter_Tdb_Avg from selected climate location
+    const provinceValue = DualState.getValue("d_19");
+    const cityValue = DualState.getValue("h_19");
+    let winterAvgC = null;
 
-    // Calculate heating season days
-    const heatingDays = 365 - coolingDays;
-
-    // Prevent division by zero
-    if (heatingDays <= 0) {
-      console.warn("[S03] Invalid heating days calculation - defaulting to 0°C");
-      setFieldValue("d_25", 0);
-      setFieldValue("e_25", 32);
-      return 0;
+    // Attempt to get Winter_Tdb_Avg from ClimateDataService
+    if (provinceValue && cityValue) {
+      const cityData = ClimateDataService.getCityData(provinceValue, cityValue);
+      if (cityData?.Winter_Tdb_Avg !== undefined && cityData.Winter_Tdb_Avg !== null) {
+        winterAvgC = cityData.Winter_Tdb_Avg;
+        console.log(`[S03] Using Winter_Tdb_Avg from ClimateValues: ${winterAvgC}°C`);
+      }
     }
 
-    // Calculate winter average: base temp - (HDD / heating days)
-    const winterAvgC = 18 - (hdd18 / heatingDays);
+    // PRIORITY 2 (Fallback): Calculate from HDD and cooling days if not available
+    if (winterAvgC === null) {
+      const hdd18 = getNumericValue("d_20"); // HDD from climate data
+      const coolingDays = getNumericValue("m_19"); // User-set cooling days
+
+      // Calculate heating season days
+      const heatingDays = 365 - coolingDays;
+
+      // Prevent division by zero
+      if (heatingDays <= 0) {
+        console.warn("[S03] Invalid heating days calculation - defaulting to 0°C");
+        setFieldValue("d_25", 0);
+        setFieldValue("e_25", 32);
+        return 0;
+      }
+
+      // Calculate winter average: base temp - (HDD / heating days)
+      winterAvgC = 18 - (hdd18 / heatingDays);
+      console.log(`[S03] Calculated Winter Average from HDD formula: ${winterAvgC}°C`);
+    }
+
+    // Round to 2 decimal places for storage
     const winterAvgC_rounded = Math.round(winterAvgC * 100) / 100;
 
     setFieldValue("d_25", winterAvgC_rounded);
