@@ -295,7 +295,12 @@ window.TEUI.SectionModules.sect12 = (function () {
       calculatedFields.forEach(fieldId => {
         let valueToDisplay;
 
-        if (this.currentMode === "reference") {
+        // ✅ FIX: Read global Reference toggle state instead of local currentMode
+        // This ensures S12 displays correct values when Reference mode is active globally
+        // even if S12's local ModeManager.currentMode hasn't been synced
+        const isReferenceMode = window.TEUI?.ReferenceToggle?.isReferenceMode?.() || false;
+
+        if (isReferenceMode) {
           // ✅ STRICT MODE ISOLATION: Reference mode reads ONLY ref_ values
           // Never fall back to Target values (Anti-Pattern 1 from CHEATSHEET)
           valueToDisplay = window.TEUI.StateManager.getValue(`ref_${fieldId}`);
