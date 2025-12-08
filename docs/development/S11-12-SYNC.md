@@ -168,12 +168,53 @@ After implementing fix:
 ✅ No console errors or warnings
 ✅ No calculation storms or performance issues
 
+## Performance Issue (Resolved)
+
+After implementing Option 1, updates worked but **lagged behind by one calculation cycle**. User had to make another change in S12 to see S11's Reference area updates.
+
+### Root Cause of Lag
+Reference area listeners only called `calculateAll()`, which has its own `updateCalculatedDisplayValues()` at the end (line 2823). However, this internal call ran **before StateManager event propagation completed**, causing the DOM to show stale values.
+
+### Solution: Explicit DOM Refresh Pattern (S13 Model)
+
+S13 uses a proven `calculateAndRefresh()` pattern for all external dependency listeners:
+
+```javascript
+// S13's proven pattern
+const calculateAndRefresh = () => {
+  calculateAll();
+  ModeManager.updateCalculatedDisplayValues();
+};
+
+sm.addListener("ref_i_104", calculateAndRefresh);
+```
+
+Applied same pattern to S12's Reference area listeners at line 3356:
+
+```javascript
+referenceAreaDeps.forEach(depId => {
+  window.TEUI.StateManager.addListener(depId, (newValue, oldValue, eventFieldId, state) => {
+    if (eventFieldId === depId) {
+      calculateAll();
+      // ✅ CRITICAL: Explicit DOM refresh for immediate UI update
+      ModeManager.updateCalculatedDisplayValues?.();
+    }
+  });
+});
+```
+
+**Result**: Immediate DOM updates in Reference mode, matching Target mode responsiveness.
+
 ## Related Commits
 
 - `b982b1d` - Added Reference area listeners to S12 (fixed listener issue, but not DOM update)
+- `0a9ab38` - Fixed S12 to read global Reference toggle state (fixed namespace reading)
+- `6f4cdd6` - Added explicit DOM refresh to Reference area listeners (fixed lag)
 - Reference: CHEATSHEET Anti-Pattern 1 (State Contamination via Fallbacks)
 - Reference: CHEATSHEET Section on Mode-Aware DOM Updates
 
 ## Files Affected
 
-- `src/sections/Section12.js` - Line 298 in `updateCalculatedDisplayValues()` function
+- `src/sections/Section12.js` - Lines 298, 3356
+  - Line 298: Read global Reference toggle state
+  - Line 3356: Explicit DOM refresh in Reference area listeners
