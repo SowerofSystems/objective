@@ -658,6 +658,13 @@ window.TEUI.SectionModules.sect03 = (function () {
 
     // console.log(`[S03] ${calculationMode.toUpperCase()} TEMP SELECTION: ${janTempKey} = ${selectedJanTemp} (Critical: ${isCritical})`);
 
+    // ✅ Winter Average Temperature - Direct from ClimateValues.js (matches d_23 pattern)
+    const winterAvgC = cityData.Winter_Tdb_Avg;
+    // Celsius-to-Fahrenheit conversion (integer format like other temp conversions)
+    const winterAvgF = winterAvgC !== null && winterAvgC !== undefined
+      ? (winterAvgC * 9) / 5 + 32
+      : null;
+
     const climateValues = {
       d_20: hdd !== null && hdd !== undefined && hdd !== 666 ? hdd : "N/A",
       d_21:
@@ -666,6 +673,8 @@ window.TEUI.SectionModules.sect03 = (function () {
       d_23: selectedJanTemp, // ✅ Now uses occupancy-aware temperature selection
       d_24: cityData.July_2_5_Tdb || "34",
       l_22: cityData["Elev ASL (m)"] || "80",
+      d_25: winterAvgC !== null && winterAvgC !== undefined ? winterAvgC : "N/A", // ✅ Winter avg from ClimateValues (matches d_23 pattern)
+      e_25: winterAvgF !== null && winterAvgF !== undefined ? winterAvgF : "N/A", // ✅ Fahrenheit conversion
     };
 
     // console.log(`[S03] Climate values for ${city} (${calculationMode}):`, climateValues);
@@ -1833,65 +1842,12 @@ window.TEUI.SectionModules.sect03 = (function () {
   }
 
   /**
-   * Calculate Winter Average Temperature (d_25) - For condensation risk assessment
+   * ❌ DEPRECATED: Winter Average Temperature now handled in getClimateDataForState()
+   * This function has been removed - d_25/e_25 are now climate data fields (like d_23)
+   * and are fetched directly from ClimateValues.js in the climate data loop.
    *
-   * PRIORITY 1: Use Winter_Tdb_Avg from ClimateValues.js (direct weather data)
-   * PRIORITY 2 (Fallback): Calculate from HDD formula =18 - (D20 / (365 - M19))
-   *
-   * Where:
-   *   - Winter_Tdb_Avg = Direct winter average from climate database
-   *   - 18°C is the HDD base temperature (fallback calculation)
-   *   - D20 is HDD18 (Heating Degree Days)
-   *   - M19 is Cooling Days
-   *   - (365 - M19) is the heating season length in days
+   * See getClimateDataForState() lines 661-676 for the new implementation.
    */
-  function calculateWinterAverageTemperature() {
-    // PRIORITY 1: Try to get Winter_Tdb_Avg from selected climate location
-    const provinceValue = DualState.getValue("d_19");
-    const cityValue = DualState.getValue("h_19");
-    let winterAvgC = null;
-
-    // Attempt to get Winter_Tdb_Avg from ClimateDataService
-    if (provinceValue && cityValue) {
-      const cityData = ClimateDataService.getCityData(provinceValue, cityValue);
-      if (cityData?.Winter_Tdb_Avg !== undefined && cityData.Winter_Tdb_Avg !== null) {
-        winterAvgC = cityData.Winter_Tdb_Avg;
-        console.log(`[S03] Using Winter_Tdb_Avg from ClimateValues: ${winterAvgC}°C`);
-      }
-    }
-
-    // PRIORITY 2 (Fallback): Calculate from HDD and cooling days if not available
-    if (winterAvgC === null) {
-      const hdd18 = getNumericValue("d_20"); // HDD from climate data
-      const coolingDays = getNumericValue("m_19"); // User-set cooling days
-
-      // Calculate heating season days
-      const heatingDays = 365 - coolingDays;
-
-      // Prevent division by zero
-      if (heatingDays <= 0) {
-        console.warn("[S03] Invalid heating days calculation - defaulting to 0°C");
-        setFieldValue("d_25", 0);
-        setFieldValue("e_25", 32);
-        return 0;
-      }
-
-      // Calculate winter average: base temp - (HDD / heating days)
-      winterAvgC = 18 - (hdd18 / heatingDays);
-      console.log(`[S03] Calculated Winter Average from HDD formula: ${winterAvgC}°C`);
-    }
-
-    // Round to 2 decimal places for storage
-    const winterAvgC_rounded = Math.round(winterAvgC * 100) / 100;
-
-    setFieldValue("d_25", winterAvgC_rounded);
-
-    // Convert to Fahrenheit
-    const winterAvgF = Math.round((winterAvgC_rounded * 9) / 5 + 32);
-    setFieldValue("e_25", winterAvgF);
-
-    return winterAvgC_rounded;
-  }
 
   /**
    * Calculate all values - DUAL-ENGINE PATTERN
@@ -1947,7 +1903,7 @@ window.TEUI.SectionModules.sect03 = (function () {
       calculateHeatingCompliance(); // n_23: Check h_23 >= m_23 compliance
       calculateCoolingSetpoint_h24();
       calculateTemperatures();
-      calculateWinterAverageTemperature(); // d_25, e_25: Winter average for condensation risk
+      // d_25, e_25 now handled in climate data loop (getClimateDataForState) - no separate calculation needed
       calculateGroundFacing();
       updateCoolingDependents();
       updateCriticalOccupancyFlag();
@@ -2024,7 +1980,7 @@ window.TEUI.SectionModules.sect03 = (function () {
       calculateHeatingCompliance(); // n_23: Check h_23 >= m_23 compliance
       calculateCoolingSetpoint_h24();
       calculateTemperatures();
-      calculateWinterAverageTemperature(); // d_25, e_25: Winter average for condensation risk
+      // d_25, e_25 now handled in climate data loop (getClimateDataForState) - no separate calculation needed
       calculateGroundFacing();
       updateCoolingDependents();
 
@@ -2099,15 +2055,14 @@ window.TEUI.SectionModules.sect03 = (function () {
     if (!window.TEUI?.StateManager) return;
 
     // ✅ ONLY publish values CALCULATED by the calculation functions (not from climate lookup)
-    // NOTE: d_20, d_21, j_19, d_23, d_24, l_22 are already published in the initial climate data loop
+    // NOTE: d_20, d_21, j_19, d_23, d_24, l_22, d_25, e_25 are already published in the initial climate data loop
     const targetResults = {
       // ✅ Calculated setpoints and derived values (ONLY these need additional publishing)
       h_23: TargetState.getValue("h_23"), // Target heating setpoint (CALCULATED from occupancy) ✅
       h_24: TargetState.getValue("h_24"), // Target cooling setpoint (CALCULATED from occupancy) ✅
-      d_22: TargetState.getValue("d_22"), // Target GF HDD (CALCULATED from h_23) ✅ - This was missing!
-      h_22: TargetState.getValue("h_22"), // Target GF CDD (CALCULATED from h_24) ✅ - This was missing!
-      d_25: TargetState.getValue("d_25"), // Target winter average temp (CALCULATED for condensation risk) ✅
-      e_25: TargetState.getValue("e_25"), // Target winter average temp °F (CALCULATED) ✅
+      d_22: TargetState.getValue("d_22"), // Target GF HDD (CALCULATED from h_23) ✅
+      h_22: TargetState.getValue("h_22"), // Target GF CDD (CALCULATED from h_24) ✅
+      // d_25, e_25 removed - now published in climate data loop (getClimateDataForState)
     };
 
     // Store unprefixed for downstream sections (Target mode)
