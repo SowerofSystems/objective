@@ -520,9 +520,6 @@ window.TEUI.CoolingCalculations = (function () {
 
     // Recursion protection (per-state)
     if (stateObj.calculatingStage1) {
-      console.log(
-        `[Cooling Stage 1] ⚠️ Already calculating (mode=${mode}) - skipping to prevent recursion`
-      );
       return;
     }
 
@@ -615,9 +612,6 @@ window.TEUI.CoolingCalculations = (function () {
 
     // Recursion protection (per-state)
     if (stateObj.calculatingStage2) {
-      console.log(
-        `[Cooling Stage 2] ⚠️ Already calculating (mode=${mode}) - skipping to prevent recursion`
-      );
       return;
     }
 

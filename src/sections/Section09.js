@@ -2041,14 +2041,12 @@ window.TEUI.SectionModules.sect09 = (function () {
       const ref_i_63 = ReferenceState.getValue("i_63");
       if (ref_i_63 !== null && ref_i_63 !== undefined) {
         window.TEUI.StateManager.setValue("ref_i_63", ref_i_63, "calculated");
-        console.log(`[S09] 🔗 Published ref_i_63=${ref_i_63} for S13`);
       }
 
       // ✅ CRITICAL: Publish ref_i_71 for S10 (heating season internal gains)
       const ref_i_71 = ReferenceState.getValue("i_71");
       if (ref_i_71 !== null && ref_i_71 !== undefined) {
         window.TEUI.StateManager.setValue("ref_i_71", ref_i_71, "calculated");
-        console.log(`[S09] 🔗 Published ref_i_71=${ref_i_71} for S10`);
       }
 
       // ✅ S07 PATTERN: Calculate M-N compliance AFTER densities are published
@@ -2584,10 +2582,6 @@ window.TEUI.SectionModules.sect09 = (function () {
       calculateReferenceModel();
       ModeManager.updateCalculatedDisplayValues();
     });
-
-    console.log(
-      "[S09] ✅ Pattern A dual-engine listeners registered (4 Target/Reference pairs - d_13 removed per SMOOTH-MOVE-S02)"
-    );
   }
 
   /**
@@ -2784,10 +2778,6 @@ window.TEUI.SectionModules.sect09 = (function () {
       // Eliminates FALLBACK_READ and potential state mixing when S13 reads this value
       window.TEUI.StateManager.setValue("j_63", "8760", "calculated");
       window.TEUI.StateManager.setValue("ref_j_63", "8760", "calculated");
-      console.log(
-        `[S09] 🔗 Published initial ref_d_63=${ReferenceState.getValue("d_63")} for S07`
-      );
-      console.log(`[S09] 🔗 Published j_63=8760 and ref_j_63=8760 for S13`);
     }
 
     // 3. Initialize event handlers

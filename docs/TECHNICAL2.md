@@ -1,5 +1,5 @@
 # OBJECTIVE TEUI 4.012 - Technical Documentation
-- (updated 2025.12.01 for M-N compliance patterns)
+- (updated 2025.12.06 for streamlined Pattern A template - SectionXX.js refactored)
 
 > **Active Development Branch: `M-N-COMPLIANCE`**
 >
@@ -13,6 +13,8 @@
 2. [Core Principles](#core-principles)
 3. [State Management](#state-management)
 4. [Calculation Engine](#calculation-engine)
+   - 4.013 [Refactor Plan: Template Refinement & Pattern Documentation](#4013-refactor-plan-template-refinement--pattern-documentation)
+   - 4.014 [Sections 13-15 + Cooling.js Refactor Assessment](#4014-sections-13-15--coolingjs-refactor-assessment)
 5. [Module Architecture](#module-architecture)
 6. [Graphical Sections](#graphical-sections)
 7. [Developer Tools](#developer-tools)
@@ -67,14 +69,15 @@ src/
 │       ├── pcOptimization.js       # Optimization algorithms
 │       └── pcFinancials.js         # Financial calculations (Pro)
 │
-├── sections/                # Calculator sections (19 modules)
+├── sections/                # Calculator sections (19 modules + template)
+│   ├── SectionXX.js         # TEMPLATE: Pattern A dual-state template (refactored 2025.12.06)
 │   ├── Section01.js         # S01: Key Values
 │   ├── Section02.js         # S02: Building Information
 │   ├── Section03.js         # S03: Climate Calculations
 │   ├── Section04.js         # S04: Actual vs Target Energy & Carbon
 │   ├── Section05.js         # S05: CO2e Emissions
 │   ├── Section06.js         # S06: Renewable Energy
-│   ├── Section07.js         # S07: Water Use
+│   ├── Section07.js         # S07: Water Use (refactored Pattern A reference)
 │   ├── Section08.js         # S08: Indoor Air Quality
 │   ├── Section09.js         # S09: Occupant + Internal Gains
 │   ├── Section10.js         # S10: Radiant Gains
@@ -1389,6 +1392,60 @@ TEUI uses consistent RSI-based field naming:
 
 **No U-value fields in StateManager** - all thermal resistance stored as RSI.
 
+#### User Input Expectations: Effective RSI Values
+
+**CRITICAL**: Users are expected to provide **effective RSI values** that already include surface film resistances (R_si and R_se) for the specific assembly orientation.
+
+**Typical workflow:**
+1. Users model assemblies in external software (e.g., **[Ubakus.de](https://ubakus.de/)** - a detailed 2D parallel path thermal bridge calculator)
+2. External software calculates effective RSI including:
+   - Assembly materials (insulation, framing, cladding, etc.)
+   - Interior surface resistance (R_si) - orientation-specific
+   - Exterior surface resistance (R_se)
+   - Thermal bridging effects (framing, fasteners)
+3. Users enter the **total effective RSI value** into TEUI (Column F in Section11)
+
+**Example - Wall Assembly:**
+```
+Ubakus.de calculates:
+- Insulation RSI: 5.28 m²·K/W (R-30 insulation)
+- Interior surface film: 0.13 m²·K/W (horizontal heat flow)
+- Exterior surface film: 0.03 m²·K/W
+- Framing thermal bridge adjustment: -0.24 m²·K/W
+= Effective RSI: 5.20 m²·K/W (user enters this in TEUI)
+```
+
+**Why this matters:**
+- TEUI calculations use: `Heat Loss = Area × ΔT / RSI_effective`
+- The effective RSI already accounts for all resistances
+- **No additional R_si is applied in TEUI heat loss calculations**
+- This differs from condensation risk calculations (see below)
+
+**Condensation Risk Calculations (Section11 Feature):**
+
+For interior surface temperature calculations (condensation risk assessment), TEUI applies surface resistance **separately** because we need to find the temperature **at the interior surface**, not through the entire assembly:
+
+```javascript
+// Condensation formula uses R_si explicitly:
+T_surface = T_interior - (U × ΔT × R_si)
+
+// Where:
+// - U = 1/RSI_effective (user's effective RSI input)
+// - R_si = 0.10, 0.13, or 0.17 depending on orientation
+```
+
+**Physics explanation:**
+- Heat flux through assembly: `q = U_effective × ΔT` (uses user's effective RSI)
+- Temperature drop across interior film: `ΔT_surface = q × R_si`
+- Surface temperature: `T_si = T_interior - ΔT_surface`
+
+Even though the user's RSI input includes R_si, we apply it again in the surface temperature formula because we're calculating the temperature drop **across that specific layer**, not the entire assembly.
+
+**Summary:**
+- **Heat loss calculations**: Use effective RSI directly (no additional R_si)
+- **Condensation calculations**: Apply R_si to find temperature at interior surface
+- Users should provide effective RSI values from tools like Ubakus.de that account for real-world thermal bridging and orientation-specific surface resistances
+
 #### Performance Implications
 
 **Numerical stability improves performance:**
@@ -1431,6 +1488,35 @@ const elapsed = performance.now() - start;
 ## 5. Module Architecture
 
 Section modules are the building blocks of the calculator. Each section is a **self-contained IIFE (Immediately Invoked Function Expression)** that encapsulates its own state, calculations, and UI management.
+
+### Pattern A Template (SectionXX.js)
+
+**Updated: 2025.12.06** - The canonical template for new section modules is [src/sections/SectionXX.js](../src/sections/SectionXX.js).
+
+**Key Features** (728 lines, streamlined from 1353):
+- **Modern structure**: 9 logical blocks (Field Definitions → Lifecycle)
+- **Section07 best practices**: Proven dual-state patterns from Water Use module
+- **47% reduction**: Removed verbose tutorial comments, kept critical architecture notes
+- **Working reference**: Copy-paste ready with example field types (dropdown, editable, slider, M-N compliance)
+- **Progressive disclosure**: Critical code first, implementation details follow
+
+**Structure Overview**:
+```
+1. Field Definitions (sectionRows)     - Single source of truth
+2. Accessor Methods                    - FieldManager integration
+3. State Objects                       - TargetState/ReferenceState (slim, focused)
+4. Mode Manager                        - Facade coordination
+5. Helper Functions                    - Grouped by purpose (section/global/compliance)
+6. Calculation Engines                 - Dual-engine pattern (Reference-first for M-N)
+7. UI Management                       - Ghosting/visibility
+8. Event Handling                      - All handlers together
+9. Lifecycle & Public API              - Clean exports
+```
+
+**Reference Implementations**:
+- [Section07.js](../src/sections/Section07.js) - Latest refactored Pattern A (Water Use, M-N compliance)
+- [Section11.js](../src/sections/Section11.js) - Complex calculations (Envelope)
+- [Section13.js](../src/sections/Section13.js) - Multi-mode calculations (Mechanical Loads)
 
 ### IIFE Module Pattern
 
@@ -5813,5 +5899,749 @@ This section documents current limitations, known bugs, and planned future enhan
 **Integration**: Run DAG validation during development builds, warn on cycles
 
 **Note on Pattern A Migration**: S01, S16-S19 do NOT need Pattern A migration. These sections are **state-agnostic data consumers/graphics** that display both Target and Reference models simultaneously in their UI. They read from StateManager but don't require isolated state objects. Pattern A architecture is only needed for sections with user-editable fields that toggle between Target/Reference modes (S02-S15).
+
+---
+
+## 4.013 Refactor Plan: Template Refinement & Pattern Documentation
+
+**Analysis Date**: 2025.12.06
+**Purpose**: Refine SectionXX.js template based on operational section analysis
+
+### Template Applicability Assessment
+
+Analysis of S02, S03, and S04 reveals **three distinct section patterns** in the codebase:
+
+#### Pattern A-Calc: Calculation-Heavy Sections
+**Characteristics**: Heavy calculations, minimal UI logic, external dependencies from multiple sections, M-N compliance patterns
+**Examples**: S04, S07, S11, S13
+**Template Fit**: ✅ **SectionXX.js is ideal** - designed for this pattern
+
+#### Pattern A-Lookup: Data Lookup + Calculation Hybrid
+**Characteristics**: External data lookup (JSON/API), cascading dropdown dependencies, calculation + lookup hybrid
+**Examples**: S03 (Climate with ClimateValues.js lookup)
+**Template Fit**: ⚠️ **Partially applicable** - needs lookup pattern documentation addendum
+
+#### Pattern B: Master Data Input
+**Characteristics**: Master data input, minimal calculations, heavy UI/event management, cost formatting, validation
+**Examples**: S02 (Building Information)
+**Template Fit**: ❌ **Not applicable** - needs separate Pattern B documentation
+
+### SectionXX.js Template Refinements (Based on S04 Analysis)
+
+The following patterns from [Section04.js](../src/sections/Section04.js) (87% code reduction, zero fallback contamination) should be incorporated into SectionXX.js template:
+
+#### 1. External Dependency Helpers (Mode-Aware)
+
+Add to **Block 5: Helper Functions**:
+
+```javascript
+// Mode-aware external dependency readers
+function getGlobalNumericValue(fieldId) {
+  let rawValue;
+  if (ModeManager.currentMode === "reference") {
+    rawValue = window.TEUI?.StateManager?.getValue(`ref_${fieldId}`);
+  } else {
+    rawValue = window.TEUI?.StateManager?.getValue(fieldId);
+  }
+  return window.TEUI?.parseNumeric?.(rawValue, 0) ?? 0;
+}
+
+function getGlobalStringValue(fieldId) {
+  let rawValue;
+  if (ModeManager.currentMode === "reference") {
+    rawValue = window.TEUI?.StateManager?.getValue(`ref_${fieldId}`);
+  } else {
+    rawValue = window.TEUI?.StateManager?.getValue(fieldId);
+  }
+  return rawValue ? rawValue.toString() : "";
+}
+```
+
+#### 2. Dual-Mode calculateAll() Pattern
+
+Update **Block 6: Calculation Engines**:
+
+```javascript
+function calculateAll() {
+  const originalMode = ModeManager.currentMode;
+
+  // CRITICAL: For M-N compliance sections, Reference FIRST
+  // (so ref_* values exist before Target compliance calculations need them)
+  ModeManager.currentMode = "reference";
+  calculateReferenceModel();
+
+  ModeManager.currentMode = "target";
+  calculateTargetModel();
+
+  ModeManager.currentMode = originalMode;
+}
+```
+
+#### 3. CSV Export Fix Pattern
+
+Add to **ModeManager.initialize()** in **Block 4**:
+
+```javascript
+// ✅ CSV EXPORT FIX: Publish ALL Reference defaults to StateManager
+// Without this, CSV export shows empty Reference values
+if (window.TEUI?.StateManager) {
+  ["d_27", "d_28", "l_28"].forEach(id => {  // Replace with actual field IDs
+    const refId = `ref_${id}`;
+    const val = ReferenceState.getValue(id);
+    if (!window.TEUI.StateManager.getValue(refId) && val != null && val !== "") {
+      window.TEUI.StateManager.setValue(refId, val, "calculated");
+    }
+  });
+}
+```
+
+#### 4. Mode-Aware Dependency Listener Pattern
+
+Add to **Block 8: Event Handling**:
+
+```javascript
+// Listen to BOTH Target and Reference external dependencies
+if (window.TEUI?.StateManager?.addListener) {
+  const calculateAndRefresh = () => {
+    calculateAll();
+    ModeManager.updateCalculatedDisplayValues();
+  };
+
+  const dependencies = [
+    "d_63", "ref_d_63",  // Example: upstream dependency
+    "h_15", "ref_h_15",  // Example: another dependency
+  ];
+
+  dependencies.forEach(fieldId => {
+    window.TEUI.StateManager.addListener(fieldId, calculateAndRefresh);
+  });
+}
+```
+
+### Pattern Variant Documentation
+
+Add to **Section 5: Module Architecture** subsection after Pattern A Template:
+
+#### Pattern A Variants
+
+**Pattern A-Calc** (S04, S07, S11, S13):
+- Calculation-heavy with minimal UI logic
+- Multiple external dependencies from upstream sections
+- M-N compliance patterns (Target/Reference ratio calculations)
+- **Use SectionXX.js template directly**
+
+**Pattern A-Lookup** (S03):
+- External data lookup (JSON files, APIs, lookup tables)
+- Cascading dropdown dependencies (e.g., Province → City → Climate data)
+- Calculation + lookup hybrid workflow
+- **Use SectionXX.js template + add lookup block** between Helpers and Calculations:
+
+```javascript
+// 5.5. Data Lookup Functions (Pattern A-Lookup variant)
+function lookupClimateData(province, city, timeframe) {
+  const climateDB = window.TEUI?.ClimateValues?.data;
+  return climateDB?.[province]?.[city]?.[timeframe] || getDefaults();
+}
+```
+
+**Pattern B** (S02):
+- Master data input with minimal calculations
+- Heavy UI management (cost formatting, critical flags, validation)
+- Complex event handling (multiple dropdowns, batch operations)
+- **Separate pattern** - not applicable to SectionXX.js template
+- Future: Create SectionXX-PatternB.js template for input-heavy sections
+
+### Implementation Priority
+
+**Phase 1: Template Refinement** (Immediate)
+1. Update SectionXX.js with S04 external dependency helpers
+2. Add dual-mode calculateAll() pattern with Reference-first ordering note
+3. Add CSV export fix pattern to ModeManager.initialize()
+4. Update TECHNICAL2.md Section 5 with pattern variant documentation
+
+**Phase 2: Pattern Documentation** (Next sprint)
+1. Document Pattern A-Lookup variant with S03 as reference
+2. Create Pattern B documentation (S02 Master Data pattern)
+3. Add pattern decision flowchart to TECHNICAL2.md
+
+**Phase 3: Template Validation** (Future)
+1. Refactor S05, S06, S08, S09, S10, S12, S14, S15 using refined SectionXX.js
+2. Validate M-N compliance pattern consistency across S05, S07, S11
+3. Performance audit: ensure all sections maintain sub-100ms recalculation
+
+### Key Principles (Do NOT Change)
+
+These architectural principles are **proven and must remain unchanged**:
+
+1. **Dual-engine calculations** - Both Target and Reference ALWAYS run (not conditional)
+2. **UI toggle is display-only** - switchMode() NEVER triggers calculations
+3. **State sovereignty** - TargetState/ReferenceState remain isolated (no fallbacks)
+4. **Reference-first for M-N compliance** - Essential for correct ratio calculations
+5. **Single source of truth** - Field definitions, not hardcoded defaults
+
+### Success Criteria
+
+Template refinement is complete when:
+- ✅ SectionXX.js includes S04 external dependency helpers
+- ✅ calculateAll() pattern documents Reference-first ordering for M-N sections
+- ✅ CSV export fix prevents empty Reference values
+- ✅ TECHNICAL2.md documents three pattern variants (A-Calc, A-Lookup, B)
+- ✅ All refactored sections maintain sub-100ms recalculation performance
+
+---
+
+## Sections 09-12 Refactor Assessment
+
+**Analysis Date**: 2025.12.06
+**Purpose**: Evaluate S09, S10, S11, S12 for SectionXX.js template applicability
+
+### Summary Statistics
+
+| Section | Lines | Calc Functions | M-N Compliance | External Deps | Pattern | Priority |
+|---------|-------|----------------|----------------|---------------|---------|----------|
+| **S09** | 3,218 | 15 | **3 fields** (plug, lighting, equipment) | 10 | A-Calc | ✅ HIGH |
+| **S10** | 3,121 | 10 | None | Moderate | A-Calc | ✅ HIGH |
+| **S11** | 3,363 | 5 | Candidate | Moderate | A-Calc | ⚠️ MEDIUM |
+| **S12** | 3,229 | 14 | **4 fields** (PH, WWR, ACH50, ELA) | Moderate | A-Calc | ✅ HIGH |
+
+---
+
+### Section 09: Occupant + Internal Gains
+
+**Current State**: 3,218 lines, Pattern A dual-state
+
+**Characteristics**:
+- **70% Calculations** - Occupancy, plug loads, lighting, elevators, internal gains
+- **20% State Management** - Dropdowns, editable fields, ReferenceValues integration
+- **10% UI Management** - Field ghosting, critical occupancy flags
+- **3 M-N compliance fields** - m_65/n_65 (plug loads), m_66/n_66 (lighting), m_67/n_67 (equipment efficiency)
+- **External dependencies** - S02 (occupancy type, floor area), minimal cross-section reads
+
+**M-N Compliance Pattern** (S07-style):
+```javascript
+// m_65: Plug load density ratio (Target/Reference)
+// n_65: Checkmark if Target ≤ Reference (ratio ≤ 1.0)
+const complianceRatio = currentValue / referenceValue;
+setCalculatedValue("m_65", formatNumber(complianceRatio, "percent-0dp"), "raw");
+setCalculatedValue("n_65", complianceRatio <= 1.0 ? "✓" : "✗", "raw");
+```
+
+**Refactor Assessment**: ✅ **EXCELLENT CANDIDATE**
+
+**Strengths**:
+- Already uses Pattern A correctly
+- Clean calculation structure (15 focused functions)
+- M-N compliance follows S07 pattern (Reference-first ordering already implemented)
+- syncFromGlobalState() implemented
+- applyReferenceValues() for Set Values button
+
+**Estimated Reduction**: **30%** (3,218 → ~2,250 lines)
+
+**Recommended Actions**:
+1. Reorder using XX template 9-block structure
+2. Remove verbose comments (keep M-N compliance architecture notes)
+3. Add external dependency helpers (getGlobalNumericValue/String from S04)
+4. CSV export fix pattern (publish Reference defaults to StateManager)
+5. Verify Reference-first calculateAll() ordering (already correct for M-N compliance)
+
+---
+
+### Section 10: Radiant Gains
+
+**Current State**: 3,121 lines, Pattern A dual-state
+
+**Characteristics**:
+- **75% Calculations** - 6 orientations (Average, N, E, S, W, Skylight) × solar gain calculations
+- **15% State Management** - Area fields, orientation dropdowns, SHGC values, shading percentages
+- **10% UI Management** - Conditional field visibility, nGains utilization dropdown
+- **No M-N compliance** - Pure solar gain physics calculations
+- **External dependencies** - S03 (climate data, solar radiation), S02 (geometry)
+
+**Unique Pattern**: Repetitive orientation-based calculations (DRY opportunity)
+
+**Refactor Assessment**: ✅ **EXCELLENT CANDIDATE**
+
+**Strengths**:
+- Already uses Pattern A correctly
+- **Already has CSV export fix** (publishToStateManager pattern from S04)
+- Repetitive structure (6 orientations) ideal for consolidation
+- Clean separation of concerns
+- syncFromGlobalState() implemented
+
+**Estimated Reduction**: **34%** (3,121 → ~2,050 lines)
+
+**Recommended Actions**:
+1. Reorder using XX template 9-block structure
+2. **Consolidate repetitive orientation calculations** (DRY pattern for 6 orientations)
+3. Remove verbose comments
+4. Add external dependency helpers
+5. Already has S04 CSV export pattern - keep it
+
+---
+
+### Section 11: Transmission Losses (Envelope)
+
+**Current State**: 3,363 lines, Pattern A dual-state
+
+**Characteristics**:
+- **60% Calculations** - Envelope heat loss, thermal bridge penalties, RSI/U-value handling
+- **25% State Management** - Area fields, RSI/U-value inputs, component types
+- **15% Area Sync Logic** - S10→S11 synchronization with crash prevention guards
+- **M-N compliance candidate** - Could compare envelope performance vs code minimum (not currently implemented)
+- **External dependencies** - S10 (glazing areas), S03 (climate data), S12 (geometry)
+
+**Critical Complexity**: S10-S11 area sync with recursion prevention
+
+**RSI vs U-value Design Decision** (Intentional):
+- **Windows/Doors**: U-value (assembly ratings) - industry standard practice
+- **Walls/Roof/Foundation**: RSI (built-up layers) - architect designs thermal resistance serially
+- **Rationale**: Numerical precision (RSI larger rational numbers vs U-value decimal expansion)
+- **DO NOT universalize** - mixing is intentional for different component types
+
+**Refactor Assessment**: ⚠️ **MEDIUM PRIORITY (Complex)**
+
+**Strengths**:
+- Already uses Pattern A correctly
+- applyReferenceValues() for Set Values button
+- syncFromGlobalState() implemented
+- Clear component type metadata (air-facing, ground-facing, penalty)
+
+**Complexity Factors**:
+- S10-S11 area sync requires crash prevention logic (recursion guards, debouncing)
+- RSI/U-value mixing intentional (DO NOT refactor numerical precision patterns)
+- Multiple component types with different physics
+
+**Estimated Reduction**: **18%** (3,363 → ~2,750 lines) - lower due to necessary complexity
+
+**Recommended Actions**:
+1. **Phase 1**: Reorder blocks only (DO NOT touch area sync logic)
+2. **Phase 2**: Add external dependency helpers
+3. **Phase 3**: Consider M-N compliance pattern (if comparing envelope to code minimum becomes requirement)
+4. **Preserve**: RSI/U-value distinction, area sync guards, component type logic
+5. **Test thoroughly** - area sync has crash prevention for a reason
+
+---
+
+### Section 12: Volume & Surface Metrics
+
+**Current State**: 3,229 lines, Pattern A dual-state
+
+**Characteristics**:
+- **65% Calculations** - Volumes, surface areas, compactness ratios, blower door methods (AL-1B, MEASURED)
+- **25% State Management** - Dropdowns (stories, exposure, blower door method), conditional visibility
+- **10% UI Management** - Method-dependent field activation
+- **4 M-N compliance fields**:
+  - m_104/n_104: Passive House U-value compliance (thresholds: <0.15 "PH level", <0.20 "Very Good", <0.30 "Good")
+  - m_107/n_107: WWR compliance (occupancy-based thresholds)
+  - m_109/n_109: ACH50 compliance ratio (ref_d_109 / d_109, lower is better)
+  - m_110/n_110: ELA compliance ratio (ref_d_110 / d_110, lower is better)
+- **External dependencies** - S02 (geometry, occupancy type), S11 (envelope areas)
+
+**M-N Compliance Patterns**:
+```javascript
+// Passive House threshold compliance
+function calculatePassiveHouseCompliance(isReferenceCalculation) {
+  const g104 = parseNumeric(getValue("g_104")) || 0;
+  const complianceText = g104 < 0.15 ? "PH level" :
+                         g104 < 0.20 ? "Very Good" :
+                         g104 < 0.30 ? "Good" : "Meh";
+  const checkmark = g104 < 0.30 ? "✓" : "✗";
+  setCalculatedValue("m_104", complianceText, "raw", isReferenceCalculation);
+  setCalculatedValue("n_104", checkmark, "raw", isReferenceCalculation);
+}
+
+// Ratio-based compliance (ACH50, ELA)
+function calculateOperationalCompliance(isReferenceCalculation) {
+  // m_109: ref_d_109 / d_109 (passing grade >= 100%)
+  const ratio = ref_d_109 / d_109;
+  const pass = ratio >= 1.0;
+  setCalculatedValue("m_109", formatNumber(ratio, "percent-0dp"), "raw");
+  setCalculatedValue("n_109", pass ? "✓" : "✗", "raw");
+}
+```
+
+**Refactor Assessment**: ✅ **EXCELLENT CANDIDATE**
+
+**Strengths**:
+- Already uses Pattern A correctly
+- **Already has S04 patterns** (CSV export fix, applyReferenceValues)
+- Clean calculation structure (14 focused functions)
+- M-N compliance follows S07/S09 pattern (Reference-first ordering)
+- onReferenceStandardChange() for d_13 updates
+- Conditional field logic (blower door methods) well-organized
+
+**Estimated Reduction**: **30%** (3,229 → ~2,250 lines)
+
+**Recommended Actions**:
+1. Reorder using XX template 9-block structure
+2. Remove verbose comments (keep M-N compliance architecture notes)
+3. Add external dependency helpers (getGlobalNumericValue/String)
+4. Already has S04 CSV export fix - keep it
+5. Verify Reference-first calculateAll() ordering (already correct for M-N compliance)
+
+---
+
+### Refactor Priority Ranking
+
+**Tier 1: Immediate Refactor** (High Value, Low Risk)
+1. **Section 10** - Already has S04 patterns, repetitive structure (6 orientations) perfect for DRY consolidation
+2. **Section 09** - Clean structure, M-N compliance correctly implemented, minimal UI complexity
+3. **Section 12** - Already has S04 patterns, 4 M-N compliance fields, clean separation of concerns
+
+**Tier 2: Next Sprint** (High Value, Moderate Risk)
+4. **Section 11** - Complex area sync logic (DO NOT touch), RSI/U-value distinction intentional (DO NOT universalize)
+
+---
+
+### Estimated Code Reduction
+
+| Section | Current | Post-Refactor | Reduction | Notes |
+|---------|---------|---------------|-----------|-------|
+| S09 | 3,218 | ~2,250 | **30%** (968 lines) | M-N compliance preserved |
+| S10 | 3,121 | ~2,050 | **34%** (1,071 lines) | DRY orientation consolidation |
+| S11 | 3,363 | ~2,750 | **18%** (613 lines) | Lower due to area sync complexity |
+| S12 | 3,229 | ~2,250 | **30%** (979 lines) | 4 M-N compliance fields preserved |
+| **Total** | **12,931** | **~9,300** | **28%** (3,631 lines) | Performance maintained |
+
+---
+
+### Key Architectural Principles (DO NOT CHANGE)
+
+1. **RSI vs U-value distinction** (S11) - Windows/Doors use U-value (assembly), Walls/Roof use RSI (built-up)
+2. **S10-S11 area sync** (S11) - Recursion guards, debouncing, crash prevention MUST be preserved
+3. **M-N compliance Reference-first** (S09, S12) - Reference calculations MUST run before Target for correct ratios
+4. **Component type metadata** (S11) - Air-facing, ground-facing, penalty types have different physics
+5. **Blower door methods** (S12) - Conditional field visibility based on method selection
+
+---
+
+### Success Criteria
+
+Refactoring is complete when:
+- ✅ All four sections follow SectionXX.js 9-block structure
+- ✅ M-N compliance patterns preserved (S09: 3 fields, S12: 4 fields)
+- ✅ S11 RSI/U-value distinction maintained (DO NOT universalize)
+- ✅ S11 area sync guards preserved (recursion prevention, debouncing)
+
+---
+
+## 4.014 Sections 13-15 + Cooling.js Refactor Assessment
+
+**Analysis Date**: 2025.12.07
+**Purpose**: Complete Pattern A template applicability analysis for final calculation sections
+
+---
+
+### Section 13: Mechanical Loads (+ Cooling.js Sidecar)
+
+**Current State**: 4,130 lines (S13) + 1,347 lines (Cooling.js) = **5,477 lines total**, Pattern A dual-state
+
+**Architecture**: **Sidecar Pattern** - S13 delegates psychrometric calculations to Cooling.js module
+- Cooling.js calculates latent load factors, free cooling capacity, wet bulb temperatures
+- S13 consumes Cooling.js results via StateManager (cooling_h_124, cooling_latentLoadFactor, cooling_m_124)
+- **2-stage calculation architecture** breaks circular dependency:
+  - Stage 1: Cooling.js calculates free cooling capacity (independent of m_129)
+  - Stage 2: S13 calculates m_129 (mitigated cooling load) using Stage 1 results
+  - Stage 2b: Cooling.js calculates days active cooling using S13's m_129
+
+**S13 Characteristics**:
+- **70% Calculations** - Heating systems (HSPF, AFUE, COP), cooling systems, ventilation (HRV/ERV), DHW
+- **20% State Management** - 8+ dropdowns (heating system, cooling system, ventilation method, DHW type)
+- **10% UI Management** - Conditional field visibility based on system selections
+- **0 M-N compliance fields** - Pure calculation consumer (no ratio comparisons)
+- **Complex external dependencies** - 25+ upstream sections (S02-S12, S14)
+
+**Cooling.js Characteristics** (Sidecar Module):
+- **90% Calculations** - Psychrometric physics (wet bulb temp, humidity ratios, partial pressures)
+- **10% StateManager Integration** - Publishes cooling_* prefixed values
+- **Pattern A dual-state** - Separate TargetState/ReferenceState for cooling calculations
+- **Stage 1**: Ventilation & free cooling (independent calculations)
+  - Outputs: h_124 (free cooling capacity), latentLoadFactor, psychrometric intermediates
+- **Stage 2**: Active cooling system (dependent on S13's m_129)
+  - Outputs: m_124 (days active cooling required), d_124 (free cooling percentage)
+
+**Sidecar Integration Pattern**:
+```javascript
+// Cooling.js Stage 1: Calculate free cooling capacity (NO dependency on m_129)
+function calculateStage1(mode = "target") {
+  const stateObj = getStateForMode(mode);
+  calculateWetBulbTemperature(stateObj);
+  calculateAtmosphericValues(stateObj, mode);
+  calculateHumidityRatios(stateObj);
+  stateObj.latentLoadFactor = calculateLatentLoadFactor(stateObj);
+  calculateFreeCoolingLimit(stateObj, mode);
+  updateStateManagerStage1(mode, stateObj); // Publish h_124, latentLoadFactor
+  dispatchCoolingEvent("stage1", mode);
+}
+
+// S13: Use Cooling.js Stage 1 results to calculate m_129
+function calculateCoolingLoad() {
+  const h_124 = parseNumeric(getValue("cooling_h_124")) || 0; // From Cooling.js Stage 1
+  const d_129_unmitigated = k71 + k79 + k98 + d122;
+  const d_123 = calculateRecoveredCooling();
+  const m_129_mitigated = d_129_unmitigated - h_124 - d_123;
+  setCalculatedValue("m_129", m_129_mitigated); // Publishes to StateManager
+}
+
+// Cooling.js Stage 2: Triggered by StateManager listener when m_129 changes
+sm.addListener("m_129", function(newValue) {
+  calculateStage2("target"); // Uses m_129 to calculate days active cooling
+});
+```
+
+**Refactor Assessment**: ✅ **EXCELLENT CANDIDATE** (Keep Sidecar Pattern)
+
+**Strengths**:
+- Already uses Pattern A correctly in both S13 and Cooling.js
+- **2-stage architecture solves bootstrap problem** - well-documented, CRITICAL to preserve
+- Sidecar pattern provides clean separation of concerns (psychrometrics vs HVAC systems)
+- Cooling.js is self-contained, reusable across sections
+- Already has onReferenceStandardChange() for d_13 updates
+- Event-driven coordination between S13 and Cooling.js
+
+**Critical Patterns to Preserve**:
+1. **Sidecar module isolation** - Cooling.js stays separate, not merged into S13
+2. **2-stage calculation order**:
+   - Cooling.js Stage 1 runs first (publishes h_124)
+   - S13 calculates m_129 using h_124
+   - Cooling.js Stage 2 triggered by m_129 StateManager listener
+3. **StateManager event coordination** - cooling-calculations-stage1, cooling-calculations-stage2 events
+4. **Mode-aware dual-state** - Both Target and Reference calculations use isolated state objects
+
+**Estimated Reduction**: **25%** (5,477 → ~4,100 lines total)
+- S13: 4,130 → ~3,100 (25% reduction)
+- Cooling.js: 1,347 → ~1,000 (26% reduction, mostly verbose comments)
+
+**Recommended Actions**:
+1. Reorder S13 using XX template 9-block structure (keep sidecar integration notes)
+2. Cooling.js: Add 9-block structure comments, consolidate psychrometric calculation functions
+3. Document sidecar pattern in XX template addendum (not all sections need this)
+4. Remove verbose Excel formula comments (keep Stage 1/Stage 2 architecture notes)
+5. Add external dependency helpers for 25+ upstream fields
+
+---
+
+### Section 14: TEDI & TELI Summary
+
+**Current State**: 1,499 lines, Pattern A dual-state
+
+**Characteristics**:
+- **85% Display/Aggregation** - Consumes upstream calculations, formats for regulatory reporting
+- **15% Calculations** - Simple summations and intensity calculations (kWh/yr → kWh/m²/yr)
+- **1 User Input** - d_142 (Capital cost premium for HP equipment)
+- **0 M-N compliance fields** - Pure summary consumer
+- **Heavy external dependencies** - Aggregates from S09-S13 (15+ fields)
+
+**Calculation Pattern** (Lightweight Summary Consumer):
+```javascript
+// TEDI (Thermal Energy Demand Intensity)
+// Excel: =(I97+I98+I103+M121)-I80 / H15
+const tedHeatloss_d127 = i97 + i98 + i103 + m121 - i80;
+const tedi_h127 = area > 0 ? tedHeatloss_d127 / area : 0;
+setCalculatedValue("d_127", tedHeatloss_d127);
+setCalculatedValue("h_127", tedi_h127);
+
+// CEDI (Cooling Energy Demand Intensity)
+// Excel: =(K71+K79+K98+D122) / H15
+const cedCoolingUnmitigated_d129 = k71 + k79 + k98 + d122;
+const cediUnmitigated_h129 = area > 0 ? cedCoolingUnmitigated_d129 / area : 0;
+setCalculatedValue("d_129", cedCoolingUnmitigated_d129);
+setCalculatedValue("h_129", cediUnmitigated_h129);
+
+// TELI/TEDI Ratio (for cost pro-rating)
+const m_131 = tedi_h127 > 0 ? teli_h131 / tedi_h127 : 0;
+setCalculatedValue("m_131", m_131);
+```
+
+**Refactor Assessment**: ✅ **GOOD CANDIDATE** (Simplified Pattern)
+
+**Strengths**:
+- Already uses Pattern A correctly
+- Minimal state management (only 1 user input)
+- Straightforward calculations (no complex physics)
+- Already has dual-engine architecture (calculateReferenceModel + calculateTargetModel)
+- Clean external dependency management (15+ fields from S09-S13)
+
+**Critical Patterns to Preserve**:
+1. **Dual-engine calculation** - calculateReferenceModel() and calculateTargetModel() independence
+2. **S13 hybrid architecture coordination** - S14 displays m_129, but S13 calculates it (Phase 3 pattern)
+3. **Reference indicator logic** - h_127 (TEDI) comparison against T-cell reference values
+
+**Estimated Reduction**: **20%** (1,499 → ~1,200 lines)
+- Lower reduction % due to already-lean structure
+- Most savings from removing redundant comments and consolidating dual-engine pattern
+
+**Recommended Actions**:
+1. Apply XX template 9-block structure (lightweight summary variant)
+2. Document "Summary Consumer" pattern variant in XX template addendum
+3. Consolidate dual-engine pattern (remove code duplication between Target/Reference)
+4. Keep S13 hybrid architecture notes (m_129 calculated by S13, displayed by S14)
+
+---
+
+### Section 15: TEUI Summary (Final Dashboard)
+
+**Current State**: 2,316 lines, Pattern A dual-state
+
+**Characteristics**:
+- **80% Display/Aggregation** - Final TEUI calculations, compliance ratios, cost summaries
+- **20% Calculations** - Energy totals, carbon emissions, cost projections
+- **Minimal User Inputs** - Most values consumed from upstream sections
+- **Heavy M-N Aggregation** - Displays compliance summary from all upstream M-N fields
+- **Dashboard Feed** - Publishes final values to UI dashboard (teui_target, teui_reference, improvement_percentage)
+
+**Final Aggregation Pattern**:
+```javascript
+// TEUI Target: Total site energy intensity (kWh/m²/yr)
+// Excel: =(D133+D134+D135+D136+D137+D138)/H15
+const totalEnergy_d133_to_d138 = d133 + d134 + d135 + d136 + d137 + d138;
+const teui_h142 = area > 0 ? totalEnergy_d133_to_d138 / area : 0;
+setTargetValue("h_142", teui_h142);
+
+// Publish to Dashboard
+window.TEUI.StateManager.setValue("teui_target", teui_h142.toString(), "calculated");
+
+// Improvement over Reference
+const ref_teui_h142 = parseNumeric(getValue("ref_h_142")) || 0;
+const improvement = ref_teui_h142 > 0 ? (ref_teui_h142 - teui_h142) / ref_teui_h142 : 0;
+window.TEUI.StateManager.setValue("improvement_percentage", improvement.toString(), "calculated");
+```
+
+**Refactor Assessment**: ✅ **GOOD CANDIDATE** (Final Summary Pattern)
+
+**Strengths**:
+- Already uses Pattern A correctly
+- Clean dual-state architecture (TargetState/ReferenceState with localStorage persistence)
+- Dashboard integration well-abstracted
+- Comprehensive external dependency listeners (30+ upstream fields)
+- Already has publishToStateManager() pattern for CSV export
+
+**Critical Patterns to Preserve**:
+1. **Dashboard feed coordination** - teui_target, teui_reference, improvement_percentage publishing
+2. **Dual-state persistence** - localStorage save/load for both Target and Reference
+3. **Reference model CSV export** - publishToStateManager() ensures ref_* values available for export
+4. **Comprehensive dependency listeners** - S15 must update when ANY upstream section changes
+
+**Estimated Reduction**: **15%** (2,316 → ~1,970 lines)
+- Lower reduction % due to already-optimized structure
+- Most savings from consolidating dual-engine pattern and removing verbose comments
+
+**Recommended Actions**:
+1. Apply XX template 9-block structure (final summary variant)
+2. Document "Dashboard Feed" pattern variant in XX template addendum
+3. Keep publishToStateManager() pattern (critical for CSV export after page refresh)
+4. Consolidate dual-engine calculations (reduce code duplication)
+5. Add comprehensive dependency listener documentation (30+ fields from S02-S14)
+
+---
+
+### Refactor Priority Ranking (Updated with S13-S15)
+
+**Tier 1: Immediate Refactor** (High Value, Low Risk)
+1. **Section 10** - Repetitive 6-orientation structure, already has S04 patterns
+2. **Section 09** - Clean M-N compliance, minimal UI complexity
+3. **Section 12** - Already has S04 patterns, 4 M-N compliance fields
+
+**Tier 2: Next Sprint** (High Value, Moderate Risk)
+4. **Section 11** - Complex area sync (DO NOT touch), RSI/U-value intentional
+5. **Section 14** - Lightweight summary consumer, straightforward aggregation
+6. **Section 15** - Final dashboard feed, comprehensive dependency management
+
+**Tier 3: Advanced Refactor** (High Value, High Complexity - Preserve Architecture)
+7. **Section 13 + Cooling.js** - Sidecar pattern, 2-stage architecture (CRITICAL to preserve)
+
+---
+
+### Estimated Code Reduction (Complete S09-S15 Assessment)
+
+| Section | Current | Post-Refactor | Reduction | Notes |
+|---------|---------|---------------|-----------|-------|
+| S09 | 3,218 | ~2,250 | **30%** (968 lines) | 3 M-N compliance fields preserved |
+| S10 | 3,121 | ~2,050 | **34%** (1,071 lines) | DRY orientation consolidation |
+| S11 | 3,363 | ~2,750 | **18%** (613 lines) | Area sync complexity preserved |
+| S12 | 3,229 | ~2,250 | **30%** (979 lines) | 4 M-N compliance fields preserved |
+| **S13** | **4,130** | **~3,100** | **25%** (1,030 lines) | Sidecar pattern preserved |
+| **Cooling.js** | **1,347** | **~1,000** | **26%** (347 lines) | 2-stage architecture preserved |
+| **S14** | **1,499** | **~1,200** | **20%** (299 lines) | Summary consumer pattern |
+| **S15** | **2,316** | **~1,970** | **15%** (346 lines) | Dashboard feed pattern |
+| **Total** | **22,223** | **~16,570** | **25%** (5,653 lines) | All patterns preserved |
+
+---
+
+### Key Architectural Principles (DO NOT CHANGE)
+
+**Existing (S09-S12)**:
+1. **RSI vs U-value distinction** (S11) - Windows/Doors use U-value, Walls/Roof use RSI
+2. **S10-S11 area sync** - Recursion guards, debouncing, crash prevention
+3. **M-N compliance Reference-first** - Reference calculations run before Target
+4. **Component type metadata** (S11) - Air-facing, ground-facing, penalty physics
+5. **Blower door methods** (S12) - Conditional field visibility
+
+**New (S13-S15)**:
+6. **Sidecar pattern** (S13 + Cooling.js) - Psychrometric calculations delegated to separate module
+7. **2-stage calculation architecture** (Cooling.js) - Stage 1 (independent), Stage 2 (depends on S13's m_129)
+8. **Stage 1/Stage 2 ordering** - Cooling.js Stage 1 → S13 m_129 → Cooling.js Stage 2 (StateManager listener)
+9. **S13 hybrid architecture** (S14) - S13 calculates m_129, S14 displays it (Phase 3 pattern)
+10. **Dashboard feed coordination** (S15) - teui_target, teui_reference, improvement_percentage publishing
+11. **Reference CSV export** (S15) - publishToStateManager() ensures ref_* values available after page refresh
+
+---
+
+### Success Criteria (Updated)
+
+Refactoring is complete when:
+- ✅ All seven sections (S09-S15) follow SectionXX.js 9-block structure
+- ✅ M-N compliance patterns preserved (S09: 3 fields, S12: 4 fields)
+- ✅ S11 RSI/U-value distinction maintained
+- ✅ S11 area sync guards preserved
+- ✅ **S13 sidecar pattern maintained** (Cooling.js stays separate)
+- ✅ **Cooling.js 2-stage architecture preserved** (Stage 1 → S13 → Stage 2)
+- ✅ **S14 hybrid architecture preserved** (m_129 calculated by S13, displayed by S14)
+- ✅ **S15 dashboard feed maintained** (teui_target, teui_reference, improvement_percentage)
+- ✅ **S15 CSV export pattern preserved** (publishToStateManager for ref_* values)
+- ✅ All Excel formula parity maintained (±0.01 tolerance)
+- ✅ 25% overall code reduction achieved (22,223 → ~16,570 lines)
+- ✅ Performance maintained or improved (target: <50ms per calculateAll)
+
+---
+
+### Template Variants Identified
+
+Based on S02-S15 analysis, three distinct SectionXX.js variants emerge:
+
+**Variant A-Calc**: Calculation-Heavy Sections (S04, S07, S09, S10, S11, S12, S13)
+- 60%+ calculations, minimal UI
+- Heavy external dependencies
+- M-N compliance patterns (S07, S09, S12)
+- **Template**: SectionXX.js (existing)
+
+**Variant A-Summary**: Summary Consumer Sections (S14, S15)
+- 80%+ aggregation/display
+- Lightweight calculations (summations, intensity conversions)
+- Heavy upstream dependencies (15-30+ fields)
+- Dashboard feed integration (S15)
+- **Template**: SectionXX-Summary.js (new variant - simplified 9-block structure)
+
+**Variant A-Sidecar**: Delegated Calculation Modules (Cooling.js)
+- 90%+ specialized calculations (psychrometrics, heat transfer, etc.)
+- Publishes results via StateManager with module-specific prefix (cooling_*)
+- Stage-based architecture for dependency management
+- **Template**: ModuleXX-Sidecar.js (new variant - document pattern for future use)
+
+**Variant A-Lookup**: Data Lookup + Calculation Hybrid (S03)
+- 40% state management, 30% JSON data lookup, 20% calculations
+- Complex dropdown dependencies (province → city → climate data)
+- External JSON data source (ClimateValues.js)
+- **Template**: SectionXX-Lookup.js (new variant - XX template + lookup block addendum)
+
+**Variant B**: Master Data Input (S02)
+- 65% UI management, 30% state management, 5% calculations
+- Heavy event handling (multiple dropdowns, "Set Values" button)
+- **Template**: Needs separate pattern documentation (not XX template compatible)
+- ✅ S10 orientation calculations consolidated (DRY pattern)
+- ✅ External dependency helpers added (getGlobalNumericValue/String from S04)
+- ✅ CSV export fixes applied (S09, S11 need it; S10, S12 already have it)
+- ✅ Sub-100ms recalculation performance maintained
+- ✅ 28% code reduction achieved (~3,631 lines eliminated)
 
 ---

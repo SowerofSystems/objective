@@ -543,6 +543,7 @@ TEUI.FieldManager = (function () {
                     <col class="col-l">
                     <col class="col-m">
                     <col class="col-n">
+                    <col class="col-o">
                 </colgroup>
                 <tbody></tbody>
             `;

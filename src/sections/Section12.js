@@ -248,6 +248,7 @@ window.TEUI.SectionModules.sect12 = (function () {
       const calculatedFields = [
         "d_101",
         "d_102",
+        "d_104",
         // d_105 removed - it's USER INPUT (editable), not calculated
         "d_106",
         "d_107",
@@ -286,12 +287,20 @@ window.TEUI.SectionModules.sect12 = (function () {
         "n_110", // ✅ M-N-COMPLIANCE: ELA compliance checkmark
         "d_109",
         "d_110",
+        "o_101", // ✅ MRT: Air-facing aggregate surface temperature
+        "o_102", // ✅ MRT: Ground-facing aggregate surface temperature
+        "o_104", // ✅ MRT: Total building aggregate surface temperature
       ];
 
       calculatedFields.forEach(fieldId => {
         let valueToDisplay;
 
-        if (this.currentMode === "reference") {
+        // ✅ FIX: Read global Reference toggle state instead of local currentMode
+        // This ensures S12 displays correct values when Reference mode is active globally
+        // even if S12's local ModeManager.currentMode hasn't been synced
+        const isReferenceMode = window.TEUI?.ReferenceToggle?.isReferenceMode?.() || false;
+
+        if (isReferenceMode) {
           // ✅ STRICT MODE ISOLATION: Reference mode reads ONLY ref_ values
           // Never fall back to Target values (Anti-Pattern 1 from CHEATSHEET)
           valueToDisplay = window.TEUI.StateManager.getValue(`ref_${fieldId}`);
@@ -328,6 +337,19 @@ window.TEUI.SectionModules.sect12 = (function () {
                 element.classList.add(
                   valueToDisplay === "✓" ? "checkmark" : "warning"
                 );
+              }
+            } else if (fieldId.startsWith("o_")) {
+              // ✅ MRT: Surface temperature fields with condensation risk indicators
+              const numericValue = window.TEUI.parseNumeric(valueToDisplay);
+              if (numericValue !== 0 && !isNaN(numericValue)) {
+                // Get interior temperature from Section03 for Passivhaus threshold calculation
+                const interiorTemp = getGlobalNumericValue("h_23");
+                const hasRisk = hasCondensationRisk(numericValue, interiorTemp);
+                const emoji = hasRisk ? "💧" : "🌵";
+                const formattedTemp = formatNumber(numericValue, "number");
+                element.textContent = `${emoji} ${formattedTemp}`;
+              } else {
+                element.textContent = "";
               }
             } else {
               // Numeric fields - parse and format
@@ -524,6 +546,10 @@ window.TEUI.SectionModules.sect12 = (function () {
           classes: ["section-subheader", "align-right"],
         },
         n: { content: "N", classes: ["section-subheader", "align-center"] },
+        o: {
+          content: "MRT °C",
+          classes: ["section-subheader", "align-right"],
+        },
       },
     },
     101: {
@@ -624,6 +650,14 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         m: { content: "", classes: ["reference-value"] },
         n: { content: "" },
+        o: {
+          fieldId: "o_101",
+          type: "calculated",
+          value: "0.00",
+          dependencies: ["g_101", "h_23", "d_25", "d_101"],
+          label: "Air-facing Aggregate: Interior Surface Temperature °C",
+          tooltip: true,
+        },
       },
     },
     102: {
@@ -695,6 +729,14 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         m: { content: "", classes: ["reference-value"] },
         n: { content: "" },
+        o: {
+          fieldId: "o_102",
+          type: "calculated",
+          value: "0.00",
+          dependencies: ["g_102", "h_23", "d_102"],
+          label: "Ground-facing Aggregate: Interior Surface Temperature °C",
+          tooltip: true,
+        },
       },
     },
     103: {
@@ -776,8 +818,16 @@ window.TEUI.SectionModules.sect12 = (function () {
             "Building U-Value Combined Total & Transmission Losses & Gains",
           classes: ["total-row-text"],
         },
-        d: {},
-        e: { content: "", classes: ["unit-label"] },
+        d: {
+          fieldId: "d_104",
+          type: "calculated",
+          value: "3577.04",
+          section: "volumeSurfaceMetrics",
+          dependencies: ["d_101", "d_102"],
+          classes: ["total-row-text"],
+          label: "Total Envelope Area (Air + Ground): m²",
+        },
+        e: { content: "m²", classes: ["unit-label"] },
         f: {},
         g: {
           fieldId: "g_104",
@@ -835,6 +885,15 @@ window.TEUI.SectionModules.sect12 = (function () {
           classes: ["total-row-text"],
           dependencies: ["m_104"],
           label: "Passive House Compliance Status",
+        },
+        o: {
+          fieldId: "o_104",
+          type: "calculated",
+          value: "0.00",
+          dependencies: ["g_104", "h_23", "d_25", "d_101", "d_102"],
+          label: "Total Building Aggregate: Interior Surface Temperature °C",
+          tooltip: true,
+          classes: ["total-row-text"],
         },
       },
     },
@@ -1182,6 +1241,7 @@ window.TEUI.SectionModules.sect12 = (function () {
       "l",
       "m",
       "n",
+      "o", // MRT Surface Temperature (condensation risk feature)
     ];
     columns.forEach(col => {
       if (row.cells && row.cells[col]) {
@@ -1595,6 +1655,7 @@ window.TEUI.SectionModules.sect12 = (function () {
     // Calculate with full precision
     const d101_areaAir = d85 + d86 + d87 + d88 + d89 + d90 + d91 + d92 + d93;
     const d102_areaGround = d94 + d95 === 0 ? 0.0000001 : d94 + d95;
+    const d104_totalArea = d101_areaAir + d102_areaGround;
     const d106_floorArea = d87 + d95 + d96;
 
     // Calculate ratios with full precision
@@ -1611,6 +1672,12 @@ window.TEUI.SectionModules.sect12 = (function () {
     setCalculatedValue(
       "d_102",
       d102_areaGround,
+      "number-2dp-comma",
+      isReferenceCalculation
+    );
+    setCalculatedValue(
+      "d_104",
+      d104_totalArea,
       "number-2dp-comma",
       isReferenceCalculation
     );
@@ -1642,6 +1709,7 @@ window.TEUI.SectionModules.sect12 = (function () {
     return {
       d_101: d101_areaAir,
       d_102: d102_areaGround,
+      d_104: d104_totalArea,
       // d_105: Removed from return - it's user input, not calculated
       d_106: d106_floorArea,
       g_105: g105_volAreaRatio,
@@ -2607,6 +2675,113 @@ window.TEUI.SectionModules.sect12 = (function () {
     };
   }
 
+  /**
+   * Calculate Mean Radiant Temperature (MRT) surface temperatures for Section 12
+   * Uses same formula as Section 11: T_si = T_interior - (U × ΔT × R_si)
+   * @param {boolean} isReferenceCalculation - Whether this is a Reference calculation
+   */
+  function calculateMRTSurfaceTemperatures(isReferenceCalculation = false) {
+    const interiorTemp = getGlobalNumericValue("h_23");
+    const winterAvgTemp = getGlobalNumericValue("d_25");
+    const groundTemp = 10;
+
+    // Get values from current calculation context
+    const d101_areaAir = isReferenceCalculation
+      ? parseFloat(getGlobalNumericValue("ref_d_101")) || 0
+      : parseFloat(getGlobalNumericValue("d_101")) || 0;
+
+    const d102_areaGround = isReferenceCalculation
+      ? parseFloat(getGlobalNumericValue("ref_d_102")) || 0
+      : parseFloat(getGlobalNumericValue("d_102")) || 0;
+
+    const g101_uAir = isReferenceCalculation
+      ? parseFloat(getGlobalNumericValue("ref_g_101")) || 0
+      : parseFloat(getGlobalNumericValue("g_101")) || 0;
+
+    const g102_uGround = isReferenceCalculation
+      ? parseFloat(getGlobalNumericValue("ref_g_102")) || 0
+      : parseFloat(getGlobalNumericValue("g_102")) || 0;
+
+    const g104_uCombined = isReferenceCalculation
+      ? parseFloat(getGlobalNumericValue("ref_g_104")) || 0
+      : parseFloat(getGlobalNumericValue("g_104")) || 0;
+
+    // Calculate o_101: Air-facing aggregate
+    // Formula: T_si = T_interior - (U × ΔT × R_si)
+    // R_si = 0.13 (wall-dominated, conservative choice)
+    let o101_surfaceTemp = null;
+    if (d101_areaAir > 0) {
+      const deltaT_air = interiorTemp - winterAvgTemp;
+      o101_surfaceTemp = interiorTemp - (g101_uAir * deltaT_air * 0.13);
+      o101_surfaceTemp = Math.round(o101_surfaceTemp * 100) / 100;
+    }
+
+    // Calculate o_102: Ground-facing aggregate
+    // Formula: T_si = T_interior - (U × ΔT × R_si)
+    // R_si = 0.17 (downward heat flow)
+    let o102_surfaceTemp = null;
+    if (d102_areaGround > 0) {
+      const deltaT_ground = interiorTemp - groundTemp;
+      o102_surfaceTemp = interiorTemp - (g102_uGround * deltaT_ground * 0.17);
+      o102_surfaceTemp = Math.round(o102_surfaceTemp * 100) / 100;
+    }
+
+    // Calculate o_104: Total building aggregate
+    // Uses area-weighted temperature difference
+    // Formula: T_si = T_interior - (U × ΔT_weighted × R_si)
+    // R_si = 0.13 (conservative choice for mixed aggregate)
+    let o104_surfaceTemp = null;
+    const totalArea = d101_areaAir + d102_areaGround;
+    if (totalArea > 0) {
+      const deltaT_air = interiorTemp - winterAvgTemp;
+      const deltaT_ground = interiorTemp - groundTemp;
+      const deltaT_weighted =
+        ((deltaT_air * d101_areaAir) + (deltaT_ground * d102_areaGround)) / totalArea;
+      o104_surfaceTemp = interiorTemp - (g104_uCombined * deltaT_weighted * 0.13);
+      o104_surfaceTemp = Math.round(o104_surfaceTemp * 100) / 100;
+    }
+
+    // Set calculated values
+    if (o101_surfaceTemp !== null) {
+      setCalculatedValue("o_101", o101_surfaceTemp, "number", isReferenceCalculation);
+    } else {
+      setCalculatedValue("o_101", "", "number", isReferenceCalculation);
+    }
+
+    if (o102_surfaceTemp !== null) {
+      setCalculatedValue("o_102", o102_surfaceTemp, "number", isReferenceCalculation);
+    } else {
+      setCalculatedValue("o_102", "", "number", isReferenceCalculation);
+    }
+
+    if (o104_surfaceTemp !== null) {
+      setCalculatedValue("o_104", o104_surfaceTemp, "number", isReferenceCalculation);
+    } else {
+      setCalculatedValue("o_104", "", "number", isReferenceCalculation);
+    }
+
+    return {
+      o_101: o101_surfaceTemp,
+      o_102: o102_surfaceTemp,
+      o_104: o104_surfaceTemp,
+    };
+  }
+
+  /**
+   * Determine if surface temperature indicates condensation risk
+   * Per Passivhaus standard: Risk threshold = T_interior - 4.2°C
+   * @param {number|null} surfaceTemp - Interior surface temperature (°C)
+   * @param {number} interiorTemp - Indoor setpoint h_23 (°C)
+   * @returns {boolean} - True if surface temp < (T_interior - 4.2°C) (condensation risk)
+   */
+  function hasCondensationRisk(surfaceTemp, interiorTemp) {
+    if (surfaceTemp === null || surfaceTemp === undefined) {
+      return false;
+    }
+    const riskThreshold = interiorTemp - 4.2;
+    return surfaceTemp < riskThreshold;
+  }
+
   function calculateAll() {
     // ✅ DUAL-ENGINE: Always run BOTH engines as per DUAL-STATE-CHEATSHEET mandate
     calculateReferenceModel(); // Reads ReferenceState → stores ref_ prefixed
@@ -2640,9 +2815,6 @@ window.TEUI.SectionModules.sect12 = (function () {
 
     // ✅ M-N-COMPLIANCE: Calculate operational compliance AFTER Reference values are published
     // This ensures ref_d_109 and ref_d_110 are available when Target mode reads them
-    console.log(
-      "[calculateAll] Reference values published. Now calculating M-N compliance..."
-    );
     calculateOperationalCompliance(true); // Reference mode: ref_m_109, ref_m_110
     calculateOperationalCompliance(false); // Target mode: m_109, m_110 (reads ref_d_109, ref_d_110)
 
@@ -2691,6 +2863,9 @@ window.TEUI.SectionModules.sect12 = (function () {
       // ⚠️ M-N-COMPLIANCE: calculateOperationalCompliance() moved to calculateAll()
       // to ensure ref_d_109/ref_d_110 are published before Target reads them
 
+      // ✅ MRT: Calculate Mean Radiant Temperature surface temperatures
+      const mrtResults = calculateMRTSurfaceTemperatures(true);
+
       // Store Reference Model results with ref_ prefix for downstream sections
       storeReferenceResults(
         volumeResults,
@@ -2701,7 +2876,8 @@ window.TEUI.SectionModules.sect12 = (function () {
         ae10Results,
         airLeakageResults,
         envelopeResults,
-        envelopeTotalsResults
+        envelopeTotalsResults,
+        mrtResults
       );
 
       // Update reference indicators after all calculations
@@ -2725,7 +2901,8 @@ window.TEUI.SectionModules.sect12 = (function () {
     ae10Results,
     airLeakageResults,
     envelopeResults,
-    envelopeTotalsResults
+    envelopeTotalsResults,
+    mrtResults
   ) {
     if (!window.TEUI?.StateManager) return;
 
@@ -2740,14 +2917,11 @@ window.TEUI.SectionModules.sect12 = (function () {
       ...airLeakageResults,
       ...envelopeResults,
       ...envelopeTotalsResults, // ✅ FIX: Include envelope totals (i_104, k_104, etc.)
+      ...mrtResults, // ✅ MRT: Include MRT surface temperatures
     };
 
     // ✅ S11 PATTERN: Store results for later re-writing
     lastReferenceResults = { ...allResults };
-
-    console.log(
-      "[Section12] Reference results cached. Publishing will occur at the end of calculateAll."
-    );
   }
 
   /**
@@ -2789,6 +2963,9 @@ window.TEUI.SectionModules.sect12 = (function () {
 
       // ⚠️ M-N-COMPLIANCE: calculateOperationalCompliance() moved to calculateAll()
       // to ensure ref_d_109/ref_d_110 are published before Target reads them
+
+      // ✅ MRT: Calculate Mean Radiant Temperature surface temperatures
+      calculateMRTSurfaceTemperatures(false);
 
       // Update reference indicators after all calculations
       updateAllReferenceIndicators();
@@ -3000,7 +3177,7 @@ window.TEUI.SectionModules.sect12 = (function () {
     // 4. Sync UI to the default (Target) state
     ModeManager.refreshUI();
 
-    // 5. Add StateManager listeners (including robot fingers)
+    // 5. Add StateManager listeners (including robot fingers 🤖👆)
     addStateManagerListeners();
 
     // 6. Apply validation tooltips to fields
@@ -3096,9 +3273,9 @@ window.TEUI.SectionModules.sect12 = (function () {
       "j_19", // Climate Zone (for N-Factor)
       "h_21", // Capacitance Setting (for k_104)
     ];
-    // ✅ OPTIMIZED: Listen only to Reference U-values (not RSI) per g_101 formula needs
+    // ✅ OPTIMIZED: Listen to Reference U-values AND areas per g_101 formula needs
     // Formula: g_101 = (SUMPRODUCT(g_85:g_95, d_85:d_95) / SUM(d_85:d_95)) × (1 + d_97/100)
-    // We read U-values from S11.ReferenceState (sovereign), so only listen to published values for recalc trigger
+    // We read values from S11.ReferenceState (sovereign), so listen to published values for recalc trigger
     const referenceUValueDeps = [
       "ref_g_85",
       "ref_g_86",
@@ -3114,6 +3291,22 @@ window.TEUI.SectionModules.sect12 = (function () {
       // Note: ref_f_XX (RSI) listeners removed - S12 reads U-values directly from S11.ReferenceState
       // S11 converts RSI→U internally, so we don't need to listen to both
       "ref_d_97", // Reference TB% when stored with prefix
+    ];
+
+    // ✅ FIX: Listen to Reference area changes (d_101, d_102, d_104 depend on these)
+    const referenceAreaDeps = [
+      "ref_d_85", // Roof area
+      "ref_d_86", // Walls AG area
+      "ref_d_87", // Floor Exp area
+      "ref_d_88", // Doors area
+      "ref_d_89", // Win N area
+      "ref_d_90", // Win E area
+      "ref_d_91", // Win S area
+      "ref_d_92", // Win W area
+      "ref_d_93", // Skylights area
+      "ref_d_94", // Walls BG area
+      "ref_d_95", // Floor Slab area
+      "ref_d_96", // Interior Floor area
     ];
     // Ensure both Target and Reference TB% changes trigger S12
     window.TEUI.StateManager.addListener("d_97", newValue => {
@@ -3138,13 +3331,29 @@ window.TEUI.SectionModules.sect12 = (function () {
       );
     });
 
-    // Add reference-prefixed listeners
+    // Add reference-prefixed U-value listeners
     referenceUValueDeps.forEach(depId => {
       window.TEUI.StateManager.addListener(
         depId,
         (newValue, oldValue, eventFieldId, state) => {
           if (eventFieldId === depId) {
             calculateAll();
+          }
+        }
+      );
+    });
+
+    // ✅ FIX: Add reference-prefixed area listeners (was missing - caused bug where ref_d_86 changes didn't update d_101)
+    // ✅ PERFORMANCE FIX: Explicit DOM refresh after calculateAll() for immediate UI update (S13 pattern)
+    referenceAreaDeps.forEach(depId => {
+      window.TEUI.StateManager.addListener(
+        depId,
+        (newValue, oldValue, eventFieldId, state) => {
+          if (eventFieldId === depId) {
+            calculateAll();
+            // ✅ CRITICAL: Explicit DOM refresh ensures immediate UI update in Reference mode
+            // Without this, updates lag behind by one calculation cycle
+            ModeManager.updateCalculatedDisplayValues?.();
           }
         }
       );
@@ -3222,6 +3431,7 @@ window.TEUI.SectionModules.sect12 = (function () {
     onSectionRendered: onSectionRendered,
     calculateAll: calculateAll,
     calculateTargetModel: calculateTargetModel, // ✅ CRITICAL: Expose for state-isolated forced recalculation
+    calculateReferenceModel: calculateReferenceModel, // ✅ CRITICAL: Expose for S11 robot fingers 🤖👆 in Reference mode
     calculateCombinedUValue: calculateCombinedUValue,
     ModeManager: ModeManager, // ✅ CRITICAL FIX: Enable FieldManager integration
     // ✅ PHASE 2: Expose state objects for import sync

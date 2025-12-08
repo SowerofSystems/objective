@@ -362,9 +362,35 @@ window.TEUI.PCRendering = (function () {
           `[pcRendering] Conditional domain for ${axis.id}: [${domainMin}, ${domainMax}]`
         );
       } else {
-        // Expand domain if data exceeds configured domain
-        if (dataMin < domainMin) domainMin = dataMin * 0.9;
-        if (dataMax > domainMax) domainMax = dataMax * 1.1;
+        // Dynamic scaling for output metrics (TEDI, TELI, GHGI, TEUI)
+        const isDynamicAxis = ["tedi", "teli", "ghgi", "teui"].includes(axis.id);
+
+        if (isDynamicAxis) {
+          // Calculate dynamic domain with 15% margin
+          const range = dataMax - dataMin;
+          const margin = range * 0.15;
+
+          // Always start at zero for output metrics
+          domainMin = 0;
+
+          // Round up maximum to maintain visual flow
+          const maxWithMargin = dataMax + margin;
+          if (axis.id === "ghgi") {
+            // GHGI: Round up to nearest 10
+            domainMax = Math.ceil(maxWithMargin / 10) * 10;
+          } else {
+            // TEDI, TELI, TEUI: Round up to nearest 100
+            domainMax = Math.ceil(maxWithMargin / 100) * 100;
+          }
+
+          console.log(
+            `[pcRendering] Dynamic domain for ${axis.id}: [0, ${domainMax}] (data: ${dataMin.toFixed(2)}-${dataMax.toFixed(2)})`
+          );
+        } else {
+          // Fixed domains for editable axes - expand if data exceeds configured domain
+          if (dataMin < domainMin) domainMin = dataMin * 0.9;
+          if (dataMax > domainMax) domainMax = dataMax * 1.1;
+        }
       }
 
       // Invert range for "higher is better" axes

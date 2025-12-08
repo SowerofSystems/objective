@@ -357,6 +357,8 @@ window.TEUI.SectionModules.sect03 = (function () {
         "i_24",
         "m_24",
         "n_24",
+        "d_25",
+        "e_25",
       ];
 
       calculatedFields.forEach(fieldId => {
@@ -396,7 +398,7 @@ window.TEUI.SectionModules.sect03 = (function () {
                 ].includes(fieldId)
               ) {
                 formatType = "integer";
-              } else if (["e_23", "i_23", "e_24", "i_24"].includes(fieldId)) {
+              } else if (["e_23", "i_23", "e_24", "i_24", "e_25"].includes(fieldId)) {
                 formatType = "integer-nocomma";
               } else if (fieldId === "j_19") {
                 formatType = "number-1dp";
@@ -656,6 +658,13 @@ window.TEUI.SectionModules.sect03 = (function () {
 
     // console.log(`[S03] ${calculationMode.toUpperCase()} TEMP SELECTION: ${janTempKey} = ${selectedJanTemp} (Critical: ${isCritical})`);
 
+    // ✅ Winter Average Temperature - Direct from ClimateValues.js (matches d_23 pattern)
+    const winterAvgC = cityData.Winter_Tdb_Avg;
+    // Celsius-to-Fahrenheit conversion (integer format like other temp conversions)
+    const winterAvgF = winterAvgC !== null && winterAvgC !== undefined
+      ? (winterAvgC * 9) / 5 + 32
+      : null;
+
     const climateValues = {
       d_20: hdd !== null && hdd !== undefined && hdd !== 666 ? hdd : "N/A",
       d_21:
@@ -664,6 +673,8 @@ window.TEUI.SectionModules.sect03 = (function () {
       d_23: selectedJanTemp, // ✅ Now uses occupancy-aware temperature selection
       d_24: cityData.July_2_5_Tdb || "34",
       l_22: cityData["Elev ASL (m)"] || "80",
+      d_25: winterAvgC !== null && winterAvgC !== undefined ? winterAvgC : "N/A", // ✅ Winter avg from ClimateValues (matches d_23 pattern)
+      e_25: winterAvgF !== null && winterAvgF !== undefined ? winterAvgF : "N/A", // ✅ Fahrenheit conversion
     };
 
     // console.log(`[S03] Climate values for ${city} (${calculationMode}):`, climateValues);
@@ -1052,6 +1063,32 @@ window.TEUI.SectionModules.sect03 = (function () {
           section: "climateCalculations",
           dependencies: ["h_24", "m_24"], // ✓ if h_24 <= m_24, ✗ if h_24 > m_24
           tooltip: true,
+        },
+      },
+    },
+
+    // Row 25: Winter Average Temperature (for condensation risk assessment)
+    25: {
+      id: "L.3.3",
+      rowId: "L.3.3",
+      label: "Winter Average Temp. (Location Specific)",
+      cells: {
+        b: { content: "L.3.3", classes: ["label-prefix"] },
+        c: { content: "Winter Average Temp. (Location Specific)", type: "label" },
+        d: {
+          fieldId: "d_25",
+          type: "calculated",
+          value: "0",
+          section: "climateCalculations",
+          dependencies: ["d_20", "m_19"],
+          tooltip: true, // Winter average temperature calculated from HDD and heating season days
+        },
+        e: {
+          fieldId: "e_25",
+          type: "calculated",
+          value: "32",
+          section: "climateCalculations",
+          dependencies: ["d_25"],
         },
       },
     },
@@ -1805,6 +1842,14 @@ window.TEUI.SectionModules.sect03 = (function () {
   }
 
   /**
+   * ❌ DEPRECATED: Winter Average Temperature now handled in getClimateDataForState()
+   * This function has been removed - d_25/e_25 are now climate data fields (like d_23)
+   * and are fetched directly from ClimateValues.js in the climate data loop.
+   *
+   * See getClimateDataForState() lines 661-676 for the new implementation.
+   */
+
+  /**
    * Calculate all values - DUAL-ENGINE PATTERN
    * Runs both Target and Reference calculations for complete downstream data
    */
@@ -1858,6 +1903,7 @@ window.TEUI.SectionModules.sect03 = (function () {
       calculateHeatingCompliance(); // n_23: Check h_23 >= m_23 compliance
       calculateCoolingSetpoint_h24();
       calculateTemperatures();
+      // d_25, e_25 now handled in climate data loop (getClimateDataForState) - no separate calculation needed
       calculateGroundFacing();
       updateCoolingDependents();
       updateCriticalOccupancyFlag();
@@ -1934,6 +1980,7 @@ window.TEUI.SectionModules.sect03 = (function () {
       calculateHeatingCompliance(); // n_23: Check h_23 >= m_23 compliance
       calculateCoolingSetpoint_h24();
       calculateTemperatures();
+      // d_25, e_25 now handled in climate data loop (getClimateDataForState) - no separate calculation needed
       calculateGroundFacing();
       updateCoolingDependents();
 
@@ -1981,6 +2028,8 @@ window.TEUI.SectionModules.sect03 = (function () {
       h_24: ReferenceState.getValue("h_24"), // Reference cooling setpoint (CALCULATED) ✅
       d_22: ReferenceState.getValue("d_22"), // Reference GF HDD (CALCULATED) ✅
       h_22: ReferenceState.getValue("h_22"), // Reference GF CDD (CALCULATED) ✅
+      d_25: ReferenceState.getValue("d_25"), // Reference winter average temp (CALCULATED for condensation risk) ✅
+      e_25: ReferenceState.getValue("e_25"), // Reference winter average temp °F (CALCULATED) ✅
     };
 
     // Store with ref_ prefix for downstream sections
@@ -2006,13 +2055,14 @@ window.TEUI.SectionModules.sect03 = (function () {
     if (!window.TEUI?.StateManager) return;
 
     // ✅ ONLY publish values CALCULATED by the calculation functions (not from climate lookup)
-    // NOTE: d_20, d_21, j_19, d_23, d_24, l_22 are already published in the initial climate data loop
+    // NOTE: d_20, d_21, j_19, d_23, d_24, l_22, d_25, e_25 are already published in the initial climate data loop
     const targetResults = {
       // ✅ Calculated setpoints and derived values (ONLY these need additional publishing)
       h_23: TargetState.getValue("h_23"), // Target heating setpoint (CALCULATED from occupancy) ✅
       h_24: TargetState.getValue("h_24"), // Target cooling setpoint (CALCULATED from occupancy) ✅
-      d_22: TargetState.getValue("d_22"), // Target GF HDD (CALCULATED from h_23) ✅ - This was missing!
-      h_22: TargetState.getValue("h_22"), // Target GF CDD (CALCULATED from h_24) ✅ - This was missing!
+      d_22: TargetState.getValue("d_22"), // Target GF HDD (CALCULATED from h_23) ✅
+      h_22: TargetState.getValue("h_22"), // Target GF CDD (CALCULATED from h_24) ✅
+      // d_25, e_25 removed - now published in climate data loop (getClimateDataForState)
     };
 
     // Store unprefixed for downstream sections (Target mode)
