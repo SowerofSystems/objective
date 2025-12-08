@@ -673,7 +673,9 @@ window.TEUI.SectionModules.sect11 = (function () {
             if (fieldId.startsWith("o_")) {
               const num = window.TEUI.parseNumeric(valueToDisplay, 0);
               if (num !== 0 && !isNaN(num)) {
-                const hasRisk = hasCondensationRisk(num);
+                // Get interior temperature from Section03 for Passivhaus threshold calculation
+                const interiorTemp = getGlobalNumericValue("h_23");
+                const hasRisk = hasCondensationRisk(num, interiorTemp);
                 const emoji = hasRisk ? "💧" : "🌵";
                 const formattedTemp = formatNumber(num, "number");
                 element.textContent = `${emoji} ${formattedTemp}`;
@@ -2382,15 +2384,18 @@ window.TEUI.SectionModules.sect11 = (function () {
 
   /**
    * Determine if surface temperature indicates condensation risk
+   * Per Passivhaus standard: Risk threshold = T_interior - 4.2°C
    * @param {number|null} surfaceTemp - Interior surface temperature (°C)
-   * @returns {boolean} - True if surface temp < 15°C (condensation risk)
+   * @param {number} interiorTemp - Indoor setpoint h_23 (°C)
+   * @returns {boolean} - True if surface temp < (T_interior - 4.2°C) (condensation risk)
    */
-  function hasCondensationRisk(surfaceTemp) {
+  function hasCondensationRisk(surfaceTemp, interiorTemp) {
     if (surfaceTemp === null || surfaceTemp === undefined) {
       return false;  // No risk if assembly doesn't exist
     }
 
-    return surfaceTemp < 15;  // Risk threshold: 15°C
+    const riskThreshold = interiorTemp - 4.2;  // Passivhaus standard threshold
+    return surfaceTemp < riskThreshold;
   }
 
   /**

@@ -316,11 +316,11 @@ updateCalculatedDisplayValues: function() {
 2. **Field definitions** o_85 through o_95 for all 11 assembly rows
 3. **Three calculation helper functions:**
    - `calculateSurfaceTemperature()` - Formula: T_si = T_interior - (U × ΔT × R_si)
-   - `hasCondensationRisk()` - Threshold check: surface temp < 15°C
+   - `hasCondensationRisk()` - Passivhaus standard threshold: surface temp < (T_interior - 4.2°C)
    - `calculateAllSurfaceTemperatures()` - Batch processor for all assemblies
 4. **Visual indicators** prepended to temperature values:
-   - 🌵 (cactus) when temp ≥ 15°C (safe)
-   - 💧 (water droplet) when temp < 15°C (condensation risk)
+   - 🌵 (cactus) when temp ≥ (h_23 - 4.2°C) - safe, no condensation risk
+   - 💧 (water droplet) when temp < (h_23 - 4.2°C) - condensation risk per Passivhaus standard
 5. **Integration** into both Target and Reference calculation engines
 6. **Infrastructure updates:**
    - Added `<col class="col-o">` to FieldManager.js colgroup
@@ -344,14 +344,19 @@ updateCalculatedDisplayValues: function() {
 
 ### 3.1 Overview
 
-Section 12 will calculate MRT for the building envelope by computing area-weighted average surface temperatures for floors and aggregate envelope (roof + walls). This extends the surface temperature calculation system from Section 11 to provide a whole-building thermal comfort metric.
+Section 12 will calculate MRT surface temperatures for the building envelope aggregates. This extends the surface temperature calculation system from Section 11 to provide whole-building thermal comfort metrics.
 
 **Key Design Decisions**:
 - **Column O** added to Section 12 (same infrastructure as Section 11)
 - **Column O header**: "MRT °C" (Mean Radiant Temperature)
-- **Field locations**: o_101 (Floor Slab), o_102 (Floor Basement), o_104 (Aggregate envelope)
+- **Field locations**:
+  - **o_101**: Aggregate of all air-facing surfaces (roof, walls, windows, doors from S11)
+  - **o_102**: Aggregate of all ground-facing surfaces (basement walls, slab from S11)
+  - **o_104**: Total building aggregate (combines o_101 and o_102)
 - **Uses same styling**: 80px width, 12px right padding (`.data-table td.col-o`)
-- **Ground temperature constant**: 10°C (same as Section 11 ground-facing assemblies)
+- **Temperature sources**:
+  - o_101 uses d_25 (winter average) for air-facing surfaces
+  - o_102 uses 10°C constant for ground-facing surfaces
 
 ### 3.2 Calculation Formulas
 
@@ -364,11 +369,14 @@ T_si = T_interior - (U × ΔT × R_si)
 
 | Row | Field | Assembly | Formula | R_si | Exterior Temp |
 |-----|-------|----------|---------|------|---------------|
-| 101 | o_101 | Floor Slab | `=IF(D101=0, "", $H$23 - (G101 * ($H$23 - 10) * 0.17))` | 0.17 | 10°C (ground) |
-| 102 | o_102 | Floor Basement | `=IF(D102=0, "", $H$23 - (G102 * ($H$23 - 10) * 0.17))` | 0.17 | 10°C (ground) |
-| 104 | o_104 | Aggregate Envelope | `=IF(SUM(D101:D102)=0, "", $H$23 - (G104 * ($H$23 - 10) * R_si_weighted))` | **TBD** | 10°C (ground) |
+| 101 | o_101 | Air-facing Aggregate | `=IF(D101=0, "", $H$23 - (G101 * ($H$23 - $D$25) * 0.13))` | 0.13 | d_25 (winter avg) |
+| 102 | o_102 | Ground-facing Aggregate | `=IF(D102=0, "", $H$23 - (G102 * ($H$23 - 10) * 0.17))` | 0.17 | 10°C (ground) |
+| 104 | o_104 | Total Building Aggregate | `=IF(D104=0, "", $H$23 - (G104 * (($H$23 - $D$25)*D101 + ($H$23 - 10)*D102) / D104 * 0.13))` | 0.13 | Weighted avg |
 
-**Note**: Row 104 (Aggregate Envelope) requires a **weighted R_si** calculation based on roof and wall areas/U-values.
+**Note**:
+- Row 101 uses R_si = 0.13 (wall-dominated aggregate, conservative choice)
+- Row 102 uses R_si = 0.17 (downward heat flow for ground contact)
+- Row 104 uses area-weighted temperature difference for combined air + ground surfaces
 
 ### 3.3 Weighted R_si Calculation Challenge
 
