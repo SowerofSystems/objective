@@ -617,7 +617,8 @@ td[colspan="2"] .form-select {
   .data-table col.col-j,
   .data-table col.col-k,
   .data-table col.col-l,
-  .data-table col.col-m {
+  .data-table col.col-m,
+  .data-table col.col-o {
     width: 80px; /* Further reduce value columns at medium size */
     min-width: 60px;
   }
@@ -2286,6 +2287,12 @@ textarea.mirror-highlight {
   vertical-align: middle;
   font-weight: bold;
   font-size: 1.2rem;
+}
+
+/* Column O: Surface temperature with condensation risk indicators - add right padding
+   NOTE: Use .data-table td.col-[letter] to target padding/styling for any column in any section */
+.data-table td.col-o {
+  padding-right: 12px;
 }
 
 .checkmark {

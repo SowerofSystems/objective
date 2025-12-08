@@ -587,56 +587,67 @@ window.TEUI.SectionModules.sect11 = (function () {
         "g_85",
         "f_85",
         "m_85",
+        "o_85",
         "i_86",
         "k_86",
         "g_86",
         "f_86",
         "m_86",
+        "o_86",
         "i_87",
         "k_87",
         "g_87",
         "f_87",
         "m_87",
+        "o_87",
         "i_88",
         "k_88",
         "g_88",
         "f_88",
         "m_88",
+        "o_88",
         "i_89",
         "k_89",
         "g_89",
         "f_89",
         "m_89",
+        "o_89",
         "i_90",
         "k_90",
         "g_90",
         "f_90",
         "m_90",
+        "o_90",
         "i_91",
         "k_91",
         "g_91",
         "f_91",
         "m_91",
+        "o_91",
         "i_92",
         "k_92",
         "g_92",
         "f_92",
         "m_92",
+        "o_92",
         "i_93",
         "k_93",
         "g_93",
         "f_93",
         "m_93",
+        "o_93",
         "i_94",
         "k_94",
         "g_94",
         "f_94",
         "m_94",
+        "o_94",
         "i_95",
         "k_95",
         "g_95",
         "f_95",
         "m_95",
+        "o_95",
         // Row 96 doesn't exist - table goes directly from Row 95 to Row 97
         // Totals and penalties
         "i_97",
@@ -658,16 +669,30 @@ window.TEUI.SectionModules.sect11 = (function () {
             `[data-field-id="${fieldId}"]`
           );
           if (element) {
-            // ✅ M-N-COMPLIANCE: Use getFieldFormat() to determine format type
-            const formatType = getFieldFormat(fieldId);
-
-            if (formatType === "raw") {
-              // M/N fields: already formatted, display as-is
-              element.textContent = valueToDisplay;
-            } else {
-              // Other fields: parse and format according to type
+            // ✅ CONDENSATION RISK: Special handling for Column O (surface temperature with emoji)
+            if (fieldId.startsWith("o_")) {
               const num = window.TEUI.parseNumeric(valueToDisplay, 0);
-              element.textContent = formatNumber(num, formatType);
+              if (num !== 0 && !isNaN(num)) {
+                const hasRisk = hasCondensationRisk(num);
+                const emoji = hasRisk ? "💧" : "🌵";
+                const formattedTemp = formatNumber(num, "number");
+                element.textContent = `${emoji} ${formattedTemp}`;
+              } else {
+                element.textContent = "";  // Empty if no area (assembly doesn't exist)
+              }
+            }
+            // ✅ M-N-COMPLIANCE: Use getFieldFormat() to determine format type
+            else {
+              const formatType = getFieldFormat(fieldId);
+
+              if (formatType === "raw") {
+                // M/N fields: already formatted, display as-is
+                element.textContent = valueToDisplay;
+              } else {
+                // Other fields: parse and format according to type
+                const num = window.TEUI.parseNumeric(valueToDisplay, 0);
+                element.textContent = formatNumber(num, formatType);
+              }
             }
           }
         }
@@ -2327,6 +2352,97 @@ window.TEUI.SectionModules.sect11 = (function () {
   }
 
   //==========================================================================
+  // CONDENSATION RISK HELPER FUNCTIONS
+  //==========================================================================
+
+  /**
+   * Calculate interior surface temperature for an envelope assembly
+   * Formula: T_si = T_interior - (U × ΔT × R_si)
+   *
+   * @param {number} area - Assembly area (d_row) - if zero, returns null (assembly doesn't exist)
+   * @param {number} uValue - Assembly U-value (g_row) in W/m²K
+   * @param {number} interiorTemp - Indoor setpoint h_23 (°C)
+   * @param {number} exteriorTemp - Exterior temperature: d_25 (winter avg) or 10°C (ground)
+   * @param {number} rSi - Internal surface resistance (0.10, 0.13, or 0.17 m²K/W)
+   * @returns {number|null} - Interior surface temperature (°C) or null if no area
+   */
+  function calculateSurfaceTemperature(area, uValue, interiorTemp, exteriorTemp, rSi) {
+    // Guard: No calculation if area is zero (assembly doesn't exist)
+    if (area === 0 || !area) {
+      return null;
+    }
+
+    // Formula: T_si = T_interior - (U × ΔT × R_si)
+    const deltaT = interiorTemp - exteriorTemp;
+    const surfaceTemp = interiorTemp - (uValue * deltaT * rSi);
+
+    // Round to 2 decimal places
+    return Math.round(surfaceTemp * 100) / 100;
+  }
+
+  /**
+   * Determine if surface temperature indicates condensation risk
+   * @param {number|null} surfaceTemp - Interior surface temperature (°C)
+   * @returns {boolean} - True if surface temp < 15°C (condensation risk)
+   */
+  function hasCondensationRisk(surfaceTemp) {
+    if (surfaceTemp === null || surfaceTemp === undefined) {
+      return false;  // No risk if assembly doesn't exist
+    }
+
+    return surfaceTemp < 15;  // Risk threshold: 15°C
+  }
+
+  /**
+   * Calculate surface temperatures for all envelope assemblies (rows 85-95)
+   * Stores results in o_85 through o_95 fields (Column O)
+   */
+  function calculateAllSurfaceTemperatures() {
+    // Get global climate values from Section03
+    const interiorTemp = getGlobalNumericValue("h_23");  // Heating setpoint
+    const winterAvgTemp = getGlobalNumericValue("d_25"); // Winter average exterior
+    const groundTemp = 10;  // Constant for ground-facing assemblies
+
+    // Assembly configurations: [row, R_si, exteriorTemp]
+    const assemblies = [
+      // Air-facing assemblies (use winter average d_25)
+      [85, 0.10, winterAvgTemp],  // Roof (upward heat flow)
+      [86, 0.13, winterAvgTemp],  // Walls AG (horizontal)
+      [87, 0.17, winterAvgTemp],  // Floor Exposed (downward)
+      [88, 0.13, winterAvgTemp],  // Doors (horizontal)
+      [89, 0.13, winterAvgTemp],  // Window N (horizontal)
+      [90, 0.13, winterAvgTemp],  // Window E (horizontal)
+      [91, 0.13, winterAvgTemp],  // Window S (horizontal)
+      [92, 0.13, winterAvgTemp],  // Window W (horizontal)
+      [93, 0.10, winterAvgTemp],  // Skylights (upward)
+
+      // Ground-facing assemblies (use constant 10°C)
+      [94, 0.13, groundTemp],     // Walls BG (horizontal)
+      [95, 0.17, groundTemp],     // Floor Slab (downward)
+    ];
+
+    assemblies.forEach(([row, rSi, exteriorTemp]) => {
+      const area = getNumericValue(`d_${row}`);
+      const uValue = getNumericValue(`g_${row}`);
+
+      const surfaceTemp = calculateSurfaceTemperature(
+        area,
+        uValue,
+        interiorTemp,
+        exteriorTemp,
+        rSi
+      );
+
+      // Store result (or empty string if no area)
+      if (surfaceTemp !== null) {
+        setCalculatedValue(`o_${row}`, surfaceTemp);
+      } else {
+        setCalculatedValue(`o_${row}`, "");
+      }
+    });
+  }
+
+  //==========================================================================
   // CALCULATION FUNCTIONS
   //==========================================================================
 
@@ -2931,6 +3047,9 @@ window.TEUI.SectionModules.sect11 = (function () {
         penalty: { heatloss: penaltyHeatlossI, heatgain: penaltyHeatgainK },
       };
 
+      // ✅ CONDENSATION RISK: Calculate surface temperatures for all assemblies
+      calculateAllSurfaceTemperatures();
+
       // ✅ M-N-COMPLIANCE: Update reference indicators for all component rows
       // This stores "100%" to ref_m_85, ref_m_86, etc. in Reference mode
       componentConfig.forEach(config => {
@@ -3075,6 +3194,9 @@ window.TEUI.SectionModules.sect11 = (function () {
         // Update reference indicators for all rows
         updateReferenceIndicators(config.row);
       });
+
+      // ✅ CONDENSATION RISK: Calculate surface temperatures for all assemblies
+      calculateAllSurfaceTemperatures();
 
       // ✅ PUBLISH: Target area values to StateManager for downstream S12 consumption
       if (window.TEUI?.StateManager) {
