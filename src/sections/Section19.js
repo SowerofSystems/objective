@@ -121,12 +121,12 @@ window.TEUI.SectionModules.sect19 = (function () {
         { label: "Footprint Aspect Ratio (L:W)" }, // Column C
         { // Column D
           fieldId: "d_202",
-          type: "slider",
+          type: "coefficient_slider",
           value: "1.0",
           min: 0.5,
           max: 4.0,
           step: 0.1,
-          classes: ["user-input", "aspect-ratio-slider"],
+          section: "topometry",
           tooltip: true,
           label: "Aspect Ratio: 1.0 = square, 2.0 = 2:1 rectangle",
         },
@@ -211,7 +211,17 @@ window.TEUI.SectionModules.sect19 = (function () {
   }
 
   function getDropdownOptions() {
-    return {};
+    return {
+      dd_d_103_s19: [
+        { value: "1", name: "1" },
+        { value: "1.5", name: "1.5" },
+        { value: "2", name: "2" },
+        { value: "3", name: "3" },
+        { value: "4", name: "4" },
+        { value: "5", name: "5" },
+        { value: "6", name: "6" },
+      ],
+    };
   }
 
   function getLayout() {
