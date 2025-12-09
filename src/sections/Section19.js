@@ -41,16 +41,16 @@ window.TEUI.SectionModules.sect19 = (function () {
     header: {
       id: "S19-HEADER",
       rowId: "S19-HEADER",
-      cells: [
-        {}, // Column A (blank)
-        {}, // Column B (blank)
-        { content: "C", classes: ["section-subheader"] },
-        { content: "D", classes: ["section-subheader"] },
-        { content: "E", classes: ["section-subheader"] },
-        { content: "F", classes: ["section-subheader"] },
-        { content: "G", classes: ["section-subheader"] },
-        { content: "H", classes: ["section-subheader"] },
-      ],
+      cells: {
+        a: {},
+        b: {},
+        c: { content: "C", classes: ["section-subheader"] },
+        d: { content: "D", classes: ["section-subheader"] },
+        e: { content: "E", classes: ["section-subheader"] },
+        f: { content: "F", classes: ["section-subheader"] },
+        g: { content: "G", classes: ["section-subheader"] },
+        h: { content: "H", classes: ["section-subheader"] },
+      },
     },
 
     // Stories dropdown (entangled with S12 d_103)
@@ -58,11 +58,11 @@ window.TEUI.SectionModules.sect19 = (function () {
       id: "19.0",
       rowId: "19.0",
       label: "Stories",
-      cells: [
-        {}, // Column A (blank)
-        {}, // Column B (blank)
-        { label: "Stories" }, // Column C
-        { // Column D - Stories dropdown (mirrored from S12)
+      cells: {
+        a: {},
+        b: {},
+        c: { label: "Stories" },
+        d: {
           fieldId: "d_103",
           type: "dropdown",
           dropdownId: "dd_d_103_s19",
@@ -79,11 +79,11 @@ window.TEUI.SectionModules.sect19 = (function () {
             { value: "6", name: "6" },
           ],
         },
-        { content: "Stories", classes: ["unit-label"] }, // Column E
-        {}, // Column F
-        {}, // Column G
-        {}, // Column H
-      ],
+        e: { content: "Stories", classes: ["unit-label"] },
+        f: {},
+        g: {},
+        h: {},
+      },
     },
 
     // Volume input (entangled with S12 d_105)
@@ -91,11 +91,11 @@ window.TEUI.SectionModules.sect19 = (function () {
       id: "19.V",
       rowId: "19.V",
       label: "Conditioned Volume",
-      cells: [
-        {}, // Column A (blank)
-        {}, // Column B (blank)
-        { label: "Conditioned Volume" }, // Column C
-        { // Column D - Volume (mirrored from S12)
+      cells: {
+        a: {},
+        b: {},
+        c: { label: "Conditioned Volume" },
+        d: {
           fieldId: "d_105",
           type: "number",
           value: "8000.00",
@@ -103,11 +103,11 @@ window.TEUI.SectionModules.sect19 = (function () {
           tooltip: true,
           label: "Total conditioned building volume",
         },
-        { content: "m³", classes: ["unit-label"] }, // Column E
-        {}, // Column F
-        {}, // Column G
-        {}, // Column H
-      ],
+        e: { content: "m³", classes: ["unit-label"] },
+        f: {},
+        g: {},
+        h: {},
+      },
     },
 
     // User controls for topology solver
@@ -115,73 +115,73 @@ window.TEUI.SectionModules.sect19 = (function () {
       id: "19.1",
       rowId: "19.1",
       label: "Footprint Aspect Ratio (L:W)",
-      cells: [
-        {}, // Column A (blank)
-        {}, // Column B (blank)
-        { label: "Footprint Aspect Ratio (L:W)" }, // Column C
-        { // Column D
+      cells: {
+        a: {},
+        b: {},
+        c: { label: "Footprint Aspect Ratio (L:W)" },
+        d: {
           fieldId: "d_202",
           type: "coefficient_slider",
-          value: "1.0",
-          min: 0.5,
+          value: "0.0",
+          min: -4.0,
           max: 4.0,
           step: 0.1,
           section: "topometry",
           tooltip: true,
-          label: "Aspect Ratio: 1.0 = square, 2.0 = 2:1 rectangle",
+          label: "Aspect Ratio: 0 = square, negative = portrait (tall), positive = landscape (wide)",
         },
-        { content: "(1.0 = square)", classes: ["text-left"] }, // Column E
-        {}, // Column F
-        {}, // Column G
-        { // Column H
+        e: { content: "(0 = square)", classes: ["text-left"] },
+        f: {},
+        g: {},
+        h: {
           fieldId: "h_200",
           type: "calculated",
           value: "0.00",
           label: "Footprint Length (m)",
         },
-      ],
+      },
     },
 
     row201: {
       id: "19.2",
       rowId: "19.2",
       label: "Footprint Width",
-      cells: [
-        {}, // Column A
-        {}, // Column B
-        { label: "Footprint Width" }, // Column C
-        {}, // Column D
-        {}, // Column E
-        {}, // Column F
-        {}, // Column G
-        { // Column H
+      cells: {
+        a: {},
+        b: {},
+        c: { label: "Footprint Width" },
+        d: {},
+        e: {},
+        f: {},
+        g: {},
+        h: {
           fieldId: "h_201",
           type: "calculated",
           value: "0.00",
           label: "Footprint Width (m)",
         },
-      ],
+      },
     },
 
     row203: {
       id: "19.3",
       rowId: "19.3",
       label: "Building Height",
-      cells: [
-        {}, // Column A
-        {}, // Column B
-        { label: "Building Height" }, // Column C
-        {}, // Column D
-        {}, // Column E
-        {}, // Column F
-        {}, // Column G
-        { // Column H
+      cells: {
+        a: {},
+        b: {},
+        c: { label: "Building Height" },
+        d: {},
+        e: {},
+        f: {},
+        g: {},
+        h: {
           fieldId: "h_203",
           type: "calculated",
           value: "0.00",
           label: "Nominal Height (m)",
         },
-      ],
+      },
     },
   };
 
@@ -192,8 +192,9 @@ window.TEUI.SectionModules.sect19 = (function () {
   function getFields() {
     const fields = {};
     Object.values(sectionRows).forEach(row => {
-      if (!row.cells || !Array.isArray(row.cells)) return;
-      row.cells.forEach(cell => {
+      if (!row.cells) return;
+      // Handle object-based cells (like Section12)
+      Object.values(row.cells).forEach(cell => {
         if (cell.fieldId) {
           fields[cell.fieldId] = {
             type: cell.type,
@@ -204,6 +205,8 @@ window.TEUI.SectionModules.sect19 = (function () {
           if (cell.min !== undefined) fields[cell.fieldId].min = cell.min;
           if (cell.max !== undefined) fields[cell.fieldId].max = cell.max;
           if (cell.step !== undefined) fields[cell.fieldId].step = cell.step;
+          if (cell.options !== undefined) fields[cell.fieldId].options = cell.options;
+          if (cell.dropdownId !== undefined) fields[cell.fieldId].dropdownId = cell.dropdownId;
         }
       });
     });
@@ -224,19 +227,63 @@ window.TEUI.SectionModules.sect19 = (function () {
     };
   }
 
+  /**
+   * Convert object-based cells to array format for FieldManager
+   * (Following Section12 pattern)
+   */
+  function createLayoutRow(row) {
+    const rowDef = { id: row.id, cells: [{}, {}] }; // Start with columns A, B (empty)
+    const columns = ["c", "d", "e", "f", "g", "h"];
+
+    columns.forEach(col => {
+      if (row.cells && row.cells[col]) {
+        const cell = { ...row.cells[col] };
+
+        // Handle column C (description) label conversion
+        if (col === "c") {
+          if (cell.type === "label" && cell.content && !cell.label) {
+            cell.label = cell.content;
+            delete cell.type;
+            delete cell.content;
+          } else if (!cell.label && !cell.content && row.label) {
+            cell.label = row.label;
+          }
+        }
+
+        // Clean up internal properties not needed by FieldManager
+        delete cell.section;
+        delete cell.dependencies;
+
+        rowDef.cells.push(cell);
+      } else {
+        // Empty cell or fallback to row label for column C
+        if (col === "c" && !row.cells?.c && row.label) {
+          rowDef.cells.push({ label: row.label });
+        } else {
+          rowDef.cells.push({});
+        }
+      }
+    });
+
+    return rowDef;
+  }
+
   function getLayout() {
-    // Partial custom layout: Return rows for left panel controls,
-    // HTML structure in index.html handles canvas container
-    return {
-      rows: [
-        sectionRows.header,
-        sectionRows.row199, // Stories dropdown
-        sectionRows.row198, // Volume input
-        sectionRows.row200, // Aspect ratio slider
-        sectionRows.row201, // Footprint width (calculated)
-        sectionRows.row203, // Building height (calculated)
-      ],
-    };
+    const layoutRows = [];
+
+    // Add header
+    if (sectionRows.header) {
+      layoutRows.push(createLayoutRow(sectionRows.header));
+    }
+
+    // Add data rows
+    ["row199", "row198", "row200", "row201", "row203"].forEach(key => {
+      if (sectionRows[key]) {
+        layoutRows.push(createLayoutRow(sectionRows[key]));
+      }
+    });
+
+    return { rows: layoutRows };
   }
 
   //==========================================================================
@@ -256,7 +303,12 @@ window.TEUI.SectionModules.sect19 = (function () {
     const stories = parseFloat(window.TEUI?.StateManager?.getValue("d_103")) || 1;
 
     // User preferences
-    const aspectRatio = parseFloat(window.TEUI?.StateManager?.getValue("d_202")) || 1.0;
+    // Aspect ratio slider: -4 to +4, centered at 0
+    // 0 = square (1:1)
+    // Positive = landscape (wider than tall): +1 = 2:1, +2 = 3:1, +4 = 5:1
+    // Negative = portrait (taller than wide): -1 = 1:2, -2 = 1:3, -4 = 1:5
+    const aspectRatioRaw = parseFloat(window.TEUI?.StateManager?.getValue("d_202")) || 0.0;
+    const aspectRatio = aspectRatioRaw >= 0 ? (1 + aspectRatioRaw) : (1 / (1 - aspectRatioRaw));
 
     // Phase 1: Footprint (X-Y plane, always horizontal)
     // Total conditioned area divided by number of stories
@@ -667,10 +719,19 @@ window.TEUI.SectionModules.sect19 = (function () {
     const aspectSlider = document.querySelector('[data-field-id="d_202"] input[type="range"]');
     if (aspectSlider && !aspectSlider.hasSliderListener) {
       aspectSlider.addEventListener("input", (e) => {
-        const value = e.target.value;
+        const rawValue = parseFloat(e.target.value);
         const displaySpan = document.querySelector('span[data-display-for="d_202"]');
         if (displaySpan) {
-          displaySpan.textContent = `${parseFloat(value).toFixed(1)}:1`;
+          // Convert slider value to aspect ratio display
+          if (rawValue === 0) {
+            displaySpan.textContent = "1:1 (square)";
+          } else if (rawValue > 0) {
+            // Landscape: +1 = 2:1, +2 = 3:1, etc.
+            displaySpan.textContent = `${(1 + rawValue).toFixed(1)}:1 (landscape)`;
+          } else {
+            // Portrait: -1 = 1:2, -2 = 1:3, etc.
+            displaySpan.textContent = `1:${(1 - rawValue).toFixed(1)} (portrait)`;
+          }
         }
       });
 
