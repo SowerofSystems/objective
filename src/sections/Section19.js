@@ -436,14 +436,32 @@ window.TEUI.SectionModules.sect19 = (function () {
     ctx.fillStyle = "#f8f9fa";
     ctx.fillRect(0, 0, config.canvasWidth, config.canvasHeight);
 
-    // Isometric projection parameters
-    const scale = 5; // pixels per meter (reduced for better fit)
-    const centerX = config.canvasWidth / 2;
-    const centerY = config.canvasHeight / 2 + 50; // Offset down slightly
+    // Building dimensions
+    const length = geometry.footprint.length;
+    const width = geometry.footprint.width;
+    const storyHeight = geometry.storyHeight;
+    const stories = geometry.stories;
+    const totalHeight = geometry.height;
 
-    // Isometric angle vectors (30° projection)
-    const isoX = Math.cos(Math.PI / 6); // cos(30°) = 0.866
-    const isoY = Math.sin(Math.PI / 6); // sin(30°) = 0.5
+    // Calculate optimal scale to fill canvas (with padding)
+    const padding = 80; // pixels of padding around edges
+    const availableWidth = config.canvasWidth - padding * 2;
+    const availableHeight = config.canvasHeight - padding * 2;
+
+    // Isometric projection dimensions (diagonal extents)
+    const isoX = Math.cos(Math.PI / 6); // 0.866
+    const isoY = Math.sin(Math.PI / 6); // 0.5
+    const projectedWidth = (length + width) * isoX;
+    const projectedHeight = (length + width) * isoY + totalHeight;
+
+    // Calculate scale to fit both dimensions
+    const scaleX = availableWidth / projectedWidth;
+    const scaleY = availableHeight / projectedHeight;
+    const scale = Math.min(scaleX, scaleY) * 0.9; // 90% to leave breathing room
+
+    // Center the building in the canvas
+    const centerX = config.canvasWidth / 2;
+    const centerY = config.canvasHeight / 2 + (totalHeight * scale * 0.2); // Offset slightly down
 
     // Helper function: Convert 3D coords to isometric 2D
     function toIso(x, y, z) {
@@ -452,12 +470,6 @@ window.TEUI.SectionModules.sect19 = (function () {
         y: centerY - (x + y) * isoY * scale - z * scale,
       };
     }
-
-    // Building dimensions
-    const length = geometry.footprint.length;
-    const width = geometry.footprint.width;
-    const storyHeight = geometry.storyHeight;
-    const stories = geometry.stories;
 
     // Draw each story from bottom to top
     for (let story = 0; story < stories; story++) {
