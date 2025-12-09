@@ -1,1312 +1,526 @@
 /**
- * 4012-Section19.js
- * Notes & Quality Control Monitor Section for TEUI Calculator 4.012
+ * Section19.js - TOPOMETRY: 3D Thermal Topology Visualization
+ * TEUI 4.012 - Created 2025-12-08
+ *
+ * TOPOMETRY generates a constraint-driven 3D thermal topology from area-based geometry.
+ * This is NOT an architectural model - it's a thermal model as topology.
+ *
+ * Core Principles:
+ * - Volume is Sacred (d_105 ALWAYS preserved exactly)
+ * - Areas Drive Form (roof pitch, wall heights emerge from area constraints)
+ * - No Validation Errors (impossible geometry renders visually as feedback)
+ * - Constraint Satisfaction Feedback (color-coded UI shows how well areas match)
  */
 
-// Ensure namespace exists
 window.TEUI = window.TEUI || {};
 window.TEUI.SectionModules = window.TEUI.SectionModules || {};
 
-// Section 18: Notes & QC Module
-window.TEUI.SectionModules.sect18 = (function () {
-  // QC monitoring state
-  let qcEnabled = false;
-  let lastReport = null;
-  let userNotes = "";
+window.TEUI.SectionModules.sect19 = (function () {
+  "use strict";
 
-  /**
-   * Initialize Section 18 with QC integration
-   */
-  function initialize() {
-    console.log("[S19] Notes & QC Monitor section loaded");
+  //==========================================================================
+  // STATE & CONFIGURATION
+  //==========================================================================
 
-    // Load saved notes
-    const savedNotes = localStorage.getItem("S19_USER_NOTES");
-    if (savedNotes) {
-      userNotes = savedNotes;
-    }
+  let isActivated = false;
+  let threejsLoaded = false;
+  let currentModel = null;
 
-    // Check if QC should be auto-enabled from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    qcEnabled = urlParams.get("qc") === "true";
-  }
+  const config = {
+    defaultAspectRatio: 1.0,      // Square footprint by default
+    defaultAllowAsymmetry: true,   // Allow walls to deform independently
+    canvasWidth: 800,
+    canvasHeight: 600,
+  };
 
-  /**
-   * Get field definitions for Section 18
-   */
+  //==========================================================================
+  // FIELD DEFINITIONS (Section 20 - 200 series)
+  //==========================================================================
+
+  const sectionRows = {
+    header: {
+      id: "S19-HEADER",
+      rowId: "S19-HEADER",
+      cells: {
+        c: { content: "C", classes: ["section-subheader"] },
+        d: { content: "D", classes: ["section-subheader"] },
+        e: { content: "E", classes: ["section-subheader"] },
+        f: { content: "F", classes: ["section-subheader"] },
+        g: { content: "G", classes: ["section-subheader"] },
+        h: { content: "H", classes: ["section-subheader"] },
+      },
+    },
+
+    // User controls for topology solver
+    row200: {
+      id: "19.1",
+      rowId: "19.1",
+      label: "Footprint Aspect Ratio (L:W)",
+      cells: {
+        c: { label: "Footprint Aspect Ratio (L:W)" },
+        d: {
+          fieldId: "d_202",
+          type: "percentage",
+          value: "100",
+          min: 50,
+          max: 400,
+          step: 10,
+          classes: ["user-input"],
+          tooltip: true,
+          label: "Aspect Ratio: 1.0 = square, 2.0 = 2:1 rectangle",
+        },
+        e: { content: "(1.0 = square)", classes: ["text-left"] },
+        f: {},
+        g: {},
+        h: {
+          fieldId: "h_200",
+          type: "calculated",
+          value: "0.00",
+          label: "Footprint Length (m)",
+        },
+      },
+    },
+
+    row201: {
+      id: "19.2",
+      rowId: "19.2",
+      label: "Footprint Width",
+      cells: {
+        c: { label: "Footprint Width" },
+        d: {},
+        e: {},
+        f: {},
+        g: {},
+        h: {
+          fieldId: "h_201",
+          type: "calculated",
+          value: "0.00",
+          label: "Footprint Width (m)",
+        },
+      },
+    },
+
+    row203: {
+      id: "19.3",
+      rowId: "19.3",
+      label: "Building Height",
+      cells: {
+        c: { label: "Building Height" },
+        d: {},
+        e: {},
+        f: {},
+        g: {},
+        h: {
+          fieldId: "h_203",
+          type: "calculated",
+          value: "0.00",
+          label: "Nominal Height (m)",
+        },
+      },
+    },
+  };
+
+  //==========================================================================
+  // ACCESSOR METHODS
+  //==========================================================================
+
   function getFields() {
-    return {
-      s18_notes: {
-        fieldId: "s18_notes",
-        type: "editable",
-        label: "Project Notes",
-        defaultValue: userNotes || "Enter project notes here...",
-        section: "notes",
-      },
-      s18_qc_output: {
-        fieldId: "s18_qc_output",
-        type: "calculated",
-        label: "QC Report Output",
-        defaultValue: "",
-        section: "notes",
-      },
-    };
+    const fields = {};
+    Object.values(sectionRows).forEach(row => {
+      if (!row.cells) return;
+      Object.values(row.cells).forEach(cell => {
+        if (cell.fieldId) {
+          fields[cell.fieldId] = {
+            type: cell.type,
+            label: cell.label || cell.content || row.label,
+            defaultValue: cell.value || "",
+            section: "section19",
+          };
+          if (cell.min !== undefined) fields[cell.fieldId].min = cell.min;
+          if (cell.max !== undefined) fields[cell.fieldId].max = cell.max;
+          if (cell.step !== undefined) fields[cell.fieldId].step = cell.step;
+        }
+      });
+    });
+    return fields;
   }
 
-  /**
-   * Get dropdown options (none for this section)
-   */
   function getDropdownOptions() {
     return {};
   }
 
-  /**
-   * Get layout definition for Section 18 - Custom full-width layout
-   */
   function getLayout() {
+    // Partial custom layout: Return rows for left panel controls,
+    // HTML structure in index.html handles canvas container
     return {
-      customLayout: true, // Flag to use custom rendering
-      rows: [], // Empty - we'll use custom HTML
+      rows: [
+        sectionRows.header,
+        sectionRows.row200,
+        sectionRows.row201,
+        sectionRows.row203,
+      ],
     };
   }
 
-  /**
-   * Initialize event handlers including Debug toggle
-   */
-  function initializeEventHandlers() {
-    // Add debug toggle to section header
-    setTimeout(() => {
-      addDebugToggleToHeader();
-    }, 100);
+  //==========================================================================
+  // GEOMETRY SOLVER (Constraint-Driven "Jello Cube")
+  //==========================================================================
 
-    // Initialize notes input handler
-    const notesInput = document.querySelector('[data-field-id="s18_notes"]');
-    if (notesInput && !notesInput.hasEditableListeners) {
-      // Prevent Enter key from creating newlines
-      notesInput.addEventListener("keydown", function (e) {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          this.blur();
-        }
-      });
+  function solveGeometry() {
+    console.log("[TOPOMETRY] Solving geometry from thermal constraints...");
 
-      // Save notes on blur
-      notesInput.addEventListener("blur", function () {
-        const value = this.textContent.trim();
-        userNotes = value;
-        localStorage.setItem("S19_USER_NOTES", value);
-        console.log("[S19] Notes saved");
-      });
+    // Read inputs from StateManager
+    // KISS: Use h_15 (Conditioned Area) instead of d_106 (Total Floor Area)
+    // h_15 = thermal envelope area (heated space only)
+    const conditionedArea = parseFloat(window.TEUI?.StateManager?.getValue("h_15")) || 100;
+    const volume = parseFloat(window.TEUI?.StateManager?.getValue("d_105")) || 1000;
+    const roofArea = parseFloat(window.TEUI?.StateManager?.getValue("d_85")) || 100;
+    const wallArea = parseFloat(window.TEUI?.StateManager?.getValue("d_86")) || 160;
 
-      notesInput.hasEditableListeners = true;
-    }
-  }
+    // User preferences
+    const aspectRatioPercent = parseFloat(window.TEUI?.StateManager?.getValue("d_202")) || 100;
+    const aspectRatio = aspectRatioPercent / 100; // Convert percentage to ratio
 
-  /**
-   * Add Debug toggle to section header (similar to Reference toggle pattern)
-   */
-  function addDebugToggleToHeader() {
-    const sectionHeader = document.querySelector("#notes .section-header");
-    if (!sectionHeader) {
-      console.warn("[S19] Section header not found for debug toggle");
-      return;
-    }
+    // Phase 1: Footprint (X-Y plane, always horizontal)
+    const footprintArea = conditionedArea;
+    const width = Math.sqrt(footprintArea / aspectRatio);
+    const length = footprintArea / width;
 
-    // Check if toggle already exists
-    if (sectionHeader.querySelector(".debug-toggle")) {
-      return;
+    // Phase 2: Nominal height (from volume constraint - SACRED)
+    const nominalHeight = volume / footprintArea;
+
+    // Phase 3: Roof geometry (pitch emerges from roof area)
+    const areaRatio = roofArea / footprintArea;
+    let roofPitch = 0;
+    let roofType = "flat";
+
+    if (areaRatio > 1.01) {
+      // Pitched roof needed to achieve larger roof area
+      roofType = "gabled";
+      // Simplified pitch calculation (assumes gabled roof)
+      roofPitch = Math.asin(Math.min((areaRatio - 1) / 2, 1)) * (180 / Math.PI);
+    } else if (areaRatio < 0.99) {
+      // Inverted pyramid (roof smaller than floor - visual conflict indicator)
+      roofType = "inverted";
+      roofPitch = -20; // Negative pitch
+      console.warn(`[TOPOMETRY] Roof area (${roofArea} m²) < Conditioned area (${footprintArea} m²) - Creating inverted geometry`);
     }
 
-    // Create toggle container
-    const toggleContainer = document.createElement("div");
-    toggleContainer.style.cssText =
-      "display: flex; align-items: center; gap: 20px; margin-left: auto;";
+    // Phase 4: Wall geometry (symmetric for now - asymmetry in Phase 2)
+    const perimeter = 2 * (length + width);
+    const wallHeight = wallArea / perimeter;
 
-    // Create QC status indicator
-    const statusIndicator = document.createElement("span");
-    statusIndicator.className = "qc-status-indicator";
-    statusIndicator.textContent = qcEnabled ? "QC ACTIVE" : "QC DISABLED";
-    statusIndicator.style.cssText = `
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 600;
-      background-color: ${qcEnabled ? "#e8f5e8" : "#f5f5f5"};
-      color: ${qcEnabled ? "#2e7d32" : "#666"};
-    `;
-
-    // Create debug toggle
-    const toggleDiv = document.createElement("div");
-    toggleDiv.className = "debug-toggle";
-    toggleDiv.style.cssText = "display: flex; align-items: center; gap: 10px;";
-
-    const toggleLabel = document.createElement("label");
-    toggleLabel.textContent = "Debug QC";
-    toggleLabel.style.cssText = "font-weight: 500; color: #fff; margin: 0;";
-
-    const toggleSwitch = document.createElement("div");
-    toggleSwitch.className = "toggle-switch";
-    if (qcEnabled) toggleSwitch.classList.add("active");
-    toggleSwitch.style.cssText = `
-      position: relative;
-      width: 50px;
-      height: 24px;
-      background-color: ${qcEnabled ? "#4caf50" : "#ccc"};
-      border-radius: 12px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    `;
-
-    const toggleSlider = document.createElement("div");
-    toggleSlider.className = "toggle-slider";
-    toggleSlider.style.cssText = `
-      position: absolute;
-      top: 2px;
-      left: ${qcEnabled ? "26px" : "2px"};
-      width: 20px;
-      height: 20px;
-      background-color: white;
-      border-radius: 50%;
-      transition: transform 0.3s;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    `;
-
-    // Create section filter dropdown
-    const sectionFilter = document.createElement("select");
-    sectionFilter.style.cssText = `
-      padding: 4px 8px;
-      border: 1px solid #ced4da;
-      border-radius: 4px;
-      font-size: 11px;
-      margin-right: 10px;
-    `;
-    sectionFilter.innerHTML = `
-      <option value="all">All Sections</option>
-      <option value="S01">S01 - Key Values</option>
-      <option value="S02">S02 - Building Info</option>
-      <option value="S03">S03 - Climate</option>
-      <option value="S04">S04 - Energy</option>
-      <option value="S05">S05 - Emissions</option>
-      <option value="S06">S06 - Renewable</option>
-      <option value="S07">S07 - Water</option>
-      <option value="S08">S08 - Air Quality</option>
-      <option value="S09">S09 - Internal Gains</option>
-      <option value="S10">S10 - Radiant Gains</option>
-      <option value="S11">S11 - Transmission</option>
-      <option value="S12">S12 - Volume</option>
-      <option value="S13">S13 - Mechanical</option>
-      <option value="S14">S14 - TEDI</option>
-      <option value="S15">S15 - TEUI</option>
-    `;
-
-    // Create Zen Mode button
-    const zenButton = document.createElement("button");
-    zenButton.textContent = "🧘 Zen";
-    zenButton.title = "ZenMaster: Runtime dependency discovery & validation";
-    zenButton.style.cssText = `
-      padding: 6px 12px;
-      background-color: #28a745;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      font-weight: 500;
-      cursor: pointer;
-      font-size: 12px;
-    `;
-
-    // Create QC report button
-    const reportButton = document.createElement("button");
-    reportButton.textContent = "Generate QC Report";
-    reportButton.style.cssText = `
-      padding: 6px 12px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      font-weight: 500;
-      cursor: pointer;
-      font-size: 12px;
-    `;
-
-    // Create copy modal button
-    const copyModalButton = document.createElement("button");
-    copyModalButton.textContent = "📋 Copy Report";
-    copyModalButton.style.cssText = `
-      padding: 6px 12px;
-      background-color: #28a745;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      font-weight: 500;
-      cursor: pointer;
-      font-size: 12px;
-      margin-left: 8px;
-    `;
-
-    // Add toggle functionality
-    toggleSwitch.addEventListener("click", function (event) {
-      event.stopPropagation();
-      const isActive = toggleSwitch.classList.contains("active");
-
-      if (!isActive) {
-        // Enable QC monitoring
-        enableQCMonitoring();
-        toggleSwitch.classList.add("active");
-        toggleSwitch.style.backgroundColor = "#4caf50";
-        toggleSlider.style.left = "26px";
-        statusIndicator.textContent = "QC ACTIVE";
-        statusIndicator.style.backgroundColor = "#e8f5e8";
-        statusIndicator.style.color = "#2e7d32";
-        console.log("[S19] QC monitoring enabled via toggle");
-      } else {
-        // Disable QC monitoring
-        disableQCMonitoring();
-        toggleSwitch.classList.remove("active");
-        toggleSwitch.style.backgroundColor = "#ccc";
-        toggleSlider.style.left = "2px";
-        statusIndicator.textContent = "QC DISABLED";
-        statusIndicator.style.backgroundColor = "#f5f5f5";
-        statusIndicator.style.color = "#666";
-        console.log("[S19] QC monitoring disabled via toggle");
-      }
-    });
-
-    // Add Zen button functionality
-    zenButton.addEventListener("click", function (event) {
-      event.stopPropagation();
-
-      // Toggle ZenMaster if available
-      if (window.TEUI?.zenMaster) {
-        const status = window.TEUI.zenMaster.getStatus();
-        if (status.enabled) {
-          window.TEUI.zenMaster.disable();
-          zenButton.style.backgroundColor = "#28a745";
-          zenButton.textContent = "🧘 Zen";
-          console.log("🧘 ZenMaster disabled from S18");
-          if (status.fieldsTracked > 0) {
-            window.TEUI.zenMaster.validateDependencies();
-          }
-        } else {
-          window.TEUI.zenMaster.enable();
-          zenButton.style.backgroundColor = "#218838";
-          zenButton.textContent = "🧘 Zen ON";
-          console.log("🧘 ZenMaster enabled from S18");
-        }
-      }
-    });
-
-    // Add report button functionality
-    reportButton.addEventListener("click", function (event) {
-      event.stopPropagation();
-      const selectedSection = sectionFilter.value;
-      generateAndDisplayQCReport(selectedSection);
-    });
-
-    // Add copy modal button functionality
-    copyModalButton.addEventListener("click", function (event) {
-      event.stopPropagation();
-      const selectedSection = sectionFilter.value;
-      showCopyModal(selectedSection);
-    });
-
-    // Assemble toggle
-    toggleSwitch.appendChild(toggleSlider);
-    toggleDiv.appendChild(toggleLabel);
-    toggleDiv.appendChild(toggleSwitch);
-
-    toggleContainer.appendChild(statusIndicator);
-    toggleContainer.appendChild(toggleDiv);
-    toggleContainer.appendChild(sectionFilter);
-    toggleContainer.appendChild(zenButton);
-    toggleContainer.appendChild(reportButton);
-    toggleContainer.appendChild(copyModalButton);
-
-    sectionHeader.appendChild(toggleContainer);
-  }
-
-  /**
-   * Enable QC monitoring
-   */
-  function enableQCMonitoring() {
-    qcEnabled = true;
-
-    // Force activate QC Monitor using direct method
-    if (window.TEUI?.QCMonitor) {
-      const activationResult = window.TEUI.QCMonitor.forceActivate();
-
-      if (activationResult) {
-        console.log("[S19] QC Monitor successfully activated");
-
-        // Analyze current StateManager contents first
-        setTimeout(() => {
-          window.TEUI.QCMonitor.analyzeStateManagerContents();
-        }, 500);
-
-        // Initialize Mirror Target validation (may not work until S13 complete)
-        setTimeout(() => {
-          window.TEUI.QCMonitor.initializeMirrorTarget();
-        }, 1000);
-      } else {
-        console.error("[S19] QC Monitor failed to activate");
-      }
-    }
-  }
-
-  /**
-   * Disable QC monitoring
-   */
-  function disableQCMonitoring() {
-    qcEnabled = false;
-
-    // Deactivate QC Monitor
-    if (window.TEUI?.QCMonitor) {
-      window.TEUI.QCMonitor.forceDeactivate();
-    }
-
-    // Remove QC dashboard if it exists
-    const dashboard = document.getElementById("qc-dashboard");
-    if (dashboard) {
-      dashboard.remove();
-    }
-
-    // Clear QC output
-    updateQCOutput("QC monitoring disabled.");
-  }
-
-  /**
-   * Perform periodic QC checks (DISABLED - reports now generated on-demand only)
-   *
-   * Previous behavior: Auto-generated reports every 5 seconds
-   * New behavior: QC monitor runs silently in background, reports generated only when user clicks "Generate QC Report"
-   */
-  function performPeriodicChecks() {
-    // DISABLED: Automatic periodic reports removed
-    // QC monitoring now passive - only generates reports on button click
-    // This prevents console spam and unnecessary overhead
-  }
-
-  /**
-   * Generate and display QC report in the section
-   */
-  function generateAndDisplayQCReport(sectionFilter = "all") {
-    if (!qcEnabled || !window.TEUI?.QCMonitor) {
-      updateQCOutput("QC Monitor not available. Enable QC monitoring first.");
-      return;
-    }
-
-    console.log(`[S19] Generating QC report for: ${sectionFilter}`);
-
-    // Generate comprehensive report
-    const fullReport = window.TEUI.QCMonitor.generateQCReport();
-
-    // Filter violations by section if specified
-    let filteredReport = fullReport;
-    if (sectionFilter !== "all") {
-      filteredReport = filterReportBySection(fullReport, sectionFilter);
-    }
-
-    lastReport = filteredReport;
-
-    // Format report as HTML for display
-    const htmlReport = formatReportAsHTML(filteredReport, sectionFilter);
-
-    // Display in QC output field
-    updateQCOutput(htmlReport);
-
-    // Also log to console for copy/paste
-    console.log(
-      `[S19] QC Report generated for ${sectionFilter} - see Notes section for formatted output`
-    );
-  }
-
-  /**
-   * Filter QC report by section
-   */
-  function filterReportBySection(report, sectionFilter) {
-    if (!report || sectionFilter === "all") return report;
-
-    // Create section field pattern based on filter (fixed patterns)
-    const sectionPatterns = {
-      S01: /^[ehk]_[0-9]{1,2}$/,
-      S02: /^[dh]_1[0-9]+$/,
-      S03: /^[dhjlm]_2[0-9]+$/,
-      S04: /^[dfgjk]_[23][0-9]+$/,
-      S05: /^[ik]_[34][0-9]+$/,
-      S06: /^[m]_4[0-9]+$/,
-      S07: /^[jk]_[45][0-9]+$/,
-      S08: /^[d]_5[0-9]+$/,
-      S09: /^[dijk]_6[0-9]+$/,
-      S10: /^[deim]_7[0-9]+$/,
-      S11: /^[dfgi]_[89][0-9]+$/,
-      S12: /^[di]_10[0-9]+$/,
-      S13: /^[dfgjlm]_11[0-9]+$/,
-      S14: /^[dhi]_12[0-9]+$/,
-      S15: /^[dhl]_13[0-9]+$/,
-    };
-
-    console.log(
-      `[S19] Filtering for ${sectionFilter}, pattern: ${sectionPatterns[sectionFilter]}`
-    );
-    console.log(
-      `[S19] Total violations before filter: ${report.violations.length}`
-    );
-
-    const pattern = sectionPatterns[sectionFilter];
-    if (!pattern) return report;
-
-    // Filter violations by field pattern
-    const filteredViolations = report.violations.filter(violation => {
-      const field = violation.field.replace("ref_", ""); // Remove ref_ prefix for pattern matching
-      const matches = pattern.test(field);
-      if (sectionFilter === "S03") {
-        console.log(
-          `[S19] Testing field: ${field}, matches S03 pattern: ${matches}`
-        );
-      }
-      return matches;
-    });
-
-    console.log(
-      `[S19] Filtered violations for ${sectionFilter}: ${filteredViolations.length}`
-    );
-
-    // Update violation counts
-    const filteredByType = {};
-    const filteredBySeverity = {};
-
-    filteredViolations.forEach(v => {
-      filteredByType[v.type] = (filteredByType[v.type] || 0) + 1;
-      const severity = v.severity || "info";
-      filteredBySeverity[severity] = (filteredBySeverity[severity] || 0) + 1;
-    });
-
-    return {
-      ...report,
-      summary: {
-        ...report.summary,
-        total: filteredViolations.length,
-        byType: filteredByType,
-        bySeverity: filteredBySeverity,
+    // Store solved dimensions
+    const solvedGeometry = {
+      footprint: { length, width, area: footprintArea },
+      height: nominalHeight,
+      walls: {
+        north: { width: width, height: wallHeight },
+        south: { width: width, height: wallHeight },
+        east: { width: length, height: wallHeight },
+        west: { width: length, height: wallHeight },
       },
-      violations: filteredViolations,
+      roof: {
+        type: roofType,
+        pitch: roofPitch,
+        area: roofArea,
+      },
+      volume: volume,
     };
+
+    // Update calculated fields in StateManager
+    window.TEUI?.StateManager?.setValue("h_200", length.toFixed(2), "calculated");
+    window.TEUI?.StateManager?.setValue("h_201", width.toFixed(2), "calculated");
+    window.TEUI?.StateManager?.setValue("h_203", nominalHeight.toFixed(2), "calculated");
+
+    console.log("[TOPOMETRY] Geometry solved:", solvedGeometry);
+    return solvedGeometry;
   }
 
-  /**
-   * Format QC report as HTML for full-width display (no nested scrolling)
-   */
-  function formatReportAsHTML(report, sectionFilter = "all") {
-    if (!report) return "No report data available.";
+  //==========================================================================
+  // 3D RENDERING (Placeholder - Three.js integration in Phase 2)
+  //==========================================================================
 
-    const sectionTitle =
-      sectionFilter === "all" ? "All Sections" : sectionFilter;
+  function initializeCanvas() {
+    const canvas = document.getElementById("topometry-canvas");
+    if (!canvas) {
+      console.error("[TOPOMETRY] Canvas element not found");
+      return;
+    }
 
-    // Create a clean, full-width layout
-    let html = `
-      <div style="padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
-        
-        <!-- Report Header -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 3px solid #007bff;">
-          <div>
-            <h5 style="margin: 0; color: #007bff; font-weight: bold;">🔍 QC REPORT: ${sectionTitle}</h5>
-            <div style="font-size: 12px; color: #666; margin-top: 4px;">Generated: ${new Date(report.timestamp).toLocaleString()}</div>
-          </div>
-          <div style="text-align: right;">
-            <div style="font-size: 24px; font-weight: bold; color: ${report.summary.total > 0 ? "#dc3545" : "#28a745"};">
-              ${report.summary.total}
-            </div>
-            <div style="font-size: 12px; color: #666;">Total Violations</div>
-          </div>
+    const ctx = canvas.getContext("2d");
+    canvas.width = config.canvasWidth;
+    canvas.height = config.canvasHeight;
+
+    // Placeholder: Draw simple 2D projection until Three.js loaded
+    drawPlaceholder(ctx);
+  }
+
+  function drawPlaceholder(ctx) {
+    // Clear canvas
+    ctx.fillStyle = "#f8f9fa";
+    ctx.fillRect(0, 0, config.canvasWidth, config.canvasHeight);
+
+    // Draw border
+    ctx.strokeStyle = "#dee2e6";
+    ctx.strokeRect(0, 0, config.canvasWidth, config.canvasHeight);
+
+    // Draw message
+    ctx.fillStyle = "#6c757d";
+    ctx.font = "16px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("TOPOMETRY - 3D Thermal Topology", config.canvasWidth / 2, config.canvasHeight / 2 - 40);
+
+    ctx.font = "14px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillText("Click 'Activate Topology View' to generate 3D model", config.canvasWidth / 2, config.canvasHeight / 2);
+
+    ctx.font = "12px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillStyle = "#999";
+    ctx.fillText("Constraint-driven thermal visualization (areas → form)", config.canvasWidth / 2, config.canvasHeight / 2 + 30);
+  }
+
+  function updateVisualization() {
+    if (!isActivated) return;
+
+    const geometry = solveGeometry();
+    currentModel = geometry;
+
+    // Render 2D footprint visualization
+    const canvas = document.getElementById("topometry-canvas");
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+
+    // Clear canvas
+    ctx.fillStyle = "#f8f9fa";
+    ctx.fillRect(0, 0, config.canvasWidth, config.canvasHeight);
+
+    // Draw square footprint in center
+    const scale = 10; // pixels per meter
+    const squareSize = Math.sqrt(geometry.footprint.area) * scale;
+    const centerX = config.canvasWidth / 2;
+    const centerY = config.canvasHeight / 2;
+    const squareX = centerX - squareSize / 2;
+    const squareY = centerY - squareSize / 2;
+
+    // Draw footprint square
+    ctx.strokeStyle = "#007bff";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(squareX, squareY, squareSize, squareSize);
+
+    // Fill with light blue
+    ctx.fillStyle = "rgba(0, 123, 255, 0.1)";
+    ctx.fillRect(squareX, squareY, squareSize, squareSize);
+
+    // Draw dimension labels
+    ctx.fillStyle = "#007bff";
+    ctx.font = "14px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.textAlign = "center";
+
+    // Length label (bottom)
+    ctx.fillText(`${geometry.footprint.length.toFixed(1)}m`, centerX, squareY + squareSize + 25);
+
+    // Width label (right side, rotated)
+    ctx.save();
+    ctx.translate(squareX + squareSize + 35, centerY);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText(`${geometry.footprint.width.toFixed(1)}m`, 0, 0);
+    ctx.restore();
+
+    // Draw area label in center
+    ctx.font = "16px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillStyle = "#495057";
+    ctx.fillText(`${geometry.footprint.area.toFixed(1)} m²`, centerX, centerY);
+
+    // Overlay geometry info in top-left
+    ctx.font = "12px monospace";
+    ctx.textAlign = "left";
+    const x = 20;
+    let y = 30;
+    const lineHeight = 18;
+
+    ctx.fillStyle = "#007bff";
+    ctx.fillText(`Conditioned Area: ${geometry.footprint.area.toFixed(1)} m² (from h_15)`, x, y);
+    y += lineHeight;
+    ctx.fillText(`Footprint: ${geometry.footprint.length.toFixed(1)}m × ${geometry.footprint.width.toFixed(1)}m`, x, y);
+    y += lineHeight;
+    ctx.fillText(`Height: ${geometry.height.toFixed(1)}m`, x, y);
+    y += lineHeight;
+    ctx.fillText(`Volume: ${geometry.volume.toFixed(0)} m³`, x, y);
+  }
+
+  //==========================================================================
+  // ACTIVATION CONTROLS (Following S17 pattern)
+  //==========================================================================
+
+  function createActivationControls() {
+    const container = document.querySelector(".topometry-controls-wrapper");
+    if (!container) {
+      console.error("[TOPOMETRY] Controls wrapper not found");
+      return;
+    }
+
+    container.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 20px;">
+        <button
+          id="topometry-activate-btn"
+          class="btn btn-primary"
+          style="padding: 8px 16px; font-weight: 500;"
+        >
+          🏗️ Activate Topology View
+        </button>
+
+        <div style="flex: 1; color: #6c757d; font-size: 13px;">
+          Generate 3D thermal topology from envelope areas (Volume, Roof, Walls, Windows)
         </div>
-        
-        <!-- Status Grid -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 25px;">
-          <div style="background: ${report.monitoring.active ? "#e8f5e8" : "#f5f5f5"}; padding: 15px; border-radius: 8px; text-align: center;">
-            <div style="font-size: 14px; font-weight: bold; color: ${report.monitoring.active ? "#2e7d32" : "#666"};">
-              ${report.monitoring.active ? "✅ ACTIVE" : "⭕ INACTIVE"}
-            </div>
-            <div style="font-size: 12px; color: #666; margin-top: 4px;">Monitoring Status</div>
-          </div>
-          
-          <div style="background: ${report.monitoring.mirrorTarget ? "#e3f2fd" : "#f5f5f5"}; padding: 15px; border-radius: 8px; text-align: center;">
-            <div style="font-size: 14px; font-weight: bold; color: ${report.monitoring.mirrorTarget ? "#1976d2" : "#666"};">
-              ${report.monitoring.mirrorTarget ? "🎯 ENABLED" : "⭕ DISABLED"}
-            </div>
-            <div style="font-size: 12px; color: #666; margin-top: 4px;">Mirror Target</div>
-          </div>
-          
-          <div style="background: #fff3cd; padding: 15px; border-radius: 8px; text-align: center;">
-            <div style="font-size: 14px; font-weight: bold; color: #856404;">
-              ${report.monitoring.overhead?.totalCalls || 0}
-            </div>
-            <div style="font-size: 12px; color: #666; margin-top: 4px;">Monitor Calls</div>
-          </div>
+
+        <div id="topometry-status" style="padding: 6px 12px; background: white; border-radius: 4px; font-size: 12px; color: #666;">
+          <span style="color: #dc3545;">●</span> Inactive
         </div>
+      </div>
+
+      <div id="topometry-info-panel" style="display: none; padding: 15px; background: #e3f2fd; border-left: 4px solid #007bff; border-radius: 4px; margin-bottom: 20px;">
+        <h6 style="margin: 0 0 10px 0; color: #007bff;">💡 What is TOPOMETRY?</h6>
+        <p style="margin: 0; font-size: 13px; line-height: 1.5;">
+          TOPOMETRY shows how <strong>OBJECTIVE "sees" your building</strong> based on thermal areas you entered.
+          This is NOT a 3D architectural model - it's a <strong>thermal topology</strong> where areas drive form.
+        </p>
+        <ul style="margin: 10px 0 0 0; padding-left: 20px; font-size: 12px;">
+          <li>✓ Volume is sacred (d_105 always preserved exactly)</li>
+          <li>✓ Roof pitch emerges from roof area (larger roof = steeper pitch)</li>
+          <li>✓ Walls deform to match area constraints (no validation errors)</li>
+          <li>⚠ If model looks strange → Your areas don't match typical building proportions</li>
+        </ul>
+      </div>
     `;
 
-    // Add violations by type (horizontal cards)
-    if (Object.keys(report.summary.byType).length > 0) {
-      html += `
-        <div style="margin-bottom: 25px;">
-          <h6 style="color: #495057; margin-bottom: 15px;">📋 Violations by Type</h6>
-          <div style="display: flex; flex-wrap: wrap; gap: 15px;">
-      `;
-
-      Object.entries(report.summary.byType).forEach(([type, count]) => {
-        const emoji =
-          type.includes("MIXING") || type.includes("CONTAMINATION")
-            ? "🚨"
-            : type.includes("STALE")
-              ? "⏰"
-              : type.includes("MISSING")
-                ? "❓"
-                : "ℹ️";
-        const color =
-          type.includes("MIXING") || type.includes("CONTAMINATION")
-            ? "#dc3545"
-            : type.includes("STALE")
-              ? "#fd7e14"
-              : type.includes("MISSING")
-                ? "#ffc107"
-                : "#6c757d";
-
-        html += `
-          <div style="background: white; padding: 12px 16px; border-radius: 6px; border-left: 4px solid ${color}; min-width: 150px;">
-            <div style="font-size: 16px; font-weight: bold; color: ${color};">${emoji} ${count}</div>
-            <div style="font-size: 11px; color: #666; margin-top: 2px;">${type.replace(/_/g, " ")}</div>
-          </div>
-        `;
-      });
-
-      html += `
-          </div>
-        </div>
-      `;
+    // Attach activation handler
+    const activateBtn = document.getElementById("topometry-activate-btn");
+    if (activateBtn) {
+      activateBtn.addEventListener("click", toggleActivation);
     }
-
-    // Add compact violations table (machine-readable)
-    if (report.violations && report.violations.length > 0) {
-      html += `
-        <div style="margin-bottom: 25px;">
-          <h6 style="color: #495057; margin-bottom: 10px;">🔍 Violations (${report.violations.length} total)</h6>
-          <div style="font-family: monospace; font-size: 10px; background: white; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px; max-height: 400px; overflow-y: auto;">
-      `;
-
-      // Group violations by type for compact display
-      const grouped = {};
-      report.violations.forEach(v => {
-        if (!grouped[v.type]) grouped[v.type] = [];
-        grouped[v.type].push(v);
-      });
-
-      Object.entries(grouped).forEach(([type, violations]) => {
-        const typeColor =
-          violations[0].severity === "error" ? "#dc3545" : "#fd7e14";
-        html += `<div style="margin: 8px 0; padding: 6px; background: #f8f9fa; border-left: 3px solid ${typeColor};">`;
-        html += `<strong style="color: ${typeColor};">${type} (${violations.length})</strong><br>`;
-
-        violations.slice(0, 50).forEach(v => {
-          const caller = v.caller ? `, ${v.caller}` : "";
-          const category = v.analysis?.category
-            ? `[${v.analysis.category}]`
-            : "";
-          html += `${v.field}${category}${caller}; `;
-        });
-
-        if (violations.length > 50) {
-          html += `<br><em>+${violations.length - 50} more (see copy section below for complete list)...</em>`;
-        }
-        html += `</div>`;
-      });
-
-      html += `</div></div>`;
-    }
-
-    // Add copy-paste section for Logs.md (always visible at bottom) - FULL REPORT
-    const logsContent = `## QC Report ${new Date(report.timestamp).toLocaleDateString()}
-
-**Summary**: ${report.summary.total} violations detected
-**Types**: ${Object.entries(report.summary.byType)
-      .map(([type, count]) => `${type}(${count})`)
-      .join(", ")}
-**Sections**: ${sectionTitle}
-**Status**: QC monitoring ${report.monitoring.active ? "active" : "inactive"}, Mirror Target ${report.monitoring.mirrorTarget ? "enabled" : "disabled"}
-
-### Violation Categories:
-${generateCategoryBreakdown(report.violations)}
-
-### All Violations (${report.violations.length} total):
-${formatViolationsByType(report.violations)}`;
-
-    html += `</div>`;
-
-    return html;
   }
 
-  /**
-   * Format violations by type for concise reporting
-   */
-  function formatViolationsByType(violations) {
-    // Group violations by type
-    const groupedByType = {};
-    violations.forEach(v => {
-      if (!groupedByType[v.type]) {
-        groupedByType[v.type] = [];
+  function toggleActivation() {
+    isActivated = !isActivated;
+
+    const activateBtn = document.getElementById("topometry-activate-btn");
+    const statusIndicator = document.getElementById("topometry-status");
+    const infoPanel = document.getElementById("topometry-info-panel");
+
+    if (isActivated) {
+      // Activate
+      activateBtn.textContent = "🔄 Refresh Topology";
+      activateBtn.classList.remove("btn-primary");
+      activateBtn.classList.add("btn-success");
+
+      if (statusIndicator) {
+        statusIndicator.innerHTML = '<span style="color: #28a745;">●</span> Active';
       }
-      groupedByType[v.type].push(v);
-    });
 
-    // Define type ordering and formatting
-    const typeOrder = [
-      "UNDEFINED_FIELD",
-      "ORPHANED_REF_FIELD",
-      "CALCULATION_FAILURE",
-      "RACE_CONDITION",
-      "CRITICAL_STALE_VALUE",
-      "HIGH_TRAFFIC_STALE_VALUE",
-      "MIRROR_TARGET_DIVERGENCE",
-      "UPSTREAM_STALE_VALUE",
-      "NORMAL_STALE_VALUE",
-      "UNREGISTERED_FIELD",
-      "EARLY_READ",
-      "MISSING_VALUE",
-      "FALLBACK_READ",
-    ];
+      if (infoPanel) {
+        infoPanel.style.display = "block";
+      }
 
-    const typeIcons = {
-      UNDEFINED_FIELD: "🚫",
-      ORPHANED_REF_FIELD: "🔗",
-      CALCULATION_FAILURE: "💥",
-      RACE_CONDITION: "⏱️",
-      CRITICAL_STALE_VALUE: "🔥",
-      HIGH_TRAFFIC_STALE_VALUE: "⚠️",
-      MIRROR_TARGET_DIVERGENCE: "🎯",
-      UPSTREAM_STALE_VALUE: "📤",
-      NORMAL_STALE_VALUE: "💤",
-      UNREGISTERED_FIELD: "📝",
-      EARLY_READ: "ℹ️",
-      MISSING_VALUE: "❓",
-      FALLBACK_READ: "🔍",
-    };
+      console.log("[TOPOMETRY] Topology view activated");
+      updateVisualization();
 
-    let output = "";
+    } else {
+      // Deactivate
+      activateBtn.textContent = "🏗️ Activate Topology View";
+      activateBtn.classList.remove("btn-success");
+      activateBtn.classList.add("btn-primary");
 
-    // Process violations in priority order
-    typeOrder.forEach(type => {
-      const violationsOfType = groupedByType[type];
-      if (!violationsOfType || violationsOfType.length === 0) return;
+      if (statusIndicator) {
+        statusIndicator.innerHTML = '<span style="color: #dc3545;">●</span> Inactive';
+      }
 
-      const icon = typeIcons[type] || "•";
-      const typeTitle = type.replace(/_/g, " ");
+      if (infoPanel) {
+        infoPanel.style.display = "none";
+      }
 
-      output += `\n#### ${icon} **${typeTitle}** (${violationsOfType.length} violations)\n`;
+      console.log("[TOPOMETRY] Topology view deactivated");
 
-      if (type === "MIRROR_TARGET_DIVERGENCE") {
-        // Special handling for mirror target divergence - show field pairs
-        const grouped = {};
-        violationsOfType.forEach(v => {
-          const baseField = v.field.replace("ref_", "");
-          if (!grouped[baseField]) grouped[baseField] = [];
-          grouped[baseField].push(v);
-        });
+      // Clear canvas
+      const canvas = document.getElementById("topometry-canvas");
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        drawPlaceholder(ctx);
+      }
+    }
+  }
 
-        Object.entries(grouped).forEach(([baseField, violations]) => {
-          const sections = [
-            ...new Set(violations.map(v => identifyViolationSection(v.field))),
-          ];
-          output += `- **[${sections.join(",")}]** \`${baseField}\`: Reference vs Target divergence (${violations.length} instances)\n`;
-        });
-      } else if (
-        type === "CRITICAL_STALE_VALUE" ||
-        type === "HIGH_TRAFFIC_STALE_VALUE"
-      ) {
-        // Group by section for stale values
-        const bySectionAndReason = {};
-        violationsOfType.forEach(v => {
-          const section = identifyViolationSection(v.field);
-          const reason =
-            v.analysis?.recommendations?.[0] || "Check dependencies";
-          const key = `${section}|${reason}`;
-          if (!bySectionAndReason[key]) bySectionAndReason[key] = [];
-          bySectionAndReason[key].push(v.field);
-        });
+  //==========================================================================
+  // EVENT HANDLERS
+  //==========================================================================
 
-        Object.entries(bySectionAndReason).forEach(([key, fields]) => {
-          const [section, reason] = key.split("|");
-          output += `- **[${section}]** ${fields.map(f => `\`${f}\``).join(", ")} - ${reason}\n`;
-        });
-      } else {
-        // Group by section for other types
-        const bySection = {};
-        violationsOfType.forEach(v => {
-          const section = identifyViolationSection(v.field);
-          if (!bySection[section]) bySection[section] = [];
-          bySection[section].push(v.field);
-        });
+  function initializeEventHandlers() {
+    console.log("[TOPOMETRY] Initializing event handlers");
 
-        Object.entries(bySection).forEach(([section, fields]) => {
-          if (fields.length > 10) {
-            // For long lists, show first 10 and count
-            output += `- **[${section}]** ${fields
-              .slice(0, 10)
-              .map(f => `\`${f}\``)
-              .join(", ")} ... and ${fields.length - 10} more\n`;
-          } else {
-            output += `- **[${section}]** ${fields.map(f => `\`${f}\``).join(", ")}\n`;
+    // Aspect ratio slider
+    const aspectSlider = document.querySelector('[data-field-id="d_202"] input[type="range"]');
+    if (aspectSlider && !aspectSlider.hasSliderListener) {
+      aspectSlider.addEventListener("input", (e) => {
+        const value = e.target.value;
+        const displaySpan = document.querySelector('span[data-display-for="d_202"]');
+        if (displaySpan) {
+          const ratio = (value / 100).toFixed(1);
+          displaySpan.textContent = `${ratio}:1`;
+        }
+      });
+
+      aspectSlider.addEventListener("change", (e) => {
+        const value = e.target.value;
+        window.TEUI?.StateManager?.setValue("d_202", value, "user-modified");
+
+        if (isActivated) {
+          updateVisualization();
+        }
+      });
+
+      aspectSlider.hasSliderListener = true;
+    }
+
+    // Listen to geometry changes from other sections
+    if (window.TEUI?.StateManager) {
+      const geometryFields = ["d_85", "d_86", "d_105", "d_106", "d_103"];
+      geometryFields.forEach(fieldId => {
+        window.TEUI.StateManager.addListener(fieldId, () => {
+          if (isActivated) {
+            console.log(`[TOPOMETRY] Geometry field ${fieldId} changed, updating visualization`);
+            updateVisualization();
           }
         });
-      }
-    });
-
-    return output;
-  }
-
-  /**
-   * Generate category breakdown for violation analysis
-   */
-  function generateCategoryBreakdown(violations) {
-    const categoryMap = {
-      undefined_field: "🚫 Undefined Fields (not defined anywhere)",
-      orphaned_ref_field: "🔗 Orphaned Reference Fields (ref_ without base)",
-      calculation_failure: "💥 Calculation Failures (never computed)",
-      timing_race_condition: "⏱️ Race Conditions (timing issues)",
-      early_initialization: "ℹ️ Early Reads (initialization phase)",
-      unregistered_field:
-        "📝 Unregistered Fields (defined but not in StateManager)",
-      standard_missing: "❓ Standard Missing Values",
-      critical_integration_stale:
-        "🔥 Critical Integration Stale (affects data flow)",
-      high_traffic_stale: "⚠️ High Traffic Stale (calculation issues)",
-      upstream_stale: "📤 Upstream Stale (normal for input fields)",
-      normal_stale: "💤 Normal Stale (low priority)",
-    };
-
-    const categoryCounts = {};
-    violations.forEach(v => {
-      const category = v.analysis?.category || "unknown";
-      categoryCounts[category] = (categoryCounts[category] || 0) + 1;
-    });
-
-    return Object.entries(categoryCounts)
-      .sort((a, b) => b[1] - a[1]) // Sort by count descending
-      .map(([category, count]) => {
-        const description =
-          categoryMap[category] || `${category} (unknown category)`;
-        return `- **${description}**: ${count} violations`;
-      })
-      .join("\n");
-  }
-
-  /**
-   * Identify which section a violation field belongs to
-   */
-  function identifyViolationSection(fieldId) {
-    // Remove ref_ prefix for pattern matching
-    const field = fieldId.replace("ref_", "");
-
-    const sectionPatterns = {
-      S01: /^[ehk]_[0-9]{1,2}$/,
-      S02: /^[dh]_1[0-9]+$/,
-      S03: /^[dhjlm]_2[0-9]+$/,
-      S04: /^[dfgjk]_[23][0-9]+$/,
-      S05: /^[ik]_[34][0-9]+$/,
-      S06: /^[m]_4[0-9]+$/,
-      S07: /^[jk]_[45][0-9]+$/,
-      S08: /^[d]_5[0-9]+$/,
-      S09: /^[dijk]_6[0-9]+$/,
-      S10: /^[deim]_7[0-9]+$/,
-      S11: /^[dfgi]_[89][0-9]+$/,
-      S12: /^[di]_10[0-9]+$/,
-      S13: /^[dfgjlm]_11[0-9]+$/,
-      S14: /^[dhi]_12[0-9]+$/,
-      S15: /^[dhl]_13[0-9]+$/,
-    };
-
-    // Debug pattern matching
-    console.log(
-      `[S19] Testing e_10 against S01 pattern: ${sectionPatterns["S01"].test("e_10")}`
-    );
-    console.log(
-      `[S19] Testing h_10 against S01 pattern: ${sectionPatterns["S01"].test("h_10")}`
-    );
-    console.log(
-      `[S19] Testing d_20 against S03 pattern: ${sectionPatterns["S03"].test("d_20")}`
-    );
-
-    for (const [section, pattern] of Object.entries(sectionPatterns)) {
-      if (pattern.test(field)) {
-        return section;
-      }
-    }
-
-    // Special cases for non-standard field IDs
-    if (field.includes("s18_")) return "S19";
-    if (field.length < 4) return "SYS"; // System fields
-
-    return "UNK"; // Unknown section
-  }
-
-  /**
-   * Update QC output field with HTML content
-   */
-  function updateQCOutput(htmlContent) {
-    const outputField = document.querySelector(
-      '[data-field-id="s18_qc_output"]'
-    );
-    if (outputField) {
-      outputField.innerHTML = htmlContent;
-
-      // Also store in StateManager for consistency
-      if (window.TEUI?.StateManager) {
-        window.TEUI.StateManager.setValue(
-          "s18_qc_output",
-          htmlContent,
-          "calculated"
-        );
-      }
-    }
-  }
-
-  /**
-   * Create custom full-width layout for Section 18
-   */
-  function createCustomLayout() {
-    const sectionContent = document.querySelector("#notes .section-content");
-    if (!sectionContent) return;
-
-    // Clear existing content
-    sectionContent.innerHTML = "";
-
-    // Create expandable full-width container
-    const container = document.createElement("div");
-    container.style.cssText = `
-      padding: 20px;
-      background: #f8f9fa;
-      border-radius: 8px;
-      margin: 10px 0;
-      min-height: 100vh;
-      box-sizing: border-box;
-    `;
-
-    // Notes section
-    const notesSection = document.createElement("div");
-    notesSection.style.cssText = "margin-bottom: 30px;";
-    notesSection.innerHTML = `
-      <h6 style="color: #495057; margin-bottom: 15px; border-bottom: 2px solid #dee2e6; padding-bottom: 8px;">
-        📝 Project Notes
-      </h6>
-      <div 
-        data-field-id="s18_notes" 
-        contenteditable="true" 
-        class="user-input notes-input"
-        style="
-          width: 100%;
-          min-height: 100px;
-          padding: 15px;
-          background: white;
-          border: 1px solid #ced4da;
-          border-radius: 6px;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-          font-size: 14px;
-          line-height: 1.5;
-          outline: none;
-          resize: vertical;
-        "
-        placeholder="Enter project notes, observations, and calculations here..."
-      >${userNotes || "Enter project notes here..."}</div>
-    `;
-
-    // QC Output section (expandable)
-    const qcSection = document.createElement("div");
-    qcSection.innerHTML = `
-      <h6 style="color: #495057; margin-bottom: 15px; border-bottom: 2px solid #dee2e6; padding-bottom: 8px;">
-        🔍 Quality Control Report
-      </h6>
-      <div 
-        data-field-id="s18_qc_output"
-        class="qc-output"
-        style="
-          width: 100%;
-          min-height: 200px;
-          background: white;
-          border: 1px solid #ced4da;
-          border-radius: 6px;
-          padding: 0;
-          overflow: visible;
-          margin-bottom: 20px;
-        "
-      >
-        <div style="padding: 20px; color: #6c757d; text-align: center; font-style: italic;">
-          Click "Generate QC Report" to analyze state mixing and dependency violations
-        </div>
-      </div>
-    `;
-
-    container.appendChild(notesSection);
-    container.appendChild(qcSection);
-    sectionContent.appendChild(container);
-  }
-
-  /**
-   * Show copy modal with QC report for clipboard
-   */
-  function showCopyModal(sectionFilter = "all") {
-    if (!qcEnabled || !window.TEUI?.QCMonitor) {
-      alert("QC Monitor not available. Enable QC monitoring first.");
-      return;
-    }
-
-    // Generate fresh report
-    const fullReport = window.TEUI.QCMonitor.generateQCReport();
-
-    // Filter violations by section if specified
-    let filteredReport = fullReport;
-    if (sectionFilter !== "all") {
-      filteredReport = filterReportBySection(fullReport, sectionFilter);
-    }
-
-    const sectionTitle =
-      sectionFilter === "all" ? "All Sections" : sectionFilter;
-
-    // Generate the copy content
-    const logsContent = `## QC Report ${new Date(filteredReport.timestamp).toLocaleDateString()}
-
-**Summary**: ${filteredReport.summary.total} violations detected
-**Types**: ${Object.entries(filteredReport.summary.byType)
-      .map(([type, count]) => `${type}(${count})`)
-      .join(", ")}
-**Sections**: ${sectionTitle}
-**Status**: QC monitoring ${filteredReport.monitoring.active ? "active" : "inactive"}, Mirror Target ${filteredReport.monitoring.mirrorTarget ? "enabled" : "disabled"}
-
-### Violation Categories:
-${generateCategoryBreakdown(filteredReport.violations)}
-
-### All Violations (${filteredReport.violations.length} total):
-${formatViolationsByType(filteredReport.violations)}`;
-
-    // Create modal
-    createCopyModal(logsContent, sectionTitle);
-  }
-
-  /**
-   * Create and show the copy modal
-   */
-  function createCopyModal(content, sectionTitle) {
-    // Remove any existing modal
-    const existingModal = document.getElementById("qc-copy-modal");
-    if (existingModal) {
-      existingModal.remove();
-    }
-
-    // Create modal overlay
-    const modal = document.createElement("div");
-    modal.id = "qc-copy-modal";
-    modal.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 10001;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      box-sizing: border-box;
-    `;
-
-    // Create modal content
-    const modalContent = document.createElement("div");
-    modalContent.style.cssText = `
-      background: white;
-      border-radius: 12px;
-      padding: 25px;
-      max-width: 900px;
-      max-height: 90vh;
-      width: 100%;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-      display: flex;
-      flex-direction: column;
-    `;
-
-    modalContent.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #007bff;">
-        <h5 style="margin: 0; color: #007bff; font-weight: bold;">📋 Copy QC Report for Logs.md</h5>
-        <button 
-          id="modal-close-btn"
-          style="
-            background: none; 
-            border: none; 
-            font-size: 24px; 
-            cursor: pointer; 
-            color: #666;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          "
-          title="Close modal"
-        >×</button>
-      </div>
-      
-      <div style="margin-bottom: 15px;">
-        <strong>Section Filter:</strong> ${sectionTitle} | 
-        <strong>Generated:</strong> ${new Date().toLocaleString()}
-      </div>
-      
-      <textarea 
-        id="modal-qc-textarea"
-        style="
-          width: 100%; 
-          height: 600px; 
-          font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; 
-          font-size: 11px; 
-          padding: 15px; 
-          border: 1px solid #ced4da; 
-          border-radius: 6px; 
-          background: #f8f9fa;
-          resize: vertical;
-          overflow-y: auto;
-          margin-bottom: 15px;
-          flex: 1;
-          min-height: 600px;
-        " 
-        readonly
-      >${content}</textarea>
-      
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div style="font-size: 12px; color: #666;">
-          Click Copy to add this report to your clipboard for pasting into Logs.md
-        </div>
-        <button 
-          id="modal-copy-btn"
-          style="
-            display: flex; 
-            align-items: center; 
-            gap: 8px; 
-            padding: 10px 20px; 
-            background: #28a745; 
-            color: white; 
-            border: none; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-size: 14px;
-            font-weight: 600;
-            box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
-          "
-          title="Copy QC report to clipboard"
-        >
-          <i class="bi bi-clipboard" style="font-size: 16px;"></i>
-          Copy to Clipboard
-        </button>
-      </div>
-    `;
-
-    modal.appendChild(modalContent);
-    document.body.appendChild(modal);
-
-    // Add event listeners
-    modal
-      .querySelector("#modal-close-btn")
-      .addEventListener("click", () => modal.remove());
-    modal
-      .querySelector("#modal-copy-btn")
-      .addEventListener("click", () => copyFromModal());
-
-    // Close on overlay click
-    modal.addEventListener("click", e => {
-      if (e.target === modal) {
-        modal.remove();
-      }
-    });
-
-    // Close on Escape key
-    const escapeHandler = e => {
-      if (e.key === "Escape") {
-        modal.remove();
-        document.removeEventListener("keydown", escapeHandler);
-      }
-    };
-    document.addEventListener("keydown", escapeHandler);
-  }
-
-  /**
-   * Copy content from modal to clipboard
-   */
-  function copyFromModal() {
-    const textarea = document.getElementById("modal-qc-textarea");
-    if (!textarea) {
-      console.error("[S19] Modal textarea not found");
-      return;
-    }
-
-    // Copy to clipboard using modern API
-    navigator.clipboard
-      .writeText(textarea.value)
-      .then(() => {
-        showModalCopyConfirmation();
-      })
-      .catch(err => {
-        console.error("[S19] Failed to copy to clipboard:", err);
-        // Fallback method
-        textarea.select();
-        document.execCommand("copy");
-        showModalCopyConfirmation();
       });
-  }
-
-  /**
-   * Show copy confirmation for modal
-   */
-  function showModalCopyConfirmation() {
-    const copyBtn = document.getElementById("modal-copy-btn");
-    if (!copyBtn) return;
-
-    // Temporarily change button appearance
-    const originalText = copyBtn.innerHTML;
-    copyBtn.innerHTML =
-      '<i class="bi bi-check-circle-fill" style="font-size: 16px;"></i> Copied!';
-    copyBtn.style.background = "#28a745";
-    copyBtn.disabled = true;
-
-    // Restore button after 2 seconds
-    setTimeout(() => {
-      if (copyBtn.parentNode) {
-        copyBtn.innerHTML = originalText;
-        copyBtn.style.background = "#28a745";
-        copyBtn.disabled = false;
-      }
-    }, 2000);
-
-    // Also close modal after successful copy
-    setTimeout(() => {
-      const modal = document.getElementById("qc-copy-modal");
-      if (modal) {
-        modal.style.transition = "opacity 0.3s ease-out";
-        modal.style.opacity = "0";
-        setTimeout(() => modal.remove(), 300);
-      }
-    }, 1500);
-  }
-
-  /**
-   * Copy QC report to clipboard with confirmation (legacy function for S19 section)
-   */
-  function copyQCReportToClipboard() {
-    const textarea = document.getElementById("qc-logs-textarea");
-    if (!textarea) {
-      console.error("[S19] QC logs textarea not found");
-      return;
     }
-
-    // Copy to clipboard using modern API
-    navigator.clipboard
-      .writeText(textarea.value)
-      .then(() => {
-        showCopyConfirmation();
-      })
-      .catch(err => {
-        console.error("[S19] Failed to copy to clipboard:", err);
-        // Fallback method
-        textarea.select();
-        document.execCommand("copy");
-        showCopyConfirmation();
-      });
   }
 
-  /**
-   * Show copy confirmation modal
-   */
-  function showCopyConfirmation() {
-    // Remove any existing confirmation
-    const existingModal = document.getElementById("qc-copy-confirmation");
-    if (existingModal) {
-      existingModal.remove();
-    }
+  //==========================================================================
+  // LIFECYCLE
+  //==========================================================================
 
-    // Create lightweight confirmation modal
-    const modal = document.createElement("div");
-    modal.id = "qc-copy-confirmation";
-    modal.style.cssText = `
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(40, 167, 69, 0.95);
-      color: white;
-      padding: 15px 25px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      z-index: 10001;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 14px;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    `;
-
-    modal.innerHTML = `
-      <i class="bi bi-check-circle-fill" style="font-size: 18px;"></i>
-      QC Report copied to clipboard!
-    `;
-
-    document.body.appendChild(modal);
-
-    // Auto-remove after 2 seconds with fade out
-    setTimeout(() => {
-      modal.style.transition = "opacity 0.3s ease-out";
-      modal.style.opacity = "0";
-      setTimeout(() => {
-        if (modal.parentNode) {
-          modal.remove();
-        }
-      }, 300);
-    }, 2000);
-  }
-
-  /**
-   * Section rendered callback
-   */
   function onSectionRendered() {
-    console.log("[S19] Notes section rendered");
-    initialize();
+    console.log("[TOPOMETRY] Section 19 rendered");
 
-    // Override Section 18 CSS to allow infinite expansion
-    const notesSection = document.getElementById("notes");
-    if (notesSection) {
-      notesSection.style.maxHeight = "none";
-      notesSection.style.height = "auto";
-      notesSection.style.overflow = "visible";
-
-      const sectionContent = notesSection.querySelector(".section-content");
-      if (sectionContent) {
-        sectionContent.style.maxHeight = "none";
-        sectionContent.style.height = "auto";
-        sectionContent.style.overflow = "visible";
-      }
-    }
-
-    // Create custom layout instead of using table structure
-    createCustomLayout();
-
-    // Make copy function globally available for onclick handler
-    window.copyQCReportToClipboard = copyQCReportToClipboard;
+    // Initialize canvas
+    setTimeout(() => {
+      initializeCanvas();
+      createActivationControls();
+    }, 100);
   }
 
-  /**
-   * Calculate all (no automatic QC reports)
-   */
   function calculateAll() {
-    // No calculations needed for Notes section
-    // QC reports are now generated only on-demand via "Generate QC Report" button
+    // TOPOMETRY doesn't calculate - it visualizes
+    // Calculations happen in solveGeometry() when activated
+    if (isActivated) {
+      updateVisualization();
+    }
   }
 
-  // Public API
+  //==========================================================================
+  // PUBLIC API
+  //==========================================================================
+
   return {
     getFields,
     getDropdownOptions,
@@ -1315,11 +529,20 @@ ${formatViolationsByType(filteredReport.violations)}`;
     onSectionRendered,
     calculateAll,
 
-    // QC-specific methods
-    generateQCReport: generateAndDisplayQCReport,
-    getLastReport: () => lastReport,
-    isQCEnabled: () => qcEnabled,
-    enableQCMonitoring,
-    disableQCMonitoring,
+    // TOPOMETRY-specific exports
+    solveGeometry,
+    isActivated: () => isActivated,
+    getCurrentModel: () => currentModel,
   };
 })();
+
+// Global namespace exposure
+document.addEventListener("DOMContentLoaded", function () {
+  const module = window.TEUI.SectionModules.sect19;
+  if (module) {
+    window.TEUI.sect19 = {
+      calculateAll: module.calculateAll,
+      solveGeometry: module.solveGeometry,
+    };
+  }
+});
