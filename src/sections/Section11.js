@@ -516,7 +516,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           (fieldId.startsWith("d_") || // Areas (d_85, d_86, etc.)
             fieldId.startsWith("f_") || // RSI values
             fieldId.startsWith("g_") || // U-values
-            fieldId === "d_97") &&      // Thermal bridge penalty
+            fieldId === "d_97") && // Thermal bridge penalty
           (source === "user-modified" || source === "user")
         ) {
           if (window.TEUI?.SectionModules?.sect12?.calculateReferenceModel) {
@@ -704,7 +704,7 @@ window.TEUI.SectionModules.sect11 = (function () {
                 const formattedTemp = formatNumber(num, "number");
                 element.textContent = `${emoji} ${formattedTemp}`;
               } else {
-                element.textContent = "";  // Empty if no area (assembly doesn't exist)
+                element.textContent = ""; // Empty if no area (assembly doesn't exist)
               }
             }
             // ✅ M-N-COMPLIANCE: Use getFieldFormat() to determine format type
@@ -2280,7 +2280,9 @@ window.TEUI.SectionModules.sect11 = (function () {
       });
 
       // ✅ PERFORMANCE: Apply all state updates silently (no StateManager publication yet)
-      console.log(`[S11 Area Sync] Applying ${targetUpdates.length} target updates, ${refUpdates.length} reference updates`);
+      console.log(
+        `[S11 Area Sync] Applying ${targetUpdates.length} target updates, ${refUpdates.length} reference updates`
+      );
 
       targetUpdates.forEach(({ field, value }) => {
         TargetState.setValue(field, value, "calculated"); // Direct state update, no global publish yet
@@ -2392,7 +2394,13 @@ window.TEUI.SectionModules.sect11 = (function () {
    * @param {number} rSi - Internal surface resistance (0.10, 0.13, or 0.17 m²K/W)
    * @returns {number|null} - Interior surface temperature (°C) or null if no area
    */
-  function calculateSurfaceTemperature(area, uValue, interiorTemp, exteriorTemp, rSi) {
+  function calculateSurfaceTemperature(
+    area,
+    uValue,
+    interiorTemp,
+    exteriorTemp,
+    rSi
+  ) {
     // Guard: No calculation if area is zero (assembly doesn't exist)
     if (area === 0 || !area) {
       return null;
@@ -2400,7 +2408,7 @@ window.TEUI.SectionModules.sect11 = (function () {
 
     // Formula: T_si = T_interior - (U × ΔT × R_si)
     const deltaT = interiorTemp - exteriorTemp;
-    const surfaceTemp = interiorTemp - (uValue * deltaT * rSi);
+    const surfaceTemp = interiorTemp - uValue * deltaT * rSi;
 
     // Round to 2 decimal places
     return Math.round(surfaceTemp * 100) / 100;
@@ -2415,10 +2423,10 @@ window.TEUI.SectionModules.sect11 = (function () {
    */
   function hasCondensationRisk(surfaceTemp, interiorTemp) {
     if (surfaceTemp === null || surfaceTemp === undefined) {
-      return false;  // No risk if assembly doesn't exist
+      return false; // No risk if assembly doesn't exist
     }
 
-    const riskThreshold = interiorTemp - 4.2;  // Passivhaus standard threshold
+    const riskThreshold = interiorTemp - 4.2; // Passivhaus standard threshold
     return surfaceTemp < riskThreshold;
   }
 
@@ -2428,26 +2436,26 @@ window.TEUI.SectionModules.sect11 = (function () {
    */
   function calculateAllSurfaceTemperatures() {
     // Get global climate values from Section03
-    const interiorTemp = getGlobalNumericValue("h_23");  // Heating setpoint
+    const interiorTemp = getGlobalNumericValue("h_23"); // Heating setpoint
     const winterAvgTemp = getGlobalNumericValue("d_25"); // Winter average exterior
-    const groundTemp = 10;  // Constant for ground-facing assemblies
+    const groundTemp = 10; // Constant for ground-facing assemblies
 
     // Assembly configurations: [row, R_si, exteriorTemp]
     const assemblies = [
       // Air-facing assemblies (use winter average d_25)
-      [85, 0.10, winterAvgTemp],  // Roof (upward heat flow)
-      [86, 0.13, winterAvgTemp],  // Walls AG (horizontal)
-      [87, 0.17, winterAvgTemp],  // Floor Exposed (downward)
-      [88, 0.13, winterAvgTemp],  // Doors (horizontal)
-      [89, 0.13, winterAvgTemp],  // Window N (horizontal)
-      [90, 0.13, winterAvgTemp],  // Window E (horizontal)
-      [91, 0.13, winterAvgTemp],  // Window S (horizontal)
-      [92, 0.13, winterAvgTemp],  // Window W (horizontal)
-      [93, 0.10, winterAvgTemp],  // Skylights (upward)
+      [85, 0.1, winterAvgTemp], // Roof (upward heat flow)
+      [86, 0.13, winterAvgTemp], // Walls AG (horizontal)
+      [87, 0.17, winterAvgTemp], // Floor Exposed (downward)
+      [88, 0.13, winterAvgTemp], // Doors (horizontal)
+      [89, 0.13, winterAvgTemp], // Window N (horizontal)
+      [90, 0.13, winterAvgTemp], // Window E (horizontal)
+      [91, 0.13, winterAvgTemp], // Window S (horizontal)
+      [92, 0.13, winterAvgTemp], // Window W (horizontal)
+      [93, 0.1, winterAvgTemp], // Skylights (upward)
 
       // Ground-facing assemblies (use constant 10°C)
-      [94, 0.13, groundTemp],     // Walls BG (horizontal)
-      [95, 0.17, groundTemp],     // Floor Slab (downward)
+      [94, 0.13, groundTemp], // Walls BG (horizontal)
+      [95, 0.17, groundTemp], // Floor Slab (downward)
     ];
 
     assemblies.forEach(([row, rSi, exteriorTemp]) => {
