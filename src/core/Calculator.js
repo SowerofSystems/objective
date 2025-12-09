@@ -504,6 +504,8 @@ TEUI.Calculator = (function () {
       "sect16", // Sankey Diagram (visualisation, should be late)
       "sect17", // Dependency Graph (visualisation, should be late)
       "sect01", // Key Values (consumes S15, S05)
+      // NOTE: sect18 (Parallel Coordinates) and sect19 (TOPOMETRY) are activation-only
+      // visualization sections - they don't participate in calculation order
     ];
 
     // Explicitly call each section's calculateAll if it exists
