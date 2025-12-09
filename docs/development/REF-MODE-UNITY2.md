@@ -9,21 +9,34 @@
 
 ## Problem Statement
 
-When using Reference mode, two distinct bugs occur that suggest UI/DOM refresh failures and residual code from retired per-section toggles:
+**CENTRAL ISSUE**: ReferenceValues overlay is being applied to BOTH models instead of just the Reference model.
 
-### Bug 1: d_13 Dropdown Shows Stale Reference Value in Target Mode
-**Symptom**: After switching to Reference mode, changing d_13, then switching back to Target mode, the d_13 dropdown shows the Reference mode selection instead of the Target mode value.
+### How d_13 Standard Selection Should Work
 
-**Expected**: Target and Reference d_13 values are 100% isolated. Each mode should show its own selected value.
+TEUI maintains two completely independent models with separate state variables:
+- **Target model**: `d_13`, `h_10`, etc. (unprefixed)
+- **Reference model**: `ref_d_13`, `e_10`, etc. (ref_ prefixed)
 
-**Actual**: Reference mode d_13 selection "bleeds" into Target mode UI.
+**Two-stage setting process** (intentional safety mechanism):
+1. User selects standard from d_13 dropdown (writes to `d_13` or `ref_d_13` depending on mode)
+2. User clicks "Set Values" to apply ReferenceValues.js overlay (prevents accidental overwrites)
+
+**Expected state isolation**:
+- Changing `d_13` dropdown in Reference mode: Only `ref_d_13` changes, `d_13` untouched
+- Changing `d_13` dropdown in Target mode: Only `d_13` changes, `ref_d_13` untouched
+- Switching modes: UI refreshes to show correct value (`d_13` in Target, `ref_d_13` in Reference)
+
+### Bug 1: d_13 Dropdown Stuck After "Set Values"
+**Working correctly**: Changing d_13 dropdown respects state isolation. Can toggle between Target/Reference modes any number of times.
+
+**Bug triggers**: As soon as "Set Values" is clicked, d_13 dropdown shows the last selected standard in BOTH modes.
+
+**Root cause**: ReferenceValues overlay is contaminating both `d_13` AND `ref_d_13` state variables.
 
 ### Bug 2: "Set Values" Applies ReferenceValues to BOTH Models
-**Symptom**: When in Reference mode, clicking "Set Values" (Section 02) applies ReferenceValues.js overlay to BOTH Target model AND Reference model.
+**Expected**: "Set Values" in Reference mode should ONLY write to `ref_*` prefixed variables (Reference model).
 
-**Expected**: "Set Values" should ONLY affect Reference model when in Reference mode.
-
-**Actual**: Both `h_10` (Target TEUI) and `e_10` (Reference TEUI) change when in Reference mode.
+**Actual**: ReferenceValues overlay is applied to BOTH Target model AND Reference model. Both `h_10` (Target TEUI) and `e_10` (Reference TEUI) change.
 
 ---
 
