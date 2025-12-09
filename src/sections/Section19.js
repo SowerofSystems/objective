@@ -41,14 +41,16 @@ window.TEUI.SectionModules.sect19 = (function () {
     header: {
       id: "S19-HEADER",
       rowId: "S19-HEADER",
-      cells: {
-        c: { content: "C", classes: ["section-subheader"] },
-        d: { content: "D", classes: ["section-subheader"] },
-        e: { content: "E", classes: ["section-subheader"] },
-        f: { content: "F", classes: ["section-subheader"] },
-        g: { content: "G", classes: ["section-subheader"] },
-        h: { content: "H", classes: ["section-subheader"] },
-      },
+      cells: [
+        {}, // Column A (blank)
+        {}, // Column B (blank)
+        { content: "C", classes: ["section-subheader"] },
+        { content: "D", classes: ["section-subheader"] },
+        { content: "E", classes: ["section-subheader"] },
+        { content: "F", classes: ["section-subheader"] },
+        { content: "G", classes: ["section-subheader"] },
+        { content: "H", classes: ["section-subheader"] },
+      ],
     },
 
     // User controls for topology solver
@@ -56,9 +58,11 @@ window.TEUI.SectionModules.sect19 = (function () {
       id: "19.1",
       rowId: "19.1",
       label: "Footprint Aspect Ratio (L:W)",
-      cells: {
-        c: { label: "Footprint Aspect Ratio (L:W)" },
-        d: {
+      cells: [
+        {}, // Column A (blank)
+        {}, // Column B (blank)
+        { label: "Footprint Aspect Ratio (L:W)" }, // Column C
+        { // Column D
           fieldId: "d_202",
           type: "percentage",
           value: "100",
@@ -69,54 +73,58 @@ window.TEUI.SectionModules.sect19 = (function () {
           tooltip: true,
           label: "Aspect Ratio: 1.0 = square, 2.0 = 2:1 rectangle",
         },
-        e: { content: "(1.0 = square)", classes: ["text-left"] },
-        f: {},
-        g: {},
-        h: {
+        { content: "(1.0 = square)", classes: ["text-left"] }, // Column E
+        {}, // Column F
+        {}, // Column G
+        { // Column H
           fieldId: "h_200",
           type: "calculated",
           value: "0.00",
           label: "Footprint Length (m)",
         },
-      },
+      ],
     },
 
     row201: {
       id: "19.2",
       rowId: "19.2",
       label: "Footprint Width",
-      cells: {
-        c: { label: "Footprint Width" },
-        d: {},
-        e: {},
-        f: {},
-        g: {},
-        h: {
+      cells: [
+        {}, // Column A
+        {}, // Column B
+        { label: "Footprint Width" }, // Column C
+        {}, // Column D
+        {}, // Column E
+        {}, // Column F
+        {}, // Column G
+        { // Column H
           fieldId: "h_201",
           type: "calculated",
           value: "0.00",
           label: "Footprint Width (m)",
         },
-      },
+      ],
     },
 
     row203: {
       id: "19.3",
       rowId: "19.3",
       label: "Building Height",
-      cells: {
-        c: { label: "Building Height" },
-        d: {},
-        e: {},
-        f: {},
-        g: {},
-        h: {
+      cells: [
+        {}, // Column A
+        {}, // Column B
+        { label: "Building Height" }, // Column C
+        {}, // Column D
+        {}, // Column E
+        {}, // Column F
+        {}, // Column G
+        { // Column H
           fieldId: "h_203",
           type: "calculated",
           value: "0.00",
           label: "Nominal Height (m)",
         },
-      },
+      ],
     },
   };
 
@@ -127,8 +135,8 @@ window.TEUI.SectionModules.sect19 = (function () {
   function getFields() {
     const fields = {};
     Object.values(sectionRows).forEach(row => {
-      if (!row.cells) return;
-      Object.values(row.cells).forEach(cell => {
+      if (!row.cells || !Array.isArray(row.cells)) return;
+      row.cells.forEach(cell => {
         if (cell.fieldId) {
           fields[cell.fieldId] = {
             type: cell.type,
