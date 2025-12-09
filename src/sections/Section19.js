@@ -53,6 +53,63 @@ window.TEUI.SectionModules.sect19 = (function () {
       ],
     },
 
+    // Stories dropdown (entangled with S12 d_103)
+    row199: {
+      id: "19.0",
+      rowId: "19.0",
+      label: "Stories",
+      cells: [
+        {}, // Column A (blank)
+        {}, // Column B (blank)
+        { label: "Stories" }, // Column C
+        { // Column D - Stories dropdown (mirrored from S12)
+          fieldId: "d_103",
+          type: "dropdown",
+          dropdownId: "dd_d_103_s19",
+          value: "1.5",
+          section: "topometry",
+          tooltip: true,
+          options: [
+            { value: "1", name: "1" },
+            { value: "1.5", name: "1.5" },
+            { value: "2", name: "2" },
+            { value: "3", name: "3" },
+            { value: "4", name: "4" },
+            { value: "5", name: "5" },
+            { value: "6", name: "6" },
+          ],
+        },
+        { content: "Stories", classes: ["unit-label"] }, // Column E
+        {}, // Column F
+        {}, // Column G
+        {}, // Column H
+      ],
+    },
+
+    // Volume input (entangled with S12 d_105)
+    row198: {
+      id: "19.V",
+      rowId: "19.V",
+      label: "Conditioned Volume",
+      cells: [
+        {}, // Column A (blank)
+        {}, // Column B (blank)
+        { label: "Conditioned Volume" }, // Column C
+        { // Column D - Volume (mirrored from S12)
+          fieldId: "d_105",
+          type: "number",
+          value: "8000.00",
+          classes: ["user-input"],
+          tooltip: true,
+          label: "Total conditioned building volume",
+        },
+        { content: "m³", classes: ["unit-label"] }, // Column E
+        {}, // Column F
+        {}, // Column G
+        {}, // Column H
+      ],
+    },
+
     // User controls for topology solver
     row200: {
       id: "19.1",
@@ -64,12 +121,12 @@ window.TEUI.SectionModules.sect19 = (function () {
         { label: "Footprint Aspect Ratio (L:W)" }, // Column C
         { // Column D
           fieldId: "d_202",
-          type: "percentage",
-          value: "100",
-          min: 50,
-          max: 400,
-          step: 10,
-          classes: ["user-input"],
+          type: "slider",
+          value: "1.0",
+          min: 0.5,
+          max: 4.0,
+          step: 0.1,
+          classes: ["user-input", "aspect-ratio-slider"],
           tooltip: true,
           label: "Aspect Ratio: 1.0 = square, 2.0 = 2:1 rectangle",
         },
@@ -163,9 +220,11 @@ window.TEUI.SectionModules.sect19 = (function () {
     return {
       rows: [
         sectionRows.header,
-        sectionRows.row200,
-        sectionRows.row201,
-        sectionRows.row203,
+        sectionRows.row199, // Stories dropdown
+        sectionRows.row198, // Volume input
+        sectionRows.row200, // Aspect ratio slider
+        sectionRows.row201, // Footprint width (calculated)
+        sectionRows.row203, // Building height (calculated)
       ],
     };
   }
@@ -184,18 +243,26 @@ window.TEUI.SectionModules.sect19 = (function () {
     const volume = parseFloat(window.TEUI?.StateManager?.getValue("d_105")) || 1000;
     const roofArea = parseFloat(window.TEUI?.StateManager?.getValue("d_85")) || 100;
     const wallArea = parseFloat(window.TEUI?.StateManager?.getValue("d_86")) || 160;
+    const stories = parseFloat(window.TEUI?.StateManager?.getValue("d_103")) || 1;
 
     // User preferences
-    const aspectRatioPercent = parseFloat(window.TEUI?.StateManager?.getValue("d_202")) || 100;
-    const aspectRatio = aspectRatioPercent / 100; // Convert percentage to ratio
+    const aspectRatio = parseFloat(window.TEUI?.StateManager?.getValue("d_202")) || 1.0;
 
     // Phase 1: Footprint (X-Y plane, always horizontal)
-    const footprintArea = conditionedArea;
+    // Total conditioned area divided by number of stories
+    const footprintArea = conditionedArea / stories;
     const width = Math.sqrt(footprintArea / aspectRatio);
     const length = footprintArea / width;
 
-    // Phase 2: Nominal height (from volume constraint - SACRED)
-    const nominalHeight = volume / footprintArea;
+    // Phase 2: Height calculation from volume constraint (SACRED)
+    // Total volume divided by footprint area gives overall building height
+    const totalBuildingHeight = volume / footprintArea;
+    // Height per story
+    const storyHeight = totalBuildingHeight / stories;
+
+    // Per-floor metrics
+    const volumePerFloor = volume / stories;
+    const areaPerFloor = conditionedArea / stories;
 
     // Phase 3: Roof geometry (pitch emerges from roof area)
     const areaRatio = roofArea / footprintArea;
@@ -221,7 +288,11 @@ window.TEUI.SectionModules.sect19 = (function () {
     // Store solved dimensions
     const solvedGeometry = {
       footprint: { length, width, area: footprintArea },
-      height: nominalHeight,
+      height: totalBuildingHeight,
+      storyHeight: storyHeight,
+      stories: stories,
+      volumePerFloor: volumePerFloor,
+      areaPerFloor: areaPerFloor,
       walls: {
         north: { width: width, height: wallHeight },
         south: { width: width, height: wallHeight },
@@ -239,7 +310,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     // Update calculated fields in StateManager
     window.TEUI?.StateManager?.setValue("h_200", length.toFixed(2), "calculated");
     window.TEUI?.StateManager?.setValue("h_201", width.toFixed(2), "calculated");
-    window.TEUI?.StateManager?.setValue("h_203", nominalHeight.toFixed(2), "calculated");
+    window.TEUI?.StateManager?.setValue("h_203", storyHeight.toFixed(2), "calculated");
 
     console.log("[TOPOMETRY] Geometry solved:", solvedGeometry);
     return solvedGeometry;
@@ -293,7 +364,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     const geometry = solveGeometry();
     currentModel = geometry;
 
-    // Render 2D footprint visualization
+    // Render isometric visualization with stacked stories
     const canvas = document.getElementById("topometry-canvas");
     if (!canvas) return;
 
@@ -303,42 +374,111 @@ window.TEUI.SectionModules.sect19 = (function () {
     ctx.fillStyle = "#f8f9fa";
     ctx.fillRect(0, 0, config.canvasWidth, config.canvasHeight);
 
-    // Draw square footprint in center
-    const scale = 10; // pixels per meter
-    const squareSize = Math.sqrt(geometry.footprint.area) * scale;
+    // Isometric projection parameters
+    const scale = 5; // pixels per meter (reduced for better fit)
     const centerX = config.canvasWidth / 2;
-    const centerY = config.canvasHeight / 2;
-    const squareX = centerX - squareSize / 2;
-    const squareY = centerY - squareSize / 2;
+    const centerY = config.canvasHeight / 2 + 50; // Offset down slightly
 
-    // Draw footprint square
-    ctx.strokeStyle = "#007bff";
-    ctx.lineWidth = 3;
-    ctx.strokeRect(squareX, squareY, squareSize, squareSize);
+    // Isometric angle vectors (30° projection)
+    const isoX = Math.cos(Math.PI / 6); // cos(30°) = 0.866
+    const isoY = Math.sin(Math.PI / 6); // sin(30°) = 0.5
 
-    // Fill with light blue
-    ctx.fillStyle = "rgba(0, 123, 255, 0.1)";
-    ctx.fillRect(squareX, squareY, squareSize, squareSize);
+    // Helper function: Convert 3D coords to isometric 2D
+    function toIso(x, y, z) {
+      return {
+        x: centerX + (x - y) * isoX * scale,
+        y: centerY - (x + y) * isoY * scale - z * scale,
+      };
+    }
 
-    // Draw dimension labels
+    // Building dimensions
+    const length = geometry.footprint.length;
+    const width = geometry.footprint.width;
+    const storyHeight = geometry.storyHeight;
+    const stories = geometry.stories;
+
+    // Draw each story from bottom to top
+    for (let story = 0; story < stories; story++) {
+      const z0 = story * storyHeight;
+      const z1 = (story + 1) * storyHeight;
+
+      // Floor corners (at base of this story)
+      const p0 = toIso(-width / 2, -length / 2, z0); // Front-left
+      const p1 = toIso(width / 2, -length / 2, z0);  // Front-right
+      const p2 = toIso(width / 2, length / 2, z0);   // Back-right
+      const p3 = toIso(-width / 2, length / 2, z0);  // Back-left
+
+      // Ceiling corners (at top of this story)
+      const p4 = toIso(-width / 2, -length / 2, z1);
+      const p5 = toIso(width / 2, -length / 2, z1);
+      const p6 = toIso(width / 2, length / 2, z1);
+      const p7 = toIso(-width / 2, length / 2, z1);
+
+      // Story color (gradient from darker to lighter as we go up)
+      const brightness = 100 + (story / stories) * 155;
+      const fillColor = `rgba(0, 123, 255, ${0.15 + story * 0.05})`;
+      const strokeColor = `rgb(0, ${Math.floor(brightness)}, 255)`;
+
+      // Draw visible faces in painter's algorithm order
+
+      // Top face (ceiling)
+      ctx.fillStyle = fillColor;
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(p4.x, p4.y);
+      ctx.lineTo(p5.x, p5.y);
+      ctx.lineTo(p6.x, p6.y);
+      ctx.lineTo(p7.x, p7.y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Left face
+      ctx.fillStyle = `rgba(0, 100, 200, ${0.1 + story * 0.04})`;
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p3.x, p3.y);
+      ctx.lineTo(p7.x, p7.y);
+      ctx.lineTo(p4.x, p4.y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Right face
+      ctx.fillStyle = `rgba(0, 80, 180, ${0.08 + story * 0.03})`;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p5.x, p5.y);
+      ctx.lineTo(p6.x, p6.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Story label
+      const labelPos = toIso(0, 0, z0 + storyHeight / 2);
+      ctx.fillStyle = "#000";
+      ctx.font = "12px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(`${geometry.areaPerFloor.toFixed(0)} m²`, labelPos.x, labelPos.y);
+    }
+
+    // Draw dimension annotations
+    ctx.font = "11px -apple-system, BlinkMacSystemFont, sans-serif";
     ctx.fillStyle = "#007bff";
-    ctx.font = "14px -apple-system, BlinkMacSystemFont, sans-serif";
-    ctx.textAlign = "center";
 
-    // Length label (bottom)
-    ctx.fillText(`${geometry.footprint.length.toFixed(1)}m`, centerX, squareY + squareSize + 25);
+    // Length label (bottom edge)
+    const lengthLabelPos = toIso(0, -length / 2 - 5, 0);
+    ctx.fillText(`${length.toFixed(1)}m`, lengthLabelPos.x, lengthLabelPos.y + 15);
 
-    // Width label (right side, rotated)
-    ctx.save();
-    ctx.translate(squareX + squareSize + 35, centerY);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText(`${geometry.footprint.width.toFixed(1)}m`, 0, 0);
-    ctx.restore();
+    // Width label (bottom right edge)
+    const widthLabelPos = toIso(width / 2 + 5, 0, 0);
+    ctx.fillText(`${width.toFixed(1)}m`, widthLabelPos.x + 20, widthLabelPos.y);
 
-    // Draw area label in center
-    ctx.font = "16px -apple-system, BlinkMacSystemFont, sans-serif";
-    ctx.fillStyle = "#495057";
-    ctx.fillText(`${geometry.footprint.area.toFixed(1)} m²`, centerX, centerY);
+    // Height label (left edge)
+    const heightLabelPos = toIso(-width / 2 - 10, length / 2, geometry.height / 2);
+    ctx.fillText(`${geometry.height.toFixed(1)}m`, heightLabelPos.x - 30, heightLabelPos.y);
 
     // Overlay geometry info in top-left
     ctx.font = "12px monospace";
@@ -348,13 +488,13 @@ window.TEUI.SectionModules.sect19 = (function () {
     const lineHeight = 18;
 
     ctx.fillStyle = "#007bff";
-    ctx.fillText(`Conditioned Area: ${geometry.footprint.area.toFixed(1)} m² (from h_15)`, x, y);
+    ctx.fillText(`Stories: ${stories} × ${geometry.areaPerFloor.toFixed(1)} m² = ${(stories * geometry.areaPerFloor).toFixed(1)} m²`, x, y);
     y += lineHeight;
-    ctx.fillText(`Footprint: ${geometry.footprint.length.toFixed(1)}m × ${geometry.footprint.width.toFixed(1)}m`, x, y);
+    ctx.fillText(`Footprint: ${length.toFixed(1)}m × ${width.toFixed(1)}m`, x, y);
     y += lineHeight;
-    ctx.fillText(`Height: ${geometry.height.toFixed(1)}m`, x, y);
+    ctx.fillText(`Story Height: ${storyHeight.toFixed(2)}m`, x, y);
     y += lineHeight;
-    ctx.fillText(`Volume: ${geometry.volume.toFixed(0)} m³`, x, y);
+    ctx.fillText(`Total Volume: ${geometry.volume.toFixed(0)} m³ (${geometry.volumePerFloor.toFixed(0)} m³/floor)`, x, y);
   }
 
   //==========================================================================
@@ -382,23 +522,18 @@ window.TEUI.SectionModules.sect19 = (function () {
           Generate 3D thermal topology from envelope areas (Volume, Roof, Walls, Windows)
         </div>
 
+        <button
+          id="topometry-info-btn"
+          class="btn btn-outline-secondary btn-sm"
+          style="padding: 4px 12px; font-size: 13px;"
+          title="What is TOPOMETRY?"
+        >
+          <i class="bi bi-info-circle"></i> Info
+        </button>
+
         <div id="topometry-status" style="padding: 6px 12px; background: white; border-radius: 4px; font-size: 12px; color: #666;">
           <span style="color: #dc3545;">●</span> Inactive
         </div>
-      </div>
-
-      <div id="topometry-info-panel" style="display: none; padding: 15px; background: #e3f2fd; border-left: 4px solid #007bff; border-radius: 4px; margin-bottom: 20px;">
-        <h6 style="margin: 0 0 10px 0; color: #007bff;">💡 What is TOPOMETRY?</h6>
-        <p style="margin: 0; font-size: 13px; line-height: 1.5;">
-          TOPOMETRY shows how <strong>OBJECTIVE "sees" your building</strong> based on thermal areas you entered.
-          This is NOT a 3D architectural model - it's a <strong>thermal topology</strong> where areas drive form.
-        </p>
-        <ul style="margin: 10px 0 0 0; padding-left: 20px; font-size: 12px;">
-          <li>✓ Volume is sacred (d_105 always preserved exactly)</li>
-          <li>✓ Roof pitch emerges from roof area (larger roof = steeper pitch)</li>
-          <li>✓ Walls deform to match area constraints (no validation errors)</li>
-          <li>⚠ If model looks strange → Your areas don't match typical building proportions</li>
-        </ul>
       </div>
     `;
 
@@ -407,6 +542,68 @@ window.TEUI.SectionModules.sect19 = (function () {
     if (activateBtn) {
       activateBtn.addEventListener("click", toggleActivation);
     }
+
+    // Attach info modal handler
+    const infoBtn = document.getElementById("topometry-info-btn");
+    if (infoBtn) {
+      infoBtn.addEventListener("click", showInfoModal);
+    }
+  }
+
+  function showInfoModal() {
+    const backdrop = document.createElement("div");
+    backdrop.className = "pc-modal-backdrop";
+
+    const modal = document.createElement("div");
+    modal.className = "pc-modal-dialog";
+    modal.style.maxWidth = "600px";
+
+    const header = document.createElement("h5");
+    header.textContent = "💡 What is TOPOMETRY?";
+    header.className = "pc-modal-header";
+    header.style.color = "#007bff";
+
+    const content = document.createElement("div");
+    content.innerHTML = `
+      <p style="margin: 0 0 15px 0; font-size: 14px; line-height: 1.6;">
+        TOPOMETRY shows how <strong>OBJECTIVE "sees" your building</strong> based on thermal areas you entered.
+        This is NOT a 3D architectural model - it's a <strong>thermal topology</strong> where areas drive form.
+      </p>
+      <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">
+        <li><strong>Volume is sacred:</strong> d_105 always preserved exactly</li>
+        <li><strong>Stories constrain height:</strong> Building height = volume ÷ (area ÷ stories)</li>
+        <li><strong>Aspect ratio shapes footprint:</strong> 1.0 = square, 2.0 = 2:1 rectangle</li>
+        <li><strong>Roof pitch emerges from roof area:</strong> Larger roof = steeper pitch</li>
+        <li><strong>Walls deform to match area constraints:</strong> No validation errors</li>
+        <li style="color: #dc3545;"><strong>⚠ If model looks strange:</strong> Your areas don't match typical building proportions</li>
+      </ul>
+    `;
+
+    const btnContainer = document.createElement("div");
+    btnContainer.className = "pc-modal-actions";
+
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "btn btn-primary";
+    closeBtn.textContent = "Close";
+    closeBtn.addEventListener("click", () => {
+      document.body.removeChild(backdrop);
+    });
+
+    btnContainer.appendChild(closeBtn);
+
+    modal.appendChild(header);
+    modal.appendChild(content);
+    modal.appendChild(btnContainer);
+
+    backdrop.appendChild(modal);
+    document.body.appendChild(backdrop);
+
+    // Close on backdrop click
+    backdrop.addEventListener("click", e => {
+      if (e.target === backdrop) {
+        document.body.removeChild(backdrop);
+      }
+    });
   }
 
   function toggleActivation() {
@@ -414,7 +611,6 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     const activateBtn = document.getElementById("topometry-activate-btn");
     const statusIndicator = document.getElementById("topometry-status");
-    const infoPanel = document.getElementById("topometry-info-panel");
 
     if (isActivated) {
       // Activate
@@ -424,10 +620,6 @@ window.TEUI.SectionModules.sect19 = (function () {
 
       if (statusIndicator) {
         statusIndicator.innerHTML = '<span style="color: #28a745;">●</span> Active';
-      }
-
-      if (infoPanel) {
-        infoPanel.style.display = "block";
       }
 
       console.log("[TOPOMETRY] Topology view activated");
@@ -441,10 +633,6 @@ window.TEUI.SectionModules.sect19 = (function () {
 
       if (statusIndicator) {
         statusIndicator.innerHTML = '<span style="color: #dc3545;">●</span> Inactive';
-      }
-
-      if (infoPanel) {
-        infoPanel.style.display = "none";
       }
 
       console.log("[TOPOMETRY] Topology view deactivated");
@@ -472,8 +660,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         const value = e.target.value;
         const displaySpan = document.querySelector('span[data-display-for="d_202"]');
         if (displaySpan) {
-          const ratio = (value / 100).toFixed(1);
-          displaySpan.textContent = `${ratio}:1`;
+          displaySpan.textContent = `${parseFloat(value).toFixed(1)}:1`;
         }
       });
 

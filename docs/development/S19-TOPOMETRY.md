@@ -2098,13 +2098,65 @@ S12 (Volume Metrics)             │  │
 
 ---
 
+## Current Implementation Status (2025-12-08)
+
+### ✅ Phase 1 Progress - MVP Features Completed
+
+**Implemented**:
+- ✅ Section19.js Pattern A module created
+- ✅ Basic isometric 3D visualization (Canvas 2D rendering)
+- ✅ Stories dropdown (d_103) - entangled with S12
+- ✅ Volume input field (d_105) - entangled with S12
+- ✅ Aspect ratio slider (d_202) - controls footprint proportions
+- ✅ Geometry solver - calculates building dimensions from thermal constraints
+- ✅ Multi-story visualization - stacked boxes showing per-floor area
+- ✅ Info modal button - explains TOPOMETRY philosophy (no inline panel)
+- ✅ Isometric projection - shows 3D form, not top-down 2D
+
+**Current Issues (In Progress)**:
+- ⚠ Stories dropdown not rendering options (blank field)
+- ⚠ Aspect ratio slider missing from UI (field type issue)
+- ⚠ Need to verify entangled state sync between S19 and S12
+
+### 🎯 Immediate Wishlist (Next Session)
+
+1. **Fix stories dropdown rendering** - Verify FieldManager dropdown rendering for d_103 in S19
+2. **Fix aspect ratio slider** - Change to `coefficient_slider` type (like f_113 in S13)
+3. **Verify state entanglement** - Test that changing stories in S12 updates S19 visualization
+4. **Graphics improvements**:
+   - Add nodes/vertices to box corners (circle markers at isometric vertices)
+   - Cleaner vector-style lines (consider SVG rendering instead of Canvas 2D)
+   - D3-style aesthetics (crisp edges, proper anti-aliasing)
+5. **Volume field formatting** - Add comma separators for large values (8,000 not 8000)
+
+### 🔮 Future Enhancements (Post-MVP)
+
+**Phase 2 - Enhanced Geometry**:
+- Roof pitch visualization (gabled/hipped roofs, not just flat)
+- Per-story window distribution (show windows on facades)
+- Foundation/basement geometry visualization
+
+**Phase 3 - Better Graphics**:
+- **SVG rendering** instead of Canvas 2D for vector-quality graphics
+- **Node markers** at all vertices (fillable circles, D3 style)
+- **Hover interactions** - show dimensions/areas on mouseover
+- **Animation** - smooth transitions when sliders change
+
+**Phase 4 - Advanced**:
+- glTF export for external tools (SketchUp, Rhino, Blender)
+- Solar radiation overlay (color-code by sun exposure)
+- Complex building shapes (L-shape, U-shape, courtyard)
+
+---
+
 ## Document History
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 2025-12-08 | Andy & Claude (AI Assistant) | Initial draft based on codebase exploration |
 | 0.2 | 2025-12-08 | Andy & Claude (AI Assistant) | Updated to "Thermal Topology" philosophy per user guidance |
+| 0.3 | 2025-12-08 | Andy & Claude (AI Assistant) | Added implementation status and wishlist after first working version |
 
 ---
 
-**END OF WORKPLAN - Ready for Implementation on `TOPOMETRY` branch**
+**END OF WORKPLAN - Implementation ongoing on `TOPOMETRY` branch**
