@@ -2832,7 +2832,7 @@ window.TEUI.SectionModules.sect12 = (function () {
       Object.entries(lastReferenceResults).forEach(([fieldId, value]) => {
         window.TEUI.StateManager.setValue(
           `ref_${fieldId}`,
-          value.toString(),
+          (value ?? "").toString(),
           "calculated"
         );
       });
