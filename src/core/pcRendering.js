@@ -363,7 +363,9 @@ window.TEUI.PCRendering = (function () {
         );
       } else {
         // Dynamic scaling for output metrics (TEDI, TELI, GHGI, TEUI)
-        const isDynamicAxis = ["tedi", "teli", "ghgi", "teui"].includes(axis.id);
+        const isDynamicAxis = ["tedi", "teli", "ghgi", "teui"].includes(
+          axis.id
+        );
 
         if (isDynamicAxis) {
           // Calculate dynamic domain with 15% margin

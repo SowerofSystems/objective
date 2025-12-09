@@ -134,13 +134,16 @@ window.TEUI.SectionModules.sectXX = (function () {
             defaultValue: cell.value || "",
             section: "sectionXX",
           };
-          if (cell.dropdownId) fields[cell.fieldId].dropdownId = cell.dropdownId;
+          if (cell.dropdownId)
+            fields[cell.fieldId].dropdownId = cell.dropdownId;
           if (cell.options) fields[cell.fieldId].options = cell.options;
           if (cell.min !== undefined) fields[cell.fieldId].min = cell.min;
           if (cell.max !== undefined) fields[cell.fieldId].max = cell.max;
           if (cell.step !== undefined) fields[cell.fieldId].step = cell.step;
-          if (cell.dependencies) fields[cell.fieldId].dependencies = cell.dependencies;
-          if (cell.conditionalDeps) fields[cell.fieldId].conditionalDeps = cell.conditionalDeps;
+          if (cell.dependencies)
+            fields[cell.fieldId].dependencies = cell.dependencies;
+          if (cell.conditionalDeps)
+            fields[cell.fieldId].conditionalDeps = cell.conditionalDeps;
         }
       });
     });
@@ -165,7 +168,8 @@ window.TEUI.SectionModules.sectXX = (function () {
 
   function getLayout() {
     const layoutRows = [];
-    if (sectionRows["header"]) layoutRows.push(createLayoutRow(sectionRows["header"]));
+    if (sectionRows["header"])
+      layoutRows.push(createLayoutRow(sectionRows["header"]));
     Object.keys(sectionRows).forEach(key => {
       if (key !== "header") layoutRows.push(createLayoutRow(sectionRows[key]));
     });
@@ -174,7 +178,20 @@ window.TEUI.SectionModules.sectXX = (function () {
 
   function createLayoutRow(row) {
     const rowDef = { id: row.id, cells: [{}, {}] };
-    const columns = ["c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n"];
+    const columns = [
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h",
+      "i",
+      "j",
+      "k",
+      "l",
+      "m",
+      "n",
+    ];
     columns.forEach(col => {
       const cell = row.cells?.[col] || {};
       if (col === "c" && !cell.label && row.label) cell.label = row.label;
@@ -200,22 +217,29 @@ window.TEUI.SectionModules.sectXX = (function () {
 
     getNumericValue: function (fieldId, defaultValue = 0) {
       const value = this.getValue(fieldId);
-      if (value === null || value === undefined || value === "") return defaultValue;
-      const parsed = window.TEUI?.parseNumeric?.(value, defaultValue) ?? parseFloat(value);
+      if (value === null || value === undefined || value === "")
+        return defaultValue;
+      const parsed =
+        window.TEUI?.parseNumeric?.(value, defaultValue) ?? parseFloat(value);
       return isNaN(parsed) ? defaultValue : parsed;
     },
 
     setDefaults: function () {
       console.log("[SXX] TargetState: Initializing from FieldDefinitions");
       // Set defaults from field definitions
-      this.values.d_xx = ModeManager.getFieldDefault("d_xx") || "Default Option";
+      this.values.d_xx =
+        ModeManager.getFieldDefault("d_xx") || "Default Option";
       this.values.e_xx = ModeManager.getFieldDefault("e_xx") || "100.00";
       this.values.i_xx = ModeManager.getFieldDefault("i_xx") || "50";
 
       // Publish to StateManager for cross-section communication
       if (window.TEUI?.StateManager) {
         Object.keys(this.values).forEach(fieldId => {
-          window.TEUI.StateManager.setValue(fieldId, this.values[fieldId], "default");
+          window.TEUI.StateManager.setValue(
+            fieldId,
+            this.values[fieldId],
+            "default"
+          );
         });
         console.log("[SXX] TargetState: Published defaults to StateManager");
       }
@@ -226,7 +250,9 @@ window.TEUI.SectionModules.sectXX = (function () {
         const globalValue = window.TEUI.StateManager.getValue(fieldId);
         if (globalValue !== null && globalValue !== undefined) {
           this.setValue(fieldId, globalValue);
-          console.log(`[SXX] TargetState: Synced ${fieldId} = ${globalValue} from StateManager`);
+          console.log(
+            `[SXX] TargetState: Synced ${fieldId} = ${globalValue} from StateManager`
+          );
         }
       });
     },
@@ -245,20 +271,27 @@ window.TEUI.SectionModules.sectXX = (function () {
 
     getNumericValue: function (fieldId, defaultValue = 0) {
       const value = this.getValue(fieldId);
-      if (value === null || value === undefined || value === "") return defaultValue;
-      const parsed = window.TEUI?.parseNumeric?.(value, defaultValue) ?? parseFloat(value);
+      if (value === null || value === undefined || value === "")
+        return defaultValue;
+      const parsed =
+        window.TEUI?.parseNumeric?.(value, defaultValue) ?? parseFloat(value);
       return isNaN(parsed) ? defaultValue : parsed;
     },
 
     setDefaults: function () {
-      console.log("[SXX] ReferenceState: Initializing Reference-specific defaults");
+      console.log(
+        "[SXX] ReferenceState: Initializing Reference-specific defaults"
+      );
 
       // Get current reference standard
-      const currentStandard = window.TEUI?.StateManager?.getValue?.("d_13") || "OBC SB10 5.5-6 Z6";
-      const referenceValues = window.TEUI?.ReferenceValues?.[currentStandard] || {};
+      const currentStandard =
+        window.TEUI?.StateManager?.getValue?.("d_13") || "OBC SB10 5.5-6 Z6";
+      const referenceValues =
+        window.TEUI?.ReferenceValues?.[currentStandard] || {};
 
       // Foundation: Start with field defaults
-      this.values.d_xx = ModeManager.getFieldDefault("d_xx") || "Default Option";
+      this.values.d_xx =
+        ModeManager.getFieldDefault("d_xx") || "Default Option";
       this.values.e_xx = ModeManager.getFieldDefault("e_xx") || "100.00";
       this.values.i_xx = ModeManager.getFieldDefault("i_xx") || "50";
 
@@ -270,9 +303,15 @@ window.TEUI.SectionModules.sectXX = (function () {
       // Publish to StateManager with ref_ prefix
       if (window.TEUI?.StateManager) {
         Object.keys(this.values).forEach(fieldId => {
-          window.TEUI.StateManager.setValue(`ref_${fieldId}`, this.values[fieldId], "default");
+          window.TEUI.StateManager.setValue(
+            `ref_${fieldId}`,
+            this.values[fieldId],
+            "default"
+          );
         });
-        console.log(`[SXX] ReferenceState: Published defaults for ${currentStandard}`);
+        console.log(
+          `[SXX] ReferenceState: Published defaults for ${currentStandard}`
+        );
       }
     },
 
@@ -282,7 +321,9 @@ window.TEUI.SectionModules.sectXX = (function () {
         const globalValue = window.TEUI.StateManager.getValue(refFieldId);
         if (globalValue !== null && globalValue !== undefined) {
           this.setValue(fieldId, globalValue);
-          console.log(`[SXX] ReferenceState: Synced ${fieldId} = ${globalValue} from ${refFieldId}`);
+          console.log(
+            `[SXX] ReferenceState: Synced ${fieldId} = ${globalValue} from ${refFieldId}`
+          );
         }
       });
     },
@@ -310,7 +351,8 @@ window.TEUI.SectionModules.sectXX = (function () {
     refreshUI: function () {
       console.log(`[SXX] refreshUI: mode=${this.currentMode}`);
       const fields = getFields();
-      const currentState = this.currentMode === "target" ? TargetState : ReferenceState;
+      const currentState =
+        this.currentMode === "target" ? TargetState : ReferenceState;
 
       Object.keys(fields).forEach(fieldId => {
         const storedValue = currentState.getValue(fieldId);
@@ -323,10 +365,11 @@ window.TEUI.SectionModules.sectXX = (function () {
         // Handle different input types
         let targetElement = element;
         if (element.tagName === "TD") {
-          targetElement = element.querySelector("select") ||
-                         element.querySelector('input[type="range"]') ||
-                         element.querySelector('[contenteditable="true"]') ||
-                         element;
+          targetElement =
+            element.querySelector("select") ||
+            element.querySelector('input[type="range"]') ||
+            element.querySelector('[contenteditable="true"]') ||
+            element;
         }
 
         if (targetElement.hasAttribute("contenteditable")) {
@@ -370,7 +413,9 @@ window.TEUI.SectionModules.sectXX = (function () {
             formattedValue = displayValue; // Already formatted
           } else {
             const formatType = getFieldFormat(fieldId);
-            formattedValue = window.TEUI?.formatNumber?.(displayValue, formatType) ?? displayValue;
+            formattedValue =
+              window.TEUI?.formatNumber?.(displayValue, formatType) ??
+              displayValue;
           }
           element.textContent = formattedValue;
           element.classList.toggle("negative-value", Number(displayValue) < 0);
@@ -379,13 +424,17 @@ window.TEUI.SectionModules.sectXX = (function () {
     },
 
     getValue: function (fieldId) {
-      const currentState = this.currentMode === "target" ? TargetState : ReferenceState;
+      const currentState =
+        this.currentMode === "target" ? TargetState : ReferenceState;
       return currentState.getValue(fieldId);
     },
 
     setValue: function (fieldId, value, source = "user-modified") {
-      console.log(`[SXX] ModeManager.setValue: ${fieldId} = "${value}" (mode=${this.currentMode})`);
-      const currentState = this.currentMode === "target" ? TargetState : ReferenceState;
+      console.log(
+        `[SXX] ModeManager.setValue: ${fieldId} = "${value}" (mode=${this.currentMode})`
+      );
+      const currentState =
+        this.currentMode === "target" ? TargetState : ReferenceState;
       currentState.setValue(fieldId, value);
 
       // Sync to StateManager (dual storage pattern)
@@ -426,7 +475,11 @@ window.TEUI.SectionModules.sectXX = (function () {
       : TargetState.getValue(fieldId);
   }
 
-  function getSectionNumericValue(fieldId, defaultValue = 0, isReferenceCalculation = false) {
+  function getSectionNumericValue(
+    fieldId,
+    defaultValue = 0,
+    isReferenceCalculation = false
+  ) {
     return isReferenceCalculation
       ? ReferenceState.getNumericValue(fieldId, defaultValue)
       : TargetState.getNumericValue(fieldId, defaultValue);
@@ -435,10 +488,18 @@ window.TEUI.SectionModules.sectXX = (function () {
   function setSectionValue(fieldId, value, isReferenceCalculation = false) {
     if (isReferenceCalculation) {
       ReferenceState.setValue(fieldId, value);
-      window.TEUI?.StateManager?.setValue(`ref_${fieldId}`, value.toString(), "calculated");
+      window.TEUI?.StateManager?.setValue(
+        `ref_${fieldId}`,
+        value.toString(),
+        "calculated"
+      );
     } else {
       TargetState.setValue(fieldId, value);
-      window.TEUI?.StateManager?.setValue(fieldId, value.toString(), "calculated");
+      window.TEUI?.StateManager?.setValue(
+        fieldId,
+        value.toString(),
+        "calculated"
+      );
     }
   }
 
@@ -448,7 +509,11 @@ window.TEUI.SectionModules.sectXX = (function () {
     return window.TEUI?.StateManager?.getValue(key);
   }
 
-  function getGlobalNumericValue(fieldId, defaultValue = 0, isReferenceCalculation = false) {
+  function getGlobalNumericValue(
+    fieldId,
+    defaultValue = 0,
+    isReferenceCalculation = false
+  ) {
     const value = getGlobalValue(fieldId, isReferenceCalculation);
     return window.TEUI?.parseNumeric?.(value, defaultValue) ?? defaultValue;
   }
@@ -463,12 +528,21 @@ window.TEUI.SectionModules.sectXX = (function () {
   }
 
   // M-N Compliance helper (Section07 pattern)
-  function calculateComplianceRatio(targetField, refField, isReferenceCalculation) {
+  function calculateComplianceRatio(
+    targetField,
+    refField,
+    isReferenceCalculation
+  ) {
     if (isReferenceCalculation) {
       return 1.0; // Reference always 100% (self-comparison)
     } else {
-      const targetValue = window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(targetField)) || 0;
-      const refValue = window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(refField)) || 0;
+      const targetValue =
+        window.TEUI.parseNumeric(
+          window.TEUI.StateManager.getValue(targetField)
+        ) || 0;
+      const refValue =
+        window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(refField)) ||
+        0;
       return refValue > 0 ? targetValue / refValue : 0;
     }
   }
@@ -507,19 +581,30 @@ window.TEUI.SectionModules.sectXX = (function () {
 
   function calculateCompliance(isReferenceCalculation = false) {
     // M-N compliance pattern (Section07)
-    const m_xx_percent = calculateComplianceRatio("h_xx", "ref_h_xx", isReferenceCalculation);
-    const m_xx_formatted = window.TEUI?.formatNumber?.(m_xx_percent, "percent-0dp") ?? "100%";
+    const m_xx_percent = calculateComplianceRatio(
+      "h_xx",
+      "ref_h_xx",
+      isReferenceCalculation
+    );
+    const m_xx_formatted =
+      window.TEUI?.formatNumber?.(m_xx_percent, "percent-0dp") ?? "100%";
 
     // Store M column
     if (isReferenceCalculation) {
-      window.TEUI.StateManager.setValue("ref_m_xx", m_xx_formatted, "calculated");
+      window.TEUI.StateManager.setValue(
+        "ref_m_xx",
+        m_xx_formatted,
+        "calculated"
+      );
     } else {
       window.TEUI.StateManager.setValue("m_xx", m_xx_formatted, "calculated");
     }
     setSectionValue("m_xx", m_xx_formatted, isReferenceCalculation);
 
     // N column checkmark
-    const numericPercent = parseFloat(String(m_xx_formatted).replace("%", "").replace(/,/g, ""));
+    const numericPercent = parseFloat(
+      String(m_xx_formatted).replace("%", "").replace(/,/g, "")
+    );
     const isCompliant = numericPercent >= 100;
     const status = isCompliant ? "✓" : "✗";
 
@@ -551,7 +636,9 @@ window.TEUI.SectionModules.sectXX = (function () {
     const valueCell = document.querySelector(`td[data-field-id="${fieldId}"]`);
     if (valueCell) {
       valueCell.classList.toggle("disabled-input", shouldBeGhosted);
-      const input = valueCell.querySelector('input, select, [contenteditable="true"]');
+      const input = valueCell.querySelector(
+        'input, select, [contenteditable="true"]'
+      );
       if (input) {
         if (input.hasAttribute("contenteditable")) {
           input.contentEditable = !shouldBeGhosted;
@@ -572,7 +659,9 @@ window.TEUI.SectionModules.sectXX = (function () {
     if (!fieldId) return;
 
     let rawTextValue = fieldElement.textContent.trim();
-    let numericValue = window.TEUI?.parseNumeric?.(rawTextValue, NaN) ?? parseFloat(rawTextValue.replace(/[$,%]/g, ""));
+    let numericValue =
+      window.TEUI?.parseNumeric?.(rawTextValue, NaN) ??
+      parseFloat(rawTextValue.replace(/[$,%]/g, ""));
 
     if (isNaN(numericValue)) {
       const previousValue = ModeManager.getValue(fieldId) || "0";
@@ -580,7 +669,9 @@ window.TEUI.SectionModules.sectXX = (function () {
     }
 
     const valueToStore = numericValue.toString();
-    const formattedDisplay = window.TEUI?.formatNumber?.(numericValue, "number-2dp-comma") ?? valueToStore;
+    const formattedDisplay =
+      window.TEUI?.formatNumber?.(numericValue, "number-2dp-comma") ??
+      valueToStore;
     fieldElement.textContent = formattedDisplay;
 
     const currentValue = ModeManager.getValue(fieldId);
@@ -592,7 +683,9 @@ window.TEUI.SectionModules.sectXX = (function () {
   }
 
   function handleDropdownChange(e) {
-    const fieldId = e.target.getAttribute("data-field-id") || e.target.getAttribute("data-dropdown-id");
+    const fieldId =
+      e.target.getAttribute("data-field-id") ||
+      e.target.getAttribute("data-dropdown-id");
     const value = e.target.value;
 
     console.log(`[SXX] Dropdown changed: ${fieldId} = "${value}"`);
@@ -608,7 +701,9 @@ window.TEUI.SectionModules.sectXX = (function () {
   function handleSliderChange(e) {
     const fieldId = e.target.getAttribute("data-field-id");
     const value = e.target.value;
-    const displaySpan = document.querySelector(`span[data-display-for="${fieldId}"]`);
+    const displaySpan = document.querySelector(
+      `span[data-display-for="${fieldId}"]`
+    );
 
     if (displaySpan) displaySpan.textContent = value + "%";
 
@@ -628,8 +723,14 @@ window.TEUI.SectionModules.sectXX = (function () {
     // Editable fields
     const editableFields = ["e_xx"]; // Add your editable fields
     editableFields.forEach(fieldId => {
-      const field = sectionElement.querySelector(`[data-field-id="${fieldId}"]`);
-      if (field && field.classList.contains("editable") && !field.hasEditableListeners) {
+      const field = sectionElement.querySelector(
+        `[data-field-id="${fieldId}"]`
+      );
+      if (
+        field &&
+        field.classList.contains("editable") &&
+        !field.hasEditableListeners
+      ) {
         field.setAttribute("contenteditable", "true");
         field.classList.add("user-input");
         field.addEventListener("blur", handleEditableBlur);
@@ -644,7 +745,9 @@ window.TEUI.SectionModules.sectXX = (function () {
     });
 
     // Dropdowns
-    const dropdowns = sectionElement.querySelectorAll("select[data-dropdown-id]");
+    const dropdowns = sectionElement.querySelectorAll(
+      "select[data-dropdown-id]"
+    );
     dropdowns.forEach(dropdown => {
       if (!dropdown.hasDropdownListener) {
         dropdown.addEventListener("change", handleDropdownChange);

@@ -398,7 +398,9 @@ window.TEUI.SectionModules.sect03 = (function () {
                 ].includes(fieldId)
               ) {
                 formatType = "integer";
-              } else if (["e_23", "i_23", "e_24", "i_24", "e_25"].includes(fieldId)) {
+              } else if (
+                ["e_23", "i_23", "e_24", "i_24", "e_25"].includes(fieldId)
+              ) {
                 formatType = "integer-nocomma";
               } else if (fieldId === "j_19") {
                 formatType = "number-1dp";
@@ -661,9 +663,10 @@ window.TEUI.SectionModules.sect03 = (function () {
     // ✅ Winter Average Temperature - Direct from ClimateValues.js (matches d_23 pattern)
     const winterAvgC = cityData.Winter_Tdb_Avg;
     // Celsius-to-Fahrenheit conversion (integer format like other temp conversions)
-    const winterAvgF = winterAvgC !== null && winterAvgC !== undefined
-      ? (winterAvgC * 9) / 5 + 32
-      : null;
+    const winterAvgF =
+      winterAvgC !== null && winterAvgC !== undefined
+        ? (winterAvgC * 9) / 5 + 32
+        : null;
 
     const climateValues = {
       d_20: hdd !== null && hdd !== undefined && hdd !== 666 ? hdd : "N/A",
@@ -673,8 +676,10 @@ window.TEUI.SectionModules.sect03 = (function () {
       d_23: selectedJanTemp, // ✅ Now uses occupancy-aware temperature selection
       d_24: cityData.July_2_5_Tdb || "34",
       l_22: cityData["Elev ASL (m)"] || "80",
-      d_25: winterAvgC !== null && winterAvgC !== undefined ? winterAvgC : "N/A", // ✅ Winter avg from ClimateValues (matches d_23 pattern)
-      e_25: winterAvgF !== null && winterAvgF !== undefined ? winterAvgF : "N/A", // ✅ Fahrenheit conversion
+      d_25:
+        winterAvgC !== null && winterAvgC !== undefined ? winterAvgC : "N/A", // ✅ Winter avg from ClimateValues (matches d_23 pattern)
+      e_25:
+        winterAvgF !== null && winterAvgF !== undefined ? winterAvgF : "N/A", // ✅ Fahrenheit conversion
     };
 
     // console.log(`[S03] Climate values for ${city} (${calculationMode}):`, climateValues);
@@ -1074,7 +1079,10 @@ window.TEUI.SectionModules.sect03 = (function () {
       label: "Winter Average Temp. (Location Specific)",
       cells: {
         b: { content: "L.3.3", classes: ["label-prefix"] },
-        c: { content: "Winter Average Temp. (Location Specific)", type: "label" },
+        c: {
+          content: "Winter Average Temp. (Location Specific)",
+          type: "label",
+        },
         d: {
           fieldId: "d_25",
           type: "calculated",

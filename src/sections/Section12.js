@@ -298,7 +298,8 @@ window.TEUI.SectionModules.sect12 = (function () {
         // ✅ FIX: Read global Reference toggle state instead of local currentMode
         // This ensures S12 displays correct values when Reference mode is active globally
         // even if S12's local ModeManager.currentMode hasn't been synced
-        const isReferenceMode = window.TEUI?.ReferenceToggle?.isReferenceMode?.() || false;
+        const isReferenceMode =
+          window.TEUI?.ReferenceToggle?.isReferenceMode?.() || false;
 
         if (isReferenceMode) {
           // ✅ STRICT MODE ISOLATION: Reference mode reads ONLY ref_ values
@@ -386,6 +387,27 @@ window.TEUI.SectionModules.sect12 = (function () {
                   formattedValue = window.TEUI.formatNumber(
                     numericValue,
                     percentFormat
+                  );
+                } else if (
+                  // ✅ FIX: Large values (areas, kWh) should use commas for readability
+                  [
+                    "d_101",
+                    "d_102",
+                    "d_104",
+                    "d_106",
+                    "i_101",
+                    "i_102",
+                    "i_103",
+                    "i_104",
+                    "k_101",
+                    "k_102",
+                    "k_103",
+                    "k_104",
+                  ].includes(fieldId)
+                ) {
+                  formattedValue = window.TEUI.formatNumber(
+                    numericValue,
+                    "number-2dp-comma"
                   );
                 } else {
                   formattedValue = window.TEUI.formatNumber(
@@ -2712,7 +2734,7 @@ window.TEUI.SectionModules.sect12 = (function () {
     let o101_surfaceTemp = null;
     if (d101_areaAir > 0) {
       const deltaT_air = interiorTemp - winterAvgTemp;
-      o101_surfaceTemp = interiorTemp - (g101_uAir * deltaT_air * 0.13);
+      o101_surfaceTemp = interiorTemp - g101_uAir * deltaT_air * 0.13;
       o101_surfaceTemp = Math.round(o101_surfaceTemp * 100) / 100;
     }
 
@@ -2722,7 +2744,7 @@ window.TEUI.SectionModules.sect12 = (function () {
     let o102_surfaceTemp = null;
     if (d102_areaGround > 0) {
       const deltaT_ground = interiorTemp - groundTemp;
-      o102_surfaceTemp = interiorTemp - (g102_uGround * deltaT_ground * 0.17);
+      o102_surfaceTemp = interiorTemp - g102_uGround * deltaT_ground * 0.17;
       o102_surfaceTemp = Math.round(o102_surfaceTemp * 100) / 100;
     }
 
@@ -2736,26 +2758,42 @@ window.TEUI.SectionModules.sect12 = (function () {
       const deltaT_air = interiorTemp - winterAvgTemp;
       const deltaT_ground = interiorTemp - groundTemp;
       const deltaT_weighted =
-        ((deltaT_air * d101_areaAir) + (deltaT_ground * d102_areaGround)) / totalArea;
-      o104_surfaceTemp = interiorTemp - (g104_uCombined * deltaT_weighted * 0.13);
+        (deltaT_air * d101_areaAir + deltaT_ground * d102_areaGround) /
+        totalArea;
+      o104_surfaceTemp = interiorTemp - g104_uCombined * deltaT_weighted * 0.13;
       o104_surfaceTemp = Math.round(o104_surfaceTemp * 100) / 100;
     }
 
     // Set calculated values
     if (o101_surfaceTemp !== null) {
-      setCalculatedValue("o_101", o101_surfaceTemp, "number", isReferenceCalculation);
+      setCalculatedValue(
+        "o_101",
+        o101_surfaceTemp,
+        "number",
+        isReferenceCalculation
+      );
     } else {
       setCalculatedValue("o_101", "", "number", isReferenceCalculation);
     }
 
     if (o102_surfaceTemp !== null) {
-      setCalculatedValue("o_102", o102_surfaceTemp, "number", isReferenceCalculation);
+      setCalculatedValue(
+        "o_102",
+        o102_surfaceTemp,
+        "number",
+        isReferenceCalculation
+      );
     } else {
       setCalculatedValue("o_102", "", "number", isReferenceCalculation);
     }
 
     if (o104_surfaceTemp !== null) {
-      setCalculatedValue("o_104", o104_surfaceTemp, "number", isReferenceCalculation);
+      setCalculatedValue(
+        "o_104",
+        o104_surfaceTemp,
+        "number",
+        isReferenceCalculation
+      );
     } else {
       setCalculatedValue("o_104", "", "number", isReferenceCalculation);
     }
