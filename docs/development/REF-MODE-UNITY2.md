@@ -805,6 +805,11 @@ function getValue(fieldId) {
 
 ### Diagnostic Logging Strategy
 
+**🔖 SAFE RESTORE POINT**: `0d7b7bfe1f7e190a73dc91e74817cfcfb01a71ec`
+- Branch: REF-MODE-UNITY
+- Commit: "Docs: Legacy onReferenceStandardChange() callbacks may contaminate both models"
+- To restore: `git reset --hard 0d7b7bfe1f7e190a73dc91e74817cfcfb01a71ec`
+
 **CRITICAL: Before implementing any fix, we must confirm if prefix logic works or if double-write occurs.**
 
 **Phase 1: Verify Prefix Logic in applyReferenceValuesFromStandard**

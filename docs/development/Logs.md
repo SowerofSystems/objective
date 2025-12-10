@@ -22,17 +22,17 @@ Example workflow:
   6. zenExportFile()    // Download for use in Dependency.js
   7. zenDisable()
 
-Section02.js:1049 [S02] "Set Values" button wired successfully
-Section02.js:1049 [S02] "Set Values" button wired successfully
-Section02.js:1049 [S02] "Set Values" button wired successfully
-Section02.js:1049 [S02] "Set Values" button wired successfully
-Section02.js:1049 [S02] "Set Values" button wired successfully
-Section02.js:1049 [S02] "Set Values" button wired successfully
-Section02.js:1049 [S02] "Set Values" button wired successfully
-Section02.js:1049 [S02] "Set Values" button wired successfully
-Section02.js:1049 [S02] "Set Values" button wired successfully
-Section02.js:1049 [S02] "Set Values" button wired successfully
-Section02.js:1044 [S02] "Set Values" button clicked in REFERENCE mode
-Section02.js:1013 [S02] "Set Values" button clicked - delegating to FileHandler
-Section02.js:1044 [S02] "Set Values" button clicked in REFERENCE mode
-Section02.js:1013 [S02] "Set Values" button clicked - delegating to FileHandler
+Section02.js:1046 [S02] "Set Values" button wired successfully
+Section02.js:1046 [S02] "Set Values" button wired successfully
+Section02.js:1046 [S02] "Set Values" button wired successfully
+Section02.js:1046 [S02] "Set Values" button wired successfully
+Section02.js:1046 [S02] "Set Values" button wired successfully
+Section02.js:1046 [S02] "Set Values" button wired successfully
+Section02.js:1046 [S02] "Set Values" button wired successfully
+Section02.js:1046 [S02] "Set Values" button wired successfully
+Section02.js:1046 [S02] "Set Values" button wired successfully
+Section02.js:1046 [S02] "Set Values" button wired successfully
+FileHandler.js:838 [FileHandler] All imported values set. Explicitly calling loadReferenceData for standard: OBC SB10 5.5-6 Z5 (2010)
+StateManager.js:1656 [StateManager] Step 1: Copied application state to activeReferenceDataSet (preserving independent Reference values). d_53 value: 0
+Section02.js:1041 [S02] "Set Values" button clicked in REFERENCE mode
+Section02.js:1041 [S02] "Set Values" button clicked in REFERENCE mode

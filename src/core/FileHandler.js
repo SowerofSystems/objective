@@ -1005,8 +1005,34 @@
         importedData[targetFieldId] = value;
       });
 
+      // 🔍 DIAGNOSTIC: Detailed logging for contamination detection
       console.log(
-        `[FileHandler] Built importedData with ${Object.keys(importedData).length} fields for ${targetMode} mode`
+        `%c[FileHandler] ===== REFERENCE VALUES OVERLAY DEBUG =====`,
+        'color: #0ff; font-weight: bold; font-size: 16px;'
+      );
+      console.log(`[FileHandler] Standard: "${standard}"`);
+      console.log(`[FileHandler] Target Mode: "${targetMode}"`);
+      console.log(
+        `[FileHandler] ReferenceValues (unprefixed source):`,
+        Object.keys(referenceValues).slice(0, 15)
+      );
+      console.log(
+        `[FileHandler] Built importedData (after prefix logic):`,
+        Object.keys(importedData).slice(0, 15)
+      );
+      console.log(
+        `[FileHandler] 🔍 CRITICAL CHECK - Does importedData contain unprefixed fields?`
+      );
+      console.log(`[FileHandler] Sample insulation fields:`, {
+        f_85: importedData.f_85, // Should be UNDEFINED in Reference mode
+        ref_f_85: importedData.ref_f_85, // Should be "5.30" in Reference mode
+        f_86: importedData.f_86, // Should be UNDEFINED
+        ref_f_86: importedData.ref_f_86, // Should be "4.10"
+        f_87: importedData.f_87, // Should be UNDEFINED
+        ref_f_87: importedData.ref_f_87, // Should be "6.60"
+      });
+      console.log(
+        `[FileHandler] ==========================================`
       );
 
       // 🔒 PHASE 1: IMPORT QUARANTINE START - Mute listeners
