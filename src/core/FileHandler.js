@@ -861,7 +861,11 @@
      * for state sovereignty per CHEATSHEET.md. Import populates global StateManager,
      * but isolated states need explicit sync to use imported values in calculations.
      */
-    syncPatternASections() {
+    /**
+     * Sync Pattern A sections from global StateManager
+     * @param {boolean} skipAreaSync - If true, skip S11 area sync to prevent contamination during overlays
+     */
+    syncPatternASections(skipAreaSync = false) {
       // Pattern A sections per CHEATSHEET.md (lines 225-227)
       const patternASections = [
         { id: "sect02", name: "S02" },
@@ -883,6 +887,11 @@
       console.log(
         "[FileHandler] 🔧 PHASE 2: Syncing Pattern A sections from global StateManager..."
       );
+      if (skipAreaSync) {
+        console.log(
+          "[FileHandler] ⚠️ Skipping S11 area sync to prevent Target/Reference contamination during overlay"
+        );
+      }
 
       patternASections.forEach(({ id, name }) => {
         const section = window.TEUI?.SectionModules?.[id];
@@ -950,8 +959,9 @@
 
       // ✅ FIX (Oct 10): Manually sync S11 window areas from S10 AFTER all imports complete
       // ✅ FIX (Nov 2): Enable dual-state sync during import to populate Reference areas
+      // ✅ FIX (Dec 10): Skip area sync if skipAreaSync flag set (overlay operations don't change areas)
       // S11's syncFromGlobalState() no longer calls this to prevent premature sync
-      if (window.TEUI?.SectionModules?.sect11?.syncAreasFromS10) {
+      if (!skipAreaSync && window.TEUI?.SectionModules?.sect11?.syncAreasFromS10) {
         console.log(
           "[FileHandler] 🔧 PHASE 2.5: Syncing S11 window areas from S10..."
         );
@@ -970,6 +980,10 @@
 
         console.log(
           "[FileHandler] ✅ PHASE 2.5: S11 window area sync complete"
+        );
+      } else if (skipAreaSync) {
+        console.log(
+          "[FileHandler] ⏭️ PHASE 2.5: Skipping S11 area sync (not needed for overlay)"
         );
       }
     }
@@ -1051,10 +1065,12 @@
         );
 
         // ✅ PHASE 3: Sync Pattern A sections FROM StateManager
+        // ✅ FIX (Dec 10): Skip area sync for overlays to prevent Target/Reference contamination
+        // ReferenceValues overlays change SHGC, insulation, etc. but NOT window areas
         console.log(
           "[FileHandler] Syncing Pattern A sections FROM StateManager..."
         );
-        this.syncPatternASections();
+        this.syncPatternASections(true); // skipAreaSync=true for overlay operations
         console.log("[FileHandler] Pattern A sections synced");
       } finally {
         // 🔓 PHASE 4: IMPORT QUARANTINE END - Always unmute
