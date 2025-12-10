@@ -19,13 +19,40 @@ TEUI maintains two completely independent models with separate state variables:
 - **Target model**: `d_13`, `h_10`, etc. (unprefixed)
 - **Reference model**: `ref_d_13`, `e_10`, etc. (ref_ prefixed)
 
-**Two-stage setting process** (intentional safety mechanism):
+**Two-stage setting process** (intentional safety mechanism - NEW BEHAVIOR):
 1. User selects standard from d_13 dropdown (writes to `d_13` or `ref_d_13` depending on mode)
 2. User clicks "Set Values" to apply ReferenceValues.js overlay (prevents accidental overwrites)
 
-**Expected state isolation**:
-- Changing `d_13` dropdown in Reference mode: Only `ref_d_13` changes, `d_13` untouched
-- Changing `d_13` dropdown in Target mode: Only `d_13` changes, `ref_d_13` untouched
+**🔥 CRITICAL ARCHITECTURAL HISTORY** (revealed Dec 9, 2025 evening):
+
+**LEGACY BEHAVIOR (single-state TEUI, before dual-state refactor):**
+- d_13 dropdown change **IMMEDIATELY** applied ReferenceValues.js to the ONE model
+- No "Set Values" button existed
+- No mode awareness needed - only one state
+- Sections like S09, S11, S12, S13, S14 had `onReferenceStandardChange()` callbacks that fired on d_13 change
+- These callbacks called `setDefaults()` which read from ReferenceValues.js and populated section state
+- **BOTH Target AND Reference would update** because there was no distinction
+
+**NEW BEHAVIOR (dual-state TEUI, current architecture):**
+- d_13 dropdown change is **PASSIVE** - only updates dropdown value (`d_13` or `ref_d_13`)
+- "Set Values" button added to give user control (prevents accidental overwrites)
+- Mode-aware: ReferenceValues overlay applies to active mode only
+- Comments in S03.js:10 and S09.js:10, S09.js:2573-2574 confirm: *"d_13 changes are passive until user triggers Import Quarantine workflow"*
+
+**THE LEGACY CODE PROBLEM:**
+Many sections STILL have `onReferenceStandardChange()` callbacks that were designed for immediate application:
+- [Section06.js:110-113](../src/sections/Section06.js#L110-L113) - Reads `ref_d_13` and calls `setDefaults()`
+- [Section11.js:239-242](../src/sections/Section11.js#L239-L242) - Reads `ref_d_13` and loads ReferenceValues
+- [Section12.js:131-169](../src/sections/Section12.js#L131-L169) - `onReferenceStandardChange()` calls `setDefaults()`
+- [Section13.js:182-185](../src/sections/Section13.js#L182-L185) - Same pattern
+- [Section14.js:67-87](../src/sections/Section14.js#L67-L87) - Same pattern
+
+**These callbacks may be triggering on d_13 changes and applying values to BOTH models!**
+
+**Expected state isolation** (NEW BEHAVIOR):
+- Changing `d_13` dropdown in Reference mode: Only `ref_d_13` changes, `d_13` untouched, NO automatic value application
+- Changing `d_13` dropdown in Target mode: Only `d_13` changes, `ref_d_13` untouched, NO automatic value application
+- Clicking "Set Values": ReferenceValues.js overlay applied ONLY to active model
 - Switching modes: UI refreshes to show correct value (`d_13` in Target, `ref_d_13` in Reference)
 
 ### Bug 1: d_13 Dropdown Stuck After "Set Values"
@@ -477,6 +504,55 @@ function getValue(fieldId) {
 - Literal ReferenceValues.js data for "OBC SB10 5.5-6 Z5 (2010)" overwrites **BOTH** Target (`f_85`) AND Reference (`ref_f_85`) fields
 - Not a stale cache read issue - actual StateManager writes to wrong fields
 - Both engines run (correct per CHEATSHEET.md), but **Target engine calculates with contaminated inputs**
+
+### BREAKTHROUGH: Legacy onReferenceStandardChange() Callbacks (Dec 9, 2025 - Evening)
+
+**HYPOTHESIS: Legacy callbacks contaminate both models post-import**
+
+**How It May Work (Fresh Page Load - WORKS):**
+1. User selects d_13 in Reference mode → writes `ref_d_13`
+2. d_13 change triggers StateManager listener for `ref_d_13`
+3. Legacy callbacks (`onReferenceStandardChange()`) may fire but state is minimal
+4. User clicks "Set Values" → FileHandler correctly prefixes fields → writes only `ref_*` values
+5. No contamination because activeReferenceDataSet is empty
+
+**How It May Break (Post-Import - FAILS):**
+1. CSV import populates BOTH `d_13` (Target) and `ref_d_13` (Reference) ✅ Correct
+2. Import calls `loadReferenceData(d_13)` → populates `activeReferenceDataSet` with Target values
+3. User switches to Reference mode, changes `ref_d_13` dropdown to "OBC SB10 5.5-6 Z5 (2010)"
+4. **SUSPECTED**: StateManager listener fires `onReferenceStandardChange()` callbacks in sections
+5. **SUSPECTED**: Callbacks read from ReferenceValues.js and write to section-local state
+6. **SUSPECTED**: Section state sync writes BACK to StateManager with wrong prefixes
+7. User clicks "Set Values" → FileHandler correctly prefixes → but sections already contaminated
+8. `calculateAll()` runs with contaminated state → both models show same values
+
+**Evidence for This Hypothesis:**
+
+1. **S03.js:10 and S09.js:10 comments**: *"d_13 changes are passive until user triggers Import Quarantine workflow"*
+   - Implies d_13 changes WERE triggering immediate updates (legacy behavior)
+   - Comments added to document NEW passive behavior
+
+2. **S09.js:2573-2574 comment**: *"This eliminates the 48-cycle cascade that generated 35,000+ log lines on d_13 change"*
+   - Confirms massive calculation cascade from d_13 changes
+   - Legacy callbacks were causing recursive recalculations
+   - Listeners were REMOVED to prevent this
+
+3. **Sections S06, S11, S12, S13, S14 still have `onReferenceStandardChange()` callbacks**
+   - These may be residual legacy code
+   - May still be firing on `ref_d_13` changes
+   - May be applying values to BOTH Target and Reference states
+
+4. **syncPatternASections() calls after "Set Values"**
+   - [FileHandler.js:1031](../src/core/FileHandler.js#L1031) - Called after overlay
+   - Syncs section-local state FROM global StateManager
+   - BUT: If callbacks contaminated StateManager first, sync propagates contamination
+
+**Critical Question: Are onReferenceStandardChange() callbacks still wired?**
+
+Need to trace:
+1. Where are these callbacks registered as StateManager listeners?
+2. Do they fire on `ref_d_13` changes post-import?
+3. Do they write to StateManager (contaminating) or just update section-local state?
 
 ### BREAKTHROUGH: FileHandler Mode Intelligence Failure (Dec 9, 2025 - Evening)
 
