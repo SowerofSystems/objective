@@ -1011,9 +1011,8 @@ window.TEUI.SectionModules.sect02 = (function () {
         : window.TEUI.StateManager.getValue("d_13");
 
     console.log(
-      `[S02] "Set Values" button clicked - delegating to FileHandler`
+      `[S02] Applying ReferenceValues: mode=${currentMode}, standard=${standard}`
     );
-    console.log(`[S02] Mode: ${currentMode}, Standard: ${standard}`);
 
     // Delegate to FileHandler - it knows how to do this correctly!
     if (window.TEUI?.FileHandler?.applyReferenceValuesFromStandard) {

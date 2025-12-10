@@ -611,9 +611,6 @@
             if (isReferenceField) {
               this.stateManager.setValue(fieldId, parsedValue, "imported");
               updatedCount++;
-              console.log(
-                `[FileHandler] [P1] Control field imported: ${fieldId} = ${parsedValue}`
-              );
               return; // Done with this reference field
             }
 
@@ -732,9 +729,6 @@
 
               this.stateManager.setValue(fieldId, parsedValue, "imported");
               updatedCount++;
-              console.log(
-                `[FileHandler] Reference field imported: ${fieldId} = ${parsedValue}`
-              );
               return; // Done with this reference field
             }
 
@@ -1023,7 +1017,9 @@
 
       try {
         // ✅ PHASE 2: Use the PROVEN import method (writes directly to StateManager)
-        this.updateStateFromImportData(importedData, 0, false);
+        // ⚠️ CRITICAL: Pass skipRecalculation=true to prevent loadReferenceData() contamination
+        // We've already written the values with correct prefixes - no need for additional reference loading
+        this.updateStateFromImportData(importedData, 0, true);
         console.log(
           `[FileHandler] Applied ${Object.keys(importedData).length} values via updateStateFromImportData`
         );
