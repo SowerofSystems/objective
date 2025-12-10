@@ -356,6 +356,22 @@ const d13Value = window.TEUI.StateManager.getValue(d13FieldId);
 
 ## POST-IMPORT REGRESSION (Dec 9, 2025)
 
+### Executive Summary: The 24-Hour Bug Hunt
+
+**Status**: Root cause identified after extensive analysis involving multiple agents and approaches.
+
+**The Bug**: After CSV/Excel import, clicking "Set Values" in Reference mode contaminates **BOTH** Target and Reference models with the same ReferenceValues.js data.
+
+**Root Cause Discovery**: ReferenceValues.js is a **legacy single-state data structure** that was never updated for dual-state architecture. It contains only **unprefixed field names** (`d_52`, `f_85`) with no `ref_` variants, unlike CSV imports which explicitly separate Target (row 2) and Reference (row 3) data.
+
+**Key Insight**: CSV imports work because they have **mode-aware structure** (separate rows for Target/Reference). ReferenceValues.js overlay fails because it has **mode-unaware structure** (unprefixed field names only). The prefix logic in FileHandler is correct, but something downstream is contaminating both models.
+
+**Next Step**: Diagnostic logging to confirm whether:
+- Option A: Prefix logic builds `importedData` incorrectly (both prefixed and unprefixed fields)
+- Option B: Prefix logic correct, but `updateStateFromImportData()` or `syncPatternASections()` writes to both models
+
+---
+
 ### New Discovery: Bug Returns After File Import
 
 **Symptom**: After importing CSV/Excel file, the bug reappears when using "Set Values" in Reference mode.
@@ -449,25 +465,92 @@ function getValue(fieldId) {
 - Not a stale cache read issue - actual StateManager writes to wrong fields
 - Both engines run (correct per CHEATSHEET.md), but **Target engine calculates with contaminated inputs**
 
-**Code Flow Analysis** (hypothesized - requires logging to confirm):
+### BREAKTHROUGH: ReferenceValues.js is Mode-Unaware (Dec 9, 2025 - Evening)
+
+**THE FUNDAMENTAL ARCHITECTURAL MISMATCH:**
+
+**CSV Import Structure (Mode-Aware - WORKS):**
+```csv
+Row 1 (headers):  d_52,  f_85,   f_86,   ...
+Row 2 (Target):   "90",  "5.30", "4.10", ...  → writes to d_52, f_85, f_86
+Row 3 (Reference):"92",  "4.87", "4.21", ...  → writes to ref_d_52, ref_f_85, ref_f_86
+```
+
+FileHandler processes CSV with **explicit dual-state rows**:
+- Row 2 → Target model (unprefixed)
+- Row 3 → Reference model (`ref_` prefix added during import)
+
+**ReferenceValues.js Structure (Mode-Unaware - BROKEN):**
+```javascript
+TEUI.ReferenceValues = {
+  "OBC SB10 5.5-6 Z5 (2010)": {
+    d_52: "90",    // ← UNPREFIXED field names only
+    f_85: "5.30",  // ← NO ref_ variants exist
+    f_86: "4.10",  // ← Data is mode-agnostic
+    // NO ref_d_52, NO ref_f_85, NO ref_f_86
+  }
+}
+```
+
+**Critical Insight:** ReferenceValues.js was designed when TEUI was **single-state only**. Field IDs are **unprefixed** because there was only one model. The file was **never updated** for dual-state architecture.
+
+**Code Flow Analysis:**
 
 ```javascript
 // FileHandler.applyReferenceValuesFromStandard("OBC SB10...", "reference")
+const referenceValues = window.TEUI.ReferenceValues["OBC SB10 5.5-6 Z5 (2010)"];
+// Returns: { d_52: "90", f_85: "5.30", f_86: "4.10" }  ← UNPREFIXED!
+
 const importedData = {};
 Object.entries(referenceValues).forEach(([fieldId, value]) => {
+  // fieldId = "f_85" (unprefixed from ReferenceValues.js)
   const targetFieldId = targetMode === "reference" ? `ref_${fieldId}` : fieldId;
-  importedData[targetFieldId] = value; // ✅ Builds: {ref_f_85: "5.30", ref_f_86: "4.10", ...}
+  // targetFieldId = "ref_f_85" ✅ Correct prefixing
+  importedData[targetFieldId] = value;
 });
+// Should build: { ref_d_52: "90", ref_f_85: "5.30", ref_f_86: "4.10" } ✅
 
 // Writes to StateManager
 this.updateStateFromImportData(importedData, 0, true); // skipRecalculation=true ✅
-
-// ❌ SUSPECTED BUG SOURCES:
-// 1. updateStateFromImportData() may be writing BOTH ref_* AND unprefixed fields
-// 2. syncPatternASections() may be copying ref_* values back to unprefixed fields
-// 3. calculateAll() reading from contaminated state and writing back to Target
-// 4. loadReferenceData() from import still affecting subsequent operations
 ```
+
+**The prefix logic at [FileHandler.js:1003-1004](../../src/core/FileHandler.js#L1003-L1004) is CORRECT.**
+
+**❌ SUSPECTED CONTAMINATION POINTS:**
+
+1. **Double-write in updateStateFromImportData()**:
+   - Receives `{ref_f_85: "5.30"}` correctly
+   - But may be writing **BOTH** `ref_f_85` AND `f_85` to StateManager
+   - Possible cause: Loop processing unprefixed field names from original ReferenceValues.js structure
+
+2. **syncPatternASections() bidirectional copy**:
+   - May be copying `ref_*` values back to unprefixed fields
+   - Pattern A sections share DOM elements between modes
+   - Sync might be contaminating Target state with Reference values
+
+3. **calculateAll() writeback contamination**:
+   - Both engines run (correct per CHEATSHEET.md)
+   - Reference engine calculates with `ref_*` inputs
+   - Results may be written to BOTH `ref_*` AND unprefixed fields
+
+4. **Residual loadReferenceData() effects**:
+   - Import calls `loadReferenceData(d_13)` which populates `activeReferenceDataSet`
+   - Cache may be causing subsequent reads to return wrong values
+   - These wrong values get written back during calculations
+
+**CRITICAL DIAGNOSTIC QUESTIONS:**
+
+1. **Does `importedData` object contain ONLY prefixed fields?**
+   - Expected: `{ref_f_85: "5.30", ref_f_86: "4.10"}` only
+   - Bug: `{d_52: "90", ref_d_52: "90", f_85: "5.30", ref_f_85: "5.30"}` (double write)
+
+2. **What setValue() calls does StateManager receive?**
+   - Expected: `setValue("ref_f_85", "5.30")` only
+   - Bug: BOTH `setValue("f_85", "5.30")` AND `setValue("ref_f_85", "5.30")`
+
+3. **Does syncPatternASections() copy bidirectionally?**
+   - Expected: Sync reads from global StateManager to populate section-local state
+   - Bug: Sync WRITES from section-local state back to global StateManager (bidirectional contamination)
 
 **WHY OUR FIX WORKS FOR DEFAULT STATE:**
 
@@ -630,21 +713,43 @@ function getValue(fieldId) {
 
 ### Diagnostic Logging Strategy
 
-**CRITICAL: Before implementing any fix, we must trace the exact contamination point.**
+**CRITICAL: Before implementing any fix, we must confirm if prefix logic works or if double-write occurs.**
 
-**Phase 1: Instrument Key Write Points**
+**Phase 1: Verify Prefix Logic in applyReferenceValuesFromStandard**
 
-Add logging at these critical locations to trace where unprefixed fields get written:
+Add logging at [FileHandler.js:985-1088](../../src/core/FileHandler.js#L985-L1088) to confirm `importedData` structure:
 
-1. **FileHandler.applyReferenceValuesFromStandard** [FileHandler.js:985-1088](../../src/core/FileHandler.js#L985-L1088)
-   ```javascript
-   console.log(`[FileHandler] Built importedData:`, Object.keys(importedData).slice(0, 10));
-   console.log(`[FileHandler] targetMode="${targetMode}"`);
-   console.log(`[FileHandler] Sample fields:`, {
-     ref_f_85: importedData.ref_f_85,
-     f_85: importedData.f_85 // Should be undefined!
-   });
-   ```
+```javascript
+// AFTER building importedData (around line 1006)
+console.log(`[FileHandler] ===== REFERENCE VALUES OVERLAY DEBUG =====`);
+console.log(`[FileHandler] Standard: "${standard}"`);
+console.log(`[FileHandler] Target Mode: "${targetMode}"`);
+console.log(`[FileHandler] ReferenceValues (unprefixed source):`, Object.keys(referenceValues).slice(0, 10));
+console.log(`[FileHandler] Built importedData (after prefix logic):`, Object.keys(importedData).slice(0, 10));
+console.log(`[FileHandler] CRITICAL CHECK - Does importedData contain unprefixed fields?`);
+console.log(`[FileHandler] Sample fields:`, {
+  f_85: importedData.f_85,       // Should be UNDEFINED in Reference mode
+  ref_f_85: importedData.ref_f_85, // Should be "5.30" in Reference mode
+  f_86: importedData.f_86,       // Should be UNDEFINED in Reference mode
+  ref_f_86: importedData.ref_f_86  // Should be "4.10" in Reference mode
+});
+console.log(`[FileHandler] ==========================================`);
+```
+
+**Expected Log Output (CORRECT):**
+```
+[FileHandler] Standard: "OBC SB10 5.5-6 Z5 (2010)"
+[FileHandler] Target Mode: "reference"
+[FileHandler] ReferenceValues (unprefixed source): ["d_52", "f_85", "f_86", ...]
+[FileHandler] Built importedData (after prefix logic): ["ref_d_52", "ref_f_85", "ref_f_86", ...]
+[FileHandler] Sample fields: { f_85: undefined, ref_f_85: "5.30", f_86: undefined, ref_f_86: "4.10" }
+```
+
+**Bug Log Output (DOUBLE-WRITE):**
+```
+[FileHandler] Sample fields: { f_85: "5.30", ref_f_85: "5.30", f_86: "4.10", ref_f_86: "4.10" }
+                               ^^^^^^^^^^^^ CONTAMINATION!
+```
 
 2. **FileHandler.updateStateFromImportData** [FileHandler.js:536-856](../../src/core/FileHandler.js#L536-L856)
    ```javascript
