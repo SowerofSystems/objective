@@ -373,22 +373,235 @@ FileHandler.js:838 [FileHandler] All imported values set. Explicitly calling loa
 StateManager.js:1656 [StateManager] Step 1: Copied application state to activeReferenceDataSet
 ```
 
-**Analysis**:
-- File import uses `updateStateFromImportData(importedData, 0, false)` at FileHandler.js:457
-- With `skipRecalculation=false`, it calls `loadReferenceData(d_13)`
-- This might be setting up state that causes subsequent "Set Values" to fail
-- Our fix only addressed `applyReferenceValuesFromStandard`, not the import flow
+### Root Cause Analysis (Complete)
 
-**Critical Question**: Are there THREE separate code paths that all need the same fix?
-1. ✅ **ReferenceValues overlay** (applyReferenceValuesFromStandard) - FIXED with skipRecalculation=true
-2. ❌ **CSV import** (processImportedCSV) - Still uses skipRecalculation=false
-3. ❌ **Excel import** (processImportedExcel) - Still uses skipRecalculation=false
+**THREE-STATE ARCHITECTURE IN STATEMANAGER:**
+
+StateManager maintains three separate state containers:
+
+1. **`fields` Map** - Target model state (unprefixed fieldIds: `d_13`, `h_10`, `f_85`, etc.)
+2. **`independentReferenceState` Object** - Reference model state for user-editable fields (stores `ref_` prefixed values)
+3. **`activeReferenceDataSet` Object** - **CACHE** for Reference mode `getValue()` calls
+
+**THE CONTAMINATION MECHANISM:**
+
+When `getValue(fieldId)` is called in Reference mode ([StateManager.js:325-356](../../src/core/StateManager.js#L325-L356)):
+
+```javascript
+function getValue(fieldId) {
+  if (ReferenceToggle.isReferenceMode()) {
+    // Priority 1: Check independentReferenceState
+    if (independentReferenceState[fieldId]) {
+      value = independentReferenceState[fieldId];
+    }
+    // Priority 2: Check activeReferenceDataSet ⚠️ STALE CACHE!
+    else if (activeReferenceDataSet[fieldId]) {
+      value = activeReferenceDataSet[fieldId]; // ❌ Returns Target values post-import
+    }
+    // Priority 3: Fallback to fields Map
+    else {
+      value = fields.get(fieldId)?.value; // ✅ Would return ref_* values if reached
+    }
+  }
+}
+```
+
+**WHY THE CACHE BECOMES STALE:**
+
+**Phase 1: File Import (Working Correctly for Import Itself)**
+1. CSV/Excel import writes with correct prefixes:
+   - Target: `fields.set("d_13", "OBC SB10 5.5-6 Z5")`, `fields.set("f_85", "5.30")`
+   - Reference: `fields.set("ref_d_13", "PH Classic")`, `fields.set("ref_f_85", "4.10")`
+2. Import calls `loadReferenceData("OBC SB10 5.5-6 Z5")` at [FileHandler.js:841](../../src/core/FileHandler.js#L841)
+3. `loadReferenceData()` **REBUILDS** `activeReferenceDataSet` by ([StateManager.js:1621-1797](../../src/core/StateManager.js#L1621-L1797)):
+   - Step 1: Copying **Target model values** from `fields` Map (lines 1640-1654)
+   - Step 2: Overlaying ReferenceValues.js for **Target's d_13 standard** (lines 1737-1760)
+4. **Result**: `activeReferenceDataSet["f_85"] = "5.30"` (Target's OBC standard value)
+
+**Phase 2: User Changes d_13 in Reference Mode**
+1. User switches to Reference mode, selects "PH Classic" from d_13 dropdown
+2. Section02 writes `fields.set("ref_d_13", "PH Classic")` ✅ Correct
+3. **`activeReferenceDataSet` NOT UPDATED** - still contains Target values
+
+**Phase 3: "Set Values" Click (BUG TRIGGERS)**
+1. User clicks "Set Values" → `applyReferenceValuesFromStandard("PH Classic", "reference")`
+2. Builds `importedData` with `ref_` prefixes: `{ref_f_85: "4.10", ref_f_86: "3.20", ...}`
+3. Writes to `fields` Map: `fields.set("ref_f_85", "4.10")` ✅ Correct
+4. Calls `calculateAll()` → **BOTH engines run** (per CHEATSHEET.md dual-engine architecture)
+5. **Reference engine** calls `getValue("f_85")` to read transmission loss value
+6. `getValue()` returns `activeReferenceDataSet["f_85"] = "5.30"` ❌ **STALE TARGET VALUE FROM IMPORT!**
+7. Reference engine calculates with **wrong** value → Reference TEUI uses Target's imported OBC values instead of PH Classic
+8. **Target engine ALSO recalculates** (both engines always run):
+   - Target engine calls `getValue("f_85")` in Target mode
+   - Target mode reads from `fields.get("f_85")` → Returns correct Target value ✅
+   - **BUT**: If `activeReferenceDataSet` somehow pollutes reads, Target could see Reference values ❌
+9. **RESULT**: ReferenceValues.js overlay for "PH Classic" is partially applied to Reference model (user inputs like `ref_d_13`) but calculations use stale Target values from import (OBC standard). This creates a **hybrid contaminated state** where neither model is pure.
+
+**WHY OUR FIX WORKS FOR DEFAULT STATE:**
+
+- Fresh page load → `activeReferenceDataSet` is empty `{}`
+- User selects d_13, clicks "Set Values" → writes `ref_*` values
+- Our fix prevents `loadReferenceData()` → cache stays empty
+- `getValue("f_85")` falls through Priority 2 (empty cache) to Priority 3
+- Reads `fields.get("f_85")` → Returns correct Target value in Target mode ✅
+- In Reference mode, should read `fields.get("ref_f_85")` but Priority 2 prevents reaching Priority 3
+
+**WHY FIX FAILS POST-IMPORT:**
+
+- Import populates `activeReferenceDataSet` with Target values
+- User changes `ref_d_13`, clicks "Set Values" → writes `ref_*` values
+- Our fix prevents **second** `loadReferenceData()` → cache **NOT CLEARED**
+- `getValue("f_85")` in Reference mode hits Priority 2 → returns stale cache ❌
+- Never reaches Priority 3 where fresh `ref_f_85` value exists
+
+### Architectural Issue: activeReferenceDataSet Purpose
+
+**Critical Question**: What is `activeReferenceDataSet` supposed to cache?
+
+**Analysis of `loadReferenceData()` logic:**
+- Copies **Target** model values (Step 1: lines 1640-1654)
+- Overlays ReferenceValues.js for **Target's** d_13 standard (Step 3: lines 1737-1760)
+- **Conclusion**: Cache represents "what Reference model WOULD look like if based on Target's standard"
+
+**This is WRONG for true dual-state isolation:**
+- Reference model should be **100% independent** (per CHEATSHEET.md)
+- `ref_*` fields should be authoritative for Reference state
+- Cache creates hidden coupling between Target standard (d_13) and Reference state
+- **User observation confirms contamination**: After import + "Set Values" in Reference mode, **BOTH** Target and Reference models change, proving the stale cache affects calculations on both sides
+
+### Proposed Solutions
+
+**Option 1: Priority Reordering in getValue() (RECOMMENDED)**
+
+Change Reference mode priority to check `ref_*` fields FIRST:
+
+```javascript
+function getValue(fieldId) {
+  if (ReferenceToggle.isReferenceMode()) {
+    // Priority 1: Check ref_* prefixed field in fields Map (FRESH DATA)
+    const refFieldId = `ref_${fieldId}`;
+    if (fields.has(refFieldId)) {
+      value = fields.get(refFieldId).value; // ✅ Always fresh, authoritative
+    }
+    // Priority 2: Check independentReferenceState (user-editable fields)
+    else if (independentReferenceState[fieldId]) {
+      value = independentReferenceState[fieldId];
+    }
+    // Priority 3: Check activeReferenceDataSet (legacy cache)
+    else if (activeReferenceDataSet[fieldId]) {
+      value = activeReferenceDataSet[fieldId];
+    }
+    // Priority 4: Fallback to Target value
+    else {
+      value = fields.get(fieldId)?.value;
+    }
+  }
+}
+```
+
+**Advantages**:
+- Minimal code change (5 lines in StateManager.js)
+- Preserves existing architecture
+- Fixes both default and post-import scenarios
+- `ref_*` fields become authoritative (true dual-state isolation)
+
+**Disadvantages**:
+- Doesn't address why `activeReferenceDataSet` exists
+- Cache becomes redundant but remains in codebase
+
+**Option 2: Clear Cache When Writing ref_* Fields**
+
+Invalidate cache entries when corresponding `ref_*` field is written:
+
+```javascript
+function setValue(fieldId, value, state) {
+  // ... existing code ...
+
+  // If writing a ref_* field, clear corresponding cache entry
+  if (fieldId.startsWith("ref_")) {
+    const baseFieldId = fieldId.substring(4);
+    if (activeReferenceDataSet[baseFieldId]) {
+      delete activeReferenceDataSet[baseFieldId];
+    }
+  }
+
+  // ... rest of setValue ...
+}
+```
+
+**Advantages**:
+- Maintains cache for performance
+- Ensures cache never stale
+
+**Disadvantages**:
+- More complex (cache invalidation is hard)
+- Doesn't fix fundamental design issue
+- Cache rebuilds on every `loadReferenceData()` call anyway
+
+**Option 3: Deprecate activeReferenceDataSet Entirely**
+
+Remove cache, always read from authoritative sources:
+
+```javascript
+function getValue(fieldId) {
+  if (ReferenceToggle.isReferenceMode()) {
+    // Check ref_* field first
+    const refFieldId = `ref_${fieldId}`;
+    if (fields.has(refFieldId)) {
+      return fields.get(refFieldId).value;
+    }
+    // Check independentReferenceState
+    if (independentReferenceState[fieldId]) {
+      return independentReferenceState[fieldId];
+    }
+    // Fallback to Target (for fields without ref_* variants)
+    return fields.get(fieldId)?.value || null;
+  }
+}
+```
+
+**Advantages**:
+- Simplest architecture
+- No cache staleness possible
+- True dual-state isolation
+- Removes 200+ lines of cache management code
+
+**Disadvantages**:
+- Requires understanding why cache was added (performance? legacy?)
+- May break assumptions in other code
+
+### Additional Import Code Paths
+
+**Are there THREE separate code paths that all need fixes?**
+
+1. ✅ **ReferenceValues overlay** ([FileHandler.js:1022](../../src/core/FileHandler.js#L1022)) - FIXED with `skipRecalculation=true`
+2. ❌ **CSV import** ([FileHandler.js:457](../../src/core/FileHandler.js#L457)) - Uses `skipRecalculation=false`
+3. ❌ **Excel import** ([FileHandler.js:189](../../src/core/FileHandler.js#L189)) - Uses `skipRecalculation=false`
 4. ❓ **Copy from Target** (menu option) - Unknown status
 
-**Next Steps**:
-- Investigate if file import's `loadReferenceData()` call is corrupting state
-- Determine if we need separate mute/unmute/quarantine patterns for each operation
-- Consider if skipRecalculation logic needs fundamental redesign
+**Analysis**: Import paths SHOULD call `loadReferenceData(d_13)` because:
+- Imports Target values (unprefixed) into `fields` Map
+- Need to initialize `activeReferenceDataSet` for Reference mode display
+- **BUT** this creates the stale cache problem for subsequent operations
+
+**Import paths are NOT the bug** - they correctly populate both models. The bug is that `activeReferenceDataSet` is never updated when `ref_*` fields change.
+
+### Recommendation
+
+**Implement Option 1 (Priority Reordering)** as the immediate fix:
+- Minimal risk, surgical change
+- Fixes both default and post-import scenarios
+- Makes `ref_*` fields authoritative for Reference state
+- Preserves existing architecture for backward compatibility
+
+**Future refactor (v4.013)**: Consider Option 3 to simplify architecture and remove cache entirely.
+
+### Next Steps
+
+1. Test Option 1 fix in isolated branch
+2. Verify with test sequence: Import → Switch to Reference → Change d_13 → Set Values
+3. Confirm both engines run with correct isolated states
+4. Check that Target model unchanged, Reference model updated correctly
 
 ---
 
