@@ -424,18 +424,50 @@ function getValue(fieldId) {
 3. **`activeReferenceDataSet` NOT UPDATED** - still contains Target values
 
 **Phase 3: "Set Values" Click (BUG TRIGGERS)**
-1. User clicks "Set Values" → `applyReferenceValuesFromStandard("PH Classic", "reference")`
-2. Builds `importedData` with `ref_` prefixes: `{ref_f_85: "4.10", ref_f_86: "3.20", ...}`
-3. Writes to `fields` Map: `fields.set("ref_f_85", "4.10")` ✅ Correct
-4. Calls `calculateAll()` → **BOTH engines run** (per CHEATSHEET.md dual-engine architecture)
-5. **Reference engine** calls `getValue("f_85")` to read transmission loss value
-6. `getValue()` returns `activeReferenceDataSet["f_85"] = "5.30"` ❌ **STALE TARGET VALUE FROM IMPORT!**
-7. Reference engine calculates with **wrong** value → Reference TEUI uses Target's imported OBC values instead of PH Classic
-8. **Target engine ALSO recalculates** (both engines always run):
-   - Target engine calls `getValue("f_85")` in Target mode
-   - Target mode reads from `fields.get("f_85")` → Returns correct Target value ✅
-   - **BUT**: If `activeReferenceDataSet` somehow pollutes reads, Target could see Reference values ❌
-9. **RESULT**: ReferenceValues.js overlay for "PH Classic" is partially applied to Reference model (user inputs like `ref_d_13`) but calculations use stale Target values from import (OBC standard). This creates a **hybrid contaminated state** where neither model is pure.
+
+**⚠️ CRITICAL: ACTUAL OBSERVED BUG** (confirmed by user testing post-import):
+
+**Test Scenario:**
+1. Import CSV/Excel with Target model using "OBC SB10 5.5-6 Z5 (2010)" and Reference model using "PH Classic"
+2. Switch to **Reference mode**
+3. Change d_13 dropdown to **"OBC SB10 5.5-6 Z5 (2010)"** (different from imported Reference standard)
+4. Click **"Set Values"** button
+
+**EXPECTED BEHAVIOR:**
+- Reference model receives OBC values: `ref_f_85 = "5.30"`, `ref_f_86 = "4.10"`, `ref_f_87 = "6.60"`
+- **Target model UNCHANGED**: `f_85`, `f_86`, `f_87` retain original imported values
+- Section 11 Reference TEUI updates, Target TEUI unchanged
+
+**ACTUAL BEHAVIOR (BUG):**
+- Reference model receives OBC values: `ref_f_85 = "5.30"`, `ref_f_86 = "4.10"`, `ref_f_87 = "6.60"` ✅
+- **Target model CONTAMINATED**: `f_85 = "5.30"`, `f_86 = "4.10"`, `f_87 = "6.60"` ❌
+- **BOTH** Section 11 Target TEUI AND Reference TEUI change to OBC values
+- **Visual proof**: User observes both calculated results change when only Reference should change
+
+**This is DIRECT WRITE CONTAMINATION:**
+- Literal ReferenceValues.js data for "OBC SB10 5.5-6 Z5 (2010)" overwrites **BOTH** Target (`f_85`) AND Reference (`ref_f_85`) fields
+- Not a stale cache read issue - actual StateManager writes to wrong fields
+- Both engines run (correct per CHEATSHEET.md), but **Target engine calculates with contaminated inputs**
+
+**Code Flow Analysis** (hypothesized - requires logging to confirm):
+
+```javascript
+// FileHandler.applyReferenceValuesFromStandard("OBC SB10...", "reference")
+const importedData = {};
+Object.entries(referenceValues).forEach(([fieldId, value]) => {
+  const targetFieldId = targetMode === "reference" ? `ref_${fieldId}` : fieldId;
+  importedData[targetFieldId] = value; // ✅ Builds: {ref_f_85: "5.30", ref_f_86: "4.10", ...}
+});
+
+// Writes to StateManager
+this.updateStateFromImportData(importedData, 0, true); // skipRecalculation=true ✅
+
+// ❌ SUSPECTED BUG SOURCES:
+// 1. updateStateFromImportData() may be writing BOTH ref_* AND unprefixed fields
+// 2. syncPatternASections() may be copying ref_* values back to unprefixed fields
+// 3. calculateAll() reading from contaminated state and writing back to Target
+// 4. loadReferenceData() from import still affecting subsequent operations
+```
 
 **WHY OUR FIX WORKS FOR DEFAULT STATE:**
 
@@ -596,12 +628,117 @@ function getValue(fieldId) {
 
 **Future refactor (v4.013)**: Consider Option 3 to simplify architecture and remove cache entirely.
 
+### Diagnostic Logging Strategy
+
+**CRITICAL: Before implementing any fix, we must trace the exact contamination point.**
+
+**Phase 1: Instrument Key Write Points**
+
+Add logging at these critical locations to trace where unprefixed fields get written:
+
+1. **FileHandler.applyReferenceValuesFromStandard** [FileHandler.js:985-1088](../../src/core/FileHandler.js#L985-L1088)
+   ```javascript
+   console.log(`[FileHandler] Built importedData:`, Object.keys(importedData).slice(0, 10));
+   console.log(`[FileHandler] targetMode="${targetMode}"`);
+   console.log(`[FileHandler] Sample fields:`, {
+     ref_f_85: importedData.ref_f_85,
+     f_85: importedData.f_85 // Should be undefined!
+   });
+   ```
+
+2. **FileHandler.updateStateFromImportData** [FileHandler.js:536-856](../../src/core/FileHandler.js#L536-L856)
+   ```javascript
+   // PASS 1 & PASS 2 logging
+   allEntries.forEach(([fieldId, value]) => {
+     if (fieldId === 'f_85' || fieldId === 'ref_f_85' || fieldId === 'f_86' || fieldId === 'ref_f_86') {
+       console.log(`[FileHandler] Writing ${fieldId} = "${value}" (pass ${passNumber})`);
+       console.trace(`[FileHandler] Stack trace for ${fieldId} write`);
+     }
+   });
+   ```
+
+3. **StateManager.setValue** [StateManager.js:365](../../src/core/StateManager.js#L365)
+   ```javascript
+   // Track BOTH f_85 and ref_f_85 writes
+   if (['f_85', 'ref_f_85', 'f_86', 'ref_f_86', 'f_87', 'ref_f_87'].includes(fieldId)) {
+     console.log(`[StateManager.setValue] ${fieldId} = "${value}" (state: ${state})`);
+     console.trace(`[StateManager] Stack trace for ${fieldId} write`);
+   }
+   ```
+
+4. **Pattern A Section Sync** [FileHandler.js:864-975](../../src/core/FileHandler.js#L864-L975)
+   ```javascript
+   // syncPatternASections() - check if bidirectional copy
+   console.log(`[FileHandler] BEFORE sync - Target f_85:`, this.stateManager.getValue('f_85'));
+   console.log(`[FileHandler] BEFORE sync - Ref ref_f_85:`, this.stateManager.getValue('ref_f_85'));
+
+   this.syncPatternASections();
+
+   console.log(`[FileHandler] AFTER sync - Target f_85:`, this.stateManager.getValue('f_85'));
+   console.log(`[FileHandler] AFTER sync - Ref ref_f_85:`, this.stateManager.getValue('ref_f_85'));
+   ```
+
+**Phase 2: Test Sequence with Logging**
+
+1. Import CSV/Excel file (Target="OBC SB10 5.5-6 Z5 (2010)", Reference="PH Classic")
+2. Verify import values:
+   ```javascript
+   {
+     target_f_85: window.TEUI.StateManager.getValue('f_85'),
+     ref_f_85: window.TEUI.StateManager.getValue('ref_f_85')
+   }
+   ```
+3. Switch to Reference mode
+4. Change d_13 to "OBC SB10 5.5-6 Z5 (2010)"
+5. **BEFORE** clicking "Set Values", log baseline:
+   ```javascript
+   console.log('BASELINE BEFORE "Set Values":');
+   console.log('Target f_85:', window.TEUI.StateManager.getValue('f_85'));
+   console.log('Ref ref_f_85:', window.TEUI.StateManager.getValue('ref_f_85'));
+   ```
+6. Click "Set Values"
+7. **AFTER** "Set Values", compare:
+   ```javascript
+   console.log('AFTER "Set Values":');
+   console.log('Target f_85:', window.TEUI.StateManager.getValue('f_85')); // Should be UNCHANGED
+   console.log('Ref ref_f_85:', window.TEUI.StateManager.getValue('ref_f_85')); // Should be "5.30"
+   ```
+
+**Phase 3: Analyze Logs**
+
+Look for:
+- ❌ **Direct contamination**: `setValue('f_85', '5.30')` called when it should only be `setValue('ref_f_85', '5.30')`
+- ❌ **Bidirectional sync**: `syncPatternASections()` copying `ref_f_85 → f_85`
+- ❌ **Double write**: Both `ref_f_85` and `f_85` in `importedData` object
+- ❌ **Calculation writeback**: `calculateAll()` writing Reference results to Target fields
+
+**Expected Log Pattern (CORRECT behavior):**
+```
+[FileHandler] Built importedData: ["ref_f_85", "ref_f_86", "ref_f_87", ...]
+[FileHandler] Sample fields: { ref_f_85: "5.30", f_85: undefined }
+[StateManager.setValue] ref_f_85 = "5.30" (state: imported)
+AFTER "Set Values":
+Target f_85: [unchanged]
+Ref ref_f_85: "5.30"
+```
+
+**Bug Log Pattern (CONTAMINATION):**
+```
+[FileHandler] Built importedData: ["ref_f_85", "ref_f_86", "f_85", "f_86", ...]
+[FileHandler] Sample fields: { ref_f_85: "5.30", f_85: "5.30" } ← BUG!
+[StateManager.setValue] ref_f_85 = "5.30" (state: imported)
+[StateManager.setValue] f_85 = "5.30" (state: imported) ← CONTAMINATION!
+```
+
 ### Next Steps
 
-1. Test Option 1 fix in isolated branch
-2. Verify with test sequence: Import → Switch to Reference → Change d_13 → Set Values
-3. Confirm both engines run with correct isolated states
-4. Check that Target model unchanged, Reference model updated correctly
+1. **IMMEDIATE**: Add diagnostic logging to trace contamination point
+2. **BEFORE ANY CODE CHANGES**: Run test sequence and capture full log output
+3. **ANALYZE**: Identify exact line/function writing to unprefixed fields
+4. **FIX**: Surgical correction at contamination source
+5. **VERIFY**: Retest with logging to confirm fix
+
+**DO NOT IMPLEMENT SOLUTION UNTIL CONTAMINATION SOURCE CONFIRMED BY LOGS.**
 
 ---
 
