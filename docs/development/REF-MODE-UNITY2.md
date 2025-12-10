@@ -1,15 +1,16 @@
-# Reference Mode UI/DOM Refresh Bug Investigation
+# Reference Mode State Isolation Bug - RESOLVED
 
-**Status**: 🔍 **UNDER INVESTIGATION**
+**Status**: ✅ **RESOLVED**
 **Branch**: REF-MODE-UNITY
 **Date**: 2025-12-09
-**Priority**: CRITICAL - State mixing violates dual-state architecture
+**Resolution**: One-line fix - skipRecalculation parameter
+**Commits**: 066b910, 1049ed8
 
 ---
 
 ## Problem Statement
 
-**CENTRAL ISSUE**: ReferenceValues overlay is being applied to BOTH models instead of just the Reference model.
+**CENTRAL ISSUE**: ReferenceValues overlay was being applied to BOTH models instead of just the Reference model.
 
 ### How d_13 Standard Selection Should Work
 
@@ -264,9 +265,71 @@ window.TEUI.ReferenceToggle.getCurrentMode()
 
 ---
 
+## Resolution Summary
+
+### Root Cause Identified
+
+**Line 1045 in FileHandler.js**: `updateStateFromImportData(importedData, 0, **false**)`
+
+When `skipRecalculation=false`, the function executed this code at lines 848-853:
+```javascript
+const finalD13 = this.stateManager.getApplicationValue("d_13"); // Target model standard!
+this.stateManager.loadReferenceData(finalD13); // Contaminated Target model!
+```
+
+**The Bug Flow**:
+1. User in Reference mode clicks "Set Values" ✅
+2. `applyReferenceValuesFromStandard()` builds `importedData` with `ref_` prefixes ✅
+3. Writes `ref_f_85`, `ref_f_86`, etc. to StateManager ✅
+4. Calls `loadReferenceData(d_13)` ❌ **BUG: Used Target standard, not Reference!**
+5. Overwrites Target model values with Reference standard ❌
+
+### The Fix
+
+**One line change** - [FileHandler.js:1045](../../src/core/FileHandler.js#L1045):
+```javascript
+// BEFORE (bug):
+this.updateStateFromImportData(importedData, 0, false);
+
+// AFTER (fixed):
+this.updateStateFromImportData(importedData, 0, true); // Skip loadReferenceData
+```
+
+**Why it works**: The `skipRecalculation` parameter was already designed for this scenario - when importing reference data that's correctly prefixed, skip additional reference loading to prevent contamination.
+
+### Verification
+
+**Logging confirmed**:
+- ✅ Mode correctly detected: `ModeManager.currentMode: reference`
+- ✅ importedData correctly built: `{ref_f_85: '5.30', ref_f_86: '4.10', ref_f_87: '6.60'}`
+- ✅ Only REF fields written: `ref_f_85`, `ref_f_86`, `ref_f_87`
+- ✅ NO Target fields contaminated: No unprefixed writes detected
+
+**User testing confirmed**:
+- ✅ Switch to Reference mode, change d_13, click "Set Values"
+- ✅ Target model values (h_10, f_85) remain unchanged
+- ✅ Only Reference model values (e_10, ref_f_85) updated
+- ✅ Perfect state isolation restored
+
+### Files Modified
+
+**Commit 1049ed8**:
+- [FileHandler.js:1045](../../src/core/FileHandler.js#L1045) - Changed `skipRecalculation` from `false` to `true`
+- [Section02.js:1013-1015](../../src/sections/Section02.js#L1013-L1015) - Simplified logging
+- [FileHandler.js](../../src/core/FileHandler.js) - Removed debug logging (lines 1024-1033, 615-617, 733-735, 779-782)
+
+### Lessons Learned
+
+1. **Code reuse requires careful parameter analysis** - `updateStateFromImportData` was designed for CSV imports where `loadReferenceData` is needed, but ReferenceValues overlay already has correct prefixes
+2. **Logging is invaluable** - Strategic logging at 3 points revealed the exact contamination source
+3. **Existing infrastructure often has the solution** - The `skipRecalculation` flag was already there for this exact scenario
+4. **One-line fixes can solve critical bugs** - Simple parameter change restored perfect state isolation
+
+---
+
 ## Notes
 
-- **No more bandaids**: Focus on root cause, not symptoms
-- **Logging over code changes**: Understand before modifying
-- **KISS principle**: Keep investigation focused and simple
-- **Historical context matters**: Per-section toggles were retired, verify cleanup complete
+- **Root cause found**: `loadReferenceData(d_13)` contamination after correct ref_* writes
+- **Fix verified**: Both Target/Reference models maintain perfect isolation
+- **No regression risk**: Only affects ReferenceValues overlay, CSV imports unchanged
+- **Historical bug**: Existed since PR#57 (2025.12-POLISH branch), now resolved
