@@ -803,6 +803,48 @@ function getValue(fieldId) {
 
 **Future refactor (v4.013)**: Consider Option 3 to simplify architecture and remove cache entirely.
 
+### 🎯 ROOT CAUSE IDENTIFIED (Dec 10, 2025 - from Logs.md)
+
+**THE BUG**: `syncPatternASections()` → `syncAreasFromS10()` → `calculateAll()` → `calculateTargetModel()` writes to unprefixed `f_85`, `f_86`, `f_87` fields during Reference mode operation!
+
+**Evidence from stack traces** ([Logs.md](./Logs.md) lines 89-127):
+
+```
+[StateManager] Stack trace for f_85 write:  ← UNPREFIXED! BUG!
+setValue @ StateManager.js:370
+setValue @ Section11.js:476              ← Section11 writes unprefixed field
+setCalculatedValue @ Section11.js:2088
+calculateComponentRow @ Section11.js:2553
+calculateTargetModel @ Section11.js:3118 ← TARGET model calculating!
+calculateAll @ Section11.js:3284
+syncAreasFromS10 @ Section11.js:2312     ← Triggered during sync!
+syncPatternASections @ FileHandler.js:964 ← Called after ref_* writes
+applyReferenceValuesFromStandard @ FileHandler.js:1057
+```
+
+**The Contamination Flow**:
+
+1. ✅ User in Reference mode clicks "Set Values"
+2. ✅ `applyReferenceValuesFromStandard()` correctly writes `ref_f_85: "5.30"`, `ref_f_86: "4.10"`, `ref_f_87: "6.60"`
+3. ✅ Calls `syncPatternASections()` at [FileHandler.js:1057](../src/core/FileHandler.js#L1057)
+4. ❌ **BUG**: `syncPatternASections()` calls `syncAreasFromS10()` at [FileHandler.js:964](../src/core/FileHandler.js#L964)
+5. ❌ **BUG**: `syncAreasFromS10()` calls `calculateAll()` at [Section11.js:2312](../src/sections/Section11.js#L2312)
+6. ❌ **BUG**: `calculateAll()` runs **BOTH** `calculateReferenceModel()` AND `calculateTargetModel()`
+7. ❌ **BUG**: `calculateTargetModel()` writes `f_85: "5.30"`, `f_86: "4.10"`, `f_87: "6.60"` (unprefixed!)
+8. ❌ **RESULT**: Target model contaminated with Reference standard values
+
+**Why This Happens**:
+
+- `syncAreasFromS10()` syncs Section 11 window areas from Section 10 dimensions
+- It calls `calculateAll()` to recalculate transmission losses with updated areas
+- **`calculateAll()` ALWAYS runs BOTH engines** (per CHEATSHEET.md dual-engine architecture)
+- `calculateTargetModel()` calculates using **current mode's values**
+- In Reference mode, it reads `ref_f_85` but **writes to unprefixed `f_85`** ← **BUG!**
+
+**The Core Issue**:
+
+Section11's `calculateTargetModel()` is NOT mode-aware for its writes. It reads from correct prefixed sources but writes to unprefixed fields regardless of mode.
+
 ### Diagnostic Logging Strategy
 
 **🔖 SAFE RESTORE POINT**: `0d7b7bfe1f7e190a73dc91e74817cfcfb01a71ec`
@@ -810,7 +852,7 @@ function getValue(fieldId) {
 - Commit: "Docs: Legacy onReferenceStandardChange() callbacks may contaminate both models"
 - To restore: `git reset --hard 0d7b7bfe1f7e190a73dc91e74817cfcfb01a71ec`
 
-**CRITICAL: Before implementing any fix, we must confirm if prefix logic works or if double-write occurs.**
+**✅ DIAGNOSTIC COMPLETE**: Prefix logic works correctly. Contamination occurs during `syncAreasFromS10()` → `calculateAll()` → `calculateTargetModel()` flow.
 
 **Phase 1: Verify Prefix Logic in applyReferenceValuesFromStandard**
 
