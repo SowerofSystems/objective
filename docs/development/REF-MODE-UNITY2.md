@@ -3,8 +3,8 @@
 **Status**: ✅ **RESOLVED**
 **Branch**: REF-MODE-UNITY
 **Date**: 2025-12-09
-**Resolution**: One-line fix - skipRecalculation parameter
-**Commits**: 066b910, 1049ed8
+**Resolution**: Two critical fixes - skipRecalculation parameter + refreshUI state source
+**Commits**: 066b910, 1049ed8, 1a7f6d3, f661113
 
 ---
 
@@ -313,23 +313,51 @@ this.updateStateFromImportData(importedData, 0, true); // Skip loadReferenceData
 
 ### Files Modified
 
-**Commit 1049ed8**:
+**Commit 1049ed8** - Primary fix (state contamination):
 - [FileHandler.js:1045](../../src/core/FileHandler.js#L1045) - Changed `skipRecalculation` from `false` to `true`
 - [Section02.js:1013-1015](../../src/sections/Section02.js#L1013-L1015) - Simplified logging
-- [FileHandler.js](../../src/core/FileHandler.js) - Removed debug logging (lines 1024-1033, 615-617, 733-735, 779-782)
+- [FileHandler.js](../../src/core/FileHandler.js) - Removed debug logging
+
+**Commit 1a7f6d3** - Secondary fix (d_13 dropdown refresh):
+- [Section02.js:1866-1868](../../src/sections/Section02.js#L1866-L1868) - Changed refreshUI() to read d_13 from StateManager instead of section-local state
+
+### Secondary Issue: d_13 Dropdown Not Refreshing
+
+**Problem**: After fixing state contamination, d_13 dropdown still showed wrong value when switching modes.
+
+**Root Cause**:
+- "Set Values" writes to StateManager (`ref_d_13` or `d_13`)
+- `refreshUI()` reads from section-local state (`currentState.getValue("d_13")`)
+- Section-local state not synced from StateManager
+- Dropdown showed stale value from local state
+
+**Fix** - [Section02.js:1866-1868](../../src/sections/Section02.js#L1866-L1868):
+```javascript
+// BEFORE (bug):
+const d13Value = currentState.getValue("d_13");
+
+// AFTER (fixed):
+const d13FieldId = this.currentMode === "reference" ? "ref_d_13" : "d_13";
+const d13Value = window.TEUI.StateManager.getValue(d13FieldId);
+```
+
+**Why it works**: Now reads from StateManager (global state) with correct mode prefix, same location where "Set Values" writes.
 
 ### Lessons Learned
 
 1. **Code reuse requires careful parameter analysis** - `updateStateFromImportData` was designed for CSV imports where `loadReferenceData` is needed, but ReferenceValues overlay already has correct prefixes
 2. **Logging is invaluable** - Strategic logging at 3 points revealed the exact contamination source
 3. **Existing infrastructure often has the solution** - The `skipRecalculation` flag was already there for this exact scenario
-4. **One-line fixes can solve critical bugs** - Simple parameter change restored perfect state isolation
+4. **State source consistency is critical** - When feature writes to global state, UI refresh must read from same location
+5. **One-line fixes can solve critical bugs** - Two simple changes (parameter + state source) restored perfect state isolation
 
 ---
 
 ## Notes
 
-- **Root cause found**: `loadReferenceData(d_13)` contamination after correct ref_* writes
-- **Fix verified**: Both Target/Reference models maintain perfect isolation
+- **Two bugs, two fixes**:
+  1. State contamination: `loadReferenceData(d_13)` after correct ref_* writes
+  2. UI refresh: `refreshUI()` reading from wrong state location
+- **Both fixes verified**: Perfect state isolation + correct dropdown display
 - **No regression risk**: Only affects ReferenceValues overlay, CSV imports unchanged
-- **Historical bug**: Existed since PR#57 (2025.12-POLISH branch), now resolved
+- **Historical bug**: Existed since PR#57 (2025.12-POLISH branch), now fully resolved
