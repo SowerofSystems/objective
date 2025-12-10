@@ -1,11 +1,14 @@
-# Reference Mode State Isolation Bug - RESOLVED
+# Reference Mode State Isolation Bug - INVESTIGATION ONGOING
 
-**Status**: ⚠️ **PARTIALLY RESOLVED - POST-IMPORT REGRESSION**
+**Status**: ⚠️ **PARTIALLY RESOLVED - CORE ISSUE UNRESOLVED**
 **Branch**: REF-MODE-UNITY
-**Date**: 2025-12-09
-**Resolution**: Two critical fixes - skipRecalculation parameter + refreshUI state source
-**Commits**: 066b910, 1049ed8, 1a7f6d3, f661113, 3a4f188
-**Regression**: Bug returns after CSV/Excel file import
+**Date**: 2025-12-09 to 2025-12-10
+**Fixes Applied**: Three fixes implemented
+**Commits**: 066b910, 1049ed8, 1a7f6d3, f661113, 3a4f188, 0e319e6
+**Current State**:
+- ✅ Works on fresh page load
+- ❌ Contamination persists post-import (h_10 changes when it shouldn't)
+- ❓ **Root cause still not fully understood**
 
 ---
 
@@ -986,11 +989,79 @@ Ref ref_f_85: "5.30"
 
 ---
 
+## What We DON'T Know (Dec 10, 2025 - Evening)
+
+### The Neverending Bug
+
+After multiple debugging sessions and three attempted fixes, contamination persists post-import. The logs ([Logs.md](./Logs.md) lines 89-127) clearly show `Section11.calculateTargetModel()` writing unprefixed `f_85`, `f_86`, `f_87` fields during Reference mode "Set Values" operation, but **we don't understand WHY this is architecturally wrong or how it should work**.
+
+### Failed Approaches (Stashed in git)
+
+1. **Listener muting during calculateAll()** (commits ec03b76, 8e77962) - Reverted
+   - Only delayed contamination, didn't prevent it
+   - Contamination happened during muted phase itself
+
+2. **Mode-aware calculateAll() parameter** (commit 2a3c081, 67cbf0d) - Reverted
+   - Changed core Calculator.js and section signatures
+   - Too invasive without understanding cascading effects
+   - Cannot make sweeping architecture changes without full context
+
+### What We Think We Know (But Maybe Don't)
+
+**From Logs.md lines 89-127:**
+```
+setValue(ref_f_85) [FileHandler writes correctly] ✅
+  ↓
+calculateAll() runs
+  ↓
+Section11.calculateReferenceModel() writes ref_f_85, ref_f_86, ref_f_87 ✅
+  ↓
+Section11.calculateTargetModel() writes f_85, f_86, f_87 ❌ CONTAMINATION
+```
+
+**The Question:** Is this flow fundamentally wrong? Or is there something upstream that should prevent `calculateTargetModel()` from running with contaminated inputs?
+
+### What Actually Works
+
+- ✅ Fresh page load: "Set Values" in Reference mode works perfectly
+- ✅ Import: CSV/Excel import maintains perfect state isolation
+- ❌ Post-import + "Set Values": h_10 (Target TEUI) changes when it shouldn't
+
+### Critical Observations
+
+1. **The prefix logic IS correct** - `importedData` contains ONLY `ref_*` fields
+2. **The writes ARE correct** - Only `ref_f_85`, `ref_f_86`, `ref_f_87` written by FileHandler
+3. **The contamination happens IN calculateAll()** - Section11 Target model writes unprefixed fields
+4. **This may be architecturally correct** - Dual-engine design runs both models always?
+
+### What We Need to Understand
+
+**Before attempting any more fixes, we need to answer:**
+
+1. **HOW SHOULD IT WORK?** - Not "where does it break" but "what is the intended design"
+2. Is `calculateAll()` SUPPOSED to run both Target and Reference models always?
+3. Is Section11.calculateTargetModel() SUPPOSED to read from current inputs and write unprefixed fields?
+4. If yes, what mechanism SHOULD prevent contamination during overlay operations?
+5. Is the dual-engine architecture itself incompatible with mode-aware overlays?
+
+### Recommendation
+
+**STOP attempting fixes.** Start with a fresh session that explains:
+- How the dual-engine calculation architecture is DESIGNED to work
+- How overlay operations are SUPPOSED to interact with calculations
+- What the intended isolation mechanism IS (not what we think it should be)
+
+AI agents may be pattern-matching "this looks wrong" without understanding "this is how it's designed to work."
+
+---
+
 ## Notes
 
-- **Two bugs, two fixes (for default/initialization scenario)**:
-  1. State contamination: `loadReferenceData(d_13)` after correct ref_* writes
-  2. UI refresh: `refreshUI()` reading from wrong state location
+- **Three fixes implemented (for default/fresh state)**:
+  1. State contamination: `skipRecalculation=true` prevents `loadReferenceData()`
+  2. UI refresh: `refreshUI()` reads from StateManager not section-local state
+  3. Sync path: `skipAreaSync=true` prevents `syncAreasFromS10()` contamination
 - **Fixes verified for default state**: Perfect state isolation + correct dropdown display
-- **REGRESSION**: Bug returns after file import - suggests deeper architectural issue
-- **Historical bug**: Existed since PR#57 (2025.12-POLISH branch), partially resolved
+- **POST-IMPORT REGRESSION PERSISTS**: h_10 changes when clicking "Set Values" in Reference mode
+- **Root cause unknown**: May be fundamental architecture issue, not a bug
+- **Historical bug**: Existed since PR#57 (2025.12-POLISH branch)
