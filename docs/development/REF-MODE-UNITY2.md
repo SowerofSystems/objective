@@ -362,13 +362,26 @@ const d13Value = window.TEUI.StateManager.getValue(d13FieldId);
 
 **The Bug**: After CSV/Excel import, clicking "Set Values" in Reference mode contaminates **BOTH** Target and Reference models with the same ReferenceValues.js data.
 
-**Root Cause Discovery**: ReferenceValues.js is a **legacy single-state data structure** that was never updated for dual-state architecture. It contains only **unprefixed field names** (`d_52`, `f_85`) with no `ref_` variants, unlike CSV imports which explicitly separate Target (row 2) and Reference (row 3) data.
+**CORRECTED UNDERSTANDING**: The issue is NOT that ReferenceValues.js needs dual-state data. ReferenceValues.js **correctly** contains mode-agnostic, unprefixed field names. The **FileHandler's responsibility** is to apply these values mode-aware-ly based on current UI state.
 
-**Key Insight**: CSV imports work because they have **mode-aware structure** (separate rows for Target/Reference). ReferenceValues.js overlay fails because it has **mode-unaware structure** (unprefixed field names only). The prefix logic in FileHandler is correct, but something downstream is contaminating both models.
+**The Real Problem**: FileHandler has **three distinct responsibilities** that must ALL respect mode isolation:
+1. **CSV/Excel Import**: Explicitly mode-aware (row 2=Target, row 3=Reference) → ✅ WORKS
+2. **ReferenceValues Overlay** ("Set Values" button): Should be mode-aware via `targetMode` parameter → ❌ FAILS POST-IMPORT
+3. **Copy Target to Reference**: Should copy `d_52 → ref_d_52` explicitly → ❓ UNKNOWN
 
-**Next Step**: Diagnostic logging to confirm whether:
-- Option A: Prefix logic builds `importedData` incorrectly (both prefixed and unprefixed fields)
-- Option B: Prefix logic correct, but `updateStateFromImportData()` or `syncPatternASections()` writes to both models
+**Key Architectural Insight**:
+- ReferenceValues.js is **correctly designed** as a single source of truth with unprefixed field names
+- FileHandler's `applyReferenceValuesFromStandard()` **correctly adds prefix** based on mode at line 1003-1004
+- **BUT**: Something in the downstream flow (after import) contaminates both models despite correct prefix logic
+
+**The Question**: Why does the SAME code path work on fresh page load but fail after import?
+
+**Hypothesis**: Import's `loadReferenceData()` call poisons `activeReferenceDataSet` or another shared state, causing subsequent "Set Values" operations to contaminate both models.
+
+**Next Step**: Diagnostic logging to confirm where the contamination occurs:
+- Does `importedData` contain ONLY prefixed fields? (Test prefix logic)
+- What `setValue()` calls reach StateManager? (Test write operations)
+- Does `syncPatternASections()` copy bidirectionally? (Test sync contamination)
 
 ---
 
@@ -465,34 +478,37 @@ function getValue(fieldId) {
 - Not a stale cache read issue - actual StateManager writes to wrong fields
 - Both engines run (correct per CHEATSHEET.md), but **Target engine calculates with contaminated inputs**
 
-### BREAKTHROUGH: ReferenceValues.js is Mode-Unaware (Dec 9, 2025 - Evening)
+### BREAKTHROUGH: FileHandler Mode Intelligence Failure (Dec 9, 2025 - Evening)
 
-**THE FUNDAMENTAL ARCHITECTURAL MISMATCH:**
+**CORRECTED ARCHITECTURAL UNDERSTANDING:**
 
-**CSV Import Structure (Mode-Aware - WORKS):**
+**CSV Import Structure (Explicitly Dual-State - WORKS):**
 ```csv
 Row 1 (headers):  d_52,  f_85,   f_86,   ...
 Row 2 (Target):   "90",  "5.30", "4.10", ...  → writes to d_52, f_85, f_86
 Row 3 (Reference):"92",  "4.87", "4.21", ...  → writes to ref_d_52, ref_f_85, ref_f_86
 ```
 
-FileHandler processes CSV with **explicit dual-state rows**:
-- Row 2 → Target model (unprefixed)
-- Row 3 → Reference model (`ref_` prefix added during import)
+FileHandler processes CSV with **explicit dual-state rows** - no mode detection needed.
 
-**ReferenceValues.js Structure (Mode-Unaware - BROKEN):**
+**ReferenceValues.js Structure (Mode-Agnostic - CORRECT DESIGN):**
 ```javascript
 TEUI.ReferenceValues = {
   "OBC SB10 5.5-6 Z5 (2010)": {
-    d_52: "90",    // ← UNPREFIXED field names only
-    f_85: "5.30",  // ← NO ref_ variants exist
-    f_86: "4.10",  // ← Data is mode-agnostic
-    // NO ref_d_52, NO ref_f_85, NO ref_f_86
+    d_52: "90",    // ← Unprefixed = mode-agnostic single source of truth
+    f_85: "5.30",  // ← FileHandler adds prefix based on current mode
+    f_86: "4.10",  // ← NO need for ref_ variants in data file
   }
 }
 ```
 
-**Critical Insight:** ReferenceValues.js was designed when TEUI was **single-state only**. Field IDs are **unprefixed** because there was only one model. The file was **never updated** for dual-state architecture.
+**Critical Insight:** ReferenceValues.js is **correctly designed** as mode-agnostic. It should NOT contain `ref_` variants. FileHandler's **responsibility** is to:
+1. Read unprefixed values from ReferenceValues.js
+2. Detect current mode (Target or Reference)
+3. Add appropriate prefix (`ref_` or none) based on mode
+4. Write ONLY to the active model
+
+**This works on fresh page load. Why does it fail post-import?**
 
 **Code Flow Analysis:**
 
