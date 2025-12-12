@@ -916,25 +916,66 @@ Sections maintain isolated state objects:
 **What Fails**:
 - ❌ Post-import Set Values: Both models sync to same values
 
-**Root Cause (CONFIRMED)**:
-1. **Conflicting mode detection**: StateManager checks global UI state (`ReferenceToggle.isReferenceMode()`), but sections set local mode (`ModeManager.currentMode = "target"`)
-2. When user in Reference mode clicks Set Values:
-   - Set Values correctly writes `ref_f_85 = "5.3"` ✅
-   - `calculateTargetModel()` sets `ModeManager.currentMode = "target"` (section-local)
-   - Target engine calls `StateManager.getValue("f_85")`
-   - StateManager checks **global UI mode** → Reference mode TRUE
-   - Returns Reference value "5.3" instead of Target value ❌
-   - Target engine writes contaminated `f_85 = "5.3"`
+**Root Cause (REVISED - Dec 11 Evening)**:
 
-**Why Fresh Page Load Works**:
-- No `ref_*` fields exist yet
-- `getValue("f_85")` falls through to Target value
-- No contamination
+**CRITICAL CORRECTION**: My initial analysis was wrong. Pattern A sections do NOT call `StateManager.getValue()` for calculations - they use **isolated state objects**.
 
-**Why Post-Import Fails**:
-- Import populates both `ref_*` fields and `activeReferenceDataSet` cache
-- StateManager in Reference mode returns Reference values to Target engine
-- **Contamination!**
+**How Pattern A Sections Actually Work**:
+
+Section11 maintains two isolated state objects:
+```javascript
+// Section11.js lines 411-466
+const ModeManager = {
+  currentMode: "target",
+  getValue: function(fieldId) {
+    return this.getCurrentState().getValue(fieldId); // ← TargetState or ReferenceState
+  },
+  getCurrentState: function() {
+    return this.currentMode === "target" ? TargetState : ReferenceState;
+  }
+};
+```
+
+**The Dual-Engine Read Pattern**:
+1. **calculateTargetModel()** reads from `TargetState.getValue("f_85")` (isolated)
+2. **calculateReferenceModel()** reads from `ReferenceState.getValue("f_85")` (isolated)
+3. Both engines write results to `StateManager` for downstream sections/UI
+
+**THE REAL BUG - Isolated State Desync**:
+
+Set Values writes to **StateManager** (global):
+```javascript
+// FileHandler.js line 1027
+window.TEUI.StateManager.setValue("ref_f_85", "5.3", "user-modified");
+```
+
+But Reference engine reads from **ReferenceState** (isolated):
+```javascript
+// Section11 calculateReferenceModel()
+const value = ReferenceState.getValue("f_85"); // ← NEVER synced from StateManager!
+```
+
+**Why Import Works**:
+```javascript
+// Section11.js ReferenceState.syncFromStateManager() lines 383-400
+// FileHandler calls this during updateStateFromImportData()
+this.setValue(fieldId, globalValue); // ✅ Syncs StateManager → ReferenceState
+```
+
+**Why Set Values Fails**:
+```javascript
+// FileHandler.js applyReferenceValuesFromStandard() line 1027
+window.TEUI.StateManager.setValue("ref_f_85", "5.3", "user-modified");
+// ❌ No call to ReferenceState.syncFromStateManager()!
+// ReferenceState.state["f_85"] still has old Import value
+// Reference engine calculates with stale data
+```
+
+**Why Post-Import Makes It Worse**:
+- Import populates `ReferenceState.state["f_85"]` with Import value "4.1"
+- Set Values writes `StateManager ref_f_85 = "5.3"` (never synced)
+- Reference engine reads `ReferenceState.getValue("f_85")` → "4.1" (stale)
+- StateManager has "5.3" but it's never used by calculations
 
 ### Failed Fixes
 
@@ -948,40 +989,62 @@ Sections maintain isolated state objects:
 
 ### The Actual Problem
 
-**Architectural Issue**: StateManager's `getValue()` is **UI-mode-aware** but calculations need **engine-mode-aware** reads.
+**Architectural Issue**: Pattern A sections maintain **isolated state** but FileHandler.applyReferenceValuesFromStandard() only writes to **global StateManager**, never syncing to the isolated state.
 
-**Two incompatible mode systems**:
-- **UI Mode** (global): What the user sees (Target vs Reference toggle)
-- **Engine Mode** (section-local): Which calculation is running (Target engine vs Reference engine)
+**The Broken Data Flow**:
 
-**Current broken contract**:
-```javascript
-// Section11 THINKS:
-ModeManager.currentMode = "target"; // "I'm calculating Target model"
-const value = StateManager.getValue("f_85"); // "Give me Target's f_85"
-
-// StateManager ACTUALLY DOES:
-if (ReferenceToggle.isReferenceMode()) { // UI is in Reference mode
-  return ref_f_85; // Returns Reference value!
-}
+Import (WORKS):
 ```
+FileHandler → StateManager (ref_f_85 = "4.1")
+          ↓
+ReferenceState.syncFromStateManager() called
+          ↓
+ReferenceState.state["f_85"] = "4.1" ✅ SYNCED
+          ↓
+calculateReferenceModel() reads from ReferenceState ✅ CORRECT
+```
+
+Set Values (FAILS):
+```
+FileHandler → StateManager (ref_f_85 = "5.3")
+          ↓
+ReferenceState.syncFromStateManager() NOT called ❌
+          ↓
+ReferenceState.state["f_85"] = "4.1" (stale from Import)
+          ↓
+calculateReferenceModel() reads from ReferenceState ❌ STALE DATA
+```
+
+**Why Fix #4 Made It Worse**:
+- Changed `StateManager.getValue()` to prioritize `ref_*` fields
+- Now Target calculations ALSO read from StateManager instead of `TargetState`
+- Both engines bypass isolated state → both read same StateManager values → synchronization!
 
 ### Solution Direction
 
-**Need**: StateManager must respect **calculation context**, not **UI mode**.
+**SIMPLE FIX**: Make Set Values call the sync pattern that Import uses.
 
-**Three possible approaches documented** (see Options A, B, C above):
-- **Option A**: Make StateManager calculation-context-aware
-- **Option B**: Explicit `getTargetValue()` / `getReferenceValue()` functions
-- **Option C**: Sections read from isolated TargetState/ReferenceState only
+**Option 1 (RECOMMENDED)**: Add sync call to applyReferenceValuesFromStandard()
+```javascript
+// FileHandler.js after line 1089 (after all setValue calls)
+// Sync StateManager → isolated ReferenceState for Pattern A sections
+if (window.TEUI?.SectionModules?.sect11?.ReferenceState?.syncFromStateManager) {
+  window.TEUI.SectionModules.sect11.ReferenceState.syncFromStateManager();
+}
+// Repeat for S12, S13 Pattern A sections
+```
 
-**Recommended Next Step**: Prototype Option B (explicit functions) as it's:
-- Clear and unambiguous
-- Doesn't require tracking calculation context
-- Works for both Pattern A and traditional sections
+**Option 2**: Extract sync logic to shared utility
+- Create `syncReferenceStateFromGlobal()` in StateManager
+- Call from both Import and Set Values
+
+**Option 3**: Make sync automatic on `setValue("ref_*")`
+- StateManager detects `ref_*` writes
+- Automatically propagates to section ReferenceState objects
+- Most robust but requires StateManager changes
 
 **Testing Required**: All four test cases must pass:
 1. Fresh page load Set Values
 2. Post-import Set Values
-3. Import regression
-4. Copy regression
+3. Import regression (must still work)
+4. Copy regression (must still work)
