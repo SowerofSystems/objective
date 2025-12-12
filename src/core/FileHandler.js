@@ -864,8 +864,10 @@
     /**
      * Sync Pattern A sections from global StateManager
      * @param {boolean} skipAreaSync - If true, skip S11 area sync to prevent contamination during overlays
+     * @param {boolean} skipTargetSync - If true, skip TargetState sync (Reference mode Set Values)
+     * @param {boolean} skipReferenceSync - If true, skip ReferenceState sync (Target mode Set Values)
      */
-    syncPatternASections(skipAreaSync = false, skipTargetSync = false) {
+    syncPatternASections(skipAreaSync = false, skipTargetSync = false, skipReferenceSync = false) {
       // Pattern A sections per CHEATSHEET.md (lines 225-227)
       const patternASections = [
         { id: "sect02", name: "S02" },
@@ -901,7 +903,7 @@
           section.TargetState.syncFromGlobalState();
         } else if (skipTargetSync) {
           console.log(
-            `[FileHandler] ${name} TargetState sync SKIPPED (overlay operation)`
+            `[FileHandler] ${name} TargetState sync SKIPPED (mode-aware sync)`
           );
         } else {
           // Not an error - section may not have syncFromGlobalState yet
@@ -910,9 +912,13 @@
           );
         }
 
-        if (section?.ReferenceState?.syncFromGlobalState) {
+        if (!skipReferenceSync && section?.ReferenceState?.syncFromGlobalState) {
           console.log(`[FileHandler] Syncing ${name} ReferenceState...`);
           section.ReferenceState.syncFromGlobalState();
+        } else if (skipReferenceSync) {
+          console.log(
+            `[FileHandler] ${name} ReferenceState sync SKIPPED (mode-aware sync)`
+          );
         }
 
         // ✅ CRITICAL: Refresh DOM after syncing state from imported values
@@ -1069,12 +1075,15 @@
         );
 
         // ✅ PHASE 3: Sync Pattern A sections FROM StateManager
-        // ✅ FIX (Dec 10): Skip area sync for overlays to prevent Target/Reference contamination
-        // ReferenceValues overlays change SHGC, insulation, etc. but NOT window areas
+        // ✅ FIX #6 (Dec 11): Mode-aware sync - only sync the state being written to
+        // Reference mode: Skip TargetState (preserve imported values), sync ReferenceState only
+        // Target mode: Skip ReferenceState (preserve reference values), sync TargetState only
+        const skipTargetSync = targetMode === "reference";
+        const skipReferenceSync = targetMode === "target";
         console.log(
-          "[FileHandler] Syncing Pattern A sections FROM StateManager..."
+          `[FileHandler] Syncing Pattern A sections in ${targetMode.toUpperCase()} mode (skipTargetSync=${skipTargetSync}, skipReferenceSync=${skipReferenceSync})...`
         );
-        this.syncPatternASections(true, true); // skipAreaSync=true, skipTargetSync=true (Fix #5)
+        this.syncPatternASections(true, skipTargetSync, skipReferenceSync); // Fix #6: Mode-aware sync
         console.log("[FileHandler] Pattern A sections synced");
       } finally {
         // 🔓 PHASE 4: IMPORT QUARANTINE END - Always unmute

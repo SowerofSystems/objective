@@ -1101,15 +1101,36 @@ const isReferenceMode = targetMode === "reference";
 this.syncPatternASections(true, isReferenceMode); // skipTargetSync based on mode
 ```
 
-**Next Step - Fix #6**:
-- Make `skipTargetSync` conditional on `targetMode`
-- Reference mode (`targetMode === "reference"`): Skip TargetState, sync ReferenceState only
-- Target mode (`targetMode === "target"`): Skip ReferenceState, sync TargetState only
+**Fix #6 - IMPLEMENTED (Dec 11, 2025 - Evening)**:
+
+**Changes**:
+- FileHandler.js:870 - Add `skipReferenceSync` parameter to `syncPatternASections()`
+- FileHandler.js:915-922 - Skip ReferenceState sync when `skipReferenceSync=true`
+- FileHandler.js:1075-1080 - Mode-aware sync: conditional based on `targetMode`
+
+**Implementation**:
+```javascript
+// FileHandler.js line 1075-1080
+const skipTargetSync = targetMode === "reference";
+const skipReferenceSync = targetMode === "target";
+this.syncPatternASections(true, skipTargetSync, skipReferenceSync);
+```
+
+**How It Works**:
+- **Reference mode** (`targetMode === "reference"`):
+  - Writes `ref_*` fields only
+  - Skips TargetState sync (preserves imported Target values)
+  - Syncs ReferenceState only (gets new ReferenceValues)
+
+- **Target mode** (`targetMode === "target"`):
+  - Writes unprefixed fields only
+  - Skips ReferenceState sync (preserves Reference values)
+  - Syncs TargetState only (gets new ReferenceValues as code minimums)
 
 **Testing Required**: All six test cases must pass:
-1. Fresh page load Set Values (Target mode)
-2. Fresh page load Set Values (Reference mode)
-3. Post-import Set Values (Target mode)
-4. Post-import Set Values (Reference mode)
-5. Import regression (must still work)
-6. Copy regression (must still work)
+1. ✅ Fresh page load Set Values (Target mode)
+2. ✅ Fresh page load Set Values (Reference mode)
+3. ⏳ Post-import Set Values (Target mode)
+4. ⏳ Post-import Set Values (Reference mode)
+5. ⏳ Import regression (must still work)
+6. ⏳ Copy regression (must still work)
