@@ -865,7 +865,7 @@
      * Sync Pattern A sections from global StateManager
      * @param {boolean} skipAreaSync - If true, skip S11 area sync to prevent contamination during overlays
      */
-    syncPatternASections(skipAreaSync = false) {
+    syncPatternASections(skipAreaSync = false, skipTargetSync = false) {
       // Pattern A sections per CHEATSHEET.md (lines 225-227)
       const patternASections = [
         { id: "sect02", name: "S02" },
@@ -896,9 +896,13 @@
       patternASections.forEach(({ id, name }) => {
         const section = window.TEUI?.SectionModules?.[id];
 
-        if (section?.TargetState?.syncFromGlobalState) {
+        if (!skipTargetSync && section?.TargetState?.syncFromGlobalState) {
           console.log(`[FileHandler] Syncing ${name} TargetState...`);
           section.TargetState.syncFromGlobalState();
+        } else if (skipTargetSync) {
+          console.log(
+            `[FileHandler] ${name} TargetState sync SKIPPED (overlay operation)`
+          );
         } else {
           // Not an error - section may not have syncFromGlobalState yet
           console.log(
@@ -1070,7 +1074,7 @@
         console.log(
           "[FileHandler] Syncing Pattern A sections FROM StateManager..."
         );
-        this.syncPatternASections(true); // skipAreaSync=true for overlay operations
+        this.syncPatternASections(true, true); // skipAreaSync=true, skipTargetSync=true (Fix #5)
         console.log("[FileHandler] Pattern A sections synced");
       } finally {
         // 🔓 PHASE 4: IMPORT QUARANTINE END - Always unmute

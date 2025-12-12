@@ -1067,13 +1067,49 @@ syncPatternASections(skipAreaSync = false, skipTargetSync = false) {
 this.syncPatternASections(true, true); // skipAreaSync=true, skipTargetSync=true
 ```
 
-**Why This Works**:
-- Set Values only writes `ref_*` fields → only ReferenceState needs syncing
-- TargetState remains untouched → preserves imported Target values
-- Import continues to work → syncs both states as before
+**Why This Works (PARTIAL FIX)**:
+- Reference mode Set Values: Only ReferenceState syncs ✅ WORKS!
+- Target mode Set Values: TargetState skipped ❌ DOESN'T WORK!
+- Import continues to work → syncs both states ✅
 
-**Testing Required**: All four test cases must pass:
-1. Fresh page load Set Values
-2. Post-import Set Values
-3. Import regression (must still work)
-4. Copy regression (must still work)
+**Fix #5 Test Results (Dec 11, 2025 - Evening)**:
+
+✅ **Reference Mode Set Values - FIXED!**
+- Import → Switch to Reference mode → Select new d_13 → Press "Set Values"
+- Result: ONLY Reference model recalculates with new ReferenceValues.js
+- Target model preserves imported values (no contamination)
+
+❌ **Target Mode Set Values - BROKEN!**
+- Import → Stay in Target mode → Select d_13 → Press "Set Values"
+- Expected: Target model updates with ReferenceValues.js (code minimums)
+- Actual: Nothing happens (TargetState sync skipped)
+
+**The Missing Piece**:
+
+We're always passing `skipTargetSync=true` regardless of UI mode!
+
+```javascript
+// FileHandler.js line 1077 - WRONG: Always skips Target
+this.syncPatternASections(true, true); // skipAreaSync=true, skipTargetSync=true
+```
+
+Should be:
+```javascript
+// Skip TargetState sync ONLY in Reference mode
+// In Target mode, we WANT to overwrite Target with ReferenceValues
+const isReferenceMode = targetMode === "reference";
+this.syncPatternASections(true, isReferenceMode); // skipTargetSync based on mode
+```
+
+**Next Step - Fix #6**:
+- Make `skipTargetSync` conditional on `targetMode`
+- Reference mode (`targetMode === "reference"`): Skip TargetState, sync ReferenceState only
+- Target mode (`targetMode === "target"`): Skip ReferenceState, sync TargetState only
+
+**Testing Required**: All six test cases must pass:
+1. Fresh page load Set Values (Target mode)
+2. Fresh page load Set Values (Reference mode)
+3. Post-import Set Values (Target mode)
+4. Post-import Set Values (Reference mode)
+5. Import regression (must still work)
+6. Copy regression (must still work)
