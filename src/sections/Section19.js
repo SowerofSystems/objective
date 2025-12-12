@@ -766,13 +766,24 @@ window.TEUI.SectionModules.sect19 = (function () {
       aspectSlider.hasSliderListener = true;
     }
 
-    // Listen to geometry changes from other sections
+    // Listen to geometry changes from other sections (external dependencies)
+    // Per 4012-CHEATSHEET Anti-Pattern 7: Only listen to EXTERNAL dependencies
+    // d_103/d_105 belong to Section 12, but WOMBAT displays them for visualization
     if (window.TEUI?.StateManager) {
       const geometryFields = ["d_85", "d_86", "d_105", "d_106", "d_103"];
       geometryFields.forEach(fieldId => {
         window.TEUI.StateManager.addListener(fieldId, () => {
           if (isActivated) {
             console.log(`[WOMBAT] Geometry field ${fieldId} changed, updating visualization`);
+            updateVisualization();
+          }
+        });
+
+        // Also listen to Reference versions for mode-aware visualization
+        const refFieldId = `ref_${fieldId}`;
+        window.TEUI.StateManager.addListener(refFieldId, () => {
+          if (isActivated) {
+            console.log(`[WOMBAT] Reference field ${refFieldId} changed, updating visualization`);
             updateVisualization();
           }
         });

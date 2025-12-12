@@ -3434,6 +3434,40 @@ window.TEUI.SectionModules.sect12 = (function () {
     // ModeManager.setValue publishes to StateManager (both ref_ and unprefixed)
     // No need for listeners to create double calculations
 
+    // ⚠️ EXCEPTION: d_103 and d_105 are displayed in WOMBAT (Section 19)
+    // When edited in WOMBAT, we need to sync back to S12's internal state
+    window.TEUI.StateManager.addListener("d_103", (newValue) => {
+      if (TargetState.getValue("d_103") !== newValue) {
+        TargetState.setValue("d_103", newValue, "external");
+        ModeManager.refreshUI();
+        console.log(`[S12] Synced d_103 = ${newValue} from external edit (WOMBAT)`);
+      }
+    });
+
+    window.TEUI.StateManager.addListener("ref_d_103", (newValue) => {
+      if (ReferenceState.getValue("d_103") !== newValue) {
+        ReferenceState.setValue("d_103", newValue, "external");
+        ModeManager.refreshUI();
+        console.log(`[S12] Synced ref_d_103 = ${newValue} from external edit (WOMBAT)`);
+      }
+    });
+
+    window.TEUI.StateManager.addListener("d_105", (newValue) => {
+      if (TargetState.getValue("d_105") !== newValue) {
+        TargetState.setValue("d_105", newValue, "external");
+        ModeManager.refreshUI();
+        console.log(`[S12] Synced d_105 = ${newValue} from external edit (WOMBAT)`);
+      }
+    });
+
+    window.TEUI.StateManager.addListener("ref_d_105", (newValue) => {
+      if (ReferenceState.getValue("d_105") !== newValue) {
+        ReferenceState.setValue("d_105", newValue, "external");
+        ModeManager.refreshUI();
+        console.log(`[S12] Synced ref_d_105 = ${newValue} from external edit (WOMBAT)`);
+      }
+    });
+
     s12ListenersAdded = true;
     console.log(
       "[S12] ✅ CLIMATE LISTENERS ADDED - Ready for d_20/d_21 changes"
