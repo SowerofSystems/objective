@@ -1200,3 +1200,125 @@ if (!window.TEUI.ReferenceToggle.isReferenceMode()) {
 ```
 
 **Status**: Fix #5 + Fix #6 achieve primary goal (Set Values bidirectional isolation). Copy regression is minor edge case for Dec 12.
+
+---
+
+## Issue #2: Copy from Target Highlighting - Browser-Specific Behavior
+**Date**: Dec 12, 2025
+**Status**: ⚠️ **BROWSER COMPATIBILITY ISSUE**
+
+### Problem
+After "Copy from Target" operation in Reference mode, contenteditable numeric fields (h_15, i_17, l_12-l_16) show **different highlighting behavior across browsers**:
+
+- **Safari**: ✅ Highlighting WORKS - targets padding space around field and table cell
+- **Chrome**: ❌ Highlighting FAILS - no yellow background appears
+
+### Browser-Specific Behavior
+
+**Safari (Working)**:
+- Yellow highlight appears around the contenteditable div
+- Highlights the padding space and table cell background
+- `.mirror-highlight` class applies successfully
+
+**Chrome (Not Working)**:
+- No yellow background appears
+- Element receives `.mirror-highlight` class (confirmed via DevTools)
+- Background color shows as `#0D6EFD` (blue) or transparent instead of `#ffff00` (yellow)
+- Text color changes to black (CSS is partially working)
+
+### Root Cause Analysis
+
+**CSS Conflict Chain**:
+1. **Base Rule** (styles.css:1622): `.mirror-highlight { background-color: #ffff00 !important; }`
+2. **Specific Rule** (styles.css:1632): `div[contenteditable].mirror-highlight { background-color: #ffff00 !important; }`
+3. **Competing Rules** (styles.css:2322-2398): Multiple `.user-input.user-modified` rules with higher specificity:
+   - Line 2325: `.user-input.user-modified { color: var(--user-input-color) !important; }` (blue text)
+   - Line 2348: `.user-input[contenteditable] { background-color: transparent !important; }`
+   - Line 2365: `.user-input[contenteditable]:hover { background-color: rgba(13, 110, 253, 0.03) !important; }`
+   - Line 2381: `.user-input[contenteditable]:focus { background-color: rgba(13, 110, 253, 0.05) !important; }`
+
+**Why Yellow Background Fails in Chrome**:
+The contenteditable div has classes: `.user-input.user-modified.mirror-highlight`
+
+CSS Specificity Battle:
+- `.mirror-highlight` = 1 class = specificity 010
+- `div[contenteditable].mirror-highlight` = 1 element + 1 attribute + 1 class = specificity 021
+- `.user-input[contenteditable]` = 1 class + 1 attribute = specificity 020
+- **Chrome**: `.user-input[contenteditable]` appears LATER in CSS (line 2348) and has `background-color: transparent !important`
+
+Even though both use `!important`, **source order wins** when specificity is equal or close. The transparent background rule at line 2348 is applied after the yellow highlight rule in Chrome's rendering engine.
+
+**Safari vs Chrome CSS Handling**:
+Safari appears to apply the `.mirror-highlight` rule more aggressively or handle the specificity/source-order differently, allowing the yellow background to show on the table cell or padding area.
+
+### Failed Attempts (Dec 12)
+1. ❌ Added Strategy 3 to ReferenceToggle.js - didn't solve CSS issue
+2. ❌ Added parent td highlighting - didn't solve CSS issue in Chrome
+3. ❌ Added more specific selectors to styles.css - source order still caused failure in Chrome
+
+**All attempts reverted** with `git restore src/core/ReferenceToggle.js src/styles.css`
+
+### Proposed Solution
+
+**Option A: Increase Specificity with Attribute Selector**
+Make the `.mirror-highlight` rule MORE specific than `.user-input[contenteditable]`:
+
+```css
+/* styles.css line ~1628 - REPLACE existing rule */
+/* Ensure highlight works on inputs and contenteditable divs */
+input.mirror-highlight,
+select.mirror-highlight,
+textarea.mirror-highlight,
+div[contenteditable="true"].mirror-highlight,
+.user-input[contenteditable="true"].mirror-highlight {
+  background-color: #ffff00 !important;
+  -webkit-text-fill-color: #000 !important;
+  color: #000 !important;
+}
+```
+
+Specificity: `.user-input[contenteditable="true"].mirror-highlight` = 1 class + 1 attribute + 1 class = **030** (should win in Chrome)
+
+**Option B: Add Dedicated Override Rule** (More Maintainable)
+Add a new rule AFTER all user-input rules (~line 2400):
+
+```css
+/* Override for Copy from Target highlighting - must be AFTER user-input rules */
+.data-table td[contenteditable="true"].user-input.mirror-highlight,
+.data-table td .user-input[contenteditable="true"].mirror-highlight {
+  background-color: #ffff00 !important;
+  color: #000 !important;
+  font-style: normal !important;
+}
+```
+
+Specificity: `.data-table td[contenteditable="true"].user-input.mirror-highlight` = **041** (definite win)
+
+**Recommended**: Option B - More specific, appears after conflicting rules, clearer intent, should fix Chrome while maintaining Safari behavior.
+
+### Testing Checklist
+After implementing fix:
+1. ✅ Test in **Chrome** (primary issue)
+2. ✅ Test in **Safari** (ensure no regression)
+3. ✅ In Reference mode, change h_15 from 1427.2 to 5000
+4. ✅ Click "Copy Geometry from Target"
+5. ✅ Verify h_15 shows yellow background in BOTH browsers
+6. ✅ Verify sliders still highlight yellow
+7. ✅ Verify dropdowns still highlight yellow
+8. ✅ Verify currency fields (l_12-l_16) highlight yellow
+
+### Current Deployed State (Dec 12, 2025)
+- **Branch**: main (merged PR #62)
+- **Commit**: 1ecb1ca (Fix: Ensure dual-state sync for Copy from Target operations)
+- **Status**: Copy from Target functionality works correctly, but highlighting has browser-specific behavior
+- **Safari**: Highlighting works
+- **Chrome**: Highlighting does not work for contenteditable fields
+- **Impact**: Medium - visual feedback missing in Chrome but functionality intact
+
+### Implementation Status
+- [ ] Choose solution (A or B)
+- [ ] Implement CSS change
+- [ ] Test in Chrome
+- [ ] Test in Safari
+- [ ] Test all field types
+- [ ] Commit with proper message per .clinerules
