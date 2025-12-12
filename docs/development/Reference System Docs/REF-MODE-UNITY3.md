@@ -730,14 +730,160 @@ console.log(`[StateManager] loadReferenceData("${standard}") END`);
 
 ---
 
+## Test Results - Dec 11, 2025
+
+### Fix #4: getValue() Priority Reordering (FAILED ❌)
+
+**Implementation**: Changed getValue() to check `ref_*` fields FIRST (Priority 1) before activeReferenceDataSet cache.
+
+**Expected**: Would prevent stale cache reads during calculateAll().
+
+**Actual Result**: ❌ **CONTAMINATION PERSISTS** - Both Target and Reference models sync to identical values after Set Values.
+
+**Evidence from Logs.md**:
+```
+[StateManager.setValue] 🎯 ref_f_85 = "5.3" (state: calculated)  ← Reference writes (correct)
+[StateManager.setValue] 🎯 ref_f_86 = "4.1" (state: calculated)
+[StateManager.setValue] 🎯 ref_f_87 = "6.6" (state: calculated)
+
+[StateManager.setValue] 🎯 f_85 = "5.3" (state: calculated)     ← Target contaminated!
+[StateManager.setValue] 🎯 f_86 = "4.1" (state: calculated)
+[StateManager.setValue] 🎯 f_87 = "6.6" (state: calculated)
+
+Stack trace for f_85 write:
+setValue @ Section11.js:476
+setCalculatedValue @ Section11.js:2088
+calculateComponentRow @ Section11.js:2553
+calculateTargetModel @ Section11.js:3118  ← Target engine writes unprefixed!
+calculateAll @ Section11.js:3284
+```
+
+**Observation**: The problem is NOT in getValue() priority. The contamination occurs because:
+1. Set Values correctly writes `ref_f_85 = "5.3"` (Reference envelope RSI)
+2. `calculateAll()` runs both engines (correct dual-engine pattern)
+3. **Section11.calculateTargetModel()** reads from Reference values instead of Target values
+4. Target engine writes contaminated results to unprefixed `f_85`, `f_86`, `f_87`
+
+**Root Cause Revision**: The issue is in Section11's calculation logic, not StateManager's getValue(). Target calculations are reading from Reference state during dual-engine execution.
+
+---
+
+### THE ACTUAL ROOT CAUSE: Conflicting Mode Detection
+
+**Investigation of Section11.calculateTargetModel()** ([Section11.js:3109-3120](../../src/sections/Section11.js#L3109-L3120)):
+
+```javascript
+function calculateTargetModel() {
+  const originalMode = ModeManager.currentMode;
+  ModeManager.currentMode = "target"; // ✅ Temporary mode switch for StateManager publishing
+
+  try {
+    // Calculate Target model...
+    // Calls getValue("f_85") internally
+  } finally {
+    ModeManager.currentMode = originalMode; // Restore
+  }
+}
+```
+
+**The Problem**: Section11 sets `ModeManager.currentMode = "target"` to ensure its writes go to unprefixed fields, BUT:
+
+**StateManager.getValue() checks global UI state**:
+```javascript
+// StateManager.js:331
+if (TEUI.ReferenceToggle.isReferenceMode()) {
+  // Returns TRUE if UI is in Reference mode (global)
+  // Ignores Section11's local ModeManager.currentMode = "target"
+}
+```
+
+**The Contamination Flow**:
+1. User in **Reference mode** (UI mode = `ReferenceToggle.isReferenceMode() = true`)
+2. Set Values writes `ref_f_85 = "5.3"` to StateManager
+3. `calculateAll()` runs
+4. `calculateTargetModel()` sets `ModeManager.currentMode = "target"` (section-local)
+5. Target engine calls `getValue("f_85")`
+6. StateManager checks `ReferenceToggle.isReferenceMode()` → **TRUE** (global UI state)
+7. Fix #4 added: Check `ref_f_85` first → returns "5.3" ❌ **WRONG VALUE for Target!**
+8. Target engine uses Reference value → writes contaminated `f_85 = "5.3"`
+
+**Why Fix #4 Failed**: It made the problem WORSE by prioritizing `ref_*` fields. When UI is in Reference mode, even Target calculations read from `ref_*` fields!
+
+**Why Fresh Page Load Works (Before Import)**:
+- No import → `activeReferenceDataSet = {}` (empty)
+- No `ref_*` fields exist yet
+- `getValue("f_85")` falls through to Priority 3 (fields Map) → returns correct Target value
+- No contamination
+
+**Why Post-Import Fails**:
+- Import populates `activeReferenceDataSet` with Target values
+- Import writes `ref_f_85` to fields Map
+- Fix #4 prioritizes `ref_f_85` → Target engine reads Reference value
+- **Contamination!**
+
+---
+
+## THE REAL FIX: Mode Detection Must Be Consistent
+
+**Problem**: Two different mode detection mechanisms:
+1. **Section-local**: `ModeManager.currentMode` (used by sections during calculation)
+2. **Global UI**: `ReferenceToggle.isReferenceMode()` (used by StateManager)
+
+**Solution Options**:
+
+### Option A: StateManager Should Respect Section-Local Mode (RECOMMENDED)
+
+StateManager's `getValue()` should check **section-local mode** not **global UI mode**:
+
+```javascript
+// StateManager.js:331 - BEFORE (checks global UI)
+if (TEUI.ReferenceToggle.isReferenceMode()) {
+
+// AFTER (checks calculation context)
+// Need a way for calculations to signal "I'm calculating Target" vs "I'm calculating Reference"
+```
+
+**Challenge**: How does StateManager know which engine is calling `getValue()`?
+
+### Option B: Sections Should Use Explicit Read Functions
+
+Instead of `getValue(fieldId)`, sections should use:
+- `getTargetValue(fieldId)` - Always reads unprefixed field
+- `getReferenceValue(fieldId)` - Always reads `ref_*` prefixed field
+
+**Advantages**:
+- ✅ Explicit - no ambiguity
+- ✅ Mode-independent - works regardless of UI state
+
+**Disadvantages**:
+- ⚠️ Requires refactoring all sections
+- ⚠️ Breaks existing calculation code
+
+### Option C: Calculation Engines Should Read Directly from TargetState/ReferenceState
+
+Sections maintain isolated state objects:
+- `TargetState.getValue("f_85")` - Always Target value
+- `ReferenceState.getValue("f_85")` - Always Reference value
+
+**Advantages**:
+- ✅ True isolation - no StateManager confusion
+- ✅ Already implemented in Pattern A sections
+
+**Disadvantages**:
+- ⚠️ Only works for Pattern A sections
+- ⚠️ Doesn't help with cross-section dependencies
+
+---
+
 ## Next Steps
 
-1. **User decision**: Which solution to implement?
-2. **Add diagnostic logging** to verify hypothesis
-3. **Run test sequence** to confirm contamination path
-4. **Implement fix** (likely Option 1)
-5. **Test all four cases** above
-6. **Commit and document** results
+1. ✅ **Revert Fix #4** - getValue() priority change made problem worse
+2. **Decide on solution approach**:
+   - Option A: Make StateManager mode-aware for calculations
+   - Option B: Explicit getTargetValue/getReferenceValue functions
+   - Option C: Sections read from isolated state only
+3. **Prototype chosen solution**
+4. **Test thoroughly** - Import, Copy, Set Values must all work
 
 ---
 
@@ -756,12 +902,86 @@ console.log(`[StateManager] loadReferenceData("${standard}") END`);
 
 ---
 
-## Summary
+## Summary for Future Agents
 
-**The Bug**: Import's `loadReferenceData()` populates `activeReferenceDataSet` cache with Target's d_13 standard. Post-import Set Values writes fresh `ref_*` values, but `getValue()` Priority 2 reads from stale cache during `calculateAll()`, causing contamination.
+### What We Know (Dec 11, 2025 - Evening)
 
-**The Fix**: Reorder `getValue()` priority to check `ref_*` fields FIRST (Priority 1), making them authoritative over stale cache (demoted to Priority 3).
+**The Bug**: After CSV/Excel import, clicking "Set Values" in Reference mode contaminates BOTH Target and Reference models with identical ReferenceValues.js data.
 
-**Risk Level**: Low - surgical change, doesn't affect Import/Copy systems.
+**What Works**:
+- ✅ Fresh page load: Set Values in Reference mode → perfect isolation
+- ✅ Import: CSV/Excel import → perfect dual-state isolation
+- ✅ Copy from Target: All three copy modes → perfect isolation
 
-**Testing Required**: All four test cases above must pass before merge.
+**What Fails**:
+- ❌ Post-import Set Values: Both models sync to same values
+
+**Root Cause (CONFIRMED)**:
+1. **Conflicting mode detection**: StateManager checks global UI state (`ReferenceToggle.isReferenceMode()`), but sections set local mode (`ModeManager.currentMode = "target"`)
+2. When user in Reference mode clicks Set Values:
+   - Set Values correctly writes `ref_f_85 = "5.3"` ✅
+   - `calculateTargetModel()` sets `ModeManager.currentMode = "target"` (section-local)
+   - Target engine calls `StateManager.getValue("f_85")`
+   - StateManager checks **global UI mode** → Reference mode TRUE
+   - Returns Reference value "5.3" instead of Target value ❌
+   - Target engine writes contaminated `f_85 = "5.3"`
+
+**Why Fresh Page Load Works**:
+- No `ref_*` fields exist yet
+- `getValue("f_85")` falls through to Target value
+- No contamination
+
+**Why Post-Import Fails**:
+- Import populates both `ref_*` fields and `activeReferenceDataSet` cache
+- StateManager in Reference mode returns Reference values to Target engine
+- **Contamination!**
+
+### Failed Fixes
+
+**Fix #1-3**: See REF-MODE-UNITY2.md (skipRecalculation, refreshUI, skipAreaSync)
+- Addressed symptoms, not root cause
+- Worked for fresh page load, failed post-import
+
+**Fix #4**: getValue() priority reordering (Dec 11)
+- Made problem WORSE by prioritizing `ref_*` fields
+- Target engine now ALWAYS reads Reference values when UI in Reference mode
+
+### The Actual Problem
+
+**Architectural Issue**: StateManager's `getValue()` is **UI-mode-aware** but calculations need **engine-mode-aware** reads.
+
+**Two incompatible mode systems**:
+- **UI Mode** (global): What the user sees (Target vs Reference toggle)
+- **Engine Mode** (section-local): Which calculation is running (Target engine vs Reference engine)
+
+**Current broken contract**:
+```javascript
+// Section11 THINKS:
+ModeManager.currentMode = "target"; // "I'm calculating Target model"
+const value = StateManager.getValue("f_85"); // "Give me Target's f_85"
+
+// StateManager ACTUALLY DOES:
+if (ReferenceToggle.isReferenceMode()) { // UI is in Reference mode
+  return ref_f_85; // Returns Reference value!
+}
+```
+
+### Solution Direction
+
+**Need**: StateManager must respect **calculation context**, not **UI mode**.
+
+**Three possible approaches documented** (see Options A, B, C above):
+- **Option A**: Make StateManager calculation-context-aware
+- **Option B**: Explicit `getTargetValue()` / `getReferenceValue()` functions
+- **Option C**: Sections read from isolated TargetState/ReferenceState only
+
+**Recommended Next Step**: Prototype Option B (explicit functions) as it's:
+- Clear and unambiguous
+- Doesn't require tracking calculation context
+- Works for both Pattern A and traditional sections
+
+**Testing Required**: All four test cases must pass:
+1. Fresh page load Set Values
+2. Post-import Set Values
+3. Import regression
+4. Copy regression
