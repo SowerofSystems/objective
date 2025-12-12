@@ -867,7 +867,11 @@
      * @param {boolean} skipTargetSync - If true, skip TargetState sync (Reference mode Set Values)
      * @param {boolean} skipReferenceSync - If true, skip ReferenceState sync (Target mode Set Values)
      */
-    syncPatternASections(skipAreaSync = false, skipTargetSync = false, skipReferenceSync = false) {
+    syncPatternASections(
+      skipAreaSync = false,
+      skipTargetSync = false,
+      skipReferenceSync = false
+    ) {
       // Pattern A sections per CHEATSHEET.md (lines 225-227)
       const patternASections = [
         { id: "sect02", name: "S02" },
@@ -902,7 +906,10 @@
           section.TargetState.syncFromGlobalState();
         }
 
-        if (!skipReferenceSync && section?.ReferenceState?.syncFromGlobalState) {
+        if (
+          !skipReferenceSync &&
+          section?.ReferenceState?.syncFromGlobalState
+        ) {
           section.ReferenceState.syncFromGlobalState();
         }
 
@@ -956,7 +963,10 @@
       // ✅ FIX (Nov 2): Enable dual-state sync during import to populate Reference areas
       // ✅ FIX (Dec 10): Skip area sync if skipAreaSync flag set (overlay operations don't change areas)
       // S11's syncFromGlobalState() no longer calls this to prevent premature sync
-      if (!skipAreaSync && window.TEUI?.SectionModules?.sect11?.syncAreasFromS10) {
+      if (
+        !skipAreaSync &&
+        window.TEUI?.SectionModules?.sect11?.syncAreasFromS10
+      ) {
         console.log(
           "[FileHandler] 🔧 PHASE 2.5: Syncing S11 window areas from S10..."
         );
