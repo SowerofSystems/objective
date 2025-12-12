@@ -3082,6 +3082,74 @@ window.TEUI.SectionModules.sect12 = (function () {
 
     // Initialize conditional editability state
     handleConditionalEditability();
+
+    // ✅ BIDIRECTIONAL SYNC: S12 listens to WOMBAT (S19) mirror field changes
+    // Mirror relationships: d_105 (S12) ↔ d_198 (S19), d_103 (S12) ↔ d_199 (S19)
+    if (window.TEUI?.StateManager) {
+      // Target volume from WOMBAT
+      window.TEUI.StateManager.addListener("d_198", (newValue) => {
+        const currentValue = ModeManager.getValue("d_105");
+        if (currentValue !== newValue) {
+          console.log(`[S12→WOMBAT] Syncing d_105 = ${newValue} from WOMBAT d_198`);
+          ModeManager.setValue("d_105", newValue, "external");
+
+          // Update DOM for d_105
+          if (window.TEUI?.FieldManager) {
+            const fieldDef = window.TEUI.FieldManager.getField("d_105");
+            if (fieldDef) {
+              window.TEUI.FieldManager.updateFieldDisplay("d_105", newValue, fieldDef);
+            }
+          }
+
+          calculateAll();
+          ModeManager.updateCalculatedDisplayValues();
+        }
+      });
+
+      // Target stories from WOMBAT
+      window.TEUI.StateManager.addListener("d_199", (newValue) => {
+        const currentValue = ModeManager.getValue("d_103");
+        if (currentValue !== newValue) {
+          console.log(`[S12→WOMBAT] Syncing d_103 = ${newValue} from WOMBAT d_199`);
+          ModeManager.setValue("d_103", newValue, "external");
+
+          // Update DOM for d_103 dropdown
+          const dropdown = document.querySelector('select[data-field-id="d_103"]');
+          if (dropdown) {
+            dropdown.value = newValue;
+          }
+
+          calculateAll();
+          ModeManager.updateCalculatedDisplayValues();
+        }
+      });
+
+      // Reference volume from WOMBAT
+      window.TEUI.StateManager.addListener("ref_d_198", (newValue) => {
+        const currentValue = ReferenceState.getValue("d_105");
+        if (currentValue !== newValue) {
+          console.log(`[S12→WOMBAT] Syncing ref_d_105 = ${newValue} from WOMBAT ref_d_198`);
+          ReferenceState.setValue("d_105", newValue);
+          window.TEUI.StateManager.setValue("ref_d_105", newValue, "external");
+          calculateAll();
+          ModeManager.updateCalculatedDisplayValues();
+        }
+      });
+
+      // Reference stories from WOMBAT
+      window.TEUI.StateManager.addListener("ref_d_199", (newValue) => {
+        const currentValue = ReferenceState.getValue("d_103");
+        if (currentValue !== newValue) {
+          console.log(`[S12→WOMBAT] Syncing ref_d_103 = ${newValue} from WOMBAT ref_d_199`);
+          ReferenceState.setValue("d_103", newValue);
+          window.TEUI.StateManager.setValue("ref_d_103", newValue, "external");
+          calculateAll();
+          ModeManager.updateCalculatedDisplayValues();
+        }
+      });
+
+      console.log("[S12] ✅ Bidirectional WOMBAT sync listeners initialized");
+    }
   }
 
   // ✅ REMOVED: Now using S10's inline dropdown handler pattern

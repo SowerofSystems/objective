@@ -35,6 +35,175 @@ window.TEUI.SectionModules.sect19 = (function () {
   };
 
   //==========================================================================
+  // PATTERN A DUAL-STATE ARCHITECTURE
+  //==========================================================================
+
+  /**
+   * TargetState - Holds Target mode values for WOMBAT fields
+   * Provides state sovereignty for Target calculation mode
+   */
+  const TargetState = {
+    values: {
+      d_198: "8000.00",  // Volume (mirrors S12 d_105)
+      d_199: "1.5",      // Stories (mirrors S12 d_103)
+      d_202: "0.0",      // Aspect ratio slider
+      h_200: "0.00",     // Calculated: Footprint length
+      h_201: "0.00",     // Calculated: Footprint width
+      h_203: "0.00",     // Calculated: Story height
+    },
+
+    getValue: function (fieldId) {
+      return this.values[fieldId] !== undefined ? this.values[fieldId] : null;
+    },
+
+    setValue: function (fieldId, value) {
+      this.values[fieldId] = value;
+    },
+
+    setDefaults: function () {
+      // Initialize from field definitions
+      this.values.d_198 = "8000.00";
+      this.values.d_199 = "1.5";
+      this.values.d_202 = "0.0";
+      this.values.h_200 = "0.00";
+      this.values.h_201 = "0.00";
+      this.values.h_203 = "0.00";
+    },
+
+    syncFromGlobalState: function () {
+      // Sync Target values from StateManager (unprefixed)
+      const fieldIds = ["d_198", "d_199", "d_202", "h_200", "h_201", "h_203"];
+      fieldIds.forEach((fieldId) => {
+        const value = window.TEUI?.StateManager?.getValue(fieldId);
+        if (value !== null && value !== undefined) {
+          this.values[fieldId] = value;
+        }
+      });
+    },
+  };
+
+  /**
+   * ReferenceState - Holds Reference mode values for WOMBAT fields
+   * Provides state sovereignty for Reference calculation mode
+   */
+  const ReferenceState = {
+    values: {
+      d_198: "8000.00",  // Volume (mirrors S12 ref_d_105)
+      d_199: "1.5",      // Stories (mirrors S12 ref_d_103)
+      d_202: "0.0",      // Aspect ratio slider
+      h_200: "0.00",     // Calculated: Footprint length
+      h_201: "0.00",     // Calculated: Footprint width
+      h_203: "0.00",     // Calculated: Story height
+    },
+
+    getValue: function (fieldId) {
+      return this.values[fieldId] !== undefined ? this.values[fieldId] : null;
+    },
+
+    setValue: function (fieldId, value) {
+      this.values[fieldId] = value;
+    },
+
+    setDefaults: function () {
+      // Initialize from field definitions
+      this.values.d_198 = "8000.00";
+      this.values.d_199 = "1.5";
+      this.values.d_202 = "0.0";
+      this.values.h_200 = "0.00";
+      this.values.h_201 = "0.00";
+      this.values.h_203 = "0.00";
+    },
+
+    syncFromGlobalState: function () {
+      // Sync Reference values from StateManager (ref_ prefixed)
+      const fieldIds = ["d_198", "d_199", "d_202", "h_200", "h_201", "h_203"];
+      fieldIds.forEach((fieldId) => {
+        const value = window.TEUI?.StateManager?.getValue(`ref_${fieldId}`);
+        if (value !== null && value !== undefined) {
+          this.values[fieldId] = value;
+        }
+      });
+    },
+  };
+
+  /**
+   * ModeManager - Facade for dual-state operations
+   * Handles mode-aware reading, writing, and StateManager publishing
+   */
+  const ModeManager = {
+    currentMode: "target", // "target" or "reference"
+
+    /**
+     * Switch between Target and Reference modes
+     */
+    switchMode: function (mode) {
+      if (mode !== "target" && mode !== "reference") {
+        console.warn(`[WOMBAT ModeManager] Invalid mode: ${mode}`);
+        return;
+      }
+      this.currentMode = mode;
+      console.log(`[WOMBAT ModeManager] Switched to ${mode} mode`);
+      this.refreshUI();
+    },
+
+    /**
+     * Refresh UI to display current mode's values
+     */
+    refreshUI: function () {
+      const currentState = this.currentMode === "target" ? TargetState : ReferenceState;
+      const fieldIds = ["d_198", "d_199", "d_202", "h_200", "h_201", "h_203"];
+
+      fieldIds.forEach((fieldId) => {
+        const value = currentState.getValue(fieldId);
+        if (value !== null) {
+          updateWombatDOM(fieldId, value);
+        }
+      });
+    },
+
+    /**
+     * Update calculated display values in DOM
+     */
+    updateCalculatedDisplayValues: function () {
+      const currentState = this.currentMode === "target" ? TargetState : ReferenceState;
+      const calculatedFields = ["h_200", "h_201", "h_203"];
+
+      calculatedFields.forEach((fieldId) => {
+        const value = currentState.getValue(fieldId);
+        if (value !== null) {
+          updateWombatDOM(fieldId, value);
+        }
+      });
+    },
+
+    /**
+     * Get value from current mode's state
+     */
+    getValue: function (fieldId) {
+      const currentState = this.currentMode === "target" ? TargetState : ReferenceState;
+      return currentState.getValue(fieldId);
+    },
+
+    /**
+     * Set value in current mode's state and publish to StateManager
+     * MODE-AWARE PUBLISHING: Target publishes unprefixed, Reference publishes ref_ prefixed
+     */
+    setValue: function (fieldId, value, source = "user-modified") {
+      const currentState = this.currentMode === "target" ? TargetState : ReferenceState;
+      currentState.setValue(fieldId, value);
+
+      // Mode-aware publishing to StateManager
+      if (this.currentMode === "target") {
+        // Target mode: publish unprefixed
+        window.TEUI.StateManager.setValue(fieldId, value, source);
+      } else {
+        // Reference mode: publish with ref_ prefix
+        window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, source);
+      }
+    },
+  };
+
+  //==========================================================================
   // FIELD DEFINITIONS (Section 20 - 200 series)
   //==========================================================================
 
@@ -292,8 +461,9 @@ window.TEUI.SectionModules.sect19 = (function () {
   // GEOMETRY SOLVER (Constraint-Driven "Jello Cube")
   //==========================================================================
 
-  function solveGeometry() {
-    console.log("[WOMBAT] Solving geometry from thermal constraints...");
+  function solveGeometry(isReferenceCalculation = false) {
+    const mode = isReferenceCalculation ? "Reference" : "Target";
+    console.log(`[WOMBAT] Solving geometry from thermal constraints (${mode} mode)...`);
 
     // Read inputs from StateManager and Pattern A sections
     // KISS: Use h_15 (Conditioned Area) instead of d_106 (Total Floor Area)
@@ -302,17 +472,18 @@ window.TEUI.SectionModules.sect19 = (function () {
     const roofArea = parseFloat(window.TEUI?.StateManager?.getValue("d_85")) || 100;
     const wallArea = parseFloat(window.TEUI?.StateManager?.getValue("d_86")) || 160;
 
-    // ⚠️ Read from WOMBAT mirror fields (d_198, d_199)
-    // These are synced bidirectionally with Section 12's d_105/d_103
-    const volume = parseFloat(window.TEUI?.StateManager?.getValue("d_198")) || 1000;
-    const stories = parseFloat(window.TEUI?.StateManager?.getValue("d_199")) || 1;
+    // ⚠️ DUAL-STATE: Read from appropriate state based on calculation mode
+    // Mirror fields: d_198 (volume) ↔ S12 d_105, d_199 (stories) ↔ S12 d_103
+    const currentState = isReferenceCalculation ? ReferenceState : TargetState;
+    const volume = parseFloat(window.TEUI.parseNumeric(currentState.getValue("d_198")) || 8000);
+    const stories = parseFloat(currentState.getValue("d_199") || 1);
 
-    // User preferences
+    // User preferences - aspect ratio slider
     // Aspect ratio slider: -4 to +4, centered at 0
     // 0 = square (1:1)
     // Positive = landscape (wider than tall): +1 = 2:1, +2 = 3:1, +4 = 5:1
     // Negative = portrait (taller than wide): -1 = 1:2, -2 = 1:3, -4 = 1:5
-    const aspectRatioRaw = parseFloat(window.TEUI?.StateManager?.getValue("d_202")) || 0.0;
+    const aspectRatioRaw = parseFloat(currentState.getValue("d_202") || 0);
     const aspectRatio = aspectRatioRaw >= 0 ? (1 + aspectRatioRaw) : (1 / (1 - aspectRatioRaw));
 
     // Phase 1: Footprint (X-Y plane, always horizontal)
@@ -374,12 +545,13 @@ window.TEUI.SectionModules.sect19 = (function () {
       volume: volume,
     };
 
-    // Update calculated fields in StateManager
-    window.TEUI?.StateManager?.setValue("h_200", length.toFixed(2), "calculated");
-    window.TEUI?.StateManager?.setValue("h_201", width.toFixed(2), "calculated");
-    window.TEUI?.StateManager?.setValue("h_203", storyHeight.toFixed(2), "calculated");
+    // DUAL-STATE: Store calculated values in appropriate state object
+    // (Will be published to StateManager by calculateTargetModel/calculateReferenceModel)
+    currentState.setValue("h_200", length.toFixed(2));
+    currentState.setValue("h_201", width.toFixed(2));
+    currentState.setValue("h_203", storyHeight.toFixed(2));
 
-    console.log("[WOMBAT] Geometry solved:", solvedGeometry);
+    console.log(`[WOMBAT] Geometry solved (${mode} mode):`, solvedGeometry);
     return solvedGeometry;
   }
 
@@ -425,10 +597,12 @@ window.TEUI.SectionModules.sect19 = (function () {
     ctx.fillText("Constraint-driven thermal visualization (areas → form)", config.canvasWidth / 2, config.canvasHeight / 2 + 30);
   }
 
-  function updateVisualization() {
+  function updateVisualization(mode = "target") {
     if (!isActivated) return;
 
-    const geometry = solveGeometry();
+    // Solve geometry for the requested mode
+    const isReference = (mode === "reference");
+    const geometry = solveGeometry(isReference);
     currentModel = geometry;
 
     // Render isometric visualization with stacked stories
@@ -726,54 +900,97 @@ window.TEUI.SectionModules.sect19 = (function () {
   }
 
   //==========================================================================
+  // DOM UPDATE HELPERS
+  //==========================================================================
+
+  /**
+   * Update WOMBAT field display in DOM using FieldManager
+   */
+  function updateWombatDOM(fieldId, value) {
+    if (!window.TEUI?.FieldManager?.updateFieldDisplay) {
+      console.warn(`[WOMBAT] FieldManager.updateFieldDisplay not available for ${fieldId}`);
+      return;
+    }
+
+    const fieldDef = window.TEUI.FieldManager.getField(fieldId);
+    if (fieldDef) {
+      try {
+        window.TEUI.FieldManager.updateFieldDisplay(fieldId, value, fieldDef);
+      } catch (e) {
+        console.error(`[WOMBAT] Error updating DOM for ${fieldId}:`, e);
+      }
+    }
+  }
+
+  //==========================================================================
   // EVENT HANDLERS
   //==========================================================================
 
   function setupFieldListeners() {
     const sectionElement = document.getElementById("wombat");
-    if (!sectionElement) return;
+    if (!sectionElement) {
+      console.warn("[WOMBAT] setupFieldListeners: Section element #wombat not found");
+      return;
+    }
 
     // ⚠️ CRITICAL: WOMBAT owns d_198 and d_199 - must publish to StateManager on user edit
     // Per 4012-CHEATSHEET Anti-Pattern 6: Only listen to OWN input fields via DOM
 
     // Handle d_199 dropdown (stories)
     const storiesDropdown = sectionElement.querySelector('[data-field-id="d_199"]');
+    console.log(`[WOMBAT] setupFieldListeners: Stories dropdown found =`, storiesDropdown);
     if (storiesDropdown && !storiesDropdown.hasWombatListener) {
-      storiesDropdown.addEventListener("change", function() {
+      storiesDropdown.addEventListener("change", function(event) {
         const fieldId = this.getAttribute("data-field-id");
-        window.TEUI?.StateManager?.setValue(fieldId, this.value, "user-modified");
-        console.log(`[WOMBAT] Published ${fieldId} = ${this.value} to StateManager`);
+        const value = this.value;
+        console.log(`[WOMBAT DOM] Stories dropdown changed: ${fieldId} = "${value}" (type: ${typeof value})`);
 
-        if (isActivated) {
-          updateVisualization();
+        if (value && value !== "undefined") {
+          // MODE-AWARE: Use ModeManager.setValue for dual-state publishing
+          ModeManager.setValue(fieldId, value, "user-modified");
+          console.log(`[WOMBAT] ✅ Published ${fieldId} = ${value} via ModeManager (${ModeManager.currentMode} mode)`);
+
+          if (isActivated) {
+            calculateAll(); // Will run dual-engine calculations
+          }
+        } else {
+          console.error(`[WOMBAT] ❌ Dropdown value is invalid: "${value}"`);
         }
       });
       storiesDropdown.hasWombatListener = true;
+      console.log(`[WOMBAT] ✅ Stories dropdown listener attached to d_199`);
     }
 
     // Handle d_198 contenteditable field (volume)
     const volumeField = sectionElement.querySelector('[data-field-id="d_198"][contenteditable="true"]');
+    console.log(`[WOMBAT] setupFieldListeners: Volume field found =`, volumeField);
     if (volumeField && !volumeField.hasWombatListener) {
       volumeField.addEventListener("blur", function(event) {
         const field = event.target;
         const fieldId = field.getAttribute("data-field-id");
         if (!fieldId) return;
 
-        const numValue = window.TEUI.parseNumeric(field.textContent);
+        const textValue = field.textContent;
+        console.log(`[WOMBAT DOM] Volume field blurred: ${fieldId} = "${textValue}"`);
+
+        const numValue = window.TEUI.parseNumeric(textValue);
         if (!isNaN(numValue) && isFinite(numValue)) {
           const formattedValue = window.TEUI.formatNumber(numValue, "number-2dp");
           field.textContent = formattedValue;
 
-          // Publish to StateManager (WOMBAT doesn't have dual-state, publishes directly)
-          window.TEUI?.StateManager?.setValue(fieldId, String(numValue), "user-modified");
-          console.log(`[WOMBAT] Published ${fieldId} = ${numValue} to StateManager`);
+          // MODE-AWARE: Use ModeManager.setValue for dual-state publishing
+          ModeManager.setValue(fieldId, String(numValue), "user-modified");
+          console.log(`[WOMBAT] ✅ Published ${fieldId} = ${numValue} via ModeManager (${ModeManager.currentMode} mode)`);
 
           if (isActivated) {
-            updateVisualization();
+            calculateAll(); // Will run dual-engine calculations
           }
+        } else {
+          console.error(`[WOMBAT] ❌ Volume value is invalid: "${textValue}" → ${numValue}`);
         }
       });
       volumeField.hasWombatListener = true;
+      console.log(`[WOMBAT] ✅ Volume field listener attached to d_198`);
     }
   }
 
@@ -839,48 +1056,56 @@ window.TEUI.SectionModules.sect19 = (function () {
       });
 
       // ⚠️ MIRROR FIELD SYNC: Section 12 → WOMBAT (d_105→d_198, d_103→d_199)
-      // When S12 volume/stories change, sync to WOMBAT mirror fields
+      // When S12 volume/stories change, sync to WOMBAT mirror fields AND recalculate
       window.TEUI.StateManager.addListener("d_105", (newValue) => {
-        const currentValue = window.TEUI?.StateManager?.getValue("d_198");
+        const currentValue = TargetState.getValue("d_198");
+        console.log(`[WOMBAT SYNC] d_105 changed: ${currentValue} → ${newValue}`);
         if (currentValue !== newValue) {
-          window.TEUI.StateManager.setValue("d_198", newValue, "external");
-          console.log(`[WOMBAT] Synced d_198 = ${newValue} from S12 (d_105)`);
-          if (isActivated) {
-            updateVisualization();
-          }
+          // Update TargetState
+          TargetState.setValue("d_198", newValue);
+          // Update DOM
+          updateWombatDOM("d_198", newValue);
+          console.log(`[WOMBAT] ✅ Synced d_198 = ${newValue} from S12 (d_105)`);
+          // Recalculate (will run both engines and update visualization)
+          calculateAll();
         }
       });
 
       window.TEUI.StateManager.addListener("ref_d_105", (newValue) => {
-        const currentValue = window.TEUI?.StateManager?.getValue("ref_d_198");
+        const currentValue = ReferenceState.getValue("d_198");
+        console.log(`[WOMBAT SYNC] ref_d_105 changed: ${currentValue} → ${newValue}`);
         if (currentValue !== newValue) {
-          window.TEUI.StateManager.setValue("ref_d_198", newValue, "external");
-          console.log(`[WOMBAT] Synced ref_d_198 = ${newValue} from S12 (ref_d_105)`);
-          if (isActivated) {
-            updateVisualization();
-          }
+          // Update ReferenceState
+          ReferenceState.setValue("d_198", newValue);
+          console.log(`[WOMBAT] ✅ Synced ref_d_198 = ${newValue} from S12 (ref_d_105)`);
+          // Recalculate (will run both engines and update visualization)
+          calculateAll();
         }
       });
 
       window.TEUI.StateManager.addListener("d_103", (newValue) => {
-        const currentValue = window.TEUI?.StateManager?.getValue("d_199");
+        const currentValue = TargetState.getValue("d_199");
+        console.log(`[WOMBAT SYNC] d_103 changed: ${currentValue} → ${newValue}`);
         if (currentValue !== newValue) {
-          window.TEUI.StateManager.setValue("d_199", newValue, "external");
-          console.log(`[WOMBAT] Synced d_199 = ${newValue} from S12 (d_103)`);
-          if (isActivated) {
-            updateVisualization();
-          }
+          // Update TargetState
+          TargetState.setValue("d_199", newValue);
+          // Update DOM
+          updateWombatDOM("d_199", newValue);
+          console.log(`[WOMBAT] ✅ Synced d_199 = ${newValue} from S12 (d_103)`);
+          // Recalculate (will run both engines and update visualization)
+          calculateAll();
         }
       });
 
       window.TEUI.StateManager.addListener("ref_d_103", (newValue) => {
-        const currentValue = window.TEUI?.StateManager?.getValue("ref_d_199");
+        const currentValue = ReferenceState.getValue("d_199");
+        console.log(`[WOMBAT SYNC] ref_d_103 changed: ${currentValue} → ${newValue}`);
         if (currentValue !== newValue) {
-          window.TEUI.StateManager.setValue("ref_d_199", newValue, "external");
-          console.log(`[WOMBAT] Synced ref_d_199 = ${newValue} from S12 (ref_d_103)`);
-          if (isActivated) {
-            updateVisualization();
-          }
+          // Update ReferenceState
+          ReferenceState.setValue("d_199", newValue);
+          console.log(`[WOMBAT] ✅ Synced ref_d_199 = ${newValue} from S12 (ref_d_103)`);
+          // Recalculate (will run both engines and update visualization)
+          calculateAll();
         }
       });
     }
@@ -934,12 +1159,47 @@ window.TEUI.SectionModules.sect19 = (function () {
     }
   }
 
+  /**
+   * DUAL-ENGINE CALCULATIONS
+   * Per Pattern A architecture: ALWAYS run both Target and Reference calculations
+   */
+
+  function calculateTargetModel() {
+    const geometry = solveGeometry(false); // isReferenceCalculation = false
+
+    // Publish calculated dimensions to StateManager (unprefixed for Target)
+    window.TEUI.StateManager.setValue("h_200", geometry.footprint.length.toFixed(2), "calculated");
+    window.TEUI.StateManager.setValue("h_201", geometry.footprint.width.toFixed(2), "calculated");
+    window.TEUI.StateManager.setValue("h_203", geometry.storyHeight.toFixed(2), "calculated");
+
+    return geometry;
+  }
+
+  function calculateReferenceModel() {
+    const geometry = solveGeometry(true); // isReferenceCalculation = true
+
+    // Publish calculated dimensions to StateManager (ref_ prefixed for Reference)
+    window.TEUI.StateManager.setValue("ref_h_200", geometry.footprint.length.toFixed(2), "calculated");
+    window.TEUI.StateManager.setValue("ref_h_201", geometry.footprint.width.toFixed(2), "calculated");
+    window.TEUI.StateManager.setValue("ref_h_203", geometry.storyHeight.toFixed(2), "calculated");
+
+    return geometry;
+  }
+
   function calculateAll() {
-    // WOMBAT doesn't calculate - it visualizes
-    // Calculations happen in solveGeometry() when activated
+    // DUAL-ENGINE: ALWAYS run both Target and Reference calculations
+    const targetGeometry = calculateTargetModel();
+    const referenceGeometry = calculateReferenceModel();
+
+    // Update visualization ONLY if activated
     if (isActivated) {
-      updateVisualization();
+      // Show visualization for current mode
+      const mode = ModeManager?.currentMode || "target";
+      updateVisualization(mode);
     }
+
+    // Update calculated display values in DOM for current mode
+    ModeManager.updateCalculatedDisplayValues();
   }
 
   //==========================================================================
@@ -968,6 +1228,9 @@ document.addEventListener("DOMContentLoaded", function () {
     window.TEUI.sect19 = {
       calculateAll: module.calculateAll,
       solveGeometry: module.solveGeometry,
+      ModeManager: ModeManager,
+      TargetState: TargetState,
+      ReferenceState: ReferenceState,
     };
   }
 });
