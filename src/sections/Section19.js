@@ -294,14 +294,20 @@ window.TEUI.SectionModules.sect19 = (function () {
   function solveGeometry() {
     console.log("[WOMBAT] Solving geometry from thermal constraints...");
 
-    // Read inputs from StateManager
+    // Read inputs from StateManager and Pattern A sections
     // KISS: Use h_15 (Conditioned Area) instead of d_106 (Total Floor Area)
     // h_15 = thermal envelope area (heated space only)
     const conditionedArea = parseFloat(window.TEUI?.StateManager?.getValue("h_15")) || 100;
-    const volume = parseFloat(window.TEUI?.StateManager?.getValue("d_105")) || 1000;
     const roofArea = parseFloat(window.TEUI?.StateManager?.getValue("d_85")) || 100;
     const wallArea = parseFloat(window.TEUI?.StateManager?.getValue("d_86")) || 160;
-    const stories = parseFloat(window.TEUI?.StateManager?.getValue("d_103")) || 1;
+
+    // ⚠️ CRITICAL: d_103 and d_105 are Pattern A fields (Section 12 dual-state)
+    // Must read from sect12.ModeManager (mode-aware) to respect Target vs Reference
+    const sect12 = window.TEUI?.SectionModules?.sect12;
+    const volume = parseFloat(sect12?.ModeManager?.getValue("d_105")) ||
+                   parseFloat(window.TEUI?.StateManager?.getValue("d_105")) || 1000;
+    const stories = parseFloat(sect12?.ModeManager?.getValue("d_103")) ||
+                    parseFloat(window.TEUI?.StateManager?.getValue("d_103")) || 1;
 
     // User preferences
     // Aspect ratio slider: -4 to +4, centered at 0
