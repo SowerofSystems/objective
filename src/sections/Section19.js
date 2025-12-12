@@ -729,8 +729,60 @@ window.TEUI.SectionModules.sect19 = (function () {
   // EVENT HANDLERS
   //==========================================================================
 
+  function setupFieldListeners() {
+    const sectionElement = document.getElementById("wombat");
+    if (!sectionElement) return;
+
+    // ⚠️ CRITICAL: WOMBAT owns d_198 and d_199 - must publish to StateManager on user edit
+    // Per 4012-CHEATSHEET Anti-Pattern 6: Only listen to OWN input fields via DOM
+
+    // Handle d_199 dropdown (stories)
+    const storiesDropdown = sectionElement.querySelector('[data-field-id="d_199"]');
+    if (storiesDropdown && !storiesDropdown.hasWombatListener) {
+      storiesDropdown.addEventListener("change", function() {
+        const fieldId = this.getAttribute("data-field-id");
+        window.TEUI?.StateManager?.setValue(fieldId, this.value, "user-modified");
+        console.log(`[WOMBAT] Published ${fieldId} = ${this.value} to StateManager`);
+
+        if (isActivated) {
+          updateVisualization();
+        }
+      });
+      storiesDropdown.hasWombatListener = true;
+    }
+
+    // Handle d_198 contenteditable field (volume)
+    const volumeField = sectionElement.querySelector('[data-field-id="d_198"][contenteditable="true"]');
+    if (volumeField && !volumeField.hasWombatListener) {
+      volumeField.addEventListener("blur", function(event) {
+        const field = event.target;
+        const fieldId = field.getAttribute("data-field-id");
+        if (!fieldId) return;
+
+        const numValue = window.TEUI.parseNumeric(field.textContent);
+        if (!isNaN(numValue) && isFinite(numValue)) {
+          const formattedValue = window.TEUI.formatNumber(numValue, "number-2dp");
+          field.textContent = formattedValue;
+
+          // Publish to StateManager (WOMBAT doesn't have dual-state, publishes directly)
+          window.TEUI?.StateManager?.setValue(fieldId, String(numValue), "user-modified");
+          console.log(`[WOMBAT] Published ${fieldId} = ${numValue} to StateManager`);
+
+          if (isActivated) {
+            updateVisualization();
+          }
+        }
+      });
+      volumeField.hasWombatListener = true;
+    }
+  }
+
   function initializeEventHandlers() {
     console.log("[WOMBAT] Initializing event handlers");
+
+    // Setup field blur handlers for WOMBAT's own input fields (d_198, d_199)
+    // Per 4012-CHEATSHEET: Sections ONLY listen to their OWN input fields via DOM
+    setupFieldListeners();
 
     // Aspect ratio slider
     const aspectSlider = document.querySelector('[data-field-id="d_202"] input[type="range"]');
@@ -841,11 +893,45 @@ window.TEUI.SectionModules.sect19 = (function () {
   function onSectionRendered() {
     console.log("[WOMBAT] Section 19 rendered");
 
+    // Initialize mirror fields from S12 on first load
+    initializeMirrorFields();
+
     // Initialize canvas
     setTimeout(() => {
       initializeCanvas();
       createActivationControls();
     }, 100);
+  }
+
+  function initializeMirrorFields() {
+    // ⚠️ CRITICAL: Initialize WOMBAT mirror fields from S12 on section load
+    // This ensures d_198/d_199 are synced with d_105/d_103 from the start
+    if (window.TEUI?.StateManager) {
+      const d_105 = window.TEUI.StateManager.getValue("d_105");
+      const d_103 = window.TEUI.StateManager.getValue("d_103");
+      const ref_d_105 = window.TEUI.StateManager.getValue("ref_d_105");
+      const ref_d_103 = window.TEUI.StateManager.getValue("ref_d_103");
+
+      if (d_105) {
+        window.TEUI.StateManager.setValue("d_198", d_105, "initial");
+        console.log(`[WOMBAT] Initialized d_198 = ${d_105} from S12 (d_105)`);
+      }
+
+      if (d_103) {
+        window.TEUI.StateManager.setValue("d_199", d_103, "initial");
+        console.log(`[WOMBAT] Initialized d_199 = ${d_103} from S12 (d_103)`);
+      }
+
+      if (ref_d_105) {
+        window.TEUI.StateManager.setValue("ref_d_198", ref_d_105, "initial");
+        console.log(`[WOMBAT] Initialized ref_d_198 = ${ref_d_105} from S12 (ref_d_105)`);
+      }
+
+      if (ref_d_103) {
+        window.TEUI.StateManager.setValue("ref_d_199", ref_d_103, "initial");
+        console.log(`[WOMBAT] Initialized ref_d_199 = ${ref_d_103} from S12 (ref_d_103)`);
+      }
+    }
   }
 
   function calculateAll() {
