@@ -1,23 +1,30 @@
-# Reference Mode Set Values Investigation - Phase 3
-**Status**: 🔍 **ACTIVE INVESTIGATION**
+# Reference Mode Set Values - RESOLVED
+**Status**: ✅ **FIXED** (with known Copy regression)
 **Branch**: REF-MODE-UNITY
 **Date**: 2025-12-11
-**Focus**: Fix Set Values without breaking Import/Copy systems
+**Commits**: Fix #5 (28bc755), Fix #6 (1c26a2b), Test Results (8eddb1f)
 
 ---
 
 ## Executive Summary
 
-**Working Systems** ✅:
+**Fixed Systems** ✅:
 1. **Import** (CSV/Excel) - Perfect dual-state isolation
-2. **Copy from Target** (Geometry/Code/All) - Perfect Target→Reference copying
+2. **Set Values** (ReferenceValues.js) - Fully bidirectional mode-aware operation
+   - Target mode: Updates only Target model with code minimums
+   - Reference mode: Updates only Reference model with selected standard
 
-**Broken System** ❌:
-3. **Set Values** (ReferenceValues.js overlay) - Works on fresh page load, fails post-import
+**Regression** ⚠️:
+3. **Copy from Target** (Geometry/Code/All) - Functions inverted in Reference mode
+   - Target mode: Works correctly (no-op, copies Target to itself)
+   - Reference mode: Inverted - copies Reference→Target instead of Target→Reference
+   - **Fix Required**: Dec 12 - Add mode validation to Copy functions
 
-**The Bug**: After CSV/Excel import, clicking "Set Values" in Reference mode contaminates **BOTH** Target and Reference models with the same ReferenceValues.js data.
+**Original Bug (FIXED)**: After CSV/Excel import, clicking "Set Values" in Reference mode contaminated BOTH Target and Reference models with identical ReferenceValues.js data.
 
-**Root Cause Hypothesis**: Import's `loadReferenceData()` call populates `activeReferenceDataSet` cache with Target values. Post-import Set Values reads from this **stale cache** during `calculateAll()`, causing contamination.
+**Root Cause**: `syncPatternASections()` was syncing BOTH TargetState and ReferenceState from global StateManager. In Reference mode, `TargetState.syncFromGlobalState()` called `StateManager.getValue("f_85")` which returned Reference values due to global UI mode check, contaminating Target's isolated state.
+
+**Solution (Fix #5 + Fix #6)**: Mode-aware state synchronization - skip TargetState sync in Reference mode, skip ReferenceState sync in Target mode.
 
 ---
 
@@ -29,11 +36,11 @@
 |---------|--------|------------------|------------|
 | **Entry Points** | `processImportedCSV()` (Line 314)<br>`processImportedExcel()` (Line 105) | `mirrorGeometry()` (RT:931)<br>`mirrorGeometryPlusCode()` (RT:1031)<br>`mirrorAllInputs()` (RT:1149) | `applyReferenceValuesFromStandard()` (Line 999) |
 | **Dual-State Method** | Explicit (Row 2/3, REPORT/REFERENCE sheets) | Direct Target→Reference copy | Mode-aware prefix logic (`targetMode` param) |
-| **skipRecalculation** | `false` (Target)<br>`true` (Reference) | N/A (no Import System) | `true` (Fix #1 - Dec 9) |
-| **loadReferenceData()** | ✅ YES (Target import only, Line 841) | ❌ NO | ❌ NO (Fix #1 prevents contamination) |
+| **skipRecalculation** | `false` (Target)<br>`true` (Reference) | N/A (no Import System) | `true` |
+| **loadReferenceData()** | ✅ YES (Target import only, Line 841) | ❌ NO | ❌ NO |
 | **Quarantine Pattern** | ✅ Yes | ✅ Yes | ✅ Yes |
-| **Pattern A Sync** | Full (`syncPatternASections()`) | Full (delegates to FileHandler) | Partial (`syncPatternASections(true)` - skipAreaSync) |
-| **Status** | ✅ WORKS | ✅ WORKS | ❌ FAILS POST-IMPORT |
+| **Pattern A Sync** | Full (both states) | Full (both states) | **Mode-aware** (Fix #6: skipTargetSync OR skipReferenceSync) |
+| **Status** | ✅ WORKS | ⚠️ REGRESSION (inverted in Ref mode) | ✅ FIXED |
 
 ---
 
@@ -190,9 +197,36 @@ window.TEUI.Calculator.calculateAll();
 window.TEUI.FileHandler.syncPatternASections(); // No skipAreaSync flag
 ```
 
+### ⚠️ Known Regression (Dec 11, 2025)
+
+**Observed Behavior After Fix #6**:
+- **Target mode**: Copy Geometry works correctly (no-op, copies Target to itself)
+- **Reference mode**: Copy functions **INVERTED** - copies Reference→Target instead of Target→Reference
+
+**Example Test**:
+1. Set Target h_16 (conditioned area) = 200
+2. Switch to Reference mode
+3. Set Reference h_16 = 6000
+4. Click "Copy Geometry from Target"
+5. **Expected**: Reference h_16 = 200 (Target→Reference)
+6. **Actual**: Target h_16 = 6000 (Reference→Target) ❌ INVERTED!
+
+**Root Cause**: Copy functions lack mode awareness. They always call `FileHandler.syncPatternASections()` which now uses mode-aware sync based on global UI state.
+
+**Impact**: Medium - breaks Reference mode Copy workflow
+
+**Fix Required** (Dec 12): Add mode validation to Copy functions in [ReferenceToggle.js:931-1212](../../src/core/ReferenceToggle.js#L931-L1212):
+```javascript
+// Add at start of mirrorGeometry(), mirrorGeometryPlusCode(), mirrorAllInputs()
+if (!window.TEUI.ReferenceToggle.isReferenceMode()) {
+  console.warn('[ReferenceToggle] Copy from Target only available in Reference mode');
+  return;
+}
+```
+
 ---
 
-## System 3: Set Values (ReferenceValues.js overlay) - ❌ BROKEN POST-IMPORT
+## System 3: Set Values (ReferenceValues.js overlay) - ✅ FIXED
 
 ### Entry Point (FileHandler.js)
 ```javascript
@@ -238,8 +272,10 @@ try {
   // Inside updateStateFromImportData() when skipRecalculation=true:
   // Lines 831-842 - SKIPPED (no loadReferenceData call)
 
-  // 3. Sync Pattern A sections with skipAreaSync=true (Dec 10 fix)
-  this.syncPatternASections(true); // Attempts to skip area sync
+  // 3. Sync Pattern A sections - MODE-AWARE (Fix #6)
+  const skipTargetSync = targetMode === "reference";
+  const skipReferenceSync = targetMode === "target";
+  this.syncPatternASections(true, skipTargetSync, skipReferenceSync);
 
 } finally {
   // 4. QUARANTINE END
@@ -247,7 +283,7 @@ try {
 }
 
 // 5. Clean recalculation
-this.calculator.calculateAll(); // ❌ Contamination happens here!
+this.calculator.calculateAll(); // ✅ No contamination - isolated state sync!
 ```
 
 ### loadReferenceData() Call
@@ -264,17 +300,21 @@ this.updateStateFromImportData(importedData, 0, true); // skipRecalculation=TRUE
 - **After**: `skipRecalculation=true` → Skips `loadReferenceData()` → **Works on fresh page load**
 
 ### Pattern A Sync
-**⚠️ PARTIAL SYNC - Area sync disabled** (Fix #3 - Dec 10, Commit 0e319e6):
+**✅ MODE-AWARE SYNC** (Fix #5 + Fix #6 - Dec 11, Commits 28bc755 + 1c26a2b):
 
 ```javascript
-this.syncPatternASections(true); // skipAreaSync=true (Line 1073)
+// Line 1075-1080
+const skipTargetSync = targetMode === "reference";     // Skip Target in Reference mode
+const skipReferenceSync = targetMode === "target";     // Skip Reference in Target mode
+this.syncPatternASections(true, skipTargetSync, skipReferenceSync);
 ```
 
-**Why**: Attempted to prevent contamination by skipping S11 area sync which calls `calculateAll()`.
+**How It Works**:
+- **Reference mode**: Only syncs ReferenceState from `ref_*` fields → Target isolated ✅
+- **Target mode**: Only syncs TargetState from unprefixed fields → Reference isolated ✅
+- Area sync always skipped (ReferenceValues don't affect window areas)
 
-**Theory**: ReferenceValues overlays change insulation/SHGC but NOT window areas, so area sync shouldn't be needed.
-
-**Problem**: Contamination persists despite this fix.
+**Result**: Perfect bidirectional isolation - no cross-contamination in either mode.
 
 ---
 
