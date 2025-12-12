@@ -611,9 +611,6 @@
             if (isReferenceField) {
               this.stateManager.setValue(fieldId, parsedValue, "imported");
               updatedCount++;
-              console.log(
-                `[FileHandler] [P1] Control field imported: ${fieldId} = ${parsedValue}`
-              );
               return; // Done with this reference field
             }
 
@@ -732,9 +729,6 @@
 
               this.stateManager.setValue(fieldId, parsedValue, "imported");
               updatedCount++;
-              console.log(
-                `[FileHandler] Reference field imported: ${fieldId} = ${parsedValue}`
-              );
               return; // Done with this reference field
             }
 
@@ -867,7 +861,17 @@
      * for state sovereignty per CHEATSHEET.md. Import populates global StateManager,
      * but isolated states need explicit sync to use imported values in calculations.
      */
-    syncPatternASections() {
+    /**
+     * Sync Pattern A sections from global StateManager
+     * @param {boolean} skipAreaSync - If true, skip S11 area sync to prevent contamination during overlays
+     * @param {boolean} skipTargetSync - If true, skip TargetState sync (Reference mode Set Values)
+     * @param {boolean} skipReferenceSync - If true, skip ReferenceState sync (Target mode Set Values)
+     */
+    syncPatternASections(
+      skipAreaSync = false,
+      skipTargetSync = false,
+      skipReferenceSync = false
+    ) {
       // Pattern A sections per CHEATSHEET.md (lines 225-227)
       const patternASections = [
         { id: "sect02", name: "S02" },
@@ -889,22 +893,23 @@
       console.log(
         "[FileHandler] 🔧 PHASE 2: Syncing Pattern A sections from global StateManager..."
       );
+      if (skipAreaSync) {
+        console.log(
+          "[FileHandler] ⚠️ Skipping S11 area sync to prevent Target/Reference contamination during overlay"
+        );
+      }
 
       patternASections.forEach(({ id, name }) => {
         const section = window.TEUI?.SectionModules?.[id];
 
-        if (section?.TargetState?.syncFromGlobalState) {
-          console.log(`[FileHandler] Syncing ${name} TargetState...`);
+        if (!skipTargetSync && section?.TargetState?.syncFromGlobalState) {
           section.TargetState.syncFromGlobalState();
-        } else {
-          // Not an error - section may not have syncFromGlobalState yet
-          console.log(
-            `[FileHandler] ${name} TargetState.syncFromGlobalState() not available (not yet implemented)`
-          );
         }
 
-        if (section?.ReferenceState?.syncFromGlobalState) {
-          console.log(`[FileHandler] Syncing ${name} ReferenceState...`);
+        if (
+          !skipReferenceSync &&
+          section?.ReferenceState?.syncFromGlobalState
+        ) {
           section.ReferenceState.syncFromGlobalState();
         }
 
@@ -956,8 +961,12 @@
 
       // ✅ FIX (Oct 10): Manually sync S11 window areas from S10 AFTER all imports complete
       // ✅ FIX (Nov 2): Enable dual-state sync during import to populate Reference areas
+      // ✅ FIX (Dec 10): Skip area sync if skipAreaSync flag set (overlay operations don't change areas)
       // S11's syncFromGlobalState() no longer calls this to prevent premature sync
-      if (window.TEUI?.SectionModules?.sect11?.syncAreasFromS10) {
+      if (
+        !skipAreaSync &&
+        window.TEUI?.SectionModules?.sect11?.syncAreasFromS10
+      ) {
         console.log(
           "[FileHandler] 🔧 PHASE 2.5: Syncing S11 window areas from S10..."
         );
@@ -976,6 +985,10 @@
 
         console.log(
           "[FileHandler] ✅ PHASE 2.5: S11 window area sync complete"
+        );
+      } else if (skipAreaSync) {
+        console.log(
+          "[FileHandler] ⏭️ PHASE 2.5: Skipping S11 area sync (not needed for overlay)"
         );
       }
     }
@@ -1011,41 +1024,31 @@
         importedData[targetFieldId] = value;
       });
 
-      console.log(
-        `[FileHandler] Built importedData with ${Object.keys(importedData).length} fields for ${targetMode} mode`
-      );
-
       // 🔒 PHASE 1: IMPORT QUARANTINE START - Mute listeners
-      console.log(
-        "[FileHandler] 🔒 IMPORT QUARANTINE START - Muting listeners"
-      );
       window.TEUI.StateManager.muteListeners();
 
       try {
         // ✅ PHASE 2: Use the PROVEN import method (writes directly to StateManager)
-        this.updateStateFromImportData(importedData, 0, false);
+        // ⚠️ CRITICAL: Pass skipRecalculation=true to prevent loadReferenceData() contamination
+        // We've already written the values with correct prefixes - no need for additional reference loading
+        this.updateStateFromImportData(importedData, 0, true);
         console.log(
           `[FileHandler] Applied ${Object.keys(importedData).length} values via updateStateFromImportData`
         );
 
         // ✅ PHASE 3: Sync Pattern A sections FROM StateManager
-        console.log(
-          "[FileHandler] Syncing Pattern A sections FROM StateManager..."
-        );
-        this.syncPatternASections();
-        console.log("[FileHandler] Pattern A sections synced");
+        // ✅ FIX #6 (Dec 11): Mode-aware sync - only sync the state being written to
+        // Reference mode: Skip TargetState (preserve imported values), sync ReferenceState only
+        // Target mode: Skip ReferenceState (preserve reference values), sync TargetState only
+        const skipTargetSync = targetMode === "reference";
+        const skipReferenceSync = targetMode === "target";
+        this.syncPatternASections(true, skipTargetSync, skipReferenceSync);
       } finally {
         // 🔓 PHASE 4: IMPORT QUARANTINE END - Always unmute
         window.TEUI.StateManager.unmuteListeners();
-        console.log(
-          "[FileHandler] 🔓 IMPORT QUARANTINE END - Unmuting listeners"
-        );
       }
 
       // ✅ PHASE 5: Trigger complete calculation cascade
-      console.log(
-        "[FileHandler] Triggering calculateAll() with complete data..."
-      );
       if (
         this.calculator &&
         typeof this.calculator.calculateAll === "function"
@@ -1053,9 +1056,6 @@
         this.calculator.calculateAll();
 
         // ✅ PHASE 6: Final DOM refresh (show calculated results)
-        console.log(
-          "[FileHandler] 🔄 Refreshing all section UIs after calculations..."
-        );
         const allSections = [
           "sect02",
           "sect03",
@@ -1082,8 +1082,6 @@
             section.ModeManager.updateCalculatedDisplayValues();
           }
         });
-
-        console.log(`[FileHandler] ✅ ReferenceValues overlay complete`);
       } else {
         console.error(
           "[FileHandler] Calculator.calculateAll() not available - calculations not triggered"
