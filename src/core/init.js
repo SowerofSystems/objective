@@ -438,9 +438,9 @@ document.addEventListener("DOMContentLoaded", function () {
         const section = header.closest(".section");
         if (section.id === "keyValues") return;
 
-        // Special case: Section 19 (Notes & Debug) defaults to collapsed for cleaner UI
+        // Special case: WOMBAT and Notes sections default to collapsed for cleaner UI
         const shouldBeCollapsed =
-          collapsedSections[section.id] || section.id === "notes";
+          collapsedSections[section.id] || section.id === "wombat" || section.id === "notes";
 
         if (shouldBeCollapsed) {
           header.classList.add("collapsed");
@@ -559,8 +559,14 @@ document.addEventListener("DOMContentLoaded", function () {
   // Restore user preferences
   restoreUserPreferences();
 
-  // Ensure Section 19 (Notes & Debug) starts collapsed for cleaner UI
+  // Ensure WOMBAT and Notes sections start collapsed for cleaner UI
   // This runs after restoreUserPreferences to override any saved state
+  const wombatSection = document.querySelector("#wombat .section-header");
+  if (wombatSection && !wombatSection.classList.contains("collapsed")) {
+    wombatSection.classList.add("collapsed");
+    wombatSection.setAttribute("aria-expanded", "false");
+  }
+
   const notesSection = document.querySelector("#notes .section-header");
   if (notesSection && !notesSection.classList.contains("collapsed")) {
     notesSection.classList.add("collapsed");
