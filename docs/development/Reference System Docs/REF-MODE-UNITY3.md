@@ -1127,10 +1127,36 @@ this.syncPatternASections(true, skipTargetSync, skipReferenceSync);
   - Skips ReferenceState sync (preserves Reference values)
   - Syncs TargetState only (gets new ReferenceValues as code minimums)
 
-**Testing Required**: All six test cases must pass:
-1. ✅ Fresh page load Set Values (Target mode)
-2. ✅ Fresh page load Set Values (Reference mode)
-3. ⏳ Post-import Set Values (Target mode)
-4. ⏳ Post-import Set Values (Reference mode)
-5. ⏳ Import regression (must still work)
-6. ⏳ Copy regression (must still work)
+**Fix #6 Test Results (Dec 11, 2025 - Late Evening)**:
+
+✅ **SUCCESS - All Core Test Cases Pass!**
+
+1. ✅ **Fresh page load Set Values (Target mode)** - WORKS
+2. ✅ **Fresh page load Set Values (Reference mode)** - WORKS
+3. ✅ **Post-import Set Values (Target mode)** - WORKS (only Target updates)
+4. ✅ **Post-import Set Values (Reference mode)** - WORKS (only Reference updates)
+5. ✅ **Import regression** - WORKS (both models maintain isolation)
+6. ⚠️ **Copy from Target regression** - UNINTENDED SIDE EFFECT
+
+**Known Issue - Copy from Target (Dec 11, 2025)**:
+
+"Copy from Target" functions now work in BOTH Target and Reference modes, but should only work in Reference mode:
+- Expected: Copy buttons disabled/hidden in Target mode
+- Actual: Copy buttons work in Target mode, polluting Target with its own values
+
+**Root Cause**: Copy functions don't check UI mode before executing
+**Impact**: Low (user workflow doesn't typically use Copy in Target mode)
+**Fix Required**: Add mode guard to Copy functions - block execution unless in Reference mode
+
+**Location**: [ReferenceToggle.js:931-1212](../../src/core/ReferenceToggle.js#L931-L1212) - mirrorGeometry, mirrorGeometryPlusCode, mirrorAllInputs
+
+**Recommended Fix (Dec 12)**:
+```javascript
+// ReferenceToggle.js - Add at start of each Copy function
+if (!window.TEUI.ReferenceToggle.isReferenceMode()) {
+  console.warn('[ReferenceToggle] Copy from Target only available in Reference mode');
+  return;
+}
+```
+
+**Status**: Fix #5 + Fix #6 achieve primary goal (Set Values bidirectional isolation). Copy regression is minor edge case for Dec 12.
