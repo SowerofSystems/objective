@@ -1,9 +1,10 @@
 /**
- * Section19.js - TOPOMETRY: 3D Thermal Topology Visualization
+ * Section19.js - WOMBAT: 3D Thermal Topology Visualization
  * TEUI 4.012 - Created 2025-12-08
  *
- * TOPOMETRY generates a constraint-driven 3D thermal topology from area-based geometry.
- * This is NOT an architectural model - it's a thermal model as topology.
+ * WOMBAT generates a constraint-driven 3D thermal topology from area-based geometry.
+ * Like a wombat creates cubic output from inputs, we transform thermal geometry fields
+ * into cube-like topology. This is NOT an architectural model - it's a thermal model as topology.
  *
  * Core Principles:
  * - Volume is Sacred (d_105 ALWAYS preserved exactly)
@@ -67,7 +68,7 @@ window.TEUI.SectionModules.sect19 = (function () {
           type: "dropdown",
           dropdownId: "dd_d_103_s19",
           value: "1.5",
-          section: "topometry",
+          section: "wombat",
           tooltip: true,
           options: [
             { value: "1", name: "1" },
@@ -126,7 +127,7 @@ window.TEUI.SectionModules.sect19 = (function () {
           min: -4.0,
           max: 4.0,
           step: 0.1,
-          section: "topometry",
+          section: "wombat",
           tooltip: true,
           label: "Aspect Ratio: 0 = square, negative = portrait (tall), positive = landscape (wide)",
         },
@@ -291,7 +292,7 @@ window.TEUI.SectionModules.sect19 = (function () {
   //==========================================================================
 
   function solveGeometry() {
-    console.log("[TOPOMETRY] Solving geometry from thermal constraints...");
+    console.log("[WOMBAT] Solving geometry from thermal constraints...");
 
     // Read inputs from StateManager
     // KISS: Use h_15 (Conditioned Area) instead of d_106 (Total Floor Area)
@@ -340,7 +341,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       // Inverted pyramid (roof smaller than floor - visual conflict indicator)
       roofType = "inverted";
       roofPitch = -20; // Negative pitch
-      console.warn(`[TOPOMETRY] Roof area (${roofArea} m²) < Conditioned area (${footprintArea} m²) - Creating inverted geometry`);
+      console.warn(`[WOMBAT] Roof area (${roofArea} m²) < Conditioned area (${footprintArea} m²) - Creating inverted geometry`);
     }
 
     // Phase 4: Wall geometry (symmetric for now - asymmetry in Phase 2)
@@ -374,7 +375,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     window.TEUI?.StateManager?.setValue("h_201", width.toFixed(2), "calculated");
     window.TEUI?.StateManager?.setValue("h_203", storyHeight.toFixed(2), "calculated");
 
-    console.log("[TOPOMETRY] Geometry solved:", solvedGeometry);
+    console.log("[WOMBAT] Geometry solved:", solvedGeometry);
     return solvedGeometry;
   }
 
@@ -383,9 +384,9 @@ window.TEUI.SectionModules.sect19 = (function () {
   //==========================================================================
 
   function initializeCanvas() {
-    const canvas = document.getElementById("topometry-canvas");
+    const canvas = document.getElementById("wombat-canvas");
     if (!canvas) {
-      console.error("[TOPOMETRY] Canvas element not found");
+      console.error("[WOMBAT] Canvas element not found");
       return;
     }
 
@@ -410,7 +411,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     ctx.fillStyle = "#6c757d";
     ctx.font = "16px -apple-system, BlinkMacSystemFont, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("TOPOMETRY - 3D Thermal Topology", config.canvasWidth / 2, config.canvasHeight / 2 - 40);
+    ctx.fillText("WOMBAT - 3D Thermal Topology", config.canvasWidth / 2, config.canvasHeight / 2 - 40);
 
     ctx.font = "14px -apple-system, BlinkMacSystemFont, sans-serif";
     ctx.fillText("Click 'Activate Topology View' to generate 3D model", config.canvasWidth / 2, config.canvasHeight / 2);
@@ -427,7 +428,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     currentModel = geometry;
 
     // Render isometric visualization with stacked stories
-    const canvas = document.getElementById("topometry-canvas");
+    const canvas = document.getElementById("wombat-canvas");
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
@@ -576,16 +577,16 @@ window.TEUI.SectionModules.sect19 = (function () {
   //==========================================================================
 
   function createActivationControls() {
-    const container = document.querySelector(".topometry-controls-wrapper");
+    const container = document.querySelector(".wombat-controls-wrapper");
     if (!container) {
-      console.error("[TOPOMETRY] Controls wrapper not found");
+      console.error("[WOMBAT] Controls wrapper not found");
       return;
     }
 
     container.innerHTML = `
       <div style="display: flex; align-items: center; gap: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 20px;">
         <button
-          id="topometry-activate-btn"
+          id="wombat-activate-btn"
           class="btn btn-primary"
           style="padding: 8px 16px; font-weight: 500;"
         >
@@ -597,28 +598,28 @@ window.TEUI.SectionModules.sect19 = (function () {
         </div>
 
         <button
-          id="topometry-info-btn"
+          id="wombat-info-btn"
           class="btn btn-outline-secondary btn-sm"
           style="padding: 4px 12px; font-size: 13px;"
-          title="What is TOPOMETRY?"
+          title="What is WOMBAT?"
         >
           <i class="bi bi-info-circle"></i> Info
         </button>
 
-        <div id="topometry-status" style="padding: 6px 12px; background: white; border-radius: 4px; font-size: 12px; color: #666;">
+        <div id="wombat-status" style="padding: 6px 12px; background: white; border-radius: 4px; font-size: 12px; color: #666;">
           <span style="color: #dc3545;">●</span> Inactive
         </div>
       </div>
     `;
 
     // Attach activation handler
-    const activateBtn = document.getElementById("topometry-activate-btn");
+    const activateBtn = document.getElementById("wombat-activate-btn");
     if (activateBtn) {
       activateBtn.addEventListener("click", toggleActivation);
     }
 
     // Attach info modal handler
-    const infoBtn = document.getElementById("topometry-info-btn");
+    const infoBtn = document.getElementById("wombat-info-btn");
     if (infoBtn) {
       infoBtn.addEventListener("click", showInfoModal);
     }
@@ -633,14 +634,14 @@ window.TEUI.SectionModules.sect19 = (function () {
     modal.style.maxWidth = "600px";
 
     const header = document.createElement("h5");
-    header.textContent = "💡 What is TOPOMETRY?";
+    header.textContent = "💡 What is WOMBAT?";
     header.className = "pc-modal-header";
     header.style.color = "#007bff";
 
     const content = document.createElement("div");
     content.innerHTML = `
       <p style="margin: 0 0 15px 0; font-size: 14px; line-height: 1.6;">
-        TOPOMETRY shows how <strong>OBJECTIVE "sees" your building</strong> based on thermal areas you entered.
+        WOMBAT shows how <strong>OBJECTIVE "sees" your building</strong> based on thermal areas you entered.
         This is NOT a 3D architectural model - it's a <strong>thermal topology</strong> where areas drive form.
       </p>
       <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">
@@ -683,8 +684,8 @@ window.TEUI.SectionModules.sect19 = (function () {
   function toggleActivation() {
     isActivated = !isActivated;
 
-    const activateBtn = document.getElementById("topometry-activate-btn");
-    const statusIndicator = document.getElementById("topometry-status");
+    const activateBtn = document.getElementById("wombat-activate-btn");
+    const statusIndicator = document.getElementById("wombat-status");
 
     if (isActivated) {
       // Activate
@@ -696,7 +697,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         statusIndicator.innerHTML = '<span style="color: #28a745;">●</span> Active';
       }
 
-      console.log("[TOPOMETRY] Topology view activated");
+      console.log("[WOMBAT] Topology view activated");
       updateVisualization();
 
     } else {
@@ -709,10 +710,10 @@ window.TEUI.SectionModules.sect19 = (function () {
         statusIndicator.innerHTML = '<span style="color: #dc3545;">●</span> Inactive';
       }
 
-      console.log("[TOPOMETRY] Topology view deactivated");
+      console.log("[WOMBAT] Topology view deactivated");
 
       // Clear canvas
-      const canvas = document.getElementById("topometry-canvas");
+      const canvas = document.getElementById("wombat-canvas");
       if (canvas) {
         const ctx = canvas.getContext("2d");
         drawPlaceholder(ctx);
@@ -725,7 +726,7 @@ window.TEUI.SectionModules.sect19 = (function () {
   //==========================================================================
 
   function initializeEventHandlers() {
-    console.log("[TOPOMETRY] Initializing event handlers");
+    console.log("[WOMBAT] Initializing event handlers");
 
     // Aspect ratio slider
     const aspectSlider = document.querySelector('[data-field-id="d_202"] input[type="range"]');
@@ -765,7 +766,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       geometryFields.forEach(fieldId => {
         window.TEUI.StateManager.addListener(fieldId, () => {
           if (isActivated) {
-            console.log(`[TOPOMETRY] Geometry field ${fieldId} changed, updating visualization`);
+            console.log(`[WOMBAT] Geometry field ${fieldId} changed, updating visualization`);
             updateVisualization();
           }
         });
@@ -778,7 +779,7 @@ window.TEUI.SectionModules.sect19 = (function () {
   //==========================================================================
 
   function onSectionRendered() {
-    console.log("[TOPOMETRY] Section 19 rendered");
+    console.log("[WOMBAT] Section 19 rendered");
 
     // Initialize canvas
     setTimeout(() => {
@@ -788,7 +789,7 @@ window.TEUI.SectionModules.sect19 = (function () {
   }
 
   function calculateAll() {
-    // TOPOMETRY doesn't calculate - it visualizes
+    // WOMBAT doesn't calculate - it visualizes
     // Calculations happen in solveGeometry() when activated
     if (isActivated) {
       updateVisualization();
@@ -807,7 +808,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     onSectionRendered,
     calculateAll,
 
-    // TOPOMETRY-specific exports
+    // WOMBAT-specific exports
     solveGeometry,
     isActivated: () => isActivated,
     getCurrentModel: () => currentModel,

@@ -1,7 +1,7 @@
 /**
  * 4012-Section20.js
  * Notes & Quality Control Monitor Section for TEUI Calculator 4.012
- * (Formerly Section19 - renumbered 2025-12-08 for TOPOMETRY integration)
+ * (Formerly Section19 - renumbered 2025-12-08 for WOMBAT integration)
  */
 
 // Ensure namespace exists

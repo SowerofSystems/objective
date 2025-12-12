@@ -74,7 +74,7 @@ document.addEventListener("DOMContentLoaded", function () {
     sankeyDiagram: "bi-sliders2",
     dependencyDiagram: "bi-link-45deg",
     parallelCoordinates: "bi-shuffle",
-    topometry: "bi-bounding-box",
+    wombat: "bi-bounding-box",
     footer: "bi-info-square",
     notes: "bi-info-square",
   };
@@ -98,7 +98,7 @@ document.addEventListener("DOMContentLoaded", function () {
     sankeyDiagram: "Sankey",
     dependencyDiagram: "Depend",
     parallelCoordinates: "Optimize",
-    topometry: "Topometry",
+    wombat: "Wombat",
     notes: "Notes",
   };
 
@@ -121,7 +121,7 @@ document.addEventListener("DOMContentLoaded", function () {
     sankeyDiagram: "Energy Flow Diagram",
     dependencyDiagram: "Dependencies Graph",
     parallelCoordinates: "Optimization Analysis",
-    topometry: "TOPOMETRY - 3D Thermal Topology",
+    wombat: "WOMBAT - 3D Thermal Topology",
     notes: "Project Notes",
   };
 

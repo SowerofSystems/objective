@@ -1,8 +1,9 @@
-# Section 20: TOPOMETRY - 3D Building Wireframe Visualization
+# Section 19: WOMBAT - 3D Thermal Topology Visualization
 
-**Branch**: `TOPOMETRY`
-**Status**: Planning Phase
+**Branch**: `WOMBAT` (renamed to WOMBAT)
+**Status**: Active Development
 **Created**: 2025-12-08
+**Renamed**: 2025-12-12
 **Target Release**: 4.013
 
 ---
@@ -11,13 +12,13 @@
 
 OBJECTIVE TEUI currently tracks comprehensive building envelope geometry (roof, walls, windows, doors, foundation) by orientation and thermal performance. However, this data exists as **area-based thermal abstractions** without spatial representation.
 
-**TOPOMETRY** will leverage existing geometry data to generate a **3D wireframe building model** that:
+**WOMBAT** (like a wombat creates cubic output from inputs) will leverage existing geometry data to generate a **3D thermal topology model** that:
 - Visualizes building form derived from envelope areas and volumetric data
 - Provides interactive exploration of thermal performance in 3D space
 - Enables geometric validation (does my WWR visually match the building I designed?)
 - Creates export-ready 3D models for integration with external tools
 
-This feature will be implemented as **Section 20** following TEUI's modular architecture.
+This feature will be implemented as **Section 19** following TEUI's modular architecture.
 
 ---
 
@@ -50,7 +51,7 @@ This feature will be implemented as **Section 20** following TEUI's modular arch
 
 ### 1.2 Solution Approach - "Thermal Topology" Philosophy
 
-**TOPOMETRY** generates a **constraint-driven 3D thermal topology** from TEUI's area-based geometry:
+**WOMBAT** generates a **constraint-driven 3D thermal topology** from TEUI's area-based geometry:
 
 ```
 Thermal Areas (Input) → Constraint Solver → Deformable Geometry → Visual Feedback
@@ -95,7 +96,7 @@ User Input:
 
 Traditional CAD: ERROR - "Roof cannot be larger than floor in rectangular building"
 
-TOPOMETRY Response:
+WOMBAT Response:
 ✓ Floor: 150 m² rectangle (12.2m × 12.2m, assuming square)
 ✓ Height: 1000 m³ / 150 m² = 6.67m
 ✓ Roof: Pitched/curved to achieve 300 m² (pitch angle emerges: ~53°)
@@ -112,11 +113,11 @@ TOPOMETRY Response:
 
 **Problem**: Architects and designers think geometrically (walls, windows, roofs as physical objects), but **OBJECTIVE** thinks thermally (areas, U-values, heat flows).
 
-**Solution**: TOPOMETRY is the **translation layer** - it shows users how their thermal inputs are interpreted by the energy model.
+**Solution**: WOMBAT is the **translation layer** - it shows users how their thermal inputs are interpreted by the energy model.
 
 **Analogy for Users**:
 
-> **"Think of TOPOMETRY as OBJECTIVE's sketch of your building based on the thermal data you provided."**
+> **"Think of WOMBAT as OBJECTIVE's sketch of your building based on the thermal data you provided."**
 >
 > You told **OBJECTIVE**:
 > - "My building contains 1,000 m³ of conditioned space"
@@ -126,20 +127,20 @@ TOPOMETRY Response:
 >
 > **OBJECTIVE** doesn't know if your building is a cube, a rectangle, or an L-shape. It only knows the **thermal surfaces** you defined.
 >
-> TOPOMETRY creates a **wireframe representation** that satisfies these thermal constraints. If the model looks strange:
+> WOMBAT creates a **wireframe representation** that satisfies these thermal constraints. If the model looks strange:
 > - ✓ It's working correctly! It's showing you what your areas imply.
 > - ✓ Use this feedback to refine your inputs until the model matches your design intent.
 >
 > **This is not a CAD model** - it's a **thermal topology diagram** that helps you validate your energy model inputs.
 
-**UI Tooltip** (shown when user first opens Section 20):
+**UI Tooltip** (shown when user first opens Section 19):
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│  💡 What is TOPOMETRY?                                           │
+│  💡 What is WOMBAT?                                           │
 ├──────────────────────────────────────────────────────────────────┤
 │                                                                   │
-│  TOPOMETRY shows how OBJECTIVE "sees" your building based on     │
+│  WOMBAT shows how OBJECTIVE "sees" your building based on     │
 │  the thermal areas you entered (roof, walls, windows, etc.).     │
 │                                                                   │
 │  This is NOT a 3D architectural model - it's a THERMAL MODEL.    │
@@ -168,7 +169,7 @@ User Input:
 ✓ Walls: 160 m² (4 walls × 10m × 4m)
 ✓ Windows evenly distributed: 6 m² per orientation
 
-TOPOMETRY Result:
+WOMBAT Result:
 → Renders as a simple 10m × 10m × 4m box with flat roof
 → Constraint satisfaction: 100% (all green)
 → User sees: "This matches my design intent!"
@@ -183,7 +184,7 @@ User Input:
 ✓ Walls: 160 m²
 ✓ Windows: Balanced
 
-TOPOMETRY Result:
+WOMBAT Result:
 → Renders with steep pitched roof (~45° gable)
 → Constraint satisfaction: Roof 98%, Volume 100%, Walls 85% (yellow)
 → User sees: "Oh! My roof area implies a steep pitch I didn't intend.
@@ -199,7 +200,7 @@ User Input:
 ⚠ South wall net: 30 m² (short/narrow)
 ⚠ East/West walls: 40 m² each
 
-TOPOMETRY Result:
+WOMBAT Result:
 → Renders with North facade taller than South facade
 → Building looks tilted/asymmetric
 → Constraint satisfaction: Walls 92% (yellow)
@@ -528,7 +529,7 @@ svg.selectAll("path")
 
 **Philosophy**: Instead of deriving rigid dimensions and validating errors, we **solve for geometry that satisfies area constraints**, allowing the model to deform naturally.
 
-**New fields to add to TEUI** (Section 20 user preferences):
+**New fields to add to TEUI** (Section 19 user preferences):
 
 | Field ID | Label | Type | Default | Description |
 |----------|-------|------|---------|-------------|
@@ -629,7 +630,7 @@ function solveRoof(footprint) {
 
   if (areaRatio < 1.0) {
     // CONFLICT: Roof smaller than floor (physically impossible for standard building)
-    console.warn(`[TOPOMETRY] Roof area (${roofArea} m²) < Floor area (${floorArea} m²) - Creating inverted pyramid`);
+    console.warn(`[WOMBAT] Roof area (${roofArea} m²) < Floor area (${floorArea} m²) - Creating inverted pyramid`);
     return {
       type: "inverted",
       pitch: -Math.atan((1 - areaRatio) * 2),  // Negative pitch (inverted)
@@ -739,7 +740,7 @@ function distributeWindows(wallGeometry) {
     const wallArea = wall.width * wall.height;
 
     if (windowArea > wallArea * 0.9) {
-      console.warn(`[TOPOMETRY] ${orientation} window area (${windowArea} m²) exceeds wall area (${wallArea} m²)`);
+      console.warn(`[WOMBAT] ${orientation} window area (${windowArea} m²) exceeds wall area (${wallArea} m²)`);
       // Create oversized window (visualization shows conflict)
     }
 
@@ -796,12 +797,12 @@ function verifyVolume(solvedGeometry) {
   const volumeError = Math.abs(calculatedVolume - targetVolume) / targetVolume;
 
   if (volumeError > 0.02) {  // 2% tolerance
-    console.error(`[TOPOMETRY] Volume mismatch: Solved ${calculatedVolume.toFixed(1)} m³ vs Target ${targetVolume.toFixed(1)} m³`);
+    console.error(`[WOMBAT] Volume mismatch: Solved ${calculatedVolume.toFixed(1)} m³ vs Target ${targetVolume.toFixed(1)} m³`);
 
     // CORRECTION: Scale entire model uniformly to match target volume
     const scaleFactor = Math.cbrt(targetVolume / calculatedVolume);
 
-    console.log(`[TOPOMETRY] Applying uniform scale: ${scaleFactor.toFixed(3)}× to preserve volume`);
+    console.log(`[WOMBAT] Applying uniform scale: ${scaleFactor.toFixed(3)}× to preserve volume`);
 
     // Scale all dimensions
     solvedGeometry.footprint.length *= scaleFactor;
@@ -998,7 +999,7 @@ src/
 │   └── Topometry.js              # NEW: 3D rendering engine (Three.js wrapper)
 │
 ├── sections/
-│   └── Section20.js              # NEW: TOPOMETRY section module (Pattern A)
+│   └── Section20.js              # NEW: WOMBAT section module (Pattern A)
 │
 └── lib/
     └── three/                    # NEW: Three.js library + addons
@@ -1018,7 +1019,7 @@ src/
 ### 5.2 Section20.js Structure (Pattern A)
 
 ```javascript
-// Section20.js - TOPOMETRY Module
+// Section20.js - WOMBAT Module
 window.TEUI = window.TEUI || {};
 window.TEUI.SectionModules = window.TEUI.SectionModules || {};
 
@@ -1156,7 +1157,7 @@ window.TEUI.SectionModules.sect20 = (function() {
     getFields: () => sectionRows,
     getLayout: () => `
       <div class="section-header">
-        <h2>Section 20: TOPOMETRY - 3D Building Visualization</h2>
+        <h2>Section 19: WOMBAT - 3D Building Visualization</h2>
         <button class="mode-toggle" data-section="sect20">
           <span class="toggle-indicator">Target</span>
         </button>
@@ -1208,7 +1209,7 @@ window.TEUI.Topometry = (function() {
   function initialize(containerId) {
     const container = document.getElementById(containerId);
     if (!container) {
-      console.error("[TOPOMETRY] Canvas container not found");
+      console.error("[WOMBAT] Canvas container not found");
       return;
     }
 
@@ -1253,7 +1254,7 @@ window.TEUI.Topometry = (function() {
     // Animation loop
     animate();
 
-    console.log("[TOPOMETRY] 3D engine initialized");
+    console.log("[WOMBAT] 3D engine initialized");
   }
 
   function animate() {
@@ -1301,7 +1302,7 @@ window.TEUI.Topometry = (function() {
     // Add window geometry
     addWindows(windows, dimensions);
 
-    console.log(`[TOPOMETRY] Model updated: ${length.toFixed(1)}m × ${width.toFixed(1)}m × ${height.toFixed(1)}m (${mode})`);
+    console.log(`[WOMBAT] Model updated: ${length.toFixed(1)}m × ${width.toFixed(1)}m × ${height.toFixed(1)}m (${mode})`);
   }
 
   function addWindows(windows, dimensions) {
@@ -1361,7 +1362,7 @@ window.TEUI.Topometry = (function() {
         link.href = url;
         link.download = 'building-model.gltf';
         link.click();
-        console.log("[TOPOMETRY] Model exported as glTF");
+        console.log("[WOMBAT] Model exported as glTF");
       },
       { binary: false }
     );
@@ -1374,7 +1375,7 @@ window.TEUI.Topometry = (function() {
     link.href = dataURL;
     link.download = 'building-screenshot.png';
     link.click();
-    console.log("[TOPOMETRY] Screenshot saved");
+    console.log("[WOMBAT] Screenshot saved");
   }
 
   // ========================================
@@ -1407,7 +1408,7 @@ window.TEUI.Topometry = (function() {
 - ✅ Orbit controls (rotate, zoom, pan)
 - ✅ Basic window distribution (no vertical detail)
 
-**Field additions** (Section 20):
+**Field additions** (Section 19):
 - d_200: Building Length (derived)
 - d_201: Building Width (derived)
 - d_202: Aspect Ratio (user slider)
@@ -1501,7 +1502,7 @@ window.TEUI.Topometry = (function() {
 
 ### 7.1 StateManager Integration
 
-Section 20 follows Pattern A dual-state architecture:
+Section 19 follows Pattern A dual-state architecture:
 
 ```javascript
 // Read geometry from S11/S12
@@ -1526,7 +1527,7 @@ window.TEUI.StateManager.addListener("d_85", () => {
 
 ### 7.2 Calculator.js Integration
 
-Add Section 20 to calculation order:
+Add Section 19 to calculation order:
 
 ```javascript
 // In Calculator.js
@@ -1537,16 +1538,16 @@ const calcOrder = [
   "sect15",  // TEUI Summary
   "sect16",  // Sankey Diagram
   "sect17",  // Dependency Graph
-  "sect20",  // TOPOMETRY (NEW - runs after all geometry sections)
+  "sect20",  // WOMBAT (NEW - runs after all geometry sections)
   "sect01"   // Key Values (Dashboard)
 ];
 ```
 
-**Why S20 runs late**: Section 20 consumes geometry from S11/S12 and thermal data from S11, so it must run after those sections complete.
+**Why S20 runs late**: Section 19 consumes geometry from S11/S12 and thermal data from S11, so it must run after those sections complete.
 
 ### 7.3 FieldManager Integration
 
-Register Section 20 fields:
+Register Section 19 fields:
 
 ```javascript
 // In FieldManager.js renderAllSections()
@@ -1557,7 +1558,7 @@ const sections = [
 
 ### 7.4 FileHandler Integration
 
-**Import/Export Section 20 fields**:
+**Import/Export Section 19 fields**:
 
 ```javascript
 // In FileHandler.js
@@ -1578,7 +1579,7 @@ function importFromCSV(data) {
 
   // ... import all values ...
 
-  // Sync Section 20 Pattern A state
+  // Sync Section 19 Pattern A state
   const sect20 = window.TEUI.SectionModules.sect20;
   if (sect20) {
     sect20.TargetState.syncFromGlobalState(section20Fields);
@@ -1757,7 +1758,7 @@ function optimizeDimensions(targetVolume, targetRoofArea, targetWallArea) {
 **Problem**: Three.js adds ~600 KB to bundle (significant for TEUI's lightweight philosophy)
 
 **Solutions**:
-1. **Lazy loading**: Only load Three.js when user opens Section 20
+1. **Lazy loading**: Only load Three.js when user opens Section 19
 2. **CDN delivery**: Load from unpkg.com or jsDelivr (no bundle impact)
 3. **Tree-shaking**: Use ES6 modules to import only needed Three.js components
 
@@ -1775,7 +1776,7 @@ function loadThreeJS() {
   script.src = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
   script.type = 'module';
   script.onload = () => {
-    console.log("[TOPOMETRY] Three.js loaded");
+    console.log("[WOMBAT] Three.js loaded");
     initializeTopometry();
   };
   document.head.appendChild(script);
@@ -1814,7 +1815,7 @@ function checkWebGLSupport() {
 
 function initialize(containerId) {
   if (!checkWebGLSupport()) {
-    console.warn("[TOPOMETRY] WebGL not supported, falling back to 2D view");
+    console.warn("[WOMBAT] WebGL not supported, falling back to 2D view");
     render2DFallback(containerId);
     return;
   }
@@ -1825,7 +1826,7 @@ function initialize(containerId) {
 
 ### 9.4 Dual-State 3D Models (Target vs Reference)
 
-**Problem**: Section 20 is Pattern A (dual-state), so it needs to render **two separate 3D models**
+**Problem**: Section 19 is Pattern A (dual-state), so it needs to render **two separate 3D models**
 
 **Challenge**: How to visualize Target vs Reference building simultaneously?
 
@@ -1930,7 +1931,7 @@ function showComparisonView() {
 
 ## Appendix A: Field ID Assignments
 
-Section 20 field IDs (200-series):
+Section 19 field IDs (200-series):
 
 | Field ID | Label | Type | Default | Source |
 |----------|-------|------|---------|--------|
@@ -1951,7 +1952,7 @@ Section 20 field IDs (200-series):
 ## Appendix B: Dependency Graph
 
 ```
-Section Dependencies (for Section 20):
+Section Dependencies (for Section 19):
 
 S02 (Building Info)
   └─> d_103 (Number of Stories) ──┐
@@ -1971,7 +1972,7 @@ S12 (Volume Metrics)             │  │
                                 ▼  ▼
                         ┌──────────────────┐
                         │   SECTION 20     │
-                        │   TOPOMETRY      │
+                        │   WOMBAT      │
                         │                  │
                         │  Derive Geometry │
                         │  Render 3D Model │
@@ -1993,7 +1994,7 @@ S12 (Volume Metrics)             │  │
 
 ```
 ┌───────────────────────────────────────────────────────────────────────┐
-│  Section 20: TOPOMETRY - 3D Building Visualization         [Target ▼] │
+│  Section 19: WOMBAT - 3D Building Visualization         [Target ▼] │
 ├───────────────────────────────────────────────────────────────────────┤
 │                                                                        │
 │  Building Geometry (Derived from Envelope Areas)                      │
@@ -2059,14 +2060,14 @@ S12 (Volume Metrics)             │  │
 
 ## Summary: Key Architectural Decisions
 
-### What Makes TOPOMETRY Different
+### What Makes WOMBAT Different
 
 **Traditional 3D Building Modelers**:
 - Start with geometry → Calculate thermal performance
 - Errors if geometry is invalid (roof < floor, overlapping walls, etc.)
 - User must know building dimensions
 
-**TOPOMETRY (Thermal Topology Approach)**:
+**WOMBAT (Thermal Topology Approach)**:
 - Start with thermal areas → Solve for geometry that satisfies constraints
 - **NO errors** - model deforms to show what areas imply
 - User only needs thermal data (already in OBJECTIVE for energy modeling)
@@ -2110,7 +2111,7 @@ S12 (Volume Metrics)             │  │
 - ✅ Aspect ratio slider (d_202) - controls footprint proportions
 - ✅ Geometry solver - calculates building dimensions from thermal constraints
 - ✅ Multi-story visualization - stacked boxes showing per-floor area
-- ✅ Info modal button - explains TOPOMETRY philosophy (no inline panel)
+- ✅ Info modal button - explains WOMBAT philosophy (no inline panel)
 - ✅ Isometric projection - shows 3D form, not top-down 2D
 
 **Current Issues (In Progress)**:
@@ -2159,4 +2160,4 @@ S12 (Volume Metrics)             │  │
 
 ---
 
-**END OF WORKPLAN - Implementation ongoing on `TOPOMETRY` branch**
+**END OF WORKPLAN - Implementation ongoing on `WOMBAT` branch**

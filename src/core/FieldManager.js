@@ -35,7 +35,7 @@ TEUI.FieldManager = (function () {
     sankeyDiagram: "sect16",
     dependencyDiagram: "sect17",
     parallelCoordinates: "sect18",
-    topometry: "sect19",
+    wombat: "sect19",
     notes: "sect20",
   };
 
