@@ -2,6 +2,13 @@
  * 4011-init.js
  * Primary navigation script for TEUI 4.011 Calculator
  * Implements layout switching and section collapsing
+ *
+ * WOMBAT DEVELOPMENT NOTE (2025-12-12):
+ * Section 19 (WOMBAT - 3D Thermal Topology) is currently hidden by default.
+ * When development is complete, remove the WOMBAT-specific logic at:
+ * - Line 443: Remove `|| section.id === "wombat"` from shouldBeCollapsed condition
+ * - Lines 564-568: Remove entire wombatSection collapsed enforcement block
+ * This will allow WOMBAT to behave like other sections (user preference saved in localStorage).
  */
 
 // --- UI Initialization ---
