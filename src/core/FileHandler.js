@@ -899,26 +899,11 @@
         const section = window.TEUI?.SectionModules?.[id];
 
         if (!skipTargetSync && section?.TargetState?.syncFromGlobalState) {
-          console.log(`[FileHandler] Syncing ${name} TargetState...`);
           section.TargetState.syncFromGlobalState();
-        } else if (skipTargetSync) {
-          console.log(
-            `[FileHandler] ${name} TargetState sync SKIPPED (mode-aware sync)`
-          );
-        } else {
-          // Not an error - section may not have syncFromGlobalState yet
-          console.log(
-            `[FileHandler] ${name} TargetState.syncFromGlobalState() not available (not yet implemented)`
-          );
         }
 
         if (!skipReferenceSync && section?.ReferenceState?.syncFromGlobalState) {
-          console.log(`[FileHandler] Syncing ${name} ReferenceState...`);
           section.ReferenceState.syncFromGlobalState();
-        } else if (skipReferenceSync) {
-          console.log(
-            `[FileHandler] ${name} ReferenceState sync SKIPPED (mode-aware sync)`
-          );
         }
 
         // ✅ CRITICAL: Refresh DOM after syncing state from imported values
@@ -1029,40 +1014,7 @@
         importedData[targetFieldId] = value;
       });
 
-      // 🔍 DIAGNOSTIC: Detailed logging for contamination detection
-      console.log(
-        `%c[FileHandler] ===== REFERENCE VALUES OVERLAY DEBUG =====`,
-        'color: #0ff; font-weight: bold; font-size: 16px;'
-      );
-      console.log(`[FileHandler] Standard: "${standard}"`);
-      console.log(`[FileHandler] Target Mode: "${targetMode}"`);
-      console.log(
-        `[FileHandler] ReferenceValues (unprefixed source):`,
-        Object.keys(referenceValues).slice(0, 15)
-      );
-      console.log(
-        `[FileHandler] Built importedData (after prefix logic):`,
-        Object.keys(importedData).slice(0, 15)
-      );
-      console.log(
-        `[FileHandler] 🔍 CRITICAL CHECK - Does importedData contain unprefixed fields?`
-      );
-      console.log(`[FileHandler] Sample insulation fields:`, {
-        f_85: importedData.f_85, // Should be UNDEFINED in Reference mode
-        ref_f_85: importedData.ref_f_85, // Should be "5.30" in Reference mode
-        f_86: importedData.f_86, // Should be UNDEFINED
-        ref_f_86: importedData.ref_f_86, // Should be "4.10"
-        f_87: importedData.f_87, // Should be UNDEFINED
-        ref_f_87: importedData.ref_f_87, // Should be "6.60"
-      });
-      console.log(
-        `[FileHandler] ==========================================`
-      );
-
       // 🔒 PHASE 1: IMPORT QUARANTINE START - Mute listeners
-      console.log(
-        "[FileHandler] 🔒 IMPORT QUARANTINE START - Muting listeners"
-      );
       window.TEUI.StateManager.muteListeners();
 
       try {
@@ -1080,23 +1032,13 @@
         // Target mode: Skip ReferenceState (preserve reference values), sync TargetState only
         const skipTargetSync = targetMode === "reference";
         const skipReferenceSync = targetMode === "target";
-        console.log(
-          `[FileHandler] Syncing Pattern A sections in ${targetMode.toUpperCase()} mode (skipTargetSync=${skipTargetSync}, skipReferenceSync=${skipReferenceSync})...`
-        );
-        this.syncPatternASections(true, skipTargetSync, skipReferenceSync); // Fix #6: Mode-aware sync
-        console.log("[FileHandler] Pattern A sections synced");
+        this.syncPatternASections(true, skipTargetSync, skipReferenceSync);
       } finally {
         // 🔓 PHASE 4: IMPORT QUARANTINE END - Always unmute
         window.TEUI.StateManager.unmuteListeners();
-        console.log(
-          "[FileHandler] 🔓 IMPORT QUARANTINE END - Unmuting listeners"
-        );
       }
 
       // ✅ PHASE 5: Trigger complete calculation cascade
-      console.log(
-        "[FileHandler] Triggering calculateAll() with complete data..."
-      );
       if (
         this.calculator &&
         typeof this.calculator.calculateAll === "function"
@@ -1104,9 +1046,6 @@
         this.calculator.calculateAll();
 
         // ✅ PHASE 6: Final DOM refresh (show calculated results)
-        console.log(
-          "[FileHandler] 🔄 Refreshing all section UIs after calculations..."
-        );
         const allSections = [
           "sect02",
           "sect03",
@@ -1133,8 +1072,6 @@
             section.ModeManager.updateCalculatedDisplayValues();
           }
         });
-
-        console.log(`[FileHandler] ✅ ReferenceValues overlay complete`);
       } else {
         console.error(
           "[FileHandler] Calculator.calculateAll() not available - calculations not triggered"

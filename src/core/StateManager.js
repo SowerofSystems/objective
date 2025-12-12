@@ -363,13 +363,6 @@ TEUI.StateManager = (function () {
    * @returns {boolean} True if the value changed
    */
   function setValue(fieldId, value, state = VALUE_STATES.USER_MODIFIED) {
-    // 🔍 DIAGNOSTIC: Track insulation value writes to detect contamination
-    if (['f_85', 'ref_f_85', 'f_86', 'ref_f_86', 'f_87', 'ref_f_87'].includes(fieldId)) {
-      console.log(`%c[StateManager.setValue] 🎯 ${fieldId} = "${value}" (state: ${state})`,
-                  'color: #f0f; font-weight: bold; font-size: 14px;');
-      console.trace(`[StateManager] Stack trace for ${fieldId} write:`);
-    }
-
     // Notify observers of this setValue call (before the actual set)
     notifyObserversSetValue(fieldId, value, state);
 
