@@ -1,0 +1,767 @@
+# Reference Mode Set Values Investigation - Phase 3
+**Status**: 🔍 **ACTIVE INVESTIGATION**
+**Branch**: REF-MODE-UNITY
+**Date**: 2025-12-11
+**Focus**: Fix Set Values without breaking Import/Copy systems
+
+---
+
+## Executive Summary
+
+**Working Systems** ✅:
+1. **Import** (CSV/Excel) - Perfect dual-state isolation
+2. **Copy from Target** (Geometry/Code/All) - Perfect Target→Reference copying
+
+**Broken System** ❌:
+3. **Set Values** (ReferenceValues.js overlay) - Works on fresh page load, fails post-import
+
+**The Bug**: After CSV/Excel import, clicking "Set Values" in Reference mode contaminates **BOTH** Target and Reference models with the same ReferenceValues.js data.
+
+**Root Cause Hypothesis**: Import's `loadReferenceData()` call populates `activeReferenceDataSet` cache with Target values. Post-import Set Values reads from this **stale cache** during `calculateAll()`, causing contamination.
+
+---
+
+## Three FileHandler Systems - Side-by-Side Comparison
+
+### Comparison Matrix
+
+| Feature | Import | Copy from Target | Set Values |
+|---------|--------|------------------|------------|
+| **Entry Points** | `processImportedCSV()` (Line 314)<br>`processImportedExcel()` (Line 105) | `mirrorGeometry()` (RT:931)<br>`mirrorGeometryPlusCode()` (RT:1031)<br>`mirrorAllInputs()` (RT:1149) | `applyReferenceValuesFromStandard()` (Line 999) |
+| **Dual-State Method** | Explicit (Row 2/3, REPORT/REFERENCE sheets) | Direct Target→Reference copy | Mode-aware prefix logic (`targetMode` param) |
+| **skipRecalculation** | `false` (Target)<br>`true` (Reference) | N/A (no Import System) | `true` (Fix #1 - Dec 9) |
+| **loadReferenceData()** | ✅ YES (Target import only, Line 841) | ❌ NO | ❌ NO (Fix #1 prevents contamination) |
+| **Quarantine Pattern** | ✅ Yes | ✅ Yes | ✅ Yes |
+| **Pattern A Sync** | Full (`syncPatternASections()`) | Full (delegates to FileHandler) | Partial (`syncPatternASections(true)` - skipAreaSync) |
+| **Status** | ✅ WORKS | ✅ WORKS | ❌ FAILS POST-IMPORT |
+
+---
+
+## System 1: Import (CSV/Excel) - ✅ WORKS
+
+### Entry Points
+```javascript
+// CSV Import
+processImportedCSV(csvData) // Line 314
+  → updateStateFromImportData(targetData, 0, false)   // Row 2 (Target)
+  → updateStateFromImportData(referenceData, 0, true) // Row 3 (Reference)
+
+// Excel Import
+processImportedExcel(workbook) // Line 105
+  → updateStateFromImportData(targetData, 0, false)   // REPORT sheet (Target)
+  → processImportedExcelReference(workbook)           // REFERENCE sheet (Reference)
+```
+
+### Dual-State Handling
+**Explicitly dual-state** - Data structure separates Target and Reference:
+
+**CSV Format**:
+```csv
+Row 1 (Headers):  d_52,  f_85,   f_86,   ...
+Row 2 (Target):   "90",  "5.30", "4.10", ...  → writes to d_52, f_85, f_86
+Row 3 (Reference):"92",  "4.87", "4.21", ...  → writes to ref_d_52, ref_f_85, ref_f_86
+```
+
+**Excel Format**:
+- `REPORT` worksheet → Target fields (unprefixed)
+- `REFERENCE` worksheet → Reference fields (ref_ prefixed)
+
+### Key Code Flow
+
+**Target Import** (Lines 154-226 Excel, 422-486 CSV):
+```javascript
+// 1. QUARANTINE START
+window.TEUI.StateManager.muteListeners(); // 🔒
+
+try {
+  // 2. Write Target values
+  this.updateStateFromImportData(targetData, 0, false); // skipRecalculation=FALSE
+
+  // Inside updateStateFromImportData() when skipRecalculation=false:
+  // Lines 831-842:
+  const finalD13 = this.stateManager.getApplicationValue("d_13");
+  this.stateManager.loadReferenceData(finalD13); // ⚠️ Populates activeReferenceDataSet
+
+  // 3. Write Reference values
+  this.processImportedExcelReference(workbook);
+
+  // 4. Sync Pattern A sections (FULL sync with area sync)
+  this.syncPatternASections(); // No skipAreaSync flag
+
+} finally {
+  // 5. QUARANTINE END
+  window.TEUI.StateManager.unmuteListeners(); // 🔓
+}
+
+// 6. Clean recalculation
+this.calculator.calculateAll();
+```
+
+### Critical: loadReferenceData() Call
+
+**YES - Called for Target import only** (Line 841):
+```javascript
+if (!skipRecalculation) {
+  const finalD13 = this.stateManager.getApplicationValue("d_13"); // Target's standard
+  this.stateManager.loadReferenceData(finalD13); // Populates cache
+}
+```
+
+**Purpose**: After importing Target values, populate `activeReferenceDataSet` cache with Target's d_13 standard for Reference mode display.
+
+**Side Effect**: This cache becomes **stale** if user later changes `ref_d_13` and clicks "Set Values".
+
+### Pattern A Sync
+**Full sync with area sync enabled**:
+```javascript
+this.syncPatternASections(); // No flag → calls syncAreasFromS10() at Line 964
+```
+
+---
+
+## System 2: Copy from Target - ✅ WORKS
+
+### Entry Points (ReferenceToggle.js)
+```javascript
+// Copy Geometry (windows/doors/envelope areas)
+mirrorGeometry() // Line 931
+  → Read Target fields (d_68, d_69, d_70, ...)
+  → Write Reference fields (ref_d_68, ref_d_69, ref_d_70, ...)
+
+// Copy Geometry + Code (+ insulation RSI values)
+mirrorGeometryPlusCode() // Line 1031
+  → Read Target fields (geometry + f_85, f_86, f_87, ...)
+  → Write Reference fields (ref_ prefixed)
+
+// Copy All Values (all user-editable fields)
+mirrorAllInputs() // Line 1149
+  → Read Target fields (all user inputs)
+  → Write Reference fields (ref_ prefixed)
+```
+
+### How It Works
+**Direct StateManager reads/writes** - No Import System involvement:
+
+```javascript
+// Example: mirrorGeometry() - Line 962-979
+const geometryFields = ["d_68", "d_69", "d_70", ...];
+
+geometryFields.forEach(fieldId => {
+  const targetValue = window.TEUI.StateManager.getValue(fieldId); // Read unprefixed
+  window.TEUI.StateManager.setValue(`ref_${fieldId}`, targetValue, "mirror"); // Write prefixed
+});
+```
+
+**Key Insight**: Copy operations directly populate `ref_*` fields in StateManager's `fields` Map. These become **authoritative** Reference values.
+
+### Quarantine Pattern
+**YES - Uses FileHandler pattern** (Line 958, 1056, 1170):
+```javascript
+// 1. QUARANTINE START
+window.TEUI.StateManager.muteListeners(); // 🔒
+
+try {
+  // 2. Copy values with ref_ prefix
+  geometryFields.forEach(fieldId => {
+    const targetValue = window.TEUI.StateManager.getValue(fieldId);
+    window.TEUI.StateManager.setValue(`ref_${fieldId}`, targetValue, "mirror");
+  });
+
+  // 3. Sync Pattern A sections (delegates to FileHandler)
+  window.TEUI.FileHandler.syncPatternASections(); // Full sync
+
+} finally {
+  // 4. QUARANTINE END
+  window.TEUI.StateManager.unmuteListeners(); // 🔓
+}
+
+// 5. Clean recalculation
+window.TEUI.Calculator.calculateAll();
+```
+
+### loadReferenceData() Call
+**NO** - Copy operations don't call `loadReferenceData()`.
+
+**Why**: Copying from Target directly populates `ref_*` fields in StateManager. No need for `activeReferenceDataSet` cache manipulation.
+
+### Pattern A Sync
+**Full sync via FileHandler delegation**:
+```javascript
+window.TEUI.FileHandler.syncPatternASections(); // No skipAreaSync flag
+```
+
+---
+
+## System 3: Set Values (ReferenceValues.js overlay) - ❌ BROKEN POST-IMPORT
+
+### Entry Point (FileHandler.js)
+```javascript
+// Called from Section02 "Set Values" button
+applyReferenceValuesFromStandard(standard, targetMode) // Line 999
+  → Read ReferenceValues.js for selected standard
+  → Apply mode-aware prefix (ref_ or none)
+  → Write to StateManager
+```
+
+### Mode-Aware Application
+**Single-mode operation** - applies to either Target OR Reference:
+
+```javascript
+// Lines 1014-1020
+const referenceValues = window.TEUI.ReferenceValues[standard];
+// Returns: { d_52: "90", f_85: "5.30", f_86: "4.10" } ← UNPREFIXED source
+
+const importedData = {};
+Object.entries(referenceValues).forEach(([fieldId, value]) => {
+  const targetFieldId = targetMode === "reference" ? `ref_${fieldId}` : fieldId;
+  importedData[targetFieldId] = value;
+});
+
+// Builds in Reference mode:
+// { ref_d_52: "90", ref_f_85: "5.30", ref_f_86: "4.10" } ✅ CORRECT
+```
+
+**Prefix logic is CORRECT** - Verified by diagnostic logging (REF-MODE-UNITY2.md lines 851-914).
+
+### Key Code Flow
+
+```javascript
+// Lines 1053-1091
+
+// 1. QUARANTINE START
+window.TEUI.StateManager.muteListeners(); // 🔒
+
+try {
+  // 2. Write with correct prefixes
+  this.updateStateFromImportData(importedData, 0, true); // skipRecalculation=TRUE
+
+  // Inside updateStateFromImportData() when skipRecalculation=true:
+  // Lines 831-842 - SKIPPED (no loadReferenceData call)
+
+  // 3. Sync Pattern A sections with skipAreaSync=true (Dec 10 fix)
+  this.syncPatternASections(true); // Attempts to skip area sync
+
+} finally {
+  // 4. QUARANTINE END
+  window.TEUI.StateManager.unmuteListeners(); // 🔓
+}
+
+// 5. Clean recalculation
+this.calculator.calculateAll(); // ❌ Contamination happens here!
+```
+
+### loadReferenceData() Call
+**NO - Explicitly prevented** (Fix #1 - Dec 9, Commit 1049ed8):
+
+```javascript
+this.updateStateFromImportData(importedData, 0, true); // skipRecalculation=TRUE
+// Line 1062 comment:
+// ⚠️ CRITICAL: Pass skipRecalculation=true to prevent loadReferenceData() contamination
+```
+
+**Fix History**:
+- **Before**: `skipRecalculation=false` → Called `loadReferenceData(d_13)` → **Contaminated Target model**
+- **After**: `skipRecalculation=true` → Skips `loadReferenceData()` → **Works on fresh page load**
+
+### Pattern A Sync
+**⚠️ PARTIAL SYNC - Area sync disabled** (Fix #3 - Dec 10, Commit 0e319e6):
+
+```javascript
+this.syncPatternASections(true); // skipAreaSync=true (Line 1073)
+```
+
+**Why**: Attempted to prevent contamination by skipping S11 area sync which calls `calculateAll()`.
+
+**Theory**: ReferenceValues overlays change insulation/SHGC but NOT window areas, so area sync shouldn't be needed.
+
+**Problem**: Contamination persists despite this fix.
+
+---
+
+## Timeline of Set Values Fixes
+
+### Fix #1: State Contamination (Commit 1049ed8 - Dec 9, 2025)
+**Problem**: `loadReferenceData(d_13)` overwrote Target model with Reference standard
+
+**Location**: [FileHandler.js:1062](../../src/core/FileHandler.js#L1062)
+
+**Solution**:
+```javascript
+// BEFORE (bug):
+this.updateStateFromImportData(importedData, 0, false); // Calls loadReferenceData
+
+// AFTER (fixed):
+this.updateStateFromImportData(importedData, 0, true); // Skips loadReferenceData
+```
+
+**Result**: ✅ Works on fresh page load, ❌ Still fails post-import
+
+---
+
+### Fix #2: d_13 Dropdown Refresh (Commit 1a7f6d3 - Dec 9, 2025)
+**Problem**: d_13 dropdown showed stale value when switching modes
+
+**Location**: [Section02.js:1866-1868](../../src/sections/Section02.js#L1866-L1868)
+
+**Solution**:
+```javascript
+// BEFORE (bug):
+const d13Value = currentState.getValue("d_13"); // Section-local state (stale)
+
+// AFTER (fixed):
+const d13FieldId = this.currentMode === "reference" ? "ref_d_13" : "d_13";
+const d13Value = window.TEUI.StateManager.getValue(d13FieldId); // Global state (fresh)
+```
+
+**Result**: ✅ Dropdown shows correct value
+
+---
+
+### Fix #3: Skip Area Sync (Commit 0e319e6 - Dec 10, 2025)
+**Problem**: `syncAreasFromS10()` calls `calculateAll()` which contaminates Target fields
+
+**Location**: [FileHandler.js:868-989](../../src/core/FileHandler.js#L868-L989)
+
+**Solution**:
+```javascript
+// Add skipAreaSync parameter
+syncPatternASections(skipAreaSync = false) {
+  // ... sync TargetState/ReferenceState ...
+
+  // Skip area sync if flag set
+  if (!skipAreaSync && window.TEUI?.SectionModules?.sect11?.syncAreasFromS10) {
+    console.log("[FileHandler] 🔧 PHASE 2.5: Syncing S11 window areas from S10...");
+    window.TEUI.SectionModules.sect11.syncAreasFromS10();
+  } else if (skipAreaSync) {
+    console.log("[FileHandler] ⏭️ PHASE 2.5: Skipping S11 area sync (not needed for overlay)");
+  }
+}
+
+// Set Values calls with skipAreaSync=true
+this.syncPatternASections(true); // Line 1073
+```
+
+**Result**: ❓ **Should work but contamination persists**
+
+---
+
+## Root Cause Analysis: The Stale Cache Mystery
+
+### Why Fresh Page Load Works ✅
+
+**State on fresh page load**:
+```javascript
+activeReferenceDataSet = {}; // Empty cache
+```
+
+**Flow**:
+1. User selects d_13 = "OBC SB10 5.5-6 Z5 (2010)" in Reference mode
+2. Writes `ref_d_13` to StateManager
+3. User clicks "Set Values"
+4. `applyReferenceValuesFromStandard()` writes `ref_f_85`, `ref_f_86`, `ref_f_87` ✅
+5. `calculateAll()` runs both engines
+6. Reference mode `getValue("f_85")` priority order:
+   - **Priority 1**: `independentReferenceState["f_85"]` → undefined
+   - **Priority 2**: `activeReferenceDataSet["f_85"]` → **undefined (cache empty)** ✅
+   - **Priority 3**: `fields.get("f_85")` → Returns correct Target value ✅
+7. No contamination - Reference uses `ref_f_85`, Target uses `f_85`
+
+### Why Post-Import Fails ❌
+
+**State after CSV/Excel import**:
+```javascript
+activeReferenceDataSet = {
+  f_85: "5.30",  // From Target's d_13 standard
+  f_86: "4.10",
+  f_87: "6.60",
+  // ... populated by loadReferenceData(d_13) during import
+}; // ⚠️ STALE CACHE!
+```
+
+**Flow**:
+1. User imports CSV/Excel with:
+   - Target: d_13 = "OBC SB10 5.5-6 Z5 (2010)"
+   - Reference: ref_d_13 = "PH Classic"
+2. Import calls `loadReferenceData("OBC SB10 5.5-6 Z5 (2010)")` (Line 841)
+3. `activeReferenceDataSet` populated with **Target's OBC standard values**
+4. User switches to Reference mode, changes ref_d_13 to "OBC SB10 5.5-6 Z5 (2010)"
+5. User clicks "Set Values"
+6. `applyReferenceValuesFromStandard()` writes `ref_f_85`, `ref_f_86`, `ref_f_87` ✅
+7. **Cache NOT updated** - still contains Target's OBC values
+8. `calculateAll()` runs both engines
+9. Reference mode `getValue("f_85")` priority order:
+   - **Priority 1**: `independentReferenceState["f_85"]` → undefined
+   - **Priority 2**: `activeReferenceDataSet["f_85"]` → **"5.30" (STALE Target value!)** ❌
+   - **Priority 3**: Never reached (Priority 2 hit)
+10. `calculateTargetModel()` reads stale value "5.30" → writes to `f_85` → **Contamination!**
+
+---
+
+## The activeReferenceDataSet Cache Architecture
+
+### Purpose (StateManager.js Lines 1628-1797)
+Cache for Reference mode `getValue()` calls to avoid repeated ReferenceValues.js lookups.
+
+### How It Gets Populated
+```javascript
+// StateManager.loadReferenceData(standard)
+function loadReferenceData(standard) {
+  // Step 1: Copy application state to activeReferenceDataSet (Lines 1640-1654)
+  for (const [fieldId, field] of this.fields.entries()) {
+    if (!fieldId.startsWith("ref_")) {
+      activeReferenceDataSet[fieldId] = field.value; // Target values!
+    }
+  }
+
+  // Step 2: Apply Reference Mode defaults from AppendixE (Lines 1672-1735)
+  // Step 3: Overlay standard-specific overrides from ReferenceValues.js (Lines 1737-1760)
+  const refValues = window.TEUI.ReferenceValues[standard];
+  Object.entries(refValues).forEach(([fieldId, value]) => {
+    activeReferenceDataSet[fieldId] = value;
+  });
+}
+```
+
+**Key Insight**: Cache represents "what Reference model WOULD look like if based on Target's standard".
+
+### Priority Order in getValue() (Lines 325-356)
+
+```javascript
+function getValue(fieldId) {
+  if (ReferenceToggle.isReferenceMode()) {
+    // Priority 1: Check independentReferenceState (user-editable Reference fields)
+    if (independentReferenceState[fieldId]) {
+      value = independentReferenceState[fieldId];
+    }
+    // Priority 2: Check activeReferenceDataSet ⚠️ STALE CACHE PROBLEM!
+    else if (activeReferenceDataSet[fieldId]) {
+      value = activeReferenceDataSet[fieldId]; // Returns Target values post-import
+    }
+    // Priority 3: Fallback to fields Map
+    else {
+      value = fields.get(fieldId)?.value; // Would return ref_* if reached
+    }
+  }
+}
+```
+
+**The Bug**: Priority 2 prevents reaching Priority 3 where fresh `ref_*` values exist.
+
+---
+
+## Evidence: Stack Trace from Logs.md (Lines 89-127)
+
+**Contamination occurs during `calculateAll()`**:
+
+```
+[StateManager] Stack trace for f_85 write:  ← UNPREFIXED! BUG!
+setValue @ StateManager.js:370
+setValue @ Section11.js:476              ← Section11 writes unprefixed field
+setCalculatedValue @ Section11.js:2088
+calculateComponentRow @ Section11.js:2553
+calculateTargetModel @ Section11.js:3118 ← TARGET model calculating!
+calculateAll @ Section11.js:3284
+syncAreasFromS10 @ Section11.js:2312     ← Triggered during sync!
+syncPatternASections @ FileHandler.js:964 ← Called after ref_* writes
+applyReferenceValuesFromStandard @ FileHandler.js:1057
+```
+
+**The Flow**:
+1. ✅ `applyReferenceValuesFromStandard()` correctly writes `ref_f_85: "5.30"`
+2. ✅ Calls `syncPatternASections(true)` with skipAreaSync=true
+3. ❌ **Somehow** `syncAreasFromS10()` is called (Line 964)
+4. ❌ `syncAreasFromS10()` calls `calculateAll()` (Line 2312)
+5. ❌ `calculateAll()` runs **BOTH** engines (dual-engine architecture)
+6. ❌ `calculateTargetModel()` calls `getValue("f_85")` in Reference mode
+7. ❌ Returns stale cache value → writes to unprefixed `f_85` → **Contamination!**
+
+---
+
+## Key Differences Between Working and Broken Systems
+
+### What Import Does That Set Values Doesn't
+1. **Calls `loadReferenceData(finalD13)` for Target import** (Line 841)
+   - Populates `activeReferenceDataSet` cache with Target's d_13 standard
+   - Set Values **SKIPS** this to avoid contamination (Fix #1)
+
+2. **Full Pattern A sync with area sync enabled**
+   - Import: `syncPatternASections()` → calls `syncAreasFromS10()`
+   - Set Values: `syncPatternASections(true)` → **ATTEMPTS** to skip area sync
+
+3. **Separate Reference import with `skipRecalculation=true`** (Line 303)
+   - Writes `ref_*` fields without triggering `loadReferenceData()`
+   - Set Values uses same pattern
+
+### What Copy Does Differently
+1. **No Import System involvement** - Direct StateManager writes to `ref_*` fields
+2. **Full Pattern A sync** - Delegates to `FileHandler.syncPatternASections()`
+3. **No `loadReferenceData()` call** - Doesn't manipulate cache
+4. **Different state flag**: `"mirror"` vs `"imported"`
+
+### Shared Patterns
+All three use:
+- `StateManager.muteListeners()` / `unmuteListeners()` quarantine
+- `Calculator.calculateAll()` for clean recalculation
+- `FileHandler.syncPatternASections()` for Pattern A state sync
+- Pattern A section `refreshUI()` calls post-calculation
+
+---
+
+## Proposed Solutions
+
+### Option 1: Priority Reordering in getValue() (RECOMMENDED)
+
+**Change Reference mode priority** to check `ref_*` fields FIRST (from REF-MODE-UNITY2.md Lines 683-711):
+
+**Location**: [StateManager.js:325-356](../../src/core/StateManager.js#L325-L356)
+
+**Change**:
+```javascript
+function getValue(fieldId) {
+  if (ReferenceToggle.isReferenceMode()) {
+    // Priority 1: Check ref_* prefixed field in fields Map (FRESH DATA) ← NEW!
+    const refFieldId = `ref_${fieldId}`;
+    if (fields.has(refFieldId)) {
+      value = fields.get(refFieldId).value; // ✅ Always fresh, authoritative
+    }
+    // Priority 2: Check independentReferenceState (user-editable fields)
+    else if (independentReferenceState[fieldId]) {
+      value = independentReferenceState[fieldId];
+    }
+    // Priority 3: Check activeReferenceDataSet (legacy cache)
+    else if (activeReferenceDataSet[fieldId]) {
+      value = activeReferenceDataSet[fieldId];
+    }
+    // Priority 4: Fallback to Target value
+    else {
+      value = fields.get(fieldId)?.value;
+    }
+  }
+}
+```
+
+**Advantages**:
+- ✅ Minimal code change (5 lines in StateManager.js)
+- ✅ Preserves existing architecture
+- ✅ Fixes both default and post-import scenarios
+- ✅ `ref_*` fields become authoritative (true dual-state isolation)
+- ✅ No risk to Import/Copy systems (doesn't change their logic)
+
+**Disadvantages**:
+- ⚠️ Doesn't address why `activeReferenceDataSet` exists
+- ⚠️ Cache becomes redundant but remains in codebase
+
+---
+
+### Option 2: Clear Cache When Writing ref_* Fields
+
+**Invalidate cache entries** when corresponding `ref_*` field is written:
+
+**Location**: [StateManager.js:365](../../src/core/StateManager.js#L365) (in `setValue()`)
+
+**Change**:
+```javascript
+function setValue(fieldId, value, state) {
+  // ... existing code ...
+
+  // If writing a ref_* field, clear corresponding cache entry
+  if (fieldId.startsWith("ref_")) {
+    const baseFieldId = fieldId.substring(4); // Remove "ref_" prefix
+    if (activeReferenceDataSet[baseFieldId]) {
+      delete activeReferenceDataSet[baseFieldId]; // Invalidate cache
+    }
+  }
+
+  // ... rest of setValue ...
+}
+```
+
+**Advantages**:
+- ✅ Maintains cache for performance
+- ✅ Ensures cache never stale
+
+**Disadvantages**:
+- ⚠️ More complex (cache invalidation is hard)
+- ⚠️ Doesn't fix fundamental design issue
+- ⚠️ Cache rebuilds on every `loadReferenceData()` call anyway
+
+---
+
+### Option 3: Deprecate activeReferenceDataSet Entirely
+
+**Remove cache**, always read from authoritative sources:
+
+**Location**: [StateManager.js:325-356](../../src/core/StateManager.js#L325-L356)
+
+**Change**:
+```javascript
+function getValue(fieldId) {
+  if (ReferenceToggle.isReferenceMode()) {
+    // Check ref_* field first
+    const refFieldId = `ref_${fieldId}`;
+    if (fields.has(refFieldId)) {
+      return fields.get(refFieldId).value;
+    }
+    // Check independentReferenceState
+    if (independentReferenceState[fieldId]) {
+      return independentReferenceState[fieldId];
+    }
+    // Fallback to Target (for fields without ref_* variants)
+    return fields.get(fieldId)?.value || null;
+  }
+}
+```
+
+**Advantages**:
+- ✅ Simplest architecture
+- ✅ No cache staleness possible
+- ✅ True dual-state isolation
+- ✅ Removes 200+ lines of cache management code
+
+**Disadvantages**:
+- ⚠️ Requires understanding why cache was added (performance? legacy?)
+- ⚠️ May break assumptions in other code
+- ⚠️ More invasive change
+
+---
+
+## Diagnostic Questions Before Fix
+
+Before implementing any solution, we need to verify:
+
+### 1. Does Fix #3 Actually Work?
+**Question**: Is `syncAreasFromS10()` still being called despite `skipAreaSync=true`?
+
+**Test**: Add logging to verify:
+```javascript
+// In syncPatternASections()
+console.log(`[FileHandler] skipAreaSync flag: ${skipAreaSync}`);
+
+// In syncAreasFromS10()
+console.trace(`[Section11] syncAreasFromS10() called`);
+```
+
+**Expected**: If Fix #3 works, `syncAreasFromS10()` should NOT be called during Set Values.
+
+**If Fix #3 fails**: Multiple sync paths may exist, or `calculateAll()` itself calls area sync.
+
+---
+
+### 2. Where Does Contamination Actually Occur?
+**Question**: Does contamination happen in `syncAreasFromS10()` or in `calculateAll()`?
+
+**Test**: Add logging to trace `getValue("f_85")` calls:
+```javascript
+// In StateManager.getValue()
+if (fieldId === "f_85" && ReferenceToggle.isReferenceMode()) {
+  console.log(`[StateManager] getValue("f_85") in Reference mode:`);
+  console.log(`  Priority 1 (independentReferenceState): ${independentReferenceState[fieldId]}`);
+  console.log(`  Priority 2 (activeReferenceDataSet): ${activeReferenceDataSet[fieldId]}`);
+  console.log(`  Priority 3 (fields.get): ${fields.get("ref_f_85")?.value}`);
+  console.trace(`  Returning: ${value}`);
+}
+```
+
+**Expected**: Should show Priority 2 returning stale cache value post-import.
+
+---
+
+### 3. What Populates activeReferenceDataSet?
+**Question**: Does ONLY `loadReferenceData()` populate the cache, or are there other paths?
+
+**Test**: Add logging to all cache writes:
+```javascript
+// In StateManager.loadReferenceData()
+console.log(`[StateManager] loadReferenceData("${standard}") START`);
+console.log(`[StateManager] Cache before:`, Object.keys(activeReferenceDataSet));
+
+// ... populate cache ...
+
+console.log(`[StateManager] Cache after:`, Object.keys(activeReferenceDataSet));
+console.log(`[StateManager] loadReferenceData("${standard}") END`);
+```
+
+**Expected**: Only Import's Target import should populate cache.
+
+---
+
+## Recommendation
+
+**Implement Option 1 (Priority Reordering)** as the immediate fix:
+- ✅ Minimal risk - doesn't change Import/Copy logic
+- ✅ Surgical change - 5 lines in StateManager.js
+- ✅ Fixes both default and post-import scenarios
+- ✅ Makes `ref_*` fields authoritative for Reference state
+- ✅ Preserves existing architecture for backward compatibility
+
+**Future refactor (v4.013)**: Consider Option 3 to simplify architecture and remove cache entirely.
+
+---
+
+## Testing Protocol
+
+### Test Case 1: Fresh Page Load (Should still work ✅)
+1. Fresh page load
+2. Switch to Reference mode
+3. Change d_13 to "OBC SB10 5.5-6 Z5 (2010)"
+4. Click "Set Values"
+5. **Expected**: Only Reference model updates (e_10 changes, h_10 unchanged)
+
+### Test Case 2: Post-Import (Currently fails ❌)
+1. Import CSV/Excel with:
+   - Target: d_13 = "OBC SB10 5.5-6 Z5 (2010)"
+   - Reference: ref_d_13 = "PH Classic"
+2. Switch to Reference mode
+3. Change ref_d_13 to "OBC SB10 5.5-6 Z5 (2010)"
+4. Click "Set Values"
+5. **Expected**: Only Reference model updates (e_10 changes, h_10 unchanged)
+6. **Actual (pre-fix)**: BOTH models update (e_10 AND h_10 change)
+
+### Test Case 3: Import System Regression (Must not break ✅)
+1. Import CSV/Excel with Target and Reference values
+2. **Expected**: Both models import correctly with perfect state isolation
+3. **Verify**: No contamination between Target and Reference
+
+### Test Case 4: Copy System Regression (Must not break ✅)
+1. Set up Target model with specific values
+2. Click "Copy Geometry" / "Copy Code" / "Copy All"
+3. **Expected**: Target values copied to Reference with ref_ prefix
+4. **Verify**: Target model unchanged, Reference model updated
+
+---
+
+## Next Steps
+
+1. **User decision**: Which solution to implement?
+2. **Add diagnostic logging** to verify hypothesis
+3. **Run test sequence** to confirm contamination path
+4. **Implement fix** (likely Option 1)
+5. **Test all four cases** above
+6. **Commit and document** results
+
+---
+
+## Files to Review/Modify
+
+**Understanding**:
+- [FileHandler.js:999-1095](../../src/core/FileHandler.js#L999-L1095) - Set Values system
+- [FileHandler.js:105-226](../../src/core/FileHandler.js#L105-L226) - Excel Import
+- [FileHandler.js:314-486](../../src/core/FileHandler.js#L314-L486) - CSV Import
+- [ReferenceToggle.js:931-1212](../../src/core/ReferenceToggle.js#L931-L1212) - Copy systems
+- [StateManager.js:325-356](../../src/core/StateManager.js#L325-L356) - getValue() priority
+- [StateManager.js:1628-1797](../../src/core/StateManager.js#L1628-L1797) - loadReferenceData()
+
+**Potential Changes** (Option 1):
+- [StateManager.js:325-356](../../src/core/StateManager.js#L325-L356) - Reorder getValue() priority
+
+---
+
+## Summary
+
+**The Bug**: Import's `loadReferenceData()` populates `activeReferenceDataSet` cache with Target's d_13 standard. Post-import Set Values writes fresh `ref_*` values, but `getValue()` Priority 2 reads from stale cache during `calculateAll()`, causing contamination.
+
+**The Fix**: Reorder `getValue()` priority to check `ref_*` fields FIRST (Priority 1), making them authoritative over stale cache (demoted to Priority 3).
+
+**Risk Level**: Low - surgical change, doesn't affect Import/Copy systems.
+
+**Testing Required**: All four test cases above must pass before merge.
