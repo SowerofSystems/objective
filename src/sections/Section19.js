@@ -1023,11 +1023,13 @@ window.TEUI.SectionModules.sect19 = (function () {
 
       aspectSlider.addEventListener("change", (e) => {
         const value = e.target.value;
-        window.TEUI?.StateManager?.setValue("d_202", value, "user-modified");
+        console.log(`[WOMBAT] Aspect ratio slider changed: d_202 = ${value}`);
 
-        if (isActivated) {
-          updateVisualization();
-        }
+        // MODE-AWARE: Use ModeManager.setValue for dual-state publishing
+        ModeManager.setValue("d_202", value, "user-modified");
+
+        // Recalculate geometry with new aspect ratio (runs dual-engine + updates viz)
+        calculateAll();
       });
 
       aspectSlider.hasSliderListener = true;
