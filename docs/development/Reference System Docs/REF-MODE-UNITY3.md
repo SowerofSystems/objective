@@ -964,20 +964,41 @@ const value = ReferenceState.getValue("f_85"); // ← NEVER synced from StateMan
 this.setValue(fieldId, globalValue); // ✅ Syncs StateManager → ReferenceState
 ```
 
-**Why Set Values Fails**:
+**Why Set Values Fails (ACTUAL ROOT CAUSE)**:
 ```javascript
-// FileHandler.js applyReferenceValuesFromStandard() line 1027
-window.TEUI.StateManager.setValue("ref_f_85", "5.3", "user-modified");
-// ❌ No call to ReferenceState.syncFromStateManager()!
-// ReferenceState.state["f_85"] still has old Import value
-// Reference engine calculates with stale data
+// FileHandler.js applyReferenceValuesFromStandard() line 1073
+this.syncPatternASections(true); // ← CALLED! But syncs BOTH TargetState AND ReferenceState
+
+// What syncPatternASections() does (line 899-911):
+section.TargetState.syncFromGlobalState();   // ← Reads unprefixed "f_85"
+section.ReferenceState.syncFromGlobalState(); // ← Reads prefixed "ref_f_85"
 ```
 
-**Why Post-Import Makes It Worse**:
-- Import populates `ReferenceState.state["f_85"]` with Import value "4.1"
-- Set Values writes `StateManager ref_f_85 = "5.3"` (never synced)
-- Reference engine reads `ReferenceState.getValue("f_85")` → "4.1" (stale)
-- StateManager has "5.3" but it's never used by calculations
+**The Contamination Mechanism**:
+
+When `TargetState.syncFromGlobalState()` runs (Section11.js line 170):
+```javascript
+const globalValue = window.TEUI.StateManager.getValue("f_85"); // Unprefixed!
+```
+
+But `StateManager.getValue("f_85")` in Reference mode (line 331-346):
+```javascript
+if (TEUI.ReferenceToggle.isReferenceMode()) {
+  // Check activeReferenceDataSet (populated by Import with ReferenceValues)
+  return activeReferenceDataSet["f_85"]; // Returns Reference value!
+}
+```
+
+**The Complete Flow**:
+1. Import populates `activeReferenceDataSet["f_85"] = "4.1"` (from imported file)
+2. Set Values writes `StateManager ref_f_85 = "5.3"` (new standard) ✅
+3. `syncPatternASections()` runs:
+   - `TargetState.syncFromGlobalState()` calls `StateManager.getValue("f_85")`
+   - StateManager in Reference mode returns `activeReferenceDataSet["f_85"]` = "4.1"
+   - `TargetState.state["f_85"] = "4.1"` ❌ CONTAMINATED with old Reference value!
+   - `ReferenceState.syncFromGlobalState()` calls `StateManager.getValue("ref_f_85")`
+   - `ReferenceState.state["f_85"] = "5.3"` ✅ Correct
+4. Both models now calculate with values from `activeReferenceDataSet`
 
 ### Failed Fixes
 
@@ -1019,31 +1040,37 @@ calculateReferenceModel() reads from ReferenceState ❌ STALE DATA
 
 **Why Fix #4 Made It Worse**:
 - Changed `StateManager.getValue()` to prioritize `ref_*` fields
-- Now Target calculations ALSO read from StateManager instead of `TargetState`
-- Both engines bypass isolated state → both read same StateManager values → synchronization!
+- Made the problem even worse by returning Reference values for ALL unprefixed reads
 
 ### Solution Direction
 
-**SIMPLE FIX**: Make Set Values call the sync pattern that Import uses.
+**THE FIX**: `syncPatternASections()` must NOT sync TargetState during Set Values - only ReferenceState!
 
-**Option 1 (RECOMMENDED)**: Add sync call to applyReferenceValuesFromStandard()
+**Option 1 (RECOMMENDED)**: Add parameter to skip TargetState sync
 ```javascript
-// FileHandler.js after line 1089 (after all setValue calls)
-// Sync StateManager → isolated ReferenceState for Pattern A sections
-if (window.TEUI?.SectionModules?.sect11?.ReferenceState?.syncFromStateManager) {
-  window.TEUI.SectionModules.sect11.ReferenceState.syncFromStateManager();
+// FileHandler.js line 868 - Modify syncPatternASections signature
+syncPatternASections(skipAreaSync = false, skipTargetSync = false) {
+  patternASections.forEach(({ id, name }) => {
+    const section = window.TEUI?.SectionModules?.[id];
+
+    if (!skipTargetSync && section?.TargetState?.syncFromGlobalState) {
+      section.TargetState.syncFromGlobalState(); // ← Skip during Set Values
+    }
+
+    if (section?.ReferenceState?.syncFromGlobalState) {
+      section.ReferenceState.syncFromGlobalState(); // ← Always sync
+    }
+  });
 }
-// Repeat for S12, S13 Pattern A sections
+
+// FileHandler.js line 1073 - Pass skipTargetSync=true
+this.syncPatternASections(true, true); // skipAreaSync=true, skipTargetSync=true
 ```
 
-**Option 2**: Extract sync logic to shared utility
-- Create `syncReferenceStateFromGlobal()` in StateManager
-- Call from both Import and Set Values
-
-**Option 3**: Make sync automatic on `setValue("ref_*")`
-- StateManager detects `ref_*` writes
-- Automatically propagates to section ReferenceState objects
-- Most robust but requires StateManager changes
+**Why This Works**:
+- Set Values only writes `ref_*` fields → only ReferenceState needs syncing
+- TargetState remains untouched → preserves imported Target values
+- Import continues to work → syncs both states as before
 
 **Testing Required**: All four test cases must pass:
 1. Fresh page load Set Values
