@@ -877,28 +877,30 @@ Sections maintain isolated state objects:
 
 ## Next Steps
 
-1. ✅ **Revert Fix #4** - getValue() priority change made problem worse
-2. **Decide on solution approach**:
-   - Option A: Make StateManager mode-aware for calculations
-   - Option B: Explicit getTargetValue/getReferenceValue functions
-   - Option C: Sections read from isolated state only
-3. **Prototype chosen solution**
-4. **Test thoroughly** - Import, Copy, Set Values must all work
+1. ✅ **Revert Fix #4** - getValue() priority change made problem worse (COMPLETED)
+2. ✅ **Root cause identified** - Isolated state desync (COMPLETED)
+3. **Implement Fix #5** - Add syncFromStateManager() calls to applyReferenceValuesFromStandard()
+4. **Test thoroughly** - All four test cases must pass:
+   - Fresh page load Set Values
+   - Post-import Set Values
+   - Import regression (must still work)
+   - Copy regression (must still work)
 
 ---
 
 ## Files to Review/Modify
 
 **Understanding**:
-- [FileHandler.js:999-1095](../../src/core/FileHandler.js#L999-L1095) - Set Values system
-- [FileHandler.js:105-226](../../src/core/FileHandler.js#L105-L226) - Excel Import
-- [FileHandler.js:314-486](../../src/core/FileHandler.js#L314-L486) - CSV Import
-- [ReferenceToggle.js:931-1212](../../src/core/ReferenceToggle.js#L931-L1212) - Copy systems
-- [StateManager.js:325-356](../../src/core/StateManager.js#L325-L356) - getValue() priority
-- [StateManager.js:1628-1797](../../src/core/StateManager.js#L1628-L1797) - loadReferenceData()
+- [FileHandler.js:999-1095](../../src/core/FileHandler.js#L999-L1095) - Set Values system (PRIMARY FIX LOCATION)
+- [FileHandler.js:105-226](../../src/core/FileHandler.js#L105-L226) - Excel Import (reference implementation)
+- [FileHandler.js:314-486](../../src/core/FileHandler.js#L314-L486) - CSV Import (reference implementation)
+- [Section11.js:383-400](../../src/sections/Section11.js#L383-L400) - ReferenceState.syncFromStateManager()
+- [Section12.js](../../src/sections/Section12.js) - Pattern A section (needs sync)
+- [Section13.js](../../src/sections/Section13.js) - Pattern A section (needs sync)
+- [ReferenceToggle.js:931-1212](../../src/core/ReferenceToggle.js#L931-L1212) - Copy systems (no changes)
 
-**Potential Changes** (Option 1):
-- [StateManager.js:325-356](../../src/core/StateManager.js#L325-L356) - Reorder getValue() priority
+**Fix #5 Implementation**:
+- [FileHandler.js:1089](../../src/core/FileHandler.js#L1089) - Add sync calls after setValue loop, before calculateAll()
 
 ---
 
