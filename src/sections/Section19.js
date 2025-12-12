@@ -54,7 +54,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       },
     },
 
-    // Stories dropdown (entangled with S12 d_103)
+    // Stories dropdown (mirrored from S12 d_103)
     row199: {
       id: "19.0",
       rowId: "19.0",
@@ -64,12 +64,13 @@ window.TEUI.SectionModules.sect19 = (function () {
         b: {},
         c: { label: "Stories" },
         d: {
-          fieldId: "d_103",
+          fieldId: "d_199",
           type: "dropdown",
-          dropdownId: "dd_d_103_s19",
+          dropdownId: "dd_d_199",
           value: "1.5",
           section: "wombat",
           tooltip: true,
+          label: "Number of stories (mirrored from S12)",
           options: [
             { value: "1", name: "1" },
             { value: "1.5", name: "1.5" },
@@ -87,7 +88,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       },
     },
 
-    // Volume input (entangled with S12 d_105)
+    // Volume input (mirrored from S12 d_105)
     row198: {
       id: "19.V",
       rowId: "19.V",
@@ -97,12 +98,12 @@ window.TEUI.SectionModules.sect19 = (function () {
         b: {},
         c: { label: "Conditioned Volume" },
         d: {
-          fieldId: "d_105",
+          fieldId: "d_198",
           type: "number",
           value: "8000.00",
           classes: ["user-input"],
           tooltip: true,
-          label: "Total conditioned building volume",
+          label: "Conditioned volume (mirrored from S12)",
         },
         e: { content: "m³", classes: ["unit-label"] },
         f: {},
@@ -216,7 +217,7 @@ window.TEUI.SectionModules.sect19 = (function () {
 
   function getDropdownOptions() {
     return {
-      dd_d_103_s19: [
+      dd_d_199: [
         { value: "1", name: "1" },
         { value: "1.5", name: "1.5" },
         { value: "2", name: "2" },
@@ -301,13 +302,10 @@ window.TEUI.SectionModules.sect19 = (function () {
     const roofArea = parseFloat(window.TEUI?.StateManager?.getValue("d_85")) || 100;
     const wallArea = parseFloat(window.TEUI?.StateManager?.getValue("d_86")) || 160;
 
-    // ⚠️ CRITICAL: d_103 and d_105 are Pattern A fields (Section 12 dual-state)
-    // Must read from sect12.ModeManager (mode-aware) to respect Target vs Reference
-    const sect12 = window.TEUI?.SectionModules?.sect12;
-    const volume = parseFloat(sect12?.ModeManager?.getValue("d_105")) ||
-                   parseFloat(window.TEUI?.StateManager?.getValue("d_105")) || 1000;
-    const stories = parseFloat(sect12?.ModeManager?.getValue("d_103")) ||
-                    parseFloat(window.TEUI?.StateManager?.getValue("d_103")) || 1;
+    // ⚠️ Read from WOMBAT mirror fields (d_198, d_199)
+    // These are synced bidirectionally with Section 12's d_105/d_103
+    const volume = parseFloat(window.TEUI?.StateManager?.getValue("d_198")) || 1000;
+    const stories = parseFloat(window.TEUI?.StateManager?.getValue("d_199")) || 1;
 
     // User preferences
     // Aspect ratio slider: -4 to +4, centered at 0
@@ -768,9 +766,8 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Listen to geometry changes from other sections (external dependencies)
     // Per 4012-CHEATSHEET Anti-Pattern 7: Only listen to EXTERNAL dependencies
-    // d_103/d_105 belong to Section 12, but WOMBAT displays them for visualization
     if (window.TEUI?.StateManager) {
-      const geometryFields = ["d_85", "d_86", "d_105", "d_106", "d_103"];
+      const geometryFields = ["d_85", "d_86", "d_106"];
       geometryFields.forEach(fieldId => {
         window.TEUI.StateManager.addListener(fieldId, () => {
           if (isActivated) {
@@ -787,6 +784,52 @@ window.TEUI.SectionModules.sect19 = (function () {
             updateVisualization();
           }
         });
+      });
+
+      // ⚠️ MIRROR FIELD SYNC: Section 12 → WOMBAT (d_105→d_198, d_103→d_199)
+      // When S12 volume/stories change, sync to WOMBAT mirror fields
+      window.TEUI.StateManager.addListener("d_105", (newValue) => {
+        const currentValue = window.TEUI?.StateManager?.getValue("d_198");
+        if (currentValue !== newValue) {
+          window.TEUI.StateManager.setValue("d_198", newValue, "external");
+          console.log(`[WOMBAT] Synced d_198 = ${newValue} from S12 (d_105)`);
+          if (isActivated) {
+            updateVisualization();
+          }
+        }
+      });
+
+      window.TEUI.StateManager.addListener("ref_d_105", (newValue) => {
+        const currentValue = window.TEUI?.StateManager?.getValue("ref_d_198");
+        if (currentValue !== newValue) {
+          window.TEUI.StateManager.setValue("ref_d_198", newValue, "external");
+          console.log(`[WOMBAT] Synced ref_d_198 = ${newValue} from S12 (ref_d_105)`);
+          if (isActivated) {
+            updateVisualization();
+          }
+        }
+      });
+
+      window.TEUI.StateManager.addListener("d_103", (newValue) => {
+        const currentValue = window.TEUI?.StateManager?.getValue("d_199");
+        if (currentValue !== newValue) {
+          window.TEUI.StateManager.setValue("d_199", newValue, "external");
+          console.log(`[WOMBAT] Synced d_199 = ${newValue} from S12 (d_103)`);
+          if (isActivated) {
+            updateVisualization();
+          }
+        }
+      });
+
+      window.TEUI.StateManager.addListener("ref_d_103", (newValue) => {
+        const currentValue = window.TEUI?.StateManager?.getValue("ref_d_199");
+        if (currentValue !== newValue) {
+          window.TEUI.StateManager.setValue("ref_d_199", newValue, "external");
+          console.log(`[WOMBAT] Synced ref_d_199 = ${newValue} from S12 (ref_d_103)`);
+          if (isActivated) {
+            updateVisualization();
+          }
+        }
       });
     }
   }
