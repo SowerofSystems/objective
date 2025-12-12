@@ -2,6 +2,13 @@
  * 4011-init.js
  * Primary navigation script for TEUI 4.011 Calculator
  * Implements layout switching and section collapsing
+ *
+ * WOMBAT DEVELOPMENT NOTE (2025-12-12):
+ * Section 19 (WOMBAT - 3D Thermal Topology) is currently hidden by default.
+ * When development is complete, remove the WOMBAT-specific logic at:
+ * - Line 443: Remove `|| section.id === "wombat"` from shouldBeCollapsed condition
+ * - Lines 564-568: Remove entire wombatSection collapsed enforcement block
+ * This will allow WOMBAT to behave like other sections (user preference saved in localStorage).
  */
 
 // --- UI Initialization ---
@@ -74,6 +81,7 @@ document.addEventListener("DOMContentLoaded", function () {
     sankeyDiagram: "bi-sliders2",
     dependencyDiagram: "bi-link-45deg",
     parallelCoordinates: "bi-shuffle",
+    wombat: "bi-bounding-box",
     footer: "bi-info-square",
     notes: "bi-info-square",
   };
@@ -97,6 +105,7 @@ document.addEventListener("DOMContentLoaded", function () {
     sankeyDiagram: "Sankey",
     dependencyDiagram: "Depend",
     parallelCoordinates: "Optimize",
+    wombat: "Wombat",
     notes: "Notes",
   };
 
@@ -119,6 +128,7 @@ document.addEventListener("DOMContentLoaded", function () {
     sankeyDiagram: "Energy Flow Diagram",
     dependencyDiagram: "Dependencies Graph",
     parallelCoordinates: "Optimization Analysis",
+    wombat: "WOMBAT - 3D Thermal Topology",
     notes: "Project Notes",
   };
 
@@ -435,9 +445,9 @@ document.addEventListener("DOMContentLoaded", function () {
         const section = header.closest(".section");
         if (section.id === "keyValues") return;
 
-        // Special case: Section 19 (Notes & Debug) defaults to collapsed for cleaner UI
+        // Special case: WOMBAT and Notes sections default to collapsed for cleaner UI
         const shouldBeCollapsed =
-          collapsedSections[section.id] || section.id === "notes";
+          collapsedSections[section.id] || section.id === "wombat" || section.id === "notes";
 
         if (shouldBeCollapsed) {
           header.classList.add("collapsed");
@@ -556,8 +566,14 @@ document.addEventListener("DOMContentLoaded", function () {
   // Restore user preferences
   restoreUserPreferences();
 
-  // Ensure Section 19 (Notes & Debug) starts collapsed for cleaner UI
+  // Ensure WOMBAT and Notes sections start collapsed for cleaner UI
   // This runs after restoreUserPreferences to override any saved state
+  const wombatSection = document.querySelector("#wombat .section-header");
+  if (wombatSection && !wombatSection.classList.contains("collapsed")) {
+    wombatSection.classList.add("collapsed");
+    wombatSection.setAttribute("aria-expanded", "false");
+  }
+
   const notesSection = document.querySelector("#notes .section-header");
   if (notesSection && !notesSection.classList.contains("collapsed")) {
     notesSection.classList.add("collapsed");

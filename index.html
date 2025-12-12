@@ -143,6 +143,8 @@
     <script src="src/sections/Section18.js"></script>
     <!-- Parallel Coordinates Module -->
     <script src="src/sections/Section19.js"></script>
+    <!-- WOMBAT - 3D Thermal Topology Module -->
+    <script src="src/sections/Section20.js"></script>
     <!-- Notes & Debug Module -->
   </head>
   <body>
@@ -662,13 +664,46 @@
             </div>
           </div>
 
-          <!-- Section 19: Notes -->
+          <!-- Section 19: WOMBAT - 3D Thermal Topology -->
+          <div id="wombat" class="section">
+            <div class="section-header">
+              <span class="section-icon"
+                ><i class="bi bi-bounding-box"></i
+              ></span>
+              SECTION 19. WOMBAT - 3D Thermal Topology
+            </div>
+            <div class="section-content">
+              <!-- Activation controls (injected by Section19.js) -->
+              <div class="wombat-controls-wrapper mb-3"></div>
+
+              <!-- Canvas layout: Left controls, Right 3D view -->
+              <div
+                class="wombat-canvas-container"
+                style="display: flex; gap: 20px; align-items: flex-start"
+              >
+                <!-- Left: Future controls (aspect ratio slider, etc.) -->
+                <div style="flex: 0 0 300px">
+                  <div data-render-section="wombat"></div>
+                </div>
+
+                <!-- Right: Square canvas for 3D visualization -->
+                <div style="flex: 1; display: flex; justify-content: center">
+                  <canvas
+                    id="wombat-canvas"
+                    style="border: 1px solid #dee2e6; border-radius: 4px; max-width: 600px"
+                  ></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 20: Notes & Debug (formerly Section 19) -->
           <div id="notes" class="section">
             <div class="section-header">
               <span class="section-icon"
                 ><i class="bi bi-info-square"></i
               ></span>
-              SECTION 19. Notes & Debug
+              SECTION 20. Notes & Debug
             </div>
             <div class="section-content">
               <div data-render-section="notes"></div>
