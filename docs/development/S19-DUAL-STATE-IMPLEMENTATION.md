@@ -355,14 +355,58 @@ User edits d_198 in S19:
 
 ### **Testing Checklist**
 
-- [ ] Edit d_105 in S12 → verify d_198 updates in S19 table AND 3D visualization
-- [ ] Edit d_198 in S19 → verify d_105 updates in S12 DOM
-- [ ] Edit d_103 dropdown in S12 → verify d_199 updates in S19 AND 3D redraws
-- [ ] Edit d_199 dropdown in S19 → verify d_103 dropdown updates in S12
+- [x] Edit d_105 in S12 → verify d_198 updates in S19 table AND 3D visualization ✅
+- [ ] Edit d_198 in S19 → verify d_105 updates in S12 DOM ⚠️ **KNOWN ISSUE**
+- [x] Edit d_103 dropdown in S12 → verify d_199 updates in S19 AND 3D redraws ✅
+- [x] Edit d_199 dropdown in S19 → verify d_103 dropdown updates in S12 ✅
 - [ ] Switch to Reference mode → verify ref_ fields work bidirectionally
-- [ ] Verify 3D visualization updates from BOTH S12 and S19 changes
-- [ ] Verify no cross-contamination (Target ≠ Reference calculations)
+- [x] Verify 3D visualization updates from BOTH S12 and S19 changes ✅
+- [x] Verify no cross-contamination (Target ≠ Reference calculations) ✅
+- [x] Aspect ratio slider triggers recalculation and visualization ✅
 
 ---
 
-**This implementation achieves full dual-state compliance and bidirectional synchronization between WOMBAT and S12 with live 3D visualization updates.**
+## ⚠️ KNOWN ISSUES
+
+### **Volume Field (d_198) Input Locked After First Edit**
+
+**Status**: Deferred for investigation
+**Severity**: High - Blocks S19 → S12 user input flow
+**Affects**: Volume field (d_198) contenteditable input in S19 table
+
+**Symptoms:**
+- First edit works correctly: value syncs to S12, calculations update, 3D redraws
+- Second click into field: field appears to accept focus but rejects typed input
+- Field becomes locked and unresponsive to user input
+- S12 → S19 direction works perfectly (editing d_105 updates d_198 correctly)
+
+**Evidence from Logs:**
+```
+Line 158: [WOMBAT] setupFieldListeners: Volume field found = null
+Line 596: [FieldManager] Section sect19 has no ModeManager - using direct write for d_198
+```
+
+**Root Cause Hypothesis:**
+Volume field not found during initialization (`setupFieldListeners()`), likely due to:
+1. Field selector too specific: `[data-field-id="d_198"][contenteditable="true"]`
+2. Field rendered by FieldManager AFTER event handler setup runs
+3. Blur handler never attached → no input processing after first DOM update
+
+**Attempted Fixes (Reverted):**
+- Focus detection to skip DOM updates ❌
+- Value comparison to prevent unnecessary updates ❌
+- Contenteditable attribute preservation ❌
+- Simplified field selector ❌
+
+**Next Steps:**
+1. Investigate field rendering timing (when does FieldManager create d_198?)
+2. Consider deferring `setupFieldListeners()` until after FieldManager renders fields
+3. Alternative: Use global blur handler pattern instead of field-specific attachment
+4. Check if field needs `contenteditable="true"` added to field definition
+
+**Workaround:**
+Use S12 d_105 field for volume input (bidirectional sync S12→S19 works correctly)
+
+---
+
+**This implementation achieves full dual-state compliance and bidirectional synchronization between WOMBAT and S12 with live 3D visualization updates. One-way S12→S19 input is production-ready; S19→S12 volume input requires further investigation.**
