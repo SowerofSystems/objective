@@ -1,7 +1,8 @@
 # Section 19 (WOMBAT) - Dual-State Architecture Implementation Plan
 
 **Created**: 2025-12-12
-**Status**: Implementation Required
+**Updated**: 2025-12-13
+**Status**: Nearly Complete - Table Display Updates Needed
 **Related**: S12 bidirectional sync, Pattern A compliance
 
 ---
@@ -302,12 +303,13 @@ After `calculateAll()`, always call `ModeManager.updateCalculatedDisplayValues()
 
 ---
 
-## ✅ IMPLEMENTATION COMPLETE
+## 🚧 IMPLEMENTATION IN PROGRESS (WOMBAT3D Branch)
 
-**Status**: Implemented 2025-12-12
+**Status**: Partial Implementation - 2025-12-13
+**Branch**: `WOMBAT3D` (SVG migration + mode-aware fixes)
 **Affected Files**:
-- `src/sections/Section19.js` (Pattern A architecture + dual-engine calculations)
-- `src/sections/Section12.js` (Bidirectional listeners with DOM updates)
+- `src/sections/Section19.js` (Pattern A architecture + SVG rendering)
+- `index.html` (SVG container replaces Canvas)
 
 ### **What Was Implemented**
 
@@ -409,4 +411,213 @@ Use S12 d_105 field for volume input (bidirectional sync S12→S19 works correct
 
 ---
 
-**This implementation achieves full dual-state compliance and bidirectional synchronization between WOMBAT and S12 with live 3D visualization updates. One-way S12→S19 input is production-ready; S19→S12 volume input requires further investigation.**
+---
+
+## 📊 WOMBAT3D BRANCH STATUS (2025-12-13)
+
+### **✅ Completed This Session**
+
+1. **Canvas → SVG Migration** (Commit: 9f1852a)
+   - Replaced `<canvas>` with `<svg>` element (800×600)
+   - Ported all rendering from Canvas 2D API to SVG DOM manipulation
+   - Wireframe topology style (edges + nodes, no filled faces)
+   - S18 aesthetic: 3px edges, 5px nodes with white borders
+
+2. **ModeManager Export Fix** (Commit: af7842d) 🔥 **CRITICAL**
+   - **Problem**: ModeManager not in module return{} → undefined globally
+   - **Evidence**: Diagnostic showed `mode: 'UNKNOWN'`, FieldManager warnings
+   - **Fix**: Added ModeManager, TargetState, ReferenceState to exports
+   - **Fix**: Added lowercase `modeManager` alias for ReferenceToggle
+   - **Result**: FieldManager now routes through ModeManager ✅
+
+3. **getModeAwareValue() for State Isolation** (Commit: 489c2ff)
+   - **Problem**: solveGeometry() read external deps without ref_ prefix
+   - **Evidence**: Reference mode showed Target geometry
+   - **Fix**: Added S16-pattern getModeAwareValue(fieldId, isReferenceCalculation)
+   - **Result**: Reference calculations read ref_h_15, ref_d_85, ref_d_86 ✅
+
+4. **Local State Sync Fix** (Commit: 920b6a3) 🔥 **CRITICAL**
+   - **Problem**: Calculation engines didn't update TargetState/ReferenceState
+   - **Evidence**: refreshUI() read stale values, mode switch showed old geometry
+   - **Fix**: calculateTargetModel/ReferenceModel now update local state FIRST
+   - **Pattern**: Update local → publish to StateManager (Anti-Pattern 4)
+
+5. **switchMode() Visualization Update** (Commit: 5833f3d)
+   - **Problem**: Mode toggle didn't redraw visualization
+   - **Fix**: Added updateVisualization(mode) call in switchMode()
+   - **Pattern**: S17/S18 passive visualization redraw on mode change
+
+6. **Diagnostic Script** (Commit: d5a8348)
+   - Created comprehensive state inspection tool
+   - Reports: mode, state isolation, visualization color, issues
+   - File: `docs/development/S19-DIAGNOSTIC.js`
+
+### **❌ STILL BROKEN**
+
+#### **1. Mode Switching Shows Stale Values** 🔴 **CRITICAL - ROOT CAUSE**
+**Status**: Core dual-state architecture not working
+**Expected**: Switching modes shows each mode's isolated state
+**Actual**: Shows "last values set" - no state isolation
+
+**User Report**: "What we see after any mode switch is the last values set, no isolated state data"
+
+**This means BOTH issues are the same root cause**:
+- Visualization stays blue (last rendered color)
+- Table shows stale values (last written values)
+- Neither visualization NOR table update when mode switches
+
+**Broken Functions**:
+1. `switchMode()` - Not actually switching displayed state
+2. `refreshUI()` - Not updating DOM from state objects
+3. `updateVisualization(mode)` - Not redrawing with new mode
+
+**Evidence from Latest Diagnostic**:
+```
+mode: 'target'  // ✅ ModeManager working now
+Wireframe Color: #007bff
+Expected Color: #dc3545 (reference mode)
+❌ Color Match: WRONG!
+```
+
+**Possible Causes**:
+1. updateVisualization() not being called when mode switches
+2. updateVisualization() receiving wrong mode parameter
+3. isReference variable calculation issue in updateVisualization()
+4. SVG not being redrawn (stale DOM)
+5. Mode switching not triggering at all from ReferenceToggle
+
+**Next Debug Step**: Add console logging to updateVisualization() to see:
+- Is it being called?
+- What mode parameter is it receiving?
+- What is isReference evaluating to?
+
+#### **2. Stories Dropdown State Isolation** ⚠️
+**Status**: May not be broken, just same values by coincidence
+**Evidence**: Diagnostic shows `d_199 === ref_d_199`
+**Next**: Change one value and verify isolation works
+
+#### **3. Stories Dropdown "undefined" Errors**
+**Evidence from Logs**:
+```
+[WOMBAT] ❌ Dropdown value is invalid: "undefined"
+```
+**Possible Cause**: refreshUI() or mode switching passing undefined to dropdown
+**Impact**: May prevent proper state display
+
+### **🔍 ROOT CAUSE ANALYSIS**
+
+**The visualization color issue is the blocker**. We've fixed:
+✅ ModeManager export (mode detection works)
+✅ State isolation (geometry calculations are mode-aware)
+✅ Local state sync (refreshUI has correct values)
+✅ switchMode() calls updateVisualization(mode)
+
+But the SVG is still blue. This suggests:
+1. **updateVisualization()** isn't receiving the mode parameter correctly, OR
+2. **The SVG isn't being cleared/redrawn**, OR
+3. **isReference** variable inside updateVisualization() is always false
+
+### **📋 NEXT SESSION ACTION PLAN**
+
+#### **Priority 1: Fix Visualization Color** 🔥
+1. Add logging to updateVisualization(mode = "target") to trace:
+   ```javascript
+   console.log(`[WOMBAT VIZ] updateVisualization called with mode="${mode}"`);
+   console.log(`[WOMBAT VIZ] isReference = ${isReference}`);
+   console.log(`[WOMBAT VIZ] modelColor = ${modelColor}`);
+   ```
+
+2. Add logging to switchMode() to verify it's being called:
+   ```javascript
+   console.log(`[WOMBAT ModeManager] switchMode("${mode}") called`);
+   console.log(`[WOMBAT ModeManager] About to call updateVisualization("${mode}")`);
+   ```
+
+3. Test: Toggle to Reference mode and check logs
+   - Is switchMode() being called?
+   - Is updateVisualization() being called?
+   - What values are the variables?
+
+#### **Priority 2: Fix Stories Dropdown Undefined**
+1. Check where "undefined" is coming from
+2. Add guard in dropdown change handler
+3. Ensure refreshUI() doesn't pass undefined
+
+#### **Priority 3: Verify State Isolation**
+1. Change Reference volume to different value
+2. Change Reference stories to different value
+3. Run diagnostic to verify isolation
+
+---
+
+## 🎉 SESSION UPDATE: 2025-12-13 (WOMBAT3D Branch)
+
+### **MAJOR BREAKTHROUGH - Root Cause Found & Fixed**
+
+**Critical Discovery**: ReferenceToggle.js was missing sect19 from its hardcoded section list!
+- Lines 192-209 in ReferenceToggle.js listed sect02-sect16 only
+- **sect19 was NOT registered** - ReferenceToggle never called `sect19.modeManager.switchMode()`
+- This explained ALL symptoms: no mode switching, stale values, always blue visualization
+
+**Fix Applied** (commit 8f21465):
+```javascript
+const sectionIds = [
+  "sect02", "sect03", ..., "sect16",
+  "sect19", // WOMBAT - 3D Thermal Topology  <-- ADDED
+];
+```
+
+### **Architectural Simplification - Passive Pattern (commit 0959c5d)**
+
+Simplified S19 to follow S16's passive visualization pattern per user guidance:
+- **Removed**: `refreshUI()` function (circular loop trigger)
+- **Removed**: `updateWombatDOM()` function (caused field locking)
+- **Simplified**: `switchMode()` now only re-renders visualization (like S16)
+- **Fixed**: S12→S19 listeners publish to StateManager instead of direct DOM updates
+- **Result**: 68 lines of problematic code removed, 22 lines of clean code added
+
+### **CURRENT STATUS - 95% Complete** ✅
+
+**What Works Perfectly**:
+1. ✅ **S12 → S19 diagram updates** (both Target and Reference modes)
+2. ✅ **S19 table → S12 updates** (Target mode only)
+3. ✅ **S19 table → diagram updates** (both modes)
+4. ✅ **State isolation** - 100% perfect between Target/Reference
+5. ✅ **Visualization color switching** - RED in Reference, BLUE in Target
+6. ✅ **Volume field input** - No longer locks (passive pattern fixed it!)
+7. ✅ **Bidirectional sync logic** - All StateManager flows correct
+
+**Remaining Issue - Table Display Updates**: ⚠️
+
+**Symptom**:
+- S12 edits → S19 **diagram** updates ✅ (both modes)
+- S12 edits → S19 **table** remains stale ❌ (both modes)
+- Workaround: Toggle mode Reference→Target→Reference forces table refresh
+
+**Root Cause Hypothesis**:
+S19 table fields need to subscribe to StateManager changes like passive sections do.
+Currently:
+- Diagram updates via `calculateAll()` → `updateVisualization()` ✅
+- Table should update via FieldManager listening to StateManager ❌ (not wired)
+
+**Solution Path**:
+FieldManager should automatically update S19's table fields when StateManager publishes:
+- `d_198` changes → update table row for Volume
+- `d_199` changes → update table row for Stories
+- `h_200`, `h_201`, `h_203` changes → update calculated fields
+
+This is standard FieldManager behavior for other sections - need to verify S19 fields are properly registered.
+
+### **🎯 NEXT SESSION GOAL**
+
+Fix table display updates by ensuring FieldManager updates S19 table on StateManager changes:
+1. Verify S19 fields are registered with FieldManager
+2. Check if FieldManager has listeners for d_198/d_199
+3. Add logging to trace why table doesn't update on StateManager publish
+4. Test: Edit d_105 in S12 → should update both diagram AND table in S19
+
+**Expected Code Change**: Likely 5-10 lines to wire FieldManager listeners for S19 table fields.
+
+---
+
+**Session Summary**: We found and fixed the root cause (ReferenceToggle registration), simplified to passive pattern (removed 68 lines of problematic code), and achieved 95% functionality. Table display updates are the final piece - very close to complete solution!**

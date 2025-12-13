@@ -205,6 +205,7 @@ TEUI.ReferenceToggle = (function () {
       "sect14",
       "sect15",
       "sect16",
+      "sect19", // WOMBAT - 3D Thermal Topology
     ];
 
     const dualStateSections = sectionIds

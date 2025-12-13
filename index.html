@@ -686,12 +686,15 @@
                   <div data-render-section="wombat"></div>
                 </div>
 
-                <!-- Right: Square canvas for 3D visualization -->
+                <!-- Right: SVG container for 3D visualization -->
                 <div style="flex: 1; display: flex; justify-content: center">
-                  <canvas
-                    id="wombat-canvas"
-                    style="border: 1px solid #dee2e6; border-radius: 4px; max-width: 600px"
-                  ></canvas>
+                  <svg
+                    id="wombat-svg"
+                    width="800"
+                    height="600"
+                    viewBox="0 0 800 600"
+                    style="max-width: 100%"
+                  ></svg>
                 </div>
               </div>
             </div>
