@@ -1025,6 +1025,9 @@ window.TEUI.SectionModules.sect19 = (function () {
   /**
    * Update WOMBAT field display in DOM using FieldManager
    */
+  // Flag to prevent infinite loops when programmatically updating fields
+  let isUpdatingDOM = false;
+
   function updateWombatDOM(fieldId, value) {
     if (!window.TEUI?.FieldManager?.updateFieldDisplay) {
       console.warn(`[WOMBAT] FieldManager.updateFieldDisplay not available for ${fieldId}`);
@@ -1034,9 +1037,12 @@ window.TEUI.SectionModules.sect19 = (function () {
     const fieldDef = window.TEUI.FieldManager.getField(fieldId);
     if (fieldDef) {
       try {
+        isUpdatingDOM = true; // Set flag before updating DOM
         window.TEUI.FieldManager.updateFieldDisplay(fieldId, value, fieldDef);
       } catch (e) {
         console.error(`[WOMBAT] Error updating DOM for ${fieldId}:`, e);
+      } finally {
+        isUpdatingDOM = false; // Clear flag after update
       }
     }
   }
@@ -1060,6 +1066,12 @@ window.TEUI.SectionModules.sect19 = (function () {
     console.log(`[WOMBAT] setupFieldListeners: Stories dropdown found =`, storiesDropdown);
     if (storiesDropdown && !storiesDropdown.hasWombatListener) {
       storiesDropdown.addEventListener("change", function(event) {
+        // Ignore programmatic updates from refreshUI
+        if (isUpdatingDOM) {
+          console.log(`[WOMBAT DOM] Ignoring programmatic update for d_199`);
+          return;
+        }
+
         const fieldId = this.getAttribute("data-field-id");
         const value = this.value;
         console.log(`[WOMBAT DOM] Stories dropdown changed: ${fieldId} = "${value}" (type: ${typeof value})`);
@@ -1086,6 +1098,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     console.log(`[WOMBAT] setupFieldListeners: Volume field found =`, volumeField);
     if (volumeField && !volumeField.hasWombatListener) {
       // Listen for Enter key press to trigger sync
+      // NOTE: keydown is user-initiated only, no need for isUpdatingDOM guard
       volumeField.addEventListener("keydown", function(event) {
         if (event.key === "Enter" || event.keyCode === 13) {
           event.preventDefault(); // Prevent form submission
