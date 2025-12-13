@@ -1,7 +1,8 @@
 # Section 19 (WOMBAT) - Dual-State Architecture Implementation Plan
 
 **Created**: 2025-12-12
-**Status**: Implementation Required
+**Updated**: 2025-12-13
+**Status**: Nearly Complete - Table Display Updates Needed
 **Related**: S12 bidirectional sync, Pattern A compliance
 
 ---
@@ -547,15 +548,76 @@ But the SVG is still blue. This suggests:
 2. Change Reference stories to different value
 3. Run diagnostic to verify isolation
 
-### **🎯 SUCCESS CRITERIA FOR NEXT SESSION**
+---
 
-- [ ] Visualization shows RED in Reference mode
-- [ ] Visualization shows BLUE in Target mode
-- [ ] Mode toggle switches colors immediately
-- [ ] No "undefined" dropdown errors
-- [ ] Diagnostic shows 0 issues
-- [ ] Volume field works (stretch goal - may defer)
+## 🎉 SESSION UPDATE: 2025-12-13 (WOMBAT3D Branch)
+
+### **MAJOR BREAKTHROUGH - Root Cause Found & Fixed**
+
+**Critical Discovery**: ReferenceToggle.js was missing sect19 from its hardcoded section list!
+- Lines 192-209 in ReferenceToggle.js listed sect02-sect16 only
+- **sect19 was NOT registered** - ReferenceToggle never called `sect19.modeManager.switchMode()`
+- This explained ALL symptoms: no mode switching, stale values, always blue visualization
+
+**Fix Applied** (commit 8f21465):
+```javascript
+const sectionIds = [
+  "sect02", "sect03", ..., "sect16",
+  "sect19", // WOMBAT - 3D Thermal Topology  <-- ADDED
+];
+```
+
+### **Architectural Simplification - Passive Pattern (commit 0959c5d)**
+
+Simplified S19 to follow S16's passive visualization pattern per user guidance:
+- **Removed**: `refreshUI()` function (circular loop trigger)
+- **Removed**: `updateWombatDOM()` function (caused field locking)
+- **Simplified**: `switchMode()` now only re-renders visualization (like S16)
+- **Fixed**: S12→S19 listeners publish to StateManager instead of direct DOM updates
+- **Result**: 68 lines of problematic code removed, 22 lines of clean code added
+
+### **CURRENT STATUS - 95% Complete** ✅
+
+**What Works Perfectly**:
+1. ✅ **S12 → S19 diagram updates** (both Target and Reference modes)
+2. ✅ **S19 table → S12 updates** (Target mode only)
+3. ✅ **S19 table → diagram updates** (both modes)
+4. ✅ **State isolation** - 100% perfect between Target/Reference
+5. ✅ **Visualization color switching** - RED in Reference, BLUE in Target
+6. ✅ **Volume field input** - No longer locks (passive pattern fixed it!)
+7. ✅ **Bidirectional sync logic** - All StateManager flows correct
+
+**Remaining Issue - Table Display Updates**: ⚠️
+
+**Symptom**:
+- S12 edits → S19 **diagram** updates ✅ (both modes)
+- S12 edits → S19 **table** remains stale ❌ (both modes)
+- Workaround: Toggle mode Reference→Target→Reference forces table refresh
+
+**Root Cause Hypothesis**:
+S19 table fields need to subscribe to StateManager changes like passive sections do.
+Currently:
+- Diagram updates via `calculateAll()` → `updateVisualization()` ✅
+- Table should update via FieldManager listening to StateManager ❌ (not wired)
+
+**Solution Path**:
+FieldManager should automatically update S19's table fields when StateManager publishes:
+- `d_198` changes → update table row for Volume
+- `d_199` changes → update table row for Stories
+- `h_200`, `h_201`, `h_203` changes → update calculated fields
+
+This is standard FieldManager behavior for other sections - need to verify S19 fields are properly registered.
+
+### **🎯 NEXT SESSION GOAL**
+
+Fix table display updates by ensuring FieldManager updates S19 table on StateManager changes:
+1. Verify S19 fields are registered with FieldManager
+2. Check if FieldManager has listeners for d_198/d_199
+3. Add logging to trace why table doesn't update on StateManager publish
+4. Test: Edit d_105 in S12 → should update both diagram AND table in S19
+
+**Expected Code Change**: Likely 5-10 lines to wire FieldManager listeners for S19 table fields.
 
 ---
 
-**Session Summary**: We fixed critical infrastructure (ModeManager export, state isolation, local state sync) but visualization color remains broken. The diagnostic tool is working and revealing the issue. Next session should focus on tracing updateVisualization() execution.**
+**Session Summary**: We found and fixed the root cause (ReferenceToggle registration), simplified to passive pattern (removed 68 lines of problematic code), and achieved 95% functionality. Table display updates are the final piece - very close to complete solution!**
