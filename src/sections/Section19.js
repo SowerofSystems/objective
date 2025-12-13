@@ -693,6 +693,9 @@ window.TEUI.SectionModules.sect19 = (function () {
     }
 
     // Draw wireframe topology (S18 graph style)
+    // Color based on mode: Blue for Target, Red for Reference (matching S18)
+    const modelColor = isReference ? "#dc3545" : "#007bff"; // Red for Reference, Blue for Target
+
     const allVertices = [];
     const allEdges = [];
 
@@ -744,28 +747,26 @@ window.TEUI.SectionModules.sect19 = (function () {
       svg.appendChild(label);
     }
 
-    // Draw all edges
-    const edgeColor = "#007bff";
+    // Draw all edges with mode-aware color
     allEdges.forEach(([p1, p2]) => {
-      const edge = createLine(p1, p2, edgeColor, 3);
+      const edge = createLine(p1, p2, modelColor, 3);
       svg.appendChild(edge);
     });
 
-    // Draw all vertex nodes on top
-    const nodeColor = "#007bff";
+    // Draw all vertex nodes on top with mode-aware color
     allVertices.forEach(vertex => {
-      const node = createNode(vertex, nodeColor, 5);
+      const node = createNode(vertex, modelColor, 5);
       svg.appendChild(node);
     });
 
-    // Draw dimension annotations (SVG)
+    // Draw dimension annotations (SVG) with mode-aware color
     // Length label (bottom edge)
     const lengthLabelPos = toIso(0, -length / 2 - 5, 0);
     const lengthLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
     lengthLabel.setAttribute("x", lengthLabelPos.x);
     lengthLabel.setAttribute("y", lengthLabelPos.y + 15);
     lengthLabel.setAttribute("text-anchor", "middle");
-    lengthLabel.setAttribute("fill", "#007bff");
+    lengthLabel.setAttribute("fill", modelColor);
     lengthLabel.setAttribute("font-family", "-apple-system, BlinkMacSystemFont, sans-serif");
     lengthLabel.setAttribute("font-size", "11");
     lengthLabel.textContent = `${length.toFixed(1)}m`;
@@ -777,7 +778,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     widthLabel.setAttribute("x", widthLabelPos.x + 20);
     widthLabel.setAttribute("y", widthLabelPos.y);
     widthLabel.setAttribute("text-anchor", "middle");
-    widthLabel.setAttribute("fill", "#007bff");
+    widthLabel.setAttribute("fill", modelColor);
     widthLabel.setAttribute("font-family", "-apple-system, BlinkMacSystemFont, sans-serif");
     widthLabel.setAttribute("font-size", "11");
     widthLabel.textContent = `${width.toFixed(1)}m`;
@@ -789,7 +790,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     heightLabel.setAttribute("x", heightLabelPos.x - 30);
     heightLabel.setAttribute("y", heightLabelPos.y);
     heightLabel.setAttribute("text-anchor", "middle");
-    heightLabel.setAttribute("fill", "#007bff");
+    heightLabel.setAttribute("fill", modelColor);
     heightLabel.setAttribute("font-family", "-apple-system, BlinkMacSystemFont, sans-serif");
     heightLabel.setAttribute("font-size", "11");
     heightLabel.textContent = `${geometry.height.toFixed(1)}m`;
@@ -811,7 +812,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       const infoText = document.createElementNS("http://www.w3.org/2000/svg", "text");
       infoText.setAttribute("x", x);
       infoText.setAttribute("y", y);
-      infoText.setAttribute("fill", "#007bff");
+      infoText.setAttribute("fill", modelColor);
       infoText.setAttribute("font-family", "monospace");
       infoText.setAttribute("font-size", "12");
       infoText.textContent = line;
