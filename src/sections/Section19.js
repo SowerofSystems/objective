@@ -32,6 +32,8 @@ window.TEUI.SectionModules.sect19 = (function () {
     defaultAllowAsymmetry: true,   // Allow walls to deform independently
     canvasWidth: 800,
     canvasHeight: 600,
+    // COORDINATE CONVENTION: Y+ = North (for future window orientation per facade)
+    // X+ = East, Y+ = North, Z+ = Up (right-handed coordinate system)
   };
 
   //==========================================================================
