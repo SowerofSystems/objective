@@ -139,18 +139,27 @@ window.TEUI.SectionModules.sect19 = (function () {
      * Switch between Target and Reference modes
      */
     switchMode: function (mode) {
+      console.log(`🔄 [WOMBAT ModeManager] switchMode() called with mode="${mode}"`);
       if (mode !== "target" && mode !== "reference") {
         console.warn(`[WOMBAT ModeManager] Invalid mode: ${mode}`);
         return;
       }
       this.currentMode = mode;
-      console.log(`[WOMBAT ModeManager] Switched to ${mode} mode`);
+      console.log(`✅ [WOMBAT ModeManager] currentMode set to "${this.currentMode}"`);
+
+      console.log(`📋 [WOMBAT ModeManager] Calling refreshUI()...`);
       this.refreshUI();
+      console.log(`✅ [WOMBAT ModeManager] refreshUI() completed`);
 
       // Update visualization with new mode's color (passive redraw, no recalculation)
       // Per 4012-CHEATSHEET: switchMode is UI-only, geometry already calculated
+      console.log(`🎨 [WOMBAT ModeManager] isActivated = ${isActivated}`);
       if (isActivated) {
+        console.log(`🎨 [WOMBAT ModeManager] Calling updateVisualization("${mode}")...`);
         updateVisualization(mode);
+        console.log(`✅ [WOMBAT ModeManager] updateVisualization() completed`);
+      } else {
+        console.log(`⚠️ [WOMBAT ModeManager] Skipping visualization update (not activated)`);
       }
     },
 
@@ -158,15 +167,22 @@ window.TEUI.SectionModules.sect19 = (function () {
      * Refresh UI to display current mode's values
      */
     refreshUI: function () {
+      console.log(`📋 [WOMBAT refreshUI] Starting refresh for mode="${this.currentMode}"`);
       const currentState = this.currentMode === "target" ? TargetState : ReferenceState;
+      console.log(`📋 [WOMBAT refreshUI] Using state: ${this.currentMode === "target" ? "TargetState" : "ReferenceState"}`);
       const fieldIds = ["d_198", "d_199", "d_202", "h_200", "h_201", "h_203"];
 
       fieldIds.forEach((fieldId) => {
         const value = currentState.getValue(fieldId);
+        console.log(`📋 [WOMBAT refreshUI] ${fieldId} = ${value}`);
         if (value !== null) {
+          console.log(`📋 [WOMBAT refreshUI] Calling updateWombatDOM("${fieldId}", "${value}")`);
           updateWombatDOM(fieldId, value);
+        } else {
+          console.warn(`⚠️ [WOMBAT refreshUI] ${fieldId} is null, skipping`);
         }
       });
+      console.log(`✅ [WOMBAT refreshUI] Refresh complete`);
     },
 
     /**
@@ -641,19 +657,30 @@ window.TEUI.SectionModules.sect19 = (function () {
   }
 
   function updateVisualization(mode = "target") {
-    if (!isActivated) return;
+    console.log(`🎨 [WOMBAT updateVisualization] Called with mode="${mode}"`);
+    console.log(`🎨 [WOMBAT updateVisualization] isActivated = ${isActivated}`);
+    if (!isActivated) {
+      console.warn(`⚠️ [WOMBAT updateVisualization] Not activated, returning early`);
+      return;
+    }
 
     // Solve geometry for the requested mode
     const isReference = (mode === "reference");
+    console.log(`🎨 [WOMBAT updateVisualization] isReference = ${isReference}`);
     const geometry = solveGeometry(isReference);
     currentModel = geometry;
 
     // Render isometric visualization with stacked stories
     const svg = document.getElementById("wombat-svg");
-    if (!svg) return;
+    console.log(`🎨 [WOMBAT updateVisualization] SVG element found: ${!!svg}`);
+    if (!svg) {
+      console.error(`❌ [WOMBAT updateVisualization] SVG element not found!`);
+      return;
+    }
 
     // Clear SVG
     svg.innerHTML = "";
+    console.log(`🎨 [WOMBAT updateVisualization] SVG cleared`);
 
     // Building dimensions
     const length = geometry.footprint.length;
@@ -718,6 +745,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     // Draw wireframe topology (S18 graph style)
     // Color based on mode: Blue for Target, Red for Reference (matching S18)
     const modelColor = isReference ? "#dc3545" : "#007bff"; // Red for Reference, Blue for Target
+    console.log(`🎨 [WOMBAT updateVisualization] modelColor = ${modelColor} (isReference=${isReference})`);
 
     const allVertices = [];
     const allEdges = [];
