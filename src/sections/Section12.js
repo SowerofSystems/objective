@@ -3131,6 +3131,16 @@ window.TEUI.SectionModules.sect12 = (function () {
           console.log(`[S12→WOMBAT] Syncing ref_d_105 = ${newValue} from WOMBAT ref_d_198`);
           ReferenceState.setValue("d_105", newValue);
           window.TEUI.StateManager.setValue("ref_d_105", newValue, "external");
+
+          // ✅ FIX: Explicit DOM update for d_105 when in Reference mode
+          if (ModeManager.currentMode === "reference" && window.TEUI?.FieldManager) {
+            const fieldDef = window.TEUI.FieldManager.getField("d_105");
+            if (fieldDef) {
+              window.TEUI.FieldManager.updateFieldDisplay("d_105", newValue, fieldDef);
+              console.log(`[S12→WOMBAT] ✅ Refreshed d_105 DOM = ${newValue} (Reference mode)`);
+            }
+          }
+
           calculateAll();
           ModeManager.updateCalculatedDisplayValues();
         }
@@ -3143,6 +3153,16 @@ window.TEUI.SectionModules.sect12 = (function () {
           console.log(`[S12→WOMBAT] Syncing ref_d_103 = ${newValue} from WOMBAT ref_d_199`);
           ReferenceState.setValue("d_103", newValue);
           window.TEUI.StateManager.setValue("ref_d_103", newValue, "external");
+
+          // ✅ FIX: Explicit DOM update for d_103 dropdown when in Reference mode
+          if (ModeManager.currentMode === "reference") {
+            const dropdown = document.querySelector('select[data-field-id="d_103"]');
+            if (dropdown) {
+              dropdown.value = newValue;
+              console.log(`[S12→WOMBAT] ✅ Refreshed d_103 DOM = ${newValue} (Reference mode)`);
+            }
+          }
+
           calculateAll();
           ModeManager.updateCalculatedDisplayValues();
         }
