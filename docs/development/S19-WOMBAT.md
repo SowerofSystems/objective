@@ -1,9 +1,9 @@
 # Section 19: WOMBAT - 3D Thermal Topology Visualization
 
-**Branch**: `WOMBAT` (renamed to WOMBAT)
+**Branch**: `WOMBAT`
 **Status**: Active Development
 **Created**: 2025-12-08
-**Renamed**: 2025-12-12
+**Major Update**: 2025-12-12 (Pattern A Dual-State Implementation - PR #63 Merged)
 **Target Release**: 4.013
 
 ---
@@ -12,34 +12,538 @@
 
 OBJECTIVE TEUI currently tracks comprehensive building envelope geometry (roof, walls, windows, doors, foundation) by orientation and thermal performance. However, this data exists as **area-based thermal abstractions** without spatial representation.
 
-**WOMBAT** (like a wombat creates cubic output from inputs) will leverage existing geometry data to generate a **3D thermal topology model** that:
+**WOMBAT** (like a wombat creates cubic output from inputs) leverages existing geometry data to generate a **3D thermal topology model** that:
 - Visualizes building form derived from envelope areas and volumetric data
 - Provides interactive exploration of thermal performance in 3D space
 - Enables geometric validation (does my WWR visually match the building I designed?)
-- Creates export-ready 3D models for integration with external tools
+- Will create export-ready 3D models for integration with external tools (future phase)
 
-This feature will be implemented as **Section 19** following TEUI's modular architecture.
+This feature is implemented as **Section 19** following TEUI's modular Pattern A architecture with full dual-state support.
 
 ---
 
 ## Table of Contents
 
-1. [Project Vision](#1-project-vision)
-2. [Current State Analysis](#2-current-state-analysis)
-3. [Technology Stack Options](#3-technology-stack-options)
-4. [Data Requirements & Geometry Derivation](#4-data-requirements--geometry-derivation)
-5. [Architecture Plan](#5-architecture-plan)
-6. [Implementation Phases](#6-implementation-phases)
-7. [Integration Points](#7-integration-points)
-8. [Future Enhancements](#8-future-enhancements)
-9. [Technical Challenges](#9-technical-challenges)
-10. [References & Resources](#10-references--resources)
+1. [Current Implementation Status](#current-implementation-status)
+2. [Project Vision & Thermal Topology Philosophy](#project-vision--thermal-topology-philosophy)
+3. [Architecture Overview](#architecture-overview)
+4. [Pattern A Dual-State Implementation](#pattern-a-dual-state-implementation)
+5. [Bidirectional Sync with Section 12](#bidirectional-sync-with-section-12)
+6. [Geometry Solver (Constraint-Driven)](#geometry-solver-constraint-driven)
+7. [Next Steps & Roadmap](#next-steps--roadmap)
+8. [Known Issues](#known-issues)
+9. [References & Resources](#references--resources)
 
 ---
 
-## 1. Project Vision
+## Current Implementation Status
 
-### 1.1 Problem Statement
+### ✅ **Completed Features (PR #63 - Merged 2025-12-12)**
+
+#### **Pattern A Dual-State Architecture** ✅
+
+**TargetState & ReferenceState objects** ([Section19.js:45-127](../../src/sections/Section19.js#L45-L127))
+- Sovereign state storage for Target/Reference modes
+- Methods: `getValue()`, `setValue()`, `setDefaults()`, `syncFromGlobalState()`
+- Field coverage: d_198, d_199, d_202, h_200, h_201, h_203
+
+**ModeManager Facade** ([Section19.js:132-204](../../src/sections/Section19.js#L132-L204))
+- Mode switching: `switchMode("target"|"reference")`
+- Mode-aware StateManager publishing (unprefixed vs `ref_` prefixed)
+- UI refresh on mode change: `refreshUI()`
+- Calculated value updates: `updateCalculatedDisplayValues()`
+
+#### **Dual-Engine Calculations** ✅
+
+- **calculateTargetModel()** - Computes geometry from Target state, publishes unprefixed
+- **calculateReferenceModel()** - Computes geometry from Reference state, publishes `ref_` prefixed
+- **calculateAll()** - ALWAYS runs both engines (Pattern A requirement)
+- **solveGeometry(isReferenceCalculation)** - Mode-aware constraint solver
+
+#### **Bidirectional Synchronization with S12** ✅
+
+**S12 → S19 sync** ([Section19.js:1062-1112](../../src/sections/Section19.js#L1062-L1112))
+- d_105 → d_198 (volume)
+- d_103 → d_199 (stories)
+- ref_d_105 → ref_d_198
+- ref_d_103 → ref_d_199
+- Includes DOM updates via `updateWombatDOM()`
+- Triggers `calculateAll()` → dual-engine + 3D visualization
+
+**S19 → S12 sync** ([Section12.js:3086-3136](../../src/sections/Section12.js#L3086-L3136))
+- d_198 → d_105 (volume) with `FieldManager.updateFieldDisplay()`
+- d_199 → d_103 (stories) with direct dropdown value update
+- ref_d_198 → ref_d_105
+- ref_d_199 → ref_d_103
+- Includes `calculateAll()` + `updateCalculatedDisplayValues()`
+
+#### **3D Visualization (Canvas 2D Isometric)** ✅
+
+- Isometric projection of building geometry
+- Multi-story stacked visualization
+- Per-floor area display (m²/floor)
+- Dimension annotations (length, width, height in meters)
+- Activation controls with status indicator
+- Info modal explaining WOMBAT philosophy
+
+#### **Geometry Solver** ✅
+
+- Volume-first constraint satisfaction (d_105/d_198 is **SACRED**)
+- Footprint calculation from conditioned area (h_15) and stories
+- Aspect ratio control (slider d_202: -4 to +4, where 0 = square)
+- Story height derivation from volume / footprint area
+- Roof pitch calculation from roof area constraint (flat, gabled, or inverted)
+- Wall height solving from wall area / perimeter
+
+#### **Field Definitions** ✅
+
+| Field ID | Label | Type | Default | Source |
+|----------|-------|------|---------|--------|
+| **d_198** | Conditioned Volume | number | 8000.00 | Mirrors S12 d_105 |
+| **d_199** | Stories | dropdown | 1.5 | Mirrors S12 d_103 |
+| **d_202** | Aspect Ratio (L:W) | coefficient_slider | 0.0 | User input (-4 to +4) |
+| **h_200** | Footprint Length | calculated | 0.00 | Derived from volume |
+| **h_201** | Footprint Width | calculated | 0.00 | Derived from volume |
+| **h_203** | Story Height | calculated | 0.00 | Derived from volume |
+
+---
+
+### ⚠️ **Known Issues**
+
+#### **1. Volume Field (d_198) Input Locked After First Edit** 🔴
+
+**Status**: Deferred for investigation
+**Severity**: High - Blocks S19 → S12 user input flow
+**Affects**: Volume field (d_198) contenteditable input in S19 table
+
+**Symptoms:**
+- ✅ First edit works: value syncs to S12, calculations update, 3D redraws
+- ❌ Second click: field appears focused but rejects typed input
+- ❌ Field becomes locked and unresponsive
+- ✅ S12 → S19 direction works perfectly (editing d_105 updates d_198 correctly)
+
+**Evidence from Logs:**
+```
+[WOMBAT] setupFieldListeners: Volume field found = null
+[FieldManager] Section sect19 has no ModeManager - using direct write for d_198
+```
+
+**Root Cause Hypothesis:**
+Volume field not found during initialization (`setupFieldListeners()` at line 966):
+```javascript
+const volumeField = sectionElement.querySelector('[data-field-id="d_198"][contenteditable="true"]');
+// → Returns null (field not yet rendered or selector too specific)
+```
+
+**Likely Issues:**
+1. Field selector too specific: requires `[contenteditable="true"]` attribute
+2. Field rendered by FieldManager AFTER event handler setup runs
+3. Blur handler never attached → no input processing after first DOM update
+
+**Workaround:**
+Use S12 d_105 field for volume input (bidirectional sync S12→S19 works correctly)
+
+---
+
+## Next Steps & Roadmap
+
+### 🎯 **Immediate Priority 1: Fix Entangled Volume Input**
+
+**Goal**: Resolve d_198 contenteditable field input blocking issue
+
+**Observation**: Stories dropdown (d_199) works **perfectly** for bidirectional sync, so numeric input should function identically using the same pattern.
+
+**Investigation Plan:**
+
+1. **Debug field selector timing**
+   ```javascript
+   // Add logging at different lifecycle stages:
+   console.log("[WOMBAT] onSectionRendered: d_198 field exists?",
+     document.querySelector('[data-field-id="d_198"]'));
+
+   // Try deferred attachment:
+   setTimeout(() => {
+     setupFieldListeners();
+   }, 500); // After FieldManager completes rendering
+   ```
+
+2. **Compare with working dropdown pattern**
+   - Stories dropdown (d_199) attaches via:
+     ```javascript
+     const storiesDropdown = sectionElement.querySelector('[data-field-id="d_199"]');
+     storiesDropdown.addEventListener("change", ...)
+     ```
+   - Apply same simplified selector pattern to volume field
+
+3. **Test alternative event strategies**
+   ```javascript
+   // Option A: Simplified selector (remove contenteditable requirement)
+   const volumeField = sectionElement.querySelector('[data-field-id="d_198"]');
+
+   // Option B: Global event delegation (like FieldManager blur handler)
+   document.addEventListener('blur', (e) => {
+     if (e.target.matches('[data-field-id="d_198"]')) {
+       handleVolumeBlur(e);
+     }
+   }, true);
+
+   // Option C: Use 'input' event instead of 'blur'
+   volumeField.addEventListener('input', handleVolumeInput);
+   ```
+
+4. **Check field definition**
+   - Verify `sectionRows.row198` includes `contenteditable: true` or `editable: true` in cell definition
+   - Compare with other contenteditable number fields in S11/S12
+
+**Success Criteria:**
+- ✅ User can edit d_198 multiple times without field locking
+- ✅ Each edit triggers S19→S12 sync + 3D visualization update
+- ✅ Field maintains focus and cursor position during edit
+
+---
+
+### 🎨 **Immediate Priority 2: Enhanced Graphics Rendering**
+
+**Goal**: Replace Canvas 2D with SVG vector graphics for D3-style clean lines, nodes, and dual-model visualization
+
+#### **Why SVG over Canvas 2D?**
+
+| Feature | Canvas 2D (Current) | SVG (Proposed) | Three.js (Future) |
+|---------|---------------------|----------------|-------------------|
+| **Vector quality** | Pixelated at zoom | Crisp at any scale | GPU-accelerated |
+| **D3 integration** | Manual pixel math | Native D3 support | Requires bridge |
+| **Node rendering** | Complex manual draw | Simple `<circle>` | `THREE.Mesh` |
+| **Interactivity** | Manual hit detection | CSS hover, click | Raycasting API |
+| **Styling** | Procedural fillStyle | CSS classes | Material shaders |
+| **File size** | N/A (raster) | Small (vector) | Large (WebGL) |
+
+**Decision**: Use **SVG for next phase** (easier D3 integration, matches S18 aesthetic), then migrate to **Three.js for Phase 4** (true 3D, export capabilities).
+
+---
+
+#### **Dual-Model Visualization Design**
+
+Show Target vs Reference models simultaneously with interactive toggle:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  WOMBAT - 3D Thermal Topology                               │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  Display Mode:                                               │
+│  ( ) Target Only  ( ) Reference Only  (●) Both (Overlay)     │
+│                                                               │
+│         Target (Blue)           Reference (Red)              │
+│       ┌────────────┐            ┌──────────┐                │
+│      ╱│            │╲          ╱│          │╲               │
+│     ╱ │            │ ╲        ╱ │          │ ╲              │
+│    ╱  │   8000 m³  │  ╲      ╱  │  6500 m³ │  ╲             │
+│   ●───●────────────●───●    ●──●──────────●──●            │
+│   │   │            │   │    │  │          │  │             │
+│   │   │  ▢ ▢ ▢    │   │    │  │  ▢ ▢    │  │             │
+│   │   │            │   │    │  │          │  │             │
+│   ●───●────────────●───●    ●──●──────────●──●            │
+│                                                               │
+│  Legend:                                                     │
+│  ● Vertex nodes | ─ Edges (walls) | ▢ Windows               │
+│  Blue = Target (Proposed) | Red = Reference (Baseline)      │
+│                                                               │
+│  [Rotate] [Reset View] [Export SVG] [Screenshot]            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### **Implementation Plan: SVG Graphics Upgrade**
+
+**Phase 2A: SVG Rendering Engine** (Week 1)
+
+1. **Replace Canvas with SVG container**
+   ```javascript
+   // Remove:
+   const canvas = document.getElementById("wombat-canvas");
+   const ctx = canvas.getContext("2d");
+
+   // Add:
+   const svg = d3.select("#wombat-canvas-container")
+     .append("svg")
+     .attr("width", config.canvasWidth)
+     .attr("height", config.canvasHeight)
+     .attr("viewBox", `0 0 ${config.canvasWidth} ${config.canvasHeight}`)
+     .style("border", "1px solid #dee2e6");
+   ```
+
+2. **Port isometric projection to D3 scales**
+   ```javascript
+   function toIso(x, y, z) {
+     const isoX = Math.cos(Math.PI / 6);
+     const isoY = Math.sin(Math.PI / 6);
+     return {
+       x: centerX + (x - y) * isoX * scale,
+       y: centerY - (x + y) * isoY * scale - z * scale,
+     };
+   }
+
+   // Use D3 line generator
+   const lineGenerator = d3.line()
+     .x(d => d.x)
+     .y(d => d.y);
+   ```
+
+3. **Render building edges as SVG lines**
+   ```javascript
+   const edges = [
+     { from: toIso(-w/2, -l/2, z0), to: toIso(w/2, -l/2, z0) }, // Bottom front
+     { from: toIso(w/2, -l/2, z0), to: toIso(w/2, l/2, z0) },   // Bottom right
+     // ... all 12 edges of box
+   ];
+
+   svg.selectAll("line.edge")
+     .data(edges)
+     .enter().append("line")
+     .attr("class", "edge")
+     .attr("x1", d => d.from.x)
+     .attr("y1", d => d.from.y)
+     .attr("x2", d => d.to.x)
+     .attr("y2", d => d.to.y)
+     .attr("stroke", "#007bff")
+     .attr("stroke-width", 2)
+     .attr("stroke-linecap", "round");
+   ```
+
+4. **Add vertex nodes as circles**
+   ```javascript
+   const vertices = [
+     toIso(-w/2, -l/2, z0), // Bottom front-left
+     toIso(w/2, -l/2, z0),  // Bottom front-right
+     // ... all 8 vertices
+   ];
+
+   svg.selectAll("circle.vertex")
+     .data(vertices)
+     .enter().append("circle")
+     .attr("class", "vertex")
+     .attr("cx", d => d.x)
+     .attr("cy", d => d.y)
+     .attr("r", 4)
+     .attr("fill", "#007bff")
+     .attr("stroke", "#fff")
+     .attr("stroke-width", 2);
+   ```
+
+5. **Apply S18-style CSS**
+   ```css
+   /* In styles.css */
+   .wombat-edge {
+     stroke: #007bff;
+     stroke-width: 2;
+     stroke-linecap: round;
+     fill: none;
+     transition: stroke 0.3s ease;
+   }
+
+   .wombat-edge:hover {
+     stroke: #0056b3;
+     stroke-width: 3;
+   }
+
+   .wombat-vertex {
+     fill: #007bff;
+     stroke: #fff;
+     stroke-width: 2;
+     transition: r 0.3s ease, fill 0.3s ease;
+   }
+
+   .wombat-vertex:hover {
+     r: 6;
+     fill: #0056b3;
+   }
+   ```
+
+**Phase 2B: Dual-Model Support** (Week 1)
+
+1. **Refactor `updateVisualization()` to render both models**
+   ```javascript
+   function updateVisualization(displayMode = "target") {
+     // Solve both geometries
+     const targetGeometry = solveGeometry(false);
+     const referenceGeometry = solveGeometry(true);
+
+     // Clear previous rendering
+     svg.selectAll("*").remove();
+
+     // Render based on mode
+     if (displayMode === "target" || displayMode === "both") {
+       renderModel(targetGeometry, "target", "#007bff"); // Blue
+     }
+
+     if (displayMode === "reference" || displayMode === "both") {
+       renderModel(referenceGeometry, "reference", "#dc3545"); // Red
+     }
+
+     // If both, add difference indicators
+     if (displayMode === "both") {
+       showDifferenceIndicators(targetGeometry, referenceGeometry);
+     }
+   }
+   ```
+
+2. **Add display mode toggle**
+   ```html
+   <div class="wombat-display-mode">
+     <label>
+       <input type="radio" name="display-mode" value="target" checked>
+       Target Only
+     </label>
+     <label>
+       <input type="radio" name="display-mode" value="reference">
+       Reference Only
+     </label>
+     <label>
+       <input type="radio" name="display-mode" value="both">
+       Both (Overlay)
+     </label>
+   </div>
+   ```
+
+3. **Implement semi-transparent overlay**
+   ```javascript
+   function renderModel(geometry, mode, color) {
+     const opacity = (currentDisplayMode === "both") ? 0.6 : 1.0;
+
+     // Render edges with mode-specific color
+     svg.selectAll(`line.edge-${mode}`)
+       .data(edges)
+       .enter().append("line")
+       .attr("class", `edge edge-${mode}`)
+       .attr("stroke", color)
+       .attr("stroke-opacity", opacity)
+       // ... positions ...
+   }
+   ```
+
+4. **Show dimension deltas** (when both models visible)
+   ```javascript
+   function showDifferenceIndicators(targetGeom, refGeom) {
+     const volumeDelta = targetGeom.volume - refGeom.volume;
+     const deltaText = volumeDelta > 0
+       ? `+${volumeDelta.toFixed(0)} m³`
+       : `${volumeDelta.toFixed(0)} m³`;
+
+     svg.append("text")
+       .attr("x", 20)
+       .attr("y", 40)
+       .attr("fill", volumeDelta > 0 ? "#28a745" : "#dc3545")
+       .attr("font-size", "14px")
+       .text(`Volume Δ: ${deltaText}`);
+   }
+   ```
+
+**Phase 2C: Interactive Features** (Week 2)
+
+1. **Hover tooltips on nodes**
+   ```javascript
+   svg.selectAll("circle.vertex")
+     .on("mouseover", function(event, d) {
+       d3.select(this)
+         .transition().duration(200)
+         .attr("r", 6);
+
+       // Show tooltip
+       const tooltip = svg.append("text")
+         .attr("class", "vertex-tooltip")
+         .attr("x", d.x + 10)
+         .attr("y", d.y - 10)
+         .text(`(${d.realX.toFixed(1)}m, ${d.realY.toFixed(1)}m, ${d.realZ.toFixed(1)}m)`);
+     })
+     .on("mouseout", function() {
+       d3.select(this).transition().duration(200).attr("r", 4);
+       svg.selectAll(".vertex-tooltip").remove();
+     });
+   ```
+
+2. **Edge hover shows wall properties**
+   ```javascript
+   svg.selectAll("line.edge")
+     .on("mouseover", function(event, d) {
+       // Highlight edge
+       d3.select(this).attr("stroke-width", 4);
+
+       // Show wall info (if edge is a wall)
+       if (d.type === "wall") {
+         svg.append("text")
+           .attr("class", "edge-tooltip")
+           .attr("x", (d.from.x + d.to.x) / 2)
+           .attr("y", (d.from.y + d.to.y) / 2 - 10)
+           .text(`${d.orientation} Wall: ${d.area.toFixed(1)} m² | U=${d.uValue} W/m²K`);
+       }
+     });
+   ```
+
+3. **Click face → highlight related S11 fields**
+   ```javascript
+   svg.selectAll("polygon.face")
+     .on("click", function(event, d) {
+       // Highlight corresponding S11 row
+       if (d.component === "roof") {
+         highlightField("d_85"); // Roof area
+       } else if (d.component === "north-wall") {
+         highlightField("d_86"); // Walls
+         highlightField("d_89"); // Windows North
+       }
+     });
+
+   function highlightField(fieldId) {
+     const fieldElement = document.querySelector(`[data-field-id="${fieldId}"]`);
+     fieldElement.classList.add("highlight-flash");
+     setTimeout(() => fieldElement.classList.remove("highlight-flash"), 2000);
+   }
+   ```
+
+---
+
+**Phase 2D: Three.js Migration** (Week 3-4, Future)
+
+Once SVG rendering is stable, migrate to Three.js for:
+- True 3D perspective camera
+- Real-time rotation/zoom (OrbitControls)
+- Solar shadows for shading analysis
+- glTF export for SketchUp/Rhino/Blender
+- WebGL performance for complex geometries
+
+**Approach**: Keep SVG as fallback for browsers without WebGL support.
+
+---
+
+### 📋 **Long-Term Roadmap**
+
+#### **Phase 3: Roof Pitch & Window Distribution** (Future)
+- Pitched roof geometry (gabled, hipped)
+- Skylight rendering (d_93)
+- Per-story window distribution on facades
+- Foundation/basement visualization
+
+#### **Phase 4: Export & Import** (Future)
+- glTF 2.0 export (binary and ASCII)
+- OBJ export (legacy tools)
+- Screenshot export (PNG from SVG)
+- Basic glTF import to populate TEUI fields
+
+#### **Phase 5: Solar Radiation Overlay** (Future)
+- Color-code surfaces by incident solar radiation (kWh/m²/year)
+- Integrate with Section 10 radiant gains
+- Shading analysis (self-shading, neighbor shading)
+
+#### **Phase 6: Advanced Shapes** (Future)
+- L-shapes, U-shapes, courtyard buildings
+- Custom polygon footprints
+- Multi-zone buildings
+
+---
+
+## Project Vision & Thermal Topology Philosophy
+
+### Problem Statement
 
 **Current limitation**: Users enter building geometry as abstract areas (roof: 120 m², walls: 180 m², windows by orientation) without visual feedback of the resulting building form.
 
@@ -47,9 +551,9 @@ This feature will be implemented as **Section 19** following TEUI's modular arch
 - No way to validate if entered geometry represents a realistic building
 - Cannot visualize thermal performance distribution across building surfaces
 - Difficult to communicate design intent to stakeholders
-- No export path to 3D modeling tools (SketchUp, Rhino, Revit)
+- No export path to 3D modeling tools
 
-### 1.2 Solution Approach - "Thermal Topology" Philosophy
+### Solution Approach - "Thermal Topology"
 
 **WOMBAT** generates a **constraint-driven 3D thermal topology** from TEUI's area-based geometry:
 
@@ -61,499 +565,392 @@ d_85-d_95, d_105        "Jello Cube"       Vertices adapt to     Color-coded
 
 **Revolutionary insight**: This is **NOT** an architectural model—it's a **thermal model as topology**.
 
-**Core Principles**:
+### Core Principles
 
 1. **Areas Drive Form** (not the other way around)
-   - User enters roof area = 240 m² and floor area = 120 m²? → Roof pitch emerges automatically (2:1 ratio → ~45° slope)
-   - North wall area ≠ South wall area? → Building deforms asymmetrically (like a "jello cube")
-   - **No validation errors**—the model adapts to match the thermal data
+   - Roof area = 240 m², floor = 120 m² → Roof pitch emerges (~45° slope)
+   - North wall ≠ South wall → Building deforms asymmetrically
+   - **No validation errors** - model adapts to match thermal data
 
 2. **Topology First, Realism Second**
-   - Floor slabs always in X-Y plane (horizontal)
-   - Default to square footprint (aspect ratio = 1.0) unless user adjusts slider
-   - Walls stretch/compress to satisfy area constraints (North facade may be taller/wider than South)
-   - Windows distribute to fill specified areas per orientation
+   - Floor slabs always horizontal (X-Y plane)
+   - Default square footprint unless user adjusts aspect ratio slider
+   - Walls stretch/compress to satisfy area constraints
 
 3. **Constraint Satisfaction Over Geometric Truth**
-   - If constraints are impossible (e.g., roof smaller than floor), model shows this visually (inverted pyramid)
-   - Overlapping walls? Show them transparently so user sees the conflict
-   - Crazy-looking model = user feedback: "Your areas don't represent a typical building"
+   - Impossible constraints (roof < floor) → renders as inverted pyramid
+   - Overlapping walls → shown transparently (visual conflict indicator)
+   - Strange model = feedback: "Your areas don't match typical proportions"
 
 4. **Volume is Sacred**
-   - User-specified volume (d_105) ALWAYS satisfied exactly
-   - All other dimensions emerge from: Volume + Area constraints + User preferences (aspect ratio, symmetry)
+   - d_105/d_198 ALWAYS satisfied exactly
+   - All dimensions emerge from: Volume + Areas + User preferences
 
-**Example "Jello Cube" Behavior**:
+### User Education
 
-```
-User Input:
-- Volume: 1000 m³
-- Roof: 300 m² (larger than floor!)
-- Floor: 150 m²
-- North wall net: 100 m²
-- South wall net: 60 m²
-- East/West walls: 80 m² each
+**UI Tooltip** (shown in Info modal):
 
-Traditional CAD: ERROR - "Roof cannot be larger than floor in rectangular building"
-
-WOMBAT Response:
-✓ Floor: 150 m² rectangle (12.2m × 12.2m, assuming square)
-✓ Height: 1000 m³ / 150 m² = 6.67m
-✓ Roof: Pitched/curved to achieve 300 m² (pitch angle emerges: ~53°)
-✓ North wall: Stretches taller/wider to reach 100 m² (may bulge out)
-✓ South wall: Compresses to 60 m² (may be shorter or narrower)
-✓ Model looks asymmetric and weird → User sees "Hmm, maybe I entered wrong areas"
-```
-
-**This is a visualization of thermal CONSTRAINTS, not architectural INTENT.**
+> **"WOMBAT shows how OBJECTIVE 'sees' your building from thermal data."**
+>
+> You entered:
+> - Volume: 1,000 m³
+> - Roof: 120 m²
+> - Walls: 180 m²
+> - Windows: 30 m²
+>
+> OBJECTIVE doesn't know if your building is square, rectangular, or L-shaped.
+> It only knows the **thermal surfaces** you defined.
+>
+> WOMBAT creates a wireframe that satisfies these constraints.
+> If it looks strange, that's **feedback** - check your inputs!
+>
+> **This is not a CAD model** - it's a **thermal topology diagram**.
 
 ---
 
-### 1.2.1 User Education: "How OBJECTIVE Sees Your Building"
+## Architecture Overview
 
-**Problem**: Architects and designers think geometrically (walls, windows, roofs as physical objects), but **OBJECTIVE** thinks thermally (areas, U-values, heat flows).
-
-**Solution**: WOMBAT is the **translation layer** - it shows users how their thermal inputs are interpreted by the energy model.
-
-**Analogy for Users**:
-
-> **"Think of WOMBAT as OBJECTIVE's sketch of your building based on the thermal data you provided."**
->
-> You told **OBJECTIVE**:
-> - "My building contains 1,000 m³ of conditioned space"
-> - "It has 120 m² of roof losing heat at U = 0.35 W/m²K"
-> - "The North facade has 30 m² of windows"
-> - etc.
->
-> **OBJECTIVE** doesn't know if your building is a cube, a rectangle, or an L-shape. It only knows the **thermal surfaces** you defined.
->
-> WOMBAT creates a **wireframe representation** that satisfies these thermal constraints. If the model looks strange:
-> - ✓ It's working correctly! It's showing you what your areas imply.
-> - ✓ Use this feedback to refine your inputs until the model matches your design intent.
->
-> **This is not a CAD model** - it's a **thermal topology diagram** that helps you validate your energy model inputs.
-
-**UI Tooltip** (shown when user first opens Section 19):
+### Module Structure
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│  💡 What is WOMBAT?                                           │
-├──────────────────────────────────────────────────────────────────┤
-│                                                                   │
-│  WOMBAT shows how OBJECTIVE "sees" your building based on     │
-│  the thermal areas you entered (roof, walls, windows, etc.).     │
-│                                                                   │
-│  This is NOT a 3D architectural model - it's a THERMAL MODEL.    │
-│                                                                   │
-│  ✓ If the model looks correct → Your thermal inputs are         │
-│    consistent and represent a realistic building.               │
-│                                                                   │
-│  ⚠ If the model looks strange → The areas you entered may       │
-│    not match a typical building shape - this is fine, its an | │  abstract, topological model of your building, not the real thing!       │
-│                                                                   │
-│  Think of it as "OBJECTIVE's sketch" of your building from       │
-│  thermal data alone.                                             │
-│                                                                   │
-│  [Got it!]  [Learn More]                                         │
-└──────────────────────────────────────────────────────────────────┘
+src/sections/Section19.js                     # Main WOMBAT module
+├── STATE & CONFIGURATION (Lines 20-36)
+│   ├── isActivated                           # Topology view activation flag
+│   └── config                                # Canvas dimensions, defaults
+│
+├── PATTERN A DUAL-STATE (Lines 37-204)
+│   ├── TargetState                           # Target mode values
+│   ├── ReferenceState                        # Reference mode values
+│   └── ModeManager                           # Dual-state facade
+│
+├── FIELD DEFINITIONS (Lines 206-357)
+│   └── sectionRows                           # d_198, d_199, d_202, h_200-203
+│
+├── GEOMETRY SOLVER (Lines 464-556)
+│   └── solveGeometry(isReferenceCalculation) # Constraint-driven algorithm
+│
+├── 3D RENDERING (Lines 562-751)
+│   ├── initializeCanvas()                    # Setup Canvas 2D context
+│   ├── updateVisualization(mode)             # Render isometric view
+│   └── drawPlaceholder()                     # Inactive state placeholder
+│
+├── ACTIVATION CONTROLS (Lines 757-900)
+│   ├── createActivationControls()            # Button, status, info
+│   ├── toggleActivation()                    # Activate/deactivate
+│   └── showInfoModal()                       # Philosophy explainer
+│
+├── EVENT HANDLERS (Lines 929-1114)
+│   ├── setupFieldListeners()                 # DOM blur/change handlers
+│   ├── initializeEventHandlers()             # Aspect slider, S11/S12 listeners
+│   └── StateManager.addListener()            # Bidirectional sync
+│
+├── LIFECYCLE (Lines 1120-1162)
+│   ├── onSectionRendered()                   # Canvas init, controls
+│   └── initializeMirrorFields()              # Sync from S12 on load
+│
+└── DUAL-ENGINE CALCULATIONS (Lines 1169-1205)
+    ├── calculateTargetModel()                # Target geometry + publish
+    ├── calculateReferenceModel()             # Reference geometry + publish
+    └── calculateAll()                        # Run BOTH engines
 ```
-
-**Educational Examples** (in documentation):
-
-**Example 1: Typical Residential Building**
-```
-User Input:
-✓ Volume: 400 m³
-✓ Floor: 100 m² (10m × 10m)
-✓ Roof: 100 m² (flat roof)
-✓ Walls: 160 m² (4 walls × 10m × 4m)
-✓ Windows evenly distributed: 6 m² per orientation
-
-WOMBAT Result:
-→ Renders as a simple 10m × 10m × 4m box with flat roof
-→ Constraint satisfaction: 100% (all green)
-→ User sees: "This matches my design intent!"
-```
-
-**Example 2: Unusual Input (Large Roof)**
-```
-User Input:
-⚠ Volume: 400 m³
-⚠ Floor: 100 m² (10m × 10m)
-⚠ Roof: 200 m² (2× floor area!)
-✓ Walls: 160 m²
-✓ Windows: Balanced
-
-WOMBAT Result:
-→ Renders with steep pitched roof (~45° gable)
-→ Constraint satisfaction: Roof 98%, Volume 100%, Walls 85% (yellow)
-→ User sees: "Oh! My roof area implies a steep pitch I didn't intend.
-   Let me check if I entered the wrong value or if this is correct."
-```
-
-**Example 3: Asymmetric Building**
-```
-User Input:
-✓ Volume: 400 m³
-✓ Floor: 100 m²
-⚠ North wall net: 60 m² (tall/wide)
-⚠ South wall net: 30 m² (short/narrow)
-⚠ East/West walls: 40 m² each
-
-WOMBAT Result:
-→ Renders with North facade taller than South facade
-→ Building looks tilted/asymmetric
-→ Constraint satisfaction: Walls 92% (yellow)
-→ User sees: "Hmm, this looks lopsided. Did I enter different wall
-   areas by mistake, or does my building actually have asymmetric facades?"
-```
-
-**Key Learning Outcome**:
-Users develop intuition for **how thermal areas translate to building form**, improving the quality of their energy model inputs.
 
 ---
 
+## Pattern A Dual-State Implementation
 
+### State Objects
 
-**Primary use cases**:
-1. **Geometry Validation**: "Does my 120 m² roof on a 1.5-story building look reasonable?"
-2. **Thermal Visualization**: Color-code surfaces by U-value, interior surface temperature, or heat loss %
-3. **Stakeholder Communication**: Export 3D view as image/video for presentations
-4. **Design Iteration**: Adjust areas in calculator, see 3D model update in real-time
-5. **Code Compliance Reporting**: Visual representation of building envelope for permit submissions
+**TargetState** ([Section19.js:45-83](../../src/sections/Section19.js#L45-L83))
 
-**Future use cases** (post-MVP):
-6. **Model Import**: Load existing 3D models (IFC, OBJ, glTF) to populate TEUI geometry
-7. **Multi-Building Portfolios**: Visualize multiple buildings side-by-side
-8. **Solar Analysis Integration**: Overlay solar radiation maps from Section 10 radiant gains
-9. **Parametric Optimization**: S18 Parallel Coordinates → S20 3D view shows optimized building form
-
----
-
-## 2. Current State Analysis
-
-### 2.1 Available Geometry Data
-
-Based on architecture exploration (2025-12-08), TEUI provides:
-
-#### Section 11: Transmission Losses (Envelope Components)
-| Field ID | Component | Units | Data Quality |
-|----------|-----------|-------|--------------|
-| d_85 | Roof Area | m² | ✅ Direct user input |
-| d_86 | Walls Above Grade | m² | ✅ Direct user input |
-| d_87 | Floor Exposed | m² | ✅ Direct user input |
-| d_88 | Doors | m² | ✅ Synced from S10 |
-| d_89 | Windows North | m² | ✅ Synced from S10 |
-| d_90 | Windows East | m² | ✅ Synced from S10 |
-| d_91 | Windows South | m² | ✅ Synced from S10 |
-| d_92 | Windows West | m² | ✅ Synced from S10 |
-| d_93 | Skylights | m² | ✅ Direct user input |
-| d_94 | Walls Below Grade | m² | ✅ Direct user input |
-| d_95 | Floor Slab (Ground) | m² | ✅ Direct user input |
-
-#### Section 12: Volume & Surface Metrics
-| Field ID | Description | Units | Notes |
-|----------|-------------|-------|-------|
-| d_103 | Number of Stories | count | Discrete: 1, 1.5, 2, 2.5, 3, etc. |
-| d_105 | Conditioned Volume | m³ | Direct user input |
-| d_106 | Total Floor Area | m² | Calculated or user input |
-| d_107 | Window:Wall Ratio | % | Calculated from d_89-d_92 |
-| g_105 | Volume to Area Ratio | m³/m² | Derived metric |
-| i_105 | Area to Volume Ratio | m²/m³ | Derived metric |
-
-#### Section 11: Thermal Performance Data (for color-coding)
-| Field ID | Metric | Units | Visualization Use |
-|----------|--------|-------|-------------------|
-| g_85-g_95 | U-Values by Component | W/m²·K | Color-code surface thermal quality |
-| o_85-o_95 | Interior Surface Temp | °C | Condensation risk visualization |
-| k_85-k_95 | Heat Loss % by Component | % | Relative heat loss intensity |
-| d_97 | Thermal Bridge Penalty | % | Overall envelope quality indicator |
-
-### 2.2 Data Gaps & Derivation Needs
-
-#### Missing Data (Not Currently Tracked):
-| Parameter | Impact | Mitigation Strategy |
-|-----------|--------|---------------------|
-| **Building Length/Width** | Cannot determine plan aspect ratio | Derive from floor area using user-specified or assumed aspect ratio |
-| **Individual Story Heights** | Cannot distribute windows vertically | Derive from volume / (floor area × stories) |
-| **Roof Pitch/Slope** | Affects roof geometry | Assume flat roof (MVP), add pitch parameter in Phase 2 |
-| **Building Orientation (Azimuth)** | Affects cardinal direction mapping | Assume True North alignment, add rotation parameter in Phase 2 |
-| **Basement/Foundation Depth** | Underground wall height unknown | Derive from d_94 (wall area) using assumed height |
-| **Vertical Window Distribution** | Windows may be on multiple floors | Distribute proportionally across above-grade stories |
-| **Wall Thickness** | Wireframe needs edge definition | Use negligible thickness (wireframe), or parameterize later |
-
-#### Derivation Strategy:
 ```javascript
-// Phase 1: Minimal Assumptions (Rectangular Prism)
-footprintArea = d_106 / d_103;  // Floor area per story
-aspectRatio = 1.5;  // Default (can be user parameter later)
-buildingLength = Math.sqrt(footprintArea * aspectRatio);
-buildingWidth = footprintArea / buildingLength;
-storyHeight = d_105 / d_106;  // Volume / Total floor area
-totalHeight = storyHeight * d_103;
+const TargetState = {
+  values: {
+    d_198: "8000.00",  // Volume (mirrors S12 d_105)
+    d_199: "1.5",      // Stories (mirrors S12 d_103)
+    d_202: "0.0",      // Aspect ratio slider
+    h_200: "0.00",     // Calculated: Footprint length
+    h_201: "0.00",     // Calculated: Footprint width
+    h_203: "0.00",     // Calculated: Story height
+  },
 
-// Validate derived dimensions against envelope areas
-derivedWallArea = 2 * (buildingLength + buildingWidth) * totalHeight;
-if (Math.abs(derivedWallArea - d_86) > tolerance) {
-  // Adjust aspect ratio or warn user
+  getValue(fieldId) {
+    return this.values[fieldId] !== undefined ? this.values[fieldId] : null;
+  },
+
+  setValue(fieldId, value) {
+    this.values[fieldId] = value;
+  },
+
+  setDefaults() {
+    // Initialize from field definitions
+  },
+
+  syncFromGlobalState() {
+    // Sync Target values from StateManager (unprefixed)
+    const fieldIds = ["d_198", "d_199", "d_202", "h_200", "h_201", "h_203"];
+    fieldIds.forEach((fieldId) => {
+      const value = window.TEUI?.StateManager?.getValue(fieldId);
+      if (value !== null && value !== undefined) {
+        this.values[fieldId] = value;
+      }
+    });
+  },
+};
+```
+
+**ReferenceState** ([Section19.js:88-127](../../src/sections/Section19.js#L88-L127))
+- Same structure as TargetState
+- `syncFromGlobalState()` reads from `ref_${fieldId}` instead
+
+---
+
+### ModeManager Facade
+
+**ModeManager** ([Section19.js:132-204](../../src/sections/Section19.js#L132-L204))
+
+```javascript
+const ModeManager = {
+  currentMode: "target", // "target" or "reference"
+
+  switchMode(mode) {
+    if (mode !== "target" && mode !== "reference") {
+      console.warn(`[WOMBAT ModeManager] Invalid mode: ${mode}`);
+      return;
+    }
+    this.currentMode = mode;
+    console.log(`[WOMBAT ModeManager] Switched to ${mode} mode`);
+    this.refreshUI();
+  },
+
+  refreshUI() {
+    const currentState = this.currentMode === "target" ? TargetState : ReferenceState;
+    const fieldIds = ["d_198", "d_199", "d_202", "h_200", "h_201", "h_203"];
+
+    fieldIds.forEach((fieldId) => {
+      const value = currentState.getValue(fieldId);
+      if (value !== null) {
+        updateWombatDOM(fieldId, value);
+      }
+    });
+  },
+
+  updateCalculatedDisplayValues() {
+    const currentState = this.currentMode === "target" ? TargetState : ReferenceState;
+    const calculatedFields = ["h_200", "h_201", "h_203"];
+
+    calculatedFields.forEach((fieldId) => {
+      const value = currentState.getValue(fieldId);
+      if (value !== null) {
+        updateWombatDOM(fieldId, value);
+      }
+    });
+  },
+
+  getValue(fieldId) {
+    const currentState = this.currentMode === "target" ? TargetState : ReferenceState;
+    return currentState.getValue(fieldId);
+  },
+
+  setValue(fieldId, value, source = "user-modified") {
+    const currentState = this.currentMode === "target" ? TargetState : ReferenceState;
+    currentState.setValue(fieldId, value);
+
+    // MODE-AWARE PUBLISHING: Target unprefixed, Reference ref_ prefixed
+    if (this.currentMode === "target") {
+      window.TEUI.StateManager.setValue(fieldId, value, source);
+    } else {
+      window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, source);
+    }
+  },
+};
+```
+
+---
+
+### Dual-Engine Calculations
+
+**calculateAll()** ([Section19.js:1191-1205](../../src/sections/Section19.js#L1191-L1205))
+
+```javascript
+function calculateAll() {
+  // DUAL-ENGINE: ALWAYS run both Target and Reference calculations
+  const targetGeometry = calculateTargetModel();
+  const referenceGeometry = calculateReferenceModel();
+
+  // Update visualization ONLY if activated
+  if (isActivated) {
+    // Show visualization for current mode
+    const mode = ModeManager?.currentMode || "target";
+    updateVisualization(mode);
+  }
+
+  // Update calculated display values in DOM for current mode
+  ModeManager.updateCalculatedDisplayValues();
 }
 ```
 
-### 2.3 Existing D3.js Infrastructure
+**calculateTargetModel()** ([Section19.js:1169-1178](../../src/sections/Section19.js#L1169-L1178))
 
-**Current D3 implementations in TEUI**:
-- **D3.js v7** loaded globally (index.html:60)
-- **Parallel Coordinates** (Section 18): Complex interactive visualization with drag-and-drop
-- **Dependency Graph**: D3 force layout (Section 17, uses dagre-d3)
-- **Sankey Diagram**: Energy flow visualization (Section 16, uses d3-sankey)
-
-**D3 rendering patterns used**:
 ```javascript
-// Standard pattern from pcRendering.js
-const svg = d3.select(container).append("svg")
-  .attr("width", width)
-  .attr("height", height);
+function calculateTargetModel() {
+  const geometry = solveGeometry(false); // isReferenceCalculation = false
 
-const scale = d3.scaleLinear()
-  .domain([min, max])
-  .range([0, width]);
+  // Publish calculated dimensions to StateManager (unprefixed for Target)
+  window.TEUI.StateManager.setValue("h_200", geometry.footprint.length.toFixed(2), "calculated");
+  window.TEUI.StateManager.setValue("h_201", geometry.footprint.width.toFixed(2), "calculated");
+  window.TEUI.StateManager.setValue("h_203", geometry.storyHeight.toFixed(2), "calculated");
 
-// Smooth curves
-d3.line().curve(d3.curveMonotoneX)
-
-// Animations
-.transition()
-  .duration(300)
-  .ease(d3.easeCubicInOut);
+  return geometry;
+}
 ```
 
-**Key takeaway**: D3.js is well-integrated and familiar. However, **D3 is primarily a 2D visualization library**. For 3D wireframes, we need additional tools.
+**calculateReferenceModel()** ([Section19.js:1180-1189](../../src/sections/Section19.js#L1180-L1189))
+
+```javascript
+function calculateReferenceModel() {
+  const geometry = solveGeometry(true); // isReferenceCalculation = true
+
+  // Publish calculated dimensions to StateManager (ref_ prefixed for Reference)
+  window.TEUI.StateManager.setValue("ref_h_200", geometry.footprint.length.toFixed(2), "calculated");
+  window.TEUI.StateManager.setValue("ref_h_201", geometry.footprint.width.toFixed(2), "calculated");
+  window.TEUI.StateManager.setValue("ref_h_203", geometry.storyHeight.toFixed(2), "calculated");
+
+  return geometry;
+}
+```
 
 ---
 
-## 3. Technology Stack Options
+## Bidirectional Sync with Section 12
 
-### 3.1 Option A: Three.js (3D Graphics Library) ✅ SELECTED
+### Data Flow
 
-**Library**: [Three.js](https://threejs.org/) - Industry-standard WebGL 3D library
-**Version**: r160+ (latest stable)
-**License**: MIT
-**Bundle Size**: ~600 KB (minified)
-
-**Preferred Format**: **glTF 2.0** (GL Transmission Format)
-- Native Three.js support for both import and export
-- Industry standard for web-based 3D (Khronos Group spec)
-- Binary (.glb) and JSON (.gltf) variants
-- Embeds geometry, materials, and custom metadata (for TEUI field values)
-- Compatible with external tools (Blender, SketchUp, Rhino via plugins)
-
-**Pros**:
-- ✅ Purpose-built for 3D WebGL rendering
-- ✅ Extensive geometry primitives (`BoxGeometry`, `PlaneGeometry`, custom shapes)
-- ✅ Built-in camera controls (`OrbitControls`, `TrackballControls`)
-- ✅ Material system for color-coding surfaces by thermal performance
-- ✅ **Native glTF 2.0 support** (GLTFLoader, GLTFExporter) - PREFERRED FORMAT
-- ✅ Additional export formats (OBJ, STL) available via addons
-- ✅ Mature ecosystem with extensive documentation
-- ✅ Used in architecture/BIM tools (Speckle, BIM Track, etc.)
-
-**Cons**:
-- ❌ New dependency (adds ~600 KB to bundle)
-- ❌ Separate learning curve from D3.js
-- ❌ No direct D3 integration (separate rendering pipeline)
-
-**Example code**:
-```javascript
-// Three.js wireframe building
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, width/height, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer();
-
-// Building geometry
-const geometry = new THREE.BoxGeometry(buildingLength, totalHeight, buildingWidth);
-const edges = new THREE.EdgesGeometry(geometry);
-const wireframe = new THREE.LineSegments(edges,
-  new THREE.LineBasicMaterial({ color: 0x000000 })
-);
-
-// Add color-coded surfaces (thermal performance)
-const material = new THREE.MeshBasicMaterial({
-  color: getColorFromUValue(uValue),
-  transparent: true,
-  opacity: 0.3
-});
-const mesh = new THREE.Mesh(geometry, material);
-
-scene.add(wireframe);
-scene.add(mesh);
-
-// Interactive controls
-const controls = new OrbitControls(camera, renderer.domElement);
+```
+┌──────────────────────────────────────────────────────────┐
+│  Section 12 (Building Metrics)                           │
+│  ├─ d_105: Conditioned Volume (m³)                       │
+│  └─ d_103: Number of Stories                             │
+└──────────────────────────────────────────────────────────┘
+           ↕ Bidirectional Sync (StateManager listeners)
+┌──────────────────────────────────────────────────────────┐
+│  Section 19 (WOMBAT)                                      │
+│  ├─ d_198: Volume (mirrors d_105)                        │
+│  ├─ d_199: Stories (mirrors d_103)                       │
+│  ├─ d_202: Aspect Ratio (user preference slider)         │
+│  ├─ h_200: Footprint Length (calculated)                 │
+│  ├─ h_201: Footprint Width (calculated)                  │
+│  └─ h_203: Story Height (calculated)                     │
+│       └─> 3D Visualization (Canvas 2D isometric)         │
+└──────────────────────────────────────────────────────────┘
 ```
 
-**Verdict**: **Recommended for MVP**. Three.js provides the most robust 3D capabilities with minimal complexity.
+### S12 → S19 Listeners ([Section19.js:1062-1112](../../src/sections/Section19.js#L1062-L1112))
 
----
-
-### 3.2 Option B: D3.js + Custom 2.5D Projection
-
-**Approach**: Use D3.js with custom projection to render isometric or perspective wireframe
-**Libraries**: D3.js v7 (already loaded)
-**Bundle Size**: 0 KB (no new dependencies)
-
-**Pros**:
-- ✅ No new dependencies
-- ✅ Familiar D3.js patterns (selection, scales, transitions)
-- ✅ Tight integration with existing TEUI D3 visualizations
-- ✅ Lightweight
-
-**Cons**:
-- ❌ Limited 3D interaction (rotation requires complex matrix transforms)
-- ❌ No built-in camera/orbit controls
-- ❌ Manual perspective/isometric projection math
-- ❌ Difficult to export 3D models (only 2D SVG)
-- ❌ Performance issues with complex geometries
-
-**Example code**:
 ```javascript
-// D3.js isometric projection
-const isometric = d3.geoProjection((x, y) => {
-  const angle = Math.PI / 6;  // 30° isometric
-  return [
-    (x - y) * Math.cos(angle),
-    (x + y) * Math.sin(angle) - z
-  ];
+// Target volume sync
+window.TEUI.StateManager.addListener("d_105", (newValue) => {
+  const currentValue = TargetState.getValue("d_198");
+  console.log(`[WOMBAT SYNC] d_105 changed: ${currentValue} → ${newValue}`);
+  if (currentValue !== newValue) {
+    // Update TargetState
+    TargetState.setValue("d_198", newValue);
+    // Update DOM
+    updateWombatDOM("d_198", newValue);
+    console.log(`[WOMBAT] ✅ Synced d_198 = ${newValue} from S12 (d_105)`);
+    // Recalculate (runs both engines + updates visualization)
+    calculateAll();
+  }
 });
 
-const path = d3.geoPath(isometric);
+// Reference volume sync
+window.TEUI.StateManager.addListener("ref_d_105", (newValue) => {
+  const currentValue = ReferenceState.getValue("d_198");
+  console.log(`[WOMBAT SYNC] ref_d_105 changed: ${currentValue} → ${newValue}`);
+  if (currentValue !== newValue) {
+    // Update ReferenceState
+    ReferenceState.setValue("d_198", newValue);
+    console.log(`[WOMBAT] ✅ Synced ref_d_198 = ${newValue} from S12 (ref_d_105)`);
+    // Recalculate (runs both engines + updates visualization)
+    calculateAll();
+  }
+});
 
-svg.selectAll("path")
-  .data(buildingFaces)
-  .enter().append("path")
-  .attr("d", path)
-  .attr("fill", d => getColorFromUValue(d.uValue))
-  .attr("stroke", "#000");
+// Similar for d_103/d_199 (stories) with Target and Reference variants
 ```
 
-**Verdict**: **Not recommended**. While clever, D3's 2D nature makes 3D interactions cumbersome. Better to use a purpose-built 3D library.
+**Key Features:**
+- ✅ Updates local state (TargetState/ReferenceState)
+- ✅ Updates DOM via `updateWombatDOM()`
+- ✅ Triggers `calculateAll()` → dual-engine + 3D visualization
 
 ---
 
-### 3.3 Option C: Topologic.py + Python Backend
+### S19 → S12 Listeners ([Section12.js:3086-3136](../../src/sections/Section12.js#L3086-L3136))
 
-**Library**: [Topologic](https://topologic.app/) - Python library for topological building modeling
-**Architecture**: Python backend API + JavaScript frontend
-**License**: GPL-3.0
+```javascript
+// ✅ NEW: S12 listens to WOMBAT mirror field changes
 
-**Pros**:
-- ✅ Purpose-built for architectural topology
-- ✅ Advanced spatial analysis (adjacency graphs, space syntax)
-- ✅ IFC import/export for BIM interoperability
-- ✅ Powerful for future advanced features (space planning, zone analysis)
+// Target volume from WOMBAT (d_198 → d_105)
+window.TEUI.StateManager.addListener("d_198", (newValue) => {
+  const currentValue = ModeManager.getValue("d_105");
+  if (currentValue !== newValue) {
+    ModeManager.setValue("d_105", newValue, "external");
 
-**Cons**:
-- ❌ Requires Python backend (TEUI is currently pure client-side)
-- ❌ Adds deployment complexity (server, API, CORS)
-- ❌ GPL license may conflict with TEUI's open-source goals
-- ❌ Overkill for wireframe visualization (designed for complex BIM workflows)
-- ❌ Latency: geometry must round-trip to server
+    // ✅ DOM UPDATE: Critical for keeping S12 table current
+    const fieldDef = window.TEUI.FieldManager.getField("d_105");
+    if (fieldDef && window.TEUI.FieldManager.updateFieldDisplay) {
+      window.TEUI.FieldManager.updateFieldDisplay("d_105", newValue, fieldDef);
+    }
 
-**Verdict**: **Not recommended for MVP**. Topologic is too heavyweight and breaks TEUI's zero-backend architecture. Consider for future **model import** feature only.
+    console.log(`[S12] ✅ Synced d_105 = ${newValue} from WOMBAT (d_198)`);
+    calculateAll();
+    ModeManager.updateCalculatedDisplayValues();
+  }
+});
 
----
+// Target stories from WOMBAT (d_199 → d_103)
+window.TEUI.StateManager.addListener("d_199", (newValue) => {
+  const currentValue = ModeManager.getValue("d_103");
+  if (currentValue !== newValue) {
+    ModeManager.setValue("d_103", newValue, "external");
 
-### 3.4 Option D: Babylon.js (Alternative 3D Engine)
+    // ✅ DOM UPDATE: Direct dropdown value update
+    const dropdown = document.querySelector('[data-field-id="d_103"]');
+    if (dropdown && dropdown.tagName === "SELECT") {
+      dropdown.value = newValue;
+    }
 
-**Library**: [Babylon.js](https://www.babylonjs.com/) - WebGL game engine for 3D
-**Version**: 6.x
-**License**: Apache 2.0
-**Bundle Size**: ~1.2 MB (larger than Three.js)
+    console.log(`[S12] ✅ Synced d_103 = ${newValue} from WOMBAT (d_199)`);
+    calculateAll();
+    ModeManager.updateCalculatedDisplayValues();
+  }
+});
 
-**Pros**:
-- ✅ Powerful 3D engine with physics, lighting, materials
-- ✅ Excellent documentation and playground
-- ✅ Built-in glTF/OBJ export
-- ✅ Strong TypeScript support
+// Similar for ref_d_198/ref_d_105, ref_d_199/ref_d_103
+```
 
-**Cons**:
-- ❌ Larger bundle size than Three.js
-- ❌ Designed for games, not architectural visualization (overkill)
-- ❌ Steeper learning curve
+**Key Features:**
+- ✅ Updates S12 state (via `ModeManager.setValue()`)
+- ✅ Updates S12 DOM (via `FieldManager.updateFieldDisplay()` or direct dropdown assignment)
+- ✅ Triggers S12 `calculateAll()` + `updateCalculatedDisplayValues()`
 
-**Verdict**: **Not recommended**. Three.js is more established in architecture/BIM domain and lighter weight.
-
----
-
-### 3.5 Recommended Stack: **Three.js + D3.js**
-
-**MVP Technology Stack**:
-- **Three.js r160+** for 3D wireframe rendering
-- **D3.js v7** (existing) for UI controls, color scales, and data binding
-- **OrbitControls** (Three.js addon) for camera interaction
-- **No backend** (pure client-side, maintains TEUI's architecture)
-
-**Why this combination works**:
-1. Three.js handles 3D geometry and rendering
-2. D3.js handles data-to-visual mapping (U-values → colors, areas → dimensions)
-3. Both libraries can coexist (Three.js renders to WebGL canvas, D3 renders SVG UI overlays)
-4. Export path: Three.js → glTF → external tools (SketchUp, Rhino, Revit via IFC converters)
+**Critical Bug Fix** (applied in PR #63):
+Added `FieldManager.updateFieldDisplay()` calls to S12 listeners to prevent "stale DOM" issue where state updates correctly but table display doesn't refresh.
 
 ---
 
-## 4. Data Requirements & Geometry Derivation
+## Geometry Solver (Constraint-Driven)
 
-### 4.1 Input Parameters (from TEUI State)
-
-**Required fields** (read from StateManager):
-
-| Field ID | Source Section | Description | Usage in 3D Model |
-|----------|----------------|-------------|-------------------|
-| d_85 | S11 | Roof Area (m²) | Top surface geometry |
-| d_86 | S11 | Walls Above Grade (m²) | Vertical surface area validation |
-| d_87 | S11 | Floor Exposed (m²) | Bottom surface (if exposed) |
-| d_88 | S11 | Door Area (m²) | Opening geometry |
-| d_89-d_92 | S11 | Window Areas by Orientation (m²) | Fenestration distribution |
-| d_93 | S11 | Skylights (m²) | Roof openings |
-| d_94 | S11 | Walls Below Grade (m²) | Underground geometry |
-| d_95 | S11 | Floor Slab (m²) | Foundation footprint |
-| d_103 | S12 | Number of Stories | Vertical segmentation |
-| d_105 | S12 | Conditioned Volume (m³) | Overall building volume |
-| d_106 | S12 | Total Floor Area (m²) | Footprint derivation |
-| g_85-g_95 | S11 | U-Values | Surface color-coding |
-| o_85-o_95 | S11 | Interior Surface Temps | Thermal visualization |
-
-### 4.2 Constraint-Driven Geometry Solver ("Jello Cube" Algorithm)
-
-**Philosophy**: Instead of deriving rigid dimensions and validating errors, we **solve for geometry that satisfies area constraints**, allowing the model to deform naturally.
-
-**New fields to add to TEUI** (Section 19 user preferences):
-
-| Field ID | Label | Type | Default | Description |
-|----------|-------|------|---------|-------------|
-| **d_200** | Footprint Length | number | (solved) | X-dimension at ground level (m) |
-| **d_201** | Footprint Width | number | (solved) | Y-dimension at ground level (m) |
-| **d_202** | Footprint Aspect Ratio | slider | 1.0 | L:W ratio (1.0 = square, 2.0 = 2:1 rectangle) |
-| **d_203** | Nominal Height | number | (solved) | Average building height (m) |
-| **d_204** | Roof Pitch Mode | dropdown | "Auto" | "Auto" (solve from area), "Flat", "Custom" |
-| **d_205** | Building Azimuth | slider | 0° | Rotation from True North (0-360°) |
-| **d_206** | Allow Asymmetry | checkbox | ✓ | Let facades deform independently to match areas |
-| **d_207** | Constraint Priority | dropdown | "Volume+Areas" | What to satisfy exactly |
-
----
-
-#### 4.2.1 Constraint Hierarchy (Priority Order)
+### Constraint Hierarchy
 
 ```
 1. SACRED (Never violated):
-   └─ Volume (d_105) - Building MUST enclose this exact volume
+   └─ Volume (d_105/d_198) - MUST be satisfied exactly
 
-2. PRIMARY (Satisfy if possible, show conflict if not):
+2. PRIMARY (Satisfy if possible, show visual conflict if not):
    ├─ Roof Area (d_85)
-   ├─ Floor Area (d_106 or d_95)
-   └─ Total Wall Area (d_86 + d_94)
+   ├─ Floor Area (h_15 conditioned area)
+   └─ Wall Area (d_86)
 
 3. SECONDARY (Distribute across PRIMARY constraints):
    ├─ Window Areas by Orientation (d_89-d_92)
@@ -562,1591 +959,145 @@ svg.selectAll("path")
 
 4. PREFERENTIAL (User aesthetics - deformable):
    ├─ Aspect Ratio (d_202) - "I prefer square-ish footprints"
-   ├─ Symmetry (d_206) - "I prefer symmetric facades"
-   └─ Roof Type (d_204) - "I prefer flat roofs"
+   └─ Symmetry - "I prefer symmetric facades"
 ```
 
 ---
 
-#### 4.2.2 Solver Algorithm (Constraint Satisfaction)
+### Solver Algorithm ([Section19.js:464-556](../../src/sections/Section19.js#L464-L556))
 
-**Phase 1: Establish Footprint (X-Y Plane)**
+**solveGeometry(isReferenceCalculation)**
 
 ```javascript
-function solveFootprint() {
-  const volume = getNumericValue("d_105");           // SACRED
-  const floorArea = getNumericValue("d_106");        // PRIMARY (or use d_95 if ground slab)
-  const aspectRatio = getNumericValue("d_202");      // PREFERENTIAL (default 1.0 = square)
+function solveGeometry(isReferenceCalculation = false) {
+  const mode = isReferenceCalculation ? "Reference" : "Target";
+  console.log(`[WOMBAT] Solving geometry from thermal constraints (${mode} mode)...`);
 
-  // Assume floor is X-Y plane
-  const footprintArea = floorArea;  // Start with user's floor area
+  // Phase 1: Read inputs from StateManager and Pattern A states
+  const conditionedArea = parseFloat(window.TEUI?.StateManager?.getValue("h_15")) || 100;
+  const roofArea = parseFloat(window.TEUI?.StateManager?.getValue("d_85")) || 100;
+  const wallArea = parseFloat(window.TEUI?.StateManager?.getValue("d_86")) || 160;
 
-  // Solve for L × W given aspect ratio preference
+  // ⚠️ DUAL-STATE: Read from appropriate state based on calculation mode
+  const currentState = isReferenceCalculation ? ReferenceState : TargetState;
+  const volume = parseFloat(window.TEUI.parseNumeric(currentState.getValue("d_198")) || 8000);
+  const stories = parseFloat(currentState.getValue("d_199") || 1);
+
+  // User preferences - aspect ratio slider
+  // -4 to +4, centered at 0 (0 = square, positive = landscape, negative = portrait)
+  const aspectRatioRaw = parseFloat(currentState.getValue("d_202") || 0);
+  const aspectRatio = aspectRatioRaw >= 0 ? (1 + aspectRatioRaw) : (1 / (1 - aspectRatioRaw));
+
+  // Phase 2: Footprint (X-Y plane, always horizontal)
+  const footprintArea = conditionedArea / stories;
   const width = Math.sqrt(footprintArea / aspectRatio);
   const length = footprintArea / width;
 
-  return { length, width, footprintArea };
-}
-```
+  // Phase 3: Height calculation from SACRED volume constraint
+  const totalBuildingHeight = volume / footprintArea;
+  const storyHeight = totalBuildingHeight / stories;
 
-**Phase 2: Solve Nominal Height (from Volume)**
+  // Phase 4: Roof geometry (pitch emerges from roof area constraint)
+  const areaRatio = roofArea / footprintArea;
+  let roofPitch = 0;
+  let roofType = "flat";
 
-```javascript
-function solveHeight(footprint) {
-  const volume = getNumericValue("d_105");  // SACRED
-
-  // Height must satisfy: Volume = footprint × height
-  const nominalHeight = volume / footprint.footprintArea;
-
-  return nominalHeight;
-}
-```
-
-**Phase 3: Solve Roof Geometry (from Roof Area Constraint)**
-
-```javascript
-function solveRoof(footprint) {
-  const roofArea = getNumericValue("d_85");     // PRIMARY
-  const floorArea = footprint.footprintArea;
-  const roofMode = getValue("d_204");           // User preference
-
-  if (roofMode === "Flat" || Math.abs(roofArea - floorArea) < 0.01) {
-    // Flat roof: Roof area ≈ Floor area
-    return {
-      type: "flat",
-      pitch: 0,
-      peakHeight: 0,
-      effectiveArea: floorArea
-    };
+  if (areaRatio > 1.01) {
+    // Pitched roof needed to achieve larger roof area
+    roofType = "gabled";
+    roofPitch = Math.asin(Math.min((areaRatio - 1) / 2, 1)) * (180 / Math.PI);
+  } else if (areaRatio < 0.99) {
+    // Inverted pyramid (roof smaller than floor - visual conflict indicator)
+    roofType = "inverted";
+    roofPitch = -20; // Negative pitch
+    console.warn(`[WOMBAT] Roof area (${roofArea} m²) < Conditioned area (${footprintArea} m²) - Creating inverted geometry`);
   }
 
-  // Pitched roof: Roof area > Floor area
-  // For gabled roof: roofArea = 2 × (sloped surface area)
-  //   where sloped surface = (width/2) × sqrt((width/2)² + peakHeight²)
-  //
-  // Solve for pitch that gives target roof area:
+  // Phase 5: Wall geometry (symmetric for now)
+  const perimeter = 2 * (length + width);
+  const wallHeight = wallArea / perimeter;
 
-  const areaRatio = roofArea / floorArea;
+  // Store solved dimensions in current state
+  currentState.setValue("h_200", length.toFixed(2));
+  currentState.setValue("h_201", width.toFixed(2));
+  currentState.setValue("h_203", storyHeight.toFixed(2));
 
-  if (areaRatio < 1.0) {
-    // CONFLICT: Roof smaller than floor (physically impossible for standard building)
-    console.warn(`[WOMBAT] Roof area (${roofArea} m²) < Floor area (${floorArea} m²) - Creating inverted pyramid`);
-    return {
-      type: "inverted",
-      pitch: -Math.atan((1 - areaRatio) * 2),  // Negative pitch (inverted)
-      peakHeight: 0,  // No peak, goes downward
-      effectiveArea: roofArea,
-      warning: "Inverted geometry - check roof area input"
-    };
-  }
-
-  // Standard pitched roof
-  // Approximate pitch angle from area ratio (simplified for gabled roof)
-  // roofArea ≈ floorArea × sqrt(1 + (2×pitch/width)²)
-  const pitchAngle = Math.asin((areaRatio - 1) / 2);  // Radians
-  const peakHeight = (footprint.width / 2) * Math.tan(pitchAngle);
-
-  return {
-    type: "gabled",
-    pitch: pitchAngle * (180 / Math.PI),  // Degrees
-    peakHeight: peakHeight,
-    effectiveArea: roofArea
-  };
-}
-```
-
-**Phase 4: Solve Wall Deformations (from Wall Area Constraints)**
-
-```javascript
-function solveWallGeometry(footprint, nominalHeight) {
-  const allowAsymmetry = getValue("d_206");  // User preference
-
-  // Wall areas by orientation (net of openings)
-  const wallAreas = {
-    north: getNumericValue("d_86") * 0.25,  // Assume 1/4 of total per side (default)
-    east: getNumericValue("d_86") * 0.25,
-    south: getNumericValue("d_86") * 0.25,
-    west: getNumericValue("d_86") * 0.25
-  };
-
-  // If user entered orientation-specific walls, override:
-  // (Future enhancement: add d_86_north, d_86_east fields)
-
-  const perimeter = 2 * (footprint.length + footprint.width);
-  const nominalWallArea = perimeter * nominalHeight;
-
-  if (!allowAsymmetry) {
-    // SYMMETRIC mode: All walls same height
-    // Scale height uniformly to match total wall area
-    const totalWallArea = getNumericValue("d_86");
-    const scaledHeight = totalWallArea / perimeter;
-
-    return {
-      north: { width: footprint.width, height: scaledHeight },
-      south: { width: footprint.width, height: scaledHeight },
-      east: { width: footprint.length, height: scaledHeight },
-      west: { width: footprint.length, height: scaledHeight }
-    };
-  }
-
-  // ASYMMETRIC mode: Each wall deforms independently
-  // Solve wall height from: wallArea = wallWidth × wallHeight
-
-  return {
-    north: {
-      width: footprint.width,
-      height: wallAreas.north / footprint.width,  // May differ from nominal!
-      area: wallAreas.north
+  const solvedGeometry = {
+    footprint: { length, width, area: footprintArea },
+    height: totalBuildingHeight,
+    storyHeight: storyHeight,
+    stories: stories,
+    volumePerFloor: volume / stories,
+    areaPerFloor: conditionedArea / stories,
+    walls: {
+      north: { width: width, height: wallHeight },
+      south: { width: width, height: wallHeight },
+      east: { width: length, height: wallHeight },
+      west: { width: length, height: wallHeight },
     },
-    south: {
-      width: footprint.width,
-      height: wallAreas.south / footprint.width,
-      area: wallAreas.south
+    roof: {
+      type: roofType,
+      pitch: roofPitch,
+      area: roofArea,
     },
-    east: {
-      width: footprint.length,
-      height: wallAreas.east / footprint.length,
-      area: wallAreas.east
-    },
-    west: {
-      width: footprint.length,
-      height: wallAreas.west / footprint.length,
-      area: wallAreas.west
-    }
+    volume: volume,
   };
+
+  console.log(`[WOMBAT] Geometry solved (${mode} mode):`, solvedGeometry);
+  return solvedGeometry;
 }
 ```
 
-**Phase 5: Distribute Windows (Fill Window Area Constraints)**
-
-```javascript
-function distributeWindows(wallGeometry) {
-  const windowAreas = {
-    north: getNumericValue("d_89"),
-    east: getNumericValue("d_90"),
-    south: getNumericValue("d_91"),
-    west: getNumericValue("d_92")
-  };
-
-  const windows = [];
-
-  Object.keys(windowAreas).forEach(orientation => {
-    const windowArea = windowAreas[orientation];
-    if (windowArea === 0) return;
-
-    const wall = wallGeometry[orientation];
-
-    // CONSTRAINT: Window area must fit on wall
-    const wallArea = wall.width * wall.height;
-
-    if (windowArea > wallArea * 0.9) {
-      console.warn(`[WOMBAT] ${orientation} window area (${windowArea} m²) exceeds wall area (${wallArea} m²)`);
-      // Create oversized window (visualization shows conflict)
-    }
-
-    // Assume standard window proportions (1.5m high × variable width)
-    const windowHeight = Math.min(1.5, wall.height * 0.6);
-    const windowWidth = windowArea / windowHeight;
-
-    // Distribute across facade
-    const numWindows = Math.max(1, Math.floor(wall.width / windowWidth));
-    const actualWindowWidth = windowArea / (numWindows * windowHeight);
-
-    for (let i = 0; i < numWindows; i++) {
-      windows.push({
-        orientation: orientation,
-        x: (i + 0.5) * (wall.width / numWindows),
-        y: wall.height * 0.3,  // 30% up from floor (typical sill height)
-        width: actualWindowWidth,
-        height: windowHeight,
-        area: actualWindowWidth * windowHeight
-      });
-    }
-  });
-
-  return windows;
-}
-```
-
-**Phase 6: Volume Verification (Post-Solve Check)**
-
-```javascript
-function verifyVolume(solvedGeometry) {
-  const targetVolume = getNumericValue("d_105");  // SACRED
-
-  // Calculate volume of solved geometry
-  let calculatedVolume = 0;
-
-  // Base box volume
-  const { length, width } = solvedGeometry.footprint;
-  const avgHeight = (
-    solvedGeometry.walls.north.height +
-    solvedGeometry.walls.south.height +
-    solvedGeometry.walls.east.height +
-    solvedGeometry.walls.west.height
-  ) / 4;
-
-  calculatedVolume += length * width * avgHeight;
-
-  // Add roof volume (if pitched)
-  if (solvedGeometry.roof.type === "gabled") {
-    const roofVolume = (length * width * solvedGeometry.roof.peakHeight) / 2;
-    calculatedVolume += roofVolume;
-  }
-
-  const volumeError = Math.abs(calculatedVolume - targetVolume) / targetVolume;
-
-  if (volumeError > 0.02) {  // 2% tolerance
-    console.error(`[WOMBAT] Volume mismatch: Solved ${calculatedVolume.toFixed(1)} m³ vs Target ${targetVolume.toFixed(1)} m³`);
-
-    // CORRECTION: Scale entire model uniformly to match target volume
-    const scaleFactor = Math.cbrt(targetVolume / calculatedVolume);
-
-    console.log(`[WOMBAT] Applying uniform scale: ${scaleFactor.toFixed(3)}× to preserve volume`);
-
-    // Scale all dimensions
-    solvedGeometry.footprint.length *= scaleFactor;
-    solvedGeometry.footprint.width *= scaleFactor;
-    Object.values(solvedGeometry.walls).forEach(wall => {
-      wall.width *= scaleFactor;
-      wall.height *= scaleFactor;
-    });
-  }
-
-  return {
-    targetVolume,
-    calculatedVolume,
-    error: volumeError,
-    isValid: volumeError < 0.02
-  };
-}
-```
-
-### 4.3 Visual Feedback System (Not Validation - No Errors!)
-
-**Philosophy Change**: Instead of validation errors, provide **visual feedback** showing how well constraints are satisfied.
-
-**No red error messages** - the model ALWAYS renders, even if it looks impossible/weird.
-
-```javascript
-function calculateConstraintSatisfaction(solvedGeometry) {
-  // Calculate how well each constraint is satisfied (0% = not met, 100% = perfect)
-
-  const constraints = {};
-
-  // 1. Volume constraint (SACRED - should always be 100%)
-  const targetVolume = getNumericValue("d_105");
-  const actualVolume = calculateGeometryVolume(solvedGeometry);
-  constraints.volume = {
-    target: targetVolume,
-    actual: actualVolume,
-    satisfaction: 100 - Math.abs(actualVolume - targetVolume) / targetVolume * 100,
-    color: getColorForSatisfaction(100)  // Always green (volume is SACRED)
-  };
-
-  // 2. Roof area constraint
-  const targetRoofArea = getNumericValue("d_85");
-  const actualRoofArea = solvedGeometry.roof.effectiveArea;
-  const roofSatisfaction = 100 - Math.abs(actualRoofArea - targetRoofArea) / targetRoofArea * 100;
-  constraints.roof = {
-    target: targetRoofArea,
-    actual: actualRoofArea,
-    satisfaction: Math.max(0, roofSatisfaction),
-    color: getColorForSatisfaction(roofSatisfaction),
-    message: roofSatisfaction > 95 ? "✓ Roof area matches" :
-             roofSatisfaction > 80 ? "⚠ Roof area approximate" :
-             "⚠ Roof area significantly different (check if pitched roof intended)"
-  };
-
-  // 3. Wall area constraints (sum all facades)
-  const targetWallArea = getNumericValue("d_86");
-  const actualWallArea = Object.values(solvedGeometry.walls)
-    .reduce((sum, wall) => sum + (wall.width * wall.height), 0);
-  const wallSatisfaction = 100 - Math.abs(actualWallArea - targetWallArea) / targetWallArea * 100;
-  constraints.walls = {
-    target: targetWallArea,
-    actual: actualWallArea,
-    satisfaction: Math.max(0, wallSatisfaction),
-    color: getColorForSatisfaction(wallSatisfaction),
-    message: wallSatisfaction > 95 ? "✓ Wall area matches" :
-             wallSatisfaction > 80 ? "⚠ Wall area approximate (asymmetric facades?)" :
-             "⚠ Wall area differs (may indicate unusual building proportions)"
-  };
-
-  // 4. Floor area constraint
-  const targetFloorArea = getNumericValue("d_106");
-  const actualFloorArea = solvedGeometry.footprint.footprintArea;
-  const floorSatisfaction = 100 - Math.abs(actualFloorArea - targetFloorArea) / targetFloorArea * 100;
-  constraints.floor = {
-    target: targetFloorArea,
-    actual: actualFloorArea,
-    satisfaction: Math.max(0, floorSatisfaction),
-    color: getColorForSatisfaction(floorSatisfaction),
-    message: floorSatisfaction > 95 ? "✓ Floor area matches" : "⚠ Floor area differs"
-  };
-
-  return constraints;
-}
-
-function getColorForSatisfaction(percentage) {
-  // Color gradient: Red (0%) → Yellow (80%) → Green (100%)
-  if (percentage >= 95) return "#00ff00";      // Green (excellent)
-  if (percentage >= 80) return "#ffff00";      // Yellow (acceptable)
-  if (percentage >= 60) return "#ff9900";      // Orange (concerning)
-  return "#ff0000";                             // Red (significant mismatch)
-}
-
-// Visual feedback display (in UI)
-function displayConstraintFeedback(constraints) {
-  const feedbackHTML = `
-    <div class="constraint-feedback">
-      <h3>Constraint Satisfaction</h3>
-      <ul>
-        <li style="color: ${constraints.volume.color}">
-          🎯 Volume: ${constraints.volume.satisfaction.toFixed(0)}%
-          (${constraints.volume.actual.toFixed(0)} / ${constraints.volume.target.toFixed(0)} m³)
-        </li>
-        <li style="color: ${constraints.roof.color}">
-          🏠 Roof: ${constraints.roof.satisfaction.toFixed(0)}%
-          (${constraints.roof.actual.toFixed(0)} / ${constraints.roof.target.toFixed(0)} m²)
-          <br><small>${constraints.roof.message}</small>
-        </li>
-        <li style="color: ${constraints.walls.color}">
-          🧱 Walls: ${constraints.walls.satisfaction.toFixed(0)}%
-          (${constraints.walls.actual.toFixed(0)} / ${constraints.walls.target.toFixed(0)} m²)
-          <br><small>${constraints.walls.message}</small>
-        </li>
-        <li style="color: ${constraints.floor.color}">
-          📐 Floor: ${constraints.floor.satisfaction.toFixed(0)}%
-          (${constraints.floor.actual.toFixed(0)} / ${constraints.floor.target.toFixed(0)} m²)
-        </li>
-      </ul>
-      <p><small>Tip: If satisfaction is low, the 3D model shows what thermal areas you entered,
-      even if they represent an unusual building shape.</small></p>
-    </div>
-  `;
-
-  document.getElementById("constraint-feedback-container").innerHTML = feedbackHTML;
-}
-```
-
-**Key difference from old approach**:
-- ❌ Old: `if (error > threshold) throw ValidationError`
-- ✅ New: `satisfaction = 100 - error; displayFeedback(satisfaction, color)`
-
-**User experience**:
-- Model ALWAYS renders (even if roof < floor → inverted pyramid)
-- Color-coded feedback shows which constraints are well-satisfied
-- Low satisfaction = visual signal to user: "Check your inputs, model looks weird because areas don't match typical building"
-
-### 4.4 Fenestration Distribution
-
-**Window placement algorithm**:
-```javascript
-function distributeWindows(derivedDims) {
-  const { length, width, height, storyHeight, stories } = derivedDims;
-
-  // Window areas by orientation (from S11)
-  const windowAreas = {
-    north: getNumericValue("d_89"),
-    east: getNumericValue("d_90"),
-    south: getNumericValue("d_91"),
-    west: getNumericValue("d_92")
-  };
-
-  // Default window geometry assumptions
-  const windowHeight = 1.5;  // m (typical window height)
-  const sillHeight = getNumericValue("d_207");  // Offset from floor
-
-  const windows = [];
-
-  // North facade (along width dimension)
-  if (windowAreas.north > 0) {
-    const numWindows = Math.ceil(windowAreas.north / (windowHeight * 1.2));  // Assume 1.2m wide windows
-    const windowWidth = windowAreas.north / (numWindows * windowHeight);
-
-    for (let i = 0; i < numWindows; i++) {
-      windows.push({
-        orientation: "north",
-        x: (i + 0.5) * (width / numWindows) - (width / 2),  // Center along facade
-        y: sillHeight + (windowHeight / 2),  // Vertical position
-        z: -length / 2,  // North face (negative Z)
-        width: windowWidth,
-        height: windowHeight,
-        area: windowWidth * windowHeight
-      });
-    }
-  }
-
-  // East, South, West facades (similar logic)
-  // ... distribute remaining window areas ...
-
-  return windows;
-}
-```
+**Key Features:**
+- ✅ Volume ALWAYS preserved (SACRED constraint)
+- ✅ Aspect ratio controls footprint proportions
+- ✅ Roof pitch emerges from area ratio (flat, gabled, or inverted)
+- ✅ Wall heights derive from wall area / perimeter
+- ✅ Mode-aware: reads from TargetState or ReferenceState
+- ✅ Stores calculated dimensions back in current state
 
 ---
 
-## 5. Architecture Plan
+## Known Issues
 
-### 5.1 Module Structure
+### 🔴 **Volume Field (d_198) Input Locked After First Edit**
 
-Following TEUI's Pattern A architecture (see [TECHNICAL2.md](../TECHNICAL2.md)):
+**Full Description**: See [Next Steps & Roadmap](#next-steps--roadmap) → Immediate Priority 1
 
-```
-src/
-├── core/
-│   └── Topometry.js              # NEW: 3D rendering engine (Three.js wrapper)
-│
-├── sections/
-│   └── Section20.js              # NEW: WOMBAT section module (Pattern A)
-│
-└── lib/
-    └── three/                    # NEW: Three.js library + addons
-        ├── three.module.js       # Three.js r160 (ESM build)
-        ├── OrbitControls.js      # Camera controls
-        └── GLTFExporter.js       # Model export
-```
-
-**File responsibilities**:
-
-| File | Lines (est.) | Purpose |
-|------|--------------|---------|
-| `Topometry.js` | ~800 | Core 3D engine: geometry generation, rendering, materials |
-| `Section20.js` | ~1200 | UI module: field definitions, state management, event handlers |
-| `three.module.js` | ~15000 | External library (loaded from CDN or bundled) |
-
-### 5.2 Section20.js Structure (Pattern A)
-
-```javascript
-// Section20.js - WOMBAT Module
-window.TEUI = window.TEUI || {};
-window.TEUI.SectionModules = window.TEUI.SectionModules || {};
-
-window.TEUI.SectionModules.sect20 = (function() {
-  "use strict";
-
-  // ========================================
-  // 1. FIELD DEFINITIONS
-  // ========================================
-  const sectionRows = [
-    {
-      id: "d_200",
-      type: "number",
-      label: "Building Length",
-      defaultValue: "20.0",
-      unit: "m",
-      editable: false,  // Derived from volume/area
-      tooltip: "Primary horizontal dimension (derived from volume and aspect ratio)"
-    },
-    {
-      id: "d_202",
-      type: "slider",
-      label: "Aspect Ratio (L:W)",
-      defaultValue: "1.5",
-      min: 0.5,
-      max: 4.0,
-      step: 0.1,
-      editable: true,
-      tooltip: "Building length to width ratio (1.0 = square, 3.0 = narrow)"
-    },
-    {
-      id: "d_208",
-      type: "dropdown",
-      label: "Building Shape",
-      defaultValue: "Rectangular Box",
-      options: [
-        "Rectangular Box",
-        "L-Shape",
-        "U-Shape",
-        "Courtyard",
-        "Custom"
-      ],
-      tooltip: "Simplified building massing geometry"
-    }
-    // ... more fields ...
-  ];
-
-  // ========================================
-  // 2. STATE OBJECTS (Pattern A)
-  // ========================================
-  const TargetState = {
-    state: {},
-    initialize() { /* ... */ },
-    getValue(fieldId) { /* ... */ },
-    setValue(fieldId, value) { /* ... */ }
-  };
-
-  const ReferenceState = {
-    // Same structure as TargetState
-  };
-
-  const ModeManager = {
-    currentMode: "target",
-    switchMode(mode) { /* ... */ },
-    getValue(fieldId) { /* ... */ },
-    setValue(fieldId, value) { /* ... */ }
-  };
-
-  // ========================================
-  // 3. GEOMETRY DERIVATION
-  // ========================================
-  function deriveGeometry() {
-    // Implement 4.2 derivation formulas
-  }
-
-  function validateGeometry(derivedDims) {
-    // Implement 4.3 validation checks
-  }
-
-  function distributeWindows(derivedDims) {
-    // Implement 4.4 fenestration distribution
-  }
-
-  // ========================================
-  // 4. CALCULATION ENGINES
-  // ========================================
-  function calculateTargetModel() {
-    const dims = deriveGeometry();
-    const validation = validateGeometry(dims);
-    const windows = distributeWindows(dims);
-
-    // Update 3D model via Topometry.js
-    if (window.TEUI?.Topometry?.updateModel) {
-      window.TEUI.Topometry.updateModel(dims, windows, "target");
-    }
-  }
-
-  function calculateReferenceModel() {
-    // Same logic but reads from ReferenceState
-  }
-
-  function calculateAll() {
-    calculateReferenceModel();  // Reference first (M-N compliance pattern)
-    calculateTargetModel();
-  }
-
-  // ========================================
-  // 5. EVENT HANDLERS
-  // ========================================
-  function initializeEventHandlers() {
-    // Listen to aspect ratio slider
-    const aspectSlider = document.querySelector('[data-field-id="d_202"] input[type="range"]');
-    aspectSlider?.addEventListener("input", (e) => {
-      ModeManager.setValue("d_202", e.target.value);
-      calculateAll();  // Re-derive geometry
-    });
-
-    // Listen to S11/S12 changes (external dependencies)
-    const geometryFields = ["d_85", "d_86", "d_105", "d_106", "d_103"];
-    geometryFields.forEach(fieldId => {
-      window.TEUI.StateManager.addListener(fieldId, () => {
-        calculateTargetModel();  // Geometry changed, update 3D model
-      });
-
-      window.TEUI.StateManager.addListener(`ref_${fieldId}`, () => {
-        calculateReferenceModel();
-      });
-    });
-  }
-
-  // ========================================
-  // 6. PUBLIC API
-  // ========================================
-  return {
-    getFields: () => sectionRows,
-    getLayout: () => `
-      <div class="section-header">
-        <h2>Section 19: WOMBAT - 3D Building Visualization</h2>
-        <button class="mode-toggle" data-section="sect20">
-          <span class="toggle-indicator">Target</span>
-        </button>
-      </div>
-      <div class="section-content">
-        <!-- Field containers -->
-        <div data-field-id="d_200"></div>
-        <div data-field-id="d_202"></div>
-        <div data-field-id="d_208"></div>
-
-        <!-- 3D canvas container -->
-        <div id="topometry-canvas-container" style="width: 100%; height: 600px; margin: 20px 0;">
-          <canvas id="topometry-canvas"></canvas>
-        </div>
-
-        <!-- Export controls -->
-        <div class="export-controls">
-          <button id="export-gltf">Export 3D Model (glTF)</button>
-          <button id="export-screenshot">Save Screenshot</button>
-        </div>
-      </div>
-    `,
-    calculateAll: calculateAll,
-    initializeEventHandlers: initializeEventHandlers,
-
-    // Pattern A exports
-    TargetState: TargetState,
-    ReferenceState: ReferenceState,
-    ModeManager: ModeManager
-  };
-})();
-```
-
-### 5.3 Topometry.js Core Engine
-
-```javascript
-// src/core/Topometry.js - Three.js rendering engine
-window.TEUI = window.TEUI || {};
-
-window.TEUI.Topometry = (function() {
-  "use strict";
-
-  let scene, camera, renderer, controls;
-  let buildingMesh, wireframe;
-
-  // ========================================
-  // INITIALIZATION
-  // ========================================
-  function initialize(containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) {
-      console.error("[WOMBAT] Canvas container not found");
-      return;
-    }
-
-    // Scene setup
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf5f5f5);
-
-    // Camera setup
-    const aspect = container.clientWidth / container.clientHeight;
-    camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
-    camera.position.set(30, 30, 30);
-    camera.lookAt(0, 0, 0);
-
-    // Renderer setup
-    renderer = new THREE.WebGLRenderer({
-      canvas: document.getElementById("topometry-canvas"),
-      antialias: true
-    });
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-
-    // Orbit controls
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-
-    // Grid helper
-    const gridHelper = new THREE.GridHelper(50, 50);
-    scene.add(gridHelper);
-
-    // Axes helper
-    const axesHelper = new THREE.AxesHelper(10);
-    scene.add(axesHelper);
-
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(10, 20, 10);
-    scene.add(directionalLight);
-
-    // Animation loop
-    animate();
-
-    console.log("[WOMBAT] 3D engine initialized");
-  }
-
-  function animate() {
-    requestAnimationFrame(animate);
-    controls.update();
-    renderer.render(scene, camera);
-  }
-
-  // ========================================
-  // MODEL GENERATION
-  // ========================================
-  function updateModel(dimensions, windows, mode) {
-    // Remove existing building
-    if (buildingMesh) scene.remove(buildingMesh);
-    if (wireframe) scene.remove(wireframe);
-
-    const { length, width, height } = dimensions;
-
-    // Create building box geometry
-    const geometry = new THREE.BoxGeometry(length, height, width);
-    geometry.translate(0, height / 2, 0);  // Base at ground level
-
-    // Wireframe edges
-    const edges = new THREE.EdgesGeometry(geometry);
-    wireframe = new THREE.LineSegments(
-      edges,
-      new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 })
-    );
-    scene.add(wireframe);
-
-    // Semi-transparent surfaces (color-coded by U-value)
-    const uValue = window.TEUI.StateManager.getValue("g_104");  // Average envelope U-value
-    const color = getColorFromUValue(parseFloat(uValue) || 0.5);
-
-    const material = new THREE.MeshLambertMaterial({
-      color: color,
-      transparent: true,
-      opacity: 0.3,
-      side: THREE.DoubleSide
-    });
-
-    buildingMesh = new THREE.Mesh(geometry, material);
-    scene.add(buildingMesh);
-
-    // Add window geometry
-    addWindows(windows, dimensions);
-
-    console.log(`[WOMBAT] Model updated: ${length.toFixed(1)}m × ${width.toFixed(1)}m × ${height.toFixed(1)}m (${mode})`);
-  }
-
-  function addWindows(windows, dimensions) {
-    windows.forEach(win => {
-      const windowGeometry = new THREE.PlaneGeometry(win.width, win.height);
-      const windowMaterial = new THREE.MeshBasicMaterial({
-        color: 0x87CEEB,  // Sky blue
-        transparent: true,
-        opacity: 0.6,
-        side: THREE.DoubleSide
-      });
-
-      const windowMesh = new THREE.Mesh(windowGeometry, windowMaterial);
-      windowMesh.position.set(win.x, win.y, win.z);
-
-      // Rotate to face correct orientation
-      if (win.orientation === "north" || win.orientation === "south") {
-        windowMesh.rotation.y = 0;
-      } else {
-        windowMesh.rotation.y = Math.PI / 2;
-      }
-
-      scene.add(windowMesh);
-    });
-  }
-
-  // ========================================
-  // COLOR MAPPING (Thermal Performance)
-  // ========================================
-  function getColorFromUValue(uValue) {
-    // Color scale: Green (low U-value, good) → Red (high U-value, bad)
-    // Typical range: 0.15 (Passivhaus) to 1.0 (poor)
-    const normalized = Math.min(Math.max((uValue - 0.15) / 0.85, 0), 1);
-
-    const green = new THREE.Color(0x00ff00);
-    const yellow = new THREE.Color(0xffff00);
-    const red = new THREE.Color(0xff0000);
-
-    if (normalized < 0.5) {
-      return green.clone().lerp(yellow, normalized * 2);
-    } else {
-      return yellow.clone().lerp(red, (normalized - 0.5) * 2);
-    }
-  }
-
-  // ========================================
-  // EXPORT FUNCTIONS
-  // ========================================
-  function exportGLTF() {
-    const exporter = new THREE.GLTFExporter();
-    exporter.parse(
-      scene,
-      (gltf) => {
-        const blob = new Blob([JSON.stringify(gltf)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'building-model.gltf';
-        link.click();
-        console.log("[WOMBAT] Model exported as glTF");
-      },
-      { binary: false }
-    );
-  }
-
-  function saveScreenshot() {
-    renderer.render(scene, camera);
-    const dataURL = renderer.domElement.toDataURL('image/png');
-    const link = document.createElement('a');
-    link.href = dataURL;
-    link.download = 'building-screenshot.png';
-    link.click();
-    console.log("[WOMBAT] Screenshot saved");
-  }
-
-  // ========================================
-  // PUBLIC API
-  // ========================================
-  return {
-    initialize: initialize,
-    updateModel: updateModel,
-    exportGLTF: exportGLTF,
-    saveScreenshot: saveScreenshot
-  };
-})();
-```
+**Quick Summary:**
+- First edit works correctly
+- Subsequent edits rejected (field appears focused but doesn't accept input)
+- Root cause: Field selector returns `null` during `setupFieldListeners()`
+- **Workaround**: Use S12 d_105 field (bidirectional sync works perfectly)
 
 ---
 
-## 6. Implementation Phases
+## References & Resources
 
-### Phase 1: MVP - Basic Rectangular Box (2-3 weeks)
-
-**Goal**: Render simple wireframe box from existing TEUI geometry data
-
-**Deliverables**:
-- ✅ Three.js integration (library loaded, canvas rendering)
-- ✅ Section20.js Pattern A module
-- ✅ Topometry.js core engine
-- ✅ Derive building dimensions (L × W × H) from volume/area
-- ✅ Render rectangular box with wireframe edges
-- ✅ Color-code surfaces by average U-value
-- ✅ Orbit controls (rotate, zoom, pan)
-- ✅ Basic window distribution (no vertical detail)
-
-**Field additions** (Section 19):
-- d_200: Building Length (derived)
-- d_201: Building Width (derived)
-- d_202: Aspect Ratio (user slider)
-- d_203: Story Height (derived)
-
-**Validation**:
-- Visual inspection: Does the box look reasonable for the given areas?
-- Geometry check: Derived roof area matches d_85 within 5%
-- Volume check: Box volume matches d_105 within 2%
-
-**Excluded from MVP**:
-- ❌ Roof pitch (assume flat)
-- ❌ Vertical window distribution (all windows at mid-height)
-- ❌ L-shapes, U-shapes, complex geometry
-- ❌ Model export (glTF)
-- ❌ Basement/underground visualization
-
----
-
-### Phase 2: Enhanced Geometry (3-4 weeks)
-
-**Goal**: Add roof pitch, multi-story detail, fenestration distribution
-
-**Deliverables**:
-- ✅ Roof pitch parameter (d_204) with gabled/hipped roof geometry
-- ✅ Per-story window distribution (respect story count)
-- ✅ Skylight geometry (d_93)
-- ✅ Foundation/basement visualization (d_94, d_95)
-- ✅ Building orientation/azimuth (d_205)
-- ✅ Thermal performance color-coding by surface (not just average)
-
-**Field additions**:
-- d_204: Roof Pitch (0-45°)
-- d_205: Building Azimuth (0-360°)
-- d_206: Foundation Depth (m)
-- d_207: Window Sill Height (m)
-
-**Validation**:
-- Multi-story buildings show horizontal floor divisions
-- Windows distribute across facades proportionally
-- Roof pitch affects roof area (validation warning if mismatch)
-
----
-
-### Phase 3: Model Export & Import (2-3 weeks)
-
-**Goal**: Enable glTF export and basic model import
-
-**Deliverables**:
-- ✅ glTF 2.0 export (binary and ASCII)
-- ✅ OBJ export (for legacy tools)
-- ✅ Screenshot export (PNG)
-- ✅ Basic glTF import (populate TEUI from uploaded model)
-- ✅ Model metadata (embed TEUI field values in glTF custom properties)
-
-**Use case**:
-1. User exports TEUI building as glTF
-2. Opens in SketchUp/Rhino for detailed design
-3. Exports refined model from SketchUp
-4. Re-imports to TEUI to update geometry (envelope areas auto-calculated)
-
----
-
-### Phase 4: Advanced Shapes & Solar Integration (4-5 weeks)
-
-**Goal**: L-shapes, U-shapes, courtyard buildings, solar radiation overlay
-
-**Deliverables**:
-- ✅ Building shape presets (d_208):
-  - Rectangular Box
-  - L-Shape
-  - U-Shape
-  - Courtyard
-  - Custom (user-defined polygon)
-- ✅ Solar radiation overlay from Section 10 radiant gains
-- ✅ Shading analysis (self-shading, neighbor shading)
-- ✅ Integration with S18 Parallel Coordinates (optimize building form)
-
-**Field additions**:
-- d_208: Building Shape preset
-- d_209: L-Shape wing ratio (for L/U shapes)
-- d_210: Courtyard size % (for courtyard buildings)
-
-**Validation**:
-- Complex shapes: Perimeter and area calculations match S11 inputs
-- Solar overlay: Incident radiation matches S10 calculations
-
----
-
-## 7. Integration Points
-
-### 7.1 StateManager Integration
-
-Section 19 follows Pattern A dual-state architecture:
-
-```javascript
-// Read geometry from S11/S12
-const roofArea = window.TEUI.StateManager.getValue("d_85");
-const volume = window.TEUI.StateManager.getValue("d_105");
-const stories = window.TEUI.StateManager.getValue("d_103");
-
-// Write derived dimensions (dual storage)
-function setCalculatedValue(fieldId, value) {
-  const state = ModeManager.getCurrentState();
-  state.setValue(fieldId, value, "calculated");
-
-  const prefix = ModeManager.currentMode === "reference" ? "ref_" : "";
-  window.TEUI.StateManager.setValue(`${prefix}${fieldId}`, value, "calculated");
-}
-
-// Listen to geometry changes
-window.TEUI.StateManager.addListener("d_85", () => {
-  calculateTargetModel();  // Roof area changed, re-derive building
-});
-```
-
-### 7.2 Calculator.js Integration
-
-Add Section 19 to calculation order:
-
-```javascript
-// In Calculator.js
-const calcOrder = [
-  "sect02",  // Building Info
-  "sect03",  // Climate
-  // ... existing sections ...
-  "sect15",  // TEUI Summary
-  "sect16",  // Sankey Diagram
-  "sect17",  // Dependency Graph
-  "sect20",  // WOMBAT (NEW - runs after all geometry sections)
-  "sect01"   // Key Values (Dashboard)
-];
-```
-
-**Why S20 runs late**: Section 19 consumes geometry from S11/S12 and thermal data from S11, so it must run after those sections complete.
-
-### 7.3 FieldManager Integration
-
-Register Section 19 fields:
-
-```javascript
-// In FieldManager.js renderAllSections()
-const sections = [
-  "sect01", "sect02", /* ... */ "sect19", "sect20"  // Add S20
-];
-```
-
-### 7.4 FileHandler Integration
-
-**Import/Export Section 19 fields**:
-
-```javascript
-// In FileHandler.js
-const section20Fields = ["d_200", "d_201", "d_202", "d_203", "d_204", "d_205", "d_206", "d_207", "d_208"];
-
-// CSV export: Include derived dimensions
-function exportToCSV() {
-  // ... existing export logic ...
-  section20Fields.forEach(fieldId => {
-    const value = window.TEUI.StateManager.getValue(fieldId);
-    csvRows.push([fieldId, value]);
-  });
-}
-
-// CSV import: Sync S20 isolated state
-function importFromCSV(data) {
-  window.TEUI.StateManager.muteListeners();
-
-  // ... import all values ...
-
-  // Sync Section 19 Pattern A state
-  const sect20 = window.TEUI.SectionModules.sect20;
-  if (sect20) {
-    sect20.TargetState.syncFromGlobalState(section20Fields);
-    sect20.ReferenceState.syncFromGlobalState(section20Fields);
-  }
-
-  window.TEUI.StateManager.unmuteListeners();
-  window.TEUI.Calculator.calculateAll();
-}
-```
-
-### 7.5 Dependency.js Integration
-
-Register S20 dependencies for Dependency Graph (Section 17):
-
-```javascript
-// Section20.js - Register dependencies
-function registerDependencies() {
-  const geometryInputs = ["d_85", "d_86", "d_105", "d_106", "d_103"];
-  const derivedOutputs = ["d_200", "d_201", "d_203"];
-
-  geometryInputs.forEach(inputField => {
-    derivedOutputs.forEach(outputField => {
-      window.TEUI.StateManager.registerDependency(inputField, outputField);
-    });
-  });
-}
-```
-
-This ensures the Dependency Graph shows S11/S12 → S20 relationships.
-
----
-
-## 8. Future Enhancements
-
-### 8.1 Model Import Pipeline
-
-**Vision**: Upload IFC/glTF models to auto-populate TEUI geometry
-
-**Workflow**:
-1. User uploads IFC file (from Revit/ArchiCAD)
-2. Topometry.js parses IFC geometry (using IFC.js library)
-3. Extract envelope areas:
-   - Roof area → d_85
-   - Wall areas by orientation → d_86, d_89-d_92
-   - Floor area → d_106
-   - Volume → d_105
-4. Auto-populate TEUI fields
-5. User reviews/adjusts thermal properties (RSI values, equipment)
-
-**Technical approach**:
-- **IFC.js** library for IFC parsing (https://ifcjs.github.io/info/)
-- **Three.js IFC loader** for geometry extraction
-- **Area calculation** from mesh triangles
-
-**Challenges**:
-- IFC complexity (need to filter only relevant geometry)
-- Orientation detection (which facade is "North"?)
-- Multi-zone buildings (need to aggregate spaces)
-
-### 8.2 Solar Radiation Overlay
-
-**Vision**: Color-code surfaces by incident solar radiation (kWh/m²/year)
-
-**Data source**: Section 10 radiant gains already calculates solar exposure by orientation
-
-**Implementation**:
-```javascript
-function applySolarOverlay() {
-  const solarGains = {
-    north: window.TEUI.StateManager.getValue("i_74"),   // Solar gain North (kWh/year)
-    east: window.TEUI.StateManager.getValue("i_75"),
-    south: window.TEUI.StateManager.getValue("i_76"),
-    west: window.TEUI.StateManager.getValue("i_77")
-  };
-
-  // Map to per-m² radiation
-  const windowAreas = {
-    north: window.TEUI.StateManager.getValue("d_89"),
-    east: window.TEUI.StateManager.getValue("d_90"),
-    south: window.TEUI.StateManager.getValue("d_91"),
-    west: window.TEUI.StateManager.getValue("d_92")
-  };
-
-  const radiationPerM2 = {
-    north: solarGains.north / windowAreas.north,
-    east: solarGains.east / windowAreas.east,
-    south: solarGains.south / windowAreas.south,
-    west: solarGains.west / windowAreas.west
-  };
-
-  // Apply color gradient to building facades
-  updateFacadeColors(radiationPerM2);
-}
-```
-
-### 8.3 Parametric Optimization with S18
-
-**Vision**: S18 Parallel Coordinates "Decarbonize" optimization → S20 shows optimized building form
-
-**Workflow**:
-1. User runs S18 optimization (finds optimal envelope RSI values)
-2. S18 updates S11 fields (f_85, f_89, etc.)
-3. S20 automatically updates 3D model colors (better U-values = greener surfaces)
-4. User visually sees building "improve" as optimization runs
-
-**Implementation**: Already supported! S20 listens to S11 field changes via StateManager.
-
-### 8.4 Multi-Building Portfolio View
-
-**Vision**: Compare multiple buildings side-by-side in 3D
-
-**Use case**: Portfolio managers want to see all buildings in a development
-
-**Implementation**:
-- Load multiple CSV files (one per building)
-- Render buildings in grid layout or actual site plan
-- Color-code by TEUI performance (green = good, red = poor)
-
-### 8.5 Shading Analysis
-
-**Vision**: Simulate neighbor shading impact on solar gains
-
-**Workflow**:
-1. User places "neighbor buildings" in 3D view
-2. Topometry.js runs ray-tracing to calculate shading
-3. Updates Section 10 solar gains based on reduced exposure
-4. TEUI recalculates with adjusted solar heat gains
-
-**Technical approach**:
-- Three.js raycasting API
-- Simple box neighbors (no detailed geometry needed)
-- Hourly sun position (from latitude/longitude in S03)
-
----
-
-## 9. Technical Challenges
-
-### 9.1 Geometry Under-Determination
-
-**Problem**: TEUI provides areas and volume but not explicit dimensions (L × W × H)
-
-**Solutions**:
-1. **User-specified aspect ratio** (d_202): Let user control L:W ratio
-2. **Optimization approach**: Find L × W × H that minimizes error between derived and user-provided areas
-3. **Sensitivity analysis**: Show user multiple valid geometries (slider to explore alternatives)
-
-**Example optimization**:
-```javascript
-function optimizeDimensions(targetVolume, targetRoofArea, targetWallArea) {
-  let bestFit = null;
-  let minError = Infinity;
-
-  // Grid search over aspect ratios
-  for (let aspectRatio = 0.5; aspectRatio <= 4.0; aspectRatio += 0.1) {
-    const footprint = targetRoofArea;  // Assume flat roof
-    const length = Math.sqrt(footprint * aspectRatio);
-    const width = footprint / length;
-    const height = targetVolume / footprint;
-
-    const derivedWallArea = 2 * (length + width) * height;
-    const error = Math.abs(derivedWallArea - targetWallArea);
-
-    if (error < minError) {
-      minError = error;
-      bestFit = { length, width, height, aspectRatio };
-    }
-  }
-
-  return bestFit;
-}
-```
-
-### 9.2 Bundle Size (Three.js)
-
-**Problem**: Three.js adds ~600 KB to bundle (significant for TEUI's lightweight philosophy)
-
-**Solutions**:
-1. **Lazy loading**: Only load Three.js when user opens Section 19
-2. **CDN delivery**: Load from unpkg.com or jsDelivr (no bundle impact)
-3. **Tree-shaking**: Use ES6 modules to import only needed Three.js components
-
-**Recommended approach** (CDN + lazy load):
-```javascript
-// In Section20.js initializeEventHandlers()
-function loadThreeJS() {
-  if (window.THREE) {
-    // Already loaded
-    initializeTopometry();
-    return;
-  }
-
-  const script = document.createElement('script');
-  script.src = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
-  script.type = 'module';
-  script.onload = () => {
-    console.log("[WOMBAT] Three.js loaded");
-    initializeTopometry();
-  };
-  document.head.appendChild(script);
-}
-
-// Only load when S20 is visible
-const observer = new IntersectionObserver((entries) => {
-  if (entries[0].isIntersecting) {
-    loadThreeJS();
-    observer.disconnect();
-  }
-});
-observer.observe(document.getElementById('topometry-canvas-container'));
-```
-
-### 9.3 Performance (Mobile Devices)
-
-**Problem**: 3D rendering may be slow on low-end devices
-
-**Solutions**:
-1. **Level of detail (LOD)**: Simplify geometry on mobile (fewer window details)
-2. **Conditional rendering**: Only render when S20 is visible (IntersectionObserver)
-3. **Static fallback**: Show 2D isometric projection on unsupported devices
-
-**Detection**:
-```javascript
-// In Topometry.js
-function checkWebGLSupport() {
-  try {
-    const canvas = document.createElement('canvas');
-    return !!(canvas.getContext('webgl') || canvas.getContext('experimental-webgl'));
-  } catch (e) {
-    return false;
-  }
-}
-
-function initialize(containerId) {
-  if (!checkWebGLSupport()) {
-    console.warn("[WOMBAT] WebGL not supported, falling back to 2D view");
-    render2DFallback(containerId);
-    return;
-  }
-
-  // ... normal Three.js initialization ...
-}
-```
-
-### 9.4 Dual-State 3D Models (Target vs Reference)
-
-**Problem**: Section 19 is Pattern A (dual-state), so it needs to render **two separate 3D models**
-
-**Challenge**: How to visualize Target vs Reference building simultaneously?
-
-**Solutions**:
-1. **Side-by-side view**: Two canvases, one for Target (left), one for Reference (right)
-2. **Toggle mode**: Single canvas, switch between Target and Reference models
-3. **Overlay mode**: Semi-transparent overlay showing differences (red = worse, green = better)
-
-**Recommended approach** (Toggle mode for MVP):
-```javascript
-// In Section20.js ModeManager
-function switchMode(mode) {
-  this.currentMode = mode;
-
-  // Update 3D model
-  if (mode === "target") {
-    window.TEUI.Topometry.updateModel(targetDimensions, targetWindows, "target");
-  } else {
-    window.TEUI.Topometry.updateModel(referenceDimensions, referenceWindows, "reference");
-  }
-
-  this.updateCalculatedDisplayValues();
-}
-```
-
-**Phase 2 enhancement** (Comparison view):
-```javascript
-// Show both models with color-coded differences
-function showComparisonView() {
-  const targetModel = generateModel(targetDimensions, "target");
-  const refModel = generateModel(referenceDimensions, "reference");
-
-  // Position side-by-side
-  targetModel.position.x = -15;
-  refModel.position.x = 15;
-
-  // Color-code by performance delta
-  const uValueDelta = targetUValue - referenceUValue;
-  const color = uValueDelta < 0 ? 0x00ff00 : 0xff0000;  // Green if Target better
-  targetModel.material.color.set(color);
-
-  scene.add(targetModel);
-  scene.add(refModel);
-}
-```
-
----
-
-## 10. References & Resources
-
-### 10.1 Libraries & Documentation
-
-**Three.js**:
-- Official site: https://threejs.org/
-- Documentation: https://threejs.org/docs/
-- Examples: https://threejs.org/examples/
-- GitHub: https://github.com/mrdoob/three.js
-
-**OrbitControls** (Three.js addon):
-- Docs: https://threejs.org/docs/#examples/en/controls/OrbitControls
-- Example: https://threejs.org/examples/#misc_controls_orbit
-
-**GLTFExporter** (Three.js addon):
-- Docs: https://threejs.org/docs/#examples/en/exporters/GLTFExporter
-- glTF 2.0 spec: https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html
-
-**IFC.js** (for future model import):
-- Official site: https://ifcjs.github.io/info/
-- Web-IFC: https://github.com/IFCjs/web-ifc
-
-### 10.2 Architecture References
-
-**TEUI Documentation**:
+### TEUI Documentation
 - [TECHNICAL2.md](../TECHNICAL2.md) - Core architecture (StateManager, Calculator, Pattern A)
-- [S07-S13-S18-STATEMIX-BUG.md](S07-S13-S18-STATEMIX-BUG.md) - Known state mixing issues
+- [4012-CHEATSHEET.md](../4012-CHEATSHEET.md) - Anti-patterns and best practices
 - [SectionXX.js](../../src/sections/SectionXX.js) - Pattern A template
 - [Section07.js](../../src/sections/Section07.js) - Latest Pattern A reference
-- [Section11.js](../../src/sections/Section11.js) - Envelope geometry source
+- [Section12.js](../../src/sections/Section12.js) - Bidirectional sync pattern
 
-### 10.3 Building Geometry Standards
+### Graphics Libraries
 
-**Canadian Building Codes**:
-- NBC 2020 - Envelope performance requirements
-- OBC SB-10 - Energy efficiency standards
+**D3.js (Current Plan for SVG)**
+- D3.js v7: https://d3js.org/
+- S18 Parallel Coordinates: Clean SVG line/node rendering reference
 
-**BIM Standards**:
-- IFC 4.3 - Industry Foundation Classes (building data schema)
-- gbXML - Green Building XML (energy modeling exchange format)
+**Three.js (Future Phase 4)**
+- Official site: https://threejs.org/
+- Documentation: https://threejs.org/docs/
+- OrbitControls: https://threejs.org/docs/#examples/en/controls/OrbitControls
+- GLTFExporter: https://threejs.org/docs/#examples/en/exporters/GLTFExporter
+- glTF 2.0 spec: https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html
 
-### 10.4 Inspiration Projects
-
-**Web-based 3D Building Visualizations**:
+### Inspiration Projects
 - **Speckle** (https://speckle.systems/) - BIM data platform with Three.js viewer
-- **BIM Track** - Issue tracking with 3D model overlay
-- **Ubakus.de** (https://ubakus.de/) - 2D thermal bridge calculator (mentioned in TECHNICAL2.md)
-
-**Energy Modeling Tools**:
 - **cove.tool** - Early-phase energy modeling with 3D visualization
 - **Sefaira** - SketchUp plugin for real-time energy analysis
-
----
-
-## Appendix A: Field ID Assignments
-
-Section 19 field IDs (200-series):
-
-| Field ID | Label | Type | Default | Source |
-|----------|-------|------|---------|--------|
-| **d_200** | Building Length | number | (derived) | Calculated |
-| **d_201** | Building Width | number | (derived) | Calculated |
-| **d_202** | Building Aspect Ratio (L:W) | slider | 1.5 | User input |
-| **d_203** | Typical Story Height | number | (derived) | Calculated |
-| **d_204** | Roof Pitch | slider | 0° | User input (Phase 2) |
-| **d_205** | Building Azimuth | slider | 0° | User input (Phase 2) |
-| **d_206** | Foundation Depth | number | 2.4 m | User input (Phase 2) |
-| **d_207** | Window Sill Height | number | 0.9 m | User input (Phase 2) |
-| **d_208** | Building Shape Preset | dropdown | "Rectangular Box" | User input (Phase 4) |
-| **d_209** | L-Shape Wing Ratio | slider | 0.5 | User input (Phase 4) |
-| **d_210** | Courtyard Size % | slider | 20% | User input (Phase 4) |
-
----
-
-## Appendix B: Dependency Graph
-
-```
-Section Dependencies (for Section 19):
-
-S02 (Building Info)
-  └─> d_103 (Number of Stories) ──┐
-                                   │
-S11 (Transmission Losses)         │
-  ├─> d_85 (Roof Area) ────────┐  │
-  ├─> d_86 (Walls) ────────────┤  │
-  ├─> d_89-d_92 (Windows) ─────┤  │
-  ├─> d_94 (Walls Below Grade) ┤  │
-  ├─> d_95 (Floor Slab) ───────┤  │
-  └─> g_85-g_95 (U-Values) ────┤  │
-                                │  │
-S12 (Volume Metrics)             │  │
-  ├─> d_105 (Volume) ───────────┤  │
-  └─> d_106 (Floor Area) ───────┤  │
-                                │  │
-                                ▼  ▼
-                        ┌──────────────────┐
-                        │   SECTION 20     │
-                        │   WOMBAT      │
-                        │                  │
-                        │  Derive Geometry │
-                        │  Render 3D Model │
-                        └──────────────────┘
-                                │
-                                ▼
-                        ┌──────────────────┐
-                        │   Outputs:       │
-                        │   d_200 (Length) │
-                        │   d_201 (Width)  │
-                        │   d_203 (Height) │
-                        │   3D Visualization│
-                        └──────────────────┘
-```
-
----
-
-## Appendix C: Mockup (ASCII Art)
-
-```
-┌───────────────────────────────────────────────────────────────────────┐
-│  Section 19: WOMBAT - 3D Building Visualization         [Target ▼] │
-├───────────────────────────────────────────────────────────────────────┤
-│                                                                        │
-│  Building Geometry (Derived from Envelope Areas)                      │
-│  ┌─────────────────────────┬─────────────────────────┐               │
-│  │ Building Length         │ 24.5 m    (derived)     │               │
-│  │ Building Width          │ 16.3 m    (derived)     │               │
-│  │ Aspect Ratio (L:W)      │ [====●===] 1.5          │  ← User Slider│
-│  │ Typical Story Height    │ 3.2 m     (derived)     │               │
-│  │ Total Height            │ 4.8 m     (1.5 stories) │               │
-│  └─────────────────────────┴─────────────────────────┘               │
-│                                                                        │
-│  ┌─────────────────────────────────────────────────────────────────┐ │
-│  │                                                                  │ │
-│  │                    3D BUILDING VIEW                             │ │
-│  │                                                                  │ │
-│  │         ┌───────────────────────────────┐                       │ │
-│  │        ╱│                               │╲                      │ │
-│  │       ╱ │         Roof (120 m²)        │ ╲                     │ │
-│  │      ╱  │     [Green - Low U-value]    │  ╲                    │ │
-│  │     ╱   └───────────────────────────────┘   ╲                   │ │
-│  │    ╱   ╱│                               │╲   ╲                  │ │
-│  │   ╱   ╱ │  North Wall                  │ ╲   ╲                 │ │
-│  │  ╱   ╱  │  [Yellow]                    │  ╲   ╲                │ │
-│  │ ╱   ╱   │  ▢ ▢ Windows                │   ╲   ╲               │ │
-│  │╱   ╱    │                               │    ╲   ╲              │ │
-│  │   ╱     └───────────────────────────────┘     ╲   ╲             │ │
-│  │  │                                              │   │            │ │
-│  │  │  West Wall                  East Wall       │   │            │ │
-│  │  │  [Orange]                   [Yellow]        │   │            │ │
-│  │  │  ▢ Windows                  ▢ ▢ Windows    │   │            │ │
-│  │  │                                              │   │            │ │
-│  │  └──────────────────────────────────────────────┘   │            │ │
-│  │       Ground Level (Foundation shown below)         │            │ │
-│  │                                                                  │ │
-│  │  [Drag to rotate | Scroll to zoom | Right-click to pan]         │ │
-│  │                                                                  │ │
-│  └─────────────────────────────────────────────────────────────────┘ │
-│                                                                        │
-│  Thermal Performance Color Legend:                                    │
-│  ┌───────────────────────────────────────────────────────────────┐   │
-│  │ 🟢 Green   U < 0.25 W/m²K  (Excellent)                        │   │
-│  │ 🟡 Yellow  U = 0.25-0.50   (Good)                             │   │
-│  │ 🟠 Orange  U = 0.50-0.75   (Code Minimum)                     │   │
-│  │ 🔴 Red     U > 0.75        (Poor)                             │   │
-│  └───────────────────────────────────────────────────────────────┘   │
-│                                                                        │
-│  ┌──────────────────┬──────────────────┬──────────────────┐          │
-│  │ Export 3D Model  │ Save Screenshot  │ Show Comparison  │          │
-│  │ (glTF)           │ (PNG)            │ (Target vs Ref)  │          │
-│  └──────────────────┴──────────────────┴──────────────────┘          │
-│                                                                        │
-│  Validation Messages:                                                 │
-│  ✅ Roof area: Derived 120.2 m² matches user input 120.0 m² (0.2%)   │
-│  ✅ Wall area: Derived 178.5 m² matches user input 180.0 m² (0.8%)   │
-│  ✅ Volume: Derived 1,176 m³ matches user input 1,176 m³ (0.0%)      │
-│                                                                        │
-└───────────────────────────────────────────────────────────────────────┘
-```
-
----
-
----
-
-## Summary: Key Architectural Decisions
-
-### What Makes WOMBAT Different
-
-**Traditional 3D Building Modelers**:
-- Start with geometry → Calculate thermal performance
-- Errors if geometry is invalid (roof < floor, overlapping walls, etc.)
-- User must know building dimensions
-
-**WOMBAT (Thermal Topology Approach)**:
-- Start with thermal areas → Solve for geometry that satisfies constraints
-- **NO errors** - model deforms to show what areas imply
-- User only needs thermal data (already in OBJECTIVE for energy modeling)
-
-### Core Design Principles
-
-1. **Volume is Sacred** - User's conditioned volume (d_105) is ALWAYS preserved exactly
-2. **Areas Drive Form** - Roof pitch, wall heights, proportions all emerge from area constraints
-3. **No Validation Errors** - Impossible geometry renders visually (e.g., inverted pyramid if roof < floor)
-4. **Constraint Satisfaction Feedback** - Color-coded UI shows how well areas match solved geometry
-5. **Educational Tool** - Helps users understand how OBJECTIVE "sees" their building from thermal data
-
-### Implementation Strategy
-
-**Technology**: Three.js (3D rendering) + D3.js (existing, for UI)
-**Architecture**: Pattern A dual-state module (Section20.js + Topometry.js core engine)
-**Phased Development**:
-- Phase 1 (MVP): Rectangular box with pitched roof, asymmetric wall deformation
-- Phase 2: Enhanced roof types, per-story detail
-- Phase 3: Export to glTF/OBJ
-- Phase 4: L-shapes, U-shapes, solar overlay
-
-### Success Metrics
-
-✅ **User understands**: "If my model looks weird, my thermal areas don't match a typical building"
-✅ **No frustration**: Model always renders, never blocks workflow with validation errors
-✅ **Improved data quality**: Users refine area inputs to match design intent after seeing 3D visualization
-✅ **Communication tool**: Stakeholders can see thermal performance spatially (color-coded U-values)
-
----
-
-## Current Implementation Status (2025-12-08)
-
-### ✅ Phase 1 Progress - MVP Features Completed
-
-**Implemented**:
-- ✅ Section19.js Pattern A module created
-- ✅ Basic isometric 3D visualization (Canvas 2D rendering)
-- ✅ Stories dropdown (d_103) - entangled with S12
-- ✅ Volume input field (d_105) - entangled with S12
-- ✅ Aspect ratio slider (d_202) - controls footprint proportions
-- ✅ Geometry solver - calculates building dimensions from thermal constraints
-- ✅ Multi-story visualization - stacked boxes showing per-floor area
-- ✅ Info modal button - explains WOMBAT philosophy (no inline panel)
-- ✅ Isometric projection - shows 3D form, not top-down 2D
-
-**Current Issues (In Progress)**:
-- ⚠ Stories dropdown not rendering options (blank field)
-- ⚠ Aspect ratio slider missing from UI (field type issue)
-- ⚠ Need to verify entangled state sync between S19 and S12
-
-### 🎯 Immediate Wishlist (Next Session)
-
-1. **Fix stories dropdown rendering** - Verify FieldManager dropdown rendering for d_103 in S19
-2. **Fix aspect ratio slider** - Change to `coefficient_slider` type (like f_113 in S13)
-3. **Verify state entanglement** - Test that changing stories in S12 updates S19 visualization
-4. **Graphics improvements**:
-   - Add nodes/vertices to box corners (circle markers at isometric vertices)
-   - Cleaner vector-style lines (consider SVG rendering instead of Canvas 2D)
-   - D3-style aesthetics (crisp edges, proper anti-aliasing)
-5. **Volume field formatting** - Add comma separators for large values (8,000 not 8000)
-
-### 🔮 Future Enhancements (Post-MVP)
-
-**Phase 2 - Enhanced Geometry**:
-- Roof pitch visualization (gabled/hipped roofs, not just flat)
-- Per-story window distribution (show windows on facades)
-- Foundation/basement geometry visualization
-
-**Phase 3 - Better Graphics**:
-- **SVG rendering** instead of Canvas 2D for vector-quality graphics
-- **Node markers** at all vertices (fillable circles, D3 style)
-- **Hover interactions** - show dimensions/areas on mouseover
-- **Animation** - smooth transitions when sliders change
-
-**Phase 4 - Advanced**:
-- glTF export for external tools (SketchUp, Rhino, Blender)
-- Solar radiation overlay (color-code by sun exposure)
-- Complex building shapes (L-shape, U-shape, courtyard)
 
 ---
 
@@ -2154,10 +1105,19 @@ S12 (Volume Metrics)             │  │
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 0.1 | 2025-12-08 | Andy & Claude (AI Assistant) | Initial draft based on codebase exploration |
-| 0.2 | 2025-12-08 | Andy & Claude (AI Assistant) | Updated to "Thermal Topology" philosophy per user guidance |
-| 0.3 | 2025-12-08 | Andy & Claude (AI Assistant) | Added implementation status and wishlist after first working version |
+| 0.1 | 2025-12-08 | Andy & Claude | Initial draft - Thermal Topology philosophy |
+| 0.2 | 2025-12-08 | Andy & Claude | Implementation status after first working version |
+| 0.3 | 2025-12-12 | Andy & Claude | Pattern A dual-state implementation (PR #63) |
+| **1.0** | **2025-12-12** | **Andy & Claude** | **Consolidated with S19-DUAL-STATE-IMPLEMENTATION.md** |
 
 ---
 
-**END OF WORKPLAN - Implementation ongoing on `WOMBAT` branch**
+**STATUS**: Implementation ongoing on `WOMBAT` branch
+**NEXT SESSION GOALS**:
+1. Fix d_198 volume field input blocking issue
+2. Migrate Canvas 2D → SVG rendering with D3.js
+3. Implement dual-model visualization (Target blue, Reference red, Overlay mode)
+
+---
+
+**END OF DOCUMENTATION**
