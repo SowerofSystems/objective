@@ -1320,6 +1320,11 @@ window.TEUI.SectionModules.sect19 = (function () {
     solveGeometry,
     isActivated: () => isActivated,
     getCurrentModel: () => currentModel,
+
+    // Dual-state architecture exports (required by FieldManager and ReferenceToggle)
+    ModeManager,
+    TargetState,
+    ReferenceState,
   };
 })();
 
@@ -1331,6 +1336,7 @@ document.addEventListener("DOMContentLoaded", function () {
       calculateAll: module.calculateAll,
       solveGeometry: module.solveGeometry,
       ModeManager: module.ModeManager,
+      modeManager: module.ModeManager, // Alias for ReferenceToggle (lowercase)
       TargetState: module.TargetState,
       ReferenceState: module.ReferenceState,
     };
