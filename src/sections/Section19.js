@@ -146,6 +146,12 @@ window.TEUI.SectionModules.sect19 = (function () {
       this.currentMode = mode;
       console.log(`[WOMBAT ModeManager] Switched to ${mode} mode`);
       this.refreshUI();
+
+      // Update visualization with new mode's color (passive redraw, no recalculation)
+      // Per 4012-CHEATSHEET: switchMode is UI-only, geometry already calculated
+      if (isActivated) {
+        updateVisualization(mode);
+      }
     },
 
     /**
