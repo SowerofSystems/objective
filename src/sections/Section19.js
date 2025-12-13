@@ -891,15 +891,15 @@ window.TEUI.SectionModules.sect19 = (function () {
     content.innerHTML = `
       <p style="margin: 0 0 15px 0; font-size: 14px; line-height: 1.6;">
         WOMBAT shows how <strong>OBJECTIVE "sees" your building</strong> based on thermal areas you entered.
-        This is NOT a 3D architectural model - it's a <strong>thermal topology</strong> where areas drive form.
+        This is NOT a 3D architectural model - it's a <strong>thermal topology</strong> where areas drive form. Why Wombat? Because Wombats poop little cubes, and that's what this section does with your geometry! 
       </p>
       <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">
-        <li><strong>Volume is sacred:</strong> d_105 always preserved exactly</li>
+        <li><strong>Volume is sacred:</strong> Section12's volume parameter is always preserved exactly</li>
         <li><strong>Stories constrain height:</strong> Building height = volume ÷ (area ÷ stories)</li>
         <li><strong>Aspect ratio shapes footprint:</strong> 1.0 = square, 2.0 = 2:1 rectangle</li>
-        <li><strong>Roof pitch emerges from roof area:</strong> Larger roof = steeper pitch</li>
+        <li><strong>Roof pitch emerges from roof area:</strong> Larger roof = steeper pitch, based on vector algebra and rational trigonometry</li>
         <li><strong>Walls deform to match area constraints:</strong> No validation errors</li>
-        <li style="color: #dc3545;"><strong>⚠ If model looks strange:</strong> Your areas don't match typical building proportions</li>
+        <li style="color: #dc3545;"><strong>⚠ We know this 3D shape may look nothing like your building:</strong> Think of this like a graph, an abstract representation of the surface geometry OBJECTIVE uses for its calculations. Over time, these models will become more refined, but for now, we hope this gives you an idea of what OBJECTIVE is considering for its area calculations</li>
       </ul>
     `;
 
@@ -947,7 +947,8 @@ window.TEUI.SectionModules.sect19 = (function () {
       }
 
       console.log("[WOMBAT] Topology view activated");
-      updateVisualization();
+      const mode = ModeManager?.currentMode || "target";
+      updateVisualization(mode);
 
     } else {
       // Deactivate
@@ -1118,8 +1119,8 @@ window.TEUI.SectionModules.sect19 = (function () {
       geometryFields.forEach(fieldId => {
         window.TEUI.StateManager.addListener(fieldId, () => {
           if (isActivated) {
-            console.log(`[WOMBAT] Geometry field ${fieldId} changed, updating visualization`);
-            updateVisualization();
+            console.log(`[WOMBAT] Geometry field ${fieldId} changed, recalculating`);
+            calculateAll(); // Will update visualization with correct mode
           }
         });
 
@@ -1127,8 +1128,8 @@ window.TEUI.SectionModules.sect19 = (function () {
         const refFieldId = `ref_${fieldId}`;
         window.TEUI.StateManager.addListener(refFieldId, () => {
           if (isActivated) {
-            console.log(`[WOMBAT] Reference field ${refFieldId} changed, updating visualization`);
-            updateVisualization();
+            console.log(`[WOMBAT] Reference field ${refFieldId} changed, recalculating`);
+            calculateAll(); // Will update visualization with correct mode
           }
         });
       });
