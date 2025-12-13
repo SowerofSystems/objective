@@ -136,7 +136,9 @@ window.TEUI.SectionModules.sect19 = (function () {
     currentMode: "target", // "target" or "reference"
 
     /**
-     * Switch between Target and Reference modes
+     * Switch between Target and Reference modes (PASSIVE PATTERN - like S16)
+     * IMPORTANT: Does NOT update input fields - FieldManager handles dual-state routing
+     * Only re-renders the 3D visualization with the new mode's geometry
      */
     switchMode: function (mode) {
       console.log(`🔄 [WOMBAT ModeManager] switchMode() called with mode="${mode}"`);
@@ -144,15 +146,17 @@ window.TEUI.SectionModules.sect19 = (function () {
         console.warn(`[WOMBAT ModeManager] Invalid mode: ${mode}`);
         return;
       }
+
+      if (this.currentMode === mode) {
+        console.log(`⚠️ [WOMBAT ModeManager] Already in ${mode} mode, skipping`);
+        return; // No change needed
+      }
+
       this.currentMode = mode;
       console.log(`✅ [WOMBAT ModeManager] currentMode set to "${this.currentMode}"`);
 
-      console.log(`📋 [WOMBAT ModeManager] Calling refreshUI()...`);
-      this.refreshUI();
-      console.log(`✅ [WOMBAT ModeManager] refreshUI() completed`);
-
-      // Update visualization with new mode's color (passive redraw, no recalculation)
-      // Per 4012-CHEATSHEET: switchMode is UI-only, geometry already calculated
+      // Update visualization with new mode's geometry and color (passive redraw)
+      // Per S16 pattern: Just re-render with current mode's data from StateManager
       console.log(`🎨 [WOMBAT ModeManager] isActivated = ${isActivated}`);
       if (isActivated) {
         console.log(`🎨 [WOMBAT ModeManager] Calling updateVisualization("${mode}")...`);
@@ -164,40 +168,14 @@ window.TEUI.SectionModules.sect19 = (function () {
     },
 
     /**
-     * Refresh UI to display current mode's values
-     */
-    refreshUI: function () {
-      console.log(`📋 [WOMBAT refreshUI] Starting refresh for mode="${this.currentMode}"`);
-      const currentState = this.currentMode === "target" ? TargetState : ReferenceState;
-      console.log(`📋 [WOMBAT refreshUI] Using state: ${this.currentMode === "target" ? "TargetState" : "ReferenceState"}`);
-      const fieldIds = ["d_198", "d_199", "d_202", "h_200", "h_201", "h_203"];
-
-      fieldIds.forEach((fieldId) => {
-        const value = currentState.getValue(fieldId);
-        console.log(`📋 [WOMBAT refreshUI] ${fieldId} = ${value}`);
-        if (value !== null) {
-          console.log(`📋 [WOMBAT refreshUI] Calling updateWombatDOM("${fieldId}", "${value}")`);
-          updateWombatDOM(fieldId, value);
-        } else {
-          console.warn(`⚠️ [WOMBAT refreshUI] ${fieldId} is null, skipping`);
-        }
-      });
-      console.log(`✅ [WOMBAT refreshUI] Refresh complete`);
-    },
-
-    /**
-     * Update calculated display values in DOM
+     * Required by ReferenceToggle - but S19 is passive visualization like S16
+     * Calculated fields are already published to StateManager by calculation engines
+     * No need to manually update DOM - FieldManager handles display updates
      */
     updateCalculatedDisplayValues: function () {
-      const currentState = this.currentMode === "target" ? TargetState : ReferenceState;
-      const calculatedFields = ["h_200", "h_201", "h_203"];
-
-      calculatedFields.forEach((fieldId) => {
-        const value = currentState.getValue(fieldId);
-        if (value !== null) {
-          updateWombatDOM(fieldId, value);
-        }
-      });
+      // S19 follows passive pattern - visualization updates happen in switchMode()
+      // Calculated values (h_200, h_201, h_203) are already in StateManager
+      console.log(`[WOMBAT] updateCalculatedDisplayValues() called (passive - no action needed)`);
     },
 
     /**
@@ -1019,29 +997,6 @@ window.TEUI.SectionModules.sect19 = (function () {
   }
 
   //==========================================================================
-  // DOM UPDATE HELPERS
-  //==========================================================================
-
-  /**
-   * Update WOMBAT field display in DOM using FieldManager
-   */
-  function updateWombatDOM(fieldId, value) {
-    if (!window.TEUI?.FieldManager?.updateFieldDisplay) {
-      console.warn(`[WOMBAT] FieldManager.updateFieldDisplay not available for ${fieldId}`);
-      return;
-    }
-
-    const fieldDef = window.TEUI.FieldManager.getField(fieldId);
-    if (fieldDef) {
-      try {
-        window.TEUI.FieldManager.updateFieldDisplay(fieldId, value, fieldDef);
-      } catch (e) {
-        console.error(`[WOMBAT] Error updating DOM for ${fieldId}:`, e);
-      }
-    }
-  }
-
-  //==========================================================================
   // EVENT HANDLERS
   //==========================================================================
 
@@ -1187,14 +1142,14 @@ window.TEUI.SectionModules.sect19 = (function () {
 
       // ⚠️ MIRROR FIELD SYNC: Section 12 → WOMBAT (d_105→d_198, d_103→d_199)
       // When S12 volume/stories change, sync to WOMBAT mirror fields AND recalculate
+      // NOTE: NO DOM updates here - FieldManager handles routing to correct state
       window.TEUI.StateManager.addListener("d_105", (newValue) => {
         const currentValue = TargetState.getValue("d_198");
         console.log(`[WOMBAT SYNC] d_105 changed: ${currentValue} → ${newValue}`);
         if (currentValue !== newValue) {
-          // Update TargetState
+          // Update TargetState AND publish to StateManager (for FieldManager to pick up)
           TargetState.setValue("d_198", newValue);
-          // Update DOM
-          updateWombatDOM("d_198", newValue);
+          window.TEUI.StateManager.setValue("d_198", newValue, "calculated");
           console.log(`[WOMBAT] ✅ Synced d_198 = ${newValue} from S12 (d_105)`);
           // Recalculate (will run both engines and update visualization)
           calculateAll();
@@ -1217,10 +1172,9 @@ window.TEUI.SectionModules.sect19 = (function () {
         const currentValue = TargetState.getValue("d_199");
         console.log(`[WOMBAT SYNC] d_103 changed: ${currentValue} → ${newValue}`);
         if (currentValue !== newValue) {
-          // Update TargetState
+          // Update TargetState AND publish to StateManager (for FieldManager to pick up)
           TargetState.setValue("d_199", newValue);
-          // Update DOM
-          updateWombatDOM("d_199", newValue);
+          window.TEUI.StateManager.setValue("d_199", newValue, "calculated");
           console.log(`[WOMBAT] ✅ Synced d_199 = ${newValue} from S12 (d_103)`);
           // Recalculate (will run both engines and update visualization)
           calculateAll();
