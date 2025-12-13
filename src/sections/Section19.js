@@ -469,16 +469,33 @@ window.TEUI.SectionModules.sect19 = (function () {
   // GEOMETRY SOLVER (Constraint-Driven "Jello Cube")
   //==========================================================================
 
+  /**
+   * Get mode-aware value from StateManager (S16 pattern)
+   * - Target mode: reads unprefixed values (h_15, d_85, d_86)
+   * - Reference mode: reads ref_ prefixed values (ref_h_15, ref_d_85, ref_d_86)
+   */
+  function getModeAwareValue(fieldId, isReferenceCalculation) {
+    if (!window.TEUI?.StateManager) return null;
+
+    if (isReferenceCalculation) {
+      // Reference mode: Read ONLY ref_ prefixed values for perfect state isolation
+      return window.TEUI.StateManager.getValue(`ref_${fieldId}`);
+    } else {
+      // Target mode: Read unprefixed (standard) values
+      return window.TEUI.StateManager.getValue(fieldId);
+    }
+  }
+
   function solveGeometry(isReferenceCalculation = false) {
     const mode = isReferenceCalculation ? "Reference" : "Target";
     console.log(`[WOMBAT] Solving geometry from thermal constraints (${mode} mode)...`);
 
-    // Read inputs from StateManager and Pattern A sections
+    // Read inputs from StateManager and Pattern A sections (MODE-AWARE per S16 pattern)
     // KISS: Use h_15 (Conditioned Area) instead of d_106 (Total Floor Area)
     // h_15 = thermal envelope area (heated space only)
-    const conditionedArea = parseFloat(window.TEUI?.StateManager?.getValue("h_15")) || 100;
-    const roofArea = parseFloat(window.TEUI?.StateManager?.getValue("d_85")) || 100;
-    const wallArea = parseFloat(window.TEUI?.StateManager?.getValue("d_86")) || 160;
+    const conditionedArea = parseFloat(getModeAwareValue("h_15", isReferenceCalculation)) || 100;
+    const roofArea = parseFloat(getModeAwareValue("d_85", isReferenceCalculation)) || 100;
+    const wallArea = parseFloat(getModeAwareValue("d_86", isReferenceCalculation)) || 160;
 
     // ⚠️ DUAL-STATE: Read from appropriate state based on calculation mode
     // Mirror fields: d_198 (volume) ↔ S12 d_105, d_199 (stories) ↔ S12 d_103
