@@ -1269,6 +1269,11 @@ window.TEUI.SectionModules.sect19 = (function () {
   function calculateTargetModel() {
     const geometry = solveGeometry(false); // isReferenceCalculation = false
 
+    // Update TargetState (for refreshUI to read)
+    TargetState.setValue("h_200", geometry.footprint.length.toFixed(2));
+    TargetState.setValue("h_201", geometry.footprint.width.toFixed(2));
+    TargetState.setValue("h_203", geometry.storyHeight.toFixed(2));
+
     // Publish calculated dimensions to StateManager (unprefixed for Target)
     window.TEUI.StateManager.setValue("h_200", geometry.footprint.length.toFixed(2), "calculated");
     window.TEUI.StateManager.setValue("h_201", geometry.footprint.width.toFixed(2), "calculated");
@@ -1279,6 +1284,11 @@ window.TEUI.SectionModules.sect19 = (function () {
 
   function calculateReferenceModel() {
     const geometry = solveGeometry(true); // isReferenceCalculation = true
+
+    // Update ReferenceState (for refreshUI to read)
+    ReferenceState.setValue("h_200", geometry.footprint.length.toFixed(2));
+    ReferenceState.setValue("h_201", geometry.footprint.width.toFixed(2));
+    ReferenceState.setValue("h_203", geometry.storyHeight.toFixed(2));
 
     // Publish calculated dimensions to StateManager (ref_ prefixed for Reference)
     window.TEUI.StateManager.setValue("ref_h_200", geometry.footprint.length.toFixed(2), "calculated");
