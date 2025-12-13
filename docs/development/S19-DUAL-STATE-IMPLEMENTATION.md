@@ -302,12 +302,13 @@ After `calculateAll()`, always call `ModeManager.updateCalculatedDisplayValues()
 
 ---
 
-## ✅ IMPLEMENTATION COMPLETE
+## 🚧 IMPLEMENTATION IN PROGRESS (WOMBAT3D Branch)
 
-**Status**: Implemented 2025-12-12
+**Status**: Partial Implementation - 2025-12-13
+**Branch**: `WOMBAT3D` (SVG migration + mode-aware fixes)
 **Affected Files**:
-- `src/sections/Section19.js` (Pattern A architecture + dual-engine calculations)
-- `src/sections/Section12.js` (Bidirectional listeners with DOM updates)
+- `src/sections/Section19.js` (Pattern A architecture + SVG rendering)
+- `index.html` (SVG container replaces Canvas)
 
 ### **What Was Implemented**
 
@@ -409,4 +410,152 @@ Use S12 d_105 field for volume input (bidirectional sync S12→S19 works correct
 
 ---
 
-**This implementation achieves full dual-state compliance and bidirectional synchronization between WOMBAT and S12 with live 3D visualization updates. One-way S12→S19 input is production-ready; S19→S12 volume input requires further investigation.**
+---
+
+## 📊 WOMBAT3D BRANCH STATUS (2025-12-13)
+
+### **✅ Completed This Session**
+
+1. **Canvas → SVG Migration** (Commit: 9f1852a)
+   - Replaced `<canvas>` with `<svg>` element (800×600)
+   - Ported all rendering from Canvas 2D API to SVG DOM manipulation
+   - Wireframe topology style (edges + nodes, no filled faces)
+   - S18 aesthetic: 3px edges, 5px nodes with white borders
+
+2. **ModeManager Export Fix** (Commit: af7842d) 🔥 **CRITICAL**
+   - **Problem**: ModeManager not in module return{} → undefined globally
+   - **Evidence**: Diagnostic showed `mode: 'UNKNOWN'`, FieldManager warnings
+   - **Fix**: Added ModeManager, TargetState, ReferenceState to exports
+   - **Fix**: Added lowercase `modeManager` alias for ReferenceToggle
+   - **Result**: FieldManager now routes through ModeManager ✅
+
+3. **getModeAwareValue() for State Isolation** (Commit: 489c2ff)
+   - **Problem**: solveGeometry() read external deps without ref_ prefix
+   - **Evidence**: Reference mode showed Target geometry
+   - **Fix**: Added S16-pattern getModeAwareValue(fieldId, isReferenceCalculation)
+   - **Result**: Reference calculations read ref_h_15, ref_d_85, ref_d_86 ✅
+
+4. **Local State Sync Fix** (Commit: 920b6a3) 🔥 **CRITICAL**
+   - **Problem**: Calculation engines didn't update TargetState/ReferenceState
+   - **Evidence**: refreshUI() read stale values, mode switch showed old geometry
+   - **Fix**: calculateTargetModel/ReferenceModel now update local state FIRST
+   - **Pattern**: Update local → publish to StateManager (Anti-Pattern 4)
+
+5. **switchMode() Visualization Update** (Commit: 5833f3d)
+   - **Problem**: Mode toggle didn't redraw visualization
+   - **Fix**: Added updateVisualization(mode) call in switchMode()
+   - **Pattern**: S17/S18 passive visualization redraw on mode change
+
+6. **Diagnostic Script** (Commit: d5a8348)
+   - Created comprehensive state inspection tool
+   - Reports: mode, state isolation, visualization color, issues
+   - File: `docs/development/S19-DIAGNOSTIC.js`
+
+### **❌ STILL BROKEN**
+
+#### **1. Mode Switching Shows Stale Values** 🔴 **CRITICAL - ROOT CAUSE**
+**Status**: Core dual-state architecture not working
+**Expected**: Switching modes shows each mode's isolated state
+**Actual**: Shows "last values set" - no state isolation
+
+**User Report**: "What we see after any mode switch is the last values set, no isolated state data"
+
+**This means BOTH issues are the same root cause**:
+- Visualization stays blue (last rendered color)
+- Table shows stale values (last written values)
+- Neither visualization NOR table update when mode switches
+
+**Broken Functions**:
+1. `switchMode()` - Not actually switching displayed state
+2. `refreshUI()` - Not updating DOM from state objects
+3. `updateVisualization(mode)` - Not redrawing with new mode
+
+**Evidence from Latest Diagnostic**:
+```
+mode: 'target'  // ✅ ModeManager working now
+Wireframe Color: #007bff
+Expected Color: #dc3545 (reference mode)
+❌ Color Match: WRONG!
+```
+
+**Possible Causes**:
+1. updateVisualization() not being called when mode switches
+2. updateVisualization() receiving wrong mode parameter
+3. isReference variable calculation issue in updateVisualization()
+4. SVG not being redrawn (stale DOM)
+5. Mode switching not triggering at all from ReferenceToggle
+
+**Next Debug Step**: Add console logging to updateVisualization() to see:
+- Is it being called?
+- What mode parameter is it receiving?
+- What is isReference evaluating to?
+
+#### **2. Stories Dropdown State Isolation** ⚠️
+**Status**: May not be broken, just same values by coincidence
+**Evidence**: Diagnostic shows `d_199 === ref_d_199`
+**Next**: Change one value and verify isolation works
+
+#### **3. Stories Dropdown "undefined" Errors**
+**Evidence from Logs**:
+```
+[WOMBAT] ❌ Dropdown value is invalid: "undefined"
+```
+**Possible Cause**: refreshUI() or mode switching passing undefined to dropdown
+**Impact**: May prevent proper state display
+
+### **🔍 ROOT CAUSE ANALYSIS**
+
+**The visualization color issue is the blocker**. We've fixed:
+✅ ModeManager export (mode detection works)
+✅ State isolation (geometry calculations are mode-aware)
+✅ Local state sync (refreshUI has correct values)
+✅ switchMode() calls updateVisualization(mode)
+
+But the SVG is still blue. This suggests:
+1. **updateVisualization()** isn't receiving the mode parameter correctly, OR
+2. **The SVG isn't being cleared/redrawn**, OR
+3. **isReference** variable inside updateVisualization() is always false
+
+### **📋 NEXT SESSION ACTION PLAN**
+
+#### **Priority 1: Fix Visualization Color** 🔥
+1. Add logging to updateVisualization(mode = "target") to trace:
+   ```javascript
+   console.log(`[WOMBAT VIZ] updateVisualization called with mode="${mode}"`);
+   console.log(`[WOMBAT VIZ] isReference = ${isReference}`);
+   console.log(`[WOMBAT VIZ] modelColor = ${modelColor}`);
+   ```
+
+2. Add logging to switchMode() to verify it's being called:
+   ```javascript
+   console.log(`[WOMBAT ModeManager] switchMode("${mode}") called`);
+   console.log(`[WOMBAT ModeManager] About to call updateVisualization("${mode}")`);
+   ```
+
+3. Test: Toggle to Reference mode and check logs
+   - Is switchMode() being called?
+   - Is updateVisualization() being called?
+   - What values are the variables?
+
+#### **Priority 2: Fix Stories Dropdown Undefined**
+1. Check where "undefined" is coming from
+2. Add guard in dropdown change handler
+3. Ensure refreshUI() doesn't pass undefined
+
+#### **Priority 3: Verify State Isolation**
+1. Change Reference volume to different value
+2. Change Reference stories to different value
+3. Run diagnostic to verify isolation
+
+### **🎯 SUCCESS CRITERIA FOR NEXT SESSION**
+
+- [ ] Visualization shows RED in Reference mode
+- [ ] Visualization shows BLUE in Target mode
+- [ ] Mode toggle switches colors immediately
+- [ ] No "undefined" dropdown errors
+- [ ] Diagnostic shows 0 issues
+- [ ] Volume field works (stretch goal - may defer)
+
+---
+
+**Session Summary**: We fixed critical infrastructure (ModeManager export, state isolation, local state sync) but visualization color remains broken. The diagnostic tool is working and revealing the issue. Next session should focus on tracing updateVisualization() execution.**
