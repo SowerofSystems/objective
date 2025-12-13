@@ -961,36 +961,45 @@ window.TEUI.SectionModules.sect19 = (function () {
       console.log(`[WOMBAT] ✅ Stories dropdown listener attached to d_199`);
     }
 
-    // Handle d_198 contenteditable field (volume)
-    const volumeField = sectionElement.querySelector('[data-field-id="d_198"][contenteditable="true"]');
+    // Handle d_198 number input field (volume)
+    // Note: Field is <input type="number">, not contenteditable
+    const volumeField = sectionElement.querySelector('[data-field-id="d_198"]');
     console.log(`[WOMBAT] setupFieldListeners: Volume field found =`, volumeField);
     if (volumeField && !volumeField.hasWombatListener) {
-      volumeField.addEventListener("blur", function(event) {
-        const field = event.target;
-        const fieldId = field.getAttribute("data-field-id");
-        if (!fieldId) return;
+      // Listen for Enter key press to trigger sync
+      volumeField.addEventListener("keydown", function(event) {
+        if (event.key === "Enter" || event.keyCode === 13) {
+          event.preventDefault(); // Prevent form submission
 
-        const textValue = field.textContent;
-        console.log(`[WOMBAT DOM] Volume field blurred: ${fieldId} = "${textValue}"`);
+          const field = event.target;
+          const fieldId = field.getAttribute("data-field-id");
+          if (!fieldId) return;
 
-        const numValue = window.TEUI.parseNumeric(textValue);
-        if (!isNaN(numValue) && isFinite(numValue)) {
-          const formattedValue = window.TEUI.formatNumber(numValue, "number-2dp");
-          field.textContent = formattedValue;
+          const inputValue = field.value;
+          console.log(`[WOMBAT DOM] Volume field Enter pressed: ${fieldId} = "${inputValue}"`);
 
-          // MODE-AWARE: Use ModeManager.setValue for dual-state publishing
-          ModeManager.setValue(fieldId, String(numValue), "user-modified");
-          console.log(`[WOMBAT] ✅ Published ${fieldId} = ${numValue} via ModeManager (${ModeManager.currentMode} mode)`);
+          const numValue = parseFloat(inputValue);
+          if (!isNaN(numValue) && isFinite(numValue)) {
+            // Browser already handles number formatting for type="number"
+            // No need to update field.value - it's already set
 
-          if (isActivated) {
-            calculateAll(); // Will run dual-engine calculations
+            // MODE-AWARE: Use ModeManager.setValue for dual-state publishing
+            ModeManager.setValue(fieldId, String(numValue), "user-modified");
+            console.log(`[WOMBAT] ✅ Published ${fieldId} = ${numValue} via ModeManager (${ModeManager.currentMode} mode)`);
+
+            if (isActivated) {
+              calculateAll(); // Will run dual-engine calculations + trigger S12 sync
+            }
+
+            // Blur the field to signal completion (optional - gives visual feedback)
+            field.blur();
+          } else {
+            console.error(`[WOMBAT] ❌ Volume value is invalid: "${inputValue}" → ${numValue}`);
           }
-        } else {
-          console.error(`[WOMBAT] ❌ Volume value is invalid: "${textValue}" → ${numValue}`);
         }
       });
       volumeField.hasWombatListener = true;
-      console.log(`[WOMBAT] ✅ Volume field listener attached to d_198`);
+      console.log(`[WOMBAT] ✅ Volume field Enter-key listener attached to d_198`);
     }
   }
 
