@@ -112,33 +112,86 @@ This feature is implemented as **Section 19** following TEUI's modular Pattern A
 
 #### **1. Volume Field (d_198) Input Locked After First Edit** 🔴
 
-**Status**: Deferred for investigation
+**Status**: Under Investigation - Failed Attempts Documented
 **Severity**: High - Blocks S19 → S12 user input flow
-**Affects**: Volume field (d_198) contenteditable input in S19 table
+**Affects**: Volume field (d_198) input in S19 table
+**Date Discovered**: 2025-12-12
 
 **Symptoms:**
 - ✅ First edit works: value syncs to S12, calculations update, 3D redraws
 - ❌ Second click: field appears focused but rejects typed input
 - ❌ Field becomes locked and unresponsive
 - ✅ S12 → S19 direction works perfectly (editing d_105 updates d_198 correctly)
+- ✅ Stories dropdown (d_199) works perfectly for bidirectional sync
 
 **Evidence from Logs:**
 ```
-[WOMBAT] setupFieldListeners: Volume field found = null
-[FieldManager] Section sect19 has no ModeManager - using direct write for d_198
+[WOMBAT DOM] Volume field changed: d_198 = "10000"
+[WOMBAT] ✅ Published d_198 = 10000 via ModeManager (target mode)
+[WOMBAT] Solving geometry from thermal constraints (Target mode)...
+[S12→WOMBAT] Syncing d_105 = 11000 from WOMBAT d_198
+[WOMBAT SYNC] d_105 changed: 10000 → 11000
+[WOMBAT] ✅ Synced d_198 = 11000 from S12 (d_105)
 ```
 
 **Root Cause Hypothesis:**
-Volume field not found during initialization (`setupFieldListeners()` at line 966):
-```javascript
-const volumeField = sectionElement.querySelector('[data-field-id="d_198"][contenteditable="true"]');
-// → Returns null (field not yet rendered or selector too specific)
+
+**Circular Update Loop** (identified by user):
+```
+User edits d_198
+  ↓
+ModeManager.setValue("d_198", value)
+  ↓
+StateManager publishes "d_198"
+  ↓
+S12 listener catches "d_198" → updates d_105
+  ↓
+StateManager publishes "d_105"
+  ↓
+S19 listener (Section19.js:1058) catches "d_105" → calls updateWombatDOM("d_198")
+  ↓
+FieldManager.updateFieldDisplay() or DOM manipulation breaks active input field
+  ↓
+Field locks/becomes unresponsive
 ```
 
-**Likely Issues:**
-1. Field selector too specific: requires `[contenteditable="true"]` attribute
-2. Field rendered by FieldManager AFTER event handler setup runs
-3. Blur handler never attached → no input processing after first DOM update
+**Failed Fix Attempts** (reverted 2025-12-12):
+
+**Attempt #1**: Field Type Mismatch Fix
+- **Theory**: Field definition uses `type: "number"` → creates `<input type="number">`, not contenteditable div
+- **Changes**:
+  - Changed selector from `'[data-field-id="d_198"][contenteditable="true"]'` to `'[data-field-id="d_198"]'`
+  - Changed event from `blur` to `change`
+  - Changed value access from `.textContent` to `.value`
+- **Result**: FAILED - Field still locks after first edit
+- **Reverted**: Yes
+
+**Attempt #2**: Focus Detection Guard
+- **Theory**: Prevent updateWombatDOM() from modifying field while user is actively editing
+- **Changes**: Added guard in `updateWombatDOM()`:
+  ```javascript
+  const element = document.querySelector(`[data-field-id="${fieldId}"]`);
+  if (element && element === document.activeElement) {
+    console.log(`[WOMBAT] Skipping DOM update for ${fieldId} (user is editing)`);
+    return;
+  }
+  ```
+- **Result**: FAILED - Field still locks after first edit
+- **Reverted**: Yes
+
+**Why Debugging is Difficult:**
+- Cannot observe what happens during second edit attempt because field is already locked
+- We're "locked out" from seeing the logs that would explain the failure
+- First edit succeeds, so initial event handler attachment works correctly
+- Something about the S12→S19 listener callback breaks the field's ability to accept subsequent input
+
+**Alternative Approaches to Investigate:**
+1. **Temporary StateManager logging**: Add extensive logging inside StateManager publish/notify cycle to trace exact event sequence
+2. **Examine FieldManager global handlers**: Check if FieldManager has document-level blur/focus handlers that might conflict
+3. **Compare with d_199 (stories dropdown)**: Dropdown works perfectly - examine why it doesn't break but number input does
+4. **Test input[type="text"] instead of input[type="number"]**: Browser number inputs may have different focus/blur behavior
+5. **Debounce updateWombatDOM calls**: Add 100ms debounce to prevent rapid-fire DOM updates during user interaction
+6. **Listener deduplication**: Check if multiple listeners are being attached to same field (causing race conditions)
 
 **Workaround:**
 Use S12 d_105 field for volume input (bidirectional sync S12→S19 works correctly)
