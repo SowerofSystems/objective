@@ -173,9 +173,43 @@ window.TEUI.SectionModules.sect19 = (function () {
      * No need to manually update DOM - FieldManager handles display updates
      */
     updateCalculatedDisplayValues: function () {
-      // S19 follows passive pattern - visualization updates happen in switchMode()
-      // Calculated values (h_200, h_201, h_203) are already in StateManager
-      console.log(`[WOMBAT] updateCalculatedDisplayValues() called (passive - no action needed)`);
+      console.log(`[WOMBAT] updateCalculatedDisplayValues() called for mode="${this.currentMode}"`);
+
+      const currentState = this.currentMode === "target" ? TargetState : ReferenceState;
+
+      // ✅ EXPANDED: Include mirror sync fields (d_198, d_199) that need DOM refresh
+      // These are technically "input" fields, but when S12 changes them via mirror sync,
+      // they BEHAVE like calculated fields and need DOM updates
+      const fieldsToRefresh = [
+        "h_200", "h_201", "h_203",  // Geometry outputs (read-only)
+        "d_198", "d_199"             // Mirror sync inputs (editable) - NEW
+      ];
+
+      fieldsToRefresh.forEach((fieldId) => {
+        const value = currentState.getValue(fieldId);
+        if (value === null || value === undefined) {
+          return; // Skip if no value
+        }
+
+        // Try FieldManager first (for input fields like d_198/d_199)
+        const fieldDef = window.TEUI?.FieldManager?.getField(fieldId);
+        if (fieldDef && window.TEUI?.FieldManager?.updateFieldDisplay) {
+          try {
+            window.TEUI.FieldManager.updateFieldDisplay(fieldId, value, fieldDef);
+            console.log(`[WOMBAT] ✅ Refreshed ${fieldId} = ${value} via FieldManager`);
+          } catch (e) {
+            console.error(`[WOMBAT] ❌ FieldManager update failed for ${fieldId}:`, e);
+          }
+        } else {
+          // Fallback for read-only calculated fields (h_200, h_201, h_203)
+          const element = document.querySelector(`[data-field-id="${fieldId}"]`);
+          if (element && element.tagName !== "INPUT" && !element.hasAttribute("contenteditable")) {
+            const formattedValue = parseFloat(value).toFixed(2);
+            element.textContent = formattedValue;
+            console.log(`[WOMBAT] ✅ Refreshed ${fieldId} = ${formattedValue} (read-only)`);
+          }
+        }
+      });
     },
 
     /**
