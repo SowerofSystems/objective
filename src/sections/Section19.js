@@ -168,14 +168,27 @@ window.TEUI.SectionModules.sect19 = (function () {
     },
 
     /**
-     * Required by ReferenceToggle - but S19 is passive visualization like S16
-     * Calculated fields are already published to StateManager by calculation engines
-     * No need to manually update DOM - FieldManager handles display updates
+     * Update calculated field displays in DOM (following S12 pattern)
+     * Called after calculations to refresh table display values
      */
     updateCalculatedDisplayValues: function () {
-      // S19 follows passive pattern - visualization updates happen in switchMode()
-      // Calculated values (h_200, h_201, h_203) are already in StateManager
-      console.log(`[WOMBAT] updateCalculatedDisplayValues() called (passive - no action needed)`);
+      console.log(`[WOMBAT] updateCalculatedDisplayValues() called for mode="${this.currentMode}"`);
+
+      const currentState = this.currentMode === "target" ? TargetState : ReferenceState;
+      const calculatedFields = ["h_200", "h_201", "h_203"]; // Length, Width, Story Height
+
+      calculatedFields.forEach((fieldId) => {
+        const value = currentState.getValue(fieldId);
+        if (value !== null && value !== undefined) {
+          const element = document.querySelector(`[data-field-id="${fieldId}"]`);
+          if (element) {
+            // Format value with 2 decimals
+            const formattedValue = parseFloat(value).toFixed(2);
+            element.textContent = formattedValue;
+            console.log(`[WOMBAT] Updated ${fieldId} = ${formattedValue}`);
+          }
+        }
+      });
     },
 
     /**
@@ -1142,17 +1155,27 @@ window.TEUI.SectionModules.sect19 = (function () {
 
       // ⚠️ MIRROR FIELD SYNC: Section 12 → WOMBAT (d_105→d_198, d_103→d_199)
       // When S12 volume/stories change, sync to WOMBAT mirror fields AND recalculate
-      // NOTE: NO DOM updates here - FieldManager handles routing to correct state
+      // Per S12 pattern (lines 3116-3135): Update state, DOM, then calculateAll()
       window.TEUI.StateManager.addListener("d_105", (newValue) => {
         const currentValue = TargetState.getValue("d_198");
         console.log(`[WOMBAT SYNC] d_105 changed: ${currentValue} → ${newValue}`);
         if (currentValue !== newValue) {
-          // Update TargetState AND publish to StateManager (for FieldManager to pick up)
+          // Update TargetState AND publish to StateManager
           TargetState.setValue("d_198", newValue);
           window.TEUI.StateManager.setValue("d_198", newValue, "calculated");
+
+          // Update DOM (following S12 pattern - only in Target mode)
+          if (ModeManager.currentMode === "target") {
+            const volumeField = document.querySelector('[data-field-id="d_198"]');
+            if (volumeField) {
+              volumeField.value = newValue;
+            }
+          }
+
           console.log(`[WOMBAT] ✅ Synced d_198 = ${newValue} from S12 (d_105)`);
           // Recalculate (will run both engines and update visualization)
           calculateAll();
+          ModeManager.updateCalculatedDisplayValues();
         }
       });
 
@@ -1160,11 +1183,22 @@ window.TEUI.SectionModules.sect19 = (function () {
         const currentValue = ReferenceState.getValue("d_198");
         console.log(`[WOMBAT SYNC] ref_d_105 changed: ${currentValue} → ${newValue}`);
         if (currentValue !== newValue) {
-          // Update ReferenceState
+          // Update ReferenceState AND publish to StateManager
           ReferenceState.setValue("d_198", newValue);
+          window.TEUI.StateManager.setValue("ref_d_198", newValue, "calculated");
+
+          // Update DOM (following S12 pattern - only in Reference mode)
+          if (ModeManager.currentMode === "reference") {
+            const volumeField = document.querySelector('[data-field-id="d_198"]');
+            if (volumeField) {
+              volumeField.value = newValue;
+            }
+          }
+
           console.log(`[WOMBAT] ✅ Synced ref_d_198 = ${newValue} from S12 (ref_d_105)`);
           // Recalculate (will run both engines and update visualization)
           calculateAll();
+          ModeManager.updateCalculatedDisplayValues();
         }
       });
 
@@ -1172,12 +1206,22 @@ window.TEUI.SectionModules.sect19 = (function () {
         const currentValue = TargetState.getValue("d_199");
         console.log(`[WOMBAT SYNC] d_103 changed: ${currentValue} → ${newValue}`);
         if (currentValue !== newValue) {
-          // Update TargetState AND publish to StateManager (for FieldManager to pick up)
+          // Update TargetState AND publish to StateManager
           TargetState.setValue("d_199", newValue);
           window.TEUI.StateManager.setValue("d_199", newValue, "calculated");
+
+          // Update DOM (following S12 pattern - only in Target mode)
+          if (ModeManager.currentMode === "target") {
+            const storiesDropdown = document.querySelector('[data-field-id="d_199"]');
+            if (storiesDropdown) {
+              storiesDropdown.value = newValue;
+            }
+          }
+
           console.log(`[WOMBAT] ✅ Synced d_199 = ${newValue} from S12 (d_103)`);
           // Recalculate (will run both engines and update visualization)
           calculateAll();
+          ModeManager.updateCalculatedDisplayValues();
         }
       });
 
@@ -1185,11 +1229,22 @@ window.TEUI.SectionModules.sect19 = (function () {
         const currentValue = ReferenceState.getValue("d_199");
         console.log(`[WOMBAT SYNC] ref_d_103 changed: ${currentValue} → ${newValue}`);
         if (currentValue !== newValue) {
-          // Update ReferenceState
+          // Update ReferenceState AND publish to StateManager
           ReferenceState.setValue("d_199", newValue);
+          window.TEUI.StateManager.setValue("ref_d_199", newValue, "calculated");
+
+          // Update DOM (following S12 pattern - only in Reference mode)
+          if (ModeManager.currentMode === "reference") {
+            const storiesDropdown = document.querySelector('[data-field-id="d_199"]');
+            if (storiesDropdown) {
+              storiesDropdown.value = newValue;
+            }
+          }
+
           console.log(`[WOMBAT] ✅ Synced ref_d_199 = ${newValue} from S12 (ref_d_103)`);
           // Recalculate (will run both engines and update visualization)
           calculateAll();
+          ModeManager.updateCalculatedDisplayValues();
         }
       });
     }
