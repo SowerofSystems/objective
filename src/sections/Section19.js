@@ -231,9 +231,11 @@ window.TEUI.SectionModules.sect19 = (function () {
       // Mode-aware publishing to StateManager
       if (this.currentMode === "target") {
         // Target mode: publish unprefixed
+        console.log(`[WOMBAT ModeManager] Publishing to StateManager: ${fieldId} = ${value} (Target mode)`);
         window.TEUI.StateManager.setValue(fieldId, value, source);
       } else {
         // Reference mode: publish with ref_ prefix
+        console.log(`[WOMBAT ModeManager] Publishing to StateManager: ref_${fieldId} = ${value} (Reference mode)`);
         window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, source);
       }
     },
@@ -1079,17 +1081,23 @@ window.TEUI.SectionModules.sect19 = (function () {
         if (event.key === "Enter" || event.keyCode === 13) {
           event.preventDefault(); // Prevent form submission
 
-          const field = event.target;
-          const fieldId = field.getAttribute("data-field-id");
-          if (!fieldId) return;
+          // Use 'this' which is guaranteed to be volumeField, not event.target
+          const field = this;
 
-          const inputValue = field.value;
+          const fieldId = field.getAttribute("data-field-id");
+          if (!fieldId) {
+            console.error(`[WOMBAT] ❌ No fieldId on element`);
+            return;
+          }
+
+          // Field is a <td> with contenteditable, not an <input>, so use textContent
+          const inputValue = field.textContent || field.innerText || "";
           console.log(`[WOMBAT DOM] Volume field Enter pressed: ${fieldId} = "${inputValue}"`);
 
           const numValue = parseFloat(inputValue);
           if (!isNaN(numValue) && isFinite(numValue)) {
-            // Browser already handles number formatting for type="number"
-            // No need to update field.value - it's already set
+            // Format and update the field display
+            field.textContent = window.TEUI.formatNumber(numValue, "number-2dp");
 
             // MODE-AWARE: Use ModeManager.setValue for dual-state publishing
             ModeManager.setValue(fieldId, String(numValue), "user-modified");
@@ -1181,9 +1189,8 @@ window.TEUI.SectionModules.sect19 = (function () {
         const currentValue = TargetState.getValue("d_198");
         console.log(`[WOMBAT SYNC] d_105 changed: ${currentValue} → ${newValue}`);
         if (currentValue !== newValue) {
-          // Update TargetState AND publish to StateManager (for FieldManager to pick up)
+          // Update TargetState only - NO re-publication to break circular loop
           TargetState.setValue("d_198", newValue);
-          window.TEUI.StateManager.setValue("d_198", newValue, "calculated");
           console.log(`[WOMBAT] ✅ Synced d_198 = ${newValue} from S12 (d_105)`);
           // Recalculate (will run both engines and update visualization)
           calculateAll();
@@ -1206,9 +1213,8 @@ window.TEUI.SectionModules.sect19 = (function () {
         const currentValue = TargetState.getValue("d_199");
         console.log(`[WOMBAT SYNC] d_103 changed: ${currentValue} → ${newValue}`);
         if (currentValue !== newValue) {
-          // Update TargetState AND publish to StateManager (for FieldManager to pick up)
+          // Update TargetState only - NO re-publication to break circular loop
           TargetState.setValue("d_199", newValue);
-          window.TEUI.StateManager.setValue("d_199", newValue, "calculated");
           console.log(`[WOMBAT] ✅ Synced d_199 = ${newValue} from S12 (d_103)`);
           // Recalculate (will run both engines and update visualization)
           calculateAll();
@@ -1315,6 +1321,8 @@ window.TEUI.SectionModules.sect19 = (function () {
   }
 
   function calculateAll() {
+    console.log(`[WOMBAT calculateAll] Called - Current mode: ${ModeManager.currentMode}, isActivated: ${isActivated}`);
+
     // DUAL-ENGINE: ALWAYS run both Target and Reference calculations
     const targetGeometry = calculateTargetModel();
     const referenceGeometry = calculateReferenceModel();
@@ -1323,11 +1331,14 @@ window.TEUI.SectionModules.sect19 = (function () {
     if (isActivated) {
       // Show visualization for current mode
       const mode = ModeManager?.currentMode || "target";
+      console.log(`[WOMBAT calculateAll] Updating visualization for mode: ${mode}`);
       updateVisualization(mode);
     }
 
     // Update calculated display values in DOM for current mode
+    console.log(`[WOMBAT calculateAll] Calling updateCalculatedDisplayValues()`);
     ModeManager.updateCalculatedDisplayValues();
+    console.log(`[WOMBAT calculateAll] Complete`);
   }
 
   //==========================================================================
