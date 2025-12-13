@@ -556,45 +556,63 @@ window.TEUI.SectionModules.sect19 = (function () {
   }
 
   //==========================================================================
-  // 3D RENDERING (Placeholder - Three.js integration in Phase 2)
+  // 3D RENDERING (SVG Isometric)
   //==========================================================================
 
-  function initializeCanvas() {
-    const canvas = document.getElementById("wombat-canvas");
-    if (!canvas) {
-      console.error("[WOMBAT] Canvas element not found");
+  function initializeSVG() {
+    const svg = document.getElementById("wombat-svg");
+    if (!svg) {
+      console.error("[WOMBAT] SVG element not found");
       return;
     }
 
-    const ctx = canvas.getContext("2d");
-    canvas.width = config.canvasWidth;
-    canvas.height = config.canvasHeight;
-
-    // Placeholder: Draw simple 2D projection until Three.js loaded
-    drawPlaceholder(ctx);
+    console.log("[WOMBAT] SVG element initialized");
+    // Placeholder: Draw simple message until activated
+    drawPlaceholder();
   }
 
-  function drawPlaceholder(ctx) {
-    // Clear canvas
-    ctx.fillStyle = "#f8f9fa";
-    ctx.fillRect(0, 0, config.canvasWidth, config.canvasHeight);
+  function drawPlaceholder() {
+    const svg = document.getElementById("wombat-svg");
+    if (!svg) return;
 
-    // Draw border
-    ctx.strokeStyle = "#dee2e6";
-    ctx.strokeRect(0, 0, config.canvasWidth, config.canvasHeight);
+    // Clear existing content
+    svg.innerHTML = "";
 
-    // Draw message
-    ctx.fillStyle = "#6c757d";
-    ctx.font = "16px -apple-system, BlinkMacSystemFont, sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("WOMBAT - 3D Thermal Topology", config.canvasWidth / 2, config.canvasHeight / 2 - 40);
+    const centerX = config.canvasWidth / 2;
+    const centerY = config.canvasHeight / 2;
 
-    ctx.font = "14px -apple-system, BlinkMacSystemFont, sans-serif";
-    ctx.fillText("Click 'Activate Topology View' to generate 3D model", config.canvasWidth / 2, config.canvasHeight / 2);
+    // Title text
+    const titleText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    titleText.setAttribute("x", centerX);
+    titleText.setAttribute("y", centerY - 40);
+    titleText.setAttribute("text-anchor", "middle");
+    titleText.setAttribute("fill", "#6c757d");
+    titleText.setAttribute("font-family", "-apple-system, BlinkMacSystemFont, sans-serif");
+    titleText.setAttribute("font-size", "16");
+    titleText.textContent = "WOMBAT - 3D Thermal Topology";
+    svg.appendChild(titleText);
 
-    ctx.font = "12px -apple-system, BlinkMacSystemFont, sans-serif";
-    ctx.fillStyle = "#999";
-    ctx.fillText("Constraint-driven thermal visualization (areas → form)", config.canvasWidth / 2, config.canvasHeight / 2 + 30);
+    // Instruction text
+    const instructionText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    instructionText.setAttribute("x", centerX);
+    instructionText.setAttribute("y", centerY);
+    instructionText.setAttribute("text-anchor", "middle");
+    instructionText.setAttribute("fill", "#6c757d");
+    instructionText.setAttribute("font-family", "-apple-system, BlinkMacSystemFont, sans-serif");
+    instructionText.setAttribute("font-size", "14");
+    instructionText.textContent = "Click 'Activate Topology View' to generate 3D model";
+    svg.appendChild(instructionText);
+
+    // Subtitle text
+    const subtitleText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    subtitleText.setAttribute("x", centerX);
+    subtitleText.setAttribute("y", centerY + 30);
+    subtitleText.setAttribute("text-anchor", "middle");
+    subtitleText.setAttribute("fill", "#999");
+    subtitleText.setAttribute("font-family", "-apple-system, BlinkMacSystemFont, sans-serif");
+    subtitleText.setAttribute("font-size", "12");
+    subtitleText.textContent = "Constraint-driven thermal visualization (areas → form)";
+    svg.appendChild(subtitleText);
   }
 
   function updateVisualization(mode = "target") {
@@ -606,14 +624,11 @@ window.TEUI.SectionModules.sect19 = (function () {
     currentModel = geometry;
 
     // Render isometric visualization with stacked stories
-    const canvas = document.getElementById("wombat-canvas");
-    if (!canvas) return;
+    const svg = document.getElementById("wombat-svg");
+    if (!svg) return;
 
-    const ctx = canvas.getContext("2d");
-
-    // Clear canvas
-    ctx.fillStyle = "#f8f9fa";
-    ctx.fillRect(0, 0, config.canvasWidth, config.canvasHeight);
+    // Clear SVG
+    svg.innerHTML = "";
 
     // Building dimensions
     const length = geometry.footprint.length;
@@ -650,104 +665,157 @@ window.TEUI.SectionModules.sect19 = (function () {
       };
     }
 
-    // Draw each story from bottom to top
+    // Helper function: Create SVG line from two points
+    function createLine(p1, p2, stroke, strokeWidth = 3) {
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", p1.x);
+      line.setAttribute("y1", p1.y);
+      line.setAttribute("x2", p2.x);
+      line.setAttribute("y2", p2.y);
+      line.setAttribute("stroke", stroke);
+      line.setAttribute("stroke-width", strokeWidth);
+      line.setAttribute("stroke-linecap", "round");
+      return line;
+    }
+
+    // Helper function: Create SVG circle node
+    function createNode(point, fill, radius = 5) {
+      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      circle.setAttribute("cx", point.x);
+      circle.setAttribute("cy", point.y);
+      circle.setAttribute("r", radius);
+      circle.setAttribute("fill", fill);
+      circle.setAttribute("stroke", "#fff");
+      circle.setAttribute("stroke-width", 2);
+      return circle;
+    }
+
+    // Draw wireframe topology (S18 graph style)
+    const allVertices = [];
+    const allEdges = [];
+
+    // Collect all unique vertices and edges
     for (let story = 0; story < stories; story++) {
       const z0 = story * storyHeight;
       const z1 = (story + 1) * storyHeight;
 
-      // Floor corners (at base of this story)
-      const p0 = toIso(-width / 2, -length / 2, z0); // Front-left
-      const p1 = toIso(width / 2, -length / 2, z0);  // Front-right
-      const p2 = toIso(width / 2, length / 2, z0);   // Back-right
-      const p3 = toIso(-width / 2, length / 2, z0);  // Back-left
+      // Floor vertices
+      const p0 = toIso(-width / 2, -length / 2, z0);
+      const p1 = toIso(width / 2, -length / 2, z0);
+      const p2 = toIso(width / 2, length / 2, z0);
+      const p3 = toIso(-width / 2, length / 2, z0);
 
-      // Ceiling corners (at top of this story)
+      // Ceiling vertices
       const p4 = toIso(-width / 2, -length / 2, z1);
       const p5 = toIso(width / 2, -length / 2, z1);
       const p6 = toIso(width / 2, length / 2, z1);
       const p7 = toIso(-width / 2, length / 2, z1);
 
-      // Story color (gradient from darker to lighter as we go up)
-      const brightness = 100 + (story / stories) * 155;
-      const fillColor = `rgba(0, 123, 255, ${0.15 + story * 0.05})`;
-      const strokeColor = `rgb(0, ${Math.floor(brightness)}, 255)`;
+      // Collect vertices
+      if (story === 0) {
+        allVertices.push(p0, p1, p2, p3); // Floor vertices only on first story
+      }
+      allVertices.push(p4, p5, p6, p7); // Ceiling vertices for each story
 
-      // Draw visible faces in painter's algorithm order
+      // Floor edges (only for first story)
+      if (story === 0) {
+        allEdges.push([p0, p1], [p1, p2], [p2, p3], [p3, p0]);
+      }
 
-      // Top face (ceiling)
-      ctx.fillStyle = fillColor;
-      ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(p4.x, p4.y);
-      ctx.lineTo(p5.x, p5.y);
-      ctx.lineTo(p6.x, p6.y);
-      ctx.lineTo(p7.x, p7.y);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+      // Ceiling edges
+      allEdges.push([p4, p5], [p5, p6], [p6, p7], [p7, p4]);
 
-      // Left face
-      ctx.fillStyle = `rgba(0, 100, 200, ${0.1 + story * 0.04})`;
-      ctx.beginPath();
-      ctx.moveTo(p0.x, p0.y);
-      ctx.lineTo(p3.x, p3.y);
-      ctx.lineTo(p7.x, p7.y);
-      ctx.lineTo(p4.x, p4.y);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // Right face
-      ctx.fillStyle = `rgba(0, 80, 180, ${0.08 + story * 0.03})`;
-      ctx.beginPath();
-      ctx.moveTo(p1.x, p1.y);
-      ctx.lineTo(p5.x, p5.y);
-      ctx.lineTo(p6.x, p6.y);
-      ctx.lineTo(p2.x, p2.y);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+      // Vertical edges
+      allEdges.push([p0, p4], [p1, p5], [p2, p6], [p3, p7]);
 
       // Story label
       const labelPos = toIso(0, 0, z0 + storyHeight / 2);
-      ctx.fillStyle = "#000";
-      ctx.font = "12px -apple-system, BlinkMacSystemFont, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(`${geometry.areaPerFloor.toFixed(0)} m²`, labelPos.x, labelPos.y);
+      const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      label.setAttribute("x", labelPos.x);
+      label.setAttribute("y", labelPos.y);
+      label.setAttribute("text-anchor", "middle");
+      label.setAttribute("fill", "#666");
+      label.setAttribute("font-family", "-apple-system, BlinkMacSystemFont, sans-serif");
+      label.setAttribute("font-size", "11");
+      label.setAttribute("font-weight", "500");
+      label.textContent = `${geometry.areaPerFloor.toFixed(0)} m²`;
+      svg.appendChild(label);
     }
 
-    // Draw dimension annotations
-    ctx.font = "11px -apple-system, BlinkMacSystemFont, sans-serif";
-    ctx.fillStyle = "#007bff";
+    // Draw all edges
+    const edgeColor = "#007bff";
+    allEdges.forEach(([p1, p2]) => {
+      const edge = createLine(p1, p2, edgeColor, 3);
+      svg.appendChild(edge);
+    });
 
+    // Draw all vertex nodes on top
+    const nodeColor = "#007bff";
+    allVertices.forEach(vertex => {
+      const node = createNode(vertex, nodeColor, 5);
+      svg.appendChild(node);
+    });
+
+    // Draw dimension annotations (SVG)
     // Length label (bottom edge)
     const lengthLabelPos = toIso(0, -length / 2 - 5, 0);
-    ctx.fillText(`${length.toFixed(1)}m`, lengthLabelPos.x, lengthLabelPos.y + 15);
+    const lengthLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    lengthLabel.setAttribute("x", lengthLabelPos.x);
+    lengthLabel.setAttribute("y", lengthLabelPos.y + 15);
+    lengthLabel.setAttribute("text-anchor", "middle");
+    lengthLabel.setAttribute("fill", "#007bff");
+    lengthLabel.setAttribute("font-family", "-apple-system, BlinkMacSystemFont, sans-serif");
+    lengthLabel.setAttribute("font-size", "11");
+    lengthLabel.textContent = `${length.toFixed(1)}m`;
+    svg.appendChild(lengthLabel);
 
     // Width label (bottom right edge)
     const widthLabelPos = toIso(width / 2 + 5, 0, 0);
-    ctx.fillText(`${width.toFixed(1)}m`, widthLabelPos.x + 20, widthLabelPos.y);
+    const widthLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    widthLabel.setAttribute("x", widthLabelPos.x + 20);
+    widthLabel.setAttribute("y", widthLabelPos.y);
+    widthLabel.setAttribute("text-anchor", "middle");
+    widthLabel.setAttribute("fill", "#007bff");
+    widthLabel.setAttribute("font-family", "-apple-system, BlinkMacSystemFont, sans-serif");
+    widthLabel.setAttribute("font-size", "11");
+    widthLabel.textContent = `${width.toFixed(1)}m`;
+    svg.appendChild(widthLabel);
 
     // Height label (left edge)
     const heightLabelPos = toIso(-width / 2 - 10, length / 2, geometry.height / 2);
-    ctx.fillText(`${geometry.height.toFixed(1)}m`, heightLabelPos.x - 30, heightLabelPos.y);
+    const heightLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    heightLabel.setAttribute("x", heightLabelPos.x - 30);
+    heightLabel.setAttribute("y", heightLabelPos.y);
+    heightLabel.setAttribute("text-anchor", "middle");
+    heightLabel.setAttribute("fill", "#007bff");
+    heightLabel.setAttribute("font-family", "-apple-system, BlinkMacSystemFont, sans-serif");
+    heightLabel.setAttribute("font-size", "11");
+    heightLabel.textContent = `${geometry.height.toFixed(1)}m`;
+    svg.appendChild(heightLabel);
 
-    // Overlay geometry info in top-left
-    ctx.font = "12px monospace";
-    ctx.textAlign = "left";
+    // Overlay geometry info in top-left (SVG)
+    const infoLines = [
+      `Stories: ${stories} × ${geometry.areaPerFloor.toFixed(1)} m² = ${(stories * geometry.areaPerFloor).toFixed(1)} m²`,
+      `Footprint: ${length.toFixed(1)}m × ${width.toFixed(1)}m`,
+      `Story Height: ${storyHeight.toFixed(2)}m`,
+      `Total Volume: ${geometry.volume.toFixed(0)} m³ (${geometry.volumePerFloor.toFixed(0)} m³/floor)`
+    ];
+
     const x = 20;
     let y = 30;
     const lineHeight = 18;
 
-    ctx.fillStyle = "#007bff";
-    ctx.fillText(`Stories: ${stories} × ${geometry.areaPerFloor.toFixed(1)} m² = ${(stories * geometry.areaPerFloor).toFixed(1)} m²`, x, y);
-    y += lineHeight;
-    ctx.fillText(`Footprint: ${length.toFixed(1)}m × ${width.toFixed(1)}m`, x, y);
-    y += lineHeight;
-    ctx.fillText(`Story Height: ${storyHeight.toFixed(2)}m`, x, y);
-    y += lineHeight;
-    ctx.fillText(`Total Volume: ${geometry.volume.toFixed(0)} m³ (${geometry.volumePerFloor.toFixed(0)} m³/floor)`, x, y);
+    infoLines.forEach(line => {
+      const infoText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      infoText.setAttribute("x", x);
+      infoText.setAttribute("y", y);
+      infoText.setAttribute("fill", "#007bff");
+      infoText.setAttribute("font-family", "monospace");
+      infoText.setAttribute("font-size", "12");
+      infoText.textContent = line;
+      svg.appendChild(infoText);
+      y += lineHeight;
+    });
   }
 
   //==========================================================================
@@ -890,12 +958,8 @@ window.TEUI.SectionModules.sect19 = (function () {
 
       console.log("[WOMBAT] Topology view deactivated");
 
-      // Clear canvas
-      const canvas = document.getElementById("wombat-canvas");
-      if (canvas) {
-        const ctx = canvas.getContext("2d");
-        drawPlaceholder(ctx);
-      }
+      // Clear SVG and show placeholder
+      drawPlaceholder();
     }
   }
 
@@ -1132,9 +1196,9 @@ window.TEUI.SectionModules.sect19 = (function () {
     // Initialize mirror fields from S12 on first load
     initializeMirrorFields();
 
-    // Initialize canvas
+    // Initialize SVG
     setTimeout(() => {
-      initializeCanvas();
+      initializeSVG();
       createActivationControls();
     }, 100);
   }
@@ -1239,9 +1303,9 @@ document.addEventListener("DOMContentLoaded", function () {
     window.TEUI.sect19 = {
       calculateAll: module.calculateAll,
       solveGeometry: module.solveGeometry,
-      ModeManager: ModeManager,
-      TargetState: TargetState,
-      ReferenceState: ReferenceState,
+      ModeManager: module.ModeManager,
+      TargetState: module.TargetState,
+      ReferenceState: module.ReferenceState,
     };
   }
 });
