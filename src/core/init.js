@@ -447,7 +447,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Special case: WOMBAT and Notes sections default to collapsed for cleaner UI
         const shouldBeCollapsed =
-          collapsedSections[section.id] || section.id === "wombat" || section.id === "notes";
+          collapsedSections[section.id] ||
+          section.id === "wombat" ||
+          section.id === "notes";
 
         if (shouldBeCollapsed) {
           header.classList.add("collapsed");

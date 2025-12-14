@@ -3087,17 +3087,23 @@ window.TEUI.SectionModules.sect12 = (function () {
     // Mirror relationships: d_105 (S12) ↔ d_198 (S19), d_103 (S12) ↔ d_199 (S19)
     if (window.TEUI?.StateManager) {
       // Target volume from WOMBAT
-      window.TEUI.StateManager.addListener("d_198", (newValue) => {
+      window.TEUI.StateManager.addListener("d_198", newValue => {
         const currentValue = ModeManager.getValue("d_105");
         if (currentValue !== newValue) {
-          console.log(`[S12→WOMBAT] Syncing d_105 = ${newValue} from WOMBAT d_198`);
+          console.log(
+            `[S12→WOMBAT] Syncing d_105 = ${newValue} from WOMBAT d_198`
+          );
           ModeManager.setValue("d_105", newValue, "external");
 
           // Update DOM for d_105
           if (window.TEUI?.FieldManager) {
             const fieldDef = window.TEUI.FieldManager.getField("d_105");
             if (fieldDef) {
-              window.TEUI.FieldManager.updateFieldDisplay("d_105", newValue, fieldDef);
+              window.TEUI.FieldManager.updateFieldDisplay(
+                "d_105",
+                newValue,
+                fieldDef
+              );
             }
           }
 
@@ -3107,14 +3113,18 @@ window.TEUI.SectionModules.sect12 = (function () {
       });
 
       // Target stories from WOMBAT
-      window.TEUI.StateManager.addListener("d_199", (newValue) => {
+      window.TEUI.StateManager.addListener("d_199", newValue => {
         const currentValue = ModeManager.getValue("d_103");
         if (currentValue !== newValue) {
-          console.log(`[S12→WOMBAT] Syncing d_103 = ${newValue} from WOMBAT d_199`);
+          console.log(
+            `[S12→WOMBAT] Syncing d_103 = ${newValue} from WOMBAT d_199`
+          );
           ModeManager.setValue("d_103", newValue, "external");
 
           // Update DOM for d_103 dropdown
-          const dropdown = document.querySelector('select[data-field-id="d_103"]');
+          const dropdown = document.querySelector(
+            'select[data-field-id="d_103"]'
+          );
           if (dropdown) {
             dropdown.value = newValue;
           }
@@ -3125,19 +3135,30 @@ window.TEUI.SectionModules.sect12 = (function () {
       });
 
       // Reference volume from WOMBAT
-      window.TEUI.StateManager.addListener("ref_d_198", (newValue) => {
+      window.TEUI.StateManager.addListener("ref_d_198", newValue => {
         const currentValue = ReferenceState.getValue("d_105");
         if (currentValue !== newValue) {
-          console.log(`[S12→WOMBAT] Syncing ref_d_105 = ${newValue} from WOMBAT ref_d_198`);
+          console.log(
+            `[S12→WOMBAT] Syncing ref_d_105 = ${newValue} from WOMBAT ref_d_198`
+          );
           ReferenceState.setValue("d_105", newValue);
           window.TEUI.StateManager.setValue("ref_d_105", newValue, "external");
 
           // ✅ FIX: Explicit DOM update for d_105 when in Reference mode
-          if (ModeManager.currentMode === "reference" && window.TEUI?.FieldManager) {
+          if (
+            ModeManager.currentMode === "reference" &&
+            window.TEUI?.FieldManager
+          ) {
             const fieldDef = window.TEUI.FieldManager.getField("d_105");
             if (fieldDef) {
-              window.TEUI.FieldManager.updateFieldDisplay("d_105", newValue, fieldDef);
-              console.log(`[S12→WOMBAT] ✅ Refreshed d_105 DOM = ${newValue} (Reference mode)`);
+              window.TEUI.FieldManager.updateFieldDisplay(
+                "d_105",
+                newValue,
+                fieldDef
+              );
+              console.log(
+                `[S12→WOMBAT] ✅ Refreshed d_105 DOM = ${newValue} (Reference mode)`
+              );
             }
           }
 
@@ -3147,19 +3168,25 @@ window.TEUI.SectionModules.sect12 = (function () {
       });
 
       // Reference stories from WOMBAT
-      window.TEUI.StateManager.addListener("ref_d_199", (newValue) => {
+      window.TEUI.StateManager.addListener("ref_d_199", newValue => {
         const currentValue = ReferenceState.getValue("d_103");
         if (currentValue !== newValue) {
-          console.log(`[S12→WOMBAT] Syncing ref_d_103 = ${newValue} from WOMBAT ref_d_199`);
+          console.log(
+            `[S12→WOMBAT] Syncing ref_d_103 = ${newValue} from WOMBAT ref_d_199`
+          );
           ReferenceState.setValue("d_103", newValue);
           window.TEUI.StateManager.setValue("ref_d_103", newValue, "external");
 
           // ✅ FIX: Explicit DOM update for d_103 dropdown when in Reference mode
           if (ModeManager.currentMode === "reference") {
-            const dropdown = document.querySelector('select[data-field-id="d_103"]');
+            const dropdown = document.querySelector(
+              'select[data-field-id="d_103"]'
+            );
             if (dropdown) {
               dropdown.value = newValue;
-              console.log(`[S12→WOMBAT] ✅ Refreshed d_103 DOM = ${newValue} (Reference mode)`);
+              console.log(
+                `[S12→WOMBAT] ✅ Refreshed d_103 DOM = ${newValue} (Reference mode)`
+              );
             }
           }
 
@@ -3525,7 +3552,7 @@ window.TEUI.SectionModules.sect12 = (function () {
     // ⚠️ MIRROR FIELD SYNC: WOMBAT → Section 12 (d_198→d_105, d_199→d_103)
     // WOMBAT has mirror fields that display S12's volume/stories
     // When edited in WOMBAT, sync back to S12's internal state and recalculate
-    window.TEUI.StateManager.addListener("d_198", (newValue) => {
+    window.TEUI.StateManager.addListener("d_198", newValue => {
       if (TargetState.getValue("d_105") !== newValue) {
         TargetState.setValue("d_105", newValue, "external");
         calculateAll(); // Trigger full recalculation and UI update
@@ -3533,15 +3560,17 @@ window.TEUI.SectionModules.sect12 = (function () {
       }
     });
 
-    window.TEUI.StateManager.addListener("ref_d_198", (newValue) => {
+    window.TEUI.StateManager.addListener("ref_d_198", newValue => {
       if (ReferenceState.getValue("d_105") !== newValue) {
         ReferenceState.setValue("d_105", newValue, "external");
         calculateAll(); // Trigger full recalculation and UI update
-        console.log(`[S12] Synced ref_d_105 = ${newValue} from WOMBAT (ref_d_198)`);
+        console.log(
+          `[S12] Synced ref_d_105 = ${newValue} from WOMBAT (ref_d_198)`
+        );
       }
     });
 
-    window.TEUI.StateManager.addListener("d_199", (newValue) => {
+    window.TEUI.StateManager.addListener("d_199", newValue => {
       if (TargetState.getValue("d_103") !== newValue) {
         TargetState.setValue("d_103", newValue, "external");
         calculateAll(); // Trigger full recalculation and UI update
@@ -3549,11 +3578,13 @@ window.TEUI.SectionModules.sect12 = (function () {
       }
     });
 
-    window.TEUI.StateManager.addListener("ref_d_199", (newValue) => {
+    window.TEUI.StateManager.addListener("ref_d_199", newValue => {
       if (ReferenceState.getValue("d_103") !== newValue) {
         ReferenceState.setValue("d_103", newValue, "external");
         calculateAll(); // Trigger full recalculation and UI update
-        console.log(`[S12] Synced ref_d_103 = ${newValue} from WOMBAT (ref_d_199)`);
+        console.log(
+          `[S12] Synced ref_d_103 = ${newValue} from WOMBAT (ref_d_199)`
+        );
       }
     });
 
