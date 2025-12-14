@@ -27,14 +27,9 @@ window.TEUI.SectionModules.sect19 = (function () {
   let threejsLoaded = false;
   let currentModel = null;
 
-  const config = {
-    defaultAspectRatio: 1.0, // Square footprint by default
-    defaultAllowAsymmetry: true, // Allow walls to deform independently
-    canvasWidth: 800,
-    canvasHeight: 600,
-    // COORDINATE CONVENTION: Y+ = North (for future window orientation per facade)
-    // X+ = East, Y+ = North, Z+ = Up (right-handed coordinate system)
-  };
+  // COORDINATE CONVENTION: Y+ = North (for future window orientation per facade)
+  // X+ = East, Y+ = North, Z+ = Up (right-handed coordinate system)
+  // Config moved to wombatRender.js
 
   //==========================================================================
   // PATTERN A DUAL-STATE ARCHITECTURE
@@ -687,7 +682,7 @@ window.TEUI.SectionModules.sect19 = (function () {
   }
 
   //==========================================================================
-  // 3D RENDERING (SVG Isometric)
+  // 3D RENDERING (Delegated to wombatRender.js)
   //==========================================================================
 
   function initializeSVG() {
@@ -706,64 +701,8 @@ window.TEUI.SectionModules.sect19 = (function () {
     const svg = document.getElementById("wombat-svg");
     if (!svg) return;
 
-    // Clear existing content
-    svg.innerHTML = "";
-
-    const centerX = config.canvasWidth / 2;
-    const centerY = config.canvasHeight / 2;
-
-    // Title text
-    const titleText = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "text"
-    );
-    titleText.setAttribute("x", centerX);
-    titleText.setAttribute("y", centerY - 40);
-    titleText.setAttribute("text-anchor", "middle");
-    titleText.setAttribute("fill", "#6c757d");
-    titleText.setAttribute(
-      "font-family",
-      "-apple-system, BlinkMacSystemFont, sans-serif"
-    );
-    titleText.setAttribute("font-size", "16");
-    titleText.textContent = "WOMBAT - 3D Thermal Topology";
-    svg.appendChild(titleText);
-
-    // Instruction text
-    const instructionText = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "text"
-    );
-    instructionText.setAttribute("x", centerX);
-    instructionText.setAttribute("y", centerY);
-    instructionText.setAttribute("text-anchor", "middle");
-    instructionText.setAttribute("fill", "#6c757d");
-    instructionText.setAttribute(
-      "font-family",
-      "-apple-system, BlinkMacSystemFont, sans-serif"
-    );
-    instructionText.setAttribute("font-size", "14");
-    instructionText.textContent =
-      "Click 'Activate Topology View' to generate 3D model";
-    svg.appendChild(instructionText);
-
-    // Subtitle text
-    const subtitleText = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "text"
-    );
-    subtitleText.setAttribute("x", centerX);
-    subtitleText.setAttribute("y", centerY + 30);
-    subtitleText.setAttribute("text-anchor", "middle");
-    subtitleText.setAttribute("fill", "#999");
-    subtitleText.setAttribute(
-      "font-family",
-      "-apple-system, BlinkMacSystemFont, sans-serif"
-    );
-    subtitleText.setAttribute("font-size", "12");
-    subtitleText.textContent =
-      "Constraint-driven thermal visualization (areas → form)";
-    svg.appendChild(subtitleText);
+    // Delegate to wombatRender.js
+    window.TEUI.WombatRender.renderPlaceholder(svg);
   }
 
   function updateVisualization(mode = "target") {
@@ -782,7 +721,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     const geometry = solveGeometry(isReference);
     currentModel = geometry;
 
-    // Render isometric visualization with stacked stories
+    // Get SVG element
     const svg = document.getElementById("wombat-svg");
     console.log(`🎨 [WOMBAT updateVisualization] SVG element found: ${!!svg}`);
     if (!svg) {
@@ -790,236 +729,10 @@ window.TEUI.SectionModules.sect19 = (function () {
       return;
     }
 
-    // Clear SVG
-    svg.innerHTML = "";
-    console.log(`🎨 [WOMBAT updateVisualization] SVG cleared`);
-
-    // Building dimensions
-    const length = geometry.footprint.length;
-    const width = geometry.footprint.width;
-    const storyHeight = geometry.storyHeight;
-    const stories = geometry.stories;
-    const totalHeight = geometry.height;
-
-    // Calculate optimal scale to fill canvas (with padding)
-    const padding = 80; // pixels of padding around edges
-    const availableWidth = config.canvasWidth - padding * 2;
-    const availableHeight = config.canvasHeight - padding * 2;
-
-    // Isometric projection dimensions (diagonal extents)
-    const isoX = Math.cos(Math.PI / 6); // 0.866
-    const isoY = Math.sin(Math.PI / 6); // 0.5
-    const projectedWidth = (length + width) * isoX;
-    const projectedHeight = (length + width) * isoY + totalHeight;
-
-    // Calculate scale to fit both dimensions
-    const scaleX = availableWidth / projectedWidth;
-    const scaleY = availableHeight / projectedHeight;
-    const scale = Math.min(scaleX, scaleY) * 0.9; // 90% to leave breathing room
-
-    // Center the building in the canvas
-    const centerX = config.canvasWidth / 2;
-    const centerY = config.canvasHeight / 2 + totalHeight * scale * 0.2; // Offset slightly down
-
-    // Helper function: Convert 3D coords to isometric 2D
-    function toIso(x, y, z) {
-      return {
-        x: centerX + (x - y) * isoX * scale,
-        y: centerY - (x + y) * isoY * scale - z * scale,
-      };
-    }
-
-    // Helper function: Create SVG line from two points
-    function createLine(p1, p2, stroke, strokeWidth = 3) {
-      const line = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "line"
-      );
-      line.setAttribute("x1", p1.x);
-      line.setAttribute("y1", p1.y);
-      line.setAttribute("x2", p2.x);
-      line.setAttribute("y2", p2.y);
-      line.setAttribute("stroke", stroke);
-      line.setAttribute("stroke-width", strokeWidth);
-      line.setAttribute("stroke-linecap", "round");
-      return line;
-    }
-
-    // Helper function: Create SVG circle node
-    function createNode(point, fill, radius = 5) {
-      const circle = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "circle"
-      );
-      circle.setAttribute("cx", point.x);
-      circle.setAttribute("cy", point.y);
-      circle.setAttribute("r", radius);
-      circle.setAttribute("fill", fill);
-      circle.setAttribute("stroke", "#fff");
-      circle.setAttribute("stroke-width", 2);
-      return circle;
-    }
-
-    // Draw wireframe topology (S18 graph style)
-    // Color based on mode: Blue for Target, Red for Reference (matching S18)
-    const modelColor = isReference ? "#dc3545" : "#007bff"; // Red for Reference, Blue for Target
-    console.log(
-      `🎨 [WOMBAT updateVisualization] modelColor = ${modelColor} (isReference=${isReference})`
-    );
-
-    const allVertices = [];
-    const allEdges = [];
-
-    // Collect all unique vertices and edges
-    for (let story = 0; story < stories; story++) {
-      const z0 = story * storyHeight;
-      const z1 = (story + 1) * storyHeight;
-
-      // Floor vertices
-      const p0 = toIso(-width / 2, -length / 2, z0);
-      const p1 = toIso(width / 2, -length / 2, z0);
-      const p2 = toIso(width / 2, length / 2, z0);
-      const p3 = toIso(-width / 2, length / 2, z0);
-
-      // Ceiling vertices
-      const p4 = toIso(-width / 2, -length / 2, z1);
-      const p5 = toIso(width / 2, -length / 2, z1);
-      const p6 = toIso(width / 2, length / 2, z1);
-      const p7 = toIso(-width / 2, length / 2, z1);
-
-      // Collect vertices
-      if (story === 0) {
-        allVertices.push(p0, p1, p2, p3); // Floor vertices only on first story
-      }
-      allVertices.push(p4, p5, p6, p7); // Ceiling vertices for each story
-
-      // Floor edges (only for first story)
-      if (story === 0) {
-        allEdges.push([p0, p1], [p1, p2], [p2, p3], [p3, p0]);
-      }
-
-      // Ceiling edges
-      allEdges.push([p4, p5], [p5, p6], [p6, p7], [p7, p4]);
-
-      // Vertical edges
-      allEdges.push([p0, p4], [p1, p5], [p2, p6], [p3, p7]);
-
-      // Story label
-      const labelPos = toIso(0, 0, z0 + storyHeight / 2);
-      const label = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "text"
-      );
-      label.setAttribute("x", labelPos.x);
-      label.setAttribute("y", labelPos.y);
-      label.setAttribute("text-anchor", "middle");
-      label.setAttribute("fill", "#666");
-      label.setAttribute(
-        "font-family",
-        "-apple-system, BlinkMacSystemFont, sans-serif"
-      );
-      label.setAttribute("font-size", "11");
-      label.setAttribute("font-weight", "500");
-      label.textContent = `${geometry.areaPerFloor.toFixed(0)} m²`;
-      svg.appendChild(label);
-    }
-
-    // Draw all edges with mode-aware color
-    allEdges.forEach(([p1, p2]) => {
-      const edge = createLine(p1, p2, modelColor, 3);
-      svg.appendChild(edge);
-    });
-
-    // Draw all vertex nodes on top with mode-aware color
-    allVertices.forEach(vertex => {
-      const node = createNode(vertex, modelColor, 5);
-      svg.appendChild(node);
-    });
-
-    // Draw dimension annotations (SVG) with mode-aware color
-    // Length label (bottom edge)
-    const lengthLabelPos = toIso(0, -length / 2 - 5, 0);
-    const lengthLabel = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "text"
-    );
-    lengthLabel.setAttribute("x", lengthLabelPos.x);
-    lengthLabel.setAttribute("y", lengthLabelPos.y + 15);
-    lengthLabel.setAttribute("text-anchor", "middle");
-    lengthLabel.setAttribute("fill", modelColor);
-    lengthLabel.setAttribute(
-      "font-family",
-      "-apple-system, BlinkMacSystemFont, sans-serif"
-    );
-    lengthLabel.setAttribute("font-size", "11");
-    lengthLabel.textContent = `${length.toFixed(1)}m`;
-    svg.appendChild(lengthLabel);
-
-    // Width label (bottom right edge)
-    const widthLabelPos = toIso(width / 2 + 5, 0, 0);
-    const widthLabel = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "text"
-    );
-    widthLabel.setAttribute("x", widthLabelPos.x + 20);
-    widthLabel.setAttribute("y", widthLabelPos.y);
-    widthLabel.setAttribute("text-anchor", "middle");
-    widthLabel.setAttribute("fill", modelColor);
-    widthLabel.setAttribute(
-      "font-family",
-      "-apple-system, BlinkMacSystemFont, sans-serif"
-    );
-    widthLabel.setAttribute("font-size", "11");
-    widthLabel.textContent = `${width.toFixed(1)}m`;
-    svg.appendChild(widthLabel);
-
-    // Height label (left edge)
-    const heightLabelPos = toIso(
-      -width / 2 - 10,
-      length / 2,
-      geometry.height / 2
-    );
-    const heightLabel = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "text"
-    );
-    heightLabel.setAttribute("x", heightLabelPos.x - 30);
-    heightLabel.setAttribute("y", heightLabelPos.y);
-    heightLabel.setAttribute("text-anchor", "middle");
-    heightLabel.setAttribute("fill", modelColor);
-    heightLabel.setAttribute(
-      "font-family",
-      "-apple-system, BlinkMacSystemFont, sans-serif"
-    );
-    heightLabel.setAttribute("font-size", "11");
-    heightLabel.textContent = `${geometry.height.toFixed(1)}m`;
-    svg.appendChild(heightLabel);
-
-    // Overlay geometry info in top-left (SVG)
-    const infoLines = [
-      `Stories: ${stories} × ${geometry.areaPerFloor.toFixed(1)} m² = ${(stories * geometry.areaPerFloor).toFixed(1)} m²`,
-      `Footprint: ${length.toFixed(1)}m × ${width.toFixed(1)}m`,
-      `Story Height: ${storyHeight.toFixed(2)}m`,
-      `Total Volume: ${geometry.volume.toFixed(0)} m³ (${geometry.volumePerFloor.toFixed(0)} m³/floor)`,
-    ];
-
-    const x = 20;
-    let y = 30;
-    const lineHeight = 18;
-
-    infoLines.forEach(line => {
-      const infoText = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "text"
-      );
-      infoText.setAttribute("x", x);
-      infoText.setAttribute("y", y);
-      infoText.setAttribute("fill", modelColor);
-      infoText.setAttribute("font-family", "monospace");
-      infoText.setAttribute("font-size", "12");
-      infoText.textContent = line;
-      svg.appendChild(infoText);
-      y += lineHeight;
+    // Delegate rendering to wombatRender.js
+    console.log(`🎨 [WOMBAT] Delegating render to wombatRender.js`);
+    window.TEUI.WombatRender.render(geometry, mode, svg, {
+      showBelowGrade: false, // Phase 2: will enable when implemented
     });
   }
 
