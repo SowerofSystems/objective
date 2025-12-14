@@ -1484,6 +1484,292 @@ When Section X needs to display fields owned by Section Y:
 
 ---
 
+## 🏗️ **Next Phase: Below-Grade Geometry Visualization** (Phase 2)
+
+**Goal**: Visualize basement/below-grade components using brown nodes and vectors to distinguish ground-facing surfaces (Ag) from air-facing surfaces (Ae).
+
+### Rationale
+
+**Current limitation**: WOMBAT shows above-grade building geometry but doesn't indicate when a building has:
+- A slab-on-grade foundation (`d_95` > 0)
+- Below-grade walls (basement walls, `d_94` > 0)
+- Combined basement with slab (`d_94` + `d_95` = `d_102` = Ag)
+
+**User value**:
+- Visual confirmation that basement geometry is included in thermal model
+- Clear distinction between air-facing (blue) and ground-facing (brown) surfaces
+- Matches S12's color coding (Ae = powder blue, Ag = brown)
+
+### Data Sources (from S11)
+
+All values available via StateManager (S11 publishes to StateManager):
+
+| Field | Description | Color |
+|-------|-------------|-------|
+| `d_95` / `ref_d_95` | Slab Area (m²) | Brown (ground-facing) |
+| `d_94` / `ref_d_94` | Below-Grade Wall Area (m²) | Brown (ground-facing) |
+| `d_85-d_93` | Above-grade components | Blue (air-facing) |
+
+**Key Insight**: `d_102` (Ag total) = `d_94` + `d_95` (basement walls + slab)
+
+### Implementation Options
+
+#### **Option A: Ground Plane + Basement Extension** (RECOMMENDED)
+
+**Visual Design**:
+```
+Above Grade (Blue):          Below Grade (Brown):
+      ┌────┐                      ═══════  ← Grade line
+     ╱│    │╲                     ┌────┐
+    ╱ │    │ ╲                    │    │   ← Basement walls (d_94)
+   ●──●────●──●                   │    │
+   │  │    │  │                   ●══●═●══● ← Slab (d_95)
+   │  │    │  │
+   ●──●────●──●
+   ═══════════  ← Grade line (new)
+   ●──●────●──● ← Basement nodes (brown)
+   │  │    │  │
+   ●══●════●══● ← Slab nodes (brown)
+```
+
+**Rendering Logic**:
+1. **Ground Plane**: If `d_95 > 0` OR `d_94 > 0`, draw grade line at z=0
+2. **Above-Grade Stories**: d_199 stories ALWAYS stacked from z=0 upward (blue)
+3. **Basement Nodes**: Create 4 perimeter nodes at z=0 (brown, at grade level)
+4. **Basement Walls**: If `d_94 > 0`, extend brown vectors downward from grade nodes (z=0 to z=-depth)
+5. **Slab**: If `d_95 > 0`, draw brown vectors connecting basement floor nodes
+
+**Critical Rule**:
+- **Stories (d_199)**: ALWAYS z+ (above grade)
+  - 1 storey = one floor from z=0 to z=storyHeight
+  - Basement is NOT counted in stories - it's additional below-grade space
+- **Basement**: ALWAYS z- (below grade)
+  - Independent of storey count
+  - Rendered in brown to distinguish from above-grade blue
+
+**Depth Calculation**:
+```javascript
+// Calculate basement depth from wall area
+const basementPerimeter = 2 * (footprint.length + footprint.width);
+const basementDepth = d_94 > 0 ? d_94 / basementPerimeter : 0;
+
+// Above-grade building: z = 0 to z = stories * storyHeight (BLUE)
+// Basement: z = 0 to z = -basementDepth (BROWN)
+```
+
+#### **Option B: Grade Line Only** (SIMPLER)
+
+If `d_95 > 0` (slab exists), draw a thin brown line at z=0 labeled "Grade" to indicate slab-on-grade foundation.
+
+**Use Case**: Buildings with slab but no basement (d_94 = 0).
+
+### Visual Color Coding
+
+**Above Grade** (Air-Facing - Ae):
+- Nodes: Blue circles with white borders
+- Edges: Blue lines (3px)
+- Label: "Ae" with area value
+
+**Below Grade** (Ground-Facing - Ag):
+- Nodes: Brown circles with white borders
+- Edges: Brown lines (3px)
+- Label: "Ag" with area value
+- Grade line: Dashed brown line
+
+**Color Constants**:
+```javascript
+const COLORS = {
+  air: "#b0e0e6",      // Powder blue (text-air-facing)
+  ground: "#8b4513",    // SaddleBrown (text-ground-facing)
+  target: "#007bff",    // Blue (Target mode)
+  reference: "#dc3545", // Red (Reference mode)
+};
+```
+
+### Implementation Steps
+
+**Step 1: Read S11 Slab/Basement Data** (5 min)
+```javascript
+// In solveGeometry(), read from StateManager
+const slabArea = parseFloat(getModeAwareValue("d_95", isReferenceCalculation)) || 0;
+const basementWallArea = parseFloat(getModeAwareValue("d_94", isReferenceCalculation)) || 0;
+
+const hasBasement = basementWallArea > 0;
+const hasSlab = slabArea > 0;
+```
+
+**Step 2: Calculate Basement Geometry** (10 min)
+```javascript
+function calculateBasementGeometry(footprint, basementWallArea, slabArea) {
+  const perimeter = 2 * (footprint.length + footprint.width);
+  const basementDepth = basementWallArea > 0 ? basementWallArea / perimeter : 0;
+
+  return {
+    depth: basementDepth,
+    nodes: [
+      { x: -footprint.width/2, y: -footprint.length/2, z: -basementDepth },
+      { x: footprint.width/2, y: -footprint.length/2, z: -basementDepth },
+      { x: footprint.width/2, y: footprint.length/2, z: -basementDepth },
+      { x: -footprint.width/2, y: footprint.length/2, z: -basementDepth },
+    ],
+  };
+}
+```
+
+**Step 3: Draw Grade Line** (5 min)
+```javascript
+// SVG dashed line at z=0
+if (hasSlab || hasBasement) {
+  const gradeLine = document.createElementNS(svgNS, "line");
+  gradeLine.setAttribute("x1", -50);
+  gradeLine.setAttribute("y1", isoY(0, 0, 0).y);
+  gradeLine.setAttribute("x2", 350);
+  gradeLine.setAttribute("y2", isoY(0, 0, 0).y);
+  gradeLine.setAttribute("stroke", COLORS.ground);
+  gradeLine.setAttribute("stroke-width", "2");
+  gradeLine.setAttribute("stroke-dasharray", "5,5");
+  svgElement.appendChild(gradeLine);
+}
+```
+
+**Step 4: Draw Basement Walls** (10 min)
+```javascript
+// Brown vertical vectors from grade to basement floor
+if (hasBasement) {
+  for (let i = 0; i < 4; i++) {
+    const topNode = { ...gradeNodes[i], z: 0 };
+    const bottomNode = basementNodes[i];
+
+    drawEdge(topNode, bottomNode, COLORS.ground, 3);
+  }
+}
+```
+
+**Step 5: Draw Basement Floor (Slab)** (10 min)
+```javascript
+// Brown horizontal vectors at basement floor level
+if (hasSlab) {
+  const z = hasBasement ? -basementDepth : 0;
+
+  // 4 perimeter edges
+  for (let i = 0; i < 4; i++) {
+    const node1 = basementNodes[i];
+    const node2 = basementNodes[(i + 1) % 4];
+    drawEdge(node1, node2, COLORS.ground, 3);
+  }
+
+  // Brown nodes at corners
+  basementNodes.forEach(node => {
+    drawNode(node, COLORS.ground, 5);
+  });
+}
+```
+
+**Step 6: Add Ag Label** (5 min)
+```javascript
+// Label showing total ground-facing area
+const agTotal = slabArea + basementWallArea;
+if (agTotal > 0) {
+  const label = document.createElementNS(svgNS, "text");
+  label.textContent = `Ag: ${agTotal.toFixed(1)} m²`;
+  label.setAttribute("fill", COLORS.ground);
+  // Position below basement geometry
+}
+```
+
+### Testing Scenarios
+
+| S11 Input | Foundation Type | Expected S19 Visualization |
+|-----------|-----------------|----------------------------|
+| d_87 > 0, d_94 = 0, d_95 = 0 | **Crawlspace (vented)** | Blue floor vectors at base (z=0), all air-facing |
+| d_94 = 0, d_95 > 0, d_87 = 0 | **Slab-on-grade** | Brown grade line + brown slab perimeter at z=0 |
+| d_94 > 0, d_95 > 0, d_87 = 0 | **Full basement** | Brown box below grade (walls + slab) |
+| d_94 > 0, d_95 = 0, d_87 = 0 | **Basement walls only** | Brown walls extending down (unusual but render) |
+| **d_87 > 0, d_95 > 0, d_94 = 0** | **Mixed: Floor over slab** | **EDGE CASE - See below** |
+| **d_87 > 0, d_94 > 0, d_95 > 0** | **Mixed: Floor over basement** | **EDGE CASE - See below** |
+
+**Foundation Type Logic**:
+- **d_87 (Floor Exposed to Air)**: Crawlspace or raised floor - blue vectors
+  - Floor at z=0 is air-facing (blue)
+  - Example: Conditioned space over unheated garage
+- **d_95 (Slab)**: Slab-on-grade foundation - brown vectors at grade level
+  - Ground-facing (Ag)
+  - Grade line at z=0
+- **d_94 (Below-Grade Walls)**: Basement walls - brown vectors extending downward
+  - Ground-facing (Ag)
+  - Basement depth calculated from wall area
+
+**Edge Case: Mixed Floor Types (d_87 > 0 AND (d_94 > 0 OR d_95 > 0))**
+
+This represents a building with BOTH:
+- Floor exposed to air (e.g., conditioned space over garage)
+- AND ground-facing components (basement or slab in another part)
+
+**Example Scenario**: 2-story house with:
+- 1st floor partially over basement (d_95 > 0)
+- 1st floor partially over garage (d_87 > 0)
+- Total floor area = d_87 + d_95
+
+**Rendering Challenge**:
+- **Cannot determine spatial layout** from area values alone
+- S11 provides TOTAL areas, not spatial distribution
+- Need to make reasonable assumption for visualization
+
+**Proposed Visualization Strategy**:
+```javascript
+// If BOTH floor types exist, show both but indicate uncertainty
+if (d_87 > 0 && (d_94 > 0 || d_95 > 0)) {
+  // Option A: Split footprint (show both foundation types)
+  // Draw blue floor on one side, brown basement on other
+  // Add visual indicator: "Mixed foundation (partial areas shown)"
+
+  // Option B: Layered approach (simpler)
+  // Draw basement/slab in brown (z < 0)
+  // Draw air-exposed floor in blue AT z=0
+  // Label: "Floor: X m² air-facing, Y m² ground-facing"
+
+  // Option C: Warning indicator (safest for Phase 2)
+  // Render as if d_87 = 0 (show basement/slab only)
+  // Add warning badge: "⚠️ Mixed foundation - visualization simplified"
+}
+```
+
+**Recommendation for Phase 2**:
+Use **Option C** initially - show ground-facing components and add warning indicator when d_87 > 0 exists alongside d_94/d_95. This acknowledges the limitation without over-engineering a spatial layout we can't infer from area data.
+
+**Future Enhancement (Phase 4)**:
+- Allow user to specify foundation type distribution
+- Add UI control: "Foundation split: [Basement: 60%] [Crawlspace: 40%]"
+- Or auto-detect from ratio: if d_87 < 20% of total, treat as minor (show basement only)
+
+**Validation**:
+- If d_87 = 0 AND d_94 = 0 AND d_95 = 0: ❌ Invalid (building needs a floor!)
+- If d_87 > 0 ONLY: Ag = 0 (no ground contact), all geometry blue, no grade line
+- If (d_94 > 0 OR d_95 > 0) ONLY: Ag = d_94 + d_95, show basement/slab, grade line at z=0
+- If d_87 > 0 AND (d_94 > 0 OR d_95 > 0): ⚠️ Mixed foundation - Phase 2 shows basement with warning
+- Brown color matches text-ground-facing CSS class (#8b4513)
+- Blue color matches text-air-facing CSS class (#b0e0e6)
+- Grade line visible ONLY when ground-facing components exist
+- Basement depth reasonable (typical: 2-3m for ~200-300 m² wall area)
+- Total floor area in S12 = d_87 + d_95 (air + ground floor components)
+
+### Code Stats (Estimated)
+
+- **Lines added**: ~80 (basement geometry calculation + rendering)
+- **Complexity**: Low (reuses existing isometric projection)
+- **Dependencies**: S11 fields already published to StateManager
+- **Risk**: Low (additive feature, doesn't modify existing above-grade logic)
+
+### Future Enhancements (Phase 3+)
+
+1. **Ground Temperature Gradient**: Color basement walls darker → lighter from floor to grade
+2. **Soil Contact Annotation**: Label showing frost depth or ground temperature zone
+3. **Basement Window Wells**: If basement has windows (d_92 allocated below grade)
+4. **Walkout Basement**: Detect if one wall is above grade (asymmetric basement)
+
+---
+
 **Document Status**: ACTIVE - Single source of truth (replaces S19-WOMBAT.md)
 **Last Updated**: 2025-12-14
-**Next Review**: After Ae/Ag fix complete
+**Next Phase**: Below-grade geometry visualization (before window distribution)
+**Next Review**: After Ae/Ag display fields complete
