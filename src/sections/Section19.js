@@ -324,6 +324,62 @@ window.TEUI.SectionModules.sect19 = (function () {
       },
     },
 
+    // Display-only: Area Exposed to Air (mirrored from S12 d_101)
+    row101: {
+      id: "19.Ae",
+      rowId: "19.Ae",
+      label: "Total Area Exposed to Air (Ae)",
+      cells: {
+        a: {},
+        b: {},
+        c: { label: "Total Area Exposed to Air (Ae)" },
+        d: {
+          fieldId: "d_101",
+          type: "calculated",
+          value: "2476.62",
+          classes: ["text-air-facing"],
+          label: "Total area of building components exposed to air (from S12)",
+        },
+        e: { content: "m²", classes: ["unit-label"] },
+        f: { content: "U-Val. for Ae", classes: ["label-main"] },
+        g: {
+          fieldId: "g_101",
+          type: "calculated",
+          value: "0.278",
+          label: "Aggregate U-value for air-facing surfaces (from S12)",
+        },
+        h: { content: "W/m²·K", classes: ["unit-label"] },
+      },
+    },
+
+    // Display-only: Area Exposed to Ground (mirrored from S12 d_102)
+    row102: {
+      id: "19.Ag",
+      rowId: "19.Ag",
+      label: "Total Area Exposed to Ground (Ag)",
+      cells: {
+        a: {},
+        b: {},
+        c: { label: "Total Area Exposed to Ground (Ag)" },
+        d: {
+          fieldId: "d_102",
+          type: "calculated",
+          value: "1100.42",
+          classes: ["text-ground-facing"],
+          label: "Total area of building components exposed to ground (from S12)",
+        },
+        e: { content: "m²", classes: ["unit-label"] },
+        f: { content: "U-Val. for Ag", classes: ["label-main"] },
+        g: {
+          fieldId: "g_102",
+          type: "calculated",
+          value: "0.324",
+          label: "Aggregate U-value for ground-facing surfaces (from S12)",
+        },
+        h: { content: "W/m²·K", classes: ["unit-label"] },
+      },
+    },
+
     // User controls for topology solver
     row200: {
       id: "19.1",
@@ -494,7 +550,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     }
 
     // Add data rows
-    ["row199", "row198", "row200", "row201", "row203"].forEach(key => {
+    ["row199", "row198", "row101", "row102", "row200", "row201", "row203"].forEach(key => {
       if (sectionRows[key]) {
         layoutRows.push(createLayoutRow(sectionRows[key]));
       }
@@ -1307,6 +1363,46 @@ window.TEUI.SectionModules.sect19 = (function () {
           // Recalculate (will run both engines and update visualization)
           calculateAll();
         }
+      });
+
+      // ✅ DISPLAY-ONLY FIELDS: Ae and Ag from S12 (d_101, g_101, d_102, g_102)
+      // These are calculated in S12 and displayed in S19 - no state storage needed
+      // FieldManager will update the DOM automatically when values change
+
+      // Area Exposed to Air (Ae) - Target mode
+      window.TEUI.StateManager.addListener("d_101", () => {
+        // FieldManager handles display update automatically
+      });
+
+      window.TEUI.StateManager.addListener("g_101", () => {
+        // FieldManager handles display update automatically
+      });
+
+      // Area Exposed to Air (Ae) - Reference mode
+      window.TEUI.StateManager.addListener("ref_d_101", () => {
+        // FieldManager handles display update automatically
+      });
+
+      window.TEUI.StateManager.addListener("ref_g_101", () => {
+        // FieldManager handles display update automatically
+      });
+
+      // Area Exposed to Ground (Ag) - Target mode
+      window.TEUI.StateManager.addListener("d_102", () => {
+        // FieldManager handles display update automatically
+      });
+
+      window.TEUI.StateManager.addListener("g_102", () => {
+        // FieldManager handles display update automatically
+      });
+
+      // Area Exposed to Ground (Ag) - Reference mode
+      window.TEUI.StateManager.addListener("ref_d_102", () => {
+        // FieldManager handles display update automatically
+      });
+
+      window.TEUI.StateManager.addListener("ref_g_102", () => {
+        // FieldManager handles display update automatically
       });
     }
   }
