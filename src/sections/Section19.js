@@ -1046,30 +1046,10 @@ window.TEUI.SectionModules.sect19 = (function () {
     // ⚠️ CRITICAL: WOMBAT owns d_198 and d_199 - must publish to StateManager on user edit
     // Per 4012-CHEATSHEET Anti-Pattern 6: Only listen to OWN input fields via DOM
 
-    // Handle d_199 dropdown (stories)
-    const storiesDropdown = sectionElement.querySelector('[data-field-id="d_199"]');
-    console.log(`[WOMBAT] setupFieldListeners: Stories dropdown found =`, storiesDropdown);
-    if (storiesDropdown && !storiesDropdown.hasWombatListener) {
-      storiesDropdown.addEventListener("change", function(event) {
-        const fieldId = this.getAttribute("data-field-id");
-        const value = this.value;
-        console.log(`[WOMBAT DOM] Stories dropdown changed: ${fieldId} = "${value}" (type: ${typeof value})`);
-
-        if (value && value !== "undefined") {
-          // MODE-AWARE: Use ModeManager.setValue for dual-state publishing
-          ModeManager.setValue(fieldId, value, "user-modified");
-          console.log(`[WOMBAT] ✅ Published ${fieldId} = ${value} via ModeManager (${ModeManager.currentMode} mode)`);
-
-          if (isActivated) {
-            calculateAll(); // Will run dual-engine calculations
-          }
-        } else {
-          console.error(`[WOMBAT] ❌ Dropdown value is invalid: "${value}"`);
-        }
-      });
-      storiesDropdown.hasWombatListener = true;
-      console.log(`[WOMBAT] ✅ Stories dropdown listener attached to d_199`);
-    }
+    // ✅ ARCHITECTURAL COMPLIANCE: d_199 dropdown handled by FieldManager
+    // FieldManager already has change listener that calls routeToSectionModeManager()
+    // which routes through ModeManager.setValue() and calls calculateAll()
+    // No custom listener needed (removed non-standard double listener)
 
     // Handle d_198 number input field (volume)
     // Note: Field is <input type="number">, not contenteditable

@@ -1197,6 +1197,7 @@ TEUI.FieldManager = (function () {
         // Add change listener to update state
         selectElement.addEventListener("change", function () {
           // ✅ DUAL-STATE AWARE: Route through section ModeManager
+          console.log(`[FieldManager] Dropdown ${fieldId} changed to "${this.value}" - routing to ModeManager`);
           routeToSectionModeManager(fieldId, this.value, "user-modified");
 
           // Update dependent dropdowns if needed
