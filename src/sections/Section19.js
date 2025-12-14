@@ -649,6 +649,37 @@ window.TEUI.SectionModules.sect19 = (function () {
     const perimeter = 2 * (length + width);
     const wallHeight = wallArea / perimeter;
 
+    // Phase 5: Below-Grade Geometry (WOMBAT Phase 2)
+    // Read S11 below-grade data
+    const slabArea =
+      parseFloat(getModeAwareValue("d_95", isReferenceCalculation)) || 0;
+    const basementWallArea =
+      parseFloat(getModeAwareValue("d_94", isReferenceCalculation)) || 0;
+    const floorExposedToAir =
+      parseFloat(getModeAwareValue("d_87", isReferenceCalculation)) || 0;
+
+    const hasBasement = basementWallArea > 0;
+    const hasSlab = slabArea > 0;
+    const hasRaisedFloor = floorExposedToAir > 0;
+
+    // Calculate basement depth from wall area
+    const basementDepth = hasBasement ? basementWallArea / perimeter : 0;
+
+    // Determine foundation type
+    function determineFoundationType(hasSlab, hasBasement, hasRaisedFloor) {
+      if (hasBasement && hasSlab) return "full-basement";
+      if (hasSlab && !hasBasement) return "slab-on-grade";
+      if (!hasSlab && !hasBasement && hasRaisedFloor) return "raised-floor";
+      if (hasBasement && !hasSlab) return "basement-no-slab";
+      return "unknown";
+    }
+
+    const foundationType = determineFoundationType(
+      hasSlab,
+      hasBasement,
+      hasRaisedFloor
+    );
+
     // Store solved dimensions
     const solvedGeometry = {
       footprint: { length, width, area: footprintArea },
@@ -669,6 +700,15 @@ window.TEUI.SectionModules.sect19 = (function () {
         area: roofArea,
       },
       volume: volume,
+      belowGrade: {
+        hasBasement: hasBasement,
+        hasSlab: hasSlab,
+        hasRaisedFloor: hasRaisedFloor,
+        basementDepth: basementDepth,
+        slabArea: slabArea,
+        basementWallArea: basementWallArea,
+        foundationType: foundationType,
+      },
     };
 
     // DUAL-STATE: Store calculated values in appropriate state object
@@ -806,7 +846,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     content.innerHTML = `
       <p style="margin: 0 0 15px 0; font-size: 14px; line-height: 1.6;">
         WOMBAT shows how <strong>OBJECTIVE "sees" your building</strong> based on thermal areas you entered.
-        This is NOT a 3D architectural model - it's a <strong>thermal topology</strong> where areas drive form. Why Wombat? Because Wombats poop little cubes, and that's what this section does with your geometry! 
+        This is NOT a 3D architectural model - it's a <strong>thermal topology</strong> where areas drive form. Why Wombat? Because Wombats poop little cubes, and that's what this section does with your geometry!
       </p>
       <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">
         <li><strong>Volume is sacred:</strong> Section12's volume parameter is always preserved exactly</li>
@@ -814,6 +854,8 @@ window.TEUI.SectionModules.sect19 = (function () {
         <li><strong>Aspect ratio shapes footprint:</strong> 1.0 = square, 2.0 = 2:1 rectangle</li>
         <li><strong>Roof pitch emerges from roof area:</strong> Larger roof = steeper pitch, based on vector algebra and rational trigonometry</li>
         <li><strong>Walls deform to match area constraints:</strong> No validation errors</li>
+        <li><strong>Below-grade geometry:</strong> Brown dashed lines = ground-facing (Ag), Blue/Red solid lines = air-facing (Ae)</li>
+        <li><strong>Grade line at z=0:</strong> Shows separation between above and below grade. Dashed = hidden (below ground), Solid = visible (at grade)</li>
         <li style="color: #dc3545;"><strong>⚠ We know this 3D shape may look nothing like your building:</strong> Think of this like a graph, an abstract representation of the surface geometry OBJECTIVE uses for its calculations. Over time, these models will become more refined, but for now, we hope this gives you an idea of what OBJECTIVE is considering for its area calculations</li>
       </ul>
     `;
