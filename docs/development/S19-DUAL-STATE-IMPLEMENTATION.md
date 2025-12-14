@@ -496,13 +496,38 @@ Expected Color: #dc3545 (reference mode)
 **Evidence**: Diagnostic shows `d_199 === ref_d_199`
 **Next**: Change one value and verify isolation works
 
-#### **3. Stories Dropdown "undefined" Errors**
+#### **3. Stories Dropdown "undefined" Errors** ⚠️
+**Status**: Active investigation - 2025-12-13 (WOMBAT-DEBUG branch)
 **Evidence from Logs**:
 ```
 [WOMBAT] ❌ Dropdown value is invalid: "undefined"
+(anonymous) @ Section19.js:1067
 ```
-**Possible Cause**: refreshUI() or mode switching passing undefined to dropdown
-**Impact**: May prevent proper state display
+**Current Behavior**: Dropdown still works in both Target and Reference modes despite errors
+**Impact**: Console errors but no functional breakage
+
+**Root Cause Analysis**:
+- Comparing S19 dropdown pattern vs S12 (which works correctly)
+- S12 pattern (d_103 - stories dropdown): [Section12.js:770-786](src/sections/Section12.js#L770-L786)
+- S19 pattern (d_199 - mirror field): [Section19.js:265-296](src/sections/Section19.js#L265-L296)
+
+**Possible Causes**:
+1. **Timing Issue**: Listener fires before dropdown fully initialized by FieldManager
+2. **Element Type Mismatch**: Dropdown might not be standard `<select>` element
+3. **Value Attribute**: Default value "1.5" not being set before listener attaches
+4. **Field Definition Differences**: S19 has extra `label` property S12 doesn't have
+
+**Standardization Needed**:
+- Match S12's exact dropdown field definition pattern
+- Remove extra `label` property from dropdown cell definition
+- Add defensive value validation in change handler
+- Verify dropdown element type and initialization timing
+
+**Next Steps**:
+1. Inspect actual DOM element in browser console
+2. Compare field definitions line-by-line with S12
+3. Add better validation/logging to change handler
+4. Test with standardized field definition
 
 ### **🔍 ROOT CAUSE ANALYSIS**
 
@@ -587,26 +612,65 @@ Simplified S19 to follow S16's passive visualization pattern per user guidance:
 6. ✅ **Volume field input** - No longer locks (passive pattern fixed it!)
 7. ✅ **Bidirectional sync logic** - All StateManager flows correct
 
-**Remaining Issue - Table Display Updates**: ⚠️
+**Remaining Issue - Target Mode Volume Upstream Write**: ⚠️ **FINAL BUG**
+
+**Current Bidirectional Flow Status**:
+| Field | Direction | Target Mode | Reference Mode |
+|-------|-----------|-------------|----------------|
+| **Volume** (d_105/d_198) | S12 → S19 | ✅ Works | ✅ Works |
+| **Volume** (d_198/d_105) | S19 → S12 | ❌ **BROKEN** | ✅ Works |
+| **Stories** (d_103/d_199) | S12 ↔ S19 | ✅ Bidirectional | ✅ Bidirectional |
 
 **Symptom**:
-- S12 edits → S19 **diagram** updates ✅ (both modes)
-- S12 edits → S19 **table** remains stale ❌ (both modes)
-- Workaround: Toggle mode Reference→Target→Reference forces table refresh
+- **Reference mode volume**: User edits `d_198` → publishes `ref_d_198` → S12 `ref_d_105` updates ✅
+- **Target mode volume**: User edits `d_198` → publishes `d_198` → S12 `d_105` does NOT update ❌
+- Stories dropdown works perfectly in BOTH modes (bidirectional)
 
-**Root Cause Hypothesis**:
-S19 table fields need to subscribe to StateManager changes like passive sections do.
-Currently:
-- Diagram updates via `calculateAll()` → `updateVisualization()` ✅
-- Table should update via FieldManager listening to StateManager ❌ (not wired)
+**Key Observation**:
+The ModeManager.setValue() logic is IDENTICAL for both modes [Section19.js:227-241](src/sections/Section19.js#L227-L241):
+```javascript
+setValue: function (fieldId, value, source = "user-modified") {
+  const currentState = this.currentMode === "target" ? TargetState : ReferenceState;
+  currentState.setValue(fieldId, value);
 
-**Solution Path**:
-FieldManager should automatically update S19's table fields when StateManager publishes:
-- `d_198` changes → update table row for Volume
-- `d_199` changes → update table row for Stories
-- `h_200`, `h_201`, `h_203` changes → update calculated fields
+  if (this.currentMode === "target") {
+    console.log(`[WOMBAT ModeManager] Publishing to StateManager: ${fieldId} = ${value} (Target mode)`);
+    window.TEUI.StateManager.setValue(fieldId, value, source);
+  } else {
+    console.log(`[WOMBAT ModeManager] Publishing to StateManager: ref_${fieldId} = ${value} (Reference mode)`);
+    window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, source);
+  }
+}
+```
 
-This is standard FieldManager behavior for other sections - need to verify S19 fields are properly registered.
+**Why Does Reference Work But Target Doesn't?**:
+- Both modes call ModeManager.setValue() on Enter keypress [Section19.js:1103](src/sections/Section19.js#L1103)
+- Both modes publish to StateManager correctly (Target: `d_198`, Reference: `ref_d_198`)
+- Dropdown (d_199) works in BOTH modes using same pattern
+- **Hypothesis**: S12's listener for `d_198` may be missing or not triggering DOM update
+
+**Investigation Path**:
+1. Check if S12 has a StateManager listener for `d_198` (should mirror `ref_d_198` listener)
+2. Compare S12's `d_103` listener (works) vs `d_105` listener (check if exists)
+3. Verify S12's listener calls `FieldManager.updateFieldDisplay()` for `d_105` (like it does for `d_103`)
+4. Check if `d_105` field definition requires special handling vs dropdown
+
+**Expected Fix**:
+S12 needs a Target mode listener mirroring the Reference mode listener structure:
+```javascript
+// S12 should have (check if missing):
+window.TEUI.StateManager.addListener("d_198", (newValue) => {
+  const currentValue = TargetState.getValue("d_105");
+  if (currentValue !== newValue) {
+    TargetState.setValue("d_105", newValue);
+    window.TEUI.StateManager.setValue("d_105", newValue, "external");
+    // DOM UPDATE (critical difference from Reference mode?)
+    const fieldDef = window.TEUI.FieldManager.getField("d_105");
+    window.TEUI.FieldManager.updateFieldDisplay("d_105", newValue, fieldDef);
+    calculateAll();
+  }
+});
+```
 
 ### **🎯 NEXT SESSION GOAL**
 
