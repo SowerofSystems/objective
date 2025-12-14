@@ -117,6 +117,15 @@ S12 may be missing a Target mode listener for `d_198`, or the listener doesn't c
 
 **Expected Fix Location**: Section12.js `initializeEventHandlers()` function
 
+**Investigation Path**:
+1. Search Section12.js for `addListener("d_198"` to verify Target mode listener exists
+2. Compare with `addListener("d_103"` (stories - works in both modes) vs `addListener("d_105"` (volume - check structure)
+3. Verify the `d_198` listener calls `FieldManager.updateFieldDisplay("d_105", newValue, fieldDef)`
+4. Check if `d_105` field definition requires special handling compared to dropdown `d_103`
+
+**Key Observation**:
+The ModeManager.setValue() logic is IDENTICAL for both Target and Reference modes ([Section19.js:227-241](../../src/sections/Section19.js#L227-L241)). Since Reference mode works perfectly and Target mode doesn't, the issue must be in S12's listener implementation, not S19's publishing logic.
+
 ---
 
 ## Architecture: Pattern A Dual-State
