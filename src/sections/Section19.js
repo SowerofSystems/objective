@@ -887,14 +887,96 @@ window.TEUI.SectionModules.sect19 = (function () {
     });
   }
 
-  function toggleActivation() {
-    isActivated = !isActivated;
+  /**
+   * Sync S19 fields and state from StateManager (S12 values)
+   * Call this on activation/refresh to ensure values are current after import
+   */
+  function syncFromStateManager() {
+    console.log("[WOMBAT] Syncing values from StateManager...");
 
+    // Read current values from StateManager (S12's d_105/d_103)
+    const volumeFromS12 = window.TEUI.StateManager.getValue("d_105");
+    const refVolumeFromS12 = window.TEUI.StateManager.getValue("ref_d_105");
+    const storiesFromS12 = window.TEUI.StateManager.getValue("d_103");
+    const refStoriesFromS12 = window.TEUI.StateManager.getValue("ref_d_103");
+
+    // Update Target state
+    if (volumeFromS12) {
+      const currentValue = TargetState.getValue("d_198");
+      if (currentValue !== volumeFromS12) {
+        TargetState.setValue("d_198", volumeFromS12);
+        console.log(`[WOMBAT] Synced d_198 = ${volumeFromS12} from StateManager (d_105)`);
+
+        // Update DOM field
+        const volumeField = document.querySelector('#wombat [data-field-id="d_198"]');
+        if (volumeField) {
+          volumeField.textContent = window.TEUI.formatNumber(
+            window.TEUI.parseNumeric(volumeFromS12),
+            "number-2dp"
+          );
+        }
+      }
+    }
+
+    if (storiesFromS12) {
+      const currentValue = TargetState.getValue("d_199");
+      if (currentValue !== storiesFromS12) {
+        TargetState.setValue("d_199", storiesFromS12);
+        console.log(`[WOMBAT] Synced d_199 = ${storiesFromS12} from StateManager (d_103)`);
+
+        // Update DOM dropdown
+        const storiesDropdown = document.querySelector('#wombat [data-field-id="d_199"]');
+        if (storiesDropdown) {
+          storiesDropdown.textContent = storiesFromS12;
+        }
+      }
+    }
+
+    // Update Reference state
+    if (refVolumeFromS12) {
+      const currentValue = ReferenceState.getValue("d_198");
+      if (currentValue !== refVolumeFromS12) {
+        ReferenceState.setValue("d_198", refVolumeFromS12);
+        console.log(`[WOMBAT] Synced ref_d_198 = ${refVolumeFromS12} from StateManager (ref_d_105)`);
+
+        // Update DOM field if Reference mode is active
+        if (ModeManager?.currentMode === "reference") {
+          const volumeField = document.querySelector('#wombat [data-field-id="d_198"]');
+          if (volumeField) {
+            volumeField.textContent = window.TEUI.formatNumber(
+              window.TEUI.parseNumeric(refVolumeFromS12),
+              "number-2dp"
+            );
+          }
+        }
+      }
+    }
+
+    if (refStoriesFromS12) {
+      const currentValue = ReferenceState.getValue("d_199");
+      if (currentValue !== refStoriesFromS12) {
+        ReferenceState.setValue("d_199", refStoriesFromS12);
+        console.log(`[WOMBAT] Synced ref_d_199 = ${refStoriesFromS12} from StateManager (ref_d_103)`);
+
+        // Update DOM dropdown if Reference mode is active
+        if (ModeManager?.currentMode === "reference") {
+          const storiesDropdown = document.querySelector('#wombat [data-field-id="d_199"]');
+          if (storiesDropdown) {
+            storiesDropdown.textContent = refStoriesFromS12;
+          }
+        }
+      }
+    }
+  }
+
+  function toggleActivation() {
     const activateBtn = document.getElementById("wombat-activate-btn");
     const statusIndicator = document.getElementById("wombat-status");
 
-    if (isActivated) {
-      // Activate
+    if (!isActivated) {
+      // First activation only
+      isActivated = true;
+
       activateBtn.textContent = "🔄 Refresh Topology";
       activateBtn.classList.remove("btn-primary");
       activateBtn.classList.add("btn-success");
@@ -905,24 +987,16 @@ window.TEUI.SectionModules.sect19 = (function () {
       }
 
       console.log("[WOMBAT] Topology view activated");
-      const mode = ModeManager?.currentMode || "target";
-      updateVisualization(mode);
     } else {
-      // Deactivate
-      activateBtn.textContent = "🏗️ Activate Topology View";
-      activateBtn.classList.remove("btn-success");
-      activateBtn.classList.add("btn-primary");
-
-      if (statusIndicator) {
-        statusIndicator.innerHTML =
-          '<span style="color: #dc3545;">●</span> Inactive';
-      }
-
-      console.log("[WOMBAT] Topology view deactivated");
-
-      // Clear SVG and show placeholder
-      drawPlaceholder();
+      // Already activated - this is a refresh
+      console.log("[WOMBAT] Refreshing topology");
     }
+
+    // Sync values from StateManager before rendering (handles post-import scenarios)
+    syncFromStateManager();
+
+    const mode = ModeManager?.currentMode || "target";
+    updateVisualization(mode);
   }
 
   //==========================================================================
