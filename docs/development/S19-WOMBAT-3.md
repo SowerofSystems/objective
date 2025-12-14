@@ -1363,8 +1363,123 @@ d_85-d_95, d_105        "Jello Cube"       Vertices adapt to     Color-coded
 **Downstream** (S19 publishes to):
 - Section 12 - Geometry dimensions `h_200`, `h_201`, `h_203`
 
+**Display-Only** (S19 reads from S12 for display, no ownership):
+- Section 12 - `d_101`/`g_101` (Ae - Area Exposed to Air), `d_102`/`g_102` (Ag - Area Exposed to Ground)
+
+---
+
+## 🔴 **WOMBAT-Ae-Ag Branch: Current Issue** (2025-12-14)
+
+**Branch**: `WOMBAT-Ae-Ag` (from main after PR#68)
+**Status**: Rows added but not updating from S12
+**Commit**: `1385393` - Field definitions added with empty listeners
+
+### Current State
+
+Two new rows added to S19 table to display S12's aggregate envelope areas:
+- **row101**: Ae (Area Exposed to Air) - `d_101` area (m²), `g_101` U-value (W/m²·K)
+- **row102**: Ag (Area Exposed to Ground) - `d_102` area (m²), `g_102` U-value (W/m²·K)
+
+**What works:**
+- ✅ Rows display in S19 table
+- ✅ Field definitions exist with default values
+- ✅ Layout integration complete
+- ✅ Empty StateManager listeners registered (placeholders)
+
+**What doesn't work:**
+- ❌ Values show defaults (2476.62, 0.278, 1100.42, 0.324), not current S12 values
+- ❌ Values don't update when S12 recalculates
+
+### Root Cause Analysis
+
+**The Problem**: S19 displays stale default values, not live S12 data.
+
+**Why**: S19 has no mechanism to read these values. The fields are defined as `type: "calculated"` with static default values, but nothing populates them from StateManager.
+
+**Key Architectural Question**: Who owns d_101/g_101/d_102/g_102?
+
+Per TECHNICAL2.md, StateManager is the single source of truth. S12 calculates and publishes these values to StateManager. S19 should simply read them - these are NOT S19 fields, they're S12 fields that S19 displays.
+
+### The Correct Solution (No Over-Engineering)
+
+S19 should treat d_101/g_101/d_102/g_102 exactly like it treats h_15 (Conditioned Area from S12):
+
+**Current working pattern** (h_15 from S12):
+```javascript
+// S12 publishes h_15 to StateManager
+window.TEUI.StateManager.setValue("h_15", conditionedArea, "calculated");
+
+// S19 reads h_15 from StateManager in calculations
+const conditionedArea = window.TEUI.StateManager.getValue("h_15");
+// ... uses in geometry solver
+```
+
+**Required pattern** (d_101/g_101/d_102/g_102 from S12):
+```javascript
+// S12 already publishes these (verify with grep)
+window.TEUI.StateManager.setValue("d_101", aeArea, "calculated");
+window.TEUI.StateManager.setValue("g_101", aeUValue, "calculated");
+// etc.
+
+// S19 needs to READ and DISPLAY these values
+// Option 1: Direct read in rendering/calculation
+// Option 2: StateManager listeners that update DOM
+```
+
+### Investigation Required
+
+**Step 1**: Verify S12 publishes these values
+```bash
+grep -n "setValue.*d_101" src/sections/Section12.js
+grep -n "setValue.*g_101" src/sections/Section12.js
+grep -n "setValue.*d_102" src/sections/Section12.js
+grep -n "setValue.*g_102" src/sections/Section12.js
+```
+
+**Step 2**: If S12 publishes to StateManager:
+- S19 can read via `StateManager.getValue("d_101")` etc.
+- No ownership, no state storage, just display
+- Like h_15, h_20, h_21 - external dependencies
+
+**Step 3**: If S12 does NOT publish to StateManager:
+- S12 needs to publish (add setValue calls)
+- This is required per StateManager-as-single-source-of-truth pattern
+- No DOM reads, no setTimeout, no fallbacks
+
+### Anti-Patterns to Avoid
+
+❌ **Over-Engineering Attempted**:
+- Custom FieldManager update logic
+- Special initialization functions
+- Mode-aware field reading from multiple sources
+- 800+ lines of technical debt
+
+✅ **Simple Pattern Required**:
+- S12 publishes to StateManager (if not already)
+- S19 reads from StateManager (like any external dependency)
+- Values auto-update via existing FieldManager flow
+- ~10 lines of code maximum
+
+### Proposed Fix (Afternoon Session)
+
+**If S12 already publishes d_101/g_101/d_102/g_102:**
+1. S19 field definitions stay as-is (type: "calculated")
+2. Add simple StateManager read in S19's display refresh
+3. Values auto-populate from StateManager
+
+**If S12 does NOT publish:**
+1. Add StateManager.setValue() calls in S12 calculations (4 lines)
+2. S19 field definitions stay as-is
+3. Values auto-populate from StateManager
+
+**No custom listeners, no initialization functions, no special logic.**
+
+Per TECHNICAL2.md: "Sections should **ONLY** listen to their own input fields via DOM. For fields owned by other sections, always use StateManager."
+
+d_101/g_101/d_102/g_102 are owned by S12. S19 has no business creating listeners for them - S19 just reads StateManager like any other external dependency.
+
 ---
 
 **Document Status**: ACTIVE - Single source of truth (replaces S19-WOMBAT.md)
-**Last Updated**: 2025-12-13
-**Next Review**: After 4.013 release
+**Last Updated**: 2025-12-14
+**Next Review**: After Ae/Ag fix complete
