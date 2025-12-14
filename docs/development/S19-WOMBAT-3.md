@@ -458,24 +458,331 @@ window.TEUI.StateManager.addListener("d_198", (newValue) => {
 
 ## Next Steps & Roadmap
 
-### 🎯 **Immediate: Fix Final Bug** (1 hour estimated)
+### 🚨 **IMMEDIATE: Architectural Normalization** (CRITICAL - Before Bug Fix)
 
-1. **Fix Target Mode Volume Upstream Write**
-   - Locate/verify S12's `d_198` listener
-   - Add DOM update if missing (compare with working `ref_d_198` listener)
-   - Test bidirectional flow
+**Problem**: S19 has been over-engineered with non-standard patterns that deviate from the established architecture used across 19 sections. This introduces maintenance chaos and may be contributing to bugs.
 
-2. **Final Testing** (30 min)
-   - Run full test matrix
-   - Verify 100% pass rate (20/20 tests)
-   - Document any edge cases
+**Philosophy**: Field types should be identical across the app. Custom event listeners for standard field types violate DRY principles and create technical debt.
 
-3. **Merge to Main** (15 min)
-   - Squash WOMBAT-DEBUG commits
-   - Update CHANGELOG.md
-   - Tag release 4.013
+---
 
-**Total Time to Release**: ~2 hours
+#### **Phase 0: Architectural Audit & Normalization Plan**
+
+**Objective**: Eliminate idiosyncratic methods, restore architectural standards, fix remaining bug.
+
+**Critical Findings**:
+
+1. **❌ Non-Standard: d_199 Dropdown Custom Listener** (lines 1050-1072)
+   - S12's d_103 dropdown has NO custom listener - FieldManager handles it
+   - S19's d_199 dropdown has CUSTOM `addEventListener("change")`
+   - **This creates double listeners** (FieldManager + custom)
+   - Likely causing "undefined" error spam
+
+2. **❌ Non-Standard: d_198 Volume Field Custom Keydown** (lines 1080-1110)
+   - S12's d_105 editable field uses blur event (FieldManager standard)
+   - S19's d_198 uses custom `addEventListener("keydown")` for Enter key
+   - Added to prevent "field lockout" but violates standard pattern
+   - **May be interfering with FieldManager's handling**
+
+3. **✅ CORRECT: d_202 Aspect Ratio Slider** (lines 1149-1158)
+   - Matches S11's d_97 slider pattern exactly
+   - Custom `input` + `change` listeners required for live feedback
+   - **This is the correct pattern for sliders**
+
+**Root Cause Hypothesis**:
+The custom listeners in S19 may be preventing FieldManager from routing through `ModeManager.setValue()` correctly, which could explain why:
+- Reference mode works (somehow bypasses the conflict)
+- Target mode fails (hits the conflict)
+- Dropdown shows "undefined" errors (double listener firing)
+
+---
+
+#### **Normalization Workplan: Step-by-Step Regression Prevention**
+
+**RULE**: Test after EACH step. Do not proceed if regression occurs.
+
+---
+
+##### **Step 1: Fix Dropdown "Undefined" Error** (15 min)
+
+**Goal**: Eliminate custom d_199 dropdown listener, trust FieldManager.
+
+**Current State**:
+```javascript
+// Section19.js:1050-1072 - CUSTOM LISTENER (NON-STANDARD)
+storiesDropdown.addEventListener("change", function(event) {
+  const value = this.value;
+  if (value && value !== "undefined") {
+    ModeManager.setValue(fieldId, value, "user-modified");
+    if (isActivated) { calculateAll(); }
+  } else {
+    console.error(`[WOMBAT] ❌ Dropdown value is invalid: "${value}"`);
+  }
+});
+```
+
+**Target State**:
+```javascript
+// Section19.js - NO custom listener needed
+// Delete lines 1050-1072
+// FieldManager handles dropdown changes automatically
+```
+
+**Pre-Check**:
+1. Verify FieldManager registers `section: "wombat"` fields
+2. Verify FieldManager has mode-aware handling for dropdowns
+3. Add diagnostic logging to FieldManager to trace d_199 changes
+
+**Test Criteria**:
+- ✅ Dropdown changes in Target mode update d_199
+- ✅ Dropdown changes in Reference mode update ref_d_199
+- ✅ No "undefined" errors in console
+- ✅ S12 d_103 still receives updates from S19 d_199
+- ✅ 3D visualization still updates on dropdown change
+
+**Rollback Plan**: If tests fail, restore custom listener and investigate FieldManager registration.
+
+---
+
+##### **Step 2: Investigate FieldManager Registration** (20 min)
+
+**Goal**: Understand why custom listeners were needed in the first place.
+
+**Questions to Answer**:
+1. Does FieldManager recognize `section: "wombat"` fields?
+2. When FieldManager updates a dropdown, does it call `ModeManager.setValue()`?
+3. Does FieldManager have special handling for `type: "number"` vs `type: "editable"`?
+
+**Investigation Path**:
+```bash
+# Search FieldManager for section registration
+grep -n 'section.*wombat' src/core/FieldManager.js
+
+# Search for dropdown handling
+grep -n 'type.*dropdown' src/core/FieldManager.js
+
+# Search for mode-aware handling
+grep -n 'ModeManager.setValue' src/core/FieldManager.js
+```
+
+**Document Findings**:
+- If FieldManager doesn't recognize "wombat", register it
+- If FieldManager doesn't call ModeManager for wombat fields, add that logic
+- If FieldManager has a bug, fix it there (not with custom workarounds in S19)
+
+---
+
+##### **Step 3: Normalize Volume Field to Standard Pattern** (30 min)
+
+**Goal**: Replace custom keydown listener with standard blur event OR fix FieldManager to handle it correctly.
+
+**Current State**:
+```javascript
+// Section19.js:1080-1110 - CUSTOM KEYDOWN LISTENER
+volumeField.addEventListener("keydown", function(event) {
+  if (event.key === "Enter" || event.keyCode === 13) {
+    event.preventDefault();
+    const value = window.TEUI.parseNumeric(this.value) || "8000.00";
+    ModeManager.setValue(fieldId, formattedValue, "user-modified");
+    if (isActivated) { calculateAll(); }
+  }
+});
+```
+
+**Option A: Change Field Type to "editable"** (RECOMMENDED)
+```javascript
+// Section19.js:307-314 - Field definition
+d: {
+  fieldId: "d_198",
+  type: "editable",  // ← Change from "number" to "editable"
+  value: "8000.00",
+  classes: ["user-input"],
+  tooltip: true,
+  label: "Conditioned volume (mirrored from S12)",
+}
+
+// Delete custom keydown listener (lines 1080-1110)
+// FieldManager handles contenteditable blur events automatically
+```
+
+**Option B: Add Blur Event (Fallback)**
+```javascript
+// Replace keydown with blur (standard pattern)
+volumeField.addEventListener("blur", function() {
+  const value = window.TEUI.parseNumeric(this.value) || "8000.00";
+  const formattedValue = parseFloat(value).toFixed(2);
+  ModeManager.setValue(fieldId, formattedValue, "user-modified");
+  if (isActivated) { calculateAll(); }
+});
+```
+
+**Test Criteria**:
+- ✅ User can focus on d_198 field
+- ✅ User can type new value
+- ✅ User can Tab or click away (blur triggers update)
+- ✅ User can press Enter (triggers blur, then update)
+- ✅ No "field lockout" (can edit multiple times)
+- ✅ Target mode: d_198 → d_105 updates S12 DOM ⚠️ **THE BUG WE'RE FIXING**
+- ✅ Reference mode: ref_d_198 → ref_d_105 still works
+
+**Rollback Plan**: If field lockout returns, investigate FieldManager's contenteditable handling.
+
+---
+
+##### **Step 4: Fix Target Mode Volume Bug** (30 min)
+
+**Goal**: Verify/add S12's d_198 listener with DOM update.
+
+**Investigation**:
+```bash
+# Search S12 for d_198 listener
+grep -n 'addListener("d_198"' src/sections/Section12.js
+
+# Compare with working ref_d_198 listener
+grep -A 15 'addListener("ref_d_198"' src/sections/Section12.js
+
+# Compare with working d_199 listener
+grep -A 15 'addListener("d_199"' src/sections/Section12.js
+```
+
+**Expected Fix** (if listener missing):
+```javascript
+// Section12.js - Add to initializeEventHandlers()
+window.TEUI.StateManager.addListener("d_198", (newValue) => {
+  const currentValue = TargetState.getValue("d_105");
+
+  if (currentValue !== newValue) {
+    // Update TargetState
+    TargetState.setValue("d_105", newValue);
+
+    // Publish to StateManager
+    window.TEUI.StateManager.setValue("d_105", newValue, "external");
+
+    // Update DOM (CRITICAL - why Reference works but Target doesn't)
+    const fieldDef = window.TEUI.FieldManager.getField("d_105");
+    if (fieldDef && window.TEUI.FieldManager.updateFieldDisplay) {
+      window.TEUI.FieldManager.updateFieldDisplay("d_105", newValue, fieldDef);
+      console.log(`[S12→WOMBAT SYNC] ✅ d_105 DOM updated = ${newValue}`);
+    }
+
+    // Recalculate
+    calculateAll();
+    ModeManager.updateCalculatedDisplayValues();
+  }
+});
+```
+
+**Test Criteria**:
+- ✅ Edit d_198 in S19 Target mode → d_105 updates in S12 DOM
+- ✅ Edit d_198 in S19 Target mode → S12 recalculates
+- ✅ Edit ref_d_198 in S19 Reference mode → ref_d_105 still works
+- ✅ No regression in S12 → S19 direction
+
+---
+
+##### **Step 5: Final Validation & Documentation** (30 min)
+
+**Full Test Matrix** (20/20 tests must pass):
+
+| Test Case | Target Mode | Reference Mode |
+|-----------|-------------|----------------|
+| Edit d_105 in S12 → d_198 updates in S19 table | ✅ | ✅ |
+| Edit d_105 in S12 → S19 diagram updates | ✅ | ✅ |
+| **Edit d_198 in S19 → d_105 updates in S12** | **✅ FIXED** | ✅ |
+| Edit d_198 in S19 → S19 diagram updates | ✅ | ✅ |
+| Edit d_103 dropdown in S12 → d_199 updates | ✅ | ✅ |
+| Edit d_199 dropdown in S19 → d_103 updates | ✅ | ✅ |
+| **No "undefined" dropdown errors** | **✅ FIXED** | **✅ FIXED** |
+| Mode switch → visualization color changes | ✅ | ✅ |
+| Mode switch → table values update | ✅ | ✅ |
+| State isolation (Target ≠ Reference) | ✅ | ✅ |
+| Aspect ratio slider triggers update | ✅ | ✅ |
+| **No field lockout on d_198** | **✅ FIXED** | **✅ FIXED** |
+
+**Documentation Updates**:
+1. Update S19-WOMBAT-3.md with "100% Complete" status
+2. Document removed non-standard patterns
+3. Add "Architectural Compliance" section
+4. Update test matrix to show all passing
+
+**Code Cleanup**:
+```javascript
+// Remove these non-standard patterns from Section19.js:
+// - Custom d_199 dropdown listener (lines 1050-1072)
+// - Custom d_198 keydown listener (lines 1080-1110)
+
+// Keep these correct patterns:
+// - d_202 slider listeners (lines 1149-1158) ✅
+// - StateManager listeners for external deps (lines 1166-1234) ✅
+```
+
+---
+
+#### **Success Metrics**
+
+**Before Normalization**:
+- ❌ Non-standard custom listeners (2 violations)
+- ❌ "undefined" dropdown errors (console spam)
+- ❌ Target mode volume upstream write broken
+- ⚠️ Field lockout workaround (technical debt)
+
+**After Normalization**:
+- ✅ 100% architectural compliance (no custom listeners for standard fields)
+- ✅ Zero console errors
+- ✅ 20/20 test matrix passing
+- ✅ No field lockout
+- ✅ Maintainable alongside 18 other sections
+
+---
+
+#### **Risk Assessment**
+
+**Low Risk** (Step 1: Dropdown):
+- Dropdown works in both modes currently
+- FieldManager handles all other dropdowns in app
+- Easy rollback if needed
+
+**Medium Risk** (Step 3: Volume Field):
+- Field lockout was a real problem
+- Need to understand root cause before removing workaround
+- Test extensively in both modes
+
+**Low Risk** (Step 4: S12 Listener):
+- Adding listener to S12 (not modifying S19)
+- Reference mode already works as template
+- Isolated change
+
+---
+
+#### **Timeline**
+
+**Day 1 (2-3 hours)**:
+- Step 1: Fix dropdown error (15 min)
+- Step 2: Investigate FieldManager (20 min)
+- Step 3: Normalize volume field (30 min)
+- Step 4: Fix S12 listener (30 min)
+- Step 5: Final validation (30 min)
+- Buffer for debugging (30 min)
+
+**Day 2 (1 hour)**:
+- Documentation updates
+- Code cleanup
+- Commit & PR
+- Merge to main
+
+**Total**: 3-4 hours to 100% architectural compliance + bug fix
+
+---
+
+### 🎯 **Post-Normalization: Merge to Main** (Day 2)
+
+1. **Squash WOMBAT-DEBUG commits**
+2. **Update CHANGELOG.md**
+   - Architectural normalization
+   - Fixed Target mode volume bug
+   - Eliminated dropdown errors
+   - Zero custom listeners for standard fields
+3. **Tag release 4.013**
 
 ---
 
