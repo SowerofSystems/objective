@@ -1365,44 +1365,102 @@ window.TEUI.SectionModules.sect19 = (function () {
         }
       });
 
-      // ✅ DISPLAY-ONLY FIELDS: Ae and Ag from S12 (d_101, g_101, d_102, g_102)
-      // These are calculated in S12 and displayed in S19 - no state storage needed
-      // FieldManager will update the DOM automatically when values change
+      // ✅ ROBOT FINGERS 🤖👆: Ae and Ag display fields from S12
+      // S12 publishes d_101/g_101/d_102/g_102 to StateManager
+      // S19 listens and updates its own DOM elements (scoped to #wombat container)
+
+      const wombatContainer = document.getElementById("wombat");
 
       // Area Exposed to Air (Ae) - Target mode
-      window.TEUI.StateManager.addListener("d_101", () => {
-        // FieldManager handles display update automatically
+      window.TEUI.StateManager.addListener("d_101", (newValue) => {
+        if (!wombatContainer) return;
+        const element = wombatContainer.querySelector('[data-field-id="d_101"]');
+        if (element && newValue !== null && newValue !== undefined) {
+          element.textContent = window.TEUI.formatNumber(
+            window.TEUI.parseNumeric(newValue),
+            "number-2dp-comma"
+          );
+        }
       });
 
-      window.TEUI.StateManager.addListener("g_101", () => {
-        // FieldManager handles display update automatically
+      window.TEUI.StateManager.addListener("g_101", (newValue) => {
+        if (!wombatContainer) return;
+        const element = wombatContainer.querySelector('[data-field-id="g_101"]');
+        if (element && newValue !== null && newValue !== undefined) {
+          element.textContent = window.TEUI.formatNumber(
+            window.TEUI.parseNumeric(newValue),
+            "number-3dp"
+          );
+        }
       });
 
       // Area Exposed to Air (Ae) - Reference mode
-      window.TEUI.StateManager.addListener("ref_d_101", () => {
-        // FieldManager handles display update automatically
+      window.TEUI.StateManager.addListener("ref_d_101", (newValue) => {
+        if (!wombatContainer) return;
+        const element = wombatContainer.querySelector('[data-field-id="d_101"]');
+        if (element && newValue !== null && newValue !== undefined && window.TEUI.ReferenceToggle?.isReferenceMode()) {
+          element.textContent = window.TEUI.formatNumber(
+            window.TEUI.parseNumeric(newValue),
+            "number-2dp-comma"
+          );
+        }
       });
 
-      window.TEUI.StateManager.addListener("ref_g_101", () => {
-        // FieldManager handles display update automatically
+      window.TEUI.StateManager.addListener("ref_g_101", (newValue) => {
+        if (!wombatContainer) return;
+        const element = wombatContainer.querySelector('[data-field-id="g_101"]');
+        if (element && newValue !== null && newValue !== undefined && window.TEUI.ReferenceToggle?.isReferenceMode()) {
+          element.textContent = window.TEUI.formatNumber(
+            window.TEUI.parseNumeric(newValue),
+            "number-3dp"
+          );
+        }
       });
 
       // Area Exposed to Ground (Ag) - Target mode
-      window.TEUI.StateManager.addListener("d_102", () => {
-        // FieldManager handles display update automatically
+      window.TEUI.StateManager.addListener("d_102", (newValue) => {
+        if (!wombatContainer) return;
+        const element = wombatContainer.querySelector('[data-field-id="d_102"]');
+        if (element && newValue !== null && newValue !== undefined) {
+          element.textContent = window.TEUI.formatNumber(
+            window.TEUI.parseNumeric(newValue),
+            "number-2dp-comma"
+          );
+        }
       });
 
-      window.TEUI.StateManager.addListener("g_102", () => {
-        // FieldManager handles display update automatically
+      window.TEUI.StateManager.addListener("g_102", (newValue) => {
+        if (!wombatContainer) return;
+        const element = wombatContainer.querySelector('[data-field-id="g_102"]');
+        if (element && newValue !== null && newValue !== undefined) {
+          element.textContent = window.TEUI.formatNumber(
+            window.TEUI.parseNumeric(newValue),
+            "number-3dp"
+          );
+        }
       });
 
       // Area Exposed to Ground (Ag) - Reference mode
-      window.TEUI.StateManager.addListener("ref_d_102", () => {
-        // FieldManager handles display update automatically
+      window.TEUI.StateManager.addListener("ref_d_102", (newValue) => {
+        if (!wombatContainer) return;
+        const element = wombatContainer.querySelector('[data-field-id="d_102"]');
+        if (element && newValue !== null && newValue !== undefined && window.TEUI.ReferenceToggle?.isReferenceMode()) {
+          element.textContent = window.TEUI.formatNumber(
+            window.TEUI.parseNumeric(newValue),
+            "number-2dp-comma"
+          );
+        }
       });
 
-      window.TEUI.StateManager.addListener("ref_g_102", () => {
-        // FieldManager handles display update automatically
+      window.TEUI.StateManager.addListener("ref_g_102", (newValue) => {
+        if (!wombatContainer) return;
+        const element = wombatContainer.querySelector('[data-field-id="g_102"]');
+        if (element && newValue !== null && newValue !== undefined && window.TEUI.ReferenceToggle?.isReferenceMode()) {
+          element.textContent = window.TEUI.formatNumber(
+            window.TEUI.parseNumeric(newValue),
+            "number-3dp"
+          );
+        }
       });
     }
   }
@@ -1456,6 +1514,10 @@ window.TEUI.SectionModules.sect19 = (function () {
           `[WOMBAT] Initialized ref_d_199 = ${ref_d_103} from S12 (ref_d_103)`
         );
       }
+
+      // ✅ NO INITIALIZATION for Ae/Ag display fields
+      // Field definitions have defaults - FieldManager renders initial values
+      // Robot fingers listeners handle live updates when S12 recalculates
     }
   }
 

@@ -1368,115 +1368,119 @@ d_85-d_95, d_105        "Jello Cube"       Vertices adapt to     Color-coded
 
 ---
 
-## 🔴 **WOMBAT-Ae-Ag Branch: Current Issue** (2025-12-14)
+## ✅ **WOMBAT-Ae-Ag: Successful Implementation** (2025-12-14)
 
 **Branch**: `WOMBAT-Ae-Ag` (from main after PR#68)
-**Status**: Rows added but not updating from S12
-**Commit**: `1385393` - Field definitions added with empty listeners
+**Status**: ✅ Target mode working perfectly, Reference mode needs testing
 
-### Current State
+### Implementation Summary
 
-Two new rows added to S19 table to display S12's aggregate envelope areas:
+Added two display-only rows to S19 showing S12's aggregate envelope areas:
 - **row101**: Ae (Area Exposed to Air) - `d_101` area (m²), `g_101` U-value (W/m²·K)
 - **row102**: Ag (Area Exposed to Ground) - `d_102` area (m²), `g_102` U-value (W/m²·K)
 
-**What works:**
-- ✅ Rows display in S19 table
-- ✅ Field definitions exist with default values
-- ✅ Layout integration complete
-- ✅ Empty StateManager listeners registered (placeholders)
+### The Successful Pattern: Robot Fingers 🤖👆
 
-**What doesn't work:**
-- ❌ Values show defaults (2476.62, 0.278, 1100.42, 0.324), not current S12 values
-- ❌ Values don't update when S12 recalculates
+**Key Architecture Insights:**
+1. **Ownership**: d_101/g_101/d_102/g_102 are S12 fields, NOT S19 fields
+2. **StateManager is Single Source**: S12 publishes to StateManager, S19 reads from it
+3. **Robot Fingers Required**: S19 needs StateManager listeners to know when S12 recalculates
+4. **DOM Scoping Critical**: Multiple sections can display same field IDs if scoped to containers
 
-### Root Cause Analysis
+### Implementation Details
 
-**The Problem**: S19 displays stale default values, not live S12 data.
-
-**Why**: S19 has no mechanism to read these values. The fields are defined as `type: "calculated"` with static default values, but nothing populates them from StateManager.
-
-**Key Architectural Question**: Who owns d_101/g_101/d_102/g_102?
-
-Per TECHNICAL2.md, StateManager is the single source of truth. S12 calculates and publishes these values to StateManager. S19 should simply read them - these are NOT S19 fields, they're S12 fields that S19 displays.
-
-### The Correct Solution (No Over-Engineering)
-
-S19 should treat d_101/g_101/d_102/g_102 exactly like it treats h_15 (Conditioned Area from S12):
-
-**Current working pattern** (h_15 from S12):
+**1. Field Definitions (S19 lines 327-381)**
 ```javascript
-// S12 publishes h_15 to StateManager
-window.TEUI.StateManager.setValue("h_15", conditionedArea, "calculated");
-
-// S19 reads h_15 from StateManager in calculations
-const conditionedArea = window.TEUI.StateManager.getValue("h_15");
-// ... uses in geometry solver
+row101: {
+  id: "19.Ae",
+  cells: {
+    d: {
+      fieldId: "d_101",  // Same field ID as S12
+      type: "calculated",
+      value: "2476.62",  // Default value (single source of truth)
+      classes: ["text-air-facing"],
+    },
+    g: {
+      fieldId: "g_101",
+      type: "calculated",
+      value: "0.278",
+      // ... etc
+    }
+  }
+}
 ```
 
-**Required pattern** (d_101/g_101/d_102/g_102 from S12):
+**2. Robot Fingers Listeners (S19 lines 1368-1464)**
 ```javascript
-// S12 already publishes these (verify with grep)
-window.TEUI.StateManager.setValue("d_101", aeArea, "calculated");
-window.TEUI.StateManager.setValue("g_101", aeUValue, "calculated");
-// etc.
+// ✅ Scoped to #wombat container to avoid querySelector collision with S12
+const wombatContainer = document.getElementById("wombat");
 
-// S19 needs to READ and DISPLAY these values
-// Option 1: Direct read in rendering/calculation
-// Option 2: StateManager listeners that update DOM
+// Target mode listeners
+window.TEUI.StateManager.addListener("d_101", (newValue) => {
+  if (!wombatContainer) return;
+  const element = wombatContainer.querySelector('[data-field-id="d_101"]');
+  if (element && newValue !== null && newValue !== undefined) {
+    element.textContent = window.TEUI.formatNumber(
+      window.TEUI.parseNumeric(newValue),
+      "number-2dp-comma"
+    );
+  }
+});
+
+// Reference mode listeners (same pattern with ref_ prefix)
+window.TEUI.StateManager.addListener("ref_d_101", (newValue) => {
+  // ... checks isReferenceMode() before updating
+});
 ```
 
-### Investigation Required
+**3. No Initialization Function Needed**
+- Field definitions contain defaults → FieldManager handles initial render
+- Robot fingers listeners handle live updates when S12 recalculates
+- No fallback logic, no setTimeout, no DOM reads from other sections
 
-**Step 1**: Verify S12 publishes these values
-```bash
-grep -n "setValue.*d_101" src/sections/Section12.js
-grep -n "setValue.*g_101" src/sections/Section12.js
-grep -n "setValue.*d_102" src/sections/Section12.js
-grep -n "setValue.*g_102" src/sections/Section12.js
-```
+### Why It Works
 
-**Step 2**: If S12 publishes to StateManager:
-- S19 can read via `StateManager.getValue("d_101")` etc.
-- No ownership, no state storage, just display
-- Like h_15, h_20, h_21 - external dependencies
+**Problem Solved #1: querySelector Collision**
+- Before: `document.querySelector('[data-field-id="d_101"]')` found S12's element first
+- After: `wombatContainer.querySelector('[data-field-id="d_101"]')` finds S19's element
+- Both sections can safely display the same field IDs
 
-**Step 3**: If S12 does NOT publish to StateManager:
-- S12 needs to publish (add setValue calls)
-- This is required per StateManager-as-single-source-of-truth pattern
-- No DOM reads, no setTimeout, no fallbacks
+**Problem Solved #2: Robot Fingers**
+- S11 changes TB% slider → calls `sect12.calculateAll()` via robot fingers
+- S12 recalculates g_101/g_102 → publishes to StateManager via `setCalculatedValue()`
+- S19's listeners fire → update S19's DOM elements
+- Perfect one-way data flow: S11 → S12 → StateManager → S19
 
-### Anti-Patterns to Avoid
+**Problem Solved #3: Single Source of Truth**
+- Defaults ONLY in field definitions (lines 327-381)
+- No initialization arrays, no fallback reads
+- Silent failures eliminated
 
-❌ **Over-Engineering Attempted**:
-- Custom FieldManager update logic
-- Special initialization functions
-- Mode-aware field reading from multiple sources
-- 800+ lines of technical debt
+### Testing Results
 
-✅ **Simple Pattern Required**:
-- S12 publishes to StateManager (if not already)
-- S19 reads from StateManager (like any external dependency)
-- Values auto-update via existing FieldManager flow
-- ~10 lines of code maximum
+✅ **Target Mode**: WORKS PERFECTLY
+- Values display current S12 data on load
+- Values update live when TB% slider changes in S11
+- Formatting correct (2dp with commas for areas, 3dp for U-values)
 
-### Proposed Fix (Afternoon Session)
+⚠️ **Reference Mode**: NEEDS TESTING
+- Listeners check `isReferenceMode()` before updating
+- Should work same as Target mode but requires verification
 
-**If S12 already publishes d_101/g_101/d_102/g_102:**
-1. S19 field definitions stay as-is (type: "calculated")
-2. Add simple StateManager read in S19's display refresh
-3. Values auto-populate from StateManager
+### Code Stats
 
-**If S12 does NOT publish:**
-1. Add StateManager.setValue() calls in S12 calculations (4 lines)
-2. S19 field definitions stay as-is
-3. Values auto-populate from StateManager
+- **Lines added**: ~140 (field definitions + listeners)
+- **No initialization function**: Defaults handle first render
+- **No over-engineering**: Simple pattern, no technical debt
 
-**No custom listeners, no initialization functions, no special logic.**
+### Pattern for Future Cross-Section Display Fields
 
-Per TECHNICAL2.md: "Sections should **ONLY** listen to their own input fields via DOM. For fields owned by other sections, always use StateManager."
+When Section X needs to display fields owned by Section Y:
 
-d_101/g_101/d_102/g_102 are owned by S12. S19 has no business creating listeners for them - S19 just reads StateManager like any other external dependency.
+1. **Field definitions**: Use same `fieldId`, add defaults
+2. **Robot fingers**: Add StateManager listeners scoped to Section X's container
+3. **No initialization**: Let field definitions handle defaults
+4. **Both modes**: Listen to both `fieldId` and `ref_fieldId` with mode checks
 
 ---
 
