@@ -306,7 +306,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         c: { label: "Conditioned Volume" },
         d: {
           fieldId: "d_198",
-          type: "number",
+          type: "editable",
           value: "8000.00",
           classes: ["user-input"],
           tooltip: true,
@@ -1051,51 +1051,38 @@ window.TEUI.SectionModules.sect19 = (function () {
     // which routes through ModeManager.setValue() and calls calculateAll()
     // No custom listener needed (removed non-standard double listener)
 
-    // Handle d_198 number input field (volume)
-    // Note: Field is <input type="number">, not contenteditable
+    // ✅ STEP 3: d_198 volume field now uses standard "editable" type
+    // Add blur and keydown handlers (matches S12 pattern for editable fields)
     const volumeField = sectionElement.querySelector('[data-field-id="d_198"]');
-    console.log(`[WOMBAT] setupFieldListeners: Volume field found =`, volumeField);
-    if (volumeField && !volumeField.hasWombatListener) {
-      // Listen for Enter key press to trigger sync
-      volumeField.addEventListener("keydown", function(event) {
-        if (event.key === "Enter" || event.keyCode === 13) {
-          event.preventDefault(); // Prevent form submission
+    if (volumeField && !volumeField.hasWombatListeners) {
+      // Blur handler: Parse, format, and publish value (matches S12 handleFieldBlur)
+      volumeField.addEventListener("blur", function(event) {
+        const field = event.target;
+        const fieldId = field.getAttribute("data-field-id");
+        if (!fieldId) return;
 
-          // Use 'this' which is guaranteed to be volumeField, not event.target
-          const field = this;
+        const numValue = window.TEUI.parseNumeric(field.textContent);
+        if (!isNaN(numValue) && isFinite(numValue)) {
+          const formattedValue = window.TEUI.formatNumber(numValue, "number-2dp");
+          field.textContent = formattedValue;
 
-          const fieldId = field.getAttribute("data-field-id");
-          if (!fieldId) {
-            console.error(`[WOMBAT] ❌ No fieldId on element`);
-            return;
-          }
-
-          // Field is a <td> with contenteditable, not an <input>, so use textContent
-          const inputValue = field.textContent || field.innerText || "";
-          console.log(`[WOMBAT DOM] Volume field Enter pressed: ${fieldId} = "${inputValue}"`);
-
-          const numValue = parseFloat(inputValue);
-          if (!isNaN(numValue) && isFinite(numValue)) {
-            // Format and update the field display
-            field.textContent = window.TEUI.formatNumber(numValue, "number-2dp");
-
-            // MODE-AWARE: Use ModeManager.setValue for dual-state publishing
-            ModeManager.setValue(fieldId, String(numValue), "user-modified");
-            console.log(`[WOMBAT] ✅ Published ${fieldId} = ${numValue} via ModeManager (${ModeManager.currentMode} mode)`);
-
-            if (isActivated) {
-              calculateAll(); // Will run dual-engine calculations + trigger S12 sync
-            }
-
-            // Blur the field to signal completion (optional - gives visual feedback)
-            field.blur();
-          } else {
-            console.error(`[WOMBAT] ❌ Volume value is invalid: "${inputValue}" → ${numValue}`);
+          // MODE-AWARE: Use ModeManager.setValue for dual-state publishing
+          ModeManager.setValue(fieldId, String(numValue), "user-modified");
+          if (isActivated) {
+            calculateAll();
           }
         }
       });
-      volumeField.hasWombatListener = true;
-      console.log(`[WOMBAT] ✅ Volume field Enter-key listener attached to d_198`);
+
+      // Keydown handler: Prevent newlines on Enter (matches S12 handleFieldKeydown)
+      volumeField.addEventListener("keydown", function(event) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          this.blur();
+        }
+      });
+
+      volumeField.hasWombatListeners = true;
     }
   }
 
