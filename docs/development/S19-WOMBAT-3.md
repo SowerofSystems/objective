@@ -1363,8 +1363,127 @@ d_85-d_95, d_105        "Jello Cube"       Vertices adapt to     Color-coded
 **Downstream** (S19 publishes to):
 - Section 12 - Geometry dimensions `h_200`, `h_201`, `h_203`
 
+**Display-Only** (S19 reads from S12 for display, no ownership):
+- Section 12 - `d_101`/`g_101` (Ae - Area Exposed to Air), `d_102`/`g_102` (Ag - Area Exposed to Ground)
+
+---
+
+## ✅ **WOMBAT-Ae-Ag: Successful Implementation** (2025-12-14)
+
+**Branch**: `WOMBAT-Ae-Ag` (from main after PR#68)
+**Status**: ✅ Target mode working perfectly, Reference mode needs testing
+
+### Implementation Summary
+
+Added two display-only rows to S19 showing S12's aggregate envelope areas:
+- **row101**: Ae (Area Exposed to Air) - `d_101` area (m²), `g_101` U-value (W/m²·K)
+- **row102**: Ag (Area Exposed to Ground) - `d_102` area (m²), `g_102` U-value (W/m²·K)
+
+### The Successful Pattern: Robot Fingers 🤖👆
+
+**Key Architecture Insights:**
+1. **Ownership**: d_101/g_101/d_102/g_102 are S12 fields, NOT S19 fields
+2. **StateManager is Single Source**: S12 publishes to StateManager, S19 reads from it
+3. **Robot Fingers Required**: S19 needs StateManager listeners to know when S12 recalculates
+4. **DOM Scoping Critical**: Multiple sections can display same field IDs if scoped to containers
+
+### Implementation Details
+
+**1. Field Definitions (S19 lines 327-381)**
+```javascript
+row101: {
+  id: "19.Ae",
+  cells: {
+    d: {
+      fieldId: "d_101",  // Same field ID as S12
+      type: "calculated",
+      value: "2476.62",  // Default value (single source of truth)
+      classes: ["text-air-facing"],
+    },
+    g: {
+      fieldId: "g_101",
+      type: "calculated",
+      value: "0.278",
+      // ... etc
+    }
+  }
+}
+```
+
+**2. Robot Fingers Listeners (S19 lines 1368-1464)**
+```javascript
+// ✅ Scoped to #wombat container to avoid querySelector collision with S12
+const wombatContainer = document.getElementById("wombat");
+
+// Target mode listeners
+window.TEUI.StateManager.addListener("d_101", (newValue) => {
+  if (!wombatContainer) return;
+  const element = wombatContainer.querySelector('[data-field-id="d_101"]');
+  if (element && newValue !== null && newValue !== undefined) {
+    element.textContent = window.TEUI.formatNumber(
+      window.TEUI.parseNumeric(newValue),
+      "number-2dp-comma"
+    );
+  }
+});
+
+// Reference mode listeners (same pattern with ref_ prefix)
+window.TEUI.StateManager.addListener("ref_d_101", (newValue) => {
+  // ... checks isReferenceMode() before updating
+});
+```
+
+**3. No Initialization Function Needed**
+- Field definitions contain defaults → FieldManager handles initial render
+- Robot fingers listeners handle live updates when S12 recalculates
+- No fallback logic, no setTimeout, no DOM reads from other sections
+
+### Why It Works
+
+**Problem Solved #1: querySelector Collision**
+- Before: `document.querySelector('[data-field-id="d_101"]')` found S12's element first
+- After: `wombatContainer.querySelector('[data-field-id="d_101"]')` finds S19's element
+- Both sections can safely display the same field IDs
+
+**Problem Solved #2: Robot Fingers**
+- S11 changes TB% slider → calls `sect12.calculateAll()` via robot fingers
+- S12 recalculates g_101/g_102 → publishes to StateManager via `setCalculatedValue()`
+- S19's listeners fire → update S19's DOM elements
+- Perfect one-way data flow: S11 → S12 → StateManager → S19
+
+**Problem Solved #3: Single Source of Truth**
+- Defaults ONLY in field definitions (lines 327-381)
+- No initialization arrays, no fallback reads
+- Silent failures eliminated
+
+### Testing Results
+
+✅ **Target Mode**: WORKS PERFECTLY
+- Values display current S12 data on load
+- Values update live when TB% slider changes in S11
+- Formatting correct (2dp with commas for areas, 3dp for U-values)
+
+⚠️ **Reference Mode**: NEEDS TESTING
+- Listeners check `isReferenceMode()` before updating
+- Should work same as Target mode but requires verification
+
+### Code Stats
+
+- **Lines added**: ~140 (field definitions + listeners)
+- **No initialization function**: Defaults handle first render
+- **No over-engineering**: Simple pattern, no technical debt
+
+### Pattern for Future Cross-Section Display Fields
+
+When Section X needs to display fields owned by Section Y:
+
+1. **Field definitions**: Use same `fieldId`, add defaults
+2. **Robot fingers**: Add StateManager listeners scoped to Section X's container
+3. **No initialization**: Let field definitions handle defaults
+4. **Both modes**: Listen to both `fieldId` and `ref_fieldId` with mode checks
+
 ---
 
 **Document Status**: ACTIVE - Single source of truth (replaces S19-WOMBAT.md)
-**Last Updated**: 2025-12-13
-**Next Review**: After 4.013 release
+**Last Updated**: 2025-12-14
+**Next Review**: After Ae/Ag fix complete
