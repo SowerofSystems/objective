@@ -115,8 +115,9 @@ window.TEUI.WombatRender = (function () {
 
   /**
    * Create SVG text element with optional background for readability
+   * Note: This returns a wrapper function that creates the background after DOM insertion
    */
-  function createText(x, y, text, color, fontSize = 11, options = {}) {
+  function createTextWithBackground(x, y, text, color, fontSize = 11, options = {}) {
     const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
 
     // Create text element
@@ -138,17 +139,46 @@ window.TEUI.WombatRender = (function () {
     if (options.style) textEl.setAttribute("font-style", options.style);
 
     textEl.textContent = text;
+    group.appendChild(textEl);
 
     // Add background if not disabled
     if (options.noBackground !== true) {
-      // Create semi-transparent background for legibility
-      const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      // Mark for background rendering (will be added after DOM insertion)
+      group.__needsBackground = true;
+      group.__backgroundPadding = 2;
+    }
 
-      // We need to append text first to get bbox, then insert background before it
-      group.appendChild(textEl);
+    return group;
+  }
+
+  /**
+   * Create SVG text element (legacy - for compatibility)
+   */
+  function createText(x, y, text, color, fontSize = 11, options = {}) {
+    const element = createTextWithBackground(x, y, text, color, fontSize, options);
+
+    // If element needs background and is a group, add it now if possible
+    if (element.__needsBackground && element.parentNode) {
+      addBackgroundToTextGroup(element);
+    }
+
+    return element;
+  }
+
+  /**
+   * Add background rect to a text group (call after element is in DOM)
+   */
+  function addBackgroundToTextGroup(group) {
+    if (!group.__needsBackground) return;
+
+    const textEl = group.querySelector('text');
+    if (!textEl) return;
+
+    try {
       const bbox = textEl.getBBox();
+      const padding = group.__backgroundPadding || 2;
 
-      const padding = 2;
+      const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
       bg.setAttribute("x", bbox.x - padding);
       bg.setAttribute("y", bbox.y - padding);
       bg.setAttribute("width", bbox.width + padding * 2);
@@ -158,11 +188,10 @@ window.TEUI.WombatRender = (function () {
 
       // Insert background before text
       group.insertBefore(bg, textEl);
-
-      return group;
+      delete group.__needsBackground;
+    } catch (e) {
+      console.warn('[WombatRender] Failed to add background to text:', e);
     }
-
-    return textEl;
   }
 
   //==========================================================================
@@ -723,6 +752,14 @@ window.TEUI.WombatRender = (function () {
 
     // Render info overlay
     renderInfoOverlay(svgElement, geometry, mode);
+
+    // PHASE 3: Add backgrounds to all labels (now that they're in the DOM)
+    const allGroups = svgElement.querySelectorAll('g');
+    allGroups.forEach(group => {
+      if (group.__needsBackground) {
+        addBackgroundToTextGroup(group);
+      }
+    });
   }
 
   //==========================================================================
