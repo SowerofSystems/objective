@@ -41,12 +41,12 @@ window.TEUI.SectionModules.sect19 = (function () {
    */
   const TargetState = {
     values: {
-      d_198: "8000.00", // Volume (mirrors S12 d_105)
-      d_199: "1.5", // Stories (mirrors S12 d_103)
-      d_202: "0.0", // Aspect ratio slider
-      h_200: "0.00", // Calculated: Footprint length
-      h_201: "0.00", // Calculated: Footprint width
-      h_203: "0.00", // Calculated: Story height
+      d_150: "1.5", // Stories (mirrors S12 d_103)
+      d_151: "8000.00", // Volume (mirrors S12 d_105)
+      d_154: "0.0", // Aspect ratio slider (L:W)
+      h_155: "0.00", // Calculated: Footprint width
+      h_156: "0.00", // Calculated: Story height
+      h_157: "0.00", // Calculated: Footprint length
     },
 
     getValue: function (fieldId) {
@@ -59,17 +59,17 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     setDefaults: function () {
       // Initialize from field definitions
-      this.values.d_198 = "8000.00";
-      this.values.d_199 = "1.5";
-      this.values.d_202 = "0.0";
-      this.values.h_200 = "0.00";
-      this.values.h_201 = "0.00";
-      this.values.h_203 = "0.00";
+      this.values.d_150 = "1.5";
+      this.values.d_151 = "8000.00";
+      this.values.d_154 = "0.0";
+      this.values.h_155 = "0.00";
+      this.values.h_156 = "0.00";
+      this.values.h_157 = "0.00";
     },
 
     syncFromGlobalState: function () {
       // Sync Target values from StateManager (unprefixed)
-      const fieldIds = ["d_198", "d_199", "d_202", "h_200", "h_201", "h_203"];
+      const fieldIds = ["d_150", "d_151", "d_154", "h_155", "h_156", "h_157"];
       fieldIds.forEach(fieldId => {
         const value = window.TEUI?.StateManager?.getValue(fieldId);
         if (value !== null && value !== undefined) {
@@ -85,12 +85,12 @@ window.TEUI.SectionModules.sect19 = (function () {
    */
   const ReferenceState = {
     values: {
-      d_198: "8000.00", // Volume (mirrors S12 ref_d_105)
-      d_199: "1.5", // Stories (mirrors S12 ref_d_103)
-      d_202: "0.0", // Aspect ratio slider
-      h_200: "0.00", // Calculated: Footprint length
-      h_201: "0.00", // Calculated: Footprint width
-      h_203: "0.00", // Calculated: Story height
+      d_150: "1.5", // Stories (mirrors S12 ref_d_103)
+      d_151: "8000.00", // Volume (mirrors S12 ref_d_105)
+      d_154: "0.0", // Aspect ratio slider
+      h_155: "0.00", // Calculated: Footprint width
+      h_156: "0.00", // Calculated: Story height
+      h_157: "0.00", // Calculated: Footprint length
     },
 
     getValue: function (fieldId) {
@@ -103,17 +103,17 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     setDefaults: function () {
       // Initialize from field definitions
-      this.values.d_198 = "8000.00";
-      this.values.d_199 = "1.5";
-      this.values.d_202 = "0.0";
-      this.values.h_200 = "0.00";
-      this.values.h_201 = "0.00";
-      this.values.h_203 = "0.00";
+      this.values.d_150 = "1.5";
+      this.values.d_151 = "8000.00";
+      this.values.d_154 = "0.0";
+      this.values.h_155 = "0.00";
+      this.values.h_156 = "0.00";
+      this.values.h_157 = "0.00";
     },
 
     syncFromGlobalState: function () {
       // Sync Reference values from StateManager (ref_ prefixed)
-      const fieldIds = ["d_198", "d_199", "d_202", "h_200", "h_201", "h_203"];
+      const fieldIds = ["d_150", "d_151", "d_154", "h_155", "h_156", "h_157"];
       fieldIds.forEach(fieldId => {
         const value = window.TEUI?.StateManager?.getValue(`ref_${fieldId}`);
         if (value !== null && value !== undefined) {
@@ -166,15 +166,15 @@ window.TEUI.SectionModules.sect19 = (function () {
       const currentState =
         this.currentMode === "target" ? TargetState : ReferenceState;
 
-      // ✅ EXPANDED: Include mirror sync fields (d_198, d_199) that need DOM refresh
+      // ✅ EXPANDED: Include mirror sync fields (d_150, d_151) that need DOM refresh
       // These are technically "input" fields, but when S12 changes them via mirror sync,
       // they BEHAVE like calculated fields and need DOM updates
       const fieldsToRefresh = [
-        "h_200",
-        "h_201",
-        "h_203", // Geometry outputs (read-only)
-        "d_198",
-        "d_199", // Mirror sync inputs (editable) - NEW
+        "h_155",
+        "h_156",
+        "h_157", // Geometry outputs (read-only)
+        "d_150",
+        "d_151", // Mirror sync inputs (editable) - NEW
       ];
 
       fieldsToRefresh.forEach(fieldId => {
@@ -183,7 +183,7 @@ window.TEUI.SectionModules.sect19 = (function () {
           return; // Skip if no value
         }
 
-        // Try FieldManager first (for input fields like d_198/d_199)
+        // Try FieldManager first (for input fields like d_150/d_151)
         const fieldDef = window.TEUI?.FieldManager?.getField(fieldId);
         if (fieldDef && window.TEUI?.FieldManager?.updateFieldDisplay) {
           try {
@@ -196,7 +196,7 @@ window.TEUI.SectionModules.sect19 = (function () {
             // Silent failure - FieldManager will handle errors
           }
         } else {
-          // Fallback for read-only calculated fields (h_200, h_201, h_203)
+          // Fallback for read-only calculated fields (h_155, h_156, h_157)
           const element = document.querySelector(
             `[data-field-id="${fieldId}"]`
           );
@@ -262,7 +262,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     },
 
     // Stories dropdown (mirrored from S12 d_103)
-    row199: {
+    row150: {
       id: "19.0",
       rowId: "19.0",
       label: "Stories",
@@ -271,9 +271,9 @@ window.TEUI.SectionModules.sect19 = (function () {
         b: {},
         c: { label: "Stories" },
         d: {
-          fieldId: "d_199",
+          fieldId: "d_150",
           type: "dropdown",
-          dropdownId: "dd_d_199",
+          dropdownId: "dd_d_150",
           value: "1.5",
           section: "wombat",
           tooltip: true,
@@ -296,7 +296,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     },
 
     // Volume input (mirrored from S12 d_105)
-    row198: {
+    row151: {
       id: "19.V",
       rowId: "19.V",
       label: "Conditioned Volume",
@@ -305,7 +305,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         b: {},
         c: { label: "Conditioned Volume" },
         d: {
-          fieldId: "d_198",
+          fieldId: "d_151",
           type: "editable",
           value: "8000.00",
           classes: ["user-input"],
@@ -320,7 +320,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     },
 
     // Display-only: Area Exposed to Air (mirrored from S12 d_101)
-    row101: {
+    row152: {
       id: "19.Ae",
       rowId: "19.Ae",
       label: "Total Area Exposed to Air (Ae)",
@@ -329,7 +329,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         b: {},
         c: { label: "Total Area Exposed to Air (Ae)" },
         d: {
-          fieldId: "d_101",
+          fieldId: "d_152",
           type: "calculated",
           value: "2476.62",
           classes: ["text-air-facing"],
@@ -338,7 +338,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         e: { content: "m²", classes: ["unit-label"] },
         f: { content: "U-Val. for Ae", classes: ["label-main"] },
         g: {
-          fieldId: "g_101",
+          fieldId: "g_152",
           type: "calculated",
           value: "0.278",
           classes: ["text-air-facing"],
@@ -349,7 +349,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     },
 
     // Display-only: Area Exposed to Ground (mirrored from S12 d_102)
-    row102: {
+    row153: {
       id: "19.Ag",
       rowId: "19.Ag",
       label: "Total Area Exposed to Ground (Ag)",
@@ -358,7 +358,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         b: {},
         c: { label: "Total Area Exposed to Ground (Ag)" },
         d: {
-          fieldId: "d_102",
+          fieldId: "d_153",
           type: "calculated",
           value: "1100.42",
           classes: ["text-ground-facing"],
@@ -368,7 +368,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         e: { content: "m²", classes: ["unit-label"] },
         f: { content: "U-Val. for Ag", classes: ["label-main"] },
         g: {
-          fieldId: "g_102",
+          fieldId: "g_153",
           type: "calculated",
           value: "0.324",
           classes: ["text-ground-facing"],
@@ -379,7 +379,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     },
 
     // User controls for topology solver
-    row200: {
+    row154: {
       id: "19.1",
       rowId: "19.1",
       label: "Footprint Aspect Ratio (L:W)",
@@ -388,7 +388,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         b: {},
         c: { label: "Footprint Aspect Ratio (L:W)" },
         d: {
-          fieldId: "d_202",
+          fieldId: "d_154",
           type: "coefficient_slider",
           value: "0.0",
           min: -4.0,
@@ -403,7 +403,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         f: {},
         g: {},
         h: {
-          fieldId: "h_200",
+          fieldId: "h_157",
           type: "calculated",
           value: "0.00",
           label: "Footprint Length (m)",
@@ -411,7 +411,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       },
     },
 
-    row201: {
+    row155: {
       id: "19.2",
       rowId: "19.2",
       label: "Footprint Width",
@@ -424,7 +424,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         f: {},
         g: {},
         h: {
-          fieldId: "h_201",
+          fieldId: "h_155",
           type: "calculated",
           value: "0.00",
           label: "Footprint Width (m)",
@@ -432,7 +432,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       },
     },
 
-    row203: {
+    row156: {
       id: "19.3",
       rowId: "19.3",
       label: "Building Height",
@@ -445,7 +445,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         f: {},
         g: {},
         h: {
-          fieldId: "h_203",
+          fieldId: "h_156",
           type: "calculated",
           value: "0.00",
           label: "Nominal Height (m)",
@@ -486,7 +486,7 @@ window.TEUI.SectionModules.sect19 = (function () {
 
   function getDropdownOptions() {
     return {
-      dd_d_199: [
+      dd_d_150: [
         { value: "1", name: "1" },
         { value: "1.5", name: "1.5" },
         { value: "2", name: "2" },
@@ -696,10 +696,10 @@ window.TEUI.SectionModules.sect19 = (function () {
     const footprintArea = parseFloat(getModeAwareValue("d_95", isReferenceCalculation));
 
     // ⚠️ DUAL-STATE: Read from appropriate state based on calculation mode
-    // Mirror fields: d_198 (volume) ↔ S12 d_105, d_199 (stories) ↔ S12 d_103
+    // Mirror fields: d_151 (volume) ↔ S12 d_105, d_150 (stories) ↔ S12 d_103
     const currentState = isReferenceCalculation ? ReferenceState : TargetState;
-    const volumeDeclared = parseFloat(window.TEUI.parseNumeric(currentState.getValue("d_198")));
-    const storiesDeclared = parseFloat(currentState.getValue("d_199"));
+    const volumeDeclared = parseFloat(window.TEUI.parseNumeric(currentState.getValue("d_151")));
+    const storiesDeclared = parseFloat(currentState.getValue("d_150"));
 
     // Validate SACRED inputs - fail loudly if missing or invalid
     if (!footprintArea || footprintArea <= 0 || isNaN(footprintArea)) {
@@ -715,7 +715,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       throw new Error("[WOMBAT] Opaque wall area (d_86) required and must be >= 0");
     }
     if (!storiesDeclared || storiesDeclared < 0.5 || isNaN(storiesDeclared)) {
-      throw new Error("[WOMBAT] Stories (d_199/d_103) required and must be >= 0.5");
+      throw new Error("[WOMBAT] Stories (d_150/d_103) required and must be >= 0.5");
     }
 
     // Volume is LESS SACRED - used for verification, not constraint
@@ -726,7 +726,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     // 0 = square (1:1)
     // Positive = landscape (wider than tall): +1 = 2:1, +2 = 3:1, +4 = 5:1
     // Negative = portrait (taller than wide): -1 = 1:2, -2 = 1:3, -4 = 1:5
-    const aspectRatioRaw = parseFloat(currentState.getValue("d_202") || 0);
+    const aspectRatioRaw = parseFloat(currentState.getValue("d_154") || 0);
     const aspectRatio =
       aspectRatioRaw >= 0 ? 1 + aspectRatioRaw : 1 / (1 - aspectRatioRaw);
 
@@ -891,9 +891,9 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // DUAL-STATE: Store calculated values in appropriate state object
     // (Will be published to StateManager by calculateTargetModel/calculateReferenceModel)
-    currentState.setValue("h_200", length.toFixed(2));
-    currentState.setValue("h_201", width.toFixed(2));
-    currentState.setValue("h_203", storyHeight.toFixed(2));
+    currentState.setValue("h_157", length.toFixed(2));
+    currentState.setValue("h_155", width.toFixed(2));
+    currentState.setValue("h_156", storyHeight.toFixed(2));
 
     console.log(`[WOMBAT] Geometry solved (${mode} mode):`, solvedGeometry);
     return solvedGeometry;
@@ -1142,16 +1142,16 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Update Target state
     if (volumeFromS12) {
-      const currentValue = TargetState.getValue("d_198");
+      const currentValue = TargetState.getValue("d_151");
       if (currentValue !== volumeFromS12) {
-        TargetState.setValue("d_198", volumeFromS12);
+        TargetState.setValue("d_151", volumeFromS12);
         console.log(
-          `[WOMBAT] Synced d_198 = ${volumeFromS12} from StateManager (d_105)`
+          `[WOMBAT] Synced d_151 = ${volumeFromS12} from StateManager (d_105)`
         );
 
         // Update DOM field
         const volumeField = document.querySelector(
-          '#wombat [data-field-id="d_198"]'
+          '#wombat [data-field-id="d_151"]'
         );
         if (volumeField) {
           volumeField.textContent = window.TEUI.formatNumber(
@@ -1163,16 +1163,16 @@ window.TEUI.SectionModules.sect19 = (function () {
     }
 
     if (storiesFromS12) {
-      const currentValue = TargetState.getValue("d_199");
+      const currentValue = TargetState.getValue("d_150");
       if (currentValue !== storiesFromS12) {
-        TargetState.setValue("d_199", storiesFromS12);
+        TargetState.setValue("d_150", storiesFromS12);
         console.log(
-          `[WOMBAT] Synced d_199 = ${storiesFromS12} from StateManager (d_103)`
+          `[WOMBAT] Synced d_150 = ${storiesFromS12} from StateManager (d_103)`
         );
 
         // Update DOM dropdown
         const storiesDropdown = document.querySelector(
-          '#wombat [data-field-id="d_199"]'
+          '#wombat [data-field-id="d_150"]'
         );
         if (storiesDropdown) {
           storiesDropdown.textContent = storiesFromS12;
@@ -1182,17 +1182,17 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Update Reference state
     if (refVolumeFromS12) {
-      const currentValue = ReferenceState.getValue("d_198");
+      const currentValue = ReferenceState.getValue("d_151");
       if (currentValue !== refVolumeFromS12) {
-        ReferenceState.setValue("d_198", refVolumeFromS12);
+        ReferenceState.setValue("d_151", refVolumeFromS12);
         console.log(
-          `[WOMBAT] Synced ref_d_198 = ${refVolumeFromS12} from StateManager (ref_d_105)`
+          `[WOMBAT] Synced ref_d_151 = ${refVolumeFromS12} from StateManager (ref_d_105)`
         );
 
         // Update DOM field if Reference mode is active
         if (ModeManager?.currentMode === "reference") {
           const volumeField = document.querySelector(
-            '#wombat [data-field-id="d_198"]'
+            '#wombat [data-field-id="d_151"]'
           );
           if (volumeField) {
             volumeField.textContent = window.TEUI.formatNumber(
@@ -1205,17 +1205,17 @@ window.TEUI.SectionModules.sect19 = (function () {
     }
 
     if (refStoriesFromS12) {
-      const currentValue = ReferenceState.getValue("d_199");
+      const currentValue = ReferenceState.getValue("d_150");
       if (currentValue !== refStoriesFromS12) {
-        ReferenceState.setValue("d_199", refStoriesFromS12);
+        ReferenceState.setValue("d_150", refStoriesFromS12);
         console.log(
-          `[WOMBAT] Synced ref_d_199 = ${refStoriesFromS12} from StateManager (ref_d_103)`
+          `[WOMBAT] Synced ref_d_150 = ${refStoriesFromS12} from StateManager (ref_d_103)`
         );
 
         // Update DOM dropdown if Reference mode is active
         if (ModeManager?.currentMode === "reference") {
           const storiesDropdown = document.querySelector(
-            '#wombat [data-field-id="d_199"]'
+            '#wombat [data-field-id="d_150"]'
           );
           if (storiesDropdown) {
             storiesDropdown.textContent = refStoriesFromS12;
@@ -1269,17 +1269,17 @@ window.TEUI.SectionModules.sect19 = (function () {
       return;
     }
 
-    // ⚠️ CRITICAL: WOMBAT owns d_198 and d_199 - must publish to StateManager on user edit
+    // ⚠️ CRITICAL: WOMBAT owns d_151 and d_150 - must publish to StateManager on user edit
     // Per 4012-CHEATSHEET Anti-Pattern 6: Only listen to OWN input fields via DOM
 
-    // ✅ ARCHITECTURAL COMPLIANCE: d_199 dropdown handled by FieldManager
+    // ✅ ARCHITECTURAL COMPLIANCE: d_150 dropdown handled by FieldManager
     // FieldManager already has change listener that calls routeToSectionModeManager()
     // which routes through ModeManager.setValue() and calls calculateAll()
     // No custom listener needed (removed non-standard double listener)
 
-    // ✅ STEP 3: d_198 volume field now uses standard "editable" type
+    // ✅ STEP 3: d_151 volume field now uses standard "editable" type
     // Add blur and keydown handlers (matches S12 pattern for editable fields)
-    const volumeField = sectionElement.querySelector('[data-field-id="d_198"]');
+    const volumeField = sectionElement.querySelector('[data-field-id="d_151"]');
     if (volumeField && !volumeField.hasWombatListeners) {
       // Blur handler: Parse, format, and publish value (matches S12 handleFieldBlur)
       volumeField.addEventListener("blur", function (event) {
@@ -1318,19 +1318,19 @@ window.TEUI.SectionModules.sect19 = (function () {
   function initializeEventHandlers() {
     console.log("[WOMBAT] Initializing event handlers");
 
-    // Setup field blur handlers for WOMBAT's own input fields (d_198, d_199)
+    // Setup field blur handlers for WOMBAT's own input fields (d_151, d_150)
     // Per 4012-CHEATSHEET: Sections ONLY listen to their OWN input fields via DOM
     setupFieldListeners();
 
     // Aspect ratio slider
     const aspectSlider = document.querySelector(
-      '[data-field-id="d_202"] input[type="range"]'
+      '[data-field-id="d_154"] input[type="range"]'
     );
     if (aspectSlider && !aspectSlider.hasSliderListener) {
       aspectSlider.addEventListener("input", e => {
         const rawValue = parseFloat(e.target.value);
         const displaySpan = document.querySelector(
-          'span[data-display-for="d_202"]'
+          'span[data-display-for="d_154"]'
         );
         if (displaySpan) {
           // Convert slider value to aspect ratio display
@@ -1348,10 +1348,10 @@ window.TEUI.SectionModules.sect19 = (function () {
 
       aspectSlider.addEventListener("change", e => {
         const value = e.target.value;
-        console.log(`[WOMBAT] Aspect ratio slider changed: d_202 = ${value}`);
+        console.log(`[WOMBAT] Aspect ratio slider changed: d_154 = ${value}`);
 
         // MODE-AWARE: Use ModeManager.setValue for dual-state publishing
-        ModeManager.setValue("d_202", value, "user-modified");
+        ModeManager.setValue("d_154", value, "user-modified");
 
         // Recalculate geometry with new aspect ratio (runs dual-engine + updates viz)
         calculateAll();
@@ -1386,19 +1386,19 @@ window.TEUI.SectionModules.sect19 = (function () {
         });
       });
 
-      // ⚠️ MIRROR FIELD SYNC: Section 12 → WOMBAT (d_105→d_198, d_103→d_199)
+      // ⚠️ MIRROR FIELD SYNC: Section 12 → WOMBAT (d_105→d_151, d_103→d_150)
       // When S12 volume/stories change, sync to WOMBAT mirror fields AND recalculate
       // NOTE: NO DOM updates here - FieldManager handles routing to correct state
       window.TEUI.StateManager.addListener("d_105", newValue => {
-        const currentValue = TargetState.getValue("d_198");
+        const currentValue = TargetState.getValue("d_151");
         console.log(
           `[WOMBAT SYNC] d_105 changed: ${currentValue} → ${newValue}`
         );
         if (currentValue !== newValue) {
           // Update TargetState only - NO re-publication to break circular loop
-          TargetState.setValue("d_198", newValue);
+          TargetState.setValue("d_151", newValue);
           console.log(
-            `[WOMBAT] ✅ Synced d_198 = ${newValue} from S12 (d_105)`
+            `[WOMBAT] ✅ Synced d_151 = ${newValue} from S12 (d_105)`
           );
           // Recalculate (will run both engines and update visualization)
           calculateAll();
@@ -1406,15 +1406,15 @@ window.TEUI.SectionModules.sect19 = (function () {
       });
 
       window.TEUI.StateManager.addListener("ref_d_105", newValue => {
-        const currentValue = ReferenceState.getValue("d_198");
+        const currentValue = ReferenceState.getValue("d_151");
         console.log(
           `[WOMBAT SYNC] ref_d_105 changed: ${currentValue} → ${newValue}`
         );
         if (currentValue !== newValue) {
           // Update ReferenceState
-          ReferenceState.setValue("d_198", newValue);
+          ReferenceState.setValue("d_151", newValue);
           console.log(
-            `[WOMBAT] ✅ Synced ref_d_198 = ${newValue} from S12 (ref_d_105)`
+            `[WOMBAT] ✅ Synced ref_d_151 = ${newValue} from S12 (ref_d_105)`
           );
           // Recalculate (will run both engines and update visualization)
           calculateAll();
@@ -1422,15 +1422,15 @@ window.TEUI.SectionModules.sect19 = (function () {
       });
 
       window.TEUI.StateManager.addListener("d_103", newValue => {
-        const currentValue = TargetState.getValue("d_199");
+        const currentValue = TargetState.getValue("d_150");
         console.log(
           `[WOMBAT SYNC] d_103 changed: ${currentValue} → ${newValue}`
         );
         if (currentValue !== newValue) {
           // Update TargetState only - NO re-publication to break circular loop
-          TargetState.setValue("d_199", newValue);
+          TargetState.setValue("d_150", newValue);
           console.log(
-            `[WOMBAT] ✅ Synced d_199 = ${newValue} from S12 (d_103)`
+            `[WOMBAT] ✅ Synced d_150 = ${newValue} from S12 (d_103)`
           );
           // Recalculate (will run both engines and update visualization)
           calculateAll();
@@ -1438,15 +1438,15 @@ window.TEUI.SectionModules.sect19 = (function () {
       });
 
       window.TEUI.StateManager.addListener("ref_d_103", newValue => {
-        const currentValue = ReferenceState.getValue("d_199");
+        const currentValue = ReferenceState.getValue("d_150");
         console.log(
           `[WOMBAT SYNC] ref_d_103 changed: ${currentValue} → ${newValue}`
         );
         if (currentValue !== newValue) {
           // Update ReferenceState
-          ReferenceState.setValue("d_199", newValue);
+          ReferenceState.setValue("d_150", newValue);
           console.log(
-            `[WOMBAT] ✅ Synced ref_d_199 = ${newValue} from S12 (ref_d_103)`
+            `[WOMBAT] ✅ Synced ref_d_150 = ${newValue} from S12 (ref_d_103)`
           );
           // Recalculate (will run both engines and update visualization)
           calculateAll();
@@ -1463,7 +1463,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       window.TEUI.StateManager.addListener("d_101", newValue => {
         if (!wombatContainer) return;
         const element = wombatContainer.querySelector(
-          '[data-field-id="d_101"]'
+          '[data-field-id="d_152"]'
         );
         if (element && newValue !== null && newValue !== undefined) {
           element.textContent = window.TEUI.formatNumber(
@@ -1476,7 +1476,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       window.TEUI.StateManager.addListener("g_101", newValue => {
         if (!wombatContainer) return;
         const element = wombatContainer.querySelector(
-          '[data-field-id="g_101"]'
+          '[data-field-id="g_152"]'
         );
         if (element && newValue !== null && newValue !== undefined) {
           element.textContent = window.TEUI.formatNumber(
@@ -1490,7 +1490,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       window.TEUI.StateManager.addListener("ref_d_101", newValue => {
         if (!wombatContainer) return;
         const element = wombatContainer.querySelector(
-          '[data-field-id="d_101"]'
+          '[data-field-id="d_152"]'
         );
         if (
           element &&
@@ -1508,7 +1508,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       window.TEUI.StateManager.addListener("ref_g_101", newValue => {
         if (!wombatContainer) return;
         const element = wombatContainer.querySelector(
-          '[data-field-id="g_101"]'
+          '[data-field-id="g_152"]'
         );
         if (
           element &&
@@ -1527,7 +1527,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       window.TEUI.StateManager.addListener("d_102", newValue => {
         if (!wombatContainer) return;
         const element = wombatContainer.querySelector(
-          '[data-field-id="d_102"]'
+          '[data-field-id="d_153"]'
         );
         if (element && newValue !== null && newValue !== undefined) {
           element.textContent = window.TEUI.formatNumber(
@@ -1540,7 +1540,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       window.TEUI.StateManager.addListener("g_102", newValue => {
         if (!wombatContainer) return;
         const element = wombatContainer.querySelector(
-          '[data-field-id="g_102"]'
+          '[data-field-id="g_153"]'
         );
         if (element && newValue !== null && newValue !== undefined) {
           element.textContent = window.TEUI.formatNumber(
@@ -1554,7 +1554,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       window.TEUI.StateManager.addListener("ref_d_102", newValue => {
         if (!wombatContainer) return;
         const element = wombatContainer.querySelector(
-          '[data-field-id="d_102"]'
+          '[data-field-id="d_153"]'
         );
         if (
           element &&
@@ -1572,7 +1572,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       window.TEUI.StateManager.addListener("ref_g_102", newValue => {
         if (!wombatContainer) return;
         const element = wombatContainer.querySelector(
-          '[data-field-id="g_102"]'
+          '[data-field-id="g_153"]'
         );
         if (
           element &&
@@ -1608,7 +1608,7 @@ window.TEUI.SectionModules.sect19 = (function () {
 
   function initializeMirrorFields() {
     // ⚠️ CRITICAL: Initialize WOMBAT mirror fields from S12 on section load
-    // This ensures d_198/d_199 are synced with d_105/d_103 from the start
+    // This ensures d_151/d_150 are synced with d_105/d_103 from the start
     if (window.TEUI?.StateManager) {
       const d_105 = window.TEUI.StateManager.getValue("d_105");
       const d_103 = window.TEUI.StateManager.getValue("d_103");
@@ -1616,26 +1616,26 @@ window.TEUI.SectionModules.sect19 = (function () {
       const ref_d_103 = window.TEUI.StateManager.getValue("ref_d_103");
 
       if (d_105) {
-        window.TEUI.StateManager.setValue("d_198", d_105, "initial");
-        console.log(`[WOMBAT] Initialized d_198 = ${d_105} from S12 (d_105)`);
+        window.TEUI.StateManager.setValue("d_151", d_105, "initial");
+        console.log(`[WOMBAT] Initialized d_151 = ${d_105} from S12 (d_105)`);
       }
 
       if (d_103) {
-        window.TEUI.StateManager.setValue("d_199", d_103, "initial");
-        console.log(`[WOMBAT] Initialized d_199 = ${d_103} from S12 (d_103)`);
+        window.TEUI.StateManager.setValue("d_150", d_103, "initial");
+        console.log(`[WOMBAT] Initialized d_150 = ${d_103} from S12 (d_103)`);
       }
 
       if (ref_d_105) {
-        window.TEUI.StateManager.setValue("ref_d_198", ref_d_105, "initial");
+        window.TEUI.StateManager.setValue("ref_d_151", ref_d_105, "initial");
         console.log(
-          `[WOMBAT] Initialized ref_d_198 = ${ref_d_105} from S12 (ref_d_105)`
+          `[WOMBAT] Initialized ref_d_151 = ${ref_d_105} from S12 (ref_d_105)`
         );
       }
 
       if (ref_d_103) {
-        window.TEUI.StateManager.setValue("ref_d_199", ref_d_103, "initial");
+        window.TEUI.StateManager.setValue("ref_d_150", ref_d_103, "initial");
         console.log(
-          `[WOMBAT] Initialized ref_d_199 = ${ref_d_103} from S12 (ref_d_103)`
+          `[WOMBAT] Initialized ref_d_150 = ${ref_d_103} from S12 (ref_d_103)`
         );
       }
 
@@ -1654,23 +1654,23 @@ window.TEUI.SectionModules.sect19 = (function () {
     const geometry = solveGeometry(false); // isReferenceCalculation = false
 
     // Update TargetState (for refreshUI to read)
-    TargetState.setValue("h_200", geometry.footprint.length.toFixed(2));
-    TargetState.setValue("h_201", geometry.footprint.width.toFixed(2));
-    TargetState.setValue("h_203", geometry.storyHeight.toFixed(2));
+    TargetState.setValue("h_157", geometry.footprint.length.toFixed(2));
+    TargetState.setValue("h_155", geometry.footprint.width.toFixed(2));
+    TargetState.setValue("h_156", geometry.storyHeight.toFixed(2));
 
     // Publish calculated dimensions to StateManager (unprefixed for Target)
     window.TEUI.StateManager.setValue(
-      "h_200",
+      "h_157",
       geometry.footprint.length.toFixed(2),
       "calculated"
     );
     window.TEUI.StateManager.setValue(
-      "h_201",
+      "h_155",
       geometry.footprint.width.toFixed(2),
       "calculated"
     );
     window.TEUI.StateManager.setValue(
-      "h_203",
+      "h_156",
       geometry.storyHeight.toFixed(2),
       "calculated"
     );
@@ -1682,23 +1682,23 @@ window.TEUI.SectionModules.sect19 = (function () {
     const geometry = solveGeometry(true); // isReferenceCalculation = true
 
     // Update ReferenceState (for refreshUI to read)
-    ReferenceState.setValue("h_200", geometry.footprint.length.toFixed(2));
-    ReferenceState.setValue("h_201", geometry.footprint.width.toFixed(2));
-    ReferenceState.setValue("h_203", geometry.storyHeight.toFixed(2));
+    ReferenceState.setValue("h_157", geometry.footprint.length.toFixed(2));
+    ReferenceState.setValue("h_155", geometry.footprint.width.toFixed(2));
+    ReferenceState.setValue("h_156", geometry.storyHeight.toFixed(2));
 
     // Publish calculated dimensions to StateManager (ref_ prefixed for Reference)
     window.TEUI.StateManager.setValue(
-      "ref_h_200",
+      "ref_h_157",
       geometry.footprint.length.toFixed(2),
       "calculated"
     );
     window.TEUI.StateManager.setValue(
-      "ref_h_201",
+      "ref_h_155",
       geometry.footprint.width.toFixed(2),
       "calculated"
     );
     window.TEUI.StateManager.setValue(
-      "ref_h_203",
+      "ref_h_156",
       geometry.storyHeight.toFixed(2),
       "calculated"
     );
