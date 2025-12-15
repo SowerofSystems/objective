@@ -294,6 +294,98 @@ window.TEUI.WombatRender = (function () {
   }
 
   //==========================================================================
+  // RENDERING: PYRAMIDAL ROOF GEOMETRY (Rational Trigonometry)
+  //==========================================================================
+
+  /**
+   * Draw a triangle in isometric projection
+   * @param {SVGElement} svg - Target SVG element
+   * @param {Object} p1 - First vertex {x, y, z}
+   * @param {Object} p2 - Second vertex {x, y, z}
+   * @param {Object} p3 - Third vertex {x, y, z}
+   * @param {number} scale - Isometric scale factor
+   * @param {number} centerX - SVG center X
+   * @param {number} centerY - SVG center Y
+   * @param {string} color - Stroke color
+   */
+  function drawTriangle(svg, p1, p2, p3, scale, centerX, centerY, color) {
+    const pt1 = toIsometric(p1.x, p1.y, p1.z, scale, centerX, centerY);
+    const pt2 = toIsometric(p2.x, p2.y, p2.z, scale, centerX, centerY);
+    const pt3 = toIsometric(p3.x, p3.y, p3.z, scale, centerX, centerY);
+
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", `M ${pt1.x},${pt1.y} L ${pt2.x},${pt2.y} L ${pt3.x},${pt3.y} Z`);
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", color);
+    path.setAttribute("stroke-width", 2);
+
+    svg.appendChild(path);
+  }
+
+  /**
+   * Render pyramidal roof geometry using rational trigonometry
+   * @param {SVGElement} svg - Target SVG element
+   * @param {Object} geometry - Geometry object with roof data
+   * @param {string} mode - "target" or "reference"
+   * @param {number} scale - Isometric scale factor
+   * @param {number} centerX - SVG center X coordinate
+   * @param {number} centerY - SVG center Y coordinate
+   */
+  function renderPyramidalRoof(svg, geometry, mode, scale, centerX, centerY) {
+    const isReference = mode === "reference";
+    const roofColor = isReference ? config.colors.reference : config.colors.target;
+
+    const { width, length } = geometry.footprint;
+    const wallHeight = geometry.height;
+    const roofHeight = geometry.roof.height;
+
+    // Apex point (centered above base)
+    const apex = {
+      x: 0,
+      y: 0,
+      z: wallHeight + roofHeight
+    };
+
+    // Four corners of roof base (top of walls)
+    const roofBase = [
+      { x: -width/2, y: -length/2, z: wallHeight }, // SW corner
+      { x:  width/2, y: -length/2, z: wallHeight }, // SE corner
+      { x:  width/2, y:  length/2, z: wallHeight }, // NE corner
+      { x: -width/2, y:  length/2, z: wallHeight }  // NW corner
+    ];
+
+    // Draw four triangular faces
+    roofBase.forEach((corner, i) => {
+      const nextCorner = roofBase[(i + 1) % 4];
+      drawTriangle(svg, corner, apex, nextCorner, scale, centerX, centerY, roofColor);
+    });
+
+    // Draw apex node
+    const apexPt = toIsometric(apex.x, apex.y, apex.z, scale, centerX, centerY);
+    const node = createNode(apexPt, roofColor, 5);
+    svg.appendChild(node);
+
+    // Add roof height label
+    const roofLabelPos = toIsometric(
+      width / 2 + 8,
+      0,
+      wallHeight + roofHeight / 2,
+      scale,
+      centerX,
+      centerY
+    );
+    const roofLabel = createText(
+      roofLabelPos.x + 15,
+      roofLabelPos.y,
+      `Roof: ${roofHeight.toFixed(1)}m`,
+      roofColor,
+      10,
+      { style: "italic" }
+    );
+    svg.appendChild(roofLabel);
+  }
+
+  //==========================================================================
   // RENDERING: DIMENSION ANNOTATIONS
   //==========================================================================
 
@@ -739,6 +831,14 @@ window.TEUI.WombatRender = (function () {
 
     // Render above-grade wireframe
     renderAboveGrade(svgElement, geometry, mode, scale, centerX, centerY);
+
+    // Render pyramidal roof (if pitched)
+    if (geometry.roof && geometry.roof.type === "pyramidal") {
+      renderPyramidalRoof(svgElement, geometry, mode, scale, centerX, centerY);
+    } else if (geometry.roof && geometry.roof.type === "inverted") {
+      // Inverted pyramid (visual indicator for roof area deficit)
+      renderPyramidalRoof(svgElement, geometry, mode, scale, centerX, centerY);
+    }
 
     // PHASE 2: Render all labels - these go on top for legibility
 
