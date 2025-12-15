@@ -1,6 +1,6 @@
 # Section 19: WOMBAT - 3D Thermal Topology Visualization
 
-**Status**: ✅ Production Ready
+**Status**: ✅ Production Ready (Phase 2 Complete - Testing)
 **Created**: 2025-12-08
 **Last Updated**: 2025-12-14
 **Target Release**: 4.013
@@ -19,13 +19,22 @@ WOMBAT generates a **3D thermal topology model** from OBJECTIVE's envelope geome
 - ✅ Interactive aspect ratio control
 - ✅ Multi-story visualization with per-floor area labels
 - ✅ Mode-aware color coding (Blue=Target, Red=Reference)
+- ✅ **Below-grade geometry visualization** (Phase 2 - Testing)
+  - Brown dashed vectors for basement walls (hidden line effect)
+  - Brown nodes for basement floor corners
+  - Brown solid vectors for slab-on-grade perimeter
+  - Grade line indicator with label
+  - Basement depth annotation
+  - Total Ag area label with foundation type
+  - Mixed foundation warning indicator
+- ✅ **Refresh button sync** - User-controlled StateManager sync after import
+- ✅ **Label readability** - Semi-transparent backgrounds, z-order optimized
 
 **Planned Enhancements**:
 - Window areas in walls
-- Below-grade wall areas (brown nodes and vectors)
-- Ground plane indicator
 - Shade plane projections (0-100%)
 - Roof topology (rational trigonometry-based)
+- Three.js migration for 3D interaction
 
 ---
 
@@ -256,38 +265,71 @@ Section 19 displays aggregate envelope area fields from Section 12 using the "Ro
 
 ---
 
-## Future Enhancements
+## Recent Enhancements
 
-### Phase 2: Below-Grade Geometry Visualization
+### Phase 2: Below-Grade Geometry Visualization ✅ COMPLETE (Testing)
 
 **Goal**: Visualize basement/below-grade components using brown nodes and vectors to distinguish ground-facing surfaces (Ag) from air-facing surfaces (Ae).
+
+**Status**: ✅ **Implemented - In Testing** (2025-12-14)
+
+**Commits**:
+- `722b624` - Docs: Update below-grade workplan with hidden line visual design
+- `3a19421` - Refactor: Extract S19 rendering to wombatRender.js module
+- `9809ae8` - Docs: Revise S19-WOMBAT-3.md to reflect production state
+- `fbad071` - Docs: Add Phase 2 below-grade geometry workplan to S19-WOMBAT-3
+- `2ecdc00` - Improve: Add color classes to Ae/Ag U-value fields in S19
+- `975163c` - Fix: WOMBAT refresh button sync and UI improvements
+- `d221df2` - Improve: Add semi-transparent backgrounds to WOMBAT labels
+- `b0b2388` - Fix: Ensure WOMBAT labels render on top of geometry
+- `cdfcdee` - Fix: Correct label background rendering timing
 
 **Data Sources** (from S11):
 - `d_95` / `ref_d_95` - Slab Area (m²) - Brown (ground-facing)
 - `d_94` / `ref_d_94` - Below-Grade Wall Area (m²) - Brown (ground-facing)
+- `d_87` / `ref_d_87` - Floor Exposed to Air (m²) - For mixed foundation detection
 
 **Visual Design**:
 ```
 Above Grade (Blue):          Below Grade (Brown):
-      ┌────┐                      ═══════  ← Grade line
+      ┌────┐                      ═══════  ← Grade line (dashed)
      ╱│    │╲                     ┌────┐
-    ╱ │    │ ╲                    │    │   ← Basement walls (d_94)
-   ●──●────●──●                   │    │
-   │  │    │  │                   ●══●═●══● ← Slab (d_95)
+    ╱ │    │ ╲                    ┊    ┊   ← Basement walls (dashed)
+   ●──●────●──●                   ┊    ┊
+   │  │    │  │                   ●──●─●──● ← Basement floor nodes
    │  │    │  │
-   ●──●────●──●
-   ═══════════  ← Grade line
+   ●──●────●──●                  Ag: 306.4 m²
+   ═══════════  ← Grade line    Full Basement
 ```
 
-**Implementation Steps**:
-1. Read S11 slab/basement data from StateManager
-2. Calculate basement depth from wall area: `depth = basementWallArea / perimeter`
-3. Draw grade line (dashed brown) at z=0 if ground-facing components exist
-4. Extend brown vectors downward for basement walls
-5. Draw brown perimeter for slab at basement floor level
-6. Label with total Ag area
+**Implementation Highlights**:
+1. ✅ Foundation type detection (full-basement, slab-on-grade, raised-floor, basement-no-slab)
+2. ✅ Basement depth calculation: `depth = basementWallArea / perimeter`
+3. ✅ Grade line (dashed brown, italic "Grade" label) at z=0
+4. ✅ Basement walls (dashed brown vectors, hidden line effect)
+5. ✅ Basement floor nodes (brown circles)
+6. ✅ Ground floor perimeter detection (brown when ground contact, blue/red when raised)
+7. ✅ Depth annotation label (left side)
+8. ✅ Total Ag area label with foundation type subtitle
+9. ✅ Mixed foundation warning (when both raised floor and ground contact exist)
+10. ✅ 3-phase rendering for proper z-order (geometry → labels → backgrounds)
+11. ✅ Semi-transparent label backgrounds for legibility
 
-**Status**: Documented, ready for implementation
+**Location**:
+- Geometry solver: [Section19.js:652-711](../../src/sections/Section19.js#L652-L711)
+- Rendering: [wombatRender.js:328-554](../../src/core/wombatRender.js#L328-L554)
+
+**Testing Required**:
+- [ ] Full basement scenario (d_94 > 0, d_95 > 0, d_87 = 0)
+- [ ] Slab-on-grade scenario (d_94 = 0, d_95 > 0, d_87 = 0)
+- [ ] Raised floor scenario (d_94 = 0, d_95 = 0, d_87 > 0)
+- [ ] Mixed foundation scenario (combination of above)
+- [ ] Basement-no-slab scenario (d_94 > 0, d_95 = 0)
+- [ ] Import/export with below-grade data
+- [ ] Target/Reference mode switching
+- [ ] Label legibility over all geometry types
+
+## Future Enhancements
 
 ### Phase 3: Three.js Migration
 
