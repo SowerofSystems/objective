@@ -3084,14 +3084,14 @@ window.TEUI.SectionModules.sect12 = (function () {
     handleConditionalEditability();
 
     // ✅ BIDIRECTIONAL SYNC: S12 listens to WOMBAT (S19) mirror field changes
-    // Mirror relationships: d_105 (S12) ↔ d_198 (S19), d_103 (S12) ↔ d_199 (S19)
+    // Mirror relationships: d_105 (S12) ↔ d_151 (S19), d_103 (S12) ↔ d_150 (S19)
     if (window.TEUI?.StateManager) {
       // Target volume from WOMBAT
-      window.TEUI.StateManager.addListener("d_198", newValue => {
+      window.TEUI.StateManager.addListener("d_151", newValue => {
         const currentValue = ModeManager.getValue("d_105");
         if (currentValue !== newValue) {
           console.log(
-            `[S12→WOMBAT] Syncing d_105 = ${newValue} from WOMBAT d_198`
+            `[S12→WOMBAT] Syncing d_105 = ${newValue} from WOMBAT d_151`
           );
           ModeManager.setValue("d_105", newValue, "external");
 
@@ -3113,11 +3113,11 @@ window.TEUI.SectionModules.sect12 = (function () {
       });
 
       // Target stories from WOMBAT
-      window.TEUI.StateManager.addListener("d_199", newValue => {
+      window.TEUI.StateManager.addListener("d_150", newValue => {
         const currentValue = ModeManager.getValue("d_103");
         if (currentValue !== newValue) {
           console.log(
-            `[S12→WOMBAT] Syncing d_103 = ${newValue} from WOMBAT d_199`
+            `[S12→WOMBAT] Syncing d_103 = ${newValue} from WOMBAT d_150`
           );
           ModeManager.setValue("d_103", newValue, "external");
 
@@ -3135,11 +3135,11 @@ window.TEUI.SectionModules.sect12 = (function () {
       });
 
       // Reference volume from WOMBAT
-      window.TEUI.StateManager.addListener("ref_d_198", newValue => {
+      window.TEUI.StateManager.addListener("ref_d_151", newValue => {
         const currentValue = ReferenceState.getValue("d_105");
         if (currentValue !== newValue) {
           console.log(
-            `[S12→WOMBAT] Syncing ref_d_105 = ${newValue} from WOMBAT ref_d_198`
+            `[S12→WOMBAT] Syncing ref_d_105 = ${newValue} from WOMBAT ref_d_151`
           );
           ReferenceState.setValue("d_105", newValue);
           window.TEUI.StateManager.setValue("ref_d_105", newValue, "external");
@@ -3168,11 +3168,11 @@ window.TEUI.SectionModules.sect12 = (function () {
       });
 
       // Reference stories from WOMBAT
-      window.TEUI.StateManager.addListener("ref_d_199", newValue => {
+      window.TEUI.StateManager.addListener("ref_d_150", newValue => {
         const currentValue = ReferenceState.getValue("d_103");
         if (currentValue !== newValue) {
           console.log(
-            `[S12→WOMBAT] Syncing ref_d_103 = ${newValue} from WOMBAT ref_d_199`
+            `[S12→WOMBAT] Syncing ref_d_103 = ${newValue} from WOMBAT ref_d_150`
           );
           ReferenceState.setValue("d_103", newValue);
           window.TEUI.StateManager.setValue("ref_d_103", newValue, "external");
@@ -3549,41 +3549,41 @@ window.TEUI.SectionModules.sect12 = (function () {
     // ModeManager.setValue publishes to StateManager (both ref_ and unprefixed)
     // No need for listeners to create double calculations
 
-    // ⚠️ MIRROR FIELD SYNC: WOMBAT → Section 12 (d_198→d_105, d_199→d_103)
+    // ⚠️ MIRROR FIELD SYNC: WOMBAT → Section 12 (d_151→d_105, d_150→d_103)
     // WOMBAT has mirror fields that display S12's volume/stories
     // When edited in WOMBAT, sync back to S12's internal state and recalculate
-    window.TEUI.StateManager.addListener("d_198", newValue => {
+    window.TEUI.StateManager.addListener("d_151", newValue => {
       if (TargetState.getValue("d_105") !== newValue) {
         TargetState.setValue("d_105", newValue, "external");
         calculateAll(); // Trigger full recalculation and UI update
-        console.log(`[S12] Synced d_105 = ${newValue} from WOMBAT (d_198)`);
+        console.log(`[S12] Synced d_105 = ${newValue} from WOMBAT (d_151)`);
       }
     });
 
-    window.TEUI.StateManager.addListener("ref_d_198", newValue => {
+    window.TEUI.StateManager.addListener("ref_d_151", newValue => {
       if (ReferenceState.getValue("d_105") !== newValue) {
         ReferenceState.setValue("d_105", newValue, "external");
         calculateAll(); // Trigger full recalculation and UI update
         console.log(
-          `[S12] Synced ref_d_105 = ${newValue} from WOMBAT (ref_d_198)`
+          `[S12] Synced ref_d_105 = ${newValue} from WOMBAT (ref_d_151)`
         );
       }
     });
 
-    window.TEUI.StateManager.addListener("d_199", newValue => {
+    window.TEUI.StateManager.addListener("d_150", newValue => {
       if (TargetState.getValue("d_103") !== newValue) {
         TargetState.setValue("d_103", newValue, "external");
         calculateAll(); // Trigger full recalculation and UI update
-        console.log(`[S12] Synced d_103 = ${newValue} from WOMBAT (d_199)`);
+        console.log(`[S12] Synced d_103 = ${newValue} from WOMBAT (d_150)`);
       }
     });
 
-    window.TEUI.StateManager.addListener("ref_d_199", newValue => {
+    window.TEUI.StateManager.addListener("ref_d_150", newValue => {
       if (ReferenceState.getValue("d_103") !== newValue) {
         ReferenceState.setValue("d_103", newValue, "external");
         calculateAll(); // Trigger full recalculation and UI update
         console.log(
-          `[S12] Synced ref_d_103 = ${newValue} from WOMBAT (ref_d_199)`
+          `[S12] Synced ref_d_103 = ${newValue} from WOMBAT (ref_d_150)`
         );
       }
     });
