@@ -362,7 +362,8 @@ window.TEUI.SectionModules.sect19 = (function () {
           type: "calculated",
           value: "1100.42",
           classes: ["text-ground-facing"],
-          label: "Total area of building components exposed to ground (from S12)",
+          label:
+            "Total area of building components exposed to ground (from S12)",
         },
         e: { content: "m²", classes: ["unit-label"] },
         f: { content: "U-Val. for Ag", classes: ["label-main"] },
@@ -547,7 +548,15 @@ window.TEUI.SectionModules.sect19 = (function () {
     }
 
     // Add data rows
-    ["row199", "row198", "row101", "row102", "row200", "row201", "row203"].forEach(key => {
+    [
+      "row199",
+      "row198",
+      "row101",
+      "row102",
+      "row200",
+      "row201",
+      "row203",
+    ].forEach(key => {
       if (sectionRows[key]) {
         layoutRows.push(createLayoutRow(sectionRows[key]));
       }
@@ -803,7 +812,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         <div>
           <button id="wombat-refresh-btn" class="btn btn-outline-secondary btn-sm"
                   title="Refresh Topology" disabled>
-            <i class="bi bi-arrow-clockwise"></i>
+            <i class="bi bi-arrow-repeat"></i>
           </button>
 
           <button id="wombat-info-btn" class="btn btn-outline-secondary btn-sm"
@@ -940,7 +949,10 @@ window.TEUI.SectionModules.sect19 = (function () {
   function handleFullscreenEscape(event) {
     if (event.key === "Escape" || event.keyCode === 27) {
       const wombatSection = document.getElementById("wombat");
-      if (wombatSection && wombatSection.classList.contains("wombat-fullscreen")) {
+      if (
+        wombatSection &&
+        wombatSection.classList.contains("wombat-fullscreen")
+      ) {
         toggleFullscreen();
       }
     }
@@ -964,10 +976,14 @@ window.TEUI.SectionModules.sect19 = (function () {
       const currentValue = TargetState.getValue("d_198");
       if (currentValue !== volumeFromS12) {
         TargetState.setValue("d_198", volumeFromS12);
-        console.log(`[WOMBAT] Synced d_198 = ${volumeFromS12} from StateManager (d_105)`);
+        console.log(
+          `[WOMBAT] Synced d_198 = ${volumeFromS12} from StateManager (d_105)`
+        );
 
         // Update DOM field
-        const volumeField = document.querySelector('#wombat [data-field-id="d_198"]');
+        const volumeField = document.querySelector(
+          '#wombat [data-field-id="d_198"]'
+        );
         if (volumeField) {
           volumeField.textContent = window.TEUI.formatNumber(
             window.TEUI.parseNumeric(volumeFromS12),
@@ -981,10 +997,14 @@ window.TEUI.SectionModules.sect19 = (function () {
       const currentValue = TargetState.getValue("d_199");
       if (currentValue !== storiesFromS12) {
         TargetState.setValue("d_199", storiesFromS12);
-        console.log(`[WOMBAT] Synced d_199 = ${storiesFromS12} from StateManager (d_103)`);
+        console.log(
+          `[WOMBAT] Synced d_199 = ${storiesFromS12} from StateManager (d_103)`
+        );
 
         // Update DOM dropdown
-        const storiesDropdown = document.querySelector('#wombat [data-field-id="d_199"]');
+        const storiesDropdown = document.querySelector(
+          '#wombat [data-field-id="d_199"]'
+        );
         if (storiesDropdown) {
           storiesDropdown.textContent = storiesFromS12;
         }
@@ -996,11 +1016,15 @@ window.TEUI.SectionModules.sect19 = (function () {
       const currentValue = ReferenceState.getValue("d_198");
       if (currentValue !== refVolumeFromS12) {
         ReferenceState.setValue("d_198", refVolumeFromS12);
-        console.log(`[WOMBAT] Synced ref_d_198 = ${refVolumeFromS12} from StateManager (ref_d_105)`);
+        console.log(
+          `[WOMBAT] Synced ref_d_198 = ${refVolumeFromS12} from StateManager (ref_d_105)`
+        );
 
         // Update DOM field if Reference mode is active
         if (ModeManager?.currentMode === "reference") {
-          const volumeField = document.querySelector('#wombat [data-field-id="d_198"]');
+          const volumeField = document.querySelector(
+            '#wombat [data-field-id="d_198"]'
+          );
           if (volumeField) {
             volumeField.textContent = window.TEUI.formatNumber(
               window.TEUI.parseNumeric(refVolumeFromS12),
@@ -1015,11 +1039,15 @@ window.TEUI.SectionModules.sect19 = (function () {
       const currentValue = ReferenceState.getValue("d_199");
       if (currentValue !== refStoriesFromS12) {
         ReferenceState.setValue("d_199", refStoriesFromS12);
-        console.log(`[WOMBAT] Synced ref_d_199 = ${refStoriesFromS12} from StateManager (ref_d_103)`);
+        console.log(
+          `[WOMBAT] Synced ref_d_199 = ${refStoriesFromS12} from StateManager (ref_d_103)`
+        );
 
         // Update DOM dropdown if Reference mode is active
         if (ModeManager?.currentMode === "reference") {
-          const storiesDropdown = document.querySelector('#wombat [data-field-id="d_199"]');
+          const storiesDropdown = document.querySelector(
+            '#wombat [data-field-id="d_199"]'
+          );
           if (storiesDropdown) {
             storiesDropdown.textContent = refStoriesFromS12;
           }
@@ -1037,7 +1065,10 @@ window.TEUI.SectionModules.sect19 = (function () {
       // First activation only
       isActivated = true;
 
-      activateBtn.textContent = "🔄 Refresh Topology";
+      // Change button style to match S18 (outlined, not solid)
+      activateBtn.classList.remove("btn-primary");
+      activateBtn.classList.add("btn-outline-secondary");
+      activateBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Refresh Topology';
 
       // Enable refresh and fullscreen buttons
       if (refreshBtn) refreshBtn.disabled = false;
@@ -1260,9 +1291,11 @@ window.TEUI.SectionModules.sect19 = (function () {
       const wombatContainer = document.getElementById("wombat");
 
       // Area Exposed to Air (Ae) - Target mode
-      window.TEUI.StateManager.addListener("d_101", (newValue) => {
+      window.TEUI.StateManager.addListener("d_101", newValue => {
         if (!wombatContainer) return;
-        const element = wombatContainer.querySelector('[data-field-id="d_101"]');
+        const element = wombatContainer.querySelector(
+          '[data-field-id="d_101"]'
+        );
         if (element && newValue !== null && newValue !== undefined) {
           element.textContent = window.TEUI.formatNumber(
             window.TEUI.parseNumeric(newValue),
@@ -1271,9 +1304,11 @@ window.TEUI.SectionModules.sect19 = (function () {
         }
       });
 
-      window.TEUI.StateManager.addListener("g_101", (newValue) => {
+      window.TEUI.StateManager.addListener("g_101", newValue => {
         if (!wombatContainer) return;
-        const element = wombatContainer.querySelector('[data-field-id="g_101"]');
+        const element = wombatContainer.querySelector(
+          '[data-field-id="g_101"]'
+        );
         if (element && newValue !== null && newValue !== undefined) {
           element.textContent = window.TEUI.formatNumber(
             window.TEUI.parseNumeric(newValue),
@@ -1283,10 +1318,17 @@ window.TEUI.SectionModules.sect19 = (function () {
       });
 
       // Area Exposed to Air (Ae) - Reference mode
-      window.TEUI.StateManager.addListener("ref_d_101", (newValue) => {
+      window.TEUI.StateManager.addListener("ref_d_101", newValue => {
         if (!wombatContainer) return;
-        const element = wombatContainer.querySelector('[data-field-id="d_101"]');
-        if (element && newValue !== null && newValue !== undefined && window.TEUI.ReferenceToggle?.isReferenceMode()) {
+        const element = wombatContainer.querySelector(
+          '[data-field-id="d_101"]'
+        );
+        if (
+          element &&
+          newValue !== null &&
+          newValue !== undefined &&
+          window.TEUI.ReferenceToggle?.isReferenceMode()
+        ) {
           element.textContent = window.TEUI.formatNumber(
             window.TEUI.parseNumeric(newValue),
             "number-2dp-comma"
@@ -1294,10 +1336,17 @@ window.TEUI.SectionModules.sect19 = (function () {
         }
       });
 
-      window.TEUI.StateManager.addListener("ref_g_101", (newValue) => {
+      window.TEUI.StateManager.addListener("ref_g_101", newValue => {
         if (!wombatContainer) return;
-        const element = wombatContainer.querySelector('[data-field-id="g_101"]');
-        if (element && newValue !== null && newValue !== undefined && window.TEUI.ReferenceToggle?.isReferenceMode()) {
+        const element = wombatContainer.querySelector(
+          '[data-field-id="g_101"]'
+        );
+        if (
+          element &&
+          newValue !== null &&
+          newValue !== undefined &&
+          window.TEUI.ReferenceToggle?.isReferenceMode()
+        ) {
           element.textContent = window.TEUI.formatNumber(
             window.TEUI.parseNumeric(newValue),
             "number-3dp"
@@ -1306,9 +1355,11 @@ window.TEUI.SectionModules.sect19 = (function () {
       });
 
       // Area Exposed to Ground (Ag) - Target mode
-      window.TEUI.StateManager.addListener("d_102", (newValue) => {
+      window.TEUI.StateManager.addListener("d_102", newValue => {
         if (!wombatContainer) return;
-        const element = wombatContainer.querySelector('[data-field-id="d_102"]');
+        const element = wombatContainer.querySelector(
+          '[data-field-id="d_102"]'
+        );
         if (element && newValue !== null && newValue !== undefined) {
           element.textContent = window.TEUI.formatNumber(
             window.TEUI.parseNumeric(newValue),
@@ -1317,9 +1368,11 @@ window.TEUI.SectionModules.sect19 = (function () {
         }
       });
 
-      window.TEUI.StateManager.addListener("g_102", (newValue) => {
+      window.TEUI.StateManager.addListener("g_102", newValue => {
         if (!wombatContainer) return;
-        const element = wombatContainer.querySelector('[data-field-id="g_102"]');
+        const element = wombatContainer.querySelector(
+          '[data-field-id="g_102"]'
+        );
         if (element && newValue !== null && newValue !== undefined) {
           element.textContent = window.TEUI.formatNumber(
             window.TEUI.parseNumeric(newValue),
@@ -1329,10 +1382,17 @@ window.TEUI.SectionModules.sect19 = (function () {
       });
 
       // Area Exposed to Ground (Ag) - Reference mode
-      window.TEUI.StateManager.addListener("ref_d_102", (newValue) => {
+      window.TEUI.StateManager.addListener("ref_d_102", newValue => {
         if (!wombatContainer) return;
-        const element = wombatContainer.querySelector('[data-field-id="d_102"]');
-        if (element && newValue !== null && newValue !== undefined && window.TEUI.ReferenceToggle?.isReferenceMode()) {
+        const element = wombatContainer.querySelector(
+          '[data-field-id="d_102"]'
+        );
+        if (
+          element &&
+          newValue !== null &&
+          newValue !== undefined &&
+          window.TEUI.ReferenceToggle?.isReferenceMode()
+        ) {
           element.textContent = window.TEUI.formatNumber(
             window.TEUI.parseNumeric(newValue),
             "number-2dp-comma"
@@ -1340,10 +1400,17 @@ window.TEUI.SectionModules.sect19 = (function () {
         }
       });
 
-      window.TEUI.StateManager.addListener("ref_g_102", (newValue) => {
+      window.TEUI.StateManager.addListener("ref_g_102", newValue => {
         if (!wombatContainer) return;
-        const element = wombatContainer.querySelector('[data-field-id="g_102"]');
-        if (element && newValue !== null && newValue !== undefined && window.TEUI.ReferenceToggle?.isReferenceMode()) {
+        const element = wombatContainer.querySelector(
+          '[data-field-id="g_102"]'
+        );
+        if (
+          element &&
+          newValue !== null &&
+          newValue !== undefined &&
+          window.TEUI.ReferenceToggle?.isReferenceMode()
+        ) {
           element.textContent = window.TEUI.formatNumber(
             window.TEUI.parseNumeric(newValue),
             "number-3dp"
