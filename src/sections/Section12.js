@@ -1,6 +1,6 @@
 /**
  * 4012-Section12.js
- * Volume and Surface Metrics (Section 12) module for TEUI Calculator 4.012
+ * Volume and Surface Metrics (Section 12) module for TEUI Calculator 4.012. Note added 2025.12.15: Make sure skylights d_93, ref_d_93, do not form part of WWR calcs at d_107. Excel had this and we fixed it. 
  */
 
 window.TEUI = window.TEUI || {};

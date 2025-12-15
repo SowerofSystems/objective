@@ -341,10 +341,16 @@ window.TEUI.WombatRender = (function () {
     const wallHeight = geometry.height;
     const roofHeight = geometry.roof.height;
 
-    // Validate roof height
-    if (!roofHeight || isNaN(roofHeight) || !isFinite(roofHeight)) {
+    // Validate roof height (allow 0 for flat/failed roofs, but catch NaN/Infinity)
+    if (isNaN(roofHeight) || !isFinite(roofHeight)) {
       console.error('[WombatRender] Invalid roof height:', roofHeight);
       console.error('  Geometry:', { width, length, wallHeight, roof: geometry.roof });
+      return;
+    }
+
+    // If roof height is 0, don't render (flat roof or geometric impossibility)
+    if (roofHeight === 0) {
+      console.log('[WombatRender] Roof height is 0 - skipping pyramid rendering (flat roof)');
       return;
     }
 
