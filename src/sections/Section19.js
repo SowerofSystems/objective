@@ -913,21 +913,36 @@ window.TEUI.SectionModules.sect19 = (function () {
   }
 
   function toggleFullscreen() {
-    const svgWrapper = document.querySelector(".wombat-svg-wrapper");
+    const wombatSection = document.getElementById("wombat");
     const fullscreenBtn = document.getElementById("wombat-fullscreen-btn");
 
-    if (!svgWrapper || !fullscreenBtn) return;
+    if (!wombatSection || !fullscreenBtn) return;
 
-    if (svgWrapper.classList.contains("fullscreen-mode")) {
+    if (wombatSection.classList.contains("wombat-fullscreen")) {
       // Exit fullscreen
-      svgWrapper.classList.remove("fullscreen-mode");
+      wombatSection.classList.remove("wombat-fullscreen");
       fullscreenBtn.innerHTML = '<i class="bi bi-fullscreen"></i>';
       fullscreenBtn.title = "Toggle Fullscreen";
+
+      // Remove ESC key listener
+      document.removeEventListener("keydown", handleFullscreenEscape);
     } else {
       // Enter fullscreen
-      svgWrapper.classList.add("fullscreen-mode");
+      wombatSection.classList.add("wombat-fullscreen");
       fullscreenBtn.innerHTML = '<i class="bi bi-fullscreen-exit"></i>';
       fullscreenBtn.title = "Exit Fullscreen";
+
+      // Add ESC key listener to exit fullscreen
+      document.addEventListener("keydown", handleFullscreenEscape);
+    }
+  }
+
+  function handleFullscreenEscape(event) {
+    if (event.key === "Escape" || event.keyCode === 27) {
+      const wombatSection = document.getElementById("wombat");
+      if (wombatSection && wombatSection.classList.contains("wombat-fullscreen")) {
+        toggleFullscreen();
+      }
     }
   }
 
@@ -1022,7 +1037,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       // First activation only
       isActivated = true;
 
-      activateBtn.textContent = "🏗️ Activate Topology View";
+      activateBtn.textContent = "🔄 Refresh Topology";
 
       // Enable refresh and fullscreen buttons
       if (refreshBtn) refreshBtn.disabled = false;
