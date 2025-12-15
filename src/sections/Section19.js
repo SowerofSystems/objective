@@ -586,6 +586,89 @@ window.TEUI.SectionModules.sect19 = (function () {
     }
   }
 
+  //==========================================================================
+  // RATIONAL TRIGONOMETRY - Pyramidal Roof Geometry (Wildberger Method)
+  //==========================================================================
+
+  /**
+   * Calculate pyramidal roof height for square base using rational trigonometry
+   * Avoids trig functions - uses quadrance (distance squared) instead
+   * @param {number} side - Side length of square base
+   * @param {number} areaRatio - Roof area / base area (R >= 1)
+   * @returns {number} - Pyramid height (positive)
+   */
+  function pyramidHeightSquare(side, areaRatio) {
+    if (areaRatio < 1) {
+      console.warn('[WOMBAT] Roof area ratio < 1, returning 0 height');
+      return 0;
+    }
+
+    // Work with quadrance (squared quantities) internally
+    // Formula: h² = (a²/4)(R² - 1)
+    const h2 = (side * side / 4) * (areaRatio * areaRatio - 1);
+
+    // Defer sqrt until final step (only irrational operation)
+    return Math.sqrt(h2);
+  }
+
+  /**
+   * Calculate pyramidal roof height for rectangular base using rational trigonometry
+   * @param {number} width - Width of rectangular base
+   * @param {number} length - Length of rectangular base
+   * @param {number} areaRatio - Roof area / base area (R >= 1)
+   * @returns {number} - Pyramid height (minimum of two axes)
+   */
+  function pyramidHeightRectangle(width, length, areaRatio) {
+    if (areaRatio < 1) {
+      console.warn('[WOMBAT] Roof area ratio < 1, returning 0 height');
+      return 0;
+    }
+
+    const baseArea = width * length;
+    const roofArea = areaRatio * baseArea;
+    const faceArea = roofArea / 4;
+
+    // Slant heights from face areas (no trig functions!)
+    const sW = (2 * faceArea) / width;  // Width-face slant height
+    const sL = (2 * faceArea) / length; // Length-face slant height
+
+    // Height quadrance from each axis using Pythagorean theorem
+    const h2w = sW * sW - (width * width) / 4;
+    const h2l = sL * sL - (length * length) / 4;
+
+    // Check for non-congruent faces (only exact for square or R=1)
+    if (Math.abs(h2w - h2l) > 1e-6) {
+      console.warn('[WOMBAT] Non-congruent pyramid faces detected');
+      console.warn(`  h²_width = ${h2w.toFixed(4)}, h²_length = ${h2l.toFixed(4)}`);
+    }
+
+    // Conservative: use minimum height to ensure all faces fit
+    return Math.sqrt(Math.min(h2w, h2l));
+  }
+
+  /**
+   * Calculate pyramidal roof height using rational trigonometry
+   * Automatically detects square vs rectangular base
+   * @param {number} width - Building width
+   * @param {number} length - Building length
+   * @param {number} areaRatio - Roof area / base area
+   * @returns {number} - Pyramid height
+   */
+  function calculatePyramidalHeight(width, length, areaRatio) {
+    const tolerance = 1e-6;
+
+    // Check if base is effectively square
+    if (Math.abs(width - length) < tolerance) {
+      return pyramidHeightSquare(width, areaRatio);
+    } else {
+      return pyramidHeightRectangle(width, length, areaRatio);
+    }
+  }
+
+  //==========================================================================
+  // GEOMETRY SOLVER
+  //==========================================================================
+
   function solveGeometry(isReferenceCalculation = false) {
     const mode = isReferenceCalculation ? "Reference" : "Target";
     console.log(
@@ -635,24 +718,35 @@ window.TEUI.SectionModules.sect19 = (function () {
     const volumePerFloor = volume / stories;
     const areaPerFloor = conditionedArea / stories;
 
-    // Phase 3: Roof geometry (pitch emerges from roof area)
+    // Phase 3: Roof geometry (RATIONAL TRIGONOMETRY - no trig functions!)
     const areaRatio = roofArea / footprintArea;
-    let roofPitch = 0;
     let roofType = "flat";
+    let roofHeight = 0;
 
     if (areaRatio > 1.01) {
-      // Pitched roof needed to achieve larger roof area
-      roofType = "gabled";
-      // Simplified pitch calculation (assumes gabled roof)
-      roofPitch = Math.asin(Math.min((areaRatio - 1) / 2, 1)) * (180 / Math.PI);
+      // Pitched/pyramidal roof needed to achieve larger roof area
+      roofType = "pyramidal";
+      roofHeight = calculatePyramidalHeight(width, length, areaRatio);
+
+      console.log(
+        `[WOMBAT] Pyramidal roof: R=${areaRatio.toFixed(3)}, h=${roofHeight.toFixed(2)}m`
+      );
     } else if (areaRatio < 0.99) {
       // Inverted pyramid (roof smaller than floor - visual conflict indicator)
       roofType = "inverted";
-      roofPitch = -20; // Negative pitch
+      roofHeight = -calculatePyramidalHeight(width, length, 1.0 / areaRatio);
+
       console.warn(
-        `[WOMBAT] Roof area (${roofArea} m²) < Conditioned area (${footprintArea} m²) - Creating inverted geometry`
+        `[WOMBAT] Inverted roof: R=${areaRatio.toFixed(3)}, h=${roofHeight.toFixed(2)}m`
       );
     }
+
+    // Store roof geometry (replaces old roofPitch field)
+    const roof = {
+      type: roofType,
+      height: roofHeight,
+      areaRatio: areaRatio
+    };
 
     // Phase 4: Wall geometry (symmetric for now - asymmetry in Phase 2)
     const perimeter = 2 * (length + width);
@@ -703,11 +797,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         east: { width: length, height: wallHeight },
         west: { width: length, height: wallHeight },
       },
-      roof: {
-        type: roofType,
-        pitch: roofPitch,
-        area: roofArea,
-      },
+      roof: roof,  // NEW: Rational trigonometry roof object (type, height, areaRatio)
       volume: volume,
       belowGrade: {
         hasBasement: hasBasement,
