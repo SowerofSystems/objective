@@ -741,11 +741,14 @@ window.TEUI.WombatRender = (function () {
     const isReference = mode === "reference";
     const modelColor = isReference ? config.colors.reference : config.colors.target;
 
+    // Calculate volume per floor
+    const volumePerFloor = geometry.volume / geometry.stories;
+
     const infoLines = [
       `Stories: ${geometry.stories} × ${geometry.areaPerFloor.toFixed(1)} m² = ${(geometry.stories * geometry.areaPerFloor).toFixed(1)} m²`,
       `Footprint: ${geometry.footprint.length.toFixed(1)}m × ${geometry.footprint.width.toFixed(1)}m`,
       `Story Height: ${geometry.storyHeight.toFixed(2)}m`,
-      `Total Volume: ${geometry.volume.toFixed(0)} m³ (${geometry.volumePerFloor.toFixed(0)} m³/floor)`,
+      `Total Volume: ${geometry.volume.toFixed(0)} m³ (${volumePerFloor.toFixed(0)} m³/floor)`,
     ];
 
     const x = 20;
