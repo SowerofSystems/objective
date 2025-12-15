@@ -1,8 +1,8 @@
 # Section 19: WOMBAT - 3D Thermal Topology Visualization
 
-**Status**: ✅ Production Ready (Phase 2 Complete - Testing)
+**Status**: ✅ Production Ready (Phase 2 Complete + Refactoring)
 **Created**: 2025-12-08
-**Last Updated**: 2025-12-14
+**Last Updated**: 2025-12-15
 **Target Release**: 4.013
 
 ---
@@ -18,8 +18,11 @@ WOMBAT generates a **3D thermal topology model** from OBJECTIVE's envelope geome
 - ✅ Display of Ae (Area Exposed to Air) and Ag (Area Exposed to Ground)
 - ✅ Interactive aspect ratio control
 - ✅ Multi-story visualization with per-floor area labels
+- ✅ **Fractional story rendering** - Proportional height boxes for partial floors (e.g., 1.5 stories)
+- ✅ **Floorplate Options dropdown** - Clarifies mezzanine vs equal floorplates
+- ✅ **Correct floor area display** - Shows footprint (d_95 SACRED), not averaged
 - ✅ Mode-aware color coding (Blue=Target, Red=Reference)
-- ✅ **Below-grade geometry visualization** (Phase 2 - Testing)
+- ✅ **Below-grade geometry visualization** (Phase 2 - Complete)
   - Brown dashed vectors for basement walls (hidden line effect)
   - Brown nodes for basement floor corners
   - Brown solid vectors for slab-on-grade perimeter
@@ -29,6 +32,7 @@ WOMBAT generates a **3D thermal topology model** from OBJECTIVE's envelope geome
   - Mixed foundation warning indicator
 - ✅ **Refresh button sync** - User-controlled StateManager sync after import
 - ✅ **Label readability** - Semi-transparent backgrounds, z-order optimized
+- ✅ **Field ID renumbering** - Sequential d_150-d_158 range for maintainability
 
 **Planned Enhancements**:
 - Window areas in walls
@@ -61,12 +65,13 @@ Section 19 implements TEUI's Pattern A dual-state architecture, maintaining sepa
 // TargetState: Holds Target mode values
 const TargetState = {
   values: {
-    d_198: "8000.00",  // Volume (mirrors S12 d_105)
-    d_199: "1.5",      // Stories (mirrors S12 d_103)
-    d_202: "0.0",      // Aspect ratio slider
-    h_200: "0.00",     // Calculated: Footprint length
-    h_201: "0.00",     // Calculated: Footprint width
-    h_203: "0.00",     // Calculated: Story height
+    d_150: "1.5",           // Stories (mirrors S12 d_103)
+    d_151: "8000.00",       // Volume (mirrors S12 d_105)
+    d_154: "0.0",           // Aspect ratio slider (L:W)
+    d_158: "mezzanine",     // Floorplate Options (mezzanine/equal)
+    h_155: "0.00",          // Calculated: Footprint width
+    h_156: "0.00",          // Calculated: Story height
+    h_157: "0.00",          // Calculated: Footprint length
   }
 };
 
@@ -77,38 +82,41 @@ const TargetState = {
 
 The ModeManager facade provides mode-aware publishing to StateManager:
 
-- **Target mode**: Publishes unprefixed field IDs (`d_198`, `h_200`)
-- **Reference mode**: Publishes with `ref_` prefix (`ref_d_198`, `ref_h_200`)
+- **Target mode**: Publishes unprefixed field IDs (`d_150`, `h_155`)
+- **Reference mode**: Publishes with `ref_` prefix (`ref_d_150`, `ref_h_155`)
 - **Passive pattern**: Mode switching only re-renders visualization; FieldManager handles table updates
 - **Dual-engine**: `calculateAll()` always runs both Target and Reference calculations
 
-**Location**: [Section19.js:135-247](../../src/sections/Section19.js#L135-L247)
+**Location**: [Section19.js:130-242](../../src/sections/Section19.js#L130-L242)
 
 ---
 
 ## Field Definitions
 
-Section 19 owns the following fields:
+Section 19 owns the following fields (renumbered to d_150-d_158 range):
 
-| Field ID | Type | Description | Mirrors |
-|----------|------|-------------|---------|
-| `d_198` | editable | Conditioned Volume (m³) | S12 `d_105` |
-| `d_199` | dropdown | Number of Stories | S12 `d_103` |
-| `d_202` | slider | Footprint Aspect Ratio (-4 to +4) | - |
-| `h_200` | calculated | Footprint Length (m) | - |
-| `h_201` | calculated | Footprint Width (m) | - |
-| `h_203` | calculated | Story Height (m) | - |
+| Field ID | Row | Type | Description | Mirrors |
+|----------|-----|------|-------------|---------|
+| `d_150` | 19.0 | dropdown | Number of Stories (1, 1.5, 2, 3, 4, 5, 6) | S12 `d_103` |
+| `d_158` | 19.FP | dropdown | Floorplate Options (Mezzanine/Equal) | - |
+| `d_151` | 19.V | editable | Conditioned Volume (m³) | S12 `d_105` |
+| `d_152` | 19.Ae | calculated | Ae - Total Area Exposed to Air (m²) | S12 `d_101` |
+| `d_153` | 19.Ag | calculated | Ag - Total Area Exposed to Ground (m²) | S12 `d_102` |
+| `d_154` | 19.1 | slider | Footprint Aspect Ratio L:W (-4 to +4) | - |
+| `h_155` | 19.2 | calculated | Footprint Width (m) | - |
+| `h_156` | 19.3 | calculated | Building Height (m) | - |
+| `h_157` | (inline) | calculated | Footprint Length (m) | - |
 
 ### Display-Only Fields (from S12)
 
-Section 19 displays aggregate envelope values owned by Section 12:
+Section 19 displays aggregate U-values owned by Section 12:
 
 | Field ID | Description | Owner |
 |----------|-------------|-------|
-| `d_101` / `g_101` | Ae - Area Exposed to Air & U-value | S12 |
-| `d_102` / `g_102` | Ag - Area Exposed to Ground & U-value | S12 |
+| `g_152` | U-value for Ae (W/m²·K) | S12 `g_101` |
+| `g_153` | U-value for Ag (W/m²·K) | S12 `g_102` |
 
-**Location**: [Section19.js:253-459](../../src/sections/Section19.js#L253-L459)
+**Location**: [Section19.js:248-455](../../src/sections/Section19.js#L248-L455)
 
 ---
 
@@ -120,17 +128,20 @@ Section 19 maintains bidirectional synchronization with Section 12 for Volume an
 
 | S12 Field | S19 Field | Description | Sync Status |
 |-----------|-----------|-------------|-------------|
-| `d_105` / `ref_d_105` | `d_198` / `ref_d_198` | Conditioned Volume (m³) | ✅ Both directions |
-| `d_103` / `ref_d_103` | `d_199` / `ref_d_199` | Number of Stories | ✅ Both directions |
+| `d_105` / `ref_d_105` | `d_151` / `ref_d_151` | Conditioned Volume (m³) | ✅ Both directions |
+| `d_103` / `ref_d_103` | `d_150` / `ref_d_150` | Number of Stories | ✅ Both directions |
 
 ### How It Works
 
-**S12 → S19**: StateManager listeners update Section 19's state and trigger recalculation
-**S19 → S12**: FieldManager routes user edits through ModeManager, which publishes to StateManager
+**S12 → S19**: StateManager listeners in S19 respond to changes from S12
+**S19 → S12**: ModeManager publishes field changes to StateManager, which S12 listens for
 
-Both sections listen for changes and update accordingly, with proper guards against circular updates.
+Both sections have listeners with proper guards against circular updates (`source="external"` flag).
 
-**Location**: [Section19.js:1306-1368](../../src/sections/Section19.js#L1306-L1368)
+**S12 Listeners** (Section12.js:3087-3190): Listen for d_150/d_151 changes from S19
+**S19 State Sync** (Section19.js): Publishes via ModeManager.setValue()
+
+**Location**: Section12.js listeners updated in commit `ce74cd7` (2025-12-15)
 
 ---
 
@@ -146,9 +157,10 @@ WOMBAT's geometry solver transforms thermal area data into 3D geometry using a c
 - `d_86` / `ref_d_86` - Wall Area (m²) from S11
 
 **Internal** (from TargetState/ReferenceState):
-- `d_198` - Volume (m³) - **SACRED** (always preserved exactly)
-- `d_199` - Stories (1, 1.5, 2, 3, 4, 5, 6)
-- `d_202` - Aspect Ratio Slider (-4 to +4, 0 = square)
+- `d_151` - Volume (m³) - **LESS SACRED** (verified against surfaces)
+- `d_150` - Stories (1, 1.5, 2, 3, 4, 5, 6)
+- `d_158` - Floorplate Options (mezzanine/equal)
+- `d_154` - Aspect Ratio Slider (-4 to +4, 0 = square)
 
 ### Constraint Solving Algorithm
 
@@ -187,11 +199,17 @@ wallHeight = wallArea / perimeter
 ### Outputs
 
 Calculated fields published to StateManager:
-- `h_200` / `ref_h_200` - Footprint Length (m)
-- `h_201` / `ref_h_201` - Footprint Width (m)
-- `h_203` / `ref_h_203` - Story Height (m)
+- `h_157` / `ref_h_157` - Footprint Length (m)
+- `h_155` / `ref_h_155` - Footprint Width (m)
+- `h_156` / `ref_h_156` - Building Height (m) - wall + roof
 
-**Location**: [Section19.js:585-687](../../src/sections/Section19.js#L585-L687)
+Geometry object also includes:
+- `areaPerFloor` - Footprint area (d_95 SACRED)
+- `mezzanineArea` - Adiabatic floor area (conditioned - footprint × fullStories)
+- `volume` - Calculated from surfaces
+- `volumeDiscrepancy` - Percentage difference from declared
+
+**Location**: [Section19.js:637-950](../../src/sections/Section19.js#L637-L950)
 
 ---
 
@@ -261,7 +279,77 @@ Section 19 displays aggregate envelope area fields from Section 12 using the "Ro
 3. **No initialization needed**: Field definitions contain defaults; robot fingers handle live updates
 4. **DOM scoping**: `wombatContainer.querySelector('[data-field-id="d_101"]')` prevents collision with S12's elements
 
-**Location**: [Section19.js:1370-1466](../../src/sections/Section19.js#L1370-L1466)
+**Location**: Section19.js scoped listeners
+
+---
+
+## Recent Refactoring (2025-12-15)
+
+### Field ID Renumbering ✅ COMPLETE
+
+**Goal**: Reorganize field IDs from scattered 198-203 range to sequential 150-158 range.
+
+**Commits**:
+- `ce74cd7` - Refactor: Rename S19 field IDs to sequential d_150-d_157 range
+- `0e8c181` - Improve: Fractional story rendering and add Floorplate Options
+- `72264ce` - Fix: Correct floor area display to use footprint (d_95), not averaged
+
+**Changes**:
+| Old ID | New ID | Description |
+|--------|--------|-------------|
+| d_199 | d_150 | Stories |
+| d_198 | d_151 | Volume |
+| d_101 | d_152 | Ae (display) |
+| d_102 | d_153 | Ag (display) |
+| d_202 | d_154 | Aspect Ratio |
+| h_201 | h_155 | Footprint Width |
+| h_203 | h_156 | Building Height |
+| h_200 | h_157 | Footprint Length |
+| (new) | d_158 | Floorplate Options |
+
+**S12 Listener Updates**: Section12.js listeners updated to listen for d_150/d_151 instead of d_198/d_199 (8 total listeners updated)
+
+### Fractional Story Visualization ✅ COMPLETE
+
+**Problem**: 1.5 stories rendered as two identical full-height boxes (misleading).
+
+**Solution**: Render fractional stories at proportional height.
+- Full stories: Full-height boxes
+- Fractional story: Partial-height box (e.g., 0.5 × storyHeight for 1.5 stories)
+- Hairline at correct position (e.g., 2/3rds wall height for 1.5 stories)
+
+**File**: [wombatRender.js:207-342](../../src/core/wombatRender.js#L207-L342)
+
+### Floor Area Math Correction ✅ COMPLETE
+
+**Problem**: Showed 951 m² per floor (conditioned ÷ stories) instead of footprint 1100.42 m².
+
+**Root Cause**: `areaPerFloor = conditionedArea / storiesDeclared` gave averaged value.
+
+**Fix**:
+1. `areaPerFloor = footprintArea` (d_95 is SACRED)
+2. Mezzanine calculation: `conditionedArea - (footprint × fullStories)` = 326.78 m²
+3. Renderer uses actual `geometry.mezzanineArea` instead of calculated value
+
+**Result**:
+- Full story label: 1100.42 m² (footprint - SACRED)
+- Mezzanine label: 326.78 m² (actual adiabatic floor area)
+
+**Files**:
+- [Section19.js:800-808](../../src/sections/Section19.js#L800-L808) - Calculation
+- [wombatRender.js:306](../../src/core/wombatRender.js#L306) - Rendering
+
+### Floorplate Options Dropdown ✅ COMPLETE
+
+**Goal**: Clarify geometric interpretation for fractional stories.
+
+**Implementation**: Added d_158 dropdown with two options:
+- "Mezzanine/Partial Floor" (default) - Adiabatic internal floor
+- "Equal Floorplates" - Stacked floors at proportional heights
+
+**Usage**: Buildings can have BOTH mezzanine AND conditioned volume under roof. The dropdown clarifies floorplate interpretation while roof area > footprint automatically implies conditioned space under roof slope.
+
+**File**: [Section19.js:302-329](../../src/sections/Section19.js#L302-L329)
 
 ---
 
@@ -397,10 +485,10 @@ This is a **thermal topology model**, not an architectural model. Strange-lookin
 - Section 12 (Volume Metrics) - `h_15` (Conditioned Area), `d_101`, `d_102` (Ae/Ag)
 
 **Bidirectional** (S19 mirrors):
-- Section 12 - `d_105`/`d_198` (Volume), `d_103`/`d_199` (Stories)
+- Section 12 - `d_105`/`d_151` (Volume), `d_103`/`d_150` (Stories)
 
 **Downstream** (S19 publishes to):
-- Section 12 - Geometry dimensions `h_200`, `h_201`, `h_203`
+- Section 12 - Geometry dimensions `h_155`, `h_156`, `h_157`
 
 ### Related Documents
 
@@ -421,5 +509,5 @@ This is a **thermal topology model**, not an architectural model. Strange-lookin
 ---
 
 **Document Status**: ACTIVE - Production documentation
-**Last Updated**: 2025-12-14
-**Next Review**: After Phase 2 (below-grade geometry) implementation
+**Last Updated**: 2025-12-15
+**Next Review**: After gable roof implementation (Phase 3)
