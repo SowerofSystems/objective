@@ -35,9 +35,11 @@ WOMBAT generates a **3D thermal topology model** from OBJECTIVE's envelope geome
 - ✅ **Field ID renumbering** - Sequential d_150-d_158 range for maintainability
 
 **Planned Enhancements**:
-- Window areas in walls
+- **Gable Roof Geometry** - Biplanar roof rendering with triangular gable ends
+- **Roof Type Selector** - Dropdown for multiplanar/biplanar/monoplane selection
+- **Gable Wall Area Accounting** - Extract gable ends from total wall area for proper height calculation
+- Window areas in walls (orientation-specific placement)
 - Shade plane projections (0-100%)
-- Roof topology (rational trigonometry-based)
 - Three.js migration for 3D interaction
 
 ---
@@ -419,7 +421,50 @@ Above Grade (Blue):          Below Grade (Brown):
 
 ## Future Enhancements
 
-### Phase 3: Three.js Migration
+### Phase 3: Gable Roof Geometry
+
+**Goal**: Implement biplanar (gable) roof rendering with proper geometric calculations.
+
+**Status**: Planned - Field d_158 (Floorplate Options) added but not yet used in calculations
+
+**Implementation Tasks**:
+1. **Add Roof Type dropdown (d_159)** - multiplanar/biplanar/monoplane
+   - Default: "biplanar" for rectangular buildings
+   - Auto-suggest based on aspect ratio
+2. **Gable height calculation** using rational trigonometry
+   - Ridge runs along longer axis
+   - Calculate triangular gable end area
+   - Formula: `gableEndArea = (span × height) / 2`
+3. **Wall area accounting** - Extract gable ends from total opaque wall area
+   - Gable ends are OPAQUE WALL AREA (d_86), not roof area
+   - Wall plate height = `(opaqueWallArea - gableArea) / perimeter`
+4. **Gable roof renderer** in wombatRender.js
+   - Two rectangular slopes
+   - Two triangular gable ends
+   - Ridge line visualization
+
+**Mathematical Foundation**:
+```javascript
+// Gable roof: ridge along longer dimension
+const ridgeOrientation = length >= width ? "longitudinal" : "transverse";
+const ridgeLength = Math.max(width, length);
+const span = Math.min(width, length);
+
+// Height from roof area using Pythagorean theorem
+const roofArea = areaRatio * baseArea;
+const slopeLength = roofArea / (2 * ridgeLength);
+const h2 = slopeLength² - (span/2)²;
+const roofHeight = Math.sqrt(h2);
+
+// Gable end area (each triangular end)
+const gableEndArea = (span × roofHeight) / 2;
+```
+
+**References**:
+- Mathematical derivation: [S19-RT.md](../S19-RT.md) (rational trigonometry approach)
+- Implementation plan: S19-REFACTOR-PLAN.md Tasks 3-6 (archived)
+
+### Phase 4: Three.js Migration
 
 **Goal**: Migrate from SVG to Three.js for true 3D interaction and export capabilities.
 
@@ -432,18 +477,17 @@ Above Grade (Blue):          Below Grade (Brown):
 
 **Status**: Planned for future release
 
-### Phase 4: Window Distribution
+### Phase 5: Window Distribution
 
 **Goal**: Show window placement on facades based on S11 orientation data.
 
 **Data Sources**:
-- `d_89-d_92` - Window areas by cardinal direction (N, E, S, W)
-- `d_88` - Door area
+- `d_88-d_92` - Window areas by cardinal direction (N, E, S, W, Other)
 - `d_93` - Skylight area
 
 **Status**: Planned for future release
 
-### Phase 5: Solar Radiation Overlay
+### Phase 6: Solar Radiation Overlay
 
 **Goal**: Visualize solar gains on building surfaces with color-coded irradiance.
 
