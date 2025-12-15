@@ -2126,6 +2126,67 @@ textarea.mirror-highlight {
 }
 
 /* ======================================
+   SECTION 19 - WOMBAT CONTROLS
+   ====================================== */
+
+/* WOMBAT Controls - Match S18 pattern */
+.wombat-controls-wrapper {
+  padding-left: 1rem;
+  padding-right: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 0.25rem;
+}
+
+.wombat-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  background-color: #f8f9fa;
+  padding: 10px;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+  margin-bottom: 10px;
+}
+
+.wombat-controls .btn-sm {
+  font-size: 0.875rem;
+}
+
+/* Activation Button */
+#wombat-activate-btn {
+  flex-shrink: 0;
+  margin-right: 10px;
+  min-width: 160px;
+}
+
+/* Disabled controls styling */
+.wombat-controls button:disabled:not(#wombat-activate-btn) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Control buttons - push to right with fullscreen at far right */
+.wombat-controls > div:last-child {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* WOMBAT - Fullscreen Mode */
+.wombat-svg-wrapper.fullscreen-mode {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999 !important;
+  background: white !important;
+  overflow: auto !important;
+}
+
+/* ======================================
    SECTION 16 - SANKEY DIAGRAM STYLES
    ====================================== */
 

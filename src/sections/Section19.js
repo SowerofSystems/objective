@@ -788,30 +788,33 @@ window.TEUI.SectionModules.sect19 = (function () {
     }
 
     container.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 20px;">
-        <button
-          id="wombat-activate-btn"
-          class="btn btn-primary"
-          style="padding: 8px 16px; font-weight: 500;"
-        >
+      <div class="wombat-controls">
+        <!-- Activation button -->
+        <button id="wombat-activate-btn" class="btn btn-primary btn-sm">
           🏗️ Activate Topology View
         </button>
 
-        <div style="flex: 1; color: #6c757d; font-size: 13px;">
+        <!-- Description text (middle flex area) -->
+        <span style="color: #6c757d; font-size: 13px;">
           Generate 3D thermal topology from envelope areas (Volume, Roof, Walls, Windows)
-        </div>
+        </span>
 
-        <button
-          id="wombat-info-btn"
-          class="btn btn-outline-secondary btn-sm"
-          style="padding: 4px 12px; font-size: 13px;"
-          title="What is WOMBAT?"
-        >
-          <i class="bi bi-info-circle"></i> Info
-        </button>
+        <!-- Control buttons (right side) -->
+        <div>
+          <button id="wombat-refresh-btn" class="btn btn-outline-secondary btn-sm"
+                  title="Refresh Topology" disabled>
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
 
-        <div id="wombat-status" style="padding: 6px 12px; background: white; border-radius: 4px; font-size: 12px; color: #666;">
-          <span style="color: #dc3545;">●</span> Inactive
+          <button id="wombat-info-btn" class="btn btn-outline-secondary btn-sm"
+                  title="What is WOMBAT?">
+            <i class="bi bi-gear"></i>
+          </button>
+
+          <button id="wombat-fullscreen-btn" class="btn btn-outline-secondary btn-sm"
+                  title="Toggle Fullscreen" disabled>
+            <i class="bi bi-fullscreen"></i>
+          </button>
         </div>
       </div>
     `;
@@ -822,10 +825,22 @@ window.TEUI.SectionModules.sect19 = (function () {
       activateBtn.addEventListener("click", toggleActivation);
     }
 
+    // Attach refresh handler
+    const refreshBtn = document.getElementById("wombat-refresh-btn");
+    if (refreshBtn) {
+      refreshBtn.addEventListener("click", handleRefreshTopology);
+    }
+
     // Attach info modal handler
     const infoBtn = document.getElementById("wombat-info-btn");
     if (infoBtn) {
       infoBtn.addEventListener("click", showInfoModal);
+    }
+
+    // Attach fullscreen handler
+    const fullscreenBtn = document.getElementById("wombat-fullscreen-btn");
+    if (fullscreenBtn) {
+      fullscreenBtn.addEventListener("click", toggleFullscreen);
     }
   }
 
@@ -885,6 +900,35 @@ window.TEUI.SectionModules.sect19 = (function () {
         document.body.removeChild(backdrop);
       }
     });
+  }
+
+  function handleRefreshTopology() {
+    console.log("[WOMBAT] Refreshing topology from refresh button");
+
+    // Sync values from StateManager before rendering
+    syncFromStateManager();
+
+    const mode = ModeManager?.currentMode || "target";
+    updateVisualization(mode);
+  }
+
+  function toggleFullscreen() {
+    const svgWrapper = document.querySelector(".wombat-svg-wrapper");
+    const fullscreenBtn = document.getElementById("wombat-fullscreen-btn");
+
+    if (!svgWrapper || !fullscreenBtn) return;
+
+    if (svgWrapper.classList.contains("fullscreen-mode")) {
+      // Exit fullscreen
+      svgWrapper.classList.remove("fullscreen-mode");
+      fullscreenBtn.innerHTML = '<i class="bi bi-fullscreen"></i>';
+      fullscreenBtn.title = "Toggle Fullscreen";
+    } else {
+      // Enter fullscreen
+      svgWrapper.classList.add("fullscreen-mode");
+      fullscreenBtn.innerHTML = '<i class="bi bi-fullscreen-exit"></i>';
+      fullscreenBtn.title = "Exit Fullscreen";
+    }
   }
 
   /**
@@ -971,20 +1015,18 @@ window.TEUI.SectionModules.sect19 = (function () {
 
   function toggleActivation() {
     const activateBtn = document.getElementById("wombat-activate-btn");
-    const statusIndicator = document.getElementById("wombat-status");
+    const refreshBtn = document.getElementById("wombat-refresh-btn");
+    const fullscreenBtn = document.getElementById("wombat-fullscreen-btn");
 
     if (!isActivated) {
       // First activation only
       isActivated = true;
 
-      activateBtn.textContent = "🔄 Refresh Topology";
-      activateBtn.classList.remove("btn-primary");
-      activateBtn.classList.add("btn-success");
+      activateBtn.textContent = "🏗️ Activate Topology View";
 
-      if (statusIndicator) {
-        statusIndicator.innerHTML =
-          '<span style="color: #28a745;">●</span> Active';
-      }
+      // Enable refresh and fullscreen buttons
+      if (refreshBtn) refreshBtn.disabled = false;
+      if (fullscreenBtn) fullscreenBtn.disabled = false;
 
       console.log("[WOMBAT] Topology view activated");
     } else {
