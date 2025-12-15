@@ -516,23 +516,280 @@ if (volumeErrorPct > 1) {
 
 ---
 
-## Implementation Priority
+## Implementation Workplan
 
-### High Priority (Fix Now)
-1. ✅ Use `volumeDeclared / footprintArea` for wall height calculation
-2. Detect mezzanines from conditioned area mismatch
-3. Validate wall area against geometric calculation
-4. Add volume verification logging
+### Task 1: Update Input Reading (Remove Fallbacks)
+**File**: `src/sections/Section19.js`
+**Location**: `solveGeometry()` function, lines ~680-720
 
-### Medium Priority (Next)
-1. Handle basement level in story height distribution
-2. Adjust story height for fractional stories
-3. Add warning badges for constraint violations
+**Changes**:
+```javascript
+// OLD (with fallbacks):
+const conditionedArea = parseFloat(getModeAwareValue("h_15", isReferenceCalculation)) || 100;
+const roofArea = parseFloat(getModeAwareValue("d_85", isReferenceCalculation)) || 100;
+const wallArea = parseFloat(getModeAwareValue("d_86", isReferenceCalculation)) || 160;
 
-### Low Priority (Future)
-1. Iterative solver for roof volume contribution
-2. User-adjustable wall height with volume feedback
-3. 3D rendering of mezzanine floor plate
+// NEW (no fallbacks, fail loudly):
+const conditionedArea = parseFloat(getModeAwareValue("h_15", isReferenceCalculation));
+const roofArea = parseFloat(getModeAwareValue("d_85", isReferenceCalculation));
+const opaqueWallArea = parseFloat(getModeAwareValue("d_86", isReferenceCalculation));
+const footprintArea = parseFloat(getModeAwareValue("d_95", isReferenceCalculation));
+const storiesDeclared = parseFloat(getModeAwareValue("d_103", isReferenceCalculation));
+const volumeDeclared = parseFloat(getModeAwareValue("d_105", isReferenceCalculation));
+
+// Validate SACRED inputs
+if (!footprintArea || footprintArea <= 0) {
+  throw new Error("[WOMBAT] Footprint area (d_95) required and must be > 0");
+}
+if (!conditionedArea || conditionedArea <= 0) {
+  throw new Error("[WOMBAT] Conditioned area (h_15) required and must be > 0");
+}
+if (!roofArea || roofArea <= 0) {
+  throw new Error("[WOMBAT] Roof area (d_85) required and must be > 0");
+}
+if (isNaN(opaqueWallArea) || opaqueWallArea < 0) {
+  throw new Error("[WOMBAT] Opaque wall area (d_86) required and must be >= 0");
+}
+if (!storiesDeclared || storiesDeclared < 0.5) {
+  throw new Error("[WOMBAT] Stories (d_103) required and must be >= 0.5");
+}
+```
+
+**Estimated Effort**: 30 minutes
+**Priority**: HIGH (prevents silent failures)
+
+---
+
+### Task 2: Replace Volume-Based Wall Height with Surface-Based
+**File**: `src/sections/Section19.js`
+**Location**: `solveGeometry()` Phase 2, lines ~710-750
+
+**OLD Logic** (lines ~711-732):
+```javascript
+// Phase 2: Height calculation from volume constraint (SACRED)
+// Total volume divided by footprint area gives overall building height
+const totalBuildingHeight = volume / footprintArea;
+// Height per story
+const storyHeight = totalBuildingHeight / stories;
+```
+
+**NEW Logic**:
+```javascript
+// Phase 2: Wall height from SURFACE AREAS (SACRED)
+
+// Read window areas
+const window_N = parseFloat(getModeAwareValue("d_88", isReferenceCalculation)) || 0;
+const window_E = parseFloat(getModeAwareValue("d_89", isReferenceCalculation)) || 0;
+const window_S = parseFloat(getModeAwareValue("d_90", isReferenceCalculation)) || 0;
+const window_W = parseFloat(getModeAwareValue("d_91", isReferenceCalculation)) || 0;
+const window_other = parseFloat(getModeAwareValue("d_92", isReferenceCalculation)) || 0;
+
+// Total wall area (gross) = opaque + windows
+const totalWallAreaGross = opaqueWallArea + window_N + window_E + window_S + window_W + window_other;
+
+// Calculate perimeter from footprint
+const perimeter = 2 * (length + width);
+
+// Wall height from SURFACES (not volume!)
+const wallHeight = totalWallAreaGross / perimeter;
+
+console.log(`[WOMBAT] Wall height from surfaces: ${wallHeight.toFixed(3)} m`);
+console.log(`[WOMBAT] Total wall area (gross): ${totalWallAreaGross.toFixed(2)} m²`);
+
+// Story height derived from wall height (for visualization)
+const storyHeight = wallHeight / storiesDeclared;
+```
+
+**Remove old variable**:
+- Delete `totalBuildingHeight` (no longer needed)
+- Rename `height` to `wallHeight` throughout for clarity
+
+**Estimated Effort**: 45 minutes
+**Priority**: HIGH (core algorithm fix)
+
+---
+
+### Task 3: Add Volume Verification (Not Constraint)
+**File**: `src/sections/Section19.js`
+**Location**: After Phase 3 (roof geometry), add new Phase 3.5
+
+**Add After Roof Calculations**:
+```javascript
+// Phase 3.5: Volume Verification (LESS SACRED - informational only)
+
+// Calculate volume from surface-derived dimensions
+let calculatedVolume = footprintArea * wallHeight;
+
+// Add roof volume if pyramidal
+if (roofType === "pyramidal" && roofHeight > 0) {
+  const pyramidVolume = (1/3) * footprintArea * roofHeight;
+  calculatedVolume += pyramidVolume;
+  console.log(`[WOMBAT] Roof pyramid volume: ${pyramidVolume.toFixed(2)} m³`);
+}
+
+// Compare to declared volume (if valid)
+if (volumeDeclared && volumeDeclared > 0 && !isNaN(volumeDeclared)) {
+  const volumeError = Math.abs(calculatedVolume - volumeDeclared);
+  const volumeErrorPct = (volumeError / volumeDeclared) * 100;
+
+  console.log(`[WOMBAT] Volume verification:`);
+  console.log(`  Declared (d_105): ${volumeDeclared.toFixed(2)} m³`);
+  console.log(`  Calculated from surfaces: ${calculatedVolume.toFixed(2)} m³`);
+  console.log(`  Discrepancy: ${volumeErrorPct.toFixed(2)}%`);
+
+  if (volumeErrorPct > 5) {
+    console.warn(`[WOMBAT] Volume discrepancy > 5%`);
+    console.warn(`  Using surface-derived dimensions (SACRED)`);
+    console.warn(`  Flag for S13 Mechanical section`);
+  }
+} else {
+  console.log(`[WOMBAT] Volume calculated from surfaces: ${calculatedVolume.toFixed(2)} m³`);
+}
+
+// Store calculated volume for geometry object
+const totalBuildingHeight = wallHeight + (roofHeight > 0 ? roofHeight : 0);
+```
+
+**Estimated Effort**: 30 minutes
+**Priority**: MEDIUM (validation/debugging aid)
+
+---
+
+### Task 4: Add Mezzanine Detection
+**File**: `src/sections/Section19.js`
+**Location**: After Phase 1 (footprint), add logging
+
+**Add After Footprint Calculations**:
+```javascript
+// Detect mezzanines from conditioned area mismatch
+const fullLevels = Math.floor(storiesDeclared);
+const fullLevelArea = footprintArea * fullLevels;
+const mezzanineArea = Math.max(0, conditionedArea - fullLevelArea);
+
+if (mezzanineArea > 0.1) {
+  const mezzaninePct = (mezzanineArea / footprintArea) * 100;
+  console.log(`[WOMBAT] Mezzanine/adiabatic floor detected:`);
+  console.log(`  Area: ${mezzanineArea.toFixed(2)} m²`);
+  console.log(`  ${mezzaninePct.toFixed(1)}% of footprint`);
+  console.log(`  (Stairs, atria, double-height spaces, etc.)`);
+}
+```
+
+**Estimated Effort**: 15 minutes
+**Priority**: LOW (informational only, not used in calculations yet)
+
+---
+
+### Task 5: Update Geometry Return Object
+**File**: `src/sections/Section19.js`
+**Location**: `solveGeometry()` return statement, lines ~815-825
+
+**Update Field Names**:
+```javascript
+// OLD:
+return {
+  footprint: { length, width, area: footprintArea },
+  height: totalBuildingHeight,  // This was wrong!
+  storyHeight: storyHeight,
+  // ...
+};
+
+// NEW:
+return {
+  footprint: { length, width, area: footprintArea },
+  height: wallHeight,  // CHANGED: Now wall height from surfaces
+  totalHeight: totalBuildingHeight,  // NEW: Wall + roof height
+  storyHeight: storyHeight,
+  calculatedVolume: calculatedVolume,  // NEW: For verification
+  volumeDiscrepancy: volumeErrorPct || 0,  // NEW: Flag for S13
+  // ...
+};
+```
+
+**Estimated Effort**: 15 minutes
+**Priority**: HIGH (required for correct rendering)
+
+---
+
+### Task 6: Update Console Logging
+**File**: `src/sections/Section19.js`
+**Location**: Throughout `solveGeometry()`
+
+**Add Comprehensive Logging**:
+```javascript
+console.log(`[WOMBAT] ========== GEOMETRY SOLVER (${mode} mode) ==========`);
+console.log(`[WOMBAT] Phase 1: Footprint`);
+console.log(`  Slab area (d_95): ${footprintArea.toFixed(2)} m²`);
+console.log(`  Aspect ratio: ${aspectRatio.toFixed(2)}`);
+console.log(`  Dimensions: ${width.toFixed(2)}m × ${length.toFixed(2)}m`);
+console.log(`  Perimeter: ${perimeter.toFixed(2)} m`);
+
+console.log(`[WOMBAT] Phase 2: Wall Height (from SURFACES)`);
+console.log(`  Opaque walls (d_86): ${opaqueWallArea.toFixed(2)} m²`);
+console.log(`  Windows (d_88-d_92): ${(window_N + window_E + window_S + window_W + window_other).toFixed(2)} m²`);
+console.log(`  Total wall area (gross): ${totalWallAreaGross.toFixed(2)} m²`);
+console.log(`  Wall height: ${wallHeight.toFixed(3)} m`);
+
+console.log(`[WOMBAT] Phase 3: Roof Geometry`);
+console.log(`  Roof area (d_85): ${roofArea.toFixed(2)} m²`);
+console.log(`  Area ratio R: ${areaRatio.toFixed(3)}`);
+console.log(`  Roof type: ${roofType}`);
+console.log(`  Roof height: ${roofHeight.toFixed(3)} m`);
+
+console.log(`[WOMBAT] ========================================`);
+```
+
+**Estimated Effort**: 20 minutes
+**Priority**: MEDIUM (debugging aid)
+
+---
+
+### Task 7: Test with Default Model
+**Test Case**: Default 1.5-story building
+
+**Expected Results**:
+- Footprint: 1100.42 m² (from d_95)
+- Wall height: ~8.4 m (from wall area ÷ perimeter)
+- Mezzanine: 326.78 m² detected
+- Roof type: Pyramidal (R = 1.28)
+- Volume: ~7500 m³ calculated, warn about 8000 m³ declared
+
+**Verification**:
+1. Open browser console
+2. Activate WOMBAT
+3. Check console logs match expected values
+4. Verify 3D rendering looks correct
+5. Check no NaN or Infinity values
+
+**Estimated Effort**: 30 minutes
+**Priority**: HIGH (validation)
+
+---
+
+## Implementation Order
+
+### Sprint 1: Core Algorithm Fix (2-3 hours)
+1. ✅ Task 1: Remove fallbacks (30 min)
+2. ✅ Task 2: Surface-based wall height (45 min)
+3. ✅ Task 5: Update return object (15 min)
+4. ✅ Task 7: Test with default model (30 min)
+
+### Sprint 2: Validation & Logging (1-2 hours)
+5. Task 3: Volume verification (30 min)
+6. Task 4: Mezzanine detection (15 min)
+7. Task 6: Console logging (20 min)
+8. Retest all scenarios
+
+---
+
+## Success Criteria
+
+✅ **No fallback values** - All `|| 100` patterns removed
+✅ **Surface areas drive geometry** - Wall height from wall area ÷ perimeter
+✅ **Volume is verification only** - Warns but doesn't fail if mismatch
+✅ **Console logs show clear hierarchy** - SACRED vs LESS SACRED
+✅ **Default model renders correctly** - Wall height ~8.4m, roof ~3.5m
+✅ **No silent failures** - Throws errors for missing SACRED inputs
 
 ---
 
