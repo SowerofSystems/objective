@@ -796,8 +796,16 @@ window.TEUI.SectionModules.sect19 = (function () {
     // Story height derived from wall height (for visualization)
     const storyHeight = wallHeight / storiesDeclared;
 
-    // Per-floor metrics
-    const areaPerFloor = conditionedArea / storiesDeclared;
+    // Per-floor metrics (footprint is SACRED - all full floors share this area)
+    const areaPerFloor = footprintArea; // Each full floor = footprint area (d_95)
+
+    // Mezzanine detection: difference between conditioned area and full floor areas
+    const fullStories = Math.floor(storiesDeclared);
+    const mezzanineArea = Math.max(0, conditionedArea - (footprintArea * fullStories));
+
+    if (mezzanineArea > 0.1) {
+      console.log(`[WOMBAT] Mezzanine/adiabatic floor detected: ${mezzanineArea.toFixed(2)} m²`);
+    }
 
     // Phase 3: Roof geometry (RATIONAL TRIGONOMETRY - no trig functions!)
     const areaRatio = roofArea / footprintArea;
@@ -906,6 +914,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       storyHeight: storyHeight,
       stories: storiesDeclared,
       areaPerFloor: areaPerFloor,
+      mezzanineArea: mezzanineArea,  // Adiabatic internal floor area
       walls: {
         north: { width: width, height: wallHeight },
         south: { width: width, height: wallHeight },

@@ -302,13 +302,13 @@ window.TEUI.WombatRender = (function () {
       // Vertical edges (hairline)
       allEdges.push([p0, p4], [p1, p5], [p2, p6], [p3, p7]);
 
-      // Fractional story label (actual area for partial floor)
-      const fractionalArea = geometry.areaPerFloor * fractionalPart;
+      // Fractional story label (mezzanine/adiabatic floor area)
+      const mezzanineArea = geometry.mezzanineArea || 0;
       const labelPos = toIsometric(0, 0, z0 + (fractionalPart * storyHeight) / 2, scale, centerX, centerY);
       const label = createText(
         labelPos.x,
         labelPos.y,
-        `${fractionalArea.toFixed(0)} m²`,
+        `${mezzanineArea.toFixed(0)} m²`,
         "#999",
         10,
         { anchor: "middle", weight: "400", style: "italic" }
