@@ -202,6 +202,7 @@ window.TEUI.WombatRender = (function () {
 
   /**
    * Render above-grade building wireframe (multi-story)
+   * Handles fractional stories by rendering partial-height boxes
    */
   function renderAboveGrade(svg, geometry, mode, scale, centerX, centerY) {
     const isReference = mode === "reference";
@@ -221,8 +222,13 @@ window.TEUI.WombatRender = (function () {
     const allEdges = [];
     const groundFloorEdges = []; // Separate array for ground floor edges
 
-    // Build wireframe for each story
-    for (let story = 0; story < stories; story++) {
+    // Determine number of full stories and fractional remainder
+    const fullStories = Math.floor(stories);
+    const fractionalPart = stories - fullStories;
+    const hasFractionalStory = fractionalPart > 0.01; // Tolerance for floating point
+
+    // Build wireframe for each full story
+    for (let story = 0; story < fullStories; story++) {
       const z0 = story * storyHeight;
       const z1 = (story + 1) * storyHeight;
 
@@ -257,7 +263,7 @@ window.TEUI.WombatRender = (function () {
       // Vertical edges
       allEdges.push([p0, p4], [p1, p5], [p2, p6], [p3, p7]);
 
-      // Story label (per-floor area)
+      // Story label (per-floor area for full stories)
       const labelPos = toIsometric(0, 0, z0 + storyHeight / 2, scale, centerX, centerY);
       const label = createText(
         labelPos.x,
@@ -266,6 +272,46 @@ window.TEUI.WombatRender = (function () {
         "#666",
         11,
         { anchor: "middle", weight: "500" }
+      );
+      svg.appendChild(label);
+    }
+
+    // Add fractional story (partial height box)
+    if (hasFractionalStory) {
+      const z0 = fullStories * storyHeight;
+      const z1 = z0 + fractionalPart * storyHeight; // Partial height
+
+      // Floor vertices (top of last full story)
+      const p0 = toIsometric(-width / 2, -length / 2, z0, scale, centerX, centerY);
+      const p1 = toIsometric(width / 2, -length / 2, z0, scale, centerX, centerY);
+      const p2 = toIsometric(width / 2, length / 2, z0, scale, centerX, centerY);
+      const p3 = toIsometric(-width / 2, length / 2, z0, scale, centerX, centerY);
+
+      // Ceiling vertices (partial height)
+      const p4 = toIsometric(-width / 2, -length / 2, z1, scale, centerX, centerY);
+      const p5 = toIsometric(width / 2, -length / 2, z1, scale, centerX, centerY);
+      const p6 = toIsometric(width / 2, length / 2, z1, scale, centerX, centerY);
+      const p7 = toIsometric(-width / 2, length / 2, z1, scale, centerX, centerY);
+
+      // Collect vertices
+      allVertices.push(p4, p5, p6, p7);
+
+      // Ceiling edges (hairline - thinner stroke to indicate partial)
+      allEdges.push([p4, p5], [p5, p6], [p6, p7], [p7, p4]);
+
+      // Vertical edges (hairline)
+      allEdges.push([p0, p4], [p1, p5], [p2, p6], [p3, p7]);
+
+      // Fractional story label (actual area for partial floor)
+      const fractionalArea = geometry.areaPerFloor * fractionalPart;
+      const labelPos = toIsometric(0, 0, z0 + (fractionalPart * storyHeight) / 2, scale, centerX, centerY);
+      const label = createText(
+        labelPos.x,
+        labelPos.y,
+        `${fractionalArea.toFixed(0)} m²`,
+        "#999",
+        10,
+        { anchor: "middle", weight: "400", style: "italic" }
       );
       svg.appendChild(label);
     }

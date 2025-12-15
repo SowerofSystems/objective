@@ -44,6 +44,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       d_150: "1.5", // Stories (mirrors S12 d_103)
       d_151: "8000.00", // Volume (mirrors S12 d_105)
       d_154: "0.0", // Aspect ratio slider (L:W)
+      d_158: "mezzanine", // Floorplate Options (mezzanine/equal)
       h_155: "0.00", // Calculated: Footprint width
       h_156: "0.00", // Calculated: Story height
       h_157: "0.00", // Calculated: Footprint length
@@ -62,6 +63,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       this.values.d_150 = "1.5";
       this.values.d_151 = "8000.00";
       this.values.d_154 = "0.0";
+      this.values.d_158 = "mezzanine";
       this.values.h_155 = "0.00";
       this.values.h_156 = "0.00";
       this.values.h_157 = "0.00";
@@ -69,7 +71,7 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     syncFromGlobalState: function () {
       // Sync Target values from StateManager (unprefixed)
-      const fieldIds = ["d_150", "d_151", "d_154", "h_155", "h_156", "h_157"];
+      const fieldIds = ["d_150", "d_151", "d_154", "d_158", "h_155", "h_156", "h_157"];
       fieldIds.forEach(fieldId => {
         const value = window.TEUI?.StateManager?.getValue(fieldId);
         if (value !== null && value !== undefined) {
@@ -88,6 +90,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       d_150: "1.5", // Stories (mirrors S12 ref_d_103)
       d_151: "8000.00", // Volume (mirrors S12 ref_d_105)
       d_154: "0.0", // Aspect ratio slider
+      d_158: "mezzanine", // Floorplate Options (mezzanine/equal)
       h_155: "0.00", // Calculated: Footprint width
       h_156: "0.00", // Calculated: Story height
       h_157: "0.00", // Calculated: Footprint length
@@ -106,6 +109,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       this.values.d_150 = "1.5";
       this.values.d_151 = "8000.00";
       this.values.d_154 = "0.0";
+      this.values.d_158 = "mezzanine";
       this.values.h_155 = "0.00";
       this.values.h_156 = "0.00";
       this.values.h_157 = "0.00";
@@ -113,7 +117,7 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     syncFromGlobalState: function () {
       // Sync Reference values from StateManager (ref_ prefixed)
-      const fieldIds = ["d_150", "d_151", "d_154", "h_155", "h_156", "h_157"];
+      const fieldIds = ["d_150", "d_151", "d_154", "d_158", "h_155", "h_156", "h_157"];
       fieldIds.forEach(fieldId => {
         const value = window.TEUI?.StateManager?.getValue(`ref_${fieldId}`);
         if (value !== null && value !== undefined) {
@@ -289,6 +293,35 @@ window.TEUI.SectionModules.sect19 = (function () {
           ],
         },
         e: { content: "Stories", classes: ["unit-label"] },
+        f: {},
+        g: {},
+        h: {},
+      },
+    },
+
+    // Floorplate Options dropdown (clarifies fractional story interpretation)
+    row158: {
+      id: "19.FP",
+      rowId: "19.FP",
+      label: "Floorplate Options",
+      cells: {
+        a: {},
+        b: {},
+        c: { label: "Floorplate Options" },
+        d: {
+          fieldId: "d_158",
+          type: "dropdown",
+          dropdownId: "dd_d_158",
+          value: "mezzanine",
+          section: "wombat",
+          tooltip: true,
+          label: "Geometry interpretation for fractional stories",
+          options: [
+            { value: "mezzanine", name: "Mezzanine/Partial Floor" },
+            { value: "equal", name: "Equal Floorplates" },
+          ],
+        },
+        e: { content: "", classes: ["unit-label"] },
         f: {},
         g: {},
         h: {},
@@ -495,6 +528,10 @@ window.TEUI.SectionModules.sect19 = (function () {
         { value: "5", name: "5" },
         { value: "6", name: "6" },
       ],
+      dd_d_158: [
+        { value: "mezzanine", name: "Mezzanine/Partial Floor" },
+        { value: "equal", name: "Equal Floorplates" },
+      ],
     };
   }
 
@@ -550,13 +587,13 @@ window.TEUI.SectionModules.sect19 = (function () {
     // Add data rows
     [
       "row150",
+      "row158",
       "row151",
       "row152",
       "row153",
       "row154",
       "row155",
       "row156",
-      "row157",
     ].forEach(key => {
       if (sectionRows[key]) {
         layoutRows.push(createLayoutRow(sectionRows[key]));
