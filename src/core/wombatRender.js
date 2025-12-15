@@ -114,9 +114,12 @@ window.TEUI.WombatRender = (function () {
   }
 
   /**
-   * Create SVG text element
+   * Create SVG text element with optional background for readability
    */
   function createText(x, y, text, color, fontSize = 11, options = {}) {
+    const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
+    // Create text element
     const textEl = document.createElementNS(
       "http://www.w3.org/2000/svg",
       "text"
@@ -135,6 +138,30 @@ window.TEUI.WombatRender = (function () {
     if (options.style) textEl.setAttribute("font-style", options.style);
 
     textEl.textContent = text;
+
+    // Add background if not disabled
+    if (options.noBackground !== true) {
+      // Create semi-transparent background for legibility
+      const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+
+      // We need to append text first to get bbox, then insert background before it
+      group.appendChild(textEl);
+      const bbox = textEl.getBBox();
+
+      const padding = 2;
+      bg.setAttribute("x", bbox.x - padding);
+      bg.setAttribute("y", bbox.y - padding);
+      bg.setAttribute("width", bbox.width + padding * 2);
+      bg.setAttribute("height", bbox.height + padding * 2);
+      bg.setAttribute("fill", "rgba(255, 255, 255, 0.85)");
+      bg.setAttribute("rx", 2);
+
+      // Insert background before text
+      group.insertBefore(bg, textEl);
+
+      return group;
+    }
+
     return textEl;
   }
 
