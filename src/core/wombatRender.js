@@ -354,9 +354,9 @@ window.TEUI.WombatRender = (function () {
   }
 
   /**
-   * Render basement walls (dashed brown, z=0 to z=-depth)
+   * Render basement walls geometry only (dashed brown, z=0 to z=-depth)
    */
-  function renderBasementWalls(svg, geometry, scale, centerX, centerY) {
+  function renderBasementWallsGeometry(svg, geometry, scale, centerX, centerY) {
     if (!geometry.belowGrade.hasBasement) {
       return;
     }
@@ -423,6 +423,20 @@ window.TEUI.WombatRender = (function () {
       const circle = createNode(point, gradeColor, 5);
       svg.appendChild(circle);
     });
+  }
+
+  /**
+   * Render basement depth label
+   */
+  function renderBasementDepthLabel(svg, geometry, scale, centerX, centerY) {
+    if (!geometry.belowGrade.hasBasement) {
+      return;
+    }
+
+    const gradeColor = config.colors.ground;
+    const length = geometry.footprint.length;
+    const width = geometry.footprint.width;
+    const basementDepth = geometry.belowGrade.basementDepth;
 
     // Add basement depth annotation
     const depthLabelPos = toIsometric(
@@ -552,17 +566,30 @@ window.TEUI.WombatRender = (function () {
   }
 
   /**
-   * Main below-grade rendering orchestrator
+   * Render below-grade geometry only (lines and nodes)
+   * Labels are rendered separately in Phase 2 to ensure they appear on top
    */
-  function renderBelowGrade(svg, geometry, scale, centerX, centerY) {
+  function renderBelowGradeGeometry(svg, geometry, scale, centerX, centerY) {
     if (!geometry.belowGrade) {
       return;
     }
 
-    // Render in order: grade line, basement walls, slab, labels, warnings
+    // Render geometry only: grade line, basement walls, slab
     renderGradeLine(svg, geometry, scale, centerX, centerY);
-    renderBasementWalls(svg, geometry, scale, centerX, centerY);
+    renderBasementWallsGeometry(svg, geometry, scale, centerX, centerY);
     renderSlabOnGrade(svg, geometry, scale, centerX, centerY);
+  }
+
+  /**
+   * Render below-grade labels (on top of all geometry)
+   */
+  function renderBelowGradeLabels(svg, geometry, scale, centerX, centerY) {
+    if (!geometry.belowGrade) {
+      return;
+    }
+
+    // Render labels only: basement depth, Ag label, warnings
+    renderBasementDepthLabel(svg, geometry, scale, centerX, centerY);
     renderAgLabel(svg, geometry, scale, centerX, centerY);
     renderMixedFoundationWarning(svg, geometry, scale, centerX, centerY);
   }
@@ -674,13 +701,22 @@ window.TEUI.WombatRender = (function () {
     const centerX = config.canvasWidth / 2;
     const centerY = config.canvasHeight / 2 + geometry.height * scale * 0.2; // Offset slightly down
 
-    // Render below-grade geometry first (so it appears behind)
+    // PHASE 1: Render all geometry (lines and nodes) - these go in back
+
+    // Render below-grade geometry first (grade line, basement walls)
     if (geometry.belowGrade) {
-      renderBelowGrade(svgElement, geometry, scale, centerX, centerY);
+      renderBelowGradeGeometry(svgElement, geometry, scale, centerX, centerY);
     }
 
     // Render above-grade wireframe
     renderAboveGrade(svgElement, geometry, mode, scale, centerX, centerY);
+
+    // PHASE 2: Render all labels - these go on top for legibility
+
+    // Render below-grade labels (basement depth, Ag label)
+    if (geometry.belowGrade) {
+      renderBelowGradeLabels(svgElement, geometry, scale, centerX, centerY);
+    }
 
     // Render dimension annotations
     renderDimensions(svgElement, geometry, mode, scale, centerX, centerY);
