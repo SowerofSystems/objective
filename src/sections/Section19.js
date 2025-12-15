@@ -549,13 +549,14 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Add data rows
     [
-      "row199",
-      "row198",
-      "row101",
-      "row102",
-      "row200",
-      "row201",
-      "row203",
+      "row150",
+      "row151",
+      "row152",
+      "row153",
+      "row154",
+      "row155",
+      "row156",
+      "row157",
     ].forEach(key => {
       if (sectionRows[key]) {
         layoutRows.push(createLayoutRow(sectionRows[key]));
