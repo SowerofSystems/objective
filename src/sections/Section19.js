@@ -362,7 +362,8 @@ window.TEUI.SectionModules.sect19 = (function () {
           type: "calculated",
           value: "1100.42",
           classes: ["text-ground-facing"],
-          label: "Total area of building components exposed to ground (from S12)",
+          label:
+            "Total area of building components exposed to ground (from S12)",
         },
         e: { content: "m²", classes: ["unit-label"] },
         f: { content: "U-Val. for Ag", classes: ["label-main"] },
@@ -547,7 +548,15 @@ window.TEUI.SectionModules.sect19 = (function () {
     }
 
     // Add data rows
-    ["row199", "row198", "row101", "row102", "row200", "row201", "row203"].forEach(key => {
+    [
+      "row199",
+      "row198",
+      "row101",
+      "row102",
+      "row200",
+      "row201",
+      "row203",
+    ].forEach(key => {
       if (sectionRows[key]) {
         layoutRows.push(createLayoutRow(sectionRows[key]));
       }
@@ -649,6 +658,37 @@ window.TEUI.SectionModules.sect19 = (function () {
     const perimeter = 2 * (length + width);
     const wallHeight = wallArea / perimeter;
 
+    // Phase 5: Below-Grade Geometry (WOMBAT Phase 2)
+    // Read S11 below-grade data
+    const slabArea =
+      parseFloat(getModeAwareValue("d_95", isReferenceCalculation)) || 0;
+    const basementWallArea =
+      parseFloat(getModeAwareValue("d_94", isReferenceCalculation)) || 0;
+    const floorExposedToAir =
+      parseFloat(getModeAwareValue("d_87", isReferenceCalculation)) || 0;
+
+    const hasBasement = basementWallArea > 0;
+    const hasSlab = slabArea > 0;
+    const hasRaisedFloor = floorExposedToAir > 0;
+
+    // Calculate basement depth from wall area
+    const basementDepth = hasBasement ? basementWallArea / perimeter : 0;
+
+    // Determine foundation type
+    function determineFoundationType(hasSlab, hasBasement, hasRaisedFloor) {
+      if (hasBasement && hasSlab) return "full-basement";
+      if (hasSlab && !hasBasement) return "slab-on-grade";
+      if (!hasSlab && !hasBasement && hasRaisedFloor) return "raised-floor";
+      if (hasBasement && !hasSlab) return "basement-no-slab";
+      return "unknown";
+    }
+
+    const foundationType = determineFoundationType(
+      hasSlab,
+      hasBasement,
+      hasRaisedFloor
+    );
+
     // Store solved dimensions
     const solvedGeometry = {
       footprint: { length, width, area: footprintArea },
@@ -669,6 +709,15 @@ window.TEUI.SectionModules.sect19 = (function () {
         area: roofArea,
       },
       volume: volume,
+      belowGrade: {
+        hasBasement: hasBasement,
+        hasSlab: hasSlab,
+        hasRaisedFloor: hasRaisedFloor,
+        basementDepth: basementDepth,
+        slabArea: slabArea,
+        basementWallArea: basementWallArea,
+        foundationType: foundationType,
+      },
     };
 
     // DUAL-STATE: Store calculated values in appropriate state object
@@ -748,30 +797,33 @@ window.TEUI.SectionModules.sect19 = (function () {
     }
 
     container.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 20px;">
-        <button
-          id="wombat-activate-btn"
-          class="btn btn-primary"
-          style="padding: 8px 16px; font-weight: 500;"
-        >
+      <div class="wombat-controls">
+        <!-- Activation button -->
+        <button id="wombat-activate-btn" class="btn btn-primary btn-sm">
           🏗️ Activate Topology View
         </button>
 
-        <div style="flex: 1; color: #6c757d; font-size: 13px;">
+        <!-- Description text (middle flex area) -->
+        <span style="color: #6c757d; font-size: 13px;">
           Generate 3D thermal topology from envelope areas (Volume, Roof, Walls, Windows)
-        </div>
+        </span>
 
-        <button
-          id="wombat-info-btn"
-          class="btn btn-outline-secondary btn-sm"
-          style="padding: 4px 12px; font-size: 13px;"
-          title="What is WOMBAT?"
-        >
-          <i class="bi bi-info-circle"></i> Info
-        </button>
+        <!-- Control buttons (right side) -->
+        <div>
+          <button id="wombat-refresh-btn" class="btn btn-outline-secondary btn-sm"
+                  title="Refresh Topology" disabled>
+            <i class="bi bi-arrow-repeat"></i>
+          </button>
 
-        <div id="wombat-status" style="padding: 6px 12px; background: white; border-radius: 4px; font-size: 12px; color: #666;">
-          <span style="color: #dc3545;">●</span> Inactive
+          <button id="wombat-info-btn" class="btn btn-outline-secondary btn-sm"
+                  title="What is WOMBAT?">
+            <i class="bi bi-gear"></i>
+          </button>
+
+          <button id="wombat-fullscreen-btn" class="btn btn-outline-secondary btn-sm"
+                  title="Toggle Fullscreen" disabled>
+            <i class="bi bi-fullscreen"></i>
+          </button>
         </div>
       </div>
     `;
@@ -782,10 +834,22 @@ window.TEUI.SectionModules.sect19 = (function () {
       activateBtn.addEventListener("click", toggleActivation);
     }
 
+    // Attach refresh handler
+    const refreshBtn = document.getElementById("wombat-refresh-btn");
+    if (refreshBtn) {
+      refreshBtn.addEventListener("click", handleRefreshTopology);
+    }
+
     // Attach info modal handler
     const infoBtn = document.getElementById("wombat-info-btn");
     if (infoBtn) {
       infoBtn.addEventListener("click", showInfoModal);
+    }
+
+    // Attach fullscreen handler
+    const fullscreenBtn = document.getElementById("wombat-fullscreen-btn");
+    if (fullscreenBtn) {
+      fullscreenBtn.addEventListener("click", toggleFullscreen);
     }
   }
 
@@ -806,7 +870,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     content.innerHTML = `
       <p style="margin: 0 0 15px 0; font-size: 14px; line-height: 1.6;">
         WOMBAT shows how <strong>OBJECTIVE "sees" your building</strong> based on thermal areas you entered.
-        This is NOT a 3D architectural model - it's a <strong>thermal topology</strong> where areas drive form. Why Wombat? Because Wombats poop little cubes, and that's what this section does with your geometry! 
+        This is NOT a 3D architectural model - it's a <strong>thermal topology</strong> where areas drive form. Why Wombat? Because Wombats poop little cubes, and that's what this section does with your geometry!
       </p>
       <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">
         <li><strong>Volume is sacred:</strong> Section12's volume parameter is always preserved exactly</li>
@@ -814,6 +878,8 @@ window.TEUI.SectionModules.sect19 = (function () {
         <li><strong>Aspect ratio shapes footprint:</strong> 1.0 = square, 2.0 = 2:1 rectangle</li>
         <li><strong>Roof pitch emerges from roof area:</strong> Larger roof = steeper pitch, based on vector algebra and rational trigonometry</li>
         <li><strong>Walls deform to match area constraints:</strong> No validation errors</li>
+        <li><strong>Below-grade geometry:</strong> Brown dashed lines = ground-facing (Ag), Blue/Red solid lines = air-facing (Ae)</li>
+        <li><strong>Grade line at z=0:</strong> Shows separation between above and below grade. Dashed = hidden (below ground), Solid = visible (at grade)</li>
         <li style="color: #dc3545;"><strong>⚠ We know this 3D shape may look nothing like your building:</strong> Think of this like a graph, an abstract representation of the surface geometry OBJECTIVE uses for its calculations. Over time, these models will become more refined, but for now, we hope this gives you an idea of what OBJECTIVE is considering for its area calculations</li>
       </ul>
     `;
@@ -845,42 +911,180 @@ window.TEUI.SectionModules.sect19 = (function () {
     });
   }
 
-  function toggleActivation() {
-    isActivated = !isActivated;
+  function handleRefreshTopology() {
+    console.log("[WOMBAT] Refreshing topology from refresh button");
 
-    const activateBtn = document.getElementById("wombat-activate-btn");
-    const statusIndicator = document.getElementById("wombat-status");
+    // Sync values from StateManager before rendering
+    syncFromStateManager();
 
-    if (isActivated) {
-      // Activate
-      activateBtn.textContent = "🔄 Refresh Topology";
-      activateBtn.classList.remove("btn-primary");
-      activateBtn.classList.add("btn-success");
+    const mode = ModeManager?.currentMode || "target";
+    updateVisualization(mode);
+  }
 
-      if (statusIndicator) {
-        statusIndicator.innerHTML =
-          '<span style="color: #28a745;">●</span> Active';
+  function toggleFullscreen() {
+    const wombatSection = document.getElementById("wombat");
+    const fullscreenBtn = document.getElementById("wombat-fullscreen-btn");
+
+    if (!wombatSection || !fullscreenBtn) return;
+
+    if (wombatSection.classList.contains("wombat-fullscreen")) {
+      // Exit fullscreen
+      wombatSection.classList.remove("wombat-fullscreen");
+      fullscreenBtn.innerHTML = '<i class="bi bi-fullscreen"></i>';
+      fullscreenBtn.title = "Toggle Fullscreen";
+
+      // Remove ESC key listener
+      document.removeEventListener("keydown", handleFullscreenEscape);
+    } else {
+      // Enter fullscreen
+      wombatSection.classList.add("wombat-fullscreen");
+      fullscreenBtn.innerHTML = '<i class="bi bi-fullscreen-exit"></i>';
+      fullscreenBtn.title = "Exit Fullscreen";
+
+      // Add ESC key listener to exit fullscreen
+      document.addEventListener("keydown", handleFullscreenEscape);
+    }
+  }
+
+  function handleFullscreenEscape(event) {
+    if (event.key === "Escape" || event.keyCode === 27) {
+      const wombatSection = document.getElementById("wombat");
+      if (
+        wombatSection &&
+        wombatSection.classList.contains("wombat-fullscreen")
+      ) {
+        toggleFullscreen();
       }
+    }
+  }
+
+  /**
+   * Sync S19 fields and state from StateManager (S12 values)
+   * Call this on activation/refresh to ensure values are current after import
+   */
+  function syncFromStateManager() {
+    console.log("[WOMBAT] Syncing values from StateManager...");
+
+    // Read current values from StateManager (S12's d_105/d_103)
+    const volumeFromS12 = window.TEUI.StateManager.getValue("d_105");
+    const refVolumeFromS12 = window.TEUI.StateManager.getValue("ref_d_105");
+    const storiesFromS12 = window.TEUI.StateManager.getValue("d_103");
+    const refStoriesFromS12 = window.TEUI.StateManager.getValue("ref_d_103");
+
+    // Update Target state
+    if (volumeFromS12) {
+      const currentValue = TargetState.getValue("d_198");
+      if (currentValue !== volumeFromS12) {
+        TargetState.setValue("d_198", volumeFromS12);
+        console.log(
+          `[WOMBAT] Synced d_198 = ${volumeFromS12} from StateManager (d_105)`
+        );
+
+        // Update DOM field
+        const volumeField = document.querySelector(
+          '#wombat [data-field-id="d_198"]'
+        );
+        if (volumeField) {
+          volumeField.textContent = window.TEUI.formatNumber(
+            window.TEUI.parseNumeric(volumeFromS12),
+            "number-2dp"
+          );
+        }
+      }
+    }
+
+    if (storiesFromS12) {
+      const currentValue = TargetState.getValue("d_199");
+      if (currentValue !== storiesFromS12) {
+        TargetState.setValue("d_199", storiesFromS12);
+        console.log(
+          `[WOMBAT] Synced d_199 = ${storiesFromS12} from StateManager (d_103)`
+        );
+
+        // Update DOM dropdown
+        const storiesDropdown = document.querySelector(
+          '#wombat [data-field-id="d_199"]'
+        );
+        if (storiesDropdown) {
+          storiesDropdown.textContent = storiesFromS12;
+        }
+      }
+    }
+
+    // Update Reference state
+    if (refVolumeFromS12) {
+      const currentValue = ReferenceState.getValue("d_198");
+      if (currentValue !== refVolumeFromS12) {
+        ReferenceState.setValue("d_198", refVolumeFromS12);
+        console.log(
+          `[WOMBAT] Synced ref_d_198 = ${refVolumeFromS12} from StateManager (ref_d_105)`
+        );
+
+        // Update DOM field if Reference mode is active
+        if (ModeManager?.currentMode === "reference") {
+          const volumeField = document.querySelector(
+            '#wombat [data-field-id="d_198"]'
+          );
+          if (volumeField) {
+            volumeField.textContent = window.TEUI.formatNumber(
+              window.TEUI.parseNumeric(refVolumeFromS12),
+              "number-2dp"
+            );
+          }
+        }
+      }
+    }
+
+    if (refStoriesFromS12) {
+      const currentValue = ReferenceState.getValue("d_199");
+      if (currentValue !== refStoriesFromS12) {
+        ReferenceState.setValue("d_199", refStoriesFromS12);
+        console.log(
+          `[WOMBAT] Synced ref_d_199 = ${refStoriesFromS12} from StateManager (ref_d_103)`
+        );
+
+        // Update DOM dropdown if Reference mode is active
+        if (ModeManager?.currentMode === "reference") {
+          const storiesDropdown = document.querySelector(
+            '#wombat [data-field-id="d_199"]'
+          );
+          if (storiesDropdown) {
+            storiesDropdown.textContent = refStoriesFromS12;
+          }
+        }
+      }
+    }
+  }
+
+  function toggleActivation() {
+    const activateBtn = document.getElementById("wombat-activate-btn");
+    const refreshBtn = document.getElementById("wombat-refresh-btn");
+    const fullscreenBtn = document.getElementById("wombat-fullscreen-btn");
+
+    if (!isActivated) {
+      // First activation only
+      isActivated = true;
+
+      // Change button style to match S18 (outlined, not solid)
+      activateBtn.classList.remove("btn-primary");
+      activateBtn.classList.add("btn-outline-secondary");
+      activateBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Refresh Topology';
+
+      // Enable refresh and fullscreen buttons
+      if (refreshBtn) refreshBtn.disabled = false;
+      if (fullscreenBtn) fullscreenBtn.disabled = false;
 
       console.log("[WOMBAT] Topology view activated");
-      const mode = ModeManager?.currentMode || "target";
-      updateVisualization(mode);
     } else {
-      // Deactivate
-      activateBtn.textContent = "🏗️ Activate Topology View";
-      activateBtn.classList.remove("btn-success");
-      activateBtn.classList.add("btn-primary");
-
-      if (statusIndicator) {
-        statusIndicator.innerHTML =
-          '<span style="color: #dc3545;">●</span> Inactive';
-      }
-
-      console.log("[WOMBAT] Topology view deactivated");
-
-      // Clear SVG and show placeholder
-      drawPlaceholder();
+      // Already activated - this is a refresh
+      console.log("[WOMBAT] Refreshing topology");
     }
+
+    // Sync values from StateManager before rendering (handles post-import scenarios)
+    syncFromStateManager();
+
+    const mode = ModeManager?.currentMode || "target";
+    updateVisualization(mode);
   }
 
   //==========================================================================
@@ -1087,9 +1291,11 @@ window.TEUI.SectionModules.sect19 = (function () {
       const wombatContainer = document.getElementById("wombat");
 
       // Area Exposed to Air (Ae) - Target mode
-      window.TEUI.StateManager.addListener("d_101", (newValue) => {
+      window.TEUI.StateManager.addListener("d_101", newValue => {
         if (!wombatContainer) return;
-        const element = wombatContainer.querySelector('[data-field-id="d_101"]');
+        const element = wombatContainer.querySelector(
+          '[data-field-id="d_101"]'
+        );
         if (element && newValue !== null && newValue !== undefined) {
           element.textContent = window.TEUI.formatNumber(
             window.TEUI.parseNumeric(newValue),
@@ -1098,9 +1304,11 @@ window.TEUI.SectionModules.sect19 = (function () {
         }
       });
 
-      window.TEUI.StateManager.addListener("g_101", (newValue) => {
+      window.TEUI.StateManager.addListener("g_101", newValue => {
         if (!wombatContainer) return;
-        const element = wombatContainer.querySelector('[data-field-id="g_101"]');
+        const element = wombatContainer.querySelector(
+          '[data-field-id="g_101"]'
+        );
         if (element && newValue !== null && newValue !== undefined) {
           element.textContent = window.TEUI.formatNumber(
             window.TEUI.parseNumeric(newValue),
@@ -1110,10 +1318,17 @@ window.TEUI.SectionModules.sect19 = (function () {
       });
 
       // Area Exposed to Air (Ae) - Reference mode
-      window.TEUI.StateManager.addListener("ref_d_101", (newValue) => {
+      window.TEUI.StateManager.addListener("ref_d_101", newValue => {
         if (!wombatContainer) return;
-        const element = wombatContainer.querySelector('[data-field-id="d_101"]');
-        if (element && newValue !== null && newValue !== undefined && window.TEUI.ReferenceToggle?.isReferenceMode()) {
+        const element = wombatContainer.querySelector(
+          '[data-field-id="d_101"]'
+        );
+        if (
+          element &&
+          newValue !== null &&
+          newValue !== undefined &&
+          window.TEUI.ReferenceToggle?.isReferenceMode()
+        ) {
           element.textContent = window.TEUI.formatNumber(
             window.TEUI.parseNumeric(newValue),
             "number-2dp-comma"
@@ -1121,10 +1336,17 @@ window.TEUI.SectionModules.sect19 = (function () {
         }
       });
 
-      window.TEUI.StateManager.addListener("ref_g_101", (newValue) => {
+      window.TEUI.StateManager.addListener("ref_g_101", newValue => {
         if (!wombatContainer) return;
-        const element = wombatContainer.querySelector('[data-field-id="g_101"]');
-        if (element && newValue !== null && newValue !== undefined && window.TEUI.ReferenceToggle?.isReferenceMode()) {
+        const element = wombatContainer.querySelector(
+          '[data-field-id="g_101"]'
+        );
+        if (
+          element &&
+          newValue !== null &&
+          newValue !== undefined &&
+          window.TEUI.ReferenceToggle?.isReferenceMode()
+        ) {
           element.textContent = window.TEUI.formatNumber(
             window.TEUI.parseNumeric(newValue),
             "number-3dp"
@@ -1133,9 +1355,11 @@ window.TEUI.SectionModules.sect19 = (function () {
       });
 
       // Area Exposed to Ground (Ag) - Target mode
-      window.TEUI.StateManager.addListener("d_102", (newValue) => {
+      window.TEUI.StateManager.addListener("d_102", newValue => {
         if (!wombatContainer) return;
-        const element = wombatContainer.querySelector('[data-field-id="d_102"]');
+        const element = wombatContainer.querySelector(
+          '[data-field-id="d_102"]'
+        );
         if (element && newValue !== null && newValue !== undefined) {
           element.textContent = window.TEUI.formatNumber(
             window.TEUI.parseNumeric(newValue),
@@ -1144,9 +1368,11 @@ window.TEUI.SectionModules.sect19 = (function () {
         }
       });
 
-      window.TEUI.StateManager.addListener("g_102", (newValue) => {
+      window.TEUI.StateManager.addListener("g_102", newValue => {
         if (!wombatContainer) return;
-        const element = wombatContainer.querySelector('[data-field-id="g_102"]');
+        const element = wombatContainer.querySelector(
+          '[data-field-id="g_102"]'
+        );
         if (element && newValue !== null && newValue !== undefined) {
           element.textContent = window.TEUI.formatNumber(
             window.TEUI.parseNumeric(newValue),
@@ -1156,10 +1382,17 @@ window.TEUI.SectionModules.sect19 = (function () {
       });
 
       // Area Exposed to Ground (Ag) - Reference mode
-      window.TEUI.StateManager.addListener("ref_d_102", (newValue) => {
+      window.TEUI.StateManager.addListener("ref_d_102", newValue => {
         if (!wombatContainer) return;
-        const element = wombatContainer.querySelector('[data-field-id="d_102"]');
-        if (element && newValue !== null && newValue !== undefined && window.TEUI.ReferenceToggle?.isReferenceMode()) {
+        const element = wombatContainer.querySelector(
+          '[data-field-id="d_102"]'
+        );
+        if (
+          element &&
+          newValue !== null &&
+          newValue !== undefined &&
+          window.TEUI.ReferenceToggle?.isReferenceMode()
+        ) {
           element.textContent = window.TEUI.formatNumber(
             window.TEUI.parseNumeric(newValue),
             "number-2dp-comma"
@@ -1167,10 +1400,17 @@ window.TEUI.SectionModules.sect19 = (function () {
         }
       });
 
-      window.TEUI.StateManager.addListener("ref_g_102", (newValue) => {
+      window.TEUI.StateManager.addListener("ref_g_102", newValue => {
         if (!wombatContainer) return;
-        const element = wombatContainer.querySelector('[data-field-id="g_102"]');
-        if (element && newValue !== null && newValue !== undefined && window.TEUI.ReferenceToggle?.isReferenceMode()) {
+        const element = wombatContainer.querySelector(
+          '[data-field-id="g_102"]'
+        );
+        if (
+          element &&
+          newValue !== null &&
+          newValue !== undefined &&
+          window.TEUI.ReferenceToggle?.isReferenceMode()
+        ) {
           element.textContent = window.TEUI.formatNumber(
             window.TEUI.parseNumeric(newValue),
             "number-3dp"
