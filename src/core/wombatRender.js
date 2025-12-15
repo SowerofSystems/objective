@@ -53,13 +53,15 @@ window.TEUI.WombatRender = (function () {
    * Calculate optimal scale to fit geometry in canvas
    */
   function calculateScale(geometry, canvasWidth, canvasHeight) {
-    const padding = 80;
+    const padding = 120; // Increased from 80 to prevent label clipping
     const availableWidth = canvasWidth - padding * 2;
     const availableHeight = canvasHeight - padding * 2;
 
     const length = geometry.footprint.length;
     const width = geometry.footprint.width;
-    const totalHeight = geometry.height;
+
+    // Use totalHeight if available (includes roof), otherwise fallback to wall height
+    const totalHeight = geometry.totalHeight || geometry.height;
 
     // Include below-grade depth if present
     const basementDepth = geometry.belowGrade?.basementDepth || 0;
@@ -339,6 +341,13 @@ window.TEUI.WombatRender = (function () {
     const wallHeight = geometry.height;
     const roofHeight = geometry.roof.height;
 
+    // Validate roof height
+    if (!roofHeight || isNaN(roofHeight) || !isFinite(roofHeight)) {
+      console.error('[WombatRender] Invalid roof height:', roofHeight);
+      console.error('  Geometry:', { width, length, wallHeight, roof: geometry.roof });
+      return;
+    }
+
     // Apex point (centered above base)
     const apex = {
       x: 0,
@@ -377,7 +386,7 @@ window.TEUI.WombatRender = (function () {
     const roofLabel = createText(
       roofLabelPos.x + 15,
       roofLabelPos.y,
-      `Roof: ${roofHeight.toFixed(1)}m`,
+      `Roof: ${Math.abs(roofHeight).toFixed(1)}m`,
       roofColor,
       10,
       { style: "italic" }

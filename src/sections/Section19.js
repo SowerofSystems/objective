@@ -636,6 +636,15 @@ window.TEUI.SectionModules.sect19 = (function () {
     const h2w = sW * sW - (width * width) / 4;
     const h2l = sL * sL - (length * length) / 4;
 
+    // Check for negative quadrance (mathematical impossibility - roof area too small for pyramid)
+    if (h2w < 0 || h2l < 0) {
+      console.error('[WOMBAT] Invalid pyramid geometry - negative height quadrance');
+      console.error(`  Width: ${width.toFixed(2)}m, Length: ${length.toFixed(2)}m, R: ${areaRatio.toFixed(3)}`);
+      console.error(`  h²_width = ${h2w.toFixed(4)}, h²_length = ${h2l.toFixed(4)}`);
+      console.error('  Roof area too small for pyramidal roof - returning 0');
+      return 0;
+    }
+
     // Check for non-congruent faces (only exact for square or R=1)
     if (Math.abs(h2w - h2l) > 1e-6) {
       console.warn('[WOMBAT] Non-congruent pyramid faces detected');
@@ -643,7 +652,8 @@ window.TEUI.SectionModules.sect19 = (function () {
     }
 
     // Conservative: use minimum height to ensure all faces fit
-    return Math.sqrt(Math.min(h2w, h2l));
+    const heightSquared = Math.max(0, Math.min(h2w, h2l)); // Ensure non-negative
+    return Math.sqrt(heightSquared);
   }
 
   /**
