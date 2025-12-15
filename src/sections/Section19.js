@@ -678,20 +678,38 @@ window.TEUI.SectionModules.sect19 = (function () {
     // Read inputs from StateManager and Pattern A sections (MODE-AWARE per S16 pattern)
     // KISS: Use h_15 (Conditioned Area) instead of d_106 (Total Floor Area)
     // h_15 = thermal envelope area (heated space only)
-    const conditionedArea =
-      parseFloat(getModeAwareValue("h_15", isReferenceCalculation)) || 100;
-    const roofArea =
-      parseFloat(getModeAwareValue("d_85", isReferenceCalculation)) || 100;
-    const wallArea =
-      parseFloat(getModeAwareValue("d_86", isReferenceCalculation)) || 160;
+
+    // SACRED INPUTS - No fallbacks, fail loudly if missing
+    const conditionedArea = parseFloat(getModeAwareValue("h_15", isReferenceCalculation));
+    const roofArea = parseFloat(getModeAwareValue("d_85", isReferenceCalculation));
+    const opaqueWallArea = parseFloat(getModeAwareValue("d_86", isReferenceCalculation));
+    const footprintArea = parseFloat(getModeAwareValue("d_95", isReferenceCalculation));
 
     // ⚠️ DUAL-STATE: Read from appropriate state based on calculation mode
     // Mirror fields: d_198 (volume) ↔ S12 d_105, d_199 (stories) ↔ S12 d_103
     const currentState = isReferenceCalculation ? ReferenceState : TargetState;
-    const volume = parseFloat(
-      window.TEUI.parseNumeric(currentState.getValue("d_198")) || 8000
-    );
-    const stories = parseFloat(currentState.getValue("d_199") || 1);
+    const volumeDeclared = parseFloat(window.TEUI.parseNumeric(currentState.getValue("d_198")));
+    const storiesDeclared = parseFloat(currentState.getValue("d_199"));
+
+    // Validate SACRED inputs - fail loudly if missing or invalid
+    if (!footprintArea || footprintArea <= 0 || isNaN(footprintArea)) {
+      throw new Error("[WOMBAT] Footprint area (d_95) required and must be > 0");
+    }
+    if (!conditionedArea || conditionedArea <= 0 || isNaN(conditionedArea)) {
+      throw new Error("[WOMBAT] Conditioned area (h_15) required and must be > 0");
+    }
+    if (!roofArea || roofArea <= 0 || isNaN(roofArea)) {
+      throw new Error("[WOMBAT] Roof area (d_85) required and must be > 0");
+    }
+    if (isNaN(opaqueWallArea) || opaqueWallArea < 0) {
+      throw new Error("[WOMBAT] Opaque wall area (d_86) required and must be >= 0");
+    }
+    if (!storiesDeclared || storiesDeclared < 0.5 || isNaN(storiesDeclared)) {
+      throw new Error("[WOMBAT] Stories (d_199/d_103) required and must be >= 0.5");
+    }
+
+    // Volume is LESS SACRED - used for verification, not constraint
+    // Will be calculated from surfaces and compared to declared value
 
     // User preferences - aspect ratio slider
     // Aspect ratio slider: -4 to +4, centered at 0
@@ -703,20 +721,35 @@ window.TEUI.SectionModules.sect19 = (function () {
       aspectRatioRaw >= 0 ? 1 + aspectRatioRaw : 1 / (1 - aspectRatioRaw);
 
     // Phase 1: Footprint (X-Y plane, always horizontal)
-    // Total conditioned area divided by number of stories
-    const footprintArea = conditionedArea / stories;
+    // Footprint area is SACRED - read directly from d_95
+    // Calculate width and length from footprint and aspect ratio
     const width = Math.sqrt(footprintArea / aspectRatio);
     const length = footprintArea / width;
+    const perimeter = 2 * (length + width);
 
-    // Phase 2: Height calculation from volume constraint (SACRED)
-    // Total volume divided by footprint area gives overall building height
-    const totalBuildingHeight = volume / footprintArea;
-    // Height per story
-    const storyHeight = totalBuildingHeight / stories;
+    // Phase 2: Wall height from SURFACE AREAS (SACRED)
+    // Read window areas (can legitimately be 0)
+    const window_N = parseFloat(getModeAwareValue("d_88", isReferenceCalculation)) || 0;
+    const window_E = parseFloat(getModeAwareValue("d_89", isReferenceCalculation)) || 0;
+    const window_S = parseFloat(getModeAwareValue("d_90", isReferenceCalculation)) || 0;
+    const window_W = parseFloat(getModeAwareValue("d_91", isReferenceCalculation)) || 0;
+    const window_other = parseFloat(getModeAwareValue("d_92", isReferenceCalculation)) || 0;
+
+    // Total wall area (gross) = opaque + windows
+    const totalWallAreaGross = opaqueWallArea + window_N + window_E + window_S + window_W + window_other;
+
+    // Wall height from SURFACES (not volume!)
+    const wallHeight = totalWallAreaGross / perimeter;
+
+    console.log(`[WOMBAT] Wall height from surfaces: ${wallHeight.toFixed(3)} m`);
+    console.log(`[WOMBAT] Total wall area (gross): ${totalWallAreaGross.toFixed(2)} m²`);
+    console.log(`[WOMBAT] Perimeter: ${perimeter.toFixed(2)} m`);
+
+    // Story height derived from wall height (for visualization)
+    const storyHeight = wallHeight / storiesDeclared;
 
     // Per-floor metrics
-    const volumePerFloor = volume / stories;
-    const areaPerFloor = conditionedArea / stories;
+    const areaPerFloor = conditionedArea / storiesDeclared;
 
     // Phase 3: Roof geometry (RATIONAL TRIGONOMETRY - no trig functions!)
     const areaRatio = roofArea / footprintArea;
@@ -748,11 +781,42 @@ window.TEUI.SectionModules.sect19 = (function () {
       areaRatio: areaRatio
     };
 
-    // Phase 4: Wall geometry (symmetric for now - asymmetry in Phase 2)
-    const perimeter = 2 * (length + width);
-    const wallHeight = wallArea / perimeter;
+    // Phase 3.5: Volume verification (LESS SACRED - calculated from surfaces)
+    // Calculate volume from surface-derived dimensions
+    let calculatedVolume = footprintArea * wallHeight;
 
-    // Phase 5: Below-Grade Geometry (WOMBAT Phase 2)
+    // Add roof volume if pyramidal
+    if (roofType === "pyramidal" && roofHeight > 0) {
+      const pyramidVolume = (1/3) * footprintArea * roofHeight;
+      calculatedVolume += pyramidVolume;
+      console.log(`[WOMBAT] Roof volume (pyramidal): ${pyramidVolume.toFixed(2)} m³`);
+    } else if (roofType === "inverted" && roofHeight < 0) {
+      const pyramidVolume = (1/3) * footprintArea * Math.abs(roofHeight);
+      calculatedVolume -= pyramidVolume;
+      console.log(`[WOMBAT] Roof volume (inverted): -${pyramidVolume.toFixed(2)} m³`);
+    }
+
+    console.log(`[WOMBAT] Calculated volume from surfaces: ${calculatedVolume.toFixed(2)} m³`);
+
+    // Compare to declared volume (if valid)
+    let volumeDiscrepancy = 0;
+    if (volumeDeclared && volumeDeclared > 0 && !isNaN(volumeDeclared)) {
+      const volumeError = Math.abs(calculatedVolume - volumeDeclared);
+      volumeDiscrepancy = (volumeError / volumeDeclared) * 100;
+
+      console.log(`[WOMBAT] Declared volume: ${volumeDeclared.toFixed(2)} m³`);
+      console.log(`[WOMBAT] Volume discrepancy: ${volumeDiscrepancy.toFixed(1)}%`);
+
+      if (volumeDiscrepancy > 5) {
+        console.warn(`[WOMBAT] Volume discrepancy > 5%`);
+        console.warn(`[WOMBAT] Using surface-derived dimensions (SACRED)`);
+        console.warn(`[WOMBAT] Flag for S13 Mechanical section`);
+      }
+    } else {
+      console.log(`[WOMBAT] No valid declared volume - using calculated volume`);
+    }
+
+    // Phase 4: Below-Grade Geometry (WOMBAT Phase 2)
     // Read S11 below-grade data
     const slabArea =
       parseFloat(getModeAwareValue("d_95", isReferenceCalculation)) || 0;
@@ -783,13 +847,16 @@ window.TEUI.SectionModules.sect19 = (function () {
       hasRaisedFloor
     );
 
+    // Calculate total building height (wall height + roof height)
+    const totalBuildingHeight = wallHeight + Math.abs(roofHeight);
+
     // Store solved dimensions
     const solvedGeometry = {
       footprint: { length, width, area: footprintArea },
-      height: totalBuildingHeight,
+      height: wallHeight,  // Wall height (from surfaces)
+      totalHeight: totalBuildingHeight,  // Wall + roof height
       storyHeight: storyHeight,
-      stories: stories,
-      volumePerFloor: volumePerFloor,
+      stories: storiesDeclared,
       areaPerFloor: areaPerFloor,
       walls: {
         north: { width: width, height: wallHeight },
@@ -797,8 +864,10 @@ window.TEUI.SectionModules.sect19 = (function () {
         east: { width: length, height: wallHeight },
         west: { width: length, height: wallHeight },
       },
-      roof: roof,  // NEW: Rational trigonometry roof object (type, height, areaRatio)
-      volume: volume,
+      roof: roof,  // Rational trigonometry roof object (type, height, areaRatio)
+      volume: calculatedVolume,  // Volume calculated from surfaces
+      volumeDeclared: volumeDeclared || null,  // User-declared volume (LESS SACRED)
+      volumeDiscrepancy: volumeDiscrepancy,  // Percentage difference
       belowGrade: {
         hasBasement: hasBasement,
         hasSlab: hasSlab,
