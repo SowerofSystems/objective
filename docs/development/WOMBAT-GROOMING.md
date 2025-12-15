@@ -137,7 +137,13 @@ console.log(`[WOMBAT] Mezzanine area: ${mezzanineArea.toFixed(2)} m²`);
 - Full levels: 1 × 1100.42 = 1100.42 m²
 - **Mezzanine**: 1427.2 - 1100.42 = 326.78 m²
 
-**Critical Insight**: Mezzanine does NOT add to exterior wall area!
+**Critical Insights**:
+- Mezzanine does NOT add to exterior wall area!
+- **Visualization concern**: The 3D model should NOT show "footprint area" labels on each floor level
+  - ❌ WRONG: Showing "951 m²" on Level 1 and Level 2 (misleading)
+  - ✅ CORRECT: Show actual floor areas OR just show footprint dimensions without area labels
+  - For 1.5 stories: Level 1 = 1100.42 m², Level 2 (mezzanine) = 326.78 m²
+  - OR: Just show "44.5m × 24.7m" without area labels to avoid confusion
 
 ---
 
@@ -164,54 +170,89 @@ if (areaRatio > 1.01) {
 
 ---
 
-### 7. Volume is SACRED (`d_105`)
+### 7. Volume is LESS SACRED (`d_105`)
 
-**Rule**: Total volume = footprint × wall height. This is the PRIMARY constraint.
+**CORRECTED RULE**: Volume is **VERIFICATION ONLY**, not a constraint. Surface areas are SACRED.
+
+**Why Volume is Less Sacred:**
+- Heat loss/gain calculations use **surface areas** (d_85, d_86, d_88-d_92), not volume
+- Volume is primarily used in S13 Mechanical calculations (ACH, ventilation rates)
+- If volume doesn't match calculated volume from surfaces, **surfaces win**
 
 ```javascript
-const volumeDeclared = parseFloat(getModeAwareValue("d_105", isRef)) || 8000;
+const volumeDeclared = parseFloat(getModeAwareValue("d_105", isRef));
 
-// Wall height MUST satisfy volume constraint
-const wallHeight = volumeDeclared / footprintArea;
-
-console.log(`[WOMBAT] Volume-constrained wall height: ${wallHeight.toFixed(3)} m`);
+// Volume is NOT used to calculate wall height!
+// It's used for VERIFICATION only
 ```
 
-**Volume Decomposition**:
+**Volume Calculation (from surfaces)**:
 ```
 Total Volume = Below-Roof Volume + Roof Volume
 
-Below-Roof Volume = footprint × wallHeight
-Roof Volume = (roof area - footprint area) × (roofHeight / 3)  // Pyramid volume
+Below-Roof Volume = footprint × wallHeight (where wallHeight comes from wall area!)
+Roof Volume = (1/3) × footprint × roofHeight (pyramidal approximation)
 ```
 
-**Critical**: Wall height is NOT `totalHeight / stories`. It's derived from volume!
+**Critical**: Wall height is derived from **wall area ÷ perimeter**, NOT from volume!
 
 ---
 
-### 8. Roof Height is the Final Unknown
+### 8. Wall Height from Surfaces (MOST SACRED)
 
-**Rule**: Roof height makes up the volume difference and achieves target roof area.
+**CORRECTED RULE**: Wall height is calculated from wall surface areas, which are SACRED.
 
 ```javascript
-// Calculate roof height using rational trigonometry
+// Phase 2: Wall height from SURFACE AREAS (MOST SACRED)
+
+// Read window areas
+const window_N = parseFloat(getModeAwareValue("d_88", isRef)) || 0;
+const window_E = parseFloat(getModeAwareValue("d_89", isRef)) || 0;
+const window_S = parseFloat(getModeAwareValue("d_90", isRef)) || 0;
+const window_W = parseFloat(getModeAwareValue("d_91", isRef)) || 0;
+const window_other = parseFloat(getModeAwareValue("d_92", isRef)) || 0;
+
+// Total wall area (gross) = opaque walls + windows
+const totalWallAreaGross = opaqueWallArea + window_N + window_E + window_S + window_W + window_other;
+
+// Calculate perimeter from footprint
+const perimeter = 2 * (width + length);
+
+// Wall height from SURFACES (SACRED calculation)
+const wallHeight = totalWallAreaGross / perimeter;
+
+console.log(`[WOMBAT] Wall height from surfaces: ${wallHeight.toFixed(3)} m`);
+```
+
+**Then calculate roof height from roof area** (also SACRED):
+
+```javascript
+// Phase 3: Roof height from ROOF AREA (SACRED)
+const areaRatio = roofArea / footprintArea;
 const roofHeight = calculatePyramidalHeight(width, length, areaRatio);
 
 // Total building height = wall height + roof height
 const totalBuildingHeight = wallHeight + roofHeight;
 ```
 
-**Roof Volume Contribution** (for pyramidal roofs):
+**Finally, verify volume** (LESS SACRED):
+
 ```javascript
-// Volume of pyramid: V = (1/3) × base_area × height
+// Phase 3.5: Volume Verification (informational only)
+const boxVolume = footprintArea * wallHeight;
 const pyramidVolume = (1/3) * footprintArea * roofHeight;
+const calculatedVolume = boxVolume + pyramidVolume;
 
-// Check: Does roof volume + below-roof volume = declared volume?
-const calculatedVolume = (footprintArea * wallHeight) + pyramidVolume;
-const volumeError = Math.abs(calculatedVolume - volumeDeclared);
+if (volumeDeclared) {
+  const volumeError = Math.abs(calculatedVolume - volumeDeclared);
+  const volumeErrorPct = (volumeError / volumeDeclared) * 100;
 
-if (volumeError > 0.01) {
-  console.warn(`[WOMBAT] Volume mismatch: ${volumeError.toFixed(2)} m³`);
+  if (volumeErrorPct > 5) {
+    console.warn(`[WOMBAT] Volume discrepancy ${volumeErrorPct.toFixed(1)}%`);
+    console.warn(`  Declared (d_105): ${volumeDeclared.toFixed(2)} m³`);
+    console.warn(`  Calculated from surfaces: ${calculatedVolume.toFixed(2)} m³`);
+    console.warn(`  Using surface-derived dimensions (SACRED)`);
+  }
 }
 ```
 
