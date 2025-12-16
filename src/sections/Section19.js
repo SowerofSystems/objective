@@ -293,7 +293,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         a: {},
         b: {},
         c: { content: "C", classes: ["section-subheader"] },
-        d: { content: "D________________________________", classes: ["section-subheader"] },
+        d: { content: "Options related to Section12", classes: ["section-subheader"] },
         e: { content: "E", classes: ["section-subheader"] },
         f: { content: "F", classes: ["section-subheader"] },
         g: { content: "G", classes: ["section-subheader"] },
@@ -937,20 +937,11 @@ window.TEUI.SectionModules.sect19 = (function () {
     }
 
     // Phase 3: Total Wall Area (SACRED)
-    // Read window areas (can legitimately be 0)
-    const window_N = parseFloat(getModeAwareValue("d_88", isReferenceCalculation)) || 0;
-    const window_E = parseFloat(getModeAwareValue("d_89", isReferenceCalculation)) || 0;
-    const window_S = parseFloat(getModeAwareValue("d_90", isReferenceCalculation)) || 0;
-    const window_W = parseFloat(getModeAwareValue("d_91", isReferenceCalculation)) || 0;
-    const window_other = parseFloat(getModeAwareValue("d_92", isReferenceCalculation)) || 0;
+    // ✅ READ FROM S12 g_107: Total Wall Area checksum (D86+SUM(D88:D92))
+    // This is the single source of truth for wall area, calculated in Section12.js
+    const totalWallAreaGross = parseFloat(getModeAwareValue("g_107", isReferenceCalculation)) || 0;
 
-    // Total window area
-    const totalWindowArea = window_N + window_E + window_S + window_W + window_other;
-
-    // Total wall area (gross) = opaque + windows
-    const totalWallAreaGross = opaqueWallArea + totalWindowArea;
-
-    console.log(`[WOMBAT] Wall area: ${totalWallAreaGross.toFixed(2)} m² (opaque: ${opaqueWallArea.toFixed(2)}, windows: ${totalWindowArea.toFixed(2)})`);
+    console.log(`[WOMBAT] Wall area: ${totalWallAreaGross.toFixed(2)} m² (from S12 g_107 checksum)`);
 
     // Phase 4: Roof Geometry - SOLVE FIRST (before wall height!)
     // ========================================================================

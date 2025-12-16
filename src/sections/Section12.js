@@ -1006,9 +1006,17 @@ window.TEUI.SectionModules.sect12 = (function () {
           ],
         },
         e: { content: "%", classes: ["unit-label"] },
-        f: {},
-        g: {},
-        h: {},
+        f: { content: "Total Wall Area", classes: ["label-main"] },
+        g: {
+          fieldId: "g_107",
+          type: "calculated",
+          value: "0.00",
+          section: "volumeSurfaceMetrics",
+          dependencies: ["d_86", "d_88", "d_89", "d_90", "d_91", "d_92"],
+          tooltip: true,
+          label: "Total Wall Area (Opaque + Windows)",
+        },
+        h: { content: "m²", classes: ["unit-label"] },
         i: {},
         j: {},
         k: {},
@@ -1917,6 +1925,11 @@ window.TEUI.SectionModules.sect12 = (function () {
     const totalWallArea = d86 + windowDoorArea;
     const wwr = totalWallArea > 0 ? windowDoorArea / totalWallArea : 0;
 
+    // Update g_107: Total Wall Area (checksum field matching Excel G107=D86+SUM(D88:D92))
+    // Note: Excludes doors (d_93) to match Excel formula
+    const totalWallAreaChecksum = d86 + d88 + d89 + d90 + d91 + d92;
+    setCalculatedValue("g_107", totalWallAreaChecksum, "area-2dp", isReferenceCalculation);
+
     // Update WWR value with standard formatter
     setCalculatedValue("d_107", wwr, "percent-2dp", isReferenceCalculation);
 
@@ -1925,6 +1938,7 @@ window.TEUI.SectionModules.sect12 = (function () {
 
     return {
       d_107: wwr,
+      g_107: totalWallAreaChecksum,
     };
   }
 
