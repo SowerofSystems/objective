@@ -1057,29 +1057,29 @@ window.TEUI.WombatRender = (function () {
     const width = geometry.footprint.width; // X-axis (East)
     const height = geometry.height;
 
-    // Y-dimension label (North, length along Y-axis) - bottom/south edge
-    const yDimPos = toIsometric(0, -length / 2 - 5, 0, scale, centerX, centerY);
-    const yDimLabel = createText(
-      yDimPos.x,
-      yDimPos.y + 15,
-      `Y: ${length.toFixed(1)}m`,
-      modelColor,
-      11,
-      { anchor: "middle" }
-    );
-    svg.appendChild(yDimLabel);
-
-    // X-dimension label (East, width along X-axis) - left/west edge
-    const xDimPos = toIsometric(-width / 2 - 5, 0, 0, scale, centerX, centerY);
+    // X-dimension label (East, width along X-axis) - lower right, red to match X/East axis
+    const xDimPos = toIsometric(width / 2 + 5, -length / 2, 0, scale, centerX, centerY);
     const xDimLabel = createText(
-      xDimPos.x - 20,
-      xDimPos.y,
+      xDimPos.x - 50,
+      xDimPos.y + 100,
       `X: ${width.toFixed(1)}m`,
-      modelColor,
+      "#cc0000", // Red to match X/East axis in coordinate legend
       11,
       { anchor: "middle" }
     );
     svg.appendChild(xDimLabel);
+
+    // Y-dimension label (North, length along Y-axis) - left/west edge, green to match Y/North axis
+    const yDimPos = toIsometric(-width / 2 - 5, 0, 0, scale, centerX, centerY);
+    const yDimLabel = createText(
+      yDimPos.x - 20,
+      yDimPos.y,
+      `Y: ${length.toFixed(1)}m`,
+      "#00cc66", // Green to match Y/North axis in coordinate legend
+      11,
+      { anchor: "middle" }
+    );
+    svg.appendChild(yDimLabel);
 
     // Height label (left edge) - keep as is
     const heightPos = toIsometric(
