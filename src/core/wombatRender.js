@@ -67,46 +67,49 @@ window.TEUI.WombatRender = (function () {
     // Basement floor corners (if present)
     if (basementDepth > 0) {
       points3D.push(
-        { x: -width/2, y: -length/2, z: -basementDepth },
-        { x:  width/2, y: -length/2, z: -basementDepth },
-        { x:  width/2, y:  length/2, z: -basementDepth },
-        { x: -width/2, y:  length/2, z: -basementDepth }
+        { x: -width / 2, y: -length / 2, z: -basementDepth },
+        { x: width / 2, y: -length / 2, z: -basementDepth },
+        { x: width / 2, y: length / 2, z: -basementDepth },
+        { x: -width / 2, y: length / 2, z: -basementDepth }
       );
     }
 
     // Ground level corners
     points3D.push(
-      { x: -width/2, y: -length/2, z: 0 },
-      { x:  width/2, y: -length/2, z: 0 },
-      { x:  width/2, y:  length/2, z: 0 },
-      { x: -width/2, y:  length/2, z: 0 }
+      { x: -width / 2, y: -length / 2, z: 0 },
+      { x: width / 2, y: -length / 2, z: 0 },
+      { x: width / 2, y: length / 2, z: 0 },
+      { x: -width / 2, y: length / 2, z: 0 }
     );
 
     // Top of walls corners
     points3D.push(
-      { x: -width/2, y: -length/2, z: geometry.height },
-      { x:  width/2, y: -length/2, z: geometry.height },
-      { x:  width/2, y:  length/2, z: geometry.height },
-      { x: -width/2, y:  length/2, z: geometry.height }
+      { x: -width / 2, y: -length / 2, z: geometry.height },
+      { x: width / 2, y: -length / 2, z: geometry.height },
+      { x: width / 2, y: length / 2, z: geometry.height },
+      { x: -width / 2, y: length / 2, z: geometry.height }
     );
 
     // Roof peak (if present)
     if (geometry.roof && geometry.roof.height > 0) {
-      if (geometry.roof.type === 'pyramidal' || geometry.roof.type === 'inverted') {
+      if (
+        geometry.roof.type === "pyramidal" ||
+        geometry.roof.type === "inverted"
+      ) {
         // Pyramidal roof: single apex point
         points3D.push({ x: 0, y: 0, z: totalHeight });
-      } else if (geometry.roof.type === 'gable') {
+      } else if (geometry.roof.type === "gable") {
         // Gable roof: ridge line endpoints
         const gableData = geometry.roof.gableData;
-        if (gableData && gableData.ridgeOrientation === 'longitudinal') {
+        if (gableData && gableData.ridgeOrientation === "longitudinal") {
           points3D.push(
-            { x: 0, y: -length/2, z: totalHeight },
-            { x: 0, y:  length/2, z: totalHeight }
+            { x: 0, y: -length / 2, z: totalHeight },
+            { x: 0, y: length / 2, z: totalHeight }
           );
         } else {
           points3D.push(
-            { x: -width/2, y: 0, z: totalHeight },
-            { x:  width/2, y: 0, z: totalHeight }
+            { x: -width / 2, y: 0, z: totalHeight },
+            { x: width / 2, y: 0, z: totalHeight }
           );
         }
       }
@@ -122,11 +125,14 @@ window.TEUI.WombatRender = (function () {
     const maxY = Math.max(...points2D.map(p => p.y));
 
     return {
-      minX, maxX, minY, maxY,
+      minX,
+      maxX,
+      minY,
+      maxY,
       width: maxX - minX,
       height: maxY - minY,
       centerX: (minX + maxX) / 2,
-      centerY: (minY + maxY) / 2
+      centerY: (minY + maxY) / 2,
     };
   }
 
@@ -136,8 +142,8 @@ window.TEUI.WombatRender = (function () {
   function calculateScaleAndCenter(geometry, canvasWidth, canvasHeight) {
     // Padding for labels and annotations
     const paddingLeft = 40;
-    const paddingRight = 120;  // Extra room for dimension labels
-    const paddingTop = 150;    // Room for info overlay
+    const paddingRight = 120; // Extra room for dimension labels
+    const paddingTop = 150; // Room for info overlay
     const paddingBottom = 100; // Room for coordinate axes and below-grade labels
 
     const availableWidth = canvasWidth - paddingLeft - paddingRight;
@@ -202,7 +208,14 @@ window.TEUI.WombatRender = (function () {
    * Create SVG text element with optional background for readability
    * Note: This returns a wrapper function that creates the background after DOM insertion
    */
-  function createTextWithBackground(x, y, text, color, fontSize = 11, options = {}) {
+  function createTextWithBackground(
+    x,
+    y,
+    text,
+    color,
+    fontSize = 11,
+    options = {}
+  ) {
     const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
 
     // Create text element
@@ -240,7 +253,14 @@ window.TEUI.WombatRender = (function () {
    * Create SVG text element (legacy - for compatibility)
    */
   function createText(x, y, text, color, fontSize = 11, options = {}) {
-    const element = createTextWithBackground(x, y, text, color, fontSize, options);
+    const element = createTextWithBackground(
+      x,
+      y,
+      text,
+      color,
+      fontSize,
+      options
+    );
 
     // If element needs background and is a group, add it now if possible
     if (element.__needsBackground && element.parentNode) {
@@ -256,7 +276,7 @@ window.TEUI.WombatRender = (function () {
   function addBackgroundToTextGroup(group) {
     if (!group.__needsBackground) return;
 
-    const textEl = group.querySelector('text');
+    const textEl = group.querySelector("text");
     if (!textEl) return;
 
     try {
@@ -275,7 +295,7 @@ window.TEUI.WombatRender = (function () {
       group.insertBefore(bg, textEl);
       delete group.__needsBackground;
     } catch (e) {
-      console.warn('[WombatRender] Failed to add background to text:', e);
+      console.warn("[WombatRender] Failed to add background to text:", e);
     }
   }
 
@@ -290,7 +310,9 @@ window.TEUI.WombatRender = (function () {
    */
   function renderAboveGrade(svg, geometry, mode, scale, centerX, centerY) {
     const isReference = mode === "reference";
-    const modelColor = isReference ? config.colors.reference : config.colors.target;
+    const modelColor = isReference
+      ? config.colors.reference
+      : config.colors.target;
 
     const length = geometry.footprint.length;
     const width = geometry.footprint.width;
@@ -298,8 +320,11 @@ window.TEUI.WombatRender = (function () {
     const stories = geometry.stories;
 
     // Check if ground floor should be brown (at-grade with ground contact)
-    const hasGroundContact = geometry.belowGrade?.hasBasement || geometry.belowGrade?.hasSlab;
-    const groundFloorColor = hasGroundContact ? config.colors.ground : modelColor;
+    const hasGroundContact =
+      geometry.belowGrade?.hasBasement || geometry.belowGrade?.hasSlab;
+    const groundFloorColor = hasGroundContact
+      ? config.colors.ground
+      : modelColor;
 
     const allVertices = [];
     const groundFloorVertices = []; // Separate array for ground floor nodes
@@ -317,16 +342,72 @@ window.TEUI.WombatRender = (function () {
       const z1 = (story + 1) * storyHeight;
 
       // Floor vertices
-      const p0 = toIsometric(-width / 2, -length / 2, z0, scale, centerX, centerY);
-      const p1 = toIsometric(width / 2, -length / 2, z0, scale, centerX, centerY);
-      const p2 = toIsometric(width / 2, length / 2, z0, scale, centerX, centerY);
-      const p3 = toIsometric(-width / 2, length / 2, z0, scale, centerX, centerY);
+      const p0 = toIsometric(
+        -width / 2,
+        -length / 2,
+        z0,
+        scale,
+        centerX,
+        centerY
+      );
+      const p1 = toIsometric(
+        width / 2,
+        -length / 2,
+        z0,
+        scale,
+        centerX,
+        centerY
+      );
+      const p2 = toIsometric(
+        width / 2,
+        length / 2,
+        z0,
+        scale,
+        centerX,
+        centerY
+      );
+      const p3 = toIsometric(
+        -width / 2,
+        length / 2,
+        z0,
+        scale,
+        centerX,
+        centerY
+      );
 
       // Ceiling vertices
-      const p4 = toIsometric(-width / 2, -length / 2, z1, scale, centerX, centerY);
-      const p5 = toIsometric(width / 2, -length / 2, z1, scale, centerX, centerY);
-      const p6 = toIsometric(width / 2, length / 2, z1, scale, centerX, centerY);
-      const p7 = toIsometric(-width / 2, length / 2, z1, scale, centerX, centerY);
+      const p4 = toIsometric(
+        -width / 2,
+        -length / 2,
+        z1,
+        scale,
+        centerX,
+        centerY
+      );
+      const p5 = toIsometric(
+        width / 2,
+        -length / 2,
+        z1,
+        scale,
+        centerX,
+        centerY
+      );
+      const p6 = toIsometric(
+        width / 2,
+        length / 2,
+        z1,
+        scale,
+        centerX,
+        centerY
+      );
+      const p7 = toIsometric(
+        -width / 2,
+        length / 2,
+        z1,
+        scale,
+        centerX,
+        centerY
+      );
 
       // Collect vertices
       if (story === 0) {
@@ -354,16 +435,72 @@ window.TEUI.WombatRender = (function () {
       const z1 = z0 + fractionalPart * storyHeight; // Partial height
 
       // Floor vertices (top of last full story)
-      const p0 = toIsometric(-width / 2, -length / 2, z0, scale, centerX, centerY);
-      const p1 = toIsometric(width / 2, -length / 2, z0, scale, centerX, centerY);
-      const p2 = toIsometric(width / 2, length / 2, z0, scale, centerX, centerY);
-      const p3 = toIsometric(-width / 2, length / 2, z0, scale, centerX, centerY);
+      const p0 = toIsometric(
+        -width / 2,
+        -length / 2,
+        z0,
+        scale,
+        centerX,
+        centerY
+      );
+      const p1 = toIsometric(
+        width / 2,
+        -length / 2,
+        z0,
+        scale,
+        centerX,
+        centerY
+      );
+      const p2 = toIsometric(
+        width / 2,
+        length / 2,
+        z0,
+        scale,
+        centerX,
+        centerY
+      );
+      const p3 = toIsometric(
+        -width / 2,
+        length / 2,
+        z0,
+        scale,
+        centerX,
+        centerY
+      );
 
       // Ceiling vertices (partial height)
-      const p4 = toIsometric(-width / 2, -length / 2, z1, scale, centerX, centerY);
-      const p5 = toIsometric(width / 2, -length / 2, z1, scale, centerX, centerY);
-      const p6 = toIsometric(width / 2, length / 2, z1, scale, centerX, centerY);
-      const p7 = toIsometric(-width / 2, length / 2, z1, scale, centerX, centerY);
+      const p4 = toIsometric(
+        -width / 2,
+        -length / 2,
+        z1,
+        scale,
+        centerX,
+        centerY
+      );
+      const p5 = toIsometric(
+        width / 2,
+        -length / 2,
+        z1,
+        scale,
+        centerX,
+        centerY
+      );
+      const p6 = toIsometric(
+        width / 2,
+        length / 2,
+        z1,
+        scale,
+        centerX,
+        centerY
+      );
+      const p7 = toIsometric(
+        -width / 2,
+        length / 2,
+        z1,
+        scale,
+        centerX,
+        centerY
+      );
 
       // Collect vertices
       allVertices.push(p4, p5, p6, p7);
@@ -388,13 +525,13 @@ window.TEUI.WombatRender = (function () {
     });
 
     // Draw ground floor nodes (brown if at-grade, blue/red if raised)
-    groundFloorVertices.forEach((vertex) => {
+    groundFloorVertices.forEach(vertex => {
       const node = createNode(vertex, groundFloorColor, 5);
       svg.appendChild(node);
     });
 
     // Draw all other vertex nodes on top (always blue/red)
-    allVertices.forEach((vertex) => {
+    allVertices.forEach(vertex => {
       const node = createNode(vertex, modelColor, 5);
       svg.appendChild(node);
     });
@@ -405,8 +542,6 @@ window.TEUI.WombatRender = (function () {
    * Separated from renderAboveGrade() to ensure labels appear in front
    */
   function renderAboveGradeLabels(svg, geometry, scale, centerX, centerY) {
-    const length = geometry.footprint.length;
-    const width = geometry.footprint.width;
     const storyHeight = geometry.storyHeight;
     const stories = geometry.stories;
 
@@ -417,7 +552,14 @@ window.TEUI.WombatRender = (function () {
     // Render labels for each full story
     for (let story = 0; story < fullStories; story++) {
       const z0 = story * storyHeight;
-      const labelPos = toIsometric(0, 0, z0 + storyHeight / 2, scale, centerX, centerY);
+      const labelPos = toIsometric(
+        0,
+        0,
+        z0 + storyHeight / 2,
+        scale,
+        centerX,
+        centerY
+      );
       const label = createText(
         labelPos.x,
         labelPos.y,
@@ -433,7 +575,14 @@ window.TEUI.WombatRender = (function () {
     if (hasFractionalStory) {
       const z0 = fullStories * storyHeight;
       const mezzanineArea = geometry.mezzanineArea || 0;
-      const labelPos = toIsometric(0, 0, z0 + (fractionalPart * storyHeight) / 2, scale, centerX, centerY);
+      const labelPos = toIsometric(
+        0,
+        0,
+        z0 + (fractionalPart * storyHeight) / 2,
+        scale,
+        centerX,
+        centerY
+      );
       const label = createText(
         labelPos.x,
         labelPos.y,
@@ -467,7 +616,10 @@ window.TEUI.WombatRender = (function () {
     const pt3 = toIsometric(p3.x, p3.y, p3.z, scale, centerX, centerY);
 
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", `M ${pt1.x},${pt1.y} L ${pt2.x},${pt2.y} L ${pt3.x},${pt3.y} Z`);
+    path.setAttribute(
+      "d",
+      `M ${pt1.x},${pt1.y} L ${pt2.x},${pt2.y} L ${pt3.x},${pt3.y} Z`
+    );
     path.setAttribute("fill", "none");
     path.setAttribute("stroke", color);
     path.setAttribute("stroke-width", 2);
@@ -486,7 +638,9 @@ window.TEUI.WombatRender = (function () {
    */
   function renderPyramidalRoof(svg, geometry, mode, scale, centerX, centerY) {
     const isReference = mode === "reference";
-    const roofColor = isReference ? config.colors.reference : config.colors.target;
+    const roofColor = isReference
+      ? config.colors.reference
+      : config.colors.target;
 
     const { width, length } = geometry.footprint;
     const wallHeight = geometry.height;
@@ -494,14 +648,21 @@ window.TEUI.WombatRender = (function () {
 
     // Validate roof height (allow 0 for flat/failed roofs, but catch NaN/Infinity)
     if (isNaN(roofHeight) || !isFinite(roofHeight)) {
-      console.error('[WombatRender] Invalid roof height:', roofHeight);
-      console.error('  Geometry:', { width, length, wallHeight, roof: geometry.roof });
+      console.error("[WombatRender] Invalid roof height:", roofHeight);
+      console.error("  Geometry:", {
+        width,
+        length,
+        wallHeight,
+        roof: geometry.roof,
+      });
       return;
     }
 
     // If roof height is 0, don't render (flat roof or geometric impossibility)
     if (roofHeight === 0) {
-      console.log('[WombatRender] Roof height is 0 - skipping pyramid rendering (flat roof)');
+      console.log(
+        "[WombatRender] Roof height is 0 - skipping pyramid rendering (flat roof)"
+      );
       return;
     }
 
@@ -509,21 +670,30 @@ window.TEUI.WombatRender = (function () {
     const apex = {
       x: 0,
       y: 0,
-      z: wallHeight + roofHeight
+      z: wallHeight + roofHeight,
     };
 
     // Four corners of roof base (top of walls)
     const roofBase = [
-      { x: -width/2, y: -length/2, z: wallHeight }, // SW corner
-      { x:  width/2, y: -length/2, z: wallHeight }, // SE corner
-      { x:  width/2, y:  length/2, z: wallHeight }, // NE corner
-      { x: -width/2, y:  length/2, z: wallHeight }  // NW corner
+      { x: -width / 2, y: -length / 2, z: wallHeight }, // SW corner
+      { x: width / 2, y: -length / 2, z: wallHeight }, // SE corner
+      { x: width / 2, y: length / 2, z: wallHeight }, // NE corner
+      { x: -width / 2, y: length / 2, z: wallHeight }, // NW corner
     ];
 
     // Draw four triangular faces
     roofBase.forEach((corner, i) => {
       const nextCorner = roofBase[(i + 1) % 4];
-      drawTriangle(svg, corner, apex, nextCorner, scale, centerX, centerY, roofColor);
+      drawTriangle(
+        svg,
+        corner,
+        apex,
+        nextCorner,
+        scale,
+        centerX,
+        centerY,
+        roofColor
+      );
     });
 
     // Draw apex node
@@ -562,7 +732,9 @@ window.TEUI.WombatRender = (function () {
    */
   function renderGableRoof(svg, geometry, mode, scale, centerX, centerY) {
     const isReference = mode === "reference";
-    const roofColor = isReference ? config.colors.reference : config.colors.target;
+    const roofColor = isReference
+      ? config.colors.reference
+      : config.colors.target;
 
     const { width, length } = geometry.footprint;
     const wallHeight = geometry.height;
@@ -570,45 +742,52 @@ window.TEUI.WombatRender = (function () {
     const gableData = geometry.roof.gableData;
 
     // Debug logging
-    console.log('[WombatRender] renderGableRoof called with:');
-    console.log('  width:', width, 'length:', length, 'wallHeight:', wallHeight, 'roofHeight:', roofHeight);
-    console.log('  scale:', scale, 'centerX:', centerX, 'centerY:', centerY);
-    console.log('  gableData:', gableData);
+    console.log("[WombatRender] renderGableRoof called with:");
+    console.log(
+      "  width:",
+      width,
+      "length:",
+      length,
+      "wallHeight:",
+      wallHeight,
+      "roofHeight:",
+      roofHeight
+    );
+    console.log("  scale:", scale, "centerX:", centerX, "centerY:", centerY);
+    console.log("  gableData:", gableData);
 
     // Validate roof data
     if (!gableData || !gableData.isValid) {
-      console.error('[WombatRender] Invalid gable roof data');
+      console.error("[WombatRender] Invalid gable roof data");
       return;
     }
 
     if (isNaN(roofHeight) || !isFinite(roofHeight) || roofHeight === 0) {
-      console.error('[WombatRender] Invalid roof height:', roofHeight);
+      console.error("[WombatRender] Invalid roof height:", roofHeight);
       return;
     }
 
     // Ridge runs along longer dimension
     const ridgeOrientation = gableData.ridgeOrientation;
-    const ridgeLength = gableData.ridgeLength;
-    const span = gableData.span;
 
     // Ridge endpoints (at peak height)
     let ridge1, ridge2;
     if (ridgeOrientation === "longitudinal") {
       // Ridge runs along length (Y-axis), gable ends on width (X-axis)
-      ridge1 = { x: 0, y: -length/2, z: wallHeight + roofHeight };
-      ridge2 = { x: 0, y:  length/2, z: wallHeight + roofHeight };
+      ridge1 = { x: 0, y: -length / 2, z: wallHeight + roofHeight };
+      ridge2 = { x: 0, y: length / 2, z: wallHeight + roofHeight };
     } else {
       // Ridge runs along width (X-axis), gable ends on length (Y-axis)
-      ridge1 = { x: -width/2, y: 0, z: wallHeight + roofHeight };
-      ridge2 = { x:  width/2, y: 0, z: wallHeight + roofHeight };
+      ridge1 = { x: -width / 2, y: 0, z: wallHeight + roofHeight };
+      ridge2 = { x: width / 2, y: 0, z: wallHeight + roofHeight };
     }
 
     // Four corners of roof base (top of walls)
     const roofBase = [
-      { x: -width/2, y: -length/2, z: wallHeight }, // SW corner
-      { x:  width/2, y: -length/2, z: wallHeight }, // SE corner
-      { x:  width/2, y:  length/2, z: wallHeight }, // NE corner
-      { x: -width/2, y:  length/2, z: wallHeight }  // NW corner
+      { x: -width / 2, y: -length / 2, z: wallHeight }, // SW corner
+      { x: width / 2, y: -length / 2, z: wallHeight }, // SE corner
+      { x: width / 2, y: length / 2, z: wallHeight }, // NE corner
+      { x: -width / 2, y: length / 2, z: wallHeight }, // NW corner
     ];
 
     // Draw gable roof geometry
@@ -617,14 +796,39 @@ window.TEUI.WombatRender = (function () {
       // Ridge runs East-West along length
 
       // South gable end (triangular): SW - SE - ridge1
-      drawTriangle(svg, roofBase[0], roofBase[1], ridge1, scale, centerX, centerY, roofColor);
+      drawTriangle(
+        svg,
+        roofBase[0],
+        roofBase[1],
+        ridge1,
+        scale,
+        centerX,
+        centerY,
+        roofColor
+      );
 
       // North gable end (triangular): NE - NW - ridge2
-      drawTriangle(svg, roofBase[2], roofBase[3], ridge2, scale, centerX, centerY, roofColor);
+      drawTriangle(
+        svg,
+        roofBase[2],
+        roofBase[3],
+        ridge2,
+        scale,
+        centerX,
+        centerY,
+        roofColor
+      );
 
       // West slope (rectangular): SW - NW - ridge2 - ridge1
       const west1 = createLine(
-        toIsometric(roofBase[3].x, roofBase[3].y, roofBase[3].z, scale, centerX, centerY),
+        toIsometric(
+          roofBase[3].x,
+          roofBase[3].y,
+          roofBase[3].z,
+          scale,
+          centerX,
+          centerY
+        ),
         toIsometric(ridge2.x, ridge2.y, ridge2.z, scale, centerX, centerY),
         roofColor
       );
@@ -635,7 +839,14 @@ window.TEUI.WombatRender = (function () {
       );
       const west3 = createLine(
         toIsometric(ridge1.x, ridge1.y, ridge1.z, scale, centerX, centerY),
-        toIsometric(roofBase[0].x, roofBase[0].y, roofBase[0].z, scale, centerX, centerY),
+        toIsometric(
+          roofBase[0].x,
+          roofBase[0].y,
+          roofBase[0].z,
+          scale,
+          centerX,
+          centerY
+        ),
         roofColor
       );
       svg.appendChild(west1);
@@ -644,7 +855,14 @@ window.TEUI.WombatRender = (function () {
 
       // East slope (rectangular): SE - NE - ridge2 - ridge1
       const east1 = createLine(
-        toIsometric(roofBase[1].x, roofBase[1].y, roofBase[1].z, scale, centerX, centerY),
+        toIsometric(
+          roofBase[1].x,
+          roofBase[1].y,
+          roofBase[1].z,
+          scale,
+          centerX,
+          centerY
+        ),
         toIsometric(ridge1.x, ridge1.y, ridge1.z, scale, centerX, centerY),
         roofColor
       );
@@ -655,31 +873,76 @@ window.TEUI.WombatRender = (function () {
       );
       const east3 = createLine(
         toIsometric(ridge2.x, ridge2.y, ridge2.z, scale, centerX, centerY),
-        toIsometric(roofBase[2].x, roofBase[2].y, roofBase[2].z, scale, centerX, centerY),
+        toIsometric(
+          roofBase[2].x,
+          roofBase[2].y,
+          roofBase[2].z,
+          scale,
+          centerX,
+          centerY
+        ),
         roofColor
       );
       svg.appendChild(east1);
       svg.appendChild(east2);
       svg.appendChild(east3);
-
     } else {
       // Gable ends on East (SE-NE) and West (SW-NW) faces
       // Ridge runs North-South along width
 
       // West gable end (triangular): SW - NW - ridge1
-      drawTriangle(svg, roofBase[0], roofBase[3], ridge1, scale, centerX, centerY, roofColor);
+      drawTriangle(
+        svg,
+        roofBase[0],
+        roofBase[3],
+        ridge1,
+        scale,
+        centerX,
+        centerY,
+        roofColor
+      );
 
       // East gable end (triangular): SE - NE - ridge2
-      drawTriangle(svg, roofBase[1], roofBase[2], ridge2, scale, centerX, centerY, roofColor);
+      drawTriangle(
+        svg,
+        roofBase[1],
+        roofBase[2],
+        ridge2,
+        scale,
+        centerX,
+        centerY,
+        roofColor
+      );
 
       // South slope (rectangular): SW - SE - ridge2 - ridge1
       const south1 = createLine(
-        toIsometric(roofBase[0].x, roofBase[0].y, roofBase[0].z, scale, centerX, centerY),
-        toIsometric(roofBase[1].x, roofBase[1].y, roofBase[1].z, scale, centerX, centerY),
+        toIsometric(
+          roofBase[0].x,
+          roofBase[0].y,
+          roofBase[0].z,
+          scale,
+          centerX,
+          centerY
+        ),
+        toIsometric(
+          roofBase[1].x,
+          roofBase[1].y,
+          roofBase[1].z,
+          scale,
+          centerX,
+          centerY
+        ),
         roofColor
       );
       const south2 = createLine(
-        toIsometric(roofBase[1].x, roofBase[1].y, roofBase[1].z, scale, centerX, centerY),
+        toIsometric(
+          roofBase[1].x,
+          roofBase[1].y,
+          roofBase[1].z,
+          scale,
+          centerX,
+          centerY
+        ),
         toIsometric(ridge2.x, ridge2.y, ridge2.z, scale, centerX, centerY),
         roofColor
       );
@@ -694,7 +957,14 @@ window.TEUI.WombatRender = (function () {
 
       // North slope (rectangular): NW - NE - ridge2 - ridge1
       const north1 = createLine(
-        toIsometric(roofBase[3].x, roofBase[3].y, roofBase[3].z, scale, centerX, centerY),
+        toIsometric(
+          roofBase[3].x,
+          roofBase[3].y,
+          roofBase[3].z,
+          scale,
+          centerX,
+          centerY
+        ),
         toIsometric(ridge1.x, ridge1.y, ridge1.z, scale, centerX, centerY),
         roofColor
       );
@@ -705,7 +975,14 @@ window.TEUI.WombatRender = (function () {
       );
       const north3 = createLine(
         toIsometric(ridge2.x, ridge2.y, ridge2.z, scale, centerX, centerY),
-        toIsometric(roofBase[2].x, roofBase[2].y, roofBase[2].z, scale, centerX, centerY),
+        toIsometric(
+          roofBase[2].x,
+          roofBase[2].y,
+          roofBase[2].z,
+          scale,
+          centerX,
+          centerY
+        ),
         roofColor
       );
       svg.appendChild(north1);
@@ -723,8 +1000,22 @@ window.TEUI.WombatRender = (function () {
     svg.appendChild(ridgeLine);
 
     // Draw ridge endpoint nodes
-    const ridge1Pt = toIsometric(ridge1.x, ridge1.y, ridge1.z, scale, centerX, centerY);
-    const ridge2Pt = toIsometric(ridge2.x, ridge2.y, ridge2.z, scale, centerX, centerY);
+    const ridge1Pt = toIsometric(
+      ridge1.x,
+      ridge1.y,
+      ridge1.z,
+      scale,
+      centerX,
+      centerY
+    );
+    const ridge2Pt = toIsometric(
+      ridge2.x,
+      ridge2.y,
+      ridge2.z,
+      scale,
+      centerX,
+      centerY
+    );
     svg.appendChild(createNode(ridge1Pt, roofColor, 5));
     svg.appendChild(createNode(ridge2Pt, roofColor, 5));
 
@@ -758,10 +1049,12 @@ window.TEUI.WombatRender = (function () {
    */
   function renderDimensions(svg, geometry, mode, scale, centerX, centerY) {
     const isReference = mode === "reference";
-    const modelColor = isReference ? config.colors.reference : config.colors.target;
+    const modelColor = isReference
+      ? config.colors.reference
+      : config.colors.target;
 
-    const length = geometry.footprint.length;  // Y-axis (North)
-    const width = geometry.footprint.width;    // X-axis (East)
+    const length = geometry.footprint.length; // Y-axis (North)
+    const width = geometry.footprint.width; // X-axis (East)
     const height = geometry.height;
 
     // Y-dimension label (North, length along Y-axis) - bottom/south edge
@@ -789,7 +1082,14 @@ window.TEUI.WombatRender = (function () {
     svg.appendChild(xDimLabel);
 
     // Height label (left edge) - keep as is
-    const heightPos = toIsometric(-width / 2 - 10, length / 2, height / 2, scale, centerX, centerY);
+    const heightPos = toIsometric(
+      -width / 2 - 10,
+      length / 2,
+      height / 2,
+      scale,
+      centerX,
+      centerY
+    );
     const heightLabel = createText(
       heightPos.x - 30,
       heightPos.y,
@@ -818,8 +1118,22 @@ window.TEUI.WombatRender = (function () {
     const width = geometry.footprint.width;
 
     // Grade line extends beyond building footprint
-    const gradeLeft = toIsometric(-width / 2 - 10, -length / 2, 0, scale, centerX, centerY);
-    const gradeRight = toIsometric(width / 2 + 10, -length / 2, 0, scale, centerX, centerY);
+    const gradeLeft = toIsometric(
+      -width / 2 - 10,
+      -length / 2,
+      0,
+      scale,
+      centerX,
+      centerY
+    );
+    const gradeRight = toIsometric(
+      width / 2 + 10,
+      -length / 2,
+      0,
+      scale,
+      centerX,
+      centerY
+    );
 
     // Create dashed line at z=0
     const gradeLine = createLine(gradeLeft, gradeRight, gradeColor, 2);
@@ -860,7 +1174,7 @@ window.TEUI.WombatRender = (function () {
     ];
 
     // Define basement floor nodes (z=-depth)
-    const basementNodes = gradeNodes.map((node) => ({
+    const basementNodes = gradeNodes.map(node => ({
       x: node.x,
       y: node.y,
       z: -basementDepth,
@@ -894,8 +1208,22 @@ window.TEUI.WombatRender = (function () {
     for (let i = 0; i < 4; i++) {
       const node1 = basementNodes[i];
       const node2 = basementNodes[(i + 1) % 4];
-      const p1 = toIsometric(node1.x, node1.y, node1.z, scale, centerX, centerY);
-      const p2 = toIsometric(node2.x, node2.y, node2.z, scale, centerX, centerY);
+      const p1 = toIsometric(
+        node1.x,
+        node1.y,
+        node1.z,
+        scale,
+        centerX,
+        centerY
+      );
+      const p2 = toIsometric(
+        node2.x,
+        node2.y,
+        node2.z,
+        scale,
+        centerX,
+        centerY
+      );
 
       const edge = createLine(p1, p2, gradeColor, 3);
       edge.setAttribute("stroke-dasharray", "8,4"); // Hidden line (below ground)
@@ -903,8 +1231,15 @@ window.TEUI.WombatRender = (function () {
     }
 
     // Draw basement floor nodes (brown circles)
-    basementNodes.forEach((node) => {
-      const point = toIsometric(node.x, node.y, node.z, scale, centerX, centerY);
+    basementNodes.forEach(node => {
+      const point = toIsometric(
+        node.x,
+        node.y,
+        node.z,
+        scale,
+        centerX,
+        centerY
+      );
       const circle = createNode(point, gradeColor, 5);
       svg.appendChild(circle);
     });
@@ -949,10 +1284,9 @@ window.TEUI.WombatRender = (function () {
    * as brown ground floor edges/nodes. This function is kept for future
    * enhancements (e.g., slab fill pattern, thermal break indicators)
    */
-  function renderSlabOnGrade(svg, geometry, scale, centerX, centerY) {
+  function renderSlabOnGrade(_svg, _geometry, _scale, _centerX, _centerY) {
     // Ground floor perimeter is now handled by renderAboveGrade()
     // when hasGroundContact is true
-
     // Future: Could add slab-specific features here like:
     // - Thermal break indicators
     // - Slab insulation visualization
@@ -968,7 +1302,8 @@ window.TEUI.WombatRender = (function () {
     }
 
     const gradeColor = config.colors.ground;
-    const agTotal = geometry.belowGrade.slabArea + geometry.belowGrade.basementWallArea;
+    const agTotal =
+      geometry.belowGrade.slabArea + geometry.belowGrade.basementWallArea;
 
     // Position label below basement geometry (or below grade line if no basement)
     const labelZ = geometry.belowGrade.hasBasement
@@ -1008,9 +1343,16 @@ window.TEUI.WombatRender = (function () {
   /**
    * Render mixed foundation warning
    */
-  function renderMixedFoundationWarning(svg, geometry, scale, centerX, centerY) {
+  function renderMixedFoundationWarning(
+    svg,
+    geometry,
+    scale,
+    centerX,
+    centerY
+  ) {
     const hasRaisedFloor = geometry.belowGrade.hasRaisedFloor;
-    const hasGroundContact = geometry.belowGrade.hasBasement || geometry.belowGrade.hasSlab;
+    const hasGroundContact =
+      geometry.belowGrade.hasBasement || geometry.belowGrade.hasSlab;
 
     if (!hasRaisedFloor || !hasGroundContact) {
       return; // No warning needed
@@ -1089,7 +1431,9 @@ window.TEUI.WombatRender = (function () {
    */
   function renderInfoOverlay(svg, geometry, mode) {
     const isReference = mode === "reference";
-    const modelColor = isReference ? config.colors.reference : config.colors.target;
+    const modelColor = isReference
+      ? config.colors.reference
+      : config.colors.target;
 
     // Calculate volume per floor
     const volumePerFloor = geometry.volume / geometry.stories;
@@ -1101,25 +1445,37 @@ window.TEUI.WombatRender = (function () {
     if (geometry.mezzanineArea && geometry.mezzanineArea > 0.1) {
       // Mezzanine case: show conditioned area directly (not multiplication)
       const conditionedArea = geometry.areaPerFloor + geometry.mezzanineArea;
-      infoLines.push(`Stories: ${geometry.stories}: ${conditionedArea.toFixed(1)} m² Conditioned Area`);
+      infoLines.push(
+        `Stories: ${geometry.stories}: ${conditionedArea.toFixed(1)} m² Conditioned Area`
+      );
       infoLines.push(`Mezzanine Area: ${geometry.mezzanineArea.toFixed(1)} m²`);
     } else {
       // Equal floorplates: show multiplication
-      infoLines.push(`Stories: ${geometry.stories} × ${geometry.areaPerFloor.toFixed(1)} m² = ${(geometry.stories * geometry.areaPerFloor).toFixed(1)} m²`);
+      infoLines.push(
+        `Stories: ${geometry.stories} × ${geometry.areaPerFloor.toFixed(1)} m² = ${(geometry.stories * geometry.areaPerFloor).toFixed(1)} m²`
+      );
     }
 
-    infoLines.push(`Footprint: ${geometry.footprint.length.toFixed(1)}m × ${geometry.footprint.width.toFixed(1)}m`);
+    infoLines.push(
+      `Footprint: ${geometry.footprint.length.toFixed(1)}m × ${geometry.footprint.width.toFixed(1)}m`
+    );
     infoLines.push(`Story Height: ${geometry.storyHeight.toFixed(2)}m`);
-    infoLines.push(`Total Volume: ${geometry.volume.toFixed(0)} m³ (${volumePerFloor.toFixed(0)} m³/floor)`);
+    infoLines.push(
+      `Total Volume: ${geometry.volume.toFixed(0)} m³ (${volumePerFloor.toFixed(0)} m³/floor)`
+    );
 
     // Show roof area and type
     if (geometry.roof) {
       const roofArea = geometry.footprint.area * geometry.roof.areaRatio;
-      infoLines.push(`Roof Area: ${roofArea.toFixed(2)} m² (ridge ht. determined from this)`);
+      infoLines.push(
+        `Roof Area: ${roofArea.toFixed(2)} m² (ridge ht. determined from this)`
+      );
 
       // Show gable area if gable roof
       if (geometry.roof.type === "gable" && geometry.roof.gableEndArea > 0) {
-        infoLines.push(`Gable Area: ${geometry.roof.gableEndArea.toFixed(2)} m²`);
+        infoLines.push(
+          `Gable Area: ${geometry.roof.gableEndArea.toFixed(2)} m²`
+        );
       }
     }
 
@@ -1132,7 +1488,7 @@ window.TEUI.WombatRender = (function () {
     let y = 30;
     const lineHeight = 18;
 
-    infoLines.forEach((line) => {
+    infoLines.forEach(line => {
       const infoText = createText(x, y, line, modelColor, 12, {});
       infoText.setAttribute("font-family", "monospace");
       svg.appendChild(infoText);
@@ -1148,43 +1504,54 @@ window.TEUI.WombatRender = (function () {
    * Positioned in bottom-right corner
    */
   function renderCoordinateAxes(svg) {
-    const x0 = config.canvasWidth - 100;  // Bottom-right corner
+    const x0 = config.canvasWidth - 100; // Bottom-right corner
     const y0 = config.canvasHeight - 80;
     const axisLength = 40;
 
     // Z-axis (Up) - blue
     const zLine = createLine(
-      {x: x0, y: y0},
-      {x: x0, y: y0 - axisLength},
+      { x: x0, y: y0 },
+      { x: x0, y: y0 - axisLength },
       "#0066cc",
       2
     );
     svg.appendChild(zLine);
-    const zLabel = createText(x0 - 5, y0 - axisLength - 5, "Z/Up", "#0066cc", 11, {});
+    const zLabel = createText(
+      x0 - 5,
+      y0 - axisLength - 5,
+      "Z/Up",
+      "#0066cc",
+      11,
+      {}
+    );
     svg.appendChild(zLabel);
 
     // Y-axis (North) - green, isometric
     const yEndIso = toIsometric(0, axisLength, 0, 1, x0, y0);
-    const yLine = createLine(
-      {x: x0, y: y0},
-      yEndIso,
-      "#00cc66",
-      2
-    );
+    const yLine = createLine({ x: x0, y: y0 }, yEndIso, "#00cc66", 2);
     svg.appendChild(yLine);
-    const yLabel = createText(yEndIso.x, yEndIso.y + 30, "Y/North", "#00cc66", 11, { anchor: "middle" });
+    const yLabel = createText(
+      yEndIso.x,
+      yEndIso.y + 30,
+      "Y/North",
+      "#00cc66",
+      11,
+      { anchor: "middle" }
+    );
     svg.appendChild(yLabel);
 
     // X-axis (East) - red, isometric
     const xEndIso = toIsometric(axisLength, 0, 0, 1, x0, y0);
-    const xLine = createLine(
-      {x: x0, y: y0},
-      xEndIso,
-      "#cc0000",
-      2
-    );
+    const xLine = createLine({ x: x0, y: y0 }, xEndIso, "#cc0000", 2);
     svg.appendChild(xLine);
-    const xLabel = createText(xEndIso.x + 5, xEndIso.y + 5, "X/East", "#cc0000", 11, {});
+    const xLabel = createText(
+      xEndIso.x + 5,
+      xEndIso.y + 5,
+      "X/East",
+      "#cc0000",
+      11,
+      {}
+    );
     svg.appendChild(xLabel);
   }
 
@@ -1245,7 +1612,7 @@ window.TEUI.WombatRender = (function () {
    * @param {SVGElement} svgElement - SVG container element
    * @param {Object} options - Rendering options
    */
-  function render(geometry, mode, svgElement, options = {}) {
+  function render(geometry, mode, svgElement, _options = {}) {
     if (!svgElement) {
       console.error("[WombatRender] SVG element not found");
       return;
@@ -1306,7 +1673,7 @@ window.TEUI.WombatRender = (function () {
     renderInfoOverlay(svgElement, geometry, mode);
 
     // PHASE 3: Add backgrounds to all labels (now that they're in the DOM)
-    const allGroups = svgElement.querySelectorAll('g');
+    const allGroups = svgElement.querySelectorAll("g");
     allGroups.forEach(group => {
       if (group.__needsBackground) {
         addBackgroundToTextGroup(group);
