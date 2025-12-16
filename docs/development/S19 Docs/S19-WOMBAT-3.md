@@ -155,9 +155,9 @@ Both sections have listeners with proper guards against circular updates (`sourc
 
 ## Geometry Solver: Constraint-Driven
 
-WOMBAT's geometry solver transforms thermal area data into 3D geometry using a constraint satisfaction approach where **footprint area (d_95) is the sacred touchstone** and all dimensions emerge from thermal envelope area constraints.
+WOMBAT's geometry solver transforms thermal area data into 3D geometry using a constraint satisfaction approach where **footprint area (d_95) is the sacred touchstone** and **volume (d_105/d_151) is a sacred constraint** used to solve for wall height.
 
-**CRITICAL**: Volume (d_105/d_151) is used for **verification only**, NOT as a geometric constraint.
+**CRITICAL**: Volume is used to **derive wall height**, ensuring the geometry satisfies the user's declared conditioned volume including space under the roof.
 
 ### Input Dependencies
 
@@ -169,7 +169,7 @@ WOMBAT's geometry solver transforms thermal area data into 3D geometry using a c
 - `d_88-d_92` / `ref_d_88-d_92` - Window Areas (North, East, South, West, Other) from S11
 
 **Internal** (from TargetState/ReferenceState):
-- `d_151` - Volume (m³) - **VERIFICATION ONLY** (not a constraint!)
+- `d_151` - Volume (m³) - **SACRED CONSTRAINT** (used to solve wall height!)
 - `d_150` - Stories (1, 1.5, 2, 3, 4, 5, 6)
 - `d_158` - Floorplate Options (mezzanine/equal)
 - `d_159` - Roof Type (multiplanar/biplanar/monoplane)
@@ -238,41 +238,38 @@ if (areaRatio > 1.01 && roofTypeSelection === "biplanar") {
 }
 ```
 
-**Phase 5: Wall Height** - AFTER roof geometry!
+**Phase 5: Wall Height** - VOLUME-CONSTRAINED (AFTER roof geometry!)
 ```javascript
-// For gable roofs: gable ends are OPAQUE WALL AREA, not roof area
-// Must extract gable end area from total wall area
+// CRITICAL: Use VOLUME as constraint to solve for wall height
+// This ensures geometry satisfies user's declared conditioned volume
 
+// 1. Calculate roof volume from roof geometry
+let roofVolume = 0
+if (roofType === "gable") {
+  roofVolume = (footprintArea * roofHeight) / 2
+} else if (roofType === "pyramidal") {
+  roofVolume = (footprintArea * roofHeight) / 3
+}
+
+// 2. Solve wall height from volume constraint
+rectangularVolume = conditionedVolume - roofVolume
+wallHeight = rectangularVolume / footprintArea
+
+// 3. Verify against wall area (consistency check)
 if (roofType === "gable" && gableEndArea > 0) {
   effectiveWallArea = totalWallAreaGross - gableEndArea
-  wallPlateHeight = effectiveWallArea / perimeter
 } else {
   effectiveWallArea = totalWallAreaGross
-  wallPlateHeight = totalWallAreaGross / perimeter
+}
+wallHeightFromArea = effectiveWallArea / perimeter
+
+// 4. Flag discrepancy if wall area and volume are inconsistent
+heightDiscrepancy = abs(wallHeight - wallHeightFromArea) / wallHeight * 100
+if (heightDiscrepancy > 5) {
+  console.warn("Wall height discrepancy > 5% - volume and wall area inconsistent")
 }
 
-wallHeight = wallPlateHeight
 storyHeight = wallHeight / d_150  // For visualization only
-```
-
-**Phase 6: Volume** - VERIFICATION ONLY
-```javascript
-// Use user's declared volume (d_105/d_151)
-conditionedVolume = d_151  // SACRED - display this value
-
-// OPTIONAL: Calculate what volume SHOULD be from geometry
-calculatedVolumeCheck = footprintArea * wallHeight
-if (roofType === "gable") {
-  calculatedVolumeCheck += (footprintArea * roofHeight) / 2
-} else if (roofType === "pyramidal") {
-  calculatedVolumeCheck += (footprintArea * roofHeight) / 3
-}
-
-// Flag discrepancy if > 5%
-volumeDiscrepancy = abs(calculatedVolumeCheck - conditionedVolume) / conditionedVolume * 100
-if (volumeDiscrepancy > 5) {
-  console.warn("Volume discrepancy > 5% - user areas may be inconsistent")
-}
 ```
 
 ### Outputs
@@ -287,9 +284,10 @@ Geometry object also includes:
 - `mezzanineArea` - Partial floor area (h_15 - footprint when mezzanine option selected)
 - `walls.totalGrossArea` - Total wall area (opaque + windows)
 - `walls.effectiveArea` - Wall area excluding gable ends
+- `walls.heightFromVolume` - Wall height from volume constraint (primary)
+- `walls.heightFromArea` - Wall height from wall area (verification)
 - `roof.gableEndArea` - Triangular gable end area (for biplanar roofs)
-- `volume` - User-declared conditioned volume (d_105/d_151)
-- `volumeCheck` - Volume calculated from geometry (verification only)
+- `volume` - User-declared conditioned volume (d_105/d_151) - CONSTRAINT
 
 **Location**: [Section19.js:813-1150](../../src/sections/Section19.js#L813-L1150)
 
