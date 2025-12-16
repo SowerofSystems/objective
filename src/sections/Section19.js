@@ -45,6 +45,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       d_151: "8000.00", // Volume (mirrors S12 d_105)
       d_154: "0.0", // Aspect ratio slider (L:W)
       d_158: "mezzanine", // Floorplate Options (mezzanine/equal)
+      d_159: "biplanar", // Roof Type (multiplanar/biplanar/monoplane)
       h_155: "0.00", // Calculated: Footprint width
       h_156: "0.00", // Calculated: Story height
       h_157: "0.00", // Calculated: Footprint length
@@ -64,6 +65,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       this.values.d_151 = "8000.00";
       this.values.d_154 = "0.0";
       this.values.d_158 = "mezzanine";
+      this.values.d_159 = "biplanar";
       this.values.h_155 = "0.00";
       this.values.h_156 = "0.00";
       this.values.h_157 = "0.00";
@@ -71,7 +73,7 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     syncFromGlobalState: function () {
       // Sync Target values from StateManager (unprefixed)
-      const fieldIds = ["d_150", "d_151", "d_154", "d_158", "h_155", "h_156", "h_157"];
+      const fieldIds = ["d_150", "d_151", "d_154", "d_158", "d_159", "h_155", "h_156", "h_157"];
       fieldIds.forEach(fieldId => {
         const value = window.TEUI?.StateManager?.getValue(fieldId);
         if (value !== null && value !== undefined) {
@@ -91,6 +93,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       d_151: "8000.00", // Volume (mirrors S12 ref_d_105)
       d_154: "0.0", // Aspect ratio slider
       d_158: "mezzanine", // Floorplate Options (mezzanine/equal)
+      d_159: "biplanar", // Roof Type (multiplanar/biplanar/monoplane)
       h_155: "0.00", // Calculated: Footprint width
       h_156: "0.00", // Calculated: Story height
       h_157: "0.00", // Calculated: Footprint length
@@ -110,6 +113,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       this.values.d_151 = "8000.00";
       this.values.d_154 = "0.0";
       this.values.d_158 = "mezzanine";
+      this.values.d_159 = "biplanar";
       this.values.h_155 = "0.00";
       this.values.h_156 = "0.00";
       this.values.h_157 = "0.00";
@@ -117,7 +121,7 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     syncFromGlobalState: function () {
       // Sync Reference values from StateManager (ref_ prefixed)
-      const fieldIds = ["d_150", "d_151", "d_154", "d_158", "h_155", "h_156", "h_157"];
+      const fieldIds = ["d_150", "d_151", "d_154", "d_158", "d_159", "h_155", "h_156", "h_157"];
       fieldIds.forEach(fieldId => {
         const value = window.TEUI?.StateManager?.getValue(`ref_${fieldId}`);
         if (value !== null && value !== undefined) {
@@ -257,7 +261,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         a: {},
         b: {},
         c: { content: "C", classes: ["section-subheader"] },
-        d: { content: "D", classes: ["section-subheader"] },
+        d: { content: "D________________________________", classes: ["section-subheader"] },
         e: { content: "E", classes: ["section-subheader"] },
         f: { content: "F", classes: ["section-subheader"] },
         g: { content: "G", classes: ["section-subheader"] },
@@ -317,8 +321,38 @@ window.TEUI.SectionModules.sect19 = (function () {
           tooltip: true,
           label: "Geometry interpretation for fractional stories",
           options: [
-            { value: "mezzanine", name: "Mezzanine/Partial Floor" },
+            { value: "mezzanine", name: "Mezzanine" },
             { value: "equal", name: "Equal Floorplates" },
+          ],
+        },
+        e: { content: "", classes: ["unit-label"] },
+        f: {},
+        g: {},
+        h: {},
+      },
+    },
+
+    // Roof Type dropdown (selects roof geometry type)
+    row159: {
+      id: "19.RT",
+      rowId: "19.RT",
+      label: "Roof Type",
+      cells: {
+        a: {},
+        b: {},
+        c: { label: "Roof Type" },
+        d: {
+          fieldId: "d_159",
+          type: "dropdown",
+          dropdownId: "dd_d_159",
+          value: "biplanar",
+          section: "wombat",
+          tooltip: true,
+          label: "Roof geometry type (multiplanar=pyramid, biplanar=gable, monoplane=shed)",
+          options: [
+            { value: "multiplanar", name: "Pyramid/Hip" },
+            { value: "biplanar", name: "Gable" },
+            { value: "monoplane", name: "Shed" },
           ],
         },
         e: { content: "", classes: ["unit-label"] },
@@ -356,11 +390,11 @@ window.TEUI.SectionModules.sect19 = (function () {
     row152: {
       id: "19.Ae",
       rowId: "19.Ae",
-      label: "Total Area Exposed to Air (Ae)",
+      label: "Area Exposed to Air (Ae)",
       cells: {
         a: {},
         b: {},
-        c: { label: "Total Area Exposed to Air (Ae)" },
+        c: { label: "Area Exposed to Air (Ae)" },
         d: {
           fieldId: "d_152",
           type: "calculated",
@@ -385,11 +419,11 @@ window.TEUI.SectionModules.sect19 = (function () {
     row153: {
       id: "19.Ag",
       rowId: "19.Ag",
-      label: "Total Area Exposed to Ground (Ag)",
+      label: "Area Exposed to Ground (Ag)",
       cells: {
         a: {},
         b: {},
-        c: { label: "Total Area Exposed to Ground (Ag)" },
+        c: { label: "Area Exposed to Ground (Ag)" },
         d: {
           fieldId: "d_153",
           type: "calculated",
@@ -588,6 +622,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     [
       "row150",
       "row158",
+      "row159",
       "row151",
       "row152",
       "row153",
@@ -713,6 +748,69 @@ window.TEUI.SectionModules.sect19 = (function () {
     }
   }
 
+  /**
+   * Calculate gable roof height using rational trigonometry
+   * Ridge runs along the longer dimension
+   * @param {number} width - Building width
+   * @param {number} length - Building length
+   * @param {number} roofArea - Total roof area (both slopes)
+   * @returns {Object} - { height, ridgeOrientation, ridgeLength, span, gableEndArea }
+   */
+  function calculateGableHeight(width, length, roofArea) {
+    // Ridge runs along the longer dimension
+    const ridgeLength = Math.max(width, length);
+    const span = Math.min(width, length);
+    const ridgeOrientation = length >= width ? "longitudinal" : "transverse";
+
+    // Total roof area = 2 rectangular slopes
+    // Each slope area = (ridgeLength × slopeLength)
+    // Total area = 2 × ridgeLength × slopeLength
+    // Therefore: slopeLength = roofArea / (2 × ridgeLength)
+    const slopeLength = roofArea / (2 * ridgeLength);
+
+    // Height from Pythagorean theorem (rational trigonometry)
+    // slopeLength² = height² + (span/2)²
+    // height² = slopeLength² - (span/2)²
+    const h2 = slopeLength * slopeLength - (span * span) / 4;
+
+    // Check for invalid geometry (roof area too small for gable)
+    if (h2 < 0) {
+      console.error('[WOMBAT] Invalid gable geometry - negative height quadrance');
+      console.error(`  Width: ${width.toFixed(2)}m, Length: ${length.toFixed(2)}m`);
+      console.error(`  Roof area: ${roofArea.toFixed(2)}m², Slope length: ${slopeLength.toFixed(2)}m`);
+      console.error(`  h² = ${h2.toFixed(4)} (negative - roof area too small for gable)`);
+      return {
+        height: 0,
+        ridgeOrientation,
+        ridgeLength,
+        span,
+        gableEndArea: 0,
+        isValid: false
+      };
+    }
+
+    const height = Math.sqrt(h2);
+
+    // Gable end area (triangular) = (span × height) / 2
+    const gableEndArea = (span * height) / 2;
+
+    console.log(`[WOMBAT] Gable roof calculation:`);
+    console.log(`  Ridge: ${ridgeOrientation} (${ridgeLength.toFixed(2)}m)`);
+    console.log(`  Span: ${span.toFixed(2)}m`);
+    console.log(`  Slope length: ${slopeLength.toFixed(2)}m`);
+    console.log(`  Height: ${height.toFixed(2)}m`);
+    console.log(`  Gable end area (each): ${gableEndArea.toFixed(2)}m²`);
+
+    return {
+      height,
+      ridgeOrientation,
+      ridgeLength,
+      span,
+      gableEndArea,
+      isValid: true
+    };
+  }
+
   //==========================================================================
   // GEOMETRY SOLVER
   //==========================================================================
@@ -768,14 +866,45 @@ window.TEUI.SectionModules.sect19 = (function () {
     const aspectRatio =
       aspectRatioRaw >= 0 ? 1 + aspectRatioRaw : 1 / (1 - aspectRatioRaw);
 
-    // Phase 1: Footprint (X-Y plane, always horizontal)
-    // Footprint area is SACRED - read directly from d_95
-    // Calculate width and length from footprint and aspect ratio
+    // ========================================================================
+    // CORRECT CONSTRAINT FLOW (per user specification 2025-12-15)
+    // ========================================================================
+    // 1. Footprint (d_95) = SACRED touchstone
+    // 2. Mezzanine = h_15 - d_95 (if Mezzanine/Partial Floor option selected)
+    // 3. Total Wall Area = d_86 + all windows
+    // 4. Solve ridge height from roof area (d_85) FIRST
+    // 5. Extract gable end area from wall area
+    // 6. Wall height = (walls - gables) / perimeter
+    // 7. Volume (d_105) is verification check ONLY
+    // ========================================================================
+
+    // Phase 1: Footprint (X-Y plane) - SACRED TOUCHSTONE
+    // Footprint area (d_95) is the foundation of all geometry
     const width = Math.sqrt(footprintArea / aspectRatio);
     const length = footprintArea / width;
     const perimeter = 2 * (length + width);
 
-    // Phase 2: Wall height from SURFACE AREAS (SACRED)
+    console.log(`[WOMBAT] Footprint: ${footprintArea.toFixed(2)} m² (${width.toFixed(2)}m × ${length.toFixed(2)}m)`);
+
+    // Phase 2: Mezzanine/Partial Floor Calculation
+    // Read Floorplate Options (d_158): "mezzanine" or "equal"
+    const floorplateOption = currentState.getValue("d_158") || "mezzanine";
+
+    let mezzanineArea = 0;
+    const fullStories = Math.floor(storiesDeclared);
+
+    if (floorplateOption === "mezzanine" && storiesDeclared !== fullStories) {
+      // User selected Mezzanine/Partial Floor option
+      // Mezzanine area = conditioned area - footprint
+      mezzanineArea = Math.max(0, conditionedArea - footprintArea);
+      console.log(`[WOMBAT] Mezzanine/Partial floor: ${mezzanineArea.toFixed(2)} m²`);
+    } else {
+      // Equal floorplates - distribute conditioned area across stories
+      mezzanineArea = 0;
+      console.log(`[WOMBAT] Equal floorplates - no mezzanine`);
+    }
+
+    // Phase 3: Total Wall Area (SACRED)
     // Read window areas (can legitimately be 0)
     const window_N = parseFloat(getModeAwareValue("d_88", isReferenceCalculation)) || 0;
     const window_E = parseFloat(getModeAwareValue("d_89", isReferenceCalculation)) || 0;
@@ -783,15 +912,107 @@ window.TEUI.SectionModules.sect19 = (function () {
     const window_W = parseFloat(getModeAwareValue("d_91", isReferenceCalculation)) || 0;
     const window_other = parseFloat(getModeAwareValue("d_92", isReferenceCalculation)) || 0;
 
+    // Total window area
+    const totalWindowArea = window_N + window_E + window_S + window_W + window_other;
+
     // Total wall area (gross) = opaque + windows
-    const totalWallAreaGross = opaqueWallArea + window_N + window_E + window_S + window_W + window_other;
+    const totalWallAreaGross = opaqueWallArea + totalWindowArea;
 
-    // Wall height from SURFACES (not volume!)
-    const wallHeight = totalWallAreaGross / perimeter;
+    console.log(`[WOMBAT] Wall area: ${totalWallAreaGross.toFixed(2)} m² (opaque: ${opaqueWallArea.toFixed(2)}, windows: ${totalWindowArea.toFixed(2)})`);
 
-    console.log(`[WOMBAT] Wall height from surfaces: ${wallHeight.toFixed(3)} m`);
-    console.log(`[WOMBAT] Total wall area (gross): ${totalWallAreaGross.toFixed(2)} m²`);
-    console.log(`[WOMBAT] Perimeter: ${perimeter.toFixed(2)} m`);
+    // Phase 4: Roof Geometry - SOLVE FIRST (before wall height!)
+    // ========================================================================
+    // CRITICAL: Roof geometry must be solved BEFORE wall height calculation
+    // because gable roofs contribute area to walls (triangular ends)
+    // ========================================================================
+    // User provides roof area (d_85) which determines ridge height
+    // Roof type selection (d_159): multiplanar/biplanar/monoplane
+    // Uses rational trigonometry (quadrance-based, no trig functions)
+
+    const roofTypeSelection = currentState.getValue("d_159") || "biplanar";
+    const areaRatio = roofArea / footprintArea;
+
+    let roofType = "flat";
+    let roofHeight = 0;
+    let gableEndArea = 0;  // Total area of both gable ends (for gable roofs)
+    let roofGeometryData = null;
+
+    console.log(`[WOMBAT] Roof area ratio: ${areaRatio.toFixed(3)} (roof/footprint)`);
+
+    if (areaRatio > 1.01) {
+      // Pitched roof needed to achieve larger roof area
+      if (roofTypeSelection === "biplanar") {
+        // GABLE ROOF (biplanar)
+        roofType = "gable";
+        const gableData = calculateGableHeight(width, length, roofArea);
+
+        if (gableData.isValid) {
+          roofHeight = gableData.height;
+          gableEndArea = 2 * gableData.gableEndArea;  // Both triangular ends
+          roofGeometryData = gableData;
+
+          console.log(`[WOMBAT] Gable roof solved:`);
+          console.log(`  Ridge height: ${roofHeight.toFixed(2)} m`);
+          console.log(`  Gable end area (both): ${gableEndArea.toFixed(2)} m²`);
+          console.log(`  Ridge orientation: ${gableData.ridgeOrientation}`);
+        } else {
+          console.warn('[WOMBAT] Invalid gable geometry - falling back to flat roof');
+          roofType = "flat";
+          roofHeight = 0;
+        }
+      } else if (roofTypeSelection === "multiplanar") {
+        // PYRAMIDAL ROOF (multiplanar)
+        roofType = "pyramidal";
+        roofHeight = calculatePyramidalHeight(width, length, areaRatio);
+
+        console.log(`[WOMBAT] Pyramidal roof: h=${roofHeight.toFixed(2)}m`);
+      } else {
+        // MONOPLANE (shed roof) - future implementation
+        console.warn('[WOMBAT] Monoplane roof type not yet implemented - using flat roof');
+        roofType = "flat";
+        roofHeight = 0;
+      }
+    } else if (areaRatio < 0.99) {
+      // Inverted pyramid (roof smaller than floor - visual conflict indicator)
+      roofType = "inverted";
+      roofHeight = -calculatePyramidalHeight(width, length, 1.0 / areaRatio);
+
+      console.warn(`[WOMBAT] Inverted roof: h=${roofHeight.toFixed(2)}m`);
+    } else {
+      console.log('[WOMBAT] Flat roof (area ratio ≈ 1.0)');
+    }
+
+    // Phase 5: Wall Height Calculation (AFTER roof geometry!)
+    // ========================================================================
+    // For gable roofs: gable ends are OPAQUE WALL AREA, not roof area
+    // Must extract gable end area from total wall area before calculating wall plate height
+    // Wall height = (Total Wall Area - Gable End Area) / Perimeter
+    // ========================================================================
+    let wallPlateHeight = 0;
+    let effectiveWallArea = totalWallAreaGross;
+
+    if (roofType === "gable" && gableEndArea > 0) {
+      // Extract gable end area from wall area
+      effectiveWallArea = totalWallAreaGross - gableEndArea;
+
+      // Wall plate height = effective wall area / perimeter
+      wallPlateHeight = effectiveWallArea / perimeter;
+
+      console.log(`[WOMBAT] Gable end extraction:`);
+      console.log(`  Total wall area (gross): ${totalWallAreaGross.toFixed(2)} m²`);
+      console.log(`  Gable end area (both): ${gableEndArea.toFixed(2)} m²`);
+      console.log(`  Effective wall area (plate): ${effectiveWallArea.toFixed(2)} m²`);
+      console.log(`  Wall plate height: ${wallPlateHeight.toFixed(3)} m`);
+    } else {
+      // No gable ends - wall height = total wall area / perimeter
+      wallPlateHeight = totalWallAreaGross / perimeter;
+
+      console.log(`[WOMBAT] Wall height from surfaces: ${wallPlateHeight.toFixed(3)} m`);
+      console.log(`[WOMBAT] Total wall area (gross): ${totalWallAreaGross.toFixed(2)} m²`);
+      console.log(`[WOMBAT] Perimeter: ${perimeter.toFixed(2)} m`);
+    }
+
+    const wallHeight = wallPlateHeight;
 
     // Story height derived from wall height (for visualization)
     const storyHeight = wallHeight / storiesDeclared;
@@ -799,77 +1020,56 @@ window.TEUI.SectionModules.sect19 = (function () {
     // Per-floor metrics (footprint is SACRED - all full floors share this area)
     const areaPerFloor = footprintArea; // Each full floor = footprint area (d_95)
 
-    // Mezzanine detection: difference between conditioned area and full floor areas
-    const fullStories = Math.floor(storiesDeclared);
-    const mezzanineArea = Math.max(0, conditionedArea - (footprintArea * fullStories));
-
-    if (mezzanineArea > 0.1) {
-      console.log(`[WOMBAT] Mezzanine/adiabatic floor detected: ${mezzanineArea.toFixed(2)} m²`);
-    }
-
-    // Phase 3: Roof geometry (RATIONAL TRIGONOMETRY - no trig functions!)
-    const areaRatio = roofArea / footprintArea;
-    let roofType = "flat";
-    let roofHeight = 0;
-
-    if (areaRatio > 1.01) {
-      // Pitched/pyramidal roof needed to achieve larger roof area
-      roofType = "pyramidal";
-      roofHeight = calculatePyramidalHeight(width, length, areaRatio);
-
-      console.log(
-        `[WOMBAT] Pyramidal roof: R=${areaRatio.toFixed(3)}, h=${roofHeight.toFixed(2)}m`
-      );
-    } else if (areaRatio < 0.99) {
-      // Inverted pyramid (roof smaller than floor - visual conflict indicator)
-      roofType = "inverted";
-      roofHeight = -calculatePyramidalHeight(width, length, 1.0 / areaRatio);
-
-      console.warn(
-        `[WOMBAT] Inverted roof: R=${areaRatio.toFixed(3)}, h=${roofHeight.toFixed(2)}m`
-      );
-    }
-
     // Store roof geometry (replaces old roofPitch field)
     const roof = {
       type: roofType,
       height: roofHeight,
-      areaRatio: areaRatio
+      areaRatio: areaRatio,
+      gableEndArea: gableEndArea,
+      gableData: roofGeometryData  // Full gable geometry data (ridge, span, etc.)
     };
 
-    // Phase 3.5: Volume verification (LESS SACRED - calculated from surfaces)
-    // Calculate volume from surface-derived dimensions
-    let calculatedVolume = footprintArea * wallHeight;
+    // Phase 6: Volume - Use Declared Value (VERIFICATION ONLY)
+    // ========================================================================
+    // User provides conditioned volume at d_105 (mirrored to d_151)
+    // This is used for display and verification, NOT as a geometric constraint
+    // We can optionally calculate what the volume SHOULD be from geometry
+    // and flag discrepancies for the user
+    // ========================================================================
 
-    // Add roof volume if pyramidal
-    if (roofType === "pyramidal" && roofHeight > 0) {
+    // Use the user's declared volume
+    const conditionedVolume = volumeDeclared && volumeDeclared > 0 && !isNaN(volumeDeclared)
+      ? volumeDeclared
+      : 0;
+
+    console.log(`[WOMBAT] Conditioned volume (user-declared): ${conditionedVolume.toFixed(2)} m³`);
+
+    // OPTIONAL: Calculate what volume SHOULD be from surface geometry
+    // This is for verification/diagnostics only
+    let calculatedVolumeCheck = footprintArea * wallHeight;
+
+    if (roofType === "gable" && roofHeight > 0) {
+      const gableVolume = (footprintArea * roofHeight) / 2;
+      calculatedVolumeCheck += gableVolume;
+    } else if (roofType === "pyramidal" && roofHeight > 0) {
       const pyramidVolume = (1/3) * footprintArea * roofHeight;
-      calculatedVolume += pyramidVolume;
-      console.log(`[WOMBAT] Roof volume (pyramidal): ${pyramidVolume.toFixed(2)} m³`);
+      calculatedVolumeCheck += pyramidVolume;
     } else if (roofType === "inverted" && roofHeight < 0) {
       const pyramidVolume = (1/3) * footprintArea * Math.abs(roofHeight);
-      calculatedVolume -= pyramidVolume;
-      console.log(`[WOMBAT] Roof volume (inverted): -${pyramidVolume.toFixed(2)} m³`);
+      calculatedVolumeCheck -= pyramidVolume;
     }
 
-    console.log(`[WOMBAT] Calculated volume from surfaces: ${calculatedVolume.toFixed(2)} m³`);
+    // Show discrepancy for diagnostics
+    if (conditionedVolume > 0) {
+      const volumeError = Math.abs(calculatedVolumeCheck - conditionedVolume);
+      const volumeDiscrepancy = (volumeError / conditionedVolume) * 100;
 
-    // Compare to declared volume (if valid)
-    let volumeDiscrepancy = 0;
-    if (volumeDeclared && volumeDeclared > 0 && !isNaN(volumeDeclared)) {
-      const volumeError = Math.abs(calculatedVolume - volumeDeclared);
-      volumeDiscrepancy = (volumeError / volumeDeclared) * 100;
-
-      console.log(`[WOMBAT] Declared volume: ${volumeDeclared.toFixed(2)} m³`);
-      console.log(`[WOMBAT] Volume discrepancy: ${volumeDiscrepancy.toFixed(1)}%`);
+      console.log(`[WOMBAT] Volume check from geometry: ${calculatedVolumeCheck.toFixed(2)} m³`);
+      console.log(`[WOMBAT] Discrepancy: ${volumeDiscrepancy.toFixed(1)}%`);
 
       if (volumeDiscrepancy > 5) {
-        console.warn(`[WOMBAT] Volume discrepancy > 5%`);
-        console.warn(`[WOMBAT] Using surface-derived dimensions (SACRED)`);
-        console.warn(`[WOMBAT] Flag for S13 Mechanical section`);
+        console.warn(`[WOMBAT] Volume discrepancy > 5% - user areas may be inconsistent`);
       }
-    } else {
-      console.log(`[WOMBAT] No valid declared volume - using calculated volume`);
     }
 
     // Phase 4: Below-Grade Geometry (WOMBAT Phase 2)
@@ -920,11 +1120,12 @@ window.TEUI.SectionModules.sect19 = (function () {
         south: { width: width, height: wallHeight },
         east: { width: length, height: wallHeight },
         west: { width: length, height: wallHeight },
+        totalGrossArea: totalWallAreaGross,  // Total wall area (opaque + windows)
+        effectiveArea: effectiveWallArea,  // Wall area excluding gable ends
       },
       roof: roof,  // Rational trigonometry roof object (type, height, areaRatio)
-      volume: calculatedVolume,  // Volume calculated from surfaces
-      volumeDeclared: volumeDeclared || null,  // User-declared volume (LESS SACRED)
-      volumeDiscrepancy: volumeDiscrepancy,  // Percentage difference
+      volume: conditionedVolume,  // User-declared conditioned volume (d_105/d_151)
+      volumeCheck: calculatedVolumeCheck,  // Volume calculated from geometry (verification only)
       belowGrade: {
         hasBasement: hasBasement,
         hasSlab: hasSlab,

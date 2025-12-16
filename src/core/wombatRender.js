@@ -446,46 +446,244 @@ window.TEUI.WombatRender = (function () {
     svg.appendChild(roofLabel);
   }
 
+  /**
+   * Render gable roof geometry using rational trigonometry
+   * @param {SVGElement} svg - Target SVG element
+   * @param {Object} geometry - Geometry object with roof data
+   * @param {string} mode - "target" or "reference"
+   * @param {number} scale - Isometric scale factor
+   * @param {number} centerX - SVG center X coordinate
+   * @param {number} centerY - SVG center Y coordinate
+   */
+  function renderGableRoof(svg, geometry, mode, scale, centerX, centerY) {
+    const isReference = mode === "reference";
+    const roofColor = isReference ? config.colors.reference : config.colors.target;
+
+    const { width, length } = geometry.footprint;
+    const wallHeight = geometry.height;
+    const roofHeight = geometry.roof.height;
+    const gableData = geometry.roof.gableData;
+
+    // Debug logging
+    console.log('[WombatRender] renderGableRoof called with:');
+    console.log('  width:', width, 'length:', length, 'wallHeight:', wallHeight, 'roofHeight:', roofHeight);
+    console.log('  scale:', scale, 'centerX:', centerX, 'centerY:', centerY);
+    console.log('  gableData:', gableData);
+
+    // Validate roof data
+    if (!gableData || !gableData.isValid) {
+      console.error('[WombatRender] Invalid gable roof data');
+      return;
+    }
+
+    if (isNaN(roofHeight) || !isFinite(roofHeight) || roofHeight === 0) {
+      console.error('[WombatRender] Invalid roof height:', roofHeight);
+      return;
+    }
+
+    // Ridge runs along longer dimension
+    const ridgeOrientation = gableData.ridgeOrientation;
+    const ridgeLength = gableData.ridgeLength;
+    const span = gableData.span;
+
+    // Ridge endpoints (at peak height)
+    let ridge1, ridge2;
+    if (ridgeOrientation === "longitudinal") {
+      // Ridge runs along length (Y-axis), gable ends on width (X-axis)
+      ridge1 = { x: 0, y: -length/2, z: wallHeight + roofHeight };
+      ridge2 = { x: 0, y:  length/2, z: wallHeight + roofHeight };
+    } else {
+      // Ridge runs along width (X-axis), gable ends on length (Y-axis)
+      ridge1 = { x: -width/2, y: 0, z: wallHeight + roofHeight };
+      ridge2 = { x:  width/2, y: 0, z: wallHeight + roofHeight };
+    }
+
+    // Four corners of roof base (top of walls)
+    const roofBase = [
+      { x: -width/2, y: -length/2, z: wallHeight }, // SW corner
+      { x:  width/2, y: -length/2, z: wallHeight }, // SE corner
+      { x:  width/2, y:  length/2, z: wallHeight }, // NE corner
+      { x: -width/2, y:  length/2, z: wallHeight }  // NW corner
+    ];
+
+    // Draw gable roof geometry
+    if (ridgeOrientation === "longitudinal") {
+      // Gable ends on North (NE-NW) and South (SE-SW) faces
+      // Ridge runs East-West along length
+
+      // South gable end (triangular): SW - SE - ridge1
+      drawTriangle(svg, roofBase[0], roofBase[1], ridge1, scale, centerX, centerY, roofColor);
+
+      // North gable end (triangular): NE - NW - ridge2
+      drawTriangle(svg, roofBase[2], roofBase[3], ridge2, scale, centerX, centerY, roofColor);
+
+      // West slope (rectangular): SW - NW - ridge2 - ridge1
+      const west1 = createLine(
+        toIsometric(roofBase[3].x, roofBase[3].y, roofBase[3].z, scale, centerX, centerY),
+        toIsometric(ridge2.x, ridge2.y, ridge2.z, scale, centerX, centerY),
+        roofColor
+      );
+      const west2 = createLine(
+        toIsometric(ridge2.x, ridge2.y, ridge2.z, scale, centerX, centerY),
+        toIsometric(ridge1.x, ridge1.y, ridge1.z, scale, centerX, centerY),
+        roofColor
+      );
+      const west3 = createLine(
+        toIsometric(ridge1.x, ridge1.y, ridge1.z, scale, centerX, centerY),
+        toIsometric(roofBase[0].x, roofBase[0].y, roofBase[0].z, scale, centerX, centerY),
+        roofColor
+      );
+      svg.appendChild(west1);
+      svg.appendChild(west2);
+      svg.appendChild(west3);
+
+      // East slope (rectangular): SE - NE - ridge2 - ridge1
+      const east1 = createLine(
+        toIsometric(roofBase[1].x, roofBase[1].y, roofBase[1].z, scale, centerX, centerY),
+        toIsometric(ridge1.x, ridge1.y, ridge1.z, scale, centerX, centerY),
+        roofColor
+      );
+      const east2 = createLine(
+        toIsometric(ridge1.x, ridge1.y, ridge1.z, scale, centerX, centerY),
+        toIsometric(ridge2.x, ridge2.y, ridge2.z, scale, centerX, centerY),
+        roofColor
+      );
+      const east3 = createLine(
+        toIsometric(ridge2.x, ridge2.y, ridge2.z, scale, centerX, centerY),
+        toIsometric(roofBase[2].x, roofBase[2].y, roofBase[2].z, scale, centerX, centerY),
+        roofColor
+      );
+      svg.appendChild(east1);
+      svg.appendChild(east2);
+      svg.appendChild(east3);
+
+    } else {
+      // Gable ends on East (SE-NE) and West (SW-NW) faces
+      // Ridge runs North-South along width
+
+      // West gable end (triangular): SW - NW - ridge1
+      drawTriangle(svg, roofBase[0], roofBase[3], ridge1, scale, centerX, centerY, roofColor);
+
+      // East gable end (triangular): SE - NE - ridge2
+      drawTriangle(svg, roofBase[1], roofBase[2], ridge2, scale, centerX, centerY, roofColor);
+
+      // South slope (rectangular): SW - SE - ridge2 - ridge1
+      const south1 = createLine(
+        toIsometric(roofBase[0].x, roofBase[0].y, roofBase[0].z, scale, centerX, centerY),
+        toIsometric(roofBase[1].x, roofBase[1].y, roofBase[1].z, scale, centerX, centerY),
+        roofColor
+      );
+      const south2 = createLine(
+        toIsometric(roofBase[1].x, roofBase[1].y, roofBase[1].z, scale, centerX, centerY),
+        toIsometric(ridge2.x, ridge2.y, ridge2.z, scale, centerX, centerY),
+        roofColor
+      );
+      const south3 = createLine(
+        toIsometric(ridge2.x, ridge2.y, ridge2.z, scale, centerX, centerY),
+        toIsometric(ridge1.x, ridge1.y, ridge1.z, scale, centerX, centerY),
+        roofColor
+      );
+      svg.appendChild(south1);
+      svg.appendChild(south2);
+      svg.appendChild(south3);
+
+      // North slope (rectangular): NW - NE - ridge2 - ridge1
+      const north1 = createLine(
+        toIsometric(roofBase[3].x, roofBase[3].y, roofBase[3].z, scale, centerX, centerY),
+        toIsometric(ridge1.x, ridge1.y, ridge1.z, scale, centerX, centerY),
+        roofColor
+      );
+      const north2 = createLine(
+        toIsometric(ridge1.x, ridge1.y, ridge1.z, scale, centerX, centerY),
+        toIsometric(ridge2.x, ridge2.y, ridge2.z, scale, centerX, centerY),
+        roofColor
+      );
+      const north3 = createLine(
+        toIsometric(ridge2.x, ridge2.y, ridge2.z, scale, centerX, centerY),
+        toIsometric(roofBase[2].x, roofBase[2].y, roofBase[2].z, scale, centerX, centerY),
+        roofColor
+      );
+      svg.appendChild(north1);
+      svg.appendChild(north2);
+      svg.appendChild(north3);
+    }
+
+    // Draw ridge line (prominent)
+    const ridgeLine = createLine(
+      toIsometric(ridge1.x, ridge1.y, ridge1.z, scale, centerX, centerY),
+      toIsometric(ridge2.x, ridge2.y, ridge2.z, scale, centerX, centerY),
+      roofColor,
+      3
+    );
+    svg.appendChild(ridgeLine);
+
+    // Draw ridge endpoint nodes
+    const ridge1Pt = toIsometric(ridge1.x, ridge1.y, ridge1.z, scale, centerX, centerY);
+    const ridge2Pt = toIsometric(ridge2.x, ridge2.y, ridge2.z, scale, centerX, centerY);
+    svg.appendChild(createNode(ridge1Pt, roofColor, 5));
+    svg.appendChild(createNode(ridge2Pt, roofColor, 5));
+
+    // Add roof height label
+    const roofLabelPos = toIsometric(
+      width / 2 + 8,
+      0,
+      wallHeight + roofHeight / 2,
+      scale,
+      centerX,
+      centerY
+    );
+    const roofLabel = createText(
+      roofLabelPos.x + 15,
+      roofLabelPos.y,
+      `Gable: ${roofHeight.toFixed(1)}m`,
+      roofColor,
+      10,
+      { style: "italic" }
+    );
+    svg.appendChild(roofLabel);
+  }
+
   //==========================================================================
   // RENDERING: DIMENSION ANNOTATIONS
   //==========================================================================
 
   /**
-   * Render dimension annotations (length, width, height)
+   * Render dimension annotations (X/East, Y/North, building height)
+   * Per user request: Label dimensions as "X: 33.2m" and "Y: 33.2m"
    */
   function renderDimensions(svg, geometry, mode, scale, centerX, centerY) {
     const isReference = mode === "reference";
     const modelColor = isReference ? config.colors.reference : config.colors.target;
 
-    const length = geometry.footprint.length;
-    const width = geometry.footprint.width;
+    const length = geometry.footprint.length;  // Y-axis (North)
+    const width = geometry.footprint.width;    // X-axis (East)
     const height = geometry.height;
 
-    // Length label (bottom edge)
-    const lengthPos = toIsometric(0, -length / 2 - 5, 0, scale, centerX, centerY);
-    const lengthLabel = createText(
-      lengthPos.x,
-      lengthPos.y + 15,
-      `${length.toFixed(1)}m`,
+    // Y-dimension label (North, length along Y-axis)
+    const yDimPos = toIsometric(0, -length / 2 - 5, 0, scale, centerX, centerY);
+    const yDimLabel = createText(
+      yDimPos.x,
+      yDimPos.y + 15,
+      `Y: ${length.toFixed(1)}m`,
       modelColor,
       11,
       { anchor: "middle" }
     );
-    svg.appendChild(lengthLabel);
+    svg.appendChild(yDimLabel);
 
-    // Width label (bottom right edge)
-    const widthPos = toIsometric(width / 2 + 5, 0, 0, scale, centerX, centerY);
-    const widthLabel = createText(
-      widthPos.x + 20,
-      widthPos.y,
-      `${width.toFixed(1)}m`,
+    // X-dimension label (East, width along X-axis)
+    const xDimPos = toIsometric(width / 2 + 5, 0, 0, scale, centerX, centerY);
+    const xDimLabel = createText(
+      xDimPos.x + 20,
+      xDimPos.y,
+      `X: ${width.toFixed(1)}m`,
       modelColor,
       11,
       { anchor: "middle" }
     );
-    svg.appendChild(widthLabel);
+    svg.appendChild(xDimLabel);
 
-    // Height label (left edge)
+    // Height label (left edge) - keep as is
     const heightPos = toIsometric(-width / 2 - 10, length / 2, height / 2, scale, centerX, centerY);
     const heightLabel = createText(
       heightPos.x - 30,
@@ -782,6 +980,7 @@ window.TEUI.WombatRender = (function () {
 
   /**
    * Render geometry information overlay (top-left)
+   * Shows diagnostic calculations for verifying geometry solver
    */
   function renderInfoOverlay(svg, geometry, mode) {
     const isReference = mode === "reference";
@@ -790,12 +989,35 @@ window.TEUI.WombatRender = (function () {
     // Calculate volume per floor
     const volumePerFloor = geometry.volume / geometry.stories;
 
+    // Build diagnostic info lines
     const infoLines = [
       `Stories: ${geometry.stories} × ${geometry.areaPerFloor.toFixed(1)} m² = ${(geometry.stories * geometry.areaPerFloor).toFixed(1)} m²`,
-      `Footprint: ${geometry.footprint.length.toFixed(1)}m × ${geometry.footprint.width.toFixed(1)}m`,
-      `Story Height: ${geometry.storyHeight.toFixed(2)}m`,
-      `Total Volume: ${geometry.volume.toFixed(0)} m³ (${volumePerFloor.toFixed(0)} m³/floor)`,
     ];
+
+    // Show mezzanine area if present
+    if (geometry.mezzanineArea && geometry.mezzanineArea > 0.1) {
+      infoLines.push(`Mezzanine Area: ${geometry.mezzanineArea.toFixed(1)} m²`);
+    }
+
+    infoLines.push(`Footprint: ${geometry.footprint.length.toFixed(1)}m × ${geometry.footprint.width.toFixed(1)}m`);
+    infoLines.push(`Story Height: ${geometry.storyHeight.toFixed(2)}m`);
+    infoLines.push(`Total Volume: ${geometry.volume.toFixed(0)} m³ (${volumePerFloor.toFixed(0)} m³/floor)`);
+
+    // Show roof area and type
+    if (geometry.roof) {
+      const roofArea = geometry.footprint.area * geometry.roof.areaRatio;
+      infoLines.push(`Roof Area: ${roofArea.toFixed(2)} m² (ridge ht. determined from this)`);
+
+      // Show gable area if gable roof
+      if (geometry.roof.type === "gable" && geometry.roof.gableEndArea > 0) {
+        infoLines.push(`Gable Area: ${geometry.roof.gableEndArea.toFixed(2)} m²`);
+      }
+    }
+
+    // Show effective wall area (excluding gable ends)
+    if (geometry.walls && geometry.walls.effectiveArea) {
+      infoLines.push(`Ae Walls: ${geometry.walls.effectiveArea.toFixed(2)} m²`);
+    }
 
     const x = 20;
     let y = 30;
@@ -807,6 +1029,53 @@ window.TEUI.WombatRender = (function () {
       svg.appendChild(infoText);
       y += lineHeight;
     });
+
+    // Add coordinate axes indicator (bottom-left)
+    renderCoordinateAxes(svg);
+  }
+
+  /**
+   * Render coordinate axes indicator (X/East, Y/North, Z/Up)
+   */
+  function renderCoordinateAxes(svg) {
+    const x0 = 50;
+    const y0 = config.canvasHeight - 100;
+    const axisLength = 40;
+
+    // Z-axis (Up) - blue
+    const zLine = createLine(
+      {x: x0, y: y0},
+      {x: x0, y: y0 - axisLength},
+      "#0066cc",
+      2
+    );
+    svg.appendChild(zLine);
+    const zLabel = createText(x0 - 5, y0 - axisLength - 5, "Z/Up", "#0066cc", 11, {});
+    svg.appendChild(zLabel);
+
+    // Y-axis (North) - green, isometric
+    const yEndIso = toIsometric(0, axisLength, 0, 1, x0, y0);
+    const yLine = createLine(
+      {x: x0, y: y0},
+      yEndIso,
+      "#00cc66",
+      2
+    );
+    svg.appendChild(yLine);
+    const yLabel = createText(yEndIso.x + 5, yEndIso.y - 5, "Y/North", "#00cc66", 11, {});
+    svg.appendChild(yLabel);
+
+    // X-axis (East) - red, isometric
+    const xEndIso = toIsometric(axisLength, 0, 0, 1, x0, y0);
+    const xLine = createLine(
+      {x: x0, y: y0},
+      xEndIso,
+      "#cc0000",
+      2
+    );
+    svg.appendChild(xLine);
+    const xLabel = createText(xEndIso.x + 5, xEndIso.y + 5, "X/East", "#cc0000", 11, {});
+    svg.appendChild(xLabel);
   }
 
   //==========================================================================
@@ -896,8 +1165,12 @@ window.TEUI.WombatRender = (function () {
     // Render above-grade wireframe
     renderAboveGrade(svgElement, geometry, mode, scale, centerX, centerY);
 
-    // Render pyramidal roof (if pitched)
-    if (geometry.roof && geometry.roof.type === "pyramidal") {
+    // Render roof geometry based on type
+    if (geometry.roof && geometry.roof.type === "gable") {
+      // Gable roof (biplanar)
+      renderGableRoof(svgElement, geometry, mode, scale, centerX, centerY);
+    } else if (geometry.roof && geometry.roof.type === "pyramidal") {
+      // Pyramidal roof (multiplanar)
       renderPyramidalRoof(svgElement, geometry, mode, scale, centerX, centerY);
     } else if (geometry.roof && geometry.roof.type === "inverted") {
       // Inverted pyramid (visual indicator for roof area deficit)
