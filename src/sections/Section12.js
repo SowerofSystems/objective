@@ -256,6 +256,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         "g_102",
         "g_104", // ✅ EXCEL PARITY: Added g_104 weighted U-value
         "g_105",
+        "g_107", // Total Wall Area checksum
         "g_108",
         "g_109",
         "g_110",
@@ -266,6 +267,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         "i_103",
         "i_104",
         "i_105",
+        "i_107", // Total Window & Door Heat Loss
         "i_110",
         "j_101",
         "j_102",
@@ -399,6 +401,7 @@ window.TEUI.SectionModules.sect12 = (function () {
                     "i_102",
                     "i_103",
                     "i_104",
+                    "i_107",
                     "k_101",
                     "k_102",
                     "k_103",
@@ -1017,8 +1020,15 @@ window.TEUI.SectionModules.sect12 = (function () {
           label: "Total Wall Area (Opaque + Windows)",
         },
         h: { content: "m²", classes: ["unit-label"] },
-        i: {},
-        j: {},
+        i: {
+          fieldId: "i_107",
+          type: "calculated",
+          value: "0.00",
+          section: "volumeSurfaceMetrics",
+          dependencies: ["i_88", "i_89", "i_90", "i_91", "i_92"],
+          label: "Total Window & Door Heat Loss: kWh/yr",
+        },
+        j: { content: "kWh/yr", classes: ["unit-label"] },
         k: {},
         l: {},
         m: {
@@ -1451,6 +1461,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         "i_102",
         "i_103",
         "i_104",
+        "i_107",
         "k_101",
         "k_102",
         "k_103",
@@ -1911,24 +1922,54 @@ window.TEUI.SectionModules.sect12 = (function () {
   }
 
   function calculateWWR(isReferenceCalculation = false) {
-    // Get values with full precision
-    const d86 = parseFloat(getGlobalNumericValue("d_86"));
-    const d88 = parseFloat(getGlobalNumericValue("d_88"));
-    const d89 = parseFloat(getGlobalNumericValue("d_89"));
-    const d90 = parseFloat(getGlobalNumericValue("d_90"));
-    const d91 = parseFloat(getGlobalNumericValue("d_91"));
-    const d92 = parseFloat(getGlobalNumericValue("d_92"));
-    const d93 = parseFloat(getGlobalNumericValue("d_93"));
+    // ✅ MODE-AWARE: Read area values based on calculation type (from Section 11)
+    // Note: d_93 (doors/skylights) excluded from WWR per Excel formula and line 3 comment
+    let d86, d88, d89, d90, d91, d92;
+    let i88, i89, i90, i91, i92;
+
+    if (isReferenceCalculation) {
+      // ✅ STRICT READS: Reference values ONLY, no fallback to Target (CHEATSHEET Anti-Pattern 1)
+      d86 = parseFloat(getGlobalNumericValue("ref_d_86")) || 0;
+      d88 = parseFloat(getGlobalNumericValue("ref_d_88")) || 0;
+      d89 = parseFloat(getGlobalNumericValue("ref_d_89")) || 0;
+      d90 = parseFloat(getGlobalNumericValue("ref_d_90")) || 0;
+      d91 = parseFloat(getGlobalNumericValue("ref_d_91")) || 0;
+      d92 = parseFloat(getGlobalNumericValue("ref_d_92")) || 0;
+      i88 = parseFloat(getGlobalNumericValue("ref_i_88")) || 0;
+      i89 = parseFloat(getGlobalNumericValue("ref_i_89")) || 0;
+      i90 = parseFloat(getGlobalNumericValue("ref_i_90")) || 0;
+      i91 = parseFloat(getGlobalNumericValue("ref_i_91")) || 0;
+      i92 = parseFloat(getGlobalNumericValue("ref_i_92")) || 0;
+    } else {
+      // ✅ STRICT READS: Target values ONLY
+      d86 = parseFloat(getGlobalNumericValue("d_86")) || 0;
+      d88 = parseFloat(getGlobalNumericValue("d_88")) || 0;
+      d89 = parseFloat(getGlobalNumericValue("d_89")) || 0;
+      d90 = parseFloat(getGlobalNumericValue("d_90")) || 0;
+      d91 = parseFloat(getGlobalNumericValue("d_91")) || 0;
+      d92 = parseFloat(getGlobalNumericValue("d_92")) || 0;
+      i88 = parseFloat(getGlobalNumericValue("i_88")) || 0;
+      i89 = parseFloat(getGlobalNumericValue("i_89")) || 0;
+      i90 = parseFloat(getGlobalNumericValue("i_90")) || 0;
+      i91 = parseFloat(getGlobalNumericValue("i_91")) || 0;
+      i92 = parseFloat(getGlobalNumericValue("i_92")) || 0;
+    }
 
     // Calculate with full precision
-    const windowDoorArea = d88 + d89 + d90 + d91 + d92 + d93;
-    const totalWallArea = d86 + windowDoorArea;
-    const wwr = totalWallArea > 0 ? windowDoorArea / totalWallArea : 0;
+    // ✅ EXCEL PARITY: WWR = SUM(D88:D92)/(D86+SUM(D88:D92))
+    // Note: Excludes d_93 (doors/skylights) per line 3 comment and Excel formula
+    const windowArea = d88 + d89 + d90 + d91 + d92; // D88:D92 only (windows)
+    const totalWallArea = d86 + windowArea; // Opaque wall + windows
+    const wwr = totalWallArea > 0 ? windowArea / totalWallArea : 0;
 
     // Update g_107: Total Wall Area (checksum field matching Excel G107=D86+SUM(D88:D92))
     // Note: Excludes doors (d_93) to match Excel formula
     const totalWallAreaChecksum = d86 + d88 + d89 + d90 + d91 + d92;
     setCalculatedValue("g_107", totalWallAreaChecksum, "area-2dp", isReferenceCalculation);
+
+    // Calculate i_107: Total Window & Door Heat Loss (sum of i_88 through i_92)
+    const totalWindowDoorHeatloss = i88 + i89 + i90 + i91 + i92;
+    setCalculatedValue("i_107", totalWindowDoorHeatloss, "number-2dp-comma", isReferenceCalculation);
 
     // Update WWR value with standard formatter
     setCalculatedValue("d_107", wwr, "percent-2dp", isReferenceCalculation);
@@ -1939,6 +1980,7 @@ window.TEUI.SectionModules.sect12 = (function () {
     return {
       d_107: wwr,
       g_107: totalWallAreaChecksum,
+      i_107: totalWindowDoorHeatloss,
     };
   }
 
@@ -3520,6 +3562,28 @@ window.TEUI.SectionModules.sect12 = (function () {
             calculateAll();
             // ✅ CRITICAL: Explicit DOM refresh ensures immediate UI update in Reference mode
             // Without this, updates lag behind by one calculation cycle
+            ModeManager.updateCalculatedDisplayValues?.();
+          }
+        }
+      );
+    });
+
+    // ✅ FIX: Add reference-prefixed heatloss listeners for i_107 calculation
+    // When Reference window/door heatloss values change in S11, recalculate WWR-related metrics
+    const referenceHeatlossDepsi_107 = [
+      "ref_i_88", // Doors heatloss
+      "ref_i_89", // Win N heatloss
+      "ref_i_90", // Win E heatloss
+      "ref_i_91", // Win S heatloss
+      "ref_i_92", // Win W heatloss
+    ];
+    referenceHeatlossDepsi_107.forEach(depId => {
+      window.TEUI.StateManager.addListener(
+        depId,
+        (newValue, oldValue, eventFieldId) => {
+          if (eventFieldId === depId) {
+            calculateAll();
+            // ✅ CRITICAL: Explicit DOM refresh ensures immediate UI update in Reference mode
             ModeManager.updateCalculatedDisplayValues?.();
           }
         }

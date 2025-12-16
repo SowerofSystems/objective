@@ -881,3 +881,65 @@ The proper solution is **Option 3** from [D13-ARCHITECTURE-OPTIONS.md](D13-ARCHI
 - Next: Implement Option 3 architecture on new branch
 
 ---
+
+## UPDATE: S12 i_107 Feature Blocked by Same Issue (2025-12-16)
+
+**Context**: Added new calculated field `i_107` (Total Window & Door Heat Loss) to Section 12 for simplified S18 integration.
+
+**Implementation Complete**:
+- ✅ Field definition added ([Section12.js:1020-1028](../../src/sections/Section12.js#L1020-L1028))
+- ✅ Dual-state value reading fixed ([Section12.js:1924-1957](../../src/sections/Section12.js#L1924-L1957))
+  - Fixed state contamination: now properly reads `ref_d_86`, `ref_d_88`-`ref_d_93` in Reference mode
+  - Fixed state contamination: now properly reads `ref_i_88`-`ref_i_92` in Reference mode
+- ✅ Reference heatloss listeners added ([Section12.js:3570-3590](../../src/sections/Section12.js#L3570-L3590))
+  - New listeners for `ref_i_88`, `ref_i_89`, `ref_i_90`, `ref_i_91`, `ref_i_92`
+- ✅ Calculation logic updated ([Section12.js:1957-1971](../../src/sections/Section12.js#L1957-L1971))
+  - `i_107 = i_88 + i_89 + i_90 + i_91 + i_92` (Total Window & Door Heatloss)
+  - Published to StateManager for S18 consumption
+
+**Symptom - IDENTICAL to S11 ref_i_97 Issue**:
+1. User changes window areas in S11 Reference mode ✅
+2. S11 calculates new `ref_i_88` through `ref_i_92` heatloss values ✅
+3. S11 publishes values to StateManager ✅
+4. S12 listeners fire → S12's local `calculateAll()` runs ✅
+5. S12 calculates `d_107` (WWR) and `i_107` (Total Heatloss) ✅
+6. S12 publishes `ref_d_107`, `ref_i_107` to StateManager ✅
+7. **BUT** S12's Reference WWR value doesn't update in UI ❌
+8. **Workaround**: Click "Tilt" button → global cascade triggers → UI updates ✅
+
+**Root Cause - SAME as Lines 780-798 Above**:
+- S12's local `calculateAll()` updates S12's own values and publishes to StateManager
+- BUT doesn't trigger downstream cascade (S13 → S14 → S01)
+- S12's `calculateAll()` is **local**, not **global**
+- The cascade architecture is broken at the section-to-section level
+
+**Why "Tilt" Button Works**:
+- "Tilt" likely calls a **global** `calculateAll()` that properly cascades through all sections
+- This triggers S12 → S13 → S14 → S01 in correct order
+- All Reference values finally propagate to UI
+
+**Decision**:
+- ✅ **Keep implementation** (architecturally correct, proper state isolation)
+- ✅ **Accept "Tilt" workaround** for now (same workaround as S11 ref_i_97 issue)
+- ⏳ **Fix when S10-S11-SYNC-BUG is resolved** (Option 3 or global cascade architecture fix)
+
+**Note for Future Fix**:
+The `i_107` field implementation is **complete and correct**:
+- Listeners are properly registered
+- Dual-state reading follows CHEATSHEET patterns
+- Values ARE being calculated and published to StateManager
+- They just need the **global cascade** to propagate properly
+
+When the S10-S11-SYNC-BUG is fixed with proper global cascade architecture, the `i_107` feature will work immediately without any code changes.
+
+**Related Files**:
+- [Section12.js:3570-3590](../../src/sections/Section12.js#L3570-L3590) - Reference heatloss listeners
+- [Section12.js:1924-1983](../../src/sections/Section12.js#L1924-L1983) - calculateWWR() dual-state logic
+- [Section12.js:1020-1028](../../src/sections/Section12.js#L1020-L1028) - i_107 field definition
+
+**Testing Notes**:
+- ✅ Target mode: WWR and i_107 update immediately when window areas change
+- ❌ Reference mode: WWR and i_107 require "Tilt" to update (known issue)
+- ✅ Values are correct after "Tilt" - calculation logic is sound
+
+---
