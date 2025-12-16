@@ -1,6 +1,6 @@
 # Section 19: WOMBAT - 3D Thermal Topology Visualization
 
-**Status**: ✅ Production Ready (Phase 2 Complete + Refactoring)
+**Status**: ✅ Production Ready (Phase 3 Complete - Gable Roofs)
 **Created**: 2025-12-08
 **Last Updated**: 2025-12-15
 **Target Release**: 4.013
@@ -32,15 +32,20 @@ WOMBAT generates a **3D thermal topology model** from OBJECTIVE's envelope geome
   - Mixed foundation warning indicator
 - ✅ **Refresh button sync** - User-controlled StateManager sync after import
 - ✅ **Label readability** - Semi-transparent backgrounds, z-order optimized
-- ✅ **Field ID renumbering** - Sequential d_150-d_158 range for maintainability
+- ✅ **Field ID renumbering** - Sequential d_150-d_159 range for maintainability
+- ✅ **Gable Roof Geometry** (Phase 3 - Complete)
+  - Biplanar roof rendering with triangular gable ends and prominent ridge line
+  - Roof Type Selector (d_159) - Dropdown for multiplanar/biplanar/monoplane
+  - Gable wall area extraction - Triangular ends properly extracted from opaque wall area
+  - Rational trigonometry - Height calculation using quadrance (no trig functions)
+  - Ridge orientation - Automatically runs along longer building dimension
+  - Correct volume calculation - Gable roof volume = (footprint × height) / 2
 
 **Planned Enhancements**:
-- **Gable Roof Geometry** - Biplanar roof rendering with triangular gable ends
-- **Roof Type Selector** - Dropdown for multiplanar/biplanar/monoplane selection
-- **Gable Wall Area Accounting** - Extract gable ends from total wall area for proper height calculation
 - Window areas in walls (orientation-specific placement)
 - Shade plane projections (0-100%)
 - Three.js migration for 3D interaction
+- Monoplane (shed) roof implementation
 
 ---
 
@@ -95,12 +100,13 @@ The ModeManager facade provides mode-aware publishing to StateManager:
 
 ## Field Definitions
 
-Section 19 owns the following fields (renumbered to d_150-d_158 range):
+Section 19 owns the following fields (renumbered to d_150-d_159 range):
 
 | Field ID | Row | Type | Description | Mirrors |
 |----------|-----|------|-------------|---------|
 | `d_150` | 19.0 | dropdown | Number of Stories (1, 1.5, 2, 3, 4, 5, 6) | S12 `d_103` |
 | `d_158` | 19.FP | dropdown | Floorplate Options (Mezzanine/Equal) | - |
+| `d_159` | 19.RT | dropdown | Roof Type (Multiplanar/Biplanar/Monoplane) | - |
 | `d_151` | 19.V | editable | Conditioned Volume (m³) | S12 `d_105` |
 | `d_152` | 19.Ae | calculated | Ae - Total Area Exposed to Air (m²) | S12 `d_101` |
 | `d_153` | 19.Ag | calculated | Ag - Total Area Exposed to Ground (m²) | S12 `d_102` |
@@ -149,53 +155,124 @@ Both sections have listeners with proper guards against circular updates (`sourc
 
 ## Geometry Solver: Constraint-Driven
 
-WOMBAT's geometry solver transforms thermal area data into 3D geometry using a constraint satisfaction approach where **volume is sacred** and all dimensions emerge from area constraints.
+WOMBAT's geometry solver transforms thermal area data into 3D geometry using a constraint satisfaction approach where **footprint area (d_95) is the sacred touchstone** and all dimensions emerge from thermal envelope area constraints.
+
+**CRITICAL**: Volume (d_105/d_151) is used for **verification only**, NOT as a geometric constraint.
 
 ### Input Dependencies
 
-**External** (from StateManager):
+**SACRED Inputs** (from StateManager):
+- `d_95` / `ref_d_95` - **Footprint Area (m²)** - SACRED TOUCHSTONE from S11
 - `h_15` / `ref_h_15` - Conditioned Area (m²) from S12
 - `d_85` / `ref_d_85` - Roof Area (m²) from S11
-- `d_86` / `ref_d_86` - Wall Area (m²) from S11
+- `d_86` / `ref_d_86` - Opaque Wall Area (m²) from S11
+- `d_88-d_92` / `ref_d_88-d_92` - Window Areas (North, East, South, West, Other) from S11
 
 **Internal** (from TargetState/ReferenceState):
-- `d_151` - Volume (m³) - **LESS SACRED** (verified against surfaces)
+- `d_151` - Volume (m³) - **VERIFICATION ONLY** (not a constraint!)
 - `d_150` - Stories (1, 1.5, 2, 3, 4, 5, 6)
 - `d_158` - Floorplate Options (mezzanine/equal)
+- `d_159` - Roof Type (multiplanar/biplanar/monoplane)
 - `d_154` - Aspect Ratio Slider (-4 to +4, 0 = square)
 
-### Constraint Solving Algorithm
+### Correct Constraint Flow (Refactored 2025-12-15)
 
-The solver works in phases:
+The solver follows this **exact sequence**:
 
-**Phase 1: Footprint** (X-Y plane)
-```
-footprintArea = conditionedArea / stories
+**Phase 1: Footprint** (X-Y plane) - SACRED TOUCHSTONE
+```javascript
+// Footprint area (d_95) is SACRED - read directly, never calculate
+footprintArea = d_95  // From S11, already known
 aspectRatio = slider >= 0 ? (1 + slider) : 1 / (1 - slider)
 width = sqrt(footprintArea / aspectRatio)
 length = footprintArea / width
-```
-
-**Phase 2: Height** (Z-axis) - **Volume-First**
-```
-totalBuildingHeight = volume / footprintArea  // SACRED - never violated
-storyHeight = totalBuildingHeight / stories
-```
-
-**Phase 3: Roof Geometry** (pitch emerges from roof area)
-```
-areaRatio = roofArea / footprintArea
-if (areaRatio > 1.01) → gabled roof (pitched)
-if (areaRatio < 0.99) → inverted pyramid (visual conflict indicator)
-roofPitch = arcsin((areaRatio - 1) / 2) * (180 / π)
-
-Note: Future enhancement will use rational trigonometry (NJ Wildberger approach)
-```
-
-**Phase 4: Wall Geometry**
-```
 perimeter = 2 * (length + width)
-wallHeight = wallArea / perimeter
+```
+
+**Phase 2: Mezzanine/Partial Floor Calculation**
+```javascript
+// Controlled by Floorplate Options dropdown (d_158)
+floorplateOption = d_158  // "mezzanine" or "equal"
+fullStories = floor(d_150)
+
+if (floorplateOption === "mezzanine" && d_150 !== fullStories) {
+  mezzanineArea = max(0, h_15 - footprintArea)
+} else {
+  mezzanineArea = 0  // Equal floorplates
+}
+```
+
+**Phase 3: Total Wall Area**
+```javascript
+// Aggregate all window areas
+totalWindowArea = d_88 + d_89 + d_90 + d_91 + d_92
+
+// Total wall area (gross) = opaque + windows
+totalWallAreaGross = d_86 + totalWindowArea
+```
+
+**Phase 4: Roof Geometry** - SOLVE FIRST (before wall height!)
+```javascript
+// CRITICAL: Roof geometry must be solved BEFORE wall height
+// because gable roofs contribute area to walls (triangular ends)
+
+roofTypeSelection = d_159  // "multiplanar" / "biplanar" / "monoplane"
+areaRatio = d_85 / footprintArea
+
+if (areaRatio > 1.01 && roofTypeSelection === "biplanar") {
+  // GABLE ROOF - Use rational trigonometry
+  ridgeLength = max(width, length)
+  span = min(width, length)
+  ridgeOrientation = length >= width ? "longitudinal" : "transverse"
+
+  slopeLength = d_85 / (2 * ridgeLength)
+  h² = slopeLength² - (span/2)²
+  roofHeight = sqrt(h²)
+
+  gableEndArea = 2 * (span * roofHeight / 2)  // Both triangular ends
+
+} else if (areaRatio > 1.01 && roofTypeSelection === "multiplanar") {
+  // PYRAMIDAL ROOF
+  roofHeight = calculatePyramidalHeight(width, length, areaRatio)
+  gableEndArea = 0
+}
+```
+
+**Phase 5: Wall Height** - AFTER roof geometry!
+```javascript
+// For gable roofs: gable ends are OPAQUE WALL AREA, not roof area
+// Must extract gable end area from total wall area
+
+if (roofType === "gable" && gableEndArea > 0) {
+  effectiveWallArea = totalWallAreaGross - gableEndArea
+  wallPlateHeight = effectiveWallArea / perimeter
+} else {
+  effectiveWallArea = totalWallAreaGross
+  wallPlateHeight = totalWallAreaGross / perimeter
+}
+
+wallHeight = wallPlateHeight
+storyHeight = wallHeight / d_150  // For visualization only
+```
+
+**Phase 6: Volume** - VERIFICATION ONLY
+```javascript
+// Use user's declared volume (d_105/d_151)
+conditionedVolume = d_151  // SACRED - display this value
+
+// OPTIONAL: Calculate what volume SHOULD be from geometry
+calculatedVolumeCheck = footprintArea * wallHeight
+if (roofType === "gable") {
+  calculatedVolumeCheck += (footprintArea * roofHeight) / 2
+} else if (roofType === "pyramidal") {
+  calculatedVolumeCheck += (footprintArea * roofHeight) / 3
+}
+
+// Flag discrepancy if > 5%
+volumeDiscrepancy = abs(calculatedVolumeCheck - conditionedVolume) / conditionedVolume * 100
+if (volumeDiscrepancy > 5) {
+  console.warn("Volume discrepancy > 5% - user areas may be inconsistent")
+}
 ```
 
 ### Outputs
@@ -206,12 +283,15 @@ Calculated fields published to StateManager:
 - `h_156` / `ref_h_156` - Building Height (m) - wall + roof
 
 Geometry object also includes:
-- `areaPerFloor` - Footprint area (d_95 SACRED)
-- `mezzanineArea` - Adiabatic floor area (conditioned - footprint × fullStories)
-- `volume` - Calculated from surfaces
-- `volumeDiscrepancy` - Percentage difference from declared
+- `footprint.area` - Footprint area (d_95 SACRED)
+- `mezzanineArea` - Partial floor area (h_15 - footprint when mezzanine option selected)
+- `walls.totalGrossArea` - Total wall area (opaque + windows)
+- `walls.effectiveArea` - Wall area excluding gable ends
+- `roof.gableEndArea` - Triangular gable end area (for biplanar roofs)
+- `volume` - User-declared conditioned volume (d_105/d_151)
+- `volumeCheck` - Volume calculated from geometry (verification only)
 
-**Location**: [Section19.js:637-950](../../src/sections/Section19.js#L637-L950)
+**Location**: [Section19.js:813-1150](../../src/sections/Section19.js#L813-L1150)
 
 ---
 
@@ -241,10 +321,28 @@ This matches standard architectural/BIM conventions and enables proper cardinal 
 - **Isometric projection**: 3D coordinates → 2D using standard isometric angles (Z-up)
 - **Multi-story stacking**: Each story rendered with floor/ceiling edges and vertical posts
 - **Mode-aware colors**: Blue (#007bff) for Target, Red (#dc3545) for Reference
-- **Dimension annotations**: Length, width, height labels with values in meters
+- **Dimension annotations**: X/East and Y/North dimension labels on building edges
 - **Per-floor area labels**: Shows conditioned area for each story
-- **Geometry info overlay**: Summary of stories, footprint, height, volume
+- **Geometry info overlay**: Summary with diagnostic calculations (see below)
+- **Coordinate axes indicator**: X/East (red), Y/North (green), Z/Up (blue) at bottom-left
 - **Dynamic scaling**: Auto-scales to fit canvas while maintaining proportions
+
+### Diagnostic Labels (Added 2025-12-15)
+
+The info overlay (top-left) shows intermediate geometry calculations for verification:
+
+1. **Stories calculation**: `Stories: 2 × 1100.4 m² = 2200.8 m²`
+2. **Mezzanine area** (if present): `Show: 'Mezzanine Area: 327 m²'`
+3. **Footprint dimensions**: `Footprint: 21.0m × 52.5m`
+4. **Story height**: `Story Height: 3.02m`
+5. **Total volume**: `Total Volume: 8000 m³ (4000 m³/floor)` (user-declared, not calculated)
+6. **Roof area**: `Roof Area: 1411.52 m² (ridge ht. determined from this)`
+7. **Gable area** (for biplanar roofs): `Show: 'Gable Area: 176.80 m²'`
+8. **Effective wall area**: `Show: 'Ae Walls: 888.30 m²'` (excluding gable ends)
+
+These labels allow verification that the geometry solver is deriving dimensions correctly from thermal constraints.
+
+**Location**: [wombatRender.js:980-1077](../../src/core/wombatRender.js#L980-L1077)
 
 ### Activation Controls
 
@@ -419,50 +517,74 @@ Above Grade (Blue):          Below Grade (Brown):
 - [ ] Target/Reference mode switching
 - [ ] Label legibility over all geometry types
 
-## Future Enhancements
+## Recent Enhancements (Continued)
 
-### Phase 3: Gable Roof Geometry
+### Phase 3: Gable Roof Geometry ✅ COMPLETE (2025-12-15)
 
 **Goal**: Implement biplanar (gable) roof rendering with proper geometric calculations.
 
-**Status**: Planned - Field d_158 (Floorplate Options) added but not yet used in calculations
+**Status**: ✅ **Complete and Production Ready**
 
-**Implementation Tasks**:
-1. **Add Roof Type dropdown (d_159)** - multiplanar/biplanar/monoplane
-   - Default: "biplanar" for rectangular buildings
-   - Auto-suggest based on aspect ratio
-2. **Gable height calculation** using rational trigonometry
-   - Ridge runs along longer axis
-   - Calculate triangular gable end area
-   - Formula: `gableEndArea = (span × height) / 2`
-3. **Wall area accounting** - Extract gable ends from total opaque wall area
-   - Gable ends are OPAQUE WALL AREA (d_86), not roof area
-   - Wall plate height = `(opaqueWallArea - gableArea) / perimeter`
-4. **Gable roof renderer** in wombatRender.js
-   - Two rectangular slopes
-   - Two triangular gable ends
-   - Ridge line visualization
+**Implementation Completed**:
+1. ✅ **Added Roof Type dropdown (d_159)** - multiplanar/biplanar/monoplane
+   - Default: "biplanar" for all buildings
+   - User-selectable roof geometry type
+   - Location: [Section19.js:332-359](../../src/sections/Section19.js#L332-L359)
+2. ✅ **Gable height calculation** using rational trigonometry
+   - Ridge automatically runs along longer axis (longitudinal or transverse)
+   - Calculates triangular gable end area: `gableEndArea = (span × height) / 2`
+   - Pure quadrance-based approach (no trig functions)
+   - Location: [Section19.js:750-811](../../src/sections/Section19.js#L750-L811)
+3. ✅ **Wall area accounting** - Gable end extraction from total opaque wall area
+   - Gable ends correctly identified as OPAQUE WALL AREA (d_86), not roof area
+   - Wall plate height = `(totalWallArea - 2×gableEndArea) / perimeter`
+   - Location: [Section19.js:943-970](../../src/sections/Section19.js#L943-L970)
+4. ✅ **Gable roof renderer** in wombatRender.js
+   - Two rectangular slopes rendered with edge vectors
+   - Two triangular gable ends (north/south or east/west)
+   - Prominent ridge line visualization (3px stroke)
+   - Ridge endpoint nodes
+   - Gable-specific height label
+   - Location: [wombatRender.js:449-585](../../src/core/wombatRender.js#L449-L585)
+5. ✅ **Volume calculation** - Correct gable roof volume
+   - Formula: `gableVolume = (footprint × height) / 2`
+   - Triangular prism geometry
+   - Location: [Section19.js:1000-1005](../../src/sections/Section19.js#L1000-L1005)
 
-**Mathematical Foundation**:
+**Mathematical Foundation** (Implemented):
 ```javascript
 // Gable roof: ridge along longer dimension
-const ridgeOrientation = length >= width ? "longitudinal" : "transverse";
 const ridgeLength = Math.max(width, length);
 const span = Math.min(width, length);
+const ridgeOrientation = length >= width ? "longitudinal" : "transverse";
 
-// Height from roof area using Pythagorean theorem
-const roofArea = areaRatio * baseArea;
+// Slope length from total roof area (rational approach)
 const slopeLength = roofArea / (2 * ridgeLength);
+
+// Height from Pythagorean theorem (quadrance)
 const h2 = slopeLength² - (span/2)²;
 const roofHeight = Math.sqrt(h2);
 
 // Gable end area (each triangular end)
 const gableEndArea = (span × roofHeight) / 2;
+
+// Wall plate height (extract gable ends from wall area)
+const wallPlateHeight = (totalWallArea - 2 × gableEndArea) / perimeter;
 ```
 
+**Key Achievements**:
+- ✅ No NaN errors in height calculations
+- ✅ Gable end area properly extracted from wall area
+- ✅ Ridge line visible at apex with correct orientation
+- ✅ Default rectangular model (1.5 stories) renders correctly
+- ✅ Roof type selection (multiplanar/biplanar/monoplane) functional
+- ✅ All calculations use rational trigonometry (algebraically stable)
+
 **References**:
-- Mathematical derivation: [S19-RT.md](../S19-RT.md) (rational trigonometry approach)
-- Implementation plan: S19-REFACTOR-PLAN.md Tasks 3-6 (archived)
+- Mathematical derivation: [S19-RT.md](S19-RT.md) (rational trigonometry approach)
+- Commit: TBD (2025-12-15)
+
+## Future Enhancements
 
 ### Phase 4: Three.js Migration
 
