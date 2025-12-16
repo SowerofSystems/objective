@@ -72,8 +72,20 @@ window.TEUI.SectionModules.sect19 = (function () {
     },
 
     syncFromGlobalState: function () {
-      // Sync Target values from StateManager (unprefixed)
-      const fieldIds = ["d_150", "d_151", "d_154", "d_158", "d_159", "h_155", "h_156", "h_157"];
+      // ✅ MIRROR SYNC: Read S12 source fields (d_103, d_105) and store as S19 mirror fields (d_150, d_151)
+      // ExcelMapper only populates d_103/d_105, NOT d_150/d_151 (those are S19-only fields)
+      const d_103 = window.TEUI?.StateManager?.getValue("d_103");
+      if (d_103 !== null && d_103 !== undefined) {
+        this.values.d_150 = d_103; // Stories (mirrors S12 d_103)
+      }
+
+      const d_105 = window.TEUI?.StateManager?.getValue("d_105");
+      if (d_105 !== null && d_105 !== undefined) {
+        this.values.d_151 = d_105; // Volume (mirrors S12 d_105)
+      }
+
+      // Sync other S19-specific fields normally
+      const fieldIds = ["d_154", "d_158", "d_159", "h_155", "h_156", "h_157"];
       fieldIds.forEach(fieldId => {
         const value = window.TEUI?.StateManager?.getValue(fieldId);
         if (value !== null && value !== undefined) {
@@ -120,8 +132,20 @@ window.TEUI.SectionModules.sect19 = (function () {
     },
 
     syncFromGlobalState: function () {
-      // Sync Reference values from StateManager (ref_ prefixed)
-      const fieldIds = ["d_150", "d_151", "d_154", "d_158", "d_159", "h_155", "h_156", "h_157"];
+      // ✅ MIRROR SYNC: Read S12 reference source fields (ref_d_103, ref_d_105) and store as S19 mirror fields
+      // ExcelMapper only populates ref_d_103/ref_d_105, NOT ref_d_150/ref_d_151 (those are S19-only fields)
+      const ref_d_103 = window.TEUI?.StateManager?.getValue("ref_d_103");
+      if (ref_d_103 !== null && ref_d_103 !== undefined) {
+        this.values.d_150 = ref_d_103; // Stories (mirrors S12 ref_d_103)
+      }
+
+      const ref_d_105 = window.TEUI?.StateManager?.getValue("ref_d_105");
+      if (ref_d_105 !== null && ref_d_105 !== undefined) {
+        this.values.d_151 = ref_d_105; // Volume (mirrors S12 ref_d_105)
+      }
+
+      // Sync other S19-specific reference fields normally
+      const fieldIds = ["d_154", "d_158", "d_159", "h_155", "h_156", "h_157"];
       fieldIds.forEach(fieldId => {
         const value = window.TEUI?.StateManager?.getValue(`ref_${fieldId}`);
         if (value !== null && value !== undefined) {
@@ -159,6 +183,14 @@ window.TEUI.SectionModules.sect19 = (function () {
       if (isActivated) {
         updateVisualization(mode);
       }
+    },
+
+    /**
+     * Refresh UI - Required by FileHandler Pattern A section sync
+     * Called after import to update DOM with synced values
+     */
+    refreshUI: function () {
+      this.updateCalculatedDisplayValues();
     },
 
     /**

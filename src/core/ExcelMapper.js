@@ -196,6 +196,10 @@ class ExcelMapper {
 
       // Section 15: TEUI Summary (REPORT! Sheet)
       D142: "d_142", // Cost Premium HP (Editable Number)
+
+      // Section 19: Wombat (REPORT! Sheet)
+      //D103: "d_150", // Stories
+      //D105: "d_151", // Total Conditioned Volume
     };
 
     // REFERENCE sheet mapping - mirrors REPORT mapping structure
@@ -355,6 +359,10 @@ class ExcelMapper {
 
       // Section 15: TEUI Summary (REFERENCE! Sheet)
       D142: "ref_d_142",
+
+      // Section 19: Wombat (REFERENCE! Sheet)
+      //D103: "d_150", // Stories
+      //D105: "d_151", // Total Conditioned Volume
     };
   }
 
