@@ -380,11 +380,12 @@ window.TEUI.SectionModules.sect19 = (function () {
           value: "biplanar",
           section: "wombat",
           tooltip: true,
-          label: "Roof geometry type (multiplanar=pyramid, biplanar=gable, monoplane=shed)",
+          label: "Roof geometry type (multiplanar=pyramid, biplanar=gable, monoplane=shed, flat=no slope)",
           options: [
             { value: "multiplanar", name: "Pyramid/Hip" },
             { value: "biplanar", name: "Gable" },
             { value: "monoplane", name: "Shed" },
+            { value: "flat", name: "Flat" },
           ],
         },
         e: { content: "", classes: ["unit-label"] },
@@ -962,7 +963,13 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     console.log(`[WOMBAT] Roof area ratio: ${areaRatio.toFixed(3)} (roof/footprint)`);
 
-    if (areaRatio > 1.01) {
+    // Check if user explicitly selected flat roof
+    if (roofTypeSelection === "flat") {
+      // FLAT ROOF - User override, use declared roof area as-is
+      console.log('[WOMBAT] Flat roof selected (user override - no slope calculations)');
+      roofType = "flat";
+      roofHeight = 0;
+    } else if (areaRatio > 1.01) {
       // Pitched roof needed to achieve larger roof area
       if (roofTypeSelection === "biplanar") {
         // GABLE ROOF (biplanar)
