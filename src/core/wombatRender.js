@@ -21,7 +21,9 @@ window.TEUI.WombatRender = (function () {
   //==========================================================================
 
   const config = {
-    canvasWidth: 800,
+    // Canvas dimensions - must match CSS (#wombat-svg) and HTML (viewBox)
+    // Primary source: styles.css Section 19 (line 2312+)
+    canvasWidth: 900,
     canvasHeight: 600,
     colors: {
       target: "#007bff", // Blue for Target mode
@@ -50,33 +52,114 @@ window.TEUI.WombatRender = (function () {
   }
 
   /**
-   * Calculate optimal scale to fit geometry in canvas
+   * Calculate bounding box of all 3D geometry in isometric projection
+   * Returns the projected extents to properly center and scale the model
    */
-  function calculateScale(geometry, canvasWidth, canvasHeight) {
-    const padding = 120; // Increased from 80 to prevent label clipping
-    const availableWidth = canvasWidth - padding * 2;
-    const availableHeight = canvasHeight - padding * 2;
-
+  function calculateGeometryBounds(geometry) {
     const length = geometry.footprint.length;
     const width = geometry.footprint.width;
-
-    // Use totalHeight if available (includes roof), otherwise fallback to wall height
     const totalHeight = geometry.totalHeight || geometry.height;
-
-    // Include below-grade depth if present
     const basementDepth = geometry.belowGrade?.basementDepth || 0;
-    const totalVerticalSpan = totalHeight + basementDepth;
 
-    // Isometric projection dimensions
-    const isoX = Math.cos(Math.PI / 6);
-    const isoY = Math.sin(Math.PI / 6);
-    const projectedWidth = (length + width) * isoX;
-    const projectedHeight = (length + width) * isoY + totalVerticalSpan;
+    // Define all corner points in 3D space (including basement and roof)
+    const points3D = [];
 
-    // Calculate scale to fit both dimensions
-    const scaleX = availableWidth / projectedWidth;
-    const scaleY = availableHeight / projectedHeight;
-    return Math.min(scaleX, scaleY) * 0.9; // 90% to leave breathing room
+    // Basement floor corners (if present)
+    if (basementDepth > 0) {
+      points3D.push(
+        { x: -width/2, y: -length/2, z: -basementDepth },
+        { x:  width/2, y: -length/2, z: -basementDepth },
+        { x:  width/2, y:  length/2, z: -basementDepth },
+        { x: -width/2, y:  length/2, z: -basementDepth }
+      );
+    }
+
+    // Ground level corners
+    points3D.push(
+      { x: -width/2, y: -length/2, z: 0 },
+      { x:  width/2, y: -length/2, z: 0 },
+      { x:  width/2, y:  length/2, z: 0 },
+      { x: -width/2, y:  length/2, z: 0 }
+    );
+
+    // Top of walls corners
+    points3D.push(
+      { x: -width/2, y: -length/2, z: geometry.height },
+      { x:  width/2, y: -length/2, z: geometry.height },
+      { x:  width/2, y:  length/2, z: geometry.height },
+      { x: -width/2, y:  length/2, z: geometry.height }
+    );
+
+    // Roof peak (if present)
+    if (geometry.roof && geometry.roof.height > 0) {
+      if (geometry.roof.type === 'pyramidal' || geometry.roof.type === 'inverted') {
+        // Pyramidal roof: single apex point
+        points3D.push({ x: 0, y: 0, z: totalHeight });
+      } else if (geometry.roof.type === 'gable') {
+        // Gable roof: ridge line endpoints
+        const gableData = geometry.roof.gableData;
+        if (gableData && gableData.ridgeOrientation === 'longitudinal') {
+          points3D.push(
+            { x: 0, y: -length/2, z: totalHeight },
+            { x: 0, y:  length/2, z: totalHeight }
+          );
+        } else {
+          points3D.push(
+            { x: -width/2, y: 0, z: totalHeight },
+            { x:  width/2, y: 0, z: totalHeight }
+          );
+        }
+      }
+    }
+
+    // Project all 3D points to 2D isometric (using scale=1, center=0,0)
+    const points2D = points3D.map(p => toIsometric(p.x, p.y, p.z, 1, 0, 0));
+
+    // Find min/max extents in 2D
+    const minX = Math.min(...points2D.map(p => p.x));
+    const maxX = Math.max(...points2D.map(p => p.x));
+    const minY = Math.min(...points2D.map(p => p.y));
+    const maxY = Math.max(...points2D.map(p => p.y));
+
+    return {
+      minX, maxX, minY, maxY,
+      width: maxX - minX,
+      height: maxY - minY,
+      centerX: (minX + maxX) / 2,
+      centerY: (minY + maxY) / 2
+    };
+  }
+
+  /**
+   * Calculate optimal scale and offset to fit geometry in canvas
+   */
+  function calculateScaleAndCenter(geometry, canvasWidth, canvasHeight) {
+    // Padding for labels and annotations
+    const paddingLeft = 40;
+    const paddingRight = 120;  // Extra room for dimension labels
+    const paddingTop = 150;    // Room for info overlay
+    const paddingBottom = 100; // Room for coordinate axes and below-grade labels
+
+    const availableWidth = canvasWidth - paddingLeft - paddingRight;
+    const availableHeight = canvasHeight - paddingTop - paddingBottom;
+
+    // Get geometry bounds in isometric projection
+    const bounds = calculateGeometryBounds(geometry);
+
+    // Calculate scale to fit within available space
+    const scaleX = availableWidth / bounds.width;
+    const scaleY = availableHeight / bounds.height;
+    const scale = Math.min(scaleX, scaleY);
+
+    // Calculate center point to position geometry in available space
+    const targetCenterX = paddingLeft + availableWidth / 2;
+    const targetCenterY = paddingTop + availableHeight / 2;
+
+    // Offset needed to center the geometry bounds at the target center
+    const offsetX = targetCenterX - bounds.centerX * scale;
+    const offsetY = targetCenterY - bounds.centerY * scale;
+
+    return { scale, centerX: offsetX, centerY: offsetY };
   }
 
   //==========================================================================
@@ -203,6 +286,7 @@ window.TEUI.WombatRender = (function () {
   /**
    * Render above-grade building wireframe (multi-story)
    * Handles fractional stories by rendering partial-height boxes
+   * Note: Labels are rendered separately to ensure they appear on top
    */
   function renderAboveGrade(svg, geometry, mode, scale, centerX, centerY) {
     const isReference = mode === "reference";
@@ -262,18 +346,6 @@ window.TEUI.WombatRender = (function () {
 
       // Vertical edges
       allEdges.push([p0, p4], [p1, p5], [p2, p6], [p3, p7]);
-
-      // Story label (per-floor area for full stories)
-      const labelPos = toIsometric(0, 0, z0 + storyHeight / 2, scale, centerX, centerY);
-      const label = createText(
-        labelPos.x,
-        labelPos.y,
-        `${geometry.areaPerFloor.toFixed(0)} m²`,
-        "#666",
-        11,
-        { anchor: "middle", weight: "500" }
-      );
-      svg.appendChild(label);
     }
 
     // Add fractional story (partial height box)
@@ -301,19 +373,6 @@ window.TEUI.WombatRender = (function () {
 
       // Vertical edges (hairline)
       allEdges.push([p0, p4], [p1, p5], [p2, p6], [p3, p7]);
-
-      // Fractional story label (mezzanine/adiabatic floor area)
-      const mezzanineArea = geometry.mezzanineArea || 0;
-      const labelPos = toIsometric(0, 0, z0 + (fractionalPart * storyHeight) / 2, scale, centerX, centerY);
-      const label = createText(
-        labelPos.x,
-        labelPos.y,
-        `${mezzanineArea.toFixed(0)} m²`,
-        "#999",
-        10,
-        { anchor: "middle", weight: "400", style: "italic" }
-      );
-      svg.appendChild(label);
     }
 
     // Draw ground floor edges first (brown if at-grade, blue/red if raised)
@@ -339,6 +398,52 @@ window.TEUI.WombatRender = (function () {
       const node = createNode(vertex, modelColor, 5);
       svg.appendChild(node);
     });
+  }
+
+  /**
+   * Render above-grade story labels (on top of all geometry)
+   * Separated from renderAboveGrade() to ensure labels appear in front
+   */
+  function renderAboveGradeLabels(svg, geometry, scale, centerX, centerY) {
+    const length = geometry.footprint.length;
+    const width = geometry.footprint.width;
+    const storyHeight = geometry.storyHeight;
+    const stories = geometry.stories;
+
+    const fullStories = Math.floor(stories);
+    const fractionalPart = stories - fullStories;
+    const hasFractionalStory = fractionalPart > 0.01;
+
+    // Render labels for each full story
+    for (let story = 0; story < fullStories; story++) {
+      const z0 = story * storyHeight;
+      const labelPos = toIsometric(0, 0, z0 + storyHeight / 2, scale, centerX, centerY);
+      const label = createText(
+        labelPos.x,
+        labelPos.y,
+        `${geometry.areaPerFloor.toFixed(0)} m²`,
+        "#666",
+        11,
+        { anchor: "middle", weight: "500" }
+      );
+      svg.appendChild(label);
+    }
+
+    // Render fractional story label (mezzanine)
+    if (hasFractionalStory) {
+      const z0 = fullStories * storyHeight;
+      const mezzanineArea = geometry.mezzanineArea || 0;
+      const labelPos = toIsometric(0, 0, z0 + (fractionalPart * storyHeight) / 2, scale, centerX, centerY);
+      const label = createText(
+        labelPos.x,
+        labelPos.y,
+        `${mezzanineArea.toFixed(0)} m²`,
+        "#999",
+        10,
+        { anchor: "middle", weight: "400", style: "italic" }
+      );
+      svg.appendChild(label);
+    }
   }
 
   //==========================================================================
@@ -659,7 +764,7 @@ window.TEUI.WombatRender = (function () {
     const width = geometry.footprint.width;    // X-axis (East)
     const height = geometry.height;
 
-    // Y-dimension label (North, length along Y-axis)
+    // Y-dimension label (North, length along Y-axis) - bottom/south edge
     const yDimPos = toIsometric(0, -length / 2 - 5, 0, scale, centerX, centerY);
     const yDimLabel = createText(
       yDimPos.x,
@@ -671,10 +776,10 @@ window.TEUI.WombatRender = (function () {
     );
     svg.appendChild(yDimLabel);
 
-    // X-dimension label (East, width along X-axis)
-    const xDimPos = toIsometric(width / 2 + 5, 0, 0, scale, centerX, centerY);
+    // X-dimension label (East, width along X-axis) - left/west edge
+    const xDimPos = toIsometric(-width / 2 - 5, 0, 0, scale, centerX, centerY);
     const xDimLabel = createText(
-      xDimPos.x + 20,
+      xDimPos.x - 20,
       xDimPos.y,
       `X: ${width.toFixed(1)}m`,
       modelColor,
@@ -1040,10 +1145,11 @@ window.TEUI.WombatRender = (function () {
 
   /**
    * Render coordinate axes indicator (X/East, Y/North, Z/Up)
+   * Positioned in bottom-right corner
    */
   function renderCoordinateAxes(svg) {
-    const x0 = 50;
-    const y0 = config.canvasHeight - 100;
+    const x0 = config.canvasWidth - 100;  // Bottom-right corner
+    const y0 = config.canvasHeight - 80;
     const axisLength = 40;
 
     // Z-axis (Up) - blue
@@ -1066,7 +1172,7 @@ window.TEUI.WombatRender = (function () {
       2
     );
     svg.appendChild(yLine);
-    const yLabel = createText(yEndIso.x + 5, yEndIso.y - 5, "Y/North", "#00cc66", 11, {});
+    const yLabel = createText(yEndIso.x, yEndIso.y + 30, "Y/North", "#00cc66", 11, { anchor: "middle" });
     svg.appendChild(yLabel);
 
     // X-axis (East) - red, isometric
@@ -1154,10 +1260,12 @@ window.TEUI.WombatRender = (function () {
       return;
     }
 
-    // Calculate scale and center
-    const scale = calculateScale(geometry, config.canvasWidth, config.canvasHeight);
-    const centerX = config.canvasWidth / 2;
-    const centerY = config.canvasHeight / 2 + geometry.height * scale * 0.2; // Offset slightly down
+    // Calculate optimal scale and center based on geometry bounds
+    const { scale, centerX, centerY } = calculateScaleAndCenter(
+      geometry,
+      config.canvasWidth,
+      config.canvasHeight
+    );
 
     // PHASE 1: Render all geometry (lines and nodes) - these go in back
 
@@ -1182,6 +1290,9 @@ window.TEUI.WombatRender = (function () {
     }
 
     // PHASE 2: Render all labels - these go on top for legibility
+
+    // Render above-grade story labels (floor area labels)
+    renderAboveGradeLabels(svgElement, geometry, scale, centerX, centerY);
 
     // Render below-grade labels (basement depth, Ag label)
     if (geometry.belowGrade) {

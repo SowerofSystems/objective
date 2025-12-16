@@ -2302,6 +2302,19 @@ textarea.mirror-highlight {
   overflow: auto !important;
 }
 
+/* WOMBAT SVG Container and Canvas Dimensions */
+.wombat-svg-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+#wombat-svg {
+  width: 900px;
+  height: 600px;
+  max-width: 100%;
+}
+
 /* =============== CONTENT ALIGNMENT: CLEAN UNIVERSAL RULES =============== */
 /* ROOT CAUSE FIX: Simple rules without aggressive overrides */
 
