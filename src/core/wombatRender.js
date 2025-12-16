@@ -990,13 +990,17 @@ window.TEUI.WombatRender = (function () {
     const volumePerFloor = geometry.volume / geometry.stories;
 
     // Build diagnostic info lines
-    const infoLines = [
-      `Stories: ${geometry.stories} × ${geometry.areaPerFloor.toFixed(1)} m² = ${(geometry.stories * geometry.areaPerFloor).toFixed(1)} m²`,
-    ];
+    const infoLines = [];
 
-    // Show mezzanine area if present
+    // Stories line - handle mezzanine vs equal floorplates differently
     if (geometry.mezzanineArea && geometry.mezzanineArea > 0.1) {
+      // Mezzanine case: show conditioned area directly (not multiplication)
+      const conditionedArea = geometry.areaPerFloor + geometry.mezzanineArea;
+      infoLines.push(`Stories: ${geometry.stories}: ${conditionedArea.toFixed(1)} m² Conditioned Area`);
       infoLines.push(`Mezzanine Area: ${geometry.mezzanineArea.toFixed(1)} m²`);
+    } else {
+      // Equal floorplates: show multiplication
+      infoLines.push(`Stories: ${geometry.stories} × ${geometry.areaPerFloor.toFixed(1)} m² = ${(geometry.stories * geometry.areaPerFloor).toFixed(1)} m²`);
     }
 
     infoLines.push(`Footprint: ${geometry.footprint.length.toFixed(1)}m × ${geometry.footprint.width.toFixed(1)}m`);

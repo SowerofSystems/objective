@@ -984,35 +984,79 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Phase 5: Wall Height Calculation (AFTER roof geometry!)
     // ========================================================================
-    // For gable roofs: gable ends are OPAQUE WALL AREA, not roof area
-    // Must extract gable end area from total wall area before calculating wall plate height
-    // Wall height = (Total Wall Area - Gable End Area) / Perimeter
+    // CRITICAL: Use VOLUME as constraint to solve for wall height
+    // This ensures the geometry satisfies the user's declared conditioned volume
+    //
+    // Process:
+    // 1. Calculate roof volume from roof geometry
+    // 2. Subtract roof volume from total volume to get rectangular volume
+    // 3. Solve wall height from rectangular volume
+    // 4. Verify against wall area as a consistency check
     // ========================================================================
-    let wallPlateHeight = 0;
+
+    // Get user's declared volume (SACRED constraint)
+    const conditionedVolume = volumeDeclared && volumeDeclared > 0 && !isNaN(volumeDeclared)
+      ? volumeDeclared
+      : 0;
+
+    let wallHeight = 0;
+    let wallHeightFromVolume = 0;
+    let wallHeightFromArea = 0;
     let effectiveWallArea = totalWallAreaGross;
 
-    if (roofType === "gable" && gableEndArea > 0) {
-      // Extract gable end area from wall area
-      effectiveWallArea = totalWallAreaGross - gableEndArea;
+    if (conditionedVolume > 0) {
+      // Calculate roof volume
+      let roofVolume = 0;
+      if (roofType === "gable" && roofHeight > 0) {
+        roofVolume = (footprintArea * roofHeight) / 2;
+      } else if (roofType === "pyramidal" && roofHeight > 0) {
+        roofVolume = (1/3) * footprintArea * roofHeight;
+      } else if (roofType === "inverted" && roofHeight < 0) {
+        roofVolume = -(1/3) * footprintArea * Math.abs(roofHeight);
+      }
 
-      // Wall plate height = effective wall area / perimeter
-      wallPlateHeight = effectiveWallArea / perimeter;
+      // Solve wall height from volume constraint
+      const rectangularVolume = conditionedVolume - roofVolume;
+      wallHeightFromVolume = rectangularVolume / footprintArea;
 
-      console.log(`[WOMBAT] Gable end extraction:`);
-      console.log(`  Total wall area (gross): ${totalWallAreaGross.toFixed(2)} m²`);
-      console.log(`  Gable end area (both): ${gableEndArea.toFixed(2)} m²`);
-      console.log(`  Effective wall area (plate): ${effectiveWallArea.toFixed(2)} m²`);
-      console.log(`  Wall plate height: ${wallPlateHeight.toFixed(3)} m`);
+      console.log(`[WOMBAT] Volume-constrained wall height:`);
+      console.log(`  Conditioned volume: ${conditionedVolume.toFixed(2)} m³`);
+      console.log(`  Roof volume: ${roofVolume.toFixed(2)} m³`);
+      console.log(`  Rectangular volume: ${rectangularVolume.toFixed(2)} m³`);
+      console.log(`  Wall height from volume: ${wallHeightFromVolume.toFixed(3)} m`);
+
+      // Use volume-derived wall height
+      wallHeight = wallHeightFromVolume;
+
     } else {
-      // No gable ends - wall height = total wall area / perimeter
-      wallPlateHeight = totalWallAreaGross / perimeter;
+      // Fallback: No valid volume, use wall area method
+      console.warn(`[WOMBAT] No valid volume - falling back to wall area method`);
 
-      console.log(`[WOMBAT] Wall height from surfaces: ${wallPlateHeight.toFixed(3)} m`);
-      console.log(`[WOMBAT] Total wall area (gross): ${totalWallAreaGross.toFixed(2)} m²`);
-      console.log(`[WOMBAT] Perimeter: ${perimeter.toFixed(2)} m`);
+      if (roofType === "gable" && gableEndArea > 0) {
+        effectiveWallArea = totalWallAreaGross - gableEndArea;
+      }
+
+      wallHeightFromArea = effectiveWallArea / perimeter;
+      wallHeight = wallHeightFromArea;
     }
 
-    const wallHeight = wallPlateHeight;
+    // Verify wall height against wall area (consistency check)
+    if (roofType === "gable" && gableEndArea > 0) {
+      effectiveWallArea = totalWallAreaGross - gableEndArea;
+    }
+    wallHeightFromArea = effectiveWallArea / perimeter;
+
+    const heightDiscrepancy = Math.abs(wallHeight - wallHeightFromArea);
+    const heightDiscrepancyPct = (heightDiscrepancy / wallHeight) * 100;
+
+    console.log(`[WOMBAT] Wall height verification:`);
+    console.log(`  From volume: ${wallHeight.toFixed(3)} m`);
+    console.log(`  From wall area: ${wallHeightFromArea.toFixed(3)} m`);
+    console.log(`  Discrepancy: ${heightDiscrepancyPct.toFixed(1)}%`);
+
+    if (heightDiscrepancyPct > 5) {
+      console.warn(`[WOMBAT] Wall height discrepancy > 5% - volume and wall area may be inconsistent`);
+    }
 
     // Story height derived from wall height (for visualization)
     const storyHeight = wallHeight / storiesDeclared;
@@ -1028,49 +1072,6 @@ window.TEUI.SectionModules.sect19 = (function () {
       gableEndArea: gableEndArea,
       gableData: roofGeometryData  // Full gable geometry data (ridge, span, etc.)
     };
-
-    // Phase 6: Volume - Use Declared Value (VERIFICATION ONLY)
-    // ========================================================================
-    // User provides conditioned volume at d_105 (mirrored to d_151)
-    // This is used for display and verification, NOT as a geometric constraint
-    // We can optionally calculate what the volume SHOULD be from geometry
-    // and flag discrepancies for the user
-    // ========================================================================
-
-    // Use the user's declared volume
-    const conditionedVolume = volumeDeclared && volumeDeclared > 0 && !isNaN(volumeDeclared)
-      ? volumeDeclared
-      : 0;
-
-    console.log(`[WOMBAT] Conditioned volume (user-declared): ${conditionedVolume.toFixed(2)} m³`);
-
-    // OPTIONAL: Calculate what volume SHOULD be from surface geometry
-    // This is for verification/diagnostics only
-    let calculatedVolumeCheck = footprintArea * wallHeight;
-
-    if (roofType === "gable" && roofHeight > 0) {
-      const gableVolume = (footprintArea * roofHeight) / 2;
-      calculatedVolumeCheck += gableVolume;
-    } else if (roofType === "pyramidal" && roofHeight > 0) {
-      const pyramidVolume = (1/3) * footprintArea * roofHeight;
-      calculatedVolumeCheck += pyramidVolume;
-    } else if (roofType === "inverted" && roofHeight < 0) {
-      const pyramidVolume = (1/3) * footprintArea * Math.abs(roofHeight);
-      calculatedVolumeCheck -= pyramidVolume;
-    }
-
-    // Show discrepancy for diagnostics
-    if (conditionedVolume > 0) {
-      const volumeError = Math.abs(calculatedVolumeCheck - conditionedVolume);
-      const volumeDiscrepancy = (volumeError / conditionedVolume) * 100;
-
-      console.log(`[WOMBAT] Volume check from geometry: ${calculatedVolumeCheck.toFixed(2)} m³`);
-      console.log(`[WOMBAT] Discrepancy: ${volumeDiscrepancy.toFixed(1)}%`);
-
-      if (volumeDiscrepancy > 5) {
-        console.warn(`[WOMBAT] Volume discrepancy > 5% - user areas may be inconsistent`);
-      }
-    }
 
     // Phase 4: Below-Grade Geometry (WOMBAT Phase 2)
     // Read S11 below-grade data
@@ -1109,7 +1110,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     // Store solved dimensions
     const solvedGeometry = {
       footprint: { length, width, area: footprintArea },
-      height: wallHeight,  // Wall height (from surfaces)
+      height: wallHeight,  // Wall height (volume-constrained)
       totalHeight: totalBuildingHeight,  // Wall + roof height
       storyHeight: storyHeight,
       stories: storiesDeclared,
@@ -1122,10 +1123,11 @@ window.TEUI.SectionModules.sect19 = (function () {
         west: { width: length, height: wallHeight },
         totalGrossArea: totalWallAreaGross,  // Total wall area (opaque + windows)
         effectiveArea: effectiveWallArea,  // Wall area excluding gable ends
+        heightFromVolume: wallHeightFromVolume,  // Wall height from volume constraint
+        heightFromArea: wallHeightFromArea,  // Wall height from area (verification)
       },
       roof: roof,  // Rational trigonometry roof object (type, height, areaRatio)
-      volume: conditionedVolume,  // User-declared conditioned volume (d_105/d_151)
-      volumeCheck: calculatedVolumeCheck,  // Volume calculated from geometry (verification only)
+      volume: conditionedVolume,  // User-declared conditioned volume (d_105/d_151) - CONSTRAINT
       belowGrade: {
         hasBasement: hasBasement,
         hasSlab: hasSlab,
