@@ -1035,6 +1035,23 @@ window.TEUI.SectionModules.sect19 = (function () {
     let effectiveWallArea = totalWallAreaGross;
 
     if (conditionedVolume > 0) {
+      // Read basement data EARLY (before wall height calculation)
+      // This prevents basement height from being divided across above-grade stories
+      const basementWallArea_early = parseFloat(getModeAwareValue("d_94", isReferenceCalculation)) || 0;
+      const hasBasement_early = basementWallArea_early > 0;
+
+      // Calculate basement volume (below-grade conditioned space)
+      let basementVolume = 0;
+      if (hasBasement_early && perimeter > 0) {
+        const basementDepth_early = basementWallArea_early / perimeter;
+        basementVolume = footprintArea * basementDepth_early;
+
+        console.log(`[WOMBAT] Basement volume calculation:`);
+        console.log(`  Basement wall area: ${basementWallArea_early.toFixed(2)} m²`);
+        console.log(`  Basement depth: ${basementDepth_early.toFixed(2)} m`);
+        console.log(`  Basement volume: ${basementVolume.toFixed(2)} m³`);
+      }
+
       // Calculate roof volume
       let roofVolume = 0;
       if (roofType === "gable" && roofHeight > 0) {
@@ -1045,15 +1062,26 @@ window.TEUI.SectionModules.sect19 = (function () {
         roofVolume = -(1/3) * footprintArea * Math.abs(roofHeight);
       }
 
-      // Solve wall height from volume constraint
-      const rectangularVolume = conditionedVolume - roofVolume;
+      // CRITICAL: Subtract BOTH roof and basement from total conditioned volume
+      // This gives us ONLY the above-grade rectangular volume
+      const rectangularVolume = conditionedVolume - roofVolume - basementVolume;
       wallHeightFromVolume = rectangularVolume / footprintArea;
 
       console.log(`[WOMBAT] Volume-constrained wall height:`);
-      console.log(`  Conditioned volume: ${conditionedVolume.toFixed(2)} m³`);
+      console.log(`  Total conditioned volume (d_105): ${conditionedVolume.toFixed(2)} m³`);
       console.log(`  Roof volume: ${roofVolume.toFixed(2)} m³`);
-      console.log(`  Rectangular volume: ${rectangularVolume.toFixed(2)} m³`);
-      console.log(`  Wall height from volume: ${wallHeightFromVolume.toFixed(3)} m`);
+      console.log(`  Basement volume: ${basementVolume.toFixed(2)} m³`);
+      console.log(`  Above-grade rectangular volume: ${rectangularVolume.toFixed(2)} m³`);
+      console.log(`  Above-grade wall height: ${wallHeightFromVolume.toFixed(3)} m`);
+
+      // Check for impossible geometry (negative or tiny volume remaining)
+      if (rectangularVolume < 100) {
+        console.warn(`[WOMBAT] ⚠️  Above-grade volume very small (${rectangularVolume.toFixed(0)} m³)`);
+        console.warn(`  This suggests inconsistent inputs:`);
+        console.warn(`  - Total volume too small for roof + basement + walls`);
+        console.warn(`  - OR roof area too large (check if cathedral ceiling intended)`);
+        console.warn(`  - OR basement too deep for building volume`);
+      }
 
       // Use volume-derived wall height
       wallHeight = wallHeightFromVolume;

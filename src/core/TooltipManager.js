@@ -593,7 +593,7 @@
       cell: "D105",
       title: "Conditioned Volume ",
       message:
-        "Measure this volume as bounded by the interior-most faces of all walls, roofs, floors facing Ae and Ag. Treat entire building as one-zone.",
+        "Measure this conditioned volume as bounded by the interior-most faces of all walls, roofs, floors facing Ae and Ag. Treat entire building as one-zone, including conditioned basements.",
     },
     d_108: {
       cell: "D108",
