@@ -1,6 +1,6 @@
 # Section 19: WOMBAT - 3D Thermal Topology Visualization
 
-**Status**: ✅ Production Ready (Phase 3 Complete - Gable Roofs)
+**Status**: ✅ Pre-Production (Phase 3 Complete - Gable Roofs)
 **Created**: 2025-12-08
 **Last Updated**: 2025-12-15
 **Target Release**: 4.013
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-WOMBAT generates a **3D thermal topology model** from OBJECTIVE's envelope geometry data. Like wombats creating cubic output from inputs, we transform thermal area-based abstractions into volumetric spatial representations. **This is not an architectural model** — it's a visual representation of thermal attributes.
+WOMBAT generates a **3D thermal topology model** from OBJECTIVE's envelope geometry data. Like wombats creating cubic output from inputs, we transform thermal area-based abstractions into volumetric spatial representations. **This is not an architectural model** — it's a visual representation of thermal attributes. The key to objective is simplified geometric inputs - areas, vs. explicit element level definitions like LxWxH for each wall element comprising stories and in aggregate an entire building, a single area for all walls can be entered, facilitating early stage analysis with the fewest possible inputs. But then to extract a semblance of the 3D tehrmal model, we need the wombat geometric solver to determine element-level details from the simple area. 
 
 **Current Features**:
 - ✅ Constraint-driven 3D wireframe visualization (SVG-based)
@@ -18,15 +18,15 @@ WOMBAT generates a **3D thermal topology model** from OBJECTIVE's envelope geome
 - ✅ Display of Ae (Area Exposed to Air) and Ag (Area Exposed to Ground)
 - ✅ Interactive aspect ratio control
 - ✅ Multi-story visualization with per-floor area labels
-- ✅ **Fractional story rendering** - Proportional height boxes for partial floors (e.g., 1.5 stories)
+- ✅ **Fractional story rendering** - Proportional height hairline storey indicators for partial floors (e.g., 1.5 stories)
 - ✅ **Floorplate Options dropdown** - Clarifies mezzanine vs equal floorplates
 - ✅ **Correct floor area display** - Shows footprint (d_95 SACRED), not averaged
 - ✅ Mode-aware color coding (Blue=Target, Red=Reference)
 - ✅ **Below-grade geometry visualization** (Phase 2 - Complete)
-  - Brown dashed vectors for basement walls (hidden line effect)
-  - Brown nodes for basement floor corners
+  - Brown dashed vectors for below grade basement walls (hidden line effect)
+  - Brown nodes for basement and/or slab floor corners
   - Brown solid vectors for slab-on-grade perimeter
-  - Grade line indicator with label
+  - Dashed hairline grade line indicator with label
   - Basement depth annotation
   - Total Ag area label with foundation type
   - Mixed foundation warning indicator
@@ -82,7 +82,7 @@ const TargetState = {
   }
 };
 
-// ReferenceState: Identical structure for Reference mode
+// ReferenceState: Identical structure for Reference mode but can vary with 100% independence
 ```
 
 ### ModeManager
@@ -111,13 +111,13 @@ Section 19 owns the following fields (renumbered to d_150-d_159 range):
 | `d_152` | 19.Ae | calculated | Ae - Total Area Exposed to Air (m²) | S12 `d_101` |
 | `d_153` | 19.Ag | calculated | Ag - Total Area Exposed to Ground (m²) | S12 `d_102` |
 | `d_154` | 19.1 | slider | Footprint Aspect Ratio L:W (-4 to +4) | - |
-| `h_155` | 19.2 | calculated | Footprint Width (m) | - |
+| `h_155` | 19.2 | calculated | Footprint Width (m) | - | //needs work, is hard to set to 0, consider snap
 | `h_156` | 19.3 | calculated | Building Height (m) | - |
 | `h_157` | (inline) | calculated | Footprint Length (m) | - |
 
 ### Display-Only Fields (from S12)
 
-Section 19 displays aggregate U-values owned by Section 12:
+Section 19 displayonly aggregate U-values owned by Section 12 (Note: *Robot Fingers):
 
 | Field ID | Description | Owner |
 |----------|-------------|-------|
@@ -157,7 +157,7 @@ Both sections have listeners with proper guards against circular updates (`sourc
 
 WOMBAT's geometry solver transforms thermal area data into 3D geometry using a constraint satisfaction approach where **footprint area (d_95) is the sacred touchstone** and **volume (d_105/d_151) is a sacred constraint** used to solve for wall height.
 
-**CRITICAL**: Volume is used to **derive wall height**, ensuring the geometry satisfies the user's declared conditioned volume including space under the roof.
+**CRITICAL**: Volume is used to **derive wall height**, ensuring the geometry satisfies the user's declared conditioned volume including space under the roof. //PENDING: Basement wall height needs NOT to participate in above grade wall ht. calculations, solution needs work. 
 
 ### Input Dependencies
 
@@ -172,8 +172,8 @@ WOMBAT's geometry solver transforms thermal area data into 3D geometry using a c
 - `d_151` - Volume (m³) - **SACRED CONSTRAINT** (used to solve wall height!)
 - `d_150` - Stories (1, 1.5, 2, 3, 4, 5, 6)
 - `d_158` - Floorplate Options (mezzanine/equal)
-- `d_159` - Roof Type (multiplanar/biplanar/monoplane)
-- `d_154` - Aspect Ratio Slider (-4 to +4, 0 = square)
+- `d_159` - Roof Type (multiplanar/biplanar/monoplane) //Monoplane not yet working, multiplanar fragile in rectangular aspect ratios
+- `d_154` - Aspect Ratio Slider (-4 to +4, 0 = square) //consider adding snap to -4, -3, -2, 0, 1, 2, 4.
 
 ### Correct Constraint Flow (Refactored 2025-12-15)
 
@@ -196,7 +196,7 @@ floorplateOption = d_158  // "mezzanine" or "equal"
 fullStories = floor(d_150)
 
 if (floorplateOption === "mezzanine" && d_150 !== fullStories) {
-  mezzanineArea = max(0, h_15 - footprintArea)
+  mezzanineArea = max(0, h_15 - footprintArea) //for when conditioned area total exceeds footprint but building is 1.5 storeys, assign difference to Mezzanine
 } else {
   mezzanineArea = 0  // Equal floorplates
 }
@@ -204,7 +204,7 @@ if (floorplateOption === "mezzanine" && d_150 !== fullStories) {
 
 **Phase 3: Total Wall Area**
 ```javascript
-// Aggregate all window areas
+// Aggregate all window areas for Total Transparent Wall Elements
 totalWindowArea = d_88 + d_89 + d_90 + d_91 + d_92
 
 // Total wall area (gross) = opaque + windows
@@ -214,7 +214,7 @@ totalWallAreaGross = d_86 + totalWindowArea
 **Phase 4: Roof Geometry** - SOLVE FIRST (before wall height!)
 ```javascript
 // CRITICAL: Roof geometry must be solved BEFORE wall height
-// because gable roofs contribute area to walls (triangular ends)
+// because gable roofs contribute area to end-walls (triangular ends)
 
 roofTypeSelection = d_159  // "multiplanar" / "biplanar" / "monoplane"
 areaRatio = d_85 / footprintArea
@@ -222,17 +222,17 @@ areaRatio = d_85 / footprintArea
 if (areaRatio > 1.01 && roofTypeSelection === "biplanar") {
   // GABLE ROOF - Use rational trigonometry
   ridgeLength = max(width, length)
-  span = min(width, length)
+  span = min(width, length) // where span = base of triangle
   ridgeOrientation = length >= width ? "longitudinal" : "transverse"
 
   slopeLength = d_85 / (2 * ridgeLength)
-  h² = slopeLength² - (span/2)²
+  h² = slopeLength² - (span/2)² // where h = height of ridge
   roofHeight = sqrt(h²)
 
-  gableEndArea = 2 * (span * roofHeight / 2)  // Both triangular ends
+  gableEndArea = 2 * (span * roofHeight / 2)  // Both triangular ends 0.5*b*h
 
 } else if (areaRatio > 1.01 && roofTypeSelection === "multiplanar") {
-  // PYRAMIDAL ROOF
+  // PYRAMIDAL ROOF - remains buggy w. rectangular forms, collapses with long buildings due to insufficient decimal carriage
   roofHeight = calculatePyramidalHeight(width, length, areaRatio)
   gableEndArea = 0
 }
@@ -252,8 +252,8 @@ if (roofType === "gable") {
 }
 
 // 2. Solve wall height from volume constraint
-rectangularVolume = conditionedVolume - roofVolume
-wallHeight = rectangularVolume / footprintArea
+rectangularVolume = conditionedVolume - roofVolume // d_105-calculated roofVolume when available, need to omit/subtract basement volume here when present
+wallHeight = rectangularVolume / footprintArea // solves for above grade walls only
 
 // 3. Verify against wall area (consistency check)
 if (roofType === "gable" && gableEndArea > 0) {
@@ -344,7 +344,7 @@ These labels allow verification that the geometry solver is deriving dimensions 
 
 ### Activation Controls
 
-Users must click "Activate Topology View" to generate the 3D model. This prevents unnecessary calculations on page load.
+Users must click "Activate Topology View" to generate the 3D model. This prevents unnecessary calculations on page load. Button switches to 'Refresh Topology' after Activated.
 
 - **Inactive state**: Shows placeholder message
 - **Active state**: Generates and displays wireframe, updates on any geometry change
@@ -586,7 +586,7 @@ const wallPlateHeight = (totalWallArea - 2 × gableEndArea) / perimeter;
 
 ### Phase 4: Three.js Migration
 
-**Goal**: Migrate from SVG to Three.js for true 3D interaction and export capabilities.
+**Goal**: Migrate from SVG to Three.js for true 3D interaction and export/import capabilities.
 
 **Benefits**:
 - Real-time rotation via OrbitControls
@@ -604,7 +604,7 @@ const wallPlateHeight = (totalWallArea - 2 × gableEndArea) / perimeter;
 **Data Sources**:
 - `d_88-d_92` - Window areas by cardinal direction (N, E, S, W, Other)
 - `d_93` - Skylight area
-
+- Start with simplified offset geometry on walls, windows inset from perimeter matching ration of wall
 **Status**: Planned for future release
 
 ### Phase 6: Solar Radiation Overlay
@@ -672,6 +672,67 @@ This is a **thermal topology model**, not an architectural model. Strange-lookin
 
 ---
 
+## TODO: Basement Volume Subtraction Fix
+
+**Status**: 🎯 **READY TO IMPLEMENT** (2025-12-16)
+**Priority**: HIGH - Fixes story height collapse when basement present
+**Reference**: [The Great Basement Caper - SOLVED.md](../The%20Great%20Basement%20Caper%20-%20SOLVED.md)
+
+### The Bug
+Currently, basement volume is NOT subtracted from conditioned volume (d_105), causing basement height to be included in above-grade wall height calculation, which then gets divided across stories.
+
+**Current code** (Section19.js:1037-1059):
+```javascript
+const rectangularVolume = conditionedVolume - roofVolume;  // ❌ Missing basement!
+```
+
+**Result**: Story heights collapse when basement walls added (e.g., 0.22m for 1.5 stories)
+
+### The Fix
+Read basement data early, calculate basement volume, subtract from conditioned volume:
+
+```javascript
+// Read basement data EARLY (before wall height calc)
+const basementWallArea_early = parseFloat(getModeAwareValue("d_94", isReferenceCalculation)) || 0;
+const hasBasement_early = basementWallArea_early > 0;
+
+// Calculate basement volume
+let basementVolume = 0;
+if (hasBasement_early && perimeter > 0) {
+  const basementDepth_early = basementWallArea_early / perimeter;
+  basementVolume = footprintArea * basementDepth_early;
+}
+
+// Subtract BOTH roof and basement from conditioned volume
+const rectangularVolume = conditionedVolume - roofVolume - basementVolume;  // ✅ FIXED!
+```
+
+### Implementation Checklist
+- [ ] Add basement data early-read (before line 1037)
+- [ ] Calculate basement volume from basement depth
+- [ ] Subtract basement volume from rectangular volume calculation
+- [ ] Add diagnostic logging for volume breakdown
+- [ ] Add validation warning when rectangularVolume < 100 m³
+- [ ] Test with basement (d_94 > 0) and without (d_94 = 0)
+- [ ] Test both Target and Reference modes
+- [ ] Verify no "basement getting bigger" bug from previous attempt
+
+### Expected Results
+**With basement** (d_94 = 498 m², 3.2m depth):
+- Basement volume correctly subtracted from d_105
+- Above-grade wall height excludes basement height
+- Story heights realistic (not collapsed)
+
+**Without basement** (d_94 = 0):
+- No change to current behavior
+- basementVolume = 0
+
+### Code Location
+**File**: [Section19.js:1037-1071](../../src/sections/Section19.js#L1037-L1071)
+**Function**: `solveGeometry()` - Phase 5: Wall Height Calculation
+
+---
+
 **Document Status**: ACTIVE - Production documentation
-**Last Updated**: 2025-12-15
-**Next Review**: After gable roof implementation (Phase 3)
+**Last Updated**: 2025-12-16
+**Next Review**: After basement volume fix implementation
