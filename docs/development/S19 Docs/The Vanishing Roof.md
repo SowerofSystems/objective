@@ -364,6 +364,59 @@ function calculateMonopitchHeight(width, length, roofArea, slopeDirection) {
 
 ---
 
-**Document Status**: ACTIVE - Investigation complete, solutions proposed
-**Last Updated**: 2025-12-16
-**Next Step**: Implement hip roof geometry (Solution 1A)
+## Implementation Attempt 1: Iterative Hip Roof Solver (REVERTED)
+
+**Date**: 2025-12-16
+**Status**: REVERTED - Abandoned rational trigonometry principles
+**Commits**: 51bcd5e, 1e4c191 (reverted back to 8215caa)
+
+### What We Tried
+Implemented nested binary search solver for hip roof:
+- Searched over ridge ratio space [0, 1] (0=pyramid, 1=gable)
+- For each ratio, solved for height that satisfies area constraint
+- Used iterative convergence with `Math.sqrt()` on every iteration
+
+### Problems Encountered
+1. **Abandoned Rational Trigonometry**: Used `Math.sqrt()` extensively throughout iteration, violating Wildberger's quadrance principle
+2. **Geometry Bugs**: Rendering worked for positive aspect ratios but failed for negative (twisted geometry)
+3. **Vertex Issues**: Hip rafter calculations had constraint problems causing glitchy appearance
+
+### Why We Reverted
+- Violated NJ Wildberger's rational trigonometry approach (work with quadrance, defer sqrt)
+- Current pyramidal code beautifully defers sqrt until final step
+- Geometry bugs suggest fundamental approach issues
+
+### Lessons Learned
+- Must preserve rational trig throughout (quadrance-based calculations)
+- User's truncated gable suggestion is more elegant and aligns with rational trig
+- Hip roof should build on working gable code, not replace pyramidal math
+
+---
+
+## Next Approach: Truncated Gable (Planned for 2025-12-17)
+
+**Why This Is Better**:
+1. **Preserves Rational Trigonometry**: Builds on gable calculation which already uses quadrance properly
+2. **Conceptually Simpler**: Start with gable, shorten ridge, solve for truncation that meets area
+3. **Uses Working Code**: Leverages existing `calculateGableHeight()` that respects rational trig
+
+**Approach**:
+```javascript
+// Start with full gable geometry (ridge = building length)
+// Parameterize by ridge shortening factor
+// Shortened portions become hip slopes with SAME PITCH as gable
+// Solve for shortening that achieves target roof area
+// All in quadrance space - single sqrt at end
+```
+
+**Advantages**:
+- All slopes have identical pitch (realistic construction)
+- Natural transition: shortening → 0 gives pyramid
+- Works with quadrance throughout iteration
+- Likely avoids geometry bugs from first attempt
+
+---
+
+**Document Status**: ACTIVE - Implementation attempt 1 reverted, planning approach 2
+**Last Updated**: 2025-12-17
+**Next Step**: Implement truncated gable approach with rational trigonometry preserved
