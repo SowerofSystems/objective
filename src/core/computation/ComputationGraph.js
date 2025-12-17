@@ -653,6 +653,11 @@
 
   window.TEUI.createComputationGraph = createComputationGraph;
 
+  // Also expose as ComputationGraph.create() for cleaner API
+  window.TEUI.ComputationGraph = {
+    create: createComputationGraph
+  };
+
   // Log initialization
   console.log("[ComputationGraph] Module loaded");
 })();

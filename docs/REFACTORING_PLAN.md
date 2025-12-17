@@ -24,8 +24,8 @@ StateManager.js already provides foundational dependency tracking that this plan
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Phase 1: Computation Graph Infrastructure | ✅ Complete | All 5 tasks done (Dec 2025) |
-| Phase 2: Section Migration to Nodes | ⏳ Not Started | Ready to begin |
-| Phase 3: Multi-Model State | ⏳ Not Started | Waiting on Phase 2 |
+| Phase 2: Section Migration to Nodes | ✅ Complete | All 6 tasks done (Dec 2025) |
+| Phase 3: Multi-Model State | ⏳ Not Started | Ready to begin |
 | Phase 4: UI Integration | ⏳ Not Started | Waiting on Phase 3 |
 | Phase 5: Cleanup & Optimization | ⏳ Not Started | Waiting on Phase 4 |
 
@@ -38,6 +38,17 @@ StateManager.js already provides foundational dependency tracking that this plan
 | `src/core/computation/IncrementalEngine.js` | Incremental computation engine |
 | `src/core/computation/FieldRegistry.js` | Legacy ID to semantic path mapping |
 | `test/computation/computation.test.js` | Unit tests (run via test.html) |
+
+### Phase 2 Deliverables
+
+| File | Purpose |
+|------|---------|
+| `src/sections/nodes/ClimateNodes.js` | Climate (S03) calculation nodes |
+| `src/sections/nodes/EnvelopeNodes.js` | Envelope (S10/S11/S12) calculation nodes |
+| `src/sections/nodes/MechanicalNodes.js` | Mechanical (S13) calculation nodes |
+| `src/sections/nodes/EnergyNodes.js` | Energy (S14/S15) result nodes |
+| `test/computation/sectionNodes.test.js` | Section node verification tests |
+| `test/computation/sectionNodes.test.html` | Browser test runner for section nodes |
 
 ### Recent Codebase Changes (Since Plan Creation)
 
