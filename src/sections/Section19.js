@@ -718,66 +718,164 @@ window.TEUI.SectionModules.sect19 = (function () {
   }
 
   /**
-   * Calculate pyramidal roof height for rectangular base using rational trigonometry
-   * @param {number} width - Width of rectangular base
-   * @param {number} length - Length of rectangular base
-   * @param {number} areaRatio - Roof area / base area (R >= 1)
-   * @returns {number} - Pyramid height (minimum of two axes)
+   * Calculate hip roof height and geometry using iterative solver
+   * Hip roof = truncated gable with shortened ridge + triangular hip ends
+   * Special case: When ridge → 0, this becomes a pyramid (apex point)
+   * Special case: When footprint is square, automatically becomes pyramid
+   *
+   * This replaces the old pyramidHeightRectangle() which assumed equal-area faces
+   * (geometrically impossible for rectangles, causing roof collapse)
+   *
+   * @param {number} width - Building width
+   * @param {number} length - Building length
+   * @param {number} roofArea - Total roof area (constraint from user)
+   * @returns {Object} - { height, ridgeLength, ridgeRatio, ridgeOrientation, isValid }
    */
-  function pyramidHeightRectangle(width, length, areaRatio) {
-    if (areaRatio < 1) {
-      console.warn('[WOMBAT] Roof area ratio < 1, returning 0 height');
-      return 0;
-    }
-
+  function calculateHipRoofHeight(width, length, roofArea) {
     const baseArea = width * length;
-    const roofArea = areaRatio * baseArea;
-    const faceArea = roofArea / 4;
+    const buildingSpan = Math.min(width, length);
+    const buildingRun = Math.max(width, length);
+    const ridgeOrientation = length >= width ? "longitudinal" : "transverse";
 
-    // Slant heights from face areas (no trig functions!)
-    const sW = (2 * faceArea) / width;  // Width-face slant height
-    const sL = (2 * faceArea) / length; // Length-face slant height
+    console.log(`[WOMBAT] Hip roof calculation:`);
+    console.log(`  Building: ${width.toFixed(2)}m × ${length.toFixed(2)}m`);
+    console.log(`  Span: ${buildingSpan.toFixed(2)}m, Run: ${buildingRun.toFixed(2)}m`);
+    console.log(`  Target roof area: ${roofArea.toFixed(2)}m²`);
 
-    // Height quadrance from each axis using Pythagorean theorem
-    const h2w = sW * sW - (width * width) / 4;
-    const h2l = sL * sL - (length * length) / 4;
+    /**
+     * Calculate total roof area for given ridge ratio and height
+     * @param {number} ridgeRatio - Ridge length / building run (0 = pyramid, 1 = full gable)
+     * @param {number} h - Roof height above eaves
+     */
+    function totalRoofArea(ridgeRatio, h) {
+      const ridgeLen = ridgeRatio * buildingRun;
 
-    // Check for negative quadrance (mathematical impossibility - roof area too small for pyramid)
-    if (h2w < 0 || h2l < 0) {
-      console.error('[WOMBAT] Invalid pyramid geometry - negative height quadrance');
-      console.error(`  Width: ${width.toFixed(2)}m, Length: ${length.toFixed(2)}m, R: ${areaRatio.toFixed(3)}`);
-      console.error(`  h²_width = ${h2w.toFixed(4)}, h²_length = ${h2l.toFixed(4)}`);
-      console.error('  Roof area too small for pyramidal roof - returning 0');
-      return 0;
+      // Slant heights from edge midpoints to ridge/apex
+      const slantWidth = Math.sqrt(h * h + (buildingSpan / 2) * (buildingSpan / 2));
+      const slantLength = Math.sqrt(h * h + (buildingSpan / 2) * (buildingSpan / 2));
+
+      // 2 trapezoidal slopes along the run
+      const trapezoidArea = ((buildingRun + ridgeLen) / 2) * slantWidth;
+
+      // 2 triangular hip ends
+      const hipLength = buildingRun - ridgeLen;
+      const hipArea = (hipLength / 2) * slantLength;
+
+      return 2 * trapezoidArea + 2 * hipArea;
     }
 
-    // Check for non-congruent faces (only exact for square or R=1)
-    if (Math.abs(h2w - h2l) > 1e-6) {
-      console.warn('[WOMBAT] Non-congruent pyramid faces detected');
-      console.warn(`  h²_width = ${h2w.toFixed(4)}, h²_length = ${h2l.toFixed(4)}`);
+    /**
+     * Solve for height given ridge ratio using binary search
+     */
+    function solveHeightForRidgeRatio(ridgeRatio) {
+      const tolerance = 0.001; // 1mm precision
+      let hMin = 0.1;
+      let hMax = buildingSpan * 2; // Reasonable upper bound
+      let iterations = 0;
+      const maxIterations = 50;
+
+      while (hMax - hMin > tolerance && iterations < maxIterations) {
+        const hMid = (hMin + hMax) / 2;
+        const area = totalRoofArea(ridgeRatio, hMid);
+
+        if (Math.abs(area - roofArea) < 0.1) {
+          return hMid; // Converged
+        }
+
+        if (area < roofArea) {
+          hMin = hMid; // Need more height
+        } else {
+          hMax = hMid; // Need less height
+        }
+
+        iterations++;
+      }
+
+      return (hMin + hMax) / 2;
     }
 
-    // Conservative: use minimum height to ensure all faces fit
-    const heightSquared = Math.max(0, Math.min(h2w, h2l)); // Ensure non-negative
-    return Math.sqrt(heightSquared);
+    // Binary search over ridge ratio space [0, 1]
+    // r=0: pyramid (apex point), r=1: full gable (no hips)
+    const tolerance = 0.001;
+    let rMin = 0.0;
+    let rMax = 1.0;
+    let iterations = 0;
+    const maxIterations = 50;
+
+    let bestRidgeRatio = 0.5;
+    let bestHeight = 0;
+
+    while (rMax - rMin > tolerance && iterations < maxIterations) {
+      const rMid = (rMin + rMax) / 2;
+      const h = solveHeightForRidgeRatio(rMid);
+      const area = totalRoofArea(rMid, h);
+
+      if (Math.abs(area - roofArea) < 0.1) {
+        bestRidgeRatio = rMid;
+        bestHeight = h;
+        break;
+      }
+
+      // Adjust search based on area error
+      if (area < roofArea) {
+        rMin = rMid; // Need shorter ridge (more hip area)
+      } else {
+        rMax = rMid; // Need longer ridge (more gable-like)
+      }
+
+      bestRidgeRatio = rMid;
+      bestHeight = h;
+      iterations++;
+    }
+
+    const finalRidgeLength = bestRidgeRatio * buildingRun;
+    const finalArea = totalRoofArea(bestRidgeRatio, bestHeight);
+
+    console.log(`[WOMBAT] Hip roof solved (${iterations} iterations):`);
+    console.log(`  Ridge ratio: ${bestRidgeRatio.toFixed(3)} (0=pyramid, 1=gable)`);
+    console.log(`  Ridge length: ${finalRidgeLength.toFixed(2)}m`);
+    console.log(`  Roof height: ${bestHeight.toFixed(2)}m`);
+    console.log(`  Achieved area: ${finalArea.toFixed(2)}m² (target: ${roofArea.toFixed(2)}m²)`);
+
+    if (Math.abs(finalArea - roofArea) > 1.0) {
+      console.warn('[WOMBAT] Hip roof area mismatch > 1m² - geometry may be invalid');
+    }
+
+    return {
+      height: bestHeight,
+      ridgeLength: finalRidgeLength,
+      ridgeRatio: bestRidgeRatio,
+      ridgeOrientation: ridgeOrientation,
+      isValid: bestHeight > 0 && !isNaN(bestHeight)
+    };
   }
 
   /**
-   * Calculate pyramidal roof height using rational trigonometry
-   * Automatically detects square vs rectangular base
+   * Calculate pyramidal/hip roof height using rational trigonometry
+   * Uses enhanced hip roof method that handles both square (pyramid) and rectangular (hip) bases
    * @param {number} width - Building width
    * @param {number} length - Building length
    * @param {number} areaRatio - Roof area / base area
-   * @returns {number} - Pyramid height
+   * @returns {number} - Roof height
    */
   function calculatePyramidalHeight(width, length, areaRatio) {
     const tolerance = 1e-6;
+    const baseArea = width * length;
+    const roofArea = areaRatio * baseArea;
 
-    // Check if base is effectively square
+    // Check if base is effectively square - use simple pyramid formula
     if (Math.abs(width - length) < tolerance) {
       return pyramidHeightSquare(width, areaRatio);
+    }
+
+    // For rectangular bases, use new hip roof solver
+    const hipData = calculateHipRoofHeight(width, length, roofArea);
+
+    if (hipData.isValid) {
+      return hipData.height;
     } else {
-      return pyramidHeightRectangle(width, length, areaRatio);
+      console.error('[WOMBAT] Hip/pyramid roof solver failed - returning 0');
+      return 0;
     }
   }
 
@@ -991,11 +1089,33 @@ window.TEUI.SectionModules.sect19 = (function () {
           roofHeight = 0;
         }
       } else if (roofTypeSelection === "multiplanar") {
-        // PYRAMIDAL ROOF (multiplanar)
+        // PYRAMIDAL/HIP ROOF (multiplanar)
+        // Uses enhanced hip roof solver that handles both square (pyramid) and rectangular (hip) cases
         roofType = "pyramidal";
-        roofHeight = calculatePyramidalHeight(width, length, areaRatio);
 
-        console.log(`[WOMBAT] Pyramidal roof: h=${roofHeight.toFixed(2)}m`);
+        // Check if square or rectangular to determine which data to capture
+        const tolerance = 1e-6;
+        const isSquare = Math.abs(width - length) < tolerance;
+
+        if (isSquare) {
+          // Square footprint - pure pyramid
+          roofHeight = calculatePyramidalHeight(width, length, areaRatio);
+          console.log(`[WOMBAT] Pyramidal roof (square): h=${roofHeight.toFixed(2)}m`);
+        } else {
+          // Rectangular footprint - hip roof (calls calculateHipRoofHeight internally)
+          const roofArea = areaRatio * footprintArea;
+          const hipData = calculateHipRoofHeight(width, length, roofArea);
+
+          if (hipData.isValid) {
+            roofHeight = hipData.height;
+            roofGeometryData = hipData;  // Store hip geometry for rendering
+            console.log(`[WOMBAT] Hip roof (rectangular): h=${roofHeight.toFixed(2)}m, ridge=${hipData.ridgeLength.toFixed(2)}m`);
+          } else {
+            console.warn('[WOMBAT] Invalid hip geometry - falling back to flat roof');
+            roofType = "flat";
+            roofHeight = 0;
+          }
+        }
       } else {
         // MONOPLANE (shed roof) - future implementation
         console.warn('[WOMBAT] Monoplane roof type not yet implemented - using flat roof');
@@ -1128,7 +1248,8 @@ window.TEUI.SectionModules.sect19 = (function () {
       height: roofHeight,
       areaRatio: areaRatio,
       gableEndArea: gableEndArea,
-      gableData: roofGeometryData  // Full gable geometry data (ridge, span, etc.)
+      gableData: roofGeometryData,  // Full gable geometry data (ridge, span, etc.)
+      hipData: roofGeometryData     // Hip roof data (same var, but distinguishes by roof type)
     };
 
     // Phase 4: Below-Grade Geometry (WOMBAT Phase 2)

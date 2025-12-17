@@ -629,6 +629,7 @@ window.TEUI.WombatRender = (function () {
 
   /**
    * Render pyramidal roof geometry using rational trigonometry
+   * Also handles hip roofs (when hipData is present)
    * @param {SVGElement} svg - Target SVG element
    * @param {Object} geometry - Geometry object with roof data
    * @param {string} mode - "target" or "reference"
@@ -645,6 +646,7 @@ window.TEUI.WombatRender = (function () {
     const { width, length } = geometry.footprint;
     const wallHeight = geometry.height;
     const roofHeight = geometry.roof.height;
+    const hipData = geometry.roof.hipData;
 
     // Validate roof height (allow 0 for flat/failed roofs, but catch NaN/Infinity)
     if (isNaN(roofHeight) || !isFinite(roofHeight)) {
@@ -666,40 +668,151 @@ window.TEUI.WombatRender = (function () {
       return;
     }
 
-    // Apex point (centered above base)
-    const apex = {
-      x: 0,
-      y: 0,
-      z: wallHeight + roofHeight,
-    };
+    // Check if this is a hip roof (has ridge) or pure pyramid (apex point)
+    if (hipData && hipData.isValid && hipData.ridgeLength > 0.01) {
+      // HIP ROOF - render with ridge line
+      renderHipRoof(svg, geometry, mode, scale, centerX, centerY);
+    } else {
+      // PURE PYRAMID - render with apex point
+      const apex = {
+        x: 0,
+        y: 0,
+        z: wallHeight + roofHeight,
+      };
 
-    // Four corners of roof base (top of walls)
-    const roofBase = [
-      { x: -width / 2, y: -length / 2, z: wallHeight }, // SW corner
-      { x: width / 2, y: -length / 2, z: wallHeight }, // SE corner
-      { x: width / 2, y: length / 2, z: wallHeight }, // NE corner
-      { x: -width / 2, y: length / 2, z: wallHeight }, // NW corner
-    ];
+      // Four corners of roof base (top of walls)
+      const roofBase = [
+        { x: -width / 2, y: -length / 2, z: wallHeight }, // SW corner
+        { x: width / 2, y: -length / 2, z: wallHeight }, // SE corner
+        { x: width / 2, y: length / 2, z: wallHeight }, // NE corner
+        { x: -width / 2, y: length / 2, z: wallHeight }, // NW corner
+      ];
 
-    // Draw four triangular faces
-    roofBase.forEach((corner, i) => {
-      const nextCorner = roofBase[(i + 1) % 4];
-      drawTriangle(
-        svg,
-        corner,
-        apex,
-        nextCorner,
+      // Draw four triangular faces
+      roofBase.forEach((corner, i) => {
+        const nextCorner = roofBase[(i + 1) % 4];
+        drawTriangle(
+          svg,
+          corner,
+          apex,
+          nextCorner,
+          scale,
+          centerX,
+          centerY,
+          roofColor
+        );
+      });
+
+      // Draw apex node
+      const apexPt = toIsometric(apex.x, apex.y, apex.z, scale, centerX, centerY);
+      const node = createNode(apexPt, roofColor, 5);
+      svg.appendChild(node);
+
+      // Add roof height label
+      const roofLabelPos = toIsometric(
+        width / 2 + 8,
+        0,
+        wallHeight + roofHeight / 2,
         scale,
         centerX,
-        centerY,
-        roofColor
+        centerY
       );
-    });
+      const roofLabel = createText(
+        roofLabelPos.x + 15,
+        roofLabelPos.y,
+        `Roof: ${Math.abs(roofHeight).toFixed(1)}m`,
+        roofColor,
+        10,
+        { style: "italic" }
+      );
+      svg.appendChild(roofLabel);
+    }
+  }
 
-    // Draw apex node
-    const apexPt = toIsometric(apex.x, apex.y, apex.z, scale, centerX, centerY);
-    const node = createNode(apexPt, roofColor, 5);
-    svg.appendChild(node);
+  /**
+   * Render hip roof geometry (truncated gable with ridge + hip ends)
+   * @param {SVGElement} svg - Target SVG element
+   * @param {Object} geometry - Geometry object with roof data
+   * @param {string} mode - "target" or "reference"
+   * @param {number} scale - Isometric scale factor
+   * @param {number} centerX - SVG center X coordinate
+   * @param {number} centerY - SVG center Y coordinate
+   */
+  function renderHipRoof(svg, geometry, mode, scale, centerX, centerY) {
+    const isReference = mode === "reference";
+    const roofColor = isReference
+      ? config.colors.reference
+      : config.colors.target;
+
+    const { width, length } = geometry.footprint;
+    const wallHeight = geometry.height;
+    const roofHeight = geometry.roof.height;
+    const hipData = geometry.roof.hipData;
+
+    if (!hipData || !hipData.isValid) {
+      console.error("[WombatRender] Invalid hip roof data");
+      return;
+    }
+
+    console.log("[WombatRender] renderHipRoof called:");
+    console.log("  Ridge length:", hipData.ridgeLength);
+    console.log("  Ridge orientation:", hipData.ridgeOrientation);
+    console.log("  Roof height:", roofHeight);
+
+    // Ridge endpoints (at peak height)
+    const buildingRun = hipData.ridgeOrientation === "longitudinal" ? length : width;
+    const buildingSpan = hipData.ridgeOrientation === "longitudinal" ? width : length;
+    const ridgeLength = hipData.ridgeLength;
+    const ridgeOffset = (buildingRun - ridgeLength) / 2;
+
+    let ridge1, ridge2, eave1, eave2, eave3, eave4;
+
+    if (hipData.ridgeOrientation === "longitudinal") {
+      // Ridge runs along length (Y-axis)
+      ridge1 = { x: 0, y: -buildingRun / 2 + ridgeOffset, z: wallHeight + roofHeight };
+      ridge2 = { x: 0, y: buildingRun / 2 - ridgeOffset, z: wallHeight + roofHeight };
+
+      // Four eave corners
+      eave1 = { x: -buildingSpan / 2, y: -buildingRun / 2, z: wallHeight };  // SW
+      eave2 = { x: buildingSpan / 2, y: -buildingRun / 2, z: wallHeight };   // SE
+      eave3 = { x: buildingSpan / 2, y: buildingRun / 2, z: wallHeight };    // NE
+      eave4 = { x: -buildingSpan / 2, y: buildingRun / 2, z: wallHeight };   // NW
+    } else {
+      // Ridge runs along width (X-axis)
+      ridge1 = { x: -buildingRun / 2 + ridgeOffset, y: 0, z: wallHeight + roofHeight };
+      ridge2 = { x: buildingRun / 2 - ridgeOffset, y: 0, z: wallHeight + roofHeight };
+
+      // Four eave corners
+      eave1 = { x: -buildingRun / 2, y: -buildingSpan / 2, z: wallHeight };  // SW
+      eave2 = { x: buildingRun / 2, y: -buildingSpan / 2, z: wallHeight };   // SE
+      eave3 = { x: buildingRun / 2, y: buildingSpan / 2, z: wallHeight };    // NE
+      eave4 = { x: -buildingRun / 2, y: buildingSpan / 2, z: wallHeight };   // NW
+    }
+
+    // Draw 2 trapezoidal slopes (split into triangles for filled faces)
+    // West/South slope trapezoid: eave1-eave4-ridge2-ridge1
+    drawTriangle(svg, eave1, eave4, ridge1, scale, centerX, centerY, roofColor);
+    drawTriangle(svg, eave4, ridge2, ridge1, scale, centerX, centerY, roofColor);
+
+    // East/North slope trapezoid: eave2-eave3-ridge2-ridge1
+    drawTriangle(svg, eave2, ridge1, eave3, scale, centerX, centerY, roofColor);
+    drawTriangle(svg, eave3, ridge1, ridge2, scale, centerX, centerY, roofColor);
+
+    // Draw 2 triangular hip ends
+    drawTriangle(svg, eave1, ridge1, eave2, scale, centerX, centerY, roofColor);
+    drawTriangle(svg, eave3, ridge2, eave4, scale, centerX, centerY, roofColor);
+
+    // Draw ridge line
+    const r1Pt = toIsometric(ridge1.x, ridge1.y, ridge1.z, scale, centerX, centerY);
+    const r2Pt = toIsometric(ridge2.x, ridge2.y, ridge2.z, scale, centerX, centerY);
+    const ridgeLine = createLine(r1Pt, r2Pt, roofColor, 2);
+    svg.appendChild(ridgeLine);
+
+    // Draw ridge endpoint nodes
+    const node1 = createNode(r1Pt, roofColor, 5);
+    const node2 = createNode(r2Pt, roofColor, 5);
+    svg.appendChild(node1);
+    svg.appendChild(node2);
 
     // Add roof height label
     const roofLabelPos = toIsometric(
@@ -713,7 +826,7 @@ window.TEUI.WombatRender = (function () {
     const roofLabel = createText(
       roofLabelPos.x + 15,
       roofLabelPos.y,
-      `Roof: ${Math.abs(roofHeight).toFixed(1)}m`,
+      `Roof: ${roofHeight.toFixed(1)}m (hip)`,
       roofColor,
       10,
       { style: "italic" }
