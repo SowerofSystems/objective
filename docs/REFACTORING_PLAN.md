@@ -23,11 +23,21 @@ StateManager.js already provides foundational dependency tracking that this plan
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| Phase 1: Computation Graph Infrastructure | ⏳ Not Started | Types, Graph, Engine modules not created |
-| Phase 2: Section Migration to Nodes | ⏳ Not Started | Waiting on Phase 1 |
+| Phase 1: Computation Graph Infrastructure | ✅ Complete | All 5 tasks done (Dec 2025) |
+| Phase 2: Section Migration to Nodes | ⏳ Not Started | Ready to begin |
 | Phase 3: Multi-Model State | ⏳ Not Started | Waiting on Phase 2 |
 | Phase 4: UI Integration | ⏳ Not Started | Waiting on Phase 3 |
 | Phase 5: Cleanup & Optimization | ⏳ Not Started | Waiting on Phase 4 |
+
+### Phase 1 Deliverables
+
+| File | Purpose |
+|------|---------|
+| `src/core/computation/types.js` | JSDoc type definitions |
+| `src/core/computation/ComputationGraph.js` | Dependency graph structure |
+| `src/core/computation/IncrementalEngine.js` | Incremental computation engine |
+| `src/core/computation/FieldRegistry.js` | Legacy ID to semantic path mapping |
+| `test/computation/computation.test.js` | Unit tests (run via test.html) |
 
 ### Recent Codebase Changes (Since Plan Creation)
 
