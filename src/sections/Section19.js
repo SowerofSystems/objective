@@ -928,9 +928,22 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     if (floorplateOption === "mezzanine" && storiesDeclared !== fullStories) {
       // User selected Mezzanine/Partial Floor option
-      // Mezzanine area = conditioned area - footprint
-      mezzanineArea = Math.max(0, conditionedArea - footprintArea);
-      console.log(`[WOMBAT] Mezzanine/Partial floor: ${mezzanineArea.toFixed(2)} m²`);
+      // Check for basement to account for its floorplate area
+      const basementWallArea_mezzanine = parseFloat(getModeAwareValue("d_94", isReferenceCalculation)) || 0;
+      const hasBasement_mezzanine = basementWallArea_mezzanine > 0;
+
+      // Mezzanine area = conditioned area - full story floorplates - basement floorplate (if present)
+      // Example: 1.5 stories with basement = conditioned - (1 × footprint) - (1 × footprint for basement)
+      const fullStoryArea = fullStories * footprintArea;
+      const basementFloorplateArea = hasBasement_mezzanine ? footprintArea : 0;
+
+      mezzanineArea = Math.max(0, conditionedArea - fullStoryArea - basementFloorplateArea);
+
+      console.log(`[WOMBAT] Mezzanine/Partial floor calculation:`);
+      console.log(`  Conditioned area: ${conditionedArea.toFixed(2)} m²`);
+      console.log(`  Full stories: ${fullStories} × ${footprintArea.toFixed(2)} m² = ${fullStoryArea.toFixed(2)} m²`);
+      console.log(`  Basement floorplate: ${basementFloorplateArea.toFixed(2)} m²`);
+      console.log(`  Mezzanine area: ${mezzanineArea.toFixed(2)} m²`);
     } else {
       // Equal floorplates - distribute conditioned area across stories
       mezzanineArea = 0;
