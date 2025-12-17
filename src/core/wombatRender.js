@@ -761,52 +761,49 @@ window.TEUI.WombatRender = (function () {
 
     // Ridge endpoints (at peak height)
     const buildingRun = hipData.ridgeOrientation === "longitudinal" ? length : width;
-    const buildingSpan = hipData.ridgeOrientation === "longitudinal" ? width : length;
     const ridgeLength = hipData.ridgeLength;
     const ridgeOffset = (buildingRun - ridgeLength) / 2;
 
-    let ridge1, ridge2, eave1, eave2, eave3, eave4;
+    // Four eave corners - ALWAYS use actual width/length regardless of orientation
+    const eave1 = { x: -width / 2, y: -length / 2, z: wallHeight };  // SW
+    const eave2 = { x: width / 2, y: -length / 2, z: wallHeight };   // SE
+    const eave3 = { x: width / 2, y: length / 2, z: wallHeight };    // NE
+    const eave4 = { x: -width / 2, y: length / 2, z: wallHeight };   // NW
+
+    let ridge1, ridge2;
 
     if (hipData.ridgeOrientation === "longitudinal") {
       // Ridge runs along length (Y-axis)
-      ridge1 = { x: 0, y: -buildingRun / 2 + ridgeOffset, z: wallHeight + roofHeight };
-      ridge2 = { x: 0, y: buildingRun / 2 - ridgeOffset, z: wallHeight + roofHeight };
-
-      // Four eave corners
-      eave1 = { x: -buildingSpan / 2, y: -buildingRun / 2, z: wallHeight };  // SW
-      eave2 = { x: buildingSpan / 2, y: -buildingRun / 2, z: wallHeight };   // SE
-      eave3 = { x: buildingSpan / 2, y: buildingRun / 2, z: wallHeight };    // NE
-      eave4 = { x: -buildingSpan / 2, y: buildingRun / 2, z: wallHeight };   // NW
+      ridge1 = { x: 0, y: -length / 2 + ridgeOffset, z: wallHeight + roofHeight };
+      ridge2 = { x: 0, y: length / 2 - ridgeOffset, z: wallHeight + roofHeight };
     } else {
       // Ridge runs along width (X-axis)
-      ridge1 = { x: -buildingRun / 2 + ridgeOffset, y: 0, z: wallHeight + roofHeight };
-      ridge2 = { x: buildingRun / 2 - ridgeOffset, y: 0, z: wallHeight + roofHeight };
-
-      // Four eave corners
-      eave1 = { x: -buildingRun / 2, y: -buildingSpan / 2, z: wallHeight };  // SW
-      eave2 = { x: buildingRun / 2, y: -buildingSpan / 2, z: wallHeight };   // SE
-      eave3 = { x: buildingRun / 2, y: buildingSpan / 2, z: wallHeight };    // NE
-      eave4 = { x: -buildingRun / 2, y: buildingSpan / 2, z: wallHeight };   // NW
+      ridge1 = { x: -width / 2 + ridgeOffset, y: 0, z: wallHeight + roofHeight };
+      ridge2 = { x: width / 2 - ridgeOffset, y: 0, z: wallHeight + roofHeight };
     }
 
-    // Draw 2 trapezoidal slopes (split into triangles for filled faces)
-    // West/South slope trapezoid: eave1-eave4-ridge2-ridge1
-    drawTriangle(svg, eave1, eave4, ridge1, scale, centerX, centerY, roofColor);
-    drawTriangle(svg, eave4, ridge2, ridge1, scale, centerX, centerY, roofColor);
+    // For wireframe rendering, draw only the ACTUAL structural edges
+    // (Don't draw internal diagonals from triangle decomposition)
 
-    // East/North slope trapezoid: eave2-eave3-ridge2-ridge1
-    drawTriangle(svg, eave2, ridge1, eave3, scale, centerX, centerY, roofColor);
-    drawTriangle(svg, eave3, ridge1, ridge2, scale, centerX, centerY, roofColor);
-
-    // Draw 2 triangular hip ends
-    drawTriangle(svg, eave1, ridge1, eave2, scale, centerX, centerY, roofColor);
-    drawTriangle(svg, eave3, ridge2, eave4, scale, centerX, centerY, roofColor);
-
-    // Draw ridge line
+    // Convert all points to isometric
+    const e1Pt = toIsometric(eave1.x, eave1.y, eave1.z, scale, centerX, centerY);
+    const e2Pt = toIsometric(eave2.x, eave2.y, eave2.z, scale, centerX, centerY);
+    const e3Pt = toIsometric(eave3.x, eave3.y, eave3.z, scale, centerX, centerY);
+    const e4Pt = toIsometric(eave4.x, eave4.y, eave4.z, scale, centerX, centerY);
     const r1Pt = toIsometric(ridge1.x, ridge1.y, ridge1.z, scale, centerX, centerY);
     const r2Pt = toIsometric(ridge2.x, ridge2.y, ridge2.z, scale, centerX, centerY);
-    const ridgeLine = createLine(r1Pt, r2Pt, roofColor, 2);
-    svg.appendChild(ridgeLine);
+
+    // Draw ridge line
+    svg.appendChild(createLine(r1Pt, r2Pt, roofColor, 2));
+
+    // Draw 4 hip rafters (from ridge endpoints to eave corners)
+    svg.appendChild(createLine(r1Pt, e1Pt, roofColor, 2));
+    svg.appendChild(createLine(r1Pt, e2Pt, roofColor, 2));
+    svg.appendChild(createLine(r2Pt, e3Pt, roofColor, 2));
+    svg.appendChild(createLine(r2Pt, e4Pt, roofColor, 2));
+
+    // Eave lines are already drawn by renderAboveGrade (building perimeter)
+    // So we don't need to redraw them here
 
     // Draw ridge endpoint nodes
     const node1 = createNode(r1Pt, roofColor, 5);
