@@ -2092,6 +2092,16 @@ window.TEUI.SectionModules.sect19 = (function () {
         calculateAll();
       });
 
+      // ✅ CRITICAL: Check if ref_g_106 was already published before listener was added
+      // Section12 publishes during initialization, but Section19 listeners are added later
+      // This ensures we don't miss the initial value (same pattern as d_105/d_103)
+      const existingRefG106 = window.TEUI.StateManager.getValue("ref_g_106");
+      if (existingRefG106 !== null && existingRefG106 !== undefined) {
+        console.log(`[WOMBAT SYNC] Found existing ref_g_106 = ${existingRefG106} in StateManager`);
+        console.log(`[WOMBAT SYNC] Triggering initial calculateAll() for Reference pre-calculation`);
+        calculateAll();
+      }
+
       // ✅ ROBOT FINGERS 🤖👆: Ae and Ag display fields from S12
       // S12 publishes d_101/g_101/d_102/g_102 to StateManager
       // S19 listens and updates its own DOM elements (scoped to #wombat container)
