@@ -922,6 +922,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Initialize elegant user input behavior
     initializeElegantInputBehavior();
+
+    // Initialize new computation system (Multi-Model Architecture)
+    if (window.TEUI.ComputationIntegration) {
+      setTimeout(function () {
+        window.TEUI.ComputationIntegration.initialize({
+          enableLogging: true,
+          runInParallel: true,
+          autoSync: true
+        });
+        console.log("[init.js] New computation system initialized");
+      }, 500); // After initial render settles
+    }
   } else {
     console.error("Core TEUI modules (StateManager, FieldManager) not found!");
   }
