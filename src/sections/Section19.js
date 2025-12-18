@@ -862,7 +862,16 @@ window.TEUI.SectionModules.sect19 = (function () {
     const conditionedArea = parseFloat(getModeAwareValue("h_15", isReferenceCalculation));
     const roofArea = parseFloat(getModeAwareValue("d_85", isReferenceCalculation));
     const opaqueWallArea = parseFloat(getModeAwareValue("d_86", isReferenceCalculation));
-    const footprintArea = parseFloat(getModeAwareValue("d_95", isReferenceCalculation));
+
+    // Footprint area: Try d_95 (slab on grade) first, fallback to d_87 (raised floor)
+    // Some buildings have only raised floor (no slab), some have both (e.g., bedroom over garage)
+    let footprintArea = parseFloat(getModeAwareValue("d_95", isReferenceCalculation));
+
+    if (!footprintArea || footprintArea <= 0 || isNaN(footprintArea)) {
+      // No slab - use raised floor area (d_87)
+      footprintArea = parseFloat(getModeAwareValue("d_87", isReferenceCalculation));
+      console.log(`[WOMBAT] No slab on grade (d_95), using raised floor area (d_87): ${footprintArea?.toFixed(2)} m²`);
+    }
 
     // ⚠️ DUAL-STATE: Read from appropriate state based on calculation mode
     // Mirror fields: d_151 (volume) ↔ S12 d_105, d_150 (stories) ↔ S12 d_103
@@ -872,7 +881,7 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Validate SACRED inputs - fail loudly if missing or invalid
     if (!footprintArea || footprintArea <= 0 || isNaN(footprintArea)) {
-      throw new Error("[WOMBAT] Footprint area (d_95) required and must be > 0");
+      throw new Error("[WOMBAT] Footprint area required: neither d_95 (slab) nor d_87 (raised floor) have valid values > 0");
     }
     if (!conditionedArea || conditionedArea <= 0 || isNaN(conditionedArea)) {
       throw new Error("[WOMBAT] Conditioned area (h_15) required and must be > 0");

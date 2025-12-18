@@ -188,7 +188,8 @@ class ExcelMapper {
       D116: "d_116", // Cooling System (Dropdown)
       J116: "j_116", // Cooling COP (Editable Number, skipped on import if system is Heatpump which sets COPc automatically)
       D118: "d_118", // HRV/ERV SRE % (Percentage Slider -> Number 0-100)
-      G118: "g_118", // Ventilation Method (Dropdown)
+      G118: "g_118", // Ventilation Method (Dropdown)- wrong DOM position?
+      //H118: "h_118", //fixed after import failure test from Greenway Project, older file had this at H
       L118: "l_118", // ACH (Editable Number)
       D119: "d_119", // Rate Per Person (Editable Number)
       L119: "l_119", // Summer Boost (Dropdown)
@@ -352,6 +353,7 @@ class ExcelMapper {
       J116: "ref_j_116", // Cooling COP (Editable Number)
       D118: "ref_d_118", //why is this value not importing properly??
       G118: "ref_g_118", //why is this value not importing properly??
+      //H118: "ref_h_118", //fixed after import failure test from Greenway Project 3.036 had this at H not G
       L118: "ref_l_118",
       D119: "ref_d_119",
       L119: "ref_l_119",
