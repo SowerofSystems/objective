@@ -441,7 +441,7 @@ Looking at the screenshot with negative aspect ratio:
 - Ridge line endpoints are CORRECTLY positioned (blue dots at right locations)
 - Building perimeter is CORRECTLY sized and oriented
 - **Hip rafters (from eave corners to ridge) connect to OPPOSITE ridge endpoint**
-- Result: Crossed/twisted roof geometry
+- Result: Crossed/twisted roof geometry at the point of sliding into negative aspect ratio, positive renders correctly (clockwise vector render flips counterclockwise?)
 
 **Example**:
 ```
@@ -842,10 +842,514 @@ The area constraint IS being satisfied mathematically (converges to exact match)
 
 ---
 
-**Document Status**: ACTIVE - Hip roof working, refinements needed for square buildings and area verification
-**Last Updated**: 2025-12-17 (End of Day)
+## CRITICAL ISSUE DISCOVERED: Hip Roof Violates Wall Area Constraint
+
+**Date**: 2025-12-18
+**Status**: BLOCKING BUG - Hip roof steals volume from storey below and thus wall areas below, thus violating the stated total wall area constraint.
+
+### The Problem
+
+From live testing logs, switching between Gable and Hip roofs on the same building shows a massive discrepancy:
+
+**Test Building**:
+- Footprint: 29.70 m² (5.45m × 5.45m square)
+- Total conditioned volume: 81.00 m³ (SACRED - from d_105)
+- Wall area checksum: 53.00 m² (SACRED - from S12 g_107 = sum of d_86 + doors + windows)
+- Roof area: 35.00 m² (1.178 ratio)
+
+**Hip Roof (multiplanar)**:
+- Roof height: 3.30 m
+- **Roof volume: 40.87 m³**
+- Above-grade rectangular volume: 40.13 m³
+- **Wall height: 1.351 m**
+- Wall height from area: 2.431 m
+- **Discrepancy: 79.9%** ❌
+
+**Gable Roof (biplanar)** - SAME BUILDING:
+- Roof height: 1.70 m
+- **Roof volume: 25.23 m³**
+- Above-grade rectangular volume: 55.77 m³
+- **Wall height: 1.878 m**
+- Wall height from area: 2.007 m
+- **Discrepancy: 6.9%** (barely acceptable)
+
+### The Numbers Don't Lie
+
+Hip roof consumes **15.64 m³ MORE volume** than gable roof (40.87 vs 25.23).
+
+This extra volume is stolen from the walls below, which violates the **SACRED wall area constraint** from Section 12.
+
+**Volume arithmetic**:
+```
+Total volume:         81.00 m³  (fixed)
+Hip roof volume:     -40.87 m³
+Rectangular volume:   40.13 m³
+÷ Footprint:         ÷29.70 m²
+Wall height:          1.351 m   ← TOO SHORT!
+
+Expected wall height from area:
+Wall area:            53.00 m²  (fixed - from S12)
+÷ Perimeter:         ÷21.80 m  (4 × 5.45m)
+Wall height:          2.431 m   ← REQUIRED!
+
+Discrepancy: 1.351m vs 2.431m = 79.9% error!
+```
+
+### Root Cause Analysis
+
+Looking at the hip roof area calculation (Section19.js:939-946):
+
+```javascript
+// Main rectangular slopes: 2 rectangles with dimensions ridgeLength × slopeLength
+const mainSlopeArea = 2 * ridgeLength * slopeLength;
+
+// Hip end triangular sections
+// Each hip end consists of 2 triangular roof planes meeting at ridge endpoint
+// The projected area of each hip end (both triangles) = ridgeOffset × slopeLength
+// Total for both ends = 2 × (ridgeOffset × slopeLength)
+const hipEndArea = 2 * ridgeOffset * slopeLength;
+
+const calculatedArea = mainSlopeArea + hipEndArea;
+```
+
+**The formula is WRONG!**
+
+This treats the hip ends as **rectangular projections** (ridgeOffset × slopeLength), NOT as the actual **triangular surface area**.
+
+### The Geometric Truth
+
+A hip roof consists of:
+1. **2 main trapezoidal slopes** (NOT rectangles!)
+2. **4 triangular hip end faces** (2 at each end)
+
+**Current formula (WRONG)**:
+```
+Area = 2 × ridgeLength × slopeLength + 2 × ridgeOffset × slopeLength
+     = 2 × slopeLength × (ridgeLength + ridgeOffset)
+     = 2 × slopeLength × (ridgeLength + ridgeOffset)
+```
+
+This is treating it like **2 rectangles** with width = (ridgeLength + ridgeOffset) = maxDimension.
+
+**In other words**: We're calculating the area of a GABLE ROOF with full ridge length = maxDimension, NOT a hip roof!
+
+**Correct formula should be**:
+
+For each trapezoidal main slope:
+- Top edge: ridgeLength
+- Bottom edge: maxDimension
+- "Height" (slope distance): slopeLength
+- Area = (ridgeLength + maxDimension) / 2 × slopeLength
+
+Wait, that's still not right. Let me think about this geometrically...
+
+Actually, a **hip roof face is NOT a trapezoid**. Each main slope is a **rectangle** running from ridge to eave, with dimensions:
+- Length: ridgeLength (along ridge)
+- Width: slopeLength (from ridge down to eave)
+
+Each hip end has 2 **triangular faces**:
+- Base: span (building width at that end)
+- Height: **hip rafter length** (NOT slopeLength!)
+
+### The Real Problem: Hip Rafter Length vs Slope Length
+
+**Slope length** = distance from ridge to eave, perpendicular to ridge
+- This is correct for the main rectangular slopes ✓
+
+**Hip rafter length** = distance from corner to ridge endpoint (diagonal)
+- From corner at (±span/2, ±ridgeOffset, 0) to ridge endpoint at (0, ±ridgeOffset, height)
+- Horizontal distance: `sqrt((span/2)² + ridgeOffset²)`
+- Vertical distance: `height`
+- Hip rafter: `sqrt((span/2)² + ridgeOffset² + height²)`
+
+**Current hip end area calculation**:
+```javascript
+const hipEndArea = 2 * ridgeOffset * slopeLength;
+```
+
+This is treating the hip end as if it's a rectangular projection with dimensions (ridgeOffset × slopeLength).
+
+But geometrically:
+- Each hip end has 2 triangular faces
+- Each triangle: base = span, height = hip rafter length
+- Area of one triangle = (1/2) × span × hipRafterLength
+- Area of one hip end (2 triangles) = span × hipRafterLength
+- Total both ends = 2 × span × hipRafterLength
+
+**The error compounds**:
+1. We're using `ridgeOffset × slopeLength` instead of `span × hipRafterLength`
+2. For a square building (5.45m × 5.45m):
+   - ridgeOffset = 1.36m
+   - span = 5.45m
+   - So we're calculating with 1.36m instead of 5.45m for the base!
+
+This massively **underestimates the hip end area**, which causes the binary search to:
+1. Find a longer ridge length (to hit target area)
+2. Derive a taller roof height (from the longer ridge)
+3. Create enormous roof volume
+4. Steal volume from walls below
+
+### Manual Verification
+
+Let's verify with the actual geometry from logs:
+
+**Hip roof**: 5.45m × 5.45m, ridge = 2.72m, height = 3.30m
+
+```
+Span: 5.45m
+Ridge length: 2.72m
+Ridge offset: (5.45 - 2.72) / 2 = 1.365m
+Height: 3.30m
+
+Slope length (main slopes):
+  s = sqrt(h² + (span/2)²)
+  s = sqrt(3.30² + 2.725²)
+  s = sqrt(10.89 + 7.426)
+  s = sqrt(18.316)
+  s = 4.28m
+
+Main slope area:
+  2 × ridgeLength × slopeLength
+  2 × 2.72 × 4.28
+  = 23.28 m²
+
+Hip end area (CURRENT WRONG FORMULA):
+  2 × ridgeOffset × slopeLength
+  2 × 1.365 × 4.28
+  = 11.68 m²
+
+Total (WRONG): 23.28 + 11.68 = 34.96 m² ≈ 35.00 m² ✓ (matches target)
+```
+
+Now with CORRECT formula:
+
+```
+Hip rafter length:
+  From corner (2.725, 1.365, 0) to ridge endpoint (0, 1.365, 3.30)
+  Horizontal: sqrt(2.725² + 0²) = 2.725m
+  Vertical: 3.30m
+  Hip rafter = sqrt(2.725² + 3.30²)
+             = sqrt(7.426 + 10.89)
+             = sqrt(18.316)
+             = 4.28m
+
+Hip end area (CORRECT):
+  Each triangle: (1/2) × span × hipRafter
+               = (1/2) × 5.45 × 4.28
+               = 11.66 m²
+  Both ends (4 triangles): 2 × 11.66 = 23.32 m²
+
+Total (CORRECT): 23.28 + 23.32 = 46.60 m²
+```
+
+**The correct roof area should be 46.60 m², NOT 35.00 m²!**
+
+To achieve the actual target of 35.00 m², the roof would need to be MUCH flatter, giving:
+- Lower roof height
+- Less roof volume
+- More volume for walls
+- Correct wall height to match area constraint
+
+### Why Gable Works Better
+
+Gable roof formula (Section19.js:~800-835) correctly uses:
+```javascript
+const slopeLength = targetRoofArea / (2 * ridgeLength);
+```
+
+This solves directly for slope length from area, then derives height. The gable ends are properly calculated as triangles.
+
+### The Fix
+
+We need to fix the hip end area calculation in `calculateHipHeight()`:
+
+**Instead of**:
+```javascript
+const hipEndArea = 2 * ridgeOffset * slopeLength;
+```
+
+**Should be**:
+```javascript
+// Hip rafter from corner to ridge endpoint (rational trig)
+const hipRafterQuadrance = (span/2) * (span/2) + ridgeOffset * ridgeOffset + height * height;
+const hipRafterLength = Math.sqrt(hipRafterQuadrance);
+
+// Each hip end: 2 triangles, each with area = (1/2) × span × hipRafter
+// Total both ends: 2 × span × hipRafter
+const hipEndArea = 2 * span * hipRafterLength;
+```
+
+But this creates a **circular dependency**:
+- We need height to calculate hip rafter length
+- We need hip rafter length to calculate total area
+- We need total area to determine if this ridge length is correct
+- The binary search adjusts ridge length to hit target area
+
+**Solution**: We need to iterate on BOTH ridge length AND height simultaneously, OR use a different solving strategy.
+
+### Alternative Strategy: Parametric Sweep
+
+Instead of binary search on ridge length alone, we could:
+1. For each candidate ridge length
+2. Sweep through possible heights
+3. Calculate true roof area with correct hip rafter formula
+4. Find height that gives target area
+5. Select the ridge/height combination that satisfies constraints
+
+Or even simpler: Recognize that for a given ridge length and target area, there's only ONE height that works. Solve algebraically.
+
+---
+
+## SOLUTION: Two-Phase Planar-Then-Vertical Approach
+
+**Date**: 2025-12-18
+**Status**: PROPOSED - Elegant solution avoiding circular dependency
+
+### The Insight
+
+User's key observation: **Hip roof geometry is naturally separable into planar and vertical components.**
+
+The hip rafters run at 45° from the corners to the ridge endpoints. This **determines the ridge length geometrically** based purely on the building footprint, independent of roof height!
+
+### The Algorithm
+
+**Phase 1: Solve Ridge on X-Y Plane (Height = 0)**
+
+For a rectangular building (width × length):
+1. Hip rafters run at 45° from corners toward center
+2. For a square building: They meet at a point (pyramid)
+3. For rectangular: They meet along a ridge line
+
+**Ridge endpoints** (using rational trig, height = 0):
+- Ridge runs along the longer dimension
+- Hip rafter travels equal distances in both perpendicular directions
+- **45° in rational trig**: Equal perpendicular distances = spread of 1/2
+- At 45°: `ridgeOffset = span / 2` where span = shorter dimension
+- Ridge length: `ridgeLength = maxDimension - span`
+
+**Rational Trigonometry Explanation**:
+
+Without using angles, we use the fact that a 45° line has **spread = 1/2**.
+
+**Spread** = (perpendicular distance)² / (hypotenuse distance)²
+
+For a 45° hip rafter from corner to ridge:
+- Moves distance `d` perpendicular to ridge (toward center)
+- Moves distance `d` parallel to ridge (toward center)
+- Hypotenuse = `d × sqrt(2)`
+- Spread = d² / (d × sqrt(2))² = d² / (2d²) = 1/2 ✓
+
+But we don't even need spread! **The geometric constraint is simpler**:
+
+For a hip roof, the corner diagonals must meet. For a rectangular building:
+- Corner is at distance `width/2` from center (perpendicular to long axis)
+- Corner is at distance `length/2` from center (parallel to long axis)
+
+If we move from corner toward center at 45° (equal x and y components):
+- We move `width/2` perpendicular to ridge → reach the ridge line
+- We move some distance `d` parallel to ridge
+- The two diagonals from opposite corners meet when `d = ridgeOffset`
+
+**The constraint**: Hip rafter must travel **full width** perpendicular to ridge.
+- Perpendicular distance: `width / 2` (from corner to centerline)
+- At 45°: Parallel distance = perpendicular distance = `width / 2`
+- Ridge extends from `(length/2 - width/2)` to `(length/2 - width/2)`
+- Ridge length = `length - 2×(width/2)` = `length - width`
+
+**No angles needed!** Just the geometric fact that hip rafters bisect the corner (equal perpendicular components).
+
+**For square building**:
+```
+width = length = span
+ridgeLength = span - span = 0  ✓ (pure pyramid!)
+```
+
+**For rectangular building (length > width)**:
+```
+span = width
+ridgeOffset = width / 2
+ridgeLength = length - width
+```
+
+**Example**: 5.45m × 5.45m square
+```
+Ridge length = 5.45 - 5.45 = 0.00m ✓
+Ridge offset = 5.45 / 2 = 2.725m
+```
+
+**Example**: 22.36m × 49.20m rectangle
+```
+span = 22.36m
+ridgeLength = 49.20 - 22.36 = 26.84m
+ridgeOffset = 22.36 / 2 = 11.18m
+```
+
+**Phase 2: Solve Height from Target Roof Area**
+
+Now that ridge length is **fixed geometrically**, solve for height that achieves target area:
+
+```javascript
+// Ridge geometry is fixed from planar solution
+const span = minDimension;
+const ridgeLength = maxDimension - span;
+const ridgeOffset = span / 2;
+
+// Now solve for height h that gives target area
+// Total area = mainSlopeArea + hipEndArea
+// mainSlopeArea = 2 × ridgeLength × slopeLength
+// hipEndArea = 2 × span × hipRafterLength
+
+// Where:
+// slopeLength² = h² + (span/2)²
+// hipRafterLength² = h² + (span/2)² + ridgeOffset²
+
+// This is ONE equation in ONE unknown (h)!
+// Solve algebraically or with simple 1D root finding
+```
+
+**Algebraic formulation**:
+```
+Target = 2 × L_ridge × sqrt(h² + (w/2)²) + 2 × w × sqrt(h² + (w/2)² + offset²)
+
+Where:
+L_ridge = length - width  (fixed)
+offset = width / 2        (fixed)
+w = width                 (fixed)
+h = height               (SOLVE FOR THIS)
+```
+
+This is a **single-variable equation** - much simpler than 2D search!
+
+### Why This Works
+
+**Geometric truth**: A hip roof is a truncated pyramid. The 45° hip rafters are **structurally required** - they define where the ridge must be.
+
+**No circular dependency**:
+1. Ridge position determined by footprint geometry ✓
+2. Height determined by area constraint ✓
+3. Volume calculated from known geometry ✓
+4. Wall height from remaining volume ✓
+
+**Rational trigonometry preserved**:
+- Planar phase: Uses only differences and ratios
+- Vertical phase: Uses quadrance (squared distances)
+- Only `Math.sqrt()` at final step
+
+### Advantages
+
+1. **Geometrically correct**: Ridge position matches real hip roof construction
+2. **Square → Pyramid automatic**: Ridge length = 0 when width = length
+3. **Single-variable solve**: Much faster, more robust convergence
+4. **No binary search on ridge**: Ridge is deterministic
+5. **Preserves rational trig**: All intermediate calculations use quadrance
+
+### Implementation Steps
+
+**Step 1: Calculate fixed ridge geometry**
+```javascript
+function calculateHipRidgeGeometry(width, length) {
+  const maxDimension = Math.max(width, length);
+  const minDimension = Math.min(width, length);
+  const span = minDimension;
+
+  // Hip rafters at 45° determine ridge position
+  const ridgeLength = maxDimension - span;
+  const ridgeOffset = span / 2;
+  const ridgeOrientation = length >= width ? "longitudinal" : "transverse";
+
+  return { ridgeLength, ridgeOffset, span, ridgeOrientation };
+}
+```
+
+**Step 2: Solve for height from target area**
+```javascript
+function solveHipHeightFromArea(ridgeGeometry, targetArea) {
+  const { ridgeLength, ridgeOffset, span } = ridgeGeometry;
+
+  // Function: area(h) = 2×ridge×sqrt(h²+(span/2)²) + 2×span×sqrt(h²+(span/2)²+offset²)
+  // Find h where area(h) = targetArea
+
+  // Use Newton-Raphson or bisection on height only
+  let hMin = 0;
+  let hMax = span * 2; // Reasonable upper bound
+  const tolerance = 0.01;
+
+  while (hMax - hMin > tolerance) {
+    const h = (hMin + hMax) / 2;
+
+    // Calculate area with this height (using correct formulas)
+    const slopeLength = Math.sqrt(h * h + (span/2) * (span/2));
+    const mainSlopeArea = 2 * ridgeLength * slopeLength;
+
+    const hipRafterQuadrance = h * h + (span/2) * (span/2) + ridgeOffset * ridgeOffset;
+    const hipRafterLength = Math.sqrt(hipRafterQuadrance);
+    const hipEndArea = 2 * span * hipRafterLength;
+
+    const calculatedArea = mainSlopeArea + hipEndArea;
+
+    if (calculatedArea < targetArea) {
+      hMin = h; // Need taller roof
+    } else {
+      hMax = h; // Need flatter roof
+    }
+  }
+
+  return (hMin + hMax) / 2;
+}
+```
+
+**Step 3: Combine**
+```javascript
+function calculateHipHeight(width, length, targetRoofArea) {
+  // Phase 1: Fixed ridge geometry from 45° hip rafters
+  const geometry = calculateHipRidgeGeometry(width, length);
+
+  // Check if square (pyramid)
+  if (geometry.ridgeLength < 0.01) {
+    // Pure pyramid - use existing pyramidal solver
+    return calculatePyramidalHeight(width, length, targetRoofArea);
+  }
+
+  // Phase 2: Solve height from area constraint
+  const height = solveHipHeightFromArea(geometry, targetRoofArea);
+
+  return {
+    height,
+    ridgeOrientation: geometry.ridgeOrientation,
+    ridgeLength: geometry.ridgeLength,
+    ridgeOffset: geometry.ridgeOffset,
+    span: geometry.span,
+    hipData: { ...geometry, achievedArea: targetRoofArea },
+    isValid: height > 0
+  };
+}
+```
+
+### Expected Results
+
+**5.45m × 5.45m square, target 35.00 m²**:
+```
+Phase 1 (planar):
+  Ridge length: 0.00m (pyramid!)
+  Ridge offset: 2.725m
+
+Phase 2 (height from area):
+  Pyramidal height solving for 35.00 m²
+  Expected: Much lower than 3.30m
+  Result: Lower roof volume → more wall volume → correct wall height
+```
+
+**Test validation**:
+- Wall height should match 2.431m (from 53.00 m² wall area)
+- Roof volume should leave enough for walls
+- Discrepancy should drop from 79.9% to <5%
+
+---
+
+**Document Status**: ACTIVE - Solution strategy documented, ready to implement
+**Last Updated**: 2025-12-18
 **Next Steps**:
-1. Add square → pyramid detection
-2. Verify hip end area calculation (projection vs surface)
-3. Manual geometry verification
-4. Test aspect ratio scaling behavior
+1. Implement two-phase algorithm (planar ridge → height from area)
+2. Test on square building (should auto-pyramid)
+3. Verify wall area constraint satisfied
+4. Test across aspect ratio range
