@@ -1195,8 +1195,23 @@ window.TEUI.SectionModules.sect19 = (function () {
     // Philosophy: "Absurd pancake is the best explanatory warning"
 
     // Read g_106 from Section 12 (typical floor-to-floor height per storey)
-    const typicalF2FHeight = parseFloat(getModeAwareValue("g_106", isReferenceCalculation));
+    // DEBUG: Track ref_g_106 lookup in Reference mode
+    const modeLabel = isReferenceCalculation ? "Reference" : "Target";
+    const rawG106 = getModeAwareValue("g_106", isReferenceCalculation);
+    console.log(`[WOMBAT g_106 DEBUG] Mode: ${modeLabel}`);
+    console.log(`[WOMBAT g_106 DEBUG] Raw g_106 value: ${rawG106}`);
+    console.log(`[WOMBAT g_106 DEBUG] isReferenceCalculation: ${isReferenceCalculation}`);
+
+    // Check StateManager directly for ref_g_106
+    if (isReferenceCalculation && window.TEUI?.StateManager) {
+      const directRefValue = window.TEUI.StateManager.getValue("ref_g_106");
+      console.log(`[WOMBAT g_106 DEBUG] Direct StateManager lookup ref_g_106: ${directRefValue}`);
+    }
+
+    const typicalF2FHeight = parseFloat(rawG106);
+    console.log(`[WOMBAT g_106 DEBUG] Parsed typicalF2FHeight: ${typicalF2FHeight}`);
     const hasTypicalHeight = typicalF2FHeight && typicalF2FHeight > 0 && !isNaN(typicalF2FHeight);
+    console.log(`[WOMBAT g_106 DEBUG] hasTypicalHeight: ${hasTypicalHeight}`);
 
     // Get user's declared volume (SACRED constraint)
     const conditionedVolume = volumeDeclared && volumeDeclared > 0 && !isNaN(volumeDeclared)
@@ -2068,7 +2083,10 @@ window.TEUI.SectionModules.sect19 = (function () {
       // ✅ NEW (2025-12-18): Listen for ref_g_106 (Typical F2F Height) from S12
       // This ensures Reference geometry is pre-calculated when ref_g_106 is published during initialization
       window.TEUI.StateManager.addListener("ref_g_106", newValue => {
-        console.log(`[WOMBAT SYNC] ref_g_106 changed: ${newValue}`);
+        console.log(`[WOMBAT SYNC] ref_g_106 changed to: ${newValue}`);
+        console.log(`[WOMBAT SYNC] Current mode: ${ModeManager.currentMode}`);
+        console.log(`[WOMBAT SYNC] isActivated: ${isActivated}`);
+        console.log(`[WOMBAT SYNC] Triggering calculateAll() to pre-calculate Reference geometry...`);
         // No state to sync (g_106 is read directly via getModeAwareValue in solveGeometry)
         // But we need to recalculate Reference geometry when this value changes
         calculateAll();

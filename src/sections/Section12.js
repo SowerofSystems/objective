@@ -105,24 +105,32 @@ window.TEUI.SectionModules.sect12 = (function () {
     state: {},
     listeners: {},
     initialize: function () {
+      console.log(`[S12 DEBUG] ReferenceState.initialize() called`);
       const savedState = localStorage.getItem("S12_REFERENCE_STATE");
       if (savedState) {
+        console.log(`[S12 DEBUG] Found saved Reference state in localStorage`);
         this.state = JSON.parse(savedState);
+        console.log(`[S12 DEBUG] ReferenceState loaded:`, this.state);
 
         // ✅ CRITICAL: Re-publish to StateManager even when loading from localStorage
         // This ensures values are available for CSV export after page refresh (S10 pattern)
         if (window.TEUI?.StateManager) {
           const referenceFields = ["d_103", "g_103", "d_105", "g_106", "d_108", "g_109"];
+          console.log(`[S12 DEBUG] Re-publishing ${referenceFields.length} Reference fields from localStorage...`);
           referenceFields.forEach(fieldId => {
             const value = this.state[fieldId];
             if (value !== null && value !== undefined) {
+              console.log(`[S12 DEBUG] Publishing ref_${fieldId} = ${value}`);
               window.TEUI.StateManager.setValue(
                 `ref_${fieldId}`,
                 value,
                 "default"
               );
+            } else {
+              console.warn(`[S12 DEBUG] Skipping ref_${fieldId} - value is null/undefined`);
             }
           });
+          console.log(`[S12 DEBUG] Reference field publishing complete`);
         }
       } else {
         this.setDefaults();
