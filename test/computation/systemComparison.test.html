@@ -148,9 +148,17 @@
 
   <!-- Load section nodes -->
   <script src="../../src/sections/nodes/ClimateNodes.js"></script>
+  <script src="../../src/sections/nodes/BuildingInfoNodes.js"></script>
   <script src="../../src/sections/nodes/EnvelopeNodes.js"></script>
   <script src="../../src/sections/nodes/MechanicalNodes.js"></script>
+  <script src="../../src/sections/nodes/SpaceHeatingNodes.js"></script>
+  <script src="../../src/sections/nodes/WaterHeatingNodes.js"></script>
+  <script src="../../src/sections/nodes/RenewableNodes.js"></script>
   <script src="../../src/sections/nodes/EnergyNodes.js"></script>
+  <script src="../../src/sections/nodes/ForestryNodes.js"></script>
+  <script src="../../src/sections/nodes/EmissionsNodes.js"></script>
+  <script src="../../src/sections/nodes/OccupancyNodes.js"></script>
+  <script src="../../src/sections/nodes/KeyValuesNodes.js"></script>
 
   <script>
     const logEl = document.getElementById('log');
@@ -241,6 +249,10 @@
           nodes.Climate.register(graph);
           log('  Registered ClimateNodes');
         }
+        if (nodes.BuildingInfo) {
+          nodes.BuildingInfo.register(graph);
+          log('  Registered BuildingInfoNodes');
+        }
         if (nodes.Envelope) {
           nodes.Envelope.register(graph);
           log('  Registered EnvelopeNodes');
@@ -249,9 +261,37 @@
           nodes.Mechanical.register(graph);
           log('  Registered MechanicalNodes');
         }
+        if (nodes.SpaceHeating) {
+          nodes.SpaceHeating.register(graph);
+          log('  Registered SpaceHeatingNodes');
+        }
+        if (nodes.WaterHeating) {
+          nodes.WaterHeating.register(graph);
+          log('  Registered WaterHeatingNodes');
+        }
+        if (nodes.Renewable) {
+          nodes.Renewable.register(graph);
+          log('  Registered RenewableNodes');
+        }
         if (nodes.Energy) {
           nodes.Energy.register(graph);
           log('  Registered EnergyNodes');
+        }
+        if (nodes.Forestry) {
+          nodes.Forestry.register(graph);
+          log('  Registered ForestryNodes');
+        }
+        if (nodes.Emissions) {
+          nodes.Emissions.register(graph);
+          log('  Registered EmissionsNodes');
+        }
+        if (nodes.Occupancy) {
+          nodes.Occupancy.register(graph);
+          log('  Registered OccupancyNodes');
+        }
+        if (nodes.KeyValues) {
+          nodes.KeyValues.register(graph);
+          log('  Registered KeyValuesNodes');
         }
 
         const stats = graph.getStats();

@@ -463,7 +463,7 @@
 
       const inputs = {
         "mechanical.heating.demand": 30000,
-        "mechanical.cooling.demand": 5000,
+        "mechanical.cooling.electricalDemand": 5000,
         "energy.dhw": 10000,
         "energy.lighting": 8000,
         "energy.plugLoads": 12000,

@@ -141,9 +141,15 @@
     // Register all section nodes
     const nodes = window.TEUI.ComputationNodes || {};
 
+    // Core infrastructure nodes
     if (nodes.Climate) {
       nodes.Climate.register(g);
       log("Registered ClimateNodes");
+    }
+
+    if (nodes.BuildingInfo) {
+      nodes.BuildingInfo.register(g);
+      log("Registered BuildingInfoNodes");
     }
 
     if (nodes.Envelope) {
@@ -156,9 +162,48 @@
       log("Registered MechanicalNodes");
     }
 
+    // Energy system nodes
+    if (nodes.SpaceHeating) {
+      nodes.SpaceHeating.register(g);
+      log("Registered SpaceHeatingNodes");
+    }
+
+    if (nodes.WaterHeating) {
+      nodes.WaterHeating.register(g);
+      log("Registered WaterHeatingNodes");
+    }
+
+    if (nodes.Renewable) {
+      nodes.Renewable.register(g);
+      log("Registered RenewableNodes");
+    }
+
     if (nodes.Energy) {
       nodes.Energy.register(g);
       log("Registered EnergyNodes");
+    }
+
+    // Emissions and carbon nodes
+    if (nodes.Forestry) {
+      nodes.Forestry.register(g);
+      log("Registered ForestryNodes");
+    }
+
+    if (nodes.Emissions) {
+      nodes.Emissions.register(g);
+      log("Registered EmissionsNodes");
+    }
+
+    // Building use nodes
+    if (nodes.Occupancy) {
+      nodes.Occupancy.register(g);
+      log("Registered OccupancyNodes");
+    }
+
+    // Dashboard consumer node (depends on all others)
+    if (nodes.KeyValues) {
+      nodes.KeyValues.register(g);
+      log("Registered KeyValuesNodes");
     }
 
     const stats = g.getStats();
