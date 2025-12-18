@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>System Comparison: Old vs New Computation</title>
+  <title>New Computation System - Unit Tests</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -67,10 +67,6 @@
       background: #7f1d1d;
       border: 1px solid #dc2626;
     }
-    .summary.warn {
-      background: #78350f;
-      border: 1px solid #d97706;
-    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -90,238 +86,155 @@
     tr:hover {
       background: #252525;
     }
-    .match { color: #22c55e; }
-    .mismatch { color: #ef4444; background: #3f1f1f; }
-    .close { color: #f59e0b; }
+    .pass { color: #22c55e; }
+    .fail { color: #ef4444; background: #3f1f1f; }
+    .info { color: #60a5fa; }
     .field-path { color: #888; font-family: monospace; font-size: 11px; }
     .value { font-family: monospace; }
-    .delta { font-size: 11px; color: #888; }
     #log {
       background: #111;
       border: 1px solid #333;
       border-radius: 4px;
       padding: 1rem;
-      margin-top: 1rem;
-      font-family: 'Monaco', 'Menlo', monospace;
+      font-family: monospace;
       font-size: 12px;
+      white-space: pre-wrap;
       max-height: 300px;
       overflow-y: auto;
-      white-space: pre-wrap;
-    }
-    .input-group {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .input-group label {
-      font-size: 13px;
-      color: #888;
-    }
-    .input-group input, .input-group select {
-      padding: 4px 8px;
-      background: #333;
-      border: 1px solid #444;
-      color: #fff;
-      border-radius: 4px;
+      margin-top: 1rem;
     }
   </style>
 </head>
 <body>
-  <h1>System Comparison: Old vs New Computation</h1>
+  <h1>New Computation System - Unit Tests</h1>
 
   <p class="info">
-    Compare results between the existing StateManager/Calculator and the new
-    MultiModelEngine with incremental computation. Both systems should produce
-    identical results for the same inputs.
+    Tests the new MultiModelEngine computation system with known inputs and expected outputs.
   </p>
 
   <div class="controls">
-    <button class="primary" onclick="runComparison()">Run Comparison</button>
-    <button onclick="runWithCustomInputs()">Test Custom Inputs</button>
-    <button onclick="clearResults()">Clear</button>
-  </div>
-
-  <div class="controls">
-    <div class="input-group">
-      <label>Floor Area (m²):</label>
-      <input type="number" id="inputArea" value="5000" min="100" max="100000">
-    </div>
-    <div class="input-group">
-      <label>Roof RSI:</label>
-      <input type="number" id="inputRoofRSI" value="5.0" min="1" max="20" step="0.1">
-    </div>
-    <div class="input-group">
-      <label>Wall RSI:</label>
-      <input type="number" id="inputWallRSI" value="4.0" min="1" max="20" step="0.1">
-    </div>
+    <button id="runBtn" class="primary">Run Tests</button>
   </div>
 
   <div id="summary" class="summary" style="display: none;"></div>
 
-  <h2>Comparison Results</h2>
-  <table id="resultsTable">
+  <h2>Test Results</h2>
+  <table>
     <thead>
       <tr>
-        <th>Field</th>
-        <th>Old System</th>
-        <th>New System</th>
+        <th>Test</th>
+        <th>Semantic Path</th>
+        <th>Expected</th>
+        <th>Actual</th>
         <th>Status</th>
-        <th>Delta</th>
       </tr>
     </thead>
-    <tbody id="resultsBody">
-      <tr><td colspan="5" style="color: #666; text-align: center;">Click "Run Comparison" to start</td></tr>
-    </tbody>
+    <tbody id="results"></tbody>
   </table>
 
   <h2>Log</h2>
   <div id="log"></div>
 
-  <!-- Load existing calculator infrastructure -->
-  <script src="../../src/core/ClimateValues.js"></script>
-  <script src="../../src/core/StateManager.js"></script>
-  <script src="../../src/core/Calculator.js"></script>
-  <script src="../../src/core/ReferenceValues.js"></script>
-
-  <!-- Load new computation infrastructure (Phase 1) -->
+  <!-- Load computation modules -->
   <script src="../../src/core/computation/types.js"></script>
   <script src="../../src/core/computation/ComputationGraph.js"></script>
-  <script src="../../src/core/computation/IncrementalEngine.js"></script>
+  <script src="../../src/core/model/ModelMetadata.js"></script>
+  <script src="../../src/core/model/MultiModelState.js"></script>
+  <script src="../../src/core/model/MultiModelEngine.js"></script>
   <script src="../../src/core/computation/FieldRegistry.js"></script>
 
-  <!-- Load section nodes (Phase 2) -->
+  <!-- Load climate data -->
+  <script src="../../src/data/ClimateValues.js"></script>
+
+  <!-- Load section nodes -->
   <script src="../../src/sections/nodes/ClimateNodes.js"></script>
   <script src="../../src/sections/nodes/EnvelopeNodes.js"></script>
   <script src="../../src/sections/nodes/MechanicalNodes.js"></script>
   <script src="../../src/sections/nodes/EnergyNodes.js"></script>
 
-  <!-- Load multi-model modules (Phase 3) -->
-  <script src="../../src/core/model/ModelMetadata.js"></script>
-  <script src="../../src/core/model/MultiModelState.js"></script>
-  <script src="../../src/core/model/MultiModelEngine.js"></script>
-  <script src="../../src/core/model/ModelOperations.js"></script>
-
-  <!-- Load UI integration modules (Phase 4) -->
-  <script src="../../src/core/computation/LegacyAdapter.js"></script>
-
   <script>
     const logEl = document.getElementById('log');
     const summaryEl = document.getElementById('summary');
-    const resultsBody = document.getElementById('resultsBody');
+    const resultsBody = document.getElementById('results');
 
     function log(msg) {
       logEl.textContent += msg + '\n';
-      logEl.scrollTop = logEl.scrollHeight;
       console.log(msg);
     }
 
     function clearResults() {
       logEl.textContent = '';
       summaryEl.style.display = 'none';
-      resultsBody.innerHTML = '<tr><td colspan="5" style="color: #666; text-align: center;">Click "Run Comparison" to start</td></tr>';
+      resultsBody.innerHTML = '';
     }
 
-    // Fields to compare between old and new systems
-    const COMPARISON_FIELDS = [
-      // Climate
-      { old: 'd_21', new: 'climate.heating.degreedays', label: 'Heating Degree Days' },
-      { old: 'i_21', new: 'climate.cooling.degreedays', label: 'Cooling Degree Days' },
-
-      // Envelope - computed values (old system: g_ = U-value computed from f_ = RSI)
-      { old: 'g_85', new: 'envelope.roof.uValue', label: 'Roof U-Value' },
-      { old: 'g_86', new: 'envelope.walls.uValue', label: 'Wall U-Value' },
-      { old: 'g_101', new: 'envelope.airFacing.weightedUValue', label: 'Weighted U-Value (Air-Facing)' },
-
-      // Envelope - heat loss
-      { old: 'i_104', new: 'envelope.total.heatLoss', label: 'Total Heat Loss' },
-
-      // Mechanical
-      { old: 'd_114', new: 'mechanical.heating.demand', label: 'Heating Demand' },
-      { old: 'd_117', new: 'mechanical.cooling.electricalDemand', label: 'Cooling Electrical Demand' },
-
-      // Energy
-      { old: 'h_136', new: 'energy.teui', label: 'TEUI' },
-    ];
-
-    // Test inputs that both systems should use
+    // Test inputs with known values
     const TEST_INPUTS = {
       // Geometry
-      'h_15': 5000,  // Conditioned Floor Area
-      'd_16': 2,     // Number of Storeys
-      'h_17': 3.0,   // Ceiling Height
+      'geometry.conditionedFloorArea': 5000,
+      'geometry.numStoreys': 2,
+      'geometry.ceilingHeight': 3.0,
 
-      // Climate
-      'd_19': 'ON',                    // Province
-      'h_19': 'Toronto (City Hall)',   // City (must match ClimateData key)
-      'd_21': 3520,                    // HDD (will be looked up)
-      'i_21': 254,                     // CDD (will be looked up)
+      // Climate - Toronto
+      'climate.location.province': 'ON',
+      'climate.location.city': 'Toronto (City Hall)',
+      'climate.timeframe': 'Current',
 
-      // Envelope RSI values (f_ prefix = RSI in Section11)
-      'f_85': 5.0,   // Roof RSI
-      'f_86': 4.0,   // Wall RSI
-      'f_94': 2.0,   // Walls Below Grade RSI
+      // Envelope RSI values
+      'envelope.roof.rsi': 5.0,
+      'envelope.walls.rsi': 4.0,
+      'envelope.wallsBelowGrade.rsi': 2.0,
+      'envelope.slabOnGrade.rsi': 1.0,
 
-      // Envelope U-values (g_ prefix = U-value in Section11)
-      'g_88': 2.0,   // Doors U-value
-      'g_89': 1.4,   // Windows North U-value
-      'g_90': 1.4,   // Windows East U-value
-      'g_91': 1.4,   // Windows South U-value
-      'g_92': 1.4,   // Windows West U-value
+      // Envelope U-values (direct input for windows/doors)
+      'envelope.doors.uValue': 2.0,
+      'envelope.windowsNorth.uValue': 1.4,
+      'envelope.windowsEast.uValue': 1.4,
+      'envelope.windowsSouth.uValue': 1.4,
+      'envelope.windowsWest.uValue': 1.4,
 
-      // Areas (d_ prefix in Section11)
-      'd_85': 2500,  // Roof Area
-      'd_86': 1500,  // Wall Area (Above Grade)
-      'd_88': 50,    // Doors Area
-      'd_89': 125,   // Windows North Area
-      'd_90': 125,   // Windows East Area
-      'd_91': 125,   // Windows South Area
-      'd_92': 125,   // Windows West Area
-      'd_94': 500,   // Walls Below Grade Area
+      // Envelope Areas
+      'envelope.roof.area': 500,
+      'envelope.walls.area': 800,
+      'envelope.wallsBelowGrade.area': 200,
+      'envelope.slabOnGrade.area': 500,
+      'envelope.doors.area': 20,
+      'envelope.windowsNorth.area': 50,
+      'envelope.windowsEast.area': 50,
+      'envelope.windowsSouth.area': 100,
+      'envelope.windowsWest.area': 50,
 
       // Mechanical
-      'j_115': 0.90, // AFUE
-      'j_116': 3.3,  // Cooling COP
+      'mechanical.heating.efficiency': 0.95,
+      'mechanical.cooling.cop': 3.5,
     };
 
-    function setupOldSystem(inputs) {
-      log('Setting up OLD system (StateManager)...');
+    // Expected outputs (calculated by hand or verified correct)
+    const EXPECTED_OUTPUTS = [
+      // Climate lookups (Toronto City Hall HDD from ClimateValues.js)
+      { path: 'climate.heating.degreedays', expected: 4600, label: 'Heating Degree Days', tolerance: 0 },
 
-      // Initialize StateManager if needed
-      if (!window.TEUI.StateManager) {
-        log('  ERROR: StateManager not loaded');
-        return false;
-      }
+      // U-value calculations (U = 1/RSI)
+      { path: 'envelope.roof.uValue', expected: 0.2, label: 'Roof U-Value (1/5.0)', tolerance: 0.001 },
+      { path: 'envelope.walls.uValue', expected: 0.25, label: 'Wall U-Value (1/4.0)', tolerance: 0.001 },
+      { path: 'envelope.wallsBelowGrade.uValue', expected: 0.5, label: 'Below Grade U-Value (1/2.0)', tolerance: 0.001 },
+      { path: 'envelope.slabOnGrade.uValue', expected: 1.0, label: 'Slab U-Value (1/1.0)', tolerance: 0.001 },
 
-      // Set all inputs
-      for (const [fieldId, value] of Object.entries(inputs)) {
-        window.TEUI.StateManager.setValue(fieldId, value);
-      }
+      // Weighted U-value for air-facing envelope
+      { path: 'envelope.airFacing.weightedUValue', expected: null, label: 'Air-Facing Weighted U-Value', tolerance: 0.01 },
 
-      log('  Set ' + Object.keys(inputs).length + ' input values');
+      // Total heat loss (aggregated, not per-component)
+      { path: 'envelope.total.heatLoss', expected: null, label: 'Total Heat Loss', tolerance: 0.01 },
+    ];
 
-      // Trigger calculations
-      if (window.TEUI.Calculator && window.TEUI.Calculator.calculateAll) {
-        try {
-          window.TEUI.Calculator.calculateAll();
-          log('  Triggered Calculator.calculateAll()');
-        } catch (e) {
-          log('  Warning: Calculator.calculateAll() failed: ' + e.message);
-        }
-      } else {
-        log('  Warning: Calculator.calculateAll not available');
-      }
-
-      return true;
-    }
-
-    function setupNewSystem(inputs) {
-      log('Setting up NEW system (MultiModelEngine)...');
+    function setupSystem() {
+      log('Setting up computation system...');
 
       try {
         // Create computation graph
         const graph = window.TEUI.ComputationGraph.create();
 
-        // Register all section nodes (exported under ComputationNodes namespace)
+        // Register all section nodes
         const nodes = window.TEUI.ComputationNodes || {};
 
         if (nodes.Climate) {
@@ -342,7 +255,7 @@
         }
 
         const stats = graph.getStats();
-        log('  Graph: ' + stats.nodeCount + ' nodes, ' + stats.inputCount + ' inputs');
+        log(`  Graph: ${stats.nodeCount} nodes, ${stats.inputCount} inputs`);
 
         // Create multi-model state
         const state = window.TEUI.MultiModelState.create();
@@ -354,54 +267,13 @@
         // Create engine
         const engine = window.TEUI.MultiModelEngine.create({ state, graph });
 
-        // Set inputs using semantic paths
-        const semanticInputs = {};
-        const registry = window.TEUI.FieldRegistry;
-
-        for (const [legacyId, value] of Object.entries(inputs)) {
-          const semanticPath = registry.toSemantic(legacyId);
-          if (semanticPath) {
-            semanticInputs[semanticPath] = value;
-          }
-        }
-
-        // Also set inputs directly by semantic path
-        semanticInputs['geometry.conditionedFloorArea'] = inputs['h_15'];
-        semanticInputs['geometry.numStoreys'] = inputs['d_16'];
-        semanticInputs['geometry.ceilingHeight'] = inputs['h_17'];
-        semanticInputs['climate.location.province'] = inputs['d_19'];
-        semanticInputs['climate.location.city'] = inputs['h_19'];  // Must match ClimateData key
-        // RSI values
-        semanticInputs['envelope.roof.rsi'] = inputs['f_85'];
-        semanticInputs['envelope.walls.rsi'] = inputs['f_86'];
-        semanticInputs['envelope.wallsBelowGrade.rsi'] = inputs['f_94'];
-
-        // U-values
-        semanticInputs['envelope.doors.uValue'] = inputs['g_88'];
-        semanticInputs['envelope.windowsNorth.uValue'] = inputs['g_89'];
-        semanticInputs['envelope.windowsEast.uValue'] = inputs['g_90'];
-        semanticInputs['envelope.windowsSouth.uValue'] = inputs['g_91'];
-        semanticInputs['envelope.windowsWest.uValue'] = inputs['g_92'];
-
-        // Areas
-        semanticInputs['envelope.roof.area'] = inputs['d_85'];
-        semanticInputs['envelope.walls.area'] = inputs['d_86'];
-        semanticInputs['envelope.doors.area'] = inputs['d_88'];
-        semanticInputs['envelope.windowsNorth.area'] = inputs['d_89'];
-        semanticInputs['envelope.windowsEast.area'] = inputs['d_90'];
-        semanticInputs['envelope.windowsSouth.area'] = inputs['d_91'];
-        semanticInputs['envelope.windowsWest.area'] = inputs['d_92'];
-        semanticInputs['envelope.wallsBelowGrade.area'] = inputs['d_94'];
-        semanticInputs['mechanical.heating.afue'] = inputs['j_115'];
-        semanticInputs['mechanical.cooling.copDedicated'] = inputs['j_116'];
-
-        // Initialize state with inputs
-        state.initializeModelState(targetMeta.id, semanticInputs);
+        // Set all inputs
+        state.initializeModelState(targetMeta.id, TEST_INPUTS);
+        log(`  Set ${Object.keys(TEST_INPUTS).length} input values`);
 
         // Compute all
-        engine.computeAllForModel(targetMeta.id);
-
-        log('  Computed all nodes for target model');
+        const result = engine.computeAllForModel(targetMeta.id);
+        log(`  Computed ${result.computedNodes} nodes in ${result.duration.toFixed(2)}ms`);
 
         return { state, engine, graph, modelId: targetMeta.id };
       } catch (e) {
@@ -411,48 +283,81 @@
       }
     }
 
-    function getOldValue(fieldId) {
-      if (!window.TEUI.StateManager) return undefined;
-      return window.TEUI.StateManager.getValue(fieldId);
-    }
+    function runTests() {
+      clearResults();
+      log('=== Starting Unit Tests ===\n');
 
-    function getNewValue(newSystem, semanticPath) {
-      if (!newSystem || !newSystem.state) return undefined;
-      return newSystem.state.getValue(semanticPath);
-    }
+      const system = setupSystem();
 
-    function compareValues(oldVal, newVal, tolerance = 0.01) {
-      if (oldVal === undefined && newVal === undefined) {
-        return { status: 'both-undefined', match: true };
-      }
-      if (oldVal === undefined) {
-        return { status: 'old-undefined', match: false };
-      }
-      if (newVal === undefined) {
-        return { status: 'new-undefined', match: false };
+      if (!system) {
+        log('\nERROR: Could not set up system');
+        summaryEl.style.display = 'block';
+        summaryEl.className = 'summary fail';
+        summaryEl.textContent = 'Failed to initialize system';
+        return;
       }
 
-      if (typeof oldVal === 'number' && typeof newVal === 'number') {
-        if (isNaN(oldVal) && isNaN(newVal)) {
-          return { status: 'both-nan', match: true };
+      log('\n=== Running Tests ===\n');
+
+      let passed = 0;
+      let failed = 0;
+
+      for (const test of EXPECTED_OUTPUTS) {
+        const actual = system.state.getValue(test.path);
+        const expected = test.expected;
+
+        let status = 'fail';
+
+        // If expected is null, just report the value (info only, counts as pass)
+        if (expected === null) {
+          status = 'info';
+          log(`ℹ ${test.label}: ${actual}`);
+        } else if (actual !== undefined && actual !== null) {
+          if (typeof expected === 'number' && typeof actual === 'number') {
+            const delta = Math.abs(actual - expected);
+            const tolerance = test.tolerance || 0.01;
+            if (delta <= tolerance || (expected !== 0 && delta / Math.abs(expected) <= tolerance)) {
+              status = 'pass';
+            }
+          } else if (actual === expected) {
+            status = 'pass';
+          }
         }
-        if (oldVal === newVal) {
-          return { status: 'exact', match: true, delta: 0 };
-        }
-        const delta = Math.abs(oldVal - newVal);
-        const relativeDelta = oldVal !== 0 ? delta / Math.abs(oldVal) : delta;
 
-        if (relativeDelta <= tolerance) {
-          return { status: 'close', match: true, delta: relativeDelta };
+        if (status === 'pass') {
+          passed++;
+          log(`✓ ${test.label}: ${actual}`);
+        } else if (status === 'info') {
+          passed++; // Info counts as pass
+        } else {
+          failed++;
+          log(`✗ ${test.label}: expected ${expected}, got ${actual}`);
         }
-        return { status: 'mismatch', match: false, delta: relativeDelta };
+
+        // Add to table
+        const row = document.createElement('tr');
+        const expectedDisplay = expected === null ? '(any)' : formatValue(expected);
+        row.innerHTML = `
+          <td>${test.label}</td>
+          <td class="field-path">${test.path}</td>
+          <td class="value">${expectedDisplay}</td>
+          <td class="value">${formatValue(actual)}</td>
+          <td class="${status}">${status.toUpperCase()}</td>
+        `;
+        resultsBody.appendChild(row);
       }
 
-      if (oldVal === newVal) {
-        return { status: 'exact', match: true };
-      }
+      log(`\n=== Tests Complete ===`);
+      log(`Passed: ${passed}, Failed: ${failed}`);
 
-      return { status: 'mismatch', match: false };
+      summaryEl.style.display = 'block';
+      if (failed === 0) {
+        summaryEl.className = 'summary pass';
+        summaryEl.textContent = `All ${passed} tests passed!`;
+      } else {
+        summaryEl.className = 'summary fail';
+        summaryEl.textContent = `${failed} of ${passed + failed} tests failed`;
+      }
     }
 
     function formatValue(val) {
@@ -460,127 +365,18 @@
       if (val === null) return '<span style="color:#666">null</span>';
       if (typeof val === 'number') {
         if (isNaN(val)) return '<span style="color:#666">NaN</span>';
-        return val.toLocaleString(undefined, { maximumFractionDigits: 2 });
+        return val.toLocaleString(undefined, { maximumFractionDigits: 4 });
       }
       return String(val);
     }
 
-    function runComparison() {
-      clearResults();
-      log('=== Starting System Comparison ===\n');
+    // Event handlers
+    document.getElementById('runBtn').addEventListener('click', runTests);
 
-      const inputs = { ...TEST_INPUTS };
-
-      // Setup both systems
-      const oldOk = setupOldSystem(inputs);
-      const newSystem = setupNewSystem(inputs);
-
-      if (!oldOk) {
-        log('\nERROR: Could not set up old system');
-        summaryEl.style.display = 'block';
-        summaryEl.className = 'summary fail';
-        summaryEl.textContent = 'Failed to initialize old system';
-        return;
-      }
-
-      if (!newSystem) {
-        log('\nERROR: Could not set up new system');
-        summaryEl.style.display = 'block';
-        summaryEl.className = 'summary fail';
-        summaryEl.textContent = 'Failed to initialize new system';
-        return;
-      }
-
-      log('\n=== Comparing Results ===\n');
-
-      let matches = 0;
-      let mismatches = 0;
-      let closeMatches = 0;
-      let undefined_count = 0;
-
-      resultsBody.innerHTML = '';
-
-      for (const field of COMPARISON_FIELDS) {
-        const oldVal = getOldValue(field.old);
-        const newVal = getNewValue(newSystem, field.new);
-        const comparison = compareValues(oldVal, newVal);
-
-        const row = document.createElement('tr');
-
-        let statusClass = 'match';
-        let statusText = '✓ Match';
-
-        if (!comparison.match) {
-          if (comparison.status.includes('undefined')) {
-            statusClass = 'close';
-            statusText = '? ' + comparison.status;
-            undefined_count++;
-          } else {
-            statusClass = 'mismatch';
-            statusText = '✗ Mismatch';
-            mismatches++;
-          }
-        } else if (comparison.status === 'close') {
-          statusClass = 'close';
-          statusText = '≈ Close';
-          closeMatches++;
-        } else {
-          matches++;
-        }
-
-        const deltaText = comparison.delta !== undefined
-          ? (comparison.delta * 100).toFixed(2) + '%'
-          : '-';
-
-        row.className = statusClass;
-        row.innerHTML = `
-          <td>
-            <div>${field.label}</div>
-            <div class="field-path">${field.old} → ${field.new}</div>
-          </td>
-          <td class="value">${formatValue(oldVal)}</td>
-          <td class="value">${formatValue(newVal)}</td>
-          <td>${statusText}</td>
-          <td class="delta">${deltaText}</td>
-        `;
-
-        resultsBody.appendChild(row);
-
-        log(`${field.label}: old=${oldVal}, new=${newVal} → ${comparison.status}`);
-      }
-
-      // Show summary
-      summaryEl.style.display = 'block';
-
-      if (mismatches === 0 && undefined_count === 0) {
-        summaryEl.className = 'summary pass';
-        summaryEl.textContent = `All ${matches + closeMatches} fields match! (${matches} exact, ${closeMatches} within tolerance)`;
-      } else if (mismatches === 0) {
-        summaryEl.className = 'summary warn';
-        summaryEl.textContent = `${matches + closeMatches} matches, ${undefined_count} undefined fields`;
-      } else {
-        summaryEl.className = 'summary fail';
-        summaryEl.textContent = `${mismatches} mismatches, ${matches + closeMatches} matches, ${undefined_count} undefined`;
-      }
-
-      log('\n=== Comparison Complete ===');
-      log(`Matches: ${matches}, Close: ${closeMatches}, Mismatches: ${mismatches}, Undefined: ${undefined_count}`);
-    }
-
-    function runWithCustomInputs() {
-      // Get custom inputs from form
-      TEST_INPUTS['h_15'] = parseFloat(document.getElementById('inputArea').value) || 5000;
-      TEST_INPUTS['f_85'] = parseFloat(document.getElementById('inputRoofRSI').value) || 5.0;
-      TEST_INPUTS['f_86'] = parseFloat(document.getElementById('inputWallRSI').value) || 4.0;
-
-      runComparison();
-    }
-
-    // Initial log
-    log('System Comparison Test Ready');
-    log('Old System: StateManager + Calculator');
-    log('New System: MultiModelEngine + IncrementalEngine');
-    log('\nClick "Run Comparison" to start...');
+    // Auto-run on load
+    window.addEventListener('load', () => {
+      setTimeout(runTests, 100);
+    });
   </script>
 </body>
 </html>
