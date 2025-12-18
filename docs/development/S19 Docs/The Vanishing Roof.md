@@ -1696,10 +1696,241 @@ Results in:
 
 ---
 
-**Document Status**: ACTIVE - New input added, constraint validation needed
+## Real-World Context: User Error Patterns
+
+**Date**: 2025-12-18
+**Observation**: Architects frequently under-report total conditioned volume
+
+### The Pattern
+
+**Before `g_106` (Typical F2F Height)**:
+- User provides thermal areas from BIM (walls, roof, floor) ✅ Usually accurate
+- User provides total volume from BIM ❌ **Frequently under-reported**
+- Solver would calculate absurd results:
+  - Floor-to-floor heights: 0.36m (physically impossible!)
+  - Wall heights that clearly don't match stated wall areas
+  - No clear error message - just nonsensical geometry
+
+**With `g_106` forcing realistic F2F heights**:
+- Wall height is now fixed at sensible values (e.g., 1.5 storeys × 3.0m = 4.5m)
+- If volume is under-reported → **immediate detection**:
+  - Wall volume exceeds total volume (negative roof volume)
+  - Clear error: "Volume insufficient for stated wall height"
+  - Points user to the actual problem: **fix d_105**
+
+### Key Assumption
+
+**Thermal areas from BIM are geometrically valid** (they come from a real 3D model):
+- Wall area (g_107) is accurate ✅
+- Roof area (d_85) is accurate ✅
+- Floor area (d_87) is accurate ✅
+- Floor-to-floor heights are realistic (g_106) ✅
+
+**Therefore**: If constraints appear incompatible, the **volume (d_105) is wrong**, not the geometry.
+
+### Diagnostic Strategy
+
+When constraints conflict:
+
+1. **Detect the conflict** (validation)
+   - Calculate wall volume: `V_wall = floor_area × wall_height`
+   - Check: `V_total > V_wall`?
+   - If not → volume is under-reported
+
+2. **Calculate correct volume** (guidance)
+   - From wall area constraint: `h_wall = wall_area / perimeter`
+   - This gives the **required** wall height for thermal constraint
+   - If `h_wall` differs from `g_106 × d_103` → aspect ratio must adjust
+   - OR: Accept `g_106 × d_103` as correct and solve for compatible aspect ratio
+
+3. **Provide clear feedback**
+   - "Total volume (81 m³) is too small for stated geometry"
+   - "Required minimum volume: XXX m³ (for wall height = 4.5m on 29.7 m² footprint)"
+   - "Either: increase d_105, reduce g_106, or reduce storey count"
+
+---
+
+## Implementation Decision Points (For This Afternoon)
+
+### Decision 1: Hierarchy of Constraints
+
+**Question**: Which constraints are SACRED vs adjustable?
+
+**Option A - Thermal Constraints Sacred** (Recommended):
+- **SACRED**: Wall area (g_107), Roof area (d_85), Floor area (d_87), F2F height (g_106), Storey count (d_103)
+- **ADJUSTABLE**: Aspect ratio (d_101), Total volume (d_105)
+- **Logic**: BIM thermal data is accurate; user must fix volume to match
+
+**Option B - Volume Constraint Sacred**:
+- **SACRED**: Total volume (d_105), F2F height (g_106), Storey count (d_103)
+- **ADJUSTABLE**: Wall area (let it float with warning)
+- **Logic**: Trust volume, warn that wall area doesn't match perimeter
+
+**Option C - Aspect Ratio Adjustable**:
+- **SACRED**: All thermal areas, volume, F2F height
+- **ADJUSTABLE**: Aspect ratio (d_101) becomes derived, not input
+- **Logic**: Solve for aspect ratio that satisfies all constraints
+
+**Recommendation**: **Option A** - Trust thermal data from BIM, guide user to fix volume
+
+### Decision 2: Solver Strategy
+
+**Option A - Validate and Error** (Simplest, immediate implementation):
+```javascript
+// Step 1: Calculate deterministic values
+h_wall = storeyCount × typicalHeight;
+V_wall = floorArea × h_wall;
+
+// Step 2: Validate volume
+if (V_total <= V_wall) {
+  console.error('[WOMBAT] Total volume insufficient');
+  console.error(`  Required minimum: ${V_wall.toFixed(2)} m³`);
+  console.error(`  Current d_105: ${V_total.toFixed(2)} m³`);
+  console.error(`  Deficit: ${(V_wall - V_total).toFixed(2)} m³`);
+  // Still render with warning, using volume-derived wall height
+  h_wall = V_total / floorArea; // Use whatever fits in available volume
+}
+
+// Step 3: Continue with roof solving
+V_roof_available = V_total - (floorArea × h_wall);
+// Solve for h_roof that gives roof_area AND roof_volume
+```
+
+**Option B - Solve for Compatible Aspect Ratio**:
+```javascript
+// Step 1: Calculate wall height (deterministic)
+h_wall = storeyCount × typicalHeight;
+
+// Step 2: Calculate required perimeter from wall area
+P_required = wall_area / h_wall;
+
+// Step 3: Solve for dimensions that give both P and floor_area
+// This determines aspect ratio (not user input!)
+// w² - (P/2)w + floor_area = 0
+const discriminant = (P_required/2)**2 - 4*floor_area;
+if (discriminant < 0) {
+  console.error('[WOMBAT] Wall area incompatible with floor area and wall height');
+  // Fall back to user aspect ratio with warning
+} else {
+  width = (P_required/2 - sqrt(discriminant)) / 2;
+  length = floor_area / width;
+  aspectRatio_derived = (length/width) - 1;
+  // Use derived aspect ratio, not user slider!
+}
+
+// Step 4: Solve for roof height from roof area
+// Step 5: Check if roof volume fits in available volume
+```
+
+**Option C - Dual Constraint Solving** (Most complex):
+- Solve simultaneously for `h_roof` that satisfies BOTH:
+  - Roof area = target (thermal constraint)
+  - Roof volume = available (volume constraint)
+- This may require adjusting roof geometry (pitch, not just height)
+
+**Recommendation**: Start with **Option A** (validate and error with clear guidance), then add **Option B** (solve for aspect ratio) if feasible.
+
+### Decision 3: User Feedback Mechanism
+
+**Console Ticker Header** (Like Section 18):
+- Add calculation status header to Section 19 (same styling as S18)
+- Show real-time constraint validation:
+  - ✅ "Constraints valid"
+  - ⚠️ "Volume under-reported by XX m³"
+  - ❌ "Wall area incompatible with floor area at current F2F height"
+
+**Console Logs**:
+- Detailed diagnostic information
+- Show all constraint checks
+- Guide user to fix (increase d_105, adjust g_106, etc.)
+
+---
+
+## Implementation Plan (This Afternoon)
+
+### Phase 1: Add Console Ticker ✅ COMPLETE
+**Implementation Details:**
+- Added `#s19-feedback-console` CSS in [src/styles.css](../../src/styles.css:2143-2149) (same styling as S18)
+- Created `createFeedbackConsole()` in [src/sections/Section19.js](../../src/sections/Section19.js:1525-1537)
+- Injects console span into `#wombat .section-header` on activation
+- Created `showFeedback(message, duration)` function at [Section19.js:1539-1555](../../src/sections/Section19.js:1539-1555)
+- Exposed via module API for use in solver and validation logic
+- Usage: `window.TEUI.SectionModules.sect19.showFeedback("✓ Constraints satisfied", 5000)`
+
+### Phase 2: Read g_106 and Calculate Wall Height ✅
+```javascript
+const storeyCount = parseFloat(StateManager.getValue('d_103')) || 1.5;
+const typicalHeight = parseFloat(StateManager.getValue('g_106')) || 3.00;
+const wallHeight = storeyCount × typicalHeight;
+console.log(`[WOMBAT] Wall height (deterministic): ${wallHeight.toFixed(2)}m`);
+```
+
+### Phase 3: Constraint Validation ✅
+```javascript
+const wallVolume = floorArea × wallHeight;
+const availableVolume = totalVolume;
+
+if (availableVolume <= wallVolume) {
+  console.error(`[WOMBAT] ❌ Volume insufficient`);
+  console.error(`  Wall volume required: ${wallVolume.toFixed(2)} m³`);
+  console.error(`  Total volume (d_105): ${availableVolume.toFixed(2)} m³`);
+  console.error(`  Deficit: ${(wallVolume - availableVolume).toFixed(2)} m³`);
+  console.error(`  → Increase d_105 or reduce g_106`);
+  // Set ticker to error state
+}
+
+const roofVolumeAvailable = availableVolume - wallVolume;
+console.log(`[WOMBAT] Roof volume available: ${roofVolumeAvailable.toFixed(2)} m³`);
+```
+
+### Phase 4: Wall Area Validation ✅
+```javascript
+// Calculate required perimeter from wall area
+const requiredPerimeter = wallArea / wallHeight;
+console.log(`[WOMBAT] Required perimeter (from wall area): ${requiredPerimeter.toFixed(2)}m`);
+
+// Calculate actual perimeter from footprint dimensions (aspect ratio)
+const actualPerimeter = 2 × (width + length);
+const perimeterDiscrepancy = Math.abs(actualPerimeter - requiredPerimeter);
+
+if (perimeterDiscrepancy > 0.1) { // 10cm tolerance
+  console.warn(`[WOMBAT] ⚠️ Wall area mismatch`);
+  console.warn(`  Required perimeter: ${requiredPerimeter.toFixed(2)}m`);
+  console.warn(`  Actual perimeter: ${actualPerimeter.toFixed(2)}m`);
+  console.warn(`  Discrepancy: ${perimeterDiscrepancy.toFixed(2)}m`);
+  // Could solve for compatible aspect ratio here
+}
+```
+
+### Phase 5: Roof Solving (With Both Constraints) 🔄
+```javascript
+// Solve for h_roof that satisfies:
+// 1. Roof area = target (thermal)
+// 2. Roof volume = available (volume)
+
+// Current implementation only satisfies #1
+// Need to add check: does resulting volume match available?
+
+const roofHeight_fromArea = solveRoofHeightForArea(roofArea);
+const roofVolume_actual = calculateRoofVolume(roofHeight_fromArea);
+
+if (Math.abs(roofVolume_actual - roofVolumeAvailable) > 1.0) { // 1 m³ tolerance
+  console.warn(`[WOMBAT] ⚠️ Roof volume mismatch`);
+  console.warn(`  From area constraint: ${roofVolume_actual.toFixed(2)} m³`);
+  console.warn(`  Available volume: ${roofVolumeAvailable.toFixed(2)} m³`);
+  console.warn(`  Discrepancy: ${Math.abs(roofVolume_actual - roofVolumeAvailable).toFixed(2)} m³`);
+  // This is the core conflict we're trying to resolve!
+}
+```
+
+---
+
+**Document Status**: ACTIVE - Strategy documented, ready for implementation
 **Last Updated**: 2025-12-18
-**Restore Point**: Commit d1c0b12 (safe fallback if needed)
-**Next Steps**:
-1. Add constraint validation (wall volume vs total volume)
-2. Provide clear user error messages for incompatible inputs
-3. Implement single-variable solver for roof height (once constraints validated)
+**Restore Point**: Commit 2323e54 (safe fallback if needed)
+**Next Implementation**:
+1. Add console ticker (copy S18 styling)
+2. Read g_106 and calculate deterministic wall height
+3. Add validation checks with clear error messages
+4. Decide on aspect ratio strategy (user input vs derived)
+5. Implement dual-constraint roof solving (area + volume)

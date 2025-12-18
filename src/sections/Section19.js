@@ -1517,6 +1517,41 @@ window.TEUI.SectionModules.sect19 = (function () {
     if (fullscreenBtn) {
       fullscreenBtn.addEventListener("click", toggleFullscreen);
     }
+
+    // Inject feedback console into section header (following S18 pattern)
+    createFeedbackConsole();
+  }
+
+  function createFeedbackConsole() {
+    const feedbackConsole = document.createElement("span");
+    feedbackConsole.id = "s19-feedback-console";
+
+    const sectionHeader = document.querySelector("#wombat .section-header");
+    if (
+      sectionHeader &&
+      !sectionHeader.querySelector("#s19-feedback-console")
+    ) {
+      sectionHeader.appendChild(feedbackConsole);
+      console.log("[WOMBAT] Feedback console injected into section header");
+    }
+  }
+
+  function showFeedback(message, duration = 5000) {
+    const console = document.getElementById("s19-feedback-console");
+    if (!console) return;
+
+    console.textContent = message;
+    console.style.opacity = "1";
+
+    setTimeout(() => {
+      console.style.transition = "opacity 1s";
+      console.style.opacity = "0";
+      setTimeout(() => {
+        console.textContent = "";
+        console.style.opacity = "1";
+        console.style.transition = "";
+      }, 1000);
+    }, duration);
   }
 
   function showInfoModal() {
@@ -2246,6 +2281,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     solveGeometry,
     isActivated: () => isActivated,
     getCurrentModel: () => currentModel,
+    showFeedback, // Feedback console (S18 pattern)
 
     // Dual-state architecture exports (required by FieldManager and ReferenceToggle)
     ModeManager,
