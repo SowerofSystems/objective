@@ -931,12 +931,13 @@ document.addEventListener("DOMContentLoaded", function () {
           runInParallel: true,
           autoSync: true
         });
-        console.log("[init.js] New computation system initialized");
+        console.log("[init.js] New computation system initialized (parallel mode)");
 
-        // Enable LegacyAdapter to make new system primary
-        if (window.TEUI.ComputationIntegration.enableAdapter()) {
-          console.log("[init.js] New computation system is now PRIMARY");
-        }
+        // NOTE: LegacyAdapter disabled due to circular dependency in FieldRegistry.getClassification
+        // TODO: Fix circular dependency before enabling adapter
+        // if (window.TEUI.ComputationIntegration.enableAdapter()) {
+        //   console.log("[init.js] New computation system is now PRIMARY");
+        // }
       }, 500); // After initial render settles
     }
   } else {
