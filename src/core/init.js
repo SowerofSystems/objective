@@ -924,6 +924,8 @@ document.addEventListener("DOMContentLoaded", function () {
     initializeElegantInputBehavior();
 
     // Initialize new computation system (Multi-Model Architecture)
+    // Runs in parallel mode - old system still drives UI
+    // New system computes independently for validation
     if (window.TEUI.ComputationIntegration) {
       setTimeout(function () {
         window.TEUI.ComputationIntegration.initialize({
@@ -932,13 +934,9 @@ document.addEventListener("DOMContentLoaded", function () {
           autoSync: true
         });
         console.log("[init.js] New computation system initialized (parallel mode)");
-
-        // NOTE: LegacyAdapter disabled due to circular dependency in FieldRegistry.getClassification
-        // TODO: Fix circular dependency before enabling adapter
-        // if (window.TEUI.ComputationIntegration.enableAdapter()) {
-        //   console.log("[init.js] New computation system is now PRIMARY");
-        // }
-      }, 500); // After initial render settles
+        // Adapter disabled - old StateManager still drives UI
+        // Enable manually with: TEUI.ComputationIntegration.enableAdapter()
+      }, 500);
     }
   } else {
     console.error("Core TEUI modules (StateManager, FieldManager) not found!");

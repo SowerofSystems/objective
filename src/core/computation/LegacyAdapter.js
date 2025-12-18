@@ -201,24 +201,27 @@
         const { isRef, baseId } = parseFieldId(fieldId);
         const semanticPath = toSemanticPath(baseId);
 
-        if (!semanticPath) {
-          // Fall back to original StateManager if available
-          if (originalStateManager?.getValue) {
-            return originalStateManager.getValue.call(originalStateManager, fieldId);
+        // Try new system first for known semantic paths
+        let value;
+        if (semanticPath && semanticPath.includes(".")) {
+          if (isRef) {
+            const refModelId = getReferenceModelId();
+            if (refModelId) {
+              value = state.getValueForModel(refModelId, semanticPath);
+            }
+          } else {
+            value = state.getValue(semanticPath);
           }
-          console.warn(`[LegacyAdapter] Unknown field: ${fieldId}`);
-          return undefined;
         }
 
-        if (isRef) {
-          const refModelId = getReferenceModelId();
-          if (refModelId) {
-            return state.getValueForModel(refModelId, semanticPath);
+        // Fall back to original StateManager if new system returns undefined/null
+        if (value === undefined || value === null) {
+          if (originalStateManager?._original_getValue) {
+            return originalStateManager._original_getValue.call(originalStateManager, fieldId);
           }
-          return undefined;
         }
 
-        return state.getValue(semanticPath);
+        return value;
       },
 
       /**

@@ -51,29 +51,34 @@
 
     /**
      * Get field classification (G, C, or A)
+     * Uses pattern matching to avoid circular dependency with FieldRegistry
      * @param {string} fieldPath
      * @returns {'G'|'C'|'A'}
      */
     function getClassification(fieldPath) {
-      // Try registry first (if available and has the field)
-      if (registry?.getClassification) {
-        const regClassification = registry.getClassification(fieldPath);
-        if (regClassification) {
-          return regClassification;
-        }
-      }
-
-      // Fallback: Check semantic path patterns for G-fields
+      // G-fields: Geometry and location data (shared across models)
       if (
         fieldPath.startsWith("geometry.") ||
         fieldPath.startsWith("climate.location.") ||
-        fieldPath.startsWith("climate.heating.degreedays") ||
-        fieldPath.startsWith("climate.cooling.degreedays")
+        fieldPath === "climate.heating.degreedays" ||
+        fieldPath === "climate.cooling.degreedays"
       ) {
         return "G";
       }
 
-      return "A"; // Default to model-specific
+      // C-fields: Code/performance values (model-specific)
+      // Most envelope, mechanical, and energy fields are C
+      if (
+        fieldPath.startsWith("envelope.") ||
+        fieldPath.startsWith("mechanical.") ||
+        fieldPath.startsWith("energy.") ||
+        fieldPath.startsWith("internal.")
+      ) {
+        return "C";
+      }
+
+      // Default: A-fields (model-specific metadata)
+      return "A";
     }
 
     /**
