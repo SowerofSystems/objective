@@ -112,6 +112,23 @@ window.TEUI.WombatRender = (function () {
             { x: width / 2, y: 0, z: totalHeight }
           );
         }
+      } else if (geometry.roof.type === "hip") {
+        // Hip roof: ridge line endpoints (shortened)
+        const hipData = geometry.roof.hipData;
+        if (hipData) {
+          const ridgeOffset = hipData.ridgeOffset;
+          if (hipData.ridgeOrientation === "longitudinal") {
+            points3D.push(
+              { x: 0, y: -length / 2 + ridgeOffset, z: totalHeight },
+              { x: 0, y: length / 2 - ridgeOffset, z: totalHeight }
+            );
+          } else {
+            points3D.push(
+              { x: -width / 2 + ridgeOffset, y: 0, z: totalHeight },
+              { x: width / 2 - ridgeOffset, y: 0, z: totalHeight }
+            );
+          }
+        }
       }
     }
 
@@ -797,10 +814,26 @@ window.TEUI.WombatRender = (function () {
     svg.appendChild(createLine(r1Pt, r2Pt, roofColor, 2));
 
     // Draw 4 hip rafters (from ridge endpoints to eave corners)
-    svg.appendChild(createLine(r1Pt, e1Pt, roofColor, 2));
-    svg.appendChild(createLine(r1Pt, e2Pt, roofColor, 2));
-    svg.appendChild(createLine(r2Pt, e3Pt, roofColor, 2));
-    svg.appendChild(createLine(r2Pt, e4Pt, roofColor, 2));
+    // CRITICAL: Connection pattern depends on ridge orientation
+    if (hipData.ridgeOrientation === "longitudinal") {
+      // Ridge runs along Y-axis (length)
+      // ridge1 is at front (negative Y), ridge2 is at back (positive Y)
+      // Front corners (e1=SW, e2=SE) connect to ridge1
+      // Back corners (e3=NE, e4=NW) connect to ridge2
+      svg.appendChild(createLine(r1Pt, e1Pt, roofColor, 2));  // ridge1 → SW (front-left)
+      svg.appendChild(createLine(r1Pt, e2Pt, roofColor, 2));  // ridge1 → SE (front-right)
+      svg.appendChild(createLine(r2Pt, e3Pt, roofColor, 2));  // ridge2 → NE (back-right)
+      svg.appendChild(createLine(r2Pt, e4Pt, roofColor, 2));  // ridge2 → NW (back-left)
+    } else {
+      // Ridge runs along X-axis (width)
+      // ridge1 is at left (negative X), ridge2 is at right (positive X)
+      // Left corners (e1=SW, e4=NW) connect to ridge1
+      // Right corners (e2=SE, e3=NE) connect to ridge2
+      svg.appendChild(createLine(r1Pt, e1Pt, roofColor, 2));  // ridge1 → SW (left-front)
+      svg.appendChild(createLine(r1Pt, e4Pt, roofColor, 2));  // ridge1 → NW (left-back)
+      svg.appendChild(createLine(r2Pt, e2Pt, roofColor, 2));  // ridge2 → SE (right-front)
+      svg.appendChild(createLine(r2Pt, e3Pt, roofColor, 2));  // ridge2 → NE (right-back)
+    }
 
     // Eave lines are already drawn by renderAboveGrade (building perimeter)
     // So we don't need to redraw them here
@@ -1758,6 +1791,9 @@ window.TEUI.WombatRender = (function () {
     if (geometry.roof && geometry.roof.type === "gable") {
       // Gable roof (biplanar)
       renderGableRoof(svgElement, geometry, mode, scale, centerX, centerY);
+    } else if (geometry.roof && geometry.roof.type === "hip") {
+      // Hip roof (multiplanar - truncated gable)
+      renderHipRoof(svgElement, geometry, mode, scale, centerX, centerY);
     } else if (geometry.roof && geometry.roof.type === "pyramidal") {
       // Pyramidal roof (multiplanar)
       renderPyramidalRoof(svgElement, geometry, mode, scale, centerX, centerY);

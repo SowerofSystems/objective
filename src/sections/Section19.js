@@ -844,6 +844,157 @@ window.TEUI.SectionModules.sect19 = (function () {
     };
   }
 
+  /**
+   * Calculate hip roof geometry using truncated gable approach (rational trigonometry)
+   * Hip roof = gable with shortened ridge + 4 triangular hip ends
+   * All slopes maintain the same pitch (rational constraint)
+   * @param {number} width - Building width
+   * @param {number} length - Building length
+   * @param {number} targetRoofArea - Target total roof area
+   * @returns {Object} - { height, ridgeOrientation, ridgeLength, span, hipData, isValid }
+   */
+  function calculateHipHeight(width, length, targetRoofArea) {
+    // Ridge runs along the longer dimension
+    const maxDimension = Math.max(width, length);
+    const minDimension = Math.min(width, length);
+    const ridgeOrientation = length >= width ? "longitudinal" : "transverse";
+    const span = minDimension;
+
+    console.log(`[WOMBAT] Hip roof calculation:`);
+    console.log(`  Building: ${width.toFixed(2)}m × ${length.toFixed(2)}m`);
+    console.log(`  Target roof area: ${targetRoofArea.toFixed(2)}m²`);
+    console.log(`  Ridge orientation: ${ridgeOrientation}`);
+
+    // Binary search to find ridge length that achieves target roof area
+    // Ridge must be shorter than building length to allow hip ends
+    let ridgeLengthMin = 0;
+    let ridgeLengthMax = maxDimension;
+    const tolerance = 0.01; // 1cm precision
+    const maxIterations = 50;
+    let iteration = 0;
+
+    let bestRidgeLength = 0;
+    let bestHeight = 0;
+    let bestArea = 0;
+
+    while (ridgeLengthMax - ridgeLengthMin > tolerance && iteration < maxIterations) {
+      const ridgeLength = (ridgeLengthMin + ridgeLengthMax) / 2;
+      const ridgeOffset = (maxDimension - ridgeLength) / 2;
+
+      // Calculate roof area for this ridge length
+      // Hip roof = 2 trapezoidal main slopes + 2 triangular hip ends
+
+      // We'll iterate to find the height that gives us the target area
+      // Given a ridge length, we can calculate the roof area as a function of height
+
+      // Strategy: Use gable formula to estimate slope length, then calculate actual area
+      // For a gable with this ridge length: Area_gable = 2 * ridgeLength * slopeLength
+      // We want total hip area = target, so estimate: slopeLength ≈ target / (2 * ridgeLength)
+      // But this doesn't account for hip ends, so we need to iterate
+
+      // Better approach: Calculate area directly from geometry
+      // Assume a height, calculate the actual roof area, compare to target
+
+      // For hip roof with ridge length L_ridge:
+      // - Each trapezoidal main slope has parallel sides: L_ridge (top) and L_max (bottom)
+      // - Height of trapezoid = slope length s
+      // - Area of each trapezoid = (L_ridge + L_max)/2 * s
+      // - But this is wrong - the "height" of the trapezoid is the slope distance
+
+      // Actually, let's think about it differently:
+      // Total roof area = 2 main slopes + 2 hip end triangles
+      // Each main slope is a rectangle: ridgeLength × slopeLength
+      // Each hip end is 2 triangular faces meeting at ridge endpoint
+      // Total hip end area = 2 × (ridgeOffset × hipSlantHeight)
+
+      // For consistent pitch, all slopes have same rise/run ratio
+      // slope = height / (span/2)
+      // So slopeLength² = height² + (span/2)²
+
+      // We need to solve: A_total = 2*ridge*slope + 2*offset*hipSlant = target
+      // Where hipSlant = sqrt(height² + offset² + (span/2)²)
+
+      // This is complex, so let's use a simpler approximation:
+      // Treat it like a gable with effective length = (ridgeLength + maxDimension)/2
+
+      const effectiveLength = (ridgeLength + maxDimension) / 2;
+      const estimatedSlopeLength = targetRoofArea / (2 * effectiveLength);
+
+      // Height from Pythagorean theorem: h² = s² - (span/2)²
+      const h2 = estimatedSlopeLength * estimatedSlopeLength - (span / 2) * (span / 2);
+
+      if (h2 < 0) {
+        // Invalid geometry - roof area too small for this ridge length
+        ridgeLengthMax = ridgeLength; // Try shorter ridge
+        iteration++;
+        continue;
+      }
+
+      const height = Math.sqrt(h2);
+
+      // Now calculate actual roof area with this height
+      // Slope length from height (using rational trig)
+      const slopeLength = Math.sqrt(height * height + (span / 2) * (span / 2));
+
+      // Main rectangular slopes: 2 rectangles with dimensions ridgeLength × slopeLength
+      const mainSlopeArea = 2 * ridgeLength * slopeLength;
+
+      // Hip end triangular sections
+      // Each hip end consists of 2 triangular roof planes meeting at ridge endpoint
+      // The projected area of each hip end (both triangles) = ridgeOffset × slopeLength
+      // Total for both ends = 2 × (ridgeOffset × slopeLength)
+      const hipEndArea = 2 * ridgeOffset * slopeLength;
+
+      const calculatedArea = mainSlopeArea + hipEndArea;
+
+      console.log(`  Iteration ${iteration}: ridge=${ridgeLength.toFixed(2)}m, h=${height.toFixed(2)}m, area=${calculatedArea.toFixed(2)}m²`);
+
+      bestRidgeLength = ridgeLength;
+      bestHeight = height;
+      bestArea = calculatedArea;
+
+      // Binary search adjustment
+      if (Math.abs(calculatedArea - targetRoofArea) < tolerance) {
+        break; // Found it!
+      } else if (calculatedArea < targetRoofArea) {
+        // Need more area - try longer ridge (more gable area, less hip area)
+        ridgeLengthMin = ridgeLength;
+      } else {
+        // Too much area - try shorter ridge (less gable area, more hip area)
+        ridgeLengthMax = ridgeLength;
+      }
+
+      iteration++;
+    }
+
+    if (iteration >= maxIterations) {
+      console.warn(`[WOMBAT] Hip roof binary search did not converge after ${maxIterations} iterations`);
+    }
+
+    const finalRidgeOffset = (maxDimension - bestRidgeLength) / 2;
+
+    console.log(`[WOMBAT] Hip roof solved:`);
+    console.log(`  Ridge length: ${bestRidgeLength.toFixed(2)}m (offset: ${finalRidgeOffset.toFixed(2)}m)`);
+    console.log(`  Ridge height: ${bestHeight.toFixed(2)}m`);
+    console.log(`  Achieved area: ${bestArea.toFixed(2)}m² (target: ${targetRoofArea.toFixed(2)}m²)`);
+    console.log(`  Error: ${Math.abs(bestArea - targetRoofArea).toFixed(2)}m²`);
+
+    return {
+      height: bestHeight,
+      ridgeOrientation,
+      ridgeLength: bestRidgeLength,
+      ridgeOffset: finalRidgeOffset,
+      span,
+      hipData: {
+        ridgeLength: bestRidgeLength,
+        ridgeOffset: finalRidgeOffset,
+        ridgeOrientation,
+        achievedArea: bestArea
+      },
+      isValid: bestHeight > 0 && Math.abs(bestArea - targetRoofArea) < targetRoofArea * 0.05 // 5% tolerance
+    };
+  }
+
   //==========================================================================
   // GEOMETRY SOLVER
   //==========================================================================
@@ -1013,11 +1164,23 @@ window.TEUI.SectionModules.sect19 = (function () {
           roofHeight = 0;
         }
       } else if (roofTypeSelection === "multiplanar") {
-        // PYRAMIDAL ROOF (multiplanar)
-        roofType = "pyramidal";
-        roofHeight = calculatePyramidalHeight(width, length, areaRatio);
+        // HIP ROOF (multiplanar) - truncated gable approach
+        roofType = "hip";
+        const hipData = calculateHipHeight(width, length, roofArea);
 
-        console.log(`[WOMBAT] Pyramidal roof: h=${roofHeight.toFixed(2)}m`);
+        if (hipData.isValid) {
+          roofHeight = hipData.height;
+          roofGeometryData = hipData;
+
+          console.log(`[WOMBAT] Hip roof solved:`);
+          console.log(`  Ridge height: ${roofHeight.toFixed(2)} m`);
+          console.log(`  Ridge length: ${hipData.ridgeLength.toFixed(2)} m`);
+          console.log(`  Ridge orientation: ${hipData.ridgeOrientation}`);
+        } else {
+          console.warn('[WOMBAT] Invalid hip geometry - falling back to flat roof');
+          roofType = "flat";
+          roofHeight = 0;
+        }
       } else {
         // MONOPLANE (shed roof) - future implementation
         console.warn('[WOMBAT] Monoplane roof type not yet implemented - using flat roof');
@@ -1078,6 +1241,20 @@ window.TEUI.SectionModules.sect19 = (function () {
       let roofVolume = 0;
       if (roofType === "gable" && roofHeight > 0) {
         roofVolume = (footprintArea * roofHeight) / 2;
+      } else if (roofType === "hip" && roofHeight > 0 && roofGeometryData) {
+        // Hip roof volume = gable section + 2 pyramidal end caps
+        const ridgeLength = roofGeometryData.ridgeLength;
+        const ridgeOffset = roofGeometryData.ridgeOffset;
+        const hipSpan = roofGeometryData.span; // Get span from hip geometry data
+
+        // Gable section: rectangular prism with triangular cross-section
+        const gableSectionVolume = (ridgeLength * hipSpan * roofHeight) / 2;
+
+        // Each pyramidal end cap: 1/3 * base_area * height
+        // Base area = ridgeOffset × span (rectangle at building edge)
+        const endCapVolume = 2 * (1/3) * (ridgeOffset * hipSpan) * roofHeight;
+
+        roofVolume = gableSectionVolume + endCapVolume;
       } else if (roofType === "pyramidal" && roofHeight > 0) {
         roofVolume = (1/3) * footprintArea * roofHeight;
       } else if (roofType === "inverted" && roofHeight < 0) {
@@ -1150,7 +1327,8 @@ window.TEUI.SectionModules.sect19 = (function () {
       height: roofHeight,
       areaRatio: areaRatio,
       gableEndArea: gableEndArea,
-      gableData: roofGeometryData  // Full gable geometry data (ridge, span, etc.)
+      gableData: roofType === "gable" ? roofGeometryData : null,  // Full gable geometry data
+      hipData: roofType === "hip" ? roofGeometryData : null  // Full hip geometry data
     };
 
     // Phase 4: Below-Grade Geometry (WOMBAT Phase 2)
