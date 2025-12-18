@@ -1346,10 +1346,360 @@ Phase 2 (height from area):
 
 ---
 
-**Document Status**: ACTIVE - Solution strategy documented, ready to implement
+## Implementation Attempt 4: Two-Phase Solver - Roof Geometry Correct, Wall Constraint Still Violated
+
+**Date**: 2025-12-18
+**Status**: PARTIAL SUCCESS - Ridge and nodes correct, but circular dependency remains
+**Branch**: WOMBAT-HIP
+
+### What We Implemented ✅
+
+**Two-Phase Algorithm**:
+1. **Phase 1 (Planar)**: Ridge geometry deterministic from 45° hip rafters
+   - `ridgeLength = maxDimension - span`
+   - `ridgeOffset = span / 2`
+   - No binary search needed - pure geometry!
+
+2. **Phase 2 (Vertical)**: Single-variable binary search on height
+   - **Correct hip end formula**: `hipEndArea = 2 × span × hipRafterLength`
+   - Previously (wrong): `2 × ridgeOffset × slopeLength`
+   - Converges to exact roof area match ✅
+
+**Square building detection**: Automatically falls back to pyramidal when `ridgeLength < 0.01m`
+
+### Current Behavior from Logs
+
+**Aspect 0.0 (Square: 5.45m × 5.45m)**:
+- Ridge length: 0.00m (detected as pyramid) ✅
+- Ridge height: Would use pyramidal solver
+- Visual: Nodes in correct positions ✅
+
+**Aspect 2.0 (Rectangular: 3.15m × 9.44m)**:
+```
+Ridge length: 6.29m (deterministic) ✅
+Ridge offset: 1.57m ✅
+Ridge height: 0.47m (solved for roof area = 35.00m²) ✅
+Roof volume: 6.25 m³ (much better than before!)
+
+Wall height from volume: 2.517m
+Wall height from area:   2.106m
+Discrepancy: 16.3% ❌
+```
+
+### The Core Problem: Circular Dependency
+
+We have **THREE simultaneous constraints** that must all be satisfied:
+
+1. **Roof surface area** (d_85): 35.00 m² (SACRED from S12)
+2. **Wall surface area** (g_107): 53.00 m² (SACRED from S12)
+3. **Total above-grade volume** (d_105 - basement - roof): Must accommodate both roof and walls
+
+**Current solver**: Only satisfies constraint #1 (roof area), ignores constraint #2 (wall area)
+
+**The circular dependency**:
+```
+To solve roof height → Need wall height (for wall volume)
+To solve wall height → Need roof volume
+To calculate roof volume → Need roof height
+To calculate wall area → Need wall height
+To satisfy wall area → Need correct perimeter × wall height
+
+But perimeter changes with aspect ratio!
+And aspect ratio changes footprint dimensions!
+Which changes wall area for a given wall height!
+```
+
+### The Mathematical Problem
+
+**Given (SACRED constraints)**:
+- Footprint area: `A_floor = 29.70 m²` (d_87)
+- Roof area: `A_roof = 35.00 m²` (d_85)
+- Wall area: `A_wall = 53.00 m²` (g_107)
+- Total volume: `V_total = 81.00 m³` (d_105)
+- Aspect ratio: `α = 2.0` (user slider d_101)
+
+**Unknowns**:
+- Wall height: `h_wall`
+- Roof height: `h_roof`
+- Footprint dimensions: `width × length` (constrained by aspect ratio)
+
+**Equations**:
+```
+1. Footprint: width × length = A_floor = 29.70 m²
+2. Aspect ratio: length/width - 1 = α = 2.0
+   → length = width × (1 + α)
+   → width² × (1 + α) = A_floor
+   → width = sqrt(A_floor / (1 + α))
+   → width = sqrt(29.70 / 3.0) = 3.15m
+   → length = 9.44m
+
+3. Perimeter: P = 2×(width + length) = 2×(3.15 + 9.44) = 25.18m
+
+4. Wall area: P × h_wall = A_wall = 53.00 m²
+   → h_wall = 53.00 / 25.18 = 2.106m
+
+5. Roof area (hip formula):
+   Ridge length = length - width = 6.29m
+   Ridge offset = width/2 = 1.57m
+   slopeLength = sqrt(h_roof² + (width/2)²)
+   hipRafterLength = sqrt(h_roof² + (width/2)² + ridgeOffset²)
+   A_roof = 2×ridgeLength×slopeLength + 2×width×hipRafterLength = 35.00 m²
+   → Solve for h_roof
+
+6. Roof volume (hip formula):
+   V_roof = (ridgeLength × width × h_roof)/2 + 2×(1/3)×(ridgeOffset × width)×h_roof
+   V_roof = (width × h_roof / 2) × (ridgeLength + 2×ridgeOffset/3)
+
+7. Volume constraint:
+   V_total = V_roof + (A_floor × h_wall)
+   81.00 = V_roof + 29.70 × h_wall
+```
+
+### The Conflict
+
+**From wall area constraint (equation 4)**:
+```
+h_wall = 53.00 / 25.18 = 2.106m
+```
+
+**From volume constraint (equation 7)**:
+```
+81.00 = V_roof + 29.70 × 2.106
+81.00 = V_roof + 62.55
+V_roof = 18.45 m³  ← REQUIRED roof volume
+```
+
+**But current solver gives**:
+```
+h_roof = 0.47m (from roof area constraint alone)
+V_roof = 6.25 m³  ← ACTUAL roof volume (too small!)
+
+This leaves: 81.00 - 6.25 = 74.75 m³ for walls
+Which gives: h_wall = 74.75 / 29.70 = 2.517m ✘
+
+But wall area constraint requires: h_wall = 2.106m
+Which needs: V_roof = 18.45 m³ (not 6.25 m³!)
+```
+
+**The discrepancy**: We need roof volume of 18.45 m³, but roof area constraint gives us only 6.25 m³.
+
+### Why This Happens
+
+As aspect ratio increases (building gets more rectangular):
+- **Perimeter increases** (for same footprint area)
+- **Wall area increases** (for same wall height)
+- To maintain fixed wall area → **wall height must decrease**
+- Lower walls → **more volume available for roof**
+- But roof area is FIXED → **can't use that extra volume!**
+
+**The fundamental issue**: For rectangular buildings at high aspect ratios, the **roof area constraint and wall area constraint are INCOMPATIBLE** with the total volume constraint.
+
+### Possible Resolutions
+
+**Option A: Adjust aspect ratio to satisfy all constraints**
+- Treat aspect ratio as a **derived value**, not an input
+- Solve for aspect ratio that allows all three constraints to be met
+- User slider becomes "suggested" value, actual may differ
+
+**Option B: Treat one constraint as "soft"**
+- Prioritize roof area + wall area (thermal constraints from S12)
+- Let total volume float (warning to user)
+- OR: Prioritize volume + wall area, let roof area float
+
+**Option C: Multi-variable simultaneous solve**
+- Solve for BOTH `h_wall` and `h_roof` simultaneously
+- Adjust aspect ratio iteratively until all constraints converge
+- 2D or 3D search space (complex but rigorous)
+
+**Option D: User guidance**
+- Detect incompatible constraints
+- Warn user: "Given roof area (35 m²), wall area (53 m²), and volume (81 m³), aspect ratio 2.0 creates geometric conflict"
+- Suggest compatible aspect ratio range
+
+### Next Investigation
+
+**Question**: At what aspect ratio ARE these constraints compatible?
+
+For our test case:
+- Footprint: 29.70 m²
+- Roof area: 35.00 m² (1.178× footprint)
+- Wall area: 53.00 m²
+- Volume: 81.00 m³
+
+We need to find aspect ratio `α` such that:
+```
+width = sqrt(29.70 / (1 + α))
+length = width × (1 + α)
+P = 2 × (width + length)
+h_wall = 53.00 / P
+V_roof = 81.00 - 29.70 × h_wall
+h_roof from hip roof volume formula given V_roof
+A_roof from hip roof area formula given h_roof
+A_roof ≈ 35.00 m² ✓
+```
+
+This requires iterating through aspect ratios to find one where the derived roof area matches the target.
+
+---
+
+## Implementation Attempt 5: Adding Typical Floor-to-Floor Height to Reduce Unknowns
+
+**Date**: 2025-12-18
+**Status**: NEW INPUT ADDED - Simplifies solver
+**Branch**: WOMBAT-HIP
+
+### What We Added ✅
+
+**New User Input Field: Typical Floor-to-Floor Height (g_106)**
+
+Added to Section12.js at row 106:
+- **Field ID**: `g_106`
+- **Location**: Row 106, column G
+- **Label**: "Typ. F2F Ht." (F106)
+- **Units**: "Ht. in Metres" (H106)
+- **Default**: 3.00m
+- **Type**: User-editable numeric input
+
+**State Management**:
+- ✅ Saves/loads from localStorage (both Target and Reference modes)
+- ✅ Publishes to StateManager as `g_106` (Target) and `ref_g_106` (Reference)
+- ✅ Formatted as 2 decimal places
+- ✅ Syncs during CSV import/export
+- ✅ Defaults to 3.00m when importing from older Excel files (backward compatible)
+
+### How This Simplifies the Solver
+
+**Previously**: Wall height was an **unknown** that had to be solved simultaneously with roof height.
+
+**Now**: Wall height is **deterministic** from user inputs:
+```javascript
+// Read from S12
+const storeyCount = parseFloat(StateManager.getValue('d_103')); // e.g., 1.5
+const typicalHeight = parseFloat(StateManager.getValue('g_106')); // e.g., 3.00m
+
+// Calculate total wall height
+const totalWallHeight = storeyCount × typicalHeight;
+// Examples:
+//   1 storey: 1.0 × 3.00 = 3.00m
+//   1.5 storey: 1.5 × 3.00 = 4.50m
+//   2 storey: 2.0 × 3.00 = 6.00m
+```
+
+### Revised Constraint System
+
+**Given (SACRED constraints)**:
+- Footprint area: `A_floor = 29.70 m²` (d_87)
+- Roof area: `A_roof = 35.00 m²` (d_85)
+- Wall area: `A_wall = 53.00 m²` (g_107)
+- Total volume: `V_total = 81.00 m³` (d_105)
+- **Storey count**: `n_stories = 1.5` (d_103)
+- **Typical F2F height**: `h_typical = 3.00m` (g_106) ← **NEW!**
+- Aspect ratio: `α = 2.0` (user slider d_101)
+
+**Known values** (no longer unknowns):
+- **Wall height**: `h_wall = n_stories × h_typical = 1.5 × 3.00 = 4.50m` ✅
+
+**Remaining unknowns** (reduced from 2 to 1):
+- Roof height: `h_roof` (single unknown!)
+
+### Simplified Solver Strategy
+
+With wall height now fixed, we can:
+
+1. **Calculate footprint dimensions** from aspect ratio and floor area
+2. **Calculate perimeter** from dimensions
+3. **Verify wall area constraint**:
+   ```
+   Required wall area: 53.00 m²
+   Calculated: P × h_wall = P × 4.50m
+   Check if they match → if not, aspect ratio is incompatible
+   ```
+
+4. **Calculate wall volume** (now deterministic!):
+   ```
+   V_wall = A_floor × h_wall = 29.70 × 4.50 = 133.65 m³
+   ```
+
+5. **Calculate required roof volume** from total volume:
+   ```
+   V_roof = V_total - V_wall = 81.00 - 133.65 = -52.65 m³ ❌
+   ```
+
+**Wait... negative roof volume?** This reveals the **incompatibility immediately**!
+
+### The Real Insight
+
+With `g_106` added, we can now **validate constraints before attempting to solve geometry**:
+
+```javascript
+// Step 1: Calculate wall height (deterministic)
+const h_wall = storeyCount × typicalHeight;
+
+// Step 2: Calculate wall volume (deterministic)
+const V_wall = floorArea × h_wall;
+
+// Step 3: Check if total volume can accommodate walls
+if (V_total <= V_wall) {
+  console.error(`[WOMBAT] Invalid: Total volume (${V_total} m³) must exceed wall volume (${V_wall} m³)`);
+  console.error(`[WOMBAT] Either increase d_105 (total volume) or reduce g_106 (typical height)`);
+  return;
+}
+
+// Step 4: Calculate available roof volume
+const V_roof_available = V_total - V_wall;
+
+// Step 5: Solve for roof height that gives:
+//   - Roof volume = V_roof_available (from volume constraint)
+//   - Roof area = A_roof (from thermal constraint d_85)
+```
+
+### Updated Equations
+
+**Constraint validation**:
+```
+1. Wall height: h_wall = n_stories × h_typical = 1.5 × 3.00 = 4.50m ✓ (known)
+2. Wall volume: V_wall = A_floor × h_wall = 29.70 × 4.50 = 133.65 m³ ✓ (known)
+3. Available roof volume: V_roof = V_total - V_wall = 81.00 - 133.65 = -52.65 m³ ✗ (INVALID!)
+```
+
+**The problem**: For this test case, the wall volume (133.65 m³) **exceeds the total volume** (81 m³)!
+
+This is physically impossible. The constraint system is **fundamentally over-constrained** with these specific values.
+
+### Implications for Testing
+
+The test case with:
+- d_105 = 81.00 m³ (total volume)
+- d_103 = 1.5 storeys
+- g_106 = 3.00m (typical height)
+- d_87 = 29.70 m² (floor area)
+
+Results in:
+- Required wall volume: 133.65 m³
+- Available volume: 81.00 m³
+- **Deficit: 52.65 m³** ❌
+
+**The building simply doesn't have enough volume to accommodate 4.5m walls on a 29.7 m² footprint.**
+
+### Next Steps
+
+1. **Add validation** to detect impossible constraint combinations
+2. **Provide user guidance**:
+   - "With 1.5 storeys at 3.0m each (4.5m total), a 29.7 m² footprint requires 133.65 m³ for walls alone"
+   - "Current total volume (81 m³) is insufficient"
+   - "Either: Increase d_105, reduce g_106, or reduce storey count"
+
+3. **Implement proper solver** once constraints are validated:
+   - Wall height is fixed (deterministic from g_106 × d_103)
+   - Roof height is the **only remaining unknown**
+   - Solve for `h_roof` that satisfies both roof area (d_85) and available roof volume
+
+---
+
+**Document Status**: ACTIVE - New input added, constraint validation needed
 **Last Updated**: 2025-12-18
+**Restore Point**: Commit d1c0b12 (safe fallback if needed)
 **Next Steps**:
-1. Implement two-phase algorithm (planar ridge → height from area)
-2. Test on square building (should auto-pyramid)
-3. Verify wall area constraint satisfied
-4. Test across aspect ratio range
+1. Add constraint validation (wall volume vs total volume)
+2. Provide clear user error messages for incompatible inputs
+3. Implement single-variable solver for roof height (once constraints validated)

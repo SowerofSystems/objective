@@ -33,6 +33,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         d_103: "1.5", // Number of stories (dropdown)
         g_103: "Normal", // Exposure (dropdown)
         d_105: "8000.00", // Conditioned volume (editable)
+        g_106: "3.00", // Typical floor-to-floor height (editable)
         d_108: "AL-1B", // ✅ FIXED: Use AL-1B method (was MEASURED) to get proper 93.6 TEUI
         g_109: "1.30", // Measured value (conditional editable, N/A when not MEASURED)
       };
@@ -41,7 +42,7 @@ window.TEUI.SectionModules.sect12 = (function () {
      * ✅ PHASE 2: Sync from global StateManager after import
      */
     syncFromGlobalState: function (
-      fieldIds = ["d_103", "g_103", "d_105", "d_108", "g_109"]
+      fieldIds = ["d_103", "g_103", "d_105", "g_106", "d_108", "g_109"]
     ) {
       fieldIds.forEach(fieldId => {
         const globalValue = window.TEUI.StateManager.getValue(fieldId);
@@ -140,13 +141,14 @@ window.TEUI.SectionModules.sect12 = (function () {
         d_103: referenceValues.d_103 || "1.5", // Stories - MATCHES Target 1.5
         g_103: referenceValues.g_103 || "Exposed", // Exposure - DIFFERENT: Exposed vs Target Normal
         d_105: "8000.00", // Volume - MATCHES:Target 8000
+        g_106: "3.00", // Typical floor-to-floor height - MATCHES Target 3.00
         d_108: referenceValues.d_108 || "MEASURED", // Blower door method - DIFFERENT: Reference uses MEASURED vs Target AL-1B
         g_109: referenceValues.g_109 || "1.30", // Measured - DIFFERENT method: But same result as AL-1B
       };
 
       // ✅ CRITICAL: Publish Reference defaults to StateManager (S10/S11/S04 pattern)
       if (window.TEUI?.StateManager) {
-        const referenceFields = ["d_103", "g_103", "d_105", "d_108", "g_109"];
+        const referenceFields = ["d_103", "g_103", "d_105", "g_106", "d_108", "g_109"];
         referenceFields.forEach(fieldId => {
           const value = this.state[fieldId];
           if (value !== null && value !== undefined) {
@@ -181,7 +183,7 @@ window.TEUI.SectionModules.sect12 = (function () {
      * ✅ PHASE 2: Sync from global StateManager after import
      */
     syncFromGlobalState: function (
-      fieldIds = ["d_103", "g_103", "d_105", "d_108", "g_109"]
+      fieldIds = ["d_103", "g_103", "d_105", "g_106", "d_108", "g_109"]
     ) {
       fieldIds.forEach(fieldId => {
         const refFieldId = `ref_${fieldId}`;
@@ -470,7 +472,7 @@ window.TEUI.SectionModules.sect12 = (function () {
       const currentState = this.getCurrentState();
 
       // S12-specific fields to sync
-      const fieldsToSync = ["d_103", "g_103", "d_105", "d_108", "g_109"];
+      const fieldsToSync = ["d_103", "g_103", "d_105", "g_106", "d_108", "g_109"];
 
       fieldsToSync.forEach(fieldId => {
         const stateValue = currentState.getValue(fieldId);
@@ -493,7 +495,7 @@ window.TEUI.SectionModules.sect12 = (function () {
           const numericValue = window.TEUI.parseNumeric(stateValue);
           if (
             !isNaN(numericValue) &&
-            (fieldId === "g_109" || fieldId === "d_105")
+            (fieldId === "g_109" || fieldId === "d_105" || fieldId === "g_106")
           ) {
             element.textContent = window.TEUI.formatNumber(
               numericValue,
@@ -976,9 +978,16 @@ window.TEUI.SectionModules.sect12 = (function () {
           dependencies: ["d_87", "d_95", "d_96"],
         },
         e: { content: "m²", classes: ["unit-label"] },
-        f: { content: "- Only used in E.3.2", classes: ["note-text"] },
-        g: {},
-        h: {},
+        f: { content: "Typ. F2F Ht.", classes: ["label-main"] },
+        g: {
+          fieldId: "g_106",
+          type: "editable",
+          value: "3.00",
+          section: "volumeSurfaceMetrics",
+          tooltip: true, // Typical Floor-to-Floor Height
+          classes: ["user-input"],
+        },
+        h: { content: "Ht. in Metres", classes: ["unit-label"] },
         i: {},
         j: {},
         k: {},

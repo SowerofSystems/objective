@@ -845,9 +845,10 @@ window.TEUI.SectionModules.sect19 = (function () {
   }
 
   /**
-   * Calculate hip roof geometry using truncated gable approach (rational trigonometry)
-   * Hip roof = gable with shortened ridge + 4 triangular hip ends
-   * All slopes maintain the same pitch (rational constraint)
+   * Calculate hip roof geometry using two-phase planar-then-vertical approach
+   * Phase 1: Ridge geometry determined by 45° hip rafters (planar, deterministic)
+   * Phase 2: Height solved from area constraint (vertical, single-variable)
+   * Uses rational trigonometry throughout (quadrance-based)
    * @param {number} width - Building width
    * @param {number} length - Building length
    * @param {number} targetRoofArea - Target total roof area
@@ -860,121 +861,109 @@ window.TEUI.SectionModules.sect19 = (function () {
     const ridgeOrientation = length >= width ? "longitudinal" : "transverse";
     const span = minDimension;
 
-    console.log(`[WOMBAT] Hip roof calculation:`);
+    console.log(`[WOMBAT] Hip roof calculation (two-phase):`);
     console.log(`  Building: ${width.toFixed(2)}m × ${length.toFixed(2)}m`);
     console.log(`  Target roof area: ${targetRoofArea.toFixed(2)}m²`);
     console.log(`  Ridge orientation: ${ridgeOrientation}`);
 
-    // Binary search to find ridge length that achieves target roof area
-    // Ridge must be shorter than building length to allow hip ends
-    let ridgeLengthMin = 0;
-    let ridgeLengthMax = maxDimension;
+    // PHASE 1: Ridge geometry from 45° hip rafters (planar, deterministic)
+    // Hip rafters at 45° travel equal distances perpendicular and parallel to ridge
+    // Ridge length determined purely by footprint geometry
+    const ridgeLength = maxDimension - span;
+    const ridgeOffset = span / 2;
+
+    console.log(`[WOMBAT] Phase 1 (planar ridge geometry):`);
+    console.log(`  Ridge length: ${ridgeLength.toFixed(2)}m (deterministic from 45° hip rafters)`);
+    console.log(`  Ridge offset: ${ridgeOffset.toFixed(2)}m`);
+
+    // Check if square building (pure pyramid)
+    if (ridgeLength < 0.01) {
+      console.log(`[WOMBAT] Square building detected - ridge length ≈ 0, pure pyramid`);
+      console.log(`[WOMBAT] Falling back to pyramidal height calculation`);
+
+      // Use pyramidal solver for square buildings
+      const pyramidHeight = pyramidHeightRectangle(width, length, targetRoofArea / (width * length));
+
+      return {
+        height: pyramidHeight,
+        ridgeOrientation,
+        ridgeLength: 0,
+        ridgeOffset: ridgeOffset,
+        span,
+        hipData: {
+          ridgeLength: 0,
+          ridgeOffset: ridgeOffset,
+          ridgeOrientation,
+          achievedArea: targetRoofArea
+        },
+        isValid: pyramidHeight > 0
+      };
+    }
+
+    // PHASE 2: Solve for height from area constraint (single-variable)
+    // Area = 2 × ridgeLength × slopeLength + 2 × span × hipRafterLength
+    // Where:
+    //   slopeLength² = h² + (span/2)²
+    //   hipRafterLength² = h² + (span/2)² + ridgeOffset²
+
+    console.log(`[WOMBAT] Phase 2 (height from area constraint):`);
+
+    // Binary search on height only
+    let hMin = 0;
+    let hMax = span * 2; // Reasonable upper bound
     const tolerance = 0.01; // 1cm precision
     const maxIterations = 50;
     let iteration = 0;
 
-    let bestRidgeLength = 0;
     let bestHeight = 0;
     let bestArea = 0;
 
-    while (ridgeLengthMax - ridgeLengthMin > tolerance && iteration < maxIterations) {
-      const ridgeLength = (ridgeLengthMin + ridgeLengthMax) / 2;
-      const ridgeOffset = (maxDimension - ridgeLength) / 2;
+    while (hMax - hMin > tolerance && iteration < maxIterations) {
+      const h = (hMin + hMax) / 2;
 
-      // Calculate roof area for this ridge length
-      // Hip roof = 2 trapezoidal main slopes + 2 triangular hip ends
+      // Calculate roof area with this height (using CORRECT formulas)
 
-      // We'll iterate to find the height that gives us the target area
-      // Given a ridge length, we can calculate the roof area as a function of height
-
-      // Strategy: Use gable formula to estimate slope length, then calculate actual area
-      // For a gable with this ridge length: Area_gable = 2 * ridgeLength * slopeLength
-      // We want total hip area = target, so estimate: slopeLength ≈ target / (2 * ridgeLength)
-      // But this doesn't account for hip ends, so we need to iterate
-
-      // Better approach: Calculate area directly from geometry
-      // Assume a height, calculate the actual roof area, compare to target
-
-      // For hip roof with ridge length L_ridge:
-      // - Each trapezoidal main slope has parallel sides: L_ridge (top) and L_max (bottom)
-      // - Height of trapezoid = slope length s
-      // - Area of each trapezoid = (L_ridge + L_max)/2 * s
-      // - But this is wrong - the "height" of the trapezoid is the slope distance
-
-      // Actually, let's think about it differently:
-      // Total roof area = 2 main slopes + 2 hip end triangles
-      // Each main slope is a rectangle: ridgeLength × slopeLength
-      // Each hip end is 2 triangular faces meeting at ridge endpoint
-      // Total hip end area = 2 × (ridgeOffset × hipSlantHeight)
-
-      // For consistent pitch, all slopes have same rise/run ratio
-      // slope = height / (span/2)
-      // So slopeLength² = height² + (span/2)²
-
-      // We need to solve: A_total = 2*ridge*slope + 2*offset*hipSlant = target
-      // Where hipSlant = sqrt(height² + offset² + (span/2)²)
-
-      // This is complex, so let's use a simpler approximation:
-      // Treat it like a gable with effective length = (ridgeLength + maxDimension)/2
-
-      const effectiveLength = (ridgeLength + maxDimension) / 2;
-      const estimatedSlopeLength = targetRoofArea / (2 * effectiveLength);
-
-      // Height from Pythagorean theorem: h² = s² - (span/2)²
-      const h2 = estimatedSlopeLength * estimatedSlopeLength - (span / 2) * (span / 2);
-
-      if (h2 < 0) {
-        // Invalid geometry - roof area too small for this ridge length
-        ridgeLengthMax = ridgeLength; // Try shorter ridge
-        iteration++;
-        continue;
-      }
-
-      const height = Math.sqrt(h2);
-
-      // Now calculate actual roof area with this height
-      // Slope length from height (using rational trig)
-      const slopeLength = Math.sqrt(height * height + (span / 2) * (span / 2));
-
-      // Main rectangular slopes: 2 rectangles with dimensions ridgeLength × slopeLength
+      // Main slope area: 2 rectangular slopes
+      const slopeLength = Math.sqrt(h * h + (span / 2) * (span / 2));
       const mainSlopeArea = 2 * ridgeLength * slopeLength;
 
-      // Hip end triangular sections
-      // Each hip end consists of 2 triangular roof planes meeting at ridge endpoint
-      // The projected area of each hip end (both triangles) = ridgeOffset × slopeLength
-      // Total for both ends = 2 × (ridgeOffset × slopeLength)
-      const hipEndArea = 2 * ridgeOffset * slopeLength;
+      // Hip end area: 4 triangular faces (2 at each end)
+      // Each triangle has base = span and slant height = hip rafter length
+      // Hip rafter from corner (±span/2, ±ridgeOffset, 0) to ridge endpoint (0, ±ridgeOffset, h)
+      const hipRafterQuadrance = (span / 2) * (span / 2) + ridgeOffset * ridgeOffset + h * h;
+      const hipRafterLength = Math.sqrt(hipRafterQuadrance);
+
+      // Each triangular face area = (1/2) × span × hipRafterLength
+      // Total for 4 triangular faces = 2 × span × hipRafterLength
+      const hipEndArea = 2 * span * hipRafterLength;
 
       const calculatedArea = mainSlopeArea + hipEndArea;
 
-      console.log(`  Iteration ${iteration}: ridge=${ridgeLength.toFixed(2)}m, h=${height.toFixed(2)}m, area=${calculatedArea.toFixed(2)}m²`);
+      console.log(`  Iteration ${iteration}: h=${h.toFixed(2)}m, area=${calculatedArea.toFixed(2)}m²`);
 
-      bestRidgeLength = ridgeLength;
-      bestHeight = height;
+      bestHeight = h;
       bestArea = calculatedArea;
 
       // Binary search adjustment
       if (Math.abs(calculatedArea - targetRoofArea) < tolerance) {
         break; // Found it!
       } else if (calculatedArea < targetRoofArea) {
-        // Need more area - try longer ridge (more gable area, less hip area)
-        ridgeLengthMin = ridgeLength;
+        // Need more area - taller roof
+        hMin = h;
       } else {
-        // Too much area - try shorter ridge (less gable area, more hip area)
-        ridgeLengthMax = ridgeLength;
+        // Too much area - flatter roof
+        hMax = h;
       }
 
       iteration++;
     }
 
     if (iteration >= maxIterations) {
-      console.warn(`[WOMBAT] Hip roof binary search did not converge after ${maxIterations} iterations`);
+      console.warn(`[WOMBAT] Hip roof height search did not converge after ${maxIterations} iterations`);
     }
 
-    const finalRidgeOffset = (maxDimension - bestRidgeLength) / 2;
-
     console.log(`[WOMBAT] Hip roof solved:`);
-    console.log(`  Ridge length: ${bestRidgeLength.toFixed(2)}m (offset: ${finalRidgeOffset.toFixed(2)}m)`);
+    console.log(`  Ridge length: ${ridgeLength.toFixed(2)}m (offset: ${ridgeOffset.toFixed(2)}m)`);
     console.log(`  Ridge height: ${bestHeight.toFixed(2)}m`);
     console.log(`  Achieved area: ${bestArea.toFixed(2)}m² (target: ${targetRoofArea.toFixed(2)}m²)`);
     console.log(`  Error: ${Math.abs(bestArea - targetRoofArea).toFixed(2)}m²`);
@@ -982,12 +971,12 @@ window.TEUI.SectionModules.sect19 = (function () {
     return {
       height: bestHeight,
       ridgeOrientation,
-      ridgeLength: bestRidgeLength,
-      ridgeOffset: finalRidgeOffset,
+      ridgeLength: ridgeLength,
+      ridgeOffset: ridgeOffset,
       span,
       hipData: {
-        ridgeLength: bestRidgeLength,
-        ridgeOffset: finalRidgeOffset,
+        ridgeLength: ridgeLength,
+        ridgeOffset: ridgeOffset,
         ridgeOrientation,
         achievedArea: bestArea
       },
