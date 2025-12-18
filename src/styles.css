@@ -1,5 +1,5 @@
 /**
- * TEUI 4.012 Styles - Updated Nov 17, 2025
+ * TEUI 4.012 Styles - Updated Dec 16 , 2025
  *
  * Bootstrap 5.1.3 compatibility: Check Bootstrap influence for conflicting styles
  *
@@ -1128,8 +1128,124 @@ table.data-table select.form-select:hover {
   font-weight: 600; /* Semi-bold */
 }
 
+
 /* ======================================
-   Dependency Graph Styles (Section 17)
+   SECTION 16 - SANKEY DIAGRAM STYLES
+   ====================================== */
+
+/* Basic Sankey Element Styles (ported and scoped/simplified) */
+#sankeySection16Container .node {
+  stroke: #000;
+  stroke-width: 1px;
+  cursor: pointer;
+}
+
+#sankeySection16Container .link {
+  fill: none;
+  stroke-opacity: 0.7;
+  cursor: pointer;
+}
+
+#sankeySection16Container .link:hover {
+  stroke-opacity: 0.9;
+}
+
+#sankeySection16Container .node-label {
+  font-size: 12px; /* Corresponds to --font-size-sm */
+  fill: black;
+  pointer-events: none;
+  font-weight: 500;
+  font-family: Arial, sans-serif; /* Ensure a common font */
+}
+
+/* Tooltip for Section 16 Sankey */
+#sankeySection16Tooltip {
+  display: none;
+  position: fixed !important;
+  z-index: 10000;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 10px;
+  max-width: 350px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  font-size: 12px;
+  pointer-events: none;
+}
+
+#sankeySection16Tooltip .tooltip-title {
+  font-weight: bold;
+  margin-bottom: 8px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #eee;
+}
+
+#sankeySection16Svg .node,
+#sankeySection16FullscreenSvg .node {
+  stroke: #000;
+  stroke-width: 1px;
+  fill-opacity: 1 !important;
+}
+
+#sankeySection16Svg .link,
+#sankeySection16FullscreenSvg .link {
+  fill: none;
+  stroke-width: 1px; /* Fallback minimum width */
+  stroke-opacity: 0.6;
+  transition: stroke-opacity 0.3s;
+}
+
+#sankeySection16Svg text,
+#sankeySection16FullscreenSvg text {
+  font-size: 12px;
+  pointer-events: none;
+}
+
+/* Controls styling */
+#s16ControlsContainer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #eee;
+  flex-wrap: wrap;
+}
+
+#s16WidthToggleContainer {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Fullscreen styles */
+#s16FullscreenContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.98);
+  z-index: 9999;
+  padding: 20px;
+  box-sizing: border-box;
+  display: none;
+}
+
+/* Ensure specific buttons in the main header do not wrap text */
+#selectExcelBtn,
+#debugExcelBtn,
+#showWeatherDataBtn {
+  white-space: nowrap;
+}
+
+/* Optional: If all buttons in that controls-container need it */
+/* .controls-container .btn {
+    white-space: nowrap;
+} */
+
+/* ======================================
+   SECTION 17 - DEPENDENCY GRAPH STYLES
    ====================================== */
 
 .dependency-graph-controls-wrapper,
@@ -2186,120 +2302,18 @@ textarea.mirror-highlight {
   overflow: auto !important;
 }
 
-/* ======================================
-   SECTION 16 - SANKEY DIAGRAM STYLES
-   ====================================== */
-
-/* Basic Sankey Element Styles (ported and scoped/simplified) */
-#sankeySection16Container .node {
-  stroke: #000;
-  stroke-width: 1px;
-  cursor: pointer;
-}
-
-#sankeySection16Container .link {
-  fill: none;
-  stroke-opacity: 0.7;
-  cursor: pointer;
-}
-
-#sankeySection16Container .link:hover {
-  stroke-opacity: 0.9;
-}
-
-#sankeySection16Container .node-label {
-  font-size: 12px; /* Corresponds to --font-size-sm */
-  fill: black;
-  pointer-events: none;
-  font-weight: 500;
-  font-family: Arial, sans-serif; /* Ensure a common font */
-}
-
-/* Tooltip for Section 16 Sankey */
-#sankeySection16Tooltip {
-  display: none;
-  position: fixed !important;
-  z-index: 10000;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 10px;
-  max-width: 350px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  font-size: 12px;
-  pointer-events: none;
-}
-
-#sankeySection16Tooltip .tooltip-title {
-  font-weight: bold;
-  margin-bottom: 8px;
-  padding-bottom: 5px;
-  border-bottom: 1px solid #eee;
-}
-
-#sankeySection16Svg .node,
-#sankeySection16FullscreenSvg .node {
-  stroke: #000;
-  stroke-width: 1px;
-  fill-opacity: 1 !important;
-}
-
-#sankeySection16Svg .link,
-#sankeySection16FullscreenSvg .link {
-  fill: none;
-  stroke-width: 1px; /* Fallback minimum width */
-  stroke-opacity: 0.6;
-  transition: stroke-opacity 0.3s;
-}
-
-#sankeySection16Svg text,
-#sankeySection16FullscreenSvg text {
-  font-size: 12px;
-  pointer-events: none;
-}
-
-/* Controls styling */
-#s16ControlsContainer {
+/* WOMBAT SVG Container and Canvas Dimensions */
+.wombat-svg-wrapper {
+  flex: 1;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 0;
-  margin-bottom: 10px;
-  border-bottom: 1px solid #eee;
-  flex-wrap: wrap;
+  justify-content: center;
 }
 
-#s16WidthToggleContainer {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+#wombat-svg {
+  width: 900px;
+  height: 600px;
+  max-width: 100%;
 }
-
-/* Fullscreen styles */
-#s16FullscreenContainer {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.98);
-  z-index: 9999;
-  padding: 20px;
-  box-sizing: border-box;
-  display: none;
-}
-
-/* Ensure specific buttons in the main header do not wrap text */
-#selectExcelBtn,
-#debugExcelBtn,
-#showWeatherDataBtn {
-  white-space: nowrap;
-}
-
-/* Optional: If all buttons in that controls-container need it */
-/* .controls-container .btn {
-    white-space: nowrap;
-} */
 
 /* =============== CONTENT ALIGNMENT: CLEAN UNIVERSAL RULES =============== */
 /* ROOT CAUSE FIX: Simple rules without aggressive overrides */

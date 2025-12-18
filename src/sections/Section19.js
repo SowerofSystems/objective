@@ -41,12 +41,14 @@ window.TEUI.SectionModules.sect19 = (function () {
    */
   const TargetState = {
     values: {
-      d_198: "8000.00", // Volume (mirrors S12 d_105)
-      d_199: "1.5", // Stories (mirrors S12 d_103)
-      d_202: "0.0", // Aspect ratio slider
-      h_200: "0.00", // Calculated: Footprint length
-      h_201: "0.00", // Calculated: Footprint width
-      h_203: "0.00", // Calculated: Story height
+      d_150: "1.5", // Stories (mirrors S12 d_103)
+      d_151: "8000.00", // Volume (mirrors S12 d_105)
+      d_154: "0.0", // Aspect ratio slider (L:W)
+      d_158: "mezzanine", // Floorplate Options (mezzanine/equal)
+      d_159: "biplanar", // Roof Type (multiplanar/biplanar/monoplane)
+      h_155: "0.00", // Calculated: Footprint width
+      h_156: "0.00", // Calculated: Story height
+      h_157: "0.00", // Calculated: Footprint length
     },
 
     getValue: function (fieldId) {
@@ -59,17 +61,31 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     setDefaults: function () {
       // Initialize from field definitions
-      this.values.d_198 = "8000.00";
-      this.values.d_199 = "1.5";
-      this.values.d_202 = "0.0";
-      this.values.h_200 = "0.00";
-      this.values.h_201 = "0.00";
-      this.values.h_203 = "0.00";
+      this.values.d_150 = "1.5";
+      this.values.d_151 = "8000.00";
+      this.values.d_154 = "0.0";
+      this.values.d_158 = "mezzanine";
+      this.values.d_159 = "biplanar";
+      this.values.h_155 = "0.00";
+      this.values.h_156 = "0.00";
+      this.values.h_157 = "0.00";
     },
 
     syncFromGlobalState: function () {
-      // Sync Target values from StateManager (unprefixed)
-      const fieldIds = ["d_198", "d_199", "d_202", "h_200", "h_201", "h_203"];
+      // ✅ MIRROR SYNC: Read S12 source fields (d_103, d_105) and store as S19 mirror fields (d_150, d_151)
+      // ExcelMapper only populates d_103/d_105, NOT d_150/d_151 (those are S19-only fields)
+      const d_103 = window.TEUI?.StateManager?.getValue("d_103");
+      if (d_103 !== null && d_103 !== undefined) {
+        this.values.d_150 = d_103; // Stories (mirrors S12 d_103)
+      }
+
+      const d_105 = window.TEUI?.StateManager?.getValue("d_105");
+      if (d_105 !== null && d_105 !== undefined) {
+        this.values.d_151 = d_105; // Volume (mirrors S12 d_105)
+      }
+
+      // Sync other S19-specific fields normally
+      const fieldIds = ["d_154", "d_158", "d_159", "h_155", "h_156", "h_157"];
       fieldIds.forEach(fieldId => {
         const value = window.TEUI?.StateManager?.getValue(fieldId);
         if (value !== null && value !== undefined) {
@@ -85,12 +101,14 @@ window.TEUI.SectionModules.sect19 = (function () {
    */
   const ReferenceState = {
     values: {
-      d_198: "8000.00", // Volume (mirrors S12 ref_d_105)
-      d_199: "1.5", // Stories (mirrors S12 ref_d_103)
-      d_202: "0.0", // Aspect ratio slider
-      h_200: "0.00", // Calculated: Footprint length
-      h_201: "0.00", // Calculated: Footprint width
-      h_203: "0.00", // Calculated: Story height
+      d_150: "1.5", // Stories (mirrors S12 ref_d_103)
+      d_151: "8000.00", // Volume (mirrors S12 ref_d_105)
+      d_154: "0.0", // Aspect ratio slider
+      d_158: "mezzanine", // Floorplate Options (mezzanine/equal)
+      d_159: "biplanar", // Roof Type (multiplanar/biplanar/monoplane)
+      h_155: "0.00", // Calculated: Footprint width
+      h_156: "0.00", // Calculated: Story height
+      h_157: "0.00", // Calculated: Footprint length
     },
 
     getValue: function (fieldId) {
@@ -103,17 +121,31 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     setDefaults: function () {
       // Initialize from field definitions
-      this.values.d_198 = "8000.00";
-      this.values.d_199 = "1.5";
-      this.values.d_202 = "0.0";
-      this.values.h_200 = "0.00";
-      this.values.h_201 = "0.00";
-      this.values.h_203 = "0.00";
+      this.values.d_150 = "1.5";
+      this.values.d_151 = "8000.00";
+      this.values.d_154 = "0.0";
+      this.values.d_158 = "mezzanine";
+      this.values.d_159 = "biplanar";
+      this.values.h_155 = "0.00";
+      this.values.h_156 = "0.00";
+      this.values.h_157 = "0.00";
     },
 
     syncFromGlobalState: function () {
-      // Sync Reference values from StateManager (ref_ prefixed)
-      const fieldIds = ["d_198", "d_199", "d_202", "h_200", "h_201", "h_203"];
+      // ✅ MIRROR SYNC: Read S12 reference source fields (ref_d_103, ref_d_105) and store as S19 mirror fields
+      // ExcelMapper only populates ref_d_103/ref_d_105, NOT ref_d_150/ref_d_151 (those are S19-only fields)
+      const ref_d_103 = window.TEUI?.StateManager?.getValue("ref_d_103");
+      if (ref_d_103 !== null && ref_d_103 !== undefined) {
+        this.values.d_150 = ref_d_103; // Stories (mirrors S12 ref_d_103)
+      }
+
+      const ref_d_105 = window.TEUI?.StateManager?.getValue("ref_d_105");
+      if (ref_d_105 !== null && ref_d_105 !== undefined) {
+        this.values.d_151 = ref_d_105; // Volume (mirrors S12 ref_d_105)
+      }
+
+      // Sync other S19-specific reference fields normally
+      const fieldIds = ["d_154", "d_158", "d_159", "h_155", "h_156", "h_157"];
       fieldIds.forEach(fieldId => {
         const value = window.TEUI?.StateManager?.getValue(`ref_${fieldId}`);
         if (value !== null && value !== undefined) {
@@ -154,6 +186,14 @@ window.TEUI.SectionModules.sect19 = (function () {
     },
 
     /**
+     * Refresh UI - Required by FileHandler Pattern A section sync
+     * Called after import to update DOM with synced values
+     */
+    refreshUI: function () {
+      this.updateCalculatedDisplayValues();
+    },
+
+    /**
      * Required by ReferenceToggle - but S19 is passive visualization like S16
      * Calculated fields are already published to StateManager by calculation engines
      * No need to manually update DOM - FieldManager handles display updates
@@ -166,15 +206,15 @@ window.TEUI.SectionModules.sect19 = (function () {
       const currentState =
         this.currentMode === "target" ? TargetState : ReferenceState;
 
-      // ✅ EXPANDED: Include mirror sync fields (d_198, d_199) that need DOM refresh
+      // ✅ EXPANDED: Include mirror sync fields (d_150, d_151) that need DOM refresh
       // These are technically "input" fields, but when S12 changes them via mirror sync,
       // they BEHAVE like calculated fields and need DOM updates
       const fieldsToRefresh = [
-        "h_200",
-        "h_201",
-        "h_203", // Geometry outputs (read-only)
-        "d_198",
-        "d_199", // Mirror sync inputs (editable) - NEW
+        "h_155",
+        "h_156",
+        "h_157", // Geometry outputs (read-only)
+        "d_150",
+        "d_151", // Mirror sync inputs (editable) - NEW
       ];
 
       fieldsToRefresh.forEach(fieldId => {
@@ -183,7 +223,7 @@ window.TEUI.SectionModules.sect19 = (function () {
           return; // Skip if no value
         }
 
-        // Try FieldManager first (for input fields like d_198/d_199)
+        // Try FieldManager first (for input fields like d_150/d_151)
         const fieldDef = window.TEUI?.FieldManager?.getField(fieldId);
         if (fieldDef && window.TEUI?.FieldManager?.updateFieldDisplay) {
           try {
@@ -196,7 +236,7 @@ window.TEUI.SectionModules.sect19 = (function () {
             // Silent failure - FieldManager will handle errors
           }
         } else {
-          // Fallback for read-only calculated fields (h_200, h_201, h_203)
+          // Fallback for read-only calculated fields (h_155, h_156, h_157)
           const element = document.querySelector(
             `[data-field-id="${fieldId}"]`
           );
@@ -253,7 +293,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         a: {},
         b: {},
         c: { content: "C", classes: ["section-subheader"] },
-        d: { content: "D", classes: ["section-subheader"] },
+        d: { content: "Options related to Section12", classes: ["section-subheader"] },
         e: { content: "E", classes: ["section-subheader"] },
         f: { content: "F", classes: ["section-subheader"] },
         g: { content: "G", classes: ["section-subheader"] },
@@ -262,7 +302,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     },
 
     // Stories dropdown (mirrored from S12 d_103)
-    row199: {
+    row150: {
       id: "19.0",
       rowId: "19.0",
       label: "Stories",
@@ -271,9 +311,9 @@ window.TEUI.SectionModules.sect19 = (function () {
         b: {},
         c: { label: "Stories" },
         d: {
-          fieldId: "d_199",
+          fieldId: "d_150",
           type: "dropdown",
-          dropdownId: "dd_d_199",
+          dropdownId: "dd_d_150",
           value: "1.5",
           section: "wombat",
           tooltip: true,
@@ -295,8 +335,68 @@ window.TEUI.SectionModules.sect19 = (function () {
       },
     },
 
+    // Floorplate Options dropdown (clarifies fractional story interpretation)
+    row158: {
+      id: "19.FP",
+      rowId: "19.FP",
+      label: "Floorplate Options",
+      cells: {
+        a: {},
+        b: {},
+        c: { label: "Floorplate Options" },
+        d: {
+          fieldId: "d_158",
+          type: "dropdown",
+          dropdownId: "dd_d_158",
+          value: "mezzanine",
+          section: "wombat",
+          tooltip: true,
+          label: "Geometry interpretation for fractional stories",
+          options: [
+            { value: "mezzanine", name: "Mezzanine" },
+            { value: "equal", name: "Equal Floorplates" },
+          ],
+        },
+        e: { content: "", classes: ["unit-label"] },
+        f: {},
+        g: {},
+        h: {},
+      },
+    },
+
+    // Roof Type dropdown (selects roof geometry type)
+    row159: {
+      id: "19.RT",
+      rowId: "19.RT",
+      label: "Roof Type",
+      cells: {
+        a: {},
+        b: {},
+        c: { label: "Roof Type" },
+        d: {
+          fieldId: "d_159",
+          type: "dropdown",
+          dropdownId: "dd_d_159",
+          value: "biplanar",
+          section: "wombat",
+          tooltip: true,
+          label: "Roof geometry type (multiplanar=pyramid, biplanar=gable, monoplane=shed, flat=no slope)",
+          options: [
+            { value: "multiplanar", name: "Pyramid/Hip" },
+            { value: "biplanar", name: "Gable" },
+            { value: "monoplane", name: "Shed" },
+            { value: "flat", name: "Flat" },
+          ],
+        },
+        e: { content: "", classes: ["unit-label"] },
+        f: {},
+        g: {},
+        h: {},
+      },
+    },
+
     // Volume input (mirrored from S12 d_105)
-    row198: {
+    row151: {
       id: "19.V",
       rowId: "19.V",
       label: "Conditioned Volume",
@@ -305,7 +405,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         b: {},
         c: { label: "Conditioned Volume" },
         d: {
-          fieldId: "d_198",
+          fieldId: "d_151",
           type: "editable",
           value: "8000.00",
           classes: ["user-input"],
@@ -320,16 +420,16 @@ window.TEUI.SectionModules.sect19 = (function () {
     },
 
     // Display-only: Area Exposed to Air (mirrored from S12 d_101)
-    row101: {
+    row152: {
       id: "19.Ae",
       rowId: "19.Ae",
-      label: "Total Area Exposed to Air (Ae)",
+      label: "Area Exposed to Air (Ae)",
       cells: {
         a: {},
         b: {},
-        c: { label: "Total Area Exposed to Air (Ae)" },
+        c: { label: "Area Exposed to Air (Ae)" },
         d: {
-          fieldId: "d_101",
+          fieldId: "d_152",
           type: "calculated",
           value: "2476.62",
           classes: ["text-air-facing"],
@@ -338,7 +438,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         e: { content: "m²", classes: ["unit-label"] },
         f: { content: "U-Val. for Ae", classes: ["label-main"] },
         g: {
-          fieldId: "g_101",
+          fieldId: "g_152",
           type: "calculated",
           value: "0.278",
           classes: ["text-air-facing"],
@@ -349,16 +449,16 @@ window.TEUI.SectionModules.sect19 = (function () {
     },
 
     // Display-only: Area Exposed to Ground (mirrored from S12 d_102)
-    row102: {
+    row153: {
       id: "19.Ag",
       rowId: "19.Ag",
-      label: "Total Area Exposed to Ground (Ag)",
+      label: "Area Exposed to Ground (Ag)",
       cells: {
         a: {},
         b: {},
-        c: { label: "Total Area Exposed to Ground (Ag)" },
+        c: { label: "Area Exposed to Ground (Ag)" },
         d: {
-          fieldId: "d_102",
+          fieldId: "d_153",
           type: "calculated",
           value: "1100.42",
           classes: ["text-ground-facing"],
@@ -368,7 +468,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         e: { content: "m²", classes: ["unit-label"] },
         f: { content: "U-Val. for Ag", classes: ["label-main"] },
         g: {
-          fieldId: "g_102",
+          fieldId: "g_153",
           type: "calculated",
           value: "0.324",
           classes: ["text-ground-facing"],
@@ -379,7 +479,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     },
 
     // User controls for topology solver
-    row200: {
+    row154: {
       id: "19.1",
       rowId: "19.1",
       label: "Footprint Aspect Ratio (L:W)",
@@ -388,7 +488,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         b: {},
         c: { label: "Footprint Aspect Ratio (L:W)" },
         d: {
-          fieldId: "d_202",
+          fieldId: "d_154",
           type: "coefficient_slider",
           value: "0.0",
           min: -4.0,
@@ -403,7 +503,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         f: {},
         g: {},
         h: {
-          fieldId: "h_200",
+          fieldId: "h_157",
           type: "calculated",
           value: "0.00",
           label: "Footprint Length (m)",
@@ -411,7 +511,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       },
     },
 
-    row201: {
+    row155: {
       id: "19.2",
       rowId: "19.2",
       label: "Footprint Width",
@@ -424,7 +524,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         f: {},
         g: {},
         h: {
-          fieldId: "h_201",
+          fieldId: "h_155",
           type: "calculated",
           value: "0.00",
           label: "Footprint Width (m)",
@@ -432,7 +532,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       },
     },
 
-    row203: {
+    row156: {
       id: "19.3",
       rowId: "19.3",
       label: "Building Height",
@@ -445,7 +545,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         f: {},
         g: {},
         h: {
-          fieldId: "h_203",
+          fieldId: "h_156",
           type: "calculated",
           value: "0.00",
           label: "Nominal Height (m)",
@@ -486,7 +586,7 @@ window.TEUI.SectionModules.sect19 = (function () {
 
   function getDropdownOptions() {
     return {
-      dd_d_199: [
+      dd_d_150: [
         { value: "1", name: "1" },
         { value: "1.5", name: "1.5" },
         { value: "2", name: "2" },
@@ -494,6 +594,10 @@ window.TEUI.SectionModules.sect19 = (function () {
         { value: "4", name: "4" },
         { value: "5", name: "5" },
         { value: "6", name: "6" },
+      ],
+      dd_d_158: [
+        { value: "mezzanine", name: "Mezzanine/Partial Floor" },
+        { value: "equal", name: "Equal Floorplates" },
       ],
     };
   }
@@ -549,13 +653,15 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Add data rows
     [
-      "row199",
-      "row198",
-      "row101",
-      "row102",
-      "row200",
-      "row201",
-      "row203",
+      "row150",
+      "row158",
+      "row159",
+      "row151",
+      "row152",
+      "row153",
+      "row154",
+      "row155",
+      "row156",
     ].forEach(key => {
       if (sectionRows[key]) {
         layoutRows.push(createLayoutRow(sectionRows[key]));
@@ -586,6 +692,162 @@ window.TEUI.SectionModules.sect19 = (function () {
     }
   }
 
+  //==========================================================================
+  // RATIONAL TRIGONOMETRY - Pyramidal Roof Geometry (Wildberger Method)
+  //==========================================================================
+
+  /**
+   * Calculate pyramidal roof height for square base using rational trigonometry
+   * Avoids trig functions - uses quadrance (distance squared) instead
+   * @param {number} side - Side length of square base
+   * @param {number} areaRatio - Roof area / base area (R >= 1)
+   * @returns {number} - Pyramid height (positive)
+   */
+  function pyramidHeightSquare(side, areaRatio) {
+    if (areaRatio < 1) {
+      console.warn('[WOMBAT] Roof area ratio < 1, returning 0 height');
+      return 0;
+    }
+
+    // Work with quadrance (squared quantities) internally
+    // Formula: h² = (a²/4)(R² - 1)
+    const h2 = (side * side / 4) * (areaRatio * areaRatio - 1);
+
+    // Defer sqrt until final step (only irrational operation)
+    return Math.sqrt(h2);
+  }
+
+  /**
+   * Calculate pyramidal roof height for rectangular base using rational trigonometry
+   * @param {number} width - Width of rectangular base
+   * @param {number} length - Length of rectangular base
+   * @param {number} areaRatio - Roof area / base area (R >= 1)
+   * @returns {number} - Pyramid height (minimum of two axes)
+   */
+  function pyramidHeightRectangle(width, length, areaRatio) {
+    if (areaRatio < 1) {
+      console.warn('[WOMBAT] Roof area ratio < 1, returning 0 height');
+      return 0;
+    }
+
+    const baseArea = width * length;
+    const roofArea = areaRatio * baseArea;
+    const faceArea = roofArea / 4;
+
+    // Slant heights from face areas (no trig functions!)
+    const sW = (2 * faceArea) / width;  // Width-face slant height
+    const sL = (2 * faceArea) / length; // Length-face slant height
+
+    // Height quadrance from each axis using Pythagorean theorem
+    const h2w = sW * sW - (width * width) / 4;
+    const h2l = sL * sL - (length * length) / 4;
+
+    // Check for negative quadrance (mathematical impossibility - roof area too small for pyramid)
+    if (h2w < 0 || h2l < 0) {
+      console.error('[WOMBAT] Invalid pyramid geometry - negative height quadrance');
+      console.error(`  Width: ${width.toFixed(2)}m, Length: ${length.toFixed(2)}m, R: ${areaRatio.toFixed(3)}`);
+      console.error(`  h²_width = ${h2w.toFixed(4)}, h²_length = ${h2l.toFixed(4)}`);
+      console.error('  Roof area too small for pyramidal roof - returning 0');
+      return 0;
+    }
+
+    // Check for non-congruent faces (only exact for square or R=1)
+    if (Math.abs(h2w - h2l) > 1e-6) {
+      console.warn('[WOMBAT] Non-congruent pyramid faces detected');
+      console.warn(`  h²_width = ${h2w.toFixed(4)}, h²_length = ${h2l.toFixed(4)}`);
+    }
+
+    // Conservative: use minimum height to ensure all faces fit
+    const heightSquared = Math.max(0, Math.min(h2w, h2l)); // Ensure non-negative
+    return Math.sqrt(heightSquared);
+  }
+
+  /**
+   * Calculate pyramidal roof height using rational trigonometry
+   * Automatically detects square vs rectangular base
+   * @param {number} width - Building width
+   * @param {number} length - Building length
+   * @param {number} areaRatio - Roof area / base area
+   * @returns {number} - Pyramid height
+   */
+  function calculatePyramidalHeight(width, length, areaRatio) {
+    const tolerance = 1e-6;
+
+    // Check if base is effectively square
+    if (Math.abs(width - length) < tolerance) {
+      return pyramidHeightSquare(width, areaRatio);
+    } else {
+      return pyramidHeightRectangle(width, length, areaRatio);
+    }
+  }
+
+  /**
+   * Calculate gable roof height using rational trigonometry
+   * Ridge runs along the longer dimension
+   * @param {number} width - Building width
+   * @param {number} length - Building length
+   * @param {number} roofArea - Total roof area (both slopes)
+   * @returns {Object} - { height, ridgeOrientation, ridgeLength, span, gableEndArea }
+   */
+  function calculateGableHeight(width, length, roofArea) {
+    // Ridge runs along the longer dimension
+    const ridgeLength = Math.max(width, length);
+    const span = Math.min(width, length);
+    const ridgeOrientation = length >= width ? "longitudinal" : "transverse";
+
+    // Total roof area = 2 rectangular slopes
+    // Each slope area = (ridgeLength × slopeLength)
+    // Total area = 2 × ridgeLength × slopeLength
+    // Therefore: slopeLength = roofArea / (2 × ridgeLength)
+    const slopeLength = roofArea / (2 * ridgeLength);
+
+    // Height from Pythagorean theorem (rational trigonometry)
+    // slopeLength² = height² + (span/2)²
+    // height² = slopeLength² - (span/2)²
+    const h2 = slopeLength * slopeLength - (span * span) / 4;
+
+    // Check for invalid geometry (roof area too small for gable)
+    if (h2 < 0) {
+      console.error('[WOMBAT] Invalid gable geometry - negative height quadrance');
+      console.error(`  Width: ${width.toFixed(2)}m, Length: ${length.toFixed(2)}m`);
+      console.error(`  Roof area: ${roofArea.toFixed(2)}m², Slope length: ${slopeLength.toFixed(2)}m`);
+      console.error(`  h² = ${h2.toFixed(4)} (negative - roof area too small for gable)`);
+      return {
+        height: 0,
+        ridgeOrientation,
+        ridgeLength,
+        span,
+        gableEndArea: 0,
+        isValid: false
+      };
+    }
+
+    const height = Math.sqrt(h2);
+
+    // Gable end area (triangular) = (span × height) / 2
+    const gableEndArea = (span * height) / 2;
+
+    console.log(`[WOMBAT] Gable roof calculation:`);
+    console.log(`  Ridge: ${ridgeOrientation} (${ridgeLength.toFixed(2)}m)`);
+    console.log(`  Span: ${span.toFixed(2)}m`);
+    console.log(`  Slope length: ${slopeLength.toFixed(2)}m`);
+    console.log(`  Height: ${height.toFixed(2)}m`);
+    console.log(`  Gable end area (each): ${gableEndArea.toFixed(2)}m²`);
+
+    return {
+      height,
+      ridgeOrientation,
+      ridgeLength,
+      span,
+      gableEndArea,
+      isValid: true
+    };
+  }
+
+  //==========================================================================
+  // GEOMETRY SOLVER
+  //==========================================================================
+
   function solveGeometry(isReferenceCalculation = false) {
     const mode = isReferenceCalculation ? "Reference" : "Target";
     console.log(
@@ -595,70 +857,294 @@ window.TEUI.SectionModules.sect19 = (function () {
     // Read inputs from StateManager and Pattern A sections (MODE-AWARE per S16 pattern)
     // KISS: Use h_15 (Conditioned Area) instead of d_106 (Total Floor Area)
     // h_15 = thermal envelope area (heated space only)
-    const conditionedArea =
-      parseFloat(getModeAwareValue("h_15", isReferenceCalculation)) || 100;
-    const roofArea =
-      parseFloat(getModeAwareValue("d_85", isReferenceCalculation)) || 100;
-    const wallArea =
-      parseFloat(getModeAwareValue("d_86", isReferenceCalculation)) || 160;
+
+    // SACRED INPUTS - No fallbacks, fail loudly if missing
+    const conditionedArea = parseFloat(getModeAwareValue("h_15", isReferenceCalculation));
+    const roofArea = parseFloat(getModeAwareValue("d_85", isReferenceCalculation));
+    const opaqueWallArea = parseFloat(getModeAwareValue("d_86", isReferenceCalculation));
+    const footprintArea = parseFloat(getModeAwareValue("d_95", isReferenceCalculation));
 
     // ⚠️ DUAL-STATE: Read from appropriate state based on calculation mode
-    // Mirror fields: d_198 (volume) ↔ S12 d_105, d_199 (stories) ↔ S12 d_103
+    // Mirror fields: d_151 (volume) ↔ S12 d_105, d_150 (stories) ↔ S12 d_103
     const currentState = isReferenceCalculation ? ReferenceState : TargetState;
-    const volume = parseFloat(
-      window.TEUI.parseNumeric(currentState.getValue("d_198")) || 8000
-    );
-    const stories = parseFloat(currentState.getValue("d_199") || 1);
+    const volumeDeclared = parseFloat(window.TEUI.parseNumeric(currentState.getValue("d_151")));
+    const storiesDeclared = parseFloat(currentState.getValue("d_150"));
+
+    // Validate SACRED inputs - fail loudly if missing or invalid
+    if (!footprintArea || footprintArea <= 0 || isNaN(footprintArea)) {
+      throw new Error("[WOMBAT] Footprint area (d_95) required and must be > 0");
+    }
+    if (!conditionedArea || conditionedArea <= 0 || isNaN(conditionedArea)) {
+      throw new Error("[WOMBAT] Conditioned area (h_15) required and must be > 0");
+    }
+    if (!roofArea || roofArea <= 0 || isNaN(roofArea)) {
+      throw new Error("[WOMBAT] Roof area (d_85) required and must be > 0");
+    }
+    if (isNaN(opaqueWallArea) || opaqueWallArea < 0) {
+      throw new Error("[WOMBAT] Opaque wall area (d_86) required and must be >= 0");
+    }
+    if (!storiesDeclared || storiesDeclared < 0.5 || isNaN(storiesDeclared)) {
+      throw new Error("[WOMBAT] Stories (d_150/d_103) required and must be >= 0.5");
+    }
+
+    // Volume is LESS SACRED - used for verification, not constraint
+    // Will be calculated from surfaces and compared to declared value
 
     // User preferences - aspect ratio slider
     // Aspect ratio slider: -4 to +4, centered at 0
     // 0 = square (1:1)
     // Positive = landscape (wider than tall): +1 = 2:1, +2 = 3:1, +4 = 5:1
     // Negative = portrait (taller than wide): -1 = 1:2, -2 = 1:3, -4 = 1:5
-    const aspectRatioRaw = parseFloat(currentState.getValue("d_202") || 0);
+    const aspectRatioRaw = parseFloat(currentState.getValue("d_154") || 0);
     const aspectRatio =
       aspectRatioRaw >= 0 ? 1 + aspectRatioRaw : 1 / (1 - aspectRatioRaw);
 
-    // Phase 1: Footprint (X-Y plane, always horizontal)
-    // Total conditioned area divided by number of stories
-    const footprintArea = conditionedArea / stories;
+    // ========================================================================
+    // CORRECT CONSTRAINT FLOW (per user specification 2025-12-15)
+    // ========================================================================
+    // 1. Footprint (d_95) = SACRED touchstone
+    // 2. Mezzanine = h_15 - d_95 (if Mezzanine/Partial Floor option selected)
+    // 3. Total Wall Area = d_86 + all windows
+    // 4. Solve ridge height from roof area (d_85) FIRST
+    // 5. Extract gable end area from wall area
+    // 6. Wall height = (walls - gables) / perimeter
+    // 7. Volume (d_105) is verification check ONLY
+    // ========================================================================
+
+    // Phase 1: Footprint (X-Y plane) - SACRED TOUCHSTONE
+    // Footprint area (d_95) is the foundation of all geometry
     const width = Math.sqrt(footprintArea / aspectRatio);
     const length = footprintArea / width;
+    const perimeter = 2 * (length + width);
 
-    // Phase 2: Height calculation from volume constraint (SACRED)
-    // Total volume divided by footprint area gives overall building height
-    const totalBuildingHeight = volume / footprintArea;
-    // Height per story
-    const storyHeight = totalBuildingHeight / stories;
+    console.log(`[WOMBAT] Footprint: ${footprintArea.toFixed(2)} m² (${width.toFixed(2)}m × ${length.toFixed(2)}m)`);
 
-    // Per-floor metrics
-    const volumePerFloor = volume / stories;
-    const areaPerFloor = conditionedArea / stories;
+    // Phase 2: Mezzanine/Partial Floor Calculation
+    // Read Floorplate Options (d_158): "mezzanine" or "equal"
+    const floorplateOption = currentState.getValue("d_158") || "mezzanine";
 
-    // Phase 3: Roof geometry (pitch emerges from roof area)
+    let mezzanineArea = 0;
+    const fullStories = Math.floor(storiesDeclared);
+
+    if (floorplateOption === "mezzanine" && storiesDeclared !== fullStories) {
+      // User selected Mezzanine/Partial Floor option
+      // Check for basement to account for its floorplate area
+      const basementWallArea_mezzanine = parseFloat(getModeAwareValue("d_94", isReferenceCalculation)) || 0;
+      const hasBasement_mezzanine = basementWallArea_mezzanine > 0;
+
+      // Mezzanine area = conditioned area - full story floorplates - basement floorplate (if present)
+      // Example: 1.5 stories with basement = conditioned - (1 × footprint) - (1 × footprint for basement)
+      const fullStoryArea = fullStories * footprintArea;
+      const basementFloorplateArea = hasBasement_mezzanine ? footprintArea : 0;
+
+      mezzanineArea = Math.max(0, conditionedArea - fullStoryArea - basementFloorplateArea);
+
+      console.log(`[WOMBAT] Mezzanine/Partial floor calculation:`);
+      console.log(`  Conditioned area: ${conditionedArea.toFixed(2)} m²`);
+      console.log(`  Full stories: ${fullStories} × ${footprintArea.toFixed(2)} m² = ${fullStoryArea.toFixed(2)} m²`);
+      console.log(`  Basement floorplate: ${basementFloorplateArea.toFixed(2)} m²`);
+      console.log(`  Mezzanine area: ${mezzanineArea.toFixed(2)} m²`);
+    } else {
+      // Equal floorplates - distribute conditioned area across stories
+      mezzanineArea = 0;
+      console.log(`[WOMBAT] Equal floorplates - no mezzanine`);
+    }
+
+    // Phase 3: Total Wall Area (SACRED)
+    // ✅ READ FROM S12 g_107: Total Wall Area checksum (D86+SUM(D88:D92))
+    // This is the single source of truth for wall area, calculated in Section12.js
+    const totalWallAreaGross = parseFloat(getModeAwareValue("g_107", isReferenceCalculation)) || 0;
+
+    console.log(`[WOMBAT] Wall area: ${totalWallAreaGross.toFixed(2)} m² (from S12 g_107 checksum)`);
+
+    // Phase 4: Roof Geometry - SOLVE FIRST (before wall height!)
+    // ========================================================================
+    // CRITICAL: Roof geometry must be solved BEFORE wall height calculation
+    // because gable roofs contribute area to walls (triangular ends)
+    // ========================================================================
+    // User provides roof area (d_85) which determines ridge height
+    // Roof type selection (d_159): multiplanar/biplanar/monoplane
+    // Uses rational trigonometry (quadrance-based, no trig functions)
+
+    const roofTypeSelection = currentState.getValue("d_159") || "biplanar";
     const areaRatio = roofArea / footprintArea;
-    let roofPitch = 0;
-    let roofType = "flat";
 
-    if (areaRatio > 1.01) {
+    let roofType = "flat";
+    let roofHeight = 0;
+    let gableEndArea = 0;  // Total area of both gable ends (for gable roofs)
+    let roofGeometryData = null;
+
+    console.log(`[WOMBAT] Roof area ratio: ${areaRatio.toFixed(3)} (roof/footprint)`);
+
+    // Check if user explicitly selected flat roof
+    if (roofTypeSelection === "flat") {
+      // FLAT ROOF - User override, use declared roof area as-is
+      console.log('[WOMBAT] Flat roof selected (user override - no slope calculations)');
+      roofType = "flat";
+      roofHeight = 0;
+    } else if (areaRatio > 1.01) {
       // Pitched roof needed to achieve larger roof area
-      roofType = "gabled";
-      // Simplified pitch calculation (assumes gabled roof)
-      roofPitch = Math.asin(Math.min((areaRatio - 1) / 2, 1)) * (180 / Math.PI);
+      if (roofTypeSelection === "biplanar") {
+        // GABLE ROOF (biplanar)
+        roofType = "gable";
+        const gableData = calculateGableHeight(width, length, roofArea);
+
+        if (gableData.isValid) {
+          roofHeight = gableData.height;
+          gableEndArea = 2 * gableData.gableEndArea;  // Both triangular ends
+          roofGeometryData = gableData;
+
+          console.log(`[WOMBAT] Gable roof solved:`);
+          console.log(`  Ridge height: ${roofHeight.toFixed(2)} m`);
+          console.log(`  Gable end area (both): ${gableEndArea.toFixed(2)} m²`);
+          console.log(`  Ridge orientation: ${gableData.ridgeOrientation}`);
+        } else {
+          console.warn('[WOMBAT] Invalid gable geometry - falling back to flat roof');
+          roofType = "flat";
+          roofHeight = 0;
+        }
+      } else if (roofTypeSelection === "multiplanar") {
+        // PYRAMIDAL ROOF (multiplanar)
+        roofType = "pyramidal";
+        roofHeight = calculatePyramidalHeight(width, length, areaRatio);
+
+        console.log(`[WOMBAT] Pyramidal roof: h=${roofHeight.toFixed(2)}m`);
+      } else {
+        // MONOPLANE (shed roof) - future implementation
+        console.warn('[WOMBAT] Monoplane roof type not yet implemented - using flat roof');
+        roofType = "flat";
+        roofHeight = 0;
+      }
     } else if (areaRatio < 0.99) {
       // Inverted pyramid (roof smaller than floor - visual conflict indicator)
       roofType = "inverted";
-      roofPitch = -20; // Negative pitch
-      console.warn(
-        `[WOMBAT] Roof area (${roofArea} m²) < Conditioned area (${footprintArea} m²) - Creating inverted geometry`
-      );
+      roofHeight = -calculatePyramidalHeight(width, length, 1.0 / areaRatio);
+
+      console.warn(`[WOMBAT] Inverted roof: h=${roofHeight.toFixed(2)}m`);
+    } else {
+      console.log('[WOMBAT] Flat roof (area ratio ≈ 1.0)');
     }
 
-    // Phase 4: Wall geometry (symmetric for now - asymmetry in Phase 2)
-    const perimeter = 2 * (length + width);
-    const wallHeight = wallArea / perimeter;
+    // Phase 5: Wall Height Calculation (AFTER roof geometry!)
+    // ========================================================================
+    // CRITICAL: Use VOLUME as constraint to solve for wall height
+    // This ensures the geometry satisfies the user's declared conditioned volume
+    //
+    // Process:
+    // 1. Calculate roof volume from roof geometry
+    // 2. Subtract roof volume from total volume to get rectangular volume
+    // 3. Solve wall height from rectangular volume
+    // 4. Verify against wall area as a consistency check
+    // ========================================================================
 
-    // Phase 5: Below-Grade Geometry (WOMBAT Phase 2)
+    // Get user's declared volume (SACRED constraint)
+    const conditionedVolume = volumeDeclared && volumeDeclared > 0 && !isNaN(volumeDeclared)
+      ? volumeDeclared
+      : 0;
+
+    let wallHeight = 0;
+    let wallHeightFromVolume = 0;
+    let wallHeightFromArea = 0;
+    let effectiveWallArea = totalWallAreaGross;
+
+    if (conditionedVolume > 0) {
+      // Read basement data EARLY (before wall height calculation)
+      // This prevents basement height from being divided across above-grade stories
+      const basementWallArea_early = parseFloat(getModeAwareValue("d_94", isReferenceCalculation)) || 0;
+      const hasBasement_early = basementWallArea_early > 0;
+
+      // Calculate basement volume (below-grade conditioned space)
+      let basementVolume = 0;
+      if (hasBasement_early && perimeter > 0) {
+        const basementDepth_early = basementWallArea_early / perimeter;
+        basementVolume = footprintArea * basementDepth_early;
+
+        console.log(`[WOMBAT] Basement volume calculation:`);
+        console.log(`  Basement wall area: ${basementWallArea_early.toFixed(2)} m²`);
+        console.log(`  Basement depth: ${basementDepth_early.toFixed(2)} m`);
+        console.log(`  Basement volume: ${basementVolume.toFixed(2)} m³`);
+      }
+
+      // Calculate roof volume
+      let roofVolume = 0;
+      if (roofType === "gable" && roofHeight > 0) {
+        roofVolume = (footprintArea * roofHeight) / 2;
+      } else if (roofType === "pyramidal" && roofHeight > 0) {
+        roofVolume = (1/3) * footprintArea * roofHeight;
+      } else if (roofType === "inverted" && roofHeight < 0) {
+        roofVolume = -(1/3) * footprintArea * Math.abs(roofHeight);
+      }
+
+      // CRITICAL: Subtract BOTH roof and basement from total conditioned volume
+      // This gives us ONLY the above-grade rectangular volume
+      const rectangularVolume = conditionedVolume - roofVolume - basementVolume;
+      wallHeightFromVolume = rectangularVolume / footprintArea;
+
+      console.log(`[WOMBAT] Volume-constrained wall height:`);
+      console.log(`  Total conditioned volume (d_105): ${conditionedVolume.toFixed(2)} m³`);
+      console.log(`  Roof volume: ${roofVolume.toFixed(2)} m³`);
+      console.log(`  Basement volume: ${basementVolume.toFixed(2)} m³`);
+      console.log(`  Above-grade rectangular volume: ${rectangularVolume.toFixed(2)} m³`);
+      console.log(`  Above-grade wall height: ${wallHeightFromVolume.toFixed(3)} m`);
+
+      // Check for impossible geometry (negative or tiny volume remaining)
+      if (rectangularVolume < 100) {
+        console.warn(`[WOMBAT] ⚠️  Above-grade volume very small (${rectangularVolume.toFixed(0)} m³)`);
+        console.warn(`  This suggests inconsistent inputs:`);
+        console.warn(`  - Total volume too small for roof + basement + walls`);
+        console.warn(`  - OR roof area too large (check if cathedral ceiling intended)`);
+        console.warn(`  - OR basement too deep for building volume`);
+      }
+
+      // Use volume-derived wall height
+      wallHeight = wallHeightFromVolume;
+
+    } else {
+      // Fallback: No valid volume, use wall area method
+      console.warn(`[WOMBAT] No valid volume - falling back to wall area method`);
+
+      if (roofType === "gable" && gableEndArea > 0) {
+        effectiveWallArea = totalWallAreaGross - gableEndArea;
+      }
+
+      wallHeightFromArea = effectiveWallArea / perimeter;
+      wallHeight = wallHeightFromArea;
+    }
+
+    // Verify wall height against wall area (consistency check)
+    if (roofType === "gable" && gableEndArea > 0) {
+      effectiveWallArea = totalWallAreaGross - gableEndArea;
+    }
+    wallHeightFromArea = effectiveWallArea / perimeter;
+
+    const heightDiscrepancy = Math.abs(wallHeight - wallHeightFromArea);
+    const heightDiscrepancyPct = (heightDiscrepancy / wallHeight) * 100;
+
+    console.log(`[WOMBAT] Wall height verification:`);
+    console.log(`  From volume: ${wallHeight.toFixed(3)} m`);
+    console.log(`  From wall area: ${wallHeightFromArea.toFixed(3)} m`);
+    console.log(`  Discrepancy: ${heightDiscrepancyPct.toFixed(1)}%`);
+
+    if (heightDiscrepancyPct > 5) {
+      console.warn(`[WOMBAT] Wall height discrepancy > 5% - volume and wall area may be inconsistent`);
+    }
+
+    // Story height derived from wall height (for visualization)
+    const storyHeight = wallHeight / storiesDeclared;
+
+    // Per-floor metrics (footprint is SACRED - all full floors share this area)
+    const areaPerFloor = footprintArea; // Each full floor = footprint area (d_95)
+
+    // Store roof geometry (replaces old roofPitch field)
+    const roof = {
+      type: roofType,
+      height: roofHeight,
+      areaRatio: areaRatio,
+      gableEndArea: gableEndArea,
+      gableData: roofGeometryData  // Full gable geometry data (ridge, span, etc.)
+    };
+
+    // Phase 4: Below-Grade Geometry (WOMBAT Phase 2)
     // Read S11 below-grade data
     const slabArea =
       parseFloat(getModeAwareValue("d_95", isReferenceCalculation)) || 0;
@@ -689,26 +1175,30 @@ window.TEUI.SectionModules.sect19 = (function () {
       hasRaisedFloor
     );
 
+    // Calculate total building height (wall height + roof height)
+    const totalBuildingHeight = wallHeight + Math.abs(roofHeight);
+
     // Store solved dimensions
     const solvedGeometry = {
       footprint: { length, width, area: footprintArea },
-      height: totalBuildingHeight,
+      height: wallHeight,  // Wall height (volume-constrained)
+      totalHeight: totalBuildingHeight,  // Wall + roof height
       storyHeight: storyHeight,
-      stories: stories,
-      volumePerFloor: volumePerFloor,
+      stories: storiesDeclared,
       areaPerFloor: areaPerFloor,
+      mezzanineArea: mezzanineArea,  // Adiabatic internal floor area
       walls: {
         north: { width: width, height: wallHeight },
         south: { width: width, height: wallHeight },
         east: { width: length, height: wallHeight },
         west: { width: length, height: wallHeight },
+        totalGrossArea: totalWallAreaGross,  // Total wall area (opaque + windows)
+        effectiveArea: effectiveWallArea,  // Wall area excluding gable ends
+        heightFromVolume: wallHeightFromVolume,  // Wall height from volume constraint
+        heightFromArea: wallHeightFromArea,  // Wall height from area (verification)
       },
-      roof: {
-        type: roofType,
-        pitch: roofPitch,
-        area: roofArea,
-      },
-      volume: volume,
+      roof: roof,  // Rational trigonometry roof object (type, height, areaRatio)
+      volume: conditionedVolume,  // User-declared conditioned volume (d_105/d_151) - CONSTRAINT
       belowGrade: {
         hasBasement: hasBasement,
         hasSlab: hasSlab,
@@ -722,9 +1212,9 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // DUAL-STATE: Store calculated values in appropriate state object
     // (Will be published to StateManager by calculateTargetModel/calculateReferenceModel)
-    currentState.setValue("h_200", length.toFixed(2));
-    currentState.setValue("h_201", width.toFixed(2));
-    currentState.setValue("h_203", storyHeight.toFixed(2));
+    currentState.setValue("h_157", length.toFixed(2));
+    currentState.setValue("h_155", width.toFixed(2));
+    currentState.setValue("h_156", storyHeight.toFixed(2));
 
     console.log(`[WOMBAT] Geometry solved (${mode} mode):`, solvedGeometry);
     return solvedGeometry;
@@ -973,16 +1463,16 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Update Target state
     if (volumeFromS12) {
-      const currentValue = TargetState.getValue("d_198");
+      const currentValue = TargetState.getValue("d_151");
       if (currentValue !== volumeFromS12) {
-        TargetState.setValue("d_198", volumeFromS12);
+        TargetState.setValue("d_151", volumeFromS12);
         console.log(
-          `[WOMBAT] Synced d_198 = ${volumeFromS12} from StateManager (d_105)`
+          `[WOMBAT] Synced d_151 = ${volumeFromS12} from StateManager (d_105)`
         );
 
         // Update DOM field
         const volumeField = document.querySelector(
-          '#wombat [data-field-id="d_198"]'
+          '#wombat [data-field-id="d_151"]'
         );
         if (volumeField) {
           volumeField.textContent = window.TEUI.formatNumber(
@@ -994,16 +1484,16 @@ window.TEUI.SectionModules.sect19 = (function () {
     }
 
     if (storiesFromS12) {
-      const currentValue = TargetState.getValue("d_199");
+      const currentValue = TargetState.getValue("d_150");
       if (currentValue !== storiesFromS12) {
-        TargetState.setValue("d_199", storiesFromS12);
+        TargetState.setValue("d_150", storiesFromS12);
         console.log(
-          `[WOMBAT] Synced d_199 = ${storiesFromS12} from StateManager (d_103)`
+          `[WOMBAT] Synced d_150 = ${storiesFromS12} from StateManager (d_103)`
         );
 
         // Update DOM dropdown
         const storiesDropdown = document.querySelector(
-          '#wombat [data-field-id="d_199"]'
+          '#wombat [data-field-id="d_150"]'
         );
         if (storiesDropdown) {
           storiesDropdown.textContent = storiesFromS12;
@@ -1013,17 +1503,17 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Update Reference state
     if (refVolumeFromS12) {
-      const currentValue = ReferenceState.getValue("d_198");
+      const currentValue = ReferenceState.getValue("d_151");
       if (currentValue !== refVolumeFromS12) {
-        ReferenceState.setValue("d_198", refVolumeFromS12);
+        ReferenceState.setValue("d_151", refVolumeFromS12);
         console.log(
-          `[WOMBAT] Synced ref_d_198 = ${refVolumeFromS12} from StateManager (ref_d_105)`
+          `[WOMBAT] Synced ref_d_151 = ${refVolumeFromS12} from StateManager (ref_d_105)`
         );
 
         // Update DOM field if Reference mode is active
         if (ModeManager?.currentMode === "reference") {
           const volumeField = document.querySelector(
-            '#wombat [data-field-id="d_198"]'
+            '#wombat [data-field-id="d_151"]'
           );
           if (volumeField) {
             volumeField.textContent = window.TEUI.formatNumber(
@@ -1036,17 +1526,17 @@ window.TEUI.SectionModules.sect19 = (function () {
     }
 
     if (refStoriesFromS12) {
-      const currentValue = ReferenceState.getValue("d_199");
+      const currentValue = ReferenceState.getValue("d_150");
       if (currentValue !== refStoriesFromS12) {
-        ReferenceState.setValue("d_199", refStoriesFromS12);
+        ReferenceState.setValue("d_150", refStoriesFromS12);
         console.log(
-          `[WOMBAT] Synced ref_d_199 = ${refStoriesFromS12} from StateManager (ref_d_103)`
+          `[WOMBAT] Synced ref_d_150 = ${refStoriesFromS12} from StateManager (ref_d_103)`
         );
 
         // Update DOM dropdown if Reference mode is active
         if (ModeManager?.currentMode === "reference") {
           const storiesDropdown = document.querySelector(
-            '#wombat [data-field-id="d_199"]'
+            '#wombat [data-field-id="d_150"]'
           );
           if (storiesDropdown) {
             storiesDropdown.textContent = refStoriesFromS12;
@@ -1100,17 +1590,17 @@ window.TEUI.SectionModules.sect19 = (function () {
       return;
     }
 
-    // ⚠️ CRITICAL: WOMBAT owns d_198 and d_199 - must publish to StateManager on user edit
+    // ⚠️ CRITICAL: WOMBAT owns d_151 and d_150 - must publish to StateManager on user edit
     // Per 4012-CHEATSHEET Anti-Pattern 6: Only listen to OWN input fields via DOM
 
-    // ✅ ARCHITECTURAL COMPLIANCE: d_199 dropdown handled by FieldManager
+    // ✅ ARCHITECTURAL COMPLIANCE: d_150 dropdown handled by FieldManager
     // FieldManager already has change listener that calls routeToSectionModeManager()
     // which routes through ModeManager.setValue() and calls calculateAll()
     // No custom listener needed (removed non-standard double listener)
 
-    // ✅ STEP 3: d_198 volume field now uses standard "editable" type
+    // ✅ STEP 3: d_151 volume field now uses standard "editable" type
     // Add blur and keydown handlers (matches S12 pattern for editable fields)
-    const volumeField = sectionElement.querySelector('[data-field-id="d_198"]');
+    const volumeField = sectionElement.querySelector('[data-field-id="d_151"]');
     if (volumeField && !volumeField.hasWombatListeners) {
       // Blur handler: Parse, format, and publish value (matches S12 handleFieldBlur)
       volumeField.addEventListener("blur", function (event) {
@@ -1149,19 +1639,19 @@ window.TEUI.SectionModules.sect19 = (function () {
   function initializeEventHandlers() {
     console.log("[WOMBAT] Initializing event handlers");
 
-    // Setup field blur handlers for WOMBAT's own input fields (d_198, d_199)
+    // Setup field blur handlers for WOMBAT's own input fields (d_151, d_150)
     // Per 4012-CHEATSHEET: Sections ONLY listen to their OWN input fields via DOM
     setupFieldListeners();
 
     // Aspect ratio slider
     const aspectSlider = document.querySelector(
-      '[data-field-id="d_202"] input[type="range"]'
+      '[data-field-id="d_154"] input[type="range"]'
     );
     if (aspectSlider && !aspectSlider.hasSliderListener) {
       aspectSlider.addEventListener("input", e => {
         const rawValue = parseFloat(e.target.value);
         const displaySpan = document.querySelector(
-          'span[data-display-for="d_202"]'
+          'span[data-display-for="d_154"]'
         );
         if (displaySpan) {
           // Convert slider value to aspect ratio display
@@ -1179,10 +1669,10 @@ window.TEUI.SectionModules.sect19 = (function () {
 
       aspectSlider.addEventListener("change", e => {
         const value = e.target.value;
-        console.log(`[WOMBAT] Aspect ratio slider changed: d_202 = ${value}`);
+        console.log(`[WOMBAT] Aspect ratio slider changed: d_154 = ${value}`);
 
         // MODE-AWARE: Use ModeManager.setValue for dual-state publishing
-        ModeManager.setValue("d_202", value, "user-modified");
+        ModeManager.setValue("d_154", value, "user-modified");
 
         // Recalculate geometry with new aspect ratio (runs dual-engine + updates viz)
         calculateAll();
@@ -1217,19 +1707,19 @@ window.TEUI.SectionModules.sect19 = (function () {
         });
       });
 
-      // ⚠️ MIRROR FIELD SYNC: Section 12 → WOMBAT (d_105→d_198, d_103→d_199)
+      // ⚠️ MIRROR FIELD SYNC: Section 12 → WOMBAT (d_105→d_151, d_103→d_150)
       // When S12 volume/stories change, sync to WOMBAT mirror fields AND recalculate
       // NOTE: NO DOM updates here - FieldManager handles routing to correct state
       window.TEUI.StateManager.addListener("d_105", newValue => {
-        const currentValue = TargetState.getValue("d_198");
+        const currentValue = TargetState.getValue("d_151");
         console.log(
           `[WOMBAT SYNC] d_105 changed: ${currentValue} → ${newValue}`
         );
         if (currentValue !== newValue) {
           // Update TargetState only - NO re-publication to break circular loop
-          TargetState.setValue("d_198", newValue);
+          TargetState.setValue("d_151", newValue);
           console.log(
-            `[WOMBAT] ✅ Synced d_198 = ${newValue} from S12 (d_105)`
+            `[WOMBAT] ✅ Synced d_151 = ${newValue} from S12 (d_105)`
           );
           // Recalculate (will run both engines and update visualization)
           calculateAll();
@@ -1237,15 +1727,15 @@ window.TEUI.SectionModules.sect19 = (function () {
       });
 
       window.TEUI.StateManager.addListener("ref_d_105", newValue => {
-        const currentValue = ReferenceState.getValue("d_198");
+        const currentValue = ReferenceState.getValue("d_151");
         console.log(
           `[WOMBAT SYNC] ref_d_105 changed: ${currentValue} → ${newValue}`
         );
         if (currentValue !== newValue) {
           // Update ReferenceState
-          ReferenceState.setValue("d_198", newValue);
+          ReferenceState.setValue("d_151", newValue);
           console.log(
-            `[WOMBAT] ✅ Synced ref_d_198 = ${newValue} from S12 (ref_d_105)`
+            `[WOMBAT] ✅ Synced ref_d_151 = ${newValue} from S12 (ref_d_105)`
           );
           // Recalculate (will run both engines and update visualization)
           calculateAll();
@@ -1253,15 +1743,15 @@ window.TEUI.SectionModules.sect19 = (function () {
       });
 
       window.TEUI.StateManager.addListener("d_103", newValue => {
-        const currentValue = TargetState.getValue("d_199");
+        const currentValue = TargetState.getValue("d_150");
         console.log(
           `[WOMBAT SYNC] d_103 changed: ${currentValue} → ${newValue}`
         );
         if (currentValue !== newValue) {
           // Update TargetState only - NO re-publication to break circular loop
-          TargetState.setValue("d_199", newValue);
+          TargetState.setValue("d_150", newValue);
           console.log(
-            `[WOMBAT] ✅ Synced d_199 = ${newValue} from S12 (d_103)`
+            `[WOMBAT] ✅ Synced d_150 = ${newValue} from S12 (d_103)`
           );
           // Recalculate (will run both engines and update visualization)
           calculateAll();
@@ -1269,15 +1759,15 @@ window.TEUI.SectionModules.sect19 = (function () {
       });
 
       window.TEUI.StateManager.addListener("ref_d_103", newValue => {
-        const currentValue = ReferenceState.getValue("d_199");
+        const currentValue = ReferenceState.getValue("d_150");
         console.log(
           `[WOMBAT SYNC] ref_d_103 changed: ${currentValue} → ${newValue}`
         );
         if (currentValue !== newValue) {
           // Update ReferenceState
-          ReferenceState.setValue("d_199", newValue);
+          ReferenceState.setValue("d_150", newValue);
           console.log(
-            `[WOMBAT] ✅ Synced ref_d_199 = ${newValue} from S12 (ref_d_103)`
+            `[WOMBAT] ✅ Synced ref_d_150 = ${newValue} from S12 (ref_d_103)`
           );
           // Recalculate (will run both engines and update visualization)
           calculateAll();
@@ -1294,7 +1784,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       window.TEUI.StateManager.addListener("d_101", newValue => {
         if (!wombatContainer) return;
         const element = wombatContainer.querySelector(
-          '[data-field-id="d_101"]'
+          '[data-field-id="d_152"]'
         );
         if (element && newValue !== null && newValue !== undefined) {
           element.textContent = window.TEUI.formatNumber(
@@ -1307,7 +1797,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       window.TEUI.StateManager.addListener("g_101", newValue => {
         if (!wombatContainer) return;
         const element = wombatContainer.querySelector(
-          '[data-field-id="g_101"]'
+          '[data-field-id="g_152"]'
         );
         if (element && newValue !== null && newValue !== undefined) {
           element.textContent = window.TEUI.formatNumber(
@@ -1321,7 +1811,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       window.TEUI.StateManager.addListener("ref_d_101", newValue => {
         if (!wombatContainer) return;
         const element = wombatContainer.querySelector(
-          '[data-field-id="d_101"]'
+          '[data-field-id="d_152"]'
         );
         if (
           element &&
@@ -1339,7 +1829,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       window.TEUI.StateManager.addListener("ref_g_101", newValue => {
         if (!wombatContainer) return;
         const element = wombatContainer.querySelector(
-          '[data-field-id="g_101"]'
+          '[data-field-id="g_152"]'
         );
         if (
           element &&
@@ -1358,7 +1848,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       window.TEUI.StateManager.addListener("d_102", newValue => {
         if (!wombatContainer) return;
         const element = wombatContainer.querySelector(
-          '[data-field-id="d_102"]'
+          '[data-field-id="d_153"]'
         );
         if (element && newValue !== null && newValue !== undefined) {
           element.textContent = window.TEUI.formatNumber(
@@ -1371,7 +1861,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       window.TEUI.StateManager.addListener("g_102", newValue => {
         if (!wombatContainer) return;
         const element = wombatContainer.querySelector(
-          '[data-field-id="g_102"]'
+          '[data-field-id="g_153"]'
         );
         if (element && newValue !== null && newValue !== undefined) {
           element.textContent = window.TEUI.formatNumber(
@@ -1385,7 +1875,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       window.TEUI.StateManager.addListener("ref_d_102", newValue => {
         if (!wombatContainer) return;
         const element = wombatContainer.querySelector(
-          '[data-field-id="d_102"]'
+          '[data-field-id="d_153"]'
         );
         if (
           element &&
@@ -1403,7 +1893,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       window.TEUI.StateManager.addListener("ref_g_102", newValue => {
         if (!wombatContainer) return;
         const element = wombatContainer.querySelector(
-          '[data-field-id="g_102"]'
+          '[data-field-id="g_153"]'
         );
         if (
           element &&
@@ -1439,7 +1929,7 @@ window.TEUI.SectionModules.sect19 = (function () {
 
   function initializeMirrorFields() {
     // ⚠️ CRITICAL: Initialize WOMBAT mirror fields from S12 on section load
-    // This ensures d_198/d_199 are synced with d_105/d_103 from the start
+    // This ensures d_151/d_150 are synced with d_105/d_103 from the start
     if (window.TEUI?.StateManager) {
       const d_105 = window.TEUI.StateManager.getValue("d_105");
       const d_103 = window.TEUI.StateManager.getValue("d_103");
@@ -1447,26 +1937,26 @@ window.TEUI.SectionModules.sect19 = (function () {
       const ref_d_103 = window.TEUI.StateManager.getValue("ref_d_103");
 
       if (d_105) {
-        window.TEUI.StateManager.setValue("d_198", d_105, "initial");
-        console.log(`[WOMBAT] Initialized d_198 = ${d_105} from S12 (d_105)`);
+        window.TEUI.StateManager.setValue("d_151", d_105, "initial");
+        console.log(`[WOMBAT] Initialized d_151 = ${d_105} from S12 (d_105)`);
       }
 
       if (d_103) {
-        window.TEUI.StateManager.setValue("d_199", d_103, "initial");
-        console.log(`[WOMBAT] Initialized d_199 = ${d_103} from S12 (d_103)`);
+        window.TEUI.StateManager.setValue("d_150", d_103, "initial");
+        console.log(`[WOMBAT] Initialized d_150 = ${d_103} from S12 (d_103)`);
       }
 
       if (ref_d_105) {
-        window.TEUI.StateManager.setValue("ref_d_198", ref_d_105, "initial");
+        window.TEUI.StateManager.setValue("ref_d_151", ref_d_105, "initial");
         console.log(
-          `[WOMBAT] Initialized ref_d_198 = ${ref_d_105} from S12 (ref_d_105)`
+          `[WOMBAT] Initialized ref_d_151 = ${ref_d_105} from S12 (ref_d_105)`
         );
       }
 
       if (ref_d_103) {
-        window.TEUI.StateManager.setValue("ref_d_199", ref_d_103, "initial");
+        window.TEUI.StateManager.setValue("ref_d_150", ref_d_103, "initial");
         console.log(
-          `[WOMBAT] Initialized ref_d_199 = ${ref_d_103} from S12 (ref_d_103)`
+          `[WOMBAT] Initialized ref_d_150 = ${ref_d_103} from S12 (ref_d_103)`
         );
       }
 
@@ -1485,23 +1975,23 @@ window.TEUI.SectionModules.sect19 = (function () {
     const geometry = solveGeometry(false); // isReferenceCalculation = false
 
     // Update TargetState (for refreshUI to read)
-    TargetState.setValue("h_200", geometry.footprint.length.toFixed(2));
-    TargetState.setValue("h_201", geometry.footprint.width.toFixed(2));
-    TargetState.setValue("h_203", geometry.storyHeight.toFixed(2));
+    TargetState.setValue("h_157", geometry.footprint.length.toFixed(2));
+    TargetState.setValue("h_155", geometry.footprint.width.toFixed(2));
+    TargetState.setValue("h_156", geometry.storyHeight.toFixed(2));
 
     // Publish calculated dimensions to StateManager (unprefixed for Target)
     window.TEUI.StateManager.setValue(
-      "h_200",
+      "h_157",
       geometry.footprint.length.toFixed(2),
       "calculated"
     );
     window.TEUI.StateManager.setValue(
-      "h_201",
+      "h_155",
       geometry.footprint.width.toFixed(2),
       "calculated"
     );
     window.TEUI.StateManager.setValue(
-      "h_203",
+      "h_156",
       geometry.storyHeight.toFixed(2),
       "calculated"
     );
@@ -1513,23 +2003,23 @@ window.TEUI.SectionModules.sect19 = (function () {
     const geometry = solveGeometry(true); // isReferenceCalculation = true
 
     // Update ReferenceState (for refreshUI to read)
-    ReferenceState.setValue("h_200", geometry.footprint.length.toFixed(2));
-    ReferenceState.setValue("h_201", geometry.footprint.width.toFixed(2));
-    ReferenceState.setValue("h_203", geometry.storyHeight.toFixed(2));
+    ReferenceState.setValue("h_157", geometry.footprint.length.toFixed(2));
+    ReferenceState.setValue("h_155", geometry.footprint.width.toFixed(2));
+    ReferenceState.setValue("h_156", geometry.storyHeight.toFixed(2));
 
     // Publish calculated dimensions to StateManager (ref_ prefixed for Reference)
     window.TEUI.StateManager.setValue(
-      "ref_h_200",
+      "ref_h_157",
       geometry.footprint.length.toFixed(2),
       "calculated"
     );
     window.TEUI.StateManager.setValue(
-      "ref_h_201",
+      "ref_h_155",
       geometry.footprint.width.toFixed(2),
       "calculated"
     );
     window.TEUI.StateManager.setValue(
-      "ref_h_203",
+      "ref_h_156",
       geometry.storyHeight.toFixed(2),
       "calculated"
     );
