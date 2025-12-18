@@ -200,6 +200,29 @@
       log("Registered OccupancyNodes");
     }
 
+    // Envelope gains and losses (S10, S11)
+    if (nodes.RadiantGains) {
+      nodes.RadiantGains.register(g);
+      log("Registered RadiantGainsNodes");
+    }
+
+    if (nodes.TransmissionLoss) {
+      nodes.TransmissionLoss.register(g);
+      log("Registered TransmissionLossNodes");
+    }
+
+    // Volume metrics and air leakage (S12)
+    if (nodes.VolumeMetrics) {
+      nodes.VolumeMetrics.register(g);
+      log("Registered VolumeMetricsNodes");
+    }
+
+    // Ventilation and mechanical (S13)
+    if (nodes.Ventilation) {
+      nodes.Ventilation.register(g);
+      log("Registered VentilationNodes");
+    }
+
     // Dashboard consumer node (depends on all others)
     if (nodes.KeyValues) {
       nodes.KeyValues.register(g);
