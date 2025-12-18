@@ -159,7 +159,7 @@ window.TEUI.SectionModules.sect12 = (function () {
 
       // ✅ CRITICAL: Publish Reference defaults to StateManager (S10/S11/S04 pattern)
       if (window.TEUI?.StateManager) {
-        console.log(`[S12 DEBUG] Publishing ${6} Reference default fields to StateManager...`);
+        console.log(`[S12 DEBUG] StateManager available - Publishing ${6} Reference default fields...`);
         const referenceFields = ["d_103", "g_103", "d_105", "g_106", "d_108", "g_109"];
         referenceFields.forEach(fieldId => {
           const value = this.state[fieldId];
@@ -170,8 +170,13 @@ window.TEUI.SectionModules.sect12 = (function () {
               value,
               "default"
             );
+          } else {
+            console.warn(`[S12 DEBUG] Skipping ref_${fieldId} - value is null/undefined`);
           }
         });
+        console.log(`[S12 DEBUG] Reference defaults publishing complete`);
+      } else {
+        console.error(`[S12 DEBUG] ❌ StateManager NOT AVAILABLE - cannot publish Reference defaults!`);
       }
 
       console.log(
