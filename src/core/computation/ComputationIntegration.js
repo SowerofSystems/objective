@@ -213,7 +213,6 @@
    */
   function syncFromStateManager() {
     const StateManager = window.TEUI.StateManager;
-    const FieldRegistry = window.TEUI.FieldRegistry;
 
     if (!StateManager) {
       warn("StateManager not available for sync");
@@ -225,12 +224,13 @@
     const targetId = state.getActiveModelId();
     let syncCount = 0;
 
-    // Get all registered inputs from the graph
-    const inputIds = graph.getInputIds ? graph.getInputIds() : [];
+    // Get all registered input IDs and use their legacyId property
+    const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
 
     for (const semanticPath of inputIds) {
-      // Try to get legacy ID
-      const legacyId = FieldRegistry?.toLegacy(semanticPath);
+      // Get the input node to access its legacyId
+      const inputNode = graph.getInput(semanticPath);
+      const legacyId = inputNode?.legacyId;
 
       if (legacyId) {
         const value = StateManager.getValue(legacyId);
@@ -241,11 +241,27 @@
       }
     }
 
-    // Also sync Reference model if ReferenceManager is available
+    // Also sync Reference model
     const refModelId = getRefModelId();
-    if (refModelId && window.TEUI.ReferenceManager) {
-      // Reference values would be synced similarly
-      log("Reference model sync available");
+    if (refModelId) {
+      let refSyncCount = 0;
+      for (const semanticPath of inputIds) {
+        const inputNode = graph.getInput(semanticPath);
+        const legacyId = inputNode?.legacyId;
+
+        if (legacyId) {
+          // Reference values use ref_ prefix
+          const refLegacyId = "ref_" + legacyId;
+          const value = StateManager.getValue(refLegacyId);
+          if (value !== undefined && value !== null && value !== "") {
+            state.setValueForModel(refModelId, semanticPath, value);
+            refSyncCount++;
+          }
+        }
+      }
+      if (refSyncCount > 0) {
+        log(`Synced ${refSyncCount} reference values`);
+      }
     }
 
     log(`Synced ${syncCount} values from StateManager`);
@@ -257,7 +273,7 @@
   function getRefModelId() {
     if (!state) return null;
     const models = state.getAllModels();
-    const refModel = models.find(m => m.type === "reference");
+    const refModel = models.find(m => m.modelType === "reference");
     return refModel?.id || null;
   }
 
@@ -287,7 +303,7 @@
     }
 
     try {
-      adapter = LegacyAdapter.create({ state, engine });
+      adapter = LegacyAdapter.create({ state, engine, graph });
       adapter.install();
       log("LegacyAdapter installed - intercepting StateManager");
       return true;

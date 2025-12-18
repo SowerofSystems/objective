@@ -27,12 +27,14 @@
    * @param {Object} options
    * @param {Object} options.state - MultiModelState instance
    * @param {Object} options.engine - MultiModelEngine instance
-   * @param {Object} [options.registry] - FieldRegistry for ID translation
+   * @param {Object} [options.graph] - ComputationGraph for ID translation
+   * @param {Object} [options.registry] - FieldRegistry for ID translation (fallback)
    * @returns {LegacyAdapter}
    */
   function createLegacyAdapter(options = {}) {
     const state = options.state;
     const engine = options.engine;
+    const graph = options.graph;
     const registry = options.registry || window.TEUI.FieldRegistry;
 
     if (!state) {
@@ -41,6 +43,22 @@
 
     if (!engine) {
       throw new Error("MultiModelEngine required");
+    }
+
+    // Build lookup maps from graph input nodes
+    const legacyToSemantic = new Map();
+    const semanticToLegacy = new Map();
+
+    if (graph) {
+      const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
+      for (const semanticPath of inputIds) {
+        const inputNode = graph.getInput(semanticPath);
+        if (inputNode?.legacyId) {
+          legacyToSemantic.set(inputNode.legacyId, semanticPath);
+          semanticToLegacy.set(semanticPath, inputNode.legacyId);
+        }
+      }
+      console.log(`[LegacyAdapter] Built translation maps: ${legacyToSemantic.size} mappings`);
     }
 
     // Store original StateManager for restoration
@@ -80,14 +98,13 @@
         return fieldId;
       }
 
-      // Try registry translation
-      if (registry?.toSemantic) {
-        const semantic = registry.toSemantic(fieldId);
-        if (semantic) return semantic;
+      // Use graph-based translation (don't use registry - causes recursion)
+      if (legacyToSemantic.has(fieldId)) {
+        return legacyToSemantic.get(fieldId);
       }
 
-      // Return as-is (might be a new-style ID)
-      return fieldId;
+      // Return null if not found (will trigger fallback to original StateManager)
+      return null;
     }
 
     /**
@@ -103,13 +120,12 @@
         return semanticPath;
       }
 
-      // Try registry translation
-      if (registry?.toLegacy) {
-        const legacy = registry.toLegacy(semanticPath);
-        if (legacy) return legacy;
+      // Use graph-based translation (don't use registry - causes recursion)
+      if (semanticToLegacy.has(semanticPath)) {
+        return semanticToLegacy.get(semanticPath);
       }
 
-      return semanticPath;
+      return null;
     }
 
     /**

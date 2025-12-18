@@ -924,18 +924,20 @@ document.addEventListener("DOMContentLoaded", function () {
     initializeElegantInputBehavior();
 
     // Initialize new computation system (Multi-Model Architecture)
-    // Runs in parallel mode - old system still drives UI
-    // New system computes independently for validation
+    // Runs in parallel mode - old system drives UI, new system validates
+    // Adapter NOT enabled - too many unmapped fields cause recursion
     if (window.TEUI.ComputationIntegration) {
       setTimeout(function () {
-        window.TEUI.ComputationIntegration.initialize({
+        const success = window.TEUI.ComputationIntegration.initialize({
           enableLogging: true,
           runInParallel: true,
           autoSync: true
         });
-        console.log("[init.js] New computation system initialized (parallel mode)");
-        // Adapter disabled - old StateManager still drives UI
-        // Enable manually with: TEUI.ComputationIntegration.enableAdapter()
+        if (success) {
+          console.log("[init.js] New computation system initialized (parallel mode)");
+          // Do NOT enable adapter - old StateManager still drives UI
+          // Enable manually for testing: TEUI.ComputationIntegration.enableAdapter()
+        }
       }, 500);
     }
   } else {
