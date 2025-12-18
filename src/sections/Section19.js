@@ -2065,6 +2065,15 @@ window.TEUI.SectionModules.sect19 = (function () {
         }
       });
 
+      // ✅ NEW (2025-12-18): Listen for ref_g_106 (Typical F2F Height) from S12
+      // This ensures Reference geometry is pre-calculated when ref_g_106 is published during initialization
+      window.TEUI.StateManager.addListener("ref_g_106", newValue => {
+        console.log(`[WOMBAT SYNC] ref_g_106 changed: ${newValue}`);
+        // No state to sync (g_106 is read directly via getModeAwareValue in solveGeometry)
+        // But we need to recalculate Reference geometry when this value changes
+        calculateAll();
+      });
+
       // ✅ ROBOT FINGERS 🤖👆: Ae and Ag display fields from S12
       // S12 publishes d_101/g_101/d_102/g_102 to StateManager
       // S19 listens and updates its own DOM elements (scoped to #wombat container)
