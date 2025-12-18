@@ -417,6 +417,435 @@ Implemented nested binary search solver for hip roof:
 
 ---
 
-**Document Status**: ACTIVE - Implementation attempt 1 reverted, planning approach 2
-**Last Updated**: 2025-12-17
-**Next Step**: Implement truncated gable approach with rational trigonometry preserved
+## Implementation Attempt 2: Aspect Ratio Alignment Fix (REVERTED)
+
+**Date**: 2025-12-17
+**Status**: REVERTED - Wrong problem solved
+**Branch**: WOMBAT-HIP (uncommitted changes reverted)
+
+### What We Tried
+Fixed aspect ratio orientation mismatch by storing original building dimensions:
+- Stored `buildingWidth` and `buildingLength` (original, not swapped) in hipData
+- Used absolute values (`spanLength`, `spanWidth`) for geometric calculations
+- Updated rendering to use original dimensions from hipData
+- Goal: Make ridge stay aligned with building as aspect ratio changes
+
+### What We Observed
+**✅ SUCCESS**: Ridge points render in CORRECT positions in 3D space
+**❌ FAILURE**: Hip rafters connect to WRONG ridge endpoints
+
+**The Real Problem**: This is a **vector rendering issue**, NOT a calculation issue!
+
+### Visual Analysis
+Looking at the screenshot with negative aspect ratio:
+- Ridge line endpoints are CORRECTLY positioned (blue dots at right locations)
+- Building perimeter is CORRECTLY sized and oriented
+- **Hip rafters (from eave corners to ridge) connect to OPPOSITE ridge endpoint**
+- Result: Crossed/twisted roof geometry
+
+**Example**:
+```
+Should be:              Actually renders:
+NW corner → Ridge1      NW corner → Ridge2  ❌ (wrong endpoint!)
+NE corner → Ridge2      NE corner → Ridge1  ❌ (wrong endpoint!)
+```
+
+### Root Cause Analysis
+**NOT** an aspect ratio problem
+**NOT** a dimension swapping problem
+**IS** a **vector connection problem**
+
+The rendering code connects eave corners to ridge endpoints, but when aspect ratio flips:
+- The building orientation changes (portrait ↔ landscape)
+- The ridge orientation SHOULD change too
+- But the eave-to-ridge connections use the WRONG pairing
+
+### Why Coordinates Are Correct But Connections Are Wrong
+In `renderHipRoof()` (wombatRender.js ~800-833):
+```javascript
+// Four eave corners (building perimeter)
+const eave1 = { x: -width/2, y: -length/2, z: wallHeight };  // SW
+const eave2 = { x:  width/2, y: -length/2, z: wallHeight };  // SE
+const eave3 = { x:  width/2, y:  length/2, z: wallHeight };  // NE
+const eave4 = { x: -width/2, y:  length/2, z: wallHeight };  // NW
+
+// Ridge endpoints (correct positions)
+ridge1 = { x: 0, y: -length/2 + offset, z: wallHeight + roofHeight };
+ridge2 = { x: 0, y:  length/2 - offset, z: wallHeight + roofHeight };
+
+// Hip rafters (THIS IS THE PROBLEM!)
+svg.appendChild(createLine(r1Pt, e1Pt, ...));  // Ridge1 → SW corner
+svg.appendChild(createLine(r1Pt, e2Pt, ...));  // Ridge1 → SE corner
+svg.appendChild(createLine(r2Pt, e3Pt, ...));  // Ridge2 → NE corner
+svg.appendChild(createLine(r2Pt, e4Pt, ...));  // Ridge2 → NW corner
+```
+
+**The Issue**: When aspect ratio is negative (width > length):
+- Ridge orientation should swap (longitudinal ↔ transverse)
+- The ridge endpoints ARE in correct positions
+- But the eave-to-ridge pairings remain HARD-CODED
+- Should connect to CLOSEST ridge endpoint, not fixed pairing
+
+### The Elegant Fix (NOT YET IMPLEMENTED)
+**DON'T**: Complicate dimension tracking
+**DO**: Fix the vector connections to find closest ridge endpoint
+
+**Approach**: For each eave corner, connect to the NEAREST ridge endpoint:
+```javascript
+// For each eave corner, find closest ridge endpoint
+const ridgePoints = [ridge1, ridge2];
+
+eaveCorners.forEach(eave => {
+  // Find closest ridge point
+  const closest = ridgePoints.reduce((nearest, ridge) => {
+    const distSq = (ridge.x - eave.x)**2 + (ridge.y - eave.y)**2;
+    return distSq < nearest.dist ? { point: ridge, dist: distSq } : nearest;
+  }, { point: null, dist: Infinity });
+
+  // Draw rafter to closest ridge point
+  svg.appendChild(createLine(eave, closest.point, roofColor, 2));
+});
+```
+
+**OR EVEN SIMPLER**: Recognize the pattern - hip rafters should form an "X" when viewed from above:
+- Corners on one end → Ridge point on that end
+- Based on which half of the building they're in (front/back or left/right depending on ridge orientation)
+
+### Lessons Learned (Attempt 2)
+1. **Vertices were ALWAYS correct** - only connections were wrong
+2. **Over-engineered the solution** - added dimension tracking when not needed
+3. **Should have focused on rendering logic** - the hip rafter connection algorithm
+4. **Key insight**: It's a graph connectivity problem (which corner connects to which ridge point), not a coordinate problem
+
+### Why We Reverted
+- Added unnecessary complexity (dimension tracking) that didn't solve the real problem
+- Real issue is simpler: just need to fix which corners connect to which ridge endpoints
+- Need to preserve clean code and tackle the actual problem
+
+---
+
+## Next Approach: Fix Hip Rafter Connections (Simple!)
+
+**The ACTUAL Problem**: Hip rafter rendering connects corners to wrong ridge endpoints when orientation changes
+
+**The Solution** (much simpler than attempt 2!):
+1. Identify ridge orientation (longitudinal vs transverse)
+2. For each corner, determine which ridge endpoint is closer
+3. Draw rafter to that endpoint
+4. NO need for complex dimension tracking - just fix the pairing logic!
+
+**Implementation** (probably 10-20 lines of code):
+```javascript
+// Determine which corners connect to which ridge points based on orientation
+if (ridgeOrientation === "longitudinal") {
+  // Ridge runs along Y-axis
+  // Front corners (y < 0) connect to ridge1, back corners (y > 0) to ridge2
+  createLine(eave1, ridge1);  // SW → front ridge
+  createLine(eave2, ridge1);  // SE → front ridge
+  createLine(eave3, ridge2);  // NE → back ridge
+  createLine(eave4, ridge2);  // NW → back ridge
+} else {
+  // Ridge runs along X-axis
+  // Left corners (x < 0) connect to ridge1, right corners (x > 0) to ridge2
+  createLine(eave1, ridge1);  // SW → left ridge
+  createLine(eave4, ridge1);  // NW → left ridge
+  createLine(eave2, ridge2);  // SE → right ridge
+  createLine(eave3, ridge2);  // NE → right ridge
+}
+```
+
+---
+
+---
+
+## Implementation Attempt 3: Working Hip Roof with Refinements Needed
+
+**Date**: 2025-12-17
+**Status**: WORKING - Rendering correctly, but area constraint needs refinement
+**Branch**: WOMBAT-HIP
+**Commit**: 81b2496
+
+### What We Implemented ✅
+
+**1. Hip Roof Calculation** (Section19.js:847-990)
+- `calculateHipHeight()` using binary search to find ridge length
+- **Area Formula**: `2 × ridgeLength × slopeLength + 2 × ridgeOffset × slopeLength`
+  - Main slopes: 2 rectangles (ridgeLength × slopeLength)
+  - Hip ends: 2 × (ridgeOffset × slopeLength) for both triangular ends
+- Converges on **first iteration** to exact target area match
+- Uses rational trigonometry throughout (quadrance-based)
+
+**2. Orientation-Aware Hip Rafter Connections** (wombatRender.js:799-819)
+- Fixed the torsion bug with simple orientation logic (~20 lines)
+- **Longitudinal ridge** (Y-axis): Front corners → ridge1, back corners → ridge2
+- **Transverse ridge** (X-axis): Left corners → ridge1, right corners → ridge2
+- No more crossed/twisted rafters in negative aspect ratios
+
+**3. Volume Calculation** (Section19.js:1244-1257)
+- Hip roof volume = gable section + 2 pyramidal end caps
+- Formula: `(ridgeLength × span × height)/2 + 2 × (1/3) × (ridgeOffset × span) × height`
+- Properly integrated into thermal model
+
+**4. Bounds Calculation** (wombatRender.js:115-132)
+- Includes shortened ridge endpoints for proper scaling
+
+### Current Behavior Observed
+
+**Positive Aspect (Square Building)**:
+- Building: 33.17m × 33.17m
+- Ridge: 16.59m (offset: 8.29m)
+- Ridge height: **23.01m**
+- Achieved area: 1411.52 m² ✅
+
+**Positive Aspect (Rectangular Building)**:
+- Building: 22.36m × 49.20m (aspect ratio 1.2)
+- Ridge: 24.60m (offset: 12.30m)
+- Ridge height: **15.52m**
+- Achieved area: 1411.52 m² ✅
+
+**Negative Aspect (Portrait)**:
+- Building: 58.4m × 18.8m (aspect ratio -1.5)
+- Ridge: Still renders correctly with orientation-aware connections ✅
+- No torsion/twisting ✅
+
+---
+
+## Critical Refinements Needed (Tomorrow's Work)
+
+### Issue 1: Square Buildings Should Render as Pyramids
+
+**Problem**: When building is square (aspect ratio 0), hip roof shows a ridge line
+- Current: Square building (33.17m × 33.17m) has ridge length 16.59m
+- Expected: Ridge length should be **0.00m** (pure pyramid)
+
+**Root Cause**: Binary search starts with `ridgeLengthMin = 0` but immediately moves away from it
+
+**Solution**:
+```javascript
+// In calculateHipHeight(), detect square buildings first
+const tolerance = 1e-6;
+if (Math.abs(width - length) < tolerance) {
+  // Square building → pure pyramid (no ridge)
+  // Fall through to pyramidHeightRectangle() instead
+  console.log('[WOMBAT] Square building detected - using pyramidal roof');
+  return {
+    height: calculatePyramidalHeight(width, length, areaRatio),
+    ridgeOrientation: "longitudinal",
+    ridgeLength: 0,
+    ridgeOffset: maxDimension / 2,
+    span,
+    hipData: {
+      ridgeLength: 0,
+      ridgeOffset: maxDimension / 2,
+      ridgeOrientation: "longitudinal",
+      achievedArea: targetRoofArea
+    },
+    isValid: true
+  };
+}
+```
+
+### Issue 2: Roof Height Not Responding to Aspect Ratio Changes
+
+**Problem**: As aspect ratio increases, roof height should DECREASE to maintain constant roof area
+- Aspect 0 (square): 23.01m height
+- Aspect 1.2 (2.2:1): 15.52m height (good trend ✓)
+- Aspect -1.5 (portrait): **Should also decrease from square baseline**
+
+**Current Behavior**: Roof appears too tall/steep, especially at square aspect ratios
+
+**Root Cause**: The area constraint is working, BUT the effective pitch is not being constrained by the **actual roof surface area (d_85)**
+
+**The Fundamental Issue**:
+We're solving for ridge length to match target area, then deriving height from that ridge. But the visual result shows roofs that are far too steep/tall for the stated roof area. This suggests our area calculation may be including BASE area instead of just SURFACE area.
+
+### Issue 3: Roof Area Constraint Verification
+
+**Problem**: Roof renders appear much larger than stated area (1411.52 m²)
+- Visual inspection: Roofs look massive compared to 1100.42 m² footprint
+- Stated ratio: 1.283 (roof/footprint)
+- Visual ratio: Appears closer to 2.0+ (roof/footprint)
+
+**Diagnosis Needed**:
+1. Is our area formula calculating **surface area** or **projected area**?
+2. Current formula: `2 × ridgeLength × slopeLength + 2 × ridgeOffset × slopeLength`
+   - `slopeLength` = hypotenuse from eave to ridge
+   - This IS surface area ✓
+3. **But**: Are we correctly accounting for all 4 faces?
+
+**Potential Issue**: Hip end area calculation
+```javascript
+// Current (Section19.js:946)
+const hipEndArea = 2 * ridgeOffset * slopeLength;
+
+// This gives BOTH triangular hip ends (each end has 2 triangular faces)
+// Each face area = (1/2) × base × slant
+// But we're using ridgeOffset × slopeLength, which is the rectangular projection
+```
+
+**Correct Hip End Calculation** (Rational Trigonometry):
+```javascript
+// Each hip end consists of 2 triangular faces meeting at ridge endpoint
+// Triangle base = span/2 (from corner to center)
+// Triangle slant height = hip rafter length
+
+// Hip rafter length (using Pythagorean theorem - still rational!)
+// From corner (±width/2, ±length/2, wallHeight) to ridge endpoint (0, y_ridge, wallHeight+roofHeight)
+// Horizontal distance: sqrt((width/2)² + ridgeOffset²)
+// Vertical distance: roofHeight
+// Hip rafter quadrance: (width/2)² + ridgeOffset² + roofHeight²
+const hipRafterQuadrance = (span/2) * (span/2) + ridgeOffset * ridgeOffset + roofHeight * roofHeight;
+const hipRafterLength = Math.sqrt(hipRafterQuadrance); // Only sqrt at final step
+
+// Each triangular face area = (1/2) × span × hipRafterLength
+// Each hip end (2 faces) = span × hipRafterLength
+const hipEndArea = 2 * span * hipRafterLength; // Total for BOTH ends
+```
+
+**BUT WAIT**: This doesn't match our current calculation which gives correct area convergence!
+
+**Re-analysis Required**:
+- Current formula converges to exact target area on first iteration
+- But visual result doesn't match stated area
+- **Either**: Formula is correct, but visual rendering scale is wrong
+- **Or**: Formula has compensating errors
+
+### Issue 4: Calculation Flow - Roof MUST Be Solved First
+
+**Current Flow** (CORRECT ✓):
+1. Footprint area (d_95) → SACRED touchstone
+2. Aspect ratio → width × length
+3. **Roof area (d_85) → Solve for roof height** ← This happens FIRST ✓
+4. Roof volume → Derived from roof geometry
+5. Wall height → Solved from (total volume - roof volume - basement volume)
+
+**This is already correct!** Roof IS being solved first, constrained by d_85.
+
+**But**: Need to verify the area constraint is truly being satisfied with SURFACE area, not base area.
+
+---
+
+## Diagnostic Steps for Tomorrow
+
+### 1. Manual Area Verification
+For a known geometry, calculate roof area by hand:
+- Square building: 33.17m × 33.17m
+- Ridge length: 16.59m (from current output)
+- Ridge height: 23.01m
+- Calculate:
+  - Slope length = sqrt(h² + (span/2)²) = sqrt(23.01² + 16.585²) = ?
+  - Main slope area = 2 × 16.59 × slopeLength = ?
+  - Hip end area = 2 × 8.29 × slopeLength = ?
+  - Total = ? (should be 1411.52 m²)
+
+### 2. Test Pyramid Constraint
+- Set aspect ratio to 0.0 (perfect square)
+- Expected: Ridge length = 0, pure pyramid
+- Check: Does `calculatePyramidalHeight()` give same area?
+
+### 3. Test Aspect Ratio Scaling
+- Series: -2, -1, 0, +1, +2
+- For each: Record ridge length, height, visual pitch
+- Expected: As aspect increases, height decreases proportionally
+- Verify: Roof area stays constant at 1411.52 m²
+
+### 4. Remove Transcendental Functions (Future)
+Current code uses:
+- `Math.sqrt()` - Acceptable (final step of rational trig)
+- No trig functions (sin, cos, tan) ✓
+
+All calculations use quadrance (squared distances) internally, only taking sqrt at the final step. This is **proper rational trigonometry** ✓
+
+---
+
+## Code Solutions (For Tomorrow)
+
+### Fix 1: Detect Square → Pyramid
+```javascript
+// In solveGeometry(), before calling calculateHipHeight()
+if (roofTypeSelection === "multiplanar") {
+  // Check if building is square
+  const tolerance = 1e-6;
+  const isSquare = Math.abs(width - length) < tolerance;
+
+  if (isSquare) {
+    // Square building → PYRAMIDAL ROOF (no ridge)
+    roofType = "pyramidal";
+    roofHeight = calculatePyramidalHeight(width, length, areaRatio);
+    console.log(`[WOMBAT] Square building - using pyramidal roof: h=${roofHeight.toFixed(2)}m`);
+  } else {
+    // Rectangular building → HIP ROOF (truncated gable)
+    roofType = "hip";
+    const hipData = calculateHipHeight(width, length, roofArea);
+    // ... existing code
+  }
+}
+```
+
+### Fix 2: Verify Hip End Area Calculation
+Need to determine which formula is geometrically correct:
+
+**Option A** (Current):
+```javascript
+const hipEndArea = 2 * ridgeOffset * slopeLength;
+```
+- Treats hip end as rectangular projection
+- Works mathematically (converges to target)
+- But may not be true surface area
+
+**Option B** (True Surface Area):
+```javascript
+// Hip rafter from corner to ridge endpoint
+const hipRafterLength = Math.sqrt(
+  (span/2) * (span/2) +           // Half span
+  ridgeOffset * ridgeOffset +      // Longitudinal distance
+  roofHeight * roofHeight          // Vertical distance
+);
+const hipEndArea = 2 * span * hipRafterLength;
+```
+- Calculates actual slant surface
+- Each triangular face: (1/2) × span × hipRafter
+- Both ends (4 faces total): 2 × span × hipRafter
+
+**Test**: Implement Option B, see if convergence still works and if visual matches stated area
+
+### Fix 3: Add Visual Scale Verification
+Add debug overlay showing:
+- Roof surface area (calculated)
+- Footprint area (d_95)
+- Ratio (should match stated 1.283)
+- If visual doesn't match, issue is in RENDERING scale, not calculation
+
+---
+
+## Lessons Learned
+
+### What Worked ✅
+1. **Truncated gable approach** - Elegant, rational, geometrically sound
+2. **Binary search** - Converges instantly (first iteration)
+3. **Orientation-aware connections** - Simple fix (20 lines) vs complex dimension tracking (100+ lines)
+4. **Rational trigonometry** - No trig functions, only sqrt at final step
+
+### What Needs Refinement ⚠️
+1. **Square → Pyramid detection** - Should have no ridge when square
+2. **Area calculation verification** - Visual doesn't match stated area
+3. **Hip end surface area** - May be using projection instead of true surface
+4. **Height scaling with aspect ratio** - Should decrease as building stretches
+
+### Key Insight 💡
+The area constraint IS being satisfied mathematically (converges to exact match), but the **visual result suggests the constraint may not be correct**. Either:
+- Formula calculates wrong thing (projection vs surface)
+- Rendering scale is wrong
+- User expectation of "roof area" differs from geometric surface area
+
+**Tomorrow**: Manually verify the geometry, test pyramid case, refine area calculation.
+
+---
+
+**Document Status**: ACTIVE - Hip roof working, refinements needed for square buildings and area verification
+**Last Updated**: 2025-12-17 (End of Day)
+**Next Steps**:
+1. Add square → pyramid detection
+2. Verify hip end area calculation (projection vs surface)
+3. Manual geometry verification
+4. Test aspect ratio scaling behavior
