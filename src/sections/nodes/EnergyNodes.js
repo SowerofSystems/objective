@@ -35,7 +35,7 @@
   // NOTE: Energy calculations depend on values from other sections:
   // - geometry.conditionedFloorArea (h_15) - from Geometry/S02
   // - mechanical.heating.demand (d_114) - computed by MechanicalNodes
-  // - mechanical.cooling.demand (d_117) - computed by MechanicalNodes
+  // - mechanical.cooling.electricalDemand (d_117) - computed by MechanicalNodes
   // These are NOT re-declared here; they're referenced via dependencies.
 
   const EnergyInputs = [
@@ -352,13 +352,13 @@
     {
       id: "energy.total.cooling",
       legacyId: "h_136_cooling",
-      dependencies: ["mechanical.cooling.demand"],
+      dependencies: ["mechanical.cooling.electricalDemand"],
       classification: "C",
       section: "S15",
       label: "Total Cooling Energy",
       unit: "kWh/yr",
       compute: (inputs) => {
-        return parseNum(inputs["mechanical.cooling.demand"], 0);
+        return parseNum(inputs["mechanical.cooling.electricalDemand"], 0);
       }
     },
     {
@@ -366,7 +366,7 @@
       legacyId: "d_136",
       dependencies: [
         "mechanical.heating.demand",
-        "mechanical.cooling.demand",
+        "mechanical.cooling.electricalDemand",
         "energy.dhw",
         "energy.lighting",
         "energy.plugLoads",
@@ -378,7 +378,7 @@
       unit: "kWh/yr",
       compute: (inputs) => {
         const heating = parseNum(inputs["mechanical.heating.demand"], 0);
-        const cooling = parseNum(inputs["mechanical.cooling.demand"], 0);
+        const cooling = parseNum(inputs["mechanical.cooling.electricalDemand"], 0);
         const dhw = parseNum(inputs["energy.dhw"], 0);
         const lighting = parseNum(inputs["energy.lighting"], 0);
         const plugLoads = parseNum(inputs["energy.plugLoads"], 0);
@@ -424,13 +424,13 @@
     {
       id: "energy.intensity.cooling",
       legacyId: "f_136",
-      dependencies: ["mechanical.cooling.demand", "geometry.conditionedFloorArea"],
+      dependencies: ["mechanical.cooling.electricalDemand", "geometry.conditionedFloorArea"],
       classification: "C",
       section: "S15",
       label: "Cooling Intensity",
       unit: "kWh/m²/yr",
       compute: (inputs) => {
-        const cooling = parseNum(inputs["mechanical.cooling.demand"], 0);
+        const cooling = parseNum(inputs["mechanical.cooling.electricalDemand"], 0);
         const area = parseNum(inputs["geometry.conditionedFloorArea"], 5000);
 
         return area > 0 ? +(cooling / area).toFixed(2) : 0;

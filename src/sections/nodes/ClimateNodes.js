@@ -139,7 +139,7 @@
     // ========================================================================
     {
       id: "climate.heating.degreedays",
-      legacyId: "d_20",
+      legacyId: "d_21",
       dependencies: [
         "climate.location.province",
         "climate.location.city",
@@ -163,7 +163,7 @@
     },
     {
       id: "climate.cooling.degreedays",
-      legacyId: "d_21",
+      legacyId: "l_20",
       dependencies: [
         "climate.location.province",
         "climate.location.city",

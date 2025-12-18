@@ -130,22 +130,22 @@
       unit: "%"
     },
 
-    // External dependencies
+    // External dependencies (must match computed node IDs from other modules)
     {
-      id: "energy.ted",
-      legacyId: "h_126",
+      id: "energy.ted.heating",
+      legacyId: "d_127",
       defaultValue: 0,
       classification: "C",
       section: "S14",
-      label: "Total Energy Demand (TED)"
+      label: "Total Energy Demand for Heating (TED)"
     },
     {
-      id: "energy.coolingDemand",
-      legacyId: "m_129",
+      id: "energy.ced.unmitigated",
+      legacyId: "h_129",
       defaultValue: 0,
       classification: "C",
-      section: "S13",
-      label: "Cooling Demand"
+      section: "S14",
+      label: "Cooling Energy Demand (Unmitigated)"
     },
     {
       id: "geometry.volume",
@@ -229,7 +229,7 @@
       dependencies: [
         "mechanical.heating.systemType",
         "mechanical.heating.copHeat",
-        "energy.ted"
+        "energy.ted.heating"
       ],
       classification: "C",
       section: "S13",
@@ -238,7 +238,7 @@
       compute: (inputs) => {
         const systemType = inputs["mechanical.heating.systemType"];
         const copHeat = parseNum(inputs["mechanical.heating.copHeat"], 1);
-        const ted = parseNum(inputs["energy.ted"], 0);
+        const ted = parseNum(inputs["energy.ted.heating"], 0);
 
         // For heat pump: demand = TED / COPheat
         // For gas/oil: demand = TED (electrical demand is minimal, tracked separately)
@@ -278,7 +278,7 @@
       dependencies: [
         "mechanical.heating.systemType",
         "mechanical.heating.afue",
-        "energy.ted"
+        "energy.ted.heating"
       ],
       classification: "C",
       section: "S13",
@@ -287,7 +287,7 @@
       compute: (inputs) => {
         const systemType = inputs["mechanical.heating.systemType"];
         const afue = parseNum(inputs["mechanical.heating.afue"], 0.9);
-        const ted = parseNum(inputs["energy.ted"], 0);
+        const ted = parseNum(inputs["energy.ted.heating"], 0);
 
         // Fuel impact = TED / AFUE for gas/oil systems
         if ((systemType === "Gas" || systemType === "Oil") && afue > 0) {
@@ -368,7 +368,7 @@
       dependencies: [
         "mechanical.cooling.systemType",
         "mechanical.cooling.effectiveCop",
-        "energy.coolingDemand"
+        "energy.ced.unmitigated"
       ],
       classification: "C",
       section: "S13",
@@ -377,7 +377,7 @@
       compute: (inputs) => {
         const coolingType = inputs["mechanical.cooling.systemType"];
         const cop = parseNum(inputs["mechanical.cooling.effectiveCop"], 1);
-        const coolingDemand = parseNum(inputs["energy.coolingDemand"], 0);
+        const coolingDemand = parseNum(inputs["energy.ced.unmitigated"], 0);
 
         if (coolingType === "No Cooling" || cop === 0) return 0;
         return +(coolingDemand / cop).toFixed(2);
