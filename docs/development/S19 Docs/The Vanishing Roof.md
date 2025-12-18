@@ -1773,28 +1773,75 @@ When constraints conflict:
 
 **Recommendation**: **Option A** - Trust thermal data from BIM, guide user to fix volume
 
-### Decision 2: Solver Strategy
+### Decision 2: Solver Strategy ✅ SELECTED
 
-**Option A - Validate and Error** (Simplest, immediate implementation):
+**Option A - Graceful Fallback with Visual Warning** (SELECTED):
+
+**Philosophy**: The absurd pancake model is the best explanatory warning. Don't block the render—let the user *see* the problem.
+
 ```javascript
-// Step 1: Calculate deterministic values
-h_wall = storeyCount × typicalHeight;
-V_wall = floorArea × h_wall;
+// Step 1: ATTEMPT using realistic F2F height from g_106
+const storeyCount = parseFloat(StateManager.getValue('d_103')) || 1.5;
+const typicalHeight = parseFloat(StateManager.getValue('g_106')) || 3.00;
+const h_wall_intended = storeyCount × typicalHeight;
+const V_wall_required = floorArea × h_wall_intended;
 
-// Step 2: Validate volume
-if (V_total <= V_wall) {
-  console.error('[WOMBAT] Total volume insufficient');
-  console.error(`  Required minimum: ${V_wall.toFixed(2)} m³`);
-  console.error(`  Current d_105: ${V_total.toFixed(2)} m³`);
-  console.error(`  Deficit: ${(V_wall - V_total).toFixed(2)} m³`);
-  // Still render with warning, using volume-derived wall height
-  h_wall = V_total / floorArea; // Use whatever fits in available volume
+// Step 2: VALIDATE volume constraint
+let h_wall_actual;
+let constraintViolated = false;
+
+if (totalVolume <= V_wall_required) {
+  // Volume insufficient for intended wall height
+  constraintViolated = true;
+  const deficit = V_wall_required - totalVolume;
+  const percentShort = (deficit / V_wall_required * 100).toFixed(1);
+
+  console.error(`[WOMBAT] ❌ VOLUME CONSTRAINT VIOLATED`);
+  console.error(`  Building: ${storeyCount} storeys × ${typicalHeight}m = ${h_wall_intended.toFixed(2)}m wall height`);
+  console.error(`  Wall volume required: ${V_wall_required.toFixed(2)} m³`);
+  console.error(`  Total volume (d_105): ${totalVolume.toFixed(2)} m³`);
+  console.error(`  Deficit: ${deficit.toFixed(2)} m³ (${percentShort}% under-reported)`);
+  console.error(`  `);
+  console.error(`  → FALLBACK: Rendering with volume-derived wall height`);
+  console.error(`  → Fix d_105 in Section 12 to at least ${V_wall_required.toFixed(0)} m³`);
+
+  // FALLBACK: Use whatever wall height fits in available volume
+  h_wall_actual = totalVolume / floorArea;
+  const fallbackF2F = h_wall_actual / storeyCount;
+
+  console.warn(`[WOMBAT] ⚠️ Fallback wall height: ${h_wall_actual.toFixed(2)}m`);
+  console.warn(`  Fallback F2F: ${fallbackF2F.toFixed(2)}m (absurd pancake!)`);
+
+  // Update console ticker with error
+  showFeedback(`❌ Volume ${percentShort}% too low (Fix d_105 in S12)`, 15000);
+
+} else {
+  // Volume is sufficient - use intended wall height
+  h_wall_actual = h_wall_intended;
+  console.log(`[WOMBAT] ✓ Volume sufficient for ${h_wall_intended.toFixed(2)}m walls`);
+  showFeedback('✓ Constraints valid', 3000);
 }
 
-// Step 3: Continue with roof solving
-V_roof_available = V_total - (floorArea × h_wall);
-// Solve for h_roof that gives roof_area AND roof_volume
+// Step 3: Continue with roof solving using h_wall_actual
+const V_roof_available = totalVolume - (floorArea × h_wall_actual);
+console.log(`[WOMBAT] Roof volume available: ${V_roof_available.toFixed(2)} m³`);
+
+// Solve for h_roof that gives target roof area
+// (Will render either correct geometry OR absurd pancake warning)
 ```
+
+**Why this approach**:
+1. ✅ **Non-blocking**: Always renders something (even if absurd)
+2. ✅ **Visual feedback**: Pancake geometry immediately signals "something is wrong"
+3. ✅ **Educational**: User sees 0.49m F2F height → understands volume is insufficient
+4. ✅ **Console clarity**: Detailed error with exact fix instructions
+5. ✅ **Ticker visible**: Quick status in section header
+6. ✅ **Preserves workflow**: User can adjust d_105 and refresh without re-activating
+
+**User Experience**:
+- **Valid volume**: Renders with realistic 3.0m F2F heights, clean geometry
+- **Invalid volume**: Renders absurd pancake, console shows exact deficit, ticker shows error
+- **After fix**: User increases d_105 → hits Refresh → geometry corrects itself
 
 **Option B - Solve for Compatible Aspect Ratio**:
 ```javascript
@@ -1857,40 +1904,78 @@ if (discriminant < 0) {
 - Exposed via module API for use in solver and validation logic
 - Usage: `window.TEUI.SectionModules.sect19.showFeedback("✓ Constraints satisfied", 5000)`
 
-### Phase 2: Read g_106 and Calculate Wall Height ✅
+### Phase 2: Graceful Fallback Validation (Next Implementation)
+
+**Strategy**: Try g_106 first, fall back to volume-derived wall height on conflict.
+
+**Implementation location**: [src/sections/Section19.js](../../src/sections/Section19.js) in `solveGeometry()` function
+
 ```javascript
+// STEP 1: Read inputs and calculate INTENDED wall height from g_106
 const storeyCount = parseFloat(StateManager.getValue('d_103')) || 1.5;
 const typicalHeight = parseFloat(StateManager.getValue('g_106')) || 3.00;
-const wallHeight = storeyCount × typicalHeight;
-console.log(`[WOMBAT] Wall height (deterministic): ${wallHeight.toFixed(2)}m`);
-```
+const h_wall_intended = storeyCount * typicalHeight;
+const V_wall_required = floorArea * h_wall_intended;
 
-### Phase 3: Constraint Validation ✅
-```javascript
-const wallVolume = floorArea × wallHeight;
-const availableVolume = totalVolume;
+console.log(`[WOMBAT] Intended wall height (from g_106): ${h_wall_intended.toFixed(2)}m`);
+console.log(`[WOMBAT] Required wall volume: ${V_wall_required.toFixed(2)} m³`);
 
-if (availableVolume <= wallVolume) {
-  console.error(`[WOMBAT] ❌ Volume insufficient`);
-  console.error(`  Wall volume required: ${wallVolume.toFixed(2)} m³`);
-  console.error(`  Total volume (d_105): ${availableVolume.toFixed(2)} m³`);
-  console.error(`  Deficit: ${(wallVolume - availableVolume).toFixed(2)} m³`);
-  console.error(`  → Increase d_105 or reduce g_106`);
-  // Set ticker to error state
+// STEP 2: VALIDATE volume constraint
+let h_wall_actual;
+let constraintViolated = false;
+
+if (totalVolume <= V_wall_required) {
+  // CONSTRAINT VIOLATED: Volume insufficient for intended wall height
+  constraintViolated = true;
+  const deficit = V_wall_required - totalVolume;
+  const percentShort = ((deficit / V_wall_required) * 100).toFixed(1);
+
+  console.error(`[WOMBAT] ❌ VOLUME CONSTRAINT VIOLATED`);
+  console.error(`  Building: ${storeyCount} storeys × ${typicalHeight}m = ${h_wall_intended.toFixed(2)}m`);
+  console.error(`  Wall volume required: ${V_wall_required.toFixed(2)} m³`);
+  console.error(`  Total volume (d_105): ${totalVolume.toFixed(2)} m³`);
+  console.error(`  Deficit: ${deficit.toFixed(2)} m³ (${percentShort}% under-reported)`);
+  console.error(`  `);
+  console.error(`  → FALLBACK: Rendering with volume-derived wall height (ABSURD PANCAKE!)`);
+  console.error(`  → Fix d_105 in Section 12 to at least ${V_wall_required.toFixed(0)} m³`);
+
+  // FALLBACK: Use old solver behavior (volume-derived wall height)
+  h_wall_actual = totalVolume / floorArea;
+  const fallbackF2F = h_wall_actual / storeyCount;
+
+  console.warn(`[WOMBAT] ⚠️ Fallback wall height: ${h_wall_actual.toFixed(2)}m`);
+  console.warn(`[WOMBAT] ⚠️ Fallback F2F: ${fallbackF2F.toFixed(2)}m per storey (absurd!)`);
+
+  // Update console ticker
+  showFeedback(`❌ Volume ${percentShort}% too low (Fix d_105 in S12)`, 15000);
+
+} else {
+  // CONSTRAINT SATISFIED: Use intended wall height from g_106
+  h_wall_actual = h_wall_intended;
+  console.log(`[WOMBAT] ✓ Volume sufficient for ${h_wall_intended.toFixed(2)}m walls`);
+  showFeedback('✓ Constraints valid', 3000);
 }
 
-const roofVolumeAvailable = availableVolume - wallVolume;
-console.log(`[WOMBAT] Roof volume available: ${roofVolumeAvailable.toFixed(2)} m³`);
+// STEP 3: Calculate available roof volume
+const V_roof_available = totalVolume - (floorArea * h_wall_actual);
+console.log(`[WOMBAT] Roof volume available: ${V_roof_available.toFixed(2)} m³`);
+
+// STEP 4: Continue with existing roof solving logic using h_wall_actual
+// (Will render either correct geometry OR absurd pancake as visual warning)
 ```
 
-### Phase 4: Wall Area Validation ✅
+**Result**:
+- **Valid constraints**: Geometry renders with realistic 3.0m F2F heights ✓
+- **Invalid constraints**: Pancake renders with 0.49m F2F heights, console shows exact deficit ⚠️
+- **User workflow**: See pancake → read console → fix d_105 → hit Refresh → geometry corrects ✓
+
+### Phase 3: Wall Area Validation (Optional - Future Enhancement)
 ```javascript
-// Calculate required perimeter from wall area
-const requiredPerimeter = wallArea / wallHeight;
+// Optional: Validate wall area constraint matches perimeter
+const requiredPerimeter = wallArea / h_wall_actual;
 console.log(`[WOMBAT] Required perimeter (from wall area): ${requiredPerimeter.toFixed(2)}m`);
 
-// Calculate actual perimeter from footprint dimensions (aspect ratio)
-const actualPerimeter = 2 × (width + length);
+const actualPerimeter = 2 * (width + length);
 const perimeterDiscrepancy = Math.abs(actualPerimeter - requiredPerimeter);
 
 if (perimeterDiscrepancy > 0.1) { // 10cm tolerance
@@ -1898,39 +1983,55 @@ if (perimeterDiscrepancy > 0.1) { // 10cm tolerance
   console.warn(`  Required perimeter: ${requiredPerimeter.toFixed(2)}m`);
   console.warn(`  Actual perimeter: ${actualPerimeter.toFixed(2)}m`);
   console.warn(`  Discrepancy: ${perimeterDiscrepancy.toFixed(2)}m`);
-  // Could solve for compatible aspect ratio here
+  // Future: Could solve for compatible aspect ratio here (Option B from Decision 2)
 }
 ```
 
-### Phase 5: Roof Solving (With Both Constraints) 🔄
+### Phase 4: Roof Volume Validation (Optional - Future Enhancement)
 ```javascript
-// Solve for h_roof that satisfies:
-// 1. Roof area = target (thermal)
-// 2. Roof volume = available (volume)
-
-// Current implementation only satisfies #1
-// Need to add check: does resulting volume match available?
-
-const roofHeight_fromArea = solveRoofHeightForArea(roofArea);
+// Optional: Check if roof volume matches available volume
+const roofHeight_fromArea = /* existing solver result */;
 const roofVolume_actual = calculateRoofVolume(roofHeight_fromArea);
 
-if (Math.abs(roofVolume_actual - roofVolumeAvailable) > 1.0) { // 1 m³ tolerance
+if (Math.abs(roofVolume_actual - V_roof_available) > 1.0) { // 1 m³ tolerance
   console.warn(`[WOMBAT] ⚠️ Roof volume mismatch`);
   console.warn(`  From area constraint: ${roofVolume_actual.toFixed(2)} m³`);
-  console.warn(`  Available volume: ${roofVolumeAvailable.toFixed(2)} m³`);
-  console.warn(`  Discrepancy: ${Math.abs(roofVolume_actual - roofVolumeAvailable).toFixed(2)} m³`);
-  // This is the core conflict we're trying to resolve!
+  console.warn(`  Available volume: ${V_roof_available.toFixed(2)} m³`);
+  console.warn(`  Discrepancy: ${Math.abs(roofVolume_actual - V_roof_available).toFixed(2)} m³`);
+  // This indicates over-constrained system - thermal areas incompatible with volume
 }
 ```
 
 ---
 
-**Document Status**: ACTIVE - Strategy documented, ready for implementation
-**Last Updated**: 2025-12-18
-**Restore Point**: Commit 2323e54 (safe fallback if needed)
+## Summary: Graceful Fallback Architecture
+
+**Decision Made**: Implement graceful fallback with visual warning (absurd pancake as educational tool)
+
+**Behavior Matrix**:
+
+| Scenario | g_106 Value | d_105 Volume | Solver Behavior | Visual Result | Console Ticker |
+|----------|-------------|--------------|-----------------|---------------|----------------|
+| **Valid** | 3.00m | Sufficient | Uses g_106 | Realistic geometry (3.0m F2F) | `✓ Constraints valid` |
+| **Invalid** | 3.00m | Insufficient | Falls back to volume/area | Absurd pancake (0.49m F2F) | `❌ Volume X% too low (Fix d_105)` |
+| **Legacy** | N/A (old file) | Any | Falls back to volume/area | Uses old solver | (no error) |
+
+**User Journey**:
+1. Import building with under-reported volume
+2. Activate WOMBAT → Sees pancake geometry
+3. Reads console ticker: "❌ Volume 64% too low (Fix d_105 in S12)"
+4. Checks console logs for exact deficit
+5. Goes to Section 12, increases d_105
+6. Hits "Refresh Topology" button
+7. Geometry corrects to realistic 3.0m F2F heights ✓
+
+---
+
+**Document Status**: COMPLETE - Strategy selected and documented
+**Last Updated**: 2025-12-18 (Graceful fallback decision finalized)
+**Restore Point**: Commit 08445ff (console ticker implemented)
+**Ready for Commit**: Documentation complete, ready to commit before implementation
 **Next Implementation**:
-1. Add console ticker (copy S18 styling)
-2. Read g_106 and calculate deterministic wall height
-3. Add validation checks with clear error messages
-4. Decide on aspect ratio strategy (user input vs derived)
-5. Implement dual-constraint roof solving (area + volume)
+- Phase 2: Add graceful fallback validation to `solveGeometry()` in Section19.js
+- Location: Early in function, before roof solving
+- Estimated: ~40 lines of code
