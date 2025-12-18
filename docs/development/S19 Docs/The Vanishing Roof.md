@@ -2035,3 +2035,328 @@ if (Math.abs(roofVolume_actual - V_roof_available) > 1.0) { // 1 m³ tolerance
 - Phase 2: Add graceful fallback validation to `solveGeometry()` in Section19.js
 - Location: Early in function, before roof solving
 - Estimated: ~40 lines of code
+
+---
+
+## CRITICAL BUG: ref_g_106 Not Available in Reference Mode
+
+**Date**: 2025-12-18
+**Status**: BLOCKING - Reference mode cannot use g_106 constraint validation
+**Branch**: WOMBAT-HIP
+**Commits Attempted**: c1bb17a, 8f0d8f2, db41616, f9a01fd, ce164ee, 84eadf4
+
+### The Problem
+
+When user switches to Reference mode, Section19's constraint validation (using g_106 for typical floor-to-floor height) receives `null` for `ref_g_106`, causing fallback to old volume-derived solver and rendering absurd pancake geometry.
+
+**Expected**: Reference mode uses ref_g_106 = 3.00m (published by Section12)
+**Actual**: getModeAwareValue("g_106", true) returns `null`
+
+### Evidence from Logs
+
+**Section12 publishes ref_g_106 during initialization** (Logs.md:67-73):
+```
+[S12 DEBUG] StateManager available - Publishing 6 Reference default fields...
+[S12 DEBUG] Publishing ref_d_103 = 1.5 (from defaults)
+[S12 DEBUG] Publishing ref_g_103 = Exposed (from defaults)
+[S12 DEBUG] Publishing ref_d_105 = 8000.00 (from defaults)
+[S12 DEBUG] Publishing ref_g_106 = 3.00 (from defaults)  ← PUBLISHED! ✓
+[S12 DEBUG] Publishing ref_d_108 = MEASURED (from defaults)
+[S12 DEBUG] Publishing ref_g_109 = 1.30 (from defaults)
+```
+
+**Section19 lookup returns null** when switching to Reference mode (Logs.md:908-913):
+```
+[WOMBAT g_106 DEBUG] Mode: Reference
+[WOMBAT g_106 DEBUG] Raw g_106 value: null               ← NULL!
+[WOMBAT g_106 DEBUG] isReferenceCalculation: true
+[WOMBAT g_106 DEBUG] Direct StateManager lookup ref_g_106: null  ← NULL!
+[WOMBAT g_106 DEBUG] Parsed typicalF2FHeight: NaN
+[WOMBAT g_106 DEBUG] hasTypicalHeight: NaN
+```
+
+**Result**: Reference geometry falls back to volume-derived wall height (0.61m instead of 4.50m).
+
+### Root Cause Analysis
+
+**Timing Issue**: Section12 publishes ref_g_106 at initialization (line 70 in logs), but Section19's listener is registered LATER (line 167 in logs).
+
+**Why ref_d_105 works but ref_g_106 doesn't**:
+- `ref_d_105` and `ref_d_103` are republished later during bidirectional WOMBAT sync (lines 683, 686)
+- `ref_g_106` is ONLY published once during Section12 initialization
+- By the time Section19's listener is added, the initial publication has already happened
+- Listener never fires → Section19 never knows ref_g_106 exists
+
+### What We Tried
+
+**Attempt 1: Add g_106 to Section12 localStorage publishing** (Commit c1bb17a)
+- **Fix**: Added "g_106" to referenceFields array at Section12.js:115
+- **Result**: PARTIAL - ref_g_106 IS being published (confirmed in logs)
+- **Issue**: Still returns null because listener isn't registered yet
+
+**Attempt 2: Add ref_g_106 listener to Section19** (Commit 8f0d8f2)
+- **Fix**: Added StateManager listener at Section19.js:2085-2093
+- **Result**: FAILURE - Listener added AFTER publication, never fires
+- **Issue**: Section19's initializeEventHandlers() runs after Section12 publishes
+
+**Attempt 3: Check for existing value after registering listener** (Commit 84eadf4)
+- **Fix**: After adding listener, explicitly check if ref_g_106 already exists in StateManager
+  ```javascript
+  const existingRefG106 = window.TEUI.StateManager.getValue("ref_g_106");
+  if (existingRefG106 !== null && existingRefG106 !== undefined) {
+    console.log(`[WOMBAT SYNC] Found existing ref_g_106 = ${existingRefG106}`);
+    calculateAll(); // Pre-calculate Reference geometry
+  }
+  ```
+- **Result**: FAILURE - Even this direct lookup returns null!
+- **Issue**: Value somehow disappears from StateManager between publication and lookup
+
+**Attempt 4-6: Various debug logging** (Commits db41616, f9a01fd, ce164ee)
+- Added extensive logging to track value flow
+- Confirmed Section12 IS publishing ref_g_106 = 3.00
+- Confirmed StateManager.setValue() is being called
+- But StateManager.getValue() returns null in Section19
+
+### The Mystery
+
+**Why does StateManager lose ref_g_106?**
+
+Possible explanations:
+1. **StateManager clears/resets** between Section12 and Section19 initialization
+2. **Namespace isolation** - Different scopes of StateManager?
+3. **localStorage override** - Something loading from localStorage after StateManager publish?
+4. **Listener side-effect** - Adding listeners somehow clears values?
+5. **Value lifetime** - Published with "default" source, gets cleared during initialization?
+
+**Evidence it's NOT a simple timing issue**:
+- Direct `StateManager.getValue("ref_g_106")` called immediately after listener registration returns null
+- This should work even if listener missed the initial publication
+- Suggests the value is genuinely not in StateManager when Section19 runs
+
+### Code Locations
+
+**Publishing** (Section12.js:167-172):
+```javascript
+console.log(`[S12 DEBUG] Publishing ref_${fieldId} = ${value} (from defaults)`);
+window.TEUI.StateManager.setValue(
+  `ref_${fieldId}`,
+  value,
+  "default"
+);
+```
+
+**Lookup** (Section19.js:1200-1208):
+```javascript
+const rawG106 = getModeAwareValue("g_106", isReferenceCalculation);
+console.log(`[WOMBAT g_106 DEBUG] Raw g_106 value: ${rawG106}`);
+
+// Direct lookup
+if (isReferenceCalculation && window.TEUI?.StateManager) {
+  const directRefValue = window.TEUI.StateManager.getValue("ref_g_106");
+  console.log(`[WOMBAT g_106 DEBUG] Direct StateManager lookup ref_g_106: ${directRefValue}`);
+}
+```
+
+**getModeAwareValue** (Section19.js:683-693):
+```javascript
+function getModeAwareValue(fieldId, isReferenceCalculation) {
+  if (!window.TEUI?.StateManager) return null;
+
+  if (isReferenceCalculation) {
+    // Reference mode: Read ONLY ref_ prefixed values
+    return window.TEUI.StateManager.getValue(`ref_${fieldId}`);
+  } else {
+    // Target mode: Read unprefixed values
+    return window.TEUI.StateManager.getValue(fieldId);
+  }
+}
+```
+
+### Why This Blocks Reference Mode
+
+Without ref_g_106:
+1. Reference mode cannot validate volume constraint against intended wall height
+2. Falls back to old solver (volume ÷ footprint = absurd wall height)
+3. Renders pancake geometry (0.61m walls instead of 4.50m)
+4. Wall height discrepancy >600% from stated wall area
+5. User sees nonsensical Reference geometry
+
+**Impact**: Reference mode comparisons are meaningless with incorrect geometry.
+
+### Next Investigation Steps
+
+When context allows:
+1. **Check StateManager source** - Does it have initialization/clearing logic that runs between Section12 and Section19?
+2. **Trace publication timing** - Add timestamp logging to see exact sequence
+3. **Check for localStorage override** - Does Section19 load from localStorage and overwrite StateManager?
+4. **Test immediate read** - Add `getValue()` call IMMEDIATELY after `setValue()` in Section12 to verify it persists
+5. **Check source parameter** - Does "default" source get cleared? Try different source like "user-modified"
+
+### Workaround for Now
+
+**Option A**: Store g_106 in Section19's own ReferenceState during initialization
+- Read from Section12's ReferenceState.state.g_106 directly
+- Don't rely on StateManager
+
+**Option B**: Defer Section19 listener registration
+- Wait for DOMContentLoaded or a later event
+- Ensure all other sections publish first
+
+**Option C**: Re-publish ref_g_106 from Section19
+- When Section19 initializes, call Section12.ReferenceState.getValue("g_106")
+- Publish to StateManager with different source to ensure it persists
+
+### Related Issues
+
+**Working examples** (for comparison):
+- `ref_d_105` - Works because bidirectional WOMBAT sync republishes it
+- `ref_d_103` - Works because bidirectional WOMBAT sync republishes it
+
+**Key difference**: These values are republished AFTER Section19 listener registration, so the listener catches them.
+
+**Possible solution**: Add ref_g_106 to bidirectional WOMBAT sync in Section12.js, similar to how d_105 and d_103 are handled.
+
+---
+
+**Status**: DOCUMENTED - Out of context, cannot implement fix
+**Priority**: HIGH - Blocks Reference mode constraint validation
+**User Impact**: Reference mode shows absurd geometry, breaking comparisons
+**Restore Point**: Commit 84eadf4 (last attempt at fixing listener timing)
+
+---
+
+## 🎯 CRITICAL DISCOVERY: g_106 Role Reversal (2025-12-18)
+
+**Date**: 2025-12-18  
+**Status**: 🔍 **ARCHITECTURAL INSIGHT** - Paradigm shift in understanding  
+**Discoverer**: User (Andy)
+
+### The Revelation
+
+**What we thought was broken is actually CORRECT!**
+
+#### Reference Mode Behavior (CORRECT ✅)
+- **Does NOT use g_106** as a constraint
+- **Solves wall height from SACRED constraints**:
+  1. Footprint area (d_95) - SACRED
+  2. Total volume (d_105) - SACRED  
+  3. Wall area (g_107) - SACRED
+  4. Roof area (d_85) - SACRED
+- **As aspect ratio changes dynamically**:
+  - Roof geometry adjusts to maintain roof area
+  - Wall height **adjusts to satisfy all constraints**
+  - Result: "Pancaked" storeys (e.g., 0.6m wall height)
+- **This is CORRECT constrained geometry!**
+
+#### Target Mode Behavior (CURRENTLY INCORRECT ❌)
+- **Locks storey height at g_106 = 3.00m**
+- Adjusts roof geometry to satisfy roof area
+- **Wall height NEVER changes** regardless of aspect ratio
+- **Problem**: This VIOLATES wall area constraint!
+  - When aspect ratio changes, wall area should remain constant
+  - But fixed 3.00m height with changing perimeter breaks this
+
+### The User's Insight
+
+> "So with the Reference model, it accurately adjusts storey height as a function of distributing reported area across the gable ends and the walls to maintain the area constraint. That is why when aspect ratio is dynamically adjusted, both the ridge Height AND the Storey Height dynamically adjust, they are maintaining the Roof area and wall area constraints!"
+
+> "Where in Target mode, the Storey height remains locked at 3m, so even though changes to aspect ratio show changes to gable and wall area and ridge height to always balance to the roof and wall area constraints, the Wall Height or Storey level renders and displays ALWAYS at 3.00m, which is probably wrong."
+
+### The Constraint Hierarchy
+
+**SACRED** (must always be satisfied):
+1. **Footprint area** (d_95) - Building ground coverage
+2. **Total volume** (d_105) - Conditioned space volume
+3. **Wall area** (g_107) - Total above-grade opaque wall area
+4. **Roof area** (d_85) - Total roof surface area
+
+**USER GUIDANCE** (informative, not prescriptive):
+5. **Storey height** (g_106) - Typical floor-to-floor height
+   - Helps reduce solver variables
+   - Provides validation check
+   - **Must yield to SACRED constraints**
+
+### The Real Building Example
+
+User's actual building:
+- **Aspect ratio**: ~-4.0 (portrait orientation)
+- **Actual wall height**: ~2.86m (NOT 3.00m!)
+- **Reference mode calculation**: Shows ~2.86m wall height ✅
+- **Target mode display**: Shows 3.00m wall height ❌
+
+**Reference mode is showing the CORRECT geometry for the constrained problem!**
+
+### Implications for Target Mode
+
+**Current behavior**: g_106 is treated as a fixed constraint
+- User sets g_106 = 3.00m
+- Solver locks wall height at 3.00m
+- When aspect ratio changes, wall area constraint is violated
+
+**Correct behavior** (needs implementation):
+- g_106 should be **guidance** for the solver
+- Wall height should **solve from constraints** like Reference mode
+- g_106 can be used to:
+  - Reduce initial solver variables
+  - Validate that solution is reasonable
+  - Warn user if solved height differs significantly from g_106
+
+### The Questions for Tonight's Work
+
+1. **Should Target mode solve wall height from constraints?**
+   - Like Reference mode currently does
+   - Use g_106 only as initial guess/validation
+
+2. **How should g_106 be presented in the UI?**
+   - As "desired" storey height?
+   - As "calculated" storey height (read-only)?
+   - As "guidance" with warning if constraints force different value?
+
+3. **What happens when g_106 conflicts with constraints?**
+   - Example: User wants 3.00m storeys, but constraints only allow 2.86m
+   - Should we:
+     - Override g_106 (solve from constraints)
+     - Warn user (show discrepancy)
+     - Offer to adjust other parameters to achieve g_106?
+
+### Code Locations for Tonight
+
+**Wall height solving** (Section19.js):
+- Line 1197-1400: `solveGeometry()` - Current constraint validation
+- Line 1308-1343: Volume-constrained wall height calculation
+- Line 1361-1368: g_106 constraint validation (currently enforces g_106)
+
+**The key decision point** (Section19.js:~1193-1194):
+```javascript
+// Current: Uses g_106 as intended height, validates against volume
+// Proposed: Solve height from volume, use g_106 as validation check
+```
+
+### Expected Changes
+
+**Reference mode**: NO CHANGES NEEDED ✅
+- Already solves correctly from constraints
+- "Pancaked" geometry is physically correct
+
+**Target mode**: NEEDS ALIGNMENT
+- Should solve wall height from constraints (like Reference)
+- Use g_106 as guidance/validation
+- Show warning if solved height differs from g_106
+
+### Success Criteria
+
+After tonight's work:
+1. **Both modes solve wall height from constraints** ✅
+2. **g_106 provides guidance**, not hard constraint ✅
+3. **User warned** when constraints force different storey height ✅
+4. **Aspect ratio changes** maintain all SACRED constraints ✅
+5. **Real building geometry** (aspect -4.0, wall height 2.86m) renders correctly ✅
+
+---
+
+**Status**: DOCUMENTED - Ready for tonight's implementation
+**Priority**: CRITICAL - Fundamental architectural correction
+**User Impact**: Target mode will show physically correct geometry
+**Branch**: WOMBAT-HIP
+**Next Commit**: After implementing constraint-based wall height solving
+
