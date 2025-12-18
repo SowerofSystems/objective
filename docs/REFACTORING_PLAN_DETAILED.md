@@ -2,11 +2,12 @@
 
 ## Status Update (December 2025)
 
-### Implementation Status: PHASE 3 COMPLETE
+### Implementation Status: PHASE 4 COMPLETE
 
 Phase 1 (Computation Graph Infrastructure) completed December 2025.
 Phase 2 (Section Migration to Computation Nodes) completed December 2025.
 Phase 3 (Multi-Model State Management) completed December 2025.
+Phase 4 (UI Integration) completed December 2025.
 
 ### Task Status Legend
 
@@ -2346,14 +2347,14 @@ if (typeof window === 'undefined') {
 
 ---
 
-## Phase 4: UI Integration ⏳
+## Phase 4: UI Integration ✅
 
-**Status:** NOT STARTED (Ready to begin)
+**Status:** COMPLETE (December 2025)
 **Goal:** Connect new computation system to existing UI.
 
 ---
 
-### Task 4.1: Create Legacy Adapter ⏳
+### Task 4.1: Create Legacy Adapter ✅
 
 **Objective:** Allow existing code to work with new system.
 
@@ -2485,46 +2486,79 @@ if (typeof window === 'undefined') {
 
 ---
 
-### Task 4.2: Create Model Selector UI ⏳
+### Task 4.2: Create Model Selector UI ✅
 
 **Objective:** UI component for switching between models.
 
 **Dependencies:** Task 4.1
 
-**Outputs:**
-- `src/core/ui/ModelSelector.js`
-- CSS additions to `styles.css`
+**Completed:** `src/core/ui/ModelSelector.js`
+
+**Features:**
+- Dropdown, tabs, and pills display modes
+- Auto-updates on model add/remove
+- onModelChange callback support
+- Keyboard accessible
 
 ---
 
-### Task 4.3: Create Comparison View ⏳
+### Task 4.3: Create Comparison View ✅
 
 **Objective:** Side-by-side comparison of multiple models.
 
 **Dependencies:** Task 3.5, 4.2
 
-**Outputs:**
-- `src/core/ui/ComparisonView.js`
+**Completed:** `src/core/ui/ComparisonView.js`
+
+**Features:**
+- Side-by-side value comparison
+- Delta/percentage calculations
+- Better/worse highlighting
+- CSV export
+- Field filtering
 
 ---
 
-### Task 4.4: Wire DOM Events to New Engine ⏳
+### Task 4.4: Wire DOM Events to New Engine ✅
 
 **Objective:** Route input events through new computation system.
 
 **Dependencies:** Tasks 4.1-4.3
 
-**Process:**
-1. Intercept field change events
-2. Route through MultiModelEngine
-3. Update UI with results
-4. Maintain compatibility with existing event handlers
+**Completed:** `src/core/ui/DOMBridge.js`
+
+**Architecture:**
+- DOM is INPUT SOURCE (captures user edits) and OUTPUT SINK (displays values)
+- Computation driven by DEPENDENCY GRAPH, not DOM events
+- DOM changes trigger engine.onValueChange() → graph computes → DOM updates
+- No cascading DOM events for calculation propagation
+
+**Features:**
+- Automatic element binding via data attributes
+- Debounced input handling
+- Bi-directional sync (state ↔ DOM)
+- Support for all input types
+
+---
+
+### Task 4.5: Unit Tests for Phase 4 ✅
+
+**Completed:**
+- `test/computation/phase4.test.js`
+- `test/computation/phase4.test.html`
+
+**Test Coverage:**
+- LegacyAdapter (11 tests)
+- ModelSelector (8 tests)
+- ComparisonView (8 tests)
+- DOMBridge (11 tests)
+- Integration (4 tests)
 
 ---
 
 ## Phase 5: Cleanup and Optimization ⏳
 
-**Status:** NOT STARTED (Blocked by Phase 4)
+**Status:** NOT STARTED (Ready to begin)
 **Goal:** Remove legacy code and optimize performance.
 
 ---
@@ -2661,13 +2695,14 @@ Phase 3: Multi-Model State ✅ (Complete)
 ├── 3.4 ModelOperations ✅          │
 └── 3.5 ModelComparison ✅ ─────────┘
 
-Phase 4: UI Integration ⏳ (Ready to begin)
-├── 4.1 LegacyAdapter ⏳ ───────────┐
-├── 4.2 ModelSelector UI ⏳ ────────┤
-├── 4.3 ComparisonView ⏳           │
-└── 4.4 DOM Event Wiring ⏳ ────────┘
+Phase 4: UI Integration ✅ (Complete)
+├── 4.1 LegacyAdapter ✅ ───────────┐
+├── 4.2 ModelSelector UI ✅ ────────┤
+├── 4.3 ComparisonView ✅           │
+├── 4.4 DOM Event Wiring ✅ ────────┤
+└── 4.5 Unit Tests ✅ ──────────────┘
 
-Phase 5: Cleanup & Optimization ⏳ (Blocked by Phase 4)
+Phase 5: Cleanup & Optimization ⏳ (Ready to begin)
 ├── 5.1 Computation Caching ⏳
 ├── 5.2 Performance Optimization ⏳
 ├── 5.3 Remove Legacy Code ⏳
@@ -2683,3 +2718,6 @@ Phase 5: Cleanup & Optimization ⏳ (Blocked by Phase 4)
 |------|---------|
 | December 2025 | Added status tracking, existing infrastructure notes, and task status markers |
 | December 2025 | **Phase 1 Complete**: Created types.js, ComputationGraph.js, IncrementalEngine.js, FieldRegistry.js, and test suite |
+| December 2025 | **Phase 2 Complete**: Created ClimateNodes.js, EnvelopeNodes.js, MechanicalNodes.js, EnergyNodes.js, and section node tests |
+| December 2025 | **Phase 3 Complete**: Created ModelMetadata.js, MultiModelState.js, MultiModelEngine.js, ModelOperations.js, and multi-model tests |
+| December 2025 | **Phase 4 Complete**: Created LegacyAdapter.js, ModelSelector.js, ComparisonView.js, DOMBridge.js, and Phase 4 tests |

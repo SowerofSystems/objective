@@ -26,8 +26,8 @@ StateManager.js already provides foundational dependency tracking that this plan
 | Phase 1: Computation Graph Infrastructure | ✅ Complete | All 5 tasks done (Dec 2025) |
 | Phase 2: Section Migration to Nodes | ✅ Complete | All 6 tasks done (Dec 2025) |
 | Phase 3: Multi-Model State | ✅ Complete | All 5 tasks done (Dec 2025) |
-| Phase 4: UI Integration | ⏳ Not Started | Ready to begin |
-| Phase 5: Cleanup & Optimization | ⏳ Not Started | Waiting on Phase 4 |
+| Phase 4: UI Integration | ✅ Complete | All 5 tasks done (Dec 2025) |
+| Phase 5: Cleanup & Optimization | ⏳ Not Started | Ready to begin |
 
 ### Phase 1 Deliverables
 
@@ -60,6 +60,17 @@ StateManager.js already provides foundational dependency tracking that this plan
 | `src/core/model/ModelOperations.js` | High-level ops (create, clone, compare) |
 | `test/computation/multiModel.test.js` | Multi-model unit tests |
 | `test/computation/multiModel.test.html` | Browser test runner for multi-model |
+
+### Phase 4 Deliverables
+
+| File | Purpose |
+|------|---------|
+| `src/core/computation/LegacyAdapter.js` | Bridge StateManager API to new engine |
+| `src/core/ui/ModelSelector.js` | Model selection UI (dropdown/tabs/pills) |
+| `src/core/ui/ComparisonView.js` | Side-by-side model comparison |
+| `src/core/ui/DOMBridge.js` | DOM ↔ Engine connection (input/output) |
+| `test/computation/phase4.test.js` | Phase 4 unit tests |
+| `test/computation/phase4.test.html` | Browser test runner for Phase 4 |
 
 ### Recent Codebase Changes (Since Plan Creation)
 
