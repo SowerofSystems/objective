@@ -2080,15 +2080,23 @@ window.TEUI.SectionModules.sect19 = (function () {
         }
       });
 
-      // ✅ NEW (2025-12-18): Listen for ref_g_106 (Typical F2F Height) from S12
-      // This ensures Reference geometry is pre-calculated when ref_g_106 is published during initialization
+      // ✅ NEW (2025-12-18): Listen for g_106 (Typical F2F Height) from S12 - TARGET mode
+      // Ensures both engines recalculate when Target value changes (dual-engine architecture)
+      window.TEUI.StateManager.addListener("g_106", newValue => {
+        console.log(`[WOMBAT SYNC] g_106 changed to: ${newValue}`);
+        console.log(`[WOMBAT SYNC] Triggering calculateAll() for Target geometry recalculation...`);
+        // No state to sync (g_106 is read directly via getModeAwareValue in solveGeometry)
+        // But we need to recalculate both engines when this value changes
+        calculateAll();
+      });
+
+      // ✅ NEW (2025-12-18): Listen for ref_g_106 (Typical F2F Height) from S12 - REFERENCE mode
+      // Ensures both engines recalculate when Reference value changes (dual-engine architecture)
       window.TEUI.StateManager.addListener("ref_g_106", newValue => {
         console.log(`[WOMBAT SYNC] ref_g_106 changed to: ${newValue}`);
-        console.log(`[WOMBAT SYNC] Current mode: ${ModeManager.currentMode}`);
-        console.log(`[WOMBAT SYNC] isActivated: ${isActivated}`);
-        console.log(`[WOMBAT SYNC] Triggering calculateAll() to pre-calculate Reference geometry...`);
+        console.log(`[WOMBAT SYNC] Triggering calculateAll() for Reference geometry recalculation...`);
         // No state to sync (g_106 is read directly via getModeAwareValue in solveGeometry)
-        // But we need to recalculate Reference geometry when this value changes
+        // But we need to recalculate both engines when this value changes
         calculateAll();
       });
 
@@ -2247,6 +2255,10 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Initialize mirror fields from S12 on first load
     initializeMirrorFields();
+
+    // ✅ CRITICAL: Initialize event handlers (listeners for S12 dependencies)
+    // This registers listeners for d_105/ref_d_105, d_103/ref_d_103, g_106/ref_g_106
+    initializeEventHandlers();
 
     // Initialize SVG
     setTimeout(() => {
