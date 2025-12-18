@@ -932,6 +932,11 @@ document.addEventListener("DOMContentLoaded", function () {
           autoSync: true
         });
         console.log("[init.js] New computation system initialized");
+
+        // Enable LegacyAdapter to make new system primary
+        if (window.TEUI.ComputationIntegration.enableAdapter()) {
+          console.log("[init.js] New computation system is now PRIMARY");
+        }
       }, 500); // After initial render settles
     }
   } else {
