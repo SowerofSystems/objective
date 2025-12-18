@@ -137,12 +137,14 @@ window.TEUI.SectionModules.sect12 = (function () {
       }
     },
     setDefaults: function () {
+      console.log(`[S12 DEBUG] ReferenceState.setDefaults() called - no localStorage, using defaults`);
       // ✅ DYNAMIC LOADING: Get current reference standard from dropdown ref_d_13
       const currentStandard =
         window.TEUI?.StateManager?.getValue?.("ref_d_13") ||
         "OBC SB10 5.5-6 Z6";
       const referenceValues =
         window.TEUI?.ReferenceValues?.[currentStandard] || {};
+      console.log(`[S12 DEBUG] Using reference standard: ${currentStandard}`);
 
       // Apply reference values to S12 fields with fallbacks - these are fine
       this.state = {
@@ -153,13 +155,16 @@ window.TEUI.SectionModules.sect12 = (function () {
         d_108: referenceValues.d_108 || "MEASURED", // Blower door method - DIFFERENT: Reference uses MEASURED vs Target AL-1B
         g_109: referenceValues.g_109 || "1.30", // Measured - DIFFERENT method: But same result as AL-1B
       };
+      console.log(`[S12 DEBUG] ReferenceState defaults set:`, this.state);
 
       // ✅ CRITICAL: Publish Reference defaults to StateManager (S10/S11/S04 pattern)
       if (window.TEUI?.StateManager) {
+        console.log(`[S12 DEBUG] Publishing ${6} Reference default fields to StateManager...`);
         const referenceFields = ["d_103", "g_103", "d_105", "g_106", "d_108", "g_109"];
         referenceFields.forEach(fieldId => {
           const value = this.state[fieldId];
           if (value !== null && value !== undefined) {
+            console.log(`[S12 DEBUG] Publishing ref_${fieldId} = ${value} (from defaults)`);
             window.TEUI.StateManager.setValue(
               `ref_${fieldId}`,
               value,
