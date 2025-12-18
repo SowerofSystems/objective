@@ -924,19 +924,19 @@ document.addEventListener("DOMContentLoaded", function () {
     initializeElegantInputBehavior();
 
     // Initialize new computation system (Multi-Model Architecture)
-    // Runs in parallel mode - old system drives UI, new system validates
-    // Adapter NOT enabled - too many unmapped fields cause recursion
+    // Runs in parallel mode - old system drives UI, new system computes independently
+    // Adapter CANNOT be enabled - old sections call setValue constantly during calculations,
+    // causing infinite recursion. Migration requires rewriting sections, not just interception.
     if (window.TEUI.ComputationIntegration) {
       setTimeout(function () {
         const success = window.TEUI.ComputationIntegration.initialize({
           enableLogging: true,
-          runInParallel: true,
+          runInParallel: true,  // Both systems run independently
           autoSync: true
         });
         if (success) {
           console.log("[init.js] New computation system initialized (parallel mode)");
-          // Do NOT enable adapter - old StateManager still drives UI
-          // Enable manually for testing: TEUI.ComputationIntegration.enableAdapter()
+          // To migrate: rewrite Section*.js to use new ComputationGraph instead of setValue loops
         }
       }, 500);
     }
