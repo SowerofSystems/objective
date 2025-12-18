@@ -112,7 +112,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         // ✅ CRITICAL: Re-publish to StateManager even when loading from localStorage
         // This ensures values are available for CSV export after page refresh (S10 pattern)
         if (window.TEUI?.StateManager) {
-          const referenceFields = ["d_103", "g_103", "d_105", "d_108", "g_109"];
+          const referenceFields = ["d_103", "g_103", "d_105", "g_106", "d_108", "g_109"];
           referenceFields.forEach(fieldId => {
             const value = this.state[fieldId];
             if (value !== null && value !== undefined) {

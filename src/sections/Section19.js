@@ -1188,20 +1188,79 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Phase 5: Wall Height Calculation (AFTER roof geometry!)
     // ========================================================================
+    // CONSTRAINT VALIDATION: Typical Floor-to-Floor Height (g_106)
+    // ========================================================================
+    // NEW (2025-12-18): Try using realistic F2F height from g_106 first
+    // If volume is insufficient for g_106 × storeys, fall back to volume-derived wall height
+    // Philosophy: "Absurd pancake is the best explanatory warning"
+
+    // Read g_106 from Section 12 (typical floor-to-floor height per storey)
+    const typicalF2FHeight = parseFloat(getModeAwareValue("g_106", isReferenceCalculation));
+    const hasTypicalHeight = typicalF2FHeight && typicalF2FHeight > 0 && !isNaN(typicalF2FHeight);
+
+    // Get user's declared volume (SACRED constraint)
+    const conditionedVolume = volumeDeclared && volumeDeclared > 0 && !isNaN(volumeDeclared)
+      ? volumeDeclared
+      : 0;
+
+    // VALIDATION: Check if volume can accommodate intended wall height from g_106
+    let useIntendedHeight = false;
+    let intendedWallHeight = 0;
+
+    if (hasTypicalHeight && conditionedVolume > 0) {
+      // Calculate INTENDED wall height from g_106 × storeys
+      intendedWallHeight = storiesDeclared * typicalF2FHeight;
+      const requiredWallVolume = footprintArea * intendedWallHeight;
+
+      console.log(`[WOMBAT] Constraint validation (g_106):`);
+      console.log(`  Intended wall height: ${storiesDeclared} storeys × ${typicalF2FHeight}m = ${intendedWallHeight.toFixed(2)}m`);
+      console.log(`  Required wall volume: ${requiredWallVolume.toFixed(2)} m³`);
+      console.log(`  Total conditioned volume (d_105): ${conditionedVolume.toFixed(2)} m³`);
+
+      // Check if volume can accommodate intended wall height
+      if (conditionedVolume > requiredWallVolume) {
+        // VALID: Volume sufficient for intended wall height
+        useIntendedHeight = true;
+        console.log(`  ✓ Volume sufficient for ${intendedWallHeight.toFixed(2)}m walls`);
+
+        // Update console ticker
+        if (showFeedback) {
+          showFeedback('✓ Constraints valid', 3000);
+        }
+      } else {
+        // INVALID: Volume insufficient - fall back to volume-derived wall height
+        const deficit = requiredWallVolume - conditionedVolume;
+        const percentShort = ((deficit / requiredWallVolume) * 100).toFixed(1);
+
+        console.error(`[WOMBAT] ❌ VOLUME CONSTRAINT VIOLATED`);
+        console.error(`  Building: ${storiesDeclared} storeys × ${typicalF2FHeight}m = ${intendedWallHeight.toFixed(2)}m`);
+        console.error(`  Wall volume required: ${requiredWallVolume.toFixed(2)} m³`);
+        console.error(`  Total volume (d_105): ${conditionedVolume.toFixed(2)} m³`);
+        console.error(`  Deficit: ${deficit.toFixed(2)} m³ (${percentShort}% under-reported)`);
+        console.error(`  `);
+        console.error(`  → FALLBACK: Rendering with volume-derived wall height (ABSURD PANCAKE!)`);
+        console.error(`  → Fix d_105 in Section 12 to at least ${requiredWallVolume.toFixed(0)} m³`);
+
+        // Update console ticker
+        if (showFeedback) {
+          showFeedback(`❌ Volume ${percentShort}% too low (Fix d_105 in S12)`, 15000);
+        }
+
+        // Will fall through to volume-derived solver below
+        useIntendedHeight = false;
+      }
+    }
+
+    // ========================================================================
     // CRITICAL: Use VOLUME as constraint to solve for wall height
     // This ensures the geometry satisfies the user's declared conditioned volume
     //
     // Process:
     // 1. Calculate roof volume from roof geometry
     // 2. Subtract roof volume from total volume to get rectangular volume
-    // 3. Solve wall height from rectangular volume
+    // 3. Solve wall height from rectangular volume (OR use intended height if validated)
     // 4. Verify against wall area as a consistency check
     // ========================================================================
-
-    // Get user's declared volume (SACRED constraint)
-    const conditionedVolume = volumeDeclared && volumeDeclared > 0 && !isNaN(volumeDeclared)
-      ? volumeDeclared
-      : 0;
 
     let wallHeight = 0;
     let wallHeightFromVolume = 0;
@@ -1271,8 +1330,29 @@ window.TEUI.SectionModules.sect19 = (function () {
         console.warn(`  - OR basement too deep for building volume`);
       }
 
-      // Use volume-derived wall height
-      wallHeight = wallHeightFromVolume;
+      // DECISION: Use intended height (g_106) if validated, otherwise use volume-derived
+      if (useIntendedHeight && intendedWallHeight > 0) {
+        // VALID: Use realistic F2F height from g_106
+        wallHeight = intendedWallHeight;
+        console.log(`[WOMBAT] ✓ Using intended wall height from g_106: ${wallHeight.toFixed(2)}m`);
+
+        // Log the difference for reference (how much volume is "wasted" vs perfect fit)
+        const impliedVolume = footprintArea * wallHeight;
+        const volumeDifference = rectangularVolume - impliedVolume;
+        if (Math.abs(volumeDifference) > 1.0) {
+          console.log(`[WOMBAT] Volume fit: ${volumeDifference > 0 ? '+' : ''}${volumeDifference.toFixed(2)} m³ ${volumeDifference > 0 ? 'spare' : 'deficit'}`);
+        }
+      } else {
+        // FALLBACK: Use volume-derived wall height (old solver behavior)
+        wallHeight = wallHeightFromVolume;
+
+        if (hasTypicalHeight && !useIntendedHeight) {
+          // Log fallback F2F for comparison
+          const fallbackF2F = wallHeight / storiesDeclared;
+          console.warn(`[WOMBAT] ⚠️ Using fallback wall height: ${wallHeight.toFixed(2)}m`);
+          console.warn(`[WOMBAT] ⚠️ Fallback F2F: ${fallbackF2F.toFixed(2)}m per storey (pancake!)`);
+        }
+      }
 
     } else {
       // Fallback: No valid volume, use wall area method
