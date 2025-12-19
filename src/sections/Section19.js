@@ -41,8 +41,8 @@ window.TEUI.SectionModules.sect19 = (function () {
    */
   const TargetState = {
     values: {
-      d_150: "1.5", // Stories (mirrors S12 d_103)
-      d_151: "8000.00", // Volume (mirrors S12 d_105)
+      d_150: "1", // Stories (mirrors S12 d_103)
+      d_151: "8319.50", // Volume (mirrors S12 d_105)
       d_154: "0.0", // Aspect ratio slider (L:W)
       d_158: "mezzanine", // Floorplate Options (mezzanine/equal)
       d_159: "biplanar", // Roof Type (multiplanar/biplanar/monoplane)
@@ -61,8 +61,8 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     setDefaults: function () {
       // Initialize from field definitions
-      this.values.d_150 = "1.5";
-      this.values.d_151 = "8000.00";
+      this.values.d_150 = "1.0";
+      this.values.d_151 = "8319.50";
       this.values.d_154 = "0.0";
       this.values.d_158 = "mezzanine";
       this.values.d_159 = "biplanar";
@@ -101,8 +101,8 @@ window.TEUI.SectionModules.sect19 = (function () {
    */
   const ReferenceState = {
     values: {
-      d_150: "1.5", // Stories (mirrors S12 ref_d_103)
-      d_151: "8000.00", // Volume (mirrors S12 ref_d_105)
+      d_150: "1.0", // Stories (mirrors S12 ref_d_103)
+      d_151: "8319.50", // Volume (mirrors S12 ref_d_105)
       d_154: "0.0", // Aspect ratio slider
       d_158: "mezzanine", // Floorplate Options (mezzanine/equal)
       d_159: "biplanar", // Roof Type (multiplanar/biplanar/monoplane)
@@ -121,8 +121,8 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     setDefaults: function () {
       // Initialize from field definitions
-      this.values.d_150 = "1.5";
-      this.values.d_151 = "8000.00";
+      this.values.d_150 = "1.0";
+      this.values.d_151 = "8319.50";
       this.values.d_154 = "0.0";
       this.values.d_158 = "mezzanine";
       this.values.d_159 = "biplanar";
@@ -314,7 +314,7 @@ window.TEUI.SectionModules.sect19 = (function () {
           fieldId: "d_150",
           type: "dropdown",
           dropdownId: "dd_d_150",
-          value: "1.5",
+          value: "1",
           section: "wombat",
           tooltip: true,
           label: "Number of stories (mirrored from S12)",
@@ -407,7 +407,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         d: {
           fieldId: "d_151",
           type: "editable",
-          value: "8000.00",
+          value: "8319.50",
           classes: ["user-input"],
           tooltip: true,
           label: "Conditioned volume (mirrored from S12)",
@@ -460,7 +460,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         d: {
           fieldId: "d_153",
           type: "calculated",
-          value: "1100.42",
+          value: "1100.93",
           classes: ["text-ground-facing"],
           label:
             "Total area of building components exposed to ground (from S12)",
@@ -844,6 +844,146 @@ window.TEUI.SectionModules.sect19 = (function () {
     };
   }
 
+  /**
+   * Calculate hip roof geometry using two-phase planar-then-vertical approach
+   * Phase 1: Ridge geometry determined by 45° hip rafters (planar, deterministic)
+   * Phase 2: Height solved from area constraint (vertical, single-variable)
+   * Uses rational trigonometry throughout (quadrance-based)
+   * @param {number} width - Building width
+   * @param {number} length - Building length
+   * @param {number} targetRoofArea - Target total roof area
+   * @returns {Object} - { height, ridgeOrientation, ridgeLength, span, hipData, isValid }
+   */
+  function calculateHipHeight(width, length, targetRoofArea) {
+    // Ridge runs along the longer dimension
+    const maxDimension = Math.max(width, length);
+    const minDimension = Math.min(width, length);
+    const ridgeOrientation = length >= width ? "longitudinal" : "transverse";
+    const span = minDimension;
+
+    console.log(`[WOMBAT] Hip roof calculation (two-phase):`);
+    console.log(`  Building: ${width.toFixed(2)}m × ${length.toFixed(2)}m`);
+    console.log(`  Target roof area: ${targetRoofArea.toFixed(2)}m²`);
+    console.log(`  Ridge orientation: ${ridgeOrientation}`);
+
+    // PHASE 1: Ridge geometry from 45° hip rafters (planar, deterministic)
+    // Hip rafters at 45° travel equal distances perpendicular and parallel to ridge
+    // Ridge length determined purely by footprint geometry
+    const ridgeLength = maxDimension - span;
+    const ridgeOffset = span / 2;
+
+    console.log(`[WOMBAT] Phase 1 (planar ridge geometry):`);
+    console.log(`  Ridge length: ${ridgeLength.toFixed(2)}m (deterministic from 45° hip rafters)`);
+    console.log(`  Ridge offset: ${ridgeOffset.toFixed(2)}m`);
+
+    // Check if square building (pure pyramid)
+    if (ridgeLength < 0.01) {
+      console.log(`[WOMBAT] Square building detected - ridge length ≈ 0, pure pyramid`);
+      console.log(`[WOMBAT] Falling back to pyramidal height calculation`);
+
+      // Use pyramidal solver for square buildings
+      const pyramidHeight = pyramidHeightRectangle(width, length, targetRoofArea / (width * length));
+
+      return {
+        height: pyramidHeight,
+        ridgeOrientation,
+        ridgeLength: 0,
+        ridgeOffset: ridgeOffset,
+        span,
+        hipData: {
+          ridgeLength: 0,
+          ridgeOffset: ridgeOffset,
+          ridgeOrientation,
+          achievedArea: targetRoofArea
+        },
+        isValid: pyramidHeight > 0
+      };
+    }
+
+    // PHASE 2: Solve for height from area constraint (single-variable)
+    // Area = 2 × ridgeLength × slopeLength + 2 × span × hipRafterLength
+    // Where:
+    //   slopeLength² = h² + (span/2)²
+    //   hipRafterLength² = h² + (span/2)² + ridgeOffset²
+
+    console.log(`[WOMBAT] Phase 2 (height from area constraint):`);
+
+    // Binary search on height only
+    let hMin = 0;
+    let hMax = span * 2; // Reasonable upper bound
+    const tolerance = 0.01; // 1cm precision
+    const maxIterations = 50;
+    let iteration = 0;
+
+    let bestHeight = 0;
+    let bestArea = 0;
+
+    while (hMax - hMin > tolerance && iteration < maxIterations) {
+      const h = (hMin + hMax) / 2;
+
+      // Calculate roof area with this height (using CORRECT formulas)
+
+      // Main slope area: 2 rectangular slopes
+      const slopeLength = Math.sqrt(h * h + (span / 2) * (span / 2));
+      const mainSlopeArea = 2 * ridgeLength * slopeLength;
+
+      // Hip end area: 4 triangular faces (2 at each end)
+      // Each triangle has base = span and slant height = hip rafter length
+      // Hip rafter from corner (±span/2, ±ridgeOffset, 0) to ridge endpoint (0, ±ridgeOffset, h)
+      const hipRafterQuadrance = (span / 2) * (span / 2) + ridgeOffset * ridgeOffset + h * h;
+      const hipRafterLength = Math.sqrt(hipRafterQuadrance);
+
+      // Each triangular face area = (1/2) × span × hipRafterLength
+      // Total for 4 triangular faces = 2 × span × hipRafterLength
+      const hipEndArea = 2 * span * hipRafterLength;
+
+      const calculatedArea = mainSlopeArea + hipEndArea;
+
+      console.log(`  Iteration ${iteration}: h=${h.toFixed(2)}m, area=${calculatedArea.toFixed(2)}m²`);
+
+      bestHeight = h;
+      bestArea = calculatedArea;
+
+      // Binary search adjustment
+      if (Math.abs(calculatedArea - targetRoofArea) < tolerance) {
+        break; // Found it!
+      } else if (calculatedArea < targetRoofArea) {
+        // Need more area - taller roof
+        hMin = h;
+      } else {
+        // Too much area - flatter roof
+        hMax = h;
+      }
+
+      iteration++;
+    }
+
+    if (iteration >= maxIterations) {
+      console.warn(`[WOMBAT] Hip roof height search did not converge after ${maxIterations} iterations`);
+    }
+
+    console.log(`[WOMBAT] Hip roof solved:`);
+    console.log(`  Ridge length: ${ridgeLength.toFixed(2)}m (offset: ${ridgeOffset.toFixed(2)}m)`);
+    console.log(`  Ridge height: ${bestHeight.toFixed(2)}m`);
+    console.log(`  Achieved area: ${bestArea.toFixed(2)}m² (target: ${targetRoofArea.toFixed(2)}m²)`);
+    console.log(`  Error: ${Math.abs(bestArea - targetRoofArea).toFixed(2)}m²`);
+
+    return {
+      height: bestHeight,
+      ridgeOrientation,
+      ridgeLength: ridgeLength,
+      ridgeOffset: ridgeOffset,
+      span,
+      hipData: {
+        ridgeLength: ridgeLength,
+        ridgeOffset: ridgeOffset,
+        ridgeOrientation,
+        achievedArea: bestArea
+      },
+      isValid: bestHeight > 0 && Math.abs(bestArea - targetRoofArea) < targetRoofArea * 0.05 // 5% tolerance
+    };
+  }
+
   //==========================================================================
   // GEOMETRY SOLVER
   //==========================================================================
@@ -862,7 +1002,16 @@ window.TEUI.SectionModules.sect19 = (function () {
     const conditionedArea = parseFloat(getModeAwareValue("h_15", isReferenceCalculation));
     const roofArea = parseFloat(getModeAwareValue("d_85", isReferenceCalculation));
     const opaqueWallArea = parseFloat(getModeAwareValue("d_86", isReferenceCalculation));
-    const footprintArea = parseFloat(getModeAwareValue("d_95", isReferenceCalculation));
+
+    // Footprint area: Try d_95 (slab on grade) first, fallback to d_87 (raised floor)
+    // Some buildings have only raised floor (no slab), some have both (e.g., bedroom over garage)
+    let footprintArea = parseFloat(getModeAwareValue("d_95", isReferenceCalculation));
+
+    if (!footprintArea || footprintArea <= 0 || isNaN(footprintArea)) {
+      // No slab - use raised floor area (d_87)
+      footprintArea = parseFloat(getModeAwareValue("d_87", isReferenceCalculation));
+      console.log(`[WOMBAT] No slab on grade (d_95), using raised floor area (d_87): ${footprintArea?.toFixed(2)} m²`);
+    }
 
     // ⚠️ DUAL-STATE: Read from appropriate state based on calculation mode
     // Mirror fields: d_151 (volume) ↔ S12 d_105, d_150 (stories) ↔ S12 d_103
@@ -872,7 +1021,7 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Validate SACRED inputs - fail loudly if missing or invalid
     if (!footprintArea || footprintArea <= 0 || isNaN(footprintArea)) {
-      throw new Error("[WOMBAT] Footprint area (d_95) required and must be > 0");
+      throw new Error("[WOMBAT] Footprint area required: neither d_95 (slab) nor d_87 (raised floor) have valid values > 0");
     }
     if (!conditionedArea || conditionedArea <= 0 || isNaN(conditionedArea)) {
       throw new Error("[WOMBAT] Conditioned area (h_15) required and must be > 0");
@@ -1004,11 +1153,23 @@ window.TEUI.SectionModules.sect19 = (function () {
           roofHeight = 0;
         }
       } else if (roofTypeSelection === "multiplanar") {
-        // PYRAMIDAL ROOF (multiplanar)
-        roofType = "pyramidal";
-        roofHeight = calculatePyramidalHeight(width, length, areaRatio);
+        // HIP ROOF (multiplanar) - truncated gable approach
+        roofType = "hip";
+        const hipData = calculateHipHeight(width, length, roofArea);
 
-        console.log(`[WOMBAT] Pyramidal roof: h=${roofHeight.toFixed(2)}m`);
+        if (hipData.isValid) {
+          roofHeight = hipData.height;
+          roofGeometryData = hipData;
+
+          console.log(`[WOMBAT] Hip roof solved:`);
+          console.log(`  Ridge height: ${roofHeight.toFixed(2)} m`);
+          console.log(`  Ridge length: ${hipData.ridgeLength.toFixed(2)} m`);
+          console.log(`  Ridge orientation: ${hipData.ridgeOrientation}`);
+        } else {
+          console.warn('[WOMBAT] Invalid hip geometry - falling back to flat roof');
+          roofType = "flat";
+          roofHeight = 0;
+        }
       } else {
         // MONOPLANE (shed roof) - future implementation
         console.warn('[WOMBAT] Monoplane roof type not yet implemented - using flat roof');
@@ -1027,20 +1188,94 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Phase 5: Wall Height Calculation (AFTER roof geometry!)
     // ========================================================================
+    // CONSTRAINT VALIDATION: Typical Floor-to-Floor Height (g_106)
+    // ========================================================================
+    // NEW (2025-12-18): Try using realistic F2F height from g_106 first
+    // If volume is insufficient for g_106 × storeys, fall back to volume-derived wall height
+    // Philosophy: "Absurd pancake is the best explanatory warning"
+
+    // Read g_106 from Section 12 (typical floor-to-floor height per storey)
+    // DEBUG: Track ref_g_106 lookup in Reference mode
+    const modeLabel = isReferenceCalculation ? "Reference" : "Target";
+    const rawG106 = getModeAwareValue("g_106", isReferenceCalculation);
+    console.log(`[WOMBAT g_106 DEBUG] Mode: ${modeLabel}`);
+    console.log(`[WOMBAT g_106 DEBUG] Raw g_106 value: ${rawG106}`);
+    console.log(`[WOMBAT g_106 DEBUG] isReferenceCalculation: ${isReferenceCalculation}`);
+
+    // Check StateManager directly for ref_g_106
+    if (isReferenceCalculation && window.TEUI?.StateManager) {
+      const directRefValue = window.TEUI.StateManager.getValue("ref_g_106");
+      console.log(`[WOMBAT g_106 DEBUG] Direct StateManager lookup ref_g_106: ${directRefValue}`);
+    }
+
+    const typicalF2FHeight = parseFloat(rawG106);
+    console.log(`[WOMBAT g_106 DEBUG] Parsed typicalF2FHeight: ${typicalF2FHeight}`);
+    const hasTypicalHeight = typicalF2FHeight && typicalF2FHeight > 0 && !isNaN(typicalF2FHeight);
+    console.log(`[WOMBAT g_106 DEBUG] hasTypicalHeight: ${hasTypicalHeight}`);
+
+    // Get user's declared volume (SACRED constraint)
+    const conditionedVolume = volumeDeclared && volumeDeclared > 0 && !isNaN(volumeDeclared)
+      ? volumeDeclared
+      : 0;
+
+    // VALIDATION: Check if volume can accommodate intended wall height from g_106
+    let useIntendedHeight = false;
+    let intendedWallHeight = 0;
+
+    if (hasTypicalHeight && conditionedVolume > 0) {
+      // Calculate INTENDED wall height from g_106 × storeys
+      intendedWallHeight = storiesDeclared * typicalF2FHeight;
+      const requiredWallVolume = footprintArea * intendedWallHeight;
+
+      console.log(`[WOMBAT] Constraint validation (g_106):`);
+      console.log(`  Intended wall height: ${storiesDeclared} storeys × ${typicalF2FHeight}m = ${intendedWallHeight.toFixed(2)}m`);
+      console.log(`  Required wall volume: ${requiredWallVolume.toFixed(2)} m³`);
+      console.log(`  Total conditioned volume (d_105): ${conditionedVolume.toFixed(2)} m³`);
+
+      // Check if volume can accommodate intended wall height
+      if (conditionedVolume > requiredWallVolume) {
+        // VALID: Volume sufficient for intended wall height
+        useIntendedHeight = true;
+        console.log(`  ✓ Volume sufficient for ${intendedWallHeight.toFixed(2)}m walls`);
+
+        // Update console ticker
+        if (showFeedback) {
+          showFeedback('✓ Constraints valid', 3000);
+        }
+      } else {
+        // INVALID: Volume insufficient - fall back to volume-derived wall height
+        const deficit = requiredWallVolume - conditionedVolume;
+        const percentShort = ((deficit / requiredWallVolume) * 100).toFixed(1);
+
+        console.error(`[WOMBAT] ❌ VOLUME CONSTRAINT VIOLATED`);
+        console.error(`  Building: ${storiesDeclared} storeys × ${typicalF2FHeight}m = ${intendedWallHeight.toFixed(2)}m`);
+        console.error(`  Wall volume required: ${requiredWallVolume.toFixed(2)} m³`);
+        console.error(`  Total volume (d_105): ${conditionedVolume.toFixed(2)} m³`);
+        console.error(`  Deficit: ${deficit.toFixed(2)} m³ (${percentShort}% under-reported)`);
+        console.error(`  `);
+        console.error(`  → FALLBACK: Rendering with volume-derived wall height (ABSURD PANCAKE!)`);
+        console.error(`  → Fix d_105 in Section 12 to at least ${requiredWallVolume.toFixed(0)} m³`);
+
+        // Update console ticker
+        if (showFeedback) {
+          showFeedback(`❌ Volume ${percentShort}% too low (Fix d_105 in S12)`, 15000);
+        }
+
+        // Will fall through to volume-derived solver below
+        useIntendedHeight = false;
+      }
+    }
+
+    // ========================================================================
     // CRITICAL: Use VOLUME as constraint to solve for wall height
     // This ensures the geometry satisfies the user's declared conditioned volume
     //
     // Process:
     // 1. Calculate roof volume from roof geometry
     // 2. Subtract roof volume from total volume to get rectangular volume
-    // 3. Solve wall height from rectangular volume
+    // 3. Solve wall height from rectangular volume (OR use intended height if validated)
     // 4. Verify against wall area as a consistency check
     // ========================================================================
-
-    // Get user's declared volume (SACRED constraint)
-    const conditionedVolume = volumeDeclared && volumeDeclared > 0 && !isNaN(volumeDeclared)
-      ? volumeDeclared
-      : 0;
 
     let wallHeight = 0;
     let wallHeightFromVolume = 0;
@@ -1069,6 +1304,20 @@ window.TEUI.SectionModules.sect19 = (function () {
       let roofVolume = 0;
       if (roofType === "gable" && roofHeight > 0) {
         roofVolume = (footprintArea * roofHeight) / 2;
+      } else if (roofType === "hip" && roofHeight > 0 && roofGeometryData) {
+        // Hip roof volume = gable section + 2 pyramidal end caps
+        const ridgeLength = roofGeometryData.ridgeLength;
+        const ridgeOffset = roofGeometryData.ridgeOffset;
+        const hipSpan = roofGeometryData.span; // Get span from hip geometry data
+
+        // Gable section: rectangular prism with triangular cross-section
+        const gableSectionVolume = (ridgeLength * hipSpan * roofHeight) / 2;
+
+        // Each pyramidal end cap: 1/3 * base_area * height
+        // Base area = ridgeOffset × span (rectangle at building edge)
+        const endCapVolume = 2 * (1/3) * (ridgeOffset * hipSpan) * roofHeight;
+
+        roofVolume = gableSectionVolume + endCapVolume;
       } else if (roofType === "pyramidal" && roofHeight > 0) {
         roofVolume = (1/3) * footprintArea * roofHeight;
       } else if (roofType === "inverted" && roofHeight < 0) {
@@ -1096,8 +1345,29 @@ window.TEUI.SectionModules.sect19 = (function () {
         console.warn(`  - OR basement too deep for building volume`);
       }
 
-      // Use volume-derived wall height
-      wallHeight = wallHeightFromVolume;
+      // DECISION: Use intended height (g_106) if validated, otherwise use volume-derived
+      if (useIntendedHeight && intendedWallHeight > 0) {
+        // VALID: Use realistic F2F height from g_106
+        wallHeight = intendedWallHeight;
+        console.log(`[WOMBAT] ✓ Using intended wall height from g_106: ${wallHeight.toFixed(2)}m`);
+
+        // Log the difference for reference (how much volume is "wasted" vs perfect fit)
+        const impliedVolume = footprintArea * wallHeight;
+        const volumeDifference = rectangularVolume - impliedVolume;
+        if (Math.abs(volumeDifference) > 1.0) {
+          console.log(`[WOMBAT] Volume fit: ${volumeDifference > 0 ? '+' : ''}${volumeDifference.toFixed(2)} m³ ${volumeDifference > 0 ? 'spare' : 'deficit'}`);
+        }
+      } else {
+        // FALLBACK: Use volume-derived wall height (old solver behavior)
+        wallHeight = wallHeightFromVolume;
+
+        if (hasTypicalHeight && !useIntendedHeight) {
+          // Log fallback F2F for comparison
+          const fallbackF2F = wallHeight / storiesDeclared;
+          console.warn(`[WOMBAT] ⚠️ Using fallback wall height: ${wallHeight.toFixed(2)}m`);
+          console.warn(`[WOMBAT] ⚠️ Fallback F2F: ${fallbackF2F.toFixed(2)}m per storey (pancake!)`);
+        }
+      }
 
     } else {
       // Fallback: No valid volume, use wall area method
@@ -1141,7 +1411,8 @@ window.TEUI.SectionModules.sect19 = (function () {
       height: roofHeight,
       areaRatio: areaRatio,
       gableEndArea: gableEndArea,
-      gableData: roofGeometryData  // Full gable geometry data (ridge, span, etc.)
+      gableData: roofType === "gable" ? roofGeometryData : null,  // Full gable geometry data
+      hipData: roofType === "hip" ? roofGeometryData : null  // Full hip geometry data
     };
 
     // Phase 4: Below-Grade Geometry (WOMBAT Phase 2)
@@ -1341,6 +1612,41 @@ window.TEUI.SectionModules.sect19 = (function () {
     if (fullscreenBtn) {
       fullscreenBtn.addEventListener("click", toggleFullscreen);
     }
+
+    // Inject feedback console into section header (following S18 pattern)
+    createFeedbackConsole();
+  }
+
+  function createFeedbackConsole() {
+    const feedbackConsole = document.createElement("span");
+    feedbackConsole.id = "s19-feedback-console";
+
+    const sectionHeader = document.querySelector("#wombat .section-header");
+    if (
+      sectionHeader &&
+      !sectionHeader.querySelector("#s19-feedback-console")
+    ) {
+      sectionHeader.appendChild(feedbackConsole);
+      console.log("[WOMBAT] Feedback console injected into section header");
+    }
+  }
+
+  function showFeedback(message, duration = 5000) {
+    const console = document.getElementById("s19-feedback-console");
+    if (!console) return;
+
+    console.textContent = message;
+    console.style.opacity = "1";
+
+    setTimeout(() => {
+      console.style.transition = "opacity 1s";
+      console.style.opacity = "0";
+      setTimeout(() => {
+        console.textContent = "";
+        console.style.opacity = "1";
+        console.style.transition = "";
+      }, 1000);
+    }, duration);
   }
 
   function showInfoModal() {
@@ -1774,6 +2080,36 @@ window.TEUI.SectionModules.sect19 = (function () {
         }
       });
 
+      // ✅ NEW (2025-12-18): Listen for g_106 (Typical F2F Height) from S12 - TARGET mode
+      // Ensures both engines recalculate when Target value changes (dual-engine architecture)
+      window.TEUI.StateManager.addListener("g_106", newValue => {
+        console.log(`[WOMBAT SYNC] g_106 changed to: ${newValue}`);
+        console.log(`[WOMBAT SYNC] Triggering calculateAll() for Target geometry recalculation...`);
+        // No state to sync (g_106 is read directly via getModeAwareValue in solveGeometry)
+        // But we need to recalculate both engines when this value changes
+        calculateAll();
+      });
+
+      // ✅ NEW (2025-12-18): Listen for ref_g_106 (Typical F2F Height) from S12 - REFERENCE mode
+      // Ensures both engines recalculate when Reference value changes (dual-engine architecture)
+      window.TEUI.StateManager.addListener("ref_g_106", newValue => {
+        console.log(`[WOMBAT SYNC] ref_g_106 changed to: ${newValue}`);
+        console.log(`[WOMBAT SYNC] Triggering calculateAll() for Reference geometry recalculation...`);
+        // No state to sync (g_106 is read directly via getModeAwareValue in solveGeometry)
+        // But we need to recalculate both engines when this value changes
+        calculateAll();
+      });
+
+      // ✅ CRITICAL: Check if ref_g_106 was already published before listener was added
+      // Section12 publishes during initialization, but Section19 listeners are added later
+      // This ensures we don't miss the initial value (same pattern as d_105/d_103)
+      const existingRefG106 = window.TEUI.StateManager.getValue("ref_g_106");
+      if (existingRefG106 !== null && existingRefG106 !== undefined) {
+        console.log(`[WOMBAT SYNC] Found existing ref_g_106 = ${existingRefG106} in StateManager`);
+        console.log(`[WOMBAT SYNC] Triggering initial calculateAll() for Reference pre-calculation`);
+        calculateAll();
+      }
+
       // ✅ ROBOT FINGERS 🤖👆: Ae and Ag display fields from S12
       // S12 publishes d_101/g_101/d_102/g_102 to StateManager
       // S19 listens and updates its own DOM elements (scoped to #wombat container)
@@ -1919,6 +2255,10 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Initialize mirror fields from S12 on first load
     initializeMirrorFields();
+
+    // ✅ CRITICAL: Initialize event handlers (listeners for S12 dependencies)
+    // This registers listeners for d_105/ref_d_105, d_103/ref_d_103, g_106/ref_g_106
+    initializeEventHandlers();
 
     // Initialize SVG
     setTimeout(() => {
@@ -2070,6 +2410,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     solveGeometry,
     isActivated: () => isActivated,
     getCurrentModel: () => currentModel,
+    showFeedback, // Feedback console (S18 pattern)
 
     // Dual-state architecture exports (required by FieldManager and ReferenceToggle)
     ModeManager,
