@@ -37,6 +37,12 @@
 - c8470d5: Attempted consolidation (BROKEN)
 - 020eaf0: Revert (back to working state)
 
+**Additional Issue Observed**:
+- Reference mode: Storey levels appear much shorter in rendered model
+- S12's `ref_g_106 = 5.15` default doesn't seem to reach S19 Reference calculation
+- May be related to defaults/initialization timing
+- Should investigate as part of general defaults debugging
+
 ---
 
 ## Current Problem: Triple (or Quadruple) Defaults
