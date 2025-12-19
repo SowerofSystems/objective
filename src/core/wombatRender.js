@@ -721,7 +721,14 @@ window.TEUI.WombatRender = (function () {
       });
 
       // Draw apex node
-      const apexPt = toIsometric(apex.x, apex.y, apex.z, scale, centerX, centerY);
+      const apexPt = toIsometric(
+        apex.x,
+        apex.y,
+        apex.z,
+        scale,
+        centerX,
+        centerY
+      );
       const node = createNode(apexPt, roofColor, 5);
       svg.appendChild(node);
 
@@ -777,25 +784,38 @@ window.TEUI.WombatRender = (function () {
     console.log("  Roof height:", roofHeight);
 
     // Ridge endpoints (at peak height)
-    const buildingRun = hipData.ridgeOrientation === "longitudinal" ? length : width;
+    const buildingRun =
+      hipData.ridgeOrientation === "longitudinal" ? length : width;
     const ridgeLength = hipData.ridgeLength;
     const ridgeOffset = (buildingRun - ridgeLength) / 2;
 
     // Four eave corners - ALWAYS use actual width/length regardless of orientation
-    const eave1 = { x: -width / 2, y: -length / 2, z: wallHeight };  // SW
-    const eave2 = { x: width / 2, y: -length / 2, z: wallHeight };   // SE
-    const eave3 = { x: width / 2, y: length / 2, z: wallHeight };    // NE
-    const eave4 = { x: -width / 2, y: length / 2, z: wallHeight };   // NW
+    const eave1 = { x: -width / 2, y: -length / 2, z: wallHeight }; // SW
+    const eave2 = { x: width / 2, y: -length / 2, z: wallHeight }; // SE
+    const eave3 = { x: width / 2, y: length / 2, z: wallHeight }; // NE
+    const eave4 = { x: -width / 2, y: length / 2, z: wallHeight }; // NW
 
     let ridge1, ridge2;
 
     if (hipData.ridgeOrientation === "longitudinal") {
       // Ridge runs along length (Y-axis)
-      ridge1 = { x: 0, y: -length / 2 + ridgeOffset, z: wallHeight + roofHeight };
-      ridge2 = { x: 0, y: length / 2 - ridgeOffset, z: wallHeight + roofHeight };
+      ridge1 = {
+        x: 0,
+        y: -length / 2 + ridgeOffset,
+        z: wallHeight + roofHeight,
+      };
+      ridge2 = {
+        x: 0,
+        y: length / 2 - ridgeOffset,
+        z: wallHeight + roofHeight,
+      };
     } else {
       // Ridge runs along width (X-axis)
-      ridge1 = { x: -width / 2 + ridgeOffset, y: 0, z: wallHeight + roofHeight };
+      ridge1 = {
+        x: -width / 2 + ridgeOffset,
+        y: 0,
+        z: wallHeight + roofHeight,
+      };
       ridge2 = { x: width / 2 - ridgeOffset, y: 0, z: wallHeight + roofHeight };
     }
 
@@ -803,12 +823,54 @@ window.TEUI.WombatRender = (function () {
     // (Don't draw internal diagonals from triangle decomposition)
 
     // Convert all points to isometric
-    const e1Pt = toIsometric(eave1.x, eave1.y, eave1.z, scale, centerX, centerY);
-    const e2Pt = toIsometric(eave2.x, eave2.y, eave2.z, scale, centerX, centerY);
-    const e3Pt = toIsometric(eave3.x, eave3.y, eave3.z, scale, centerX, centerY);
-    const e4Pt = toIsometric(eave4.x, eave4.y, eave4.z, scale, centerX, centerY);
-    const r1Pt = toIsometric(ridge1.x, ridge1.y, ridge1.z, scale, centerX, centerY);
-    const r2Pt = toIsometric(ridge2.x, ridge2.y, ridge2.z, scale, centerX, centerY);
+    const e1Pt = toIsometric(
+      eave1.x,
+      eave1.y,
+      eave1.z,
+      scale,
+      centerX,
+      centerY
+    );
+    const e2Pt = toIsometric(
+      eave2.x,
+      eave2.y,
+      eave2.z,
+      scale,
+      centerX,
+      centerY
+    );
+    const e3Pt = toIsometric(
+      eave3.x,
+      eave3.y,
+      eave3.z,
+      scale,
+      centerX,
+      centerY
+    );
+    const e4Pt = toIsometric(
+      eave4.x,
+      eave4.y,
+      eave4.z,
+      scale,
+      centerX,
+      centerY
+    );
+    const r1Pt = toIsometric(
+      ridge1.x,
+      ridge1.y,
+      ridge1.z,
+      scale,
+      centerX,
+      centerY
+    );
+    const r2Pt = toIsometric(
+      ridge2.x,
+      ridge2.y,
+      ridge2.z,
+      scale,
+      centerX,
+      centerY
+    );
 
     // Draw ridge line
     svg.appendChild(createLine(r1Pt, r2Pt, roofColor, 2));
@@ -820,19 +882,19 @@ window.TEUI.WombatRender = (function () {
       // ridge1 is at front (negative Y), ridge2 is at back (positive Y)
       // Front corners (e1=SW, e2=SE) connect to ridge1
       // Back corners (e3=NE, e4=NW) connect to ridge2
-      svg.appendChild(createLine(r1Pt, e1Pt, roofColor, 2));  // ridge1 → SW (front-left)
-      svg.appendChild(createLine(r1Pt, e2Pt, roofColor, 2));  // ridge1 → SE (front-right)
-      svg.appendChild(createLine(r2Pt, e3Pt, roofColor, 2));  // ridge2 → NE (back-right)
-      svg.appendChild(createLine(r2Pt, e4Pt, roofColor, 2));  // ridge2 → NW (back-left)
+      svg.appendChild(createLine(r1Pt, e1Pt, roofColor, 2)); // ridge1 → SW (front-left)
+      svg.appendChild(createLine(r1Pt, e2Pt, roofColor, 2)); // ridge1 → SE (front-right)
+      svg.appendChild(createLine(r2Pt, e3Pt, roofColor, 2)); // ridge2 → NE (back-right)
+      svg.appendChild(createLine(r2Pt, e4Pt, roofColor, 2)); // ridge2 → NW (back-left)
     } else {
       // Ridge runs along X-axis (width)
       // ridge1 is at left (negative X), ridge2 is at right (positive X)
       // Left corners (e1=SW, e4=NW) connect to ridge1
       // Right corners (e2=SE, e3=NE) connect to ridge2
-      svg.appendChild(createLine(r1Pt, e1Pt, roofColor, 2));  // ridge1 → SW (left-front)
-      svg.appendChild(createLine(r1Pt, e4Pt, roofColor, 2));  // ridge1 → NW (left-back)
-      svg.appendChild(createLine(r2Pt, e2Pt, roofColor, 2));  // ridge2 → SE (right-front)
-      svg.appendChild(createLine(r2Pt, e3Pt, roofColor, 2));  // ridge2 → NE (right-back)
+      svg.appendChild(createLine(r1Pt, e1Pt, roofColor, 2)); // ridge1 → SW (left-front)
+      svg.appendChild(createLine(r1Pt, e4Pt, roofColor, 2)); // ridge1 → NW (left-back)
+      svg.appendChild(createLine(r2Pt, e2Pt, roofColor, 2)); // ridge2 → SE (right-front)
+      svg.appendChild(createLine(r2Pt, e3Pt, roofColor, 2)); // ridge2 → NE (right-back)
     }
 
     // Eave lines are already drawn by renderAboveGrade (building perimeter)
@@ -1201,7 +1263,14 @@ window.TEUI.WombatRender = (function () {
     const height = geometry.height;
 
     // X-dimension label (East, width along X-axis) - lower right, red to match X/East axis
-    const xDimPos = toIsometric(width / 2 + 5, -length / 2, 0, scale, centerX, centerY);
+    const xDimPos = toIsometric(
+      width / 2 + 5,
+      -length / 2,
+      0,
+      scale,
+      centerX,
+      centerY
+    );
     const xDimLabel = createText(
       xDimPos.x - 50,
       xDimPos.y + 100,
