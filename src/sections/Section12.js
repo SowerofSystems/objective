@@ -30,7 +30,7 @@ window.TEUI.SectionModules.sect12 = (function () {
     setDefaults: function () {
       // S12-specific defaults - MUST match sectionRows values CONSOLIDATE THESE TO FIELD DEFINITIONS PER 4012-CHEATSHEET.md
       this.state = {
-        d_103: "1.0", // Number of stories (dropdown)
+        d_103: "1", // Number of stories (dropdown)
         g_103: "Normal", // Exposure (dropdown)
         d_105: "8319.50", // Conditioned volume (editable)
         g_106: "5.15", // Typical floor-to-floor height (editable)
@@ -148,7 +148,7 @@ window.TEUI.SectionModules.sect12 = (function () {
 
       // Apply reference values to S12 fields with fallbacks - these are fine
       this.state = {
-        d_103: referenceValues.d_103 || "1.0", // Stories - MATCHES Target 1.0
+        d_103: referenceValues.d_103 || "1", // Stories - MATCHES Target 1.0
         g_103: referenceValues.g_103 || "Exposed", // Exposure - DIFFERENT: Exposed vs Target Normal
         d_105: "8319.50", // Volume - MATCHES:Target 8319.50
         g_106: "5.15", // Typical floor-to-floor height - Generally >2.5m

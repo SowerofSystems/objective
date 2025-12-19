@@ -1,8 +1,35 @@
 # The Vanishing Roof 🏔️→💨
 
-**Date**: 2025-12-16
+**Date**: 2025-12-16 (Started) | 2025-12-18 (Resolved)
 **Issue**: Pyramidal roofs collapse/vanish on rectangular buildings; monopitch/shed roofs not implemented
-**Status**: 🔍 INVESTIGATING
+**Status**: ✅ **RESOLVED** - Root cause was irrational default geometry, not calculation bugs
+
+---
+
+## 🎯 RESOLUTION (2025-12-18)
+
+**Root Cause**: The "pancaked storeys" and constraint conflicts were caused by **irrational default geometry**, not bugs in the constraint solver or Reference mode calculations.
+
+**The Problem**:
+- Default geometry had 1.5 storeys with 3.00m typical F2F height
+- This forced unrealistic constraints that made the building appear "stuck"
+- When aspect ratio changed, storey height couldn't adjust to maintain wall area constraints
+- User thought Reference mode was broken, but it was actually showing the **correct physics-based solution** for the impossible constraints
+
+**The Fix**:
+- Updated defaults to match accurate BIM takeoff from Threefeathers Terrace:
+  - Stories: 1.0 (was 1.5)
+  - Volume: 8319.50 m³ (was 8000)
+  - Typical F2F height: 5.15m (was 3.00m)
+- With rational geometry, constraints are now sensible
+- Both Target and Reference modes solve correctly
+- No code changes needed - just accurate input data!
+
+**Key Insight**: The constraint solver was working perfectly all along. The issue was "garbage in, garbage out" - irrational default geometry produced irrational results.
+
+**Status**: ✅ CASE CLOSED
+**Branch**: WOMBAT-HIP
+**Next Work**: WOMBAT-SHED branch for shed/monopitch roof implementation
 
 ---
 

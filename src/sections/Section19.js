@@ -41,7 +41,7 @@ window.TEUI.SectionModules.sect19 = (function () {
    */
   const TargetState = {
     values: {
-      d_150: "0", // Stories (mirrors S12 d_103)
+      d_150: "1", // Stories (mirrors S12 d_103)
       d_151: "8319.50", // Volume (mirrors S12 d_105)
       d_154: "0.0", // Aspect ratio slider (L:W)
       d_158: "mezzanine", // Floorplate Options (mezzanine/equal)
@@ -314,7 +314,7 @@ window.TEUI.SectionModules.sect19 = (function () {
           fieldId: "d_150",
           type: "dropdown",
           dropdownId: "dd_d_150",
-          value: "1.0",
+          value: "1",
           section: "wombat",
           tooltip: true,
           label: "Number of stories (mirrored from S12)",
