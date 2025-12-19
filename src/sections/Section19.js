@@ -40,16 +40,7 @@ window.TEUI.SectionModules.sect19 = (function () {
    * Provides state sovereignty for Target calculation mode
    */
   const TargetState = {
-    values: {
-      d_150: "1", // Stories (mirrors S12 d_103)
-      d_151: "8319.50", // Volume (mirrors S12 d_105)
-      d_154: "0.0", // Aspect ratio slider (L:W)
-      d_158: "mezzanine", // Floorplate Options (mezzanine/equal)
-      d_159: "biplanar", // Roof Type (multiplanar/biplanar/monoplane)
-      h_155: "0.00", // Calculated: Footprint width
-      h_156: "0.00", // Calculated: Story height
-      h_157: "0.00", // Calculated: Footprint length
-    },
+    values: {}, // ✅ Start empty, populate in setDefaults()
 
     getValue: function (fieldId) {
       return this.values[fieldId] !== undefined ? this.values[fieldId] : null;
@@ -60,15 +51,16 @@ window.TEUI.SectionModules.sect19 = (function () {
     },
 
     setDefaults: function () {
-      // Initialize from field definitions
-      this.values.d_150 = "1.0";
-      this.values.d_151 = "8319.50";
-      this.values.d_154 = "0.0";
-      this.values.d_158 = "mezzanine";
-      this.values.d_159 = "biplanar";
-      this.values.h_155 = "0.00";
-      this.values.h_156 = "0.00";
-      this.values.h_157 = "0.00";
+      // ✅ DRY: Defaults match field definitions (single source of truth)
+      // Must hardcode here since fieldDefinitions not yet defined when this runs
+      this.values.d_150 = "1"; // Stories (matches row150 field definition)
+      this.values.d_151 = "8319.50"; // Volume (matches row151 field definition)
+      this.values.d_154 = "0.0"; // Aspect ratio (matches row154 field definition)
+      this.values.d_158 = "mezzanine"; // Floorplate (matches row158 field definition)
+      this.values.d_159 = "biplanar"; // Roof type (matches row159 field definition)
+      this.values.h_155 = "0.00"; // Calculated field
+      this.values.h_156 = "0.00"; // Calculated field
+      this.values.h_157 = "0.00"; // Calculated field
     },
 
     syncFromGlobalState: function () {
@@ -100,16 +92,7 @@ window.TEUI.SectionModules.sect19 = (function () {
    * Provides state sovereignty for Reference calculation mode
    */
   const ReferenceState = {
-    values: {
-      d_150: "1.0", // Stories (mirrors S12 ref_d_103)
-      d_151: "8319.50", // Volume (mirrors S12 ref_d_105)
-      d_154: "0.0", // Aspect ratio slider
-      d_158: "mezzanine", // Floorplate Options (mezzanine/equal)
-      d_159: "biplanar", // Roof Type (multiplanar/biplanar/monoplane)
-      h_155: "0.00", // Calculated: Footprint width
-      h_156: "0.00", // Calculated: Story height
-      h_157: "0.00", // Calculated: Footprint length
-    },
+    values: {}, // ✅ Start empty, populate in setDefaults()
 
     getValue: function (fieldId) {
       return this.values[fieldId] !== undefined ? this.values[fieldId] : null;
@@ -120,15 +103,16 @@ window.TEUI.SectionModules.sect19 = (function () {
     },
 
     setDefaults: function () {
-      // Initialize from field definitions
-      this.values.d_150 = "1.0";
-      this.values.d_151 = "8319.50";
-      this.values.d_154 = "0.0";
-      this.values.d_158 = "mezzanine";
-      this.values.d_159 = "biplanar";
-      this.values.h_155 = "0.00";
-      this.values.h_156 = "0.00";
-      this.values.h_157 = "0.00";
+      // ✅ DRY: Defaults match field definitions (single source of truth)
+      // Reference uses same defaults as Target for WOMBAT fields
+      this.values.d_150 = "1"; // Stories (matches row150 field definition)
+      this.values.d_151 = "8319.50"; // Volume (matches row151 field definition)
+      this.values.d_154 = "0.0"; // Aspect ratio (matches row154 field definition)
+      this.values.d_158 = "mezzanine"; // Floorplate (matches row158 field definition)
+      this.values.d_159 = "biplanar"; // Roof type (matches row159 field definition)
+      this.values.h_155 = "0.00"; // Calculated field
+      this.values.h_156 = "0.00"; // Calculated field
+      this.values.h_157 = "0.00"; // Calculated field
     },
 
     syncFromGlobalState: function () {
