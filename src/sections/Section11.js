@@ -115,7 +115,7 @@ window.TEUI.SectionModules.sect11 = (function () {
       this.state = {
         d_85: "1411.52",
         f_85: "9.35", // Roof
-        d_86: "712.97",
+        d_86: "705.27",
         f_86: "6.69", // Walls Above Grade
         d_87: "0.00",
         f_87: "9.52", // Floor Exposed
@@ -134,7 +134,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         g_93: "0.900", // Skylights U-value (Target default, not ReferenceValues)
         d_94: "0.00",
         f_94: "4.00", // Walls Below Grade
-        d_95: "1100.42",
+        d_95: "1100.92",
         f_95: "3.70", // Floor Slab
         d_96: "29.70", // Interior Floors
         d_97: "20", // Thermal Bridge Penalty %
@@ -248,7 +248,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         // Area values (d_) - Reference defaults are Target +1 for clear differentiation
         d_85: "1411.52",
         f_85: referenceValues.f_85 || "5.30", // Roof
-        d_86: "712.97",
+        d_86: "705.27",
         f_86: referenceValues.f_86 || "4.10", // Walls Above Grade
         d_87: "0.00",
         f_87: referenceValues.f_87 || "6.60", // Floor Exposed
@@ -262,7 +262,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         g_93: referenceValues.g_93 || "1.420", // Skylights U-value (from ReferenceValues)
         d_94: "0.00",
         f_94: referenceValues.f_94 || "1.80", // Walls Below Grade
-        d_95: "1100.42",
+        d_95: "1100.92",
         f_95: referenceValues.f_95 || "3.50", // Floor Slab
         d_96: "29.70", // Interior Floors (not in codes)
         d_97: referenceValues.d_97 || "50", // Thermal Bridge Penalty %
@@ -891,7 +891,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         d: {
           fieldId: "d_86",
           type: "editable",
-          value: "712.97",
+          value: "705.27",
           label: "Walls Above Grade: Area m²",
         },
         e: {
@@ -1662,7 +1662,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         d: {
           fieldId: "d_95",
           type: "editable",
-          value: "1100.42",
+          value: "1100.92",
           label: "Floor Slab: Area m²",
         },
         e: {

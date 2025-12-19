@@ -30,10 +30,10 @@ window.TEUI.SectionModules.sect12 = (function () {
     setDefaults: function () {
       // S12-specific defaults - MUST match sectionRows values CONSOLIDATE THESE TO FIELD DEFINITIONS PER 4012-CHEATSHEET.md
       this.state = {
-        d_103: "1.5", // Number of stories (dropdown)
+        d_103: "1.0", // Number of stories (dropdown)
         g_103: "Normal", // Exposure (dropdown)
-        d_105: "8000.00", // Conditioned volume (editable)
-        g_106: "3.00", // Typical floor-to-floor height (editable)
+        d_105: "8319.50", // Conditioned volume (editable)
+        g_106: "5.15", // Typical floor-to-floor height (editable)
         d_108: "AL-1B", // ✅ FIXED: Use AL-1B method (was MEASURED) to get proper 93.6 TEUI
         g_109: "1.30", // Measured value (conditional editable, N/A when not MEASURED)
       };
@@ -148,10 +148,10 @@ window.TEUI.SectionModules.sect12 = (function () {
 
       // Apply reference values to S12 fields with fallbacks - these are fine
       this.state = {
-        d_103: referenceValues.d_103 || "1.5", // Stories - MATCHES Target 1.5
+        d_103: referenceValues.d_103 || "1.0", // Stories - MATCHES Target 1.0
         g_103: referenceValues.g_103 || "Exposed", // Exposure - DIFFERENT: Exposed vs Target Normal
-        d_105: "8000.00", // Volume - MATCHES:Target 8000
-        g_106: "3.00", // Typical floor-to-floor height - MATCHES Target 3.00
+        d_105: "8319.50", // Volume - MATCHES:Target 8319.50
+        g_106: "5.15", // Typical floor-to-floor height - Generally >2.5m
         d_108: referenceValues.d_108 || "MEASURED", // Blower door method - DIFFERENT: Reference uses MEASURED vs Target AL-1B
         g_109: referenceValues.g_109 || "1.30", // Measured - DIFFERENT method: But same result as AL-1B
       };
@@ -714,7 +714,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         d: {
           fieldId: "d_102",
           type: "calculated",
-          value: "1100.42",
+          value: "1100.93",
           section: "volumeSurfaceMetrics",
           dependencies: ["d_94", "d_95"],
           classes: ["text-ground-facing"],
@@ -794,7 +794,7 @@ window.TEUI.SectionModules.sect12 = (function () {
           fieldId: "d_103",
           type: "dropdown",
           dropdownId: "dd_d_103",
-          value: "1.5",
+          value: "1",
           section: "volumeSurfaceMetrics",
           tooltip: true, // Select Stories
           options: [
@@ -951,7 +951,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         d: {
           fieldId: "d_105",
           type: "editable",
-          value: "8000.00", // Our only required Target default set here
+          value: "8319.50", // Our only required Target default set here
           section: "volumeSurfaceMetrics",
           tooltip: true, // Conditioned Volume
           classes: ["user-input"],
@@ -1000,7 +1000,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         g: {
           fieldId: "g_106",
           type: "editable",
-          value: "3.00",
+          value: "5.15",
           section: "volumeSurfaceMetrics",
           tooltip: true, // Typical Floor-to-Floor Height
           classes: ["user-input"],
@@ -2128,7 +2128,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         window.TEUI.parseNumeric(
           getSectionValue("d_103", isReferenceCalculation)
         ) || 0
-      ) || 1.5;
+      ) || 1.0;
     const shielding =
       getSectionValue("g_103", isReferenceCalculation) || "Normal";
 
@@ -2246,7 +2246,7 @@ window.TEUI.SectionModules.sect12 = (function () {
 
     // Determine story key with full precision (extended to 6 stories)
     // Table has keys: 1, 1.5, 2, 3, 4, 5, 6 (no 2.5, 3.5, etc.)
-    let storyKey = 1.5;
+    let storyKey = 1; // !!!should this default be set as 1.0? Or is this not a default?
     if (stories <= 1) storyKey = 1;
     else if (stories > 1 && stories <= 1.75) storyKey = 1.5;
     else if (stories > 1.75 && stories < 2.5) storyKey = 2;

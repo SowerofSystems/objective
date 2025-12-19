@@ -41,8 +41,8 @@ window.TEUI.SectionModules.sect19 = (function () {
    */
   const TargetState = {
     values: {
-      d_150: "1.5", // Stories (mirrors S12 d_103)
-      d_151: "8000.00", // Volume (mirrors S12 d_105)
+      d_150: "0", // Stories (mirrors S12 d_103)
+      d_151: "8319.50", // Volume (mirrors S12 d_105)
       d_154: "0.0", // Aspect ratio slider (L:W)
       d_158: "mezzanine", // Floorplate Options (mezzanine/equal)
       d_159: "biplanar", // Roof Type (multiplanar/biplanar/monoplane)
@@ -61,8 +61,8 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     setDefaults: function () {
       // Initialize from field definitions
-      this.values.d_150 = "1.5";
-      this.values.d_151 = "8000.00";
+      this.values.d_150 = "1.0";
+      this.values.d_151 = "8319.50";
       this.values.d_154 = "0.0";
       this.values.d_158 = "mezzanine";
       this.values.d_159 = "biplanar";
@@ -101,8 +101,8 @@ window.TEUI.SectionModules.sect19 = (function () {
    */
   const ReferenceState = {
     values: {
-      d_150: "1.5", // Stories (mirrors S12 ref_d_103)
-      d_151: "8000.00", // Volume (mirrors S12 ref_d_105)
+      d_150: "1.0", // Stories (mirrors S12 ref_d_103)
+      d_151: "8319.50", // Volume (mirrors S12 ref_d_105)
       d_154: "0.0", // Aspect ratio slider
       d_158: "mezzanine", // Floorplate Options (mezzanine/equal)
       d_159: "biplanar", // Roof Type (multiplanar/biplanar/monoplane)
@@ -121,8 +121,8 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     setDefaults: function () {
       // Initialize from field definitions
-      this.values.d_150 = "1.5";
-      this.values.d_151 = "8000.00";
+      this.values.d_150 = "1.0";
+      this.values.d_151 = "8319.50";
       this.values.d_154 = "0.0";
       this.values.d_158 = "mezzanine";
       this.values.d_159 = "biplanar";
@@ -314,7 +314,7 @@ window.TEUI.SectionModules.sect19 = (function () {
           fieldId: "d_150",
           type: "dropdown",
           dropdownId: "dd_d_150",
-          value: "1.5",
+          value: "1.0",
           section: "wombat",
           tooltip: true,
           label: "Number of stories (mirrored from S12)",
@@ -407,7 +407,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         d: {
           fieldId: "d_151",
           type: "editable",
-          value: "8000.00",
+          value: "8319.50",
           classes: ["user-input"],
           tooltip: true,
           label: "Conditioned volume (mirrored from S12)",
@@ -460,7 +460,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         d: {
           fieldId: "d_153",
           type: "calculated",
-          value: "1100.42",
+          value: "1100.93",
           classes: ["text-ground-facing"],
           label:
             "Total area of building components exposed to ground (from S12)",
