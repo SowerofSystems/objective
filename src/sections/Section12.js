@@ -1,6 +1,6 @@
 /**
  * 4012-Section12.js
- * Volume and Surface Metrics (Section 12) module for TEUI Calculator 4.012. Note added 2025.12.15: Make sure skylights d_93, ref_d_93, do not form part of WWR calcs at d_107. Excel had this and we fixed it. 
+ * Volume and Surface Metrics (Section 12) module for TEUI Calculator 4.012. Note added 2025.12.15: Make sure skylights d_93, ref_d_93, do not form part of WWR calcs at d_107. Excel had this and we fixed it.
  */
 
 window.TEUI = window.TEUI || {};
@@ -115,8 +115,17 @@ window.TEUI.SectionModules.sect12 = (function () {
         // ✅ CRITICAL: Re-publish to StateManager even when loading from localStorage
         // This ensures values are available for CSV export after page refresh (S10 pattern)
         if (window.TEUI?.StateManager) {
-          const referenceFields = ["d_103", "g_103", "d_105", "g_106", "d_108", "g_109"];
-          console.log(`[S12 DEBUG] Re-publishing ${referenceFields.length} Reference fields from localStorage...`);
+          const referenceFields = [
+            "d_103",
+            "g_103",
+            "d_105",
+            "g_106",
+            "d_108",
+            "g_109",
+          ];
+          console.log(
+            `[S12 DEBUG] Re-publishing ${referenceFields.length} Reference fields from localStorage...`
+          );
           referenceFields.forEach(fieldId => {
             const value = this.state[fieldId];
             if (value !== null && value !== undefined) {
@@ -127,7 +136,9 @@ window.TEUI.SectionModules.sect12 = (function () {
                 "default"
               );
             } else {
-              console.warn(`[S12 DEBUG] Skipping ref_${fieldId} - value is null/undefined`);
+              console.warn(
+                `[S12 DEBUG] Skipping ref_${fieldId} - value is null/undefined`
+              );
             }
           });
           console.log(`[S12 DEBUG] Reference field publishing complete`);
@@ -137,7 +148,9 @@ window.TEUI.SectionModules.sect12 = (function () {
       }
     },
     setDefaults: function () {
-      console.log(`[S12 DEBUG] ReferenceState.setDefaults() called - no localStorage, using defaults`);
+      console.log(
+        `[S12 DEBUG] ReferenceState.setDefaults() called - no localStorage, using defaults`
+      );
       // ✅ DYNAMIC LOADING: Get current reference standard from dropdown ref_d_13
       const currentStandard =
         window.TEUI?.StateManager?.getValue?.("ref_d_13") ||
@@ -159,24 +172,39 @@ window.TEUI.SectionModules.sect12 = (function () {
 
       // ✅ CRITICAL: Publish Reference defaults to StateManager (S10/S11/S04 pattern)
       if (window.TEUI?.StateManager) {
-        console.log(`[S12 DEBUG] StateManager available - Publishing ${6} Reference default fields...`);
-        const referenceFields = ["d_103", "g_103", "d_105", "g_106", "d_108", "g_109"];
+        console.log(
+          `[S12 DEBUG] StateManager available - Publishing ${6} Reference default fields...`
+        );
+        const referenceFields = [
+          "d_103",
+          "g_103",
+          "d_105",
+          "g_106",
+          "d_108",
+          "g_109",
+        ];
         referenceFields.forEach(fieldId => {
           const value = this.state[fieldId];
           if (value !== null && value !== undefined) {
-            console.log(`[S12 DEBUG] Publishing ref_${fieldId} = ${value} (from defaults)`);
+            console.log(
+              `[S12 DEBUG] Publishing ref_${fieldId} = ${value} (from defaults)`
+            );
             window.TEUI.StateManager.setValue(
               `ref_${fieldId}`,
               value,
               "default"
             );
           } else {
-            console.warn(`[S12 DEBUG] Skipping ref_${fieldId} - value is null/undefined`);
+            console.warn(
+              `[S12 DEBUG] Skipping ref_${fieldId} - value is null/undefined`
+            );
           }
         });
         console.log(`[S12 DEBUG] Reference defaults publishing complete`);
       } else {
-        console.error(`[S12 DEBUG] ❌ StateManager NOT AVAILABLE - cannot publish Reference defaults!`);
+        console.error(
+          `[S12 DEBUG] ❌ StateManager NOT AVAILABLE - cannot publish Reference defaults!`
+        );
       }
 
       console.log(
@@ -490,7 +518,14 @@ window.TEUI.SectionModules.sect12 = (function () {
       const currentState = this.getCurrentState();
 
       // S12-specific fields to sync
-      const fieldsToSync = ["d_103", "g_103", "d_105", "g_106", "d_108", "g_109"];
+      const fieldsToSync = [
+        "d_103",
+        "g_103",
+        "d_105",
+        "g_106",
+        "d_108",
+        "g_109",
+      ];
 
       fieldsToSync.forEach(fieldId => {
         const stateValue = currentState.getValue(fieldId);
@@ -1992,11 +2027,21 @@ window.TEUI.SectionModules.sect12 = (function () {
     // Update g_107: Total Wall Area (checksum field matching Excel G107=D86+SUM(D88:D92))
     // Note: Excludes doors (d_93) to match Excel formula
     const totalWallAreaChecksum = d86 + d88 + d89 + d90 + d91 + d92;
-    setCalculatedValue("g_107", totalWallAreaChecksum, "area-2dp", isReferenceCalculation);
+    setCalculatedValue(
+      "g_107",
+      totalWallAreaChecksum,
+      "area-2dp",
+      isReferenceCalculation
+    );
 
     // Calculate i_107: Total Window & Door Heat Loss (sum of i_88 through i_92)
     const totalWindowDoorHeatloss = i88 + i89 + i90 + i91 + i92;
-    setCalculatedValue("i_107", totalWindowDoorHeatloss, "number-2dp-comma", isReferenceCalculation);
+    setCalculatedValue(
+      "i_107",
+      totalWindowDoorHeatloss,
+      "number-2dp-comma",
+      isReferenceCalculation
+    );
 
     // Update WWR value with standard formatter
     setCalculatedValue("d_107", wwr, "percent-2dp", isReferenceCalculation);
