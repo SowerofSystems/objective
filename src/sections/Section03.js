@@ -86,7 +86,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         this.listeners[fieldId].forEach(callback => callback(value));
       }
     },
-    syncFromGlobalState: function (fieldIds = ["d_19", "h_19", "i_21"]) {
+    syncFromGlobalState: function (fieldIds = ["d_19", "h_19", "h_20", "h_21", "i_21", "m_19", "l_20", "l_21", "l_24"]) {
       fieldIds.forEach(fieldId => {
         const globalValue = window.TEUI.StateManager.getValue(fieldId);
         if (globalValue !== null && globalValue !== undefined) {
@@ -169,7 +169,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         this.listeners[fieldId].forEach(callback => callback(value));
       }
     },
-    syncFromGlobalState: function (fieldIds = ["d_19", "h_19", "i_21"]) {
+    syncFromGlobalState: function (fieldIds = ["d_19", "h_19", "h_20", "h_21", "i_21", "m_19", "l_20", "l_21", "l_24"]) {
       fieldIds.forEach(fieldId => {
         const refFieldId = `ref_${fieldId}`;
         const globalValue = window.TEUI.StateManager.getValue(refFieldId);
