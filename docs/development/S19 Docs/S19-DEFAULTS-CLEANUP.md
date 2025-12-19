@@ -1,9 +1,41 @@
 # S19 Defaults Cleanup - DRY Violation Workplan
 
-**Date**: 2025-12-18
+**Date**: 2025-12-18 (Created) | 2025-12-18 (Failed Attempt)
 **Issue**: Default values duplicated across 3+ locations in Section19.js
-**Priority**: Medium - Code quality/maintainability issue
+**Priority**: Medium - Code quality/maintainability issue (but tricky!)
 **Pattern**: Should follow CHEATSHEET.md Pattern A (single source of truth)
+**Status**: ⚠️ **FAILED ATTEMPT** - Reverted, needs different approach
+
+---
+
+## ⚠️ FAILED ATTEMPT (2025-12-18 22:42)
+
+**What We Tried**:
+- Removed hardcoded initial values from `TargetState.values` and `ReferenceState.values`
+- Created `getFieldDefault()` helper to read from field definitions
+- Consolidated defaults into `setDefaults()` methods only
+
+**Why It Failed**:
+1. **Timing Issue**: `getFieldDefault()` tries to read `fieldDefinitions` before it's defined
+   - Helper defined at line 42
+   - `fieldDefinitions` defined around line 306+
+   - `setDefaults()` called during initialization when `fieldDefinitions` is `undefined`
+   - Result: All defaults return `null`, dropdown breaks
+
+2. **Hardcoding Workaround Didn't Help**:
+   - Removed helper, hardcoded values in `setDefaults()`
+   - Still broken - suggests the issue is NOT just timing
+   - Empty initial values object causes problems elsewhere
+
+3. **Root Cause Unknown**:
+   - Dropdown shows just "1" without frame/chevron
+   - Same symptom as "0" vs "1" bug from earlier
+   - But field definitions have correct value: "1"
+   - Something else depends on initial values being populated
+
+**Commits**:
+- c8470d5: Attempted consolidation (BROKEN)
+- 020eaf0: Revert (back to working state)
 
 ---
 
@@ -202,6 +234,42 @@ Decide on canonical format (recommend "1" for dropdown values) and ensure field 
 
 ---
 
-**Status**: DOCUMENTED - Ready for implementation
-**Branch**: WOMBAT-SHED (or future cleanup branch)
-**Estimated Effort**: ~30 minutes (low risk, straightforward pattern application)
+## Investigation Needed (Before Next Attempt)
+
+**Questions to Answer**:
+
+1. **What depends on initial values being populated?**
+   - Is there code that reads `TargetState.values.d_150` before `setDefaults()` is called?
+   - Does FieldManager initialization depend on pre-populated values?
+   - Check initialization sequence carefully
+
+2. **Why does empty initial object break dropdown?**
+   - Dropdown shows "1" but without frame/chevron (broken UI)
+   - Field definition has correct value
+   - setDefaults() sets correct value
+   - Something in rendering chain breaks when values start empty
+
+3. **How does S12 handle this?**
+   - S12 successfully consolidated defaults (CHEATSHEET Pattern A)
+   - Compare S12's initialization sequence with S19
+   - Key difference: S12 doesn't have dropdowns in state objects?
+
+4. **Is there a FieldManager dependency?**
+   - Does FieldManager read initial values before setDefaults()?
+   - Check FieldManager initialization in index.html
+   - May need to ensure setDefaults() runs BEFORE FieldManager renders
+
+**Next Approach** (for tomorrow):
+
+1. Add console.log statements to trace initialization order
+2. Check when FieldManager reads field values
+3. Verify setDefaults() is called before any field rendering
+4. Consider calling setDefaults() IMMEDIATELY in state object definition
+5. Or move field definitions ABOVE state objects (architectural change)
+
+---
+
+**Status**: ⚠️ REVERTED - Needs investigation before retry
+**Branch**: WOMBAT-SHED
+**Estimated Effort**: Unknown - requires debugging initialization sequence first
+**Lesson**: Empty initial values break something in the rendering chain
