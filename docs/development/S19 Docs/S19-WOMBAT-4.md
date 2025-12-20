@@ -1394,6 +1394,67 @@ function build2DProfile(roofType, width, wallHeight, roofHeight) {
 - [ ] Verify storey height compresses when roof volume is large
 - [ ] Update legend to show "Roof steals Xm³ from walls"
 
+### Step-by-Step Implementation Plan
+
+**Decision (2025-12-20)**: Modify current WOMBAT-4 files, not backup files.
+
+**Rationale**:
+- Prismatic rendering works perfectly (proven by flat roof test)
+- Dynamic ridge orientation already implemented (commit c27b220)
+- Only need to refactor constraint order (~250-300 lines in one file)
+- Backup has complex rendering and broken shed roof wall areas
+- This is a surgical fix, not major surgery
+
+**5-Phase Implementation**:
+
+**Phase 1: Add Roof Solver Functions** (~120 lines, Section19.js)
+- Add `solveRoofGeometry()` function (lines 1097-1127 from spec)
+- Add `solveGableRoof()` function (lines 1133-1182 from spec)
+- Add `solveShedRoof()` function (lines 1188-1236 from spec)
+- These functions solve ONLY roof geometry from roof area constraint
+- They calculate roof volume and return it for wall height derivation
+
+**Phase 2: Refactor solveGeometry() Function** (~80 lines, Section19.js)
+- Follow high-level algorithm (lines 1022-1089 from spec)
+- Change constraint order: footprint → roof area → volume
+- Call `solveRoofGeometry()` BEFORE calculating wall height
+- Derive wall height from: `wallHeight = (targetVolume - roofVolume) / footprintArea`
+- Remove `0.85` estimation factor (now exact)
+- Pass `storyHeight` to returned geometry object
+
+**Phase 3: Modify Profile Builders** (~40 lines, Section19.js)
+- Rename `solveGable2DProfile()` to `buildGable2DProfile()`
+- Rename `solveShed2DProfile()` to `buildShed2DProfile()`
+- Remove all solving logic (area, height calculations)
+- Keep ONLY node array construction
+- Accept pre-calculated `wallHeight` and `roofHeight` parameters
+- Follow spec lines 1244-1288
+
+**Phase 4: Update Extrusion Logic** (~30 lines, Section19.js)
+- Remove volume-matching logic from `extrudeProfile()`
+- Function should just use pre-calculated `span` dimension
+- No iteration needed - extrusion depth IS the span
+- Simplify to direct node generation
+
+**Phase 5: Testing & Validation**
+1. Test flat roof first (roof volume = 0, should work unchanged)
+2. Test gable roof at aspect +4.00 (landscape, 5:1 ratio)
+3. Test gable roof at aspect -4.00 (portrait, 1:5 ratio)
+4. Verify visual proportions match calculated dimensions
+5. Verify storey height compresses when roof volume is large
+6. Test shed roof at both aspect extremes
+7. Check legend shows correct roof volume and wall volume
+
+**File Locations**:
+- All changes in: `src/sections/Section19.js`
+- Total affected lines: ~900-1000 (main solveGeometry function)
+- Rendering unchanged: `src/core/wombatRender.js` (no changes needed)
+
+**Rollback Plan**:
+- Git branch: WOMBAT-PRISMATIC (can reset if needed)
+- Backup file: Section19.js.backup (original WOMBAT-3)
+- Each phase commits separately for granular rollback
+
 ---
 
 ## Ridge Orientation Convention
