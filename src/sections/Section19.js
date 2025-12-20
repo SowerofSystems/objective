@@ -953,38 +953,49 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     console.log(`[WOMBAT-2] Inputs: footprint=${footprintArea.toFixed(2)}m², volume=${targetVolume.toFixed(2)}m³, roof=${roofType} (requested: ${roofTypeRequested})`);
 
+    // Calculate ridge orientation - ridge runs across SHORT dimension (structural efficiency)
+    // This MUST be calculated dynamically because aspect ratio changes which dimension is short/long
+    const ridgeLength = Math.min(width, length);  // SHORT dimension (ridge runs across this)
+    const span = Math.max(width, length);         // LONG dimension (slope runs across this)
+    const ridgeOrientation = length >= width ? "longitudinal" : "transverse";
+
+    console.log(`[WOMBAT-2] Ridge: ${ridgeOrientation} (${ridgeLength.toFixed(2)}m across ${ridgeLength === width ? 'width' : 'length'}), Span: ${span.toFixed(2)}m`);
+
     // Choose profile solver based on (potentially collapsed) roof type
     let profile2D;
     if (roofType === "biplanar") {
-      // Gable roof: need to solve wall height from volume constraint first
-      // Volume = footprint × wallHeight + roof volume
+      // Gable roof: ridge runs across SHORT dimension
       // STOREY HEIGHT IS SACRIFICIAL - derived from volume, not prescribed
       const estimatedWallHeight = targetVolume / footprintArea * 0.85; // Rough estimate
-      profile2D = solveGable2DProfile(width, roofArea, estimatedWallHeight);
+      profile2D = solveGable2DProfile(ridgeLength, roofArea, estimatedWallHeight);
     } else if (roofType === "monoplane") {
-      // Shed roof: trapezoid profile with slope across length dimension
+      // Shed roof: ridge runs across SHORT dimension, slope across LONG
       // STOREY HEIGHT IS SACRIFICIAL - derived from volume, not prescribed
       const estimatedWallHeight = targetVolume / footprintArea * 0.85; // Rough estimate
-      profile2D = solveShed2DProfile(width, roofArea, length, estimatedWallHeight);
+      profile2D = solveShed2DProfile(ridgeLength, roofArea, span, estimatedWallHeight);
     } else {
       // Flat roof (default or collapsed from pitched)
       // Wall height directly from volume constraint
       const wallHeight = targetVolume / footprintArea;
-      profile2D = solveFlat2DProfile(width, wallHeight);
+      profile2D = solveFlat2DProfile(ridgeLength, wallHeight);
     }
 
     const extrusion = extrudeProfile(profile2D, targetVolume);
     const nodes3D = generate3DNodes(profile2D, extrusion.depth);
 
     console.log(`[WOMBAT-2] Profile: ${profile2D.type}, extrusion depth: ${extrusion.depth.toFixed(2)}m`);
+    console.log(`[WOMBAT-2] Footprint dimensions: width=${width.toFixed(2)}m, length=${length.toFixed(2)}m (from aspect ratio)`);
 
     // Store calculated footprint dimensions in state for display
-    currentState.setValue("h_155", width.toFixed(2));  // Footprint width
-    currentState.setValue("h_157", length.toFixed(2)); // Footprint length (via extrusion depth)
+    // These are the ORIGINAL width/length from aspect ratio calculation, not profile dimensions
+    currentState.setValue("h_155", width.toFixed(2));  // Footprint width (from aspect ratio)
+    currentState.setValue("h_157", length.toFixed(2)); // Footprint length (from aspect ratio)
     currentState.setValue("h_156", profile2D.wallHeight.toFixed(2)); // Storey height (sacrificial)
 
+    // Return footprint using aspect ratio dimensions (not profile/extrusion dimensions)
+    // This ensures consistency with user's aspect ratio input
     return {
-      footprint: { width: width, length: extrusion.depth },
+      footprint: { width: width, length: length },
       height: profile2D.wallHeight,
       totalHeight: profile2D.wallHeight + profile2D.height,
       storyHeight: profile2D.wallHeight,
