@@ -145,11 +145,18 @@ window.TEUI.WombatRender = (function () {
 
   /**
    * Main render function - draws 8-node prismatic geometry
+   * @param {Object} geometry - Geometry data with nodes3D
+   * @param {String} mode - "target" or "reference"
+   * @param {SVGElement} svg - SVG container element
+   * @param {Object} options - Additional render options
    */
-  function render(svg, geometry, isReference) {
+  function render(geometry, mode, svg, options = {}) {
     console.log("[WombatRender-4] Prismatic render called");
     console.log("  Geometry:", geometry);
-    console.log("  IsReference:", isReference);
+    console.log("  Mode:", mode);
+    console.log("  Options:", options);
+
+    const isReference = mode === "reference";
 
     // Clear SVG
     while (svg.firstChild) {
