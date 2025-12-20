@@ -1276,13 +1276,15 @@ test("visual parity - gable roof", () => {
 
 ### Next Steps 📋
 
-16. **Test aspect ratio impact** - Verify shed roof height reduces with landscape aspect ratio
-17. **Volume iteration** - Refine wall height calculation to exactly match volume constraint
-16. **Area constraints** - Iterate to satisfy roof area (d_85) exactly
-17. **Wall area calculations** - Implement prismatic wall area formulas and display
-18. **Multi-storey support** - Scale pattern for multiple storeys
-19. **Test and merge** - Comprehensive testing, then merge to main
-20. **Future enhancements** - Hip roof, pyramidal, basement support
+16. **Fix aspect ratio NaN bug** - Debug d_154 state sync issue (current blocker)
+17. **Test aspect ratio impact** - Verify shed roof height reduces with landscape aspect ratio
+18. **Implement stories dropdown handler** - Wire d_150 changes to recalculate geometry
+19. **Volume iteration** - Refine wall height calculation to exactly match volume constraint
+20. **Area constraints** - Iterate to satisfy roof area (d_85) exactly
+21. **Wall area calculations** - Implement prismatic wall area formulas and display
+22. **Multi-storey rendering** - Add horizontal floor plane lines to visualization (see spec below)
+23. **Test and merge** - Comprehensive testing, then merge to main
+24. **Future enhancements** - Hip roof, pyramidal, basement support
 
 ---
 
@@ -1339,14 +1341,212 @@ test("visual parity - gable roof", () => {
   - **Footprint Dimensions**: X and Y labels showing `Width: xx.x m` and `Length: xx.x m`
 
 - **Volume calculation approximate**: 0.85 factor for gable/shed, needs exact iteration to satisfy volume constraint
-- **Aspect ratio fixed at 1:1**: Square footprint currently, needs d_154 slider integration to allow rectangular footprints
+- **Aspect ratio NaN bug**: d_154 state sync issue causing rendering errors (BLOCKER - see debug section below)
 - **Wall areas not calculated**: Prismatic formulas designed but not implemented yet
-- **No multi-storey support yet**: Phase 2 enhancement
+- **No multi-storey visualization yet**: Stories dropdown works but doesn't draw floor planes (see implementation spec below)
+
+---
+
+## Multi-Storey Implementation Specification
+
+### Overview
+
+The stories dropdown (d_150) is already wired to recalculate geometry, but the visualization doesn't show horizontal floor planes. This section documents how to add multi-storey rendering based on the backup file implementation.
+
+### Current State (WOMBAT 4 Prismatic)
+
+**What Works:**
+- ✅ Stories dropdown (d_150) mirrors S12 d_103 via TargetState/ReferenceState
+- ✅ FieldManager routes dropdown changes through ModeManager.setValue()
+- ✅ ModeManager.setValue() publishes to StateManager and calls calculateAll()
+- ✅ Storey height calculated: `wallHeight / storiesDeclared` (Section19.js:line ~1542 in backup)
+- ✅ Geometry object includes `stories` and `storyHeight` properties
+
+**What's Missing:**
+- ❌ Horizontal floor plane lines not rendered in 3D visualization
+- ❌ No visual indication of multiple storeys (1.5, 2, 3+ storeys look identical)
+- ❌ Legend doesn't show storey-by-storey breakdown
+
+### Implementation Pattern (from Section19.js.backup)
+
+**Data Flow:**
+1. User changes d_150 dropdown (1 → 1.5 → 2 → 3, etc.)
+2. FieldManager routes to `ModeManager.setValue("d_150", value, "user-modified")` (backup:line ~2043-2045)
+3. ModeManager publishes to StateManager → triggers calculateAll()
+4. solveGeometry() reads `storiesDeclared = parseFloat(currentState.getValue("d_150"))` (backup:line 1073)
+5. Wall height calculated: `wallHeight = (volume - roofVolume) / footprintArea` (sacrificial to volume)
+6. **Storey height derived**: `storyHeight = wallHeight / storiesDeclared` (backup:line 1542)
+7. Geometry returned with `{ stories: storiesDeclared, storyHeight: storyHeight }` (backup:line 1596-1597)
+8. **Renderer draws floor planes** at intervals of `storyHeight` (MISSING IN WOMBAT 4)
+
+### Rendering Multi-Storey Floor Planes
+
+**Concept:**
+For a 3-storey building with `storyHeight = 3.0m`, draw horizontal lines at:
+- Z = 0m (ground level)
+- Z = 3m (storey 1 ceiling / storey 2 floor)
+- Z = 6m (storey 2 ceiling / storey 3 floor)
+- Z = 9m (storey 3 ceiling / eave line)
+- Z = 9m + roofHeight (ridge/peak)
+
+**Implementation Location:**
+`src/core/wombatRender.js` - Add floor plane rendering after eave lines, before roof planes
+
+**Pseudocode:**
+```javascript
+function renderFloorPlanes(svg, geometry, nodes3D, scale, centerX, centerY) {
+  const stories = geometry.stories || 1;
+  const storyHeight = geometry.storyHeight || geometry.height;
+
+  if (stories <= 1) {
+    return; // No intermediate floors for single-storey
+  }
+
+  // Draw horizontal floor planes at each storey boundary
+  for (let i = 1; i < stories; i++) {
+    const floorZ = i * storyHeight;
+
+    // Create 4 corner points at this floor level
+    const floorCorners = [
+      { x: nodes3D.ground[0].x, y: nodes3D.ground[0].y, z: floorZ },
+      { x: nodes3D.ground[1].x, y: nodes3D.ground[1].y, z: floorZ },
+      { x: nodes3D.ground[2].x, y: nodes3D.ground[2].y, z: floorZ },
+      { x: nodes3D.ground[3].x, y: nodes3D.ground[3].y, z: floorZ },
+    ];
+
+    // Draw floor plane as dashed rectangle
+    for (let j = 0; j < 4; j++) {
+      const p1 = toIsometric(floorCorners[j].x, floorCorners[j].y, floorCorners[j].z, scale, centerX, centerY);
+      const p2 = toIsometric(floorCorners[(j + 1) % 4].x, floorCorners[(j + 1) % 4].y, floorCorners[(j + 1) % 4].z, scale, centerX, centerY);
+
+      const line = createLine(p1, p2, "#888888", 1); // Gray, dashed
+      line.setAttribute("stroke-dasharray", "4,4"); // Dashed line
+      line.setAttribute("opacity", "0.5");
+      svg.appendChild(line);
+    }
+
+    // Optional: Draw "STOREY X" label
+    const centerPt = toIsometric(0, 0, floorZ, scale, centerX, centerY);
+    const label = createText(centerPt.x + 20, centerPt.y, `Storey ${i}`, "#666", 10, { textAnchor: "start" });
+    label.setAttribute("opacity", "0.7");
+    svg.appendChild(label);
+  }
+}
+```
+
+**Integration into render():**
+```javascript
+// In wombatRender.js render() function, after drawing vertical edges:
+
+// Draw vertical edges (existing code)
+drawVerticalEdges(svg, nodes3D, ...);
+
+// NEW: Draw intermediate floor planes for multi-storey buildings
+renderFloorPlanes(svg, geometry, nodes3D, scale, centerX, centerY);
+
+// Draw eave lines (existing code)
+drawEaveLines(svg, nodes3D, ...);
+```
+
+### Fractional Stories Handling
+
+**Mezzanine Option** (d_158 = "mezzanine"):
+- 1.5 storeys = 1 full floor + mezzanine (partial floor, smaller area)
+- Render mezzanine as dashed outline at `1.0 × storyHeight`
+- Mezzanine area calculated: `conditionedArea - footprintArea - (fullStories × footprintArea)` (backup:line 1153-1156)
+- Visual: Smaller rectangle inset from building perimeter
+
+**Equal Floorplates Option** (d_158 = "equal"):
+- 1.5 storeys = equal distribution of conditioned area across 1.5 levels
+- No mezzanine - just taller storey height
+- Render as uniform floor plane at `1.0 × storyHeight`
+
+**Implementation Notes:**
+- Read `floorplateOption = currentState.getValue("d_158")` in renderer
+- If `mezzanine` AND `stories` is fractional → draw partial floor
+- Mezzanine dimensions: Calculate from `mezzanineArea` in geometry object
+
+### Validation & Testing
+
+**Test Cases:**
+1. **1 storey**: No floor planes (ground + eave only)
+2. **1.5 storeys (mezzanine)**: 1 dashed partial floor plane at Z = storyHeight
+3. **2 storeys**: 1 solid floor plane at Z = storyHeight
+4. **3 storeys**: 2 solid floor planes at Z = storyHeight, Z = 2×storyHeight
+5. **6 storeys**: 5 solid floor planes (max dropdown value)
+
+**Expected Behavior:**
+- Dropdown change 1→2 → floor plane appears at mid-height
+- Dropdown change 2→1 → floor plane disappears
+- Volume stays constant → building gets taller or shorter (storey height sacrificial)
+- Roof height stays constant → wall height flexes to accommodate stories
+
+### Known Issues from Backup
+
+**Volume vs. Height Conflict:**
+- If user sets `d_105 = 8000m³`, `d_95 = 1000m²`, `d_150 = 3 storeys`
+- Implied wall height = 8000 / 1000 = 8m total → 2.67m per storey (low!)
+- If g_106 = 3.5m → intended = 3 × 3.5 = 10.5m → volume deficit
+- Backup handled this with "pancake" warning (backup:line 1348-1377)
+- **Solution**: Show constraint violation in legend (e.g., "⚠️ Volume too low for realistic storey heights")
+
+### Implementation Checklist
+
+- [ ] Add `renderFloorPlanes()` function to wombatRender.js
+- [ ] Call `renderFloorPlanes()` after vertical edges, before eave lines
+- [ ] Pass `geometry.stories` and `geometry.storyHeight` to renderer
+- [ ] Handle fractional stories (1.5) with mezzanine option check
+- [ ] Add "STOREY X" labels to floor planes (optional)
+- [ ] Add legend entry: "Storey Height: X.XXm (sacrificial to volume)"
+- [ ] Test with 1, 1.5, 2, 3, 6 storeys
+- [ ] Verify volume stays constant as stories change
+- [ ] Verify roof height independent of stories count
+
+---
+
+## Current Blocker: Aspect Ratio NaN Bug
+
+### Symptoms:
+- Moving aspect ratio slider (d_154) causes NaN errors in wombatRender.js
+- Lines and circles render with NaN coordinates
+- No WOMBAT-2 DEBUG output in console (code not running)
+
+### Hypothesis:
+`currentState.getValue("d_154")` on Section19.js:917 returns invalid value because:
+1. ModeManager.setValue() publishes to StateManager but doesn't update TargetState.values["d_154"]
+2. TargetState.getValue() reads stale/null value
+3. `parseFloat(null)` → NaN
+4. `width = sqrt(area / NaN)` → NaN
+5. Cascade failure in geometry calculations
+
+### Debug Strategy:
+1. Check ModeManager.setValue() implementation (Section19.js:~268-281)
+2. Verify it calls `currentState.setValue(fieldId, value)` BEFORE publishing to StateManager
+3. Add breakpoint at line 917 to inspect d_154_raw value
+4. Trace why debug logs aren't appearing (code path not executing?)
+
+### Fix Approach:
+Ensure ModeManager.setValue() updates local state FIRST:
+```javascript
+setValue: function (fieldId, value, source = "user-modified") {
+  const currentState = this.currentMode === "target" ? TargetState : ReferenceState;
+
+  // ✅ UPDATE LOCAL STATE FIRST (critical!)
+  currentState.setValue(fieldId, value);
+
+  // ✅ THEN publish to StateManager
+  if (this.currentMode === "target") {
+    window.TEUI.StateManager.setValue(fieldId, value, source);
+  } else {
+    window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, source);
+  }
+}
+```
 
 ---
 
 **Document Status**: ACTIVE - Implementation in progress
 **Author**: Claude + Andy
-**Date**: 2025-12-19 (Created), 2025-12-20 (Updated with progress)
+**Date**: 2025-12-19 (Created), 2025-12-20 (Updated with multi-storey spec and NaN bug analysis)
 **Branch**: WOMBAT-PRISMATIC
-**Next Review**: After flat roof rendering verified
+**Next Review**: After aspect ratio NaN bug fixed
