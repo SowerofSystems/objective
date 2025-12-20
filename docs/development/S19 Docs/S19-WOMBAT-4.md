@@ -19,6 +19,63 @@ This eliminates iteration, clarifies dependency chains, and makes rendering stra
 
 ---
 
+## Constraint Hierarchy & Priority Order
+
+### Sacred Constraints (Inflexible)
+
+These constraints MUST be satisfied exactly and drive the geometry:
+
+1. **Footprint Area** (d_95 or d_87) - Foundation/slab area is fixed
+2. **Volume** (d_105) - Conditioned volume is sacred, always preserved
+3. **Roof Area** (d_85) - Total roof surface area constraint
+4. **Wall Areas** (Ae walls + Gable/Shed end walls) - Thermal envelope areas
+
+### Derived Constraints (Flexible)
+
+These values are calculated FROM the sacred constraints:
+
+1. **Storey Height** (h_156) - Derives from volume ÷ footprint, can flex based on roof geometry
+2. **Aspect Ratio** (d_154) - Controls footprint shape (L:W ratio), affects roof height
+3. **Footprint Dimensions** (Width × Length) - Derived from area + aspect ratio
+
+### Critical Insight: Aspect Ratio ↔ Roof Height Relationship
+
+**The shed roof "too tall" issue is likely an aspect ratio problem:**
+
+For shed/gable roofs with fixed roof area:
+- **Narrow footprint (low aspect ratio)** → Roof area spread over SHORT ridge → TALL roof rise
+- **Wide footprint (high aspect ratio)** → Roof area spread over LONG ridge → LOW roof rise
+
+**Example**:
+```javascript
+// Given: Roof area = 1100 m², Volume = 8319 m³, Footprint = 1100 m²
+
+// Case 1: Square footprint (aspect ratio = 1:1)
+const width = 33.2m;   // sqrt(1100)
+const length = 33.2m;
+const ridgeLength = 33.2m;  // SHORT dimension
+const slopeLength = 1100 / 33.2 = 33.1m;
+const roofHeight = sqrt(33.1² - 16.6²) = 28.6m;  // VERY TALL!
+
+// Case 2: Rectangular footprint (aspect ratio = 2:1)
+const width = 23.5m;   // sqrt(1100/2)
+const length = 46.9m;  // width × 2
+const ridgeLength = 23.5m;  // SHORT dimension
+const slopeLength = 1100 / 23.5 = 46.8m;
+const roofHeight = sqrt(46.8² - 23.5²) = 40.6m;  // EVEN TALLER!
+
+// Case 3: Aspect ratio needs adjustment to distribute roof area
+// The aspect ratio slider (d_154) redistributes roof area across dimensions
+// Higher aspect ratio → longer ridge → shallower roof slope
+```
+
+**Conclusion**: The "too tall" shed roof may already be mathematically correct given current constraints. We need to either:
+1. Adjust aspect ratio to distribute roof area over longer ridge
+2. Re-examine if roof area constraint (d_85) is properly wired
+3. Verify volume constraint isn't forcing unrealistic wall heights
+
+---
+
 ## Problem Statement
 
 ### Current Architecture Issues
@@ -1086,11 +1143,23 @@ test("visual parity - gable roof", () => {
 
 ### Known Issues
 
-- **Shed roof height**: Currently too tall (33m tall wall visible in screenshot) - needs wall height calculation adjustment
-- **Missing legend annotations**: Need to display roof area, floorplate area, wall areas, storey height on canvas (like old WOMBAT 3)
-- **Volume calculation approximate**: 0.85 factor for gable/shed, needs exact iteration
-- **Aspect ratio fixed at 1:1**: Square footprint, needs d_100 slider integration
-- **Wall areas not calculated**: Prismatic formulas designed but not implemented
+- **Shed roof height**: Currently too tall (33m visible in screenshot) - likely caused by square footprint aspect ratio forcing roof area over short ridge. Need to:
+  - Wire aspect ratio slider (d_154) to redistribute roof area over longer dimension
+  - Verify roof area constraint (d_85) is properly applied
+  - Add legend annotations to troubleshoot constraint satisfaction
+
+- **Missing legend annotations**: Need to restore upper-left canvas legend from WOMBAT 3:
+  - **Roof Area**: `xxxx.xx m²` (from d_85, StateManager 2dp format)
+  - **Floorplate Area**: `xxxx.xx m²` (from d_95 or d_87, 2dp)
+  - **Gable End Wall Area**: `xxxx.xx m²` (calculated, visible for gable roofs only)
+  - **Shed End Wall Area**: `xxxx.xx m²` (calculated, visible for shed roofs only)
+  - **Ae Wall Area**: `xxxx.xx m²` (calculated air-facing longitudinal walls)
+  - **Storey Height**: `x.xx m` (from h_156, 2dp)
+  - **Footprint Dimensions**: X and Y labels showing `Width: xx.x m` and `Length: xx.x m`
+
+- **Volume calculation approximate**: 0.85 factor for gable/shed, needs exact iteration to satisfy volume constraint
+- **Aspect ratio fixed at 1:1**: Square footprint currently, needs d_154 slider integration to allow rectangular footprints
+- **Wall areas not calculated**: Prismatic formulas designed but not implemented yet
 - **No multi-storey support yet**: Phase 2 enhancement
 
 ---
