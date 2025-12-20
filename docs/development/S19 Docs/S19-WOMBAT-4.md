@@ -1026,23 +1026,25 @@ test("visual parity - gable roof", () => {
 5. ✅ **Branch setup** - WOMBAT-PRISMATIC branch created and active
 6. ✅ **Flat roof solver** - Renders cube (8 nodes), verified working
 7. ✅ **Gable roof solver** - Renders house with ridge (10 nodes), verified working
-8. ✅ **Dropdown integration** - Roof type (d_159) correctly switches between flat/gable
+8. ✅ **Dropdown integration** - Roof type (d_159) correctly switches between flat/gable/shed
 9. ✅ **Renderer fixes** - Parameter order, export name, placeholder function all fixed
+10. ✅ **Shed roof solver** - Renders sloped trapezoid (8 nodes), verified working
 
 ### In Progress 🔄
 
-10. 🔄 **Documentation update** - Capturing progress and next steps
+11. 🔄 **Documentation update** - Capturing progress and next steps
+12. 🔄 **Legend annotations** - Add roof area, floorplate area, wall areas, storey height display on canvas
 
 ### Next Steps 📋
 
-11. **Implement shed roof profile solver** - Add `solveShed2DProfile()` function (monoplane)
-12. **Aspect ratio slider** - Make footprint aspect ratio dynamic from d_100 slider
-13. **Volume iteration** - Refine wall height calculation to exactly match volume constraint
-14. **Area constraints** - Iterate to satisfy roof area (d_85) exactly
-15. **Wall area calculations** - Implement prismatic wall area formulas
-16. **Multi-storey support** - Scale pattern for multiple storeys
-17. **Test and merge** - Comprehensive testing, then merge to main
-18. **Future enhancements** - Hip roof, pyramidal, basement support
+13. **Fix shed roof height** - Currently too tall, adjust wall height calculation
+14. **Aspect ratio slider** - Make footprint aspect ratio dynamic from d_100 slider
+15. **Volume iteration** - Refine wall height calculation to exactly match volume constraint
+16. **Area constraints** - Iterate to satisfy roof area (d_85) exactly
+17. **Wall area calculations** - Implement prismatic wall area formulas and display
+18. **Multi-storey support** - Scale pattern for multiple storeys
+19. **Test and merge** - Comprehensive testing, then merge to main
+20. **Future enhancements** - Hip roof, pyramidal, basement support
 
 ---
 
@@ -1063,8 +1065,9 @@ test("visual parity - gable roof", () => {
 **Section19.js**:
 - `solveFlat2DProfile(width, wallHeight)` - Returns 4-node rectangle profile
 - `solveGable2DProfile(width, roofArea, wallHeight)` - Returns 5-node gable profile (pentagon)
-- `extrudeProfile(profile2D, targetVolume)` - Calculates extrusion depth, handles flat/gable cross-sections
-- `generate3DNodes(profile2D, extrusionDepth)` - Creates 8 or 10 nodes (flat=8, gable=10)
+- `solveShed2DProfile(width, roofArea, length, wallHeight)` - Returns 4-node trapezoid profile (shed)
+- `extrudeProfile(profile2D, targetVolume)` - Calculates extrusion depth, handles flat/gable/shed cross-sections
+- `generate3DNodes(profile2D, extrusionDepth)` - Creates 8 or 10 nodes (flat=8, gable=10, shed=8)
 - `solveGeometry(isReferenceCalculation)` - Main entry point, reads d_159 roof type
 
 **wombatRender.js**:
@@ -1076,18 +1079,19 @@ test("visual parity - gable roof", () => {
 - `render(geometry, mode, svg, options)` - Main rendering function, handles flat/gable/shed
 
 **Roof Type Values** (from d_159 dropdown):
-- `"flat"` → Flat roof (8 nodes)
-- `"biplanar"` → Gable roof (10 nodes)
-- `"monoplane"` → Shed roof (not yet implemented)
+- `"flat"` → Flat roof (8 nodes) ✅
+- `"biplanar"` → Gable roof (10 nodes) ✅
+- `"monoplane"` → Shed roof (8 nodes) ✅
 - `"multiplanar"` → Pyramid/Hip (future)
 
 ### Known Issues
 
-- Shed roof solver not yet implemented (falls back to flat temporarily)
-- Volume calculation approximate (0.85 factor, needs iteration)
-- Aspect ratio fixed at 1:1 (square footprint), needs d_100 slider integration
-- Wall areas not yet calculated
-- No multi-storey support yet (Phase 2)
+- **Shed roof height**: Currently too tall (33m tall wall visible in screenshot) - needs wall height calculation adjustment
+- **Missing legend annotations**: Need to display roof area, floorplate area, wall areas, storey height on canvas (like old WOMBAT 3)
+- **Volume calculation approximate**: 0.85 factor for gable/shed, needs exact iteration
+- **Aspect ratio fixed at 1:1**: Square footprint, needs d_100 slider integration
+- **Wall areas not calculated**: Prismatic formulas designed but not implemented
+- **No multi-storey support yet**: Phase 2 enhancement
 
 ---
 
