@@ -1380,19 +1380,135 @@ function build2DProfile(roofType, width, wallHeight, roofHeight) {
 
 ### Implementation Checklist
 
-- [ ] Refactor `solveGeometry()` to use correct constraint order
-- [ ] Implement `solveRoofGeometry()` function
-- [ ] Implement `solveGableRoof()` with volume calculation
-- [ ] Implement `solveShedRoof()` with volume calculation
+- [x] Refactor `solveGeometry()` to use correct constraint order (Commit 9cd09d3)
+- [x] Implement `solveRoofGeometry()` function (Commit 2412e2f)
+- [x] Implement `solveGableRoof()` with volume calculation (Commit 2412e2f)
+- [x] Implement `solveShedRoof()` with volume calculation (Commit 2412e2f)
 - [ ] Modify profile builders to NOT solve (just build node arrays)
 - [ ] Remove `extrudeProfile()` volume-matching logic
 - [ ] Update `generate3DNodes()` to use span dimension for extrusion
-- [ ] Test flat roof (should still work - roof volume = 0)
-- [ ] Test gable roof with aspect ratio +4 and -4
-- [ ] Test shed roof with aspect ratio +4 and -4
-- [ ] Verify footprint proportions render correctly
+- [x] Test flat roof (WORKS - roof volume = 0) ✅
+- [x] Test gable roof with aspect ratio +4 and -4 (RENDERS but bugs found) ⚠️
+- [x] Test shed roof with aspect ratio +4 and -4 (RENDERS but bugs found) ⚠️
+- [x] Verify footprint proportions render correctly (WORKS) ✅
 - [ ] Verify storey height compresses when roof volume is large
 - [ ] Update legend to show "Roof steals Xm³ from walls"
+
+### Testing Results (2025-12-20)
+
+**STATUS**: 🧪 **TESTING IN PROGRESS** - Core refactoring complete, rendering bugs identified
+
+**What Works ✅**:
+1. **Flat roof** - Perfect at all aspect ratios
+2. **Pyramid roof** - Perfect at all aspect ratios (for now)
+3. **Footprint proportions** - Displays correctly (19.48m × 56.50m at aspect +1.90)
+4. **Ridge orientation swap** - Clever solution: flip X/Y instead of rotating building
+5. **Aspect ratio calculation** - Works across full range (-4 to +4)
+6. **Storey height compression** - Shows negative heights when roof steals too much volume
+
+**Critical Bugs Found ⚠️**:
+
+**Bug 1: Shed Roof Dives Below Ground (Bowtie Effect)**
+- **Symptom**: Shed roof extends BELOW ground plane, forming 3D "bowtie" shape
+- **Root Cause**: Roof geometry positioned from ground (Z=0) instead of eave line
+- **Expected**: Roof should sit ON TOP of base storey, from eave to ridge
+- **Fix Needed**: Profile nodes should place short wall at eave, tall wall at eave+roofHeight
+- **Test Case**: Aspect +2.30, shed roof shows building height -16.63m (NEGATIVE!)
+
+**Bug 2: Gable Roof Exceeds Area Allowance**
+- **Symptom**: Gable roof area far exceeds specified roof area constraint
+- **Root Cause**: Roof geometry solving may be using wrong dimensions
+- **Expected**: Roof area should equal 1411.52 m² (from d_85)
+- **Test Case**: Aspect +1.90, gable shows "Gable End Wall Area: 266.27 m²"
+- **Fix Needed**: Verify slopeLength calculation and area formulas
+
+**Bug 3: Gable Roof Builds from Grade, Not Eave**
+- **Symptom**: Gable roof positioned from ground (Z=0) instead of eave line
+- **Root Cause**: Same as Bug 1 - profile nodes use absolute Z instead of eave-relative
+- **Expected**: Triangle should sit on top of rectangular walls (eave to ridge)
+- **Fix Needed**: Profile builders need wallHeight offset in Z coordinates
+
+**Bug 4: Missing Axis Indicator**
+- **Symptom**: No visual indicator of coordinate system or ridge orientation
+- **Expected**: Show X, Y, Z axis key (Z-up, Y-North, X-E/W) like backup file
+- **Implementation**: Add axis indicator that rotates when aspect ratio crosses origin
+- **Purpose**: Help user understand ridge orientation swap (longitudinal ↔ transverse)
+
+### Detailed Bug Analysis
+
+**Shed Roof Bowtie (CRITICAL)**:
+
+Current profile nodes (Section19.js:~950-970):
+```javascript
+// WRONG - positions from ground
+nodes: [
+  { x: 0, z: 0 },                          // Short wall ground
+  { x: width, z: 0 },                      // Tall wall ground
+  { x: width, z: wallHeight + roofHeight }, // Tall wall top
+  { x: 0, z: wallHeight }                  // Short wall top (eave)
+]
+```
+
+Should be:
+```javascript
+// CORRECT - positions from eave line
+nodes: [
+  { x: 0, z: 0 },                     // Left ground
+  { x: width, z: 0 },                 // Right ground
+  { x: width, z: wallHeight },        // Right eave (short wall)
+  { x: width / 2, z: wallHeight + roofHeight }, // Ridge (high point)
+  { x: 0, z: wallHeight + roofHeight } // Left eave (tall wall)
+]
+```
+
+Wait, this is actually backwards. Shed roof should be:
+```javascript
+nodes: [
+  { x: 0, z: 0 },                          // Left ground
+  { x: width, z: 0 },                      // Right ground
+  { x: width, z: wallHeight + roofHeight }, // Right top (tall wall)
+  { x: 0, z: wallHeight }                  // Left top (short wall = eave)
+]
+```
+
+The issue is the roof is being built DOWNWARD instead of UPWARD from the eave line.
+
+**Gable Roof Geometry (CRITICAL)**:
+
+The issue is likely in the volume calculation. Current formula:
+```javascript
+const roofVolume = (footprintArea * roofHeight) / 2;  // Rectangular prism
+```
+
+This is CORRECT for gable roof (two triangular prisms).
+
+The visual issue suggests the profile is being built incorrectly. Let me check if it's the same eave-offset problem.
+
+Current gable profile (Section19.js:~920-935):
+```javascript
+nodes: [
+  { x: 0, z: 0 },                     // Left ground
+  { x: width, z: 0 },                 // Right ground
+  { x: width, z: wallHeight },        // Right eave
+  { x: width / 2, z: wallHeight + roofHeight }, // Ridge (center)
+  { x: 0, z: wallHeight }             // Left eave
+]
+```
+
+This looks CORRECT! The triangle sits on top of the rectangle. So why is it rendering from grade?
+
+**Hypothesis**: The issue might be in generate3DNodes() - it may be using absolute coordinates instead of offsetting the roof portion by wallHeight.
+
+### Fix Priority
+
+1. **CRITICAL**: Fix shed/gable roof Z-offset (profiles building from ground instead of eave)
+2. **HIGH**: Verify roof area constraint satisfaction (gable exceeding allowance)
+3. **MEDIUM**: Add axis indicator for ridge orientation visualization
+4. **LOW**: Add "Roof steals Xm³" to legend
+
+### Next Implementation Step
+
+Focus on fixing Bug 1 & 3 together - the Z-offset issue affecting both shed and gable roofs.
 
 ### Step-by-Step Implementation Plan
 
