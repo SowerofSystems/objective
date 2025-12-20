@@ -99,36 +99,63 @@ The aspect ratio slider (d_154) controls the footprint shape, redistributing the
 
 ### Mathematical Formula
 
+**✨ DISCOVERY FROM BACKUP (Section19.js.backup:1108-1127)**: The original WOMBAT 3 has a **superior, more elegant formula**:
+
 ```javascript
-/**
- * Calculate footprint width and length from area and aspect ratio
- * @param {number} footprintArea - Sacred footprint area (d_95 or d_87)
- * @param {number} aspectRatioValue - Slider value from d_154 (-4.0 to +4.0)
- * @returns {Object} { width, length } - Footprint dimensions in meters
- */
+// ✅ RECOMMENDED APPROACH (from backup - simpler, no branching)
+// Convert slider value to actual aspect ratio (length/width)
+const aspectRatioRaw = parseFloat(d_154) || 0;
+const aspectRatio = aspectRatioRaw >= 0
+  ? 1 + aspectRatioRaw           // Landscape: 0→1, +1→2, +2→3, +4→5
+  : 1 / (1 - aspectRatioRaw);    // Portrait:  0→1, -1→0.5, -2→0.33, -4→0.2
+
+// Solve dimensions with elegant single formula
+const width = Math.sqrt(footprintArea / aspectRatio);
+const length = footprintArea / width;  // Exact, no rounding error
+const perimeter = 2 * (length + width);
+```
+
+**Why This Is Better**:
+1. **No branching** - Single formula handles landscape and portrait uniformly
+2. **Mathematically pure** - `length = area / width` guarantees exact area preservation
+3. **Direct ratio** - `aspectRatio` directly represents `length/width` ratio
+4. **Simpler** - 3 lines vs 10+ lines with conditionals
+5. **Clearer intent** - aspectRatio variable name matches what it represents
+
+**Comparison to Initially Proposed Formula** (more complex):
+
+```javascript
+// ❌ INITIALLY PROPOSED (works but unnecessarily complex)
 function calculateFootprintDimensions(footprintArea, aspectRatioValue) {
-  // Convert slider value to ratio multiplier
-  // 0 = 1:1, +1 = 2:1, +2 = 3:1, -1 = 1:2, etc.
   const ratio = 1 + Math.abs(aspectRatioValue);
-
   let width, length;
-
   if (aspectRatioValue >= 0) {
-    // Landscape: length > width (wider building)
-    // Area = width × length = width × (width × ratio)
-    // width² × ratio = Area
     width = Math.sqrt(footprintArea / ratio);
     length = width * ratio;
   } else {
-    // Portrait: width > length (taller building)
-    // Area = width × length = (length × ratio) × length
-    // length² × ratio = Area
     length = Math.sqrt(footprintArea / ratio);
     width = length * ratio;
   }
-
   return { width, length };
 }
+```
+
+**Examples**:
+```javascript
+// Square (d_154 = 0):
+const aspectRatio = 1;  // 1 + 0
+const width = sqrt(1100 / 1) = 33.17m;
+const length = 1100 / 33.17 = 33.17m;  // Exact square
+
+// Landscape 2:1 (d_154 = +1):
+const aspectRatio = 2;  // 1 + 1
+const width = sqrt(1100 / 2) = 23.45m;
+const length = 1100 / 23.45 = 46.90m;  // Exactly 2:1
+
+// Portrait 1:2 (d_154 = -1):
+const aspectRatio = 0.5;  // 1 / (1 - (-1)) = 1 / 2
+const width = sqrt(1100 / 0.5) = 46.90m;
+const length = 1100 / 46.90 = 23.45m;  // Exactly 1:2
 ```
 
 ### Ridge Orientation Impact
