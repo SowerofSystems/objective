@@ -704,36 +704,102 @@ window.TEUI.SectionModules.sect19 = (function () {
   //==========================================================================
 
   /**
-   * PLACEHOLDER: Prismatic geometry solver will go here
-   *
-   * TODO: Implement following functions:
-   * - solve2DProfile(roofType, width, length, roofArea, wallHeight)
-   * - solveFlat2DProfile(width, wallHeight)
-   * - solveGable2DProfile(width, length, roofArea, wallHeight)
-   * - solveShed2DProfile(width, length, roofArea, wallHeight)
-   * - extrudeProfile(profile2D, targetVolume)
-   * - generate3DNodes(profile2D, extrusionDepth)
-   *
-   * For now, keep minimal stub
+   * Solve flat roof 2D profile - simple rectangle
    */
+  function solveFlat2DProfile(width, wallHeight) {
+    return {
+      nodes: [
+        { x: 0, z: 0 },
+        { x: width, z: 0 },
+        { x: width, z: wallHeight },
+        { x: 0, z: wallHeight },
+      ],
+      type: "flat",
+      height: 0,
+      wallHeight: wallHeight,
+      endWallArea: 0,
+    };
+  }
 
   /**
-   * STUB: Minimal geometry solver - returns flat roof for now
-   * Will be replaced with prismatic extrusion solver
+   * Extrude 2D profile to satisfy volume constraint
+   */
+  function extrudeProfile(profile2D, targetVolume) {
+    const crossSectionArea = profile2D.wallHeight * profile2D.nodes[1].x;
+    const extrusionDepth = targetVolume / crossSectionArea;
+    return {
+      depth: extrusionDepth,
+      crossSectionArea: crossSectionArea,
+    };
+  }
+
+  /**
+   * Generate 8 3D corner nodes from 2D profile + extrusion depth
+   */
+  function generate3DNodes(profile2D, extrusionDepth) {
+    const halfDepth = extrusionDepth / 2;
+    const width = profile2D.nodes[1].x;
+    const halfWidth = width / 2;
+
+    return {
+      ground: [
+        { x: -halfWidth, y: -halfDepth, z: 0 },
+        { x: halfWidth, y: -halfDepth, z: 0 },
+        { x: halfWidth, y: halfDepth, z: 0 },
+        { x: -halfWidth, y: halfDepth, z: 0 },
+      ],
+      eave: [
+        { x: -halfWidth, y: -halfDepth, z: profile2D.wallHeight },
+        { x: halfWidth, y: -halfDepth, z: profile2D.wallHeight },
+        { x: halfWidth, y: halfDepth, z: profile2D.wallHeight },
+        { x: -halfWidth, y: halfDepth, z: profile2D.wallHeight },
+      ],
+    };
+  }
+
+  /**
+   * Main geometry solver using prismatic extrusion
    */
   function solveGeometry(isReferenceCalculation = false) {
     const mode = isReferenceCalculation ? "Reference" : "Target";
-    console.log(`[WOMBAT-2] Prismatic solver stub (${mode} mode)`);
+    console.log(`[WOMBAT-2] Prismatic solver (${mode} mode)`);
 
-    // Return minimal geometry for flat roof
+    // Read inputs
+    const d_105_raw = getModeAwareValue("d_105", isReferenceCalculation);
+    const targetVolume = parseFloat(d_105_raw) || 8319.5;
+
+    // Get footprint area from d_95 (slab on grade)
+    let footprintArea = parseFloat(getModeAwareValue("d_95", isReferenceCalculation));
+    if (!footprintArea || footprintArea <= 0) {
+      // Fallback to raised floor (d_87)
+      footprintArea = parseFloat(getModeAwareValue("d_87", isReferenceCalculation)) || 1100;
+    }
+
+    // Assume square footprint for simplicity (can enhance later with aspect ratio)
+    const width = Math.sqrt(footprintArea);
+
+    // Solve height from volume: Volume = footprint × height
+    const wallHeight = targetVolume / footprintArea;
+
+    console.log(`[WOMBAT-2] Inputs: footprint=${footprintArea.toFixed(2)}m², volume=${targetVolume.toFixed(2)}m³`);
+    console.log(`[WOMBAT-2] Derived: width=${width.toFixed(2)}m, height=${wallHeight.toFixed(2)}m`);
+
+    const profile2D = solveFlat2DProfile(width, wallHeight);
+    const extrusion = extrudeProfile(profile2D, targetVolume);
+    const nodes3D = generate3DNodes(profile2D, extrusion.depth);
+
+    console.log(`[WOMBAT-2] Extrusion depth: ${extrusion.depth.toFixed(2)}m (should equal width for square)`);
+
     return {
-      footprint: { width: 33, length: 33 },
-      height: 3,
-      totalHeight: 3,
-      storyHeight: 3,
+      footprint: { width: width, length: extrusion.depth },
+      height: wallHeight,
+      totalHeight: wallHeight,
+      storyHeight: wallHeight,
       stories: 1,
       roofType: "flat",
       roofHeight: 0,
+      nodes3D: nodes3D,
+      profile2D: profile2D,
     };
   }
 
