@@ -1020,27 +1020,29 @@ test("visual parity - gable roof", () => {
 ### Completed ✅
 
 1. ✅ **Document review** - Architectural design approved
-2. ✅ **Create Section19.js** (activated from Section19-2.js) - Flat roof prismatic solver implemented
-3. ✅ **Create wombatRender.js** (activated from wombatRender-2.js) - Basic 8-node wireframe renderer implemented
+2. ✅ **Create Section19.js** (activated from Section19-2.js) - Prismatic solver implemented
+3. ✅ **Create wombatRender.js** (activated from wombatRender-2.js) - Wireframe renderer implemented
 4. ✅ **File activation** - Renamed to replace WOMBAT 3 files, backups created
 5. ✅ **Branch setup** - WOMBAT-PRISMATIC branch created and active
+6. ✅ **Flat roof solver** - Renders cube (8 nodes), verified working
+7. ✅ **Gable roof solver** - Renders house with ridge (10 nodes), verified working
+8. ✅ **Dropdown integration** - Roof type (d_159) correctly switches between flat/gable
+9. ✅ **Renderer fixes** - Parameter order, export name, placeholder function all fixed
 
 ### In Progress 🔄
 
-6. 🔄 **Renderer debugging** - Parameter order fixed, testing flat roof visualization
-   - Fixed: `renderPlaceholder()` function added
-   - Fixed: Export name changed from `WombatRender2` to `WombatRender`
-   - Fixed: `render()` parameter order corrected to match Section19.js caller
-   - Testing: Flat roof cube rendering in browser
+10. 🔄 **Documentation update** - Capturing progress and next steps
 
 ### Next Steps 📋
 
-7. **Verify flat roof rendering** - Test in browser, ensure wireframe cube displays
-8. **Implement shed roof profile solver** - Add `solveShed2DProfile()` function
-9. **Implement gable roof profile solver** - Add `solveGable2DProfile()` function
-10. **Test all roof types** - Verify rendering for flat, shed, gable
-11. **Commit and merge** - Push to main when stable
-12. **Future enhancements** - Hip roof, multi-storey support
+11. **Implement shed roof profile solver** - Add `solveShed2DProfile()` function (monoplane)
+12. **Aspect ratio slider** - Make footprint aspect ratio dynamic from d_100 slider
+13. **Volume iteration** - Refine wall height calculation to exactly match volume constraint
+14. **Area constraints** - Iterate to satisfy roof area (d_85) exactly
+15. **Wall area calculations** - Implement prismatic wall area formulas
+16. **Multi-storey support** - Scale pattern for multiple storeys
+17. **Test and merge** - Comprehensive testing, then merge to main
+18. **Future enhancements** - Hip roof, pyramidal, basement support
 
 ---
 
@@ -1060,9 +1062,10 @@ test("visual parity - gable roof", () => {
 
 **Section19.js**:
 - `solveFlat2DProfile(width, wallHeight)` - Returns 4-node rectangle profile
-- `extrudeProfile(profile2D, targetVolume)` - Calculates extrusion depth
-- `generate3DNodes(profile2D, extrusionDepth)` - Creates 8-node geometry
-- `solveGeometry(isReferenceCalculation)` - Main entry point
+- `solveGable2DProfile(width, roofArea, wallHeight)` - Returns 5-node gable profile (pentagon)
+- `extrudeProfile(profile2D, targetVolume)` - Calculates extrusion depth, handles flat/gable cross-sections
+- `generate3DNodes(profile2D, extrusionDepth)` - Creates 8 or 10 nodes (flat=8, gable=10)
+- `solveGeometry(isReferenceCalculation)` - Main entry point, reads d_159 roof type
 
 **wombatRender.js**:
 - `toIsometric(x, y, z, scale, centerX, centerY)` - 3D → 2D projection
@@ -1070,12 +1073,20 @@ test("visual parity - gable roof", () => {
 - `createNode(point, fill, radius)` - SVG circle helper
 - `createText(x, y, text, color, fontSize, options)` - SVG text helper
 - `renderPlaceholder(svg)` - Shows inactive state message
-- `render(geometry, mode, svg, options)` - Main rendering function
+- `render(geometry, mode, svg, options)` - Main rendering function, handles flat/gable/shed
+
+**Roof Type Values** (from d_159 dropdown):
+- `"flat"` → Flat roof (8 nodes)
+- `"biplanar"` → Gable roof (10 nodes)
+- `"monoplane"` → Shed roof (not yet implemented)
+- `"multiplanar"` → Pyramid/Hip (future)
 
 ### Known Issues
 
-- Flat roof renders as cube (expected - working on first test case)
-- Shed and gable roof profile solvers not yet implemented
+- Shed roof solver not yet implemented (falls back to flat temporarily)
+- Volume calculation approximate (0.85 factor, needs iteration)
+- Aspect ratio fixed at 1:1 (square footprint), needs d_100 slider integration
+- Wall areas not yet calculated
 - No multi-storey support yet (Phase 2)
 
 ---
