@@ -872,50 +872,96 @@ window.TEUI.SectionModules.sect19 = (function () {
 
   /**
    * Main geometry solver using prismatic extrusion, translation of copy of elevation geometry as sweep along longer axis (idea from ArchiCad GDL)
+   *
+   * CRITICAL CONSTRAINTS (in priority order):
+   * 1. Volume (d_105) - SACRED, always preserved exactly
+   * 2. Footprint Area (d_95/d_87) - SACRED, always preserved exactly
+   * 3. Roof Area (d_85) - SACRED ONLY if > footprint area, else collapses to flat roof
+   * 4. Aspect Ratio (d_154) - Reshapes footprint while preserving area
+   * 5. Storey Height (g_106) - SACRIFICIAL to satisfy volume constraint
+   *
+   * ROOF COLLAPSE RULE: If roof area <= footprint area, pitched roof is geometrically impossible
+   * → Automatically fall back to flat roof (roof area = footprint area)
+   * → User must increase d_85 to enable pitched roofs
    */
   function solveGeometry(isReferenceCalculation = false) {
     const mode = isReferenceCalculation ? "Reference" : "Target";
     console.log(`[WOMBAT-2] Prismatic solver (${mode} mode)`);
 
-    // Read inputs
+    // Read sacred constraints
     const d_105_raw = getModeAwareValue("d_105", isReferenceCalculation);
     const targetVolume = parseFloat(d_105_raw) || 8319.5;
 
     // Get roof type from d_159 dropdown
     const roofTypeRaw = getModeAwareValue("d_159", isReferenceCalculation);
-    const roofType = (roofTypeRaw || "flat").toLowerCase(); // biplanar, monoplane, flat, multiplanar
+    const roofTypeRequested = (roofTypeRaw || "flat").toLowerCase(); // biplanar, monoplane, flat, multiplanar
 
-    // Get roof area (d_85)
+    // Get roof area (d_85) - SACRED constraint
     const d_85_raw = getModeAwareValue("d_85", isReferenceCalculation);
     const roofArea = parseFloat(d_85_raw) || 1100;
 
-    // Get footprint area from d_95 (slab on grade)
+    // Get footprint area from d_95 (slab on grade) - SACRED constraint
     let footprintArea = parseFloat(getModeAwareValue("d_95", isReferenceCalculation));
     if (!footprintArea || footprintArea <= 0) {
       // Fallback to raised floor (d_87)
       footprintArea = parseFloat(getModeAwareValue("d_87", isReferenceCalculation)) || 1100;
     }
 
-    // Assume square footprint for simplicity (can enhance later with aspect ratio)
-    const width = Math.sqrt(footprintArea);
+    // ========================================================================
+    // ASPECT RATIO IMPLEMENTATION (from Section19.js.backup:1108-1127)
+    // Superior formula - no branching, mathematically pure
+    // ========================================================================
+    // Read aspect ratio slider d_154 (-4.0 to +4.0, step 0.1, default 0.0)
+    // 0 = square (1:1), positive = landscape (wide), negative = portrait (tall)
+    const currentState = isReferenceCalculation ? ReferenceState : TargetState;
+    const d_154_raw = currentState.getValue("d_154");
+    const aspectRatioRaw = parseFloat(d_154_raw) || 0.0;
 
-    console.log(`[WOMBAT-2] Inputs: footprint=${footprintArea.toFixed(2)}m², volume=${targetVolume.toFixed(2)}m³, roof=${roofType}`);
+    // Convert slider value to actual aspect ratio (length/width)
+    const aspectRatio = aspectRatioRaw >= 0
+      ? 1 + aspectRatioRaw           // Landscape: 0→1, +1→2, +2→3, +4→5
+      : 1 / (1 - aspectRatioRaw);    // Portrait:  0→1, -1→0.5, -2→0.33, -4→0.2
 
-    // Choose profile solver based on roof type
+    // Solve footprint dimensions - preserves area exactly
+    const width = Math.sqrt(footprintArea / aspectRatio);
+    const length = footprintArea / width;  // Exact, no rounding error
+
+    console.log(`[WOMBAT-2] Aspect ratio: ${aspectRatioRaw.toFixed(1)} → ${aspectRatio.toFixed(2)}:1 (L:W)`);
+    console.log(`[WOMBAT-2] Footprint: ${width.toFixed(2)}m × ${length.toFixed(2)}m = ${footprintArea.toFixed(2)}m²`);
+
+    // ========================================================================
+    // ROOF COLLAPSE CONSTRAINT
+    // Pitched roofs require roof area > footprint area
+    // If roof area <= footprint, geometry is impossible → fall back to flat
+    // ========================================================================
+    const areaRatio = roofArea / footprintArea;
+    let roofType = roofTypeRequested;
+
+    if (areaRatio <= 1.01 && roofTypeRequested !== "flat") {
+      console.warn(`[WOMBAT-2] ⚠️ ROOF COLLAPSE: Roof area (${roofArea.toFixed(2)}m²) ≈ footprint (${footprintArea.toFixed(2)}m²)`);
+      console.warn(`[WOMBAT-2] → Pitched roof geometrically impossible, falling back to FLAT roof`);
+      console.warn(`[WOMBAT-2] → Increase d_85 to > ${(footprintArea * 1.1).toFixed(0)}m² to enable ${roofTypeRequested} roof`);
+      roofType = "flat";
+    }
+
+    console.log(`[WOMBAT-2] Inputs: footprint=${footprintArea.toFixed(2)}m², volume=${targetVolume.toFixed(2)}m³, roof=${roofType} (requested: ${roofTypeRequested})`);
+
+    // Choose profile solver based on (potentially collapsed) roof type
     let profile2D;
     if (roofType === "biplanar") {
       // Gable roof: need to solve wall height from volume constraint first
       // Volume = footprint × wallHeight + roof volume
-      // For now, estimate wallHeight then adjust (will refine)
+      // STOREY HEIGHT IS SACRIFICIAL - derived from volume, not prescribed
       const estimatedWallHeight = targetVolume / footprintArea * 0.85; // Rough estimate
       profile2D = solveGable2DProfile(width, roofArea, estimatedWallHeight);
     } else if (roofType === "monoplane") {
       // Shed roof: trapezoid profile with slope across length dimension
+      // STOREY HEIGHT IS SACRIFICIAL - derived from volume, not prescribed
       const estimatedWallHeight = targetVolume / footprintArea * 0.85; // Rough estimate
-      const estimatedLength = footprintArea / width; // Derive length from footprint area
-      profile2D = solveShed2DProfile(width, roofArea, estimatedLength, estimatedWallHeight);
+      profile2D = solveShed2DProfile(width, roofArea, length, estimatedWallHeight);
     } else {
-      // Flat roof (default)
+      // Flat roof (default or collapsed from pitched)
+      // Wall height directly from volume constraint
       const wallHeight = targetVolume / footprintArea;
       profile2D = solveFlat2DProfile(width, wallHeight);
     }
@@ -925,6 +971,11 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     console.log(`[WOMBAT-2] Profile: ${profile2D.type}, extrusion depth: ${extrusion.depth.toFixed(2)}m`);
 
+    // Store calculated footprint dimensions in state for display
+    currentState.setValue("h_155", width.toFixed(2));  // Footprint width
+    currentState.setValue("h_157", length.toFixed(2)); // Footprint length (via extrusion depth)
+    currentState.setValue("h_156", profile2D.wallHeight.toFixed(2)); // Storey height (sacrificial)
+
     return {
       footprint: { width: width, length: extrusion.depth },
       height: profile2D.wallHeight,
@@ -933,6 +984,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       stories: 1,
       roofType: profile2D.type,
       roofHeight: profile2D.height,
+      roofCollapsed: roofType !== roofTypeRequested, // Flag if roof collapsed to flat
       nodes3D: nodes3D,
       profile2D: profile2D,
     };

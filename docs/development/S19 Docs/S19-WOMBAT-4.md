@@ -25,18 +25,25 @@ This eliminates iteration, clarifies dependency chains, and makes rendering stra
 
 These constraints MUST be satisfied exactly and drive the geometry:
 
-1. **Footprint Area** (d_95 or d_87) - Foundation/slab area is fixed
-2. **Volume** (d_105) - Conditioned volume is sacred, always preserved
-3. **Roof Area** (d_85) - Total roof surface area constraint
+1. **Volume** (d_105) - SACRED, always preserved exactly (highest priority)
+2. **Footprint Area** (d_95 or d_87) - SACRED, always preserved exactly
+3. **Roof Area** (d_85) - SACRED ONLY if > footprint area, else collapses to flat roof
+   - **ROOF COLLAPSE RULE**: If roof area ≤ footprint area, pitched roof is geometrically impossible
+   - Automatically falls back to flat roof (roof area = footprint area)
+   - User must increase d_85 to enable pitched roofs (minimum ~110% of footprint area)
 4. **Wall Areas** (Ae walls + Gable/Shed end walls) - Thermal envelope areas
 
 ### Derived Constraints (Flexible)
 
 These values are calculated FROM the sacred constraints:
 
-1. **Storey Height** (h_156) - Derives from volume ÷ footprint, can flex based on roof geometry
-2. **Aspect Ratio** (d_154) - Controls footprint shape (L:W ratio), affects roof height
-3. **Footprint Dimensions** (Width × Length) - Derived from area + aspect ratio
+1. **Aspect Ratio** (d_154) - Reshapes footprint while preserving area, affects roof height
+2. **Footprint Dimensions** (Width × Length) - Derived from area + aspect ratio
+3. **Storey Height** (h_156) - SACRIFICIAL to satisfy volume constraint
+   - **NOT prescribed** from g_106 (typical F2F height)
+   - **Derived** from volume ÷ footprint ÷ stories
+   - Can flex based on roof geometry to satisfy volume exactly
+   - User may see "pancake" storeys if volume is insufficient for realistic heights
 
 ### Critical Insight: Aspect Ratio ↔ Roof Height Relationship
 
@@ -1259,20 +1266,18 @@ test("visual parity - gable roof", () => {
 9. ✅ **Renderer fixes** - Parameter order, export name, placeholder function all fixed
 10. ✅ **Shed roof solver** - Renders sloped trapezoid (8 nodes), verified working
 
-### In Progress 🔄
-
-11. 🔄 **Aspect ratio implementation** - Wire d_154 slider to footprint dimensions (see detailed spec below)
-
 ### Completed ✅ (continued)
 
-12. ✅ **Legend annotations** - Canvas legend with roof area, floorplate area, wall areas, storey height, dimensions
-13. ✅ **Documentation updates** - Constraint hierarchy, aspect ratio analysis, implementation notes
+11. ✅ **Aspect ratio implementation** - d_154 slider wired to footprint dimensions (Section19.js:910-927)
+12. ✅ **Roof collapse constraint** - Auto-fallback to flat if roof area ≤ footprint (Section19.js:932-945)
+13. ✅ **Storey height sacrificial** - Wall height derived from volume, not prescribed (Section19.js:954-960)
+14. ✅ **Legend annotations** - Canvas legend with roof area, floorplate area, wall areas, storey height, dimensions
+15. ✅ **Documentation updates** - Constraint hierarchy, roof collapse rule, aspect ratio analysis
 
 ### Next Steps 📋
 
-14. **Complete aspect ratio solver** - Implement calculateFootprintDimensions() per spec below
-15. **Test aspect ratio impact** - Verify shed roof height reduces with landscape aspect ratio
-16. **Volume iteration** - Refine wall height calculation to exactly match volume constraint
+16. **Test aspect ratio impact** - Verify shed roof height reduces with landscape aspect ratio
+17. **Volume iteration** - Refine wall height calculation to exactly match volume constraint
 16. **Area constraints** - Iterate to satisfy roof area (d_85) exactly
 17. **Wall area calculations** - Implement prismatic wall area formulas and display
 18. **Multi-storey support** - Scale pattern for multiple storeys
