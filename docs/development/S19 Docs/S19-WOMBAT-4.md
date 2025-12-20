@@ -21,29 +21,112 @@ This eliminates iteration, clarifies dependency chains, and makes rendering stra
 
 ## Constraint Hierarchy & Priority Order
 
-### Sacred Constraints (Inflexible)
+**CRITICAL INSIGHT (2025-12-20)**: The constraint order was BACKWARDS in initial WOMBAT-4 implementation!
 
-These constraints MUST be satisfied exactly and drive the geometry:
+### Correct Constraint Flow (from Section19.js.backup)
 
-1. **Volume** (d_105) - SACRED, always preserved exactly (highest priority)
-2. **Footprint Area** (d_95 or d_87) - SACRED, always preserved exactly
-3. **Roof Area** (d_85) - SACRED ONLY if > footprint area, else collapses to flat roof
+The backup file (WOMBAT 3) had the **correct constraint order** documented at lines 1113-1122:
+
+```javascript
+// CORRECT CONSTRAINT FLOW (per user specification 2025-12-15)
+// 1. Footprint (d_95) = SACRED touchstone
+// 2. Mezzanine = h_15 - d_95 (if Mezzanine/Partial Floor option selected)
+// 3. Total Wall Area = d_86 + all windows
+// 4. Solve ridge height from roof area (d_85) FIRST ← CRITICAL
+// 5. Extract gable end area from wall area
+// 6. Wall height = (walls - gables) / perimeter
+// 7. Volume (d_105) is verification check ONLY ← NOT a driver!
+```
+
+### Sacred Constraints (Execution Order)
+
+These constraints MUST be satisfied in THIS ORDER:
+
+1. **Footprint Area** (d_95 or d_87) - SACRED touchstone, foundation of all geometry
+2. **Aspect Ratio** (d_154) - Reshapes footprint: `width = sqrt(area/aspectRatio)`, `length = area/width`
+3. **Roof Area** (d_85) - SACRED, drives roof height calculation FIRST
    - **ROOF COLLAPSE RULE**: If roof area ≤ footprint area, pitched roof is geometrically impossible
-   - Automatically falls back to flat roof (roof area = footprint area)
-   - User must increase d_85 to enable pitched roofs (minimum ~110% of footprint area)
-4. **Wall Areas** (Ae walls + Gable/Shed end walls) - Thermal envelope areas
+   - Automatically falls back to flat roof
+   - User must increase d_85 to > 110% of footprint area to enable pitched roofs
+4. **Roof Geometry Solved** - Calculate roof height from roof area using rational trigonometry
+5. **Roof Volume Calculated** - Derive volume from roof geometry (pyramid, prism, etc.)
+6. **Volume** (d_105) - SACRED total volume constraint
+7. **Wall Height DERIVED** - **SACRIFICIAL**: `wallHeight = (volume - roofVolume) / footprintArea`
+   - Roof "steals" volume from walls
+   - Storey height gets compressed if roof takes significant volume
+   - Can result in "pancake" storeys if roof volume is large relative to total volume
 
-### Derived Constraints (Flexible)
+### What Was Wrong (Initial WOMBAT-4 Implementation)
 
-These values are calculated FROM the sacred constraints:
+**Incorrect Order** (lines 962-968 in current Section19.js):
+```javascript
+// ❌ WRONG: Estimated wall height FIRST, then solve roof
+const estimatedWallHeight = targetVolume / footprintArea * 0.85; // Rough guess
+profile2D = solveGable2DProfile(ridgeLength, roofArea, estimatedWallHeight);
 
-1. **Aspect Ratio** (d_154) - Reshapes footprint while preserving area, affects roof height
-2. **Footprint Dimensions** (Width × Length) - Derived from area + aspect ratio
-3. **Storey Height** (h_156) - SACRIFICIAL to satisfy volume constraint
-   - **NOT prescribed** from g_106 (typical F2F height)
-   - **Derived** from volume ÷ footprint ÷ stories
-   - Can flex based on roof geometry to satisfy volume exactly
-   - User may see "pancake" storeys if volume is insufficient for realistic heights
+// Then extrude to match volume
+const extrusion = extrudeProfile(profile2D, targetVolume);
+```
+
+**Problems**:
+1. Wall height estimated from volume × 0.85 factor (arbitrary)
+2. Roof geometry solved with estimated wall height
+3. Extrusion depth forced to match total volume
+4. Result: Footprint dimensions wrong, roof geometry doesn't satisfy roof area constraint
+
+**Evidence from Flat Roof Test** (2025-12-20):
+- Flat roof at aspect ratio +4.00 renders CORRECTLY
+- Footprint: 14.84m × 74.19m = 1100.92 m² (exact 5:1 ratio) ✅
+- Storey Height: 7.56m = 8319.5 ÷ 1100.92 ✅
+- Visual proportions: Long skinny rectangle ✅
+- **Conclusion**: Footprint and wall solver work perfectly when roof volume = 0
+
+### Correct Implementation Pattern (from backup)
+
+**Phase 1: Footprint** (backup lines 1124-1132)
+```javascript
+const width = Math.sqrt(footprintArea / aspectRatio);
+const length = footprintArea / width;  // Exact, no rounding error
+```
+
+**Phase 4: Roof Geometry FIRST** (backup lines 1183-1271)
+```javascript
+// Solve roof height from roof area constraint using rational trigonometry
+const gableData = calculateGableHeight(width, length, roofArea);
+roofHeight = gableData.height;
+gableEndArea = 2 * gableData.gableEndArea;
+
+// Calculate roof volume (for gable: pyramid volume of triangular cap)
+const roofVolume = (footprintArea * roofHeight) / 3;  // Pyramid formula
+```
+
+**Phase 5: Wall Height DERIVED** (backup lines 1273-1319)
+```javascript
+// Wall height is SACRIFICIAL - derived from remaining volume after roof
+const wallVolume = conditionedVolume - roofVolume;
+const wallHeight = wallVolume / footprintArea;
+const storyHeight = wallHeight / storiesDeclared;
+
+console.log(`Roof steals ${roofVolume.toFixed(0)}m³, leaving ${wallVolume.toFixed(0)}m³ for walls`);
+```
+
+### Visual Proof of Problem
+
+**Current WOMBAT-4 with Gable Roof** (aspect ratio -4.00):
+- Displayed dimensions: 74.2m × 14.8m (says width=74.19, length=14.84)
+- Expected proportions: 5:1 ratio
+- **Visual proportions**: WRONG - appears nearly square, not 5:1
+- **Volume calculation**: Footprint × storey height = 1100.98 × 6.42 = 7068.29 m³
+- **Roof volume remaining**: 8319.5 - 7068.29 = only 1251.21 m³
+- **Problem**: Roof area constraint (1574 m²) cannot be satisfied with only 1251 m³ available
+
+**Correct Approach** (what should happen):
+1. Footprint: 1100.92 m² → width=14.84m, length=74.19m (portrait mode, aspect=-4)
+2. Roof area: 1574 m² → solve gable height using ridgeLength=14.84m (SHORT)
+3. Roof height: ~H meters (from Pythagorean theorem with roof area constraint)
+4. Roof volume: (1100.92 × H) / 3 = ~V m³
+5. Wall height: (8319.5 - V) / 1100.92 = reduced height
+6. Storey height: wallHeight / 1 storey = sacrificial (compressed by roof)
 
 ### Critical Insight: Aspect Ratio ↔ Roof Height Relationship
 
@@ -1014,6 +1097,302 @@ function solveHip2DProfile(width, roofArea, wallHeight) {
 **Extrude**: `depth = d_105 / crossSectionArea`
 
 **Render**: Hexagonal prism (6 nodes per end)
+
+---
+
+## Implementation Specification: Correct Constraint Order
+
+**STATUS**: 🚧 **NEEDS IMPLEMENTATION** - Documentation complete, code needs refactoring
+
+This section provides a complete specification for fixing the constraint order in WOMBAT-4.
+
+### High-Level Algorithm
+
+```javascript
+function solveGeometry(isReferenceCalculation) {
+  // Phase 1: Read SACRED constraints
+  const footprintArea = getModeAwareValue("d_95");  // SACRED
+  const roofArea = getModeAwareValue("d_85");        // SACRED
+  const targetVolume = getModeAwareValue("d_105");   // SACRED
+  const aspectRatioRaw = getModeAwareValue("d_154"); // User preference
+  const roofTypeRequested = getModeAwareValue("d_159"); // User selection
+  const storiesDeclared = getModeAwareValue("d_150"); // User input
+
+  // Phase 2: Calculate footprint dimensions from aspect ratio
+  const aspectRatio = aspectRatioRaw >= 0
+    ? 1 + aspectRatioRaw
+    : 1 / (1 - aspectRatioRaw);
+
+  const width = Math.sqrt(footprintArea / aspectRatio);
+  const length = footprintArea / width;  // Exact preservation
+
+  // Phase 3: Calculate ridge orientation (dynamic)
+  const ridgeLength = Math.min(width, length);  // SHORT dimension
+  const span = Math.max(width, length);         // LONG dimension
+  const ridgeOrientation = length >= width ? "longitudinal" : "transverse";
+
+  // Phase 4: Solve roof geometry from ROOF AREA constraint (FIRST!)
+  const roofResult = solveRoofGeometry(
+    roofTypeRequested,
+    roofArea,
+    footprintArea,
+    ridgeLength,
+    span
+  );
+
+  // roofResult contains:
+  // - roofHeight: height of ridge above eave
+  // - roofVolume: volume of pitched cap
+  // - roofType: "flat", "gable", "shed", "hip" (may collapse)
+  // - gableEndArea: area of triangular ends (for wall area calculations)
+
+  // Phase 5: Derive wall height from REMAINING volume (SACRIFICIAL!)
+  const wallVolume = targetVolume - roofResult.roofVolume;
+  const wallHeight = wallVolume / footprintArea;
+  const storyHeight = wallHeight / storiesDeclared;
+
+  // Phase 6: Build 2D profile for rendering (NOT for solving!)
+  const profile2D = build2DProfile(
+    roofResult.roofType,
+    ridgeLength,
+    wallHeight,
+    roofResult.roofHeight
+  );
+
+  // Phase 7: Extrude along SPAN dimension (perpendicular to profile)
+  const nodes3D = generate3DNodes(profile2D, span);
+
+  // Return complete geometry
+  return {
+    footprint: { width, length },
+    ridgeOrientation,
+    roofType: roofResult.roofType,
+    roofHeight: roofResult.roofHeight,
+    roofVolume: roofResult.roofVolume,
+    wallHeight,
+    storyHeight,
+    stories: storiesDeclared,
+    totalHeight: wallHeight + roofResult.roofHeight,
+    nodes3D,
+    profile2D
+  };
+}
+```
+
+### Key Function: solveRoofGeometry()
+
+This function solves roof geometry from the roof area constraint FIRST, without knowing wall height.
+
+```javascript
+function solveRoofGeometry(roofTypeRequested, roofArea, footprintArea, ridgeLength, span) {
+  // Check roof collapse condition
+  const areaRatio = roofArea / footprintArea;
+
+  if (areaRatio <= 1.01) {
+    // Roof area ≤ footprint → pitched roof impossible
+    return {
+      roofType: "flat",
+      roofHeight: 0,
+      roofVolume: 0,
+      gableEndArea: 0
+    };
+  }
+
+  // Roof area > footprint → solve pitched roof geometry
+  if (roofTypeRequested === "biplanar") {
+    return solveGableRoof(roofArea, ridgeLength, span, footprintArea);
+  } else if (roofTypeRequested === "monoplane") {
+    return solveShedRoof(roofArea, ridgeLength, span, footprintArea);
+  } else if (roofTypeRequested === "multiplanar") {
+    return solveHipRoof(roofArea, ridgeLength, span, footprintArea);
+  } else {
+    // Flat roof explicitly selected
+    return {
+      roofType: "flat",
+      roofHeight: 0,
+      roofVolume: 0,
+      gableEndArea: 0
+    };
+  }
+}
+```
+
+### Gable Roof Solver (from backup)
+
+```javascript
+function solveGableRoof(roofArea, ridgeLength, span, footprintArea) {
+  // Gable roof: two rectangular slopes meet at ridge
+  // Ridge runs across SHORT dimension (ridgeLength)
+  // Slope runs down LONG dimension (span)
+
+  // Total roof area = 2 rectangular slopes
+  // roofArea = 2 × ridgeLength × slopeLength
+  // Therefore: slopeLength = roofArea / (2 × ridgeLength)
+  const slopeLength = roofArea / (2 * ridgeLength);
+
+  // Pythagorean theorem (rational trigonometry):
+  // slopeLength² = roofHeight² + (span/2)²
+  // roofHeight² = slopeLength² - (span/2)²
+  const h2 = slopeLength * slopeLength - (span * span) / 4;
+
+  if (h2 < 0) {
+    console.error(`[WOMBAT] Invalid gable geometry - roof area ${roofArea.toFixed(0)}m² too small for footprint`);
+    return {
+      roofType: "flat",
+      roofHeight: 0,
+      roofVolume: 0,
+      gableEndArea: 0
+    };
+  }
+
+  const roofHeight = Math.sqrt(h2);
+
+  // Gable end area (triangular): base × height / 2
+  const gableEndArea = (span * roofHeight) / 2;
+
+  // Roof volume = rectangular prism (footprint × roofHeight / 2)
+  // OR equivalently: pyramid volume = (base × height) / 3 where base = 2 × footprint
+  const roofVolume = (footprintArea * roofHeight) / 2;
+
+  console.log(`[WOMBAT] Gable roof solved from area constraint:`);
+  console.log(`  Roof area: ${roofArea.toFixed(2)} m²`);
+  console.log(`  Ridge length: ${ridgeLength.toFixed(2)} m (SHORT dimension)`);
+  console.log(`  Span: ${span.toFixed(2)} m (LONG dimension)`);
+  console.log(`  Slope length: ${slopeLength.toFixed(2)} m`);
+  console.log(`  Roof height: ${roofHeight.toFixed(2)} m`);
+  console.log(`  Roof volume: ${roofVolume.toFixed(2)} m³ (steals from walls)`);
+  console.log(`  Gable end area (both): ${(2 * gableEndArea).toFixed(2)} m²`);
+
+  return {
+    roofType: "gable",
+    roofHeight,
+    roofVolume,
+    gableEndArea: 2 * gableEndArea  // Both triangular ends
+  };
+}
+```
+
+### Shed Roof Solver
+
+```javascript
+function solveShedRoof(roofArea, ridgeLength, span, footprintArea) {
+  // Shed roof: single rectangular slope
+  // Ridge runs across SHORT dimension (ridgeLength) at HIGH end
+  // Slope runs down LONG dimension (span)
+
+  // Roof area = ridgeLength × slopeLength
+  const slopeLength = roofArea / ridgeLength;
+
+  // Pythagorean theorem:
+  // slopeLength² = roofHeight² + span²
+  // roofHeight² = slopeLength² - span²
+  const h2 = slopeLength * slopeLength - span * span;
+
+  if (h2 < 0) {
+    console.error(`[WOMBAT] Invalid shed geometry - roof area ${roofArea.toFixed(0)}m² too small for footprint`);
+    return {
+      roofType: "flat",
+      roofHeight: 0,
+      roofVolume: 0,
+      gableEndArea: 0
+    };
+  }
+
+  const roofHeight = Math.sqrt(h2);
+
+  // Shed end wall area (rectangular): ridgeLength × roofHeight
+  const shedEndWallArea = ridgeLength * roofHeight;
+
+  // Roof volume = trapezoidal prism volume
+  // = footprint × (average height above eave)
+  // = footprint × (roofHeight / 2)
+  const roofVolume = (footprintArea * roofHeight) / 2;
+
+  console.log(`[WOMBAT] Shed roof solved from area constraint:`);
+  console.log(`  Roof area: ${roofArea.toFixed(2)} m²`);
+  console.log(`  Ridge length: ${ridgeLength.toFixed(2)} m (SHORT dimension)`);
+  console.log(`  Span: ${span.toFixed(2)} m (LONG dimension)`);
+  console.log(`  Slope length: ${slopeLength.toFixed(2)} m`);
+  console.log(`  Roof height: ${roofHeight.toFixed(2)} m`);
+  console.log(`  Roof volume: ${roofVolume.toFixed(2)} m³ (steals from walls)`);
+  console.log(`  Shed end wall area (both): ${(2 * shedEndWallArea).toFixed(2)} m²`);
+
+  return {
+    roofType: "shed",
+    roofHeight,
+    roofVolume,
+    shedEndWallArea: 2 * shedEndWallArea  // Both rectangular ends
+  };
+}
+```
+
+### Modified Profile Builders (for rendering only)
+
+The profile solvers no longer SOLVE geometry - they just BUILD 2D node arrays for rendering.
+
+```javascript
+function build2DProfile(roofType, width, wallHeight, roofHeight) {
+  // width = ridgeLength (SHORT dimension)
+  // This profile will be extruded along span (LONG dimension)
+
+  if (roofType === "gable") {
+    return {
+      type: "gable",
+      wallHeight,
+      height: roofHeight,
+      nodes: [
+        { x: 0, z: 0 },                     // Left ground
+        { x: width, z: 0 },                 // Right ground
+        { x: width, z: wallHeight },        // Right eave
+        { x: width / 2, z: wallHeight + roofHeight }, // Ridge (center)
+        { x: 0, z: wallHeight }             // Left eave
+      ]
+    };
+  } else if (roofType === "shed") {
+    return {
+      type: "shed",
+      wallHeight,
+      tallWallHeight: wallHeight + roofHeight,
+      height: roofHeight,
+      nodes: [
+        { x: 0, z: 0 },                          // Left ground (short wall)
+        { x: width, z: 0 },                      // Right ground (tall wall)
+        { x: width, z: wallHeight + roofHeight }, // Right eave (tall)
+        { x: 0, z: wallHeight }                  // Left eave (short)
+      ]
+    };
+  } else {
+    // Flat roof
+    return {
+      type: "flat",
+      wallHeight,
+      height: 0,
+      nodes: [
+        { x: 0, z: 0 },
+        { x: width, z: 0 },
+        { x: width, z: wallHeight },
+        { x: 0, z: wallHeight }
+      ]
+    };
+  }
+}
+```
+
+### Implementation Checklist
+
+- [ ] Refactor `solveGeometry()` to use correct constraint order
+- [ ] Implement `solveRoofGeometry()` function
+- [ ] Implement `solveGableRoof()` with volume calculation
+- [ ] Implement `solveShedRoof()` with volume calculation
+- [ ] Modify profile builders to NOT solve (just build node arrays)
+- [ ] Remove `extrudeProfile()` volume-matching logic
+- [ ] Update `generate3DNodes()` to use span dimension for extrusion
+- [ ] Test flat roof (should still work - roof volume = 0)
+- [ ] Test gable roof with aspect ratio +4 and -4
+- [ ] Test shed roof with aspect ratio +4 and -4
+- [ ] Verify footprint proportions render correctly
+- [ ] Verify storey height compresses when roof volume is large
+- [ ] Update legend to show "Roof steals Xm³ from walls"
 
 ---
 
