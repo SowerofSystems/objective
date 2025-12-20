@@ -76,6 +76,151 @@ const roofHeight = sqrt(46.8² - 23.5²) = 40.6m;  // EVEN TALLER!
 
 ---
 
+## Aspect Ratio Implementation Specification
+
+### Overview
+
+The aspect ratio slider (d_154) controls the footprint shape, redistributing the sacred footprint area between width and length dimensions. This directly affects roof height because the ridge orientation follows the SHORT dimension convention.
+
+### Slider Range & Interpretation
+
+```javascript
+// d_154 slider: -4.0 to +4.0, step 0.1, default 0.0
+
+// Value → Footprint Shape
+// -4.0 → 5:1 portrait (very tall/narrow)
+// -2.0 → 3:1 portrait
+// -1.0 → 2:1 portrait
+//  0.0 → 1:1 square (current default)
+// +1.0 → 2:1 landscape
+// +2.0 → 3:1 landscape
+// +4.0 → 5:1 landscape (very wide/shallow)
+```
+
+### Mathematical Formula
+
+```javascript
+/**
+ * Calculate footprint width and length from area and aspect ratio
+ * @param {number} footprintArea - Sacred footprint area (d_95 or d_87)
+ * @param {number} aspectRatioValue - Slider value from d_154 (-4.0 to +4.0)
+ * @returns {Object} { width, length } - Footprint dimensions in meters
+ */
+function calculateFootprintDimensions(footprintArea, aspectRatioValue) {
+  // Convert slider value to ratio multiplier
+  // 0 = 1:1, +1 = 2:1, +2 = 3:1, -1 = 1:2, etc.
+  const ratio = 1 + Math.abs(aspectRatioValue);
+
+  let width, length;
+
+  if (aspectRatioValue >= 0) {
+    // Landscape: length > width (wider building)
+    // Area = width × length = width × (width × ratio)
+    // width² × ratio = Area
+    width = Math.sqrt(footprintArea / ratio);
+    length = width * ratio;
+  } else {
+    // Portrait: width > length (taller building)
+    // Area = width × length = (length × ratio) × length
+    // length² × ratio = Area
+    length = Math.sqrt(footprintArea / ratio);
+    width = length * ratio;
+  }
+
+  return { width, length };
+}
+```
+
+### Ridge Orientation Impact
+
+**CRITICAL**: Ridge ALWAYS runs across SHORT dimension (structural efficiency convention)
+
+```javascript
+// Example: 1100m² footprint area
+
+// Square (aspectRatio = 0):
+const { width: 33.2m, length: 33.2m } = calculateFootprintDimensions(1100, 0);
+const ridgeLength = Math.min(width, length) = 33.2m;  // SHORT dimension
+// → Roof area spread over 33.2m ridge → TALL roof
+
+// Landscape 2:1 (aspectRatio = +1):
+const { width: 23.5m, length: 46.9m } = calculateFootprintDimensions(1100, 1);
+const ridgeLength = Math.min(width, length) = 23.5m;  // SHORT dimension (width)
+// → Roof area spread over 23.5m ridge → EVEN TALLER roof (worse!)
+
+// Landscape 1:2 (aspectRatio = -1):
+const { width: 46.9m, length: 23.5m } = calculateFootprintDimensions(1100, -1);
+const ridgeLength = Math.min(width, length) = 23.5m;  // SHORT dimension (length)
+// → Same ridge length, same tall roof issue
+
+// Landscape 1:3 (aspectRatio = -2):
+const { width: 57.4m, length: 19.2m } = calculateFootprintDimensions(1100, -2);
+const ridgeLength = Math.min(width, length) = 19.2m;  // SHORT dimension (length)
+// → Roof area spread over 19.2m ridge → EVEN TALLER roof
+```
+
+### Key Insight: Aspect Ratio Paradox
+
+**Changing aspect ratio alone may NOT reduce roof height!**
+
+- Ridge always uses SHORT dimension
+- Making building more rectangular → shorter SHORT dimension → TALLER roof
+- For gable/shed roofs: `roofHeight = sqrt(slopeLength² - (span/2)²)` where `slopeLength = roofArea / ridgeLength`
+- Smaller ridgeLength → larger slopeLength → potentially taller roof
+
+**Solution**: Aspect ratio must work in conjunction with:
+1. **Roof area iteration** - Adjust d_85 to match realistic slope
+2. **Volume iteration** - Recalculate wall height to satisfy volume constraint
+3. **User feedback** - Legend shows when roof geometry is unrealistic
+
+### Implementation Location
+
+**File**: `src/sections/Section19.js`
+**Function**: `solveGeometry(isReferenceCalculation)`
+**Line**: ~840 (currently has `const width = Math.sqrt(footprintArea);`)
+
+**Changes Required**:
+
+```javascript
+// BEFORE (line ~840):
+const width = Math.sqrt(footprintArea);
+
+// AFTER:
+// Read aspect ratio from d_154
+const d_154_raw = getModeAwareValue("d_154", isReferenceCalculation);
+const aspectRatio = parseFloat(d_154_raw) || 0.0;
+
+// Calculate dimensions from aspect ratio
+const { width, length } = calculateFootprintDimensions(footprintArea, aspectRatio);
+
+console.log(`[WOMBAT-2] Aspect ratio: ${aspectRatio.toFixed(2)}, footprint: ${width.toFixed(2)}m × ${length.toFixed(2)}m`);
+```
+
+**Additional Changes**:
+
+1. Add `calculateFootprintDimensions()` helper function before `solveGeometry()`
+2. Update ridge orientation logic to use `Math.min(width, length)` explicitly
+3. Ensure profile solvers receive correct width/length for their orientation
+4. Publish h_155 (width) and h_157 (length) to StateManager
+
+### Testing Plan
+
+1. **Square test** (d_154 = 0): Verify width = length = sqrt(area)
+2. **Landscape test** (d_154 = +1): Verify length = 2 × width, area preserved
+3. **Portrait test** (d_154 = -1): Verify width = 2 × length, area preserved
+4. **Extremes test** (d_154 = ±4): Verify 5:1 ratio, area preserved
+5. **Roof height test**: Document how roof height changes with aspect ratio for 1100m² footprint
+
+### Expected Outcome
+
+With aspect ratio slider implemented:
+- User can reshape footprint while preserving area
+- Legend shows width × length dimensions updating in real-time
+- Roof height may increase or decrease depending on ridge orientation
+- Volume and area constraints remain sacred (always preserved)
+
+---
+
 ## Problem Statement
 
 ### Current Architecture Issues
@@ -1089,14 +1234,18 @@ test("visual parity - gable roof", () => {
 
 ### In Progress 🔄
 
-11. 🔄 **Documentation update** - Capturing progress and next steps
-12. 🔄 **Legend annotations** - Add roof area, floorplate area, wall areas, storey height display on canvas
+11. 🔄 **Aspect ratio implementation** - Wire d_154 slider to footprint dimensions (see detailed spec below)
+
+### Completed ✅ (continued)
+
+12. ✅ **Legend annotations** - Canvas legend with roof area, floorplate area, wall areas, storey height, dimensions
+13. ✅ **Documentation updates** - Constraint hierarchy, aspect ratio analysis, implementation notes
 
 ### Next Steps 📋
 
-13. **Fix shed roof height** - Currently too tall, adjust wall height calculation
-14. **Aspect ratio slider** - Make footprint aspect ratio dynamic from d_100 slider
-15. **Volume iteration** - Refine wall height calculation to exactly match volume constraint
+14. **Complete aspect ratio solver** - Implement calculateFootprintDimensions() per spec below
+15. **Test aspect ratio impact** - Verify shed roof height reduces with landscape aspect ratio
+16. **Volume iteration** - Refine wall height calculation to exactly match volume constraint
 16. **Area constraints** - Iterate to satisfy roof area (d_85) exactly
 17. **Wall area calculations** - Implement prismatic wall area formulas and display
 18. **Multi-storey support** - Scale pattern for multiple storeys
