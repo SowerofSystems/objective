@@ -8,8 +8,10 @@
  *
  * Core Principles:
  * - Volume is Sacred (d_105 ALWAYS preserved exactly)
- * - Areas Drive Form (roof pitch, wall heights emerge from area constraints)
- * - No Validation Errors (impossible geometry renders visually as feedback)
+ * - Footprint Area is Sacred (d_95 ALWAYS preserved exactly, and varies with d_154 - Aspect Ratio)
+ * - Roof Area is Sacred (d_85 ALWAYS preserved exactly, and uses roof type from d_159 and height as a flexible variable, greater ht. allows greater area AND volume)
+ * - Areas Drive Form (Footprint area generates volume by storey, roof pitch/steepness/height, wall heights emerge from area constraints)
+ * - No Validation Errors (impossible geometry renders visually as feedback in console ticker per S16.js.backup file pattern)
  * - Constraint Satisfaction Feedback (color-coded UI shows how well areas match)
  */
 
@@ -24,10 +26,10 @@ window.TEUI.SectionModules.sect19 = (function () {
   //==========================================================================
 
   let isActivated = false;
-  let threejsLoaded = false;
+  let threejsLoaded = false; // Future implementation for flatShader, orbit, zoom, ground plane generation, etc.
   let currentModel = null;
 
-  // COORDINATE CONVENTION: Y+ = North (for future window orientation per facade)
+  // BIM-STYLE COORDINATE CONVENTION: Y+ = North (for future window orientation per facade)
   // X+ = East, Y+ = North, Z+ = Up (right-handed coordinate system)
   // Config moved to wombatRender.js
 
@@ -43,11 +45,11 @@ window.TEUI.SectionModules.sect19 = (function () {
     values: {
       d_150: "1", // Stories (mirrors S12 d_103)
       d_151: "8319.50", // Volume (mirrors S12 d_105)
-      d_154: "0.0", // Aspect ratio slider (L:W)
-      d_158: "mezzanine", // Floorplate Options (mezzanine/equal)
+      d_154: "0.0", // Aspect ratio slider (L:W)- to be implemented
+      d_158: "mezzanine", // Floorplate Options (mezzanine/equal), absorbs difference of h_15-d_95 when h_15>d_95 for 1.5 storey buildings
       d_159: "biplanar", // Roof Type (multiplanar/biplanar/monoplane)
-      h_155: "0.00", // Calculated: Footprint width
-      h_156: "0.00", // Calculated: Story height
+      h_155: "0.00", // Calculated: Footprint width driven by user-editable slider
+      h_156: "0.00", // Calculated: Storey height, use first g_106 as wall height, but allow to be less to satisfy volume and/or wall constraints
       h_157: "0.00", // Calculated: Footprint length
     },
 
@@ -97,7 +99,7 @@ window.TEUI.SectionModules.sect19 = (function () {
 
   /**
    * ReferenceState - Holds Reference mode values for WOMBAT fields
-   * Provides state sovereignty for Reference calculation mode
+   * Provides state sovereignty for Reference calculation mode, all identical on initialization but me have 100% independence from TargetState
    */
   const ReferenceState = {
     values: {
@@ -338,7 +340,167 @@ window.TEUI.SectionModules.sect19 = (function () {
       },
     },
 
-    // Floorplate Options dropdown (clarifies fractional story interpretation)
+    // Volume input (mirrored from S12 d_105)
+    row151: {
+      id: "19.V",
+      rowId: "19.V",
+      label: "Conditioned Volume",
+      cells: {
+        a: {},
+        b: {},
+        c: { label: "Conditioned Volume" },
+        d: {
+          fieldId: "d_151",
+          type: "editable",
+          value: "8319.50",
+          classes: ["user-input"],
+          tooltip: true,
+          label: "Conditioned volume (mirrored from S12)",
+        },
+        e: { content: "m³", classes: ["unit-label"] },
+        f: {},
+        g: {},
+        h: {},
+      },
+    },
+
+    // Display-only: Area Exposed to Air (mirrored from S12 d_101, comprises total of Roof Area + Wall Area + Window Area)
+    row152: {
+      id: "19.Ae",
+      rowId: "19.Ae",
+      label: "Area Exposed to Air (Ae)",
+      cells: {
+        a: {},
+        b: {},
+        c: { label: "Area Exposed to Air (Ae)" },
+        d: {
+          fieldId: "d_152",
+          type: "calculated",
+          value: "2476.62",
+          classes: ["text-air-facing"],
+          label: "Total area of building components exposed to air (from S12)",
+        },
+        e: { content: "m²", classes: ["unit-label"] },
+        f: { content: "U-Val. for Ae", classes: ["label-main"] },
+        g: {
+          fieldId: "g_152",
+          type: "calculated",
+          value: "0.278",
+          classes: ["text-air-facing"],
+          label: "Aggregate U-value for air-facing surfaces (from S12)",
+        },
+        h: { content: "W/m²·K", classes: ["unit-label"] },
+      },
+    },
+
+    // Display-only: Area Exposed to Ground (mirrored from S12 d_102) - Includes floor slab and any basement walls
+    row153: {
+      id: "19.Ag",
+      rowId: "19.Ag",
+      label: "Area Exposed to Ground (Ag)",
+      cells: {
+        a: {},
+        b: {},
+        c: { label: "Area Exposed to Ground (Ag)" },
+        d: {
+          fieldId: "d_153",
+          type: "calculated",
+          value: "1100.93",
+          classes: ["text-ground-facing"],
+          label:
+            "Total area of building components exposed to ground (from S12)",
+        },
+        e: { content: "m²", classes: ["unit-label"] },
+        f: { content: "U-Val. for Ag", classes: ["label-main"] },
+        g: {
+          fieldId: "g_153",
+          type: "calculated",
+          value: "0.324",
+          classes: ["text-ground-facing"],
+          label: "Aggregate U-value for ground-facing surfaces (from S12)",
+        },
+        h: { content: "W/m²·K", classes: ["unit-label"] },
+      },
+    },
+
+    // User controls for topology solver - redistributes area/volume into footprint length, width, and height, initializes as 0 = Square = X=Y. 
+    row154: {
+      id: "19.1",
+      rowId: "19.1",
+      label: "Footprint Aspect Ratio (L:W)",
+      cells: {
+        a: {},
+        b: {},
+        c: { label: "Footprint Aspect Ratio (L:W)" },
+        d: {
+          fieldId: "d_154",
+          type: "coefficient_slider",
+          value: "0.0",
+          min: -4.0,
+          max: 4.0,
+          step: 0.1, // Consider adding snap to 0 for ease of value setting.
+          section: "wombat",
+          tooltip: true,
+          label:
+            "Aspect Ratio: 0 = square, negative = portrait (tall), positive = landscape (wide)",
+        },
+        e: { content: "(0 = square)", classes: ["text-left"] },
+        f: {},
+        g: {},
+        h: {
+          fieldId: "h_157",
+          type: "calculated",
+          value: "0.00",
+          label: "Footprint Length (m)",
+        },
+      },
+    },
+
+    row155: {
+      id: "19.2",
+      rowId: "19.2",
+      label: "Footprint Width",
+      cells: {
+        a: {},
+        b: {},
+        c: { label: "Footprint Width" },
+        d: {},
+        e: {},
+        f: {},
+        g: {},
+        h: {
+          fieldId: "h_155",
+          type: "calculated",
+          value: "0.00",
+          label: "Footprint Width (m)",
+        },
+      },
+    },
+
+    row156: {
+      id: "19.3",
+      rowId: "19.3",
+      label: "Building Height",
+      cells: {
+        a: {},
+        b: {},
+        c: { label: "Building Height" },
+        d: {},
+        e: {},
+        f: {},
+        g: {},
+        h: {
+          fieldId: "h_156",
+          type: "calculated",
+          value: "0.00",
+          label: "Nominal Height (m)",
+        },
+      },
+    },
+
+    // No row 157 yet...
+
+        // Floorplate Options dropdown (clarifies fractional story interpretation)
     row158: {
       id: "19.FP",
       rowId: "19.FP",
@@ -399,163 +561,6 @@ window.TEUI.SectionModules.sect19 = (function () {
       },
     },
 
-    // Volume input (mirrored from S12 d_105)
-    row151: {
-      id: "19.V",
-      rowId: "19.V",
-      label: "Conditioned Volume",
-      cells: {
-        a: {},
-        b: {},
-        c: { label: "Conditioned Volume" },
-        d: {
-          fieldId: "d_151",
-          type: "editable",
-          value: "8319.50",
-          classes: ["user-input"],
-          tooltip: true,
-          label: "Conditioned volume (mirrored from S12)",
-        },
-        e: { content: "m³", classes: ["unit-label"] },
-        f: {},
-        g: {},
-        h: {},
-      },
-    },
-
-    // Display-only: Area Exposed to Air (mirrored from S12 d_101)
-    row152: {
-      id: "19.Ae",
-      rowId: "19.Ae",
-      label: "Area Exposed to Air (Ae)",
-      cells: {
-        a: {},
-        b: {},
-        c: { label: "Area Exposed to Air (Ae)" },
-        d: {
-          fieldId: "d_152",
-          type: "calculated",
-          value: "2476.62",
-          classes: ["text-air-facing"],
-          label: "Total area of building components exposed to air (from S12)",
-        },
-        e: { content: "m²", classes: ["unit-label"] },
-        f: { content: "U-Val. for Ae", classes: ["label-main"] },
-        g: {
-          fieldId: "g_152",
-          type: "calculated",
-          value: "0.278",
-          classes: ["text-air-facing"],
-          label: "Aggregate U-value for air-facing surfaces (from S12)",
-        },
-        h: { content: "W/m²·K", classes: ["unit-label"] },
-      },
-    },
-
-    // Display-only: Area Exposed to Ground (mirrored from S12 d_102)
-    row153: {
-      id: "19.Ag",
-      rowId: "19.Ag",
-      label: "Area Exposed to Ground (Ag)",
-      cells: {
-        a: {},
-        b: {},
-        c: { label: "Area Exposed to Ground (Ag)" },
-        d: {
-          fieldId: "d_153",
-          type: "calculated",
-          value: "1100.93",
-          classes: ["text-ground-facing"],
-          label:
-            "Total area of building components exposed to ground (from S12)",
-        },
-        e: { content: "m²", classes: ["unit-label"] },
-        f: { content: "U-Val. for Ag", classes: ["label-main"] },
-        g: {
-          fieldId: "g_153",
-          type: "calculated",
-          value: "0.324",
-          classes: ["text-ground-facing"],
-          label: "Aggregate U-value for ground-facing surfaces (from S12)",
-        },
-        h: { content: "W/m²·K", classes: ["unit-label"] },
-      },
-    },
-
-    // User controls for topology solver
-    row154: {
-      id: "19.1",
-      rowId: "19.1",
-      label: "Footprint Aspect Ratio (L:W)",
-      cells: {
-        a: {},
-        b: {},
-        c: { label: "Footprint Aspect Ratio (L:W)" },
-        d: {
-          fieldId: "d_154",
-          type: "coefficient_slider",
-          value: "0.0",
-          min: -4.0,
-          max: 4.0,
-          step: 0.1,
-          section: "wombat",
-          tooltip: true,
-          label:
-            "Aspect Ratio: 0 = square, negative = portrait (tall), positive = landscape (wide)",
-        },
-        e: { content: "(0 = square)", classes: ["text-left"] },
-        f: {},
-        g: {},
-        h: {
-          fieldId: "h_157",
-          type: "calculated",
-          value: "0.00",
-          label: "Footprint Length (m)",
-        },
-      },
-    },
-
-    row155: {
-      id: "19.2",
-      rowId: "19.2",
-      label: "Footprint Width",
-      cells: {
-        a: {},
-        b: {},
-        c: { label: "Footprint Width" },
-        d: {},
-        e: {},
-        f: {},
-        g: {},
-        h: {
-          fieldId: "h_155",
-          type: "calculated",
-          value: "0.00",
-          label: "Footprint Width (m)",
-        },
-      },
-    },
-
-    row156: {
-      id: "19.3",
-      rowId: "19.3",
-      label: "Building Height",
-      cells: {
-        a: {},
-        b: {},
-        c: { label: "Building Height" },
-        d: {},
-        e: {},
-        f: {},
-        g: {},
-        h: {
-          fieldId: "h_156",
-          type: "calculated",
-          value: "0.00",
-          label: "Nominal Height (m)",
-        },
-      },
-    },
   };
 
   //==========================================================================
@@ -658,14 +663,17 @@ window.TEUI.SectionModules.sect19 = (function () {
     // Add data rows
     [
       "row150",
-      "row158",
-      "row159",
       "row151",
       "row152",
       "row153",
       "row154",
       "row155",
       "row156",
+      //"row157",   //Reserved for future use
+      "row158",     //footprint width to be added
+      "row159",     //building height to be added
+      
+      
     ].forEach(key => {
       if (sectionRows[key]) {
         layoutRows.push(createLayoutRow(sectionRows[key]));
@@ -722,11 +730,11 @@ window.TEUI.SectionModules.sect19 = (function () {
   }
 
   /**
-   * Solve gable roof 2D profile - rectangle + triangle
+   * Solve gable roof 2D Elevation profile - rectangle + triangle
    * Ridge runs across SHORT dimension (structural efficiency)
    */
   function solveGable2DProfile(width, roofArea, wallHeight) {
-    const ridgeLength = width; // SHORT dimension
+    const ridgeLength = width; // SHORT dimension per structural efficiency convention
     const slopeLength = roofArea / (2 * ridgeLength); // Half roof on each side
     const halfWidth = width / 2;
 
@@ -784,7 +792,7 @@ window.TEUI.SectionModules.sect19 = (function () {
   }
 
   /**
-   * Extrude 2D profile to satisfy volume constraint
+   * Extrude 2D profile to satisfy volume constraint AND footprint and roof constraints (noting mezzanine area does not participate in volume generation)
    */
   function extrudeProfile(profile2D, targetVolume) {
     const width = profile2D.nodes[1].x;
@@ -863,7 +871,7 @@ window.TEUI.SectionModules.sect19 = (function () {
   }
 
   /**
-   * Main geometry solver using prismatic extrusion
+   * Main geometry solver using prismatic extrusion, translation of copy of elevation geometry as sweep along longer axis (idea from ArchiCad GDL)
    */
   function solveGeometry(isReferenceCalculation = false) {
     const mode = isReferenceCalculation ? "Reference" : "Target";
@@ -1070,7 +1078,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     }
   }
 
-  function showFeedback(message, duration = 5000) {
+  function showFeedback(message, duration = 10000) {  //unless new message comes in then over-write
     const console = document.getElementById("s19-feedback-console");
     if (!console) return;
 
