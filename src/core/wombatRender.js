@@ -7,7 +7,7 @@
  */
 
 window.TEUI = window.TEUI || {};
-window.TEUI.WombatRender2 = (function () {
+window.TEUI.WombatRender = (function () {
   "use strict";
 
   //==========================================================================
