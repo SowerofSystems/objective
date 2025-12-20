@@ -281,7 +281,139 @@ window.TEUI.WombatRender = (function () {
     );
     svg.appendChild(dims);
 
+    // Add legend annotations
+    renderLegend(svg, geometry, mode);
+
     console.log("[WombatRender-4] Rendered successfully");
+  }
+
+  //==========================================================================
+  // LEGEND RENDERING
+  //==========================================================================
+
+  /**
+   * Render legend with key metrics in upper-left area
+   * @param {SVGElement} svg - SVG container
+   * @param {Object} geometry - Geometry data
+   * @param {String} mode - "target" or "reference"
+   */
+  function renderLegend(svg, geometry, mode) {
+    const isReference = mode === "reference";
+    let yOffset = 75; // Start below title and dimensions
+    const xOffset = 20;
+    const lineHeight = 18;
+    const labelColor = "#666";
+    const valueColor = "#333";
+
+    // Helper to get values from StateManager with mode awareness
+    function getValue(fieldId) {
+      if (!window.TEUI?.StateManager) return null;
+      const fullFieldId = isReference ? `ref_${fieldId}` : fieldId;
+      return window.TEUI.StateManager.getValue(fullFieldId);
+    }
+
+    // Helper to format number with 2dp
+    function format2dp(value) {
+      const num = parseFloat(value);
+      return isNaN(num) ? "0.00" : num.toFixed(2);
+    }
+
+    // 1. Footprint dimensions (Width × Length)
+    const widthText = createText(
+      xOffset,
+      yOffset,
+      `Width (X): ${geometry.footprint.width.toFixed(2)} m`,
+      labelColor,
+      11
+    );
+    svg.appendChild(widthText);
+    yOffset += lineHeight;
+
+    const lengthText = createText(
+      xOffset,
+      yOffset,
+      `Length (Y): ${geometry.footprint.length.toFixed(2)} m`,
+      labelColor,
+      11
+    );
+    svg.appendChild(lengthText);
+    yOffset += lineHeight;
+
+    // 2. Storey Height
+    const storeyHeight = getValue("h_156") || geometry.storyHeight.toFixed(2);
+    const storeyText = createText(
+      xOffset,
+      yOffset,
+      `Storey Height: ${format2dp(storeyHeight)} m`,
+      labelColor,
+      11
+    );
+    svg.appendChild(storeyText);
+    yOffset += lineHeight;
+
+    // 3. Floorplate Area (from d_95 or d_87)
+    const floorplateArea = getValue("d_95") || getValue("d_87") || "0.00";
+    const floorplateText = createText(
+      xOffset,
+      yOffset,
+      `Floorplate Area: ${format2dp(floorplateArea)} m²`,
+      labelColor,
+      11
+    );
+    svg.appendChild(floorplateText);
+    yOffset += lineHeight;
+
+    // 4. Roof Area (from d_85)
+    const roofArea = getValue("d_85") || "0.00";
+    const roofText = createText(
+      xOffset,
+      yOffset,
+      `Roof Area: ${format2dp(roofArea)} m²`,
+      labelColor,
+      11
+    );
+    svg.appendChild(roofText);
+    yOffset += lineHeight;
+
+    // 5. End Wall Area (gable or shed specific)
+    if (geometry.roofType === "gable" || geometry.roofType === "shed") {
+      const endWallArea = geometry.profile2D?.endWallArea || 0;
+      const endWallLabel = geometry.roofType === "gable" ? "Gable End Wall Area" : "Shed End Wall Area";
+      const endWallText = createText(
+        xOffset,
+        yOffset,
+        `${endWallLabel}: ${endWallArea.toFixed(2)} m²`,
+        labelColor,
+        11
+      );
+      svg.appendChild(endWallText);
+      yOffset += lineHeight;
+    }
+
+    // 6. Ae Wall Area (air-facing longitudinal walls - calculated from geometry)
+    // For prismatic geometry: 2 longitudinal walls × length × wall height
+    const longitudinalWallArea = 2 * geometry.footprint.length * geometry.height;
+    const aeWallText = createText(
+      xOffset,
+      yOffset,
+      `Ae Wall Area: ${longitudinalWallArea.toFixed(2)} m²`,
+      labelColor,
+      11
+    );
+    svg.appendChild(aeWallText);
+    yOffset += lineHeight;
+
+    // 7. Volume (from d_105) - for verification
+    const volume = getValue("d_105") || "0.00";
+    const volumeText = createText(
+      xOffset,
+      yOffset,
+      `Volume: ${format2dp(volume)} m³`,
+      valueColor,
+      11,
+      { fontWeight: "bold" }
+    );
+    svg.appendChild(volumeText);
   }
 
   //==========================================================================
