@@ -752,6 +752,38 @@ window.TEUI.SectionModules.sect19 = (function () {
   }
 
   /**
+   * Solve shed roof 2D profile - trapezoid (asymmetric)
+   * Ridge runs across SHORT dimension (structural efficiency)
+   * One wall at wallHeight, opposite wall at wallHeight + roofHeight
+   */
+  function solveShed2DProfile(width, roofArea, length, wallHeight) {
+    const ridgeLength = width; // SHORT dimension (ridge)
+    const span = length;        // LONG dimension (slope direction)
+    const slopeLength = roofArea / ridgeLength;
+
+    // Rational trigonometry: slopeLength² = span² + roofHeight²
+    const R = slopeLength * slopeLength;
+    const Q_span = span * span;
+    const Q_height = R - Q_span;
+    const roofHeight = Math.sqrt(Q_height);
+    const tallWallHeight = wallHeight + roofHeight;
+
+    return {
+      nodes: [
+        { x: 0, z: 0 },                   // Left ground
+        { x: width, z: 0 },               // Right ground
+        { x: width, z: tallWallHeight },  // Right eave (tall side)
+        { x: 0, z: wallHeight },          // Left eave (short side)
+      ],
+      type: "shed",
+      height: roofHeight,
+      wallHeight: wallHeight,
+      tallWallHeight: tallWallHeight,
+      endWallArea: ((wallHeight + tallWallHeight) / 2) * width, // Trapezoid end wall
+    };
+  }
+
+  /**
    * Extrude 2D profile to satisfy volume constraint
    */
   function extrudeProfile(profile2D, targetVolume) {
@@ -763,6 +795,10 @@ window.TEUI.SectionModules.sect19 = (function () {
       const rectangleArea = width * profile2D.wallHeight;
       const triangleArea = (width * profile2D.height) / 2;
       crossSectionArea = rectangleArea + triangleArea;
+    } else if (profile2D.type === "shed") {
+      // Trapezoid: average of two parallel sides × width
+      const avgHeight = (profile2D.wallHeight + profile2D.tallWallHeight) / 2;
+      crossSectionArea = width * avgHeight;
     } else {
       // Flat roof: just rectangle
       crossSectionArea = width * profile2D.wallHeight;
@@ -777,7 +813,7 @@ window.TEUI.SectionModules.sect19 = (function () {
 
   /**
    * Generate 3D corner nodes from 2D profile + extrusion depth
-   * Returns 8 nodes for flat, 10 nodes for gable (4 ground + 4 eave + 2 ridge)
+   * Returns 8 nodes for flat/shed, 10 nodes for gable (4 ground + 4 eave + 2 ridge)
    */
   function generate3DNodes(profile2D, extrusionDepth) {
     const halfDepth = extrusionDepth / 2;
@@ -791,13 +827,28 @@ window.TEUI.SectionModules.sect19 = (function () {
         { x: halfWidth, y: halfDepth, z: 0 },
         { x: -halfWidth, y: halfDepth, z: 0 },
       ],
-      eave: [
+      eave: [],
+    };
+
+    // Generate eave nodes based on roof type
+    if (profile2D.type === "shed") {
+      // Shed roof: short side at wallHeight, tall side at tallWallHeight
+      // Slope runs from -Y (short) to +Y (tall)
+      nodes.eave = [
+        { x: -halfWidth, y: -halfDepth, z: profile2D.wallHeight },      // Front left (short)
+        { x: halfWidth, y: -halfDepth, z: profile2D.wallHeight },       // Front right (short)
+        { x: halfWidth, y: halfDepth, z: profile2D.tallWallHeight },    // Back right (tall)
+        { x: -halfWidth, y: halfDepth, z: profile2D.tallWallHeight },   // Back left (tall)
+      ];
+    } else {
+      // Flat or gable: uniform eave height
+      nodes.eave = [
         { x: -halfWidth, y: -halfDepth, z: profile2D.wallHeight },
         { x: halfWidth, y: -halfDepth, z: profile2D.wallHeight },
         { x: halfWidth, y: halfDepth, z: profile2D.wallHeight },
         { x: -halfWidth, y: halfDepth, z: profile2D.wallHeight },
-      ],
-    };
+      ];
+    }
 
     // Add ridge nodes for gable roof
     if (profile2D.type === "gable") {
@@ -851,9 +902,10 @@ window.TEUI.SectionModules.sect19 = (function () {
       const estimatedWallHeight = targetVolume / footprintArea * 0.85; // Rough estimate
       profile2D = solveGable2DProfile(width, roofArea, estimatedWallHeight);
     } else if (roofType === "monoplane") {
-      // Shed roof: TODO - implement solveShed2DProfile()
-      const wallHeight = targetVolume / footprintArea * 0.85;
-      profile2D = solveFlat2DProfile(width, wallHeight); // Temporary fallback
+      // Shed roof: trapezoid profile with slope across length dimension
+      const estimatedWallHeight = targetVolume / footprintArea * 0.85; // Rough estimate
+      const estimatedLength = footprintArea / width; // Derive length from footprint area
+      profile2D = solveShed2DProfile(width, roofArea, estimatedLength, estimatedWallHeight);
     } else {
       // Flat roof (default)
       const wallHeight = targetVolume / footprintArea;
