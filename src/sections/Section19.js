@@ -915,6 +915,9 @@ window.TEUI.SectionModules.sect19 = (function () {
     // 0 = square (1:1), positive = landscape (wide), negative = portrait (tall)
     const currentState = isReferenceCalculation ? ReferenceState : TargetState;
     const d_154_raw = currentState.getValue("d_154");
+
+    console.log(`[WOMBAT-2 DEBUG] d_154_raw from state: ${d_154_raw} (type: ${typeof d_154_raw})`);
+
     const aspectRatioRaw = parseFloat(d_154_raw) || 0.0;
 
     // Convert slider value to actual aspect ratio (length/width)
@@ -922,10 +925,14 @@ window.TEUI.SectionModules.sect19 = (function () {
       ? 1 + aspectRatioRaw           // Landscape: 0→1, +1→2, +2→3, +4→5
       : 1 / (1 - aspectRatioRaw);    // Portrait:  0→1, -1→0.5, -2→0.33, -4→0.2
 
+    console.log(`[WOMBAT-2 DEBUG] aspectRatio calculated: ${aspectRatio}`);
+    console.log(`[WOMBAT-2 DEBUG] footprintArea: ${footprintArea}`);
+
     // Solve footprint dimensions - preserves area exactly
     const width = Math.sqrt(footprintArea / aspectRatio);
     const length = footprintArea / width;  // Exact, no rounding error
 
+    console.log(`[WOMBAT-2 DEBUG] width: ${width}, length: ${length}`);
     console.log(`[WOMBAT-2] Aspect ratio: ${aspectRatioRaw.toFixed(1)} → ${aspectRatio.toFixed(2)}:1 (L:W)`);
     console.log(`[WOMBAT-2] Footprint: ${width.toFixed(2)}m × ${length.toFixed(2)}m = ${footprintArea.toFixed(2)}m²`);
 
