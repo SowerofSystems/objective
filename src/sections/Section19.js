@@ -711,6 +711,178 @@ window.TEUI.SectionModules.sect19 = (function () {
   // Unified pattern for flat, gable, shed, hip roofs - no iteration needed
   //==========================================================================
 
+  //==========================================================================
+  // PHASE 1: ROOF GEOMETRY SOLVERS (from area constraint)
+  // These functions solve roof geometry from ROOF AREA constraint FIRST,
+  // independent of wall height. They return roof height and roof volume.
+  //==========================================================================
+
+  /**
+   * Solve roof geometry from roof area constraint (FIRST step in constraint flow)
+   * Returns roof height and roof volume for wall height derivation
+   */
+  function solveRoofGeometry(roofTypeRequested, roofArea, footprintArea, ridgeLength, span) {
+    const areaRatio = roofArea / footprintArea;
+
+    // Check roof collapse condition
+    if (areaRatio <= 1.01) {
+      console.log(`[WOMBAT] Roof area ≤ footprint (${areaRatio.toFixed(2)}x) → flat roof`);
+      return {
+        roofType: "flat",
+        roofHeight: 0,
+        roofVolume: 0,
+        gableEndArea: 0,
+        shedEndWallArea: 0
+      };
+    }
+
+    // Roof area > footprint → solve pitched roof geometry
+    if (roofTypeRequested === "biplanar") {
+      return solveGableRoof(roofArea, ridgeLength, span, footprintArea);
+    } else if (roofTypeRequested === "monoplane") {
+      return solveShedRoof(roofArea, ridgeLength, span, footprintArea);
+    } else if (roofTypeRequested === "flat") {
+      // Flat roof explicitly selected by user
+      return {
+        roofType: "flat",
+        roofHeight: 0,
+        roofVolume: 0,
+        gableEndArea: 0,
+        shedEndWallArea: 0
+      };
+    } else {
+      // Default to flat for unknown types
+      console.warn(`[WOMBAT] Unknown roof type "${roofTypeRequested}", defaulting to flat`);
+      return {
+        roofType: "flat",
+        roofHeight: 0,
+        roofVolume: 0,
+        gableEndArea: 0,
+        shedEndWallArea: 0
+      };
+    }
+  }
+
+  /**
+   * Solve gable roof geometry from roof area constraint
+   * Returns roof height, roof volume, and gable end areas
+   */
+  function solveGableRoof(roofArea, ridgeLength, span, footprintArea) {
+    // Gable roof: two rectangular slopes meet at ridge
+    // Ridge runs across SHORT dimension (ridgeLength)
+    // Slope runs down LONG dimension (span)
+
+    // Total roof area = 2 rectangular slopes
+    // roofArea = 2 × ridgeLength × slopeLength
+    // Therefore: slopeLength = roofArea / (2 × ridgeLength)
+    const slopeLength = roofArea / (2 * ridgeLength);
+
+    // Pythagorean theorem (rational trigonometry):
+    // slopeLength² = roofHeight² + (span/2)²
+    // roofHeight² = slopeLength² - (span/2)²
+    const h2 = slopeLength * slopeLength - (span * span) / 4;
+
+    if (h2 < 0) {
+      console.error(`[WOMBAT] Invalid gable geometry - roof area ${roofArea.toFixed(0)}m² too small for footprint`);
+      console.error(`[WOMBAT] Need slopeLength (${slopeLength.toFixed(2)}m) > span/2 (${(span/2).toFixed(2)}m)`);
+      return {
+        roofType: "flat",
+        roofHeight: 0,
+        roofVolume: 0,
+        gableEndArea: 0,
+        shedEndWallArea: 0
+      };
+    }
+
+    const roofHeight = Math.sqrt(h2);
+
+    // Gable end area (triangular): base × height / 2
+    const gableEndArea = (span * roofHeight) / 2;
+
+    // Roof volume = rectangular prism (footprint × roofHeight / 2)
+    // Geometrically: two triangular prisms stacked = box × 1/2
+    const roofVolume = (footprintArea * roofHeight) / 2;
+
+    console.log(`[WOMBAT] Gable roof solved from area constraint:`);
+    console.log(`  Roof area: ${roofArea.toFixed(2)} m²`);
+    console.log(`  Ridge length: ${ridgeLength.toFixed(2)} m (SHORT dimension)`);
+    console.log(`  Span: ${span.toFixed(2)} m (LONG dimension)`);
+    console.log(`  Slope length: ${slopeLength.toFixed(2)} m`);
+    console.log(`  Roof height: ${roofHeight.toFixed(2)} m`);
+    console.log(`  Roof volume: ${roofVolume.toFixed(2)} m³ (steals from walls)`);
+    console.log(`  Gable end area (both): ${(2 * gableEndArea).toFixed(2)} m²`);
+
+    return {
+      roofType: "gable",
+      roofHeight,
+      roofVolume,
+      gableEndArea: 2 * gableEndArea,  // Both triangular ends
+      shedEndWallArea: 0
+    };
+  }
+
+  /**
+   * Solve shed roof geometry from roof area constraint
+   * Returns roof height, roof volume, and shed end wall areas
+   */
+  function solveShedRoof(roofArea, ridgeLength, span, footprintArea) {
+    // Shed roof: single rectangular slope
+    // Ridge runs across SHORT dimension (ridgeLength) at HIGH end
+    // Slope runs down LONG dimension (span)
+
+    // Roof area = ridgeLength × slopeLength
+    const slopeLength = roofArea / ridgeLength;
+
+    // Pythagorean theorem:
+    // slopeLength² = roofHeight² + span²
+    // roofHeight² = slopeLength² - span²
+    const h2 = slopeLength * slopeLength - span * span;
+
+    if (h2 < 0) {
+      console.error(`[WOMBAT] Invalid shed geometry - roof area ${roofArea.toFixed(0)}m² too small for footprint`);
+      console.error(`[WOMBAT] Need slopeLength (${slopeLength.toFixed(2)}m) > span (${span.toFixed(2)}m)`);
+      return {
+        roofType: "flat",
+        roofHeight: 0,
+        roofVolume: 0,
+        gableEndArea: 0,
+        shedEndWallArea: 0
+      };
+    }
+
+    const roofHeight = Math.sqrt(h2);
+
+    // Shed end wall area (rectangular): ridgeLength × roofHeight
+    const shedEndWallArea = ridgeLength * roofHeight;
+
+    // Roof volume = trapezoidal prism volume
+    // = footprint × (average height above eave)
+    // = footprint × (roofHeight / 2)
+    const roofVolume = (footprintArea * roofHeight) / 2;
+
+    console.log(`[WOMBAT] Shed roof solved from area constraint:`);
+    console.log(`  Roof area: ${roofArea.toFixed(2)} m²`);
+    console.log(`  Ridge length: ${ridgeLength.toFixed(2)} m (SHORT dimension)`);
+    console.log(`  Span: ${span.toFixed(2)} m (LONG dimension)`);
+    console.log(`  Slope length: ${slopeLength.toFixed(2)} m`);
+    console.log(`  Roof height: ${roofHeight.toFixed(2)} m`);
+    console.log(`  Roof volume: ${roofVolume.toFixed(2)} m³ (steals from walls)`);
+    console.log(`  Shed end wall area (both): ${(2 * shedEndWallArea).toFixed(2)} m²`);
+
+    return {
+      roofType: "shed",
+      roofHeight,
+      roofVolume,
+      gableEndArea: 0,
+      shedEndWallArea: 2 * shedEndWallArea  // Both rectangular ends
+    };
+  }
+
+  //==========================================================================
+  // PHASE 3: 2D PROFILE BUILDERS (for rendering only, NOT solving)
+  // These functions just BUILD node arrays from pre-calculated dimensions
+  //==========================================================================
+
   /**
    * Solve flat roof 2D profile - simple rectangle
    */
