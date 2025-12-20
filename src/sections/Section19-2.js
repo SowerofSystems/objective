@@ -724,7 +724,7 @@ window.TEUI.SectionModules.sect19 = (function () {
   function solveGeometry(isReferenceCalculation = false) {
     const mode = isReferenceCalculation ? "Reference" : "Target";
     console.log(`[WOMBAT-2] Prismatic solver stub (${mode} mode)`);
-    
+
     // Return minimal geometry for flat roof
     return {
       footprint: { width: 33, length: 33 },
@@ -735,15 +735,6 @@ window.TEUI.SectionModules.sect19 = (function () {
       roofType: "flat",
       roofHeight: 0,
     };
-  }
-    // DUAL-STATE: Store calculated values in appropriate state object
-    // (Will be published to StateManager by calculateTargetModel/calculateReferenceModel)
-    currentState.setValue("h_157", length.toFixed(2));
-    currentState.setValue("h_155", width.toFixed(2));
-    currentState.setValue("h_156", storyHeight.toFixed(2));
-
-    console.log(`[WOMBAT] Geometry solved (${mode} mode):`, solvedGeometry);
-    return solvedGeometry;
   }
 
   //==========================================================================
