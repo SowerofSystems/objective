@@ -1133,50 +1133,81 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     console.log(`[WOMBAT-2] Ridge: ${ridgeOrientation} (${ridgeLength.toFixed(2)}m across ${ridgeLength === width ? 'width' : 'length'}), Span: ${span.toFixed(2)}m`);
 
-    // Choose profile solver based on (potentially collapsed) roof type
+    // ========================================================================
+    // PHASE 2: SOLVE ROOF GEOMETRY FROM AREA CONSTRAINT (FIRST!)
+    // This is the CORRECT constraint order - roof area drives roof height
+    // ========================================================================
+    const roofResult = solveRoofGeometry(
+      roofType,           // May be collapsed from roofTypeRequested
+      roofArea,
+      footprintArea,
+      ridgeLength,
+      span
+    );
+
+    console.log(`[WOMBAT-2] Roof solved: type=${roofResult.roofType}, height=${roofResult.roofHeight.toFixed(2)}m, volume=${roofResult.roofVolume.toFixed(2)}m³`);
+
+    // ========================================================================
+    // PHASE 3: DERIVE WALL HEIGHT FROM REMAINING VOLUME (SACRIFICIAL!)
+    // Roof "steals" volume from walls - storey height gets compressed
+    // ========================================================================
+    const storiesDeclared = parseFloat(currentState.getValue("d_150")) || 1.0;
+    const wallVolume = targetVolume - roofResult.roofVolume;
+    const wallHeight = wallVolume / footprintArea;
+    const storyHeight = wallHeight / storiesDeclared;
+
+    console.log(`[WOMBAT-2] Volume breakdown:`);
+    console.log(`  Total volume: ${targetVolume.toFixed(2)} m³`);
+    console.log(`  Roof steals: ${roofResult.roofVolume.toFixed(2)} m³ (${(roofResult.roofVolume/targetVolume*100).toFixed(1)}%)`);
+    console.log(`  Wall volume: ${wallVolume.toFixed(2)} m³ (${(wallVolume/targetVolume*100).toFixed(1)}%)`);
+    console.log(`  Wall height: ${wallHeight.toFixed(2)} m (sacrificial)`);
+    console.log(`  Stories: ${storiesDeclared}, Story height: ${storyHeight.toFixed(2)} m`);
+
+    // ========================================================================
+    // PHASE 4: BUILD 2D PROFILE FOR RENDERING (not solving!)
+    // ========================================================================
     let profile2D;
-    if (roofType === "biplanar") {
-      // Gable roof: ridge runs across SHORT dimension
-      // STOREY HEIGHT IS SACRIFICIAL - derived from volume, not prescribed
-      const estimatedWallHeight = targetVolume / footprintArea * 0.85; // Rough estimate
-      profile2D = solveGable2DProfile(ridgeLength, roofArea, estimatedWallHeight);
-    } else if (roofType === "monoplane") {
-      // Shed roof: ridge runs across SHORT dimension, slope across LONG
-      // STOREY HEIGHT IS SACRIFICIAL - derived from volume, not prescribed
-      const estimatedWallHeight = targetVolume / footprintArea * 0.85; // Rough estimate
-      profile2D = solveShed2DProfile(ridgeLength, roofArea, span, estimatedWallHeight);
+    if (roofResult.roofType === "gable") {
+      profile2D = solveGable2DProfile(ridgeLength, roofArea, wallHeight);
+    } else if (roofResult.roofType === "shed") {
+      profile2D = solveShed2DProfile(ridgeLength, roofArea, span, wallHeight);
     } else {
-      // Flat roof (default or collapsed from pitched)
-      // Wall height directly from volume constraint
-      const wallHeight = targetVolume / footprintArea;
+      // Flat roof
       profile2D = solveFlat2DProfile(ridgeLength, wallHeight);
     }
 
+    // ========================================================================
+    // PHASE 5: EXTRUDE AND GENERATE 3D NODES
+    // ========================================================================
     const extrusion = extrudeProfile(profile2D, targetVolume);
-    const nodes3D = generate3DNodes(profile2D, extrusion.depth);
+    const nodes3D = generate3DNodes(profile2D, span);  // Use SPAN, not extrusion.depth
 
-    console.log(`[WOMBAT-2] Profile: ${profile2D.type}, extrusion depth: ${extrusion.depth.toFixed(2)}m`);
+    console.log(`[WOMBAT-2] Profile: ${profile2D.type}, extrusion depth: ${extrusion.depth.toFixed(2)}m, span: ${span.toFixed(2)}m`);
     console.log(`[WOMBAT-2] Footprint dimensions: width=${width.toFixed(2)}m, length=${length.toFixed(2)}m (from aspect ratio)`);
 
     // Store calculated footprint dimensions in state for display
-    // These are the ORIGINAL width/length from aspect ratio calculation, not profile dimensions
     currentState.setValue("h_155", width.toFixed(2));  // Footprint width (from aspect ratio)
     currentState.setValue("h_157", length.toFixed(2)); // Footprint length (from aspect ratio)
-    currentState.setValue("h_156", profile2D.wallHeight.toFixed(2)); // Storey height (sacrificial)
+    currentState.setValue("h_156", storyHeight.toFixed(2)); // Storey height (sacrificial)
 
-    // Return footprint using aspect ratio dimensions (not profile/extrusion dimensions)
-    // This ensures consistency with user's aspect ratio input
+    // Return complete geometry
     return {
-      footprint: { width: width, length: length },
-      height: profile2D.wallHeight,
-      totalHeight: profile2D.wallHeight + profile2D.height,
-      storyHeight: profile2D.wallHeight,
-      stories: 1,
-      roofType: profile2D.type,
-      roofHeight: profile2D.height,
-      roofCollapsed: roofType !== roofTypeRequested, // Flag if roof collapsed to flat
-      nodes3D: nodes3D,
-      profile2D: profile2D,
+      footprint: { width, length },
+      ridgeOrientation,
+      roofType: roofResult.roofType,
+      roofHeight: roofResult.roofHeight,
+      roofVolume: roofResult.roofVolume,
+      wallHeight,
+      storyHeight,
+      stories: storiesDeclared,
+      height: wallHeight,  // For backward compatibility
+      totalHeight: wallHeight + roofResult.roofHeight,
+      roofCollapsed: roofResult.roofType !== roofTypeRequested,
+      nodes3D,
+      profile2D,
+      // Wall area data for thermal calculations
+      gableEndArea: roofResult.gableEndArea,
+      shedEndWallArea: roofResult.shedEndWallArea,
     };
   }
 
