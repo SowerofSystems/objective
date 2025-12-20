@@ -822,9 +822,9 @@ window.TEUI.SectionModules.sect19 = (function () {
     const d_105_raw = getModeAwareValue("d_105", isReferenceCalculation);
     const targetVolume = parseFloat(d_105_raw) || 8319.5;
 
-    // Get roof type
-    const roofTypeRaw = getModeAwareValue("roofType", isReferenceCalculation);
-    const roofType = (roofTypeRaw || "Flat").toLowerCase();
+    // Get roof type from d_159 dropdown
+    const roofTypeRaw = getModeAwareValue("d_159", isReferenceCalculation);
+    const roofType = (roofTypeRaw || "flat").toLowerCase(); // biplanar, monoplane, flat, multiplanar
 
     // Get roof area (d_85)
     const d_85_raw = getModeAwareValue("d_85", isReferenceCalculation);
@@ -844,12 +844,16 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Choose profile solver based on roof type
     let profile2D;
-    if (roofType === "gable") {
+    if (roofType === "biplanar") {
       // Gable roof: need to solve wall height from volume constraint first
       // Volume = footprint × wallHeight + roof volume
       // For now, estimate wallHeight then adjust (will refine)
       const estimatedWallHeight = targetVolume / footprintArea * 0.85; // Rough estimate
       profile2D = solveGable2DProfile(width, roofArea, estimatedWallHeight);
+    } else if (roofType === "monoplane") {
+      // Shed roof: TODO - implement solveShed2DProfile()
+      const wallHeight = targetVolume / footprintArea * 0.85;
+      profile2D = solveFlat2DProfile(width, wallHeight); // Temporary fallback
     } else {
       // Flat roof (default)
       const wallHeight = targetVolume / footprintArea;
