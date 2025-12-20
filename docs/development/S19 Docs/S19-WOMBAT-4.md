@@ -1041,6 +1041,47 @@ const span = Math.max(width, length);         // LONG dimension (perpendicular t
 - Rectangular buildings: Ridge ALWAYS across short dimension
 - Consistent with structural engineering practice
 
+### Dynamic Ridge Orientation Implementation (2025-12-20)
+
+**STATUS**: ✅ **IMPLEMENTED** - Commit c27b220
+
+**Critical Bug Fix**: The aspect ratio slider was failing at portrait extremes (< -2) due to hardcoded dimension assumptions.
+
+**Root Cause**:
+- Profile solvers originally assumed `width` parameter was always SHORT and `length` was always LONG
+- When aspect ratio went negative (portrait mode), `width > length`, inverting the dimensions
+- Profile solvers received geometrically incorrect dimensions → negative height quadrance → NaN cascade
+
+**Solution Implemented**:
+```javascript
+// BEFORE calling profile solvers, calculate ridge orientation dynamically
+const ridgeLength = Math.min(width, length);  // SHORT dimension (ridge runs across this)
+const span = Math.max(width, length);         // LONG dimension (slope runs across this)
+const ridgeOrientation = length >= width ? "longitudinal" : "transverse";
+
+// Pass correct dimensions to profile solvers
+profile2D = solveGable2DProfile(ridgeLength, roofArea, estimatedWallHeight);
+profile2D = solveShed2DProfile(ridgeLength, roofArea, span, estimatedWallHeight);
+```
+
+**Key Changes**:
+1. Ridge orientation calculated BEFORE profile solving (Section19.js:956-962)
+2. Profile solvers receive `ridgeLength` and `span` (not raw `width`/`length`)
+3. Ridge automatically swaps: "longitudinal" (ridge along length) ↔ "transverse" (ridge along width)
+4. Works correctly across full aspect ratio range: -4.0 to +4.0
+5. Footprint dimensions (h_155, h_157) now update correctly on aspect ratio changes
+
+**Structural Convention Maintained**:
+- Ridge ALWAYS on SHORT dimension (structural efficiency)
+- Slope ALWAYS across LONG dimension (minimizes structural span)
+- Roof geometry remains valid in both landscape and portrait modes
+
+**Testing Requirements**:
+- Test aspect ratio slider across full range: -4, -2, -1, 0, +1, +2, +4
+- Verify h_155 (width) and h_157 (length) display updates when slider moves
+- Verify no NaN errors in console at extreme portrait values
+- Verify ridge orientation swaps correctly at aspect ratio = 0 crossing
+
 ---
 
 ## Benefits of Prismatic Approach
