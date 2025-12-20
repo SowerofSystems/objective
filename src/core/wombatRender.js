@@ -178,7 +178,7 @@ window.TEUI.WombatRender = (function () {
       return;
     }
 
-    const { ground, eave } = geometry.nodes3D;
+    const { ground, eave, ridge } = geometry.nodes3D;
 
     // Calculate scale to fit geometry in canvas
     const maxDim = Math.max(
@@ -193,13 +193,18 @@ window.TEUI.WombatRender = (function () {
     // Choose color based on mode
     const color = isReference ? config.colors.reference : config.colors.target;
 
-    // Project all 8 nodes to isometric
+    // Project ground and eave nodes to isometric
     const groundProj = ground.map((node) =>
       toIsometric(node.x, node.y, node.z, scale, centerX, centerY)
     );
     const eaveProj = eave.map((node) =>
       toIsometric(node.x, node.y, node.z, scale, centerX, centerY)
     );
+
+    // Project ridge nodes if present (gable roof)
+    const ridgeProj = ridge
+      ? ridge.map((node) => toIsometric(node.x, node.y, node.z, scale, centerX, centerY))
+      : null;
 
     // Draw ground rectangle (4 edges)
     for (let i = 0; i < 4; i++) {
@@ -221,7 +226,26 @@ window.TEUI.WombatRender = (function () {
       svg.appendChild(line);
     }
 
-    // Draw nodes (8 circles)
+    // Draw roof edges for gable
+    if (ridgeProj) {
+      // Ridge line (front to back)
+      const ridgeLine = createLine(ridgeProj[0], ridgeProj[1], color, 2);
+      svg.appendChild(ridgeLine);
+
+      // Front gable (eave corners to front ridge)
+      const frontLeft = createLine(eaveProj[0], ridgeProj[0], color, 2);
+      const frontRight = createLine(eaveProj[1], ridgeProj[0], color, 2);
+      svg.appendChild(frontLeft);
+      svg.appendChild(frontRight);
+
+      // Back gable (eave corners to back ridge)
+      const backLeft = createLine(eaveProj[3], ridgeProj[1], color, 2);
+      const backRight = createLine(eaveProj[2], ridgeProj[1], color, 2);
+      svg.appendChild(backLeft);
+      svg.appendChild(backRight);
+    }
+
+    // Draw nodes (circles)
     ground.forEach((node, i) => {
       const circle = createNode(groundProj[i], config.colors.ground, 4);
       svg.appendChild(circle);
@@ -230,6 +254,12 @@ window.TEUI.WombatRender = (function () {
       const circle = createNode(eaveProj[i], config.colors.air, 4);
       svg.appendChild(circle);
     });
+    if (ridgeProj) {
+      ridge.forEach((node, i) => {
+        const circle = createNode(ridgeProj[i], "#ff6b6b", 5); // Red for ridge peaks
+        svg.appendChild(circle);
+      });
+    }
 
     // Add title annotation
     const title = createText(

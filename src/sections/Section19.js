@@ -722,10 +722,52 @@ window.TEUI.SectionModules.sect19 = (function () {
   }
 
   /**
+   * Solve gable roof 2D profile - rectangle + triangle
+   * Ridge runs across SHORT dimension (structural efficiency)
+   */
+  function solveGable2DProfile(width, roofArea, wallHeight) {
+    const ridgeLength = width; // SHORT dimension
+    const slopeLength = roofArea / (2 * ridgeLength); // Half roof on each side
+    const halfWidth = width / 2;
+
+    // Rational trigonometry: slopeLength² = halfWidth² + roofHeight²
+    const R = slopeLength * slopeLength;
+    const Q_halfWidth = halfWidth * halfWidth;
+    const Q_height = R - Q_halfWidth;
+    const roofHeight = Math.sqrt(Q_height);
+
+    return {
+      nodes: [
+        { x: 0, z: 0 },                                 // Left ground
+        { x: width, z: 0 },                             // Right ground
+        { x: width, z: wallHeight },                    // Right eave
+        { x: width / 2, z: wallHeight + roofHeight },   // Peak
+        { x: 0, z: wallHeight },                        // Left eave
+      ],
+      type: "gable",
+      height: roofHeight,
+      wallHeight: wallHeight,
+      endWallArea: width * wallHeight + (width * roofHeight) / 2, // Rectangle + triangle
+    };
+  }
+
+  /**
    * Extrude 2D profile to satisfy volume constraint
    */
   function extrudeProfile(profile2D, targetVolume) {
-    const crossSectionArea = profile2D.wallHeight * profile2D.nodes[1].x;
+    const width = profile2D.nodes[1].x;
+    let crossSectionArea;
+
+    if (profile2D.type === "gable") {
+      // Rectangle (wall) + Triangle (roof)
+      const rectangleArea = width * profile2D.wallHeight;
+      const triangleArea = (width * profile2D.height) / 2;
+      crossSectionArea = rectangleArea + triangleArea;
+    } else {
+      // Flat roof: just rectangle
+      crossSectionArea = width * profile2D.wallHeight;
+    }
+
     const extrusionDepth = targetVolume / crossSectionArea;
     return {
       depth: extrusionDepth,
@@ -734,14 +776,15 @@ window.TEUI.SectionModules.sect19 = (function () {
   }
 
   /**
-   * Generate 8 3D corner nodes from 2D profile + extrusion depth
+   * Generate 3D corner nodes from 2D profile + extrusion depth
+   * Returns 8 nodes for flat, 10 nodes for gable (4 ground + 4 eave + 2 ridge)
    */
   function generate3DNodes(profile2D, extrusionDepth) {
     const halfDepth = extrusionDepth / 2;
     const width = profile2D.nodes[1].x;
     const halfWidth = width / 2;
 
-    return {
+    const nodes = {
       ground: [
         { x: -halfWidth, y: -halfDepth, z: 0 },
         { x: halfWidth, y: -halfDepth, z: 0 },
@@ -755,6 +798,17 @@ window.TEUI.SectionModules.sect19 = (function () {
         { x: -halfWidth, y: halfDepth, z: profile2D.wallHeight },
       ],
     };
+
+    // Add ridge nodes for gable roof
+    if (profile2D.type === "gable") {
+      const peakHeight = profile2D.wallHeight + profile2D.height;
+      nodes.ridge = [
+        { x: 0, y: -halfDepth, z: peakHeight }, // Front ridge
+        { x: 0, y: halfDepth, z: peakHeight },  // Back ridge
+      ];
+    }
+
+    return nodes;
   }
 
   /**
@@ -768,6 +822,14 @@ window.TEUI.SectionModules.sect19 = (function () {
     const d_105_raw = getModeAwareValue("d_105", isReferenceCalculation);
     const targetVolume = parseFloat(d_105_raw) || 8319.5;
 
+    // Get roof type
+    const roofTypeRaw = getModeAwareValue("roofType", isReferenceCalculation);
+    const roofType = (roofTypeRaw || "Flat").toLowerCase();
+
+    // Get roof area (d_85)
+    const d_85_raw = getModeAwareValue("d_85", isReferenceCalculation);
+    const roofArea = parseFloat(d_85_raw) || 1100;
+
     // Get footprint area from d_95 (slab on grade)
     let footprintArea = parseFloat(getModeAwareValue("d_95", isReferenceCalculation));
     if (!footprintArea || footprintArea <= 0) {
@@ -778,26 +840,35 @@ window.TEUI.SectionModules.sect19 = (function () {
     // Assume square footprint for simplicity (can enhance later with aspect ratio)
     const width = Math.sqrt(footprintArea);
 
-    // Solve height from volume: Volume = footprint × height
-    const wallHeight = targetVolume / footprintArea;
+    console.log(`[WOMBAT-2] Inputs: footprint=${footprintArea.toFixed(2)}m², volume=${targetVolume.toFixed(2)}m³, roof=${roofType}`);
 
-    console.log(`[WOMBAT-2] Inputs: footprint=${footprintArea.toFixed(2)}m², volume=${targetVolume.toFixed(2)}m³`);
-    console.log(`[WOMBAT-2] Derived: width=${width.toFixed(2)}m, height=${wallHeight.toFixed(2)}m`);
+    // Choose profile solver based on roof type
+    let profile2D;
+    if (roofType === "gable") {
+      // Gable roof: need to solve wall height from volume constraint first
+      // Volume = footprint × wallHeight + roof volume
+      // For now, estimate wallHeight then adjust (will refine)
+      const estimatedWallHeight = targetVolume / footprintArea * 0.85; // Rough estimate
+      profile2D = solveGable2DProfile(width, roofArea, estimatedWallHeight);
+    } else {
+      // Flat roof (default)
+      const wallHeight = targetVolume / footprintArea;
+      profile2D = solveFlat2DProfile(width, wallHeight);
+    }
 
-    const profile2D = solveFlat2DProfile(width, wallHeight);
     const extrusion = extrudeProfile(profile2D, targetVolume);
     const nodes3D = generate3DNodes(profile2D, extrusion.depth);
 
-    console.log(`[WOMBAT-2] Extrusion depth: ${extrusion.depth.toFixed(2)}m (should equal width for square)`);
+    console.log(`[WOMBAT-2] Profile: ${profile2D.type}, extrusion depth: ${extrusion.depth.toFixed(2)}m`);
 
     return {
       footprint: { width: width, length: extrusion.depth },
-      height: wallHeight,
-      totalHeight: wallHeight,
-      storyHeight: wallHeight,
+      height: profile2D.wallHeight,
+      totalHeight: profile2D.wallHeight + profile2D.height,
+      storyHeight: profile2D.wallHeight,
       stories: 1,
-      roofType: "flat",
-      roofHeight: 0,
+      roofType: profile2D.type,
+      roofHeight: profile2D.height,
       nodes3D: nodes3D,
       profile2D: profile2D,
     };
