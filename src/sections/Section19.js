@@ -1155,6 +1155,55 @@ window.TEUI.SectionModules.sect19 = (function () {
     console.log(`[WOMBAT-2] Roof solved: type=${roofResult.roofType}, height=${roofResult.roofHeight.toFixed(2)}m, volume=${roofResult.roofVolume.toFixed(2)}m³`);
 
     // ========================================================================
+    // PHASE 2B: BASEMENT GEOMETRY (affects volume constraint)
+    // ========================================================================
+    // CRITICAL: Calculate basement BEFORE wall height, because basement volume
+    // must be subtracted from total conditioned volume (d_105)
+    // Basement is part of conditioned space, but below grade
+
+    const basementWallArea = parseFloat(getModeAwareValue("d_94", isReferenceCalculation)) || 0;
+    const slabArea = parseFloat(getModeAwareValue("d_95", isReferenceCalculation)) || 0;
+    const floorExposedToAir = parseFloat(getModeAwareValue("d_87", isReferenceCalculation)) || 0;
+
+    const hasBasement = basementWallArea > 0;
+    const hasSlab = slabArea > 0;
+    const hasRaisedFloor = floorExposedToAir > 0;
+
+    // Calculate perimeter for basement depth calculation
+    const perimeter = 2 * (shortDimension + longDimension);
+
+    // Calculate basement depth from wall area and perimeter
+    let basementDepth = 0;
+    let basementVolume = 0;
+
+    if (hasBasement && perimeter > 0) {
+      basementDepth = basementWallArea / perimeter;
+      basementVolume = footprintArea * basementDepth;
+
+      console.log(`[WOMBAT-2] Basement geometry:`);
+      console.log(`  Basement wall area (d_94): ${basementWallArea.toFixed(2)} m²`);
+      console.log(`  Basement depth: ${basementDepth.toFixed(2)} m`);
+      console.log(`  Basement volume: ${basementVolume.toFixed(2)} m³ (part of conditioned space)`);
+    }
+
+    // Determine foundation type for rendering
+    function determineFoundationType(hasSlab, hasBasement, hasRaisedFloor) {
+      if (hasBasement && hasSlab) return "full-basement";
+      if (hasSlab && !hasBasement && !hasRaisedFloor) return "slab-on-grade";
+      if (!hasSlab && !hasBasement && hasRaisedFloor) return "raised-floor";
+      if (hasBasement && !hasSlab) return "basement-no-slab";
+      if ((hasSlab || hasBasement) && hasRaisedFloor) return "mixed-foundation";
+      return "unknown";
+    }
+
+    const foundationType = determineFoundationType(hasSlab, hasBasement, hasRaisedFloor);
+
+    console.log(`[WOMBAT-2] Foundation type: ${foundationType}`);
+    if (foundationType === "mixed-foundation") {
+      console.warn(`[WOMBAT-2] ⚠️ Mixed foundation detected (unusual - part ground, part elevated)`);
+    }
+
+    // ========================================================================
     // PHASE 3: CALCULATE WALL HEIGHT
     // Start with g_106 reference, compress if volume exceeded
     // ========================================================================
@@ -1167,11 +1216,14 @@ window.TEUI.SectionModules.sect19 = (function () {
     // TRY reference wall height first
     let wallHeightTarget = storyHeightReference * storiesDeclared;
     let wallVolume = footprintArea * wallHeightTarget;
-    let calculatedVolume = wallVolume + roofResult.roofVolume;
+    let calculatedVolume = wallVolume + roofResult.roofVolume + basementVolume;
 
     console.log(`[WOMBAT-2] Attempting reference wall height:`);
     console.log(`  Target wall height: ${wallHeightTarget.toFixed(2)} m (${storiesDeclared} × ${storyHeightReference.toFixed(2)}m from g_106)`);
     console.log(`  Would give volume: ${calculatedVolume.toFixed(2)} m³`);
+    console.log(`    = Wall volume: ${wallVolume.toFixed(2)} m³`);
+    console.log(`    + Roof volume: ${roofResult.roofVolume.toFixed(2)} m³`);
+    console.log(`    + Basement volume: ${basementVolume.toFixed(2)} m³`);
     console.log(`  USER TARGET (d_105): ${targetVolume.toFixed(2)} m³`);
 
     // Check if volume would be exceeded
@@ -1181,23 +1233,26 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     if (calculatedVolume > targetVolume) {
       // Volume exceeded - compress walls to fit
-      const availableWallVolume = targetVolume - roofResult.roofVolume;
+      // CRITICAL: Subtract BOTH roof and basement from total conditioned volume
+      const availableWallVolume = targetVolume - roofResult.roofVolume - basementVolume;
 
       if (availableWallVolume < 0) {
-        // Roof alone exceeds volume - this is critical
-        console.error(`[WOMBAT-2] ⚠️ CRITICAL: Roof volume (${roofResult.roofVolume.toFixed(0)}m³) exceeds total volume (${targetVolume.toFixed(0)}m³)`);
+        // Roof + Basement exceeds total volume - this is critical
+        const combinedVolume = roofResult.roofVolume + basementVolume;
+        console.error(`[WOMBAT-2] ⚠️ CRITICAL: Roof + Basement volume (${combinedVolume.toFixed(0)}m³) exceeds total volume (${targetVolume.toFixed(0)}m³)`);
+        console.error(`[WOMBAT-2] → Roof: ${roofResult.roofVolume.toFixed(0)}m³ + Basement: ${basementVolume.toFixed(0)}m³ = ${combinedVolume.toFixed(0)}m³`);
         console.error(`[WOMBAT-2] → Using reference wall height anyway, volume will be violated`);
         wallHeight = wallHeightTarget;
         storyHeightActual = storyHeightReference;
         wallVolume = footprintArea * wallHeight;
-        calculatedVolume = wallVolume + roofResult.roofVolume;
+        calculatedVolume = wallVolume + roofResult.roofVolume + basementVolume;
         wallHeightViolation = true;
 
         // Update console ticker (persistent until next user interaction)
-        const deficit = roofResult.roofVolume - targetVolume;
+        const deficit = combinedVolume - targetVolume;
         const percentOver = ((deficit / targetVolume) * 100).toFixed(0);
         showFeedback(
-          `❌ Roof volume ${percentOver}% over total (increase Conditioned Volume in S12)`,
+          `❌ Roof+Basement volume ${percentOver}% over total (increase Conditioned Volume in S12)`,
           true // persistent
         );
       } else {
@@ -1236,8 +1291,12 @@ window.TEUI.SectionModules.sect19 = (function () {
     console.log(`  Roof height: ${roofResult.roofHeight.toFixed(2)} m`);
     console.log(`  Wall height: ${wallHeight.toFixed(2)} m (${wallHeightViolation ? 'COMPRESSED' : 'reference'})`);
     console.log(`  Storey height: ${storyHeightActual.toFixed(2)} m`);
+    if (hasBasement) {
+      console.log(`  Basement depth: ${basementDepth.toFixed(2)} m`);
+    }
     console.log(`  Wall volume: ${wallVolume.toFixed(2)} m³`);
     console.log(`  Roof volume: ${roofResult.roofVolume.toFixed(2)} m³`);
+    console.log(`  Basement volume: ${basementVolume.toFixed(2)} m³`);
     console.log(`  Total volume: ${calculatedVolume.toFixed(2)} m³`);
 
     // ========================================================================
@@ -1306,6 +1365,17 @@ window.TEUI.SectionModules.sect19 = (function () {
       // Wall area data for thermal calculations
       gableEndArea: roofResult.gableEndArea,
       shedEndWallArea: roofResult.shedEndWallArea,
+      // NEW: Below-grade geometry for rendering
+      belowGrade: {
+        hasBasement,
+        hasSlab,
+        hasRaisedFloor,
+        basementDepth,
+        basementVolume,        // Critical for volume accounting
+        slabArea,
+        basementWallArea,
+        foundationType,
+      },
     };
   }
 

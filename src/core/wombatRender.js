@@ -264,6 +264,11 @@ window.TEUI.WombatRender = (function () {
     // Render intermediate floor planes for multi-storey buildings
     renderFloorPlanes(svg, geometry, ground, scale, centerX, centerY);
 
+    // Render below-grade geometry (basement, slab, grade line)
+    if (geometry.belowGrade) {
+      renderBelowGradeGeometry(svg, geometry, color, scale, centerX, centerY);
+    }
+
     // Add title annotation
     const title = createText(
       20,
@@ -378,6 +383,208 @@ window.TEUI.WombatRender = (function () {
         node.setAttribute("opacity", "0.6");
         svg.appendChild(node);
       }
+    }
+  }
+
+  //==========================================================================
+  // BELOW-GRADE GEOMETRY RENDERING (Basement, Slab, Grade Line)
+  //==========================================================================
+
+  /**
+   * Render below-grade geometry including basement walls, slab-on-grade, raised floor, and grade line
+   * @param {SVGElement} svg - SVG container
+   * @param {Object} geometry - Geometry object with belowGrade data
+   * @param {String} color - Mode color (blue for target, red for reference)
+   * @param {number} scale - Isometric scale factor
+   * @param {number} centerX - Canvas center X
+   * @param {number} centerY - Canvas center Y
+   */
+  function renderBelowGradeGeometry(svg, geometry, color, scale, centerX, centerY) {
+    const { belowGrade, footprint } = geometry;
+    const { hasBasement, hasSlab, hasRaisedFloor, basementDepth, foundationType } = belowGrade;
+
+    const gradeColor = "#8b4513"; // Brown (matches .text-ground-facing)
+    const width = footprint.width;
+    const length = footprint.length;
+
+    // Grade-level corners (z=0)
+    const gradeCorners = [
+      { x: -width/2, y: -length/2, z: 0 },
+      { x: width/2, y: -length/2, z: 0 },
+      { x: width/2, y: length/2, z: 0 },
+      { x: -width/2, y: length/2, z: 0 },
+    ];
+
+    // ========================================================================
+    // GRADE LINE (appears when ground-facing components exist)
+    // ========================================================================
+    if (hasBasement || hasSlab) {
+      // Grade line extends slightly beyond footprint for clarity
+      const gradeStart = toIsometric(-width/2 - 5, -length/2 - 5, 0, scale, centerX, centerY);
+      const gradeEnd = toIsometric(width/2 + 5, -length/2 - 5, 0, scale, centerX, centerY);
+
+      // Dashed line at z=0
+      const gradeLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      gradeLine.setAttribute("x1", gradeStart.x);
+      gradeLine.setAttribute("y1", gradeStart.y);
+      gradeLine.setAttribute("x2", gradeEnd.x);
+      gradeLine.setAttribute("y2", gradeEnd.y);
+      gradeLine.setAttribute("stroke", gradeColor);
+      gradeLine.setAttribute("stroke-width", "2");
+      gradeLine.setAttribute("stroke-dasharray", "8,4");
+      gradeLine.setAttribute("opacity", "0.7");
+      svg.appendChild(gradeLine);
+
+      // Label
+      const gradeLabel = createText(
+        gradeEnd.x + 10,
+        gradeEnd.y + 5,
+        "Grade",
+        gradeColor,
+        10
+      );
+      gradeLabel.setAttribute("font-style", "italic");
+      svg.appendChild(gradeLabel);
+    }
+
+    // ========================================================================
+    // BASEMENT WALLS (brown dashed verticals from z=0 to z=-depth)
+    // ========================================================================
+    if (hasBasement) {
+      // Basement floor corners (z=-depth)
+      const basementCorners = gradeCorners.map(c => ({ ...c, z: -basementDepth }));
+
+      // Draw vertical edges (basement walls) - DASHED (hidden line effect)
+      gradeCorners.forEach((top, i) => {
+        const bottom = basementCorners[i];
+        const p1 = toIsometric(top.x, top.y, top.z, scale, centerX, centerY);
+        const p2 = toIsometric(bottom.x, bottom.y, bottom.z, scale, centerX, centerY);
+
+        const edge = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        edge.setAttribute("x1", p1.x);
+        edge.setAttribute("y1", p1.y);
+        edge.setAttribute("x2", p2.x);
+        edge.setAttribute("y2", p2.y);
+        edge.setAttribute("stroke", gradeColor);
+        edge.setAttribute("stroke-width", "3");
+        edge.setAttribute("stroke-dasharray", "8,4"); // Hidden line (below ground)
+        svg.appendChild(edge);
+      });
+
+      // Draw basement floor perimeter - DASHED
+      basementCorners.forEach((corner, i) => {
+        const next = basementCorners[(i + 1) % 4];
+        const p1 = toIsometric(corner.x, corner.y, corner.z, scale, centerX, centerY);
+        const p2 = toIsometric(next.x, next.y, next.z, scale, centerX, centerY);
+
+        const edge = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        edge.setAttribute("x1", p1.x);
+        edge.setAttribute("y1", p1.y);
+        edge.setAttribute("x2", p2.x);
+        edge.setAttribute("y2", p2.y);
+        edge.setAttribute("stroke", gradeColor);
+        edge.setAttribute("stroke-width", "3");
+        edge.setAttribute("stroke-dasharray", "8,4");
+        svg.appendChild(edge);
+      });
+
+      // Draw basement corner nodes (brown circles)
+      basementCorners.forEach(corner => {
+        const p = toIsometric(corner.x, corner.y, corner.z, scale, centerX, centerY);
+        const node = createNode(p, gradeColor, 5);
+        svg.appendChild(node);
+      });
+
+      // Depth annotation
+      const depthMidpoint = toIsometric(-width/2 - 8, length/2, -basementDepth/2, scale, centerX, centerY);
+      const depthLabel = createText(
+        depthMidpoint.x - 30,
+        depthMidpoint.y,
+        `${basementDepth.toFixed(1)}m`,
+        gradeColor,
+        11
+      );
+      depthLabel.setAttribute("text-anchor", "middle");
+      svg.appendChild(depthLabel);
+    }
+
+    // ========================================================================
+    // SLAB-ON-GRADE (brown SOLID perimeter at z=0, only if no basement)
+    // ========================================================================
+    if (hasSlab && !hasBasement) {
+      // Draw slab perimeter - SOLID (at grade, visible)
+      gradeCorners.forEach((corner, i) => {
+        const next = gradeCorners[(i + 1) % 4];
+        const p1 = toIsometric(corner.x, corner.y, corner.z, scale, centerX, centerY);
+        const p2 = toIsometric(next.x, next.y, next.z, scale, centerX, centerY);
+
+        const edge = createLine(p1, p2, gradeColor, 3);
+        // NO stroke-dasharray - solid line for at-grade component
+        svg.appendChild(edge);
+      });
+
+      // Draw corner nodes
+      gradeCorners.forEach(corner => {
+        const p = toIsometric(corner.x, corner.y, corner.z, scale, centerX, centerY);
+        const node = createNode(p, gradeColor, 5);
+        svg.appendChild(node);
+      });
+    }
+
+    // ========================================================================
+    // RAISED FLOOR (BLUE/RED perimeter - AIR-FACING, not brown!)
+    // ========================================================================
+    if (hasRaisedFloor && !hasSlab) {
+      // CRITICAL: Raised floor is AIR-FACING, render in mode color (blue/red), NOT brown
+      const floorColor = color; // Use mode color (blue for target, red for reference)
+
+      // Draw floor perimeter - SOLID in mode color (air-facing surface)
+      gradeCorners.forEach((corner, i) => {
+        const next = gradeCorners[(i + 1) % 4];
+        const p1 = toIsometric(corner.x, corner.y, corner.z, scale, centerX, centerY);
+        const p2 = toIsometric(next.x, next.y, next.z, scale, centerX, centerY);
+
+        const edge = createLine(p1, p2, floorColor, 3);
+        // Solid line - it's visible (air-facing)
+        svg.appendChild(edge);
+      });
+
+      // Draw corner nodes in mode color
+      gradeCorners.forEach(corner => {
+        const p = toIsometric(corner.x, corner.y, corner.z, scale, centerX, centerY);
+        const node = createNode(p, floorColor, 5);
+        svg.appendChild(node);
+      });
+
+      // Add "Raised Floor" label
+      const labelPos = toIsometric(0, -length/2 - 8, 0, scale, centerX, centerY);
+      const label = createText(
+        labelPos.x,
+        labelPos.y,
+        "Raised Floor (Air-Facing)",
+        floorColor,
+        10
+      );
+      label.setAttribute("font-style", "italic");
+      label.setAttribute("text-anchor", "middle");
+      svg.appendChild(label);
+    }
+
+    // ========================================================================
+    // MIXED FOUNDATION WARNING
+    // ========================================================================
+    if (foundationType === "mixed-foundation") {
+      const warningPos = toIsometric(0, length/2 + 8, 0, scale, centerX, centerY);
+      const warning = createText(
+        warningPos.x,
+        warningPos.y,
+        "⚠️ Mixed Foundation",
+        "#ff6600",
+        11
+      );
+      warning.setAttribute("font-weight", "bold");
+      warning.setAttribute("text-anchor", "middle");
+      svg.appendChild(warning);
     }
   }
 
@@ -524,6 +731,43 @@ window.TEUI.WombatRender = (function () {
     );
     svg.appendChild(aeWallText);
     yOffset += lineHeight;
+
+    // 7b. Ag (Area exposed to Ground) - if basement or slab present
+    if (geometry.belowGrade && (geometry.belowGrade.hasBasement || geometry.belowGrade.hasSlab)) {
+      const basementWallArea = geometry.belowGrade.basementWallArea || 0;
+      const slabArea = geometry.belowGrade.slabArea || 0;
+      const agTotal = basementWallArea + slabArea;
+
+      const agText = createText(
+        xOffset,
+        yOffset,
+        `Ag (Ground): ${agTotal.toFixed(2)} m²`,
+        "#8b4513", // Brown
+        11
+      );
+      svg.appendChild(agText);
+      yOffset += lineHeight;
+
+      // Foundation type subtitle
+      const typeNames = {
+        "full-basement": "Full Basement",
+        "slab-on-grade": "Slab-on-Grade",
+        "raised-floor": "Raised Floor",
+        "basement-no-slab": "Basement (no slab)",
+        "mixed-foundation": "Mixed Foundation",
+      };
+
+      const typeText = createText(
+        xOffset + 10,
+        yOffset,
+        typeNames[geometry.belowGrade.foundationType] || "Unknown",
+        "#8b4513",
+        9
+      );
+      typeText.setAttribute("font-style", "italic");
+      svg.appendChild(typeText);
+      yOffset += lineHeight;
+    }
 
     // 8. Volume (from d_105) - for verification
     const volume = getValue("d_105") || "0.00";
