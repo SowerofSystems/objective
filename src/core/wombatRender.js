@@ -419,7 +419,12 @@ window.TEUI.WombatRender = (function () {
     // GRADE LINE (appears when ground-facing components exist)
     // ========================================================================
     if (hasBasement || hasSlab) {
-      // Grade line extends slightly beyond footprint for clarity
+      // CRITICAL: Grade line must align with ACTUAL building footprint
+      // The building geometry doesn't rotate - we just swap axis labels at negative aspect ratios
+      // So grade line should always run perpendicular to the FRONT edge (across width)
+      // This matches the physical footprint regardless of aspect ratio sign
+
+      // Grade line runs East-West (across the width dimension, perpendicular to Y/length)
       const gradeStart = toIsometric(-width/2 - 5, -length/2 - 5, 0, scale, centerX, centerY);
       const gradeEnd = toIsometric(width/2 + 5, -length/2 - 5, 0, scale, centerX, centerY);
 
@@ -491,7 +496,7 @@ window.TEUI.WombatRender = (function () {
       // Draw basement corner nodes (brown circles)
       basementCorners.forEach(corner => {
         const p = toIsometric(corner.x, corner.y, corner.z, scale, centerX, centerY);
-        const node = createNode(p, gradeColor, 5);
+        const node = createNode(p, gradeColor, 4);  // Match other node sizes
         svg.appendChild(node);
       });
 
@@ -526,7 +531,7 @@ window.TEUI.WombatRender = (function () {
       // Draw corner nodes
       gradeCorners.forEach(corner => {
         const p = toIsometric(corner.x, corner.y, corner.z, scale, centerX, centerY);
-        const node = createNode(p, gradeColor, 5);
+        const node = createNode(p, gradeColor, 4);  // Match other node sizes
         svg.appendChild(node);
       });
     }
@@ -552,7 +557,7 @@ window.TEUI.WombatRender = (function () {
       // Draw corner nodes in mode color
       gradeCorners.forEach(corner => {
         const p = toIsometric(corner.x, corner.y, corner.z, scale, centerX, centerY);
-        const node = createNode(p, floorColor, 5);
+        const node = createNode(p, floorColor, 4);  // Match other node sizes
         svg.appendChild(node);
       });
 
