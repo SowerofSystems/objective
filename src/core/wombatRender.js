@@ -267,7 +267,7 @@ window.TEUI.WombatRender = (function () {
     // Add title annotation
     const title = createText(
       20,
-      30,
+      14,
       `WOMBAT 4 - ${geometry.roofType} roof (${isReference ? "Reference" : "Target"})`,
       color,
       14
@@ -277,7 +277,7 @@ window.TEUI.WombatRender = (function () {
     // Add dimensions annotation
     const dims = createText(
       20,
-      50,
+      32,
       `${geometry.footprint.width.toFixed(1)}m × ${geometry.footprint.length.toFixed(1)}m × ${geometry.totalHeight.toFixed(1)}m`,
       "#666",
       12
@@ -393,7 +393,7 @@ window.TEUI.WombatRender = (function () {
    */
   function renderLegend(svg, geometry, mode) {
     const isReference = mode === "reference";
-    let yOffset = 75; // Start below title and dimensions
+    let yOffset = 50; // Start below title and dimensions (moved up to align with table)
     const xOffset = 20;
     const lineHeight = 18;
     const labelColor = "#666";
