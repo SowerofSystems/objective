@@ -1726,6 +1726,9 @@ window.TEUI.SectionModules.sect19 = (function () {
       '[data-field-id="d_154"] input[type="range"]'
     );
     if (aspectSlider && !aspectSlider.hasSliderListener) {
+      // Make this slider wider for better precision around zero
+      aspectSlider.style.width = "150px";
+
       aspectSlider.addEventListener("input", e => {
         const rawValue = parseFloat(e.target.value);
         const displaySpan = document.querySelector(
