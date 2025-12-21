@@ -284,6 +284,11 @@ window.TEUI.WombatRender = (function () {
     // Add legend annotations
     renderLegend(svg, geometry, mode);
 
+    // Add coordinate axes indicator (bottom-right corner)
+    // Pass aspect ratio to determine orientation
+    const aspectRatio = geometry.footprint.length / geometry.footprint.width;
+    renderCoordinateAxes(svg, aspectRatio);
+
     console.log("[WombatRender-4] Rendered successfully");
   }
 
@@ -414,6 +419,104 @@ window.TEUI.WombatRender = (function () {
       { fontWeight: "bold" }
     );
     svg.appendChild(volumeText);
+  }
+
+  //==========================================================================
+  // COORDINATE AXES INDICATOR
+  //==========================================================================
+
+  /**
+   * Render coordinate axes indicator (X/East, Y/North, Z/Up)
+   * Positioned in bottom-right corner
+   * Rotates 90° when aspect ratio crosses 1.0 (portrait vs landscape)
+   */
+  function renderCoordinateAxes(svg, aspectRatio) {
+    const x0 = config.canvasWidth - 100; // Bottom-right corner
+    const y0 = config.canvasHeight - 80;
+    const axisLength = 40;
+
+    // Determine if building is landscape (aspectRatio >= 1) or portrait (aspectRatio < 1)
+    // When portrait, swap X/Y to reflect that width becomes the long dimension
+    const isLandscape = aspectRatio >= 1.0;
+
+    // Z-axis (Up) - blue (always vertical)
+    const zLine = createLine(
+      { x: x0, y: y0 },
+      { x: x0, y: y0 - axisLength },
+      "#0066cc",
+      2
+    );
+    svg.appendChild(zLine);
+    const zLabel = createText(
+      x0 - 5,
+      y0 - axisLength - 5,
+      "Z/Up",
+      "#0066cc",
+      11,
+      {}
+    );
+    svg.appendChild(zLabel);
+
+    if (isLandscape) {
+      // Landscape: Y=LONG (North), X=SHORT (East)
+      // Y-axis (North) - green, isometric pointing up-left
+      const yEndIso = toIsometric(0, axisLength, 0, 1, x0, y0);
+      const yLine = createLine({ x: x0, y: y0 }, yEndIso, "#00cc66", 2);
+      svg.appendChild(yLine);
+      const yLabel = createText(
+        yEndIso.x,
+        yEndIso.y + 30,
+        "Y/North",
+        "#00cc66",
+        11,
+        { anchor: "middle" }
+      );
+      svg.appendChild(yLabel);
+
+      // X-axis (East) - red, isometric pointing down-right
+      const xEndIso = toIsometric(axisLength, 0, 0, 1, x0, y0);
+      const xLine = createLine({ x: x0, y: y0 }, xEndIso, "#cc0000", 2);
+      svg.appendChild(xLine);
+      const xLabel = createText(
+        xEndIso.x + 5,
+        xEndIso.y + 5,
+        "X/East",
+        "#cc0000",
+        11,
+        {}
+      );
+      svg.appendChild(xLabel);
+    } else {
+      // Portrait: X=LONG (East), Y=SHORT (North)
+      // Swap the rendering to reflect 90° rotation
+      // X-axis (East) - red, isometric pointing up-left (was Y position)
+      const xEndIso = toIsometric(axisLength, 0, 0, 1, x0, y0);
+      const xLine = createLine({ x: x0, y: y0 }, xEndIso, "#cc0000", 2);
+      svg.appendChild(xLine);
+      const xLabel = createText(
+        xEndIso.x,
+        xEndIso.y + 30,
+        "X/East",
+        "#cc0000",
+        11,
+        { anchor: "middle" }
+      );
+      svg.appendChild(xLabel);
+
+      // Y-axis (North) - green, isometric pointing down-right (was X position)
+      const yEndIso = toIsometric(0, axisLength, 0, 1, x0, y0);
+      const yLine = createLine({ x: x0, y: y0 }, yEndIso, "#00cc66", 2);
+      svg.appendChild(yLine);
+      const yLabel = createText(
+        yEndIso.x + 5,
+        yEndIso.y + 5,
+        "Y/North",
+        "#00cc66",
+        11,
+        {}
+      );
+      svg.appendChild(yLabel);
+    }
   }
 
   //==========================================================================
