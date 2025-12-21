@@ -285,7 +285,7 @@ window.TEUI.WombatRender = (function () {
     renderLegend(svg, geometry, mode);
 
     // Add coordinate axes indicator (bottom-right corner)
-    // Pass aspect ratio to determine orientation
+    // Pass aspect ratio SIGN to determine orientation (180° rotation at aspect=0)
     const aspectRatio = geometry.footprint.length / geometry.footprint.width;
     renderCoordinateAxes(svg, aspectRatio);
 
@@ -428,16 +428,20 @@ window.TEUI.WombatRender = (function () {
   /**
    * Render coordinate axes indicator (X/East, Y/North, Z/Up)
    * Positioned in bottom-right corner
-   * Rotates 90° when aspect ratio crosses 1.0 (portrait vs landscape)
+   * Rotates 180° when aspect ratio crosses 1.0 (landscape vs portrait)
+   *
+   * aspectRatio >= 1.0: Length > Width (Y-aligned, North-South is long)
+   * aspectRatio < 1.0:  Width > Length (X-aligned, East-West is long)
    */
   function renderCoordinateAxes(svg, aspectRatio) {
     const x0 = config.canvasWidth - 100; // Bottom-right corner
     const y0 = config.canvasHeight - 80;
     const axisLength = 40;
 
-    // Determine if building is landscape (aspectRatio >= 1) or portrait (aspectRatio < 1)
-    // When portrait, swap X/Y to reflect that width becomes the long dimension
-    const isLandscape = aspectRatio >= 1.0;
+    // Determine orientation based on aspect ratio (length/width)
+    // aspectRatio >= 1.0: Building longer in Y direction (North-South)
+    // aspectRatio < 1.0:  Building longer in X direction (East-West)
+    const isYAligned = aspectRatio >= 1.0;
 
     // Z-axis (Up) - blue (always vertical)
     const zLine = createLine(
@@ -457,9 +461,9 @@ window.TEUI.WombatRender = (function () {
     );
     svg.appendChild(zLabel);
 
-    if (isLandscape) {
-      // Landscape: Y=LONG (North), X=SHORT (East)
-      // Y-axis (North) - green, isometric pointing up-left
+    if (isYAligned) {
+      // Aspect >= 1.0: Building longer in North-South direction (Y=LONG)
+      // Y-axis (North) - green, isometric pointing up-left (long dimension)
       const yEndIso = toIsometric(0, axisLength, 0, 1, x0, y0);
       const yLine = createLine({ x: x0, y: y0 }, yEndIso, "#00cc66", 2);
       svg.appendChild(yLine);
@@ -473,7 +477,7 @@ window.TEUI.WombatRender = (function () {
       );
       svg.appendChild(yLabel);
 
-      // X-axis (East) - red, isometric pointing down-right
+      // X-axis (East) - red, isometric pointing down-right (short dimension)
       const xEndIso = toIsometric(axisLength, 0, 0, 1, x0, y0);
       const xLine = createLine({ x: x0, y: y0 }, xEndIso, "#cc0000", 2);
       svg.appendChild(xLine);
@@ -487,10 +491,10 @@ window.TEUI.WombatRender = (function () {
       );
       svg.appendChild(xLabel);
     } else {
-      // Portrait: X=LONG (East), Y=SHORT (North)
-      // Swap the rendering to reflect 90° rotation
-      // X-axis (East) - red, isometric pointing up-left (was Y position)
-      const xEndIso = toIsometric(axisLength, 0, 0, 1, x0, y0);
+      // Aspect < 1.0: Building longer in East-West direction (X=LONG)
+      // 180° rotation: flip both axes to opposite isometric directions
+      // X-axis (East) - red, isometric pointing up-left (long dimension, negated Y)
+      const xEndIso = toIsometric(0, -axisLength, 0, 1, x0, y0);
       const xLine = createLine({ x: x0, y: y0 }, xEndIso, "#cc0000", 2);
       svg.appendChild(xLine);
       const xLabel = createText(
@@ -503,8 +507,8 @@ window.TEUI.WombatRender = (function () {
       );
       svg.appendChild(xLabel);
 
-      // Y-axis (North) - green, isometric pointing down-right (was X position)
-      const yEndIso = toIsometric(0, axisLength, 0, 1, x0, y0);
+      // Y-axis (North) - green, isometric pointing down-right (short dimension, negated X)
+      const yEndIso = toIsometric(-axisLength, 0, 0, 1, x0, y0);
       const yLine = createLine({ x: x0, y: y0 }, yEndIso, "#00cc66", 2);
       svg.appendChild(yLine);
       const yLabel = createText(
