@@ -351,9 +351,9 @@ window.TEUI.WombatRender = (function () {
           centerY
         );
 
-        // Gray hairline (solid, thin, low opacity)
-        const line = createLine(p1, p2, "#999999", 0.5);
-        line.setAttribute("opacity", "0.4");
+        // Gray hairline (solid, thin, visible but subtle)
+        const line = createLine(p1, p2, "#666666", 0.5);
+        line.setAttribute("opacity", "0.6");
         svg.appendChild(line);
       }
 
@@ -374,8 +374,8 @@ window.TEUI.WombatRender = (function () {
         node.setAttribute("cx", pt.x);
         node.setAttribute("cy", pt.y);
         node.setAttribute("r", 2); // Smaller than structural nodes
-        node.setAttribute("fill", "#999999");
-        node.setAttribute("opacity", "0.4");
+        node.setAttribute("fill", "#666666");
+        node.setAttribute("opacity", "0.6");
         svg.appendChild(node);
       }
     }
