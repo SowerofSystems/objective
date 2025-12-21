@@ -1159,6 +1159,14 @@ window.TEUI.SectionModules.sect19 = (function () {
         wallVolume = footprintArea * wallHeight;
         calculatedVolume = wallVolume + roofResult.roofVolume;
         wallHeightViolation = true;
+
+        // Update console ticker
+        const deficit = roofResult.roofVolume - targetVolume;
+        const percentOver = ((deficit / targetVolume) * 100).toFixed(0);
+        showFeedback(
+          `❌ Roof volume ${percentOver}% over total (Fix d_105 in S12)`,
+          15000
+        );
       } else {
         // Compress walls to fit within volume budget
         wallHeight = availableWallVolume / footprintArea;
@@ -1171,12 +1179,22 @@ window.TEUI.SectionModules.sect19 = (function () {
         console.warn(`[WOMBAT-2] → Wall height reduced: ${wallHeightTarget.toFixed(2)}m → ${wallHeight.toFixed(2)}m`);
         console.warn(`[WOMBAT-2] → Storey height: ${storyHeightReference.toFixed(2)}m → ${storyHeightActual.toFixed(2)}m`);
         console.warn(`[WOMBAT-2] → To restore: increase d_105 (volume) or reduce d_85 (roof area)`);
+
+        // Update console ticker
+        const reductionPercent = (((wallHeightTarget - wallHeight) / wallHeightTarget) * 100).toFixed(0);
+        showFeedback(
+          `⚠️ Walls compressed ${reductionPercent}% (increase d_105 or reduce d_85)`,
+          15000
+        );
       }
     } else {
       // Volume OK - use reference height
       wallHeight = wallHeightTarget;
       storyHeightActual = storyHeightReference;
       console.log(`[WOMBAT-2] ✓ Using reference wall height (volume within budget)`);
+
+      // Update console ticker
+      showFeedback("✓ Constraints valid", 3000);
     }
 
     console.log(`[WOMBAT-2] Final geometry:`);
