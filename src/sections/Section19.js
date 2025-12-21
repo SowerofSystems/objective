@@ -821,12 +821,18 @@ window.TEUI.SectionModules.sect19 = (function () {
     // Geometrically: two triangular prisms stacked = box × 1/2
     const roofVolume = (footprintArea * roofHeight) / 2;
 
+    // PITCH RATIO (Carpenter's notation: rise:12)
+    // Rational Trigonometry compliant - pure ratio, no trig functions
+    // For gable: pitch is rise over half-base (center to eave)
+    const pitchRise = (roofHeight / halfBase) * 12;  // Scale to :12 format
+
     console.log(`[WOMBAT] Gable roof solved from area constraint:`);
     console.log(`  Roof area: ${roofArea.toFixed(2)} m²`);
     console.log(`  Ridge length: ${ridgeLength.toFixed(2)} m (LONG dimension)`);
     console.log(`  Triangle base: ${triangleBase.toFixed(2)} m (SHORT dimension)`);
     console.log(`  Slope length: ${slopeLength.toFixed(2)} m`);
     console.log(`  Roof height: ${roofHeight.toFixed(2)} m`);
+    console.log(`  Roof pitch: ${pitchRise.toFixed(1)}:12 (rise:run ratio)`);
     console.log(`  Roof volume: ${roofVolume.toFixed(2)} m³`);
     console.log(`  Gable end area (both): ${(2 * gableEndArea).toFixed(2)} m²`);
 
@@ -895,12 +901,18 @@ window.TEUI.SectionModules.sect19 = (function () {
     // = footprint × (roofHeight / 2)
     const roofVolume = (footprintArea * roofHeight) / 2;
 
+    // PITCH RATIO (Carpenter's notation: rise:12)
+    // Rational Trigonometry compliant - pure ratio, no trig functions
+    // For shed: pitch is rise over full span (low eave to high ridge)
+    const pitchRise = (roofHeight / slopeSpan) * 12;  // Scale to :12 format
+
     console.log(`[WOMBAT] Shed roof solved from area constraint:`);
     console.log(`  Roof area: ${roofArea.toFixed(2)} m²`);
     console.log(`  Ridge length: ${ridgeLength.toFixed(2)} m (LONG dimension)`);
     console.log(`  Slope span: ${slopeSpan.toFixed(2)} m (SHORT dimension - slope drops across this)`);
     console.log(`  Slope length: ${slopeLength.toFixed(2)} m`);
     console.log(`  Roof height: ${roofHeight.toFixed(2)} m`);
+    console.log(`  Roof pitch: ${pitchRise.toFixed(1)}:12 (rise:run ratio)`);
     console.log(`  Roof volume: ${roofVolume.toFixed(2)} m³ (steals from walls)`);
     console.log(`  Shed end wall area (both): ${(2 * shedEndWallArea).toFixed(2)} m²`);
 
