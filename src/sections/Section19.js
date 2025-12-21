@@ -770,7 +770,8 @@ window.TEUI.SectionModules.sect19 = (function () {
   function solveGableRoof(roofArea, ridgeLength, span, footprintArea) {
     // Gable roof: two rectangular slopes meet at ridge
     // Ridge runs across SHORT dimension (ridgeLength)
-    // Slope runs down LONG dimension (span)
+    // Slope runs PERPENDICULAR to ridge, dropping down the SHORT dimension width
+    // For gable: ridge is along one axis, slope drops perpendicular across the OTHER short axis
 
     // Total roof area = 2 rectangular slopes
     // roofArea = 2 × ridgeLength × slopeLength
@@ -778,6 +779,8 @@ window.TEUI.SectionModules.sect19 = (function () {
     const slopeLength = roofArea / (2 * ridgeLength);
 
     // Pythagorean theorem (rational trigonometry):
+    // For gable roof, the slope runs from ridge to eave PERPENDICULAR to ridge
+    // The horizontal distance is the perpendicular dimension (span for typical orientation)
     // slopeLength² = roofHeight² + (span/2)²
     // roofHeight² = slopeLength² - (span/2)²
     const h2 = slopeLength * slopeLength - (span * span) / 4;
@@ -902,20 +905,11 @@ window.TEUI.SectionModules.sect19 = (function () {
   }
 
   /**
-   * Solve gable roof 2D Elevation profile - rectangle + triangle
+   * Build gable roof 2D profile from pre-calculated dimensions
+   * Does NOT solve geometry - just builds node array for rendering
    * Ridge runs across SHORT dimension (structural efficiency)
    */
-  function solveGable2DProfile(width, roofArea, wallHeight) {
-    const ridgeLength = width; // SHORT dimension per structural efficiency convention
-    const slopeLength = roofArea / (2 * ridgeLength); // Half roof on each side
-    const halfWidth = width / 2;
-
-    // Rational trigonometry: slopeLength² = halfWidth² + roofHeight²
-    const R = slopeLength * slopeLength;
-    const Q_halfWidth = halfWidth * halfWidth;
-    const Q_height = R - Q_halfWidth;
-    const roofHeight = Math.sqrt(Q_height);
-
+  function buildGable2DProfile(width, wallHeight, roofHeight) {
     return {
       nodes: [
         { x: 0, z: 0 },                                 // Left ground
@@ -932,26 +926,18 @@ window.TEUI.SectionModules.sect19 = (function () {
   }
 
   /**
-   * Solve shed roof 2D profile - trapezoid (asymmetric)
+   * Build shed roof 2D profile from pre-calculated dimensions
+   * Does NOT solve geometry - just builds node array for rendering
    * Ridge runs across SHORT dimension (structural efficiency)
    * One wall at wallHeight, opposite wall at wallHeight + roofHeight
    */
-  function solveShed2DProfile(width, roofArea, length, wallHeight) {
-    const ridgeLength = width; // SHORT dimension (ridge)
-    const span = length;        // LONG dimension (slope direction)
-    const slopeLength = roofArea / ridgeLength;
-
-    // Rational trigonometry: slopeLength² = span² + roofHeight²
-    const R = slopeLength * slopeLength;
-    const Q_span = span * span;
-    const Q_height = R - Q_span;
-    const roofHeight = Math.sqrt(Q_height);
+  function buildShed2DProfile(width, wallHeight, roofHeight) {
     const tallWallHeight = wallHeight + roofHeight;
 
     return {
       nodes: [
-        { x: 0, z: 0 },                   // Left ground
-        { x: width, z: 0 },               // Right ground
+        { x: 0, z: 0 },                   // Left ground (short wall)
+        { x: width, z: 0 },               // Right ground (tall wall)
         { x: width, z: tallWallHeight },  // Right eave (tall side)
         { x: 0, z: wallHeight },          // Left eave (short side)
       ],
@@ -1163,14 +1149,22 @@ window.TEUI.SectionModules.sect19 = (function () {
     console.log(`  Wall height: ${wallHeight.toFixed(2)} m (sacrificial)`);
     console.log(`  Stories: ${storiesDeclared}, Story height: ${storyHeight.toFixed(2)} m`);
 
+    // Safety check: Warn if roof steals more volume than available
+    if (wallVolume < 0) {
+      console.error(`[WOMBAT-2] ⚠️ CRITICAL: Roof volume (${roofResult.roofVolume.toFixed(2)}m³) exceeds total volume (${targetVolume.toFixed(2)}m³)!`);
+      console.error(`[WOMBAT-2] → Wall height is NEGATIVE (${wallHeight.toFixed(2)}m) - geometry is impossible!`);
+      console.error(`[WOMBAT-2] → Either increase d_105 (volume) or reduce d_85 (roof area)`);
+    }
+
     // ========================================================================
     // PHASE 4: BUILD 2D PROFILE FOR RENDERING (not solving!)
+    // Profile builders just construct node arrays from pre-calculated dimensions
     // ========================================================================
     let profile2D;
     if (roofResult.roofType === "gable") {
-      profile2D = solveGable2DProfile(ridgeLength, roofArea, wallHeight);
+      profile2D = buildGable2DProfile(ridgeLength, wallHeight, roofResult.roofHeight);
     } else if (roofResult.roofType === "shed") {
-      profile2D = solveShed2DProfile(ridgeLength, roofArea, span, wallHeight);
+      profile2D = buildShed2DProfile(ridgeLength, wallHeight, roofResult.roofHeight);
     } else {
       // Flat roof
       profile2D = solveFlat2DProfile(ridgeLength, wallHeight);
