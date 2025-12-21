@@ -1989,8 +1989,19 @@ For a 3-storey building with `storyHeight = 3.0m`, draw horizontal lines at:
 **Implementation Location:**
 `src/core/wombatRender.js` - Add floor plane rendering after eave lines, before roof planes
 
-**Pseudocode:**
+**Implementation (Updated 2025-12-21):**
 ```javascript
+/**
+ * Render horizontal floor planes for multi-storey buildings
+ * Shows intermediate floor levels as gray hairlines
+ *
+ * @param {SVGElement} svg - SVG container
+ * @param {Object} geometry - Geometry object with stories, storyHeight
+ * @param {Object} nodes3D - 3D nodes with ground corner positions
+ * @param {number} scale - Isometric scale factor
+ * @param {number} centerX - Canvas center X
+ * @param {number} centerY - Canvas center Y
+ */
 function renderFloorPlanes(svg, geometry, nodes3D, scale, centerX, centerY) {
   const stories = geometry.stories || 1;
   const storyHeight = geometry.storyHeight || geometry.height;
@@ -2000,10 +2011,12 @@ function renderFloorPlanes(svg, geometry, nodes3D, scale, centerX, centerY) {
   }
 
   // Draw horizontal floor planes at each storey boundary
+  // Iterate from 1 to stories-1 (intermediate floors only, not ground or eave)
   for (let i = 1; i < stories; i++) {
     const floorZ = i * storyHeight;
 
     // Create 4 corner points at this floor level
+    // Use ground footprint corners, just elevated to floor height
     const floorCorners = [
       { x: nodes3D.ground[0].x, y: nodes3D.ground[0].y, z: floorZ },
       { x: nodes3D.ground[1].x, y: nodes3D.ground[1].y, z: floorZ },
@@ -2011,22 +2024,28 @@ function renderFloorPlanes(svg, geometry, nodes3D, scale, centerX, centerY) {
       { x: nodes3D.ground[3].x, y: nodes3D.ground[3].y, z: floorZ },
     ];
 
-    // Draw floor plane as dashed rectangle
+    // Draw floor plane as rectangular perimeter (4 edges)
     for (let j = 0; j < 4; j++) {
       const p1 = toIsometric(floorCorners[j].x, floorCorners[j].y, floorCorners[j].z, scale, centerX, centerY);
       const p2 = toIsometric(floorCorners[(j + 1) % 4].x, floorCorners[(j + 1) % 4].y, floorCorners[(j + 1) % 4].z, scale, centerX, centerY);
 
-      const line = createLine(p1, p2, "#888888", 1); // Gray, dashed
-      line.setAttribute("stroke-dasharray", "4,4"); // Dashed line
-      line.setAttribute("opacity", "0.5");
+      // Gray hairline (solid, thin, low opacity)
+      const line = createLine(p1, p2, "#999999", 0.5);
+      line.setAttribute("opacity", "0.4");
       svg.appendChild(line);
     }
 
-    // Optional: Draw "STOREY X" label
-    const centerPt = toIsometric(0, 0, floorZ, scale, centerX, centerY);
-    const label = createText(centerPt.x + 20, centerPt.y, `Storey ${i}`, "#666", 10, { textAnchor: "start" });
-    label.setAttribute("opacity", "0.7");
-    svg.appendChild(label);
+    // Add corner nodes at each floor level
+    for (let j = 0; j < 4; j++) {
+      const pt = toIsometric(floorCorners[j].x, floorCorners[j].y, floorCorners[j].z, scale, centerX, centerY);
+      const node = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      node.setAttribute("cx", pt.x);
+      node.setAttribute("cy", pt.y);
+      node.setAttribute("r", 2); // Smaller than structural nodes
+      node.setAttribute("fill", "#999999");
+      node.setAttribute("opacity", "0.4");
+      svg.appendChild(node);
+    }
   }
 }
 ```
