@@ -1142,8 +1142,8 @@ window.TEUI.SectionModules.sect19 = (function () {
     console.log(`[WOMBAT-2] Roof solved: type=${roofResult.roofType}, height=${roofResult.roofHeight.toFixed(2)}m, volume=${roofResult.roofVolume.toFixed(2)}m³`);
 
     // ========================================================================
-    // PHASE 3: CALCULATE WALL HEIGHT FROM REFERENCE g_106
-    // Volume becomes a VERIFICATION CHECK, not a driver
+    // PHASE 3: CALCULATE WALL HEIGHT
+    // Start with g_106 reference, compress if volume exceeded
     // ========================================================================
     const storiesDeclared = parseFloat(currentState.getValue("d_150")) || 1.0;
 
@@ -1151,37 +1151,63 @@ window.TEUI.SectionModules.sect19 = (function () {
     const g_106_raw = getModeAwareValue("g_106", isReferenceCalculation);
     const storyHeightReference = parseFloat(g_106_raw) || 5.15; // Default 5.15m
 
-    // Calculate wall height from reference storey height
-    const wallHeight = storyHeightReference * storiesDeclared;
+    // TRY reference wall height first
+    let wallHeightTarget = storyHeightReference * storiesDeclared;
+    let wallVolume = footprintArea * wallHeightTarget;
+    let calculatedVolume = wallVolume + roofResult.roofVolume;
 
-    // CALCULATE actual volumes
-    const wallVolume = footprintArea * wallHeight;
-    const calculatedVolume = wallVolume + roofResult.roofVolume;
-
-    console.log(`[WOMBAT-2] Geometry from SACRED constraints:`);
-    console.log(`  Footprint area: ${footprintArea.toFixed(2)} m² (d_95 - SACRED)`);
-    console.log(`  Roof area: ${roofArea.toFixed(2)} m² (d_85 - SACRED)`);
-    console.log(`  Roof height: ${roofResult.roofHeight.toFixed(2)} m (from roof area)`);
-    console.log(`  Wall height: ${wallHeight.toFixed(2)} m (${storiesDeclared} × ${storyHeightReference.toFixed(2)}m from g_106)`);
-    console.log(`[WOMBAT-2] Volume calculation:`);
-    console.log(`  Wall volume: ${wallVolume.toFixed(2)} m³`);
-    console.log(`  Roof volume: ${roofResult.roofVolume.toFixed(2)} m³`);
-    console.log(`  CALCULATED total: ${calculatedVolume.toFixed(2)} m³`);
+    console.log(`[WOMBAT-2] Attempting reference wall height:`);
+    console.log(`  Target wall height: ${wallHeightTarget.toFixed(2)} m (${storiesDeclared} × ${storyHeightReference.toFixed(2)}m from g_106)`);
+    console.log(`  Would give volume: ${calculatedVolume.toFixed(2)} m³`);
     console.log(`  USER TARGET (d_105): ${targetVolume.toFixed(2)} m³`);
 
-    // Volume verification check
-    const volumeDifference = calculatedVolume - targetVolume;
-    if (Math.abs(volumeDifference) > 1) { // Tolerance of 1 m³
-      if (volumeDifference > 0) {
-        console.warn(`[WOMBAT-2] ⚠️ Volume EXCEEDED by ${volumeDifference.toFixed(0)} m³`);
-        console.warn(`[WOMBAT-2] → To reduce: decrease d_85 (roof area) or reduce stories`);
+    // Check if volume would be exceeded
+    let wallHeight;
+    let storyHeightActual;
+    let wallHeightViolation = false;
+
+    if (calculatedVolume > targetVolume) {
+      // Volume exceeded - compress walls to fit
+      const availableWallVolume = targetVolume - roofResult.roofVolume;
+
+      if (availableWallVolume < 0) {
+        // Roof alone exceeds volume - this is critical
+        console.error(`[WOMBAT-2] ⚠️ CRITICAL: Roof volume (${roofResult.roofVolume.toFixed(0)}m³) exceeds total volume (${targetVolume.toFixed(0)}m³)`);
+        console.error(`[WOMBAT-2] → Using reference wall height anyway, volume will be violated`);
+        wallHeight = wallHeightTarget;
+        storyHeightActual = storyHeightReference;
+        wallVolume = footprintArea * wallHeight;
+        calculatedVolume = wallVolume + roofResult.roofVolume;
+        wallHeightViolation = true;
       } else {
-        console.warn(`[WOMBAT-2] ⚠️ Volume UNDER by ${Math.abs(volumeDifference).toFixed(0)} m³`);
-        console.warn(`[WOMBAT-2] → To increase: increase d_85 (roof area) or add stories`);
+        // Compress walls to fit within volume budget
+        wallHeight = availableWallVolume / footprintArea;
+        storyHeightActual = wallHeight / storiesDeclared;
+        wallVolume = availableWallVolume;
+        calculatedVolume = targetVolume; // Exactly matches now
+        wallHeightViolation = true;
+
+        console.warn(`[WOMBAT-2] ⚠️ Volume exceeded - compressing walls to fit`);
+        console.warn(`[WOMBAT-2] → Wall height reduced: ${wallHeightTarget.toFixed(2)}m → ${wallHeight.toFixed(2)}m`);
+        console.warn(`[WOMBAT-2] → Storey height: ${storyHeightReference.toFixed(2)}m → ${storyHeightActual.toFixed(2)}m`);
+        console.warn(`[WOMBAT-2] → To restore: increase d_105 (volume) or reduce d_85 (roof area)`);
       }
     } else {
-      console.log(`[WOMBAT-2] ✓ Volume matches target within tolerance`);
+      // Volume OK - use reference height
+      wallHeight = wallHeightTarget;
+      storyHeightActual = storyHeightReference;
+      console.log(`[WOMBAT-2] ✓ Using reference wall height (volume within budget)`);
     }
+
+    console.log(`[WOMBAT-2] Final geometry:`);
+    console.log(`  Footprint: ${footprintArea.toFixed(2)} m² (d_95 - SACRED)`);
+    console.log(`  Roof area: ${roofArea.toFixed(2)} m² (d_85 - SACRED)`);
+    console.log(`  Roof height: ${roofResult.roofHeight.toFixed(2)} m`);
+    console.log(`  Wall height: ${wallHeight.toFixed(2)} m (${wallHeightViolation ? 'COMPRESSED' : 'reference'})`);
+    console.log(`  Storey height: ${storyHeightActual.toFixed(2)} m`);
+    console.log(`  Wall volume: ${wallVolume.toFixed(2)} m³`);
+    console.log(`  Roof volume: ${roofResult.roofVolume.toFixed(2)} m³`);
+    console.log(`  Total volume: ${calculatedVolume.toFixed(2)} m³`);
 
     // ========================================================================
     // PHASE 4: BUILD 2D PROFILE FOR RENDERING (not solving!)
@@ -1216,7 +1242,9 @@ window.TEUI.SectionModules.sect19 = (function () {
     // Store calculated footprint dimensions in state for display
     currentState.setValue("h_155", width.toFixed(2));  // Footprint width (from aspect ratio)
     currentState.setValue("h_157", length.toFixed(2)); // Footprint length (from aspect ratio)
-    currentState.setValue("h_156", storyHeightReference.toFixed(2)); // Storey height (from g_106)
+    currentState.setValue("h_156", storyHeightActual.toFixed(2)); // Actual storey height (may be compressed)
+
+    const volumeDifference = calculatedVolume - targetVolume;
 
     // Return complete geometry
     return {
@@ -1227,10 +1255,12 @@ window.TEUI.SectionModules.sect19 = (function () {
       roofVolume: roofResult.roofVolume,
       wallHeight,
       wallVolume,
-      calculatedVolume,        // NEW: actual volume from geometry
-      targetVolume,             // NEW: user's specified volume (d_105)
-      volumeDifference,         // NEW: difference for reporting
-      storyHeight: storyHeightReference,
+      calculatedVolume,         // Actual volume from geometry
+      targetVolume,              // User's specified volume (d_105)
+      volumeDifference,          // Difference for reporting
+      wallHeightViolation,       // Flag if walls were compressed
+      storyHeightReference,      // Reference from g_106
+      storyHeight: storyHeightActual,  // Actual (may be compressed)
       stories: storiesDeclared,
       height: wallHeight,  // For backward compatibility
       totalHeight: wallHeight + roofResult.roofHeight,
