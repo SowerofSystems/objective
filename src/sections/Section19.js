@@ -942,8 +942,8 @@ window.TEUI.SectionModules.sect19 = (function () {
    * Build shed roof 2D profile from pre-calculated dimensions
    * Does NOT solve geometry - just builds node array for rendering
    * CRITICAL: Ridge runs along LONG dimension (structural efficiency)
-   * Profile width = LONG dimension (ridge runs across this width)
-   * Profile will be extruded along SHORT dimension
+   * Profile width = SHORT dimension (end wall cross-section)
+   * Profile will be extruded along LONG dimension (ridge direction)
    * Slope drops from X=0 (low eave) to X=width (high ridge)
    */
   function buildShed2DProfile(width, wallHeight, roofHeight) {
@@ -985,13 +985,13 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Generate eave nodes based on roof type
     if (profile2D.type === "shed") {
-      // Shed roof: short side at wallHeight, tall side at tallWallHeight
-      // Slope runs from -Y (short) to +Y (tall)
+      // Shed roof: FIXED - slope runs in X direction (profile direction)
+      // Slope runs from -X (low eave) to +X (high ridge)
       nodes.eave = [
-        { x: -halfWidth, y: -halfDepth, z: profile2D.wallHeight },      // Front left (short)
-        { x: halfWidth, y: -halfDepth, z: profile2D.wallHeight },       // Front right (short)
-        { x: halfWidth, y: halfDepth, z: profile2D.tallWallHeight },    // Back right (tall)
-        { x: -halfWidth, y: halfDepth, z: profile2D.tallWallHeight },   // Back left (tall)
+        { x: -halfWidth, y: -halfDepth, z: profile2D.wallHeight },      // Left front (low)
+        { x: halfWidth, y: -halfDepth, z: profile2D.tallWallHeight },   // Right front (high)
+        { x: halfWidth, y: halfDepth, z: profile2D.tallWallHeight },    // Right back (high)
+        { x: -halfWidth, y: halfDepth, z: profile2D.wallHeight },       // Left back (low)
       ];
     } else {
       // Flat or gable: uniform eave height
@@ -1219,9 +1219,9 @@ window.TEUI.SectionModules.sect19 = (function () {
       // Ridge runs parallel to long walls
       profile2D = buildGable2DProfile(shortDimension, wallHeight, roofResult.roofHeight);
     } else if (roofResult.roofType === "shed") {
-      // CRITICAL: For shed, profile width = LONG dimension (where ridge runs)
-      // Profile will be extruded along SHORT dimension
-      profile2D = buildShed2DProfile(longDimension, wallHeight, roofResult.roofHeight);
+      // CRITICAL: For shed, profile width = SHORT dimension (end wall cross-section)
+      // Profile will be extruded along LONG dimension (ridge direction, same as gable)
+      profile2D = buildShed2DProfile(shortDimension, wallHeight, roofResult.roofHeight);
     } else {
       // Flat roof
       profile2D = solveFlat2DProfile(shortDimension, wallHeight);
@@ -1231,16 +1231,11 @@ window.TEUI.SectionModules.sect19 = (function () {
     // PHASE 5: EXTRUDE AND GENERATE 3D NODES
     // ========================================================================
 
-    // Extrusion depth depends on roof type:
+    // Extrusion depth: ALWAYS extrude along LONG dimension
     // - Flat: extrude along LONG - profile width is SHORT
     // - Gable: extrude along LONG - profile width is SHORT (triangle cross-section)
-    // - Shed: extrude along SHORT - profile width is LONG
-    let extrusionDepth;
-    if (roofResult.roofType === "shed") {
-      extrusionDepth = shortDimension;  // SHORT - shed ridge is at end
-    } else {
-      extrusionDepth = longDimension;   // LONG - gable/flat ridge runs along length
-    }
+    // - Shed: extrude along LONG - profile width is SHORT (FIXED: same as gable)
+    let extrusionDepth = longDimension;  // LONG - ridge runs along length for all roof types
     const nodes3D = generate3DNodes(profile2D, extrusionDepth);
 
     console.log(`[WOMBAT-2] Profile: ${profile2D.type}, extrusion depth: ${extrusionDepth.toFixed(2)}m`);
