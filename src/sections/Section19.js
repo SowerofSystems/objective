@@ -436,8 +436,8 @@ window.TEUI.SectionModules.sect19 = (function () {
           fieldId: "d_154",
           type: "coefficient_slider",
           value: "0.0",
-          min: -4.0,
-          max: 4.0,
+          min: -5.0,
+          max: 5.0,
           step: 0.1, // Consider adding snap to 0 for ease of value setting.
           section: "wombat",
           tooltip: true,
@@ -1056,7 +1056,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     // ASPECT RATIO IMPLEMENTATION (from Section19.js.backup:1108-1127)
     // Superior formula - no branching, mathematically pure
     // ========================================================================
-    // Read aspect ratio slider d_154 (-4.0 to +4.0, step 0.1, default 0.0)
+    // Read aspect ratio slider d_154 (-5.0 to +5.0, step 0.1, default 0.0)
     // 0 = square (1:1), positive = landscape (wide), negative = portrait (tall)
     const currentState = isReferenceCalculation ? ReferenceState : TargetState;
     const d_154_raw = currentState.getValue("d_154");
@@ -1067,8 +1067,8 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Convert slider value to actual aspect ratio (length/width)
     const aspectRatio = aspectRatioRaw >= 0
-      ? 1 + aspectRatioRaw           // Landscape: 0→1, +1→2, +2→3, +4→5
-      : 1 / (1 - aspectRatioRaw);    // Portrait:  0→1, -1→0.5, -2→0.33, -4→0.2
+      ? 1 + aspectRatioRaw           // Landscape: 0→1, +1→2, +2→3, +5→6
+      : 1 / (1 - aspectRatioRaw);    // Portrait:  0→1, -1→0.5, -2→0.33, -5→0.167
 
     console.log(`[WOMBAT-2 DEBUG] aspectRatio calculated: ${aspectRatio}`);
     console.log(`[WOMBAT-2 DEBUG] footprintArea: ${footprintArea}`);
