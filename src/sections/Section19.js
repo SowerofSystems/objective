@@ -830,16 +830,22 @@ window.TEUI.SectionModules.sect19 = (function () {
    */
   function solveShedRoof(roofArea, ridgeLength, span, footprintArea) {
     // Shed roof: single rectangular slope
-    // Ridge runs across SHORT dimension (ridgeLength) at HIGH end
-    // Slope runs down LONG dimension (span)
+    // CRITICAL: Ridge runs along LONG dimension (structural efficiency)
+    // Slope drops perpendicular to ridge across SHORT dimension
+    // Structural members span the SHORT distance (same as slope horizontal distance)
 
-    // Roof area = ridgeLength × slopeLength
-    const slopeLength = roofArea / ridgeLength;
+    // SWAP: ridgeLength should be LONG, span should be SHORT
+    // The parameters come in with ridgeLength=SHORT, span=LONG, so we swap them
+    const actualRidgeLength = span;      // LONG dimension (ridge runs along this)
+    const actualSpan = ridgeLength;      // SHORT dimension (slope drops across this)
+
+    // Roof area = ridge × slopeLength
+    const slopeLength = roofArea / actualRidgeLength;
 
     // Pythagorean theorem:
     // slopeLength² = roofHeight² + span²
     // roofHeight² = slopeLength² - span²
-    const h2 = slopeLength * slopeLength - span * span;
+    const h2 = slopeLength * slopeLength - actualSpan * actualSpan;
 
     if (h2 < 0) {
       console.error(`[WOMBAT] Invalid shed geometry - roof area ${roofArea.toFixed(0)}m² too small for footprint`);
@@ -855,8 +861,8 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     const roofHeight = Math.sqrt(h2);
 
-    // Shed end wall area (rectangular): ridgeLength × roofHeight
-    const shedEndWallArea = ridgeLength * roofHeight;
+    // Shed end wall area (rectangular): actualSpan × roofHeight
+    const shedEndWallArea = actualSpan * roofHeight;
 
     // Roof volume = trapezoidal prism volume
     // = footprint × (average height above eave)
@@ -865,8 +871,8 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     console.log(`[WOMBAT] Shed roof solved from area constraint:`);
     console.log(`  Roof area: ${roofArea.toFixed(2)} m²`);
-    console.log(`  Ridge length: ${ridgeLength.toFixed(2)} m (SHORT dimension)`);
-    console.log(`  Span: ${span.toFixed(2)} m (LONG dimension)`);
+    console.log(`  Ridge length: ${actualRidgeLength.toFixed(2)} m (LONG dimension - CORRECTED)`);
+    console.log(`  Span: ${actualSpan.toFixed(2)} m (SHORT dimension - slope drops across this)`);
     console.log(`  Slope length: ${slopeLength.toFixed(2)} m`);
     console.log(`  Roof height: ${roofHeight.toFixed(2)} m`);
     console.log(`  Roof volume: ${roofVolume.toFixed(2)} m³ (steals from walls)`);
