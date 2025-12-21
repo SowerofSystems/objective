@@ -2142,8 +2142,61 @@ setValue: function (fieldId, value, source = "user-modified") {
 
 ---
 
+## Implementation Status (2025-12-20)
+
+### ✅ Completed
+
+1. **Shed Roof Orientation Fix** - Ridge now runs along LONG dimension, slope drops across SHORT dimension for structural efficiency
+2. **Gable Roof Orientation Fix** - Ridge parallel to long walls, triangle base = SHORT dimension, roof area satisfied correctly
+3. **Volume Constraint Logic** - Changed from volume-driven to g_106-driven with compression when exceeded, eliminates negative wall heights
+4. **Roof Area Satisfaction** - Both gable and shed roofs now correctly satisfy d_85 constraint exactly
+5. **Nomenclature Refactoring** - Eliminated confusing `ridgeLength`/`span` parameter swaps throughout Section19.js:
+   - All roof solver functions now use clear `shortDimension`/`longDimension` parameters
+   - Removed internal parameter swap logic
+   - Added self-documenting local variable names (`triangleBase`, `slopeSpan`, etc.)
+   - Removed obsolete `extrudeProfile()` function
+   - Updated profile building and extrusion depth logic
+6. **Documentation** - Created [PRISMATIC-TERMINOLOGY.md](PRISMATIC-TERMINOLOGY.md) with rational trigonometry notation, coordinate conventions, and variable naming guide
+
+### ⬜ Remaining Work
+
+1. **Visual Aids Needed**:
+   - X-Y-Z coordinate system key graphic (reference old backup files)
+   - Dimension labels showing X, Y, and Height axes
+   - Isometric view showing coordinate orientation
+
+2. **Hip Roof Solver** (Tomorrow):
+   - Implement hip roof geometry using same prismatic extrusion pattern
+   - Ridge runs parallel to LONG dimension (same as gable/shed)
+   - Four triangular faces at corners, two trapezoidal faces on sides
+   - Maintain consistent constraint hierarchy (footprint → roof area → volume)
+
+3. **Runtime Testing**:
+   - Verify gable/shed roof orientations at various aspect ratios
+   - Test multi-storey buildings
+   - Verify volume compression logic with extreme roof areas
+
+4. **Code Quality**:
+   - Verify wombatRender.js coordinate system matches documentation
+   - Consider spread-based roof pitch display (rational trig)
+   - Add geometric feasibility validation before rendering
+
+### Testing Results
+
+- ✅ Linter check passed (no syntax errors)
+- ✅ Quick runtime test passed (user verified)
+- ⬜ Comprehensive testing pending
+
+### Git Status
+
+- **Branch**: WOMBAT-PRISMATIC (pushed to origin)
+- **Commits**: 32 commits ahead of main
+- **Latest commit**: af66e97 "Refactor: Eliminate confusing ridgeLength/span parameter swaps"
+
+---
+
 **Document Status**: ACTIVE - Implementation in progress
 **Author**: Claude + Andy
-**Date**: 2025-12-19 (Created), 2025-12-20 (Updated with multi-storey spec and NaN bug analysis)
+**Date**: 2025-12-19 (Created), 2025-12-20 (Updated with implementation status)
 **Branch**: WOMBAT-PRISMATIC
-**Next Review**: After aspect ratio NaN bug fixed
+**Next Session**: Implement hip roof solver and add coordinate system graphics

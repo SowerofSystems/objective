@@ -276,13 +276,34 @@ const slope = Math.tan(angle);            // Compounds errors
 
 ---
 
-## Future Improvements
+## Implementation Status
+
+### ✅ Completed (2025-12-20)
 
 1. **Refactor parameter names** to eliminate swap confusion
+   - All `ridgeLength`/`span` → `shortDimension`/`longDimension` changes complete
+   - Functions: `solveGableRoof()`, `solveShedRoof()`, main solver, profile building
+   - No more internal parameter swapping required
+
+### ⬜ Pending (Future Work)
+
 2. **Implement full rational trig** using `s` (spread) consistently
+   - Current code still uses direct quadrance calculations
+   - Need to refactor to work with spread ratios throughout
+   - Would eliminate premature square root operations
+
 3. **Add spread-based roof pitch display** instead of degrees
+   - Currently no pitch display at all
+   - Future: Show `s = 0.36` instead of "33.7°"
+
 4. **Optimize calculations** to minimize square root operations
+   - Related to #2 - defer `Math.sqrt()` until final value needed
+   - Keep intermediate values in quadrance (Q) space
+
 5. **Add validation** for geometric feasibility before rendering
+   - Check if roof area constraints are physically possible
+   - Warn user before attempting to render impossible geometry
+   - Auto-collapse to flat roof when constraints conflict
 
 ---
 
@@ -453,8 +474,10 @@ Then each roof type assigns these to appropriate local variables:
 ### Testing Status
 
 - ✅ Linter check passed (no syntax errors introduced)
-- ⬜ Runtime testing pending (user to verify rendering behavior)
-- ⬜ Visual verification needed for gable/shed roof orientations at various aspect ratios
+- ✅ Quick runtime test passed (user verified basic rendering works)
+- ⬜ Comprehensive testing pending (gable/shed roof orientations at various aspect ratios)
+- ⬜ Multi-storey building testing
+- ⬜ Edge case testing (extreme roof areas, volume conflicts)
 
 ### Benefits
 
