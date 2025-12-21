@@ -783,16 +783,24 @@ window.TEUI.SectionModules.sect19 = (function () {
     // roofArea = 2 × ridge × slopeLength
     const slopeLength = roofArea / (2 * ridgeLength);
 
-    // Pythagorean theorem:
+    // RATIONAL TRIGONOMETRY (Wildberger notation):
+    // Work with quadrances (Q = distance²) to avoid premature square roots
+    // Pythagorean theorem in Q-space:
     // Slope runs from ridge at center to eave at edge
     // Horizontal distance = half the building width (triangleBase/2)
-    // slopeLength² = roofHeight² + (triangleBase/2)²
-    // roofHeight² = slopeLength² - (triangleBase/2)²
-    const h2 = slopeLength * slopeLength - (triangleBase * triangleBase) / 4;
 
-    if (h2 < 0) {
+    const halfBase = triangleBase / 2;
+    const Q_slope = slopeLength * slopeLength;   // R in Wildberger notation
+    const Q_halfBase = halfBase * halfBase;      // Quadrance of horizontal run
+    const Q_height = Q_slope - Q_halfBase;       // Pythagorean: Q_height = R - Q_base
+
+    // Spread (ratio of quadrances) for validation
+    const spread = Q_halfBase / Q_slope;         // s = Q_base / R
+
+    if (Q_height < 0) {
       console.error(`[WOMBAT] Invalid gable geometry - roof area ${roofArea.toFixed(0)}m² too small for footprint`);
-      console.error(`[WOMBAT] Need slopeLength (${slopeLength.toFixed(2)}m) > triangleBase/2 (${(triangleBase/2).toFixed(2)}m)`);
+      console.error(`[WOMBAT] Need slopeLength (${slopeLength.toFixed(2)}m) > triangleBase/2 (${halfBase.toFixed(2)}m)`);
+      console.error(`[WOMBAT] Spread s = ${spread.toFixed(3)} > 1.0 (impossible geometry)`);
       return {
         roofType: "flat",
         roofHeight: 0,
@@ -802,7 +810,8 @@ window.TEUI.SectionModules.sect19 = (function () {
       };
     }
 
-    const roofHeight = Math.sqrt(h2);
+    // Expand quadrance to distance only at final step
+    const roofHeight = Math.sqrt(Q_height);
 
     // Gable end area (triangular): base × height / 2
     // Triangle base = SHORT dimension
@@ -849,14 +858,23 @@ window.TEUI.SectionModules.sect19 = (function () {
     // Roof area = ridge × slopeLength
     const slopeLength = roofArea / ridgeLength;
 
-    // Pythagorean theorem:
-    // slopeLength² = roofHeight² + slopeSpan²
-    // roofHeight² = slopeLength² - slopeSpan²
-    const h2 = slopeLength * slopeLength - slopeSpan * slopeSpan;
+    // RATIONAL TRIGONOMETRY (Wildberger notation):
+    // Work with quadrances (Q = distance²) to avoid premature square roots
+    // Pythagorean theorem in Q-space:
+    // Slope runs from high ridge to low eave
+    // Horizontal distance = full span across building (slopeSpan)
 
-    if (h2 < 0) {
+    const Q_slope = slopeLength * slopeLength;   // R in Wildberger notation
+    const Q_span = slopeSpan * slopeSpan;        // Quadrance of horizontal run
+    const Q_height = Q_slope - Q_span;           // Pythagorean: Q_height = R - Q_span
+
+    // Spread (ratio of quadrances) for validation
+    const spread = Q_span / Q_slope;             // s = Q_span / R
+
+    if (Q_height < 0) {
       console.error(`[WOMBAT] Invalid shed geometry - roof area ${roofArea.toFixed(0)}m² too small for footprint`);
       console.error(`[WOMBAT] Need slopeLength (${slopeLength.toFixed(2)}m) > slopeSpan (${slopeSpan.toFixed(2)}m)`);
+      console.error(`[WOMBAT] Spread s = ${spread.toFixed(3)} > 1.0 (impossible geometry)`);
       return {
         roofType: "flat",
         roofHeight: 0,
@@ -866,7 +884,8 @@ window.TEUI.SectionModules.sect19 = (function () {
       };
     }
 
-    const roofHeight = Math.sqrt(h2);
+    // Expand quadrance to distance only at final step
+    const roofHeight = Math.sqrt(Q_height);
 
     // Shed end wall area (rectangular): slopeSpan × roofHeight
     const shedEndWallArea = slopeSpan * roofHeight;
