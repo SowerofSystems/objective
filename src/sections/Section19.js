@@ -1220,9 +1220,11 @@ window.TEUI.SectionModules.sect19 = (function () {
     // ========================================================================
     let profile2D;
     if (roofResult.roofType === "gable") {
-      // CRITICAL: For gable, profile width = LONG dimension (where ridge runs)
-      // Profile will be extruded along SHORT dimension
-      profile2D = buildGable2DProfile(span, wallHeight, roofResult.roofHeight);
+      // CRITICAL: For gable, profile shows CROSS-SECTION (triangle)
+      // Profile width = SHORT dimension (triangle base, perpendicular to ridge)
+      // Profile will be extruded along LONG dimension (parallel to ridge)
+      // Ridge runs parallel to long walls
+      profile2D = buildGable2DProfile(ridgeLength, wallHeight, roofResult.roofHeight);
     } else if (roofResult.roofType === "shed") {
       // CRITICAL: For shed, profile width = LONG dimension (where ridge runs)
       // Profile will be extruded along SHORT dimension
@@ -1239,8 +1241,14 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Extrusion depth depends on roof type:
     // - Flat: extrude along LONG (span) - profile width is SHORT
-    // - Gable/Shed: extrude along SHORT (ridgeLength) - profile width is already LONG
-    const extrusionDepth = (roofResult.roofType === "flat") ? span : ridgeLength;
+    // - Gable: extrude along LONG (span) - profile width is SHORT (triangle cross-section)
+    // - Shed: extrude along SHORT (ridgeLength) - profile width is LONG
+    let extrusionDepth;
+    if (roofResult.roofType === "shed") {
+      extrusionDepth = ridgeLength;  // SHORT - shed ridge is at end
+    } else {
+      extrusionDepth = span;  // LONG - gable/flat ridge runs along length
+    }
     const nodes3D = generate3DNodes(profile2D, extrusionDepth);
 
     console.log(`[WOMBAT-2] Profile: ${profile2D.type}, extrusion depth: ${extrusion.depth.toFixed(2)}m, span: ${span.toFixed(2)}m`);
