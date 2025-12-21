@@ -1160,12 +1160,12 @@ window.TEUI.SectionModules.sect19 = (function () {
         calculatedVolume = wallVolume + roofResult.roofVolume;
         wallHeightViolation = true;
 
-        // Update console ticker
+        // Update console ticker (persistent until next user interaction)
         const deficit = roofResult.roofVolume - targetVolume;
         const percentOver = ((deficit / targetVolume) * 100).toFixed(0);
         showFeedback(
           `❌ Roof volume ${percentOver}% over total (increase Conditioned Volume in S12)`,
-          15000
+          true // persistent
         );
       } else {
         // Compress walls to fit within volume budget
@@ -1180,11 +1180,11 @@ window.TEUI.SectionModules.sect19 = (function () {
         console.warn(`[WOMBAT-2] → Storey height: ${storyHeightReference.toFixed(2)}m → ${storyHeightActual.toFixed(2)}m`);
         console.warn(`[WOMBAT-2] → To restore: increase Conditioned Volume or reduce Roof Area`);
 
-        // Update console ticker
+        // Update console ticker (persistent until next user interaction)
         const reductionPercent = (((wallHeightTarget - wallHeight) / wallHeightTarget) * 100).toFixed(0);
         showFeedback(
           `⚠️ Walls compressed ${reductionPercent}% (increase Conditioned Volume or reduce Roof Area)`,
-          15000
+          true // persistent
         );
       }
     } else {
@@ -1404,6 +1404,15 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Inject feedback console into section header (following S18 pattern)
     createFeedbackConsole();
+
+    // Clear feedback console on any user input interaction
+    // This makes persistent messages stay until user changes anything
+    const wombatSection = document.getElementById("wombat");
+    if (wombatSection) {
+      // Listen for all input types: sliders, dropdowns, text inputs
+      wombatSection.addEventListener("input", clearFeedback, true); // use capture phase
+      wombatSection.addEventListener("change", clearFeedback, true); // use capture phase
+    }
   }
 
   function createFeedbackConsole() {
@@ -1420,22 +1429,55 @@ window.TEUI.SectionModules.sect19 = (function () {
     }
   }
 
-  function showFeedback(message, duration = 10000) {  //unless new message comes in then over-write
+  // Store timeout ID for clearing persistent messages
+  let feedbackClearTimeout = null;
+
+  function showFeedback(message, persistent = false) {
     const console = document.getElementById("s19-feedback-console");
     if (!console) return;
 
+    // Clear any existing timeout
+    if (feedbackClearTimeout) {
+      clearTimeout(feedbackClearTimeout);
+      feedbackClearTimeout = null;
+    }
+
     console.textContent = message;
     console.style.opacity = "1";
+    console.style.transition = "";
 
+    // If not persistent, auto-fade after 3 seconds
+    if (!persistent) {
+      feedbackClearTimeout = setTimeout(() => {
+        console.style.transition = "opacity 1s";
+        console.style.opacity = "0";
+        setTimeout(() => {
+          console.textContent = "";
+          console.style.opacity = "1";
+          console.style.transition = "";
+        }, 1000);
+        feedbackClearTimeout = null;
+      }, 3000);
+    }
+    // If persistent, message stays until next interaction (cleared by clearFeedback)
+  }
+
+  function clearFeedback() {
+    const console = document.getElementById("s19-feedback-console");
+    if (!console || !console.textContent) return;
+
+    if (feedbackClearTimeout) {
+      clearTimeout(feedbackClearTimeout);
+      feedbackClearTimeout = null;
+    }
+
+    console.style.transition = "opacity 0.5s";
+    console.style.opacity = "0";
     setTimeout(() => {
-      console.style.transition = "opacity 1s";
-      console.style.opacity = "0";
-      setTimeout(() => {
-        console.textContent = "";
-        console.style.opacity = "1";
-        console.style.transition = "";
-      }, 1000);
-    }, duration);
+      console.textContent = "";
+      console.style.opacity = "1";
+      console.style.transition = "";
+    }, 500);
   }
 
   function showInfoModal() {
