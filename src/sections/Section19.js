@@ -934,18 +934,20 @@ window.TEUI.SectionModules.sect19 = (function () {
   /**
    * Build shed roof 2D profile from pre-calculated dimensions
    * Does NOT solve geometry - just builds node array for rendering
-   * Ridge runs across SHORT dimension (structural efficiency)
-   * One wall at wallHeight, opposite wall at wallHeight + roofHeight
+   * CRITICAL: Ridge runs along LONG dimension (structural efficiency)
+   * Profile width = LONG dimension (ridge runs across this width)
+   * Profile will be extruded along SHORT dimension
+   * Slope drops from X=0 (low eave) to X=width (high ridge)
    */
   function buildShed2DProfile(width, wallHeight, roofHeight) {
     const tallWallHeight = wallHeight + roofHeight;
 
     return {
       nodes: [
-        { x: 0, z: 0 },                   // Left ground (short wall)
-        { x: width, z: 0 },               // Right ground (tall wall)
-        { x: width, z: tallWallHeight },  // Right eave (tall side)
-        { x: 0, z: wallHeight },          // Left eave (short side)
+        { x: 0, z: 0 },                   // Left ground (low eave side)
+        { x: width, z: 0 },               // Right ground (high ridge side)
+        { x: width, z: tallWallHeight },  // Right eave (high ridge)
+        { x: 0, z: wallHeight },          // Left eave (low eave)
       ],
       type: "shed",
       height: roofHeight,
@@ -1170,7 +1172,9 @@ window.TEUI.SectionModules.sect19 = (function () {
     if (roofResult.roofType === "gable") {
       profile2D = buildGable2DProfile(ridgeLength, wallHeight, roofResult.roofHeight);
     } else if (roofResult.roofType === "shed") {
-      profile2D = buildShed2DProfile(ridgeLength, wallHeight, roofResult.roofHeight);
+      // CRITICAL: For shed, profile width = LONG dimension (where ridge runs)
+      // Profile will be extruded along SHORT dimension
+      profile2D = buildShed2DProfile(span, wallHeight, roofResult.roofHeight);
     } else {
       // Flat roof
       profile2D = solveFlat2DProfile(ridgeLength, wallHeight);
@@ -1180,7 +1184,12 @@ window.TEUI.SectionModules.sect19 = (function () {
     // PHASE 5: EXTRUDE AND GENERATE 3D NODES
     // ========================================================================
     const extrusion = extrudeProfile(profile2D, targetVolume);
-    const nodes3D = generate3DNodes(profile2D, span);  // Use SPAN, not extrusion.depth
+
+    // Extrusion depth depends on roof type:
+    // - Gable/Flat: extrude along LONG (span)
+    // - Shed: extrude along SHORT (ridgeLength) because profile width is already LONG
+    const extrusionDepth = (roofResult.roofType === "shed") ? ridgeLength : span;
+    const nodes3D = generate3DNodes(profile2D, extrusionDepth);
 
     console.log(`[WOMBAT-2] Profile: ${profile2D.type}, extrusion depth: ${extrusion.depth.toFixed(2)}m, span: ${span.toFixed(2)}m`);
     console.log(`[WOMBAT-2] Footprint dimensions: width=${width.toFixed(2)}m, length=${length.toFixed(2)}m (from aspect ratio)`);
