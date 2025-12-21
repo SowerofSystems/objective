@@ -286,8 +286,232 @@ const slope = Math.tan(angle);            // Compounds errors
 
 ---
 
+## Code Locations Requiring Refactoring
+
+**CRITICAL**: These locations have confusing variable names that require renaming for future clarity.
+
+### Section19.js
+
+#### Line 770-825: `solveGableRoof()`
+**Issue**: Parameters named `ridgeLength` and `span` are SWAPPED internally
+
+**Current (confusing)**:
+```javascript
+function solveGableRoof(roofArea, ridgeLength, span, footprintArea) {
+  // ridgeLength = SHORT (incoming)
+  // span = LONG (incoming)
+
+  // SWAPPED:
+  const actualRidgeLength = span;      // LONG
+  const actualSpan = ridgeLength;      // SHORT
+}
+```
+
+**Refactor to**:
+```javascript
+function solveGableRoof(roofArea, shortDimension, longDimension, footprintArea) {
+  // Clear, no swap needed:
+  const ridgeLength = longDimension;   // Ridge parallel to long walls
+  const triangleBase = shortDimension; // Perpendicular to ridge
+}
+```
+
+**Lines to change**: 770, 778-779, 783, 790, 808, 816-817
+
+---
+
+#### Line 831-888: `solveShedRoof()`
+**Issue**: Same parameter swap confusion
+
+**Current (confusing)**:
+```javascript
+function solveShedRoof(roofArea, ridgeLength, span, footprintArea) {
+  const actualRidgeLength = span;      // LONG
+  const actualSpan = ridgeLength;      // SHORT
+}
+```
+
+**Refactor to**:
+```javascript
+function solveShedRoof(roofArea, shortDimension, longDimension, footprintArea) {
+  const ridgeLength = longDimension;   // Ridge at end
+  const slopeSpan = shortDimension;    // Slope drops across this
+}
+```
+
+**Lines to change**: 831, 839-840, 843, 850, 865, 875-876
+
+---
+
+#### Line 1130-1134: Ridge Calculation
+**Issue**: Variable naming suggests SHORT but used for different purposes
+
+**Current**:
+```javascript
+const ridgeLength = Math.min(width, length);  // SHORT
+const span = Math.max(width, length);         // LONG
+```
+
+**Refactor to**:
+```javascript
+const shortDimension = Math.min(width, length);
+const longDimension = Math.max(width, length);
+```
+
+**Lines to change**: 1130-1131, and all subsequent usages
+
+---
+
+#### Line 1140-1146: `solveRoofGeometry()` Call
+**Issue**: Passes confusingly-named parameters
+
+**Current**:
+```javascript
+const roofResult = solveRoofGeometry(
+  roofType,
+  roofArea,
+  footprintArea,
+  ridgeLength,  // SHORT
+  span          // LONG
+);
+```
+
+**Refactor to**:
+```javascript
+const roofResult = solveRoofGeometry(
+  roofType,
+  roofArea,
+  footprintArea,
+  shortDimension,
+  longDimension
+);
+```
+
+**Lines to change**: 1140-1146
+
+---
+
+#### Line 1222-1233: Profile Building
+**Issue**: Uses confusing ridgeLength/span
+
+**Current**:
+```javascript
+if (roofResult.roofType === "gable") {
+  profile2D = buildGable2DProfile(ridgeLength, wallHeight, roofResult.roofHeight);
+} else if (roofResult.roofType === "shed") {
+  profile2D = buildShed2DProfile(span, wallHeight, roofResult.roofHeight);
+}
+```
+
+**Refactor to**:
+```javascript
+if (roofResult.roofType === "gable") {
+  // Gable: profile shows cross-section (short dimension)
+  profile2D = buildGable2DProfile(shortDimension, wallHeight, roofResult.roofHeight);
+} else if (roofResult.roofType === "shed") {
+  // Shed: profile shows long face
+  profile2D = buildShed2DProfile(longDimension, wallHeight, roofResult.roofHeight);
+}
+```
+
+**Lines to change**: 1222-1233
+
+---
+
+#### Line 1246-1252: Extrusion Depth
+**Issue**: Conditional logic obscures which dimension is which
+
+**Current**:
+```javascript
+let extrusionDepth;
+if (roofResult.roofType === "shed") {
+  extrusionDepth = ridgeLength;  // SHORT
+} else {
+  extrusionDepth = span;  // LONG
+}
+```
+
+**Refactor to**:
+```javascript
+let extrusionDepth;
+if (roofResult.roofType === "shed") {
+  extrusionDepth = shortDimension;  // Shed: extrude short
+} else {
+  extrusionDepth = longDimension;   // Gable/Flat: extrude long
+}
+```
+
+**Lines to change**: 1246-1252
+
+---
+
+### wombatRender.js
+
+**TODO**: Verify if wombatRender.js uses X/Y coordinate naming that conflicts with width/length
+
+**Check these functions**:
+- `toIsometric()` - Line ~36
+- `generate3DNodes()` - Should receive clear dimension names
+- Any hardcoded assumptions about X=width, Y=length
+
+---
+
+## Coordinate System Conventions
+
+**Recommended standard** (to implement throughout):
+
+```javascript
+// Footprint in plan view (looking down, Z-up):
+//
+//        Y (North)
+//        ^
+//        |
+//        |
+//        +-------> X (East)
+//
+// width = X dimension (East-West)
+// length = Y dimension (North-South)
+// height/Z = vertical (Up)
+
+// For landscape buildings (length > width):
+// - X: SHORT dimension (width)
+// - Y: LONG dimension (length)
+// - Gable ridge runs parallel to Y axis (long walls)
+
+// For portrait buildings (width > length):
+// - X: LONG dimension (width)
+// - Y: SHORT dimension (length)
+// - Gable ridge runs parallel to X axis (long walls)
+```
+
+**Key principle**: Ridge runs parallel to LONGEST dimension, regardless of whether that's X or Y.
+
+---
+
+## Variable Naming Guide for Future Agents
+
+When working on roof geometry, **use these names**:
+
+| Use This | Not This | Meaning |
+|----------|----------|---------|
+| `shortDimension` | `ridgeLength` | Shorter footprint edge |
+| `longDimension` | `span` | Longer footprint edge |
+| `roofHeight` | `height` | Vertical roof rise |
+| `slopeLength` | `R` (alone) | Roof slope distance |
+| `Q_base` | `baseSquared` | Quadrance of base |
+| `Q_height` | `heightSquared` | Quadrance of height |
+| `triangleBase` | `width` (ambiguous) | Gable triangle base |
+| `profileWidth` | `width` | 2D profile dimension |
+| `extrusionDepth` | `length` | 3D sweep distance |
+
+**When in doubt**: Be explicit! `gableTriangleBase` is better than `base`.
+
+---
+
 ## References
 
 - N.J. Wildberger: "Divine Proportions: Rational Trigonometry to Universal Geometry"
 - ArchiCad GDL: Prismatic extrusion concept
 - Current implementation: Section19.js (solveGableRoof, solveShedRoof)
+- File: `/src/sections/Section19.js` (lines 770-1252)
+- File: `/src/core/wombatRender.js` (coordinate system)
