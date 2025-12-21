@@ -1164,7 +1164,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         const deficit = roofResult.roofVolume - targetVolume;
         const percentOver = ((deficit / targetVolume) * 100).toFixed(0);
         showFeedback(
-          `❌ Roof volume ${percentOver}% over total (Fix d_105 in S12)`,
+          `❌ Roof volume ${percentOver}% over total (increase Conditioned Volume in S12)`,
           15000
         );
       } else {
@@ -1178,12 +1178,12 @@ window.TEUI.SectionModules.sect19 = (function () {
         console.warn(`[WOMBAT-2] ⚠️ Volume exceeded - compressing walls to fit`);
         console.warn(`[WOMBAT-2] → Wall height reduced: ${wallHeightTarget.toFixed(2)}m → ${wallHeight.toFixed(2)}m`);
         console.warn(`[WOMBAT-2] → Storey height: ${storyHeightReference.toFixed(2)}m → ${storyHeightActual.toFixed(2)}m`);
-        console.warn(`[WOMBAT-2] → To restore: increase d_105 (volume) or reduce d_85 (roof area)`);
+        console.warn(`[WOMBAT-2] → To restore: increase Conditioned Volume or reduce Roof Area`);
 
         // Update console ticker
         const reductionPercent = (((wallHeightTarget - wallHeight) / wallHeightTarget) * 100).toFixed(0);
         showFeedback(
-          `⚠️ Walls compressed ${reductionPercent}% (increase d_105 or reduce d_85)`,
+          `⚠️ Walls compressed ${reductionPercent}% (increase Conditioned Volume or reduce Roof Area)`,
           15000
         );
       }
