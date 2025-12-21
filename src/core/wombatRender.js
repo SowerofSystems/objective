@@ -481,6 +481,22 @@ window.TEUI.WombatRender = (function () {
     svg.appendChild(roofHeightText);
     yOffset += lineHeight;
 
+    // 5b. Roof Pitch (rise:12 ratio for gable/shed only)
+    if (geometry.roofType === "gable" || geometry.roofType === "shed") {
+      const pitchRise = geometry.pitchRise || 0;
+      if (pitchRise > 0) {
+        const pitchText = createText(
+          xOffset,
+          yOffset,
+          `Roof Pitch: ${pitchRise.toFixed(1)}:12`,
+          labelColor,
+          11
+        );
+        svg.appendChild(pitchText);
+        yOffset += lineHeight;
+      }
+    }
+
     // 6. End Wall Area (gable or shed specific)
     if (geometry.roofType === "gable" || geometry.roofType === "shed") {
       const endWallArea = geometry.profile2D?.endWallArea || 0;

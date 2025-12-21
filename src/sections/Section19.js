@@ -841,7 +841,8 @@ window.TEUI.SectionModules.sect19 = (function () {
       roofHeight,
       roofVolume,
       gableEndArea: 2 * gableEndArea,  // Both triangular ends
-      shedEndWallArea: 0
+      shedEndWallArea: 0,
+      pitchRise  // Carpenter's rise:12 ratio
     };
   }
 
@@ -921,7 +922,8 @@ window.TEUI.SectionModules.sect19 = (function () {
       roofHeight,
       roofVolume,
       gableEndArea: 0,
-      shedEndWallArea: 2 * shedEndWallArea  // Both rectangular ends
+      shedEndWallArea: 2 * shedEndWallArea,  // Both rectangular ends
+      pitchRise  // Carpenter's rise:12 ratio
     };
   }
 
@@ -1286,6 +1288,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       roofType: roofResult.roofType,
       roofHeight: roofResult.roofHeight,
       roofVolume: roofResult.roofVolume,
+      pitchRise: roofResult.pitchRise,  // Carpenter's rise:12 ratio
       wallHeight,
       wallVolume,
       calculatedVolume,         // Actual volume from geometry
