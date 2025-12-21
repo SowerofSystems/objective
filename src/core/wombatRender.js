@@ -380,7 +380,19 @@ window.TEUI.WombatRender = (function () {
     svg.appendChild(roofText);
     yOffset += lineHeight;
 
-    // 5. End Wall Area (gable or shed specific)
+    // 5. Roof Height (Q dimension)
+    const roofHeight = geometry.roofHeight || 0;
+    const roofHeightText = createText(
+      xOffset,
+      yOffset,
+      `Roof Ht. (Q): ${roofHeight.toFixed(2)} m`,
+      labelColor,
+      11
+    );
+    svg.appendChild(roofHeightText);
+    yOffset += lineHeight;
+
+    // 6. End Wall Area (gable or shed specific)
     if (geometry.roofType === "gable" || geometry.roofType === "shed") {
       const endWallArea = geometry.profile2D?.endWallArea || 0;
       const endWallLabel = geometry.roofType === "gable" ? "Gable End Wall Area" : "Shed End Wall Area";
@@ -395,7 +407,7 @@ window.TEUI.WombatRender = (function () {
       yOffset += lineHeight;
     }
 
-    // 6. Ae Wall Area (air-facing longitudinal walls - calculated from geometry)
+    // 7. Ae Wall Area (air-facing longitudinal walls - calculated from geometry)
     // For prismatic geometry: 2 longitudinal walls × length × wall height
     const longitudinalWallArea = 2 * geometry.footprint.length * geometry.height;
     const aeWallText = createText(
@@ -408,7 +420,7 @@ window.TEUI.WombatRender = (function () {
     svg.appendChild(aeWallText);
     yOffset += lineHeight;
 
-    // 7. Volume (from d_105) - for verification
+    // 8. Volume (from d_105) - for verification
     const volume = getValue("d_105") || "0.00";
     const volumeText = createText(
       xOffset,
