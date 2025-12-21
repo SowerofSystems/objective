@@ -495,6 +495,168 @@ Then each roof type assigns these to appropriate local variables:
 
 ---
 
+## Canvas Scaling and Viewport Optimization (TODO)
+
+### Problem Statement
+
+The SVG canvas is currently fixed at 900×600px with static scaling that creates excessive whitespace for smaller buildings while potentially clipping larger ones.
+
+**Current Issues**:
+- Fixed canvas size wastes vertical space for short buildings (e.g., 2.49m building height in flat roof example)
+- Legend positioned at top (y=14, y=32, y=50) but geometry is centered, leaving large gaps
+- No dynamic scaling based on actual building dimensions
+- Isometric projection scale is hardcoded, not responsive to geometry bounds
+
+### Observed Symptoms
+
+From user screenshot (flat roof, 6 storeys, 23.15m × 23.15m × 2.49m):
+- Legend block starts at top (~y=14)
+- Building geometry starts around y=100-150 (large whitespace gap)
+- Building occupies small portion of canvas vertically
+- Most canvas area is empty space above/below geometry
+
+### Proposed Solutions
+
+#### Option A: Dynamic Vertical Scaling (Recommended)
+Adjust the canvas viewBox or scale factor based on building height to fill available space efficiently.
+
+**Implementation approach**:
+1. Calculate geometry bounding box (min/max X, Y, Z after isometric projection)
+2. Add padding buffer (e.g., 10% margins)
+3. Scale to fit canvas height optimally
+4. Shift geometry vertically to minimize top whitespace while leaving room for legend
+
+**Pros**:
+- Efficient use of canvas for all building sizes
+- Legend stays at top, geometry scales below
+- Automatic adaptation to tall/short buildings
+
+**Cons**:
+- Need to calculate bounds before rendering
+- May make comparison between different geometries harder (non-uniform scaling)
+
+#### Option B: Variable Canvas Height
+Change canvas from fixed 600px height to dynamic based on geometry.
+
+**Implementation approach**:
+1. Calculate required height from geometry bounds
+2. Set minimum height (e.g., 400px) for very short buildings
+3. Set maximum height (e.g., 800px) to prevent excessive scroll
+4. Adjust canvas height attribute dynamically
+
+**Pros**:
+- Consistent scale across different buildings
+- Better for visual comparison
+- Simpler than recalculating scale
+
+**Cons**:
+- May cause layout reflow
+- Table and canvas won't always align in height
+- Requires container layout changes
+
+#### Option C: Smart Centering with Legend Offset
+Keep canvas size fixed, but center geometry accounting for legend block at top.
+
+**Implementation approach**:
+1. Calculate center point excluding legend area (y > 70)
+2. Center geometry in remaining vertical space (y: 70-600)
+3. Scale to fit that reduced area
+
+**Pros**:
+- Simple implementation
+- Legend stays clean at top
+- No layout changes
+
+**Cons**:
+- Still wastes space for short buildings
+- Doesn't fully solve the problem
+
+#### Option D: Collapsible Legend / Overlay
+Move detailed metrics to a collapsible panel or tooltip overlay, freeing canvas space.
+
+**Implementation approach**:
+1. Show minimal info at top (title + dimensions only)
+2. Move detailed metrics (areas, volumes) to:
+   - Tooltip on hover over building
+   - Collapsible panel beside canvas
+   - Info button that shows modal
+3. Use reclaimed vertical space for geometry
+
+**Pros**:
+- Maximum space for geometry
+- Cleaner visual presentation
+- Legend details still accessible
+
+**Cons**:
+- Requires new UI components
+- Info less immediately visible
+- More clicks for user
+
+### Recommended Implementation Plan
+
+**Phase 1**: Option A (Dynamic Vertical Scaling)
+- Calculate geometry bounds in `wombatRender.js`
+- Add `calculateGeometryBounds(nodes3D)` function
+- Adjust scale factor: `scale = (canvasHeight - legendHeight - padding) / geometryHeight`
+- Center geometry in remaining space
+
+**Phase 2** (Optional): Option D elements
+- Move verbose metrics to hover tooltips
+- Keep essential info (title, dimensions, roof type) at top
+- Consider SVG `<title>` elements on geometry nodes for accessibility
+
+### Technical Considerations
+
+**Isometric Projection**:
+- Current scale factor affects all axes equally
+- Z-axis compression in isometric: `z * sin(30°) = z * 0.5`
+- May need separate horizontal/vertical scale factors
+
+**Legend Height Calculation**:
+```javascript
+// Current legend occupies approximately:
+// - Title: y=14 (14px font)
+// - Dimensions: y=32 (12px font)
+// - Metrics start: y=50
+// - Each metric line: 18px (lineHeight)
+// - ~8 metric lines = 144px
+// Total legend height: ~194px
+
+const legendHeight = 50 + (metricCount * 18);
+const availableGeometryHeight = canvasHeight - legendHeight - padding;
+```
+
+**Bounding Box Calculation**:
+```javascript
+function calculateGeometryBounds(nodes3D) {
+  const allPoints = [
+    ...nodes3D.ground,
+    ...nodes3D.eave,
+    ...(nodes3D.ridge || [])
+  ].map(node => toIsometric(node.x, node.y, node.z, scale, 0, 0));
+
+  return {
+    minX: Math.min(...allPoints.map(p => p.x)),
+    maxX: Math.max(...allPoints.map(p => p.x)),
+    minY: Math.min(...allPoints.map(p => p.y)),
+    maxY: Math.max(...allPoints.map(p => p.y))
+  };
+}
+```
+
+### Testing Checklist
+
+When implementing:
+- [ ] Test with flat roof (minimal height)
+- [ ] Test with tall gable (maximum height)
+- [ ] Test with multi-storey (6+ storeys)
+- [ ] Test with extreme aspect ratios (±5.0)
+- [ ] Verify legend doesn't overlap geometry
+- [ ] Check coordinate axes still visible at bottom-right
+- [ ] Ensure responsive behavior on window resize
+
+---
+
 ## References
 
 - N.J. Wildberger: "Divine Proportions: Rational Trigonometry to Universal Geometry"

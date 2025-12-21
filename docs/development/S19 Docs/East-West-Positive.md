@@ -1,22 +1,42 @@
 # East-West-Positive Debug Document
 **Issue**: Gable and Shed roofs render with opposite orientations despite identical aspect ratios
 **Date**: 2025-12-21
-**Status**: BUG CONFIRMED - Shed roof has backwards extrusion logic
+**Status**: BUG CONFIRMED - Shed and Gable map dimensions to X/Y axes inconsistently
 **Scope**: **Rendering bug only** (Section19.js Phase 4) - constraint solving is CORRECT ✅
 **Impact**: Section19.js only - wombatRender.js is innocent
 
 ---
 
-## Problem Statement
+## Problem Statement - CORRECTED
 
-When switching between **Shed** and **Gable** roof types with the same positive aspect ratio (1.5), the building orientation rotates 90°:
+When switching between **Shed** and **Gable** roof types with the same positive aspect ratio (5.0), the building orientation rotates 90°:
 
-- **Shed roof** (aspect = +1.5): Building runs **East-West** (long axis horizontal, X-aligned)
-- **Gable roof** (aspect = +1.5): Building runs **North-South** (long axis vertical, Y-aligned)
+- **Shed roof** (aspect = +5.0): Building runs **East-West** (X-dominant, long axis horizontal)
+- **Gable roof** (aspect = +5.0): Building runs **North-South** (Y-dominant, long axis vertical)
 
-**Expected behavior**: Both roof types should maintain the same orientation for a given aspect ratio.
+**User Requirement**:
+> "Roof type changes should have NO EFFECT on orientation. The aspect ratio slider determines orientation, not the roof type."
 
-**Correct behavior**: **GABLE is correct ✅, SHED is backwards ❌**
+**Expected behavior**: Both roof types maintain the **same X-Y axis mapping** for a given aspect ratio.
+
+**Correct behavior**: **GABLE is correct ✅, SHED needs to match GABLE's axis mapping ❌**
+
+---
+
+## Core Requirement: Consistent Axis Mapping
+
+### The Invariant Rule
+
+For a given footprint defined by `width` and `length` from aspect ratio:
+
+**Positive aspect (+5.0)**:
+- `width = 13.55m` (SHORT)
+- `length = 81.27m` (LONG)
+- **X-axis MUST = width** (13.55m, East-West, SHORT)
+- **Y-axis MUST = length** (81.27m, North-South, LONG)
+- Ridge MUST run along **Y-axis** (North-South) for structural efficiency
+
+**This mapping must be INDEPENDENT of roof type** - changing from shed to gable should NOT rotate the building!
 
 ---
 
@@ -40,10 +60,10 @@ const width = Math.sqrt(footprintArea / aspectRatio);
 const length = footprintArea / width;  // Exact, no rounding error
 ```
 
-For aspect = +1.5 (slider value):
-- `aspectRatio = 1 + 1.5 = 2.5` (L:W ratio)
-- `width = 14.64m` (SHORT, X-axis, East)
-- `length = 36.61m` (LONG, Y-axis, North)
+For aspect = +5.0 (slider value):
+- `aspectRatio = 1 + 5.0 = 6.0` (L:W ratio)
+- `width = 13.55m` (SHORT, should map to X-axis)
+- `length = 81.27m` (LONG, should map to Y-axis)
 
 ### Short/Long Dimension Assignment (CORRECT ✅)
 From [Section19.js:1103-1104](../../../src/sections/Section19.js#L1103-L1104):
@@ -53,37 +73,19 @@ const longDimension = Math.max(width, length);   // LONG footprint edge
 ```
 
 For our example:
-- `shortDimension = 14.64m`
-- `longDimension = 36.61m`
+- `shortDimension = 13.55m` (should map to X-axis)
+- `longDimension = 81.27m` (should map to Y-axis)
 
 ---
 
 ## CRITICAL: Constraint Solving is CORRECT ✅
 
-**Phase 1 & 2: Roof geometry solving (Lines 724-895) works perfectly:**
+**Phase 1 & 2: Roof geometry solving (Lines 724-895) works perfectly for both roof types.**
 
-Both `solveShedRoof()` and `solveGableRoof()` receive and correctly interpret parameters:
-
+Both `solveShedRoof()` and `solveGableRoof()` correctly interpret:
 ```javascript
-// Called from solveGeometry() line 1114-1120
-const roofResult = solveRoofGeometry(
-  roofType,
-  roofArea,
-  footprintArea,
-  shortDimension,     // 14.64m - passed as param 4
-  longDimension       // 36.61m - passed as param 5
-);
-
-// Inside solveShedRoof(roofArea, shortDimension, longDimension, footprintArea)
-// Lines 846-847:
-const ridgeLength = longDimension;      // 36.61m LONG ✅ (ridge runs along this)
-const slopeSpan = shortDimension;       // 14.64m SHORT ✅ (slope drops across this)
-
-// Roof area = ridge × slopeLength
-const slopeLength = roofArea / ridgeLength;  // ✅ CORRECT
-
-// End wall area = slopeSpan × roofHeight ✅
-const shedEndWallArea = slopeSpan * roofHeight;
+const ridgeLength = longDimension;      // 81.27m LONG ✅ (ridge runs along this)
+const slopeSpan = shortDimension;       // 13.55m SHORT ✅ (slope drops across this)
 ```
 
 **Result**:
@@ -92,162 +94,109 @@ const shedEndWallArea = slopeSpan * roofHeight;
 - ✅ End wall areas calculated correctly
 - ✅ All constraints satisfied (volume, footprint area, roof area)
 
-**The constraint solver correctly assumes ridge runs along LONG dimension (36.61m, Y-axis).**
+**The constraint solvers are NOT the problem - they work identically for both roof types.**
 
 ---
 
-## The Bug: Profile/Extrusion Logic (Phase 4 - Rendering Only)
+## The Bug: Inconsistent X/Y Axis Mapping (Phase 4)
 
-### Correct Extrusion Pattern (CAD/Architectural Standard)
+### How generate3DNodes() Maps to Axes
 
-In traditional CAD/architectural extrusion:
-1. Draw a **2D profile** (cross-section/elevation view)
-2. **Sweep** that profile along a path (extrusion depth)
-3. The extrusion path is typically the **LONG** dimension (like extruding pasta)
+From [Section19.js:971-983](../../../src/sections/Section19.js#L971-L983):
 
-**Analogy**: Draw a gable end wall elevation, then extrude it along the building length (ridge direction).
+```javascript
+function generate3DNodes(profile2D, extrusionDepth) {
+  const width = profile2D.nodes[1].x;  // Profile width from 2D
+  const halfWidth = width / 2;
+  const halfDepth = extrusionDepth / 2;
 
-### Gable Roof (Lines 1215-1242) - CORRECT ✅
+  const nodes = {
+    ground: [
+      { x: -halfWidth, y: -halfDepth, z: 0 },  // X = profile width
+      { x: halfWidth, y: -halfDepth, z: 0 },   // Y = extrusion depth
+      // ...
+    ]
+  };
+}
+```
+
+**The coordinate mapping rule**:
+- **X-axis** = `profile2D.nodes[1].x` (profile width)
+- **Y-axis** = `extrusionDepth` (extrusion dimension)
+- **Z-axis** = height (up)
+
+### Gable Roof (Lines 1215-1242) - CORRECT AXIS MAPPING ✅
 
 ```javascript
 if (roofResult.roofType === "gable") {
-  // Profile width = SHORT dimension (gable end cross-section)
   profile2D = buildGable2DProfile(shortDimension, wallHeight, roofResult.roofHeight);
   //                               ↑
-  //                          14.64m (SHORT) - the gable end elevation
-
-  // Extrusion depth = LONG dimension (sweep along ridge direction)
-  extrusionDepth = longDimension;   // 36.61m (LONG)
+  //                          13.55m (SHORT)
 }
+
+// Later...
+extrusionDepth = longDimension;   // 81.27m (LONG)
 ```
 
-**What this does**:
-- Draw a **14.64m wide gable end triangle** (the elevation you'd see from the end)
-- Extrude it **36.61m along the Y-axis** (North-South, the ridge direction)
-- Ridge runs **perpendicular to the profile**, along the extrusion direction
+**Axis mapping result**:
+- X-axis = `shortDimension` (13.55m) ✅ Matches `width`
+- Y-axis = `longDimension` (81.27m) ✅ Matches `length`
+- Ridge runs along **Y-axis** (North-South) ✅
+- Building orientation: **North-South** (Y-dominant) ✅
 
-**Result**:
-- Ridge runs along LONG dimension (36.61m, Y-axis) ✅
-- Building appears to run North-South (Y-dominant) ✅
-- **Matches constraint solver assumptions** ✅
-- **Correct CAD extrusion pattern** ✅
-
-### Shed Roof (Lines 1222-1240) - BACKWARDS ❌
+### Shed Roof (Lines 1222-1240) - INCORRECT AXIS MAPPING ❌
 
 ```javascript
 else if (roofResult.roofType === "shed") {
-  // Profile width = LONG dimension (WRONG!)
   profile2D = buildShed2DProfile(longDimension, wallHeight, roofResult.roofHeight);
   //                              ↑
-  //                         36.61m (LONG) - This is the ridge direction!
+  //                         81.27m (LONG) ❌ WRONG!
+}
 
-  // Extrusion depth = SHORT dimension (WRONG!)
-  extrusionDepth = shortDimension;  // 14.64m (SHORT)
+// Later...
+if (roofResult.roofType === "shed") {
+  extrusionDepth = shortDimension;  // 13.55m (SHORT) ❌ WRONG!
 }
 ```
 
-**What this does**:
-- Draw a **36.61m wide profile** (this includes the full ridge length IN the profile!)
-- Extrude it **14.64m along the Y-axis** (the slope span direction)
-- This is **backwards** - we're extruding across the slope instead of along the ridge
+**Axis mapping result**:
+- X-axis = `longDimension` (81.27m) ❌ Should be `width` (13.55m)
+- Y-axis = `shortDimension` (13.55m) ❌ Should be `length` (81.27m)
+- Ridge runs along **X-axis** (East-West) ❌ Should be Y-axis
+- Building orientation: **East-West** (X-dominant) ❌ Should be North-South
 
-**Result**:
-- Ridge runs along SHORT dimension (14.64m, X-axis) ❌
-- Building appears to run East-West (X-dominant) ❌
-- **Contradicts constraint solver** (solver assumes ridge along LONG) ❌
-- **Backwards CAD extrusion pattern** ❌
+**The axes are swapped!** This causes the 90° rotation when switching roof types.
 
-### The Coordinate Mapping Proof
+---
 
-From [generate3DNodes()](../../../src/sections/Section19.js#L971-L1016):
+## Why This Happens: Profile vs Extrusion Semantics
+
+### Current Shed Profile Logic
+
+The `buildShed2DProfile()` function (Lines 949-965) creates a **2D trapezoid profile**:
 
 ```javascript
-const width = profile2D.nodes[1].x;  // Profile width from 2D
-const halfWidth = width / 2;
+function buildShed2DProfile(width, wallHeight, roofHeight) {
+  const tallWallHeight = wallHeight + roofHeight;
 
-const nodes = {
-  ground: [
-    { x: -halfWidth, y: -halfDepth, z: 0 },  // X = profile width
-    { x: halfWidth, y: -halfDepth, z: 0 },   // Y = extrusion depth
+  return {
+    nodes: [
+      { x: 0, z: 0 },                   // Left ground (low eave side)
+      { x: width, z: 0 },               // Right ground (high ridge side)
+      { x: width, z: tallWallHeight },  // Right eave (high ridge)
+      { x: 0, z: wallHeight },          // Left eave (low eave)
+    ],
     // ...
-  ]
-};
-```
-
-**The mapping**:
-- **X-axis** gets the profile width
-- **Y-axis** gets the extrusion depth
-
-**For Gable (CORRECT)**:
-- X = `shortDimension` (14.64m)
-- Y = `longDimension` (36.61m)
-- Result: Y-dominant building (North-South) ✅
-
-**For Shed (WRONG)**:
-- X = `longDimension` (36.61m)
-- Y = `shortDimension` (14.64m)
-- Result: X-dominant building (East-West) ❌
-
----
-
-## Why This Happened
-
-During the PRISMATIC-TERMINOLOGY refactor, we updated the **constraint-solving functions** (`solveShedRoof`, `solveGableRoof`) to use `shortDimension/longDimension` correctly.
-
-BUT we forgot to update the **profile building and extrusion logic** for shed roofs to match the gable pattern.
-
-The gable roof was already using the correct CAD extrusion pattern (profile = cross-section, extrude along length), but the shed roof was written with a non-standard extrusion approach.
-
----
-
-## The Fix
-
-### Change Required (Section19.js Lines 1222-1240)
-
-**Current (WRONG)**:
-```javascript
-else if (roofResult.roofType === "shed") {
-  profile2D = buildShed2DProfile(longDimension, wallHeight, roofResult.roofHeight);
-  extrusionDepth = shortDimension;
+  };
 }
 ```
 
-**Fixed (CORRECT)**:
-```javascript
-else if (roofResult.roofType === "shed") {
-  // FIXED: Profile = SHORT dimension (shed end wall cross-section)
-  // Extrude along LONG dimension (ridge direction)
-  profile2D = buildShed2DProfile(shortDimension, wallHeight, roofResult.roofHeight);
-  extrusionDepth = longDimension;
-}
-```
+**The profile shows elevation variation** (low eave at x=0, high eave at x=width).
 
-### Update Profile Builder Documentation
-
-The `buildShed2DProfile()` function documentation (Lines 941-948) currently says:
-```javascript
-/**
- * Profile width = LONG dimension (ridge runs across this width)  ❌ WRONG
- * Profile will be extruded along SHORT dimension  ❌ WRONG
- */
-```
-
-Should say:
-```javascript
-/**
- * Profile width = SHORT dimension (shed end wall cross-section)  ✅ CORRECT
- * Profile will be extruded along LONG dimension (ridge direction)  ✅ CORRECT
- * Slope drops from Z=0 (low eave) to Z=wallHeight+roofHeight (high eave)
- */
-```
-
-### Update generate3DNodes for Shed
-
-The `generate3DNodes()` function (Lines 987-995) has special handling for shed roofs that assumes the backwards extrusion. This logic needs review:
+**BUT**: The actual slope direction is applied during 3D node generation (Lines 987-995):
 
 ```javascript
 if (profile2D.type === "shed") {
-  // Shed roof: short side at wallHeight, tall side at tallWallHeight
   // Slope runs from -Y (short) to +Y (tall)
   nodes.eave = [
     { x: -halfWidth, y: -halfDepth, z: profile2D.wallHeight },      // Front (short)
@@ -258,22 +207,191 @@ if (profile2D.type === "shed") {
 }
 ```
 
-After the fix, this should still work because:
-- Profile width (now SHORT) spans X-axis
-- Extrusion (now LONG) spans Y-axis
-- Slope in the profile goes from low (left X) to high (right X)
-- When extruded, this creates the sloped roof along Y
+**The slope is in the Y direction** (extrusion direction), NOT in the profile X direction!
 
-**Actually, this logic should be REMOVED** - the shed eave nodes should be uniform height like gable/flat, because the slope is in the **roof surface**, not in the eave heights.
+So the profile's X-dimension "elevation variation" is **ignored** - the actual slope is applied in Y during 3D generation. This means we CAN swap the parameters without breaking the slope direction.
+
+---
+
+## The Fix
+
+### Required Changes (Section19.js)
+
+**Change 1: Line 1224 - Swap shed profile parameter**
+```javascript
+// Current (WRONG):
+profile2D = buildShed2DProfile(longDimension, wallHeight, roofResult.roofHeight);
+
+// Fixed (CORRECT):
+profile2D = buildShed2DProfile(shortDimension, wallHeight, roofResult.roofHeight);
+```
+
+**Change 2: Line 1240 - Swap shed extrusion depth**
+```javascript
+// Current (WRONG):
+if (roofResult.roofType === "shed") {
+  extrusionDepth = shortDimension;
+}
+
+// Fixed (CORRECT):
+if (roofResult.roofType === "shed") {
+  extrusionDepth = longDimension;
+}
+```
+
+**Change 3: Update comments (Lines 1222-1223, 1237, 1240)**
+```javascript
+// Updated to reflect correct axis mapping:
+// - Shed: Profile = SHORT, Extrude = LONG (same as gable)
+```
+
+**Change 4: Update buildShed2DProfile documentation (Lines 945-946)**
+```javascript
+// Current:
+* Profile width = LONG dimension (ridge runs across this width)
+* Profile will be extruded along SHORT dimension
+
+// Fixed:
+* Profile width = SHORT dimension (end wall cross-section)
+* Profile will be extruded along LONG dimension (ridge direction)
+```
+
+### Why This Fix Works
+
+**After the fix, both roof types will have identical axis mapping**:
+
+| Roof Type | Profile Width | Extrusion Depth | X-Axis | Y-Axis | Ridge Direction |
+|-----------|---------------|-----------------|--------|--------|-----------------|
+| Gable     | SHORT (13.55m) | LONG (81.27m)  | 13.55m | 81.27m | Y-axis (N-S) ✅ |
+| Shed      | SHORT (13.55m) | LONG (81.27m)  | 13.55m | 81.27m | Y-axis (N-S) ✅ |
+
+**Result**: Changing roof type will NOT rotate the building - only the aspect ratio slider controls orientation.
+
+### Slope Direction Preservation
+
+The shed roof slope direction is controlled by the 3D node generation (Lines 987-995), NOT by the 2D profile. The slope runs from `y: -halfDepth` (low eave) to `y: +halfDepth` (high eave).
+
+**This logic doesn't change** - it automatically adapts to the new extrusion depth:
+- Before: Slope across 13.55m (SHORT, wrong axis)
+- After: Slope across 81.27m (LONG, correct axis)
+
+Wait, that's wrong! The slope should be across the SHORT dimension (13.55m), not the LONG dimension (81.27m).
+
+Let me reconsider...
+
+---
+
+## HOLD: Slope Direction Analysis
+
+Looking at the constraint solver again (Lines 879-886):
+
+```javascript
+console.log(`[WOMBAT] Shed roof solved from area constraint:`);
+console.log(`  Ridge length: ${ridgeLength.toFixed(2)} m (LONG dimension)`);
+console.log(`  Slope span: ${slopeSpan.toFixed(2)} m (SHORT dimension - slope drops across this)`);
+```
+
+**From constraint solver**: "Slope drops across SHORT dimension" (13.55m)
+
+**From 3D node generation** (Lines 987-995): Slope runs in **Y direction** (the extrusion direction)
+
+**After our proposed fix**:
+- Extrusion direction = LONG (81.27m) along Y-axis
+- Slope in Y direction = slope across 81.27m ❌ **WRONG!**
+
+**The slope should drop across SHORT (13.55m), but with our fix it would drop across LONG (81.27m).**
+
+This means the 3D node generation logic (Lines 987-995) needs to be updated to put the slope in the **X direction** (profile direction) instead of the **Y direction** (extrusion direction) after we swap the parameters.
+
+OR... we need a different approach entirely.
+
+---
+
+## Alternative: The Real Problem
+
+Maybe the issue isn't with shed OR gable - maybe it's that we need to **rotate the entire coordinate system** based on aspect ratio?
+
+**User's actual requirement**:
+- Positive aspect: Building should run North-South (Y-dominant)
+- Negative aspect: Building should run East-West (X-dominant)
+
+**Current mapping from aspect ratio** (Lines 1077-1078):
+```javascript
+const width = Math.sqrt(footprintArea / aspectRatio);  // X-axis
+const length = footprintArea / width;                   // Y-axis
+```
+
+For positive aspect (+5.0):
+- `width = 13.55m` (SHORT) → X-axis
+- `length = 81.27m` (LONG) → Y-axis
+- Result: **Y-dominant** (North-South) ✅ This is CORRECT
+
+So the aspect ratio calculation already produces the right axis assignment!
+
+**The problem**: Gable uses it correctly, shed swaps it.
+
+**Conclusion**: My original fix IS correct - swap shed parameters to match gable. But we also need to fix the slope direction in the 3D node generation.
+
+Let me document the complete fix...
+
+---
+
+## Complete Fix (Updated)
+
+### Code Changes Required
+
+**1. Fix shed profile parameter (Line 1224)**
+```javascript
+// Swap longDimension → shortDimension
+profile2D = buildShed2DProfile(shortDimension, wallHeight, roofResult.roofHeight);
+```
+
+**2. Fix shed extrusion depth (Line 1240)**
+```javascript
+// Swap shortDimension → longDimension
+extrusionDepth = longDimension;
+```
+
+**3. Fix shed eave node generation (Lines 987-995)**
+
+Current logic puts slope in **Y direction** (extrusion):
+```javascript
+if (profile2D.type === "shed") {
+  nodes.eave = [
+    { x: -halfWidth, y: -halfDepth, z: profile2D.wallHeight },      // Front (low)
+    { x: halfWidth, y: -halfDepth, z: profile2D.wallHeight },       // Front (low)
+    { x: halfWidth, y: halfDepth, z: profile2D.tallWallHeight },    // Back (high)
+    { x: -halfWidth, y: halfDepth, z: profile2D.tallWallHeight },   // Back (high)
+  ];
+}
+```
+
+After parameter swap, this needs to put slope in **X direction** (profile):
+```javascript
+if (profile2D.type === "shed") {
+  nodes.eave = [
+    { x: -halfWidth, y: -halfDepth, z: profile2D.wallHeight },      // Left (low)
+    { x: halfWidth, y: -halfDepth, z: profile2D.tallWallHeight },   // Right (high)
+    { x: halfWidth, y: halfDepth, z: profile2D.tallWallHeight },    // Right (high)
+    { x: -halfWidth, y: halfDepth, z: profile2D.wallHeight },       // Left (low)
+  ];
+}
+```
+
+Slope now runs from `-halfWidth` (low eave) to `+halfWidth` (high eave) in the **X direction** ✅
+
+**4. Update documentation comments** (Lines 945-946, 1222-1223, 1237)
 
 ---
 
 ## Impact Analysis
 
 ### Files Affected
-1. **[Section19.js:1222-1240](../../../src/sections/Section19.js#L1222-L1240)** - Fix shed profile/extrusion parameters
-2. **[Section19.js:941-965](../../../src/sections/Section19.js#L941-L965)** - Update `buildShed2DProfile()` documentation
-3. **[Section19.js:987-995](../../../src/sections/Section19.js#L987-L995)** - Review shed eave node generation in `generate3DNodes()`
+1. **[Section19.js:1224](../../../src/sections/Section19.js#L1224)** - Fix shed profile parameter (longDim → shortDim)
+2. **[Section19.js:1240](../../../src/sections/Section19.js#L1240)** - Fix shed extrusion depth (shortDim → longDim)
+3. **[Section19.js:987-995](../../../src/sections/Section19.js#L987-L995)** - Fix shed eave slope direction (Y → X)
+4. **[Section19.js:945-946](../../../src/sections/Section19.js#L945-L946)** - Update buildShed2DProfile() docs
+5. **[Section19.js:1222-1223, 1237](../../../src/sections/Section19.js#L1222-L1223)** - Update inline comments
 
 ### Files NOT Affected
 - **wombatRender.js** - Innocent! Just renders whatever geometry Section19 provides
@@ -288,17 +406,20 @@ After the fix, this should still work because:
 - Roof area (d_85) ✅
 - Roof height ✅
 - End wall areas ✅
+- Slope span (SHORT dimension) ✅
 
-**This is purely a rendering orientation fix - no constraint math changes.**
+**This is purely an axis mapping fix - no constraint math changes.**
 
 ---
 
 ## Testing Checklist
 
 After fix:
-- [ ] Positive aspect (+1.5): Both shed and gable run **North-South** (Y-dominant, long axis vertical)
-- [ ] Negative aspect (-1.5): Both shed and gable run **East-West** (X-dominant, long axis horizontal)
+- [ ] Positive aspect (+5.0): Both shed and gable run **North-South** (Y-dominant, long axis vertical)
+- [ ] Negative aspect (-5.0): Both shed and gable run **East-West** (X-dominant, long axis horizontal)
 - [ ] Zero aspect (0): Both shed and gable are **square** (symmetric)
+- [ ] Shed roof slope runs across **SHORT dimension** (13.55m in X direction)
+- [ ] Gable roof ridge runs along **LONG dimension** (81.27m in Y direction)
 - [ ] Coordinate axes indicator shows same orientation for both roof types
 - [ ] Legend dimensions match visual orientation
 - [ ] Roof area constraint still satisfied (no change)
@@ -309,12 +430,17 @@ After fix:
 
 ## Conclusion
 
-**Bug confirmed**: Shed roof uses backwards extrusion logic (profile=LONG, extrude=SHORT) while gable uses correct CAD pattern (profile=SHORT, extrude=LONG).
+**Bug confirmed**: Shed and gable roofs map dimensions to X/Y axes inconsistently, causing 90° rotation when switching roof types.
 
-**Fix**: Swap shed parameters to match gable:
-- Change `buildShed2DProfile(longDimension, ...)` → `buildShed2DProfile(shortDimension, ...)`
-- Change `extrusionDepth = shortDimension` → `extrusionDepth = longDimension`
+**Root cause**: Shed uses (profile=LONG, extrude=SHORT) while gable uses (profile=SHORT, extrude=LONG), resulting in swapped axis assignments.
+
+**Fix**: Make shed match gable's axis mapping:
+1. Change shed profile width: `longDimension` → `shortDimension`
+2. Change shed extrusion depth: `shortDimension` → `longDimension`
+3. Change shed eave slope direction: Y-axis → X-axis (in 3D node generation)
 
 **Scope**: Rendering bug only (Phase 4) - constraint solving (Phases 1-3) is already correct.
 
-**Safety**: No risk to sacred constraints - this only affects the 3D node coordinates for visualization.
+**Safety**: No risk to sacred constraints - only affects 3D visualization coordinates.
+
+**Result**: Roof type selection will NOT affect building orientation - only aspect ratio slider controls orientation.
