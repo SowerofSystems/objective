@@ -400,33 +400,46 @@ window.TEUI.WombatRender = (function () {
    * @param {number} centerY - Canvas center Y
    */
   function renderBelowGradeGeometry(svg, geometry, color, scale, centerX, centerY) {
-    const { belowGrade, footprint } = geometry;
+    const { belowGrade, footprint, nodes3D } = geometry;
     const { hasBasement, hasSlab, hasRaisedFloor, basementDepth, foundationType } = belowGrade;
 
     const gradeColor = "#8b4513"; // Brown (matches .text-ground-facing)
-    const width = footprint.width;
-    const length = footprint.length;
 
-    // Grade-level corners (z=0)
-    const gradeCorners = [
-      { x: -width/2, y: -length/2, z: 0 },
-      { x: width/2, y: -length/2, z: 0 },
-      { x: width/2, y: length/2, z: 0 },
-      { x: -width/2, y: length/2, z: 0 },
-    ];
+    // CRITICAL: Use the SAME coordinates as the building's ground nodes
+    // This ensures basement aligns perfectly regardless of aspect ratio
+    // Don't use footprint.width/length - those are logical dimensions, not 3D coordinates
+    const gradeCorners = nodes3D.ground.map(node => ({ ...node, z: 0 }));
 
     // ========================================================================
     // GRADE LINE (appears when ground-facing components exist)
     // ========================================================================
     if (hasBasement || hasSlab) {
-      // CRITICAL: Grade line must align with ACTUAL building footprint
-      // The building geometry doesn't rotate - we just swap axis labels at negative aspect ratios
-      // So grade line should always run perpendicular to the FRONT edge (across width)
-      // This matches the physical footprint regardless of aspect ratio sign
+      // CRITICAL: Use building's ground nodes to define grade line
+      // This ensures perfect alignment regardless of aspect ratio
+      // Grade line runs from front-left corner to front-right corner (across the front edge)
+      const frontLeft = gradeCorners[0];   // nodes3D.ground[0]
+      const frontRight = gradeCorners[1];  // nodes3D.ground[1]
 
-      // Grade line runs East-West (across the width dimension, perpendicular to Y/length)
-      const gradeStart = toIsometric(-width/2 - 5, -length/2 - 5, 0, scale, centerX, centerY);
-      const gradeEnd = toIsometric(width/2 + 5, -length/2 - 5, 0, scale, centerX, centerY);
+      // Extend grade line slightly beyond corners for visibility
+      const extensionX = (frontRight.x - frontLeft.x) * 0.1;
+      const extensionY = (frontRight.y - frontLeft.y) * 0.1;
+
+      const gradeStart = toIsometric(
+        frontLeft.x - extensionX,
+        frontLeft.y - extensionY,
+        0,
+        scale,
+        centerX,
+        centerY
+      );
+      const gradeEnd = toIsometric(
+        frontRight.x + extensionX,
+        frontRight.y + extensionY,
+        0,
+        scale,
+        centerX,
+        centerY
+      );
 
       // Dashed line at z=0
       const gradeLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -471,7 +484,7 @@ window.TEUI.WombatRender = (function () {
         edge.setAttribute("x2", p2.x);
         edge.setAttribute("y2", p2.y);
         edge.setAttribute("stroke", gradeColor);
-        edge.setAttribute("stroke-width", "3");
+        edge.setAttribute("stroke-width", "2"); // Match above-grade line weight
         edge.setAttribute("stroke-dasharray", "8,4"); // Hidden line (below ground)
         svg.appendChild(edge);
       });
@@ -488,7 +501,7 @@ window.TEUI.WombatRender = (function () {
         edge.setAttribute("x2", p2.x);
         edge.setAttribute("y2", p2.y);
         edge.setAttribute("stroke", gradeColor);
-        edge.setAttribute("stroke-width", "3");
+        edge.setAttribute("stroke-width", "2"); // Match above-grade line weight
         edge.setAttribute("stroke-dasharray", "8,4");
         svg.appendChild(edge);
       });
@@ -523,7 +536,7 @@ window.TEUI.WombatRender = (function () {
         const p1 = toIsometric(corner.x, corner.y, corner.z, scale, centerX, centerY);
         const p2 = toIsometric(next.x, next.y, next.z, scale, centerX, centerY);
 
-        const edge = createLine(p1, p2, gradeColor, 3);
+        const edge = createLine(p1, p2, gradeColor, 2); // Match above-grade line weight
         // NO stroke-dasharray - solid line for at-grade component
         svg.appendChild(edge);
       });
@@ -549,7 +562,7 @@ window.TEUI.WombatRender = (function () {
         const p1 = toIsometric(corner.x, corner.y, corner.z, scale, centerX, centerY);
         const p2 = toIsometric(next.x, next.y, next.z, scale, centerX, centerY);
 
-        const edge = createLine(p1, p2, floorColor, 3);
+        const edge = createLine(p1, p2, floorColor, 2); // Match above-grade line weight
         // Solid line - it's visible (air-facing)
         svg.appendChild(edge);
       });
@@ -607,7 +620,7 @@ window.TEUI.WombatRender = (function () {
     const isReference = mode === "reference";
     let yOffset = 50; // Start below title and dimensions (moved up to align with table)
     const xOffset = 20;
-    const lineHeight = 18;
+    const lineHeight = 16; // Reduced from 18 to prevent overflow with basement fields
     const labelColor = "#666";
     const valueColor = "#333";
 
