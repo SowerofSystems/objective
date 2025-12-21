@@ -767,31 +767,32 @@ window.TEUI.SectionModules.sect19 = (function () {
    * Solve gable roof geometry from roof area constraint
    * Returns roof height, roof volume, and gable end areas
    */
-  function solveGableRoof(roofArea, ridgeLength, span, footprintArea) {
+  function solveGableRoof(roofArea, shortDimension, longDimension, footprintArea) {
     // Gable roof: two rectangular slopes meet at ridge
     // CRITICAL: Ridge runs along LONG dimension (structural efficiency)
     // Slope drops perpendicular to ridge across SHORT dimension
     // Structural members span the SHORT distance
 
-    // SWAP: ridgeLength should be LONG, span should be SHORT
-    // The parameters come in with ridgeLength=SHORT, span=LONG, so we swap them
-    const actualRidgeLength = span;      // LONG dimension (ridge runs along this)
-    const actualSpan = ridgeLength;      // SHORT dimension (triangle base, slope drops across this)
+    // For gable roofs:
+    // - Ridge runs parallel to LONG dimension (ridge is long)
+    // - Triangle base is the SHORT dimension (perpendicular to ridge)
+    const ridgeLength = longDimension;      // LONG dimension (ridge runs along this)
+    const triangleBase = shortDimension;    // SHORT dimension (triangle base, slope drops across this)
 
     // Total roof area = 2 rectangular slopes
     // roofArea = 2 × ridge × slopeLength
-    const slopeLength = roofArea / (2 * actualRidgeLength);
+    const slopeLength = roofArea / (2 * ridgeLength);
 
     // Pythagorean theorem:
     // Slope runs from ridge at center to eave at edge
-    // Horizontal distance = half the building width (actualSpan/2)
-    // slopeLength² = roofHeight² + (actualSpan/2)²
-    // roofHeight² = slopeLength² - (actualSpan/2)²
-    const h2 = slopeLength * slopeLength - (actualSpan * actualSpan) / 4;
+    // Horizontal distance = half the building width (triangleBase/2)
+    // slopeLength² = roofHeight² + (triangleBase/2)²
+    // roofHeight² = slopeLength² - (triangleBase/2)²
+    const h2 = slopeLength * slopeLength - (triangleBase * triangleBase) / 4;
 
     if (h2 < 0) {
       console.error(`[WOMBAT] Invalid gable geometry - roof area ${roofArea.toFixed(0)}m² too small for footprint`);
-      console.error(`[WOMBAT] Need slopeLength (${slopeLength.toFixed(2)}m) > span/2 (${(span/2).toFixed(2)}m)`);
+      console.error(`[WOMBAT] Need slopeLength (${slopeLength.toFixed(2)}m) > triangleBase/2 (${(triangleBase/2).toFixed(2)}m)`);
       return {
         roofType: "flat",
         roofHeight: 0,
@@ -804,8 +805,8 @@ window.TEUI.SectionModules.sect19 = (function () {
     const roofHeight = Math.sqrt(h2);
 
     // Gable end area (triangular): base × height / 2
-    // Triangle base = SHORT dimension (actualSpan)
-    const gableEndArea = (actualSpan * roofHeight) / 2;
+    // Triangle base = SHORT dimension
+    const gableEndArea = (triangleBase * roofHeight) / 2;
 
     // Roof volume = rectangular prism (footprint × roofHeight / 2)
     // Geometrically: two triangular prisms stacked = box × 1/2
@@ -813,8 +814,8 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     console.log(`[WOMBAT] Gable roof solved from area constraint:`);
     console.log(`  Roof area: ${roofArea.toFixed(2)} m²`);
-    console.log(`  Ridge length: ${actualRidgeLength.toFixed(2)} m (LONG dimension - CORRECTED)`);
-    console.log(`  Span (triangle base): ${actualSpan.toFixed(2)} m (SHORT dimension)`);
+    console.log(`  Ridge length: ${ridgeLength.toFixed(2)} m (LONG dimension)`);
+    console.log(`  Triangle base: ${triangleBase.toFixed(2)} m (SHORT dimension)`);
     console.log(`  Slope length: ${slopeLength.toFixed(2)} m`);
     console.log(`  Roof height: ${roofHeight.toFixed(2)} m`);
     console.log(`  Roof volume: ${roofVolume.toFixed(2)} m³`);
@@ -833,28 +834,29 @@ window.TEUI.SectionModules.sect19 = (function () {
    * Solve shed roof geometry from roof area constraint
    * Returns roof height, roof volume, and shed end wall areas
    */
-  function solveShedRoof(roofArea, ridgeLength, span, footprintArea) {
+  function solveShedRoof(roofArea, shortDimension, longDimension, footprintArea) {
     // Shed roof: single rectangular slope
     // CRITICAL: Ridge runs along LONG dimension (structural efficiency)
     // Slope drops perpendicular to ridge across SHORT dimension
     // Structural members span the SHORT distance (same as slope horizontal distance)
 
-    // SWAP: ridgeLength should be LONG, span should be SHORT
-    // The parameters come in with ridgeLength=SHORT, span=LONG, so we swap them
-    const actualRidgeLength = span;      // LONG dimension (ridge runs along this)
-    const actualSpan = ridgeLength;      // SHORT dimension (slope drops across this)
+    // For shed roofs:
+    // - Ridge runs parallel to LONG dimension (ridge is long)
+    // - Slope drops across the SHORT dimension (perpendicular to ridge)
+    const ridgeLength = longDimension;      // LONG dimension (ridge runs along this)
+    const slopeSpan = shortDimension;       // SHORT dimension (slope drops across this)
 
     // Roof area = ridge × slopeLength
-    const slopeLength = roofArea / actualRidgeLength;
+    const slopeLength = roofArea / ridgeLength;
 
     // Pythagorean theorem:
-    // slopeLength² = roofHeight² + span²
-    // roofHeight² = slopeLength² - span²
-    const h2 = slopeLength * slopeLength - actualSpan * actualSpan;
+    // slopeLength² = roofHeight² + slopeSpan²
+    // roofHeight² = slopeLength² - slopeSpan²
+    const h2 = slopeLength * slopeLength - slopeSpan * slopeSpan;
 
     if (h2 < 0) {
       console.error(`[WOMBAT] Invalid shed geometry - roof area ${roofArea.toFixed(0)}m² too small for footprint`);
-      console.error(`[WOMBAT] Need slopeLength (${slopeLength.toFixed(2)}m) > span (${span.toFixed(2)}m)`);
+      console.error(`[WOMBAT] Need slopeLength (${slopeLength.toFixed(2)}m) > slopeSpan (${slopeSpan.toFixed(2)}m)`);
       return {
         roofType: "flat",
         roofHeight: 0,
@@ -866,8 +868,8 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     const roofHeight = Math.sqrt(h2);
 
-    // Shed end wall area (rectangular): actualSpan × roofHeight
-    const shedEndWallArea = actualSpan * roofHeight;
+    // Shed end wall area (rectangular): slopeSpan × roofHeight
+    const shedEndWallArea = slopeSpan * roofHeight;
 
     // Roof volume = trapezoidal prism volume
     // = footprint × (average height above eave)
@@ -876,8 +878,8 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     console.log(`[WOMBAT] Shed roof solved from area constraint:`);
     console.log(`  Roof area: ${roofArea.toFixed(2)} m²`);
-    console.log(`  Ridge length: ${actualRidgeLength.toFixed(2)} m (LONG dimension - CORRECTED)`);
-    console.log(`  Span: ${actualSpan.toFixed(2)} m (SHORT dimension - slope drops across this)`);
+    console.log(`  Ridge length: ${ridgeLength.toFixed(2)} m (LONG dimension)`);
+    console.log(`  Slope span: ${slopeSpan.toFixed(2)} m (SHORT dimension - slope drops across this)`);
     console.log(`  Slope length: ${slopeLength.toFixed(2)} m`);
     console.log(`  Roof height: ${roofHeight.toFixed(2)} m`);
     console.log(`  Roof volume: ${roofVolume.toFixed(2)} m³ (steals from walls)`);
@@ -959,34 +961,6 @@ window.TEUI.SectionModules.sect19 = (function () {
       wallHeight: wallHeight,
       tallWallHeight: tallWallHeight,
       endWallArea: ((wallHeight + tallWallHeight) / 2) * width, // Trapezoid end wall
-    };
-  }
-
-  /**
-   * Extrude 2D profile to satisfy volume constraint AND footprint and roof constraints (noting mezzanine area does not participate in volume generation)
-   */
-  function extrudeProfile(profile2D, targetVolume) {
-    const width = profile2D.nodes[1].x;
-    let crossSectionArea;
-
-    if (profile2D.type === "gable") {
-      // Rectangle (wall) + Triangle (roof)
-      const rectangleArea = width * profile2D.wallHeight;
-      const triangleArea = (width * profile2D.height) / 2;
-      crossSectionArea = rectangleArea + triangleArea;
-    } else if (profile2D.type === "shed") {
-      // Trapezoid: average of two parallel sides × width
-      const avgHeight = (profile2D.wallHeight + profile2D.tallWallHeight) / 2;
-      crossSectionArea = width * avgHeight;
-    } else {
-      // Flat roof: just rectangle
-      crossSectionArea = width * profile2D.wallHeight;
-    }
-
-    const extrusionDepth = targetVolume / crossSectionArea;
-    return {
-      depth: extrusionDepth,
-      crossSectionArea: crossSectionArea,
     };
   }
 
@@ -1124,13 +1098,14 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     console.log(`[WOMBAT-2] Inputs: footprint=${footprintArea.toFixed(2)}m², volume=${targetVolume.toFixed(2)}m³, roof=${roofType} (requested: ${roofTypeRequested})`);
 
-    // Calculate ridge orientation - ridge runs across SHORT dimension (structural efficiency)
-    // This MUST be calculated dynamically because aspect ratio changes which dimension is short/long
-    const ridgeLength = Math.min(width, length);  // SHORT dimension (ridge runs across this)
-    const span = Math.max(width, length);         // LONG dimension (slope runs across this)
+    // Calculate footprint dimensions - dynamically determined by aspect ratio
+    // Nomenclature: shortDimension/longDimension (clear, no ambiguity)
+    const shortDimension = Math.min(width, length);  // SHORT footprint edge
+    const longDimension = Math.max(width, length);   // LONG footprint edge
     const ridgeOrientation = length >= width ? "longitudinal" : "transverse";
 
-    console.log(`[WOMBAT-2] Ridge: ${ridgeOrientation} (${ridgeLength.toFixed(2)}m across ${ridgeLength === width ? 'width' : 'length'}), Span: ${span.toFixed(2)}m`);
+    console.log(`[WOMBAT-2] Footprint: ${shortDimension.toFixed(2)}m (short) × ${longDimension.toFixed(2)}m (long)`);
+    console.log(`[WOMBAT-2] Ridge orientation: ${ridgeOrientation}`);
 
     // ========================================================================
     // PHASE 2: SOLVE ROOF GEOMETRY FROM AREA CONSTRAINT (FIRST!)
@@ -1140,8 +1115,8 @@ window.TEUI.SectionModules.sect19 = (function () {
       roofType,           // May be collapsed from roofTypeRequested
       roofArea,
       footprintArea,
-      ridgeLength,
-      span
+      shortDimension,     // SHORT dimension (was ridgeLength)
+      longDimension       // LONG dimension (was span)
     );
 
     console.log(`[WOMBAT-2] Roof solved: type=${roofResult.roofType}, height=${roofResult.roofHeight.toFixed(2)}m, volume=${roofResult.roofVolume.toFixed(2)}m³`);
@@ -1224,34 +1199,33 @@ window.TEUI.SectionModules.sect19 = (function () {
       // Profile width = SHORT dimension (triangle base, perpendicular to ridge)
       // Profile will be extruded along LONG dimension (parallel to ridge)
       // Ridge runs parallel to long walls
-      profile2D = buildGable2DProfile(ridgeLength, wallHeight, roofResult.roofHeight);
+      profile2D = buildGable2DProfile(shortDimension, wallHeight, roofResult.roofHeight);
     } else if (roofResult.roofType === "shed") {
       // CRITICAL: For shed, profile width = LONG dimension (where ridge runs)
       // Profile will be extruded along SHORT dimension
-      profile2D = buildShed2DProfile(span, wallHeight, roofResult.roofHeight);
+      profile2D = buildShed2DProfile(longDimension, wallHeight, roofResult.roofHeight);
     } else {
       // Flat roof
-      profile2D = solveFlat2DProfile(ridgeLength, wallHeight);
+      profile2D = solveFlat2DProfile(shortDimension, wallHeight);
     }
 
     // ========================================================================
     // PHASE 5: EXTRUDE AND GENERATE 3D NODES
     // ========================================================================
-    const extrusion = extrudeProfile(profile2D, targetVolume);
 
     // Extrusion depth depends on roof type:
-    // - Flat: extrude along LONG (span) - profile width is SHORT
-    // - Gable: extrude along LONG (span) - profile width is SHORT (triangle cross-section)
-    // - Shed: extrude along SHORT (ridgeLength) - profile width is LONG
+    // - Flat: extrude along LONG - profile width is SHORT
+    // - Gable: extrude along LONG - profile width is SHORT (triangle cross-section)
+    // - Shed: extrude along SHORT - profile width is LONG
     let extrusionDepth;
     if (roofResult.roofType === "shed") {
-      extrusionDepth = ridgeLength;  // SHORT - shed ridge is at end
+      extrusionDepth = shortDimension;  // SHORT - shed ridge is at end
     } else {
-      extrusionDepth = span;  // LONG - gable/flat ridge runs along length
+      extrusionDepth = longDimension;   // LONG - gable/flat ridge runs along length
     }
     const nodes3D = generate3DNodes(profile2D, extrusionDepth);
 
-    console.log(`[WOMBAT-2] Profile: ${profile2D.type}, extrusion depth: ${extrusion.depth.toFixed(2)}m, span: ${span.toFixed(2)}m`);
+    console.log(`[WOMBAT-2] Profile: ${profile2D.type}, extrusion depth: ${extrusionDepth.toFixed(2)}m`);
     console.log(`[WOMBAT-2] Footprint dimensions: width=${width.toFixed(2)}m, length=${length.toFixed(2)}m (from aspect ratio)`);
 
     // Store calculated footprint dimensions in state for display

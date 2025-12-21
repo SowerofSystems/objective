@@ -286,98 +286,39 @@ const slope = Math.tan(angle);            // Compounds errors
 
 ---
 
-## Code Locations Requiring Refactoring
+## Code Locations Refactored (COMPLETED 2025-12-20)
 
-**CRITICAL**: These locations have confusing variable names that require renaming for future clarity.
+**Status**: ✅ Nomenclature refactoring COMPLETE
 
-### Section19.js
+All confusing `ridgeLength`/`span` parameters have been replaced with clear `shortDimension`/`longDimension` naming.
 
-#### Line 770-825: `solveGableRoof()`
-**Issue**: Parameters named `ridgeLength` and `span` are SWAPPED internally
+### Section19.js - Completed Changes
 
-**Current (confusing)**:
-```javascript
-function solveGableRoof(roofArea, ridgeLength, span, footprintArea) {
-  // ridgeLength = SHORT (incoming)
-  // span = LONG (incoming)
-
-  // SWAPPED:
-  const actualRidgeLength = span;      // LONG
-  const actualSpan = ridgeLength;      // SHORT
-}
-```
-
-**Refactor to**:
+#### ✅ Line 770-825: `solveGableRoof()`
+**Refactored**:
 ```javascript
 function solveGableRoof(roofArea, shortDimension, longDimension, footprintArea) {
   // Clear, no swap needed:
-  const ridgeLength = longDimension;   // Ridge parallel to long walls
-  const triangleBase = shortDimension; // Perpendicular to ridge
+  const ridgeLength = longDimension;      // Ridge parallel to long walls
+  const triangleBase = shortDimension;    // Perpendicular to ridge
 }
 ```
 
-**Lines to change**: 770, 778-779, 783, 790, 808, 816-817
-
----
-
-#### Line 831-888: `solveShedRoof()`
-**Issue**: Same parameter swap confusion
-
-**Current (confusing)**:
-```javascript
-function solveShedRoof(roofArea, ridgeLength, span, footprintArea) {
-  const actualRidgeLength = span;      // LONG
-  const actualSpan = ridgeLength;      // SHORT
-}
-```
-
-**Refactor to**:
+#### ✅ Line 831-888: `solveShedRoof()`
+**Refactored**:
 ```javascript
 function solveShedRoof(roofArea, shortDimension, longDimension, footprintArea) {
-  const ridgeLength = longDimension;   // Ridge at end
-  const slopeSpan = shortDimension;    // Slope drops across this
+  const ridgeLength = longDimension;      // Ridge at end
+  const slopeSpan = shortDimension;       // Slope drops across this
 }
 ```
 
-**Lines to change**: 831, 839-840, 843, 850, 865, 875-876
-
----
-
-#### Line 1130-1134: Ridge Calculation
-**Issue**: Variable naming suggests SHORT but used for different purposes
-
-**Current**:
+#### ✅ Line 1128-1146: Main Variable Declarations
+**Refactored**:
 ```javascript
-const ridgeLength = Math.min(width, length);  // SHORT
-const span = Math.max(width, length);         // LONG
-```
+const shortDimension = Math.min(width, length);  // SHORT footprint edge
+const longDimension = Math.max(width, length);   // LONG footprint edge
 
-**Refactor to**:
-```javascript
-const shortDimension = Math.min(width, length);
-const longDimension = Math.max(width, length);
-```
-
-**Lines to change**: 1130-1131, and all subsequent usages
-
----
-
-#### Line 1140-1146: `solveRoofGeometry()` Call
-**Issue**: Passes confusingly-named parameters
-
-**Current**:
-```javascript
-const roofResult = solveRoofGeometry(
-  roofType,
-  roofArea,
-  footprintArea,
-  ridgeLength,  // SHORT
-  span          // LONG
-);
-```
-
-**Refactor to**:
-```javascript
 const roofResult = solveRoofGeometry(
   roofType,
   roofArea,
@@ -387,51 +328,20 @@ const roofResult = solveRoofGeometry(
 );
 ```
 
-**Lines to change**: 1140-1146
-
----
-
-#### Line 1222-1233: Profile Building
-**Issue**: Uses confusing ridgeLength/span
-
-**Current**:
+#### ✅ Line 1222-1237: Profile Building
+**Refactored**:
 ```javascript
 if (roofResult.roofType === "gable") {
-  profile2D = buildGable2DProfile(ridgeLength, wallHeight, roofResult.roofHeight);
-} else if (roofResult.roofType === "shed") {
-  profile2D = buildShed2DProfile(span, wallHeight, roofResult.roofHeight);
-}
-```
-
-**Refactor to**:
-```javascript
-if (roofResult.roofType === "gable") {
-  // Gable: profile shows cross-section (short dimension)
   profile2D = buildGable2DProfile(shortDimension, wallHeight, roofResult.roofHeight);
 } else if (roofResult.roofType === "shed") {
-  // Shed: profile shows long face
   profile2D = buildShed2DProfile(longDimension, wallHeight, roofResult.roofHeight);
-}
-```
-
-**Lines to change**: 1222-1233
-
----
-
-#### Line 1246-1252: Extrusion Depth
-**Issue**: Conditional logic obscures which dimension is which
-
-**Current**:
-```javascript
-let extrusionDepth;
-if (roofResult.roofType === "shed") {
-  extrusionDepth = ridgeLength;  // SHORT
 } else {
-  extrusionDepth = span;  // LONG
+  profile2D = solveFlat2DProfile(shortDimension, wallHeight);
 }
 ```
 
-**Refactor to**:
+#### ✅ Line 1244-1254: Extrusion Depth
+**Refactored**:
 ```javascript
 let extrusionDepth;
 if (roofResult.roofType === "shed") {
@@ -441,7 +351,8 @@ if (roofResult.roofType === "shed") {
 }
 ```
 
-**Lines to change**: 1246-1252
+#### ✅ Removed Obsolete Function
+**Line 970**: Removed `extrudeProfile()` function (no longer needed - using footprint dimensions directly)
 
 ---
 
@@ -508,10 +419,63 @@ When working on roof geometry, **use these names**:
 
 ---
 
+## Refactoring Session Summary (2025-12-20)
+
+### What Was Changed
+
+Completed systematic nomenclature refactoring to eliminate confusing `ridgeLength`/`span` parameter names throughout [Section19.js](../../../src/sections/Section19.js).
+
+**Problem**: Parameters were named based on shed roof conventions where ridge could be at either end, but this created confusion for gable roofs where ridge conventionally runs along the long dimension. The functions internally "swapped" these parameters, making the code difficult to understand.
+
+**Solution**: Renamed parameters to dimension-agnostic names that clearly indicate size:
+- `ridgeLength` → `shortDimension`
+- `span` → `longDimension`
+
+Then each roof type assigns these to appropriate local variables:
+- **Gable**: `ridgeLength = longDimension`, `triangleBase = shortDimension`
+- **Shed**: `ridgeLength = longDimension`, `slopeSpan = shortDimension`
+
+### Files Modified
+
+1. **[Section19.js](../../../src/sections/Section19.js)**:
+   - Lines 770-830: `solveGableRoof()` - Changed signature and removed swap logic
+   - Lines 831-895: `solveShedRoof()` - Changed signature and removed swap logic
+   - Lines 1128-1146: Main variable declarations and `solveRoofGeometry()` call
+   - Lines 1222-1237: Profile building calls
+   - Lines 1244-1254: Extrusion depth logic
+   - Line 1257: Console logging
+   - Removed obsolete `extrudeProfile()` function (line 970)
+
+2. **[PRISMATIC-TERMINOLOGY.md](PRISMATIC-TERMINOLOGY.md)** (this file):
+   - Updated "Code Locations Requiring Refactoring" section to show completed status
+   - Added this summary section
+
+### Testing Status
+
+- ✅ Linter check passed (no syntax errors introduced)
+- ⬜ Runtime testing pending (user to verify rendering behavior)
+- ⬜ Visual verification needed for gable/shed roof orientations at various aspect ratios
+
+### Benefits
+
+1. **Code Clarity**: No more internal parameter swapping - what comes in is what's used
+2. **Future-Proof**: Next developer won't need to understand the swap pattern
+3. **Self-Documenting**: Variable names like `triangleBase` and `slopeSpan` are explicit
+4. **Consistent**: All roof solvers use same parameter naming convention
+
+### Next Steps (Future Work)
+
+1. Verify wombatRender.js coordinate system matches documentation
+2. Consider implementing spread-based roof pitch display (rational trig)
+3. Add geometric feasibility validation before rendering
+4. Optimize to minimize square root operations further
+
+---
+
 ## References
 
 - N.J. Wildberger: "Divine Proportions: Rational Trigonometry to Universal Geometry"
 - ArchiCad GDL: Prismatic extrusion concept
 - Current implementation: Section19.js (solveGableRoof, solveShedRoof)
-- File: `/src/sections/Section19.js` (lines 770-1252)
+- File: [/src/sections/Section19.js](../../../src/sections/Section19.js) (lines 770-1254)
 - File: `/src/core/wombatRender.js` (coordinate system)
