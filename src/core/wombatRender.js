@@ -513,8 +513,13 @@ window.TEUI.WombatRender = (function () {
         svg.appendChild(node);
       });
 
-      // Depth annotation
-      const depthMidpoint = toIsometric(-width/2 - 8, length/2, -basementDepth/2, scale, centerX, centerY);
+      // Depth annotation - calculate dimensions from gradeCorners
+      const frontLeft = gradeCorners[0];
+      const backLeft = gradeCorners[3];
+      const actualWidth = Math.abs(frontLeft.x - gradeCorners[1].x);
+      const actualLength = Math.abs(frontLeft.y - backLeft.y);
+
+      const depthMidpoint = toIsometric(-actualWidth/2 - 8, actualLength/2, -basementDepth/2, scale, centerX, centerY);
       const depthLabel = createText(
         depthMidpoint.x - 30,
         depthMidpoint.y,
