@@ -423,7 +423,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       },
     },
 
-    // User controls for topology solver - redistributes area/volume into footprint length, width, and height, initializes as 0 = Square = X=Y. 
+    // User controls for topology solver - redistributes area/volume into footprint length, width, and height, initializes as 0 = Square = X=Y.
     row154: {
       id: "19.1",
       rowId: "19.1",
@@ -500,7 +500,7 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // No row 157 yet...
 
-        // Floorplate Options dropdown (clarifies fractional story interpretation)
+    // Floorplate Options dropdown (clarifies fractional story interpretation)
     row158: {
       id: "19.FP",
       rowId: "19.FP",
@@ -560,7 +560,6 @@ window.TEUI.SectionModules.sect19 = (function () {
         h: {},
       },
     },
-
   };
 
   //==========================================================================
@@ -670,10 +669,8 @@ window.TEUI.SectionModules.sect19 = (function () {
       "row155",
       "row156",
       //"row157",   //Reserved for future use
-      "row158",     //footprint width to be added
-      "row159",     //building height to be added
-      
-      
+      "row158", //footprint width to be added
+      "row159", //building height to be added
     ].forEach(key => {
       if (sectionRows[key]) {
         layoutRows.push(createLayoutRow(sectionRows[key]));
@@ -721,18 +718,26 @@ window.TEUI.SectionModules.sect19 = (function () {
    * Solve roof geometry from roof area constraint (FIRST step in constraint flow)
    * Returns roof height and roof volume for wall height derivation
    */
-  function solveRoofGeometry(roofTypeRequested, roofArea, footprintArea, ridgeLength, span) {
+  function solveRoofGeometry(
+    roofTypeRequested,
+    roofArea,
+    footprintArea,
+    ridgeLength,
+    span
+  ) {
     const areaRatio = roofArea / footprintArea;
 
     // Check roof collapse condition
     if (areaRatio <= 1.01) {
-      console.log(`[WOMBAT] Roof area ≤ footprint (${areaRatio.toFixed(2)}x) → flat roof`);
+      console.log(
+        `[WOMBAT] Roof area ≤ footprint (${areaRatio.toFixed(2)}x) → flat roof`
+      );
       return {
         roofType: "flat",
         roofHeight: 0,
         roofVolume: 0,
         gableEndArea: 0,
-        shedEndWallArea: 0
+        shedEndWallArea: 0,
       };
     }
 
@@ -751,17 +756,19 @@ window.TEUI.SectionModules.sect19 = (function () {
         roofHeight: 0,
         roofVolume: 0,
         gableEndArea: 0,
-        shedEndWallArea: 0
+        shedEndWallArea: 0,
       };
     } else {
       // Default to flat for unknown types
-      console.warn(`[WOMBAT] Unknown roof type "${roofTypeRequested}", defaulting to flat`);
+      console.warn(
+        `[WOMBAT] Unknown roof type "${roofTypeRequested}", defaulting to flat`
+      );
       return {
         roofType: "flat",
         roofHeight: 0,
         roofVolume: 0,
         gableEndArea: 0,
-        shedEndWallArea: 0
+        shedEndWallArea: 0,
       };
     }
   }
@@ -770,7 +777,12 @@ window.TEUI.SectionModules.sect19 = (function () {
    * Solve gable roof geometry from roof area constraint
    * Returns roof height, roof volume, and gable end areas
    */
-  function solveGableRoof(roofArea, shortDimension, longDimension, footprintArea) {
+  function solveGableRoof(
+    roofArea,
+    shortDimension,
+    longDimension,
+    footprintArea
+  ) {
     // Gable roof: two rectangular slopes meet at ridge
     // CRITICAL: Ridge runs along LONG dimension (structural efficiency)
     // Slope drops perpendicular to ridge across SHORT dimension
@@ -779,8 +791,8 @@ window.TEUI.SectionModules.sect19 = (function () {
     // For gable roofs:
     // - Ridge runs parallel to LONG dimension (ridge is long)
     // - Triangle base is the SHORT dimension (perpendicular to ridge)
-    const ridgeLength = longDimension;      // LONG dimension (ridge runs along this)
-    const triangleBase = shortDimension;    // SHORT dimension (triangle base, slope drops across this)
+    const ridgeLength = longDimension; // LONG dimension (ridge runs along this)
+    const triangleBase = shortDimension; // SHORT dimension (triangle base, slope drops across this)
 
     // Total roof area = 2 rectangular slopes
     // roofArea = 2 × ridge × slopeLength
@@ -793,23 +805,29 @@ window.TEUI.SectionModules.sect19 = (function () {
     // Horizontal distance = half the building width (triangleBase/2)
 
     const halfBase = triangleBase / 2;
-    const Q_slope = slopeLength * slopeLength;   // R in Wildberger notation
-    const Q_halfBase = halfBase * halfBase;      // Quadrance of horizontal run
-    const Q_height = Q_slope - Q_halfBase;       // Pythagorean: Q_height = R - Q_base
+    const Q_slope = slopeLength * slopeLength; // R in Wildberger notation
+    const Q_halfBase = halfBase * halfBase; // Quadrance of horizontal run
+    const Q_height = Q_slope - Q_halfBase; // Pythagorean: Q_height = R - Q_base
 
     // Spread (ratio of quadrances) for validation
-    const spread = Q_halfBase / Q_slope;         // s = Q_base / R
+    const spread = Q_halfBase / Q_slope; // s = Q_base / R
 
     if (Q_height < 0) {
-      console.error(`[WOMBAT] Invalid gable geometry - roof area ${roofArea.toFixed(0)}m² too small for footprint`);
-      console.error(`[WOMBAT] Need slopeLength (${slopeLength.toFixed(2)}m) > triangleBase/2 (${halfBase.toFixed(2)}m)`);
-      console.error(`[WOMBAT] Spread s = ${spread.toFixed(3)} > 1.0 (impossible geometry)`);
+      console.error(
+        `[WOMBAT] Invalid gable geometry - roof area ${roofArea.toFixed(0)}m² too small for footprint`
+      );
+      console.error(
+        `[WOMBAT] Need slopeLength (${slopeLength.toFixed(2)}m) > triangleBase/2 (${halfBase.toFixed(2)}m)`
+      );
+      console.error(
+        `[WOMBAT] Spread s = ${spread.toFixed(3)} > 1.0 (impossible geometry)`
+      );
       return {
         roofType: "flat",
         roofHeight: 0,
         roofVolume: 0,
         gableEndArea: 0,
-        shedEndWallArea: 0
+        shedEndWallArea: 0,
       };
     }
 
@@ -827,12 +845,14 @@ window.TEUI.SectionModules.sect19 = (function () {
     // PITCH RATIO (Carpenter's notation: rise:12)
     // Rational Trigonometry compliant - pure ratio, no trig functions
     // For gable: pitch is rise over half-base (center to eave)
-    const pitchRise = (roofHeight / halfBase) * 12;  // Scale to :12 format
+    const pitchRise = (roofHeight / halfBase) * 12; // Scale to :12 format
 
     console.log(`[WOMBAT] Gable roof solved from area constraint:`);
     console.log(`  Roof area: ${roofArea.toFixed(2)} m²`);
     console.log(`  Ridge length: ${ridgeLength.toFixed(2)} m (LONG dimension)`);
-    console.log(`  Triangle base: ${triangleBase.toFixed(2)} m (SHORT dimension)`);
+    console.log(
+      `  Triangle base: ${triangleBase.toFixed(2)} m (SHORT dimension)`
+    );
     console.log(`  Slope length: ${slopeLength.toFixed(2)} m`);
     console.log(`  Roof height: ${roofHeight.toFixed(2)} m`);
     console.log(`  Roof pitch: ${pitchRise.toFixed(1)}:12 (rise:run ratio)`);
@@ -843,9 +863,9 @@ window.TEUI.SectionModules.sect19 = (function () {
       roofType: "gable",
       roofHeight,
       roofVolume,
-      gableEndArea: 2 * gableEndArea,  // Both triangular ends
+      gableEndArea: 2 * gableEndArea, // Both triangular ends
       shedEndWallArea: 0,
-      pitchRise  // Carpenter's rise:12 ratio
+      pitchRise, // Carpenter's rise:12 ratio
     };
   }
 
@@ -853,7 +873,12 @@ window.TEUI.SectionModules.sect19 = (function () {
    * Solve shed roof geometry from roof area constraint
    * Returns roof height, roof volume, and shed end wall areas
    */
-  function solveShedRoof(roofArea, shortDimension, longDimension, footprintArea) {
+  function solveShedRoof(
+    roofArea,
+    shortDimension,
+    longDimension,
+    footprintArea
+  ) {
     // Shed roof: single rectangular slope
     // CRITICAL: Ridge runs along LONG dimension (structural efficiency)
     // Slope drops perpendicular to ridge across SHORT dimension
@@ -862,8 +887,8 @@ window.TEUI.SectionModules.sect19 = (function () {
     // For shed roofs:
     // - Ridge runs parallel to LONG dimension (ridge is long)
     // - Slope drops across the SHORT dimension (perpendicular to ridge)
-    const ridgeLength = longDimension;      // LONG dimension (ridge runs along this)
-    const slopeSpan = shortDimension;       // SHORT dimension (slope drops across this)
+    const ridgeLength = longDimension; // LONG dimension (ridge runs along this)
+    const slopeSpan = shortDimension; // SHORT dimension (slope drops across this)
 
     // Roof area = ridge × slopeLength
     const slopeLength = roofArea / ridgeLength;
@@ -874,23 +899,29 @@ window.TEUI.SectionModules.sect19 = (function () {
     // Slope runs from high ridge to low eave
     // Horizontal distance = full span across building (slopeSpan)
 
-    const Q_slope = slopeLength * slopeLength;   // R in Wildberger notation
-    const Q_span = slopeSpan * slopeSpan;        // Quadrance of horizontal run
-    const Q_height = Q_slope - Q_span;           // Pythagorean: Q_height = R - Q_span
+    const Q_slope = slopeLength * slopeLength; // R in Wildberger notation
+    const Q_span = slopeSpan * slopeSpan; // Quadrance of horizontal run
+    const Q_height = Q_slope - Q_span; // Pythagorean: Q_height = R - Q_span
 
     // Spread (ratio of quadrances) for validation
-    const spread = Q_span / Q_slope;             // s = Q_span / R
+    const spread = Q_span / Q_slope; // s = Q_span / R
 
     if (Q_height < 0) {
-      console.error(`[WOMBAT] Invalid shed geometry - roof area ${roofArea.toFixed(0)}m² too small for footprint`);
-      console.error(`[WOMBAT] Need slopeLength (${slopeLength.toFixed(2)}m) > slopeSpan (${slopeSpan.toFixed(2)}m)`);
-      console.error(`[WOMBAT] Spread s = ${spread.toFixed(3)} > 1.0 (impossible geometry)`);
+      console.error(
+        `[WOMBAT] Invalid shed geometry - roof area ${roofArea.toFixed(0)}m² too small for footprint`
+      );
+      console.error(
+        `[WOMBAT] Need slopeLength (${slopeLength.toFixed(2)}m) > slopeSpan (${slopeSpan.toFixed(2)}m)`
+      );
+      console.error(
+        `[WOMBAT] Spread s = ${spread.toFixed(3)} > 1.0 (impossible geometry)`
+      );
       return {
         roofType: "flat",
         roofHeight: 0,
         roofVolume: 0,
         gableEndArea: 0,
-        shedEndWallArea: 0
+        shedEndWallArea: 0,
       };
     }
 
@@ -908,25 +939,31 @@ window.TEUI.SectionModules.sect19 = (function () {
     // PITCH RATIO (Carpenter's notation: rise:12)
     // Rational Trigonometry compliant - pure ratio, no trig functions
     // For shed: pitch is rise over full span (low eave to high ridge)
-    const pitchRise = (roofHeight / slopeSpan) * 12;  // Scale to :12 format
+    const pitchRise = (roofHeight / slopeSpan) * 12; // Scale to :12 format
 
     console.log(`[WOMBAT] Shed roof solved from area constraint:`);
     console.log(`  Roof area: ${roofArea.toFixed(2)} m²`);
     console.log(`  Ridge length: ${ridgeLength.toFixed(2)} m (LONG dimension)`);
-    console.log(`  Slope span: ${slopeSpan.toFixed(2)} m (SHORT dimension - slope drops across this)`);
+    console.log(
+      `  Slope span: ${slopeSpan.toFixed(2)} m (SHORT dimension - slope drops across this)`
+    );
     console.log(`  Slope length: ${slopeLength.toFixed(2)} m`);
     console.log(`  Roof height: ${roofHeight.toFixed(2)} m`);
     console.log(`  Roof pitch: ${pitchRise.toFixed(1)}:12 (rise:run ratio)`);
-    console.log(`  Roof volume: ${roofVolume.toFixed(2)} m³ (steals from walls)`);
-    console.log(`  Shed end wall area (both): ${(2 * shedEndWallArea).toFixed(2)} m²`);
+    console.log(
+      `  Roof volume: ${roofVolume.toFixed(2)} m³ (steals from walls)`
+    );
+    console.log(
+      `  Shed end wall area (both): ${(2 * shedEndWallArea).toFixed(2)} m²`
+    );
 
     return {
       roofType: "shed",
       roofHeight,
       roofVolume,
       gableEndArea: 0,
-      shedEndWallArea: 2 * shedEndWallArea,  // Both rectangular ends
-      pitchRise  // Carpenter's rise:12 ratio
+      shedEndWallArea: 2 * shedEndWallArea, // Both rectangular ends
+      pitchRise, // Carpenter's rise:12 ratio
     };
   }
 
@@ -935,9 +972,14 @@ window.TEUI.SectionModules.sect19 = (function () {
    * NO iteration, NO derivatives - pure rational trigonometry
    * Hip roofs are POLYHEDRAL (not prismatic) - they taper to ridge endpoints
    */
-  function solveHipRoof(roofArea, shortDimension, longDimension, footprintArea) {
-    const W = shortDimension;  // SHORT dimension (span across slopes)
-    const L = longDimension;   // LONG dimension
+  function solveHipRoof(
+    roofArea,
+    shortDimension,
+    longDimension,
+    footprintArea
+  ) {
+    const W = shortDimension; // SHORT dimension (span across slopes)
+    const L = longDimension; // LONG dimension
     const A = roofArea;
 
     // Ridge length (deterministic from s=0.5 hip rafters at 45° in plan view)
@@ -955,19 +997,21 @@ window.TEUI.SectionModules.sect19 = (function () {
       const Q_height = Q_slope - Q_halfBase;
 
       if (Q_height <= 0) {
-        console.error(`[WOMBAT] Pyramid impossible: roof area ${A.toFixed(0)}m² too small`);
+        console.error(
+          `[WOMBAT] Pyramid impossible: roof area ${A.toFixed(0)}m² too small`
+        );
         console.error(`[WOMBAT] Spread would be ≥ 1.0 (impossible geometry)`);
         return {
           roofType: "flat",
           roofHeight: 0,
           roofVolume: 0,
           gableEndArea: 0,
-          shedEndWallArea: 0
+          shedEndWallArea: 0,
         };
       }
 
       const roofHeight = Math.sqrt(Q_height);
-      const roofVolume = (footprintArea * roofHeight) / 3;  // Pyramid volume
+      const roofVolume = (footprintArea * roofHeight) / 3; // Pyramid volume
 
       // Pitch calculation for pyramid (from center to corner)
       const pitchRise = (roofHeight / (W / 2)) * 12;
@@ -986,7 +1030,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         gableEndArea: 0,
         shedEndWallArea: 0,
         ridgeLength: 0,
-        pitchRise
+        pitchRise,
       };
     }
 
@@ -1015,35 +1059,43 @@ window.TEUI.SectionModules.sect19 = (function () {
     const u_v2 = A / denominator_v2;
 
     console.log(`[WOMBAT-DEBUG] Testing two formulas:`);
-    console.log(`  v1: u = A/(2L-W) = ${A}/${denominator_v1.toFixed(2)} = ${u_v1.toFixed(2)}m`);
-    console.log(`  v2: u = A/(2L) = ${A}/${denominator_v2.toFixed(2)} = ${u_v2.toFixed(2)}m`);
+    console.log(
+      `  v1: u = A/(2L-W) = ${A}/${denominator_v1.toFixed(2)} = ${u_v1.toFixed(2)}m`
+    );
+    console.log(
+      `  v2: u = A/(2L) = ${A}/${denominator_v2.toFixed(2)} = ${u_v2.toFixed(2)}m`
+    );
 
     // Use v2 for now (simpler formula that should give continuous behavior)
     const u = u_v2;
 
     if (u <= 0) {
-      console.error(`[WOMBAT] Invalid slant height (u ≤ 0) - roof area ${A.toFixed(0)}m² too small`);
+      console.error(
+        `[WOMBAT] Invalid slant height (u ≤ 0) - roof area ${A.toFixed(0)}m² too small`
+      );
       return {
         roofType: "flat",
         roofHeight: 0,
         roofVolume: 0,
         gableEndArea: 0,
-        shedEndWallArea: 0
+        shedEndWallArea: 0,
       };
     }
 
     // Extract height quadrance from u
     // u² = Q + W²/4, so Q = u² - W²/4
-    const Q_height = u * u - (W * W / 4);
+    const Q_height = u * u - (W * W) / 4;
 
     if (Q_height <= 0) {
-      console.error(`[WOMBAT] Invalid height quadrance (Q ≤ 0) - roof area ${A.toFixed(0)}m² too small for footprint`);
+      console.error(
+        `[WOMBAT] Invalid height quadrance (Q ≤ 0) - roof area ${A.toFixed(0)}m² too small for footprint`
+      );
       return {
         roofType: "flat",
         roofHeight: 0,
         roofVolume: 0,
         gableEndArea: 0,
-        shedEndWallArea: 0
+        shedEndWallArea: 0,
       };
     }
 
@@ -1051,20 +1103,23 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Verify area constraint with both formulas
     const slopeLength = u;
-    const hipRafterLength = Math.sqrt(u*u + W*W/4);
+    const hipRafterLength = Math.sqrt(u * u + (W * W) / 4);
     const achievedArea_v1 = 2 * ridgeLength * slopeLength + W * slopeLength;
-    const achievedArea_v2 = 2 * ridgeLength * slopeLength + 2 * W * hipRafterLength;
+    const achievedArea_v2 =
+      2 * ridgeLength * slopeLength + 2 * W * hipRafterLength;
 
     console.log(`[WOMBAT-DEBUG] Area verification:`);
     console.log(`  v1 formula [2(L-W)u + Wu]: ${achievedArea_v1.toFixed(2)}m²`);
-    console.log(`  v2 formula [2(L-W)u + 2W·hipRafter]: ${achievedArea_v2.toFixed(2)}m²`);
+    console.log(
+      `  v2 formula [2(L-W)u + 2W·hipRafter]: ${achievedArea_v2.toFixed(2)}m²`
+    );
     console.log(`  Target: ${A.toFixed(2)}m²`);
 
-    const achievedArea = achievedArea_v2;  // Use backup's formula for now
+    const achievedArea = achievedArea_v2; // Use backup's formula for now
 
     // Hip roof volume (see WOMBAT-HIP.md Phase 3)
     const gableSectionVolume = (ridgeLength * W * roofHeight) / 2;
-    const endCapVolume = 2 * (1 / 3) * (W / 2 * W / 2) * roofHeight;
+    const endCapVolume = 2 * (1 / 3) * (((W / 2) * W) / 2) * roofHeight;
     const roofVolume = gableSectionVolume + endCapVolume;
 
     // Pitch calculation (from center to eave on short axis)
@@ -1088,7 +1143,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       shedEndWallArea: 0,
       ridgeLength,
       pitchRise,
-      achievedArea
+      achievedArea,
     };
   }
 
@@ -1123,11 +1178,11 @@ window.TEUI.SectionModules.sect19 = (function () {
   function buildGable2DProfile(width, wallHeight, roofHeight) {
     return {
       nodes: [
-        { x: 0, z: 0 },                                 // Left ground
-        { x: width, z: 0 },                             // Right ground
-        { x: width, z: wallHeight },                    // Right eave
-        { x: width / 2, z: wallHeight + roofHeight },   // Peak
-        { x: 0, z: wallHeight },                        // Left eave
+        { x: 0, z: 0 }, // Left ground
+        { x: width, z: 0 }, // Right ground
+        { x: width, z: wallHeight }, // Right eave
+        { x: width / 2, z: wallHeight + roofHeight }, // Peak
+        { x: 0, z: wallHeight }, // Left eave
       ],
       type: "gable",
       height: roofHeight,
@@ -1149,10 +1204,10 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     return {
       nodes: [
-        { x: 0, z: 0 },                   // Left ground (low eave side)
-        { x: width, z: 0 },               // Right ground (high ridge side)
-        { x: width, z: tallWallHeight },  // Right eave (high ridge)
-        { x: 0, z: wallHeight },          // Left eave (low eave)
+        { x: 0, z: 0 }, // Left ground (low eave side)
+        { x: width, z: 0 }, // Right ground (high ridge side)
+        { x: width, z: tallWallHeight }, // Right eave (high ridge)
+        { x: 0, z: wallHeight }, // Left eave (low eave)
       ],
       type: "shed",
       height: roofHeight,
@@ -1186,10 +1241,10 @@ window.TEUI.SectionModules.sect19 = (function () {
       // Shed roof: FIXED - slope runs in X direction (profile direction)
       // Slope runs from -X (low eave) to +X (high ridge)
       nodes.eave = [
-        { x: -halfWidth, y: -halfDepth, z: profile2D.wallHeight },      // Left front (low)
-        { x: halfWidth, y: -halfDepth, z: profile2D.tallWallHeight },   // Right front (high)
-        { x: halfWidth, y: halfDepth, z: profile2D.tallWallHeight },    // Right back (high)
-        { x: -halfWidth, y: halfDepth, z: profile2D.wallHeight },       // Left back (low)
+        { x: -halfWidth, y: -halfDepth, z: profile2D.wallHeight }, // Left front (low)
+        { x: halfWidth, y: -halfDepth, z: profile2D.tallWallHeight }, // Right front (high)
+        { x: halfWidth, y: halfDepth, z: profile2D.tallWallHeight }, // Right back (high)
+        { x: -halfWidth, y: halfDepth, z: profile2D.wallHeight }, // Left back (low)
       ];
     } else {
       // Flat or gable: uniform eave height
@@ -1206,7 +1261,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       const peakHeight = profile2D.wallHeight + profile2D.height;
       nodes.ridge = [
         { x: 0, y: -halfDepth, z: peakHeight }, // Front ridge
-        { x: 0, y: halfDepth, z: peakHeight },  // Back ridge
+        { x: 0, y: halfDepth, z: peakHeight }, // Back ridge
       ];
     }
 
@@ -1223,7 +1278,12 @@ window.TEUI.SectionModules.sect19 = (function () {
    * @param {number} wallHeight - Height of walls
    * @returns {Object} - { ground, eave, ridge }
    */
-  function generateHipNodes3D(roofResult, shortDimension, longDimension, wallHeight) {
+  function generateHipNodes3D(
+    roofResult,
+    shortDimension,
+    longDimension,
+    wallHeight
+  ) {
     const W = shortDimension;
     const L = longDimension;
     const halfW = W / 2;
@@ -1232,18 +1292,18 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Ground nodes (Z=0) - same for all roof types
     const ground = [
-      { x: -halfW, y: -halfL, z: 0 },  // Front-left
-      { x: +halfW, y: -halfL, z: 0 },  // Front-right
-      { x: +halfW, y: +halfL, z: 0 },  // Back-right
-      { x: -halfW, y: +halfL, z: 0 },  // Back-left
+      { x: -halfW, y: -halfL, z: 0 }, // Front-left
+      { x: +halfW, y: -halfL, z: 0 }, // Front-right
+      { x: +halfW, y: +halfL, z: 0 }, // Back-right
+      { x: -halfW, y: +halfL, z: 0 }, // Back-left
     ];
 
     // Eave nodes (Z=wallHeight) - same for all roof types
     const eave = [
-      { x: -halfW, y: -halfL, z: wallHeight },  // Front-left
-      { x: +halfW, y: -halfL, z: wallHeight },  // Front-right
-      { x: +halfW, y: +halfL, z: wallHeight },  // Back-right
-      { x: -halfW, y: +halfL, z: wallHeight },  // Back-left
+      { x: -halfW, y: -halfL, z: wallHeight }, // Front-left
+      { x: +halfW, y: -halfL, z: wallHeight }, // Front-right
+      { x: +halfW, y: +halfL, z: wallHeight }, // Back-right
+      { x: -halfW, y: +halfL, z: wallHeight }, // Back-left
     ];
 
     // Ridge nodes depend on roof type
@@ -1252,13 +1312,17 @@ window.TEUI.SectionModules.sect19 = (function () {
     if (roofResult.roofType === "pyramid" || roofResult.ridgeLength < 0.01) {
       // Square building - single apex (pure pyramid)
       ridge.push({ x: 0, y: 0, z: ridgeHeight });
-      console.log(`[WOMBAT] Pyramid: 1 apex node at (0, 0, ${ridgeHeight.toFixed(2)}m)`);
+      console.log(
+        `[WOMBAT] Pyramid: 1 apex node at (0, 0, ${ridgeHeight.toFixed(2)}m)`
+      );
     } else {
       // Rectangular building - two ridge endpoints (hip roof)
       const halfRidge = roofResult.ridgeLength / 2;
-      ridge.push({ x: 0, y: -halfRidge, z: ridgeHeight });  // Front ridge end
-      ridge.push({ x: 0, y: +halfRidge, z: ridgeHeight });  // Back ridge end
-      console.log(`[WOMBAT] Hip: 2 ridge nodes, ridge length=${roofResult.ridgeLength.toFixed(2)}m`);
+      ridge.push({ x: 0, y: -halfRidge, z: ridgeHeight }); // Front ridge end
+      ridge.push({ x: 0, y: +halfRidge, z: ridgeHeight }); // Back ridge end
+      console.log(
+        `[WOMBAT] Hip: 2 ridge nodes, ridge length=${roofResult.ridgeLength.toFixed(2)}m`
+      );
     }
 
     return { ground, eave, ridge };
@@ -1295,10 +1359,13 @@ window.TEUI.SectionModules.sect19 = (function () {
     const roofArea = parseFloat(d_85_raw) || 1100;
 
     // Get footprint area from d_95 (slab on grade) - SACRED constraint
-    let footprintArea = parseFloat(getModeAwareValue("d_95", isReferenceCalculation));
+    let footprintArea = parseFloat(
+      getModeAwareValue("d_95", isReferenceCalculation)
+    );
     if (!footprintArea || footprintArea <= 0) {
       // Fallback to raised floor (d_87)
-      footprintArea = parseFloat(getModeAwareValue("d_87", isReferenceCalculation)) || 1100;
+      footprintArea =
+        parseFloat(getModeAwareValue("d_87", isReferenceCalculation)) || 1100;
     }
 
     // ========================================================================
@@ -1310,25 +1377,32 @@ window.TEUI.SectionModules.sect19 = (function () {
     const currentState = isReferenceCalculation ? ReferenceState : TargetState;
     const d_154_raw = currentState.getValue("d_154");
 
-    console.log(`[WOMBAT-2 DEBUG] d_154_raw from state: ${d_154_raw} (type: ${typeof d_154_raw})`);
+    console.log(
+      `[WOMBAT-2 DEBUG] d_154_raw from state: ${d_154_raw} (type: ${typeof d_154_raw})`
+    );
 
     const aspectRatioRaw = parseFloat(d_154_raw) || 0.0;
 
     // Convert slider value to actual aspect ratio (length/width)
-    const aspectRatio = aspectRatioRaw >= 0
-      ? 1 + aspectRatioRaw           // Landscape: 0→1, +1→2, +2→3, +5→6
-      : 1 / (1 - aspectRatioRaw);    // Portrait:  0→1, -1→0.5, -2→0.33, -5→0.167
+    const aspectRatio =
+      aspectRatioRaw >= 0
+        ? 1 + aspectRatioRaw // Landscape: 0→1, +1→2, +2→3, +5→6
+        : 1 / (1 - aspectRatioRaw); // Portrait:  0→1, -1→0.5, -2→0.33, -5→0.167
 
     console.log(`[WOMBAT-2 DEBUG] aspectRatio calculated: ${aspectRatio}`);
     console.log(`[WOMBAT-2 DEBUG] footprintArea: ${footprintArea}`);
 
     // Solve footprint dimensions - preserves area exactly
     const width = Math.sqrt(footprintArea / aspectRatio);
-    const length = footprintArea / width;  // Exact, no rounding error
+    const length = footprintArea / width; // Exact, no rounding error
 
     console.log(`[WOMBAT-2 DEBUG] width: ${width}, length: ${length}`);
-    console.log(`[WOMBAT-2] Aspect ratio: ${aspectRatioRaw.toFixed(1)} → ${aspectRatio.toFixed(2)}:1 (L:W)`);
-    console.log(`[WOMBAT-2] Footprint: ${width.toFixed(2)}m × ${length.toFixed(2)}m = ${footprintArea.toFixed(2)}m²`);
+    console.log(
+      `[WOMBAT-2] Aspect ratio: ${aspectRatioRaw.toFixed(1)} → ${aspectRatio.toFixed(2)}:1 (L:W)`
+    );
+    console.log(
+      `[WOMBAT-2] Footprint: ${width.toFixed(2)}m × ${length.toFixed(2)}m = ${footprintArea.toFixed(2)}m²`
+    );
 
     // ========================================================================
     // ROOF COLLAPSE CONSTRAINT
@@ -1339,21 +1413,31 @@ window.TEUI.SectionModules.sect19 = (function () {
     let roofType = roofTypeRequested;
 
     if (areaRatio <= 1.01 && roofTypeRequested !== "flat") {
-      console.warn(`[WOMBAT-2] ⚠️ ROOF COLLAPSE: Roof area (${roofArea.toFixed(2)}m²) ≈ footprint (${footprintArea.toFixed(2)}m²)`);
-      console.warn(`[WOMBAT-2] → Pitched roof geometrically impossible, falling back to FLAT roof`);
-      console.warn(`[WOMBAT-2] → Increase d_85 to > ${(footprintArea * 1.1).toFixed(0)}m² to enable ${roofTypeRequested} roof`);
+      console.warn(
+        `[WOMBAT-2] ⚠️ ROOF COLLAPSE: Roof area (${roofArea.toFixed(2)}m²) ≈ footprint (${footprintArea.toFixed(2)}m²)`
+      );
+      console.warn(
+        `[WOMBAT-2] → Pitched roof geometrically impossible, falling back to FLAT roof`
+      );
+      console.warn(
+        `[WOMBAT-2] → Increase d_85 to > ${(footprintArea * 1.1).toFixed(0)}m² to enable ${roofTypeRequested} roof`
+      );
       roofType = "flat";
     }
 
-    console.log(`[WOMBAT-2] Inputs: footprint=${footprintArea.toFixed(2)}m², volume=${targetVolume.toFixed(2)}m³, roof=${roofType} (requested: ${roofTypeRequested})`);
+    console.log(
+      `[WOMBAT-2] Inputs: footprint=${footprintArea.toFixed(2)}m², volume=${targetVolume.toFixed(2)}m³, roof=${roofType} (requested: ${roofTypeRequested})`
+    );
 
     // Calculate footprint dimensions - dynamically determined by aspect ratio
     // Nomenclature: shortDimension/longDimension (clear, no ambiguity)
-    const shortDimension = Math.min(width, length);  // SHORT footprint edge
-    const longDimension = Math.max(width, length);   // LONG footprint edge
+    const shortDimension = Math.min(width, length); // SHORT footprint edge
+    const longDimension = Math.max(width, length); // LONG footprint edge
     const ridgeOrientation = length >= width ? "longitudinal" : "transverse";
 
-    console.log(`[WOMBAT-2] Footprint: ${shortDimension.toFixed(2)}m (short) × ${longDimension.toFixed(2)}m (long)`);
+    console.log(
+      `[WOMBAT-2] Footprint: ${shortDimension.toFixed(2)}m (short) × ${longDimension.toFixed(2)}m (long)`
+    );
     console.log(`[WOMBAT-2] Ridge orientation: ${ridgeOrientation}`);
 
     // ========================================================================
@@ -1361,14 +1445,16 @@ window.TEUI.SectionModules.sect19 = (function () {
     // This is the CORRECT constraint order - roof area drives roof height
     // ========================================================================
     const roofResult = solveRoofGeometry(
-      roofType,           // May be collapsed from roofTypeRequested
+      roofType, // May be collapsed from roofTypeRequested
       roofArea,
       footprintArea,
-      shortDimension,     // SHORT dimension (was ridgeLength)
-      longDimension       // LONG dimension (was span)
+      shortDimension, // SHORT dimension (was ridgeLength)
+      longDimension // LONG dimension (was span)
     );
 
-    console.log(`[WOMBAT-2] Roof solved: type=${roofResult.roofType}, height=${roofResult.roofHeight.toFixed(2)}m, volume=${roofResult.roofVolume.toFixed(2)}m³`);
+    console.log(
+      `[WOMBAT-2] Roof solved: type=${roofResult.roofType}, height=${roofResult.roofHeight.toFixed(2)}m, volume=${roofResult.roofVolume.toFixed(2)}m³`
+    );
 
     // ========================================================================
     // PHASE 2B: BASEMENT GEOMETRY (affects volume constraint)
@@ -1377,9 +1463,12 @@ window.TEUI.SectionModules.sect19 = (function () {
     // must be subtracted from total conditioned volume (d_105)
     // Basement is part of conditioned space, but below grade
 
-    const basementWallArea = parseFloat(getModeAwareValue("d_94", isReferenceCalculation)) || 0;
-    const slabArea = parseFloat(getModeAwareValue("d_95", isReferenceCalculation)) || 0;
-    const floorExposedToAir = parseFloat(getModeAwareValue("d_87", isReferenceCalculation)) || 0;
+    const basementWallArea =
+      parseFloat(getModeAwareValue("d_94", isReferenceCalculation)) || 0;
+    const slabArea =
+      parseFloat(getModeAwareValue("d_95", isReferenceCalculation)) || 0;
+    const floorExposedToAir =
+      parseFloat(getModeAwareValue("d_87", isReferenceCalculation)) || 0;
 
     const hasBasement = basementWallArea > 0;
     const hasSlab = slabArea > 0;
@@ -1397,9 +1486,13 @@ window.TEUI.SectionModules.sect19 = (function () {
       basementVolume = footprintArea * basementDepth;
 
       console.log(`[WOMBAT-2] Basement geometry:`);
-      console.log(`  Basement wall area (d_94): ${basementWallArea.toFixed(2)} m²`);
+      console.log(
+        `  Basement wall area (d_94): ${basementWallArea.toFixed(2)} m²`
+      );
       console.log(`  Basement depth: ${basementDepth.toFixed(2)} m`);
-      console.log(`  Basement volume: ${basementVolume.toFixed(2)} m³ (part of conditioned space)`);
+      console.log(
+        `  Basement volume: ${basementVolume.toFixed(2)} m³ (part of conditioned space)`
+      );
     }
 
     // Determine foundation type for rendering
@@ -1412,11 +1505,17 @@ window.TEUI.SectionModules.sect19 = (function () {
       return "unknown";
     }
 
-    const foundationType = determineFoundationType(hasSlab, hasBasement, hasRaisedFloor);
+    const foundationType = determineFoundationType(
+      hasSlab,
+      hasBasement,
+      hasRaisedFloor
+    );
 
     console.log(`[WOMBAT-2] Foundation type: ${foundationType}`);
     if (foundationType === "mixed-foundation") {
-      console.warn(`[WOMBAT-2] ⚠️ Mixed foundation detected (unusual - part ground, part elevated)`);
+      console.warn(
+        `[WOMBAT-2] ⚠️ Mixed foundation detected (unusual - part ground, part elevated)`
+      );
     }
 
     // ========================================================================
@@ -1435,7 +1534,9 @@ window.TEUI.SectionModules.sect19 = (function () {
     let calculatedVolume = wallVolume + roofResult.roofVolume + basementVolume;
 
     console.log(`[WOMBAT-2] Attempting reference wall height:`);
-    console.log(`  Target wall height: ${wallHeightTarget.toFixed(2)} m (${storiesDeclared} × ${storyHeightReference.toFixed(2)}m from g_106)`);
+    console.log(
+      `  Target wall height: ${wallHeightTarget.toFixed(2)} m (${storiesDeclared} × ${storyHeightReference.toFixed(2)}m from g_106)`
+    );
     console.log(`  Would give volume: ${calculatedVolume.toFixed(2)} m³`);
     console.log(`    = Wall volume: ${wallVolume.toFixed(2)} m³`);
     console.log(`    + Roof volume: ${roofResult.roofVolume.toFixed(2)} m³`);
@@ -1450,14 +1551,21 @@ window.TEUI.SectionModules.sect19 = (function () {
     if (calculatedVolume > targetVolume) {
       // Volume exceeded - compress walls to fit
       // CRITICAL: Subtract BOTH roof and basement from total conditioned volume
-      const availableWallVolume = targetVolume - roofResult.roofVolume - basementVolume;
+      const availableWallVolume =
+        targetVolume - roofResult.roofVolume - basementVolume;
 
       if (availableWallVolume < 0) {
         // Roof + Basement exceeds total volume - this is critical
         const combinedVolume = roofResult.roofVolume + basementVolume;
-        console.error(`[WOMBAT-2] ⚠️ CRITICAL: Roof + Basement volume (${combinedVolume.toFixed(0)}m³) exceeds total volume (${targetVolume.toFixed(0)}m³)`);
-        console.error(`[WOMBAT-2] → Roof: ${roofResult.roofVolume.toFixed(0)}m³ + Basement: ${basementVolume.toFixed(0)}m³ = ${combinedVolume.toFixed(0)}m³`);
-        console.error(`[WOMBAT-2] → Using reference wall height anyway, volume will be violated`);
+        console.error(
+          `[WOMBAT-2] ⚠️ CRITICAL: Roof + Basement volume (${combinedVolume.toFixed(0)}m³) exceeds total volume (${targetVolume.toFixed(0)}m³)`
+        );
+        console.error(
+          `[WOMBAT-2] → Roof: ${roofResult.roofVolume.toFixed(0)}m³ + Basement: ${basementVolume.toFixed(0)}m³ = ${combinedVolume.toFixed(0)}m³`
+        );
+        console.error(
+          `[WOMBAT-2] → Using reference wall height anyway, volume will be violated`
+        );
         wallHeight = wallHeightTarget;
         storyHeightActual = storyHeightReference;
         wallVolume = footprintArea * wallHeight;
@@ -1479,13 +1587,24 @@ window.TEUI.SectionModules.sect19 = (function () {
         calculatedVolume = targetVolume; // Exactly matches now
         wallHeightViolation = true;
 
-        console.warn(`[WOMBAT-2] ⚠️ Volume exceeded - compressing walls to fit`);
-        console.warn(`[WOMBAT-2] → Wall height reduced: ${wallHeightTarget.toFixed(2)}m → ${wallHeight.toFixed(2)}m`);
-        console.warn(`[WOMBAT-2] → Storey height: ${storyHeightReference.toFixed(2)}m → ${storyHeightActual.toFixed(2)}m`);
-        console.warn(`[WOMBAT-2] → To restore: increase Conditioned Volume or reduce Roof Area`);
+        console.warn(
+          `[WOMBAT-2] ⚠️ Volume exceeded - compressing walls to fit`
+        );
+        console.warn(
+          `[WOMBAT-2] → Wall height reduced: ${wallHeightTarget.toFixed(2)}m → ${wallHeight.toFixed(2)}m`
+        );
+        console.warn(
+          `[WOMBAT-2] → Storey height: ${storyHeightReference.toFixed(2)}m → ${storyHeightActual.toFixed(2)}m`
+        );
+        console.warn(
+          `[WOMBAT-2] → To restore: increase Conditioned Volume or reduce Roof Area`
+        );
 
         // Update console ticker (persistent until next user interaction)
-        const reductionPercent = (((wallHeightTarget - wallHeight) / wallHeightTarget) * 100).toFixed(0);
+        const reductionPercent = (
+          ((wallHeightTarget - wallHeight) / wallHeightTarget) *
+          100
+        ).toFixed(0);
         showFeedback(
           `⚠️ Walls compressed ${reductionPercent}% (increase Conditioned Volume or reduce Roof Area)`,
           true // persistent
@@ -1495,7 +1614,9 @@ window.TEUI.SectionModules.sect19 = (function () {
       // Volume OK - use reference height
       wallHeight = wallHeightTarget;
       storyHeightActual = storyHeightReference;
-      console.log(`[WOMBAT-2] ✓ Using reference wall height (volume within budget)`);
+      console.log(
+        `[WOMBAT-2] ✓ Using reference wall height (volume within budget)`
+      );
 
       // Update console ticker
       showFeedback("✓ Constraints valid", 3000);
@@ -1505,7 +1626,9 @@ window.TEUI.SectionModules.sect19 = (function () {
     console.log(`  Footprint: ${footprintArea.toFixed(2)} m² (d_95 - SACRED)`);
     console.log(`  Roof area: ${roofArea.toFixed(2)} m² (d_85 - SACRED)`);
     console.log(`  Roof height: ${roofResult.roofHeight.toFixed(2)} m`);
-    console.log(`  Wall height: ${wallHeight.toFixed(2)} m (${wallHeightViolation ? 'COMPRESSED' : 'reference'})`);
+    console.log(
+      `  Wall height: ${wallHeight.toFixed(2)} m (${wallHeightViolation ? "COMPRESSED" : "reference"})`
+    );
     console.log(`  Storey height: ${storyHeightActual.toFixed(2)} m`);
     if (hasBasement) {
       console.log(`  Basement depth: ${basementDepth.toFixed(2)} m`);
@@ -1525,11 +1648,19 @@ window.TEUI.SectionModules.sect19 = (function () {
       // Profile width = SHORT dimension (triangle base, perpendicular to ridge)
       // Profile will be extruded along LONG dimension (parallel to ridge)
       // Ridge runs parallel to long walls
-      profile2D = buildGable2DProfile(shortDimension, wallHeight, roofResult.roofHeight);
+      profile2D = buildGable2DProfile(
+        shortDimension,
+        wallHeight,
+        roofResult.roofHeight
+      );
     } else if (roofResult.roofType === "shed") {
       // CRITICAL: For shed, profile width = SHORT dimension (end wall cross-section)
       // Profile will be extruded along LONG dimension (ridge direction, same as gable)
-      profile2D = buildShed2DProfile(shortDimension, wallHeight, roofResult.roofHeight);
+      profile2D = buildShed2DProfile(
+        shortDimension,
+        wallHeight,
+        roofResult.roofHeight
+      );
     } else {
       // Flat roof
       profile2D = solveFlat2DProfile(shortDimension, wallHeight);
@@ -1551,21 +1682,29 @@ window.TEUI.SectionModules.sect19 = (function () {
         longDimension,
         wallHeight
       );
-      console.log(`[WOMBAT-2] Polyhedral roof (${roofResult.roofType}): ${nodes3D.ridge.length} ridge node(s)`);
-      console.log(`[WOMBAT-2] Footprint dimensions: width=${width.toFixed(2)}m, length=${length.toFixed(2)}m (from aspect ratio)`);
+      console.log(
+        `[WOMBAT-2] Polyhedral roof (${roofResult.roofType}): ${nodes3D.ridge.length} ridge node(s)`
+      );
+      console.log(
+        `[WOMBAT-2] Footprint dimensions: width=${width.toFixed(2)}m, length=${length.toFixed(2)}m (from aspect ratio)`
+      );
     } else {
       // PRISMATIC: Extrude 2D profile along LONG dimension
       // - Flat: extrude along LONG - profile width is SHORT
       // - Gable: extrude along LONG - profile width is SHORT (triangle cross-section)
       // - Shed: extrude along LONG - profile width is SHORT
-      let extrusionDepth = longDimension;  // LONG - ridge runs along length for all roof types
+      let extrusionDepth = longDimension; // LONG - ridge runs along length for all roof types
       nodes3D = generate3DNodes(profile2D, extrusionDepth);
-      console.log(`[WOMBAT-2] Prismatic roof: profile=${profile2D.type}, extrusion=${extrusionDepth.toFixed(2)}m`);
-      console.log(`[WOMBAT-2] Footprint dimensions: width=${width.toFixed(2)}m, length=${length.toFixed(2)}m (from aspect ratio)`);
+      console.log(
+        `[WOMBAT-2] Prismatic roof: profile=${profile2D.type}, extrusion=${extrusionDepth.toFixed(2)}m`
+      );
+      console.log(
+        `[WOMBAT-2] Footprint dimensions: width=${width.toFixed(2)}m, length=${length.toFixed(2)}m (from aspect ratio)`
+      );
     }
 
     // Store calculated footprint dimensions in state for display
-    currentState.setValue("h_155", width.toFixed(2));  // Footprint width (from aspect ratio)
+    currentState.setValue("h_155", width.toFixed(2)); // Footprint width (from aspect ratio)
     currentState.setValue("h_157", length.toFixed(2)); // Footprint length (from aspect ratio)
     currentState.setValue("h_156", storyHeightActual.toFixed(2)); // Actual storey height (may be compressed)
 
@@ -1578,17 +1717,17 @@ window.TEUI.SectionModules.sect19 = (function () {
       roofType: roofResult.roofType,
       roofHeight: roofResult.roofHeight,
       roofVolume: roofResult.roofVolume,
-      pitchRise: roofResult.pitchRise,  // Carpenter's rise:12 ratio
+      pitchRise: roofResult.pitchRise, // Carpenter's rise:12 ratio
       wallHeight,
       wallVolume,
-      calculatedVolume,         // Actual volume from geometry
-      targetVolume,              // User's specified volume (d_105)
-      volumeDifference,          // Difference for reporting
-      wallHeightViolation,       // Flag if walls were compressed
-      storyHeightReference,      // Reference from g_106
-      storyHeight: storyHeightActual,  // Actual (may be compressed)
+      calculatedVolume, // Actual volume from geometry
+      targetVolume, // User's specified volume (d_105)
+      volumeDifference, // Difference for reporting
+      wallHeightViolation, // Flag if walls were compressed
+      storyHeightReference, // Reference from g_106
+      storyHeight: storyHeightActual, // Actual (may be compressed)
       stories: storiesDeclared,
-      height: wallHeight,  // For backward compatibility
+      height: wallHeight, // For backward compatibility
       totalHeight: wallHeight + roofResult.roofHeight,
       roofCollapsed: roofResult.roofType !== roofTypeRequested,
       nodes3D,
@@ -1602,7 +1741,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         hasSlab,
         hasRaisedFloor,
         basementDepth,
-        basementVolume,        // Critical for volume accounting
+        basementVolume, // Critical for volume accounting
         slabArea,
         basementWallArea,
         foundationType,
