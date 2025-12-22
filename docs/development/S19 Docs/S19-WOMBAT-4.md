@@ -1870,18 +1870,30 @@ test("visual parity - gable roof", () => {
 13. ✅ **Storey height sacrificial** - Wall height derived from volume, not prescribed (Section19.js:954-960)
 14. ✅ **Legend annotations** - Canvas legend with roof area, floorplate area, wall areas, storey height, dimensions
 15. ✅ **Documentation updates** - Constraint hierarchy, roof collapse rule, aspect ratio analysis
+16. ✅ **Hip roof solver (polyhedral)** - Direct algebraic RT solution, renders 4 hip rafters + ridge (Section19.js:930-1080)
+17. ✅ **Pyramid roof solver** - Square footprint special case, renders 4 rafters to apex (Section19.js:948-987)
+18. ✅ **Hip/Pyramid rendering** - Polyhedral wireframe with proper face topology (wombatRender.js:237-285)
+19. ✅ **Pitch display for all roofs** - Rise:12 ratio shown for gable/shed/hip/pyramid (wombatRender.js:759)
+20. ✅ **RT documentation** - Complete WOMBAT-HIP.md with formula derivation, corrections, and lessons learned
+
+### All Roof Types Complete! 🎉
+
+**Summary**: All four major roof types now fully implemented using rational trigonometry:
+- ✅ **Flat roof** - Prismatic extrusion (8 nodes)
+- ✅ **Gable roof** - Prismatic with triangular ends (10 nodes)
+- ✅ **Shed roof** - Prismatic with trapezoidal profile (8 nodes)
+- ✅ **Hip/Pyramid roof** - Polyhedral with algebraic RT solver (10 nodes hip, 5 nodes pyramid)
+
+All solvers use direct algebraic solutions with NO iteration, achieving the "clever algebra" goal inspired by Pythagoras, Fuller, and Wildberger.
 
 ### Next Steps 📋
 
-16. **Fix aspect ratio NaN bug** - Debug d_154 state sync issue (current blocker)
-17. **Test aspect ratio impact** - Verify shed roof height reduces with landscape aspect ratio
-18. **Implement stories dropdown handler** - Wire d_150 changes to recalculate geometry
-19. **Volume iteration** - Refine wall height calculation to exactly match volume constraint
-20. **Area constraints** - Iterate to satisfy roof area (d_85) exactly
-21. **Wall area calculations** - Implement prismatic wall area formulas and display
-22. **Multi-storey rendering** - Add horizontal floor plane lines to visualization (see spec below)
-23. **Test and merge** - Comprehensive testing, then merge to main
-24. **Future enhancements** - Hip roof, pyramidal, basement support
+21. **Basement/foundation visualization** - Multi-level support (see Basement-4.md)
+22. **Window placement** - Wire window area (d_86) to facade rendering
+23. **Multi-storey rendering** - Add horizontal floor plane lines to visualization (see spec below)
+24. **Volume iteration refinement** - Fine-tune wall height to exactly match volume constraint
+25. **Wall area calculations** - Implement prismatic wall area formulas and display
+26. **Test and merge** - Comprehensive testing of all roof types, then merge WOMBAT-WINDOWS to main
 
 ---
 
