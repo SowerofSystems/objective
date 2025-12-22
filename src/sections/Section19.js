@@ -1710,9 +1710,19 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     const volumeDifference = calculatedVolume - targetVolume;
 
+    // Calculate window geometries (Phase 1: Facade windows only)
+    const windowData = window.TEUI.WombatWindows?.calculateWindows({
+      width,
+      length,
+      wallHeight,
+    });
+
     // Return complete geometry
     return {
       footprint: { width, length },
+      width, // For window calculations
+      length, // For window calculations
+      wallHeight, // For window calculations
       ridgeOrientation,
       roofType: roofResult.roofType,
       roofHeight: roofResult.roofHeight,
@@ -1746,6 +1756,9 @@ window.TEUI.SectionModules.sect19 = (function () {
         basementWallArea,
         foundationType,
       },
+      // NEW: Window geometries (Phase 1: Facade windows)
+      windows: windowData?.windows || [],
+      windowWarnings: windowData?.warnings || [],
     };
   }
 

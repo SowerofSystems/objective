@@ -1,0 +1,365 @@
+/**
+ * wombatWindows.js - WOMBAT Window Placement Module
+ * TEUI 4.012 - Created 2025-12-22
+ *
+ * Phase 1: Vertical facade windows (N/E/S/W)
+ * Phase 2: Skylights on roof surfaces (future)
+ * Phase 3: Multi-storey division (future)
+ *
+ * Philosophy:
+ * - Lightweight algebraic geometry (no iteration except square→rectangle conversion)
+ * - Center-placed windows using diagonal bisection
+ * - Square-first approach with rectangle fallback
+ * - Facade-only placement between grade and eave line
+ */
+
+window.TEUI = window.TEUI || {};
+window.TEUI.WombatWindows = (function () {
+  "use strict";
+
+  //==========================================================================
+  // WINDOW DATA INTEGRATION
+  //==========================================================================
+
+  /**
+   * Map window orientation to facade distribution
+   * Diagonal orientations (NE, SE, SW, NW) split 50/50 between two facades
+   */
+  const ORIENTATION_MAP = {
+    North: { north: 1.0 },
+    East: { east: 1.0 },
+    South: { south: 1.0 },
+    West: { west: 1.0 },
+    Northeast: { north: 0.5, east: 0.5 },
+    Southeast: { south: 0.5, east: 0.5 },
+    Southwest: { south: 0.5, west: 0.5 },
+    Northwest: { north: 0.5, west: 0.5 },
+  };
+
+  /**
+   * Read window areas from Section10 and map to facades
+   * @returns {Object} windowsByFacade - Accumulated window area per facade
+   */
+  function mapWindowsToFacades() {
+    const windowsByFacade = {
+      north: 0,
+      east: 0,
+      south: 0,
+      west: 0,
+    };
+
+    // Read window fields d_74 through d_77 (skip d_73 doors, d_78 skylights)
+    const windowFields = [
+      { areaField: "d_74", orientationField: "e_74" }, // North
+      { areaField: "d_75", orientationField: "e_75" }, // East
+      { areaField: "d_76", orientationField: "e_76" }, // South
+      { areaField: "d_77", orientationField: "e_77" }, // West
+    ];
+
+    windowFields.forEach(({ areaField, orientationField }) => {
+      const area = parseFloat(
+        window.TEUI?.StateManager?.getValue(areaField) || "0"
+      );
+      const orientation =
+        window.TEUI?.StateManager?.getValue(orientationField) || "North";
+
+      if (area > 0) {
+        addWindowToFacade(windowsByFacade, area, orientation);
+      }
+    });
+
+    return windowsByFacade;
+  }
+
+  /**
+   * Add window area to facade(s) based on orientation
+   * @param {Object} windowsByFacade - Accumulator object
+   * @param {number} area - Window area in m²
+   * @param {string} orientation - Cardinal or diagonal orientation
+   */
+  function addWindowToFacade(windowsByFacade, area, orientation) {
+    const distribution = ORIENTATION_MAP[orientation] || { north: 1.0 };
+
+    for (const [facade, ratio] of Object.entries(distribution)) {
+      windowsByFacade[facade] += area * ratio;
+    }
+  }
+
+  /**
+   * Calculate facade dimensions and areas from geometry
+   * @param {Object} geometry - Geometry object from Section19
+   * @returns {Object} Facade areas and dimensions
+   */
+  function calculateFacadeAreas(geometry) {
+    const width = geometry.width || 0;
+    const length = geometry.length || 0;
+    const wallHeight = geometry.wallHeight || 0;
+
+    return {
+      north: {
+        width: width,
+        height: wallHeight,
+        area: width * wallHeight,
+      },
+      south: {
+        width: width,
+        height: wallHeight,
+        area: width * wallHeight,
+      },
+      east: {
+        width: length,
+        height: wallHeight,
+        area: length * wallHeight,
+      },
+      west: {
+        width: length,
+        height: wallHeight,
+        area: length * wallHeight,
+      },
+    };
+  }
+
+  /**
+   * Validate window areas against facade areas
+   * @param {Object} windowsByFacade - Window areas per facade
+   * @param {Object} facadeAreas - Available facade areas
+   * @returns {Array} Array of warning messages
+   */
+  function validateWindowAreas(windowsByFacade, facadeAreas) {
+    const warnings = [];
+
+    for (const [facade, windowArea] of Object.entries(windowsByFacade)) {
+      if (windowArea > 0 && windowArea > facadeAreas[facade].area) {
+        const msg = `${
+          facade.charAt(0).toUpperCase() + facade.slice(1)
+        } windows (${windowArea.toFixed(2)}m²) exceed facade area (${facadeAreas[
+          facade
+        ].area.toFixed(2)}m²)`;
+        warnings.push(msg);
+        console.warn(`[WOMBAT Windows] ${msg}`);
+      }
+    }
+
+    return warnings;
+  }
+
+  //==========================================================================
+  // WINDOW GEOMETRY GENERATION
+  //==========================================================================
+
+  /**
+   * Get facade center point using diagonal bisection
+   * @param {string} facade - Facade name (north, east, south, west)
+   * @param {Object} geometry - Geometry object from Section19
+   * @returns {Object} Center point {x, y, z}
+   */
+  function getFacadeCenter(facade, geometry) {
+    const width = geometry.width || 0;
+    const length = geometry.length || 0;
+    const wallHeight = geometry.wallHeight || 0;
+
+    // BIM coordinates: X+ = East, Y+ = North, Z+ = Up
+    const centers = {
+      north: {
+        x: 0,
+        y: length / 2,
+        z: wallHeight / 2,
+      },
+      south: {
+        x: 0,
+        y: -length / 2,
+        z: wallHeight / 2,
+      },
+      east: {
+        x: width / 2,
+        y: 0,
+        z: wallHeight / 2,
+      },
+      west: {
+        x: -width / 2,
+        y: 0,
+        z: wallHeight / 2,
+      },
+    };
+
+    return centers[facade] || { x: 0, y: 0, z: 0 };
+  }
+
+  /**
+   * Generate window geometry for a facade
+   * @param {string} facade - Facade name
+   * @param {number} windowArea - Total window area for this facade (m²)
+   * @param {Object} center - Facade center point
+   * @param {number} maxWidth - Facade width constraint
+   * @param {number} maxHeight - Facade height constraint (eave line)
+   * @returns {Object} Window geometry with 4 corner nodes
+   */
+  function generateWindowGeometry(
+    facade,
+    windowArea,
+    center,
+    maxWidth,
+    maxHeight
+  ) {
+    // Step 1: Try square window first
+    let squareSide = Math.sqrt(windowArea);
+    let windowWidth, windowHeight;
+
+    // Inset from edges (90% of max to avoid touching edges)
+    const maxAllowedWidth = maxWidth * 0.9;
+    const maxAllowedHeight = maxHeight * 0.9;
+
+    if (
+      squareSide <= maxAllowedWidth &&
+      squareSide <= maxAllowedHeight
+    ) {
+      // Square fits
+      windowWidth = squareSide;
+      windowHeight = squareSide;
+    } else {
+      // Step 2: Convert to rectangle
+      if (squareSide > maxAllowedHeight) {
+        // Window hits eave line - make horizontal rectangle
+        windowHeight = maxAllowedHeight;
+        windowWidth = windowArea / windowHeight;
+
+        // Check if width now exceeds facade
+        if (windowWidth > maxAllowedWidth) {
+          console.warn(
+            `[WOMBAT Windows] ${facade} window area too large, clamping to facade dimensions`
+          );
+          windowWidth = maxAllowedWidth;
+          windowHeight = windowArea / windowWidth;
+        }
+      } else {
+        // Window hits facade edge - make vertical rectangle
+        windowWidth = maxAllowedWidth;
+        windowHeight = windowArea / windowWidth;
+
+        // Check if height now exceeds eave
+        if (windowHeight > maxAllowedHeight) {
+          console.warn(
+            `[WOMBAT Windows] ${facade} window area too large, clamping to facade dimensions`
+          );
+          windowHeight = maxAllowedHeight;
+          windowWidth = windowArea / windowHeight;
+        }
+      }
+    }
+
+    // Step 3: Generate corner nodes
+    // Inset slightly from wall plane (0.05m outward for visibility in isometric)
+    const insetDepth = 0.05;
+    const halfWidth = windowWidth / 2;
+    const halfHeight = windowHeight / 2;
+
+    let nodes;
+
+    // Generate nodes based on facade orientation
+    if (facade === "north") {
+      // North facade: y = +length/2, offset outward (+y)
+      const y = center.y + insetDepth;
+      nodes = [
+        { x: center.x - halfWidth, y: y, z: center.z - halfHeight },
+        { x: center.x + halfWidth, y: y, z: center.z - halfHeight },
+        { x: center.x + halfWidth, y: y, z: center.z + halfHeight },
+        { x: center.x - halfWidth, y: y, z: center.z + halfHeight },
+      ];
+    } else if (facade === "south") {
+      // South facade: y = -length/2, offset outward (-y)
+      const y = center.y - insetDepth;
+      nodes = [
+        { x: center.x - halfWidth, y: y, z: center.z - halfHeight },
+        { x: center.x + halfWidth, y: y, z: center.z - halfHeight },
+        { x: center.x + halfWidth, y: y, z: center.z + halfHeight },
+        { x: center.x - halfWidth, y: y, z: center.z + halfHeight },
+      ];
+    } else if (facade === "east") {
+      // East facade: x = +width/2, offset outward (+x)
+      const x = center.x + insetDepth;
+      nodes = [
+        { x: x, y: center.y - halfWidth, z: center.z - halfHeight },
+        { x: x, y: center.y + halfWidth, z: center.z - halfHeight },
+        { x: x, y: center.y + halfWidth, z: center.z + halfHeight },
+        { x: x, y: center.y - halfWidth, z: center.z + halfHeight },
+      ];
+    } else {
+      // West facade: x = -width/2, offset outward (-x)
+      const x = center.x - insetDepth;
+      nodes = [
+        { x: x, y: center.y - halfWidth, z: center.z - halfHeight },
+        { x: x, y: center.y + halfWidth, z: center.z - halfHeight },
+        { x: x, y: center.y + halfWidth, z: center.z + halfHeight },
+        { x: x, y: center.y - halfWidth, z: center.z + halfHeight },
+      ];
+    }
+
+    return {
+      facade: facade,
+      area: windowArea,
+      width: windowWidth,
+      height: windowHeight,
+      nodes: nodes,
+    };
+  }
+
+  //==========================================================================
+  // PUBLIC API
+  //==========================================================================
+
+  /**
+   * Calculate window geometries for all facades
+   * @param {Object} geometry - Geometry object from Section19
+   * @returns {Object} { windows: Array, warnings: Array }
+   */
+  function calculateWindows(geometry) {
+    // Skip if geometry is invalid
+    if (!geometry || !geometry.width || !geometry.length || !geometry.wallHeight) {
+      return { windows: [], warnings: [] };
+    }
+
+    // Step 1: Map window areas to facades
+    const windowsByFacade = mapWindowsToFacades();
+
+    // Step 2: Calculate facade areas
+    const facadeAreas = calculateFacadeAreas(geometry);
+
+    // Step 3: Validate window areas
+    const warnings = validateWindowAreas(windowsByFacade, facadeAreas);
+
+    // Step 4: Generate window geometries
+    const windows = [];
+
+    for (const [facade, area] of Object.entries(windowsByFacade)) {
+      if (area > 0) {
+        const center = getFacadeCenter(facade, geometry);
+        const windowGeometry = generateWindowGeometry(
+          facade,
+          area,
+          center,
+          facadeAreas[facade].width,
+          facadeAreas[facade].height
+        );
+        windows.push(windowGeometry);
+      }
+    }
+
+    console.log(`[WOMBAT Windows] Generated ${windows.length} window(s)`);
+    if (warnings.length > 0) {
+      console.warn(`[WOMBAT Windows] ${warnings.length} warning(s) flagged`);
+    }
+
+    return {
+      windows: windows,
+      warnings: warnings,
+    };
+  }
+
+  //==========================================================================
+  // MODULE EXPORT
+  //==========================================================================
+
+  return {
+    calculateWindows: calculateWindows,
+  };
+})();

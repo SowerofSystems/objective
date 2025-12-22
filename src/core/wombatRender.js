@@ -320,6 +320,11 @@ window.TEUI.WombatRender = (function () {
       renderBelowGradeGeometry(svg, geometry, color, scale, centerX, centerY);
     }
 
+    // Render windows (Phase 1: Facade windows)
+    if (geometry.windows && geometry.windows.length > 0) {
+      renderWindows(svg, geometry, scale, centerX, centerY);
+    }
+
     // Add title annotation
     const title = createText(
       20,
@@ -764,6 +769,59 @@ window.TEUI.WombatRender = (function () {
   }
 
   //==========================================================================
+  // WINDOW RENDERING (Phase 1: Facade Windows)
+  //==========================================================================
+
+  /**
+   * Render window geometries on facades
+   * @param {SVGElement} svg - SVG container
+   * @param {Object} geometry - Geometry object with windows array
+   * @param {number} scale - Isometric scale factor
+   * @param {number} centerX - Canvas center X
+   * @param {number} centerY - Canvas center Y
+   */
+  function renderWindows(svg, geometry, scale, centerX, centerY) {
+    if (!geometry.windows || geometry.windows.length === 0) {
+      return;
+    }
+
+    console.log(`[WombatRender] Rendering ${geometry.windows.length} window(s)`);
+
+    geometry.windows.forEach(window => {
+      // Project window corner nodes to isometric
+      const nodesProj = window.nodes.map(node =>
+        toIsometric(node.x, node.y, node.z, scale, centerX, centerY)
+      );
+
+      // Create window plane (yellow fill)
+      const windowPath = `
+        M ${nodesProj[0].x} ${nodesProj[0].y}
+        L ${nodesProj[1].x} ${nodesProj[1].y}
+        L ${nodesProj[2].x} ${nodesProj[2].y}
+        L ${nodesProj[3].x} ${nodesProj[3].y}
+        Z
+      `;
+
+      const windowPlane = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "path"
+      );
+      windowPlane.setAttribute("d", windowPath);
+      windowPlane.setAttribute("fill", "#FFFF00"); // Yellow
+      windowPlane.setAttribute("fill-opacity", "0.4");
+      windowPlane.setAttribute("stroke", "#0066CC"); // Blue
+      windowPlane.setAttribute("stroke-width", "2");
+      svg.appendChild(windowPlane);
+
+      // Add corner nodes (blue circles, slightly smaller than wall nodes)
+      nodesProj.forEach(corner => {
+        const node = createNode(corner, "#0066CC", 3);
+        svg.appendChild(node);
+      });
+    });
+  }
+
+  //==========================================================================
   // LEGEND RENDERING
   //==========================================================================
 
@@ -967,6 +1025,37 @@ window.TEUI.WombatRender = (function () {
       { fontWeight: "bold" }
     );
     svg.appendChild(volumeText);
+    yOffset += lineHeight;
+
+    // 9. Window Area (Phase 1: Total window area across all facades)
+    if (geometry.windows && geometry.windows.length > 0) {
+      const totalWindowArea = geometry.windows.reduce((sum, win) => sum + win.area, 0);
+      const windowText = createText(
+        xOffset,
+        yOffset,
+        `Total Window Area: ${totalWindowArea.toFixed(2)} m²`,
+        "#0066CC", // Blue to match window rendering
+        11
+      );
+      svg.appendChild(windowText);
+      yOffset += lineHeight;
+    }
+
+    // 10. Window warnings (if any)
+    if (geometry.windowWarnings && geometry.windowWarnings.length > 0) {
+      geometry.windowWarnings.forEach(warning => {
+        const warningText = createText(
+          xOffset,
+          yOffset,
+          `⚠️ ${warning}`,
+          "#CC0000", // Red
+          10,
+          { fontWeight: "bold" }
+        );
+        svg.appendChild(warningText);
+        yOffset += lineHeight;
+      });
+    }
   }
 
   //==========================================================================
