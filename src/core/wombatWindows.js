@@ -148,17 +148,56 @@ window.TEUI.WombatWindows = (function () {
   //==========================================================================
 
   /**
-   * Get facade center point using diagonal bisection
+   * Get facade center point using diagonal bisection of actual footprint nodes
+   * Locks to footprint geometry to follow orientation changes (like basement rendering)
    * @param {string} facade - Facade name (north, east, south, west)
    * @param {Object} geometry - Geometry object from Section19
    * @returns {Object} Center point {x, y, z}
    */
   function getFacadeCenter(facade, geometry) {
-    const width = geometry.width || 0;
-    const length = geometry.length || 0;
     const wallHeight = geometry.wallHeight || 0;
 
-    // BIM coordinates: X+ = East, Y+ = North, Z+ = Up
+    // If nodes3D available, use actual ground corners (locked to footprint orientation)
+    if (geometry.nodes3D && geometry.nodes3D.ground) {
+      const ground = geometry.nodes3D.ground;
+
+      // Ground corners: [0]=front-left, [1]=front-right, [2]=back-right, [3]=back-left
+      // North = front edge (corners 0-1)
+      // South = back edge (corners 3-2)
+      // East = right edge (corners 1-2)
+      // West = left edge (corners 0-3)
+
+      let centerX, centerY;
+
+      if (facade === "north") {
+        // Front edge midpoint
+        centerX = (ground[0].x + ground[1].x) / 2;
+        centerY = (ground[0].y + ground[1].y) / 2;
+      } else if (facade === "south") {
+        // Back edge midpoint
+        centerX = (ground[3].x + ground[2].x) / 2;
+        centerY = (ground[3].y + ground[2].y) / 2;
+      } else if (facade === "east") {
+        // Right edge midpoint
+        centerX = (ground[1].x + ground[2].x) / 2;
+        centerY = (ground[1].y + ground[2].y) / 2;
+      } else {
+        // West: left edge midpoint
+        centerX = (ground[0].x + ground[3].x) / 2;
+        centerY = (ground[0].y + ground[3].y) / 2;
+      }
+
+      return {
+        x: centerX,
+        y: centerY,
+        z: wallHeight / 2, // Center height between grade and eave
+      };
+    }
+
+    // Fallback: Use simple width/length calculation (for backward compatibility)
+    const width = geometry.width || 0;
+    const length = geometry.length || 0;
+
     const centers = {
       north: {
         x: 0,
