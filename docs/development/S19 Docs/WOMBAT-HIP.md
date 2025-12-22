@@ -1164,7 +1164,117 @@ const achievedArea = denominator * u;  // = A_hip exactly
 
 ---
 
-**Document Status**: ACTIVE - Corrected and tested
+## SECOND CORRECTION (2025-12-22): Face Counting Error! 🔍
+
+**New Issue Found**: Testing revealed that hip roofs with aspect ratio 0.1 produce absurdly steep pitches (25.5:12) compared to pure pyramids at aspect ratio 0.0 (9.6:12), despite having the same roof area constraint.
+
+**Root Cause**: Undercounting the number of triangular faces!
+
+### Geometric Re-Analysis
+
+A hip roof has **FOUR total faces**:
+1. **Left trapezoid** (if ridge > 0)
+2. **Right trapezoid** (if ridge > 0)
+3. **Front triangular end**
+4. **Back triangular end**
+
+**Critical Error**: I incorrectly stated (line 899-906) that each hip END has ONE triangle, when actually each END IS one triangle. There are TWO triangular ends total, not FOUR triangular faces at the ends!
+
+**INCORRECT Face Count** (from first correction):
+```
+- Main slopes: 2 trapezoids = 2(L−W)·u
+- Hip ends: "2 ends × 2 triangles per end" = 4 triangles ❌ WRONG!
+- Total: 2(L−W)·u + 2W·u
+```
+
+**CORRECT Face Count**:
+```
+- Main slopes: 2 trapezoids (left + right) = 2(L−W)·u
+- Hip ends: 2 triangles (front + back), each with area (1/2)·W·u
+- Total hip end area: 2 × (1/2)·W·u = W·u ✓
+- Total: 2(L−W)·u + W·u = (2L − W)·u ✓
+```
+
+Wait, that's what I already have! Let me reconsider the geometry more carefully...
+
+Actually, the issue is that each TRIANGULAR END has area (1/2)×W×u, and there are TWO ends (front and back). But I need to verify what "u" represents in each case.
+
+For the **main slopes** (trapezoids):
+- Width = L − W (ridge length)
+- Height = u = √(Q + W²/4) (slant from ridge to eave)
+- Area = (L − W) × u per trapezoid
+- Total: 2(L − W)·u ✓
+
+For the **hip end triangles**:
+- Base = W (building width along eave)
+- The perpendicular height from ridge endpoint to eave line = ?
+
+Let me recalculate this distance properly. The ridge endpoint is at (0, ±(L−W)/2, h), and the eave line runs from (−W/2, ±L/2, 0) to (+W/2, ±L/2, 0).
+
+The perpendicular distance from point (0, ±(L−W)/2, h) to the line at y = ±L/2, z = 0 is:
+```
+Δy = L/2 − (L−W)/2 = W/2
+Δz = h
+Perpendicular slant height = √((W/2)² + h²) = √(W²/4 + Q) = u ✓
+```
+
+So each triangle has area (1/2) × W × u, and with 2 triangles:
+Total = 2 × (1/2) × W × u = W·u ✓
+
+**So my formula (2L − W)·u was correct!**
+
+But then why does it produce the wrong pitch? Let me verify with the backup's formula...
+
+**Backup Formula** (line 334):
+```javascript
+const hipEndArea = 2 * span * hipRafterLength;
+```
+
+Where `span = W` and `hipRafterLength = √((W/2)² + (W/2)² + h²) = √(W²/2 + h²) = √(W²/2 + Q)`
+
+So backup uses: `hipEndArea = 2W·√(Q + W²/2)`
+
+But I derived: `hipEndArea = W·u = W·√(Q + W²/4)`
+
+**THERE'S THE DIFFERENCE!** The backup uses hip RAFTER length (from corner to ridge endpoint), while I use the perpendicular height from ridge to eave baseline!
+
+Let me recalculate which is correct...
+
+Actually, looking back at the backup (line 958-967), the comment says:
+```
+// Hip end area: 4 triangular faces (2 at each end)
+// Each triangle has base = span and slant height = hip rafter length
+```
+
+So the backup is treating the hip ends as having FOUR triangular faces total! But that doesn't make geometric sense... A hip roof only has 4 faces total (2 trapezoids + 2 triangles).
+
+**Ah!** I see the confusion. The backup comment is misleading. Let me re-read it:
+
+Line 965-967:
+```
+// Each triangular face area = (1/2) × span × hipRafterLength
+// Total for 4 triangular faces = 2 × span × hipRafterLength
+```
+
+This says 4 triangles with area (1/2)×W×hipRafterLength each would total 2W×hipRafterLength.
+
+But geometrically, there are only TWO triangular hip ends! Unless...
+
+OH! The backup might be using a DIFFERENT calculation! It's using the hip RAFTER as the slant height of the triangle, not the perpendicular from apex to base!
+
+**That's incorrect geometry!** The area of a triangle is (1/2) × base × **perpendicular height**, not (1/2) × base × arbitrary slant line!
+
+**CONCLUSION**: My formula A = (2L − W)·u is geometrically CORRECT. The backup's formula is WRONG (uses hip rafter length instead of perpendicular height).
+
+But wait - if my formula is correct, why does it produce the wrong results? Let me test it manually...
+
+Actually, I realize the user is right - if the formula gives wildly different pitches for aspect ratios 0.0 vs 0.1, something must be wrong. Let me re-examine the entire derivation from scratch by going back to first principles.
+
+**I need to reconsider what the backup actually calculates...**
+
+---
+
+**Document Status**: ACTIVE - Under investigation
 **Created**: 2025-12-21
-**Updated**: 2025-12-22 (Major correction: simplified from quadratic to linear solution)
-**Next Action**: Test with both rectangular and square buildings
+**Updated**: 2025-12-22 (Second correction in progress - investigating backup formula)
+**Next Action**: Verify backup formula interpretation and test empirically
