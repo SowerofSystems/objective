@@ -66,7 +66,10 @@ window.TEUI.WombatRender = (function () {
    * Create SVG circle node
    */
   function createNode(point, fill, radius = 5) {
-    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    const circle = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "circle"
+    );
     circle.setAttribute("cx", point.x);
     circle.setAttribute("cy", point.y);
     circle.setAttribute("r", radius);
@@ -80,7 +83,10 @@ window.TEUI.WombatRender = (function () {
    * Create SVG text element
    */
   function createText(x, y, text, color, fontSize = 11, options = {}) {
-    const textEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    const textEl = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "text"
+    );
     textEl.setAttribute("x", x);
     textEl.setAttribute("y", y);
     textEl.setAttribute("fill", color);
@@ -181,8 +187,10 @@ window.TEUI.WombatRender = (function () {
     const { ground, eave, ridge } = geometry.nodes3D;
 
     // Calculate bounding box from extremes: basement bottom, ground corners, ridge/eave top
-    const basementDepth = (geometry.belowGrade?.hasBasement) ? (geometry.belowGrade.basementDepth || 0) : 0;
-    const minZ = -basementDepth;  // Bottom of basement (or 0 if no basement)
+    const basementDepth = geometry.belowGrade?.hasBasement
+      ? geometry.belowGrade.basementDepth || 0
+      : 0;
+    const minZ = -basementDepth; // Bottom of basement (or 0 if no basement)
     // For shed roofs, eave heights vary - find the maximum z across all eave nodes
     const maxZ = ridge ? ridge[0].z : Math.max(...eave.map(node => node.z));
 
@@ -192,26 +200,30 @@ window.TEUI.WombatRender = (function () {
 
     // Calculate scale to fit entire model in canvas with padding
     const maxDim = Math.max(boundingWidth, boundingLength, boundingHeight);
-    const scale = Math.min(config.canvasWidth, config.canvasHeight) / (maxDim * 1.8);
+    const scale =
+      Math.min(config.canvasWidth, config.canvasHeight) / (maxDim * 1.8);
 
     const centerX = config.canvasWidth / 2;
     // Shift view up when basement is present to keep model centered in visible space
-    const centerY = config.canvasHeight / 2 + (minZ < 0 ? minZ * scale * 0.3 : 0);
+    const centerY =
+      config.canvasHeight / 2 + (minZ < 0 ? minZ * scale * 0.3 : 0);
 
     // Choose color based on mode
     const color = isReference ? config.colors.reference : config.colors.target;
 
     // Project ground and eave nodes to isometric
-    const groundProj = ground.map((node) =>
+    const groundProj = ground.map(node =>
       toIsometric(node.x, node.y, node.z, scale, centerX, centerY)
     );
-    const eaveProj = eave.map((node) =>
+    const eaveProj = eave.map(node =>
       toIsometric(node.x, node.y, node.z, scale, centerX, centerY)
     );
 
     // Project ridge nodes if present (gable roof)
     const ridgeProj = ridge
-      ? ridge.map((node) => toIsometric(node.x, node.y, node.z, scale, centerX, centerY))
+      ? ridge.map(node =>
+          toIsometric(node.x, node.y, node.z, scale, centerX, centerY)
+        )
       : null;
 
     // Draw ground rectangle (4 edges)
@@ -234,23 +246,54 @@ window.TEUI.WombatRender = (function () {
       svg.appendChild(line);
     }
 
-    // Draw roof edges for gable
+    // Draw roof edges based on type
     if (ridgeProj) {
-      // Ridge line (front to back)
-      const ridgeLine = createLine(ridgeProj[0], ridgeProj[1], color, 2);
-      svg.appendChild(ridgeLine);
+      if (geometry.roofType === "hip" || geometry.roofType === "pyramid") {
+        // HIP/PYRAMID ROOF (polyhedral)
+        if (ridgeProj.length === 1) {
+          // PYRAMID: 4 hip rafters from corners to single apex
+          const apex = ridgeProj[0];
+          for (let i = 0; i < 4; i++) {
+            const hipRafter = createLine(eaveProj[i], apex, color, 2);
+            svg.appendChild(hipRafter);
+          }
+        } else if (ridgeProj.length === 2) {
+          // HIP: 4 hip rafters + ridge line + optional main slope edges
+          // Ridge line (connecting two ridge endpoints)
+          const ridgeLine = createLine(ridgeProj[0], ridgeProj[1], color, 2);
+          svg.appendChild(ridgeLine);
 
-      // Front gable (eave corners to front ridge)
-      const frontLeft = createLine(eaveProj[0], ridgeProj[0], color, 2);
-      const frontRight = createLine(eaveProj[1], ridgeProj[0], color, 2);
-      svg.appendChild(frontLeft);
-      svg.appendChild(frontRight);
+          // 4 Hip rafters (from eave corners to ridge endpoints)
+          // Front corners to front ridge endpoint
+          const frontLeftHip = createLine(eaveProj[0], ridgeProj[0], color, 2);
+          const frontRightHip = createLine(eaveProj[1], ridgeProj[0], color, 2);
+          svg.appendChild(frontLeftHip);
+          svg.appendChild(frontRightHip);
 
-      // Back gable (eave corners to back ridge)
-      const backLeft = createLine(eaveProj[3], ridgeProj[1], color, 2);
-      const backRight = createLine(eaveProj[2], ridgeProj[1], color, 2);
-      svg.appendChild(backLeft);
-      svg.appendChild(backRight);
+          // Back corners to back ridge endpoint
+          const backLeftHip = createLine(eaveProj[3], ridgeProj[1], color, 2);
+          const backRightHip = createLine(eaveProj[2], ridgeProj[1], color, 2);
+          svg.appendChild(backLeftHip);
+          svg.appendChild(backRightHip);
+        }
+      } else {
+        // GABLE ROOF (prismatic)
+        // Ridge line (front to back)
+        const ridgeLine = createLine(ridgeProj[0], ridgeProj[1], color, 2);
+        svg.appendChild(ridgeLine);
+
+        // Front gable (eave corners to front ridge)
+        const frontLeft = createLine(eaveProj[0], ridgeProj[0], color, 2);
+        const frontRight = createLine(eaveProj[1], ridgeProj[0], color, 2);
+        svg.appendChild(frontLeft);
+        svg.appendChild(frontRight);
+
+        // Back gable (eave corners to back ridge)
+        const backLeft = createLine(eaveProj[3], ridgeProj[1], color, 2);
+        const backRight = createLine(eaveProj[2], ridgeProj[1], color, 2);
+        svg.appendChild(backLeft);
+        svg.appendChild(backRight);
+      }
     }
 
     // Draw nodes (circles)
@@ -407,9 +450,22 @@ window.TEUI.WombatRender = (function () {
    * @param {number} centerX - Canvas center X
    * @param {number} centerY - Canvas center Y
    */
-  function renderBelowGradeGeometry(svg, geometry, color, scale, centerX, centerY) {
+  function renderBelowGradeGeometry(
+    svg,
+    geometry,
+    color,
+    scale,
+    centerX,
+    centerY
+  ) {
     const { belowGrade, footprint, nodes3D } = geometry;
-    const { hasBasement, hasSlab, hasRaisedFloor, basementDepth, foundationType } = belowGrade;
+    const {
+      hasBasement,
+      hasSlab,
+      hasRaisedFloor,
+      basementDepth,
+      foundationType,
+    } = belowGrade;
 
     const gradeColor = "#8b4513"; // Brown (matches .text-ground-facing)
 
@@ -425,8 +481,8 @@ window.TEUI.WombatRender = (function () {
       // CRITICAL: Use building's ground nodes to define grade line
       // This ensures perfect alignment regardless of aspect ratio
       // Grade line runs from front-left corner to front-right corner (across the front edge)
-      const frontLeft = gradeCorners[0];   // nodes3D.ground[0]
-      const frontRight = gradeCorners[1];  // nodes3D.ground[1]
+      const frontLeft = gradeCorners[0]; // nodes3D.ground[0]
+      const frontRight = gradeCorners[1]; // nodes3D.ground[1]
 
       // Calculate direction vector for grade line extension
       const dx = frontRight.x - frontLeft.x;
@@ -456,7 +512,10 @@ window.TEUI.WombatRender = (function () {
       );
 
       // Dashed line at z=0
-      const gradeLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      const gradeLine = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "line"
+      );
       gradeLine.setAttribute("x1", gradeStart.x);
       gradeLine.setAttribute("y1", gradeStart.y);
       gradeLine.setAttribute("x2", gradeEnd.x);
@@ -484,15 +543,28 @@ window.TEUI.WombatRender = (function () {
     // ========================================================================
     if (hasBasement) {
       // Basement floor corners (z=-depth)
-      const basementCorners = gradeCorners.map(c => ({ ...c, z: -basementDepth }));
+      const basementCorners = gradeCorners.map(c => ({
+        ...c,
+        z: -basementDepth,
+      }));
 
       // Draw vertical edges (basement walls) - DASHED (hidden line effect)
       gradeCorners.forEach((top, i) => {
         const bottom = basementCorners[i];
         const p1 = toIsometric(top.x, top.y, top.z, scale, centerX, centerY);
-        const p2 = toIsometric(bottom.x, bottom.y, bottom.z, scale, centerX, centerY);
+        const p2 = toIsometric(
+          bottom.x,
+          bottom.y,
+          bottom.z,
+          scale,
+          centerX,
+          centerY
+        );
 
-        const edge = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        const edge = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "line"
+        );
         edge.setAttribute("x1", p1.x);
         edge.setAttribute("y1", p1.y);
         edge.setAttribute("x2", p2.x);
@@ -506,10 +578,20 @@ window.TEUI.WombatRender = (function () {
       // Draw basement floor perimeter - DASHED
       basementCorners.forEach((corner, i) => {
         const next = basementCorners[(i + 1) % 4];
-        const p1 = toIsometric(corner.x, corner.y, corner.z, scale, centerX, centerY);
+        const p1 = toIsometric(
+          corner.x,
+          corner.y,
+          corner.z,
+          scale,
+          centerX,
+          centerY
+        );
         const p2 = toIsometric(next.x, next.y, next.z, scale, centerX, centerY);
 
-        const edge = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        const edge = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "line"
+        );
         edge.setAttribute("x1", p1.x);
         edge.setAttribute("y1", p1.y);
         edge.setAttribute("x2", p2.x);
@@ -522,8 +604,15 @@ window.TEUI.WombatRender = (function () {
 
       // Draw basement corner nodes (brown circles)
       basementCorners.forEach(corner => {
-        const p = toIsometric(corner.x, corner.y, corner.z, scale, centerX, centerY);
-        const node = createNode(p, gradeColor, 4);  // Match other node sizes
+        const p = toIsometric(
+          corner.x,
+          corner.y,
+          corner.z,
+          scale,
+          centerX,
+          centerY
+        );
+        const node = createNode(p, gradeColor, 4); // Match other node sizes
         svg.appendChild(node);
       });
 
@@ -533,7 +622,14 @@ window.TEUI.WombatRender = (function () {
       const actualWidth = Math.abs(frontLeft.x - gradeCorners[1].x);
       const actualLength = Math.abs(frontLeft.y - backLeft.y);
 
-      const depthMidpoint = toIsometric(-actualWidth/2 - 8, actualLength/2, -basementDepth/2, scale, centerX, centerY);
+      const depthMidpoint = toIsometric(
+        -actualWidth / 2 - 8,
+        actualLength / 2,
+        -basementDepth / 2,
+        scale,
+        centerX,
+        centerY
+      );
       const depthLabel = createText(
         depthMidpoint.x - 30,
         depthMidpoint.y,
@@ -552,7 +648,14 @@ window.TEUI.WombatRender = (function () {
       // Draw slab perimeter - SOLID (at grade, visible)
       gradeCorners.forEach((corner, i) => {
         const next = gradeCorners[(i + 1) % 4];
-        const p1 = toIsometric(corner.x, corner.y, corner.z, scale, centerX, centerY);
+        const p1 = toIsometric(
+          corner.x,
+          corner.y,
+          corner.z,
+          scale,
+          centerX,
+          centerY
+        );
         const p2 = toIsometric(next.x, next.y, next.z, scale, centerX, centerY);
 
         const edge = createLine(p1, p2, gradeColor, 2); // Match above-grade line weight
@@ -562,8 +665,15 @@ window.TEUI.WombatRender = (function () {
 
       // Draw corner nodes
       gradeCorners.forEach(corner => {
-        const p = toIsometric(corner.x, corner.y, corner.z, scale, centerX, centerY);
-        const node = createNode(p, gradeColor, 4);  // Match other node sizes
+        const p = toIsometric(
+          corner.x,
+          corner.y,
+          corner.z,
+          scale,
+          centerX,
+          centerY
+        );
+        const node = createNode(p, gradeColor, 4); // Match other node sizes
         svg.appendChild(node);
       });
     }
@@ -578,7 +688,14 @@ window.TEUI.WombatRender = (function () {
       // Draw floor perimeter - SOLID in mode color (air-facing surface)
       gradeCorners.forEach((corner, i) => {
         const next = gradeCorners[(i + 1) % 4];
-        const p1 = toIsometric(corner.x, corner.y, corner.z, scale, centerX, centerY);
+        const p1 = toIsometric(
+          corner.x,
+          corner.y,
+          corner.z,
+          scale,
+          centerX,
+          centerY
+        );
         const p2 = toIsometric(next.x, next.y, next.z, scale, centerX, centerY);
 
         const edge = createLine(p1, p2, floorColor, 2); // Match above-grade line weight
@@ -588,13 +705,27 @@ window.TEUI.WombatRender = (function () {
 
       // Draw corner nodes in mode color
       gradeCorners.forEach(corner => {
-        const p = toIsometric(corner.x, corner.y, corner.z, scale, centerX, centerY);
-        const node = createNode(p, floorColor, 4);  // Match other node sizes
+        const p = toIsometric(
+          corner.x,
+          corner.y,
+          corner.z,
+          scale,
+          centerX,
+          centerY
+        );
+        const node = createNode(p, floorColor, 4); // Match other node sizes
         svg.appendChild(node);
       });
 
       // Add "Raised Floor" label
-      const labelPos = toIsometric(0, -length/2 - 8, 0, scale, centerX, centerY);
+      const labelPos = toIsometric(
+        0,
+        -length / 2 - 8,
+        0,
+        scale,
+        centerX,
+        centerY
+      );
       const label = createText(
         labelPos.x,
         labelPos.y,
@@ -611,7 +742,14 @@ window.TEUI.WombatRender = (function () {
     // MIXED FOUNDATION WARNING
     // ========================================================================
     if (foundationType === "mixed-foundation") {
-      const warningPos = toIsometric(0, length/2 + 8, 0, scale, centerX, centerY);
+      const warningPos = toIsometric(
+        0,
+        length / 2 + 8,
+        0,
+        scale,
+        centerX,
+        centerY
+      );
       const warning = createText(
         warningPos.x,
         warningPos.y,
@@ -725,8 +863,13 @@ window.TEUI.WombatRender = (function () {
     svg.appendChild(roofHeightText);
     yOffset += lineHeight;
 
-    // 5b. Roof Pitch (rise:12 ratio for gable/shed only)
-    if (geometry.roofType === "gable" || geometry.roofType === "shed") {
+    // 5b. Roof Pitch (rise:12 ratio for all pitched roofs)
+    if (
+      geometry.roofType === "gable" ||
+      geometry.roofType === "shed" ||
+      geometry.roofType === "hip" ||
+      geometry.roofType === "pyramid"
+    ) {
       const pitchRise = geometry.pitchRise || 0;
       if (pitchRise > 0) {
         const pitchText = createText(
@@ -744,7 +887,10 @@ window.TEUI.WombatRender = (function () {
     // 6. End Wall Area (gable or shed specific)
     if (geometry.roofType === "gable" || geometry.roofType === "shed") {
       const endWallArea = geometry.profile2D?.endWallArea || 0;
-      const endWallLabel = geometry.roofType === "gable" ? "Gable End Wall Area" : "Shed End Wall Area";
+      const endWallLabel =
+        geometry.roofType === "gable"
+          ? "Gable End Wall Area"
+          : "Shed End Wall Area";
       const endWallText = createText(
         xOffset,
         yOffset,
@@ -758,7 +904,8 @@ window.TEUI.WombatRender = (function () {
 
     // 7. Ae Wall Area (air-facing longitudinal walls - calculated from geometry)
     // For prismatic geometry: 2 longitudinal walls × length × wall height
-    const longitudinalWallArea = 2 * geometry.footprint.length * geometry.height;
+    const longitudinalWallArea =
+      2 * geometry.footprint.length * geometry.height;
     const aeWallText = createText(
       xOffset,
       yOffset,
@@ -770,7 +917,10 @@ window.TEUI.WombatRender = (function () {
     yOffset += lineHeight;
 
     // 7b. Ag (Area exposed to Ground) - if basement or slab present
-    if (geometry.belowGrade && (geometry.belowGrade.hasBasement || geometry.belowGrade.hasSlab)) {
+    if (
+      geometry.belowGrade &&
+      (geometry.belowGrade.hasBasement || geometry.belowGrade.hasSlab)
+    ) {
       const basementWallArea = geometry.belowGrade.basementWallArea || 0;
       const slabArea = geometry.belowGrade.slabArea || 0;
       const agTotal = basementWallArea + slabArea;

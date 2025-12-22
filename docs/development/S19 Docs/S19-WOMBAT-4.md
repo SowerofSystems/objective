@@ -1870,18 +1870,30 @@ test("visual parity - gable roof", () => {
 13. ✅ **Storey height sacrificial** - Wall height derived from volume, not prescribed (Section19.js:954-960)
 14. ✅ **Legend annotations** - Canvas legend with roof area, floorplate area, wall areas, storey height, dimensions
 15. ✅ **Documentation updates** - Constraint hierarchy, roof collapse rule, aspect ratio analysis
+16. ✅ **Hip roof solver (polyhedral)** - Direct algebraic RT solution, renders 4 hip rafters + ridge (Section19.js:930-1080)
+17. ✅ **Pyramid roof solver** - Square footprint special case, renders 4 rafters to apex (Section19.js:948-987)
+18. ✅ **Hip/Pyramid rendering** - Polyhedral wireframe with proper face topology (wombatRender.js:237-285)
+19. ✅ **Pitch display for all roofs** - Rise:12 ratio shown for gable/shed/hip/pyramid (wombatRender.js:759)
+20. ✅ **RT documentation** - Complete WOMBAT-HIP.md with formula derivation, corrections, and lessons learned
+
+### All Roof Types Complete! 🎉
+
+**Summary**: All four major roof types now fully implemented using rational trigonometry:
+- ✅ **Flat roof** - Prismatic extrusion (8 nodes)
+- ✅ **Gable roof** - Prismatic with triangular ends (10 nodes)
+- ✅ **Shed roof** - Prismatic with trapezoidal profile (8 nodes)
+- ✅ **Hip/Pyramid roof** - Polyhedral with algebraic RT solver (10 nodes hip, 5 nodes pyramid)
+
+All solvers use direct algebraic solutions with NO iteration, achieving the "clever algebra" goal inspired by Pythagoras, Fuller, and Wildberger.
 
 ### Next Steps 📋
 
-16. **Fix aspect ratio NaN bug** - Debug d_154 state sync issue (current blocker)
-17. **Test aspect ratio impact** - Verify shed roof height reduces with landscape aspect ratio
-18. **Implement stories dropdown handler** - Wire d_150 changes to recalculate geometry
-19. **Volume iteration** - Refine wall height calculation to exactly match volume constraint
-20. **Area constraints** - Iterate to satisfy roof area (d_85) exactly
-21. **Wall area calculations** - Implement prismatic wall area formulas and display
-22. **Multi-storey rendering** - Add horizontal floor plane lines to visualization (see spec below)
-23. **Test and merge** - Comprehensive testing, then merge to main
-24. **Future enhancements** - Hip roof, pyramidal, basement support
+21. **Basement/foundation visualization** - Multi-level support (see Basement-4.md)
+22. **Window placement** - Wire window area (d_86) to facade rendering
+23. **Multi-storey rendering** - Add horizontal floor plane lines to visualization (see spec below)
+24. **Volume iteration refinement** - Fine-tune wall height to exactly match volume constraint
+25. **Wall area calculations** - Implement prismatic wall area formulas and display
+26. **Test and merge** - Comprehensive testing of all roof types, then merge WOMBAT-WINDOWS to main
 
 ---
 
@@ -2161,7 +2173,7 @@ setValue: function (fieldId, value, source = "user-modified") {
 
 ---
 
-## Implementation Status (2025-12-20)
+## Implementation Status (2025-12-21)
 
 ### ✅ Completed
 
@@ -2176,6 +2188,19 @@ setValue: function (fieldId, value, source = "user-modified") {
    - Removed obsolete `extrudeProfile()` function
    - Updated profile building and extrusion depth logic
 6. **Documentation** - Created [PRISMATIC-TERMINOLOGY.md](PRISMATIC-TERMINOLOGY.md) with rational trigonometry notation, coordinate conventions, and variable naming guide
+7. **Basement/Below-Grade Visualization** (2025-12-21) - Full implementation per [Basement-4.md](Basement-4.md):
+   - ✅ Basement geometry calculation (Section19.js Phase 2B)
+   - ✅ Volume constraint updated to subtract basement volume
+   - ✅ Below-grade rendering (grade line, basement walls, slab-on-grade, raised floor)
+   - ✅ Foundation type detection (full-basement, slab-on-grade, raised-floor, basement-no-slab, mixed)
+   - ✅ Legend integration showing Ag (ground-facing area) and foundation type
+   - ✅ Perfect alignment with building at all aspect ratios (using nodes3D.ground coordinates)
+8. **Dynamic Viewport Scaling** (2025-12-21):
+   - ✅ Bounding box calculation includes basement depth and ridge/eave peaks
+   - ✅ Prevents clipping at canvas edges (roof ridge or basement floor)
+   - ✅ Maximizes model size while leaving room for legend
+   - ✅ Handles shed roof asymmetric eave heights correctly
+   - ✅ Extended grade line visibility (40px extension on each side)
 
 ### ⬜ Remaining Work
 
@@ -2184,21 +2209,29 @@ setValue: function (fieldId, value, source = "user-modified") {
    - Dimension labels showing X, Y, and Height axes
    - Isometric view showing coordinate orientation
 
-2. **Hip Roof Solver** (Tomorrow):
+2. **Hip Roof Solver** (Future):
    - Implement hip roof geometry using same prismatic extrusion pattern
    - Ridge runs parallel to LONG dimension (same as gable/shed)
    - Four triangular faces at corners, two trapezoidal faces on sides
    - Maintain consistent constraint hierarchy (footprint → roof area → volume)
 
 3. **Runtime Testing**:
-   - Verify gable/shed roof orientations at various aspect ratios
-   - Test multi-storey buildings
-   - Verify volume compression logic with extreme roof areas
+   - ✅ Verify gable/shed roof orientations at various aspect ratios (TESTED - Working)
+   - ✅ Test basement/slab/raised floor configurations (TESTED - Working)
+   - ✅ Test imported files with various configurations (TESTED - Working)
+   - ⬜ Test multi-storey buildings
+   - ⬜ Verify volume compression logic with extreme roof areas
 
 4. **Code Quality**:
-   - Verify wombatRender.js coordinate system matches documentation
-   - Consider spread-based roof pitch display (rational trig)
-   - Add geometric feasibility validation before rendering
+   - ✅ Verify wombatRender.js coordinate system matches documentation
+   - ⬜ Consider spread-based roof pitch display (rational trig)
+   - ⬜ Add geometric feasibility validation before rendering
+   - 🔲 **TODO: Downgrade geometry constraint "Errors" to "Warnings"** in console logging
+     - Current: `console.error()` for roof volume exceeding total volume
+     - Issue: Dev team confuses user input validation with coding errors
+     - Solution: Use `console.warn()` with clear "[USER INPUT]" prefix for geometry impossibilities
+     - Examples: "⚠️ [USER INPUT] Roof volume exceeds total volume", "⚠️ [USER INPUT] Roof area too small for pitched roof"
+     - Keep `console.error()` only for actual code failures (null references, undefined functions, etc.)
 
 ### Testing Results
 
