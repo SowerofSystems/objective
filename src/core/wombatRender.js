@@ -234,23 +234,54 @@ window.TEUI.WombatRender = (function () {
       svg.appendChild(line);
     }
 
-    // Draw roof edges for gable
+    // Draw roof edges based on type
     if (ridgeProj) {
-      // Ridge line (front to back)
-      const ridgeLine = createLine(ridgeProj[0], ridgeProj[1], color, 2);
-      svg.appendChild(ridgeLine);
+      if (geometry.roofType === "hip" || geometry.roofType === "pyramid") {
+        // HIP/PYRAMID ROOF (polyhedral)
+        if (ridgeProj.length === 1) {
+          // PYRAMID: 4 hip rafters from corners to single apex
+          const apex = ridgeProj[0];
+          for (let i = 0; i < 4; i++) {
+            const hipRafter = createLine(eaveProj[i], apex, color, 2);
+            svg.appendChild(hipRafter);
+          }
+        } else if (ridgeProj.length === 2) {
+          // HIP: 4 hip rafters + ridge line + optional main slope edges
+          // Ridge line (connecting two ridge endpoints)
+          const ridgeLine = createLine(ridgeProj[0], ridgeProj[1], color, 2);
+          svg.appendChild(ridgeLine);
 
-      // Front gable (eave corners to front ridge)
-      const frontLeft = createLine(eaveProj[0], ridgeProj[0], color, 2);
-      const frontRight = createLine(eaveProj[1], ridgeProj[0], color, 2);
-      svg.appendChild(frontLeft);
-      svg.appendChild(frontRight);
+          // 4 Hip rafters (from eave corners to ridge endpoints)
+          // Front corners to front ridge endpoint
+          const frontLeftHip = createLine(eaveProj[0], ridgeProj[0], color, 2);
+          const frontRightHip = createLine(eaveProj[1], ridgeProj[0], color, 2);
+          svg.appendChild(frontLeftHip);
+          svg.appendChild(frontRightHip);
 
-      // Back gable (eave corners to back ridge)
-      const backLeft = createLine(eaveProj[3], ridgeProj[1], color, 2);
-      const backRight = createLine(eaveProj[2], ridgeProj[1], color, 2);
-      svg.appendChild(backLeft);
-      svg.appendChild(backRight);
+          // Back corners to back ridge endpoint
+          const backLeftHip = createLine(eaveProj[3], ridgeProj[1], color, 2);
+          const backRightHip = createLine(eaveProj[2], ridgeProj[1], color, 2);
+          svg.appendChild(backLeftHip);
+          svg.appendChild(backRightHip);
+        }
+      } else {
+        // GABLE ROOF (prismatic)
+        // Ridge line (front to back)
+        const ridgeLine = createLine(ridgeProj[0], ridgeProj[1], color, 2);
+        svg.appendChild(ridgeLine);
+
+        // Front gable (eave corners to front ridge)
+        const frontLeft = createLine(eaveProj[0], ridgeProj[0], color, 2);
+        const frontRight = createLine(eaveProj[1], ridgeProj[0], color, 2);
+        svg.appendChild(frontLeft);
+        svg.appendChild(frontRight);
+
+        // Back gable (eave corners to back ridge)
+        const backLeft = createLine(eaveProj[3], ridgeProj[1], color, 2);
+        const backRight = createLine(eaveProj[2], ridgeProj[1], color, 2);
+        svg.appendChild(backLeft);
+        svg.appendChild(backRight);
+      }
     }
 
     // Draw nodes (circles)
@@ -725,8 +756,8 @@ window.TEUI.WombatRender = (function () {
     svg.appendChild(roofHeightText);
     yOffset += lineHeight;
 
-    // 5b. Roof Pitch (rise:12 ratio for gable/shed only)
-    if (geometry.roofType === "gable" || geometry.roofType === "shed") {
+    // 5b. Roof Pitch (rise:12 ratio for all pitched roofs)
+    if (geometry.roofType === "gable" || geometry.roofType === "shed" || geometry.roofType === "hip" || geometry.roofType === "pyramid") {
       const pitchRise = geometry.pitchRise || 0;
       if (pitchRise > 0) {
         const pitchText = createText(
