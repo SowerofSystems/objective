@@ -638,23 +638,88 @@ Add to upper-left canvas legend:
 
 ---
 
-## Implementation Files
+## File Structure
+
+### New Core Module
+
+**src/core/wombatWindows.js** (~400 lines, NEW FILE)
+```javascript
+/**
+ * wombatWindows.js - WOMBAT Window Placement Module
+ * TEUI 4.012
+ *
+ * Phase 1: Vertical facade windows (N/E/S/W)
+ * Phase 2: Skylights on roof surfaces (future)
+ * Phase 3: Multi-storey division (future)
+ */
+
+window.TEUI = window.TEUI || {};
+window.TEUI.WombatWindows = (function () {
+  "use strict";
+
+  //==========================================================================
+  // WINDOW DATA INTEGRATION
+  //==========================================================================
+
+  function mapWindowsToFacades() { /* ... */ }
+  function calculateFacadeAreas(geometry) { /* ... */ }
+  function validateWindowAreas(windowsByFacade, facadeAreas) { /* ... */ }
+
+  //==========================================================================
+  // WINDOW GEOMETRY GENERATION
+  //==========================================================================
+
+  function generateWindowGeometry(facade, area, center, maxWidth, maxHeight) { /* ... */ }
+  function getFacadeCenter(facade, geometry) { /* ... */ }
+
+  //==========================================================================
+  // PUBLIC API
+  //==========================================================================
+
+  function calculateWindows(geometry) {
+    // 1. Map window areas to facades
+    // 2. Calculate facade areas
+    // 3. Validate constraints
+    // 4. Generate window geometries
+    // 5. Return windows array + warnings
+    return {
+      windows: [...],
+      warnings: [...]
+    };
+  }
+
+  return {
+    calculateWindows: calculateWindows
+  };
+})();
+```
 
 ### Modified Files
 
-1. **src/sections/Section19.js** (~100 lines added)
-   - `mapWindowsToFacades()` - Read Section10 data, map to facades
-   - `calculateFacadeAreas()` - Calculate available wall area per facade
-   - `validateWindowAreas()` - Check constraints, generate warnings
-   - `generateWindowGeometry()` - Create window corner nodes
-   - `rotateFacadeMap()` - Handle building orientation
+1. **src/sections/Section19.js** (~5 lines added)
+   - In `solveGeometry()` function:
+     ```javascript
+     // Add windows (Phase 1: Facade windows only)
+     const windowData = window.TEUI.WombatWindows?.calculateWindows(geometry);
+     if (windowData) {
+       geometry.windows = windowData.windows;
+       geometry.windowWarnings = windowData.warnings;
+     }
+     ```
 
 2. **src/core/wombatRender.js** (~80 lines added)
-   - `renderWindows()` - Draw yellow window planes with blue borders
-   - Update `render()` - Call renderWindows() in correct z-order
-   - Update `createLegend()` - Add window stats and warnings
+   - `renderWindows(geometry, svg, options)` - Draw yellow window planes
+   - Update `render()` - Call renderWindows() after walls, before nodes
+   - Update legend rendering - Add window stats and warnings
 
-### New Helper Functions
+3. **index.html** (~1 line added)
+   - Add script tag:
+     ```html
+     <script src="src/core/wombatWindows.js"></script>
+     ```
+   - Load order: after StateManager.js, before Section19.js
+
+### Helper Functions (wombatWindows.js)
 
 ```javascript
 // Section19.js additions
@@ -779,25 +844,55 @@ function generateWindowGeometry(facade, windowArea, center, facadeWidth, maxHeig
 
 ---
 
+## Architecture Decision: Core Module Approach
+
+**Decision**: Create `src/core/wombatWindows.js` as a new core module (not embedded in Section19.js)
+
+**Rationale**:
+1. **Clean Separation**: Section19.js = roof solvers, wombatWindows.js = window solver, wombatRender.js = rendering
+2. **Follows Pattern**: Matches existing `wombatRender.js` core module architecture
+3. **Scalability**: Phase 2 (skylights) and Phase 3 (multi-storey) fit naturally into wombatWindows.js
+4. **File Size**: Section19.js already 2,747 lines; avoid bloating with ~400 lines of window logic
+5. **Reusability**: Core modules are more discoverable than section internals
+
 ## Implementation Plan
 
 ### Phase 1: Vertical Facade Windows (Current Sprint)
 
-1. **Create feature branch**: `WOMBAT-WINDOWS-PLACEMENT`
-2. **Step 1.1**: Data integration (Section19.js)
-   - Read d_74-d_77 from StateManager (skip d_78 skylights)
-   - Map windows to facades via orientation dropdowns
-   - Calculate facade areas
-3. **Step 1.2**: Geometry generation (Section19.js)
-   - Center-bisect algorithm for facade centers
-   - Square-first dimension calculation
-   - Rectangle fallback if constraints hit
-4. **Step 1.3**: Rendering (wombatRender.js)
+1. **Create feature branch**: `WOMBAT-WINDOWS` (already created)
+
+2. **Step 1.1**: Create wombatWindows.js core module
+   - File: `src/core/wombatWindows.js`
+   - Pattern: IIFE following wombatRender.js structure
+   - Functions:
+     - `mapWindowsToFacades()` - Read d_74-d_77, accumulate by N/E/S/W
+     - `calculateFacadeAreas()` - Width × height per facade
+     - `validateWindowAreas()` - Check constraints, warnings
+     - `generateWindowGeometry()` - Center-bisect, square-first, corner nodes
+   - Public API: `window.TEUI.WombatWindows.calculateWindows(geometry)`
+
+3. **Step 1.2**: Integrate with Section19.js (minimal changes)
+   - File: `src/sections/Section19.js`
+   - Add single line in `solveGeometry()`:
+     ```javascript
+     geometry.windows = window.TEUI.WombatWindows.calculateWindows(geometry);
+     ```
+   - No refactoring needed, keeps roof solver logic separate
+
+4. **Step 1.3**: Add rendering to wombatRender.js
+   - File: `src/core/wombatRender.js`
+   - Add `renderWindows(geometry.windows)` function
+   - Call after wall rendering, before legend
    - Yellow window planes with blue borders
    - Corner nodes (3px radius)
-   - Legend stats and warnings
-5. **Test**: All 7 test cases across all roof types
-6. **Merge**: PR to main
+
+5. **Step 1.4**: Update index.html
+   - Add `<script src="src/core/wombatWindows.js"></script>`
+   - Load order: after StateManager.js, before Section19.js
+
+6. **Test**: All 7 test cases across all roof types
+
+7. **Merge**: PR to main
 
 ### Phase 2: Skylights (Future Sprint)
 
@@ -832,5 +927,7 @@ function generateWindowGeometry(facade, windowArea, center, facadeWidth, maxHeig
 
 **Document Status**: READY FOR IMPLEMENTATION ✅
 **Created**: 2025-12-22
+**Updated**: 2025-12-22 (Architecture decision: wombatWindows.js core module)
 **Scope**: Phase 1 - Vertical facade windows only
-**Next Action**: Create WOMBAT-WINDOWS-PLACEMENT branch and begin Step 1.1
+**Branch**: WOMBAT-WINDOWS (already created)
+**Next Action**: Create src/core/wombatWindows.js and implement calculateWindows() API
