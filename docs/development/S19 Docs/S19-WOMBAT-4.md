@@ -2161,7 +2161,7 @@ setValue: function (fieldId, value, source = "user-modified") {
 
 ---
 
-## Implementation Status (2025-12-20)
+## Implementation Status (2025-12-21)
 
 ### ✅ Completed
 
@@ -2176,6 +2176,19 @@ setValue: function (fieldId, value, source = "user-modified") {
    - Removed obsolete `extrudeProfile()` function
    - Updated profile building and extrusion depth logic
 6. **Documentation** - Created [PRISMATIC-TERMINOLOGY.md](PRISMATIC-TERMINOLOGY.md) with rational trigonometry notation, coordinate conventions, and variable naming guide
+7. **Basement/Below-Grade Visualization** (2025-12-21) - Full implementation per [Basement-4.md](Basement-4.md):
+   - ✅ Basement geometry calculation (Section19.js Phase 2B)
+   - ✅ Volume constraint updated to subtract basement volume
+   - ✅ Below-grade rendering (grade line, basement walls, slab-on-grade, raised floor)
+   - ✅ Foundation type detection (full-basement, slab-on-grade, raised-floor, basement-no-slab, mixed)
+   - ✅ Legend integration showing Ag (ground-facing area) and foundation type
+   - ✅ Perfect alignment with building at all aspect ratios (using nodes3D.ground coordinates)
+8. **Dynamic Viewport Scaling** (2025-12-21):
+   - ✅ Bounding box calculation includes basement depth and ridge/eave peaks
+   - ✅ Prevents clipping at canvas edges (roof ridge or basement floor)
+   - ✅ Maximizes model size while leaving room for legend
+   - ✅ Handles shed roof asymmetric eave heights correctly
+   - ✅ Extended grade line visibility (40px extension on each side)
 
 ### ⬜ Remaining Work
 
@@ -2184,21 +2197,29 @@ setValue: function (fieldId, value, source = "user-modified") {
    - Dimension labels showing X, Y, and Height axes
    - Isometric view showing coordinate orientation
 
-2. **Hip Roof Solver** (Tomorrow):
+2. **Hip Roof Solver** (Future):
    - Implement hip roof geometry using same prismatic extrusion pattern
    - Ridge runs parallel to LONG dimension (same as gable/shed)
    - Four triangular faces at corners, two trapezoidal faces on sides
    - Maintain consistent constraint hierarchy (footprint → roof area → volume)
 
 3. **Runtime Testing**:
-   - Verify gable/shed roof orientations at various aspect ratios
-   - Test multi-storey buildings
-   - Verify volume compression logic with extreme roof areas
+   - ✅ Verify gable/shed roof orientations at various aspect ratios (TESTED - Working)
+   - ✅ Test basement/slab/raised floor configurations (TESTED - Working)
+   - ✅ Test imported files with various configurations (TESTED - Working)
+   - ⬜ Test multi-storey buildings
+   - ⬜ Verify volume compression logic with extreme roof areas
 
 4. **Code Quality**:
-   - Verify wombatRender.js coordinate system matches documentation
-   - Consider spread-based roof pitch display (rational trig)
-   - Add geometric feasibility validation before rendering
+   - ✅ Verify wombatRender.js coordinate system matches documentation
+   - ⬜ Consider spread-based roof pitch display (rational trig)
+   - ⬜ Add geometric feasibility validation before rendering
+   - 🔲 **TODO: Downgrade geometry constraint "Errors" to "Warnings"** in console logging
+     - Current: `console.error()` for roof volume exceeding total volume
+     - Issue: Dev team confuses user input validation with coding errors
+     - Solution: Use `console.warn()` with clear "[USER INPUT]" prefix for geometry impossibilities
+     - Examples: "⚠️ [USER INPUT] Roof volume exceeds total volume", "⚠️ [USER INPUT] Roof area too small for pitched roof"
+     - Keep `console.error()` only for actual code failures (null references, undefined functions, etc.)
 
 ### Testing Results
 
