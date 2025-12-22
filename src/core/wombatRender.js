@@ -180,15 +180,23 @@ window.TEUI.WombatRender = (function () {
 
     const { ground, eave, ridge } = geometry.nodes3D;
 
-    // Calculate scale to fit geometry in canvas
-    const maxDim = Math.max(
-      geometry.footprint.width,
-      geometry.footprint.length,
-      geometry.totalHeight
-    );
-    const scale = Math.min(config.canvasWidth, config.canvasHeight) / (maxDim * 1.5);
+    // Calculate bounding box from extremes: basement bottom, ground corners, ridge/eave top
+    const basementDepth = (geometry.belowGrade?.hasBasement) ? (geometry.belowGrade.basementDepth || 0) : 0;
+    const minZ = -basementDepth;  // Bottom of basement (or 0 if no basement)
+    // For shed roofs, eave heights vary - find the maximum z across all eave nodes
+    const maxZ = ridge ? ridge[0].z : Math.max(...eave.map(node => node.z));
+
+    const boundingWidth = geometry.footprint.width;
+    const boundingLength = geometry.footprint.length;
+    const boundingHeight = maxZ - minZ;
+
+    // Calculate scale to fit entire model in canvas with padding
+    const maxDim = Math.max(boundingWidth, boundingLength, boundingHeight);
+    const scale = Math.min(config.canvasWidth, config.canvasHeight) / (maxDim * 1.8);
+
     const centerX = config.canvasWidth / 2;
-    const centerY = config.canvasHeight / 2;
+    // Shift view up when basement is present to keep model centered in visible space
+    const centerY = config.canvasHeight / 2 + (minZ < 0 ? minZ * scale * 0.3 : 0);
 
     // Choose color based on mode
     const color = isReference ? config.colors.reference : config.colors.target;
@@ -420,9 +428,15 @@ window.TEUI.WombatRender = (function () {
       const frontLeft = gradeCorners[0];   // nodes3D.ground[0]
       const frontRight = gradeCorners[1];  // nodes3D.ground[1]
 
-      // Extend grade line slightly beyond corners for visibility
-      const extensionX = (frontRight.x - frontLeft.x) * 0.1;
-      const extensionY = (frontRight.y - frontLeft.y) * 0.1;
+      // Calculate direction vector for grade line extension
+      const dx = frontRight.x - frontLeft.x;
+      const dy = frontRight.y - frontLeft.y;
+      const lineLength = Math.sqrt(dx * dx + dy * dy);
+
+      // Extend 40 pixels in 2D space (convert back to 3D space based on scale)
+      const extension3D = 40 / scale;
+      const extensionX = (dx / lineLength) * extension3D;
+      const extensionY = (dy / lineLength) * extension3D;
 
       const gradeStart = toIsometric(
         frontLeft.x - extensionX,
