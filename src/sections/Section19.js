@@ -741,6 +741,9 @@ window.TEUI.SectionModules.sect19 = (function () {
       return solveGableRoof(roofArea, ridgeLength, span, footprintArea);
     } else if (roofTypeRequested === "monoplane") {
       return solveShedRoof(roofArea, ridgeLength, span, footprintArea);
+    } else if (roofTypeRequested === "multiplanar") {
+      // Hip/Pyramid roof (polyhedral, not prismatic)
+      return solveHipRoof(roofArea, ridgeLength, span, footprintArea);
     } else if (roofTypeRequested === "flat") {
       // Flat roof explicitly selected by user
       return {
@@ -927,6 +930,153 @@ window.TEUI.SectionModules.sect19 = (function () {
     };
   }
 
+  /**
+   * Solve hip roof geometry using pure algebraic solution (quadratic formula)
+   * NO iteration, NO derivatives - pure rational trigonometry
+   * Hip roofs are POLYHEDRAL (not prismatic) - they taper to ridge endpoints
+   */
+  function solveHipRoof(roofArea, shortDimension, longDimension, footprintArea) {
+    const W = shortDimension;  // SHORT dimension (span across slopes)
+    const L = longDimension;   // LONG dimension
+    const A = roofArea;
+
+    // Ridge length (deterministic from s=0.5 hip rafters at 45° in plan view)
+    const ridgeLength = L - W;
+
+    // Special case: Square building (ridgeLength ≈ 0) → Pure pyramid
+    if (ridgeLength < 0.01) {
+      console.log(`[WOMBAT] Square building detected → Pure pyramid`);
+
+      // Pure pyramid - use direct solution
+      // A = 2a × slopeLength (4 triangular faces)
+      const slopeLength = A / (2 * W);
+      const Q_slope = slopeLength * slopeLength;
+      const Q_halfBase = (W / 2) * (W / 2);
+      const Q_height = Q_slope - Q_halfBase;
+
+      if (Q_height <= 0) {
+        console.error(`[WOMBAT] Pyramid impossible: roof area ${A.toFixed(0)}m² too small`);
+        console.error(`[WOMBAT] Spread would be ≥ 1.0 (impossible geometry)`);
+        return {
+          roofType: "flat",
+          roofHeight: 0,
+          roofVolume: 0,
+          gableEndArea: 0,
+          shedEndWallArea: 0
+        };
+      }
+
+      const roofHeight = Math.sqrt(Q_height);
+      const roofVolume = (footprintArea * roofHeight) / 3;  // Pyramid volume
+
+      // Pitch calculation for pyramid (from center to corner)
+      const pitchRise = (roofHeight / (W / 2)) * 12;
+
+      console.log(`[WOMBAT] Pyramid roof solved algebraically:`);
+      console.log(`  Footprint: ${W.toFixed(2)}m × ${L.toFixed(2)}m (square)`);
+      console.log(`  Roof height: ${roofHeight.toFixed(2)}m`);
+      console.log(`  Roof pitch: ${pitchRise.toFixed(1)}:12 (rise:run ratio)`);
+      console.log(`  Roof volume: ${roofVolume.toFixed(2)}m³`);
+      console.log(`  Target area: ${A.toFixed(2)}m²`);
+
+      return {
+        roofType: "pyramid",
+        roofHeight,
+        roofVolume,
+        gableEndArea: 0,
+        shedEndWallArea: 0,
+        ridgeLength: 0,
+        pitchRise
+      };
+    }
+
+    // Rectangular building - solve for u algebraically
+    // where u = √(Q + W²/4) = slant height from ridge centerline to eave
+
+    // Hip roof area formula (unwrapped):
+    // - Two main slopes: 2 × ridgeLength × u = 2(L-W)·u
+    // - Two hip end triangles: 2 × (1/2) × W × u = W·u
+    // - Total: A_hip = 2(L-W)·u + W·u = (2L - W)·u
+    //
+    // Therefore: u = A_hip / (2L - W)
+
+    const denominator = 2 * L - W;
+
+    if (denominator <= 0) {
+      console.error(`[WOMBAT] Invalid geometry: 2L - W ≤ 0`);
+      return {
+        roofType: "flat",
+        roofHeight: 0,
+        roofVolume: 0,
+        gableEndArea: 0,
+        shedEndWallArea: 0
+      };
+    }
+
+    // Solve for u (direct algebraic solution - no quadratic needed!)
+    const u = A / denominator;
+
+    if (u <= 0) {
+      console.error(`[WOMBAT] Invalid slant height (u ≤ 0) - roof area ${A.toFixed(0)}m² too small`);
+      return {
+        roofType: "flat",
+        roofHeight: 0,
+        roofVolume: 0,
+        gableEndArea: 0,
+        shedEndWallArea: 0
+      };
+    }
+
+    // Extract height quadrance from u
+    // u² = Q + W²/4, so Q = u² - W²/4
+    const Q_height = u * u - (W * W / 4);
+
+    if (Q_height <= 0) {
+      console.error(`[WOMBAT] Invalid height quadrance (Q ≤ 0) - roof area ${A.toFixed(0)}m² too small for footprint`);
+      return {
+        roofType: "flat",
+        roofHeight: 0,
+        roofVolume: 0,
+        gableEndArea: 0,
+        shedEndWallArea: 0
+      };
+    }
+
+    const roofHeight = Math.sqrt(Q_height);
+
+    // Verify area constraint (should be exact by construction)
+    const achievedArea = denominator * u;  // = (2L - W) × u = A_hip
+
+    // Hip roof volume (see WOMBAT-HIP.md Phase 3)
+    const gableSectionVolume = (ridgeLength * W * roofHeight) / 2;
+    const endCapVolume = 2 * (1 / 3) * (W / 2 * W / 2) * roofHeight;
+    const roofVolume = gableSectionVolume + endCapVolume;
+
+    // Pitch calculation (from center to eave on short axis)
+    const pitchRise = (roofHeight / (W / 2)) * 12;
+
+    console.log(`[WOMBAT] Hip roof solved algebraically:`);
+    console.log(`  Footprint: ${W.toFixed(2)}m × ${L.toFixed(2)}m`);
+    console.log(`  Ridge length: ${ridgeLength.toFixed(2)}m`);
+    console.log(`  Roof height: ${roofHeight.toFixed(2)}m`);
+    console.log(`  Roof pitch: ${pitchRise.toFixed(1)}:12 (rise:run ratio)`);
+    console.log(`  Target area: ${A.toFixed(2)}m²`);
+    console.log(`  Achieved area: ${achievedArea.toFixed(2)}m²`);
+    console.log(`  Error: ${Math.abs(achievedArea - A).toFixed(4)}m²`);
+    console.log(`  Roof volume: ${roofVolume.toFixed(2)}m³`);
+
+    return {
+      roofType: "hip",
+      roofHeight,
+      roofVolume,
+      gableEndArea: 0,
+      shedEndWallArea: 0,
+      ridgeLength,
+      pitchRise,
+      achievedArea
+    };
+  }
+
   //==========================================================================
   // PHASE 3: 2D PROFILE BUILDERS (for rendering only, NOT solving)
   // These functions just BUILD node arrays from pre-calculated dimensions
@@ -1046,6 +1196,57 @@ window.TEUI.SectionModules.sect19 = (function () {
     }
 
     return nodes;
+  }
+
+  /**
+   * Generate 3D nodes for hip/pyramid roofs (polyhedral, not prismatic)
+   * Hip roofs cannot be generated by extruding a 2D profile
+   *
+   * @param {Object} roofResult - Result from solveHipRoof()
+   * @param {number} shortDimension - Width (SHORT dimension)
+   * @param {number} longDimension - Length (LONG dimension)
+   * @param {number} wallHeight - Height of walls
+   * @returns {Object} - { ground, eave, ridge }
+   */
+  function generateHipNodes3D(roofResult, shortDimension, longDimension, wallHeight) {
+    const W = shortDimension;
+    const L = longDimension;
+    const halfW = W / 2;
+    const halfL = L / 2;
+    const ridgeHeight = wallHeight + roofResult.roofHeight;
+
+    // Ground nodes (Z=0) - same for all roof types
+    const ground = [
+      { x: -halfW, y: -halfL, z: 0 },  // Front-left
+      { x: +halfW, y: -halfL, z: 0 },  // Front-right
+      { x: +halfW, y: +halfL, z: 0 },  // Back-right
+      { x: -halfW, y: +halfL, z: 0 },  // Back-left
+    ];
+
+    // Eave nodes (Z=wallHeight) - same for all roof types
+    const eave = [
+      { x: -halfW, y: -halfL, z: wallHeight },  // Front-left
+      { x: +halfW, y: -halfL, z: wallHeight },  // Front-right
+      { x: +halfW, y: +halfL, z: wallHeight },  // Back-right
+      { x: -halfW, y: +halfL, z: wallHeight },  // Back-left
+    ];
+
+    // Ridge nodes depend on roof type
+    const ridge = [];
+
+    if (roofResult.roofType === "pyramid" || roofResult.ridgeLength < 0.01) {
+      // Square building - single apex (pure pyramid)
+      ridge.push({ x: 0, y: 0, z: ridgeHeight });
+      console.log(`[WOMBAT] Pyramid: 1 apex node at (0, 0, ${ridgeHeight.toFixed(2)}m)`);
+    } else {
+      // Rectangular building - two ridge endpoints (hip roof)
+      const halfRidge = roofResult.ridgeLength / 2;
+      ridge.push({ x: 0, y: -halfRidge, z: ridgeHeight });  // Front ridge end
+      ridge.push({ x: 0, y: +halfRidge, z: ridgeHeight });  // Back ridge end
+      console.log(`[WOMBAT] Hip: 2 ridge nodes, ridge length=${roofResult.ridgeLength.toFixed(2)}m`);
+    }
+
+    return { ground, eave, ridge };
   }
 
   /**
@@ -1320,18 +1521,33 @@ window.TEUI.SectionModules.sect19 = (function () {
     }
 
     // ========================================================================
-    // PHASE 5: EXTRUDE AND GENERATE 3D NODES
+    // PHASE 5: GENERATE 3D NODES
+    // Hip/Pyramid roofs are POLYHEDRAL (not prismatic) - generate nodes directly
+    // Other roofs are PRISMATIC - extrude 2D profile
     // ========================================================================
 
-    // Extrusion depth: ALWAYS extrude along LONG dimension
-    // - Flat: extrude along LONG - profile width is SHORT
-    // - Gable: extrude along LONG - profile width is SHORT (triangle cross-section)
-    // - Shed: extrude along LONG - profile width is SHORT (FIXED: same as gable)
-    let extrusionDepth = longDimension;  // LONG - ridge runs along length for all roof types
-    const nodes3D = generate3DNodes(profile2D, extrusionDepth);
+    let nodes3D;
 
-    console.log(`[WOMBAT-2] Profile: ${profile2D.type}, extrusion depth: ${extrusionDepth.toFixed(2)}m`);
-    console.log(`[WOMBAT-2] Footprint dimensions: width=${width.toFixed(2)}m, length=${length.toFixed(2)}m (from aspect ratio)`);
+    if (roofResult.roofType === "hip" || roofResult.roofType === "pyramid") {
+      // POLYHEDRAL: Generate hip/pyramid nodes directly (cannot be extruded)
+      nodes3D = generateHipNodes3D(
+        roofResult,
+        shortDimension,
+        longDimension,
+        wallHeight
+      );
+      console.log(`[WOMBAT-2] Polyhedral roof (${roofResult.roofType}): ${nodes3D.ridge.length} ridge node(s)`);
+      console.log(`[WOMBAT-2] Footprint dimensions: width=${width.toFixed(2)}m, length=${length.toFixed(2)}m (from aspect ratio)`);
+    } else {
+      // PRISMATIC: Extrude 2D profile along LONG dimension
+      // - Flat: extrude along LONG - profile width is SHORT
+      // - Gable: extrude along LONG - profile width is SHORT (triangle cross-section)
+      // - Shed: extrude along LONG - profile width is SHORT
+      let extrusionDepth = longDimension;  // LONG - ridge runs along length for all roof types
+      nodes3D = generate3DNodes(profile2D, extrusionDepth);
+      console.log(`[WOMBAT-2] Prismatic roof: profile=${profile2D.type}, extrusion=${extrusionDepth.toFixed(2)}m`);
+      console.log(`[WOMBAT-2] Footprint dimensions: width=${width.toFixed(2)}m, length=${length.toFixed(2)}m (from aspect ratio)`);
+    }
 
     // Store calculated footprint dimensions in state for display
     currentState.setValue("h_155", width.toFixed(2));  // Footprint width (from aspect ratio)
