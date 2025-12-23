@@ -15,7 +15,7 @@
 5. **Simple geometry**: Square windows by default, rectangle only if square hits eave/grade constraints
 6. **Algebraic solution**: Direct calculation, no iteration (except optional square→rectangle conversion)
 7. **Validation**: Flag geometric warning if window area exceeds facade area
-8. **Skylights deferred**: Roof-mounted skylights (d_78) are Phase 2 (future)
+8. **Skylights deferred**: Roof-mounted skylights (d_78) are Phase 2 (future) (diagonal bisection coplanar determines location of face-normal vector to orient skylight which dynamically changes with roof pitch)
 
 ---
 
@@ -30,6 +30,7 @@
 - `d_76`: Window area South (m²)
 - `d_77`: Window area West (m²)
 - `d_78`: Skylight area (m²) - *Phase 2: Roof placement (future)*
+- Future: will read orientation toggles at e_73 through e_77 to determine facade placement vs. orientation by row name/description
 
 **Orientation Dropdowns** (d_74-d_77):
 - `e_73`: Door orientation
@@ -44,7 +45,7 @@ Options: `"North"`, `"East"`, `"South"`, `"West"`, `"Northeast"`, `"Southeast"`,
 - `f_73` through `f_78`: SHGC multipliers (0.0 to 1.0)
 
 **Shading Percentages**:
-- `g_73`/`h_73` through `g_77`/`h_77`: Winter/summer shading (%) - *not visualized*
+- `g_73`/`h_73` through `g_77`/`h_77`: Winter/summer shading (%) - *not yet visualized*
 
 ---
 
@@ -903,7 +904,7 @@ function generateWindowGeometry(facade, windowArea, center, facadeWidth, maxHeig
 ### Phase 3: Multi-Storey Division (Future Sprint)
 
 - Horizontal division by storey count (d_150)
-- Multiple window rows per facade
+- Multiple window rows per facade (required for ASHRAE 140 Bench Testing)
 - Storey-height spacing and alignment
 
 **Current Complexity**: LOW (facade windows only, no skylight/multi-storey complexity!)
@@ -922,246 +923,6 @@ function generateWindowGeometry(facade, windowArea, center, facadeWidth, maxHeig
 **Future Phases**:
 - Phase 2: Skylight placement on roof surfaces
 - Phase 3: Multi-storey horizontal window division
-
----
-
-## Known Issues and Proposed Fixes
-
-### Issue #1: Window Orientation During Aspect Ratio Sign Change
-
-**Status**: IDENTIFIED - Needs Fix
-
-**Problem Description**:
-
-When aspect ratio crosses zero (from positive to negative range), window placement doesn't follow the correct cardinal orientation.
-
-**BIM Coordinate Convention** (ALWAYS CONSTANT):
-- **Y+ = North** (always, regardless of aspect ratio)
-- **Y- = South** (always)
-- **X+ = East** (always)
-- **X- = West** (always)
-
-**Aspect Ratio Behavior**:
-- **Positive (0 to +5)**: Length > Width, building oriented North-South (long axis aligned with Y)
-- **Zero (0)**: Square footprint
-- **Negative (0 to -5)**: Width > Length, building oriented East-West (long axis aligned with X)
-
-**What Happens Now** (Incorrect):
-
-When aspect ratio goes negative (e.g., -0.50):
-1. Footprint nodes rotate 90° to accommodate width > length orientation
-2. Windows stay locked to footprint edge midpoints (correct)
-3. BUT window facade assignments don't update to match new orientation
-4. Result: "South" windows end up on East-facing wall, "East" windows on South-facing wall, etc.
-
-**Example** (Aspect Ratio = -0.50):
-- Largest window area assigned to "South" orientation (e_76 = "South")
-- Window renders on East-facing wall (wrong!)
-- Should render on South-facing wall (Y- direction)
-
-**Root Cause**:
-
-The `getFacadeCenter()` function uses fixed ground node indices:
-```javascript
-// Current implementation (INCORRECT for negative aspect ratio)
-if (facade === "north") {
-  centerX = (ground[0].x + ground[1].x) / 2;  // Front edge
-  centerY = (ground[0].y + ground[1].y) / 2;
-}
-```
-
-This assumes:
-- Front edge (nodes 0-1) = North
-- Back edge (nodes 3-2) = South
-- Right edge (nodes 1-2) = East
-- Left edge (nodes 0-3) = West
-
-**But when aspect ratio flips negative**, the footprint rotates 90°, and these node indices no longer correspond to the same cardinal directions!
-
-**Proposed Fix**:
-
-Instead of using fixed node indices, determine facade assignment based on **actual node positions relative to cardinal axes**:
-
-```javascript
-function getFacadeCenter(facade, geometry) {
-  const wallHeight = geometry.wallHeight || 0;
-
-  if (geometry.nodes3D && geometry.nodes3D.ground) {
-    const ground = geometry.nodes3D.ground;
-
-    // Calculate edge midpoints for all 4 edges
-    const edges = {
-      edge01: {
-        center: {
-          x: (ground[0].x + ground[1].x) / 2,
-          y: (ground[0].y + ground[1].y) / 2
-        },
-        nodes: [0, 1]
-      },
-      edge12: {
-        center: {
-          x: (ground[1].x + ground[2].x) / 2,
-          y: (ground[1].y + ground[2].y) / 2
-        },
-        nodes: [1, 2]
-      },
-      edge23: {
-        center: {
-          x: (ground[2].x + ground[3].x) / 2,
-          y: (ground[2].y + ground[3].y) / 2
-        },
-        nodes: [2, 3]
-      },
-      edge30: {
-        center: {
-          x: (ground[3].x + ground[0].x) / 2,
-          y: (ground[3].y + ground[0].y) / 2
-        },
-        nodes: [3, 0]
-      }
-    };
-
-    // Find which edge has the most extreme position in each cardinal direction
-    let northEdge, southEdge, eastEdge, westEdge;
-    let maxY = -Infinity, minY = Infinity, maxX = -Infinity, minX = Infinity;
-
-    for (const [edgeName, edge] of Object.entries(edges)) {
-      if (edge.center.y > maxY) {
-        maxY = edge.center.y;
-        northEdge = edge;  // Y+ = North
-      }
-      if (edge.center.y < minY) {
-        minY = edge.center.y;
-        southEdge = edge;  // Y- = South
-      }
-      if (edge.center.x > maxX) {
-        maxX = edge.center.x;
-        eastEdge = edge;   // X+ = East
-      }
-      if (edge.center.x < minX) {
-        minX = edge.center.x;
-        westEdge = edge;   // X- = West
-      }
-    }
-
-    // Return center of the requested cardinal facade
-    const facadeMap = {
-      north: northEdge,
-      south: southEdge,
-      east: eastEdge,
-      west: westEdge
-    };
-
-    const selectedEdge = facadeMap[facade];
-
-    return {
-      x: selectedEdge.center.x,
-      y: selectedEdge.center.y,
-      z: wallHeight / 2
-    };
-  }
-
-  // Fallback...
-}
-```
-
-**Why This Works**:
-
-1. Calculates all 4 edge midpoints from actual node positions
-2. Finds which edge is most extreme in each cardinal direction:
-   - **North** = edge with highest Y value (Y+)
-   - **South** = edge with lowest Y value (Y-)
-   - **East** = edge with highest X value (X+)
-   - **West** = edge with lowest X value (X-)
-3. Returns the correct edge center regardless of footprint rotation
-
-**Result**: Windows will correctly follow cardinal directions across all aspect ratios (-5 to +5), matching the BIM coordinate convention.
-
-**Testing Plan**:
-1. Set aspect ratio to +2.0 (North-South orientation) → South windows on Y- edge ✓
-2. Set aspect ratio to -2.0 (East-West orientation) → South windows STILL on Y- edge ✓
-3. Verify all 4 cardinal directions at multiple aspect ratios
-
-**Priority**: HIGH - Core functionality for proper window-to-wall mapping
-
----
-
-**Document Status**: IMPLEMENTATION COMPLETE, FIX IDENTIFIED ✅
-
----
-
-### Issue #1 Resolution: Missing nodes3D Parameter
-
-**Discovery Date**: 2025-12-22
-
-**Problem**: The cardinal detection fix was implemented in `wombatWindows.js` but wasn't executing - debug console logging showed no output.
-
-**Root Cause**: In `Section19.js` line 1714-1718, the geometry object passed to `calculateWindows()` only included `{ width, length, wallHeight }`. The `nodes3D` data was NOT being passed, so the cardinal detection code path never executed (it fell through to the simple fallback calculation).
-
-**Fix**: Updated Section19.js to pass `nodes3D` to the calculateWindows() function:
-
-```javascript
-// BEFORE (missing nodes3D)
-const windowData = window.TEUI.WombatWindows?.calculateWindows({
-  width,
-  length,
-  wallHeight,
-});
-
-// AFTER (nodes3D included)
-const windowData = window.TEUI.WombatWindows?.calculateWindows({
-  width,
-  length,
-  wallHeight,
-  nodes3D,  // ← NOW PASSED!
-});
-```
-
-**Expected Behavior After Fix**:
-- Console should show debug output: `[WOMBAT Windows] Facade "north": edge center (x, y)`
-- Windows should correctly orient to cardinal directions at all aspect ratios
-- North windows → Y+ edge
-- South windows → Y- edge
-- East windows → X+ edge
-- West windows → X- edge
-
-**Status**: ✅ RESOLVED - Implemented and tested (2025-12-22)
-
----
-
-### Issue #2: Gable/Shed End Area Support
-
-**Status**: PLANNED - Phase 1b Enhancement
-
-**Discovery Date**: 2025-12-23
-
-**Problem Description**:
-
-Windows currently only use the rectangular facade area (width × wallHeight), but gable and shed roofs create additional wall area above the eave line. This causes unnecessary "windows exceed facade area" warnings when the full elevation profile would actually accommodate the window area.
-
-**Example** (from user screenshot):
-- West facade rectangular area: 70.66m²
-- West window requirement: 100.66m²
-- **Warning**: "West windows exceed facade area"
-- **BUT**: Gable end adds ~30m² triangular area above eave
-- **Actual available area**: ~100m² (rectangular + gable triangle)
-- **Result**: Window would actually fit if we used full elevation polygon!
-
-**Current Limitation**:
-
-In `wombatWindows.js` line 88-120, `calculateFacadeAreas()` uses simple rectangles:
-
-```javascript
-// CURRENT: Only rectangular zone
-facadeArea = facadeWidth × wallHeight
-```
-
-**Proposed Solution**: Use actual elevation polygon area from nodes3D
-
-**Why This Works**:
-1. Section19 already calculates gable end wall areas (e.g., `gableEndWallArea`)
-2. nodes3D contains full elevation perimeter (ground + eave + ridge nodes)
-3. We can project elevation to 2D plane and calculate polygon area using shoelace formula
 
 ---
 
@@ -1365,19 +1126,20 @@ function calculateFacadeAreas(geometry) {
 ### Phase 1a: Vertical Facade Windows ✅ COMPLETE
 - ✅ Windows on N/E/S/W facades
 - ✅ Cardinal direction detection (aspect ratio independent)
-- ✅ Coordinate swap for negative aspect ratios
+- ✅ Coordinate swap for negative aspect ratios in Section19.js
 - ✅ Window labels (N/E/S/W) for debugging
 - ✅ Simplified coordinate axes (BIM convention)
 - **Status**: Implemented, tested, pushed to origin
-- **Branch**: WOMBAT-WINDOWS (ready for PR)
+- **Branch**: WOMBAT-WINDOWS
 
-### Phase 1b: Gable/Shed End Area Support 📋 PLANNED
-- [ ] Calculate elevation polygon area from nodes3D
-- [ ] Use full elevation area (rectangular + triangular) for validation
-- [ ] Eliminate false "windows exceed facade area" warnings
-- [ ] Test across all roof types (flat, gable, shed, hip)
-- **Status**: Workflow documented, ready to implement
-- **Branch**: WOMBAT-WINDOWS (continue on same branch)
+### Phase 1b: Gable/Shed End Area Support ✅ COMPLETE
+- ✅ Calculate elevation polygon area from nodes3D (shoelace formula)
+- ✅ Use full elevation area (rectangular + triangular) for validation
+- ✅ Eliminate false "windows exceed facade area" warnings on gable/shed roofs
+- ✅ Tested with gable roof - warnings eliminated
+- **Status**: Implemented, tested
+- **Branch**: WOMBAT-WINDOWS
+- **Known Limitation**: Windows remain rectangular and centered; may visually extend into gable area (acceptable for Phase 1)
 
 ### Phase 2: Skylights (Future)
 - ❌ Roof-mounted skylight placement (d_78)
@@ -1391,7 +1153,8 @@ function calculateFacadeAreas(geometry) {
 
 ---
 
-**Document Updated**: 2025-12-23 (Phase 1b workflow added)
-**Scope**: Phase 1a complete, Phase 1b planned
+**Document Updated**: 2025-12-23
+**Scope**: Phase 1a & 1b COMPLETE - Vertical facade windows with gable/shed end area support
 **Branch**: WOMBAT-WINDOWS
-**Next Action**: Implement Phase 1b - calculateElevationArea() function
+**Status**: Ready for PR review
+**Next Phase**: Phase 2 (Skylights) - Future work
