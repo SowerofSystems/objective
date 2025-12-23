@@ -1695,6 +1695,27 @@ window.TEUI.SectionModules.sect19 = (function () {
       // - Shed: extrude along LONG - profile width is SHORT
       let extrusionDepth = longDimension; // LONG - ridge runs along length for all roof types
       nodes3D = generate3DNodes(profile2D, extrusionDepth);
+
+      // CRITICAL: generate3DNodes always puts profile width in X, extrusion in Y
+      // This gives North-South orientation (long axis on Y)
+      // When aspect ratio is negative (width > length), we need East-West orientation
+      // Solution: Swap X and Y coordinates to rotate building 90°
+      if (aspectRatioRaw < 0) {
+        // Swap X and Y for all node arrays
+        for (const nodeArray of Object.values(nodes3D)) {
+          if (Array.isArray(nodeArray)) {
+            nodeArray.forEach(node => {
+              const temp = node.x;
+              node.x = node.y;
+              node.y = temp;
+            });
+          }
+        }
+        console.log(
+          `[WOMBAT-2] Rotated building 90° (aspect ratio negative: X and Y swapped)`
+        );
+      }
+
       console.log(
         `[WOMBAT-2] Prismatic roof: profile=${profile2D.type}, extrusion=${extrusionDepth.toFixed(2)}m`
       );
