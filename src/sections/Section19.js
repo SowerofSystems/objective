@@ -43,11 +43,12 @@ window.TEUI.SectionModules.sect19 = (function () {
    */
   const TargetState = {
     values: {
-      d_150: "1", // Stories (mirrors S12 d_103)
+      d_150: "1.5", // Stories (mirrors S12 d_103)
       d_151: "8319.50", // Volume (mirrors S12 d_105)
-      d_154: "0.0", // Aspect ratio slider (L:W)- to be implemented
+      d_154: "-2.0", // Aspect ratio slider (L:W) - portrait 1:3 for better window fit
       d_158: "mezzanine", // Floorplate Options (mezzanine/equal), absorbs difference of h_15-d_95 when h_15>d_95 for 1.5 storey buildings
       d_159: "biplanar", // Roof Type (multiplanar/biplanar/monoplane)
+      d_160: "show", // Window (show/hide dropdown)
       h_155: "0.00", // Calculated: Footprint width driven by user-editable slider
       h_156: "0.00", // Calculated: Storey height, use first g_106 as wall height, but allow to be less to satisfy volume and/or wall constraints
       h_157: "0.00", // Calculated: Footprint length
@@ -103,11 +104,12 @@ window.TEUI.SectionModules.sect19 = (function () {
    */
   const ReferenceState = {
     values: {
-      d_150: "1.0", // Stories (mirrors S12 ref_d_103)
+      d_150: "1.5", // Stories (mirrors S12 ref_d_103)
       d_151: "8319.50", // Volume (mirrors S12 ref_d_105)
-      d_154: "0.0", // Aspect ratio slider
+      d_154: "-2.0", // Aspect ratio slider - portrait 1:3 for better window fit
       d_158: "mezzanine", // Floorplate Options (mezzanine/equal)
       d_159: "biplanar", // Roof Type (multiplanar/biplanar/monoplane)
+      d_160: "show", // Window (show/hide dropdown)
       h_155: "0.00", // Calculated: Footprint width
       h_156: "0.00", // Calculated: Story height
       h_157: "0.00", // Calculated: Footprint length
@@ -319,7 +321,7 @@ window.TEUI.SectionModules.sect19 = (function () {
           fieldId: "d_150",
           type: "dropdown",
           dropdownId: "dd_d_150",
-          value: "1",
+          value: "1.5",
           section: "wombat",
           tooltip: true,
           label: "Number of stories (mirrored from S12)",
@@ -435,7 +437,7 @@ window.TEUI.SectionModules.sect19 = (function () {
         d: {
           fieldId: "d_154",
           type: "coefficient_slider",
-          value: "0.0",
+          value: "-2.0",
           min: -5.0,
           max: 5.0,
           step: 0.1, // Consider adding snap to 0 for ease of value setting.
@@ -560,6 +562,35 @@ window.TEUI.SectionModules.sect19 = (function () {
         h: {},
       },
     },
+
+    // Window dropdown (show/hide windows in visualization)
+    row160: {
+      id: "19.W",
+      rowId: "19.W",
+      label: "Window",
+      cells: {
+        a: {},
+        b: {},
+        c: { label: "Window" },
+        d: {
+          fieldId: "d_160",
+          type: "dropdown",
+          dropdownId: "dd_d_160",
+          value: "show",
+          section: "wombat",
+          tooltip: true,
+          label: "Show or hide windows in WOMBAT visualization",
+          options: [
+            { value: "show", name: "Show Windows" },
+            { value: "hide", name: "Hide Windows" },
+          ],
+        },
+        e: { content: "", classes: ["unit-label"] },
+        f: {},
+        g: {},
+        h: {},
+      },
+    },
   };
 
   //==========================================================================
@@ -670,7 +701,8 @@ window.TEUI.SectionModules.sect19 = (function () {
       "row156",
       //"row157",   //Reserved for future use
       "row158", //footprint width to be added
-      "row159", //building height to be added
+      "row159", //Roof Type dropdown
+      "row160", //Window show/hide toggle
     ].forEach(key => {
       if (sectionRows[key]) {
         layoutRows.push(createLayoutRow(sectionRows[key]));
@@ -1750,7 +1782,6 @@ window.TEUI.SectionModules.sect19 = (function () {
       roofHeight: roofResult.roofHeight,
       roofVolume: roofResult.roofVolume,
       pitchRise: roofResult.pitchRise, // Carpenter's rise:12 ratio
-      wallHeight,
       wallVolume,
       calculatedVolume, // Actual volume from geometry
       targetVolume, // User's specified volume (d_105)
@@ -2588,6 +2619,17 @@ window.TEUI.SectionModules.sect19 = (function () {
             window.TEUI.parseNumeric(newValue),
             "number-3dp"
           );
+        }
+      });
+
+      // ✅ Window show/hide dropdown (d_160)
+      // Listen for changes to window visibility dropdown
+      window.TEUI.StateManager.addListener("d_160", newValue => {
+        console.log(`[WOMBAT] Window visibility changed: d_160 = ${newValue}`);
+        if (isActivated) {
+          // Re-render visualization to show/hide windows
+          const mode = ModeManager?.currentMode || "target";
+          updateVisualization(mode);
         }
       });
     }

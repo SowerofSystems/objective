@@ -201,7 +201,7 @@ window.TEUI.WombatWindows = (function () {
         maxX = -Infinity,
         minX = Infinity;
 
-      for (const [edgeName, edge] of Object.entries(edges)) {
+      for (const [_edgeName, edge] of Object.entries(edges)) {
         if (edge.center.y > maxY) {
           maxY = edge.center.y;
           northEdge = edge; // Y+ = North
@@ -292,14 +292,11 @@ window.TEUI.WombatWindows = (function () {
     let squareSide = Math.sqrt(windowArea);
     let windowWidth, windowHeight;
 
-    // Inset from edges (90% of max to avoid touching edges)
-    const maxAllowedWidth = maxWidth * 0.9;
-    const maxAllowedHeight = maxHeight * 0.9;
+    // Allow windows to fill 100% of facade (curtainwall support)
+    const maxAllowedWidth = maxWidth;
+    const maxAllowedHeight = maxHeight;
 
-    if (
-      squareSide <= maxAllowedWidth &&
-      squareSide <= maxAllowedHeight
-    ) {
+    if (squareSide <= maxAllowedWidth && squareSide <= maxAllowedHeight) {
       // Square fits
       windowWidth = squareSide;
       windowHeight = squareSide;
@@ -401,7 +398,12 @@ window.TEUI.WombatWindows = (function () {
    */
   function calculateWindows(geometry) {
     // Skip if geometry is invalid
-    if (!geometry || !geometry.width || !geometry.length || !geometry.wallHeight) {
+    if (
+      !geometry ||
+      !geometry.width ||
+      !geometry.length ||
+      !geometry.wallHeight
+    ) {
       return { windows: [], warnings: [] };
     }
 

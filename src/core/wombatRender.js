@@ -781,11 +781,20 @@ window.TEUI.WombatRender = (function () {
    * @param {number} centerY - Canvas center Y
    */
   function renderWindows(svg, geometry, scale, centerX, centerY) {
+    // Check if windows should be shown (d_160 dropdown)
+    const windowVisibility =
+      window.TEUI?.StateManager?.getValue("d_160") || "show";
+    if (windowVisibility === "hide") {
+      return; // Skip rendering if hidden
+    }
+
     if (!geometry.windows || geometry.windows.length === 0) {
       return;
     }
 
-    console.log(`[WombatRender] Rendering ${geometry.windows.length} window(s)`);
+    console.log(
+      `[WombatRender] Rendering ${geometry.windows.length} window(s)`
+    );
 
     geometry.windows.forEach(window => {
       // Project window corner nodes to isometric
@@ -820,8 +829,10 @@ window.TEUI.WombatRender = (function () {
       });
 
       // Add cardinal direction label in center of window
-      const centerX_window = (nodesProj[0].x + nodesProj[1].x + nodesProj[2].x + nodesProj[3].x) / 4;
-      const centerY_window = (nodesProj[0].y + nodesProj[1].y + nodesProj[2].y + nodesProj[3].y) / 4;
+      const centerX_window =
+        (nodesProj[0].x + nodesProj[1].x + nodesProj[2].x + nodesProj[3].x) / 4;
+      const centerY_window =
+        (nodesProj[0].y + nodesProj[1].y + nodesProj[2].y + nodesProj[3].y) / 4;
 
       const label = window.facade.charAt(0).toUpperCase(); // "N", "E", "S", or "W"
       const labelText = createText(
@@ -829,7 +840,7 @@ window.TEUI.WombatRender = (function () {
         centerY_window,
         label,
         "#000000", // Black
-        24 // Large font size
+        12 // Large font size
       );
       labelText.setAttribute("font-weight", "bold");
       labelText.setAttribute("text-anchor", "middle");
@@ -1046,7 +1057,10 @@ window.TEUI.WombatRender = (function () {
 
     // 9. Window Area (Phase 1: Total window area across all facades)
     if (geometry.windows && geometry.windows.length > 0) {
-      const totalWindowArea = geometry.windows.reduce((sum, win) => sum + win.area, 0);
+      const totalWindowArea = geometry.windows.reduce(
+        (sum, win) => sum + win.area,
+        0
+      );
       const windowText = createText(
         xOffset,
         yOffset,
