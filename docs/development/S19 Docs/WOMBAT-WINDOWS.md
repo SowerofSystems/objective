@@ -1125,9 +1125,273 @@ const windowData = window.TEUI.WombatWindows?.calculateWindows({
 - East windows → X+ edge
 - West windows → X- edge
 
-**Status**: FIXED - Ready for testing ✅
-**Created**: 2025-12-22
-**Updated**: 2025-12-22 (Issue #1: Aspect ratio orientation fix documented)
-**Scope**: Phase 1 - Vertical facade windows only
-**Branch**: WOMBAT-WINDOWS (already created)
-**Next Action**: Implement Issue #1 fix - cardinal direction detection from node positions
+**Status**: ✅ RESOLVED - Implemented and tested (2025-12-22)
+
+---
+
+### Issue #2: Gable/Shed End Area Support
+
+**Status**: PLANNED - Phase 1b Enhancement
+
+**Discovery Date**: 2025-12-23
+
+**Problem Description**:
+
+Windows currently only use the rectangular facade area (width × wallHeight), but gable and shed roofs create additional wall area above the eave line. This causes unnecessary "windows exceed facade area" warnings when the full elevation profile would actually accommodate the window area.
+
+**Example** (from user screenshot):
+- West facade rectangular area: 70.66m²
+- West window requirement: 100.66m²
+- **Warning**: "West windows exceed facade area"
+- **BUT**: Gable end adds ~30m² triangular area above eave
+- **Actual available area**: ~100m² (rectangular + gable triangle)
+- **Result**: Window would actually fit if we used full elevation polygon!
+
+**Current Limitation**:
+
+In `wombatWindows.js` line 88-120, `calculateFacadeAreas()` uses simple rectangles:
+
+```javascript
+// CURRENT: Only rectangular zone
+facadeArea = facadeWidth × wallHeight
+```
+
+**Proposed Solution**: Use actual elevation polygon area from nodes3D
+
+**Why This Works**:
+1. Section19 already calculates gable end wall areas (e.g., `gableEndWallArea`)
+2. nodes3D contains full elevation perimeter (ground + eave + ridge nodes)
+3. We can project elevation to 2D plane and calculate polygon area using shoelace formula
+
+---
+
+## Phase 1b Implementation Workflow: Gable/Shed End Support
+
+**Goal**: Allow windows to use full elevation area including gable/shed triangular regions above eave line.
+
+**Approach**: Simplest possible - single large window filling available elevation area (no multi-window distribution complexity).
+
+### Step 1: Add Elevation Polygon Area Calculation
+
+**File**: `src/core/wombatWindows.js`
+
+**Location**: Add new function after `calculateFacadeAreas()` (around line 120)
+
+**New Function**:
+
+```javascript
+/**
+ * Calculate actual elevation polygon area from nodes3D
+ * Includes gable/shed end triangular areas above eave line
+ * @param {string} facade - Facade name (north, east, south, west)
+ * @param {Object} geometry - Geometry object with nodes3D
+ * @returns {number} Elevation area in m² (or null if nodes3D unavailable)
+ */
+function calculateElevationArea(facade, geometry) {
+  if (!geometry.nodes3D) return null;
+
+  const { ground, eave, ridge } = geometry.nodes3D;
+  if (!ground || !eave) return null;
+
+  // Step 1: Identify which ground edge corresponds to this facade
+  // Use same cardinal detection as getFacadeCenter()
+  const edges = {
+    edge01: { nodes: [0, 1], center: { x: (ground[0].x + ground[1].x) / 2, y: (ground[0].y + ground[1].y) / 2 } },
+    edge12: { nodes: [1, 2], center: { x: (ground[1].x + ground[2].x) / 2, y: (ground[1].y + ground[2].y) / 2 } },
+    edge23: { nodes: [2, 3], center: { x: (ground[2].x + ground[3].x) / 2, y: (ground[2].y + ground[3].y) / 2 } },
+    edge30: { nodes: [3, 0], center: { x: (ground[3].x + ground[0].x) / 2, y: (ground[3].y + ground[0].y) / 2 } }
+  };
+
+  // Find cardinal directions
+  let facadeEdge = null;
+  let maxY = -Infinity, minY = Infinity, maxX = -Infinity, minX = Infinity;
+
+  for (const [edgeName, edge] of Object.entries(edges)) {
+    if (edge.center.y > maxY && facade === "north") { maxY = edge.center.y; facadeEdge = edge; }
+    if (edge.center.y < minY && facade === "south") { minY = edge.center.y; facadeEdge = edge; }
+    if (edge.center.x > maxX && facade === "east") { maxX = edge.center.x; facadeEdge = edge; }
+    if (edge.center.x < minX && facade === "west") { minX = edge.center.x; facadeEdge = edge; }
+  }
+
+  if (!facadeEdge) return null;
+
+  // Step 2: Get elevation perimeter nodes
+  // For gable: [ground_left, ground_right, eave_right, ridge, eave_left]
+  // For flat: [ground_left, ground_right, eave_right, eave_left]
+  const [idx0, idx1] = facadeEdge.nodes;
+
+  const elevationNodes = [
+    { x: ground[idx0].x, y: ground[idx0].y, z: ground[idx0].z },  // Bottom left
+    { x: ground[idx1].x, y: ground[idx1].y, z: ground[idx1].z },  // Bottom right
+    { x: eave[idx1].x, y: eave[idx1].y, z: eave[idx1].z },        // Top right (eave)
+  ];
+
+  // Add ridge node(s) if present (gable/shed roofs)
+  if (ridge && ridge.length > 0) {
+    // For gable: ridge has 2 nodes, find which one(s) align with this facade
+    // Simple approach: add all ridge nodes that are close to facade plane
+    for (const ridgeNode of ridge) {
+      elevationNodes.push({ x: ridgeNode.x, y: ridgeNode.y, z: ridgeNode.z });
+    }
+  }
+
+  elevationNodes.push({ x: eave[idx0].x, y: eave[idx0].y, z: eave[idx0].z }); // Top left (eave)
+
+  // Step 3: Project to 2D elevation plane
+  // Determine facade orientation (N/S use X-Z plane, E/W use Y-Z plane)
+  let projected2D;
+  if (facade === "north" || facade === "south") {
+    // X-Z plane (width on X axis, height on Z axis)
+    projected2D = elevationNodes.map(n => ({ x: n.x, y: n.z }));
+  } else {
+    // Y-Z plane (width on Y axis, height on Z axis)
+    projected2D = elevationNodes.map(n => ({ x: n.y, y: n.z }));
+  }
+
+  // Step 4: Calculate polygon area using shoelace formula
+  let area = 0;
+  for (let i = 0; i < projected2D.length; i++) {
+    const j = (i + 1) % projected2D.length;
+    area += projected2D[i].x * projected2D[j].y;
+    area -= projected2D[j].x * projected2D[i].y;
+  }
+  area = Math.abs(area / 2);
+
+  console.log(`[WOMBAT Windows] Facade "${facade}": elevation polygon area = ${area.toFixed(2)}m²`);
+
+  return area;
+}
+```
+
+### Step 2: Update `calculateFacadeAreas()` to Use Elevation Polygon
+
+**File**: `src/core/wombatWindows.js`
+
+**Location**: Modify existing function (lines 88-120)
+
+**Changes**:
+
+```javascript
+function calculateFacadeAreas(geometry) {
+  const width = geometry.width || 0;
+  const length = geometry.length || 0;
+  const wallHeight = geometry.wallHeight || 0;
+
+  const facadeAreas = {
+    north: { width: width, height: wallHeight, area: width * wallHeight },
+    south: { width: width, height: wallHeight, area: width * wallHeight },
+    east: { width: length, height: wallHeight, area: length * wallHeight },
+    west: { width: length, height: wallHeight, area: length * wallHeight }
+  };
+
+  // ENHANCEMENT: Use actual elevation polygon area if nodes3D available
+  // This includes gable/shed end triangular areas above eave line
+  if (geometry.nodes3D) {
+    for (const facade of ["north", "south", "east", "west"]) {
+      const elevationArea = calculateElevationArea(facade, geometry);
+      if (elevationArea !== null) {
+        facadeAreas[facade].area = elevationArea;
+        console.log(`[WOMBAT Windows] Facade "${facade}": using elevation area ${elevationArea.toFixed(2)}m² (was ${(facadeAreas[facade].width * facadeAreas[facade].height).toFixed(2)}m²)`);
+      }
+    }
+  }
+
+  return facadeAreas;
+}
+```
+
+### Step 3: Update `generateWindowGeometry()` Constraints
+
+**File**: `src/core/wombatWindows.js`
+
+**Location**: Lines 284-335
+
+**Issue**: Current logic constrains windows to rectangular zone (90% of maxWidth/maxHeight). With gable/shed support, we need to respect the actual elevation polygon boundary.
+
+**Simple Solution**: Keep existing rectangular constraint logic BUT use polygon area for validation. Windows will still be rectangles centered on facade, but won't throw warnings if they fit within the larger polygon area.
+
+**Changes**: None needed initially - validation already uses `facadeArea` which now includes gable/shed areas.
+
+### Step 4: Testing Plan
+
+**Test Case 1: Gable Roof (User's Screenshot)**
+- Input: West windows = 100.66m²
+- Rectangular area: 70.66m²
+- Gable polygon area: ~100m²
+- **Expected**: No warning (fits within polygon area)
+
+**Test Case 2: Flat Roof**
+- Input: Same window areas
+- Rectangular area: 70.66m²
+- Polygon area: 70.66m² (no gable)
+- **Expected**: Warning (still exceeds area)
+
+**Test Case 3: Shed Roof**
+- Input: Large window on tall side
+- Rectangular area: X m²
+- Shed polygon area: X + triangle m²
+- **Expected**: Uses shed end area, no warning
+
+**Test Case 4: Hip Roof**
+- Input: Windows on all facades
+- **Expected**: No gable ends, polygon area = rectangular area (no change)
+
+### Step 5: Implementation Checklist
+
+- [ ] Add `calculateElevationArea()` function to wombatWindows.js
+- [ ] Update `calculateFacadeAreas()` to use elevation polygon area
+- [ ] Test with gable roof (user's current case)
+- [ ] Test with flat, shed, hip roofs
+- [ ] Verify console logging shows polygon vs rectangular areas
+- [ ] Verify warnings disappear when polygon area accommodates windows
+- [ ] Commit changes with message: `Feat: Add gable/shed end area support to window placement`
+- [ ] Update WOMBAT-WINDOWS.md to mark Phase 1b complete
+
+### Step 6: Known Limitations (Acceptable for Phase 1b)
+
+1. **Window geometry still rectangular**: Windows don't conform to triangular gable shape - they're rectangles centered on facade. This is acceptable because:
+   - Simple implementation
+   - Visually clear
+   - Accurate area validation
+
+2. **No multi-window distribution**: Single large window per facade (no splitting into multiple windows). Deferred to Phase 3 (multi-storey).
+
+3. **Ridge node detection simplified**: Assumes all ridge nodes belong to facade. May need refinement for complex roofs (acceptable for common cases).
+
+---
+
+## Phase Status Summary
+
+### Phase 1a: Vertical Facade Windows ✅ COMPLETE
+- ✅ Windows on N/E/S/W facades
+- ✅ Cardinal direction detection (aspect ratio independent)
+- ✅ Coordinate swap for negative aspect ratios
+- ✅ Window labels (N/E/S/W) for debugging
+- ✅ Simplified coordinate axes (BIM convention)
+- **Status**: Implemented, tested, pushed to origin
+- **Branch**: WOMBAT-WINDOWS (ready for PR)
+
+### Phase 1b: Gable/Shed End Area Support 📋 PLANNED
+- [ ] Calculate elevation polygon area from nodes3D
+- [ ] Use full elevation area (rectangular + triangular) for validation
+- [ ] Eliminate false "windows exceed facade area" warnings
+- [ ] Test across all roof types (flat, gable, shed, hip)
+- **Status**: Workflow documented, ready to implement
+- **Branch**: WOMBAT-WINDOWS (continue on same branch)
+
+### Phase 2: Skylights (Future)
+- ❌ Roof-mounted skylight placement (d_78)
+- ❌ Requires roof surface geometry integration
+- **Status**: Deferred
+
+### Phase 3: Multi-Storey Windows (Future)
+- ❌ Horizontal division of facade area by storey count
+- ❌ Multiple window rows per facade
+- **Status**: Deferred
+
+---
+
+**Document Updated**: 2025-12-23 (Phase 1b workflow added)
+**Scope**: Phase 1a complete, Phase 1b planned
+**Branch**: WOMBAT-WINDOWS
+**Next Action**: Implement Phase 1b - calculateElevationArea() function
