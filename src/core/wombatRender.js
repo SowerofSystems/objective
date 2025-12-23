@@ -818,6 +818,23 @@ window.TEUI.WombatRender = (function () {
         const node = createNode(corner, "#0066CC", 3);
         svg.appendChild(node);
       });
+
+      // Add cardinal direction label in center of window
+      const centerX_window = (nodesProj[0].x + nodesProj[1].x + nodesProj[2].x + nodesProj[3].x) / 4;
+      const centerY_window = (nodesProj[0].y + nodesProj[1].y + nodesProj[2].y + nodesProj[3].y) / 4;
+
+      const label = window.facade.charAt(0).toUpperCase(); // "N", "E", "S", or "W"
+      const labelText = createText(
+        centerX_window,
+        centerY_window,
+        label,
+        "#000000", // Black
+        24 // Large font size
+      );
+      labelText.setAttribute("font-weight", "bold");
+      labelText.setAttribute("text-anchor", "middle");
+      labelText.setAttribute("dominant-baseline", "middle");
+      svg.appendChild(labelText);
     });
   }
 
