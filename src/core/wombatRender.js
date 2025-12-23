@@ -1080,22 +1080,15 @@ window.TEUI.WombatRender = (function () {
   //==========================================================================
 
   /**
-   * Render coordinate axes indicator (X/East, Y/North, Z/Up)
+   * Render coordinate axes indicator
    * Positioned in bottom-right corner
-   * Rotates 180° when aspect ratio crosses 1.0 (landscape vs portrait)
-   *
-   * aspectRatio >= 1.0: Length > Width (Y-aligned, North-South is long)
-   * aspectRatio < 1.0:  Width > Length (X-aligned, East-West is long)
+   * Shows BIM convention: Y+=North (green), X+=East (red), Z+=Up (blue)
+   * NOTE: Axes always show true BIM orientation regardless of building rotation
    */
-  function renderCoordinateAxes(svg, aspectRatio) {
+  function renderCoordinateAxes(svg, _aspectRatio) {
     const x0 = config.canvasWidth - 100; // Bottom-right corner
     const y0 = config.canvasHeight - 80;
     const axisLength = 40;
-
-    // Determine orientation based on aspect ratio (length/width)
-    // aspectRatio >= 1.0: Building longer in Y direction (North-South)
-    // aspectRatio < 1.0:  Building longer in X direction (East-West)
-    const isYAligned = aspectRatio >= 1.0;
 
     // Z-axis (Up) - blue (always vertical)
     const zLine = createLine(
@@ -1105,76 +1098,18 @@ window.TEUI.WombatRender = (function () {
       2
     );
     svg.appendChild(zLine);
-    const zLabel = createText(
-      x0 - 5,
-      y0 - axisLength - 5,
-      "Z/Up",
-      "#0066cc",
-      11,
-      {}
-    );
-    svg.appendChild(zLabel);
 
-    if (isYAligned) {
-      // Aspect >= 1.0: Building longer in North-South direction (Y=LONG)
-      // Y-axis (North) - green, isometric pointing up-left (long dimension)
-      const yEndIso = toIsometric(0, axisLength, 0, 1, x0, y0);
-      const yLine = createLine({ x: x0, y: y0 }, yEndIso, "#00cc66", 2);
-      svg.appendChild(yLine);
-      const yLabel = createText(
-        yEndIso.x,
-        yEndIso.y + 30,
-        "Y/North",
-        "#00cc66",
-        11,
-        { anchor: "middle" }
-      );
-      svg.appendChild(yLabel);
+    // Y-axis (North) - green, isometric pointing up-left (Y+ direction)
+    const yEndIso = toIsometric(0, axisLength, 0, 1, x0, y0);
+    const yLine = createLine({ x: x0, y: y0 }, yEndIso, "#00cc66", 2);
+    svg.appendChild(yLine);
 
-      // X-axis (East) - red, isometric pointing down-right (short dimension)
-      const xEndIso = toIsometric(axisLength, 0, 0, 1, x0, y0);
-      const xLine = createLine({ x: x0, y: y0 }, xEndIso, "#cc0000", 2);
-      svg.appendChild(xLine);
-      const xLabel = createText(
-        xEndIso.x + 5,
-        xEndIso.y + 5,
-        "X/East",
-        "#cc0000",
-        11,
-        {}
-      );
-      svg.appendChild(xLabel);
-    } else {
-      // Aspect < 1.0: Building longer in East-West direction (X=LONG)
-      // 180° rotation: flip both axes to opposite isometric directions
-      // X-axis (East) - red, isometric pointing up-left (long dimension, negated Y)
-      const xEndIso = toIsometric(0, -axisLength, 0, 1, x0, y0);
-      const xLine = createLine({ x: x0, y: y0 }, xEndIso, "#cc0000", 2);
-      svg.appendChild(xLine);
-      const xLabel = createText(
-        xEndIso.x,
-        xEndIso.y + 30,
-        "X/East",
-        "#cc0000",
-        11,
-        { anchor: "middle" }
-      );
-      svg.appendChild(xLabel);
+    // X-axis (East) - red, isometric pointing down-right (X+ direction)
+    const xEndIso = toIsometric(axisLength, 0, 0, 1, x0, y0);
+    const xLine = createLine({ x: x0, y: y0 }, xEndIso, "#cc0000", 2);
+    svg.appendChild(xLine);
 
-      // Y-axis (North) - green, isometric pointing down-right (short dimension, negated X)
-      const yEndIso = toIsometric(-axisLength, 0, 0, 1, x0, y0);
-      const yLine = createLine({ x: x0, y: y0 }, yEndIso, "#00cc66", 2);
-      svg.appendChild(yLine);
-      const yLabel = createText(
-        yEndIso.x + 5,
-        yEndIso.y + 5,
-        "Y/North",
-        "#00cc66",
-        11,
-        {}
-      );
-      svg.appendChild(yLabel);
-    }
+    // Note: Text labels removed - window labels (N/E/S/W) make orientation clear
   }
 
   //==========================================================================
