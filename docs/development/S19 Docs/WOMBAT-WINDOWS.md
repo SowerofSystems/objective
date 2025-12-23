@@ -925,9 +925,170 @@ function generateWindowGeometry(facade, windowArea, center, facadeWidth, maxHeig
 
 ---
 
-**Document Status**: READY FOR IMPLEMENTATION ✅
+## Known Issues and Proposed Fixes
+
+### Issue #1: Window Orientation During Aspect Ratio Sign Change
+
+**Status**: IDENTIFIED - Needs Fix
+
+**Problem Description**:
+
+When aspect ratio crosses zero (from positive to negative range), window placement doesn't follow the correct cardinal orientation.
+
+**BIM Coordinate Convention** (ALWAYS CONSTANT):
+- **Y+ = North** (always, regardless of aspect ratio)
+- **Y- = South** (always)
+- **X+ = East** (always)
+- **X- = West** (always)
+
+**Aspect Ratio Behavior**:
+- **Positive (0 to +5)**: Length > Width, building oriented North-South (long axis aligned with Y)
+- **Zero (0)**: Square footprint
+- **Negative (0 to -5)**: Width > Length, building oriented East-West (long axis aligned with X)
+
+**What Happens Now** (Incorrect):
+
+When aspect ratio goes negative (e.g., -0.50):
+1. Footprint nodes rotate 90° to accommodate width > length orientation
+2. Windows stay locked to footprint edge midpoints (correct)
+3. BUT window facade assignments don't update to match new orientation
+4. Result: "South" windows end up on East-facing wall, "East" windows on South-facing wall, etc.
+
+**Example** (Aspect Ratio = -0.50):
+- Largest window area assigned to "South" orientation (e_76 = "South")
+- Window renders on East-facing wall (wrong!)
+- Should render on South-facing wall (Y- direction)
+
+**Root Cause**:
+
+The `getFacadeCenter()` function uses fixed ground node indices:
+```javascript
+// Current implementation (INCORRECT for negative aspect ratio)
+if (facade === "north") {
+  centerX = (ground[0].x + ground[1].x) / 2;  // Front edge
+  centerY = (ground[0].y + ground[1].y) / 2;
+}
+```
+
+This assumes:
+- Front edge (nodes 0-1) = North
+- Back edge (nodes 3-2) = South
+- Right edge (nodes 1-2) = East
+- Left edge (nodes 0-3) = West
+
+**But when aspect ratio flips negative**, the footprint rotates 90°, and these node indices no longer correspond to the same cardinal directions!
+
+**Proposed Fix**:
+
+Instead of using fixed node indices, determine facade assignment based on **actual node positions relative to cardinal axes**:
+
+```javascript
+function getFacadeCenter(facade, geometry) {
+  const wallHeight = geometry.wallHeight || 0;
+
+  if (geometry.nodes3D && geometry.nodes3D.ground) {
+    const ground = geometry.nodes3D.ground;
+
+    // Calculate edge midpoints for all 4 edges
+    const edges = {
+      edge01: {
+        center: {
+          x: (ground[0].x + ground[1].x) / 2,
+          y: (ground[0].y + ground[1].y) / 2
+        },
+        nodes: [0, 1]
+      },
+      edge12: {
+        center: {
+          x: (ground[1].x + ground[2].x) / 2,
+          y: (ground[1].y + ground[2].y) / 2
+        },
+        nodes: [1, 2]
+      },
+      edge23: {
+        center: {
+          x: (ground[2].x + ground[3].x) / 2,
+          y: (ground[2].y + ground[3].y) / 2
+        },
+        nodes: [2, 3]
+      },
+      edge30: {
+        center: {
+          x: (ground[3].x + ground[0].x) / 2,
+          y: (ground[3].y + ground[0].y) / 2
+        },
+        nodes: [3, 0]
+      }
+    };
+
+    // Find which edge has the most extreme position in each cardinal direction
+    let northEdge, southEdge, eastEdge, westEdge;
+    let maxY = -Infinity, minY = Infinity, maxX = -Infinity, minX = Infinity;
+
+    for (const [edgeName, edge] of Object.entries(edges)) {
+      if (edge.center.y > maxY) {
+        maxY = edge.center.y;
+        northEdge = edge;  // Y+ = North
+      }
+      if (edge.center.y < minY) {
+        minY = edge.center.y;
+        southEdge = edge;  // Y- = South
+      }
+      if (edge.center.x > maxX) {
+        maxX = edge.center.x;
+        eastEdge = edge;   // X+ = East
+      }
+      if (edge.center.x < minX) {
+        minX = edge.center.x;
+        westEdge = edge;   // X- = West
+      }
+    }
+
+    // Return center of the requested cardinal facade
+    const facadeMap = {
+      north: northEdge,
+      south: southEdge,
+      east: eastEdge,
+      west: westEdge
+    };
+
+    const selectedEdge = facadeMap[facade];
+
+    return {
+      x: selectedEdge.center.x,
+      y: selectedEdge.center.y,
+      z: wallHeight / 2
+    };
+  }
+
+  // Fallback...
+}
+```
+
+**Why This Works**:
+
+1. Calculates all 4 edge midpoints from actual node positions
+2. Finds which edge is most extreme in each cardinal direction:
+   - **North** = edge with highest Y value (Y+)
+   - **South** = edge with lowest Y value (Y-)
+   - **East** = edge with highest X value (X+)
+   - **West** = edge with lowest X value (X-)
+3. Returns the correct edge center regardless of footprint rotation
+
+**Result**: Windows will correctly follow cardinal directions across all aspect ratios (-5 to +5), matching the BIM coordinate convention.
+
+**Testing Plan**:
+1. Set aspect ratio to +2.0 (North-South orientation) → South windows on Y- edge ✓
+2. Set aspect ratio to -2.0 (East-West orientation) → South windows STILL on Y- edge ✓
+3. Verify all 4 cardinal directions at multiple aspect ratios
+
+**Priority**: HIGH - Core functionality for proper window-to-wall mapping
+
+---
+
+**Document Status**: IMPLEMENTATION COMPLETE, FIX IDENTIFIED ✅
 **Created**: 2025-12-22
-**Updated**: 2025-12-22 (Architecture decision: wombatWindows.js core module)
+**Updated**: 2025-12-22 (Issue #1: Aspect ratio orientation fix documented)
 **Scope**: Phase 1 - Vertical facade windows only
 **Branch**: WOMBAT-WINDOWS (already created)
-**Next Action**: Create src/core/wombatWindows.js and implement calculateWindows() API
+**Next Action**: Implement Issue #1 fix - cardinal direction detection from node positions
