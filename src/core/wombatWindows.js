@@ -148,8 +148,9 @@ window.TEUI.WombatWindows = (function () {
   //==========================================================================
 
   /**
-   * Get facade center point using diagonal bisection of actual footprint nodes
-   * Locks to footprint geometry to follow orientation changes (like basement rendering)
+   * Get facade center point using cardinal direction detection
+   * Respects BIM convention: Y+=North, Y-=South, X+=East, X-=West
+   * Works across all aspect ratios (-5 to +5) by finding edge positions
    * @param {string} facade - Facade name (north, east, south, west)
    * @param {Object} geometry - Geometry object from Section19
    * @returns {Object} Center point {x, y, z}
@@ -157,39 +158,81 @@ window.TEUI.WombatWindows = (function () {
   function getFacadeCenter(facade, geometry) {
     const wallHeight = geometry.wallHeight || 0;
 
-    // If nodes3D available, use actual ground corners (locked to footprint orientation)
+    // If nodes3D available, use actual ground corners with cardinal detection
     if (geometry.nodes3D && geometry.nodes3D.ground) {
       const ground = geometry.nodes3D.ground;
 
-      // Ground corners: [0]=front-left, [1]=front-right, [2]=back-right, [3]=back-left
-      // North = front edge (corners 0-1)
-      // South = back edge (corners 3-2)
-      // East = right edge (corners 1-2)
-      // West = left edge (corners 0-3)
+      // Calculate edge midpoints for all 4 edges
+      const edges = {
+        edge01: {
+          center: {
+            x: (ground[0].x + ground[1].x) / 2,
+            y: (ground[0].y + ground[1].y) / 2,
+          },
+          nodes: [0, 1],
+        },
+        edge12: {
+          center: {
+            x: (ground[1].x + ground[2].x) / 2,
+            y: (ground[1].y + ground[2].y) / 2,
+          },
+          nodes: [1, 2],
+        },
+        edge23: {
+          center: {
+            x: (ground[2].x + ground[3].x) / 2,
+            y: (ground[2].y + ground[3].y) / 2,
+          },
+          nodes: [2, 3],
+        },
+        edge30: {
+          center: {
+            x: (ground[3].x + ground[0].x) / 2,
+            y: (ground[3].y + ground[0].y) / 2,
+          },
+          nodes: [3, 0],
+        },
+      };
 
-      let centerX, centerY;
+      // Find which edge has the most extreme position in each cardinal direction
+      let northEdge, southEdge, eastEdge, westEdge;
+      let maxY = -Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        minX = Infinity;
 
-      if (facade === "north") {
-        // Front edge midpoint
-        centerX = (ground[0].x + ground[1].x) / 2;
-        centerY = (ground[0].y + ground[1].y) / 2;
-      } else if (facade === "south") {
-        // Back edge midpoint
-        centerX = (ground[3].x + ground[2].x) / 2;
-        centerY = (ground[3].y + ground[2].y) / 2;
-      } else if (facade === "east") {
-        // Right edge midpoint
-        centerX = (ground[1].x + ground[2].x) / 2;
-        centerY = (ground[1].y + ground[2].y) / 2;
-      } else {
-        // West: left edge midpoint
-        centerX = (ground[0].x + ground[3].x) / 2;
-        centerY = (ground[0].y + ground[3].y) / 2;
+      for (const [edgeName, edge] of Object.entries(edges)) {
+        if (edge.center.y > maxY) {
+          maxY = edge.center.y;
+          northEdge = edge; // Y+ = North
+        }
+        if (edge.center.y < minY) {
+          minY = edge.center.y;
+          southEdge = edge; // Y- = South
+        }
+        if (edge.center.x > maxX) {
+          maxX = edge.center.x;
+          eastEdge = edge; // X+ = East
+        }
+        if (edge.center.x < minX) {
+          minX = edge.center.x;
+          westEdge = edge; // X- = West
+        }
       }
 
+      // Return center of the requested cardinal facade
+      const facadeMap = {
+        north: northEdge,
+        south: southEdge,
+        east: eastEdge,
+        west: westEdge,
+      };
+
+      const selectedEdge = facadeMap[facade];
+
       return {
-        x: centerX,
-        y: centerY,
+        x: selectedEdge.center.x,
+        y: selectedEdge.center.y,
         z: wallHeight / 2, // Center height between grade and eave
       };
     }
