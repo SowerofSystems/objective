@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeRT - Rational Trigonometry Geometry Explorer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow: hidden;
+      background: #1a1a1a;
+      color: #e0e0e0;
+    }
+
+    #container {
+      display: flex;
+      height: 100vh;
+    }
+
+    #canvas-container {
+      flex: 1;
+      position: relative;
+    }
+
+    #controls-panel {
+      width: 300px;
+      background: #2a2a2a;
+      padding: 20px;
+      overflow-y: auto;
+      border-left: 1px solid #444;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: #4a9eff;
+      text-align: center;
+    }
+
+    .control-group {
+      margin-bottom: 25px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #444;
+    }
+
+    .control-group:last-child {
+      border-bottom: none;
+    }
+
+    .control-group h3 {
+      font-size: 14px;
+      margin-bottom: 12px;
+      color: #7ab8ff;
+      font-weight: 600;
+    }
+
+    .control-item {
+      margin-bottom: 15px;
+    }
+
+    .control-item label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 6px;
+      color: #b0b0b0;
+    }
+
+    .control-item input[type="checkbox"] {
+      margin-right: 8px;
+      cursor: pointer;
+    }
+
+    .control-item select {
+      width: 100%;
+      padding: 8px;
+      background: #1a1a1a;
+      border: 1px solid #555;
+      color: #e0e0e0;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .control-item select:focus {
+      outline: none;
+      border-color: #4a9eff;
+    }
+
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .slider-container input[type="range"] {
+      flex: 1;
+      cursor: pointer;
+    }
+
+    .slider-value {
+      min-width: 40px;
+      text-align: right;
+      font-size: 11px;
+      color: #7ab8ff;
+    }
+
+    .info-text {
+      font-size: 11px;
+      color: #888;
+      font-style: italic;
+      margin-top: 8px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #4a9eff;
+      border: none;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #357abd;
+    }
+
+    button:active {
+      background: #2a5f94;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      font-size: 12px;
+      color: #e0e0e0;
+    }
+
+    .stats {
+      font-size: 11px;
+      color: #999;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    #info-overlay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 12px 16px;
+      border-radius: 4px;
+      font-size: 12px;
+      line-height: 1.6;
+      max-width: 300px;
+      pointer-events: none;
+    }
+
+    .coord-label {
+      color: #7ab8ff;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div id="canvas-container">
+      <div id="info-overlay"></div>
+    </div>
+    <div id="controls-panel">
+      <h1>ThreeRT Explorer</h1>
+
+      <!-- Coordinate System Toggle -->
+      <div class="control-group">
+        <h3>Coordinate System</h3>
+        <div class="control-item">
+          <label class="checkbox-label">
+            <input type="checkbox" id="showCartesian" checked>
+            Show Cartesian Grid (XYZ)
+          </label>
+        </div>
+        <div class="control-item">
+          <label class="checkbox-label">
+            <input type="checkbox" id="showQuadray">
+            Show Quadray Basis (WXYZ)
+          </label>
+        </div>
+        <p class="info-text">Quadray: 4 tetrahedral basis vectors pointing to cube vertices (1,1,1), (1,-1,-1), (-1,1,-1), (-1,-1,1)</p>
+      </div>
+
+      <!-- Polyhedra Selection -->
+      <div class="control-group">
+        <h3>Polyhedra</h3>
+        <div class="control-item">
+          <label class="checkbox-label">
+            <input type="checkbox" id="showCube" checked>
+            Hexahedron (Cube)
+          </label>
+        </div>
+        <div class="control-item">
+          <label class="checkbox-label">
+            <input type="checkbox" id="showTetrahedron">
+            Tetrahedron (Inscribed)
+          </label>
+        </div>
+        <div class="control-item">
+          <label class="checkbox-label">
+            <input type="checkbox" id="showDualTetrahedron">
+            Dual Tetrahedron
+          </label>
+        </div>
+        <div class="control-item">
+          <label class="checkbox-label">
+            <input type="checkbox" id="showOctahedron">
+            Octahedron (Dual of Cube)
+          </label>
+        </div>
+        <div class="control-item">
+          <label class="checkbox-label">
+            <input type="checkbox" id="showIcosahedron">
+            Icosahedron (20 faces, φ)
+          </label>
+        </div>
+        <div class="control-item">
+          <label class="checkbox-label">
+            <input type="checkbox" id="showRhombicDodecahedron">
+            Rhombic Dodecahedron
+          </label>
+        </div>
+      </div>
+
+      <!-- Scale Controls -->
+      <div class="control-group">
+        <h3>Scale</h3>
+        <div class="control-item">
+          <label>Cube Edge Length</label>
+          <div class="slider-container">
+            <input type="range" id="scaleSlider" min="0.5" max="3" step="0.1" value="2">
+            <span class="slider-value" id="scaleValue">2.0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Visual Options -->
+      <div class="control-group">
+        <h3>Visual Options</h3>
+        <div class="control-item">
+          <label class="checkbox-label">
+            <input type="checkbox" id="showNodes" checked>
+            Show Vertex Nodes
+          </label>
+        </div>
+        <div class="control-item">
+          <label class="checkbox-label">
+            <input type="checkbox" id="showFaces" checked>
+            Show Faces (Semi-Transparent)
+          </label>
+        </div>
+        <div class="control-item">
+          <label>Face Opacity</label>
+          <div class="slider-container">
+            <input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="0.25">
+            <span class="slider-value" id="opacityValue">0.25</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Geometry Info -->
+      <div class="control-group">
+        <h3>Geometry Info</h3>
+        <div class="stats" id="geometryStats">
+          <div><strong>Cube:</strong></div>
+          <div>Vertices: 8</div>
+          <div>Edges: 12</div>
+          <div>Faces: 6</div>
+          <div>Euler: V - E + F = 2 ✓</div>
+        </div>
+      </div>
+
+      <!-- Reset Button -->
+      <div class="control-group">
+        <button id="resetCamera">Reset Camera</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Three.js ES Modules via importmap (no build step required) -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    // Import Three.js modules
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // Make THREE global for easier access in console
+    window.THREE = THREE;
+
+    // ========================================================================
+    // RATIONAL TRIGONOMETRY LIBRARY
+    // ========================================================================
+    const RT = {
+      /**
+       * Quadrance (Q = distance²) - Wildberger's replacement for distance
+       * Avoids sqrt, keeps calculations exact
+       */
+      quadrance: (p1, p2) => {
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const dz = p2.z - p1.z;
+        return dx * dx + dy * dy + dz * dz;
+      },
+
+      /**
+       * Spread (s) - Wildberger's replacement for angle
+       * s = 1 - (v1·v2)² / (|v1|²|v2|²)
+       */
+      spread: (v1, v2) => {
+        const dot = v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+        const q1 = v1.x * v1.x + v1.y * v1.y + v1.z * v1.z;
+        const q2 = v2.x * v2.x + v2.y * v2.y + v2.z * v2.z;
+        return 1 - (dot * dot) / (q1 * q2);
+      },
+
+      /**
+       * Verify Euler's formula: V - E + F = 2
+       */
+      verifyEuler: (vertices, edges, faces) => {
+        return vertices - edges + faces === 2;
+      }
+    };
+
+    // ========================================================================
+    // QUADRAY COORDINATE SYSTEM (Tom Ace / Kirby Urner)
+    // ========================================================================
+    const Quadray = {
+      /**
+       * 4 basis vectors pointing to tetrahedral vertices inscribed in cube
+       * These are the face normals of a regular tetrahedron
+       * A: ( 1,  1,  1)
+       * B: ( 1, -1, -1)
+       * C: (-1,  1, -1)
+       * D: (-1, -1,  1)
+       */
+      basisVectors: [
+        new THREE.Vector3( 1,  1,  1).normalize(),  // A
+        new THREE.Vector3( 1, -1, -1).normalize(),  // B
+        new THREE.Vector3(-1,  1, -1).normalize(),  // C
+        new THREE.Vector3(-1, -1,  1).normalize()   // D
+      ],
+
+      /**
+       * Zero-sum normalization: A + B + C + D = 0
+       * Subtracts mean from all coordinates
+       */
+      zeroSumNormalize: (coords) => {
+        const mean = (coords[0] + coords[1] + coords[2] + coords[3]) / 4;
+        return coords.map(c => c - mean);
+      },
+
+      /**
+       * Convert quadray (a, b, c, d) to Cartesian (x, y, z)
+       * Using zero-sum normalized coordinates
+       */
+      toCartesian: (a, b, c, d) => {
+        const normalized = Quadray.zeroSumNormalize([a, b, c, d]);
+        const result = new THREE.Vector3(0, 0, 0);
+
+        for (let i = 0; i < 4; i++) {
+          result.add(Quadray.basisVectors[i].clone().multiplyScalar(normalized[i]));
+        }
+
+        return result;
+      }
+    };
+
+    // ========================================================================
+    // POLYHEDRA GENERATORS (Rational Trigonometry)
+    // ========================================================================
+    const Polyhedra = {
+      /**
+       * Hexahedron (Cube) - vertices at (±1, ±1, ±1)
+       * Edge quadrance Q = 4 (edge length = 2)
+       */
+      cube: (halfSize = 1) => {
+        const s = halfSize;
+        const vertices = [
+          new THREE.Vector3(-s, -s, -s),  // 0: (-, -, -)
+          new THREE.Vector3( s, -s, -s),  // 1: (+, -, -)
+          new THREE.Vector3( s,  s, -s),  // 2: (+, +, -)
+          new THREE.Vector3(-s,  s, -s),  // 3: (-, +, -)
+          new THREE.Vector3(-s, -s,  s),  // 4: (-, -, +)
+          new THREE.Vector3( s, -s,  s),  // 5: (+, -, +)
+          new THREE.Vector3( s,  s,  s),  // 6: (+, +, +)
+          new THREE.Vector3(-s,  s,  s),  // 7: (-, +, +)
+        ];
+
+        // 12 edges (3 groups of 4 parallel edges)
+        const edges = [
+          // Bottom face (z = -s)
+          [0, 1], [1, 2], [2, 3], [3, 0],
+          // Top face (z = +s)
+          [4, 5], [5, 6], [6, 7], [7, 4],
+          // Vertical edges
+          [0, 4], [1, 5], [2, 6], [3, 7]
+        ];
+
+        // 6 square faces
+        const faces = [
+          [0, 1, 2, 3],  // Bottom (z = -s)
+          [4, 5, 6, 7],  // Top (z = +s)
+          [0, 1, 5, 4],  // Front (y = -s)
+          [2, 3, 7, 6],  // Back (y = +s)
+          [0, 3, 7, 4],  // Left (x = -s)
+          [1, 2, 6, 5]   // Right (x = +s)
+        ];
+
+        return { vertices, edges, faces };
+      },
+
+      /**
+       * Tetrahedron inscribed in cube
+       * Uses alternating vertices (every other corner)
+       * Edge quadrance Q = 8 (edge length = 2√2)
+       */
+      tetrahedron: (halfSize = 1) => {
+        const s = halfSize;
+        // Select 4 vertices of cube such that no two share an edge
+        // These form a regular tetrahedron
+        const vertices = [
+          new THREE.Vector3(-s, -s, -s),  // 0: (-, -, -)
+          new THREE.Vector3( s,  s, -s),  // 2: (+, +, -)
+          new THREE.Vector3( s, -s,  s),  // 5: (+, -, +)
+          new THREE.Vector3(-s,  s,  s),  // 7: (-, +, +)
+        ];
+
+        // 6 edges (all pairs - complete graph K4)
+        const edges = [
+          [0, 1], [0, 2], [0, 3],
+          [1, 2], [1, 3], [2, 3]
+        ];
+
+        // 4 triangular faces
+        const faces = [
+          [0, 1, 2],
+          [0, 1, 3],
+          [0, 2, 3],
+          [1, 2, 3]
+        ];
+
+        return { vertices, edges, faces };
+      },
+
+      /**
+       * Dual Tetrahedron (opposite alternating vertices)
+       * Forms stella octangula when both tetrahedra shown together
+       */
+      dualTetrahedron: (halfSize = 1) => {
+        const s = halfSize;
+        const vertices = [
+          new THREE.Vector3( s, -s, -s),  // 1: (+, -, -)
+          new THREE.Vector3(-s,  s, -s),  // 3: (-, +, -)
+          new THREE.Vector3(-s, -s,  s),  // 4: (-, -, +)
+          new THREE.Vector3( s,  s,  s),  // 6: (+, +, +)
+        ];
+
+        const edges = [
+          [0, 1], [0, 2], [0, 3],
+          [1, 2], [1, 3], [2, 3]
+        ];
+
+        const faces = [
+          [0, 1, 2],
+          [0, 1, 3],
+          [0, 2, 3],
+          [1, 2, 3]
+        ];
+
+        return { vertices, edges, faces };
+      },
+
+      /**
+       * Octahedron (dual of cube)
+       * Vertices at face centers of cube: (±1,0,0), (0,±1,0), (0,0,±1)
+       * Edge quadrance Q = 2 (edge length = √2)
+       * Bounded by stella octangula (intersection of dual tetrahedra)
+       */
+      octahedron: (halfSize = 1) => {
+        const s = halfSize;
+        // 6 vertices at cube face centers
+        const vertices = [
+          new THREE.Vector3( s,  0,  0),  // 0: Right (+x)
+          new THREE.Vector3(-s,  0,  0),  // 1: Left (-x)
+          new THREE.Vector3( 0,  s,  0),  // 2: Top (+y)
+          new THREE.Vector3( 0, -s,  0),  // 3: Bottom (-y)
+          new THREE.Vector3( 0,  0,  s),  // 4: Front (+z)
+          new THREE.Vector3( 0,  0, -s),  // 5: Back (-z)
+        ];
+
+        // 12 edges (each vertex connects to 4 others, excluding opposite)
+        const edges = [
+          // Right (0) connects to: top, bottom, front, back
+          [0, 2], [0, 3], [0, 4], [0, 5],
+          // Left (1) connects to: top, bottom, front, back
+          [1, 2], [1, 3], [1, 4], [1, 5],
+          // Top (2) connects to: front, back (already connected to left/right)
+          [2, 4], [2, 5],
+          // Bottom (3) connects to: front, back
+          [3, 4], [3, 5]
+        ];
+
+        // 8 triangular faces (4 above xy-plane, 4 below)
+        const faces = [
+          // Upper hemisphere (y > 0)
+          [0, 2, 4],  // Right-Top-Front
+          [0, 2, 5],  // Right-Top-Back
+          [1, 2, 4],  // Left-Top-Front
+          [1, 2, 5],  // Left-Top-Back
+          // Lower hemisphere (y < 0)
+          [0, 3, 4],  // Right-Bottom-Front
+          [0, 3, 5],  // Right-Bottom-Back
+          [1, 3, 4],  // Left-Bottom-Front
+          [1, 3, 5]   // Left-Bottom-Back
+        ];
+
+        return { vertices, edges, faces };
+      },
+
+      /**
+       * Icosahedron (20 triangular faces, 12 vertices, 30 edges)
+       * Rational Trigonometry construction: vertices derived from edge midpoints
+       * Alternative to golden ratio: use quadrance relationships
+       * For RT purity: coordinates (0, ±a, ±b) where b²/a² = 5 (golden rectangle ratio)
+       * This gives edge quadrance Q = 4a² for all 30 edges
+       */
+      icosahedron: (halfSize = 1) => {
+        // RT approach: Use a=1, b=√5 to avoid phi directly
+        // Quadrance from (0,1,√5) to (1,√5,0) = 1² + (√5-1)² + 5 = 1 + (6-2√5) + 5 = 12-2√5
+        // For unit edge: all edges have same quadrance when a=1, b=√5
+        const a = halfSize * 0.525731; // ≈ 1/√(1+φ²) for normalization
+        const b = halfSize * 0.850651; // ≈ φ/√(1+φ²)
+
+        // Alternative: exact construction from cube edge divisions
+        // 12 vertices at positions that create equilateral triangle faces
+        const vertices = [
+          // Rectangle 1: XZ plane, y = ±a
+          new THREE.Vector3( 0,  a,  b),  // 0
+          new THREE.Vector3( 0,  a, -b),  // 1
+          new THREE.Vector3( 0, -a,  b),  // 2
+          new THREE.Vector3( 0, -a, -b),  // 3
+          // Rectangle 2: YZ plane, x = ±a
+          new THREE.Vector3( a,  b,  0),  // 4
+          new THREE.Vector3( a, -b,  0),  // 5
+          new THREE.Vector3(-a,  b,  0),  // 6
+          new THREE.Vector3(-a, -b,  0),  // 7
+          // Rectangle 3: XY plane, z = ±a
+          new THREE.Vector3( b,  0,  a),  // 8
+          new THREE.Vector3( b,  0, -a),  // 9
+          new THREE.Vector3(-b,  0,  a),  // 10
+          new THREE.Vector3(-b,  0, -a),  // 11
+        ];
+
+        // 30 edges (each vertex connects to 5 others in pentagonal symmetry)
+        const edges = [
+          // Vertex 0 connections
+          [0, 2], [0, 4], [0, 6], [0, 8], [0, 10],
+          // Vertex 1 connections
+          [1, 3], [1, 4], [1, 6], [1, 9], [1, 11],
+          // Vertex 2 connections
+          [2, 5], [2, 7], [2, 8], [2, 10],
+          // Vertex 3 connections
+          [3, 5], [3, 7], [3, 9], [3, 11],
+          // Vertex 4 connections
+          [4, 6], [4, 8], [4, 9],
+          // Vertex 5 connections
+          [5, 7], [5, 8], [5, 9],
+          // Vertex 6 connections
+          [6, 10], [6, 11],
+          // Vertex 7 connections
+          [7, 10], [7, 11],
+          // Vertex 8-9 connection
+          [8, 9],
+          // Vertex 10-11 connection
+          [10, 11]
+        ];
+
+        // 20 equilateral triangular faces
+        const faces = [
+          // Top cap (5 faces around +Y axis)
+          [0, 4, 8], [0, 6, 4], [0, 10, 6], [0, 8, 2], [0, 2, 10],
+          // Upper belt (5 faces)
+          [4, 1, 9], [4, 9, 8], [6, 1, 4], [6, 11, 1], [6, 10, 11],
+          // Lower belt (5 faces)
+          [2, 8, 5], [8, 9, 5], [10, 2, 7], [2, 5, 7], [10, 7, 11],
+          // Bottom cap (5 faces around -Y axis)
+          [3, 9, 1], [3, 5, 9], [3, 11, 7], [3, 7, 5], [3, 1, 11]
+        ];
+
+        return { vertices, edges, faces };
+      },
+
+      /**
+       * Rhombic Dodecahedron (12 rhombic faces, 14 vertices, 24 edges)
+       * Dual of cuboctahedron, Voronoi cell of FCC lattice
+       * 8 vertices at (±1,0,0),(0,±1,0),(0,0,±1) and 6 at (±1,±1,±1)/√3
+       */
+      rhombicDodecahedron: (halfSize = 1) => {
+        const s = halfSize;
+        const t = s / Math.sqrt(3); // Normalize cube corner vertices
+
+        // 14 vertices total
+        const vertices = [
+          // 8 vertices on coordinate axes (degree 3)
+          new THREE.Vector3( s,  0,  0),  // 0: +X
+          new THREE.Vector3(-s,  0,  0),  // 1: -X
+          new THREE.Vector3( 0,  s,  0),  // 2: +Y
+          new THREE.Vector3( 0, -s,  0),  // 3: -Y
+          new THREE.Vector3( 0,  0,  s),  // 4: +Z
+          new THREE.Vector3( 0,  0, -s),  // 5: -Z
+          // 6 vertices at cube body diagonals (degree 4)
+          new THREE.Vector3( t,  t,  t),  // 6: (+,+,+)
+          new THREE.Vector3( t, -t, -t),  // 7: (+,-,-)
+          new THREE.Vector3(-t,  t, -t),  // 8: (-,+,-)
+          new THREE.Vector3(-t, -t,  t),  // 9: (-,-,+)
+          new THREE.Vector3( t,  t, -t),  // 10: (+,+,-)
+          new THREE.Vector3( t, -t,  t),  // 11: (+,-,+)
+          new THREE.Vector3(-t,  t,  t),  // 12: (-,+,+)
+          new THREE.Vector3(-t, -t, -t),  // 13: (-,-,-)
+        ];
+
+        // 24 edges - each axis vertex connects to 3 cube corners
+        const edges = [
+          // From +X (0)
+          [0, 6], [0, 7], [0, 10], [0, 11],
+          // From -X (1)
+          [1, 8], [1, 9], [1, 12], [1, 13],
+          // From +Y (2)
+          [2, 6], [2, 8], [2, 10], [2, 12],
+          // From -Y (3)
+          [3, 7], [3, 9], [3, 11], [3, 13],
+          // From +Z (4)
+          [4, 6], [4, 9], [4, 11], [4, 12],
+          // From -Z (5)
+          [5, 7], [5, 8], [5, 10], [5, 13]
+        ];
+
+        // 12 rhombic faces - each connects 2 axis vertices to 2 cube corner vertices
+        const faces = [
+          // Rhombi containing +X axis vertex (0)
+          [0, 6, 2, 10],  [0, 10, 5, 7],  [0, 7, 3, 11],  [0, 11, 4, 6],
+          // Rhombi containing -X axis vertex (1)
+          [1, 8, 2, 12],  [1, 12, 4, 9],  [1, 9, 3, 13],  [1, 13, 5, 8],
+          // Rhombi bridging +/-Y
+          [2, 6, 4, 12],  [3, 11, 4, 9],
+          // Rhombi bridging +/-Z
+          [5, 10, 2, 8],  [3, 7, 5, 13]
+        ];
+
+        return { vertices, edges, faces };
+      }
+    };
+
+    // ========================================================================
+    // THREE.JS SCENE SETUP
+    // ========================================================================
+    let scene, camera, renderer, controls;
+    let cubeGroup, tetrahedronGroup, dualTetrahedronGroup, octahedronGroup;
+    let icosahedronGroup, rhombicDodecahedronGroup;
+    let cartesianGrid, quadrayBasis;
+
+    function initScene() {
+      // Scene
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x1a1a1a);
+
+      // Camera (Isometric-style perspective from above)
+      const aspect = window.innerWidth / window.innerHeight;
+      camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 1000);
+
+      // Position camera for isometric-like view (elevated, looking down)
+      camera.position.set(5, 5, 5);
+      camera.lookAt(0, 0, 0);
+
+      // Renderer
+      const container = document.getElementById('canvas-container');
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      container.appendChild(renderer.domElement);
+
+      // Orbit Controls (with damping for easing)
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.enableZoom = true;
+      controls.enablePan = true;
+
+      // Ambient light
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
+
+      // Directional light
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
+      directionalLight.position.set(5, 10, 7);
+      scene.add(directionalLight);
+
+      // Create coordinate grids
+      createCartesianGrid();
+      createQuadrayBasis();
+
+      // Create polyhedra groups
+      cubeGroup = new THREE.Group();
+      tetrahedronGroup = new THREE.Group();
+      dualTetrahedronGroup = new THREE.Group();
+      octahedronGroup = new THREE.Group();
+      icosahedronGroup = new THREE.Group();
+      rhombicDodecahedronGroup = new THREE.Group();
+
+      scene.add(cubeGroup);
+      scene.add(tetrahedronGroup);
+      scene.add(dualTetrahedronGroup);
+      scene.add(octahedronGroup);
+      scene.add(icosahedronGroup);
+      scene.add(rhombicDodecahedronGroup);
+
+      // Initial render
+      updateGeometry();
+
+      // Handle window resize
+      window.addEventListener('resize', onWindowResize);
+    }
+
+    /**
+     * Create Cartesian grid (XYZ) - grey hairlines
+     */
+    function createCartesianGrid() {
+      cartesianGrid = new THREE.Group();
+
+      const gridSize = 10;
+      const gridStep = 1;
+      const gridColor = 0x444444;
+
+      // XY plane (z = 0)
+      const gridXY = new THREE.GridHelper(gridSize, gridSize / gridStep, gridColor, gridColor);
+      gridXY.rotation.x = Math.PI / 2;
+      cartesianGrid.add(gridXY);
+
+      // Add axes (subtle, thinner than WOMBAT edges)
+      const axesHelper = new THREE.AxesHelper(3);
+      cartesianGrid.add(axesHelper);
+
+      scene.add(cartesianGrid);
+    }
+
+    /**
+     * Create Quadray basis vectors (WXYZ)
+     * 4 vectors pointing to tetrahedral vertices
+     */
+    function createQuadrayBasis() {
+      quadrayBasis = new THREE.Group();
+
+      const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00]; // R, G, B, Y
+      const labels = ['A', 'B', 'C', 'D'];
+
+      Quadray.basisVectors.forEach((vec, i) => {
+        const arrow = new THREE.ArrowHelper(
+          vec,
+          new THREE.Vector3(0, 0, 0),
+          2.5,
+          colors[i],
+          0.3,
+          0.2
+        );
+        quadrayBasis.add(arrow);
+      });
+
+      quadrayBasis.visible = false; // Hidden by default
+      scene.add(quadrayBasis);
+    }
+
+    /**
+     * Render a polyhedron from vertices, edges, faces
+     * Uses proper geometry with indexed faces for clean rendering
+     */
+    function renderPolyhedron(group, geometry, color, opacity) {
+      // Clear existing geometry
+      while (group.children.length > 0) {
+        group.remove(group.children[0]);
+      }
+
+      const { vertices, edges, faces } = geometry;
+      const showNodes = document.getElementById('showNodes').checked;
+      const showFaces = document.getElementById('showFaces').checked;
+
+      // Render faces first (back to front) using proper BufferGeometry
+      if (showFaces) {
+        // Build indexed face geometry
+        const positions = [];
+        const indices = [];
+
+        // Add all vertices to positions array
+        vertices.forEach(v => {
+          positions.push(v.x, v.y, v.z);
+        });
+
+        // Build face indices (triangulate quads if needed)
+        faces.forEach(faceIndices => {
+          // Fan triangulation from first vertex
+          for (let i = 1; i < faceIndices.length - 1; i++) {
+            indices.push(faceIndices[0], faceIndices[i], faceIndices[i + 1]);
+          }
+        });
+
+        const faceGeometry = new THREE.BufferGeometry();
+        faceGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        faceGeometry.setIndex(indices);
+        faceGeometry.computeVertexNormals();
+
+        const faceMaterial = new THREE.MeshStandardMaterial({
+          color: color,
+          transparent: true,
+          opacity: opacity,
+          side: THREE.DoubleSide,
+          depthWrite: opacity >= 0.99, // Only write depth for opaque faces
+          flatShading: true
+        });
+
+        const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);
+        faceMesh.renderOrder = 1; // Render faces before edges
+        group.add(faceMesh);
+      }
+
+      // Render edges using LineSegments for efficiency
+      const edgePositions = [];
+      edges.forEach(([i, j]) => {
+        const v1 = vertices[i];
+        const v2 = vertices[j];
+        edgePositions.push(v1.x, v1.y, v1.z);
+        edgePositions.push(v2.x, v2.y, v2.z);
+      });
+
+      const edgeGeometry = new THREE.BufferGeometry();
+      edgeGeometry.setAttribute('position', new THREE.Float32BufferAttribute(edgePositions, 3));
+
+      const edgeMaterial = new THREE.LineBasicMaterial({
+        color: color,
+        linewidth: 1, // WebGL limitation
+        depthTest: true,
+        depthWrite: true
+      });
+
+      const edgeLines = new THREE.LineSegments(edgeGeometry, edgeMaterial);
+      edgeLines.renderOrder = 2; // Render edges after faces
+      group.add(edgeLines);
+
+      // Render vertex nodes using instanced geometry for efficiency
+      if (showNodes) {
+        const nodeGeometry = new THREE.SphereGeometry(0.08, 16, 16);
+        const nodeMaterial = new THREE.MeshStandardMaterial({
+          color: color,
+          emissive: color,
+          emissiveIntensity: 0.2
+        });
+
+        vertices.forEach(vertex => {
+          const node = new THREE.Mesh(nodeGeometry, nodeMaterial);
+          node.position.copy(vertex);
+          node.renderOrder = 3; // Render nodes on top
+          group.add(node);
+        });
+      }
+    }
+
+    /**
+     * Update all geometry based on current settings
+     */
+    function updateGeometry() {
+      const scale = parseFloat(document.getElementById('scaleSlider').value) / 2;
+      const opacity = parseFloat(document.getElementById('opacitySlider').value);
+
+      // Cube (Blue)
+      if (document.getElementById('showCube').checked) {
+        const cube = Polyhedra.cube(scale);
+        renderPolyhedron(cubeGroup, cube, 0x4a9eff, opacity);
+        cubeGroup.visible = true;
+      } else {
+        cubeGroup.visible = false;
+      }
+
+      // Tetrahedron (Yellow)
+      if (document.getElementById('showTetrahedron').checked) {
+        const tetra = Polyhedra.tetrahedron(scale);
+        renderPolyhedron(tetrahedronGroup, tetra, 0xffff00, opacity);
+        tetrahedronGroup.visible = true;
+      } else {
+        tetrahedronGroup.visible = false;
+      }
+
+      // Dual Tetrahedron (Magenta)
+      if (document.getElementById('showDualTetrahedron').checked) {
+        const dualTetra = Polyhedra.dualTetrahedron(scale);
+        renderPolyhedron(dualTetrahedronGroup, dualTetra, 0xff00ff, opacity);
+        dualTetrahedronGroup.visible = true;
+      } else {
+        dualTetrahedronGroup.visible = false;
+      }
+
+      // Octahedron (Green)
+      if (document.getElementById('showOctahedron').checked) {
+        const octa = Polyhedra.octahedron(scale);
+        renderPolyhedron(octahedronGroup, octa, 0x00ff00, opacity);
+        octahedronGroup.visible = true;
+      } else {
+        octahedronGroup.visible = false;
+      }
+
+      // Icosahedron (Cyan)
+      if (document.getElementById('showIcosahedron').checked) {
+        const icosa = Polyhedra.icosahedron(scale);
+        renderPolyhedron(icosahedronGroup, icosa, 0x00ffff, opacity);
+        icosahedronGroup.visible = true;
+      } else {
+        icosahedronGroup.visible = false;
+      }
+
+      // Rhombic Dodecahedron (Orange)
+      if (document.getElementById('showRhombicDodecahedron').checked) {
+        const rhombicDodec = Polyhedra.rhombicDodecahedron(scale);
+        renderPolyhedron(rhombicDodecahedronGroup, rhombicDodec, 0xff8800, opacity);
+        rhombicDodecahedronGroup.visible = true;
+      } else {
+        rhombicDodecahedronGroup.visible = false;
+      }
+
+      updateGeometryStats();
+    }
+
+    /**
+     * Update geometry statistics display
+     */
+    function updateGeometryStats() {
+      const stats = document.getElementById('geometryStats');
+      let html = '';
+
+      if (document.getElementById('showCube').checked) {
+        const cube = Polyhedra.cube(1);
+        const eulerOK = RT.verifyEuler(cube.vertices.length, cube.edges.length, cube.faces.length);
+        html += `<div><strong>Hexahedron (Cube):</strong></div>`;
+        html += `<div>Schläfli: {4,3}</div>`;
+        html += `<div>V: ${cube.vertices.length}, E: ${cube.edges.length}, F: ${cube.faces.length}</div>`;
+        html += `<div>Euler: ${eulerOK ? '✓' : '✗'} (V - E + F = 2)</div>`;
+      }
+
+      if (document.getElementById('showTetrahedron').checked) {
+        const tetra = Polyhedra.tetrahedron(1);
+        const eulerOK = RT.verifyEuler(tetra.vertices.length, tetra.edges.length, tetra.faces.length);
+        html += `<div style="margin-top: 10px;"><strong>Tetrahedron:</strong></div>`;
+        html += `<div>Schläfli: {3,3}</div>`;
+        html += `<div>V: ${tetra.vertices.length}, E: ${tetra.edges.length}, F: ${tetra.faces.length}</div>`;
+        html += `<div>Euler: ${eulerOK ? '✓' : '✗'} (V - E + F = 2)</div>`;
+      }
+
+      if (document.getElementById('showOctahedron').checked) {
+        const octa = Polyhedra.octahedron(1);
+        const eulerOK = RT.verifyEuler(octa.vertices.length, octa.edges.length, octa.faces.length);
+        html += `<div style="margin-top: 10px;"><strong>Octahedron:</strong></div>`;
+        html += `<div>Schläfli: {3,4}</div>`;
+        html += `<div>V: ${octa.vertices.length}, E: ${octa.edges.length}, F: ${octa.faces.length}</div>`;
+        html += `<div>Euler: ${eulerOK ? '✓' : '✗'} (V - E + F = 2)</div>`;
+      }
+
+      if (document.getElementById('showIcosahedron').checked) {
+        const icosa = Polyhedra.icosahedron(1);
+        const eulerOK = RT.verifyEuler(icosa.vertices.length, icosa.edges.length, icosa.faces.length);
+        html += `<div style="margin-top: 10px;"><strong>Icosahedron:</strong></div>`;
+        html += `<div>Schläfli: {3,5}</div>`;
+        html += `<div>V: ${icosa.vertices.length}, E: ${icosa.edges.length}, F: ${icosa.faces.length}</div>`;
+        html += `<div>Euler: ${eulerOK ? '✓' : '✗'} (V - E + F = 2)</div>`;
+      }
+
+      if (document.getElementById('showRhombicDodecahedron').checked) {
+        const rhombicDodec = Polyhedra.rhombicDodecahedron(1);
+        const eulerOK = RT.verifyEuler(rhombicDodec.vertices.length, rhombicDodec.edges.length, rhombicDodec.faces.length);
+        html += `<div style="margin-top: 10px;"><strong>Rhombic Dodecahedron:</strong></div>`;
+        html += `<div>Catalan: V(3,4)</div>`;
+        html += `<div>V: ${rhombicDodec.vertices.length}, E: ${rhombicDodec.edges.length}, F: ${rhombicDodec.faces.length}</div>`;
+        html += `<div>Euler: ${eulerOK ? '✓' : '✗'} (V - E + F = 2)</div>`;
+      }
+
+      stats.innerHTML = html || 'Select a polyhedron to see stats';
+    }
+
+    /**
+     * Animation loop
+     */
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update(); // Required for damping
+      renderer.render(scene, camera);
+    }
+
+    /**
+     * Handle window resize
+     */
+    function onWindowResize() {
+      const container = document.getElementById('canvas-container');
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    // ========================================================================
+    // EVENT HANDLERS
+    // ========================================================================
+
+    // Coordinate system toggles
+    document.getElementById('showCartesian').addEventListener('change', (e) => {
+      cartesianGrid.visible = e.target.checked;
+    });
+
+    document.getElementById('showQuadray').addEventListener('change', (e) => {
+      quadrayBasis.visible = e.target.checked;
+    });
+
+    // Polyhedra toggles
+    document.getElementById('showCube').addEventListener('change', updateGeometry);
+    document.getElementById('showTetrahedron').addEventListener('change', updateGeometry);
+    document.getElementById('showDualTetrahedron').addEventListener('change', updateGeometry);
+    document.getElementById('showOctahedron').addEventListener('change', updateGeometry);
+    document.getElementById('showIcosahedron').addEventListener('change', updateGeometry);
+    document.getElementById('showRhombicDodecahedron').addEventListener('change', updateGeometry);
+
+    // Scale slider
+    document.getElementById('scaleSlider').addEventListener('input', (e) => {
+      document.getElementById('scaleValue').textContent = e.target.value;
+      updateGeometry();
+    });
+
+    // Opacity slider
+    document.getElementById('opacitySlider').addEventListener('input', (e) => {
+      document.getElementById('opacityValue').textContent = e.target.value;
+      updateGeometry();
+    });
+
+    // Visual toggles
+    document.getElementById('showNodes').addEventListener('change', updateGeometry);
+    document.getElementById('showFaces').addEventListener('change', updateGeometry);
+
+    // Reset camera
+    document.getElementById('resetCamera').addEventListener('click', () => {
+      camera.position.set(5, 5, 5);
+      camera.lookAt(0, 0, 0);
+      controls.target.set(0, 0, 0);
+      controls.update();
+    });
+
+    // ========================================================================
+    // INITIALIZE
+    // ========================================================================
+    initScene();
+    animate();
+
+    // Update info overlay
+    const infoOverlay = document.getElementById('info-overlay');
+    infoOverlay.innerHTML = `
+      <div><span class="coord-label">ThreeRT</span> - Rational Trigonometry Explorer</div>
+      <div style="margin-top: 8px; font-size: 11px;">
+        Orbit: Left-click + drag<br>
+        Pan: Right-click + drag<br>
+        Zoom: Scroll wheel
+      </div>
+    `;
+  </script>
+</body>
+</html>
