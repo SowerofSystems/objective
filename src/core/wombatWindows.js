@@ -230,6 +230,11 @@ window.TEUI.WombatWindows = (function () {
 
       const selectedEdge = facadeMap[facade];
 
+      // Debug logging to verify cardinal detection
+      console.log(
+        `[WOMBAT Windows] Facade "${facade}": edge center (${selectedEdge.center.x.toFixed(2)}, ${selectedEdge.center.y.toFixed(2)})`
+      );
+
       return {
         x: selectedEdge.center.x,
         y: selectedEdge.center.y,
