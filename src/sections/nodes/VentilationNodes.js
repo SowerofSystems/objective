@@ -16,286 +16,239 @@
 
   function parseNum(value, defaultVal = 0) {
     if (value === null || value === undefined || value === "N/A") return defaultVal;
+    if (value === "Unavailable") return "Unavailable";
     const num = parseFloat(String(value).replace(/,/g, ""));
     return isNaN(num) ? defaultVal : num;
   }
 
+  function isUnavailable(value) {
+    return value === "Unavailable" || value === "N/A";
+  }
+
   function register(graph) {
-    const inputs = [
-      // Ventilation system inputs
-      { id: "ventilation.type", legacyId: "d_107", section: "S13", classification: "C", label: "Ventilation Type", defaultValue: "HRV" },
-      { id: "ventilation.efficiency", legacyId: "d_108", section: "S13", classification: "C", label: "Heat Recovery Efficiency (%)", defaultValue: 75 },
-      { id: "ventilation.flowRate", legacyId: "d_109", section: "S13", classification: "C", label: "Ventilation Flow Rate (L/s)", defaultValue: 50 },
-
-      // Heating system inputs
-      { id: "heating.systemType", legacyId: "d_113", section: "S13", classification: "C", label: "Heating System Type", defaultValue: "Heat Pump" },
-      { id: "heating.hspf", legacyId: "d_114", section: "S13", classification: "C", label: "HSPF", defaultValue: 10 },
-      { id: "heating.afue", legacyId: "d_115", section: "S13", classification: "C", label: "AFUE (%)", defaultValue: 95 },
-
-      // Cooling system inputs
-      { id: "cooling.systemType", legacyId: "d_119", section: "S13", classification: "C", label: "Cooling System Type", defaultValue: "Heat Pump" },
-      { id: "cooling.seer", legacyId: "d_120", section: "S13", classification: "C", label: "SEER", defaultValue: 15 },
-      { id: "cooling.eer", legacyId: "d_121", section: "S13", classification: "C", label: "EER", defaultValue: 12 },
-    ];
-
-    graph.registerInputs(inputs);
+    // NOTE: All S13 inputs are registered in MechanicalNodes.
+    // This module uses mechanical.* paths for those inputs.
 
     // ========================================================================
-    // VENTILATION RATES
+    // VENTILATION RATES - from Section13 rows 119-120
     // ========================================================================
 
-    // Ventilation ACH
+    // Volumetric ventilation rate (L/s) - d_120
     graph.registerNode({
-      id: "ventilation.ach",
-      legacyId: "e_107",
+      id: "ventilation.volumetricRate",
+      legacyId: "d_120",
       section: "S13",
       classification: "C",
-      dependencies: ["ventilation.flowRate", "volume.conditioned"],
-      label: "Ventilation ACH",
+      dependencies: [
+        "mechanical.ventilation.method",
+        "mechanical.ventilation.ach",
+        "mechanical.ventilation.ratePerPerson",
+        "volume.conditioned",
+        "occupancy.occupants",
+        "occupancy.occupiedHours",
+        "occupancy.totalHours"
+      ],
+      label: "Volumetric Ventilation Rate (L/s)",
       compute: (inputs) => {
-        const flowRate = parseNum(inputs["ventilation.flowRate"], 50); // L/s
-        const volume = parseNum(inputs["volume.conditioned"], 500); // m³
-        // ACH = (flow rate in L/s × 3.6) / volume
-        return volume > 0 ? (flowRate * 3.6) / volume : 0;
+        const method = inputs["mechanical.ventilation.method"] || "Volume by Schedule";
+        const ach = parseNum(inputs["mechanical.ventilation.ach"], 3);
+        const perPersonRate = parseNum(inputs["mechanical.ventilation.ratePerPerson"], 14);
+        const volume = parseNum(inputs["volume.conditioned"], 6000);
+        const occupants = parseNum(inputs["occupancy.occupants"], 20);
+        const occupiedHours = parseNum(inputs["occupancy.occupiedHours"], 4380);
+        const totalHours = parseNum(inputs["occupancy.totalHours"], 8760);
+        const scheduleFactor = totalHours > 0 ? occupiedHours / totalHours : 0.5;
+
+        if (method === "Volume Constant") {
+          return (ach * volume) / 3.6;
+        } else if (method === "Volume by Schedule") {
+          return ((ach * volume) / 3.6) * scheduleFactor;
+        } else if (method === "Occupant Constant") {
+          return perPersonRate * occupants;
+        } else if (method === "Occupant by Schedule") {
+          return perPersonRate * occupants * scheduleFactor;
+        } else {
+          // Default to Volume by Schedule (matches legacy default)
+          return ((ach * volume) / 3.6) * scheduleFactor;
+        }
       }
     });
 
-    // Ventilation volume rate
+    // Volumetric ventilation rate in m³/h - h_120
     graph.registerNode({
       id: "ventilation.volumeRate",
-      legacyId: "f_107",
+      legacyId: "h_120",
       section: "S13",
       classification: "C",
-      dependencies: ["ventilation.flowRate"],
-      label: "Ventilation Volume Rate (m³/h)",
+      dependencies: ["ventilation.volumetricRate"],
+      label: "Volumetric Ventilation Rate (m³/h)",
       compute: (inputs) => {
-        const flowRate = parseNum(inputs["ventilation.flowRate"], 50);
+        const flowRate = parseNum(inputs["ventilation.volumetricRate"]);
         return flowRate * 3.6; // L/s to m³/h
       }
     });
 
     // ========================================================================
-    // HEAT RECOVERY
+    // VENTILATION HEAT LOSS/GAIN - from Section13 rows 121-123
     // ========================================================================
 
-    // Effective heat recovery
-    graph.registerNode({
-      id: "ventilation.effectiveRecovery",
-      legacyId: "g_108",
-      section: "S13",
-      classification: "C",
-      dependencies: ["ventilation.type", "ventilation.efficiency"],
-      label: "Effective Heat Recovery (%)",
-      compute: (inputs) => {
-        const type = inputs["ventilation.type"] || "HRV";
-        const efficiency = parseNum(inputs["ventilation.efficiency"], 75);
-
-        // No recovery for exhaust-only or natural ventilation
-        if (type === "Exhaust Only" || type === "Natural") {
-          return 0;
-        }
-
-        return efficiency;
-      }
-    });
-
-    // ========================================================================
-    // VENTILATION HEAT LOSS/GAIN
-    // ========================================================================
-
-    // Ventilation heat loss (before recovery)
+    // Ventilation heating load (before recovery) - d_121
     graph.registerNode({
       id: "ventilation.grossHeatLoss",
-      legacyId: "h_109",
+      legacyId: "d_121",
       section: "S13",
       classification: "C",
-      dependencies: ["ventilation.volumeRate", "climate.heating.degreedays"],
-      label: "Gross Ventilation Heat Loss (kWh/yr)",
+      dependencies: ["ventilation.volumetricRate", "climate.heating.degreedays"],
+      label: "Ventilation Heating Load (kWh/yr)",
       compute: (inputs) => {
-        const volumeRate = parseNum(inputs["ventilation.volumeRate"]);
-        const hdd = parseNum(inputs["climate.heating.degreedays"], 4000);
-        const airHeatCapacity = 0.34; // W·h/m³·K
-        return (volumeRate * airHeatCapacity * hdd * 24) / 1000;
+        const hdd = inputs["climate.heating.degreedays"];
+        if (isUnavailable(hdd)) return "Unavailable";
+
+        const volumeRate = parseNum(inputs["ventilation.volumetricRate"]);
+        // Formula from Section13: (1.21 * ventRate * hdd * 24) / 1000
+        // 1.21 is volumetric heat capacity of air (kJ/(m³·K))
+        return (1.21 * volumeRate * parseNum(hdd) * 24) / 1000;
       }
     });
 
-    // Ventilation heat loss (net after recovery)
+    // Ventilation energy recovered - h_121
     graph.registerNode({
-      id: "ventilation.netHeatLoss",
-      legacyId: "i_109",
+      id: "ventilation.energyRecovered",
+      legacyId: "h_121",
       section: "S13",
       classification: "C",
-      dependencies: ["ventilation.grossHeatLoss", "ventilation.effectiveRecovery"],
+      dependencies: ["ventilation.grossHeatLoss", "mechanical.ventilation.efficiency"],
+      label: "Ventilation Energy Recovered (kWh/yr)",
+      compute: (inputs) => {
+        const grossLoss = parseNum(inputs["ventilation.grossHeatLoss"]);
+        const efficiency = parseNum(inputs["mechanical.ventilation.efficiency"], 89) / 100;
+        return grossLoss * efficiency;
+      }
+    });
+
+    // Net heating season ventilation losses - m_121
+    graph.registerNode({
+      id: "ventilation.netHeatLoss",
+      legacyId: "m_121",
+      section: "S13",
+      classification: "C",
+      dependencies: ["ventilation.grossHeatLoss", "ventilation.energyRecovered"],
       label: "Net Ventilation Heat Loss (kWh/yr)",
       compute: (inputs) => {
         const grossLoss = parseNum(inputs["ventilation.grossHeatLoss"]);
-        const recovery = parseNum(inputs["ventilation.effectiveRecovery"], 75) / 100;
-        return grossLoss * (1 - recovery);
+        const recovered = parseNum(inputs["ventilation.energyRecovered"]);
+        return grossLoss - recovered;
       }
     });
 
-    // Ventilation heat gain (cooling season)
+    // Ventilation cooling load - d_122
     graph.registerNode({
       id: "ventilation.heatGain",
-      legacyId: "k_109",
+      legacyId: "d_122",
       section: "S13",
       classification: "C",
-      dependencies: ["ventilation.volumeRate", "climate.cooling.degreedays", "ventilation.effectiveRecovery"],
+      dependencies: ["ventilation.volumetricRate", "climate.cooling.degreedays", "mechanical.ventilation.efficiency"],
       label: "Net Ventilation Heat Gain (kWh/yr)",
       compute: (inputs) => {
-        const volumeRate = parseNum(inputs["ventilation.volumeRate"]);
-        const cdd = parseNum(inputs["climate.cooling.degreedays"], 300);
-        const recovery = parseNum(inputs["ventilation.effectiveRecovery"], 75) / 100;
-        const airHeatCapacity = 0.34;
-        const grossGain = (volumeRate * airHeatCapacity * cdd * 24) / 1000;
-        return grossGain * (1 - recovery);
+        const cdd = inputs["climate.cooling.degreedays"];
+        // Legacy returns 0 when CDD unavailable
+        if (isUnavailable(cdd)) return 0;
+
+        const volumeRate = parseNum(inputs["ventilation.volumetricRate"]);
+        const efficiency = parseNum(inputs["mechanical.ventilation.efficiency"], 89) / 100;
+        // Formula from Section13: (1.21 * ventRate * cdd * 24) / 1000 * (1 - efficiency)
+        const grossGain = (1.21 * volumeRate * parseNum(cdd) * 24) / 1000;
+        return grossGain * (1 - efficiency);
       }
     });
 
     // ========================================================================
-    // HEATING SYSTEM PERFORMANCE
+    // HEATING SYSTEM PERFORMANCE - from Section13 row 113-114
     // ========================================================================
 
-    // Heating COP
+    // Heating COP (derived from HSPF or AFUE) - no direct legacyId
     graph.registerNode({
-      id: "heating.cop",
-      legacyId: "e_113",
+      id: "heating.copDerived",
       section: "S13",
       classification: "C",
-      dependencies: ["heating.systemType", "heating.hspf", "heating.afue"],
+      dependencies: ["mechanical.heating.systemType", "mechanical.heating.hspf", "mechanical.heating.afue"],
       label: "Heating COP",
       compute: (inputs) => {
-        const type = inputs["heating.systemType"] || "Heat Pump";
-        const hspf = parseNum(inputs["heating.hspf"], 10);
-        const afue = parseNum(inputs["heating.afue"], 95);
+        const type = inputs["mechanical.heating.systemType"] || "Heatpump";
+        const hspf = parseNum(inputs["mechanical.heating.hspf"], 10);
+        const afue = parseNum(inputs["mechanical.heating.afue"], 0.95);
 
-        if (type.includes("Heat Pump") || type.includes("ASHP") || type.includes("GSHP")) {
+        if (type.includes("eatpump") || type.includes("ASHP") || type.includes("GSHP")) {
           // HSPF to COP: COP = HSPF / 3.412
           return hspf / 3.412;
         } else if (type.includes("Electric")) {
-          return 1.0; // Electric resistance
+          return 1.0;
         } else {
-          // Combustion systems - AFUE to COP equivalent
-          return afue / 100;
+          // Combustion systems - AFUE is already a decimal (0.95)
+          return afue;
         }
       }
     });
 
     // Heating energy consumption
+    // Note: No legacyId - this is an intermediate computation not stored in legacy system
     graph.registerNode({
       id: "heating.energyConsumption",
-      legacyId: "i_113",
       section: "S13",
       classification: "C",
-      dependencies: [
-        "energy.ted",
-        "heating.cop"
-      ],
+      dependencies: ["energy.ted.heating", "heating.copDerived"],
       label: "Heating Energy Consumption (kWh/yr)",
       compute: (inputs) => {
-        const ted = parseNum(inputs["energy.ted"]); // Thermal energy demand
-        const cop = parseNum(inputs["heating.cop"], 1);
+        const ted = parseNum(inputs["energy.ted.heating"]);
+        const cop = parseNum(inputs["heating.copDerived"], 1);
         return cop > 0 ? ted / cop : ted;
       }
     });
 
     // ========================================================================
-    // COOLING SYSTEM PERFORMANCE
+    // COOLING SYSTEM PERFORMANCE - from Section13 row 116-117
     // ========================================================================
 
-    // Cooling COP
-    graph.registerNode({
-      id: "cooling.cop",
-      legacyId: "e_119",
-      section: "S13",
-      classification: "C",
-      dependencies: ["cooling.systemType", "cooling.seer", "cooling.eer"],
-      label: "Cooling COP",
-      compute: (inputs) => {
-        const type = inputs["cooling.systemType"] || "Heat Pump";
-        const seer = parseNum(inputs["cooling.seer"], 15);
-        const eer = parseNum(inputs["cooling.eer"], 12);
-
-        if (type.includes("Heat Pump") || type.includes("Central AC")) {
-          // SEER to COP: COP = SEER / 3.412
-          return seer / 3.412;
-        } else {
-          // EER to COP: COP = EER / 3.412
-          return eer / 3.412;
-        }
-      }
-    });
-
-    // Cooling energy consumption
+    // Cooling energy
+    // Note: No legacyId - this is an intermediate computation not stored in legacy system
     graph.registerNode({
       id: "cooling.energyConsumption",
-      legacyId: "i_119",
       section: "S13",
       classification: "C",
-      dependencies: [
-        "energy.ced",
-        "cooling.cop"
-      ],
+      dependencies: ["energy.ced.unmitigated", "mechanical.cooling.effectiveCop"],
       label: "Cooling Energy Consumption (kWh/yr)",
       compute: (inputs) => {
-        const ced = parseNum(inputs["energy.ced"]); // Cooling energy demand
-        const cop = parseNum(inputs["cooling.cop"], 3);
+        const ced = parseNum(inputs["energy.ced.unmitigated"]);
+        const cop = parseNum(inputs["mechanical.cooling.effectiveCop"], 2.66);
         return cop > 0 ? ced / cop : ced;
       }
     });
 
     // ========================================================================
-    // FREE COOLING
+    // FREE COOLING - from Section13 row 124
     // ========================================================================
 
-    // Free cooling potential (night flush, economizer)
+    // Free cooling potential - m_124
     graph.registerNode({
       id: "cooling.freeCooling",
-      legacyId: "i_122",
+      legacyId: "m_124",
       section: "S13",
       classification: "C",
-      dependencies: [
-        "radiantGains.subtotal.coolingGain",
-        "climate.cooling.degreedays"
-      ],
+      dependencies: ["radiantGains.subtotal.coolingGain", "climate.cooling.degreedays"],
       label: "Free Cooling Potential (kWh/yr)",
       compute: (inputs) => {
+        const cdd = inputs["climate.cooling.degreedays"];
+        // Legacy returns 0 when CDD unavailable
+        if (isUnavailable(cdd)) return 0;
+
         const coolingGain = parseNum(inputs["radiantGains.subtotal.coolingGain"]);
-        const cdd = parseNum(inputs["climate.cooling.degreedays"], 300);
-        // Estimate: 10% of cooling gains can be offset by free cooling in moderate climates
-        const freeCoolingFactor = cdd < 500 ? 0.15 : cdd < 1000 ? 0.10 : 0.05;
+        const cddNum = parseNum(cdd);
+        const freeCoolingFactor = cddNum < 500 ? 0.15 : cddNum < 1000 ? 0.10 : 0.05;
         return coolingGain * freeCoolingFactor;
       }
     });
 
-    // ========================================================================
-    // TOTAL MECHANICAL ENERGY
-    // ========================================================================
-
-    // Total HVAC energy
-    graph.registerNode({
-      id: "mechanical.totalEnergy",
-      legacyId: "i_125",
-      section: "S13",
-      classification: "C",
-      dependencies: [
-        "heating.energyConsumption",
-        "cooling.energyConsumption",
-        "ventilation.netHeatLoss"
-      ],
-      label: "Total HVAC Energy (kWh/yr)",
-      compute: (inputs) => {
-        const heating = parseNum(inputs["heating.energyConsumption"]);
-        const cooling = parseNum(inputs["cooling.energyConsumption"]);
-        // Fan energy is typically small compared to heating/cooling
-        // Assume ~5% of total for fans
-        const baseEnergy = heating + cooling;
-        const fanEnergy = baseEnergy * 0.05;
-        return baseEnergy + fanEnergy;
-      }
-    });
-
-    console.log("[VentilationNodes] Registered", inputs.length, "inputs");
+    console.log("[VentilationNodes] Registered ventilation computed nodes");
   }
 
   window.TEUI.ComputationNodes.Ventilation = { register };

@@ -2,6 +2,10 @@
  * ForestryNodes.js - Wood Emissions Offset (Section 08)
  *
  * d_60: Wood offset (MT/yr) used in S04 Row 32 emissions calculations
+ *
+ * Legacy calculation derived from Section04.js:
+ *   k_31 = d_31 * 150 (wood volume * emissions factor)
+ *   d_60 = k_31 / 1000 (if d_31 > 0, else 0)
  */
 (function () {
   "use strict";
@@ -9,44 +13,62 @@
   window.TEUI = window.TEUI || {};
   window.TEUI.ComputationNodes = window.TEUI.ComputationNodes || {};
 
+  function parseNum(value, defaultVal = 0) {
+    if (value === null || value === undefined || value === "N/A") return defaultVal;
+    if (value === "Unavailable") return "Unavailable";
+    const num = parseFloat(String(value).replace(/,/g, ""));
+    return isNaN(num) ? defaultVal : num;
+  }
+
+  function isUnavailable(value) {
+    return value === "Unavailable" || value === "N/A";
+  }
+
   function register(graph) {
+    // Input: Wood volume from S04 Row 31
     const inputs = [
-      { id: "forestry.woodVolume", legacyId: "d_57", section: "S08", classification: "C", label: "Wood Volume (m³)", defaultValue: 0 },
-      { id: "forestry.woodDensity", legacyId: "h_57", section: "S08", classification: "C", label: "Wood Density (kg/m³)", defaultValue: 500 },
-      { id: "forestry.carbonFraction", legacyId: "d_58", section: "S08", classification: "C", label: "Carbon Fraction", defaultValue: 0.5 },
+      {
+        id: "forestry.woodVolume",
+        legacyId: "d_31",
+        section: "S04",
+        classification: "G",
+        label: "Wood Volume (m³/yr)",
+        defaultValue: 0
+      },
     ];
 
     graph.registerInputs(inputs);
 
-    // Wood carbon storage calculation
+    // Wood emissions (intermediate calculation matching k_31)
+    // From Section04.js line 1286: k_31 = h_31 * 150
     graph.registerNode({
-      id: "forestry.carbonStorage",
-      legacyId: "d_59",
-      section: "S08",
+      id: "forestry.woodEmissions",
+      legacyId: "k_31",
+      section: "S04",
       classification: "C",
-      dependencies: ["forestry.woodVolume", "forestry.woodDensity", "forestry.carbonFraction"],
-      label: "Carbon Storage (kg CO2)",
+      dependencies: ["forestry.woodVolume"],
+      label: "Wood Emissions (kg CO2/yr)",
       compute: (inputs) => {
-        const volume = parseFloat(inputs["forestry.woodVolume"]) || 0;
-        const density = parseFloat(inputs["forestry.woodDensity"]) || 500;
-        const fraction = parseFloat(inputs["forestry.carbonFraction"]) || 0.5;
-        // Carbon storage = volume * density * carbon fraction * 3.67 (CO2/C ratio)
-        return volume * density * fraction * 3.67;
+        const volume = parseNum(inputs["forestry.woodVolume"]);
+        // k_31 = d_31 * 150 (wood volume * emissions factor)
+        return volume * 150;
       },
     });
 
-    // Annual wood offset (divided by service life)
+    // Annual wood offset (d_60) - used to offset emissions in S04
+    // This is subtracted from emissions totals in Row 32
     graph.registerNode({
       id: "forestry.annualOffset",
       legacyId: "d_60",
       section: "S08",
       classification: "C",
-      dependencies: ["forestry.carbonStorage", "building.serviceLife"],
+      dependencies: ["forestry.woodVolume", "forestry.woodEmissions"],
       label: "Annual Wood Offset (MT CO2/yr)",
       compute: (inputs) => {
-        const storage = parseFloat(inputs["forestry.carbonStorage"]) || 0;
-        const serviceLife = parseFloat(inputs["building.serviceLife"]) || 50;
-        return serviceLife > 0 ? storage / serviceLife / 1000 : 0; // Convert kg to MT
+        const volume = parseNum(inputs["forestry.woodVolume"]);
+        const emissions = parseNum(inputs["forestry.woodEmissions"]);
+        // d_60 = k_31 / 1000 (if d_31 > 0)
+        return volume > 0 ? emissions / 1000 : 0;
       },
     });
 

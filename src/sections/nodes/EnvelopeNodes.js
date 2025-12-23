@@ -25,8 +25,13 @@
 
   function parseNum(value, defaultVal = 0) {
     if (value === null || value === undefined || value === "N/A") return defaultVal;
+    if (value === "Unavailable") return "Unavailable";
     const num = parseFloat(String(value).replace(/,/g, ""));
     return isNaN(num) ? defaultVal : num;
+  }
+
+  function isUnavailable(value) {
+    return value === "Unavailable" || value === "N/A";
   }
 
   // ============================================================================
@@ -396,7 +401,8 @@
     // ========================================================================
     {
       id: "envelope.airFacing.weightedUValue",
-      legacyId: "g_101",
+      // Note: legacyId "g_101" is mapped in VolumeMetricsNodes
+      // This node applies thermal bridge penalty for internal use
       dependencies: [
         "envelope.roof.area",
         "envelope.roof.uValue",
@@ -457,7 +463,7 @@
     },
     {
       id: "envelope.groundFacing.weightedUValue",
-      legacyId: "g_102",
+      // Note: legacyId "g_102" is mapped in VolumeMetricsNodes
       dependencies: [
         "envelope.wallsBelowGrade.area",
         "envelope.wallsBelowGrade.uValue",
@@ -504,11 +510,12 @@
       label: "Heat Loss Rate (Ae)",
       unit: "kWh/m²",
       compute: (inputs) => {
-        const u = parseNum(inputs["envelope.airFacing.weightedUValue"], 0);
-        const hdd = parseNum(inputs["climate.heating.degreedays"], 4600);
+        const hdd = inputs["climate.heating.degreedays"];
+        if (isUnavailable(hdd)) return "Unavailable";
 
+        const u = parseNum(inputs["envelope.airFacing.weightedUValue"], 0);
         // Heat loss = U × HDD × 24 / 1000
-        return +((u * hdd * 24) / 1000).toFixed(2);
+        return +((u * parseNum(hdd) * 24) / 1000).toFixed(2);
       }
     },
     {
@@ -537,11 +544,12 @@
       label: "Heat Loss Rate (Ag)",
       unit: "kWh/m²",
       compute: (inputs) => {
-        const u = parseNum(inputs["envelope.groundFacing.weightedUValue"], 0);
-        const gfhdd = parseNum(inputs["climate.groundFacing.hdd"], 2695);
+        const gfhdd = inputs["climate.groundFacing.hdd"];
+        if (isUnavailable(gfhdd)) return "Unavailable";
 
+        const u = parseNum(inputs["envelope.groundFacing.weightedUValue"], 0);
         // Heat loss = U × GF_HDD × 24 / 1000
-        return +((u * gfhdd * 24) / 1000).toFixed(2);
+        return +((u * parseNum(gfhdd) * 24) / 1000).toFixed(2);
       }
     },
     {
@@ -577,11 +585,13 @@
       label: "Heat Gain Rate (Ae)",
       unit: "kWh/m²",
       compute: (inputs) => {
-        const u = parseNum(inputs["envelope.airFacing.weightedUValue"], 0);
-        const cdd = parseNum(inputs["climate.cooling.degreedays"], 196);
+        const cdd = inputs["climate.cooling.degreedays"];
+        // Legacy returns 0 when CDD unavailable
+        if (isUnavailable(cdd)) return 0;
 
+        const u = parseNum(inputs["envelope.airFacing.weightedUValue"], 0);
         // Heat gain = U × CDD × 24 / 1000
-        return +((u * cdd * 24) / 1000).toFixed(2);
+        return +((u * parseNum(cdd) * 24) / 1000).toFixed(2);
       }
     },
     {
@@ -610,11 +620,10 @@
       label: "Heat Gain Rate (Ag)",
       unit: "kWh/m²",
       compute: (inputs) => {
+        const gfcdd = inputs["climate.groundFacing.cdd"];
         const u = parseNum(inputs["envelope.groundFacing.weightedUValue"], 0);
-        const gfcdd = parseNum(inputs["climate.groundFacing.cdd"], -1680);
-
         // Heat gain = U × GF_CDD × 24 / 1000
-        return +((u * gfcdd * 24) / 1000).toFixed(2);
+        return +((u * parseNum(gfcdd, 0) * 24) / 1000).toFixed(2);
       }
     },
     {

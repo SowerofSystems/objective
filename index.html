@@ -150,6 +150,7 @@
     <script src="src/core/computation/LegacyAdapter.js"></script>
     <script src="src/core/ui/DOMBridge.js"></script>
     <script src="src/core/computation/ComputationIntegration.js"></script>
+    <script src="src/core/DevTools.js"></script>
 
     <!-- Initialize everything AFTER core scripts are loaded -->
     <script src="src/core/init.js"></script>
@@ -351,6 +352,42 @@
             >
               <i class="bi bi-arrow-repeat"></i> Tilt
             </button>
+            <!-- Dev Tools Dropdown -->
+            <div class="btn-group me-2">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                title="Developer tools for testing the new computation system"
+              >
+                <i class="bi bi-gear"></i> Dev
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li><h6 class="dropdown-header">New Computation System</h6></li>
+                <li>
+                  <a class="dropdown-item" href="#" id="validateSystemBtn">
+                    <i class="bi bi-check2-all me-2"></i>Validate Old vs New
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#" id="detailedValidationBtn">
+                    <i class="bi bi-list-check me-2"></i>Detailed Validation
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#" id="computeSystemBtn">
+                    <i class="bi bi-calculator me-2"></i>Run New System
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a class="dropdown-item" href="#" id="debugSystemBtn">
+                    <i class="bi bi-bug me-2"></i>Debug Info
+                  </a>
+                </li>
+              </ul>
+            </div>
             <div class="btn-group">
               <button
                 id="downloadBtn"

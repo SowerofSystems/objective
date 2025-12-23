@@ -19,14 +19,8 @@
   };
 
   function register(graph) {
-    const inputs = [
-      { id: "spaceHeating.systemType", legacyId: "d_113", section: "S13", classification: "C", label: "Space Heating System Type", defaultValue: "Gas" },
-      { id: "spaceHeating.efficiency", legacyId: "d_114", section: "S13", classification: "C", label: "Heating Efficiency/COP", defaultValue: 95 },
-      { id: "spaceHeating.secondaryType", legacyId: "d_115", section: "S13", classification: "C", label: "Secondary Heating Type", defaultValue: "None" },
-      { id: "spaceHeating.secondaryFraction", legacyId: "d_116", section: "S13", classification: "C", label: "Secondary Heating Fraction (%)", defaultValue: 0 },
-    ];
-
-    graph.registerInputs(inputs);
+    // NOTE: All S13 inputs are registered in MechanicalNodes.
+    // This module uses mechanical.* paths for those inputs.
 
     // Space heating energy from envelope heat loss
     graph.registerNode({
@@ -46,17 +40,22 @@
       id: "spaceHeating.primaryFuelConsumption",
       section: "S13",
       classification: "C",
-      dependencies: ["spaceHeating.annualDemand", "spaceHeating.efficiency", "spaceHeating.systemType", "spaceHeating.secondaryFraction"],
+      dependencies: ["spaceHeating.annualDemand", "mechanical.heating.copHeat", "mechanical.heating.afue", "mechanical.heating.systemType"],
       label: "Primary Heating Fuel Consumption",
       compute: (inputs) => {
         const demand = parseFloat(inputs["spaceHeating.annualDemand"]) || 0;
-        const efficiency = parseFloat(inputs["spaceHeating.efficiency"]) || 95;
-        const secondaryFraction = parseFloat(inputs["spaceHeating.secondaryFraction"]) || 0;
-        const systemType = inputs["spaceHeating.systemType"] || "Gas";
+        const systemType = inputs["mechanical.heating.systemType"] || "Gas";
         const factor = FUEL_FACTORS[systemType]?.factor || 1;
 
-        const primaryDemand = demand * (1 - secondaryFraction / 100);
-        const energyIn = efficiency > 0 ? primaryDemand / (efficiency / 100) : primaryDemand;
+        // Get efficiency based on system type
+        let efficiency;
+        if (systemType === "Heatpump" || systemType === "Heat Pump") {
+          efficiency = parseFloat(inputs["mechanical.heating.copHeat"]) || 1;
+        } else {
+          efficiency = parseFloat(inputs["mechanical.heating.afue"]) || 0.95;
+        }
+
+        const energyIn = efficiency > 0 ? demand / efficiency : demand;
         return factor !== 1 ? energyIn / factor : energyIn;
       },
     });
@@ -66,15 +65,15 @@
       id: "spaceHeating.isHeatPump",
       section: "S13",
       classification: "C",
-      dependencies: ["spaceHeating.systemType"],
+      dependencies: ["mechanical.heating.systemType"],
       label: "Is Heat Pump System",
       compute: (inputs) => {
-        const type = inputs["spaceHeating.systemType"] || "";
-        return type.toLowerCase().includes("heat pump");
+        const type = inputs["mechanical.heating.systemType"] || "";
+        return type.toLowerCase().includes("heatpump") || type.toLowerCase().includes("heat pump");
       },
     });
 
-    console.log("[SpaceHeatingNodes] Registered", inputs.length, "inputs");
+    console.log("[SpaceHeatingNodes] Registered space heating computed nodes");
   }
 
   window.TEUI.ComputationNodes.SpaceHeating = { register, FUEL_FACTORS };

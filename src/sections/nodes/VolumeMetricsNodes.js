@@ -1,13 +1,15 @@
 /**
  * VolumeMetricsNodes.js - Building Volume & Surface Metrics (Section 12)
  *
- * Calculates volume and surface area metrics:
- * - Conditioned volume
- * - Surface-to-volume ratio
- * - Window-to-wall ratio (WWR)
- * - Air changes per hour (ACH50)
- * - N-factor for air leakage
- * - Air leakage heat loss
+ * Calculates envelope areas, heat loss rates, and totals per Section12.js formulas:
+ * - d_101 = Total Air-Facing Area (Ae) = SUM(d_85:d_93)
+ * - d_102 = Total Ground-Facing Area (Ag) = SUM(d_94:d_95)
+ * - g_101 = Weighted U-Value for Ae
+ * - h_101 = Heat Loss Rate per m² (Ae) = (g_101 × HDD × 24) / 1000
+ * - i_101 = Total Heat Loss (Ae) = h_101 × d_101
+ * - i_102 = Total Heat Loss (Ag) = h_102 × d_102
+ * - i_103 = Air Leakage Heat Loss
+ * - i_104 = Total Envelope Heat Loss = i_101 + i_102 + i_103
  */
 (function () {
   "use strict";
@@ -17,8 +19,13 @@
 
   function parseNum(value, defaultVal = 0) {
     if (value === null || value === undefined || value === "N/A") return defaultVal;
+    if (value === "Unavailable") return "Unavailable";
     const num = parseFloat(String(value).replace(/,/g, ""));
     return isNaN(num) ? defaultVal : num;
+  }
+
+  function isUnavailable(value) {
+    return value === "Unavailable" || value === "N/A";
   }
 
   function register(graph) {
@@ -29,163 +36,200 @@
 
       // Air tightness inputs
       { id: "airTightness.ach50", legacyId: "d_103", section: "S12", classification: "C", label: "ACH50 (air changes/hour @ 50Pa)", defaultValue: 3.0 },
-      { id: "airTightness.method", legacyId: "d_106", section: "S12", classification: "C", label: "Air Leakage Calculation Method", defaultValue: "LBL" },
+      { id: "airTightness.nFactor", legacyId: "g_110", section: "S12", classification: "C", label: "N-Factor", defaultValue: 13 },
+
+      // Conditioned volume (user input or from S02)
+      { id: "volume.conditioned", legacyId: "d_105", section: "S12", classification: "C", label: "Conditioned Volume (m³)", defaultValue: 0 },
     ];
 
     graph.registerInputs(inputs);
 
     // ========================================================================
-    // VOLUME CALCULATIONS
+    // ENVELOPE AREA TOTALS (Row 101, 102)
+    // From Section12.js line 1697: d_101 = sum of air-facing component areas
     // ========================================================================
 
-    // Conditioned volume
+    // d_101: Total Air-Facing Area (Ae) - uses d_91 from TransmissionLossNodes
     graph.registerNode({
-      id: "volume.conditioned",
+      id: "envelope.airFacing.area",
       legacyId: "d_101",
       section: "S12",
       classification: "C",
-      dependencies: ["building.conditionedFloorArea", "volume.ceilingHeight"],
-      label: "Conditioned Volume (m³)",
+      dependencies: ["transmissionLoss.airFacing.totalArea"],
+      label: "Total Air-Facing Envelope Area (Ae) (m²)",
       compute: (inputs) => {
-        const area = parseNum(inputs["building.conditionedFloorArea"]);
-        const height = parseNum(inputs["volume.ceilingHeight"], 2.7);
-        return area * height;
+        // d_101 = sum of air-facing component areas from S11
+        return parseNum(inputs["transmissionLoss.airFacing.totalArea"]);
       }
     });
 
-    // Floor area per storey
+    // d_102: Total Ground-Facing Area (Ag) - uses d_95 from TransmissionLossNodes
     graph.registerNode({
-      id: "volume.floorAreaPerStorey",
-      legacyId: "e_101",
-      section: "S12",
-      classification: "C",
-      dependencies: ["building.conditionedFloorArea", "volume.numStoreys"],
-      label: "Floor Area per Storey (m²)",
-      compute: (inputs) => {
-        const area = parseNum(inputs["building.conditionedFloorArea"]);
-        const storeys = parseNum(inputs["volume.numStoreys"], 1);
-        return storeys > 0 ? area / storeys : area;
-      }
-    });
-
-    // Total envelope area (from S11)
-    graph.registerNode({
-      id: "volume.envelopeArea",
+      id: "envelope.groundFacing.area",
       legacyId: "d_102",
       section: "S12",
       classification: "C",
-      dependencies: ["transmissionLoss.total.area"],
+      dependencies: ["transmissionLoss.groundFacing.totalArea"],
+      label: "Total Ground-Facing Envelope Area (Ag) (m²)",
+      compute: (inputs) => {
+        // d_102 = sum of ground-facing component areas from S11
+        return parseNum(inputs["transmissionLoss.groundFacing.totalArea"]);
+      }
+    });
+
+    // d_104: Total Envelope Area
+    graph.registerNode({
+      id: "envelope.total.area",
+      legacyId: "d_104",
+      section: "S12",
+      classification: "C",
+      dependencies: ["envelope.airFacing.area", "envelope.groundFacing.area"],
       label: "Total Envelope Area (m²)",
       compute: (inputs) => {
-        return parseNum(inputs["transmissionLoss.total.area"]);
-      }
-    });
-
-    // Surface to volume ratio
-    graph.registerNode({
-      id: "volume.surfaceToVolumeRatio",
-      legacyId: "e_102",
-      section: "S12",
-      classification: "C",
-      dependencies: ["volume.envelopeArea", "volume.conditioned"],
-      label: "Surface to Volume Ratio",
-      compute: (inputs) => {
-        const surface = parseNum(inputs["volume.envelopeArea"]);
-        const volume = parseNum(inputs["volume.conditioned"], 1);
-        return volume > 0 ? surface / volume : 0;
+        return parseNum(inputs["envelope.airFacing.area"]) +
+               parseNum(inputs["envelope.groundFacing.area"]);
       }
     });
 
     // ========================================================================
-    // WINDOW-TO-WALL RATIO (WWR)
+    // WEIGHTED U-VALUES (Row 101, 102)
+    // From Section12.js calculateCombinedUValue function
     // ========================================================================
 
-    // Total glazing area (windows + skylights)
+    // g_101: Weighted U-Value for Air-Facing Envelope
     graph.registerNode({
-      id: "volume.glazingArea",
-      legacyId: "f_102",
+      id: "envelope.airFacing.uValue",
+      legacyId: "g_101",
       section: "S12",
       classification: "C",
-      dependencies: [
-        "transmissionLoss.windows.area",
-        "transmissionLoss.skylights.area"
-      ],
-      label: "Total Glazing Area (m²)",
+      dependencies: ["transmissionLoss.airFacing.weightedUValue"],
+      label: "Weighted U-Value for Air-Facing (W/m²K)",
       compute: (inputs) => {
-        const windows = parseNum(inputs["transmissionLoss.windows.area"]);
-        const skylights = parseNum(inputs["transmissionLoss.skylights.area"]);
-        return windows + skylights;
+        return parseNum(inputs["transmissionLoss.airFacing.weightedUValue"]);
       }
     });
 
-    // Wall area (above grade only)
+    // g_102: Weighted U-Value for Ground-Facing Envelope
+    // Note: Ground-facing components typically have different U-values
+    // Includes thermal bridge penalty factor as per legacy Section12.js formula
     graph.registerNode({
-      id: "volume.wallArea",
+      id: "envelope.groundFacing.uValue",
       legacyId: "g_102",
       section: "S12",
       classification: "C",
-      dependencies: ["transmissionLoss.walls.area"],
-      label: "Wall Area (m²)",
+      dependencies: [
+        "transmissionLoss.wallsBelowGrade.area",
+        "transmissionLoss.wallsBelowGrade.uValue",
+        "transmissionLoss.slabOnGrade.area",
+        "transmissionLoss.slabOnGrade.uValue",
+        "transmissionLoss.groundFacing.totalArea",
+        "transmissionLoss.thermalBridgePenalty"
+      ],
+      label: "Weighted U-Value for Ground-Facing (W/m²K)",
       compute: (inputs) => {
-        return parseNum(inputs["transmissionLoss.walls.area"]);
+        const totalArea = parseNum(inputs["transmissionLoss.groundFacing.totalArea"], 1);
+        if (totalArea === 0) return 0;
+
+        // Weighted average of ground-facing component U-values
+        const wallsArea = parseNum(inputs["transmissionLoss.wallsBelowGrade.area"]);
+        const wallsU = parseNum(inputs["transmissionLoss.wallsBelowGrade.uValue"]);
+        const slabOnArea = parseNum(inputs["transmissionLoss.slabOnGrade.area"]);
+        const slabOnU = parseNum(inputs["transmissionLoss.slabOnGrade.uValue"]);
+
+        const weightedSum = (wallsArea * wallsU) + (slabOnArea * slabOnU);
+
+        // Include thermal bridge penalty factor: g_102 = weighted_avg × (1 + d_97/100)
+        const penaltyPercent = parseNum(inputs["transmissionLoss.thermalBridgePenalty"], 5);
+        const tbFactor = 1 + penaltyPercent / 100;
+        return (weightedSum / totalArea) * tbFactor;
       }
     });
 
-    // Window-to-wall ratio
+    // ========================================================================
+    // HEAT LOSS RATES (Row 101, 102)
+    // From Section12.js line 2556: h_101 = (g_101 × HDD × 24) / 1000
+    // ========================================================================
+
+    // h_101: Heat Loss Rate per m² (Air-Facing)
     graph.registerNode({
-      id: "volume.wwr",
+      id: "envelope.airFacing.heatLossRate",
+      legacyId: "h_101",
+      section: "S12",
+      classification: "C",
+      dependencies: ["envelope.airFacing.uValue", "climate.heating.degreedays"],
+      label: "Heat Loss Rate (Ae) (kWh/m²/yr)",
+      compute: (inputs) => {
+        const hdd = inputs["climate.heating.degreedays"];
+        if (isUnavailable(hdd)) return "Unavailable";
+        // h_101 = (g_101 × HDD × 24) / 1000
+        const uValue = parseNum(inputs["envelope.airFacing.uValue"]);
+        return (uValue * parseNum(hdd) * 24) / 1000;
+      }
+    });
+
+    // h_102: Heat Loss Rate per m² (Ground-Facing)
+    graph.registerNode({
+      id: "envelope.groundFacing.heatLossRate",
       legacyId: "h_102",
       section: "S12",
       classification: "C",
-      dependencies: ["volume.glazingArea", "volume.wallArea"],
-      label: "Window-to-Wall Ratio (%)",
+      dependencies: ["envelope.groundFacing.uValue", "climate.groundFacing.hdd"],
+      label: "Heat Loss Rate (Ag) (kWh/m²/yr)",
       compute: (inputs) => {
-        const glazing = parseNum(inputs["volume.glazingArea"]);
-        const wall = parseNum(inputs["volume.wallArea"], 1);
-        return wall > 0 ? (glazing / wall) * 100 : 0;
+        const groundHdd = inputs["climate.groundFacing.hdd"];
+        if (isUnavailable(groundHdd)) return "Unavailable";
+        // h_102 = (g_102 × Ground HDD × 24) / 1000
+        const uValue = parseNum(inputs["envelope.groundFacing.uValue"]);
+        return (uValue * parseNum(groundHdd) * 24) / 1000;
       }
     });
 
     // ========================================================================
-    // AIR LEAKAGE / INFILTRATION
+    // ENVELOPE HEAT LOSSES (Row 101, 102)
+    // From Section12.js line 2557: i_101 = h_101 × d_101
     // ========================================================================
 
-    // N-factor (climate-dependent infiltration factor)
+    // i_101: Total Heat Loss (Air-Facing)
     graph.registerNode({
-      id: "airTightness.nFactor",
-      legacyId: "d_105",
+      id: "envelope.airFacing.totalHeatLoss",
+      legacyId: "i_101",
       section: "S12",
       classification: "C",
-      dependencies: ["climate.zone", "volume.numStoreys"],
-      label: "N-Factor",
+      dependencies: ["envelope.airFacing.heatLossRate", "envelope.airFacing.area"],
+      label: "Total Heat Loss (Ae) (kWh/yr)",
       compute: (inputs) => {
-        const climateZone = parseNum(inputs["climate.zone"], 6);
-        const storeys = parseNum(inputs["volume.numStoreys"], 2);
-
-        // N-factor lookup table based on climate zone and building height
-        // Values from ASHRAE/building science research
-        const nFactors = {
-          1: { 1: 18, 2: 16, 3: 14 },
-          2: { 1: 17, 2: 15, 3: 13 },
-          3: { 1: 16, 2: 14, 3: 12 },
-          4: { 1: 15, 2: 13, 3: 11 },
-          5: { 1: 14, 2: 12, 3: 10 },
-          6: { 1: 13, 2: 11, 3: 9 },
-          7: { 1: 12, 2: 10, 3: 8 },
-          8: { 1: 11, 2: 9, 3: 7 }
-        };
-
-        const zoneKey = Math.min(8, Math.max(1, Math.round(climateZone)));
-        const storeysKey = Math.min(3, Math.max(1, storeys));
-
-        return nFactors[zoneKey]?.[storeysKey] || 13;
+        // i_101 = h_101 × d_101
+        const rate = parseNum(inputs["envelope.airFacing.heatLossRate"]);
+        const area = parseNum(inputs["envelope.airFacing.area"]);
+        return rate * area;
       }
     });
 
-    // Air leakage rate (ACH natural)
+    // i_102: Total Heat Loss (Ground-Facing)
+    graph.registerNode({
+      id: "envelope.groundFacing.totalHeatLoss",
+      legacyId: "i_102",
+      section: "S12",
+      classification: "C",
+      dependencies: ["envelope.groundFacing.heatLossRate", "envelope.groundFacing.area"],
+      label: "Total Heat Loss (Ag) (kWh/yr)",
+      compute: (inputs) => {
+        // i_102 = h_102 × d_102
+        const rate = parseNum(inputs["envelope.groundFacing.heatLossRate"]);
+        const area = parseNum(inputs["envelope.groundFacing.area"]);
+        return rate * area;
+      }
+    });
+
+    // ========================================================================
+    // AIR LEAKAGE HEAT LOSS (Row 103)
+    // From Section12.js line 2498: i_103 = (baseLeakageCoefficient × HDD × 24) / 1000
+    // ========================================================================
+
+    // ACH natural = ACH50 / N-factor
+    // Note: No legacyId - this is an intermediate computation not stored in legacy system
     graph.registerNode({
       id: "airTightness.achNatural",
-      legacyId: "e_103",
       section: "S12",
       classification: "C",
       dependencies: ["airTightness.ach50", "airTightness.nFactor"],
@@ -193,15 +237,14 @@
       compute: (inputs) => {
         const ach50 = parseNum(inputs["airTightness.ach50"], 3);
         const nFactor = parseNum(inputs["airTightness.nFactor"], 13);
-        // ACH natural = ACH50 / N-factor
         return nFactor > 0 ? ach50 / nFactor : 0;
       }
     });
 
     // Air leakage volume rate
+    // Note: No legacyId - this is an intermediate computation not stored in legacy system
     graph.registerNode({
       id: "airTightness.leakageRate",
-      legacyId: "f_103",
       section: "S12",
       classification: "C",
       dependencies: ["airTightness.achNatural", "volume.conditioned"],
@@ -213,10 +256,11 @@
       }
     });
 
-    // Air leakage heat loss
+    // i_103: Air Leakage Heat Loss
+    // From Section12.js line 2492-2498: baseLeakageCoefficient × HDD × 24 / 1000
     graph.registerNode({
       id: "airTightness.heatLoss",
-      legacyId: "i_106",
+      legacyId: "i_103",
       section: "S12",
       classification: "C",
       dependencies: [
@@ -225,18 +269,19 @@
       ],
       label: "Air Leakage Heat Loss (kWh/yr)",
       compute: (inputs) => {
+        const hdd = inputs["climate.heating.degreedays"];
+        if (isUnavailable(hdd)) return "Unavailable";
         const leakageRate = parseNum(inputs["airTightness.leakageRate"]);
-        const hdd = parseNum(inputs["climate.heating.degreedays"], 4000);
-        // Heat loss = Volume rate × 0.34 (air heat capacity) × HDD × 24 / 1000
-        const airHeatCapacity = 0.34; // W·h/m³·K
-        return (leakageRate * airHeatCapacity * hdd * 24) / 1000;
+        // Heat loss = Volume rate × 0.34 (air heat capacity Wh/m³K) × HDD × 24 / 1000
+        const airHeatCapacity = 0.34;
+        return (leakageRate * airHeatCapacity * parseNum(hdd) * 24) / 1000;
       }
     });
 
-    // Air leakage heat gain (cooling season)
+    // k_103: Air Leakage Heat Gain (cooling season)
     graph.registerNode({
       id: "airTightness.heatGain",
-      legacyId: "k_106",
+      legacyId: "k_103",
       section: "S12",
       classification: "C",
       dependencies: [
@@ -245,10 +290,59 @@
       ],
       label: "Air Leakage Heat Gain (kWh/yr)",
       compute: (inputs) => {
+        const cdd = inputs["climate.cooling.degreedays"];
+        // Legacy returns 0 when CDD unavailable
+        if (isUnavailable(cdd)) return 0;
         const leakageRate = parseNum(inputs["airTightness.leakageRate"]);
-        const cdd = parseNum(inputs["climate.cooling.degreedays"], 300);
         const airHeatCapacity = 0.34;
-        return (leakageRate * airHeatCapacity * cdd * 24) / 1000;
+        return (leakageRate * airHeatCapacity * parseNum(cdd) * 24) / 1000;
+      }
+    });
+
+    // ========================================================================
+    // TOTAL ENVELOPE HEAT LOSS (Row 104)
+    // From Section12.js line 2700: i_104 = i_101 + i_102 + i_103
+    // ========================================================================
+
+    // i_104: Total Envelope Heat Loss (used in TEUI d_135 calculation)
+    graph.registerNode({
+      id: "envelope.total.heatLoss",
+      legacyId: "i_104",
+      section: "S12",
+      classification: "C",
+      dependencies: [
+        "envelope.airFacing.totalHeatLoss",
+        "envelope.groundFacing.totalHeatLoss",
+        "airTightness.heatLoss"
+      ],
+      label: "Total Envelope Heat Loss (kWh/yr)",
+      compute: (inputs) => {
+        // i_104 = i_101 + i_102 + i_103
+        const i101 = parseNum(inputs["envelope.airFacing.totalHeatLoss"]);
+        const i102 = parseNum(inputs["envelope.groundFacing.totalHeatLoss"]);
+        const i103 = parseNum(inputs["airTightness.heatLoss"]);
+        return i101 + i102 + i103;
+      }
+    });
+
+    // k_104: Total Envelope Heat Gain
+    graph.registerNode({
+      id: "envelope.total.heatGain",
+      legacyId: "k_104",
+      section: "S12",
+      classification: "C",
+      dependencies: [
+        "transmissionLoss.airFacing.totalHeatGain",
+        "transmissionLoss.groundFacing.totalHeatGain",
+        "airTightness.heatGain"
+      ],
+      label: "Total Envelope Heat Gain (kWh/yr)",
+      compute: (inputs) => {
+        // k_104 = k_101 + k_102 + k_103
+        const k101 = parseNum(inputs["transmissionLoss.airFacing.totalHeatGain"]);
+        const k102 = parseNum(inputs["transmissionLoss.groundFacing.totalHeatGain"]);
+        const k103 = parseNum(inputs["airTightness.heatGain"]);
+        return k101 + k102 + k103;
       }
     });
 
@@ -256,37 +350,27 @@
     // COMBINED ENVELOPE METRICS
     // ========================================================================
 
-    // Combined weighted U-value (all components)
+    // g_104: Combined Weighted U-value
     graph.registerNode({
-      id: "volume.combinedUValue",
-      legacyId: "g_97",
+      id: "envelope.combined.uValue",
+      legacyId: "g_104",
       section: "S12",
       classification: "C",
       dependencies: [
-        "transmissionLoss.airFacing.weightedUValue",
-        "transmissionLoss.airFacing.totalArea",
-        "transmissionLoss.groundFacing.totalArea"
+        "envelope.airFacing.uValue",
+        "envelope.airFacing.area",
+        "envelope.groundFacing.uValue",
+        "envelope.groundFacing.area"
       ],
       label: "Combined Envelope U-Value (W/m²K)",
       compute: (inputs) => {
-        // Simplified - uses air-facing weighted U-value as primary metric
-        // Ground-facing typically has much lower contribution
-        return parseNum(inputs["transmissionLoss.airFacing.weightedUValue"]);
-      }
-    });
-
-    // Ae10 (envelope area per 10m² floor area)
-    graph.registerNode({
-      id: "volume.ae10",
-      legacyId: "h_101",
-      section: "S12",
-      classification: "C",
-      dependencies: ["volume.envelopeArea", "building.conditionedFloorArea"],
-      label: "Ae10 (Envelope per 10m² floor)",
-      compute: (inputs) => {
-        const envelope = parseNum(inputs["volume.envelopeArea"]);
-        const floor = parseNum(inputs["building.conditionedFloorArea"], 1);
-        return floor > 0 ? (envelope / floor) * 10 : 0;
+        // g_104 = (g_101 × d_101 + g_102 × d_102) / (d_101 + d_102)
+        const g101 = parseNum(inputs["envelope.airFacing.uValue"]);
+        const d101 = parseNum(inputs["envelope.airFacing.area"]);
+        const g102 = parseNum(inputs["envelope.groundFacing.uValue"]);
+        const d102 = parseNum(inputs["envelope.groundFacing.area"]);
+        const totalArea = d101 + d102 + 0.000001; // Avoid division by zero
+        return (g101 * d101 + g102 * d102) / totalArea;
       }
     });
 

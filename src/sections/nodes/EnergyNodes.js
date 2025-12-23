@@ -6,11 +6,16 @@
  *
  * This module expresses Section 04/14/15 energy result calculations.
  * Key metrics:
- * - TED (Total Energy Demand for Heating)
- * - TEDI (Thermal Energy Demand Intensity)
- * - TELI (Transmission Loss Intensity)
- * - CED (Cooling Energy Demand)
- * - TEUI (Total Energy Use Intensity)
+ * - TED (Total Energy Demand for Heating) - d_127
+ * - TEDI (Thermal Energy Demand Intensity) - h_127
+ * - TEUI (Total Energy Use Intensity) - h_136
+ *
+ * Formulas derived from Section14.js and Section15.js:
+ * - TED (d_127) = i_97 + i_98 + i_103 + m_121 - i_80
+ * - TEDI (h_127) = d_127 / h_15
+ * - d_135 = m_43 + k_51 + h_70 + d_117 + i_104 + m_121 - i_80
+ * - d_136 depends on primary heating type (d_113)
+ * - TEUI (h_136) = d_136 / h_15
  */
 (function () {
   "use strict";
@@ -24,145 +29,59 @@
 
   function parseNum(value, defaultVal = 0) {
     if (value === null || value === undefined || value === "N/A") return defaultVal;
+    if (value === "Unavailable") return "Unavailable";
     const num = parseFloat(String(value).replace(/,/g, ""));
     return isNaN(num) ? defaultVal : num;
+  }
+
+  function isUnavailable(value) {
+    return value === "Unavailable" || value === "N/A";
   }
 
   // ============================================================================
   // INPUT NODES (Upstream values needed for energy calculations)
   // ============================================================================
 
-  // NOTE: Energy calculations depend on values from other sections:
-  // - geometry.conditionedFloorArea (h_15) - from Geometry/S02
-  // - mechanical.heating.demand (d_114) - computed by MechanicalNodes
-  // - mechanical.cooling.electricalDemand (d_117) - computed by MechanicalNodes
-  // These are NOT re-declared here; they're referenced via dependencies.
-
   const EnergyInputs = [
-    // Transmission losses (from S11/S12)
-    {
-      id: "envelope.airFacing.totalHeatLoss",
-      legacyId: "i_97",
-      defaultValue: 0,
-      classification: "C",
-      section: "S11",
-      label: "Air-Facing Transmission Heat Loss",
-      unit: "kWh/yr"
-    },
-    {
-      id: "envelope.groundFacing.totalHeatLoss",
-      legacyId: "i_98",
-      defaultValue: 0,
-      classification: "C",
-      section: "S11",
-      label: "Ground-Facing Transmission Heat Loss",
-      unit: "kWh/yr"
-    },
-    {
-      id: "envelope.airLeakage.heatLoss",
-      legacyId: "i_103",
-      defaultValue: 0,
-      classification: "C",
-      section: "S12",
-      label: "Air Leakage Heat Loss",
-      unit: "kWh/yr"
-    },
+    // NOTE: Most inputs needed for energy calculations are computed by other modules:
+    // - m_121 (ventilation heat loss) = ventilation.netHeatLoss from VentilationNodes
+    // - k_98 (transmission heat gain) = transmissionLoss.components.subtotalHeatGain from TransmissionLossNodes
+    // - k_79 (solar cooling load) = radiantGains.subtotal.coolingGain from RadiantGainsNodes
+    // - i_80 (internal gains) = radiantGains.usableGains from RadiantGainsNodes
+    // - d_122 (ventilation cooling gain) = ventilation.heatGain from VentilationNodes
+    // - d_113, d_114, d_116, d_117 are in MechanicalNodes
+    // - m_43 is in RenewableNodes
 
-    // Ventilation losses (from S13)
+    // ==== Section 09: Occupant Cooling Load ====
     {
-      id: "mechanical.ventilation.heatLoss",
-      legacyId: "m_121",
-      defaultValue: 0,
-      classification: "C",
-      section: "S13",
-      label: "Ventilation Heat Loss",
-      unit: "kWh/yr"
-    },
-
-    // Internal gains (from S09/S10)
-    {
-      id: "internal.totalGains",
-      legacyId: "i_80",
-      defaultValue: 0,
-      classification: "C",
-      section: "S09",
-      label: "Internal Heat Gains",
-      unit: "kWh/yr"
-    },
-    {
-      id: "solar.totalGains",
-      legacyId: "d_122",
-      defaultValue: 0,
-      classification: "C",
-      section: "S10",
-      label: "Solar Heat Gains",
-      unit: "kWh/yr"
-    },
-
-    // Cooling loads (heat gains)
-    {
-      id: "envelope.airFacing.totalHeatGain",
+      id: "internal.coolingLoad.occupants",
       legacyId: "k_71",
       defaultValue: 0,
       classification: "C",
-      section: "S11",
-      label: "Air-Facing Heat Gain",
-      unit: "kWh/yr"
-    },
-    {
-      id: "internal.coolingLoad",
-      legacyId: "k_79",
-      defaultValue: 0,
-      classification: "C",
       section: "S09",
-      label: "Internal Cooling Load",
-      unit: "kWh/yr"
-    },
-    {
-      id: "envelope.airLeakage.heatGain",
-      legacyId: "k_98",
-      defaultValue: 0,
-      classification: "C",
-      section: "S12",
-      label: "Air Leakage Heat Gain",
+      label: "Occupant Cooling Load",
       unit: "kWh/yr"
     },
 
-    // Other energy uses
+    // ==== Section 05: DHW ====
     {
-      id: "energy.dhw",
-      legacyId: "h_52",
+      id: "energy.dhw.netElectrical",
+      legacyId: "k_51",
+      defaultValue: 0,
+      classification: "C",
+      section: "S05",
+      label: "DHW Net Electrical Demand",
+      unit: "kWh/yr"
+    },
+
+    // ==== Section 07: Plug Loads ====
+    {
+      id: "energy.plugLoads.subtotal",
+      legacyId: "h_70",
       defaultValue: 0,
       classification: "C",
       section: "S07",
-      label: "DHW Energy Use",
-      unit: "kWh/yr"
-    },
-    {
-      id: "energy.lighting",
-      legacyId: "h_77",
-      defaultValue: 0,
-      classification: "C",
-      section: "S09",
-      label: "Lighting Energy",
-      unit: "kWh/yr"
-    },
-    {
-      id: "energy.plugLoads",
-      legacyId: "h_78",
-      defaultValue: 0,
-      classification: "C",
-      section: "S09",
-      label: "Plug Load Energy",
-      unit: "kWh/yr"
-    },
-    {
-      id: "energy.fans",
-      legacyId: "h_118",
-      defaultValue: 0,
-      classification: "C",
-      section: "S13",
-      label: "Fan Energy",
+      label: "Plug/Light/Equipment Subtotals",
       unit: "kWh/yr"
     }
   ];
@@ -174,28 +93,30 @@
   const EnergyNodes = [
     // ========================================================================
     // THERMAL ENERGY DEMAND (Section 14)
+    // Formula from Section14.js line 1148:
+    // d_127 = i_97 + i_98 + i_103 + m_121 - i_80
     // ========================================================================
     {
       id: "energy.ted.heating",
       legacyId: "d_127",
       dependencies: [
-        "envelope.airFacing.totalHeatLoss",
-        "envelope.groundFacing.totalHeatLoss",
-        "envelope.airLeakage.heatLoss",
-        "mechanical.ventilation.heatLoss",
-        "internal.totalGains"
+        "transmissionLoss.thermalBridgePenalty.heatLoss",
+        "transmissionLoss.components.subtotalHeatLoss",
+        "airTightness.heatLoss",
+        "ventilation.netHeatLoss",
+        "radiantGains.usableGains"
       ],
       classification: "C",
       section: "S14",
       label: "Total Energy Demand for Heating (TED)",
       unit: "kWh/yr",
       compute: (inputs) => {
-        // TED = Transmission losses + Ventilation losses - Internal gains
-        const i97 = parseNum(inputs["envelope.airFacing.totalHeatLoss"], 0);
-        const i98 = parseNum(inputs["envelope.groundFacing.totalHeatLoss"], 0);
-        const i103 = parseNum(inputs["envelope.airLeakage.heatLoss"], 0);
-        const m121 = parseNum(inputs["mechanical.ventilation.heatLoss"], 0);
-        const i80 = parseNum(inputs["internal.totalGains"], 0);
+        // TED = i_97 + i_98 + i_103 + m_121 - i_80 (Section14.js line 1148)
+        const i97 = parseNum(inputs["transmissionLoss.thermalBridgePenalty.heatLoss"], 0);
+        const i98 = parseNum(inputs["transmissionLoss.components.subtotalHeatLoss"], 0);
+        const i103 = parseNum(inputs["airTightness.heatLoss"], 0);
+        const m121 = parseNum(inputs["ventilation.netHeatLoss"], 0);
+        const i80 = parseNum(inputs["radiantGains.usableGains"], 0);
 
         return +(i97 + i98 + i103 + m121 - i80).toFixed(2);
       }
@@ -203,14 +124,15 @@
     {
       id: "energy.tedi",
       legacyId: "h_127",
-      dependencies: ["energy.ted.heating", "geometry.conditionedFloorArea"],
+      dependencies: ["energy.ted.heating", "building.conditionedFloorArea"],
       classification: "C",
       section: "S14",
       label: "Thermal Energy Demand Intensity (TEDI)",
       unit: "kWh/m²/yr",
       compute: (inputs) => {
+        // TEDI = d_127 / h_15 (Section14.js line 1152)
         const ted = parseNum(inputs["energy.ted.heating"], 0);
-        const area = parseNum(inputs["geometry.conditionedFloorArea"], 5000);
+        const area = parseNum(inputs["building.conditionedFloorArea"], 1);
 
         return area > 0 ? +(ted / area).toFixed(2) : 0;
       }
@@ -219,21 +141,21 @@
       id: "energy.ted.envelope",
       legacyId: "d_128",
       dependencies: [
-        "envelope.airFacing.totalHeatLoss",
-        "envelope.groundFacing.totalHeatLoss",
-        "envelope.airLeakage.heatLoss",
-        "internal.totalGains"
+        "transmissionLoss.thermalBridgePenalty.heatLoss",
+        "transmissionLoss.components.subtotalHeatLoss",
+        "airTightness.heatLoss",
+        "radiantGains.usableGains"
       ],
       classification: "C",
       section: "S14",
-      label: "TED Envelope Only",
+      label: "TED Envelope Only (no ventilation)",
       unit: "kWh/yr",
       compute: (inputs) => {
-        // TED Envelope = Transmission losses - Internal gains (no ventilation)
-        const i97 = parseNum(inputs["envelope.airFacing.totalHeatLoss"], 0);
-        const i98 = parseNum(inputs["envelope.groundFacing.totalHeatLoss"], 0);
-        const i103 = parseNum(inputs["envelope.airLeakage.heatLoss"], 0);
-        const i80 = parseNum(inputs["internal.totalGains"], 0);
+        // TED Envelope = i_97 + i_98 + i_103 - i_80 (Section14.js line 1156)
+        const i97 = parseNum(inputs["transmissionLoss.thermalBridgePenalty.heatLoss"], 0);
+        const i98 = parseNum(inputs["transmissionLoss.components.subtotalHeatLoss"], 0);
+        const i103 = parseNum(inputs["airTightness.heatLoss"], 0);
+        const i80 = parseNum(inputs["radiantGains.usableGains"], 0);
 
         return +(i97 + i98 + i103 - i80).toFixed(2);
       }
@@ -241,79 +163,46 @@
     {
       id: "energy.tedi.envelope",
       legacyId: "h_128",
-      dependencies: ["energy.ted.envelope", "geometry.conditionedFloorArea"],
+      dependencies: ["energy.ted.envelope", "building.conditionedFloorArea"],
       classification: "C",
       section: "S14",
       label: "TEDI Envelope Only",
       unit: "kWh/m²/yr",
       compute: (inputs) => {
+        // h_128 = d_128 / h_15 (Section14.js line 1160)
         const ted = parseNum(inputs["energy.ted.envelope"], 0);
-        const area = parseNum(inputs["geometry.conditionedFloorArea"], 5000);
+        const area = parseNum(inputs["building.conditionedFloorArea"], 1);
 
         return area > 0 ? +(ted / area).toFixed(2) : 0;
       }
     },
 
     // ========================================================================
-    // TRANSMISSION LOSS (TELI)
-    // ========================================================================
-    {
-      id: "energy.tel",
-      legacyId: "d_131",
-      dependencies: [
-        "envelope.airFacing.totalHeatLoss",
-        "envelope.groundFacing.totalHeatLoss",
-        "envelope.airLeakage.heatLoss"
-      ],
-      classification: "C",
-      section: "S14",
-      label: "Total Envelope Heat Loss (TEL)",
-      unit: "kWh/yr",
-      compute: (inputs) => {
-        const i97 = parseNum(inputs["envelope.airFacing.totalHeatLoss"], 0);
-        const i98 = parseNum(inputs["envelope.groundFacing.totalHeatLoss"], 0);
-        const i103 = parseNum(inputs["envelope.airLeakage.heatLoss"], 0);
-
-        return +(i97 + i98 + i103).toFixed(2);
-      }
-    },
-    {
-      id: "energy.teli",
-      legacyId: "h_131",
-      dependencies: ["energy.tel", "geometry.conditionedFloorArea"],
-      classification: "C",
-      section: "S14",
-      label: "Transmission Loss Intensity (TELI)",
-      unit: "kWh/m²/yr",
-      compute: (inputs) => {
-        const tel = parseNum(inputs["energy.tel"], 0);
-        const area = parseNum(inputs["geometry.conditionedFloorArea"], 5000);
-
-        return area > 0 ? +(tel / area).toFixed(2) : 0;
-      }
-    },
-
-    // ========================================================================
-    // COOLING ENERGY DEMAND
+    // COOLING ENERGY DEMAND (Section 14)
+    // Formula from Section14.js line 1164:
+    // d_129 = k_71 + k_79 + k_98 + d_122
     // ========================================================================
     {
       id: "energy.ced.unmitigated",
       legacyId: "d_129",
       dependencies: [
-        "envelope.airFacing.totalHeatGain",
-        "internal.coolingLoad",
-        "envelope.airLeakage.heatGain",
-        "solar.totalGains"
+        "internal.coolingLoad.occupants",
+        "radiantGains.subtotal.coolingGain",
+        "transmissionLoss.components.subtotalHeatGain",
+        "ventilation.heatGain"
       ],
       classification: "C",
       section: "S14",
       label: "Cooling Energy Demand Unmitigated",
       unit: "kWh/yr",
       compute: (inputs) => {
-        const k71 = parseNum(inputs["envelope.airFacing.totalHeatGain"], 0);
-        const k79 = parseNum(inputs["internal.coolingLoad"], 0);
-        const k98 = parseNum(inputs["envelope.airLeakage.heatGain"], 0);
-        const d122 = parseNum(inputs["solar.totalGains"], 0);
+        // CED = k_71 + k_79 + k_98 + d_122 (Section14.js line 1164)
+        // k_79 = radiantGains.subtotal.coolingGain, k_98 = transmissionLoss.components.subtotalHeatGain
+        // d_122 = ventilation.heatGain (from VentilationNodes)
+        const k71 = parseNum(inputs["internal.coolingLoad.occupants"], 0);
+        const k79 = parseNum(inputs["radiantGains.subtotal.coolingGain"], 0);
+        const k98 = parseNum(inputs["transmissionLoss.components.subtotalHeatGain"], 0);
+        const d122 = parseNum(inputs["ventilation.heatGain"], 0);
 
         return +(k71 + k79 + k98 + d122).toFixed(2);
       }
@@ -321,134 +210,114 @@
     {
       id: "energy.cedi.unmitigated",
       legacyId: "h_129",
-      dependencies: ["energy.ced.unmitigated", "geometry.conditionedFloorArea"],
+      dependencies: ["energy.ced.unmitigated", "building.conditionedFloorArea"],
       classification: "C",
       section: "S14",
       label: "Cooling Energy Demand Intensity (Unmitigated)",
       unit: "kWh/m²/yr",
       compute: (inputs) => {
+        // h_129 = d_129 / h_15 (Section14.js line 1167-1168)
         const ced = parseNum(inputs["energy.ced.unmitigated"], 0);
-        const area = parseNum(inputs["geometry.conditionedFloorArea"], 5000);
+        const area = parseNum(inputs["building.conditionedFloorArea"], 1);
 
         return area > 0 ? +(ced / area).toFixed(2) : 0;
       }
     },
 
     // ========================================================================
-    // TOTAL ENERGY USE INTENSITY (Section 15)
+    // TOTAL ENERGY USE (Section 15)
+    // Formula from Section15.js lines 1749-1778:
+    // d_135 = m_43 + k_51 + h_70 + d_117_effective + i_104 + m_121 - i_80
+    // d_136 depends on d_113 (primary heating type):
+    //   - "Electricity": d_136 = d_135
+    //   - "Heatpump": d_136 = k_51 + d_117 + d_114 + m_43 + h_70
+    //   - "Gas"/"Oil": d_136 = k_51 + d_117 + m_43 + h_70
+    // h_136 = d_136 / h_15
     // ========================================================================
     {
-      id: "energy.total.heating",
-      legacyId: "h_135",
-      dependencies: ["mechanical.heating.demand"],
+      id: "energy.total.targeted",
+      legacyId: "d_135",
+      dependencies: [
+        "renewable.exteriorLoads",
+        "energy.dhw.netElectrical",
+        "energy.plugLoads.subtotal",
+        "mechanical.cooling.electricalDemand",
+        "mechanical.cooling.systemType",
+        "envelope.total.heatLoss",
+        "ventilation.netHeatLoss",
+        "radiantGains.usableGains"
+      ],
       classification: "C",
       section: "S15",
-      label: "Total Heating Energy",
+      label: "TEU Targeted Electricity",
       unit: "kWh/yr",
       compute: (inputs) => {
-        return parseNum(inputs["mechanical.heating.demand"], 0);
-      }
-    },
-    {
-      id: "energy.total.cooling",
-      legacyId: "h_136_cooling",
-      dependencies: ["mechanical.cooling.electricalDemand"],
-      classification: "C",
-      section: "S15",
-      label: "Total Cooling Energy",
-      unit: "kWh/yr",
-      compute: (inputs) => {
-        return parseNum(inputs["mechanical.cooling.electricalDemand"], 0);
+        // d_135 = m_43 + k_51 + h_70 + d_117 + i_104 + m_121 - i_80
+        // Note: d_117_effective = 0 if d_116 = "No Cooling"
+        const m43 = parseNum(inputs["renewable.exteriorLoads"], 0);
+        const k51 = parseNum(inputs["energy.dhw.netElectrical"], 0);
+        const h70 = parseNum(inputs["energy.plugLoads.subtotal"], 0);
+        const coolingType = inputs["mechanical.cooling.systemType"] || "No Cooling";
+        const d117 = coolingType === "No Cooling" ? 0 : parseNum(inputs["mechanical.cooling.electricalDemand"], 0);
+        const i104 = parseNum(inputs["envelope.total.heatLoss"], 0);
+        const m121 = parseNum(inputs["ventilation.netHeatLoss"], 0);
+        const i80 = parseNum(inputs["radiantGains.usableGains"], 0);
+
+        return +(m43 + k51 + h70 + d117 + i104 + m121 - i80).toFixed(2);
       }
     },
     {
       id: "energy.total.all",
       legacyId: "d_136",
       dependencies: [
+        "energy.total.targeted",
+        "mechanical.heating.systemType",
         "mechanical.heating.demand",
+        "mechanical.cooling.systemType",
         "mechanical.cooling.electricalDemand",
-        "energy.dhw",
-        "energy.lighting",
-        "energy.plugLoads",
-        "energy.fans"
+        "renewable.exteriorLoads",
+        "energy.dhw.netElectrical",
+        "energy.plugLoads.subtotal"
       ],
       classification: "C",
       section: "S15",
-      label: "Total Energy Use",
+      label: "TEU Targeted Electricity if HP/Gas/Oil Bldg",
       unit: "kWh/yr",
       compute: (inputs) => {
-        const heating = parseNum(inputs["mechanical.heating.demand"], 0);
-        const cooling = parseNum(inputs["mechanical.cooling.electricalDemand"], 0);
-        const dhw = parseNum(inputs["energy.dhw"], 0);
-        const lighting = parseNum(inputs["energy.lighting"], 0);
-        const plugLoads = parseNum(inputs["energy.plugLoads"], 0);
-        const fans = parseNum(inputs["energy.fans"], 0);
+        // d_136 formula from Section15.js lines 1761-1769
+        const primaryHeating = inputs["mechanical.heating.systemType"] || "Electricity";
+        const d135 = parseNum(inputs["energy.total.targeted"], 0);
+        const k51 = parseNum(inputs["energy.dhw.netElectrical"], 0);
+        const coolingType = inputs["mechanical.cooling.systemType"] || "No Cooling";
+        const d117 = coolingType === "No Cooling" ? 0 : parseNum(inputs["mechanical.cooling.electricalDemand"], 0);
+        const d114 = parseNum(inputs["mechanical.heating.demand"], 0);
+        const m43 = parseNum(inputs["renewable.exteriorLoads"], 0);
+        const h70 = parseNum(inputs["energy.plugLoads.subtotal"], 0);
 
-        return +(heating + cooling + dhw + lighting + plugLoads + fans).toFixed(2);
+        if (primaryHeating === "Electricity") {
+          return d135;
+        } else if (primaryHeating === "Heatpump") {
+          return +(k51 + d117 + d114 + m43 + h70).toFixed(2);
+        } else {
+          // Gas or Oil - sum electrical loads only, exclude heating demand
+          return +(k51 + d117 + m43 + h70).toFixed(2);
+        }
       }
     },
     {
       id: "energy.teui",
       legacyId: "h_136",
-      dependencies: ["energy.total.all", "geometry.conditionedFloorArea"],
+      dependencies: ["energy.total.all", "building.conditionedFloorArea"],
       classification: "C",
       section: "S15",
       label: "Total Energy Use Intensity (TEUI)",
       unit: "kWh/m²/yr",
       compute: (inputs) => {
+        // h_136 = d_136 / h_15 (Section15.js line 1777)
         const total = parseNum(inputs["energy.total.all"], 0);
-        const area = parseNum(inputs["geometry.conditionedFloorArea"], 5000);
+        const area = parseNum(inputs["building.conditionedFloorArea"], 1);
 
         return area > 0 ? +(total / area).toFixed(2) : 0;
-      }
-    },
-
-    // ========================================================================
-    // INTENSITY BREAKDOWNS
-    // ========================================================================
-    {
-      id: "energy.intensity.heating",
-      legacyId: "f_135",
-      dependencies: ["mechanical.heating.demand", "geometry.conditionedFloorArea"],
-      classification: "C",
-      section: "S15",
-      label: "Heating Intensity",
-      unit: "kWh/m²/yr",
-      compute: (inputs) => {
-        const heating = parseNum(inputs["mechanical.heating.demand"], 0);
-        const area = parseNum(inputs["geometry.conditionedFloorArea"], 5000);
-
-        return area > 0 ? +(heating / area).toFixed(2) : 0;
-      }
-    },
-    {
-      id: "energy.intensity.cooling",
-      legacyId: "f_136",
-      dependencies: ["mechanical.cooling.electricalDemand", "geometry.conditionedFloorArea"],
-      classification: "C",
-      section: "S15",
-      label: "Cooling Intensity",
-      unit: "kWh/m²/yr",
-      compute: (inputs) => {
-        const cooling = parseNum(inputs["mechanical.cooling.electricalDemand"], 0);
-        const area = parseNum(inputs["geometry.conditionedFloorArea"], 5000);
-
-        return area > 0 ? +(cooling / area).toFixed(2) : 0;
-      }
-    },
-    {
-      id: "energy.intensity.dhw",
-      legacyId: "f_137",
-      dependencies: ["energy.dhw", "geometry.conditionedFloorArea"],
-      classification: "C",
-      section: "S15",
-      label: "DHW Intensity",
-      unit: "kWh/m²/yr",
-      compute: (inputs) => {
-        const dhw = parseNum(inputs["energy.dhw"], 0);
-        const area = parseNum(inputs["geometry.conditionedFloorArea"], 5000);
-
-        return area > 0 ? +(dhw / area).toFixed(2) : 0;
       }
     }
   ];

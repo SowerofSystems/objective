@@ -30,8 +30,16 @@
    */
   function parseNum(value, defaultVal = 0) {
     if (value === null || value === undefined || value === "N/A") return defaultVal;
+    if (value === "Unavailable") return "Unavailable";
     const num = parseFloat(String(value).replace(/,/g, ""));
     return isNaN(num) ? defaultVal : num;
+  }
+
+  /**
+   * Check if value is unavailable
+   */
+  function isUnavailable(value) {
+    return value === "Unavailable" || value === "N/A";
   }
 
   /**
@@ -139,7 +147,7 @@
     // ========================================================================
     {
       id: "climate.heating.degreedays",
-      legacyId: "d_21",
+      legacyId: "d_20",
       dependencies: [
         "climate.location.province",
         "climate.location.city",
@@ -155,15 +163,19 @@
         const timeframe = inputs["climate.timeframe"];
         const data = getClimateData(province, city);
 
-        if (!data) return 4600; // Default
+        if (!data) return "Unavailable"; // No climate data for this location
 
         const hdd = timeframe === "Future" ? data.HDD18_2021_2050 : data.HDD18;
-        return hdd !== null && hdd !== 666 ? hdd : 4600;
+        // 666 means unavailable in ClimateValues.js
+        if (hdd === null || hdd === 666) {
+          return "Unavailable";
+        }
+        return hdd;
       }
     },
     {
       id: "climate.cooling.degreedays",
-      legacyId: "l_20",
+      legacyId: "d_21",
       dependencies: [
         "climate.location.province",
         "climate.location.city",
@@ -179,7 +191,7 @@
         const timeframe = inputs["climate.timeframe"];
         const data = getClimateData(province, city);
 
-        if (!data) return 196; // Default
+        if (!data) return "Unavailable";
 
         const cdd = timeframe === "Future" ? data.CDD24_2021_2050 : data.CDD24;
         // 666 means unavailable in ClimateValues.js
@@ -188,7 +200,7 @@
           if (timeframe === "Future" && data.CDD24 !== null && data.CDD24 !== 666) {
             return data.CDD24;
           }
-          return 196; // Default
+          return "Unavailable";
         }
         return cdd;
       }
@@ -280,14 +292,16 @@
       section: "S03",
       label: "Climate Zone",
       compute: (inputs) => {
-        const hdd = parseNum(inputs["climate.heating.degreedays"], 4600);
+        const hdd = inputs["climate.heating.degreedays"];
+        if (isUnavailable(hdd)) return "Unavailable";
 
+        const hddNum = parseNum(hdd);
         // Excel Formula: =IF(D20<3000, 4, IF(D20<4000, 5, IF(D20<5000, 6, IF(D20<6000, 7.1, IF(D20<7000, 7.2, 8)))))
-        if (hdd < 3000) return "4.0";
-        if (hdd < 4000) return "5.0";
-        if (hdd < 5000) return "6.0";
-        if (hdd < 6000) return "7.1";
-        if (hdd < 7000) return "7.2";
+        if (hddNum < 3000) return "4.0";
+        if (hddNum < 4000) return "5.0";
+        if (hddNum < 5000) return "6.0";
+        if (hddNum < 6000) return "7.1";
+        if (hddNum < 7000) return "7.2";
         return "8.0";
       }
     },
@@ -436,22 +450,21 @@
       label: "Ground Facing CDD",
       unit: "°C·days",
       compute: (inputs) => {
+        // From Section03.js line 1832-1849: calculateGroundFacing()
         const coolingSetpoint = parseNum(inputs["climate.cooling.setpoint"], 24);
         const coolingDays = parseNum(inputs["climate.coolingDays"], 120);
         const capacitanceSetting = inputs["climate.capacitance.setting"] || "Static";
-        const capacitancePct = parseNum(inputs["climate.capacitance.percentage"], 100);
 
         // Ground temp is 10°C
         const groundTemp = 10;
 
         let gfcdd;
         if (capacitanceSetting === "Static") {
-          // Static: Simple formula
-          gfcdd = (groundTemp - coolingSetpoint) * coolingDays;
+          // Static: MAX(0, (10 - TsetCool) * DaysCooling)
+          gfcdd = Math.max(0, (groundTemp - coolingSetpoint) * coolingDays);
         } else {
-          // Capacitance mode: Scaled by percentage
-          const scaledCooling = (coolingSetpoint - groundTemp) * (capacitancePct / 100);
-          gfcdd = (groundTemp - coolingSetpoint + scaledCooling) * coolingDays;
+          // Capacitance mode: (10 - TsetCool) * DaysCooling (can be negative)
+          gfcdd = (groundTemp - coolingSetpoint) * coolingDays;
         }
 
         return Math.round(gfcdd);

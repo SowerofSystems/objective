@@ -1,10 +1,14 @@
 /**
  * EmissionsNodes.js - CO2e Emissions Calculations (S04/S05)
  *
- * Energy emissions from fuel consumption and lifetime carbon:
- * - Row 32 subtotals (g_32, k_32)
- * - Annual emissions intensity
- * - Lifetime embodied carbon
+ * Energy emissions from fuel consumption and lifetime carbon.
+ *
+ * Formulas derived from Section04.js and Section05.js:
+ * - g_32 = g_27 + g_28 + g_29 + g_30 + g_31 - (d_60 * 1000) (Actual Emissions)
+ * - k_32 = k_27 + k_28 + k_29 + k_30 + k_31 - (d_60 * 1000) (Target Emissions)
+ * - h_8 = k_32 / h_15 (Target Annual Carbon from S01)
+ * - g_38 = emissions / h_15 (Annual GHGI from S05)
+ * - i_38 = g_38 * h_13 (Lifetime Operational from S05)
  */
 (function () {
   "use strict";
@@ -12,189 +16,205 @@
   window.TEUI = window.TEUI || {};
   window.TEUI.ComputationNodes = window.TEUI.ComputationNodes || {};
 
-  // Emission factors (kg CO2e per unit) - Ontario defaults
-  const EMISSION_FACTORS = {
-    electricity: 0.028,  // kg CO2e/kWh (Ontario grid)
-    gas: 1.888,          // kg CO2e/m³
-    propane: 1.51,       // kg CO2e/L
-    oil: 2.725,          // kg CO2e/L
-    wood: 0.0,           // Carbon neutral (offset handled separately)
-  };
-
   function parseNum(value, defaultVal = 0) {
     if (value === null || value === undefined || value === "N/A") return defaultVal;
+    if (value === "Unavailable") return "Unavailable";
     const num = parseFloat(String(value).replace(/,/g, ""));
     return isNaN(num) ? defaultVal : num;
   }
 
+  function isUnavailable(value) {
+    return value === "Unavailable" || value === "N/A";
+  }
+
   function register(graph) {
     // ========================================================================
-    // INPUTS - Fuel consumption from each source
+    // INPUTS - Individual row emissions (calculated by legacy system)
+    // These are synced from StateManager for validation
     // ========================================================================
     const inputs = [
-      // Energy consumption by fuel type
-      { id: "energy.electricity.consumption", legacyId: "f_27", section: "S04", classification: "C", label: "Electricity Consumption (kWh/yr)", defaultValue: 0 },
-      { id: "energy.gas.consumption", legacyId: "f_28", section: "S04", classification: "C", label: "Gas Consumption (m³/yr)", defaultValue: 0 },
-      { id: "energy.propane.consumption", legacyId: "f_29", section: "S04", classification: "C", label: "Propane Consumption (L/yr)", defaultValue: 0 },
-      { id: "energy.oil.consumption", legacyId: "f_30", section: "S04", classification: "C", label: "Oil Consumption (L/yr)", defaultValue: 0 },
-      { id: "energy.wood.consumption", legacyId: "f_31", section: "S04", classification: "C", label: "Wood Consumption (kg/yr)", defaultValue: 0 },
+      // Actual energy consumption (f_27 through f_31)
+      { id: "energy.actual.electricity", legacyId: "f_27", section: "S04", classification: "C", label: "Actual Electricity (kWh/yr)", defaultValue: 0 },
+      { id: "energy.actual.gas", legacyId: "f_28", section: "S04", classification: "C", label: "Actual Gas (kWh/yr)", defaultValue: 0 },
+      { id: "energy.actual.propane", legacyId: "f_29", section: "S04", classification: "C", label: "Actual Propane (kWh/yr)", defaultValue: 0 },
+      { id: "energy.actual.oil", legacyId: "f_30", section: "S04", classification: "C", label: "Actual Oil (kWh/yr)", defaultValue: 0 },
+      { id: "energy.actual.wood", legacyId: "f_31", section: "S04", classification: "C", label: "Actual Wood (kWh/yr)", defaultValue: 0 },
 
-      // Target energy (from S15)
+      // Actual emissions (g_27 through g_31)
+      { id: "emissions.actual.electricity", legacyId: "g_27", section: "S04", classification: "C", label: "Actual Electricity Emissions (kg CO2e/yr)", defaultValue: 0 },
+      { id: "emissions.actual.gas", legacyId: "g_28", section: "S04", classification: "C", label: "Actual Gas Emissions (kg CO2e/yr)", defaultValue: 0 },
+      { id: "emissions.actual.propane", legacyId: "g_29", section: "S04", classification: "C", label: "Actual Propane Emissions (kg CO2e/yr)", defaultValue: 0 },
+      { id: "emissions.actual.oil", legacyId: "g_30", section: "S04", classification: "C", label: "Actual Oil Emissions (kg CO2e/yr)", defaultValue: 0 },
+      { id: "emissions.actual.wood", legacyId: "g_31", section: "S04", classification: "C", label: "Actual Wood Emissions (kg CO2e/yr)", defaultValue: 0 },
+
+      // Target energy consumption (j_27 through j_31)
       { id: "energy.target.electricity", legacyId: "j_27", section: "S04", classification: "C", label: "Target Electricity (kWh/yr)", defaultValue: 0 },
-      { id: "energy.target.gas", legacyId: "j_28", section: "S04", classification: "C", label: "Target Gas (kWh)", defaultValue: 0 },
-      { id: "energy.target.propane", legacyId: "j_29", section: "S04", classification: "C", label: "Target Propane (kWh)", defaultValue: 0 },
-      { id: "energy.target.oil", legacyId: "j_30", section: "S04", classification: "C", label: "Target Oil (kWh)", defaultValue: 0 },
-      { id: "energy.target.wood", legacyId: "j_31", section: "S04", classification: "C", label: "Target Wood (kWh)", defaultValue: 0 },
+      { id: "energy.target.gas", legacyId: "j_28", section: "S04", classification: "C", label: "Target Gas (kWh/yr)", defaultValue: 0 },
+      { id: "energy.target.propane", legacyId: "j_29", section: "S04", classification: "C", label: "Target Propane (kWh/yr)", defaultValue: 0 },
+      { id: "energy.target.oil", legacyId: "j_30", section: "S04", classification: "C", label: "Target Oil (kWh/yr)", defaultValue: 0 },
+      { id: "energy.target.wood", legacyId: "j_31", section: "S04", classification: "C", label: "Target Wood (kWh/yr)", defaultValue: 0 },
 
-      // Embodied carbon inputs
-      { id: "emissions.typology", legacyId: "d_39", section: "S05", classification: "C", label: "Building Typology", defaultValue: "Low-Rise Residential" },
+      // Target emissions (k_27 through k_31)
+      { id: "emissions.target.electricity", legacyId: "k_27", section: "S04", classification: "C", label: "Target Electricity Emissions (kg CO2e/yr)", defaultValue: 0 },
+      { id: "emissions.target.gas", legacyId: "k_28", section: "S04", classification: "C", label: "Target Gas Emissions (kg CO2e/yr)", defaultValue: 0 },
+      { id: "emissions.target.propane", legacyId: "k_29", section: "S04", classification: "C", label: "Target Propane Emissions (kg CO2e/yr)", defaultValue: 0 },
+      { id: "emissions.target.oil", legacyId: "k_30", section: "S04", classification: "C", label: "Target Oil Emissions (kg CO2e/yr)", defaultValue: 0 },
+      { id: "emissions.target.wood", legacyId: "k_31", section: "S04", classification: "C", label: "Target Wood Emissions (kg CO2e/yr)", defaultValue: 0 },
+
+      // Embodied carbon inputs (S05)
       { id: "emissions.modelledEmbodied", legacyId: "i_41", section: "S05", classification: "C", label: "Modelled Embodied Carbon (kgCO2e/m²)", defaultValue: 350 },
     ];
 
     graph.registerInputs(inputs);
 
     // ========================================================================
-    // EMISSIONS CALCULATIONS - Row 27-31
-    // ========================================================================
-
-    // Electricity emissions
-    graph.registerNode({
-      id: "emissions.electricity",
-      legacyId: "g_27",
-      section: "S04",
-      classification: "C",
-      dependencies: ["energy.electricity.consumption"],
-      label: "Electricity Emissions (kg CO2e/yr)",
-      compute: (inputs) => {
-        const consumption = parseNum(inputs["energy.electricity.consumption"]);
-        return consumption * EMISSION_FACTORS.electricity;
-      },
-    });
-
-    // Gas emissions
-    graph.registerNode({
-      id: "emissions.gas",
-      legacyId: "g_28",
-      section: "S04",
-      classification: "C",
-      dependencies: ["energy.gas.consumption"],
-      label: "Gas Emissions (kg CO2e/yr)",
-      compute: (inputs) => {
-        const consumption = parseNum(inputs["energy.gas.consumption"]);
-        return consumption * EMISSION_FACTORS.gas;
-      },
-    });
-
-    // Propane emissions
-    graph.registerNode({
-      id: "emissions.propane",
-      legacyId: "g_29",
-      section: "S04",
-      classification: "C",
-      dependencies: ["energy.propane.consumption"],
-      label: "Propane Emissions (kg CO2e/yr)",
-      compute: (inputs) => {
-        const consumption = parseNum(inputs["energy.propane.consumption"]);
-        return consumption * EMISSION_FACTORS.propane;
-      },
-    });
-
-    // Oil emissions
-    graph.registerNode({
-      id: "emissions.oil",
-      legacyId: "g_30",
-      section: "S04",
-      classification: "C",
-      dependencies: ["energy.oil.consumption"],
-      label: "Oil Emissions (kg CO2e/yr)",
-      compute: (inputs) => {
-        const consumption = parseNum(inputs["energy.oil.consumption"]);
-        return consumption * EMISSION_FACTORS.oil;
-      },
-    });
-
-    // ========================================================================
     // ROW 32 SUBTOTALS (Critical for S01 dashboard)
+    // Section04.js lines 1323-1326
     // ========================================================================
 
-    // Actual emissions subtotal (g_32) = SUM(g_27:g_31) - wood offset
+    // Actual energy subtotal (f_32) = SUM(f_27:f_31)
+    graph.registerNode({
+      id: "energy.actual.total",
+      legacyId: "f_32",
+      section: "S04",
+      classification: "C",
+      dependencies: [
+        "energy.actual.electricity",
+        "energy.actual.gas",
+        "energy.actual.propane",
+        "energy.actual.oil",
+        "energy.actual.wood"
+      ],
+      label: "Actual Energy Total (kWh/yr)",
+      compute: (inputs) => {
+        // f_32 = SUM(f_27:f_31) (Section04.js line 1323)
+        const f27 = parseNum(inputs["energy.actual.electricity"]);
+        const f28 = parseNum(inputs["energy.actual.gas"]);
+        const f29 = parseNum(inputs["energy.actual.propane"]);
+        const f30 = parseNum(inputs["energy.actual.oil"]);
+        const f31 = parseNum(inputs["energy.actual.wood"]);
+        return f27 + f28 + f29 + f30 + f31;
+      },
+    });
+
+    // Actual emissions subtotal (g_32) = SUM(g_27:g_31) - (d_60 * 1000)
     graph.registerNode({
       id: "emissions.actual.subtotal",
       legacyId: "g_32",
       section: "S04",
       classification: "C",
       dependencies: [
-        "emissions.electricity",
-        "emissions.gas",
-        "emissions.propane",
-        "emissions.oil",
+        "emissions.actual.electricity",
+        "emissions.actual.gas",
+        "emissions.actual.propane",
+        "emissions.actual.oil",
+        "emissions.actual.wood",
         "forestry.annualOffset"
       ],
       label: "Actual Emissions Subtotal (kg CO2e/yr)",
       compute: (inputs) => {
-        const elec = parseNum(inputs["emissions.electricity"]);
-        const gas = parseNum(inputs["emissions.gas"]);
-        const propane = parseNum(inputs["emissions.propane"]);
-        const oil = parseNum(inputs["emissions.oil"]);
-        const woodOffset = parseNum(inputs["forestry.annualOffset"]) * 1000; // MT to kg
-
-        return elec + gas + propane + oil - woodOffset;
+        // g_32 = SUM(g_27:g_31) - (d_60 * 1000) (Section04.js line 1324)
+        const g27 = parseNum(inputs["emissions.actual.electricity"]);
+        const g28 = parseNum(inputs["emissions.actual.gas"]);
+        const g29 = parseNum(inputs["emissions.actual.propane"]);
+        const g30 = parseNum(inputs["emissions.actual.oil"]);
+        const g31 = parseNum(inputs["emissions.actual.wood"]);
+        const d60 = parseNum(inputs["forestry.annualOffset"]); // MT/yr
+        return g27 + g28 + g29 + g30 + g31 - (d60 * 1000);
       },
     });
 
-    // Target emissions subtotal (k_32) - similar but uses target consumption
+    // Target energy subtotal (j_32) = SUM(j_27:j_31)
+    graph.registerNode({
+      id: "energy.target.total",
+      legacyId: "j_32",
+      section: "S04",
+      classification: "C",
+      dependencies: [
+        "energy.target.electricity",
+        "energy.target.gas",
+        "energy.target.propane",
+        "energy.target.oil",
+        "energy.target.wood"
+      ],
+      label: "Target Energy Total (kWh/yr)",
+      compute: (inputs) => {
+        // j_32 = SUM(j_27:j_31) (Section04.js line 1325)
+        const j27 = parseNum(inputs["energy.target.electricity"]);
+        const j28 = parseNum(inputs["energy.target.gas"]);
+        const j29 = parseNum(inputs["energy.target.propane"]);
+        const j30 = parseNum(inputs["energy.target.oil"]);
+        const j31 = parseNum(inputs["energy.target.wood"]);
+        return j27 + j28 + j29 + j30 + j31;
+      },
+    });
+
+    // Target emissions subtotal (k_32) = SUM(k_27:k_31) - (d_60 * 1000)
     graph.registerNode({
       id: "emissions.target.subtotal",
       legacyId: "k_32",
       section: "S04",
       classification: "C",
       dependencies: [
-        "energy.target.electricity",
-        "energy.target.gas",
+        "emissions.target.electricity",
+        "emissions.target.gas",
+        "emissions.target.propane",
+        "emissions.target.oil",
+        "emissions.target.wood",
         "forestry.annualOffset"
       ],
       label: "Target Emissions Subtotal (kg CO2e/yr)",
       compute: (inputs) => {
-        // Simplified - assumes all target energy is electricity equivalent
-        const elec = parseNum(inputs["energy.target.electricity"]);
-        const gas = parseNum(inputs["energy.target.gas"]) / 10.3321 * EMISSION_FACTORS.gas;
-        const woodOffset = parseNum(inputs["forestry.annualOffset"]) * 1000;
-
-        return elec * EMISSION_FACTORS.electricity + gas - woodOffset;
+        // k_32 = SUM(k_27:k_31) - (d_60 * 1000) (Section04.js line 1326)
+        const k27 = parseNum(inputs["emissions.target.electricity"]);
+        const k28 = parseNum(inputs["emissions.target.gas"]);
+        const k29 = parseNum(inputs["emissions.target.propane"]);
+        const k30 = parseNum(inputs["emissions.target.oil"]);
+        const k31 = parseNum(inputs["emissions.target.wood"]);
+        const d60 = parseNum(inputs["forestry.annualOffset"]); // MT/yr
+        return k27 + k28 + k29 + k30 + k31 - (d60 * 1000);
       },
     });
 
     // ========================================================================
-    // EMISSIONS INTENSITY
+    // NOTE: h_8 and e_8 (Annual Carbon) are calculated in KeyValuesNodes.js
+    // to avoid duplicate legacyId registrations
     // ========================================================================
 
-    // GHGI - Greenhouse Gas Intensity (kg CO2e/m²/yr)
+    // ========================================================================
+    // SECTION 05: GHGI Calculations
+    // Section05.js lines 844-853
+    // ========================================================================
+
+    // Annual GHGI (g_38) = emissions / h_15
     graph.registerNode({
-      id: "emissions.ghgi",
+      id: "emissions.ghgi.annual",
       legacyId: "g_38",
       section: "S05",
       classification: "C",
-      dependencies: ["emissions.actual.subtotal", "building.conditionedFloorArea"],
+      dependencies: ["emissions.target.subtotal", "building.conditionedFloorArea"],
       label: "Annual GHG Intensity (kg CO2e/m²/yr)",
       compute: (inputs) => {
-        const emissions = parseNum(inputs["emissions.actual.subtotal"]);
-        const area = parseNum(inputs["building.conditionedFloorArea"], 1);
-        return area > 0 ? emissions / area : 0;
+        // g_38 = emissions / h_15 (Section05.js line 845)
+        const emissions = parseNum(inputs["emissions.target.subtotal"]);
+        const h15 = parseNum(inputs["building.conditionedFloorArea"], 1);
+        return h15 > 0 ? emissions / h15 : 0;
       },
     });
 
-    // Lifetime operational emissions
+    // Lifetime operational emissions (i_38) = g_38 * h_13
     graph.registerNode({
-      id: "emissions.lifetime.operational",
+      id: "emissions.ghgi.lifetime",
       legacyId: "i_38",
       section: "S05",
       classification: "C",
-      dependencies: ["emissions.ghgi", "building.serviceLife"],
+      dependencies: ["emissions.ghgi.annual", "building.serviceLife"],
       label: "Lifetime Operational Emissions (kg CO2e/m²)",
       compute: (inputs) => {
-        const ghgi = parseNum(inputs["emissions.ghgi"]);
-        const serviceLife = parseNum(inputs["building.serviceLife"], 50);
-        return ghgi * serviceLife;
+        // i_38 = g_38 * h_13 (Section05.js line 892)
+        const g38 = parseNum(inputs["emissions.ghgi.annual"]);
+        const h13 = parseNum(inputs["building.serviceLife"], 50);
+        return g38 * h13;
       },
     });
 
@@ -203,10 +223,10 @@
       id: "emissions.lifetime.total",
       section: "S05",
       classification: "C",
-      dependencies: ["emissions.lifetime.operational", "emissions.modelledEmbodied"],
+      dependencies: ["emissions.ghgi.lifetime", "emissions.modelledEmbodied"],
       label: "Total Lifetime Carbon (kg CO2e/m²)",
       compute: (inputs) => {
-        const operational = parseNum(inputs["emissions.lifetime.operational"]);
+        const operational = parseNum(inputs["emissions.ghgi.lifetime"]);
         const embodied = parseNum(inputs["emissions.modelledEmbodied"]);
         return operational + embodied;
       },
@@ -215,6 +235,6 @@
     console.log("[EmissionsNodes] Registered", inputs.length, "inputs");
   }
 
-  window.TEUI.ComputationNodes.Emissions = { register, EMISSION_FACTORS };
+  window.TEUI.ComputationNodes.Emissions = { register };
   console.log("[EmissionsNodes] Module loaded");
 })();

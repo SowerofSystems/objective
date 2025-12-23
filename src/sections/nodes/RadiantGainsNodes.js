@@ -29,8 +29,13 @@
 
   function parseNum(value, defaultVal = 0) {
     if (value === null || value === undefined || value === "N/A") return defaultVal;
+    if (value === "Unavailable") return "Unavailable";
     const num = parseFloat(String(value).replace(/,/g, ""));
     return isNaN(num) ? defaultVal : num;
+  }
+
+  function isUnavailable(value) {
+    return value === "Unavailable" || value === "N/A";
   }
 
   function getGainFactor(orientation, climateZone) {
@@ -69,6 +74,11 @@
       { id: "radiantGains.utilizationMethod", legacyId: "d_80", section: "S10", classification: "C", label: "Gains Utilization Method", defaultValue: "NRC 40%" }
     );
 
+    // Internal gains from S09 (heating season)
+    inputs.push(
+      { id: "internal.heatingGains", legacyId: "i_71", section: "S09", classification: "C", label: "Internal Gains - Heating Season (kWh/yr)", defaultValue: 0 }
+    );
+
     graph.registerInputs(inputs);
 
     // ========================================================================
@@ -83,9 +93,11 @@
         dependencies: [`radiantGains.row${row}.orientation`, "climate.zone"],
         label: `${label} Gain Factor`,
         compute: (inputs) => {
+          const climateZone = inputs["climate.zone"];
+          if (isUnavailable(climateZone)) return "Unavailable";
+
           const orientation = inputs[`radiantGains.row${row}.orientation`] || "Average";
-          const climateZone = parseNum(inputs["climate.zone"], 6);
-          return getGainFactor(orientation, climateZone);
+          return getGainFactor(orientation, parseNum(climateZone, 6));
         }
       });
     });
@@ -224,11 +236,11 @@
       legacyId: "e_80",
       section: "S10",
       classification: "C",
-      dependencies: ["radiantGains.subtotal.heatingGain", "internal.totalGains"],
+      dependencies: ["radiantGains.subtotal.heatingGain", "internal.heatingGains"],
       label: "Total Gains (Solar + Internal)",
       compute: (inputs) => {
         const solarGains = parseNum(inputs["radiantGains.subtotal.heatingGain"]);
-        const internalGains = parseNum(inputs["internal.totalGains"]);
+        const internalGains = parseNum(inputs["internal.heatingGains"]);
         return solarGains + internalGains;
       }
     });

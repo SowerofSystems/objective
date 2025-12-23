@@ -23,8 +23,13 @@
 
   function parseNum(value, defaultVal = 0) {
     if (value === null || value === undefined || value === "N/A") return defaultVal;
+    if (value === "Unavailable") return "Unavailable";
     const num = parseFloat(String(value).replace(/,/g, ""));
     return isNaN(num) ? defaultVal : num;
+  }
+
+  function isUnavailable(value) {
+    return value === "Unavailable" || value === "N/A";
   }
 
   // ============================================================================
@@ -97,10 +102,10 @@
     {
       id: "mechanical.ventilation.ach",
       legacyId: "l_118",
-      defaultValue: 0.3,
+      defaultValue: 3.0,
       classification: "C",
       section: "S13",
-      label: "Air Changes per Hour"
+      label: "Air Changes per Hour (ACH)"
     },
     {
       id: "mechanical.ventilation.ratePerPerson",
@@ -130,41 +135,11 @@
       unit: "%"
     },
 
-    // External dependencies (must match computed node IDs from other modules)
-    {
-      id: "energy.ted.heating",
-      legacyId: "d_127",
-      defaultValue: 0,
-      classification: "C",
-      section: "S14",
-      label: "Total Energy Demand for Heating (TED)"
-    },
-    {
-      id: "energy.ced.unmitigated",
-      legacyId: "h_129",
-      defaultValue: 0,
-      classification: "C",
-      section: "S14",
-      label: "Cooling Energy Demand (Unmitigated)"
-    },
-    {
-      id: "geometry.volume",
-      legacyId: "d_105",
-      defaultValue: 8000,
-      classification: "G",
-      section: "S12",
-      label: "Building Volume",
-      unit: "m³"
-    },
-    {
-      id: "geometry.conditionedFloorArea",
-      legacyId: "h_15",
-      defaultValue: 5000,
-      classification: "G",
-      section: "S02",
-      label: "Conditioned Floor Area",
-      unit: "m²"
-    }
+    // NOTE: External dependencies from other modules (no legacyIds to avoid duplicates):
+    // - energy.ted.heating (d_127) from EnergyNodes
+    // - energy.ced.unmitigated (d_129) from EnergyNodes
+    // - volume.conditioned (d_105) from VolumeMetricsNodes
+    // - building.conditionedFloorArea (h_15) from BuildingInfoNodes
   ];
 
   // ============================================================================
@@ -409,7 +384,7 @@
       legacyId: "f_117",
       dependencies: [
         "mechanical.cooling.electricalDemand",
-        "geometry.conditionedFloorArea"
+        "building.conditionedFloorArea"
       ],
       classification: "C",
       section: "S13",
@@ -417,7 +392,7 @@
       unit: "kWh/m²",
       compute: (inputs) => {
         const demand = parseNum(inputs["mechanical.cooling.electricalDemand"], 0);
-        const area = parseNum(inputs["geometry.conditionedFloorArea"], 5000);
+        const area = parseNum(inputs["building.conditionedFloorArea"], 5000);
 
         if (area > 0) {
           return +(demand / area).toFixed(2);
@@ -431,11 +406,11 @@
     // ========================================================================
     {
       id: "mechanical.ventilation.rateLs",
-      legacyId: "d_120",
+      // Note: legacyId "d_120" is mapped in VentilationNodes
       dependencies: [
         "mechanical.ventilation.method",
         "mechanical.ventilation.ach",
-        "geometry.volume"
+        "volume.conditioned"
       ],
       classification: "C",
       section: "S13",
@@ -443,8 +418,8 @@
       unit: "L/s",
       compute: (inputs) => {
         const method = inputs["mechanical.ventilation.method"];
-        const ach = parseNum(inputs["mechanical.ventilation.ach"], 0.3);
-        const volume = parseNum(inputs["geometry.volume"], 8000);
+        const ach = parseNum(inputs["mechanical.ventilation.ach"], 3.0);
+        const volume = parseNum(inputs["volume.conditioned"], 8000);
 
         // Rate = volume × ACH / 3.6 (convert m³/hr to L/s)
         if (method === "Natural" || method === "None") {
@@ -455,7 +430,7 @@
     },
     {
       id: "mechanical.ventilation.rateM3h",
-      legacyId: "h_120",
+      // Note: legacyId "h_120" is mapped in VentilationNodes
       dependencies: ["mechanical.ventilation.rateLs"],
       classification: "C",
       section: "S13",
@@ -490,7 +465,7 @@
     },
     {
       id: "mechanical.ventilation.heatingEnergyLoss",
-      legacyId: "h_121",
+      // Note: legacyId "h_121" is mapped in VentilationNodes as energyRecovered
       dependencies: [
         "mechanical.ventilation.rateLs",
         "mechanical.ventilation.recoveryFactor",
@@ -501,14 +476,16 @@
       label: "Ventilation Heating Energy Loss",
       unit: "kWh/yr",
       compute: (inputs) => {
+        const hdd = inputs["climate.heating.degreedays"];
+        if (isUnavailable(hdd)) return "Unavailable";
+
         const rateLs = parseNum(inputs["mechanical.ventilation.rateLs"], 0);
         const recovery = parseNum(inputs["mechanical.ventilation.recoveryFactor"], 0);
-        const hdd = parseNum(inputs["climate.heating.degreedays"], 4600);
 
         // Energy loss = rate × (1 - recovery) × HDD × 24 × 1.2 / 1000
         // 1.2 = volumetric heat capacity of air (kJ/m³·K)
         const effectiveRate = rateLs * (1 - recovery);
-        return +((effectiveRate * hdd * 24 * 1.2) / 1000).toFixed(2);
+        return +((effectiveRate * parseNum(hdd) * 24 * 1.2) / 1000).toFixed(2);
       }
     }
   ];

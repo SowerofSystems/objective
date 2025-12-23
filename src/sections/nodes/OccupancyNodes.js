@@ -13,6 +13,8 @@
     const inputs = [
       { id: "occupancy.occupants", legacyId: "d_63", section: "S09", classification: "C", label: "Number of Occupants", defaultValue: 4 },
       { id: "occupancy.occupantDensity", legacyId: "h_63", section: "S09", classification: "C", label: "Occupant Density (m²/person)", defaultValue: 35 },
+      { id: "occupancy.occupiedHours", legacyId: "i_63", section: "S09", classification: "C", label: "Occupied Hours per Year", defaultValue: 4380 },
+      { id: "occupancy.totalHours", legacyId: "j_63", section: "S09", classification: "C", label: "Total Hours per Year", defaultValue: 8760 },
     ];
 
     graph.registerInputs(inputs);

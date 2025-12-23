@@ -91,6 +91,10 @@
   <script src="../../src/sections/nodes/ForestryNodes.js"></script>
   <script src="../../src/sections/nodes/EmissionsNodes.js"></script>
   <script src="../../src/sections/nodes/OccupancyNodes.js"></script>
+  <script src="../../src/sections/nodes/RadiantGainsNodes.js"></script>
+  <script src="../../src/sections/nodes/TransmissionLossNodes.js"></script>
+  <script src="../../src/sections/nodes/VolumeMetricsNodes.js"></script>
+  <script src="../../src/sections/nodes/VentilationNodes.js"></script>
   <script src="../../src/sections/nodes/KeyValuesNodes.js"></script>
 
   <script>
@@ -213,6 +217,55 @@
       'internal.occupantGains': 1200,
       'internal.lightingGains': 800,
       'internal.equipmentGains': 1000,
+
+      // ========== S10: Radiant Gains ==========
+      'radiantGains.north.shgc': 0.25,
+      'radiantGains.east.shgc': 0.25,
+      'radiantGains.south.shgc': 0.25,
+      'radiantGains.west.shgc': 0.25,
+      'radiantGains.skylights.shgc': 0.25,
+      'radiantGains.shading.winter': 0.1,
+      'radiantGains.shading.summer': 0.5,
+      'radiantGains.utilization.heatingFactor': 0.9,
+      'radiantGains.utilization.coolingFactor': 0.8,
+
+      // ========== S11: Transmission Loss (envelope component areas/values) ==========
+      'transmissionLoss.roof.area': 100,
+      'transmissionLoss.roof.rsi': 8.81,
+      'transmissionLoss.walls.area': 180,
+      'transmissionLoss.walls.rsi': 5.28,
+      'transmissionLoss.windows.area': 36,
+      'transmissionLoss.windows.uValue': 1.2,
+      'transmissionLoss.skylights.area': 2,
+      'transmissionLoss.skylights.uValue': 1.4,
+      'transmissionLoss.doors.area': 4,
+      'transmissionLoss.doors.uValue': 1.6,
+      'transmissionLoss.exposedFloor.area': 0,
+      'transmissionLoss.exposedFloor.rsi': 5.28,
+      'transmissionLoss.foundation.area': 60,
+      'transmissionLoss.foundation.rsi': 3.52,
+      'transmissionLoss.slab.area': 100,
+      'transmissionLoss.slab.rsi': 1.76,
+      'transmissionLoss.basement.area': 0,
+      'transmissionLoss.basement.rsi': 3.52,
+      'transmissionLoss.thermalBridge.penalty': 0.05,
+
+      // ========== S12: Volume Metrics ==========
+      'volume.ceilingHeight': 2.7,
+      'volume.numStoreys': 2,
+      'airTightness.ach50': 3.0,
+      'airTightness.method': 'LBL',
+
+      // ========== S13: Ventilation ==========
+      'ventilation.type': 'HRV',
+      'ventilation.efficiency': 75,
+      'ventilation.flowRate': 50,
+      'heating.systemType': 'Heat Pump',
+      'heating.hspf': 10,
+      'heating.afue': 95,
+      'cooling.systemType': 'Heat Pump',
+      'cooling.seer': 15,
+      'cooling.eer': 12,
     };
 
     function runFullCalculation() {
@@ -231,7 +284,9 @@
         const moduleOrder = [
           'Climate', 'BuildingInfo', 'Envelope', 'Mechanical',
           'SpaceHeating', 'WaterHeating', 'Renewable', 'Energy',
-          'Forestry', 'Emissions', 'Occupancy', 'KeyValues'
+          'Forestry', 'Emissions', 'Occupancy',
+          'RadiantGains', 'TransmissionLoss', 'VolumeMetrics', 'Ventilation',
+          'KeyValues'
         ];
 
         for (const name of moduleOrder) {
@@ -277,6 +332,28 @@
           'Building (S02)': ['building.conditionedFloorArea', 'building.serviceLife'],
           'Envelope U-Values': ['envelope.roof.uValue', 'envelope.walls.uValue', 'envelope.wallsBelowGrade.uValue', 'envelope.slabOnGrade.uValue'],
           'Envelope Heat Loss': ['envelope.roof.heatLoss', 'envelope.walls.heatLoss', 'envelope.airFacing.totalHeatLoss', 'envelope.groundFacing.totalHeatLoss', 'envelope.total.heatLoss'],
+          'Radiant Gains (S10)': [
+            'radiantGains.north.heatingGain', 'radiantGains.south.heatingGain',
+            'radiantGains.subtotal.heatingGain', 'radiantGains.subtotal.coolingGain',
+            'radiantGains.utilized.heating', 'radiantGains.utilized.cooling'
+          ],
+          'Transmission Loss (S11)': [
+            'transmissionLoss.roof.heatLoss', 'transmissionLoss.walls.heatLoss',
+            'transmissionLoss.windows.heatLoss', 'transmissionLoss.airFacing.totalHeatLoss',
+            'transmissionLoss.groundFacing.totalHeatLoss', 'transmissionLoss.total.heatLoss',
+            'transmissionLoss.total.heatGain'
+          ],
+          'Volume Metrics (S12)': [
+            'volume.conditioned', 'volume.surfaceToVolumeRatio', 'volume.wwr',
+            'airTightness.nFactor', 'airTightness.achNatural', 'airTightness.heatLoss'
+          ],
+          'Ventilation (S13)': [
+            'ventilation.ach', 'ventilation.effectiveRecovery',
+            'ventilation.grossHeatLoss', 'ventilation.netHeatLoss',
+            'heating.cop', 'cooling.cop',
+            'heating.energyConsumption', 'cooling.energyConsumption',
+            'mechanical.totalEnergy'
+          ],
           'Mechanical': ['mechanical.heating.cop', 'mechanical.cooling.cop', 'mechanical.ventilation.heatLoss'],
           'Water Heating (S07)': ['waterHeating.energyDemand', 'waterHeating.fuelConsumption'],
           'Forestry (S08)': ['forestry.carbonStorage', 'forestry.annualOffset'],
