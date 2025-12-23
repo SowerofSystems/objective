@@ -1087,6 +1087,45 @@ function getFacadeCenter(facade, geometry) {
 ---
 
 **Document Status**: IMPLEMENTATION COMPLETE, FIX IDENTIFIED ✅
+
+---
+
+### Issue #1 Resolution: Missing nodes3D Parameter
+
+**Discovery Date**: 2025-12-22
+
+**Problem**: The cardinal detection fix was implemented in `wombatWindows.js` but wasn't executing - debug console logging showed no output.
+
+**Root Cause**: In `Section19.js` line 1714-1718, the geometry object passed to `calculateWindows()` only included `{ width, length, wallHeight }`. The `nodes3D` data was NOT being passed, so the cardinal detection code path never executed (it fell through to the simple fallback calculation).
+
+**Fix**: Updated Section19.js to pass `nodes3D` to the calculateWindows() function:
+
+```javascript
+// BEFORE (missing nodes3D)
+const windowData = window.TEUI.WombatWindows?.calculateWindows({
+  width,
+  length,
+  wallHeight,
+});
+
+// AFTER (nodes3D included)
+const windowData = window.TEUI.WombatWindows?.calculateWindows({
+  width,
+  length,
+  wallHeight,
+  nodes3D,  // ← NOW PASSED!
+});
+```
+
+**Expected Behavior After Fix**:
+- Console should show debug output: `[WOMBAT Windows] Facade "north": edge center (x, y)`
+- Windows should correctly orient to cardinal directions at all aspect ratios
+- North windows → Y+ edge
+- South windows → Y- edge
+- East windows → X+ edge
+- West windows → X- edge
+
+**Status**: FIXED - Ready for testing ✅
 **Created**: 2025-12-22
 **Updated**: 2025-12-22 (Issue #1: Aspect ratio orientation fix documented)
 **Scope**: Phase 1 - Vertical facade windows only

@@ -1715,6 +1715,7 @@ window.TEUI.SectionModules.sect19 = (function () {
       width,
       length,
       wallHeight,
+      nodes3D,
     });
 
     // Return complete geometry
