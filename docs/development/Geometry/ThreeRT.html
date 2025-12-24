@@ -366,6 +366,59 @@
        */
       verifyEuler: (vertices, edges, faces) => {
         return vertices - edges + faces === 2;
+      },
+
+      /**
+       * Golden Ratio (φ) - Symbolic operations to defer √5 expansion
+       * φ = (1 + √5)/2 ≈ 1.618033988749895
+       * Key identities: φ² = φ + 1, 1/φ = φ - 1
+       */
+      Phi: {
+        /**
+         * Compute √5 - only call when absolutely necessary
+         */
+        sqrt5: () => Math.sqrt(5),
+
+        /**
+         * φ = (1 + √5)/2
+         * Deferred: only expands √5 when called
+         */
+        value: function() {
+          return 0.5 * (1 + this.sqrt5());
+        },
+
+        /**
+         * φ² = φ + 1 (algebraic identity - no sqrt needed!)
+         * Derived from φ² - φ - 1 = 0
+         */
+        squared: function() {
+          return this.value() + 1;
+        },
+
+        /**
+         * 1/φ = φ - 1 (algebraic identity - no division needed!)
+         * Also equals (√5 - 1)/2
+         */
+        inverse: function() {
+          return this.value() - 1;
+        }
+      },
+
+      /**
+       * Validate edges have uniform quadrance (regular polyhedron check)
+       * Returns array of {edge, Q, error} for each edge
+       */
+      validateEdges: (vertices, edges, expectedQ, tolerance = 1e-10) => {
+        return edges.map(([i, j]) => {
+          const Q = RT.quadrance(vertices[i], vertices[j]);
+          const error = Math.abs(Q - expectedQ);
+          return {
+            edge: [i, j],
+            Q,
+            error,
+            valid: error < tolerance
+          };
+        });
       }
     };
 
@@ -676,18 +729,16 @@
         // For dodecahedron: φ² = φ + 1 → φ² - φ - 1 = 0
         // Quadrance relationship: φ² - φ - 1 = 0 means Q_phi/Q_1 = (φ²)/1
         //
-        // Symbolic: φ = (1 + √5)/2  or  φ = 0.5 * (1 + √5)
-        // Only expand √5 when absolutely necessary (for final vertex coords)
+        // Use RT.Phi library for symbolic golden ratio operations
+        // φ = (1 + √5)/2, and 1/φ = φ - 1 (algebraic identity!)
 
-        const sqrt5 = Math.sqrt(5); // Defer until needed
-        const phi = 0.5 * (1 + sqrt5); // φ = (1 + √5)/2
-        const invPhi = 1 / phi;        // 1/φ = φ - 1 = (√5 - 1)/2
+        const phi = RT.Phi.value();      // φ = (1 + √5)/2
+        const invPhi = RT.Phi.inverse(); // 1/φ = φ - 1 (NO division!)
 
         console.log(`[ThreeRT] Dodecahedron RT construction:`);
         console.log(`  Cube half-size: ${s.toFixed(3)}`);
-        console.log(`  √5 = ${sqrt5.toFixed(6)} (deferred expansion)`);
-        console.log(`  φ = 0.5(1 + √5) = ${phi.toFixed(6)} (from Q_φ² - Q_φ - Q_1 = 0)`);
-        console.log(`  1/φ = ${invPhi.toFixed(6)}`);
+        console.log(`  φ = (1 + √5)/2 = ${phi.toFixed(6)} (from φ² - φ - 1 = 0)`);
+        console.log(`  1/φ = φ - 1 = ${invPhi.toFixed(6)} (algebraic identity - no division!)`);
 
         // 20 vertices: 8 at (±1, ±1, ±1) + 12 at permutations of (0, ±1/φ, ±φ)
         // Scaled by s to fit cube of size ±s
@@ -785,10 +836,21 @@
        * Rhombic Dodecahedron (12 rhombic faces, 14 vertices, 24 edges)
        * Dual of cuboctahedron, Voronoi cell of FCC lattice
        * 8 vertices at (±1,0,0),(0,±1,0),(0,0,±1) and 6 at (±1,±1,±1)/√3
+       *
+       * RATIONAL TRIGONOMETRY: Defer √3 expansion following Wildberger principles
+       * Instead of t = s/√3, use algebraic rationalization: s/√3 = s·√3/3
        */
       rhombicDodecahedron: (halfSize = 1) => {
         const s = halfSize;
-        const t = s / Math.sqrt(3); // Normalize cube corner vertices
+
+        // Defer √3 expansion: compute √3 only once, use rationalized form
+        const sqrt3 = Math.sqrt(3);  // Deferred until needed
+        const t = s * sqrt3 / 3;     // s/√3 = s·√3/3 (rationalized denominator)
+
+        console.log(`[ThreeRT] Rhombic Dodecahedron RT construction:`);
+        console.log(`  Axis vertex scale: s = ${s.toFixed(3)}`);
+        console.log(`  √3 = ${sqrt3.toFixed(6)} (deferred expansion)`);
+        console.log(`  Body diagonal scale: s/√3 = s·√3/3 = ${t.toFixed(6)} (rationalized!)`);
 
         // 14 vertices total
         const vertices = [
@@ -855,8 +917,13 @@
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x1a1a1a);
 
+      // Get container dimensions FIRST (before camera setup)
+      const container = document.getElementById('canvas-container');
+      const width = container.clientWidth || window.innerWidth;
+      const height = container.clientHeight || window.innerHeight;
+      const aspect = width / height;
+
       // Camera (Isometric-style perspective from above)
-      const aspect = window.innerWidth / window.innerHeight;
       camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 1000);
 
       // Position camera for isometric-like view (elevated, looking down)
@@ -864,9 +931,8 @@
       camera.lookAt(0, 0, 0);
 
       // Renderer
-      const container = document.getElementById('canvas-container');
       renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setSize(width, height);
       renderer.setPixelRatio(window.devicePixelRatio);
       container.appendChild(renderer.domElement);
 
