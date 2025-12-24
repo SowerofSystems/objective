@@ -745,43 +745,37 @@
           // Edges from cube corner 7 (-,-,-)
           [7, 11], [7, 15], [7, 19],
 
-          // Edges between phi-vertices forming pentagon edges (6 edges)
-          // These connect vertices within the same permutation group
-          [8, 10],  // (0, +invPhi, +phi) to (0, -invPhi, +phi)
-          [9, 11],  // (0, +invPhi, -phi) to (0, -invPhi, -phi)
-          [12, 14], // (+invPhi, +phi, 0) to (-invPhi, +phi, 0)
-          [13, 15], // (+invPhi, -phi, 0) to (-invPhi, -phi, 0)
-          [16, 17], // (+phi, 0, +invPhi) to (+phi, 0, -invPhi)
-          [18, 19], // (-phi, 0, +invPhi) to (-phi, 0, -invPhi)
+          // Edges between phi-vertices (6 edges, completing the 30 total)
+          // These connect phi-vertices within the same permutation group
+          [8, 10],  // (0, +invPhi, +phi) to (0, -invPhi, +phi) - YZ group
+          [9, 11],  // (0, +invPhi, -phi) to (0, -invPhi, -phi) - YZ group
+          [12, 14], // (+invPhi, +phi, 0) to (-invPhi, +phi, 0) - XY group
+          [13, 15], // (+invPhi, -phi, 0) to (-invPhi, -phi, 0) - XY group
+          [16, 17], // (+phi, 0, +invPhi) to (+phi, 0, -invPhi) - XZ group
+          [18, 19], // (-phi, 0, +invPhi) to (-phi, 0, -invPhi) - XZ group
         ];
 
-        // 12 pentagonal faces (vertices ordered counterclockwise from outside)
-        // Each pentagon contains: 2 cube corners (shoulders) + 3 phi-vertices
+        // 12 pentagonal faces - standard dodecahedron topology
+        // Vertices: 0-7 (cube), 8-11 (YZ permutation), 12-15 (XY permutation), 16-19 (XZ permutation)
+        // Each face verified to follow edge connectivity
         const faces = [
-          // Face 1: vertices 0, 8, 4, 14, 12 (contains cube corners 0, 4)
-          [0, 8, 4, 14, 12],
-          // Face 2: vertices 0, 12, 1, 17, 16 (contains cube corners 0, 1)
-          [0, 12, 1, 17, 16],
-          // Face 3: vertices 0, 16, 2, 10, 8 (contains cube corners 0, 2)
-          [0, 16, 2, 10, 8],
-          // Face 4: vertices 1, 9, 5, 19, 17 (contains cube corners 1, 5)
-          [1, 9, 5, 19, 17],
-          // Face 5: vertices 1, 12, 14, 5, 9 (contains cube corners 1, 5)
-          [1, 12, 14, 5, 9],
-          // Face 6: vertices 2, 13, 3, 11, 10 (contains cube corners 2, 3)
-          [2, 13, 3, 11, 10],
-          // Face 7: vertices 2, 16, 17, 3, 13 (contains cube corners 2, 3)
-          [2, 16, 17, 3, 13],
-          // Face 8: vertices 4, 8, 10, 6, 18 (contains cube corners 4, 6)
-          [4, 8, 10, 6, 18],
-          // Face 9: vertices 4, 18, 6, 15, 14 (contains cube corners 4, 6)
-          [4, 18, 6, 15, 14],
-          // Face 10: vertices 5, 14, 15, 7, 19 (contains cube corners 5, 7)
-          [5, 14, 15, 7, 19],
-          // Face 11: vertices 6, 10, 11, 7, 15 (contains cube corners 6, 7)
-          [6, 10, 11, 7, 15],
-          // Face 12: vertices 3, 17, 19, 7, 11 (contains cube corners 3, 7)
-          [3, 17, 19, 7, 11],
+          // Three faces meeting at vertex 0 (+,+,+)
+          [0, 8, 4, 14, 12],    // 0→8→4→14→12→0
+          [0, 12, 1, 17, 16],   // 0→12→1→17→16→0
+          [0, 16, 2, 10, 8],    // 0→16→2→10→8→0
+
+          // Three faces meeting at vertex 7 (-,-,-)
+          [7, 11, 3, 13, 15],   // 7→11→3→13→15→7
+          [7, 15, 6, 18, 19],   // 7→15→6→18→19→7
+          [7, 19, 5, 9, 11],    // 7→19→5→9→11→7
+
+          // Six remaining faces (belt)
+          [1, 12, 14, 5, 9],    // 1→12→14→5→9→1
+          [1, 9, 11, 3, 17],    // 1→9→11→3→17→1 (note: edge 9→11 exists)
+          [2, 16, 17, 3, 13],   // 2→16→17→3→13→2 (note: edge 16→17 exists)
+          [2, 13, 15, 6, 10],   // 2→13→15→6→10→2 (note: edge 13→15 exists)
+          [4, 8, 10, 6, 18],    // 4→8→10→6→18→4 (note: edge 8→10 exists)
+          [4, 18, 19, 5, 14],   // 4→18→19→5→14→4 (note: edge 18→19 exists)
         ];
 
         return { vertices, edges, faces };
