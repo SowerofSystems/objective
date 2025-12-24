@@ -35,6 +35,8 @@
       { id: "volume.numStoreys", legacyId: "d_99", section: "S12", classification: "C", label: "Number of Storeys", defaultValue: 2 },
 
       // Air tightness inputs
+      { id: "airTightness.method", legacyId: "d_108", section: "S12", classification: "C", label: "Air Tightness Method", defaultValue: "AL-1B" },
+      { id: "airTightness.measuredAch50", legacyId: "g_109", section: "S12", classification: "C", label: "Measured ACH50", defaultValue: 3.0 },
       { id: "airTightness.ach50", legacyId: "d_103", section: "S12", classification: "C", label: "ACH50 (air changes/hour @ 50Pa)", defaultValue: 3.0 },
       { id: "airTightness.nFactor", legacyId: "g_110", section: "S12", classification: "C", label: "N-Factor", defaultValue: 13 },
 
@@ -222,59 +224,116 @@
     });
 
     // ========================================================================
-    // AIR LEAKAGE HEAT LOSS (Row 103)
-    // From Section12.js line 2498: i_103 = (baseLeakageCoefficient × HDD × 24) / 1000
+    // AIR LEAKAGE - NRL50 and Heat Loss (Row 103, 108)
+    // From Section12.js calculateACH50Target and calculateAirLeakageHeatLoss
     // ========================================================================
 
-    // ACH natural = ACH50 / N-factor
-    // Note: No legacyId - this is an intermediate computation not stored in legacy system
+    // NRL50 preset lookup values (from Section12.js line 2076-2090)
+    const NRL50_PRESETS = {
+      "AL-1A": 0.89,
+      "AL-2A": 0.71,
+      "AL-3A": 0.53,
+      "AL-4A": 0.35,
+      "AL-1B": 1.17,
+      "AL-2B": 0.94,
+      "AL-3B": 0.70,
+      "AL-4B": 0.47
+    };
+
+    // g_108: NRL50 Target (Normalized Leakage Rate at 50Pa in L/s/m²)
+    // From Section12.js line 2096-2106
     graph.registerNode({
-      id: "airTightness.achNatural",
+      id: "airTightness.nrl50",
+      legacyId: "g_108",
       section: "S12",
       classification: "C",
-      dependencies: ["airTightness.ach50", "airTightness.nFactor"],
-      label: "Natural Air Changes (ACH)",
+      dependencies: [
+        "airTightness.method",
+        "airTightness.measuredAch50",
+        "volume.conditioned",
+        "envelope.airFacing.area"
+      ],
+      label: "NRL50 Target (L/s·m²)",
       compute: (inputs) => {
-        const ach50 = parseNum(inputs["airTightness.ach50"], 3);
-        const nFactor = parseNum(inputs["airTightness.nFactor"], 13);
-        return nFactor > 0 ? ach50 / nFactor : 0;
+        const method = inputs["airTightness.method"] || "AL-1B";
+        const measuredAch50 = parseNum(inputs["airTightness.measuredAch50"], 3);
+        const volume = parseNum(inputs["volume.conditioned"]);
+        const areaAir = parseNum(inputs["envelope.airFacing.area"]);
+
+        // Helper: Convert ACH50 to NRL50
+        // NRL50 = ACH50 × volume / (area × 3.6)
+        const achToNrl = (ach) => {
+          return areaAir > 0 && volume > 0 ? (ach * volume) / (areaAir * 3.6) : 0;
+        };
+
+        if (method === "MEASURED") {
+          return achToNrl(measuredAch50);
+        } else if (method === "PH_CLASSIC") {
+          return achToNrl(0.6);
+        } else if (method === "PH_LOW") {
+          return achToNrl(1.0);
+        } else if (method === "PH_PLUS") {
+          return 0.1;
+        } else {
+          // Use preset value from lookup table
+          return NRL50_PRESETS[method] || 1.17;
+        }
       }
     });
 
-    // Air leakage volume rate
-    // Note: No legacyId - this is an intermediate computation not stored in legacy system
+    // d_109: ACH50 Target (calculated from NRL50)
+    // From Section12.js line 2117-2119
     graph.registerNode({
-      id: "airTightness.leakageRate",
+      id: "airTightness.ach50Target",
+      legacyId: "d_109",
       section: "S12",
       classification: "C",
-      dependencies: ["airTightness.achNatural", "volume.conditioned"],
-      label: "Air Leakage Rate (m³/h)",
+      dependencies: [
+        "airTightness.nrl50",
+        "envelope.airFacing.area",
+        "volume.conditioned"
+      ],
+      label: "ACH50 Target",
       compute: (inputs) => {
-        const achNatural = parseNum(inputs["airTightness.achNatural"]);
+        const nrl50 = parseNum(inputs["airTightness.nrl50"]);
+        const areaAir = parseNum(inputs["envelope.airFacing.area"]);
         const volume = parseNum(inputs["volume.conditioned"]);
-        return achNatural * volume;
+        // ACH50 = NRL50 × (area / volume) × 3.6
+        return volume > 0 && areaAir > 0 ? nrl50 * (areaAir / volume) * 3.6 : 0;
       }
     });
 
     // i_103: Air Leakage Heat Loss
-    // From Section12.js line 2492-2498: baseLeakageCoefficient × HDD × 24 / 1000
+    // From Section12.js line 2564-2571:
+    // baseLeakageCoefficient = (1.21 × NRL50 × area_air) / N_factor
+    // i_103 = (baseLeakageCoefficient × HDD × 24) / 1000
     graph.registerNode({
       id: "airTightness.heatLoss",
       legacyId: "i_103",
       section: "S12",
       classification: "C",
       dependencies: [
-        "airTightness.leakageRate",
+        "airTightness.nrl50",
+        "envelope.airFacing.area",
+        "airTightness.nFactor",
         "climate.heating.degreedays"
       ],
       label: "Air Leakage Heat Loss (kWh/yr)",
       compute: (inputs) => {
         const hdd = inputs["climate.heating.degreedays"];
         if (isUnavailable(hdd)) return "Unavailable";
-        const leakageRate = parseNum(inputs["airTightness.leakageRate"]);
-        // Heat loss = Volume rate × 0.34 (air heat capacity Wh/m³K) × HDD × 24 / 1000
-        const airHeatCapacity = 0.34;
-        return (leakageRate * airHeatCapacity * parseNum(hdd) * 24) / 1000;
+
+        const nrl50 = parseNum(inputs["airTightness.nrl50"]);
+        const areaAir = parseNum(inputs["envelope.airFacing.area"]);
+        const nFactor = parseNum(inputs["airTightness.nFactor"], 13);
+
+        // Legacy formula: (1.21 × NRL50 × area / N_factor × HDD × 24) / 1000
+        const leakageFactor = 1.21;
+        const baseLeakageCoefficient = nFactor > 0
+          ? (leakageFactor * nrl50 * areaAir) / nFactor
+          : 0;
+
+        return (baseLeakageCoefficient * parseNum(hdd) * 24) / 1000;
       }
     });
 
@@ -285,7 +344,9 @@
       section: "S12",
       classification: "C",
       dependencies: [
-        "airTightness.leakageRate",
+        "airTightness.nrl50",
+        "envelope.airFacing.area",
+        "airTightness.nFactor",
         "climate.cooling.degreedays"
       ],
       label: "Air Leakage Heat Gain (kWh/yr)",
@@ -293,9 +354,18 @@
         const cdd = inputs["climate.cooling.degreedays"];
         // Legacy returns 0 when CDD unavailable
         if (isUnavailable(cdd)) return 0;
-        const leakageRate = parseNum(inputs["airTightness.leakageRate"]);
-        const airHeatCapacity = 0.34;
-        return (leakageRate * airHeatCapacity * parseNum(cdd) * 24) / 1000;
+
+        const nrl50 = parseNum(inputs["airTightness.nrl50"]);
+        const areaAir = parseNum(inputs["envelope.airFacing.area"]);
+        const nFactor = parseNum(inputs["airTightness.nFactor"], 13);
+
+        // Legacy formula: (1.21 × NRL50 × area / N_factor × CDD × 24) / 1000
+        const leakageFactor = 1.21;
+        const baseLeakageCoefficient = nFactor > 0
+          ? (leakageFactor * nrl50 * areaAir) / nFactor
+          : 0;
+
+        return (baseLeakageCoefficient * parseNum(cdd) * 24) / 1000;
       }
     });
 

@@ -183,7 +183,6 @@
     },
     {
       id: "mechanical.heating.ceer",
-      legacyId: "l_113_ceer",
       dependencies: ["mechanical.heating.copCoolDerived"],
       classification: "C",
       section: "S13",
@@ -315,7 +314,6 @@
     // ========================================================================
     {
       id: "mechanical.cooling.effectiveCop",
-      legacyId: "j_116_effective",
       dependencies: [
         "mechanical.cooling.systemType",
         "mechanical.heating.systemType",
@@ -444,7 +442,6 @@
     },
     {
       id: "mechanical.ventilation.recoveryFactor",
-      legacyId: "f_118",
       dependencies: [
         "mechanical.ventilation.method",
         "mechanical.ventilation.efficiency"

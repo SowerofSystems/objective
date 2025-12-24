@@ -27,6 +27,13 @@
     'envelope.airFacing.uValue': 'g_101',
     'envelope.groundFacing.uValue': 'g_102',
 
+    // Air Tightness (S12)
+    'airTightness.method': 'd_108',
+    'airTightness.nrl50': 'g_108',
+    'airTightness.nFactor': 'g_110',
+    'airTightness.heatLoss': 'i_103',
+    'airTightness.heatGain': 'k_103',
+
     // Transmission Loss (S11)
     'transmissionLoss.thermalBridgePenalty': 'd_97',
     'transmissionLoss.components.subtotalHeatLoss': 'i_98',
@@ -70,10 +77,8 @@
   }
   console.log(`Loaded ${moduleCount} modules`);
 
-  // Create state and sync from StateManager
-  const state = window.TEUI.MultiModelState.create();
-  const targetMeta = window.TEUI.ModelMetadata.createTarget('Validation');
-  state.addModel(targetMeta);
+  // Create engine and sync from StateManager
+  const engine = window.TEUI.IncrementalEngine.create(graph);
 
   // Sync inputs
   const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
@@ -86,7 +91,7 @@
     if (legacyId) {
       const value = StateManager.getValue(legacyId);
       if (value !== undefined && value !== null && value !== '') {
-        state.setValueForModel(targetMeta.id, semanticPath, value);
+        engine.setInput(semanticPath, value);
         syncCount++;
       }
     }
@@ -94,9 +99,10 @@
   console.log(`Synced ${syncCount} values from StateManager\n`);
 
   // Compute
-  const engine = window.TEUI.MultiModelEngine.create({ state, graph });
-  const computeResult = engine.computeAllForModel(targetMeta.id);
-  console.log(`Computed ${computeResult.computedNodes} nodes in ${computeResult.duration.toFixed(2)}ms\n`);
+  const startTime = performance.now();
+  const computedCount = engine.computeAll();
+  const duration = performance.now() - startTime;
+  console.log(`Computed ${computedCount} nodes in ${duration.toFixed(2)}ms\n`);
 
   // Compare values
   function parseNum(value, defaultVal = 0) {
@@ -109,7 +115,7 @@
 
   for (const [semanticPath, legacyId] of Object.entries(FIELD_MAPPINGS)) {
     const oldValue = StateManager.getValue(legacyId);
-    const newValue = state.getValue(semanticPath);
+    const newValue = engine.getValue(semanticPath);
 
     if (oldValue === undefined || oldValue === null || oldValue === '' || oldValue === 'N/A') {
       results.missing.push({ legacyId, semanticPath, oldValue, newValue });

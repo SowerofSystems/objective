@@ -11,8 +11,6 @@
 
   window.TEUI = window.TEUI || {};
 
-  // No hardcoded mappings - we'll use the graph's legacyId properties
-
   /**
    * Initialize dev tools - attach event listeners
    */
@@ -70,11 +68,23 @@
     }
 
     try {
-      // Initialize new computation system if needed
       const CI = window.TEUI.ComputationIntegration;
-      if (!CI?.isInitialized()) {
+      if (!CI) {
+        console.error('ComputationIntegration module not loaded');
+        alert('Error: ComputationIntegration module not loaded');
+        console.groupEnd();
+        return;
+      }
+
+      if (!CI.isInitialized()) {
         console.log('Initializing new computation system...');
-        CI.initialize();
+        const initResult = CI.initialize();
+        if (!initResult) {
+          console.error('Failed to initialize computation system');
+          alert('Error: Failed to initialize computation system. Check console.');
+          console.groupEnd();
+          return;
+        }
       }
 
       const graph = CI.getGraph();
@@ -82,19 +92,25 @@
       const engine = CI.getEngine();
 
       if (!graph || !state || !engine) {
-        console.error('Computation system components not available');
-        alert('Error: New computation system not properly initialized');
+        console.error('Components not available', { graph: !!graph, state: !!state, engine: !!engine });
+        alert('Error: Computation system components missing');
         console.groupEnd();
         return;
       }
 
-      // Sync values from StateManager to new system
-      console.log('Syncing values from StateManager...');
       const targetId = state.getActiveModelId();
+      if (!targetId) {
+        console.error('No active model ID');
+        alert('Error: No active model');
+        console.groupEnd();
+        return;
+      }
+
+      // Sync values from StateManager
+      console.log('Syncing values from StateManager...');
       const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
       let syncCount = 0;
 
-      // Sync inputs
       for (const semanticPath of inputIds) {
         const inputNode = graph.getInput(semanticPath);
         const legacyId = inputNode?.legacyId;
@@ -109,7 +125,7 @@
       }
       console.log(`Synced ${syncCount} input values`);
 
-      // Compute with new system
+      // Compute
       const computeStart = performance.now();
       const result = engine.computeAllForModel(targetId);
       const computeDuration = performance.now() - computeStart;
@@ -118,8 +134,6 @@
 
       // Build validation fields from graph's legacyId properties
       const VALIDATION_FIELDS = {};
-
-      // Get all computed nodes with legacyIds
       const allNodeIds = graph.getAllNodeIds ? graph.getAllNodeIds() : [];
       for (const nodeId of allNodeIds) {
         const node = graph.getNode(nodeId);
@@ -141,14 +155,7 @@
         const oldValue = StateManager.getValue(legacyId);
         const newValue = state.getValue(semanticPath);
 
-        const comparison = {
-          semanticPath,
-          legacyId,
-          oldValue,
-          newValue,
-          status: 'missing',
-          diff: null
-        };
+        const comparison = { semanticPath, legacyId, oldValue, newValue, status: 'missing', diff: null };
 
         if (oldValue === undefined || oldValue === null || oldValue === '' || oldValue === 'N/A') {
           comparison.status = 'missing';
@@ -161,7 +168,6 @@
           const newNum = parseFloat(String(newValue));
 
           if (isNaN(oldNum) || isNaN(newNum)) {
-            // String comparison
             if (String(oldValue) === String(newValue)) {
               comparison.status = 'match';
               matchCount++;
@@ -170,7 +176,6 @@
               mismatchCount++;
             }
           } else {
-            // Numeric comparison
             const diff = Math.abs(oldNum - newNum);
             const relDiff = oldNum !== 0 ? (diff / Math.abs(oldNum)) * 100 : (diff === 0 ? 0 : 100);
             comparison.diff = relDiff;
@@ -199,7 +204,6 @@
       console.log(`Mismatches: ${mismatchCount}`);
       console.log(`Missing: ${missingCount}`);
 
-      // Show mismatches
       const mismatches = comparisons.filter(c => c.status === 'mismatch');
       if (mismatches.length > 0) {
         console.log('\n=== MISMATCHES ===');
@@ -208,26 +212,8 @@
         });
       }
 
-      // Show missing
-      const missing = comparisons.filter(c => c.status === 'missing');
-      if (missing.length > 0) {
-        console.log('\n=== MISSING ===');
-        missing.forEach(m => {
-          console.log(`${m.semanticPath} (${m.legacyId}): OLD=${m.oldValue} | NEW=${m.newValue}`);
-        });
-      }
-
-      // Show all comparisons for debugging
-      console.log('\n=== ALL COMPARISONS ===');
-      comparisons.forEach(c => {
-        const emoji = c.status === 'match' ? '✓' : c.status === 'close' ? '~' : c.status === 'mismatch' ? '✗' : '?';
-        console.log(`${emoji} ${c.semanticPath}: OLD=${c.oldValue} | NEW=${c.newValue}`);
-      });
-
-      // Show alert with summary
-      const statusEmoji = mismatchCount === 0 ? '✓' : '✗';
       alert(
-        `${statusEmoji} Validation Complete\n\n` +
+        `Validation Complete\n\n` +
         `Fields compared: ${comparisons.length}\n` +
         `Exact matches: ${matchCount}\n` +
         `Close (<1%): ${closeCount}\n` +
@@ -253,24 +239,40 @@
     const StateManager = window.TEUI?.StateManager;
     const CI = window.TEUI?.ComputationIntegration;
 
-    if (!StateManager) {
-      console.error('StateManager not available');
-      alert('Error: StateManager not loaded');
+    if (!StateManager || !CI) {
+      alert('Error: Required modules not loaded');
       console.groupEnd();
       return;
     }
 
     try {
-      if (!CI?.isInitialized()) {
-        CI?.initialize();
+      if (!CI.isInitialized()) {
+        console.log('Attempting to initialize CI...');
+        const initResult = CI.initialize();
+        console.log('CI.initialize() returned:', initResult);
       }
 
       const graph = CI.getGraph();
       const state = CI.getState();
       const engine = CI.getEngine();
-      const targetId = state.getActiveModelId();
 
-      // Sync inputs from StateManager
+      console.log('After init - graph:', !!graph, 'state:', !!state, 'engine:', !!engine);
+
+      if (!graph || !state || !engine) {
+        alert('Error: Computation system not initialized. Check console.');
+        console.groupEnd();
+        return;
+      }
+
+      const targetId = state.getActiveModelId();
+      console.log('targetId:', targetId);
+      if (!targetId) {
+        alert('Error: No active model');
+        console.groupEnd();
+        return;
+      }
+
+      // Sync inputs
       const inputIds = graph.getAllInputIds();
       for (const semanticPath of inputIds) {
         const inputNode = graph.getInput(semanticPath);
@@ -279,23 +281,12 @@
           const value = StateManager.getValue(legacyId);
           if (value !== undefined && value !== null && value !== '') {
             state.setValueForModel(targetId, semanticPath, value);
-            // Debug: log climate, ventilation, and occupancy inputs
-            if (legacyId === 'd_19' || legacyId === 'h_19' || legacyId === 'h_20' ||
-                legacyId === 'd_105' || legacyId === 'l_118' || legacyId === 'g_118' ||
-                legacyId === 'i_63' || legacyId === 'j_63') {
-              console.log(`[DEBUG] Synced ${semanticPath} (${legacyId}) = "${value}"`);
-            }
           }
         }
       }
 
       // Compute
       engine.computeAllForModel(targetId);
-
-      // Debug: show computed vs legacy HDD
-      const computedHDD = state.getValue('climate.heating.degreedays');
-      const legacyHDD = StateManager.getValue('d_20');
-      console.log(`[DEBUG] HDD - Legacy d_20: ${legacyHDD}, Computed: ${computedHDD}`);
 
       // Compare and categorize
       const results = { matches: [], close: [], mismatches: [], missing: [] };
@@ -309,8 +300,7 @@
         const newValue = state.getValue(nodeId);
 
         if (oldValue === undefined || oldValue === null || oldValue === '' ||
-            oldValue === 'N/A' || newValue === undefined || newValue === null ||
-            newValue === 'Unavailable') {
+            oldValue === 'N/A' || newValue === undefined || newValue === null) {
           results.missing.push({ nodeId, legacyId: node.legacyId, old: oldValue, new: newValue });
           continue;
         }
@@ -338,7 +328,6 @@
         }
       }
 
-      // Output
       console.log('=== VALIDATION SUMMARY ===');
       console.log('Matches:', results.matches.length);
       console.log('Close (<1%):', results.close.length);
@@ -347,9 +336,6 @@
 
       console.log('\n=== MISMATCHES ===');
       results.mismatches.forEach(m => console.log(`${m.nodeId} (${m.legacyId}): OLD=${m.old} | NEW=${m.new} | DIFF=${m.diff}`));
-
-      console.log('\n=== CLOSE VALUES ===');
-      results.close.forEach(m => console.log(`${m.nodeId} (${m.legacyId}): OLD=${m.old} | NEW=${m.new} | DIFF=${m.diff}`));
 
       console.log('\n=== MISSING ===');
       results.missing.forEach(m => console.log(`${m.nodeId} (${m.legacyId}): OLD=${m.old} | NEW=${m.new}`));
@@ -378,20 +364,37 @@
     console.group('[DevTools] Running New Computation System');
 
     try {
-      const CI = window.TEUI.ComputationIntegration;
+      const CI = window.TEUI?.ComputationIntegration;
+      const StateManager = window.TEUI?.StateManager;
 
-      if (!CI?.isInitialized()) {
-        console.log('Initializing...');
+      if (!CI) {
+        alert('Error: ComputationIntegration not loaded');
+        console.groupEnd();
+        return;
+      }
+
+      if (!CI.isInitialized()) {
         CI.initialize();
       }
 
-      // Re-sync from StateManager
-      const StateManager = window.TEUI?.StateManager;
       const graph = CI.getGraph();
       const state = CI.getState();
       const engine = CI.getEngine();
-      const targetId = state.getActiveModelId();
 
+      if (!graph || !state || !engine) {
+        alert('Error: Computation system not initialized');
+        console.groupEnd();
+        return;
+      }
+
+      const targetId = state.getActiveModelId();
+      if (!targetId) {
+        alert('Error: No active model');
+        console.groupEnd();
+        return;
+      }
+
+      // Sync from StateManager
       if (StateManager) {
         const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
         let syncCount = 0;
@@ -417,14 +420,12 @@
       console.log('=== COMPUTATION RESULTS ===');
       console.log(`Nodes computed: ${result.computedNodes}`);
       console.log(`Duration: ${result.duration.toFixed(2)}ms`);
-      console.log(`Speed: ${(result.computedNodes / result.duration * 1000).toFixed(0)} nodes/sec`);
 
       // Show key metrics
       console.log('\n=== KEY METRICS ===');
       console.log(`TEUI: ${state.getValue('energy.teui')?.toFixed(1) || 'N/A'} kWh/m²/yr`);
       console.log(`TEDI: ${state.getValue('energy.tedi')?.toFixed(1) || 'N/A'} kWh/m²/yr`);
       console.log(`GHGI: ${state.getValue('emissions.ghgi')?.toFixed(1) || 'N/A'} kgCO2e/m²/yr`);
-      console.log(`Total Heat Loss: ${state.getValue('envelope.total.heatLoss')?.toFixed(0) || 'N/A'} kWh/yr`);
 
       alert(
         `New System Computed\n\n` +
@@ -432,8 +433,7 @@
         `Duration: ${result.duration.toFixed(2)}ms\n\n` +
         `TEUI: ${state.getValue('energy.teui')?.toFixed(1) || 'N/A'} kWh/m²/yr\n` +
         `TEDI: ${state.getValue('energy.tedi')?.toFixed(1) || 'N/A'} kWh/m²/yr\n` +
-        `GHGI: ${state.getValue('emissions.ghgi')?.toFixed(1) || 'N/A'} kgCO2e/m²/yr\n\n` +
-        `Check console for full details.`
+        `GHGI: ${state.getValue('emissions.ghgi')?.toFixed(1) || 'N/A'} kgCO2e/m²/yr`
       );
 
     } catch (e) {
@@ -451,7 +451,7 @@
     console.group('[DevTools] Debug Info');
 
     try {
-      const CI = window.TEUI.ComputationIntegration;
+      const CI = window.TEUI?.ComputationIntegration;
       const StateManager = window.TEUI?.StateManager;
 
       console.log('=== OLD SYSTEM (StateManager) ===');
@@ -468,12 +468,6 @@
         console.log('Graph:', stats.graph);
         console.log('State:', stats.state);
         console.log('Engine:', stats.engine);
-
-        // List all registered nodes
-        const graph = CI.getGraph();
-        const nodeStats = graph.getStats();
-        console.log(`\nNodes: ${nodeStats.nodeCount}`);
-        console.log(`Inputs: ${nodeStats.inputCount}`);
       } else {
         console.log('Not initialized');
       }
@@ -492,103 +486,6 @@
     console.groupEnd();
   }
 
-  /**
-   * Debug a specific mismatch by showing its dependency chain
-   * Usage: TEUI.DevTools.debugMismatch('mechanical.heating.copHeat')
-   */
-  function debugMismatch(nodeId) {
-    console.group(`[DevTools] Debug Mismatch: ${nodeId}`);
-
-    try {
-      const CI = window.TEUI.ComputationIntegration;
-      const StateManager = window.TEUI?.StateManager;
-      const graph = CI.getGraph();
-      const state = CI.getState();
-      const node = graph.getNode(nodeId);
-
-      if (!node) {
-        console.error(`Node not found: ${nodeId}`);
-        console.groupEnd();
-        return;
-      }
-
-      console.log('=== NODE INFO ===');
-      console.log(`ID: ${nodeId}`);
-      console.log(`Legacy ID: ${node.legacyId}`);
-      console.log(`Dependencies: ${node.dependencies?.join(', ') || 'none'}`);
-
-      console.log('\n=== VALUES ===');
-      const oldValue = StateManager?.getValue(node.legacyId);
-      const newValue = state.getValue(nodeId);
-      console.log(`Legacy (${node.legacyId}): ${oldValue}`);
-      console.log(`Computed: ${newValue}`);
-
-      if (node.dependencies?.length > 0) {
-        console.log('\n=== DEPENDENCY VALUES ===');
-        for (const depId of node.dependencies) {
-          const depNode = graph.getNode(depId) || graph.getInput(depId);
-          const depLegacyId = depNode?.legacyId;
-          const depOld = depLegacyId ? StateManager?.getValue(depLegacyId) : 'N/A';
-          const depNew = state.getValue(depId);
-          const status = depOld == depNew ? '✓' : '✗';
-          console.log(`${status} ${depId} (${depLegacyId || 'no legacyId'}): legacy=${depOld} | computed=${depNew}`);
-        }
-      }
-
-    } catch (e) {
-      console.error('Debug failed:', e);
-    }
-
-    console.groupEnd();
-  }
-
-  /**
-   * Debug all mismatches at once - shows input sync issues
-   */
-  function debugAllMismatches() {
-    console.group('[DevTools] Debug All Mismatches');
-
-    try {
-      const CI = window.TEUI.ComputationIntegration;
-      const StateManager = window.TEUI?.StateManager;
-      const graph = CI.getGraph();
-      const state = CI.getState();
-
-      // Find input sync issues
-      console.log('=== INPUT SYNC STATUS ===');
-      const inputIds = graph.getAllInputIds();
-      let syncIssues = 0;
-
-      for (const semanticPath of inputIds) {
-        const inputNode = graph.getInput(semanticPath);
-        const legacyId = inputNode?.legacyId;
-        if (!legacyId) continue;
-
-        const legacyValue = StateManager?.getValue(legacyId);
-        const stateValue = state.getValue(semanticPath);
-
-        // Check for sync issues
-        if (legacyValue !== undefined && legacyValue !== null && legacyValue !== '') {
-          if (String(legacyValue) !== String(stateValue)) {
-            console.log(`✗ ${semanticPath} (${legacyId}): legacy="${legacyValue}" | state="${stateValue}"`);
-            syncIssues++;
-          }
-        }
-      }
-
-      if (syncIssues === 0) {
-        console.log('All inputs synced correctly!');
-      } else {
-        console.log(`\n${syncIssues} input sync issues found`);
-      }
-
-    } catch (e) {
-      console.error('Debug failed:', e);
-    }
-
-    console.groupEnd();
-  }
-
   // Auto-initialize
   initialize();
 
@@ -597,9 +494,7 @@
     runValidation,
     runDetailedValidation,
     runNewSystem,
-    showDebugInfo,
-    debugMismatch,
-    debugAllMismatches
+    showDebugInfo
   };
 
   console.log('[DevTools] Module loaded');
