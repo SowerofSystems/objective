@@ -503,7 +503,7 @@ function tetrahedronFaces() {
 
 4. **Geometry Scope:**
    - Start with Platonic solids only, or include Archimedean? Platonic for now, with Rhombic Dodec as symmetrical sister to Icosahedron. 
-   - Interest in geodesic domes (subdivided icosahedron)? Abasolutely, all polyhedra will aim to have this kind of smart subdivision feature, but always observint rational trig rules. (Wildberger). 
+   - Interest in geodesic domes (subdivided icosahedron)? Absolutely, all polyhedra will aim to have this kind of smart subdivision feature, but always observing rational trig rules. (Wildberger). 
    - Dual polyhedra visualization (show both at once)? Yes, show dual can be an option for any selected polyhedron. Starting with Dual Tetrehedra within cube boundary. 
 
 ---
@@ -529,7 +529,7 @@ a form of normalization that minimizes the values of a, b, c, and d
 while keeping them all nonnegative.  Choosing (a,b,c,d) such that
 a+b+c+d=1 gives barycentric coordinates.  Choosing (a,b,c,d) such that
 a+b+c+d=0 facilitates computation by exploiting an isomorphism
-described on my page at http://minortriad.com/q4d.html.
+described at http://minortriad.com/q4d.html.
 
 A few quadray formulas are coded below in C++, with comments about
 the method used and how I derived it.  (I haven't included trivial
@@ -732,3 +732,45 @@ void  Quadray::RotateAboutA(const Quadray &QX,double Theta)
    
    for (int I = 0; I < 4; I++) Coords[I] = Rotated[I];
 }
+
+
+- New Features: 
+
+1. ## Bevelling: To create geodesics on a sphere surface ##
+
+- not pure RT topology but approximates geodesics. 
+// Start with a cube
+let geometry = new THREE.BoxGeometry(2, 2, 2, 10, 10, 10);
+
+// Move all vertices onto a sphere
+const position = geometry.attributes.position;
+const v = new THREE.Vector3();
+
+for (let i = 0; i < position.count; i++) {
+  v.fromBufferAttribute(position, i);
+  v.normalize().multiplyScalar(1); // radius = 1
+  position.setXYZ(i, v.x, v.y, v.z);
+}
+
+geometry.computeVertexNormals();
+
+- Tetrahedron:
+let geometry = new THREE.TetrahedronGeometry(1, 6); // radius, detail
+
+Internally, three.js already:
+Subdivides
+Normalizes vertices to a sphere
+This yields:
+Perfectly curved edges
+Equal geodesic spacing
+Very clean topology
+➡️ A tetrahedron maps more naturally to a sphere than a cube.
+
+Why this works (geometric intuition)
+Each vertex vector becomes a radius
+Edges become arcs on a sphere
+Faces become spherical patches
+Normals align naturally with position
+This is not beveling — it is radial projection.
+
+For higher level polyhedra, consider actual topological subdivision with a slider for multi-frequency domes per Bucky Fuller (allow cartsian cutplane to act as grade for these)

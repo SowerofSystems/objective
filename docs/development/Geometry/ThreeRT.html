@@ -239,6 +239,12 @@
         </div>
         <div class="control-item">
           <label class="checkbox-label">
+            <input type="checkbox" id="showDualIcosahedron">
+            Dual Icosahedron (Face Dual)
+          </label>
+        </div>
+        <div class="control-item">
+          <label class="checkbox-label">
             <input type="checkbox" id="showRhombicDodecahedron">
             Rhombic Dodecahedron
           </label>
@@ -709,6 +715,82 @@
       },
 
       /**
+       * Dual Icosahedron (face dual of dodecahedron)
+       * Vertices positioned at dodecahedron face centers
+       * Each icosahedron vertex points to center of dodecahedron pentagonal face
+       *
+       * RATIONAL TRIGONOMETRY: Face dual relationship in quadrance space
+       * - Dodecahedron inradius (face center) = φ × halfSize
+       * - Icosahedron vertices scaled to this radius for "kissing" configuration
+       * - Edge quadrance scaled by φ²
+       *
+       * This creates the canonical Platonic dual pair positioning
+       */
+      dualIcosahedron: (halfSize = 1) => {
+        // Standard icosahedron normalized to unit sphere
+        const sqrt5 = Math.sqrt(5);
+        const phi = RT.Phi.value(); // φ = (1 + √5)/2
+        const phi_squared = phi * phi;
+        const normFactor = 1 / Math.sqrt(1 + phi_squared);
+
+        // Dodecahedron face centers are at radius φ × halfSize from origin
+        // Scale icosahedron to match this radius for face dual alignment
+        const dualRadius = phi * halfSize;
+
+        const a = dualRadius * normFactor;      // scaled to dual radius
+        const b = dualRadius * phi * normFactor; // φ times a
+
+        console.log(`[ThreeRT] Dual Icosahedron RT construction:`);
+        console.log(`  Dodecahedron halfSize: ${halfSize.toFixed(3)}`);
+        console.log(`  Dodecahedron inradius (face center): φ·s = ${dualRadius.toFixed(6)}`);
+        console.log(`  Icosahedron vertex radius: ${dualRadius.toFixed(6)} (matches dodec inradius)`);
+        console.log(`  a = ${a.toFixed(6)}, b = φ·a = ${b.toFixed(6)}`);
+
+        // Same vertex configuration as standard icosahedron, but scaled
+        // Three orthogonal golden rectangles at dual radius
+        const vertices = [
+          // Rectangle 1: XZ plane, y = ±a
+          new THREE.Vector3( 0,  a,  b),  // 0
+          new THREE.Vector3( 0,  a, -b),  // 1
+          new THREE.Vector3( 0, -a,  b),  // 2
+          new THREE.Vector3( 0, -a, -b),  // 3
+          // Rectangle 2: YZ plane, x = ±a
+          new THREE.Vector3( a,  b,  0),  // 4
+          new THREE.Vector3( a, -b,  0),  // 5
+          new THREE.Vector3(-a,  b,  0),  // 6
+          new THREE.Vector3(-a, -b,  0),  // 7
+          // Rectangle 3: XY plane, z = ±a
+          new THREE.Vector3( b,  0,  a),  // 8
+          new THREE.Vector3( b,  0, -a),  // 9
+          new THREE.Vector3(-b,  0,  a),  // 10
+          new THREE.Vector3(-b,  0, -a),  // 11
+        ];
+
+        // Same topology as standard icosahedron
+        const edges = [
+          [0, 2], [0, 4], [0, 6], [0, 8], [0, 10],
+          [1, 3], [1, 4], [1, 6], [1, 9], [1, 11],
+          [2, 5], [2, 7], [2, 8], [2, 10],
+          [3, 5], [3, 7], [3, 9], [3, 11],
+          [4, 6], [4, 8], [4, 9],
+          [5, 7], [5, 8], [5, 9],
+          [6, 10], [6, 11],
+          [7, 10], [7, 11],
+          [8, 9],
+          [10, 11]
+        ];
+
+        const faces = [
+          [0, 4, 8], [0, 6, 4], [0, 10, 6], [0, 8, 2], [0, 2, 10],
+          [4, 1, 9], [4, 9, 8], [6, 1, 4], [6, 11, 1], [6, 10, 11],
+          [2, 8, 5], [8, 9, 5], [10, 2, 7], [2, 5, 7], [10, 7, 11],
+          [3, 9, 1], [3, 5, 9], [3, 11, 7], [3, 7, 5], [3, 1, 11]
+        ];
+
+        return { vertices, edges, faces };
+      },
+
+      /**
        * Dodecahedron (12 pentagonal faces, 20 vertices, 30 edges)
        * RT construction: "hip roof pup tent" on each cube face
        * Following Section19.js hip roof solver pattern - quadrance-based
@@ -909,7 +991,7 @@
     // ========================================================================
     let scene, camera, renderer, controls;
     let cubeGroup, tetrahedronGroup, dualTetrahedronGroup, octahedronGroup;
-    let icosahedronGroup, dodecahedronGroup, rhombicDodecahedronGroup;
+    let icosahedronGroup, dodecahedronGroup, dualIcosahedronGroup, rhombicDodecahedronGroup;
     let cartesianGrid, quadrayBasis;
 
     function initScene() {
@@ -963,6 +1045,7 @@
       octahedronGroup = new THREE.Group();
       icosahedronGroup = new THREE.Group();
       dodecahedronGroup = new THREE.Group();
+      dualIcosahedronGroup = new THREE.Group();
       rhombicDodecahedronGroup = new THREE.Group();
 
       scene.add(cubeGroup);
@@ -971,6 +1054,7 @@
       scene.add(octahedronGroup);
       scene.add(icosahedronGroup);
       scene.add(dodecahedronGroup);
+      scene.add(dualIcosahedronGroup);
       scene.add(rhombicDodecahedronGroup);
 
       // Initial render
@@ -1192,6 +1276,15 @@
         dodecahedronGroup.visible = true;
       } else {
         dodecahedronGroup.visible = false;
+      }
+
+      // Dual Icosahedron (Magenta - Face dual of dodecahedron)
+      if (document.getElementById('showDualIcosahedron').checked) {
+        const dualIcosa = Polyhedra.dualIcosahedron(scale);
+        renderPolyhedron(dualIcosahedronGroup, dualIcosa, 0xff00ff, opacity);
+        dualIcosahedronGroup.visible = true;
+      } else {
+        dualIcosahedronGroup.visible = false;
       }
 
       // Rhombic Dodecahedron (Orange)
