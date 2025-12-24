@@ -178,10 +178,10 @@
         const hspf = parseNum(inputs["mechanical.heating.hspf"], 10);
         const afue = parseNum(inputs["mechanical.heating.afue"], 0.95);
 
-        if (type.includes("eatpump") || type.includes("ASHP") || type.includes("GSHP")) {
+        if (type === "Heatpump") {
           // HSPF to COP: COP = HSPF / 3.412
           return hspf / 3.412;
-        } else if (type.includes("Electric")) {
+        } else if (type === "Electric") {
           return 1.0;
         } else {
           // Combustion systems - AFUE is already a decimal (0.95)

@@ -15,7 +15,7 @@
     "Gas": { unit: "m³", factor: 10.3321 },
     "Propane": { unit: "L", factor: 7.0833 },
     "Oil": { unit: "L", factor: 10.7444 },
-    "Heat Pump": { unit: "kWh", factor: 1 },
+    "Heatpump": { unit: "kWh", factor: 1 },
   };
 
   function register(graph) {

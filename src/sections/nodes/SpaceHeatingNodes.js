@@ -14,7 +14,7 @@
     "Gas": { unit: "m³", factor: 10.3321 },
     "Propane": { unit: "L", factor: 7.0833 },
     "Oil": { unit: "L", factor: 10.7444 },
-    "Heat Pump": { unit: "kWh", factor: 1 },
+    "Heatpump": { unit: "kWh", factor: 1 },
     "Wood": { unit: "kg", factor: 4.5 },
   };
 
@@ -49,7 +49,7 @@
 
         // Get efficiency based on system type
         let efficiency;
-        if (systemType === "Heatpump" || systemType === "Heat Pump") {
+        if (systemType === "Heatpump") {
           efficiency = parseFloat(inputs["mechanical.heating.copHeat"]) || 1;
         } else {
           efficiency = parseFloat(inputs["mechanical.heating.afue"]) || 0.95;
@@ -69,7 +69,7 @@
       label: "Is Heat Pump System",
       compute: (inputs) => {
         const type = inputs["mechanical.heating.systemType"] || "";
-        return type.toLowerCase().includes("heatpump") || type.toLowerCase().includes("heat pump");
+        return type === "Heatpump";
       },
     });
 
