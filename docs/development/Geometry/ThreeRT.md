@@ -305,21 +305,157 @@ function tetrahedronFaces() {
 - Standard (0, ±1, ±φ) vertex construction
 - 2 shoulder vertices per pentagon shared with cube corners
 - All 30 edges and 12 pentagonal faces properly defined
+- Face topology fix eliminated rendering gaps
+
+---
+
+## Phase 2.5: RT Purity Enhancements 🔄 IN PROGRESS
+
+### Deliverable: Enhanced Rational Trigonometry Implementation
+
+**Objective:** Maximize RT purity by deferring square root expansion and working in quadrance space as long as possible.
+
+**Current RT Implementation Status:**
+- ✅ **Good**: Using algebraic identities where possible (φ² = φ + 1)
+- ✅ **Good**: No angle calculations anywhere (pure algebraic geometry)
+- ⚠️ **Needs improvement**: Premature sqrt expansion in some cases
+- ⚠️ **Needs improvement**: Not actually using quadrance calculations for validation
+- ⚠️ **Missing**: Spread calculations (though not yet needed - a good sign!)
+
+**Identified Issues:**
+
+1. **Premature Division in 1/φ calculation**
+   ```javascript
+   const invPhi = 1 / phi;  // ❌ Forces floating-point division
+   ```
+   **Fix:** Use algebraic identity: `1/φ = φ - 1`
+   ```javascript
+   const invPhi = phi - 1;  // ✓ Keeps as (√5 - 1)/2 symbolically
+   ```
+
+2. **Icosahedron Nested Square Roots**
+   ```javascript
+   const normFactor = 1 / Math.sqrt(1 + phi_squared);  // ❌ sqrt(1 + φ²)
+   ```
+   **Fix:** Defer normalization or work in quadrance space
+
+3. **Rhombic Dodecahedron Immediate √3 Expansion**
+   ```javascript
+   const t = s / Math.sqrt(3);  // ❌ Expands √3 immediately
+   ```
+   **Fix:** Defer as `s * √3 / 3` or scale at final vertex creation
+
+4. **Missing Quadrance Calculations**
+   - Not using Q = distance² for validation
+   - Not verifying edge quadrances are equal
+   - Not using quadrance for geometric relationships
+
+**Enhancement Plan:**
+
+1. **Symbolic Golden Ratio Library**
+   ```javascript
+   const RT_Phi = {
+     sqrt5: () => Math.sqrt(5),           // Only call when needed
+     value: function() {
+       return 0.5 * (1 + this.sqrt5());
+     },
+     squared: function() {
+       return this.value() + 1;           // φ² = φ + 1 (no sqrt!)
+     },
+     inverse: function() {
+       return this.value() - 1;           // 1/φ = φ - 1 (no division!)
+     }
+   };
+   ```
+
+2. **Quadrance-Based Validation**
+   ```javascript
+   RT.quadrance = (v1, v2) => {
+     const dx = v2.x - v1.x;
+     const dy = v2.y - v1.y;
+     const dz = v2.z - v1.z;
+     return dx*dx + dy*dy + dz*dz;  // Q = d² (no sqrt!)
+   };
+
+   RT.validateEdges = (vertices, edges, expectedQ) => {
+     // Verify all edges have equal quadrance
+     return edges.map(([i,j]) => ({
+       edge: [i,j],
+       Q: RT.quadrance(vertices[i], vertices[j]),
+       error: Math.abs(Q - expectedQ)
+     }));
+   };
+   ```
+
+3. **Spread Implementation (when needed)**
+   ```javascript
+   RT.spread = (v1, v2, v3) => {
+     // Spread s = Q1·Q2·Q3 / (Q1+Q2+Q3)²
+     // Replaces sin²(θ) without using angles!
+     // Will be needed for: angular validation, rotations, projections
+   };
+   ```
+
+**Why We Haven't Needed Spread Yet:**
+- All polyhedra built from **pure vertex coordinates** (algebraic)
+- No rotations or angular constraints required
+- Validation via **Euler's formula** (V - E + F = 2) only
+- This is **exactly how RT should work** - angles avoided entirely!
+
+**When We'll Need Spread:**
+- 4D → 3D projections (Phase 3)
+- Geodesic subdivisions (Phase 4+)
+- Angular validation of tetrahedral coordinates
+- Verifying vertex angle relationships
+
+**RT Principles Checklist:**
+- [ ] Defer all √ expansions until final vertex creation
+- [ ] Use algebraic identities (φ² = φ + 1, 1/φ = φ - 1)
+- [ ] Validate geometry using quadrance, not distance
+- [ ] Implement spread for angular relationships (when needed)
+- [ ] Work in rational/algebraic space as long as possible
+- [ ] Only convert to floating-point for Three.js Vector3 creation
 
 ---
 
 ## Next Steps
 
-### Immediate (Phase 2 refinements):
+### Immediate (Phase 2.5 - RT Enhancements):
+1. **Implement Enhanced RT Library**
+   - Add RT_Phi symbolic golden ratio operations
+   - Replace `invPhi = 1/phi` with `invPhi = phi - 1`
+   - Defer √3 and other radical expansions
+   - Add quadrance calculation functions
+
+2. **Add Quadrance-Based Validation**
+   - Implement edge quadrance verification
+   - Calculate expected Q for each polyhedron type
+   - Display quadrance stats in console logs
+   - Add visual indicator for quadrance uniformity
+
+3. **Implement Spread (preparation for Phase 3)**
+   - Add spread calculation function
+   - Document spread formula: s = sin²(θ) replacement
+   - Add spread-based angle validation (for future use)
+   - Will be critical for 4D projections
+
+4. **Refactor Existing Polyhedra**
+   - Update dodecahedron to use `phi - 1` instead of `1/phi`
+   - Update icosahedron normalization approach
+   - Update rhombic dodecahedron to defer √3
+   - Maintain backward compatibility (same visual output)
+
+### Near-term (Phase 2.5 completion):
 1. **Graphics Refinements**
    - Review edge thickness and node sizes
    - Optimize line rendering (match WOMBAT style)
    - Adjust colors if needed
 
-2. **Icosahedron Scale Review**
-   - Verify nesting relationships with dodecahedron
-   - Each dodecahedron face should have icosahedron vertex at center
+2. **Icosahedron/Dodecahedron Nesting Verification**
+   - Verify each dodecahedron face center has icosahedron vertex
+   - Use quadrance to validate nesting relationships
    - Adjust scaling factors if needed
+   - Document nesting ratios in RT terms
 
 ### Near-term (Phase 3 prep):
 1. **4D Coordinate System Research**
