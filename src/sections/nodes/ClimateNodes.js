@@ -51,7 +51,26 @@
   function getClimateData(province, city) {
     const climateData = window.TEUI?.ClimateData;
     if (!climateData || !province || !city) return null;
-    return climateData[province]?.[city] || null;
+
+    const provinceData = climateData[province.trim().toUpperCase()];
+    if (!provinceData) return null;
+
+    // Try exact match first
+    if (provinceData[city]) return provinceData[city];
+
+    // Try trimmed match
+    const trimmedCity = city.trim();
+    if (provinceData[trimmedCity]) return provinceData[trimmedCity];
+
+    // Try case-insensitive match
+    const cityLower = trimmedCity.toLowerCase();
+    for (const [key, data] of Object.entries(provinceData)) {
+      if (key.toLowerCase() === cityLower) {
+        return data;
+      }
+    }
+
+    return null;
   }
 
   // ============================================================================
