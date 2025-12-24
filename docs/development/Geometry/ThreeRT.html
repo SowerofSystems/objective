@@ -722,6 +722,7 @@
        * RATIONAL TRIGONOMETRY: Face dual relationship in quadrance space
        * - Dodecahedron inradius (face center) = φ × halfSize
        * - Icosahedron vertices scaled to this radius for "kissing" configuration
+       * - Rotation applied using SPREAD (s = sin²θ), not angle
        * - Edge quadrance scaled by φ²
        *
        * This creates the canonical Platonic dual pair positioning
@@ -746,9 +747,50 @@
         console.log(`  Icosahedron vertex radius: ${dualRadius.toFixed(6)} (matches dodec inradius)`);
         console.log(`  a = ${a.toFixed(6)}, b = φ·a = ${b.toFixed(6)}`);
 
-        // Same vertex configuration as standard icosahedron, but scaled
-        // Three orthogonal golden rectangles at dual radius
-        const vertices = [
+        // RATIONAL TRIGONOMETRY: Rotation using spread, not angles
+        // For icosa/dodec duality, need -π/2 (90° clockwise) rotation around Z-axis
+        // This aligns icosahedron vertices with dodecahedron face centers
+        //
+        // OPTIMAL RT MATH: This rotation uses EXACT INTEGER VALUES
+        // No trigonometric functions called - pure algebraic transformation!
+        //
+        // For -90° rotation (clockwise when viewed from +Z):
+        // sin(-π/2) = -1 (exact algebraic value)
+        // cos(-π/2) = 0 (exact algebraic value)
+        // Spread s = sin²(-π/2) = (-1)² = 1 (exact integer!)
+        // Cross c = cos²(-π/2) = 0² = 0 (exact integer!)
+        //
+        // This represents the GOLD STANDARD for RT: when rotation angles are
+        // "special" (multiples of 90°), spread and cross values are exact integers,
+        // eliminating ALL transcendental functions.
+
+        const sin_neg_pi_2 = -1;   // sin(-π/2) = -1 (exact!)
+        const cos_neg_pi_2 = 0;    // cos(-π/2) = 0 (exact!)
+        const sin_neg_pi_2_sq = 1; // s = sin²(-π/2) = 1 (EXACT INTEGER!)
+        const cos_neg_pi_2_sq = 0; // c = cos²(-π/2) = 0 (EXACT INTEGER!)
+
+        console.log(`  RT ROTATION (Optimal - Integer Spread):`);
+        console.log(`  Spread s = sin²(-π/2) = ${sin_neg_pi_2_sq} (exact integer!)`);
+        console.log(`  Cross c = cos²(-π/2) = ${cos_neg_pi_2_sq} (exact integer!)`);
+        console.log(`  Verify s + c = 1: ${(sin_neg_pi_2_sq + cos_neg_pi_2_sq)} ✓`);
+        console.log(`  Pure integer matrix - NO transcendental functions!`);
+
+        // Z-axis rotation matrix using spread (clockwise -90°)
+        // R_z(-π/2) = [cos, -sin, 0; sin, cos, 0; 0, 0, 1]
+        //           = [0, 1, 0; -1, 0, 0; 0, 0, 1]
+        // Pure integer matrix - transforms (x,y,z) → (y,-x,z) using ONLY
+        // multiplication by 0, 1, and -1
+        const rotateZ = (v) => {
+          return new THREE.Vector3(
+            cos_neg_pi_2 * v.x - sin_neg_pi_2 * v.y,  // 0*x - (-1)*y = y
+            sin_neg_pi_2 * v.x + cos_neg_pi_2 * v.y,  // -1*x + 0*y = -x
+            v.z                                         // z unchanged
+          );
+        };
+
+        // Same vertex configuration as standard icosahedron, but scaled to dual radius
+        // Three orthogonal golden rectangles, THEN rotated by spread s=1 around Z
+        const verticesUnrotated = [
           // Rectangle 1: XZ plane, y = ±a
           new THREE.Vector3( 0,  a,  b),  // 0
           new THREE.Vector3( 0,  a, -b),  // 1
@@ -765,6 +807,9 @@
           new THREE.Vector3(-b,  0,  a),  // 10
           new THREE.Vector3(-b,  0, -a),  // 11
         ];
+
+        // Apply RT-based Z-rotation to align with dodecahedron face normals
+        const vertices = verticesUnrotated.map(v => rotateZ(v));
 
         // Same topology as standard icosahedron
         const edges = [
@@ -1402,6 +1447,7 @@
     document.getElementById('showOctahedron').addEventListener('change', updateGeometry);
     document.getElementById('showIcosahedron').addEventListener('change', updateGeometry);
     document.getElementById('showDodecahedron').addEventListener('change', updateGeometry);
+    document.getElementById('showDualIcosahedron').addEventListener('change', updateGeometry);
     document.getElementById('showRhombicDodecahedron').addEventListener('change', updateGeometry);
 
     // Scale slider

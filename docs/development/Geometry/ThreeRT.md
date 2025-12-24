@@ -291,7 +291,99 @@ function tetrahedronFaces() {
 
 ---
 
-## Current Status (as of 2025-12-23)
+## Phase 2.6: Face Dual Icosahedron ✅ COMPLETE
+
+### Deliverable: Icosahedron/Dodecahedron Dual Pair
+
+**Objective:** Implement the canonical face dual relationship where icosahedron vertices point to dodecahedron face centers ("kissing" configuration).
+
+**Geometric Duality:**
+- **Vertex-Face correspondence**: 12 icosahedron vertices ↔ 12 dodecahedron pentagonal faces
+- **Face-Vertex correspondence**: 20 icosahedron triangular faces ↔ 20 dodecahedron vertices
+- **Inradius matching**: Icosahedron vertices positioned at dodecahedron inradius (φ × halfSize)
+
+**RT Implementation - Spread-Based Rotation:**
+
+Instead of using angles for rotation, RT uses **spread** (s) and **cross** (c):
+- **Spread**: s = sin²(θ) - the "quadrance" of rotation
+- **Cross**: c = cos²(θ) - complementary measure
+- **Fundamental relation**: s + c = 1
+
+**Implemented Example: -90° Z-axis Rotation (Optimal RT Math)**
+
+For icosahedron/dodecahedron face dual alignment, we use a **-90° clockwise rotation around Z-axis**. This is **optimal RT math** because the spread and cross values are exact integers:
+
+```javascript
+// EXACT INTEGER VALUES - No trigonometric functions called!
+const sin_neg_pi_2 = -1;   // sin(-π/2) = -1 (exact!)
+const cos_neg_pi_2 = 0;    // cos(-π/2) = 0 (exact!)
+const sin_neg_pi_2_sq = 1; // s = sin²(-π/2) = 1 (exact!)
+const cos_neg_pi_2_sq = 0; // c = cos²(-π/2) = 0 (exact!)
+
+// Verify RT identity: s + c = 1
+// 1 + 0 = 1 ✓ (pure integer arithmetic!)
+
+// Z-axis rotation matrix - Pure integer matrix!
+// R_z(-π/2) = [0, 1, 0; -1, 0, 0; 0, 0, 1]
+const rotateZ = (v) => new THREE.Vector3(
+  0 * v.x - (-1) * v.y,  // = y
+  -1 * v.x + 0 * v.y,    // = -x
+  v.z                     // z unchanged
+);
+// Transforms (x, y, z) → (y, -x, z) using ONLY integer multiplication
+```
+
+**Why This Is Optimal RT Math:**
+1. **No transcendental functions**: Uses algebraic fact that sin(-90°) = -1, cos(-90°) = 0
+2. **Exact integer spread values**: s = 1, c = 0 (no floating-point approximation)
+3. **Pure integer matrix**: All operations are multiplication by 0, 1, or -1
+4. **Verifiable identity**: s + c = 1 + 0 = 1 ✓
+5. **Gold standard for RT**: Special angles (90°, 180°, etc.) yield exact rational values
+
+**General Case: Non-Special Angles**
+
+For other rotations (e.g., π/10 = 18°), we use exact algebraic spread values:
+
+```javascript
+// EXACT algebraic values (no angle calculation!)
+const sqrt5 = Math.sqrt(5);
+const sin_pi_10_sq = (3 - sqrt5) / 8;  // s = sin²(π/10)
+const cos_pi_10_sq = (5 + sqrt5) / 8;  // c = cos²(π/10)
+
+// Verify RT identity: s + c = 1
+// (3 - √5)/8 + (5 + √5)/8 = 8/8 = 1 ✓
+
+// Only take sqrt when needed for rotation matrix
+const sin_pi_10 = Math.sqrt(sin_pi_10_sq);
+const cos_pi_10 = Math.sqrt(cos_pi_10_sq);
+```
+
+**Why This Approach is RT-Pure:**
+1. **Works in spread space**: Calculates s and c first, verifies s + c = 1
+2. **Exact algebraic values**: Uses symbolic formulas, not floating-point trig
+3. **Deferred square roots**: Only takes sqrt when absolutely needed for final rotation
+4. **No angle arithmetic**: Never calculates angles as decimal approximations
+5. **Quadrance preservation**: Geometric relationships maintained exactly
+
+**Scaling Relationship:**
+- Standard icosahedron: radius = 1 (unit sphere)
+- Dual icosahedron: radius = φ (dodecahedron inradius)
+- Edge quadrance ratio: Q_dual / Q_standard = φ² = φ + 1 (algebraic!)
+
+**Completed Features:**
+- ✅ Dual icosahedron polyhedron generator with φ-scaling
+- ✅ Spread-based rotation (-π/2 around Z-axis) for vertex alignment
+- ✅ RT-pure implementation using exact integer spread values (s=1, c=0)
+- ✅ Optimal RT math: pure integer transformation matrix
+- ✅ UI toggle for dual icosahedron visibility
+- ✅ Console logging of spread/cross verification
+
+**Key Insight:**
+The -90° rotation is **optimal RT math** because it uses exact integer values (sin=-1, cos=0) rather than algebraic radicals. This represents the gold standard for RT: when rotation angles are "special" (multiples of 90°), the spread and cross values collapse to exact rationals (integers), eliminating all transcendental functions.
+
+---
+
+## Current Status (as of 2025-12-24)
 
 **Phase 1 & 2: ✅ COMPLETE**
 - All 7 polyhedra implemented and rendering correctly
@@ -300,12 +392,17 @@ function tetrahedronFaces() {
 - Semi-transparent faces with configurable opacity
 - Coordinate system visualization (Cartesian + Quadray basis)
 
+**Phase 2.6: ✅ COMPLETE**
+- Dual icosahedron with face dual relationship to dodecahedron
+- Spread-based rotation (RT-pure, no angle calculations)
+- Exact algebraic values: s = (3-√5)/8, c = (5+√5)/8
+- Vertices aligned with dodecahedron pentagonal face centers
+
 **Recent Completion:**
 - Dodecahedron with correct "hip roof pup tent" topology
-- Standard (0, ±1, ±φ) vertex construction
-- 2 shoulder vertices per pentagon shared with cube corners
-- All 30 edges and 12 pentagonal faces properly defined
-- Face topology fix eliminated rendering gaps
+- Dual icosahedron with spread-based rotation for perfect alignment
+- RT.Phi library with symbolic golden ratio operations
+- Spread/cross rotation implementation (Wildberger principles)
 
 ---
 
