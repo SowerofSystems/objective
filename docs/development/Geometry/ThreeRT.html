@@ -267,6 +267,23 @@
           </label>
         </div>
         <div class="control-item">
+          <label>Node Size</label>
+          <div style="display: flex; gap: 8px; margin-top: 4px;">
+            <label class="checkbox-label" style="flex: 1;">
+              <input type="radio" name="nodeSize" value="sm">
+              Sm
+            </label>
+            <label class="checkbox-label" style="flex: 1;">
+              <input type="radio" name="nodeSize" value="md" checked>
+              Md
+            </label>
+            <label class="checkbox-label" style="flex: 1;">
+              <input type="radio" name="nodeSize" value="lg">
+              Lg
+            </label>
+          </div>
+        </div>
+        <div class="control-item">
           <label class="checkbox-label">
             <input type="checkbox" id="showFaces" checked>
             Show Faces (Semi-Transparent)
@@ -1028,7 +1045,19 @@
 
       // Render vertex nodes using instanced geometry for efficiency
       if (showNodes) {
-        const nodeGeometry = new THREE.SphereGeometry(0.08, 16, 16);
+        // Get selected node size
+        const nodeSizeRadio = document.querySelector('input[name="nodeSize"]:checked');
+        const nodeSize = nodeSizeRadio ? nodeSizeRadio.value : 'md';
+
+        // Node size mapping: sm = 0.02, md = 0.04 (half of original), lg = 0.08 (original)
+        const nodeSizes = {
+          sm: 0.02,
+          md: 0.04,
+          lg: 0.08
+        };
+        const radius = nodeSizes[nodeSize];
+
+        const nodeGeometry = new THREE.SphereGeometry(radius, 16, 16);
         const nodeMaterial = new THREE.MeshStandardMaterial({
           color: color,
           emissive: color,
@@ -1237,6 +1266,11 @@
     // Visual toggles
     document.getElementById('showNodes').addEventListener('change', updateGeometry);
     document.getElementById('showFaces').addEventListener('change', updateGeometry);
+
+    // Node size radio buttons
+    document.querySelectorAll('input[name="nodeSize"]').forEach(radio => {
+      radio.addEventListener('change', updateGeometry);
+    });
 
     // Reset camera
     document.getElementById('resetCamera').addEventListener('click', () => {
