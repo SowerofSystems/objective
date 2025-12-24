@@ -15,6 +15,7 @@
   window.TEUI.ComputationNodes = window.TEUI.ComputationNodes || {};
 
   // Component definitions - matches Section11.js legacy structure
+  // NOTE: Ground-facing heat gain uses capacitance factor (i_21 / 100) with fallback to 0.5
   const AIR_FACING_COMPONENTS = [
     { row: 85, id: "roof", label: "Roof/Ceiling", input: "rsi" },
     { row: 86, id: "walls", label: "Walls Above Grade", input: "rsi" },
@@ -238,15 +239,21 @@
         dependencies: [
           `transmissionLoss.${id}.area`,
           `transmissionLoss.${id}.uValue`,
-          "climate.groundFacing.cdd"
+          "climate.groundFacing.cdd",
+          "climate.capacitance.percentage"
         ],
         label: `${label} Heat Gain (kWh/yr)`,
         compute: (inputs) => {
-          const groundCdd = inputs["climate.groundFacing.cdd"];
+          const groundCdd = parseNum(inputs["climate.groundFacing.cdd"], 0);
           const area = parseNum(inputs[`transmissionLoss.${id}.area`]);
           const uValue = parseNum(inputs[`transmissionLoss.${id}.uValue`]);
-          // Heat gain = Area × U-value × Ground CDD × 24 / 1000
-          return (area * uValue * parseNum(groundCdd, 0) * 24) / 1000;
+          // Legacy Section11.js: capacitanceFactor = i_21 / 100, fallback to 0.5
+          let capacitanceFactor = parseNum(inputs["climate.capacitance.percentage"], 0) / 100;
+          if (capacitanceFactor === 0 || isNaN(capacitanceFactor)) {
+            capacitanceFactor = 0.5;
+          }
+          // Heat gain = Area × U-value × (capacitance × groundCDD × 24) / 1000
+          return (area * uValue * capacitanceFactor * groundCdd * 24) / 1000;
         }
       });
     });

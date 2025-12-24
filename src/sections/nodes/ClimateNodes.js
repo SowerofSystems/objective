@@ -95,7 +95,7 @@
     {
       id: "climate.capacitance.percentage",
       legacyId: "i_21",
-      defaultValue: 100,
+      defaultValue: 50,
       classification: "C",
       section: "S03",
       label: "Capacitance Percentage",

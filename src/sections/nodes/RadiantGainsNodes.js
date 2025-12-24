@@ -283,10 +283,53 @@
       }
     });
 
-    // Usable gains per area
+    // PHPP method usable gains (row 81 - always calculated as reference)
+    // Uses PHPP utilization factor formula: (1 - γ^a) / (1 - γ^(a+1)) where a=5
+    graph.registerNode({
+      id: "radiantGains.phppUsableGains",
+      legacyId: "i_81",
+      section: "S10",
+      classification: "C",
+      dependencies: [
+        "radiantGains.totalGains",
+        "transmissionLoss.thermalBridgePenalty.heatLoss",
+        "airTightness.heatLoss",
+        "ventilation.netHeatLoss",
+        "transmissionLoss.components.subtotalHeatLoss"
+      ],
+      label: "PHPP Usable Gains (kWh/yr)",
+      compute: (inputs) => {
+        const totalGains = parseNum(inputs["radiantGains.totalGains"]);
+        const i97 = parseNum(inputs["transmissionLoss.thermalBridgePenalty.heatLoss"]);
+        const i103 = parseNum(inputs["airTightness.heatLoss"]);
+        const m121 = parseNum(inputs["ventilation.netHeatLoss"]);
+        const i98 = parseNum(inputs["transmissionLoss.components.subtotalHeatLoss"]);
+
+        const denominator = i97 + i103 + m121 + i98;
+
+        let phUtilizationFactor = 0.9;
+        if (denominator > 0) {
+          const gamma = totalGains / denominator;
+          if (Math.abs(gamma - 1) < 1e-9) {
+            phUtilizationFactor = 5 / 6;
+          } else {
+            const a = 5;
+            const gamma_a = Math.pow(gamma, a);
+            const gamma_a_plus_1 = Math.pow(gamma, a + 1);
+            phUtilizationFactor = (1 - gamma_a) / (1 - gamma_a_plus_1);
+            phUtilizationFactor = Math.max(0, Math.min(1, phUtilizationFactor));
+          }
+        } else {
+          phUtilizationFactor = totalGains > 0 ? 1 : 0;
+        }
+
+        return totalGains * phUtilizationFactor;
+      }
+    });
+
+    // Usable gains per area (internal calculation, no legacy equivalent)
     graph.registerNode({
       id: "radiantGains.usableGainsPerArea",
-      legacyId: "i_81",
       section: "S10",
       classification: "C",
       dependencies: ["radiantGains.usableGains", "building.conditionedFloorArea"],
