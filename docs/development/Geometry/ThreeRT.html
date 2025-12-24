@@ -556,14 +556,31 @@
        * This gives edge quadrance Q = 4a² for all 30 edges
        */
       icosahedron: (halfSize = 1) => {
-        // RT approach: Use a=1, b=√5 to avoid phi directly
+        // RT approach: Use (0, ±a, ±b) where b²/a² = 5 (golden rectangle ratio)
         // Quadrance from (0,1,√5) to (1,√5,0) = 1² + (√5-1)² + 5 = 1 + (6-2√5) + 5 = 12-2√5
-        // For unit edge: all edges have same quadrance when a=1, b=√5
-        const a = halfSize * 0.525731; // ≈ 1/√(1+φ²) for normalization
-        const b = halfSize * 0.850651; // ≈ φ/√(1+φ²)
+        //
+        // RATIONAL TRIGONOMETRY: Defer sqrt expansion following Wildberger principles
+        // For icosahedron: Three orthogonal golden rectangles (aspect ratio 1:φ)
+        // Vertices at (0, ±1, ±φ) and cyclic permutations
+        //
+        // Normalization: Scale to fit within unit sphere
+        // sqrt(1² + φ²) = sqrt(1 + φ²) = sqrt(1 + ((1+√5)/2)²) = sqrt(1 + (3+√5)/2)
 
-        // Alternative: exact construction from cube edge divisions
-        // 12 vertices at positions that create equilateral triangle faces
+        const sqrt5 = Math.sqrt(5); // Defer until needed
+        const phi = 0.5 * (1 + sqrt5); // φ = (1 + √5)/2
+
+        // Normalization factor: 1/√(1 + φ²) for unit sphere radius
+        const phi_squared = phi * phi; // φ² = φ + 1 = (3 + √5)/2
+        const normFactor = 1 / Math.sqrt(1 + phi_squared);
+
+        const a = halfSize * normFactor;      // 1 * normalization
+        const b = halfSize * phi * normFactor; // φ * normalization
+
+        console.log(`[ThreeRT] Icosahedron RT construction:`);
+        console.log(`  √5 = ${sqrt5.toFixed(6)} (deferred expansion)`);
+        console.log(`  φ = 0.5(1 + √5) = ${phi.toFixed(6)}`);
+        console.log(`  Normalization: 1/√(1 + φ²) = ${normFactor.toFixed(6)}`);
+        console.log(`  a = ${a.toFixed(6)}, b = φ·a = ${b.toFixed(6)}`);
         const vertices = [
           // Rectangle 1: XZ plane, y = ±a
           new THREE.Vector3( 0,  a,  b),  // 0
@@ -638,17 +655,21 @@
       dodecahedron: (halfSize = 1) => {
         const s = halfSize;
 
-        // RATIONAL TRIGONOMETRY: Use quadrance ratio to derive phi
+        // RATIONAL TRIGONOMETRY: Defer sqrt(5) expansion following Wildberger principles
         // For dodecahedron: φ² = φ + 1 → φ² - φ - 1 = 0
-        // Solution: φ = (1 + √5)/2
         // Quadrance relationship: φ² - φ - 1 = 0 means Q_phi/Q_1 = (φ²)/1
+        //
+        // Symbolic: φ = (1 + √5)/2  or  φ = 0.5 * (1 + √5)
+        // Only expand √5 when absolutely necessary (for final vertex coords)
 
-        const phi = (1 + Math.sqrt(5)) / 2;
-        const invPhi = 1 / phi; // = φ - 1 = (√5 - 1)/2
+        const sqrt5 = Math.sqrt(5); // Defer until needed
+        const phi = 0.5 * (1 + sqrt5); // φ = (1 + √5)/2
+        const invPhi = 1 / phi;        // 1/φ = φ - 1 = (√5 - 1)/2
 
         console.log(`[ThreeRT] Dodecahedron RT construction:`);
         console.log(`  Cube half-size: ${s.toFixed(3)}`);
-        console.log(`  φ = ${phi.toFixed(6)} (from quadrance Q_φ² - Q_φ - Q_1 = 0)`);
+        console.log(`  √5 = ${sqrt5.toFixed(6)} (deferred expansion)`);
+        console.log(`  φ = 0.5(1 + √5) = ${phi.toFixed(6)} (from Q_φ² - Q_φ - Q_1 = 0)`);
         console.log(`  1/φ = ${invPhi.toFixed(6)}`);
 
         // 20 vertices: 8 at (±1, ±1, ±1) + 12 at permutations of (0, ±1/φ, ±φ)
