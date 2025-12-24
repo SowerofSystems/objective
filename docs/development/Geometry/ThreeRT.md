@@ -13,61 +13,107 @@ Standalone HTML + Three.js (CDN) application for exploring polyhedral geometry u
 
 ---
 
-## Phase 1: Foundation (MVP)
+## Phase 1: Foundation (MVP) ✅ COMPLETE
 
-### Deliverable: Single HTML file with CDN Three.js
+### Deliverable: Single HTML file with ES module Three.js
 
 **File Structure:**
 ```
 docs/development/Geometry/
 ├── ThreeRT.md (this file)
-└── ThreeRT.html (standalone app)
+└── ThreeRT.html (standalone app - 1200+ lines)
 ```
 
-**Goals:**
-1. ✅ Load Three.js from CDN (latest stable)
-2. ✅ Basic scene setup (camera, renderer, lights)
-3. ✅ Render single tetrahedron using hand-coded vertices
-4. ✅ Orbit controls for 3D navigation
-5. ✅ Coordinate axes visualization (XYZ)
+**Completed Goals:**
+1. ✅ Load Three.js from CDN via ES modules (three@0.160.0)
+2. ✅ Basic scene setup (camera, renderer, lights, orbit controls)
+3. ✅ Render multiple polyhedra using hand-coded vertices
+4. ✅ Orbit controls for 3D navigation with damping
+5. ✅ Coordinate axes visualization (XYZ Cartesian + Quadray basis)
+6. ✅ Interactive controls panel with toggles and sliders
+7. ✅ Geometry statistics panel with Euler validation
+8. ✅ Semi-transparent faces with configurable opacity
 
-**Tetrahedron Specification (First Polyhedron):**
-- 4 vertices, 6 edges, 4 faces
-- Use Rational Trigonometry to calculate vertices
-- Quadrance-based edge validation
-- No `Math.sin()`, `Math.cos()`, `Math.atan()` - pure algebra
+**Implemented Polyhedra (Phase 1b):**
+- ✅ **Hexahedron (Cube)** - 8 vertices, 12 edges, 6 faces - Schläfli {4,3}
+- ✅ **Tetrahedron** - 4 vertices, 6 edges, 4 faces - Schläfli {3,3}
+- ✅ **Dual Tetrahedron** - Inverted tetrahedron within cube
+- ✅ **Octahedron** - 6 vertices, 12 edges, 8 faces - Schläfli {3,4} (dual of cube)
+- ✅ **Icosahedron** - 12 vertices, 30 edges, 20 faces - Schläfli {3,5}
+- ✅ **Dodecahedron** - 20 vertices, 30 edges, 12 faces - Schläfli {5,3}
+- ✅ **Rhombic Dodecahedron** - 14 vertices, 24 edges, 12 faces (dual of cuboctahedron)
 
-**Visual Style:**
-- Wireframe edges (thin lines)
-- Semi-transparent faces
-- Vertex nodes (small spheres at corners)
-- Color-coded: vertices (red), edges (blue), faces (yellow transparent)
+**Visual Style (Implemented):**
+- Wireframe edges with LineSegments (efficient rendering)
+- Semi-transparent faces with configurable opacity slider
+- Vertex nodes (small spheres at corners) - toggleable
+- Color-coded by polyhedron type:
+  - Cube: Blue (0x4a9eff)
+  - Tetrahedron: Red (0xff4444)
+  - Dual Tetrahedron: Magenta (0xff00ff)
+  - Octahedron: Green (0x00ff00)
+  - Icosahedron: Cyan (0x00ffff)
+  - Dodecahedron: Yellow (0xffff00)
+  - Rhombic Dodecahedron: Orange (0xff8800)
 
 ---
 
-## Phase 2: Nested Polyhedra (3D Space)
+## Phase 1b: Dodecahedron Implementation ✅ COMPLETE
 
-### Deliverable: Platonic solids hierarchy
+### Deliverable: "Hip Roof Pup Tent" Construction
 
-**Sequence (increasing complexity):**
-1. Tetrahedron (4 vertices, simplest)
-2. Cube/Hexahedron (8 vertices)
-3. Octahedron (6 vertices, dual of cube)
-4. Dodecahedron (20 vertices)
-5. Icosahedron (12 vertices, dual of dodecahedron)
+**Geometric Approach:**
+The dodecahedron uses the standard (0, ±1, ±φ) permutation construction where φ = (1+√5)/2 (golden ratio).
 
-**Goals:**
-1. Generate each polyhedron procedurally (no hardcoded vertices)
-2. Nest polyhedra concentrically (same center point)
-3. Toggle visibility for each level
-4. Color-code by nesting level
-5. Validate Euler's formula: V - E + F = 2
+**Key Properties:**
+- 20 vertices: 8 at cube corners (±s, ±s, ±s) + 12 at phi-vertices
+- 30 edges: 24 from cube corners to phi-vertices + 6 between phi-vertices
+- 12 pentagonal faces (fan-triangulated for rendering)
+- Each pentagon has 2 "shoulder" vertices that ARE cube corners
+- The line between shoulder vertices lies exactly on the cube edge
+- Resembles "hip roof pup tents" on each cube face
 
-**Rational Trigonometry Constraints:**
-- All edge lengths derived from quadrances
-- Verify spread relationships at vertices
-- No floating-point angle calculations
-- Use algebraic formulas for vertex positions
+**Phi-Vertex Permutations (scaled by s):**
+1. (0, ±1/φ, ±φ) - 4 vertices (permutation group 1)
+2. (±1/φ, ±φ, 0) - 4 vertices (permutation group 2)
+3. (±φ, 0, ±1/φ) - 4 vertices (permutation group 3)
+
+**Rational Trigonometry Connection:**
+- φ² = φ + 1 → φ² - φ - 1 = 0 (quadrance relationship)
+- All dodecahedron edges have equal quadrance
+- Derived from algebraic relationship: Q_φ/Q_1 = φ²
+
+**Reference:**
+Similar to Section19.js hip roof solver pattern - pure algebraic solution using quadrance relationships, avoiding iterative methods.
+
+---
+
+## Phase 2: Nested Polyhedra (3D Space) ✅ COMPLETE
+
+### Deliverable: Platonic solids + Rhombic Dodecahedron
+
+**Implemented Sequence:**
+1. ✅ Hexahedron (Cube) - 8 vertices, foundation solid
+2. ✅ Tetrahedron - 4 vertices, inscribed in cube
+3. ✅ Dual Tetrahedron - 4 vertices, inverted tetrahedron
+4. ✅ Octahedron - 6 vertices, dual of cube (vertices at cube face centers)
+5. ✅ Icosahedron - 12 vertices, three orthogonal golden rectangles
+6. ✅ Dodecahedron - 20 vertices, "hip roof" construction on cube faces
+7. ✅ Rhombic Dodecahedron - 14 vertices, dual of cuboctahedron
+
+**Completed Goals:**
+1. ✅ Generate each polyhedron procedurally (no hardcoded vertices)
+2. ✅ Nest polyhedra concentrically (same center point at origin)
+3. ✅ Toggle visibility for each polyhedron independently
+4. ✅ Color-code by polyhedron type
+5. ✅ Validate Euler's formula: V - E + F = 2 (displayed in stats panel)
+
+**Rational Trigonometry Implementation:**
+- ✅ All edge lengths derived from quadrances
+- ✅ Algebraic formulas for all vertex positions
+- ✅ No floating-point angle calculations (except for golden ratio √5)
+- ✅ Euler characteristic validation for all polyhedra
+- ✅ BufferGeometry with indexed rendering for efficiency
 
 ---
 
@@ -245,23 +291,51 @@ function tetrahedronFaces() {
 
 ---
 
+## Current Status (as of 2025-12-23)
+
+**Phase 1 & 2: ✅ COMPLETE**
+- All 7 polyhedra implemented and rendering correctly
+- Full interactive controls with toggles and sliders
+- Euler validation for all solids
+- Semi-transparent faces with configurable opacity
+- Coordinate system visualization (Cartesian + Quadray basis)
+
+**Recent Completion:**
+- Dodecahedron with correct "hip roof pup tent" topology
+- Standard (0, ±1, ±φ) vertex construction
+- 2 shoulder vertices per pentagon shared with cube corners
+- All 30 edges and 12 pentagonal faces properly defined
+
+---
+
 ## Next Steps
 
-1. **Phase 1 Implementation**
-   - Create ThreeRT.html skeleton
-   - Implement RT library (quadrance, spread functions)
-   - Render single tetrahedron
-   - Add orbit controls
+### Immediate (Phase 2 refinements):
+1. **Graphics Refinements**
+   - Review edge thickness and node sizes
+   - Optimize line rendering (match WOMBAT style)
+   - Adjust colors if needed
 
-2. **User Feedback**
-   - Share Phase 1 MVP for Andy to test
-   - Gather 4D coordinate system requirements
-   - Refine visual style based on preferences
+2. **Icosahedron Scale Review**
+   - Verify nesting relationships with dodecahedron
+   - Each dodecahedron face should have icosahedron vertex at center
+   - Adjust scaling factors if needed
+
+### Near-term (Phase 3 prep):
+1. **4D Coordinate System Research**
+   - Implement Quadray coordinate transformations
+   - Add WXYZ/Caltrop coordinate toggles
+   - Design 4D → 3D projection system
+
+2. **Dual Polyhedra Feature**
+   - Show dual of any selected polyhedron
+   - Implement dual generation algorithm
+   - Validate duality relationships
 
 3. **Documentation**
-   - Add mathematical derivations to this file
-   - Code comments explaining RT principles
-   - References to Wildberger's work
+   - Add mathematical derivations for each polyhedron
+   - Document quadrance calculations
+   - Add more code comments explaining RT principles
 
 ---
 
