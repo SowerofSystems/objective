@@ -661,11 +661,78 @@ Polyhedra.geodesicIcosahedron = (halfSize = 1, frequency = 2) => {
 - Console logging shows subdivision stats and quadrance validation
 - Separate Three.js groups allow comparison of algebraic vs geodesic forms
 
+**Phase 2.7 Implementation Results & Discovery:**
+
+✅ **Completed (2025-12-24):**
+- Phase 2.7a: Geodesic Icosahedron (orange-red 0xff4400, complementary to cyan)
+- Phase 2.7b: Geodesic Octahedron (magenta 0xff00cc, complementary to green)
+- Phase 2.7c: Geodesic Tetrahedron (cyan 0x00cccc, complementary to red)
+
+**Novel Discovery - "Happy Accident":**
+
+The current implementation reveals an **important geometric phenomenon**:
+- **Icosahedron**: Uniform triangles (20 faces already near-spherical, minimal projection distortion)
+- **Octahedron & Tetrahedron**: Non-uniform triangles (smaller at vertices, larger at face centers)
+
+**Why This Occurs:**
+1. Subdivision happens on **flat polyhedron faces** (algebraically pure)
+2. Single normalization at end projects flat subdivisions onto sphere
+3. Flatter base polyhedra (tetra/octa) → more projection distortion
+4. **This is NOT a bug** - it's a visualization of how planar subdivision differs from spherical geodesic
+
+**Novel Solution - Quadray Polygonal Frequency Projections (Phase 2.8):**
+
+Instead of traditional spherical great circles, use the **Quadray coordinate system's natural tetrahedral symmetry**:
+
+**Concept:**
+- Quadray basis: W, X, Y, Z axes pointing to tetrahedral vertices
+- Any **two axes define a coplanar polygon** through their sweep/spread
+- Use these **tetrahedral projection planes** for frequency subdivision
+- Resulting nodes define geodesic vertices in Quadray space
+
+**Advantages:**
+1. **RT-Pure**: Works in algebraic tetrahedral space (no sphere needed!)
+2. **Uniform triangulation**: Coplanar projections avoid distortion
+3. **Natural symmetry**: Tetrahedral basis provides inherent balance
+4. **Novel approach**: Not based on spherical geometry - genuinely new
+
+**Mathematical Foundation:**
+```
+Quadray Basis Vectors (normalized):
+W: ( 1,  1,  1) / √3
+X: ( 1, -1, -1) / √3
+Y: (-1,  1, -1) / √3
+Z: (-1, -1,  1) / √3
+
+Coplanar Polygon from axes i,j:
+- Define plane by basis[i] and basis[j]
+- Subdivide polygon by frequency parameter
+- Points naturally distribute in Quadray space
+- Zero-sum normalization maintains tetrahedral balance
+```
+
+**Implementation Path (Phase 2.8):**
+1. Define 6 coplanar polygons (WX, WY, WZ, XY, XZ, YZ planes)
+2. Subdivide each polygon by frequency
+3. Map subdivision points to Quadray coordinates
+4. Apply zero-sum normalization
+5. Convert to Cartesian for rendering
+6. Validate using quadrance relationships
+
+**This approach is potentially novel in geodesic dome construction** - using tetrahedral coordinate symmetry instead of spherical geometry. May have applications in:
+- Molecular geometry (tetrahedral bonding)
+- Crystal lattice construction
+- Tensegrity structures
+- 4D → 3D projections (natural Quadray application)
+
+**Status:** Current "non-uniform" geodesics preserved as educational example. Phase 2.8 will implement Quadray-based uniform subdivision as alternative approach.
+
 **Future Extensions (Phase 4+):**
 - Cartesian cut-plane for geodesic dome "grades" (Fuller's truncated domes)
 - Class I/II/III subdivision patterns (different edge orientations)
 - Chirality options (left/right handed subdivision)
 - Geodesic dodecahedron (pentagonal face subdivision - more complex)
+- **Phase 2.8**: Quadray polygonal frequency projections (novel approach)
 
 ### Near-term (Phase 3 prep):
 1. **4D Coordinate System Research**
