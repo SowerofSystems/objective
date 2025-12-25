@@ -1529,11 +1529,11 @@
         dodecahedronGroup.visible = false;
       }
 
-      // Geodesic Icosahedron (Phase 2.7a - Light Cyan)
+      // Geodesic Icosahedron (Phase 2.7a - Orange-Red, complementary to Cyan)
       if (document.getElementById('showGeodesicIcosahedron').checked) {
         const frequency = parseInt(document.getElementById('geodesicFrequency').value) || 2;
         const geodesicIcosa = Polyhedra.geodesicIcosahedron(scale, frequency);
-        renderPolyhedron(geodesicIcosahedronGroup, geodesicIcosa, 0x00dddd, opacity);
+        renderPolyhedron(geodesicIcosahedronGroup, geodesicIcosa, 0xff4400, opacity); // Vibrant orange-red
         geodesicIcosahedronGroup.visible = true;
       } else {
         geodesicIcosahedronGroup.visible = false;
