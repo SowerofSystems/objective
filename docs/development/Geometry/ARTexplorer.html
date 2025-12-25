@@ -233,6 +233,16 @@
             Icosahedron (20 faces, φ)
           </label>
         </div>
+        <div class="control-item" style="margin-left: 20px;">
+          <label class="checkbox-label">
+            <input type="checkbox" id="showGeodesicIcosahedron">
+            Geodesic (Fuller)
+          </label>
+          <div class="slider-container" style="margin-top: 5px;">
+            <label style="font-size: 11px;">Freq:</label>
+            <input type="number" id="geodesicFrequency" min="1" max="6" value="2" style="width: 50px; margin-left: 5px;">
+          </div>
+        </div>
         <div class="control-item">
           <label class="checkbox-label">
             <input type="checkbox" id="showDodecahedron">
@@ -876,6 +886,138 @@
       },
 
       /**
+       * RT-PURE GEODESIC SUBDIVISION (Phase 2.7a)
+       * Subdivide triangular face into smaller triangles for geodesic domes
+       * IMPORTANT: Subdivision happens in ALGEBRAIC SPACE before sphere projection
+       *
+       * @param {Array} vertices - Original polyhedron vertices
+       * @param {Array} faces - Original triangular faces
+       * @param {number} frequency - Subdivision frequency (1-6)
+       * @returns {Object} - {vertices, edges, faces} for subdivided polyhedron
+       */
+      subdivideTriangles: (vertices, faces, frequency) => {
+        if (frequency === 1) {
+          // No subdivision - return original
+          const edges = [];
+          faces.forEach(([a, b, c]) => {
+            edges.push([a, b], [b, c], [c, a]);
+          });
+          return { vertices, edges, faces };
+        }
+
+        const newVertices = [...vertices]; // Start with original vertices
+        const vertexMap = new Map(); // Cache midpoints to avoid duplicates
+
+        // Helper: Get or create midpoint between two vertices
+        const getMidpoint = (i, j) => {
+          const key = i < j ? `${i},${j}` : `${j},${i}`;
+
+          if (vertexMap.has(key)) {
+            return vertexMap.get(key);
+          }
+
+          const v1 = newVertices[i];
+          const v2 = newVertices[j];
+
+          // RT-PURE: Calculate midpoint in algebraic space
+          // For icosahedron vertices with golden ratio coords,
+          // midpoint preserves algebraic relationships
+          const mid = new THREE.Vector3(
+            (v1.x + v2.x) / 2,
+            (v1.y + v2.y) / 2,
+            (v1.z + v2.z) / 2
+          );
+
+          const idx = newVertices.length;
+          newVertices.push(mid);
+          vertexMap.set(key, idx);
+          return idx;
+        };
+
+        const newFaces = [];
+
+        // Subdivide each triangle recursively
+        const subdivideTriangle = (a, b, c, depth) => {
+          if (depth === 0) {
+            newFaces.push([a, b, c]);
+            return;
+          }
+
+          // Get midpoints of three edges
+          const ab = getMidpoint(a, b);
+          const bc = getMidpoint(b, c);
+          const ca = getMidpoint(c, a);
+
+          // Create 4 smaller triangles
+          subdivideTriangle(a, ab, ca, depth - 1);
+          subdivideTriangle(ab, b, bc, depth - 1);
+          subdivideTriangle(ca, bc, c, depth - 1);
+          subdivideTriangle(ab, bc, ca, depth - 1); // Center triangle
+        };
+
+        // Subdivide all original faces
+        faces.forEach(([a, b, c]) => {
+          subdivideTriangle(a, b, c, frequency - 1);
+        });
+
+        // Generate edges from faces
+        const edgeSet = new Set();
+        newFaces.forEach(([a, b, c]) => {
+          const e1 = a < b ? `${a},${b}` : `${b},${a}`;
+          const e2 = b < c ? `${b},${c}` : `${c},${b}`;
+          const e3 = c < a ? `${c},${a}` : `${a},${c}`;
+          edgeSet.add(e1);
+          edgeSet.add(e2);
+          edgeSet.add(e3);
+        });
+
+        const newEdges = Array.from(edgeSet).map(e => e.split(',').map(Number));
+
+        return { vertices: newVertices, edges: newEdges, faces: newFaces };
+      },
+
+      /**
+       * Geodesic Icosahedron (Phase 2.7a)
+       * RT-pure implementation: Subdivision in algebraic space, then sphere projection
+       *
+       * @param {number} halfSize - Radius of geodesic sphere
+       * @param {number} frequency - Subdivision frequency (1-6)
+       * @returns {Object} - {vertices, edges, faces}
+       */
+      geodesicIcosahedron: (halfSize = 1, frequency = 2) => {
+        // 1. Start with pure algebraic icosahedron
+        const base = Polyhedra.icosahedron(halfSize);
+
+        console.log(`[RT] Geodesic Icosahedron: frequency=${frequency}`);
+        console.log(`  Base vertices: ${base.vertices.length}, faces: ${base.faces.length}`);
+
+        // 2. Subdivide in algebraic space (preserves golden ratio relationships)
+        const subdivided = Polyhedra.subdivideTriangles(base.vertices, base.faces, frequency);
+
+        console.log(`  Subdivided vertices: ${subdivided.vertices.length}, faces: ${subdivided.faces.length}`);
+
+        // 3. Project to sphere - ONLY NOW do we normalize
+        // This is the ONLY place we call normalize() - late as possible!
+        const projected = subdivided.vertices.map(v => {
+          const normalized = v.clone().normalize();
+          return normalized.multiplyScalar(halfSize);
+        });
+
+        // 4. Validate edge quadrance uniformity
+        // After projection to sphere, all edges should have similar quadrance
+        const sampleQ = RT.quadrance(projected[subdivided.edges[0][0]], projected[subdivided.edges[0][1]]);
+        const validation = RT.validateEdges(projected, subdivided.edges, sampleQ);
+        const maxError = Math.max(...validation.map(v => v.error));
+        const avgQ = validation.reduce((sum, v) => sum + v.Q, 0) / validation.length;
+
+        console.log(`  Projected to sphere: radius=${halfSize.toFixed(3)}`);
+        console.log(`  Edge quadrance: avg=${avgQ.toFixed(6)}, max error=${maxError.toExponential(2)}`);
+        console.log(`  RT PURITY: Normalization deferred until final step ✓`);
+
+        return { vertices: projected, edges: subdivided.edges, faces: subdivided.faces };
+      },
+
+      /**
        * Dodecahedron (12 pentagonal faces, 20 vertices, 30 edges)
        * RT construction: "hip roof pup tent" on each cube face
        * Following Section19.js hip roof solver pattern - quadrance-based
@@ -1098,6 +1240,7 @@
     let scene, camera, renderer, controls;
     let cubeGroup, tetrahedronGroup, dualTetrahedronGroup, octahedronGroup;
     let icosahedronGroup, dodecahedronGroup, dualIcosahedronGroup, rhombicDodecahedronGroup;
+    let geodesicIcosahedronGroup; // Phase 2.7a: Geodesic subdivision
     let cartesianGrid, quadrayBasis;
 
     function initScene() {
@@ -1153,6 +1296,7 @@
       dodecahedronGroup = new THREE.Group();
       dualIcosahedronGroup = new THREE.Group();
       rhombicDodecahedronGroup = new THREE.Group();
+      geodesicIcosahedronGroup = new THREE.Group(); // Phase 2.7a
 
       scene.add(cubeGroup);
       scene.add(tetrahedronGroup);
@@ -1162,6 +1306,7 @@
       scene.add(dodecahedronGroup);
       scene.add(dualIcosahedronGroup);
       scene.add(rhombicDodecahedronGroup);
+      scene.add(geodesicIcosahedronGroup);
 
       // Initial render
       updateGeometry();
@@ -1384,6 +1529,16 @@
         dodecahedronGroup.visible = false;
       }
 
+      // Geodesic Icosahedron (Phase 2.7a - Light Cyan)
+      if (document.getElementById('showGeodesicIcosahedron').checked) {
+        const frequency = parseInt(document.getElementById('geodesicFrequency').value) || 2;
+        const geodesicIcosa = Polyhedra.geodesicIcosahedron(scale, frequency);
+        renderPolyhedron(geodesicIcosahedronGroup, geodesicIcosa, 0x00dddd, opacity);
+        geodesicIcosahedronGroup.visible = true;
+      } else {
+        geodesicIcosahedronGroup.visible = false;
+      }
+
       // Dual Icosahedron (Magenta - Face dual of dodecahedron)
       if (document.getElementById('showDualIcosahedron').checked) {
         const dualIcosa = Polyhedra.dualIcosahedron(scale);
@@ -1510,6 +1665,10 @@
     document.getElementById('showDodecahedron').addEventListener('change', updateGeometry);
     document.getElementById('showDualIcosahedron').addEventListener('change', updateGeometry);
     document.getElementById('showRhombicDodecahedron').addEventListener('change', updateGeometry);
+
+    // Phase 2.7a: Geodesic controls
+    document.getElementById('showGeodesicIcosahedron').addEventListener('change', updateGeometry);
+    document.getElementById('geodesicFrequency').addEventListener('input', updateGeometry);
 
     // Scale slider
     document.getElementById('scaleSlider').addEventListener('input', (e) => {
