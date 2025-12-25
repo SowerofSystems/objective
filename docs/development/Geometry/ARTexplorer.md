@@ -728,6 +728,209 @@ Coplanar Polygon from axes i,j:
 
 **Status:** Current "non-uniform" geodesics preserved as educational example. Phase 2.8 will implement Quadray-based uniform subdivision as alternative approach.
 
+---
+
+## Phase 2.9: RT-Pure Geodesic Educational UI (InSphere/MidSphere/OutSphere)
+
+### Deliverable: Multi-Stage Geodesic Visualization
+
+**Objective:** Separate geodesic subdivision from sphere projection to educate users on the process while maintaining RT purity.
+
+**Current Problem:**
+- Users see only final result (subdivided + projected)
+- Cannot see subdivision happening on flat polyhedron faces
+- Cannot compare different sphere projection radii
+- Process appears as "black box"
+
+**Solution: Two-Stage Process with Three Sphere Options**
+
+**Stage 1: Subdivide/Frequency**
+- ☑ Subdivide (checkbox)
+- Frequency: [0-6] (number input)
+- **Result:** Subdivided faces on FLAT polyhedron (no sphere projection)
+- Shows barycentric grid subdivision in algebraic space
+- All vertices remain on original polyhedron faces
+
+**Stage 2: Project (checkboxes - can select multiple)**
+- ☐ InSphere (project to inscribed sphere - tangent to face centers)
+- ☐ MidSphere (project to mid-radius sphere - tangent to edge centers)
+- ☐ OutSphere (project to circumscribed sphere - passes through vertices)
+- **Result:** Same subdivided mesh projected to 1, 2, or all 3 spheres simultaneously
+- Each sphere renders in slightly different color tint
+- Allows visual comparison of projection effects
+
+**RT-Pure Mathematics:**
+
+For a regular tetrahedron inscribed in cube with half-size `s`:
+
+**Vertices (4 corners):**
+```
+v0 = ( s,  s,  s)
+v1 = ( s, -s, -s)
+v2 = (-s,  s, -s)
+v3 = (-s, -s,  s)
+```
+
+**1. OutSphere (Circumradius) - Origin to Vertex:**
+```javascript
+// Quadrance from origin to any vertex
+Q_outer = s² + s² + s² = 3s²
+
+// Radius (only when needed for projection):
+r_outer = √(3s²) = s√3
+```
+
+**2. MidSphere (Midradius) - Origin to Edge Center:**
+
+Edge v0-v1 center:
+```
+edge_center = ((s+s)/2, (s-s)/2, (s-s)/2) = (s, 0, 0)
+Q_mid = s² + 0² + 0² = s²
+r_mid = s
+```
+
+All 6 edge centers have Q_mid = s² (can verify RT-pure!)
+
+**3. InSphere (Inradius) - Origin to Face Center:**
+
+Face [v0, v1, v2] center:
+```
+face_center = ((s+s-s)/3, (s-s+s)/3, (s-s-s)/3)
+            = (s/3, s/3, -s/3)
+
+Q_inner = (s/3)² + (s/3)² + (-s/3)²
+        = s²/9 + s²/9 + s²/9
+        = 3s²/9 = s²/3
+
+r_inner = √(s²/3) = s/√3 = s√3/3
+```
+
+All 4 face centers have Q_inner = s²/3 (RT-pure validation!)
+
+**Quadrance Ratios (Exact Algebraic!):**
+```
+Q_outer : Q_mid : Q_inner = 3s² : s² : s²/3
+                           = 9 : 3 : 1
+
+r_outer : r_mid : r_inner = √3 : 1 : 1/√3
+                           = √3 : 1 : √3/3
+```
+
+**RT-Pure Implementation Strategy:**
+
+```javascript
+Polyhedra.geodesicTetrahedron = (halfSize = 1, frequency = 0, options = {
+  subdivide: false,
+  projectInSphere: false,
+  projectMidSphere: false,
+  projectOutSphere: false
+}) => {
+  const base = Polyhedra.tetrahedron(halfSize);
+
+  // Stage 1: Subdivision (if enabled)
+  if (!options.subdivide || frequency === 0) {
+    return base;  // Return flat base tetrahedron
+  }
+
+  const subdivided = Polyhedra.subdivideTriangles(
+    base.vertices, base.faces, frequency
+  );
+
+  // Stage 2: Projection (if any sphere selected)
+  const results = [];
+
+  // Option 1: InSphere projection
+  if (options.projectInSphere) {
+    const Q_target = halfSize * halfSize / 3;  // s²/3
+    const projected = subdivided.vertices.map(v => {
+      const normalized = v.clone().normalize();
+      return normalized.multiplyScalar(Math.sqrt(Q_target));
+    });
+    results.push({
+      vertices: projected,
+      edges: subdivided.edges,
+      faces: subdivided.faces,
+      type: 'InSphere',
+      color: 0x4444ff  // Blue tint
+    });
+  }
+
+  // Option 2: MidSphere projection
+  if (options.projectMidSphere) {
+    const Q_target = halfSize * halfSize;  // s²
+    const projected = subdivided.vertices.map(v => {
+      const normalized = v.clone().normalize();
+      return normalized.multiplyScalar(Math.sqrt(Q_target));
+    });
+    results.push({
+      vertices: projected,
+      edges: subdivided.edges,
+      faces: subdivided.faces,
+      type: 'MidSphere',
+      color: 0x44ff44  // Green tint
+    });
+  }
+
+  // Option 3: OutSphere projection
+  if (options.projectOutSphere) {
+    const Q_target = 3 * halfSize * halfSize;  // 3s²
+    const projected = subdivided.vertices.map(v => {
+      const normalized = v.clone().normalize();
+      return normalized.multiplyScalar(Math.sqrt(Q_target));
+    });
+    results.push({
+      vertices: projected,
+      edges: subdivided.edges,
+      faces: subdivided.faces,
+      type: 'OutSphere',
+      color: 0xff4444  // Red tint
+    });
+  }
+
+  // If no sphere selected, return flat subdivided mesh
+  if (results.length === 0) {
+    return {
+      vertices: subdivided.vertices,
+      edges: subdivided.edges,
+      faces: subdivided.faces,
+      type: 'Flat'
+    };
+  }
+
+  return results;  // Array of projected versions
+};
+```
+
+**UI Design:**
+
+```
+☑ Tetrahedron (Inscribed)
+  ▾ ☑ Geodesic (Fuller)
+      ☑ Subdivide  Freq: [1]
+
+      Project to Sphere:
+      ☐ InSphere (r = s/√3)
+      ☐ MidSphere (r = s)
+      ☐ OutSphere (r = s√3)
+```
+
+**Educational Benefits:**
+
+1. **Subdivision First:** See barycentric grid on flat faces
+2. **Projection Second:** Understand how normalization affects geometry
+3. **Multiple Spheres:** Compare inscribed/mid/circumscribed simultaneously
+4. **RT Purity:** All quadrances calculated algebraically
+5. **Visual Proof:** See 9:3:1 quadrance ratio visually
+
+**Phase 2.9 Implementation Plan:**
+
+1. **Add RT sphere quadrance functions** (ARTexplorer.html RT library)
+2. **Update geodesicTetrahedron()** with stage 1 & 2 separation
+3. **Create UI controls** for subdivide + 3 sphere checkboxes
+4. **Render multiple projections** simultaneously with color coding
+5. **Console logging** showing Q_inner, Q_mid, Q_outer validation
+6. **Test and refine** with tetrahedron before extending to octa/icosa
+
 **Future Extensions (Phase 4+):**
 - Cartesian cut-plane for geodesic dome "grades" (Fuller's truncated domes)
 - Class I/II/III subdivision patterns (different edge orientations)
