@@ -1,4 +1,5 @@
 # ThreeRT - Three.js + Rational Trigonometry Geometry Explorer
+- Credits and thanks: Co-developed from the ideas of R. Buckminster Fuller, Kirby Urner, Tom Ace, NJ Wildberger and Andy Thomson, witnessed by Metatron. 
 
 ## Overview
 
@@ -591,6 +592,81 @@ All RT purity enhancements successfully implemented:
    - Adjust scaling factors if needed
    - Document nesting ratios in RT terms
 
+### Phase 2.7: RT-Pure Geodesic Subdivision (Fuller Domes):
+**Objective:** Implement quadrance-preserving geodesic subdivision for multi-frequency domes.
+
+**RT-Pure Approach:**
+- Subdivide polyhedra topologically FIRST (in algebraic/rational space)
+- Use golden ratio coordinates and quadrance relationships during subdivision
+- Only normalize vertices to sphere at final Vector3 creation
+- NO Three.js preset geometries (BoxGeometry, etc.)
+- Preserve RT purity throughout subdivision pipeline
+
+**Implementation Phases:**
+
+1. **Phase 2.7a: Geodesic Icosahedron** (Priority 1)
+   - Icosahedron is industry standard for geodesic domes
+   - Subdivide 20 triangular faces using frequency parameter
+   - Midpoints calculated using golden ratio relationships
+   - UI: Per-solid checkbox with frequency slider (1-6)
+   - Validates edge quadrance after subdivision
+
+   **UI Design:**
+   ```
+   ☑ Icosahedron              ☐ Geodesic [freq: ▾2]
+   ```
+
+   **Vertex Count by Frequency:**
+   - Freq 1: 12 vertices (original)
+   - Freq 2: 42 vertices
+   - Freq 3: 92 vertices
+   - Freq 4: 162 vertices
+   - Freq 5: 252 vertices
+   - Freq 6: 362 vertices (performance limit)
+
+2. **Phase 2.7b: Geodesic Octahedron** (Priority 2)
+   - Simpler than icosahedron (8 triangular faces)
+   - Good for educational comparison
+   - Same UI pattern with frequency slider
+
+3. **Phase 2.7c: Geodesic Tetrahedron** (Priority 3)
+   - Simplest geodesic case (4 triangular faces)
+   - Excellent for learning subdivision algorithms
+   - Demonstrates RT principles clearly
+
+**Quadrance-Preserving Subdivision Algorithm:**
+```javascript
+// RT-PURE GEODESIC SUBDIVISION
+Polyhedra.geodesicIcosahedron = (halfSize = 1, frequency = 2) => {
+  // 1. Start with pure algebraic icosahedron
+  const base = Polyhedra.icosahedron(halfSize);
+
+  // 2. Subdivide each triangle in ALGEBRAIC SPACE
+  //    Midpoint of (0,a,φa) and (a,φa,0) = (a/2, φa, φa/2) - exact!
+  const subdivided = subdivideTriangularFaces(base.faces, base.vertices, frequency);
+
+  // 3. Project to sphere ONLY at final vertex creation
+  const projected = projectToSphere(subdivided.vertices, halfSize);
+
+  // 4. Validate edge quadrance uniformity
+  const validation = RT.validateEdges(projected, subdivided.edges, expectedQ);
+
+  return { vertices: projected, edges: subdivided.edges, faces: subdivided.faces };
+};
+```
+
+**Key Features:**
+- Individual checkbox per solid (can show both pure & geodesic simultaneously)
+- Frequency slider (1-6) enabled only when geodesic checkbox active
+- Console logging shows subdivision stats and quadrance validation
+- Separate Three.js groups allow comparison of algebraic vs geodesic forms
+
+**Future Extensions (Phase 4+):**
+- Cartesian cut-plane for geodesic dome "grades" (Fuller's truncated domes)
+- Class I/II/III subdivision patterns (different edge orientations)
+- Chirality options (left/right handed subdivision)
+- Geodesic dodecahedron (pentagonal face subdivision - more complex)
+
 ### Near-term (Phase 3 prep):
 1. **4D Coordinate System Research**
    - Implement Quadray coordinate transformations
@@ -645,7 +721,7 @@ All RT purity enhancements successfully implemented:
 **Status:** Work plan complete, ready for Phase 1 implementation upon approval.
 
 
-Add'l QUADRAYS support material: /*
+## Add'l QUADRAYS support material: ## 
 Quadrays are a 4-coordinate system for mapping space, described in detail
 on Kirby Urner's page at http://www.grunch.net/synergetics/quadintro.html.
 
@@ -660,13 +736,13 @@ may be added to quadray coordinates (a,b,c,d) without changing the
 point in space being referred to.  Various methods of normalizing
 coordinates are possible.  Kirby Urner's quadintro.html page discusses
 a form of normalization that minimizes the values of a, b, c, and d
-while keeping them all nonnegative.  Choosing (a,b,c,d) such that
+while keeping them all non-negative.  Choosing (a,b,c,d) such that
 a+b+c+d=1 gives barycentric coordinates.  Choosing (a,b,c,d) such that
 a+b+c+d=0 facilitates computation by exploiting an isomorphism
 described at http://minortriad.com/q4d.html.
 
 A few quadray formulas are coded below in C++, with comments about
-the method used and how I derived it.  (I haven't included trivial
+the method used and how [Tom] derived it.  (I haven't included trivial
 methods like translation and scaling.)  This document, saved as text,
 compiles as ANSI C++.  There is no warranty of fitness for purpose,
 nor of anything else.
@@ -854,6 +930,8 @@ void  Quadray::RotateAboutA(const Quadray &QX,double Theta)
    // How this was derived:  a bunch of algebra and trig.  I later
    //                        developed a method for rotation about any
    //                        desired axis but I haven't coded that yet.
+   
+   // Andy Comment: Rationalize above and use spread above and below
 
    RotationCoeffs    RC(Theta);
 
@@ -866,45 +944,3 @@ void  Quadray::RotateAboutA(const Quadray &QX,double Theta)
    
    for (int I = 0; I < 4; I++) Coords[I] = Rotated[I];
 }
-
-
-- New Features: 
-
-1. ## Bevelling: To create geodesics on a sphere surface ##
-
-- not pure RT topology but approximates geodesics. 
-// Start with a cube
-let geometry = new THREE.BoxGeometry(2, 2, 2, 10, 10, 10);
-
-// Move all vertices onto a sphere
-const position = geometry.attributes.position;
-const v = new THREE.Vector3();
-
-for (let i = 0; i < position.count; i++) {
-  v.fromBufferAttribute(position, i);
-  v.normalize().multiplyScalar(1); // radius = 1
-  position.setXYZ(i, v.x, v.y, v.z);
-}
-
-geometry.computeVertexNormals();
-
-- Tetrahedron:
-let geometry = new THREE.TetrahedronGeometry(1, 6); // radius, detail
-
-Internally, three.js already:
-Subdivides
-Normalizes vertices to a sphere
-This yields:
-Perfectly curved edges
-Equal geodesic spacing
-Very clean topology
-➡️ A tetrahedron maps more naturally to a sphere than a cube.
-
-Why this works (geometric intuition)
-Each vertex vector becomes a radius
-Edges become arcs on a sphere
-Faces become spherical patches
-Normals align naturally with position
-This is not beveling — it is radial projection.
-
-For higher level polyhedra, consider actual topological subdivision with a slider for multi-frequency domes per Bucky Fuller (allow cartsian cutplane to act as grade for these)
