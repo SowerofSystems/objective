@@ -215,6 +215,16 @@
             Tetrahedron (Inscribed)
           </label>
         </div>
+        <div class="control-item" style="margin-left: 20px;">
+          <label class="checkbox-label">
+            <input type="checkbox" id="showGeodesicTetrahedron">
+            Geodesic (Fuller)
+          </label>
+          <div class="slider-container" style="margin-top: 5px;">
+            <label style="font-size: 11px;">Freq:</label>
+            <input type="number" id="geodesicTetraFrequency" min="1" max="6" value="2" style="width: 50px; margin-left: 5px;">
+          </div>
+        </div>
         <div class="control-item">
           <label class="checkbox-label">
             <input type="checkbox" id="showDualTetrahedron">
@@ -1018,6 +1028,46 @@
       },
 
       /**
+       * Geodesic Tetrahedron (Phase 2.7c)
+       * RT-pure implementation: Subdivision in algebraic space, then sphere projection
+       * Simplest geodesic case - excellent for learning subdivision algorithms
+       *
+       * @param {number} halfSize - Radius of geodesic sphere
+       * @param {number} frequency - Subdivision frequency (1-6)
+       * @returns {Object} - {vertices, edges, faces}
+       */
+      geodesicTetrahedron: (halfSize = 1, frequency = 2) => {
+        // 1. Start with pure algebraic tetrahedron
+        const base = Polyhedra.tetrahedron(halfSize);
+
+        console.log(`[RT] Geodesic Tetrahedron: frequency=${frequency}`);
+        console.log(`  Base vertices: ${base.vertices.length}, faces: ${base.faces.length}`);
+
+        // 2. Subdivide in algebraic space
+        const subdivided = Polyhedra.subdivideTriangles(base.vertices, base.faces, frequency);
+
+        console.log(`  Subdivided vertices: ${subdivided.vertices.length}, faces: ${subdivided.faces.length}`);
+
+        // 3. Project to sphere - late normalization
+        const projected = subdivided.vertices.map(v => {
+          const normalized = v.clone().normalize();
+          return normalized.multiplyScalar(halfSize);
+        });
+
+        // 4. Validate edge quadrance uniformity
+        const sampleQ = RT.quadrance(projected[subdivided.edges[0][0]], projected[subdivided.edges[0][1]]);
+        const validation = RT.validateEdges(projected, subdivided.edges, sampleQ);
+        const maxError = Math.max(...validation.map(v => v.error));
+        const avgQ = validation.reduce((sum, v) => sum + v.Q, 0) / validation.length;
+
+        console.log(`  Projected to sphere: radius=${halfSize.toFixed(3)}`);
+        console.log(`  Edge quadrance: avg=${avgQ.toFixed(6)}, max error=${maxError.toExponential(2)}`);
+        console.log(`  RT PURITY: Normalization deferred until final step ✓`);
+
+        return { vertices: projected, edges: subdivided.edges, faces: subdivided.faces };
+      },
+
+      /**
        * Dodecahedron (12 pentagonal faces, 20 vertices, 30 edges)
        * RT construction: "hip roof pup tent" on each cube face
        * Following Section19.js hip roof solver pattern - quadrance-based
@@ -1241,6 +1291,7 @@
     let cubeGroup, tetrahedronGroup, dualTetrahedronGroup, octahedronGroup;
     let icosahedronGroup, dodecahedronGroup, dualIcosahedronGroup, rhombicDodecahedronGroup;
     let geodesicIcosahedronGroup; // Phase 2.7a: Geodesic subdivision
+    let geodesicTetrahedronGroup; // Phase 2.7c: Geodesic tetrahedron
     let cartesianGrid, quadrayBasis;
 
     function initScene() {
@@ -1297,6 +1348,7 @@
       dualIcosahedronGroup = new THREE.Group();
       rhombicDodecahedronGroup = new THREE.Group();
       geodesicIcosahedronGroup = new THREE.Group(); // Phase 2.7a
+      geodesicTetrahedronGroup = new THREE.Group(); // Phase 2.7c
 
       scene.add(cubeGroup);
       scene.add(tetrahedronGroup);
@@ -1307,6 +1359,7 @@
       scene.add(dualIcosahedronGroup);
       scene.add(rhombicDodecahedronGroup);
       scene.add(geodesicIcosahedronGroup);
+      scene.add(geodesicTetrahedronGroup);
 
       // Initial render
       updateGeometry();
@@ -1493,6 +1546,16 @@
         tetrahedronGroup.visible = false;
       }
 
+      // Geodesic Tetrahedron (Phase 2.7c - Cyan/Turquoise, complementary to Red)
+      if (document.getElementById('showGeodesicTetrahedron').checked) {
+        const frequency = parseInt(document.getElementById('geodesicTetraFrequency').value) || 2;
+        const geodesicTetra = Polyhedra.geodesicTetrahedron(scale, frequency);
+        renderPolyhedron(geodesicTetrahedronGroup, geodesicTetra, 0x00cccc, opacity); // Cyan/turquoise
+        geodesicTetrahedronGroup.visible = true;
+      } else {
+        geodesicTetrahedronGroup.visible = false;
+      }
+
       // Dual Tetrahedron (Magenta)
       if (document.getElementById('showDualTetrahedron').checked) {
         const dualTetra = Polyhedra.dualTetrahedron(scale);
@@ -1666,9 +1729,11 @@
     document.getElementById('showDualIcosahedron').addEventListener('change', updateGeometry);
     document.getElementById('showRhombicDodecahedron').addEventListener('change', updateGeometry);
 
-    // Phase 2.7a: Geodesic controls
+    // Phase 2.7a & 2.7c: Geodesic controls
     document.getElementById('showGeodesicIcosahedron').addEventListener('change', updateGeometry);
     document.getElementById('geodesicFrequency').addEventListener('input', updateGeometry);
+    document.getElementById('showGeodesicTetrahedron').addEventListener('change', updateGeometry);
+    document.getElementById('geodesicTetraFrequency').addEventListener('input', updateGeometry);
 
     // Scale slider
     document.getElementById('scaleSlider').addEventListener('input', (e) => {
