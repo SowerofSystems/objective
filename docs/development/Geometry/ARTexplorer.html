@@ -237,6 +237,16 @@
             Octahedron (Dual of Cube)
           </label>
         </div>
+        <div class="control-item" style="margin-left: 20px;">
+          <label class="checkbox-label">
+            <input type="checkbox" id="showGeodesicOctahedron">
+            Geodesic (Fuller)
+          </label>
+          <div class="slider-container" style="margin-top: 5px;">
+            <label style="font-size: 11px;">Freq:</label>
+            <input type="number" id="geodesicOctaFrequency" min="1" max="6" value="2" style="width: 50px; margin-left: 5px;">
+          </div>
+        </div>
         <div class="control-item">
           <label class="checkbox-label">
             <input type="checkbox" id="showIcosahedron">
@@ -1068,6 +1078,46 @@
       },
 
       /**
+       * Geodesic Octahedron (Phase 2.7b)
+       * RT-pure implementation: Subdivision in algebraic space, then sphere projection
+       * 8 triangular faces - simpler than icosahedron, more complex than tetrahedron
+       *
+       * @param {number} halfSize - Radius of geodesic sphere
+       * @param {number} frequency - Subdivision frequency (1-6)
+       * @returns {Object} - {vertices, edges, faces}
+       */
+      geodesicOctahedron: (halfSize = 1, frequency = 2) => {
+        // 1. Start with pure algebraic octahedron
+        const base = Polyhedra.octahedron(halfSize);
+
+        console.log(`[RT] Geodesic Octahedron: frequency=${frequency}`);
+        console.log(`  Base vertices: ${base.vertices.length}, faces: ${base.faces.length}`);
+
+        // 2. Subdivide in algebraic space
+        const subdivided = Polyhedra.subdivideTriangles(base.vertices, base.faces, frequency);
+
+        console.log(`  Subdivided vertices: ${subdivided.vertices.length}, faces: ${subdivided.faces.length}`);
+
+        // 3. Project to sphere - late normalization
+        const projected = subdivided.vertices.map(v => {
+          const normalized = v.clone().normalize();
+          return normalized.multiplyScalar(halfSize);
+        });
+
+        // 4. Validate edge quadrance uniformity
+        const sampleQ = RT.quadrance(projected[subdivided.edges[0][0]], projected[subdivided.edges[0][1]]);
+        const validation = RT.validateEdges(projected, subdivided.edges, sampleQ);
+        const maxError = Math.max(...validation.map(v => v.error));
+        const avgQ = validation.reduce((sum, v) => sum + v.Q, 0) / validation.length;
+
+        console.log(`  Projected to sphere: radius=${halfSize.toFixed(3)}`);
+        console.log(`  Edge quadrance: avg=${avgQ.toFixed(6)}, max error=${maxError.toExponential(2)}`);
+        console.log(`  RT PURITY: Normalization deferred until final step ✓`);
+
+        return { vertices: projected, edges: subdivided.edges, faces: subdivided.faces };
+      },
+
+      /**
        * Dodecahedron (12 pentagonal faces, 20 vertices, 30 edges)
        * RT construction: "hip roof pup tent" on each cube face
        * Following Section19.js hip roof solver pattern - quadrance-based
@@ -1292,6 +1342,7 @@
     let icosahedronGroup, dodecahedronGroup, dualIcosahedronGroup, rhombicDodecahedronGroup;
     let geodesicIcosahedronGroup; // Phase 2.7a: Geodesic subdivision
     let geodesicTetrahedronGroup; // Phase 2.7c: Geodesic tetrahedron
+    let geodesicOctahedronGroup; // Phase 2.7b: Geodesic octahedron
     let cartesianGrid, quadrayBasis;
 
     function initScene() {
@@ -1349,6 +1400,7 @@
       rhombicDodecahedronGroup = new THREE.Group();
       geodesicIcosahedronGroup = new THREE.Group(); // Phase 2.7a
       geodesicTetrahedronGroup = new THREE.Group(); // Phase 2.7c
+      geodesicOctahedronGroup = new THREE.Group(); // Phase 2.7b
 
       scene.add(cubeGroup);
       scene.add(tetrahedronGroup);
@@ -1360,6 +1412,7 @@
       scene.add(rhombicDodecahedronGroup);
       scene.add(geodesicIcosahedronGroup);
       scene.add(geodesicTetrahedronGroup);
+      scene.add(geodesicOctahedronGroup);
 
       // Initial render
       updateGeometry();
@@ -1574,6 +1627,16 @@
         octahedronGroup.visible = false;
       }
 
+      // Geodesic Octahedron (Phase 2.7b - Magenta/Pink, complementary to Green)
+      if (document.getElementById('showGeodesicOctahedron').checked) {
+        const frequency = parseInt(document.getElementById('geodesicOctaFrequency').value) || 2;
+        const geodesicOcta = Polyhedra.geodesicOctahedron(scale, frequency);
+        renderPolyhedron(geodesicOctahedronGroup, geodesicOcta, 0xff00cc, opacity); // Magenta/pink
+        geodesicOctahedronGroup.visible = true;
+      } else {
+        geodesicOctahedronGroup.visible = false;
+      }
+
       // Icosahedron (Cyan)
       if (document.getElementById('showIcosahedron').checked) {
         const icosa = Polyhedra.icosahedron(scale);
@@ -1729,11 +1792,13 @@
     document.getElementById('showDualIcosahedron').addEventListener('change', updateGeometry);
     document.getElementById('showRhombicDodecahedron').addEventListener('change', updateGeometry);
 
-    // Phase 2.7a & 2.7c: Geodesic controls
+    // Phase 2.7a, 2.7b, 2.7c: Geodesic controls
     document.getElementById('showGeodesicIcosahedron').addEventListener('change', updateGeometry);
     document.getElementById('geodesicFrequency').addEventListener('input', updateGeometry);
     document.getElementById('showGeodesicTetrahedron').addEventListener('change', updateGeometry);
     document.getElementById('geodesicTetraFrequency').addEventListener('input', updateGeometry);
+    document.getElementById('showGeodesicOctahedron').addEventListener('change', updateGeometry);
+    document.getElementById('geodesicOctaFrequency').addEventListener('input', updateGeometry);
 
     // Scale slider
     document.getElementById('scaleSlider').addEventListener('input', (e) => {
