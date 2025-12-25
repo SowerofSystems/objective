@@ -681,13 +681,14 @@ The current implementation reveals an **important geometric phenomenon**:
 4. **This is NOT a bug** - it's a visualization of how planar subdivision differs from spherical geodesic
 
 **Novel Solution - Quadray Polygonal Frequency Projections (Phase 2.8):**
+- discovered by Andy w. Metatron 2025.12.24, 22h22.
 
 Instead of traditional spherical great circles, use the **Quadray coordinate system's natural tetrahedral symmetry**:
 
 **Concept:**
 - Quadray basis: W, X, Y, Z axes pointing to tetrahedral vertices
 - Any **two axes define a coplanar polygon** through their sweep/spread
-- Use these **tetrahedral projection planes** for frequency subdivision
+- Use these **tetrahedral projection planes** for frequency subdivision, 3 (triangle) = Frequency 1, 6 (hexagon) = Frequency 2, 12 (dodecagon), F3, etc.
 - Resulting nodes define geodesic vertices in Quadray space
 
 **Advantages:**

@@ -147,6 +147,65 @@
       color: #e0e0e0;
     }
 
+    /* Collapsible geodesic controls */
+    .geodesic-toggle {
+      display: inline-block;
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 7px solid #7ab8ff;
+      margin-right: 8px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .geodesic-toggle.collapsed {
+      transform: rotate(-90deg);
+    }
+
+    .geodesic-options {
+      margin-left: 20px;
+      margin-top: 5px;
+      max-height: 100px;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+
+    .geodesic-options.collapsed {
+      max-height: 0;
+    }
+
+    /* Node size selector */
+    .node-size-selector {
+      display: flex;
+      gap: 5px;
+      margin-top: 5px;
+    }
+
+    .node-size-btn {
+      flex: 1;
+      padding: 5px;
+      background: #1a1a1a;
+      border: 1px solid #555;
+      color: #b0b0b0;
+      border-radius: 3px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .node-size-btn:hover {
+      border-color: #7ab8ff;
+      color: #e0e0e0;
+    }
+
+    .node-size-btn.active {
+      background: #4a9eff;
+      border-color: #4a9eff;
+      color: white;
+    }
+
     .stats {
       font-size: 11px;
       color: #999;
@@ -217,12 +276,15 @@
         </div>
         <div class="control-item" style="margin-left: 20px;">
           <label class="checkbox-label">
+            <span class="geodesic-toggle collapsed" data-target="geodesic-tetra-options"></span>
             <input type="checkbox" id="showGeodesicTetrahedron">
             Geodesic (Fuller)
           </label>
-          <div class="slider-container" style="margin-top: 5px;">
-            <label style="font-size: 11px;">Freq:</label>
-            <input type="number" id="geodesicTetraFrequency" min="1" max="6" value="2" style="width: 50px; margin-left: 5px;">
+          <div id="geodesic-tetra-options" class="geodesic-options collapsed">
+            <div class="slider-container">
+              <label style="font-size: 11px;">Freq:</label>
+              <input type="number" id="geodesicTetraFrequency" min="1" max="6" value="2" style="width: 50px; margin-left: 5px;">
+            </div>
           </div>
         </div>
         <div class="control-item">
@@ -239,12 +301,15 @@
         </div>
         <div class="control-item" style="margin-left: 20px;">
           <label class="checkbox-label">
+            <span class="geodesic-toggle collapsed" data-target="geodesic-octa-options"></span>
             <input type="checkbox" id="showGeodesicOctahedron">
             Geodesic (Fuller)
           </label>
-          <div class="slider-container" style="margin-top: 5px;">
-            <label style="font-size: 11px;">Freq:</label>
-            <input type="number" id="geodesicOctaFrequency" min="1" max="6" value="2" style="width: 50px; margin-left: 5px;">
+          <div id="geodesic-octa-options" class="geodesic-options collapsed">
+            <div class="slider-container">
+              <label style="font-size: 11px;">Freq:</label>
+              <input type="number" id="geodesicOctaFrequency" min="1" max="6" value="2" style="width: 50px; margin-left: 5px;">
+            </div>
           </div>
         </div>
         <div class="control-item">
@@ -255,12 +320,15 @@
         </div>
         <div class="control-item" style="margin-left: 20px;">
           <label class="checkbox-label">
+            <span class="geodesic-toggle collapsed" data-target="geodesic-icosa-options"></span>
             <input type="checkbox" id="showGeodesicIcosahedron">
             Geodesic (Fuller)
           </label>
-          <div class="slider-container" style="margin-top: 5px;">
-            <label style="font-size: 11px;">Freq:</label>
-            <input type="number" id="geodesicFrequency" min="1" max="6" value="2" style="width: 50px; margin-left: 5px;">
+          <div id="geodesic-icosa-options" class="geodesic-options collapsed">
+            <div class="slider-container">
+              <label style="font-size: 11px;">Freq:</label>
+              <input type="number" id="geodesicFrequency" min="1" max="6" value="2" style="width: 50px; margin-left: 5px;">
+            </div>
           </div>
         </div>
         <div class="control-item">
@@ -299,33 +367,13 @@
       <div class="control-group">
         <h3>Visual Options</h3>
         <div class="control-item">
-          <label class="checkbox-label">
-            <input type="checkbox" id="showNodes" checked>
-            Show Vertex Nodes
-          </label>
-        </div>
-        <div class="control-item">
-          <label>Node Size</label>
-          <div style="display: flex; gap: 8px; margin-top: 4px;">
-            <label class="checkbox-label" style="flex: 1;">
-              <input type="radio" name="nodeSize" value="sm">
-              Sm
-            </label>
-            <label class="checkbox-label" style="flex: 1;">
-              <input type="radio" name="nodeSize" value="md" checked>
-              Md
-            </label>
-            <label class="checkbox-label" style="flex: 1;">
-              <input type="radio" name="nodeSize" value="lg">
-              Lg
-            </label>
+          <label style="font-size: 12px; margin-bottom: 5px; display: block; color: #b0b0b0;">Nodes</label>
+          <div class="node-size-selector">
+            <button class="node-size-btn" data-node-size="off">Off</button>
+            <button class="node-size-btn" data-node-size="sm">Sm</button>
+            <button class="node-size-btn active" data-node-size="md">Md</button>
+            <button class="node-size-btn" data-node-size="lg">Lg</button>
           </div>
-        </div>
-        <div class="control-item">
-          <label class="checkbox-label">
-            <input type="checkbox" id="showFaces" checked>
-            Show Faces (Semi-Transparent)
-          </label>
         </div>
         <div class="control-item">
           <label>Face Opacity</label>
@@ -1480,8 +1528,12 @@
       }
 
       const { vertices, edges, faces } = geometry;
-      const showNodes = document.getElementById('showNodes').checked;
-      const showFaces = document.getElementById('showFaces').checked;
+
+      // Get selected node size from new button selector
+      const nodeSizeBtn = document.querySelector('.node-size-btn.active');
+      const nodeSize = nodeSizeBtn ? nodeSizeBtn.dataset.nodeSize : 'md';
+      const showNodes = nodeSize !== 'off';
+      const showFaces = true; // Always render faces (use opacity slider to hide)
 
       // Render faces first (back to front) using proper BufferGeometry
       if (showFaces) {
@@ -1546,10 +1598,6 @@
 
       // Render vertex nodes using instanced geometry for efficiency
       if (showNodes) {
-        // Get selected node size
-        const nodeSizeRadio = document.querySelector('input[name="nodeSize"]:checked');
-        const nodeSize = nodeSizeRadio ? nodeSizeRadio.value : 'md';
-
         // Node size mapping: sm = 0.02, md = 0.04 (half of original), lg = 0.08 (original)
         const nodeSizes = {
           sm: 0.02,
@@ -1812,15 +1860,6 @@
       updateGeometry();
     });
 
-    // Visual toggles
-    document.getElementById('showNodes').addEventListener('change', updateGeometry);
-    document.getElementById('showFaces').addEventListener('change', updateGeometry);
-
-    // Node size radio buttons
-    document.querySelectorAll('input[name="nodeSize"]').forEach(radio => {
-      radio.addEventListener('change', updateGeometry);
-    });
-
     // Reset camera
     document.getElementById('resetCamera').addEventListener('click', () => {
       camera.position.set(5, 5, 5);
@@ -1832,6 +1871,34 @@
     // ========================================================================
     // INITIALIZE
     // ========================================================================
+
+    // Geodesic toggle functionality
+    document.querySelectorAll('.geodesic-toggle').forEach(toggle => {
+      toggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const targetId = this.dataset.target;
+        const targetOptions = document.getElementById(targetId);
+
+        // Toggle collapsed state
+        this.classList.toggle('collapsed');
+        targetOptions.classList.toggle('collapsed');
+      });
+    });
+
+    // Node size selector functionality
+    document.querySelectorAll('.node-size-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        // Remove active from all buttons
+        document.querySelectorAll('.node-size-btn').forEach(b => b.classList.remove('active'));
+        // Add active to clicked button
+        this.classList.add('active');
+        // Trigger re-render
+        updateGeometry();
+      });
+    });
+
     initScene();
     animate();
 
