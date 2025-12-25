@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="application-name" content="A.R.T. Geometry Explorer">
-  <meta name="description" content="An interactive explorer for Algebraic Rational Trigonometry geometry by Andy Ross Thomson, M.Arch, OAA.">
+  <meta name="description" content="An interactive explorer for Algebraic Rational Trigonometry geometry by Andy Ross Thomson, M.Arch, OAA. with guidance by Metatron">
   <style>
     * {
       margin: 0;
@@ -348,7 +348,7 @@
     // ========================================================================
     const RT = {
       /**
-       * Quadrance (Q = distance²) - Wildberger's replacement for distance
+       * Quadrance (Q = distance²) - Wildberger's alternative to distance
        * Avoids sqrt, keeps calculations exact
        */
       quadrance: (p1, p2) => {
@@ -359,7 +359,7 @@
       },
 
       /**
-       * Spread (s) - Wildberger's replacement for angle
+       * Spread (s) - Wildberger's version of angle
        * s = 1 - (v1·v2)² / (|v1|²|v2|²)
        */
       spread: (v1, v2) => {
@@ -431,7 +431,7 @@
     };
 
     // ========================================================================
-    // QUADRAY COORDINATE SYSTEM (Tom Ace / Kirby Urner)
+    // QUADRAY COORDINATE SYSTEM (originally in C++ by Tom Ace / Kirby Urner)
     // ========================================================================
     const Quadray = {
       /**
