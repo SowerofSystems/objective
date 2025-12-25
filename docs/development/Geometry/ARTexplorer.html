@@ -283,7 +283,7 @@
           <div id="geodesic-tetra-options" class="geodesic-options collapsed">
             <div class="slider-container">
               <label style="font-size: 11px;">Freq:</label>
-              <input type="number" id="geodesicTetraFrequency" min="1" max="6" value="2" style="width: 50px; margin-left: 5px;">
+              <input type="number" id="geodesicTetraFrequency" min="0" max="6" value="0" style="width: 50px; margin-left: 5px;">
             </div>
           </div>
         </div>
@@ -308,7 +308,7 @@
           <div id="geodesic-octa-options" class="geodesic-options collapsed">
             <div class="slider-container">
               <label style="font-size: 11px;">Freq:</label>
-              <input type="number" id="geodesicOctaFrequency" min="1" max="6" value="2" style="width: 50px; margin-left: 5px;">
+              <input type="number" id="geodesicOctaFrequency" min="0" max="6" value="0" style="width: 50px; margin-left: 5px;">
             </div>
           </div>
         </div>
@@ -327,7 +327,7 @@
           <div id="geodesic-icosa-options" class="geodesic-options collapsed">
             <div class="slider-container">
               <label style="font-size: 11px;">Freq:</label>
-              <input type="number" id="geodesicFrequency" min="1" max="6" value="2" style="width: 50px; margin-left: 5px;">
+              <input type="number" id="geodesicFrequency" min="0" max="6" value="0" style="width: 50px; margin-left: 5px;">
             </div>
           </div>
         </div>
@@ -964,8 +964,8 @@
        * @returns {Object} - {vertices, edges, faces} for subdivided polyhedron
        */
       subdivideTriangles: (vertices, faces, frequency) => {
-        if (frequency === 1) {
-          // No subdivision - return original
+        if (frequency === 0) {
+          // Frequency 0 = base polyhedron (no subdivision)
           const edges = [];
           faces.forEach(([a, b, c]) => {
             edges.push([a, b], [b, c], [c, a]);
@@ -973,12 +973,19 @@
           return { vertices, edges, faces };
         }
 
-        const newVertices = [...vertices]; // Start with original vertices
-        const vertexMap = new Map(); // Cache midpoints to avoid duplicates
+        // Class I geodesic subdivision: divide each edge into 2^frequency segments
+        // Each triangular face becomes 4^frequency smaller triangles
+        const divisions = Math.pow(2, frequency); // 2^freq edge segments
 
-        // Helper: Get or create midpoint between two vertices
-        const getMidpoint = (i, j) => {
-          const key = i < j ? `${i},${j}` : `${j},${i}`;
+        const newVertices = [...vertices]; // Start with original vertices
+        const vertexMap = new Map(); // Cache division points to avoid duplicates
+
+        // Helper: Get or create division point along edge
+        // t = parameter from 0 to 1 along edge from vi to vj
+        const getEdgePoint = (i, j, t) => {
+          // Create canonical key (smaller index first, then t value)
+          const [i0, j0, t0] = i < j ? [i, j, t] : [j, i, 1 - t];
+          const key = `${i0},${j0},${t0.toFixed(6)}`;
 
           if (vertexMap.has(key)) {
             return vertexMap.get(key);
@@ -987,45 +994,100 @@
           const v1 = newVertices[i];
           const v2 = newVertices[j];
 
-          // RT-PURE: Calculate midpoint in algebraic space
-          // For icosahedron vertices with golden ratio coords,
-          // midpoint preserves algebraic relationships
-          const mid = new THREE.Vector3(
-            (v1.x + v2.x) / 2,
-            (v1.y + v2.y) / 2,
-            (v1.z + v2.z) / 2
+          // RT-PURE: Linear interpolation in algebraic space
+          // Preserves golden ratio relationships for icosahedron
+          const point = new THREE.Vector3(
+            v1.x + t * (v2.x - v1.x),
+            v1.y + t * (v2.y - v1.y),
+            v1.z + t * (v2.z - v1.z)
           );
 
           const idx = newVertices.length;
-          newVertices.push(mid);
+          newVertices.push(point);
           vertexMap.set(key, idx);
           return idx;
         };
 
         const newFaces = [];
 
-        // Subdivide each triangle recursively
-        const subdivideTriangle = (a, b, c, depth) => {
-          if (depth === 0) {
-            newFaces.push([a, b, c]);
-            return;
+        // Subdivide each triangular face using barycentric grid
+        faces.forEach(([v0, v1, v2]) => {
+          // Create uniform triangular grid on this face
+          // Grid points use barycentric coordinates (u, v, w) where u+v+w=1
+          // u,v,w are multiples of 1/divisions
+
+          // Build grid of vertex indices
+          const grid = [];
+          for (let row = 0; row <= divisions; row++) {
+            grid[row] = [];
+            for (let col = 0; col <= divisions - row; col++) {
+              // Barycentric coordinates
+              const u = row / divisions;      // Weight for v0
+              const v = col / divisions;      // Weight for v1
+              const w = 1 - u - v;            // Weight for v2
+
+              if (row === 0 && col === 0) {
+                // Corner v0
+                grid[row][col] = v0;
+              } else if (row === 0 && col === divisions) {
+                // Corner v1
+                grid[row][col] = v1;
+              } else if (row === divisions && col === 0) {
+                // Corner v2
+                grid[row][col] = v2;
+              } else if (row === 0) {
+                // Edge v0-v1
+                grid[row][col] = getEdgePoint(v0, v1, v);
+              } else if (col === 0) {
+                // Edge v0-v2
+                grid[row][col] = getEdgePoint(v0, v2, u);
+              } else if (row + col === divisions) {
+                // Edge v1-v2
+                grid[row][col] = getEdgePoint(v1, v2, row / divisions);
+              } else {
+                // Interior point - create using barycentric interpolation
+                const key = `${v0},${v1},${v2},${u.toFixed(6)},${v.toFixed(6)}`;
+
+                if (vertexMap.has(key)) {
+                  grid[row][col] = vertexMap.get(key);
+                } else {
+                  const p0 = newVertices[v0];
+                  const p1 = newVertices[v1];
+                  const p2 = newVertices[v2];
+
+                  const point = new THREE.Vector3(
+                    w * p0.x + v * p1.x + u * p2.x,
+                    w * p0.y + v * p1.y + u * p2.y,
+                    w * p0.z + v * p1.z + u * p2.z
+                  );
+
+                  const idx = newVertices.length;
+                  newVertices.push(point);
+                  vertexMap.set(key, idx);
+                  grid[row][col] = idx;
+                }
+              }
+            }
           }
 
-          // Get midpoints of three edges
-          const ab = getMidpoint(a, b);
-          const bc = getMidpoint(b, c);
-          const ca = getMidpoint(c, a);
+          // Create faces from grid
+          for (let row = 0; row < divisions; row++) {
+            for (let col = 0; col < divisions - row; col++) {
+              // Upward-pointing triangle
+              const a = grid[row][col];
+              const b = grid[row][col + 1];
+              const c = grid[row + 1][col];
+              newFaces.push([a, b, c]);
 
-          // Create 4 smaller triangles
-          subdivideTriangle(a, ab, ca, depth - 1);
-          subdivideTriangle(ab, b, bc, depth - 1);
-          subdivideTriangle(ca, bc, c, depth - 1);
-          subdivideTriangle(ab, bc, ca, depth - 1); // Center triangle
-        };
-
-        // Subdivide all original faces
-        faces.forEach(([a, b, c]) => {
-          subdivideTriangle(a, b, c, frequency - 1);
+              // Downward-pointing triangle (if not at edge)
+              if (col < divisions - row - 1) {
+                const d = grid[row][col + 1];
+                const e = grid[row + 1][col + 1];
+                const f = grid[row + 1][col];
+                newFaces.push([d, e, f]);
+              }
+            }
+          }
         });
 
         // Generate edges from faces
@@ -1040,6 +1102,8 @@
         });
 
         const newEdges = Array.from(edgeSet).map(e => e.split(',').map(Number));
+
+        console.log(`[RT] Geodesic subdivision: freq=${frequency}, divisions=${divisions}, faces=${newFaces.length} (expected: ${faces.length * divisions * divisions})`);
 
         return { vertices: newVertices, edges: newEdges, faces: newFaces };
       },
@@ -1058,6 +1122,12 @@
 
         console.log(`[RT] Geodesic Icosahedron: frequency=${frequency}`);
         console.log(`  Base vertices: ${base.vertices.length}, faces: ${base.faces.length}`);
+
+        // Frequency 0 = return base icosahedron (no subdivision, no sphere projection)
+        if (frequency === 0) {
+          console.log(`  Frequency 0: Returning base icosahedron (20 faces)`);
+          return base;
+        }
 
         // 2. Subdivide in algebraic space (preserves golden ratio relationships)
         const subdivided = Polyhedra.subdivideTriangles(base.vertices, base.faces, frequency);
@@ -1101,6 +1171,12 @@
         console.log(`[RT] Geodesic Tetrahedron: frequency=${frequency}`);
         console.log(`  Base vertices: ${base.vertices.length}, faces: ${base.faces.length}`);
 
+        // Frequency 0 = return base tetrahedron (no subdivision, no sphere projection)
+        if (frequency === 0) {
+          console.log(`  Frequency 0: Returning base tetrahedron (4 faces)`);
+          return base;
+        }
+
         // 2. Subdivide in algebraic space
         const subdivided = Polyhedra.subdivideTriangles(base.vertices, base.faces, frequency);
 
@@ -1140,6 +1216,12 @@
 
         console.log(`[RT] Geodesic Octahedron: frequency=${frequency}`);
         console.log(`  Base vertices: ${base.vertices.length}, faces: ${base.faces.length}`);
+
+        // Frequency 0 = return base octahedron (no subdivision, no sphere projection)
+        if (frequency === 0) {
+          console.log(`  Frequency 0: Returning base octahedron (8 faces)`);
+          return base;
+        }
 
         // 2. Subdivide in algebraic space
         const subdivided = Polyhedra.subdivideTriangles(base.vertices, base.faces, frequency);
@@ -1649,8 +1731,8 @@
 
       // Geodesic Tetrahedron (Phase 2.7c - Cyan/Turquoise, complementary to Red)
       if (document.getElementById('showGeodesicTetrahedron').checked) {
-        const frequency = parseInt(document.getElementById('geodesicTetraFrequency').value) || 2;
-        const geodesicTetra = Polyhedra.geodesicTetrahedron(scale, frequency);
+        const frequency = parseInt(document.getElementById('geodesicTetraFrequency').value);
+        const geodesicTetra = Polyhedra.geodesicTetrahedron(scale, isNaN(frequency) ? 1 : frequency);
         renderPolyhedron(geodesicTetrahedronGroup, geodesicTetra, 0x00cccc, opacity); // Cyan/turquoise
         geodesicTetrahedronGroup.visible = true;
       } else {
@@ -1677,8 +1759,8 @@
 
       // Geodesic Octahedron (Phase 2.7b - Magenta/Pink, complementary to Green)
       if (document.getElementById('showGeodesicOctahedron').checked) {
-        const frequency = parseInt(document.getElementById('geodesicOctaFrequency').value) || 2;
-        const geodesicOcta = Polyhedra.geodesicOctahedron(scale, frequency);
+        const frequency = parseInt(document.getElementById('geodesicOctaFrequency').value);
+        const geodesicOcta = Polyhedra.geodesicOctahedron(scale, isNaN(frequency) ? 1 : frequency);
         renderPolyhedron(geodesicOctahedronGroup, geodesicOcta, 0xff00cc, opacity); // Magenta/pink
         geodesicOctahedronGroup.visible = true;
       } else {
@@ -1705,8 +1787,8 @@
 
       // Geodesic Icosahedron (Phase 2.7a - Orange-Red, complementary to Cyan)
       if (document.getElementById('showGeodesicIcosahedron').checked) {
-        const frequency = parseInt(document.getElementById('geodesicFrequency').value) || 2;
-        const geodesicIcosa = Polyhedra.geodesicIcosahedron(scale, frequency);
+        const frequency = parseInt(document.getElementById('geodesicFrequency').value);
+        const geodesicIcosa = Polyhedra.geodesicIcosahedron(scale, isNaN(frequency) ? 1 : frequency);
         renderPolyhedron(geodesicIcosahedronGroup, geodesicIcosa, 0xff4400, opacity); // Vibrant orange-red
         geodesicIcosahedronGroup.visible = true;
       } else {
