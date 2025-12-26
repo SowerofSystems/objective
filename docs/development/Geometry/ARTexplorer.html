@@ -283,7 +283,22 @@
           <div id="geodesic-tetra-options" class="geodesic-options collapsed">
             <div class="slider-container">
               <label style="font-size: 11px;">Freq:</label>
-              <input type="number" id="geodesicTetraFrequency" min="0" max="6" value="0" style="width: 50px; margin-left: 5px;">
+              <input type="number" id="geodesicTetraFrequency" min="0" max="6" value="1" style="width: 50px; margin-left: 5px;">
+            </div>
+            <div style="margin-top: 8px;">
+              <label style="font-size: 11px; display: block; margin-bottom: 3px; color: #b0b0b0;">Project:</label>
+              <label style="font-size: 10px; display: block; margin-left: 5px;">
+                <input type="radio" name="geodesicTetraProjection" value="off"> Off (flat)
+              </label>
+              <label style="font-size: 10px; display: block; margin-left: 5px;">
+                <input type="radio" name="geodesicTetraProjection" value="in"> InSphere
+              </label>
+              <label style="font-size: 10px; display: block; margin-left: 5px;">
+                <input type="radio" name="geodesicTetraProjection" value="mid"> MidSphere
+              </label>
+              <label style="font-size: 10px; display: block; margin-left: 5px;">
+                <input type="radio" name="geodesicTetraProjection" value="out" checked> OutSphere
+              </label>
             </div>
           </div>
         </div>
@@ -1164,11 +1179,12 @@
        * @param {number} frequency - Subdivision frequency (1-6)
        * @returns {Object} - {vertices, edges, faces}
        */
-      geodesicTetrahedron: (halfSize = 1, frequency = 2) => {
+      geodesicTetrahedron: (halfSize = 1, frequency = 2, projection = 'out') => {
+        // Phase 2.9: RT-Pure Geodesic with InSphere/MidSphere/OutSphere options
         // 1. Start with pure algebraic tetrahedron
         const base = Polyhedra.tetrahedron(halfSize);
 
-        console.log(`[RT] Geodesic Tetrahedron: frequency=${frequency}`);
+        console.log(`[RT] Geodesic Tetrahedron: frequency=${frequency}, projection=${projection}`);
         console.log(`  Base vertices: ${base.vertices.length}, faces: ${base.faces.length}`);
 
         // Frequency 0 = return base tetrahedron (no subdivision, no sphere projection)
@@ -1182,23 +1198,46 @@
 
         console.log(`  Subdivided vertices: ${subdivided.vertices.length}, faces: ${subdivided.faces.length}`);
 
-        // 3. Project to sphere - late normalization
-        const projected = subdivided.vertices.map(v => {
+        // 3. Projection options (Phase 2.9)
+        let finalVertices;
+        let Q_target;
+
+        if (projection === 'off') {
+          // No projection - return flat subdivided mesh
+          console.log(`  Projection: OFF (flat subdivided faces)`);
+          return { vertices: subdivided.vertices, edges: subdivided.edges, faces: subdivided.faces };
+        } else if (projection === 'in') {
+          // InSphere: tangent to face centers, Q = s²/3
+          Q_target = (halfSize * halfSize) / 3;
+          console.log(`  Projection: InSphere (Q = s²/3 = ${Q_target.toFixed(6)})`);
+        } else if (projection === 'mid') {
+          // MidSphere: tangent to edge centers, Q = s²
+          Q_target = halfSize * halfSize;
+          console.log(`  Projection: MidSphere (Q = s² = ${Q_target.toFixed(6)})`);
+        } else if (projection === 'out') {
+          // OutSphere: through vertices, Q = 3s² (Fuller's geodesic)
+          Q_target = 3 * halfSize * halfSize;
+          console.log(`  Projection: OutSphere (Q = 3s² = ${Q_target.toFixed(6)}) - Fuller geodesic`);
+        }
+
+        // Project to target sphere
+        const r_target = Math.sqrt(Q_target);
+        finalVertices = subdivided.vertices.map(v => {
           const normalized = v.clone().normalize();
-          return normalized.multiplyScalar(halfSize);
+          return normalized.multiplyScalar(r_target);
         });
 
         // 4. Validate edge quadrance uniformity
-        const sampleQ = RT.quadrance(projected[subdivided.edges[0][0]], projected[subdivided.edges[0][1]]);
-        const validation = RT.validateEdges(projected, subdivided.edges, sampleQ);
+        const sampleQ = RT.quadrance(finalVertices[subdivided.edges[0][0]], finalVertices[subdivided.edges[0][1]]);
+        const validation = RT.validateEdges(finalVertices, subdivided.edges, sampleQ);
         const maxError = Math.max(...validation.map(v => v.error));
         const avgQ = validation.reduce((sum, v) => sum + v.Q, 0) / validation.length;
 
-        console.log(`  Projected to sphere: radius=${halfSize.toFixed(3)}`);
+        console.log(`  Target radius: r = √Q = ${r_target.toFixed(6)}`);
         console.log(`  Edge quadrance: avg=${avgQ.toFixed(6)}, max error=${maxError.toExponential(2)}`);
-        console.log(`  RT PURITY: Normalization deferred until final step ✓`);
+        console.log(`  RT PURITY: Quadrance calculated algebraically, √ only at final projection ✓`);
 
-        return { vertices: projected, edges: subdivided.edges, faces: subdivided.faces };
+        return { vertices: finalVertices, edges: subdivided.edges, faces: subdivided.faces };
       },
 
       /**
@@ -1730,9 +1769,13 @@
       }
 
       // Geodesic Tetrahedron (Phase 2.7c - Cyan/Turquoise, complementary to Red)
+      // Geodesic Tetrahedron (Phase 2.9 - with projection options)
       if (document.getElementById('showGeodesicTetrahedron').checked) {
         const frequency = parseInt(document.getElementById('geodesicTetraFrequency').value);
-        const geodesicTetra = Polyhedra.geodesicTetrahedron(scale, isNaN(frequency) ? 1 : frequency);
+        const projectionRadio = document.querySelector('input[name="geodesicTetraProjection"]:checked');
+        const projection = projectionRadio ? projectionRadio.value : 'out';
+
+        const geodesicTetra = Polyhedra.geodesicTetrahedron(scale, isNaN(frequency) ? 1 : frequency, projection);
         renderPolyhedron(geodesicTetrahedronGroup, geodesicTetra, 0x00cccc, opacity); // Cyan/turquoise
         geodesicTetrahedronGroup.visible = true;
       } else {
@@ -1927,6 +1970,10 @@
     document.getElementById('geodesicFrequency').addEventListener('input', updateGeometry);
     document.getElementById('showGeodesicTetrahedron').addEventListener('change', updateGeometry);
     document.getElementById('geodesicTetraFrequency').addEventListener('input', updateGeometry);
+    // Phase 2.9: Projection radio buttons
+    document.querySelectorAll('input[name="geodesicTetraProjection"]').forEach(radio => {
+      radio.addEventListener('change', updateGeometry);
+    });
     document.getElementById('showGeodesicOctahedron').addEventListener('change', updateGeometry);
     document.getElementById('geodesicOctaFrequency').addEventListener('input', updateGeometry);
 
