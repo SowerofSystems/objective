@@ -1185,6 +1185,318 @@ Construct rotation matrices using deferred sqrt expansion (RT-acceptable):
 
 ---
 
+## TODO: Quadray Coordinate Plane Visualization (WXYZ Planes)
+
+**Status:** 📋 Planned (Documented 2025-12-26)
+**Priority:** HIGH - Foundation for Phase 2.8 (Quadray Polygonal Frequency Projections)
+**Related to:** Phase 2.7 Geodesic subdivision, Phase 3 4D coordinate systems
+
+### Objective
+
+Implement Quadray (WXYZ) coordinate plane visualization analogous to the existing Cartesian (XYZ) plane toggles, enabling users to visualize the tetrahedral basis of the 4D coordinate system.
+
+### Background: Quadray Coordinate System
+
+**Quadray Basis Vectors:**
+Four vectors from origin to vertices of a regular tetrahedron:
+```javascript
+// Normalized to unit length
+W: ( 1,  1,  1) / √3   // Basis vector 0
+X: ( 1, -1, -1) / √3   // Basis vector 1
+Y: (-1,  1, -1) / √3   // Basis vector 2
+Z: (-1, -1,  1) / √3   // Basis vector 3
+
+// Zero-sum property: W + X + Y + Z = (0, 0, 0)
+// Any point P = (w,x,y,z) where w + x + y + z = 0 (zero-sum normalization)
+```
+
+**Tetrahedral Planes:**
+Six planes defined by pairs of basis vectors (analogous to XY, XZ, YZ in Cartesian):
+- **WX plane** (Z=0, Y=0 in Quadray space)
+- **WY plane** (Z=0, X=0 in Quadray space)
+- **WZ plane** (Y=0, X=0 in Quadray space)
+- **XY plane** (Z=0, W=0 in Quadray space)
+- **XZ plane** (Y=0, W=0 in Quadray space)
+- **YZ plane** (X=0, W=0 in Quadray space)
+
+### Conceptual Design
+
+**Analogous to Cartesian Planes:**
+
+Current implementation (XYZ Cartesian):
+```
+☑ Grid Planes
+  ☑ XY Plane (horizontal - Z=0)
+  ☐ XZ Plane (vertical wall - Y=0)
+  ☐ YZ Plane (vertical wall - X=0)
+```
+
+**Proposed addition (WXYZ Quadray):**
+```
+☑ Quadray Planes (Tetrahedral Basis)
+  ☐ WX Plane (triangular grid)
+  ☐ WY Plane (triangular grid)
+  ☐ WZ Plane (triangular grid)
+  ☐ XY Plane (triangular grid)
+  ☐ XZ Plane (triangular grid)
+  ☐ YZ Plane (triangular grid)
+```
+
+### Key Differences from Cartesian Grids
+
+**1. Origin Representation:**
+- **Cartesian XYZ**: Origin at (0,0,0) - clearly visible intersection point
+- **Quadray WXYZ**: Origin is **infinitesimally small tetrahedron** - DO NOT ATTEMPT TO DRAW
+- The "origin" in Quadray space is the tetrahedral center where all 4 basis vectors meet
+- Mathematically: (0,0,0,0) in Quadray = (0,0,0) in Cartesian
+
+**2. Grid Structure:**
+- **Cartesian**: Rectangular grids (perpendicular X/Y lines, X/Z lines, Y/Z lines)
+- **Quadray**: **Triangular grids** on each plane (basis vectors at 60° angles)
+- Each Quadray plane is a 2D triangular lattice formed by two basis vectors
+
+**3. Extent:**
+- **Cartesian**: Grids extend symmetrically from origin (-N to +N)
+- **Quadray**: Grids extend from **infinitesimal inner tetrahedron** to **larger outer extent tetrahedron**
+- Inner extent: Near zero (don't visualize the infinitesimal origin)
+- Outer extent: Configurable radius (e.g., same as current grid size)
+
+### RT-Pure Implementation Strategy
+
+**Step 1: Define Quadray Basis in Cartesian Coordinates**
+
+```javascript
+const RT_Quadray = {
+  // Basis vectors (normalized to unit length)
+  basis: [
+    new THREE.Vector3( 1,  1,  1).normalize(),  // W
+    new THREE.Vector3( 1, -1, -1).normalize(),  // X
+    new THREE.Vector3(-1,  1, -1).normalize(),  // Y
+    new THREE.Vector3(-1, -1,  1).normalize()   // Z
+  ],
+
+  // Verify zero-sum property
+  verifyZeroSum: function() {
+    const sum = this.basis.reduce((acc, v) =>
+      acc.add(v.clone()), new THREE.Vector3(0,0,0));
+    return sum.length() < 1e-10;  // Should be ~0
+  }
+};
+```
+
+**Step 2: Generate Triangular Grid on Quadray Plane**
+
+```javascript
+/**
+ * Create triangular grid for a Quadray plane defined by two basis vectors
+ * @param {THREE.Vector3} basis1 - First basis vector (e.g., W)
+ * @param {THREE.Vector3} basis2 - Second basis vector (e.g., X)
+ * @param {number} minExtent - Inner radius (near-zero, e.g., 0.1)
+ * @param {number} maxExtent - Outer radius (e.g., 10)
+ * @param {number} divisions - Grid subdivisions (e.g., 10)
+ * @param {number} color - Grid line color
+ * @returns {THREE.LineSegments} Triangular grid geometry
+ */
+function createQuadrayPlaneGrid(basis1, basis2, minExtent, maxExtent, divisions, color) {
+  const geometry = new THREE.BufferGeometry();
+  const vertices = [];
+
+  // Generate triangular lattice between minExtent and maxExtent
+  // Lines parallel to basis1 direction
+  for (let i = 0; i <= divisions; i++) {
+    const t = minExtent + (i / divisions) * (maxExtent - minExtent);
+
+    // Line along basis2 direction at distance t along basis1
+    const start = basis1.clone().multiplyScalar(minExtent).add(
+                  basis2.clone().multiplyScalar(t));
+    const end = basis1.clone().multiplyScalar(maxExtent).add(
+                basis2.clone().multiplyScalar(t));
+
+    vertices.push(start.x, start.y, start.z);
+    vertices.push(end.x, end.y, end.z);
+  }
+
+  // Lines parallel to basis2 direction
+  for (let i = 0; i <= divisions; i++) {
+    const t = minExtent + (i / divisions) * (maxExtent - minExtent);
+
+    // Line along basis1 direction at distance t along basis2
+    const start = basis2.clone().multiplyScalar(minExtent).add(
+                  basis1.clone().multiplyScalar(t));
+    const end = basis2.clone().multiplyScalar(maxExtent).add(
+                basis1.clone().multiplyScalar(t));
+
+    vertices.push(start.x, start.y, start.z);
+    vertices.push(end.x, end.y, end.z);
+  }
+
+  // Diagonal lines (60° triangular lattice characteristic)
+  // Lines parallel to (basis1 - basis2) direction
+  for (let i = 0; i <= divisions; i++) {
+    const t = minExtent + (i / divisions) * (maxExtent - minExtent);
+    const direction = basis1.clone().sub(basis2).normalize();
+
+    // Implementation detail: compute intersection with plane boundaries
+    // This creates the characteristic triangular grid pattern
+    // ... (geometric calculation for diagonal grid lines)
+  }
+
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  return new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({
+    color,
+    transparent: true,
+    opacity: 0.3  // Subtle visualization
+  }));
+}
+```
+
+**Step 3: Create All 6 Quadray Planes**
+
+```javascript
+// In scene initialization
+const quadrayGrids = {
+  WX: createQuadrayPlaneGrid(RT_Quadray.basis[0], RT_Quadray.basis[1], 0.1, 10, 10, 0xff00ff),
+  WY: createQuadrayPlaneGrid(RT_Quadray.basis[0], RT_Quadray.basis[2], 0.1, 10, 10, 0x00ffff),
+  WZ: createQuadrayPlaneGrid(RT_Quadray.basis[0], RT_Quadray.basis[3], 0.1, 10, 10, 0xffff00),
+  XY: createQuadrayPlaneGrid(RT_Quadray.basis[1], RT_Quadray.basis[2], 0.1, 10, 10, 0xff0000),
+  XZ: createQuadrayPlaneGrid(RT_Quadray.basis[1], RT_Quadray.basis[3], 0.1, 10, 10, 0x00ff00),
+  YZ: createQuadrayPlaneGrid(RT_Quadray.basis[2], RT_Quadray.basis[3], 0.1, 10, 10, 0x0000ff)
+};
+
+// Add to scene (initially hidden)
+Object.values(quadrayGrids).forEach(grid => {
+  grid.visible = false;
+  scene.add(grid);
+});
+```
+
+### UI Integration
+
+**Add Quadray Plane Toggles:**
+
+```html
+<!-- In controls panel -->
+<div class="control-group">
+  <label class="section-header">
+    <input type="checkbox" id="quadrayPlanesToggle">
+    Quadray Planes (WXYZ)
+  </label>
+  <div id="quadrayPlaneControls" style="margin-left: 20px;">
+    <label><input type="checkbox" id="planeWX"> WX Plane</label><br>
+    <label><input type="checkbox" id="planeWY"> WY Plane</label><br>
+    <label><input type="checkbox" id="planeWZ"> WZ Plane</label><br>
+    <label><input type="checkbox" id="planeXY_quadray"> XY Plane (Quadray)</label><br>
+    <label><input type="checkbox" id="planeXZ_quadray"> XZ Plane (Quadray)</label><br>
+    <label><input type="checkbox" id="planeYZ_quadray"> YZ Plane (Quadray)</label><br>
+  </div>
+</div>
+```
+
+### Connection to Phase 2.8: Polygonal Great Spheres
+
+**Quadray Planes as Geodesic Projection Surfaces:**
+
+The six Quadray planes become the **projection surfaces** for Phase 2.8 geodesic subdivision:
+
+1. **Traditional approach**: Project subdivided faces onto sphere (causes distortion on tet/octa)
+2. **Quadray approach**: Project subdivided vertices onto **coplanar Quadray planes** first
+3. **Result**: Uniform triangulation using tetrahedral symmetry instead of spherical geometry
+
+**Mathematical Foundation:**
+- Each Quadray plane pair (e.g., WX) defines a **great circle** analog in tetrahedral space
+- Subdividing along these planes creates **polygonal frequency patterns** (triangles, hexagons, dodecagons)
+- Frequencies: 3 (triangle), 6 (hexagon), 12 (dodecagon), etc.
+- These polygonal grids naturally distribute vertices uniformly
+
+**Novel Discovery (Phase 2.7):**
+Using Quadray plane projections instead of spherical normalization may eliminate the non-uniform triangle distortion observed in tetrahedron/octahedron geodesics.
+
+### RT Purity Considerations
+
+**✅ RT-Pure Elements:**
+- Basis vectors: Exact algebraic coordinates (±1/√3 combinations)
+- Zero-sum normalization: Pure algebraic constraint (w+x+y+z=0)
+- Triangular lattice: Integer coordinate relationships
+- No angles calculated (only vector directions)
+
+**⚠️ Considerations:**
+- Grid line construction uses vector arithmetic (RT-acceptable)
+- Basis vector normalization requires √3 (deferred expansion - acceptable)
+- Plane intersections computed algebraically (RT-pure)
+
+### Visual Design
+
+**Appearance:**
+- **Subtle transparency** (opacity ~0.3) - don't overpower polyhedra
+- **Distinct colors** per plane (6 colors for 6 planes)
+- **Triangular lattice** pattern clearly visible
+- **Infinitesimal inner extent** (start at r ≈ 0.1, not 0) - avoid origin singularity
+- **Outer extent** matches current grid size (configurable)
+
+**Interaction:**
+- Toggle individual planes on/off
+- Master toggle for all Quadray planes
+- Coordinate with Cartesian grid toggles (can show both simultaneously for comparison)
+- Option to show Quadray basis vectors as colored arrows from origin
+
+### Educational Value
+
+**Demonstrates:**
+1. **Tetrahedral symmetry** vs Cartesian orthogonal symmetry
+2. **4D coordinate basis** projected into 3D space
+3. **Zero-sum constraint** visualization (basis vectors sum to zero)
+4. **Alternative coordinate systems** for same 3D space
+5. **Foundation for Phase 2.8** geodesic subdivision approach
+
+**User Learning:**
+- Compare Cartesian vs Quadray plane orientations
+- Understand how 4 basis vectors define 3D space
+- Visualize tetrahedral coordinate structure
+- Prepare conceptually for 4D space (Phase 3)
+
+### Implementation Checklist
+
+**Phase 1: Basic Visualization**
+- [ ] Define RT_Quadray basis vectors in Cartesian coordinates
+- [ ] Implement `createQuadrayPlaneGrid()` with triangular lattice
+- [ ] Create all 6 Quadray planes (WX, WY, WZ, XY, XZ, YZ)
+- [ ] Add UI toggles for individual planes
+- [ ] Verify zero-sum property in console logging
+
+**Phase 2: Refinement**
+- [ ] Optimize triangular lattice generation (diagonal lines)
+- [ ] Add color-coding per plane with transparency
+- [ ] Implement infinitesimal inner extent (avoid origin)
+- [ ] Add Quadray basis vector arrows (optional visualization)
+- [ ] Document Quadray coordinate conventions in comments
+
+**Phase 3: Integration with Phase 2.8**
+- [ ] Use Quadray planes as projection surfaces for geodesic subdivision
+- [ ] Implement polygonal frequency patterns (3, 6, 12 frequency grids)
+- [ ] Create geodesic vertices at plane/frequency intersections
+- [ ] Compare results with traditional spherical projection
+
+### Success Criteria
+
+**Quadray Plane Visualization Complete When:**
+- [ ] All 6 Quadray planes render correctly as triangular grids
+- [ ] Individual plane toggles work in UI
+- [ ] Planes start at infinitesimal inner extent (not visible origin singularity)
+- [ ] Planes extend to configurable outer tetrahedral boundary
+- [ ] Visual style is subtle and doesn't overpower polyhedra
+- [ ] Zero-sum property verified (W+X+Y+Z = 0 within tolerance)
+- [ ] Documentation explains Quadray coordinate system clearly
+- [ ] Foundation established for Phase 2.8 geodesic projections
+
+### Related Documentation
+
+- **Tom Ace Quadray C++ Reference**: Lines 1224-1446 (rotation, cross product, distance formulas)
+- **Phase 2.7**: Geodesic subdivision with current spherical projection
+- **Phase 2.8**: Quadray polygonal frequency projections (novel approach)
+- **Phase 3**: Full 4D coordinate system implementation
+
+---
+
 ## References
 
 - **Wildberger's Rational Trigonometry:** [YouTube Series](https://www.youtube.com/playlist?list=PLs9SaLpcM3VTeXk9q_PL4_1c1lWKVeKpz)
