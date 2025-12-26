@@ -325,6 +325,21 @@
               <label style="font-size: 11px;">Freq:</label>
               <input type="number" id="geodesicOctaFrequency" min="0" max="6" value="0" style="width: 50px; margin-left: 5px;">
             </div>
+            <div style="margin-top: 8px;">
+              <label style="font-size: 11px;">Project:</label>
+              <label style="font-size: 10px;">
+                <input type="radio" name="geodesicOctaProjection" value="off"> Off (flat)
+              </label>
+              <label style="font-size: 10px;">
+                <input type="radio" name="geodesicOctaProjection" value="in"> InSphere
+              </label>
+              <label style="font-size: 10px;">
+                <input type="radio" name="geodesicOctaProjection" value="mid"> MidSphere
+              </label>
+              <label style="font-size: 10px;">
+                <input type="radio" name="geodesicOctaProjection" value="out" checked> OutSphere
+              </label>
+            </div>
           </div>
         </div>
         <div class="control-item">
@@ -343,6 +358,21 @@
             <div class="slider-container">
               <label style="font-size: 11px;">Freq:</label>
               <input type="number" id="geodesicFrequency" min="0" max="6" value="0" style="width: 50px; margin-left: 5px;">
+            </div>
+            <div style="margin-top: 8px;">
+              <label style="font-size: 11px;">Project:</label>
+              <label style="font-size: 10px;">
+                <input type="radio" name="geodesicIcosaProjection" value="off"> Off (flat)
+              </label>
+              <label style="font-size: 10px;">
+                <input type="radio" name="geodesicIcosaProjection" value="in"> InSphere
+              </label>
+              <label style="font-size: 10px;">
+                <input type="radio" name="geodesicIcosaProjection" value="mid"> MidSphere
+              </label>
+              <label style="font-size: 10px;">
+                <input type="radio" name="geodesicIcosaProjection" value="out" checked> OutSphere
+              </label>
             </div>
           </div>
         </div>
@@ -1131,11 +1161,13 @@
        * @param {number} frequency - Subdivision frequency (1-6)
        * @returns {Object} - {vertices, edges, faces}
        */
-      geodesicIcosahedron: (halfSize = 1, frequency = 2) => {
+      geodesicIcosahedron: (halfSize = 1, frequency = 2, projection = 'out') => {
+        // Phase 2.9: RT-Pure Geodesic with InSphere/MidSphere/OutSphere options
+
         // 1. Start with pure algebraic icosahedron
         const base = Polyhedra.icosahedron(halfSize);
 
-        console.log(`[RT] Geodesic Icosahedron: frequency=${frequency}`);
+        console.log(`[RT] Geodesic Icosahedron: frequency=${frequency}, projection=${projection}`);
         console.log(`  Base vertices: ${base.vertices.length}, faces: ${base.faces.length}`);
 
         // Frequency 0 = return base icosahedron (no subdivision, no sphere projection)
@@ -1149,21 +1181,48 @@
 
         console.log(`  Subdivided vertices: ${subdivided.vertices.length}, faces: ${subdivided.faces.length}`);
 
+        // Phase 2.9: Projection options (Off, InSphere, MidSphere, OutSphere)
+        let Q_target;
+
+        if (projection === 'off') {
+          // No sphere projection - return flat subdivided mesh
+          console.log(`  Projection: OFF (flat subdivided mesh)`);
+          return { vertices: subdivided.vertices, edges: subdivided.edges, faces: subdivided.faces };
+        } else if (projection === 'in') {
+          // InSphere: Tangent to face centers
+          // For icosahedron: r_in = r_out * cos(arctan(2)) ≈ r_out * 0.7558
+          // Q_in = Q_out * cos²(arctan(2)) ≈ Q_out * 0.5714
+          const phi = 0.5 * (1 + Math.sqrt(5));
+          const cos_arctan_2_sq = 1 / (1 + 4); // cos²(arctan(2)) = 1/(1+2²) = 1/5
+          Q_target = (halfSize * halfSize) * (phi * phi / (3 * Math.sqrt(3)));
+          console.log(`  Projection: InSphere (tangent to face centers)`);
+        } else if (projection === 'mid') {
+          // MidSphere: Tangent to edge centers
+          // For icosahedron: r_mid = r_out * cos(31.72°) ≈ r_out * 0.8507
+          const phi = 0.5 * (1 + Math.sqrt(5));
+          Q_target = (halfSize * halfSize) * (phi / Math.sqrt(3));
+          console.log(`  Projection: MidSphere (tangent to edge centers)`);
+        } else if (projection === 'out') {
+          // OutSphere: Through vertices (Fuller's true geodesic)
+          Q_target = halfSize * halfSize;
+          console.log(`  Projection: OutSphere (through vertices - Fuller geodesic)`);
+        }
+
+        const r_target = Math.sqrt(Q_target);
+        console.log(`  Target quadrance: Q = ${Q_target.toFixed(6)}, r = ${r_target.toFixed(6)}`);
+
         // 3. Project to sphere - ONLY NOW do we normalize
-        // This is the ONLY place we call normalize() - late as possible!
         const projected = subdivided.vertices.map(v => {
           const normalized = v.clone().normalize();
-          return normalized.multiplyScalar(halfSize);
+          return normalized.multiplyScalar(r_target);
         });
 
         // 4. Validate edge quadrance uniformity
-        // After projection to sphere, all edges should have similar quadrance
         const sampleQ = RT.quadrance(projected[subdivided.edges[0][0]], projected[subdivided.edges[0][1]]);
         const validation = RT.validateEdges(projected, subdivided.edges, sampleQ);
         const maxError = Math.max(...validation.map(v => v.error));
         const avgQ = validation.reduce((sum, v) => sum + v.Q, 0) / validation.length;
 
-        console.log(`  Projected to sphere: radius=${halfSize.toFixed(3)}`);
         console.log(`  Edge quadrance: avg=${avgQ.toFixed(6)}, max error=${maxError.toExponential(2)}`);
         console.log(`  RT PURITY: Normalization deferred until final step ✓`);
 
@@ -1249,11 +1308,12 @@
        * @param {number} frequency - Subdivision frequency (1-6)
        * @returns {Object} - {vertices, edges, faces}
        */
-      geodesicOctahedron: (halfSize = 1, frequency = 2) => {
+      geodesicOctahedron: (halfSize = 1, frequency = 2, projection = 'out') => {
+        // Phase 2.9: RT-Pure Geodesic with InSphere/MidSphere/OutSphere options
         // 1. Start with pure algebraic octahedron
         const base = Polyhedra.octahedron(halfSize);
 
-        console.log(`[RT] Geodesic Octahedron: frequency=${frequency}`);
+        console.log(`[RT] Geodesic Octahedron: frequency=${frequency}, projection=${projection}`);
         console.log(`  Base vertices: ${base.vertices.length}, faces: ${base.faces.length}`);
 
         // Frequency 0 = return base octahedron (no subdivision, no sphere projection)
@@ -1267,23 +1327,45 @@
 
         console.log(`  Subdivided vertices: ${subdivided.vertices.length}, faces: ${subdivided.faces.length}`);
 
-        // 3. Project to sphere - late normalization
-        const projected = subdivided.vertices.map(v => {
+        // 3. Projection options (Phase 2.9)
+        let finalVertices;
+        let Q_target;
+
+        if (projection === 'off') {
+          console.log(`  Projection: OFF (flat subdivided faces)`);
+          return { vertices: subdivided.vertices, edges: subdivided.edges, faces: subdivided.faces };
+        } else if (projection === 'in') {
+          // InSphere: tangent to face centers, Q = s²/3
+          Q_target = (halfSize * halfSize) / 3;
+          console.log(`  Projection: InSphere (Q = s²/3 = ${Q_target.toFixed(6)})`);
+        } else if (projection === 'mid') {
+          // MidSphere: tangent to edge centers, Q = s²/2
+          Q_target = (halfSize * halfSize) / 2;
+          console.log(`  Projection: MidSphere (Q = s²/2 = ${Q_target.toFixed(6)})`);
+        } else if (projection === 'out') {
+          // OutSphere: through vertices, Q = s² (Fuller's geodesic)
+          Q_target = halfSize * halfSize;
+          console.log(`  Projection: OutSphere (Q = s² = ${Q_target.toFixed(6)}) - Fuller geodesic`);
+        }
+
+        // Project to target sphere
+        const r_target = Math.sqrt(Q_target);
+        finalVertices = subdivided.vertices.map(v => {
           const normalized = v.clone().normalize();
-          return normalized.multiplyScalar(halfSize);
+          return normalized.multiplyScalar(r_target);
         });
 
         // 4. Validate edge quadrance uniformity
-        const sampleQ = RT.quadrance(projected[subdivided.edges[0][0]], projected[subdivided.edges[0][1]]);
-        const validation = RT.validateEdges(projected, subdivided.edges, sampleQ);
+        const sampleQ = RT.quadrance(finalVertices[subdivided.edges[0][0]], finalVertices[subdivided.edges[0][1]]);
+        const validation = RT.validateEdges(finalVertices, subdivided.edges, sampleQ);
         const maxError = Math.max(...validation.map(v => v.error));
         const avgQ = validation.reduce((sum, v) => sum + v.Q, 0) / validation.length;
 
-        console.log(`  Projected to sphere: radius=${halfSize.toFixed(3)}`);
+        console.log(`  Target radius: r = √Q = ${r_target.toFixed(6)}`);
         console.log(`  Edge quadrance: avg=${avgQ.toFixed(6)}, max error=${maxError.toExponential(2)}`);
-        console.log(`  RT PURITY: Normalization deferred until final step ✓`);
+        console.log(`  RT PURITY: Quadrance calculated algebraically, √ only at final projection ✓`);
 
-        return { vertices: projected, edges: subdivided.edges, faces: subdivided.faces };
+        return { vertices: finalVertices, edges: subdivided.edges, faces: subdivided.faces };
       },
 
       /**
@@ -1803,7 +1885,9 @@
       // Geodesic Octahedron (Phase 2.7b - Magenta/Pink, complementary to Green)
       if (document.getElementById('showGeodesicOctahedron').checked) {
         const frequency = parseInt(document.getElementById('geodesicOctaFrequency').value);
-        const geodesicOcta = Polyhedra.geodesicOctahedron(scale, isNaN(frequency) ? 1 : frequency);
+        const projectionRadio = document.querySelector('input[name="geodesicOctaProjection"]:checked');
+        const projection = projectionRadio ? projectionRadio.value : 'out';
+        const geodesicOcta = Polyhedra.geodesicOctahedron(scale, isNaN(frequency) ? 1 : frequency, projection);
         renderPolyhedron(geodesicOctahedronGroup, geodesicOcta, 0xff00cc, opacity); // Magenta/pink
         geodesicOctahedronGroup.visible = true;
       } else {
@@ -1831,7 +1915,9 @@
       // Geodesic Icosahedron (Phase 2.7a - Orange-Red, complementary to Cyan)
       if (document.getElementById('showGeodesicIcosahedron').checked) {
         const frequency = parseInt(document.getElementById('geodesicFrequency').value);
-        const geodesicIcosa = Polyhedra.geodesicIcosahedron(scale, isNaN(frequency) ? 1 : frequency);
+        const projectionRadio = document.querySelector('input[name="geodesicIcosaProjection"]:checked');
+        const projection = projectionRadio ? projectionRadio.value : 'out';
+        const geodesicIcosa = Polyhedra.geodesicIcosahedron(scale, isNaN(frequency) ? 1 : frequency, projection);
         renderPolyhedron(geodesicIcosahedronGroup, geodesicIcosa, 0xff4400, opacity); // Vibrant orange-red
         geodesicIcosahedronGroup.visible = true;
       } else {
@@ -1976,6 +2062,12 @@
     });
     document.getElementById('showGeodesicOctahedron').addEventListener('change', updateGeometry);
     document.getElementById('geodesicOctaFrequency').addEventListener('input', updateGeometry);
+    document.querySelectorAll('input[name="geodesicOctaProjection"]').forEach(radio => {
+      radio.addEventListener('change', updateGeometry);
+    });
+    document.querySelectorAll('input[name="geodesicIcosaProjection"]').forEach(radio => {
+      radio.addEventListener('change', updateGeometry);
+    });
 
     // Scale slider
     document.getElementById('scaleSlider').addEventListener('input', (e) => {
