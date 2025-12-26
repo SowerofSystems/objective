@@ -215,6 +215,22 @@ Search for any logs that mention specific planes and update references from Y-up
 
 ---
 
+## RT Purity Note: Math.PI Usage
+
+**⚠️ Non-RT Pattern Identified:**
+
+Grid plane rotations currently use `Math.PI / 2` for 90° rotations:
+```javascript
+gridXY.rotation.x = Math.PI / 2;  // Rotate to lie flat in XY
+gridYZ.rotation.z = Math.PI / 2;  // Rotate from XZ to YZ
+```
+
+**Status:** Deferred to future RT-pure refactor. This pattern existed in the original Y-up version - the Z-up conversion only swapped which planes receive which rotations (notation change only).
+
+**Future Enhancement:** Replace π-based rotations with RT-pure approach (exact rational values or alternative grid construction method).
+
+---
+
 ## What NOT to Change
 
 **❌ Don't touch these (they work as-is):**
@@ -404,5 +420,18 @@ No need for separate ARTexplorer-ZUP.html - just edit ARTexplorer.html directly 
 
 ---
 
-**Status:** 📋 Simple Plan Ready
-**Next Action:** Update camera.up and grid rotations, test with blue axis vertical
+**Status:** ✅ Implementation Complete (2025-12-26)
+**Commit:** 193d53c "Refactor: Implement Z-up coordinate convention in ARTexplorer"
+
+**Completed:**
+- ✅ Camera: `camera.up.set(0, 0, 1)` making Z vertical
+- ✅ Camera position: Adjusted to `(5, -5, 5)` for proper view
+- ✅ Grid planes: XY horizontal (ground), XZ/YZ vertical (walls)
+- ✅ Comments: Updated all polyhedra for Z-up interpretation
+- ✅ Visual validation: Blue axis points up, XY plane is horizontal
+
+**Deferred:**
+- ⏭️ RT-pure grid rotations (replace Math.PI usage)
+- ⏭️ Optional UI labels enhancement ("XY (Ground)", "XZ (Wall)", etc.)
+
+**Next:** User testing polyhedra and geodesic functions before proceeding to next feature development
