@@ -206,34 +206,53 @@
       color: white;
     }
 
-    /* Plane toggle buttons (pill-shaped on/off switches) */
+    /* Plane toggle switches (iOS-style pill switches) */
     .plane-toggle-container {
       display: flex;
+      gap: 10px;
+      margin-top: 8px;
+      align-items: center;
+    }
+
+    .plane-toggle-item {
+      display: flex;
+      align-items: center;
       gap: 5px;
-      margin-top: 5px;
     }
 
-    .plane-toggle-btn {
-      flex: 1;
-      padding: 5px;
-      background: #1a1a1a;
-      border: 1px solid #555;
-      color: #b0b0b0;
-      border-radius: 3px;
+    .plane-toggle-label {
       font-size: 11px;
+      color: #b0b0b0;
+      min-width: 20px;
+    }
+
+    .plane-toggle-switch {
+      position: relative;
+      width: 40px;
+      height: 20px;
+      background-color: #555;
+      border-radius: 10px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: background-color 0.2s;
     }
 
-    .plane-toggle-btn:hover {
-      border-color: #7ab8ff;
-      color: #e0e0e0;
+    .plane-toggle-switch.active {
+      background-color: #4a9eff;
     }
 
-    .plane-toggle-btn.active {
-      background: #4a9eff;
-      border-color: #4a9eff;
-      color: white;
+    .plane-toggle-slider {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      background-color: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .plane-toggle-switch.active .plane-toggle-slider {
+      transform: translateX(20px);
     }
 
     .stats {
@@ -277,9 +296,24 @@
         <div class="control-item">
           <label style="font-size: 12px; color: #b0b0b0; display: block; margin-bottom: 5px;">Cartesian Planes</label>
           <div class="plane-toggle-container">
-            <button class="plane-toggle-btn active" data-plane="XY">XY</button>
-            <button class="plane-toggle-btn" data-plane="XZ">XZ</button>
-            <button class="plane-toggle-btn" data-plane="YZ">YZ</button>
+            <div class="plane-toggle-item">
+              <span class="plane-toggle-label">XY</span>
+              <div class="plane-toggle-switch active" data-plane="XY">
+                <div class="plane-toggle-slider"></div>
+              </div>
+            </div>
+            <div class="plane-toggle-item">
+              <span class="plane-toggle-label">XZ</span>
+              <div class="plane-toggle-switch" data-plane="XZ">
+                <div class="plane-toggle-slider"></div>
+              </div>
+            </div>
+            <div class="plane-toggle-item">
+              <span class="plane-toggle-label">YZ</span>
+              <div class="plane-toggle-switch" data-plane="YZ">
+                <div class="plane-toggle-slider"></div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="control-item">
@@ -2082,25 +2116,26 @@
     // EVENT HANDLERS
     // ========================================================================
 
-    // Cartesian plane toggle buttons (independent on/off switches)
-    document.querySelectorAll('.plane-toggle-btn[data-plane]').forEach(btn => {
-      btn.addEventListener('click', function() {
+    // Cartesian plane iOS-style toggle switches (independent on/off switches)
+    document.querySelectorAll('.plane-toggle-switch[data-plane]').forEach(toggleSwitch => {
+      toggleSwitch.addEventListener('click', function() {
         // Toggle active state
         this.classList.toggle('active');
 
         const plane = this.dataset.plane;
+        const isActive = this.classList.contains('active');
 
         // Update grid visibility
         if (plane === 'XY' && window.gridXY) {
-          window.gridXY.visible = this.classList.contains('active');
+          window.gridXY.visible = isActive;
         } else if (plane === 'XZ' && window.gridXZ) {
-          window.gridXZ.visible = this.classList.contains('active');
+          window.gridXZ.visible = isActive;
         } else if (plane === 'YZ' && window.gridYZ) {
-          window.gridYZ.visible = this.classList.contains('active');
+          window.gridYZ.visible = isActive;
         }
 
         // Show/hide cartesianGrid group if any plane is active
-        const anyActive = document.querySelector('.plane-toggle-btn[data-plane].active');
+        const anyActive = document.querySelector('.plane-toggle-switch[data-plane].active');
         if (cartesianGrid) {
           cartesianGrid.visible = anyActive !== null;
         }
