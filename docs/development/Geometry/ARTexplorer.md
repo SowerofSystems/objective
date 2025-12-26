@@ -384,7 +384,7 @@ The -90° rotation is **optimal RT math** because it uses exact integer values (
 
 ---
 
-## Current Status (as of 2025-12-24)
+## Current Status (as of 2025-12-26)
 
 **Phase 1 & 2: ✅ COMPLETE**
 - All 7 polyhedra implemented and rendering correctly
@@ -399,11 +399,25 @@ The -90° rotation is **optimal RT math** because it uses exact integer values (
 - Exact algebraic values: s = (3-√5)/8, c = (5+√5)/8
 - Vertices aligned with dodecahedron pentagonal face centers
 
+**Phase 2.9: ✅ COMPLETE (2025-12-26)**
+- InSphere/MidSphere/OutSphere geodesic projections for all three geodesics
+- RT-pure sphere radius formulas using golden ratio φ
+- Fixed icosahedron sphere projection bugs (correct geometric formulas)
+- Frequency slider glitching fixed (changed `input` to `change` event)
+
+**Phase 2.10: ✅ COMPLETE (2025-12-26) - Z-Up Coordinate Convention**
+- **Camera**: Set `camera.up.set(0, 0, 1)` - Z is now vertical (CAD/BIM/glTF standard)
+- **Visual**: Blue axis points UP (was green/Y before)
+- **Grid Planes**: XY horizontal (ground), XZ/YZ vertical (walls)
+- **Comments**: Updated all polyhedra vertex descriptions for Z-up interpretation
+- **Backup**: Created ARTexplorer-YUP-BACKUP.html for reference
+- **Rationale**: Preparing for glTF/DWG/GXF export compatibility with industry CAD standards
+
 **Recent Completion:**
-- Dodecahedron with correct "hip roof pup tent" topology
-- Dual icosahedron with spread-based rotation for perfect alignment
-- RT.Phi library with symbolic golden ratio operations
-- Spread/cross rotation implementation (Wildberger principles)
+- Z-up coordinate refactor (notation change only - coordinates unchanged)
+- Icosahedron geodesic InSphere/MidSphere RT-pure formulas corrected
+- Eliminated all trigonometric functions from geodesic sphere calculations
+- Frequency slider performance optimization (rebuild only on release, not during drag)
 
 ---
 
@@ -740,7 +754,59 @@ Coplanar Polygon from axes i,j:
 
 ## Phase 2.9: RT-Pure Geodesic Educational UI (InSphere/MidSphere/OutSphere)
 
-### Deliverable: Multi-Stage Geodesic Visualization
+### Deliverable: Multi-Stage Geodesic Visualization ✅ COMPLETE (2025-12-26)
+
+**Objective:** Separate geodesic subdivision from sphere projection to educate users on the process while maintaining RT purity.
+
+**CRITICAL BUG FIXES (2025-12-26):**
+
+**Problem:** Icosahedron InSphere and MidSphere projections were using incorrect trigonometric formulas that violated RT purity principles:
+- InSphere was using `cos(arctan(2))` - classical trig garbage!
+- MidSphere was using approximate decimal values
+- Formulas didn't match actual geometric perpendicular distances
+
+**Solution - RT-Pure Icosahedron Sphere Radii:**
+
+Derived from first principles using golden ratio φ and perpendicular distance calculations:
+
+```javascript
+// For icosahedron with OutSphere radius = halfSize
+const phi = 0.5 * (1 + Math.sqrt(5));  // Golden ratio
+
+// InSphere: Perpendicular distance to face planes
+// Face normal = (1,1,1)/√3, distance = (a+b)/√3 where a+b = φ²/√(φ+2)
+// Q_in = φ⁴/[3(φ+2)] = (3φ+2)/[3(φ+2)] using φ⁴ = 3φ+2
+Q_in = Q_out · (3*phi + 2) / (3*(phi + 2));  // ≈ 0.6315
+
+// MidSphere: Distance to edge midpoints
+// Q_mid = Q_out · φ²/(φ+2) = Q_out · (φ+1)/(φ+2) using φ² = φ+1
+Q_mid = Q_out · (phi + 1) / (phi + 2);  // ≈ 0.7236
+
+// OutSphere: Through vertices (Fuller's true geodesic)
+Q_out = halfSize * halfSize;
+```
+
+**RT Purity Verification:**
+- ✅ NO trigonometric functions (no cos, sin, arctan)
+- ✅ Only golden ratio φ and algebraic relationships
+- ✅ Uses φ² = φ + 1 (fundamental golden ratio identity)
+- ✅ Quadrance Q calculated directly, √ only at final projection
+- ✅ Formulas verified geometrically via cross product and face plane calculations
+
+**Additional Fix - Frequency Slider Glitching:**
+- Changed event listener from `input` to `change` for all geodesic frequency sliders
+- Prevents continuous geometry rebuild during slider drag
+- Geometry now rebuilds only when user releases slider
+- Applies to tetrahedron, octahedron, and icosahedron geodesics
+
+**Implementation Status:** ✅ COMPLETE
+- All three geodesics (tetra, octa, icosa) now have correct RT-pure sphere projections
+- Console logging shows exact quadrance ratios for verification
+- Users can now correctly compare InSphere/MidSphere/OutSphere projections
+
+---
+
+### Original Phase 2.9 Specification
 
 **Objective:** Separate geodesic subdivision from sphere projection to educate users on the process while maintaining RT purity.
 
@@ -965,6 +1031,157 @@ Polyhedra.geodesicTetrahedron = (halfSize = 1, frequency = 0, options = {
    - Add mathematical derivations for each polyhedron
    - Document quadrance calculations
    - Add more code comments explaining RT principles
+
+---
+
+## TODO: RT Purity Enhancement - Eliminate Classical Trigonometry
+
+**Status:** 📋 Deferred (Documented 2025-12-26)
+**Priority:** MEDIUM - Important for RT philosophical purity, but app currently functional
+
+### Problem: Math.PI Usage Violates RT Principles
+
+The app currently uses `Math.PI` in grid plane rotations, which violates Rational Trigonometry purity:
+
+**Location:** [ARTexplorer.html:1769-1790](../../../ARTexplorer.html#L1769-L1790)
+
+```javascript
+// Z-UP CONVENTION Grid Planes
+window.gridXY = new THREE.GridHelper(gridSize, gridSize / gridStep, gridColor, gridColor);
+window.gridXY.rotation.x = Math.PI / 2;  // ❌ Uses π for 90° rotation
+
+window.gridYZ = new THREE.GridHelper(gridSize, gridSize / gridStep, gridColor, gridColor);
+window.gridYZ.rotation.z = Math.PI / 2;  // ❌ Uses π for 90° rotation
+```
+
+**Why This Matters:**
+- **Rational Trigonometry** works exclusively with **quadrance** (Q = distance²) and **spread** (s = sin²θ)
+- π is a classical trigonometric constant with no place in RT mathematics
+- Using π for rotations contradicts the RT pedagogical mission of the app
+
+### Current Status
+
+**Note:** This pattern existed in the original Y-up version. The Z-up coordinate refactor (Phase 2.10) only swapped which planes receive which rotations - it was a **notation change only**, not introducing new violations.
+
+**What Changed in Z-up Refactor:**
+- Y-up: XY plane used `rotation.x = Math.PI/2`, YZ plane used `rotation.z = Math.PI/2`
+- Z-up: XY plane uses `rotation.x = Math.PI/2`, YZ plane uses `rotation.z = Math.PI/2`
+- **Same rotations, different planes** (notational swap to match Z-up convention)
+
+### Proposed Solutions
+
+#### Option 1: Custom Grid Construction (Preferred)
+Replace `THREE.GridHelper` with custom line geometry constructed from first principles:
+
+```javascript
+// RT-Pure grid using explicit line segments
+function createRTPureGrid(size, divisions, color, plane = 'XY') {
+  const geometry = new THREE.BufferGeometry();
+  const vertices = [];
+  const step = size / divisions;
+
+  for (let i = 0; i <= divisions; i++) {
+    const coord = -size/2 + i * step;
+
+    if (plane === 'XY') {
+      // Lines parallel to X-axis (Y varies)
+      vertices.push(-size/2, coord, 0,  size/2, coord, 0);
+      // Lines parallel to Y-axis (X varies)
+      vertices.push(coord, -size/2, 0,  coord, size/2, 0);
+    } else if (plane === 'XZ') {
+      // Lines parallel to X-axis (Z varies)
+      vertices.push(-size/2, 0, coord,  size/2, 0, coord);
+      // Lines parallel to Z-axis (X varies)
+      vertices.push(coord, 0, -size/2,  coord, 0, size/2);
+    } else if (plane === 'YZ') {
+      // Lines parallel to Y-axis (Z varies)
+      vertices.push(0, -size/2, coord,  0, size/2, coord);
+      // Lines parallel to Z-axis (Y varies)
+      vertices.push(0, coord, -size/2,  0, coord, size/2);
+    }
+  }
+
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  return new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ color }));
+}
+```
+
+**Benefits:**
+- ✅ No rotation matrices needed
+- ✅ No π usage
+- ✅ Explicit coordinate construction matches RT philosophy
+- ✅ Clearer code - grid plane orientation is obvious from vertex coordinates
+
+#### Option 2: Exact Rational Rotation Values
+Replace π with exact algebraic rotation values (if Three.js supports quaternion-based rotations):
+
+```javascript
+// 90° rotation as quaternion: [sin(45°), 0, 0, cos(45°)] = [√2/2, 0, 0, √2/2]
+// But this still uses trig under the hood...
+```
+
+**Problem:** This still relies on trigonometric concepts (even if values are exact).
+
+#### Option 3: Deferred sqrt Rotation Matrices
+Construct rotation matrices using deferred sqrt expansion (RT-acceptable):
+
+```javascript
+// 90° rotation around X-axis (XY plane)
+// R = [1, 0, 0]
+//     [0, 0,-1]
+//     [0, 1, 0]
+// No transcendental constants needed!
+```
+
+**Benefits:**
+- ✅ Uses only exact integer matrix values
+- ✅ No π usage
+- ⚠️ Still uses rotation concept (arguably classical)
+
+### Recommendation
+
+**Implement Option 1 (Custom Grid Construction)** in future RT purity enhancement phase.
+
+**Rationale:**
+1. Most philosophically pure - explicit coordinate construction
+2. No hidden trigonometry or rotation matrices
+3. Code clarity matches RT pedagogical goals
+4. Performance should be equivalent to GridHelper
+
+### Implementation Plan (Future Phase)
+
+1. **Create `createRTPureGrid()` helper function** (15 min)
+2. **Replace all THREE.GridHelper calls** with custom grids (10 min)
+3. **Remove all Math.PI usage** from codebase (5 min)
+4. **Verify visual output identical** to current grids (5 min)
+5. **Update documentation** noting RT purity achievement (5 min)
+
+**Estimated Time:** 40 minutes
+**Risk:** LOW - Grid construction is straightforward, easy to test visually
+
+### Other Classical Trig Usage - Audit Required
+
+**Search for:**
+- `Math.sin`, `Math.cos`, `Math.tan`
+- `Math.asin`, `Math.acos`, `Math.atan`, `Math.atan2`
+- `Math.PI` (currently only in grid rotations ✅)
+
+**Status:** Preliminary audit shows:
+- ✅ Geodesic sphere projections: RT-pure (golden ratio φ only)
+- ✅ Polyhedra construction: RT-pure (algebraic coordinates)
+- ✅ Edge validation: RT-pure (quadrance calculations)
+- ⚠️ Grid rotations: Math.PI usage (documented above)
+- ⏳ Need full codebase search to verify no other violations
+
+### Success Criteria
+
+**RT Purity Achieved When:**
+- [ ] Zero `Math.PI` usage in codebase
+- [ ] Zero `Math.sin/cos/tan/asin/acos/atan` usage in codebase
+- [ ] All geometry constructed from explicit coordinates or RT-pure formulas
+- [ ] All calculations use quadrance Q and spread s (no distances or angles)
+- [ ] √ (sqrt) used only for final visualization (deferred expansion acceptable)
+- [ ] Documentation explicitly states "100% RT-pure implementation"
 
 ---
 
