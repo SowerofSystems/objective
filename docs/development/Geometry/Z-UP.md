@@ -1,45 +1,33 @@
-# Z-Up Coordinate System - Foundational Refactor
+# Z-Up Coordinate System - Simple Convention Change
 
 ## Executive Summary
 
-**Objective:** Rebuild ARTexplorer from the ground up using native Z-up coordinate convention (CAD/BIM/Architecture standard).
+**Objective:** Change ARTexplorer coordinate convention from Y-up to Z-up (CAD/BIM/Architecture standard).
 
-**Approach:** Complete rewrite, NOT transformation layer. All geometry defined with Z as vertical axis from first principles.
+**Key Insight:** Vertex coordinates don't need to change! Only camera orientation and comment labels.
+
+**Approach:** Update camera.up, fix grid rotations, update comments/labels. That's it.
+
+**Estimated Time:** 30-45 minutes
 
 **Status:** Planning - Ready for Implementation
 
 ---
 
-## Rationale: Why Foundational vs Transformation
+## The Simple Truth
 
-### ❌ Transformation Approach (REJECTED)
-```javascript
-// BAD: Define in Y-up, then transform
-const verticesYUp = [new THREE.Vector3(x, y, z), ...];
-const vertices = transform(verticesYUp); // (x,y,z) → (x,z,-y)
-```
-**Problems:**
-- Internal coordinates still Y-up (confusing for developers)
-- Transformation overhead on every polyhedron
-- Grid planes conceptually backwards
-- Export requires reverse transform
-- Mental model mismatch with CAD tools
+The vertices are already defined with numerical coordinates like `(±1, ±1, ±1)`. These numbers don't need to change.
 
-### ✅ Foundational Approach (SELECTED)
-```javascript
-// GOOD: Define natively in Z-up
-const vertices = [
-  new THREE.Vector3(x, y, z)  // Z is naturally vertical
-];
-// Camera sees Z as up, geometry is Z-up, grids are Z-up
-// Everything aligned from first principles
-```
-**Benefits:**
-- Clear mental model: Z = height everywhere
-- No transformation layer needed
-- Direct export to glTF/DWG/GXF
-- Matches industry tools (Blender, AutoCAD, Revit)
-- Future-proof for CAD integration
+**What changes:**
+1. Camera tells Three.js "Z is up" instead of "Y is up"
+2. Grid planes rotate to match new convention
+3. Comments/labels updated to reflect Z-up thinking
+
+**What doesn't change:**
+- Vertex coordinate values (the numbers stay the same!)
+- Edge definitions
+- Face definitions
+- RT math (coordinate-agnostic)
 
 ---
 
@@ -47,415 +35,280 @@ const vertices = [
 
 ### Z-Up Convention (CAD/BIM Standard)
 ```
-X+ = Right (horizontal, east-west)
-Y+ = Away from viewer (horizontal, north-south, depth)
-Z+ = Up (vertical, elevation)
+X+ = Right (horizontal)
+Y+ = Depth (horizontal, away from viewer)
+Z+ = Up (vertical)
 ```
 
-### Three.js Camera Configuration
+### Three.js Interpretation
+The same vertex `new THREE.Vector3(1, 1, 1)`:
+- **Y-up interpretation**: right-up-back
+- **Z-up interpretation**: right-back-up
+
+The numbers are identical, only our mental model changes!
+
+---
+
+## Implementation Plan
+
+### Phase 1: Camera & Scene (15 min)
+
+**Camera Setup**
 ```javascript
-camera.position.set(5, -5, 5);  // Isometric-like view
-camera.up.set(0, 0, 1);         // Z is up
+// Current (Y-up):
+camera.position.set(5, 5, 5);
+camera.up.set(0, 1, 0);  // Y is up
 camera.lookAt(0, 0, 0);
-```
 
-### Grid Planes in Z-Up
-- **XY plane (Z=0)**: Horizontal ground plane - DEFAULT VISIBLE
-- **XZ plane (Y=0)**: Vertical wall (front elevation)
-- **YZ plane (X=0)**: Vertical wall (side elevation)
-
----
-
-## Implementation Strategy
-
-### Phase 1: Create New File Structure
-
-**File:** `ARTexplorer-ZUP.html` (will become ARTexplorer.html after testing)
-
-**Steps:**
-1. Copy ARTexplorer.html → ARTexplorer-ZUP.html
-2. Update title/branding to indicate Z-up version
-3. Implement changes phase by phase
-4. Test thoroughly
-5. Replace original when validated
-
----
-
-## Phase 2: Camera & Scene Setup
-
-### Camera Position
-```javascript
-// Z-up isometric view
+// New (Z-up):
 camera.position.set(5, -5, 5);
-camera.up.set(0, 0, 1);  // Critical: tells Three.js Z is up
+camera.up.set(0, 0, 1);  // Z is up
 camera.lookAt(0, 0, 0);
 ```
 
-### Axes Helper
-- Red: X+ (right)
-- Green: Y+ (away/depth)
-- Blue: Z+ (up) ← Should point vertically in view
+**Grid Planes**
 
-### Grid Planes
+Current understanding needs verification, but likely:
 ```javascript
-// XY plane (Z=0) - HORIZONTAL ground plane
-gridXY = new THREE.GridHelper(10, 10);
-// GridHelper creates XZ by default, rotate for XY:
-gridXY.rotation.x = Math.PI / 2;  // Rotate to horizontal XY
+// XY plane (Z=0) - Should be HORIZONTAL in Z-up
+gridXY = new THREE.GridHelper(gridSize, divisions, color, color);
+gridXY.rotation.x = Math.PI / 2;  // Rotate to lie flat
 gridXY.visible = true;  // Default visible (ground plane)
 
-// XZ plane (Y=0) - VERTICAL front wall
-gridXZ = new THREE.GridHelper(10, 10);
-gridXZ.rotation.z = Math.PI / 2;  // Rotate to vertical XZ plane
+// XZ plane (Y=0) - Should be VERTICAL in Z-up
+gridXZ = new THREE.GridHelper(gridSize, divisions, color, color);
+// Needs rotation to be vertical front wall
 gridXZ.visible = false;
 
-// YZ plane (X=0) - VERTICAL side wall
-gridYZ = new THREE.GridHelper(10, 10);
-gridYZ.rotation.x = Math.PI / 2;
-gridYZ.rotation.y = Math.PI / 2;
+// YZ plane (X=0) - Should be VERTICAL in Z-up
+gridYZ = new THREE.GridHelper(gridSize, divisions, color, color);
+// Needs rotation to be vertical side wall
 gridYZ.visible = false;
 ```
 
+**Axes Helper**
+No code change needed - axes automatically follow camera.up:
+- Red = X+ (right)
+- Green = Y+ (depth)
+- Blue = Z+ (up) ← should point vertically
+
 ---
 
-## Phase 3: Polyhedra - Native Z-Up Definitions
+### Phase 2: Comment Updates (15 min)
 
-### Cube (Hexahedron)
+**Cube Comments**
 ```javascript
-// Z-UP: Bottom 4 vertices at Z=-s, Top 4 vertices at Z=+s
-cube: (halfSize = 1) => {
-  const s = halfSize;
-  const vertices = [
-    // Bottom face (Z = -s)
-    new THREE.Vector3(-s, -s, -s),  // 0: bottom-back-left
-    new THREE.Vector3( s, -s, -s),  // 1: bottom-back-right
-    new THREE.Vector3( s,  s, -s),  // 2: bottom-front-right
-    new THREE.Vector3(-s,  s, -s),  // 3: bottom-front-left
+// Current (Y-up):
+new THREE.Vector3(-s, -s, -s),  // 0: (-, -, -)
 
-    // Top face (Z = +s)
-    new THREE.Vector3(-s, -s,  s),  // 4: top-back-left
-    new THREE.Vector3( s, -s,  s),  // 5: top-back-right
-    new THREE.Vector3( s,  s,  s),  // 6: top-front-right
-    new THREE.Vector3(-s,  s,  s),  // 7: top-front-left
-  ];
-
-  const edges = [
-    // Bottom face
-    [0, 1], [1, 2], [2, 3], [3, 0],
-    // Top face
-    [4, 5], [5, 6], [6, 7], [7, 4],
-    // Vertical edges (connecting bottom to top)
-    [0, 4], [1, 5], [2, 6], [3, 7]
-  ];
-
-  const faces = [
-    [0, 1, 2, 3],  // Bottom (Z = -s)
-    [4, 5, 6, 7],  // Top (Z = +s)
-    [0, 1, 5, 4],  // Back (Y = -s)
-    [2, 3, 7, 6],  // Front (Y = +s)
-    [0, 3, 7, 4],  // Left (X = -s)
-    [1, 2, 6, 5]   // Right (X = +s)
-  ];
-
-  return { vertices, edges, faces };
-}
+// Update to (Z-up):
+new THREE.Vector3(-s, -s, -s),  // 0: left-back-bottom
+new THREE.Vector3( s, -s, -s),  // 1: right-back-bottom
+new THREE.Vector3( s,  s, -s),  // 2: right-front-bottom
+new THREE.Vector3(-s,  s, -s),  // 3: left-front-bottom
+new THREE.Vector3(-s, -s,  s),  // 4: left-back-top
+new THREE.Vector3( s, -s,  s),  // 5: right-back-top
+new THREE.Vector3( s,  s,  s),  // 6: right-front-top
+new THREE.Vector3(-s,  s,  s),  // 7: left-front-top
 ```
 
-### Tetrahedron (Inscribed in Cube)
+**Edge/Face Comments**
 ```javascript
-// Z-UP: Select alternating cube vertices
-tetrahedron: (halfSize = 1) => {
-  const s = halfSize;
-  const vertices = [
-    new THREE.Vector3(-s, -s, -s),  // 0: bottom-back-left
-    new THREE.Vector3( s,  s, -s),  // 2: bottom-front-right
-    new THREE.Vector3( s, -s,  s),  // 5: top-back-right
-    new THREE.Vector3(-s,  s,  s),  // 7: top-front-left
-  ];
-  // ... edges, faces
-}
+// Current (Y-up):
+// Bottom face (z = -s)
+
+// Update to (Z-up):
+// Bottom face (Z = -s)  // Just capitalize!
 ```
 
-### Octahedron (Dual of Cube)
+**Octahedron Comments**
 ```javascript
-// Z-UP: 6 vertices at axis centers
-octahedron: (halfSize = 1) => {
-  const s = halfSize;
-  const vertices = [
-    new THREE.Vector3( s,  0,  0),  // Right (+X)
-    new THREE.Vector3(-s,  0,  0),  // Left (-X)
-    new THREE.Vector3( 0,  s,  0),  // Front (+Y)
-    new THREE.Vector3( 0, -s,  0),  // Back (-Y)
-    new THREE.Vector3( 0,  0,  s),  // Top (+Z) ← Vertical!
-    new THREE.Vector3( 0,  0, -s),  // Bottom (-Z)
-  ];
-  // ... edges, faces
-}
+// Current (Y-up):
+new THREE.Vector3( 0,  s,  0),  // 2: Top (+y)
+new THREE.Vector3( 0, -s,  0),  // 3: Bottom (-y)
+new THREE.Vector3( 0,  0,  s),  // 4: Front (+z)
+
+// Update to (Z-up):
+new THREE.Vector3( 0,  s,  0),  // 2: Front (+Y)
+new THREE.Vector3( 0, -s,  0),  // 3: Back (-Y)
+new THREE.Vector3( 0,  0,  s),  // 4: Top (+Z)  ← Key change!
 ```
 
-### Icosahedron
+**Icosahedron Comments**
 ```javascript
-// Z-UP: Three orthogonal golden rectangles
-// Rectangles lie in XY, XZ, YZ planes
-icosahedron: (halfSize = 1) => {
-  const phi = RT.Phi.value();
-  const a = halfSize * normFactor;
-  const b = halfSize * phi * normFactor;
+// Current (Y-up):
+// Rectangle 1: XZ plane, y = ±a
+// Rectangle 2: YZ plane, x = ±a
+// Rectangle 3: XY plane, z = ±a
 
-  const vertices = [
-    // XY plane (Z = ±a) - horizontal rectangles
-    new THREE.Vector3( b,  0,  a),  new THREE.Vector3( b,  0, -a),
-    new THREE.Vector3(-b,  0,  a),  new THREE.Vector3(-b,  0, -a),
-
-    // XZ plane (Y = ±a) - vertical rectangle (front/back)
-    new THREE.Vector3( 0,  a,  b),  new THREE.Vector3( 0,  a, -b),
-    new THREE.Vector3( 0, -a,  b),  new THREE.Vector3( 0, -a, -b),
-
-    // YZ plane (X = ±a) - vertical rectangle (left/right)
-    new THREE.Vector3( a,  b,  0),  new THREE.Vector3( a, -b,  0),
-    new THREE.Vector3(-a,  b,  0),  new THREE.Vector3(-a, -b,  0),
-  ];
-  // ... edges, faces
-}
+// Update to (Z-up):
+// Rectangle 1: XY plane, Z = ±a  (horizontal rectangles)
+// Rectangle 2: XZ plane, Y = ±a  (vertical front/back)
+// Rectangle 3: YZ plane, X = ±a  (vertical left/right)
 ```
 
-### Dodecahedron
+**Quadray Basis Comments**
 ```javascript
-// Z-UP: 8 cube corners + 12 phi vertices
-dodecahedron: (halfSize = 1) => {
-  const s = halfSize;
-  const phi = RT.Phi.value();
-  const invPhi = RT.Phi.inverse();
+// Current (Y-up):
+/**
+ * A: ( 1,  1,  1)
+ * B: ( 1, -1, -1)
+ * C: (-1,  1, -1)
+ * D: (-1, -1,  1)
+ */
 
-  const vertices = [
-    // 8 cube corners (±s, ±s, ±s)
-    new THREE.Vector3( s,  s,  s),  new THREE.Vector3( s,  s, -s),
-    new THREE.Vector3( s, -s,  s),  new THREE.Vector3( s, -s, -s),
-    new THREE.Vector3(-s,  s,  s),  new THREE.Vector3(-s,  s, -s),
-    new THREE.Vector3(-s, -s,  s),  new THREE.Vector3(-s, -s, -s),
-
-    // 12 phi vertices - cyclic permutations of (0, ±invPhi, ±phi)
-    // XY plane family (Z = ±a)
-    new THREE.Vector3( 0,  s*invPhi,  s*phi),
-    new THREE.Vector3( 0,  s*invPhi, -s*phi),
-    new THREE.Vector3( 0, -s*invPhi,  s*phi),
-    new THREE.Vector3( 0, -s*invPhi, -s*phi),
-
-    // XZ plane family (Y = ±a)
-    new THREE.Vector3( s*invPhi,  s*phi,  0),
-    new THREE.Vector3( s*invPhi, -s*phi,  0),
-    new THREE.Vector3(-s*invPhi,  s*phi,  0),
-    new THREE.Vector3(-s*invPhi, -s*phi,  0),
-
-    // YZ plane family (X = ±a)
-    new THREE.Vector3( s*phi,  0,  s*invPhi),
-    new THREE.Vector3( s*phi,  0, -s*invPhi),
-    new THREE.Vector3(-s*phi,  0,  s*invPhi),
-    new THREE.Vector3(-s*phi,  0, -s*invPhi),
-  ];
-  // ... edges, faces
-}
+// Update to (Z-up):
+/**
+ * Z-UP: Tetrahedral basis vectors
+ * A: ( 1,  1,  1)  // top-front-right
+ * B: ( 1, -1, -1)  // bottom-back-right
+ * C: (-1,  1, -1)  // bottom-front-left
+ * D: (-1, -1,  1)  // top-back-left
+ */
 ```
 
 ---
 
-## Phase 4: Quadray Basis Vectors (Z-Up)
+### Phase 3: UI Labels (10 min)
 
+**Grid Plane Toggle Labels**
 ```javascript
-const Quadray = {
-  /**
-   * Z-UP: 4 basis vectors pointing to tetrahedral vertices
-   * These point to alternating cube corners inscribed in unit cube
-   */
-  basisVectors: [
-    new THREE.Vector3( 1,  1,  1).normalize(),  // A: top-front-right
-    new THREE.Vector3( 1, -1, -1).normalize(),  // B: bottom-back-right
-    new THREE.Vector3(-1,  1, -1).normalize(),  // C: bottom-front-left
-    new THREE.Vector3(-1, -1,  1).normalize(),  // D: top-back-left
-  ],
-  // ... rest of Quadray implementation
-}
+// Consider adding descriptive labels:
+"XY" → "XY (Ground)"
+"XZ" → "XZ (Front)"
+"YZ" → "YZ (Side)"
 ```
 
-**Key point:** These are the SAME numeric values as Y-up, but now Z component is vertical!
+**Console Logging**
+Search for any logs that mention specific planes and update references from Y-up to Z-up thinking.
 
 ---
 
-## Phase 5: Geodesic Subdivisions
+## What NOT to Change
 
-Geodesic functions will automatically work correctly because they:
-1. Call base polyhedra generators (which are now Z-up)
-2. Subdivide in algebraic space (coordinate-agnostic)
-3. Project to sphere using quadrance (coordinate-agnostic)
+**❌ Don't touch these (they work as-is):**
+- Vertex coordinate values (numbers stay the same!)
+- Edge arrays
+- Face arrays
+- RT.validateEdges() calls
+- Geodesic subdivision functions
+- Quadray.toCartesian() implementation
+- Any RT math (quadrance, spread calculations)
 
-**No changes needed** - they inherit Z-up from base polyhedra.
-
----
-
-## Phase 6: UI Labels & Documentation
-
-### Grid Plane Labels
-```javascript
-// Update UI labels to match Z-up convention
-"XY" → "XY (Ground)"     // Horizontal floor
-"XZ" → "XZ (Front Wall)" // Vertical front
-"YZ" → "YZ (Side Wall)"  // Vertical side
-```
-
-### Console Logging
-```javascript
-// Update any logs that reference coordinate planes
-console.log(`Top vertex at Z = ${topZ}`);  // Not "Y = ..."
-console.log(`Ground plane (XY at Z=0)`);   // Not "XZ at Y=0"
-```
-
-### Code Comments
-- Update all "horizontal"/"vertical" references
-- Change "Y-up" comments to "Z-up"
-- Update axis descriptions (X=right, Y=depth, Z=up)
+**✅ Only change:**
+- camera.up
+- camera.position (to view from good angle)
+- Grid plane rotations
+- Comments describing vertex positions
+- UI labels for clarity
 
 ---
 
 ## Testing Checklist
 
-### Visual Validation
+### Visual Validation (5 min)
 - [ ] Blue axis (Z) points vertically upward
 - [ ] XY plane is horizontal (ground)
 - [ ] XZ and YZ planes are vertical (walls)
-- [ ] Cube edges: 4 vertical, 8 horizontal
-- [ ] Tetrahedron: 1 vertex at top, 1 at bottom (Z-aligned)
-- [ ] Octahedron: top/bottom vertices on Z-axis
-- [ ] Camera controls feel natural (orbit around Z-up)
+- [ ] Cube: 4 edges vertical, 8 edges horizontal
+- [ ] Octahedron: top and bottom vertices on vertical line
 
-### RT Validation (Console)
-- [ ] All edge quadrances match expected values
-- [ ] Cube: Q = 4s² for all 12 edges
-- [ ] Tetrahedron: Q = 8s² for all 6 edges
-- [ ] Octahedron: Q = 2s² for all 12 edges
-- [ ] Icosahedron: Uniform edge quadrance
-- [ ] Dodecahedron: Uniform edge quadrance
-- [ ] Quadray basis: 109.47° spreads maintained
+### RT Validation (5 min)
+- [ ] Console shows same quadrances as before
+- [ ] No errors in console
+- [ ] All polyhedra toggle on/off correctly
 
-### Functional Tests
+### Functional Validation (5 min)
+- [ ] Camera controls feel natural
 - [ ] Scale slider works
-- [ ] Opacity slider works
-- [ ] Node size buttons work
-- [ ] All plane toggles show/hide correctly
-- [ ] All polyhedra toggles work
-- [ ] Geodesic frequency controls work
-- [ ] Projection options work (In/Mid/Out/Off)
+- [ ] Grid toggles show/hide correctly
+- [ ] All polyhedra render properly
 
 ---
 
 ## Implementation Timeline
 
-### Session 1: Setup & Camera (30 min)
-- Create ARTexplorer-ZUP.html
-- Implement Phase 2 (camera, grids, axes)
-- Visual test: blue axis up, XY horizontal
+**Total: 30-45 minutes**
 
-### Session 2: Core Polyhedra (60 min)
-- Implement cube, tetrahedron, octahedron (Z-up)
-- Test each individually
-- Validate RT quadrances
+1. **Camera & Grids** (15 min)
+   - Update camera.up to (0, 0, 1)
+   - Adjust camera.position
+   - Fix grid plane rotations
+   - Test: blue axis vertical, XY horizontal
 
-### Session 3: Golden Ratio Polyhedra (60 min)
-- Implement icosahedron, dodecahedron
-- Dual icosahedron, rhombic dodecahedron
-- Validate nesting relationships
+2. **Comments** (15 min)
+   - Update cube comments (top/bottom instead of front/back)
+   - Update octahedron comments (Z is vertical)
+   - Update icosahedron rectangle descriptions
+   - Update Quadray basis descriptions
 
-### Session 4: Quadray & Validation (30 min)
-- Update Quadray basis
-- Update all console logs
-- Full RT validation suite
-
-### Session 5: Final Testing (30 min)
-- Complete testing checklist
-- Side-by-side comparison with Y-up backup
-- Document any differences
-- Rename to ARTexplorer.html if successful
-
-**Total:** ~3.5 hours
+3. **Labels & Testing** (10-15 min)
+   - Update UI labels if desired
+   - Run through testing checklist
+   - Verify everything works
 
 ---
 
 ## Success Criteria
 
-### Definition of Done
-1. All polyhedra render identically to Y-up version (when viewed from equivalent angles)
-2. Blue axis (Z) visibly points up in default view
-3. XY plane is horizontal ground plane
-4. All RT quadrance validations pass
-5. Camera controls feel natural (Z feels "up")
-6. No transformation layer in code
-7. All vertex definitions use Z as vertical directly
-8. Code comments reflect Z-up convention
+**Definition of Done:**
+1. Blue axis (Z) visibly points up
+2. XY plane is horizontal (ground)
+3. Comments reflect Z-up convention
+4. Same visual output when viewed from equivalent angles
+5. All RT validations still pass
 
-### Acceptance Test
-Open ARTexplorer-ZUP.html:
-- Blue axis vertical? ✓
-- XY plane horizontal? ✓
-- Cube has 4 vertical edges? ✓
-- Console shows same quadrances as Y-up? ✓
-- Mental model clear (Z=height)? ✓
-
-If all pass → Replace ARTexplorer.html
+**Acceptance Test:**
+Side-by-side comparison with Y-up backup:
+- Polyhedra look identical? ✓
+- Quadrances match? ✓
+- Blue axis now vertical? ✓
+- Grid orientations make sense? ✓
 
 ---
 
-## Migration Path
+## File Management
 
 ```bash
-# Current state:
-ARTexplorer.html              # Y-up (original)
-ARTexplorer-YUP-BACKUP.html   # Y-up (safety backup)
+# Already done:
+ARTexplorer.html              # Y-up (current)
+ARTexplorer-YUP-BACKUP.html   # Y-up (backup)
 
-# Development:
-ARTexplorer-ZUP.html          # Z-up (new version, in progress)
-
-# After validation:
-mv ARTexplorer.html ARTexplorer-YUP-OLD.html
-mv ARTexplorer-ZUP.html ARTexplorer.html
-
-# Final state:
-ARTexplorer.html              # Z-up (production)
+# After changes:
+ARTexplorer.html              # Z-up (updated)
 ARTexplorer-YUP-BACKUP.html   # Y-up (reference)
-ARTexplorer-YUP-OLD.html      # Y-up (deprecated)
 ```
+
+No need for separate ARTexplorer-ZUP.html - just edit ARTexplorer.html directly since changes are minimal and backup already exists.
 
 ---
 
-## Notes for Developer
+## The Mental Model Shift
 
-**Critical Mental Model:**
-- Z is height (elevation, altitude)
-- XY plane is the floor you walk on
-- Looking down at XY from above (+Z) is architectural plan view
-- XZ and YZ planes are vertical walls
+**Same vertex `(1, 1, 1)` means different things:**
 
-**When Defining Vertices:**
-Ask: "How high is this point?" → That's the Z coordinate
-Ask: "North-south position?" → That's the Y coordinate
-Ask: "East-west position?" → That's the X coordinate
+**Y-up thinking:**
+- X = 1: right
+- Y = 1: up
+- Z = 1: toward viewer
 
-**Three.js GridHelper Quirk:**
-GridHelper creates grids in the XZ plane by default (Y-up convention).
-For Z-up, we need to rotate to get planes right:
-- XY horizontal: `rotation.x = π/2`
-- XZ vertical: `rotation.z = π/2`
-- YZ vertical: `rotation.x = π/2, rotation.y = π/2`
+**Z-up thinking:**
+- X = 1: right
+- Y = 1: away from viewer (depth)
+- Z = 1: up
+
+**The coordinates don't change. Only how we interpret them.**
 
 ---
 
 ## References
 
-- **Three.js Coordinate Systems**: https://threejs.org/docs/#manual/en/introduction/Coordinate-systems
-- **glTF 2.0 Spec (Z-up)**: https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html
-- **AutoCAD Z-up Convention**: Industry standard for architectural drawings
-- **Blender Z-up**: Default coordinate system
-- **Rational Trigonometry**: Coordinate-agnostic (Wildberger)
+- **Three.js camera.up**: https://threejs.org/docs/#api/en/cameras/Camera.up
+- **glTF 2.0 (Z-up)**: https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html
+- **Blender Z-up**: Industry standard
+- **Rational Trigonometry**: Coordinate-agnostic mathematics
 
 ---
 
-**Status:** 📋 Documentation Complete - Ready for Implementation
-**Next Action:** Create ARTexplorer-ZUP.html and begin Phase 2
+**Status:** 📋 Simple Plan Ready
+**Next Action:** Update camera.up and grid rotations, test with blue axis vertical
