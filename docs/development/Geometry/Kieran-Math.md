@@ -285,34 +285,99 @@ Or equivalently (for radius):
 
 ### Tetrahedron Sphere Projections
 
-**Tetrahedron vertices:** `(±1, ±1, ±1)` with appropriate sign pattern
-
-#### Tetrahedron: OutSphere
-```javascript
-// Circumsphere through vertices at (±1, ±1, ±1)
-// Q_vertex = 1² + 1² + 1² = 3
-Q_out = 3 * halfSize * halfSize;  // 3s²
+**Tetrahedron vertices:** Alternating corners of cube at `(±s, ±s, ±s)` where signs follow pattern:
+```
+(-s, -s, -s)  // vertex 0: (-, -, -)
+( s,  s, -s)  // vertex 1: (+, +, -)
+( s, -s,  s)  // vertex 2: (+, -, +)
+(-s,  s,  s)  // vertex 3: (-, +, +)
 ```
 
-#### Tetrahedron: MidSphere
+**CRITICAL:** NOT `(1,1,1), (1,1,-1), (1,-1,1), (-1,1,1)` - that would contain 90° angles!
+
+#### Tetrahedron: Vertex Quadrance (OutSphere)
+
+**For unit cube (s = 1):**
+```
+Q_vertex = (-1)² + (-1)² + (-1)² = 3
+r_vertex = √3
+```
+
+**For halfSize = s:**
+```
+Q_out = 3s²
+r_out = s√3
+```
+
+#### Tetrahedron: Edge Quadrance
+
+**Edge example:** From `(-s, -s, -s)` to `(s, s, -s)`
+```
+Δx = s - (-s) = 2s
+Δy = s - (-s) = 2s
+Δz = -s - (-s) = 0
+
+Q_edge = (2s)² + (2s)² + 0² = 8s²
+edge_length = 2s√2
+```
+
+**All 6 edges have Q_edge = 8s² (regular tetrahedron)**
+
+#### Tetrahedron: MidSphere (Tangent to Edge Midpoints)
+
+**Edge midpoint example:** Midpoint of `(-s,-s,-s)` and `(s,s,-s)`:
+```
+midpoint = (0, 0, -s)
+
+Q_mid = 0² + 0² + (-s)² = s²
+r_mid = s
+```
+
+**Ratio:**
+```
+Q_mid/Q_out = s² / (3s²) = 1/3
+r_mid/r_out = s / (s√3) = 1/√3
+```
+
 ```javascript
-// Midsphere tangent to edge midpoints
-// Edge midpoint example: midpoint of (1,1,1) and (1,-1,-1) = (1, 0, 0)
-// Q_mid = 1² = 1 (for unit tetrahedron)
-// Ratio: Q_mid/Q_vertex = 1/3
 const ratio_mid_sq = 1 / 3;
 Q_mid = (3 * halfSize * halfSize) * ratio_mid_sq;
 // Simplifies to: Q_mid = halfSize²
 ```
 
-**QUESTION FOR KIERAN:**
-Is there a golden ratio relationship for tetrahedron spheres, or is it purely rational (1/3)?
+#### Tetrahedron: InSphere (Tangent to Face Planes)
 
-#### Tetrahedron: InSphere
+**Face example:** Triangle with vertices `[(-s,-s,-s), (s,s,-s), (s,-s,s)]`
+
+**Face center (centroid):**
+```
+center = [(-s+s+s)/3, (-s+s-s)/3, (-s-s+s)/3]
+       = (s/3, -s/3, -s/3)
+
+Q_center = (s/3)² + (-s/3)² + (-s/3)²
+         = 3(s/3)²
+         = s²/3
+
+r_center = s/√3
+```
+
+But this is distance to face CENTER, not perpendicular distance to face PLANE.
+
+**Perpendicular distance to face (InSphere radius):**
+For regular tetrahedron: `r_in/r_out = 1/3`
+
+```
+r_in = (s√3) / 3 = s/√3 · (1/3) = s√3/3
+Q_in = (s√3/3)² = 3s²/9 = s²/3
+```
+
+**Ratio:**
+```
+Q_in/Q_out = (s²/3) / (3s²) = 1/9
+r_in/r_out = (s√3/3) / (s√3) = 1/3
+```
+
 ```javascript
-// Insphere tangent to face planes
-// For regular tetrahedron: r_in/r_out = 1/3
-// Q_in/Q_out = (1/3)² = 1/9
 const ratio_in_sq = 1 / 9;
 Q_in = (3 * halfSize * halfSize) * ratio_in_sq;
 // Simplifies to: Q_in = (1/3) * halfSize²
@@ -320,9 +385,17 @@ Q_in = (3 * halfSize * halfSize) * ratio_in_sq;
 
 **Ratios Summary:**
 ```
-Q_out : Q_mid : Q_in = 3 : 1 : (1/3)
+Q_out : Q_mid : Q_in = 3s² : s² : (s²/3)
+                     = 3 : 1 : (1/3)
                      = 9 : 3 : 1      // Integer ratio!
+
+r_out : r_mid : r_in = s√3 : s : (s√3/3)
+                     = √3 : 1 : (√3/3)
+                     = √3 : 1 : (1/√3)
 ```
+
+**QUESTION FOR KIERAN:**
+Tetrahedron ratios are purely rational (9:3:1 for quadrances). No golden ratio involvement - correct?
 
 ---
 
@@ -545,11 +618,19 @@ r_mid/r_out ≈ √0.7236 ≈ 0.8507
 r_in/r_out ≈ √0.6315 ≈ 0.7947
 ```
 
-**Tetrahedron (OutSphere radius = √3):**
+**Tetrahedron (halfSize s = 1, OutSphere radius = √3):**
 ```
-Q_out = 3
-Q_mid = 1
-Q_in = 1/3
+Vertices: Alternating cube corners (±1, ±1, ±1) with sign pattern
+Q_out = 3s² = 3
+Q_mid = s² = 1
+Q_in = s²/3 = 1/3
+
+r_out = s√3 = √3 ≈ 1.7321
+r_mid = s = 1
+r_in = s/√3 ≈ 0.5774
+
+Q_mid/Q_out = 1/3
+Q_in/Q_out = 1/9
 
 r_mid/r_out = 1/√3 ≈ 0.5774
 r_in/r_out = 1/3 ≈ 0.3333
