@@ -1893,71 +1893,65 @@
       const geometry = new THREE.BufferGeometry();
       const vertices = [];
 
-      // RT-PURE triangular lattice generation
-      // Same principle as tetrahedron barycentric subdivision (Phase 2.7c)
-      // Three line families form equilateral triangles (NO degrees, NO angles!)
-      // Direction 1: basis1
-      // Direction 2: basis2
-      // Direction 3: basis1 + basis2 (NOT basis1 - basis2!)
+      // RT-PURE triangular lattice generation using barycentric coordinates
+      // Same principle as tetrahedron frequency subdivision
+      //
+      // For a triangular grid from origin, we use barycentric coordinates (u, v, w)
+      // where u + v + w = 1, and position = u*origin + v*basis1 + w*basis2
+      //
+      // Since origin = (0,0,0), this simplifies to: position = v*basis1 + w*basis2
+      // We generate lines by varying one parameter while keeping the other fixed
 
-      const step = (maxExtent - minExtent) / divisions;
+      // Generate grid lines parallel to each of the three directions:
+      // 1. Lines parallel to basis1 (v varies, w fixed)
+      // 2. Lines parallel to basis2 (w varies, v fixed)
+      // 3. Lines parallel to -(basis1 + basis2) (u varies, v+w fixed at 1-u)
 
       // DIRECTION 1: Lines parallel to basis1
-      // These lines are displaced along basis2 direction
+      // Fix w (position along basis2), vary v (position along basis1)
       for (let i = 0; i <= divisions; i++) {
-        const offset = minExtent + i * step;
+        const w = i / divisions;  // Barycentric weight for basis2
 
-        // Displace along basis2
-        const displacement = basis2.clone().multiplyScalar(offset);
-
-        // Line endpoints along basis1 direction
-        const start = displacement.clone().add(basis1.clone().multiplyScalar(minExtent));
-        const end = displacement.clone().add(basis1.clone().multiplyScalar(maxExtent));
+        // Line from origin (v=0) to basis1 direction (v up to available space)
+        const start = basis2.clone().multiplyScalar(w * maxExtent);
+        const end = basis1.clone().multiplyScalar(maxExtent).add(
+                    basis2.clone().multiplyScalar(w * maxExtent));
 
         vertices.push(start.x, start.y, start.z);
         vertices.push(end.x, end.y, end.z);
       }
 
       // DIRECTION 2: Lines parallel to basis2
-      // These lines are displaced along basis1 direction
+      // Fix v (position along basis1), vary w (position along basis2)
       for (let i = 0; i <= divisions; i++) {
-        const offset = minExtent + i * step;
+        const v = i / divisions;  // Barycentric weight for basis1
 
-        // Displace along basis1
-        const displacement = basis1.clone().multiplyScalar(offset);
-
-        // Line endpoints along basis2 direction
-        const start = displacement.clone().add(basis2.clone().multiplyScalar(minExtent));
-        const end = displacement.clone().add(basis2.clone().multiplyScalar(maxExtent));
+        // Line from origin (w=0) to basis2 direction (w up to available space)
+        const start = basis1.clone().multiplyScalar(v * maxExtent);
+        const end = basis2.clone().multiplyScalar(maxExtent).add(
+                    basis1.clone().multiplyScalar(v * maxExtent));
 
         vertices.push(start.x, start.y, start.z);
         vertices.push(end.x, end.y, end.z);
       }
 
-      // DIRECTION 3: Lines parallel to (basis1 + basis2)
-      // These are the diagonal lines that complete the triangular lattice
-      // They are displaced along the (basis2 - basis1) direction
-      const diagonal = basis1.clone().add(basis2);  // NOT subtract!
-      const perpDisplacement = basis2.clone().sub(basis1);  // Perpendicular to diagonal
+      // DIRECTION 3: Lines parallel to -(basis1 + basis2)
+      // These close the triangular lattice
+      // Fix u (distance from far edge), vary along the edge perpendicular to (basis1+basis2)
+      for (let i = 0; i <= divisions; i++) {
+        const t = i / divisions;  // Parameter along the perpendicular edge
 
-      // Need to sample a wider range to cover the triangular region
-      for (let i = -divisions; i <= divisions; i++) {
-        const offset = minExtent + i * step;
+        // The far edge goes from basis1*maxExtent to basis2*maxExtent
+        // Points along this edge: (1-t)*basis1*maxExtent + t*basis2*maxExtent
+        const edgePoint1 = basis1.clone().multiplyScalar((1 - t) * maxExtent).add(
+                           basis2.clone().multiplyScalar(t * maxExtent));
 
-        // Displace perpendicular to diagonal
-        const displacement = perpDisplacement.clone().multiplyScalar(offset / diagonal.length());
+        // Line from origin through edgePoint1
+        const start = new THREE.Vector3(0, 0, 0);
+        const end = edgePoint1;
 
-        // Line endpoints along diagonal direction
-        const start = displacement.clone().add(diagonal.clone().multiplyScalar(minExtent));
-        const end = displacement.clone().add(diagonal.clone().multiplyScalar(maxExtent));
-
-        // Only add if line segment is within reasonable bounds
-        // (Triangular region naturally clips these)
-        const centerDist = displacement.length();
-        if (centerDist <= maxExtent * 1.5) {
-          vertices.push(start.x, start.y, start.z);
-          vertices.push(end.x, end.y, end.z);
-        }
+        vertices.push(start.x, start.y, start.z);
+        vertices.push(end.x, end.y, end.z);
       }
 
       geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
@@ -1975,9 +1969,9 @@
     function createQuadrayPlanes() {
       quadrayPlanes = new THREE.Group();
 
-      const minExtent = 0.5;  // Infinitesimal inner extent (avoid origin singularity)
-      const maxExtent = 5.0;  // Outer tetrahedral boundary
-      const divisions = 8;    // Grid subdivisions
+      const minExtent = 0.0;  // Origin is dimensionless point
+      const maxExtent = 5.0;  // Outer tetrahedral boundary (unit quadrance steps)
+      const divisions = 5;    // Grid subdivisions (unit increments)
 
       // Using nomenclature: W, X, Y, Z for Quadray basis (mapping to indices 0,1,2,3)
       // 6 planes from 6 combinations of 4 basis vectors
