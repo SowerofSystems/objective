@@ -1872,6 +1872,10 @@
      * Create triangular grid for a Quadray plane defined by two basis vectors
      * RT-PURE: Uses only vector arithmetic, no angles or rotations
      *
+     * TRIANGULAR LATTICE: Creates proper 60° equilateral triangle grid
+     * by generating lines in THREE directions (basis1, basis2, basis1+basis2)
+     * NOT a parallelogram grid!
+     *
      * @param {THREE.Vector3} basis1 - First basis vector (e.g., W)
      * @param {THREE.Vector3} basis2 - Second basis vector (e.g., X)
      * @param {number} minExtent - Inner radius (near-zero, avoid origin singularity)
@@ -1884,53 +1888,67 @@
       const geometry = new THREE.BufferGeometry();
       const vertices = [];
 
-      // Generate triangular lattice between minExtent and maxExtent
-      // This creates the characteristic 60° triangular grid pattern
+      // RT-PURE triangular lattice generation
+      // Three line families form equilateral triangles (60° angles)
+      // Direction 1: basis1
+      // Direction 2: basis2
+      // Direction 3: basis1 + basis2 (NOT basis1 - basis2!)
 
-      // Lines parallel to basis1 direction
+      const step = (maxExtent - minExtent) / divisions;
+
+      // DIRECTION 1: Lines parallel to basis1
+      // These lines are displaced along basis2 direction
       for (let i = 0; i <= divisions; i++) {
-        const t = minExtent + (i / divisions) * (maxExtent - minExtent);
+        const offset = minExtent + i * step;
 
-        // Line along basis2 direction at distance t along basis1
-        const start = basis1.clone().multiplyScalar(t).add(
-                      basis2.clone().multiplyScalar(minExtent));
-        const end = basis1.clone().multiplyScalar(t).add(
-                    basis2.clone().multiplyScalar(maxExtent));
+        // Displace along basis2
+        const displacement = basis2.clone().multiplyScalar(offset);
+
+        // Line endpoints along basis1 direction
+        const start = displacement.clone().add(basis1.clone().multiplyScalar(minExtent));
+        const end = displacement.clone().add(basis1.clone().multiplyScalar(maxExtent));
 
         vertices.push(start.x, start.y, start.z);
         vertices.push(end.x, end.y, end.z);
       }
 
-      // Lines parallel to basis2 direction
+      // DIRECTION 2: Lines parallel to basis2
+      // These lines are displaced along basis1 direction
       for (let i = 0; i <= divisions; i++) {
-        const t = minExtent + (i / divisions) * (maxExtent - minExtent);
+        const offset = minExtent + i * step;
 
-        // Line along basis1 direction at distance t along basis2
-        const start = basis2.clone().multiplyScalar(t).add(
-                      basis1.clone().multiplyScalar(minExtent));
-        const end = basis2.clone().multiplyScalar(t).add(
-                    basis1.clone().multiplyScalar(maxExtent));
+        // Displace along basis1
+        const displacement = basis1.clone().multiplyScalar(offset);
+
+        // Line endpoints along basis2 direction
+        const start = displacement.clone().add(basis2.clone().multiplyScalar(minExtent));
+        const end = displacement.clone().add(basis2.clone().multiplyScalar(maxExtent));
 
         vertices.push(start.x, start.y, start.z);
         vertices.push(end.x, end.y, end.z);
       }
 
-      // Diagonal lines (creates triangular lattice characteristic)
-      // Lines parallel to (basis1 - basis2) direction
-      const diagonal = basis1.clone().sub(basis2).normalize();
+      // DIRECTION 3: Lines parallel to (basis1 + basis2)
+      // These are the diagonal lines that complete the triangular lattice
+      // They are displaced along the (basis2 - basis1) direction
+      const diagonal = basis1.clone().add(basis2);  // NOT subtract!
+      const perpDisplacement = basis2.clone().sub(basis1);  // Perpendicular to diagonal
 
+      // Need to sample a wider range to cover the triangular region
       for (let i = -divisions; i <= divisions; i++) {
-        const offset = (i / divisions) * (maxExtent - minExtent);
+        const offset = minExtent + i * step;
 
-        // Start point along basis2, offset perpendicularly
-        const perpDir = basis2.clone();
-        const start = perpDir.clone().multiplyScalar(minExtent).add(
-                      diagonal.clone().multiplyScalar(offset));
-        const end = perpDir.clone().multiplyScalar(maxExtent).add(
-                    diagonal.clone().multiplyScalar(offset));
+        // Displace perpendicular to diagonal
+        const displacement = perpDisplacement.clone().multiplyScalar(offset / diagonal.length());
 
-        // Only draw if within bounds
-        if (Math.abs(offset) <= (maxExtent - minExtent)) {
+        // Line endpoints along diagonal direction
+        const start = displacement.clone().add(diagonal.clone().multiplyScalar(minExtent));
+        const end = displacement.clone().add(diagonal.clone().multiplyScalar(maxExtent));
+
+        // Only add if line segment is within reasonable bounds
+        // (Triangular region naturally clips these)
+        const centerDist = displacement.length();
+        if (centerDist <= maxExtent * 1.5) {
           vertices.push(start.x, start.y, start.z);
           vertices.push(end.x, end.y, end.z);
         }
