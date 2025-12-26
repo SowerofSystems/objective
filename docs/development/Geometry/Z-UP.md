@@ -235,6 +235,58 @@ Search for any logs that mention specific planes and update references from Y-up
 
 ---
 
+## CRITICAL: Comment Updates (Not Find/Replace!)
+
+**⚠️ DO NOT use find/replace for Y→Z or Z→Y!**
+
+The coordinate values don't change. Only the INTERPRETATION changes.
+
+**Example of what changes:**
+```javascript
+// Y-up (before):
+new THREE.Vector3(0, s, 0),  // Top (+y)
+new THREE.Vector3(0, 0, s),  // Front (+z)
+
+// Z-up (after) - SAME COORDINATES, different meaning:
+new THREE.Vector3(0, s, 0),  // Front (+Y) - not "top" anymore!
+new THREE.Vector3(0, 0, s),  // Top (+Z) - not "front" anymore!
+```
+
+**Selective comment updates needed:**
+
+1. **Octahedron** - Most obvious changes:
+   - `(0, s, 0)`: "Top" → "Front"
+   - `(0, -s, 0)`: "Bottom" → "Back"
+   - `(0, 0, s)`: "Front" → "Top"
+   - `(0, 0, -s)`: "Back" → "Bottom"
+
+2. **Cube** - Update vertical references:
+   - First 4 vertices: "bottom" (Z=-s)
+   - Last 4 vertices: "top" (Z=+s)
+   - Edges: "vertical edges" now connect along Z-axis
+
+3. **Icosahedron** - Rectangle plane references:
+   - "XZ plane" → "XY plane" for horizontal rectangles
+   - "YZ plane" → "XZ plane" for vertical front/back
+   - "XY plane" → "YZ plane" for vertical left/right
+
+4. **Face/Edge comments** - Plane references:
+   - "Bottom face (z = -s)" → "Bottom face (Z = -s)" (capitalize)
+   - "Top face (z = +s)" → "Top face (Z = +s)"
+   - "Vertical edges" - now refer to edges parallel to Z-axis
+
+5. **Console logs** - Plane descriptions:
+   - Search for "XZ plane" references → check if should be "XY plane"
+   - Search for "horizontal" → verify which plane is actually horizontal in Z-up
+
+**Strategy:**
+- Search for "Top", "Bottom", "Front", "Back" in comments
+- Check if they reference Y-coordinates (now depth) or Z-coordinates (now height)
+- Update descriptive words, not coordinate letters
+- Capitalize Z for emphasis where it indicates vertical axis
+
+---
+
 ## Testing Checklist
 
 ### Visual Validation (5 min)
