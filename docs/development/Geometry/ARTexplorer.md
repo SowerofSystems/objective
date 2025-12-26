@@ -1294,11 +1294,15 @@ const RT_Quadray = {
 
 **Triangular Lattice Fundamental:**
 For proper triangular grid, need THREE line families (not two):
-1. Lines parallel to basis1
-2. Lines parallel to basis2
-3. Lines parallel to (basis1 + basis2) - **NOT (basis1 - basis2)**!
+1. **Lines parallel to basis1** - displaced along basis2 direction at unit intervals
+2. **Lines parallel to basis2** - displaced along basis1 direction at unit intervals
+3. **Lines parallel to (basis1 + basis2)** - displaced perpendicular to (basis1 + basis2) at unit intervals
 
-The third direction forms the characteristic 60° equilateral triangle pattern.
+**CRITICAL:** All three directions must be PARALLEL line families, NOT radiating fans from origin!
+Each family consists of parallel lines offset at unit intervals in the perpendicular direction.
+
+The third direction forms the characteristic 60° equilateral triangle pattern by intersecting
+the parallelograms created by directions 1 and 2, dividing each into two triangles.
 
 ```javascript
 /**
@@ -1358,27 +1362,26 @@ function createQuadrayPlaneGrid(basis1, basis2, minExtent, maxExtent, divisions,
 
   // DIRECTION 3: Lines parallel to (basis1 + basis2)
   // This is the CRITICAL third direction that creates proper triangular lattice
-  // Displaced perpendicular to the diagonal (basis2 - basis1)
-  const diagonal = basis1.clone().add(basis2);  // NOT subtract!
-  const perpDisplacement = basis2.clone().sub(basis1);  // Perpendicular to diagonal
+  // Must be PARALLEL lines (not radiating fan from origin!)
+  // Displaced perpendicular to (basis1 + basis2) at unit intervals
 
-  // Sample wider range to cover triangular region
-  for (let i = -divisions; i <= divisions; i++) {
-    const offset = minExtent + i * step;
+  const diagonal = basis1.clone().add(basis2);  // Direction of third line family
+  const perpDirection = basis2.clone().sub(basis1);  // Perpendicular displacement direction
 
-    // Displace perpendicular to diagonal
-    const displacement = perpDisplacement.clone().multiplyScalar(offset / diagonal.length());
+  // Normalize perpendicular direction for unit spacing
+  const perpUnit = perpDirection.clone().normalize();
 
-    // Line endpoints along diagonal direction
-    const start = displacement.clone().add(diagonal.clone().multiplyScalar(minExtent));
+  // Generate parallel lines displaced at unit intervals perpendicular to diagonal
+  for (let i = 0; i <= divisions; i++) {
+    const displacement = perpUnit.clone().multiplyScalar(i * step);
+
+    // Line parallel to diagonal, displaced by 'displacement' amount
+    // Line extends from origin+displacement along diagonal direction
+    const start = displacement.clone();
     const end = displacement.clone().add(diagonal.clone().multiplyScalar(maxExtent));
 
-    // Only add if within reasonable bounds (triangular region clips these naturally)
-    const centerDist = displacement.length();
-    if (centerDist <= maxExtent * 1.5) {
-      vertices.push(start.x, start.y, start.z);
-      vertices.push(end.x, end.y, end.z);
-    }
+    vertices.push(start.x, start.y, start.z);
+    vertices.push(end.x, end.y, end.z);
   }
 
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
