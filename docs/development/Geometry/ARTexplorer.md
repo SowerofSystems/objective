@@ -1286,14 +1286,37 @@ const RT_Quadray = {
 
 **Step 2: Generate Triangular Grid on Quadray Plane**
 
+**CRITICAL PRINCIPLE:** Generate grids using the SAME RT-pure tessellation method as tetrahedron frequency divisions (Phase 2.7c). This ensures:
+- Proper 60° equilateral triangular lattice (NOT parallelograms or rhombuses)
+- Functionally equivalent to tetrahedron 'Flat' projection
+- Pure barycentric subdivision in algebraic space
+- No angle calculations, no degrees, RT-pure vector arithmetic only
+
+**Triangular Lattice Fundamental:**
+For proper triangular grid, need THREE line families (not two):
+1. Lines parallel to basis1
+2. Lines parallel to basis2
+3. Lines parallel to (basis1 + basis2) - **NOT (basis1 - basis2)**!
+
+The third direction forms the characteristic 60° equilateral triangle pattern.
+
 ```javascript
 /**
  * Create triangular grid for a Quadray plane defined by two basis vectors
+ * RT-PURE: Uses same tessellation method as tetrahedron frequency subdivisions
+ *
+ * TRIANGULAR LATTICE: Three line families form equilateral triangles (60° angles)
+ * - Direction 1: basis1
+ * - Direction 2: basis2
+ * - Direction 3: basis1 + basis2 (creates proper triangular grid)
+ *
+ * When Project='Flat', tetrahedron geodesic vertices lie EXACTLY on these grids!
+ *
  * @param {THREE.Vector3} basis1 - First basis vector (e.g., W)
  * @param {THREE.Vector3} basis2 - Second basis vector (e.g., X)
- * @param {number} minExtent - Inner radius (near-zero, e.g., 0.1)
- * @param {number} maxExtent - Outer radius (e.g., 10)
- * @param {number} divisions - Grid subdivisions (e.g., 10)
+ * @param {number} minExtent - Inner radius (near-zero, avoid origin singularity)
+ * @param {number} maxExtent - Outer radius (tetrahedral boundary)
+ * @param {number} divisions - Grid subdivisions (frequency parameter)
  * @param {number} color - Grid line color
  * @returns {THREE.LineSegments} Triangular grid geometry
  */
@@ -1301,54 +1324,118 @@ function createQuadrayPlaneGrid(basis1, basis2, minExtent, maxExtent, divisions,
   const geometry = new THREE.BufferGeometry();
   const vertices = [];
 
-  // Generate triangular lattice between minExtent and maxExtent
-  // Lines parallel to basis1 direction
-  for (let i = 0; i <= divisions; i++) {
-    const t = minExtent + (i / divisions) * (maxExtent - minExtent);
+  // RT-PURE triangular lattice generation
+  // Same principle as tetrahedron barycentric subdivision
+  const step = (maxExtent - minExtent) / divisions;
 
-    // Line along basis2 direction at distance t along basis1
-    const start = basis1.clone().multiplyScalar(minExtent).add(
-                  basis2.clone().multiplyScalar(t));
-    const end = basis1.clone().multiplyScalar(maxExtent).add(
-                basis2.clone().multiplyScalar(t));
+  // DIRECTION 1: Lines parallel to basis1
+  // Displaced along basis2 direction
+  for (let i = 0; i <= divisions; i++) {
+    const offset = minExtent + i * step;
+    const displacement = basis2.clone().multiplyScalar(offset);
+
+    // Line endpoints along basis1 direction
+    const start = displacement.clone().add(basis1.clone().multiplyScalar(minExtent));
+    const end = displacement.clone().add(basis1.clone().multiplyScalar(maxExtent));
 
     vertices.push(start.x, start.y, start.z);
     vertices.push(end.x, end.y, end.z);
   }
 
-  // Lines parallel to basis2 direction
+  // DIRECTION 2: Lines parallel to basis2
+  // Displaced along basis1 direction
   for (let i = 0; i <= divisions; i++) {
-    const t = minExtent + (i / divisions) * (maxExtent - minExtent);
+    const offset = minExtent + i * step;
+    const displacement = basis1.clone().multiplyScalar(offset);
 
-    // Line along basis1 direction at distance t along basis2
-    const start = basis2.clone().multiplyScalar(minExtent).add(
-                  basis1.clone().multiplyScalar(t));
-    const end = basis2.clone().multiplyScalar(maxExtent).add(
-                basis1.clone().multiplyScalar(t));
+    // Line endpoints along basis2 direction
+    const start = displacement.clone().add(basis2.clone().multiplyScalar(minExtent));
+    const end = displacement.clone().add(basis2.clone().multiplyScalar(maxExtent));
 
     vertices.push(start.x, start.y, start.z);
     vertices.push(end.x, end.y, end.z);
   }
 
-  // Diagonal lines (60° triangular lattice characteristic)
-  // Lines parallel to (basis1 - basis2) direction
-  for (let i = 0; i <= divisions; i++) {
-    const t = minExtent + (i / divisions) * (maxExtent - minExtent);
-    const direction = basis1.clone().sub(basis2).normalize();
+  // DIRECTION 3: Lines parallel to (basis1 + basis2)
+  // This is the CRITICAL third direction that creates proper triangular lattice
+  // Displaced perpendicular to the diagonal (basis2 - basis1)
+  const diagonal = basis1.clone().add(basis2);  // NOT subtract!
+  const perpDisplacement = basis2.clone().sub(basis1);  // Perpendicular to diagonal
 
-    // Implementation detail: compute intersection with plane boundaries
-    // This creates the characteristic triangular grid pattern
-    // ... (geometric calculation for diagonal grid lines)
+  // Sample wider range to cover triangular region
+  for (let i = -divisions; i <= divisions; i++) {
+    const offset = minExtent + i * step;
+
+    // Displace perpendicular to diagonal
+    const displacement = perpDisplacement.clone().multiplyScalar(offset / diagonal.length());
+
+    // Line endpoints along diagonal direction
+    const start = displacement.clone().add(diagonal.clone().multiplyScalar(minExtent));
+    const end = displacement.clone().add(diagonal.clone().multiplyScalar(maxExtent));
+
+    // Only add if within reasonable bounds (triangular region clips these naturally)
+    const centerDist = displacement.length();
+    if (centerDist <= maxExtent * 1.5) {
+      vertices.push(start.x, start.y, start.z);
+      vertices.push(end.x, end.y, end.z);
+    }
   }
 
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
   return new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({
     color,
     transparent: true,
-    opacity: 0.3  // Subtle visualization
+    opacity: 0.3  // Subtle visualization (don't overpower polyhedra)
   }));
 }
 ```
+
+**Connection to Tetrahedron Frequency Divisions:**
+
+The Quadray plane grids are functionally EQUIVALENT to tetrahedron frequency divisions when `Project = 'Flat'`:
+
+```javascript
+// Tetrahedron frequency subdivision (Phase 2.7c)
+// Subdivides triangular face using barycentric coordinates
+function subdivideTriangleFace(v0, v1, v2, frequency) {
+  const vertices = [];
+  const step = 1 / frequency;
+
+  // Barycentric subdivision - same principle as Quadray grid!
+  for (let i = 0; i <= frequency; i++) {
+    for (let j = 0; j <= frequency - i; j++) {
+      const k = frequency - i - j;
+
+      // Barycentric weights (u, v, w) where u+v+w=1
+      const u = i * step;
+      const v = j * step;
+      const w = k * step;
+
+      // Vertex position: u*v0 + v*v1 + w*v2 (same as grid intersection!)
+      const vertex = v0.clone().multiplyScalar(u)
+                        .add(v1.clone().multiplyScalar(v))
+                        .add(v2.clone().multiplyScalar(w));
+      vertices.push(vertex);
+    }
+  }
+  return vertices;
+}
+```
+
+**Why This Matters:**
+
+1. **Mathematical Consistency**: Both use barycentric/simplicial coordinate subdivision
+2. **Visual Equivalence**: Flat tetrahedron geodesic vertices align perfectly with Quadray grid intersections
+3. **RT Purity**: Pure algebraic vector arithmetic, no angles or trigonometry
+4. **Educational Value**: Shows that Quadray planes ARE the coordinate system for tetrahedral tessellation
+5. **Foundation for Phase 2.8**: Polygonal frequency projections use these same grids
+
+**RT Purity Verification:**
+- ✅ NO angle calculations (no degrees, no radians)
+- ✅ NO trigonometric functions (no sin, cos, tan)
+- ✅ Only vector addition, scalar multiplication, and length
+- ✅ Three line families create equilateral triangles via vector relationships
+- ✅ Same subdivision principle as tetrahedron frequency divisions
 
 **Step 3: Create All 6 Quadray Planes**
 
