@@ -751,6 +751,7 @@ Coplanar Polygon from axes i,j:
 - Process appears as "black box"
 
 **Solution: Two-Stage Process with Three Sphere Options**
+- KNOWN ISSUES: Icosahedron not yet properly mapping to insphere (not reaching face of base solid), or midsphere (actually exceeding edge as boundary), although outsphere appears correct.  
 
 **Stage 1: Subdivide/Frequency**
 - ☑ Subdivide (checkbox)

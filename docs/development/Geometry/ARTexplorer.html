@@ -206,6 +206,36 @@
       color: white;
     }
 
+    /* Plane toggle buttons (pill-shaped on/off switches) */
+    .plane-toggle-container {
+      display: flex;
+      gap: 5px;
+      margin-top: 5px;
+    }
+
+    .plane-toggle-btn {
+      flex: 1;
+      padding: 5px;
+      background: #1a1a1a;
+      border: 1px solid #555;
+      color: #b0b0b0;
+      border-radius: 3px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .plane-toggle-btn:hover {
+      border-color: #7ab8ff;
+      color: #e0e0e0;
+    }
+
+    .plane-toggle-btn.active {
+      background: #4a9eff;
+      border-color: #4a9eff;
+      color: white;
+    }
+
     .stats {
       font-size: 11px;
       color: #999;
@@ -245,10 +275,12 @@
       <div class="control-group">
         <h3>Coordinate System</h3>
         <div class="control-item">
-          <label class="checkbox-label">
-            <input type="checkbox" id="showCartesian" checked>
-            Show Cartesian Grid (XYZ)
-          </label>
+          <label style="font-size: 12px; color: #b0b0b0; display: block; margin-bottom: 5px;">Cartesian Planes</label>
+          <div class="plane-toggle-container">
+            <button class="plane-toggle-btn active" data-plane="XY">XY</button>
+            <button class="plane-toggle-btn" data-plane="XZ">XZ</button>
+            <button class="plane-toggle-btn" data-plane="YZ">YZ</button>
+          </div>
         </div>
         <div class="control-item">
           <label class="checkbox-label">
@@ -1688,10 +1720,22 @@
       const gridStep = 1;
       const gridColor = 0x444444;
 
-      // XY plane (z = 0)
-      const gridXY = new THREE.GridHelper(gridSize, gridSize / gridStep, gridColor, gridColor);
-      gridXY.rotation.x = Math.PI / 2;
-      cartesianGrid.add(gridXY);
+      // XY plane (z = 0) - horizontal plane
+      window.gridXY = new THREE.GridHelper(gridSize, gridSize / gridStep, gridColor, gridColor);
+      window.gridXY.rotation.x = Math.PI / 2;
+      cartesianGrid.add(window.gridXY);
+
+      // XZ plane (y = 0) - vertical front plane
+      window.gridXZ = new THREE.GridHelper(gridSize, gridSize / gridStep, gridColor, gridColor);
+      // GridHelper is already in XZ orientation (default horizontal), no rotation needed
+      window.gridXZ.visible = false; // Hidden by default
+      cartesianGrid.add(window.gridXZ);
+
+      // YZ plane (x = 0) - vertical side plane
+      window.gridYZ = new THREE.GridHelper(gridSize, gridSize / gridStep, gridColor, gridColor);
+      window.gridYZ.rotation.z = Math.PI / 2;
+      window.gridYZ.visible = false; // Hidden by default
+      cartesianGrid.add(window.gridYZ);
 
       // Add axes (subtle, thinner than WOMBAT edges)
       const axesHelper = new THREE.AxesHelper(3);
@@ -2038,9 +2082,29 @@
     // EVENT HANDLERS
     // ========================================================================
 
-    // Coordinate system toggles
-    document.getElementById('showCartesian').addEventListener('change', (e) => {
-      cartesianGrid.visible = e.target.checked;
+    // Cartesian plane toggle buttons (independent on/off switches)
+    document.querySelectorAll('.plane-toggle-btn[data-plane]').forEach(btn => {
+      btn.addEventListener('click', function() {
+        // Toggle active state
+        this.classList.toggle('active');
+
+        const plane = this.dataset.plane;
+
+        // Update grid visibility
+        if (plane === 'XY' && window.gridXY) {
+          window.gridXY.visible = this.classList.contains('active');
+        } else if (plane === 'XZ' && window.gridXZ) {
+          window.gridXZ.visible = this.classList.contains('active');
+        } else if (plane === 'YZ' && window.gridYZ) {
+          window.gridYZ.visible = this.classList.contains('active');
+        }
+
+        // Show/hide cartesianGrid group if any plane is active
+        const anyActive = document.querySelector('.plane-toggle-btn[data-plane].active');
+        if (cartesianGrid) {
+          cartesianGrid.visible = anyActive !== null;
+        }
+      });
     });
 
     document.getElementById('showQuadray').addEventListener('change', (e) => {
