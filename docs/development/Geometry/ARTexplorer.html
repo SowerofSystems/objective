@@ -1271,22 +1271,20 @@
           console.log(`  Projection: OFF (flat subdivided mesh)`);
           return { vertices: subdivided.vertices, edges: subdivided.edges, faces: subdivided.faces };
         } else if (projection === 'in') {
-          // RT-PURE InSphere: Tangent to face centers
-          // For icosahedron vertices at (±a, ±φa, 0): Q_out = a²(φ + 2)
-          // Face centers have Q_in = Q_out · (3φ + 5) / (9(φ + 2))
-          const phi = 0.5 * (1 + Math.sqrt(5));  // Golden ratio
-          const ratio_in_sq = (3 * phi + 5) / (9 * (phi + 2));
-          Q_target = (halfSize * halfSize) * ratio_in_sq;
-          console.log(`  Projection: InSphere (tangent to face centers, RT-pure)`);
-          console.log(`  RT: Q_in/Q_out = (3φ+5)/(9(φ+2)) = ${ratio_in_sq.toFixed(6)}`);
+          // RT-PURE InSphere: Perpendicular distance to face planes
+          // For icosahedron: Q_in = Q_out / 5 (exact!)
+          // Where 5 = (√5)² - RT-pure since √5 appears in φ definition
+          Q_target = (halfSize * halfSize) / 5;
+          console.log(`  Projection: InSphere (perpendicular to face planes, RT-pure)`);
+          console.log(`  RT: Q_in = Q_out / 5 (exact!)`);
         } else if (projection === 'mid') {
-          // RT-PURE MidSphere: Tangent to edge midpoints
-          // Edge midpoints have Q_mid = Q_out · (3φ + 4) / (4(φ + 2))
+          // RT-PURE MidSphere: Distance to edge midpoints
+          // For icosahedron: Q_mid = Q_out · φ²/(φ+2) = Q_out · (φ+1)/(φ+2)
           const phi = 0.5 * (1 + Math.sqrt(5));  // Golden ratio
-          const ratio_mid_sq = (3 * phi + 4) / (4 * (phi + 2));
+          const ratio_mid_sq = (phi + 1) / (phi + 2);  // Using φ² = φ + 1
           Q_target = (halfSize * halfSize) * ratio_mid_sq;
-          console.log(`  Projection: MidSphere (tangent to edge midpoints, RT-pure)`);
-          console.log(`  RT: Q_mid/Q_out = (3φ+4)/(4(φ+2)) = ${ratio_mid_sq.toFixed(6)}`);
+          console.log(`  Projection: MidSphere (distance to edge midpoints, RT-pure)`);
+          console.log(`  RT: Q_mid/Q_out = φ²/(φ+2) = (φ+1)/(φ+2) = ${ratio_mid_sq.toFixed(6)}`);
         } else if (projection === 'out') {
           // OutSphere: Through vertices (Fuller's true geodesic)
           Q_target = halfSize * halfSize;
