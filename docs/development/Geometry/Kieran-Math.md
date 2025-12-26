@@ -545,36 +545,58 @@ const scale = Math.sqrt(scale_squared);  // Deferred sqrt - only used once
 
 ---
 
-## Potential Optimizations - Review Checklist
+## Optimization Review - COMPLETED (2025-12-26)
 
-### For Kieran to Check:
+### Kieran's Analysis & Recommendations:
 
 1. **Icosahedron InSphere Formula:**
    - Current: `Q_in/Q_out = (3φ + 2) / [3(φ + 2)]`
    - Proposed: `Q_in/Q_out = (9/(7φ))²` or equivalent
-   - **Task:** Prove algebraically if these are equal
+   - **✅ VERIFIED:** Formulas are **NOT equal**. Keep current form `(3φ + 2) / [3(φ + 2)]`
+   - **Rationale:** Maintains computational accuracy and avoids unnecessary algebraic complexity
 
 2. **Icosahedron MidSphere Formula:**
    - Current: `Q_mid/Q_out = (φ + 1) / (φ + 2)`
    - Alternative: `Q_mid/Q_out = φ² / (φ + 2)`
-   - **Task:** Which form is simpler for computation?
+   - **✅ OPTIMAL:** Current formula `(φ + 1) / (φ + 2)` is best
+   - **Rationale:** Avoids error induced by squaring φ; lower order in φ is computationally optimal
 
 3. **Icosahedron Base Construction:**
    - Current: `a = r_out / √(φ + 2)` and `b = φ·a`
-   - Note: `φ + 2 = φ² + 1`
-   - **Task:** Can `√(φ² + 1)` be simplified?
+   - Alternative: `a = r_out / √(φ² + 1)`
+   - **✅ OPTIMAL:** Keep as `√(φ + 2)`
+   - **Rationale:** Lower order in φ; square root cannot be cancelled due to the constant term
 
 4. **Golden Ratio Higher Powers:**
    - We use: `φ² = φ + 1`, `φ⁴ = 3φ + 2`
-   - **Task:** Are there identities that simplify expressions like `(3φ + 2) / (3φ + 6)`?
+   - Question: Can identities simplify expressions like `(3φ + 2) / (3φ + 6)`?
+   - **✅ NO SIMPLIFICATION:** Provided identities do not simplify these ratios
+   - **Rationale:** Would increase the order in φ without potential for cancellation; not computationally optimal
 
 5. **Tetrahedron & Octahedron:**
    - Currently use simple rational fractions (1/2, 1/3, 1/9, etc.)
-   - **Task:** Verify these have no golden ratio relationships (should be purely rational)
+   - **✅ CORRECT:** These are purely integer ratios, no golden ratio involvement
+   - **Rationale:** Radius to face, edge, and vertex of any single polyhedron can be related using midpoint formulas without invoking φ
 
-6. **General Question:**
-   - Are there any expressions with nested √ that can be denested?
-   - Example: `√(φ + 2)` versus `√(φ² + 1)` - is one "simpler"?
+6. **Denesting Square Roots:**
+   - Question: Can expressions like `√(φ + 2)` be denested?
+   - **✅ NO DENESTING:** Choose lowest order in φ
+   - **Rationale:** Square root cannot be cancelled due to the constant; lower order minimizes numerical error
+
+### Summary of Recommendations:
+
+**ALL CURRENT FORMULAS ARE OPTIMAL - NO CHANGES NEEDED**
+
+The implementation in ARTexplorer.html uses the most computationally efficient forms:
+- ✅ Lowest order in golden ratio φ
+- ✅ Minimal numerical error propagation
+- ✅ Avoids unnecessary algebraic complexity
+- ✅ Maintains RT purity (quadrance-based calculations)
+
+**Key Principle:** When working with φ expressions, prefer **lowest order** forms (e.g., `φ + 1` over `φ²`) to minimize:
+1. Floating-point error accumulation
+2. Computational complexity
+3. Expression evaluation cost
 
 ---
 
@@ -648,29 +670,41 @@ r_in/r_out = 1/√3 ≈ 0.5774
 
 ---
 
-## Questions Summary for Kieran
+## Review Completion Summary
+
+**Reviewer:** Kieran Thomson
+**Date:** 2025-12-26
+**Status:** ✅ ALL QUESTIONS ANSWERED
+
+### Questions & Answers:
 
 1. **Can you prove algebraically that `(3φ + 2) / [3(φ + 2)] = (9/(7φ))²`?**
-   - If true, this would simplify InSphere calculation significantly
+   - ❌ **NOT EQUAL** - Keep current formula `(3φ + 2) / [3(φ + 2)]`
 
 2. **Is `(φ + 1) / (φ + 2)` or `φ² / (φ + 2)` the better form for MidSphere?**
-   - Which is more computationally efficient?
+   - ✅ **`(φ + 1) / (φ + 2)` is optimal** - Avoids error from squaring φ
 
 3. **Can `√(φ + 2)` be simplified using golden ratio identities?**
-   - We know `φ + 2 = φ² + 1`, but is `√(φ² + 1)` simpler somehow?
+   - ✅ **Keep as `√(φ + 2)`** - Lower order in φ minimizes numerical error
 
 4. **Are there any denesting opportunities?**
-   - Any nested radicals that can be simplified?
+   - ✅ **No denesting possible** - Lowest order forms are already optimal
 
 5. **General optimization suggestions?**
-   - Any other algebraic simplifications you see?
+   - ✅ **All current formulas are optimal** - No changes needed
+
+### Key Finding:
+
+**"Choose lowest order in φ for optimal computation"**
+
+When multiple equivalent forms exist (e.g., `φ + 1` vs `φ²`), always prefer the form with the lowest power of φ to:
+- Minimize floating-point error accumulation
+- Reduce computational complexity
+- Improve numerical stability
 
 ---
 
-**END OF MATHEMATICAL REFERENCE**
+**END OF MATHEMATICAL REFERENCE - REVIEW COMPLETE**
 
-**Next Steps:**
-1. Kieran reviews formulas for algebraic simplifications
-2. Check proposed equivalences (especially InSphere 9/(7φ) claim)
-3. Suggest any computational optimizations
-4. Verify all golden ratio identities are correctly applied
+**Conclusion:**
+All formulas in ARTexplorer.html are mathematically optimal and computationally efficient. No code changes required.
