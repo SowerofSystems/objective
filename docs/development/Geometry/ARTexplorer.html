@@ -1935,20 +1935,24 @@
         vertices.push(end.x, end.y, end.z);
       }
 
-      // DIRECTION 3: Lines parallel to -(basis1 + basis2)
-      // These close the triangular lattice
-      // Fix u (distance from far edge), vary along the edge perpendicular to (basis1+basis2)
+      // DIRECTION 3: Lines parallel to (basis1 + basis2)
+      // CRITICAL: Must be PARALLEL lines, NOT radiating fan from origin!
+      // These lines intersect the parallelograms to create triangular lattice
+      const diagonal = basis1.clone().add(basis2);  // Direction of third line family
+      const perpDirection = basis2.clone().sub(basis1);  // Perpendicular displacement direction
+
+      // Calculate step size in perpendicular direction
+      const step = maxExtent / divisions;
+
+      // Generate parallel lines displaced at unit intervals perpendicular to diagonal
       for (let i = 0; i <= divisions; i++) {
-        const t = i / divisions;  // Parameter along the perpendicular edge
+        // Displacement perpendicular to diagonal
+        const displacement = perpDirection.clone().normalize().multiplyScalar(i * step);
 
-        // The far edge goes from basis1*maxExtent to basis2*maxExtent
-        // Points along this edge: (1-t)*basis1*maxExtent + t*basis2*maxExtent
-        const edgePoint1 = basis1.clone().multiplyScalar((1 - t) * maxExtent).add(
-                           basis2.clone().multiplyScalar(t * maxExtent));
-
-        // Line from origin through edgePoint1
-        const start = new THREE.Vector3(0, 0, 0);
-        const end = edgePoint1;
+        // Line parallel to diagonal, displaced by 'displacement' amount
+        // Extends from displaced origin along diagonal direction
+        const start = displacement.clone();
+        const end = displacement.clone().add(diagonal.clone().multiplyScalar(maxExtent));
 
         vertices.push(start.x, start.y, start.z);
         vertices.push(end.x, end.y, end.z);
