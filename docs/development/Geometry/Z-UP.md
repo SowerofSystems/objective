@@ -49,6 +49,25 @@ The numbers are identical, only our mental model changes!
 
 ---
 
+## Quick Reference: What Changes
+
+### Code Changes (3 locations)
+1. **Camera setup**: `camera.up.set(0, 0, 1)` and adjust position
+2. **Grid rotations**: XY horizontal, XZ/YZ vertical
+3. **Default toggle**: XY active (not XZ)
+
+### Visual Changes
+- **Blue axis points UP** (instead of green)
+- **XY plane is horizontal ground** (instead of XZ)
+- **XZ and YZ planes are vertical walls**
+
+### Comment/Label Updates
+- Update vertex descriptions (top/bottom instead of front/back)
+- Update plane references (XY=ground, not XZ)
+- Capitalize Z in comments for consistency
+
+---
+
 ## Implementation Plan
 
 ### Phase 1: Camera & Scene (15 min)
@@ -88,9 +107,12 @@ gridYZ.visible = false;
 
 **Axes Helper**
 No code change needed - axes automatically follow camera.up:
-- Red = X+ (right)
-- Green = Y+ (depth)
-- Blue = Z+ (up) ← should point vertically
+- **Red = X+** (right, horizontal)
+- **Green = Y+** (depth, horizontal, away from viewer)
+- **Blue = Z+** (up, VERTICAL) ← Industry standard: Blue = Up in Z-up systems
+
+This matches CAD/Blender/glTF convention where Blue = Z = Up.
+When we set camera.up.set(0, 0, 1), blue arrow automatically points vertically.
 
 ---
 
@@ -169,14 +191,23 @@ new THREE.Vector3( 0,  0,  s),  // 4: Top (+Z)  ← Key change!
 
 ---
 
-### Phase 3: UI Labels (10 min)
+### Phase 3: UI Labels & Grid Toggles (10 min)
 
-**Grid Plane Toggle Labels**
+**Grid Plane Toggle Defaults**
+In Z-up, the XY plane should be the default horizontal ground plane:
 ```javascript
-// Consider adding descriptive labels:
-"XY" → "XY (Ground)"
-"XZ" → "XZ (Front)"
-"YZ" → "YZ (Side)"
+// Update default visible plane in HTML:
+// XY toggle: ACTIVE (horizontal ground plane in Z-up)
+// XZ toggle: inactive (vertical wall in Z-up)
+// YZ toggle: inactive (vertical wall in Z-up)
+```
+
+**Grid Plane Toggle Labels (Optional Enhancement)**
+```javascript
+// Consider adding descriptive labels in UI:
+"XY" → "XY (Ground)"    // Horizontal floor at Z=0
+"XZ" → "XZ (Wall)"      // Vertical front/back at Y=0
+"YZ" → "YZ (Wall)"      // Vertical left/right at X=0
 ```
 
 **Console Logging**
@@ -207,22 +238,29 @@ Search for any logs that mention specific planes and update references from Y-up
 ## Testing Checklist
 
 ### Visual Validation (5 min)
-- [ ] Blue axis (Z) points vertically upward
-- [ ] XY plane is horizontal (ground)
-- [ ] XZ and YZ planes are vertical (walls)
+- [ ] **Blue axis (Z) points vertically upward** ← Key test!
+- [ ] Green axis (Y) points away from viewer (horizontal depth)
+- [ ] Red axis (X) points right (horizontal)
+- [ ] **XY toggle active by default** (shows horizontal ground grid)
+- [ ] XY plane is horizontal (ground at Z=0)
+- [ ] XZ plane is vertical when toggled on (wall at Y=0)
+- [ ] YZ plane is vertical when toggled on (wall at X=0)
 - [ ] Cube: 4 edges vertical, 8 edges horizontal
-- [ ] Octahedron: top and bottom vertices on vertical line
+- [ ] Octahedron: top and bottom vertices on vertical line (along Z-axis)
 
 ### RT Validation (5 min)
 - [ ] Console shows same quadrances as before
 - [ ] No errors in console
 - [ ] All polyhedra toggle on/off correctly
+- [ ] Geodesic subdivisions work correctly
 
 ### Functional Validation (5 min)
-- [ ] Camera controls feel natural
+- [ ] Camera controls feel natural (orbit feels like going around vertical object)
 - [ ] Scale slider works
 - [ ] Grid toggles show/hide correctly
 - [ ] All polyhedra render properly
+- [ ] Node size buttons work
+- [ ] Opacity slider works
 
 ---
 
@@ -252,18 +290,22 @@ Search for any logs that mention specific planes and update references from Y-up
 ## Success Criteria
 
 **Definition of Done:**
-1. Blue axis (Z) visibly points up
-2. XY plane is horizontal (ground)
-3. Comments reflect Z-up convention
-4. Same visual output when viewed from equivalent angles
-5. All RT validations still pass
+1. **Blue axis (Z) visibly points vertically upward** ← Primary visual test
+2. **XY toggle is active by default** (shows horizontal ground grid)
+3. **XY plane is horizontal** (ground at Z=0)
+4. XZ and YZ planes are vertical (walls)
+5. Comments reflect Z-up convention (top/bottom, not front/back for vertical)
+6. Same visual output when viewed from equivalent angles
+7. All RT validations still pass (same quadrances)
 
 **Acceptance Test:**
 Side-by-side comparison with Y-up backup:
-- Polyhedra look identical? ✓
-- Quadrances match? ✓
-- Blue axis now vertical? ✓
-- Grid orientations make sense? ✓
+- ✓ Polyhedra look identical? (same geometry)
+- ✓ Quadrances match? (same RT values in console)
+- ✓ **Blue axis now vertical?** (was green before)
+- ✓ **XY plane now horizontal?** (was XZ before)
+- ✓ Grid orientations make sense? (XY=ground, XZ/YZ=walls)
+- ✓ Camera feels natural? (orbiting around vertical axis)
 
 ---
 
