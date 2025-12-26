@@ -555,6 +555,14 @@ All RT purity enhancements successfully implemented:
 
 ## Next Steps
 
+### ✅ COMPLETED (Phase 2.9 - Geodesic UI Refinements - 2025-12-25):
+1. ✅ **UI Reorganization** - COMPLETE
+   - ✅ Nested geodesic controls under parent polyhedron checkboxes
+   - ✅ Single collapsible toggle per polyhedron (cleaner hierarchy)
+   - ✅ Reordered elements: checkbox → toggle → title (vertical alignment)
+   - ✅ Improved discoverability of geodesic features
+   - ✅ Applied to tetrahedron, octahedron, and icosahedron
+
 ### ✅ COMPLETED (Phase 2.5 - RT Enhancements - 2025-12-24):
 1. ✅ **Implement Enhanced RT Library** - COMPLETE
    - ✅ Add RT_Phi symbolic golden ratio operations

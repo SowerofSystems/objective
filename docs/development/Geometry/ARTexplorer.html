@@ -271,34 +271,36 @@
         <div class="control-item">
           <label class="checkbox-label">
             <input type="checkbox" id="showTetrahedron">
+            <span class="geodesic-toggle collapsed" data-target="geodesic-tetra-all"></span>
             Tetrahedron (Inscribed)
           </label>
-        </div>
-        <div class="control-item" style="margin-left: 20px;">
-          <label class="checkbox-label">
-            <span class="geodesic-toggle collapsed" data-target="geodesic-tetra-options"></span>
-            <input type="checkbox" id="showGeodesicTetrahedron">
-            Geodesic (Fuller)
-          </label>
-          <div id="geodesic-tetra-options" class="geodesic-options collapsed">
-            <div class="slider-container">
-              <label style="font-size: 11px;">Freq:</label>
-              <input type="number" id="geodesicTetraFrequency" min="0" max="6" value="1" style="width: 50px; margin-left: 5px;">
-            </div>
-            <div style="margin-top: 8px;">
-              <label style="font-size: 11px; display: block; margin-bottom: 3px; color: #b0b0b0;">Project:</label>
-              <label style="font-size: 10px; display: block; margin-left: 5px;">
-                <input type="radio" name="geodesicTetraProjection" value="off"> Off (flat)
+          <div id="geodesic-tetra-all" class="geodesic-options collapsed">
+            <div style="margin-left: 20px; margin-top: 5px;">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showGeodesicTetrahedron">
+                Geodesic (Fuller)
               </label>
-              <label style="font-size: 10px; display: block; margin-left: 5px;">
-                <input type="radio" name="geodesicTetraProjection" value="in"> InSphere
-              </label>
-              <label style="font-size: 10px; display: block; margin-left: 5px;">
-                <input type="radio" name="geodesicTetraProjection" value="mid"> MidSphere
-              </label>
-              <label style="font-size: 10px; display: block; margin-left: 5px;">
-                <input type="radio" name="geodesicTetraProjection" value="out" checked> OutSphere
-              </label>
+              <div style="margin-left: 20px; margin-top: 5px;">
+                <div class="slider-container">
+                  <label style="font-size: 11px;">Freq:</label>
+                  <input type="number" id="geodesicTetraFrequency" min="0" max="6" value="1" style="width: 50px; margin-left: 5px;">
+                </div>
+                <div style="margin-top: 8px;">
+                  <label style="font-size: 11px; display: block; margin-bottom: 3px; color: #b0b0b0;">Project:</label>
+                  <label style="font-size: 10px; display: block; margin-left: 5px;">
+                    <input type="radio" name="geodesicTetraProjection" value="off"> Off (flat)
+                  </label>
+                  <label style="font-size: 10px; display: block; margin-left: 5px;">
+                    <input type="radio" name="geodesicTetraProjection" value="in"> InSphere
+                  </label>
+                  <label style="font-size: 10px; display: block; margin-left: 5px;">
+                    <input type="radio" name="geodesicTetraProjection" value="mid"> MidSphere
+                  </label>
+                  <label style="font-size: 10px; display: block; margin-left: 5px;">
+                    <input type="radio" name="geodesicTetraProjection" value="out" checked> OutSphere
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -311,68 +313,72 @@
         <div class="control-item">
           <label class="checkbox-label">
             <input type="checkbox" id="showOctahedron">
+            <span class="geodesic-toggle collapsed" data-target="geodesic-octa-all"></span>
             Octahedron (Dual of Cube)
           </label>
-        </div>
-        <div class="control-item" style="margin-left: 20px;">
-          <label class="checkbox-label">
-            <span class="geodesic-toggle collapsed" data-target="geodesic-octa-options"></span>
-            <input type="checkbox" id="showGeodesicOctahedron">
-            Geodesic (Fuller)
-          </label>
-          <div id="geodesic-octa-options" class="geodesic-options collapsed">
-            <div class="slider-container">
-              <label style="font-size: 11px;">Freq:</label>
-              <input type="number" id="geodesicOctaFrequency" min="0" max="6" value="0" style="width: 50px; margin-left: 5px;">
-            </div>
-            <div style="margin-top: 8px;">
-              <label style="font-size: 11px;">Project:</label>
-              <label style="font-size: 10px;">
-                <input type="radio" name="geodesicOctaProjection" value="off"> Off (flat)
+          <div id="geodesic-octa-all" class="geodesic-options collapsed">
+            <div style="margin-left: 20px; margin-top: 5px;">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showGeodesicOctahedron">
+                Geodesic (Fuller)
               </label>
-              <label style="font-size: 10px;">
-                <input type="radio" name="geodesicOctaProjection" value="in"> InSphere
-              </label>
-              <label style="font-size: 10px;">
-                <input type="radio" name="geodesicOctaProjection" value="mid"> MidSphere
-              </label>
-              <label style="font-size: 10px;">
-                <input type="radio" name="geodesicOctaProjection" value="out" checked> OutSphere
-              </label>
+              <div style="margin-left: 20px; margin-top: 5px;">
+                <div class="slider-container">
+                  <label style="font-size: 11px;">Freq:</label>
+                  <input type="number" id="geodesicOctaFrequency" min="0" max="6" value="0" style="width: 50px; margin-left: 5px;">
+                </div>
+                <div style="margin-top: 8px;">
+                  <label style="font-size: 11px; display: block; margin-bottom: 3px; color: #b0b0b0;">Project:</label>
+                  <label style="font-size: 10px; display: block; margin-left: 5px;">
+                    <input type="radio" name="geodesicOctaProjection" value="off"> Off (flat)
+                  </label>
+                  <label style="font-size: 10px; display: block; margin-left: 5px;">
+                    <input type="radio" name="geodesicOctaProjection" value="in"> InSphere
+                  </label>
+                  <label style="font-size: 10px; display: block; margin-left: 5px;">
+                    <input type="radio" name="geodesicOctaProjection" value="mid"> MidSphere
+                  </label>
+                  <label style="font-size: 10px; display: block; margin-left: 5px;">
+                    <input type="radio" name="geodesicOctaProjection" value="out" checked> OutSphere
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
         </div>
         <div class="control-item">
           <label class="checkbox-label">
             <input type="checkbox" id="showIcosahedron">
+            <span class="geodesic-toggle collapsed" data-target="geodesic-icosa-all"></span>
             Icosahedron (20 faces, φ)
           </label>
-        </div>
-        <div class="control-item" style="margin-left: 20px;">
-          <label class="checkbox-label">
-            <span class="geodesic-toggle collapsed" data-target="geodesic-icosa-options"></span>
-            <input type="checkbox" id="showGeodesicIcosahedron">
-            Geodesic (Fuller)
-          </label>
-          <div id="geodesic-icosa-options" class="geodesic-options collapsed">
-            <div class="slider-container">
-              <label style="font-size: 11px;">Freq:</label>
-              <input type="number" id="geodesicFrequency" min="0" max="6" value="0" style="width: 50px; margin-left: 5px;">
-            </div>
-            <div style="margin-top: 8px;">
-              <label style="font-size: 11px;">Project:</label>
-              <label style="font-size: 10px;">
-                <input type="radio" name="geodesicIcosaProjection" value="off"> Off (flat)
+          <div id="geodesic-icosa-all" class="geodesic-options collapsed">
+            <div style="margin-left: 20px; margin-top: 5px;">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showGeodesicIcosahedron">
+                Geodesic (Fuller)
               </label>
-              <label style="font-size: 10px;">
-                <input type="radio" name="geodesicIcosaProjection" value="in"> InSphere
-              </label>
-              <label style="font-size: 10px;">
-                <input type="radio" name="geodesicIcosaProjection" value="mid"> MidSphere
-              </label>
-              <label style="font-size: 10px;">
-                <input type="radio" name="geodesicIcosaProjection" value="out" checked> OutSphere
-              </label>
+              <div style="margin-left: 20px; margin-top: 5px;">
+                <div class="slider-container">
+                  <label style="font-size: 11px;">Freq:</label>
+                  <input type="number" id="geodesicFrequency" min="0" max="6" value="0" style="width: 50px; margin-left: 5px;">
+                </div>
+                <div style="margin-top: 8px;">
+                  <label style="font-size: 11px; display: block; margin-bottom: 3px; color: #b0b0b0;">Project:</label>
+                  <label style="font-size: 10px; display: block; margin-left: 5px;">
+                    <input type="radio" name="geodesicIcosaProjection" value="off"> Off (flat)
+                  </label>
+                  <label style="font-size: 10px; display: block; margin-left: 5px;">
+                    <input type="radio" name="geodesicIcosaProjection" value="in"> InSphere
+                  </label>
+                  <label style="font-size: 10px; display: block; margin-left: 5px;">
+                    <input type="radio" name="geodesicIcosaProjection" value="mid"> MidSphere
+                  </label>
+                  <label style="font-size: 10px; display: block; margin-left: 5px;">
+                    <input type="radio" name="geodesicIcosaProjection" value="out" checked> OutSphere
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
         </div>
