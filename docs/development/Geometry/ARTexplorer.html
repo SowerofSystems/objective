@@ -323,6 +323,47 @@
           </label>
         </div>
         <p class="info-text">Quadray: 4 tetrahedral basis vectors pointing to cube vertices (1,1,1), (1,-1,-1), (-1,1,-1), (-1,-1,1)</p>
+        <div class="control-item">
+          <label style="font-size: 12px; color: #b0b0b0; display: block; margin-bottom: 5px;">Quadray Planes (Triangular Grids)</label>
+          <div class="plane-toggle-container">
+            <div class="plane-toggle-item">
+              <span class="plane-toggle-label">WX</span>
+              <div class="plane-toggle-switch" data-plane="quadrayWX">
+                <div class="plane-toggle-slider"></div>
+              </div>
+            </div>
+            <div class="plane-toggle-item">
+              <span class="plane-toggle-label">WY</span>
+              <div class="plane-toggle-switch" data-plane="quadrayWY">
+                <div class="plane-toggle-slider"></div>
+              </div>
+            </div>
+            <div class="plane-toggle-item">
+              <span class="plane-toggle-label">WZ</span>
+              <div class="plane-toggle-switch" data-plane="quadrayWZ">
+                <div class="plane-toggle-slider"></div>
+              </div>
+            </div>
+            <div class="plane-toggle-item">
+              <span class="plane-toggle-label">XY</span>
+              <div class="plane-toggle-switch" data-plane="quadrayXY">
+                <div class="plane-toggle-slider"></div>
+              </div>
+            </div>
+            <div class="plane-toggle-item">
+              <span class="plane-toggle-label">XZ</span>
+              <div class="plane-toggle-switch" data-plane="quadrayXZ">
+                <div class="plane-toggle-slider"></div>
+              </div>
+            </div>
+            <div class="plane-toggle-item">
+              <span class="plane-toggle-label">YZ</span>
+              <div class="plane-toggle-switch" data-plane="quadrayYZ">
+                <div class="plane-toggle-slider"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Polyhedra Selection -->
@@ -1726,6 +1767,7 @@
       // Create coordinate grids
       createCartesianGrid();
       createQuadrayBasis();
+      createQuadrayPlanes();
 
       // Create polyhedra groups
       cubeGroup = new THREE.Group();
@@ -1824,6 +1866,159 @@
 
       quadrayBasis.visible = false; // Hidden by default
       scene.add(quadrayBasis);
+    }
+
+    /**
+     * Create triangular grid for a Quadray plane defined by two basis vectors
+     * RT-PURE: Uses only vector arithmetic, no angles or rotations
+     *
+     * @param {THREE.Vector3} basis1 - First basis vector (e.g., W)
+     * @param {THREE.Vector3} basis2 - Second basis vector (e.g., X)
+     * @param {number} minExtent - Inner radius (near-zero, avoid origin singularity)
+     * @param {number} maxExtent - Outer radius (tetrahedral boundary)
+     * @param {number} divisions - Grid subdivisions
+     * @param {number} color - Grid line color
+     * @returns {THREE.LineSegments} Triangular grid geometry
+     */
+    function createQuadrayPlaneGrid(basis1, basis2, minExtent, maxExtent, divisions, color) {
+      const geometry = new THREE.BufferGeometry();
+      const vertices = [];
+
+      // Generate triangular lattice between minExtent and maxExtent
+      // This creates the characteristic 60° triangular grid pattern
+
+      // Lines parallel to basis1 direction
+      for (let i = 0; i <= divisions; i++) {
+        const t = minExtent + (i / divisions) * (maxExtent - minExtent);
+
+        // Line along basis2 direction at distance t along basis1
+        const start = basis1.clone().multiplyScalar(t).add(
+                      basis2.clone().multiplyScalar(minExtent));
+        const end = basis1.clone().multiplyScalar(t).add(
+                    basis2.clone().multiplyScalar(maxExtent));
+
+        vertices.push(start.x, start.y, start.z);
+        vertices.push(end.x, end.y, end.z);
+      }
+
+      // Lines parallel to basis2 direction
+      for (let i = 0; i <= divisions; i++) {
+        const t = minExtent + (i / divisions) * (maxExtent - minExtent);
+
+        // Line along basis1 direction at distance t along basis2
+        const start = basis2.clone().multiplyScalar(t).add(
+                      basis1.clone().multiplyScalar(minExtent));
+        const end = basis2.clone().multiplyScalar(t).add(
+                    basis1.clone().multiplyScalar(maxExtent));
+
+        vertices.push(start.x, start.y, start.z);
+        vertices.push(end.x, end.y, end.z);
+      }
+
+      // Diagonal lines (creates triangular lattice characteristic)
+      // Lines parallel to (basis1 - basis2) direction
+      const diagonal = basis1.clone().sub(basis2).normalize();
+
+      for (let i = -divisions; i <= divisions; i++) {
+        const offset = (i / divisions) * (maxExtent - minExtent);
+
+        // Start point along basis2, offset perpendicularly
+        const perpDir = basis2.clone();
+        const start = perpDir.clone().multiplyScalar(minExtent).add(
+                      diagonal.clone().multiplyScalar(offset));
+        const end = perpDir.clone().multiplyScalar(maxExtent).add(
+                    diagonal.clone().multiplyScalar(offset));
+
+        // Only draw if within bounds
+        if (Math.abs(offset) <= (maxExtent - minExtent)) {
+          vertices.push(start.x, start.y, start.z);
+          vertices.push(end.x, end.y, end.z);
+        }
+      }
+
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+      return new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.3  // Subtle visualization (don't overpower polyhedra)
+      }));
+    }
+
+    /**
+     * Create all 6 Quadray coordinate planes (WXYZ tetrahedral basis)
+     * Analogous to XYZ Cartesian planes but with triangular grids
+     */
+    function createQuadrayPlanes() {
+      quadrayPlanes = new THREE.Group();
+
+      const minExtent = 0.5;  // Infinitesimal inner extent (avoid origin singularity)
+      const maxExtent = 5.0;  // Outer tetrahedral boundary
+      const divisions = 8;    // Grid subdivisions
+
+      // Using nomenclature: W, X, Y, Z for Quadray basis (mapping to indices 0,1,2,3)
+      // 6 planes from 6 combinations of 4 basis vectors
+
+      // WX plane (basis 0, 1) - Magenta
+      window.quadrayWX = createQuadrayPlaneGrid(
+        Quadray.basisVectors[0], Quadray.basisVectors[1],
+        minExtent, maxExtent, divisions, 0xff00ff
+      );
+      window.quadrayWX.visible = false;
+      window.quadrayWX.name = 'WX';
+      quadrayPlanes.add(window.quadrayWX);
+
+      // WY plane (basis 0, 2) - Cyan
+      window.quadrayWY = createQuadrayPlaneGrid(
+        Quadray.basisVectors[0], Quadray.basisVectors[2],
+        minExtent, maxExtent, divisions, 0x00ffff
+      );
+      window.quadrayWY.visible = false;
+      window.quadrayWY.name = 'WY';
+      quadrayPlanes.add(window.quadrayWY);
+
+      // WZ plane (basis 0, 3) - Yellow
+      window.quadrayWZ = createQuadrayPlaneGrid(
+        Quadray.basisVectors[0], Quadray.basisVectors[3],
+        minExtent, maxExtent, divisions, 0xffff00
+      );
+      window.quadrayWZ.visible = false;
+      window.quadrayWZ.name = 'WZ';
+      quadrayPlanes.add(window.quadrayWZ);
+
+      // XY plane (basis 1, 2) - Red
+      window.quadrayXY = createQuadrayPlaneGrid(
+        Quadray.basisVectors[1], Quadray.basisVectors[2],
+        minExtent, maxExtent, divisions, 0xff0000
+      );
+      window.quadrayXY.visible = false;
+      window.quadrayXY.name = 'XY';
+      quadrayPlanes.add(window.quadrayXY);
+
+      // XZ plane (basis 1, 3) - Green
+      window.quadrayXZ = createQuadrayPlaneGrid(
+        Quadray.basisVectors[1], Quadray.basisVectors[3],
+        minExtent, maxExtent, divisions, 0x00ff00
+      );
+      window.quadrayXZ.visible = false;
+      window.quadrayXZ.name = 'XZ';
+      quadrayPlanes.add(window.quadrayXZ);
+
+      // YZ plane (basis 2, 3) - Blue
+      window.quadrayYZ = createQuadrayPlaneGrid(
+        Quadray.basisVectors[2], Quadray.basisVectors[3],
+        minExtent, maxExtent, divisions, 0x0000ff
+      );
+      window.quadrayYZ.visible = false;
+      window.quadrayYZ.name = 'YZ';
+      quadrayPlanes.add(window.quadrayYZ);
+
+      // Verify zero-sum property (should be true)
+      const sum = Quadray.basisVectors.reduce((acc, v) =>
+        acc.add(v.clone()), new THREE.Vector3(0, 0, 0));
+      console.log('Quadray zero-sum verification:', sum.length() < 1e-10 ? '✓ PASS' : '✗ FAIL');
+      console.log('  Sum vector length:', sum.length().toExponential(2), '(should be ~0)');
+
+      scene.add(quadrayPlanes);
     }
 
     /**
@@ -2138,7 +2333,7 @@
     // EVENT HANDLERS
     // ========================================================================
 
-    // Cartesian plane iOS-style toggle switches (independent on/off switches)
+    // Plane iOS-style toggle switches (Cartesian XYZ + Quadray WXYZ)
     document.querySelectorAll('.plane-toggle-switch[data-plane]').forEach(toggleSwitch => {
       toggleSwitch.addEventListener('click', function() {
         // Toggle active state
@@ -2147,7 +2342,7 @@
         const plane = this.dataset.plane;
         const isActive = this.classList.contains('active');
 
-        // Update grid visibility
+        // Update Cartesian grid visibility
         if (plane === 'XY' && window.gridXY) {
           window.gridXY.visible = isActive;
         } else if (plane === 'XZ' && window.gridXZ) {
@@ -2155,11 +2350,33 @@
         } else if (plane === 'YZ' && window.gridYZ) {
           window.gridYZ.visible = isActive;
         }
+        // Update Quadray plane visibility
+        else if (plane === 'quadrayWX' && window.quadrayWX) {
+          window.quadrayWX.visible = isActive;
+        } else if (plane === 'quadrayWY' && window.quadrayWY) {
+          window.quadrayWY.visible = isActive;
+        } else if (plane === 'quadrayWZ' && window.quadrayWZ) {
+          window.quadrayWZ.visible = isActive;
+        } else if (plane === 'quadrayXY' && window.quadrayXY) {
+          window.quadrayXY.visible = isActive;
+        } else if (plane === 'quadrayXZ' && window.quadrayXZ) {
+          window.quadrayXZ.visible = isActive;
+        } else if (plane === 'quadrayYZ' && window.quadrayYZ) {
+          window.quadrayYZ.visible = isActive;
+        }
 
-        // Show/hide cartesianGrid group if any plane is active
-        const anyActive = document.querySelector('.plane-toggle-switch[data-plane].active');
+        // Show/hide cartesianGrid group if any Cartesian plane is active
+        const anyCartesianActive = Array.from(document.querySelectorAll('.plane-toggle-switch[data-plane]'))
+          .some(sw => !sw.dataset.plane.startsWith('quadray') && sw.classList.contains('active'));
         if (cartesianGrid) {
-          cartesianGrid.visible = anyActive !== null;
+          cartesianGrid.visible = anyCartesianActive;
+        }
+
+        // Show/hide quadrayPlanes group if any Quadray plane is active
+        const anyQuadrayActive = Array.from(document.querySelectorAll('.plane-toggle-switch[data-plane]'))
+          .some(sw => sw.dataset.plane.startsWith('quadray') && sw.classList.contains('active'));
+        if (quadrayPlanes) {
+          quadrayPlanes.visible = anyQuadrayActive;
         }
       });
     });
