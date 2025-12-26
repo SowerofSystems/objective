@@ -1262,7 +1262,8 @@
 
         console.log(`  Subdivided vertices: ${subdivided.vertices.length}, faces: ${subdivided.faces.length}`);
 
-        // Phase 2.9: Projection options (Off, InSphere, MidSphere, OutSphere)
+        // Phase 2.9: RT-PURE Projection options (Off, InSphere, MidSphere, OutSphere)
+        // NO TRIG! Pure quadrance relationships using golden ratio φ
         let Q_target;
 
         if (projection === 'off') {
@@ -1270,19 +1271,22 @@
           console.log(`  Projection: OFF (flat subdivided mesh)`);
           return { vertices: subdivided.vertices, edges: subdivided.edges, faces: subdivided.faces };
         } else if (projection === 'in') {
-          // InSphere: Tangent to face centers
-          // For icosahedron: r_in = r_out * cos(arctan(2)) ≈ r_out * 0.7558
-          // Q_in = Q_out * cos²(arctan(2)) ≈ Q_out * 0.5714
-          const phi = 0.5 * (1 + Math.sqrt(5));
-          const cos_arctan_2_sq = 1 / (1 + 4); // cos²(arctan(2)) = 1/(1+2²) = 1/5
-          Q_target = (halfSize * halfSize) * (phi * phi / (3 * Math.sqrt(3)));
-          console.log(`  Projection: InSphere (tangent to face centers)`);
+          // RT-PURE InSphere: Tangent to face centers
+          // For icosahedron vertices at (±a, ±φa, 0): Q_out = a²(φ + 2)
+          // Face centers have Q_in = Q_out · (3φ + 5) / (9(φ + 2))
+          const phi = 0.5 * (1 + Math.sqrt(5));  // Golden ratio
+          const ratio_in_sq = (3 * phi + 5) / (9 * (phi + 2));
+          Q_target = (halfSize * halfSize) * ratio_in_sq;
+          console.log(`  Projection: InSphere (tangent to face centers, RT-pure)`);
+          console.log(`  RT: Q_in/Q_out = (3φ+5)/(9(φ+2)) = ${ratio_in_sq.toFixed(6)}`);
         } else if (projection === 'mid') {
-          // MidSphere: Tangent to edge centers
-          // For icosahedron: r_mid = r_out * cos(31.72°) ≈ r_out * 0.8507
-          const phi = 0.5 * (1 + Math.sqrt(5));
-          Q_target = (halfSize * halfSize) * (phi / Math.sqrt(3));
-          console.log(`  Projection: MidSphere (tangent to edge centers)`);
+          // RT-PURE MidSphere: Tangent to edge midpoints
+          // Edge midpoints have Q_mid = Q_out · (3φ + 4) / (4(φ + 2))
+          const phi = 0.5 * (1 + Math.sqrt(5));  // Golden ratio
+          const ratio_mid_sq = (3 * phi + 4) / (4 * (phi + 2));
+          Q_target = (halfSize * halfSize) * ratio_mid_sq;
+          console.log(`  Projection: MidSphere (tangent to edge midpoints, RT-pure)`);
+          console.log(`  RT: Q_mid/Q_out = (3φ+4)/(4(φ+2)) = ${ratio_mid_sq.toFixed(6)}`);
         } else if (projection === 'out') {
           // OutSphere: Through vertices (Fuller's true geodesic)
           Q_target = halfSize * halfSize;
@@ -2176,15 +2180,15 @@
 
     // Phase 2.7a, 2.7b, 2.7c: Geodesic controls
     document.getElementById('showGeodesicIcosahedron').addEventListener('change', updateGeometry);
-    document.getElementById('geodesicFrequency').addEventListener('input', updateGeometry);
+    document.getElementById('geodesicFrequency').addEventListener('change', updateGeometry);  // Use 'change' not 'input' to avoid glitching
     document.getElementById('showGeodesicTetrahedron').addEventListener('change', updateGeometry);
-    document.getElementById('geodesicTetraFrequency').addEventListener('input', updateGeometry);
+    document.getElementById('geodesicTetraFrequency').addEventListener('change', updateGeometry);  // Use 'change' not 'input'
     // Phase 2.9: Projection radio buttons
     document.querySelectorAll('input[name="geodesicTetraProjection"]').forEach(radio => {
       radio.addEventListener('change', updateGeometry);
     });
     document.getElementById('showGeodesicOctahedron').addEventListener('change', updateGeometry);
-    document.getElementById('geodesicOctaFrequency').addEventListener('input', updateGeometry);
+    document.getElementById('geodesicOctaFrequency').addEventListener('change', updateGeometry);  // Use 'change' not 'input'
     document.querySelectorAll('input[name="geodesicOctaProjection"]').forEach(radio => {
       radio.addEventListener('change', updateGeometry);
     });
