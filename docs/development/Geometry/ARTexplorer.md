@@ -1559,6 +1559,14 @@ Using Quadray plane projections instead of spherical normalization may eliminate
 - ✅ Add color-coding per plane with transparency (opacity 0.3)
 - ✅ Infinitesimal inner extent avoided (minExtent = 0.0, origin dimensionless)
 - [ ] Correlate grid spacing with dual tetrahedron edge length
+  - **Interval Sizing Options** (to correlate with dual tetrahedron):
+    - Tetrahedron edge length: `2s√2` where s = halfSize
+    - Cube edge length: `2s`
+    - Tetrahedron OutSphere radius: `s√3`
+    - Tetrahedron MidSphere radius: `s`
+    - Tetrahedron InSphere radius: `s/√3`
+  - Current implementation: `maxExtent = 5.0`, `divisions = 5` (arbitrary units)
+  - **TODO**: Set meaningful base unit interval aligned with tetrahedron dimensions
 - [ ] Add Quadray basis vector arrows (optional visualization)
 - [ ] Document Quadray coordinate conventions in comments
 
