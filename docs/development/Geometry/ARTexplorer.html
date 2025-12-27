@@ -1895,83 +1895,97 @@
       const geometry = new THREE.BufferGeometry();
       const vertices = [];
 
-      // DEBUG MODE: Toggle line families via window.quadrayDebug
+      // DEBUG MODE: Toggle edge types via window.quadrayDebug
       // Usage in console:
-      //   window.quadrayDebug = { showFamily1: true, showFamily2: true, showFamily3: false }
+      //   window.quadrayDebug = { showHorizontal: true, showVertical: true, showDiagonal: false }
       //   rebuildQuadrayPlanes()
-      const debug = window.quadrayDebug || { showFamily1: true, showFamily2: true, showFamily3: true };
+      const debug = window.quadrayDebug || { showHorizontal: true, showVertical: true, showDiagonal: true };
 
-      // RT-PURE triangular lattice generation
-      // THREE PARALLEL LINE FAMILIES form proper equilateral triangular grid:
-      // - Family 1: Lines parallel to basis1, displaced along basis2
-      // - Family 2: Lines parallel to basis2, displaced along basis1
-      // - Family 3: Lines parallel to (basis1 + basis2), displaced perpendicular
+      // RT-PURE triangular lattice generation using barycentric coordinates
+      // EXACTLY like tetrahedron frequency subdivision (Project='Flat')
       //
-      // This is the CORRECT approach for triangular grids (NOT point-connection method)
-      // Same principle as tetrahedron barycentric subdivision when Project='Flat'
+      // Generate all grid points first using barycentric coordinates,
+      // then connect adjacent points to form triangular lattice.
+      //
+      // For triangular region with corners at: origin, basis1*maxExtent, basis2*maxExtent
+      // Barycentric coordinates: (u, v, w) where u+v+w=1
+      // Position = u*origin + v*(basis1*maxExtent) + w*(basis2*maxExtent)
+      // Since origin=(0,0,0): Position = v*basis1*maxExtent + w*basis2*maxExtent
 
-      const step = (maxExtent - minExtent) / divisions;
-      let f1Count = 0, f2Count = 0, f3Count = 0;
+      // STEP 1: Generate all grid points using barycentric subdivision
+      const gridPoints = [];
+      for (let i = 0; i <= divisions; i++) {
+        for (let j = 0; j <= divisions - i; j++) {
+          const v = i / divisions;  // Barycentric weight for basis1
+          const w = j / divisions;  // Barycentric weight for basis2
+          // u = 1 - v - w (barycentric weight for origin, implicit)
 
-      // FAMILY 1: Lines parallel to basis1, displaced along basis2 direction
-      if (debug.showFamily1) {
-        for (let i = 0; i <= divisions; i++) {
-          const offset = minExtent + i * step;
-          const displacement = basis2.clone().multiplyScalar(offset);
-
-          // Line endpoints along basis1 direction
-          const start = displacement.clone().add(basis1.clone().multiplyScalar(minExtent));
-          const end = displacement.clone().add(basis1.clone().multiplyScalar(maxExtent));
-
-          vertices.push(start.x, start.y, start.z);
-          vertices.push(end.x, end.y, end.z);
-          f1Count++;
+          const point = basis1.clone().multiplyScalar(v * maxExtent)
+                               .add(basis2.clone().multiplyScalar(w * maxExtent));
+          gridPoints.push({i, j, point});
         }
       }
 
-      // FAMILY 2: Lines parallel to basis2, displaced along basis1 direction
-      if (debug.showFamily2) {
-        for (let i = 0; i <= divisions; i++) {
-          const offset = minExtent + i * step;
-          const displacement = basis1.clone().multiplyScalar(offset);
+      // STEP 2: Connect adjacent points to form triangular lattice
+      // Three edge directions in triangular grid:
+      // - Horizontal: connect (i,j) to (i+1,j)
+      // - Vertical: connect (i,j) to (i,j+1)
+      // - Diagonal: connect (i+1,j) to (i,j+1)
 
-          // Line endpoints along basis2 direction
-          const start = displacement.clone().add(basis2.clone().multiplyScalar(minExtent));
-          const end = displacement.clone().add(basis2.clone().multiplyScalar(maxExtent));
-
-          vertices.push(start.x, start.y, start.z);
-          vertices.push(end.x, end.y, end.z);
-          f2Count++;
+      const getPoint = (i, j) => {
+        // Index in gridPoints array for barycentric coordinate (i,j)
+        // Points are stored sequentially: row 0, row 1, etc.
+        let index = 0;
+        for (let row = 0; row < i; row++) {
+          index += (divisions - row + 1);
         }
-      }
+        index += j;
+        return index < gridPoints.length ? gridPoints[index] : null;
+      };
 
-      // FAMILY 3: Lines parallel to (basis1 + basis2), displaced perpendicular
-      // This is the CRITICAL third direction that creates proper triangular lattice
-      if (debug.showFamily3) {
-        const diagonal = basis1.clone().add(basis2);  // Direction of third line family
-        const perpDirection = basis2.clone().sub(basis1);  // Perpendicular displacement direction
+      let hCount = 0, vCount = 0, dCount = 0;
 
-        // Normalize perpendicular direction for unit spacing
-        const perpUnit = perpDirection.clone().normalize();
+      for (let i = 0; i <= divisions; i++) {
+        for (let j = 0; j <= divisions - i; j++) {
+          const current = getPoint(i, j);
+          if (!current) continue;
 
-        // Generate parallel lines displaced at unit intervals perpendicular to diagonal
-        for (let i = 0; i <= divisions; i++) {
-          const displacement = perpUnit.clone().multiplyScalar(i * step);
+          // Horizontal edge: (i,j) -> (i+1,j)
+          if (debug.showHorizontal && i < divisions) {
+            const next = getPoint(i + 1, j);
+            if (next) {
+              vertices.push(current.point.x, current.point.y, current.point.z);
+              vertices.push(next.point.x, next.point.y, next.point.z);
+              hCount++;
+            }
+          }
 
-          // Line parallel to diagonal, displaced by 'displacement' amount
-          // Line extends from origin+displacement along diagonal direction
-          const start = displacement.clone();
-          const end = displacement.clone().add(diagonal.clone().multiplyScalar(maxExtent));
+          // Vertical edge: (i,j) -> (i,j+1)
+          if (debug.showVertical && j < divisions - i) {
+            const next = getPoint(i, j + 1);
+            if (next) {
+              vertices.push(current.point.x, current.point.y, current.point.z);
+              vertices.push(next.point.x, next.point.y, next.point.z);
+              vCount++;
+            }
+          }
 
-          vertices.push(start.x, start.y, start.z);
-          vertices.push(end.x, end.y, end.z);
-          f3Count++;
+          // Diagonal edge: (i+1,j) -> (i,j+1) - only for upward-facing triangles
+          if (debug.showDiagonal && i < divisions && j < divisions - i) {
+            const p1 = getPoint(i + 1, j);
+            const p2 = getPoint(i, j + 1);
+            if (p1 && p2) {
+              vertices.push(p1.point.x, p1.point.y, p1.point.z);
+              vertices.push(p2.point.x, p2.point.y, p2.point.z);
+              dCount++;
+            }
+          }
         }
       }
 
       // Store debug counts globally for console inspection
       if (!window.quadrayDebugCounts) window.quadrayDebugCounts = {};
-      window.quadrayDebugCounts.lastGrid = { family1: f1Count, family2: f2Count, family3: f3Count, total: f1Count + f2Count + f3Count };
+      window.quadrayDebugCounts.lastGrid = { horizontal: hCount, vertical: vCount, diagonal: dCount, total: hCount + vCount + dCount };
 
       geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
       return new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({
@@ -2058,7 +2072,7 @@
       // Log debug counts if available
       if (window.quadrayDebugCounts && window.quadrayDebugCounts.lastGrid) {
         const c = window.quadrayDebugCounts.lastGrid;
-        console.log(`Quadray grid lines: F1=${c.family1}, F2=${c.family2}, F3=${c.family3}, Total=${c.total}`);
+        console.log(`Quadray grid edges: H=${c.horizontal}, V=${c.vertical}, D=${c.diagonal}, Total=${c.total}`);
       }
 
       scene.add(quadrayPlanes);
@@ -2067,18 +2081,15 @@
     /**
      * Rebuild Quadray planes with current debug settings
      * Usage in console:
-     *   window.quadrayDebug = { showFamily1: true, showFamily2: false, showFamily3: true }
+     *   window.quadrayDebug = { showHorizontal: true, showVertical: false, showDiagonal: true }
      *   rebuildQuadrayPlanes()
      */
     window.rebuildQuadrayPlanes = function() {
       console.log('═══════════════════════════════════════════════════════');
       console.log('🔄 Rebuilding Quadray Planes');
       console.log('═══════════════════════════════════════════════════════');
-      const d = window.quadrayDebug || { showFamily1: true, showFamily2: true, showFamily3: true };
-      console.log(`Debug flags: F1=${d.showFamily1}, F2=${d.showFamily2}, F3=${d.showFamily3}`);
-      console.log('  F1 = Lines parallel to basis1 (displaced along basis2)');
-      console.log('  F2 = Lines parallel to basis2 (displaced along basis1)');
-      console.log('  F3 = Lines parallel to (basis1+basis2) diagonal');
+      const d = window.quadrayDebug || { showHorizontal: true, showVertical: true, showDiagonal: true };
+      console.log(`Debug flags: H=${d.showHorizontal}, V=${d.showVertical}, D=${d.showDiagonal}`);
       console.log('');
 
       if (quadrayPlanes) {
