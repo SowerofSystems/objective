@@ -21,15 +21,19 @@ This document captures three distinct grid topology options, our implementation 
 
 ## The Three Grid Topology Options
 
-### Option 1: Triangular Lattice (Barycentric Point-Connection)
+### Option 1: Tetrahedral Central Angle Exploration Grid
 
-**Current Implementation Status:** ✅ IMPLEMENTED (with bugs)
+**Current Implementation Status:** ✅ IMPLEMENTED (with known bugs)
+**Purpose:** Visualize the "web space" created by working within the tetrahedral central angle (109.47°) and extending it outward from the tetrahedron center into space beyond it.
+
+**What This Shows:** This grid represents an interior division from the centre of the tetrahedron, extended out into space. It correctly defines the "web" plane boundaries that exist between the sweep of Quadray axes, but it is **NOT the true IVM grid**. Rather, it's an interesting geometric exploration of the space created by the 109.47° angle between basis vectors.
 
 #### Geometry
 - **Cell Type:** Equilateral triangular cells
 - **Internal Angles:** 60° (RT: spread = 3/4)
-- **Boundary Shape:** Triangular perimeter (extends to outer tetrahedral face)
+- **Boundary Shape:** Triangular perimeter (extends to outer tetrahedral face) - correct "web" plane boundary definitions
 - **Space-Filling:** Tetrahedral packing when stacked
+- **Grid Type:** Point-connection within the angular "web space" between axes
 
 #### Line Generation Method
 **Barycentric point-connection approach:**
@@ -78,61 +82,42 @@ for (let i = 0; i <= divisions; i++) {
 
 ---
 
-### Option 2: Octet Truss / IVM (Isotropic Vector Matrix)
+### Option 2: True IVM Grid via Vertex-to-Vertex Tessellation
 
-**Current Implementation Status:** ❌ NOT IMPLEMENTED
+**Current Implementation Status:** ❌ NOT IMPLEMENTED (planned for Phase 2.9 or later)
+**Purpose:** Visualize the TRUE Isotropic Vector Matrix (IVM) by tessellating tetrahedra vertex-to-vertex along each Quadray plane.
+
+**What This Shows:** This is the proper IVM planar cross-section. Instead of "filling the web space between axes," this approach places tetrahedra vertex-to-vertex and extracts the coplanar triangular faces that lie along each Quadray plane. Each triangular face preserves the same face normal (coplanar), creating one plane through the IVM space-filling structure.
+
+**Key Insight:** If we were to join all 4 faces in a similar tessellated fashion across the planes of the origin tetrahedron, we would essentially construct the complete IVM.
 
 #### Geometry
-- **Cell Type:** Alternating octahedra and tetrahedra
-- **Internal Angles:** 60° and 90° combinations
-- **Boundary Shape:** Could extend to larger tetrahedral or octahedral envelope
-- **Space-Filling:** **Octet truss** (Buckminster Fuller's Isotropic Vector Matrix)
+- **Cell Type:** Equilateral triangular faces from vertex-to-vertex tetrahedra
+- **Internal Angles:** 60° (RT: spread = 3/4)
+- **Boundary Shape:** Extends infinitely along the plane
+- **Space-Filling:** **True IVM** (Buckminster Fuller's Isotropic Vector Matrix) - octet truss structure
+- **Grid Type:** Planar cross-section through vertex-to-vertex tetrahedral tessellation
 
 #### Line Generation Method
-**Three parallel line families approach:**
-1. **Family 1:** Lines parallel to basis1, displaced along basis2 direction at unit intervals
-2. **Family 2:** Lines parallel to basis2, displaced along basis1 direction at unit intervals
-3. **Family 3:** Lines parallel to `(basis1 + basis2)`, displaced perpendicular to diagonal at unit intervals
+**Vertex-to-vertex tetrahedral tessellation approach:**
+1. Start with origin tetrahedron
+2. Identify the two triangular faces that define each Quadray plane (WX, WY, WZ, XY, XZ, YZ)
+3. For each plane, tessellate tetrahedra by placing them vertex-to-vertex along the plane
+4. Extract only the triangular faces that are coplanar (share the same face normal)
+5. Render these coplanar triangular edges as the IVM grid
+
+**NOT the parallel line families approach** - that was a misunderstanding documented earlier
 
 ```javascript
-// FAMILY 1: Lines parallel to basis1
-for (let i = 0; i <= divisions; i++) {
-  const offset = minExtent + i * step;
-  const displacement = basis2.clone().multiplyScalar(offset);
-
-  const start = displacement.clone().add(basis1.clone().multiplyScalar(minExtent));
-  const end = displacement.clone().add(basis1.clone().multiplyScalar(maxExtent));
-
-  vertices.push(start.x, start.y, start.z);
-  vertices.push(end.x, end.y, end.z);
-}
-
-// FAMILY 2: Lines parallel to basis2
-for (let i = 0; i <= divisions; i++) {
-  const offset = minExtent + i * step;
-  const displacement = basis1.clone().multiplyScalar(offset);
-
-  const start = displacement.clone().add(basis2.clone().multiplyScalar(minExtent));
-  const end = displacement.clone().add(basis2.clone().multiplyScalar(maxExtent));
-
-  vertices.push(start.x, start.y, start.z);
-  vertices.push(end.x, end.y, end.z);
-}
-
-// FAMILY 3: Lines parallel to (basis1 + basis2)
-const diagonal = basis1.clone().add(basis2);
-const perpDirection = basis2.clone().sub(basis1);
-const perpUnit = perpDirection.clone().normalize();
-
-for (let i = 0; i <= divisions; i++) {
-  const displacement = perpUnit.clone().multiplyScalar(i * step);
-
-  const start = displacement.clone();
-  const end = displacement.clone().add(diagonal.clone().multiplyScalar(maxExtent));
-
-  vertices.push(start.x, start.y, start.z);
-  vertices.push(end.x, end.y, end.z);
-}
+// TODO: Implement vertex-to-vertex tessellation
+// Algorithm sketch:
+// 1. Define tetrahedron edge length (e.g., dual tet edge = 2s√2)
+// 2. For each Quadray plane (e.g., WX plane):
+//    a. Identify the two basis vectors (e.g., W and X)
+//    b. Generate lattice positions for tetrahedra along the plane
+//    c. For each position, determine if a tetrahedral face is coplanar
+//    d. Extract the three edges of each coplanar face
+// 3. Return edges as line segments
 ```
 
 #### RT-Purity
@@ -147,18 +132,18 @@ The **109.47° tetrahedral angle** between Quadray basis vectors is critical her
 - Quadrance between normalized vectors: `8/3`
 
 #### Strengths
-- 🌟 **ULTIMATE EDUCATIONAL VALUE** - This IS Fuller's Isotropic Vector Matrix!
-- 🌟 Shows how octahedra and tetrahedra tile 3D space
-- 🌟 Demonstrates Quadray coordinates as the natural coordinate system for 3D space
+- 🌟 **ULTIMATE EDUCATIONAL VALUE** - This IS the true Fuller's Isotropic Vector Matrix!
+- 🌟 Shows how tetrahedra tessellate vertex-to-vertex to create IVM structure
+- 🌟 Demonstrates proper planar cross-sections through space-filling geometry
 - 🌟 Perfect for visualizing space-frame structures
-- ✅ RT-pure mathematics
-- ✅ Space-filling geometry (extends infinitely in all directions)
+- ✅ RT-pure mathematics (vertex positions, face normals)
+- ✅ True space-filling geometry - the foundation of IVM
 
 #### Weaknesses
-- ❌ **IMPLEMENTATION FAILED** - Generated far too many lines (visual disaster)
-- ❌ More complex than triangular lattice
-- ❌ May not align perfectly with geodesic vertices for Phase 2.8
-- ⚠️ Need to carefully bound the grid (infinite extension problem)
+- ❌ **NOT YET IMPLEMENTED** - Requires vertex-to-vertex tessellation algorithm
+- ❌ More complex than Option 1 (Tetrahedral Central Angle Exploration Grid)
+- ⚠️ May require different grid spacing/bounds than Option 1
+- ⚠️ Need to carefully select which faces to render (coplanarity test)
 
 #### Space-Frame Applications
 **IF** this grid topology helps generate space frames:
@@ -168,11 +153,12 @@ The **109.47° tetrahedral angle** between Quadray basis vectors is critical her
 - ✅ Optimal strength-to-weight ratio
 
 #### Recommendation
-**IMPLEMENT AS SEPARATE PHASE** (Phase 2.9 or Phase 3):
-- Document as future enhancement
-- "Visualize space-filling octet truss geometry"
-- Separate from basic Quadray plane visualization
-- Focus on space-frame generation and educational value
+**IMPLEMENT AS SEPARATE PHASE** (Phase 2.9 or later):
+- This is the TRUE IVM grid that should be implemented after Option 1 is complete
+- Add UI checkbox: "Show IVM Grid" (separate from "Show Central Angle Grid")
+- Focus on vertex-to-vertex tessellation algorithm
+- Educational value: demonstrates proper IVM planar cross-sections
+- Space-frame applications: foundation for generating octet truss structures
 
 ---
 
@@ -243,22 +229,31 @@ for (let i = 0; i <= divisions; i++) {
 
 ## Implementation Struggles
 
-### Struggle 1: Documentation vs. Implementation Mismatch
+### Struggle 1: Fundamental Misunderstanding of IVM Grid
+
+**The Critical Insight:**
+We were attempting to build the IVM grid by "filling the web space between axes" using the 109.47° tetrahedral central angle. This is NOT how IVM grids work!
 
 **The Problem:**
-- Documentation (ARTexplorer.md lines 1295-1393) describes the **three parallel line families** approach (Option 2)
-- Current implementation uses **barycentric point-connection** approach (Option 1)
-- Attempting to implement the documented approach created a visual disaster (too many lines)
+- Option 1 implementation (barycentric point-connection) creates an interesting "Tetrahedral Central Angle Exploration Grid"
+- This shows the "web space" created by extending the tetrahedral angle outward from center
+- It correctly defines web plane boundaries, but it's NOT the true IVM grid
+- Previous documentation described parallel line families approach, which was also incorrect
 
-**Why This Happened:**
-- The parallel line families approach is theoretically correct for octet truss geometry
-- But it's NOT the right approach for basic triangular Quadray plane grids
-- Documentation was written aspirationally for a more advanced visualization
+**The TRUE IVM Approach:**
+The IVM is built by **vertex-to-vertex tetrahedral tessellation**:
+1. Place tetrahedra vertex-to-vertex along the plane
+2. Each triangular face preserves the same face normal (coplanar)
+3. Extract ONLY the coplanar triangular faces that lie along each Quadray plane
+4. This creates ONE plane through the IVM space-filling structure
 
 **Resolution:**
-- Keep Option 1 (barycentric) for Phase 2.6 basic Quadray planes
-- Document Option 2 (parallel families) as separate future phase
-- Update documentation to clarify the distinction
+- Renamed Option 1 to "Tetrahedral Central Angle Exploration Grid" - preserve this despite bugs
+- Redefined Option 2 as "True IVM Grid via Vertex-to-Vertex Tessellation"
+- Add two separate UI checkboxes:
+  - "Show Central Angle Grid" (Option 1 - current implementation)
+  - "Show IVM Grid" (Option 2 - future implementation)
+- Both have value, but they serve different purposes
 
 ### Struggle 2: Identifying Extraneous Lines
 
@@ -281,68 +276,84 @@ The horizontal edge generation code `(i,j) → (i+1,j)` is creating unwanted lin
 **The Fundamental Question:**
 What are we trying to visualize with Quadray planes?
 
-**Three Possible Answers:**
+**Answer: BOTH Option 1 AND Option 2 serve different valuable purposes!**
 
-1. **Coordinate system planes** → Use Option 1 (triangular lattice)
-   - Shows how Quadray coordinates subdivide space
-   - Aligns with tetrahedron face subdivision
-   - Perfect for Phase 2.8 geodesic projections
+1. **Tetrahedral Central Angle Exploration Grid (Option 1)** - Shows the "web space"
+   - Visualizes the angular geometry between Quadray basis vectors
+   - Interior division from tetrahedron center extended outward
+   - Correct "web" plane boundary definitions
+   - Interesting geometric exploration of the 109.47° angle
+   - Perfect for understanding how Quadray axes relate to each other
 
-2. **Space-filling geometry** → Use Option 2 (octet truss)
-   - Shows how octahedra and tetrahedra tile space
-   - Demonstrates IVM (Isotropic Vector Matrix)
-   - Educational value for space-frame structures
+2. **True IVM Grid (Option 2)** - Shows vertex-to-vertex tessellation
+   - TRUE planar cross-section through IVM structure
+   - Demonstrates how tetrahedra tessellate to create space-filling geometry
+   - Foundation for octet truss and space-frame applications
+   - Educational value for understanding Fuller's IVM
+   - Proper geometric foundation for space structures
 
-3. **Simple grid reference** → Use Option 3 (parallelogram)
-   - Just a basic reference grid
-   - Loses tetrahedral properties
-   - Not recommended
+3. **Parallelogram Grid (Option 3)** - NOT recommended
+   - Loses tetrahedral symmetry
+   - Less educational value
+   - Not space-filling in interesting way
 
 **Current Decision:**
-Implement **Option 1 for Phase 2.6**, reserve **Option 2 for future phase**.
+- Implement **Option 1 for Phase 2.6** (fix horizontal edge bug first)
+- Implement **Option 2 for Phase 2.9 or later** (true IVM via vertex-to-vertex tessellation)
+- Provide separate UI toggles for both grids
+- Both grids are valuable and should coexist!
 
 ---
 
 ## Recommended Implementation Path
 
-### Phase 2.6: Basic Quadray Planes (Option 1)
+### Phase 2.6: Tetrahedral Central Angle Exploration Grid (Option 1)
 
 **Status:** 🚧 IN PROGRESS
+
+**Purpose:** Visualize the "web space" created by working within the 109.47° tetrahedral central angle
 
 **Tasks:**
 1. ✅ Implement barycentric point generation
 2. ✅ Add debug mode with edge type toggles
 3. 🚧 **FIX HORIZONTAL EDGE BUG** - identify why `(i,j) → (i+1,j)` creates extraneous lines
 4. ⏳ Set meaningful grid spacing (correlate with tetrahedron dimensions)
-5. ⏳ Complete Phase 2.6 and move to Phase 2.7
+5. ⏳ Add UI checkbox: "Show Central Angle Grid"
+6. ⏳ Complete Phase 2.6 and move to Phase 2.7
 
 **Why This Approach:**
-- Triangular lattice matches tetrahedral coordinate system
-- Perfect foundation for Phase 2.8 geodesic projections
+- Shows interior division from tetrahedron center extended outward
+- Correct "web" plane boundary definitions between Quadray axes
 - RT-pure barycentric mathematics
-- Educational value: shows how Quadray planes subdivide space
+- Educational value: demonstrates the 109.47° angle geometry
+- Preserves interesting geometric exploration despite known bug
 
-### Phase 2.9 (or 3.x): Octet Truss Visualization (Option 2)
+### Phase 2.9 (or later): True IVM Grid (Option 2)
 
 **Status:** 📋 PLANNED
 
-**Purpose:**
-- Visualize space-filling octet truss geometry
-- Show how octahedra and tetrahedra tile 3D space
-- Demonstrate Fuller's Isotropic Vector Matrix
-- Educational tool for space-frame structures
+**Purpose:** Visualize the TRUE IVM by tessellating tetrahedra vertex-to-vertex along each Quadray plane
 
 **Implementation Notes:**
-- Use three parallel line families approach
-- Carefully bound the grid (solve infinite extension problem)
-- Add UI toggle: "Show Octet Truss Grid"
-- Consider making this a separate visualization mode
+- Use vertex-to-vertex tetrahedral tessellation approach (NOT parallel line families)
+- Extract coplanar triangular faces from tessellated tetrahedra
+- Each face must preserve same face normal (coplanarity test)
+- Add UI checkbox: "Show IVM Grid" (separate from "Show Central Angle Grid")
+- Both grids can be shown simultaneously or independently
+
+**Algorithm Sketch:**
+1. Define tetrahedron edge length (correlate with dual tet dimensions)
+2. For each Quadray plane, generate lattice positions for tetrahedra
+3. Place tetrahedra vertex-to-vertex along the plane
+4. Test each triangular face for coplanarity with the Quadray plane
+5. Extract and render only the coplanar triangular edges
 
 **Benefits:**
-- 🌟 Ultimate educational value for space-frame geometry
-- 🌟 Shows Quadray coordinates as natural 3D coordinate system
-- 🌟 Space-frame generation applications
-- 🌟 Demonstrates 109.47° tetrahedral angle property
+- 🌟 TRUE Fuller's Isotropic Vector Matrix visualization
+- 🌟 Shows proper planar cross-sections through IVM structure
+- 🌟 Foundation for space-frame and octet truss applications
+- 🌟 Educational value for understanding vertex-to-vertex tessellation
+- 🌟 Proper geometric foundation for space structures
 
 ---
 
@@ -386,19 +397,33 @@ The tetrahedral angle ensures that when you create three parallel line families 
 
 ## Conclusion
 
-We have struggled to define the "correct" grid topology because there are **multiple valid options**, each serving different purposes:
+The key insight from our exploration: **We were confusing two fundamentally different grid types!**
 
-1. **Option 1 (Triangular Lattice):** Best for basic Quadray coordinate plane visualization
-2. **Option 2 (Octet Truss):** Best for demonstrating space-filling geometry and space-frames
-3. **Option 3 (Parallelogram):** Simplest, but loses tetrahedral properties
+1. **Option 1 (Tetrahedral Central Angle Exploration Grid):**
+   - Shows the "web space" between Quadray axes (109.47° angle)
+   - Interior division from tetrahedron center extended outward
+   - Interesting geometric exploration, NOT the true IVM grid
+   - Preserve and complete despite horizontal edge bug
+
+2. **Option 2 (True IVM Grid via Vertex-to-Vertex Tessellation):**
+   - Proper planar cross-section through Fuller's IVM structure
+   - Built by tessellating tetrahedra vertex-to-vertex along each plane
+   - Extract coplanar triangular faces from tessellated structure
+   - This IS the true IVM grid we're after
+
+3. **Option 3 (Parallelogram):**
+   - DO NOT implement - loses tetrahedral properties
 
 **Current Path Forward:**
-- Implement Option 1 for Phase 2.6
-- Fix horizontal edge bug
-- Reserve Option 2 for future enhancement (Phase 2.9 or 3.x)
-- Do not implement Option 3
+- Complete Option 1 for Phase 2.6 (fix horizontal edge bug, add "Show Central Angle Grid" checkbox)
+- Implement Option 2 for Phase 2.9 or later (add "Show IVM Grid" checkbox)
+- Both grids have value and should coexist with separate UI toggles
+- The plane toggle switches (WX, WY, WZ, XY, XZ, YZ) remain relevant for both grid types
 
-This document serves as a record of our exploration and decision-making process, ensuring we don't repeat the same implementation struggles in the future.
+**Critical Learning:**
+We initially thought we were building the IVM grid, but we were actually exploring the tetrahedral central angle geometry. The TRUE IVM requires vertex-to-vertex tessellation, not point-connection within angular "web space." Both approaches are valuable, but they serve different educational purposes.
+
+This document serves as a record of our exploration and the critical insight that led to proper understanding of both grid topologies.
 
 ---
 
@@ -426,7 +451,7 @@ rebuildQuadrayPlanes()  // Reconstructs all planes with current debug flags
 
 Open browser console and run:
 
-#### Test 1: Only Horizontal Edges
+#### Test 1: Only Horizontal Edges (weird rays)
 ```javascript
 window.quadrayDebug = { showHorizontal: true, showVertical: false, showDiagonal: false }
 rebuildQuadrayPlanes()
