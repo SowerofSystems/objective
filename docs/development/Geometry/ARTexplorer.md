@@ -1546,17 +1546,19 @@ Using Quadray plane projections instead of spherical normalization may eliminate
 
 ### Implementation Checklist
 
-**Phase 1: Basic Visualization**
-- [ ] Define RT_Quadray basis vectors in Cartesian coordinates
-- [ ] Implement `createQuadrayPlaneGrid()` with triangular lattice
-- [ ] Create all 6 Quadray planes (WX, WY, WZ, XY, XZ, YZ)
-- [ ] Add UI toggles for individual planes
-- [ ] Verify zero-sum property in console logging
+**Phase 1: Basic Visualization** ✅ COMPLETE (2025-12-27)
+- ✅ Define RT_Quadray basis vectors in Cartesian coordinates
+- ✅ Implement `createQuadrayPlaneGrid()` with barycentric point generation
+- ✅ Create all 6 Quadray planes (WX, WY, WZ, XY, XZ, YZ)
+- ✅ Add UI toggles in 2×3 grid layout for all 6 planes
+- ✅ Verify zero-sum property in console logging
+- ✅ Brighten WY and YZ plane colors for better visibility
 
-**Phase 2: Refinement**
-- [ ] Optimize triangular lattice generation (diagonal lines)
-- [ ] Add color-coding per plane with transparency
-- [ ] Implement infinitesimal inner extent (avoid origin)
+**Phase 2: Refinement** 🚧 IN PROGRESS
+- 🚧 Remove extraneous diagonal edges (leftover from parallelogram approach)
+- ✅ Add color-coding per plane with transparency (opacity 0.3)
+- ✅ Infinitesimal inner extent avoided (minExtent = 0.0, origin dimensionless)
+- [ ] Correlate grid spacing with dual tetrahedron edge length
 - [ ] Add Quadray basis vector arrows (optional visualization)
 - [ ] Document Quadray coordinate conventions in comments
 
