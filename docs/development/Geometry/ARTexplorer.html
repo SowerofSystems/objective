@@ -296,6 +296,12 @@
       <div class="control-group">
         <h3>Coordinate System</h3>
         <div class="control-item">
+          <label class="checkbox-label">
+            <input type="checkbox" id="showCartesianBasis" checked>
+            Show Cartesian Basis (XYZ)
+          </label>
+        </div>
+        <div class="control-item">
           <label style="font-size: 12px; color: #b0b0b0; display: block; margin-bottom: 5px;">Cartesian Planes</label>
           <div class="plane-toggle-container">
             <div class="plane-toggle-item">
@@ -368,7 +374,7 @@
         </div>
         <div class="control-item">
           <label style="font-size: 12px; color: #b0b0b0; display: block; margin-bottom: 5px;">IVM Grids (Vertex-to-Vertex Tessellation)</label>
-          <div class="plane-toggle-container">
+          <div class="plane-toggle-container" style="grid-template-columns: repeat(2, 1fr);">
             <div class="plane-toggle-item">
               <span class="plane-toggle-label">WX</span>
               <div class="plane-toggle-switch" data-plane="ivmWX">
@@ -388,18 +394,6 @@
               </div>
             </div>
             <div class="plane-toggle-item">
-              <span class="plane-toggle-label">XY</span>
-              <div class="plane-toggle-switch" data-plane="ivmXY">
-                <div class="plane-toggle-slider"></div>
-              </div>
-            </div>
-            <div class="plane-toggle-item">
-              <span class="plane-toggle-label">XZ</span>
-              <div class="plane-toggle-switch" data-plane="ivmXZ">
-                <div class="plane-toggle-slider"></div>
-              </div>
-            </div>
-            <div class="plane-toggle-item">
               <span class="plane-toggle-label">YZ</span>
               <div class="plane-toggle-switch" data-plane="ivmYZ">
                 <div class="plane-toggle-slider"></div>
@@ -407,7 +401,7 @@
             </div>
           </div>
         </div>
-        <p class="info-text" style="font-size: 10px; margin-top: 5px;">IVM: True Isotropic Vector Matrix - triangular faces tessellated vertex-to-vertex using tet edge length 2s√2</p>
+        <p class="info-text" style="font-size: 10px; margin-top: 5px;">IVM: True Isotropic Vector Matrix - 4 tetrahedral faces tessellated vertex-to-vertex using tet edge length 2s√2</p>
       </div>
 
       <!-- Polyhedra Selection -->
@@ -1764,7 +1758,7 @@
     let geodesicIcosahedronGroup; // Phase 2.7a: Geodesic subdivision
     let geodesicTetrahedronGroup; // Phase 2.7c: Geodesic tetrahedron
     let geodesicOctahedronGroup; // Phase 2.7b: Geodesic octahedron
-    let cartesianGrid, quadrayBasis, quadrayPlanes, ivmPlanes;
+    let cartesianGrid, cartesianBasis, quadrayBasis, quadrayPlanes, ivmPlanes;
 
     function initScene() {
       // Scene
@@ -1880,11 +1874,12 @@
       window.gridYZ.visible = false;  // Hidden by default
       cartesianGrid.add(window.gridYZ);
 
-      // Add axes (subtle, thinner than WOMBAT edges)
-      const axesHelper = new THREE.AxesHelper(3);
-      cartesianGrid.add(axesHelper);
-
       scene.add(cartesianGrid);
+
+      // Add Cartesian axes as separate object (can be toggled independently)
+      cartesianBasis = new THREE.AxesHelper(3);
+      cartesianBasis.visible = true;  // Visible by default
+      scene.add(cartesianBasis);
     }
 
     /**
@@ -2197,7 +2192,8 @@
     }
 
     /**
-     * Create all 6 IVM grids (TRUE Isotropic Vector Matrix)
+     * Create 4 IVM grids (TRUE Isotropic Vector Matrix)
+     * One for each tetrahedral face
      * Uses vertex-to-vertex tetrahedral tessellation
      */
     function createIVMPlanes() {
@@ -2207,9 +2203,10 @@
       const tessellations = 5;   // Number of triangle copies in each direction
 
       // Using nomenclature: W, X, Y, Z for Quadray basis (mapping to indices 0,1,2,3)
-      // 6 planes from 6 combinations of 4 basis vectors
+      // 4 planes for 4 tetrahedral faces:
+      // Face WXZ (opposite Y), Face WYZ (opposite X), Face WXY (opposite Z), Face XYZ (opposite W)
 
-      // WX plane (basis 0, 1) - Magenta
+      // WX plane (basis 0, 1) - Face containing W, X (opposite Y-Z edge) - Magenta
       window.ivmWX = createIVMGrid(
         Quadray.basisVectors[0], Quadray.basisVectors[1],
         halfSize, tessellations, 0xff00ff
@@ -2218,7 +2215,7 @@
       window.ivmWX.name = 'IVM_WX';
       ivmPlanes.add(window.ivmWX);
 
-      // WY plane (basis 0, 2) - Bright Aqua
+      // WY plane (basis 0, 2) - Face containing W, Y (opposite X-Z edge) - Bright Aqua
       window.ivmWY = createIVMGrid(
         Quadray.basisVectors[0], Quadray.basisVectors[2],
         halfSize, tessellations, 0x00ffcc
@@ -2227,7 +2224,7 @@
       window.ivmWY.name = 'IVM_WY';
       ivmPlanes.add(window.ivmWY);
 
-      // WZ plane (basis 0, 3) - Yellow
+      // WZ plane (basis 0, 3) - Face containing W, Z (opposite X-Y edge) - Yellow
       window.ivmWZ = createIVMGrid(
         Quadray.basisVectors[0], Quadray.basisVectors[3],
         halfSize, tessellations, 0xffff00
@@ -2236,25 +2233,7 @@
       window.ivmWZ.name = 'IVM_WZ';
       ivmPlanes.add(window.ivmWZ);
 
-      // XY plane (basis 1, 2) - Red
-      window.ivmXY = createIVMGrid(
-        Quadray.basisVectors[1], Quadray.basisVectors[2],
-        halfSize, tessellations, 0xff0000
-      );
-      window.ivmXY.visible = false;
-      window.ivmXY.name = 'IVM_XY';
-      ivmPlanes.add(window.ivmXY);
-
-      // XZ plane (basis 1, 3) - Green
-      window.ivmXZ = createIVMGrid(
-        Quadray.basisVectors[1], Quadray.basisVectors[3],
-        halfSize, tessellations, 0x00ff00
-      );
-      window.ivmXZ.visible = false;
-      window.ivmXZ.name = 'IVM_XZ';
-      ivmPlanes.add(window.ivmXZ);
-
-      // YZ plane (basis 2, 3) - Sky Blue
+      // YZ plane (basis 2, 3) - Face containing Y, Z (opposite W-X edge) - Sky Blue
       window.ivmYZ = createIVMGrid(
         Quadray.basisVectors[2], Quadray.basisVectors[3],
         halfSize, tessellations, 0x6699ff
@@ -2263,7 +2242,7 @@
       window.ivmYZ.name = 'IVM_YZ';
       ivmPlanes.add(window.ivmYZ);
 
-      console.log('✅ IVM grids created with edge length:', (2 * halfSize * Math.sqrt(2)).toFixed(4));
+      console.log('✅ IVM grids created (4 tetrahedral faces) with edge length:', (2 * halfSize * Math.sqrt(2)).toFixed(4));
 
       scene.add(ivmPlanes);
     }
@@ -2635,10 +2614,20 @@
         } else if (plane === 'quadrayYZ' && window.quadrayYZ) {
           window.quadrayYZ.visible = isActive;
         }
+        // Update IVM plane visibility (4 tetrahedral faces)
+        else if (plane === 'ivmWX' && window.ivmWX) {
+          window.ivmWX.visible = isActive;
+        } else if (plane === 'ivmWY' && window.ivmWY) {
+          window.ivmWY.visible = isActive;
+        } else if (plane === 'ivmWZ' && window.ivmWZ) {
+          window.ivmWZ.visible = isActive;
+        } else if (plane === 'ivmYZ' && window.ivmYZ) {
+          window.ivmYZ.visible = isActive;
+        }
 
         // Show/hide cartesianGrid group if any Cartesian plane is active
         const anyCartesianActive = Array.from(document.querySelectorAll('.plane-toggle-switch[data-plane]'))
-          .some(sw => !sw.dataset.plane.startsWith('quadray') && sw.classList.contains('active'));
+          .some(sw => !sw.dataset.plane.startsWith('quadray') && !sw.dataset.plane.startsWith('ivm') && sw.classList.contains('active'));
         if (cartesianGrid) {
           cartesianGrid.visible = anyCartesianActive;
         }
@@ -2649,7 +2638,18 @@
         if (quadrayPlanes) {
           quadrayPlanes.visible = anyQuadrayActive;
         }
+
+        // Show/hide ivmPlanes group if any IVM plane is active
+        const anyIVMActive = Array.from(document.querySelectorAll('.plane-toggle-switch[data-plane]'))
+          .some(sw => sw.dataset.plane.startsWith('ivm') && sw.classList.contains('active'));
+        if (ivmPlanes) {
+          ivmPlanes.visible = anyIVMActive;
+        }
       });
+    });
+
+    document.getElementById('showCartesianBasis').addEventListener('change', (e) => {
+      cartesianBasis.visible = e.target.checked;
     });
 
     document.getElementById('showQuadray').addEventListener('change', (e) => {
