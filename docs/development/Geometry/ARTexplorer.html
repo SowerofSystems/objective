@@ -1894,70 +1894,80 @@
       const vertices = [];
 
       // RT-PURE triangular lattice generation using barycentric coordinates
-      // Same principle as tetrahedron frequency subdivision
+      // EXACTLY like tetrahedron frequency subdivision (Project='Flat')
       //
-      // For a triangular grid from origin, we use barycentric coordinates (u, v, w)
-      // where u + v + w = 1, and position = u*origin + v*basis1 + w*basis2
+      // Generate all grid points first using barycentric coordinates,
+      // then connect adjacent points to form triangular lattice.
       //
-      // Since origin = (0,0,0), this simplifies to: position = v*basis1 + w*basis2
-      // We generate lines by varying one parameter while keeping the other fixed
+      // For triangular region with corners at: origin, basis1*maxExtent, basis2*maxExtent
+      // Barycentric coordinates: (u, v, w) where u+v+w=1
+      // Position = u*origin + v*(basis1*maxExtent) + w*(basis2*maxExtent)
+      // Since origin=(0,0,0): Position = v*basis1*maxExtent + w*basis2*maxExtent
 
-      // Generate grid lines parallel to each of the three directions:
-      // 1. Lines parallel to basis1 (v varies, w fixed)
-      // 2. Lines parallel to basis2 (w varies, v fixed)
-      // 3. Lines parallel to -(basis1 + basis2) (u varies, v+w fixed at 1-u)
-
-      // DIRECTION 1: Lines parallel to basis1
-      // Fix w (position along basis2), vary v (position along basis1)
+      // STEP 1: Generate all grid points using barycentric subdivision
+      const gridPoints = [];
       for (let i = 0; i <= divisions; i++) {
-        const w = i / divisions;  // Barycentric weight for basis2
+        for (let j = 0; j <= divisions - i; j++) {
+          const v = i / divisions;  // Barycentric weight for basis1
+          const w = j / divisions;  // Barycentric weight for basis2
+          // u = 1 - v - w (barycentric weight for origin, implicit)
 
-        // Line from origin (v=0) to basis1 direction (v up to available space)
-        const start = basis2.clone().multiplyScalar(w * maxExtent);
-        const end = basis1.clone().multiplyScalar(maxExtent).add(
-                    basis2.clone().multiplyScalar(w * maxExtent));
-
-        vertices.push(start.x, start.y, start.z);
-        vertices.push(end.x, end.y, end.z);
+          const point = basis1.clone().multiplyScalar(v * maxExtent)
+                               .add(basis2.clone().multiplyScalar(w * maxExtent));
+          gridPoints.push({i, j, point});
+        }
       }
 
-      // DIRECTION 2: Lines parallel to basis2
-      // Fix v (position along basis1), vary w (position along basis2)
+      // STEP 2: Connect adjacent points to form triangular lattice
+      // Three edge directions in triangular grid:
+      // - Horizontal: connect (i,j) to (i+1,j)
+      // - Vertical: connect (i,j) to (i,j+1)
+      // - Diagonal: connect (i+1,j) to (i,j+1)
+
+      const getPoint = (i, j) => {
+        // Index in gridPoints array for barycentric coordinate (i,j)
+        // Points are stored sequentially: row 0, row 1, etc.
+        let index = 0;
+        for (let row = 0; row < i; row++) {
+          index += (divisions - row + 1);
+        }
+        index += j;
+        return index < gridPoints.length ? gridPoints[index] : null;
+      };
+
       for (let i = 0; i <= divisions; i++) {
-        const v = i / divisions;  // Barycentric weight for basis1
+        for (let j = 0; j <= divisions - i; j++) {
+          const current = getPoint(i, j);
+          if (!current) continue;
 
-        // Line from origin (w=0) to basis2 direction (w up to available space)
-        const start = basis1.clone().multiplyScalar(v * maxExtent);
-        const end = basis2.clone().multiplyScalar(maxExtent).add(
-                    basis1.clone().multiplyScalar(v * maxExtent));
+          // Horizontal edge: (i,j) -> (i+1,j)
+          if (i < divisions) {
+            const next = getPoint(i + 1, j);
+            if (next) {
+              vertices.push(current.point.x, current.point.y, current.point.z);
+              vertices.push(next.point.x, next.point.y, next.point.z);
+            }
+          }
 
-        vertices.push(start.x, start.y, start.z);
-        vertices.push(end.x, end.y, end.z);
-      }
+          // Vertical edge: (i,j) -> (i,j+1)
+          if (j < divisions - i) {
+            const next = getPoint(i, j + 1);
+            if (next) {
+              vertices.push(current.point.x, current.point.y, current.point.z);
+              vertices.push(next.point.x, next.point.y, next.point.z);
+            }
+          }
 
-      // DIRECTION 3: Lines parallel to (basis1 + basis2)
-      // CRITICAL: Must be PARALLEL lines, NOT radiating fan from origin!
-      // These lines intersect the parallelograms to create triangular lattice
-      const diagonal = basis1.clone().add(basis2);  // Direction of third line family
-
-      // For displacement, use same principle as directions 1 and 2
-      // Displace along a direction perpendicular to the diagonal
-      // The perpendicular direction is (basis2 - basis1)
-      const perpDirection = basis2.clone().sub(basis1);
-
-      // Generate parallel lines displaced at same unit intervals as other directions
-      for (let i = 0; i <= divisions; i++) {
-        const offset = i / divisions;  // Same barycentric parameter as directions 1 & 2
-
-        // Displacement perpendicular to diagonal
-        const displacement = perpDirection.clone().multiplyScalar(offset * maxExtent);
-
-        // Line parallel to diagonal, displaced by 'displacement' amount
-        const start = displacement.clone();
-        const end = displacement.clone().add(diagonal.clone().multiplyScalar(maxExtent));
-
-        vertices.push(start.x, start.y, start.z);
-        vertices.push(end.x, end.y, end.z);
+          // Diagonal edge: (i+1,j) -> (i,j+1) - only for upward-facing triangles
+          if (i < divisions && j < divisions - i) {
+            const p1 = getPoint(i + 1, j);
+            const p2 = getPoint(i, j + 1);
+            if (p1 && p2) {
+              vertices.push(p1.point.x, p1.point.y, p1.point.z);
+              vertices.push(p2.point.x, p2.point.y, p2.point.z);
+            }
+          }
+        }
       }
 
       geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
