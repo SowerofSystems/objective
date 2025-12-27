@@ -1,0 +1,280 @@
+/* A.R.T Explorer - Stylesheet
+ * Algebraic Rational Trigonometry Polyhedra Visualization
+ * Author: Andy Ross Thomson
+ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;
+  background: #1a1a1a;
+  color: #e0e0e0;
+}
+
+#container {
+  display: flex;
+  height: 100vh;
+}
+
+#canvas-container {
+  flex: 1;
+  position: relative;
+}
+
+#controls-panel {
+  width: 300px;
+  background: #2a2a2a;
+  padding: 15px;
+  overflow-y: auto;
+  border-left: 1px solid #444;
+}
+
+h1 {
+  font-size: 18px;
+  margin-bottom: 10px;
+  color: #4a9eff;
+  text-align: center;
+}
+
+.control-group {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #444;
+}
+
+.control-group:last-child {
+  border-bottom: none;
+}
+
+.control-group h3 {
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #7ab8ff;
+  font-weight: 600;
+}
+
+.control-item {
+  margin-bottom: 8px;
+}
+
+.control-item label {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 6px;
+  color: #b0b0b0;
+}
+
+.control-item input[type="checkbox"] {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.control-item select {
+  width: 100%;
+  padding: 8px;
+  background: #1a1a1a;
+  border: 1px solid #555;
+  color: #e0e0e0;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.control-item select:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.slider-container input[type="range"] {
+  flex: 1;
+  cursor: pointer;
+}
+
+.slider-value {
+  min-width: 40px;
+  text-align: right;
+  font-size: 11px;
+  color: #7ab8ff;
+}
+
+.info-text {
+  font-size: 11px;
+  color: #888;
+  font-style: italic;
+  margin-top: 8px;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  background: #4a9eff;
+  border: none;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background: #357abd;
+}
+
+button:active {
+  background: #2a5f94;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 12px;
+  color: #e0e0e0;
+}
+
+/* Collapsible geodesic controls */
+.geodesic-toggle {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 7px solid #7ab8ff;
+  margin-right: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.geodesic-toggle.collapsed {
+  transform: rotate(-90deg);
+}
+
+.geodesic-options {
+  margin-left: 20px;
+  margin-top: 5px;
+  max-height: 180px;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.geodesic-options.collapsed {
+  max-height: 0;
+}
+
+/* Node size selector */
+.node-size-selector {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.node-size-btn {
+  flex: 1;
+  padding: 5px;
+  background: #1a1a1a;
+  border: 1px solid #555;
+  color: #b0b0b0;
+  border-radius: 3px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.node-size-btn:hover {
+  border-color: #7ab8ff;
+  color: #e0e0e0;
+}
+
+.node-size-btn.active {
+  background: #4a9eff;
+  border-color: #4a9eff;
+  color: white;
+}
+
+/* Plane toggle switches (iOS-style pill switches) */
+.plane-toggle-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.plane-toggle-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.plane-toggle-label {
+  font-size: 10px;
+  color: #b0b0b0;
+  text-align: center;
+  order: 2;  /* Label below toggle */
+}
+
+.plane-toggle-switch {
+  position: relative;
+  width: 40px;
+  height: 20px;
+  background-color: #555;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.plane-toggle-switch.active {
+  background-color: #4a9eff;
+}
+
+.plane-toggle-slider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.plane-toggle-switch.active .plane-toggle-slider {
+  transform: translateX(20px);
+}
+
+.stats {
+  font-size: 11px;
+  color: #999;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+#info-overlay {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 12px 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.6;
+  max-width: 300px;
+  pointer-events: none;
+}
+
+.coord-label {
+  color: #7ab8ff;
+  font-weight: 600;
+}
