@@ -1889,7 +1889,42 @@
       scene.add(cartesianGrid);
 
       // Add Cartesian axes as separate object (can be toggled independently)
-      cartesianBasis = new THREE.AxesHelper(3);
+      // Using ArrowHelper to match Quadray vector style (with arrowheads)
+      cartesianBasis = new THREE.Group();
+
+      // X-axis (Red)
+      const xAxis = new THREE.ArrowHelper(
+        new THREE.Vector3(1, 0, 0),  // Direction
+        new THREE.Vector3(0, 0, 0),  // Origin
+        3,                            // Length (matching AxesHelper default)
+        0xff0000,                     // Red
+        0.3,                          // Head length (matching Quadray style)
+        0.2                           // Head width (matching Quadray style)
+      );
+      cartesianBasis.add(xAxis);
+
+      // Y-axis (Green)
+      const yAxis = new THREE.ArrowHelper(
+        new THREE.Vector3(0, 1, 0),  // Direction
+        new THREE.Vector3(0, 0, 0),  // Origin
+        3,                            // Length
+        0x00ff00,                     // Green
+        0.3,                          // Head length
+        0.2                           // Head width
+      );
+      cartesianBasis.add(yAxis);
+
+      // Z-axis (Blue) - vertical in Z-up convention
+      const zAxis = new THREE.ArrowHelper(
+        new THREE.Vector3(0, 0, 1),  // Direction (up in Z-up)
+        new THREE.Vector3(0, 0, 0),  // Origin
+        3,                            // Length
+        0x0000ff,                     // Blue
+        0.3,                          // Head length
+        0.2                           // Head width
+      );
+      cartesianBasis.add(zAxis);
+
       cartesianBasis.visible = true;  // Visible by default
       scene.add(cartesianBasis);
     }
