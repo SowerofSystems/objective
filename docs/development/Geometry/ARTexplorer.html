@@ -1939,18 +1939,20 @@
       // CRITICAL: Must be PARALLEL lines, NOT radiating fan from origin!
       // These lines intersect the parallelograms to create triangular lattice
       const diagonal = basis1.clone().add(basis2);  // Direction of third line family
-      const perpDirection = basis2.clone().sub(basis1);  // Perpendicular displacement direction
 
-      // Calculate step size in perpendicular direction
-      const step = maxExtent / divisions;
+      // For displacement, use same principle as directions 1 and 2
+      // Displace along a direction perpendicular to the diagonal
+      // The perpendicular direction is (basis2 - basis1)
+      const perpDirection = basis2.clone().sub(basis1);
 
-      // Generate parallel lines displaced at unit intervals perpendicular to diagonal
+      // Generate parallel lines displaced at same unit intervals as other directions
       for (let i = 0; i <= divisions; i++) {
+        const offset = i / divisions;  // Same barycentric parameter as directions 1 & 2
+
         // Displacement perpendicular to diagonal
-        const displacement = perpDirection.clone().normalize().multiplyScalar(i * step);
+        const displacement = perpDirection.clone().multiplyScalar(offset * maxExtent);
 
         // Line parallel to diagonal, displaced by 'displacement' amount
-        // Extends from displaced origin along diagonal direction
         const start = displacement.clone();
         const end = displacement.clone().add(diagonal.clone().multiplyScalar(maxExtent));
 
