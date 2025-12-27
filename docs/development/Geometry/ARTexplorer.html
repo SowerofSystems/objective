@@ -332,7 +332,7 @@
         </div>
         <p class="info-text">Quadray: 4 tetrahedral basis vectors pointing to cube vertices (1,1,1), (1,-1,-1), (-1,1,-1), (-1,-1,1)</p>
         <div class="control-item">
-          <label style="font-size: 12px; color: #b0b0b0; display: block; margin-bottom: 5px;">Quadray Planes (Triangular Grids)</label>
+          <label style="font-size: 12px; color: #b0b0b0; display: block; margin-bottom: 5px;">IVM Grids (Future Implementation)</label>
           <div class="plane-toggle-container">
             <div class="plane-toggle-item">
               <span class="plane-toggle-label">WX</span>
@@ -371,6 +371,7 @@
               </div>
             </div>
           </div>
+          <p class="info-text" style="font-size: 10px; margin-top: 5px;">IVM: Placeholder for TRUE IVM implementation - coplanar tetrahedral faces (not yet implemented)</p>
         </div>
         <div class="control-item">
           <label style="font-size: 12px; color: #b0b0b0; display: block; margin-bottom: 5px;">Central Angle Grids (Corrected Tessellation)</label>
@@ -1770,7 +1771,7 @@
     let geodesicIcosahedronGroup; // Phase 2.7a: Geodesic subdivision
     let geodesicTetrahedronGroup; // Phase 2.7c: Geodesic tetrahedron
     let geodesicOctahedronGroup; // Phase 2.7b: Geodesic octahedron
-    let cartesianGrid, cartesianBasis, quadrayBasis, quadrayPlanes, ivmPlanes;
+    let cartesianGrid, cartesianBasis, quadrayBasis, ivmPlanes;
 
     function initScene() {
       // Scene
@@ -1817,7 +1818,6 @@
       // Create coordinate grids
       createCartesianGrid();
       createQuadrayBasis();
-      createQuadrayPlanes();
       createIVMPlanes();
 
       // Create polyhedra groups
@@ -2021,193 +2021,6 @@
       }));
     }
 
-    function createQuadrayPlaneGrid(basis1, basis2, minExtent, maxExtent, divisions, color) {
-      const geometry = new THREE.BufferGeometry();
-      const vertices = [];
-
-      // DEBUG MODE: Toggle edge types via window.quadrayDebug
-      // Usage in console:
-      //   window.quadrayDebug = { showHorizontal: true, showVertical: true, showDiagonal: false }
-      //   rebuildQuadrayPlanes()
-      const debug = window.quadrayDebug || { showHorizontal: true, showVertical: true, showDiagonal: true };
-
-      // RT-PURE triangular lattice generation using barycentric coordinates
-      // EXACTLY like tetrahedron frequency subdivision (Project='Flat')
-      //
-      // Generate all grid points first using barycentric coordinates,
-      // then connect adjacent points to form triangular lattice.
-      //
-      // For triangular region with corners at: origin, basis1*maxExtent, basis2*maxExtent
-      // Barycentric coordinates: (u, v, w) where u+v+w=1
-      // Position = u*origin + v*(basis1*maxExtent) + w*(basis2*maxExtent)
-      // Since origin=(0,0,0): Position = v*basis1*maxExtent + w*basis2*maxExtent
-
-      // STEP 1: Generate all grid points using barycentric subdivision
-      const gridPoints = [];
-      for (let i = 0; i <= divisions; i++) {
-        for (let j = 0; j <= divisions - i; j++) {
-          const v = i / divisions;  // Barycentric weight for basis1
-          const w = j / divisions;  // Barycentric weight for basis2
-          // u = 1 - v - w (barycentric weight for origin, implicit)
-
-          const point = basis1.clone().multiplyScalar(v * maxExtent)
-                               .add(basis2.clone().multiplyScalar(w * maxExtent));
-          gridPoints.push({i, j, point});
-        }
-      }
-
-      // STEP 2: Connect adjacent points to form triangular lattice
-      // Three edge directions in triangular grid:
-      // - Horizontal: connect (i,j) to (i+1,j)
-      // - Vertical: connect (i,j) to (i,j+1)
-      // - Diagonal: connect (i+1,j) to (i,j+1)
-
-      const getPoint = (i, j) => {
-        // Index in gridPoints array for barycentric coordinate (i,j)
-        // Points are stored sequentially: row 0, row 1, etc.
-        let index = 0;
-        for (let row = 0; row < i; row++) {
-          index += (divisions - row + 1);
-        }
-        index += j;
-        return index < gridPoints.length ? gridPoints[index] : null;
-      };
-
-      let hCount = 0, vCount = 0, dCount = 0;
-
-      for (let i = 0; i <= divisions; i++) {
-        for (let j = 0; j <= divisions - i; j++) {
-          const current = getPoint(i, j);
-          if (!current) continue;
-
-          // Horizontal edge: (i,j) -> (i+1,j)
-          if (debug.showHorizontal && i < divisions) {
-            const next = getPoint(i + 1, j);
-            if (next) {
-              vertices.push(current.point.x, current.point.y, current.point.z);
-              vertices.push(next.point.x, next.point.y, next.point.z);
-              hCount++;
-            }
-          }
-
-          // Vertical edge: (i,j) -> (i,j+1)
-          if (debug.showVertical && j < divisions - i) {
-            const next = getPoint(i, j + 1);
-            if (next) {
-              vertices.push(current.point.x, current.point.y, current.point.z);
-              vertices.push(next.point.x, next.point.y, next.point.z);
-              vCount++;
-            }
-          }
-
-          // Diagonal edge: (i+1,j) -> (i,j+1) - only for upward-facing triangles
-          if (debug.showDiagonal && i < divisions && j < divisions - i) {
-            const p1 = getPoint(i + 1, j);
-            const p2 = getPoint(i, j + 1);
-            if (p1 && p2) {
-              vertices.push(p1.point.x, p1.point.y, p1.point.z);
-              vertices.push(p2.point.x, p2.point.y, p2.point.z);
-              dCount++;
-            }
-          }
-        }
-      }
-
-      // Store debug counts globally for console inspection
-      if (!window.quadrayDebugCounts) window.quadrayDebugCounts = {};
-      window.quadrayDebugCounts.lastGrid = { horizontal: hCount, vertical: vCount, diagonal: dCount, total: hCount + vCount + dCount };
-
-      geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-      return new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({
-        color,
-        transparent: true,
-        opacity: 0.3  // Subtle visualization (don't overpower polyhedra)
-      }));
-    }
-
-    /**
-     * Create all 6 Quadray coordinate planes (WXYZ tetrahedral basis)
-     * Analogous to XYZ Cartesian planes but with triangular grids
-     */
-    function createQuadrayPlanes() {
-      quadrayPlanes = new THREE.Group();
-
-      const minExtent = 0.0;  // Origin is dimensionless point
-      const maxExtent = 5.0;  // Outer tetrahedral boundary (unit quadrance steps)
-      const divisions = 5;    // Grid subdivisions (unit increments)
-
-      // Using nomenclature: W, X, Y, Z for Quadray basis (mapping to indices 0,1,2,3)
-      // 6 planes from 6 combinations of 4 basis vectors
-
-      // WX plane (basis 0, 1) - Magenta
-      window.quadrayWX = createQuadrayPlaneGrid(
-        Quadray.basisVectors[0], Quadray.basisVectors[1],
-        minExtent, maxExtent, divisions, 0xff00ff
-      );
-      window.quadrayWX.visible = false;
-      window.quadrayWX.name = 'WX';
-      quadrayPlanes.add(window.quadrayWX);
-
-      // WY plane (basis 0, 2) - Bright Aqua
-      window.quadrayWY = createQuadrayPlaneGrid(
-        Quadray.basisVectors[0], Quadray.basisVectors[2],
-        minExtent, maxExtent, divisions, 0x00ffcc
-      );
-      window.quadrayWY.visible = false;
-      window.quadrayWY.name = 'WY';
-      quadrayPlanes.add(window.quadrayWY);
-
-      // WZ plane (basis 0, 3) - Yellow
-      window.quadrayWZ = createQuadrayPlaneGrid(
-        Quadray.basisVectors[0], Quadray.basisVectors[3],
-        minExtent, maxExtent, divisions, 0xffff00
-      );
-      window.quadrayWZ.visible = false;
-      window.quadrayWZ.name = 'WZ';
-      quadrayPlanes.add(window.quadrayWZ);
-
-      // XY plane (basis 1, 2) - Red
-      window.quadrayXY = createQuadrayPlaneGrid(
-        Quadray.basisVectors[1], Quadray.basisVectors[2],
-        minExtent, maxExtent, divisions, 0xff0000
-      );
-      window.quadrayXY.visible = false;
-      window.quadrayXY.name = 'XY';
-      quadrayPlanes.add(window.quadrayXY);
-
-      // XZ plane (basis 1, 3) - Green
-      window.quadrayXZ = createQuadrayPlaneGrid(
-        Quadray.basisVectors[1], Quadray.basisVectors[3],
-        minExtent, maxExtent, divisions, 0x00ff00
-      );
-      window.quadrayXZ.visible = false;
-      window.quadrayXZ.name = 'XZ';
-      quadrayPlanes.add(window.quadrayXZ);
-
-      // YZ plane (basis 2, 3) - Sky Blue
-      window.quadrayYZ = createQuadrayPlaneGrid(
-        Quadray.basisVectors[2], Quadray.basisVectors[3],
-        minExtent, maxExtent, divisions, 0x6699ff
-      );
-      window.quadrayYZ.visible = false;
-      window.quadrayYZ.name = 'YZ';
-      quadrayPlanes.add(window.quadrayYZ);
-
-      // Verify zero-sum property (should be true)
-      const sum = Quadray.basisVectors.reduce((acc, v) =>
-        acc.add(v.clone()), new THREE.Vector3(0, 0, 0));
-      console.log('Quadray zero-sum verification:', sum.length() < 1e-10 ? '✓ PASS' : '✗ FAIL');
-      console.log('  Sum vector length:', sum.length().toExponential(2), '(should be ~0)');
-
-      // Log debug counts if available
-      if (window.quadrayDebugCounts && window.quadrayDebugCounts.lastGrid) {
-        const c = window.quadrayDebugCounts.lastGrid;
-        console.log(`Quadray grid edges: H=${c.horizontal}, V=${c.vertical}, D=${c.diagonal}, Total=${c.total}`);
-      }
-
-      scene.add(quadrayPlanes);
-    }
-
     /**
      * Create Central Angle Grids (Corrected Implementation)
      * This is the CORRECTED "Tetrahedral Central Angle Exploration Grid" (Option 1)
@@ -2283,30 +2096,6 @@
 
       scene.add(ivmPlanes);
     }
-
-    /**
-     * Rebuild Quadray planes with current debug settings
-     * Usage in console:
-     *   window.quadrayDebug = { showHorizontal: true, showVertical: false, showDiagonal: true }
-     *   rebuildQuadrayPlanes()
-     */
-    window.rebuildQuadrayPlanes = function() {
-      console.log('═══════════════════════════════════════════════════════');
-      console.log('🔄 Rebuilding Quadray Planes');
-      console.log('═══════════════════════════════════════════════════════');
-      const d = window.quadrayDebug || { showHorizontal: true, showVertical: true, showDiagonal: true };
-      console.log(`Debug flags: H=${d.showHorizontal}, V=${d.showVertical}, D=${d.showDiagonal}`);
-      console.log('');
-
-      if (quadrayPlanes) {
-        scene.remove(quadrayPlanes);
-      }
-      createQuadrayPlanes();
-
-      console.log('');
-      console.log('✅ Rebuild complete. Toggle planes in UI to see changes.');
-      console.log('═══════════════════════════════════════════════════════');
-    };
 
     /**
      * Render a polyhedron from vertices, edges, faces
@@ -2637,19 +2426,10 @@
         } else if (plane === 'YZ' && window.gridYZ) {
           window.gridYZ.visible = isActive;
         }
-        // Update Quadray plane visibility
-        else if (plane === 'quadrayWX' && window.quadrayWX) {
-          window.quadrayWX.visible = isActive;
-        } else if (plane === 'quadrayWY' && window.quadrayWY) {
-          window.quadrayWY.visible = isActive;
-        } else if (plane === 'quadrayWZ' && window.quadrayWZ) {
-          window.quadrayWZ.visible = isActive;
-        } else if (plane === 'quadrayXY' && window.quadrayXY) {
-          window.quadrayXY.visible = isActive;
-        } else if (plane === 'quadrayXZ' && window.quadrayXZ) {
-          window.quadrayXZ.visible = isActive;
-        } else if (plane === 'quadrayYZ' && window.quadrayYZ) {
-          window.quadrayYZ.visible = isActive;
+        // IVM Grids (Future Implementation) - placeholders, no action yet
+        else if (plane.startsWith('quadray')) {
+          // These toggles are placeholders for future TRUE IVM implementation
+          // No action taken yet
         }
         // Update Central Angle Grid visibility (corrected implementation, 6 planes)
         else if (plane === 'ivmWX' && window.ivmWX) {
@@ -2671,13 +2451,6 @@
           .some(sw => !sw.dataset.plane.startsWith('quadray') && !sw.dataset.plane.startsWith('ivm') && sw.classList.contains('active'));
         if (cartesianGrid) {
           cartesianGrid.visible = anyCartesianActive;
-        }
-
-        // Show/hide quadrayPlanes group if any Quadray plane is active
-        const anyQuadrayActive = Array.from(document.querySelectorAll('.plane-toggle-switch[data-plane]'))
-          .some(sw => sw.dataset.plane.startsWith('quadray') && sw.classList.contains('active'));
-        if (quadrayPlanes) {
-          quadrayPlanes.visible = anyQuadrayActive;
         }
 
         // Show/hide ivmPlanes group if any IVM plane is active
