@@ -302,7 +302,11 @@
           </label>
         </div>
         <div class="control-item">
-          <label style="font-size: 12px; color: #b0b0b0; display: block; margin-bottom: 5px;">Cartesian Planes</label>
+          <label style="font-size: 12px; color: #b0b0b0; display: block; margin-bottom: 5px;">
+            <span class="geodesic-toggle collapsed" data-target="cartesian-planes"></span>
+            Cartesian Planes
+          </label>
+          <div id="cartesian-planes" class="geodesic-options collapsed">
           <div class="plane-toggle-container">
             <div class="plane-toggle-item">
               <span class="plane-toggle-label">XY</span>
@@ -323,6 +327,7 @@
               </div>
             </div>
           </div>
+          </div>
         </div>
         <div class="control-item">
           <label class="checkbox-label">
@@ -332,7 +337,11 @@
         </div>
         <p class="info-text">Quadray: 4 tetrahedral basis vectors pointing to cube vertices (1,1,1), (1,-1,-1), (-1,1,-1), (-1,-1,1)</p>
         <div class="control-item">
-          <label style="font-size: 12px; color: #b0b0b0; display: block; margin-bottom: 5px;">IVM Grids (Future Implementation)</label>
+          <label style="font-size: 12px; color: #b0b0b0; display: block; margin-bottom: 5px;">
+            <span class="geodesic-toggle collapsed" data-target="ivm-grids"></span>
+            IVM Grids (Future Implementation)
+          </label>
+          <div id="ivm-grids" class="geodesic-options collapsed">
           <div class="plane-toggle-container">
             <div class="plane-toggle-item">
               <span class="plane-toggle-label">WX</span>
@@ -372,9 +381,14 @@
             </div>
           </div>
           <p class="info-text" style="font-size: 10px; margin-top: 5px;">IVM: Placeholder for TRUE IVM implementation - coplanar tetrahedral faces (not yet implemented)</p>
+          </div>
         </div>
         <div class="control-item">
-          <label style="font-size: 12px; color: #b0b0b0; display: block; margin-bottom: 5px;">Central Angle Grids (Corrected Tessellation)</label>
+          <label style="font-size: 12px; color: #b0b0b0; display: block; margin-bottom: 5px;">
+            <span class="geodesic-toggle collapsed" data-target="central-angle-grids"></span>
+            Central Angle Grids (Corrected Tessellation)
+          </label>
+          <div id="central-angle-grids" class="geodesic-options collapsed">
           <div class="plane-toggle-container">
             <div class="plane-toggle-item">
               <span class="plane-toggle-label">WX</span>
@@ -413,8 +427,9 @@
               </div>
             </div>
           </div>
+          <p class="info-text" style="font-size: 10px; margin-top: 5px;">Central Angle: Triangular faces tessellated vertex-to-vertex using tet edge length 2s√2 (corrected implementation without bugs)</p>
+          </div>
         </div>
-        <p class="info-text" style="font-size: 10px; margin-top: 5px;">Central Angle: Triangular faces tessellated vertex-to-vertex using tet edge length 2s√2 (corrected implementation without bugs)</p>
       </div>
 
       <!-- Polyhedra Selection -->
