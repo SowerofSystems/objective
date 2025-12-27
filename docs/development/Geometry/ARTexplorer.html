@@ -1920,10 +1920,11 @@
         }
       }
 
-      // STEP 2: Connect adjacent points to form grid lines parallel to basis vectors
-      // Two edge directions (no diagonal - only lines parallel to basis1 and basis2):
-      // - Horizontal: connect (i,j) to (i+1,j) - parallel to basis1
-      // - Vertical: connect (i,j) to (i,j+1) - parallel to basis2
+      // STEP 2: Connect adjacent points to form triangular lattice
+      // Three edge directions in triangular grid:
+      // - Horizontal: connect (i,j) to (i+1,j)
+      // - Vertical: connect (i,j) to (i,j+1)
+      // - Diagonal: connect (i+1,j) to (i,j+1)
 
       const getPoint = (i, j) => {
         // Index in gridPoints array for barycentric coordinate (i,j)
@@ -1941,7 +1942,7 @@
           const current = getPoint(i, j);
           if (!current) continue;
 
-          // Horizontal edge: (i,j) -> (i+1,j) - parallel to basis1
+          // Horizontal edge: (i,j) -> (i+1,j)
           if (i < divisions) {
             const next = getPoint(i + 1, j);
             if (next) {
@@ -1950,7 +1951,7 @@
             }
           }
 
-          // Vertical edge: (i,j) -> (i,j+1) - parallel to basis2
+          // Vertical edge: (i,j) -> (i,j+1)
           if (j < divisions - i) {
             const next = getPoint(i, j + 1);
             if (next) {
@@ -1959,8 +1960,15 @@
             }
           }
 
-          // Diagonal edges removed - created visual clutter
-          // Only show grid lines parallel to Quadray basis vectors
+          // Diagonal edge: (i+1,j) -> (i,j+1) - only for upward-facing triangles
+          if (i < divisions && j < divisions - i) {
+            const p1 = getPoint(i + 1, j);
+            const p2 = getPoint(i, j + 1);
+            if (p1 && p2) {
+              vertices.push(p1.point.x, p1.point.y, p1.point.z);
+              vertices.push(p2.point.x, p2.point.y, p2.point.z);
+            }
+          }
         }
       }
 
