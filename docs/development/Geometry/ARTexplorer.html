@@ -366,6 +366,48 @@
             </div>
           </div>
         </div>
+        <div class="control-item">
+          <label style="font-size: 12px; color: #b0b0b0; display: block; margin-bottom: 5px;">IVM Grids (Vertex-to-Vertex Tessellation)</label>
+          <div class="plane-toggle-container">
+            <div class="plane-toggle-item">
+              <span class="plane-toggle-label">WX</span>
+              <div class="plane-toggle-switch" data-plane="ivmWX">
+                <div class="plane-toggle-slider"></div>
+              </div>
+            </div>
+            <div class="plane-toggle-item">
+              <span class="plane-toggle-label">WY</span>
+              <div class="plane-toggle-switch" data-plane="ivmWY">
+                <div class="plane-toggle-slider"></div>
+              </div>
+            </div>
+            <div class="plane-toggle-item">
+              <span class="plane-toggle-label">WZ</span>
+              <div class="plane-toggle-switch" data-plane="ivmWZ">
+                <div class="plane-toggle-slider"></div>
+              </div>
+            </div>
+            <div class="plane-toggle-item">
+              <span class="plane-toggle-label">XY</span>
+              <div class="plane-toggle-switch" data-plane="ivmXY">
+                <div class="plane-toggle-slider"></div>
+              </div>
+            </div>
+            <div class="plane-toggle-item">
+              <span class="plane-toggle-label">XZ</span>
+              <div class="plane-toggle-switch" data-plane="ivmXZ">
+                <div class="plane-toggle-slider"></div>
+              </div>
+            </div>
+            <div class="plane-toggle-item">
+              <span class="plane-toggle-label">YZ</span>
+              <div class="plane-toggle-switch" data-plane="ivmYZ">
+                <div class="plane-toggle-slider"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="info-text" style="font-size: 10px; margin-top: 5px;">IVM: True Isotropic Vector Matrix - triangular faces tessellated vertex-to-vertex using tet edge length 2s√2</p>
       </div>
 
       <!-- Polyhedra Selection -->
@@ -1722,7 +1764,7 @@
     let geodesicIcosahedronGroup; // Phase 2.7a: Geodesic subdivision
     let geodesicTetrahedronGroup; // Phase 2.7c: Geodesic tetrahedron
     let geodesicOctahedronGroup; // Phase 2.7b: Geodesic octahedron
-    let cartesianGrid, quadrayBasis, quadrayPlanes;
+    let cartesianGrid, quadrayBasis, quadrayPlanes, ivmPlanes;
 
     function initScene() {
       // Scene
@@ -1770,6 +1812,7 @@
       createCartesianGrid();
       createQuadrayBasis();
       createQuadrayPlanes();
+      createIVMPlanes();
 
       // Create polyhedra groups
       cubeGroup = new THREE.Group();
@@ -1891,6 +1934,81 @@
      * @param {number} color - Grid line color
      * @returns {THREE.LineSegments} Triangular grid geometry
      */
+    /**
+     * Create IVM grid by tessellating triangular faces vertex-to-vertex
+     * RT-PURE: Uses tetrahedron edge length as unit increment
+     *
+     * @param {THREE.Vector3} basis1 - First basis vector (e.g., W)
+     * @param {THREE.Vector3} basis2 - Second basis vector (e.g., X)
+     * @param {number} halfSize - Tetrahedron halfSize (s)
+     * @param {number} tessellations - Number of triangle copies in each direction (e.g., 5)
+     * @param {number} color - Grid line color
+     * @returns {THREE.LineSegments} IVM grid geometry
+     */
+    function createIVMGrid(basis1, basis2, halfSize, tessellations, color) {
+      const geometry = new THREE.BufferGeometry();
+      const vertices = [];
+
+      // RT-PURE: Tetrahedron edge length = 2s√2 where s = halfSize
+      // This is the fundamental unit for IVM tessellation
+      const edgeLength = 2 * halfSize * Math.sqrt(2);
+
+      // Base triangle vertices:
+      // v0 = origin (0,0,0)
+      // v1 = basis1 * edgeLength
+      // v2 = basis2 * edgeLength
+      const v0 = new THREE.Vector3(0, 0, 0);
+      const v1 = basis1.clone().multiplyScalar(edgeLength);
+      const v2 = basis2.clone().multiplyScalar(edgeLength);
+
+      // Tessellate triangle outward in three directions:
+      // Direction A: along basis1 (v0 -> v1 edge)
+      // Direction B: along basis2 (v0 -> v2 edge)
+      // Direction C: along (v1 -> v2 edge), which is (v2 - v1) direction
+
+      // For each tessellation position (i, j, k) where i+j+k <= tessellations:
+      // - i: steps along basis1 direction
+      // - j: steps along basis2 direction
+      // - k: steps along (basis2 - basis1) direction
+      //
+      // Triangle vertex calculation using vector addition:
+      // TriangleOrigin = i*v1 + j*v2
+      // Each triangle has three vertices: origin, origin+v1, origin+v2
+
+      for (let i = 0; i <= tessellations; i++) {
+        for (let j = 0; j <= tessellations - i; j++) {
+          // Calculate the "origin" of this triangle copy
+          const triOrigin = v1.clone().multiplyScalar(i)
+                               .add(v2.clone().multiplyScalar(j));
+
+          // Three vertices of this triangle:
+          const p0 = triOrigin.clone();
+          const p1 = triOrigin.clone().add(v1);
+          const p2 = triOrigin.clone().add(v2);
+
+          // Draw three edges (triangle outline):
+          // Edge 1: p0 -> p1
+          vertices.push(p0.x, p0.y, p0.z);
+          vertices.push(p1.x, p1.y, p1.z);
+
+          // Edge 2: p1 -> p2
+          vertices.push(p1.x, p1.y, p1.z);
+          vertices.push(p2.x, p2.y, p2.z);
+
+          // Edge 3: p2 -> p0
+          vertices.push(p2.x, p2.y, p2.z);
+          vertices.push(p0.x, p0.y, p0.z);
+        }
+      }
+
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+      return new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.4  // Slightly more visible than Central Angle Grid
+      }));
+    }
+
     function createQuadrayPlaneGrid(basis1, basis2, minExtent, maxExtent, divisions, color) {
       const geometry = new THREE.BufferGeometry();
       const vertices = [];
@@ -2076,6 +2194,78 @@
       }
 
       scene.add(quadrayPlanes);
+    }
+
+    /**
+     * Create all 6 IVM grids (TRUE Isotropic Vector Matrix)
+     * Uses vertex-to-vertex tetrahedral tessellation
+     */
+    function createIVMPlanes() {
+      ivmPlanes = new THREE.Group();
+
+      const halfSize = 1.0;      // Tetrahedron halfSize (s) - matches dual tetrahedron
+      const tessellations = 5;   // Number of triangle copies in each direction
+
+      // Using nomenclature: W, X, Y, Z for Quadray basis (mapping to indices 0,1,2,3)
+      // 6 planes from 6 combinations of 4 basis vectors
+
+      // WX plane (basis 0, 1) - Magenta
+      window.ivmWX = createIVMGrid(
+        Quadray.basisVectors[0], Quadray.basisVectors[1],
+        halfSize, tessellations, 0xff00ff
+      );
+      window.ivmWX.visible = false;
+      window.ivmWX.name = 'IVM_WX';
+      ivmPlanes.add(window.ivmWX);
+
+      // WY plane (basis 0, 2) - Bright Aqua
+      window.ivmWY = createIVMGrid(
+        Quadray.basisVectors[0], Quadray.basisVectors[2],
+        halfSize, tessellations, 0x00ffcc
+      );
+      window.ivmWY.visible = false;
+      window.ivmWY.name = 'IVM_WY';
+      ivmPlanes.add(window.ivmWY);
+
+      // WZ plane (basis 0, 3) - Yellow
+      window.ivmWZ = createIVMGrid(
+        Quadray.basisVectors[0], Quadray.basisVectors[3],
+        halfSize, tessellations, 0xffff00
+      );
+      window.ivmWZ.visible = false;
+      window.ivmWZ.name = 'IVM_WZ';
+      ivmPlanes.add(window.ivmWZ);
+
+      // XY plane (basis 1, 2) - Red
+      window.ivmXY = createIVMGrid(
+        Quadray.basisVectors[1], Quadray.basisVectors[2],
+        halfSize, tessellations, 0xff0000
+      );
+      window.ivmXY.visible = false;
+      window.ivmXY.name = 'IVM_XY';
+      ivmPlanes.add(window.ivmXY);
+
+      // XZ plane (basis 1, 3) - Green
+      window.ivmXZ = createIVMGrid(
+        Quadray.basisVectors[1], Quadray.basisVectors[3],
+        halfSize, tessellations, 0x00ff00
+      );
+      window.ivmXZ.visible = false;
+      window.ivmXZ.name = 'IVM_XZ';
+      ivmPlanes.add(window.ivmXZ);
+
+      // YZ plane (basis 2, 3) - Sky Blue
+      window.ivmYZ = createIVMGrid(
+        Quadray.basisVectors[2], Quadray.basisVectors[3],
+        halfSize, tessellations, 0x6699ff
+      );
+      window.ivmYZ.visible = false;
+      window.ivmYZ.name = 'IVM_YZ';
+      ivmPlanes.add(window.ivmYZ);
+
+      console.log('✅ IVM grids created with edge length:', (2 * halfSize * Math.sqrt(2)).toFixed(4));
+
+      scene.add(ivmPlanes);
     }
 
     /**
