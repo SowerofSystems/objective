@@ -1756,9 +1756,19 @@
       const geometry = new THREE.BufferGeometry();
       const vertices = [];
 
-      // RT-PURE: Tetrahedron edge length = 2s√2 where s = halfSize
-      // This is the fundamental unit for IVM tessellation
-      const edgeLength = 2 * halfSize * Math.sqrt(2);
+      // RT-PURE: Unit tetrahedron grid interval
+      // For a unit tetrahedron (edge length = 1):
+      // Centroid-to-vertex distance (OutSphere radius) = √6/4 ≈ 0.612
+      // This provides meaningful intervals at edge lengths 1, 2, 3, 4...
+      const edgeLength = Math.sqrt(6) / 4;
+
+      // DIAGNOSTIC: Log grid interval with full precision (first plane only)
+      if (!window.gridIntervalLogged) {
+        console.log('=== QUADRAY GRID INTERVAL (FIXED) ===');
+        console.log(`Grid interval (√6/4): ${edgeLength.toFixed(16)}`);
+        console.log(`Exact value: ${edgeLength}`);
+        window.gridIntervalLogged = true;
+      }
 
       // Base triangle vertices:
       // v0 = origin (0,0,0)
@@ -2001,7 +2011,10 @@
      * Update all geometry based on current settings
      */
     function updateGeometry() {
-      const scale = parseFloat(document.getElementById('scaleSlider').value) / 2;
+      // QUADRAY SYSTEM: Use tet edge length as primary unit
+      // For tetrahedron edge length e: halfSize = e / (2√2)
+      const tetEdge = parseFloat(document.getElementById('tetScaleSlider').value);
+      const scale = tetEdge / (2 * Math.sqrt(2));  // Convert tet edge to halfSize
       const opacity = parseFloat(document.getElementById('opacitySlider').value);
 
       // Cube (Blue)
@@ -2018,6 +2031,27 @@
         const tetra = Polyhedra.tetrahedron(scale);
         renderPolyhedron(tetrahedronGroup, tetra, 0xffff00, opacity);
         tetrahedronGroup.visible = true;
+
+        // DIAGNOSTIC: Log OutSphere radius for edge lengths 1, 2, 3, 4, 5
+        // scale = halfSize (s), edge length = 2s√2, OutSphere = s√3
+        const halfSize = scale;
+        const tetEdgeLength = 2 * halfSize * Math.sqrt(2);
+        const outSphereRadius = halfSize * Math.sqrt(3);
+        const gridInterval = Math.sqrt(6) / 4;
+        const difference = outSphereRadius - gridInterval;
+        const percentDiff = (difference / gridInterval) * 100;
+
+        // Only log for integer edge lengths 1-5
+        const roundedEdge = Math.round(tetEdgeLength * 10) / 10;
+        if ([1.0, 2.0, 3.0, 4.0, 5.0].includes(roundedEdge)) {
+          console.log(`\n=== TETRAHEDRON EDGE LENGTH ${roundedEdge} ===`);
+          console.log(`HalfSize (s): ${halfSize.toFixed(16)}`);
+          console.log(`Edge length (2s√2): ${tetEdgeLength.toFixed(16)}`);
+          console.log(`OutSphere radius (s√3): ${outSphereRadius.toFixed(16)}`);
+          console.log(`Grid interval (√6/4): ${gridInterval.toFixed(16)}`);
+          console.log(`Difference (OutSphere - Grid): ${difference.toFixed(16)}`);
+          console.log(`Percent difference: ${percentDiff.toFixed(8)}%`);
+        }
       } else {
         tetrahedronGroup.visible = false;
       }
@@ -2122,7 +2156,7 @@
       }
 
       // Quadray basis vectors scale with tetrahedron edge length
-      const tetEdge = parseFloat(document.getElementById('tetScaleSlider').value);
+      // (tetEdge already declared at top of function)
       if (quadrayBasis) {
         quadrayBasis.scale.set(tetEdge / (2 * Math.sqrt(2)), tetEdge / (2 * Math.sqrt(2)), tetEdge / (2 * Math.sqrt(2)));
       }

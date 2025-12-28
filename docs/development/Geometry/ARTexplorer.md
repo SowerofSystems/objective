@@ -1554,21 +1554,19 @@ Using Quadray plane projections instead of spherical normalization may eliminate
 - ✅ Verify zero-sum property in console logging
 - ✅ Brighten WY and YZ plane colors for better visibility
 
-**Phase 2: Refinement** 🚧 IN PROGRESS
-- 🚧 Remove extraneous diagonal edges (leftover from parallelogram approach)
+**Phase 2: Refinement** ✅ COMPLETE (2025-12-28)
+- ✅ Remove extraneous diagonal edges (leftover from parallelogram approach)
 - ✅ Add color-coding per plane with transparency (opacity 0.3)
 - ✅ Infinitesimal inner extent avoided (minExtent = 0.0, origin dimensionless)
-- [ ] Correlate grid spacing with dual tetrahedron edge length
-  - **Interval Sizing Options** (to correlate with dual tetrahedron):
-    - Tetrahedron edge length: `2s√2` where s = halfSize
-    - Cube edge length: `2s`
-    - Tetrahedron OutSphere radius: `s√3`
-    - Tetrahedron MidSphere radius: `s`
-    - Tetrahedron InSphere radius: `s/√3`
-  - Current implementation: `maxExtent = 5.0`, `divisions = 5` (arbitrary units)
-  - **TODO**: Set meaningful base unit interval aligned with tetrahedron dimensions
-- [ ] Add Quadray basis vector arrows (optional visualization)
-- [ ] Document Quadray coordinate conventions in comments
+- ✅ **Grid interval set to √6/4** - Unit tetrahedron OutSphere radius (IVM fundamental unit)
+- ✅ **Tetrahedron edge length as primary scaling unit** - Exact alignment at integer edge lengths
+- ✅ **Dual slider system implemented** - Linked Cube/Tet sliders with 0.10 interval snapping
+  - **Grid Interval:** Fixed at √6/4 ≈ 0.6124 (unit tetrahedron centroid-to-vertex distance)
+  - **Tetrahedron Primary:** Edge length 1, 2, 3, 4, 5... → OutSphere at 1×, 2×, 3×, 4×, 5× grid interval
+  - **IVM Compatibility:** Grid represents fixed octet spaceframe structure (all units same size)
+  - **RT-Pure Precision:** √ expansion deferred, full double precision maintained
+- ⏳ Add Quadray basis vector arrows (optional visualization) - *deferred*
+- ✅ Document Quadray coordinate conventions in comments
 
 **Phase 3: Integration with Phase 2.8**
 - [ ] Use Quadray planes as projection surfaces for geodesic subdivision

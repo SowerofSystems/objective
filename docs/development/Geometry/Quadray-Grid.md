@@ -311,7 +311,7 @@ What are we trying to visualize with Quadray planes?
 
 ### Phase 2.6: Tetrahedral Central Angle Exploration Grid (Option 1)
 
-**Status:** ✅ COMPLETE (2025-12-27)
+**Status:** ✅ COMPLETE (2025-12-28)
 
 **Purpose:** Visualize the "web space" created by working within the 109.47° tetrahedral central angle
 
@@ -320,9 +320,10 @@ What are we trying to visualize with Quadray planes?
 2. ✅ Add debug mode with edge type toggles
 3. ✅ **FIX HORIZONTAL EDGE BUG** - Fixed by switching to three parallel line families approach
 4. ✅ Basis vector lengths corrected (XYZ = 2.0, WXYZ = 2√2)
-5. ⏳ Set meaningful grid spacing (correlate with tetrahedron dimensions) - *deferred to Phase 2.10*
-6. ⏳ Add UI checkbox: "Show Central Angle Grid" - *optional enhancement*
-7. ✅ Phase 2.6 complete - ready to move forward
+5. ✅ **Set meaningful grid spacing** - Grid interval = √6/4 (unit tetrahedron OutSphere radius)
+6. ✅ **Dual slider system** - Linked Cube/Tetrahedron edge length sliders with smart snapping
+7. ✅ **Tetrahedron edge as primary unit** - Exact alignment with IVM grid at tet edge = 1, 2, 3, 4, 5...
+8. ✅ Phase 2.6 complete - ready for Phase 2.9 (True IVM Grid)
 
 **Resolution Notes:**
 - Grid now uses three parallel line families instead of barycentric point-connection
@@ -330,6 +331,10 @@ What are we trying to visualize with Quadray planes?
 - Clean equilateral triangular lattice achieved
 - RT-pure vector arithmetic maintained
 - Basis vectors now precisely aligned with grid intervals
+- **Grid interval fixed at √6/4** - represents unit tetrahedron OutSphere radius
+- **Tetrahedron edge length is primary scaling unit** - ensures exact alignment with IVM octet spaceframe
+- **Dual sliders implemented** - Cube and Tet edge length linked, user chooses which shows rational values
+- **Exact precision achieved** - Tet edge 1.0 → OutSphere = √6/4 (perfect match with grid interval)
 
 ### Phase 2.9 (or later): True IVM Grid (Option 2)
 
