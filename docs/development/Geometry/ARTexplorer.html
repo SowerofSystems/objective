@@ -1632,17 +1632,17 @@
       // Using ArrowHelper to match Quadray vector style (with arrowheads)
       cartesianBasis = new THREE.Group();
 
-      // Fundamental unit: tetrahedron edge length = 2√2 (for halfSize = 1)
-      // ArrowHelper length = shaft only (not including head), so subtract head length
-      const totalBasisLength = 2 * Math.sqrt(2);  // ≈ 2.828 (one tetrahedron edge)
+      // Fundamental unit: cube edge = 2.0 (for halfSize = 1)
+      // ArrowHelper 'length' parameter = TOTAL arrow length (shaft + head)
+      const totalBasisLength = 2.0;  // Cube edge length at base scale
       const headLength = 0.3;
-      const shaftLength = totalBasisLength - headLength;  // Total visual length = shaft + head
+      const arrowLength = totalBasisLength;  // Total visual length
 
       // X-axis (Red)
       const xAxis = new THREE.ArrowHelper(
         new THREE.Vector3(1, 0, 0),  // Direction
         new THREE.Vector3(0, 0, 0),  // Origin
-        shaftLength,                  // Shaft length (total - head = 2√2 - 0.3)
+        arrowLength,                  // Total arrow length = 2.0
         0xff0000,                     // Red
         headLength,                   // Head length = 0.3
         0.2                           // Head width (matching Quadray style)
@@ -1653,7 +1653,7 @@
       const yAxis = new THREE.ArrowHelper(
         new THREE.Vector3(0, 1, 0),  // Direction
         new THREE.Vector3(0, 0, 0),  // Origin
-        shaftLength,                  // Shaft length (total - head = 2√2 - 0.3)
+        arrowLength,                  // Total arrow length = 2.0
         0x00ff00,                     // Green
         headLength,                   // Head length = 0.3
         0.2                           // Head width
@@ -1664,7 +1664,7 @@
       const zAxis = new THREE.ArrowHelper(
         new THREE.Vector3(0, 0, 1),  // Direction (up in Z-up)
         new THREE.Vector3(0, 0, 0),  // Origin
-        shaftLength,                  // Shaft length (total - head = 2√2 - 0.3)
+        arrowLength,                  // Total arrow length = 2.0
         0x0000ff,                     // Blue
         headLength,                   // Head length = 0.3
         0.2                           // Head width
@@ -1683,10 +1683,10 @@
       quadrayBasis = new THREE.Group();
 
       // Fundamental unit: tetrahedron edge length = 2√2 (for halfSize = 1)
-      // ArrowHelper length = shaft only (not including head), so subtract head length
+      // ArrowHelper 'length' parameter = TOTAL arrow length (shaft + head)
       const totalBasisLength = 2 * Math.sqrt(2);  // ≈ 2.828 (one tetrahedron edge)
       const headLength = 0.3;
-      const shaftLength = totalBasisLength - headLength;  // Total visual length = shaft + head
+      const arrowLength = totalBasisLength;  // Total visual length
 
       const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00]; // R, G, B, Y
       const labels = ['A', 'B', 'C', 'D'];
@@ -1695,7 +1695,7 @@
         const arrow = new THREE.ArrowHelper(
           vec,
           new THREE.Vector3(0, 0, 0),
-          shaftLength,                // Shaft length (total - head = 2√2 - 0.3)
+          arrowLength,                // Total arrow length = 2√2
           colors[i],
           headLength,                 // Head length = 0.3
           0.2
