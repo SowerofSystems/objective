@@ -1632,11 +1632,14 @@
       // Using ArrowHelper to match Quadray vector style (with arrowheads)
       cartesianBasis = new THREE.Group();
 
+      // Fundamental unit: tetrahedron edge length = 2√2 (for halfSize = 1)
+      const basisLength = 2 * Math.sqrt(2);  // ≈ 2.828 (one tetrahedron edge)
+
       // X-axis (Red)
       const xAxis = new THREE.ArrowHelper(
         new THREE.Vector3(1, 0, 0),  // Direction
         new THREE.Vector3(0, 0, 0),  // Origin
-        3,                            // Length (matching AxesHelper default)
+        basisLength,                  // Length = tetrahedron edge (2√2)
         0xff0000,                     // Red
         0.3,                          // Head length (matching Quadray style)
         0.2                           // Head width (matching Quadray style)
@@ -1647,7 +1650,7 @@
       const yAxis = new THREE.ArrowHelper(
         new THREE.Vector3(0, 1, 0),  // Direction
         new THREE.Vector3(0, 0, 0),  // Origin
-        3,                            // Length
+        basisLength,                  // Length = tetrahedron edge (2√2)
         0x00ff00,                     // Green
         0.3,                          // Head length
         0.2                           // Head width
@@ -1658,7 +1661,7 @@
       const zAxis = new THREE.ArrowHelper(
         new THREE.Vector3(0, 0, 1),  // Direction (up in Z-up)
         new THREE.Vector3(0, 0, 0),  // Origin
-        3,                            // Length
+        basisLength,                  // Length = tetrahedron edge (2√2)
         0x0000ff,                     // Blue
         0.3,                          // Head length
         0.2                           // Head width
@@ -1676,6 +1679,9 @@
     function createQuadrayBasis() {
       quadrayBasis = new THREE.Group();
 
+      // Fundamental unit: tetrahedron edge length = 2√2 (for halfSize = 1)
+      const basisLength = 2 * Math.sqrt(2);  // ≈ 2.828 (one tetrahedron edge)
+
       const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00]; // R, G, B, Y
       const labels = ['A', 'B', 'C', 'D'];
 
@@ -1683,7 +1689,7 @@
         const arrow = new THREE.ArrowHelper(
           vec,
           new THREE.Vector3(0, 0, 0),
-          2.5,
+          basisLength,                // Length = tetrahedron edge (2√2)
           colors[i],
           0.3,
           0.2
