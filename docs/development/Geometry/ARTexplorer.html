@@ -306,14 +306,14 @@
         <div class="control-item">
           <label>Cube Edge Length</label>
           <div class="slider-container">
-            <input type="range" id="scaleSlider" min="0.5" max="3" step="0.1" value="2">
+            <input type="range" id="scaleSlider" min="0.5" max="3.6" step="0.1" value="2">
             <span class="slider-value" id="scaleValue">2.00</span>
           </div>
         </div>
         <div class="control-item">
           <label>Tetrahedron Edge Length</label>
           <div class="slider-container">
-            <input type="range" id="tetScaleSlider" min="0.7" max="4.2" step="0.1" value="2.83">
+            <input type="range" id="tetScaleSlider" min="0.7" max="5.0" step="0.1" value="2.83">
             <span class="slider-value" id="tetScaleValue">2.83</span>
           </div>
         </div>
@@ -2112,6 +2112,19 @@
         rhombicDodecahedronGroup.visible = true;
       } else {
         rhombicDodecahedronGroup.visible = false;
+      }
+
+      // Scale basis vectors to match current slider values
+      // Cartesian basis vectors scale with cube edge length
+      const cubeEdge = parseFloat(document.getElementById('scaleSlider').value);
+      if (cartesianBasis) {
+        cartesianBasis.scale.set(cubeEdge, cubeEdge, cubeEdge);
+      }
+
+      // Quadray basis vectors scale with tetrahedron edge length
+      const tetEdge = parseFloat(document.getElementById('tetScaleSlider').value);
+      if (quadrayBasis) {
+        quadrayBasis.scale.set(tetEdge / (2 * Math.sqrt(2)), tetEdge / (2 * Math.sqrt(2)), tetEdge / (2 * Math.sqrt(2)));
       }
 
       updateGeometryStats();
