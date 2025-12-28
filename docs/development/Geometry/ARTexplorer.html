@@ -1449,39 +1449,37 @@
 
         // RT-PURE: Defer expansions until needed
         const sqrt2 = Math.sqrt(2);
-        const sqrt3 = Math.sqrt(3);
         const t = s / sqrt2;         // Cuboctahedron vertex distance: s/√2
-        const u = 2 * t / 3;         // Triangle face center distance: 2(s/√2)/3 (centroid of triangle)
+        const u = t / 2;             // Rhombic dodec octant vertex distance: (s/√2)/2 = s/(2√2)
 
         console.log(`[ThreeRT] Rhombic Dodecahedron RT construction (dual of cuboctahedron):`);
         console.log(`  HalfSize: s = ${s.toFixed(6)}`);
-        console.log(`  √2 = ${sqrt2.toFixed(6)}, √3 = ${sqrt3.toFixed(6)} (deferred expansion)`);
+        console.log(`  √2 = ${sqrt2.toFixed(6)} (deferred expansion)`);
         console.log(`  Cuboctahedron vertex distance: t = s/√2 = ${t.toFixed(6)}`);
-        console.log(`  Triangle face center (centroid): u = 2t/3 = ${u.toFixed(6)}`);
+        console.log(`  Rhombic dodec octant vertices: u = t/2 = s/(2√2) = ${u.toFixed(6)}`);
 
-        // 14 vertices = centers of cuboctahedron's 14 faces (6 square + 8 triangular)
+        // 14 vertices positioned to create planar rhombic faces
         const vertices = [
-          // 6 vertices at SQUARE face centers (on coordinate axes)
-          // Square faces lie on cube face planes at distance t from origin
-          new THREE.Vector3( t,  0,  0),  // 0: +X square (center of [0,4,1,5])
-          new THREE.Vector3(-t,  0,  0),  // 1: -X square (center of [2,6,3,7])
-          new THREE.Vector3( 0,  t,  0),  // 2: +Y square (center of [0,8,2,9])
-          new THREE.Vector3( 0, -t,  0),  // 3: -Y square (center of [1,10,3,11])
-          new THREE.Vector3( 0,  0,  t),  // 4: +Z square (center of [4,8,6,10])
-          new THREE.Vector3( 0,  0, -t),  // 5: -Z square (center of [5,9,7,11])
+          // 6 vertices at SQUARE face centers (on coordinate axes) - degree 4
+          // These are at distance t from origin, matching cuboctahedron square face centers
+          new THREE.Vector3( t,  0,  0),  // 0: +X square (degree 4)
+          new THREE.Vector3(-t,  0,  0),  // 1: -X square (degree 4)
+          new THREE.Vector3( 0,  t,  0),  // 2: +Y square (degree 4)
+          new THREE.Vector3( 0, -t,  0),  // 3: -Y square (degree 4)
+          new THREE.Vector3( 0,  0,  t),  // 4: +Z square (degree 4)
+          new THREE.Vector3( 0,  0, -t),  // 5: -Z square (degree 4)
 
-          // 8 vertices at TRIANGULAR face centers (one per octant)
-          // Each triangle face center = average of 3 cuboctahedron vertices
-          // Cuboctahedron triangle [0,4,8] has vertices (t,t,0), (t,0,t), (0,t,t)
-          // Centroid = ((t+t+0)/3, (t+0+t)/3, (0+t+t)/3) = (2t/3, 2t/3, 2t/3) = (u,u,u)
-          new THREE.Vector3( u,  u,  u),  // 6: (+,+,+) triangle (center of [0,4,8])
-          new THREE.Vector3( u,  u, -u),  // 7: (+,+,-) triangle (center of [0,5,9])
-          new THREE.Vector3( u, -u,  u),  // 8: (+,-,+) triangle (center of [1,4,10])
-          new THREE.Vector3( u, -u, -u),  // 9: (+,-,-) triangle (center of [1,5,11])
-          new THREE.Vector3(-u,  u,  u),  // 10: (-,+,+) triangle (center of [2,6,8])
-          new THREE.Vector3(-u,  u, -u),  // 11: (-,+,-) triangle (center of [2,7,9])
-          new THREE.Vector3(-u, -u,  u),  // 12: (-,-,+) triangle (center of [3,6,10])
-          new THREE.Vector3(-u, -u, -u),  // 13: (-,-,-) triangle (center of [3,7,11])
+          // 8 vertices at body diagonals (one per octant) - degree 3
+          // CRITICAL: NOT at triangle centroids (2t/3), but at t/2 to ensure planar rhombic faces
+          // This is the proper geometric dual relationship
+          new THREE.Vector3( u,  u,  u),  // 6: (+,+,+) octant (degree 3)
+          new THREE.Vector3( u,  u, -u),  // 7: (+,+,-) octant (degree 3)
+          new THREE.Vector3( u, -u,  u),  // 8: (+,-,+) octant (degree 3)
+          new THREE.Vector3( u, -u, -u),  // 9: (+,-,-) octant (degree 3)
+          new THREE.Vector3(-u,  u,  u),  // 10: (-,+,+) octant (degree 3)
+          new THREE.Vector3(-u,  u, -u),  // 11: (-,+,-) octant (degree 3)
+          new THREE.Vector3(-u, -u,  u),  // 12: (-,-,+) octant (degree 3)
+          new THREE.Vector3(-u, -u, -u),  // 13: (-,-,-) octant (degree 3)
         ];
 
         // 24 edges connecting adjacent face centers

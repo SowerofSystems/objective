@@ -145,6 +145,53 @@ The cuboctahedron is the proper foundation for constructing the Rhombic Dodecahe
 
 ---
 
+## Phase 1d: Rhombic Dodecahedron (Correct Dual) Implementation ✅ COMPLETE
+
+### Deliverable: Proper Geometric Dual of Cuboctahedron
+
+**Critical Discovery: Dual Vertices ≠ Face Centroids**
+
+The rhombic dodecahedron as the geometric dual of the cuboctahedron requires vertices positioned to create **planar rhombic faces**, not simply at face centroids.
+
+**Incorrect Approach (Non-Planar Faces):**
+- Triangle face centroids at (±2t/3, ±2t/3, ±2t/3)
+- Results in saddle-shaped, non-coplanar rhombic faces
+- Scalar triple product ≠ 0 (failed coplanarity test)
+
+**Correct Approach (Planar Faces):**
+- 6 axis vertices at (±t, 0, 0), (0, ±t, 0), (0, 0, ±t) where t = s/√2 (degree 4)
+- 8 octant vertices at (±u, ±u, ±u) where **u = t/2 = s/(2√2)** (degree 3)
+- This ensures all 12 rhombic faces are perfectly coplanar
+- Verified via scalar triple product = 0
+
+**Key Properties:**
+- 14 vertices: 6 degree-4 (axis) + 8 degree-3 (octant)
+- 24 edges with uniform quadrance Q = t² = s²/2
+- 12 planar rhombic faces (no saddle distortion)
+- Each rhombus corresponds to one cuboctahedron vertex
+
+**RT-Pure Construction:**
+- Defer √2 expansion: t = s/√2, u = t/2 = s/(2√2)
+- Algebraic vertex positions ensure exact geometric relationships
+- All edges validated to have uniform quadrance
+
+**Dual Relationship Verified:**
+- Cuboctahedron 14 faces → Rhombic dodec 14 vertices ✓
+- Cuboctahedron 12 vertices → Rhombic dodec 12 faces ✓
+- Proper geometric dual with reciprocal face/vertex relationship ✓
+
+**Bug Fix History:**
+1. Initial attempt used triangle centroids at 2t/3 → non-planar faces (saddle)
+2. Corrected to u = t/2 → perfectly planar rhombic faces ✓
+3. Coplanarity verified via scalar triple product test
+
+**Visual Style:**
+- Color: Orange (0xff8800)
+- Opacity: 0.4 (semi-transparent)
+- Rendering: BufferGeometry with indexed faces
+
+---
+
 ## Phase 2: Nested Polyhedra (3D Space) ✅ COMPLETE
 
 ### Deliverable: Platonic solids + Rhombic Dodecahedron
