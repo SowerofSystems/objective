@@ -307,9 +307,17 @@
           <label>Cube Edge Length</label>
           <div class="slider-container">
             <input type="range" id="scaleSlider" min="0.5" max="3" step="0.1" value="2">
-            <span class="slider-value" id="scaleValue">2.0</span>
+            <span class="slider-value" id="scaleValue">2.00</span>
           </div>
         </div>
+        <div class="control-item">
+          <label>Tetrahedron Edge Length</label>
+          <div class="slider-container">
+            <input type="range" id="tetScaleSlider" min="0.7" max="4.2" step="0.1" value="2.83">
+            <span class="slider-value" id="tetScaleValue">2.83</span>
+          </div>
+        </div>
+        <p class="info-text" style="font-size: 10px; margin-top: 5px;">Linked sliders: rational units follow whichever you adjust</p>
       </div>
 
       <!-- Visual Options -->
@@ -2285,9 +2293,48 @@
       radio.addEventListener('change', updateGeometry);
     });
 
-    // Scale slider
+    // Dual Scale Sliders - Linked with Smart Snapping
+    // ONE unified metric, TWO presentation modes
+    // Both snap to 0.10 intervals, show 2 decimal places
+    // Which slider you adjust determines which shows rational values
+
     document.getElementById('scaleSlider').addEventListener('input', (e) => {
-      document.getElementById('scaleValue').textContent = e.target.value;
+      const rawValue = parseFloat(e.target.value);
+
+      // Snap cube edge to 0.10 intervals
+      const cubeEdge = Math.round(rawValue * 10) / 10;
+
+      // Update cube slider and display (rational - snapped)
+      e.target.value = cubeEdge;
+      document.getElementById('scaleValue').textContent = cubeEdge.toFixed(2);
+
+      // Calculate corresponding tet edge (irrational)
+      const tetEdge = cubeEdge * Math.sqrt(2);
+
+      // Update tet slider and display (irrational - calculated)
+      document.getElementById('tetScaleSlider').value = tetEdge;
+      document.getElementById('tetScaleValue').textContent = tetEdge.toFixed(2);
+
+      updateGeometry();
+    });
+
+    document.getElementById('tetScaleSlider').addEventListener('input', (e) => {
+      const rawValue = parseFloat(e.target.value);
+
+      // Snap tet edge to 0.10 intervals
+      const tetEdge = Math.round(rawValue * 10) / 10;
+
+      // Update tet slider and display (rational - snapped)
+      e.target.value = tetEdge;
+      document.getElementById('tetScaleValue').textContent = tetEdge.toFixed(2);
+
+      // Calculate corresponding cube edge (irrational)
+      const cubeEdge = tetEdge / Math.sqrt(2);
+
+      // Update cube slider and display (irrational - calculated)
+      document.getElementById('scaleSlider').value = cubeEdge;
+      document.getElementById('scaleValue').textContent = cubeEdge.toFixed(2);
+
       updateGeometry();
     });
 
