@@ -529,7 +529,8 @@
       unit: "°F",
       compute: (inputs) => {
         const celsius = parseNum(inputs["climate.temperature.winterAverage"], -7);
-        return Math.round((celsius * 9) / 5 + 32);
+        // Note: e_25 is NOT rounded in legacy (unlike e_23/e_24)
+        return (celsius * 9) / 5 + 32;
       }
     }
   ];
