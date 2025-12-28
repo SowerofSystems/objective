@@ -42,7 +42,8 @@ docs/development/Geometry/
 - ✅ **Octahedron** - 6 vertices, 12 edges, 8 faces - Schläfli {3,4} (dual of cube)
 - ✅ **Icosahedron** - 12 vertices, 30 edges, 20 faces - Schläfli {3,5}
 - ✅ **Dodecahedron** - 20 vertices, 30 edges, 12 faces - Schläfli {5,3}
-- ✅ **Rhombic Dodecahedron** - 14 vertices, 24 edges, 12 faces (dual of cuboctahedron)
+- ✅ **Cuboctahedron (Vector Equilibrium)** - 12 vertices, 24 edges, 14 faces (8 tri + 6 square) - Fuller's IVM foundation
+- ⚠️ **Rhombic Dodecahedron** - 14 vertices, 24 edges, 12 faces (dual of cuboctahedron) - *Requires rebuilding from cuboctahedron dual*
 
 **Visual Style (Implemented):**
 - Wireframe edges with LineSegments (efficient rendering)
@@ -55,6 +56,7 @@ docs/development/Geometry/
   - Octahedron: Green (0x00ff00)
   - Icosahedron: Cyan (0x00ffff)
   - Dodecahedron: Yellow (0xffff00)
+  - Cuboctahedron (VE): Bright Lime-Cyan (0x00ff88)
   - Rhombic Dodecahedron: Orange (0xff8800)
 
 ---
@@ -86,6 +88,60 @@ The dodecahedron uses the standard (0, ±1, ±φ) permutation construction where
 
 **Reference:**
 Similar to Section19.js hip roof solver pattern - pure algebraic solution using quadrance relationships, avoiding iterative methods.
+
+---
+
+## Phase 1c: Cuboctahedron (Vector Equilibrium) Implementation ✅ COMPLETE
+
+### Deliverable: Fuller's IVM Foundation Polyhedron
+
+**Geometric Approach:**
+The cuboctahedron (Fuller's "Vector Equilibrium") is constructed with vertices at the edge midpoints of a cube/octahedron. This is the fundamental polyhedron in Fuller's Isotropic Vector Matrix (IVM) space-filling geometry.
+
+**Key Properties:**
+- 12 vertices at (±t, ±t, 0), (±t, 0, ±t), (0, ±t, ±t) where t = s/√2
+- 24 edges (all equal length - uniform quadrance)
+- 14 faces: 6 square + 8 triangular
+- Each vertex connects to 4 edges
+- Dual polyhedron: Rhombic Dodecahedron
+
+**Vertex Construction (RT-Pure):**
+Following Wildberger's Rational Trigonometry principles:
+1. Defer √2 expansion: `const sqrt2 = Math.sqrt(2);` calculated once
+2. Use algebraic position: `t = s / sqrt2` (rationalized distance from origin)
+3. Vertices at alternating coordinate positions:
+   - XY plane (Z=0): 4 vertices at (±t, ±t, 0)
+   - XZ plane (Y=0): 4 vertices at (±t, 0, ±t)
+   - YZ plane (X=0): 4 vertices at (0, ±t, ±t)
+
+**Edge Topology (24 total):**
+Critical lesson: Edges must be derived from actual face perimeters, not assumed from coordinate planes.
+- 16 edges connecting XY plane vertices to XZ/YZ plane vertices
+- 8 edges connecting XZ plane vertices to YZ plane vertices
+- All edges have uniform quadrance: Q = 2t² (validated via RT.validateEdges)
+
+**Face Structure (14 total):**
+- 6 square faces (corresponding to cube faces): proper cyclic winding order
+  - Example: `[0, 4, 1, 5]` winds around +X square face perimeter
+- 8 triangular faces (corresponding to octahedron faces, one per octant)
+  - Example: `[0, 4, 8]` for (+,+,+) octant
+
+**Rational Trigonometry Validation:**
+- Edge quadrance: Q = 2t² where t = s/√2
+- Expected quadrance: 2 * (s/√2)² = 2 * s²/2 = s²
+- All 24 edges validated to have uniform quadrance
+- No angle calculations - pure algebraic construction
+
+**Bug Fix History:**
+Initial implementation incorrectly included phantom edges for XY, XZ, YZ plane squares that don't exist in cuboctahedron geometry. These created diagonal "X" patterns on square faces. Fix: regenerated all 24 edges from the 14 face perimeter definitions, removing non-existent plane square edges.
+
+**Significance:**
+The cuboctahedron is the proper foundation for constructing the Rhombic Dodecahedron as its dual (vertices ↔ face centers). This ensures coplanar faces and proper RT-pure construction.
+
+**Visual Style:**
+- Color: Bright Lime-Cyan (0x00ff88)
+- Opacity: 0.4 (semi-transparent)
+- Rendering: BufferGeometry with indexed faces, fan triangulation from first vertex
 
 ---
 
