@@ -23,10 +23,12 @@ This document captures three distinct grid topology options, our implementation 
 
 ### Option 1: Tetrahedral Central Angle Exploration Grid
 
-**Current Implementation Status:** ✅ IMPLEMENTED (with known bugs)
+**Current Implementation Status:** ✅ IMPLEMENTED AND WORKING (bug fixed inadvertently during IVM exploration)
 **Purpose:** Visualize the "web space" created by working within the tetrahedral central angle (109.47°) and extending it outward from the tetrahedron center into space beyond it.
 
 **What This Shows:** This grid represents an interior division from the centre of the tetrahedron, extended out into space. It correctly defines the "web" plane boundaries that exist between the sweep of Quadray axes, but it is **NOT the true IVM grid**. Rather, it's an interesting geometric exploration of the space created by the 109.47° angle between basis vectors.
+
+**Bug Resolution:** The horizontal edge bug was inadvertently fixed when we switched from barycentric point-connection approach to the three parallel line families approach (attempting to implement IVM). The new approach correctly generates clean triangular grids without extraneous lines.
 
 #### Geometry
 - **Cell Type:** Equilateral triangular cells
@@ -73,12 +75,12 @@ for (let i = 0; i <= divisions; i++) {
 - ✅ Geodesic vertices align exactly with grid intersections when Project='Flat'
 
 #### Weaknesses
-- ❌ **CURRENT BUG:** Horizontal edges `(i,j) → (i+1,j)` generate extraneous lines
-- ❌ These mystery lines are neither parallel to camera nor parallel to axes
-- ❌ Debug testing (Tests 1 and 4) showed horizontal edges are the culprit
+- ~~❌ **FORMER BUG:** Horizontal edges `(i,j) → (i+1,j)` generated extraneous lines~~ ✅ **FIXED**
+- ~~❌ These mystery lines were neither parallel to camera nor parallel to axes~~ ✅ **RESOLVED**
+- **Solution:** Switched to three parallel line families approach (see ARTexplorer.md lines 1295-1393)
 
 #### Recommendation
-**USE FOR PHASE 2.6** - Fix the horizontal edge bug, then proceed with this topology.
+**✅ COMPLETE FOR PHASE 2.6** - Grid topology is now clean and working correctly.
 
 ---
 
@@ -309,24 +311,25 @@ What are we trying to visualize with Quadray planes?
 
 ### Phase 2.6: Tetrahedral Central Angle Exploration Grid (Option 1)
 
-**Status:** 🚧 IN PROGRESS
+**Status:** ✅ COMPLETE (2025-12-27)
 
 **Purpose:** Visualize the "web space" created by working within the 109.47° tetrahedral central angle
 
 **Tasks:**
 1. ✅ Implement barycentric point generation
 2. ✅ Add debug mode with edge type toggles
-3. 🚧 **FIX HORIZONTAL EDGE BUG** - identify why `(i,j) → (i+1,j)` creates extraneous lines
-4. ⏳ Set meaningful grid spacing (correlate with tetrahedron dimensions)
-5. ⏳ Add UI checkbox: "Show Central Angle Grid"
-6. ⏳ Complete Phase 2.6 and move to Phase 2.7
+3. ✅ **FIX HORIZONTAL EDGE BUG** - Fixed by switching to three parallel line families approach
+4. ✅ Basis vector lengths corrected (XYZ = 2.0, WXYZ = 2√2)
+5. ⏳ Set meaningful grid spacing (correlate with tetrahedron dimensions) - *deferred to Phase 2.10*
+6. ⏳ Add UI checkbox: "Show Central Angle Grid" - *optional enhancement*
+7. ✅ Phase 2.6 complete - ready to move forward
 
-**Why This Approach:**
-- Shows interior division from tetrahedron center extended outward
-- Correct "web" plane boundary definitions between Quadray axes
-- RT-pure barycentric mathematics
-- Educational value: demonstrates the 109.47° angle geometry
-- Preserves interesting geometric exploration despite known bug
+**Resolution Notes:**
+- Grid now uses three parallel line families instead of barycentric point-connection
+- All extraneous lines eliminated
+- Clean equilateral triangular lattice achieved
+- RT-pure vector arithmetic maintained
+- Basis vectors now precisely aligned with grid intervals
 
 ### Phase 2.9 (or later): True IVM Grid (Option 2)
 
@@ -535,6 +538,231 @@ These counts help verify the grid is generating the expected number of lines.
 - **Quadray Coordinates** - Fuller's tetrahedral coordinate system
 - **IVM (Isotropic Vector Matrix)** - Fuller's space-filling octet truss geometry
 - **Rational Trigonometry** - Norman Wildberger's angle-free geometry
+
+---
+
+---
+
+## Future Exploration: Independent Tetrahedron Edge Length Slider
+
+**Date Added:** 2025-12-27
+**Status:** 💡 PROPOSED EXPLORATION
+**Priority:** Consider for Phase 2.10 or later
+
+### The Fundamental Question
+
+**Should we provide TWO sliders that preference rational units based on which one the user adjusts?**
+
+**Current Implementation:**
+- Single slider: "Cube Edge Length"
+- All polyhedra scale uniformly with cube halfSize
+- Tetrahedron edge = 2s√2 (irrational relative to cube)
+- Cube edge = 2s (rational)
+
+**Proposed Alternative:**
+- **TWO linked sliders** (one unified metric, different presentations):
+  1. "Cube Edge Length" - snap to 0.10 intervals, show 2 decimal places
+  2. "Tetrahedron Edge Length" - snap to 0.10 intervals, show 2 decimal places
+- **User chooses which slider to adjust:**
+  - Adjust cube slider → cube shows rational value (snapped), tet shows irrational (calculated)
+  - Adjust tet slider → tet shows rational value (snapped), cube shows irrational (calculated)
+- **Both sliders always linked** - single source of truth underneath
+
+### Mathematical Relationship
+
+**If tetrahedron edge = 1 (rational base unit):**
+```
+Tet edge = 1
+Tet halfSize = 1/(2√2) = √2/4 ≈ 0.3536
+
+Cube edge = Tet edge / √2 = 1/√2 ≈ 0.7071
+Cube halfSize = 1/(2√2) = √2/4 ≈ 0.3536
+```
+
+**Relationship:**
+```
+When Tet edge = 1:
+  Cube edge = 1/√2 (irrational!)
+
+When Cube edge = 1:
+  Tet edge = √2 (irrational!)
+```
+
+**Key Insight:** You CANNOT have both cube and tetrahedron with rational edge lengths simultaneously in the same coordinate system. One must be irrational relative to the other.
+
+**UI Solution - Linked Sliders with Smart Snapping:**
+- **Both sliders snap to 0.10 intervals** (NOT just integers - finer granularity)
+- **Both show 2 decimal places** (e.g., "1.41" or "2.00")
+- **Which slider you adjust determines which shows rational:**
+  - Drag cube slider → cube shows rational (1.00, 1.10, 1.20...), tet updates to irrational (1.41, 1.56, 1.70...)
+  - Drag tet slider → tet shows rational (1.00, 1.10, 1.20...), cube updates to irrational (0.71, 0.78, 0.85...)
+- **Single metric underneath** - no actual independence, just UI presentation
+- **Benefit:** User can work in whichever system feels more natural, see real values in both 
+
+### User Benefits
+
+**Advantages of Linked Dual Sliders:**
+
+1. **User Chooses Rational System:**
+   - Work with cube edge in rational units (1.00, 1.10, 1.20...) if you prefer Cartesian
+   - Work with tet edge in rational units (1.00, 1.10, 1.20...) if you prefer Quadray
+   - Either choice updates the entire scene consistently
+
+2. **Educational Value:**
+   - **Demonstrates incommensurability visually** - can't have both rational simultaneously
+   - Shows real irrational values (√2 ≈ 1.41, 1/√2 ≈ 0.71) in 2 decimal places
+   - User learns relationship between coordinate systems
+
+3. **Flexible Workflow:**
+   - Cartesian-focused users: use cube slider, ignore tet slider display
+   - Quadray-focused users: use tet slider, ignore cube slider display
+   - Advanced users: switch between both as needed
+
+4. **Unified Scaling:**
+   - Single metric underneath - no actual independence
+   - All polyhedra scale consistently together
+   - No visual misalignment issues
+
+**Disadvantages:**
+
+1. **UI Complexity:**
+   - Two sliders instead of one (more screen space)
+   - Need to explain the linked behavior
+   - May confuse users initially
+
+2. **Display Precision:**
+   - 2 decimal places may not perfectly represent irrational values
+   - User sees approximations (1.41 instead of exact √2)
+   - Could be addressed with tooltip showing exact value
+
+### Implementation Sketch
+
+**UI Changes:**
+```
+Scale
+  Cube Edge Length       [slider] 2.0
+  Tetrahedron Edge Length [slider] 1.0
+```
+
+**Code Structure:**
+```javascript
+// Global scale parameters
+let cubeHalfSize = 1.0;      // Cube system base unit
+let tetEdgeLength = 1.0;     // Tet system base unit
+
+// Cube system (Cartesian)
+function updateCubeScale(cubeEdge) {
+  cubeHalfSize = cubeEdge / 2;
+  // Update: cube, Cartesian grid, XYZ basis
+}
+
+// Tet system (Quadray)
+function updateTetScale(tetEdge) {
+  const tetHalfSize = tetEdge / (2 * Math.sqrt(2));
+  // Update: tetrahedron, octahedron, icosahedron, dodecahedron
+  // Update: Quadray grids, WXYZ basis
+}
+```
+
+**Slider Event Handlers with Linked Updates:**
+```javascript
+// ONE unified metric, TWO presentation modes
+let currentCubeEdge = 2.0;  // Single source of truth (stored as cube edge)
+
+cubeSlider.addEventListener('input', (e) => {
+  const rawValue = parseFloat(e.target.value);
+
+  // Snap to 0.10 intervals
+  const cubeEdge = Math.round(rawValue * 10) / 10;
+  currentCubeEdge = cubeEdge;
+
+  // Update cube slider and display (rational)
+  cubeSlider.value = cubeEdge;
+  cubeValueDisplay.textContent = cubeEdge.toFixed(2);  // 2 decimal places
+
+  // Calculate and display corresponding tet edge (irrational)
+  const tetEdge = cubeEdge * Math.sqrt(2);
+  tetSlider.value = tetEdge;
+  tetValueDisplay.textContent = tetEdge.toFixed(2);  // 2 decimal places, shows irrational
+
+  // Update geometry
+  updateCubeScale(cubeEdge);
+  updateTetScale(tetEdge);
+  updateGeometry();
+});
+
+tetSlider.addEventListener('input', (e) => {
+  const rawValue = parseFloat(e.target.value);
+
+  // Snap to 0.10 intervals
+  const tetEdge = Math.round(rawValue * 10) / 10;
+
+  // Update tet slider and display (rational)
+  tetSlider.value = tetEdge;
+  tetValueDisplay.textContent = tetEdge.toFixed(2);  // 2 decimal places
+
+  // Calculate and display corresponding cube edge (irrational)
+  const cubeEdge = tetEdge / Math.sqrt(2);
+  currentCubeEdge = cubeEdge;
+
+  cubeSlider.value = cubeEdge;
+  cubeValueDisplay.textContent = cubeEdge.toFixed(2);  // 2 decimal places, shows irrational
+
+  // Update geometry
+  updateCubeScale(cubeEdge);
+  updateTetScale(tetEdge);
+  updateGeometry();
+});
+```
+
+**Key Implementation Details:**
+- **Both sliders snap to 0.10 intervals** (fine granularity, not just integers)
+- **Both show 2 decimal places** to reveal rational vs irrational nature
+- **Which slider you drag determines which shows rational:**
+  - Cube slider: cube = 1.00, 1.10, 1.20... (rational), tet = 1.41, 1.56... (irrational)
+  - Tet slider: tet = 1.00, 1.10, 1.20... (rational), cube = 0.71, 0.78... (irrational)
+- **Single unified scale** - mathematically consistent throughout
+- **User chooses preference** by which slider they interact with
+
+### Questions to Explore
+
+1. **Philosophical:**
+   - Is it better to have ONE unified scale (current) or TWO independent systems?
+   - Does dual system enhance or reduce educational value?
+   - What does this teach about incommensurability?
+
+2. **Practical:**
+   - How do users react to two sliders vs one?
+   - Does visual misalignment confuse or enlighten?
+   - Is it worth the implementation complexity?
+
+3. **Mathematical:**
+   - Should Quadray coordinates be the PRIMARY system (tet edge = 1)?
+   - Should Cartesian remain primary (cube edge = 1)?
+   - Or should they coexist independently?
+
+### Recommendation
+
+**EXPLORE AS SEPARATE BRANCH** (Phase 2.10 or later):
+
+1. **Create experimental branch:** `feature/dual-unit-system`
+2. **Implement dual sliders** with independent scaling
+3. **User test:** Get feedback on dual vs unified system
+4. **Document findings:** Which approach is more educational?
+5. **Decide:** Keep unified system, switch to dual, or make it a toggle
+
+**Why not now?**
+- Current Phase 2.6 focus: Fix horizontal edge bug in Quadray grids
+- Dual system adds significant complexity
+- Need to stabilize current implementation first
+- Good candidate for future exploration after Phase 2.9
+
+### Related Concepts
+
+- **Incommensurability:** Cube and tetrahedron edges cannot both be rational
+- **Quadray Purity:** Setting tet edge = 1 makes Quadray system fully rational
+- **Fuller's Philosophy:** Tetrahedron as fundamental unit (argues for tet edge = 1)
+- **Practical Convention:** Cube edge = 1 is more familiar to most users
 
 ---
 
