@@ -181,7 +181,7 @@
         if (type === "Heatpump") {
           // HSPF to COP: COP = HSPF / 3.412
           return hspf / 3.412;
-        } else if (type === "Electric") {
+        } else if (type === "Electricity") {
           return 1.0;
         } else {
           // Combustion systems - AFUE is already a decimal (0.95)

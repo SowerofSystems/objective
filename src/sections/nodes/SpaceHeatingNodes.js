@@ -10,7 +10,7 @@
   window.TEUI.ComputationNodes = window.TEUI.ComputationNodes || {};
 
   const FUEL_FACTORS = {
-    "Electric": { unit: "kWh", factor: 1 },
+    "Electricity": { unit: "kWh", factor: 1 },
     "Gas": { unit: "m³", factor: 10.3321 },
     "Propane": { unit: "L", factor: 7.0833 },
     "Oil": { unit: "L", factor: 10.7444 },
