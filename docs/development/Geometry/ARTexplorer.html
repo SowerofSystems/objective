@@ -1746,27 +1746,34 @@
       // This makes grid EXTEND (like Quadray grids) rather than subdivide
       // divisions=10 → 10-unit extent (-5 to +5) with 1.0 unit squares (cube edge=2 occupies 2×2 squares)
       const gridSize = divisions;
-      const gridColor = 0x444444;
+
+      // Color scheme: Cartesian basis X=Red, Y=Green, Z=Blue → RGB two-color mixes
+      // XY plane = Red+Green = Yellow (0xffff00)
+      // XZ plane = Red+Blue = Magenta (0xff00ff)
+      // YZ plane = Green+Blue = Cyan (0x00ffff)
 
       // Z-UP CONVENTION: Notation swap from Y-up
       // In Y-up: XZ was horizontal (default), XY was rotated, YZ was rotated
       // In Z-up: XY is horizontal, XZ is vertical, YZ is vertical
       // Just swap which planes get rotations - same rotation values as before
 
-      // XY plane (Z = 0) - HORIZONTAL ground plane in Z-up
-      window.gridXY = new THREE.GridHelper(gridSize, divisions, gridColor, gridColor);
+      // XY plane (Z = 0) - HORIZONTAL ground plane in Z-up - Red+Green = Yellow
+      const colorXY = 0xffff00;
+      window.gridXY = new THREE.GridHelper(gridSize, divisions, colorXY, colorXY);
       window.gridXY.rotation.x = Math.PI / 2;  // Same rotation as Y-up XY had
       window.gridXY.visible = false;  // Hidden by default
       cartesianGrid.add(window.gridXY);
 
-      // XZ plane (Y = 0) - VERTICAL wall in Z-up (front/back)
-      window.gridXZ = new THREE.GridHelper(gridSize, divisions, gridColor, gridColor);
+      // XZ plane (Y = 0) - VERTICAL wall in Z-up (front/back) - Red+Blue = Magenta
+      const colorXZ = 0xff00ff;
+      window.gridXZ = new THREE.GridHelper(gridSize, divisions, colorXZ, colorXZ);
       // GridHelper default - was horizontal in Y-up, now vertical in Z-up (notation swap)
       window.gridXZ.visible = false;  // Hidden by default
       cartesianGrid.add(window.gridXZ);
 
-      // YZ plane (X = 0) - VERTICAL wall in Z-up (left/right)
-      window.gridYZ = new THREE.GridHelper(gridSize, divisions, gridColor, gridColor);
+      // YZ plane (X = 0) - VERTICAL wall in Z-up (left/right) - Green+Blue = Cyan
+      const colorYZ = 0x00ffff;
+      window.gridYZ = new THREE.GridHelper(gridSize, divisions, colorYZ, colorYZ);
       window.gridYZ.rotation.z = Math.PI / 2;  // Same rotation as Y-up YZ had
       window.gridYZ.visible = false;  // Hidden by default
       cartesianGrid.add(window.gridYZ);
