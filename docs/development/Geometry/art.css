@@ -318,3 +318,48 @@ button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ============================================
+   ART GUMBALL CONTROLS
+   ============================================ */
+
+/* NOW Button */
+.now-button {
+  width: 100%;
+  padding: 15px;
+  font-size: 16px;
+  font-weight: bold;
+  background: #00ff88;
+  color: #1a1a1a;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
+}
+
+.now-button:hover {
+  background: #00dd77;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 255, 136, 0.4);
+}
+
+.now-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 255, 136, 0.3);
+}
+
+/* NOW Counter */
+.now-counter {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 12px;
+  color: #b0b0b0;
+  font-weight: 500;
+}
+
+.now-counter span {
+  color: #00ff88;
+  font-weight: bold;
+  font-size: 14px;
+}

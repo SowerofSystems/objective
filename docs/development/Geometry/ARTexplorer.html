@@ -757,20 +757,41 @@
           </div>
         </div>
 
-        <!-- Controls -->
+        <!-- Controls (ART Gumball) -->
         <div class="control-group">
           <h3>
             <span
-              class="section-toggle collapsed"
+              class="section-toggle"
               data-target="controls-section"
             ></span>
             Controls
           </h3>
-          <div id="controls-section" class="section-content collapsed">
-            <p class="info-text">ART Gumball controls - Coming soon</p>
-            <p class="info-text" style="font-size: 10px">
-              Move, Scale, Rotate (spread-based), NOW button
-            </p>
+          <div id="controls-section" class="section-content">
+            <!-- Tool Mode -->
+            <div class="control-item">
+              <label style="font-size: 12px; color: #b0b0b0">Tool Mode</label>
+              <div class="node-size-selector">
+                <button class="node-size-btn active" data-tool="move">
+                  Move
+                </button>
+                <button class="node-size-btn" data-tool="scale">
+                  Scale
+                </button>
+                <button class="node-size-btn" data-tool="rotate">
+                  Rotate
+                </button>
+              </div>
+            </div>
+
+            <!-- NOW Button -->
+            <div class="control-item" style="margin-top: 15px">
+              <button id="nowButton" class="now-button">
+                🕐 NOW
+              </button>
+              <div class="now-counter">
+                Deposited: <span id="nowCount">0</span>
+              </div>
+            </div>
           </div>
         </div>
 

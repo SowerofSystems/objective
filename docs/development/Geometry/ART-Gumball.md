@@ -579,20 +579,27 @@ Cartesian Mode (XYZ):
   - Color-coded to match axes
 ```
 
-**ROTATE Handles** - Circles/hexagons at planes between basis vectors
+**ROTATE Handles** - Hexagons (or polygons) around each basis vector axis
 ```
 Quadray Mode (WXYZ):
-  - 6 rotation rings (WX, WY, WZ, XY, XZ, YZ planes)
-  - Click + drag ring = rotation in that plane (spread-based)
-  - Rings positioned at midpoint between two basis vectors
-  - Color: Blend of two basis colors
+  - 4 rotation handles (around W, X, Y, Z axes)
+  - Each handle = hexagon perpendicular to its basis vector
+  - Click + drag hexagon = rotation around that axis (spread-based)
+  - Color-coded to match basis vector (W=Yellow, X=Red, Y=Blue, Z=Green)
+  - Simpler than 6 Central Angle plane rings (reduces visual clutter)
 
 Cartesian Mode (XYZ):
-  - 3 rotation rings (XY, XZ, YZ planes)
-  - Click + drag ring = rotation in that plane (spread-based)
-  - Rings positioned perpendicular to third axis
-  - Color: Blend of two axis colors
+  - 3 rotation handles (around X, Y, Z axes)
+  - Each handle = hexagon perpendicular to its axis
+  - Click + drag hexagon = rotation around that axis (spread-based)
+  - Color-coded to match axis (X=Red, Y=Green, Z=Blue)
 ```
+
+**Design Rationale:**
+- Hexagons preferred over circles for RT fidelity (polygonal geometry)
+- 4 rotation axes (WXYZ) simpler than 6 Central Angle planes (WX, WY, WZ, XY, XZ, YZ)
+- Less visual clutter while maintaining full rotational control
+- Axis-aligned rotations easier to understand than plane-based rotations
 
 #### Visual Design
 
@@ -814,19 +821,40 @@ uuid3,1234567892,cube,quadray,0,2,0,0,0,0,0,0,0,0,1.414,1.414,1.414,Cube_Center
 ## Implementation Roadmap
 
 ### Phase 1: Core Gumball (MVP)
-- [ ] Gumball UI panel (collapsible, similar to existing controls)
-- [ ] Polyhedron selection dropdown
-- [ ] Coordinate mode toggle (Cartesian/Quadray)
-- [ ] Position sliders (4 sliders for Quadray, 3 for Cartesian)
-- [ ] Scale sliders (uniform + individual)
-- [ ] Apply transforms to working polyhedron (live preview)
+- [ ] Minimal UI controls (top-right corner)
+  - [ ] Coordinate mode toggle (Cartesian XYZ / Quadray WXYZ)
+  - [ ] Tool mode selector (Move / Scale / Rotate)
+  - [ ] Polyhedron selection dropdown
+  - [ ] NOW button with deposited count
+- [ ] Interactive 3D gumball handles (basis vectors ARE the gumball)
+  - [ ] MOVE mode: Arrow handles at basis vector tips
+    - [ ] Cartesian: 3 arrows (X, Y, Z)
+    - [ ] Quadray: 4 arrows (W, X, Y, Z)
+    - [ ] Click + drag arrow = constrained move along that axis
+  - [ ] SCALE mode: Cube handles at basis vector tips
+    - [ ] Cartesian: 3 cubes + center sphere (uniform)
+    - [ ] Quadray: 4 cubes + center sphere (uniform)
+    - [ ] Click + drag cube = scale in that direction
+  - [ ] Visual feedback: Real-time transform preview
+- [ ] Status bar for numeric input
+  - [ ] Appears on handle click
+  - [ ] Live value display
+  - [ ] Keyboard input for precise values
+  - [ ] TAB/ENTER to accept, ESC to cancel
 
 ### Phase 2: Spread-Based Rotation
-- [ ] Spread slider implementation (6 sliders for all planes)
-- [ ] Exact spread dropdown (preset algebraic values)
+- [ ] ROTATE mode: Polygon handles (hexagons preferred for RT fidelity)
+  - [ ] Cartesian XYZ: 3 rotation handles around each axis (X, Y, Z)
+    - [ ] Each handle = polygon perpendicular to rotation axis
+    - [ ] Color-coded to axis color
+  - [ ] Quadray WXYZ: 4 rotation handles around each basis (W, X, Y, Z)
+    - [ ] Each handle = polygon perpendicular to basis vector
+    - [ ] Simpler than 6 coplanar Central Angle planes (less clutter)
 - [ ] `spreadToRotationMatrix()` function
+- [ ] Exact spread preset buttons in status bar
+  - [ ] [0] [1/6] [1/4] [1/3·tet] [1/2·45°] [2/3] [3/4] [1·90°]
 - [ ] Rotation composition logic
-- [ ] Visual feedback (rotation arcs on grids?)
+- [ ] Visual feedback during rotation
 
 ### Phase 3: "Now" System
 - [ ] Now data structure
