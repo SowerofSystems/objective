@@ -2350,7 +2350,8 @@
           if (this.classList.contains("active")) {
             this.classList.remove("active");
             currentGumballTool = null;
-            console.log("Gumball disabled - orbit controls active");
+            controls.enabled = true; // Re-enable orbit controls
+            console.log("✅ Gumball disabled - orbit controls enabled");
           } else {
             // Remove active from all gumball tool buttons
             document
@@ -2359,7 +2360,8 @@
             // Add active to clicked button
             this.classList.add("active");
             currentGumballTool = tool;
-            console.log(`Gumball tool: ${tool}`);
+            controls.enabled = false; // Disable orbit controls when gumball tool active
+            console.log(`✅ Gumball tool: ${tool} - orbit controls disabled`);
           }
         });
       });
@@ -2437,7 +2439,7 @@
                 event.stopPropagation();
 
                 isDragging = true;
-                controls.enabled = false; // Disable orbit controls during drag
+                // Note: controls.enabled already false when tool is active
 
                 // Get the basis vector direction from userData
                 const axisDirection = handle.userData.basisAxis.clone();
@@ -2558,10 +2560,11 @@
 
             isDragging = false;
             selectedHandle = null;
-            controls.enabled = true; // Re-enable orbit controls
             selectedPolyhedra = [];
 
-            console.log("✅ Gumball drag ended - orbit controls re-enabled");
+            // Keep orbit controls disabled if gumball tool is still active
+            // Only re-enable if user has deactivated the tool
+            console.log("✅ Gumball drag ended - orbit controls remain disabled while tool active");
           }
         }, { capture: true }); // Capture phase to intercept before OrbitControls
       } // End initGumballEventListeners
