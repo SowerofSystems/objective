@@ -403,13 +403,12 @@
         </h3>
         <div id="file-section" class="section-content collapsed">
           <div class="control-item">
-            <button id="importBtn" disabled>Import (.json)</button>
-          </div>
-          <div class="control-item">
-            <button id="exportBtn" disabled>Export (.json)</button>
-          </div>
-          <div class="control-item">
-            <button id="saveBtn" disabled>Save (Local Storage)</button>
+            <label style="font-size: 12px; color: #b0b0b0;">File Operations</label>
+            <div class="node-size-selector">
+              <button class="node-size-btn" id="importBtn" disabled>Import</button>
+              <button class="node-size-btn" id="exportBtn" disabled>Export</button>
+              <button class="node-size-btn" id="saveBtn" disabled>Save</button>
+            </div>
           </div>
           <p class="info-text" style="font-size: 10px;">
             StateManager integration - Coming soon
@@ -427,12 +426,12 @@
           <div class="control-item">
             <label style="font-size: 12px; color: #b0b0b0;">Camera Presets</label>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 5px;">
-              <button id="viewTop" disabled>Top</button>
-              <button id="viewBottom" disabled>Bottom</button>
-              <button id="viewLeft" disabled>Left</button>
-              <button id="viewRight" disabled>Right</button>
-              <button id="viewFront" disabled>Front</button>
-              <button id="viewBack" disabled>Back</button>
+              <button class="node-size-btn" id="viewTop" disabled>Top</button>
+              <button class="node-size-btn" id="viewBottom" disabled>Bottom</button>
+              <button class="node-size-btn" id="viewLeft" disabled>Left</button>
+              <button class="node-size-btn" id="viewRight" disabled>Right</button>
+              <button class="node-size-btn" id="viewFront" disabled>Front</button>
+              <button class="node-size-btn" id="viewBack" disabled>Back</button>
             </div>
           </div>
           <div class="control-item" style="margin-top: 10px;">
@@ -476,10 +475,10 @@
           <div class="control-item">
             <label style="font-size: 12px; color: #b0b0b0;">Print Extents</label>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 5px;">
-              <button id="fitA4" disabled>A4</button>
-              <button id="fitLetter" disabled>Letter</button>
-              <button id="fitA3" disabled>A3</button>
-              <button id="fitCustom" disabled>Custom</button>
+              <button class="node-size-btn" id="fitA4" disabled>A4</button>
+              <button class="node-size-btn" id="fitLetter" disabled>Letter</button>
+              <button class="node-size-btn" id="fitA3" disabled>A3</button>
+              <button class="node-size-btn" id="fitCustom" disabled>Custom</button>
             </div>
           </div>
           <p class="info-text" style="font-size: 10px;">
@@ -490,13 +489,21 @@
 
       <!-- Geometry Info -->
       <div class="control-group">
-        <h3>Geometry Info</h3>
-        <div class="stats" id="geometryStats">
-          <div><strong>Cube:</strong></div>
-          <div>Vertices: 8</div>
-          <div>Edges: 12</div>
-          <div>Faces: 6</div>
-          <div>Euler: V - E + F = 2 ✓</div>
+        <h3>
+          <span class="section-toggle collapsed" data-target="geometry-info-section"></span>
+          Geometry Info
+        </h3>
+        <div id="geometry-info-section" class="section-content collapsed">
+          <div class="stats" id="geometryStats">
+            <div><strong>Cube:</strong></div>
+            <div>Vertices: 8</div>
+            <div>Edges: 12</div>
+            <div>Faces: 6</div>
+            <div>Euler: V - E + F = 2 ✓</div>
+          </div>
+          <p class="info-text" style="font-size: 10px; margin-top: 10px;">
+            Future metrics: Volume (Cubic), Volume (Tetrahedral), Area on Plan, Surface Area, etc.
+          </p>
         </div>
       </div>
 
