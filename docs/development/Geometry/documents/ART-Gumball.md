@@ -756,6 +756,574 @@ Click preset = instantly apply that spread value
 - Dodecahedron
 - etc.
 
+## Forms, Instances, and Localized Gumballs
+
+### Conceptual Architecture
+
+The ART Gumball system distinguishes between **Forms** (templates) and **Instances** ("Nows"):
+
+#### Forms
+**Forms** are polyhedra templates that always exist at the origin (0,0,0,0). They serve as:
+- **Blueprints** for creating instances
+- **Active editing objects** when selected
+- **Reusable templates** that reset after instance creation
+
+When a user selects a Form:
+1. Form appears at origin with default properties
+2. **Editing Basis** (localized gumball) appears at Form's center
+3. User can transform the Form using gumball handles
+4. Form remains "active" until released/deposited
+
+#### Instances ("Nows")
+**Instances** are deposited snapshots of Forms with stored transforms:
+- **Immutable configurations** in shape-space (Julian Barbour's "Nows")
+- **Fixed position, rotation, scale** stored in StateManager
+- **Selectable objects** that can be edited or deleted
+- **Independent from Forms** - Forms reset to origin after instance creation
+
+When a user releases a transformed Form:
+1. Instance is auto-created with current transform
+2. Instance is deposited in scene with stored state
+3. Form resets to origin (0,0,0,0)
+4. Form ready for next transformation
+
+#### Editing Basis vs. Origin Basis
+
+**Origin Basis (Global Reference)**
+- Always visible at world origin (0,0,0,0)
+- Shows global coordinate frame (XYZ or WXYZ)
+- Cannot be moved or hidden
+- Provides spatial orientation reference
+
+**Editing Basis (Localized Gumball)**
+- Appears when Form or Instance is selected
+- Centered on selected object's position
+- Moves with object during transformations
+- Hidden when nothing is selected
+- Provides interactive transform handles
+
+### Workflow: Forms → Instances
+
+**Step 1: Select Form**
+```
+User clicks "Tetrahedron" in Forms list
+→ Tetrahedron Form appears at origin
+→ Editing Basis appears at Form center
+→ Origin Basis remains at world origin
+```
+
+**Step 2: Transform Form**
+```
+User activates Move tool
+→ Clicks/drags Editing Basis W-axis handle
+→ Form moves along W-axis (grid snapping to 0.1)
+→ Coordinate inputs update in real-time
+→ Origin Basis stays at world origin (reference)
+```
+
+**Step 3: Release/Deposit**
+```
+User releases mouse button (or clicks NOW button)
+→ Instance auto-created with Form's current transform
+→ Instance deposited in scene at (W:2.5, X:0, Y:0, Z:0)
+→ Form resets to origin (0,0,0,0)
+→ Editing Basis disappears (nothing selected)
+→ User can now select another Form or edit existing Instance
+```
+
+**Step 4: Select Instance (Edit Existing)**
+```
+User clicks on deposited Instance
+→ Instance becomes selected (visual highlight/glow)
+→ Editing Basis appears at Instance center
+→ User can Move/Scale/Rotate the Instance
+→ On release, Instance transform updates in StateManager
+```
+
+**Step 5: Delete Instance**
+```
+User selects Instance
+→ Presses Delete key (or Delete button)
+→ Instance removed from scene and StateManager
+→ Action added to Undo stack
+```
+
+**Step 6: Undo/Redo**
+```
+User presses Cmd+Z (Undo)
+→ Last action (create/move/delete) is reversed
+→ StateManager reverts to previous state
+→ Scene updates to match StateManager
+
+User presses Cmd+Shift+Z (Redo)
+→ Undone action is reapplied
+→ StateManager advances forward
+```
+
+### StateManager Architecture
+
+Following the proven TEUI/OBJECTIVE pattern (see [UI-Module.md](./UI-Module.md)), the `rt-state-manager.js` module manages all state:
+
+#### State Structure
+```javascript
+/**
+ * rt-state-manager.js
+ * State management for ART Gumball system
+ * Following TEUI/OBJECTIVE StateManager pattern
+ */
+
+const RTStateManager = {
+  // Forms registry (templates at origin)
+  forms: {
+    tetrahedron: { type: 'tetrahedron', name: 'Tetrahedron', ... },
+    cube: { type: 'cube', name: 'Hexahedron', ... },
+    octahedron: { type: 'octahedron', name: 'Octahedron', ... },
+    // ... all polyhedra types
+  },
+
+  // Active Form (currently being transformed)
+  activeForm: null, // { type: 'tetrahedron', transform: {...}, threeObject: Group }
+
+  // Deposited Instances (all "Nows")
+  instances: [], // Array of Instance objects
+
+  // Selection state
+  selection: {
+    type: null,      // 'form' or 'instance'
+    id: null,        // Instance ID or null for Form
+    object: null     // THREE.Object3D reference
+  },
+
+  // Undo/Redo stacks
+  history: {
+    undoStack: [],   // Past states
+    redoStack: [],   // Future states (cleared on new action)
+    maxHistory: 50   // Limit to prevent memory issues
+  },
+
+  // Gumball state
+  gumball: {
+    tool: null,           // 'move', 'scale', 'rotate', or null
+    editingBasis: null,   // THREE.Group for localized gumball
+    visible: false        // Show/hide editing basis
+  }
+};
+```
+
+#### Instance Data Structure
+```javascript
+const Instance = {
+  id: String,              // Unique UUID
+  timestamp: Number,       // Creation time
+  type: String,            // 'tetrahedron', 'cube', etc.
+
+  transform: {
+    position: {
+      mode: String,        // 'cartesian' or 'quadray'
+      quadray: { w, x, y, z },
+      cartesian: { x, y, z }
+    },
+    rotation: {
+      mode: String,        // 'spread' or 'euler'
+      spreads: [{plane, spread, exact}],
+      euler: { x, y, z, order }
+    },
+    scale: { x, y, z, uniform }
+  },
+
+  appearance: {
+    color: Number,
+    opacity: Number,
+    wireframe: Boolean,
+    visible: Boolean
+  },
+
+  metadata: {
+    label: String,
+    tags: [String],
+    notes: String
+  },
+
+  // THREE.js object reference (not serialized)
+  threeObject: THREE.Group
+};
+```
+
+#### Core Functions
+
+**Form Management**
+```javascript
+/**
+ * Select a Form (load at origin with editing basis)
+ */
+function selectForm(formType) {
+  // Clear previous selection
+  if (RTStateManager.activeForm) {
+    resetForm(RTStateManager.activeForm);
+  }
+
+  // Create Form at origin
+  const form = {
+    type: formType,
+    transform: createDefaultTransform(),
+    threeObject: createPolyhedronGroup(formType)
+  };
+
+  // Add to scene
+  scene.add(form.threeObject);
+
+  // Create editing basis at Form center
+  createEditingBasis(form.threeObject.position);
+
+  RTStateManager.activeForm = form;
+  RTStateManager.selection = { type: 'form', id: null, object: form.threeObject };
+
+  return form;
+}
+
+/**
+ * Reset Form to origin (after instance creation)
+ */
+function resetForm(form) {
+  form.threeObject.position.set(0, 0, 0);
+  form.threeObject.rotation.set(0, 0, 0);
+  form.threeObject.scale.set(1, 1, 1);
+  form.transform = createDefaultTransform();
+  hideEditingBasis();
+}
+```
+
+**Instance Management**
+```javascript
+/**
+ * Create Instance from active Form (auto-deposit on release)
+ */
+function createInstance() {
+  if (!RTStateManager.activeForm) return null;
+
+  const form = RTStateManager.activeForm;
+
+  // Create Instance snapshot
+  const instance = {
+    id: generateUUID(),
+    timestamp: Date.now(),
+    type: form.type,
+    transform: cloneTransform(form.transform),
+    appearance: cloneAppearance(form.threeObject),
+    metadata: { label: `${form.type}_${Date.now()}`, tags: [], notes: '' },
+    threeObject: clonePolyhedronGroup(form.threeObject)
+  };
+
+  // Add to StateManager
+  RTStateManager.instances.push(instance);
+
+  // Add to scene
+  scene.add(instance.threeObject);
+
+  // Add to undo stack
+  addToHistory({ action: 'create', instance });
+
+  // Reset Form to origin
+  resetForm(form);
+
+  return instance;
+}
+
+/**
+ * Select an existing Instance (show editing basis)
+ */
+function selectInstance(instanceId) {
+  const instance = RTStateManager.instances.find(i => i.id === instanceId);
+  if (!instance) return;
+
+  // Deselect Form if active
+  if (RTStateManager.activeForm) {
+    resetForm(RTStateManager.activeForm);
+    RTStateManager.activeForm = null;
+  }
+
+  // Highlight Instance
+  highlightObject(instance.threeObject);
+
+  // Show editing basis at Instance center
+  createEditingBasis(instance.threeObject.position);
+
+  RTStateManager.selection = { type: 'instance', id: instanceId, object: instance.threeObject };
+}
+
+/**
+ * Update Instance transform (after drag/edit)
+ */
+function updateInstance(instanceId, newTransform) {
+  const instance = RTStateManager.instances.find(i => i.id === instanceId);
+  if (!instance) return;
+
+  // Store old transform for undo
+  const oldTransform = cloneTransform(instance.transform);
+
+  // Apply new transform
+  instance.transform = newTransform;
+  applyTransformToObject(instance.threeObject, newTransform);
+
+  // Add to undo stack
+  addToHistory({ action: 'update', instanceId, oldTransform, newTransform });
+}
+
+/**
+ * Delete Instance
+ */
+function deleteInstance(instanceId) {
+  const index = RTStateManager.instances.findIndex(i => i.id === instanceId);
+  if (index === -1) return;
+
+  const instance = RTStateManager.instances[index];
+
+  // Remove from scene
+  scene.remove(instance.threeObject);
+
+  // Remove from StateManager
+  RTStateManager.instances.splice(index, 1);
+
+  // Hide editing basis
+  hideEditingBasis();
+
+  // Clear selection
+  RTStateManager.selection = { type: null, id: null, object: null };
+
+  // Add to undo stack
+  addToHistory({ action: 'delete', instance, index });
+}
+```
+
+**Selection & Highlighting**
+```javascript
+/**
+ * Highlight selected object (outline glow effect)
+ */
+function highlightObject(object) {
+  // Remove previous highlights
+  clearHighlights();
+
+  // Add outline pass or glow shader
+  // Option 1: THREE.OutlinePass (post-processing)
+  // Option 2: Edge glow shader on wireframe
+  // Option 3: Colored outline geometry
+
+  object.traverse(mesh => {
+    if (mesh.isMesh) {
+      mesh.userData.originalEmissive = mesh.material.emissive.clone();
+      mesh.material.emissive.setHex(0x4a9eff); // Blue glow
+      mesh.material.emissiveIntensity = 0.3;
+    }
+  });
+}
+
+/**
+ * Clear all highlights
+ */
+function clearHighlights() {
+  RTStateManager.instances.forEach(instance => {
+    instance.threeObject.traverse(mesh => {
+      if (mesh.isMesh && mesh.userData.originalEmissive) {
+        mesh.material.emissive.copy(mesh.userData.originalEmissive);
+        mesh.material.emissiveIntensity = 0;
+      }
+    });
+  });
+}
+
+/**
+ * Handle click on scene object (raycasting)
+ */
+function onSceneClick(event) {
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+
+  // Check for Instance hits
+  const instanceObjects = RTStateManager.instances.map(i => i.threeObject);
+  const intersects = raycaster.intersectObjects(instanceObjects, true);
+
+  if (intersects.length > 0) {
+    // Find parent Instance
+    let hitObject = intersects[0].object;
+    while (hitObject.parent && !hitObject.userData.instanceId) {
+      hitObject = hitObject.parent;
+    }
+
+    if (hitObject.userData.instanceId) {
+      selectInstance(hitObject.userData.instanceId);
+    }
+  } else {
+    // Clicked on empty space - deselect
+    clearSelection();
+  }
+}
+```
+
+**Undo/Redo System**
+```javascript
+/**
+ * Add action to history
+ */
+function addToHistory(action) {
+  // Clear redo stack (new action invalidates future)
+  RTStateManager.history.redoStack = [];
+
+  // Add to undo stack
+  RTStateManager.history.undoStack.push(action);
+
+  // Limit history size
+  if (RTStateManager.history.undoStack.length > RTStateManager.history.maxHistory) {
+    RTStateManager.history.undoStack.shift();
+  }
+}
+
+/**
+ * Undo last action
+ */
+function undo() {
+  if (RTStateManager.history.undoStack.length === 0) return;
+
+  const action = RTStateManager.history.undoStack.pop();
+
+  switch (action.action) {
+    case 'create':
+      // Remove Instance
+      const index = RTStateManager.instances.findIndex(i => i.id === action.instance.id);
+      if (index !== -1) {
+        scene.remove(RTStateManager.instances[index].threeObject);
+        RTStateManager.instances.splice(index, 1);
+      }
+      break;
+
+    case 'delete':
+      // Re-add Instance
+      RTStateManager.instances.splice(action.index, 0, action.instance);
+      scene.add(action.instance.threeObject);
+      break;
+
+    case 'update':
+      // Revert transform
+      updateInstance(action.instanceId, action.oldTransform);
+      break;
+  }
+
+  // Add to redo stack
+  RTStateManager.history.redoStack.push(action);
+}
+
+/**
+ * Redo last undone action
+ */
+function redo() {
+  if (RTStateManager.history.redoStack.length === 0) return;
+
+  const action = RTStateManager.history.redoStack.pop();
+
+  switch (action.action) {
+    case 'create':
+      // Re-add Instance
+      RTStateManager.instances.push(action.instance);
+      scene.add(action.instance.threeObject);
+      break;
+
+    case 'delete':
+      // Remove Instance again
+      const index = RTStateManager.instances.findIndex(i => i.id === action.instance.id);
+      if (index !== -1) {
+        scene.remove(RTStateManager.instances[index].threeObject);
+        RTStateManager.instances.splice(index, 1);
+      }
+      break;
+
+    case 'update':
+      // Re-apply new transform
+      updateInstance(action.instanceId, action.newTransform);
+      break;
+  }
+
+  // Add back to undo stack
+  RTStateManager.history.undoStack.push(action);
+}
+```
+
+**Editing Basis (Localized Gumball)**
+```javascript
+/**
+ * Create editing basis at specified position
+ */
+function createEditingBasis(position) {
+  // Remove existing editing basis
+  if (RTStateManager.gumball.editingBasis) {
+    scene.remove(RTStateManager.gumball.editingBasis);
+  }
+
+  // Create new basis group
+  const editingBasis = new THREE.Group();
+  editingBasis.position.copy(position);
+
+  // Add basis vectors (same as origin basis, but localized)
+  const basisVectors = createBasisVectors(currentCoordinateSystem); // 'XYZ' or 'WXYZ'
+  editingBasis.add(basisVectors);
+
+  // Add to scene
+  scene.add(editingBasis);
+
+  RTStateManager.gumball.editingBasis = editingBasis;
+  RTStateManager.gumball.visible = true;
+}
+
+/**
+ * Update editing basis position (follow selected object)
+ */
+function updateEditingBasisPosition(position) {
+  if (RTStateManager.gumball.editingBasis) {
+    RTStateManager.gumball.editingBasis.position.copy(position);
+  }
+}
+
+/**
+ * Hide editing basis (nothing selected)
+ */
+function hideEditingBasis() {
+  if (RTStateManager.gumball.editingBasis) {
+    scene.remove(RTStateManager.gumball.editingBasis);
+    RTStateManager.gumball.editingBasis = null;
+    RTStateManager.gumball.visible = false;
+  }
+}
+```
+
+### User Interactions
+
+**Keyboard Shortcuts**
+- `G` - Activate Move tool
+- `S` - Activate Scale tool
+- `R` - Activate Rotate tool
+- `Esc` - Deactivate current tool / Deselect
+- `Delete` / `Backspace` - Delete selected Instance
+- `Cmd+Z` / `Ctrl+Z` - Undo
+- `Cmd+Shift+Z` / `Ctrl+Shift+Z` - Redo
+- `N` - Deposit Now (create Instance from active Form)
+
+**Mouse Interactions**
+- **Click on canvas (empty space)** - Deselect all
+- **Click on Instance** - Select Instance (show editing basis + highlight)
+- **Click on Form in list** - Select Form (load at origin with editing basis)
+- **Click + Drag gumball handle** - Transform selected object (Form or Instance)
+- **Release mouse** - Auto-deposit Instance if Form was moved
+
+**UI Buttons**
+- **Move / Scale / Rotate** - Toggle gumball tool mode
+- **NOW** - Manually deposit Instance from active Form
+- **Delete** - Delete selected Instance
+- **Undo / Redo** - History navigation
+
 ## StateManager Integration
 
 ### Environment State (Captured Once)
@@ -848,21 +1416,118 @@ uuid3,1234567892,cube,quadray,0,2,0,0,0,0,0,0,0,0,1.414,1.414,1.414,Cube_Center
 
 **Implementation Notes (Phase 1):**
 - **Date:** 2025-12-29
-- **Commit:** (pending)
-- **Status:** WXYZ Move functionality implemented and ready for testing
-- **Files Modified:**
-  - `ARTexplorer.html` (lines 2311-2491): Added gumball tool event listeners, raycasting, and drag behavior
-  - Coordinate inputs automatically update during drag operations
-  - Orbit controls properly disabled during drag, re-enabled on release
-- **Key Features Working:**
-  - Raycasting detects clicks on Quadray basis vector arrows (W, X, Y, Z)
-  - Constrained axis movement (drag projects onto selected axis direction)
-  - Real-time XYZ and WXYZ coordinate display (4 decimal precision)
-  - Cartesian to Quadray coordinate conversion (simplified projection method)
-- **Next Steps:**
-  - Test WXYZ movement with dev server (http://localhost:8000/ARTexplorer.html)
-  - Add Cartesian XYZ arrow dragging support
-  - Implement Scale and Rotate modes
+- **Commit:** `f4e30fe` - "Feat: Implement WXYZ Move gumball with grid snapping (MVP)"
+- **Branch:** `Gumball`
+- **Status:** MVP working with known limitations requiring architectural improvements
+
+**Files Modified:**
+- `ARTexplorer.html` (lines 1307-1321, 2311-2510): Gumball implementation
+  - Added invisible hit spheres (0.3 radius) at basis vector tips
+  - Tool mode buttons with toggle behavior (default off)
+  - Raycasting and drag event listeners
+  - Grid snapping to 0.1 increments
+  - Real-time coordinate updates (XYZ and WXYZ)
+
+**What's Working:**
+- ✅ Invisible clickable handles at basis vector tips
+- ✅ Constrained axis movement (drag along W, X, Y, Z)
+- ✅ Grid snapping to 0.1 for RT precision
+- ✅ Real-time coordinate display (4dp, text inputs without spinners)
+- ✅ 5x sensitivity multiplier for responsive dragging
+- ✅ Entire polyhedra groups move together
+
+**Critical Issues Identified:**
+1. **Orbit lock incomplete** - Camera still rotates during drag attempts
+   - `controls.enabled = false` not fully preventing orbit
+   - May need `event.stopPropagation()` at canvas level
+
+2. **Basis vectors stationary** - Global basis stays at origin
+   - Need **localized gumball** that follows selected polyhedra
+   - Each selected object should have its own transform gizmo
+
+3. **Instance management broken** - Only first selection works
+   - Second polyhedra (icosahedron) loads at origin but won't move
+   - Need proper instance/selection system
+   - StateManager integration required
+
+4. **Selection model unclear** - Multiple polyhedra vs. single active
+   - Should moved polyhedra become "instances"?
+   - How to select/deselect for subsequent moves?
+
+**Architectural Decisions Needed:**
+
+**Option A: Global Gumball (Current)**
+- Single basis vector set at world origin
+- Selected polyhedra move relative to global axes
+- ❌ Basis doesn't follow objects
+- ❌ Confusing UX when polyhedra far from origin
+
+**Option B: Localized Gumball (Recommended)**
+- Each selected polyhedra gets own gumball at its center
+- Basis vectors move with the object
+- ✅ Matches Maya/Blender/Rhino UX
+- ✅ Clear visual feedback
+- Need: Gumball attachment/detachment system
+
+**Option C: Hybrid (Best for RT)**
+- Global Quadray basis always visible (reference frame)
+- Local gumball overlays on selected object
+- Can toggle between local/global transform space
+- Most powerful but most complex
+
+**Next Steps:**
+
+**Phase 1.5: Forms, Instances & StateManager (CRITICAL ARCHITECTURE)**
+- [ ] Create `rt-state-manager.js` module following TEUI/OBJECTIVE pattern
+  - [ ] RTStateManager object with forms registry, instances array, selection state
+  - [ ] Form management: `selectForm()`, `resetForm()`
+  - [ ] Instance management: `createInstance()`, `selectInstance()`, `updateInstance()`, `deleteInstance()`
+  - [ ] Undo/Redo: `addToHistory()`, `undo()`, `redo()` with action stacks
+- [ ] Create `rt-gumball.js` module for localized gumball system
+  - [ ] Editing Basis: `createEditingBasis()`, `updateEditingBasisPosition()`, `hideEditingBasis()`
+  - [ ] Separate from global origin basis (always visible at world origin)
+  - [ ] Attach to selected Form or Instance center
+  - [ ] Update position when object moves during drag
+- [ ] Integrate Forms/Instances workflow
+  - [ ] Auto-deposit Instance on mouseup (create from active Form)
+  - [ ] Reset Form to origin after Instance creation
+  - [ ] Track all instances in RTStateManager.instances array
+- [ ] Fix orbit lock during drag
+  - [ ] Add `event.stopPropagation()` at canvas level
+  - [ ] Prevent orbit when gumball tool active and dragging
+
+**Phase 1.6: Selection & Deletion**
+- [ ] Implement click-to-select for Instances
+  - [ ] Raycasting on canvas click (check for Instance hits)
+  - [ ] `selectInstance()` shows editing basis + highlight
+  - [ ] Click empty space to deselect
+- [ ] Visual highlight for selected objects
+  - [ ] Option 1: THREE.OutlinePass (post-processing glow)
+  - [ ] Option 2: Emissive material glow (simpler, current approach)
+  - [ ] Option 3: Edge glow shader on wireframe
+- [ ] Delete functionality
+  - [ ] Delete key removes selected Instance
+  - [ ] Delete button in UI
+  - [ ] Remove from scene and StateManager
+  - [ ] Add to undo stack
+- [ ] Undo/Redo keyboard shortcuts
+  - [ ] Cmd+Z / Ctrl+Z for Undo
+  - [ ] Cmd+Shift+Z / Ctrl+Shift+Z for Redo
+  - [ ] Undo/Redo buttons in UI (optional)
+
+**Phase 1.7: Polish Current MVP**
+- [ ] Add Cartesian XYZ arrow dragging (same pattern as WXYZ)
+- [ ] Implement Scale and Rotate modes (using same hit sphere pattern)
+- [ ] Add keyboard shortcuts (G=Move, S=Scale, R=Rotate, ESC=Cancel/Deselect, N=NOW)
+- [ ] Visual feedback when handle is hovered (change color/scale)
+- [ ] Visual feedback when handle is selected during drag
+
+**Testing Observations (2025-12-29):**
+- Cube and Dual Tetrahedron move together correctly
+- Grid snapping works (positions snap to 0.1, 0.2, 0.3, etc.)
+- Coordinate inputs update in real-time
+- Tool toggle works (click to activate, click again to deactivate)
+- Movement is visually apparent and responsive
 
 ### Phase 2: Spread-Based Rotation
 - [ ] ROTATE mode: Polygon handles (hexagons preferred for RT fidelity)
