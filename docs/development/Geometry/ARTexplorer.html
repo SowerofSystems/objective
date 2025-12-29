@@ -2359,6 +2359,15 @@
 
         // Create instance snapshot for each selected polyhedron
         selected.forEach(poly => {
+          // Clone the THREE.js group to create an independent visual copy
+          const clonedGroup = poly.clone(true); // true = deep clone (includes children)
+
+          // Copy current transform from Form
+          clonedGroup.position.copy(poly.position);
+          clonedGroup.rotation.copy(poly.rotation);
+          clonedGroup.scale.copy(poly.scale);
+
+          // Create instance metadata
           const instance = {
             id: `instance_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             timestamp: Date.now(),
@@ -2366,20 +2375,44 @@
             rotation: poly.rotation.clone(),
             scale: poly.scale.clone(),
             type: poly.userData.type || 'unknown',
-            // Store reference to the THREE.js group (not a copy - the actual object)
-            threeObject: poly
+            // Store the cloned THREE.js group (independent visual object)
+            threeObject: clonedGroup
           };
 
+          // Tag the clone with instance metadata
+          clonedGroup.userData.isInstance = true;
+          clonedGroup.userData.instanceId = instance.id;
+          clonedGroup.userData.type = instance.type;
+
+          // Add cloned instance to scene
+          scene.add(clonedGroup);
+
+          // Track instance in state
           depositedInstances.push(instance);
           depositedCount++;
 
           console.log(`✅ Deposited instance: ${instance.id} at position (${instance.position.x.toFixed(2)}, ${instance.position.y.toFixed(2)}, ${instance.position.z.toFixed(2)})`);
         });
 
+        // Reset Forms to origin after depositing instances
+        selected.forEach(poly => {
+          poly.position.set(0, 0, 0);
+          poly.rotation.set(0, 0, 0);
+          poly.scale.set(1, 1, 1);
+          console.log(`↩️  Reset Form to origin: ${poly.userData.type}`);
+        });
+
+        // Hide editing basis after depositing (nothing selected)
+        if (editingBasis) {
+          scene.remove(editingBasis);
+          editingBasis = null;
+        }
+
         // Update counter UI
         document.getElementById("nowCount").textContent = depositedCount;
 
         console.log(`📦 Total deposited instances: ${depositedCount}`);
+        console.log(`🏠 Forms reset to origin - ready for next transformation`);
       });
 
       // Gumball tool selector functionality
