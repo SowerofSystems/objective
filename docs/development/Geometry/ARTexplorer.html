@@ -332,7 +332,11 @@
 
       <!-- Scale Controls -->
       <div class="control-group">
-        <h3>Scale</h3>
+        <h3>
+          <span class="section-toggle collapsed" data-target="scale-section"></span>
+          Scale
+        </h3>
+        <div id="scale-section" class="section-content collapsed">
         <div class="control-item">
           <label>Cube Edge Length</label>
           <div class="slider-container">
@@ -348,11 +352,16 @@
           </div>
         </div>
         <p class="info-text" style="font-size: 10px; margin-top: 5px;">Linked sliders: rational units follow whichever you adjust</p>
+        </div>
       </div>
 
       <!-- Visual Options -->
       <div class="control-group">
-        <h3>Visual Options</h3>
+        <h3>
+          <span class="section-toggle collapsed" data-target="visual-options-section"></span>
+          Visual Options
+        </h3>
+        <div id="visual-options-section" class="section-content collapsed">
         <div class="control-item">
           <label style="font-size: 12px; margin-bottom: 5px; display: block; color: #b0b0b0;">Nodes</label>
           <div class="node-size-selector">
@@ -368,6 +377,7 @@
             <input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="0.25">
             <span class="slider-value" id="opacityValue">0.25</span>
           </div>
+        </div>
         </div>
       </div>
 
