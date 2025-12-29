@@ -2340,6 +2340,7 @@
       let dragPlane = null; // THREE.Plane for raycasting
       let dragStartPoint = new THREE.Vector3();
       let selectedPolyhedra = []; // Will store currently selected polyhedra
+      let editingBasis = null; // Localized gumball that follows selected Forms
 
       // Gumball tool selector functionality
       document.querySelectorAll(".gumball-tool-btn").forEach(btn => {
@@ -2351,6 +2352,7 @@
             this.classList.remove("active");
             currentGumballTool = null;
             controls.enabled = true; // Re-enable orbit controls
+            destroyEditingBasis(); // Remove editing basis
             console.log("✅ Gumball disabled - orbit controls enabled");
           } else {
             // Remove active from all gumball tool buttons
@@ -2361,10 +2363,95 @@
             this.classList.add("active");
             currentGumballTool = tool;
             controls.enabled = false; // Disable orbit controls when gumball tool active
+
+            // Create editing basis at selected Forms' center
+            const selected = getSelectedPolyhedra();
+            if (selected.length > 0) {
+              // Use first selected polyhedron's position
+              createEditingBasis(selected[0].position.clone());
+            }
+
             console.log(`✅ Gumball tool: ${tool} - orbit controls disabled`);
           }
         });
       });
+
+      // ========================================================================
+      // EDITING BASIS MANAGEMENT (Localized Gumball)
+      // ========================================================================
+
+      /**
+       * Create editing basis (localized gumball) at specified position
+       * Clone of quadrayBasis but positioned at Form/Instance center
+       */
+      function createEditingBasis(position) {
+        // Remove existing editing basis if any
+        if (editingBasis) {
+          scene.remove(editingBasis);
+        }
+
+        // Create new group for editing basis
+        editingBasis = new THREE.Group();
+        editingBasis.position.copy(position);
+
+        // Clone quadray basis structure
+        const totalBasisLength = 2 * Math.sqrt(2);
+        const headLength = 0.3;
+        const arrowLength = totalBasisLength;
+        const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00]; // R, G, B, Y
+
+        Quadray.basisVectors.forEach((vec, i) => {
+          const arrow = new THREE.ArrowHelper(
+            vec,
+            new THREE.Vector3(0, 0, 0),
+            arrowLength,
+            colors[i],
+            headLength,
+            0.2
+          );
+
+          // Add invisible hit sphere at arrow tip (gumball handle)
+          const tipPosition = vec.clone().multiplyScalar(arrowLength);
+          const hitSphere = new THREE.Mesh(
+            new THREE.SphereGeometry(0.3, 8, 8),
+            new THREE.MeshBasicMaterial({
+              transparent: true,
+              opacity: 0,
+              depthTest: false
+            })
+          );
+          hitSphere.position.copy(tipPosition);
+          hitSphere.userData.basisIndex = i;
+          hitSphere.userData.basisAxis = vec.clone();
+          hitSphere.userData.isGumballHandle = true;
+          arrow.add(hitSphere);
+
+          editingBasis.add(arrow);
+        });
+
+        scene.add(editingBasis);
+        console.log(`✅ Created editing basis at position: ${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)}`);
+      }
+
+      /**
+       * Update editing basis position to follow selected object
+       */
+      function updateEditingBasisPosition(position) {
+        if (editingBasis) {
+          editingBasis.position.copy(position);
+        }
+      }
+
+      /**
+       * Destroy editing basis (when tool deactivated)
+       */
+      function destroyEditingBasis() {
+        if (editingBasis) {
+          scene.remove(editingBasis);
+          editingBasis = null;
+          console.log("✅ Editing basis destroyed");
+        }
+      }
 
       // Raycaster for handle selection (will be initialized after scene)
       let raycaster;
@@ -2416,11 +2503,11 @@
 
           raycaster.setFromCamera(mouse, camera);
 
-          // Check if we hit a Quadray basis vector arrow (via invisible hit spheres)
-          if (quadrayBasis && quadrayBasis.visible) {
-            // Collect all gumball handle hit spheres
+          // Check editing basis (localized gumball) if it exists
+          if (editingBasis) {
+            // Collect all gumball handle hit spheres from editing basis
             const hitTargets = [];
-            quadrayBasis.traverse(obj => {
+            editingBasis.traverse(obj => {
               if (obj.userData.isGumballHandle) {
                 hitTargets.push(obj);
               }
@@ -2515,6 +2602,11 @@
               poly.position.y = Math.round(poly.position.y / gridSize) * gridSize;
               poly.position.z = Math.round(poly.position.z / gridSize) * gridSize;
             });
+
+            // Update editing basis to follow the Forms
+            if (selectedPolyhedra.length > 0) {
+              updateEditingBasisPosition(selectedPolyhedra[0].position);
+            }
 
             // Update coordinate inputs
             if (selectedPolyhedra.length > 0) {
