@@ -30,35 +30,45 @@ Refactor ARTexplorer into modular components separating UI, Controls, Rendering,
 
 ## Proposed Modular Architecture
 
-### Module Separation Strategy
+### Module Separation Strategy (Pragmatic)
+
+**Philosophy:** Only modularize when it improves maintainability. Avoid over-engineering.
+
+**Analysis of Current ARTexplorer.html (~2820 lines):**
+- RT Library: ~130 lines (small, self-contained)
+- Polyhedra Generators: ~1870 lines (large but cohesive)
+- THREE.js Scene/Rendering: ~500-800 lines (integrated functionality)
+- Event Handlers: ~200 lines (will stay in main HTML)
+
+**Pragmatic Module Structure (ES6, No Build Step):**
 
 ```
 ARTexplorer/
-├── index.html (minimal shell)
+├── ARTexplorer.html           // Main shell + UI + event handlers (~500 lines)
 ├── modules/
-│   ├── ui/
-│   │   ├── controls-panel.js      // UI component management
-│   │   ├── status-bar.js          // Streaming console
-│   │   └── collapsible-section.js // Reusable toggle component
-│   ├── geometry/
-│   │   ├── polyhedra.js           // Polyhedra definitions
-│   │   ├── geodesic.js            // Geodesic subdivision
-│   │   └── rt-math.js             // RT calculations
-│   ├── rendering/
-│   │   ├── scene-manager.js       // THREE.js scene setup
-│   │   ├── grid-renderer.js       // Cartesian/Quadray grids
-│   │   └── basis-renderer.js      // Basis vector rendering
-│   ├── controls/
-│   │   ├── gumball.js             // ART Gumball transform system
-│   │   ├── camera-controller.js   // Camera/view management
-│   │   └── interaction-handler.js // Mouse/keyboard events
-│   └── data/
-│       ├── state-manager.js       // Application state
-│       ├── now-collection.js      // "Now" snapshots
-│       └── file-manager.js        // Import/Export/Save
+│   ├── rt-math.js             // ~130 lines: RT calculations (quadrance, spread)
+│   ├── polyhedra.js           // ~1870 lines: All polyhedra generators
+│   ├── rendering.js           // ~500-800 lines: Scene, viewer, grids, basis
+│   ├── state-manager.js       // Future: Application state management
+│   ├── file-handler.js        // Future: Import/Export/Save operations
+│   └── gumball.js             // Future: ART Gumball transform system
 └── styles/
     └── art.css (existing)
 ```
+
+**Why This Structure:**
+- **rt-math.js**: Small, reusable, pure functions - easy to test independently
+- **polyhedra.js**: Large but cohesive - all shape definitions in one place
+- **rendering.js**: All THREE.js code together - scene/viewer/grids are tightly coupled
+- **state-manager.js**: Proven pattern from TEUI/OBJECTIVE - manages app state
+- **file-handler.js**: Proven pattern from TEUI/OBJECTIVE - handles I/O operations
+- **gumball.js**: Complex feature, deserves its own module when implemented
+
+**Technical Approach:**
+- Use native ES6 modules (`<script type="module">`)
+- No build step, no bundler - runs directly in browser
+- Import/export syntax for clean dependencies
+- Maintain backward compatibility during migration
 
 ## Phase 1: UI Decluttering (Immediate - Tonight)
 
@@ -295,77 +305,144 @@ document.querySelectorAll('h3').forEach(header => {
 });
 ```
 
-## Phase 2: Module Extraction (Future)
+## Phase 2: Module Extraction (Pragmatic Approach)
 
-### 2.1 Extract UI Components
+### 2.1 Extract RT Math Module (~130 lines)
 
-**Goal:** Separate UI markup and event handling from rendering logic
+**Goal:** Create reusable, testable rational trigonometry library
 
-**Files to Create:**
-- `modules/ui/controls-panel.js`
-- `modules/ui/collapsible-section.js`
-- `modules/ui/status-bar.js`
+**File to Create:** `modules/rt-math.js`
 
-**Approach:**
-- Create HTML using JavaScript template literals or DOM manipulation
-- Use custom events for inter-component communication
-- Implement reactive state updates
-
-### 2.2 Extract Geometry Logic
-
-**Goal:** Pure geometry calculations separate from rendering
-
-**Files to Create:**
-- `modules/geometry/polyhedra.js` - Shape definitions
-- `modules/geometry/geodesic.js` - Subdivision algorithms
-- `modules/geometry/rt-math.js` - RT calculations (quadrance, spread)
+**Contents:**
+- `quadrance(p1, p2)` - Distance squared
+- `spread(v1, v2)` - Perpendicularity measure (0-1)
+- `crossSpread(v1, v2, v3)` - Triple spread formula
+- Helper functions for RT calculations
 
 **Approach:**
-- Export factory functions for each polyhedron
-- RT calculations use pure functions (no THREE.js dependencies)
-- Return vertex/face/edge data structures
+- Pure functions, no dependencies on THREE.js
+- Export object: `export const RT = { quadrance, spread, ... }`
+- Fully documented with JSDoc comments
+- Easy to unit test independently
 
-### 2.3 Extract Rendering Logic
+**Estimated Effort:** 1-2 hours
 
-**Goal:** THREE.js rendering isolated from business logic
+---
 
-**Files to Create:**
-- `modules/rendering/scene-manager.js`
-- `modules/rendering/grid-renderer.js`
-- `modules/rendering/basis-renderer.js`
+### 2.2 Extract Polyhedra Module (~1870 lines)
 
-**Approach:**
-- SceneManager owns THREE.Scene, Camera, Renderer
-- Grid/Basis renderers are stateless functions
-- Use observer pattern for updates
+**Goal:** Separate shape generation logic from rendering
 
-### 2.4 Extract Control Logic
+**File to Create:** `modules/polyhedra.js`
 
-**Goal:** Interaction handling separate from UI
-
-**Files to Create:**
-- `modules/controls/gumball.js` - ART Gumball implementation
-- `modules/controls/camera-controller.js` - View management
-- `modules/controls/interaction-handler.js` - Mouse/keyboard
+**Contents:**
+- `createTetrahedron()` - Tetrahedron generator
+- `createCube()` - Cube generator
+- `createOctahedron()` - Octahedron generator
+- `createIcosahedron()` - Icosahedron generator
+- `createDodecahedron()` - Dodecahedron generator
+- Geodesic subdivision algorithms
+- All polyhedra factory functions
 
 **Approach:**
-- Gumball as separate object with own rendering
-- Camera controller manages OrbitControls + presets
-- Event delegation for all interactions
+- Import RT from `rt-math.js`
+- Export factory functions for each shape
+- Return vertex/edge/face data structures
+- Keep all shape definitions together (cohesive)
 
-### 2.5 Extract Data Management
+**Estimated Effort:** 3-4 hours
 
-**Goal:** State management and persistence
+---
 
-**Files to Create:**
-- `modules/data/state-manager.js` - Application state
-- `modules/data/now-collection.js` - "Now" snapshots
-- `modules/data/file-manager.js` - Import/Export/Save
+### 2.3 Extract Rendering Module (~500-800 lines)
+
+**Goal:** Isolate THREE.js rendering logic
+
+**File to Create:** `modules/rendering.js`
+
+**Contents:**
+- Scene initialization (THREE.Scene, Camera, Renderer)
+- Viewer/canvas management (resize handling)
+- Grid rendering (Cartesian XYZ, Quadray WXYZ)
+- Basis vector rendering
+- Lighting setup
+- OrbitControls initialization
 
 **Approach:**
-- Single source of truth for app state
+- Import THREE.js from CDN
+- Export `SceneManager` class or init function
+- Keep scene/viewer/grids together (tightly coupled)
+- Provide hooks for polyhedra updates
+
+**Estimated Effort:** 4-5 hours
+
+---
+
+### 2.4 Create State Manager Module (Future)
+
+**Goal:** Application state management (proven TEUI/OBJECTIVE pattern)
+
+**File to Create:** `modules/state-manager.js`
+
+**Contents:**
+- Application state object
+- State getters/setters
 - Observable state changes
-- JSON/CSV serialization
+- "Now" collection management
+- Environment metadata
+
+**Approach:**
+- Follow TEUI/OBJECTIVE StateManager pattern
+- Single source of truth for app state
+- Event-based state updates
+- Serializable for export
+
+**Estimated Effort:** 3-4 hours
+
+---
+
+### 2.5 Create File Handler Module (Future)
+
+**Goal:** Import/Export/Save operations (proven TEUI/OBJECTIVE pattern)
+
+**File to Create:** `modules/file-handler.js`
+
+**Contents:**
+- JSON import/export
+- CSV export for "Now" snapshots
+- LocalStorage persistence
+- File validation
+
+**Approach:**
+- Follow TEUI/OBJECTIVE FileHandler pattern
+- Separate I/O from state management
+- Handle file read/write operations
+- Error handling for corrupt files
+
+**Estimated Effort:** 2-3 hours
+
+---
+
+### 2.6 Create Gumball Module (Future - Phase 3)
+
+**Goal:** ART Gumball interactive transform system
+
+**File to Create:** `modules/gumball.js`
+
+**Contents:**
+- Gumball handle rendering (arrows, cubes, rings)
+- Interaction handlers (move, scale, rotate)
+- Spread-based rotation logic
+- Status bar integration
+- NOW button functionality
+
+**Approach:**
+- Import THREE.js and RT
+- Separate object with own rendering
+- Event-based communication with main app
+- Follow ART-Gumball.md specification
+
+**Estimated Effort:** 8-10 hours
 
 ## Phase 3: ART Gumball Integration
 
@@ -420,30 +497,76 @@ Implement state persistence:
 
 ## Implementation Priority
 
-### Immediate (Tonight)
-✅ Phase 1 Tasks:
-1. Make existing sections collapsible
-2. Rename Polyhedra → Forms
-3. Add placeholder sections (Controls, File, View, Papercut)
-4. Update CSS for section toggles
-5. Add JavaScript toggle logic
+### ✅ Phase 1 Complete (Dec 29, 2025)
+1. Made all sections collapsible with toggle functionality
+2. Renamed Polyhedra → Forms
+3. Added placeholder sections (Controls, File, View, Papercut, Geometry Info)
+4. Updated CSS for section toggles
+5. Added JavaScript toggle logic
+6. Standardized button styling across all sections
 
-### Near-Term (Next Session)
-- Phase 2.1: Extract UI components
-- Phase 2.4: Start camera controller
-- Phase 3.1: Begin gumball rendering
+**Result:** Clean, organized UI with ~40% less visual clutter
 
-### Medium-Term
-- Phase 2.2: Extract geometry logic
-- Phase 2.3: Extract rendering logic
-- Phase 3.2: Status bar implementation
-- Phase 4.1: View presets
+---
 
-### Long-Term
-- Phase 2.5: Data management
-- Phase 3.3: NOW system
-- Phase 4.2: Papercut tools
-- Phase 4.3: File management
+### 🔄 Phase 2: Module Extraction (Current - Next Session)
+
+**Priority Order:**
+
+1. **Phase 2.1: Extract RT Math** (~130 lines, 1-2 hours)
+   - Pure functions, no dependencies
+   - Easiest to test
+   - Foundation for other modules
+
+2. **Phase 2.2: Extract Polyhedra** (~1870 lines, 3-4 hours)
+   - Depends on rt-math.js
+   - Self-contained shape generators
+   - Large but cohesive
+
+3. **Phase 2.3: Extract Rendering** (~500-800 lines, 4-5 hours)
+   - Depends on polyhedra.js
+   - Scene, viewer, grids together
+   - Update main HTML to use modules
+
+**Success Criteria:**
+- ARTexplorer.html reduced from 2820 → ~500 lines
+- All existing functionality preserved
+- No build step required (native ES6 modules)
+- Code is more maintainable and testable
+
+---
+
+### 📋 Phase 3: State & File Management (Future)
+
+1. **Phase 2.4: State Manager** (3-4 hours)
+   - Follow TEUI/OBJECTIVE pattern
+   - Application state management
+   - "Now" collection foundation
+
+2. **Phase 2.5: File Handler** (2-3 hours)
+   - Follow TEUI/OBJECTIVE pattern
+   - Import/Export/Save functionality
+   - Enable File section buttons
+
+---
+
+### 🎯 Phase 4: ART Gumball & Advanced Features (Future)
+
+1. **Phase 2.6: Gumball Module** (8-10 hours)
+   - Interactive 3D handles
+   - Spread-based rotation
+   - NOW system implementation
+
+2. **Phase 4.1: View Presets** (2-3 hours)
+   - Camera positioning
+   - Ortho/Perspective toggle
+   - Enable View section buttons
+
+3. **Phase 4.2: Papercut Tools** (3-4 hours)
+   - Line weight control
+   - Backface culling
+   - Print extent fitting
+   - Enable Papercut section buttons
 
 ## Technical Considerations
 
