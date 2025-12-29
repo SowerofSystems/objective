@@ -2359,8 +2359,28 @@
 
         // Create instance snapshot for each selected polyhedron
         selected.forEach(poly => {
-          // Clone the THREE.js group to create an independent visual copy
-          const clonedGroup = poly.clone(true); // true = deep clone (includes children)
+          // Create lightweight clone that SHARES geometry/materials (memory efficient)
+          // Instead of poly.clone(true) which duplicates everything
+          const clonedGroup = new THREE.Group();
+
+          // Copy all children but share their geometry and materials
+          poly.children.forEach(child => {
+            if (child.isMesh) {
+              // Create new mesh that SHARES geometry and material (not cloned)
+              const instanceMesh = new THREE.Mesh(child.geometry, child.material);
+              instanceMesh.position.copy(child.position);
+              instanceMesh.rotation.copy(child.rotation);
+              instanceMesh.scale.copy(child.scale);
+              clonedGroup.add(instanceMesh);
+            } else if (child.isLine) {
+              // Share line geometry and material too
+              const instanceLine = new THREE.Line(child.geometry, child.material);
+              instanceLine.position.copy(child.position);
+              instanceLine.rotation.copy(child.rotation);
+              instanceLine.scale.copy(child.scale);
+              clonedGroup.add(instanceLine);
+            }
+          });
 
           // Copy current transform from Form
           clonedGroup.position.copy(poly.position);
