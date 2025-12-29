@@ -1,25 +1,23 @@
 /**
  * rt-polyhedra.js
  * Polyhedra Generators for ARTexplorer
- * 
+ *
  * All Platonic solids, Archimedean solids, and geodesic subdivisions.
  * Uses Rational Trigonometry (RT) for exact calculations.
- * 
- * @requires THREE.js
- * @requires rt-math.js
+ *
+ * @requires THREE.js (from global scope)
+ * @requires rt-math.js (RT and Quadray from global scope)
+ * Global scope - no ES6 import/export (works with file:// protocol)
  */
 
-import { RT } from './rt-math.js';
-
-// Access THREE.js from global scope (set by main HTML)
-const THREE = window.THREE;
+// RT and THREE are available from global scope (loaded before this script)
 
 /**
  * Polyhedra generator functions
  * All functions return {vertices, edges, faces}
  * @namespace Polyhedra
  */
-export const Polyhedra = {
+const Polyhedra = {
     /**
      * Hexahedron (Cube) - vertices at (±1, ±1, ±1)
      * Edge quadrance Q = 4 (edge length = 2)
