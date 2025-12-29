@@ -62,8 +62,8 @@
           <div style="margin-top: 10px;">
             <label style="font-size: 11px; color: #b0b0b0;">Grid Intervals</label>
             <div class="slider-container">
-              <input type="range" id="cartesianTessSlider" min="12" max="120" step="12" value="12">
-              <span class="slider-value" id="cartesianTessValue">12</span>
+              <input type="range" id="cartesianTessSlider" min="10" max="100" step="10" value="10">
+              <span class="slider-value" id="cartesianTessValue">10</span>
             </div>
           </div>
           </div>
@@ -1740,9 +1740,12 @@
 
       // Read tessellation from slider (dynamic control)
       const sliderElement = document.getElementById('cartesianTessSlider');
-      const divisions = sliderElement ? parseInt(sliderElement.value) : 12;
+      const divisions = sliderElement ? parseInt(sliderElement.value) : 10;
 
-      const gridSize = 10;
+      // Grid size scales with divisions to maintain 1.0×1.0 unit squares
+      // This makes grid EXTEND (like Quadray grids) rather than subdivide
+      // divisions=10 → 10-unit extent (-5 to +5) with 1.0 unit squares (cube edge=2 occupies 2×2 squares)
+      const gridSize = divisions;
       const gridColor = 0x444444;
 
       // Z-UP CONVENTION: Notation swap from Y-up
