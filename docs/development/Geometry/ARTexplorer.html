@@ -2382,7 +2382,7 @@
 
       /**
        * Create editing basis (localized gumball) at specified position
-       * Clone of quadrayBasis but positioned at Form/Instance center
+       * Contains BOTH Quadray (WXYZ) and Cartesian (XYZ) basis vectors for full flexibility
        */
       function createEditingBasis(position) {
         // Remove existing editing basis if any
@@ -2394,18 +2394,21 @@
         editingBasis = new THREE.Group();
         editingBasis.position.copy(position);
 
-        // Clone quadray basis structure
         const totalBasisLength = 2 * Math.sqrt(2);
         const headLength = 0.3;
         const arrowLength = totalBasisLength;
-        const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00]; // R, G, B, Y
+
+        // ========================================================================
+        // QUADRAY BASIS VECTORS (WXYZ) - Tetrahedral coordinate system
+        // ========================================================================
+        const quadrayColors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00]; // R, G, B, Y
 
         Quadray.basisVectors.forEach((vec, i) => {
           const arrow = new THREE.ArrowHelper(
             vec,
             new THREE.Vector3(0, 0, 0),
             arrowLength,
-            colors[i],
+            quadrayColors[i],
             headLength,
             0.2
           );
@@ -2413,31 +2416,73 @@
           editingBasis.add(arrow);
 
           // Add hit sphere at arrow tip (gumball handle)
-          // Calculate tip position in editingBasis local space
           const tipPosition = vec.clone().multiplyScalar(arrowLength);
 
           const hitSphere = new THREE.Mesh(
-            new THREE.SphereGeometry(0.5, 16, 16), // Larger, higher quality
+            new THREE.SphereGeometry(0.5, 16, 16),
             new THREE.MeshBasicMaterial({
-              color: colors[i],
+              color: quadrayColors[i],
               transparent: true,
               opacity: 0.3, // Semi-visible for debugging
               depthTest: true
             })
           );
 
-          // Position sphere at tip in editingBasis local coordinates
           hitSphere.position.copy(tipPosition);
+          hitSphere.userData.basisType = 'quadray';
           hitSphere.userData.basisIndex = i;
           hitSphere.userData.basisAxis = vec.clone();
           hitSphere.userData.isGumballHandle = true;
 
-          // Add directly to editingBasis (not to arrow)
+          editingBasis.add(hitSphere);
+        });
+
+        // ========================================================================
+        // CARTESIAN BASIS VECTORS (XYZ) - Standard orthogonal coordinate system
+        // ========================================================================
+        const cartesianVectors = [
+          new THREE.Vector3(1, 0, 0),  // X-axis (red)
+          new THREE.Vector3(0, 1, 0),  // Y-axis (green)
+          new THREE.Vector3(0, 0, 1)   // Z-axis (blue)
+        ];
+        const cartesianColors = [0xff0000, 0x00ff00, 0x0000ff]; // R, G, B
+
+        cartesianVectors.forEach((vec, i) => {
+          const arrow = new THREE.ArrowHelper(
+            vec,
+            new THREE.Vector3(0, 0, 0),
+            arrowLength,
+            cartesianColors[i],
+            headLength,
+            0.2
+          );
+
+          editingBasis.add(arrow);
+
+          // Add hit sphere at arrow tip (gumball handle)
+          const tipPosition = vec.clone().multiplyScalar(arrowLength);
+
+          const hitSphere = new THREE.Mesh(
+            new THREE.SphereGeometry(0.5, 16, 16),
+            new THREE.MeshBasicMaterial({
+              color: cartesianColors[i],
+              transparent: true,
+              opacity: 0.3, // Semi-visible for debugging
+              depthTest: true
+            })
+          );
+
+          hitSphere.position.copy(tipPosition);
+          hitSphere.userData.basisType = 'cartesian';
+          hitSphere.userData.basisIndex = i;
+          hitSphere.userData.basisAxis = vec.clone();
+          hitSphere.userData.isGumballHandle = true;
+
           editingBasis.add(hitSphere);
         });
 
         scene.add(editingBasis);
-        console.log(`✅ Created editing basis at position: ${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)}`);
+        console.log(`✅ Created dual editing basis (WXYZ + XYZ) at position: ${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)}`);
       }
 
       /**
@@ -2537,12 +2582,13 @@
                 isDragging = true;
                 // Note: controls.enabled already false when tool is active
 
-                // Get the basis vector direction from userData
+                // Get the basis vector direction and type from userData
                 const axisDirection = handle.userData.basisAxis.clone();
                 const basisIndex = handle.userData.basisIndex;
+                const basisType = handle.userData.basisType; // 'quadray' or 'cartesian'
 
                 selectedHandle = {
-                  type: "quadray",
+                  type: basisType,
                   index: basisIndex,
                   axis: axisDirection,
                 };
@@ -2561,7 +2607,10 @@
                 // Store selected polyhedra
                 selectedPolyhedra = getSelectedPolyhedra();
 
-                console.log(`✅ Gumball handle selected: axis ${basisIndex}, polyhedra count: ${selectedPolyhedra.length}`);
+                const axisName = basisType === 'cartesian'
+                  ? ['X', 'Y', 'Z'][basisIndex]
+                  : ['W', 'X', 'Y', 'Z'][basisIndex];
+                console.log(`✅ Gumball handle selected: ${basisType.toUpperCase()} ${axisName}-axis, polyhedra count: ${selectedPolyhedra.length}`);
               }
             }
           } else {

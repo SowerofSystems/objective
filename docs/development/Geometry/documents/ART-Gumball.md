@@ -1477,24 +1477,26 @@ uuid3,1234567892,cube,quadray,0,2,0,0,0,0,0,0,0,0,1.414,1.414,1.414,Cube_Center
 
 **Next Steps:**
 
-**Phase 1.5: Forms, Instances & StateManager (CRITICAL ARCHITECTURE)**
-- [ ] Create `rt-state-manager.js` module following TEUI/OBJECTIVE pattern
+**Phase 1.5: Forms, Instances & StateManager (CRITICAL ARCHITECTURE)** - ✅ COMPLETED (2025-12-29)
+- [x] **Localized editing basis (Option C: Hybrid approach) - ✅ IMPLEMENTED**
+  - [x] **Global origin basis remains visible at (0,0,0) as reference frame**
+  - [x] **Editing basis appears at selected Form center when Move tool activated**
+  - [x] **Editing basis follows Forms during drag operations**
+  - [x] **Hit spheres positioned correctly in WXYZ quadray coordinate system**
+  - [x] **Semi-transparent debug spheres (0.5 radius, 30% opacity) at arrow tips**
+- [x] **Orbit controls management - ✅ FIXED**
+  - [x] **Orbit disabled when Move tool activated (not just during drag)**
+  - [x] **Orbit re-enabled when Move tool deactivated**
+  - [x] **Clean tool-level control prevents camera fighting**
+- [ ] Create `rt-state-manager.js` module following TEUI/OBJECTIVE pattern - DEFERRED
   - [ ] RTStateManager object with forms registry, instances array, selection state
   - [ ] Form management: `selectForm()`, `resetForm()`
   - [ ] Instance management: `createInstance()`, `selectInstance()`, `updateInstance()`, `deleteInstance()`
   - [ ] Undo/Redo: `addToHistory()`, `undo()`, `redo()` with action stacks
-- [ ] Create `rt-gumball.js` module for localized gumball system
-  - [ ] Editing Basis: `createEditingBasis()`, `updateEditingBasisPosition()`, `hideEditingBasis()`
-  - [ ] Separate from global origin basis (always visible at world origin)
-  - [ ] Attach to selected Form or Instance center
-  - [ ] Update position when object moves during drag
-- [ ] Integrate Forms/Instances workflow
+- [ ] Integrate Forms/Instances workflow - PENDING Phase 2
   - [ ] Auto-deposit Instance on mouseup (create from active Form)
   - [ ] Reset Form to origin after Instance creation
   - [ ] Track all instances in RTStateManager.instances array
-- [ ] Fix orbit lock during drag
-  - [ ] Add `event.stopPropagation()` at canvas level
-  - [ ] Prevent orbit when gumball tool active and dragging
 
 **Phase 1.6: Selection & Deletion**
 - [ ] Implement click-to-select for Instances
@@ -1515,19 +1517,28 @@ uuid3,1234567892,cube,quadray,0,2,0,0,0,0,0,0,0,0,1.414,1.414,1.414,Cube_Center
   - [ ] Cmd+Shift+Z / Ctrl+Shift+Z for Redo
   - [ ] Undo/Redo buttons in UI (optional)
 
-**Phase 1.7: Polish Current MVP**
-- [ ] Add Cartesian XYZ arrow dragging (same pattern as WXYZ)
+**Phase 1.7: Cartesian XYZ Support & Polish** - 🚧 IN PROGRESS
+- [ ] **Add Cartesian XYZ arrow dragging (same pattern as WXYZ) - NEXT**
+  - [ ] Create XYZ basis vectors in editing basis (X=red, Y=green, Z=blue)
+  - [ ] Add hit spheres at XYZ arrow tips
+  - [ ] Implement constrained movement along X, Y, Z axes
+  - [ ] Dual coordinate system: Both WXYZ and XYZ visible simultaneously
 - [ ] Implement Scale and Rotate modes (using same hit sphere pattern)
 - [ ] Add keyboard shortcuts (G=Move, S=Scale, R=Rotate, ESC=Cancel/Deselect, N=NOW)
 - [ ] Visual feedback when handle is hovered (change color/scale)
 - [ ] Visual feedback when handle is selected during drag
+- [ ] Hide debug hit spheres (set opacity: 0) once testing complete
 
 **Testing Observations (2025-12-29):**
-- Cube and Dual Tetrahedron move together correctly
-- Grid snapping works (positions snap to 0.1, 0.2, 0.3, etc.)
-- Coordinate inputs update in real-time
-- Tool toggle works (click to activate, click again to deactivate)
-- Movement is visually apparent and responsive
+- ✅ Cube and Dual Tetrahedron move together correctly
+- ✅ Grid snapping works (positions snap to 0.1, 0.2, 0.3, etc.)
+- ✅ Coordinate inputs update in real-time (both XYZ and WXYZ)
+- ✅ Tool toggle works (click to activate, click again to deactivate)
+- ✅ Movement is visually apparent and responsive
+- ✅ Editing basis follows Forms during drag operations
+- ✅ Hit spheres correctly positioned at WXYZ arrow tips
+- ✅ Orbit controls locked when Move tool active
+- ✅ Can perform multiple moves on same Form (editing basis persists)
 
 ### Phase 2: Spread-Based Rotation
 - [ ] ROTATE mode: Polygon handles (hexagons preferred for RT fidelity)
