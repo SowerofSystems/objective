@@ -1747,32 +1747,34 @@
       // divisions=10 → 10-unit extent (-5 to +5) with 1.0 unit squares (cube edge=2 occupies 2×2 squares)
       const gridSize = divisions;
 
-      // Color scheme: Cartesian basis X=Red, Y=Green, Z=Blue → RGB two-color mixes
-      // XY plane = Red+Green = Yellow (0xffff00)
-      // XZ plane = Red+Blue = Magenta (0xff00ff)
-      // YZ plane = Green+Blue = Cyan (0x00ffff)
+      // Color scheme: Match grid colors to their corresponding axes (faded for subtlety)
+      // Cartesian basis: X=Red, Y=Green, Z=Blue
+      // XY plane uses Green (Y-axis color, horizontal plane)
+      // XZ plane uses Red (X-axis color, front/back wall)
+      // YZ plane uses Blue (Z-axis color, left/right wall)
+      // Faded to 30% brightness for hairline appearance
 
       // Z-UP CONVENTION: Notation swap from Y-up
       // In Y-up: XZ was horizontal (default), XY was rotated, YZ was rotated
       // In Z-up: XY is horizontal, XZ is vertical, YZ is vertical
       // Just swap which planes get rotations - same rotation values as before
 
-      // XY plane (Z = 0) - HORIZONTAL ground plane in Z-up - Red+Green = Yellow
-      const colorXY = 0xffff00;
+      // XY plane (Z = 0) - HORIZONTAL ground plane in Z-up - Green (faded)
+      const colorXY = 0x004400;  // Dark green - hairline
       window.gridXY = new THREE.GridHelper(gridSize, divisions, colorXY, colorXY);
       window.gridXY.rotation.x = Math.PI / 2;  // Same rotation as Y-up XY had
       window.gridXY.visible = false;  // Hidden by default
       cartesianGrid.add(window.gridXY);
 
-      // XZ plane (Y = 0) - VERTICAL wall in Z-up (front/back) - Red+Blue = Magenta
-      const colorXZ = 0xff00ff;
+      // XZ plane (Y = 0) - VERTICAL wall in Z-up (front/back) - Red (faded)
+      const colorXZ = 0x440000;  // Dark red - hairline
       window.gridXZ = new THREE.GridHelper(gridSize, divisions, colorXZ, colorXZ);
       // GridHelper default - was horizontal in Y-up, now vertical in Z-up (notation swap)
       window.gridXZ.visible = false;  // Hidden by default
       cartesianGrid.add(window.gridXZ);
 
-      // YZ plane (X = 0) - VERTICAL wall in Z-up (left/right) - Green+Blue = Cyan
-      const colorYZ = 0x00ffff;
+      // YZ plane (X = 0) - VERTICAL wall in Z-up (left/right) - Blue (faded)
+      const colorYZ = 0x000044;  // Dark blue - hairline
       window.gridYZ = new THREE.GridHelper(gridSize, divisions, colorYZ, colorYZ);
       window.gridYZ.rotation.z = Math.PI / 2;  // Same rotation as Y-up YZ had
       window.gridYZ.visible = false;  // Hidden by default
@@ -2573,8 +2575,14 @@
       const tessValue = parseInt(e.target.value);
       document.getElementById('cartesianTessValue').textContent = tessValue;
 
+      // Save current cartesianBasis visibility state from checkbox
+      const basisCheckbox = document.getElementById('showCartesianBasis');
+      const basisWasVisible = basisCheckbox ? basisCheckbox.checked : false;
+
       // Rebuild Cartesian Grids with new tessellation
+      // IMPORTANT: Remove BOTH cartesianGrid AND cartesianBasis to prevent duplicates
       scene.remove(cartesianGrid);
+      scene.remove(cartesianBasis);
       createCartesianGrid();
 
       // Restore visibility state from active toggles
@@ -2589,6 +2597,11 @@
       if (window.gridYZ) {
         const yzToggle = document.querySelector('[data-plane="YZ"]');
         window.gridYZ.visible = yzToggle ? yzToggle.classList.contains('active') : false;
+      }
+
+      // Restore cartesianBasis visibility from checkbox state
+      if (cartesianBasis) {
+        cartesianBasis.visible = basisWasVisible;
       }
     });
 
