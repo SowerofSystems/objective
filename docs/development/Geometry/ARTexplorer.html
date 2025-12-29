@@ -514,17 +514,27 @@
     </div>
   </div>
 
-  <!-- THREE.js Library (r149 - last version with UMD build support) -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- Three.js ES Modules via importmap (no build step required) -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
 
-  <!-- ARTexplorer Modules (Global scope - loaded in dependency order) -->
-  <script src="modules/rt-math.js"></script>
-  <script src="modules/rt-polyhedra.js"></script>
+  <script type="module">
+    // Import Three.js modules
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-  <script>
-    // THREE is now global from UMD build
-    // RT, Quadray, and Polyhedra are global from our modules
+    // Import ARTexplorer modules
+    import { RT, Quadray } from './modules/rt-math.js';
+    import { Polyhedra } from './modules/rt-polyhedra.js';
+
+    // Make THREE global for easier access in console
+    window.THREE = THREE;
 
     // Initialize Quadray basis vectors with THREE.js
     Quadray.init(THREE);

@@ -19,9 +19,8 @@
 /**
  * Rational Trigonometry (RT) Library
  * @namespace RT
- * Global scope - no ES6 export (works with file:// protocol)
  */
-const RT = {
+export const RT = {
   /**
    * Quadrance (Q = distance²) - Wildberger's alternative to distance
    * Avoids sqrt, keeps calculations exact
@@ -166,9 +165,8 @@ const RT = {
  *
  * @namespace Quadray
  * @requires THREE - THREE.js Vector3
- * Global scope - no ES6 export (works with file:// protocol)
  */
-const Quadray = {
+export const Quadray = {
   /**
    * 4 basis vectors pointing to tetrahedral vertices inscribed in cube
    * These are the face normals of a regular tetrahedron
