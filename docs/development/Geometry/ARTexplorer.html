@@ -19,7 +19,11 @@
       <br>
       <!-- Coordinate System Toggle -->
       <div class="control-group">
-        <h3>Coordinate System</h3>
+        <h3>
+          <span class="section-toggle collapsed" data-target="coordinate-system-section"></span>
+          Coordinate System
+        </h3>
+        <div id="coordinate-system-section" class="section-content collapsed">
         <div class="control-item">
           <label class="checkbox-label">
             <input type="checkbox" id="showCartesianBasis">
@@ -168,6 +172,7 @@
           </div>
           <p class="info-text" style="font-size: 10px; margin-top: 5px;">Central Angle: Triangular faces tessellated vertex-to-vertex using tet edge length 2s√2 (corrected implementation without bugs)</p>
           </div>
+        </div>
         </div>
       </div>
 
@@ -2623,6 +2628,37 @@
         this.classList.toggle('collapsed');
         targetOptions.classList.toggle('collapsed');
       });
+    });
+
+    // Section toggle functionality (for main h3 sections)
+    document.querySelectorAll('.section-toggle').forEach(toggle => {
+      toggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const targetId = this.dataset.target;
+        const content = document.getElementById(targetId);
+
+        // Toggle collapsed state
+        this.classList.toggle('collapsed');
+        content.classList.toggle('collapsed');
+      });
+    });
+
+    // Make h3 headers clickable (entire row) - only those with section-toggle
+    document.querySelectorAll('h3').forEach(header => {
+      if (header.querySelector('.section-toggle')) {
+        header.style.cursor = 'pointer';
+        header.addEventListener('click', function(e) {
+          // Don't trigger if clicking directly on the toggle arrow
+          if (e.target.classList.contains('section-toggle')) return;
+
+          const toggle = this.querySelector('.section-toggle');
+          if (toggle) {
+            toggle.click();
+          }
+        });
+      }
     });
 
     // Node size selector functionality

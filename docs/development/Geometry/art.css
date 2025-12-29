@@ -278,3 +278,43 @@ button:active {
   color: #7ab8ff;
   font-weight: 600;
 }
+
+/* Section Toggle (for h3 main sections) */
+.section-toggle {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid #7ab8ff;
+  margin-right: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  vertical-align: middle;
+}
+
+.section-toggle.collapsed {
+  transform: rotate(-90deg);
+}
+
+.section-content {
+  max-height: 2000px;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+  opacity: 1;
+}
+
+.section-content.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+h3 {
+  cursor: pointer;
+  user-select: none;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
