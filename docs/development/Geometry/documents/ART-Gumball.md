@@ -1517,13 +1517,14 @@ uuid3,1234567892,cube,quadray,0,2,0,0,0,0,0,0,0,0,1.414,1.414,1.414,Cube_Center
   - [ ] Cmd+Shift+Z / Ctrl+Shift+Z for Redo
   - [ ] Undo/Redo buttons in UI (optional)
 
-**Phase 1.7: Cartesian XYZ Support & Polish** - 🚧 IN PROGRESS
-- [ ] **Add Cartesian XYZ arrow dragging (same pattern as WXYZ) - NEXT**
-  - [ ] Create XYZ basis vectors in editing basis (X=red, Y=green, Z=blue)
-  - [ ] Add hit spheres at XYZ arrow tips
-  - [ ] Implement constrained movement along X, Y, Z axes
-  - [ ] Dual coordinate system: Both WXYZ and XYZ visible simultaneously
-- [ ] Implement Scale and Rotate modes (using same hit sphere pattern)
+**Phase 1.7: Cartesian XYZ Support & Polish** - ✅ COMPLETED (2025-12-29)
+- [x] **Add Cartesian XYZ arrow dragging (same pattern as WXYZ) - ✅ IMPLEMENTED**
+  - [x] **Create XYZ basis vectors in editing basis (X=red, Y=green, Z=blue)**
+  - [x] **Add hit spheres at XYZ arrow tips**
+  - [x] **Implement constrained movement along X, Y, Z axes**
+  - [x] **Checkbox-controlled visibility: UI checkboxes determine which systems appear**
+  - [x] **User can enable WXYZ only, XYZ only, or both simultaneously**
+- [ ] Implement Scale and Rotate modes (using same hit sphere pattern) - NEXT
 - [ ] Add keyboard shortcuts (G=Move, S=Scale, R=Rotate, ESC=Cancel/Deselect, N=NOW)
 - [ ] Visual feedback when handle is hovered (change color/scale)
 - [ ] Visual feedback when handle is selected during drag
@@ -1536,9 +1537,12 @@ uuid3,1234567892,cube,quadray,0,2,0,0,0,0,0,0,0,0,1.414,1.414,1.414,Cube_Center
 - ✅ Tool toggle works (click to activate, click again to deactivate)
 - ✅ Movement is visually apparent and responsive
 - ✅ Editing basis follows Forms during drag operations
-- ✅ Hit spheres correctly positioned at WXYZ arrow tips
+- ✅ Hit spheres correctly positioned at both WXYZ and XYZ arrow tips
 - ✅ Orbit controls locked when Move tool active
 - ✅ Can perform multiple moves on same Form (editing basis persists)
+- ✅ Checkbox control works: uncheck XYZ/WXYZ to hide respective handles
+- ✅ Cleaner workspace when using single coordinate system
+- ✅ Both systems can be enabled simultaneously for maximum flexibility
 
 ### Phase 2: Spread-Based Rotation
 - [ ] ROTATE mode: Polygon handles (hexagons preferred for RT fidelity)
