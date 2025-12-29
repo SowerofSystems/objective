@@ -1118,5 +1118,4 @@ export const Polyhedra = {
 
       return { vertices, edges, faces };
     }
-  }
 };
