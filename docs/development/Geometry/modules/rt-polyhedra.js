@@ -12,7 +12,7 @@
 import { RT } from './rt-math.js';
 
 // Access THREE.js from global scope (set by main HTML)
-const THREE = window.THREE;
+
 
 /**
  * Polyhedra generator functions
