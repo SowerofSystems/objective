@@ -510,30 +510,119 @@ Implement state persistence:
 
 ---
 
-### 🔄 Phase 2: Module Extraction (Current - Next Session)
+### 🔄 Phase 2: Module Extraction (Current - In Progress)
 
 **Priority Order:**
 
-1. **Phase 2.1: Extract RT Math** (~130 lines, 1-2 hours)
-   - Pure functions, no dependencies
-   - Easiest to test
-   - Foundation for other modules
+1. **Phase 2.1: Extract RT Math** (~130 lines, 1-2 hours) - ✅ COMPLETED (2025-12-29)
+   - ✅ Pure functions, no dependencies
+   - ✅ Easiest to test
+   - ✅ Foundation for other modules
+   - **Status:** Module created at `modules/rt-math.js` with RT and Quadray namespaces
+   - **Contents:** quadrance(), spread(), verifyEuler(), Phi utilities, validateEdges(), Quadray coordinate system
+   - **Testing:** robots.txt added to prevent web crawler indexing
 
-2. **Phase 2.2: Extract Polyhedra** (~1870 lines, 3-4 hours)
-   - Depends on rt-math.js
+2. **Phase 2.2: Extract Polyhedra** (~1870 lines, 3-4 hours) - ⏸️ DEFERRED
+   - Depends on rt-math.js ✅
    - Self-contained shape generators
    - Large but cohesive
+   - **Note:** Deferred to prioritize ART Gumball implementation
 
-3. **Phase 2.3: Extract Rendering** (~500-800 lines, 4-5 hours)
+3. **Phase 2.3: Extract Rendering** (~500-800 lines, 4-5 hours) - ⏸️ DEFERRED
    - Depends on polyhedra.js
    - Scene, viewer, grids together
    - Update main HTML to use modules
+   - **Note:** Deferred to prioritize ART Gumball implementation
+
+**Current Status:**
+- ✅ rt-math.js extracted and functional
+- ⏸️ Polyhedra and Rendering extraction deferred
+- 🔄 ART Gumball functionality implemented directly in ARTexplorer.html (see Phase 2.7)
+- ARTexplorer.html still ~3000+ lines (gumball logic added)
 
 **Success Criteria:**
 - ARTexplorer.html reduced from 2820 → ~500 lines
 - All existing functionality preserved
 - No build step required (native ES6 modules)
 - Code is more maintainable and testable
+
+### 🎯 Phase 2.7: ART Gumball Implementation (Current - In Progress)
+
+**Goal:** Implement Move tool with WXYZ and XYZ support before extracting to dedicated module
+
+**Status:** ✅ Phase 1 MVP COMPLETED - Basic move functionality working
+
+**Implementation Approach:** Rapid prototyping in ARTexplorer.html, then extract to rt-controls.js module
+
+#### Completed Features (2025-12-29)
+
+1. **Move Tool with Dual Coordinate Systems** - ✅ COMPLETED
+   - WXYZ (Quadray) basis vectors with 4 arrow handles (W, X, Y, Z)
+   - XYZ (Cartesian) basis vectors with 3 arrow handles (X, Y, Z)
+   - Checkbox-controlled visibility (user selects WXYZ, XYZ, or both)
+   - Hit spheres positioned correctly at arrow tips (0.5 radius, 30% opacity)
+   - Editing basis appears at Form center when Move tool activated
+   - Editing basis follows Forms during drag operations
+
+2. **Orbit Controls Management** - ✅ COMPLETED
+   - Orbit disabled when Move tool activated (not just during drag)
+   - Orbit re-enabled when Move tool deactivated
+   - Tool-level control prevents camera fighting
+
+3. **Grid Snapping** - ✅ COMPLETED
+   - 0.1 increment snapping for RT precision
+   - Positions snap to 0.1, 0.2, 0.3, etc.
+   - Coordinate inputs update in real-time
+
+4. **NOW Button Instance Deposition** - ✅ COMPLETED
+   - Fixed ballooning issue (removed node-size-btn class)
+   - Deposits instance snapshots with full metadata
+   - Updates counter UI in real-time
+   - Console logging for debugging
+
+#### Known Issues & Architectural Limitations
+
+**CRITICAL: No Selection System** - Blocking further progress
+
+**Problem:**
+- All visible polyhedra move together globally
+- No way to select individual instances
+- Cannot isolate Forms from Instances
+- User loses control over what gets edited
+
+**Impact:**
+- "Everything gets moved together and without instantiation, also everything is edited globally" (User feedback)
+- NOW button can deposit instances but cannot differentiate them
+- Cannot implement delete functionality
+- Cannot implement proper Forms vs Instances workflow
+
+**Required Solution:**
+1. Click-to-select raycasting for individual instances
+2. Visual highlight glow for selected Forms/Instances
+3. Forms vs Instances separation:
+   - Forms: Templates at origin (editable)
+   - Instances: Deposited snapshots (independent copies)
+4. StateManager integration for instance tracking
+
+#### Recommended Next Steps
+
+**Immediate (Next Session):**
+1. **Implement Selection System** - CRITICAL
+   - Add raycasting on canvas click
+   - Implement visual highlight for selected objects
+   - Distinguish Forms from Instances
+
+2. **Consider Modular Refactoring** - User suggestion:
+   - "Should we consider breaking these functions into a new 'rt-controls.js' file?"
+   - Extract gumball logic from ARTexplorer.html to rt-controls.js
+   - Create rt-state-manager.js for instance tracking
+   - Keep HTML as UI container only
+
+**Future:**
+3. Implement Scale and Rotate modes
+4. Add keyboard shortcuts (G=Move, S=Scale, R=Rotate, ESC=Cancel, N=NOW)
+5. Implement Delete key functionality
+6. Implement Undo/Redo (Cmd+Z / Ctrl+Z)
 
 ---
 

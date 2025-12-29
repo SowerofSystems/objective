@@ -1544,6 +1544,37 @@ uuid3,1234567892,cube,quadray,0,2,0,0,0,0,0,0,0,0,1.414,1.414,1.414,Cube_Center
 - ✅ Cleaner workspace when using single coordinate system
 - ✅ Both systems can be enabled simultaneously for maximum flexibility
 
+**Known Issues & Blockers (2025-12-29):**
+
+⚠️ **CRITICAL: No Selection System** - Blocking further progress on Phase 1.6+
+
+**Problem:**
+- All visible polyhedra move together globally
+- No way to select individual instances via click
+- Cannot isolate Forms (templates) from Instances (deposited snapshots)
+- User loses control over what gets edited
+
+**Impact:**
+- "Everything gets moved together and without instantiation, also everything is edited globally" (User feedback)
+- NOW button can deposit instance snapshots but they remain coupled to Forms
+- Cannot implement delete functionality (Phase 1.6)
+- Cannot implement proper Forms vs Instances workflow (Phase 1.5)
+
+**Required Solution (Phase 1.6 Prerequisites):**
+1. **Click-to-select raycasting** - Detect mouse clicks on 3D objects
+2. **Visual highlight glow** - Show which Form/Instance is selected (emissive material or OutlinePass)
+3. **Forms vs Instances separation:**
+   - Forms: Editable templates at origin (only one active at a time)
+   - Instances: Independent deposited snapshots (immutable after NOW button pressed)
+4. **StateManager integration** - Track selected instance, deposited instances, undo stack
+
+**Architectural Recommendation (User Suggestion):**
+- "Should we consider breaking these functions into a new 'rt-controls.js' file?"
+- Extract gumball logic from ARTexplorer.html (~3000+ lines) to dedicated modules:
+  - `rt-controls.js` - Gumball interaction logic, raycasting, selection
+  - `rt-state-manager.js` - Instance tracking, undo/redo, state persistence
+- Keep ARTexplorer.html as UI container only (~500 lines target)
+
 ### Phase 2: Spread-Based Rotation
 - [ ] ROTATE mode: Polygon handles (hexagons preferred for RT fidelity)
   - [ ] Cartesian XYZ: 3 rotation handles around each axis (X, Y, Z)
