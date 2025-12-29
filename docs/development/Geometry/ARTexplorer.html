@@ -2410,14 +2410,16 @@
             0.2
           );
 
-          // Add invisible hit sphere at arrow tip (gumball handle)
+          // Add hit sphere at arrow tip (gumball handle)
+          // Making it semi-visible for debugging
           const tipPosition = vec.clone().multiplyScalar(arrowLength);
           const hitSphere = new THREE.Mesh(
-            new THREE.SphereGeometry(0.3, 8, 8),
+            new THREE.SphereGeometry(0.5, 16, 16), // Larger, higher quality
             new THREE.MeshBasicMaterial({
+              color: colors[i],
               transparent: true,
-              opacity: 0,
-              depthTest: false
+              opacity: 0.3, // Semi-visible for debugging
+              depthTest: true
             })
           );
           hitSphere.position.copy(tipPosition);
@@ -2513,9 +2515,11 @@
               }
             });
 
+            console.log(`🎯 Editing basis exists, found ${hitTargets.length} hit targets`);
+
             const intersects = raycaster.intersectObjects(hitTargets, false);
 
-            console.log(`Raycaster intersects: ${intersects.length}`);
+            console.log(`🎯 Raycaster intersects: ${intersects.length}`);
 
             if (intersects.length > 0) {
               // Get the first intersected handle
@@ -2555,6 +2559,8 @@
                 console.log(`✅ Gumball handle selected: axis ${basisIndex}, polyhedra count: ${selectedPolyhedra.length}`);
               }
             }
+          } else {
+            console.warn("⚠️ No editing basis found - did you activate Move tool?");
           }
         }, { capture: true }); // Capture phase to intercept before OrbitControls
 
