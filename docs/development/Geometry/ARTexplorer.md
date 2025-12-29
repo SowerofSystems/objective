@@ -1,5 +1,5 @@
 # ThreeRT - Three.js + Rational Trigonometry Geometry Explorer
-- Credits and thanks: Co-developed from the ideas of R. Buckminster Fuller, Kirby Urner, Tom Ace, NJ Wildberger and Andy Thomson, witnessed by Metatron. 
+- Credits and thanks: Co-developed from the ideas of R. Buckminster Fuller, Kirby Urner, Tom Ace, NJ Wildberger and Andy Thomson, witnessed silently by Metatron. 
 
 ## Overview
 
@@ -281,7 +281,7 @@ The rhombic dodecahedron as the geometric dual of the cuboctahedron requires ver
 <!DOCTYPE html>
 <html>
 <head>
-  <title>ThreeRT - Rational Trigonometry Geometry Explorer</title>
+  <title>A.R.T. - Rational Trigonometry Geometry Explorer</title>
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
   <style>
@@ -457,7 +457,7 @@ const cos_pi_10_sq = (5 + sqrt5) / 8;  // c = cos²(π/10)
 // Verify RT identity: s + c = 1
 // (3 - √5)/8 + (5 + √5)/8 = 8/8 = 1 ✓
 
-// Only take sqrt when needed for rotation matrix
+// Only take sqrt when needed for rotation matrix OPTIMIZE LATER FOR SPREAD per RT Purity
 const sin_pi_10 = Math.sqrt(sin_pi_10_sq);
 const cos_pi_10 = Math.sqrt(cos_pi_10_sq);
 ```
@@ -510,10 +510,10 @@ The -90° rotation is **optimal RT math** because it uses exact integer values (
 
 **Phase 2.10: ✅ COMPLETE (2025-12-26) - Z-Up Coordinate Convention**
 - **Camera**: Set `camera.up.set(0, 0, 1)` - Z is now vertical (CAD/BIM/glTF standard)
-- **Visual**: Blue axis points UP (was green/Y before)
+- **Visual**: Blue Z-axis points UP (was green/Y before)
 - **Grid Planes**: XY horizontal (ground), XZ/YZ vertical (walls)
 - **Comments**: Updated all polyhedra vertex descriptions for Z-up interpretation
-- **Backup**: Created ARTexplorer-YUP-BACKUP.html for reference
+- **Backup**: Created ARTexplorer-YUP-BACKUP.html (since deleted) for reference
 - **Rationale**: Preparing for glTF/DWG/GXF export compatibility with industry CAD standards
 
 **Recent Completion:**
@@ -705,7 +705,7 @@ All RT purity enhancements successfully implemented:
    - ✅ Update rhombic dodecahedron to defer √3
    - ✅ Maintain backward compatibility (same visual output)
 
-### Near-term (Phase 2.5 completion):
+### Near-term (Phase 2.5 completion): - COMPLETE
 1. **Graphics Refinements**
    - Review edge thickness and node sizes
    - Optimize line rendering (match WOMBAT style)
@@ -717,7 +717,7 @@ All RT purity enhancements successfully implemented:
    - Adjust scaling factors if needed
    - Document nesting ratios in RT terms: FACE DUAL OF IH & RDDH
 
-### Phase 2.7: RT-Pure Geodesic Subdivision (Fuller Domes):
+### Phase 2.7: RT-Pure Geodesic Subdivision (Fuller Domes): - COMPLETE
 **Objective:** Implement quadrance-preserving geodesic subdivision for multi-frequency domes.
 
 **RT-Pure Approach:**
@@ -806,7 +806,7 @@ The current implementation reveals an **important geometric phenomenon**:
 4. **This is NOT a bug** - it's a visualization of how planar subdivision differs from spherical geodesic
 
 **Novel Solution - Quadray Polygonal Frequency Projections (Phase 2.8):**
-- discovered by Andy w. Metatron 2025.12.24, 22h22.
+- discovered by Andy w. Metatron 2025.12.24, 22h22. PENDING IMPLEMENTATION 2025.12.28
 
 Instead of traditional spherical great circles, use the **Quadray coordinate system's natural tetrahedral symmetry**:
 
@@ -1112,7 +1112,7 @@ Polyhedra.geodesicTetrahedron = (halfSize = 1, frequency = 0, options = {
 7. ✅ **Console logging** showing Q_target validation for all projection modes
 8. ✅ **Event listeners** for all projection radio buttons
 
-**Future Extensions (Phase 4+):**
+**Future Extensions (Phase 4+):** PENDING
 - Cartesian cut-plane for geodesic dome "grades" (Fuller's truncated domes)
 - Class I/II/III subdivision patterns (different edge orientations)
 - Chirality options (left/right handed subdivision)
@@ -1120,12 +1120,12 @@ Polyhedra.geodesicTetrahedron = (halfSize = 1, frequency = 0, options = {
 - **Phase 2.8**: Quadray polygonal frequency projections (novel approach)
 
 ### Near-term (Phase 3 prep):
-1. **4D Coordinate System Research**
+1. **4D Coordinate System Research** COMPLETED
    - Implement Quadray coordinate transformations
    - Add WXYZ/Caltrop coordinate toggles
    - Design 4D → 3D projection system
 
-2. **Dual Polyhedra Feature**
+2. **Dual Polyhedra Feature** PARTIALLY COMPLETE
    - Show dual of any selected polyhedron
    - Implement dual generation algorithm
    - Validate duality relationships
@@ -1216,7 +1216,7 @@ function createRTPureGrid(size, divisions, color, plane = 'XY') {
 - ✅ Clearer code - grid plane orientation is obvious from vertex coordinates
 
 #### Option 2: Exact Rational Rotation Values
-Replace π with exact algebraic rotation values (if Three.js supports quaternion-based rotations):
+Replace π with exact algebraic rotation values (if Three.js supports quaternion-based rotations): RESEARCH NEEDED FOR LATER AI AGENT PROJECT
 
 ```javascript
 // 90° rotation as quaternion: [sin(45°), 0, 0, cos(45°)] = [√2/2, 0, 0, √2/2]
@@ -1957,3 +1957,398 @@ void  Quadray::RotateAboutA(const Quadray &QX,double Theta)
    
    for (int I = 0; I < 4; I++) Coords[I] = Rotated[I];
 }
+---
+
+## TODO: Grid Tessellation Sliders + State Management
+
+### Grid Tessellation Controls (High Priority)
+
+**Requirement:** Add dynamic tessellation sliders for both Quadray and Cartesian grids.
+
+**UI Placement:** Position sliders in Scale control group, immediately after Cube/Tetrahedron edge length sliders.
+
+**Specifications:**
+- **Range:** 12 to 120 intervals
+- **Step:** 12 (increments: 12, 24, 36, 48, 60, 72, 84, 96, 108, 120)
+- **Default:** 12 (current value)
+- **Two separate sliders:**
+  1. Quadray Grid Tessellation (Central Angle Grids)
+  2. Cartesian Grid Tessellation (XY/XZ/YZ planes)
+
+**Implementation Code Sketch:**
+
+```html
+<!-- Add to Scale control group, after tetScaleSlider -->
+<div class="control-item">
+  <label>Quadray Grid Intervals</label>
+  <div class="slider-container">
+    <input type="range" id="quadrayTessSlider" min="12" max="120" step="12" value="12">
+    <span class="slider-value" id="quadrayTessValue">12</span>
+  </div>
+</div>
+<div class="control-item">
+  <label>Cartesian Grid Intervals</label>
+  <div class="slider-container">
+    <input type="range" id="cartesianTessSlider" min="12" max="120" step="12" value="12">
+    <span class="slider-value" id="cartesianTessValue">12</span>
+  </div>
+</div>
+```
+
+**JavaScript Implementation:**
+
+```javascript
+// Update createIVMPlanes() to use dynamic tessellation
+function createIVMPlanes() {
+  ivmPlanes = new THREE.Group();
+  const halfSize = 1.0;
+  
+  // Read tessellation from slider (instead of hardcoded 12)
+  const tessellations = parseInt(document.getElementById('quadrayTessSlider').value);
+  
+  // Create all 6 Central Angle Grids with dynamic tessellation
+  window.ivmWX = createIVMGrid(Quadray.basisVectors[0], Quadray.basisVectors[1], 
+                                halfSize, tessellations, 0xffaa00);
+  // ... etc for all 6 planes
+}
+
+// Add slider event listener
+document.getElementById('quadrayTessSlider').addEventListener('input', (e) => {
+  document.getElementById('quadrayTessValue').textContent = e.target.value;
+  
+  // Rebuild all Quadray grids with new tessellation
+  scene.remove(ivmPlanes);
+  createIVMPlanes();
+  
+  // Restore visibility state from toggles
+  const activeToggles = document.querySelectorAll('[data-plane^="ivm"].active');
+  activeToggles.forEach(toggle => {
+    const planeName = toggle.dataset.plane;
+    if (window[planeName]) window[planeName].visible = true;
+  });
+});
+
+// Similar implementation for cartesianTessSlider affecting createCartesianGrid()
+```
+
+**Performance Considerations:**
+- 120 intervals = significant geometry (120×120 triangular tessellation per plane)
+- May need debouncing on slider `input` event (use `change` instead for release-only updates)
+- Consider geometry caching or progressive loading for higher tessellations
+
+**Benefits:**
+- Dynamic exploration of grid density
+- User can balance visual detail vs performance
+- Useful for different zoom levels (close: fine grid, far: coarse grid)
+- Educational tool for understanding tessellation density
+
+---
+
+### State Management + CSV Import/Export (Critical Next Phase)
+
+**Requirement:** Implement comprehensive state management with file I/O, following TEUI Calculator pattern.
+
+**Scope:** Capture complete application state for reproducibility and sharing.
+
+**State Schema (Proposed):**
+
+```javascript
+const AppState = {
+  // Polyhedra visibility (boolean flags)
+  polyhedra: {
+    showCube: true,
+    showTetrahedron: false,
+    showDualTetrahedron: true,
+    showOctahedron: false,
+    showIcosahedron: false,
+    showDodecahedron: false,
+    showCuboctahedron: false,
+    showRhombicDodecahedron: false,
+    // Geodesic variations
+    showGeodesicTetrahedron: false,
+    geodesicTetraFrequency: 1,
+    geodesicTetraProjection: 'out', // 'off', 'in', 'mid', 'out'
+    showGeodesicOctahedron: false,
+    geodesicOctaFrequency: 0,
+    geodesicOctaProjection: 'out',
+    showGeodesicIcosahedron: false,
+    geodesicIcosaFrequency: 0,
+    geodesicIcosaProjection: 'out'
+  },
+  
+  // Coordinate systems
+  coordinates: {
+    showCartesianBasis: false,
+    showQuadrayBasis: true,
+    // Cartesian plane toggles
+    cartesianPlanes: {
+      XY: false,
+      XZ: false,
+      YZ: false
+    },
+    // Central Angle Grid toggles
+    centralAngleGrids: {
+      WX: true,
+      WY: true,
+      WZ: true,
+      XY: true,
+      XZ: true,
+      YZ: true
+    }
+  },
+  
+  // Scale controls
+  scale: {
+    cubeEdgeLength: 1.4142,      // halfSize * 2
+    tetEdgeLength: 2.0000,        // halfSize * 2 * √2
+    quadrayTessellation: 12,
+    cartesianTessellation: 12
+  },
+  
+  // Visual settings
+  visual: {
+    opacity: 0.25,
+    nodeSize: 'md'  // 'off', 'sm', 'md', 'lg'
+  },
+  
+  // Camera position (optional - for saved views)
+  camera: {
+    position: [5, -5, 5],
+    target: [0, 0, 0],
+    up: [0, 0, 1]
+  }
+};
+```
+
+**CSV Format (Proposed):**
+
+```csv
+# ARTexplorer State File v1.0
+# Generated: 2025-12-28T12:34:56Z
+
+# Polyhedra
+polyhedra.showCube,true
+polyhedra.showTetrahedron,false
+polyhedra.showDualTetrahedron,true
+polyhedra.showOctahedron,false
+polyhedra.showIcosahedron,false
+polyhedra.showDodecahedron,false
+polyhedra.showCuboctahedron,false
+polyhedra.showRhombicDodecahedron,false
+
+# Geodesic Settings
+polyhedra.showGeodesicTetrahedron,false
+polyhedra.geodesicTetraFrequency,1
+polyhedra.geodesicTetraProjection,out
+
+# Coordinates
+coordinates.showCartesianBasis,false
+coordinates.showQuadrayBasis,true
+coordinates.cartesianPlanes.XY,false
+coordinates.cartesianPlanes.XZ,false
+coordinates.cartesianPlanes.YZ,false
+coordinates.centralAngleGrids.WX,true
+coordinates.centralAngleGrids.WY,true
+coordinates.centralAngleGrids.WZ,true
+coordinates.centralAngleGrids.XY,true
+coordinates.centralAngleGrids.XZ,true
+coordinates.centralAngleGrids.YZ,true
+
+# Scale
+scale.cubeEdgeLength,1.4142
+scale.tetEdgeLength,2.0000
+scale.quadrayTessellation,12
+scale.cartesianTessellation,12
+
+# Visual
+visual.opacity,0.25
+visual.nodeSize,md
+
+# Camera (optional)
+camera.position,"5,-5,5"
+camera.target,"0,0,0"
+camera.up,"0,0,1"
+```
+
+**StateManager Pattern (TEUI-inspired):**
+
+```javascript
+const StateManager = {
+  // Current state object
+  state: { /* AppState schema */ },
+  
+  // Get state value by path (e.g., "polyhedra.showCube")
+  getValue: function(path) {
+    const keys = path.split('.');
+    let value = this.state;
+    for (const key of keys) {
+      value = value[key];
+      if (value === undefined) return null;
+    }
+    return value;
+  },
+  
+  // Set state value by path
+  setValue: function(path, value) {
+    const keys = path.split('.');
+    let obj = this.state;
+    for (let i = 0; i < keys.length - 1; i++) {
+      obj = obj[keys[i]];
+    }
+    obj[keys[keys.length - 1]] = value;
+  },
+  
+  // Export state to CSV string
+  exportCSV: function() {
+    let csv = '# ARTexplorer State File v1.0\n';
+    csv += `# Generated: ${new Date().toISOString()}\n\n`;
+    
+    // Flatten nested state object to CSV rows
+    function flatten(obj, prefix = '') {
+      let rows = [];
+      for (const [key, value] of Object.entries(obj)) {
+        const path = prefix ? `${prefix}.${key}` : key;
+        if (typeof value === 'object' && !Array.isArray(value) && value !== null) {
+          rows.push(...flatten(value, path));
+        } else {
+          const csvValue = Array.isArray(value) ? `"${value.join(',')}"` : value;
+          rows.push(`${path},${csvValue}`);
+        }
+      }
+      return rows;
+    }
+    
+    csv += flatten(this.state).join('\n');
+    return csv;
+  },
+  
+  // Import state from CSV string
+  importCSV: function(csvString) {
+    const lines = csvString.split('\n');
+    const newState = {};
+    
+    for (const line of lines) {
+      if (line.startsWith('#') || line.trim() === '') continue;
+      
+      const [path, valueStr] = line.split(',');
+      let value = valueStr;
+      
+      // Parse value type
+      if (valueStr === 'true') value = true;
+      else if (valueStr === 'false') value = false;
+      else if (!isNaN(valueStr)) value = parseFloat(valueStr);
+      else if (valueStr.startsWith('"') && valueStr.endsWith('"')) {
+        value = valueStr.slice(1, -1).split(',').map(v => parseFloat(v) || v);
+      }
+      
+      // Set value in state using path
+      const keys = path.split('.');
+      let obj = newState;
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (!obj[keys[i]]) obj[keys[i]] = {};
+        obj = obj[keys[i]];
+      }
+      obj[keys[keys.length - 1]] = value;
+    }
+    
+    this.state = newState;
+    this.applyStateToUI();
+  },
+  
+  // Apply state to UI controls and scene
+  applyStateToUI: function() {
+    // Update all checkboxes
+    document.getElementById('showCube').checked = this.getValue('polyhedra.showCube');
+    document.getElementById('showDualTetrahedron').checked = this.getValue('polyhedra.showDualTetrahedron');
+    // ... etc for all controls
+    
+    // Update sliders
+    document.getElementById('scaleSlider').value = this.getValue('scale.cubeEdgeLength');
+    document.getElementById('tetScaleSlider').value = this.getValue('scale.tetEdgeLength');
+    // ... etc
+    
+    // Trigger geometry update
+    updateGeometry();
+  },
+  
+  // Capture current UI state
+  captureStateFromUI: function() {
+    this.setValue('polyhedra.showCube', document.getElementById('showCube').checked);
+    this.setValue('polyhedra.showDualTetrahedron', document.getElementById('showDualTetrahedron').checked);
+    // ... etc for all controls
+  }
+};
+```
+
+**UI Implementation:**
+
+```html
+<!-- Add to controls panel, new section -->
+<div class="control-group">
+  <h3>State Management</h3>
+  <button id="exportStateBtn">Export State (CSV)</button>
+  <button id="importStateBtn">Import State (CSV)</button>
+  <input type="file" id="stateFileInput" accept=".csv" style="display: none;">
+</div>
+```
+
+```javascript
+// Export handler
+document.getElementById('exportStateBtn').addEventListener('click', () => {
+  StateManager.captureStateFromUI();
+  const csv = StateManager.exportCSV();
+  
+  // Download CSV file
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ARTexplorer_State_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// Import handler
+document.getElementById('importStateBtn').addEventListener('click', () => {
+  document.getElementById('stateFileInput').click();
+});
+
+document.getElementById('stateFileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const csvString = event.target.result;
+    StateManager.importCSV(csvString);
+  };
+  reader.readAsText(file);
+});
+```
+
+**Benefits:**
+- **Reproducibility:** Share exact visual configurations
+- **Teaching:** Save specific geometric demonstrations
+- **Workflow:** Quick switching between different exploration modes
+- **Debugging:** Capture problematic states for troubleshooting
+- **Version Control:** Track state changes over time
+
+**Integration Notes:**
+- StateManager should be initialized on page load with default state
+- Any UI interaction should call `StateManager.setValue()` to maintain sync
+- Consider auto-save to localStorage for session persistence
+- CSV format allows easy editing in spreadsheet software
+
+**File Naming Convention:**
+```
+ARTexplorer_State_YYYY-MM-DD_description.csv
+ARTexplorer_State_2025-12-28_dual-tet-quadray-grids.csv
+ARTexplorer_State_2025-12-28_geodesic-icosa-freq4.csv
+```
+
+**Future Extensions:**
+- JSON export option (more compact, easier parsing)
+- URL parameter state encoding (shareable links)
+- State history/undo (stack-based state management)
+- Preset library (common configurations as buttons)
+
