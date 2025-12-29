@@ -1747,37 +1747,46 @@
       // divisions=10 → 10-unit extent (-5 to +5) with 1.0 unit squares (cube edge=2 occupies 2×2 squares)
       const gridSize = divisions;
 
-      // Color scheme: Match grid colors to their corresponding axes (faded for subtlety)
+      // Color scheme: Match grid colors to their corresponding axes
       // Cartesian basis: X=Red, Y=Green, Z=Blue
       // XY plane uses Green (Y-axis color, horizontal plane)
       // XZ plane uses Red (X-axis color, front/back wall)
       // YZ plane uses Blue (Z-axis color, left/right wall)
-      // Faded to 30% brightness for hairline appearance
+      // Using 0.4 opacity like WXYZ Quadray grids for visual clarity without distraction
 
       // Z-UP CONVENTION: Notation swap from Y-up
       // In Y-up: XZ was horizontal (default), XY was rotated, YZ was rotated
       // In Z-up: XY is horizontal, XZ is vertical, YZ is vertical
       // Just swap which planes get rotations - same rotation values as before
 
-      // XY plane (Z = 0) - HORIZONTAL ground plane in Z-up - Green (faded)
-      const colorXY = 0x004400;  // Dark green - hairline
+      // XY plane (Z = 0) - HORIZONTAL ground plane in Z-up - Green
+      const colorXY = 0x00ff00;  // Bright green
       window.gridXY = new THREE.GridHelper(gridSize, divisions, colorXY, colorXY);
       window.gridXY.rotation.x = Math.PI / 2;  // Same rotation as Y-up XY had
       window.gridXY.visible = false;  // Hidden by default
+      // Set material opacity to match WXYZ grids
+      window.gridXY.material.transparent = true;
+      window.gridXY.material.opacity = 0.4;
       cartesianGrid.add(window.gridXY);
 
-      // XZ plane (Y = 0) - VERTICAL wall in Z-up (front/back) - Red (faded)
-      const colorXZ = 0x440000;  // Dark red - hairline
+      // XZ plane (Y = 0) - VERTICAL wall in Z-up (front/back) - Red
+      const colorXZ = 0xff0000;  // Bright red
       window.gridXZ = new THREE.GridHelper(gridSize, divisions, colorXZ, colorXZ);
       // GridHelper default - was horizontal in Y-up, now vertical in Z-up (notation swap)
       window.gridXZ.visible = false;  // Hidden by default
+      // Set material opacity to match WXYZ grids
+      window.gridXZ.material.transparent = true;
+      window.gridXZ.material.opacity = 0.4;
       cartesianGrid.add(window.gridXZ);
 
-      // YZ plane (X = 0) - VERTICAL wall in Z-up (left/right) - Blue (faded)
-      const colorYZ = 0x000044;  // Dark blue - hairline
+      // YZ plane (X = 0) - VERTICAL wall in Z-up (left/right) - Blue
+      const colorYZ = 0x0000ff;  // Bright blue
       window.gridYZ = new THREE.GridHelper(gridSize, divisions, colorYZ, colorYZ);
       window.gridYZ.rotation.z = Math.PI / 2;  // Same rotation as Y-up YZ had
       window.gridYZ.visible = false;  // Hidden by default
+      // Set material opacity to match WXYZ grids
+      window.gridYZ.material.transparent = true;
+      window.gridYZ.material.opacity = 0.4;
       cartesianGrid.add(window.gridYZ);
 
       scene.add(cartesianGrid);
