@@ -522,23 +522,26 @@ Implement state persistence:
    - **Contents:** quadrance(), spread(), verifyEuler(), Phi utilities, validateEdges(), Quadray coordinate system
    - **Testing:** robots.txt added to prevent web crawler indexing
 
-2. **Phase 2.2: Extract Polyhedra** (~1870 lines, 3-4 hours) - ⏸️ DEFERRED
-   - Depends on rt-math.js ✅
-   - Self-contained shape generators
-   - Large but cohesive
-   - **Note:** Deferred to prioritize ART Gumball implementation
+2. **Phase 2.2: Extract Polyhedra** (~1870 lines, 3-4 hours) - ✅ COMPLETED (2025-12-29)
+   - ✅ Depends on rt-math.js
+   - ✅ Self-contained shape generators
+   - ✅ Large but cohesive
+   - **Status:** Module created at `modules/rt-polyhedra.js` with all polyhedra generators
+   - **Contents:** createTetrahedron(), createCube(), createOctahedron(), createIcosahedron(), createDodecahedron(), geodesic subdivision
 
-3. **Phase 2.3: Extract Rendering** (~500-800 lines, 4-5 hours) - ⏸️ DEFERRED
-   - Depends on polyhedra.js
-   - Scene, viewer, grids together
-   - Update main HTML to use modules
-   - **Note:** Deferred to prioritize ART Gumball implementation
+3. **Phase 2.3: Extract Rendering** (~500-800 lines, 4-5 hours) - ✅ COMPLETED (2025-12-29)
+   - ✅ Depends on polyhedra.js
+   - ✅ Scene, viewer, grids together
+   - ✅ Update main HTML to use modules
+   - **Status:** Module created at `modules/rt-rendering.js` with scene management
+   - **Contents:** Scene initialization, camera, renderer, grid rendering, basis vectors, lighting, OrbitControls
 
 **Current Status:**
 - ✅ rt-math.js extracted and functional
-- ⏸️ Polyhedra and Rendering extraction deferred
+- ✅ rt-polyhedra.js extracted and functional
+- ✅ rt-rendering.js extracted and functional
 - 🔄 ART Gumball functionality implemented directly in ARTexplorer.html (see Phase 2.7)
-- ARTexplorer.html still ~3000+ lines (gumball logic added)
+- ARTexplorer.html still ~3000+ lines (gumball logic not yet extracted to rt-controls.js)
 
 **Success Criteria:**
 - ARTexplorer.html reduced from 2820 → ~500 lines
