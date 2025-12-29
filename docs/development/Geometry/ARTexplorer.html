@@ -2402,6 +2402,7 @@
         mouse = new THREE.Vector2();
 
         // Mouse down - start dragging
+        // Use capture phase (true) to intercept before OrbitControls
         renderer.domElement.addEventListener("mousedown", (event) => {
           // Only work if a gumball tool is active and it's Move mode
           if (!currentGumballTool || currentGumballTool !== "move") return;
@@ -2466,11 +2467,15 @@
               }
             }
           }
-        });
+        }, { capture: true }); // Capture phase to intercept before OrbitControls
 
         // Mouse move - perform dragging
         renderer.domElement.addEventListener("mousemove", (event) => {
           if (!isDragging || !selectedHandle) return;
+
+          // Prevent orbit controls from receiving this event
+          event.preventDefault();
+          event.stopPropagation();
 
           console.log("🔄 Dragging...");
 
@@ -2542,17 +2547,23 @@
             // Update drag start point for next frame
             dragStartPoint.copy(currentPoint);
           }
-        });
+        }, { capture: true }); // Capture phase to intercept before OrbitControls
 
         // Mouse up - stop dragging
-        renderer.domElement.addEventListener("mouseup", () => {
+        renderer.domElement.addEventListener("mouseup", (event) => {
           if (isDragging) {
+            // Prevent orbit controls from receiving this event
+            event.preventDefault();
+            event.stopPropagation();
+
             isDragging = false;
             selectedHandle = null;
             controls.enabled = true; // Re-enable orbit controls
             selectedPolyhedra = [];
+
+            console.log("✅ Gumball drag ended - orbit controls re-enabled");
           }
-        });
+        }, { capture: true }); // Capture phase to intercept before OrbitControls
       } // End initGumballEventListeners
 
       initScene();
