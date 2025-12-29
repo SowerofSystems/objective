@@ -16,14 +16,11 @@
  * - https://www.youtube.com/watch?v=GJPJKPNb2Zg
  */
 
-(function() {
-  'use strict';
-
 /**
  * Rational Trigonometry (RT) Library
  * @namespace RT
  */
-window.RT = {
+export const RT = {
   /**
    * Quadrance (Q = distance²) - Wildberger's alternative to distance
    * Avoids sqrt, keeps calculations exact
@@ -108,7 +105,7 @@ window.RT = {
      * Deferred: only expands √5 when called
      * @returns {number} Golden ratio value
      */
-    value: function() {
+    value: function () {
       return 0.5 * (1 + this.sqrt5());
     },
 
@@ -117,7 +114,7 @@ window.RT = {
      * Derived from φ² - φ - 1 = 0
      * @returns {number} Golden ratio squared
      */
-    squared: function() {
+    squared: function () {
       return this.value() + 1;
     },
 
@@ -126,9 +123,9 @@ window.RT = {
      * Also equals (√5 - 1)/2
      * @returns {number} Reciprocal of golden ratio
      */
-    inverse: function() {
+    inverse: function () {
       return this.value() - 1;
-    }
+    },
   },
 
   /**
@@ -153,10 +150,10 @@ window.RT = {
         edge: [i, j],
         Q,
         error,
-        valid: error < tolerance
+        valid: error < tolerance,
       };
     });
-  }
+  },
 };
 
 /**
@@ -169,7 +166,7 @@ window.RT = {
  * @namespace Quadray
  * @requires THREE - THREE.js Vector3
  */
-window.Quadray = {
+export const Quadray = {
   /**
    * 4 basis vectors pointing to tetrahedral vertices inscribed in cube
    * These are the face normals of a regular tetrahedron
@@ -189,12 +186,12 @@ window.Quadray = {
    * Initialize basis vectors (call after THREE.js is loaded)
    * @param {Object} THREE - THREE.js library
    */
-  init: (THREE) => {
+  init: THREE => {
     Quadray.basisVectors = [
-      new THREE.Vector3( 1,  1,  1).normalize(),  // A (top-front-right)
-      new THREE.Vector3( 1, -1, -1).normalize(),  // B (bottom-back-right)
-      new THREE.Vector3(-1,  1, -1).normalize(),  // C (bottom-front-left)
-      new THREE.Vector3(-1, -1,  1).normalize()   // D (top-back-left)
+      new THREE.Vector3(1, 1, 1).normalize(), // A (top-front-right)
+      new THREE.Vector3(1, -1, -1).normalize(), // B (bottom-back-right)
+      new THREE.Vector3(-1, 1, -1).normalize(), // C (bottom-front-left)
+      new THREE.Vector3(-1, -1, 1).normalize(), // D (top-back-left)
     ];
   },
 
@@ -208,7 +205,7 @@ window.Quadray = {
    * @example
    * Quadray.zeroSumNormalize([1, 0, 0, 0]); // [0.75, -0.25, -0.25, -0.25]
    */
-  zeroSumNormalize: (coords) => {
+  zeroSumNormalize: coords => {
     const mean = (coords[0] + coords[1] + coords[2] + coords[3]) / 4;
     return coords.map(c => c - mean);
   },
@@ -240,7 +237,5 @@ window.Quadray = {
     }
 
     return result;
-  }
+  },
 };
-
-})(); // End IIFE
