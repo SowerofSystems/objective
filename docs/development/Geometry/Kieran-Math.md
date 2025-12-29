@@ -53,6 +53,7 @@ s = 1 - ((v₁ · v₂)² / (Q₁ · Q₂))
 2. ✅ Only use √ for final visualization (deferred sqrt expansion)
 3. ✅ Express all relationships algebraically (no trig functions)
 4. ❌ NO Math.PI, Math.sin, Math.cos, Math.tan, Math.atan, etc.
+5. ✅ Resolve rotations with Spread first vs. Angles for better rational results
 
 ---
 
@@ -81,7 +82,7 @@ So: `√(φ + 2) = √(φ² + 1)`
 
 **Question:** Is there a simpler form?
 
-### Vertex Quadrance Validation
+### Vertex Quadrance Validation - uses for grid tesselation lock for all scaling polyhedra
 
 ```
 Q_vertex = a² + b²
@@ -279,7 +280,52 @@ Or equivalently (for radius):
 √[(3φ + 2) / [3(φ + 2)]] = 9 / (7φ)
 ```
 
-**If this is true, it would simplify the code significantly!**
+**ANSWER (2025-12-28):**
+
+❌ **NO - These expressions are NOT algebraically equal.**
+
+**Proof by algebraic expansion:**
+
+Starting with right side:
+```
+(9 / (7φ))² = 81 / (49φ²)
+```
+
+Using φ² = φ + 1:
+```
+= 81 / (49(φ + 1))
+= 81 / (49φ + 49)
+```
+
+Left side:
+```
+(3φ + 2) / [3(φ + 2)] = (3φ + 2) / (3φ + 6)
+```
+
+Testing equality by cross-multiplication:
+```
+81(3φ + 6) ≟ (3φ + 2)(49φ + 49)
+243φ + 486 ≟ 147φ² + 147φ + 98φ + 98
+243φ + 486 ≟ 147φ² + 245φ + 98
+```
+
+Substituting φ² = φ + 1:
+```
+243φ + 486 ≟ 147(φ + 1) + 245φ + 98
+243φ + 486 ≟ 147φ + 147 + 245φ + 98
+243φ + 486 ≟ 392φ + 245
+```
+
+**Result:**
+```
+243φ + 486 ≠ 392φ + 245
+```
+
+The numerical similarity (both ≈ 0.6315) was **coincidental**. The correct formula remains:
+
+✅ **`Q_in/Q_out = (3φ + 2) / [3(φ + 2)]`**
+
+No code simplification possible. Current implementation is correct.
 
 ---
 
