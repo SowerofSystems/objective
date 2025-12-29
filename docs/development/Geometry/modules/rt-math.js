@@ -16,11 +16,14 @@
  * - https://www.youtube.com/watch?v=GJPJKPNb2Zg
  */
 
+(function() {
+  'use strict';
+
 /**
  * Rational Trigonometry (RT) Library
  * @namespace RT
  */
-export const RT = {
+window.RT = {
   /**
    * Quadrance (Q = distance²) - Wildberger's alternative to distance
    * Avoids sqrt, keeps calculations exact
@@ -166,7 +169,7 @@ export const RT = {
  * @namespace Quadray
  * @requires THREE - THREE.js Vector3
  */
-export const Quadray = {
+window.Quadray = {
   /**
    * 4 basis vectors pointing to tetrahedral vertices inscribed in cube
    * These are the face normals of a regular tetrahedron
@@ -239,3 +242,5 @@ export const Quadray = {
     return result;
   }
 };
+
+})(); // End IIFE

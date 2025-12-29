@@ -9,8 +9,10 @@
  * @requires rt-math.js
  */
 
-import { RT } from './rt-math.js';
+(function() {
+  'use strict';
 
+// Access RT from global scope (set by rt-math.js)
 // Access THREE.js from global scope (set by main HTML)
 
 
@@ -19,7 +21,7 @@ import { RT } from './rt-math.js';
  * All functions return {vertices, edges, faces}
  * @namespace Polyhedra
  */
-export const Polyhedra = {
+window.Polyhedra = {
     /**
      * Hexahedron (Cube) - vertices at (±1, ±1, ±1)
      * Edge quadrance Q = 4 (edge length = 2)
@@ -1122,3 +1124,5 @@ export const Polyhedra = {
       return { vertices, edges, faces };
     }
 };
+
+})(); // End IIFE
