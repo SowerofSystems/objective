@@ -806,10 +806,10 @@
 
             <!-- NOW Button -->
             <div class="control-item" style="margin-top: 15px">
-              <button id="nowButton" class="node-size-btn" style="width: 100%; background: #00ff88; color: #1a1a1a; font-weight: bold;">
+              <button id="nowButton" class="gumball-action-btn" style="width: 100%; background: #00ff88; color: #1a1a1a; font-weight: bold; padding: 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
                 🕐 NOW
               </button>
-              <div class="now-counter">
+              <div class="now-counter" style="text-align: center; margin-top: 5px; font-size: 12px; color: #888;">
                 Deposited: <span id="nowCount">0</span>
               </div>
             </div>
@@ -2341,6 +2341,46 @@
       let dragStartPoint = new THREE.Vector3();
       let selectedPolyhedra = []; // Will store currently selected polyhedra
       let editingBasis = null; // Localized gumball that follows selected Forms
+
+      // ========================================================================
+      // INSTANCE STATE (Simple tracking until rt-state-manager.js is created)
+      // ========================================================================
+      let depositedInstances = []; // Array of deposited instance snapshots
+      let depositedCount = 0;
+
+      // NOW button - deposit current Form as Instance
+      document.getElementById("nowButton").addEventListener("click", function() {
+        const selected = getSelectedPolyhedra();
+
+        if (selected.length === 0) {
+          console.warn("⚠️ No polyhedra selected - cannot deposit instance");
+          return;
+        }
+
+        // Create instance snapshot for each selected polyhedron
+        selected.forEach(poly => {
+          const instance = {
+            id: `instance_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            timestamp: Date.now(),
+            position: poly.position.clone(),
+            rotation: poly.rotation.clone(),
+            scale: poly.scale.clone(),
+            type: poly.userData.type || 'unknown',
+            // Store reference to the THREE.js group (not a copy - the actual object)
+            threeObject: poly
+          };
+
+          depositedInstances.push(instance);
+          depositedCount++;
+
+          console.log(`✅ Deposited instance: ${instance.id} at position (${instance.position.x.toFixed(2)}, ${instance.position.y.toFixed(2)}, ${instance.position.z.toFixed(2)})`);
+        });
+
+        // Update counter UI
+        document.getElementById("nowCount").textContent = depositedCount;
+
+        console.log(`📦 Total deposited instances: ${depositedCount}`);
+      });
 
       // Gumball tool selector functionality
       document.querySelectorAll(".gumball-tool-btn").forEach(btn => {
