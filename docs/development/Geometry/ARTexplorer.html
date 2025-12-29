@@ -1779,8 +1779,8 @@
       window.gridXZ.material.opacity = 0.4;
       cartesianGrid.add(window.gridXZ);
 
-      // YZ plane (X = 0) - VERTICAL wall in Z-up (left/right) - Blue
-      const colorYZ = 0x0000ff;  // Bright blue
+      // YZ plane (X = 0) - VERTICAL wall in Z-up (left/right) - Cyan
+      const colorYZ = 0x00ffff;  // Cyan (brighter than pure blue)
       window.gridYZ = new THREE.GridHelper(gridSize, divisions, colorYZ, colorYZ);
       window.gridYZ.rotation.z = Math.PI / 2;  // Same rotation as Y-up YZ had
       window.gridYZ.visible = false;  // Hidden by default
