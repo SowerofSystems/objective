@@ -59,6 +59,13 @@
               </div>
             </div>
           </div>
+          <div style="margin-top: 10px;">
+            <label style="font-size: 11px; color: #b0b0b0;">Grid Intervals</label>
+            <div class="slider-container">
+              <input type="range" id="cartesianTessSlider" min="12" max="120" step="12" value="12">
+              <span class="slider-value" id="cartesianTessValue">12</span>
+            </div>
+          </div>
           </div>
         </div>
         <div class="control-item">
@@ -150,6 +157,13 @@
               <div class="plane-toggle-switch active" data-plane="ivmYZ">
                 <div class="plane-toggle-slider"></div>
               </div>
+            </div>
+          </div>
+          <div style="margin-top: 10px;">
+            <label style="font-size: 11px; color: #b0b0b0;">Grid Intervals</label>
+            <div class="slider-container">
+              <input type="range" id="quadrayTessSlider" min="12" max="120" step="12" value="12">
+              <span class="slider-value" id="quadrayTessValue">12</span>
             </div>
           </div>
           <p class="info-text" style="font-size: 10px; margin-top: 5px;">Central Angle: Triangular faces tessellated vertex-to-vertex using tet edge length 2s√2 (corrected implementation without bugs)</p>
@@ -1724,8 +1738,11 @@
     function createCartesianGrid() {
       cartesianGrid = new THREE.Group();
 
+      // Read tessellation from slider (dynamic control)
+      const sliderElement = document.getElementById('cartesianTessSlider');
+      const divisions = sliderElement ? parseInt(sliderElement.value) : 12;
+
       const gridSize = 10;
-      const gridStep = 1;
       const gridColor = 0x444444;
 
       // Z-UP CONVENTION: Notation swap from Y-up
@@ -1734,19 +1751,19 @@
       // Just swap which planes get rotations - same rotation values as before
 
       // XY plane (Z = 0) - HORIZONTAL ground plane in Z-up
-      window.gridXY = new THREE.GridHelper(gridSize, gridSize / gridStep, gridColor, gridColor);
+      window.gridXY = new THREE.GridHelper(gridSize, divisions, gridColor, gridColor);
       window.gridXY.rotation.x = Math.PI / 2;  // Same rotation as Y-up XY had
       window.gridXY.visible = false;  // Hidden by default
       cartesianGrid.add(window.gridXY);
 
       // XZ plane (Y = 0) - VERTICAL wall in Z-up (front/back)
-      window.gridXZ = new THREE.GridHelper(gridSize, gridSize / gridStep, gridColor, gridColor);
+      window.gridXZ = new THREE.GridHelper(gridSize, divisions, gridColor, gridColor);
       // GridHelper default - was horizontal in Y-up, now vertical in Z-up (notation swap)
       window.gridXZ.visible = false;  // Hidden by default
       cartesianGrid.add(window.gridXZ);
 
       // YZ plane (X = 0) - VERTICAL wall in Z-up (left/right)
-      window.gridYZ = new THREE.GridHelper(gridSize, gridSize / gridStep, gridColor, gridColor);
+      window.gridYZ = new THREE.GridHelper(gridSize, divisions, gridColor, gridColor);
       window.gridYZ.rotation.z = Math.PI / 2;  // Same rotation as Y-up YZ had
       window.gridYZ.visible = false;  // Hidden by default
       cartesianGrid.add(window.gridYZ);
@@ -1955,7 +1972,10 @@
       ivmPlanes = new THREE.Group();
 
       const halfSize = 1.0;      // Tetrahedron halfSize (s) - matches dual tetrahedron
-      const tessellations = 12;  // Number of triangle copies in each direction (grid intervals)
+
+      // Read tessellation from slider (dynamic control)
+      const sliderElement = document.getElementById('quadrayTessSlider');
+      const tessellations = sliderElement ? parseInt(sliderElement.value) : 12;
 
       // Using nomenclature: W, X, Y, Z for Quadray basis (mapping to indices 0,1,2,3)
       // 6 planes from 6 combinations of 4 basis vectors (all Quadray planes)
@@ -2517,6 +2537,49 @@
     document.getElementById('opacitySlider').addEventListener('input', (e) => {
       document.getElementById('opacityValue').textContent = e.target.value;
       updateGeometry();
+    });
+
+    // Quadray Grid Tessellation Slider
+    document.getElementById('quadrayTessSlider').addEventListener('input', (e) => {
+      const tessValue = parseInt(e.target.value);
+      document.getElementById('quadrayTessValue').textContent = tessValue;
+
+      // Rebuild Central Angle Grids with new tessellation
+      scene.remove(ivmPlanes);
+      createIVMPlanes();
+
+      // Restore visibility state from active toggles
+      document.querySelectorAll('[data-plane^="ivm"]').forEach(toggle => {
+        const planeName = toggle.dataset.plane;
+        const isActive = toggle.classList.contains('active');
+        if (window[planeName]) {
+          window[planeName].visible = isActive;
+        }
+      });
+    });
+
+    // Cartesian Grid Tessellation Slider
+    document.getElementById('cartesianTessSlider').addEventListener('input', (e) => {
+      const tessValue = parseInt(e.target.value);
+      document.getElementById('cartesianTessValue').textContent = tessValue;
+
+      // Rebuild Cartesian Grids with new tessellation
+      scene.remove(cartesianGrid);
+      createCartesianGrid();
+
+      // Restore visibility state from active toggles
+      if (window.gridXY) {
+        const xyToggle = document.querySelector('[data-plane="XY"]');
+        window.gridXY.visible = xyToggle ? xyToggle.classList.contains('active') : false;
+      }
+      if (window.gridXZ) {
+        const xzToggle = document.querySelector('[data-plane="XZ"]');
+        window.gridXZ.visible = xzToggle ? xzToggle.classList.contains('active') : false;
+      }
+      if (window.gridYZ) {
+        const yzToggle = document.querySelector('[data-plane="YZ"]');
+        window.gridYZ.visible = yzToggle ? yzToggle.classList.contains('active') : false;
+      }
     });
 
     // Reset camera
