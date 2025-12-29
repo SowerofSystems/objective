@@ -2410,9 +2410,12 @@
             0.2
           );
 
+          editingBasis.add(arrow);
+
           // Add hit sphere at arrow tip (gumball handle)
-          // Making it semi-visible for debugging
+          // Calculate tip position in editingBasis local space
           const tipPosition = vec.clone().multiplyScalar(arrowLength);
+
           const hitSphere = new THREE.Mesh(
             new THREE.SphereGeometry(0.5, 16, 16), // Larger, higher quality
             new THREE.MeshBasicMaterial({
@@ -2422,13 +2425,15 @@
               depthTest: true
             })
           );
+
+          // Position sphere at tip in editingBasis local coordinates
           hitSphere.position.copy(tipPosition);
           hitSphere.userData.basisIndex = i;
           hitSphere.userData.basisAxis = vec.clone();
           hitSphere.userData.isGumballHandle = true;
-          arrow.add(hitSphere);
 
-          editingBasis.add(arrow);
+          // Add directly to editingBasis (not to arrow)
+          editingBasis.add(hitSphere);
         });
 
         scene.add(editingBasis);
