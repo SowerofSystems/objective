@@ -323,43 +323,79 @@ button:disabled {
    ART GUMBALL CONTROLS
    ============================================ */
 
-/* NOW Button */
-.now-button {
-  width: 100%;
-  padding: 15px;
-  font-size: 16px;
-  font-weight: bold;
-  background: #00ff88;
-  color: #1a1a1a;
-  border: none;
-  border-radius: 8px;
+/* Gumball Tool Selector (Move/Scale/Rotate) */
+.gumball-tool-selector {
+  display: flex;
+  gap: 5px;
+}
+
+.gumball-tool-btn {
+  flex: 1;
+  padding: 8px;
+  font-size: 11px;
+  background: #2a2a2a;
+  color: #b0b0b0;
+  border: 1px solid #444;
+  border-radius: 3px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
 }
 
-.now-button:hover {
-  background: #00dd77;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 255, 136, 0.4);
+.gumball-tool-btn:hover {
+  background: #353535;
+  border-color: #555;
 }
 
-.now-button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(0, 255, 136, 0.3);
+.gumball-tool-btn.active {
+  background: #4a9eff;
+  color: white;
+  border-color: #4a9eff;
+}
+
+/* Coordinate Input Fields */
+.coordinate-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+
+/* Four-column layout for WXYZ */
+.coordinate-inputs:has(#coordW) {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.coord-input {
+  width: 100%;
+  padding: 6px;
+  font-size: 11px;
+  background: #2a2a2a;
+  color: #b0b0b0;
+  border: 1px solid #444;
+  border-radius: 3px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.coord-input:focus {
+  outline: none;
+  border-color: #4a9eff;
+  background: #353535;
+}
+
+.coord-input::placeholder {
+  color: #666;
+  font-weight: bold;
 }
 
 /* NOW Counter */
 .now-counter {
-  margin-top: 10px;
+  margin-top: 8px;
   text-align: center;
-  font-size: 12px;
+  font-size: 11px;
   color: #b0b0b0;
-  font-weight: 500;
 }
 
 .now-counter span {
   color: #00ff88;
   font-weight: bold;
-  font-size: 14px;
 }

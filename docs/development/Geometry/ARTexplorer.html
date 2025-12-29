@@ -770,22 +770,43 @@
             <!-- Tool Mode -->
             <div class="control-item">
               <label style="font-size: 12px; color: #b0b0b0">Tool Mode</label>
-              <div class="node-size-selector">
-                <button class="node-size-btn active" data-tool="move">
+              <div class="gumball-tool-selector">
+                <button class="gumball-tool-btn active" data-gumball-tool="move">
                   Move
                 </button>
-                <button class="node-size-btn" data-tool="scale">
+                <button class="gumball-tool-btn" data-gumball-tool="scale">
                   Scale
                 </button>
-                <button class="node-size-btn" data-tool="rotate">
+                <button class="gumball-tool-btn" data-gumball-tool="rotate">
                   Rotate
                 </button>
               </div>
             </div>
 
+            <!-- Cartesian Coordinates (XYZ) -->
+            <div class="control-item" style="margin-top: 15px">
+              <label style="font-size: 12px; color: #b0b0b0">XYZ Coordinates</label>
+              <div class="coordinate-inputs">
+                <input type="number" id="coordX" class="coord-input" placeholder="X" step="0.1" value="0" />
+                <input type="number" id="coordY" class="coord-input" placeholder="Y" step="0.1" value="0" />
+                <input type="number" id="coordZ" class="coord-input" placeholder="Z" step="0.1" value="0" />
+              </div>
+            </div>
+
+            <!-- Quadray Coordinates (WXYZ) -->
+            <div class="control-item" style="margin-top: 10px">
+              <label style="font-size: 12px; color: #b0b0b0">WXYZ Coordinates</label>
+              <div class="coordinate-inputs">
+                <input type="number" id="coordW" class="coord-input" placeholder="W" step="0.1" value="0" />
+                <input type="number" id="coordX2" class="coord-input" placeholder="X" step="0.1" value="0" />
+                <input type="number" id="coordY2" class="coord-input" placeholder="Y" step="0.1" value="0" />
+                <input type="number" id="coordZ2" class="coord-input" placeholder="Z" step="0.1" value="0" />
+              </div>
+            </div>
+
             <!-- NOW Button -->
             <div class="control-item" style="margin-top: 15px">
-              <button id="nowButton" class="now-button">
+              <button id="nowButton" class="node-size-btn" style="width: 100%; background: #00ff88; color: #1a1a1a; font-weight: bold;">
                 🕐 NOW
               </button>
               <div class="now-counter">
