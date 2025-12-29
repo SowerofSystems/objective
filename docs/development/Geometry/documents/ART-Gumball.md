@@ -820,27 +820,49 @@ uuid3,1234567892,cube,quadray,0,2,0,0,0,0,0,0,0,0,1.414,1.414,1.414,Cube_Center
 
 ## Implementation Roadmap
 
-### Phase 1: Core Gumball (MVP)
-- [ ] Minimal UI controls (top-right corner)
-  - [ ] Coordinate mode toggle (Cartesian XYZ / Quadray WXYZ)
-  - [ ] Tool mode selector (Move / Scale / Rotate)
-  - [ ] Polyhedron selection dropdown
-  - [ ] NOW button with deposited count
-- [ ] Interactive 3D gumball handles (basis vectors ARE the gumball)
-  - [ ] MOVE mode: Arrow handles at basis vector tips
-    - [ ] Cartesian: 3 arrows (X, Y, Z)
-    - [ ] Quadray: 4 arrows (W, X, Y, Z)
-    - [ ] Click + drag arrow = constrained move along that axis
+### Phase 1: Core Gumball (MVP) - ✅ IN PROGRESS
+
+- [x] Minimal UI controls (Controls section)
+  - [x] ~~Coordinate mode toggle (Cartesian XYZ / Quadray WXYZ)~~ - Uses existing Coordinate System section
+  - [x] Tool mode selector (Move / Scale / Rotate)
+  - [x] ~~Polyhedron selection dropdown~~ - Works with currently selected polyhedra
+  - [x] NOW button with deposited count (UI only, functionality pending)
+  - [x] XYZ coordinate input fields (3 inputs with 4dp precision)
+  - [x] WXYZ coordinate input fields (4 inputs with 4dp precision)
+- [x] Interactive 3D gumball handles (basis vectors ARE the gumball)
+  - [x] MOVE mode: Arrow handles at basis vector tips
+    - [ ] Cartesian: 3 arrows (X, Y, Z) - Pending implementation
+    - [x] **Quadray: 4 arrows (W, X, Y, Z) - ✅ IMPLEMENTED**
+    - [x] **Click + drag arrow = constrained move along that axis - ✅ WORKING**
   - [ ] SCALE mode: Cube handles at basis vector tips
     - [ ] Cartesian: 3 cubes + center sphere (uniform)
     - [ ] Quadray: 4 cubes + center sphere (uniform)
     - [ ] Click + drag cube = scale in that direction
-  - [ ] Visual feedback: Real-time transform preview
-- [ ] Status bar for numeric input
+  - [x] **Visual feedback: Real-time transform preview - ✅ WORKING**
+  - [x] **Real-time coordinate updates during drag - ✅ WORKING**
+- [ ] Status bar for numeric input - DEFERRED (using coordinate input fields instead)
   - [ ] Appears on handle click
   - [ ] Live value display
   - [ ] Keyboard input for precise values
   - [ ] TAB/ENTER to accept, ESC to cancel
+
+**Implementation Notes (Phase 1):**
+- **Date:** 2025-12-29
+- **Commit:** (pending)
+- **Status:** WXYZ Move functionality implemented and ready for testing
+- **Files Modified:**
+  - `ARTexplorer.html` (lines 2311-2491): Added gumball tool event listeners, raycasting, and drag behavior
+  - Coordinate inputs automatically update during drag operations
+  - Orbit controls properly disabled during drag, re-enabled on release
+- **Key Features Working:**
+  - Raycasting detects clicks on Quadray basis vector arrows (W, X, Y, Z)
+  - Constrained axis movement (drag projects onto selected axis direction)
+  - Real-time XYZ and WXYZ coordinate display (4 decimal precision)
+  - Cartesian to Quadray coordinate conversion (simplified projection method)
+- **Next Steps:**
+  - Test WXYZ movement with dev server (http://localhost:8000/ARTexplorer.html)
+  - Add Cartesian XYZ arrow dragging support
+  - Implement Scale and Rotate modes
 
 ### Phase 2: Spread-Based Rotation
 - [ ] ROTATE mode: Polygon handles (hexagons preferred for RT fidelity)

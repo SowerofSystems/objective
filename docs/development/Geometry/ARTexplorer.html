@@ -771,7 +771,7 @@
             <div class="control-item">
               <label style="font-size: 12px; color: #b0b0b0">Tool Mode</label>
               <div class="gumball-tool-selector">
-                <button class="gumball-tool-btn active" data-gumball-tool="move">
+                <button class="gumball-tool-btn" data-gumball-tool="move">
                   Move
                 </button>
                 <button class="gumball-tool-btn" data-gumball-tool="scale">
@@ -787,9 +787,9 @@
             <div class="control-item" style="margin-top: 15px">
               <label style="font-size: 12px; color: #b0b0b0">XYZ Coordinates</label>
               <div class="coordinate-inputs">
-                <input type="number" id="coordX" class="coord-input" placeholder="X" step="0.0001" value="0.0000" />
-                <input type="number" id="coordY" class="coord-input" placeholder="Y" step="0.0001" value="0.0000" />
-                <input type="number" id="coordZ" class="coord-input" placeholder="Z" step="0.0001" value="0.0000" />
+                <input type="text" id="coordX" class="coord-input" placeholder="X" value="0.0000" />
+                <input type="text" id="coordY" class="coord-input" placeholder="Y" value="0.0000" />
+                <input type="text" id="coordZ" class="coord-input" placeholder="Z" value="0.0000" />
               </div>
             </div>
 
@@ -797,10 +797,10 @@
             <div class="control-item" style="margin-top: 10px">
               <label style="font-size: 12px; color: #b0b0b0">WXYZ Coordinates</label>
               <div class="coordinate-inputs">
-                <input type="number" id="coordW" class="coord-input" placeholder="W" step="0.0001" value="0.0000" />
-                <input type="number" id="coordX2" class="coord-input" placeholder="X" step="0.0001" value="0.0000" />
-                <input type="number" id="coordY2" class="coord-input" placeholder="Y" step="0.0001" value="0.0000" />
-                <input type="number" id="coordZ2" class="coord-input" placeholder="Z" step="0.0001" value="0.0000" />
+                <input type="text" id="coordW" class="coord-input" placeholder="W" value="0.0000" />
+                <input type="text" id="coordX2" class="coord-input" placeholder="X" value="0.0000" />
+                <input type="text" id="coordY2" class="coord-input" placeholder="Y" value="0.0000" />
+                <input type="text" id="coordZ2" class="coord-input" placeholder="Z" value="0.0000" />
               </div>
             </div>
 
@@ -1292,7 +1292,7 @@
         const arrowLength = totalBasisLength; // Total visual length
 
         const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00]; // R, G, B, Y
-        const labels = ["A", "B", "C", "D"];
+        const labels = ["W", "X", "Y", "Z"];
 
         Quadray.basisVectors.forEach((vec, i) => {
           const arrow = new THREE.ArrowHelper(
@@ -1303,6 +1303,23 @@
             headLength, // Head length = 0.3
             0.2
           );
+
+          // Add invisible sphere at arrow tip for easier clicking (gumball handle)
+          const tipPosition = vec.clone().multiplyScalar(arrowLength);
+          const hitSphere = new THREE.Mesh(
+            new THREE.SphereGeometry(0.3, 8, 8), // Larger hit target
+            new THREE.MeshBasicMaterial({
+              transparent: true,
+              opacity: 0, // Invisible
+              depthTest: false
+            })
+          );
+          hitSphere.position.copy(tipPosition);
+          hitSphere.userData.basisIndex = i; // Store which basis vector this is
+          hitSphere.userData.basisAxis = vec.clone(); // Store axis direction
+          hitSphere.userData.isGumballHandle = true; // Mark as gumball handle
+          arrow.add(hitSphere);
+
           quadrayBasis.add(arrow);
         });
 
@@ -2308,7 +2325,238 @@
         });
       });
 
+      // ========================================================================
+      // GUMBALL TOOL FUNCTIONALITY
+      // ========================================================================
+
+      // ========================================================================
+      // GUMBALL STATE
+      // ========================================================================
+
+      // Gumball state
+      let currentGumballTool = null; // null = off, "move", "scale", "rotate"
+      let isDragging = false;
+      let selectedHandle = null; // { type: 'quadray'|'cartesian', index: number, axis: Vector3 }
+      let dragPlane = null; // THREE.Plane for raycasting
+      let dragStartPoint = new THREE.Vector3();
+      let selectedPolyhedra = []; // Will store currently selected polyhedra
+
+      // Gumball tool selector functionality
+      document.querySelectorAll(".gumball-tool-btn").forEach(btn => {
+        btn.addEventListener("click", function () {
+          const tool = this.dataset.gumballTool;
+
+          // Toggle: if clicking active button, deactivate it
+          if (this.classList.contains("active")) {
+            this.classList.remove("active");
+            currentGumballTool = null;
+            console.log("Gumball disabled - orbit controls active");
+          } else {
+            // Remove active from all gumball tool buttons
+            document
+              .querySelectorAll(".gumball-tool-btn")
+              .forEach(b => b.classList.remove("active"));
+            // Add active to clicked button
+            this.classList.add("active");
+            currentGumballTool = tool;
+            console.log(`Gumball tool: ${tool}`);
+          }
+        });
+      });
+
+      // Raycaster for handle selection (will be initialized after scene)
+      let raycaster;
+      let mouse;
+
+      // Get selected polyhedra - find all visible polyhedra groups in the scene
+      function getSelectedPolyhedra() {
+        const selected = [];
+
+        // Search through all groups for visible polyhedra
+        const groups = [
+          cubeGroup,
+          tetrahedronGroup,
+          dualTetrahedronGroup,
+          octahedronGroup,
+          icosahedronGroup,
+          dodecahedronGroup,
+          dualIcosahedronGroup,
+          cuboctahedronGroup,
+          rhombicDodecahedronGroup
+        ];
+
+        // Add the entire group (not individual meshes) so they move together
+        groups.forEach(group => {
+          if (group && group.visible && group.children.length > 0) {
+            selected.push(group);
+          }
+        });
+
+        console.log(`Found ${selected.length} visible polyhedra groups`);
+        return selected;
+      }
+
+      // Initialize gumball mouse event listeners (called after initScene)
+      function initGumballEventListeners() {
+        raycaster = new THREE.Raycaster();
+        mouse = new THREE.Vector2();
+
+        // Mouse down - start dragging
+        renderer.domElement.addEventListener("mousedown", (event) => {
+          // Only work if a gumball tool is active and it's Move mode
+          if (!currentGumballTool || currentGumballTool !== "move") return;
+
+          // Convert mouse position to normalized device coordinates
+          const rect = renderer.domElement.getBoundingClientRect();
+          mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+          mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+          raycaster.setFromCamera(mouse, camera);
+
+          // Check if we hit a Quadray basis vector arrow (via invisible hit spheres)
+          if (quadrayBasis && quadrayBasis.visible) {
+            // Collect all gumball handle hit spheres
+            const hitTargets = [];
+            quadrayBasis.traverse(obj => {
+              if (obj.userData.isGumballHandle) {
+                hitTargets.push(obj);
+              }
+            });
+
+            const intersects = raycaster.intersectObjects(hitTargets, false);
+
+            console.log(`Raycaster intersects: ${intersects.length}`);
+
+            if (intersects.length > 0) {
+              // Get the first intersected handle
+              const handle = intersects[0].object;
+
+              if (handle.userData.isGumballHandle) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                isDragging = true;
+                controls.enabled = false; // Disable orbit controls during drag
+
+                // Get the basis vector direction from userData
+                const axisDirection = handle.userData.basisAxis.clone();
+                const basisIndex = handle.userData.basisIndex;
+
+                selectedHandle = {
+                  type: "quadray",
+                  index: basisIndex,
+                  axis: axisDirection,
+                };
+
+                // Create a drag plane perpendicular to camera view
+                const cameraDirection = new THREE.Vector3();
+                camera.getWorldDirection(cameraDirection);
+                dragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+                  cameraDirection,
+                  new THREE.Vector3(0, 0, 0)
+                );
+
+                // Get starting point
+                raycaster.ray.intersectPlane(dragPlane, dragStartPoint);
+
+                // Store selected polyhedra
+                selectedPolyhedra = getSelectedPolyhedra();
+
+                console.log(`✅ Gumball handle selected: axis ${basisIndex}, polyhedra count: ${selectedPolyhedra.length}`);
+              }
+            }
+          }
+        });
+
+        // Mouse move - perform dragging
+        renderer.domElement.addEventListener("mousemove", (event) => {
+          if (!isDragging || !selectedHandle) return;
+
+          console.log("🔄 Dragging...");
+
+          // Update mouse position
+          const rect = renderer.domElement.getBoundingClientRect();
+          mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+          mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+          raycaster.setFromCamera(mouse, camera);
+
+          // Get current point on drag plane
+          const currentPoint = new THREE.Vector3();
+          raycaster.ray.intersectPlane(dragPlane, currentPoint);
+
+          if (currentPoint) {
+            // Calculate movement vector
+            const movement = new THREE.Vector3().subVectors(currentPoint, dragStartPoint);
+
+            // Project movement onto the selected axis (constrained movement)
+            const axisMovement = movement.dot(selectedHandle.axis);
+
+            // Apply sensitivity multiplier for more responsive dragging
+            const sensitivity = 5.0; // Amplify movement for better responsiveness
+            const constrainedMovement = selectedHandle.axis.clone().multiplyScalar(axisMovement * sensitivity);
+
+            console.log(`Movement: ${(axisMovement * sensitivity).toFixed(4)}, Polyhedra: ${selectedPolyhedra.length}`);
+
+            // Move all selected polyhedra
+            selectedPolyhedra.forEach(poly => {
+              poly.position.add(constrainedMovement);
+
+              // Snap to grid (0.1 increments for precise RT positioning)
+              const gridSize = 0.1;
+              poly.position.x = Math.round(poly.position.x / gridSize) * gridSize;
+              poly.position.y = Math.round(poly.position.y / gridSize) * gridSize;
+              poly.position.z = Math.round(poly.position.z / gridSize) * gridSize;
+            });
+
+            // Update coordinate inputs
+            if (selectedPolyhedra.length > 0) {
+              const pos = selectedPolyhedra[0].position;
+
+              // Update XYZ coordinates
+              document.getElementById("coordX").value = pos.x.toFixed(4);
+              document.getElementById("coordY").value = pos.y.toFixed(4);
+              document.getElementById("coordZ").value = pos.z.toFixed(4);
+
+              // Convert to WXYZ (reverse of Quadray.toCartesian)
+              // For now, display placeholder - proper conversion needs implementation
+              // This is a simplified approximation
+              const basisVectors = Quadray.basisVectors;
+              let wxyz = [0, 0, 0, 0];
+
+              // Simple projection onto basis vectors
+              for (let i = 0; i < 4; i++) {
+                wxyz[i] = pos.dot(basisVectors[i]);
+              }
+
+              // Apply zero-sum normalization
+              const mean = (wxyz[0] + wxyz[1] + wxyz[2] + wxyz[3]) / 4;
+              wxyz = wxyz.map(c => c - mean);
+
+              document.getElementById("coordW").value = wxyz[0].toFixed(4);
+              document.getElementById("coordX2").value = wxyz[1].toFixed(4);
+              document.getElementById("coordY2").value = wxyz[2].toFixed(4);
+              document.getElementById("coordZ2").value = wxyz[3].toFixed(4);
+            }
+
+            // Update drag start point for next frame
+            dragStartPoint.copy(currentPoint);
+          }
+        });
+
+        // Mouse up - stop dragging
+        renderer.domElement.addEventListener("mouseup", () => {
+          if (isDragging) {
+            isDragging = false;
+            selectedHandle = null;
+            controls.enabled = true; // Re-enable orbit controls
+            selectedPolyhedra = [];
+          }
+        });
+      } // End initGumballEventListeners
+
       initScene();
+      initGumballEventListeners(); // Initialize gumball after scene is ready
       animate();
 
       // Update info overlay
