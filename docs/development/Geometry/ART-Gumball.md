@@ -141,8 +141,8 @@ For two lines forming an angle:
 
 **Example from diagram:**
 - R_q = 2, Q_q = 1 → s = 0.5 (45°)
-- R_q = 5, Q_q = 1 → s = 0.2 (≈26.56°)
-- R_q = 10, Q_q = 1 → s = 0.1 (≈18.43°)
+- R_q = 5, Q_q = 1 → s = 0.2 (≈26.56...°)
+- R_q = 10, Q_q = 1 → s = 0.1 (≈18.43...°)
 
 #### Parameters
 
@@ -279,7 +279,7 @@ function applySpreadRotations(polyhedron, rotations) {
 
 ### Concept
 
-Each "Now" is an **immutable snapshot** of a polyhedron's configuration at a moment in shape-space. Users manipulate a "working" polyhedron using the gumball, then press **"Now"** to deposit that configuration as a permanent instance.
+Each "Now" is an **immutable snapshot** of a polyhedron's configuration at a moment in shape-space. Users manipulate a "working" polyhedron using the gumball, then press **"Now"** to deposit that configuration as a permanent instance, with position, scale, rotation noted in whatever system it was created in (XYZ/WXYZ) and stored in StateManager (able to export via CSV or other formats)
 
 ### Now Data Structure
 
@@ -545,68 +545,209 @@ const nowCollection = {
 
 ## User Interface
 
-### Gumball Control Panel
+### Interactive Gumball Handles (3D Viewport)
 
+The ART Gumball uses the **actual basis vectors as interactive handles** - similar to Maya, Blender, or Rhino gumballs. NO separate control panel needed.
+
+#### Handle Types by Operation
+
+**MOVE Handles** - Arrow tips at end of each basis vector
 ```
-┌─────────────────────────────────────────┐
-│ ART GUMBALL                             │
-├─────────────────────────────────────────┤
-│ Polyhedron: [Tetrahedron ▼]            │
-│                                          │
-│ ┌─ Coordinate Mode ───────────────────┐ │
-│ │ ⚪ Cartesian (XYZ)  ⚫ Quadray (WXYZ)│ │
-│ └───────────────────────────────────── ┘ │
-│                                          │
-│ ┌─ POSITION ────────────────────────── ┐ │
-│ │ W: [0.00] ◀▬▬▬●▬▬▬▶                │ │
-│ │ X: [0.00] ◀▬▬▬●▬▬▬▶                │ │
-│ │ Y: [0.00] ◀▬▬▬●▬▬▬▶                │ │
-│ │ Z: [0.00] ◀▬▬▬●▬▬▬▶                │ │
-│ └───────────────────────────────────── ┘ │
-│                                          │
-│ ┌─ ROTATION (Spread) ──────────────── ┐ │
-│ │ WX plane: [0.00] ◀▬▬▬●▬▬▬▶  [Exact▼]│ │
-│ │ WY plane: [0.00] ◀▬▬▬●▬▬▬▶  [Exact▼]│ │
-│ │ WZ plane: [0.00] ◀▬▬▬●▬▬▬▶  [Exact▼]│ │
-│ │ XY plane: [0.00] ◀▬▬▬●▬▬▬▶  [Exact▼]│ │
-│ │ XZ plane: [0.00] ◀▬▬▬●▬▬▬▶  [Exact▼]│ │
-│ │ YZ plane: [0.00] ◀▬▬▬●▬▬▬▶  [Exact▼]│ │
-│ └───────────────────────────────────── ┘ │
-│                                          │
-│ ┌─ SCALE ──────────────────────────── ┐ │
-│ │ ☑ Uniform: [1.00] ◀▬▬▬●▬▬▬▶        │ │
-│ │ X: [1.00] Y: [1.00] Z: [1.00]      │ │
-│ └───────────────────────────────────── ┘ │
-│                                          │
-│ ┌─ DEPOSIT ────────────────────────── ┐ │
-│ │ Label: [Tet_001____________]        │ │
-│ │ Tags:  [lattice, origin____]        │ │
-│ │                                      │ │
-│ │         [   🕐 NOW   ]              │ │
-│ │                                      │ │
-│ │ Nows deposited: 0                   │ │
-│ └───────────────────────────────────── ┘ │
-│                                          │
-│ [Reset] [Export Nows] [Import Nows]    │
-└─────────────────────────────────────────┘
+Quadray Mode (WXYZ):
+  - 4 arrow handles (W, X, Y, Z directions)
+  - Click + drag arrow = constrained move along that basis vector
+  - Color-coded: W=Yellow, X=Red, Y=Blue, Z=Green
+
+Cartesian Mode (XYZ):
+  - 3 arrow handles (X, Y, Z directions)
+  - Click + drag arrow = constrained move along that axis
+  - Color-coded: X=Red, Y=Green, Z=Blue
 ```
 
-### Exact Spread Dropdown
+**SCALE Handles** - Cubes at end of each basis vector
+```
+Quadray Mode (WXYZ):
+  - 4 cube handles (W, X, Y, Z directions)
+  - Click + drag cube = scale in that direction
+  - Central sphere at origin = uniform scale all directions
+  - Color-coded to match basis vectors
 
-For each spread slider, provide exact algebraic values:
+Cartesian Mode (XYZ):
+  - 3 cube handles (X, Y, Z directions)
+  - Click + drag cube = scale in that direction
+  - Central sphere at origin = uniform scale all directions
+  - Color-coded to match axes
+```
+
+**ROTATE Handles** - Circles/hexagons at planes between basis vectors
+```
+Quadray Mode (WXYZ):
+  - 6 rotation rings (WX, WY, WZ, XY, XZ, YZ planes)
+  - Click + drag ring = rotation in that plane (spread-based)
+  - Rings positioned at midpoint between two basis vectors
+  - Color: Blend of two basis colors
+
+Cartesian Mode (XYZ):
+  - 3 rotation rings (XY, XZ, YZ planes)
+  - Click + drag ring = rotation in that plane (spread-based)
+  - Rings positioned perpendicular to third axis
+  - Color: Blend of two axis colors
+```
+
+#### Visual Design
 
 ```
-[Exact ▼]
-├─ 0 (Parallel)
-├─ 1/6
-├─ 1/4
-├─ 1/3 (Tetrahedral)
-├─ 1/2 (45°)
-├─ 2/3
-├─ 3/4
-├─ 1 (Perpendicular)
-└─ Custom...
+QUADRAY GUMBALL (WXYZ Mode):
+
+              Z (Green)
+                ▲
+                │ ●─── Z-scale cube (green)
+                │/
+                ◯  <── YZ rotation ring (cyan)
+               /│
+              / │
+             /  │
+    W (Yellow)  │
+        ▲       │
+        │\      │
+        │ ●─────┼──────● X (Red)
+        │  \    │     /│
+        │   \   │    / │ ●─── X-scale cube (red)
+        ●────\──┼───/──◯
+       /|\    \ │  /  / <── XY rotation ring (magenta)
+      / │ \    \│ /  /
+     /  │  \    ◯  /
+    ●───┼───────●─/
+   /    │      / │/
+  /     │     /  │
+ ●      │    ●   │
+W-cube  │  Y-cube│
+        ▼        ▼
+      Y (Blue)  Origin Sphere (uniform scale)
+
+
+CARTESIAN GUMBALL (XYZ Mode):
+
+              Z (Blue)
+                ▲
+                │ ●─── Z-scale cube (blue)
+                │
+                │
+                ◯  <── YZ rotation ring (cyan)
+                │
+                │
+                │
+                ●─────────────────● Y (Green)
+               /│                 │
+              / │                 │ ●─── Y-scale cube (green)
+             /  │                 │
+            /   ◯  <── XY rotation ring (yellow)
+           /    │
+          ●─────┼─────●
+         /│     │    /
+        / │     │   /
+       /  │     │  /
+      ●   │     ● ●─── X-scale cube (red)
+    X-cube│    Origin Sphere
+          ▼
+       X (Red)
 ```
+
+### Status Bar / Streaming Console
+
+**Location:** Top or bottom of viewport (user preference)
+
+**Appears:** When user starts an operation (click on handle)
+
+**Purpose:** Numeric input completion for precise control
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ MOVE W: [____] | TAB to accept | ESC to cancel | NOW to deposit │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Interaction Flow
+
+1. **User clicks arrow handle (e.g., W-axis move)**
+   - Status bar appears: `MOVE W: [____]`
+   - Polyhedron follows mouse in W direction
+   - Real-time numeric display shows current value
+
+2. **User types value** (e.g., `2.5`)
+   - Status bar: `MOVE W: [2.5_]`
+   - Polyhedron jumps to exact position
+   - TAB or ENTER to accept
+
+3. **User presses NOW button** (or keyboard shortcut `N`)
+   - Current transform deposited as "Now" instance
+   - Counter increments
+   - Working polyhedron remains for next transform
+
+#### Status Bar States
+
+```
+IDLE:
+[No active operation]
+
+MOVE (Quadray W):
+MOVE W: [2.500] | TAB: accept | ESC: cancel | N: NOW
+
+ROTATE (XY plane, spread):
+ROTATE XY: s=[0.500] (45°) | TAB: accept | ESC: cancel | N: NOW
+Exact spreads: [0] [1/6] [1/4] [1/3] [1/2] [2/3] [3/4] [1]
+
+SCALE (Uniform):
+SCALE UNIFORM: [1.414] | TAB: accept | ESC: cancel | N: NOW
+
+NOW DEPOSITED:
+✓ Now #5 deposited: Tet_001 at (W:2.5, X:0, Y:0, Z:0)
+```
+
+### Exact Spread Presets
+
+When rotating (clicking rotation ring), status bar shows preset spread buttons:
+
+```
+ROTATE XY plane:
+┌──────────────────────────────────────────────────────────────┐
+│ s=[____] │ [0°] [1/6] [1/4] [1/3·tet] [1/2·45°] [2/3] [3/4] [1·90°] │
+└──────────────────────────────────────────────────────────────┘
+```
+
+Click preset = instantly apply that spread value
+
+### Minimal UI Elements
+
+**Top-right corner (always visible):**
+```
+┌─────────────────────────────┐
+│ Mode: [Quadray ▼]           │
+│ Tool: [Move ▼]              │
+│ Poly: [Tetrahedron ▼]       │
+│                             │
+│ [🕐 NOW] Deposited: 3      │
+│                             │
+│ [Export] [Import] [Clear]   │
+└─────────────────────────────┘
+```
+
+**Mode dropdown:**
+- Cartesian (XYZ)
+- Quadray (WXYZ)
+
+**Tool dropdown:**
+- Move
+- Rotate
+- Scale
+
+**Poly dropdown:**
+- Tetrahedron
+- Cube
+- Octahedron
+- Icosahedron
+- Dodecahedron
+- etc.
 
 ## StateManager Integration
 
