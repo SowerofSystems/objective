@@ -2687,15 +2687,6 @@
               const handle = intersects[0].object;
 
               if (handle.userData.isGumballHandle) {
-                // Check if any coordinate system is enabled before allowing drag
-                const showCartesian = document.getElementById("showCartesianBasis").checked;
-                const showQuadray = document.getElementById("showQuadray").checked;
-
-                if (!showCartesian && !showQuadray) {
-                  console.warn("⚠️ Move tool disabled: No coordinate system enabled. Enable XYZ or WXYZ basis to use Move tool.");
-                  return;
-                }
-
                 event.preventDefault();
                 event.stopPropagation();
 
@@ -2776,47 +2767,11 @@
             selectedPolyhedra.forEach(poly => {
               poly.position.add(constrainedMovement);
 
-              // Smart grid snapping based on active coordinate system and handle type
-              const showCartesian = document.getElementById("showCartesianBasis").checked;
-              const showQuadray = document.getElementById("showQuadray").checked;
-
-              // Determine which grid to snap to
-              let gridSize;
-              let snapMode;
-              if (showCartesian && showQuadray) {
-                // Both enabled: snap based on which handle type is being dragged
-                if (selectedHandle.type === 'quadray') {
-                  gridSize = Math.sqrt(6) / 4; // Quadray grid interval ≈ 0.6124
-                  snapMode = 'WXYZ';
-                } else {
-                  gridSize = 0.1; // Cartesian grid interval
-                  snapMode = 'XYZ';
-                }
-              } else if (showQuadray) {
-                // Only Quadray enabled: always snap to Quadray grid
-                gridSize = Math.sqrt(6) / 4;
-                snapMode = 'WXYZ';
-              } else if (showCartesian) {
-                // Only Cartesian enabled: always snap to Cartesian grid
-                gridSize = 0.1;
-                snapMode = 'XYZ';
-              } else {
-                // Neither enabled: no snapping (but this shouldn't happen - move tool should be disabled)
-                gridSize = null;
-                snapMode = 'NONE';
-              }
-
-              // Apply grid snapping if gridSize is defined
-              if (gridSize !== null) {
-                poly.position.x = Math.round(poly.position.x / gridSize) * gridSize;
-                poly.position.y = Math.round(poly.position.y / gridSize) * gridSize;
-                poly.position.z = Math.round(poly.position.z / gridSize) * gridSize;
-              }
-
-              // Log snap mode for debugging
-              if (selectedPolyhedra.indexOf(poly) === 0) {
-                console.log(`📐 Snap mode: ${snapMode}, Grid size: ${gridSize ? gridSize.toFixed(4) : 'none'}`);
-              }
+              // Snap to grid (0.1 increments for precise RT positioning)
+              const gridSize = 0.1;
+              poly.position.x = Math.round(poly.position.x / gridSize) * gridSize;
+              poly.position.y = Math.round(poly.position.y / gridSize) * gridSize;
+              poly.position.z = Math.round(poly.position.z / gridSize) * gridSize;
             });
 
             // Update editing basis to follow the Forms
