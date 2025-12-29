@@ -46,23 +46,24 @@ Refactor ARTexplorer into modular components separating UI, Controls, Rendering,
 ARTexplorer/
 ├── ARTexplorer.html           // Main shell + UI + event handlers (~500 lines)
 ├── modules/
-│   ├── rt-math.js             // ~130 lines: RT calculations (quadrance, spread)
-│   ├── polyhedra.js           // ~1870 lines: All polyhedra generators
-│   ├── rendering.js           // ~500-800 lines: Scene, viewer, grids, basis
-│   ├── state-manager.js       // Future: Application state management
-│   ├── file-handler.js        // Future: Import/Export/Save operations
-│   └── gumball.js             // Future: ART Gumball transform system
+│   ├── rt-math.js             // ~260 lines: RT calculations (quadrance, spread)
+│   ├── rt-polyhedra.js        // ~1122 lines: All polyhedra generators
+│   ├── rt-rendering.js        // ~781 lines: Scene, viewer, grids, basis
+│   ├── rt-state-manager.js    // Future: Application state management
+│   ├── rt-file-handler.js     // Future: Import/Export/Save operations
+│   └── rt-gumball.js          // Future: ART Gumball transform system
 └── styles/
     └── art.css (existing)
 ```
 
 **Why This Structure:**
 - **rt-math.js**: Small, reusable, pure functions - easy to test independently
-- **polyhedra.js**: Large but cohesive - all shape definitions in one place
-- **rendering.js**: All THREE.js code together - scene/viewer/grids are tightly coupled
-- **state-manager.js**: Proven pattern from TEUI/OBJECTIVE - manages app state
-- **file-handler.js**: Proven pattern from TEUI/OBJECTIVE - handles I/O operations
-- **gumball.js**: Complex feature, deserves its own module when implemented
+- **rt-polyhedra.js**: Large but cohesive - all shape definitions in one place
+- **rt-rendering.js**: All THREE.js code together - scene/viewer/grids are tightly coupled
+- **rt-state-manager.js**: Proven pattern from TEUI/OBJECTIVE - manages app state
+- **rt-file-handler.js**: Proven pattern from TEUI/OBJECTIVE - handles I/O operations
+- **rt-gumball.js**: Complex feature, deserves its own module when implemented
+- **rt- prefix**: Avoids confusion with core TEUI/OBJECTIVE app modules
 
 **Technical Approach:**
 - Use native ES6 modules (`<script type="module">`)
