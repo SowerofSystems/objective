@@ -381,6 +381,113 @@
         </div>
       </div>
 
+      <!-- Controls -->
+      <div class="control-group">
+        <h3>
+          <span class="section-toggle collapsed" data-target="controls-section"></span>
+          Controls
+        </h3>
+        <div id="controls-section" class="section-content collapsed">
+          <p class="info-text">ART Gumball controls - Coming soon</p>
+          <p class="info-text" style="font-size: 10px;">
+            Move, Scale, Rotate (spread-based), NOW button
+          </p>
+        </div>
+      </div>
+
+      <!-- File -->
+      <div class="control-group">
+        <h3>
+          <span class="section-toggle collapsed" data-target="file-section"></span>
+          File
+        </h3>
+        <div id="file-section" class="section-content collapsed">
+          <div class="control-item">
+            <button id="importBtn" disabled>Import (.json)</button>
+          </div>
+          <div class="control-item">
+            <button id="exportBtn" disabled>Export (.json)</button>
+          </div>
+          <div class="control-item">
+            <button id="saveBtn" disabled>Save (Local Storage)</button>
+          </div>
+          <p class="info-text" style="font-size: 10px;">
+            StateManager integration - Coming soon
+          </p>
+        </div>
+      </div>
+
+      <!-- View -->
+      <div class="control-group">
+        <h3>
+          <span class="section-toggle collapsed" data-target="view-section"></span>
+          View
+        </h3>
+        <div id="view-section" class="section-content collapsed">
+          <div class="control-item">
+            <label style="font-size: 12px; color: #b0b0b0;">Camera Presets</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 5px;">
+              <button id="viewTop" disabled>Top</button>
+              <button id="viewBottom" disabled>Bottom</button>
+              <button id="viewLeft" disabled>Left</button>
+              <button id="viewRight" disabled>Right</button>
+              <button id="viewFront" disabled>Front</button>
+              <button id="viewBack" disabled>Back</button>
+            </div>
+          </div>
+          <div class="control-item" style="margin-top: 10px;">
+            <label class="checkbox-label">
+              <input type="checkbox" id="orthoPerspective" disabled>
+              Orthographic (Plan/Elevation)
+            </label>
+          </div>
+          <p class="info-text" style="font-size: 10px;">
+            Camera controller - Coming soon
+          </p>
+        </div>
+      </div>
+
+      <!-- Papercut -->
+      <div class="control-group">
+        <h3>
+          <span class="section-toggle collapsed" data-target="papercut-section"></span>
+          Papercut
+        </h3>
+        <div id="papercut-section" class="section-content collapsed">
+          <div class="control-item">
+            <label style="font-size: 12px; color: #b0b0b0;">Line Weight</label>
+            <div class="slider-container">
+              <input type="range" id="lineWeight" min="1" max="5" value="1" disabled>
+              <span class="slider-value" id="lineWeightValue">1</span>
+            </div>
+          </div>
+          <div class="control-item">
+            <label class="checkbox-label">
+              <input type="checkbox" id="backfaceCulling" disabled>
+              Backface Culling
+            </label>
+          </div>
+          <div class="control-item">
+            <label class="checkbox-label">
+              <input type="checkbox" id="enableCutPlane" disabled>
+              Enable Cut Plane
+            </label>
+          </div>
+          <div class="control-item">
+            <label style="font-size: 12px; color: #b0b0b0;">Print Extents</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 5px;">
+              <button id="fitA4" disabled>A4</button>
+              <button id="fitLetter" disabled>Letter</button>
+              <button id="fitA3" disabled>A3</button>
+              <button id="fitCustom" disabled>Custom</button>
+            </div>
+          </div>
+          <p class="info-text" style="font-size: 10px;">
+            Print optimization tools - Coming soon
+          </p>
+        </div>
+      </div>
+
       <!-- Geometry Info -->
       <div class="control-group">
         <h3>Geometry Info</h3>
