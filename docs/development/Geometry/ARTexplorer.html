@@ -22,13 +22,13 @@
         <h3>Coordinate System</h3>
         <div class="control-item">
           <label class="checkbox-label">
-            <input type="checkbox" id="showCartesianBasis" checked>
+            <input type="checkbox" id="showCartesianBasis">
             Show Cartesian Basis (XYZ)
           </label>
         </div>
         <div class="control-item">
           <label class="checkbox-label">
-            <input type="checkbox" id="showQuadray">
+            <input type="checkbox" id="showQuadray" checked>
             Show Quadray Basis (WXYZ)
             <!-- Quadray: 4 tetrahedral basis vectors pointing to cube vertices (1,1,1), (1,-1,-1), (-1,1,-1), (-1,-1,1) -->
           </label>
@@ -42,7 +42,7 @@
           <div class="plane-toggle-container">
             <div class="plane-toggle-item">
               <span class="plane-toggle-label">XY</span>
-              <div class="plane-toggle-switch active" data-plane="XY">
+              <div class="plane-toggle-switch" data-plane="XY">
                 <div class="plane-toggle-slider"></div>
               </div>
             </div>
@@ -110,44 +110,44 @@
         </div>
         <div class="control-item">
           <label style="font-size: 12px; color: #b0b0b0; display: block; margin-bottom: 5px;">
-            <span class="geodesic-toggle collapsed" data-target="central-angle-grids"></span>
+            <span class="geodesic-toggle" data-target="central-angle-grids"></span>
             Central Angle Grids (Corrected Tessellation)
           </label>
-          <div id="central-angle-grids" class="geodesic-options collapsed">
+          <div id="central-angle-grids" class="geodesic-options">
           <div class="plane-toggle-container">
             <div class="plane-toggle-item">
               <span class="plane-toggle-label">WX</span>
-              <div class="plane-toggle-switch" data-plane="ivmWX">
+              <div class="plane-toggle-switch active" data-plane="ivmWX">
                 <div class="plane-toggle-slider"></div>
               </div>
             </div>
             <div class="plane-toggle-item">
               <span class="plane-toggle-label">WY</span>
-              <div class="plane-toggle-switch" data-plane="ivmWY">
+              <div class="plane-toggle-switch active" data-plane="ivmWY">
                 <div class="plane-toggle-slider"></div>
               </div>
             </div>
             <div class="plane-toggle-item">
               <span class="plane-toggle-label">WZ</span>
-              <div class="plane-toggle-switch" data-plane="ivmWZ">
+              <div class="plane-toggle-switch active" data-plane="ivmWZ">
                 <div class="plane-toggle-slider"></div>
               </div>
             </div>
             <div class="plane-toggle-item">
               <span class="plane-toggle-label">XY</span>
-              <div class="plane-toggle-switch" data-plane="ivmXY">
+              <div class="plane-toggle-switch active" data-plane="ivmXY">
                 <div class="plane-toggle-slider"></div>
               </div>
             </div>
             <div class="plane-toggle-item">
               <span class="plane-toggle-label">XZ</span>
-              <div class="plane-toggle-switch" data-plane="ivmXZ">
+              <div class="plane-toggle-switch active" data-plane="ivmXZ">
                 <div class="plane-toggle-slider"></div>
               </div>
             </div>
             <div class="plane-toggle-item">
               <span class="plane-toggle-label">YZ</span>
-              <div class="plane-toggle-switch" data-plane="ivmYZ">
+              <div class="plane-toggle-switch active" data-plane="ivmYZ">
                 <div class="plane-toggle-slider"></div>
               </div>
             </div>
@@ -162,7 +162,7 @@
         <h3>Polyhedra</h3>
         <div class="control-item">
           <label class="checkbox-label">
-            <input type="checkbox" id="showCube" checked>
+            <input type="checkbox" id="showCube">
             Hexahedron (Cube)
           </label>
         </div>
@@ -204,7 +204,7 @@
         </div>
         <div class="control-item">
           <label class="checkbox-label">
-            <input type="checkbox" id="showDualTetrahedron">
+            <input type="checkbox" id="showDualTetrahedron" checked>
             Dual Tetrahedron
           </label>
         </div>
@@ -312,15 +312,15 @@
         <div class="control-item">
           <label>Cube Edge Length</label>
           <div class="slider-container">
-            <input type="range" id="scaleSlider" min="0.5" max="3.6" step="0.1" value="2">
-            <span class="slider-value" id="scaleValue">2.0000</span>
+            <input type="range" id="scaleSlider" min="0.5" max="3.6" step="0.1" value="1.4">
+            <span class="slider-value" id="scaleValue">1.4142</span>
           </div>
         </div>
         <div class="control-item">
           <label>Tetrahedron Edge Length</label>
           <div class="slider-container">
-            <input type="range" id="tetScaleSlider" min="0.7" max="5.0" step="0.1" value="2.83">
-            <span class="slider-value" id="tetScaleValue">2.8284</span>
+            <input type="range" id="tetScaleSlider" min="0.7" max="5.0" step="0.1" value="2.0">
+            <span class="slider-value" id="tetScaleValue">2.0000</span>
           </div>
         </div>
         <p class="info-text" style="font-size: 10px; margin-top: 5px;">Linked sliders: rational units follow whichever you adjust</p>
@@ -1736,7 +1736,7 @@
       // XY plane (Z = 0) - HORIZONTAL ground plane in Z-up
       window.gridXY = new THREE.GridHelper(gridSize, gridSize / gridStep, gridColor, gridColor);
       window.gridXY.rotation.x = Math.PI / 2;  // Same rotation as Y-up XY had
-      window.gridXY.visible = true;  // Visible by default (ground plane)
+      window.gridXY.visible = false;  // Hidden by default
       cartesianGrid.add(window.gridXY);
 
       // XZ plane (Y = 0) - VERTICAL wall in Z-up (front/back)
@@ -1966,7 +1966,7 @@
         Quadray.basisVectors[0], Quadray.basisVectors[1],
         halfSize, tessellations, 0xffaa00
       );
-      window.ivmWX.visible = false;
+      window.ivmWX.visible = true;
       window.ivmWX.name = 'CentralAngle_WX';
       ivmPlanes.add(window.ivmWX);
 
@@ -1975,7 +1975,7 @@
         Quadray.basisVectors[0], Quadray.basisVectors[2],
         halfSize, tessellations, 0xaaaaff
       );
-      window.ivmWY.visible = false;
+      window.ivmWY.visible = true;
       window.ivmWY.name = 'CentralAngle_WY';
       ivmPlanes.add(window.ivmWY);
 
@@ -1984,7 +1984,7 @@
         Quadray.basisVectors[0], Quadray.basisVectors[3],
         halfSize, tessellations, 0xaaff00
       );
-      window.ivmWZ.visible = false;
+      window.ivmWZ.visible = true;
       window.ivmWZ.name = 'CentralAngle_WZ';
       ivmPlanes.add(window.ivmWZ);
 
@@ -1993,7 +1993,7 @@
         Quadray.basisVectors[1], Quadray.basisVectors[2],
         halfSize, tessellations, 0xff00ff
       );
-      window.ivmXY.visible = false;
+      window.ivmXY.visible = true;
       window.ivmXY.name = 'CentralAngle_XY';
       ivmPlanes.add(window.ivmXY);
 
@@ -2002,7 +2002,7 @@
         Quadray.basisVectors[1], Quadray.basisVectors[3],
         halfSize, tessellations, 0xffff00
       );
-      window.ivmXZ.visible = false;
+      window.ivmXZ.visible = true;
       window.ivmXZ.name = 'CentralAngle_XZ';
       ivmPlanes.add(window.ivmXZ);
 
@@ -2011,7 +2011,7 @@
         Quadray.basisVectors[2], Quadray.basisVectors[3],
         halfSize, tessellations, 0x00ffff
       );
-      window.ivmYZ.visible = false;
+      window.ivmYZ.visible = true;
       window.ivmYZ.name = 'CentralAngle_YZ';
       ivmPlanes.add(window.ivmYZ);
 
