@@ -10,8 +10,95 @@
       content="An interactive explorer for Algebraic Rational Trigonometry geometry by Andy Ross Thomson, M.Arch, OAA. with guidance by Metatron"
     />
     <link rel="stylesheet" href="art.css" />
+    <style>
+      /* Password protection overlay */
+      #password-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.95);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+      }
+      #password-modal {
+        background: #2a2a2a;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        text-align: center;
+        max-width: 400px;
+      }
+      #password-modal h2 {
+        color: #ffffff;
+        margin-bottom: 20px;
+        font-size: 24px;
+      }
+      #password-modal p {
+        color: #b0b0b0;
+        margin-bottom: 30px;
+        font-size: 14px;
+      }
+      #password-input {
+        width: 100%;
+        padding: 12px;
+        font-size: 16px;
+        border: 2px solid #444;
+        border-radius: 5px;
+        background: #1a1a1a;
+        color: #ffffff;
+        margin-bottom: 20px;
+        box-sizing: border-box;
+      }
+      #password-input:focus {
+        outline: none;
+        border-color: #4a9eff;
+      }
+      #password-submit {
+        width: 100%;
+        padding: 12px;
+        font-size: 16px;
+        background: #4a9eff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+      #password-submit:hover {
+        background: #3a8eef;
+      }
+      #password-error {
+        color: #ff4444;
+        margin-top: 10px;
+        font-size: 14px;
+        display: none;
+      }
+      .hidden {
+        display: none !important;
+      }
+    </style>
   </head>
   <body>
+    <!-- Password Protection Overlay -->
+    <div id="password-overlay">
+      <div id="password-modal">
+        <h2>A.R.T Explorer</h2>
+        <p>This demonstration is password protected.</p>
+        <input
+          type="password"
+          id="password-input"
+          placeholder="Enter password"
+          autocomplete="off"
+        />
+        <button id="password-submit">Access</button>
+        <div id="password-error">Incorrect password. Please try again.</div>
+      </div>
+    </div>
+
     <div id="container">
       <div id="canvas-container">
         <div id="info-overlay"></div>
@@ -877,19 +964,78 @@
     </script>
 
     <script type="module">
-      // Import Three.js modules
-      import * as THREE from "three";
-      import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+      // ========================================================================
+      // PASSWORD PROTECTION
+      // ========================================================================
+      const PASSWORD = "https://www.spacekinetic.com/careers";
+      const passwordOverlay = document.getElementById("password-overlay");
+      const passwordInput = document.getElementById("password-input");
+      const passwordSubmit = document.getElementById("password-submit");
+      const passwordError = document.getElementById("password-error");
 
-      // Import ARTexplorer modules
-      import { RT, Quadray } from "./modules/rt-math.js";
-      import { Polyhedra } from "./modules/rt-polyhedra.js";
+      // Check if already authenticated (session storage)
+      if (sessionStorage.getItem("artexplorer-auth") === "true") {
+        passwordOverlay.classList.add("hidden");
+        initApp();
+      } else {
+        // Focus on password input
+        passwordInput.focus();
 
-      // Make THREE global for easier access in console
-      window.THREE = THREE;
+        // Handle password submission
+        function checkPassword() {
+          if (passwordInput.value === PASSWORD) {
+            sessionStorage.setItem("artexplorer-auth", "true");
+            passwordOverlay.classList.add("hidden");
+            passwordError.style.display = "none";
+            initApp();
+          } else {
+            passwordError.style.display = "block";
+            passwordInput.value = "";
+            passwordInput.focus();
+          }
+        }
 
-      // Initialize Quadray basis vectors with THREE.js
-      Quadray.init(THREE);
+        passwordSubmit.addEventListener("click", checkPassword);
+        passwordInput.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            checkPassword();
+          }
+        });
+      }
+
+      // ========================================================================
+      // APPLICATION INITIALIZATION
+      // ========================================================================
+      function initApp() {
+        // Import Three.js modules
+        import("three").then((THREE_MODULE) => {
+          const THREE = THREE_MODULE.default || THREE_MODULE;
+
+          import("three/addons/controls/OrbitControls.js").then((OrbitControlsModule) => {
+            const OrbitControls = OrbitControlsModule.OrbitControls;
+
+            // Import ARTexplorer modules
+            import("./modules/rt-math.js").then((RTModule) => {
+              const { RT, Quadray } = RTModule;
+
+              import("./modules/rt-polyhedra.js").then((PolyhedraModule) => {
+                const { Polyhedra } = PolyhedraModule;
+
+                // Make THREE global for easier access in console
+                window.THREE = THREE;
+
+                // Initialize Quadray basis vectors with THREE.js
+                Quadray.init(THREE);
+
+                // Continue with app initialization
+                startARTexplorer(THREE, OrbitControls, RT, Quadray, Polyhedra);
+              });
+            });
+          });
+        });
+      }
+
+      function startARTexplorer(THREE, OrbitControls, RT, Quadray, Polyhedra) {
 
       // ========================================================================
       // THREE.JS SCENE SETUP
@@ -2133,6 +2279,7 @@
         Zoom: Scroll wheel
       </div>
     `;
+      } // End startARTexplorer function
     </script>
   </body>
 </html>
