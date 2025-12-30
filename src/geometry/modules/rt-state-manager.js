@@ -9,23 +9,37 @@
  * @requires THREE.js
  */
 
+/* global THREE */
+
 export const RTStateManager = {
   // ========================================================================
   // FORMS REGISTRY (Templates - always at origin)
   // ========================================================================
   forms: {
-    tetrahedron: { type: 'tetrahedron', name: 'Tetrahedron' },
-    cube: { type: 'cube', name: 'Hexahedron' },
-    octahedron: { type: 'octahedron', name: 'Octahedron' },
-    icosahedron: { type: 'icosahedron', name: 'Icosahedron' },
-    dodecahedron: { type: 'dodecahedron', name: 'Dodecahedron' },
-    dualTetrahedron: { type: 'dualTetrahedron', name: 'Dual Tetrahedron' },
-    dualIcosahedron: { type: 'dualIcosahedron', name: 'Dual Icosahedron' },
-    cuboctahedron: { type: 'cuboctahedron', name: 'Cuboctahedron' },
-    rhombicDodecahedron: { type: 'rhombicDodecahedron', name: 'Rhombic Dodecahedron' },
-    geodesicIcosahedron: { type: 'geodesicIcosahedron', name: 'Geodesic Icosahedron' },
-    geodesicTetrahedron: { type: 'geodesicTetrahedron', name: 'Geodesic Tetrahedron' },
-    geodesicOctahedron: { type: 'geodesicOctahedron', name: 'Geodesic Octahedron' }
+    tetrahedron: { type: "tetrahedron", name: "Tetrahedron" },
+    cube: { type: "cube", name: "Hexahedron" },
+    octahedron: { type: "octahedron", name: "Octahedron" },
+    icosahedron: { type: "icosahedron", name: "Icosahedron" },
+    dodecahedron: { type: "dodecahedron", name: "Dodecahedron" },
+    dualTetrahedron: { type: "dualTetrahedron", name: "Dual Tetrahedron" },
+    dualIcosahedron: { type: "dualIcosahedron", name: "Dual Icosahedron" },
+    cuboctahedron: { type: "cuboctahedron", name: "Cuboctahedron" },
+    rhombicDodecahedron: {
+      type: "rhombicDodecahedron",
+      name: "Rhombic Dodecahedron",
+    },
+    geodesicIcosahedron: {
+      type: "geodesicIcosahedron",
+      name: "Geodesic Icosahedron",
+    },
+    geodesicTetrahedron: {
+      type: "geodesicTetrahedron",
+      name: "Geodesic Tetrahedron",
+    },
+    geodesicOctahedron: {
+      type: "geodesicOctahedron",
+      name: "Geodesic Octahedron",
+    },
   },
 
   // ========================================================================
@@ -40,20 +54,20 @@ export const RTStateManager = {
 
     // Selection state
     selection: {
-      type: null,      // 'form' or 'instance'
-      id: null,        // Instance ID or null for Form
-      object: null     // THREE.Object3D reference
+      type: null, // 'form' or 'instance'
+      id: null, // Instance ID or null for Form
+      object: null, // THREE.Object3D reference
     },
 
     // Undo/Redo stacks
     history: {
       undoStack: [],
       redoStack: [],
-      maxHistory: 50
+      maxHistory: 50,
     },
 
     // Counters
-    depositedCount: 0
+    depositedCount: 0,
   },
 
   // ========================================================================
@@ -64,7 +78,7 @@ export const RTStateManager = {
    * Initialize StateManager
    */
   init() {
-    console.log('✅ RTStateManager initialized');
+    console.log("✅ RTStateManager initialized");
   },
 
   // ========================================================================
@@ -114,42 +128,42 @@ export const RTStateManager = {
     const instance = {
       id: instanceId,
       timestamp: timestamp,
-      type: polyhedronGroup.userData.type || 'unknown',
+      type: polyhedronGroup.userData.type || "unknown",
 
       // Transform state
       transform: {
         position: {
           x: polyhedronGroup.position.x,
           y: polyhedronGroup.position.y,
-          z: polyhedronGroup.position.z
+          z: polyhedronGroup.position.z,
         },
         rotation: {
           x: polyhedronGroup.rotation.x,
           y: polyhedronGroup.rotation.y,
           z: polyhedronGroup.rotation.z,
-          order: polyhedronGroup.rotation.order
+          order: polyhedronGroup.rotation.order,
         },
         scale: {
           x: polyhedronGroup.scale.x,
           y: polyhedronGroup.scale.y,
-          z: polyhedronGroup.scale.z
-        }
+          z: polyhedronGroup.scale.z,
+        },
       },
 
       // Visual properties
       appearance: {
-        visible: polyhedronGroup.visible
+        visible: polyhedronGroup.visible,
       },
 
       // Metadata
       metadata: {
         label: `${polyhedronGroup.userData.type}_${timestamp}`,
         tags: [],
-        notes: ''
+        notes: "",
       },
 
       // THREE.js object reference (independent visual object)
-      threeObject: clonedGroup
+      threeObject: clonedGroup,
     };
 
     // Tag the clone with instance metadata
@@ -165,9 +179,11 @@ export const RTStateManager = {
     this.state.depositedCount++;
 
     // Add to undo stack
-    this.addToHistory({ action: 'create', instance });
+    this.addToHistory({ action: "create", instance });
 
-    console.log(`✅ Instance created: ${instance.id} (${instance.type}) at position (${instance.transform.position.x.toFixed(2)}, ${instance.transform.position.y.toFixed(2)}, ${instance.transform.position.z.toFixed(2)})`);
+    console.log(
+      `✅ Instance created: ${instance.id} (${instance.type}) at position (${instance.transform.position.x.toFixed(2)}, ${instance.transform.position.y.toFixed(2)}, ${instance.transform.position.z.toFixed(2)})`
+    );
 
     return instance;
   },
@@ -186,9 +202,9 @@ export const RTStateManager = {
 
     // Update selection state
     this.state.selection = {
-      type: 'instance',
+      type: "instance",
       id: instanceId,
-      object: instance.threeObject
+      object: instance.threeObject,
     };
 
     console.log(`✅ Instance selected: ${instanceId} (${instance.type})`);
@@ -233,7 +249,12 @@ export const RTStateManager = {
     }
 
     // Add to undo stack
-    this.addToHistory({ action: 'update', instanceId, oldTransform, newTransform });
+    this.addToHistory({
+      action: "update",
+      instanceId,
+      oldTransform,
+      newTransform,
+    });
 
     console.log(`✅ Instance updated: ${instanceId}`);
   },
@@ -262,7 +283,7 @@ export const RTStateManager = {
     this.state.depositedCount--;
 
     // Add to undo stack
-    this.addToHistory({ action: 'delete', instance, index });
+    this.addToHistory({ action: "delete", instance, index });
 
     console.log(`✅ Instance deleted: ${instanceId} (${instance.type})`);
   },
@@ -303,9 +324,9 @@ export const RTStateManager = {
    */
   selectForm(formType, formGroup) {
     this.state.selection = {
-      type: 'form',
+      type: "form",
       id: null,
-      object: formGroup
+      object: formGroup,
     };
 
     console.log(`✅ Form selected: ${formType}`);
@@ -320,7 +341,7 @@ export const RTStateManager = {
     formGroup.rotation.set(0, 0, 0);
     formGroup.scale.set(1, 1, 1);
 
-    const formType = formGroup.userData.type || 'unknown';
+    const formType = formGroup.userData.type || "unknown";
     console.log(`↩️  Form reset to origin: ${formType}`);
   },
 
@@ -351,16 +372,18 @@ export const RTStateManager = {
    */
   undo(scene) {
     if (this.state.history.undoStack.length === 0) {
-      console.warn('⚠️ Nothing to undo');
+      console.warn("⚠️ Nothing to undo");
       return;
     }
 
     const action = this.state.history.undoStack.pop();
 
     switch (action.action) {
-      case 'create':
+      case "create": {
         // Remove Instance
-        const createIndex = this.state.instances.findIndex(i => i.id === action.instance.id);
+        const createIndex = this.state.instances.findIndex(
+          i => i.id === action.instance.id
+        );
         if (createIndex !== -1) {
           scene.remove(this.state.instances[createIndex].threeObject);
           this.state.instances.splice(createIndex, 1);
@@ -368,8 +391,9 @@ export const RTStateManager = {
         }
         console.log(`⏪ Undone: Create instance ${action.instance.id}`);
         break;
+      }
 
-      case 'delete':
+      case "delete":
         // Re-add Instance
         this.state.instances.splice(action.index, 0, action.instance);
         scene.add(action.instance.threeObject);
@@ -377,7 +401,7 @@ export const RTStateManager = {
         console.log(`⏪ Undone: Delete instance ${action.instance.id}`);
         break;
 
-      case 'update':
+      case "update":
         // Revert transform
         this.updateInstance(action.instanceId, action.oldTransform);
         console.log(`⏪ Undone: Update instance ${action.instanceId}`);
@@ -394,14 +418,14 @@ export const RTStateManager = {
    */
   redo(scene) {
     if (this.state.history.redoStack.length === 0) {
-      console.warn('⚠️ Nothing to redo');
+      console.warn("⚠️ Nothing to redo");
       return;
     }
 
     const action = this.state.history.redoStack.pop();
 
     switch (action.action) {
-      case 'create':
+      case "create":
         // Re-add Instance
         this.state.instances.push(action.instance);
         scene.add(action.instance.threeObject);
@@ -409,9 +433,11 @@ export const RTStateManager = {
         console.log(`⏩ Redone: Create instance ${action.instance.id}`);
         break;
 
-      case 'delete':
+      case "delete": {
         // Remove Instance again
-        const deleteIndex = this.state.instances.findIndex(i => i.id === action.instance.id);
+        const deleteIndex = this.state.instances.findIndex(
+          i => i.id === action.instance.id
+        );
         if (deleteIndex !== -1) {
           scene.remove(this.state.instances[deleteIndex].threeObject);
           this.state.instances.splice(deleteIndex, 1);
@@ -419,8 +445,9 @@ export const RTStateManager = {
         }
         console.log(`⏩ Redone: Delete instance ${action.instance.id}`);
         break;
+      }
 
-      case 'update':
+      case "update":
         // Re-apply new transform
         this.updateInstance(action.instanceId, action.newTransform);
         console.log(`⏩ Redone: Update instance ${action.instanceId}`);
@@ -441,7 +468,7 @@ export const RTStateManager = {
    */
   exportJSON() {
     const exportData = {
-      version: '1.0',
+      version: "1.0",
       timestamp: Date.now(),
       count: this.state.instances.length,
       instances: this.state.instances.map(instance => ({
@@ -450,9 +477,9 @@ export const RTStateManager = {
         type: instance.type,
         transform: instance.transform,
         appearance: instance.appearance,
-        metadata: instance.metadata
+        metadata: instance.metadata,
         // Note: threeObject is NOT exported (not serializable)
-      }))
+      })),
     };
 
     return JSON.stringify(exportData, null, 2);
@@ -464,19 +491,19 @@ export const RTStateManager = {
    */
   exportCSV() {
     const headers = [
-      'id',
-      'timestamp',
-      'type',
-      'posX',
-      'posY',
-      'posZ',
-      'rotX',
-      'rotY',
-      'rotZ',
-      'scaleX',
-      'scaleY',
-      'scaleZ',
-      'label'
+      "id",
+      "timestamp",
+      "type",
+      "posX",
+      "posY",
+      "posZ",
+      "rotX",
+      "rotY",
+      "rotZ",
+      "scaleX",
+      "scaleY",
+      "scaleZ",
+      "label",
     ];
 
     const rows = this.state.instances.map(instance => [
@@ -492,13 +519,10 @@ export const RTStateManager = {
       instance.transform.scale.x.toFixed(4),
       instance.transform.scale.y.toFixed(4),
       instance.transform.scale.z.toFixed(4),
-      instance.metadata.label
+      instance.metadata.label,
     ]);
 
-    return [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
+    return [headers.join(","), ...rows.map(row => row.join(","))].join("\n");
   },
 
   /**
@@ -519,6 +543,6 @@ export const RTStateManager = {
     this.state.history.undoStack = [];
     this.state.history.redoStack = [];
 
-    console.log('🗑️  All instances cleared');
-  }
+    console.log("🗑️  All instances cleared");
+  },
 };
