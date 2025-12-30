@@ -937,57 +937,39 @@
             <div class="control-item">
               <label class="label-section">Camera Presets</label>
               <div class="button-grid-2col">
-                <button
-                  class="toggle-btn variant-standard"
-                  id="viewTop"
-                  disabled
-                >
+                <button class="toggle-btn variant-standard" id="viewTop">
                   Top
                 </button>
-                <button
-                  class="toggle-btn variant-standard"
-                  id="viewBottom"
-                  disabled
-                >
+                <button class="toggle-btn variant-standard" id="viewBottom">
                   Bottom
                 </button>
-                <button
-                  class="toggle-btn variant-standard"
-                  id="viewLeft"
-                  disabled
-                >
+                <button class="toggle-btn variant-standard" id="viewLeft">
                   Left
                 </button>
-                <button
-                  class="toggle-btn variant-standard"
-                  id="viewRight"
-                  disabled
-                >
+                <button class="toggle-btn variant-standard" id="viewRight">
                   Right
                 </button>
-                <button
-                  class="toggle-btn variant-standard"
-                  id="viewFront"
-                  disabled
-                >
+                <button class="toggle-btn variant-standard" id="viewFront">
                   Front
                 </button>
-                <button
-                  class="toggle-btn variant-standard"
-                  id="viewBack"
-                  disabled
-                >
+                <button class="toggle-btn variant-standard" id="viewBack">
                   Back
                 </button>
+                <button class="toggle-btn variant-standard" id="viewAxo">
+                  Axo
+                </button>
+                <button id="resetCamera">Reset</button>
               </div>
             </div>
             <div class="control-item spacing-top-large">
               <label class="checkbox-label">
-                <input type="checkbox" id="orthoPerspective" disabled />
+                <input type="checkbox" id="orthoPerspective" />
                 Orthographic (Plan/Elevation)
               </label>
             </div>
-            <p class="info-text">Camera controller - Coming soon</p>
+            <p class="info-text">
+              Switch between standard views and projection types
+            </p>
           </div>
         </div>
 
@@ -1078,11 +1060,6 @@
               Plan, Surface Area, etc.
             </p>
           </div>
-        </div>
-
-        <!-- Reset Button -->
-        <div class="control-group">
-          <button id="resetCamera">Reset Camera</button>
         </div>
       </div>
     </div>
@@ -2443,12 +2420,9 @@
             }
           });
 
-        // Reset camera
+        // Reset camera to default axo view
         document.getElementById("resetCamera").addEventListener("click", () => {
-          camera.position.set(5, 5, 5);
-          camera.lookAt(0, 0, 0);
-          controls.target.set(0, 0, 0);
-          controls.update();
+          setCameraPreset("axo");
         });
 
         // ========================================================================
@@ -2512,7 +2486,7 @@
 
         /**
          * Set camera to preset view
-         * @param {string} view - View name (top, bottom, left, right, front, back)
+         * @param {string} view - View name (top, bottom, left, right, front, back, axo)
          */
         function setCameraPreset(view) {
           const distance = 10; // Standard distance from origin
@@ -2555,6 +2529,18 @@
               camera.position.set(0, -distance, 0);
               camera.up.set(0, 0, 1); // Z points up
               break;
+
+            case "axo":
+              // Axonometric/Isometric view (equal angles to X, Y, Z)
+              // Position: (1, 1, 1) direction scaled to distance
+              const axisoDistance = distance / Math.sqrt(3);
+              camera.position.set(
+                axisoDistance * Math.sqrt(3),
+                axisoDistance * Math.sqrt(3),
+                axisoDistance * Math.sqrt(3)
+              );
+              camera.up.set(0, 0, 1); // Z points up
+              break;
           }
 
           camera.lookAt(0, 0, 0);
@@ -2574,11 +2560,11 @@
           { id: "viewRight", view: "right" },
           { id: "viewFront", view: "front" },
           { id: "viewBack", view: "back" },
+          { id: "viewAxo", view: "axo" },
         ];
 
         viewButtons.forEach(({ id, view }) => {
           const btn = document.getElementById(id);
-          btn.disabled = false; // Enable button
           btn.addEventListener("click", () => {
             setCameraPreset(view);
           });
@@ -2586,14 +2572,9 @@
 
         // Orthographic/Perspective toggle
         const orthoCheckbox = document.getElementById("orthoPerspective");
-        orthoCheckbox.disabled = false; // Enable checkbox
         orthoCheckbox.addEventListener("change", e => {
           switchCameraType(e.target.checked);
         });
-
-        // Update info text
-        document.querySelector("#view-section .info-text").textContent =
-          "Switch between standard views and projection types";
 
         // ========================================================================
         // INITIALIZE
