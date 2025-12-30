@@ -2526,41 +2526,48 @@
           const distance = 10; // Standard distance from origin
 
           // Z-up coordinate system (CAD/BIM standard)
-          // Z = vertical (blue axis), X-Y = horizontal ground plane
+          // Z = vertical, X-Y = horizontal ground plane
+          // Viewing convention: Standing on ground (X-Y plane), Z is up
           switch (view) {
             case "top":
-              // Looking down from above (down negative Z axis)
+              // Top view: Looking DOWN from above (camera on +Z looking toward -Z)
               camera.position.set(0, 0, distance);
               camera.up.set(0, 1, 0); // Y axis points "north" in top view
               break;
 
             case "bottom":
-              // Looking up from below (up positive Z axis)
+              // Bottom view: Looking UP from below (camera on -Z looking toward +Z)
               camera.position.set(0, 0, -distance);
               camera.up.set(0, -1, 0); // Flip Y to keep orientation consistent
               break;
 
             case "left":
-              // Looking from left side (positive X direction, toward negative X)
-              camera.position.set(-distance, 0, 0);
+              // Left view: Looking from LEFT side at 45° angle (camera on -X,-Y looking toward +X,+Y)
+              // At 45° from X-axis to see tetrahedral triangular profile
+              const leftDist = distance / Math.sqrt(2);
+              camera.position.set(-leftDist, -leftDist, 0);
               camera.up.set(0, 0, 1); // Z points up
               break;
 
             case "right":
-              // Looking from right side (negative X direction, toward positive X)
-              camera.position.set(distance, 0, 0);
+              // Right view: Looking from RIGHT side at 45° angle (camera on +X,+Y looking toward -X,-Y)
+              // At 45° from X-axis to see tetrahedral triangular profile
+              const rightDist = distance / Math.sqrt(2);
+              camera.position.set(rightDist, rightDist, 0);
               camera.up.set(0, 0, 1); // Z points up
               break;
 
             case "front":
-              // Looking from front (positive Y direction, toward negative Y)
-              camera.position.set(0, distance, 0);
+              // Front view: Looking from FRONT (camera on -Y looking toward +Y)
+              // Standing on ground, looking forward (north) - see XZ plane (front elevation)
+              camera.position.set(0, -distance, 0);
               camera.up.set(0, 0, 1); // Z points up
               break;
 
             case "back":
-              // Looking from back (negative Y direction, toward positive Y)
-              camera.position.set(0, -distance, 0);
+              // Back view: Looking from BACK (camera on +Y looking toward -Y)
+              // Standing on ground, looking back (south) - see XZ plane (back elevation)
+              camera.position.set(0, distance, 0);
               camera.up.set(0, 0, 1); // Z points up
               break;
 
