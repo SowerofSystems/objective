@@ -1117,17 +1117,52 @@
 
         // Create polyhedra groups
         cubeGroup = new THREE.Group();
+        cubeGroup.userData.type = 'cube';
+        cubeGroup.userData.isInstance = false; // Mark as Form (template)
+
         tetrahedronGroup = new THREE.Group();
+        tetrahedronGroup.userData.type = 'tetrahedron';
+        tetrahedronGroup.userData.isInstance = false;
+
         dualTetrahedronGroup = new THREE.Group();
+        dualTetrahedronGroup.userData.type = 'dualTetrahedron';
+        dualTetrahedronGroup.userData.isInstance = false;
+
         octahedronGroup = new THREE.Group();
+        octahedronGroup.userData.type = 'octahedron';
+        octahedronGroup.userData.isInstance = false;
+
         icosahedronGroup = new THREE.Group();
+        icosahedronGroup.userData.type = 'icosahedron';
+        icosahedronGroup.userData.isInstance = false;
+
         dodecahedronGroup = new THREE.Group();
+        dodecahedronGroup.userData.type = 'dodecahedron';
+        dodecahedronGroup.userData.isInstance = false;
+
         dualIcosahedronGroup = new THREE.Group();
+        dualIcosahedronGroup.userData.type = 'dualIcosahedron';
+        dualIcosahedronGroup.userData.isInstance = false;
+
         cuboctahedronGroup = new THREE.Group();
+        cuboctahedronGroup.userData.type = 'cuboctahedron';
+        cuboctahedronGroup.userData.isInstance = false;
+
         rhombicDodecahedronGroup = new THREE.Group();
+        rhombicDodecahedronGroup.userData.type = 'rhombicDodecahedron';
+        rhombicDodecahedronGroup.userData.isInstance = false;
+
         geodesicIcosahedronGroup = new THREE.Group(); // Phase 2.7a
+        geodesicIcosahedronGroup.userData.type = 'geodesicIcosahedron';
+        geodesicIcosahedronGroup.userData.isInstance = false;
+
         geodesicTetrahedronGroup = new THREE.Group(); // Phase 2.7c
+        geodesicTetrahedronGroup.userData.type = 'geodesicTetrahedron';
+        geodesicTetrahedronGroup.userData.isInstance = false;
+
         geodesicOctahedronGroup = new THREE.Group(); // Phase 2.7b
+        geodesicOctahedronGroup.userData.type = 'geodesicOctahedron';
+        geodesicOctahedronGroup.userData.isInstance = false;
 
         scene.add(cubeGroup);
         scene.add(tetrahedronGroup);
@@ -2321,6 +2356,11 @@
       let editingBasis = null; // Localized gumball that follows selected Forms
 
       // ========================================================================
+      // SELECTION STATE
+      // ========================================================================
+      let currentSelection = null; // Currently selected polyhedron (Form or Instance)
+
+      // ========================================================================
       // INSTANCE STATE (Simple tracking until rt-state-manager.js is created)
       // ========================================================================
       let depositedInstances = []; // Array of deposited instance snapshots
@@ -2618,12 +2658,92 @@
       let raycaster;
       let mouse;
 
-      // Get selected polyhedra - find all visible polyhedra groups in the scene
-      function getSelectedPolyhedra() {
-        const selected = [];
+      // ========================================================================
+      // SELECTION SYSTEM
+      // ========================================================================
 
-        // Search through all groups for visible polyhedra
-        const groups = [
+      /**
+       * Select a polyhedron (Form or Instance) with visual highlight
+       */
+      function selectPolyhedron(polyhedron) {
+        // Deselect previous selection
+        if (currentSelection) {
+          clearHighlight(currentSelection);
+        }
+
+        // Set new selection
+        currentSelection = polyhedron;
+
+        // Apply highlight
+        applyHighlight(polyhedron);
+
+        const type = polyhedron.userData.isInstance ? 'Instance' : 'Form';
+        const name = polyhedron.userData.type || 'unknown';
+        console.log(`✅ Selected ${type}: ${name}`);
+      }
+
+      /**
+       * Apply highlight glow to selected polyhedron
+       */
+      function applyHighlight(polyhedron) {
+        polyhedron.traverse(mesh => {
+          if (mesh.isMesh) {
+            // Store original emissive for restoration
+            mesh.userData.originalEmissive = mesh.material.emissive.clone();
+            mesh.userData.originalEmissiveIntensity = mesh.material.emissiveIntensity;
+
+            // Apply blue glow
+            mesh.material.emissive.setHex(0x4a9eff);
+            mesh.material.emissiveIntensity = 0.3;
+          }
+        });
+      }
+
+      /**
+       * Clear highlight from polyhedron
+       */
+      function clearHighlight(polyhedron) {
+        polyhedron.traverse(mesh => {
+          if (mesh.isMesh && mesh.userData.originalEmissive) {
+            mesh.material.emissive.copy(mesh.userData.originalEmissive);
+            mesh.material.emissiveIntensity = mesh.userData.originalEmissiveIntensity;
+          }
+        });
+      }
+
+      /**
+       * Deselect all polyhedra
+       */
+      function deselectAll() {
+        if (currentSelection) {
+          clearHighlight(currentSelection);
+          currentSelection = null;
+        }
+        console.log('✅ Deselected all');
+      }
+
+      /**
+       * Handle canvas click for object selection
+       */
+      function onCanvasClick(event) {
+        // Don't select during drag operations
+        if (isDragging) return;
+
+        // Don't select if clicking on gumball handles
+        if (currentGumballTool) return; // Let gumball handle its own clicks
+
+        const rect = renderer.domElement.getBoundingClientRect();
+        const mouseX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        const mouseY = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        const selectionRaycaster = new THREE.Raycaster();
+        selectionRaycaster.setFromCamera(new THREE.Vector2(mouseX, mouseY), camera);
+
+        // Collect all selectable polyhedra (Forms and Instances)
+        const selectableObjects = [];
+
+        // Forms
+        const formGroups = [
           cubeGroup,
           tetrahedronGroup,
           dualTetrahedronGroup,
@@ -2635,15 +2755,55 @@
           rhombicDodecahedronGroup
         ];
 
-        // Add the entire group (not individual meshes) so they move together
-        groups.forEach(group => {
+        formGroups.forEach(group => {
           if (group && group.visible && group.children.length > 0) {
-            selected.push(group);
+            // Collect all meshes/lines from group for raycasting
+            group.traverse(obj => {
+              if (obj.isMesh || obj.isLine) {
+                selectableObjects.push({ object: obj, parent: group });
+              }
+            });
           }
         });
 
-        console.log(`Found ${selected.length} visible polyhedra groups`);
-        return selected;
+        // Instances
+        depositedInstances.forEach(instance => {
+          if (instance.threeObject && instance.threeObject.visible) {
+            instance.threeObject.traverse(obj => {
+              if (obj.isMesh || obj.isLine) {
+                selectableObjects.push({ object: obj, parent: instance.threeObject });
+              }
+            });
+          }
+        });
+
+        // Raycast
+        const intersects = selectionRaycaster.intersectObjects(
+          selectableObjects.map(item => item.object),
+          false
+        );
+
+        if (intersects.length > 0) {
+          // Find parent group from hit object
+          const hitObject = intersects[0].object;
+          const parentEntry = selectableObjects.find(item => item.object === hitObject);
+
+          if (parentEntry) {
+            selectPolyhedron(parentEntry.parent);
+          }
+        } else {
+          // Clicked empty space - deselect
+          deselectAll();
+        }
+      }
+
+      // Get selected polyhedra - returns only currently selected polyhedron
+      function getSelectedPolyhedra() {
+        // Return only the currently selected polyhedron (if any)
+        if (currentSelection) {
+          return [currentSelection];
+        }
+        return [];
       }
 
       // Initialize gumball mouse event listeners (called after initScene)
@@ -2894,6 +3054,10 @@
 
       initScene();
       initGumballEventListeners(); // Initialize gumball after scene is ready
+
+      // Initialize selection click listener
+      renderer.domElement.addEventListener('click', onCanvasClick);
+
       animate();
 
       // Update info overlay
