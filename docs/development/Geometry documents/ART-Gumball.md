@@ -2299,4 +2299,70 @@ document.addEventListener('keydown', (event) => {
 **Next Steps:**
 1. Refine snap mode UI/UX
 2. Add keyboard shortcut documentation to UI
+
+---
+
+### Session: Scale Mode Implementation (2025-12-30)
+
+**Objective:** Implement Scale mode functionality for ART Gumball system to enable scaling of both Forms and Instances using cube handles and central sphere.
+
+**Key Commits:**
+1. `fdbfbd5` - Feat: Add Scale mode gumball functionality with cube handles
+2. `fbd043f` - Fix: Increase scale sensitivity from 0.1 to 15.0 for meaningful scaling
+3. [pending] - Fix: Enable scaling of selected objects (Forms and Instances)
+
+**Files Modified:**
+- `src/geometry/ARTexplorer.html` - Visual handle switching, scale dragging logic, selection-based scaling
+
+**Implemented Features:**
+- ✅ Visual handle switching: Cube handles for Scale mode, sphere handles for Move mode
+- ✅ Central white sphere for uniform scaling
+- ✅ Scale dragging logic with appropriate sensitivity (15.0)
+- ✅ Dual coordinate system support: Quadray handles (WXYZ) and Cartesian handles (XYZ)
+- ✅ Selection-based scaling: Works on both Forms at origin AND deposited Instances
+- ✅ Direct THREE.js scaling: Uses `scale.set()` instead of slider manipulation
+- ✅ Scale state tracking: Stores `userData.currentScale` for cumulative changes
+- ✅ Reasonable bounds: Clamps scale to 0.1 - 10.0 range
+
+**Scale Mode Workflow:**
+1. User selects Form or Instance → cyan highlight appears
+2. Click Scale button → arrow handles convert to cubes, central white sphere appears
+3. Drag cube handle (axis-constrained) or central sphere (uniform) → object scales in real-time
+4. For Forms: Sliders update to reflect scale (optional visual feedback)
+5. For Instances: Direct scaling without slider interference
+6. Click NOW button → deposits scaled instance to RTStateManager, resets Form to origin
+
+**Technical Implementation:**
+- **Handle Geometry**: Cubes (0.4 size, 0.5 opacity) replace spheres in Scale mode
+- **Arrow Heads**: Removed in Scale mode (`headLength = 0`) for cleaner visual
+- **Sensitivity**: 15.0 (vs 5.0 for Move mode) for visible scaling
+- **Scale Calculation**: Percentage-based multiplier (`1 + scaleDelta * 0.01`)
+- **Cumulative Scaling**: Each drag multiplies current scale by delta
+- **Uniform Scaling**: All three axes scaled equally (`scale.set(s, s, s)`)
+
+**Future Refinements (Deferred):**
+- ⏳ Rational scaling steps: Align scale increments with 0.1 slider steps for rational consistency
+- ⏳ Cube=Rational vs Tetrahedron=Rational: Respect which polyhedron type uses rational edge lengths
+- ⏳ Snap-aware scaling: Coordinate scaling with XYZ/WXYZ snap modes (0.100 steps)
+- ⏳ Non-uniform scaling: Per-axis deformations (stretch/compress along individual axes)
+- ⏳ Scale visualization: Display current scale value near gumball during drag
+
+**Known Limitations:**
+- Current implementation uses continuous floating-point scale multipliers rather than rational 0.1 steps
+- Slider synchronization for Forms uses base edge lengths (1.4142 for cube, 2.0 for tet) - may need refinement
+- No visual feedback of current scale value during drag (console only)
+
+**Note:** The Scale mode now works correctly on both Forms and Instances. The rational scaling refinement is intentionally deferred to maintain clean, working code. When we return to implement rational scaling, we should:
+1. Quantize scale deltas to 0.1 increments
+2. Respect Cube=Rational vs Tetrahedron=Rational edge length conventions
+3. Ensure scale steps align with XYZ/WXYZ snap grid intervals
+4. Maintain algebraic precision throughout scaling operations
+
+---
+
+**Status:** Scale Mode FUNCTIONAL - Basic scaling complete, rational refinements deferred
+**Next Steps:**
+1. Return to rational scaling implementation (coordinate with snap modes)
+2. Add Rotate mode functionality
+3. Consider per-axis (non-uniform) scaling with deformation controls
 3. Consider Scale and Rotate modes after Move is perfected

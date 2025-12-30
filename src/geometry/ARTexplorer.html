@@ -3349,7 +3349,7 @@
                   }
                 } else if (currentGumballTool === "scale") {
                   // ====================================================================
-                  // SCALE MODE: Scale polyhedra edge lengths via sliders
+                  // SCALE MODE: Scale selected object (Form or Instance)
                   // ====================================================================
                   // Calculate movement vector
                   const movement = new THREE.Vector3().subVectors(
@@ -3371,70 +3371,67 @@
                     scaleMovement = movement.dot(selectedHandle.axis);
                   }
 
-                  // Apply sensitivity to match slider step interval (0.1)
-                  // Increased from 0.1 to 15.0 for meaningful scale changes
-                  const scaleSensitivity = 15.0; // Adjusted for visible scaling
+                  // Apply sensitivity for meaningful scale changes
+                  const scaleSensitivity = 15.0;
                   const scaleDelta = scaleMovement * scaleSensitivity;
 
                   console.log(
                     `Scale delta: ${scaleDelta.toFixed(4)}, Handle type: ${selectedHandle.type}`
                   );
 
-                  // Get current slider values
-                  const cubeSlider = document.getElementById("scaleSlider");
-                  const tetSlider = document.getElementById("tetScaleSlider");
+                  // Scale selected polyhedra directly
+                  if (selectedPolyhedra.length > 0) {
+                    selectedPolyhedra.forEach(poly => {
+                      // Get current scale (default to 1.0 if not set)
+                      if (!poly.userData.currentScale) {
+                        poly.userData.currentScale = 1.0;
+                      }
 
-                  // Determine which slider to update based on handle type
-                  if (
-                    selectedHandle.type === "cartesian" ||
-                    selectedHandle.type === "uniform"
-                  ) {
-                    // Update CUBE edge length slider (XYZ basis or uniform)
-                    let currentCubeScale = parseFloat(cubeSlider.value);
-                    let newCubeScale = currentCubeScale + scaleDelta;
+                      // Calculate new scale multiplier
+                      const scaleMultiplier = 1 + scaleDelta * 0.01; // Convert delta to percentage
+                      const newScale = poly.userData.currentScale * scaleMultiplier;
 
-                    // Clamp to slider bounds (0.1 to 10.0)
-                    newCubeScale = Math.max(0.1, Math.min(10.0, newCubeScale));
+                      // Clamp scale to reasonable bounds (0.1 to 10.0)
+                      const clampedScale = Math.max(0.1, Math.min(10.0, newScale));
 
-                    // Update cube slider
-                    cubeSlider.value = newCubeScale;
+                      // Apply uniform scale to the object
+                      poly.scale.set(clampedScale, clampedScale, clampedScale);
 
-                    // Synchronize tet slider (tet = cube × √2)
-                    const newTetScale = newCubeScale * Math.sqrt(2);
-                    tetSlider.value = newTetScale;
+                      // Store current scale for next frame
+                      poly.userData.currentScale = clampedScale;
 
-                    // Trigger slider input events to update Forms
-                    cubeSlider.dispatchEvent(new Event("input", { bubbles: true }));
-                    tetSlider.dispatchEvent(new Event("input", { bubbles: true }));
+                      console.log(
+                        `✅ Scaled ${poly.userData.isInstance ? "Instance" : "Form"}: ${clampedScale.toFixed(4)}`
+                      );
+                    });
 
-                    console.log(
-                      `✅ Cube scale: ${newCubeScale.toFixed(4)}, Tet scale: ${newTetScale.toFixed(4)}`
-                    );
-                  } else if (selectedHandle.type === "quadray") {
-                    // Update TETRAHEDRON edge length slider (WXYZ basis)
-                    let currentTetScale = parseFloat(tetSlider.value);
-                    let newTetScale = currentTetScale + scaleDelta;
+                    // If scaling a Form at origin, also update sliders to reflect change
+                    if (
+                      selectedPolyhedra.length > 0 &&
+                      !selectedPolyhedra[0].userData.isInstance
+                    ) {
+                      const currentScale = selectedPolyhedra[0].userData.currentScale;
+                      const cubeSlider = document.getElementById("scaleSlider");
+                      const tetSlider = document.getElementById("tetScaleSlider");
 
-                    // Clamp to slider bounds (0.1 to 10.0)
-                    newTetScale = Math.max(0.1, Math.min(10.0, newTetScale));
+                      // Update sliders to match the visual scale
+                      const baseCubeEdge = 1.4142; // Default cube edge length
+                      const baseTetEdge = 2.0; // Default tet edge length
 
-                    // Update tet slider
-                    tetSlider.value = newTetScale;
+                      const newCubeEdge = baseCubeEdge * currentScale;
+                      const newTetEdge = baseTetEdge * currentScale;
 
-                    // Synchronize cube slider (cube = tet / √2)
-                    const newCubeScale = newTetScale / Math.sqrt(2);
-                    cubeSlider.value = newCubeScale;
+                      cubeSlider.value = newCubeEdge;
+                      tetSlider.value = newTetEdge;
 
-                    // Trigger slider input events to update Forms
-                    tetSlider.dispatchEvent(new Event("input", { bubbles: true }));
-                    cubeSlider.dispatchEvent(new Event("input", { bubbles: true }));
-
-                    console.log(
-                      `✅ Tet scale: ${newTetScale.toFixed(4)}, Cube scale: ${newCubeScale.toFixed(4)}`
-                    );
+                      document.getElementById("scaleValue").textContent =
+                        newCubeEdge.toFixed(4);
+                      document.getElementById("tetScaleValue").textContent =
+                        newTetEdge.toFixed(4);
+                    }
                   }
 
-                  // NOTE: No position update needed - Forms remain at origin during scaling
+                  // NOTE: No position update needed - objects stay in place during scaling
                   // Editing basis stays in place
                 }
 
