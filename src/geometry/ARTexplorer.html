@@ -1082,6 +1082,12 @@
 
     <script type="module">
       // ========================================================================
+      // MODULE IMPORTS
+      // ========================================================================
+      // TODO: Uncomment when ready to extract gumball to module
+      // import { RTControls } from "./modules/rt-controls.js";
+
+      // ========================================================================
       // PASSWORD PROTECTION
       // ========================================================================
       const PASSWORD = "https://www.spacekinetic.com/careers";
@@ -2753,6 +2759,7 @@
             );
           });
 
+        // INLINE BUTTON HANDLERS - RESTORED (Module extraction deferred)
         // Gumball tool selector functionality
         document.querySelectorAll(".toggle-btn.variant-tool").forEach(btn => {
           btn.addEventListener("click", function () {
@@ -2787,7 +2794,7 @@
           });
         });
 
-        // Snap toggle button functionality
+        // Snap toggle button functionality (NOW HANDLED BY rt-controls.js)
         document.querySelectorAll(".toggle-btn.variant-snap").forEach(btn => {
           btn.addEventListener("click", function () {
             const snapMode = this.dataset.snapMode;
@@ -3588,6 +3595,10 @@
 
         initScene();
         initGumballEventListeners(); // Initialize gumball after scene is ready
+
+        // TODO: Extract to rt-controls.js module when ready
+        // RTControls.init(THREE, Quadray, scene, camera, renderer, controls);
+        // console.log("✅ RTControls module initialized");
 
         // Initialize selection click listener
         renderer.domElement.addEventListener("click", onCanvasClick);
