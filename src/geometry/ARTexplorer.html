@@ -3371,8 +3371,9 @@
                     scaleMovement = movement.dot(selectedHandle.axis);
                   }
 
-                  // Apply reduced sensitivity for fine control
-                  const scaleSensitivity = 0.1; // Much lower than Move mode (5.0)
+                  // Apply sensitivity to match slider step interval (0.1)
+                  // Increased from 0.1 to 15.0 for meaningful scale changes
+                  const scaleSensitivity = 15.0; // Adjusted for visible scaling
                   const scaleDelta = scaleMovement * scaleSensitivity;
 
                   console.log(
