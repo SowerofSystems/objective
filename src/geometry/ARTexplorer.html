@@ -2436,13 +2436,19 @@
         // ========================================================================
 
         let orthographicCamera = null;
-        let perspectiveCamera = camera; // Store reference to initial perspective camera
+        let originalPerspectiveCamera = null; // Will be set after camera is initialized
         let isOrthographic = false;
 
         /**
          * Switch between Perspective and Orthographic camera
          */
         function switchCameraType(toOrthographic) {
+          // CRITICAL: Store the original perspective camera on first call
+          if (!originalPerspectiveCamera && !isOrthographic) {
+            originalPerspectiveCamera = camera;
+            console.log("📸 Saved original perspective camera reference");
+          }
+
           const container = document.getElementById("canvas-container");
           const width = container.clientWidth || window.innerWidth;
           const height = container.clientHeight || window.innerHeight;
@@ -2473,18 +2479,34 @@
             controls.object = orthographicCamera;
             isOrthographic = true;
 
-            console.log("✅ Switched to Orthographic camera");
+            console.log("✅ Switched to Orthographic camera (parallel projection)");
           } else if (!toOrthographic && isOrthographic) {
-            // Switch back to perspective
-            perspectiveCamera.position.copy(camera.position);
-            perspectiveCamera.rotation.copy(camera.rotation);
-            perspectiveCamera.up.copy(camera.up);
+            // Switch back to perspective - use ORIGINAL perspective camera
+            if (!originalPerspectiveCamera) {
+              console.error("❌ Original perspective camera not found!");
+              return;
+            }
 
-            camera = perspectiveCamera;
-            controls.object = perspectiveCamera;
+            // Copy current position/rotation from orthographic camera to perspective camera
+            originalPerspectiveCamera.position.copy(camera.position);
+            originalPerspectiveCamera.rotation.copy(camera.rotation);
+            originalPerspectiveCamera.up.copy(camera.up);
+
+            // CRITICAL: Update perspective camera aspect ratio and projection matrix
+            originalPerspectiveCamera.aspect = aspect;
+            originalPerspectiveCamera.updateProjectionMatrix();
+
+            // Switch to perspective - use the ORIGINAL camera
+            camera = originalPerspectiveCamera;
+            controls.object = originalPerspectiveCamera;
             isOrthographic = false;
 
-            console.log("✅ Switched to Perspective camera");
+            console.log(
+              "✅ Switched to Perspective camera - TRUE perspective with view cone restored"
+            );
+            console.log(
+              `   Camera type: ${camera.isPerspectiveCamera ? "PerspectiveCamera" : camera.isOrthographicCamera ? "OrthographicCamera" : "Unknown"}`
+            );
           }
 
           controls.update();
@@ -2549,16 +2571,22 @@
               break;
 
             case "perspective":
-              // Perspective view - slightly offset from isometric for dynamic feel
-              // Position: asymmetric to encourage orbit exploration
-              camera.position.set(5, -5, 5);
-              camera.up.set(0, 0, 1); // Z points up
-              // Ensure we're in perspective mode
+              // TRUE PERSPECTIVE view - return to initial app state
+              // CRITICAL: Switch to perspective camera FIRST, then set position
               if (isOrthographic) {
                 orthoCheckbox.checked = false;
                 switchCameraType(false);
               }
-              break;
+              // Now set the perspective camera to initial position
+              camera.position.set(5, -5, 5);
+              camera.up.set(0, 0, 1); // Z points up
+              camera.lookAt(0, 0, 0);
+              controls.target.set(0, 0, 0);
+              controls.update();
+              console.log(
+                `✅ Camera preset: perspective (TRUE perspective mode restored)`
+              );
+              return; // Skip the common camera setup below
           }
 
           camera.lookAt(0, 0, 0);
