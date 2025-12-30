@@ -1,7 +1,15 @@
 /**
  * WaterHeatingNodes.js - Water Heating System (Section 07)
  *
- * Water heating fuel type, efficiency, and energy calculations
+ * Matches legacy Section07.js calculation logic exactly.
+ * Key fields:
+ * - d_49: Water Use Method dropdown
+ * - e_49: User Defined litres/person/day
+ * - e_50: By Engineer direct kWh/yr input
+ * - j_50: Calculated hot water energy demand
+ * - d_51: System type (Heatpump, Gas, Oil, Electric)
+ * - d_52: Efficiency %
+ * - d_53: Fuel consumption
  */
 (function () {
   "use strict";
@@ -18,33 +26,77 @@
     "Heatpump": { unit: "kWh", factor: 1 },
   };
 
+  // Litres per person per day by method
+  const METHOD_LPPPD = {
+    "User Defined": null,  // Uses e_49 input
+    "By Engineer": null,   // Uses e_50 direct input
+    "PHPP Method": 62.5,
+    "NBC Method": 220,
+    "OBC Method": 275,
+    "Luxury": 400,
+  };
+
   function register(graph) {
     const inputs = [
-      { id: "waterHeating.systemType", legacyId: "d_51", section: "S07", classification: "C", label: "Water Heating System Type", defaultValue: "Electric" },
-      { id: "waterHeating.efficiency", legacyId: "d_52", section: "S07", classification: "C", label: "Water Heating Efficiency (%)", defaultValue: 95 },
-      { id: "waterHeating.annualDemand", legacyId: "d_49", section: "S07", classification: "C", label: "Hot Water Demand (L/day)", defaultValue: 200 },
-      { id: "waterHeating.deltaT", legacyId: "e_49", section: "S07", classification: "C", label: "Temperature Rise (°C)", defaultValue: 45 },
+      { id: "waterHeating.method", legacyId: "d_49", section: "S07", classification: "C", label: "Water Use Method", defaultValue: "User Defined" },
+      { id: "waterHeating.userDefinedLpppd", legacyId: "e_49", section: "S07", classification: "C", label: "User Defined Water Use (L/person/day)", defaultValue: 40 },
+      { id: "waterHeating.byEngineerKwh", legacyId: "e_50", section: "S07", classification: "C", label: "By Engineer Energy Demand (kWh/yr)", defaultValue: 10000 },
+      { id: "waterHeating.systemType", legacyId: "d_51", section: "S07", classification: "C", label: "Water Heating System Type", defaultValue: "Heatpump" },
+      { id: "waterHeating.efficiency", legacyId: "d_52", section: "S07", classification: "C", label: "Water Heating Efficiency (%)", defaultValue: 300 },
     ];
 
     graph.registerInputs(inputs);
 
-    // Water heating energy demand
+    // Litres per person per day (computed from method)
     graph.registerNode({
-      id: "waterHeating.energyDemand",
-      legacyId: "e_50",
+      id: "waterHeating.lpppd",
+      legacyId: "h_49",
       section: "S07",
       classification: "C",
-      dependencies: ["waterHeating.annualDemand", "waterHeating.deltaT"],
-      label: "Water Heating Energy Demand (kWh/yr)",
+      dependencies: ["waterHeating.method", "waterHeating.userDefinedLpppd", "waterHeating.byEngineerKwh", "occupancy.occupants"],
+      label: "Litres per Person per Day",
       compute: (inputs) => {
-        const demand = parseFloat(inputs["waterHeating.annualDemand"]) || 200;
-        const deltaT = parseFloat(inputs["waterHeating.deltaT"]) || 45;
-        // Q = m * c * deltaT; c = 4.186 kJ/kg°C, convert to kWh
-        return (demand * 365 * 4.186 * deltaT) / 3600;
+        const method = inputs["waterHeating.method"] || "User Defined";
+        const userDefined = parseFloat(inputs["waterHeating.userDefinedLpppd"]) || 40;
+        const byEngineer = parseFloat(inputs["waterHeating.byEngineerKwh"]) || 10000;
+        const occupants = parseFloat(inputs["occupancy.occupants"]) || 4;
+
+        if (method === "By Engineer") {
+          // Reverse-calculate lpppd from kWh
+          const waterHeatFactor = 0.0524;
+          return occupants > 0 ? byEngineer / (365 * waterHeatFactor * occupants * 0.4) : 0;
+        } else if (method === "User Defined") {
+          return userDefined;
+        } else {
+          return METHOD_LPPPD[method] || 40;
+        }
       },
     });
 
-    // Water heating fuel consumption
+    // Hot water energy demand (j_50 in legacy)
+    graph.registerNode({
+      id: "waterHeating.energyDemand",
+      legacyId: "j_50",
+      section: "S07",
+      classification: "C",
+      dependencies: ["waterHeating.method", "waterHeating.lpppd", "waterHeating.byEngineerKwh", "occupancy.occupants"],
+      label: "Hot Water Energy Demand (kWh/yr)",
+      compute: (inputs) => {
+        const method = inputs["waterHeating.method"] || "User Defined";
+        const lpppd = parseFloat(inputs["waterHeating.lpppd"]) || 40;
+        const byEngineer = parseFloat(inputs["waterHeating.byEngineerKwh"]) || 10000;
+        const occupants = parseFloat(inputs["occupancy.occupants"]) || 4;
+
+        if (method === "By Engineer") {
+          return byEngineer;
+        } else {
+          // Formula: lpppd * 0.4 * occupants * 0.0523 * 365
+          return lpppd * 0.4 * occupants * 0.0523 * 365;
+        }
+      },
+    });
+
+    // Water heating fuel consumption (d_53)
     graph.registerNode({
       id: "waterHeating.fuelConsumption",
       legacyId: "d_53",
@@ -58,14 +110,17 @@
         const systemType = inputs["waterHeating.systemType"] || "Electric";
         const factor = FUEL_FACTORS[systemType]?.factor || 1;
 
-        const energyIn = efficiency > 0 ? demand / (efficiency / 100) : demand;
-        return factor !== 1 ? energyIn / factor : energyIn;
+        // Net thermal demand = energy / (efficiency/100)
+        const netThermalDemand = efficiency > 0 ? demand / (efficiency / 100) : demand;
+
+        // Convert to fuel units if not electric/heatpump
+        return factor !== 1 ? netThermalDemand / factor : netThermalDemand;
       },
     });
 
     console.log("[WaterHeatingNodes] Registered", inputs.length, "inputs");
   }
 
-  window.TEUI.ComputationNodes.WaterHeating = { register, FUEL_FACTORS };
+  window.TEUI.ComputationNodes.WaterHeating = { register, FUEL_FACTORS, METHOD_LPPPD };
   console.log("[WaterHeatingNodes] Module loaded");
 })();
