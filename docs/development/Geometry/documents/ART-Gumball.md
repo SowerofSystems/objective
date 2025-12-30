@@ -1702,5 +1702,577 @@ RT's algebraic exactness may align with:
 
 ---
 
-**Status:** Ready for implementation planning
-**Next Steps:** Create detailed UI mockups and begin Phase 1 development
+## Session Plan: 2025-12-30 - Selection System & StateManager (CRITICAL)
+
+### Current State (as of 2025-12-29 EOD)
+
+**Branch:** Gumball
+**Commit:** 2cf2da1 - "Revert: Reset to working inline gumball version for analysis"
+
+**What We Have:**
+- ✅ Working inline gumball implementation in ARTexplorer.html
+- ✅ Extracted rt-controls.js module saved for comparison
+- ✅ Move tool with WXYZ and XYZ dual coordinate system support
+- ✅ Grid snapping, real-time coordinate updates, editing basis following forms
+- ✅ Backup branch `backup-broken-state` preserving broken extraction attempt
+
+**What's Broken:**
+- ❌ Previous hasty rt-controls.js extraction broke all axis movement except W-axis (partially)
+- ❌ No selection system - all visible polyhedra move together globally
+- ❌ No StateManager - cannot track Forms vs Instances
+- ❌ NOW button deposits instances but they remain coupled to Forms
+- ❌ Cannot delete, undo/redo, or isolate individual objects
+
+### Priority 1: Analyze Failed Module Extraction (2-3 hours)
+
+**Goal:** Understand what broke when extracting gumball code to rt-controls.js module
+
+**Tasks:**
+1. **Side-by-side comparison** - Compare inline gumball code in ARTexplorer.html with extracted rt-controls.js
+2. **Identify broken dependencies:**
+   - What global variables does inline code access?
+   - Which THREE.js objects (scene, camera, renderer, controls) need proper passing?
+   - How do event listeners differ between inline and module contexts?
+   - Why does editing basis creation fail in module but work inline?
+   - What causes X/Y/Z axes to break while W-axis works partially?
+3. **Document findings** - Create detailed analysis of what dependencies must be preserved
+4. **Plan systematic extraction** - Design incremental approach with testing at each step
+
+**Key Questions to Answer:**
+- Does inline code rely on global `scene`, `camera`, `renderer`, `controls` variables?
+- Are there closure/scope issues with `this` binding in ES6 module class?
+- Do event listeners lose context when moved to module?
+- Is `editingBasis` reference lost between inline and module?
+- What's different about W-axis that makes it partially work vs X/Y/Z total failure?
+
+**Deliverable:** Analysis document outlining exact dependencies and extraction plan
+
+---
+
+### Priority 2: Implement Selection System (4-5 hours)
+
+**Goal:** Enable click-to-select individual polyhedra/instances with visual feedback
+
+**CRITICAL:** This is blocking all further progress. Without selection, we cannot:
+- Distinguish Forms (templates at origin) from Instances (deposited snapshots)
+- Edit individual objects without affecting everything globally
+- Implement delete functionality
+- Track state properly
+- Have a functional Forms/Instances workflow
+
+**Tasks:**
+
+#### 2.1: Click-to-Select Raycasting
+```javascript
+/**
+ * Handle canvas click for object selection
+ * Add to ARTexplorer.html (inline for now, extract later)
+ */
+function onCanvasClick(event) {
+  // Prevent selection during gumball drag operations
+  if (isDragging) return;
+
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+
+  // Convert mouse position to normalized device coordinates
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+
+  // Check for polyhedra hits (all groups with userData.polyhedronType)
+  const selectableObjects = [];
+  scene.traverse(obj => {
+    if (obj.userData && obj.userData.polyhedronType) {
+      selectableObjects.push(obj);
+    }
+  });
+
+  const intersects = raycaster.intersectObjects(selectableObjects, true);
+
+  if (intersects.length > 0) {
+    // Find parent group (traverse up from mesh to group)
+    let hitObject = intersects[0].object;
+    while (hitObject.parent && !hitObject.userData.polyhedronType) {
+      hitObject = hitObject.parent;
+    }
+
+    selectPolyhedron(hitObject);
+  } else {
+    // Clicked empty space - deselect all
+    deselectAll();
+  }
+}
+
+// Attach listener
+renderer.domElement.addEventListener('click', onCanvasClick);
+```
+
+#### 2.2: Visual Selection Highlight
+```javascript
+/**
+ * Highlight selected polyhedron with emissive glow
+ */
+let currentSelection = null;
+
+function selectPolyhedron(polyhedron) {
+  // Deselect previous
+  if (currentSelection) {
+    clearHighlight(currentSelection);
+  }
+
+  // Highlight new selection
+  currentSelection = polyhedron;
+  applyHighlight(polyhedron);
+
+  console.log(`✅ Selected: ${polyhedron.userData.polyhedronType}`);
+}
+
+function applyHighlight(polyhedron) {
+  polyhedron.traverse(mesh => {
+    if (mesh.isMesh) {
+      // Store original emissive for restoration
+      mesh.userData.originalEmissive = mesh.material.emissive.clone();
+      mesh.userData.originalEmissiveIntensity = mesh.material.emissiveIntensity;
+
+      // Apply blue glow
+      mesh.material.emissive.setHex(0x4a9eff);
+      mesh.material.emissiveIntensity = 0.3;
+    }
+  });
+}
+
+function clearHighlight(polyhedron) {
+  polyhedron.traverse(mesh => {
+    if (mesh.isMesh && mesh.userData.originalEmissive) {
+      mesh.material.emissive.copy(mesh.userData.originalEmissive);
+      mesh.material.emissiveIntensity = mesh.userData.originalEmissiveIntensity;
+    }
+  });
+}
+
+function deselectAll() {
+  if (currentSelection) {
+    clearHighlight(currentSelection);
+    currentSelection = null;
+  }
+  console.log('✅ Deselected all');
+}
+```
+
+#### 2.3: Integrate Selection with Gumball
+```javascript
+/**
+ * Modify getSelectedPolyhedra() to return ONLY currently selected object
+ * Replace the TEMPORARY workaround that selects all visible polyhedra
+ */
+function getSelectedPolyhedra() {
+  // Return only the currently selected polyhedron
+  if (currentSelection) {
+    return [currentSelection];
+  }
+  return [];
+}
+```
+
+**Testing Checklist:**
+- [ ] Click on hexahedron → hexahedron glows blue, becomes selected
+- [ ] Click on dual tetrahedron → tetrahedron glows, hexahedron deselects
+- [ ] Click on empty space → all deselect, no glow
+- [ ] Activate Move tool on selected object → only selected object moves
+- [ ] Deactivate Move tool → glow persists (selection separate from tool state)
+- [ ] Multiple clicks on same object → remains selected (no toggle)
+
+**Deliverable:** Working click-to-select with visual feedback, only selected objects move
+
+---
+
+### Priority 3: Implement StateManager (3-4 hours)
+
+**Goal:** Create `rt-state-manager.js` module following TEUI/OBJECTIVE pattern
+
+**Why Critical:**
+- Without StateManager, we cannot distinguish Forms from Instances
+- Cannot track deposited instances for delete/undo/redo
+- Cannot export/import sessions
+- Cannot implement proper NOW button workflow
+
+**Tasks:**
+
+#### 3.1: Create rt-state-manager.js Module
+```javascript
+/**
+ * rt-state-manager.js
+ * State management for ART Gumball system
+ * Following TEUI/OBJECTIVE StateManager pattern
+ */
+
+export const RTStateManager = {
+  // Forms registry (templates - always at origin)
+  forms: {
+    tetrahedron: { type: 'tetrahedron', name: 'Tetrahedron' },
+    cube: { type: 'cube', name: 'Hexahedron' },
+    octahedron: { type: 'octahedron', name: 'Octahedron' },
+    icosahedron: { type: 'icosahedron', name: 'Icosahedron' },
+    dodecahedron: { type: 'dodecahedron', name: 'Dodecahedron' },
+    dualTetrahedron: { type: 'dualTetrahedron', name: 'Dual Tetrahedron' }
+  },
+
+  // Active Form (currently being transformed, NOT yet deposited)
+  activeForm: null,
+
+  // Deposited Instances (all "Nows" - immutable snapshots)
+  instances: [],
+
+  // Selection state
+  selection: {
+    type: null,      // 'form' or 'instance'
+    id: null,        // Instance ID or null for Form
+    object: null     // THREE.Object3D reference
+  },
+
+  // Undo/Redo stacks
+  history: {
+    undoStack: [],
+    redoStack: [],
+    maxHistory: 50
+  },
+
+  // Gumball state
+  gumball: {
+    tool: null,           // 'move', 'scale', 'rotate', or null
+    editingBasis: null,   // THREE.Group for localized gumball
+    visible: false
+  }
+};
+
+/**
+ * Create Instance from current transform state
+ */
+export function createInstance(polyhedronGroup, scene) {
+  const instance = {
+    id: generateUUID(),
+    timestamp: Date.now(),
+    type: polyhedronGroup.userData.polyhedronType,
+    transform: {
+      position: {
+        cartesian: {
+          x: polyhedronGroup.position.x,
+          y: polyhedronGroup.position.y,
+          z: polyhedronGroup.position.z
+        }
+      },
+      rotation: {
+        euler: {
+          x: polyhedronGroup.rotation.x,
+          y: polyhedronGroup.rotation.y,
+          z: polyhedronGroup.rotation.z
+        }
+      },
+      scale: {
+        x: polyhedronGroup.scale.x,
+        y: polyhedronGroup.scale.y,
+        z: polyhedronGroup.scale.z
+      }
+    },
+    threeObject: polyhedronGroup.clone() // Deep clone for independence
+  };
+
+  // Add to instances array
+  RTStateManager.instances.push(instance);
+
+  // Add to scene
+  scene.add(instance.threeObject);
+
+  // Add to undo stack
+  addToHistory({ action: 'create', instance });
+
+  console.log(`✅ Instance created: ${instance.type} #${RTStateManager.instances.length}`);
+
+  return instance;
+}
+
+/**
+ * Delete Instance by ID
+ */
+export function deleteInstance(instanceId, scene) {
+  const index = RTStateManager.instances.findIndex(i => i.id === instanceId);
+  if (index === -1) return;
+
+  const instance = RTStateManager.instances[index];
+
+  // Remove from scene
+  scene.remove(instance.threeObject);
+
+  // Remove from array
+  RTStateManager.instances.splice(index, 1);
+
+  // Add to undo stack
+  addToHistory({ action: 'delete', instance, index });
+
+  console.log(`✅ Instance deleted: ${instance.type}`);
+}
+
+/**
+ * Generate UUID for instances
+ */
+function generateUUID() {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+/**
+ * Add action to undo stack
+ */
+function addToHistory(action) {
+  RTStateManager.history.undoStack.push(action);
+  RTStateManager.history.redoStack = []; // Clear redo on new action
+
+  // Limit history size
+  if (RTStateManager.history.undoStack.length > RTStateManager.history.maxHistory) {
+    RTStateManager.history.undoStack.shift();
+  }
+}
+```
+
+#### 3.2: Integrate StateManager with NOW Button
+```javascript
+/**
+ * Update NOW button to use StateManager
+ * ARTexplorer.html
+ */
+document.getElementById('now-btn').addEventListener('click', () => {
+  const selectedPolyhedra = getSelectedPolyhedra();
+
+  if (selectedPolyhedra.length === 0) {
+    console.warn('⚠️ No polyhedra selected - cannot deposit instance');
+    return;
+  }
+
+  // Deposit each selected polyhedron as instance
+  selectedPolyhedra.forEach(poly => {
+    const instance = createInstance(poly, scene);
+
+    // Update counter
+    document.getElementById('now-count').textContent = RTStateManager.instances.length;
+  });
+});
+```
+
+**Testing Checklist:**
+- [ ] Import rt-state-manager.js into ARTexplorer.html
+- [ ] Select polyhedron, move it, click NOW → instance created and tracked
+- [ ] Instance counter increments correctly
+- [ ] Multiple NOW clicks → multiple instances at same/different positions
+- [ ] Instances persist in scene independently
+- [ ] Console logs show instance creation with unique IDs
+
+**Deliverable:** Functional StateManager tracking all instances with NOW button integration
+
+---
+
+### Priority 4: Forms vs Instances Workflow (2-3 hours)
+
+**Goal:** Implement proper separation between Forms (templates at origin) and Instances (deposited snapshots)
+
+**Current Problem:**
+- When a polyhedron is moved and deposited via NOW, it remains in the moved position
+- The "Form" (template) should reset to origin after deposition
+- User should be able to create multiple instances from same Form without interference
+
+**Proposed Workflow:**
+
+#### 4.1: Reset Form After Instance Creation
+```javascript
+/**
+ * After depositing instance, reset Form to origin
+ */
+function depositAndResetForm(formGroup, scene) {
+  // Create instance at current transform
+  const instance = createInstance(formGroup, scene);
+
+  // Reset Form to origin
+  formGroup.position.set(0, 0, 0);
+  formGroup.rotation.set(0, 0, 0);
+  formGroup.scale.set(1, 1, 1);
+
+  // Update coordinate inputs
+  updateCoordinateInputs(formGroup);
+
+  console.log(`✅ Form reset to origin, instance deposited`);
+
+  return instance;
+}
+```
+
+#### 4.2: Mark Forms vs Instances in userData
+```javascript
+/**
+ * When creating polyhedra groups in initScene()
+ */
+cubeGroup.userData.isForm = true;         // Template at origin
+cubeGroup.userData.polyhedronType = 'cube';
+
+// When depositing instance
+instance.threeObject.userData.isForm = false;  // Deposited snapshot
+instance.threeObject.userData.instanceId = instance.id;
+```
+
+#### 4.3: Selection Logic Differentiates Forms vs Instances
+```javascript
+/**
+ * Update selectPolyhedron to track selection type
+ */
+function selectPolyhedron(polyhedron) {
+  // ... existing highlight code ...
+
+  // Update StateManager selection
+  if (polyhedron.userData.isForm) {
+    RTStateManager.selection = {
+      type: 'form',
+      id: null,
+      object: polyhedron
+    };
+    console.log(`✅ Form selected: ${polyhedron.userData.polyhedronType}`);
+  } else {
+    RTStateManager.selection = {
+      type: 'instance',
+      id: polyhedron.userData.instanceId,
+      object: polyhedron
+    };
+    console.log(`✅ Instance selected: ${polyhedron.userData.instanceId}`);
+  }
+}
+```
+
+**Testing Checklist:**
+- [ ] Select Form (hexahedron at origin) → marked as Form in StateManager
+- [ ] Move Form to (1, 1, 1) → Form moves, origin basis stays at (0,0,0)
+- [ ] Click NOW → Instance deposited at (1,1,1), Form resets to (0,0,0)
+- [ ] Move Form again to (2, 2, 2) → First instance stays at (1,1,1)
+- [ ] Click NOW again → Second instance at (2,2,2), Form resets to (0,0,0)
+- [ ] Select first instance → marked as Instance in StateManager
+- [ ] Move first instance → only that instance moves, Form stays at origin
+- [ ] Forms always at origin after deposition, Instances independent
+
+**Deliverable:** Working Forms/Instances separation with proper reset behavior
+
+---
+
+### Priority 5: Delete & Undo/Redo (2-3 hours) - OPTIONAL
+
+**Goal:** Implement delete key and undo/redo keyboard shortcuts
+
+**Only proceed if Priorities 1-4 completed and tested**
+
+#### 5.1: Delete Key Functionality
+```javascript
+/**
+ * Delete selected instance
+ */
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Delete' || event.key === 'Backspace') {
+    if (RTStateManager.selection.type === 'instance') {
+      deleteInstance(RTStateManager.selection.id, scene);
+
+      // Clear selection
+      deselectAll();
+
+      // Update counter
+      document.getElementById('now-count').textContent = RTStateManager.instances.length;
+    } else {
+      console.warn('⚠️ Cannot delete Forms (templates), only Instances');
+    }
+  }
+});
+```
+
+#### 5.2: Undo/Redo Implementation
+```javascript
+/**
+ * Undo last action
+ */
+function undo(scene) {
+  if (RTStateManager.history.undoStack.length === 0) return;
+
+  const action = RTStateManager.history.undoStack.pop();
+
+  switch (action.action) {
+    case 'create':
+      // Remove instance
+      const index = RTStateManager.instances.findIndex(i => i.id === action.instance.id);
+      if (index !== -1) {
+        scene.remove(RTStateManager.instances[index].threeObject);
+        RTStateManager.instances.splice(index, 1);
+      }
+      break;
+
+    case 'delete':
+      // Re-add instance
+      RTStateManager.instances.splice(action.index, 0, action.instance);
+      scene.add(action.instance.threeObject);
+      break;
+  }
+
+  RTStateManager.history.redoStack.push(action);
+  console.log(`✅ Undo: ${action.action}`);
+}
+
+/**
+ * Keyboard shortcuts
+ */
+document.addEventListener('keydown', (event) => {
+  // Cmd+Z or Ctrl+Z
+  if ((event.metaKey || event.ctrlKey) && event.key === 'z' && !event.shiftKey) {
+    event.preventDefault();
+    undo(scene);
+    document.getElementById('now-count').textContent = RTStateManager.instances.length;
+  }
+
+  // Cmd+Shift+Z or Ctrl+Shift+Z
+  if ((event.metaKey || event.ctrlKey) && event.key === 'z' && event.shiftKey) {
+    event.preventDefault();
+    redo(scene);
+    document.getElementById('now-count').textContent = RTStateManager.instances.length;
+  }
+});
+```
+
+**Deliverable:** Delete key removes instances, Cmd+Z/Ctrl+Z undo/redo working
+
+---
+
+### Success Criteria for Session
+
+**Minimum (Must Complete):**
+1. ✅ Analysis document explaining why module extraction failed
+2. ✅ Click-to-select working with visual highlight
+3. ✅ StateManager tracking instances
+4. ✅ Forms reset to origin after NOW button pressed
+
+**Stretch Goals (If Time Permits):**
+5. ✅ Delete key functionality
+6. ✅ Undo/Redo keyboard shortcuts
+
+**DO NOT ATTEMPT:**
+- ❌ Module extraction of rt-controls.js until analysis complete and dependencies understood
+- ❌ New features beyond selection/state management
+- ❌ Scale or Rotate modes (wait for selection to be stable first)
+
+---
+
+### Commit Strategy
+
+**Commit after each priority:**
+1. After Priority 1: "Docs: Analysis of failed rt-controls.js extraction"
+2. After Priority 2: "Feat: Implement click-to-select with visual highlight"
+3. After Priority 3: "Feat: Add StateManager for Forms/Instances tracking"
+4. After Priority 4: "Feat: Implement Forms/Instances workflow with reset"
+5. After Priority 5 (optional): "Feat: Add delete key and undo/redo shortcuts"
+
+**End of session:** Commit working state and update this document with outcomes
+
+---
+
+**Status:** Session plan ready for 2025-12-30
+**Next Steps:** Follow priorities in order, test thoroughly at each stage, commit frequently
