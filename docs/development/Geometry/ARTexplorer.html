@@ -131,14 +131,7 @@
               </label>
             </div>
             <div class="control-item">
-              <label
-                style="
-                  font-size: 12px;
-                  color: #b0b0b0;
-                  display: block;
-                  margin-bottom: 5px;
-                "
-              >
+              <label class="label-section">
                 <span
                   class="geodesic-toggle collapsed"
                   data-target="cartesian-planes"
@@ -166,10 +159,8 @@
                     </div>
                   </div>
                 </div>
-                <div style="margin-top: 10px">
-                  <label style="font-size: 11px; color: #b0b0b0"
-                    >Grid Intervals</label
-                  >
+                <div class="spacing-top-large">
+                  <label class="label-subsection">Grid Intervals</label>
                   <div class="slider-container">
                     <input
                       type="range"
@@ -185,14 +176,7 @@
               </div>
             </div>
             <div class="control-item">
-              <label
-                style="
-                  font-size: 12px;
-                  color: #b0b0b0;
-                  display: block;
-                  margin-bottom: 5px;
-                "
-              >
+              <label class="label-section">
                 <span
                   class="geodesic-toggle collapsed"
                   data-target="ivm-grids"
@@ -245,14 +229,7 @@
               </div>
             </div>
             <div class="control-item">
-              <label
-                style="
-                  font-size: 12px;
-                  color: #b0b0b0;
-                  display: block;
-                  margin-bottom: 5px;
-                "
-              >
+              <label class="label-section">
                 <span
                   class="geodesic-toggle"
                   data-target="central-angle-grids"
@@ -298,10 +275,8 @@
                     </div>
                   </div>
                 </div>
-                <div style="margin-top: 10px">
-                  <label style="font-size: 11px; color: #b0b0b0"
-                    >Grid Intervals</label
-                  >
+                <div class="spacing-top-large">
+                  <label class="label-subsection">Grid Intervals</label>
                   <div class="slider-container">
                     <input
                       type="range"
@@ -314,7 +289,7 @@
                     <span class="slider-value" id="quadrayTessValue">12</span>
                   </div>
                 </div>
-                <p class="info-text" style="font-size: 10px; margin-top: 5px">
+                <p class="info-text spacing-top-small">
                   Central Angle: Triangular faces tessellated vertex-to-vertex
                   using tet edge length 2s√2 (corrected implementation without
                   bugs)
@@ -769,35 +744,35 @@
           <div id="controls-section" class="section-content">
             <!-- Tool Mode -->
             <div class="control-item">
-              <label style="font-size: 12px; color: #b0b0b0">Tool Mode</label>
-              <div class="gumball-tool-selector">
-                <button class="gumball-tool-btn" data-gumball-tool="move">
+              <label class="label-section">Tool Mode</label>
+              <div class="toggle-btn-group">
+                <button class="toggle-btn variant-tool" data-gumball-tool="move">
                   Move
                 </button>
-                <button class="gumball-tool-btn" data-gumball-tool="scale">
+                <button class="toggle-btn variant-tool" data-gumball-tool="scale">
                   Scale
                 </button>
-                <button class="gumball-tool-btn" data-gumball-tool="rotate">
+                <button class="toggle-btn variant-tool" data-gumball-tool="rotate">
                   Rotate
                 </button>
               </div>
             </div>
 
             <!-- Grid Snapping -->
-            <div class="control-item" style="margin-top: 15px">
-              <label style="font-size: 12px; color: #b0b0b0">Grid Snapping</label>
-              <div class="snap-toggle-container" style="display: flex; gap: 8px; margin-top: 8px;">
-                <button id="snapFree" class="snap-toggle-btn active" data-snap-mode="free" style="flex: 1; padding: 6px; background: #333; color: #00ff88; border: 1px solid #00ff88; border-radius: 4px; cursor: pointer; font-size: 12px;">
+            <div class="control-item spacing-top-large">
+              <label class="label-section">Grid Snapping</label>
+              <div class="snap-toggle-container">
+                <button id="snapFree" class="toggle-btn variant-snap active" data-snap-mode="free">
                   Free
                 </button>
-                <button id="snapXYZ" class="snap-toggle-btn" data-snap-mode="xyz" style="flex: 1; padding: 6px; background: #222; color: #888; border: 1px solid #444; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                <button id="snapXYZ" class="toggle-btn variant-snap" data-snap-mode="xyz">
                   XYZ
                 </button>
-                <button id="snapWXYZ" class="snap-toggle-btn" data-snap-mode="wxyz" style="flex: 1; padding: 6px; background: #222; color: #888; border: 1px solid #444; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                <button id="snapWXYZ" class="toggle-btn variant-snap" data-snap-mode="wxyz">
                   WXYZ
                 </button>
               </div>
-              <div style="font-size: 10px; color: #666; margin-top: 5px; line-height: 1.4;">
+              <div class="snap-description">
                 <strong>Free:</strong> No snapping (full precision)<br>
                 <strong>XYZ:</strong> Snap to 0.1 Cartesian grid<br>
                 <strong>WXYZ:</strong> Snap to √6/4 ≈ 0.612 Quadray grid
@@ -805,53 +780,53 @@
             </div>
 
             <!-- Cartesian Coordinates (XYZ) -->
-            <div class="control-item" style="margin-top: 15px">
-              <label style="font-size: 12px; color: #b0b0b0">XYZ Coordinates</label>
-              <div class="coordinate-inputs" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;">
-                <div style="display: flex; flex-direction: column; gap: 2px;">
-                  <label style="font-size: 10px; color: #ff6666; font-weight: bold; text-align: center;">X</label>
-                  <input type="text" id="coordX" class="coord-input" style="border-left: 2px solid #ff6666;" value="0.0000" />
+            <div class="control-item spacing-top-large">
+              <label class="label-section">XYZ Coordinates</label>
+              <div class="coordinate-inputs">
+                <div class="coord-container">
+                  <label class="label-axis label-axis-x">X</label>
+                  <input type="text" id="coordX" class="coord-input axis-x" value="0.0000" />
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 2px;">
-                  <label style="font-size: 10px; color: #66ff66; font-weight: bold; text-align: center;">Y</label>
-                  <input type="text" id="coordY" class="coord-input" style="border-left: 2px solid #66ff66;" value="0.0000" />
+                <div class="coord-container">
+                  <label class="label-axis label-axis-y">Y</label>
+                  <input type="text" id="coordY" class="coord-input axis-y" value="0.0000" />
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 2px;">
-                  <label style="font-size: 10px; color: #6666ff; font-weight: bold; text-align: center;">Z</label>
-                  <input type="text" id="coordZ" class="coord-input" style="border-left: 2px solid #6666ff;" value="0.0000" />
+                <div class="coord-container">
+                  <label class="label-axis label-axis-z">Z</label>
+                  <input type="text" id="coordZ" class="coord-input axis-z" value="0.0000" />
                 </div>
               </div>
             </div>
 
             <!-- Quadray Coordinates (WXYZ) -->
-            <div class="control-item" style="margin-top: 10px">
-              <label style="font-size: 12px; color: #b0b0b0">WXYZ Coordinates</label>
-              <div class="coordinate-inputs" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px;">
-                <div style="display: flex; flex-direction: column; gap: 2px;">
-                  <label style="font-size: 10px; color: #ffff66; font-weight: bold; text-align: center;">W</label>
-                  <input type="text" id="coordW" class="coord-input" style="border-left: 2px solid #ffff66;" value="0.0000" />
+            <div class="control-item spacing-top-large">
+              <label class="label-section">WXYZ Coordinates</label>
+              <div class="coordinate-inputs">
+                <div class="coord-container">
+                  <label class="label-axis label-axis-w">W</label>
+                  <input type="text" id="coordW" class="coord-input axis-w" value="0.0000" />
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 2px;">
-                  <label style="font-size: 10px; color: #ff6666; font-weight: bold; text-align: center;">X</label>
-                  <input type="text" id="coordX2" class="coord-input" style="border-left: 2px solid #ff6666;" value="0.0000" />
+                <div class="coord-container">
+                  <label class="label-axis label-axis-x">X</label>
+                  <input type="text" id="coordX2" class="coord-input axis-x" value="0.0000" />
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 2px;">
-                  <label style="font-size: 10px; color: #66ff66; font-weight: bold; text-align: center;">Y</label>
-                  <input type="text" id="coordY2" class="coord-input" style="border-left: 2px solid #66ff66;" value="0.0000" />
+                <div class="coord-container">
+                  <label class="label-axis label-axis-y">Y</label>
+                  <input type="text" id="coordY2" class="coord-input axis-y" value="0.0000" />
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 2px;">
-                  <label style="font-size: 10px; color: #6666ff; font-weight: bold; text-align: center;">Z</label>
-                  <input type="text" id="coordZ2" class="coord-input" style="border-left: 2px solid #6666ff;" value="0.0000" />
+                <div class="coord-container">
+                  <label class="label-axis label-axis-z">Z</label>
+                  <input type="text" id="coordZ2" class="coord-input axis-z" value="0.0000" />
                 </div>
               </div>
             </div>
 
             <!-- NOW Button -->
-            <div class="control-item" style="margin-top: 15px">
-              <button id="nowButton" class="gumball-action-btn" style="width: 100%; background: #00ff88; color: #1a1a1a; font-weight: bold; padding: 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+            <div class="control-item spacing-top-large">
+              <button id="nowButton" class="gumball-action-btn">
                 🕐 NOW
               </button>
-              <div class="now-counter" style="text-align: center; margin-top: 5px; font-size: 12px; color: #888;">
+              <div class="now-counter">
                 Deposited: <span id="nowCount">0</span>
               </div>
             </div>
@@ -869,22 +844,14 @@
           </h3>
           <div id="file-section" class="section-content collapsed">
             <div class="control-item">
-              <label style="font-size: 12px; color: #b0b0b0"
-                >File Operations</label
-              >
-              <div class="node-size-selector">
-                <button class="node-size-btn" id="importBtn" disabled>
-                  Import
-                </button>
-                <button class="node-size-btn" id="exportBtn" disabled>
-                  Export
-                </button>
-                <button class="node-size-btn" id="saveBtn" disabled>
-                  Save
-                </button>
+              <label class="label-section">File Operations</label>
+              <div class="toggle-btn-group">
+                <button class="toggle-btn variant-standard" id="importBtn" disabled>Import</button>
+                <button class="toggle-btn variant-standard" id="exportBtn" disabled>Export</button>
+                <button class="toggle-btn variant-standard" id="saveBtn" disabled>Save</button>
               </div>
             </div>
-            <p class="info-text" style="font-size: 10px">
+            <p class="info-text">
               StateManager integration - Coming soon
             </p>
           </div>
@@ -901,42 +868,23 @@
           </h3>
           <div id="view-section" class="section-content collapsed">
             <div class="control-item">
-              <label style="font-size: 12px; color: #b0b0b0"
-                >Camera Presets</label
-              >
-              <div
-                style="
-                  display: grid;
-                  grid-template-columns: 1fr 1fr;
-                  gap: 5px;
-                  margin-top: 5px;
-                "
-              >
-                <button class="node-size-btn" id="viewTop" disabled>Top</button>
-                <button class="node-size-btn" id="viewBottom" disabled>
-                  Bottom
-                </button>
-                <button class="node-size-btn" id="viewLeft" disabled>
-                  Left
-                </button>
-                <button class="node-size-btn" id="viewRight" disabled>
-                  Right
-                </button>
-                <button class="node-size-btn" id="viewFront" disabled>
-                  Front
-                </button>
-                <button class="node-size-btn" id="viewBack" disabled>
-                  Back
-                </button>
+              <label class="label-section">Camera Presets</label>
+              <div class="button-grid-2col">
+                <button class="toggle-btn variant-standard" id="viewTop" disabled>Top</button>
+                <button class="toggle-btn variant-standard" id="viewBottom" disabled>Bottom</button>
+                <button class="toggle-btn variant-standard" id="viewLeft" disabled>Left</button>
+                <button class="toggle-btn variant-standard" id="viewRight" disabled>Right</button>
+                <button class="toggle-btn variant-standard" id="viewFront" disabled>Front</button>
+                <button class="toggle-btn variant-standard" id="viewBack" disabled>Back</button>
               </div>
             </div>
-            <div class="control-item" style="margin-top: 10px">
+            <div class="control-item spacing-top-large">
               <label class="checkbox-label">
                 <input type="checkbox" id="orthoPerspective" disabled />
                 Orthographic (Plan/Elevation)
               </label>
             </div>
-            <p class="info-text" style="font-size: 10px">
+            <p class="info-text">
               Camera controller - Coming soon
             </p>
           </div>
@@ -979,28 +927,15 @@
               </label>
             </div>
             <div class="control-item">
-              <label style="font-size: 12px; color: #b0b0b0"
-                >Print Extents</label
-              >
-              <div
-                style="
-                  display: grid;
-                  grid-template-columns: 1fr 1fr;
-                  gap: 5px;
-                  margin-top: 5px;
-                "
-              >
-                <button class="node-size-btn" id="fitA4" disabled>A4</button>
-                <button class="node-size-btn" id="fitLetter" disabled>
-                  Letter
-                </button>
-                <button class="node-size-btn" id="fitA3" disabled>A3</button>
-                <button class="node-size-btn" id="fitCustom" disabled>
-                  Custom
-                </button>
+              <label class="label-section">Print Extents</label>
+              <div class="button-grid-2col">
+                <button class="toggle-btn variant-standard" id="fitA4" disabled>A4</button>
+                <button class="toggle-btn variant-standard" id="fitLetter" disabled>Letter</button>
+                <button class="toggle-btn variant-standard" id="fitA3" disabled>A3</button>
+                <button class="toggle-btn variant-standard" id="fitCustom" disabled>Custom</button>
               </div>
             </div>
-            <p class="info-text" style="font-size: 10px">
+            <p class="info-text">
               Print optimization tools - Coming soon
             </p>
           </div>
@@ -2479,7 +2414,7 @@
       });
 
       // Gumball tool selector functionality
-      document.querySelectorAll(".gumball-tool-btn").forEach(btn => {
+      document.querySelectorAll(".toggle-btn.variant-tool").forEach(btn => {
         btn.addEventListener("click", function () {
           const tool = this.dataset.gumballTool;
 
@@ -2493,7 +2428,7 @@
           } else {
             // Remove active from all gumball tool buttons
             document
-              .querySelectorAll(".gumball-tool-btn")
+              .querySelectorAll(".toggle-btn.variant-tool")
               .forEach(b => b.classList.remove("active"));
             // Add active to clicked button
             this.classList.add("active");
@@ -2513,23 +2448,17 @@
       });
 
       // Snap toggle button functionality
-      document.querySelectorAll(".snap-toggle-btn").forEach(btn => {
+      document.querySelectorAll(".toggle-btn.variant-snap").forEach(btn => {
         btn.addEventListener("click", function () {
           const snapMode = this.dataset.snapMode;
 
           // Remove active from all snap buttons
-          document.querySelectorAll(".snap-toggle-btn").forEach(b => {
+          document.querySelectorAll(".toggle-btn.variant-snap").forEach(b => {
             b.classList.remove("active");
-            b.style.background = "#222";
-            b.style.color = "#888";
-            b.style.borderColor = "#444";
           });
 
           // Add active to clicked button
           this.classList.add("active");
-          this.style.background = "#333";
-          this.style.color = "#00ff88";
-          this.style.borderColor = "#00ff88";
 
           // Update global snap mode
           currentSnapMode = snapMode;
