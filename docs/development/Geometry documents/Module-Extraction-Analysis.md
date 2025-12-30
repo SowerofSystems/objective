@@ -516,3 +516,244 @@ The `rt-controls.js` module is **well-written and structurally sound**. The logi
 
 **Analysis Complete**
 **Next Steps:** Proceed with Priority 2 (Selection System) using inline gumball implementation.
+
+---
+
+## Update: Second Extraction Attempt (2025-12-30)
+
+### Attempt Summary
+
+A second attempt was made to extract the inline gumball code to rt-controls.js module following these steps:
+
+1. ✅ Uncommented module import: `import { RTControls } from "./modules/rt-controls.js"`
+2. ✅ Uncommented initialization: `RTControls.init(THREE, Quadray, scene, camera, renderer, controls)`
+3. ✅ Deleted inline gumball code (lines 2762-3597)
+4. ✅ Restored selection system functions (selectPolyhedron, deselectAll, onCanvasClick, etc.)
+5. ✅ Injected HTML's getSelectedPolyhedra() into RTControls to override scene traversal
+
+### Results
+
+**Partial Success:**
+- ✅ Module loaded without errors
+- ✅ Tool buttons activated/deactivated correctly
+- ✅ Editing basis appeared at selected Form position
+- ✅ Hit spheres rendered visibly
+
+**Critical Failure:**
+- ❌ **Dragging did not work** - Forms could not be moved or scaled
+- ❌ Console showed tool activation but no drag events fired
+- ❌ Same fundamental issue as first attempt
+
+### Root Cause Analysis
+
+The module extraction fails because of **scope isolation issues** between the module and HTML contexts:
+
+1. **Variable Isolation:**
+   - Module uses `this.state.isDragging` internally
+   - HTML selection system checks `isDragging` in outer scope
+   - These are separate variables - no synchronization
+
+2. **Event Listener Context:**
+   - Module attaches event listeners in its own scope
+   - Listeners reference `this.scene`, `this.camera`, etc.
+   - May not properly capture drag events due to scope boundaries
+
+3. **Selection System Coupling:**
+   - Selection system lives in HTML scope (`currentSelection`, `deselectAll()`)
+   - Gumball module needs access to these variables
+   - Injection of `getSelectedPolyhedra()` helped but wasn't sufficient
+
+### Why This Keeps Failing
+
+The inline gumball code has **closure access** to:
+- Global variables: `cubeGroup`, `tetrahedronGroup`, `scene`, `camera`, etc.
+- Selection state: `currentSelection`, `isDragging`
+- Helper functions: `deselectAll()`, `applyHighlight()`, `clearHighlight()`
+- Event listeners execute in same scope with direct variable access
+
+The module code **loses this closure access** and must rely on:
+- Explicit parameter passing during init
+- Property injection (`RTControls.getSelectedPolyhedra = ...`)
+- No direct access to HTML scope variables
+
+**Result:** The module can initialize and create visual elements, but cannot execute the interactive drag operations that depend on shared state.
+
+### Decision: Keep Inline Implementation
+
+**Recommendation:** **DO NOT extract gumball to module** until architectural prerequisites are met.
+
+**Rationale:**
+1. Inline code **works perfectly** - proven in production use
+2. Module extraction **has failed twice** with same core issues
+3. Time cost of debugging > value of modularization
+4. Selection system already extracted successfully to rt-state-manager.js
+5. Gumball is tightly coupled to UI interaction - acceptable to keep inline
+
+**Future Prerequisites for Successful Extraction:**
+
+If extraction is attempted again in the future, these must be implemented FIRST:
+
+1. **Global State Object:**
+   ```javascript
+   window.ARTState = {
+     isDragging: false,
+     currentSelection: null,
+     selectedHandle: null,
+     // ... all shared state
+   };
+   ```
+
+2. **Event Bus Pattern:**
+   ```javascript
+   const EventBus = {
+     on(event, callback) { /* ... */ },
+     emit(event, data) { /* ... */ }
+   };
+   // Module emits: EventBus.emit('drag:start', {handle, form})
+   // HTML listens: EventBus.on('drag:start', updateUI)
+   ```
+
+3. **Dependency Injection Framework:**
+   - Pass ALL dependencies explicitly during init
+   - No reliance on closure or global scope
+   - Clear separation of concerns
+
+4. **Test Harness:**
+   - Unit tests for module in isolation
+   - Integration tests for module + HTML
+   - Regression tests for all drag operations
+
+**Estimated Effort:** 8-12 hours of architectural refactoring + testing
+
+**Current Value:** Not worth the effort when inline code works
+
+**Status:** **ABANDONED** - Inline implementation will remain
+
+---
+
+## Selection System Architecture Recommendation
+
+### Question: Where Should Selection Functions Live?
+
+After the failed gumball extraction attempts, the question arose: should selection functions (selectPolyhedron, deselectAll, onCanvasClick, etc.) be extracted to a module?
+
+### Analysis
+
+**Selection Functions (currently in HTML):**
+- `selectPolyhedron()` - Apply highlight to clicked object
+- `applyHighlight()` - Add cyan glow to selected form
+- `clearHighlight()` - Remove glow
+- `deselectAll()` - Clear all selections
+- `onCanvasClick()` - Raycasting to detect clicks
+
+**State Variables:**
+- `currentSelection` - Currently selected object
+- `isDragging` - Prevents selection during drag
+
+**Used By:**
+- Gumball controls (needs to know what's selected to show editing basis)
+- NOW button (deposits selected forms as instances)
+- Keyboard shortcuts (ESC, Delete)
+- Click interactions (select/deselect)
+
+### Architectural Options
+
+#### Option A: Keep in HTML (RECOMMENDED for now)
+
+**Pros:**
+- ✅ Already working perfectly
+- ✅ Shared state accessible to all systems (gumball, NOW button, keyboard)
+- ✅ No scope isolation issues
+- ✅ Simple mental model - selection is global UI state
+- ✅ Easy to debug - everything in one place
+
+**Cons:**
+- ❌ HTML file remains larger (~3000 lines)
+- ❌ Less modular architecture
+- ❌ Selection logic not reusable
+
+**Best For:**
+- Current architecture where gumball is inline
+- Rapid development and iteration
+- Proven working code
+
+#### Option B: Extract to `rt-selection.js` Module (Future consideration)
+
+**Pros:**
+- ✅ Clean separation of concerns
+- ✅ Reusable selection system
+- ✅ Could be used by other tools beyond gumball
+- ✅ Easier to test in isolation
+- ✅ Professional architecture
+
+**Cons:**
+- ❌ Same scope isolation issues as gumball extraction
+- ❌ Would need global state object or event bus
+- ❌ Requires architectural refactoring (8+ hours)
+- ❌ Risk of breaking working code
+
+**Required Changes:**
+- Move selection state to module
+- All code must reference `RTSelection.state.current` instead of `currentSelection`
+- Gumball, NOW button, keyboard handlers must import and use module
+- Event bus or callbacks for selection change notifications
+
+#### Option C: Include in `rt-controls.js` (NOT RECOMMENDED)
+
+**Why Not:**
+Selection is a **general UI concern**, while gumball is a **specific editing tool**. They should be separate. This violates single responsibility principle.
+
+### Recommendation
+
+**Short Term (Current):** **Keep selection functions in HTML** ✅
+
+**Rationale:**
+1. **It works perfectly** - zero bugs, proven in use
+2. **No architectural debt** - inline code is acceptable for UI interaction
+3. **Fast iteration** - can add features without module complexity
+4. **Selection is global state** - naturally belongs in top-level scope
+5. **Just failed gumball extraction twice** - adding more module complexity now = high risk, low reward
+
+**Long Term (Future Refactor):** **Extract to `rt-selection.js`** 🎯
+
+**Only extract when ALL of these are true:**
+1. ✅ Gumball functionality is **stable and complete**
+2. ✅ You have **8+ hours** for careful refactoring
+3. ✅ You implement **global state pattern** first (`window.ARTState`)
+4. ✅ You write **integration tests** to catch regressions
+5. ✅ You plan to build **other tools** that need selection (measurement tool, annotation tool, etc.)
+
+**Implementation Path (if/when needed):**
+```
+Phase 1: Global State (2 hours)
+- Create window.ARTState object
+- Migrate currentSelection → ARTState.selection.current
+- Test everything still works
+
+Phase 2: Selection Module (4 hours)
+- Create rt-selection.js
+- Move selection functions to module
+- Module reads/writes ARTState.selection
+- Test in isolation
+
+Phase 3: Integration (2 hours)
+- Update HTML to use RTSelection module
+- Update gumball to read ARTState.selection
+- Test all interactions
+
+Phase 4: Gumball Module (Optional, 4+ hours)
+- Only after selection is stable
+- Extract gumball using same pattern
+```
+
+### Final Decision
+
+**For current situation:** **Leave selection functions in HTML**
+
+The selection system is ~150 lines of well-organized, working code. Module extraction should come AFTER you've proven the need for it (e.g., building other tools that need selection), not before.
+
+**Sign you're ready to extract:**
+- Gumball features are stable (no longer adding Move/Scale/Rotate functionality)
+- Need selection for other tools (measurement, annotations, etc.)
+- Have time for careful architectural work
+- Willing to implement global state pattern across entire codebase
