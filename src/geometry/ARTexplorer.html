@@ -3832,20 +3832,35 @@
                   // ====================================================================
                   // ROTATE MODE: Rotate selected object around axis
                   // ====================================================================
-                  // Calculate movement vector from drag start to current position
-                  const movement = new THREE.Vector3().subVectors(currentPoint, dragStartPoint);
+                  // Get the center of rotation (editing basis position)
+                  const rotationCenter = editingBasis ? editingBasis.position : new THREE.Vector3(0, 0, 0);
 
-                  // Calculate rotation angle from tangential movement
-                  const rotationSensitivity = 0.5;
-                  const angleRadians = movement.length() * rotationSensitivity;
+                  // Calculate vectors from rotation center to drag points
+                  const startVector = new THREE.Vector3().subVectors(dragStartPoint, rotationCenter);
+                  const currentVector = new THREE.Vector3().subVectors(currentPoint, rotationCenter);
 
-                  // Determine rotation direction based on cross product
-                  const toCurrentPoint = currentPoint.clone().normalize();
-                  const toStartPoint = dragStartPoint.clone().normalize();
-                  const crossProduct = new THREE.Vector3().crossVectors(toStartPoint, toCurrentPoint);
-                  const rotationDirection = crossProduct.dot(selectedHandle.axis) > 0 ? 1 : -1;
+                  // Project both vectors onto plane perpendicular to rotation axis
+                  const axis = selectedHandle.axis.clone().normalize();
+                  const startProjected = startVector.clone().sub(axis.clone().multiplyScalar(startVector.dot(axis)));
+                  const currentProjected = currentVector.clone().sub(axis.clone().multiplyScalar(currentVector.dot(axis)));
 
-                  const signedAngleRadians = angleRadians * rotationDirection;
+                  // Calculate angle between projected vectors
+                  const dotProduct = startProjected.dot(currentProjected);
+                  const startLength = startProjected.length();
+                  const currentLength = currentProjected.length();
+
+                  let angleRadians = 0;
+                  if (startLength > 0.001 && currentLength > 0.001) {
+                    const cosAngle = THREE.MathUtils.clamp(dotProduct / (startLength * currentLength), -1, 1);
+                    angleRadians = Math.acos(cosAngle);
+
+                    // Determine rotation direction using cross product
+                    const cross = new THREE.Vector3().crossVectors(startProjected, currentProjected);
+                    const rotationDirection = cross.dot(axis) > 0 ? 1 : -1;
+                    angleRadians *= rotationDirection;
+                  }
+
+                  const signedAngleRadians = angleRadians;
 
                   // Calculate spread from angle (spread = sin²(θ))
                   const spreadValue = Math.sin(signedAngleRadians) * Math.sin(signedAngleRadians);
@@ -3888,19 +3903,28 @@
                   // Apply rotation to selected polyhedra
                   if (selectedPolyhedra.length > 0) {
                     selectedPolyhedra.forEach(poly => {
-                      // Store initial rotation if not set
-                      if (!poly.userData.initialRotation) {
-                        poly.userData.initialRotation = poly.quaternion.clone();
+                      // Store initial rotation and position if not set
+                      if (!poly.userData.dragStartQuaternion) {
+                        poly.userData.dragStartQuaternion = poly.quaternion.clone();
+                        poly.userData.dragStartPosition = poly.position.clone();
                       }
 
-                      // Create rotation matrix from axis and angle
-                      const rotationMatrix = new THREE.Matrix4().makeRotationAxis(
-                        selectedHandle.axis,
-                        snappedAngleRadians
-                      );
+                      // Reset to initial state
+                      poly.quaternion.copy(poly.userData.dragStartQuaternion);
+                      poly.position.copy(poly.userData.dragStartPosition);
 
-                      // Apply rotation incrementally
-                      poly.applyMatrix4(rotationMatrix);
+                      // Apply rotation from center of rotation
+                      const offset = poly.position.clone().sub(rotationCenter);
+
+                      // Rotate the offset vector
+                      const rotatedOffset = offset.clone().applyAxisAngle(selectedHandle.axis, snappedAngleRadians);
+
+                      // Update position
+                      poly.position.copy(rotationCenter.clone().add(rotatedOffset));
+
+                      // Rotate the object itself
+                      const rotationQuat = new THREE.Quaternion().setFromAxisAngle(selectedHandle.axis, snappedAngleRadians);
+                      poly.quaternion.multiplyQuaternions(rotationQuat, poly.userData.dragStartQuaternion);
 
                       console.log(
                         `✅ Rotated ${poly.userData.isInstance ? "Instance" : "Form"}: ${snappedAngleDegrees.toFixed(2)}° around ${selectedHandle.type}[${selectedHandle.index}]`
@@ -3908,8 +3932,7 @@
                     });
                   }
 
-                  // Update drag start point for next frame
-                  dragStartPoint.copy(currentPoint);
+                  // NOTE: Do NOT update dragStartPoint - we calculate angle from original start point
                 }
 
                 // Update coordinate inputs (MOVE MODE ONLY)
@@ -4050,6 +4073,13 @@
 
                 isDragging = false;
                 selectedHandle = null;
+
+                // Clear drag start data from selected polyhedra
+                selectedPolyhedra.forEach(poly => {
+                  delete poly.userData.dragStartQuaternion;
+                  delete poly.userData.dragStartPosition;
+                });
+
                 selectedPolyhedra = [];
 
                 // Keep orbit controls disabled if gumball tool is still active
