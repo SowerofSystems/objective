@@ -76,7 +76,7 @@ export const RTControls = {
    * Initialize tool mode buttons (Move, Scale, Rotate)
    */
   initToolButtons() {
-    const buttons = document.querySelectorAll('.gumball-tool-btn');
+    const buttons = document.querySelectorAll('.toggle-btn.variant-tool');
 
     buttons.forEach(btn => {
       btn.addEventListener('click', () => {
@@ -98,7 +98,7 @@ export const RTControls = {
    * Initialize snap mode toggle buttons (Free, XYZ, WXYZ)
    */
   initSnapToggles() {
-    const buttons = document.querySelectorAll('.snap-toggle-btn');
+    const buttons = document.querySelectorAll('.toggle-btn.variant-snap');
 
     buttons.forEach(btn => {
       btn.addEventListener('click', () => {
@@ -153,11 +153,13 @@ export const RTControls = {
     // Disable orbit controls while tool is active
     this.orbitControls.enabled = false;
 
-    // Create editing basis if polyhedra are selected
+    // Create/recreate editing basis if polyhedra are selected
+    // (Recreate if switching tools to update handle types: arrows vs cubes)
     const selectedPolyhedra = this.getSelectedPolyhedra();
 
     if (selectedPolyhedra.length > 0) {
       const center = this.getSelectionCenter(selectedPolyhedra);
+      // createEditingBasis() automatically destroys existing basis first
       this.createEditingBasis(center);
     }
 
@@ -168,7 +170,6 @@ export const RTControls = {
    * Deactivate current gumball tool
    */
   deactivateTool() {
-    const tool = this.state.currentTool;
     this.state.currentTool = null;
 
     // Update UI
@@ -188,7 +189,7 @@ export const RTControls = {
    * @param {string|null} activeTool - Currently active tool or null
    */
   updateToolButtons(activeTool) {
-    const buttons = document.querySelectorAll('.gumball-tool-btn');
+    const buttons = document.querySelectorAll('.toggle-btn.variant-tool');
 
     buttons.forEach(btn => {
       const tool = btn.dataset.gumballTool; // Use data-gumball-tool attribute
@@ -229,6 +230,9 @@ export const RTControls = {
     const headLength = 0.3;
     const arrowLength = totalBasisLength;
 
+    // Determine handle type based on active tool
+    const isScaleMode = this.state.currentTool === 'scale';
+
     // ========================================================================
     // QUADRAY BASIS VECTORS (WXYZ) - Tetrahedral coordinate system
     // ========================================================================
@@ -237,37 +241,53 @@ export const RTControls = {
       const quadrayLabels = ['W', 'X', 'Y', 'Z'];
 
       this.Quadray.basisVectors.forEach((vec, i) => {
+        // Create arrow shaft (same for both Move and Scale modes)
         const arrow = new this.THREE.ArrowHelper(
           vec,
           new this.THREE.Vector3(0, 0, 0),
           arrowLength,
           quadrayColors[i],
-          headLength,
+          isScaleMode ? 0 : headLength, // No arrowhead in Scale mode
           0.2
         );
 
         this.state.editingBasis.add(arrow);
 
-        // Add hit sphere at arrow tip (gumball handle)
+        // Add handle at arrow tip - CUBE for Scale, SPHERE for Move
         const tipPosition = vec.clone().multiplyScalar(arrowLength);
 
-        const hitSphere = new this.THREE.Mesh(
-          new this.THREE.SphereGeometry(0.5, 16, 16),
-          new this.THREE.MeshBasicMaterial({
-            color: quadrayColors[i],
-            transparent: true,
-            opacity: 0.3
-          })
-        );
+        let handle;
+        if (isScaleMode) {
+          // SCALE MODE: Cube handle
+          const cubeSize = 0.4;
+          handle = new this.THREE.Mesh(
+            new this.THREE.BoxGeometry(cubeSize, cubeSize, cubeSize),
+            new this.THREE.MeshBasicMaterial({
+              color: quadrayColors[i],
+              transparent: true,
+              opacity: 0.5
+            })
+          );
+        } else {
+          // MOVE MODE: Sphere handle
+          handle = new this.THREE.Mesh(
+            new this.THREE.SphereGeometry(0.5, 16, 16),
+            new this.THREE.MeshBasicMaterial({
+              color: quadrayColors[i],
+              transparent: true,
+              opacity: 0.3
+            })
+          );
+        }
 
-        hitSphere.position.copy(tipPosition);
-        hitSphere.userData.isGumballHandle = true;
-        hitSphere.userData.basisType = 'quadray';
-        hitSphere.userData.basisIndex = i;
-        hitSphere.userData.axis = vec.clone();
-        hitSphere.userData.axisName = quadrayLabels[i];
+        handle.position.copy(tipPosition);
+        handle.userData.isGumballHandle = true;
+        handle.userData.basisType = 'quadray';
+        handle.userData.basisIndex = i;
+        handle.userData.axis = vec.clone();
+        handle.userData.axisName = quadrayLabels[i];
 
-        this.state.editingBasis.add(hitSphere);
+        this.state.editingBasis.add(handle);
       });
     }
 
@@ -284,38 +304,77 @@ export const RTControls = {
       const cartesianLabels = ['X', 'Y', 'Z'];
 
       cartesianVectors.forEach((vec, i) => {
+        // Create arrow shaft (same for both Move and Scale modes)
         const arrow = new this.THREE.ArrowHelper(
           vec,
           new this.THREE.Vector3(0, 0, 0),
           arrowLength,
           cartesianColors[i],
-          headLength,
+          isScaleMode ? 0 : headLength, // No arrowhead in Scale mode
           0.2
         );
 
         this.state.editingBasis.add(arrow);
 
-        // Add hit sphere at arrow tip (gumball handle)
+        // Add handle at arrow tip - CUBE for Scale, SPHERE for Move
         const tipPosition = vec.clone().multiplyScalar(arrowLength);
 
-        const hitSphere = new this.THREE.Mesh(
-          new this.THREE.SphereGeometry(0.5, 16, 16),
-          new this.THREE.MeshBasicMaterial({
-            color: cartesianColors[i],
-            transparent: true,
-            opacity: 0.3
-          })
-        );
+        let handle;
+        if (isScaleMode) {
+          // SCALE MODE: Cube handle
+          const cubeSize = 0.4;
+          handle = new this.THREE.Mesh(
+            new this.THREE.BoxGeometry(cubeSize, cubeSize, cubeSize),
+            new this.THREE.MeshBasicMaterial({
+              color: cartesianColors[i],
+              transparent: true,
+              opacity: 0.5
+            })
+          );
+        } else {
+          // MOVE MODE: Sphere handle
+          handle = new this.THREE.Mesh(
+            new this.THREE.SphereGeometry(0.5, 16, 16),
+            new this.THREE.MeshBasicMaterial({
+              color: cartesianColors[i],
+              transparent: true,
+              opacity: 0.3
+            })
+          );
+        }
 
-        hitSphere.position.copy(tipPosition);
-        hitSphere.userData.isGumballHandle = true;
-        hitSphere.userData.basisType = 'cartesian';
-        hitSphere.userData.basisIndex = i;
-        hitSphere.userData.axis = vec.clone();
-        hitSphere.userData.axisName = cartesianLabels[i];
+        handle.position.copy(tipPosition);
+        handle.userData.isGumballHandle = true;
+        handle.userData.basisType = 'cartesian';
+        handle.userData.basisIndex = i;
+        handle.userData.axis = vec.clone();
+        handle.userData.axisName = cartesianLabels[i];
 
-        this.state.editingBasis.add(hitSphere);
+        this.state.editingBasis.add(handle);
       });
+    }
+
+    // ========================================================================
+    // CENTRAL SPHERE for UNIFORM SCALING (Scale mode only)
+    // ========================================================================
+    if (isScaleMode) {
+      const centralSphere = new this.THREE.Mesh(
+        new this.THREE.SphereGeometry(0.6, 32, 32),
+        new this.THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.4
+        })
+      );
+
+      centralSphere.position.set(0, 0, 0); // At gumball origin
+      centralSphere.userData.isGumballHandle = true;
+      centralSphere.userData.basisType = 'uniform';
+      centralSphere.userData.basisIndex = -1; // Special index for uniform
+      centralSphere.userData.axis = null; // No specific axis (uniform)
+      centralSphere.userData.axisName = 'UNIFORM';
+
+      this.state.editingBasis.add(centralSphere);
     }
 
     // Add to scene
@@ -373,7 +432,7 @@ export const RTControls = {
    * Handle mousedown - select gumball handle
    */
   onMouseDown(event) {
-    if (!this.state.currentTool || this.state.currentTool !== 'move') return;
+    if (!this.state.currentTool || (this.state.currentTool !== 'move' && this.state.currentTool !== 'scale')) return;
     if (!this.state.editingBasis) return;
 
     // Prevent orbit controls
@@ -427,7 +486,7 @@ export const RTControls = {
   },
 
   /**
-   * Handle mousemove - update drag position
+   * Handle mousemove - update drag position (Move mode) or scale (Scale mode)
    */
   onMouseMove(event) {
     if (!this.state.isDragging) return;
@@ -450,29 +509,117 @@ export const RTControls = {
     // Calculate movement vector
     const movementVector = new this.THREE.Vector3().subVectors(currentPoint, this.state.dragStartPoint);
 
-    // Project movement onto handle axis (constrain to axis)
-    const axis = this.state.selectedHandle.axis;
-    const projectedDistance = movementVector.dot(axis);
+    if (this.state.currentTool === 'move') {
+      // ================================================================
+      // MOVE MODE: Translate along axis
+      // ================================================================
+      const axis = this.state.selectedHandle.axis;
+      const projectedDistance = movementVector.dot(axis);
 
-    // Apply sensitivity multiplier for easier control
-    const sensitivity = 5.0;
-    const constrainedMovement = axis.clone().multiplyScalar(projectedDistance * sensitivity);
+      // Apply sensitivity multiplier for easier control
+      const sensitivity = 5.0;
+      const constrainedMovement = axis.clone().multiplyScalar(projectedDistance * sensitivity);
 
-    // Move all selected polyhedra (FULL PRECISION - no snapping during drag)
-    this.state.selectedPolyhedra.forEach(poly => {
-      poly.position.add(constrainedMovement);
-      // Snapping will be applied at mouseup based on currentSnapMode
-    });
+      // Move all selected polyhedra (FULL PRECISION - no snapping during drag)
+      this.state.selectedPolyhedra.forEach(poly => {
+        poly.position.add(constrainedMovement);
+        // Snapping will be applied at mouseup based on currentSnapMode
+      });
 
-    // Update editing basis position to follow Forms
-    if (this.state.selectedPolyhedra.length > 0) {
-      const center = this.getSelectionCenter(this.state.selectedPolyhedra);
-      this.updateEditingBasisPosition(center);
-    }
+      // Update editing basis position to follow Forms
+      if (this.state.selectedPolyhedra.length > 0) {
+        const center = this.getSelectionCenter(this.state.selectedPolyhedra);
+        this.updateEditingBasisPosition(center);
+      }
 
-    // Update coordinate displays
-    if (this.state.selectedPolyhedra.length > 0) {
-      this.updateCoordinateDisplays(this.state.selectedPolyhedra[0].position);
+      // Update coordinate displays
+      if (this.state.selectedPolyhedra.length > 0) {
+        this.updateCoordinateDisplays(this.state.selectedPolyhedra[0].position);
+      }
+
+    } else if (this.state.currentTool === 'scale') {
+      // ================================================================
+      // SCALE MODE: Scale selected object (Form or Instance)
+      // ================================================================
+      // Project movement onto the selected axis (or radial for uniform)
+      let scaleMovement;
+
+      if (this.state.selectedHandle.basisType === 'uniform') {
+        // UNIFORM SCALING: Use radial distance from origin
+        scaleMovement = movementVector.length();
+        // Determine direction (inward vs outward)
+        const direction = movementVector.dot(currentPoint.clone().normalize());
+        if (direction < 0) scaleMovement = -scaleMovement;
+      } else {
+        // AXIS-CONSTRAINED SCALING: Project onto selected axis
+        const axis = this.state.selectedHandle.axis;
+        scaleMovement = movementVector.dot(axis);
+      }
+
+      // Apply sensitivity for meaningful scale changes
+      const scaleSensitivity = 15.0;
+      const scaleDelta = scaleMovement * scaleSensitivity;
+
+      console.log(
+        `Scale delta: ${scaleDelta.toFixed(4)}, Handle type: ${this.state.selectedHandle.basisType}`
+      );
+
+      // Scale selected polyhedra directly
+      if (this.state.selectedPolyhedra.length > 0) {
+        this.state.selectedPolyhedra.forEach(poly => {
+          // Get current scale (default to 1.0 if not set)
+          if (!poly.userData.currentScale) {
+            poly.userData.currentScale = 1.0;
+          }
+
+          // Calculate new scale multiplier
+          const scaleMultiplier = 1 + scaleDelta * 0.01; // Convert delta to percentage
+          const newScale = poly.userData.currentScale * scaleMultiplier;
+
+          // Clamp scale to reasonable bounds (0.1 to 10.0)
+          const clampedScale = Math.max(0.1, Math.min(10.0, newScale));
+
+          // Apply uniform scale to the object
+          poly.scale.set(clampedScale, clampedScale, clampedScale);
+
+          // Store current scale for next frame
+          poly.userData.currentScale = clampedScale;
+
+          console.log(
+            `✅ Scaled ${poly.userData.isInstance ? "Instance" : "Form"}: ${clampedScale.toFixed(4)}`
+          );
+        });
+
+        // If scaling a Form at origin, also update sliders to reflect change
+        if (
+          this.state.selectedPolyhedra.length > 0 &&
+          !this.state.selectedPolyhedra[0].userData.isInstance
+        ) {
+          const currentScale = this.state.selectedPolyhedra[0].userData.currentScale;
+          const cubeSlider = document.getElementById('scaleSlider');
+          const tetSlider = document.getElementById('tetScaleSlider');
+
+          if (cubeSlider && tetSlider) {
+            // Update sliders to match the visual scale
+            const baseCubeEdge = 1.4142; // Default cube edge length
+            const baseTetEdge = 2.0; // Default tet edge length
+
+            const newCubeEdge = baseCubeEdge * currentScale;
+            const newTetEdge = baseTetEdge * currentScale;
+
+            cubeSlider.value = newCubeEdge;
+            tetSlider.value = newTetEdge;
+
+            document.getElementById('scaleValue').textContent =
+              newCubeEdge.toFixed(4);
+            document.getElementById('tetScaleValue').textContent =
+              newTetEdge.toFixed(4);
+          }
+        }
+      }
+
+      // NOTE: No position update needed - objects stay in place during scaling
+      // Editing basis stays in place
     }
 
     // Update drag start point for next frame
