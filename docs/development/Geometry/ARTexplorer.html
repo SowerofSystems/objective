@@ -807,21 +807,42 @@
             <!-- Cartesian Coordinates (XYZ) -->
             <div class="control-item" style="margin-top: 15px">
               <label style="font-size: 12px; color: #b0b0b0">XYZ Coordinates</label>
-              <div class="coordinate-inputs">
-                <input type="text" id="coordX" class="coord-input" placeholder="X" value="0.0000" />
-                <input type="text" id="coordY" class="coord-input" placeholder="Y" value="0.0000" />
-                <input type="text" id="coordZ" class="coord-input" placeholder="Z" value="0.0000" />
+              <div class="coordinate-inputs" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;">
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                  <label style="font-size: 10px; color: #ff6666; font-weight: bold; text-align: center;">X</label>
+                  <input type="text" id="coordX" class="coord-input" style="border-left: 2px solid #ff6666;" value="0.0000" />
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                  <label style="font-size: 10px; color: #66ff66; font-weight: bold; text-align: center;">Y</label>
+                  <input type="text" id="coordY" class="coord-input" style="border-left: 2px solid #66ff66;" value="0.0000" />
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                  <label style="font-size: 10px; color: #6666ff; font-weight: bold; text-align: center;">Z</label>
+                  <input type="text" id="coordZ" class="coord-input" style="border-left: 2px solid #6666ff;" value="0.0000" />
+                </div>
               </div>
             </div>
 
             <!-- Quadray Coordinates (WXYZ) -->
             <div class="control-item" style="margin-top: 10px">
               <label style="font-size: 12px; color: #b0b0b0">WXYZ Coordinates</label>
-              <div class="coordinate-inputs">
-                <input type="text" id="coordW" class="coord-input" placeholder="W" value="0.0000" />
-                <input type="text" id="coordX2" class="coord-input" placeholder="X" value="0.0000" />
-                <input type="text" id="coordY2" class="coord-input" placeholder="Y" value="0.0000" />
-                <input type="text" id="coordZ2" class="coord-input" placeholder="Z" value="0.0000" />
+              <div class="coordinate-inputs" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px;">
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                  <label style="font-size: 10px; color: #ffff66; font-weight: bold; text-align: center;">W</label>
+                  <input type="text" id="coordW" class="coord-input" style="border-left: 2px solid #ffff66;" value="0.0000" />
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                  <label style="font-size: 10px; color: #ff6666; font-weight: bold; text-align: center;">X</label>
+                  <input type="text" id="coordX2" class="coord-input" style="border-left: 2px solid #ff6666;" value="0.0000" />
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                  <label style="font-size: 10px; color: #66ff66; font-weight: bold; text-align: center;">Y</label>
+                  <input type="text" id="coordY2" class="coord-input" style="border-left: 2px solid #66ff66;" value="0.0000" />
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                  <label style="font-size: 10px; color: #6666ff; font-weight: bold; text-align: center;">Z</label>
+                  <input type="text" id="coordZ2" class="coord-input" style="border-left: 2px solid #6666ff;" value="0.0000" />
+                </div>
               </div>
             </div>
 
