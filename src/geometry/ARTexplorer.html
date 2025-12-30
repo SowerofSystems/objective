@@ -3664,6 +3664,9 @@
                   // ====================================================================
                   // ROTATE MODE: Rotate selected object around axis
                   // ====================================================================
+                  // Calculate movement vector from drag start to current position
+                  const movement = new THREE.Vector3().subVectors(currentPoint, dragStartPoint);
+
                   // Calculate rotation angle from tangential movement
                   const rotationSensitivity = 0.5;
                   const angleRadians = movement.length() * rotationSensitivity;
