@@ -2111,7 +2111,7 @@ void  Quadray::RotateAboutA(const Quadray &QX,double Theta)
 }
 ---
 
-## TODO: Grid Tessellation Sliders + State Management
+## TODO: Grid Tessellation Sliders + State Management - COMPLETED
 
 ### Grid Tessellation Controls (High Priority)
 
@@ -2522,11 +2522,13 @@ ARTexplorer_State_2025-12-28_geodesic-icosa-freq4.csv
 - ✅ Selection system (click-to-select, ESC deselect, Delete remove)
 - ✅ Undo/redo history (50-action stack)
 - ✅ NOW button (deposit instances, reset forms)
+- ✅ Grid tessellation sliders (Quadray and Cartesian grids, dynamic intervals)
 
 **2025-12-26 - Z-Up Convention & Geodesics:**
 - ✅ Z-up coordinate convention (CAD/BIM/glTF standard)
 - ✅ Geodesic sphere projections (InSphere/MidSphere/OutSphere)
-- ✅ Frequency slider for geodesic subdivision
+- ✅ Geodesic subdivision for Tetrahedron, Icosahedron, Octahedron
+- ✅ Frequency slider (0-6) for geodesic subdivision
 - ✅ RT-pure sphere projection formulas
 
 **2025-12-25 - Grids & Dual Polyhedra:**
@@ -2548,45 +2550,82 @@ ARTexplorer_State_2025-12-28_geodesic-icosa-freq4.csv
 
 ### 5.2 TODO: Active Work Items 🎯
 
-**Priority 1: Rotation Mode (Next Implementation)**
-- [ ] Implement Rotate mode with circular arc handles
-- [ ] Arc handles positioned at form edges (perpendicular to Move arrows)
-- [ ] Rotation around X, Y, Z axes (Cartesian)
-- [ ] Rotation around W, X, Y, Z axes (Quadray) - **Question:** How does rotation work in 4D tetrahedral space?
-- [ ] Visual feedback: circular arcs showing rotation plane
-- [ ] Snap-to-angle options (15°, 30°, 45°, 90° increments)
-- [ ] RT-pure rotation using spread values (not angle calculations)
+**Priority 1: Rotation Mode (Next Implementation)** 🎯
 
-**Priority 2: Grid Tessellation Sliders**
-- [ ] Add dynamic tessellation sliders for Quadray grids (12-120 intervals, step 12)
-- [ ] Add dynamic tessellation sliders for Cartesian grids (12-120 intervals, step 12)
-- [ ] Position in Scale control group after tetScaleSlider
-- [ ] Rebuild grids on slider change with state preservation
-- [ ] Performance optimization for high tessellations (>60 intervals)
-- [ ] Consider debouncing or using `change` event instead of `input`
+**XYZ Rotation (Cartesian):**
+- [ ] Implement Rotate mode with **circular arc handles** around X, Y, Z axes
+- [ ] Position circular handles perpendicular to Move arrow handles
+- [ ] Visual style: Circular arcs/tori showing rotation plane
+- [ ] Rotation snaps at degree intervals (15°, 30°, 45°, 90°) - traditional angles
+- [ ] Color coding: Red (X-axis), Green (Y-axis), Blue (Z-axis)
 
-**Priority 3: CSV/JSON State Export (Partial)**
+**WXYZ Rotation (Quadray):**
+- [ ] Implement **hexagonal arc handles** for W, X, Y, Z axes (to differentiate from XYZ circles)
+- [ ] Position hexagon handles perpendicular to WXYZ arrow handles
+- [ ] Alternative: Use rotation handles aligned with Quadray grid planes (6 planes)
+- [ ] **RT-pure rotation using spread values** (NOT angle calculations)
+- [ ] Snap-to-spread intervals: 0.1, 0.2, 0.3, ... 0.9, 1.0 (1 decimal place)
+- [ ] If insufficient precision, extend to 2 decimal places: 0.01, 0.02, ... 0.99, 1.00
+- [ ] Color coding: Match WXYZ arrow colors (W=red, X=green, Y=blue, Z=magenta)
+
+**Implementation Notes:**
+- Rotation in Quadray space: Each handle rotates around corresponding Quadray basis vector
+- Perpendicular to WXYZ axes = aligned with Quadray grid planes
+- Hexagon shape visually distinguishes tetrahedral rotation from Cartesian
+- Spread-based snapping ensures RT-purity (no angle→spread conversions)
+
+**Priority 2: JSON State Export/Import** ⚡ (Preferred over CSV)
 - [x] StateManager architecture implemented
-- [ ] CSV export for all UI state (polyhedra visibility, sliders, toggles, camera position)
-- [ ] JSON export option (more compact format)
-- [ ] Import functionality with validation
+- [ ] **Environment state** - Camera, grids, UI settings (JSON format)
+- [ ] **Instances state** - Deposited Forms with transforms (position, rotation, scale)
+- [ ] Export to .json file with timestamp
+- [ ] Import with validation and error handling
 - [ ] Auto-save to localStorage for session persistence
 - [ ] Preset library system for common configurations
 
-**Priority 4: Rhombic Dodecahedron Rebuild**
-- [ ] Rebuild from cuboctahedron dual relationship
-- [ ] Fix face dual construction (current implementation has issues)
-- [ ] Verify all 12 rhombic faces are congruent
-- [ ] RT-pure vertex calculations
+**JSON Schema Example:**
+```json
+{
+  "version": "1.0",
+  "timestamp": "2025-12-30T14:30:00.000Z",
+  "environment": {
+    "camera": { "position": [10, 10, 10], "target": [0, 0, 0] },
+    "grids": {
+      "quadray": { "visible": true, "tessellation": 12 },
+      "cartesian": { "visible": true, "tessellation": 12 }
+    },
+    "forms": {
+      "icosahedron": { "visible": true, "scale": 2.0, "frequency": 2 }
+    }
+  },
+  "instances": [
+    {
+      "id": "inst_001",
+      "formType": "cube",
+      "transform": {
+        "position": { "xyz": [5, 0, 0], "wxyz": [1.25, 1.25, 1.25, 1.25] },
+        "rotation_spread": [0, 0, 0.5, 0],
+        "scale": 1.5
+      }
+    }
+  ]
+}
+```
 
 ---
 
 ### 5.3 TODO: Future Enhancements 🔮
 
 **Geodesic Improvements:**
-- [ ] Geodesic subdivision for all polyhedra (not just icosahedron)
-- [ ] Frequency slider extension (currently 1-4, extend to 1-8)
-- [ ] Alternative subdivision methods (Class I, II, III)
+- [x] Geodesic subdivision for Tetrahedron, Icosahedron, Octahedron ✅
+- [x] Frequency slider (0-6) - sufficient range for most applications ✅
+- [ ] **Geodesic cutplane feature** - Horizontal slice for terrestrial dome structures
+  - Adjustable height slider (0-100% of geodesic height)
+  - Removes vertices and faces below cutplane
+  - Generates new base perimeter edges
+  - Useful for architectural dome applications (foundation level)
+- [ ] Geodesic subdivision for remaining polyhedra (Dodecahedron, Cube)
+- [ ] Alternative subdivision methods (Class I, II, III) - Fuller's classification
 - [ ] Edge length equalization for geodesic domes
 
 **Advanced Interaction:**
@@ -2644,16 +2683,18 @@ ARTexplorer_State_2025-12-28_geodesic-icosa-freq4.csv
 
 **Question 4: Geometry Scope?**
 - **Answer:** Platonic solids + Rhombic Dodec, with geodesic subdivision for all
-- **Status:** ✅ Platonic solids complete, ⚠️ Rhombic Dodec needs rebuild, ✅ Geodesic icosa working
+- **Status:** ✅ Platonic solids complete, ✅ Geodesics for Tet/Icosa/Octa (frequency 0-6)
 
 **Question 5: Dual Polyhedra Visualization?**
 - **Answer:** Yes, show dual as toggleable option starting with dual tetrahedra in cube
 - **Status:** ✅ Implemented - Dual tetrahedron, dual icosahedron (dodecahedron)
 
 **Question 6: Rotation in 4D Tetrahedral Space?**
-- **Answer:** OPEN - How does rotation work around W/X/Y/Z axes in Quadray coordinates?
-- **Research Needed:** Tom Ace's RotateAboutA() method, Kirby Urner's documentation
-- **Status:** 🔍 Needs investigation before implementing Rotate mode
+- **Answer:** ✅ **ANSWERED** - Rotation around each WXYZ axis, perpendicular to Quadray grid planes
+- **Implementation:** Hexagonal arc handles (to differentiate from XYZ circular handles)
+- **RT-Purity:** Snap-to-spread intervals (0.1, 0.2, ... 1.0), NOT angle-based
+- **Visual:** Aligned with 6 Quadray planes, color-coded to match WXYZ basis vectors
+- **Status:** Ready for implementation - design spec complete
 
 **Question 7: Why do Left/Right views show squares instead of triangles?**
 - **Answer:** Cardinal axis views show tetrahedra edge-on. Need 45° angles to see triangular profiles.
