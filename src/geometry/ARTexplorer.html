@@ -2150,9 +2150,25 @@
          */
         function onWindowResize() {
           const container = document.getElementById("canvas-container");
-          camera.aspect = container.clientWidth / container.clientHeight;
-          camera.updateProjectionMatrix();
-          renderer.setSize(container.clientWidth, container.clientHeight);
+          const width = container.clientWidth;
+          const height = container.clientHeight;
+          const aspect = width / height;
+
+          if (isOrthographic && orthographicCamera) {
+            // Update orthographic camera
+            const frustumSize = orthographicCamera.top * 2;
+            orthographicCamera.left = (frustumSize * aspect) / -2;
+            orthographicCamera.right = (frustumSize * aspect) / 2;
+            orthographicCamera.top = frustumSize / 2;
+            orthographicCamera.bottom = frustumSize / -2;
+            orthographicCamera.updateProjectionMatrix();
+          } else {
+            // Update perspective camera
+            camera.aspect = aspect;
+            camera.updateProjectionMatrix();
+          }
+
+          renderer.setSize(width, height);
         }
 
         // ========================================================================
@@ -2434,6 +2450,150 @@
           controls.target.set(0, 0, 0);
           controls.update();
         });
+
+        // ========================================================================
+        // VIEW CONTROLS - Camera Presets
+        // ========================================================================
+
+        let orthographicCamera = null;
+        let perspectiveCamera = camera; // Store reference to initial perspective camera
+        let isOrthographic = false;
+
+        /**
+         * Switch between Perspective and Orthographic camera
+         */
+        function switchCameraType(toOrthographic) {
+          const container = document.getElementById("canvas-container");
+          const width = container.clientWidth || window.innerWidth;
+          const height = container.clientHeight || window.innerHeight;
+          const aspect = width / height;
+
+          if (toOrthographic && !isOrthographic) {
+            // Create orthographic camera matching current perspective view
+            const distance = camera.position.distanceTo(controls.target);
+            const frustumSize =
+              distance * Math.tan((camera.fov * Math.PI) / 360) * 2;
+
+            orthographicCamera = new THREE.OrthographicCamera(
+              (frustumSize * aspect) / -2,
+              (frustumSize * aspect) / 2,
+              frustumSize / 2,
+              frustumSize / -2,
+              0.1,
+              1000
+            );
+
+            // Copy position and orientation from perspective camera
+            orthographicCamera.position.copy(camera.position);
+            orthographicCamera.rotation.copy(camera.rotation);
+            orthographicCamera.up.copy(camera.up);
+
+            // Switch to orthographic
+            camera = orthographicCamera;
+            controls.object = orthographicCamera;
+            isOrthographic = true;
+
+            console.log("✅ Switched to Orthographic camera");
+          } else if (!toOrthographic && isOrthographic) {
+            // Switch back to perspective
+            perspectiveCamera.position.copy(camera.position);
+            perspectiveCamera.rotation.copy(camera.rotation);
+            perspectiveCamera.up.copy(camera.up);
+
+            camera = perspectiveCamera;
+            controls.object = perspectiveCamera;
+            isOrthographic = false;
+
+            console.log("✅ Switched to Perspective camera");
+          }
+
+          controls.update();
+        }
+
+        /**
+         * Set camera to preset view
+         * @param {string} view - View name (top, bottom, left, right, front, back)
+         */
+        function setCameraPreset(view) {
+          const distance = 10; // Standard distance from origin
+
+          // Z-up coordinate system (CAD/BIM standard)
+          // Z = vertical (blue axis), X-Y = horizontal ground plane
+          switch (view) {
+            case "top":
+              // Looking down from above (down negative Z axis)
+              camera.position.set(0, 0, distance);
+              camera.up.set(0, 1, 0); // Y axis points "north" in top view
+              break;
+
+            case "bottom":
+              // Looking up from below (up positive Z axis)
+              camera.position.set(0, 0, -distance);
+              camera.up.set(0, -1, 0); // Flip Y to keep orientation consistent
+              break;
+
+            case "left":
+              // Looking from left side (positive X direction, toward negative X)
+              camera.position.set(-distance, 0, 0);
+              camera.up.set(0, 0, 1); // Z points up
+              break;
+
+            case "right":
+              // Looking from right side (negative X direction, toward positive X)
+              camera.position.set(distance, 0, 0);
+              camera.up.set(0, 0, 1); // Z points up
+              break;
+
+            case "front":
+              // Looking from front (positive Y direction, toward negative Y)
+              camera.position.set(0, distance, 0);
+              camera.up.set(0, 0, 1); // Z points up
+              break;
+
+            case "back":
+              // Looking from back (negative Y direction, toward positive Y)
+              camera.position.set(0, -distance, 0);
+              camera.up.set(0, 0, 1); // Z points up
+              break;
+          }
+
+          camera.lookAt(0, 0, 0);
+          controls.target.set(0, 0, 0);
+          controls.update();
+
+          console.log(
+            `✅ Camera preset: ${view} (${isOrthographic ? "Orthographic" : "Perspective"})`
+          );
+        }
+
+        // Enable view preset buttons and wire up event listeners
+        const viewButtons = [
+          { id: "viewTop", view: "top" },
+          { id: "viewBottom", view: "bottom" },
+          { id: "viewLeft", view: "left" },
+          { id: "viewRight", view: "right" },
+          { id: "viewFront", view: "front" },
+          { id: "viewBack", view: "back" },
+        ];
+
+        viewButtons.forEach(({ id, view }) => {
+          const btn = document.getElementById(id);
+          btn.disabled = false; // Enable button
+          btn.addEventListener("click", () => {
+            setCameraPreset(view);
+          });
+        });
+
+        // Orthographic/Perspective toggle
+        const orthoCheckbox = document.getElementById("orthoPerspective");
+        orthoCheckbox.disabled = false; // Enable checkbox
+        orthoCheckbox.addEventListener("change", e => {
+          switchCameraType(e.target.checked);
+        });
+
+        // Update info text
+        document.querySelector("#view-section .info-text").textContent =
+          "Switch between standard views and projection types";
 
         // ========================================================================
         // INITIALIZE
