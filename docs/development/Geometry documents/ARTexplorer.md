@@ -1,31 +1,132 @@
 # ThreeRT - Three.js + Rational Trigonometry Geometry Explorer
-- Credits and thanks: Co-developed from the ideas of R. Buckminster Fuller, Kirby Urner, Tom Ace, NJ Wildberger and Andy Thomson, witnessed silently by Metatron. 
+- Credits and thanks: Co-developed from the ideas of R. Buckminster Fuller, Kirby Urner, Tom Ace, NJ Wildberger and Andy Thomson, witnessed silently by Metatron.
 
-## Overview
+---
+
+## Table of Contents
+
+### 1. Project Overview
+- [1.1 Introduction](#11-introduction)
+- [1.2 On Dimensions and Coordinate Systems](#12-on-dimensions-and-coordinate-systems)
+- [1.3 Core Philosophy](#13-core-philosophy)
+- [1.4 File Structure](#14-file-structure)
+- [1.5 Related Documentation](#15-related-documentation)
+
+### 2. Current Status
+- [2.1 Current Status (2025-12-30)](#21-current-status-as-of-2025-12-30)
+- [2.2 Recent Completion](#22-recent-completion-2025-12-30)
+
+### 3. Implementation Phases
+- [3.1 Phase 1: Foundation (MVP)](#31-phase-1-foundation-mvp--complete)
+- [3.2 Phase 1b: Dodecahedron Implementation](#32-phase-1b-dodecahedron-implementation--complete)
+- [3.3 Phase 1c: Cuboctahedron (VE)](#33-phase-1c-cuboctahedron-vector-equilibrium-implementation--complete)
+- [3.4 Phase 2.5: RT Purity Enhancements](#34-phase-25-rt-purity-enhancements--complete)
+- [3.5 Phase 2.6: Dual Icosahedron](#35-phase-26-dual-icosahedron-implementation--complete)
+- [3.6 Phase 2.7: Geodesic Spheres](#36-phase-27-geodesic-sphere-implementation--complete)
+- [3.7 Phase 2.8: Central Angle Grids](#37-phase-28-quadray-coordinate-planes-central-angle-grids--complete)
+- [3.8 Phase 2.9: Geodesic Projections](#38-phase-29-geodesic-sphere-projections--complete)
+- [3.9 Phase 2.10: Z-Up Coordinate Convention](#39-phase-210-z-up-coordinate-convention--complete)
+- [3.10 Phase 2.11: ART Gumball + StateManager](#310-phase-211-art-gumball--statemanager--complete)
+
+### 4. Technical Reference
+- [4.1 Rational Trigonometry Implementation](#41-rational-trigonometry-implementation)
+- [4.2 Quadray Coordinates (Tom Ace)](#42-quadray-coordinates-tom-ace)
+- [4.3 Grid Systems](#43-grid-systems)
+- [4.4 Polyhedra Specifications](#44-polyhedra-specifications)
+
+### 5. Work Plan & Roadmap
+- [5.1 Completed Items](#51-completed-items)
+- [5.2 TODO: Active Work Items](#52-todo-active-work-items)
+- [5.3 TODO: Future Enhancements](#53-todo-future-enhancements)
+- [5.4 Open Questions](#54-open-questions-answered)
+
+---
+
+## 1. Project Overview
+
+### 1.1 Introduction
 
 Standalone HTML + Three.js (CDN) application for exploring polyhedral geometry using Rational Trigonometry principles. Built on the constraint-driven successes of WOMBAT (Section 19), this tool visualizes nested polyhedra in both 3D (XYZ) and 4D (WXYZ/Quadray/Caltrop) coordinate spaces.
 
-**Core Philosophy:**
+### 1.2 On Dimensions and Coordinate Systems
+
+Cartesian 3D space requires **3 orthogonal axes** but Fuller's tetrahedral space requires **4 equiangular axes**. This doesn't make space "4D" in the physics sense (you still have 3 degrees of freedom for position), but it does mean that natural spatial coordinatization is fundamentally 4-fold, not 3-fold.
+
+The common assertion that "time is the 4th dimension" conflates three separate concepts:
+1. The **geometric fact** that Cartesian space uses 3 axes (an arbitrary choice)
+2. With the **assumption** that spatial dimensions must therefore = 3 (demonstrably false)
+3. Leading to the **conclusion** that any 4th dimension must be non-spatial (misleading)
+
+In physics, "dimension" means **degrees of freedom** - independent ways a system can vary. In geometry, "dimension" refers to **coordinate axes** needed to naturally describe space. Fuller was correct: **spatial geometry is inherently 4-fold** (tetrahedral), and Cartesian reduction to 3 axes is a convenient but limiting convention that obscures the natural symmetry of space.
+
+### 1.3 Core Philosophy
 - No Three.js preset forms (Box, Sphere, etc.)
 - Hand-coded geometry using Rational Trigonometry (Wildberger)
 - Quadrance (Q = distance²) and spread (s) instead of distance/angle
 - Nested polyhedra relationships
 - Pure algebraic solutions (no iteration, no trig functions)
 
+### 1.4 File Structure
+
+**Modularized Architecture:**
+
+```
+src/geometry/
+├── ARTexplorer.html          # Main application (HTML structure + inline logic)
+├── art.css                   # Extracted stylesheet (UI panels, controls, buttons)
+└── modules/
+    ├── rt-math.js            # Quadray coordinate system & RT math library
+    ├── rt-polyhedra.js       # Polyhedra geometry definitions (vertices, faces, edges)
+    ├── rt-rendering.js       # Three.js rendering utilities (meshes, lines, nodes)
+    ├── rt-state-manager.js   # Forms/Instances state management + undo/redo
+    └── rt-controls.js        # Gumball editing controls (Move/Scale) [INLINE for now]
+
+docs/development/Geometry documents/
+├── ARTexplorer.md            # This file - Main documentation
+├── ART-Gumball.md           # Gumball interaction design specifications
+├── Module-Extraction-Analysis.md  # Analysis of module extraction attempts
+├── Quadray-Grid.md          # Central Angle Grid implementation details
+├── UI-Module.md             # UI/UX design patterns and controls
+└── Kieran-Math.md           # Mathematical foundations and RT formulas
+```
+
+**Code Organization:**
+- **ARTexplorer.html**: ~3600 lines - Main app, scene setup, inline gumball, event handlers
+- **art.css**: ~400 lines - All styling extracted for maintainability
+- **rt-math.js**: Quadray class, conversions (XYZ ↔ WXYZ), RT formulas
+- **rt-polyhedra.js**: All polyhedra definitions with RT-pure vertex calculations
+- **rt-rendering.js**: Three.js rendering abstraction (faces, edges, nodes)
+- **rt-state-manager.js**: Forms (templates) vs Instances (snapshots) architecture
+- **rt-controls.js**: Gumball module (NOT currently active - see Module-Extraction-Analysis.md)
+
+**Key Architectural Decision:**
+Gumball controls remain **inline** in ARTexplorer.html due to scope isolation issues. See [Module-Extraction-Analysis.md](Module-Extraction-Analysis.md) for detailed analysis of two extraction attempts and rationale for keeping inline implementation.
+
+### 1.5 Related Documentation
+
+**Core Documentation:**
+- **[ARTexplorer.md](ARTexplorer.md)** (this file) - Complete project documentation, implementation phases, technical reference
+- **[ART-Gumball.md](ART-Gumball.md)** - Gumball interaction design, Move/Scale/Rotate modes, handle specifications
+- **[Module-Extraction-Analysis.md](Module-Extraction-Analysis.md)** - Detailed analysis of rt-controls.js extraction attempts, scope isolation issues, architectural recommendations
+
+**Technical Reference:**
+- **[Quadray-Grid.md](Quadray-Grid.md)** - Central Angle Grid system, tessellation patterns, 6-plane configuration
+- **[Kieran-Math.md](Kieran-Math.md)** - Rational Trigonometry foundations, quadrance/spread formulas, algebraic identities
+- **[UI-Module.md](UI-Module.md)** - UI/UX patterns, control panel design, keyboard shortcuts, visual feedback
+
+**External References:**
+- [Tom Ace - Quadray Coordinates (C++ implementation)](http://minortriad.com/quadray.html)
+- [Kirby Urner - Quadray Introduction](http://www.grunch.net/synergetics/quadintro.html)
+- [NJ Wildberger - Rational Trigonometry](https://www.youtube.com/user/njwildberger)
+- [R. Buckminster Fuller - Synergetics](https://www.rwgrayprojects.com/synergetics/synergetics.html)
+
 ---
 
-## Phase 1: Foundation (MVP) ✅ COMPLETE
+## 2. Current Status
 
-### Deliverable: Single HTML file with ES module Three.js
+### 2.1 Current Status (as of 2025-12-30)
 
-**File Structure:**
-```
-docs/development/Geometry/
-├── ThreeRT.md (this file)
-└── ThreeRT.html (standalone app - 1200+ lines)
-```
-
-**Completed Goals:**
+**Phase 1 & 2: ✅ COMPLETE**
 1. ✅ Load Three.js from CDN via ES modules (three@0.160.0)
 2. ✅ Basic scene setup (camera, renderer, lights, orbit controls)
 3. ✅ Render multiple polyhedra using hand-coded vertices
@@ -61,9 +162,15 @@ docs/development/Geometry/
 
 ---
 
-## Phase 1b: Dodecahedron Implementation ✅ COMPLETE
+## 3. Implementation Phases
 
-### Deliverable: "Hip Roof Pup Tent" Construction
+### 3.1 Phase 1: Foundation (MVP) ✅ COMPLETE
+
+See section 2.1 for completed goals and implemented polyhedra.
+
+### 3.2 Phase 1b: Dodecahedron Implementation ✅ COMPLETE
+
+**Deliverable: "Hip Roof Pup Tent" Construction**
 
 **Geometric Approach:**
 The dodecahedron uses the standard (0, ±1, ±φ) permutation construction where φ = (1+√5)/2 (golden ratio).
@@ -91,9 +198,9 @@ Similar to Section19.js hip roof solver pattern - pure algebraic solution using 
 
 ---
 
-## Phase 1c: Cuboctahedron (Vector Equilibrium) Implementation ✅ COMPLETE
+### 3.3 Phase 1c: Cuboctahedron (Vector Equilibrium) Implementation ✅ COMPLETE
 
-### Deliverable: Fuller's IVM Foundation Polyhedron
+**Deliverable: Fuller's IVM Foundation Polyhedron**
 
 **Geometric Approach:**
 The cuboctahedron (Fuller's "Vector Equilibrium") is constructed with vertices at the edge midpoints of a cube/octahedron. This is the fundamental polyhedron in Fuller's Isotropic Vector Matrix (IVM) space-filling geometry.
@@ -524,13 +631,48 @@ The -90° rotation is **optimal RT math** because it uses exact integer values (
 - **History**: 50-action undo/redo stack with createInstance/deleteInstance/updateInstance
 - **Export**: JSON/CSV export functions for session persistence
 
-**Recent Completion (2025-12-30):**
+### 2.2 Recent Completion (2025-12-30)
+
+**Morning Session:**
 - Click-to-select raycasting with visual highlight
 - Forms vs Instances separation (templates vs snapshots)
 - Delete key removes selected instances (Forms protected)
 - Enhanced selection visibility (3x line width, bright cyan glow)
 - Fixed deselection (ESC key + click empty space)
 - Fixed NOW button highlight clearing
+
+**Afternoon Session:**
+- **Selection Precision Fix**: Reduced raycaster line threshold from 1.0 to 0.1 for precise edge selection
+  - Previous: Could select forms from ~2x their width away (1 world unit threshold)
+  - Fixed: Now requires clicking within 0.1 units of edges for accurate selection
+  - Commit: 47d9fe6
+
+- **Gumball Basis Vector Scaling**: Changed from fixed size (2√2) to dynamic sizing based on form's tetEdge
+  - Basis vectors now scale proportionally with form size (OutSphere radius approximation)
+  - Uses tetEdge slider value directly (more performant than bounding box calculation)
+  - Handles extend outside forms for easier grabbing on geodesics
+  - Commit: 759fa1b
+
+- **Camera View Presets for Z-Up + Tetrahedral Geometry**: Fixed all 6 camera views for proper Z-up orientation
+  - **Problem**: Side views showed tetrahedra as squares (edge-on) instead of triangular profiles
+  - **Root Cause**: Code originally Y-up, only partially converted to Z-up; Front/Back positions swapped
+  - **Solution**:
+    - Swapped Front (0, -distance, 0) and Back (0, distance, 0) to match Z-up convention
+    - Modified Left/Right views to use 45° angles in X-Y plane for tetrahedral triangular profiles
+    - Left: (-distance/√2, -distance/√2, 0) - sees YZ plane at 45° angle
+    - Right: (+distance/√2, +distance/√2, 0) - opposite 45° angle
+  - **Result**: Side views now correctly show tetrahedral geometry (triangular profiles, not squares)
+  - **Insight**: Cardinal axis views (pure X/Y/Z) show tetrahedra edge-on; 45° angles reveal natural triangular faces
+  - **Reveals**: How Cartesian-optimized orthogonal views obscure tetrahedral geometry's natural structure
+  - Commit: d038078
+
+- **Scale Mode Implementation**: Gumball now supports scaling selected objects via cube handles
+  - Scale cube handles positioned at form corners
+  - Drag to scale form uniformly from origin
+  - Uses same tetEdge-based sizing as Move mode handles
+  - Preserves form proportions during scaling
+  - Scale sensitivity increased from 0.1 to 15.0 for meaningful interaction
+  - Commits: fdbfbd5, fbd043f, 1d19d9c, 80bafc0
 
 ---
 
@@ -2361,4 +2503,186 @@ ARTexplorer_State_2025-12-28_geodesic-icosa-freq4.csv
 - URL parameter state encoding (shareable links)
 - State history/undo (stack-based state management)
 - Preset library (common configurations as buttons)
+
+
+---
+
+## 5. Work Plan & Roadmap
+
+### 5.1 Completed Items ✅
+
+**2025-12-30 - Gumball Interaction & Camera Views:**
+- ✅ Selection precision fix (raycaster threshold 1.0 → 0.1)
+- ✅ Gumball basis vector dynamic sizing (tetEdge-based)
+- ✅ Camera view presets corrected for Z-up coordinate system
+- ✅ Left/Right views at 45° angles to show tetrahedral triangular profiles
+- ✅ Scale mode implementation with cube handles
+- ✅ StateManager implementation (Forms/Instances architecture)
+- ✅ Move mode with WXYZ and XYZ dual gumball handles
+- ✅ Selection system (click-to-select, ESC deselect, Delete remove)
+- ✅ Undo/redo history (50-action stack)
+- ✅ NOW button (deposit instances, reset forms)
+
+**2025-12-26 - Z-Up Convention & Geodesics:**
+- ✅ Z-up coordinate convention (CAD/BIM/glTF standard)
+- ✅ Geodesic sphere projections (InSphere/MidSphere/OutSphere)
+- ✅ Frequency slider for geodesic subdivision
+- ✅ RT-pure sphere projection formulas
+
+**2025-12-25 - Grids & Dual Polyhedra:**
+- ✅ Central Angle Grids (6 Quadray planes)
+- ✅ Corrected tessellation (triangular faces, not parallelograms)
+- ✅ Dual icosahedron with spread-based rotation
+- ✅ Exact algebraic spread values (no trig functions)
+
+**Phase 1 & 2 Foundation:**
+- ✅ All 7 platonic + Archimedean polyhedra implemented
+- ✅ RT-pure vertex calculations (quadrance-based)
+- ✅ Interactive controls panel with toggles and sliders
+- ✅ Euler validation for all solids
+- ✅ Semi-transparent faces with configurable opacity
+- ✅ Modularized code (rt-math, rt-polyhedra, rt-rendering, rt-state-manager)
+- ✅ CSS extraction (art.css)
+
+---
+
+### 5.2 TODO: Active Work Items 🎯
+
+**Priority 1: Rotation Mode (Next Implementation)**
+- [ ] Implement Rotate mode with circular arc handles
+- [ ] Arc handles positioned at form edges (perpendicular to Move arrows)
+- [ ] Rotation around X, Y, Z axes (Cartesian)
+- [ ] Rotation around W, X, Y, Z axes (Quadray) - **Question:** How does rotation work in 4D tetrahedral space?
+- [ ] Visual feedback: circular arcs showing rotation plane
+- [ ] Snap-to-angle options (15°, 30°, 45°, 90° increments)
+- [ ] RT-pure rotation using spread values (not angle calculations)
+
+**Priority 2: Grid Tessellation Sliders**
+- [ ] Add dynamic tessellation sliders for Quadray grids (12-120 intervals, step 12)
+- [ ] Add dynamic tessellation sliders for Cartesian grids (12-120 intervals, step 12)
+- [ ] Position in Scale control group after tetScaleSlider
+- [ ] Rebuild grids on slider change with state preservation
+- [ ] Performance optimization for high tessellations (>60 intervals)
+- [ ] Consider debouncing or using `change` event instead of `input`
+
+**Priority 3: CSV/JSON State Export (Partial)**
+- [x] StateManager architecture implemented
+- [ ] CSV export for all UI state (polyhedra visibility, sliders, toggles, camera position)
+- [ ] JSON export option (more compact format)
+- [ ] Import functionality with validation
+- [ ] Auto-save to localStorage for session persistence
+- [ ] Preset library system for common configurations
+
+**Priority 4: Rhombic Dodecahedron Rebuild**
+- [ ] Rebuild from cuboctahedron dual relationship
+- [ ] Fix face dual construction (current implementation has issues)
+- [ ] Verify all 12 rhombic faces are congruent
+- [ ] RT-pure vertex calculations
+
+---
+
+### 5.3 TODO: Future Enhancements 🔮
+
+**Geodesic Improvements:**
+- [ ] Geodesic subdivision for all polyhedra (not just icosahedron)
+- [ ] Frequency slider extension (currently 1-4, extend to 1-8)
+- [ ] Alternative subdivision methods (Class I, II, III)
+- [ ] Edge length equalization for geodesic domes
+
+**Advanced Interaction:**
+- [ ] Multi-selection (Shift+Click to select multiple forms/instances)
+- [ ] Copy/paste instances (Cmd/Ctrl+C, Cmd/Ctrl+V)
+- [ ] Group/ungroup instances
+- [ ] Snap-to-grid for Move mode
+- [ ] Snap-to-angle for Rotate mode
+- [ ] Measurement tool (distance, angle, area, volume)
+
+**Visualization Enhancements:**
+- [ ] Face normals visualization (arrows pointing outward)
+- [ ] Vertex labels (show coordinates in XYZ and WXYZ)
+- [ ] Edge labels (show lengths and quadrances)
+- [ ] Dihedral angle display (using spread, not angle)
+- [ ] Animation system (rotate polyhedra, morph between forms)
+- [ ] Multiple viewport modes (quad view: Top/Front/Right/Perspective)
+
+**Export & Sharing:**
+- [ ] glTF export for 3D model sharing
+- [ ] DWG export for CAD software integration
+- [ ] SVG export for 2D projections
+- [ ] PNG screenshot capture with transparent background
+- [ ] URL parameter state encoding for shareable links
+- [ ] Embed mode (iframe-friendly version for documentation)
+
+**Performance Optimization:**
+- [ ] Geometry instancing for repeated forms
+- [ ] Level-of-detail (LOD) system for high-frequency geodesics
+- [ ] WebGL2 optimization
+- [ ] Web Worker for geometry calculations
+- [ ] Progressive loading for complex tessellations
+
+**Educational Features:**
+- [ ] Tutorial mode (guided exploration of polyhedra relationships)
+- [ ] Formula display panel (show RT calculations for current geometry)
+- [ ] Comparison mode (side-by-side polyhedra with measurements)
+- [ ] Historical timeline (Fuller's discoveries, Wildberger's RT development)
+
+---
+
+### 5.4 Open Questions (Answered) ✓
+
+**Question 1: 4D Coordinate System Preference?**
+- **Answer:** WXYZ (Quadray) as primary with XYZ (Cartesian) as secondary. Toggle between both for comparison.
+- **Status:** ✅ Implemented - Both coordinate systems active with dual gumball handles
+
+**Question 2: Visual Style Preferences?**
+- **Answer:** Semi-transparent faces, hairline grid vectors, thicker edge vectors (like WombatRender.js)
+- **Status:** ✅ Implemented - Configurable opacity, distinct line weights
+
+**Question 3: Interaction Model?**
+- **Answer:** Still on load, user-controlled orbit with easing, touch support later
+- **Status:** ✅ Implemented - OrbitControls with damping
+
+**Question 4: Geometry Scope?**
+- **Answer:** Platonic solids + Rhombic Dodec, with geodesic subdivision for all
+- **Status:** ✅ Platonic solids complete, ⚠️ Rhombic Dodec needs rebuild, ✅ Geodesic icosa working
+
+**Question 5: Dual Polyhedra Visualization?**
+- **Answer:** Yes, show dual as toggleable option starting with dual tetrahedra in cube
+- **Status:** ✅ Implemented - Dual tetrahedron, dual icosahedron (dodecahedron)
+
+**Question 6: Rotation in 4D Tetrahedral Space?**
+- **Answer:** OPEN - How does rotation work around W/X/Y/Z axes in Quadray coordinates?
+- **Research Needed:** Tom Ace's RotateAboutA() method, Kirby Urner's documentation
+- **Status:** 🔍 Needs investigation before implementing Rotate mode
+
+**Question 7: Why do Left/Right views show squares instead of triangles?**
+- **Answer:** Cardinal axis views show tetrahedra edge-on. Need 45° angles to see triangular profiles.
+- **Status:** ✅ Fixed - Left/Right views now at 45° in X-Y plane
+
+**Question 8: Should gumball handles be extracted to rt-controls.js module?**
+- **Answer:** NO - Keep inline due to scope isolation issues. See Module-Extraction-Analysis.md for details.
+- **Status:** ✅ Decision made - Inline implementation maintained
+
+---
+
+## 6. Contributors & Acknowledgments
+
+**Primary Development:**
+- Andy Thomson - Project lead, geometric vision, Fuller/Wildberger synthesis
+- Claude (Anthropic) - Implementation, RT mathematics, modularization architecture
+
+**Foundational Ideas:**
+- R. Buckminster Fuller - Synergetics, IVM, Vector Equilibrium, tetrahedral coordinatization
+- Kirby Urner - Quadray coordinates, Python implementations, educational outreach
+- Tom Ace - Quadray C++ implementation, cross product, rotation algorithms
+- NJ Wildberger - Rational Trigonometry, quadrance/spread formulas, pure algebraic geometry
+
+**Witnessed Silently By:**
+- Metatron - Geometric overseer, sacred geometry guardian
+
+---
+
+**Document Version:** 2.0 (2025-12-30)  
+**Last Updated:** 2025-12-30  
+**Next Review:** When Rotate mode is implemented
 
