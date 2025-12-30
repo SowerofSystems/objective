@@ -2633,17 +2633,24 @@
 
       /**
        * Apply highlight glow to selected polyhedron
+       * Enhanced with stronger emissive and thicker edges for visibility
        */
       function applyHighlight(polyhedron) {
-        polyhedron.traverse(mesh => {
-          if (mesh.isMesh) {
+        polyhedron.traverse(obj => {
+          if (obj.isMesh) {
             // Store original emissive for restoration
-            mesh.userData.originalEmissive = mesh.material.emissive.clone();
-            mesh.userData.originalEmissiveIntensity = mesh.material.emissiveIntensity;
+            obj.userData.originalEmissive = obj.material.emissive.clone();
+            obj.userData.originalEmissiveIntensity = obj.material.emissiveIntensity;
 
-            // Apply blue glow
-            mesh.material.emissive.setHex(0x4a9eff);
-            mesh.material.emissiveIntensity = 0.3;
+            // Apply bright cyan glow (more intense and visible)
+            obj.material.emissive.setHex(0x00ffff);
+            obj.material.emissiveIntensity = 0.8;
+          } else if (obj.isLine) {
+            // Store original line width
+            obj.userData.originalLineWidth = obj.material.linewidth || 1;
+
+            // Increase line width for selected edges (more visible)
+            obj.material.linewidth = 3;
           }
         });
       }
@@ -2652,10 +2659,12 @@
        * Clear highlight from polyhedron
        */
       function clearHighlight(polyhedron) {
-        polyhedron.traverse(mesh => {
-          if (mesh.isMesh && mesh.userData.originalEmissive) {
-            mesh.material.emissive.copy(mesh.userData.originalEmissive);
-            mesh.material.emissiveIntensity = mesh.userData.originalEmissiveIntensity;
+        polyhedron.traverse(obj => {
+          if (obj.isMesh && obj.userData.originalEmissive) {
+            obj.material.emissive.copy(obj.userData.originalEmissive);
+            obj.material.emissiveIntensity = obj.userData.originalEmissiveIntensity;
+          } else if (obj.isLine && obj.userData.originalLineWidth !== undefined) {
+            obj.material.linewidth = obj.userData.originalLineWidth;
           }
         });
       }
@@ -2677,9 +2686,6 @@
       function onCanvasClick(event) {
         // Don't select during drag operations
         if (isDragging) return;
-
-        // Don't select if clicking on gumball handles
-        if (currentGumballTool) return; // Let gumball handle its own clicks
 
         const rect = renderer.domElement.getBoundingClientRect();
         const mouseX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -3010,9 +3016,15 @@
       animate();
 
       // ========================================================================
-      // KEYBOARD SHORTCUTS (Delete, Undo/Redo)
+      // KEYBOARD SHORTCUTS (ESC, Delete, Undo/Redo)
       // ========================================================================
       document.addEventListener('keydown', (event) => {
+        // ESC key - deselect all
+        if (event.key === 'Escape') {
+          deselectAll();
+          console.log('⎋ ESC: Deselected all');
+        }
+
         // Delete key - delete selected Instance
         if (event.key === 'Delete' || event.key === 'Backspace') {
           if (currentSelection && currentSelection.userData.isInstance) {
@@ -3061,6 +3073,7 @@
         Pan: Right-click + drag<br>
         Zoom: Scroll wheel<br>
         <br>
+        ESC: Deselect<br>
         Delete: Remove selected instance<br>
         Cmd/Ctrl+Z: Undo<br>
         Cmd/Ctrl+Shift+Z: Redo
