@@ -958,6 +958,12 @@
                 <button class="toggle-btn variant-standard" id="viewAxo">
                   Axo
                 </button>
+                <button
+                  class="toggle-btn variant-standard"
+                  id="viewPerspective"
+                >
+                  Perspective
+                </button>
                 <button id="resetCamera">Reset</button>
               </div>
             </div>
@@ -2541,6 +2547,18 @@
               );
               camera.up.set(0, 0, 1); // Z points up
               break;
+
+            case "perspective":
+              // Perspective view - slightly offset from isometric for dynamic feel
+              // Position: asymmetric to encourage orbit exploration
+              camera.position.set(5, -5, 5);
+              camera.up.set(0, 0, 1); // Z points up
+              // Ensure we're in perspective mode
+              if (isOrthographic) {
+                orthoCheckbox.checked = false;
+                switchCameraType(false);
+              }
+              break;
           }
 
           camera.lookAt(0, 0, 0);
@@ -2561,6 +2579,7 @@
           { id: "viewFront", view: "front" },
           { id: "viewBack", view: "back" },
           { id: "viewAxo", view: "axo" },
+          { id: "viewPerspective", view: "perspective" },
         ];
 
         viewButtons.forEach(({ id, view }) => {
