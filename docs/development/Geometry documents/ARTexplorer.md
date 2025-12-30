@@ -487,7 +487,7 @@ The -90° rotation is **optimal RT math** because it uses exact integer values (
 
 ---
 
-## Current Status (as of 2025-12-26)
+## Current Status (as of 2025-12-30)
 
 **Phase 1 & 2: ✅ COMPLETE**
 - All 7 polyhedra implemented and rendering correctly
@@ -513,14 +513,24 @@ The -90° rotation is **optimal RT math** because it uses exact integer values (
 - **Visual**: Blue Z-axis points UP (was green/Y before)
 - **Grid Planes**: XY horizontal (ground), XZ/YZ vertical (walls)
 - **Comments**: Updated all polyhedra vertex descriptions for Z-up interpretation
-- **Backup**: Created ARTexplorer-YUP-BACKUP.html (since deleted) for reference
 - **Rationale**: Preparing for glTF/DWG/GXF export compatibility with industry CAD standards
 
-**Recent Completion:**
-- Z-up coordinate refactor (notation change only - coordinates unchanged)
-- Icosahedron geodesic InSphere/MidSphere RT-pure formulas corrected
-- Eliminated all trigonometric functions from geodesic sphere calculations
-- Frequency slider performance optimization (rebuild only on release, not during drag)
+**Phase 2.11: ✅ COMPLETE (2025-12-30) - ART Gumball + StateManager**
+- **Selection System**: Click-to-select with bright cyan highlight (0x00ffff, 0.8 intensity)
+- **StateManager**: rt-state-manager.js module with Forms/Instances architecture
+- **Move Tool**: WXYZ and XYZ dual coordinate systems with gumball handles
+- **Keyboard Shortcuts**: ESC (deselect), Delete (remove instance), Cmd/Ctrl+Z (undo/redo)
+- **NOW Button**: Deposits instances, resets Forms to origin, clears highlight
+- **History**: 50-action undo/redo stack with createInstance/deleteInstance/updateInstance
+- **Export**: JSON/CSV export functions for session persistence
+
+**Recent Completion (2025-12-30):**
+- Click-to-select raycasting with visual highlight
+- Forms vs Instances separation (templates vs snapshots)
+- Delete key removes selected instances (Forms protected)
+- Enhanced selection visibility (3x line width, bright cyan glow)
+- Fixed deselection (ESC key + click empty space)
+- Fixed NOW button highlight clearing
 
 ---
 

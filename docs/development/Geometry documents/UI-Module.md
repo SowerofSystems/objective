@@ -549,15 +549,15 @@ Implement state persistence:
 - No build step required (native ES6 modules)
 - Code is more maintainable and testable
 
-### 🎯 Phase 2.7: ART Gumball Implementation (Current - In Progress)
+### 🎯 Phase 2.7: ART Gumball Implementation - ✅ COMPLETED (2025-12-30)
 
-**Goal:** Implement Move tool with WXYZ and XYZ support before extracting to dedicated module
+**Goal:** Implement Move tool with WXYZ and XYZ support + Selection + StateManager
 
-**Status:** ✅ Phase 1 MVP COMPLETED - Basic move functionality working
+**Status:** ✅ ALL FEATURES COMPLETED - Move tool production-ready
 
-**Implementation Approach:** Rapid prototyping in ARTexplorer.html, then extract to rt-controls.js module
+**Implementation Approach:** Inline in ARTexplorer.html (deferred module extraction until rock-solid)
 
-#### Completed Features (2025-12-29)
+#### Completed Features (2025-12-29 + 2025-12-30)
 
 1. **Move Tool with Dual Coordinate Systems** - ✅ COMPLETED
    - WXYZ (Quadray) basis vectors with 4 arrow handles (W, X, Y, Z)
@@ -583,49 +583,78 @@ Implement state persistence:
    - Updates counter UI in real-time
    - Console logging for debugging
 
-#### Known Issues & Architectural Limitations
+5. **Selection System** - ✅ COMPLETED (2025-12-30)
+   - Click to select Forms/Instances
+   - Bright cyan highlight (0x00ffff, 0.8 intensity)
+   - 3x thicker edge lines for visibility
+   - ESC key to deselect
+   - Click empty space to deselect
+   - Only selected objects move with gumball
 
-**CRITICAL: No Selection System** - Blocking further progress
+6. **StateManager (rt-state-manager.js)** - ✅ COMPLETED (2025-12-30)
+   - Forms registry (templates at origin)
+   - Instance tracking with metadata
+   - createInstance(), deleteInstance(), updateInstance()
+   - Undo/Redo with 50-action history stack
+   - Export to JSON/CSV
 
-**Problem:**
-- All visible polyhedra move together globally
-- No way to select individual instances
-- Cannot isolate Forms from Instances
-- User loses control over what gets edited
+7. **Delete Functionality** - ✅ COMPLETED (2025-12-30)
+   - Delete key removes selected Instance
+   - Cannot delete Forms (templates protected)
+   - Updates counter UI
 
-**Impact:**
-- "Everything gets moved together and without instantiation, also everything is edited globally" (User feedback)
-- NOW button can deposit instances but cannot differentiate them
-- Cannot implement delete functionality
-- Cannot implement proper Forms vs Instances workflow
+8. **Keyboard Shortcuts** - ✅ COMPLETED (2025-12-30)
+   - ESC: Deselect
+   - Delete/Backspace: Remove selected Instance
+   - Cmd/Ctrl+Z: Undo
+   - Cmd/Ctrl+Shift+Z: Redo
+   - Documented in info overlay
 
-**Required Solution:**
-1. Click-to-select raycasting for individual instances
-2. Visual highlight glow for selected Forms/Instances
-3. Forms vs Instances separation:
-   - Forms: Templates at origin (editable)
-   - Instances: Deposited snapshots (independent copies)
-4. StateManager integration for instance tracking
+#### Resolved Issues (2025-12-30)
+
+**FIXED: Selection System** - ✅ RESOLVED
+- ✅ Individual selection working (no more global movement)
+- ✅ Forms vs Instances separation complete
+- ✅ Visual highlight makes selection obvious
+- ✅ Deselection works reliably (ESC or click empty space)
+
+**FIXED: NOW Button Behavior** - ✅ RESOLVED
+- ✅ Instances deposit correctly
+- ✅ Forms reset to origin after deposition
+- ✅ Highlight clears after NOW button press
+
+#### Remaining Refinements (Low Priority)
+
+**Minor Issues (Non-Blocking):**
+- Selection sensitivity during camera orbit (acceptable - may need drag threshold)
+- Snap mode UI/UX needs better visual feedback and documentation
+- Module extraction deferred (rt-controls.js) - keep inline until all features stable
+
+---
 
 #### Recommended Next Steps
 
 **Immediate (Next Session):**
-1. **Implement Selection System** - CRITICAL
-   - Add raycasting on canvas click
-   - Implement visual highlight for selected objects
-   - Distinguish Forms from Instances
+1. **Refine Snap Mode UI** - Improve user feedback
+   - Visual indicators for active snap mode
+   - Better documentation in UI
+   - Consider snap grid visualization
 
-2. **Consider Modular Refactoring** - User suggestion:
-   - "Should we consider breaking these functions into a new 'rt-controls.js' file?"
-   - Extract gumball logic from ARTexplorer.html to rt-controls.js
-   - Create rt-state-manager.js for instance tracking
-   - Keep HTML as UI container only
+2. **Implement Scale Mode** - Now that Move is solid
+   - Cube handles on axes
+   - Uniform vs non-uniform scaling
+   - Snap to rational scale factors
 
-**Future:**
-3. Implement Scale and Rotate modes
-4. Add keyboard shortcuts (G=Move, S=Scale, R=Rotate, ESC=Cancel, N=NOW)
-5. Implement Delete key functionality
-6. Implement Undo/Redo (Cmd+Z / Ctrl+Z)
+3. **Implement Rotate Mode** - Spread-based rotations
+   - Ring handles for rotation planes
+   - Spread presets (s=1/4, 1/2, 3/4, 1)
+   - Visual feedback for rotation plane
+
+**Future (Phase 3):**
+4. Extract to rt-controls.js module (once all modes are stable)
+5. Add additional keyboard shortcuts (G=Move, S=Scale, R=Rotate, N=NOW)
+6. Implement View presets (Top, Bottom, Left, Right, Front, Back)
+7. Implement Papercut tools (line weight, backface culling, print extents)
 
 ---
 
