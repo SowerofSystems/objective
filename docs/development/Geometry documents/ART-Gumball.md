@@ -2366,3 +2366,229 @@ document.addEventListener('keydown', (event) => {
 2. Add Rotate mode functionality
 3. Consider per-axis (non-uniform) scaling with deformation controls
 3. Consider Scale and Rotate modes after Move is perfected
+
+ADDED 2025.12.30:
+
+1. Is the ART-Gumball.md specification detailed enough?
+YES, the specification is very detailed for rotation: ✅ Well-defined:
+Lines 118-277: Complete rotation specification
+Spread-to-rotation matrix conversion (lines 168-234)
+Exact algebraic spread values (lines 236-251)
+Hexagonal handles for WXYZ, circular for XYZ (lines 582-603)
+Rotation around each axis (perpendicular planes)
+✅ Missing pieces YOU just clarified:
+Two numeric input fields (degrees AND spread) - NOT in current spec
+Selection → Rotate → Drag workflow - Matches Move/Scale pattern
+Spread snapping at 0.1 intervals - Already specified but needs UI fields
+2. THREE.js Rotation Helpers:
+YES, THREE.js has built-in helpers we can leverage:
+
+// THREE.js provides rotation helpers, but they use ANGLES, not spreads
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
+
+// TransformControls has built-in rotation rings
+const transformControls = new TransformControls(camera, renderer.domElement);
+transformControls.attach(mesh);
+transformControls.setMode('rotate'); // Built-in rotation gizmo!
+scene.add(transformControls);
+However, for RT-purity and your hexagon specification, I recommend:
+Custom Implementation (Better for RT-purity):
+Reasons:
+THREE.TransformControls uses angles internally, not spreads
+We want hexagonal handles for WXYZ (not circles)
+We need spread-based snapping (0.1, 0.2, ... 1.0)
+Must show both degrees AND spread in real-time
+Leverage from THREE.js:
+
+// We CAN use these THREE.js utilities:
+THREE.TorusGeometry()      // For circular XYZ handles
+THREE.CylinderGeometry()   // For hexagonal WXYZ handles (6 sides)
+THREE.Matrix4              // For rotation matrix application
+object.applyMatrix4()      // Apply spread-based rotation
+Implementation Plan for Rotation Mode:
+Step 1: Add Numeric Input Fields (Controls Section)
+
+<!-- Add to Controls section in ARTexplorer.html -->
+<div class="control-group">
+  <h4>Rotation</h4>
+  
+  <!-- Angle input (traditional degrees) -->
+  <div class="control-item">
+    <label>Angle (degrees)</label>
+    <input type="number" id="rotAngle" step="1" value="0.00" style="width: 100px">°
+  </div>
+  
+  <!-- Spread input (RT-pure) -->
+  <div class="control-item">
+    <label>Spread (RT)</label>
+    <input type="number" id="rotSpread" step="0.01" min="0" max="1" value="0.00" style="width: 100px">
+  </div>
+  
+  <!-- Bidirectional sync -->
+  <script>
+    // Angle → Spread conversion: s = sin²(θ)
+    document.getElementById('rotAngle').addEventListener('input', (e) => {
+      const degrees = parseFloat(e.target.value);
+      const radians = degrees * (Math.PI / 180);
+      const spread = Math.pow(Math.sin(radians), 2);
+      document.getElementById('rotSpread').value = spread.toFixed(4);
+    });
+    
+    // Spread → Angle conversion: θ = arcsin(√s)
+    document.getElementById('rotSpread').addEventListener('input', (e) => {
+      const spread = parseFloat(e.target.value);
+      const radians = Math.asin(Math.sqrt(spread));
+      const degrees = radians * (180 / Math.PI);
+      document.getElementById('rotAngle').value = degrees.toFixed(2);
+    });
+  </script>
+</div>
+Step 2: Create Rotation Handles (Hexagons for WXYZ, Circles for XYZ)
+
+/**
+ * Create rotation handles in editing basis
+ * Lines 2900-3000 in ARTexplorer.html (after Move/Scale handle code)
+ */
+function createRotationHandles(editingBasis, coordinateSystem) {
+  const handleGroup = new THREE.Group();
+  
+  if (coordinateSystem === 'WXYZ') {
+    // 4 hexagonal handles perpendicular to W, X, Y, Z axes
+    Quadray.basisVectors.forEach((vec, i) => {
+      const hexagon = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.5, 1.5, 0.1, 6), // 6 sides = hexagon
+        new THREE.MeshBasicMaterial({
+          color: basisColors[i],
+          transparent: true,
+          opacity: 0.4
+        })
+      );
+      
+      // Orient hexagon perpendicular to basis vector
+      hexagon.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        vec.clone().normalize()
+      );
+      
+      hexagon.userData.rotationAxis = vec.clone().normalize();
+      hexagon.userData.axisName = ['W', 'X', 'Y', 'Z'][i];
+      
+      handleGroup.add(hexagon);
+    });
+  } else { // XYZ
+    // 3 circular (torus) handles around X, Y, Z axes
+    const axes = [
+      { axis: new THREE.Vector3(1, 0, 0), color: 0xff0000, name: 'X' },
+      { axis: new THREE.Vector3(0, 1, 0), color: 0x00ff00, name: 'Y' },
+      { axis: new THREE.Vector3(0, 0, 1), color: 0x0000ff, name: 'Z' }
+    ];
+    
+    axes.forEach(({axis, color, name}) => {
+      const torus = new THREE.Mesh(
+        new THREE.TorusGeometry(1.5, 0.05, 16, 32),
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.6 })
+      );
+      
+      // Orient torus perpendicular to rotation axis
+      torus.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        axis
+      );
+      
+      torus.userData.rotationAxis = axis;
+      torus.userData.axisName = name;
+      
+      handleGroup.add(torus);
+    });
+  }
+  
+  editingBasis.add(handleGroup);
+  return handleGroup;
+}
+Step 3: Rotation Drag Logic (Spread-based)
+
+/**
+ * Handle rotation drag with spread snapping
+ */
+function onRotationDrag(event, selectedHandle, selectedObject) {
+  // Calculate rotation delta from mouse movement
+  const mouseDelta = event.movementX + event.movementY; // Simplified
+  
+  // Convert to spread delta (snap to 0.1 intervals)
+  const spreadDelta = Math.round((mouseDelta * 0.001) * 10) / 10; // Snap to 0.1
+  const newSpread = Math.max(0, Math.min(1, currentSpread + spreadDelta));
+  
+  // Update spread input
+  document.getElementById('rotSpread').value = newSpread.toFixed(2);
+  
+  // Trigger angle conversion
+  document.getElementById('rotSpread').dispatchEvent(new Event('input'));
+  
+  // Apply rotation using spread-to-matrix conversion
+  const rotationAxis = selectedHandle.userData.rotationAxis;
+  const rotationMatrix = spreadToRotationMatrix(newSpread, rotationAxis);
+  
+  selectedObject.applyMatrix4(rotationMatrix);
+  
+  currentSpread = newSpread;
+}
+
+/**
+ * Spread-to-rotation matrix (from ART-Gumball.md lines 191-233)
+ */
+function spreadToRotationMatrix(spread, axis) {
+  const s = Math.max(0, Math.min(1, spread));
+  const sinTheta = Math.sqrt(s);
+  const cosTheta = Math.sqrt(1 - s);
+  
+  const matrix = new THREE.Matrix4();
+  
+  // Rotation around arbitrary axis using Rodrigues' formula
+  const x = axis.x, y = axis.y, z = axis.z;
+  const c = cosTheta, s = sinTheta;
+  const t = 1 - c;
+  
+  matrix.set(
+    t*x*x + c,   t*x*y - s*z, t*x*z + s*y, 0,
+    t*x*y + s*z, t*y*y + c,   t*y*z - s*x, 0,
+    t*x*z - s*y, t*y*z + s*x, t*z*z + c,   0,
+    0,           0,           0,           1
+  );
+  
+  return matrix;
+}
+
+Answer to Your Questions:
+Is the specification detailed enough?
+✅ YES - with your additions:
+Two numeric inputs (degrees + spread) ← YOU added this
+Selection → Rotate → Drag workflow ← YOU clarified this
+Spread snapping at 0.1 intervals ← Already in spec + YOU confirmed
+Does THREE.js have rotation handles we can leverage?
+✅ Partially:
+TransformControls exists but uses angles (not RT-pure)
+Better approach: Custom handles using THREE.js primitives
+TorusGeometry for XYZ circles
+CylinderGeometry(radius, radius, height, 6) for WXYZ hexagons
+Matrix4 for spread-based rotation application
+Tonight's Implementation Scope:
+I recommend implementing in this order:
+✅ Add numeric input fields (15 min)
+Angle field (0.00°)
+Spread field (0.00)
+Bidirectional conversion sync
+✅ Create rotation handle geometry (30 min)
+Hexagons for WXYZ (6-sided cylinders)
+Circles/Tori for XYZ
+Color-coded to basis vectors
+✅ Implement drag rotation (45 min)
+Raycasting to detect handle clicks
+Convert mouse movement → spread delta
+Snap to 0.1 intervals
+Apply spread-to-matrix conversion
+Update both input fields
+✅ Polish (20 min)
+Visual feedback during rotation
+ESC to cancel
+Works on Forms and Instances
+Total: ~2 hours for working Rotate mode Would you like me to start implementing this tonight?

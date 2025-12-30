@@ -232,6 +232,7 @@ export const RTControls = {
 
     // Determine handle type based on active tool
     const isScaleMode = this.state.currentTool === 'scale';
+    const isRotateMode = this.state.currentTool === 'rotate';
 
     // ========================================================================
     // QUADRAY BASIS VECTORS (WXYZ) - Tetrahedral coordinate system
@@ -241,53 +242,106 @@ export const RTControls = {
       const quadrayLabels = ['W', 'X', 'Y', 'Z'];
 
       this.Quadray.basisVectors.forEach((vec, i) => {
-        // Create arrow shaft (same for both Move and Scale modes)
-        const arrow = new this.THREE.ArrowHelper(
-          vec,
-          new this.THREE.Vector3(0, 0, 0),
-          arrowLength,
-          quadrayColors[i],
-          isScaleMode ? 0 : headLength, // No arrowhead in Scale mode
-          0.2
-        );
+        if (isRotateMode) {
+          // ROTATE MODE: Hexagonal circle perpendicular to axis
+          const circleRadius = arrowLength * 0.9;
+          const segments = 6; // Hexagon for WXYZ differentiation
 
-        this.state.editingBasis.add(arrow);
+          const curve = new this.THREE.EllipseCurve(
+            0, 0,
+            circleRadius, circleRadius,
+            0, 2 * Math.PI,
+            false,
+            0
+          );
 
-        // Add handle at arrow tip - CUBE for Scale, SPHERE for Move
-        const tipPosition = vec.clone().multiplyScalar(arrowLength);
+          const points = curve.getPoints(segments);
+          const geometry = new this.THREE.BufferGeometry().setFromPoints(points);
+          const material = new this.THREE.LineBasicMaterial({
+            color: quadrayColors[i],
+            linewidth: 2,
+            transparent: true,
+            opacity: 0.8
+          });
 
-        let handle;
-        if (isScaleMode) {
-          // SCALE MODE: Cube handle
-          const cubeSize = 0.4;
-          handle = new this.THREE.Mesh(
-            new this.THREE.BoxGeometry(cubeSize, cubeSize, cubeSize),
+          const rotationHandle = new this.THREE.LineLoop(geometry, material);
+
+          // Orient circle perpendicular to the axis vector
+          const defaultNormal = new this.THREE.Vector3(0, 0, 1);
+          const quaternion = new this.THREE.Quaternion().setFromUnitVectors(defaultNormal, vec);
+          rotationHandle.setRotationFromQuaternion(quaternion);
+
+          this.state.editingBasis.add(rotationHandle);
+
+          // Invisible torus hit zone for clicking
+          const hitThickness = 0.15; // Clickable area thickness
+          const hitZone = new this.THREE.Mesh(
+            new this.THREE.TorusGeometry(circleRadius, hitThickness, 16, 64),
             new this.THREE.MeshBasicMaterial({
-              color: quadrayColors[i],
               transparent: true,
-              opacity: 0.5
+              opacity: 0, // Invisible
+              depthTest: false
             })
           );
+
+          hitZone.setRotationFromQuaternion(quaternion);
+          hitZone.userData.isGumballHandle = true;
+          hitZone.userData.isRotationHandle = true;
+          hitZone.userData.basisType = 'quadray';
+          hitZone.userData.basisIndex = i;
+          hitZone.userData.axis = vec.clone();
+          hitZone.userData.axisName = quadrayLabels[i];
+
+          this.state.editingBasis.add(hitZone);
         } else {
-          // MOVE MODE: Sphere handle
-          handle = new this.THREE.Mesh(
-            new this.THREE.SphereGeometry(0.5, 16, 16),
-            new this.THREE.MeshBasicMaterial({
-              color: quadrayColors[i],
-              transparent: true,
-              opacity: 0.3
-            })
+          // MOVE/SCALE MODE: Arrow with handle at tip
+          const arrow = new this.THREE.ArrowHelper(
+            vec,
+            new this.THREE.Vector3(0, 0, 0),
+            arrowLength,
+            quadrayColors[i],
+            isScaleMode ? 0 : headLength,
+            0.2
           );
+
+          this.state.editingBasis.add(arrow);
+
+          // Add handle at arrow tip - CUBE for Scale, SPHERE for Move
+          const tipPosition = vec.clone().multiplyScalar(arrowLength);
+
+          let handle;
+          if (isScaleMode) {
+            // SCALE MODE: Cube handle
+            const cubeSize = 0.4;
+            handle = new this.THREE.Mesh(
+              new this.THREE.BoxGeometry(cubeSize, cubeSize, cubeSize),
+              new this.THREE.MeshBasicMaterial({
+                color: quadrayColors[i],
+                transparent: true,
+                opacity: 0.5
+              })
+            );
+          } else {
+            // MOVE MODE: Sphere handle
+            handle = new this.THREE.Mesh(
+              new this.THREE.SphereGeometry(0.5, 16, 16),
+              new this.THREE.MeshBasicMaterial({
+                color: quadrayColors[i],
+                transparent: true,
+                opacity: 0.3
+              })
+            );
+          }
+
+          handle.position.copy(tipPosition);
+          handle.userData.isGumballHandle = true;
+          handle.userData.basisType = 'quadray';
+          handle.userData.basisIndex = i;
+          handle.userData.axis = vec.clone();
+          handle.userData.axisName = quadrayLabels[i];
+
+          this.state.editingBasis.add(handle);
         }
-
-        handle.position.copy(tipPosition);
-        handle.userData.isGumballHandle = true;
-        handle.userData.basisType = 'quadray';
-        handle.userData.basisIndex = i;
-        handle.userData.axis = vec.clone();
-        handle.userData.axisName = quadrayLabels[i];
-
-        this.state.editingBasis.add(handle);
       });
     }
 
@@ -304,53 +358,106 @@ export const RTControls = {
       const cartesianLabels = ['X', 'Y', 'Z'];
 
       cartesianVectors.forEach((vec, i) => {
-        // Create arrow shaft (same for both Move and Scale modes)
-        const arrow = new this.THREE.ArrowHelper(
-          vec,
-          new this.THREE.Vector3(0, 0, 0),
-          arrowLength,
-          cartesianColors[i],
-          isScaleMode ? 0 : headLength, // No arrowhead in Scale mode
-          0.2
-        );
+        if (isRotateMode) {
+          // ROTATE MODE: Smooth circle perpendicular to axis
+          const circleRadius = arrowLength * 0.9;
+          const segments = 64; // Smooth circle for XYZ
 
-        this.state.editingBasis.add(arrow);
+          const curve = new this.THREE.EllipseCurve(
+            0, 0,
+            circleRadius, circleRadius,
+            0, 2 * Math.PI,
+            false,
+            0
+          );
 
-        // Add handle at arrow tip - CUBE for Scale, SPHERE for Move
-        const tipPosition = vec.clone().multiplyScalar(arrowLength);
+          const points = curve.getPoints(segments);
+          const geometry = new this.THREE.BufferGeometry().setFromPoints(points);
+          const material = new this.THREE.LineBasicMaterial({
+            color: cartesianColors[i],
+            linewidth: 2,
+            transparent: true,
+            opacity: 0.8
+          });
 
-        let handle;
-        if (isScaleMode) {
-          // SCALE MODE: Cube handle
-          const cubeSize = 0.4;
-          handle = new this.THREE.Mesh(
-            new this.THREE.BoxGeometry(cubeSize, cubeSize, cubeSize),
+          const rotationHandle = new this.THREE.LineLoop(geometry, material);
+
+          // Orient circle perpendicular to the axis vector
+          const defaultNormal = new this.THREE.Vector3(0, 0, 1);
+          const quaternion = new this.THREE.Quaternion().setFromUnitVectors(defaultNormal, vec);
+          rotationHandle.setRotationFromQuaternion(quaternion);
+
+          this.state.editingBasis.add(rotationHandle);
+
+          // Invisible torus hit zone for clicking
+          const hitThickness = 0.15; // Clickable area thickness
+          const hitZone = new this.THREE.Mesh(
+            new this.THREE.TorusGeometry(circleRadius, hitThickness, 16, 64),
             new this.THREE.MeshBasicMaterial({
-              color: cartesianColors[i],
               transparent: true,
-              opacity: 0.5
+              opacity: 0, // Invisible
+              depthTest: false
             })
           );
+
+          hitZone.setRotationFromQuaternion(quaternion);
+          hitZone.userData.isGumballHandle = true;
+          hitZone.userData.isRotationHandle = true;
+          hitZone.userData.basisType = 'cartesian';
+          hitZone.userData.basisIndex = i;
+          hitZone.userData.axis = vec.clone();
+          hitZone.userData.axisName = cartesianLabels[i];
+
+          this.state.editingBasis.add(hitZone);
         } else {
-          // MOVE MODE: Sphere handle
-          handle = new this.THREE.Mesh(
-            new this.THREE.SphereGeometry(0.5, 16, 16),
-            new this.THREE.MeshBasicMaterial({
-              color: cartesianColors[i],
-              transparent: true,
-              opacity: 0.3
-            })
+          // MOVE/SCALE MODE: Arrow with handle at tip
+          const arrow = new this.THREE.ArrowHelper(
+            vec,
+            new this.THREE.Vector3(0, 0, 0),
+            arrowLength,
+            cartesianColors[i],
+            isScaleMode ? 0 : headLength,
+            0.2
           );
+
+          this.state.editingBasis.add(arrow);
+
+          // Add handle at arrow tip - CUBE for Scale, SPHERE for Move
+          const tipPosition = vec.clone().multiplyScalar(arrowLength);
+
+          let handle;
+          if (isScaleMode) {
+            // SCALE MODE: Cube handle
+            const cubeSize = 0.4;
+            handle = new this.THREE.Mesh(
+              new this.THREE.BoxGeometry(cubeSize, cubeSize, cubeSize),
+              new this.THREE.MeshBasicMaterial({
+                color: cartesianColors[i],
+                transparent: true,
+                opacity: 0.5
+              })
+            );
+          } else {
+            // MOVE MODE: Sphere handle
+            handle = new this.THREE.Mesh(
+              new this.THREE.SphereGeometry(0.5, 16, 16),
+              new this.THREE.MeshBasicMaterial({
+                color: cartesianColors[i],
+                transparent: true,
+                opacity: 0.3
+              })
+            );
+          }
+
+          handle.position.copy(tipPosition);
+          handle.userData.isGumballHandle = true;
+          handle.userData.basisType = 'cartesian';
+          handle.userData.basisIndex = i;
+          handle.userData.axis = vec.clone();
+          handle.userData.axisName = cartesianLabels[i];
+
+          this.state.editingBasis.add(handle);
         }
-
-        handle.position.copy(tipPosition);
-        handle.userData.isGumballHandle = true;
-        handle.userData.basisType = 'cartesian';
-        handle.userData.basisIndex = i;
-        handle.userData.axis = vec.clone();
-        handle.userData.axisName = cartesianLabels[i];
-
-        this.state.editingBasis.add(handle);
       });
     }
 
@@ -432,7 +539,7 @@ export const RTControls = {
    * Handle mousedown - select gumball handle
    */
   onMouseDown(event) {
-    if (!this.state.currentTool || (this.state.currentTool !== 'move' && this.state.currentTool !== 'scale')) return;
+    if (!this.state.currentTool || (this.state.currentTool !== 'move' && this.state.currentTool !== 'scale' && this.state.currentTool !== 'rotate')) return;
     if (!this.state.editingBasis) return;
 
     // Prevent orbit controls
@@ -620,6 +727,65 @@ export const RTControls = {
 
       // NOTE: No position update needed - objects stay in place during scaling
       // Editing basis stays in place
+    } else if (this.state.currentTool === 'rotate') {
+      // ================================================================
+      // ROTATE MODE: Rotate selected object around axis
+      // ================================================================
+      // Calculate rotation angle from tangential movement
+      const rotationSensitivity = 0.5;
+      const angleRadians = movementVector.length() * rotationSensitivity;
+
+      // Determine rotation direction based on cross product
+      const toCurrentPoint = currentPoint.clone().normalize();
+      const toStartPoint = this.state.dragStartPoint.clone().normalize();
+      const crossProduct = new this.THREE.Vector3().crossVectors(toStartPoint, toCurrentPoint);
+      const rotationDirection = crossProduct.dot(this.state.selectedHandle.axis) > 0 ? 1 : -1;
+
+      const signedAngleRadians = angleRadians * rotationDirection;
+
+      // Calculate spread from angle (spread = sin²(θ))
+      const spreadValue = Math.sin(signedAngleRadians) * Math.sin(signedAngleRadians);
+
+      // Apply spread snapping (0.1 intervals)
+      const snapInterval = 0.1;
+      const snappedSpread = Math.round(spreadValue / snapInterval) * snapInterval;
+      const snappedAngleRadians = Math.asin(Math.sqrt(Math.abs(snappedSpread))) * Math.sign(snappedSpread);
+      const snappedAngleDegrees = (snappedAngleRadians * 180) / Math.PI;
+
+      console.log(
+        `🔄 Rotation: ${snappedAngleDegrees.toFixed(2)}°, Spread: ${snappedSpread.toFixed(2)}, Axis: ${this.state.selectedHandle.basisType}[${this.state.selectedHandle.basisIndex}]`
+      );
+
+      // Update rotation input fields
+      const degreesInput = document.getElementById('rotationDegrees');
+      const spreadInput = document.getElementById('rotationSpread');
+      if (degreesInput && spreadInput) {
+        degreesInput.value = snappedAngleDegrees.toFixed(2);
+        spreadInput.value = snappedSpread.toFixed(2);
+      }
+
+      // Apply rotation to selected polyhedra
+      if (this.state.selectedPolyhedra.length > 0) {
+        this.state.selectedPolyhedra.forEach(poly => {
+          // Store initial rotation if not set
+          if (!poly.userData.initialRotation) {
+            poly.userData.initialRotation = poly.quaternion.clone();
+          }
+
+          // Create rotation matrix from axis and angle
+          const rotationMatrix = new this.THREE.Matrix4().makeRotationAxis(
+            this.state.selectedHandle.axis,
+            snappedAngleRadians
+          );
+
+          // Apply rotation incrementally
+          poly.applyMatrix4(rotationMatrix);
+
+          console.log(
+            `✅ Rotated ${poly.userData.isInstance ? "Instance" : "Form"}: ${snappedAngleDegrees.toFixed(2)}° around ${this.state.selectedHandle.axisName}-axis`
+          );
+        });
+      }
     }
 
     // Update drag start point for next frame
