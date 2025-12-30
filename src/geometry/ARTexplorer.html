@@ -3118,6 +3118,12 @@
           const mouseY = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
           const selectionRaycaster = new THREE.Raycaster();
+
+          // Set line threshold to 0.1 for precise edge selection (default is 1)
+          // With threshold=1, you could click 1 unit away from edges (2x cube width!)
+          // threshold=0.1 allows clicking within 0.1 units of edges
+          selectionRaycaster.params.Line.threshold = 0.1;
+
           selectionRaycaster.setFromCamera(
             new THREE.Vector2(mouseX, mouseY),
             camera
