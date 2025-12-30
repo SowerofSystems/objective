@@ -2785,8 +2785,8 @@
               // Create editing basis at selected Forms' center
               const selected = getSelectedPolyhedra();
               if (selected.length > 0) {
-                // Use first selected polyhedron's position
-                createEditingBasis(selected[0].position.clone());
+                // Use first selected polyhedron's position and pass the object for sizing
+                createEditingBasis(selected[0].position.clone(), selected[0]);
               }
 
               console.log(`✅ Gumball tool: ${tool} - orbit controls disabled`);
@@ -2821,8 +2821,10 @@
         /**
          * Create editing basis (localized gumball) at specified position
          * Respects UI checkbox state: only shows checked coordinate systems
+         * @param {THREE.Vector3} position - Position to create the basis at
+         * @param {THREE.Group} selectedObject - The selected form/instance for sizing
          */
-        function createEditingBasis(position) {
+        function createEditingBasis(position, selectedObject) {
           // Remove existing editing basis if any
           if (editingBasis) {
             scene.remove(editingBasis);
@@ -2837,9 +2839,23 @@
             document.getElementById("showCartesianBasis").checked;
           const showQuadray = document.getElementById("showQuadray").checked;
 
-          const totalBasisLength = 2 * Math.sqrt(2);
+          // Use tetEdge from slider for arrow length (performant, works for all forms)
+          // For platonic solids: tetEdge ≈ OutSphere radius (good fit)
+          // For geodesics: tetEdge < OutSphere (handles outside - easier to grab)
+          const tetEdge = parseFloat(document.getElementById("tetScaleSlider").value);
+          const arrowLength = tetEdge;
           const headLength = 0.3;
-          const arrowLength = totalBasisLength;
+
+          // ALTERNATIVE: Bounding box calculation (more accurate but slower)
+          // Useful for large subdivided geodesics if tetEdge becomes too small
+          // Uncomment if needed for specific form types:
+          /*
+          const boundingBox = new THREE.Box3().setFromObject(selectedObject);
+          const size = new THREE.Vector3();
+          boundingBox.getSize(size);
+          const outSphereRadius = Math.max(size.x, size.y, size.z) * Math.sqrt(3) / 2;
+          const arrowLength = outSphereRadius;
+          */
 
           // Determine handle type based on active tool
           const isScaleMode = currentGumballTool === 'scale';
