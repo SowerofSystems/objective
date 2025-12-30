@@ -2834,6 +2834,9 @@
           const headLength = 0.3;
           const arrowLength = totalBasisLength;
 
+          // Determine handle type based on active tool
+          const isScaleMode = currentGumballTool === 'scale';
+
           let basisCount = 0;
 
           // ========================================================================
@@ -2843,37 +2846,54 @@
             const quadrayColors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00]; // R, G, B, Y
 
             Quadray.basisVectors.forEach((vec, i) => {
+              // Create arrow shaft (same for both Move and Scale modes)
               const arrow = new THREE.ArrowHelper(
                 vec,
                 new THREE.Vector3(0, 0, 0),
                 arrowLength,
                 quadrayColors[i],
-                headLength,
+                isScaleMode ? 0 : headLength, // No arrowhead in Scale mode
                 0.2
               );
 
               editingBasis.add(arrow);
 
-              // Add hit sphere at arrow tip (gumball handle)
+              // Add handle at arrow tip - CUBE for Scale, SPHERE for Move
               const tipPosition = vec.clone().multiplyScalar(arrowLength);
 
-              const hitSphere = new THREE.Mesh(
-                new THREE.SphereGeometry(0.5, 16, 16),
-                new THREE.MeshBasicMaterial({
-                  color: quadrayColors[i],
-                  transparent: true,
-                  opacity: 0.3, // Semi-visible for debugging
-                  depthTest: true,
-                })
-              );
+              let handle;
+              if (isScaleMode) {
+                // SCALE MODE: Cube handle
+                const cubeSize = 0.4;
+                handle = new THREE.Mesh(
+                  new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize),
+                  new THREE.MeshBasicMaterial({
+                    color: quadrayColors[i],
+                    transparent: true,
+                    opacity: 0.5,
+                    depthTest: true,
+                  })
+                );
+              } else {
+                // MOVE MODE: Sphere handle
+                handle = new THREE.Mesh(
+                  new THREE.SphereGeometry(0.5, 16, 16),
+                  new THREE.MeshBasicMaterial({
+                    color: quadrayColors[i],
+                    transparent: true,
+                    opacity: 0.3, // Semi-visible for debugging
+                    depthTest: true,
+                  })
+                );
+              }
 
-              hitSphere.position.copy(tipPosition);
-              hitSphere.userData.basisType = "quadray";
-              hitSphere.userData.basisIndex = i;
-              hitSphere.userData.basisAxis = vec.clone();
-              hitSphere.userData.isGumballHandle = true;
+              handle.position.copy(tipPosition);
+              handle.userData.basisType = "quadray";
+              handle.userData.basisIndex = i;
+              handle.userData.basisAxis = vec.clone();
+              handle.userData.isGumballHandle = true;
 
-              editingBasis.add(hitSphere);
+              editingBasis.add(handle);
             });
             basisCount++;
           }
@@ -2890,39 +2910,79 @@
             const cartesianColors = [0xff0000, 0x00ff00, 0x0000ff]; // R, G, B
 
             cartesianVectors.forEach((vec, i) => {
+              // Create arrow shaft (same for both Move and Scale modes)
               const arrow = new THREE.ArrowHelper(
                 vec,
                 new THREE.Vector3(0, 0, 0),
                 arrowLength,
                 cartesianColors[i],
-                headLength,
+                isScaleMode ? 0 : headLength, // No arrowhead in Scale mode
                 0.2
               );
 
               editingBasis.add(arrow);
 
-              // Add hit sphere at arrow tip (gumball handle)
+              // Add handle at arrow tip - CUBE for Scale, SPHERE for Move
               const tipPosition = vec.clone().multiplyScalar(arrowLength);
 
-              const hitSphere = new THREE.Mesh(
-                new THREE.SphereGeometry(0.5, 16, 16),
-                new THREE.MeshBasicMaterial({
-                  color: cartesianColors[i],
-                  transparent: true,
-                  opacity: 0.3, // Semi-visible for debugging
-                  depthTest: true,
-                })
-              );
+              let handle;
+              if (isScaleMode) {
+                // SCALE MODE: Cube handle
+                const cubeSize = 0.4;
+                handle = new THREE.Mesh(
+                  new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize),
+                  new THREE.MeshBasicMaterial({
+                    color: cartesianColors[i],
+                    transparent: true,
+                    opacity: 0.5,
+                    depthTest: true,
+                  })
+                );
+              } else {
+                // MOVE MODE: Sphere handle
+                handle = new THREE.Mesh(
+                  new THREE.SphereGeometry(0.5, 16, 16),
+                  new THREE.MeshBasicMaterial({
+                    color: cartesianColors[i],
+                    transparent: true,
+                    opacity: 0.3, // Semi-visible for debugging
+                    depthTest: true,
+                  })
+                );
+              }
 
-              hitSphere.position.copy(tipPosition);
-              hitSphere.userData.basisType = "cartesian";
-              hitSphere.userData.basisIndex = i;
-              hitSphere.userData.basisAxis = vec.clone();
-              hitSphere.userData.isGumballHandle = true;
+              handle.position.copy(tipPosition);
+              handle.userData.basisType = "cartesian";
+              handle.userData.basisIndex = i;
+              handle.userData.basisAxis = vec.clone();
+              handle.userData.isGumballHandle = true;
 
-              editingBasis.add(hitSphere);
+              editingBasis.add(handle);
             });
             basisCount++;
+          }
+
+          // ========================================================================
+          // CENTRAL SPHERE for UNIFORM SCALING (Scale mode only)
+          // ========================================================================
+          if (isScaleMode) {
+            const centralSphere = new THREE.Mesh(
+              new THREE.SphereGeometry(0.6, 32, 32),
+              new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.4,
+                depthTest: true,
+              })
+            );
+
+            centralSphere.position.set(0, 0, 0); // At gumball origin
+            centralSphere.userData.isGumballHandle = true;
+            centralSphere.userData.basisType = "uniform";
+            centralSphere.userData.basisIndex = -1; // Special index for uniform
+            centralSphere.userData.basisAxis = null; // No specific axis (uniform)
+
+            editingBasis.add(centralSphere);
           }
 
           scene.add(editingBasis);
@@ -3138,8 +3198,12 @@
           renderer.domElement.addEventListener(
             "mousedown",
             event => {
-              // Only work if a gumball tool is active and it's Move mode
-              if (!currentGumballTool || currentGumballTool !== "move") return;
+              // Only work if a gumball tool is active (Move or Scale mode)
+              if (
+                !currentGumballTool ||
+                (currentGumballTool !== "move" && currentGumballTool !== "scale")
+              )
+                return;
 
               // Convert mouse position to normalized device coordinates
               const rect = renderer.domElement.getBoundingClientRect();
@@ -3247,38 +3311,134 @@
               raycaster.ray.intersectPlane(dragPlane, currentPoint);
 
               if (currentPoint) {
-                // Calculate movement vector
-                const movement = new THREE.Vector3().subVectors(
-                  currentPoint,
-                  dragStartPoint
-                );
+                // ====================================================================
+                // TOOL MODE: MOVE vs SCALE
+                // ====================================================================
+                if (currentGumballTool === "move") {
+                  // ====================================================================
+                  // MOVE MODE: Translate polyhedra along axis
+                  // ====================================================================
+                  // Calculate movement vector
+                  const movement = new THREE.Vector3().subVectors(
+                    currentPoint,
+                    dragStartPoint
+                  );
 
-                // Project movement onto the selected axis (constrained movement)
-                const axisMovement = movement.dot(selectedHandle.axis);
+                  // Project movement onto the selected axis (constrained movement)
+                  const axisMovement = movement.dot(selectedHandle.axis);
 
-                // Apply sensitivity multiplier for more responsive dragging
-                const sensitivity = 5.0; // Amplify movement for better responsiveness
-                const constrainedMovement = selectedHandle.axis
-                  .clone()
-                  .multiplyScalar(axisMovement * sensitivity);
+                  // Apply sensitivity multiplier for more responsive dragging
+                  const sensitivity = 5.0; // Amplify movement for better responsiveness
+                  const constrainedMovement = selectedHandle.axis
+                    .clone()
+                    .multiplyScalar(axisMovement * sensitivity);
 
-                console.log(
-                  `Movement: ${(axisMovement * sensitivity).toFixed(4)}, Polyhedra: ${selectedPolyhedra.length}`
-                );
+                  console.log(
+                    `Movement: ${(axisMovement * sensitivity).toFixed(4)}, Polyhedra: ${selectedPolyhedra.length}`
+                  );
 
-                // Move all selected polyhedra (FULL PRECISION - no snapping during drag)
-                selectedPolyhedra.forEach(poly => {
-                  poly.position.add(constrainedMovement);
-                  // Snapping will be applied at mouseup based on currentSnapMode
-                });
+                  // Move all selected polyhedra (FULL PRECISION - no snapping during drag)
+                  selectedPolyhedra.forEach(poly => {
+                    poly.position.add(constrainedMovement);
+                    // Snapping will be applied at mouseup based on currentSnapMode
+                  });
 
-                // Update editing basis to follow the Forms
-                if (selectedPolyhedra.length > 0) {
-                  updateEditingBasisPosition(selectedPolyhedra[0].position);
+                  // Update editing basis to follow the Forms
+                  if (selectedPolyhedra.length > 0) {
+                    updateEditingBasisPosition(selectedPolyhedra[0].position);
+                  }
+                } else if (currentGumballTool === "scale") {
+                  // ====================================================================
+                  // SCALE MODE: Scale polyhedra edge lengths via sliders
+                  // ====================================================================
+                  // Calculate movement vector
+                  const movement = new THREE.Vector3().subVectors(
+                    currentPoint,
+                    dragStartPoint
+                  );
+
+                  // Project movement onto the selected axis (or radial for uniform)
+                  let scaleMovement;
+
+                  if (selectedHandle.type === "uniform") {
+                    // UNIFORM SCALING: Use radial distance from origin
+                    scaleMovement = movement.length();
+                    // Determine direction (inward vs outward)
+                    const direction = movement.dot(currentPoint.clone().normalize());
+                    if (direction < 0) scaleMovement = -scaleMovement;
+                  } else {
+                    // AXIS-CONSTRAINED SCALING: Project onto selected axis
+                    scaleMovement = movement.dot(selectedHandle.axis);
+                  }
+
+                  // Apply reduced sensitivity for fine control
+                  const scaleSensitivity = 0.1; // Much lower than Move mode (5.0)
+                  const scaleDelta = scaleMovement * scaleSensitivity;
+
+                  console.log(
+                    `Scale delta: ${scaleDelta.toFixed(4)}, Handle type: ${selectedHandle.type}`
+                  );
+
+                  // Get current slider values
+                  const cubeSlider = document.getElementById("scaleSlider");
+                  const tetSlider = document.getElementById("tetScaleSlider");
+
+                  // Determine which slider to update based on handle type
+                  if (
+                    selectedHandle.type === "cartesian" ||
+                    selectedHandle.type === "uniform"
+                  ) {
+                    // Update CUBE edge length slider (XYZ basis or uniform)
+                    let currentCubeScale = parseFloat(cubeSlider.value);
+                    let newCubeScale = currentCubeScale + scaleDelta;
+
+                    // Clamp to slider bounds (0.1 to 10.0)
+                    newCubeScale = Math.max(0.1, Math.min(10.0, newCubeScale));
+
+                    // Update cube slider
+                    cubeSlider.value = newCubeScale;
+
+                    // Synchronize tet slider (tet = cube × √2)
+                    const newTetScale = newCubeScale * Math.sqrt(2);
+                    tetSlider.value = newTetScale;
+
+                    // Trigger slider input events to update Forms
+                    cubeSlider.dispatchEvent(new Event("input", { bubbles: true }));
+                    tetSlider.dispatchEvent(new Event("input", { bubbles: true }));
+
+                    console.log(
+                      `✅ Cube scale: ${newCubeScale.toFixed(4)}, Tet scale: ${newTetScale.toFixed(4)}`
+                    );
+                  } else if (selectedHandle.type === "quadray") {
+                    // Update TETRAHEDRON edge length slider (WXYZ basis)
+                    let currentTetScale = parseFloat(tetSlider.value);
+                    let newTetScale = currentTetScale + scaleDelta;
+
+                    // Clamp to slider bounds (0.1 to 10.0)
+                    newTetScale = Math.max(0.1, Math.min(10.0, newTetScale));
+
+                    // Update tet slider
+                    tetSlider.value = newTetScale;
+
+                    // Synchronize cube slider (cube = tet / √2)
+                    const newCubeScale = newTetScale / Math.sqrt(2);
+                    cubeSlider.value = newCubeScale;
+
+                    // Trigger slider input events to update Forms
+                    tetSlider.dispatchEvent(new Event("input", { bubbles: true }));
+                    cubeSlider.dispatchEvent(new Event("input", { bubbles: true }));
+
+                    console.log(
+                      `✅ Tet scale: ${newTetScale.toFixed(4)}, Cube scale: ${newCubeScale.toFixed(4)}`
+                    );
+                  }
+
+                  // NOTE: No position update needed - Forms remain at origin during scaling
+                  // Editing basis stays in place
                 }
 
-                // Update coordinate inputs
-                if (selectedPolyhedra.length > 0) {
+                // Update coordinate inputs (MOVE MODE ONLY)
+                if (currentGumballTool === "move" && selectedPolyhedra.length > 0) {
                   const pos = selectedPolyhedra[0].position;
 
                   // Update XYZ coordinates
