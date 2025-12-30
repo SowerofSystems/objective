@@ -1040,21 +1040,29 @@
               import("./modules/rt-polyhedra.js").then((PolyhedraModule) => {
                 const { Polyhedra } = PolyhedraModule;
 
-                // Make THREE global for easier access in console
-                window.THREE = THREE;
+                import("./modules/rt-state-manager.js").then((StateModule) => {
+                  const { RTStateManager } = StateModule;
 
-                // Initialize Quadray basis vectors with THREE.js
-                Quadray.init(THREE);
+                  // Make THREE and RTStateManager global for easier access in console
+                  window.THREE = THREE;
+                  window.RTStateManager = RTStateManager;
 
-                // Continue with app initialization
-                startARTexplorer(THREE, OrbitControls, RT, Quadray, Polyhedra);
+                  // Initialize Quadray basis vectors with THREE.js
+                  Quadray.init(THREE);
+
+                  // Initialize StateManager
+                  RTStateManager.init();
+
+                  // Continue with app initialization
+                  startARTexplorer(THREE, OrbitControls, RT, Quadray, Polyhedra, RTStateManager);
+                });
               });
             });
           });
         });
       }
 
-      function startARTexplorer(THREE, OrbitControls, RT, Quadray, Polyhedra) {
+      function startARTexplorer(THREE, OrbitControls, RT, Quadray, Polyhedra, RTStateManager) {
 
       // ========================================================================
       // THREE.JS SCENE SETUP
@@ -2360,13 +2368,7 @@
       // ========================================================================
       let currentSelection = null; // Currently selected polyhedron (Form or Instance)
 
-      // ========================================================================
-      // INSTANCE STATE (Simple tracking until rt-state-manager.js is created)
-      // ========================================================================
-      let depositedInstances = []; // Array of deposited instance snapshots
-      let depositedCount = 0;
-
-      // NOW button - deposit current Form as Instance
+      // NOW button - deposit current Form as Instance using RTStateManager
       document.getElementById("nowButton").addEventListener("click", function() {
         const selected = getSelectedPolyhedra();
 
@@ -2375,69 +2377,13 @@
           return;
         }
 
-        // Create instance snapshot for each selected polyhedron
+        // Deposit each selected polyhedron using StateManager
         selected.forEach(poly => {
-          // Create lightweight clone that SHARES geometry/materials (memory efficient)
-          // Instead of poly.clone(true) which duplicates everything
-          const clonedGroup = new THREE.Group();
+          // Create instance using RTStateManager
+          const instance = RTStateManager.createInstance(poly, scene);
 
-          // Copy all children but share their geometry and materials
-          poly.children.forEach(child => {
-            if (child.isMesh) {
-              // Create new mesh that SHARES geometry and material (not cloned)
-              const instanceMesh = new THREE.Mesh(child.geometry, child.material);
-              instanceMesh.position.copy(child.position);
-              instanceMesh.rotation.copy(child.rotation);
-              instanceMesh.scale.copy(child.scale);
-              clonedGroup.add(instanceMesh);
-            } else if (child.isLine) {
-              // Share line geometry and material too
-              const instanceLine = new THREE.Line(child.geometry, child.material);
-              instanceLine.position.copy(child.position);
-              instanceLine.rotation.copy(child.rotation);
-              instanceLine.scale.copy(child.scale);
-              clonedGroup.add(instanceLine);
-            }
-          });
-
-          // Copy current transform from Form
-          clonedGroup.position.copy(poly.position);
-          clonedGroup.rotation.copy(poly.rotation);
-          clonedGroup.scale.copy(poly.scale);
-
-          // Create instance metadata
-          const instance = {
-            id: `instance_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            timestamp: Date.now(),
-            position: poly.position.clone(),
-            rotation: poly.rotation.clone(),
-            scale: poly.scale.clone(),
-            type: poly.userData.type || 'unknown',
-            // Store the cloned THREE.js group (independent visual object)
-            threeObject: clonedGroup
-          };
-
-          // Tag the clone with instance metadata
-          clonedGroup.userData.isInstance = true;
-          clonedGroup.userData.instanceId = instance.id;
-          clonedGroup.userData.type = instance.type;
-
-          // Add cloned instance to scene
-          scene.add(clonedGroup);
-
-          // Track instance in state
-          depositedInstances.push(instance);
-          depositedCount++;
-
-          console.log(`✅ Deposited instance: ${instance.id} at position (${instance.position.x.toFixed(2)}, ${instance.position.y.toFixed(2)}, ${instance.position.z.toFixed(2)})`);
-        });
-
-        // Reset Forms to origin after depositing instances
-        selected.forEach(poly => {
-          poly.position.set(0, 0, 0);
-          poly.rotation.set(0, 0, 0);
-          poly.scale.set(1, 1, 1);
-          console.log(`↩️  Reset Form to origin: ${poly.userData.type}`);
+          // Reset Form to origin
+          RTStateManager.resetForm(poly);
         });
 
         // Hide editing basis after depositing (nothing selected)
@@ -2446,10 +2392,13 @@
           editingBasis = null;
         }
 
-        // Update counter UI
-        document.getElementById("nowCount").textContent = depositedCount;
+        // Deselect after depositing
+        currentSelection = null;
 
-        console.log(`📦 Total deposited instances: ${depositedCount}`);
+        // Update counter UI
+        document.getElementById("nowCount").textContent = RTStateManager.getDepositedCount();
+
+        console.log(`📦 Total deposited instances: ${RTStateManager.getDepositedCount()}`);
         console.log(`🏠 Forms reset to origin - ready for next transformation`);
       });
 
@@ -2766,8 +2715,8 @@
           }
         });
 
-        // Instances
-        depositedInstances.forEach(instance => {
+        // Instances (from RTStateManager)
+        RTStateManager.getAllInstances().forEach(instance => {
           if (instance.threeObject && instance.threeObject.visible) {
             instance.threeObject.traverse(obj => {
               if (obj.isMesh || obj.isLine) {
@@ -3060,6 +3009,49 @@
 
       animate();
 
+      // ========================================================================
+      // KEYBOARD SHORTCUTS (Delete, Undo/Redo)
+      // ========================================================================
+      document.addEventListener('keydown', (event) => {
+        // Delete key - delete selected Instance
+        if (event.key === 'Delete' || event.key === 'Backspace') {
+          if (currentSelection && currentSelection.userData.isInstance) {
+            const instanceId = currentSelection.userData.instanceId;
+
+            // Delete via StateManager
+            RTStateManager.deleteInstance(instanceId, scene);
+
+            // Clear selection and highlight
+            deselectAll();
+
+            // Update counter UI
+            document.getElementById("nowCount").textContent = RTStateManager.getDepositedCount();
+
+            console.log(`🗑️  Instance deleted: ${instanceId}`);
+          } else if (currentSelection && !currentSelection.userData.isInstance) {
+            console.warn('⚠️  Cannot delete Forms (templates), only Instances');
+          }
+        }
+
+        // Undo: Cmd+Z or Ctrl+Z
+        if ((event.metaKey || event.ctrlKey) && event.key === 'z' && !event.shiftKey) {
+          event.preventDefault();
+          RTStateManager.undo(scene);
+
+          // Update counter UI
+          document.getElementById("nowCount").textContent = RTStateManager.getDepositedCount();
+        }
+
+        // Redo: Cmd+Shift+Z or Ctrl+Shift+Z
+        if ((event.metaKey || event.ctrlKey) && event.key === 'z' && event.shiftKey) {
+          event.preventDefault();
+          RTStateManager.redo(scene);
+
+          // Update counter UI
+          document.getElementById("nowCount").textContent = RTStateManager.getDepositedCount();
+        }
+      });
+
       // Update info overlay
       const infoOverlay = document.getElementById("info-overlay");
       infoOverlay.innerHTML = `
@@ -3067,7 +3059,11 @@
       <div style="margin-top: 8px; font-size: 11px;">
         Orbit: Left-click + drag<br>
         Pan: Right-click + drag<br>
-        Zoom: Scroll wheel
+        Zoom: Scroll wheel<br>
+        <br>
+        Delete: Remove selected instance<br>
+        Cmd/Ctrl+Z: Undo<br>
+        Cmd/Ctrl+Shift+Z: Redo
       </div>
     `;
       } // End startARTexplorer function
