@@ -743,38 +743,17 @@ export const RTControls = {
 
       const signedAngleRadians = angleRadians * rotationDirection;
 
-      // ================================================================
-      // RT-PURE ROTATION: Use Wildberger's rational circle parameterization
-      // ================================================================
-      // Step 1: Convert angle to parameter 't' (Weierstrass substitution)
-      // t = tan(θ/2) - maps angle to parameter space
-      const t = Math.tan(signedAngleRadians / 2);
+      // Calculate spread from angle (spread = sin²(θ))
+      const spreadValue = Math.sin(signedAngleRadians) * Math.sin(signedAngleRadians);
 
-      // Step 2: Get circle point using RT-pure parameterization (no sin/cos!)
-      // Circle(t) = ((1-t²)/(1+t²), 2t/(1+t²))
-      const point = this.RT.circleParam(t);
-
-      // Step 3: Extract spread algebraically from circle point (NO Math.sin!)
-      // spread = sin²(θ) = 1 - cos²(θ) = 1 - x²
-      const spreadValue = 1 - point.x * point.x;
-
-      // Step 4: Apply spread snapping (0.1 intervals)
+      // Apply spread snapping (0.1 intervals)
       const snapInterval = 0.1;
       const snappedSpread = Math.round(spreadValue / snapInterval) * snapInterval;
-
-      // Step 5: Convert snapped spread back to parameter 't' (algebraic, not inverse trig)
-      const snappedT = this.RT.spreadToParam(snappedSpread);
-
-      // Step 6: Get snapped circle point from parameter
-      const snappedPoint = this.RT.circleParam(snappedT);
-
-      // Step 7: Get final angle using atan2 (only at UI boundary - acceptable)
-      // Preserve sign from original rotation direction
-      const snappedAngleRadians = Math.sign(signedAngleRadians) * Math.atan2(snappedPoint.y, snappedPoint.x);
+      const snappedAngleRadians = Math.asin(Math.sqrt(Math.abs(snappedSpread))) * Math.sign(snappedSpread);
       const snappedAngleDegrees = (snappedAngleRadians * 180) / Math.PI;
 
       console.log(
-        `🔄 RT-Pure Rotation: ${snappedAngleDegrees.toFixed(2)}°, Spread: ${snappedSpread.toFixed(2)}, t: ${snappedT.toFixed(4)}, Axis: ${this.state.selectedHandle.basisType}[${this.state.selectedHandle.basisIndex}]`
+        `🔄 Rotation: ${snappedAngleDegrees.toFixed(2)}°, Spread: ${snappedSpread.toFixed(2)}, Axis: ${this.state.selectedHandle.basisType}[${this.state.selectedHandle.basisIndex}]`
       );
 
       // Update rotation input fields
