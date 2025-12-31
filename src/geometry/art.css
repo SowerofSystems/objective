@@ -318,3 +318,270 @@ button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ============================================
+   ART GUMBALL CONTROLS
+   ============================================ */
+
+/* Gumball Tool Selector (Move/Scale/Rotate) */
+.gumball-tool-selector {
+  display: flex;
+  gap: 5px;
+}
+
+.gumball-tool-btn {
+  flex: 1;
+  padding: 8px;
+  font-size: 11px;
+  background: #2a2a2a;
+  color: #b0b0b0;
+  border: 1px solid #444;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gumball-tool-btn:hover {
+  background: #353535;
+  border-color: #555;
+}
+
+.gumball-tool-btn.active {
+  background: #4a9eff;
+  color: white;
+  border-color: #4a9eff;
+}
+
+/* Coordinate Input Fields */
+.coordinate-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+
+/* Four-column layout for WXYZ */
+.coordinate-inputs:has(#coordW) {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.coord-input {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 11px;
+  background: #2a2a2a;
+  color: #b0b0b0;
+  border: 1px solid #444;
+  border-radius: 3px;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.coord-input:focus {
+  outline: none;
+  border-color: #4a9eff;
+  background: #353535;
+}
+
+.coord-input::placeholder {
+  color: #666;
+  font-weight: bold;
+}
+
+/* NOW Counter */
+.now-counter {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 11px;
+  color: #b0b0b0;
+}
+
+.now-counter span {
+  color: #00ff88;
+  font-weight: bold;
+}
+
+/* ============================================
+   CONSOLIDATED CSS CLASSES
+   ============================================ */
+
+/* Unified Toggle Button System */
+.toggle-btn-group {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.toggle-btn {
+  flex: 1;
+  padding: 6px;
+  font-size: 11px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid;
+}
+
+/* Variant: Standard (node-size, camera, file ops, print) */
+.toggle-btn.variant-standard {
+  background: #1a1a1a;
+  border-color: #555;
+  color: #b0b0b0;
+  padding: 5px;
+}
+
+.toggle-btn.variant-standard:hover {
+  border-color: #7ab8ff;
+  color: #e0e0e0;
+}
+
+.toggle-btn.variant-standard.active {
+  background: #4a9eff;
+  border-color: #4a9eff;
+  color: white;
+}
+
+/* Variant: Tool mode (move/scale/rotate) */
+.toggle-btn.variant-tool {
+  padding: 8px;
+  background: #2a2a2a;
+  border-color: #444;
+  color: #b0b0b0;
+}
+
+.toggle-btn.variant-tool:hover {
+  background: #353535;
+  border-color: #555;
+}
+
+.toggle-btn.variant-tool.active {
+  background: #4a9eff;
+  border-color: #4a9eff;
+  color: white;
+}
+
+/* Variant: Snap mode (free/xyz/wxyz) */
+.toggle-btn.variant-snap {
+  font-size: 12px;
+  background: #222;
+  border-color: #444;
+  color: #888;
+}
+
+.toggle-btn.variant-snap:hover {
+  background: #2a2a2a;
+  border-color: #555;
+}
+
+.toggle-btn.variant-snap.active {
+  background: #333;
+  border-color: #00ff88;
+  color: #00ff88;
+}
+
+/* Label Variants */
+.label-section {
+  font-size: 12px;
+  color: #b0b0b0;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.label-subsection {
+  font-size: 11px;
+  color: #b0b0b0;
+  display: block;
+  margin-bottom: 3px;
+}
+
+.label-axis {
+  font-size: 10px;
+  font-weight: bold;
+  text-align: center;
+}
+
+/* Axis-specific label colors */
+.label-axis-x { color: #ff6666; }
+.label-axis-y { color: #66ff66; }
+.label-axis-z { color: #6666ff; }
+.label-axis-w { color: #ffff66; }
+
+/* Coordinate Input Axis Borders */
+.coord-input.axis-x { border-left: 2px solid #ff6666; }
+.coord-input.axis-y { border-left: 2px solid #66ff66; }
+.coord-input.axis-z { border-left: 2px solid #6666ff; }
+.coord-input.axis-w { border-left: 2px solid #ffff66; }
+
+/* Nested Content Spacing */
+.nested-content {
+  margin-left: 20px;
+  margin-top: 5px;
+}
+
+.nested-content-2 {
+  margin-left: 40px;
+  margin-top: 5px;
+}
+
+/* Spacing Utilities */
+.spacing-top-small { margin-top: 5px; }
+.spacing-top-medium { margin-top: 8px; }
+.spacing-top-large { margin-top: 10px; }
+
+/* Button Grid Layouts */
+.button-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.button-grid-3col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  margin-top: 5px;
+}
+
+/* Coordinate Input Containers */
+.coord-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Snap Toggle Container */
+.snap-toggle-container {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Snap Description Text */
+.snap-description {
+  font-size: 10px;
+  color: #666;
+  margin-top: 5px;
+  line-height: 1.4;
+}
+
+/* Gumball Action Button */
+.gumball-action-btn {
+  width: 100%;
+  background: #00ff88;
+  color: #1a1a1a;
+  font-weight: bold;
+  padding: 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.gumball-action-btn:hover {
+  background: #00dd77;
+}
+
+.gumball-action-btn:active {
+  background: #00bb66;
+}

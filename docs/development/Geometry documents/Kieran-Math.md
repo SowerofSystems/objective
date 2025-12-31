@@ -57,6 +57,141 @@ s = 1 - ((v₁ · v₂)² / (Q₁ · Q₂))
 
 ---
 
+## Rational Circle Parameterization
+
+### Wildberger's Alternative to Sin/Cos
+
+**Formula:** `Circle(t) = ((1 - t²) / (1 + t²), 2t / (1 + t²))`
+
+**Key Properties:**
+- Parameter `t` represents **angle/turns** (input parameter, NOT spread)
+- Based on Weierstrass substitution: `t = tan(θ/2)` in traditional trigonometry
+- Generates all points on the unit circle using **only rational operations** (addition, multiplication, division)
+- Avoids transcendental functions entirely (no sin, cos, tan, atan)
+- Maps all real numbers to the full circle: `t ∈ (-∞, ∞)` → full circle
+- At `t = 0`: point is `(1, 0)` (positive x-axis)
+- As `t → ∞`: point approaches `(-1, 0)` (negative x-axis)
+
+### Distinguishing 't' from Spread
+
+**IMPORTANT:** The parameter `t` is NOT the same as spread!
+
+| Concept | Symbol | Definition | Range | Role |
+|---------|--------|------------|-------|------|
+| **Parameter** | `t` | Angle input (tan(θ/2)) | All reals (-∞, ∞) | INPUT to trace circle |
+| **Spread** | `s` | Perpendicularity measure (sin²θ) | [0, 1] | OUTPUT from geometry |
+
+**Example:**
+```javascript
+// Parameter t traces the circle
+const t = 1.0;
+const x = (1 - t*t) / (1 + t*t);  // = 0
+const y = (2 * t) / (1 + t*t);    // = 1
+// Point: (0, 1) - top of circle
+
+// Spread measures perpendicularity from x-axis
+const spread = 1 - x*x;  // = 1 - 0 = 1 (perpendicular)
+```
+
+### Application to Rotation in ARTexplorer
+
+**Current Problem:** Rotation code uses transcendental functions, violating RT principles.
+
+**Current Implementation (ARTexplorer.html ~lines 3812-3813):**
+```javascript
+// ❌ NOT RT-PURE - Uses sin, asin, sqrt
+const spreadValue = Math.sin(signedAngleRadians) * Math.sin(signedAngleRadians);
+const snappedAngleRadians = Math.asin(Math.sqrt(Math.abs(snappedSpread))) * Math.sign(snappedSpread);
+```
+
+**RT-Pure Alternative Using Parameterization:**
+
+**Option 1: Screen-space rotation (current approach - unavoidable atan2)**
+```javascript
+// Screen-space rotation inherently requires atan2 for angle calculation
+// This is acceptable as it's at the UI boundary, not core geometry
+const screenAngle = Math.atan2(screenDeltaY, screenDeltaX);  // Unavoidable
+```
+
+**Option 2: Rational rotation for geometric calculations**
+```javascript
+// For purely algebraic rotation calculations (future use)
+// Use parameter t instead of angle
+
+// Given parameter t, get point on circle
+const t = rotationParameter;  // Input from user or calculation
+const x = (1 - t*t) / (1 + t*t);
+const y = (2 * t) / (1 + t*t);
+
+// Extract spread directly from coordinates (no inverse trig!)
+const spread = 1 - x*x;  // Or: spread = y*y / (1 + y*y)
+
+// This avoids: Math.sin(), Math.asin(), Math.sqrt() in spread calculations
+```
+
+**Benefits of Rational Approach:**
+1. ✅ No transcendental functions (sin, cos, asin, sqrt)
+2. ✅ Purely algebraic operations (multiply, add, divide)
+3. ✅ Maintains RT purity for geometric calculations
+4. ✅ Can work directly with spread values without angle conversion
+
+**Limitation:**
+- Initial angle extraction from screen coordinates still requires `atan2()` at UI boundary
+- However, once we have parameter `t`, all subsequent calculations can be RT-pure
+
+### Mathematical Derivation
+
+**Why this works:**
+
+Starting from traditional trigonometry with `t = tan(θ/2)`:
+
+```
+x = cos(θ) = (1 - tan²(θ/2)) / (1 + tan²(θ/2)) = (1 - t²) / (1 + t²)
+y = sin(θ) = 2tan(θ/2) / (1 + tan²(θ/2)) = 2t / (1 + t²)
+```
+
+**Verify it traces a circle:**
+```
+x² + y² = [(1 - t²) / (1 + t²)]² + [2t / (1 + t²)]²
+        = [(1 - t²)² + (2t)²] / (1 + t²)²
+        = [1 - 2t² + t⁴ + 4t²] / (1 + t²)²
+        = [1 + 2t² + t⁴] / (1 + t²)²
+        = [(1 + t²)²] / (1 + t²)²
+        = 1  ✓
+```
+
+**Extract spread from coordinates:**
+```
+spread = sin²(θ) = y² = [2t / (1 + t²)]² = 4t² / (1 + t²)²
+```
+
+Or equivalently:
+```
+spread = 1 - cos²(θ) = 1 - x² = 1 - [(1 - t²) / (1 + t²)]²
+```
+
+**Key Insight:** Once we have `(x, y)` from the rational parameterization, we can calculate spread directly from the coordinates without any inverse trigonometric functions!
+
+### Future Integration Opportunities
+
+**Where this could improve ARTexplorer:**
+
+1. **Snap-to-spread calculations** (currently uses `Math.asin(Math.sqrt(spread))`)
+   - Could use rational parameterization to find nearest `t` value for target spread
+   - Requires solving: `4t² / (1 + t²)² = spread_target` for `t`
+
+2. **Spread-based rotation constraints**
+   - Work directly in `t` parameter space instead of angle/spread conversions
+   - No transcendental functions needed for calculations
+
+3. **Quaternion rotation from spread**
+   - Convert spread → parameter `t` → quaternion components
+   - Avoids sin/cos in quaternion construction
+
+**Note:** Full integration would require refactoring rotation system to work with parameter `t` instead of angles. Current screen-space approach with `atan2()` is acceptable for UI interaction, but geometric calculations could be made RT-pure.
+
+---
+
 ## Icosahedron Geometry
 
 ### Base Construction

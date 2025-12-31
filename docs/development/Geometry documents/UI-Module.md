@@ -510,30 +510,151 @@ Implement state persistence:
 
 ---
 
-### 🔄 Phase 2: Module Extraction (Current - Next Session)
+### 🔄 Phase 2: Module Extraction (Current - In Progress)
 
 **Priority Order:**
 
-1. **Phase 2.1: Extract RT Math** (~130 lines, 1-2 hours)
-   - Pure functions, no dependencies
-   - Easiest to test
-   - Foundation for other modules
+1. **Phase 2.1: Extract RT Math** (~130 lines, 1-2 hours) - ✅ COMPLETED (2025-12-29)
+   - ✅ Pure functions, no dependencies
+   - ✅ Easiest to test
+   - ✅ Foundation for other modules
+   - **Status:** Module created at `modules/rt-math.js` with RT and Quadray namespaces
+   - **Contents:** quadrance(), spread(), verifyEuler(), Phi utilities, validateEdges(), Quadray coordinate system
+   - **Testing:** robots.txt added to prevent web crawler indexing
 
-2. **Phase 2.2: Extract Polyhedra** (~1870 lines, 3-4 hours)
-   - Depends on rt-math.js
-   - Self-contained shape generators
-   - Large but cohesive
+2. **Phase 2.2: Extract Polyhedra** (~1870 lines, 3-4 hours) - ✅ COMPLETED (2025-12-29)
+   - ✅ Depends on rt-math.js
+   - ✅ Self-contained shape generators
+   - ✅ Large but cohesive
+   - **Status:** Module created at `modules/rt-polyhedra.js` with all polyhedra generators
+   - **Contents:** createTetrahedron(), createCube(), createOctahedron(), createIcosahedron(), createDodecahedron(), geodesic subdivision
 
-3. **Phase 2.3: Extract Rendering** (~500-800 lines, 4-5 hours)
-   - Depends on polyhedra.js
-   - Scene, viewer, grids together
-   - Update main HTML to use modules
+3. **Phase 2.3: Extract Rendering** (~500-800 lines, 4-5 hours) - ✅ COMPLETED (2025-12-29)
+   - ✅ Depends on polyhedra.js
+   - ✅ Scene, viewer, grids together
+   - ✅ Update main HTML to use modules
+   - **Status:** Module created at `modules/rt-rendering.js` with scene management
+   - **Contents:** Scene initialization, camera, renderer, grid rendering, basis vectors, lighting, OrbitControls
+
+**Current Status:**
+- ✅ rt-math.js extracted and functional
+- ✅ rt-polyhedra.js extracted and functional
+- ✅ rt-rendering.js extracted and functional
+- 🔄 ART Gumball functionality implemented directly in ARTexplorer.html (see Phase 2.7)
+- ARTexplorer.html still ~3000+ lines (gumball logic not yet extracted to rt-controls.js)
 
 **Success Criteria:**
 - ARTexplorer.html reduced from 2820 → ~500 lines
 - All existing functionality preserved
 - No build step required (native ES6 modules)
 - Code is more maintainable and testable
+
+### 🎯 Phase 2.7: ART Gumball Implementation - ✅ COMPLETED (2025-12-30)
+
+**Goal:** Implement Move tool with WXYZ and XYZ support + Selection + StateManager
+
+**Status:** ✅ ALL FEATURES COMPLETED - Move tool production-ready
+
+**Implementation Approach:** Inline in ARTexplorer.html (deferred module extraction until rock-solid)
+
+#### Completed Features (2025-12-29 + 2025-12-30)
+
+1. **Move Tool with Dual Coordinate Systems** - ✅ COMPLETED
+   - WXYZ (Quadray) basis vectors with 4 arrow handles (W, X, Y, Z)
+   - XYZ (Cartesian) basis vectors with 3 arrow handles (X, Y, Z)
+   - Checkbox-controlled visibility (user selects WXYZ, XYZ, or both)
+   - Hit spheres positioned correctly at arrow tips (0.5 radius, 30% opacity)
+   - Editing basis appears at Form center when Move tool activated
+   - Editing basis follows Forms during drag operations
+
+2. **Orbit Controls Management** - ✅ COMPLETED
+   - Orbit disabled when Move tool activated (not just during drag)
+   - Orbit re-enabled when Move tool deactivated
+   - Tool-level control prevents camera fighting
+
+3. **Grid Snapping** - ✅ COMPLETED
+   - 0.1 increment snapping for RT precision
+   - Positions snap to 0.1, 0.2, 0.3, etc.
+   - Coordinate inputs update in real-time
+
+4. **NOW Button Instance Deposition** - ✅ COMPLETED
+   - Fixed ballooning issue (removed node-size-btn class)
+   - Deposits instance snapshots with full metadata
+   - Updates counter UI in real-time
+   - Console logging for debugging
+
+5. **Selection System** - ✅ COMPLETED (2025-12-30)
+   - Click to select Forms/Instances
+   - Bright cyan highlight (0x00ffff, 0.8 intensity)
+   - 3x thicker edge lines for visibility
+   - ESC key to deselect
+   - Click empty space to deselect
+   - Only selected objects move with gumball
+
+6. **StateManager (rt-state-manager.js)** - ✅ COMPLETED (2025-12-30)
+   - Forms registry (templates at origin)
+   - Instance tracking with metadata
+   - createInstance(), deleteInstance(), updateInstance()
+   - Undo/Redo with 50-action history stack
+   - Export to JSON/CSV
+
+7. **Delete Functionality** - ✅ COMPLETED (2025-12-30)
+   - Delete key removes selected Instance
+   - Cannot delete Forms (templates protected)
+   - Updates counter UI
+
+8. **Keyboard Shortcuts** - ✅ COMPLETED (2025-12-30)
+   - ESC: Deselect
+   - Delete/Backspace: Remove selected Instance
+   - Cmd/Ctrl+Z: Undo
+   - Cmd/Ctrl+Shift+Z: Redo
+   - Documented in info overlay
+
+#### Resolved Issues (2025-12-30)
+
+**FIXED: Selection System** - ✅ RESOLVED
+- ✅ Individual selection working (no more global movement)
+- ✅ Forms vs Instances separation complete
+- ✅ Visual highlight makes selection obvious
+- ✅ Deselection works reliably (ESC or click empty space)
+
+**FIXED: NOW Button Behavior** - ✅ RESOLVED
+- ✅ Instances deposit correctly
+- ✅ Forms reset to origin after deposition
+- ✅ Highlight clears after NOW button press
+
+#### Remaining Refinements (Low Priority)
+
+**Minor Issues (Non-Blocking):**
+- Selection sensitivity during camera orbit (acceptable - may need drag threshold)
+- Snap mode UI/UX needs better visual feedback and documentation
+- Module extraction deferred (rt-controls.js) - keep inline until all features stable
+
+---
+
+#### Recommended Next Steps
+
+**Immediate (Next Session):**
+1. **Refine Snap Mode UI** - Improve user feedback
+   - Visual indicators for active snap mode
+   - Better documentation in UI
+   - Consider snap grid visualization
+
+2. **Implement Scale Mode** - Now that Move is solid
+   - Cube handles on axes
+   - Uniform vs non-uniform scaling
+   - Snap to rational scale factors
+
+3. **Implement Rotate Mode** - Spread-based rotations
+   - Ring handles for rotation planes
+   - Spread presets (s=1/4, 1/2, 3/4, 1)
+   - Visual feedback for rotation plane
+
+**Future (Phase 3):**
+4. Extract to rt-controls.js module (once all modes are stable)
+5. Add additional keyboard shortcuts (G=Move, S=Scale, R=Rotate, N=NOW)
+6. Implement View presets (Top, Bottom, Left, Right, Front, Back)
+7. Implement Papercut tools (line weight, backface culling, print extents)
 
 ---
 
