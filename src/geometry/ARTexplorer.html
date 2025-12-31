@@ -10,77 +10,6 @@
       content="An interactive explorer for Algebraic Rational Trigonometry geometry by Andy Ross Thomson, M.Arch, OAA. with guidance by Metatron"
     />
     <link rel="stylesheet" href="art.css" />
-    <style>
-      /* Password protection overlay */
-      #password-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.95);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10000;
-      }
-      #password-modal {
-        background: #2a2a2a;
-        padding: 40px;
-        border-radius: 10px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-        text-align: center;
-        max-width: 400px;
-      }
-      #password-modal h2 {
-        color: #ffffff;
-        margin-bottom: 20px;
-        font-size: 24px;
-      }
-      #password-modal p {
-        color: #b0b0b0;
-        margin-bottom: 30px;
-        font-size: 14px;
-      }
-      #password-input {
-        width: 100%;
-        padding: 12px;
-        font-size: 16px;
-        border: 2px solid #444;
-        border-radius: 5px;
-        background: #1a1a1a;
-        color: #ffffff;
-        margin-bottom: 20px;
-        box-sizing: border-box;
-      }
-      #password-input:focus {
-        outline: none;
-        border-color: #4a9eff;
-      }
-      #password-submit {
-        width: 100%;
-        padding: 12px;
-        font-size: 16px;
-        background: #4a9eff;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background 0.3s;
-      }
-      #password-submit:hover {
-        background: #3a8eef;
-      }
-      #password-error {
-        color: #ff4444;
-        margin-top: 10px;
-        font-size: 14px;
-        display: none;
-      }
-      .hidden {
-        display: none !important;
-      }
-    </style>
   </head>
   <body>
     <!-- Password Protection Overlay -->
@@ -1177,7 +1106,7 @@
       // ========================================================================
       // PASSWORD PROTECTION
       // ========================================================================
-      const PASSWORD = "https://www.spacekinetic.com/careers";
+      const PASSWORD = "enzyme2026";
       const passwordOverlay = document.getElementById("password-overlay");
       const passwordInput = document.getElementById("password-input");
       const passwordSubmit = document.getElementById("password-submit");
@@ -2913,30 +2842,6 @@
         // ========================================================================
 
         /**
-         * Convert spread to degrees using RT-pure calculation
-         * Spread = sin²(θ), so θ = arcsin(√spread)
-         * @param {number} spread - Spread value (0.00 to 1.00)
-         * @returns {number} - Angle in degrees
-         */
-        function spreadToDegrees(spread) {
-          const clampedSpread = Math.max(0, Math.min(1, spread));
-          const radians = Math.asin(Math.sqrt(clampedSpread));
-          return (radians * 180) / Math.PI;
-        }
-
-        /**
-         * Convert degrees to spread using RT-pure calculation
-         * θ → spread = sin²(θ)
-         * @param {number} degrees - Angle in degrees
-         * @returns {number} - Spread value (0.00 to 1.00)
-         */
-        function degreesToSpread(degrees) {
-          const radians = (degrees * Math.PI) / 180;
-          const sinValue = Math.sin(radians);
-          return sinValue * sinValue; // sin²(θ)
-        }
-
-        /**
          * Setup bidirectional conversion between degrees and spread for a pair of input fields
          * @param {string} degreesId - ID of degrees input field
          * @param {string} spreadId - ID of spread input field
@@ -2955,7 +2860,7 @@
           degreesInput.addEventListener("input", function(e) {
             const degreesValue = parseFloat(e.target.value);
             if (!isNaN(degreesValue)) {
-              const spreadValue = degreesToSpread(degreesValue);
+              const spreadValue = RT.degreesToSpread(degreesValue);
               spreadInput.value = spreadValue.toFixed(2);
               console.log(`🔄 ${axis}: ${degreesValue.toFixed(2)}° → Spread: ${spreadValue.toFixed(2)}`);
             }
@@ -2965,7 +2870,7 @@
           spreadInput.addEventListener("input", function(e) {
             const spreadValue = parseFloat(e.target.value);
             if (!isNaN(spreadValue)) {
-              const degreesValue = spreadToDegrees(spreadValue);
+              const degreesValue = RT.spreadToDegrees(spreadValue);
               degreesInput.value = degreesValue.toFixed(2);
               console.log(`🔄 ${axis}: Spread: ${spreadValue.toFixed(2)} → ${degreesValue.toFixed(2)}°`);
             }
@@ -3804,43 +3709,26 @@
                   // Flip rotation direction if axis points away from camera
                   let signedAngleRadians = axisToCamera > 0 ? -deltaAngle : deltaAngle;
 
-                  // Calculate spread from angle (spread = sin²(θ))
-                  const spreadValue = Math.sin(signedAngleRadians) * Math.sin(signedAngleRadians);
+                  // ================================================================
+                  // FULL CIRCLE ROTATION (360°) - No spread snapping for now
+                  // ================================================================
+                  // Use the deltaAngle directly - it's already calculated correctly
+                  // from the drag start point, so it supports full 360° rotation
+                  const snappedAngleRadians = signedAngleRadians;
+                  const snappedAngleDegrees = (snappedAngleRadians * 180) / Math.PI;
 
+                  // Calculate spread for display only (not used for snapping yet)
+                  const spreadValue = Math.sin(signedAngleRadians) * Math.sin(signedAngleRadians);
+                  const snappedSpread = spreadValue; // No snapping
+
+                  /* TODO: Add spread snapping back once full rotation is working
                   // Apply spread snapping (0.1 intervals)
                   const snapInterval = 0.1;
                   const snappedSpread = Math.round(spreadValue / snapInterval) * snapInterval;
 
-                  // CRITICAL FIX: Preserve quadrant when converting spread back to angle
-                  // Problem: asin() only returns [-90°, +90°], losing quadrant information
-                  // Solution: Use original angle to determine which quadrant we're in
-                  let snappedAngleRadians;
-                  if (snappedSpread === 0) {
-                    // Special case: spread = 0 means angle = 0° or 180°
-                    snappedAngleRadians = 0;
-                  } else {
-                    // Get the acute angle (0° to 90°) for this spread
-                    const acuteAngle = Math.asin(Math.sqrt(snappedSpread));
-
-                    // Determine which quadrant based on original angle
-                    const absOriginalAngle = Math.abs(signedAngleRadians);
-
-                    if (absOriginalAngle <= Math.PI / 2) {
-                      // First quadrant (0° to 90°) - use acute angle directly
-                      snappedAngleRadians = Math.sign(signedAngleRadians) * acuteAngle;
-                    } else if (absOriginalAngle <= Math.PI) {
-                      // Second quadrant (90° to 180°) - use supplementary angle (180° - θ)
-                      // Since sin(θ) = sin(180° - θ), we need π - acuteAngle
-                      snappedAngleRadians = Math.sign(signedAngleRadians) * (Math.PI - acuteAngle);
-                    } else {
-                      // Beyond 180° - shouldn't happen in single drag, but handle it
-                      // Wrap to [-180°, 180°] range
-                      const normalizedAngle = ((signedAngleRadians + Math.PI) % (2 * Math.PI)) - Math.PI;
-                      snappedAngleRadians = normalizedAngle;
-                    }
-                  }
-
-                  const snappedAngleDegrees = (snappedAngleRadians * 180) / Math.PI;
+                  // Convert snapped spread back to angle (preserving quadrant)
+                  // ... quadrant preservation logic here ...
+                  */
 
                   console.log(
                     `🔄 Rotation: ${snappedAngleDegrees.toFixed(2)}°, Spread: ${snappedSpread.toFixed(2)}, Axis: ${selectedHandle.type}[${selectedHandle.index}]`

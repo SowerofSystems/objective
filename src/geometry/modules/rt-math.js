@@ -239,6 +239,30 @@ export const RT = {
       };
     });
   },
+
+  /**
+   * Convert spread to degrees
+   * spread → θ (degrees)
+   * @param {number} spread - Spread value (0.00 to 1.00)
+   * @returns {number} - Angle in degrees (0° to 90°)
+   */
+  spreadToDegrees: spread => {
+    const clampedSpread = Math.max(0, Math.min(1, spread));
+    const radians = Math.asin(Math.sqrt(clampedSpread));
+    return (radians * 180) / Math.PI;
+  },
+
+  /**
+   * Convert degrees to spread using RT-pure calculation
+   * θ → spread = sin²(θ)
+   * @param {number} degrees - Angle in degrees
+   * @returns {number} - Spread value (0.00 to 1.00)
+   */
+  degreesToSpread: degrees => {
+    const radians = (degrees * Math.PI) / 180;
+    const sinValue = Math.sin(radians);
+    return sinValue * sinValue; // sin²(θ)
+  },
 };
 
 /**
