@@ -27,7 +27,7 @@ body {
 }
 
 #controls-panel {
-  width: 300px;
+  width: 330px;
   background: #2a2a2a;
   padding: 15px;
   overflow-y: auto;
@@ -270,7 +270,7 @@ button:active {
   border-radius: 4px;
   font-size: 12px;
   line-height: 1.6;
-  max-width: 300px;
+  max-width: 330px;
   pointer-events: none;
 }
 
