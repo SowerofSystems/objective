@@ -105,16 +105,13 @@ export const RTStateManager = {
       if (child.isMesh) {
         // Create new mesh that SHARES geometry and material (not cloned)
         const instanceMesh = new THREE.Mesh(child.geometry, child.material);
-        instanceMesh.position.copy(child.position);
-        instanceMesh.rotation.copy(child.rotation);
-        instanceMesh.scale.copy(child.scale);
+        // NOTE: Do NOT copy child transforms - they should stay at (0,0,0) relative to parent
+        // The parent group transform (lines 123-125) handles all positioning/rotation/scale
         clonedGroup.add(instanceMesh);
       } else if (child.isLine) {
         // Share line geometry and material too
         const instanceLine = new THREE.Line(child.geometry, child.material);
-        instanceLine.position.copy(child.position);
-        instanceLine.rotation.copy(child.rotation);
-        instanceLine.scale.copy(child.scale);
+        // NOTE: Do NOT copy child transforms - they should stay at (0,0,0) relative to parent
         clonedGroup.add(instanceLine);
       }
     });
