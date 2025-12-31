@@ -743,14 +743,25 @@ export const RTControls = {
 
       const signedAngleRadians = angleRadians * rotationDirection;
 
-      // Calculate spread from angle (spread = sin²(θ))
-      const spreadValue = Math.sin(signedAngleRadians) * Math.sin(signedAngleRadians);
+      // ================================================================
+      // FULL CIRCLE ROTATION (360°) - No spread snapping for now
+      // ================================================================
+      // Use the angle directly - supports full 360° rotation
+      const snappedAngleRadians = signedAngleRadians;
+      const snappedAngleDegrees = (snappedAngleRadians * 180) / Math.PI;
 
+      // Calculate spread for display only (not used for snapping yet)
+      const spreadValue = Math.sin(signedAngleRadians) * Math.sin(signedAngleRadians);
+      const snappedSpread = spreadValue; // No snapping
+
+      /* TODO: Add spread snapping back once full rotation is working
       // Apply spread snapping (0.1 intervals)
       const snapInterval = 0.1;
       const snappedSpread = Math.round(spreadValue / snapInterval) * snapInterval;
-      const snappedAngleRadians = Math.asin(Math.sqrt(Math.abs(snappedSpread))) * Math.sign(snappedSpread);
-      const snappedAngleDegrees = (snappedAngleRadians * 180) / Math.PI;
+
+      // Convert snapped spread back to angle (preserving quadrant)
+      // ... quadrant preservation logic here ...
+      */
 
       console.log(
         `🔄 Rotation: ${snappedAngleDegrees.toFixed(2)}°, Spread: ${snappedSpread.toFixed(2)}, Axis: ${this.state.selectedHandle.basisType}[${this.state.selectedHandle.basisIndex}]`

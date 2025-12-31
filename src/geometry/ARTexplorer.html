@@ -3804,43 +3804,26 @@
                   // Flip rotation direction if axis points away from camera
                   let signedAngleRadians = axisToCamera > 0 ? -deltaAngle : deltaAngle;
 
-                  // Calculate spread from angle (spread = sin²(θ))
-                  const spreadValue = Math.sin(signedAngleRadians) * Math.sin(signedAngleRadians);
+                  // ================================================================
+                  // FULL CIRCLE ROTATION (360°) - No spread snapping for now
+                  // ================================================================
+                  // Use the deltaAngle directly - it's already calculated correctly
+                  // from the drag start point, so it supports full 360° rotation
+                  const snappedAngleRadians = signedAngleRadians;
+                  const snappedAngleDegrees = (snappedAngleRadians * 180) / Math.PI;
 
+                  // Calculate spread for display only (not used for snapping yet)
+                  const spreadValue = Math.sin(signedAngleRadians) * Math.sin(signedAngleRadians);
+                  const snappedSpread = spreadValue; // No snapping
+
+                  /* TODO: Add spread snapping back once full rotation is working
                   // Apply spread snapping (0.1 intervals)
                   const snapInterval = 0.1;
                   const snappedSpread = Math.round(spreadValue / snapInterval) * snapInterval;
 
-                  // CRITICAL FIX: Preserve quadrant when converting spread back to angle
-                  // Problem: asin() only returns [-90°, +90°], losing quadrant information
-                  // Solution: Use original angle to determine which quadrant we're in
-                  let snappedAngleRadians;
-                  if (snappedSpread === 0) {
-                    // Special case: spread = 0 means angle = 0° or 180°
-                    snappedAngleRadians = 0;
-                  } else {
-                    // Get the acute angle (0° to 90°) for this spread
-                    const acuteAngle = Math.asin(Math.sqrt(snappedSpread));
-
-                    // Determine which quadrant based on original angle
-                    const absOriginalAngle = Math.abs(signedAngleRadians);
-
-                    if (absOriginalAngle <= Math.PI / 2) {
-                      // First quadrant (0° to 90°) - use acute angle directly
-                      snappedAngleRadians = Math.sign(signedAngleRadians) * acuteAngle;
-                    } else if (absOriginalAngle <= Math.PI) {
-                      // Second quadrant (90° to 180°) - use supplementary angle (180° - θ)
-                      // Since sin(θ) = sin(180° - θ), we need π - acuteAngle
-                      snappedAngleRadians = Math.sign(signedAngleRadians) * (Math.PI - acuteAngle);
-                    } else {
-                      // Beyond 180° - shouldn't happen in single drag, but handle it
-                      // Wrap to [-180°, 180°] range
-                      const normalizedAngle = ((signedAngleRadians + Math.PI) % (2 * Math.PI)) - Math.PI;
-                      snappedAngleRadians = normalizedAngle;
-                    }
-                  }
-
-                  const snappedAngleDegrees = (snappedAngleRadians * 180) / Math.PI;
+                  // Convert snapped spread back to angle (preserving quadrant)
+                  // ... quadrant preservation logic here ...
+                  */
 
                   console.log(
                     `🔄 Rotation: ${snappedAngleDegrees.toFixed(2)}°, Spread: ${snappedSpread.toFixed(2)}, Axis: ${selectedHandle.type}[${selectedHandle.index}]`
