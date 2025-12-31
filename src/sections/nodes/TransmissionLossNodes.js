@@ -474,12 +474,13 @@
         legacyId: `j_${row}`,
         section: "S11",
         classification: "C",
-        dependencies: [`transmissionLoss.${id}.heatLoss`, "transmissionLoss.total.heatLoss"],
+        // Legacy uses i_98 (component subtotal WITHOUT penalty) as denominator
+        dependencies: [`transmissionLoss.${id}.heatLoss`, "transmissionLoss.components.subtotalHeatLoss"],
         label: `${label} Heat Loss %`,
         compute: (inputs) => {
           const componentLoss = parseNum(inputs[`transmissionLoss.${id}.heatLoss`]);
-          const totalLoss = parseNum(inputs["transmissionLoss.total.heatLoss"]);
-          return totalLoss > 0 ? componentLoss / totalLoss : 0;
+          const subtotal = parseNum(inputs["transmissionLoss.components.subtotalHeatLoss"]);
+          return subtotal > 0 ? componentLoss / subtotal : 0;
         }
       });
 
@@ -488,13 +489,14 @@
         legacyId: `l_${row}`,
         section: "S11",
         classification: "C",
-        dependencies: [`transmissionLoss.${id}.heatGain`, "transmissionLoss.total.heatGain"],
+        // Legacy uses k_98 (component subtotal) as denominator, with NEGATIVE sign
+        dependencies: [`transmissionLoss.${id}.heatGain`, "transmissionLoss.components.subtotalHeatGain"],
         label: `${label} Heat Gain %`,
         compute: (inputs) => {
           const componentGain = parseNum(inputs[`transmissionLoss.${id}.heatGain`]);
-          const totalGain = parseNum(inputs["transmissionLoss.total.heatGain"]);
-          // Handle zero or near-zero total (avoid division by zero)
-          return Math.abs(totalGain) > 0.001 ? componentGain / totalGain : 0;
+          const subtotal = parseNum(inputs["transmissionLoss.components.subtotalHeatGain"]);
+          // Legacy formula: -heatgain / totals.gain
+          return Math.abs(subtotal) > 0.001 ? -componentGain / subtotal : 0;
         }
       });
     });
