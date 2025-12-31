@@ -2592,3 +2592,185 @@ Visual feedback during rotation
 ESC to cancel
 Works on Forms and Instances
 Total: ~2 hours for working Rotate mode Would you like me to start implementing this tonight?
+
+---
+
+## TODO: RT-Pure Rotation Implementation
+
+**Date Added:** 2025-12-30
+**Status:** Planned for next session
+**Priority:** High - Current rotation code violates RT principles
+
+### Problem Statement
+
+The current rotation implementation (ARTexplorer.html lines ~3812-3813 in rt-controls.js lines ~640-645) uses transcendental functions, violating Rational Trigonometry principles:
+
+```javascript
+// ❌ NOT RT-PURE - Uses sin, asin, sqrt
+const spreadValue = Math.sin(signedAngleRadians) * Math.sin(signedAngleRadians);
+const snappedAngleRadians = Math.asin(Math.sqrt(Math.abs(snappedSpread))) * Math.sign(snappedSpread);
+```
+
+**Issues:**
+1. Uses `Math.sin()` to calculate spread from angle
+2. Uses `Math.asin()` and `Math.sqrt()` to calculate angle from spread
+3. Violates RT principle #4: "NO Math.sin, Math.cos, Math.tan, Math.atan"
+4. Unnecessary transcendental functions for what should be algebraic calculations
+
+### Solution: Wildberger's Rational Circle Parameterization
+
+**New Documentation Added (2025-12-30):**
+- ✅ [Kieran-Math.md](Kieran-Math.md#L60-L192) - Full mathematical explanation
+- ✅ [rt-math.js](../../src/geometry/modules/rt-math.js#L69-L152) - Implementation functions
+
+**Key Formula:** `Circle(t) = ((1 - t²) / (1 + t²), 2t / (1 + t²))`
+
+**Where:**
+- `t` = angle parameter (NOT spread) - ranges over all real numbers
+- `t = tan(θ/2)` in traditional trigonometry (Weierstrass substitution)
+- Returns `(x, y)` point on unit circle using **only rational operations**
+
+**Spread Extraction (RT-Pure):**
+```javascript
+// Once we have (x, y) from parameterization:
+const spread = 1 - x*x;  // Or: spread = y*y
+// No inverse trig needed!
+```
+
+### Proposed Implementation
+
+#### Option 1: Screen-Space Hybrid (Current + Improvement)
+
+**Keep atan2() at UI boundary** (unavoidable for screen-space rotation), but **replace spread/angle conversions** with rational parameterization:
+
+```javascript
+// Step 1: Get screen-space angle (unavoidable atan2)
+const screenAngle = Math.atan2(screenDeltaY, screenDeltaX);  // UI boundary
+
+// Step 2: Convert angle to parameter 't' using rational formula
+// Instead of: const spread = Math.sin(angle) * Math.sin(angle)
+const t = Math.tan(screenAngle / 2);  // Still uses tan, but only once
+
+// Step 3: Get circle point using RT-pure parameterization
+const point = RT.circleParam(t);  // {x, y} - purely rational operations
+const spread = 1 - point.x * point.x;  // RT-pure spread extraction
+
+// Step 4: Snap spread
+const snappedSpread = Math.round(spread / 0.1) * 0.1;
+
+// Step 5: Convert back to parameter 't' (RT-pure)
+const snappedT = RT.spreadToParam(snappedSpread);  // Uses sqrt, but algebraic
+
+// Step 6: Get snapped angle from parameter
+// Instead of: const angle = Math.asin(Math.sqrt(spread))
+const snappedPoint = RT.circleParam(snappedT);
+const snappedAngle = Math.atan2(snappedPoint.y, snappedPoint.x);  // Only at end
+```
+
+**Benefits:**
+- ✅ Removes `Math.sin()` from spread calculation
+- ✅ Removes `Math.asin(Math.sqrt(...))` from angle recovery
+- ✅ Works directly with spread values algebraically
+- ✅ Only uses transcendental functions at UI boundaries (atan2)
+
+**Limitation:**
+- Still needs `atan2()` for screen-space interaction and final angle display
+- This is acceptable - atan2 is at UI boundary, not core geometry
+
+#### Option 2: Full RT-Pure Rotation (Future)
+
+**Eliminate screen-space angle entirely** by working in parameter space:
+
+```javascript
+// Track rotation in parameter 't' space instead of angle space
+let currentT = 0;  // Start at (1, 0) on circle
+
+// During drag: increment 't' based on tangential movement
+const deltaT = calculateDeltaT(movementVector, rotationRadius);
+currentT += deltaT;
+
+// Get current rotation state
+const point = RT.circleParam(currentT);  // {x, y} on unit circle
+const spread = 1 - point.x * point.x;   // Current spread
+
+// Snap in 't' space for even spread intervals
+const targetSpread = Math.round(spread / 0.1) * 0.1;
+const snappedT = RT.spreadToParam(targetSpread);
+
+// Apply rotation using parameter 't'
+// Build rotation matrix directly from (x, y) = (cos θ, sin θ) coordinates
+const rotationMatrix = buildRotationFromCirclePoint(point, axis);
+```
+
+**Benefits:**
+- ✅ Zero transcendental functions in rotation calculations
+- ✅ Works entirely in rational parameter space
+- ✅ True RT-purity
+- ✅ Potentially simpler code (no angle conversions)
+
+**Challenges:**
+- ⚠️ Requires rethinking UI interaction (no longer screen-angle-based)
+- ⚠️ Need to calculate `deltaT` from mouse movement
+- ⚠️ More complex quaternion/matrix construction
+
+### Implementation Tasks
+
+**Session 1: Hybrid Approach (2 hours)**
+1. [ ] Update rotation code in rt-controls.js to use `RT.circleParam()`
+2. [ ] Replace `Math.sin(angle)` spread calculation with `1 - point.x*x`
+3. [ ] Replace `Math.asin(Math.sqrt(spread))` with `RT.spreadToParam()` + atan2
+4. [ ] Test rotation still works correctly
+5. [ ] Verify spread snapping maintains accuracy
+6. [ ] Update console logs to show both angle and parameter 't'
+
+**Session 2: Full RT-Pure (Optional, 4-6 hours)**
+1. [ ] Design parameter-space drag interaction
+2. [ ] Implement `calculateDeltaT()` from tangential movement
+3. [ ] Build rotation matrix from circle point coordinates
+4. [ ] Remove all angle calculations from core rotation logic
+5. [ ] Keep angle display for UI only (cosmetic conversion at end)
+6. [ ] Comprehensive testing
+
+### References
+
+**Documentation:**
+- [Kieran-Math.md - Rational Circle Parameterization](Kieran-Math.md#L60-L192)
+- [rt-math.js - RT.circleParam() and RT.spreadToParam()](../../src/geometry/modules/rt-math.js#L69-L152)
+- [HTML-Refactor-Plan.md](HTML-Refactor-Plan.md) - File size reduction plan
+
+**Current Implementation:**
+- [rt-controls.js:640-645](../../src/geometry/modules/rt-controls.js#L640-L645) - Rotation code using transcendental functions
+
+**RT Principles:**
+- Principle #4: NO Math.PI, Math.sin, Math.cos, Math.tan, Math.atan
+- Principle #5: Resolve rotations with Spread first vs. Angles
+
+### Success Criteria
+
+- [ ] Rotation uses `RT.circleParam()` for spread calculations
+- [ ] No `Math.sin()` or `Math.asin()` in core rotation logic
+- [ ] Spread snapping works correctly with 0.1 intervals
+- [ ] Rotation behavior identical to current implementation
+- [ ] Console logs show parameter 't' alongside angle and spread
+- [ ] Code is cleaner and more RT-pure
+
+### Notes
+
+**Why This Matters:**
+- Current code works but violates RT philosophy
+- Wildberger's parameterization provides algebraic alternative
+- Demonstrates commitment to RT-pure methodology
+- Educational value - shows how to avoid transcendental functions
+
+**Acceptable Trade-offs:**
+- `atan2()` at UI boundary is OK (screen-space interaction)
+- `Math.tan()` for initial parameter conversion is acceptable
+- Final angle display for user feedback uses atan2 (cosmetic only)
+
+**Core Principle:**
+> "Use transcendental functions only at system boundaries (input/output), never in core geometric calculations."
+
+---
+
+**Last Updated:** 2025-12-30
+**Related Issues:** Rotation mode implementation added ~200 lines to ARTexplorer.html

@@ -67,6 +67,91 @@ export const RT = {
   },
 
   /**
+   * Rational Circle Parameterization - Wildberger's alternative to sin/cos
+   * Generates points on unit circle using only rational operations (no trig functions)
+   *
+   * Formula: Circle(t) = ((1 - t²) / (1 + t²), 2t / (1 + t²))
+   *
+   * Based on Weierstrass substitution where t = tan(θ/2) in traditional trigonometry.
+   * Maps all real numbers to the full unit circle:
+   * - t = 0 → (1, 0) - positive x-axis
+   * - t = 1 → (0, 1) - top of circle
+   * - t → ∞ → (-1, 0) - negative x-axis
+   *
+   * IMPORTANT: Parameter 't' is NOT spread!
+   * - 't' is an INPUT representing angle/turns (ranges over all reals)
+   * - 'spread' is an OUTPUT measuring perpendicularity (ranges 0-1)
+   *
+   * RT-Pure Benefits:
+   * - No transcendental functions (sin, cos, tan, atan)
+   * - Only rational operations (multiply, add, divide)
+   * - Spread can be extracted directly from coordinates: spread = 1 - x² or spread = y²
+   *
+   * Use Cases:
+   * 1. RT-pure rotation calculations (avoid sin/cos for angles)
+   * 2. Convert between angle parameter and spread without inverse trig
+   * 3. Snap-to-spread constraints (find 't' for target spread algebraically)
+   *
+   * @param {number} t - Angle parameter (any real number, NOT spread)
+   * @returns {Object} {x, y} - Point on unit circle
+   *
+   * @example
+   * // Get point at parameter t = 1
+   * const point = RT.circleParam(1);
+   * // point = {x: 0, y: 1} - top of circle
+   *
+   * // Extract spread from coordinates (no inverse trig!)
+   * const spread = 1 - point.x * point.x;  // = 1 (perpendicular to x-axis)
+   *
+   * @see docs/development/Geometry documents/Kieran-Math.md - "Rational Circle Parameterization"
+   */
+  circleParam: t => {
+    const tSquared = t * t;
+    const denominator = 1 + tSquared;
+    return {
+      x: (1 - tSquared) / denominator,
+      y: (2 * t) / denominator,
+    };
+  },
+
+  /**
+   * Convert spread to angle parameter 't' using rational circle parameterization
+   * Solves: 4t² / (1 + t²)² = spread for t
+   *
+   * WARNING: This is a helper for understanding the relationship.
+   * The actual solution requires solving a quartic equation, which may use sqrt.
+   * For RT-pure calculations, work directly with 't' parameter instead of converting.
+   *
+   * Note: Given spread s = sin²(θ), there are two possible 't' values:
+   * - Positive t: 0° ≤ θ ≤ 180° (upper semicircle)
+   * - Negative t: 180° ≤ θ ≤ 360° (lower semicircle)
+   *
+   * This function returns the positive 't' value.
+   *
+   * @param {number} spread - Spread value (0 to 1)
+   * @returns {number} Parameter 't' (positive solution)
+   *
+   * @example
+   * // For spread = 1 (90° angle):
+   * const t = RT.spreadToParam(1);  // t ≈ 1.0
+   * const point = RT.circleParam(t); // {x: 0, y: 1}
+   */
+  spreadToParam: spread => {
+    // From spread = 4t² / (1 + t²)²
+    // Rearranging: spread(1 + 2t² + t⁴) = 4t²
+    //             spread·t⁴ + (2·spread - 4)t² + spread = 0
+    // Substituting u = t²:
+    //             spread·u² + (2·spread - 4)u + spread = 0
+    // Quadratic formula:
+    const a = spread;
+    const b = 2 * spread - 4;
+    const c = spread;
+    const discriminant = b * b - 4 * a * c;
+    const u = (-b + Math.sqrt(discriminant)) / (2 * a); // Take positive solution
+    return Math.sqrt(u); // t = √u (positive root)
+  },
+
+  /**
    * Verify Euler's formula: V - E + F = 2
    * Valid for any convex polyhedron
    *
