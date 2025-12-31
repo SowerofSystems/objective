@@ -3577,6 +3577,12 @@
                     // Get starting point
                     raycaster.ray.intersectPlane(dragPlane, dragStartPoint);
 
+                    // Store initial mouse position for rotation calculation
+                    dragStartPoint.userData = {
+                      mouseX: mouse.x,
+                      mouseY: mouse.y
+                    };
+
                     // Store selected polyhedra
                     selectedPolyhedra = getSelectedPolyhedra();
 
@@ -3748,35 +3754,51 @@
                   // ====================================================================
                   // ROTATE MODE: Rotate selected object around axis
                   // ====================================================================
-                  // Get the center of rotation (editing basis position)
+                  // Use screen-space mouse movement for rotation
+                  // Project rotation center to screen space
                   const rotationCenter = editingBasis ? editingBasis.position : new THREE.Vector3(0, 0, 0);
+                  const centerScreen = rotationCenter.clone().project(camera);
 
-                  // Calculate vectors from rotation center to drag points
-                  const startVector = new THREE.Vector3().subVectors(dragStartPoint, rotationCenter);
-                  const currentVector = new THREE.Vector3().subVectors(currentPoint, rotationCenter);
+                  // Calculate screen-space vectors from center to mouse positions
+                  const rect = renderer.domElement.getBoundingClientRect();
 
-                  // Project both vectors onto plane perpendicular to rotation axis
-                  const axis = selectedHandle.axis.clone().normalize();
-                  const startProjected = startVector.clone().sub(axis.clone().multiplyScalar(startVector.dot(axis)));
-                  const currentProjected = currentVector.clone().sub(axis.clone().multiplyScalar(currentVector.dot(axis)));
+                  // Current mouse position in normalized device coordinates
+                  const currentMouseX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                  const currentMouseY = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
-                  // Calculate angle between projected vectors
-                  const dotProduct = startProjected.dot(currentProjected);
-                  const startLength = startProjected.length();
-                  const currentLength = currentProjected.length();
+                  // Start mouse position (stored when drag began)
+                  const startMouseX = dragStartPoint.userData?.mouseX || currentMouseX;
+                  const startMouseY = dragStartPoint.userData?.mouseY || currentMouseY;
 
-                  let angleRadians = 0;
-                  if (startLength > 0.001 && currentLength > 0.001) {
-                    const cosAngle = THREE.MathUtils.clamp(dotProduct / (startLength * currentLength), -1, 1);
-                    angleRadians = Math.acos(cosAngle);
-
-                    // Determine rotation direction using cross product
-                    const cross = new THREE.Vector3().crossVectors(startProjected, currentProjected);
-                    const rotationDirection = cross.dot(axis) > 0 ? 1 : -1;
-                    angleRadians *= rotationDirection;
+                  // Store mouse position for next frame
+                  if (!dragStartPoint.userData) {
+                    dragStartPoint.userData = {};
                   }
+                  dragStartPoint.userData.mouseX = startMouseX;
+                  dragStartPoint.userData.mouseY = startMouseY;
 
-                  const signedAngleRadians = angleRadians;
+                  // Vectors from center to mouse positions (in screen space)
+                  const startDX = startMouseX - centerScreen.x;
+                  const startDY = startMouseY - centerScreen.y;
+                  const currentDX = currentMouseX - centerScreen.x;
+                  const currentDY = currentMouseY - centerScreen.y;
+
+                  // Calculate angle between the two vectors
+                  const startAngle = Math.atan2(startDY, startDX);
+                  const currentAngle = Math.atan2(currentDY, currentDX);
+                  let deltaAngle = currentAngle - startAngle;
+
+                  // Normalize angle to -π to π range
+                  if (deltaAngle > Math.PI) deltaAngle -= 2 * Math.PI;
+                  if (deltaAngle < -Math.PI) deltaAngle += 2 * Math.PI;
+
+                  // Check if rotation axis points toward or away from camera
+                  const cameraDirection = new THREE.Vector3();
+                  camera.getWorldDirection(cameraDirection);
+                  const axisToCamera = selectedHandle.axis.dot(cameraDirection);
+
+                  // Flip rotation direction if axis points away from camera
+                  let signedAngleRadians = axisToCamera > 0 ? -deltaAngle : deltaAngle;
 
                   // Calculate spread from angle (spread = sin²(θ))
                   const spreadValue = Math.sin(signedAngleRadians) * Math.sin(signedAngleRadians);
