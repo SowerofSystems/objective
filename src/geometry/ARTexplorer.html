@@ -3634,10 +3634,10 @@
             if (parentEntry) {
               selectPolyhedron(parentEntry.parent);
             }
-          } else {
-            // Clicked empty space - deselect
-            deselectAll();
           }
+          // NOTE: Clicking empty space no longer deselects
+          // Deselection now requires: ESC key OR NOW button
+          // This allows users to orbit camera between transformations without losing selection
         }
 
         // Get selected polyhedra - returns only currently selected polyhedron
