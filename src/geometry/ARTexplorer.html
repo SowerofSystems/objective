@@ -2889,6 +2889,244 @@
         setupRotationInputs("rotZQDegrees", "rotZQSpread", "Z (Quadray)");
 
         // ========================================================================
+        // COORDINATE INPUT HANDLERS - Execute transformations on Enter
+        // ========================================================================
+
+        /**
+         * Helper function to exit current tool mode while keeping selection active
+         * Called after transformations complete (Enter key or mouseup)
+         */
+        function exitToolMode() {
+          if (currentGumballTool) {
+            console.log(`🚪 Exiting ${currentGumballTool} mode - selection preserved`);
+
+            // Deactivate tool button
+            document.querySelectorAll(".toggle-btn.variant-tool").forEach(btn => {
+              btn.classList.remove("active");
+            });
+
+            currentGumballTool = null;
+            controls.enabled = true; // Re-enable orbit controls
+
+            // Remove editing basis but keep selection highlight
+            if (editingBasis) {
+              scene.remove(editingBasis);
+              editingBasis = null;
+            }
+
+            console.log("✅ Tool mode exited - orbit enabled, selection preserved");
+          }
+        }
+
+        /**
+         * Setup coordinate input handler for MOVE mode (XYZ fields)
+         */
+        function setupMoveCoordinateInputs() {
+          const coordInputs = [
+            { id: 'coordX', axis: 'x', name: 'X' },
+            { id: 'coordY', axis: 'y', name: 'Y' },
+            { id: 'coordZ', axis: 'z', name: 'Z' }
+          ];
+
+          coordInputs.forEach(({ id, axis, name }) => {
+            const input = document.getElementById(id);
+            if (!input) return;
+
+            input.addEventListener('keydown', function(e) {
+              if (e.key === 'Enter' && currentGumballTool === 'move') {
+                const value = parseFloat(e.target.value);
+                if (isNaN(value)) return;
+
+                const selected = getSelectedPolyhedra();
+                if (selected.length === 0) {
+                  console.warn('⚠️ No polyhedra selected');
+                  return;
+                }
+
+                // Apply position change
+                selected.forEach(poly => {
+                  poly.position[axis] = value;
+                  console.log(`📍 ${name} position set to ${value.toFixed(4)}`);
+                });
+
+                // Update WXYZ coordinates
+                if (selected.length > 0) {
+                  const pos = selected[0].position;
+                  const basisVectors = Quadray.basisVectors;
+                  let wxyz = [0, 0, 0, 0];
+                  for (let i = 0; i < 4; i++) {
+                    wxyz[i] = pos.dot(basisVectors[i]);
+                  }
+                  const mean = (wxyz[0] + wxyz[1] + wxyz[2] + wxyz[3]) / 4;
+                  wxyz = wxyz.map(c => c - mean);
+
+                  document.getElementById("coordW").value = wxyz[0].toFixed(4);
+                  document.getElementById("coordX2").value = wxyz[1].toFixed(4);
+                  document.getElementById("coordY2").value = wxyz[2].toFixed(4);
+                  document.getElementById("coordZ2").value = wxyz[3].toFixed(4);
+                }
+
+                // Update editing basis position if it exists
+                if (editingBasis && selected.length > 0) {
+                  editingBasis.position.copy(selected[0].position);
+                }
+
+                // Exit tool mode but keep selection
+                exitToolMode();
+              }
+            });
+          });
+        }
+
+        /**
+         * Setup coordinate input handler for MOVE mode (WXYZ fields)
+         */
+        function setupMoveQuadrayInputs() {
+          const coordInputs = [
+            { id: 'coordW', index: 0, name: 'W' },
+            { id: 'coordX2', index: 1, name: 'X' },
+            { id: 'coordY2', index: 2, name: 'Y' },
+            { id: 'coordZ2', index: 3, name: 'Z' }
+          ];
+
+          coordInputs.forEach(({ id, index, name }) => {
+            const input = document.getElementById(id);
+            if (!input) return;
+
+            input.addEventListener('keydown', function(e) {
+              if (e.key === 'Enter' && currentGumballTool === 'move') {
+                const value = parseFloat(e.target.value);
+                if (isNaN(value)) return;
+
+                const selected = getSelectedPolyhedra();
+                if (selected.length === 0) {
+                  console.warn('⚠️ No polyhedra selected');
+                  return;
+                }
+
+                // Get all WXYZ values
+                let wxyz = [
+                  parseFloat(document.getElementById('coordW').value),
+                  parseFloat(document.getElementById('coordX2').value),
+                  parseFloat(document.getElementById('coordY2').value),
+                  parseFloat(document.getElementById('coordZ2').value)
+                ];
+
+                // Convert WXYZ to Cartesian
+                const newPos = Quadray.toCartesian(wxyz[0], wxyz[1], wxyz[2], wxyz[3], THREE);
+
+                // Apply position
+                selected.forEach(poly => {
+                  poly.position.copy(newPos);
+                  console.log(`📍 WXYZ position set: (${wxyz[0].toFixed(4)}, ${wxyz[1].toFixed(4)}, ${wxyz[2].toFixed(4)}, ${wxyz[3].toFixed(4)})`);
+                });
+
+                // Update XYZ coordinates
+                document.getElementById('coordX').value = newPos.x.toFixed(4);
+                document.getElementById('coordY').value = newPos.y.toFixed(4);
+                document.getElementById('coordZ').value = newPos.z.toFixed(4);
+
+                // Update editing basis position if it exists
+                if (editingBasis && selected.length > 0) {
+                  editingBasis.position.copy(selected[0].position);
+                }
+
+                // Exit tool mode but keep selection
+                exitToolMode();
+              }
+            });
+          });
+        }
+
+        /**
+         * Setup rotation input handler for ROTATE mode (Degrees fields - XYZ)
+         */
+        function setupRotateDegreesInputs() {
+          const rotInputs = [
+            { id: 'rotXDegrees', axis: new THREE.Vector3(1, 0, 0), name: 'X' },
+            { id: 'rotYDegrees', axis: new THREE.Vector3(0, 1, 0), name: 'Y' },
+            { id: 'rotZDegrees', axis: new THREE.Vector3(0, 0, 1), name: 'Z' }
+          ];
+
+          rotInputs.forEach(({ id, axis, name }) => {
+            const input = document.getElementById(id);
+            if (!input) return;
+
+            input.addEventListener('keydown', function(e) {
+              if (e.key === 'Enter' && currentGumballTool === 'rotate') {
+                const degrees = parseFloat(e.target.value);
+                if (isNaN(degrees)) return;
+
+                const selected = getSelectedPolyhedra();
+                if (selected.length === 0) {
+                  console.warn('⚠️ No polyhedra selected');
+                  return;
+                }
+
+                const radians = (degrees * Math.PI) / 180;
+
+                // Apply rotation
+                selected.forEach(poly => {
+                  poly.rotateOnWorldAxis(axis, radians);
+                  console.log(`🔄 Rotated ${degrees.toFixed(2)}° around ${name} axis`);
+                });
+
+                // Exit tool mode but keep selection
+                exitToolMode();
+              }
+            });
+          });
+        }
+
+        /**
+         * Setup rotation input handler for ROTATE mode (Degrees fields - WXYZ)
+         */
+        function setupRotateQuadrayDegreesInputs() {
+          const rotInputs = [
+            { id: 'rotWDegrees', basisIndex: 0, name: 'W' },
+            { id: 'rotXQDegrees', basisIndex: 1, name: 'X (Quadray)' },
+            { id: 'rotYQDegrees', basisIndex: 2, name: 'Y (Quadray)' },
+            { id: 'rotZQDegrees', basisIndex: 3, name: 'Z (Quadray)' }
+          ];
+
+          rotInputs.forEach(({ id, basisIndex, name }) => {
+            const input = document.getElementById(id);
+            if (!input) return;
+
+            input.addEventListener('keydown', function(e) {
+              if (e.key === 'Enter' && currentGumballTool === 'rotate') {
+                const degrees = parseFloat(e.target.value);
+                if (isNaN(degrees)) return;
+
+                const selected = getSelectedPolyhedra();
+                if (selected.length === 0) {
+                  console.warn('⚠️ No polyhedra selected');
+                  return;
+                }
+
+                const radians = (degrees * Math.PI) / 180;
+                const axis = Quadray.basisVectors[basisIndex];
+
+                // Apply rotation
+                selected.forEach(poly => {
+                  poly.rotateOnWorldAxis(axis, radians);
+                  console.log(`🔄 Rotated ${degrees.toFixed(2)}° around ${name} axis`);
+                });
+
+                // Exit tool mode but keep selection
+                exitToolMode();
+              }
+            });
+          });
+        }
+
+        // Initialize all coordinate/rotation input handlers
+        setupMoveCoordinateInputs();
+        setupMoveQuadrayInputs();
+        setupRotateDegreesInputs();
+        setupRotateQuadrayDegreesInputs();
+
+        // ========================================================================
         // EDITING BASIS MANAGEMENT (Localized Gumball)
         // ========================================================================
 
@@ -3942,10 +4180,10 @@
 
                 selectedPolyhedra = [];
 
-                // Keep orbit controls disabled if gumball tool is still active
-                // Only re-enable if user has deactivated the tool
+                // Auto-exit tool mode after drag complete (keeps selection active)
+                exitToolMode();
                 console.log(
-                  "✅ Gumball drag ended - orbit controls remain disabled while tool active"
+                  "✅ Gumball drag ended - tool mode exited, selection preserved"
                 );
               }
             },
