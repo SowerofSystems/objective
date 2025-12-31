@@ -100,18 +100,23 @@ export const RTStateManager = {
     // Create lightweight clone that SHARES geometry/materials (memory efficient)
     const clonedGroup = new THREE.Group();
 
-    // Copy all children but share their geometry and materials
+    // Copy all children and CLONE their geometry (don't share)
+    // Sharing geometry causes corruption when instances have different transforms
     polyhedronGroup.children.forEach(child => {
       if (child.isMesh) {
-        // Create new mesh that SHARES geometry and material (not cloned)
-        const instanceMesh = new THREE.Mesh(child.geometry, child.material);
+        // Clone geometry to prevent transform corruption
+        const clonedGeometry = child.geometry.clone();
+        const instanceMesh = new THREE.Mesh(clonedGeometry, child.material);
         instanceMesh.position.copy(child.position);
         instanceMesh.rotation.copy(child.rotation);
         instanceMesh.scale.copy(child.scale);
         clonedGroup.add(instanceMesh);
-      } else if (child.isLine) {
-        // Share line geometry and material too
-        const instanceLine = new THREE.Line(child.geometry, child.material);
+      } else if (child.isLine || child.isLineSegments) {
+        // Clone line geometry too
+        const clonedGeometry = child.geometry.clone();
+        const instanceLine = child.isLineSegments
+          ? new THREE.LineSegments(clonedGeometry, child.material)
+          : new THREE.Line(clonedGeometry, child.material);
         instanceLine.position.copy(child.position);
         instanceLine.rotation.copy(child.rotation);
         instanceLine.scale.copy(child.scale);

@@ -2524,6 +2524,19 @@ ARTexplorer_State_2025-12-28_geodesic-icosa-freq4.csv
 - ✅ NOW button (deposit instances, reset forms)
 - ✅ Grid tessellation sliders (Quadray and Cartesian grids, dynamic intervals)
 
+**2025-12-31 - Rotation Mode & UI Cleanup:**
+- ✅ **Rotation mode implementation** - Full 360° smooth rotation around all axes
+  - Screen-space angle calculation prevents quadrant reversals
+  - Dual coordinate display: degrees (0-360°) and spread (0-1)
+  - Bidirectional conversion with `RT.spreadToDegrees()` and `RT.degreesToSpread()`
+  - Circular arc handles around XYZ axes (red/green/blue)
+  - Circular arc handles around WXYZ axes (red/green/blue/magenta)
+  - Spread values calculated and displayed but not used for snapping (deferred until polyhedral relationships understood)
+- ✅ **Rotation math in rt-math.js module** - Added `RTMath.spreadToDegrees()` and `RTMath.degreesToSpread()`
+- ✅ **HTML refactoring** - Removed 71-line embedded `<style>` block, removed duplicate RT math functions
+- ✅ **UI compaction** - Inline axis prefixes (X:, Y:, Z:, W:), 4-column WXYZ layout, 330px panel width
+- ✅ **Password simplification** - Changed from URL to 'enzyme2026'
+
 **2025-12-26 - Z-Up Convention & Geodesics:**
 - ✅ Z-up coordinate convention (CAD/BIM/glTF standard)
 - ✅ Geodesic sphere projections (InSphere/MidSphere/OutSphere)
@@ -2550,29 +2563,32 @@ ARTexplorer_State_2025-12-28_geodesic-icosa-freq4.csv
 
 ### 5.2 TODO: Active Work Items 🎯
 
-**Priority 1: Rotation Mode (Next Implementation)** 🎯
+**Priority 1: Rotation Mode** ✅ **COMPLETED**
 
 **XYZ Rotation (Cartesian):**
-- [ ] Implement Rotate mode with **circular arc handles** around X, Y, Z axes
-- [ ] Position circular handles perpendicular to Move arrow handles
-- [ ] Visual style: Circular arcs/tori showing rotation plane
-- [ ] Rotation snaps at degree intervals (15°, 30°, 45°, 90°) - traditional angles
-- [ ] Color coding: Red (X-axis), Green (Y-axis), Blue (Z-axis)
+- ✅ Implement Rotate mode with **circular arc handles** around X, Y, Z axes
+- ✅ Position circular handles perpendicular to Move arrow handles
+- ✅ Visual style: Circular arcs/tori showing rotation plane
+- ✅ Color coding: Red (X-axis), Green (Y-axis), Blue (Z-axis)
+- ✅ Full 360° smooth rotation with screen-space angle calculation
+- ⏸️ Rotation snaps at degree intervals (15°, 30°, 45°, 90°) - deferred, smooth rotation preferred
 
 **WXYZ Rotation (Quadray):**
-- [ ] Implement **hexagonal arc handles** for W, X, Y, Z axes (to differentiate from XYZ circles)
-- [ ] Position hexagon handles perpendicular to WXYZ arrow handles
-- [ ] Alternative: Use rotation handles aligned with Quadray grid planes (6 planes)
-- [ ] **RT-pure rotation using spread values** (NOT angle calculations)
-- [ ] Snap-to-spread intervals: 0.1, 0.2, 0.3, ... 0.9, 1.0 (1 decimal place)
-- [ ] If insufficient precision, extend to 2 decimal places: 0.01, 0.02, ... 0.99, 1.00
-- [ ] Color coding: Match WXYZ arrow colors (W=red, X=green, Y=blue, Z=magenta)
+- ✅ Implement **circular arc handles** for W, X, Y, Z axes (using same style as XYZ for consistency)
+- ✅ Position circular handles perpendicular to WXYZ arrow handles
+- ✅ Color coding: Match WXYZ arrow colors (W=red, X=green, Y=blue, Z=magenta)
+- ✅ Dual display: degrees (0-360°) and spread (0-1) shown simultaneously
+- ✅ RT math functions: `RTMath.spreadToDegrees()` and `RTMath.degreesToSpread()` in rt-math.js module
+- ⏸️ **Spread-based snapping** - Deferred until polyhedral relationships are better understood
+- ⏸️ Snap-to-spread intervals (0.1, 0.2, ... 1.0) - Will implement when meaningful geometric relationships identified
 
 **Implementation Notes:**
-- Rotation in Quadray space: Each handle rotates around corresponding Quadray basis vector
-- Perpendicular to WXYZ axes = aligned with Quadray grid planes
-- Hexagon shape visually distinguishes tetrahedral rotation from Cartesian
-- Spread-based snapping ensures RT-purity (no angle→spread conversions)
+- **Key Insight:** Simplified rotation approach (remove complexity, not add it) resulted in perfectly smooth 360° rotation
+- **Screen-space calculation:** Prevents quadrant reversals that plagued angle-based approaches
+- **Spread display:** Calculated and shown for educational purposes, but not used for snapping
+- **Future spread snapping:** Will be added back when we discover which polyhedral relationships benefit from rational spread values
+- **Module sync:** Both inline implementation (ARTexplorer.html:3807-3826) and module version (rt-controls.js:746-764) kept in sync
+- **Detailed implementation journey:** See [ART-Gumball.md](ART-Gumball.md) for complete rotation solution documentation (3 sessions, RT-pure attempt, final success)
 
 **Priority 2: JSON State Export/Import** ⚡ (Preferred over CSV)
 - [x] StateManager architecture implemented
@@ -2723,7 +2739,7 @@ ARTexplorer_State_2025-12-28_geodesic-icosa-freq4.csv
 
 ---
 
-**Document Version:** 2.0 (2025-12-30)  
-**Last Updated:** 2025-12-30  
-**Next Review:** When Rotate mode is implemented
+**Document Version:** 2.1 (2025-12-31)
+**Last Updated:** 2025-12-31
+**Next Review:** When JSON State Export/Import is implemented
 

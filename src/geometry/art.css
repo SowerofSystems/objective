@@ -27,7 +27,7 @@ body {
 }
 
 #controls-panel {
-  width: 300px;
+  width: 330px;
   background: #2a2a2a;
   padding: 15px;
   overflow-y: auto;
@@ -270,7 +270,7 @@ button:active {
   border-radius: 4px;
   font-size: 12px;
   line-height: 1.6;
-  max-width: 300px;
+  max-width: 330px;
   pointer-events: none;
 }
 
@@ -359,8 +359,10 @@ button:disabled {
   gap: 5px;
 }
 
-/* Four-column layout for WXYZ */
-.coordinate-inputs:has(#coordW) {
+/* Four-column layout for WXYZ (coordinates and rotation) */
+.coordinate-inputs:has(#coordW),
+.coordinate-inputs:has(#rotWDegrees),
+.coordinate-inputs:has(#rotWSpread) {
   grid-template-columns: repeat(4, 1fr);
 }
 
@@ -547,6 +549,25 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  position: relative;
+}
+
+/* Position the label inside the input field as a prefix */
+.coord-container .label-axis {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  font-weight: bold;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Add left padding to inputs to make room for the prefix label */
+.coord-input {
+  padding-left: 24px !important;
+  text-align: left;
 }
 
 /* Snap Toggle Container */
