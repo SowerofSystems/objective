@@ -549,6 +549,25 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  position: relative;
+}
+
+/* Position the label inside the input field as a prefix */
+.coord-container .label-axis {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  font-weight: bold;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Add left padding to inputs to make room for the prefix label */
+.coord-input {
+  padding-left: 24px !important;
+  text-align: left;
 }
 
 /* Snap Toggle Container */
