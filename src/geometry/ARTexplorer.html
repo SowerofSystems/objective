@@ -3580,11 +3580,22 @@
                     // Store initial mouse position for rotation calculation
                     dragStartPoint.userData = {
                       mouseX: mouse.x,
-                      mouseY: mouse.y
+                      mouseY: mouse.y,
+                      // Store initial quaternions for all selected polyhedra
+                      initialQuaternions: [],
+                      initialPositions: []
                     };
 
                     // Store selected polyhedra
                     selectedPolyhedra = getSelectedPolyhedra();
+
+                    // Store initial state for rotation mode
+                    if (currentGumballTool === "rotate") {
+                      selectedPolyhedra.forEach(poly => {
+                        dragStartPoint.userData.initialQuaternions.push(poly.quaternion.clone());
+                        dragStartPoint.userData.initialPositions.push(poly.position.clone());
+                      });
+                    }
 
                     const axisName =
                       basisType === "cartesian"
@@ -3759,23 +3770,13 @@
                   const rotationCenter = editingBasis ? editingBasis.position : new THREE.Vector3(0, 0, 0);
                   const centerScreen = rotationCenter.clone().project(camera);
 
-                  // Calculate screen-space vectors from center to mouse positions
-                  const rect = renderer.domElement.getBoundingClientRect();
-
                   // Current mouse position in normalized device coordinates
-                  const currentMouseX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-                  const currentMouseY = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                  const currentMouseX = mouse.x;
+                  const currentMouseY = mouse.y;
 
-                  // Start mouse position (stored when drag began)
-                  const startMouseX = dragStartPoint.userData?.mouseX || currentMouseX;
-                  const startMouseY = dragStartPoint.userData?.mouseY || currentMouseY;
-
-                  // Store mouse position for next frame
-                  if (!dragStartPoint.userData) {
-                    dragStartPoint.userData = {};
-                  }
-                  dragStartPoint.userData.mouseX = startMouseX;
-                  dragStartPoint.userData.mouseY = startMouseY;
+                  // CRITICAL: Use INITIAL mouse position stored at drag start (not updated every frame!)
+                  const startMouseX = dragStartPoint.userData.mouseX;
+                  const startMouseY = dragStartPoint.userData.mouseY;
 
                   // Vectors from center to mouse positions (in screen space)
                   const startDX = startMouseX - centerScreen.x;
@@ -3783,12 +3784,15 @@
                   const currentDX = currentMouseX - centerScreen.x;
                   const currentDY = currentMouseY - centerScreen.y;
 
-                  // Calculate angle between the two vectors
+                  // Calculate angle between the two vectors using atan2
+                  // This gives us the total accumulated rotation since drag started
                   const startAngle = Math.atan2(startDY, startDX);
                   const currentAngle = Math.atan2(currentDY, currentDX);
                   let deltaAngle = currentAngle - startAngle;
 
                   // Normalize angle to -π to π range
+                  // Note: This can still cause issues at ±180°, but we're storing initial state
+                  // so at least we're calculating from the original start point
                   if (deltaAngle > Math.PI) deltaAngle -= 2 * Math.PI;
                   if (deltaAngle < -Math.PI) deltaAngle += 2 * Math.PI;
 
@@ -3806,7 +3810,36 @@
                   // Apply spread snapping (0.1 intervals)
                   const snapInterval = 0.1;
                   const snappedSpread = Math.round(spreadValue / snapInterval) * snapInterval;
-                  const snappedAngleRadians = Math.asin(Math.sqrt(Math.abs(snappedSpread))) * Math.sign(snappedSpread);
+
+                  // CRITICAL FIX: Preserve quadrant when converting spread back to angle
+                  // Problem: asin() only returns [-90°, +90°], losing quadrant information
+                  // Solution: Use original angle to determine which quadrant we're in
+                  let snappedAngleRadians;
+                  if (snappedSpread === 0) {
+                    // Special case: spread = 0 means angle = 0° or 180°
+                    snappedAngleRadians = 0;
+                  } else {
+                    // Get the acute angle (0° to 90°) for this spread
+                    const acuteAngle = Math.asin(Math.sqrt(snappedSpread));
+
+                    // Determine which quadrant based on original angle
+                    const absOriginalAngle = Math.abs(signedAngleRadians);
+
+                    if (absOriginalAngle <= Math.PI / 2) {
+                      // First quadrant (0° to 90°) - use acute angle directly
+                      snappedAngleRadians = Math.sign(signedAngleRadians) * acuteAngle;
+                    } else if (absOriginalAngle <= Math.PI) {
+                      // Second quadrant (90° to 180°) - use supplementary angle (180° - θ)
+                      // Since sin(θ) = sin(180° - θ), we need π - acuteAngle
+                      snappedAngleRadians = Math.sign(signedAngleRadians) * (Math.PI - acuteAngle);
+                    } else {
+                      // Beyond 180° - shouldn't happen in single drag, but handle it
+                      // Wrap to [-180°, 180°] range
+                      const normalizedAngle = ((signedAngleRadians + Math.PI) % (2 * Math.PI)) - Math.PI;
+                      snappedAngleRadians = normalizedAngle;
+                    }
+                  }
+
                   const snappedAngleDegrees = (snappedAngleRadians * 180) / Math.PI;
 
                   console.log(
@@ -3838,31 +3871,29 @@
                     spreadField.value = snappedSpread.toFixed(2);
                   }
 
-                  // Apply rotation to selected polyhedra
+                  // Apply rotation to selected polyhedra using stored initial state
                   if (selectedPolyhedra.length > 0) {
-                    selectedPolyhedra.forEach(poly => {
-                      // Store initial rotation and position if not set
-                      if (!poly.userData.dragStartQuaternion) {
-                        poly.userData.dragStartQuaternion = poly.quaternion.clone();
-                        poly.userData.dragStartPosition = poly.position.clone();
-                      }
+                    selectedPolyhedra.forEach((poly, index) => {
+                      // Get initial quaternion and position from drag start data
+                      const initialQuaternion = dragStartPoint.userData.initialQuaternions[index];
+                      const initialPosition = dragStartPoint.userData.initialPositions[index];
 
-                      // Reset to initial state
-                      poly.quaternion.copy(poly.userData.dragStartQuaternion);
-                      poly.position.copy(poly.userData.dragStartPosition);
+                      // Reset to initial state FIRST
+                      poly.quaternion.copy(initialQuaternion);
+                      poly.position.copy(initialPosition);
 
-                      // Apply rotation from center of rotation
+                      // Calculate offset from rotation center
                       const offset = poly.position.clone().sub(rotationCenter);
 
-                      // Rotate the offset vector
+                      // Rotate the offset vector by the TOTAL accumulated angle
                       const rotatedOffset = offset.clone().applyAxisAngle(selectedHandle.axis, snappedAngleRadians);
 
-                      // Update position
+                      // Update position with rotated offset
                       poly.position.copy(rotationCenter.clone().add(rotatedOffset));
 
-                      // Rotate the object itself
+                      // Rotate the object itself using quaternion composition
                       const rotationQuat = new THREE.Quaternion().setFromAxisAngle(selectedHandle.axis, snappedAngleRadians);
-                      poly.quaternion.multiplyQuaternions(rotationQuat, poly.userData.dragStartQuaternion);
+                      poly.quaternion.multiplyQuaternions(rotationQuat, initialQuaternion);
 
                       console.log(
                         `✅ Rotated ${poly.userData.isInstance ? "Instance" : "Form"}: ${snappedAngleDegrees.toFixed(2)}° around ${selectedHandle.type}[${selectedHandle.index}]`
@@ -3903,8 +3934,11 @@
                   document.getElementById("coordZ2").value = wxyz[3].toFixed(4);
                 }
 
-                // Update drag start point for next frame
-                dragStartPoint.copy(currentPoint);
+                // CRITICAL FIX: Only update drag start point for MOVE and SCALE modes
+                // DO NOT update for ROTATE mode - we need the original start point!
+                if (currentGumballTool !== "rotate") {
+                  dragStartPoint.copy(currentPoint);
+                }
               }
             },
             { capture: true }

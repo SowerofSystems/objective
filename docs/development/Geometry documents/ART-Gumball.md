@@ -275,6 +275,393 @@ function applySpreadRotations(polyhedron, rotations) {
 - Exact lattice rotations for tetrahedral/cubic symmetries
 - Reversible transforms (spread addition/subtraction is exact)
 
+---
+
+### Performance Analysis and Optimization Strategies
+
+**Status:** Implementation Analysis (December 2024)
+
+#### Current Implementation Architecture
+
+The current rotation system in ARTexplorer.html (lines 3753-3874) performs the following operations per frame:
+
+1. **Screen-space angle calculation** → Convert to radians using `atan2`
+2. **Radians to spread conversion**: `spread = sin²(θ)`
+3. **Snapping**: Round spread to 0.1 intervals
+4. **Back to radians**: `θ = asin(√spread)`
+5. **Create quaternion**: `setFromAxisAngle(axis, θ)`
+6. **Apply rotation**:
+   - Position: `offset.applyAxisAngle(axis, θ)` (matrix operation #1)
+   - Orientation: `quaternion.multiplyQuaternions(newQuat, startQuat)` (matrix operation #2)
+
+**Current Cost:** 2 matrix multiplications per object per frame
+
+#### Optimization Strategy 1: Pre-multiply Transformation Matrices ✅
+
+**Recommended for immediate implementation**
+
+Currently, rotation involves separate operations for position and orientation. These can be combined into a single transformation matrix:
+
+```javascript
+// CURRENT APPROACH (2 operations):
+const offset = poly.position.clone().sub(rotationCenter);
+const rotatedOffset = offset.clone().applyAxisAngle(axis, angle);
+poly.position.copy(rotationCenter.clone().add(rotatedOffset));
+poly.quaternion.multiplyQuaternions(rotationQuat, dragStartQuat);
+
+// OPTIMIZED APPROACH (1 operation):
+// Pre-multiply: T⁻¹ · R · T (translate to origin, rotate, translate back)
+const rotationMatrix = new THREE.Matrix4().makeRotationAxis(axis, angle);
+const transformMatrix = new THREE.Matrix4()
+  .makeTranslation(-rotationCenter.x, -rotationCenter.y, -rotationCenter.z)
+  .multiply(rotationMatrix)
+  .multiply(new THREE.Matrix4().makeTranslation(rotationCenter.x, rotationCenter.y, rotationCenter.z));
+
+poly.applyMatrix4(transformMatrix); // Single operation for both position and orientation
+```
+
+**Benefits:**
+- Reduces from 2 matrix operations to 1 per object per frame
+- Cleaner code (single transformation concept)
+- Mathematically equivalent
+- No loss of precision
+
+**Implementation Note:** The transformation matrix can be computed once per drag event and applied to all selected objects.
+
+#### Optimization Strategy 2: Weierstrass Substitution (RT-Pure Circle Parameterization) 🌟
+
+**Recommended for RT-pure implementation**
+
+Using the rational circle parameterization from `rt-math.js`:
+
+**Current conversion path:**
+```
+spread → asin(√spread) → sin/cos lookup → rotation matrix
+```
+
+**RT-Pure path using Weierstrass substitution:**
+```javascript
+/**
+ * Create rotation matrix directly from spread using rational circle parameterization
+ * Avoids inverse trig functions for better numerical stability
+ *
+ * Based on Weierstrass substitution where spread = sin²(θ) and t = tan(θ/2):
+ * - cos(θ) = (1 - t²) / (1 + t²)
+ * - sin(θ) = 2t / (1 + t²)
+ * - spread = 4t² / (1 + t²)²
+ *
+ * @param {number} spread - Spread value (0 to 1)
+ * @param {THREE.Vector3} axis - Rotation axis (normalized)
+ * @returns {THREE.Matrix4} Rotation matrix
+ */
+function spreadToRotationMatrixRTPure(spread, axis) {
+  // Solve spread = 4t²/(1+t²)² for parameter t
+  const t = RT.spreadToParam(spread); // Already implemented in rt-math.js!
+
+  // Get cos/sin from rational circle parameterization (NO trig functions!)
+  const {x: cosTheta, y: sinTheta} = RT.circleParam(t);
+
+  // Build rotation matrix using Rodrigues' formula:
+  // R = I + sin(θ)K + (1 - cos(θ))K²
+  // where K is the skew-symmetric matrix for the axis
+
+  const c = cosTheta;
+  const s = sinTheta;
+  const t = 1 - c;
+  const [x, y, z] = [axis.x, axis.y, axis.z];
+
+  const matrix = new THREE.Matrix4();
+  matrix.set(
+    t*x*x + c,   t*x*y - s*z, t*x*z + s*y, 0,
+    t*x*y + s*z, t*y*y + c,   t*y*z - s*x, 0,
+    t*x*z - s*y, t*y*z + s*x, t*z*z + c,   0,
+    0,           0,           0,           1
+  );
+
+  return matrix;
+}
+```
+
+**Benefits:**
+- **Algebraically exact** for rational spreads (1/2, 1/3, 1/4, etc.)
+- Only uses `sqrt` **once** (in `spreadToParam`), vs. twice in traditional approach (asin + sqrt)
+- More numerically stable for small angles (avoids asin domain issues)
+- Conceptually pure: works entirely with the parameter `t` instead of converting to/from angles
+- Natural for UI: slider could control `t` directly, with spread computed as output
+
+**Implementation Location:** Add as `RT.spreadToRotationMatrix(spread, axis)` in `modules/rt-math.js`
+
+**Mathematical Insight:**
+
+The Weierstrass substitution provides a **bijective mapping** between:
+- Parameter `t` (rational numbers) ↔ Points on unit circle
+- Spread `s = 4t²/(1+t²)²` ↔ Perpendicularity measure
+
+This means:
+- **Input:** Rational spread values (1/2, 1/3, 2/3, etc.)
+- **Processing:** Rational parameter `t` (possibly irrational, but computed once)
+- **Output:** cos/sin values computed using only rational operations on `t`
+- **Result:** Rotation matrix with maximum algebraic precision
+
+#### Optimization Strategy 3: Native Quadray Rotation Matrices 💡
+
+**Deferred for future investigation**
+
+**Theoretical Question:** Can rotations be expressed as linear transformations directly in 4D Quadray space (with zero-sum constraint)?
+
+**Background:**
+
+The Quadray basis vectors form a tetrahedral coordinate system:
+```javascript
+W = (1, 1, 1)/√3
+X = (1, -1, -1)/√3
+Y = (-1, 1, -1)/√3
+Z = (-1, -1, 1)/√3
+```
+
+Currently, rotations follow this path:
+```
+Quadray coords → Cartesian → Rotate in Cartesian → Display (convert back to Quadray)
+```
+
+**Theoretical Approach:**
+
+Given a 3D Cartesian rotation matrix R₃, find the equivalent 4×4 Quadray transformation R₄:
+
+```
+R₄ = B⁺ R₃ B
+```
+
+where:
+- **B** = Quadray-to-Cartesian basis matrix (3×4, columns = basis vectors)
+- **B⁺** = Moore-Penrose pseudoinverse (4×3, since B is not square)
+- For orthonormal basis: B⁺ = Bᵀ
+
+**Implementation Sketch:**
+
+```javascript
+// Precompute once at initialization (global basis transformation)
+const quadrayBasisMatrix = new THREE.Matrix3(
+  1/√3,  1/√3,  1/√3,    // Cartesian X components of W,X,Y,Z
+  1/√3, -1/√3, -1/√3,    // Cartesian Y components
+ -1/√3,  1/√3, -1/√3,    // Cartesian Z components
+ -1/√3, -1/√3,  1/√3
+);
+
+// For each rotation operation:
+function getQuadrayRotationMatrix(cartesianRotation3x3) {
+  // R₄ = B⁺ R₃ B
+  const pseudoInverse = quadrayBasisMatrix.transpose(); // For orthonormal basis
+  const quadrayRotation = pseudoInverse
+    .multiply(cartesianRotation3x3)
+    .multiply(quadrayBasisMatrix);
+
+  return quadrayRotation; // 4×4 matrix operating in Quadray space
+}
+```
+
+**Special Cases - Exact Tetrahedral Symmetries:**
+
+For **discrete tetrahedral symmetry rotations** (24 total), Quadray transformations are exact permutations:
+
+```javascript
+// Example: 120° rotation around tetrahedral axis permutes coordinates
+// (W, X, Y, Z) → (W, Y, Z, X)  [cyclic permutation]
+
+const TETRAHEDRAL_ROTATIONS = {
+  // Identity
+  IDENTITY: [1, 0, 0, 0,
+             0, 1, 0, 0,
+             0, 0, 1, 0,
+             0, 0, 0, 1],
+
+  // 120° rotation around (1,1,1) axis
+  ROT_120_111: [1, 0, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1,
+                0, 1, 0, 0],
+
+  // ... (21 more symmetries)
+};
+```
+
+These are **algebraically exact** - no floating-point errors, perfect for snapping to tetrahedral grid points.
+
+**Evaluation:**
+
+**Pros:**
+- Conceptually elegant (work natively in Quadray space)
+- Exact for tetrahedral symmetries
+- Educational value (demonstrates coordinate system theory)
+
+**Cons:**
+- Still requires conversion to Cartesian for Three.js rendering
+- Adds complexity without clear performance benefit for arbitrary rotations
+- Better suited for a future **pure-Quadray rendering engine** (not Three.js-based)
+
+**Recommendation:** Document the theory, implement tetrahedral symmetry presets, but defer full native Quadray rotations until building a custom renderer.
+
+#### Optimization Strategy 4: Preset Rotation Matrix Cache 🚀
+
+**Recommended for immediate implementation**
+
+Pre-compute and cache rotation matrices for common exact spread values:
+
+```javascript
+/**
+ * Precomputed rotation matrices for exact algebraic spreads
+ * Computed once at initialization, reused for all rotations
+ */
+const EXACT_ROTATION_MATRICES = {
+  // spread = 0 (0°)
+  0: {
+    cos: 1,
+    sin: 0,
+    matrices: {} // Indexed by axis
+  },
+
+  // spread = 1/6 (≈30°)
+  [1/6]: {
+    cos: Math.sqrt(3)/2,
+    sin: 0.5,
+    matrices: {}
+  },
+
+  // spread = 1/4 (≈36.87°)
+  [1/4]: {
+    cos: Math.sqrt(3)/2,
+    sin: 0.5,
+    matrices: {}
+  },
+
+  // spread = 1/3 (≈54.74° - tetrahedral dihedral)
+  [1/3]: {
+    cos: Math.sqrt(2/3),
+    sin: Math.sqrt(1/3),
+    matrices: {}
+  },
+
+  // spread = 1/2 (45° - octahedral)
+  [1/2]: {
+    cos: 1/Math.sqrt(2),
+    sin: 1/Math.sqrt(2),
+    matrices: {}
+  },
+
+  // spread = 2/3 (≈70.53° - cube diagonal to edge)
+  [2/3]: {
+    cos: Math.sqrt(1/3),
+    sin: Math.sqrt(2/3),
+    matrices: {}
+  },
+
+  // spread = 3/4 (≈60°)
+  [3/4]: {
+    cos: 0.5,
+    sin: Math.sqrt(3)/2,
+    matrices: {}
+  },
+
+  // spread = 1 (90° - perpendicular)
+  1: {
+    cos: 0,
+    sin: 1,
+    matrices: {}
+  }
+};
+
+/**
+ * Get rotation matrix for exact spread value, using cache
+ * Falls back to RT-pure calculation for non-exact spreads
+ */
+function getRotationMatrix(spread, axis) {
+  // Check if exact spread exists in cache
+  const roundedSpread = Math.round(spread * 12) / 12; // Snap to 1/12 intervals
+
+  if (EXACT_ROTATION_MATRICES[roundedSpread]) {
+    const axisKey = `${axis.x},${axis.y},${axis.z}`;
+
+    // Return cached matrix if exists
+    if (EXACT_ROTATION_MATRICES[roundedSpread].matrices[axisKey]) {
+      return EXACT_ROTATION_MATRICES[roundedSpread].matrices[axisKey].clone();
+    }
+
+    // Compute and cache
+    const matrix = buildRotationMatrix(
+      EXACT_ROTATION_MATRICES[roundedSpread].cos,
+      EXACT_ROTATION_MATRICES[roundedSpread].sin,
+      axis
+    );
+    EXACT_ROTATION_MATRICES[roundedSpread].matrices[axisKey] = matrix;
+    return matrix.clone();
+  }
+
+  // Fall back to RT-pure calculation
+  return spreadToRotationMatrixRTPure(spread, axis);
+}
+```
+
+**Benefits:**
+- **Zero runtime cost** for exact spread values (common case)
+- Perfect numerical precision for tetrahedral/cubic geometries
+- Graceful fallback for arbitrary spreads
+- Memory cost negligible (8 spreads × ~6 common axes ≈ 48 matrices)
+
+**UI Integration:**
+
+Snap-to buttons in rotation mode:
+```
+[0°] [1/6] [1/4] [1/3·tet] [1/2·45°] [2/3] [3/4] [1·90°]
+```
+
+Clicking a preset = instant cached matrix lookup, perfect precision.
+
+---
+
+### Implementation Recommendations Summary
+
+**Priority 1 - Immediate Implementation:**
+
+1. ✅ **Pre-multiply transformation matrices** (Strategy 1)
+   - Reduces operations from 2 to 1 per object
+   - Straightforward, no risk
+   - Clear performance win
+
+2. ✅ **Preset rotation matrix cache** (Strategy 4)
+   - Zero cost for common cases
+   - Enhances RT-pure philosophy (exact algebraic values)
+   - Small implementation effort
+
+**Priority 2 - RT-Pure Enhancement:**
+
+3. ✅ **Weierstrass substitution** (Strategy 2)
+   - Add `RT.spreadToRotationMatrix()` in `modules/rt-math.js`
+   - More numerically stable than traditional approach
+   - Excellent for educational/demonstration purposes
+   - Documents the RT-pure methodology
+
+**Priority 3 - Future Research:**
+
+4. ❌ **Native Quadray rotation matrices** (Strategy 3) - **Deferred**
+   - Document theory in this file
+   - Implement 24 tetrahedral symmetry presets for exact snapping
+   - Full arbitrary rotation in Quadray space deferred until custom renderer development
+   - Not critical for Three.js-based implementation
+
+**Performance Impact Projection:**
+
+- Current: **2 matrix ops** per object per frame
+- After P1: **1 matrix op** per object per frame (50% reduction)
+- After P1+P2: **0 matrix ops** for exact spreads (100% reduction in common case)
+- After P1+P2+P3: Same as P1+P2 (no additional runtime benefit until custom renderer)
+
+**Code Locations:**
+- Rotation application: `ARTexplorer.html` lines 3753-3874
+- RT math library: `modules/rt-math.js`
+- Circle parameterization: `RT.circleParam()` and `RT.spreadToParam()`
+
+---
+
 ## "Now" System: Configuration Snapshots
 
 ### Concept
@@ -2616,6 +3003,33 @@ const snappedAngleRadians = Math.asin(Math.sqrt(Math.abs(snappedSpread))) * Math
 2. Uses `Math.asin()` and `Math.sqrt()` to calculate angle from spread
 3. Violates RT principle #4: "NO Math.sin, Math.cos, Math.tan, Math.atan"
 4. Unnecessary transcendental functions for what should be algebraic calculations
+5. **CRITICAL BUG:** `asin()` only returns [-90°, +90°], causing rotation reversals every 90° due to quadrant ambiguity
+
+### Bug Fix History (2025-12-31)
+
+**Session 1: Initial Drag State Bugs**
+- ✅ Fixed: `dragStartPoint` was being updated every frame, breaking rotation accumulation
+- ✅ Fixed: Store initial mouse position and quaternions at drag start
+- ✅ Fixed: Prevent `dragStartPoint` update in rotation mode
+- ✅ Result: Rotation now calculates from original drag start, not frame-to-frame
+
+**Session 2: Quadrant Ambiguity Bug (Option A - Interim Fix)**
+- ✅ **Problem Identified:** Spread = sin²(θ) loses quadrant information
+  - sin(45°) = sin(135°) → same spread (0.5)
+  - `asin()` can only return [-90°, +90°], so 135° becomes 45° (wrong!)
+  - Rotation reverses direction every 90° as angle wraps
+- ✅ **Interim Solution Implemented:** Preserve quadrant when snapping
+  ```javascript
+  // Quadrant-preserving spread-to-angle conversion
+  const acuteAngle = Math.asin(Math.sqrt(snappedSpread));
+  if (absOriginalAngle <= π/2) {
+    snappedAngle = sign * acuteAngle;  // First quadrant
+  } else if (absOriginalAngle <= π) {
+    snappedAngle = sign * (π - acuteAngle);  // Second quadrant (supplementary)
+  }
+  ```
+- ✅ **Status:** Working rotation up to 180°, but still not RT-pure
+- 🔲 **Next:** Implement full RT-pure solution (Option B below)
 
 ### Solution: Wildberger's Rational Circle Parameterization
 
@@ -2639,7 +3053,60 @@ const spread = 1 - x*x;  // Or: spread = y*y
 
 ### Proposed Implementation
 
-#### Option 1: Screen-Space Hybrid (Current + Improvement)
+#### Option A: Quadrant-Preserving Interim Fix (✅ IMPLEMENTED 2025-12-31)
+
+**Status:** Working solution that fixes rotation reversals while maintaining current architecture
+
+**Problem:** Converting spread → angle loses quadrant information because:
+- Spread = sin²(θ) is always positive
+- Multiple angles have the same spread: sin(45°) = sin(135°)
+- `asin()` only returns [-90°, +90°], can't represent angles beyond first quadrant
+
+**Solution:** Use original angle to determine which quadrant, then calculate snapped angle in that quadrant
+
+```javascript
+// Calculate spread from current angle (still uses sin - not RT-pure yet)
+const spreadValue = Math.sin(signedAngleRadians) * Math.sin(signedAngleRadians);
+
+// Snap spread to 0.1 intervals
+const snappedSpread = Math.round(spreadValue / 0.1) * 0.1;
+
+// Preserve quadrant when converting back to angle
+const acuteAngle = Math.asin(Math.sqrt(snappedSpread));  // Returns 0° to 90°
+const absOriginalAngle = Math.abs(signedAngleRadians);
+
+if (absOriginalAngle <= Math.PI / 2) {
+  // First quadrant (0° to 90°) - use acute angle directly
+  snappedAngleRadians = Math.sign(signedAngleRadians) * acuteAngle;
+} else if (absOriginalAngle <= Math.PI) {
+  // Second quadrant (90° to 180°) - use supplementary angle
+  // Since sin(θ) = sin(180° - θ), we need π - acuteAngle
+  snappedAngleRadians = Math.sign(signedAngleRadians) * (Math.PI - acuteAngle);
+} else {
+  // Beyond 180° - normalize to [-180°, 180°]
+  snappedAngleRadians = ((signedAngleRadians + Math.PI) % (2 * Math.PI)) - Math.PI;
+}
+```
+
+**Benefits:**
+- ✅ Fixes rotation reversal bug
+- ✅ Smooth continuous rotation up to 180°
+- ✅ Minimal code change (drop-in fix)
+- ✅ Preserves existing spread snapping behavior
+
+**Limitations:**
+- ❌ Still uses `Math.sin()` and `Math.asin()` (not RT-pure)
+- ❌ Still transcendental functions in core rotation
+- ❌ This is a **workaround**, not the ideal solution
+
+**Implementation Location:**
+- [ARTexplorer.html:3814-3841](../../src/geometry/ARTexplorer.html#L3814-L3841)
+
+**Next Step:** Implement Option B (RT-pure) to eliminate transcendental functions entirely
+
+---
+
+#### Option B: Screen-Space Hybrid (RT-Pure - PLANNED)
 
 **Keep atan2() at UI boundary** (unavoidable for screen-space rotation), but **replace spread/angle conversions** with rational parameterization:
 
@@ -2677,7 +3144,7 @@ const snappedAngle = Math.atan2(snappedPoint.y, snappedPoint.x);  // Only at end
 - Still needs `atan2()` for screen-space interaction and final angle display
 - This is acceptable - atan2 is at UI boundary, not core geometry
 
-#### Option 2: Full RT-Pure Rotation (Future)
+#### Option C: Full RT-Pure Rotation (Future - Beyond atan2)
 
 **Eliminate screen-space angle entirely** by working in parameter space:
 
@@ -2715,15 +3182,24 @@ const rotationMatrix = buildRotationFromCirclePoint(point, axis);
 
 ### Implementation Tasks
 
-**Session 1: Hybrid Approach (2 hours)**
-1. [ ] Update rotation code in rt-controls.js to use `RT.circleParam()`
+**Session 1: Bug Fixes (✅ COMPLETED 2025-12-31)**
+1. ✅ Fix `dragStartPoint` update bug - store initial mouse position
+2. ✅ Store initial quaternions for rotation accumulation
+3. ✅ Prevent `dragStartPoint` update in rotation mode
+4. ✅ Implement quadrant-preserving spread-to-angle conversion (Option A)
+5. ✅ Test rotation continuity up to 180°
+6. ✅ Update documentation with interim fix
+
+**Session 2: RT-Pure Hybrid Approach (PLANNED - TODAY)**
+1. [ ] Update rotation code to use `RT.circleParam()` and `RT.spreadToParam()`
 2. [ ] Replace `Math.sin(angle)` spread calculation with `1 - point.x*x`
 3. [ ] Replace `Math.asin(Math.sqrt(spread))` with `RT.spreadToParam()` + atan2
-4. [ ] Test rotation still works correctly
-5. [ ] Verify spread snapping maintains accuracy
-6. [ ] Update console logs to show both angle and parameter 't'
+4. [ ] Remove quadrant-preservation workaround (Option A) - no longer needed!
+5. [ ] Test rotation still works correctly across full 360°
+6. [ ] Verify spread snapping maintains accuracy
+7. [ ] Update console logs to show both angle and parameter 't'
 
-**Session 2: Full RT-Pure (Optional, 4-6 hours)**
+**Session 3: Full RT-Pure (Optional - Future)**
 1. [ ] Design parameter-space drag interaction
 2. [ ] Implement `calculateDeltaT()` from tangential movement
 3. [ ] Build rotation matrix from circle point coordinates
@@ -2772,5 +3248,9 @@ const rotationMatrix = buildRotationFromCirclePoint(point, axis);
 
 ---
 
-**Last Updated:** 2025-12-30
-**Related Issues:** Rotation mode implementation added ~200 lines to ARTexplorer.html
+**Last Updated:** 2025-12-31
+**Related Issues:**
+- Rotation mode implementation added ~200 lines to ARTexplorer.html
+- Bug fixes (Session 1) resolved rotation reversals and state accumulation issues
+- Option A (interim) working - rotation smooth up to 180°
+- Option B (RT-pure) planned for later today to eliminate transcendental functions
