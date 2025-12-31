@@ -2732,6 +2732,7 @@
         let dragPlane = null; // THREE.Plane for raycasting
         let dragStartPoint = new THREE.Vector3();
         let selectedPolyhedra = []; // Will store currently selected polyhedra
+        let justFinishedDrag = false; // Track if we just completed a drag (prevent deselect on click-after-drag)
         let editingBasis = null; // Localized gumball that follows selected Forms
 
         // ========================================================================
@@ -3552,6 +3553,14 @@
           // Don't select during drag operations
           if (isDragging) return;
 
+          // Don't deselect immediately after completing a drag
+          // (mouseup fires, then click fires - we want to ignore the click)
+          if (justFinishedDrag) {
+            justFinishedDrag = false;
+            console.log("🚫 Ignoring click-after-drag (selection preserved)");
+            return;
+          }
+
           const rect = renderer.domElement.getBoundingClientRect();
           const mouseX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
           const mouseY = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -4168,6 +4177,9 @@
                     "✨ Free mode - no snapping applied (full precision preserved)"
                   );
                 }
+
+                // Mark that we just finished a drag to prevent click-after-drag deselection
+                justFinishedDrag = true;
 
                 isDragging = false;
                 selectedHandle = null;
