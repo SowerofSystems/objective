@@ -2842,30 +2842,6 @@
         // ========================================================================
 
         /**
-         * Convert spread to degrees using RT-pure calculation
-         * Spread = sin²(θ), so θ = arcsin(√spread)
-         * @param {number} spread - Spread value (0.00 to 1.00)
-         * @returns {number} - Angle in degrees
-         */
-        function spreadToDegrees(spread) {
-          const clampedSpread = Math.max(0, Math.min(1, spread));
-          const radians = Math.asin(Math.sqrt(clampedSpread));
-          return (radians * 180) / Math.PI;
-        }
-
-        /**
-         * Convert degrees to spread using RT-pure calculation
-         * θ → spread = sin²(θ)
-         * @param {number} degrees - Angle in degrees
-         * @returns {number} - Spread value (0.00 to 1.00)
-         */
-        function degreesToSpread(degrees) {
-          const radians = (degrees * Math.PI) / 180;
-          const sinValue = Math.sin(radians);
-          return sinValue * sinValue; // sin²(θ)
-        }
-
-        /**
          * Setup bidirectional conversion between degrees and spread for a pair of input fields
          * @param {string} degreesId - ID of degrees input field
          * @param {string} spreadId - ID of spread input field
@@ -2884,7 +2860,7 @@
           degreesInput.addEventListener("input", function(e) {
             const degreesValue = parseFloat(e.target.value);
             if (!isNaN(degreesValue)) {
-              const spreadValue = degreesToSpread(degreesValue);
+              const spreadValue = RT.degreesToSpread(degreesValue);
               spreadInput.value = spreadValue.toFixed(2);
               console.log(`🔄 ${axis}: ${degreesValue.toFixed(2)}° → Spread: ${spreadValue.toFixed(2)}`);
             }
@@ -2894,7 +2870,7 @@
           spreadInput.addEventListener("input", function(e) {
             const spreadValue = parseFloat(e.target.value);
             if (!isNaN(spreadValue)) {
-              const degreesValue = spreadToDegrees(spreadValue);
+              const degreesValue = RT.spreadToDegrees(spreadValue);
               degreesInput.value = degreesValue.toFixed(2);
               console.log(`🔄 ${axis}: Spread: ${spreadValue.toFixed(2)} → ${degreesValue.toFixed(2)}°`);
             }
