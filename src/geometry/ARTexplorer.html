@@ -1013,6 +1013,29 @@
                 <button class="node-size-btn" data-node-size="lg">Lg</button>
               </div>
             </div>
+            <div class="control-item spacing-top-medium">
+              <label class="label-section">Node Geometry</label>
+              <div class="toggle-btn-group">
+                <button
+                  class="toggle-btn variant-snap active"
+                  id="nodeGeomClassical"
+                  data-node-geom="classical"
+                >
+                  Classical Spheres
+                </button>
+                <button
+                  class="toggle-btn variant-snap"
+                  id="nodeGeomRT"
+                  data-node-geom="rt"
+                >
+                  RT Geodesics
+                </button>
+              </div>
+              <p class="info-text" style="font-size: 10px; margin-top: 5px">
+                Toggle between THREE.js spheres and RT-computed geodesic nodes
+                for performance comparison
+              </p>
+            </div>
             <div class="control-item">
               <label>Face Opacity</label>
               <div class="slider-container">
@@ -1200,6 +1223,11 @@
       // ========================================================================
       // MODULE IMPORTS
       // ========================================================================
+      import { RTPolyhedra } from "./modules/rt-polyhedra.js";
+
+      // Make RTPolyhedra available globally for node geometry creation
+      window.RTPolyhedra = RTPolyhedra;
+
       // TODO: Uncomment when ready to extract gumball to module
       // import { RTControls } from "./modules/rt-controls.js";
 
@@ -1895,15 +1923,33 @@
 
           // Render vertex nodes using instanced geometry for efficiency
           if (showNodes) {
-            // Node size mapping: sm = 0.02, md = 0.04 (half of original), lg = 0.08 (original)
-            const nodeSizes = {
-              sm: 0.02,
-              md: 0.04,
-              lg: 0.08,
-            };
-            const radius = nodeSizes[nodeSize];
+            // Choose geometry based on toggle: Classical THREE.js spheres vs RT geodesics
+            let nodeGeometry;
+            if (useRTNodeGeometry) {
+              // Use RT-computed Octahedron Freq-2 for performance and dogfooding
+              // Size mapping: sm = insphere, md = midsphere, lg = outsphere
+              // For a unit octahedron: insphere = s/√2, midsphere = s, outsphere = s√2
+              // Base size s = 0.04 (medium reference)
+              const baseSize = 0.04;
+              const rtSizes = {
+                sm: baseSize / Math.sqrt(2), // Insphere: ~0.028
+                md: baseSize, // Midsphere: 0.04
+                lg: baseSize * Math.sqrt(2), // Outsphere: ~0.057
+              };
+              const radius = rtSizes[nodeSize];
+              nodeGeometry = window.RTPolyhedra.createOctahedron(radius, 2);
+            } else {
+              // Classical THREE.js sphere (slower, more triangles)
+              // Node size mapping: sm = 0.02, md = 0.04, lg = 0.08
+              const nodeSizes = {
+                sm: 0.02,
+                md: 0.04,
+                lg: 0.08,
+              };
+              const radius = nodeSizes[nodeSize];
+              nodeGeometry = new THREE.SphereGeometry(radius, 16, 16);
+            }
 
-            const nodeGeometry = new THREE.SphereGeometry(radius, 16, 16);
             const nodeMaterial = new THREE.MeshStandardMaterial({
               color: color,
               emissive: color,
@@ -2817,6 +2863,31 @@
             updateGeometry();
           });
         });
+
+        // Node geometry type toggle (Classical vs RT)
+        let useRTNodeGeometry = false; // Default to classical THREE.js spheres
+
+        document
+          .getElementById("nodeGeomClassical")
+          .addEventListener("click", function () {
+            useRTNodeGeometry = false;
+            document
+              .getElementById("nodeGeomClassical")
+              .classList.add("active");
+            document.getElementById("nodeGeomRT").classList.remove("active");
+            updateGeometry();
+          });
+
+        document
+          .getElementById("nodeGeomRT")
+          .addEventListener("click", function () {
+            useRTNodeGeometry = true;
+            document.getElementById("nodeGeomRT").classList.add("active");
+            document
+              .getElementById("nodeGeomClassical")
+              .classList.remove("active");
+            updateGeometry();
+          });
 
         // ========================================================================
         // GUMBALL TOOL FUNCTIONALITY
