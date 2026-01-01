@@ -1,0 +1,1244 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>A.R.T Explorer - Polyhedra Visualization</title>
+    <meta name="application-name" content="A.R.T. Geometry Explorer" />
+    <meta
+      name="description"
+      content="An interactive explorer for Algebraic Rational Trigonometry geometry by Andy Ross Thomson, M.Arch, OAA. with guidance by Metatron"
+    />
+    <link rel="stylesheet" href="art.css" />
+  </head>
+  <body>
+    <!-- Password Protection Overlay -->
+    <div id="password-overlay">
+      <div id="password-modal">
+        <h2>A.R.T Explorer</h2>
+        <p>This demonstration is password protected.</p>
+        <input
+          type="password"
+          id="password-input"
+          placeholder="Enter password"
+          autocomplete="off"
+        />
+        <button id="password-submit">Access</button>
+        <div id="password-error">Incorrect password. Please try again.</div>
+      </div>
+    </div>
+
+    <div id="container">
+      <div id="canvas-container">
+        <div id="info-overlay"></div>
+      </div>
+      <div id="controls-panel">
+        <h2>A.R.T Explorer</h2>
+        <h5>by Andy Ross Thomson</h5>
+        <br />
+        <!-- ========================================
+             SECTION 1: FILE
+             ======================================== -->
+        <div class="control-group">
+          <h3>
+            <span
+              class="section-toggle collapsed"
+              data-target="file-section"
+            ></span>
+            File
+          </h3>
+          <div id="file-section" class="section-content collapsed">
+            <div class="control-item">
+              <label class="label-section">File Operations</label>
+              <div class="toggle-btn-group">
+                <button
+                  class="toggle-btn variant-standard"
+                  id="importBtn"
+                  disabled
+                >
+                  Import
+                </button>
+                <button
+                  class="toggle-btn variant-standard"
+                  id="exportBtn"
+                  disabled
+                >
+                  Export
+                </button>
+                <button
+                  class="toggle-btn variant-standard"
+                  id="saveBtn"
+                  disabled
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+            <p class="info-text">StateManager integration - Coming soon</p>
+          </div>
+        </div>
+        <!-- END SECTION 1: FILE -->
+
+        <!-- ========================================
+             SECTION 2: COORDINATE SYSTEMS
+             ======================================== -->
+        <div class="control-group">
+          <h3>
+            <span
+              class="section-toggle collapsed"
+              data-target="coordinate-system-section"
+            ></span>
+            Coordinate Systems
+          </h3>
+          <div id="coordinate-system-section" class="section-content collapsed">
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showCartesianBasis" />
+                Show Cartesian Basis (XYZ)
+              </label>
+            </div>
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showQuadray" checked />
+                Show Quadray Basis (WXYZ)
+                <!-- Quadray: 4 tetrahedral basis vectors pointing to cube vertices (1,1,1), (1,-1,-1), (-1,1,-1), (-1,-1,1) -->
+              </label>
+            </div>
+            <div class="control-item">
+              <label class="label-section">
+                <span
+                  class="geodesic-toggle collapsed"
+                  data-target="cartesian-planes"
+                ></span>
+                Cartesian Planes
+              </label>
+              <div id="cartesian-planes" class="geodesic-options collapsed">
+                <div class="plane-toggle-container">
+                  <div class="plane-toggle-item">
+                    <span class="plane-toggle-label">XY</span>
+                    <div class="plane-toggle-switch" data-plane="XY">
+                      <div class="plane-toggle-slider"></div>
+                    </div>
+                  </div>
+                  <div class="plane-toggle-item">
+                    <span class="plane-toggle-label">XZ</span>
+                    <div class="plane-toggle-switch" data-plane="XZ">
+                      <div class="plane-toggle-slider"></div>
+                    </div>
+                  </div>
+                  <div class="plane-toggle-item">
+                    <span class="plane-toggle-label">YZ</span>
+                    <div class="plane-toggle-switch" data-plane="YZ">
+                      <div class="plane-toggle-slider"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="spacing-top-large">
+                  <label class="label-subsection">Grid Intervals</label>
+                  <div class="slider-container">
+                    <input
+                      type="range"
+                      id="cartesianTessSlider"
+                      min="10"
+                      max="100"
+                      step="10"
+                      value="10"
+                    />
+                    <span class="slider-value" id="cartesianTessValue">10</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="control-item">
+              <label class="label-section">
+                <span
+                  class="geodesic-toggle collapsed"
+                  data-target="ivm-grids"
+                ></span>
+                IVM Grids (Future Implementation)
+              </label>
+              <div id="ivm-grids" class="geodesic-options collapsed">
+                <div class="plane-toggle-container">
+                  <div class="plane-toggle-item">
+                    <span class="plane-toggle-label">WX</span>
+                    <div class="plane-toggle-switch" data-plane="quadrayWX">
+                      <div class="plane-toggle-slider"></div>
+                    </div>
+                  </div>
+                  <div class="plane-toggle-item">
+                    <span class="plane-toggle-label">WY</span>
+                    <div class="plane-toggle-switch" data-plane="quadrayWY">
+                      <div class="plane-toggle-slider"></div>
+                    </div>
+                  </div>
+                  <div class="plane-toggle-item">
+                    <span class="plane-toggle-label">WZ</span>
+                    <div class="plane-toggle-switch" data-plane="quadrayWZ">
+                      <div class="plane-toggle-slider"></div>
+                    </div>
+                  </div>
+                  <div class="plane-toggle-item">
+                    <span class="plane-toggle-label">XY</span>
+                    <div class="plane-toggle-switch" data-plane="quadrayXY">
+                      <div class="plane-toggle-slider"></div>
+                    </div>
+                  </div>
+                  <div class="plane-toggle-item">
+                    <span class="plane-toggle-label">XZ</span>
+                    <div class="plane-toggle-switch" data-plane="quadrayXZ">
+                      <div class="plane-toggle-slider"></div>
+                    </div>
+                  </div>
+                  <div class="plane-toggle-item">
+                    <span class="plane-toggle-label">YZ</span>
+                    <div class="plane-toggle-switch" data-plane="quadrayYZ">
+                      <div class="plane-toggle-slider"></div>
+                    </div>
+                  </div>
+                </div>
+                <p class="info-text" style="font-size: 10px; margin-top: 5px">
+                  IVM: Placeholder for TRUE IVM implementation - coplanar
+                  tetrahedral faces (not yet implemented)
+                </p>
+              </div>
+            </div>
+            <div class="control-item">
+              <label class="label-section">
+                <span
+                  class="geodesic-toggle"
+                  data-target="central-angle-grids"
+                ></span>
+                Central Angle Grids (Corrected Tessellation)
+              </label>
+              <div id="central-angle-grids" class="geodesic-options">
+                <div class="plane-toggle-container">
+                  <div class="plane-toggle-item">
+                    <span class="plane-toggle-label">WX</span>
+                    <div class="plane-toggle-switch active" data-plane="ivmWX">
+                      <div class="plane-toggle-slider"></div>
+                    </div>
+                  </div>
+                  <div class="plane-toggle-item">
+                    <span class="plane-toggle-label">WY</span>
+                    <div class="plane-toggle-switch active" data-plane="ivmWY">
+                      <div class="plane-toggle-slider"></div>
+                    </div>
+                  </div>
+                  <div class="plane-toggle-item">
+                    <span class="plane-toggle-label">WZ</span>
+                    <div class="plane-toggle-switch active" data-plane="ivmWZ">
+                      <div class="plane-toggle-slider"></div>
+                    </div>
+                  </div>
+                  <div class="plane-toggle-item">
+                    <span class="plane-toggle-label">XY</span>
+                    <div class="plane-toggle-switch active" data-plane="ivmXY">
+                      <div class="plane-toggle-slider"></div>
+                    </div>
+                  </div>
+                  <div class="plane-toggle-item">
+                    <span class="plane-toggle-label">XZ</span>
+                    <div class="plane-toggle-switch active" data-plane="ivmXZ">
+                      <div class="plane-toggle-slider"></div>
+                    </div>
+                  </div>
+                  <div class="plane-toggle-item">
+                    <span class="plane-toggle-label">YZ</span>
+                    <div class="plane-toggle-switch active" data-plane="ivmYZ">
+                      <div class="plane-toggle-slider"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="spacing-top-large">
+                  <label class="label-subsection">Grid Intervals</label>
+                  <div class="slider-container">
+                    <input
+                      type="range"
+                      id="quadrayTessSlider"
+                      min="12"
+                      max="120"
+                      step="12"
+                      value="12"
+                    />
+                    <span class="slider-value" id="quadrayTessValue">12</span>
+                  </div>
+                </div>
+                <p class="info-text spacing-top-small">
+                  Central Angle: Triangular faces tessellated vertex-to-vertex
+                  using tet edge length 2s√2 (corrected implementation without
+                  bugs)
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- END SECTION 2: COORDINATE SYSTEMS -->
+
+        <!-- ========================================
+             SECTION 3: FORMS
+             ======================================== -->
+        <div class="control-group">
+          <h3>
+            <span class="section-toggle" data-target="forms-section"></span>
+            Forms
+          </h3>
+          <div id="forms-section" class="section-content">
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showCube" checked />
+                Hexahedron (Cube)
+              </label>
+            </div>
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showTetrahedron" />
+                <span
+                  class="geodesic-toggle collapsed"
+                  data-target="geodesic-tetra-all"
+                ></span>
+                Tetrahedron (Inscribed)
+              </label>
+              <div id="geodesic-tetra-all" class="geodesic-options collapsed">
+                <div style="margin-left: 20px; margin-top: 5px">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="showGeodesicTetrahedron" />
+                    Geodesic (Fuller)
+                  </label>
+                  <div style="margin-left: 20px; margin-top: 5px">
+                    <div class="slider-container">
+                      <label style="font-size: 11px">Freq:</label>
+                      <input
+                        type="number"
+                        id="geodesicTetraFrequency"
+                        min="0"
+                        max="6"
+                        value="1"
+                        style="width: 50px; margin-left: 5px"
+                      />
+                    </div>
+                    <div style="margin-top: 8px">
+                      <label
+                        style="
+                          font-size: 11px;
+                          display: block;
+                          margin-bottom: 3px;
+                          color: #b0b0b0;
+                        "
+                        >Project:</label
+                      >
+                      <label
+                        style="
+                          font-size: 10px;
+                          display: block;
+                          margin-left: 5px;
+                        "
+                      >
+                        <input
+                          type="radio"
+                          name="geodesicTetraProjection"
+                          value="off"
+                        />
+                        Off (flat)
+                      </label>
+                      <label
+                        style="
+                          font-size: 10px;
+                          display: block;
+                          margin-left: 5px;
+                        "
+                      >
+                        <input
+                          type="radio"
+                          name="geodesicTetraProjection"
+                          value="in"
+                        />
+                        InSphere
+                      </label>
+                      <label
+                        style="
+                          font-size: 10px;
+                          display: block;
+                          margin-left: 5px;
+                        "
+                      >
+                        <input
+                          type="radio"
+                          name="geodesicTetraProjection"
+                          value="mid"
+                        />
+                        MidSphere
+                      </label>
+                      <label
+                        style="
+                          font-size: 10px;
+                          display: block;
+                          margin-left: 5px;
+                        "
+                      >
+                        <input
+                          type="radio"
+                          name="geodesicTetraProjection"
+                          value="out"
+                          checked
+                        />
+                        OutSphere
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showDualTetrahedron" checked />
+                Dual Tetrahedron
+              </label>
+            </div>
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showOctahedron" />
+                <span
+                  class="geodesic-toggle collapsed"
+                  data-target="geodesic-octa-all"
+                ></span>
+                Octahedron (Dual of Cube)
+              </label>
+              <div id="geodesic-octa-all" class="geodesic-options collapsed">
+                <div style="margin-left: 20px; margin-top: 5px">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="showGeodesicOctahedron" />
+                    Geodesic (Fuller)
+                  </label>
+                  <div style="margin-left: 20px; margin-top: 5px">
+                    <div class="slider-container">
+                      <label style="font-size: 11px">Freq:</label>
+                      <input
+                        type="number"
+                        id="geodesicOctaFrequency"
+                        min="0"
+                        max="6"
+                        value="0"
+                        style="width: 50px; margin-left: 5px"
+                      />
+                    </div>
+                    <div style="margin-top: 8px">
+                      <label
+                        style="
+                          font-size: 11px;
+                          display: block;
+                          margin-bottom: 3px;
+                          color: #b0b0b0;
+                        "
+                        >Project:</label
+                      >
+                      <label
+                        style="
+                          font-size: 10px;
+                          display: block;
+                          margin-left: 5px;
+                        "
+                      >
+                        <input
+                          type="radio"
+                          name="geodesicOctaProjection"
+                          value="off"
+                        />
+                        Off (flat)
+                      </label>
+                      <label
+                        style="
+                          font-size: 10px;
+                          display: block;
+                          margin-left: 5px;
+                        "
+                      >
+                        <input
+                          type="radio"
+                          name="geodesicOctaProjection"
+                          value="in"
+                        />
+                        InSphere
+                      </label>
+                      <label
+                        style="
+                          font-size: 10px;
+                          display: block;
+                          margin-left: 5px;
+                        "
+                      >
+                        <input
+                          type="radio"
+                          name="geodesicOctaProjection"
+                          value="mid"
+                        />
+                        MidSphere
+                      </label>
+                      <label
+                        style="
+                          font-size: 10px;
+                          display: block;
+                          margin-left: 5px;
+                        "
+                      >
+                        <input
+                          type="radio"
+                          name="geodesicOctaProjection"
+                          value="out"
+                          checked
+                        />
+                        OutSphere
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showIcosahedron" />
+                <span
+                  class="geodesic-toggle collapsed"
+                  data-target="geodesic-icosa-all"
+                ></span>
+                Icosahedron (20 faces, φ)
+              </label>
+              <div id="geodesic-icosa-all" class="geodesic-options collapsed">
+                <div style="margin-left: 20px; margin-top: 5px">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="showGeodesicIcosahedron" />
+                    Geodesic (Fuller)
+                  </label>
+                  <div style="margin-left: 20px; margin-top: 5px">
+                    <div class="slider-container">
+                      <label style="font-size: 11px">Freq:</label>
+                      <input
+                        type="number"
+                        id="geodesicIcosaFrequency"
+                        min="0"
+                        max="6"
+                        value="0"
+                        style="width: 50px; margin-left: 5px"
+                      />
+                    </div>
+                    <div style="margin-top: 8px">
+                      <label
+                        style="
+                          font-size: 11px;
+                          display: block;
+                          margin-bottom: 3px;
+                          color: #b0b0b0;
+                        "
+                        >Project:</label
+                      >
+                      <label
+                        style="
+                          font-size: 10px;
+                          display: block;
+                          margin-left: 5px;
+                        "
+                      >
+                        <input
+                          type="radio"
+                          name="geodesicIcosaProjection"
+                          value="off"
+                        />
+                        Off (flat)
+                      </label>
+                      <label
+                        style="
+                          font-size: 10px;
+                          display: block;
+                          margin-left: 5px;
+                        "
+                      >
+                        <input
+                          type="radio"
+                          name="geodesicIcosaProjection"
+                          value="in"
+                        />
+                        InSphere
+                      </label>
+                      <label
+                        style="
+                          font-size: 10px;
+                          display: block;
+                          margin-left: 5px;
+                        "
+                      >
+                        <input
+                          type="radio"
+                          name="geodesicIcosaProjection"
+                          value="mid"
+                        />
+                        MidSphere
+                      </label>
+                      <label
+                        style="
+                          font-size: 10px;
+                          display: block;
+                          margin-left: 5px;
+                        "
+                      >
+                        <input
+                          type="radio"
+                          name="geodesicIcosaProjection"
+                          value="out"
+                          checked
+                        />
+                        OutSphere
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showDodecahedron" />
+                Dodecahedron (12 faces, φ)
+              </label>
+            </div>
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showDualIcosahedron" />
+                Dual Icosahedron (Face Dual)
+              </label>
+            </div>
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showCuboctahedron" />
+                Cuboctahedron (VE)
+              </label>
+            </div>
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showRhombicDodecahedron" />
+                Rhombic Dodecahedron
+              </label>
+            </div>
+          </div>
+        </div>
+        <!-- END SECTION 3: FORMS -->
+
+        <!-- ========================================
+             SECTION 4: CONTROLS
+             ======================================== -->
+        <div class="control-group">
+          <h3>
+            <span
+              class="section-toggle collapsed"
+              data-target="controls-section"
+            ></span>
+            Controls
+          </h3>
+          <div id="controls-section" class="section-content collapsed">
+            <!-- Tool Mode -->
+            <div class="control-item">
+              <label class="label-section">Tool Mode</label>
+              <div class="toggle-btn-group">
+                <button
+                  class="toggle-btn variant-tool"
+                  data-gumball-tool="move"
+                >
+                  Move
+                </button>
+                <button
+                  class="toggle-btn variant-tool"
+                  data-gumball-tool="scale"
+                >
+                  Scale
+                </button>
+                <button
+                  class="toggle-btn variant-tool"
+                  data-gumball-tool="rotate"
+                >
+                  Rotate
+                </button>
+              </div>
+            </div>
+
+            <!-- Grid Snapping -->
+            <div class="control-item spacing-top-large">
+              <label class="label-section">Grid Snapping</label>
+              <div class="snap-toggle-container">
+                <button
+                  id="snapFree"
+                  class="toggle-btn variant-snap active"
+                  data-snap-mode="free"
+                >
+                  Free
+                </button>
+                <button
+                  id="snapXYZ"
+                  class="toggle-btn variant-snap"
+                  data-snap-mode="xyz"
+                >
+                  XYZ
+                </button>
+                <button
+                  id="snapWXYZ"
+                  class="toggle-btn variant-snap"
+                  data-snap-mode="wxyz"
+                >
+                  WXYZ
+                </button>
+              </div>
+              <div class="snap-description">
+                <strong>Free:</strong> No snapping (full precision)<br />
+                <strong>XYZ:</strong> Snap to 0.1 Cartesian grid<br />
+                <strong>WXYZ:</strong> Snap to √6/4 ≈ 0.612 Quadray grid
+              </div>
+            </div>
+
+            <!-- NOW Button -->
+            <div class="control-item spacing-top-large">
+              <button id="nowButton" class="gumball-action-btn">🕐 NOW</button>
+              <div class="now-counter">
+                Deposited: <span id="nowCount">0</span>
+              </div>
+            </div>
+
+            <!-- Cartesian Coordinates (XYZ) -->
+            <div class="control-item spacing-top-large">
+              <label class="label-section">XYZ Coordinates</label>
+              <div class="coordinate-inputs">
+                <div class="coord-container">
+                  <label class="label-axis label-axis-x">X:</label>
+                  <input
+                    type="text"
+                    id="coordX"
+                    class="coord-input axis-x"
+                    value="0.0000"
+                  />
+                </div>
+                <div class="coord-container">
+                  <label class="label-axis label-axis-y">Y:</label>
+                  <input
+                    type="text"
+                    id="coordY"
+                    class="coord-input axis-y"
+                    value="0.0000"
+                  />
+                </div>
+                <div class="coord-container">
+                  <label class="label-axis label-axis-z">Z:</label>
+                  <input
+                    type="text"
+                    id="coordZ"
+                    class="coord-input axis-z"
+                    value="0.0000"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Quadray Coordinates (WXYZ) -->
+            <div class="control-item spacing-top-large">
+              <label class="label-section">WXYZ Coordinates</label>
+              <div class="coordinate-inputs">
+                <div class="coord-container">
+                  <label class="label-axis label-axis-w">W:</label>
+                  <input
+                    type="text"
+                    id="coordW"
+                    class="coord-input axis-w"
+                    value="0.0000"
+                  />
+                </div>
+                <div class="coord-container">
+                  <label class="label-axis label-axis-x">X:</label>
+                  <input
+                    type="text"
+                    id="coordX2"
+                    class="coord-input axis-x"
+                    value="0.0000"
+                  />
+                </div>
+                <div class="coord-container">
+                  <label class="label-axis label-axis-y">Y:</label>
+                  <input
+                    type="text"
+                    id="coordY2"
+                    class="coord-input axis-y"
+                    value="0.0000"
+                  />
+                </div>
+                <div class="coord-container">
+                  <label class="label-axis label-axis-z">Z:</label>
+                  <input
+                    type="text"
+                    id="coordZ2"
+                    class="coord-input axis-z"
+                    value="0.0000"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- XYZ Rotation (Degrees °) -->
+            <div class="control-item spacing-top-large">
+              <label class="label-section">XYZ Rotation (°)</label>
+              <div class="coordinate-inputs">
+                <div class="coord-container">
+                  <label class="label-axis label-axis-x">X:</label>
+                  <input
+                    type="text"
+                    id="rotXDegrees"
+                    class="coord-input axis-x"
+                    value="0.00"
+                  />
+                </div>
+                <div class="coord-container">
+                  <label class="label-axis label-axis-y">Y:</label>
+                  <input
+                    type="text"
+                    id="rotYDegrees"
+                    class="coord-input axis-y"
+                    value="0.00"
+                  />
+                </div>
+                <div class="coord-container">
+                  <label class="label-axis label-axis-z">Z:</label>
+                  <input
+                    type="text"
+                    id="rotZDegrees"
+                    class="coord-input axis-z"
+                    value="0.00"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- XYZ Rotation (Spread s) -->
+            <div class="control-item spacing-top-small">
+              <label class="label-section">XYZ Rotation (s)</label>
+              <div class="coordinate-inputs">
+                <div class="coord-container">
+                  <label class="label-axis label-axis-x">X:</label>
+                  <input
+                    type="text"
+                    id="rotXSpread"
+                    class="coord-input axis-x"
+                    value="0.00"
+                  />
+                </div>
+                <div class="coord-container">
+                  <label class="label-axis label-axis-y">Y:</label>
+                  <input
+                    type="text"
+                    id="rotYSpread"
+                    class="coord-input axis-y"
+                    value="0.00"
+                  />
+                </div>
+                <div class="coord-container">
+                  <label class="label-axis label-axis-z">Z:</label>
+                  <input
+                    type="text"
+                    id="rotZSpread"
+                    class="coord-input axis-z"
+                    value="0.00"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- WXYZ Rotation (Degrees °) -->
+            <div class="control-item spacing-top-small">
+              <label class="label-section">WXYZ Rotation (°)</label>
+              <div class="coordinate-inputs">
+                <div class="coord-container">
+                  <label class="label-axis label-axis-w">W:</label>
+                  <input
+                    type="text"
+                    id="rotWDegrees"
+                    class="coord-input axis-w"
+                    value="0.00"
+                  />
+                </div>
+                <div class="coord-container">
+                  <label class="label-axis label-axis-x">X:</label>
+                  <input
+                    type="text"
+                    id="rotXQDegrees"
+                    class="coord-input axis-x"
+                    value="0.00"
+                  />
+                </div>
+                <div class="coord-container">
+                  <label class="label-axis label-axis-y">Y:</label>
+                  <input
+                    type="text"
+                    id="rotYQDegrees"
+                    class="coord-input axis-y"
+                    value="0.00"
+                  />
+                </div>
+                <div class="coord-container">
+                  <label class="label-axis label-axis-z">Z:</label>
+                  <input
+                    type="text"
+                    id="rotZQDegrees"
+                    class="coord-input axis-z"
+                    value="0.00"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- WXYZ Rotation (Spread s) -->
+            <div class="control-item spacing-top-small">
+              <label class="label-section">WXYZ Rotation (s)</label>
+              <div class="coordinate-inputs">
+                <div class="coord-container">
+                  <label class="label-axis label-axis-w">W:</label>
+                  <input
+                    type="text"
+                    id="rotWSpread"
+                    class="coord-input axis-w"
+                    value="0.00"
+                  />
+                </div>
+                <div class="coord-container">
+                  <label class="label-axis label-axis-x">X:</label>
+                  <input
+                    type="text"
+                    id="rotXQSpread"
+                    class="coord-input axis-x"
+                    value="0.00"
+                  />
+                </div>
+                <div class="coord-container">
+                  <label class="label-axis label-axis-y">Y:</label>
+                  <input
+                    type="text"
+                    id="rotYQSpread"
+                    class="coord-input axis-y"
+                    value="0.00"
+                  />
+                </div>
+                <div class="coord-container">
+                  <label class="label-axis label-axis-z">Z:</label>
+                  <input
+                    type="text"
+                    id="rotZQSpread"
+                    class="coord-input axis-z"
+                    value="0.00"
+                  />
+                </div>
+              </div>
+              <p class="info-text spacing-top-small">
+                s = sin²(θ), bounded 0.00-1.00
+              </p>
+            </div>
+          </div>
+        </div>
+        <!-- END SECTION 4: CONTROLS -->
+
+        <!-- ========================================
+             SECTION 5: SCALE
+             ======================================== -->
+        <div class="control-group">
+          <h3>
+            <span
+              class="section-toggle collapsed"
+              data-target="scale-section"
+            ></span>
+            Scale
+          </h3>
+          <div id="scale-section" class="section-content collapsed">
+            <div class="control-item">
+              <label>Cube Edge Length</label>
+              <div class="slider-container">
+                <input
+                  type="range"
+                  id="scaleSlider"
+                  min="0.5"
+                  max="3.6"
+                  step="0.1"
+                  value="1.4"
+                />
+                <span class="slider-value" id="scaleValue">1.4142</span>
+              </div>
+            </div>
+            <div class="control-item">
+              <label>Tetrahedron Edge Length</label>
+              <div class="slider-container">
+                <input
+                  type="range"
+                  id="tetScaleSlider"
+                  min="0.7"
+                  max="5.0"
+                  step="0.1"
+                  value="2.0"
+                />
+                <span class="slider-value" id="tetScaleValue">2.0000</span>
+              </div>
+            </div>
+            <p class="info-text" style="font-size: 10px; margin-top: 5px">
+              Linked sliders: rational units follow whichever you adjust
+            </p>
+          </div>
+        </div>
+        <!-- END SECTION 5: SCALE -->
+
+        <!-- ========================================
+             SECTION 6: VISUAL OPTIONS
+             ======================================== -->
+        <div class="control-group">
+          <h3>
+            <span
+              class="section-toggle collapsed"
+              data-target="visual-options-section"
+            ></span>
+            Visual Options
+          </h3>
+          <div id="visual-options-section" class="section-content collapsed">
+            <div class="control-item">
+              <label
+                style="
+                  font-size: 12px;
+                  margin-bottom: 5px;
+                  display: block;
+                  color: #b0b0b0;
+                "
+                >Nodes</label
+              >
+              <div class="node-size-selector">
+                <button class="node-size-btn" data-node-size="off">Off</button>
+                <button class="node-size-btn" data-node-size="sm">Sm</button>
+                <button class="node-size-btn active" data-node-size="md">
+                  Md
+                </button>
+                <button class="node-size-btn" data-node-size="lg">Lg</button>
+              </div>
+            </div>
+            <div class="control-item spacing-top-medium">
+              <label class="label-section">Node Geometry</label>
+              <div class="toggle-btn-group">
+                <button
+                  class="toggle-btn variant-toggle active"
+                  id="nodeGeomClassical"
+                  data-node-geom="classical"
+                >
+                  Classical Spheres
+                </button>
+                <button
+                  class="toggle-btn variant-toggle"
+                  id="nodeGeomRT"
+                  data-node-geom="rt"
+                >
+                  RT Geodesics
+                </button>
+              </div>
+              <p class="info-text" style="font-size: 10px; margin-top: 5px">
+                Toggle between THREE.js spheres and RT-computed geodesic nodes
+                for performance comparison
+              </p>
+            </div>
+            <div class="control-item spacing-top-small">
+              <label class="checkbox-label">
+                <input type="checkbox" id="nodeFlatShading" />
+                Faceted Nodes (show geometry)
+              </label>
+              <p class="info-text" style="font-size: 10px; margin-top: 3px">
+                Show faceted geometry vs smooth "sphere" shading
+              </p>
+            </div>
+            <div class="control-item">
+              <label>Face Opacity</label>
+              <div class="slider-container">
+                <input
+                  type="range"
+                  id="opacitySlider"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value="0.25"
+                />
+                <span class="slider-value" id="opacityValue">0.25</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- END SECTION 6: VISUAL OPTIONS -->
+
+        <!-- ========================================
+             SECTION 7: VIEW OPTIONS
+             ======================================== -->
+        <div class="control-group">
+          <h3>
+            <span
+              class="section-toggle collapsed"
+              data-target="view-section"
+            ></span>
+            View Options
+          </h3>
+          <div id="view-section" class="section-content collapsed">
+            <div class="control-item">
+              <label class="label-section">Camera Presets</label>
+              <div class="button-grid-2col">
+                <button class="toggle-btn variant-standard" id="viewTop">
+                  Top
+                </button>
+                <button class="toggle-btn variant-standard" id="viewBottom">
+                  Bottom
+                </button>
+                <button class="toggle-btn variant-standard" id="viewLeft">
+                  Left
+                </button>
+                <button class="toggle-btn variant-standard" id="viewRight">
+                  Right
+                </button>
+                <button class="toggle-btn variant-standard" id="viewFront">
+                  Front
+                </button>
+                <button class="toggle-btn variant-standard" id="viewBack">
+                  Back
+                </button>
+                <button class="toggle-btn variant-standard" id="viewAxo">
+                  Axo
+                </button>
+                <button
+                  class="toggle-btn variant-standard"
+                  id="viewPerspective"
+                >
+                  Perspective
+                </button>
+                <button id="resetCamera">Reset</button>
+              </div>
+            </div>
+            <div class="control-item spacing-top-large">
+              <label class="checkbox-label">
+                <input type="checkbox" id="orthoPerspective" />
+                Orthographic (Plan/Elevation)
+              </label>
+            </div>
+            <p class="info-text">
+              Switch between standard views and projection types
+            </p>
+          </div>
+        </div>
+        <!-- END SECTION 7: VIEW OPTIONS -->
+
+        <!-- ========================================
+             SECTION 8: PAPERCUT
+             ======================================== -->
+        <div class="control-group">
+          <h3>
+            <span
+              class="section-toggle collapsed"
+              data-target="papercut-section"
+            ></span>
+            Papercut
+          </h3>
+          <div id="papercut-section" class="section-content collapsed">
+            <div class="control-item">
+              <label style="font-size: 12px; color: #b0b0b0">Line Weight</label>
+              <div class="slider-container">
+                <input
+                  type="range"
+                  id="lineWeight"
+                  min="1"
+                  max="5"
+                  value="1"
+                  disabled
+                />
+                <span class="slider-value" id="lineWeightValue">1</span>
+              </div>
+            </div>
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="backfaceCulling" disabled />
+                Backface Culling
+              </label>
+            </div>
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="enableCutPlane" disabled />
+                Enable Cut Plane
+              </label>
+            </div>
+            <div class="control-item">
+              <label class="label-section">Print Extents</label>
+              <div class="button-grid-2col">
+                <button class="toggle-btn variant-standard" id="fitA4" disabled>
+                  A4
+                </button>
+                <button
+                  class="toggle-btn variant-standard"
+                  id="fitLetter"
+                  disabled
+                >
+                  Letter
+                </button>
+                <button class="toggle-btn variant-standard" id="fitA3" disabled>
+                  A3
+                </button>
+                <button
+                  class="toggle-btn variant-standard"
+                  id="fitCustom"
+                  disabled
+                >
+                  Custom
+                </button>
+              </div>
+            </div>
+            <p class="info-text">Print optimization tools - Coming soon</p>
+          </div>
+        </div>
+        <!-- END SECTION 8: PAPERCUT -->
+
+        <!-- ========================================
+             SECTION 9: GEOMETRY INFO
+             ======================================== -->
+        <div class="control-group">
+          <h3>
+            <span
+              class="section-toggle"
+              data-target="geometry-info-section"
+            ></span>
+            Geometry Info
+          </h3>
+          <div id="geometry-info-section" class="section-content">
+            <div class="stats" id="geometryStats">
+              <div><strong>Scene Totals:</strong></div>
+              <div id="totalVertices">Vertices: --</div>
+              <div id="totalEdges">Edges: --</div>
+              <div id="totalFaces">Faces: --</div>
+              <div id="totalTriangles">Triangles: --</div>
+            </div>
+
+            <div class="stats" id="performanceStats" style="margin-top: 12px">
+              <div><strong>Performance:</strong></div>
+              <div id="perfCalcTime">Calculation: -- ms</div>
+              <div id="perfNodeTime">Node Gen: -- ms</div>
+              <div id="perfFPS">FPS: --</div>
+              <div id="perfNodeType">Node Type: Classical</div>
+              <div id="perfNodeTriangles">Node Δ: --</div>
+            </div>
+
+            <p class="info-text" style="font-size: 10px; margin-top: 10px">
+              Performance metrics compare RT algebraic methods vs classical
+              trigonometry
+            </p>
+          </div>
+        </div>
+        <!-- END SECTION 9: GEOMETRY INFO -->
+      </div>
+    </div>
+
+    <!-- Three.js ES Modules via importmap (no build step required) -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+
+    <!-- Application Initialization -->
+    <script type="module" src="rt-init.js"></script>
+  </body>
+</html>
