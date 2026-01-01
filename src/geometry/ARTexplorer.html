@@ -1859,6 +1859,80 @@
           scene.add(ivmPlanes);
         }
 
+        // ========================================================================
+        // NODE GEOMETRY CACHE (prevent repeated generation)
+        // ========================================================================
+        const nodeGeometryCache = new Map();
+
+        function getCachedNodeGeometry(useRT, nodeSize) {
+          const cacheKey = `${useRT ? "rt" : "classical"}-${nodeSize}`;
+
+          if (nodeGeometryCache.has(cacheKey)) {
+            return nodeGeometryCache.get(cacheKey);
+          }
+
+          let nodeGeometry;
+          let trianglesPerNode = 0;
+
+          if (useRT) {
+            // RT Geodesic Octahedron
+            const baseSize = 0.04;
+            const rtSizes = {
+              sm: baseSize / Math.sqrt(2),
+              md: baseSize,
+              lg: baseSize * Math.sqrt(2),
+            };
+            const radius = rtSizes[nodeSize];
+
+            const polyData = window.RTPolyhedra.geodesicOctahedron(
+              radius,
+              2,
+              "out"
+            );
+
+            nodeGeometry = new THREE.BufferGeometry();
+            const positions = [];
+            const indices = [];
+
+            polyData.vertices.forEach(v => {
+              positions.push(v.x, v.y, v.z);
+            });
+
+            polyData.faces.forEach(faceIndices => {
+              for (let i = 1; i < faceIndices.length - 1; i++) {
+                indices.push(
+                  faceIndices[0],
+                  faceIndices[i],
+                  faceIndices[i + 1]
+                );
+              }
+            });
+
+            nodeGeometry.setAttribute(
+              "position",
+              new THREE.Float32BufferAttribute(positions, 3)
+            );
+            nodeGeometry.setIndex(indices);
+            nodeGeometry.computeVertexNormals();
+
+            trianglesPerNode = indices.length / 3;
+          } else {
+            // Classical THREE.js Sphere
+            const nodeSizes = {
+              sm: 0.02,
+              md: 0.04,
+              lg: 0.08,
+            };
+            const radius = nodeSizes[nodeSize];
+            nodeGeometry = new THREE.SphereGeometry(radius, 16, 16);
+            trianglesPerNode = 16 * 16 * 2; // 512 triangles
+          }
+
+          const result = { geometry: nodeGeometry, triangles: trianglesPerNode };
+          nodeGeometryCache.set(cacheKey, result);
+          return result;
+        }
+
         /**
          * Render a polyhedron from vertices, edges, faces
          * Uses proper geometry with indexed faces for clean rendering
@@ -1948,79 +2022,14 @@
           edgeLines.renderOrder = 2; // Render edges after faces
           group.add(edgeLines);
 
-          // Render vertex nodes using instanced geometry for efficiency
+          // Render vertex nodes using cached geometry for efficiency
           if (showNodes) {
             // Start node generation timing
             PerformanceClock.startNodeGeneration();
 
-            // Choose geometry based on toggle: Classical THREE.js spheres vs RT geodesics
-            let nodeGeometry;
-            let trianglesPerNode = 0;
-
-            if (useRTNodeGeometry) {
-              // Use RT-computed Octahedron Freq-2 for performance and dogfooding
-              // Size mapping: sm = insphere, md = midsphere, lg = outsphere
-              // For a unit octahedron: insphere = s/√2, midsphere = s, outsphere = s√2
-              // Base size s = 0.04 (medium reference)
-              const baseSize = 0.04;
-              const rtSizes = {
-                sm: baseSize / Math.sqrt(2), // Insphere: ~0.028
-                md: baseSize, // Midsphere: 0.04
-                lg: baseSize * Math.sqrt(2), // Outsphere: ~0.057
-              };
-              const radius = rtSizes[nodeSize];
-
-              // Get polyhedra data from RTPolyhedra
-              const polyData = window.RTPolyhedra.geodesicOctahedron(
-                radius,
-                2,
-                "out"
-              );
-
-              // Convert to THREE.BufferGeometry
-              nodeGeometry = new THREE.BufferGeometry();
-              const positions = [];
-              const indices = [];
-
-              polyData.vertices.forEach(v => {
-                positions.push(v.x, v.y, v.z);
-              });
-
-              polyData.faces.forEach(faceIndices => {
-                for (let i = 1; i < faceIndices.length - 1; i++) {
-                  indices.push(
-                    faceIndices[0],
-                    faceIndices[i],
-                    faceIndices[i + 1]
-                  );
-                }
-              });
-
-              nodeGeometry.setAttribute(
-                "position",
-                new THREE.Float32BufferAttribute(positions, 3)
-              );
-              nodeGeometry.setIndex(indices);
-              nodeGeometry.computeVertexNormals();
-
-              // Calculate triangles per node for RT geodesic
-              trianglesPerNode = indices.length / 3;
-            } else {
-              // Classical THREE.js sphere (slower, more triangles)
-              // Node size mapping: sm = 0.02, md = 0.04, lg = 0.08
-              const nodeSizes = {
-                sm: 0.02,
-                md: 0.04,
-                lg: 0.08,
-              };
-              const radius = nodeSizes[nodeSize];
-              nodeGeometry = new THREE.SphereGeometry(radius, 16, 16);
-
-              // Calculate triangles per node for classical sphere
-              // SphereGeometry(radius, widthSegments, heightSegments)
-              // Triangles ≈ widthSegments * heightSegments * 2
-              trianglesPerNode = 16 * 16 * 2; // 512 triangles
-            }
+            // Get cached geometry (prevents repeated generation)
+            const { geometry: nodeGeometry, triangles: trianglesPerNode } =
+              getCachedNodeGeometry(useRTNodeGeometry, nodeSize);
 
             const nodeMaterial = new THREE.MeshStandardMaterial({
               color: color,
@@ -2951,6 +2960,8 @@
         // Node size selector functionality
         document.querySelectorAll(".node-size-btn").forEach(btn => {
           btn.addEventListener("click", function () {
+            // Clear geometry cache when size changes
+            nodeGeometryCache.clear();
             // Remove active from all buttons
             document
               .querySelectorAll(".node-size-btn")
@@ -2969,6 +2980,8 @@
           .getElementById("nodeGeomClassical")
           .addEventListener("click", function () {
             useRTNodeGeometry = false;
+            // Clear geometry cache when switching node types
+            nodeGeometryCache.clear();
             document
               .getElementById("nodeGeomClassical")
               .classList.add("active");
@@ -2980,6 +2993,8 @@
           .getElementById("nodeGeomRT")
           .addEventListener("click", function () {
             useRTNodeGeometry = true;
+            // Clear geometry cache when switching node types
+            nodeGeometryCache.clear();
             document.getElementById("nodeGeomRT").classList.add("active");
             document
               .getElementById("nodeGeomClassical")
