@@ -1223,10 +1223,10 @@
       // ========================================================================
       // MODULE IMPORTS
       // ========================================================================
-      import { RTPolyhedra } from "./modules/rt-polyhedra.js";
+      import { Polyhedra } from "./modules/rt-polyhedra.js";
 
       // Make RTPolyhedra available globally for node geometry creation
-      window.RTPolyhedra = RTPolyhedra;
+      window.RTPolyhedra = Polyhedra;
 
       // TODO: Uncomment when ready to extract gumball to module
       // import { RTControls } from "./modules/rt-controls.js";
@@ -1937,7 +1937,28 @@
                 lg: baseSize * Math.sqrt(2), // Outsphere: ~0.057
               };
               const radius = rtSizes[nodeSize];
-              nodeGeometry = window.RTPolyhedra.createOctahedron(radius, 2);
+
+              // Get polyhedra data from RTPolyhedra
+              const polyData = window.RTPolyhedra.geodesicOctahedron(radius, 2, "out");
+
+              // Convert to THREE.BufferGeometry
+              nodeGeometry = new THREE.BufferGeometry();
+              const positions = [];
+              const indices = [];
+
+              polyData.vertices.forEach(v => {
+                positions.push(v.x, v.y, v.z);
+              });
+
+              polyData.faces.forEach(faceIndices => {
+                for (let i = 1; i < faceIndices.length - 1; i++) {
+                  indices.push(faceIndices[0], faceIndices[i], faceIndices[i + 1]);
+                }
+              });
+
+              nodeGeometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+              nodeGeometry.setIndex(indices);
+              nodeGeometry.computeVertexNormals();
             } else {
               // Classical THREE.js sphere (slower, more triangles)
               // Node size mapping: sm = 0.02, md = 0.04, lg = 0.08

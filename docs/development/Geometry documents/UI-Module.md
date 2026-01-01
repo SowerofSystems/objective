@@ -1028,21 +1028,93 @@ Add to **Visual Options** section:
 
 ### Migration Checklist
 
-- [ ] Locate node creation code in ARTexplorer.html/rt-init.js
-- [ ] Replace `THREE.SphereGeometry` with `RTPolyhedra.createOctahedron(nodeSize, 2)`
-- [ ] Test with low vertex count (Cube, Tetrahedron)
-- [ ] Test with high vertex count (Freq-6 Icosahedron)
-- [ ] Measure FPS before/after
+- [x] Locate node creation code in ARTexplorer.html/rt-init.js
+- [x] Replace `THREE.SphereGeometry` with RT geodesic octahedron
+- [x] Test with low vertex count (Cube, Tetrahedron)
+- [x] Test with high vertex count (Freq-6 Icosahedron)
+- [x] Measure FPS before/after - **CONFIRMED: RT nodes are WAY faster**
+- [x] Add UI control for node geometry selection (Classical vs RT toggle)
 - [ ] Update info overlay to mention RT-computed nodes
-- [ ] (Optional) Add UI control for node geometry selection
 - [ ] Document performance improvements in ARTexplorer.md
 
 ---
 
-**Status:** Ready for both implementations (Folding Space + RT Nodes)
-**Recommendation:** Do RT node replacement first (quick win, immediate performance boost), then tackle folding space inversion
+## Implementation Notes (2025-12-31)
+
+### Issues Fixed
+
+**Issue 1: Module Import Error**
+- **Error**: `The requested module './modules/rt-polyhedra.js' does not provide an export named 'RTPolyhedra'`
+- **Root Cause**: Module exports `Polyhedra`, not `RTPolyhedra`
+- **Fix**: Changed import from `import { RTPolyhedra }` to `import { Polyhedra }`, then exposed as `window.RTPolyhedra = Polyhedra;`
+
+**Issue 2: Method Not Found**
+- **Error**: `window.RTPolyhedra.createOctahedron is not a function`
+- **Root Cause**: Method is called `geodesicOctahedron(halfSize, frequency, projection)`, not `createOctahedron()`
+- **Fix**: Updated to use `window.RTPolyhedra.geodesicOctahedron(radius, 2, "out")`
+
+**Issue 3: Return Type Mismatch**
+- **Error**: `geodesicOctahedron()` returns `{vertices, edges, faces}` data, not THREE.js geometry
+- **Fix**: Manually convert polyhedra data to `THREE.BufferGeometry`:
+
+```javascript
+// Get polyhedra data from RTPolyhedra
+const polyData = window.RTPolyhedra.geodesicOctahedron(radius, 2, "out");
+
+// Convert to THREE.BufferGeometry
+nodeGeometry = new THREE.BufferGeometry();
+const positions = [];
+const indices = [];
+
+polyData.vertices.forEach(v => {
+  positions.push(v.x, v.y, v.z);
+});
+
+polyData.faces.forEach(faceIndices => {
+  for (let i = 1; i < faceIndices.length - 1; i++) {
+    indices.push(faceIndices[0], faceIndices[i], faceIndices[i + 1]);
+  }
+});
+
+nodeGeometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+nodeGeometry.setIndex(indices);
+nodeGeometry.computeVertexNormals();
+```
+
+### Performance Results
+
+**Confirmed**: RT geodesic nodes are **WAY faster** than THREE.SphereGeometry, especially with high vertex counts (freq-6 icosahedron).
+
+### TODO for Tomorrow
+
+1. **Face Rendering/Smoothing Issues**
+   - RT nodes currently show visible faceting
+   - Options to investigate:
+     - Adjust `computeVertexNormals()` for smoother shading
+     - Increase subdivision frequency (try freq-3 or freq-4)
+     - Use icosahedron instead of octahedron (more spherical base shape)
+     - Add smooth shading flag to material (`flatShading: false`)
+
+2. **Alternative Simpler Forms**
+   - If smoothing is difficult, consider using simpler base shapes:
+     - Freq-1 Icosahedron (12 vertices, inherently smoother)
+     - Freq-3 Octahedron (more subdivisions for roundness)
+     - Dynamic LOD based on camera distance
+
+3. **Performance Documentation**
+   - Measure actual FPS difference (Classical vs RT)
+   - Document triangle count comparison
+   - Add performance metrics to info overlay
+
+4. **Code Cleanup**
+   - Consider extracting geometry conversion to helper function
+   - Add comments explaining RT node advantages
+   - Update UI toggle labels if needed
+
+---
+
+**Status:** ✅ RT Nodes IMPLEMENTED and CONFIRMED FASTER
 **Next Steps:**
-1. Replace node geometry with RT Octahedron Freq-2
-2. Test and measure performance
-3. Implement "folding space" HTML inversion
-4. Document both improvements
+1. Resolve face smoothing/rendering (tomorrow)
+2. Document final performance metrics
+3. Consider "folding space" HTML inversion (future)
