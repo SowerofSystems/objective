@@ -91,13 +91,90 @@ docs/development/Geometry documents/
 ```
 
 **Code Organization:**
-- **ARTexplorer.html**: ~3600 lines - Main app, scene setup, inline gumball, event handlers
-- **art.css**: ~400 lines - All styling extracted for maintainability
+- **ARTexplorer.html**: ~3600 lines (reduced from ~3800 via modularization) - Main app, scene setup, inline gumball, event handlers
+- **art.css**: ~760 lines - All styling extracted for maintainability
 - **rt-math.js**: Quadray class, conversions (XYZ ↔ WXYZ), RT formulas
 - **rt-polyhedra.js**: All polyhedra definitions with RT-pure vertex calculations
 - **rt-rendering.js**: Three.js rendering abstraction (faces, edges, nodes)
 - **rt-state-manager.js**: Forms (templates) vs Instances (snapshots) architecture
+- **performance-clock.js**: Performance tracking module (Clock.js pattern from TEUI)
 - **rt-controls.js**: Gumball module (NOT currently active - see Module-Extraction-Analysis.md)
+
+### 1.5 Performance Monitoring & The "Fair Fight" Question
+
+**Added:** 2026-01-01
+
+#### The Truth About RT Performance Benefits
+
+When comparing RT (Rational Trigonometry) geodesic nodes vs Classical THREE.js spheres, it's important to understand **what we're actually measuring**.
+
+**❌ What We're NOT Comparing:**
+- **Runtime "Rational Algebra" Computation** - Once geometries become `THREE.BufferGeometry`, both become irrational floating-point vertex arrays in GPU memory
+- **GPU Rendering Speed** - THREE.js renders all triangles identically, regardless of how they were generated
+- **Real-time RT vs Trig Calculation** - The algebraic advantage exists only during geometry generation, not rendering
+
+**✅ What We ARE Comparing:**
+1. **Generation Speed** - RT algebraic calculations (quadrance/spread) vs classical trigonometry (sin/cos) during initial geometry creation
+2. **Triangle Count Efficiency** - RT geodesic subdivision produces better geometric distribution than UV sphere tessellation
+3. **Memory Footprint** - Fewer vertices = less GPU RAM usage
+4. **Visual Quality per Triangle** - Geodesic distribution provides more uniform sphere approximation
+
+**Current Results (Unequal Triangle Counts):**
+- **RT Geodesic Octahedron (Freq-2)**: ~32 triangles per node
+- **Classical THREE.js Sphere (16×16)**: 512 triangles per node
+- **Performance Benefit**: 16x triangle reduction = faster rendering (but NOT from algebraic computation)
+
+#### How to Make It a TRULY Fair Comparison
+
+To honestly compare RT algebra vs classical trig **generation speed**:
+
+1. **Match Triangle Counts**
+   - Classical Sphere: 36 triangles (e.g., 6 segments × 6 rings)
+   - RT Geodesic: 36 triangles (adjust frequency to match)
+
+2. **Measure Generation Time ONLY**
+   - Time the `geodesicOctahedron()` call vs `new THREE.SphereGeometry()` call
+   - This isolates the algebraic advantage (where RT truly shines)
+
+3. **Acknowledge GPU Reality**
+   - Once created, both are `BufferGeometry` - GPU treats them identically
+   - Rendering FPS should be equal if triangle counts match
+
+4. **Compare Visual Quality at Equal Triangle Budget**
+   - Does RT geodesic distribution look more spherical than UV sphere at same Δ count?
+   - This demonstrates geometric efficiency, not computational advantage
+
+#### Performance Clock Module
+
+**File**: `src/geometry/modules/performance-clock.js`
+
+Modeled after `src/core/Clock.js` from TEUI, tracks:
+- **Calculation Time**: Full `updateGeometry()` execution
+- **Node Generation Time**: Isolated timing for node creation
+- **FPS**: 60-frame rolling average
+- **Triangle Counts**: Scene-wide and per-vertex metrics
+
+**Display Location**: Geometry Info section (auto-expanded)
+
+**Key Metrics:**
+| Metric | Purpose |
+|--------|---------|
+| Calculation | Full geometry rebuild speed |
+| Node Gen | RT vs Classical generation comparison |
+| FPS | Real-time rendering performance |
+| Node Type | Current method (Classical/RT) |
+| Node Δ | Triangles per vertex |
+| Total Triangles | GPU rendering load |
+
+#### Honest Takeaway
+
+RT's computational advantage is **real** but **localized to generation**:
+- ✅ Faster geometry creation (algebraic vs trig)
+- ✅ Better geometric distribution (geodesic vs UV)
+- ✅ Fewer triangles for equivalent visual quality
+- ❌ No ongoing advantage during GPU rendering
+
+The performance benefit we see is from **triangle reduction**, not runtime rational algebra. This is still valuable (fewer triangles = better performance), but it's important to be intellectually honest about what we're measuring.
 
 **Key Architectural Decision:**
 Gumball controls remain **inline** in ARTexplorer.html due to scope isolation issues. See [Module-Extraction-Analysis.md](Module-Extraction-Analysis.md) for detailed analysis of two extraction attempts and rationale for keeping inline implementation.
