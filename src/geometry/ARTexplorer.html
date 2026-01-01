@@ -1017,14 +1017,14 @@
               <label class="label-section">Node Geometry</label>
               <div class="toggle-btn-group">
                 <button
-                  class="toggle-btn variant-snap active"
+                  class="toggle-btn variant-toggle active"
                   id="nodeGeomClassical"
                   data-node-geom="classical"
                 >
                   Classical Spheres
                 </button>
                 <button
-                  class="toggle-btn variant-snap"
+                  class="toggle-btn variant-toggle"
                   id="nodeGeomRT"
                   data-node-geom="rt"
                 >
@@ -1034,6 +1034,15 @@
               <p class="info-text" style="font-size: 10px; margin-top: 5px">
                 Toggle between THREE.js spheres and RT-computed geodesic nodes
                 for performance comparison
+              </p>
+            </div>
+            <div class="control-item spacing-top-small">
+              <label class="checkbox-label">
+                <input type="checkbox" id="nodeFlatShading" />
+                Faceted Nodes (show geometry)
+              </label>
+              <p class="info-text" style="font-size: 10px; margin-top: 3px">
+                Show faceted geometry vs smooth "sphere" shading
               </p>
             </div>
             <div class="control-item">
@@ -1193,15 +1202,25 @@
           </h3>
           <div id="geometry-info-section" class="section-content">
             <div class="stats" id="geometryStats">
-              <div><strong>Cube:</strong></div>
-              <div>Vertices: 8</div>
-              <div>Edges: 12</div>
-              <div>Faces: 6</div>
-              <div>Euler: V - E + F = 2 ✓</div>
+              <div><strong>Scene Totals:</strong></div>
+              <div id="totalVertices">Vertices: --</div>
+              <div id="totalEdges">Edges: --</div>
+              <div id="totalFaces">Faces: --</div>
+              <div id="totalTriangles">Triangles: --</div>
             </div>
+
+            <div class="stats" id="performanceStats" style="margin-top: 12px">
+              <div><strong>Performance:</strong></div>
+              <div id="perfCalcTime">Calculation: -- ms</div>
+              <div id="perfNodeTime">Node Gen: -- ms</div>
+              <div id="perfFPS">FPS: --</div>
+              <div id="perfNodeType">Node Type: Classical</div>
+              <div id="perfNodeTriangles">Node Δ: --</div>
+            </div>
+
             <p class="info-text" style="font-size: 10px; margin-top: 10px">
-              Future metrics: Volume (Cubic), Volume (Tetrahedral), Area on
-              Plan, Surface Area, etc.
+              Performance metrics compare RT algebraic methods vs classical
+              trigonometry
             </p>
           </div>
         </div>
@@ -1224,6 +1243,7 @@
       // MODULE IMPORTS
       // ========================================================================
       import { Polyhedra } from "./modules/rt-polyhedra.js";
+      import { PerformanceClock } from "./modules/performance-clock.js";
 
       // Make RTPolyhedra available globally for node geometry creation
       window.RTPolyhedra = Polyhedra;
@@ -1447,6 +1467,22 @@
           scene.add(geodesicIcosahedronGroup);
           scene.add(geodesicTetrahedronGroup);
           scene.add(geodesicOctahedronGroup);
+
+          // Initialize PerformanceClock with all scene groups
+          PerformanceClock.init([
+            cubeGroup,
+            tetrahedronGroup,
+            dualTetrahedronGroup,
+            octahedronGroup,
+            icosahedronGroup,
+            dodecahedronGroup,
+            dualIcosahedronGroup,
+            cuboctahedronGroup,
+            rhombicDodecahedronGroup,
+            geodesicIcosahedronGroup,
+            geodesicTetrahedronGroup,
+            geodesicOctahedronGroup,
+          ]);
 
           // Initial render
           updateGeometry();
@@ -1832,6 +1868,80 @@
           scene.add(ivmPlanes);
         }
 
+        // ========================================================================
+        // NODE GEOMETRY CACHE (prevent repeated generation)
+        // ========================================================================
+        const nodeGeometryCache = new Map();
+
+        function getCachedNodeGeometry(useRT, nodeSize) {
+          const cacheKey = `${useRT ? "rt" : "classical"}-${nodeSize}`;
+
+          if (nodeGeometryCache.has(cacheKey)) {
+            return nodeGeometryCache.get(cacheKey);
+          }
+
+          let nodeGeometry;
+          let trianglesPerNode = 0;
+
+          if (useRT) {
+            // RT Geodesic Icosahedron (freq-0 = base 20-triangle icosahedron)
+            const baseSize = 0.04;
+            const rtSizes = {
+              sm: baseSize / Math.sqrt(2),
+              md: baseSize,
+              lg: baseSize * Math.sqrt(2),
+            };
+            const radius = rtSizes[nodeSize];
+
+            const polyData = window.RTPolyhedra.geodesicIcosahedron(
+              radius,
+              0,
+              "out"
+            );
+
+            nodeGeometry = new THREE.BufferGeometry();
+            const positions = [];
+            const indices = [];
+
+            polyData.vertices.forEach(v => {
+              positions.push(v.x, v.y, v.z);
+            });
+
+            polyData.faces.forEach(faceIndices => {
+              for (let i = 1; i < faceIndices.length - 1; i++) {
+                indices.push(
+                  faceIndices[0],
+                  faceIndices[i],
+                  faceIndices[i + 1]
+                );
+              }
+            });
+
+            nodeGeometry.setAttribute(
+              "position",
+              new THREE.Float32BufferAttribute(positions, 3)
+            );
+            nodeGeometry.setIndex(indices);
+            nodeGeometry.computeVertexNormals();
+
+            trianglesPerNode = indices.length / 3;
+          } else {
+            // Classical THREE.js Sphere
+            const nodeSizes = {
+              sm: 0.02,
+              md: 0.04,
+              lg: 0.08,
+            };
+            const radius = nodeSizes[nodeSize];
+            nodeGeometry = new THREE.SphereGeometry(radius, 16, 16);
+            trianglesPerNode = 16 * 16 * 2; // 512 triangles
+          }
+
+          const result = { geometry: nodeGeometry, triangles: trianglesPerNode };
+          nodeGeometryCache.set(cacheKey, result);
+          return result;
+        }
+
         /**
          * Render a polyhedron from vertices, edges, faces
          * Uses proper geometry with indexed faces for clean rendering
@@ -1921,60 +2031,23 @@
           edgeLines.renderOrder = 2; // Render edges after faces
           group.add(edgeLines);
 
-          // Render vertex nodes using instanced geometry for efficiency
+          // Render vertex nodes using cached geometry for efficiency
           if (showNodes) {
-            // Choose geometry based on toggle: Classical THREE.js spheres vs RT geodesics
-            let nodeGeometry;
-            if (useRTNodeGeometry) {
-              // Use RT-computed Octahedron Freq-2 for performance and dogfooding
-              // Size mapping: sm = insphere, md = midsphere, lg = outsphere
-              // For a unit octahedron: insphere = s/√2, midsphere = s, outsphere = s√2
-              // Base size s = 0.04 (medium reference)
-              const baseSize = 0.04;
-              const rtSizes = {
-                sm: baseSize / Math.sqrt(2), // Insphere: ~0.028
-                md: baseSize, // Midsphere: 0.04
-                lg: baseSize * Math.sqrt(2), // Outsphere: ~0.057
-              };
-              const radius = rtSizes[nodeSize];
+            // Start node generation timing
+            PerformanceClock.startNodeGeneration();
 
-              // Get polyhedra data from RTPolyhedra
-              const polyData = window.RTPolyhedra.geodesicOctahedron(radius, 2, "out");
+            // Get cached geometry (prevents repeated generation)
+            const { geometry: nodeGeometry, triangles: trianglesPerNode } =
+              getCachedNodeGeometry(useRTNodeGeometry, nodeSize);
 
-              // Convert to THREE.BufferGeometry
-              nodeGeometry = new THREE.BufferGeometry();
-              const positions = [];
-              const indices = [];
-
-              polyData.vertices.forEach(v => {
-                positions.push(v.x, v.y, v.z);
-              });
-
-              polyData.faces.forEach(faceIndices => {
-                for (let i = 1; i < faceIndices.length - 1; i++) {
-                  indices.push(faceIndices[0], faceIndices[i], faceIndices[i + 1]);
-                }
-              });
-
-              nodeGeometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-              nodeGeometry.setIndex(indices);
-              nodeGeometry.computeVertexNormals();
-            } else {
-              // Classical THREE.js sphere (slower, more triangles)
-              // Node size mapping: sm = 0.02, md = 0.04, lg = 0.08
-              const nodeSizes = {
-                sm: 0.02,
-                md: 0.04,
-                lg: 0.08,
-              };
-              const radius = nodeSizes[nodeSize];
-              nodeGeometry = new THREE.SphereGeometry(radius, 16, 16);
-            }
+            // Get flatShading preference from checkbox
+            const useFlatShading = document.getElementById("nodeFlatShading")?.checked || false;
 
             const nodeMaterial = new THREE.MeshStandardMaterial({
               color: color,
               emissive: color,
               emissiveIntensity: 0.2,
+              flatShading: useFlatShading, // User-controlled shading
             });
 
             vertices.forEach(vertex => {
@@ -1983,6 +2056,14 @@
               node.renderOrder = 3; // Render nodes on top
               group.add(node);
             });
+
+            // End node generation timing and store triangle count
+            PerformanceClock.endNodeGeneration();
+            PerformanceClock.timings.lastNodeTriangles =
+              Math.round(trianglesPerNode);
+          } else {
+            // Reset node triangle count when nodes are OFF
+            PerformanceClock.timings.lastNodeTriangles = 0;
           }
         }
 
@@ -1990,6 +2071,9 @@
          * Update all geometry based on current settings
          */
         function updateGeometry() {
+          // Start performance timing
+          PerformanceClock.startCalculation();
+
           // QUADRAY SYSTEM: Use tet edge length as primary unit
           // For tetrahedron edge length e: halfSize = e / (2√2)
           const tetEdge = parseFloat(
@@ -2218,6 +2302,29 @@
           }
 
           updateGeometryStats();
+
+          // End performance timing
+          PerformanceClock.endCalculation();
+          PerformanceClock.updateDisplay(useRTNodeGeometry);
+        }
+
+        /**
+         * Count triangles in a THREE.js group
+         */
+        function countGroupTriangles(group) {
+          let triangles = 0;
+          if (group && group.visible) {
+            group.traverse(child => {
+              if (child.geometry) {
+                if (child.geometry.index) {
+                  triangles += child.geometry.index.count / 3;
+                } else if (child.geometry.attributes.position) {
+                  triangles += child.geometry.attributes.position.count / 3;
+                }
+              }
+            });
+          }
+          return Math.round(triangles);
         }
 
         /**
@@ -2234,9 +2341,11 @@
               cube.edges.length,
               cube.faces.length
             );
+            const triangles = countGroupTriangles(cubeGroup);
             html += `<div><strong>Hexahedron (Cube):</strong></div>`;
             html += `<div>Schläfli: {4,3}</div>`;
             html += `<div>V: ${cube.vertices.length}, E: ${cube.edges.length}, F: ${cube.faces.length}</div>`;
+            html += `<div>Triangles: ${triangles}</div>`;
             html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
           }
 
@@ -2247,9 +2356,11 @@
               tetra.edges.length,
               tetra.faces.length
             );
+            const triangles = countGroupTriangles(tetrahedronGroup);
             html += `<div style="margin-top: 10px;"><strong>Tetrahedron:</strong></div>`;
             html += `<div>Schläfli: {3,3}</div>`;
             html += `<div>V: ${tetra.vertices.length}, E: ${tetra.edges.length}, F: ${tetra.faces.length}</div>`;
+            html += `<div>Triangles: ${triangles}</div>`;
             html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
           }
 
@@ -2260,9 +2371,11 @@
               octa.edges.length,
               octa.faces.length
             );
+            const triangles = countGroupTriangles(octahedronGroup);
             html += `<div style="margin-top: 10px;"><strong>Octahedron:</strong></div>`;
             html += `<div>Schläfli: {3,4}</div>`;
             html += `<div>V: ${octa.vertices.length}, E: ${octa.edges.length}, F: ${octa.faces.length}</div>`;
+            html += `<div>Triangles: ${triangles}</div>`;
             html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
           }
 
@@ -2273,9 +2386,11 @@
               icosa.edges.length,
               icosa.faces.length
             );
+            const triangles = countGroupTriangles(icosahedronGroup);
             html += `<div style="margin-top: 10px;"><strong>Icosahedron:</strong></div>`;
             html += `<div>Schläfli: {3,5}</div>`;
             html += `<div>V: ${icosa.vertices.length}, E: ${icosa.edges.length}, F: ${icosa.faces.length}</div>`;
+            html += `<div>Triangles: ${triangles}</div>`;
             html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
           }
 
@@ -2286,9 +2401,11 @@
               dodec.edges.length,
               dodec.faces.length
             );
+            const triangles = countGroupTriangles(dodecahedronGroup);
             html += `<div style="margin-top: 10px;"><strong>Dodecahedron:</strong></div>`;
             html += `<div>Schläfli: {5,3}</div>`;
             html += `<div>V: ${dodec.vertices.length}, E: ${dodec.edges.length}, F: ${dodec.faces.length}</div>`;
+            html += `<div>Triangles: ${triangles}</div>`;
             html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
           }
 
@@ -2299,22 +2416,95 @@
               rhombicDodec.edges.length,
               rhombicDodec.faces.length
             );
+            const triangles = countGroupTriangles(rhombicDodecahedronGroup);
             html += `<div style="margin-top: 10px;"><strong>Rhombic Dodecahedron:</strong></div>`;
             html += `<div>Catalan: V(3,4)</div>`;
             html += `<div>V: ${rhombicDodec.vertices.length}, E: ${rhombicDodec.edges.length}, F: ${rhombicDodec.faces.length}</div>`;
+            html += `<div>Triangles: ${triangles}</div>`;
+            html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
+          }
+
+          // Geodesic Tetrahedron
+          if (document.getElementById("showGeodesicTetrahedron").checked) {
+            const frequency = parseInt(document.getElementById("geodesicTetraFrequency").value);
+            const projectionRadio = document.querySelector('input[name="geodesicTetraProjection"]:checked');
+            const projection = projectionRadio ? projectionRadio.value : "out";
+            const geodesicTetra = Polyhedra.geodesicTetrahedron(1, isNaN(frequency) ? 1 : frequency, projection);
+            const eulerOK = RT.verifyEuler(
+              geodesicTetra.vertices.length,
+              geodesicTetra.edges.length,
+              geodesicTetra.faces.length
+            );
+            const triangles = countGroupTriangles(geodesicTetrahedronGroup);
+            html += `<div style="margin-top: 10px;"><strong>Geodesic Tetrahedron:</strong></div>`;
+            html += `<div>Freq: ${isNaN(frequency) ? 1 : frequency}, Proj: ${projection}</div>`;
+            html += `<div>V: ${geodesicTetra.vertices.length}, E: ${geodesicTetra.edges.length}, F: ${geodesicTetra.faces.length}</div>`;
+            html += `<div>Triangles: ${triangles}</div>`;
+            html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
+          }
+
+          // Geodesic Octahedron
+          if (document.getElementById("showGeodesicOctahedron").checked) {
+            const frequency = parseInt(document.getElementById("geodesicOctaFrequency").value);
+            const projectionRadio = document.querySelector('input[name="geodesicOctaProjection"]:checked');
+            const projection = projectionRadio ? projectionRadio.value : "out";
+            const geodesicOcta = Polyhedra.geodesicOctahedron(1, isNaN(frequency) ? 1 : frequency, projection);
+            const eulerOK = RT.verifyEuler(
+              geodesicOcta.vertices.length,
+              geodesicOcta.edges.length,
+              geodesicOcta.faces.length
+            );
+            const triangles = countGroupTriangles(geodesicOctahedronGroup);
+            html += `<div style="margin-top: 10px;"><strong>Geodesic Octahedron:</strong></div>`;
+            html += `<div>Freq: ${isNaN(frequency) ? 1 : frequency}, Proj: ${projection}</div>`;
+            html += `<div>V: ${geodesicOcta.vertices.length}, E: ${geodesicOcta.edges.length}, F: ${geodesicOcta.faces.length}</div>`;
+            html += `<div>Triangles: ${triangles}</div>`;
+            html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
+          }
+
+          // Geodesic Icosahedron
+          if (document.getElementById("showGeodesicIcosahedron").checked) {
+            const frequency = parseInt(document.getElementById("geodesicIcosaFrequency").value);
+            const projectionRadio = document.querySelector('input[name="geodesicIcosaProjection"]:checked');
+            const projection = projectionRadio ? projectionRadio.value : "out";
+            const geodesicIcosa = Polyhedra.geodesicIcosahedron(1, isNaN(frequency) ? 1 : frequency, projection);
+            const eulerOK = RT.verifyEuler(
+              geodesicIcosa.vertices.length,
+              geodesicIcosa.edges.length,
+              geodesicIcosa.faces.length
+            );
+            const triangles = countGroupTriangles(geodesicIcosahedronGroup);
+            html += `<div style="margin-top: 10px;"><strong>Geodesic Icosahedron:</strong></div>`;
+            html += `<div>Freq: ${isNaN(frequency) ? 1 : frequency}, Proj: ${projection}</div>`;
+            html += `<div>V: ${geodesicIcosa.vertices.length}, E: ${geodesicIcosa.edges.length}, F: ${geodesicIcosa.faces.length}</div>`;
+            html += `<div>Triangles: ${triangles}</div>`;
             html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
           }
 
           stats.innerHTML = html || "Select a polyhedron to see stats";
         }
 
+        // ========================================================================
+        // PERFORMANCE MONITORING INITIALIZATION
+        // ========================================================================
+        // Initialize PerformanceClock with scene groups after they're created
+        // (Happens in initScene() - see geodesicOctahedronGroup creation below)
+
         /**
-         * Animation loop
+         * Animation loop with FPS tracking
          */
         function animate() {
           requestAnimationFrame(animate);
           controls.update(); // Required for damping
           renderer.render(scene, camera);
+
+          // Update FPS tracking and performance display
+          PerformanceClock.updateFPS();
+
+          // Update display every 10 frames (reduce overhead)
+          if (Math.floor(performance.now() / 100) % 10 === 0) {
+            PerformanceClock.updateDisplay(useRTNodeGeometry);
+          }
         }
 
         /**
@@ -2874,6 +3064,8 @@
         // Node size selector functionality
         document.querySelectorAll(".node-size-btn").forEach(btn => {
           btn.addEventListener("click", function () {
+            // Clear geometry cache when size changes
+            nodeGeometryCache.clear();
             // Remove active from all buttons
             document
               .querySelectorAll(".node-size-btn")
@@ -2892,6 +3084,8 @@
           .getElementById("nodeGeomClassical")
           .addEventListener("click", function () {
             useRTNodeGeometry = false;
+            // Clear geometry cache when switching node types
+            nodeGeometryCache.clear();
             document
               .getElementById("nodeGeomClassical")
               .classList.add("active");
@@ -2903,12 +3097,19 @@
           .getElementById("nodeGeomRT")
           .addEventListener("click", function () {
             useRTNodeGeometry = true;
+            // Clear geometry cache when switching node types
+            nodeGeometryCache.clear();
             document.getElementById("nodeGeomRT").classList.add("active");
             document
               .getElementById("nodeGeomClassical")
               .classList.remove("active");
             updateGeometry();
           });
+
+        // Node shading toggle (Faceted vs Smooth)
+        document
+          .getElementById("nodeFlatShading")
+          .addEventListener("change", updateGeometry);
 
         // ========================================================================
         // GUMBALL TOOL FUNCTIONALITY
