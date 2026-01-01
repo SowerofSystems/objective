@@ -36,14 +36,59 @@
         <h2>A.R.T Explorer</h2>
         <h5>by Andy Ross Thomson</h5>
         <br />
-        <!-- Coordinate System Toggle -->
+        <!-- ========================================
+             SECTION 1: FILE
+             ======================================== -->
+        <div class="control-group">
+          <h3>
+            <span
+              class="section-toggle collapsed"
+              data-target="file-section"
+            ></span>
+            File
+          </h3>
+          <div id="file-section" class="section-content collapsed">
+            <div class="control-item">
+              <label class="label-section">File Operations</label>
+              <div class="toggle-btn-group">
+                <button
+                  class="toggle-btn variant-standard"
+                  id="importBtn"
+                  disabled
+                >
+                  Import
+                </button>
+                <button
+                  class="toggle-btn variant-standard"
+                  id="exportBtn"
+                  disabled
+                >
+                  Export
+                </button>
+                <button
+                  class="toggle-btn variant-standard"
+                  id="saveBtn"
+                  disabled
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+            <p class="info-text">StateManager integration - Coming soon</p>
+          </div>
+        </div>
+        <!-- END SECTION 1: FILE -->
+
+        <!-- ========================================
+             SECTION 2: COORDINATE SYSTEMS
+             ======================================== -->
         <div class="control-group">
           <h3>
             <span
               class="section-toggle collapsed"
               data-target="coordinate-system-section"
             ></span>
-            Coordinate System
+            Coordinate Systems
           </h3>
           <div id="coordinate-system-section" class="section-content collapsed">
             <div class="control-item">
@@ -227,8 +272,11 @@
             </div>
           </div>
         </div>
+        <!-- END SECTION 2: COORDINATE SYSTEMS -->
 
-        <!-- Forms Selection -->
+        <!-- ========================================
+             SECTION 3: FORMS
+             ======================================== -->
         <div class="control-group">
           <h3>
             <span class="section-toggle" data-target="forms-section"></span>
@@ -570,104 +618,20 @@
             </div>
           </div>
         </div>
+        <!-- END SECTION 3: FORMS -->
 
-        <!-- Scale Controls -->
+        <!-- ========================================
+             SECTION 4: CONTROLS
+             ======================================== -->
         <div class="control-group">
           <h3>
             <span
               class="section-toggle collapsed"
-              data-target="scale-section"
+              data-target="controls-section"
             ></span>
-            Scale
-          </h3>
-          <div id="scale-section" class="section-content collapsed">
-            <div class="control-item">
-              <label>Cube Edge Length</label>
-              <div class="slider-container">
-                <input
-                  type="range"
-                  id="scaleSlider"
-                  min="0.5"
-                  max="3.6"
-                  step="0.1"
-                  value="1.4"
-                />
-                <span class="slider-value" id="scaleValue">1.4142</span>
-              </div>
-            </div>
-            <div class="control-item">
-              <label>Tetrahedron Edge Length</label>
-              <div class="slider-container">
-                <input
-                  type="range"
-                  id="tetScaleSlider"
-                  min="0.7"
-                  max="5.0"
-                  step="0.1"
-                  value="2.0"
-                />
-                <span class="slider-value" id="tetScaleValue">2.0000</span>
-              </div>
-            </div>
-            <p class="info-text" style="font-size: 10px; margin-top: 5px">
-              Linked sliders: rational units follow whichever you adjust
-            </p>
-          </div>
-        </div>
-
-        <!-- Visual Options -->
-        <div class="control-group">
-          <h3>
-            <span
-              class="section-toggle collapsed"
-              data-target="visual-options-section"
-            ></span>
-            Visual Options
-          </h3>
-          <div id="visual-options-section" class="section-content collapsed">
-            <div class="control-item">
-              <label
-                style="
-                  font-size: 12px;
-                  margin-bottom: 5px;
-                  display: block;
-                  color: #b0b0b0;
-                "
-                >Nodes</label
-              >
-              <div class="node-size-selector">
-                <button class="node-size-btn" data-node-size="off">Off</button>
-                <button class="node-size-btn" data-node-size="sm">Sm</button>
-                <button class="node-size-btn active" data-node-size="md">
-                  Md
-                </button>
-                <button class="node-size-btn" data-node-size="lg">Lg</button>
-              </div>
-            </div>
-            <div class="control-item">
-              <label>Face Opacity</label>
-              <div class="slider-container">
-                <input
-                  type="range"
-                  id="opacitySlider"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  value="0.25"
-                />
-                <span class="slider-value" id="opacityValue">0.25</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Controls (ART Gumball) -->
-        <div class="control-group">
-          <h3>
-            <span class="section-toggle" data-target="controls-section"></span>
             Controls
           </h3>
-          <div id="controls-section" class="section-content">
+          <div id="controls-section" class="section-content collapsed">
             <!-- Tool Mode -->
             <div class="control-item">
               <label class="label-section">Tool Mode</label>
@@ -817,15 +781,30 @@
               <div class="coordinate-inputs">
                 <div class="coord-container">
                   <label class="label-axis label-axis-x">X:</label>
-                  <input type="text" id="rotXDegrees" class="coord-input axis-x" value="0.00" />
+                  <input
+                    type="text"
+                    id="rotXDegrees"
+                    class="coord-input axis-x"
+                    value="0.00"
+                  />
                 </div>
                 <div class="coord-container">
                   <label class="label-axis label-axis-y">Y:</label>
-                  <input type="text" id="rotYDegrees" class="coord-input axis-y" value="0.00" />
+                  <input
+                    type="text"
+                    id="rotYDegrees"
+                    class="coord-input axis-y"
+                    value="0.00"
+                  />
                 </div>
                 <div class="coord-container">
                   <label class="label-axis label-axis-z">Z:</label>
-                  <input type="text" id="rotZDegrees" class="coord-input axis-z" value="0.00" />
+                  <input
+                    type="text"
+                    id="rotZDegrees"
+                    class="coord-input axis-z"
+                    value="0.00"
+                  />
                 </div>
               </div>
             </div>
@@ -836,15 +815,30 @@
               <div class="coordinate-inputs">
                 <div class="coord-container">
                   <label class="label-axis label-axis-x">X:</label>
-                  <input type="text" id="rotXSpread" class="coord-input axis-x" value="0.00" />
+                  <input
+                    type="text"
+                    id="rotXSpread"
+                    class="coord-input axis-x"
+                    value="0.00"
+                  />
                 </div>
                 <div class="coord-container">
                   <label class="label-axis label-axis-y">Y:</label>
-                  <input type="text" id="rotYSpread" class="coord-input axis-y" value="0.00" />
+                  <input
+                    type="text"
+                    id="rotYSpread"
+                    class="coord-input axis-y"
+                    value="0.00"
+                  />
                 </div>
                 <div class="coord-container">
                   <label class="label-axis label-axis-z">Z:</label>
-                  <input type="text" id="rotZSpread" class="coord-input axis-z" value="0.00" />
+                  <input
+                    type="text"
+                    id="rotZSpread"
+                    class="coord-input axis-z"
+                    value="0.00"
+                  />
                 </div>
               </div>
             </div>
@@ -855,19 +849,39 @@
               <div class="coordinate-inputs">
                 <div class="coord-container">
                   <label class="label-axis label-axis-w">W:</label>
-                  <input type="text" id="rotWDegrees" class="coord-input axis-w" value="0.00" />
+                  <input
+                    type="text"
+                    id="rotWDegrees"
+                    class="coord-input axis-w"
+                    value="0.00"
+                  />
                 </div>
                 <div class="coord-container">
                   <label class="label-axis label-axis-x">X:</label>
-                  <input type="text" id="rotXQDegrees" class="coord-input axis-x" value="0.00" />
+                  <input
+                    type="text"
+                    id="rotXQDegrees"
+                    class="coord-input axis-x"
+                    value="0.00"
+                  />
                 </div>
                 <div class="coord-container">
                   <label class="label-axis label-axis-y">Y:</label>
-                  <input type="text" id="rotYQDegrees" class="coord-input axis-y" value="0.00" />
+                  <input
+                    type="text"
+                    id="rotYQDegrees"
+                    class="coord-input axis-y"
+                    value="0.00"
+                  />
                 </div>
                 <div class="coord-container">
                   <label class="label-axis label-axis-z">Z:</label>
-                  <input type="text" id="rotZQDegrees" class="coord-input axis-z" value="0.00" />
+                  <input
+                    type="text"
+                    id="rotZQDegrees"
+                    class="coord-input axis-z"
+                    value="0.00"
+                  />
                 </div>
               </div>
             </div>
@@ -878,19 +892,39 @@
               <div class="coordinate-inputs">
                 <div class="coord-container">
                   <label class="label-axis label-axis-w">W:</label>
-                  <input type="text" id="rotWSpread" class="coord-input axis-w" value="0.00" />
+                  <input
+                    type="text"
+                    id="rotWSpread"
+                    class="coord-input axis-w"
+                    value="0.00"
+                  />
                 </div>
                 <div class="coord-container">
                   <label class="label-axis label-axis-x">X:</label>
-                  <input type="text" id="rotXQSpread" class="coord-input axis-x" value="0.00" />
+                  <input
+                    type="text"
+                    id="rotXQSpread"
+                    class="coord-input axis-x"
+                    value="0.00"
+                  />
                 </div>
                 <div class="coord-container">
                   <label class="label-axis label-axis-y">Y:</label>
-                  <input type="text" id="rotYQSpread" class="coord-input axis-y" value="0.00" />
+                  <input
+                    type="text"
+                    id="rotYQSpread"
+                    class="coord-input axis-y"
+                    value="0.00"
+                  />
                 </div>
                 <div class="coord-container">
                   <label class="label-axis label-axis-z">Z:</label>
-                  <input type="text" id="rotZQSpread" class="coord-input axis-z" value="0.00" />
+                  <input
+                    type="text"
+                    id="rotZQSpread"
+                    class="coord-input axis-z"
+                    value="0.00"
+                  />
                 </div>
               </div>
               <p class="info-text spacing-top-small">
@@ -899,55 +933,137 @@
             </div>
           </div>
         </div>
+        <!-- END SECTION 4: CONTROLS -->
 
-        <!-- File -->
+        <!-- ========================================
+             SECTION 5: SCALE
+             ======================================== -->
         <div class="control-group">
           <h3>
             <span
               class="section-toggle collapsed"
-              data-target="file-section"
+              data-target="scale-section"
             ></span>
-            File
+            Scale
           </h3>
-          <div id="file-section" class="section-content collapsed">
+          <div id="scale-section" class="section-content collapsed">
             <div class="control-item">
-              <label class="label-section">File Operations</label>
-              <div class="toggle-btn-group">
-                <button
-                  class="toggle-btn variant-standard"
-                  id="importBtn"
-                  disabled
-                >
-                  Import
-                </button>
-                <button
-                  class="toggle-btn variant-standard"
-                  id="exportBtn"
-                  disabled
-                >
-                  Export
-                </button>
-                <button
-                  class="toggle-btn variant-standard"
-                  id="saveBtn"
-                  disabled
-                >
-                  Save
-                </button>
+              <label>Cube Edge Length</label>
+              <div class="slider-container">
+                <input
+                  type="range"
+                  id="scaleSlider"
+                  min="0.5"
+                  max="3.6"
+                  step="0.1"
+                  value="1.4"
+                />
+                <span class="slider-value" id="scaleValue">1.4142</span>
               </div>
             </div>
-            <p class="info-text">StateManager integration - Coming soon</p>
+            <div class="control-item">
+              <label>Tetrahedron Edge Length</label>
+              <div class="slider-container">
+                <input
+                  type="range"
+                  id="tetScaleSlider"
+                  min="0.7"
+                  max="5.0"
+                  step="0.1"
+                  value="2.0"
+                />
+                <span class="slider-value" id="tetScaleValue">2.0000</span>
+              </div>
+            </div>
+            <p class="info-text" style="font-size: 10px; margin-top: 5px">
+              Linked sliders: rational units follow whichever you adjust
+            </p>
           </div>
         </div>
+        <!-- END SECTION 5: SCALE -->
 
-        <!-- View -->
+        <!-- ========================================
+             SECTION 6: VISUAL OPTIONS
+             ======================================== -->
+        <div class="control-group">
+          <h3>
+            <span
+              class="section-toggle collapsed"
+              data-target="visual-options-section"
+            ></span>
+            Visual Options
+          </h3>
+          <div id="visual-options-section" class="section-content collapsed">
+            <div class="control-item">
+              <label
+                style="
+                  font-size: 12px;
+                  margin-bottom: 5px;
+                  display: block;
+                  color: #b0b0b0;
+                "
+                >Nodes</label
+              >
+              <div class="node-size-selector">
+                <button class="node-size-btn" data-node-size="off">Off</button>
+                <button class="node-size-btn" data-node-size="sm">Sm</button>
+                <button class="node-size-btn active" data-node-size="md">
+                  Md
+                </button>
+                <button class="node-size-btn" data-node-size="lg">Lg</button>
+              </div>
+            </div>
+            <div class="control-item spacing-top-medium">
+              <label class="label-section">Node Geometry</label>
+              <div class="toggle-btn-group">
+                <button
+                  class="toggle-btn variant-snap active"
+                  id="nodeGeomClassical"
+                  data-node-geom="classical"
+                >
+                  Classical Spheres
+                </button>
+                <button
+                  class="toggle-btn variant-snap"
+                  id="nodeGeomRT"
+                  data-node-geom="rt"
+                >
+                  RT Geodesics
+                </button>
+              </div>
+              <p class="info-text" style="font-size: 10px; margin-top: 5px">
+                Toggle between THREE.js spheres and RT-computed geodesic nodes
+                for performance comparison
+              </p>
+            </div>
+            <div class="control-item">
+              <label>Face Opacity</label>
+              <div class="slider-container">
+                <input
+                  type="range"
+                  id="opacitySlider"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value="0.25"
+                />
+                <span class="slider-value" id="opacityValue">0.25</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- END SECTION 6: VISUAL OPTIONS -->
+
+        <!-- ========================================
+             SECTION 7: VIEW OPTIONS
+             ======================================== -->
         <div class="control-group">
           <h3>
             <span
               class="section-toggle collapsed"
               data-target="view-section"
             ></span>
-            View
+            View Options
           </h3>
           <div id="view-section" class="section-content collapsed">
             <div class="control-item">
@@ -994,8 +1110,11 @@
             </p>
           </div>
         </div>
+        <!-- END SECTION 7: VIEW OPTIONS -->
 
-        <!-- Papercut -->
+        <!-- ========================================
+             SECTION 8: PAPERCUT
+             ======================================== -->
         <div class="control-group">
           <h3>
             <span
@@ -1059,17 +1178,20 @@
             <p class="info-text">Print optimization tools - Coming soon</p>
           </div>
         </div>
+        <!-- END SECTION 8: PAPERCUT -->
 
-        <!-- Geometry Info -->
+        <!-- ========================================
+             SECTION 9: GEOMETRY INFO
+             ======================================== -->
         <div class="control-group">
           <h3>
             <span
-              class="section-toggle collapsed"
+              class="section-toggle"
               data-target="geometry-info-section"
             ></span>
             Geometry Info
           </h3>
-          <div id="geometry-info-section" class="section-content collapsed">
+          <div id="geometry-info-section" class="section-content">
             <div class="stats" id="geometryStats">
               <div><strong>Cube:</strong></div>
               <div>Vertices: 8</div>
@@ -1083,6 +1205,7 @@
             </p>
           </div>
         </div>
+        <!-- END SECTION 9: GEOMETRY INFO -->
       </div>
     </div>
 
@@ -1100,6 +1223,11 @@
       // ========================================================================
       // MODULE IMPORTS
       // ========================================================================
+      import { Polyhedra } from "./modules/rt-polyhedra.js";
+
+      // Make RTPolyhedra available globally for node geometry creation
+      window.RTPolyhedra = Polyhedra;
+
       // TODO: Uncomment when ready to extract gumball to module
       // import { RTControls } from "./modules/rt-controls.js";
 
@@ -1795,15 +1923,54 @@
 
           // Render vertex nodes using instanced geometry for efficiency
           if (showNodes) {
-            // Node size mapping: sm = 0.02, md = 0.04 (half of original), lg = 0.08 (original)
-            const nodeSizes = {
-              sm: 0.02,
-              md: 0.04,
-              lg: 0.08,
-            };
-            const radius = nodeSizes[nodeSize];
+            // Choose geometry based on toggle: Classical THREE.js spheres vs RT geodesics
+            let nodeGeometry;
+            if (useRTNodeGeometry) {
+              // Use RT-computed Octahedron Freq-2 for performance and dogfooding
+              // Size mapping: sm = insphere, md = midsphere, lg = outsphere
+              // For a unit octahedron: insphere = s/√2, midsphere = s, outsphere = s√2
+              // Base size s = 0.04 (medium reference)
+              const baseSize = 0.04;
+              const rtSizes = {
+                sm: baseSize / Math.sqrt(2), // Insphere: ~0.028
+                md: baseSize, // Midsphere: 0.04
+                lg: baseSize * Math.sqrt(2), // Outsphere: ~0.057
+              };
+              const radius = rtSizes[nodeSize];
 
-            const nodeGeometry = new THREE.SphereGeometry(radius, 16, 16);
+              // Get polyhedra data from RTPolyhedra
+              const polyData = window.RTPolyhedra.geodesicOctahedron(radius, 2, "out");
+
+              // Convert to THREE.BufferGeometry
+              nodeGeometry = new THREE.BufferGeometry();
+              const positions = [];
+              const indices = [];
+
+              polyData.vertices.forEach(v => {
+                positions.push(v.x, v.y, v.z);
+              });
+
+              polyData.faces.forEach(faceIndices => {
+                for (let i = 1; i < faceIndices.length - 1; i++) {
+                  indices.push(faceIndices[0], faceIndices[i], faceIndices[i + 1]);
+                }
+              });
+
+              nodeGeometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+              nodeGeometry.setIndex(indices);
+              nodeGeometry.computeVertexNormals();
+            } else {
+              // Classical THREE.js sphere (slower, more triangles)
+              // Node size mapping: sm = 0.02, md = 0.04, lg = 0.08
+              const nodeSizes = {
+                sm: 0.02,
+                md: 0.04,
+                lg: 0.08,
+              };
+              const radius = nodeSizes[nodeSize];
+              nodeGeometry = new THREE.SphereGeometry(radius, 16, 16);
+            }
+
             const nodeMaterial = new THREE.MeshStandardMaterial({
               color: color,
               emissive: color,
@@ -2501,7 +2668,9 @@
             controls.object = orthographicCamera;
             isOrthographic = true;
 
-            console.log("✅ Switched to Orthographic camera (parallel projection)");
+            console.log(
+              "✅ Switched to Orthographic camera (parallel projection)"
+            );
           } else if (!toOrthographic && isOrthographic) {
             // Switch back to perspective - use ORIGINAL perspective camera
             if (!originalPerspectiveCamera) {
@@ -2716,6 +2885,31 @@
           });
         });
 
+        // Node geometry type toggle (Classical vs RT)
+        let useRTNodeGeometry = false; // Default to classical THREE.js spheres
+
+        document
+          .getElementById("nodeGeomClassical")
+          .addEventListener("click", function () {
+            useRTNodeGeometry = false;
+            document
+              .getElementById("nodeGeomClassical")
+              .classList.add("active");
+            document.getElementById("nodeGeomRT").classList.remove("active");
+            updateGeometry();
+          });
+
+        document
+          .getElementById("nodeGeomRT")
+          .addEventListener("click", function () {
+            useRTNodeGeometry = true;
+            document.getElementById("nodeGeomRT").classList.add("active");
+            document
+              .getElementById("nodeGeomClassical")
+              .classList.remove("active");
+            updateGeometry();
+          });
+
         // ========================================================================
         // GUMBALL TOOL FUNCTIONALITY
         // ========================================================================
@@ -2858,22 +3052,26 @@
           }
 
           // Degrees → Spread
-          degreesInput.addEventListener("input", function(e) {
+          degreesInput.addEventListener("input", function (e) {
             const degreesValue = parseFloat(e.target.value);
             if (!isNaN(degreesValue)) {
               const spreadValue = RT.degreesToSpread(degreesValue);
               spreadInput.value = spreadValue.toFixed(2);
-              console.log(`🔄 ${axis}: ${degreesValue.toFixed(2)}° → Spread: ${spreadValue.toFixed(2)}`);
+              console.log(
+                `🔄 ${axis}: ${degreesValue.toFixed(2)}° → Spread: ${spreadValue.toFixed(2)}`
+              );
             }
           });
 
           // Spread → Degrees
-          spreadInput.addEventListener("input", function(e) {
+          spreadInput.addEventListener("input", function (e) {
             const spreadValue = parseFloat(e.target.value);
             if (!isNaN(spreadValue)) {
               const degreesValue = RT.spreadToDegrees(spreadValue);
               degreesInput.value = degreesValue.toFixed(2);
-              console.log(`🔄 ${axis}: Spread: ${spreadValue.toFixed(2)} → ${degreesValue.toFixed(2)}°`);
+              console.log(
+                `🔄 ${axis}: Spread: ${spreadValue.toFixed(2)} → ${degreesValue.toFixed(2)}°`
+              );
             }
           });
         }
@@ -2899,12 +3097,16 @@
          */
         function exitToolMode() {
           if (currentGumballTool) {
-            console.log(`🚪 Exiting ${currentGumballTool} mode - selection preserved`);
+            console.log(
+              `🚪 Exiting ${currentGumballTool} mode - selection preserved`
+            );
 
             // Deactivate tool button
-            document.querySelectorAll(".toggle-btn.variant-tool").forEach(btn => {
-              btn.classList.remove("active");
-            });
+            document
+              .querySelectorAll(".toggle-btn.variant-tool")
+              .forEach(btn => {
+                btn.classList.remove("active");
+              });
 
             currentGumballTool = null;
             controls.enabled = true; // Re-enable orbit controls
@@ -2915,7 +3117,9 @@
               editingBasis = null;
             }
 
-            console.log("✅ Tool mode exited - orbit enabled, selection preserved");
+            console.log(
+              "✅ Tool mode exited - orbit enabled, selection preserved"
+            );
           }
         }
 
@@ -2924,23 +3128,23 @@
          */
         function setupMoveCoordinateInputs() {
           const coordInputs = [
-            { id: 'coordX', axis: 'x', name: 'X' },
-            { id: 'coordY', axis: 'y', name: 'Y' },
-            { id: 'coordZ', axis: 'z', name: 'Z' }
+            { id: "coordX", axis: "x", name: "X" },
+            { id: "coordY", axis: "y", name: "Y" },
+            { id: "coordZ", axis: "z", name: "Z" },
           ];
 
           coordInputs.forEach(({ id, axis, name }) => {
             const input = document.getElementById(id);
             if (!input) return;
 
-            input.addEventListener('keydown', function(e) {
-              if (e.key === 'Enter' && currentGumballTool === 'move') {
+            input.addEventListener("keydown", function (e) {
+              if (e.key === "Enter" && currentGumballTool === "move") {
                 const value = parseFloat(e.target.value);
                 if (isNaN(value)) return;
 
                 const selected = getSelectedPolyhedra();
                 if (selected.length === 0) {
-                  console.warn('⚠️ No polyhedra selected');
+                  console.warn("⚠️ No polyhedra selected");
                   return;
                 }
 
@@ -2984,48 +3188,56 @@
          */
         function setupMoveQuadrayInputs() {
           const coordInputs = [
-            { id: 'coordW', index: 0, name: 'W' },
-            { id: 'coordX2', index: 1, name: 'X' },
-            { id: 'coordY2', index: 2, name: 'Y' },
-            { id: 'coordZ2', index: 3, name: 'Z' }
+            { id: "coordW", index: 0, name: "W" },
+            { id: "coordX2", index: 1, name: "X" },
+            { id: "coordY2", index: 2, name: "Y" },
+            { id: "coordZ2", index: 3, name: "Z" },
           ];
 
           coordInputs.forEach(({ id, index, name }) => {
             const input = document.getElementById(id);
             if (!input) return;
 
-            input.addEventListener('keydown', function(e) {
-              if (e.key === 'Enter' && currentGumballTool === 'move') {
+            input.addEventListener("keydown", function (e) {
+              if (e.key === "Enter" && currentGumballTool === "move") {
                 const value = parseFloat(e.target.value);
                 if (isNaN(value)) return;
 
                 const selected = getSelectedPolyhedra();
                 if (selected.length === 0) {
-                  console.warn('⚠️ No polyhedra selected');
+                  console.warn("⚠️ No polyhedra selected");
                   return;
                 }
 
                 // Get all WXYZ values
                 let wxyz = [
-                  parseFloat(document.getElementById('coordW').value),
-                  parseFloat(document.getElementById('coordX2').value),
-                  parseFloat(document.getElementById('coordY2').value),
-                  parseFloat(document.getElementById('coordZ2').value)
+                  parseFloat(document.getElementById("coordW").value),
+                  parseFloat(document.getElementById("coordX2").value),
+                  parseFloat(document.getElementById("coordY2").value),
+                  parseFloat(document.getElementById("coordZ2").value),
                 ];
 
                 // Convert WXYZ to Cartesian
-                const newPos = Quadray.toCartesian(wxyz[0], wxyz[1], wxyz[2], wxyz[3], THREE);
+                const newPos = Quadray.toCartesian(
+                  wxyz[0],
+                  wxyz[1],
+                  wxyz[2],
+                  wxyz[3],
+                  THREE
+                );
 
                 // Apply position
                 selected.forEach(poly => {
                   poly.position.copy(newPos);
-                  console.log(`📍 WXYZ position set: (${wxyz[0].toFixed(4)}, ${wxyz[1].toFixed(4)}, ${wxyz[2].toFixed(4)}, ${wxyz[3].toFixed(4)})`);
+                  console.log(
+                    `📍 WXYZ position set: (${wxyz[0].toFixed(4)}, ${wxyz[1].toFixed(4)}, ${wxyz[2].toFixed(4)}, ${wxyz[3].toFixed(4)})`
+                  );
                 });
 
                 // Update XYZ coordinates
-                document.getElementById('coordX').value = newPos.x.toFixed(4);
-                document.getElementById('coordY').value = newPos.y.toFixed(4);
-                document.getElementById('coordZ').value = newPos.z.toFixed(4);
+                document.getElementById("coordX").value = newPos.x.toFixed(4);
+                document.getElementById("coordY").value = newPos.y.toFixed(4);
+                document.getElementById("coordZ").value = newPos.z.toFixed(4);
 
                 // Update editing basis position if it exists
                 if (editingBasis && selected.length > 0) {
@@ -3044,23 +3256,23 @@
          */
         function setupRotateDegreesInputs() {
           const rotInputs = [
-            { id: 'rotXDegrees', axis: new THREE.Vector3(1, 0, 0), name: 'X' },
-            { id: 'rotYDegrees', axis: new THREE.Vector3(0, 1, 0), name: 'Y' },
-            { id: 'rotZDegrees', axis: new THREE.Vector3(0, 0, 1), name: 'Z' }
+            { id: "rotXDegrees", axis: new THREE.Vector3(1, 0, 0), name: "X" },
+            { id: "rotYDegrees", axis: new THREE.Vector3(0, 1, 0), name: "Y" },
+            { id: "rotZDegrees", axis: new THREE.Vector3(0, 0, 1), name: "Z" },
           ];
 
           rotInputs.forEach(({ id, axis, name }) => {
             const input = document.getElementById(id);
             if (!input) return;
 
-            input.addEventListener('keydown', function(e) {
-              if (e.key === 'Enter' && currentGumballTool === 'rotate') {
+            input.addEventListener("keydown", function (e) {
+              if (e.key === "Enter" && currentGumballTool === "rotate") {
                 const degrees = parseFloat(e.target.value);
                 if (isNaN(degrees)) return;
 
                 const selected = getSelectedPolyhedra();
                 if (selected.length === 0) {
-                  console.warn('⚠️ No polyhedra selected');
+                  console.warn("⚠️ No polyhedra selected");
                   return;
                 }
 
@@ -3069,7 +3281,9 @@
                 // Apply rotation
                 selected.forEach(poly => {
                   poly.rotateOnWorldAxis(axis, radians);
-                  console.log(`🔄 Rotated ${degrees.toFixed(2)}° around ${name} axis`);
+                  console.log(
+                    `🔄 Rotated ${degrees.toFixed(2)}° around ${name} axis`
+                  );
                 });
 
                 // Exit tool mode but keep selection
@@ -3084,24 +3298,24 @@
          */
         function setupRotateQuadrayDegreesInputs() {
           const rotInputs = [
-            { id: 'rotWDegrees', basisIndex: 0, name: 'W' },
-            { id: 'rotXQDegrees', basisIndex: 1, name: 'X (Quadray)' },
-            { id: 'rotYQDegrees', basisIndex: 2, name: 'Y (Quadray)' },
-            { id: 'rotZQDegrees', basisIndex: 3, name: 'Z (Quadray)' }
+            { id: "rotWDegrees", basisIndex: 0, name: "W" },
+            { id: "rotXQDegrees", basisIndex: 1, name: "X (Quadray)" },
+            { id: "rotYQDegrees", basisIndex: 2, name: "Y (Quadray)" },
+            { id: "rotZQDegrees", basisIndex: 3, name: "Z (Quadray)" },
           ];
 
           rotInputs.forEach(({ id, basisIndex, name }) => {
             const input = document.getElementById(id);
             if (!input) return;
 
-            input.addEventListener('keydown', function(e) {
-              if (e.key === 'Enter' && currentGumballTool === 'rotate') {
+            input.addEventListener("keydown", function (e) {
+              if (e.key === "Enter" && currentGumballTool === "rotate") {
                 const degrees = parseFloat(e.target.value);
                 if (isNaN(degrees)) return;
 
                 const selected = getSelectedPolyhedra();
                 if (selected.length === 0) {
-                  console.warn('⚠️ No polyhedra selected');
+                  console.warn("⚠️ No polyhedra selected");
                   return;
                 }
 
@@ -3111,7 +3325,9 @@
                 // Apply rotation
                 selected.forEach(poly => {
                   poly.rotateOnWorldAxis(axis, radians);
-                  console.log(`🔄 Rotated ${degrees.toFixed(2)}° around ${name} axis`);
+                  console.log(
+                    `🔄 Rotated ${degrees.toFixed(2)}° around ${name} axis`
+                  );
                 });
 
                 // Exit tool mode but keep selection
@@ -3155,7 +3371,9 @@
           // Use tetEdge from slider for arrow length (performant, works for all forms)
           // For platonic solids: tetEdge ≈ OutSphere radius (good fit)
           // For geodesics: tetEdge < OutSphere (handles outside - easier to grab)
-          const tetEdge = parseFloat(document.getElementById("tetScaleSlider").value);
+          const tetEdge = parseFloat(
+            document.getElementById("tetScaleSlider").value
+          );
           const arrowLength = tetEdge;
           const headLength = 0.3;
 
@@ -3171,8 +3389,8 @@
           */
 
           // Determine handle type based on active tool
-          const isScaleMode = currentGumballTool === 'scale';
-          const isRotateMode = currentGumballTool === 'rotate';
+          const isScaleMode = currentGumballTool === "scale";
+          const isRotateMode = currentGumballTool === "rotate";
 
           let basisCount = 0;
 
@@ -3190,20 +3408,25 @@
 
                 // Create hexagonal circle using EllipseCurve with 6 segments
                 const curve = new THREE.EllipseCurve(
-                  0, 0,            // center x, y
-                  circleRadius, circleRadius, // xRadius, yRadius
-                  0, 2 * Math.PI,  // start angle, end angle
-                  false,           // clockwise
-                  0                // rotation
+                  0,
+                  0, // center x, y
+                  circleRadius,
+                  circleRadius, // xRadius, yRadius
+                  0,
+                  2 * Math.PI, // start angle, end angle
+                  false, // clockwise
+                  0 // rotation
                 );
 
                 const points = curve.getPoints(segments);
-                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const geometry = new THREE.BufferGeometry().setFromPoints(
+                  points
+                );
                 const material = new THREE.LineBasicMaterial({
                   color: quadrayColors[i],
                   linewidth: 2,
                   transparent: true,
-                  opacity: 0.8
+                  opacity: 0.8,
                 });
 
                 const rotationHandle = new THREE.LineLoop(geometry, material);
@@ -3211,7 +3434,10 @@
                 // Orient circle perpendicular to the axis vector
                 // Default circle is in XY plane (normal = Z-axis)
                 const defaultNormal = new THREE.Vector3(0, 0, 1);
-                const quaternion = new THREE.Quaternion().setFromUnitVectors(defaultNormal, vec);
+                const quaternion = new THREE.Quaternion().setFromUnitVectors(
+                  defaultNormal,
+                  vec
+                );
                 rotationHandle.setRotationFromQuaternion(quaternion);
 
                 editingBasis.add(rotationHandle);
@@ -3224,7 +3450,7 @@
                     color: quadrayColors[i],
                     transparent: true,
                     opacity: 0.2, // Visible for debugging
-                    depthTest: false
+                    depthTest: false,
                   })
                 );
 
@@ -3309,20 +3535,25 @@
 
                 // Create smooth circle using EllipseCurve with many segments
                 const curve = new THREE.EllipseCurve(
-                  0, 0,            // center x, y
-                  circleRadius, circleRadius, // xRadius, yRadius
-                  0, 2 * Math.PI,  // start angle, end angle
-                  false,           // clockwise
-                  0                // rotation
+                  0,
+                  0, // center x, y
+                  circleRadius,
+                  circleRadius, // xRadius, yRadius
+                  0,
+                  2 * Math.PI, // start angle, end angle
+                  false, // clockwise
+                  0 // rotation
                 );
 
                 const points = curve.getPoints(segments);
-                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const geometry = new THREE.BufferGeometry().setFromPoints(
+                  points
+                );
                 const material = new THREE.LineBasicMaterial({
                   color: cartesianColors[i],
                   linewidth: 2,
                   transparent: true,
-                  opacity: 0.8
+                  opacity: 0.8,
                 });
 
                 const rotationHandle = new THREE.LineLoop(geometry, material);
@@ -3330,7 +3561,10 @@
                 // Orient circle perpendicular to the axis vector
                 // Default circle is in XY plane (normal = Z-axis)
                 const defaultNormal = new THREE.Vector3(0, 0, 1);
-                const quaternion = new THREE.Quaternion().setFromUnitVectors(defaultNormal, vec);
+                const quaternion = new THREE.Quaternion().setFromUnitVectors(
+                  defaultNormal,
+                  vec
+                );
                 rotationHandle.setRotationFromQuaternion(quaternion);
 
                 editingBasis.add(rotationHandle);
@@ -3343,7 +3577,7 @@
                     color: cartesianColors[i],
                     transparent: true,
                     opacity: 0.2, // Visible for debugging
-                    depthTest: false
+                    depthTest: false,
                   })
                 );
 
@@ -3664,7 +3898,9 @@
               // Keeping this check for backward compatibility
               if (
                 !currentGumballTool ||
-                (currentGumballTool !== "move" && currentGumballTool !== "scale" && currentGumballTool !== "rotate")
+                (currentGumballTool !== "move" &&
+                  currentGumballTool !== "scale" &&
+                  currentGumballTool !== "rotate")
               )
                 return;
 
@@ -3735,7 +3971,7 @@
                       mouseY: mouse.y,
                       // Store initial quaternions for all selected polyhedra
                       initialQuaternions: [],
-                      initialPositions: []
+                      initialPositions: [],
                     };
 
                     // Store selected polyhedra
@@ -3744,8 +3980,12 @@
                     // Store initial state for rotation mode
                     if (currentGumballTool === "rotate") {
                       selectedPolyhedra.forEach(poly => {
-                        dragStartPoint.userData.initialQuaternions.push(poly.quaternion.clone());
-                        dragStartPoint.userData.initialPositions.push(poly.position.clone());
+                        dragStartPoint.userData.initialQuaternions.push(
+                          poly.quaternion.clone()
+                        );
+                        dragStartPoint.userData.initialPositions.push(
+                          poly.position.clone()
+                        );
                       });
                     }
 
@@ -3844,7 +4084,9 @@
                     // UNIFORM SCALING: Use radial distance from origin
                     scaleMovement = movement.length();
                     // Determine direction (inward vs outward)
-                    const direction = movement.dot(currentPoint.clone().normalize());
+                    const direction = movement.dot(
+                      currentPoint.clone().normalize()
+                    );
                     if (direction < 0) scaleMovement = -scaleMovement;
                   } else {
                     // AXIS-CONSTRAINED SCALING: Project onto selected axis
@@ -3869,10 +4111,14 @@
 
                       // Calculate new scale multiplier
                       const scaleMultiplier = 1 + scaleDelta * 0.01; // Convert delta to percentage
-                      const newScale = poly.userData.currentScale * scaleMultiplier;
+                      const newScale =
+                        poly.userData.currentScale * scaleMultiplier;
 
                       // Clamp scale to reasonable bounds (0.1 to 10.0)
-                      const clampedScale = Math.max(0.1, Math.min(10.0, newScale));
+                      const clampedScale = Math.max(
+                        0.1,
+                        Math.min(10.0, newScale)
+                      );
 
                       // Apply uniform scale to the object
                       poly.scale.set(clampedScale, clampedScale, clampedScale);
@@ -3890,9 +4136,11 @@
                       selectedPolyhedra.length > 0 &&
                       !selectedPolyhedra[0].userData.isInstance
                     ) {
-                      const currentScale = selectedPolyhedra[0].userData.currentScale;
+                      const currentScale =
+                        selectedPolyhedra[0].userData.currentScale;
                       const cubeSlider = document.getElementById("scaleSlider");
-                      const tetSlider = document.getElementById("tetScaleSlider");
+                      const tetSlider =
+                        document.getElementById("tetScaleSlider");
 
                       // Update sliders to match the visual scale
                       const baseCubeEdge = 1.4142; // Default cube edge length
@@ -3919,7 +4167,9 @@
                   // ====================================================================
                   // Use screen-space mouse movement for rotation
                   // Project rotation center to screen space
-                  const rotationCenter = editingBasis ? editingBasis.position : new THREE.Vector3(0, 0, 0);
+                  const rotationCenter = editingBasis
+                    ? editingBasis.position
+                    : new THREE.Vector3(0, 0, 0);
                   const centerScreen = rotationCenter.clone().project(camera);
 
                   // Current mouse position in normalized device coordinates
@@ -3954,7 +4204,8 @@
                   const axisToCamera = selectedHandle.axis.dot(cameraDirection);
 
                   // Flip rotation direction if axis points away from camera
-                  let signedAngleRadians = axisToCamera > 0 ? -deltaAngle : deltaAngle;
+                  let signedAngleRadians =
+                    axisToCamera > 0 ? -deltaAngle : deltaAngle;
 
                   // ================================================================
                   // FULL CIRCLE ROTATION (360°) - No spread snapping for now
@@ -3962,10 +4213,12 @@
                   // Use the deltaAngle directly - it's already calculated correctly
                   // from the drag start point, so it supports full 360° rotation
                   const snappedAngleRadians = signedAngleRadians;
-                  const snappedAngleDegrees = (snappedAngleRadians * 180) / Math.PI;
+                  const snappedAngleDegrees =
+                    (snappedAngleRadians * 180) / Math.PI;
 
                   // Calculate spread for display only (not used for snapping yet)
-                  const spreadValue = Math.sin(signedAngleRadians) * Math.sin(signedAngleRadians);
+                  const spreadValue =
+                    Math.sin(signedAngleRadians) * Math.sin(signedAngleRadians);
                   const snappedSpread = spreadValue; // No snapping
 
                   /* TODO: Add spread snapping back once full rotation is working
@@ -4010,8 +4263,10 @@
                   if (selectedPolyhedra.length > 0) {
                     selectedPolyhedra.forEach((poly, index) => {
                       // Get initial quaternion and position from drag start data
-                      const initialQuaternion = dragStartPoint.userData.initialQuaternions[index];
-                      const initialPosition = dragStartPoint.userData.initialPositions[index];
+                      const initialQuaternion =
+                        dragStartPoint.userData.initialQuaternions[index];
+                      const initialPosition =
+                        dragStartPoint.userData.initialPositions[index];
 
                       // Reset to initial state FIRST
                       poly.quaternion.copy(initialQuaternion);
@@ -4021,14 +4276,28 @@
                       const offset = poly.position.clone().sub(rotationCenter);
 
                       // Rotate the offset vector by the TOTAL accumulated angle
-                      const rotatedOffset = offset.clone().applyAxisAngle(selectedHandle.axis, snappedAngleRadians);
+                      const rotatedOffset = offset
+                        .clone()
+                        .applyAxisAngle(
+                          selectedHandle.axis,
+                          snappedAngleRadians
+                        );
 
                       // Update position with rotated offset
-                      poly.position.copy(rotationCenter.clone().add(rotatedOffset));
+                      poly.position.copy(
+                        rotationCenter.clone().add(rotatedOffset)
+                      );
 
                       // Rotate the object itself using quaternion composition
-                      const rotationQuat = new THREE.Quaternion().setFromAxisAngle(selectedHandle.axis, snappedAngleRadians);
-                      poly.quaternion.multiplyQuaternions(rotationQuat, initialQuaternion);
+                      const rotationQuat =
+                        new THREE.Quaternion().setFromAxisAngle(
+                          selectedHandle.axis,
+                          snappedAngleRadians
+                        );
+                      poly.quaternion.multiplyQuaternions(
+                        rotationQuat,
+                        initialQuaternion
+                      );
 
                       console.log(
                         `✅ Rotated ${poly.userData.isInstance ? "Instance" : "Form"}: ${snappedAngleDegrees.toFixed(2)}° around ${selectedHandle.type}[${selectedHandle.index}]`
@@ -4040,7 +4309,10 @@
                 }
 
                 // Update coordinate inputs (MOVE MODE ONLY)
-                if (currentGumballTool === "move" && selectedPolyhedra.length > 0) {
+                if (
+                  currentGumballTool === "move" &&
+                  selectedPolyhedra.length > 0
+                ) {
                   const pos = selectedPolyhedra[0].position;
 
                   // Update XYZ coordinates

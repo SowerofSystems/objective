@@ -10,7 +10,7 @@
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   overflow: hidden;
   background: #1a1a1a;
   color: #e0e0e0;
@@ -222,7 +222,7 @@ button:active {
   font-size: 10px;
   color: #b0b0b0;
   text-align: center;
-  order: 2;  /* Label below toggle */
+  order: 2; /* Label below toggle */
 }
 
 .plane-toggle-switch {
@@ -300,7 +300,9 @@ button:active {
 .section-content {
   max-height: 2000px;
   overflow: hidden;
-  transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+  transition:
+    max-height 0.3s ease-out,
+    opacity 0.3s ease-out;
   opacity: 1;
 }
 
@@ -502,16 +504,32 @@ button:disabled {
 }
 
 /* Axis-specific label colors */
-.label-axis-x { color: #ff6666; }
-.label-axis-y { color: #66ff66; }
-.label-axis-z { color: #6666ff; }
-.label-axis-w { color: #ffff66; }
+.label-axis-x {
+  color: #ff6666;
+}
+.label-axis-y {
+  color: #66ff66;
+}
+.label-axis-z {
+  color: #6666ff;
+}
+.label-axis-w {
+  color: #ffff66;
+}
 
 /* Coordinate Input Axis Borders */
-.coord-input.axis-x { border-left: 2px solid #ff6666; }
-.coord-input.axis-y { border-left: 2px solid #66ff66; }
-.coord-input.axis-z { border-left: 2px solid #6666ff; }
-.coord-input.axis-w { border-left: 2px solid #ffff66; }
+.coord-input.axis-x {
+  border-left: 2px solid #ff6666;
+}
+.coord-input.axis-y {
+  border-left: 2px solid #66ff66;
+}
+.coord-input.axis-z {
+  border-left: 2px solid #6666ff;
+}
+.coord-input.axis-w {
+  border-left: 2px solid #ffff66;
+}
 
 /* Nested Content Spacing */
 .nested-content {
@@ -525,9 +543,15 @@ button:disabled {
 }
 
 /* Spacing Utilities */
-.spacing-top-small { margin-top: 5px; }
-.spacing-top-medium { margin-top: 8px; }
-.spacing-top-large { margin-top: 10px; }
+.spacing-top-small {
+  margin-top: 5px;
+}
+.spacing-top-medium {
+  margin-top: 8px;
+}
+.spacing-top-large {
+  margin-top: 10px;
+}
 
 /* Button Grid Layouts */
 .button-grid-2col {
