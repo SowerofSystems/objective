@@ -1036,6 +1036,15 @@
                 for performance comparison
               </p>
             </div>
+            <div class="control-item spacing-top-small">
+              <label class="checkbox-label">
+                <input type="checkbox" id="nodeFlatShading" />
+                Faceted Nodes (show geometry)
+              </label>
+              <p class="info-text" style="font-size: 10px; margin-top: 3px">
+                Show faceted geometry vs smooth "sphere" shading
+              </p>
+            </div>
             <div class="control-item">
               <label>Face Opacity</label>
               <div class="slider-container">
@@ -2031,11 +2040,14 @@
             const { geometry: nodeGeometry, triangles: trianglesPerNode } =
               getCachedNodeGeometry(useRTNodeGeometry, nodeSize);
 
+            // Get flatShading preference from checkbox
+            const useFlatShading = document.getElementById("nodeFlatShading")?.checked || false;
+
             const nodeMaterial = new THREE.MeshStandardMaterial({
               color: color,
               emissive: color,
               emissiveIntensity: 0.2,
-              flatShading: false, // Smooth shading for RT geodesic nodes
+              flatShading: useFlatShading, // User-controlled shading
             });
 
             vertices.forEach(vertex => {
@@ -2408,6 +2420,63 @@
             html += `<div style="margin-top: 10px;"><strong>Rhombic Dodecahedron:</strong></div>`;
             html += `<div>Catalan: V(3,4)</div>`;
             html += `<div>V: ${rhombicDodec.vertices.length}, E: ${rhombicDodec.edges.length}, F: ${rhombicDodec.faces.length}</div>`;
+            html += `<div>Triangles: ${triangles}</div>`;
+            html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
+          }
+
+          // Geodesic Tetrahedron
+          if (document.getElementById("showGeodesicTetrahedron").checked) {
+            const frequency = parseInt(document.getElementById("geodesicTetraFrequency").value);
+            const projectionRadio = document.querySelector('input[name="geodesicTetraProjection"]:checked');
+            const projection = projectionRadio ? projectionRadio.value : "out";
+            const geodesicTetra = Polyhedra.geodesicTetrahedron(1, isNaN(frequency) ? 1 : frequency, projection);
+            const eulerOK = RT.verifyEuler(
+              geodesicTetra.vertices.length,
+              geodesicTetra.edges.length,
+              geodesicTetra.faces.length
+            );
+            const triangles = countGroupTriangles(geodesicTetrahedronGroup);
+            html += `<div style="margin-top: 10px;"><strong>Geodesic Tetrahedron:</strong></div>`;
+            html += `<div>Freq: ${isNaN(frequency) ? 1 : frequency}, Proj: ${projection}</div>`;
+            html += `<div>V: ${geodesicTetra.vertices.length}, E: ${geodesicTetra.edges.length}, F: ${geodesicTetra.faces.length}</div>`;
+            html += `<div>Triangles: ${triangles}</div>`;
+            html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
+          }
+
+          // Geodesic Octahedron
+          if (document.getElementById("showGeodesicOctahedron").checked) {
+            const frequency = parseInt(document.getElementById("geodesicOctaFrequency").value);
+            const projectionRadio = document.querySelector('input[name="geodesicOctaProjection"]:checked');
+            const projection = projectionRadio ? projectionRadio.value : "out";
+            const geodesicOcta = Polyhedra.geodesicOctahedron(1, isNaN(frequency) ? 1 : frequency, projection);
+            const eulerOK = RT.verifyEuler(
+              geodesicOcta.vertices.length,
+              geodesicOcta.edges.length,
+              geodesicOcta.faces.length
+            );
+            const triangles = countGroupTriangles(geodesicOctahedronGroup);
+            html += `<div style="margin-top: 10px;"><strong>Geodesic Octahedron:</strong></div>`;
+            html += `<div>Freq: ${isNaN(frequency) ? 1 : frequency}, Proj: ${projection}</div>`;
+            html += `<div>V: ${geodesicOcta.vertices.length}, E: ${geodesicOcta.edges.length}, F: ${geodesicOcta.faces.length}</div>`;
+            html += `<div>Triangles: ${triangles}</div>`;
+            html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
+          }
+
+          // Geodesic Icosahedron
+          if (document.getElementById("showGeodesicIcosahedron").checked) {
+            const frequency = parseInt(document.getElementById("geodesicIcosaFrequency").value);
+            const projectionRadio = document.querySelector('input[name="geodesicIcosaProjection"]:checked');
+            const projection = projectionRadio ? projectionRadio.value : "out";
+            const geodesicIcosa = Polyhedra.geodesicIcosahedron(1, isNaN(frequency) ? 1 : frequency, projection);
+            const eulerOK = RT.verifyEuler(
+              geodesicIcosa.vertices.length,
+              geodesicIcosa.edges.length,
+              geodesicIcosa.faces.length
+            );
+            const triangles = countGroupTriangles(geodesicIcosahedronGroup);
+            html += `<div style="margin-top: 10px;"><strong>Geodesic Icosahedron:</strong></div>`;
+            html += `<div>Freq: ${isNaN(frequency) ? 1 : frequency}, Proj: ${projection}</div>`;
+            html += `<div>V: ${geodesicIcosa.vertices.length}, E: ${geodesicIcosa.edges.length}, F: ${geodesicIcosa.faces.length}</div>`;
             html += `<div>Triangles: ${triangles}</div>`;
             html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
           }
@@ -3036,6 +3105,11 @@
               .classList.remove("active");
             updateGeometry();
           });
+
+        // Node shading toggle (Faceted vs Smooth)
+        document
+          .getElementById("nodeFlatShading")
+          .addEventListener("change", updateGeometry);
 
         // ========================================================================
         // GUMBALL TOOL FUNCTIONALITY
