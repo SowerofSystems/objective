@@ -2048,6 +2048,9 @@
             PerformanceClock.endNodeGeneration();
             PerformanceClock.timings.lastNodeTriangles =
               Math.round(trianglesPerNode);
+          } else {
+            // Reset node triangle count when nodes are OFF
+            PerformanceClock.timings.lastNodeTriangles = 0;
           }
         }
 

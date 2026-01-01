@@ -172,8 +172,13 @@ export const PerformanceClock = {
       perfNodeTypeEl.textContent = `Node Type: ${useRTNodeGeometry ? "RT Geodesic" : "Classical"}`;
     }
 
-    if (perfNodeTrianglesEl && this.timings.lastNodeTriangles > 0) {
-      perfNodeTrianglesEl.textContent = `Node Δ: ${this.timings.lastNodeTriangles} per vertex`;
+    if (perfNodeTrianglesEl) {
+      if (this.timings.lastNodeTriangles > 0) {
+        perfNodeTrianglesEl.textContent = `Node Δ: ${this.timings.lastNodeTriangles} per vertex`;
+        perfNodeTrianglesEl.style.display = "";
+      } else {
+        perfNodeTrianglesEl.style.display = "none";
+      }
     }
   },
 };
