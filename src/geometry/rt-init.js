@@ -31,10 +31,10 @@
           if (passwordInput.value === PASSWORD) {
             sessionStorage.setItem("artexplorer-auth", "true");
             passwordOverlay.classList.add("hidden");
-            passwordError.style.display = "none";
+            passwordError.classList.add("hidden");
             initApp();
           } else {
-            passwordError.style.display = "block";
+            passwordError.classList.remove("hidden");
             passwordInput.value = "";
             passwordInput.focus();
           }
@@ -1806,7 +1806,6 @@
         // Make h3 headers clickable (entire row) - only those with section-toggle
         document.querySelectorAll("h3").forEach(header => {
           if (header.querySelector(".section-toggle")) {
-            header.style.cursor = "pointer";
             header.addEventListener("click", function (e) {
               // Don't trigger if clicking directly on the toggle arrow
               if (e.target.classList.contains("section-toggle")) return;
@@ -3511,19 +3510,4 @@
           }
         });
 
-        // Update info overlay
-        const infoOverlay = document.getElementById("info-overlay");
-        infoOverlay.innerHTML = `
-      <div><span class="coord-label">A.R.T.</span> - Algebraic Rational Trigonometry Explorer</div>
-      <div style="margin-top: 8px; font-size: 11px;">
-        Orbit: Left-click + drag<br>
-        Pan: Right-click + drag<br>
-        Zoom: Scroll wheel<br>
-        <br>
-        ESC: Deselect<br>
-        Delete: Remove selected instance<br>
-        Cmd/Ctrl+Z: Undo<br>
-        Cmd/Ctrl+Shift+Z: Redo
-      </div>
-    `;
       } // End startARTexplorer function
