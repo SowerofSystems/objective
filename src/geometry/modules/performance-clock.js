@@ -169,7 +169,7 @@ export const PerformanceClock = {
     }
 
     if (perfNodeTypeEl) {
-      perfNodeTypeEl.textContent = `Node Type: ${useRTNodeGeometry ? "RT Geodesic" : "Classical"}`;
+      perfNodeTypeEl.textContent = `Node Type: ${useRTNodeGeometry ? "RT Icosahedron" : "Classical"}`;
     }
 
     if (perfNodeTrianglesEl) {

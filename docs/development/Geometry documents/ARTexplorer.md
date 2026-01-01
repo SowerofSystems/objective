@@ -2709,6 +2709,28 @@ ARTexplorer_State_2025-12-28_geodesic-icosa-freq4.csv
 
 ### 5.3 TODO: Future Enhancements 🔮
 
+**Performance & Node Geometry Enhancements (2026-01-01):**
+- [x] Replace Classical THREE.SphereGeometry with RT geodesic nodes ✅
+- [x] Implement geometry caching to prevent repeated generation ✅
+- [x] Add per-form triangle count display in Geometry Info ✅
+- [ ] **Dynamic LOD (Level of Detail) for RT Nodes** - Adaptive node complexity based on camera distance or vertex count
+  - Close to camera or few vertices: freq-2+ icosahedron (high detail)
+  - Medium distance: freq-0 icosahedron (base 20 triangles) - **CURRENT**
+  - Far from camera or many vertices: tetrahedron (minimal 4 triangles)
+  - Benefits: Maintains visual quality when needed, optimizes when beneficial
+  - Implementation: Add distance-based or count-based switching in getCachedNodeGeometry()
+- [ ] **Selection-Based Performance Tracking** - Track performance metrics for selected forms
+  - Add currentSelection-aware performance monitoring
+  - Display "Selected Form: Icosahedron, Triangles: 80" in Performance section
+  - Isolate FPS impact of individual polyhedra
+  - Helps users understand performance cost of specific forms
+- [ ] **Performance History Graph** - Visual timeline of FPS and triangle counts
+  - Track FPS over time (rolling 60-second window)
+  - Show before/after metrics when switching node types or forms
+  - Visual representation of performance deltas
+  - SVG or canvas-based mini-graph in Geometry Info section
+  - Helps demonstrate RT performance benefits visually
+
 **Geodesic Improvements:**
 - [x] Geodesic subdivision for Tetrahedron, Icosahedron, Octahedron ✅
 - [x] Frequency slider (0-6) - sufficient range for most applications ✅

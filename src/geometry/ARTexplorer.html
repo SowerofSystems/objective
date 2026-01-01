@@ -1875,7 +1875,7 @@
           let trianglesPerNode = 0;
 
           if (useRT) {
-            // RT Geodesic Octahedron
+            // RT Geodesic Icosahedron (freq-0 = base 20-triangle icosahedron)
             const baseSize = 0.04;
             const rtSizes = {
               sm: baseSize / Math.sqrt(2),
@@ -1884,9 +1884,9 @@
             };
             const radius = rtSizes[nodeSize];
 
-            const polyData = window.RTPolyhedra.geodesicOctahedron(
+            const polyData = window.RTPolyhedra.geodesicIcosahedron(
               radius,
-              2,
+              0,
               "out"
             );
 
@@ -2035,6 +2035,7 @@
               color: color,
               emissive: color,
               emissiveIntensity: 0.2,
+              flatShading: false, // Smooth shading for RT geodesic nodes
             });
 
             vertices.forEach(vertex => {
@@ -2296,6 +2297,25 @@
         }
 
         /**
+         * Count triangles in a THREE.js group
+         */
+        function countGroupTriangles(group) {
+          let triangles = 0;
+          if (group && group.visible) {
+            group.traverse(child => {
+              if (child.geometry) {
+                if (child.geometry.index) {
+                  triangles += child.geometry.index.count / 3;
+                } else if (child.geometry.attributes.position) {
+                  triangles += child.geometry.attributes.position.count / 3;
+                }
+              }
+            });
+          }
+          return Math.round(triangles);
+        }
+
+        /**
          * Update geometry statistics display
          */
         function updateGeometryStats() {
@@ -2309,9 +2329,11 @@
               cube.edges.length,
               cube.faces.length
             );
+            const triangles = countGroupTriangles(cubeGroup);
             html += `<div><strong>Hexahedron (Cube):</strong></div>`;
             html += `<div>Schläfli: {4,3}</div>`;
             html += `<div>V: ${cube.vertices.length}, E: ${cube.edges.length}, F: ${cube.faces.length}</div>`;
+            html += `<div>Triangles: ${triangles}</div>`;
             html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
           }
 
@@ -2322,9 +2344,11 @@
               tetra.edges.length,
               tetra.faces.length
             );
+            const triangles = countGroupTriangles(tetrahedronGroup);
             html += `<div style="margin-top: 10px;"><strong>Tetrahedron:</strong></div>`;
             html += `<div>Schläfli: {3,3}</div>`;
             html += `<div>V: ${tetra.vertices.length}, E: ${tetra.edges.length}, F: ${tetra.faces.length}</div>`;
+            html += `<div>Triangles: ${triangles}</div>`;
             html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
           }
 
@@ -2335,9 +2359,11 @@
               octa.edges.length,
               octa.faces.length
             );
+            const triangles = countGroupTriangles(octahedronGroup);
             html += `<div style="margin-top: 10px;"><strong>Octahedron:</strong></div>`;
             html += `<div>Schläfli: {3,4}</div>`;
             html += `<div>V: ${octa.vertices.length}, E: ${octa.edges.length}, F: ${octa.faces.length}</div>`;
+            html += `<div>Triangles: ${triangles}</div>`;
             html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
           }
 
@@ -2348,9 +2374,11 @@
               icosa.edges.length,
               icosa.faces.length
             );
+            const triangles = countGroupTriangles(icosahedronGroup);
             html += `<div style="margin-top: 10px;"><strong>Icosahedron:</strong></div>`;
             html += `<div>Schläfli: {3,5}</div>`;
             html += `<div>V: ${icosa.vertices.length}, E: ${icosa.edges.length}, F: ${icosa.faces.length}</div>`;
+            html += `<div>Triangles: ${triangles}</div>`;
             html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
           }
 
@@ -2361,9 +2389,11 @@
               dodec.edges.length,
               dodec.faces.length
             );
+            const triangles = countGroupTriangles(dodecahedronGroup);
             html += `<div style="margin-top: 10px;"><strong>Dodecahedron:</strong></div>`;
             html += `<div>Schläfli: {5,3}</div>`;
             html += `<div>V: ${dodec.vertices.length}, E: ${dodec.edges.length}, F: ${dodec.faces.length}</div>`;
+            html += `<div>Triangles: ${triangles}</div>`;
             html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
           }
 
@@ -2374,9 +2404,11 @@
               rhombicDodec.edges.length,
               rhombicDodec.faces.length
             );
+            const triangles = countGroupTriangles(rhombicDodecahedronGroup);
             html += `<div style="margin-top: 10px;"><strong>Rhombic Dodecahedron:</strong></div>`;
             html += `<div>Catalan: V(3,4)</div>`;
             html += `<div>V: ${rhombicDodec.vertices.length}, E: ${rhombicDodec.edges.length}, F: ${rhombicDodec.faces.length}</div>`;
+            html += `<div>Triangles: ${triangles}</div>`;
             html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
           }
 
