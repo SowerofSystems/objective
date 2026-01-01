@@ -1017,14 +1017,14 @@
               <label class="label-section">Node Geometry</label>
               <div class="toggle-btn-group">
                 <button
-                  class="toggle-btn variant-snap active"
+                  class="toggle-btn variant-toggle active"
                   id="nodeGeomClassical"
                   data-node-geom="classical"
                 >
                   Classical Spheres
                 </button>
                 <button
-                  class="toggle-btn variant-snap"
+                  class="toggle-btn variant-toggle"
                   id="nodeGeomRT"
                   data-node-geom="rt"
                 >
@@ -3027,12 +3027,6 @@
         document.querySelectorAll(".toggle-btn.variant-snap").forEach(btn => {
           btn.addEventListener("click", function () {
             const snapMode = this.dataset.snapMode;
-
-            // Skip if button doesn't have snap mode data attribute
-            if (!snapMode) {
-              console.warn("⚠️ Button missing data-snap-mode attribute:", this);
-              return;
-            }
 
             // Remove active from all snap buttons
             document.querySelectorAll(".toggle-btn.variant-snap").forEach(b => {
