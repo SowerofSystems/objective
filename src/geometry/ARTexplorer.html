@@ -1939,7 +1939,11 @@
               const radius = rtSizes[nodeSize];
 
               // Get polyhedra data from RTPolyhedra
-              const polyData = window.RTPolyhedra.geodesicOctahedron(radius, 2, "out");
+              const polyData = window.RTPolyhedra.geodesicOctahedron(
+                radius,
+                2,
+                "out"
+              );
 
               // Convert to THREE.BufferGeometry
               nodeGeometry = new THREE.BufferGeometry();
@@ -1952,11 +1956,18 @@
 
               polyData.faces.forEach(faceIndices => {
                 for (let i = 1; i < faceIndices.length - 1; i++) {
-                  indices.push(faceIndices[0], faceIndices[i], faceIndices[i + 1]);
+                  indices.push(
+                    faceIndices[0],
+                    faceIndices[i],
+                    faceIndices[i + 1]
+                  );
                 }
               });
 
-              nodeGeometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+              nodeGeometry.setAttribute(
+                "position",
+                new THREE.Float32BufferAttribute(positions, 3)
+              );
               nodeGeometry.setIndex(indices);
               nodeGeometry.computeVertexNormals();
             } else {
@@ -3016,6 +3027,12 @@
         document.querySelectorAll(".toggle-btn.variant-snap").forEach(btn => {
           btn.addEventListener("click", function () {
             const snapMode = this.dataset.snapMode;
+
+            // Skip if button doesn't have snap mode data attribute
+            if (!snapMode) {
+              console.warn("⚠️ Button missing data-snap-mode attribute:", this);
+              return;
+            }
 
             // Remove active from all snap buttons
             document.querySelectorAll(".toggle-btn.variant-snap").forEach(b => {

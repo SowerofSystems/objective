@@ -71,7 +71,7 @@ export const Polyhedra = {
     // RT VALIDATION: Check edge quadrance uniformity
     const expectedQ = 4 * halfSize * halfSize; // Q = (2s)² = 4s²
     const validation = RT.validateEdges(vertices, edges, expectedQ);
-    const maxError = Math.max(...validation.map(v => v.error));
+    const maxError = validation.reduce((max, v) => Math.max(max, v.error), 0);
     console.log(
       `Cube: Expected Q=${expectedQ.toFixed(6)}, Max error=${maxError.toExponential(2)}`
     );
@@ -116,7 +116,7 @@ export const Polyhedra = {
     // RT VALIDATION: Check edge quadrance uniformity
     const expectedQ = 8 * halfSize * halfSize; // Q = (2√2·s)² = 8s²
     const validation = RT.validateEdges(vertices, edges, expectedQ);
-    const maxError = Math.max(...validation.map(v => v.error));
+    const maxError = validation.reduce((max, v) => Math.max(max, v.error), 0);
     console.log(
       `Tetrahedron: Expected Q=${expectedQ.toFixed(6)}, Max error=${maxError.toExponential(2)}`
     );
@@ -156,7 +156,7 @@ export const Polyhedra = {
     // RT VALIDATION: Check edge quadrance uniformity
     const expectedQ = 8 * halfSize * halfSize; // Q = (2√2·s)² = 8s²
     const validation = RT.validateEdges(vertices, edges, expectedQ);
-    const maxError = Math.max(...validation.map(v => v.error));
+    const maxError = validation.reduce((max, v) => Math.max(max, v.error), 0);
     console.log(
       `Dual Tetrahedron: Expected Q=${expectedQ.toFixed(6)}, Max error=${maxError.toExponential(2)}`
     );
@@ -220,7 +220,7 @@ export const Polyhedra = {
     // RT VALIDATION: Check edge quadrance uniformity
     const expectedQ = 2 * halfSize * halfSize; // Q = (√2·s)² = 2s²
     const validation = RT.validateEdges(vertices, edges, expectedQ);
-    const maxError = Math.max(...validation.map(v => v.error));
+    const maxError = validation.reduce((max, v) => Math.max(max, v.error), 0);
     console.log(
       `Octahedron: Expected Q=${expectedQ.toFixed(6)}, Max error=${maxError.toExponential(2)}`
     );
@@ -358,7 +358,7 @@ export const Polyhedra = {
     // For normalized icosahedron scaled to halfSize, edge Q = 4a²
     const expectedQ = 4 * a * a;
     const validation = RT.validateEdges(vertices, edges, expectedQ);
-    const maxError = Math.max(...validation.map(v => v.error));
+    const maxError = validation.reduce((max, v) => Math.max(max, v.error), 0);
     console.log(
       `Icosahedron: Expected Q=${expectedQ.toFixed(6)}, Max error=${maxError.toExponential(2)}`
     );
@@ -530,7 +530,7 @@ export const Polyhedra = {
     // Dual icosahedron scaled by φ, so edge Q = 4a² × φ²
     const expectedQ = 4 * a * a;
     const validation = RT.validateEdges(vertices, edges, expectedQ);
-    const maxError = Math.max(...validation.map(v => v.error));
+    const maxError = validation.reduce((max, v) => Math.max(max, v.error), 0);
     console.log(
       `Dual Icosahedron: Expected Q=${expectedQ.toFixed(6)}, Max error=${maxError.toExponential(2)}`
     );
@@ -795,7 +795,8 @@ export const Polyhedra = {
       projected[subdivided.edges[0][1]]
     );
     const validation = RT.validateEdges(projected, subdivided.edges, sampleQ);
-    const maxError = Math.max(...validation.map(v => v.error));
+    // Use reduce instead of spread operator to avoid stack overflow with large arrays
+    const maxError = validation.reduce((max, v) => Math.max(max, v.error), 0);
     const avgQ =
       validation.reduce((sum, v) => sum + v.Q, 0) / validation.length;
 
@@ -894,7 +895,7 @@ export const Polyhedra = {
       subdivided.edges,
       sampleQ
     );
-    const maxError = Math.max(...validation.map(v => v.error));
+    const maxError = validation.reduce((max, v) => Math.max(max, v.error), 0);
     const avgQ =
       validation.reduce((sum, v) => sum + v.Q, 0) / validation.length;
 
@@ -997,7 +998,7 @@ export const Polyhedra = {
       subdivided.edges,
       sampleQ
     );
-    const maxError = Math.max(...validation.map(v => v.error));
+    const maxError = validation.reduce((max, v) => Math.max(max, v.error), 0);
     const avgQ =
       validation.reduce((sum, v) => sum + v.Q, 0) / validation.length;
 
@@ -1159,7 +1160,7 @@ export const Polyhedra = {
     // Sample first edge to get actual quadrance, then validate all edges match
     const sampleQ = RT.quadrance(vertices[edges[0][0]], vertices[edges[0][1]]);
     const validation = RT.validateEdges(vertices, edges, sampleQ);
-    const maxError = Math.max(...validation.map(v => v.error));
+    const maxError = validation.reduce((max, v) => Math.max(max, v.error), 0);
     console.log(
       `Dodecahedron: Edge Q=${sampleQ.toFixed(6)}, Max error=${maxError.toExponential(2)}`
     );
@@ -1287,7 +1288,7 @@ export const Polyhedra = {
     // Q = (t-u)² + (0-u)² + (0-u)² = (t-2t/3)² + 2(2t/3)² = (t/3)² + 2(4t²/9) = t²/9 + 8t²/9 = t²
     const expectedQ = t * t; // All edges have quadrance = t² = s²/2
     const validation = RT.validateEdges(vertices, edges, expectedQ);
-    const maxError = Math.max(...validation.map(v => v.error));
+    const maxError = validation.reduce((max, v) => Math.max(max, v.error), 0);
     console.log(
       `Rhombic Dodecahedron (dual): Expected edge Q=${expectedQ.toFixed(6)} (= s²/2), Max error=${maxError.toExponential(2)}`
     );
@@ -1398,7 +1399,7 @@ export const Polyhedra = {
     // RT VALIDATION: All edges should have same quadrance
     const expectedQ = 2 * t * t; // Two perpendicular components of length t
     const validation = RT.validateEdges(vertices, edges, expectedQ);
-    const maxError = Math.max(...validation.map(v => v.error));
+    const maxError = validation.reduce((max, v) => Math.max(max, v.error), 0);
     console.log(
       `Cuboctahedron: Expected edge Q=${expectedQ.toFixed(6)}, Max error=${maxError.toExponential(2)}`
     );
