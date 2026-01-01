@@ -1130,8 +1130,111 @@ nodeGeometry.computeVertexNormals();
 
 ---
 
-**Status:** ✅ RT Nodes IMPLEMENTED and CONFIRMED FASTER
+## Performance Monitoring System (2026-01-01)
+
+### Implementation: Clock.js Pattern for ARTexplorer
+
+**Objective:** Add comprehensive performance tracking to compare RT algebraic methods vs classical trigonometry
+
+### What Was Implemented
+
+**1. Performance Clock Module** (lines 2332-2494)
+- Modeled after `src/core/Clock.js` from TEUI
+- Tracks calculation timing, node generation, FPS, and triangle counts
+- Automatic display updates in Geometry Info section
+
+**2. Updated Geometry Info Section** (lines 1195-1216)
+```html
+<div class="stats" id="geometryStats">
+  <div><strong>Scene Totals:</strong></div>
+  <div id="totalVertices">Vertices: --</div>
+  <div id="totalEdges">Edges: --</div>
+  <div id="totalFaces">Faces: --</div>
+  <div id="totalTriangles">Triangles: --</div>
+</div>
+
+<div class="stats" id="performanceStats">
+  <div><strong>Performance:</strong></div>
+  <div id="perfCalcTime">Calculation: -- ms</div>
+  <div id="perfNodeTime">Node Gen: -- ms</div>
+  <div id="perfFPS">FPS: --</div>
+  <div id="perfNodeType">Node Type: Classical</div>
+  <div id="perfNodeTriangles">Node Δ: -- per vertex</div>
+</div>
+```
+
+**3. Timing Integration**
+- `updateGeometry()` wrapped with `startCalculation()` / `endCalculation()`
+- `renderPolyhedron()` node generation wrapped with `startNodeGeneration()` / `endNodeGeneration()`
+- `animate()` loop tracks FPS with 60-frame rolling average
+- Display updates every 10 frames to reduce overhead
+
+**4. Triangle Counting**
+- RT Geodesic Octahedron (Freq-2): ~32 triangles per node
+- Classical THREE.js Sphere (16×16): 512 triangles per node
+- **16x reduction in triangles with RT nodes**
+
+### Key Performance Metrics Tracked
+
+| Metric | Description | Purpose |
+|--------|-------------|---------|
+| **Calculation Time** | Total `updateGeometry()` execution | Measures full geometry rebuild speed |
+| **Node Gen Time** | Node geometry creation only | Isolates RT vs Classical generation |
+| **FPS** | 60-frame rolling average | Real-time rendering performance |
+| **Node Type** | Classical vs RT Geodesic | Current method being used |
+| **Node Δ** | Triangles per vertex | Direct comparison metric |
+| **Total Triangles** | Scene-wide triangle count | GPU rendering load |
+
+### The "Fair Fight" Question
+
+**User Insight:** Once geometries become `THREE.BufferGeometry`, the GPU treats all triangles equally - there's no runtime "rational algebra" advantage.
+
+**What We're Actually Comparing:**
+
+✅ **Geometry Generation Speed** - RT algebraic calculations vs trig functions (sin/cos)
+✅ **Triangle Count Efficiency** - RT geodesic subdivision vs UV sphere tessellation
+✅ **Memory Footprint** - Fewer vertices = less RAM usage
+✅ **Visual Quality per Triangle** - Geodesic distribution vs uniform grid
+
+❌ **NOT Runtime Computation** - Both become irrational vertex arrays in GPU memory
+❌ **NOT Rendering Speed** - THREE.js renders both identically
+
+### Honest Performance Comparison
+
+**To make it truly fair:**
+1. Match triangle counts (e.g., both 36 triangles)
+2. Measure **generation time only** (where RT algebra shines)
+3. Acknowledge GPU rendering is identical
+4. Compare visual quality at equal triangle budgets
+
+**Current Results (Unequal Triangle Counts):**
+- RT Geodesic: 32 Δ/node, faster generation, better distribution
+- Classical Sphere: 512 Δ/node, slower generation, uniform grid
+- **Performance benefit is triangle reduction, not runtime algebra**
+
+### Future Enhancements
+
+1. **Add Triangle Count Matching UI**
+   - Let users select equal triangle counts for both methods
+   - Measure only generation speed for fair comparison
+   - Compare visual quality at same triangle budget
+
+2. **Expand Performance Metrics**
+   - Memory usage tracking
+   - Vertex count per polyhedron
+   - Edge/face statistics from polyhedra data
+
+3. **Performance History Graph**
+   - Track FPS over time
+   - Compare before/after node type switch
+   - Visual representation of performance deltas
+
+---
+
+**Status:** ✅ PERFORMANCE MONITORING IMPLEMENTED
+**Key Insight:** RT's advantage is in generation efficiency and geometric distribution, not GPU runtime computation
+
 **Next Steps:**
-1. Resolve face smoothing/rendering (tomorrow)
-2. Document final performance metrics
+1. Test with high-frequency geodesics (Freq-6 icosahedron) to see dramatic differences
+2. Add triangle count matching for truly fair generation speed comparisons
 3. Consider "folding space" HTML inversion (future)

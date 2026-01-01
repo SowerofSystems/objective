@@ -482,6 +482,24 @@ button:disabled {
   color: #00ff88;
 }
 
+/* Toggle variant (for generic toggles like Node Geometry) */
+.toggle-btn.variant-toggle {
+  background: #1a1a1a;
+  border-color: #555;
+  color: #b0b0b0;
+}
+
+.toggle-btn.variant-toggle:hover {
+  border-color: #7ab8ff;
+  color: #e0e0e0;
+}
+
+.toggle-btn.variant-toggle.active {
+  background: #4a9eff;
+  border-color: #4a9eff;
+  color: white;
+}
+
 /* Label Variants */
 .label-section {
   font-size: 12px;
