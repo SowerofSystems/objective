@@ -1085,6 +1085,23 @@ nodeGeometry.computeVertexNormals();
 
 **Confirmed**: RT geodesic nodes are **WAY faster** than THREE.SphereGeometry, especially with high vertex counts (freq-6 icosahedron).
 
+### Bug Fixes Applied (2026-01-01)
+
+**Issue 4: Stack Overflow in Geodesic Validation (FIXED)**
+- **Error**: `RangeError: Maximum call stack size exceeded` at line 798-799
+- **Root Cause**: `Math.max(...largeArray)` exceeds JavaScript call stack argument limit (~65k-100k)
+- **Fix**: Replaced all 11 occurrences of `Math.max(...validation.map())` with `validation.reduce((max, v) => Math.max(max, v.error), 0)`
+- **Impact**: Now works correctly with high-frequency geodesics (freq-6+ icosahedron)
+- **Note**: If error persists, hard refresh browser (Cmd+Shift+R) to clear cached JavaScript
+
+**Issue 5: Snap Mode Button Classification (FIXED)**
+- **Error**: `Cannot read properties of undefined (reading 'toUpperCase')`
+- **Root Cause**: Node Geometry toggle buttons incorrectly using `variant-snap` class
+- **Fix**: Changed Node Geometry buttons to use `variant-toggle` class
+- **Impact**: Snap mode buttons now properly isolated, no more undefined errors
+
+---
+
 ### TODO for Tomorrow
 
 1. **Face Rendering/Smoothing Issues**
