@@ -22,16 +22,16 @@ export const RTControls = {
   // ========================================================================
 
   state: {
-    currentTool: null,        // null = off, "move", "scale", "rotate"
-    currentSnapMode: 'free',  // 'free', 'xyz', 'wxyz'
+    currentTool: null, // null = off, "move", "scale", "rotate"
+    currentSnapMode: "free", // 'free', 'xyz', 'wxyz'
     isDragging: false,
-    selectedHandle: null,     // { type: 'quadray'|'cartesian', index: number, axis: Vector3 }
-    dragPlane: null,          // THREE.Plane for raycasting
-    dragStartPoint: null,     // THREE.Vector3
-    selectedPolyhedra: [],    // Currently selected polyhedra
-    editingBasis: null,       // Localized gumball THREE.Group
-    depositedInstances: [],   // Deposited instance snapshots
-    depositedCount: 0
+    selectedHandle: null, // { type: 'quadray'|'cartesian', index: number, axis: Vector3 }
+    dragPlane: null, // THREE.Plane for raycasting
+    dragStartPoint: null, // THREE.Vector3
+    selectedPolyhedra: [], // Currently selected polyhedra
+    editingBasis: null, // Localized gumball THREE.Group
+    depositedInstances: [], // Deposited instance snapshots
+    depositedCount: 0,
   },
 
   // ========================================================================
@@ -65,7 +65,7 @@ export const RTControls = {
     this.initNowButton();
     this.initEventListeners();
 
-    console.log('✅ RTControls initialized');
+    console.log("✅ RTControls initialized");
   },
 
   // ========================================================================
@@ -76,10 +76,10 @@ export const RTControls = {
    * Initialize tool mode buttons (Move, Scale, Rotate)
    */
   initToolButtons() {
-    const buttons = document.querySelectorAll('.toggle-btn.variant-tool');
+    const buttons = document.querySelectorAll(".toggle-btn.variant-tool");
 
     buttons.forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener("click", () => {
         const tool = btn.dataset.gumballTool; // Use data-gumball-tool attribute
 
         // Toggle tool
@@ -98,25 +98,25 @@ export const RTControls = {
    * Initialize snap mode toggle buttons (Free, XYZ, WXYZ)
    */
   initSnapToggles() {
-    const buttons = document.querySelectorAll('.toggle-btn.variant-snap');
+    const buttons = document.querySelectorAll(".toggle-btn.variant-snap");
 
     buttons.forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener("click", () => {
         const snapMode = btn.dataset.snapMode;
 
         // Remove active from all buttons
         buttons.forEach(b => {
-          b.classList.remove('active');
-          b.style.background = '#222';
-          b.style.color = '#888';
-          b.style.borderColor = '#444';
+          b.classList.remove("active");
+          b.style.background = "#222";
+          b.style.color = "#888";
+          b.style.borderColor = "#444";
         });
 
         // Add active to clicked button
-        btn.classList.add('active');
-        btn.style.background = '#333';
-        btn.style.color = '#00ff88';
-        btn.style.borderColor = '#00ff88';
+        btn.classList.add("active");
+        btn.style.background = "#333";
+        btn.style.color = "#00ff88";
+        btn.style.borderColor = "#00ff88";
 
         // Update state
         this.state.currentSnapMode = snapMode;
@@ -130,7 +130,7 @@ export const RTControls = {
    * Initialize NOW button for instance deposition
    */
   initNowButton() {
-    document.getElementById('nowButton').addEventListener('click', () => {
+    document.getElementById("nowButton").addEventListener("click", () => {
       this.depositInstances();
     });
   },
@@ -181,7 +181,7 @@ export const RTControls = {
     // Remove editing basis
     this.destroyEditingBasis();
 
-    console.log('✅ Gumball disabled - orbit controls enabled');
+    console.log("✅ Gumball disabled - orbit controls enabled");
   },
 
   /**
@@ -189,19 +189,19 @@ export const RTControls = {
    * @param {string|null} activeTool - Currently active tool or null
    */
   updateToolButtons(activeTool) {
-    const buttons = document.querySelectorAll('.toggle-btn.variant-tool');
+    const buttons = document.querySelectorAll(".toggle-btn.variant-tool");
 
     buttons.forEach(btn => {
       const tool = btn.dataset.gumballTool; // Use data-gumball-tool attribute
 
       if (tool === activeTool) {
-        btn.classList.add('active');
-        btn.style.background = '#00ff88';
-        btn.style.color = '#1a1a1a';
+        btn.classList.add("active");
+        btn.style.background = "#00ff88";
+        btn.style.color = "#1a1a1a";
       } else {
-        btn.classList.remove('active');
-        btn.style.background = '#333';
-        btn.style.color = '#b0b0b0';
+        btn.classList.remove("active");
+        btn.style.background = "#333";
+        btn.style.color = "#b0b0b0";
       }
     });
   },
@@ -223,23 +223,23 @@ export const RTControls = {
     this.state.editingBasis.position.copy(position);
 
     // Check which coordinate systems are enabled in UI
-    const showCartesian = document.getElementById('showCartesianBasis').checked;
-    const showQuadray = document.getElementById('showQuadray').checked;
+    const showCartesian = document.getElementById("showCartesianBasis").checked;
+    const showQuadray = document.getElementById("showQuadray").checked;
 
     const totalBasisLength = 2 * Math.sqrt(2);
     const headLength = 0.3;
     const arrowLength = totalBasisLength;
 
     // Determine handle type based on active tool
-    const isScaleMode = this.state.currentTool === 'scale';
-    const isRotateMode = this.state.currentTool === 'rotate';
+    const isScaleMode = this.state.currentTool === "scale";
+    const isRotateMode = this.state.currentTool === "rotate";
 
     // ========================================================================
     // QUADRAY BASIS VECTORS (WXYZ) - Tetrahedral coordinate system
     // ========================================================================
     if (showQuadray) {
       const quadrayColors = [0xffff00, 0xff0000, 0x00ff00, 0x0000ff]; // W=Y, X=R, Y=G, Z=B
-      const quadrayLabels = ['W', 'X', 'Y', 'Z'];
+      const quadrayLabels = ["W", "X", "Y", "Z"];
 
       this.Quadray.basisVectors.forEach((vec, i) => {
         if (isRotateMode) {
@@ -248,27 +248,35 @@ export const RTControls = {
           const segments = 6; // Hexagon for WXYZ differentiation
 
           const curve = new this.THREE.EllipseCurve(
-            0, 0,
-            circleRadius, circleRadius,
-            0, 2 * Math.PI,
+            0,
+            0,
+            circleRadius,
+            circleRadius,
+            0,
+            2 * Math.PI,
             false,
             0
           );
 
           const points = curve.getPoints(segments);
-          const geometry = new this.THREE.BufferGeometry().setFromPoints(points);
+          const geometry = new this.THREE.BufferGeometry().setFromPoints(
+            points
+          );
           const material = new this.THREE.LineBasicMaterial({
             color: quadrayColors[i],
             linewidth: 2,
             transparent: true,
-            opacity: 0.8
+            opacity: 0.8,
           });
 
           const rotationHandle = new this.THREE.LineLoop(geometry, material);
 
           // Orient circle perpendicular to the axis vector
           const defaultNormal = new this.THREE.Vector3(0, 0, 1);
-          const quaternion = new this.THREE.Quaternion().setFromUnitVectors(defaultNormal, vec);
+          const quaternion = new this.THREE.Quaternion().setFromUnitVectors(
+            defaultNormal,
+            vec
+          );
           rotationHandle.setRotationFromQuaternion(quaternion);
 
           this.state.editingBasis.add(rotationHandle);
@@ -280,14 +288,14 @@ export const RTControls = {
             new this.THREE.MeshBasicMaterial({
               transparent: true,
               opacity: 0, // Invisible
-              depthTest: false
+              depthTest: false,
             })
           );
 
           hitZone.setRotationFromQuaternion(quaternion);
           hitZone.userData.isGumballHandle = true;
           hitZone.userData.isRotationHandle = true;
-          hitZone.userData.basisType = 'quadray';
+          hitZone.userData.basisType = "quadray";
           hitZone.userData.basisIndex = i;
           hitZone.userData.axis = vec.clone();
           hitZone.userData.axisName = quadrayLabels[i];
@@ -318,7 +326,7 @@ export const RTControls = {
               new this.THREE.MeshBasicMaterial({
                 color: quadrayColors[i],
                 transparent: true,
-                opacity: 0.5
+                opacity: 0.5,
               })
             );
           } else {
@@ -328,14 +336,14 @@ export const RTControls = {
               new this.THREE.MeshBasicMaterial({
                 color: quadrayColors[i],
                 transparent: true,
-                opacity: 0.3
+                opacity: 0.3,
               })
             );
           }
 
           handle.position.copy(tipPosition);
           handle.userData.isGumballHandle = true;
-          handle.userData.basisType = 'quadray';
+          handle.userData.basisType = "quadray";
           handle.userData.basisIndex = i;
           handle.userData.axis = vec.clone();
           handle.userData.axisName = quadrayLabels[i];
@@ -350,12 +358,12 @@ export const RTControls = {
     // ========================================================================
     if (showCartesian) {
       const cartesianVectors = [
-        new this.THREE.Vector3(1, 0, 0),  // X
-        new this.THREE.Vector3(0, 1, 0),  // Y
-        new this.THREE.Vector3(0, 0, 1)   // Z
+        new this.THREE.Vector3(1, 0, 0), // X
+        new this.THREE.Vector3(0, 1, 0), // Y
+        new this.THREE.Vector3(0, 0, 1), // Z
       ];
       const cartesianColors = [0xff0000, 0x00ff00, 0x0000ff]; // R, G, B
-      const cartesianLabels = ['X', 'Y', 'Z'];
+      const cartesianLabels = ["X", "Y", "Z"];
 
       cartesianVectors.forEach((vec, i) => {
         if (isRotateMode) {
@@ -364,27 +372,35 @@ export const RTControls = {
           const segments = 64; // Smooth circle for XYZ
 
           const curve = new this.THREE.EllipseCurve(
-            0, 0,
-            circleRadius, circleRadius,
-            0, 2 * Math.PI,
+            0,
+            0,
+            circleRadius,
+            circleRadius,
+            0,
+            2 * Math.PI,
             false,
             0
           );
 
           const points = curve.getPoints(segments);
-          const geometry = new this.THREE.BufferGeometry().setFromPoints(points);
+          const geometry = new this.THREE.BufferGeometry().setFromPoints(
+            points
+          );
           const material = new this.THREE.LineBasicMaterial({
             color: cartesianColors[i],
             linewidth: 2,
             transparent: true,
-            opacity: 0.8
+            opacity: 0.8,
           });
 
           const rotationHandle = new this.THREE.LineLoop(geometry, material);
 
           // Orient circle perpendicular to the axis vector
           const defaultNormal = new this.THREE.Vector3(0, 0, 1);
-          const quaternion = new this.THREE.Quaternion().setFromUnitVectors(defaultNormal, vec);
+          const quaternion = new this.THREE.Quaternion().setFromUnitVectors(
+            defaultNormal,
+            vec
+          );
           rotationHandle.setRotationFromQuaternion(quaternion);
 
           this.state.editingBasis.add(rotationHandle);
@@ -396,14 +412,14 @@ export const RTControls = {
             new this.THREE.MeshBasicMaterial({
               transparent: true,
               opacity: 0, // Invisible
-              depthTest: false
+              depthTest: false,
             })
           );
 
           hitZone.setRotationFromQuaternion(quaternion);
           hitZone.userData.isGumballHandle = true;
           hitZone.userData.isRotationHandle = true;
-          hitZone.userData.basisType = 'cartesian';
+          hitZone.userData.basisType = "cartesian";
           hitZone.userData.basisIndex = i;
           hitZone.userData.axis = vec.clone();
           hitZone.userData.axisName = cartesianLabels[i];
@@ -434,7 +450,7 @@ export const RTControls = {
               new this.THREE.MeshBasicMaterial({
                 color: cartesianColors[i],
                 transparent: true,
-                opacity: 0.5
+                opacity: 0.5,
               })
             );
           } else {
@@ -444,14 +460,14 @@ export const RTControls = {
               new this.THREE.MeshBasicMaterial({
                 color: cartesianColors[i],
                 transparent: true,
-                opacity: 0.3
+                opacity: 0.3,
               })
             );
           }
 
           handle.position.copy(tipPosition);
           handle.userData.isGumballHandle = true;
-          handle.userData.basisType = 'cartesian';
+          handle.userData.basisType = "cartesian";
           handle.userData.basisIndex = i;
           handle.userData.axis = vec.clone();
           handle.userData.axisName = cartesianLabels[i];
@@ -470,16 +486,16 @@ export const RTControls = {
         new this.THREE.MeshBasicMaterial({
           color: 0xffffff,
           transparent: true,
-          opacity: 0.4
+          opacity: 0.4,
         })
       );
 
       centralSphere.position.set(0, 0, 0); // At gumball origin
       centralSphere.userData.isGumballHandle = true;
-      centralSphere.userData.basisType = 'uniform';
+      centralSphere.userData.basisType = "uniform";
       centralSphere.userData.basisIndex = -1; // Special index for uniform
       centralSphere.userData.axis = null; // No specific axis (uniform)
-      centralSphere.userData.axisName = 'UNIFORM';
+      centralSphere.userData.axisName = "UNIFORM";
 
       this.state.editingBasis.add(centralSphere);
     }
@@ -487,7 +503,9 @@ export const RTControls = {
     // Add to scene
     this.scene.add(this.state.editingBasis);
 
-    console.log(`✅ Created editing basis at position: ${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)}`);
+    console.log(
+      `✅ Created editing basis at position: ${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)}`
+    );
   },
 
   /**
@@ -507,7 +525,7 @@ export const RTControls = {
     if (this.state.editingBasis) {
       this.scene.remove(this.state.editingBasis);
       this.state.editingBasis = null;
-      console.log('✅ Editing basis destroyed');
+      console.log("✅ Editing basis destroyed");
     }
   },
 
@@ -520,26 +538,44 @@ export const RTControls = {
    */
   initEventListeners() {
     // Mouse down - start drag
-    this.renderer.domElement.addEventListener('mousedown', (event) => {
-      this.onMouseDown(event);
-    }, { capture: true });
+    this.renderer.domElement.addEventListener(
+      "mousedown",
+      event => {
+        this.onMouseDown(event);
+      },
+      { capture: true }
+    );
 
     // Mouse move - update drag
-    this.renderer.domElement.addEventListener('mousemove', (event) => {
-      this.onMouseMove(event);
-    }, { capture: true });
+    this.renderer.domElement.addEventListener(
+      "mousemove",
+      event => {
+        this.onMouseMove(event);
+      },
+      { capture: true }
+    );
 
     // Mouse up - end drag
-    this.renderer.domElement.addEventListener('mouseup', (event) => {
-      this.onMouseUp(event);
-    }, { capture: true });
+    this.renderer.domElement.addEventListener(
+      "mouseup",
+      event => {
+        this.onMouseUp(event);
+      },
+      { capture: true }
+    );
   },
 
   /**
    * Handle mousedown - select gumball handle
    */
   onMouseDown(event) {
-    if (!this.state.currentTool || (this.state.currentTool !== 'move' && this.state.currentTool !== 'scale' && this.state.currentTool !== 'rotate')) return;
+    if (
+      !this.state.currentTool ||
+      (this.state.currentTool !== "move" &&
+        this.state.currentTool !== "scale" &&
+        this.state.currentTool !== "rotate")
+    )
+      return;
     if (!this.state.editingBasis) return;
 
     // Prevent orbit controls
@@ -581,14 +617,19 @@ export const RTControls = {
       );
 
       // Store starting point
-      raycaster.ray.intersectPlane(this.state.dragPlane, this.state.dragStartPoint);
+      raycaster.ray.intersectPlane(
+        this.state.dragPlane,
+        this.state.dragStartPoint
+      );
 
       this.state.isDragging = true;
 
       const basisType = handle.userData.basisType;
       const axisName = handle.userData.axisName;
 
-      console.log(`✅ Gumball handle selected: ${basisType.toUpperCase()} ${axisName}-axis, polyhedra count: ${this.state.selectedPolyhedra.length}`);
+      console.log(
+        `✅ Gumball handle selected: ${basisType.toUpperCase()} ${axisName}-axis, polyhedra count: ${this.state.selectedPolyhedra.length}`
+      );
     }
   },
 
@@ -614,9 +655,12 @@ export const RTControls = {
     raycaster.ray.intersectPlane(this.state.dragPlane, currentPoint);
 
     // Calculate movement vector
-    const movementVector = new this.THREE.Vector3().subVectors(currentPoint, this.state.dragStartPoint);
+    const movementVector = new this.THREE.Vector3().subVectors(
+      currentPoint,
+      this.state.dragStartPoint
+    );
 
-    if (this.state.currentTool === 'move') {
+    if (this.state.currentTool === "move") {
       // ================================================================
       // MOVE MODE: Translate along axis
       // ================================================================
@@ -625,7 +669,9 @@ export const RTControls = {
 
       // Apply sensitivity multiplier for easier control
       const sensitivity = 5.0;
-      const constrainedMovement = axis.clone().multiplyScalar(projectedDistance * sensitivity);
+      const constrainedMovement = axis
+        .clone()
+        .multiplyScalar(projectedDistance * sensitivity);
 
       // Move all selected polyhedra (FULL PRECISION - no snapping during drag)
       this.state.selectedPolyhedra.forEach(poly => {
@@ -643,15 +689,14 @@ export const RTControls = {
       if (this.state.selectedPolyhedra.length > 0) {
         this.updateCoordinateDisplays(this.state.selectedPolyhedra[0].position);
       }
-
-    } else if (this.state.currentTool === 'scale') {
+    } else if (this.state.currentTool === "scale") {
       // ================================================================
       // SCALE MODE: Scale selected object (Form or Instance)
       // ================================================================
       // Project movement onto the selected axis (or radial for uniform)
       let scaleMovement;
 
-      if (this.state.selectedHandle.basisType === 'uniform') {
+      if (this.state.selectedHandle.basisType === "uniform") {
         // UNIFORM SCALING: Use radial distance from origin
         scaleMovement = movementVector.length();
         // Determine direction (inward vs outward)
@@ -702,9 +747,10 @@ export const RTControls = {
           this.state.selectedPolyhedra.length > 0 &&
           !this.state.selectedPolyhedra[0].userData.isInstance
         ) {
-          const currentScale = this.state.selectedPolyhedra[0].userData.currentScale;
-          const cubeSlider = document.getElementById('scaleSlider');
-          const tetSlider = document.getElementById('tetScaleSlider');
+          const currentScale =
+            this.state.selectedPolyhedra[0].userData.currentScale;
+          const cubeSlider = document.getElementById("scaleSlider");
+          const tetSlider = document.getElementById("tetScaleSlider");
 
           if (cubeSlider && tetSlider) {
             // Update sliders to match the visual scale
@@ -717,9 +763,9 @@ export const RTControls = {
             cubeSlider.value = newCubeEdge;
             tetSlider.value = newTetEdge;
 
-            document.getElementById('scaleValue').textContent =
+            document.getElementById("scaleValue").textContent =
               newCubeEdge.toFixed(4);
-            document.getElementById('tetScaleValue').textContent =
+            document.getElementById("tetScaleValue").textContent =
               newTetEdge.toFixed(4);
           }
         }
@@ -727,7 +773,7 @@ export const RTControls = {
 
       // NOTE: No position update needed - objects stay in place during scaling
       // Editing basis stays in place
-    } else if (this.state.currentTool === 'rotate') {
+    } else if (this.state.currentTool === "rotate") {
       // ================================================================
       // ROTATE MODE: Rotate selected object around axis
       // ================================================================
@@ -738,8 +784,12 @@ export const RTControls = {
       // Determine rotation direction based on cross product
       const toCurrentPoint = currentPoint.clone().normalize();
       const toStartPoint = this.state.dragStartPoint.clone().normalize();
-      const crossProduct = new this.THREE.Vector3().crossVectors(toStartPoint, toCurrentPoint);
-      const rotationDirection = crossProduct.dot(this.state.selectedHandle.axis) > 0 ? 1 : -1;
+      const crossProduct = new this.THREE.Vector3().crossVectors(
+        toStartPoint,
+        toCurrentPoint
+      );
+      const rotationDirection =
+        crossProduct.dot(this.state.selectedHandle.axis) > 0 ? 1 : -1;
 
       const signedAngleRadians = angleRadians * rotationDirection;
 
@@ -751,7 +801,8 @@ export const RTControls = {
       const snappedAngleDegrees = (snappedAngleRadians * 180) / Math.PI;
 
       // Calculate spread for display only (not used for snapping yet)
-      const spreadValue = Math.sin(signedAngleRadians) * Math.sin(signedAngleRadians);
+      const spreadValue =
+        Math.sin(signedAngleRadians) * Math.sin(signedAngleRadians);
       const snappedSpread = spreadValue; // No snapping
 
       /* TODO: Add spread snapping back once full rotation is working
@@ -768,8 +819,8 @@ export const RTControls = {
       );
 
       // Update rotation input fields
-      const degreesInput = document.getElementById('rotationDegrees');
-      const spreadInput = document.getElementById('rotationSpread');
+      const degreesInput = document.getElementById("rotationDegrees");
+      const spreadInput = document.getElementById("rotationSpread");
       if (degreesInput && spreadInput) {
         degreesInput.value = snappedAngleDegrees.toFixed(2);
         spreadInput.value = snappedSpread.toFixed(2);
@@ -816,17 +867,21 @@ export const RTControls = {
       // ALGEBRAIC PRECISION SNAPPING
       // Apply snapping based on snap mode and handle type (active/passive)
       // ====================================================================
-      if (this.state.currentSnapMode !== 'free' && this.state.selectedPolyhedra.length > 0) {
+      if (
+        this.state.currentSnapMode !== "free" &&
+        this.state.selectedPolyhedra.length > 0
+      ) {
         this.state.selectedPolyhedra.forEach(poly => {
-          if (this.state.currentSnapMode === 'xyz') {
+          if (this.state.currentSnapMode === "xyz") {
             // XYZ Snap Mode: Snap to 0.1 Cartesian grid
             const gridSize = 0.1;
             poly.position.x = Math.round(poly.position.x / gridSize) * gridSize;
             poly.position.y = Math.round(poly.position.y / gridSize) * gridSize;
             poly.position.z = Math.round(poly.position.z / gridSize) * gridSize;
-            console.log(`📐 XYZ snap applied: (${poly.position.x.toFixed(2)}, ${poly.position.y.toFixed(2)}, ${poly.position.z.toFixed(2)})`);
-
-          } else if (this.state.currentSnapMode === 'wxyz') {
+            console.log(
+              `📐 XYZ snap applied: (${poly.position.x.toFixed(2)}, ${poly.position.y.toFixed(2)}, ${poly.position.z.toFixed(2)})`
+            );
+          } else if (this.state.currentSnapMode === "wxyz") {
             // WXYZ Snap Mode: Snap to √6/4 ≈ 0.6124 Quadray grid
             // Convert position to Quadray coordinates
             const basisVectors = this.Quadray.basisVectors;
@@ -843,28 +898,44 @@ export const RTControls = {
 
             // Snap each Quadray coordinate to grid
             const quadrayGridSize = Math.sqrt(6) / 4; // ≈ 0.6124
-            wxyz = wxyz.map(c => Math.round(c / quadrayGridSize) * quadrayGridSize);
+            wxyz = wxyz.map(
+              c => Math.round(c / quadrayGridSize) * quadrayGridSize
+            );
 
             // Convert back to Cartesian
-            const snappedPos = this.Quadray.toCartesian(wxyz[0], wxyz[1], wxyz[2], wxyz[3], this.THREE);
+            const snappedPos = this.Quadray.toCartesian(
+              wxyz[0],
+              wxyz[1],
+              wxyz[2],
+              wxyz[3],
+              this.THREE
+            );
             poly.position.copy(snappedPos);
-            console.log(`📐 WXYZ snap applied: (W:${wxyz[0].toFixed(3)}, X:${wxyz[1].toFixed(3)}, Y:${wxyz[2].toFixed(3)}, Z:${wxyz[3].toFixed(3)})`);
+            console.log(
+              `📐 WXYZ snap applied: (W:${wxyz[0].toFixed(3)}, X:${wxyz[1].toFixed(3)}, Y:${wxyz[2].toFixed(3)}, Z:${wxyz[3].toFixed(3)})`
+            );
           }
         });
 
         // Update coordinate displays after snapping
         if (this.state.selectedPolyhedra.length > 0) {
-          this.updateCoordinateDisplays(this.state.selectedPolyhedra[0].position);
+          this.updateCoordinateDisplays(
+            this.state.selectedPolyhedra[0].position
+          );
         }
       } else {
-        console.log("✨ Free mode - no snapping applied (full precision preserved)");
+        console.log(
+          "✨ Free mode - no snapping applied (full precision preserved)"
+        );
       }
 
       this.state.isDragging = false;
       this.state.selectedHandle = null;
       this.state.selectedPolyhedra = [];
 
-      console.log("✅ Gumball drag ended - orbit controls remain disabled while tool active");
+      console.log(
+        "✅ Gumball drag ended - orbit controls remain disabled while tool active"
+      );
     }
   },
 
@@ -878,9 +949,9 @@ export const RTControls = {
    */
   updateCoordinateDisplays(position) {
     // Update XYZ coordinates
-    document.getElementById('coordX').value = position.x.toFixed(4);
-    document.getElementById('coordY').value = position.y.toFixed(4);
-    document.getElementById('coordZ').value = position.z.toFixed(4);
+    document.getElementById("coordX").value = position.x.toFixed(4);
+    document.getElementById("coordY").value = position.y.toFixed(4);
+    document.getElementById("coordZ").value = position.z.toFixed(4);
 
     // Convert to WXYZ and update
     const basisVectors = this.Quadray.basisVectors;
@@ -891,10 +962,10 @@ export const RTControls = {
     const mean = (wxyz[0] + wxyz[1] + wxyz[2] + wxyz[3]) / 4;
     wxyz = wxyz.map(c => c - mean);
 
-    document.getElementById('coordW').value = wxyz[0].toFixed(4);
-    document.getElementById('coordX2').value = wxyz[1].toFixed(4);
-    document.getElementById('coordY2').value = wxyz[2].toFixed(4);
-    document.getElementById('coordZ2').value = wxyz[3].toFixed(4);
+    document.getElementById("coordW").value = wxyz[0].toFixed(4);
+    document.getElementById("coordX2").value = wxyz[1].toFixed(4);
+    document.getElementById("coordY2").value = wxyz[2].toFixed(4);
+    document.getElementById("coordZ2").value = wxyz[3].toFixed(4);
   },
 
   // ========================================================================
@@ -908,7 +979,7 @@ export const RTControls = {
     const selected = this.getSelectedPolyhedra();
 
     if (selected.length === 0) {
-      console.warn('⚠️ No polyhedra selected - cannot deposit instance');
+      console.warn("⚠️ No polyhedra selected - cannot deposit instance");
       return;
     }
 
@@ -925,18 +996,20 @@ export const RTControls = {
         position: poly.position.clone(),
         rotation: poly.rotation.clone(),
         scale: poly.scale.clone(),
-        type: poly.userData.polyhedronType || 'unknown',
-        polyhedronGroup: poly
+        type: poly.userData.polyhedronType || "unknown",
+        polyhedronGroup: poly,
       };
 
       this.state.depositedInstances.push(instance);
       this.state.depositedCount++;
 
-      console.log(`✅ Deposited instance: ${instanceId} at position (${poly.position.x.toFixed(2)}, ${poly.position.y.toFixed(2)}, ${poly.position.z.toFixed(2)})`);
+      console.log(
+        `✅ Deposited instance: ${instanceId} at position (${poly.position.x.toFixed(2)}, ${poly.position.y.toFixed(2)}, ${poly.position.z.toFixed(2)})`
+      );
     });
 
     // Update UI counter
-    document.getElementById('nowCount').textContent = this.state.depositedCount;
+    document.getElementById("nowCount").textContent = this.state.depositedCount;
 
     console.log(`📦 Total deposited instances: ${this.state.depositedCount}`);
   },
@@ -988,5 +1061,5 @@ export const RTControls = {
     center.divideScalar(polyhedra.length);
 
     return center;
-  }
+  },
 };
