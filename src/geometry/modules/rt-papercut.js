@@ -28,6 +28,8 @@ export const RTPapercut = {
   _camera: null,
   _renderer: null,
   _intersectionLines: null, // Group to hold cutplane intersection edge lines
+  _originalBackgroundColor: null, // Store original background color
+  _originalMaterialColors: new Map(), // Store original material colors
 
   /**
    * Initialize Papercut module and wire up UI controls
@@ -43,7 +45,41 @@ export const RTPapercut = {
     RTPapercut._camera = camera;
     RTPapercut._renderer = renderer;
 
-    // 1. Enable Cutplane checkbox
+    // Store original background color
+    RTPapercut._originalBackgroundColor = scene.background ? scene.background.clone() : new THREE.Color(0x000000);
+
+    // 1. Print Mode checkbox
+    const printModeCheckbox = document.getElementById('enablePrintMode');
+    if (printModeCheckbox) {
+      printModeCheckbox.addEventListener('change', (e) => {
+        RTPapercut.state.printModeEnabled = e.target.checked;
+        RTPapercut.togglePrintMode(scene);
+      });
+    }
+
+    // 2. Line Weight slider
+    const lineWeightSlider = document.getElementById('lineWeight');
+    const lineWeightValue = document.getElementById('lineWeightValue');
+    if (lineWeightSlider) {
+      lineWeightSlider.addEventListener('input', (e) => {
+        const value = parseFloat(e.target.value);
+        RTPapercut.state.lineWeightMax = value;
+        if (lineWeightValue) {
+          lineWeightValue.textContent = value;
+        }
+        // Update intersection line material if it exists
+        if (RTPapercut._intersectionLines) {
+          RTPapercut._intersectionLines.traverse((child) => {
+            if (child.material && child.material.linewidth !== undefined) {
+              child.material.linewidth = value;
+              child.material.needsUpdate = true;
+            }
+          });
+        }
+      });
+    }
+
+    // 3. Enable Cutplane checkbox
     const cutplaneCheckbox = document.getElementById('enableCutPlane');
     if (cutplaneCheckbox) {
       cutplaneCheckbox.disabled = false;
@@ -53,10 +89,10 @@ export const RTPapercut = {
       });
     }
 
-    // 2. Create Cutplane slider UI dynamically
+    // 4. Create Cutplane slider UI dynamically
     RTPapercut._createCutplaneSlider();
 
-    // 3. Wire up slider to cutplane updates
+    // 5. Wire up slider to cutplane updates
     const cutplaneSlider = document.getElementById('cutplaneSlider');
     const cutplaneValue = document.getElementById('cutplaneValue');
 
@@ -70,7 +106,7 @@ export const RTPapercut = {
       });
     }
 
-    // 4. Listen to camera view changes to update cutplane axis
+    // 6. Listen to camera view changes to update cutplane axis
     const viewButtons = [
       { id: 'viewTop', view: 'top' },
       { id: 'viewBottom', view: 'bottom' },
@@ -91,10 +127,10 @@ export const RTPapercut = {
       }
     });
 
-    // 5. Update slider range based on current grid extent
+    // 7. Update slider range based on current grid extent
     RTPapercut._updateSliderRange();
 
-    // 6. Listen to grid extent changes
+    // 8. Listen to grid extent changes
     const cartesianSlider = document.getElementById('cartesianTessSlider');
     if (cartesianSlider) {
       cartesianSlider.addEventListener('change', () => {
@@ -295,6 +331,88 @@ export const RTPapercut = {
   },
 
   /**
+   * Toggle print mode (B&W rendering)
+   * @param {THREE.Scene} scene
+   */
+  togglePrintMode: function(scene) {
+    if (RTPapercut.state.printModeEnabled) {
+      // ENABLE PRINT MODE: White background, black/dark materials
+
+      // 1. Change background to white
+      scene.background = new THREE.Color(0xffffff);
+
+      // 2. Store original colors and convert materials to black/dark gray
+      scene.traverse((object) => {
+        if (object.material) {
+          const materials = Array.isArray(object.material) ? object.material : [object.material];
+
+          materials.forEach((mat) => {
+            // Skip if already stored
+            if (!RTPapercut._originalMaterialColors.has(mat.uuid)) {
+              // Store original color
+              if (mat.color) {
+                RTPapercut._originalMaterialColors.set(mat.uuid, mat.color.clone());
+              }
+            }
+
+            // Set to black or dark gray for print
+            if (mat.color) {
+              // LineBasicMaterial and similar
+              if (mat.type.includes('Line')) {
+                mat.color.setHex(0x000000); // Black lines
+              } else {
+                mat.color.setHex(0x303030); // Dark gray for mesh materials
+              }
+              mat.needsUpdate = true;
+            }
+          });
+        }
+      });
+
+      // 3. Update intersection line color to black
+      if (RTPapercut._intersectionLines) {
+        RTPapercut._intersectionLines.traverse((child) => {
+          if (child.material) {
+            child.material.color.setHex(0x000000);
+            child.material.needsUpdate = true;
+          }
+        });
+      }
+
+    } else {
+      // DISABLE PRINT MODE: Restore original colors
+
+      // 1. Restore background color
+      scene.background = RTPapercut._originalBackgroundColor.clone();
+
+      // 2. Restore original material colors
+      scene.traverse((object) => {
+        if (object.material) {
+          const materials = Array.isArray(object.material) ? object.material : [object.material];
+
+          materials.forEach((mat) => {
+            const originalColor = RTPapercut._originalMaterialColors.get(mat.uuid);
+            if (originalColor && mat.color) {
+              mat.color.copy(originalColor);
+              mat.needsUpdate = true;
+            }
+          });
+        }
+      });
+
+      // 3. Restore intersection line color to red
+      if (RTPapercut._intersectionLines) {
+        RTPapercut._intersectionLines.traverse((child) => {
+          if (child.material) {
+            child.material.color.setHex(0xff0000);
+            child.material.needsUpdate = true;
+          }
+        });
+      }
+    }
+  },
+
+  /**
    * Generate visible edge lines where cutplane intersects geometry
    * @param {THREE.Scene} scene
    * @param {THREE.Plane} plane - The cutplane
@@ -315,10 +433,11 @@ export const RTPapercut = {
     const intersectionGroup = new THREE.Group();
     intersectionGroup.name = 'CutplaneIntersectionEdges';
 
-    // Material for intersection edges (thicker, brighter)
+    // Material for intersection edges (thicker, color depends on print mode)
+    const lineColor = RTPapercut.state.printModeEnabled ? 0x000000 : 0xff0000;
     const intersectionMaterial = new THREE.LineBasicMaterial({
-      color: 0xff0000, // Red for visibility (can be changed)
-      linewidth: 2.0,   // Thicker than regular edges
+      color: lineColor, // Black in print mode, red otherwise
+      linewidth: RTPapercut.state.lineWeightMax, // Use current line weight
       opacity: 1.0,
       transparent: false
     });
