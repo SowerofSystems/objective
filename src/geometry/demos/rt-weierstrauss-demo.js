@@ -62,6 +62,9 @@ export function initWeierstrassDemo() {
 
   ({ scene, camera, renderer, animate, cleanup } = sceneData);
 
+  // Move camera up to prevent formula panel from clipping circle
+  camera.position.y = 0.3;
+
   // Create visual elements
   createAxes();
   createCircle();
