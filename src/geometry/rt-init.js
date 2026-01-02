@@ -2,6 +2,7 @@
 // ========================================================================
 import { Polyhedra } from "./modules/rt-polyhedra.js";
 import { PerformanceClock } from "./modules/performance-clock.js";
+import { RTPapercut } from "./modules/rt-papercut.js";
 
 // Make RTPolyhedra available globally for node geometry creation
 window.RTPolyhedra = Polyhedra;
@@ -3410,6 +3411,12 @@ function startARTexplorer(
   });
 
   animate();
+
+  // ========================================================================
+  // RT-PAPERCUT MODULE INITIALIZATION
+  // ========================================================================
+  RTPapercut.init(scene, camera, renderer);
+  window.RTPapercut = RTPapercut; // Global access for debugging
 
   // ========================================================================
   // KEYBOARD SHORTCUTS (ESC, Delete, Undo/Redo)
