@@ -1,9 +1,27 @@
-# RT-Papercut Module Implementation Plan
+# RT-Papercut Module
 
 **Module**: `rt-papercut.js`
 **Branch**: `Papercut` (branched from `Fold-Space`)
 **Created**: 2026-01-01
-**Status**: Planning Phase
+**Status**: ✅ **Phase 1 Complete** - Core features implemented
+
+---
+
+## Implementation Status
+
+### ✅ Completed Features
+- **Dynamic Cutplane** - Slides along current view axis with ±10 unit range
+- **Intersection Edge Rendering** - Clean Line2 edges where cutplane slices through geometry
+- **Print Mode (B&W)** - One-click toggle for white background, black lines, dark gray meshes
+- **Line Weight Control** - Real-time slider (1-5) with Line2/LineMaterial for actual thickness
+- **Invert Cutplane** - Simple checkbox to flip normal direction (ground plane mode)
+- **Smart Filtering** - Automatically excludes grids, basis vectors (up to 3 levels), hidden objects
+
+### 🔲 TODO Features
+- **Visualize Cutplane** - Optional visible plane with light gray fill and Line2 boundary edges
+  - Should inherit grid extent (±10 units default)
+  - Works for both normal and inverted modes
+  - Toggle on/off independently of clipping
 
 ---
 

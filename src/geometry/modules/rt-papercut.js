@@ -43,7 +43,6 @@ export const RTPapercut = {
    * @param {THREE.WebGLRenderer} renderer
    */
   init: function(scene, camera, renderer) {
-    console.log('🎨 Initializing RT-Papercut module...');
 
     // Store references
     RTPapercut._scene = scene;
@@ -152,8 +151,6 @@ export const RTPapercut = {
         RTPapercut._updateSliderRange();
       });
     }
-
-    console.log('✅ RT-Papercut module initialized');
   },
 
   /**
@@ -270,7 +267,6 @@ export const RTPapercut = {
       // Disable renderer clipping
       if (RTPapercut._renderer) {
         RTPapercut._renderer.localClippingEnabled = false;
-        console.log('🔧 Renderer clipping disabled');
       }
 
       // Remove intersection lines
@@ -477,8 +473,10 @@ export const RTPapercut = {
       // Skip non-mesh objects
       if (object.type !== 'Mesh' || !object.geometry) return;
 
-      // Skip invisible/hidden meshes (check both object and parent visibility)
-      if (!object.visible || (object.parent && !object.parent.visible)) return;
+      // Skip invisible/hidden meshes (check object, parent, and grandparent visibility)
+      if (!object.visible) return;
+      if (object.parent && !object.parent.visible) return;
+      if (object.parent && object.parent.parent && !object.parent.parent.visible) return;
 
       // Skip grid-related meshes
       if (object.parent && object.parent.name &&
@@ -493,12 +491,21 @@ export const RTPapercut = {
         return;
       }
 
-      // Also check parent name for basis/coordinate system objects
+      // Also check parent and grandparent names for basis/coordinate system objects
       if (object.parent && object.parent.name &&
           (object.parent.name.includes('Basis') ||
            object.parent.name.includes('basis') ||
            object.parent.name.includes('Cartesian') ||
            object.parent.name.includes('Quadray'))) {
+        return;
+      }
+
+      // Check grandparent for basis/coordinate system objects (nested structure)
+      if (object.parent && object.parent.parent && object.parent.parent.name &&
+          (object.parent.parent.name.includes('Basis') ||
+           object.parent.parent.name.includes('basis') ||
+           object.parent.parent.name.includes('Cartesian') ||
+           object.parent.parent.name.includes('Quadray'))) {
         return;
       }
 
