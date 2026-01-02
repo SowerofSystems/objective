@@ -315,9 +315,16 @@ function normalizeAngleDiff(diff) {
  * Update visualization based on current angle
  */
 function updateVisualization() {
-  // Calculate point on circle
-  const x = radius * Math.cos(angle);
-  const y = radius * Math.sin(angle);
+  // DOGFOODING: Use Weierstrauss substitution to calculate point on circle
+  // This demonstrates the computational advantage: pure rational functions, no trig!
+  const t = Math.tan(angle / 2);
+  const denom = 1 + t * t;
+  const wX = (1 - t * t) / denom;  // Rational function for x-coordinate
+  const wY = (2 * t) / denom;      // Rational function for y-coordinate
+
+  // Scale to radius
+  const x = wX * radius;
+  const y = wY * radius;
 
   // Update draggable point position
   draggablePoint.position.set(x, y, 0);
@@ -334,16 +341,6 @@ function updateVisualization() {
   // Update Y component vector (x, 0 to x, y)
   yVector.geometry.setPositions([x, 0, 0.01, x, y, 0.01]);
   yVector.computeLineDistances();
-
-  // Calculate Weierstrauss parameters
-  const t = Math.tan(angle / 2);
-  const denom = 1 + t * t;
-  const wX = (1 - t * t) / denom;
-  const wY = (2 * t) / denom;
-
-  // Normalize to radius
-  const normX = wX * radius;
-  const normY = wY * radius;
 
   // Calculate quadrances (squared lengths)
   const qX = x * x;
@@ -363,13 +360,22 @@ function updateVisualization() {
   // In rational trigonometry, spread goes from 0 to 1 in each quadrant
   const spread = Math.sin(angle) * Math.sin(angle);
 
-  // Update formula display
+  // Calculate traditional method for comparison
+  const traditionalX = radius * Math.cos(angle);
+  const traditionalY = radius * Math.sin(angle);
+
+  // Update formula display with computational comparison
   formulaElement.innerHTML = `
-    <strong>Weierstrauss Parametrization:</strong><br>
-    Let t = tan(θ/2) = <span style="color: #4a9eff">${t.toFixed(4)}</span><br>
+    <strong>Weierstrauss (ACTIVE):</strong> <span style="color: #00ff88">✓ Rational Functions Only</span><br>
+    t = tan(θ/2) = <span style="color: #4a9eff">${t.toFixed(4)}</span> &nbsp;&nbsp;
+    x = r·(1-t²)/(1+t²) = <span style="color: #ff0000">${x.toFixed(4)}</span> &nbsp;&nbsp;
+    y = r·(2t)/(1+t²) = <span style="color: #66ff66">${y.toFixed(4)}</span><br>
+    <span style="color: #888">After tan: 4 multiply + 2 add + 2 divide = 8 rational ops (GPU-friendly!)</span><br>
     <br>
-    x = r · (1 - t²) / (1 + t²) = ${radius} · <span style="color: #ff6666">${wX.toFixed(4)}</span> = <span style="color: #ff6666">${x.toFixed(4)}</span><br>
-    y = r · (2t) / (1 + t²) = ${radius} · <span style="color: #66ff66">${wY.toFixed(4)}</span> = <span style="color: #66ff66">${y.toFixed(4)}</span>
+    <strong>Traditional:</strong> <span style="color: #ff8800">⚠ Transcendental (Taylor Series)</span><br>
+    x = r·cos(θ) = <span style="color: #ff0000">${traditionalX.toFixed(4)}</span> &nbsp;&nbsp;
+    y = r·sin(θ) = <span style="color: #66ff66">${traditionalY.toFixed(4)}</span><br>
+    <span style="color: #888">sin/cos each require ~10-20 Taylor terms for precision (not GPU-friendly)</span>
   `;
 
   // Update coordinates display
