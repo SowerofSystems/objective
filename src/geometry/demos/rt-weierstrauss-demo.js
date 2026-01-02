@@ -289,7 +289,7 @@ function createFormulaDisplay() {
   coordsElement = document.createElement('div');
   coordsElement.style.cssText = `
     position: absolute;
-    top: 20px;
+    top: 220px;
     right: 80px;
     background: rgba(0, 0, 0, 0.85);
     padding: 12px;
