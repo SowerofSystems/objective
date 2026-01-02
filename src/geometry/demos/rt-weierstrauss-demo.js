@@ -119,32 +119,32 @@ function createAxes() {
 function createAxisLabels() {
   const container = document.getElementById('weierstrauss-demo-container');
 
-  // X axis label (red X at right end)
+  // X axis label (red X at right end of circle)
   const xLabel = document.createElement('div');
   xLabel.style.cssText = `
     position: absolute;
     top: 50%;
-    right: 10%;
-    transform: translate(50%, -50%);
+    left: 68%;
+    transform: translate(0, -50%);
     color: #ff0000;
     font-family: 'Courier New', monospace;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: bold;
     pointer-events: none;
   `;
   xLabel.textContent = 'X';
   container.appendChild(xLabel);
 
-  // Y axis label (green Y at top)
+  // Y axis label (green Y at top of circle)
   const yLabel = document.createElement('div');
   yLabel.style.cssText = `
     position: absolute;
-    top: 10%;
+    top: 16%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, 0);
     color: #00ff00;
     font-family: 'Courier New', monospace;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: bold;
     pointer-events: none;
   `;
@@ -289,7 +289,7 @@ function createFormulaDisplay() {
   coordsElement.style.cssText = `
     position: absolute;
     top: 20px;
-    right: 20px;
+    right: 80px;
     background: rgba(0, 0, 0, 0.85);
     padding: 12px;
     border-radius: 4px;
@@ -364,7 +364,7 @@ function updateVisualization() {
   const traditionalX = radius * Math.cos(angle);
   const traditionalY = radius * Math.sin(angle);
 
-  // Update formula display with computational comparison and visual chart
+  // Update formula display with computational comparison and animated chart
   const weierstrassOps = 8;
   const traditionalOps = 30; // Approximation: 2 trig functions × ~15 Taylor terms each
   const maxOps = 40;
@@ -384,11 +384,11 @@ function updateVisualization() {
     <span style="color: #888">sin/cos each ~15 Taylor terms × 2 = <strong>~30 ops</strong> (not GPU-friendly)</span><br>
     <br>
     <div style="margin-top: 10px;">
-      <div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">Computational Cost Comparison:</div>
+      <div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">Computational Cost (live):</div>
       <div style="display: flex; align-items: center; margin-bottom: 3px;">
         <span style="width: 90px; font-size: 11px; color: #00ff88;">Weierstrauss:</span>
         <div style="flex: 1; background: #222; height: 18px; border-radius: 2px; overflow: hidden;">
-          <div style="width: ${wBarWidth}%; background: linear-gradient(90deg, #00ff88, #00cc66); height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px;">
+          <div id="weierstrauss-bar" style="width: 0%; background: linear-gradient(90deg, #00ff88, #00cc66); height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; transition: width 0.15s ease-out;">
             <span style="font-size: 10px; color: #000; font-weight: bold;">${weierstrassOps}</span>
           </div>
         </div>
@@ -396,7 +396,7 @@ function updateVisualization() {
       <div style="display: flex; align-items: center;">
         <span style="width: 90px; font-size: 11px; color: #ff8800;">Traditional:</span>
         <div style="flex: 1; background: #222; height: 18px; border-radius: 2px; overflow: hidden;">
-          <div style="width: ${tBarWidth}%; background: linear-gradient(90deg, #ff8800, #cc6600); height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px;">
+          <div id="traditional-bar" style="width: 0%; background: linear-gradient(90deg, #ff8800, #cc6600); height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; transition: width 0.3s ease-out;">
             <span style="font-size: 10px; color: #000; font-weight: bold;">${traditionalOps}</span>
           </div>
         </div>
@@ -406,6 +406,15 @@ function updateVisualization() {
       </div>
     </div>
   `;
+
+  // Animate the bars to show computation happening
+  // Use requestAnimationFrame for smooth animation
+  requestAnimationFrame(() => {
+    const wBar = document.getElementById('weierstrauss-bar');
+    const tBar = document.getElementById('traditional-bar');
+    if (wBar) wBar.style.width = `${wBarWidth}%`;
+    if (tBar) tBar.style.width = `${tBarWidth}%`;
+  });
 
   // Update coordinates display
   coordsElement.innerHTML = `
