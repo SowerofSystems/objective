@@ -279,6 +279,11 @@ button:active {
   font-weight: 600;
 }
 
+.info-controls {
+  margin-top: 8px;
+  font-size: 11px;
+}
+
 /* Section Toggle (for h3 main sections) */
 .section-toggle {
   display: inline-block;

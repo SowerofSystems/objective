@@ -87,7 +87,7 @@ for (let i = 0; i <= divisions; i++) {
 ### Option 2: True IVM Grid via Vertex-to-Vertex Tessellation
 
 **Current Implementation Status:** ❌ NOT IMPLEMENTED (planned for Phase 2.9 or later)
-**Purpose:** Visualize the TRUE Isotropic Vector Matrix (IVM) by tessellating tetrahedra vertex-to-vertex along each Quadray plane.
+**Purpose:** Visualize the TRUE Isotropic Vector Matrix (IVM) by tessellating tetrahedra vertex-to-vertex along each Quadray plane. (UI Elements already in place)
 
 **What This Shows:** This is the proper IVM planar cross-section. Instead of "filling the web space between axes," this approach places tetrahedra vertex-to-vertex and extracts the coplanar triangular faces that lie along each Quadray plane. Each triangular face preserves the same face normal (coplanar), creating one plane through the IVM space-filling structure.
 
