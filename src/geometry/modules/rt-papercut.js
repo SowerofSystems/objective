@@ -150,7 +150,7 @@ export const RTPapercut = {
       papercutSection.appendChild(sliderContainer);
     }
 
-    console.log('✅ Cutplane slider UI created');
+    // Cutplane slider UI created
   },
 
   /**
@@ -176,7 +176,7 @@ export const RTPapercut = {
       }
     }
 
-    console.log(`📐 Cutplane range updated: ${range.min} to ${range.max}`);
+    // Cutplane range updated
   },
 
   /**
@@ -232,7 +232,7 @@ export const RTPapercut = {
         RTPapercut._intersectionLines = null;
       }
 
-      console.log('✂️ Cutplane disabled');
+      // Cutplane disabled
       return;
     }
 
@@ -273,12 +273,11 @@ export const RTPapercut = {
         }
       }
     });
-    console.log(`📦 Applied clipping plane to ${materialCount} materials`);
+    // Applied clipping plane to materials
 
     // 3. Enable renderer local clipping
     if (RTPapercut._renderer) {
       RTPapercut._renderer.localClippingEnabled = true;
-      console.log('🔧 Renderer clipping ENABLED');
     } else {
       console.error('❌ Renderer reference not found!');
     }
@@ -289,7 +288,7 @@ export const RTPapercut = {
       valueDisplay.textContent = value.toFixed(1);
     }
 
-    console.log(`✂️ Cutplane updated: ${RTPapercut.state.cutplaneAxis.toUpperCase()} = ${value.toFixed(1)}`);
+    // Cutplane updated
 
     // 5. Generate intersection edges where cutplane slices through geometry
     RTPapercut._generateIntersectionEdges(scene, plane);
@@ -329,12 +328,41 @@ export const RTPapercut = {
       // Skip non-mesh objects
       if (object.type !== 'Mesh' || !object.geometry) return;
 
-      // Skip invisible/hidden meshes
-      if (!object.visible) return;
+      // Skip invisible/hidden meshes (check both object and parent visibility)
+      if (!object.visible || (object.parent && !object.parent.visible)) return;
 
       // Skip grid-related meshes
       if (object.parent && object.parent.name &&
           (object.parent.name.includes('Grid') || object.parent.name.includes('grid'))) {
+        return;
+      }
+
+      // Skip helper objects, lights, cameras, basis vectors, arrows
+      // Skip objects that are part of control systems (gumball, handles, etc.)
+      const skipNames = ['Helper', 'Handle', 'Gumball', 'Basis', 'Arrow', 'Cone', 'basis'];
+      if (object.name && skipNames.some(name => object.name.includes(name))) {
+        return;
+      }
+
+      // Also check parent name for basis/coordinate system objects
+      if (object.parent && object.parent.name &&
+          (object.parent.name.includes('Basis') ||
+           object.parent.name.includes('basis') ||
+           object.parent.name.includes('Cartesian') ||
+           object.parent.name.includes('Quadray'))) {
+        return;
+      }
+
+      // Skip if parent is a polyhedron group that's been hidden
+      if (object.parent && object.parent.name &&
+          object.parent.name.includes('Group') &&
+          !object.parent.visible) {
+        return;
+      }
+
+      // Skip sphere geometries (gumball/control handles, scale mode spheres)
+      if (object.geometry.type === 'SphereGeometry' ||
+          (object.geometry.parameters && object.geometry.parameters.radius)) {
         return;
       }
 
@@ -399,7 +427,7 @@ export const RTPapercut = {
     if (intersectionGroup.children.length > 0) {
       scene.add(intersectionGroup);
       RTPapercut._intersectionLines = intersectionGroup;
-      console.log(`✏️ Generated ${intersectionGroup.children.length} intersection segments`);
+      // Generated intersection segments
     }
   },
 
@@ -470,7 +498,7 @@ export const RTPapercut = {
         RTPapercut.updateCutplane(RTPapercut.state.cutplaneValue, scene);
       }
 
-      console.log(`📐 Cutplane axis updated: ${newAxis.toUpperCase()} (view: ${view})`);
+      // Cutplane axis updated
     }
   }
 };
