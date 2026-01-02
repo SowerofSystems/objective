@@ -270,17 +270,18 @@ function createFormulaDisplay() {
   formulaElement = document.createElement('div');
   formulaElement.style.cssText = `
     position: absolute;
-    bottom: 20px;
+    bottom: 10px;
     left: 20px;
     right: 20px;
     background: rgba(0, 0, 0, 0.85);
-    padding: 15px;
+    padding: 10px;
     border-radius: 4px;
     font-family: 'Courier New', monospace;
-    font-size: 14px;
+    font-size: 12px;
     border: 1px solid #333;
     box-shadow: 0 2px 8px rgba(255,255,255,0.1);
     color: #ffffff;
+    max-height: 160px;
   `;
   container.appendChild(formulaElement);
 
