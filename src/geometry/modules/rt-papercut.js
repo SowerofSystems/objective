@@ -21,6 +21,7 @@ export const RTPapercut = {
     cutplaneValue: 0,      // Current slider position
     cutplaneAxis: 'z',     // 'x', 'y', or 'z'
     cutplaneNormal: null,  // THREE.Vector3
+    invertCutPlane: false, // Invert normal (for ground plane mode)
     lineWeightEnabled: true,
     lineWeightMin: 0.5,
     lineWeightMax: 3.0,
@@ -90,6 +91,15 @@ export const RTPapercut = {
       cutplaneCheckbox.disabled = false;
       cutplaneCheckbox.addEventListener('change', (e) => {
         RTPapercut.state.cutplaneEnabled = e.target.checked;
+        RTPapercut.updateCutplane(RTPapercut.state.cutplaneValue, scene);
+      });
+    }
+
+    // 3b. Invert Cutplane checkbox
+    const invertCutPlaneCheckbox = document.getElementById('invertCutPlane');
+    if (invertCutPlaneCheckbox) {
+      invertCutPlaneCheckbox.addEventListener('change', (e) => {
+        RTPapercut.state.invertCutPlane = e.target.checked;
         RTPapercut.updateCutplane(RTPapercut.state.cutplaneValue, scene);
       });
     }
@@ -278,21 +288,27 @@ export const RTPapercut = {
     }
 
     // 1. Create clipping plane based on current axis
-    // Invert normal to clip top-down (architectural style)
-    // Show geometry CLOSEST to camera, hide what's farther away
+    // Default: Inverted normal for top-down (architectural) clipping
+    // With invertCutPlane: Double invert = normal clipping (bottom-up, ground plane mode)
     const normal = new THREE.Vector3();
+    const invert = RTPapercut.state.invertCutPlane ? 1 : -1; // Flip sign when inverted
+
     if (RTPapercut.state.cutplaneAxis === 'x') {
-      normal.set(-1, 0, 0);  // Inverted for top-down clipping
+      normal.set(invert * 1, 0, 0);
     } else if (RTPapercut.state.cutplaneAxis === 'y') {
-      normal.set(0, -1, 0);  // Inverted for top-down clipping
+      normal.set(0, invert * 1, 0);
     } else { // 'z'
-      normal.set(0, 0, -1);  // Inverted for top-down clipping
+      normal.set(0, 0, invert * 1);
     }
+
+    // Add small epsilon when inverted and at origin to catch geometry sitting exactly on ground
+    // This avoids floating-point precision issues at exactly 0.0
+    const epsilon = (RTPapercut.state.invertCutPlane && Math.abs(value) < 0.01) ? -0.001 : 0;
+    const adjustedValue = value + epsilon;
 
     // THREE.Plane(normal, constant)
     // constant = -d where d is distance from origin along normal
-    // Clip everything on the far side of the plane from camera
-    const plane = new THREE.Plane(normal, value);
+    const plane = new THREE.Plane(normal, adjustedValue);
     RTPapercut.state.cutplaneNormal = plane;
 
     // 2. Apply clipping plane to all renderable objects
