@@ -20,7 +20,7 @@ let circle, radiusLine, xVector, yVector, draggablePoint;
 let isDragging = false;
 let angle = Math.PI / 4; // Start at 45 degrees
 let radius = 1.5;
-let formulaElement, coordsElement;
+let formulaElement;
 let snapMarkers = [];
 
 // Golden ratio
@@ -266,41 +266,65 @@ function createDraggablePoint() {
 function createFormulaDisplay() {
   const container = document.getElementById('weierstrauss-demo-container');
 
-  // Formula display
+  // Title overlay (top-left)
+  const titleElement = document.createElement('div');
+  titleElement.style.cssText = `
+    position: absolute;
+    top: 15px;
+    left: 20px;
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    pointer-events: none;
+  `;
+  titleElement.textContent = 'Weierstrauss Parametrization of the Circle';
+  container.appendChild(titleElement);
+
+  // Close button (now part of canvas overlay since we removed modal header)
+  const closeButton = document.createElement('button');
+  closeButton.className = 'close-modal';
+  closeButton.innerHTML = '&times;';
+  closeButton.style.cssText = `
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: transparent;
+    border: none;
+    font-size: 32px;
+    color: #888;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    z-index: 10;
+  `;
+  closeButton.onmouseover = () => closeButton.style.color = '#fff';
+  closeButton.onmouseout = () => closeButton.style.color = '#888';
+  closeButton.onclick = () => {
+    document.getElementById('weierstrauss-modal').style.display = 'none';
+  };
+  container.appendChild(closeButton);
+
+  // Combined formula and coordinates display (bottom)
   formulaElement = document.createElement('div');
   formulaElement.style.cssText = `
     position: absolute;
-    bottom: 10px;
+    bottom: 15px;
     left: 20px;
     right: 20px;
-    background: rgba(0, 0, 0, 0.85);
-    padding: 10px;
-    border-radius: 4px;
-    font-family: 'Courier New', monospace;
-    font-size: 12px;
-    border: 1px solid #333;
-    box-shadow: 0 2px 8px rgba(255,255,255,0.1);
-    color: #ffffff;
-    max-height: 160px;
-  `;
-  container.appendChild(formulaElement);
-
-  // Coordinates display
-  coordsElement = document.createElement('div');
-  coordsElement.style.cssText = `
-    position: absolute;
-    top: 220px;
-    right: 80px;
     background: rgba(0, 0, 0, 0.85);
     padding: 12px;
     border-radius: 4px;
     font-family: 'Courier New', monospace;
-    font-size: 13px;
+    font-size: 14px;
     border: 1px solid #333;
     box-shadow: 0 2px 8px rgba(255,255,255,0.1);
     color: #ffffff;
   `;
-  container.appendChild(coordsElement);
+  container.appendChild(formulaElement);
 }
 
 /**
@@ -372,38 +396,61 @@ function updateVisualization() {
   const wBarWidth = (weierstrassOps / maxOps) * 100;
   const tBarWidth = (traditionalOps / maxOps) * 100;
 
+  // Combined two-column layout: formulas on left, coordinates on right
   formulaElement.innerHTML = `
-    <strong>Weierstrauss (ACTIVE):</strong> <span style="color: #00ff88">✓ Rational Functions Only</span><br>
-    t = tan(θ/2) = <span style="color: #4a9eff">${t.toFixed(4)}</span> &nbsp;&nbsp;
-    x = r·(1-t²)/(1+t²) = <span style="color: #ff0000">${x.toFixed(4)}</span> &nbsp;&nbsp;
-    y = r·(2t)/(1+t²) = <span style="color: #66ff66">${y.toFixed(4)}</span><br>
-    <span style="color: #888">After tan: 4 multiply + 2 add + 2 divide = <strong>8 ops</strong> (GPU-friendly!)</span><br>
-    <br>
-    <strong>Traditional:</strong> <span style="color: #ff8800">⚠ Transcendental (Taylor Series)</span><br>
-    x = r·cos(θ) = <span style="color: #ff0000">${traditionalX.toFixed(4)}</span> &nbsp;&nbsp;
-    y = r·sin(θ) = <span style="color: #66ff66">${traditionalY.toFixed(4)}</span><br>
-    <span style="color: #888">sin/cos each ~15 Taylor terms × 2 = <strong>~30 ops</strong> (not GPU-friendly)</span><br>
-    <br>
-    <div style="margin-top: 10px;">
-      <div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">Computational Cost (live):</div>
-      <div style="display: flex; align-items: center; margin-bottom: 3px;">
-        <span style="width: 90px; font-size: 11px; color: #00ff88;">Weierstrauss:</span>
-        <div style="flex: 1; background: #222; height: 18px; border-radius: 2px; overflow: hidden;">
-          <div id="weierstrauss-bar" style="width: 0%; background: linear-gradient(90deg, #00ff88, #00cc66); height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; transition: width 0.15s ease-out;">
-            <span style="font-size: 10px; color: #000; font-weight: bold;">${weierstrassOps}</span>
+    <div style="display: flex; gap: 20px;">
+      <!-- LEFT COLUMN: Formulas and Performance -->
+      <div style="flex: 1; min-width: 0;">
+        <strong>Weierstrauss (ACTIVE):</strong> <span style="color: #00ff88">✓ Rational Functions Only</span><br>
+        t = tan(θ/2) = <span style="color: #4a9eff">${t.toFixed(4)}</span> &nbsp;&nbsp;
+        x = r·(1-t²)/(1+t²) = <span style="color: #ff0000">${x.toFixed(4)}</span> &nbsp;&nbsp;
+        y = r·(2t)/(1+t²) = <span style="color: #66ff66">${y.toFixed(4)}</span><br>
+        <span style="color: #888">After tan: 4 multiply + 2 add + 2 divide = <strong>8 ops</strong> (GPU-friendly!)</span><br>
+        <br>
+        <strong>Traditional:</strong> <span style="color: #ff8800">⚠ Transcendental (Taylor Series)</span><br>
+        x = r·cos(θ) = <span style="color: #ff0000">${traditionalX.toFixed(4)}</span> &nbsp;&nbsp;
+        y = r·sin(θ) = <span style="color: #66ff66">${traditionalY.toFixed(4)}</span><br>
+        <span style="color: #888">sin/cos each ~15 Taylor terms × 2 = <strong>~30 ops</strong> (not GPU-friendly)</span><br>
+        <br>
+        <div style="margin-top: 8px;">
+          <div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">Computational Cost (live):</div>
+          <div style="display: flex; align-items: center; margin-bottom: 3px;">
+            <span style="width: 90px; font-size: 11px; color: #00ff88;">Weierstrauss:</span>
+            <div style="flex: 1; background: #222; height: 18px; border-radius: 2px; overflow: hidden;">
+              <div id="weierstrauss-bar" style="width: 0%; background: linear-gradient(90deg, #00ff88, #00cc66); height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; transition: width 0.15s ease-out;">
+                <span style="font-size: 10px; color: #000; font-weight: bold;">${weierstrassOps}</span>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center;">
+            <span style="width: 90px; font-size: 11px; color: #ff8800;">Traditional:</span>
+            <div style="flex: 1; background: #222; height: 18px; border-radius: 2px; overflow: hidden;">
+              <div id="traditional-bar" style="width: 0%; background: linear-gradient(90deg, #ff8800, #cc6600); height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; transition: width 0.3s ease-out;">
+                <span style="font-size: 10px; color: #000; font-weight: bold;">${traditionalOps}</span>
+              </div>
+            </div>
+          </div>
+          <div style="font-size: 10px; color: #666; margin-top: 5px; text-align: right;">
+            Weierstrauss is <strong style="color: #00ff88">${(traditionalOps / weierstrassOps).toFixed(1)}× faster</strong>
           </div>
         </div>
       </div>
-      <div style="display: flex; align-items: center;">
-        <span style="width: 90px; font-size: 11px; color: #ff8800;">Traditional:</span>
-        <div style="flex: 1; background: #222; height: 18px; border-radius: 2px; overflow: hidden;">
-          <div id="traditional-bar" style="width: 0%; background: linear-gradient(90deg, #ff8800, #cc6600); height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; transition: width 0.3s ease-out;">
-            <span style="font-size: 10px; color: #000; font-weight: bold;">${traditionalOps}</span>
-          </div>
-        </div>
-      </div>
-      <div style="font-size: 10px; color: #666; margin-top: 5px; text-align: right;">
-        Weierstrauss is <strong style="color: #00ff88">${(traditionalOps / weierstrassOps).toFixed(1)}× faster</strong>
+
+      <!-- RIGHT COLUMN: Coordinates and Quadrances -->
+      <div style="width: 220px; flex-shrink: 0; border-left: 1px solid #444; padding-left: 15px; font-size: 12px;">
+        <strong>Angular Position:</strong><br>
+        Degrees: <span style="color: #4a9eff">${degrees.toFixed(2)}°</span><br>
+        Radians: <span style="color: #4a9eff">${radians.toFixed(4)}</span><br>
+        Spread: <span style="color: #4a9eff">${spread.toFixed(4)}</span><br>
+        <br>
+        <strong>Cartesian Position:</strong><br>
+        <span style="color: #ff6666">X = ${x.toFixed(4)}</span><br>
+        <span style="color: #66ff66">Y = ${y.toFixed(4)}</span><br>
+        <br>
+        <strong>Quadrances:</strong><br>
+        <span style="color: #ff6666">Q(X) = ${qX.toFixed(4)}</span><br>
+        <span style="color: #66ff66">Q(Y) = ${qY.toFixed(4)}</span><br>
+        <span style="color: #4a9eff">Q(R) = ${qRadius.toFixed(4)}</span>
       </div>
     </div>
   `;
@@ -416,23 +463,6 @@ function updateVisualization() {
     if (wBar) wBar.style.width = `${wBarWidth}%`;
     if (tBar) tBar.style.width = `${tBarWidth}%`;
   });
-
-  // Update coordinates display
-  coordsElement.innerHTML = `
-    <strong>Angular Position:</strong><br>
-    Degrees: <span style="color: #4a9eff">${degrees.toFixed(2)}°</span><br>
-    Radians: <span style="color: #4a9eff">${radians.toFixed(4)}</span><br>
-    Spread: <span style="color: #4a9eff">${spread.toFixed(4)}</span><br>
-    <br>
-    <strong>Cartesian Position:</strong><br>
-    <span style="color: #ff6666">X = ${x.toFixed(4)}</span><br>
-    <span style="color: #66ff66">Y = ${y.toFixed(4)}</span><br>
-    <br>
-    <strong>Quadrances:</strong><br>
-    <span style="color: #ff6666">Q(X) = ${qX.toFixed(4)}</span><br>
-    <span style="color: #66ff66">Q(Y) = ${qY.toFixed(4)}</span><br>
-    <span style="color: #4a9eff">Q(R) = ${qRadius.toFixed(4)}</span>
-  `;
 }
 
 /**
@@ -529,11 +559,8 @@ function setupInteraction(container) {
 export function cleanupWeierstrassDemo() {
   if (cleanup) cleanup();
 
-  // Remove formula displays
+  // Remove formula display (coordinates now integrated)
   if (formulaElement && formulaElement.parentNode) {
     formulaElement.parentNode.removeChild(formulaElement);
-  }
-  if (coordsElement && coordsElement.parentNode) {
-    coordsElement.parentNode.removeChild(coordsElement);
   }
 }
