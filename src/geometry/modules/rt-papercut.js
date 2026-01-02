@@ -9,6 +9,10 @@
  * - SVG export via browser print
  */
 
+import { Line2 } from 'three/addons/lines/Line2.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
+
 export const RTPapercut = {
   // Module state (local, not persisted)
   state: {
@@ -70,8 +74,9 @@ export const RTPapercut = {
         // Update intersection line material if it exists
         if (RTPapercut._intersectionLines) {
           RTPapercut._intersectionLines.traverse((child) => {
-            if (child.material && child.material.linewidth !== undefined) {
-              child.material.linewidth = value;
+            if (child.material && child.material.isLineMaterial) {
+              // LineMaterial uses linewidth property (scaled to world units)
+              child.material.linewidth = value * 0.001;
               child.material.needsUpdate = true;
             }
           });
@@ -434,13 +439,22 @@ export const RTPapercut = {
     intersectionGroup.name = 'CutplaneIntersectionEdges';
 
     // Material for intersection edges (thicker, color depends on print mode)
+    // LineMaterial supports actual line thickness (unlike LineBasicMaterial)
     const lineColor = RTPapercut.state.printModeEnabled ? 0x000000 : 0xff0000;
-    const intersectionMaterial = new THREE.LineBasicMaterial({
+    const intersectionMaterial = new LineMaterial({
       color: lineColor, // Black in print mode, red otherwise
-      linewidth: RTPapercut.state.lineWeightMax, // Use current line weight
+      linewidth: RTPapercut.state.lineWeightMax * 0.001, // Convert to world units (scaled down)
+      worldUnits: true, // Use world units for consistent thickness
       opacity: 1.0,
       transparent: false
     });
+
+    // Set resolution for proper line rendering
+    if (RTPapercut._renderer) {
+      const size = new THREE.Vector2();
+      RTPapercut._renderer.getSize(size);
+      intersectionMaterial.resolution.set(size.x, size.y);
+    }
 
     // Process MESH objects (not line objects) to get face intersections
     scene.traverse((object) => {
@@ -532,11 +546,16 @@ export const RTPapercut = {
         }
       }
 
-      // Create line segments from intersection pairs
+      // Create line segments from intersection pairs using Line2
       if (intersectionSegments.length > 0) {
         intersectionSegments.forEach(([p1, p2]) => {
-          const lineGeometry = new THREE.BufferGeometry().setFromPoints([p1, p2]);
-          const line = new THREE.LineSegments(lineGeometry, intersectionMaterial);
+          // LineGeometry requires positions as flat array: [x1, y1, z1, x2, y2, z2]
+          const positions = [p1.x, p1.y, p1.z, p2.x, p2.y, p2.z];
+          const lineGeometry = new LineGeometry();
+          lineGeometry.setPositions(positions);
+
+          const line = new Line2(lineGeometry, intersectionMaterial);
+          line.computeLineDistances(); // Required for LineMaterial
           intersectionGroup.add(line);
         });
       }
