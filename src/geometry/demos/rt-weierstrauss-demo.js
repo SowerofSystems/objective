@@ -21,6 +21,31 @@ let isDragging = false;
 let angle = Math.PI / 4; // Start at 45 degrees
 let radius = 1.5;
 let formulaElement, coordsElement;
+let snapMarkers = [];
+
+// Golden ratio
+const PHI = (1 + Math.sqrt(5)) / 2;
+
+// Snap points: Phi positions and 45° angles
+const snapAngles = [
+  // 45° angles (spread = 0.5)
+  { angle: Math.PI / 4, label: '45°', type: 'spread' },
+  { angle: 3 * Math.PI / 4, label: '135°', type: 'spread' },
+  { angle: 5 * Math.PI / 4, label: '225°', type: 'spread' },
+  { angle: 7 * Math.PI / 4, label: '315°', type: 'spread' },
+
+  // Phi angles (golden rectangle vertices)
+  { angle: Math.atan2(1, PHI), label: 'φ', type: 'phi' },
+  { angle: Math.atan2(1, -PHI), label: 'φ', type: 'phi' },
+  { angle: Math.atan2(-1, PHI), label: 'φ', type: 'phi' },
+  { angle: Math.atan2(-1, -PHI), label: 'φ', type: 'phi' },
+  { angle: Math.atan2(PHI, 1), label: 'φ', type: 'phi' },
+  { angle: Math.atan2(PHI, -1), label: 'φ', type: 'phi' },
+  { angle: Math.atan2(-PHI, 1), label: 'φ', type: 'phi' },
+  { angle: Math.atan2(-PHI, -1), label: 'φ', type: 'phi' }
+];
+
+const SNAP_THRESHOLD = 0.15; // radians (~8.6°)
 
 /**
  * Initialize the Weierstrauss demo
@@ -31,7 +56,7 @@ export function initWeierstrassDemo() {
 
   // Create 2D scene
   const sceneData = create2DScene(container, {
-    backgroundColor: 0xffffff,
+    backgroundColor: 0x000000,
     cameraSize: 2.5
   });
 
@@ -40,6 +65,7 @@ export function initWeierstrassDemo() {
   // Create visual elements
   createAxes();
   createCircle();
+  createSnapMarkers();
   createVectors();
   createDraggablePoint();
   createFormulaDisplay();
@@ -65,24 +91,65 @@ export function initWeierstrassDemo() {
  * Create coordinate axes
  */
 function createAxes() {
-  const axisLength = 2.5;
-  const axisWidth = 2;
+  const axisWidth = 1;
 
-  // X axis (red)
+  // X axis (hairline grey, terminates at circle boundary)
   const xAxisGeometry = new LineGeometry();
-  xAxisGeometry.setPositions([-axisLength, 0, 0, axisLength, 0, 0]);
-  const xAxisMaterial = new LineMaterial({ color: 0xff0000, linewidth: axisWidth });
+  xAxisGeometry.setPositions([-radius, 0, 0, radius, 0, 0]);
+  const xAxisMaterial = new LineMaterial({ color: 0x444444, linewidth: axisWidth });
   xAxisMaterial.resolution.set(window.innerWidth, window.innerHeight);
   const xAxis = new Line2(xAxisGeometry, xAxisMaterial);
   scene.add(xAxis);
 
-  // Y axis (green)
+  // Y axis (hairline grey, terminates at circle boundary)
   const yAxisGeometry = new LineGeometry();
-  yAxisGeometry.setPositions([0, -axisLength, 0, 0, axisLength, 0]);
-  const yAxisMaterial = new LineMaterial({ color: 0x00ff00, linewidth: axisWidth });
+  yAxisGeometry.setPositions([0, -radius, 0, 0, radius, 0]);
+  const yAxisMaterial = new LineMaterial({ color: 0x444444, linewidth: axisWidth });
   yAxisMaterial.resolution.set(window.innerWidth, window.innerHeight);
   const yAxis = new Line2(yAxisGeometry, yAxisMaterial);
   scene.add(yAxis);
+
+  // Add axis labels
+  createAxisLabels();
+}
+
+/**
+ * Create axis labels
+ */
+function createAxisLabels() {
+  const container = document.getElementById('weierstrauss-demo-container');
+
+  // X axis label (red X at right end)
+  const xLabel = document.createElement('div');
+  xLabel.style.cssText = `
+    position: absolute;
+    top: 50%;
+    right: 10%;
+    transform: translate(50%, -50%);
+    color: #ff0000;
+    font-family: 'Courier New', monospace;
+    font-size: 20px;
+    font-weight: bold;
+    pointer-events: none;
+  `;
+  xLabel.textContent = 'X';
+  container.appendChild(xLabel);
+
+  // Y axis label (green Y at top)
+  const yLabel = document.createElement('div');
+  yLabel.style.cssText = `
+    position: absolute;
+    top: 10%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #00ff00;
+    font-family: 'Courier New', monospace;
+    font-size: 20px;
+    font-weight: bold;
+    pointer-events: none;
+  `;
+  yLabel.textContent = 'Y';
+  container.appendChild(yLabel);
 }
 
 /**
@@ -91,9 +158,55 @@ function createAxes() {
 function createCircle() {
   const circleGeometry = new THREE.CircleGeometry(radius, 64);
   const edges = new THREE.EdgesGeometry(circleGeometry);
-  const circleMaterial = new THREE.LineBasicMaterial({ color: 0x333333, linewidth: 2 });
+  const circleMaterial = new THREE.LineBasicMaterial({ color: 0x888888, linewidth: 2 });
   circle = new THREE.LineSegments(edges, circleMaterial);
   scene.add(circle);
+}
+
+/**
+ * Create snap point markers
+ */
+function createSnapMarkers() {
+  snapAngles.forEach(snap => {
+    const x = radius * Math.cos(snap.angle);
+    const y = radius * Math.sin(snap.angle);
+
+    // Create small circle marker
+    const markerGeometry = new THREE.CircleGeometry(0.06, 16);
+    const markerColor = snap.type === 'phi' ? 0xffd700 : 0xff8800; // Gold for φ, orange for 45°
+    const markerMaterial = new THREE.MeshBasicMaterial({
+      color: markerColor,
+      transparent: true,
+      opacity: 0.6
+    });
+    const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+    marker.position.set(x, y, 0.02);
+    scene.add(marker);
+    snapMarkers.push(marker);
+
+    // Create label
+    const container = document.getElementById('weierstrauss-demo-container');
+    const label = document.createElement('div');
+    const labelColor = snap.type === 'phi' ? '#ffd700' : '#ff8800';
+
+    // Convert world coordinates to screen percentage
+    const screenX = 50 + (x / 2.5) * 40; // Approximate conversion
+    const screenY = 50 - (y / 2.5) * 40;
+
+    label.style.cssText = `
+      position: absolute;
+      left: ${screenX}%;
+      top: ${screenY}%;
+      transform: translate(-50%, -50%);
+      color: ${labelColor};
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      font-weight: bold;
+      pointer-events: none;
+    `;
+    label.textContent = snap.label;
+    container.appendChild(label);
+  });
 }
 
 /**
@@ -102,23 +215,38 @@ function createCircle() {
 function createVectors() {
   // Radius vector (from origin to point on circle)
   const radiusGeometry = new LineGeometry();
-  const radiusMaterial = new LineMaterial({ color: 0x4a9eff, linewidth: 3 });
+  const radiusMaterial = new LineMaterial({
+    color: 0x4a9eff,
+    linewidth: 3,
+    depthTest: false  // Render on top
+  });
   radiusMaterial.resolution.set(window.innerWidth, window.innerHeight);
   radiusLine = new Line2(radiusGeometry, radiusMaterial);
+  radiusLine.renderOrder = 3;
   scene.add(radiusLine);
 
   // X component vector (horizontal)
   const xVectorGeometry = new LineGeometry();
-  const xVectorMaterial = new LineMaterial({ color: 0xff6666, linewidth: 3 });
+  const xVectorMaterial = new LineMaterial({
+    color: 0xff0000,  // Red
+    linewidth: 3,
+    depthTest: false  // Render on top
+  });
   xVectorMaterial.resolution.set(window.innerWidth, window.innerHeight);
   xVector = new Line2(xVectorGeometry, xVectorMaterial);
+  xVector.renderOrder = 2;
   scene.add(xVector);
 
   // Y component vector (vertical)
   const yVectorGeometry = new LineGeometry();
-  const yVectorMaterial = new LineMaterial({ color: 0x66ff66, linewidth: 3 });
+  const yVectorMaterial = new LineMaterial({
+    color: 0x66ff66,
+    linewidth: 3,
+    depthTest: false  // Render on top
+  });
   yVectorMaterial.resolution.set(window.innerWidth, window.innerHeight);
   yVector = new Line2(yVectorGeometry, yVectorMaterial);
+  yVector.renderOrder = 2;
   scene.add(yVector);
 }
 
@@ -145,13 +273,14 @@ function createFormulaDisplay() {
     bottom: 20px;
     left: 20px;
     right: 20px;
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(0, 0, 0, 0.85);
     padding: 15px;
     border-radius: 4px;
     font-family: 'Courier New', monospace;
     font-size: 14px;
-    border: 1px solid #ddd;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #333;
+    box-shadow: 0 2px 8px rgba(255,255,255,0.1);
+    color: #ffffff;
   `;
   container.appendChild(formulaElement);
 
@@ -161,15 +290,25 @@ function createFormulaDisplay() {
     position: absolute;
     top: 20px;
     right: 20px;
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(0, 0, 0, 0.85);
     padding: 12px;
     border-radius: 4px;
     font-family: 'Courier New', monospace;
     font-size: 13px;
-    border: 1px solid #ddd;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #333;
+    box-shadow: 0 2px 8px rgba(255,255,255,0.1);
+    color: #ffffff;
   `;
   container.appendChild(coordsElement);
+}
+
+/**
+ * Normalize angle difference to [-π, π] range
+ */
+function normalizeAngleDiff(diff) {
+  while (diff > Math.PI) diff -= 2 * Math.PI;
+  while (diff < -Math.PI) diff += 2 * Math.PI;
+  return diff;
 }
 
 /**
@@ -185,12 +324,16 @@ function updateVisualization() {
 
   // Update radius vector (origin to point)
   radiusLine.geometry.setPositions([0, 0, 0, x, y, 0]);
+  radiusLine.computeLineDistances();
 
   // Update X component vector (origin to x, 0)
-  xVector.geometry.setPositions([0, 0, 0, x, 0, 0]);
+  // Offset slightly in Z to prevent z-fighting with X axis
+  xVector.geometry.setPositions([0, 0, 0.01, x, 0, 0.01]);
+  xVector.computeLineDistances();
 
   // Update Y component vector (x, 0 to x, y)
-  yVector.geometry.setPositions([x, 0, 0, x, y, 0]);
+  yVector.geometry.setPositions([x, 0, 0.01, x, y, 0.01]);
+  yVector.computeLineDistances();
 
   // Calculate Weierstrauss parameters
   const t = Math.tan(angle / 2);
@@ -298,7 +441,18 @@ function setupInteraction(container) {
     const { worldX, worldY } = getMousePos(event);
 
     // Calculate angle from origin
-    angle = Math.atan2(worldY, worldX);
+    let newAngle = Math.atan2(worldY, worldX);
+
+    // Apply snapping to special angles
+    for (const snap of snapAngles) {
+      const angleDiff = Math.abs(normalizeAngleDiff(newAngle - snap.angle));
+      if (angleDiff < SNAP_THRESHOLD) {
+        newAngle = snap.angle;
+        break;
+      }
+    }
+
+    angle = newAngle;
 
     // Update visualization
     updateVisualization();
