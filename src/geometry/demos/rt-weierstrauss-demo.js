@@ -364,18 +364,47 @@ function updateVisualization() {
   const traditionalX = radius * Math.cos(angle);
   const traditionalY = radius * Math.sin(angle);
 
-  // Update formula display with computational comparison
+  // Update formula display with computational comparison and visual chart
+  const weierstrassOps = 8;
+  const traditionalOps = 30; // Approximation: 2 trig functions × ~15 Taylor terms each
+  const maxOps = 40;
+  const wBarWidth = (weierstrassOps / maxOps) * 100;
+  const tBarWidth = (traditionalOps / maxOps) * 100;
+
   formulaElement.innerHTML = `
     <strong>Weierstrauss (ACTIVE):</strong> <span style="color: #00ff88">✓ Rational Functions Only</span><br>
     t = tan(θ/2) = <span style="color: #4a9eff">${t.toFixed(4)}</span> &nbsp;&nbsp;
     x = r·(1-t²)/(1+t²) = <span style="color: #ff0000">${x.toFixed(4)}</span> &nbsp;&nbsp;
     y = r·(2t)/(1+t²) = <span style="color: #66ff66">${y.toFixed(4)}</span><br>
-    <span style="color: #888">After tan: 4 multiply + 2 add + 2 divide = 8 rational ops (GPU-friendly!)</span><br>
+    <span style="color: #888">After tan: 4 multiply + 2 add + 2 divide = <strong>8 ops</strong> (GPU-friendly!)</span><br>
     <br>
     <strong>Traditional:</strong> <span style="color: #ff8800">⚠ Transcendental (Taylor Series)</span><br>
     x = r·cos(θ) = <span style="color: #ff0000">${traditionalX.toFixed(4)}</span> &nbsp;&nbsp;
     y = r·sin(θ) = <span style="color: #66ff66">${traditionalY.toFixed(4)}</span><br>
-    <span style="color: #888">sin/cos each require ~10-20 Taylor terms for precision (not GPU-friendly)</span>
+    <span style="color: #888">sin/cos each ~15 Taylor terms × 2 = <strong>~30 ops</strong> (not GPU-friendly)</span><br>
+    <br>
+    <div style="margin-top: 10px;">
+      <div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">Computational Cost Comparison:</div>
+      <div style="display: flex; align-items: center; margin-bottom: 3px;">
+        <span style="width: 90px; font-size: 11px; color: #00ff88;">Weierstrauss:</span>
+        <div style="flex: 1; background: #222; height: 18px; border-radius: 2px; overflow: hidden;">
+          <div style="width: ${wBarWidth}%; background: linear-gradient(90deg, #00ff88, #00cc66); height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px;">
+            <span style="font-size: 10px; color: #000; font-weight: bold;">${weierstrassOps}</span>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center;">
+        <span style="width: 90px; font-size: 11px; color: #ff8800;">Traditional:</span>
+        <div style="flex: 1; background: #222; height: 18px; border-radius: 2px; overflow: hidden;">
+          <div style="width: ${tBarWidth}%; background: linear-gradient(90deg, #ff8800, #cc6600); height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px;">
+            <span style="font-size: 10px; color: #000; font-weight: bold;">${traditionalOps}</span>
+          </div>
+        </div>
+      </div>
+      <div style="font-size: 10px; color: #666; margin-top: 5px; text-align: right;">
+        Weierstrauss is <strong style="color: #00ff88">${(traditionalOps / weierstrassOps).toFixed(1)}× faster</strong>
+      </div>
+    </div>
   `;
 
   // Update coordinates display

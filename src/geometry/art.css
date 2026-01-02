@@ -831,7 +831,7 @@ button:disabled {
   max-width: 90%;
   max-height: 90%;
   width: 900px;
-  height: 700px;
+  height: 1000px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
