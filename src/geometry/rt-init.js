@@ -3,6 +3,10 @@
 import { Polyhedra } from "./modules/rt-polyhedra.js";
 import { PerformanceClock } from "./modules/performance-clock.js";
 import { RTPapercut } from "./modules/rt-papercut.js";
+import { initQuadranceDemo } from "./demos/rt-quadrance-demo.js";
+import { initSpreadDemo } from "./demos/rt-spread-demo.js";
+import { initWeierstrassDemo } from "./demos/rt-weierstrauss-demo.js";
+import { openDemoModal } from "./demos/rt-demo-utils.js";
 
 // Make RTPolyhedra available globally for node geometry creation
 window.RTPolyhedra = Polyhedra;
@@ -1839,6 +1843,51 @@ function startARTexplorer(
   document
     .getElementById("nodeFlatShading")
     .addEventListener("change", updateGeometry);
+
+  // ========================================================================
+  // DEMO MODAL HANDLERS
+  // ========================================================================
+
+  // Initialize demo modals on first open
+  let demosInitialized = {
+    quadrance: false,
+    spread: false,
+    weierstrauss: false
+  };
+
+  document.getElementById("open-quadrance-demo").addEventListener("click", (e) => {
+    e.preventDefault();
+    openDemoModal("quadrance-modal");
+    if (!demosInitialized.quadrance) {
+      // Delay initialization to ensure modal is visible and container has dimensions
+      setTimeout(() => {
+        initQuadranceDemo();
+        demosInitialized.quadrance = true;
+      }, 50);
+    }
+  });
+
+  document.getElementById("open-spread-demo").addEventListener("click", (e) => {
+    e.preventDefault();
+    openDemoModal("spread-modal");
+    if (!demosInitialized.spread) {
+      setTimeout(() => {
+        initSpreadDemo();
+        demosInitialized.spread = true;
+      }, 50);
+    }
+  });
+
+  document.getElementById("open-weierstrauss-demo").addEventListener("click", (e) => {
+    e.preventDefault();
+    openDemoModal("weierstrauss-modal");
+    if (!demosInitialized.weierstrauss) {
+      setTimeout(() => {
+        initWeierstrassDemo();
+        demosInitialized.weierstrauss = true;
+      }, 50);
+    }
+  });
 
   // ========================================================================
   // GUMBALL TOOL FUNCTIONALITY

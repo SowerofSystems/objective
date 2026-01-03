@@ -21,6 +21,7 @@ export const RTPapercut = {
     cutplaneValue: 0,      // Current slider position
     cutplaneAxis: 'z',     // 'x', 'y', or 'z'
     cutplaneNormal: null,  // THREE.Vector3
+    invertCutPlane: false, // Invert normal (for ground plane mode)
     lineWeightEnabled: true,
     lineWeightMin: 0.5,
     lineWeightMax: 3.0,
@@ -42,7 +43,6 @@ export const RTPapercut = {
    * @param {THREE.WebGLRenderer} renderer
    */
   init: function(scene, camera, renderer) {
-    console.log('🎨 Initializing RT-Papercut module...');
 
     // Store references
     RTPapercut._scene = scene;
@@ -90,6 +90,15 @@ export const RTPapercut = {
       cutplaneCheckbox.disabled = false;
       cutplaneCheckbox.addEventListener('change', (e) => {
         RTPapercut.state.cutplaneEnabled = e.target.checked;
+        RTPapercut.updateCutplane(RTPapercut.state.cutplaneValue, scene);
+      });
+    }
+
+    // 3b. Invert Cutplane checkbox
+    const invertCutPlaneCheckbox = document.getElementById('invertCutPlane');
+    if (invertCutPlaneCheckbox) {
+      invertCutPlaneCheckbox.addEventListener('change', (e) => {
+        RTPapercut.state.invertCutPlane = e.target.checked;
         RTPapercut.updateCutplane(RTPapercut.state.cutplaneValue, scene);
       });
     }
@@ -142,8 +151,6 @@ export const RTPapercut = {
         RTPapercut._updateSliderRange();
       });
     }
-
-    console.log('✅ RT-Papercut module initialized');
   },
 
   /**
@@ -260,7 +267,6 @@ export const RTPapercut = {
       // Disable renderer clipping
       if (RTPapercut._renderer) {
         RTPapercut._renderer.localClippingEnabled = false;
-        console.log('🔧 Renderer clipping disabled');
       }
 
       // Remove intersection lines
@@ -278,21 +284,27 @@ export const RTPapercut = {
     }
 
     // 1. Create clipping plane based on current axis
-    // Invert normal to clip top-down (architectural style)
-    // Show geometry CLOSEST to camera, hide what's farther away
+    // Default: Inverted normal for top-down (architectural) clipping
+    // With invertCutPlane: Double invert = normal clipping (bottom-up, ground plane mode)
     const normal = new THREE.Vector3();
+    const invert = RTPapercut.state.invertCutPlane ? 1 : -1; // Flip sign when inverted
+
     if (RTPapercut.state.cutplaneAxis === 'x') {
-      normal.set(-1, 0, 0);  // Inverted for top-down clipping
+      normal.set(invert * 1, 0, 0);
     } else if (RTPapercut.state.cutplaneAxis === 'y') {
-      normal.set(0, -1, 0);  // Inverted for top-down clipping
+      normal.set(0, invert * 1, 0);
     } else { // 'z'
-      normal.set(0, 0, -1);  // Inverted for top-down clipping
+      normal.set(0, 0, invert * 1);
     }
+
+    // Add small epsilon when inverted and at origin to catch geometry sitting exactly on ground
+    // This avoids floating-point precision issues at exactly 0.0
+    const epsilon = (RTPapercut.state.invertCutPlane && Math.abs(value) < 0.01) ? -0.001 : 0;
+    const adjustedValue = value + epsilon;
 
     // THREE.Plane(normal, constant)
     // constant = -d where d is distance from origin along normal
-    // Clip everything on the far side of the plane from camera
-    const plane = new THREE.Plane(normal, value);
+    const plane = new THREE.Plane(normal, adjustedValue);
     RTPapercut.state.cutplaneNormal = plane;
 
     // 2. Apply clipping plane to all renderable objects
@@ -461,8 +473,10 @@ export const RTPapercut = {
       // Skip non-mesh objects
       if (object.type !== 'Mesh' || !object.geometry) return;
 
-      // Skip invisible/hidden meshes (check both object and parent visibility)
-      if (!object.visible || (object.parent && !object.parent.visible)) return;
+      // Skip invisible/hidden meshes (check object, parent, and grandparent visibility)
+      if (!object.visible) return;
+      if (object.parent && !object.parent.visible) return;
+      if (object.parent && object.parent.parent && !object.parent.parent.visible) return;
 
       // Skip grid-related meshes
       if (object.parent && object.parent.name &&
@@ -477,12 +491,21 @@ export const RTPapercut = {
         return;
       }
 
-      // Also check parent name for basis/coordinate system objects
+      // Also check parent and grandparent names for basis/coordinate system objects
       if (object.parent && object.parent.name &&
           (object.parent.name.includes('Basis') ||
            object.parent.name.includes('basis') ||
            object.parent.name.includes('Cartesian') ||
            object.parent.name.includes('Quadray'))) {
+        return;
+      }
+
+      // Check grandparent for basis/coordinate system objects (nested structure)
+      if (object.parent && object.parent.parent && object.parent.parent.name &&
+          (object.parent.parent.name.includes('Basis') ||
+           object.parent.parent.name.includes('basis') ||
+           object.parent.parent.name.includes('Cartesian') ||
+           object.parent.parent.name.includes('Quadray'))) {
         return;
       }
 
