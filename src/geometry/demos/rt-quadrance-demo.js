@@ -762,11 +762,11 @@ function setupInteraction(container) {
     const x = ((clientX - rect.left) / rect.width) * 2 - 1;
     const y = -((clientY - rect.top) / rect.height) * 2 + 1;
 
-    // Convert to world coordinates
+    // Convert to world coordinates (accounting for Q1-centered camera)
     const aspect = rect.width / rect.height;
-    const cameraSize = 2.5;
-    const worldX = x * cameraSize * aspect;
-    const worldY = y * cameraSize;
+    const cameraSize = 1.2;  // Must match the cameraSize used in create2DScene
+    const worldX = x * cameraSize * aspect + camera.position.x;
+    const worldY = y * cameraSize + camera.position.y;
 
     return { worldX, worldY };
   };
