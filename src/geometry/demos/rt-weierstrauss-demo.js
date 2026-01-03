@@ -270,8 +270,8 @@ function createFormulaDisplay() {
   const titleElement = document.createElement('div');
   titleElement.style.cssText = `
     position: absolute;
-    top: 15px;
-    left: 20px;
+    top: 10px;
+    left: 15px;
     font-family: 'Courier New', monospace;
     font-size: 16px;
     font-weight: bold;
@@ -288,8 +288,8 @@ function createFormulaDisplay() {
   closeButton.innerHTML = '&times;';
   closeButton.style.cssText = `
     position: absolute;
-    top: 10px;
-    right: 15px;
+    top: 5px;
+    right: 10px;
     background: transparent;
     border: none;
     font-size: 32px;
@@ -312,11 +312,11 @@ function createFormulaDisplay() {
   formulaElement = document.createElement('div');
   formulaElement.style.cssText = `
     position: absolute;
-    bottom: 15px;
-    left: 20px;
-    right: 20px;
+    bottom: 10px;
+    left: 15px;
+    right: 15px;
     background: rgba(0, 0, 0, 0.85);
-    padding: 12px;
+    padding: 10px;
     border-radius: 4px;
     font-family: 'Courier New', monospace;
     font-size: 14px;
