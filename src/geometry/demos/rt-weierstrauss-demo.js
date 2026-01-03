@@ -305,8 +305,13 @@ function createSnapMarkers() {
     const label = document.createElement('div');
 
     // Convert world coordinates to screen percentage
-    const screenX = 50 + (x / 2.5) * 40; // Approximate conversion
-    const screenY = 50 - (y / 2.5) * 40;
+    // Account for camera.position.y = -0.5 offset (shifts view up by 20% of viewport)
+    const cameraYOffset = -0.5;  // Camera Y position
+    const cameraSize = 2.5;       // Orthographic camera size
+    const offsetPercent = (cameraYOffset / cameraSize) * 40;  // Convert to screen %
+
+    const screenX = 50 + (x / cameraSize) * 40;
+    const screenY = 50 - (y / cameraSize) * 40 + offsetPercent;  // Add camera offset
 
     label.style.cssText = `
       position: absolute;
