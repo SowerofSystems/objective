@@ -268,9 +268,37 @@ function createCircle() {
 }
 
 /**
+ * Convert world coordinates to screen pixel position
+ * Accounts for camera offset and orthographic projection
+ */
+function worldToScreen(worldX, worldY, container) {
+  const cameraSize = 2.5;
+  const cameraYOffset = -0.5;
+
+  // Get container dimensions
+  const rect = container.getBoundingClientRect();
+  const aspect = rect.width / rect.height;
+
+  // World space accounting for camera offset
+  const adjustedY = worldY - cameraYOffset;
+
+  // Convert to normalized device coordinates (-1 to 1)
+  const ndcX = worldX / (cameraSize * aspect);
+  const ndcY = adjustedY / cameraSize;
+
+  // Convert to screen pixels
+  const screenX = (ndcX * 0.5 + 0.5) * rect.width;
+  const screenY = (-ndcY * 0.5 + 0.5) * rect.height;
+
+  return { x: screenX, y: screenY };
+}
+
+/**
  * Create snap point markers
  */
 function createSnapMarkers() {
+  const container = document.getElementById('weierstrauss-demo-container');
+
   snapAngles.forEach(snap => {
     const x = radius * Math.cos(snap.angle);
     const y = radius * Math.sin(snap.angle);
@@ -300,23 +328,16 @@ function createSnapMarkers() {
     scene.add(marker);
     snapMarkers.push(marker);
 
-    // Create label
-    const container = document.getElementById('weierstrauss-demo-container');
+    // Create label at exact world coordinates
     const label = document.createElement('div');
 
-    // Convert world coordinates to screen percentage
-    // Account for camera.position.y = -0.5 offset (shifts view up by 20% of viewport)
-    const cameraYOffset = -0.5;  // Camera Y position
-    const cameraSize = 2.5;       // Orthographic camera size
-    const offsetPercent = (cameraYOffset / cameraSize) * 40;  // Convert to screen %
-
-    const screenX = 50 + (x / cameraSize) * 40;
-    const screenY = 50 - (y / cameraSize) * 40 + offsetPercent;  // Add camera offset
+    // Convert world coordinates to screen position
+    const screenPos = worldToScreen(x, y, container);
 
     label.style.cssText = `
       position: absolute;
-      left: ${screenX}%;
-      top: ${screenY}%;
+      left: ${screenPos.x}px;
+      top: ${screenPos.y}px;
       transform: translate(-50%, -50%);
       color: ${labelColor};
       font-family: 'Courier New', monospace;
