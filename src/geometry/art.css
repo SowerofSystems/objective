@@ -828,9 +828,9 @@ button:disabled {
   background: #2a2a2a;
   border-radius: 4px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  max-width: 98%;
+  max-width: 95%;
   max-height: 95%;
-  width: 1600px;
+  width: 1400px;
   height: 900px;
   display: flex;
   flex-direction: column;
