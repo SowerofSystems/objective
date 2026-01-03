@@ -154,21 +154,25 @@ function createGeometricGuides() {
   sqrt2Square.position.z = -0.01; // Behind circle
   scene.add(sqrt2Square);
 
-  // GOLDEN RECTANGLES - One rectangle per quadrant (4 quadrants × 2 orientations = 8 rectangles)
-  // Each quadrant has a horizontal φ:1 and vertical 1:φ rectangle
-  // We'll create one horizontal and one vertical, then rotate for other quadrants
+  // GOLDEN RECTANGLES - 8 total (2 per quadrant)
+  // Each rectangle extends from origin to a φ snap point on the circle
+  // φ snap points on the circle have angles: atan2(1, φ) and atan2(φ, 1)
+  // These create golden rectangles since the ratio of sides is φ:1
 
-  // Create master golden rectangle in Quadrant I (horizontal: φ×1)
-  function createGoldenRectangle(width, height) {
-    const halfW = width / 2;
-    const halfH = height / 2;
+  // Calculate normalized φ coordinates (on unit circle)
+  const phiNorm = Math.sqrt(PHI * PHI + 1); // Normalizing factor for (φ, 1)
+  const phi_x = PHI / phiNorm;              // x coordinate for atan2(1, φ)
+  const phi_y = 1 / phiNorm;                // y coordinate for atan2(1, φ)
+
+  // Quadrant rectangle: origin to φ snap point on circle
+  function createQuadrantRectangle(x, y) {
     const geometry = new LineGeometry();
     geometry.setPositions([
-      halfW, halfH, 0,
-      -halfW, halfH, 0,
-      -halfW, -halfH, 0,
-      halfW, -halfH, 0,
-      halfW, halfH, 0
+      0, 0, 0,      // origin
+      x, 0, 0,      // along x-axis to x
+      x, y, 0,      // corner (φ point on circle)
+      0, y, 0,      // along y-axis to y
+      0, 0, 0       // back to origin
     ]);
     const material = new LineMaterial({
       color: guideColor,
@@ -182,13 +186,32 @@ function createGeometricGuides() {
     return rect;
   }
 
-  // Horizontal golden rectangle (φ:1 aspect ratio)
-  const horizontalRect = createGoldenRectangle(PHI * radius * 2, radius * 2);
-  scene.add(horizontalRect);
+  // Create 8 golden rectangles (2 per quadrant - one for each φ orientation)
+  // Each uses actual φ snap point positions on the circle
 
-  // Vertical golden rectangle (1:φ aspect ratio)
-  const verticalRect = createGoldenRectangle(radius * 2, PHI * radius * 2);
-  scene.add(verticalRect);
+  // Quadrant I (positive x, positive y)
+  const q1_horizontal = createQuadrantRectangle(phi_x * radius, phi_y * radius);  // atan2(1, φ)
+  const q1_vertical = createQuadrantRectangle(phi_y * radius, phi_x * radius);    // atan2(φ, 1)
+  scene.add(q1_horizontal);
+  scene.add(q1_vertical);
+
+  // Quadrant II (negative x, positive y)
+  const q2_horizontal = createQuadrantRectangle(-phi_x * radius, phi_y * radius); // atan2(1, -φ)
+  const q2_vertical = createQuadrantRectangle(-phi_y * radius, phi_x * radius);   // atan2(φ, -1)
+  scene.add(q2_horizontal);
+  scene.add(q2_vertical);
+
+  // Quadrant III (negative x, negative y)
+  const q3_horizontal = createQuadrantRectangle(-phi_x * radius, -phi_y * radius); // atan2(-1, -φ)
+  const q3_vertical = createQuadrantRectangle(-phi_y * radius, -phi_x * radius);   // atan2(-φ, -1)
+  scene.add(q3_horizontal);
+  scene.add(q3_vertical);
+
+  // Quadrant IV (positive x, negative y)
+  const q4_horizontal = createQuadrantRectangle(phi_x * radius, -phi_y * radius);  // atan2(-1, φ)
+  const q4_vertical = createQuadrantRectangle(phi_y * radius, -phi_x * radius);    // atan2(-φ, 1)
+  scene.add(q4_horizontal);
+  scene.add(q4_vertical);
 }
 
 /**
@@ -197,11 +220,11 @@ function createGeometricGuides() {
 function createAxisLabels() {
   const container = document.getElementById('weierstrauss-demo-container');
 
-  // X axis label (red X to the right of circle)
+  // X axis label (red X to the right of circle, on horizontal centerline)
   const xLabel = document.createElement('div');
   xLabel.style.cssText = `
     position: absolute;
-    top: 50%;
+    top: 47%;
     right: 20%;
     transform: translate(0, -50%);
     color: #ff0000;
@@ -213,11 +236,11 @@ function createAxisLabels() {
   xLabel.textContent = 'X';
   container.appendChild(xLabel);
 
-  // Y axis label (green Y at top of circle)
+  // Y axis label (green Y just above centerline, outside circle)
   const yLabel = document.createElement('div');
   yLabel.style.cssText = `
     position: absolute;
-    top: 16%;
+    top: 12%;
     left: 50%;
     transform: translate(-50%, 0);
     color: #00ff00;
