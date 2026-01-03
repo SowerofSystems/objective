@@ -229,17 +229,21 @@ function createAxisLabels() {
   // Get container aspect ratio for precise positioning
   const rect = container.getBoundingClientRect();
   const aspect = rect.width / rect.height;
-  const cameraSize = 2.5;
+  const cameraSize = 1.2;  // Match Q1 zoom camera setting
 
   // Position labels equidistant outside circle
-  const labelOffset = 0.35;
+  const labelOffset = 0.20;  // Reduced for zoomed view
   const xLabelWorld = radius + labelOffset;
   const yLabelWorld = radius + labelOffset;
 
+  // Account for Q1 camera shift
+  const cameraOffsetX = radius * 0.45;
+  const cameraOffsetY = radius * 0.45;
+
   // X axis label (red X)
   const xLabel = document.createElement('div');
-  const xLabelScreenX = 50 + (xLabelWorld / (cameraSize * aspect)) * 50;
-  const xLabelScreenY = 50;
+  const xLabelScreenX = 50 + ((xLabelWorld - cameraOffsetX) / (cameraSize * aspect)) * 100;
+  const xLabelScreenY = 50 - ((0 - cameraOffsetY) / cameraSize) * 100;
   xLabel.style.cssText = `
     position: absolute;
     left: ${xLabelScreenX}%;
@@ -256,8 +260,8 @@ function createAxisLabels() {
 
   // Y axis label (green Y)
   const yLabel = document.createElement('div');
-  const yLabelScreenX = 50;
-  const yLabelScreenY = 50 - (yLabelWorld / cameraSize) * 50;
+  const yLabelScreenX = 50 + ((0 - cameraOffsetX) / (cameraSize * aspect)) * 100;
+  const yLabelScreenY = 50 - ((yLabelWorld - cameraOffsetY) / cameraSize) * 100;
   yLabel.style.cssText = `
     position: absolute;
     left: ${yLabelScreenX}%;
@@ -370,16 +374,18 @@ function createSnapMarkers() {
     // Get container aspect ratio
     const rect = container.getBoundingClientRect();
     const aspect = rect.width / rect.height;
-    const cameraSize = 2.5;
+    const cameraSize = 1.2;  // Match Q1 zoom camera setting
 
-    // Position label outside the circle
-    const labelOffset = 0.25;
+    // Position label outside the circle (smaller offset for zoomed view)
+    const labelOffset = snap.type === 'plimpton' ? 0.12 : 0.15;  // Tighter spacing for Plimpton
     const labelX = x + (x / radius) * labelOffset;
     const labelY = y + (y / radius) * labelOffset;
 
-    // Map world coordinates to screen percentages
-    const screenX = 50 + (labelX / (cameraSize * aspect)) * 50;
-    const screenY = 50 - (labelY / cameraSize) * 50;
+    // Map world coordinates to screen percentages (accounting for Q1 camera shift)
+    const cameraOffsetX = radius * 0.45;  // Match camera.position.x from initialization
+    const cameraOffsetY = radius * 0.45;  // Match camera.position.y from initialization
+    const screenX = 50 + ((labelX - cameraOffsetX) / (cameraSize * aspect)) * 100;
+    const screenY = 50 - ((labelY - cameraOffsetY) / cameraSize) * 100;
 
     // Reduce font size for Plimpton markers to prevent collision
     const fontSize = snap.type === 'plimpton' ? '9px' : '14px';
