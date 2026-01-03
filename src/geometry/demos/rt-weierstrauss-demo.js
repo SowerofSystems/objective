@@ -14,6 +14,7 @@ import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { create2DScene, initializeModalHandlers } from './rt-demo-utils.js';
+import { RT } from '../modules/rt-math.js';
 
 let scene, camera, renderer, animate, cleanup;
 let circle, radiusLine, xVector, yVector, draggablePoint;
@@ -26,9 +27,15 @@ let snapMarkers = [];
 // Golden ratio
 const PHI = (1 + Math.sqrt(5)) / 2;
 
-// Snap points: Phi positions and 45° angles
+// Snap points: Cardinal directions, 45° angles, and Phi positions
 const snapAngles = [
-  // 45° angles (spread = 0.5)
+  // Cardinal directions (0°, 90°, 180°, 270°)
+  { angle: 0, label: '0°', type: 'cardinal' },
+  { angle: Math.PI / 2, label: '90°', type: 'cardinal' },
+  { angle: Math.PI, label: '180°', type: 'cardinal' },
+  { angle: 3 * Math.PI / 2, label: '270°', type: 'cardinal' },
+
+  // 45° angles (spread = 0.5, √2 square vertices)
   { angle: Math.PI / 4, label: '45°', type: 'spread' },
   { angle: 3 * Math.PI / 4, label: '135°', type: 'spread' },
   { angle: 5 * Math.PI / 4, label: '225°', type: 'spread' },
@@ -67,6 +74,7 @@ export function initWeierstrassDemo() {
 
   // Create visual elements
   createAxes();
+  createGeometricGuides();
   createCircle();
   createSnapMarkers();
   createVectors();
@@ -114,6 +122,73 @@ function createAxes() {
 
   // Add axis labels
   createAxisLabels();
+}
+
+/**
+ * Create geometric guide shapes (√2 squares and golden rectangles)
+ * These are quadrant-based shapes: one square/rectangle per quadrant, rotated 90° each
+ */
+function createGeometricGuides() {
+  const hairlineWidth = 1;
+  const guideColor = 0x888888;  // Match circle color for visibility
+
+  // √2 SQUARE - One square per quadrant (4 total)
+  // Vertices at cardinal directions (0°, 90°, 180°, 270°)
+  // This is inscribed in the circle, rotated 45° from the axes
+  const sqrt2SquareGeometry = new LineGeometry();
+  sqrt2SquareGeometry.setPositions([
+    radius, 0, 0,       // 0° (east)
+    0, radius, 0,       // 90° (north)
+    -radius, 0, 0,      // 180° (west)
+    0, -radius, 0,      // 270° (south)
+    radius, 0, 0        // close path
+  ]);
+  const sqrt2SquareMaterial = new LineMaterial({
+    color: guideColor,
+    linewidth: hairlineWidth,
+    transparent: true,
+    opacity: 0.5
+  });
+  sqrt2SquareMaterial.resolution.set(window.innerWidth, window.innerHeight);
+  const sqrt2Square = new Line2(sqrt2SquareGeometry, sqrt2SquareMaterial);
+  sqrt2Square.position.z = -0.01; // Behind circle
+  scene.add(sqrt2Square);
+
+  // GOLDEN RECTANGLES - One rectangle per quadrant (4 quadrants × 2 orientations = 8 rectangles)
+  // Each quadrant has a horizontal φ:1 and vertical 1:φ rectangle
+  // We'll create one horizontal and one vertical, then rotate for other quadrants
+
+  // Create master golden rectangle in Quadrant I (horizontal: φ×1)
+  function createGoldenRectangle(width, height) {
+    const halfW = width / 2;
+    const halfH = height / 2;
+    const geometry = new LineGeometry();
+    geometry.setPositions([
+      halfW, halfH, 0,
+      -halfW, halfH, 0,
+      -halfW, -halfH, 0,
+      halfW, -halfH, 0,
+      halfW, halfH, 0
+    ]);
+    const material = new LineMaterial({
+      color: guideColor,
+      linewidth: hairlineWidth,
+      transparent: true,
+      opacity: 0.5
+    });
+    material.resolution.set(window.innerWidth, window.innerHeight);
+    const rect = new Line2(geometry, material);
+    rect.position.z = -0.01;
+    return rect;
+  }
+
+  // Horizontal golden rectangle (φ:1 aspect ratio)
+  const horizontalRect = createGoldenRectangle(PHI * radius * 2, radius * 2);
+  scene.add(horizontalRect);
+
+  // Vertical golden rectangle (1:φ aspect ratio)
+  const verticalRect = createGoldenRectangle(radius * 2, PHI * radius * 2);
+  scene.add(verticalRect);
 }
 
 /**
@@ -174,9 +249,21 @@ function createSnapMarkers() {
     const x = radius * Math.cos(snap.angle);
     const y = radius * Math.sin(snap.angle);
 
-    // Create small circle marker
+    // Create small circle marker with color based on type
     const markerGeometry = new THREE.CircleGeometry(0.06, 16);
-    const markerColor = snap.type === 'phi' ? 0xffd700 : 0xff8800; // Gold for φ, orange for 45°
+    let markerColor, labelColor;
+
+    if (snap.type === 'cardinal') {
+      markerColor = 0x666666;  // Grey for cardinal directions
+      labelColor = '#666666';
+    } else if (snap.type === 'phi') {
+      markerColor = 0xffd700;  // Gold for φ
+      labelColor = '#ffd700';
+    } else {  // 'spread' (45° angles)
+      markerColor = 0xff8800;  // Orange for 45°
+      labelColor = '#ff8800';
+    }
+
     const markerMaterial = new THREE.MeshBasicMaterial({
       color: markerColor,
       transparent: true,
@@ -190,7 +277,6 @@ function createSnapMarkers() {
     // Create label
     const container = document.getElementById('weierstrauss-demo-container');
     const label = document.createElement('div');
-    const labelColor = snap.type === 'phi' ? '#ffd700' : '#ff8800';
 
     // Convert world coordinates to screen percentage
     const screenX = 50 + (x / 2.5) * 40; // Approximate conversion
@@ -343,16 +429,18 @@ function normalizeAngleDiff(diff) {
  * Update visualization based on current angle
  */
 function updateVisualization() {
-  // DOGFOODING: Use Weierstrauss substitution to calculate point on circle
-  // This demonstrates the computational advantage: pure rational functions, no trig!
+  // DOGFOODING: Use RT.circleParam (Weierstrauss parametrization)
+  // This demonstrates rational trigonometry: pure rational functions, no trig!
+  // NOTE: We still need tan(θ/2) to convert from angle to parameter 't'
+  // In a pure RT workflow, you'd work with 't' parameter directly
   const t = Math.tan(angle / 2);
-  const denom = 1 + t * t;
-  const wX = (1 - t * t) / denom;  // Rational function for x-coordinate
-  const wY = (2 * t) / denom;      // Rational function for y-coordinate
+
+  // Use RT.circleParam for the actual circle point calculation
+  const point = RT.circleParam(t);
 
   // Scale to radius
-  const x = wX * radius;
-  const y = wY * radius;
+  const x = point.x * radius;
+  const y = point.y * radius;
 
   // Update draggable point position
   draggablePoint.position.set(x, y, 0);
@@ -370,10 +458,14 @@ function updateVisualization() {
   yVector.geometry.setPositions([x, 0, 0.01, x, y, 0.01]);
   yVector.computeLineDistances();
 
-  // Calculate quadrances (squared lengths)
-  const qX = x * x;
-  const qY = y * y;
-  const qRadius = qX + qY;
+  // Calculate quadrances (squared lengths) using RT library
+  const origin = { x: 0, y: 0, z: 0 };
+  const xPoint = { x: x, y: 0, z: 0 };
+  const yPoint = { x: x, y: y, z: 0 };
+
+  const qX = RT.quadrance(origin, xPoint);     // Quadrance of X component
+  const qY = RT.quadrance(xPoint, yPoint);      // Quadrance of Y component
+  const qRadius = RT.quadrance(origin, { x, y, z: 0 });  // Quadrance of radius vector
 
   // Calculate angular measures
   // Normalize angle to 0-360° range
@@ -388,58 +480,34 @@ function updateVisualization() {
   // In rational trigonometry, spread goes from 0 to 1 in each quadrant
   const spread = Math.sin(angle) * Math.sin(angle);
 
-  // PERFORMANCE MEASUREMENT: Actual runtime comparison
-  // Run multiple iterations for stable measurement
-  const iterations = 10000;
-
-  // Prevent optimization by accumulating results
-  let wSum = 0;
-  let tSum = 0;
-
-  // Measure Weierstrauss method
-  const wStart = performance.now();
-  for (let i = 0; i < iterations; i++) {
-    const t = Math.tan(angle / 2);
-    const denom = 1 + t * t;
-    const wx = (1 - t * t) / denom;
-    const wy = (2 * t) / denom;
-    wSum += wx + wy; // Prevent dead code elimination
-  }
-  const wEnd = performance.now();
-  const weierstrassTime = wEnd - wStart;
-
-  // Measure traditional method
-  const tStart = performance.now();
-  for (let i = 0; i < iterations; i++) {
-    const tx = Math.cos(angle);
-    const ty = Math.sin(angle);
-    tSum += tx + ty; // Prevent dead code elimination
-  }
-  const tEnd = performance.now();
-  const traditionalTime = tEnd - tStart;
-
-  // Calculate actual values for display (using accumulated sums to prevent warnings)
+  // Calculate actual values for display
   const traditionalX = radius * Math.cos(angle);
   const traditionalY = radius * Math.sin(angle);
 
-  // Calculate speedup ratio (guard against division by zero)
-  const speedup = weierstrassTime > 0 ? traditionalTime / weierstrassTime : 1;
+  // OPERATION COUNT COMPARISON (Theoretical advantage in GPU/shader contexts)
+  // These counts represent the computational advantage in environments without
+  // hardware-accelerated transcendentals (GPU shaders, fixed-point systems, etc.)
+  const weierstrassOps = 8;   // 1 tan + 4 multiply + 2 add + 2 divide (but tan itself uses rational approx in shaders)
+  const traditionalOps = 30;  // 2 trig functions × ~15 Taylor series terms each (in software/shader implementation)
 
-  // Normalize times for bar chart (scale to 0-100 based on slower method)
-  const maxTime = Math.max(weierstrassTime, traditionalTime);
-  const wBarWidth = maxTime > 0 ? (weierstrassTime / maxTime) * 100 : 0;
-  const tBarWidth = maxTime > 0 ? (traditionalTime / maxTime) * 100 : 0;
+  // NOTE: In JavaScript, sin/cos use CPU hardware instructions, so the advantage isn't visible here.
+  // The real benefit is in GPU fragment shaders where transcendentals are expensive.
+  const theoreticalSpeedup = traditionalOps / weierstrassOps;
+
+  // Normalize for bar chart display (showing theoretical GPU advantage)
+  const wBarWidth = (weierstrassOps / traditionalOps) * 100;
+  const tBarWidth = 100;
 
   // Combined two-column layout: formulas on left, coordinates on right
   formulaElement.innerHTML = `
     <div style="display: flex; gap: 20px;">
       <!-- LEFT COLUMN: Formulas and Performance -->
       <div style="flex: 1; min-width: 0;">
-        <strong>Weierstrauss (ACTIVE):</strong> <span style="color: #00ff88">✓ Rational Functions Only</span><br>
+        <strong>Weierstrauss (ACTIVE):</strong> <span style="color: #00ff88">✓ RT.circleParam(t)</span><br>
         t = tan(θ/2) = <span style="color: #4a9eff">${t.toFixed(4)}</span> &nbsp;&nbsp;
         x = r·(1-t²)/(1+t²) = <span style="color: #ff0000">${x.toFixed(4)}</span> &nbsp;&nbsp;
         y = r·(2t)/(1+t²) = <span style="color: #66ff66">${y.toFixed(4)}</span><br>
-        <span style="color: #888">4 multiply + 2 add + 2 divide = 8 rational ops (GPU-friendly!)</span><br>
+        <span style="color: #888">Rational functions only—4 multiply + 2 add + 2 divide = 8 ops</span><br>
         <br>
         <strong>Traditional:</strong> <span style="color: #ff8800">⚠ Transcendental (Taylor Series)</span><br>
         x = r·cos(θ) = <span style="color: #ff0000">${traditionalX.toFixed(4)}</span> &nbsp;&nbsp;
@@ -447,12 +515,12 @@ function updateVisualization() {
         <span style="color: #888">sin/cos each ~15 Taylor terms (not GPU-friendly)</span><br>
         <br>
         <div style="margin-top: 8px;">
-          <div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">Performance (${iterations.toLocaleString()} iterations):</div>
+          <div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">Computational Complexity (GPU/Shader context):</div>
           <div style="display: flex; align-items: center; margin-bottom: 3px;">
             <span style="width: 90px; font-size: 11px; color: #00ff88;">Weierstrauss:</span>
             <div style="flex: 1; background: #222; height: 9px; border-radius: 2px; overflow: hidden;">
               <div id="weierstrauss-bar" style="width: 0%; background: linear-gradient(90deg, #00ff88, #00cc66); height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; transition: width 0.15s ease-out;">
-                <span style="font-size: 10px; color: #000; font-weight: bold;">${weierstrassTime.toFixed(2)}ms</span>
+                <span style="font-size: 10px; color: #000; font-weight: bold;">${weierstrassOps} ops</span>
               </div>
             </div>
           </div>
@@ -460,12 +528,12 @@ function updateVisualization() {
             <span style="width: 90px; font-size: 11px; color: #ff8800;">Traditional:</span>
             <div style="flex: 1; background: #222; height: 9px; border-radius: 2px; overflow: hidden;">
               <div id="traditional-bar" style="width: 0%; background: linear-gradient(90deg, #ff8800, #cc6600); height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; transition: width 0.3s ease-out;">
-                <span style="font-size: 10px; color: #000; font-weight: bold;">${traditionalTime.toFixed(2)}ms</span>
+                <span style="font-size: 10px; color: #000; font-weight: bold;">${traditionalOps} ops</span>
               </div>
             </div>
           </div>
           <div style="font-size: 10px; color: #666; margin-top: 5px; text-align: right;">
-            Weierstrauss is <strong style="color: #00ff88">${speedup.toFixed(2)}× faster</strong> (actual JS runtime)
+            ~${theoreticalSpeedup.toFixed(1)}× fewer operations <span style="color: #888">(GPU shader advantage)</span>
           </div>
         </div>
       </div>
