@@ -69,9 +69,6 @@ export function initWeierstrassDemo() {
 
   ({ scene, camera, renderer, animate, cleanup } = sceneData);
 
-  // Shift camera down to move circle up in viewport (more space at bottom for formula bar)
-  camera.position.y = -0.5;
-
   // Create visual elements
   createAxes();
   createGeometricGuides();
@@ -216,17 +213,15 @@ function createGeometricGuides() {
 
 /**
  * Create axis labels
- * Note: Labels positioned to account for camera.position.y = -0.5 offset
  */
 function createAxisLabels() {
   const container = document.getElementById('weierstrauss-demo-container');
 
   // X axis label (red X to the right of circle, on horizontal centerline)
-  // Camera offset shifts circle up, so X label moves up too
   const xLabel = document.createElement('div');
   xLabel.style.cssText = `
     position: absolute;
-    top: 40%;
+    top: 50%;
     right: 20%;
     transform: translate(0, -50%);
     color: #ff0000;
@@ -239,11 +234,10 @@ function createAxisLabels() {
   container.appendChild(xLabel);
 
   // Y axis label (green Y just above top of circle)
-  // Camera offset shifts circle up, so Y label moves up too
   const yLabel = document.createElement('div');
   yLabel.style.cssText = `
     position: absolute;
-    top: 5%;
+    top: 20%;
     left: 50%;
     transform: translate(-50%, 0);
     color: #00ff00;
@@ -265,32 +259,6 @@ function createCircle() {
   const circleMaterial = new THREE.LineBasicMaterial({ color: 0x888888, linewidth: 2 });
   circle = new THREE.LineSegments(edges, circleMaterial);
   scene.add(circle);
-}
-
-/**
- * Convert world coordinates to screen pixel position
- * Accounts for camera offset and orthographic projection
- */
-function worldToScreen(worldX, worldY, container) {
-  const cameraSize = 2.5;
-  const cameraYOffset = -0.5;
-
-  // Get container dimensions
-  const rect = container.getBoundingClientRect();
-  const aspect = rect.width / rect.height;
-
-  // World space accounting for camera offset
-  const adjustedY = worldY - cameraYOffset;
-
-  // Convert to normalized device coordinates (-1 to 1)
-  const ndcX = worldX / (cameraSize * aspect);
-  const ndcY = adjustedY / cameraSize;
-
-  // Convert to screen pixels
-  const screenX = (ndcX * 0.5 + 0.5) * rect.width;
-  const screenY = (-ndcY * 0.5 + 0.5) * rect.height;
-
-  return { x: screenX, y: screenY };
 }
 
 /**
@@ -328,16 +296,18 @@ function createSnapMarkers() {
     scene.add(marker);
     snapMarkers.push(marker);
 
-    // Create label at exact world coordinates
+    // Create label using simple percentage-based positioning
+    // Circle centered naturally at 50%, 50%
     const label = document.createElement('div');
 
-    // Convert world coordinates to screen position
-    const screenPos = worldToScreen(x, y, container);
+    const cameraSize = 2.5;
+    const screenX = 50 + (x / cameraSize) * 40;  // Map world X to screen %
+    const screenY = 50 - (y / cameraSize) * 40;  // Map world Y to screen % (inverted Y)
 
     label.style.cssText = `
       position: absolute;
-      left: ${screenPos.x}px;
-      top: ${screenPos.y}px;
+      left: ${screenX}%;
+      top: ${screenY}%;
       transform: translate(-50%, -50%);
       color: ${labelColor};
       font-family: 'Courier New', monospace;
@@ -449,11 +419,11 @@ function createFormulaDisplay() {
   };
   container.appendChild(closeButton);
 
-  // Combined formula and coordinates display (bottom)
+  // Combined formula and coordinates display (bottom with extra margin)
   formulaElement = document.createElement('div');
   formulaElement.style.cssText = `
     position: absolute;
-    bottom: 10px;
+    bottom: 15px;
     left: 15px;
     right: 15px;
     background: rgba(0, 0, 0, 0.85);
@@ -464,6 +434,8 @@ function createFormulaDisplay() {
     border: 1px solid #333;
     box-shadow: 0 2px 8px rgba(255,255,255,0.1);
     color: #ffffff;
+    max-height: 180px;
+    overflow-y: auto;
   `;
   container.appendChild(formulaElement);
 }
@@ -635,11 +607,11 @@ function setupInteraction(container) {
     const x = ((clientX - rect.left) / rect.width) * 2 - 1;
     const y = -((clientY - rect.top) / rect.height) * 2 + 1;
 
-    // Convert to world coordinates (accounting for camera offset)
+    // Convert to world coordinates
     const aspect = rect.width / rect.height;
     const cameraSize = 2.5;
     const worldX = x * cameraSize * aspect;
-    const worldY = y * cameraSize + camera.position.y; // Add camera Y offset
+    const worldY = y * cameraSize;
 
     return { worldX, worldY };
   };
