@@ -229,7 +229,7 @@ function createAxisLabels() {
   // Get container aspect ratio for precise positioning
   const rect = container.getBoundingClientRect();
   const aspect = rect.width / rect.height;
-  const cameraSize = 2.5;
+  const cameraSize = 1.2;  // Must match Q1 zoom camera size
 
   // Position labels equidistant outside circle
   const labelOffset = 0.35;
