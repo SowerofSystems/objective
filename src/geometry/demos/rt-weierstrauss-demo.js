@@ -52,7 +52,7 @@ const snapAngles = [
   { angle: Math.atan2(-PHI, -1), label: 'φ', type: 'phi' }
 ];
 
-const SNAP_THRESHOLD = 0.15; // radians (~8.6°)
+const SNAP_THRESHOLD = 0.08; // radians (~4.6°) - reduced magnetic zone for less aggressive snapping
 
 /**
  * Initialize the Weierstrauss demo
@@ -499,9 +499,10 @@ function updateVisualization() {
   let radians = angle;
   if (radians < 0) radians += 2 * Math.PI;
 
-  // Spread: s = sin²(θ)
-  // In rational trigonometry, spread goes from 0 to 1 in each quadrant
-  const spread = Math.sin(angle) * Math.sin(angle);
+  // RT OPTIMIZATION: Calculate spread directly from coordinates (no trig!)
+  // Spread: s = sin²(θ) = y²/r² (for unit circle, just y²)
+  // This is pure RT - extracting spread from Weierstrauss coordinates
+  const spread = (y / radius) * (y / radius);  // Equivalent to: 1 - (x/radius)²
 
   // Calculate actual values for display
   const traditionalX = radius * Math.cos(angle);
@@ -618,9 +619,11 @@ function setupInteraction(container) {
     const { worldX, worldY } = getMousePos(event);
     const dx = worldX - draggablePoint.position.x;
     const dy = worldY - draggablePoint.position.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
+    // RT OPTIMIZATION: Use quadrance instead of distance (no sqrt!)
+    const clickQuadrance = dx * dx + dy * dy;
+    const hitThresholdQ = 0.15 * 0.15;  // Quadrance of hit radius
 
-    if (distance < 0.15) {
+    if (clickQuadrance < hitThresholdQ) {
       isDragging = true;
       canvas.style.cursor = 'grabbing';
       event.preventDefault();
@@ -633,8 +636,10 @@ function setupInteraction(container) {
       const { worldX, worldY } = getMousePos(event);
       const dx = worldX - draggablePoint.position.x;
       const dy = worldY - draggablePoint.position.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      canvas.style.cursor = distance < 0.15 ? 'grab' : 'default';
+      // RT OPTIMIZATION: Use quadrance instead of distance (no sqrt!)
+      const hoverQuadrance = dx * dx + dy * dy;
+      const hitThresholdQ = 0.15 * 0.15;  // Quadrance of hit radius
+      canvas.style.cursor = hoverQuadrance < hitThresholdQ ? 'grab' : 'default';
       return;
     }
 
