@@ -29,56 +29,53 @@ let unitRectangle; // Dynamic unit rectangle from origin to point
 // Format: { a, b, c, x, y, spread, label, type }
 // where (a,b,c) is the triple, (x,y) is normalized to unit circle, spread = (b/c)²
 
+// Pythagorean triples - Q1 only (0° to 90°) with complementary orientations
 const snapPoints = [
-  // Cardinals (spread = 0, 1)
+  // Cardinals (spread = 0, 1) - Q1 endpoints only
   { x: 1, y: 0, spread: 0, label: 's=0', type: 'cardinal', triple: null },
   { x: 0, y: 1, spread: 1, label: 's=1', type: 'cardinal', triple: null },
-  { x: -1, y: 0, spread: 0, label: 's=0', type: 'cardinal', triple: null },
-  { x: 0, y: -1, spread: 1, label: 's=1', type: 'cardinal', triple: null },
 
-  // 3-4-5 Pythagorean triple (spread = 0.64 = 16/25)
-  // (3, 4, 5) → normalized (3/5, 4/5) → spread = (4/5)² = 16/25 = 0.64
+  // 3-4-5 Pythagorean triple (spread = 0.64 = 16/25 and complement 0.36 = 9/25)
+  // (3, 4, 5) → normalized (3/5, 4/5) → spread = (4/5)² = 0.64
   { x: 0.6, y: 0.8, spread: 0.64, label: 's=0.64', type: 'rational', triple: [3, 4, 5] },
-  { x: -0.6, y: 0.8, spread: 0.64, label: 's=0.64', type: 'rational', triple: [3, 4, 5] },
-  { x: -0.6, y: -0.8, spread: 0.64, label: 's=0.64', type: 'rational', triple: [3, 4, 5] },
-  { x: 0.6, y: -0.8, spread: 0.64, label: 's=0.64', type: 'rational', triple: [3, 4, 5] },
+  // Complement (4, 3, 5) → (4/5, 3/5) → spread = (3/5)² = 0.36
+  { x: 0.8, y: 0.6, spread: 0.36, label: 's=0.36', type: 'rational', triple: [4, 3, 5] },
 
-  // 1-1-√2 special case (spread = 0.5 = 1/2)
-  // Equal legs: (1, 1, √2) → normalized (1/√2, 1/√2) → spread = (1/√2)² = 1/2 = 0.5
+  // 1-1-√2 special case (spread = 0.5 = 1/2) - 45° diagonal (no complement needed)
+  // Equal legs: (1, 1, √2) → normalized (1/√2, 1/√2) → spread = 0.5
   { x: 1/Math.sqrt(2), y: 1/Math.sqrt(2), spread: 0.5, label: 's=0.5', type: 'special', triple: [1, 1, '√2'] },
-  { x: -1/Math.sqrt(2), y: 1/Math.sqrt(2), spread: 0.5, label: 's=0.5', type: 'special', triple: [1, 1, '√2'] },
-  { x: -1/Math.sqrt(2), y: -1/Math.sqrt(2), spread: 0.5, label: 's=0.5', type: 'special', triple: [1, 1, '√2'] },
-  { x: 1/Math.sqrt(2), y: -1/Math.sqrt(2), spread: 0.5, label: 's=0.5', type: 'special', triple: [1, 1, '√2'] },
 
-  // 5-12-13 Pythagorean triple (spread ≈ 0.852 = 144/169)
-  // (5, 12, 13) → normalized (5/13, 12/13) → spread = (12/13)² = 144/169 ≈ 0.852
+  // 5-12-13 Pythagorean triple (spread ≈ 0.852 and complement ≈ 0.148)
+  // (5, 12, 13) → (5/13, 12/13) → spread = (12/13)² = 144/169 ≈ 0.852
   { x: 5/13, y: 12/13, spread: 144/169, label: 's≈0.85', type: 'rational', triple: [5, 12, 13] },
-  { x: -5/13, y: 12/13, spread: 144/169, label: 's≈0.85', type: 'rational', triple: [5, 12, 13] },
-  { x: -5/13, y: -12/13, spread: 144/169, label: 's≈0.85', type: 'rational', triple: [5, 12, 13] },
-  { x: 5/13, y: -12/13, spread: 144/169, label: 's≈0.85', type: 'rational', triple: [5, 12, 13] },
+  // Complement (12, 5, 13) → (12/13, 5/13) → spread = (5/13)² ≈ 0.148
+  { x: 12/13, y: 5/13, spread: 25/169, label: 's≈0.15', type: 'rational', triple: [12, 5, 13] },
 
-  // 1-√3-2 special case (spread = 0.75 = 3/4)
-  // 30-60-90 triangle: (1, √3, 2) → normalized (1/2, √3/2) → spread = (√3/2)² = 3/4 = 0.75
+  // 1-√3-2 special case (spread = 0.75 and complement = 0.25)
+  // 30-60-90 triangle: (1, √3, 2) → (1/2, √3/2) → spread = (√3/2)² = 0.75
   { x: 0.5, y: Math.sqrt(3)/2, spread: 0.75, label: 's=0.75', type: 'special', triple: [1, '√3', 2] },
-  { x: -0.5, y: Math.sqrt(3)/2, spread: 0.75, label: 's=0.75', type: 'special', triple: [1, '√3', 2] },
-  { x: -0.5, y: -Math.sqrt(3)/2, spread: 0.75, label: 's=0.75', type: 'special', triple: [1, '√3', 2] },
-  { x: 0.5, y: -Math.sqrt(3)/2, spread: 0.75, label: 's=0.75', type: 'special', triple: [1, '√3', 2] },
+  // Complement (√3, 1, 2) → (√3/2, 1/2) → spread = (1/2)² = 0.25
+  { x: Math.sqrt(3)/2, y: 0.5, spread: 0.25, label: 's=0.25', type: 'special', triple: ['√3', 1, 2] },
 
-  // 8-15-17 Pythagorean triple (spread ≈ 0.779 = 225/289)
-  // (8, 15, 17) → normalized (8/17, 15/17) → spread = (15/17)² = 225/289 ≈ 0.779
+  // 8-15-17 Pythagorean triple (spread ≈ 0.779 and complement ≈ 0.221)
+  // (8, 15, 17) → (8/17, 15/17) → spread = (15/17)² ≈ 0.779
   { x: 8/17, y: 15/17, spread: 225/289, label: 's≈0.78', type: 'rational', triple: [8, 15, 17] },
-  { x: -8/17, y: 15/17, spread: 225/289, label: 's≈0.78', type: 'rational', triple: [8, 15, 17] },
+  // Complement (15, 8, 17) → (15/17, 8/17) → spread = (8/17)² ≈ 0.221
+  { x: 15/17, y: 8/17, spread: 64/289, label: 's≈0.22', type: 'rational', triple: [15, 8, 17] },
 
-  // 7-24-25 Pythagorean triple (spread ≈ 0.922 = 576/625)
-  // (7, 24, 25) → normalized (7/25, 24/25) → spread = (24/25)² = 576/625 ≈ 0.922
+  // 7-24-25 Pythagorean triple (spread ≈ 0.922 and complement ≈ 0.078)
+  // (7, 24, 25) → (7/25, 24/25) → spread = (24/25)² ≈ 0.922
   { x: 7/25, y: 24/25, spread: 576/625, label: 's≈0.92', type: 'rational', triple: [7, 24, 25] },
-  { x: -7/25, y: 24/25, spread: 576/625, label: 's≈0.92', type: 'rational', triple: [7, 24, 25] }
+  // Complement (24, 7, 25) → (24/25, 7/25) → spread = (7/25)² ≈ 0.078
+  { x: 24/25, y: 7/25, spread: 49/625, label: 's≈0.08', type: 'rational', triple: [24, 7, 25] }
 ];
 
 // BABYLONIAN PLIMPTON 322 TRIPLES (c. 1800 BC)
 // Complete set of 15 Pythagorean triples from the ancient clay tablet
 // Demonstrates base-60 (sexagesimal) exact trigonometry predating Pythagoras by 1000+ years
-const plimpton322Triples = [
+
+// Base Plimpton 322 triples (first quadrant only)
+const plimpton322Base = [
   // Row 1: (120, 119, 169) - Nearly square, highest spread
   { a: 120, b: 119, c: 169, spread: (119*119)/(169*169), label: 'P322-1', type: 'plimpton' },
 
@@ -123,11 +120,28 @@ const plimpton322Triples = [
 
   // Row 15: (90, 56, 106) - Flattest triangle
   { a: 90, b: 56, c: 106, spread: (56*56)/(106*106), label: 'P322-15', type: 'plimpton' }
-].map(triple => ({
-  ...triple,
-  x: triple.a / triple.c,  // Normalized x coordinate on unit circle
-  y: triple.b / triple.c   // Normalized y coordinate on unit circle
-}));
+];
+
+// Plimpton 322: Show only Q1 (0° to 90°) with both orientations for historical accuracy
+// This preserves the tablet's original data while showing the full 0-90° range
+const plimpton322Triples = [];
+plimpton322Base.forEach(triple => {
+  // Original orientation: (a, b, c)
+  const x1 = triple.a / triple.c;
+  const y1 = triple.b / triple.c;
+
+  // Complementary orientation: (b, a, c) - swaps x and y for complementary spread
+  const x2 = triple.b / triple.c;
+  const y2 = triple.a / triple.c;
+
+  // Q1 only: Show both orientations to cover full 0°-90° range
+  plimpton322Triples.push({ ...triple, x: x1, y: y1 });  // Original
+
+  // Add complementary only if a ≠ b (avoid duplicates)
+  if (triple.a !== triple.b) {
+    plimpton322Triples.push({ ...triple, x: x2, y: y2, label: triple.label + '*' }); // Complement
+  }
+});
 
 // Current triple set mode ('pythagoras' or 'plimpton322')
 let currentTripleSet = 'pythagoras';
@@ -141,13 +155,18 @@ export function initQuadranceDemo() {
   const container = document.getElementById('quadrance-demo-container');
   if (!container) return;
 
-  // Create 2D scene with cyan/blue theme
+  // Create 2D scene with cyan/blue theme, zoomed to Q1
   const sceneData = create2DScene(container, {
     backgroundColor: 0x001a1a, // Dark cyan background
-    cameraSize: 2.5
+    cameraSize: 1.2  // Smaller = more zoomed in for Q1 focus
   });
 
   ({ scene, camera, renderer, animate, cleanup } = sceneData);
+
+  // Shift camera to center on Q1 (positive x, positive y quadrant)
+  // Center at (radius/2, radius/2) to frame the 90° arc nicely
+  camera.position.x = radius * 0.45;
+  camera.position.y = radius * 0.45;
 
   // Create visual elements
   createAxes();
@@ -176,23 +195,23 @@ export function initQuadranceDemo() {
 }
 
 /**
- * Create coordinate axes
+ * Create coordinate axes (Q1 only - positive X and Y)
  */
 function createAxes() {
-  const axisWidth = 1;
+  const axisWidth = 2;
 
-  // X axis (hairline grey)
+  // X axis (positive only, red)
   const xAxisGeometry = new LineGeometry();
-  xAxisGeometry.setPositions([-radius, 0, 0, radius, 0, 0]);
-  const xAxisMaterial = new LineMaterial({ color: 0x444444, linewidth: axisWidth });
+  xAxisGeometry.setPositions([0, 0, 0, radius, 0, 0]);
+  const xAxisMaterial = new LineMaterial({ color: 0xff0000, linewidth: axisWidth });
   xAxisMaterial.resolution.set(window.innerWidth, window.innerHeight);
   const xAxis = new Line2(xAxisGeometry, xAxisMaterial);
   scene.add(xAxis);
 
-  // Y axis (hairline grey)
+  // Y axis (positive only, green)
   const yAxisGeometry = new LineGeometry();
-  yAxisGeometry.setPositions([0, -radius, 0, 0, radius, 0]);
-  const yAxisMaterial = new LineMaterial({ color: 0x444444, linewidth: axisWidth });
+  yAxisGeometry.setPositions([0, 0, 0, 0, radius, 0]);
+  const yAxisMaterial = new LineMaterial({ color: 0x00ff00, linewidth: axisWidth });
   yAxisMaterial.resolution.set(window.innerWidth, window.innerHeight);
   const yAxis = new Line2(yAxisGeometry, yAxisMaterial);
   scene.add(yAxis);
@@ -255,14 +274,36 @@ function createAxisLabels() {
 }
 
 /**
- * Create the unit circle
+ * Create the Q1 arc (0° to 90° only) using RT parametrization
+ * DOGFOODING: Uses Weierstrauss substitution instead of classical angles
  */
 function createCircle() {
-  const segments = 128;
-  const circleGeometry = new THREE.CircleGeometry(radius, segments);
-  const edges = new THREE.EdgesGeometry(circleGeometry);
-  const circleMaterial = new THREE.LineBasicMaterial({ color: 0x888888, linewidth: 1 });
-  circle = new THREE.LineSegments(edges, circleMaterial);
+  // RT METHOD: Generate arc using Weierstrauss parametrization
+  // For t = tan(θ/2), the circle parametrization is:
+  // x = (1 - t²) / (1 + t²)
+  // y = 2t / (1 + t²)
+  // For 0° to 90°: θ ranges from 0 to π/2, so t = tan(θ/2) ranges from 0 to 1
+
+  const points = [];
+  const numPoints = 64;
+
+  for (let i = 0; i <= numPoints; i++) {
+    // Parameter t ranges from 0 (0°) to 1 (90°)
+    const t = i / numPoints;
+
+    // RT.circleParam would be: { x: (1-t²)/(1+t²), y: 2t/(1+t²) }
+    // Compute directly here for transparency (dogfooding RT math)
+    const t_squared = t * t;
+    const denominator = 1 + t_squared;
+    const x = ((1 - t_squared) / denominator) * radius;
+    const y = ((2 * t) / denominator) * radius;
+
+    points.push(new THREE.Vector3(x, y, 0));
+  }
+
+  const arcGeometry = new THREE.BufferGeometry().setFromPoints(points);
+  const arcMaterial = new THREE.LineBasicMaterial({ color: 0x888888, linewidth: 1 });
+  circle = new THREE.Line(arcGeometry, arcMaterial);
   scene.add(circle);
 }
 
@@ -761,8 +802,19 @@ function setupInteraction(container) {
 
     // Normalize to circle
     const dist = Math.sqrt(worldX * worldX + worldY * worldY);
-    const normX = worldX / dist;
-    const normY = worldY / dist;
+    let normX = worldX / dist;
+    let normY = worldY / dist;
+
+    // Constrain to Q1 (0° to 90°) - clamp to positive values
+    normX = Math.max(0, normX);
+    normY = Math.max(0, normY);
+
+    // Re-normalize after clamping (maintain unit circle constraint)
+    const newDist = Math.sqrt(normX * normX + normY * normY);
+    if (newDist > 0) {
+      normX /= newDist;
+      normY /= newDist;
+    }
 
     // RT OPTIMIZATION: Quadrance-based snapping
     // Use active triple set for snapping
@@ -783,7 +835,7 @@ function setupInteraction(container) {
       }
     }
 
-    // Calculate angle from snapped coordinates
+    // Calculate angle from snapped coordinates (will be 0 to π/2)
     angle = Math.atan2(snappedY, snappedX);
 
     // Update visualization
