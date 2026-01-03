@@ -119,12 +119,12 @@ function createAxes() {
 function createAxisLabels() {
   const container = document.getElementById('weierstrauss-demo-container');
 
-  // X axis label (red X at right end of circle)
+  // X axis label (red X to the right of circle)
   const xLabel = document.createElement('div');
   xLabel.style.cssText = `
     position: absolute;
     top: 50%;
-    left: 68%;
+    right: 20%;
     transform: translate(0, -50%);
     color: #ff0000;
     font-family: 'Courier New', monospace;
@@ -416,7 +416,7 @@ function updateVisualization() {
           <div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">Computational Cost (live):</div>
           <div style="display: flex; align-items: center; margin-bottom: 3px;">
             <span style="width: 90px; font-size: 11px; color: #00ff88;">Weierstrauss:</span>
-            <div style="flex: 1; background: #222; height: 18px; border-radius: 2px; overflow: hidden;">
+            <div style="flex: 1; background: #222; height: 9px; border-radius: 2px; overflow: hidden;">
               <div id="weierstrauss-bar" style="width: 0%; background: linear-gradient(90deg, #00ff88, #00cc66); height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; transition: width 0.15s ease-out;">
                 <span style="font-size: 10px; color: #000; font-weight: bold;">${weierstrassOps}</span>
               </div>
@@ -424,7 +424,7 @@ function updateVisualization() {
           </div>
           <div style="display: flex; align-items: center;">
             <span style="width: 90px; font-size: 11px; color: #ff8800;">Traditional:</span>
-            <div style="flex: 1; background: #222; height: 18px; border-radius: 2px; overflow: hidden;">
+            <div style="flex: 1; background: #222; height: 9px; border-radius: 2px; overflow: hidden;">
               <div id="traditional-bar" style="width: 0%; background: linear-gradient(90deg, #ff8800, #cc6600); height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; transition: width 0.3s ease-out;">
                 <span style="font-size: 10px; color: #000; font-weight: bold;">${traditionalOps}</span>
               </div>
