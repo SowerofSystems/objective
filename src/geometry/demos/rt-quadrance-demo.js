@@ -376,16 +376,19 @@ function createSnapMarkers() {
     const aspect = rect.width / rect.height;
     const cameraSize = 1.2;  // Match Q1 zoom camera setting
 
+    // Camera shift for Q1 view
+    const cameraOffsetX = radius * 0.45;  // Match camera.position.x from initialization
+    const cameraOffsetY = radius * 0.45;  // Match camera.position.y from initialization
+
     // Position label outside the circle (smaller offset for zoomed view)
     const labelOffset = snap.type === 'plimpton' ? 0.12 : 0.15;  // Tighter spacing for Plimpton
     const labelX = x + (x / radius) * labelOffset;
     const labelY = y + (y / radius) * labelOffset;
 
-    // Map world coordinates to screen percentages (accounting for Q1 camera shift)
-    const cameraOffsetX = radius * 0.45;  // Match camera.position.x from initialization
-    const cameraOffsetY = radius * 0.45;  // Match camera.position.y from initialization
-    const screenX = 50 + ((labelX - cameraOffsetX) / (cameraSize * aspect)) * 100;
-    const screenY = 50 - ((labelY - cameraOffsetY) / cameraSize) * 100;
+    // Map world coordinates to screen percentages
+    // Following Weierstrauss demo approach: direct mapping with aspect correction
+    const screenX = 50 + ((labelX - cameraOffsetX) / (cameraSize * aspect)) * 50;
+    const screenY = 50 - ((labelY - cameraOffsetY) / cameraSize) * 50;
 
     // Reduce font size for Plimpton markers to prevent collision
     const fontSize = snap.type === 'plimpton' ? '9px' : '14px';
