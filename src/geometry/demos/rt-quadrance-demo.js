@@ -118,8 +118,8 @@ const plimpton322Base = [
   // Row 14: (2700, 1771, 3229)
   { a: 2700, b: 1771, c: 3229, spread: (1771*1771)/(3229*3229), label: 'P322-14', type: 'plimpton' },
 
-  // Row 15: (90, 56, 106) - Flattest triangle
-  { a: 90, b: 56, c: 106, spread: (56*56)/(106*106), label: 'P322-15', type: 'plimpton' }
+  // Row 15: (45, 28, 53) - Steepest triangle, β ≈ 0.6222
+  { a: 45, b: 28, c: 53, spread: (28*28)/(53*53), label: 'P322-15', type: 'plimpton' }
 ];
 
 // Plimpton 322: Show only Q1 (0° to 90°) with both orientations for historical accuracy
@@ -335,8 +335,8 @@ function createSnapMarkers() {
       labelColor = '#00cccc';
     } else if (snap.type === 'plimpton') {
       // Gold pyramid markers for Babylonian Plimpton 322 triples
-      // Create a tetrahedron (pyramid) shape
-      const pyramidSize = 0.04;
+      // Create a tetrahedron (pyramid) shape - REDUCED SIZE to prevent collision
+      const pyramidSize = 0.018;  // Reduced from 0.04 to prevent overlap
       const pyramidGeom = new THREE.BufferGeometry();
       const vertices = new Float32Array([
         0, pyramidSize, 0,           // Top vertex
@@ -381,6 +381,9 @@ function createSnapMarkers() {
     const screenX = 50 + (labelX / (cameraSize * aspect)) * 50;
     const screenY = 50 - (labelY / cameraSize) * 50;
 
+    // Reduce font size for Plimpton markers to prevent collision
+    const fontSize = snap.type === 'plimpton' ? '9px' : '14px';
+
     label.style.cssText = `
       position: absolute;
       left: ${screenX}%;
@@ -388,7 +391,7 @@ function createSnapMarkers() {
       transform: translate(-50%, -50%);
       color: ${labelColor};
       font-family: 'Courier New', monospace;
-      font-size: 14px;
+      font-size: ${fontSize};
       font-weight: bold;
       pointer-events: none;
       text-shadow: 0 0 3px rgba(0,0,0,0.8);
