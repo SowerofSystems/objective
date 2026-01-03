@@ -819,8 +819,9 @@ button:disabled {
   height: 100%;
   background: rgba(0, 0, 0, 0.9);
   display: none;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding-top: 2vh;
   z-index: 9000;
 }
 
