@@ -27,29 +27,35 @@ let snapMarkers = [];
 // Golden ratio
 const PHI = (1 + Math.sqrt(5)) / 2;
 
-// Snap points: Cardinal directions, 45° angles, and Phi positions
-const snapAngles = [
-  // Cardinal directions (0°, 90°, 180°, 270°)
-  { angle: 0, label: '0°', type: 'cardinal' },
-  { angle: Math.PI / 2, label: '90°', type: 'cardinal' },
-  { angle: Math.PI, label: '180°', type: 'cardinal' },
-  { angle: 3 * Math.PI / 2, label: '270°', type: 'cardinal' },
+// Snap points using algebraic coordinates (no trig!)
+// Store normalized (x, y) coordinates on the unit circle instead of angles
+// Calculate normalized φ coordinates
+const phiNorm = Math.sqrt(PHI * PHI + 1);
+const phi_x = PHI / phiNorm;  // x for atan2(1, φ)
+const phi_y = 1 / phiNorm;    // y for atan2(1, φ)
 
-  // 45° angles (spread = 0.5, √2 square vertices)
-  { angle: Math.PI / 4, label: '45°', type: 'spread' },
-  { angle: 3 * Math.PI / 4, label: '135°', type: 'spread' },
-  { angle: 5 * Math.PI / 4, label: '225°', type: 'spread' },
-  { angle: 7 * Math.PI / 4, label: '315°', type: 'spread' },
+const snapPoints = [
+  // Cardinal directions (0°, 90°, 180°, 270°) - on axes
+  { x: 1, y: 0, label: '0°', type: 'cardinal' },
+  { x: 0, y: 1, label: '90°', type: 'cardinal' },
+  { x: -1, y: 0, label: '180°', type: 'cardinal' },
+  { x: 0, y: -1, label: '270°', type: 'cardinal' },
 
-  // Phi angles (golden rectangle vertices)
-  { angle: Math.atan2(1, PHI), label: 'φ', type: 'phi' },
-  { angle: Math.atan2(1, -PHI), label: 'φ', type: 'phi' },
-  { angle: Math.atan2(-1, PHI), label: 'φ', type: 'phi' },
-  { angle: Math.atan2(-1, -PHI), label: 'φ', type: 'phi' },
-  { angle: Math.atan2(PHI, 1), label: 'φ', type: 'phi' },
-  { angle: Math.atan2(PHI, -1), label: 'φ', type: 'phi' },
-  { angle: Math.atan2(-PHI, 1), label: 'φ', type: 'phi' },
-  { angle: Math.atan2(-PHI, -1), label: 'φ', type: 'phi' }
+  // 45° angles (spread = 0.5, √2 square vertices) - normalized (1, 1)
+  { x: 1/Math.sqrt(2), y: 1/Math.sqrt(2), label: '45°', type: 'spread' },
+  { x: -1/Math.sqrt(2), y: 1/Math.sqrt(2), label: '135°', type: 'spread' },
+  { x: -1/Math.sqrt(2), y: -1/Math.sqrt(2), label: '225°', type: 'spread' },
+  { x: 1/Math.sqrt(2), y: -1/Math.sqrt(2), label: '315°', type: 'spread' },
+
+  // φ points (golden rectangle vertices) - normalized (φ, 1) and (1, φ)
+  { x: phi_x, y: phi_y, label: 'φ', type: 'phi' },       // Q1 horizontal
+  { x: phi_y, y: phi_x, label: 'φ', type: 'phi' },       // Q1 vertical
+  { x: -phi_x, y: phi_y, label: 'φ', type: 'phi' },      // Q2 horizontal
+  { x: -phi_y, y: phi_x, label: 'φ', type: 'phi' },      // Q2 vertical
+  { x: -phi_x, y: -phi_y, label: 'φ', type: 'phi' },     // Q3 horizontal
+  { x: -phi_y, y: -phi_x, label: 'φ', type: 'phi' },     // Q3 vertical
+  { x: phi_x, y: -phi_y, label: 'φ', type: 'phi' },      // Q4 horizontal
+  { x: phi_y, y: -phi_x, label: 'φ', type: 'phi' }       // Q4 vertical
 ];
 
 const SNAP_THRESHOLD = 0.08; // radians (~4.6°) - reduced magnetic zone for less aggressive snapping
@@ -151,6 +157,64 @@ function createGeometricGuides() {
   sqrt2Square.position.z = -0.01; // Behind circle
   scene.add(sqrt2Square);
 
+  // √3 EQUILATERAL TRIANGLES - Two triangles (pointing up and down)
+  // Built using pure algebraic/geometric construction, no classical trig
+  // For a point on the unit circle where spread = 0.75, we have sin²(θ) = 3/4
+  // This means sin(θ) = √3/2, and by Pythagoras: cos²(θ) = 1 - 3/4 = 1/4, so cos(θ) = ±1/2
+  // These are the 30° and 60° points, creating equilateral triangles
+
+  // Algebraic construction: normalize (√3, 1) to get 30° point on circle
+  // This avoids classical trig - we use the fact that (√3, 1) has the right ratio
+  // and normalize it to lie on the unit circle
+  const sqrt3 = Math.sqrt(3);
+  const norm_1_sqrt3 = Math.sqrt(1 + 3);  // = 2, normalizing factor for (√3, 1)
+
+  // 30° point: normalize (√3, 1) → (√3/2, 1/2)
+  // This represents the point on the circle where x/y = √3/1 = √3
+  const x_30 = sqrt3 / norm_1_sqrt3;  // √3/2
+  const y_30 = 1 / norm_1_sqrt3;      // 1/2
+
+  // Note: 60° point would be (y_30, x_30) = (1/2, √3/2) by symmetry,
+  // but we don't need it since both triangles can be constructed from the 30° point
+
+  // Upward-pointing equilateral triangle (vertices at 90°, 210°, 330°)
+  const triangleUpGeometry = new LineGeometry();
+  triangleUpGeometry.setPositions([
+    0, radius, 0,              // 90° (top) - on Y axis
+    -x_30 * radius, -y_30 * radius, 0,  // 210° (bottom-left) - reflected 30° point
+    x_30 * radius, -y_30 * radius, 0,   // 330° (bottom-right) - 30° point reflected over X
+    0, radius, 0               // close path
+  ]);
+  const triangleUpMaterial = new LineMaterial({
+    color: guideColor,
+    linewidth: hairlineWidth,
+    transparent: true,
+    opacity: 0.5
+  });
+  triangleUpMaterial.resolution.set(window.innerWidth, window.innerHeight);
+  const triangleUp = new Line2(triangleUpGeometry, triangleUpMaterial);
+  triangleUp.position.z = -0.01;
+  scene.add(triangleUp);
+
+  // Downward-pointing equilateral triangle (vertices at 30°, 150°, 270°)
+  const triangleDownGeometry = new LineGeometry();
+  triangleDownGeometry.setPositions([
+    x_30 * radius, y_30 * radius, 0,    // 30° (top-right)
+    -x_30 * radius, y_30 * radius, 0,   // 150° (top-left)
+    0, -radius, 0,                       // 270° (bottom) - on -Y axis
+    x_30 * radius, y_30 * radius, 0     // close path
+  ]);
+  const triangleDownMaterial = new LineMaterial({
+    color: guideColor,
+    linewidth: hairlineWidth,
+    transparent: true,
+    opacity: 0.5
+  });
+  triangleDownMaterial.resolution.set(window.innerWidth, window.innerHeight);
+  const triangleDown = new Line2(triangleDownGeometry, triangleDownMaterial);
+  triangleDown.position.z = -0.01;
+  scene.add(triangleDown);
+
   // GOLDEN RECTANGLES - 8 total (2 per quadrant)
   // Each rectangle extends from origin to a φ snap point on the circle
   // φ snap points on the circle have angles: atan2(1, φ) and atan2(φ, 1)
@@ -217,13 +281,25 @@ function createGeometricGuides() {
 function createAxisLabels() {
   const container = document.getElementById('weierstrauss-demo-container');
 
+  // Get container aspect ratio for precise positioning
+  const rect = container.getBoundingClientRect();
+  const aspect = rect.width / rect.height;
+  const cameraSize = 2.5;
+
+  // Position labels equidistant outside circle (radius + offset)
+  const labelOffset = 0.35; // Distance outside circle edge
+  const xLabelWorld = radius + labelOffset; // Right of circle
+  const yLabelWorld = radius + labelOffset; // Above circle
+
   // X axis label (red X to the right of circle, on horizontal centerline)
   const xLabel = document.createElement('div');
+  const xLabelScreenX = 50 + (xLabelWorld / (cameraSize * aspect)) * 50;
+  const xLabelScreenY = 50; // Horizontal centerline
   xLabel.style.cssText = `
     position: absolute;
-    top: 50%;
-    right: 20%;
-    transform: translate(0, -50%);
+    left: ${xLabelScreenX}%;
+    top: ${xLabelScreenY}%;
+    transform: translate(-50%, -50%);
     color: #ff0000;
     font-family: 'Courier New', monospace;
     font-size: 18px;
@@ -235,11 +311,13 @@ function createAxisLabels() {
 
   // Y axis label (green Y just above top of circle)
   const yLabel = document.createElement('div');
+  const yLabelScreenX = 50; // Vertical centerline
+  const yLabelScreenY = 50 - (yLabelWorld / cameraSize) * 50;
   yLabel.style.cssText = `
     position: absolute;
-    top: 20%;
-    left: 50%;
-    transform: translate(-50%, 0);
+    left: ${yLabelScreenX}%;
+    top: ${yLabelScreenY}%;
+    transform: translate(-50%, -50%);
     color: #00ff00;
     font-family: 'Courier New', monospace;
     font-size: 18px;
@@ -267,22 +345,28 @@ function createCircle() {
 function createSnapMarkers() {
   const container = document.getElementById('weierstrauss-demo-container');
 
-  snapAngles.forEach(snap => {
-    const x = radius * Math.cos(snap.angle);
-    const y = radius * Math.sin(snap.angle);
+  snapPoints.forEach(snap => {
+    // Use algebraic coordinates directly - no trig needed!
+    const x = radius * snap.x;
+    const y = radius * snap.y;
 
-    // Create small circle marker with color based on type
-    const markerGeometry = new THREE.CircleGeometry(0.06, 16);
-    let markerColor, labelColor;
+    let markerGeometry, markerColor, labelColor;
 
     if (snap.type === 'cardinal') {
-      markerColor = 0x666666;  // Grey for cardinal directions
+      // Grey circles for cardinal directions (0°, 90°, 180°, 270°)
+      markerGeometry = new THREE.CircleGeometry(0.06, 16);
+      markerColor = 0x666666;
       labelColor = '#666666';
     } else if (snap.type === 'phi') {
+      // Tiny gold diamonds for φ points
+      // Create a rotated square (diamond) shape
+      markerGeometry = new THREE.PlaneGeometry(0.03, 0.03);
       markerColor = 0xffd700;  // Gold for φ
       labelColor = '#ffd700';
     } else {  // 'spread' (45° angles)
-      markerColor = 0xff8800;  // Orange for 45°
+      // Orange circles for 45° angles
+      markerGeometry = new THREE.CircleGeometry(0.06, 16);
+      markerColor = 0xff8800;
       labelColor = '#ff8800';
     }
 
@@ -293,16 +377,32 @@ function createSnapMarkers() {
     });
     const marker = new THREE.Mesh(markerGeometry, markerMaterial);
     marker.position.set(x, y, 0.02);
+
+    // Rotate diamonds 45° to make them diamond-shaped
+    if (snap.type === 'phi') {
+      marker.rotation.z = Math.PI / 4;
+    }
+
     scene.add(marker);
     snapMarkers.push(marker);
 
-    // Create label using simple percentage-based positioning
-    // Circle centered naturally at 50%, 50%
+    // Create label positioned radially outside the marker for better readability
     const label = document.createElement('div');
 
+    // Get container aspect ratio to correctly map world coordinates to screen percentages
+    const rect = container.getBoundingClientRect();
+    const aspect = rect.width / rect.height;
     const cameraSize = 2.5;
-    const screenX = 50 + (x / cameraSize) * 40;  // Map world X to screen %
-    const screenY = 50 - (y / cameraSize) * 40;  // Map world Y to screen % (inverted Y)
+
+    // Position label outside the circle (radially outward from marker)
+    const labelOffset = 0.25; // Distance to push label outward from marker
+    const labelX = x + (x / radius) * labelOffset; // Push radially outward
+    const labelY = y + (y / radius) * labelOffset;
+
+    // Map world coordinates to screen percentages
+    // Account for aspect ratio: X needs to be scaled by aspect, Y is 1:1
+    const screenX = 50 + (labelX / (cameraSize * aspect)) * 50;  // Map to ±50% range accounting for aspect
+    const screenY = 50 - (labelY / cameraSize) * 50;              // Map to ±50% range (inverted Y)
 
     label.style.cssText = `
       position: absolute;
@@ -436,15 +536,6 @@ function createFormulaDisplay() {
     color: #ffffff;
   `;
   container.appendChild(formulaElement);
-}
-
-/**
- * Normalize angle difference to [-π, π] range
- */
-function normalizeAngleDiff(diff) {
-  while (diff > Math.PI) diff -= 2 * Math.PI;
-  while (diff < -Math.PI) diff += 2 * Math.PI;
-  return diff;
 }
 
 /**
@@ -645,19 +736,32 @@ function setupInteraction(container) {
 
     const { worldX, worldY } = getMousePos(event);
 
-    // Calculate angle from origin
-    let newAngle = Math.atan2(worldY, worldX);
+    // Normalize mouse position to unit circle
+    const dist = Math.sqrt(worldX * worldX + worldY * worldY);
+    const normX = worldX / dist;
+    const normY = worldY / dist;
 
-    // Apply snapping to special angles
-    for (const snap of snapAngles) {
-      const angleDiff = Math.abs(normalizeAngleDiff(newAngle - snap.angle));
-      if (angleDiff < SNAP_THRESHOLD) {
-        newAngle = snap.angle;
+    // RT OPTIMIZATION: Use quadrance-based snapping instead of angle difference
+    // Check if mouse is close to any snap point using coordinate quadrance
+    let snappedX = normX;
+    let snappedY = normY;
+    const snapThresholdQ = SNAP_THRESHOLD * SNAP_THRESHOLD;  // Convert angle threshold to coordinate quadrance
+
+    for (const snap of snapPoints) {
+      // Quadrance between normalized mouse position and snap point
+      const dx = normX - snap.x;
+      const dy = normY - snap.y;
+      const quadrance = dx * dx + dy * dy;
+
+      if (quadrance < snapThresholdQ) {
+        snappedX = snap.x;
+        snappedY = snap.y;
         break;
       }
     }
 
-    angle = newAngle;
+    // Calculate angle from snapped coordinates
+    angle = Math.atan2(snappedY, snappedX);
 
     // Update visualization
     updateVisualization();
