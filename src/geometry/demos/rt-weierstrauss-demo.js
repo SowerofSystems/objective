@@ -216,15 +216,17 @@ function createGeometricGuides() {
 
 /**
  * Create axis labels
+ * Note: Labels positioned to account for camera.position.y = -0.5 offset
  */
 function createAxisLabels() {
   const container = document.getElementById('weierstrauss-demo-container');
 
   // X axis label (red X to the right of circle, on horizontal centerline)
+  // Camera offset shifts circle up, so X label moves up too
   const xLabel = document.createElement('div');
   xLabel.style.cssText = `
     position: absolute;
-    top: 47%;
+    top: 40%;
     right: 20%;
     transform: translate(0, -50%);
     color: #ff0000;
@@ -236,11 +238,12 @@ function createAxisLabels() {
   xLabel.textContent = 'X';
   container.appendChild(xLabel);
 
-  // Y axis label (green Y just above centerline, outside circle)
+  // Y axis label (green Y just above top of circle)
+  // Camera offset shifts circle up, so Y label moves up too
   const yLabel = document.createElement('div');
   yLabel.style.cssText = `
     position: absolute;
-    top: 12%;
+    top: 5%;
     left: 50%;
     transform: translate(-50%, 0);
     color: #00ff00;
