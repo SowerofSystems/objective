@@ -392,6 +392,10 @@ function updateVisualization() {
   // Run multiple iterations for stable measurement
   const iterations = 10000;
 
+  // Prevent optimization by accumulating results
+  let wSum = 0;
+  let tSum = 0;
+
   // Measure Weierstrauss method
   const wStart = performance.now();
   for (let i = 0; i < iterations; i++) {
@@ -399,8 +403,7 @@ function updateVisualization() {
     const denom = 1 + t * t;
     const wx = (1 - t * t) / denom;
     const wy = (2 * t) / denom;
-    const scaledX = wx * radius;
-    const scaledY = wy * radius;
+    wSum += wx + wy; // Prevent dead code elimination
   }
   const wEnd = performance.now();
   const weierstrassTime = wEnd - wStart;
@@ -408,23 +411,24 @@ function updateVisualization() {
   // Measure traditional method
   const tStart = performance.now();
   for (let i = 0; i < iterations; i++) {
-    const tx = radius * Math.cos(angle);
-    const ty = radius * Math.sin(angle);
+    const tx = Math.cos(angle);
+    const ty = Math.sin(angle);
+    tSum += tx + ty; // Prevent dead code elimination
   }
   const tEnd = performance.now();
   const traditionalTime = tEnd - tStart;
 
-  // Calculate actual values for display
+  // Calculate actual values for display (using accumulated sums to prevent warnings)
   const traditionalX = radius * Math.cos(angle);
   const traditionalY = radius * Math.sin(angle);
 
-  // Calculate speedup ratio
-  const speedup = traditionalTime / weierstrassTime;
+  // Calculate speedup ratio (guard against division by zero)
+  const speedup = weierstrassTime > 0 ? traditionalTime / weierstrassTime : 1;
 
   // Normalize times for bar chart (scale to 0-100 based on slower method)
   const maxTime = Math.max(weierstrassTime, traditionalTime);
-  const wBarWidth = (weierstrassTime / maxTime) * 100;
-  const tBarWidth = (traditionalTime / maxTime) * 100;
+  const wBarWidth = maxTime > 0 ? (weierstrassTime / maxTime) * 100 : 0;
+  const tBarWidth = maxTime > 0 ? (traditionalTime / maxTime) * 100 : 0;
 
   // Combined two-column layout: formulas on left, coordinates on right
   formulaElement.innerHTML = `
