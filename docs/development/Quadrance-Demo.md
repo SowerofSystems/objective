@@ -287,71 +287,91 @@ This is pure Rational Trigonometry - the Babylonians used **quadrance and spread
 
 ### Complete Plimpton 322 Triple Set (15 rows)
 
-All triples in format: `(long side, short side, diagonal)` → normalized to unit circle → spread calculated
+**Source:** Mansfield & Wildberger (2017), "Plimpton 322 is Babylonian exact sexagesimal trigonometry", *Historia Mathematica*
+
+The tablet organizes triples by **ukullû (reciprocal slope)** β = long/diagonal, ranging from near 1 (isosceles) to smaller values (steeper triangles). The angle range (from vertical) is approximately **31.89° to 44.76°**, or equivalently **45.24° to 58.11°** from horizontal.
+
+#### Table: Sexagesimal Format (Table 9 from Mansfield & Wildberger 2017)
+
+| Row | β (base/diag) | δ (diagonal) | b (simplified base) | d (simplified diag) |
+|-----|---------------|--------------|---------------------|---------------------|
+| 1   | 59.30         | 1.24.30      | 1.59                | 2.49                |
+| 2   | 58.27.17.30   | 1.23.46.02.30| 56.07               | 1.20.25             |
+| 3   | 57.30.45      | 1.23.06.45   | 1.16.41             | 1.50.49             |
+| 4   | 56.29.04      | 1.22.24.16   | 3.31.49             | 5.09.01             |
+| 5   | 54.10         | 1.20.50      | 1.05                | 1.37                |
+| 6   | 53.10         | 1.20.10      | 5.19                | 8.01                |
+| 7   | 50.54.40      | 1.18.41.20   | 38.11               | 59.01               |
+| 8   | 49.56.15      | 1.18.03.45   | 13.19               | 20.49               |
+| 9   | 48.06         | 1.16.54      | 8.01                | 12.49               |
+| 10  | 45.56.06.40   | 1.15.33.53.20| 1.22.41             | 2.16.01             |
+| 11  | 45            | 1.15         | 45                  | 1.15                |
+| 12  | 41.58.30      | 1.13.13.30   | 27.59               | 48.49               |
+| 13  | 40.15         | 1.12.15      | 2.41                | 4.49                |
+| 14  | 39.21.20      | 1.11.45.20   | 29.31               | 53.49               |
+| 15  | 37.20         | 1.10.40      | 28                  | 53                  |
+
+*Note: Base-60 notation (e.g., 59.30 = 59 + 30/60 = 0.9916̄)*
+
+#### Table: Decimal Format with Complete Pythagorean Triples
+
+All triples in format: `(long, short, diagonal)` → normalized to unit circle `(x, y)` → spread `s = y²`
+
+| Row | Long | Short | Diagonal | x = long/diag | y = short/diag | Spread s = y² | Angle (from vertical) |
+|-----|------|-------|----------|---------------|----------------|---------------|-----------------------|
+| 1   | 168  | 119   | 169      | 0.9941        | 0.7041         | **0.495816**  | 44.76°                |
+| 2   | 4701 | 3367  | 4825     | 0.9743        | 0.6978         | **0.486958**  | 44.25°                |
+| 3   | 6373 | 4601  | 6649     | 0.9585        | 0.6920         | **0.478842**  | 43.79°                |
+| 4   | 17455| 12709 | 18541    | 0.9414        | 0.6855         | **0.469847**  | 43.27°                |
+| 5   | 88   | 65    | 97       | 0.9072        | 0.6701         | **0.449038**  | 42.08°                |
+| 6   | 426  | 319   | 481      | 0.8857        | 0.6632         | **0.439836**  | 41.54°                |
+| 7   | 3005 | 2291  | 3541     | 0.8486        | 0.6470         | **0.418599**  | 40.32°                |
+| 8   | 1040 | 799   | 1249     | 0.8327        | 0.6397         | **0.409231**  | 39.77°                |
+| 9   | 616  | 481   | 769      | 0.8010        | 0.6255         | **0.391235**  | 38.72°                |
+| 10  | 6248 | 4961  | 8161     | 0.7656        | 0.6079         | **0.369532**  | 37.44°                |
+| 11  | 56   | 45    | 75       | 0.7467        | 0.6000         | **0.360000**  | 36.87° (3-4-5 × 15)   |
+| 12  | 2049 | 1679  | 2929     | 0.6996        | 0.5732         | **0.328596**  | 34.98°                |
+| 13  | 194  | 161   | 289      | 0.6713        | 0.5571         | **0.310353**  | 33.86°                |
+| 14  | 2118 | 1771  | 3229     | 0.6559        | 0.5485         | **0.300816**  | 33.26°                |
+| 15  | 33   | 28    | 53       | 0.6226        | 0.5283         | **0.279103**  | 31.89°                |
 
 ```javascript
 // BABYLONIAN PLIMPTON 322 TRIPLES (c. 1800 BC)
+// Complete dataset from Mansfield & Wildberger (2017)
 const plimpton322Triples = [
-  // Row 1: (120, 119, 169) - Nearly square, highest spread
-  { a: 120, b: 119, c: 169, spread: 0.9965, label: 'P322-1' },
-
-  // Row 2: (3456, 3367, 4825)
-  { a: 3456, b: 3367, c: 4825, spread: 0.9948, label: 'P322-2' },
-
-  // Row 3: (4800, 4601, 6649)
-  { a: 4800, b: 4601, c: 6649, spread: 0.9920, label: 'P322-3' },
-
-  // Row 4: (13500, 12709, 18541) - Mentioned in research
-  { a: 13500, b: 12709, c: 18541, spread: 0.9872, label: 'P322-4' },
-
-  // Row 5: (72, 65, 97)
-  { a: 72, b: 65, c: 97, spread: 0.9494, label: 'P322-5' },
-
-  // Row 6: (360, 319, 481)
-  { a: 360, b: 319, c: 481, spread: 0.9309, label: 'P322-6' },
-
-  // Row 7: (2700, 2291, 3541)
-  { a: 2700, b: 2291, c: 3541, spread: 0.8836, label: 'P322-7' },
-
-  // Row 8: (960, 799, 1249)
-  { a: 960, b: 799, c: 1249, spread: 0.8642, label: 'P322-8' },
-
-  // Row 9: (600, 481, 769)
-  { a: 600, b: 481, c: 769, spread: 0.8281, label: 'P322-9' },
-
-  // Row 10: (6480, 4961, 8161)
-  { a: 6480, b: 4961, c: 8161, spread: 0.7834, label: 'P322-10' },
-
-  // Row 11: (60, 45, 75) - This is 3-4-5 scaled by 15!
-  { a: 60, b: 45, c: 75, spread: 0.64, label: 'P322-11 (3-4-5)' },
-
-  // Row 12: (2400, 1679, 2929)
-  { a: 2400, b: 1679, c: 2929, spread: 0.6241, label: 'P322-12' },
-
-  // Row 13: (240, 161, 289)
-  { a: 240, b: 161, c: 289, spread: 0.5576, label: 'P322-13' },
-
-  // Row 14: (2700, 1771, 3229)
-  { a: 2700, b: 1771, c: 3229, spread: 0.5033, label: 'P322-14' },
-
-  // Row 15: (90, 56, 106) - Flattest triangle
-  { a: 90, b: 56, c: 106, spread: 0.4698, label: 'P322-15' }
+  { row: 1,  long: 168,   short: 119,   diag: 169,   spread: 0.495816, label: 'P322-1' },
+  { row: 2,  long: 4701,  short: 3367,  diag: 4825,  spread: 0.486958, label: 'P322-2' },
+  { row: 3,  long: 6373,  short: 4601,  diag: 6649,  spread: 0.478842, label: 'P322-3' },
+  { row: 4,  long: 17455, short: 12709, diag: 18541, spread: 0.469847, label: 'P322-4' },
+  { row: 5,  long: 88,    short: 65,    diag: 97,    spread: 0.449038, label: 'P322-5' },
+  { row: 6,  long: 426,   short: 319,   diag: 481,   spread: 0.439836, label: 'P322-6' },
+  { row: 7,  long: 3005,  short: 2291,  diag: 3541,  spread: 0.418599, label: 'P322-7' },
+  { row: 8,  long: 1040,  short: 799,   diag: 1249,  spread: 0.409231, label: 'P322-8' },
+  { row: 9,  long: 616,   short: 481,   diag: 769,   spread: 0.391235, label: 'P322-9' },
+  { row: 10, long: 6248,  short: 4961,  diag: 8161,  spread: 0.369532, label: 'P322-10' },
+  { row: 11, long: 56,    short: 45,    diag: 75,    spread: 0.360000, label: 'P322-11 (3-4-5×15)' },
+  { row: 12, long: 2049,  short: 1679,  diag: 2929,  spread: 0.328596, label: 'P322-12' },
+  { row: 13, long: 194,   short: 161,   diag: 289,   spread: 0.310353, label: 'P322-13' },
+  { row: 14, long: 2118,  short: 1771,  diag: 3229,  spread: 0.300816, label: 'P322-14' },
+  { row: 15, long: 33,    short: 28,    diag: 53,    spread: 0.279103, label: 'P322-15' }
 ];
 
 // Normalize to unit circle coordinates
 plimpton322Triples.forEach(triple => {
-  triple.x = triple.a / triple.c;  // Normalized x coordinate
-  triple.y = triple.b / triple.c;  // Normalized y coordinate
-  triple.spreadExact = (triple.b * triple.b) / (triple.c * triple.c);  // s = (b/c)²
+  triple.x = triple.long / triple.diag;   // Long side / diagonal (β ratio)
+  triple.y = triple.short / triple.diag;  // Short side / diagonal
+  triple.spreadExact = (triple.short * triple.short) / (triple.diag * triple.diag);  // s = (short/diag)²
 });
 ```
 
 ### Key Properties of Plimpton 322 Triples
 
-1. **Ordered by Spread**: Progressively decreasing from s ≈ 0.9965 (nearly square) to s ≈ 0.4698 (flat)
-2. **Regular Numbers**: All values are 2ᵃ×3ᵇ×5ᶜ for exact base-60 representation
-3. **No Approximations**: Pure rational arithmetic, no irrational square roots needed
-4. **Educational Value**: Shows ancient understanding of quadrance relationships
+1. **Ordered by ukullû (reciprocal slope)**: β = long/diagonal, progressively decreasing from 0.9941 (nearly isosceles) to 0.6226 (steeper)
+2. **Spread Range**: s ranges from **0.279** to **0.496** (angles 31.89° to 44.76° from vertical, or 45.24° to 58.11° from horizontal)
+3. **Regular Numbers**: All values are 2ᵃ×3ᵇ×5ᶜ for exact base-60 representation
+4. **No Approximations**: Pure rational arithmetic, no irrational square roots needed
+5. **Educational Value**: Shows ancient understanding of quadrance relationships
+6. **Limited Angular Range**: Explains why markers appear bunched together - the tablet focuses on a specific range of triangular geometries, not the full 0° to 90° spectrum
 
 ### Implementation Strategy: Toggle System
 
