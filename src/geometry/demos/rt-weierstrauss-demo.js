@@ -9,12 +9,12 @@
  * y = 2t / (1 + t²)
  */
 
-import * as THREE from 'three';
-import { Line2 } from 'three/addons/lines/Line2.js';
-import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
-import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
-import { create2DScene, initializeModalHandlers } from './rt-demo-utils.js';
-import { RT } from '../modules/rt-math.js';
+import * as THREE from "three";
+import { Line2 } from "three/addons/lines/Line2.js";
+import { LineMaterial } from "three/addons/lines/LineMaterial.js";
+import { LineGeometry } from "three/addons/lines/LineGeometry.js";
+import { create2DScene, initializeModalHandlers } from "./rt-demo-utils.js";
+import { RT } from "../modules/rt-math.js";
 
 let scene, camera, renderer, animate, cleanup;
 let circle, radiusLine, xVector, yVector, draggablePoint;
@@ -31,31 +31,31 @@ const PHI = (1 + Math.sqrt(5)) / 2;
 // Store normalized (x, y) coordinates on the unit circle instead of angles
 // Calculate normalized φ coordinates
 const phiNorm = Math.sqrt(PHI * PHI + 1);
-const phi_x = PHI / phiNorm;  // x for atan2(1, φ)
-const phi_y = 1 / phiNorm;    // y for atan2(1, φ)
+const phi_x = PHI / phiNorm; // x for atan2(1, φ)
+const phi_y = 1 / phiNorm; // y for atan2(1, φ)
 
 const snapPoints = [
   // Cardinal directions (0°, 90°, 180°, 270°) - on axes
-  { x: 1, y: 0, label: '0°', type: 'cardinal' },
-  { x: 0, y: 1, label: '90°', type: 'cardinal' },
-  { x: -1, y: 0, label: '180°', type: 'cardinal' },
-  { x: 0, y: -1, label: '270°', type: 'cardinal' },
+  { x: 1, y: 0, label: "0°", type: "cardinal" },
+  { x: 0, y: 1, label: "90°", type: "cardinal" },
+  { x: -1, y: 0, label: "180°", type: "cardinal" },
+  { x: 0, y: -1, label: "270°", type: "cardinal" },
 
   // 45° angles (spread = 0.5, √2 square vertices) - normalized (1, 1)
-  { x: 1/Math.sqrt(2), y: 1/Math.sqrt(2), label: '45°', type: 'spread' },
-  { x: -1/Math.sqrt(2), y: 1/Math.sqrt(2), label: '135°', type: 'spread' },
-  { x: -1/Math.sqrt(2), y: -1/Math.sqrt(2), label: '225°', type: 'spread' },
-  { x: 1/Math.sqrt(2), y: -1/Math.sqrt(2), label: '315°', type: 'spread' },
+  { x: 1 / Math.sqrt(2), y: 1 / Math.sqrt(2), label: "45°", type: "spread" },
+  { x: -1 / Math.sqrt(2), y: 1 / Math.sqrt(2), label: "135°", type: "spread" },
+  { x: -1 / Math.sqrt(2), y: -1 / Math.sqrt(2), label: "225°", type: "spread" },
+  { x: 1 / Math.sqrt(2), y: -1 / Math.sqrt(2), label: "315°", type: "spread" },
 
   // φ points (golden rectangle vertices) - normalized (φ, 1) and (1, φ)
-  { x: phi_x, y: phi_y, label: 'φ', type: 'phi' },       // Q1 horizontal
-  { x: phi_y, y: phi_x, label: 'φ', type: 'phi' },       // Q1 vertical
-  { x: -phi_x, y: phi_y, label: 'φ', type: 'phi' },      // Q2 horizontal
-  { x: -phi_y, y: phi_x, label: 'φ', type: 'phi' },      // Q2 vertical
-  { x: -phi_x, y: -phi_y, label: 'φ', type: 'phi' },     // Q3 horizontal
-  { x: -phi_y, y: -phi_x, label: 'φ', type: 'phi' },     // Q3 vertical
-  { x: phi_x, y: -phi_y, label: 'φ', type: 'phi' },      // Q4 horizontal
-  { x: phi_y, y: -phi_x, label: 'φ', type: 'phi' }       // Q4 vertical
+  { x: phi_x, y: phi_y, label: "φ", type: "phi" }, // Q1 horizontal
+  { x: phi_y, y: phi_x, label: "φ", type: "phi" }, // Q1 vertical
+  { x: -phi_x, y: phi_y, label: "φ", type: "phi" }, // Q2 horizontal
+  { x: -phi_y, y: phi_x, label: "φ", type: "phi" }, // Q2 vertical
+  { x: -phi_x, y: -phi_y, label: "φ", type: "phi" }, // Q3 horizontal
+  { x: -phi_y, y: -phi_x, label: "φ", type: "phi" }, // Q3 vertical
+  { x: phi_x, y: -phi_y, label: "φ", type: "phi" }, // Q4 horizontal
+  { x: phi_y, y: -phi_x, label: "φ", type: "phi" }, // Q4 vertical
 ];
 
 const SNAP_THRESHOLD = 0.08; // radians (~4.6°) - reduced magnetic zone for less aggressive snapping
@@ -64,13 +64,13 @@ const SNAP_THRESHOLD = 0.08; // radians (~4.6°) - reduced magnetic zone for les
  * Initialize the Weierstrauss demo
  */
 export function initWeierstrassDemo() {
-  const container = document.getElementById('weierstrauss-demo-container');
+  const container = document.getElementById("weierstrauss-demo-container");
   if (!container) return;
 
   // Create 2D scene
   const sceneData = create2DScene(container, {
     backgroundColor: 0x000000,
-    cameraSize: 2.5
+    cameraSize: 2.5,
   });
 
   ({ scene, camera, renderer, animate, cleanup } = sceneData);
@@ -95,7 +95,7 @@ export function initWeierstrassDemo() {
   renderLoop();
 
   // Initialize modal handlers
-  initializeModalHandlers('weierstrauss-modal');
+  initializeModalHandlers("weierstrauss-modal");
 
   // Initial update
   updateVisualization();
@@ -110,7 +110,10 @@ function createAxes() {
   // X axis (hairline grey, terminates at circle boundary)
   const xAxisGeometry = new LineGeometry();
   xAxisGeometry.setPositions([-radius, 0, 0, radius, 0, 0]);
-  const xAxisMaterial = new LineMaterial({ color: 0x444444, linewidth: axisWidth });
+  const xAxisMaterial = new LineMaterial({
+    color: 0x444444,
+    linewidth: axisWidth,
+  });
   xAxisMaterial.resolution.set(window.innerWidth, window.innerHeight);
   const xAxis = new Line2(xAxisGeometry, xAxisMaterial);
   scene.add(xAxis);
@@ -118,7 +121,10 @@ function createAxes() {
   // Y axis (hairline grey, terminates at circle boundary)
   const yAxisGeometry = new LineGeometry();
   yAxisGeometry.setPositions([0, -radius, 0, 0, radius, 0]);
-  const yAxisMaterial = new LineMaterial({ color: 0x444444, linewidth: axisWidth });
+  const yAxisMaterial = new LineMaterial({
+    color: 0x444444,
+    linewidth: axisWidth,
+  });
   yAxisMaterial.resolution.set(window.innerWidth, window.innerHeight);
   const yAxis = new Line2(yAxisGeometry, yAxisMaterial);
   scene.add(yAxis);
@@ -133,24 +139,34 @@ function createAxes() {
  */
 function createGeometricGuides() {
   const hairlineWidth = 1;
-  const guideColor = 0x888888;  // Match circle color for visibility
+  const guideColor = 0x888888; // Match circle color for visibility
 
   // √2 SQUARE - One square per quadrant (4 total)
   // Vertices at cardinal directions (0°, 90°, 180°, 270°)
   // This is inscribed in the circle, rotated 45° from the axes
   const sqrt2SquareGeometry = new LineGeometry();
   sqrt2SquareGeometry.setPositions([
-    radius, 0, 0,       // 0° (east)
-    0, radius, 0,       // 90° (north)
-    -radius, 0, 0,      // 180° (west)
-    0, -radius, 0,      // 270° (south)
-    radius, 0, 0        // close path
+    radius,
+    0,
+    0, // 0° (east)
+    0,
+    radius,
+    0, // 90° (north)
+    -radius,
+    0,
+    0, // 180° (west)
+    0,
+    -radius,
+    0, // 270° (south)
+    radius,
+    0,
+    0, // close path
   ]);
   const sqrt2SquareMaterial = new LineMaterial({
     color: guideColor,
     linewidth: hairlineWidth,
     transparent: true,
-    opacity: 0.5
+    opacity: 0.5,
   });
   sqrt2SquareMaterial.resolution.set(window.innerWidth, window.innerHeight);
   const sqrt2Square = new Line2(sqrt2SquareGeometry, sqrt2SquareMaterial);
@@ -167,12 +183,12 @@ function createGeometricGuides() {
   // This avoids classical trig - we use the fact that (√3, 1) has the right ratio
   // and normalize it to lie on the unit circle
   const sqrt3 = Math.sqrt(3);
-  const norm_1_sqrt3 = Math.sqrt(1 + 3);  // = 2, normalizing factor for (√3, 1)
+  const norm_1_sqrt3 = Math.sqrt(1 + 3); // = 2, normalizing factor for (√3, 1)
 
   // 30° point: normalize (√3, 1) → (√3/2, 1/2)
   // This represents the point on the circle where x/y = √3/1 = √3
-  const x_30 = sqrt3 / norm_1_sqrt3;  // √3/2
-  const y_30 = 1 / norm_1_sqrt3;      // 1/2
+  const x_30 = sqrt3 / norm_1_sqrt3; // √3/2
+  const y_30 = 1 / norm_1_sqrt3; // 1/2
 
   // Note: 60° point would be (y_30, x_30) = (1/2, √3/2) by symmetry,
   // but we don't need it since both triangles can be constructed from the 30° point
@@ -180,16 +196,24 @@ function createGeometricGuides() {
   // Upward-pointing equilateral triangle (vertices at 90°, 210°, 330°)
   const triangleUpGeometry = new LineGeometry();
   triangleUpGeometry.setPositions([
-    0, radius, 0,              // 90° (top) - on Y axis
-    -x_30 * radius, -y_30 * radius, 0,  // 210° (bottom-left) - reflected 30° point
-    x_30 * radius, -y_30 * radius, 0,   // 330° (bottom-right) - 30° point reflected over X
-    0, radius, 0               // close path
+    0,
+    radius,
+    0, // 90° (top) - on Y axis
+    -x_30 * radius,
+    -y_30 * radius,
+    0, // 210° (bottom-left) - reflected 30° point
+    x_30 * radius,
+    -y_30 * radius,
+    0, // 330° (bottom-right) - 30° point reflected over X
+    0,
+    radius,
+    0, // close path
   ]);
   const triangleUpMaterial = new LineMaterial({
     color: guideColor,
     linewidth: hairlineWidth,
     transparent: true,
-    opacity: 0.5
+    opacity: 0.5,
   });
   triangleUpMaterial.resolution.set(window.innerWidth, window.innerHeight);
   const triangleUp = new Line2(triangleUpGeometry, triangleUpMaterial);
@@ -199,16 +223,24 @@ function createGeometricGuides() {
   // Downward-pointing equilateral triangle (vertices at 30°, 150°, 270°)
   const triangleDownGeometry = new LineGeometry();
   triangleDownGeometry.setPositions([
-    x_30 * radius, y_30 * radius, 0,    // 30° (top-right)
-    -x_30 * radius, y_30 * radius, 0,   // 150° (top-left)
-    0, -radius, 0,                       // 270° (bottom) - on -Y axis
-    x_30 * radius, y_30 * radius, 0     // close path
+    x_30 * radius,
+    y_30 * radius,
+    0, // 30° (top-right)
+    -x_30 * radius,
+    y_30 * radius,
+    0, // 150° (top-left)
+    0,
+    -radius,
+    0, // 270° (bottom) - on -Y axis
+    x_30 * radius,
+    y_30 * radius,
+    0, // close path
   ]);
   const triangleDownMaterial = new LineMaterial({
     color: guideColor,
     linewidth: hairlineWidth,
     transparent: true,
-    opacity: 0.5
+    opacity: 0.5,
   });
   triangleDownMaterial.resolution.set(window.innerWidth, window.innerHeight);
   const triangleDown = new Line2(triangleDownGeometry, triangleDownMaterial);
@@ -222,24 +254,34 @@ function createGeometricGuides() {
 
   // Calculate normalized φ coordinates (on unit circle)
   const phiNorm = Math.sqrt(PHI * PHI + 1); // Normalizing factor for (φ, 1)
-  const phi_x = PHI / phiNorm;              // x coordinate for atan2(1, φ)
-  const phi_y = 1 / phiNorm;                // y coordinate for atan2(1, φ)
+  const phi_x = PHI / phiNorm; // x coordinate for atan2(1, φ)
+  const phi_y = 1 / phiNorm; // y coordinate for atan2(1, φ)
 
   // Quadrant rectangle: origin to φ snap point on circle
   function createQuadrantRectangle(x, y) {
     const geometry = new LineGeometry();
     geometry.setPositions([
-      0, 0, 0,      // origin
-      x, 0, 0,      // along x-axis to x
-      x, y, 0,      // corner (φ point on circle)
-      0, y, 0,      // along y-axis to y
-      0, 0, 0       // back to origin
+      0,
+      0,
+      0, // origin
+      x,
+      0,
+      0, // along x-axis to x
+      x,
+      y,
+      0, // corner (φ point on circle)
+      0,
+      y,
+      0, // along y-axis to y
+      0,
+      0,
+      0, // back to origin
     ]);
     const material = new LineMaterial({
       color: guideColor,
       linewidth: hairlineWidth,
       transparent: true,
-      opacity: 0.5
+      opacity: 0.5,
     });
     material.resolution.set(window.innerWidth, window.innerHeight);
     const rect = new Line2(geometry, material);
@@ -251,26 +293,35 @@ function createGeometricGuides() {
   // Each uses actual φ snap point positions on the circle
 
   // Quadrant I (positive x, positive y)
-  const q1_horizontal = createQuadrantRectangle(phi_x * radius, phi_y * radius);  // atan2(1, φ)
-  const q1_vertical = createQuadrantRectangle(phi_y * radius, phi_x * radius);    // atan2(φ, 1)
+  const q1_horizontal = createQuadrantRectangle(phi_x * radius, phi_y * radius); // atan2(1, φ)
+  const q1_vertical = createQuadrantRectangle(phi_y * radius, phi_x * radius); // atan2(φ, 1)
   scene.add(q1_horizontal);
   scene.add(q1_vertical);
 
   // Quadrant II (negative x, positive y)
-  const q2_horizontal = createQuadrantRectangle(-phi_x * radius, phi_y * radius); // atan2(1, -φ)
-  const q2_vertical = createQuadrantRectangle(-phi_y * radius, phi_x * radius);   // atan2(φ, -1)
+  const q2_horizontal = createQuadrantRectangle(
+    -phi_x * radius,
+    phi_y * radius
+  ); // atan2(1, -φ)
+  const q2_vertical = createQuadrantRectangle(-phi_y * radius, phi_x * radius); // atan2(φ, -1)
   scene.add(q2_horizontal);
   scene.add(q2_vertical);
 
   // Quadrant III (negative x, negative y)
-  const q3_horizontal = createQuadrantRectangle(-phi_x * radius, -phi_y * radius); // atan2(-1, -φ)
-  const q3_vertical = createQuadrantRectangle(-phi_y * radius, -phi_x * radius);   // atan2(-φ, -1)
+  const q3_horizontal = createQuadrantRectangle(
+    -phi_x * radius,
+    -phi_y * radius
+  ); // atan2(-1, -φ)
+  const q3_vertical = createQuadrantRectangle(-phi_y * radius, -phi_x * radius); // atan2(-φ, -1)
   scene.add(q3_horizontal);
   scene.add(q3_vertical);
 
   // Quadrant IV (positive x, negative y)
-  const q4_horizontal = createQuadrantRectangle(phi_x * radius, -phi_y * radius);  // atan2(-1, φ)
-  const q4_vertical = createQuadrantRectangle(phi_y * radius, -phi_x * radius);    // atan2(-φ, 1)
+  const q4_horizontal = createQuadrantRectangle(
+    phi_x * radius,
+    -phi_y * radius
+  ); // atan2(-1, φ)
+  const q4_vertical = createQuadrantRectangle(phi_y * radius, -phi_x * radius); // atan2(-φ, 1)
   scene.add(q4_horizontal);
   scene.add(q4_vertical);
 }
@@ -279,7 +330,7 @@ function createGeometricGuides() {
  * Create axis labels
  */
 function createAxisLabels() {
-  const container = document.getElementById('weierstrauss-demo-container');
+  const container = document.getElementById("weierstrauss-demo-container");
 
   // Get container aspect ratio for precise positioning
   const rect = container.getBoundingClientRect();
@@ -292,7 +343,7 @@ function createAxisLabels() {
   const yLabelWorld = radius + labelOffset; // Above circle
 
   // X axis label (red X to the right of circle, on horizontal centerline)
-  const xLabel = document.createElement('div');
+  const xLabel = document.createElement("div");
   const xLabelScreenX = 50 + (xLabelWorld / (cameraSize * aspect)) * 50;
   const xLabelScreenY = 50; // Horizontal centerline
   xLabel.style.cssText = `
@@ -306,11 +357,11 @@ function createAxisLabels() {
     font-weight: bold;
     pointer-events: none;
   `;
-  xLabel.textContent = 'X';
+  xLabel.textContent = "X";
   container.appendChild(xLabel);
 
   // Y axis label (green Y just above top of circle)
-  const yLabel = document.createElement('div');
+  const yLabel = document.createElement("div");
   const yLabelScreenX = 50; // Vertical centerline
   const yLabelScreenY = 50 - (yLabelWorld / cameraSize) * 50;
   yLabel.style.cssText = `
@@ -324,7 +375,7 @@ function createAxisLabels() {
     font-weight: bold;
     pointer-events: none;
   `;
-  yLabel.textContent = 'Y';
+  yLabel.textContent = "Y";
   container.appendChild(yLabel);
 }
 
@@ -334,7 +385,10 @@ function createAxisLabels() {
 function createCircle() {
   const circleGeometry = new THREE.CircleGeometry(radius, 64);
   const edges = new THREE.EdgesGeometry(circleGeometry);
-  const circleMaterial = new THREE.LineBasicMaterial({ color: 0x888888, linewidth: 2 });
+  const circleMaterial = new THREE.LineBasicMaterial({
+    color: 0x888888,
+    linewidth: 2,
+  });
   circle = new THREE.LineSegments(edges, circleMaterial);
   scene.add(circle);
 }
@@ -343,7 +397,7 @@ function createCircle() {
  * Create snap point markers
  */
 function createSnapMarkers() {
-  const container = document.getElementById('weierstrauss-demo-container');
+  const container = document.getElementById("weierstrauss-demo-container");
 
   snapPoints.forEach(snap => {
     // Use algebraic coordinates directly - no trig needed!
@@ -352,34 +406,35 @@ function createSnapMarkers() {
 
     let markerGeometry, markerColor, labelColor;
 
-    if (snap.type === 'cardinal') {
+    if (snap.type === "cardinal") {
       // Grey circles for cardinal directions (0°, 90°, 180°, 270°)
       markerGeometry = new THREE.CircleGeometry(0.06, 16);
       markerColor = 0x666666;
-      labelColor = '#666666';
-    } else if (snap.type === 'phi') {
+      labelColor = "#666666";
+    } else if (snap.type === "phi") {
       // Tiny gold diamonds for φ points
       // Create a rotated square (diamond) shape
       markerGeometry = new THREE.PlaneGeometry(0.03, 0.03);
-      markerColor = 0xffd700;  // Gold for φ
-      labelColor = '#ffd700';
-    } else {  // 'spread' (45° angles)
+      markerColor = 0xffd700; // Gold for φ
+      labelColor = "#ffd700";
+    } else {
+      // 'spread' (45° angles)
       // Orange circles for 45° angles
       markerGeometry = new THREE.CircleGeometry(0.06, 16);
       markerColor = 0xff8800;
-      labelColor = '#ff8800';
+      labelColor = "#ff8800";
     }
 
     const markerMaterial = new THREE.MeshBasicMaterial({
       color: markerColor,
       transparent: true,
-      opacity: 0.6
+      opacity: 0.6,
     });
     const marker = new THREE.Mesh(markerGeometry, markerMaterial);
     marker.position.set(x, y, 0.02);
 
     // Rotate diamonds 45° to make them diamond-shaped
-    if (snap.type === 'phi') {
+    if (snap.type === "phi") {
       marker.rotation.z = Math.PI / 4;
     }
 
@@ -387,7 +442,7 @@ function createSnapMarkers() {
     snapMarkers.push(marker);
 
     // Create label positioned radially outside the marker for better readability
-    const label = document.createElement('div');
+    const label = document.createElement("div");
 
     // Get container aspect ratio to correctly map world coordinates to screen percentages
     const rect = container.getBoundingClientRect();
@@ -401,8 +456,8 @@ function createSnapMarkers() {
 
     // Map world coordinates to screen percentages
     // Account for aspect ratio: X needs to be scaled by aspect, Y is 1:1
-    const screenX = 50 + (labelX / (cameraSize * aspect)) * 50;  // Map to ±50% range accounting for aspect
-    const screenY = 50 - (labelY / cameraSize) * 50;              // Map to ±50% range (inverted Y)
+    const screenX = 50 + (labelX / (cameraSize * aspect)) * 50; // Map to ±50% range accounting for aspect
+    const screenY = 50 - (labelY / cameraSize) * 50; // Map to ±50% range (inverted Y)
 
     label.style.cssText = `
       position: absolute;
@@ -429,7 +484,7 @@ function createVectors() {
   const radiusMaterial = new LineMaterial({
     color: 0x4a9eff,
     linewidth: 3,
-    depthTest: false  // Render on top
+    depthTest: false, // Render on top
   });
   radiusMaterial.resolution.set(window.innerWidth, window.innerHeight);
   radiusLine = new Line2(radiusGeometry, radiusMaterial);
@@ -439,9 +494,9 @@ function createVectors() {
   // X component vector (horizontal)
   const xVectorGeometry = new LineGeometry();
   const xVectorMaterial = new LineMaterial({
-    color: 0xff0000,  // Red
+    color: 0xff0000, // Red
     linewidth: 3,
-    depthTest: false  // Render on top
+    depthTest: false, // Render on top
   });
   xVectorMaterial.resolution.set(window.innerWidth, window.innerHeight);
   xVector = new Line2(xVectorGeometry, xVectorMaterial);
@@ -453,7 +508,7 @@ function createVectors() {
   const yVectorMaterial = new LineMaterial({
     color: 0x66ff66,
     linewidth: 3,
-    depthTest: false  // Render on top
+    depthTest: false, // Render on top
   });
   yVectorMaterial.resolution.set(window.innerWidth, window.innerHeight);
   yVector = new Line2(yVectorGeometry, yVectorMaterial);
@@ -475,10 +530,10 @@ function createDraggablePoint() {
  * Create formula display overlay
  */
 function createFormulaDisplay() {
-  const container = document.getElementById('weierstrauss-demo-container');
+  const container = document.getElementById("weierstrauss-demo-container");
 
   // Title overlay (top-left)
-  const titleElement = document.createElement('div');
+  const titleElement = document.createElement("div");
   titleElement.style.cssText = `
     position: absolute;
     top: 10px;
@@ -490,13 +545,13 @@ function createFormulaDisplay() {
     text-shadow: 0 2px 4px rgba(0,0,0,0.8);
     pointer-events: none;
   `;
-  titleElement.textContent = 'Weierstrauss Parametrization of the Circle';
+  titleElement.textContent = "Weierstrauss Parametrization of the Circle";
   container.appendChild(titleElement);
 
   // Close button (now part of canvas overlay since we removed modal header)
-  const closeButton = document.createElement('button');
-  closeButton.className = 'close-modal';
-  closeButton.innerHTML = '&times;';
+  const closeButton = document.createElement("button");
+  closeButton.className = "close-modal";
+  closeButton.innerHTML = "&times;";
   closeButton.style.cssText = `
     position: absolute;
     top: 5px;
@@ -512,15 +567,15 @@ function createFormulaDisplay() {
     height: 32px;
     z-index: 10;
   `;
-  closeButton.onmouseover = () => closeButton.style.color = '#fff';
-  closeButton.onmouseout = () => closeButton.style.color = '#888';
+  closeButton.onmouseover = () => (closeButton.style.color = "#fff");
+  closeButton.onmouseout = () => (closeButton.style.color = "#888");
   closeButton.onclick = () => {
-    document.getElementById('weierstrauss-modal').style.display = 'none';
+    document.getElementById("weierstrauss-modal").style.display = "none";
   };
   container.appendChild(closeButton);
 
   // Horizontal masthead formula display (bottom)
-  formulaElement = document.createElement('div');
+  formulaElement = document.createElement("div");
   formulaElement.style.cssText = `
     position: absolute;
     bottom: 10px;
@@ -576,13 +631,13 @@ function updateVisualization() {
   const xPoint = { x: x, y: 0, z: 0 };
   const yPoint = { x: x, y: y, z: 0 };
 
-  const qX = RT.quadrance(origin, xPoint);     // Quadrance of X component
-  const qY = RT.quadrance(xPoint, yPoint);      // Quadrance of Y component
-  const qRadius = RT.quadrance(origin, { x, y, z: 0 });  // Quadrance of radius vector
+  const qX = RT.quadrance(origin, xPoint); // Quadrance of X component
+  const qY = RT.quadrance(xPoint, yPoint); // Quadrance of Y component
+  const qRadius = RT.quadrance(origin, { x, y, z: 0 }); // Quadrance of radius vector
 
   // Calculate angular measures
   // Normalize angle to 0-360° range
-  let degrees = (angle * 180 / Math.PI);
+  let degrees = (angle * 180) / Math.PI;
   if (degrees < 0) degrees += 360;
 
   // Radians (normalized to 0-2π)
@@ -592,7 +647,7 @@ function updateVisualization() {
   // RT OPTIMIZATION: Calculate spread directly from coordinates (no trig!)
   // Spread: s = sin²(θ) = y²/r² (for unit circle, just y²)
   // This is pure RT - extracting spread from Weierstrauss coordinates
-  const spread = (y / radius) * (y / radius);  // Equivalent to: 1 - (x/radius)²
+  const spread = (y / radius) * (y / radius); // Equivalent to: 1 - (x/radius)²
 
   // Calculate actual values for display
   const traditionalX = radius * Math.cos(angle);
@@ -601,8 +656,8 @@ function updateVisualization() {
   // OPERATION COUNT COMPARISON (Theoretical advantage in GPU/shader contexts)
   // These counts represent the computational advantage in environments without
   // hardware-accelerated transcendentals (GPU shaders, fixed-point systems, etc.)
-  const weierstrassOps = 8;   // 1 tan + 4 multiply + 2 add + 2 divide (but tan itself uses rational approx in shaders)
-  const traditionalOps = 30;  // 2 trig functions × ~15 Taylor series terms each (in software/shader implementation)
+  const weierstrassOps = 8; // 1 tan + 4 multiply + 2 add + 2 divide (but tan itself uses rational approx in shaders)
+  const traditionalOps = 30; // 2 trig functions × ~15 Taylor series terms each (in software/shader implementation)
 
   // NOTE: In JavaScript, sin/cos use CPU hardware instructions, so the advantage isn't visible here.
   // The real benefit is in GPU fragment shaders where transcendentals are expensive.
@@ -675,8 +730,8 @@ function updateVisualization() {
   // Animate the bars to show computation happening
   // Use requestAnimationFrame for smooth animation
   requestAnimationFrame(() => {
-    const wBar = document.getElementById('weierstrauss-bar');
-    const tBar = document.getElementById('traditional-bar');
+    const wBar = document.getElementById("weierstrauss-bar");
+    const tBar = document.getElementById("traditional-bar");
     if (wBar) wBar.style.width = `${wBarWidth}%`;
     if (tBar) tBar.style.width = `${tBarWidth}%`;
   });
@@ -688,7 +743,7 @@ function updateVisualization() {
 function setupInteraction(container) {
   const canvas = renderer.domElement;
 
-  const getMousePos = (event) => {
+  const getMousePos = event => {
     const rect = canvas.getBoundingClientRect();
     const clientX = event.touches ? event.touches[0].clientX : event.clientX;
     const clientY = event.touches ? event.touches[0].clientY : event.clientY;
@@ -706,22 +761,22 @@ function setupInteraction(container) {
     return { worldX, worldY };
   };
 
-  const handleStart = (event) => {
+  const handleStart = event => {
     const { worldX, worldY } = getMousePos(event);
     const dx = worldX - draggablePoint.position.x;
     const dy = worldY - draggablePoint.position.y;
     // RT OPTIMIZATION: Use quadrance instead of distance (no sqrt!)
     const clickQuadrance = dx * dx + dy * dy;
-    const hitThresholdQ = 0.15 * 0.15;  // Quadrance of hit radius
+    const hitThresholdQ = 0.15 * 0.15; // Quadrance of hit radius
 
     if (clickQuadrance < hitThresholdQ) {
       isDragging = true;
-      canvas.style.cursor = 'grabbing';
+      canvas.style.cursor = "grabbing";
       event.preventDefault();
     }
   };
 
-  const handleMove = (event) => {
+  const handleMove = event => {
     if (!isDragging) {
       // Check if hovering over point
       const { worldX, worldY } = getMousePos(event);
@@ -729,8 +784,8 @@ function setupInteraction(container) {
       const dy = worldY - draggablePoint.position.y;
       // RT OPTIMIZATION: Use quadrance instead of distance (no sqrt!)
       const hoverQuadrance = dx * dx + dy * dy;
-      const hitThresholdQ = 0.15 * 0.15;  // Quadrance of hit radius
-      canvas.style.cursor = hoverQuadrance < hitThresholdQ ? 'grab' : 'default';
+      const hitThresholdQ = 0.15 * 0.15; // Quadrance of hit radius
+      canvas.style.cursor = hoverQuadrance < hitThresholdQ ? "grab" : "default";
       return;
     }
 
@@ -745,7 +800,7 @@ function setupInteraction(container) {
     // Check if mouse is close to any snap point using coordinate quadrance
     let snappedX = normX;
     let snappedY = normY;
-    const snapThresholdQ = SNAP_THRESHOLD * SNAP_THRESHOLD;  // Convert angle threshold to coordinate quadrance
+    const snapThresholdQ = SNAP_THRESHOLD * SNAP_THRESHOLD; // Convert angle threshold to coordinate quadrance
 
     for (const snap of snapPoints) {
       // Quadrance between normalized mouse position and snap point
@@ -771,20 +826,20 @@ function setupInteraction(container) {
   const handleEnd = () => {
     if (isDragging) {
       isDragging = false;
-      canvas.style.cursor = 'grab';
+      canvas.style.cursor = "grab";
     }
   };
 
   // Mouse events
-  canvas.addEventListener('mousedown', handleStart);
-  canvas.addEventListener('mousemove', handleMove);
-  canvas.addEventListener('mouseup', handleEnd);
-  canvas.addEventListener('mouseleave', handleEnd);
+  canvas.addEventListener("mousedown", handleStart);
+  canvas.addEventListener("mousemove", handleMove);
+  canvas.addEventListener("mouseup", handleEnd);
+  canvas.addEventListener("mouseleave", handleEnd);
 
   // Touch events
-  canvas.addEventListener('touchstart', handleStart, { passive: false });
-  canvas.addEventListener('touchmove', handleMove, { passive: false });
-  canvas.addEventListener('touchend', handleEnd);
+  canvas.addEventListener("touchstart", handleStart, { passive: false });
+  canvas.addEventListener("touchmove", handleMove, { passive: false });
+  canvas.addEventListener("touchend", handleEnd);
 }
 
 /**
