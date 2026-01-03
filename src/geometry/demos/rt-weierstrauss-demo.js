@@ -419,23 +419,21 @@ function createFormulaDisplay() {
   };
   container.appendChild(closeButton);
 
-  // Combined formula and coordinates display (bottom with extra margin)
+  // Horizontal masthead formula display (bottom)
   formulaElement = document.createElement('div');
   formulaElement.style.cssText = `
     position: absolute;
-    bottom: 15px;
-    left: 15px;
-    right: 15px;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
     background: rgba(0, 0, 0, 0.85);
-    padding: 10px;
+    padding: 12px;
     border-radius: 4px;
     font-family: 'Courier New', monospace;
     font-size: 14px;
     border: 1px solid #333;
     box-shadow: 0 2px 8px rgba(255,255,255,0.1);
     color: #ffffff;
-    max-height: 180px;
-    overflow-y: auto;
   `;
   container.appendChild(formulaElement);
 }
@@ -523,61 +521,62 @@ function updateVisualization() {
   const wBarWidth = (weierstrassOps / traditionalOps) * 100;
   const tBarWidth = 100;
 
-  // Combined two-column layout: formulas on left, coordinates on right
+  // Horizontal masthead layout with formula columns
   formulaElement.innerHTML = `
-    <div style="display: flex; gap: 20px;">
-      <!-- LEFT COLUMN: Formulas and Performance -->
-      <div style="flex: 1; min-width: 0;">
-        <strong>Weierstrauss (ACTIVE):</strong> <span style="color: #00ff88">✓ RT.circleParam(t)</span><br>
-        t = tan(θ/2) = <span style="color: #4a9eff">${t.toFixed(4)}</span> &nbsp;&nbsp;
-        x = r·(1-t²)/(1+t²) = <span style="color: #ff0000">${x.toFixed(4)}</span> &nbsp;&nbsp;
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; font-size: 12px;">
+      <!-- Column 1: Weierstrauss Method -->
+      <div>
+        <strong style="color: #00ff88;">Weierstrauss (RT)</strong><br>
+        t = tan(θ/2) = <span style="color: #4a9eff">${t.toFixed(4)}</span><br>
+        x = r·(1-t²)/(1+t²) = <span style="color: #ff0000">${x.toFixed(4)}</span><br>
         y = r·(2t)/(1+t²) = <span style="color: #66ff66">${y.toFixed(4)}</span><br>
-        <span style="color: #888">Rational functions only—4 multiply + 2 add + 2 divide = 8 ops</span><br>
-        <br>
-        <strong>Traditional:</strong> <span style="color: #ff8800">⚠ Transcendental (Taylor Series)</span><br>
-        x = r·cos(θ) = <span style="color: #ff0000">${traditionalX.toFixed(4)}</span> &nbsp;&nbsp;
-        y = r·sin(θ) = <span style="color: #66ff66">${traditionalY.toFixed(4)}</span><br>
-        <span style="color: #888">sin/cos each ~15 Taylor terms (not GPU-friendly)</span><br>
-        <br>
-        <div style="margin-top: 8px;">
-          <div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">Computational Complexity (GPU/Shader context):</div>
-          <div style="display: flex; align-items: center; margin-bottom: 3px;">
-            <span style="width: 90px; font-size: 11px; color: #00ff88;">Weierstrauss:</span>
-            <div style="flex: 1; background: #222; height: 9px; border-radius: 2px; overflow: hidden;">
-              <div id="weierstrauss-bar" style="width: 0%; background: linear-gradient(90deg, #00ff88, #00cc66); height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; transition: width 0.15s ease-out;">
-                <span style="font-size: 10px; color: #000; font-weight: bold;">${weierstrassOps} ops</span>
-              </div>
-            </div>
-          </div>
-          <div style="display: flex; align-items: center;">
-            <span style="width: 90px; font-size: 11px; color: #ff8800;">Traditional:</span>
-            <div style="flex: 1; background: #222; height: 9px; border-radius: 2px; overflow: hidden;">
-              <div id="traditional-bar" style="width: 0%; background: linear-gradient(90deg, #ff8800, #cc6600); height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; transition: width 0.3s ease-out;">
-                <span style="font-size: 10px; color: #000; font-weight: bold;">${traditionalOps} ops</span>
-              </div>
-            </div>
-          </div>
-          <div style="font-size: 10px; color: #666; margin-top: 5px; text-align: right;">
-            ~${theoreticalSpeedup.toFixed(1)}× fewer operations <span style="color: #888">(GPU shader advantage)</span>
-          </div>
-        </div>
+        <span style="color: #888; font-size: 10px;">8 rational ops</span>
       </div>
 
-      <!-- RIGHT COLUMN: Coordinates and Quadrances -->
-      <div style="width: 220px; flex-shrink: 0; border-left: 1px solid #444; padding-left: 15px; font-size: 12px;">
-        <strong>Angular Position:</strong><br>
-        Degrees: <span style="color: #4a9eff">${degrees.toFixed(2)}°</span><br>
-        Radians: <span style="color: #4a9eff">${radians.toFixed(4)}</span><br>
-        Spread: <span style="color: #4a9eff">${spread.toFixed(4)}</span><br>
-        <br>
-        <strong>Cartesian Position:</strong><br>
+      <!-- Column 2: Traditional Method -->
+      <div>
+        <strong style="color: #ff8800;">Traditional</strong><br>
+        θ = <span style="color: #4a9eff">${degrees.toFixed(2)}° (${radians.toFixed(3)} rad)</span><br>
+        x = r·cos(θ) = <span style="color: #ff0000">${traditionalX.toFixed(4)}</span><br>
+        y = r·sin(θ) = <span style="color: #66ff66">${traditionalY.toFixed(4)}</span><br>
+        <span style="color: #888; font-size: 10px;">~30 Taylor terms</span>
+      </div>
+
+      <!-- Column 3: Position & Spread -->
+      <div>
+        <strong>Position (RT)</strong><br>
         <span style="color: #ff6666">X = ${x.toFixed(4)}</span><br>
         <span style="color: #66ff66">Y = ${y.toFixed(4)}</span><br>
-        <br>
-        <strong>Quadrances:</strong><br>
+        Spread s = <span style="color: #4a9eff">${spread.toFixed(4)}</span>
+      </div>
+
+      <!-- Column 4: Quadrances -->
+      <div>
+        <strong>Quadrances (Q)</strong><br>
         <span style="color: #ff6666">Q(X) = ${qX.toFixed(4)}</span><br>
         <span style="color: #66ff66">Q(Y) = ${qY.toFixed(4)}</span><br>
         <span style="color: #4a9eff">Q(R) = ${qRadius.toFixed(4)}</span>
+      </div>
+    </div>
+
+    <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #444;">
+      <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">Computational Complexity (GPU/Shader):</div>
+      <div style="display: flex; gap: 15px; align-items: center;">
+        <div style="flex: 1; display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 10px; color: #00ff88;">Weierstrauss:</span>
+          <div style="flex: 1; background: #222; height: 8px; border-radius: 2px; overflow: hidden;">
+            <div id="weierstrauss-bar" style="width: 0%; background: linear-gradient(90deg, #00ff88, #00cc66); height: 100%; transition: width 0.15s;"></div>
+          </div>
+          <span style="font-size: 10px; color: #888;">${weierstrassOps} ops</span>
+        </div>
+        <div style="flex: 1; display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 10px; color: #ff8800;">Traditional:</span>
+          <div style="flex: 1; background: #222; height: 8px; border-radius: 2px; overflow: hidden;">
+            <div id="traditional-bar" style="width: 0%; background: linear-gradient(90deg, #ff8800, #cc6600); height: 100%; transition: width 0.3s;"></div>
+          </div>
+          <span style="font-size: 10px; color: #888;">${traditionalOps} ops</span>
+        </div>
+        <span style="font-size: 10px; color: #666;">~${theoreticalSpeedup.toFixed(1)}× GPU advantage</span>
       </div>
     </div>
   `;
