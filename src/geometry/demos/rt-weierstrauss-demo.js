@@ -62,6 +62,9 @@ export function initWeierstrassDemo() {
 
   ({ scene, camera, renderer, animate, cleanup } = sceneData);
 
+  // Shift camera down to move circle up in viewport (more space at bottom for formula bar)
+  camera.position.y = -0.25;
+
   // Create visual elements
   createAxes();
   createCircle();
