@@ -753,6 +753,60 @@ The -90° rotation is **optimal RT math** because it uses exact integer values (
 
 ---
 
+## Interactive Mathematical Demos ✅
+
+### Weierstrauss Circle Parametrization Demo (2026-01-03)
+
+**Purpose:** Educational demonstration of Weierstrauss parametrization as a rational alternative to classical trigonometric circle parametrization.
+
+**Location:** `src/geometry/demos/rt-weierstrauss-demo.js` (accessible via UI)
+
+**Key Features:**
+- **Draggable Point**: Interactive exploration of circle parametrization
+- **Dual Formula Display**: Side-by-side comparison of Weierstrauss (RT) vs Traditional methods
+- **Guide Geometry**: √2 square, √3 equilateral triangles, φ golden rectangles
+- **Smart Snapping**: Quadrance-based snapping to special angles (cardinals, 45°, φ)
+- **Visual Differentiation**: Tiny gold diamonds (0.03) for φ points, circles for others
+- **Performance Visualization**: "Theatrical" bars showing theoretical GPU advantage
+
+**RT Implementations:**
+```javascript
+// Weierstrauss parametrization: t = tan(θ/2)
+x = r·(1-t²)/(1+t²)  // 8 rational operations
+y = r·(2t)/(1+t²)
+
+// vs Traditional (requires ~30 Taylor series terms)
+x = r·cos(θ)
+y = r·sin(θ)
+
+// Spread calculation (no trig!)
+spread = (y/radius)²  // Equivalent to sin²(θ)
+
+// Quadrance-based snapping (no sqrt!)
+snapQuadrance = dx² + dy²  // Distance² comparison
+```
+
+**Algebraic Geometry Construction:**
+- **√2 points**: Normalize (1, 1) → (1/√2, 1/√2) for 45° angles
+- **√3 points**: Normalize (√3, 1) → (√3/2, 1/2) for 30° angles
+- **φ points**: Normalize (φ, 1) → (φ/√(φ²+1), 1/√(φ²+1)) for golden angles
+
+**Performance Note:**
+The demo includes a "theatrical" performance comparison showing ~3.75× theoretical speedup for Weierstrauss over traditional methods. **Important context**: Due to heavy optimizations in modern JavaScript engines (hardware-accelerated `Math.sin/cos` via SIMD instructions), this advantage is not realized in browser JavaScript. The *actual* performance benefit of Weierstrauss parametrization is in **GPU fragment shaders** where:
+1. Transcendental functions (sin/cos) are expensive (~30 Taylor series terms)
+2. Rational operations are cheap (direct ALU operations)
+3. Memory bandwidth is limited (fewer operations = better cache utilization)
+
+The demo's performance visualization is therefore pedagogical rather than empirical—demonstrating *why* and *where* RT methods excel (GPU rendering, fixed-point systems, shader code) rather than claiming JavaScript performance gains. The true advantage is **render efficiency** when deploying Weierstrauss parametrization in WebGL/GLSL shaders for procedural geometry generation.
+
+**Educational Value:**
+- Shows how algebraic methods can replace transcendental functions
+- Demonstrates quadrance (distance²) and spread (sin²θ) as primary RT concepts
+- Reveals geometric relationships between √2, √3, and φ on the unit circle
+- Provides template architecture for future interactive math demos
+
+---
+
 ## Phase 2.5: RT Purity Enhancements ✅ COMPLETE
 
 ### Deliverable: Enhanced Rational Trigonometry Implementation
