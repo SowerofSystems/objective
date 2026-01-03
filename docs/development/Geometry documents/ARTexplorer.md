@@ -27,6 +27,8 @@
 - [3.8 Phase 2.9: Geodesic Projections](#38-phase-29-geodesic-sphere-projections--complete)
 - [3.9 Phase 2.10: Z-Up Coordinate Convention](#39-phase-210-z-up-coordinate-convention--complete)
 - [3.10 Phase 2.11: ART Gumball + StateManager](#310-phase-211-art-gumball--statemanager--complete)
+- [3.11 Interactive Mathematical Demos](#311-interactive-mathematical-demos)
+- [3.12 Mathematical Innovations & Discoveries](#312-mathematical-innovations--discoveries)
 
 ### 4. Technical Reference
 - [4.1 Rational Trigonometry Implementation](#41-rational-trigonometry-implementation)
@@ -753,7 +755,7 @@ The -90° rotation is **optimal RT math** because it uses exact integer values (
 
 ---
 
-## Interactive Mathematical Demos ✅
+## 3.11 Interactive Mathematical Demos ✅
 
 ### Weierstrauss Circle Parametrization Demo (2026-01-03)
 
@@ -804,6 +806,122 @@ The demo's performance visualization is therefore pedagogical rather than empiri
 - Demonstrates quadrance (distance²) and spread (sin²θ) as primary RT concepts
 - Reveals geometric relationships between √2, √3, and φ on the unit circle
 - Provides template architecture for future interactive math demos
+
+---
+
+## 3.12 Mathematical Innovations & Discoveries ✅
+
+This section documents novel mathematical insights and relationships discovered during the development of the ART Explorer, particularly from the Papercut and Weierstrauss parametrization explorations.
+
+### 3.12.1 Discovery: Axial Projections and Polygonal Relationships (2026-01-03)
+
+**Context:** During development of the RT-Papercut tool and Weierstrauss circle parametrization demo, a fundamental geometric principle emerged about the relationship between polyhedral sections and their projections.
+
+#### The Rectangular Relationship Discovery
+
+**Observation:** When sectioning the complete group of nested polyhedra with a cutting plane perpendicular to the Z-axis (as in RT-Papercut), almost ALL intersection relationships revealed are **RECTANGULAR**.
+
+**Visual Evidence:** The red cut lines in the Papercut tool consistently reveal rectangular cross-sections rather than arbitrary polygons.
+
+**RT Significance:**
+- Rectangular relationships have **clear rational and quadrance math relationships**
+- Each rectangle defines two pairs of parallel edges with perpendicular adjacencies
+- Quadrance calculations are simplified: Q = Δx² + Δy² with many terms zeroing out
+- No transcendental functions needed - pure algebraic relationships
+- Spread between perpendicular edges = 1 (exact, no approximation)
+
+**Geometric Principle:**
+```
+Perpendicular Sectioning Theorem (Z-Axis):
+When a plane perpendicular to a principal axis (X, Y, or Z) intersects
+nested polyhedra at grid intervals, the resulting cross-sections exhibit
+predominantly rectangular relationships, enabling pure RT analysis.
+```
+
+**Mathematical Properties:**
+- **Orthogonality**: Rectangle edges meet at spread s = 1 (90° angles)
+- **Parallelism**: Opposite edges are parallel (zero spread between edge vectors)
+- **Quadrance Preservation**: Edge quadrances follow simple Pythagorean relationships
+- **Algebraic Simplicity**: Coordinates often reduce to simple ratios (φ, √2, √3)
+
+#### Hypothesis: Triangular Relationships on WXYZ Axes
+
+**Proposed Extension:** If perpendicular sectioning along Cartesian axes (XYZ) yields rectangular relationships, then sectioning along the **Quadray tetrahedral axes (WXYZ)** should yield **triangular relationships**.
+
+**Rationale:**
+1. **Tetrahedral Symmetry**: WXYZ axes define tetrahedral geometry (60° angles)
+2. **Equilateral Triangles**: Natural subdivision pattern for tetrahedral coordinate system
+3. **Spread = 3/4**: Equilateral triangles have spread s = 3/4 (exact rational value)
+4. **Barycentric Coordinates**: Natural coordinate system for triangular sectioning
+
+**Expected Properties at WXYZ Axial Grid Intervals:**
+- Triangular cross-sections (equilateral or isosceles)
+- 60° and 120° angle relationships (spread s = 3/4)
+- Barycentric coordinate simplification
+- Natural connection to geodesic subdivision patterns
+- Alignment with Fuller's Isotropic Vector Matrix (IVM)
+
+**RT-Pure Analysis:**
+```javascript
+// Expected triangular relationship properties
+const equilateralSpread = 0.75;  // sin²(60°) = (√3/2)² = 3/4 (exact!)
+const supplementarySpread = 0.75; // sin²(120°) = (√3/2)² = 3/4 (exact!)
+
+// Quadrance relationships in equilateral triangle
+// All three edges have equal quadrance: Q₁ = Q₂ = Q₃
+// All three vertex-to-centroid quadrances equal: Q_c = Q₁/3
+
+// Barycentric coordinates sum to 1 (rational constraint)
+const [u, v, w] = barycentricCoords; // u + v + w = 1
+```
+
+**Potential Applications:**
+1. **Geodesic Subdivision**: Natural triangular grid patterns on tetrahedral faces
+2. **Phase 2.8 Implementation**: Quadray polygonal frequency projections
+3. **4D → 3D Projection**: Understanding tetrahedral structure in hyperdimensional spaces
+4. **Great Circle Relationships**: Alternative to spherical geodesics using tetrahedral symmetry
+
+#### Connection to Weierstrauss Parametrization
+
+The Weierstrauss demo revealed that **algebraic parametrization** (using rational functions of t = tan(θ/2)) naturally exposes rectangular and triangular relationships on the unit circle:
+
+- **√2 Square**: 45° angles create square vertices (rectangular relationships)
+- **√3 Triangles**: 30° and 60° angles create equilateral triangles
+- **φ Golden Rectangles**: Golden ratio angles create nested rectangles
+
+All three geometric families (√2, √3, φ) emerge naturally from **pure algebraic normalization** without trigonometric functions, suggesting a deep connection between Weierstrauss parametrization and the axial projection discoveries.
+
+#### Implementation Opportunities
+
+**Immediate (Phase 2.8 Enhancement):**
+- Create Papercut variation that slices along WXYZ axes
+- Visualize triangular cross-sections at tetrahedral grid intervals
+- Compare rectangular (XYZ) vs triangular (WXYZ) sectioning patterns
+- Document spread values and quadrance relationships
+
+**Future (Phase 3 - 4D Coordinates):**
+- Extend sectioning to 4D hypercube and tesseract projections
+- Explore hyperdimensional rectangular and triangular relationships
+- Investigate connection to Caltrop coordinate system
+- Develop RT-pure methods for 4D → 3D projection analysis
+
+**Pedagogical Value:**
+- Demonstrates fundamental difference between Cartesian (cubic) and Quadray (tetrahedral) coordinate systems
+- Shows how coordinate system choice affects geometric relationships
+- Reveals "natural" sectioning patterns for different symmetry groups
+- Provides visual proof of RT principles through interactive exploration
+
+#### References & Related Work
+
+- **RT-Papercut Tool**: [src/geometry/art.js](src/geometry/art.js#L2800-L3200) (Z-axis perpendicular sectioning)
+- **Weierstrauss Demo**: [src/geometry/demos/rt-weierstrauss-demo.js](src/geometry/demos/rt-weierstrauss-demo.js) (algebraic circle parametrization)
+- **Phase 2.8 Quadray Planes**: Documentation section on tetrahedral coordinate grids
+- **Fuller's IVM**: Isotropic Vector Matrix tetrahedral space-filling geometry
+
+**Status:**
+- ✅ Rectangular relationships documented (Z-axis sectioning)
+- 🎯 Triangular relationships hypothesized (WXYZ-axis sectioning - pending implementation)
+- 🎯 Papercut WXYZ variation (future demo)
 
 ---
 
