@@ -502,6 +502,7 @@ function createFormulaDisplay() {
     top: 10px;
     left: 50%;
     transform: translateX(-50%);
+    width: auto;
     background: rgba(0, 26, 26, 0.9);
     border: 2px solid ${currentTripleSet === 'plimpton322' ? '#ffd700' : '#00cccc'};
     color: ${currentTripleSet === 'plimpton322' ? '#ffd700' : '#00cccc'};
@@ -513,6 +514,7 @@ function createFormulaDisplay() {
     cursor: pointer;
     z-index: 10;
     transition: all 0.2s;
+    white-space: nowrap;
   `;
   toggleButton.innerHTML = currentTripleSet === 'plimpton322'
     ? '🏺 Plimpton 322 (1800 BC)'
