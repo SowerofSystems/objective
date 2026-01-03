@@ -73,53 +73,56 @@ const snapPoints = [
 // BABYLONIAN PLIMPTON 322 TRIPLES (c. 1800 BC)
 // Complete set of 15 Pythagorean triples from the ancient clay tablet
 // Demonstrates base-60 (sexagesimal) exact trigonometry predating Pythagoras by 1000+ years
+// Source: Mansfield & Wildberger (2017), Historia Mathematica, Tables 9 & 13
+// Format: (long, short, diagonal) organized by ukullû (reciprocal slope) β = long/diagonal
+// Angular range: 31.89° to 44.76° from vertical (45.24° to 58.11° from horizontal)
 
 // Base Plimpton 322 triples (first quadrant only)
 const plimpton322Base = [
-  // Row 1: (120, 119, 169) - Nearly square, highest spread
-  { a: 120, b: 119, c: 169, spread: (119*119)/(169*169), label: 'P322-1', type: 'plimpton' },
+  // Row 1: (168, 119, 169) - Nearly isosceles, β ≈ 0.9941
+  { a: 168, b: 119, c: 169, spread: 0.495816, label: 'P322-1', type: 'plimpton' },
 
-  // Row 2: (3456, 3367, 4825)
-  { a: 3456, b: 3367, c: 4825, spread: (3367*3367)/(4825*4825), label: 'P322-2', type: 'plimpton' },
+  // Row 2: (4701, 3367, 4825) - β ≈ 0.9743
+  { a: 4701, b: 3367, c: 4825, spread: 0.486958, label: 'P322-2', type: 'plimpton' },
 
-  // Row 3: (4800, 4601, 6649)
-  { a: 4800, b: 4601, c: 6649, spread: (4601*4601)/(6649*6649), label: 'P322-3', type: 'plimpton' },
+  // Row 3: (6373, 4601, 6649) - β ≈ 0.9585
+  { a: 6373, b: 4601, c: 6649, spread: 0.478842, label: 'P322-3', type: 'plimpton' },
 
-  // Row 4: (13500, 12709, 18541)
-  { a: 13500, b: 12709, c: 18541, spread: (12709*12709)/(18541*18541), label: 'P322-4', type: 'plimpton' },
+  // Row 4: (17455, 12709, 18541) - β ≈ 0.9414
+  { a: 17455, b: 12709, c: 18541, spread: 0.469847, label: 'P322-4', type: 'plimpton' },
 
-  // Row 5: (72, 65, 97)
-  { a: 72, b: 65, c: 97, spread: (65*65)/(97*97), label: 'P322-5', type: 'plimpton' },
+  // Row 5: (88, 65, 97) - β ≈ 0.9072
+  { a: 88, b: 65, c: 97, spread: 0.449038, label: 'P322-5', type: 'plimpton' },
 
-  // Row 6: (360, 319, 481)
-  { a: 360, b: 319, c: 481, spread: (319*319)/(481*481), label: 'P322-6', type: 'plimpton' },
+  // Row 6: (426, 319, 481) - β ≈ 0.8857
+  { a: 426, b: 319, c: 481, spread: 0.439836, label: 'P322-6', type: 'plimpton' },
 
-  // Row 7: (2700, 2291, 3541)
-  { a: 2700, b: 2291, c: 3541, spread: (2291*2291)/(3541*3541), label: 'P322-7', type: 'plimpton' },
+  // Row 7: (3005, 2291, 3541) - β ≈ 0.8486
+  { a: 3005, b: 2291, c: 3541, spread: 0.418599, label: 'P322-7', type: 'plimpton' },
 
-  // Row 8: (960, 799, 1249)
-  { a: 960, b: 799, c: 1249, spread: (799*799)/(1249*1249), label: 'P322-8', type: 'plimpton' },
+  // Row 8: (1040, 799, 1249) - β ≈ 0.8327
+  { a: 1040, b: 799, c: 1249, spread: 0.409231, label: 'P322-8', type: 'plimpton' },
 
-  // Row 9: (600, 481, 769)
-  { a: 600, b: 481, c: 769, spread: (481*481)/(769*769), label: 'P322-9', type: 'plimpton' },
+  // Row 9: (616, 481, 769) - β ≈ 0.8010
+  { a: 616, b: 481, c: 769, spread: 0.391235, label: 'P322-9', type: 'plimpton' },
 
-  // Row 10: (6480, 4961, 8161)
-  { a: 6480, b: 4961, c: 8161, spread: (4961*4961)/(8161*8161), label: 'P322-10', type: 'plimpton' },
+  // Row 10: (6248, 4961, 8161) - β ≈ 0.7656
+  { a: 6248, b: 4961, c: 8161, spread: 0.369532, label: 'P322-10', type: 'plimpton' },
 
-  // Row 11: (60, 45, 75) - This is 3-4-5 scaled by 15!
-  { a: 60, b: 45, c: 75, spread: 0.64, label: 'P322-11', type: 'plimpton' },
+  // Row 11: (56, 45, 75) - This is 3-4-5 scaled by 15! β = 0.7467
+  { a: 56, b: 45, c: 75, spread: 0.360000, label: 'P322-11', type: 'plimpton' },
 
-  // Row 12: (2400, 1679, 2929)
-  { a: 2400, b: 1679, c: 2929, spread: (1679*1679)/(2929*2929), label: 'P322-12', type: 'plimpton' },
+  // Row 12: (2049, 1679, 2929) - β ≈ 0.6996
+  { a: 2049, b: 1679, c: 2929, spread: 0.328596, label: 'P322-12', type: 'plimpton' },
 
-  // Row 13: (240, 161, 289)
-  { a: 240, b: 161, c: 289, spread: (161*161)/(289*289), label: 'P322-13', type: 'plimpton' },
+  // Row 13: (194, 161, 289) - β ≈ 0.6713
+  { a: 194, b: 161, c: 289, spread: 0.310353, label: 'P322-13', type: 'plimpton' },
 
-  // Row 14: (2700, 1771, 3229)
-  { a: 2700, b: 1771, c: 3229, spread: (1771*1771)/(3229*3229), label: 'P322-14', type: 'plimpton' },
+  // Row 14: (2118, 1771, 3229) - β ≈ 0.6559
+  { a: 2118, b: 1771, c: 3229, spread: 0.300816, label: 'P322-14', type: 'plimpton' },
 
-  // Row 15: (90, 56, 106) - Flattest triangle
-  { a: 90, b: 56, c: 106, spread: (56*56)/(106*106), label: 'P322-15', type: 'plimpton' }
+  // Row 15: (33, 28, 53) - Steepest triangle, β ≈ 0.6226
+  { a: 33, b: 28, c: 53, spread: 0.279103, label: 'P322-15', type: 'plimpton' }
 ];
 
 // Plimpton 322: Show only Q1 (0° to 90°) with both orientations for historical accuracy
