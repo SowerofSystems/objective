@@ -24,6 +24,7 @@ let radius = 1.5;
 let formulaElement;
 let snapMarkers = [];
 let unitRectangle; // Dynamic unit rectangle from origin to point
+let unitRectangleFill; // Filled rectangle behind the outline
 
 // Pythagorean triples and their rational spreads
 // Format: { a, b, c, x, y, spread, label, type }
@@ -651,6 +652,29 @@ function refreshSnapMarkers() {
  * Create dynamic unit rectangle from origin to point on circle
  */
 function createUnitRectangle() {
+  // Create filled rectangle first (renders behind)
+  const fillGeometry = new THREE.BufferGeometry();
+  const fillVertices = new Float32Array([
+    0, 0, 0,  // origin
+    0, 0, 0,  // will be updated to (x, 0, 0)
+    0, 0, 0,  // will be updated to (x, y, 0)
+    0, 0, 0,  // will be updated to (0, y, 0)
+  ]);
+  fillGeometry.setAttribute('position', new THREE.BufferAttribute(fillVertices, 3));
+  fillGeometry.setIndex([0, 1, 2, 0, 2, 3]); // Two triangles forming rectangle
+
+  const fillMaterial = new THREE.MeshBasicMaterial({
+    color: 0x00ffff, // Light cyan
+    transparent: true,
+    opacity: 0.15, // Very transparent fill
+    side: THREE.DoubleSide,
+  });
+
+  unitRectangleFill = new THREE.Mesh(fillGeometry, fillMaterial);
+  unitRectangleFill.position.z = -0.02; // Behind everything
+  scene.add(unitRectangleFill);
+
+  // Create outline (renders on top of fill)
   const geometry = new LineGeometry();
   geometry.setPositions([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]); // Placeholder
   const material = new LineMaterial({
@@ -860,7 +884,15 @@ function updateVisualization() {
   yVector.geometry.dispose();
   yVector.geometry = yVectorGeometry;
 
-  // Update unit rectangle (origin to point, forming rectangle)
+  // Update filled rectangle vertices
+  const fillPositions = unitRectangleFill.geometry.attributes.position;
+  fillPositions.setXYZ(0, 0, 0, 0); // origin
+  fillPositions.setXYZ(1, x, 0, 0); // along X axis
+  fillPositions.setXYZ(2, x, y, 0); // point on circle
+  fillPositions.setXYZ(3, 0, y, 0); // along Y axis
+  fillPositions.needsUpdate = true;
+
+  // Update unit rectangle outline (origin to point, forming rectangle)
   const rectGeometry = new LineGeometry();
   rectGeometry.setPositions([
     0,

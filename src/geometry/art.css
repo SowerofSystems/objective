@@ -871,7 +871,7 @@ button:disabled {
 .demo-modal-body {
   flex: 1;
   padding: 8px;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .demo-container {
