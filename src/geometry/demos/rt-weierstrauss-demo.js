@@ -388,16 +388,43 @@ function updateVisualization() {
   // In rational trigonometry, spread goes from 0 to 1 in each quadrant
   const spread = Math.sin(angle) * Math.sin(angle);
 
-  // Calculate traditional method for comparison
+  // PERFORMANCE MEASUREMENT: Actual runtime comparison
+  // Run multiple iterations for stable measurement
+  const iterations = 10000;
+
+  // Measure Weierstrauss method
+  const wStart = performance.now();
+  for (let i = 0; i < iterations; i++) {
+    const t = Math.tan(angle / 2);
+    const denom = 1 + t * t;
+    const wx = (1 - t * t) / denom;
+    const wy = (2 * t) / denom;
+    const scaledX = wx * radius;
+    const scaledY = wy * radius;
+  }
+  const wEnd = performance.now();
+  const weierstrassTime = wEnd - wStart;
+
+  // Measure traditional method
+  const tStart = performance.now();
+  for (let i = 0; i < iterations; i++) {
+    const tx = radius * Math.cos(angle);
+    const ty = radius * Math.sin(angle);
+  }
+  const tEnd = performance.now();
+  const traditionalTime = tEnd - tStart;
+
+  // Calculate actual values for display
   const traditionalX = radius * Math.cos(angle);
   const traditionalY = radius * Math.sin(angle);
 
-  // Update formula display with computational comparison and animated chart
-  const weierstrassOps = 8;
-  const traditionalOps = 30; // Approximation: 2 trig functions × ~15 Taylor terms each
-  const maxOps = 40;
-  const wBarWidth = (weierstrassOps / maxOps) * 100;
-  const tBarWidth = (traditionalOps / maxOps) * 100;
+  // Calculate speedup ratio
+  const speedup = traditionalTime / weierstrassTime;
+
+  // Normalize times for bar chart (scale to 0-100 based on slower method)
+  const maxTime = Math.max(weierstrassTime, traditionalTime);
+  const wBarWidth = (weierstrassTime / maxTime) * 100;
+  const tBarWidth = (traditionalTime / maxTime) * 100;
 
   // Combined two-column layout: formulas on left, coordinates on right
   formulaElement.innerHTML = `
@@ -408,20 +435,20 @@ function updateVisualization() {
         t = tan(θ/2) = <span style="color: #4a9eff">${t.toFixed(4)}</span> &nbsp;&nbsp;
         x = r·(1-t²)/(1+t²) = <span style="color: #ff0000">${x.toFixed(4)}</span> &nbsp;&nbsp;
         y = r·(2t)/(1+t²) = <span style="color: #66ff66">${y.toFixed(4)}</span><br>
-        <span style="color: #888">After tan: 4 multiply + 2 add + 2 divide = <strong>8 ops</strong> (GPU-friendly!)</span><br>
+        <span style="color: #888">4 multiply + 2 add + 2 divide = 8 rational ops (GPU-friendly!)</span><br>
         <br>
         <strong>Traditional:</strong> <span style="color: #ff8800">⚠ Transcendental (Taylor Series)</span><br>
         x = r·cos(θ) = <span style="color: #ff0000">${traditionalX.toFixed(4)}</span> &nbsp;&nbsp;
         y = r·sin(θ) = <span style="color: #66ff66">${traditionalY.toFixed(4)}</span><br>
-        <span style="color: #888">sin/cos each ~15 Taylor terms × 2 = <strong>~30 ops</strong> (not GPU-friendly)</span><br>
+        <span style="color: #888">sin/cos each ~15 Taylor terms (not GPU-friendly)</span><br>
         <br>
         <div style="margin-top: 8px;">
-          <div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">Computational Cost (live):</div>
+          <div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">Performance (${iterations.toLocaleString()} iterations):</div>
           <div style="display: flex; align-items: center; margin-bottom: 3px;">
             <span style="width: 90px; font-size: 11px; color: #00ff88;">Weierstrauss:</span>
             <div style="flex: 1; background: #222; height: 9px; border-radius: 2px; overflow: hidden;">
               <div id="weierstrauss-bar" style="width: 0%; background: linear-gradient(90deg, #00ff88, #00cc66); height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; transition: width 0.15s ease-out;">
-                <span style="font-size: 10px; color: #000; font-weight: bold;">${weierstrassOps}</span>
+                <span style="font-size: 10px; color: #000; font-weight: bold;">${weierstrassTime.toFixed(2)}ms</span>
               </div>
             </div>
           </div>
@@ -429,12 +456,12 @@ function updateVisualization() {
             <span style="width: 90px; font-size: 11px; color: #ff8800;">Traditional:</span>
             <div style="flex: 1; background: #222; height: 9px; border-radius: 2px; overflow: hidden;">
               <div id="traditional-bar" style="width: 0%; background: linear-gradient(90deg, #ff8800, #cc6600); height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; transition: width 0.3s ease-out;">
-                <span style="font-size: 10px; color: #000; font-weight: bold;">${traditionalOps}</span>
+                <span style="font-size: 10px; color: #000; font-weight: bold;">${traditionalTime.toFixed(2)}ms</span>
               </div>
             </div>
           </div>
           <div style="font-size: 10px; color: #666; margin-top: 5px; text-align: right;">
-            Weierstrauss is <strong style="color: #00ff88">${(traditionalOps / weierstrassOps).toFixed(1)}× faster</strong>
+            Weierstrauss is <strong style="color: #00ff88">${speedup.toFixed(2)}× faster</strong> (actual JS runtime)
           </div>
         </div>
       </div>
@@ -483,11 +510,11 @@ function setupInteraction(container) {
     const x = ((clientX - rect.left) / rect.width) * 2 - 1;
     const y = -((clientY - rect.top) / rect.height) * 2 + 1;
 
-    // Convert to world coordinates
+    // Convert to world coordinates (accounting for camera offset)
     const aspect = rect.width / rect.height;
     const cameraSize = 2.5;
     const worldX = x * cameraSize * aspect;
-    const worldY = y * cameraSize;
+    const worldY = y * cameraSize + camera.position.y; // Add camera Y offset
 
     return { worldX, worldY };
   };
