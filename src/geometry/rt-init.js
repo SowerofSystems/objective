@@ -5,7 +5,7 @@ import { PerformanceClock } from "./modules/performance-clock.js";
 import { RTPapercut } from "./modules/rt-papercut.js";
 import { initQuadranceDemo } from "./demos/rt-quadrance-demo.js";
 import { initSpreadDemo } from "./demos/rt-spread-demo.js";
-import { initWeierstrassDemo } from "./demos/rt-weierstrauss-demo.js";
+import { initWeierstrassDemo } from "./demos/rt-weierstrass-demo.js";
 import { openDemoModal } from "./demos/rt-demo-utils.js";
 
 // Make RTPolyhedra available globally for node geometry creation
@@ -1852,7 +1852,7 @@ function startARTexplorer(
   let demosInitialized = {
     quadrance: false,
     spread: false,
-    weierstrauss: false
+    weierstrass: false
   };
 
   document.getElementById("open-quadrance-demo").addEventListener("click", (e) => {
@@ -1878,13 +1878,13 @@ function startARTexplorer(
     }
   });
 
-  document.getElementById("open-weierstrauss-demo").addEventListener("click", (e) => {
+  document.getElementById("open-weierstrass-demo").addEventListener("click", (e) => {
     e.preventDefault();
-    openDemoModal("weierstrauss-modal");
-    if (!demosInitialized.weierstrauss) {
+    openDemoModal("weierstrass-modal");
+    if (!demosInitialized.weierstrass) {
       setTimeout(() => {
         initWeierstrassDemo();
-        demosInitialized.weierstrauss = true;
+        demosInitialized.weierstrass = true;
       }, 50);
     }
   });

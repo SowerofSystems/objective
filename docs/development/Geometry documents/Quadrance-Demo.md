@@ -124,14 +124,14 @@ And: s = y² = Q_vertical
 ## 5. Visual Design (Based on Your Sketch)
 
 ### Elements to Include:
-1. **Unit Circle** - black outline, radius = 1.5 (same as Weierstrauss)
-2. **X/Y Axes** - red/green (same as Weierstrauss)
+1. **Unit Circle** - black outline, radius = 1.5 (same as Weierstrass)
+2. **X/Y Axes** - red/green (same as Weierstrass)
 3. **Unit Rectangles** - red outlines from origin to circle point
 4. **Draggable Point** - blue circle on circumference
 5. **Snap Points** - different markers for different spread types:
    - Cardinals (s=0, s=1): Gray circles
    - Rational spreads: Orange/gold markers
-   - Special (√2, √3, φ): Keep from Weierstrauss or modify
+   - Special (√2, √3, φ): Keep from Weierstrass or modify
 
 ### Rectangle Visualization:
 - Origin (0, 0) to point (x, y) on circle
@@ -140,7 +140,7 @@ And: s = y² = Q_vertical
 - Label with spread value
 
 ### Formula Display:
-Replace Weierstrauss formulas with quadrance formulas:
+Replace Weierstrass formulas with quadrance formulas:
 ```
 Column 1: Spread & Position
   s = y²/R² = [value]
@@ -168,13 +168,13 @@ Column 4: Spread Classification
 ## 6. Implementation Steps
 
 ### Step 1: Copy & Rename
-1. Copy `rt-weierstrauss-demo.js` to `rt-quadrance-demo.js`
+1. Copy `rt-Weierstrass-demo.js` to `rt-quadrance-demo.js`
 2. Delete existing stub file
 3. Update function names: `initQuadranceDemo()`, `cleanupQuadranceDemo()`
 4. Update modal ID: `quadrance-modal`, `quadrance-demo-container`
 
 ### Step 2: Modify Snap Points Array
-Replace Weierstrauss snap points with rational spread snap points:
+Replace Weierstrass snap points with rational spread snap points:
 
 ```javascript
 // Rational spread snap points (T-Series)
@@ -197,7 +197,7 @@ const snapPoints = [
 ];
 ```
 
-### Step 3: Remove Weierstrauss-Specific Elements
+### Step 3: Remove Weierstrass-Specific Elements
 - Remove √2 square guide geometry
 - Remove √3 triangle guide geometry
 - Remove φ golden rectangles
@@ -210,7 +210,7 @@ Based on your sketch showing layered rectangles:
 - Show "stacking" effect
 
 ### Step 5: Update Formula Display
-Replace Weierstrauss parametrization with quadrance relationships
+Replace Weierstrass parametrization with quadrance relationships
 
 ### Step 6: Update UI Integration
 - Add button/link in main UI to launch quadrance demo
@@ -273,7 +273,7 @@ s = 0.45 → calculate
 ✅ Show unit rectangle from origin to point on circle
 ✅ Display spread, quadrance, and Pythagorean triple (when applicable)
 ✅ Educational formula panel explaining relationships
-✅ Visually distinct from Weierstrauss demo (different color scheme?)
+✅ Visually distinct from Weierstrass demo (different color scheme?)
 ✅ Document connection between integer rectangles and rational spreads
 
 ---
@@ -487,7 +487,7 @@ Column 3: Pythagorean Triple
 ## 11. Next Steps
 
 1. ✅ Create this planning document
-2. ✅ Copy `rt-weierstrauss-demo.js` → `rt-quadrance-demo.js`
+2. ✅ Copy `rt-Weierstrass-demo.js` → `rt-quadrance-demo.js`
 3. ✅ Implement modern Pythagorean triples
 4. ✅ Add unit rectangle visualization
 5. ✅ Update formula display

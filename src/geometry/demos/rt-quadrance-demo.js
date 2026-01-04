@@ -468,10 +468,10 @@ function createAxisLabels() {
 
 /**
  * Create the Q1 arc (0° to 90° only) using RT parametrization
- * DOGFOODING: Uses Weierstrauss substitution instead of classical angles
+ * DOGFOODING: Uses Weierstrass substitution instead of classical angles
  */
 function createCircle() {
-  // RT METHOD: Generate arc using Weierstrauss parametrization
+  // RT METHOD: Generate arc using Weierstrass parametrization
   // For t = tan(θ/2), the circle parametrization is:
   // x = (1 - t²) / (1 + t²)
   // y = 2t / (1 + t²)
@@ -589,7 +589,7 @@ function createSnapMarkers() {
     const labelY = y + (y / radius) * labelOffset;
 
     // Map world coordinates to screen percentages
-    // Following Weierstrauss demo approach: direct mapping with aspect correction
+    // Following Weierstrass demo approach: direct mapping with aspect correction
     const screenX =
       50 + ((labelX - cameraOffsetX) / (cameraSize * aspect)) * 50;
     const screenY = 50 - ((labelY - cameraOffsetY) / cameraSize) * 50;
@@ -738,7 +738,7 @@ function createDraggablePoint() {
 function createFormulaDisplay() {
   const container = document.getElementById("quadrance-demo-container");
 
-  // Title overlay (top-left) - matching Weierstrauss demo style
+  // Title overlay (top-left) - matching Weierstrass demo style
   const titleElement = document.createElement("div");
   titleElement.style.cssText = `
     position: absolute;
@@ -755,7 +755,7 @@ function createFormulaDisplay() {
     "Quadrance Demo - Rational Spreads & Pythagorean Triples";
   container.appendChild(titleElement);
 
-  // Close button (now styled to match Weierstrauss)
+  // Close button (now styled to match Weierstrass)
   const closeButton = document.createElement("button");
   closeButton.className = "close-modal";
   closeButton.innerHTML = "&times;";

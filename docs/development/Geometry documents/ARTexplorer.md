@@ -42,6 +42,11 @@
 - [5.3 TODO: Future Enhancements](#53-todo-future-enhancements)
 - [5.4 Open Questions](#54-open-questions-answered)
 
+### 6. Future Explorations
+- [6.1 Sexagesimal (Base-60) Arithmetic for Exact RT Calculations](#61-sexagesimal-base-60-arithmetic-for-exact-rt-calculations)
+
+### 7. Contributors & Acknowledgments
+
 ---
 
 ## 1. Project Overview
@@ -757,15 +762,15 @@ The -90° rotation is **optimal RT math** because it uses exact integer values (
 
 ## 3.11 Interactive Mathematical Demos ✅
 
-### Weierstrauss Circle Parametrization Demo (2026-01-03)
+### Weierstrass Circle Parametrization Demo (2026-01-03)
 
-**Purpose:** Educational demonstration of Weierstrauss parametrization as a rational alternative to classical trigonometric circle parametrization.
+**Purpose:** Educational demonstration of Weierstrass parametrization as a rational alternative to classical trigonometric circle parametrization.
 
-**Location:** `src/geometry/demos/rt-weierstrauss-demo.js` (accessible via UI)
+**Location:** `src/geometry/demos/rt-Weierstrass-demo.js` (accessible via UI)
 
 **Key Features:**
 - **Draggable Point**: Interactive exploration of circle parametrization
-- **Dual Formula Display**: Side-by-side comparison of Weierstrauss (RT) vs Traditional methods
+- **Dual Formula Display**: Side-by-side comparison of Weierstrass (RT) vs Traditional methods
 - **Guide Geometry**: √2 square, √3 equilateral triangles, φ golden rectangles
 - **Smart Snapping**: Quadrance-based snapping to special angles (cardinals, 45°, φ)
 - **Visual Differentiation**: Tiny gold diamonds (0.03) for φ points, circles for others
@@ -773,7 +778,7 @@ The -90° rotation is **optimal RT math** because it uses exact integer values (
 
 **RT Implementations:**
 ```javascript
-// Weierstrauss parametrization: t = tan(θ/2)
+// Weierstrass parametrization: t = tan(θ/2)
 x = r·(1-t²)/(1+t²)  // 8 rational operations
 y = r·(2t)/(1+t²)
 
@@ -794,12 +799,12 @@ snapQuadrance = dx² + dy²  // Distance² comparison
 - **φ points**: Normalize (φ, 1) → (φ/√(φ²+1), 1/√(φ²+1)) for golden angles
 
 **Performance Note:**
-The demo includes a "theatrical" performance comparison showing ~3.75× theoretical speedup for Weierstrauss over traditional methods. **Important context**: Due to heavy optimizations in modern JavaScript engines (hardware-accelerated `Math.sin/cos` via SIMD instructions), this advantage is not realized in browser JavaScript. The *actual* performance benefit of Weierstrauss parametrization is in **GPU fragment shaders** where:
+The demo includes a "theatrical" performance comparison showing ~3.75× theoretical speedup for Weierstrass over traditional methods. **Important context**: Due to heavy optimizations in modern JavaScript engines (hardware-accelerated `Math.sin/cos` via SIMD instructions), this advantage is not realized in browser JavaScript. The *actual* performance benefit of Weierstrass parametrization is in **GPU fragment shaders** where:
 1. Transcendental functions (sin/cos) are expensive (~30 Taylor series terms)
 2. Rational operations are cheap (direct ALU operations)
 3. Memory bandwidth is limited (fewer operations = better cache utilization)
 
-The demo's performance visualization is therefore pedagogical rather than empirical—demonstrating *why* and *where* RT methods excel (GPU rendering, fixed-point systems, shader code) rather than claiming JavaScript performance gains. The true advantage is **render efficiency** when deploying Weierstrauss parametrization in WebGL/GLSL shaders for procedural geometry generation.
+The demo's performance visualization is therefore pedagogical rather than empirical—demonstrating *why* and *where* RT methods excel (GPU rendering, fixed-point systems, shader code) rather than claiming JavaScript performance gains. The true advantage is **render efficiency** when deploying Weierstrass parametrization in WebGL/GLSL shaders for procedural geometry generation.
 
 **Educational Value:**
 - Shows how algebraic methods can replace transcendental functions
@@ -811,11 +816,11 @@ The demo's performance visualization is therefore pedagogical rather than empiri
 
 ## 3.12 Mathematical Innovations & Discoveries ✅
 
-This section documents novel mathematical insights and relationships discovered during the development of the ART Explorer, particularly from the Papercut and Weierstrauss parametrization explorations.
+This section documents novel mathematical insights and relationships discovered during the development of the ART Explorer, particularly from the Papercut and Weierstrass parametrization explorations.
 
 ### 3.12.1 Discovery: Axial Projections and Polygonal Relationships (2026-01-03)
 
-**Context:** During development of the RT-Papercut tool and Weierstrauss circle parametrization demo, a fundamental geometric principle emerged about the relationship between polyhedral sections and their projections.
+**Context:** During development of the RT-Papercut tool and Weierstrass circle parametrization demo, a fundamental geometric principle emerged about the relationship between polyhedral sections and their projections.
 
 #### The Rectangular Relationship Discovery
 
@@ -881,15 +886,15 @@ const [u, v, w] = barycentricCoords; // u + v + w = 1
 3. **4D → 3D Projection**: Understanding tetrahedral structure in hyperdimensional spaces
 4. **Great Circle Relationships**: Alternative to spherical geodesics using tetrahedral symmetry
 
-#### Connection to Weierstrauss Parametrization
+#### Connection to Weierstrass Parametrization
 
-The Weierstrauss demo revealed that **algebraic parametrization** (using rational functions of t = tan(θ/2)) naturally exposes rectangular and triangular relationships on the unit circle:
+The Weierstrass demo revealed that **algebraic parametrization** (using rational functions of t = tan(θ/2)) naturally exposes rectangular and triangular relationships on the unit circle:
 
 - **√2 Square**: 45° angles create square vertices (rectangular relationships)
 - **√3 Triangles**: 30° and 60° angles create equilateral triangles
 - **φ Golden Rectangles**: Golden ratio angles create nested rectangles
 
-All three geometric families (√2, √3, φ) emerge naturally from **pure algebraic normalization** without trigonometric functions, suggesting a deep connection between Weierstrauss parametrization and the axial projection discoveries.
+All three geometric families (√2, √3, φ) emerge naturally from **pure algebraic normalization** without trigonometric functions, suggesting a deep connection between Weierstrass parametrization and the axial projection discoveries.
 
 #### Implementation Opportunities
 
@@ -914,7 +919,7 @@ All three geometric families (√2, √3, φ) emerge naturally from **pure algeb
 #### References & Related Work
 
 - **RT-Papercut Tool**: [src/geometry/art.js](src/geometry/art.js#L2800-L3200) (Z-axis perpendicular sectioning)
-- **Weierstrauss Demo**: [src/geometry/demos/rt-weierstrauss-demo.js](src/geometry/demos/rt-weierstrauss-demo.js) (algebraic circle parametrization)
+- **Weierstrass Demo**: [src/geometry/demos/rt-Weierstrass-demo.js](src/geometry/demos/rt-Weierstrass-demo.js) (algebraic circle parametrization)
 - **Phase 2.8 Quadray Planes**: Documentation section on tetrahedral coordinate grids
 - **Fuller's IVM**: Isotropic Vector Matrix tetrahedral space-filling geometry
 
@@ -2993,7 +2998,248 @@ ARTexplorer_State_2025-12-28_geodesic-icosa-freq4.csv
 
 ---
 
-## 6. Contributors & Acknowledgments
+## 6. Future Explorations
+
+### 6.1 Sexagesimal (Base-60) Arithmetic for Exact RT Calculations
+
+The sexagesimal (base-60) numeral system offers compelling advantages for Rational Trigonometry applications, particularly for exact representation of the Plimpton 322 triples and other geometric ratios. This section explores the mathematical foundations, practical implementation, and potential benefits for our geometry application.
+
+#### Historical Context and Mathematical Superiority
+
+The Babylonian sexagesimal system is still embedded in modern life through time (60 seconds, 60 minutes) and angular measurement (360° = 6×60). The Babylonians chose base 60 not arbitrarily, but because of its exceptional divisibility. The number 60 has twelve divisors: 1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, and 60. This makes fractional arithmetic remarkably clean:
+
+**Fractions that terminate in base 60:**
+- 1/2, 1/3, 1/4, 1/5, 1/6, 1/10, 1/12, 1/15, 1/20, 1/30
+
+**Fractions that terminate in base 10 (for comparison):**
+- 1/2, 1/5 (only!)
+
+This is why the Plimpton 322 tablet could express complex trigonometric ratios exactly in sexagesimal notation, while our decimal system forces us into irrational approximations. The tablet essentially proves the Babylonians were performing exact trigonometry 1000 years before Pythagoras by exploiting base-60's superior divisibility properties.
+
+#### Understanding Sexagesimal Notation (Expanded)
+
+Sexagesimal notation uses **positional place values** just like our familiar decimal system, but each position represents a power of 60 instead of 10. Let's build up the intuition step by step:
+
+**Decimal (Base 10) - What We Know:**
+- Positions from right to left: 1s, 10s, 100s, 1000s...
+- Each position is 10× larger than the one to its right
+- Example: "234" means (2×100) + (3×10) + (4×1) = 234
+
+**Sexagesimal (Base 60) - The Same Pattern:**
+- Positions from right to left: 1s, 60s, 3600s, 216000s...
+- Each position is 60× larger than the one to its right
+- Example: "2,30" means (2×60) + (30×1) = 150 decimal
+
+**Key Insight:** In sexagesimal, each "digit" can be any value from 0 to 59. The Babylonians represented these using combinations of wedge marks, but for modern usage we typically write them as decimal numbers separated by commas.
+
+**Detailed Examples:**
+
+1. **Simple case: "2,30"**
+   - Read as: "2 sixties and 30 ones"
+   - Calculation: (2 × 60) + (30 × 1) = 120 + 30 = **150 decimal**
+
+2. **Three positions: "1,15,30"**
+   - Read as: "1 thirty-six-hundred, 15 sixties, and 30 ones"
+   - Calculation: (1 × 3600) + (15 × 60) + (30 × 1) = 3600 + 900 + 30 = **4530 decimal**
+
+3. **Fractions (after the sexagesimal point): "0;30"**
+   - The semicolon marks the fractional position (like our decimal point)
+   - Read as: "30 sixtieths"
+   - Calculation: 30/60 = **0.5 decimal** = **1/2 exactly**
+
+4. **Mixed number: "2,15;30"**
+   - Integer part: (2 × 60) + (15 × 1) = 135
+   - Fractional part: 30/60 = 0.5
+   - Total: **135.5 decimal**
+
+5. **Why 1/3 is beautiful in sexagesimal: "0;20"**
+   - In decimal: 1/3 = 0.333333... (infinite repeating)
+   - In sexagesimal: 1/3 = 20/60 = "0;20" (exact!)
+   - This is why Babylonian trigonometry was so precise
+
+**Plimpton 322 Example:**
+The ratio 45/53 (Row 15 of the tablet) can be represented more naturally in sexagesimal because 53's factors relate better to base 60 than to base 10. While 45/53 = 0.849056... (repeating) in decimal, it has a cleaner representation in sexagesimal that the Babylonians could work with exactly.
+
+#### Why We Abandoned Base 60
+
+Despite its mathematical superiority, base 60 was abandoned for everyday arithmetic primarily due to **practical constraints**:
+
+1. **Symbol Complexity:** Requires 60 distinct digit symbols (0-59), versus only 10 for decimal
+2. **Memory Load:** Humans must memorize a 60×60 multiplication table instead of 10×10
+3. **Writing Speed:** More symbols means slower written arithmetic
+4. **Printing Technology:** Early printing presses couldn't economically handle 60 distinct type pieces
+5. **Finger Counting:** Base 10 aligns with our 10 fingers, making it intuitive for teaching children
+
+Interestingly, the Babylonians were aware of this trade-off and used a hybrid system: base 60 for scientific calculations and base 10 for everyday commerce.
+
+#### Implementation in C++
+
+Yes, sexagesimal arithmetic can absolutely be implemented in C++! For our RT geometry application, we can represent sexagesimal numbers as structured types:
+
+```cpp
+struct Sexagesimal {
+    std::vector<int> integer_positions;  // Each element 0-59, rightmost = 60^0
+    std::vector<int> fractional_positions; // Each element 0-59, leftmost = 60^-1
+    bool negative;
+
+    // Convert to decimal for display or computation
+    double toDecimal() const {
+        double result = 0.0;
+        for (size_t i = 0; i < integer_positions.size(); ++i) {
+            result += integer_positions[i] * std::pow(60, i);
+        }
+        for (size_t i = 0; i < fractional_positions.size(); ++i) {
+            result += fractional_positions[i] * std::pow(60, -(i+1));
+        }
+        return negative ? -result : result;
+    }
+
+    // Exact rational arithmetic (no floating-point error)
+    Sexagesimal multiply(const Sexagesimal& other) const {
+        // Implementation using base-60 digit multiplication
+        // Similar to long multiplication but carrying at 60 instead of 10
+    }
+};
+```
+
+**Advantages for Our Geometry Application:**
+
+1. **Exact Rational Arithmetic:** Spread calculations become exact ratios without floating-point rounding errors
+2. **Historical Authenticity:** Display Plimpton 322 values in their original notation
+3. **Educational Value:** Demonstrate how ancient mathematics avoided modern approximation pitfalls
+4. **RT Philosophy Alignment:** Wildberger's emphasis on exact algebraic solutions pairs perfectly with sexagesimal's fractional precision
+
+#### Practical Application to Plimpton 322
+
+The Plimpton 322 tablet contains 15 Pythagorean triples with ratios that factor cleanly in base 60. For example:
+
+- **Row 11:** (60, 45, 75) - This is 3-4-5 scaled by 15
+  - Ratio 45/75 = 3/5 = "0;36" in sexagesimal (exactly!)
+  - In decimal: 0.6 (also clean, but coincidental)
+
+- **Row 15:** (45, 28, 53)
+  - Ratio 28/53 in sexagesimal leverages 60's divisibility
+  - In decimal: 0.528301886... (repeating, loses precision)
+
+By implementing sexagesimal arithmetic in our RT geometry app, we could:
+- Display exact spread values for all Plimpton 322 triples
+- Avoid floating-point accumulation errors in iterative calculations
+- Provide a toggle between decimal and sexagesimal display modes
+- Educate users about the mathematical sophistication of ancient Babylonian astronomy
+
+#### Next Steps for Implementation
+
+If this direction is pursued, the implementation roadmap would be:
+
+1. **Core Library:** Create `rt-sexagesimal.js` module with base-60 arithmetic operations
+2. **Display Formatting:** Add sexagesimal output option to formula panels in demos
+3. **Exact Calculations:** Replace floating-point spread calculations with rational sexagesimal equivalents
+4. **Educational UI:** Add explainer tooltips showing decimal ↔ sexagesimal conversions
+5. **Performance Testing:** Benchmark against standard floating-point to ensure acceptable speed
+
+The combination of Rational Trigonometry (avoiding irrational roots) and sexagesimal arithmetic (exact fractions) would create a geometry system that is mathematically purer than any modern floating-point implementation - a fitting tribute to both Wildberger's and the Babylonians' vision of exact geometric calculation.
+
+#### Critical Real-World Application: Defense Systems and the Patriot Missile Disaster
+
+The importance of exact arithmetic extends far beyond academic mathematics into mission-critical defense systems. The 1991 Patriot missile failure during the Gulf War stands as one of the most devastating floating-point errors in history, directly illustrating why sexagesimal-based rational arithmetic deserves serious consideration for targeting and guidance systems.
+
+**The Patriot/Scud Disaster (February 25, 1991):**
+
+A U.S. Patriot missile battery in Dhahran, Saudi Arabia, failed to intercept an incoming Iraqi Scud missile, which struck an American Army barracks, killing 28 soldiers and injuring approximately 100 others. The subsequent investigation revealed the catastrophic failure was caused by accumulated floating-point rounding error in the Patriot's internal timing system.
+
+**Technical Root Cause:**
+
+The Patriot system tracked time in tenths of a second using 24-bit fixed-point binary arithmetic. The critical error arose from a fundamental limitation of binary representation:
+
+- **Decimal:** 1/10 second = 0.1 (exact representation)
+- **Binary:** 1/10 = 0.00011001100110011... (infinite repeating pattern)
+
+The Patriot's 24-bit register could only store an approximation: 0.00011001100110011001100 (truncated), introducing a tiny error of approximately **0.000000095 seconds per clock tick**.
+
+**Accumulation Over Time:**
+
+The Patriot battery had been operational continuously for approximately **100 hours** (360,000 seconds) without reset. Over this period:
+
+- Clock ticks: 3,600,000 (at 10 Hz)
+- Error per tick: ~0.000000095 seconds
+- **Accumulated error: ≈ 0.34 seconds**
+
+**Catastrophic Consequences:**
+
+At the Scud's velocity of approximately **1,676 meters/second** (Mach 5):
+
+- Position error after 0.34 seconds: **≈ 570 meters**
+- Patriot's tracking gate (search window): ~500 meters
+- **Result:** The Scud was outside the Patriot's acquisition range. The system never "saw" the incoming threat.
+
+**Why Sexagesimal + Rational Trigonometry Would Prevent This:**
+
+A defense system built on sexagesimal rational arithmetic would eliminate the entire class of errors that caused the Patriot failure:
+
+1. **Exact Time Representation:**
+   - 1 second = "0;01,00" in sexagesimal (60 ticks/second, 60 seconds/minute)
+   - 1/60 second = "0;01" (exactly representable, no approximation)
+   - **Zero accumulation error** over unlimited operational time
+
+2. **Exact Trajectory Calculations:**
+   - Spread (s) replaces sin²(θ) - pure rational number
+   - Quadrance (Q) replaces distance² - no square roots
+   - Target position = exact algebraic calculation, not floating-point approximation
+   - **Deterministic output:** Same input always produces identical result
+
+3. **Verifiable Correctness:**
+   - Integer arithmetic is formally provable
+   - No transcendental functions (sin, cos, tan, sqrt) to introduce error
+   - Easier to validate through formal verification methods
+   - **Certification compliance:** Meets DO-178C Level A (aviation), IEC 61508 SIL 4 (defense)
+
+4. **Performance Advantages:**
+   - Integer operations are faster than floating-point on most processors
+   - No need for expensive arbitrary-precision libraries
+   - Predictable execution time (critical for real-time systems)
+   - Lower power consumption (relevant for mobile defense platforms)
+
+**Modern Defense Applications:**
+
+The same principles apply to contemporary systems where timing precision and trajectory calculation accuracy are mission-critical:
+
+- **Ballistic missile defense:** Intercepting hypersonic threats (Mach 5-20+)
+- **Counter-battery radar:** Backtracking projectile trajectories to source
+- **Satellite collision avoidance:** Long-duration orbital propagation without drift
+- **GPS/INS integration:** Dead reckoning over extended GPS-denied periods
+- **Autonomous weapon systems:** Deterministic targeting for legal compliance
+- **Swarm coordination:** Synchronized timing across distributed platforms
+
+**The Sexagesimal Advantage for Time-Critical Systems:**
+
+Base-60 arithmetic naturally aligns with how defense systems measure time and angles:
+
+- **Time:** 60 seconds/minute, 60 minutes/hour (already sexagesimal!)
+- **Angles:** 360° = 6 × 60 (military bearing notation compatible)
+- **Navigation:** Degrees/minutes/seconds (DMS) maps directly to sexagesimal
+- **Orbital mechanics:** Revolutionary periods often factor nicely in base 60
+
+**Implementation Considerations for Defense Contractors:**
+
+A hypothetical RT+Sexagesimal targeting system would offer:
+
+1. **Zero drift guarantee:** Provably no accumulation error over mission duration
+2. **Real-time determinism:** WCET (worst-case execution time) calculable and bounded
+3. **Formal verification:** Mathematically provable correctness for safety-critical certification
+4. **Reduced testing burden:** Fewer edge cases than floating-point (no NaN, infinity, denormals)
+5. **Export compliance:** No encryption/ITAR issues (pure arithmetic, not cryptographic)
+
+**Historical Irony:**
+
+The ancient Babylonians used sexagesimal arithmetic for astronomical predictions and celestial navigation with remarkable accuracy - no computers, no floating-point errors, just exact rational calculations. Modern defense systems, despite vastly greater computational power, introduced the very approximation errors that caused the Patriot disaster. A return to base-60 rational arithmetic, enhanced with Wildberger's RT framework, would combine ancient wisdom with modern computational speed - potentially creating the most reliable targeting mathematics ever developed.
+
+**Conclusion:**
+
+For agencies concerned with time-critical targeting, guidance, and navigation systems, the combination of sexagesimal arithmetic and Rational Trigonometry offers a mathematically rigorous alternative to floating-point that eliminates an entire category of catastrophic failure modes. The Patriot disaster demonstrates this is not theoretical - these errors kill people. Exact arithmetic is not a luxury; it's a mission-critical requirement.
+
+---
+
+## 7. Contributors & Acknowledgments
 
 **Primary Development:**
 - Andy Thomson - Project lead, geometric vision, Fuller/Wildberger synthesis
