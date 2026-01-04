@@ -2844,16 +2844,18 @@ ARTexplorer_State_2025-12-28_geodesic-icosa-freq4.csv
 - **Module sync:** Both inline implementation (ARTexplorer.html:3807-3826) and module version (rt-controls.js:746-764) kept in sync
 - **Detailed implementation journey:** See [ART-Gumball.md](ART-Gumball.md) for complete rotation solution documentation (3 sessions, RT-pure attempt, final success)
 
-**Priority 2: JSON State Export/Import** ⚡ (Preferred over CSV)
-- [x] StateManager architecture implemented
-- [ ] **Environment state** - Camera, grids, UI settings (JSON format)
-- [ ] **Instances state** - Deposited Forms with transforms (position, rotation, scale)
-- [ ] Export to .json file with timestamp
-- [ ] Import with validation and error handling
+**Priority 2: File Handler - State & Geometry Export/Import** ⚡ (Active Development - rt-filehandler branch)
+- [x] StateManager architecture implemented ✅
+- [x] **Environment state** - Camera, grids, UI settings (JSON format) ✅
+- [x] **Instances state** - Deposited Forms with transforms (position, rotation, scale) ✅
+- [ ] **Export to .json file** with timestamp (State persistence)
+- [ ] **Import .json state** with validation and error handling
+- [ ] **Export to .gltf/.glb** - 3D geometry export for use in other applications
 - [ ] Auto-save to localStorage for session persistence
 - [ ] Preset library system for common configurations
+- [ ] File menu UI for all export/import operations
 
-**JSON Schema Example:**
+**JSON State Schema Example:**
 ```json
 {
   "version": "1.0",
@@ -2881,6 +2883,32 @@ ARTexplorer_State_2025-12-28_geodesic-icosa-freq4.csv
   ]
 }
 ```
+
+**glTF Export Specification:**
+
+The file handler will support exporting the current scene to glTF 2.0 format (.gltf or .glb) for use in:
+- 3D modeling applications (Blender, Maya, 3ds Max)
+- Game engines (Unity, Unreal Engine, Godot)
+- Web viewers (model-viewer, Three.js applications)
+- AR/VR platforms (WebXR, Quest, Vision Pro)
+
+**Export Options:**
+- **Format:** .gltf (JSON + separate .bin) or .glb (binary, single file)
+- **Include:**
+  - All deposited Form instances with transforms
+  - Optionally: Reference Forms (tetrahedron, cube, etc.)
+  - Optionally: Grid geometry (Quadray and/or Cartesian)
+  - Optionally: Gumball handles (for debugging/visualization)
+- **Metadata:** Custom glTF extensions for RT-specific data
+  - WXYZ coordinates stored as custom attributes
+  - Spread-based rotations preserved
+  - Original form types and parameters
+
+**Implementation Notes:**
+- Use Three.js GLTFExporter from `three/addons/exporters/GLTFExporter.js`
+- Z-up coordinate convention maintained (critical for compatibility)
+- Export respects current visibility states
+- File naming: `art-scene-YYYY-MM-DD-HHmmss.gltf`
 
 ---
 
