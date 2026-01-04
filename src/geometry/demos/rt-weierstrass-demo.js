@@ -64,7 +64,7 @@ const SNAP_THRESHOLD = 0.08; // radians (~4.6°) - reduced magnetic zone for les
  * Initialize the Weierstrauss demo
  */
 export function initWeierstrassDemo() {
-  const container = document.getElementById("weierstrauss-demo-container");
+  const container = document.getElementById("weierstrass-demo-container");
   if (!container) return;
 
   // Create 2D scene
@@ -95,7 +95,7 @@ export function initWeierstrassDemo() {
   renderLoop();
 
   // Initialize modal handlers
-  initializeModalHandlers("weierstrauss-modal");
+  initializeModalHandlers("weierstrass-modal");
 
   // Initial update
   updateVisualization();
@@ -330,7 +330,7 @@ function createGeometricGuides() {
  * Create axis labels
  */
 function createAxisLabels() {
-  const container = document.getElementById("weierstrauss-demo-container");
+  const container = document.getElementById("weierstrass-demo-container");
 
   // Get container aspect ratio for precise positioning
   const rect = container.getBoundingClientRect();
@@ -397,7 +397,7 @@ function createCircle() {
  * Create snap point markers
  */
 function createSnapMarkers() {
-  const container = document.getElementById("weierstrauss-demo-container");
+  const container = document.getElementById("weierstrass-demo-container");
 
   snapPoints.forEach(snap => {
     // Use algebraic coordinates directly - no trig needed!
@@ -530,7 +530,7 @@ function createDraggablePoint() {
  * Create formula display overlay
  */
 function createFormulaDisplay() {
-  const container = document.getElementById("weierstrauss-demo-container");
+  const container = document.getElementById("weierstrass-demo-container");
 
   // Title overlay (top-left)
   const titleElement = document.createElement("div");
@@ -570,7 +570,7 @@ function createFormulaDisplay() {
   closeButton.onmouseover = () => (closeButton.style.color = "#fff");
   closeButton.onmouseout = () => (closeButton.style.color = "#888");
   closeButton.onclick = () => {
-    document.getElementById("weierstrauss-modal").style.display = "none";
+    document.getElementById("weierstrass-modal").style.display = "none";
   };
   container.appendChild(closeButton);
 
@@ -711,7 +711,7 @@ function updateVisualization() {
         <div style="flex: 1; display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 10px; color: #00ff88;">Weierstrauss:</span>
           <div style="flex: 1; background: #222; height: 8px; border-radius: 2px; overflow: hidden;">
-            <div id="weierstrauss-bar" style="width: 0%; background: linear-gradient(90deg, #00ff88, #00cc66); height: 100%; transition: width 0.15s;"></div>
+            <div id="weierstrass-bar" style="width: 0%; background: linear-gradient(90deg, #00ff88, #00cc66); height: 100%; transition: width 0.15s;"></div>
           </div>
           <span style="font-size: 10px; color: #888;">${weierstrassOps} ops</span>
         </div>
@@ -730,7 +730,7 @@ function updateVisualization() {
   // Animate the bars to show computation happening
   // Use requestAnimationFrame for smooth animation
   requestAnimationFrame(() => {
-    const wBar = document.getElementById("weierstrauss-bar");
+    const wBar = document.getElementById("weierstrass-bar");
     const tBar = document.getElementById("traditional-bar");
     if (wBar) wBar.style.width = `${wBarWidth}%`;
     if (tBar) tBar.style.width = `${tBarWidth}%`;
