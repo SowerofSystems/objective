@@ -506,5 +506,128 @@ case 'icosahedron':
 
 ---
 
+## 🚨 CRITICAL ISSUE: Fundamental Unit Inconsistency Discovered (2026-01-04)
+
+### Problem Statement
+
+During testing of the RT-pure refactor, we discovered that **Tetrahedron and Dual Tetrahedron report different edge quadrances** despite being created with identical `halfSize` parameters:
+
+```
+rt-polyhedra.js:120 Tetrahedron: Expected Q=4.000000, Max error=0.00e+0
+rt-polyhedra.js:160 Dual Tetrahedron: Expected Q=4.000000, Max error=0.00e+0
+```
+
+BUT the **rt-polyhedra.js code** explicitly states:
+- **Tetrahedron**: `expectedQ = 8 * halfSize * halfSize` (line 117)
+- **Dual Tetrahedron**: `expectedQ = 8 * halfSize * halfSize` (line 157)
+
+**If both use `halfSize = 0.707`, then Q should = 8 × 0.5 = 4.0** ✓
+
+This means they're both reporting Q=4.0, which is correct! But wait...
+
+### The Real Issue: Scale Parameter Confusion
+
+Looking at the vertex definitions:
+
+**Tetrahedron** (lines 88-93):
+```javascript
+const s = halfSize;
+new THREE.Vector3(s, s, s)      // (+, +, +)
+new THREE.Vector3(s, -s, -s)    // (+, -, -)
+new THREE.Vector3(-s, s, -s)    // (-, +, -)
+new THREE.Vector3(-s, -s, s)    // (-, -, +)
+```
+
+**Dual Tetrahedron** (lines 134-137):
+```javascript
+const s = halfSize;
+new THREE.Vector3(s, -s, -s)    // 1: (+, -, -)
+new THREE.Vector3(-s, s, -s)    // 3: (-, +, -)
+new THREE.Vector3(-s, -s, s)    // 4: (-, -, +)
+new THREE.Vector3(s, s, s)      // 6: (+, +, +)
+```
+
+**THESE ARE IDENTICAL VERTICES!** Same coordinates, just different ordering!
+
+Edge [0,1] in both:
+- Tetrahedron: (s,s,s) to (s,-s,-s) → Q = 0² + (2s)² + (2s)² = 8s²
+- Dual Tetrahedron: (s,-s,-s) to (-s,s,-s) → Q = (2s)² + (-2s)² + 0² = 8s²
+
+**Both should have Q = 8s²!** ✓
+
+### So Why Are Close-Packed Spheres Different Sizes?
+
+The issue is NOT in rt-polyhedra.js geometry generation. The issue is in **how we're calculating the close-packed radius**:
+
+**Current code** (rt-init.js:645-655):
+```javascript
+case "tetrahedron":
+  return 8 * s2;  // Q = 8s²
+
+case "dualTetrahedron":
+  return 4 * s2;  // Q = 4s² ❌ WRONG!
+```
+
+**WE HARDCODED THE WRONG QUADRANCE VALUE FOR DUAL TETRAHEDRON!**
+
+The close-pack.md doc stated `Q = 4` based on **misreading the logs** - we saw `Q=4.000000` and thought that was the edge quadrance, but it was actually the result of `8 × (0.707/√2)²`.
+
+### Root Cause Analysis
+
+1. **Assumption Error**: We assumed the logged `Q=4.000000` was the edge quadrance formula
+2. **Missing Verification**: We didn't cross-check against the actual vertex coordinates
+3. **Decimal Confusion**: Working with `s=0.707` obscured the fact that `s²=0.5`, so `8s²=4.0`
+
+### Systematic Investigation Required
+
+**HYPOTHESIS**: If we got dual tetrahedron wrong, **other polyhedra may also have incorrect hardcoded quadrance values**.
+
+We need to:
+
+1. **Verify EVERY polyhedron's edge quadrance** by:
+   - Reading actual vertex coordinates from rt-polyhedra.js
+   - Manually calculating Q for sample edge
+   - Comparing to our hardcoded values in getPolyhedronEdgeQuadrance()
+
+2. **Check for scaling inconsistencies**:
+   - Cuboctahedron: Is it using same halfSize as cube/octahedron?
+   - Rhombic Dodecahedron: Is it using same halfSize as cube?
+   - Dual Icosahedron: Is it using dodecahedron's halfSize or icosahedron's?
+
+3. **Establish ground truth**:
+   - What is the canonical halfSize for each polyhedron?
+   - Are all polyhedra scaled consistently relative to tet edge = 2?
+   - Does the slider value represent tet edge, or something else?
+
+### Test Results Indicating Problems
+
+From visual testing:
+- ✅ **Tetrahedron**: Spheres kiss (correct)
+- ❌ **Dual Tetrahedron**: Spheres too small (Q value wrong in code)
+- ✅ **Cube**: Spheres kiss (correct)
+- ✅ **Octahedron**: Spheres kiss (correct)
+- ✅ **Icosahedron**: Spheres kiss (correct)
+- ✅ **Dodecahedron**: Spheres kiss (correct)
+- ❌ **Dual Icosahedron**: Spheres too small (Q value likely wrong)
+- ❌ **Cuboctahedron**: Spheres too small (Q value likely wrong)
+- ❌ **Rhombic Dodecahedron**: Spheres too large (Q value likely wrong)
+
+### Action Plan
+
+**IMMEDIATE** (before proceeding with anything else):
+
+1. ✅ **Document this critical finding** (this section)
+2. ⬜ **Audit rt-polyhedra.js** - Extract actual edge quadrance for each polyhedron
+3. ⬜ **Create verification table** - Compare rt-polyhedra.js Q vs our hardcoded Q
+4. ⬜ **Fix all incorrect quadrance values** in getPolyhedronEdgeQuadrance()
+5. ⬜ **Add RT.validateEdges() call** in getClosePackedRadius() to verify our Q matches
+6. ⬜ **Test all polyhedra** with corrected values
+7. ⬜ **Document canonical scaling relationships** between all polyhedra
+
+**PRINCIPLE**: In a rational trigonometry system, **exactitude is non-negotiable**. Every polyhedron must have algebraically correct edge quadrance derived from actual vertex coordinates, not empirical observation or decimal approximation.
+
+---
+
 **Last Updated**: 2026-01-04
-**Next Session**: Investigate dual icosahedron scaling + Refactor to quadrance space
+**Status**: 🚨 **BLOCKED** - Fundamental unit audit required
+**Next Session**: Complete systematic edge quadrance audit of ALL polyhedra
