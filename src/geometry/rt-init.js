@@ -3,6 +3,7 @@
 import { Polyhedra } from "./modules/rt-polyhedra.js";
 import { PerformanceClock } from "./modules/performance-clock.js";
 import { RTPapercut } from "./modules/rt-papercut.js";
+import { RT } from "./modules/rt-math.js"; // For RT.Phi in edge quadrance calculations
 import { initQuadranceDemo } from "./demos/rt-quadrance-demo.js";
 import { initSpreadDemo } from "./demos/rt-spread-demo.js";
 import { initWeierstrassDemo } from "./demos/rt-weierstrass-demo.js";
@@ -664,25 +665,33 @@ function startARTexplorer(
         // Edge quadrance Q = 2s² (edge = s√2)
         return 2 * s2;
 
-      case "icosahedron":
-        // Edge quadrance Q = 4a² where a = s·normFactor
-        // normFactor = 1/√(1 + φ²), involves golden ratio φ = (1+√5)/2
-        // From rt-polyhedra.js RT.validateEdges: Q ≈ 1.105573·s²
-        // Note: This value itself requires √5, so we use observed constant
-        return 1.105573 * s2;
+      case "icosahedron": {
+        // RT-PURE: Edge quadrance using algebraic φ expression (NO hardcoded decimals!)
+        // Vertices: a = s/√(1 + φ²), edge Q = 4a² = 4s²/(1 + φ²)
+        // Since φ² = φ + 1 (from φ² - φ - 1 = 0):
+        // Q = 4s²/(φ + 2) = 4s²/((1+√5)/2 + 2) = 8s²/(5 + √5)
+        // This defers √5 expansion to RT.Phi.sqrt5() - algebraic until last step
+        const Q_coefficient = 8 / (5 + RT.Phi.sqrt5());
+        return Q_coefficient * s2;
+      }
 
-      case "dodecahedron":
-        // Edge quadrance involves golden ratio pentagonal geometry
-        // From rt-polyhedra.js RT.validateEdges: Q ≈ 1.527864·s²
-        // Derived from (0, ±1, ±φ) vertex coordinates
+      case "dodecahedron": {
+        // RT-PURE: Dodecahedron edge quadrance using algebraic φ
+        // TODO: Derive exact algebraic expression from vertex coordinates
+        // Vertices at (0, ±1, ±φ), (±1, ±φ, 0), (±φ, 0, ±1) scaled by halfSize
+        // For now, use empirical value until we derive the exact formula
+        // This needs investigation - see rt-polyhedra.js lines 1020-1167
         return 1.527864 * s2;
+      }
 
-      case "dualIcosahedron":
-        // Dual icosahedron: vertices scaled by φ relative to dodecahedron
-        // dualRadius = φ × halfSize, so edge Q scales by φ²
-        // Base icosa Q = 1.105573, scaled by φ²: Q = 1.105573 × 2.618034 = 2.894428
-        // Validation log shows Q=1.447214 at s=0.707 (s²=0.5), confirming 1.447214/0.5 = 2.894428
-        return 2.894428 * s2;
+      case "dualIcosahedron": {
+        // RT-PURE: Dual icosa edge Q = base icosa Q × φ²
+        // dualRadius = φ × halfSize, so all quadrances scale by φ²
+        // Q_dual = Q_base × φ² = [8/(5+√5)] × (φ+1) using φ²=φ+1
+        const phi_squared = RT.Phi.squared(); // φ² = φ + 1 (algebraic!)
+        const Q_base_coefficient = 8 / (5 + RT.Phi.sqrt5());
+        return Q_base_coefficient * phi_squared * s2;
+      }
 
       case "cuboctahedron":
         // Edge quadrance Q = s² (NOT 0.5s²!)
