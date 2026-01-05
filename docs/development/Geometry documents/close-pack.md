@@ -340,6 +340,171 @@ In quadrance terms:
 
 ---
 
-**Status**: Planning Complete
-**Next Step**: Implement Phase 1 (Core Formula)
-**Dependencies**: None (uses existing polyhedra geometry)
+## Implementation Status (2026-01-04)
+
+**Status**: ✅ **IMPLEMENTED** (Phases 1-3 Complete)
+**Commit**: `964f057` - "Feat: Add close-packed vertex spheres (Packed button)"
+**Net Code Added**: ~110 lines (127 insertions, 17 deletions in rt-init.js + 3 in HTML)
+
+### What Was Implemented
+
+#### Phase 1: Core Functions (rt-init.js)
+- ✅ `getPolyhedronEdgeLength(type, scale)` - lines 645-694
+- ✅ `getClosePackedRadius(type, scale)` - lines 696-716
+- ✅ Modified `getCachedNodeGeometry()` to support 'packed' mode - lines 718-782
+- ✅ Updated `renderPolyhedron()` to pass polyType and scale - lines 869-910
+
+#### Phase 2: UI (index.html)
+- ✅ Added "Packed" button (5th button: Off/Sm/Md/Lg/Packed) - line 1029-1031
+- ✅ Tooltip: "Close-packed spheres: r = a/2 (kissing number)"
+- ✅ Flexbox auto-distributes 5 buttons evenly (no CSS changes needed)
+
+#### Phase 3: Integration
+- ✅ Works with **both** Classical Spheres and RT Geodesics
+- ✅ Dynamic cache key includes polyhedronType and scale
+- ✅ Console logging shows classical vs RT verification
+- ✅ Supports all polyhedra including geodesic subdivisions
+
+### Actual Edge Length Formulas (from rt-polyhedra.js logs)
+
+All formulas at **halfSize = 1**:
+
+| Polyhedron | Edge Quadrance Q | Edge Length Formula | Status |
+|------------|------------------|---------------------|--------|
+| **Cube** | 4.0 | `2s` | ✅ Working |
+| **Tetrahedron** | 8.0 | `2s√2` | ✅ Working |
+| **Dual Tetrahedron** | 4.0 | `2s` | ✅ Working |
+| **Octahedron** | 2.0 | `s√2` | ✅ Fixed (was 2s) |
+| **Icosahedron** | 1.105573 | `s√1.105573` | ✅ Working |
+| **Dodecahedron** | 1.527864 | `s√1.527864` | ✅ Working |
+| **Dual Icosahedron** | 1.447214 | `s√1.447214` | ⚠️ Needs tuning |
+| **Cuboctahedron** | 0.5 | `s/√2` | ✅ Working |
+| **Rhombic Dodecahedron** | 0.5 | `s/√2` | ✅ Working |
+
+### Testing Results
+
+**Working Correctly:**
+- ✅ Cube - Spheres kiss perfectly
+- ✅ Tetrahedron - Perfect close-packing
+- ✅ Dual Tetrahedron - Correct
+- ✅ Octahedron - Fixed edge length formula
+- ✅ Icosahedron - Correct
+- ✅ Dodecahedron - Correct
+- ✅ Cuboctahedron - Correct
+- ✅ Rhombic Dodecahedron - Correct
+
+**Needs Investigation:**
+- ⚠️ **Dual Icosahedron** - Spheres too small (not kissing)
+  - Issue: Dual icosa scaled to dodec inradius φ·s, not dodec halfSize
+  - Logged Q=1.447214 at icosa radius 1.144123 (≠ dodec halfSize 0.707)
+  - Need to account for scaling relationship between dual and parent
+
+---
+
+## CRITICAL ISSUE: Not Staying in Rational Trigonometry Space! ⚠️
+
+### Current Implementation Problem
+
+The current implementation **breaks Rational Trigonometry principles** by:
+
+1. **Using hardcoded decimal approximations**:
+   ```javascript
+   case 'icosahedron':
+     return scale * Math.sqrt(1.105573);  // ❌ BAD: Static decimal terminated number
+   ```
+
+2. **Taking sqrt() too early**:
+   - We compute `Math.sqrt(Q)` immediately in `getPolyhedronEdgeLength()`
+   - We should stay in **quadrance space** and defer sqrt until render
+
+3. **Losing algebraic precision**:
+   - 1.105573 is a decimal approximation
+   - Should use symbolic expressions involving φ (golden ratio)
+
+### What We SHOULD Be Doing (Wildberger Principles)
+
+**Stay in quadrance space as long as possible:**
+
+```javascript
+// CURRENT (BAD):
+function getPolyhedronEdgeLength(type, scale) {
+  case 'icosahedron':
+    return scale * Math.sqrt(1.105573);  // ❌ sqrt too early!
+}
+
+function getClosePackedRadius(type, scale) {
+  const edgeLength = getPolyhedronEdgeLength(type, scale);
+  return edgeLength / 2;  // Distance-based
+}
+
+// BETTER (Rational Trigonometry):
+function getPolyhedronEdgeQuadrance(type, scale) {
+  case 'icosahedron':
+    // Return QUADRANCE, not distance!
+    const Q_base = 1.105573;  // Or better: symbolic form with φ
+    return Q_base * scale * scale;  // Q scales as s²
+}
+
+function getClosePackedRadiusQuadrance(type, scale) {
+  const Q_edge = getPolyhedronEdgeQuadrance(type, scale);
+
+  // Work in QUADRANCE space - pure algebra!
+  const Q_vertex = Q_edge / 4;  // ✅ Rational: Q_vertex = Q_edge / 4
+
+  // Only sqrt at the VERY END for rendering
+  return Math.sqrt(Q_vertex);
+}
+```
+
+### Even Better: Use Symbolic Ratios
+
+**Leverage RT.Phi library for golden ratio:**
+
+```javascript
+case 'icosahedron':
+  // Q involves φ (golden ratio) - use symbolic form!
+  const phi = RT.Phi.value();  // φ = (1 + √5)/2
+  const Q_edge = /* symbolic expression with φ */;
+  return Q_edge * scale * scale;
+```
+
+### Why This Matters
+
+1. **Precision**: Algebraic ratios are exact, decimals are approximations
+2. **Philosophy**: Wildberger's Rational Trig avoids transcendental functions
+3. **Correctness**: Q_vertex = Q_edge / 4 is pure algebra (no sqrt needed!)
+4. **Performance**: Fewer sqrt() calls = faster computation
+
+### Recommended Refactor
+
+**Priority**: HIGH (aligns with RT philosophy)
+**Effort**: 2-3 hours
+**Benefit**: True Rational Trigonometry implementation
+
+**Steps**:
+1. Rename `getPolyhedronEdgeLength()` → `getPolyhedronEdgeQuadrance()`
+2. Return quadrance values (Q = a²), not distances
+3. Update `getClosePackedRadius()` to work in quadrance space
+4. Only call `Math.sqrt()` at final render step
+5. Use `RT.Phi` library for symbolic golden ratio expressions
+
+---
+
+## Known Issues & TODO
+
+### Immediate Issues
+1. ⚠️ **Dual Icosahedron**: Edge length formula needs correction for scaling relationship
+2. ⚠️ **Not using Rational Trigonometry properly**: Taking sqrt() too early, using decimal approximations
+
+### Future Work
+1. **Refactor to stay in quadrance space** (HIGH priority)
+2. **Use symbolic ratios** instead of decimal approximations
+3. **Leverage RT.Phi library** for golden ratio calculations
+4. Add UI display showing quadrance values
+5. Visual diagram of kissing spheres
+6. Export sphere data in glTF format
+
+---
+
+**Last Updated**: 2026-01-04
+**Next Session**: Investigate dual icosahedron scaling + Refactor to quadrance space
