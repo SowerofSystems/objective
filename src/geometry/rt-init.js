@@ -678,10 +678,11 @@ function startARTexplorer(
         return 1.527864 * s2;
 
       case "dualIcosahedron":
-        // Dual icosahedron (dodecahedron scaled to φ·s radius)
-        // Edge quadrance from rt-polyhedra.js validation: Q ≈ 1.447214·s²
-        // Note: 1.447214 ≈ φ² ≈ 2.618 / 1.809 (involves golden ratio)
-        return 1.447214 * s2;
+        // Dual icosahedron: vertices scaled by φ relative to dodecahedron
+        // dualRadius = φ × halfSize, so edge Q scales by φ²
+        // Base icosa Q = 1.105573, scaled by φ²: Q = 1.105573 × 2.618034 = 2.894428
+        // Validation log shows Q=1.447214 at s=0.707 (s²=0.5), confirming 1.447214/0.5 = 2.894428
+        return 2.894428 * s2;
 
       case "cuboctahedron":
         // Edge quadrance Q = s² (NOT 0.5s²!)
