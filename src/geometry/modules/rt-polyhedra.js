@@ -1284,13 +1284,13 @@ export const Polyhedra = {
 
     // RT VALIDATION: All edges have uniform quadrance
     // All 24 edges connect a square center to an adjacent triangle center
-    // Example: (t,0,0) to (u,u,u) where u = 2t/3
-    // Q = (t-u)² + (0-u)² + (0-u)² = (t-2t/3)² + 2(2t/3)² = (t/3)² + 2(4t²/9) = t²/9 + 8t²/9 = t²
-    const expectedQ = t * t; // All edges have quadrance = t² = s²/2
+    // Example: (t,0,0) to (u,u,u) where u = t/2 (CORRECT for planar rhombic faces!)
+    // Q = (t-u)² + (0-u)² + (0-u)² = (t/2)² + (t/2)² + (t/2)² = 3t²/4 = 3s²/8
+    const expectedQ = (3 * t * t) / 4; // All edges have quadrance = 3t²/4 = 3s²/8
     const validation = RT.validateEdges(vertices, edges, expectedQ);
     const maxError = validation.reduce((max, v) => Math.max(max, v.error), 0);
     console.log(
-      `Rhombic Dodecahedron (dual): Expected edge Q=${expectedQ.toFixed(6)} (= s²/2), Max error=${maxError.toExponential(2)}`
+      `Rhombic Dodecahedron (dual): Expected edge Q=${expectedQ.toFixed(6)} (= 3s²/8), Max error=${maxError.toExponential(2)}`
     );
 
     return { vertices, edges, faces };
