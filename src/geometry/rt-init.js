@@ -634,8 +634,104 @@ function startARTexplorer(
   // ========================================================================
   const nodeGeometryCache = new Map();
 
-  function getCachedNodeGeometry(useRT, nodeSize) {
-    const cacheKey = `${useRT ? "rt" : "classical"}-${nodeSize}`;
+  /**
+   * Calculate edge length for any polyhedron type
+   * This is the universal parameter 'a' used in close-packing formula r = a/2
+   *
+   * @param {string} type - Polyhedron type (tetrahedron, cube, octahedron, etc.)
+   * @param {number} scale - halfSize parameter (s)
+   * @returns {number} Edge length 'a' in world units
+   */
+  function getPolyhedronEdgeLength(type, scale) {
+    switch(type) {
+      case 'tetrahedron':
+        // Edge quadrance Q = 8, edge = 2s√2
+        return 2 * scale * Math.sqrt(2);
+
+      case 'dualTetrahedron':
+        // Edge quadrance Q = 4, edge = 2s
+        return 2 * scale;
+
+      case 'cube':
+        // Edge quadrance Q = 4, edge = 2s
+        return 2 * scale;
+
+      case 'octahedron':
+        // Edge quadrance Q = 2, edge = s√2
+        return scale * Math.sqrt(2);
+
+      case 'icosahedron':
+        // Edge quadrance Q = 1.105573, edge = s·√Q
+        return scale * Math.sqrt(1.105573);
+
+      case 'dodecahedron':
+        // Edge quadrance Q = 1.527864, edge = s·√Q
+        return scale * Math.sqrt(1.527864);
+
+      case 'dualIcosahedron':
+        // Edge quadrance Q = 1.447214 (from logs at dodec halfSize=0.707)
+        // Using exact logged value - dual icosa uses dodec's scale parameter
+        return scale * Math.sqrt(1.447214);
+
+      case 'cuboctahedron':
+        // Edge quadrance Q = 0.5, edge = s/√2
+        return scale / Math.sqrt(2);
+
+      case 'rhombicDodecahedron':
+        // Edge quadrance Q = 0.5, edge = s/√2
+        return scale / Math.sqrt(2);
+
+      case 'geodesicTetrahedron':
+      case 'geodesicOctahedron':
+      case 'geodesicIcosahedron':
+        // Geodesics subdivide base edges - use base polyhedron formula
+        const baseType = type.replace('geodesic', '').toLowerCase();
+        return getPolyhedronEdgeLength(baseType, scale);
+
+      default:
+        console.warn(`Unknown polyhedron type: ${type}, using default cube edge`);
+        return 2 * scale;
+    }
+  }
+
+  /**
+   * Calculate close-packed vertex sphere radius using universal formula
+   *
+   * UNIVERSAL FORMULA: r = a/2 (works for ALL regular polyhedra)
+   * When spheres at adjacent vertices are mutually tangent (kissing),
+   * each sphere radius equals half the edge length.
+   *
+   * RATIONAL TRIGONOMETRY: Q_vertex = Q_edge / 4
+   * Pure algebraic form - no transcendental functions needed.
+   *
+   * @param {string} type - Polyhedron type
+   * @param {number} scale - halfSize parameter
+   * @returns {number} Vertex sphere radius for close-packing
+   */
+  function getClosePackedRadius(type, scale) {
+    const edgeLength = getPolyhedronEdgeLength(type, scale);
+
+    // Universal close-packing formula: r = a/2
+    const radius = edgeLength / 2;
+
+    // DIAGNOSTIC: Rational Trigonometry verification (quadrance form)
+    const edgeQuadrance = edgeLength * edgeLength;
+    const vertexQuadrance = edgeQuadrance / 4;
+    const vertexRadius = Math.sqrt(vertexQuadrance);
+
+    console.log(`🔵 Close-pack for ${type}:`);
+    console.log(`  Edge length (a): ${edgeLength.toFixed(4)}`);
+    console.log(`  Edge quadrance (a²): ${edgeQuadrance.toFixed(4)}`);
+    console.log(`  Vertex quadrance (a²/4): ${vertexQuadrance.toFixed(4)}`);
+    console.log(`  Vertex radius (a/2): ${radius.toFixed(4)}`);
+    console.log(`  RT verification (√Q_vertex): ${vertexRadius.toFixed(4)}`);
+    console.log(`  ✓ Formulas match: ${Math.abs(radius - vertexRadius) < 0.0001}`);
+
+    return radius;
+  }
+
+  function getCachedNodeGeometry(useRT, nodeSize, polyhedronType, scale) {
+    const cacheKey = `${useRT ? "rt" : "classical"}-${nodeSize}-${polyhedronType || 'default'}-${scale || 1}`;
 
     if (nodeGeometryCache.has(cacheKey)) {
       return nodeGeometryCache.get(cacheKey);
@@ -643,17 +739,28 @@ function startARTexplorer(
 
     let nodeGeometry;
     let trianglesPerNode = 0;
+    let radius;
+
+    if (nodeSize === 'packed') {
+      // CLOSE-PACKED MODE: Calculate from edge length using universal formula
+      if (!polyhedronType || !scale) {
+        console.warn('⚠️ Packed mode requires polyhedronType and scale parameters');
+        radius = 0.04; // Fallback to medium size
+      } else {
+        radius = getClosePackedRadius(polyhedronType, scale);
+      }
+    } else {
+      // FIXED SIZE MODE: Use predefined sizes
+      const nodeSizes = {
+        sm: 0.02,
+        md: 0.04,
+        lg: 0.08,
+      };
+      radius = nodeSizes[nodeSize] || 0.04;
+    }
 
     if (useRT) {
       // RT Geodesic Icosahedron (freq-0 = base 20-triangle icosahedron)
-      const baseSize = 0.04;
-      const rtSizes = {
-        sm: baseSize / Math.sqrt(2),
-        md: baseSize,
-        lg: baseSize * Math.sqrt(2),
-      };
-      const radius = rtSizes[nodeSize];
-
       const polyData = window.RTPolyhedra.geodesicIcosahedron(radius, 0, "out");
 
       nodeGeometry = new THREE.BufferGeometry();
@@ -680,12 +787,6 @@ function startARTexplorer(
       trianglesPerNode = indices.length / 3;
     } else {
       // Classical THREE.js Sphere
-      const nodeSizes = {
-        sm: 0.02,
-        md: 0.04,
-        lg: 0.08,
-      };
-      const radius = nodeSizes[nodeSize];
       nodeGeometry = new THREE.SphereGeometry(radius, 16, 16);
       trianglesPerNode = 16 * 16 * 2; // 512 triangles
     }
@@ -785,9 +886,15 @@ function startARTexplorer(
       // Start node generation timing
       PerformanceClock.startNodeGeneration();
 
+      // Get polyhedron type and scale from group for close-pack calculations
+      const polyType = group.userData.type;
+      const tetEdge = parseFloat(document.getElementById("tetScaleSlider").value);
+      const scale = tetEdge / (2 * Math.sqrt(2)); // Convert tet edge to halfSize
+
       // Get cached geometry (prevents repeated generation)
+      // Pass polyhedronType and scale for 'packed' mode calculations
       const { geometry: nodeGeometry, triangles: trianglesPerNode } =
-        getCachedNodeGeometry(useRTNodeGeometry, nodeSize);
+        getCachedNodeGeometry(useRTNodeGeometry, nodeSize, polyType, scale);
 
       // Get flatShading preference from checkbox
       const useFlatShading =
