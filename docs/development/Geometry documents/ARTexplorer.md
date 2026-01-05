@@ -2844,16 +2844,26 @@ ARTexplorer_State_2025-12-28_geodesic-icosa-freq4.csv
 - **Module sync:** Both inline implementation (ARTexplorer.html:3807-3826) and module version (rt-controls.js:746-764) kept in sync
 - **Detailed implementation journey:** See [ART-Gumball.md](ART-Gumball.md) for complete rotation solution documentation (3 sessions, RT-pure attempt, final success)
 
-**Priority 2: File Handler - State & Geometry Export/Import** ⚡ (Active Development - rt-filehandler branch)
+**Priority 2: File Handler - State & Geometry Export/Import** ✅ (Completed 2026-01-05)
 - [x] StateManager architecture implemented ✅
 - [x] **Environment state** - Camera, grids, UI settings (JSON format) ✅
 - [x] **Instances state** - Deposited Forms with transforms (position, rotation, scale) ✅
-- [ ] **Export to .json file** with timestamp (State persistence)
-- [ ] **Import .json state** with validation and error handling
-- [ ] **Export to .gltf/.glb** - 3D geometry export for use in other applications
-- [ ] Auto-save to localStorage for session persistence
-- [ ] Preset library system for common configurations
-- [ ] File menu UI for all export/import operations
+- [x] **Export to .json file** with timestamp (State persistence) ✅
+- [x] **Import .json state** with validation and error handling ✅
+- [x] **Export to .gltf/.glb** - 3D geometry export for use in other applications ✅
+- [x] Auto-save to localStorage for session persistence ✅
+- [x] Preset library system for common configurations ✅
+- [x] File menu UI for all export/import operations ✅
+
+**Implementation Details (2026-01-05):**
+- **Module Created:** `rt-filehandler.js` - Comprehensive file operations module
+- **Module Reorganization:** Moved `rt-init.js` → `modules/rt-init.js` for consistency
+- **UI Integration:** File section buttons (Import/Export/Save) fully wired and functional
+- **Keyboard Shortcuts:** Ctrl/Cmd+S (Save), Ctrl/Cmd+O (Import), Ctrl/Cmd+E (Export)
+- **Export Formats:** JSON (state), glTF/glB (geometry), CSV (data)
+- **Auto-Save:** 60-second interval with localStorage persistence
+- **Presets:** Named scene configurations with save/load/delete API
+- **Known Issue:** Instance restoration needs geometry recreation integration (logged for next phase)
 
 **JSON State Schema Example:**
 ```json

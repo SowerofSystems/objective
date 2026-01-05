@@ -69,27 +69,32 @@
                 <button
                   class="toggle-btn variant-standard"
                   id="importBtn"
-                  disabled
+                  title="Import scene state from JSON file (Ctrl/Cmd+O)"
                 >
                   Import
                 </button>
                 <button
                   class="toggle-btn variant-standard"
                   id="exportBtn"
-                  disabled
+                  title="Export scene (JSON/glTF/glB/CSV) (Ctrl/Cmd+E)"
                 >
                   Export
                 </button>
                 <button
                   class="toggle-btn variant-standard"
                   id="saveBtn"
-                  disabled
+                  title="Quick save to JSON file (Ctrl/Cmd+S)"
                 >
                   Save
                 </button>
               </div>
             </div>
-            <p class="info-text">StateManager integration - Coming soon</p>
+            <p class="info-text">
+              <strong>Import:</strong> Load .json state file<br />
+              <strong>Export:</strong> Choose format (JSON/glTF/glB/CSV)<br />
+              <strong>Save:</strong> Quick save to timestamped JSON<br />
+              <span style="font-size: 10px; color: #666;">Keyboard: Ctrl/Cmd+S (Save) | Ctrl/Cmd+O (Import) | Ctrl/Cmd+E (Export)</span>
+            </p>
           </div>
         </div>
         <!-- END SECTION 1: FILE -->
@@ -1332,6 +1337,6 @@
     </script>
 
     <!-- Application Initialization -->
-    <script type="module" src="rt-init.js"></script>
+    <script type="module" src="modules/rt-init.js"></script>
   </body>
 </html>
