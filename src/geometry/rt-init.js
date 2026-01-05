@@ -651,8 +651,10 @@ function startARTexplorer(
         return 8 * s2;
 
       case "dualTetrahedron":
-        // Edge quadrance Q = 4s² (edge = 2s)
-        return 4 * s2;
+        // Edge quadrance Q = 8s² (edge = 2s√2, SAME as regular tetrahedron!)
+        // Vertices: (±s, ∓s, ∓s) - same as tet, just different vertex selection
+        // Edge: (s,-s,-s) → (-s,s,-s): Q = (2s)² + (2s)² + 0² = 8s²
+        return 8 * s2;
 
       case "cube":
         // Edge quadrance Q = 4s² (edge = 2s)
@@ -682,8 +684,11 @@ function startARTexplorer(
         return 1.447214 * s2;
 
       case "cuboctahedron":
-        // Edge quadrance Q = 0.5s² (edge = s/√2)
-        return 0.5 * s2;
+        // Edge quadrance Q = s² (NOT 0.5s²!)
+        // Vertices at t = s/√2: (±t,±t,0), (±t,0,±t), (0,±t,±t)
+        // Edge: (t,t,0) → (t,0,t): Q = 0² + t² + t² = 2t² = 2(s²/2) = s²
+        // rt-polyhedra.js line 1400: expectedQ = 2 * t * t where t = s/√2
+        return s2;
 
       case "rhombicDodecahedron":
         // Edge quadrance Q = 0.5s² (edge = s/√2)
