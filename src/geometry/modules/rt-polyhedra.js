@@ -1188,7 +1188,7 @@ export const Polyhedra = {
     // RT-PURE: Defer expansions until needed
     const sqrt2 = Math.sqrt(2);
     const t = s / sqrt2; // Cuboctahedron vertex distance: s/√2
-    const u = t / 2; // Rhombic dodec octant vertex distance: (s/√2)/2 = s/(2√2)
+    const u = (2 * t) / 3; // Rhombic dodec octant vertex distance: 2t/3 for proper dual geometry
 
     console.log(
       `[ThreeRT] Rhombic Dodecahedron RT construction (dual of cuboctahedron):`
@@ -1197,7 +1197,7 @@ export const Polyhedra = {
     console.log(`  √2 = ${sqrt2.toFixed(6)} (deferred expansion)`);
     console.log(`  Cuboctahedron vertex distance: t = s/√2 = ${t.toFixed(6)}`);
     console.log(
-      `  Rhombic dodec octant vertices: u = t/2 = s/(2√2) = ${u.toFixed(6)}`
+      `  Rhombic dodec octant vertices: u = 2t/3 = ${u.toFixed(6)}`
     );
 
     // 14 vertices positioned to create planar rhombic faces
