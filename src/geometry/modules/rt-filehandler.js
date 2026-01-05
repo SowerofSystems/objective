@@ -22,7 +22,7 @@ export const RTFileHandler = {
 
   config: {
     autoSaveEnabled: true,
-    autoSaveInterval: 60000, // 60 seconds
+    autoSaveThreshold: 10, // Auto-save every N modifications
     autoSaveKey: "art-explorer-autosave",
     presetKeyPrefix: "art-explorer-preset-",
     maxAutoSaveHistory: 5,
@@ -33,7 +33,6 @@ export const RTFileHandler = {
   // ========================================================================
 
   state: {
-    autoSaveTimer: null,
     lastSaveTimestamp: null,
   },
 
@@ -52,9 +51,16 @@ export const RTFileHandler = {
     this.scene = scene;
     this.camera = camera;
 
-    // Start auto-save if enabled
+    // Register for state modification events if auto-save enabled
     if (this.config.autoSaveEnabled) {
-      this.startAutoSave();
+      this.stateManager.onModification((modCount, changesSinceSave, action) => {
+        // Auto-save when threshold is reached
+        if (changesSinceSave >= this.config.autoSaveThreshold) {
+          this.autoSave();
+          console.log(`💾 Auto-save triggered after ${changesSinceSave} changes`);
+        }
+      });
+      console.log(`💾 Auto-save enabled (every ${this.config.autoSaveThreshold} modifications)`);
     }
 
     console.log("✅ RTFileHandler initialized");
@@ -164,6 +170,9 @@ export const RTFileHandler = {
 
     // Create download
     this.downloadFile(jsonString, finalFilename, "application/json");
+
+    // Mark state as saved (resets modification counter)
+    this.stateManager.markAsSaved();
 
     console.log(`✅ State exported to ${finalFilename}`);
     return stateData;
@@ -375,37 +384,11 @@ export const RTFileHandler = {
   },
 
   // ========================================================================
-  // AUTO-SAVE (LocalStorage)
+  // AUTO-SAVE (LocalStorage - Modification-Based)
   // ========================================================================
 
   /**
-   * Start auto-save timer
-   */
-  startAutoSave() {
-    if (this.state.autoSaveTimer) {
-      clearInterval(this.state.autoSaveTimer);
-    }
-
-    this.state.autoSaveTimer = setInterval(() => {
-      this.autoSave();
-    }, this.config.autoSaveInterval);
-
-    console.log(`💾 Auto-save started (interval: ${this.config.autoSaveInterval}ms)`);
-  },
-
-  /**
-   * Stop auto-save timer
-   */
-  stopAutoSave() {
-    if (this.state.autoSaveTimer) {
-      clearInterval(this.state.autoSaveTimer);
-      this.state.autoSaveTimer = null;
-      console.log("💾 Auto-save stopped");
-    }
-  },
-
-  /**
-   * Save current state to localStorage
+   * Save current state to localStorage (triggered by modifications)
    */
   autoSave() {
     try {
@@ -419,7 +402,11 @@ export const RTFileHandler = {
       // Maintain save history
       this.addToSaveHistory(stateData);
 
-      console.log(`💾 Auto-saved at ${new Date().toLocaleTimeString()}`);
+      // Mark state as saved in StateManager (resets modification counter)
+      this.stateManager.markAsSaved();
+
+      const unsavedCount = this.stateManager.getUnsavedChanges();
+      console.log(`💾 Auto-saved at ${new Date().toLocaleTimeString()} (${unsavedCount} unsaved changes)`);
     } catch (error) {
       console.error("❌ Auto-save failed:", error);
     }
