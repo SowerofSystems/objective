@@ -676,12 +676,15 @@ function startARTexplorer(
       }
 
       case "dodecahedron": {
-        // RT-PURE: Dodecahedron edge quadrance using algebraic φ
-        // TODO: Derive exact algebraic expression from vertex coordinates
-        // Vertices at (0, ±1, ±φ), (±1, ±φ, 0), (±φ, 0, ±1) scaled by halfSize
-        // For now, use empirical value until we derive the exact formula
-        // This needs investigation - see rt-polyhedra.js lines 1020-1167
-        return 1.527864 * s2;
+        // RT-PURE: Dodecahedron edge quadrance using algebraic φ (NO decimals!)
+        // Vertices: cube corners (±s,±s,±s) + phi vertices (0,±s/φ,±sφ) and permutations
+        // Sample edge [0,8]: (s,s,s) → (0,s/φ,sφ)
+        // Q = s² + s²(1-1/φ)² + s²(1-φ)²
+        // Using 1/φ = φ-1 and φ² = φ+1:
+        //   = s²[1 + (2-φ)² + (1-φ)²] = s²[1 + (5-3φ) + (2-φ)] = s²(8-4φ)
+        //   = 4s²(2-φ) = 2s²(4-2φ) = 2s²(4-(1+√5)) = 2s²(3-√5)
+        const Q_coefficient = 2 * (3 - RT.Phi.sqrt5());
+        return Q_coefficient * s2;
       }
 
       case "dualIcosahedron": {
