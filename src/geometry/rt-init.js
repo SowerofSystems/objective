@@ -635,103 +635,115 @@ function startARTexplorer(
   const nodeGeometryCache = new Map();
 
   /**
-   * Calculate edge length for any polyhedron type
-   * This is the universal parameter 'a' used in close-packing formula r = a/2
+   * Calculate edge QUADRANCE for any polyhedron type
+   * RATIONAL TRIGONOMETRY: Stay in quadrance space (Q = a²) to avoid sqrt
    *
    * @param {string} type - Polyhedron type (tetrahedron, cube, octahedron, etc.)
    * @param {number} scale - halfSize parameter (s)
-   * @returns {number} Edge length 'a' in world units
+   * @returns {number} Edge quadrance Q = a² (NOT edge length!)
    */
-  function getPolyhedronEdgeLength(type, scale) {
-    switch(type) {
-      case 'tetrahedron':
-        // Edge quadrance Q = 8, edge = 2s√2
-        return 2 * scale * Math.sqrt(2);
+  function getPolyhedronEdgeQuadrance(type, scale) {
+    const s2 = scale * scale; // Pre-compute s² for RT calculations
 
-      case 'dualTetrahedron':
-        // Edge quadrance Q = 4, edge = 2s
-        return 2 * scale;
+    switch (type) {
+      case "tetrahedron":
+        // Edge quadrance Q = 8s² (edge = 2s√2)
+        return 8 * s2;
 
-      case 'cube':
-        // Edge quadrance Q = 4, edge = 2s
-        return 2 * scale;
+      case "dualTetrahedron":
+        // Edge quadrance Q = 4s² (edge = 2s)
+        return 4 * s2;
 
-      case 'octahedron':
-        // Edge quadrance Q = 2, edge = s√2
-        return scale * Math.sqrt(2);
+      case "cube":
+        // Edge quadrance Q = 4s² (edge = 2s)
+        return 4 * s2;
 
-      case 'icosahedron':
-        // Edge quadrance Q = 1.105573, edge = s·√Q
-        return scale * Math.sqrt(1.105573);
+      case "octahedron":
+        // Edge quadrance Q = 2s² (edge = s√2)
+        return 2 * s2;
 
-      case 'dodecahedron':
-        // Edge quadrance Q = 1.527864, edge = s·√Q
-        return scale * Math.sqrt(1.527864);
+      case "icosahedron":
+        // Edge quadrance Q = 4a² where a = s·normFactor
+        // normFactor = 1/√(1 + φ²), involves golden ratio φ = (1+√5)/2
+        // From rt-polyhedra.js RT.validateEdges: Q ≈ 1.105573·s²
+        // Note: This value itself requires √5, so we use observed constant
+        return 1.105573 * s2;
 
-      case 'dualIcosahedron':
-        // Edge quadrance Q = 1.447214 (from logs at dodec halfSize=0.707)
-        // Using exact logged value - dual icosa uses dodec's scale parameter
-        return scale * Math.sqrt(1.447214);
+      case "dodecahedron":
+        // Edge quadrance involves golden ratio pentagonal geometry
+        // From rt-polyhedra.js RT.validateEdges: Q ≈ 1.527864·s²
+        // Derived from (0, ±1, ±φ) vertex coordinates
+        return 1.527864 * s2;
 
-      case 'cuboctahedron':
-        // Edge quadrance Q = 0.5, edge = s/√2
-        return scale / Math.sqrt(2);
+      case "dualIcosahedron":
+        // Dual icosahedron (dodecahedron scaled to φ·s radius)
+        // Edge quadrance from rt-polyhedra.js validation: Q ≈ 1.447214·s²
+        // Note: 1.447214 ≈ φ² ≈ 2.618 / 1.809 (involves golden ratio)
+        return 1.447214 * s2;
 
-      case 'rhombicDodecahedron':
-        // Edge quadrance Q = 0.5, edge = s/√2
-        return scale / Math.sqrt(2);
+      case "cuboctahedron":
+        // Edge quadrance Q = 0.5s² (edge = s/√2)
+        return 0.5 * s2;
 
-      case 'geodesicTetrahedron':
-      case 'geodesicOctahedron':
-      case 'geodesicIcosahedron':
-        // Geodesics subdivide base edges - use base polyhedron formula
-        const baseType = type.replace('geodesic', '').toLowerCase();
-        return getPolyhedronEdgeLength(baseType, scale);
+      case "rhombicDodecahedron":
+        // Edge quadrance Q = 0.5s² (edge = s/√2)
+        return 0.5 * s2;
+
+      case "geodesicTetrahedron":
+      case "geodesicOctahedron":
+      case "geodesicIcosahedron":
+        // Geodesics subdivide base edges - use base polyhedron quadrance
+        const baseType = type.replace("geodesic", "").toLowerCase();
+        return getPolyhedronEdgeQuadrance(baseType, scale);
 
       default:
-        console.warn(`Unknown polyhedron type: ${type}, using default cube edge`);
-        return 2 * scale;
+        console.warn(
+          `Unknown polyhedron type: ${type}, using default cube Q=4s²`
+        );
+        return 4 * s2;
     }
   }
 
   /**
-   * Calculate close-packed vertex sphere radius using universal formula
+   * Calculate close-packed vertex sphere radius using RT-pure quadrance formula
    *
-   * UNIVERSAL FORMULA: r = a/2 (works for ALL regular polyhedra)
-   * When spheres at adjacent vertices are mutually tangent (kissing),
-   * each sphere radius equals half the edge length.
+   * RATIONAL TRIGONOMETRY: Q_vertex = Q_edge / 4 (pure algebra!)
+   * Stay in quadrance space as long as possible, only sqrt at final step.
    *
-   * RATIONAL TRIGONOMETRY: Q_vertex = Q_edge / 4
-   * Pure algebraic form - no transcendental functions needed.
+   * UNIVERSAL FORMULA: When spheres at adjacent vertices are mutually tangent,
+   * the vertex sphere quadrance is exactly 1/4 of the edge quadrance.
+   * Classical equivalent: r = a/2, but we work with Q = a²/4 directly.
    *
    * @param {string} type - Polyhedron type
    * @param {number} scale - halfSize parameter
    * @returns {number} Vertex sphere radius for close-packing
    */
   function getClosePackedRadius(type, scale) {
-    const edgeLength = getPolyhedronEdgeLength(type, scale);
+    // RT-PURE: Work in quadrance space (no sqrt until final step!)
+    const Q_edge = getPolyhedronEdgeQuadrance(type, scale);
 
-    // Universal close-packing formula: r = a/2
-    const radius = edgeLength / 2;
+    // UNIVERSAL CLOSE-PACKING LAW (Rational Trigonometry form):
+    // Q_vertex = Q_edge / 4
+    // Pure algebraic relationship - no transcendental functions!
+    const Q_vertex = Q_edge / 4;
 
-    // DIAGNOSTIC: Rational Trigonometry verification (quadrance form)
-    const edgeQuadrance = edgeLength * edgeLength;
-    const vertexQuadrance = edgeQuadrance / 4;
-    const vertexRadius = Math.sqrt(vertexQuadrance);
+    // Only NOW do we take sqrt for final radius (rendering requirement)
+    const radius = Math.sqrt(Q_vertex);
 
-    console.log(`🔵 Close-pack for ${type}:`);
-    console.log(`  Edge length (a): ${edgeLength.toFixed(4)}`);
-    console.log(`  Edge quadrance (a²): ${edgeQuadrance.toFixed(4)}`);
-    console.log(`  Vertex quadrance (a²/4): ${vertexQuadrance.toFixed(4)}`);
-    console.log(`  Vertex radius (a/2): ${radius.toFixed(4)}`);
-    console.log(`  RT verification (√Q_vertex): ${vertexRadius.toFixed(4)}`);
-    console.log(`  ✓ Formulas match: ${Math.abs(radius - vertexRadius) < 0.0001}`);
+    // DIAGNOSTIC: RT validation logging (matches rt-polyhedra.js pattern)
+    console.log(`🔵 Close-pack RT for ${type} (halfSize=${scale.toFixed(4)}):`);
+    console.log(`  Edge quadrance Q_edge: ${Q_edge.toFixed(6)}`);
+    console.log(
+      `  Vertex quadrance Q_vertex = Q_edge/4: ${Q_vertex.toFixed(6)}`
+    );
+    console.log(`  Vertex radius r = √Q_vertex: ${radius.toFixed(6)}`);
+    console.log(`  ✓ RT-PURE: Stayed in quadrance space until final sqrt`);
 
     return radius;
   }
 
   function getCachedNodeGeometry(useRT, nodeSize, polyhedronType, scale) {
-    const cacheKey = `${useRT ? "rt" : "classical"}-${nodeSize}-${polyhedronType || 'default'}-${scale || 1}`;
+    const cacheKey = `${useRT ? "rt" : "classical"}-${nodeSize}-${polyhedronType || "default"}-${scale || 1}`;
 
     if (nodeGeometryCache.has(cacheKey)) {
       return nodeGeometryCache.get(cacheKey);
@@ -741,10 +753,12 @@ function startARTexplorer(
     let trianglesPerNode = 0;
     let radius;
 
-    if (nodeSize === 'packed') {
+    if (nodeSize === "packed") {
       // CLOSE-PACKED MODE: Calculate from edge length using universal formula
       if (!polyhedronType || !scale) {
-        console.warn('⚠️ Packed mode requires polyhedronType and scale parameters');
+        console.warn(
+          "⚠️ Packed mode requires polyhedronType and scale parameters"
+        );
         radius = 0.04; // Fallback to medium size
       } else {
         radius = getClosePackedRadius(polyhedronType, scale);
@@ -888,7 +902,9 @@ function startARTexplorer(
 
       // Get polyhedron type and scale from group for close-pack calculations
       const polyType = group.userData.type;
-      const tetEdge = parseFloat(document.getElementById("tetScaleSlider").value);
+      const tetEdge = parseFloat(
+        document.getElementById("tetScaleSlider").value
+      );
       const scale = tetEdge / (2 * Math.sqrt(2)); // Convert tet edge to halfSize
 
       // Get cached geometry (prevents repeated generation)
@@ -1959,22 +1975,24 @@ function startARTexplorer(
   let demosInitialized = {
     quadrance: false,
     spread: false,
-    weierstrass: false
+    weierstrass: false,
   };
 
-  document.getElementById("open-quadrance-demo").addEventListener("click", (e) => {
-    e.preventDefault();
-    openDemoModal("quadrance-modal");
-    if (!demosInitialized.quadrance) {
-      // Delay initialization to ensure modal is visible and container has dimensions
-      setTimeout(() => {
-        initQuadranceDemo();
-        demosInitialized.quadrance = true;
-      }, 50);
-    }
-  });
+  document
+    .getElementById("open-quadrance-demo")
+    .addEventListener("click", e => {
+      e.preventDefault();
+      openDemoModal("quadrance-modal");
+      if (!demosInitialized.quadrance) {
+        // Delay initialization to ensure modal is visible and container has dimensions
+        setTimeout(() => {
+          initQuadranceDemo();
+          demosInitialized.quadrance = true;
+        }, 50);
+      }
+    });
 
-  document.getElementById("open-spread-demo").addEventListener("click", (e) => {
+  document.getElementById("open-spread-demo").addEventListener("click", e => {
     e.preventDefault();
     openDemoModal("spread-modal");
     if (!demosInitialized.spread) {
@@ -1985,16 +2003,18 @@ function startARTexplorer(
     }
   });
 
-  document.getElementById("open-weierstrass-demo").addEventListener("click", (e) => {
-    e.preventDefault();
-    openDemoModal("weierstrass-modal");
-    if (!demosInitialized.weierstrass) {
-      setTimeout(() => {
-        initWeierstrassDemo();
-        demosInitialized.weierstrass = true;
-      }, 50);
-    }
-  });
+  document
+    .getElementById("open-weierstrass-demo")
+    .addEventListener("click", e => {
+      e.preventDefault();
+      openDemoModal("weierstrass-modal");
+      if (!demosInitialized.weierstrass) {
+        setTimeout(() => {
+          initWeierstrassDemo();
+          demosInitialized.weierstrass = true;
+        }, 50);
+      }
+    });
 
   // ========================================================================
   // GUMBALL TOOL FUNCTIONALITY
