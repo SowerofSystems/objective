@@ -704,8 +704,10 @@ function startARTexplorer(
         return s2;
 
       case "rhombicDodecahedron":
-        // Edge quadrance Q = 0.5s² (edge = s/√2)
-        return 0.5 * s2;
+        // Edge quadrance Q = 3s²/8 = 0.375s²
+        // With u = t/2 where t = s/√2:
+        // Edge: (t,0,0) → (t/2,t/2,t/2): Q = (t/2)² + (t/2)² + (t/2)² = 3t²/4 = 3s²/8
+        return 0.375 * s2;
 
       case "geodesicTetrahedron":
       case "geodesicOctahedron":

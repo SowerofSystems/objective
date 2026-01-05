@@ -685,51 +685,18 @@ All edge quadrance errors have been corrected and refactored to use **RT-pure al
 | Dodecahedron | `Q = 2(3-√5) × s²` | ✅ **RT-PURE** | **UPGRADED** |
 | Dual Icosahedron | `Q = [8/(5+√5)]×φ² × s²` | ✅ **RT-PURE** | **FIXED** |
 | Cuboctahedron | `Q = s²` | ✅ Algebraic | **FIXED** |
-| Rhombic Dodecahedron | `Q = 0.5s²` | ✅ Algebraic | Pending investigation |
+| Rhombic Dodecahedron | `Q = 3s²/8 = 0.375s²` | ✅ Algebraic | **FIXED** |
 
-### Remaining Work
+#### 6. Rhombic Dodecahedron ✅
+- **Issue**: Validation comment in rt-polyhedra.js was WRONG
+- **Discovery**: Code correctly uses `u = t/2` for planar rhombic faces (not `u = 2t/3`!)
+- **Actual edge Q**: With u=t/2, edge (t,0,0)→(t/2,t/2,t/2) gives Q = 3t²/4 = 3s²/8
+- **Fix**:
+  - rt-init.js: Changed from Q=0.5s² to Q=0.375s² (= 3s²/8)
+  - rt-polyhedra.js: Fixed validation comment and expectedQ to match actual geometry
+- **Result**: Spheres should now kiss correctly, geometry remains planar
 
-#### Rhombic Dodecahedron - CRITICAL BUG FOUND ⚠️
-
-**Issue**: Code/comment/validation mismatch in rt-polyhedra.js
-
-**Evidence**:
-- Line 1191: `const u = t / 2` (actual code)
-- Line 1215: Comment says "NOT at triangle centroids (2t/3)"
-- Line 1287: Comment says "where u = 2t/3" (contradicts code!)
-- Line 1289: `expectedQ = t * t` (expects Q = t²)
-
-**Calculation with CURRENT code (u = t/2)**:
-```
-Edge [0,6]: (t,0,0) → (t/2, t/2, t/2)
-Q = (t/2)² + (t/2)² + (t/2)² = 3t²/4 ❌ (doesn't match expectedQ!)
-```
-
-**Calculation with COMMENT formula (u = 2t/3)**:
-```
-Edge [0,6]: (t,0,0) → (2t/3, 2t/3, 2t/3)
-Q = (t/3)² + (2t/3)² + (2t/3)² = t²/9 + 8t²/9 = t² ✅ (matches expectedQ!)
-```
-
-**Conclusion**: The CODE is wrong, the COMMENT is correct!
-- rt-polyhedra.js line 1191 should be: `const u = (2 * t) / 3`
-- This is a fundamental geometry error in rt-polyhedra.js
-
-**Impact on close-pack**:
-- Currently using `Q = 0.5s²` (based on expectedQ = t² = (s/√2)² = s²/2)
-- If code uses u=t/2, actual Q would be `3t²/4 = 3s²/8 = 0.375s²`
-- Our current value is WRONG if rt-polyhedra.js code is used as-is
-- Need to either: (1) Fix rt-polyhedra.js to use u=2t/3, OR (2) Use Q=0.375s²
-
-**For Next Session**:
-1. Verify which u value produces correct rhombic dodecahedron geometry
-2. Fix rt-polyhedra.js line 1191 if needed: `const u = (2*t)/3`
-3. Update close-pack Q value if code can't be changed
-4. Visual test to confirm spheres kiss properly
-
-**User reported**: Spheres "slightly too large" - suggests our Q=0.5s² is too large, which would be correct if code actually uses u=t/2 (giving Q=3t²/4=0.375s²). This confirms the CODE is being used, not the validation expectation!
-
-**Recommended fix**: Change rt-init.js rhombic dodec to `Q = 0.375s²` to match actual code, OR fix rt-polyhedra.js to use correct u=2t/3.
+**Key insight**: The CODE was correct all along! The `u = t/2` produces proper planar rhombic faces. The validation comment claiming `u = 2t/3` was erroneous and would have broken the geometry (as user confirmed - saddle-shaped faces instead of flat rhombi).
 
 ---
 
