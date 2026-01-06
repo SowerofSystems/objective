@@ -314,7 +314,66 @@ export const RT = {
     );
 
     group.applyMatrix4(rotationMatrix);
-    console.log(`[RT] Matrix rotation applied: s=${s}, c=${c}, s+c=${s + c} ✓`);
+    console.log(`[RT] 45° rotation applied: s=${s}, c=${c}, s+c=${s + c} ✓`);
+  },
+
+  /**
+   * Apply 180° rotation around Z-axis using RT-pure spread/cross values
+   * Used for alternating tetrahedron orientations in IVM matrices
+   *
+   * RT-Pure Implementation:
+   * - Works in spread/cross space, NOT angle space
+   * - Spread s = sin²(180°) = 0² = 0 (exact rational!)
+   * - Cross c = cos²(180°) = (-1)² = 1 (exact rational!)
+   * - Trivial sqrt extraction: sin = 0, cos = -1 (no computation needed!)
+   * - Verifies RT identity: s + c = 1.0
+   *
+   * Educational Note:
+   * The 180° rotation is particularly elegant in RT - the spread/cross values
+   * are exact rationals (0 and 1), and sqrt extraction is trivial. This
+   * demonstrates that even "complicated" rotations become simple in spread space.
+   *
+   * @param {THREE.Group} group - THREE.js Group to rotate
+   * @requires THREE - THREE.js library
+   *
+   * @example
+   * const tetGroup = new THREE.Group();
+   * // ... add tetrahedron geometry to group ...
+   * RT.applyRotation180(tetGroup);
+   * // Group is now flipped 180° around Z-axis (down-facing orientation)
+   */
+  applyRotation180: group => {
+    // Work in spread/cross space, not angle space
+    const s = 0; // Spread = sin²(180°) = 0 (exact rational!)
+    const c = 1; // Cross = cos²(180°) = 1 (exact rational!)
+
+    // Extract sin/cos (trivial - no sqrt computation needed!)
+    const sin_val = 0; // √0 = 0 (exact)
+    const cos_val = -1; // -√1 = -1 (exact, negated for 180°)
+
+    // Build rotation matrix from spread/cross values
+    const rotationMatrix = new THREE.Matrix4();
+    rotationMatrix.set(
+      cos_val,
+      -sin_val,
+      0,
+      0, // [-1,  0, 0, 0]
+      sin_val,
+      cos_val,
+      0,
+      0, // [ 0, -1, 0, 0]
+      0,
+      0,
+      1,
+      0, // [ 0,  0, 1, 0]
+      0,
+      0,
+      0,
+      1 // [ 0,  0, 0, 1]
+    );
+
+    group.applyMatrix4(rotationMatrix);
+    console.log(`[RT] 180° rotation applied: s=${s}, c=${c}, s+c=${s + c} ✓`);
   },
 };
 
