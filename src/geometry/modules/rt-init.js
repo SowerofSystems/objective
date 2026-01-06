@@ -1633,6 +1633,18 @@ function startARTexplorer(
     updateGeometry();
   });
 
+  // Matrix Size slider (IVM Array)
+  document.getElementById("matrixSizeSlider").addEventListener("input", e => {
+    const matrixSize = parseInt(e.target.value);
+    document.getElementById("matrixSizeValue").textContent = `${matrixSize}×${matrixSize}`;
+    updateGeometry();
+  });
+
+  // Matrix Rotate 45° checkbox
+  document.getElementById("matrixRotate45").addEventListener("change", () => {
+    updateGeometry();
+  });
+
   // Quadray Grid Tessellation Slider
   document.getElementById("quadrayTessSlider").addEventListener("input", e => {
     const tessValue = parseInt(e.target.value);

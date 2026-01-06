@@ -263,6 +263,59 @@ export const RT = {
     const sinValue = Math.sin(radians);
     return sinValue * sinValue; // sin²(θ)
   },
+
+  /**
+   * Apply 45° rotation around Z-axis using RT-pure spread/cross values
+   * Used for matrix grid alignment (aligns Tet/Octa edges to X-Y axes)
+   *
+   * RT-Pure Implementation:
+   * - Works in spread/cross space, NOT angle space
+   * - Spread s = sin²(45°) = 1/2 = 0.5 (exact rational!)
+   * - Cross c = cos²(45°) = 1/2 = 0.5 (exact rational!)
+   * - Verifies RT identity: s + c = 1.0
+   *
+   * @param {THREE.Group} group - THREE.js Group to rotate
+   * @requires THREE - THREE.js library
+   *
+   * @example
+   * const matrixGroup = new THREE.Group();
+   * // ... add polyhedra to group ...
+   * RT.applyRotation45(matrixGroup);
+   * // Group is now rotated 45° around Z-axis for grid alignment
+   */
+  applyRotation45: group => {
+    // Work in spread/cross space, not angle space
+    const s = 0.5; // Spread = sin²(45°) = 1/2 (exact rational!)
+    const c = 0.5; // Cross = cos²(45°) = 1/2 (exact rational!)
+
+    // Extract sin/cos ONLY when constructing matrix (deferred √)
+    const sin_val = Math.sqrt(s); // √(1/2) = √2/2
+    const cos_val = Math.sqrt(c); // √(1/2) = √2/2
+
+    // Build rotation matrix from spread/cross values
+    const rotationMatrix = new THREE.Matrix4();
+    rotationMatrix.set(
+      cos_val,
+      -sin_val,
+      0,
+      0,
+      sin_val,
+      cos_val,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1
+    );
+
+    group.applyMatrix4(rotationMatrix);
+    console.log(`[RT] Matrix rotation applied: s=${s}, c=${c}, s+c=${s + c} ✓`);
+  },
 };
 
 /**

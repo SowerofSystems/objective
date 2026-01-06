@@ -998,6 +998,34 @@
             <p class="info-text" style="font-size: 10px; margin-top: 5px">
               Linked sliders: rational units follow whichever you adjust
             </p>
+
+            <!-- Matrix Slider (IVM Array) -->
+            <div class="control-item" style="margin-top: 20px">
+              <label>Matrix Size (IVM Array)</label>
+              <div class="slider-container">
+                <input
+                  type="range"
+                  id="matrixSizeSlider"
+                  min="1"
+                  max="10"
+                  step="1"
+                  value="1"
+                />
+                <span class="slider-value" id="matrixSizeValue">1×1</span>
+              </div>
+              <p class="info-text">
+                Creates N×N array in X-Y plane (Fuller's IVM)
+              </p>
+
+              <!-- Matrix Rotation Toggle -->
+              <label class="checkbox-label">
+                <input type="checkbox" id="matrixRotate45" />
+                Rotate 45° (align to grid)
+              </label>
+              <p class="info-text" style="margin-left: 20px">
+                Aligns Tet/Octa edge-to-edge with X-Y grid (spread = 0.5)
+              </p>
+            </div>
           </div>
         </div>
         <!-- END SECTION 5: SCALE -->
