@@ -1849,18 +1849,85 @@ function startARTexplorer(
   document
     .getElementById("showCube")
     .addEventListener("change", updateGeometry);
-  document
-    .getElementById("showTetrahedron")
-    .addEventListener("change", updateGeometry);
+
+  // Tetrahedron with geodesic controls toggle
+  const tetrahedronCheckbox = document.getElementById("showTetrahedron");
+  const geodesicTetraCheckbox = document.getElementById("showGeodesicTetrahedron");
+  if (tetrahedronCheckbox) {
+    tetrahedronCheckbox.addEventListener("change", () => {
+      const geodesicTetraControls = document.getElementById("geodesic-tetra-all");
+      if (geodesicTetraControls) {
+        // Keep controls visible if geodesic variant is checked (preserve settings)
+        const shouldShow = tetrahedronCheckbox.checked || (geodesicTetraCheckbox && geodesicTetraCheckbox.checked);
+        geodesicTetraControls.style.display = shouldShow ? "block" : "none";
+      }
+      updateGeometry();
+    });
+  }
+  // Also listen to geodesic checkbox to control visibility
+  if (geodesicTetraCheckbox) {
+    geodesicTetraCheckbox.addEventListener("change", () => {
+      const geodesicTetraControls = document.getElementById("geodesic-tetra-all");
+      if (geodesicTetraControls && geodesicTetraCheckbox.checked) {
+        geodesicTetraControls.style.display = "block";
+      }
+      updateGeometry();
+    });
+  }
+
   document
     .getElementById("showDualTetrahedron")
     .addEventListener("change", updateGeometry);
-  document
-    .getElementById("showOctahedron")
-    .addEventListener("change", updateGeometry);
-  document
-    .getElementById("showIcosahedron")
-    .addEventListener("change", updateGeometry);
+
+  // Octahedron with geodesic controls toggle
+  const octahedronCheckbox = document.getElementById("showOctahedron");
+  const geodesicOctaCheckbox = document.getElementById("showGeodesicOctahedron");
+  if (octahedronCheckbox) {
+    octahedronCheckbox.addEventListener("change", () => {
+      const geodesicOctaControls = document.getElementById("geodesic-octa-all");
+      if (geodesicOctaControls) {
+        // Keep controls visible if geodesic variant is checked (preserve settings)
+        const shouldShow = octahedronCheckbox.checked || (geodesicOctaCheckbox && geodesicOctaCheckbox.checked);
+        geodesicOctaControls.style.display = shouldShow ? "block" : "none";
+      }
+      updateGeometry();
+    });
+  }
+  // Also listen to geodesic checkbox to control visibility
+  if (geodesicOctaCheckbox) {
+    geodesicOctaCheckbox.addEventListener("change", () => {
+      const geodesicOctaControls = document.getElementById("geodesic-octa-all");
+      if (geodesicOctaControls && geodesicOctaCheckbox.checked) {
+        geodesicOctaControls.style.display = "block";
+      }
+      updateGeometry();
+    });
+  }
+
+  // Icosahedron with geodesic controls toggle
+  const icosahedronCheckbox = document.getElementById("showIcosahedron");
+  const geodesicIcosaCheckbox = document.getElementById("showGeodesicIcosahedron");
+  if (icosahedronCheckbox) {
+    icosahedronCheckbox.addEventListener("change", () => {
+      const geodesicIcosaControls = document.getElementById("geodesic-icosa-all");
+      if (geodesicIcosaControls) {
+        // Keep controls visible if geodesic variant is checked (preserve settings)
+        const shouldShow = icosahedronCheckbox.checked || (geodesicIcosaCheckbox && geodesicIcosaCheckbox.checked);
+        geodesicIcosaControls.style.display = shouldShow ? "block" : "none";
+      }
+      updateGeometry();
+    });
+  }
+  // Also listen to geodesic checkbox to control visibility
+  if (geodesicIcosaCheckbox) {
+    geodesicIcosaCheckbox.addEventListener("change", () => {
+      const geodesicIcosaControls = document.getElementById("geodesic-icosa-all");
+      if (geodesicIcosaControls && geodesicIcosaCheckbox.checked) {
+        geodesicIcosaControls.style.display = "block";
+      }
+      updateGeometry();
+    });
+  }
   document
     .getElementById("showDodecahedron")
     .addEventListener("change", updateGeometry);
