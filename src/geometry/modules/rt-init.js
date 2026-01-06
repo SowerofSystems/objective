@@ -980,10 +980,38 @@ function startARTexplorer(
     const scale = tetEdge / (2 * Math.sqrt(2)); // Convert tet edge to halfSize
     const opacity = parseFloat(document.getElementById("opacitySlider").value);
 
-    // Cube (Blue)
+    // Cube (Blue) - with Matrix support
     if (document.getElementById("showCube").checked) {
-      const cube = Polyhedra.cube(scale);
-      renderPolyhedron(cubeGroup, cube, 0x4a9eff, opacity);
+      // Get matrix settings
+      const matrixSize = parseInt(
+        document.getElementById("matrixSizeSlider")?.value || "1"
+      );
+      const rotate45 = document.getElementById("matrixRotate45")?.checked || false;
+
+      // Clear existing cube group
+      while (cubeGroup.children.length > 0) {
+        cubeGroup.remove(cubeGroup.children[0]);
+      }
+
+      if (matrixSize > 1) {
+        // Use matrix generator for N×N array
+        import("./rt-matrix.js").then(MatrixModule => {
+          const { RTMatrix } = MatrixModule;
+          const cubeMatrix = RTMatrix.createCubeMatrix(
+            matrixSize,
+            scale,
+            rotate45,
+            opacity,
+            0x4a9eff,
+            THREE
+          );
+          cubeGroup.add(cubeMatrix);
+        });
+      } else {
+        // Single cube (original behavior)
+        const cube = Polyhedra.cube(scale);
+        renderPolyhedron(cubeGroup, cube, 0x4a9eff, opacity);
+      }
       cubeGroup.visible = true;
     } else {
       cubeGroup.visible = false;
@@ -1634,16 +1662,22 @@ function startARTexplorer(
   });
 
   // Matrix Size slider (IVM Array)
-  document.getElementById("matrixSizeSlider").addEventListener("input", e => {
-    const matrixSize = parseInt(e.target.value);
-    document.getElementById("matrixSizeValue").textContent = `${matrixSize}×${matrixSize}`;
-    updateGeometry();
-  });
+  const matrixSlider = document.getElementById("matrixSizeSlider");
+  if (matrixSlider) {
+    matrixSlider.addEventListener("input", e => {
+      const matrixSize = parseInt(e.target.value);
+      document.getElementById("matrixSizeValue").textContent = `${matrixSize}×${matrixSize}`;
+      updateGeometry();
+    });
+  }
 
   // Matrix Rotate 45° checkbox
-  document.getElementById("matrixRotate45").addEventListener("change", () => {
-    updateGeometry();
-  });
+  const rotateCheckbox = document.getElementById("matrixRotate45");
+  if (rotateCheckbox) {
+    rotateCheckbox.addEventListener("change", () => {
+      updateGeometry();
+    });
+  }
 
   // Quadray Grid Tessellation Slider
   document.getElementById("quadrayTessSlider").addEventListener("input", e => {
