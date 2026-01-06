@@ -142,23 +142,48 @@
     });
 
     // Ventilation cooling load - d_122
+    // Legacy formula from Section13.js lines 2956-2980
     graph.registerNode({
       id: "ventilation.heatGain",
       legacyId: "d_122",
       section: "S13",
       classification: "C",
-      dependencies: ["ventilation.volumetricRate", "climate.cooling.degreedays", "mechanical.ventilation.efficiency"],
+      dependencies: [
+        "ventilation.volumetricRate",
+        "climate.cooling.degreedays",
+        "mechanical.cooling.systemType",
+        "occupancy.occupiedHours",
+        "occupancy.totalHours",
+        "mechanical.ventilation.summerBoost"
+      ],
       label: "Net Ventilation Heat Gain (kWh/yr)",
       compute: (inputs) => {
         const cdd = inputs["climate.cooling.degreedays"];
-        // Legacy returns 0 when CDD unavailable
         if (isUnavailable(cdd)) return 0;
 
         const volumeRate = parseNum(inputs["ventilation.volumetricRate"]);
-        const efficiency = parseNum(inputs["mechanical.ventilation.efficiency"], 89) / 100;
-        // Formula from Section13: (1.21 * ventRate * cdd * 24) / 1000 * (1 - efficiency)
-        const grossGain = (1.21 * volumeRate * parseNum(cdd) * 24) / 1000;
-        return grossGain * (1 - efficiency);
+        const coolingSystem = inputs["mechanical.cooling.systemType"] || "No Cooling";
+        const occupiedHours = parseNum(inputs["occupancy.occupiedHours"], 4380);
+        const totalHours = parseNum(inputs["occupancy.totalHours"], 8760);
+        const occupancyFactor = totalHours > 0 ? occupiedHours / totalHours : 0.5;
+
+        // Latent load factor (from Cooling.js) - default 1.0
+        const latentLoadFactor = 1.0;  // TODO: Add cooling.latentLoadFactor input
+
+        // Summer boost factor (l_119)
+        const summerBoost = parseNum(inputs["mechanical.ventilation.summerBoost"], 0);
+        const summerBoostFactor = summerBoost > 0 ? summerBoost : 1.0;
+
+        // Base formula: (1.21 * ventRate * cdd * 24) / 1000
+        const baseEnergy = (1.21 * volumeRate * parseNum(cdd) * 24) / 1000;
+
+        // Apply factors based on cooling system type
+        if (coolingSystem === "Cooling") {
+          return baseEnergy * occupancyFactor * summerBoostFactor * latentLoadFactor;
+        } else {
+          // No Cooling - don't apply occupancy factor
+          return baseEnergy * summerBoostFactor * latentLoadFactor;
+        }
       }
     });
 
