@@ -692,9 +692,9 @@ Matrix forms integrate seamlessly with existing systems through minimal, targete
 
 ---
 
-**Phase 1.5b: Add Tet Matrix Form Type** (READY TO IMPLEMENT)
+**Phase 1.5b: Add Tet Matrix Form Type** ⚠️ IMPLEMENTED - NEEDS SPACING CORRECTION
 
-**Status:** 🔜 Next Phase
+**Status:** ✅ Implemented | ⚠️ Spacing Issue Identified
 
 **Goal:** Create tetrahedron matrix following Cube Matrix pattern
 
@@ -768,13 +768,40 @@ Matrix forms integrate seamlessly with existing systems through minimal, targete
 - Test Tet + Cube simultaneous display
 - Verify octahedral voids appear between tets
 
-**Estimated Effort:** 2-3 hours (generator function + testing)
+**Implementation Summary:**
+- ✅ Generator function created with alternating orientations (checkerboard pattern)
+- ✅ UI controls enabled (checkbox, size slider, rotate45)
+- ✅ Event listeners wired up
+- ✅ Rendering integration in updateGeometry()
+- ✅ Node support via addMatrixNodes()
+- ⚠️ **SPACING ISSUE**: Currently using `spacing = tetEdge = 2 * halfSize * √2`
+  - **Problem**: Tetrahedra do NOT nest inside cubes as expected
+  - **Expected**: Tets should perfectly inscribe in cube matrix (complementary geometry)
+  - **Required Fix**: Spacing should match cube spacing (`cubeEdge = 2 * halfSize * √2`)
+  - Tetrahedron vertices lie at cube vertices, so spacing MUST equal cube edge length
+
+**Validation Results:**
+- ✅ Matrix renders with alternating up/down orientations
+- ✅ UI controls work (size slider, rotate45 checkbox)
+- ✅ Nodes render at all vertices
+- ❌ **Spacing incorrect**: Tets do NOT nest in cubes (visual test failed)
+- ❌ **Grid alignment**: Vertices not touching in plan view
+
+**Files Modified:**
+- [rt-matrix.js](../../../src/geometry/modules/rt-matrix.js): createTetrahedronMatrix() implemented
+- [rt-init.js](../../../src/geometry/modules/rt-init.js): Rendering logic + event listeners
+- [index.html](../../../src/geometry/index.html): UI controls enabled
+
+**Next Steps:**
+- 🔧 **Fix spacing**: Change from `tetEdge` to cube edge length (`2 * halfSize * √2`)
+- 🔧 Verify tetrahedra nest perfectly inside cube matrix
+- 🔧 Verify vertex-to-vertex contact in plan view
 
 ---
 
-**Phase 1.5c: Add Octa Matrix Form Type** (READY TO IMPLEMENT)
+**Phase 1.5c: Add Octa Matrix Form Type** ⚠️ IMPLEMENTED - NEEDS SPACING CORRECTION
 
-**Status:** 🔜 After Phase 1.5b
+**Status:** ✅ Implemented | ⚠️ Spacing Issue Identified
 
 **Goal:** Create octahedron matrix following Cube Matrix pattern
 
@@ -831,12 +858,35 @@ Matrix forms integrate seamlessly with existing systems through minimal, targete
 - **Orientation**: All octahedra point up, or alternating?
 - **Alignment**: With/without 45° rotation shows different grid relationships
 
-**Validation:**
-- All Cube Matrix criteria
-- Test Tet + Octa composition (Octet Truss!)
-- Verify IVM packing relationships visible
+**Implementation Summary:**
+- ✅ Generator function created with uniform orientation
+- ✅ UI controls enabled (checkbox, size slider, rotate45)
+- ✅ Event listeners wired up
+- ✅ Rendering integration in updateGeometry()
+- ✅ Node support via addMatrixNodes()
+- ⚠️ **SPACING ISSUE**: Currently using `spacing = 2 * halfSize` (face-to-face)
+  - **Problem**: Octahedra should pack edge-to-edge, not face-to-face
+  - **Current Result**: Too close together (overlapping in some cases)
+  - **Expected**: Edge-to-edge contact with octahedron centered in each grid cell
+  - **Required Fix**: Follow cube matrix logic - octahedron should sit in center of cube
+  - Octahedron vertices at ±halfSize on each axis → spacing should equal cube edge
 
-**Estimated Effort:** 2-3 hours
+**Validation Results:**
+- ✅ Matrix renders with uniform orientation
+- ✅ UI controls work (size slider, rotate45 checkbox)
+- ✅ Nodes render at all vertices
+- ❌ **Spacing incorrect**: Octahedra too close (should be edge-to-edge)
+- ❌ **Grid alignment**: Not centered properly in cube grid
+
+**Files Modified:**
+- [rt-matrix.js](../../../src/geometry/modules/rt-matrix.js): createOctahedronMatrix() implemented
+- [rt-init.js](../../../src/geometry/modules/rt-init.js): Rendering logic + event listeners
+- [index.html](../../../src/geometry/index.html): UI controls enabled
+
+**Next Steps:**
+- 🔧 **Fix spacing**: Use cube edge length for proper grid alignment
+- 🔧 Verify octahedra center in cube cells (like octahedron sits in cube center)
+- 🔧 Test edge-to-edge contact when rotate45 enabled
 
 ---
 
