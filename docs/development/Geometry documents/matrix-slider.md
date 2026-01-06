@@ -136,6 +136,9 @@ if (matrixRotate45Enabled) {
 // ALTERNATIVE: If Three.js makeRotationZ is used (pragmatic compromise):
 // const rotation_45_z = new THREE.Matrix4().makeRotationZ(Math.PI / 4);
 // NOTE: This uses π internally, but we've verified s=c=0.5 algebraically first
+
+// IMPLEMENTATION NOTE: Use RT.applyRotation45(group) from rt-math.js module
+// This centralizes rotation logic with other RT-pure functions (spread, circleParam)
 ```
 
 **Use Cases:**
@@ -269,12 +272,14 @@ All styling comes from existing art.css definitions, maintaining visual consiste
    - Return combined THREE.Group containing all cubes
 
 3. **Rotation Implementation (RT-PURE)**
+   - Add `RT.applyRotation45(group)` to rt-math.js module (see Section 6.1)
    - Define spread/cross: `s = 0.5, c = 0.5` (exact rational values, NO angles!)
    - Extract sin/cos ONLY when needed: `sin = √s, cos = √c` (deferred √ expansion)
    - Construct rotation matrix manually using spread/cross values
    - Apply to matrix group: `matrixGroup.applyMatrix4(rotationMatrix)`
    - Verify RT identity: `s + c = 1.0 ✓`
-   - Label "45°" is user-facing shorthand; internal math uses quadrance
+   - Console log: `[RT] Matrix rotation applied: s=0.5, c=0.5, s+c=1.0 ✓`
+   - Label "45°" is user-facing shorthand; internal math uses spread
    - Note: Cube matrix visually unchanged by rotation (cubic symmetry)
 
 4. **Integration with Existing Scale**
@@ -472,29 +477,6 @@ const RT_Matrix = {
   createTetrahedronMatrix: (matrixSize, halfSize, rotate45) => { /* ... */ },
   createOctahedronMatrix: (matrixSize, halfSize, rotate45) => { /* ... */ },
 
-  // RT-Pure rotation helper (NO ANGLES!)
-  applyRotation45: (group) => {
-    // Work in spread/cross space, not angle space
-    const s = 0.5;  // Spread = sin²(45°) = 1/2 (exact rational!)
-    const c = 0.5;  // Cross = cos²(45°) = 1/2 (exact rational!)
-
-    // Extract sin/cos ONLY when constructing matrix (deferred √)
-    const sin_val = Math.sqrt(s);  // √(1/2) = √2/2
-    const cos_val = Math.sqrt(c);  // √(1/2) = √2/2
-
-    // Build rotation matrix from spread/cross values
-    const rotationMatrix = new THREE.Matrix4();
-    rotationMatrix.set(
-      cos_val, -sin_val, 0, 0,
-      sin_val,  cos_val, 0, 0,
-      0,        0,       1, 0,
-      0,        0,       0, 1
-    );
-
-    group.applyMatrix4(rotationMatrix);
-    console.log(`[RT] Matrix rotation applied: s=${s}, c=${c}, s+c=${s+c} ✓`);
-  },
-
   // Helper functions
   calculateGridPosition: (i, j, matrixSize, spacing) => { /* ... */ },
   centerMatrix: (group, matrixSize, spacing) => { /* ... */ },
@@ -504,7 +486,71 @@ const RT_Matrix = {
 };
 ```
 
-### 6.2 Integration Points
+**Enhanced Module:** `src/geometry/modules/rt-math.js`
+
+Add rotation helper to centralize RT-pure rotation logic:
+
+```javascript
+// RT-Pure 45° rotation helper (NO ANGLES!)
+// Add to existing RT namespace in rt-math.js
+RT.applyRotation45 = (group) => {
+  // Work in spread/cross space, not angle space
+  const s = 0.5;  // Spread = sin²(45°) = 1/2 (exact rational!)
+  const c = 0.5;  // Cross = cos²(45°) = 1/2 (exact rational!)
+
+  // Extract sin/cos ONLY when constructing matrix (deferred √)
+  const sin_val = Math.sqrt(s);  // √(1/2) = √2/2
+  const cos_val = Math.sqrt(c);  // √(1/2) = √2/2
+
+  // Build rotation matrix from spread/cross values
+  const rotationMatrix = new THREE.Matrix4();
+  rotationMatrix.set(
+    cos_val, -sin_val, 0, 0,
+    sin_val,  cos_val, 0, 0,
+    0,        0,       1, 0,
+    0,        0,       0, 1
+  );
+
+  group.applyMatrix4(rotationMatrix);
+  console.log(`[RT] Matrix rotation applied: s=${s}, c=${c}, s+c=${s+c} ✓`);
+};
+```
+
+**Rationale:** Rotation logic belongs in rt-math.js alongside `spread()`, `circleParam()`, and other RT-pure mathematical functions. This keeps all spread/cross-based operations centralized.
+
+### 6.2 Leveraging Existing RT-Math Functions
+
+**Available RT-Math Functions (from rt-math.js):**
+
+1. **`RT.circleParam(t)`** - Rational circle parametrization (Weierstrass)
+   - Future use: Snap-to-spread rotation constraints
+   - Can find parameter `t` for target spread algebraically
+   - No inverse trig needed
+
+2. **`RT.spreadToParam(spread)`** - Convert spread to angle parameter
+   - Future use: Algebraic snapping to specific spread values
+   - Example: Snap to spread = 0.5 (45°) or spread = 0.75 (60°)
+   - Returns parameter `t` for `circleParam(t)`
+
+3. **`RT.quadrance(p1, p2)`** - Distance² calculation
+   - Used for: Edge validation, spacing verification
+   - All matrix positioning can use quadrance comparisons
+
+4. **`RT.spread(v1, v2)`** - Angular spread between vectors
+   - Used for: Verifying 45° rotation correctness
+   - Educational: Display spread between matrix instances
+
+5. **`RT.degreesToSpread(deg)` / `RT.spreadToDegrees(spread)`**
+   - Used for: UI display conversion (degrees ↔ spread)
+   - Label shows "45°" but calculation uses spread = 0.5
+
+**Integration Strategy:**
+- Matrix spacing: Use `RT.quadrance()` for all distance comparisons
+- Rotation verification: Use `RT.spread()` to verify s = 0.5
+- Future snapping: Use `RT.spreadToParam()` for algebraic snap-to-spread
+- Console logging: Display both degrees and spread for educational clarity
+
+### 6.3 Integration Points
 
 **Modify:** `src/geometry/modules/rt-rendering.js`
 - Update `updateGeometry()` to call matrix generators instead of single polyhedra
