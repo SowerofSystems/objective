@@ -166,7 +166,20 @@ export const RTStateManager = {
         if (child.isMesh) {
           // Clone geometry to prevent transform corruption
           const clonedGeometry = child.geometry.clone();
-          const instanceMesh = new THREE.Mesh(clonedGeometry, child.material);
+
+          // Clone material to prevent shared highlight state
+          const clonedMaterial = child.material.clone();
+
+          // Reset any highlight state from material
+          // (instance should start unhighlighted even if form was selected)
+          if (child.userData.originalEmissive) {
+            // Form was highlighted - restore original emissive to cloned material
+            clonedMaterial.emissive.copy(child.userData.originalEmissive);
+            clonedMaterial.emissiveIntensity =
+              child.userData.originalEmissiveIntensity;
+          }
+
+          const instanceMesh = new THREE.Mesh(clonedGeometry, clonedMaterial);
           instanceMesh.position.copy(child.position);
           instanceMesh.rotation.copy(child.rotation);
           instanceMesh.scale.copy(child.scale);
@@ -175,9 +188,18 @@ export const RTStateManager = {
         } else if (child.isLine || child.isLineSegments) {
           // Clone line geometry too
           const clonedGeometry = child.geometry.clone();
+
+          // Clone material to prevent shared line width state
+          const clonedMaterial = child.material.clone();
+
+          // Reset any highlight line width
+          if (child.userData.originalLineWidth !== undefined) {
+            clonedMaterial.linewidth = child.userData.originalLineWidth;
+          }
+
           const instanceLine = child.isLineSegments
-            ? new THREE.LineSegments(clonedGeometry, child.material)
-            : new THREE.Line(clonedGeometry, child.material);
+            ? new THREE.LineSegments(clonedGeometry, clonedMaterial)
+            : new THREE.Line(clonedGeometry, clonedMaterial);
           instanceLine.position.copy(child.position);
           instanceLine.rotation.copy(child.rotation);
           instanceLine.scale.copy(child.scale);
