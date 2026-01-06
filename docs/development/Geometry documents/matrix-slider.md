@@ -321,140 +321,310 @@ All styling comes from existing art.css definitions, maintaining visual consiste
 - `a9c14b8` - Initial matrix slider implementation
 - `f326461` - Fix: Implement cube matrix in correct updateGeometry function
 
+**Phase 1 Notes:**
+Phase 1 implementation placed matrix controls in the Scale section as a proof-of-concept. Phase 1.5 refactors this to create proper Form types with isolated controls, aligning with the established ARTexplorer architecture.
+
 ---
 
-### Phase 1.5: Instance Transform Support (Matrix Object Controls)
+### Phase 1.5: Matrix Forms Architecture (REVISED APPROACH) 🔄
 
-**Goal:** Enable existing gumball transform controls (move, scale, rotate) to work with matrix objects
+**Goal:** Refactor matrix slider into separate Form types that integrate with existing instance/transform system
 
-**Status:** 🔄 Planning
+**Status:** 🔄 Planning → Implementation
 
-**Problem:**
-Currently, generated matrix objects are procedurally created groups that don't integrate with the existing instance system. The "move", "scale", "rotate", and "now" instance controls only work with individual polyhedra created via the instance system, not with matrix groups.
+**Architectural Decision:**
+Instead of treating matrices as properties of base forms (Cube, Tet, Octa), create **dedicated Matrix Form types** (Cube Matrix, Tet Matrix, Octa Matrix) with form-specific controls. This approach:
+- Separates concerns: base forms vs spatial arrays
+- Isolates transformations to individual forms (existing pattern)
+- Enables multi-matrix compositions (e.g., Tet Matrix + Octa Matrix = Octet Truss)
+- Integrates seamlessly with RTStateManager instance system
 
-**Objective:**
-Allow users to apply transformation controls to the entire matrix object as a single entity:
-- **Move:** Translate the entire N×N matrix in 3D space
-- **Scale:** Uniformly scale the entire matrix (in addition to per-cube scaling)
-- **Rotate:** Rotate the entire matrix around its center
-- **Now:** Capture current matrix state as an instance (snapshot)
+---
 
-**Implementation Considerations:**
+## Phase 1.5 Implementation Plan
 
-1. **Matrix as Instance Integration**
-   - Current matrix is a procedural THREE.Group, not an "instance" in RTStateManager
-   - Options:
-     - A) Convert matrix group to instance when created
-     - B) Create special "matrix instance" type in RTStateManager
-     - C) Hybrid: matrix remains procedural until user interacts with gumball
+### 1.5.1: New Form Types
 
-2. **Gumball Attachment**
-   - Gumball controls currently attach to RTStateManager instances
-   - Need to detect when matrix object is selected
-   - Attach gumball to matrix group's bounding box center
-   - Apply transformations to matrix group transform
+**Create Three Matrix Form Types:**
 
-3. **Transform Persistence**
-   - Matrix rebuilds on slider change (matrixSize or rotate45)
-   - Need to preserve user-applied transforms during rebuilds
-   - Store transform state separately from matrix generation parameters
+| Form Type | Label | Color | Properties | Notes |
+|-----------|-------|-------|------------|-------|
+| `cubeMatrix` | "Cube Matrix" | 0x4a9eff | matrixSize, rotate45, opacity | No vertex nodes |
+| `tetrahedronMatrix` | "Tet Matrix" | 0xffff00 | matrixSize, rotate45, opacity | No vertex nodes |
+| `octahedronMatrix` | "Octa Matrix" | 0xff6b6b | matrixSize, rotate45, opacity | No vertex nodes |
 
-4. **Scale Interaction**
-   - Existing: tetScaleSlider affects per-cube halfSize
-   - New: Gumball scale affects entire matrix group scale
-   - Both should compose: matrix.scale × cubeGroup.scale
-   - User should understand distinction: "cube size" vs "matrix spread"
+**Key Properties:**
+- **matrixSize**: 1-10 (N×N grid size)
+- **rotate45**: Boolean (45° Z-rotation for grid alignment)
+- **opacity**: 0.0-1.0 (transparency)
+- **scale**: Inherits from global tetScaleSlider (per-polyhedron halfSize)
+- **NO nodes toggle**: Matrix forms never render vertex nodes (semantic difference from base forms)
 
-**Proposed Architecture:**
+### 1.5.2: UI Restructuring
+
+**Move Matrix Controls OUT of Scale Section → Into Individual Form Sections**
+
+**Current (Phase 1):**
+```
+Scale (global)
+  ├─ Tet Edge Slider
+  ├─ Cube Edge Slider
+  └─ Matrix Size Slider (❌ applies to all forms, confusing)
+```
+
+**New (Phase 1.5):**
+```
+Forms
+  ├─ ☐ Cube
+  ├─ ☐ Cube Matrix
+  │   └─ Matrix Size: [1-10]
+  │   └─ ☐ Rotate 45°
+  ├─ ☐ Tetrahedron
+  ├─ ☐ Tet Matrix
+  │   └─ Matrix Size: [1-10]
+  │   └─ ☐ Rotate 45°
+  ├─ ☐ Octahedron
+  └─ ☐ Octa Matrix
+      └─ Matrix Size: [1-10]
+      └─ ☐ Rotate 45°
+
+Scale (global - affects ALL forms)
+  ├─ Tet Edge Slider
+  └─ Cube Edge Slider
+```
+
+**Benefits:**
+- Matrix controls only visible when corresponding matrix form is checked
+- Each matrix form has isolated properties (different sizes/rotations possible)
+- Clear separation: "working with Cube" vs "working with Cube Matrix"
+- Enables simultaneous multi-matrix scenes (Tet Matrix + Octa Matrix)
+
+### 1.5.3: Multi-Matrix Compositions
+
+**Use Case: Octet Truss Visualization**
+
+User can enable both `Tet Matrix` + `Octa Matrix` simultaneously to visualize Fuller's Octet Truss space frame:
 
 ```javascript
-// Pseudocode
-class MatrixInstance {
-  constructor(matrixSize, halfSize, rotate45, polyType) {
-    this.matrixSize = matrixSize;
-    this.halfSize = halfSize;
-    this.rotate45 = rotate45;
-    this.polyType = polyType; // 'cube', 'tetrahedron', 'octahedron'
+// Example configuration
+tetMatrix: {
+  enabled: true,
+  matrixSize: 5,
+  rotate45: true,
+  opacity: 0.7
+}
 
-    // User-applied transforms (separate from generation)
-    this.position = new THREE.Vector3(0, 0, 0);
-    this.rotation = new THREE.Euler(0, 0, 0);
-    this.scale = new THREE.Vector3(1, 1, 1);
+octaMatrix: {
+  enabled: true,
+  matrixSize: 5,
+  rotate45: true,
+  opacity: 0.7
+}
 
-    this.group = this.generate();
+// Result: 5×5 Tet + 5×5 Octa overlapping → Octet Truss structure
+```
+
+**Design Decision: Separate Octet Matrix Form?**
+
+**Option A:** Dedicated "Octet Matrix" form
+- Pros: Single toggle for complete structure, optimized rendering
+- Cons: Redundant with Tet + Octa combination, less flexible
+
+**Option B:** Composition via Tet Matrix + Octa Matrix (RECOMMENDED)
+- Pros: Educational (shows components), flexible (vary sizes/opacities independently), reuses existing generators
+- Cons: Slightly more UI complexity (two checkboxes instead of one)
+
+**Recommendation:** Start with Option B (composition). Defer dedicated "Octet Matrix" form to Phase 5 if user demand exists.
+
+### 1.5.4: RTStateManager Integration
+
+**Extend RTStateManager to Handle Matrix Forms:**
+
+```javascript
+// Pseudocode additions to RTStateManager
+
+const FORM_TYPES = {
+  // Existing base forms
+  cube: { hasNodes: true, generator: 'cube' },
+  tetrahedron: { hasNodes: true, generator: 'tetrahedron' },
+  octahedron: { hasNodes: true, generator: 'octahedron' },
+  // ... other base forms
+
+  // NEW: Matrix forms
+  cubeMatrix: {
+    hasNodes: false,
+    generator: 'createCubeMatrix',
+    properties: ['matrixSize', 'rotate45']
+  },
+  tetrahedronMatrix: {
+    hasNodes: false,
+    generator: 'createTetrahedronMatrix',
+    properties: ['matrixSize', 'rotate45']
+  },
+  octahedronMatrix: {
+    hasNodes: false,
+    generator: 'createOctahedronMatrix',
+    properties: ['matrixSize', 'rotate45']
   }
+};
 
-  generate() {
-    // Call RTMatrix.createCubeMatrix() etc
-    const matrixGroup = RTMatrix.createCubeMatrix(
-      this.matrixSize,
-      this.halfSize,
-      this.rotate45,
-      /* ... */
+// Instance creation
+createInstance(formType, properties) {
+  const instance = {
+    id: generateUUID(),
+    formType: formType, // 'cubeMatrix', 'tetrahedronMatrix', etc.
+    properties: {
+      ...properties,
+      position: new THREE.Vector3(),
+      rotation: new THREE.Euler(),
+      scale: new THREE.Vector3(1, 1, 1)
+    },
+    group: this.generateGeometry(formType, properties)
+  };
+
+  this.instances.set(instance.id, instance);
+  return instance;
+}
+
+// Geometry generation routing
+generateGeometry(formType, props) {
+  if (formType === 'cubeMatrix') {
+    return RTMatrix.createCubeMatrix(
+      props.matrixSize,
+      props.halfSize,
+      props.rotate45,
+      props.opacity,
+      props.color,
+      THREE
     );
-
-    // Apply user transforms
-    matrixGroup.position.copy(this.position);
-    matrixGroup.rotation.copy(this.rotation);
-    matrixGroup.scale.copy(this.scale);
-
-    return matrixGroup;
-  }
-
-  rebuild() {
-    // Preserve transforms, regenerate geometry
-    const oldPos = this.group.position.clone();
-    const oldRot = this.group.rotation.clone();
-    const oldScale = this.group.scale.clone();
-
-    this.group = this.generate();
-
-    this.group.position.copy(oldPos);
-    this.group.rotation.copy(oldRot);
-    this.group.scale.copy(oldScale);
+  } else if (formType === 'tetrahedronMatrix') {
+    return RTMatrix.createTetrahedronMatrix(/* ... */);
+  } else if (formType === 'octahedronMatrix') {
+    return RTMatrix.createOctahedronMatrix(/* ... */);
+  } else {
+    // Base forms use Polyhedra.cube(), etc.
+    return Polyhedra[formType](props.halfSize);
   }
 }
 ```
 
-**Tasks:**
-1. **Matrix Instance Class**
-   - Create MatrixInstance class to wrap matrix generation
-   - Store generation parameters (matrixSize, halfSize, rotate45, polyType)
-   - Store user transform state (position, rotation, scale)
-   - Provide rebuild() method that preserves transforms
+### 1.5.5: Transform & Instance Workflow
 
-2. **RTStateManager Integration**
-   - Register matrix as a special instance type
-   - Allow gumball to attach to matrix instances
-   - Serialize/deserialize matrix instances with RTFileHandler
+**User Workflow (aligns with existing system):**
 
-3. **Gumball Transform Application**
-   - Detect matrix instance selection
-   - Attach gumball to matrix bounding box
-   - Update MatrixInstance transform properties on gumball interaction
-   - Rebuild matrix geometry while preserving transforms
+1. **Enable Matrix Form:**
+   - Check `☐ Cube Matrix` → base cube matrix appears at origin
 
-4. **UI/UX Refinement**
-   - Visual feedback: highlight matrix when selected
-   - "Now" button creates snapshot of current matrix state
-   - Multiple matrix instances can coexist in scene
+2. **Adjust Properties:**
+   - Set Matrix Size = 5 (5×5 grid)
+   - Enable Rotate 45° (align to grid)
+   - Set Opacity = 0.8
 
-5. **Transform Persistence During Regeneration**
-   - When matrixSize slider changes → rebuild geometry, keep transforms
-   - When rotate45 checkbox changes → rebuild geometry, keep transforms
-   - When tetScaleSlider changes → rebuild geometry with new halfSize, keep transforms
+3. **Create Instance ("Now" button):**
+   - Current cube matrix is frozen as an instance
+   - Instance registered in RTStateManager with properties: `{formType: 'cubeMatrix', matrixSize: 5, rotate45: true, opacity: 0.8}`
+   - Base cube matrix resets to defaults (Size=1, Rotate=OFF, Opacity=1.0)
 
-**Validation Criteria:**
-- User can click matrix to select it
-- Gumball appears attached to matrix center
-- Move gumball → entire matrix translates
-- Scale gumball → entire matrix scales uniformly (multiplies with per-cube scale)
-- Rotate gumball → entire matrix rotates around center
-- Changing matrixSize slider → matrix rebuilds with new size, preserves position/rotation/scale
-- "Now" button → creates instance snapshot of current matrix configuration
-- Multiple matrix instances can exist simultaneously with independent transforms
+4. **Transform Instance:**
+   - Click instance to select
+   - Gumball appears attached to matrix bounding box center
+   - Move/Scale/Rotate entire matrix as single unit
+   - Transforms persist in instance state
 
-**Priority:** High (essential for matrix usability)
+5. **Create Additional Instances:**
+   - Adjust base cube matrix to different properties (e.g., Size=3, Rotate=OFF)
+   - Click "Now" → second instance created
+   - Both instances coexist with independent transforms
+
+6. **Multi-Matrix Composition:**
+   - Enable `☐ Tet Matrix` while Cube Matrix instances exist
+   - Adjust Tet Matrix properties, click "Now"
+   - Scene now has Cube Matrix + Tet Matrix instances overlapping
+
+### 1.5.6: RTFileHandler Serialization
+
+**Extend serialization to include matrix properties:**
+
+```javascript
+// Serialized instance format
+{
+  id: "uuid-1234",
+  formType: "cubeMatrix",
+  properties: {
+    matrixSize: 5,
+    rotate45: true,
+    opacity: 0.8,
+    halfSize: 0.707, // from global scale slider
+    color: 0x4a9eff
+  },
+  transform: {
+    position: { x: 2.5, y: 0, z: 0 },
+    rotation: { x: 0, y: 0, z: 0 },
+    scale: { x: 1.2, y: 1.2, z: 1.2 }
+  }
+}
+```
+
+**On reload:**
+1. Deserialize instance data
+2. Call `RTMatrix.createCubeMatrix(matrixSize, halfSize, rotate45, ...)`
+3. Apply stored transform to generated group
+4. Add to scene and RTStateManager
+
+### 1.5.7: Implementation Tasks
+
+**Phase 1.5a: Refactor Cube Matrix to Form Type**
+1. ✅ Remove matrix controls from Scale section
+2. ✅ Add "Cube Matrix" checkbox in Forms section
+3. ✅ Create cubeMatrixGroup (separate from cubeGroup)
+4. ✅ Add matrix-specific controls (matrixSize, rotate45) that appear only when Cube Matrix is checked
+5. ✅ Integrate with RTStateManager as 'cubeMatrix' form type
+6. ✅ Test "Now" button → instance creation
+7. ✅ Test gumball transforms on matrix instances
+8. ✅ Test RTFileHandler save/load with matrix instances
+
+**Phase 1.5b: Add Tet Matrix Form Type**
+1. Implement `RTMatrix.createTetrahedronMatrix()`
+2. Add "Tet Matrix" checkbox + controls
+3. Register 'tetrahedronMatrix' in RTStateManager
+4. Test Tet Matrix + Cube Matrix simultaneous display
+
+**Phase 1.5c: Add Octa Matrix Form Type**
+1. Implement `RTMatrix.createOctahedronMatrix()`
+2. Add "Octa Matrix" checkbox + controls
+3. Register 'octahedronMatrix' in RTStateManager
+4. Test Tet + Octa Matrix composition (Octet Truss demo)
+
+**Phase 1.5d: Documentation & Polish**
+1. Update workplan with completed implementation
+2. Document multi-matrix composition workflows
+3. Add educational notes on Octet Truss structure
+
+### 1.5.8: Validation Criteria
+
+**Form Isolation:**
+- ✅ Cube Matrix checkbox toggles cubeMatrixGroup visibility
+- ✅ Matrix Size slider only visible when Cube Matrix is checked
+- ✅ Changing Matrix Size only affects Cube Matrix, not other forms
+- ✅ Cube and Cube Matrix can display simultaneously with different properties
+
+**Instance System:**
+- ✅ "Now" button creates cubeMatrix instance
+- ✅ Instance stores matrixSize, rotate45, opacity properties
+- ✅ Base Cube Matrix resets after "Now"
+- ✅ Multiple matrix instances can coexist
+
+**Transforms:**
+- ✅ Click matrix instance → gumball attaches to bounding box center
+- ✅ Move/Scale/Rotate applied to entire matrix group
+- ✅ Transforms persist across session (RTFileHandler save/load)
+
+**Multi-Matrix:**
+- ✅ Tet Matrix + Octa Matrix enabled simultaneously
+- ✅ Independent matrixSize/rotate45 controls for each
+- ✅ Overlapping matrices render correctly (Octet Truss visualization)
+
+**Priority:** High (essential architectural refactor before Phase 2)
 
 ---
 
