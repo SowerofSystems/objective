@@ -68,6 +68,15 @@ export const RTStateManager = {
 
     // Counters
     depositedCount: 0,
+
+    // Modification tracking for auto-save
+    modificationCount: 0,
+    lastSaveModificationCount: 0,
+  },
+
+  // Callbacks for external systems (e.g., file handler auto-save)
+  callbacks: {
+    onModification: null, // Called on each state modification
   },
 
   // ========================================================================
@@ -79,6 +88,43 @@ export const RTStateManager = {
    */
   init() {
     console.log("✅ RTStateManager initialized");
+  },
+
+  /**
+   * Register callback for state modifications
+   * @param {Function} callback - Called with (modificationCount, changesSinceSave)
+   */
+  onModification(callback) {
+    this.callbacks.onModification = callback;
+  },
+
+  /**
+   * Track a state modification and trigger callback
+   * @param {string} action - Type of modification (create/update/delete)
+   */
+  trackModification(action) {
+    this.state.modificationCount++;
+    const changesSinceSave = this.state.modificationCount - this.state.lastSaveModificationCount;
+
+    // Trigger callback if registered
+    if (this.callbacks.onModification) {
+      this.callbacks.onModification(this.state.modificationCount, changesSinceSave, action);
+    }
+  },
+
+  /**
+   * Mark current state as saved (resets modification counter baseline)
+   */
+  markAsSaved() {
+    this.state.lastSaveModificationCount = this.state.modificationCount;
+  },
+
+  /**
+   * Get number of unsaved modifications
+   * @returns {number} Changes since last save
+   */
+  getUnsavedChanges() {
+    return this.state.modificationCount - this.state.lastSaveModificationCount;
   },
 
   // ========================================================================
@@ -186,6 +232,9 @@ export const RTStateManager = {
     // Add to undo stack
     this.addToHistory({ action: "create", instance });
 
+    // Track modification for auto-save
+    this.trackModification("create");
+
     console.log(
       `✅ Instance created: ${instance.id} (${instance.type}) at position (${instance.transform.position.x.toFixed(2)}, ${instance.transform.position.y.toFixed(2)}, ${instance.transform.position.z.toFixed(2)})`
     );
@@ -261,6 +310,9 @@ export const RTStateManager = {
       newTransform,
     });
 
+    // Track modification for auto-save
+    this.trackModification("update");
+
     console.log(`✅ Instance updated: ${instanceId}`);
   },
 
@@ -289,6 +341,9 @@ export const RTStateManager = {
 
     // Add to undo stack
     this.addToHistory({ action: "delete", instance, index });
+
+    // Track modification for auto-save
+    this.trackModification("delete");
 
     console.log(`✅ Instance deleted: ${instanceId} (${instance.type})`);
   },

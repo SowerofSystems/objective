@@ -1,13 +1,13 @@
 // MODULE IMPORTS
 // ========================================================================
-import { Polyhedra } from "./modules/rt-polyhedra.js";
-import { PerformanceClock } from "./modules/performance-clock.js";
-import { RTPapercut } from "./modules/rt-papercut.js";
-import { RT } from "./modules/rt-math.js"; // For RT.Phi in edge quadrance calculations
-import { initQuadranceDemo } from "./demos/rt-quadrance-demo.js";
-import { initSpreadDemo } from "./demos/rt-spread-demo.js";
-import { initWeierstrassDemo } from "./demos/rt-weierstrass-demo.js";
-import { openDemoModal } from "./demos/rt-demo-utils.js";
+import { Polyhedra } from "./rt-polyhedra.js";
+import { PerformanceClock } from "./performance-clock.js";
+import { RTPapercut } from "./rt-papercut.js";
+import { RT } from "./rt-math.js"; // For RT.Phi in edge quadrance calculations
+import { initQuadranceDemo } from "../demos/rt-quadrance-demo.js";
+import { initSpreadDemo } from "../demos/rt-spread-demo.js";
+import { initWeierstrassDemo } from "../demos/rt-weierstrass-demo.js";
+import { openDemoModal } from "../demos/rt-demo-utils.js";
 
 // Make RTPolyhedra available globally for node geometry creation
 window.RTPolyhedra = Polyhedra;
@@ -67,34 +67,40 @@ function initApp() {
         const OrbitControls = OrbitControlsModule.OrbitControls;
 
         // Import ARTexplorer modules
-        import("./modules/rt-math.js").then(RTModule => {
+        import("./rt-math.js").then(RTModule => {
           const { RT, Quadray } = RTModule;
 
-          import("./modules/rt-polyhedra.js").then(PolyhedraModule => {
+          import("./rt-polyhedra.js").then(PolyhedraModule => {
             const { Polyhedra } = PolyhedraModule;
 
-            import("./modules/rt-state-manager.js").then(StateModule => {
+            import("./rt-state-manager.js").then(StateModule => {
               const { RTStateManager } = StateModule;
 
-              // Make THREE and RTStateManager global for easier access in console
-              window.THREE = THREE;
-              window.RTStateManager = RTStateManager;
+              import("./rt-filehandler.js").then(FileHandlerModule => {
+                const { RTFileHandler } = FileHandlerModule;
 
-              // Initialize Quadray basis vectors with THREE.js
-              Quadray.init(THREE);
+                // Make THREE, RTStateManager, and RTFileHandler global for easier access in console
+                window.THREE = THREE;
+                window.RTStateManager = RTStateManager;
+                window.RTFileHandler = RTFileHandler;
 
-              // Initialize StateManager
-              RTStateManager.init();
+                // Initialize Quadray basis vectors with THREE.js
+                Quadray.init(THREE);
 
-              // Continue with app initialization
-              startARTexplorer(
-                THREE,
-                OrbitControls,
-                RT,
-                Quadray,
-                Polyhedra,
-                RTStateManager
-              );
+                // Initialize StateManager
+                RTStateManager.init();
+
+                // Continue with app initialization
+                startARTexplorer(
+                  THREE,
+                  OrbitControls,
+                  RT,
+                  Quadray,
+                  Polyhedra,
+                  RTStateManager,
+                  RTFileHandler
+                );
+              });
             });
           });
         });
@@ -109,7 +115,8 @@ function startARTexplorer(
   RT,
   Quadray,
   Polyhedra,
-  RTStateManager
+  RTStateManager,
+  RTFileHandler
 ) {
   // ========================================================================
   // THREE.JS SCENE SETUP
@@ -3567,6 +3574,61 @@ function startARTexplorer(
 
   initScene();
   initGumballEventListeners(); // Initialize gumball after scene is ready
+
+  // ========================================================================
+  // FILE HANDLER INITIALIZATION
+  // ========================================================================
+  RTFileHandler.init(RTStateManager, scene, camera);
+  console.log("✅ RTFileHandler module initialized");
+
+  // Wire up File section UI buttons
+  const importBtn = document.getElementById("importBtn");
+  const exportBtn = document.getElementById("exportBtn");
+  const saveBtn = document.getElementById("saveBtn");
+
+  // Enable buttons
+  importBtn.disabled = false;
+  exportBtn.disabled = false;
+  saveBtn.disabled = false;
+
+  // Import button - Load JSON state file
+  importBtn.addEventListener("click", () => {
+    RTFileHandler.showImportDialog();
+  });
+
+  // Export button - Show format selection dialog
+  exportBtn.addEventListener("click", async () => {
+    await RTFileHandler.showExportDialog();
+  });
+
+  // Save button - Quick save to JSON with timestamp
+  saveBtn.addEventListener("click", () => {
+    RTFileHandler.exportStateToFile();
+  });
+
+  // Keyboard shortcuts for file operations
+  document.addEventListener("keydown", (e) => {
+    // Ctrl/Cmd + S - Save
+    if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+      e.preventDefault();
+      RTFileHandler.exportStateToFile();
+      console.log("💾 Quick save triggered (Ctrl/Cmd+S)");
+    }
+
+    // Ctrl/Cmd + O - Open
+    if ((e.ctrlKey || e.metaKey) && e.key === "o") {
+      e.preventDefault();
+      RTFileHandler.showImportDialog();
+      console.log("📂 Import dialog opened (Ctrl/Cmd+O)");
+    }
+
+    // Ctrl/Cmd + E - Export dialog
+    if ((e.ctrlKey || e.metaKey) && e.key === "e") {
+      e.preventDefault();
+      RTFileHandler.showExportDialog();
+      console.log("📤 Export dialog opened (Ctrl/Cmd+E)");
+    }
+  });
 
   // TODO: Extract to rt-controls.js module when ready
   // RTControls.init(THREE, Quadray, scene, camera, renderer, controls);

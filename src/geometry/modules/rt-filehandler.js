@@ -1,0 +1,656 @@
+/**
+ * rt-filehandler.js
+ * File Handler Module for ART Explorer
+ *
+ * Handles export/import of:
+ * - State persistence (.json) - Scene state, instances, environment
+ * - Geometry export (.gltf/.glb) - 3D model export for external applications
+ * - Auto-save to localStorage
+ * - Preset library system
+ *
+ * @module RTFileHandler
+ * @requires THREE.js
+ * @requires RTStateManager
+ */
+
+/* global THREE */
+
+export const RTFileHandler = {
+  // ========================================================================
+  // CONFIGURATION
+  // ========================================================================
+
+  config: {
+    autoSaveEnabled: true,
+    autoSaveThreshold: 10, // Auto-save every N modifications
+    autoSaveKey: "art-explorer-autosave",
+    presetKeyPrefix: "art-explorer-preset-",
+    maxAutoSaveHistory: 5,
+  },
+
+  // ========================================================================
+  // STATE
+  // ========================================================================
+
+  state: {
+    lastSaveTimestamp: null,
+  },
+
+  // ========================================================================
+  // INITIALIZATION
+  // ========================================================================
+
+  /**
+   * Initialize File Handler
+   * @param {Object} stateManager - RTStateManager instance
+   * @param {THREE.Scene} scene - THREE.js scene
+   * @param {THREE.Camera} camera - THREE.js camera
+   */
+  init(stateManager, scene, camera) {
+    this.stateManager = stateManager;
+    this.scene = scene;
+    this.camera = camera;
+
+    // Register for state modification events if auto-save enabled
+    if (this.config.autoSaveEnabled) {
+      this.stateManager.onModification((modCount, changesSinceSave, action) => {
+        // Auto-save when threshold is reached
+        if (changesSinceSave >= this.config.autoSaveThreshold) {
+          this.autoSave();
+          console.log(`💾 Auto-save triggered after ${changesSinceSave} changes`);
+        }
+      });
+      console.log(`💾 Auto-save enabled (every ${this.config.autoSaveThreshold} modifications)`);
+    }
+
+    console.log("✅ RTFileHandler initialized");
+  },
+
+  // ========================================================================
+  // JSON STATE EXPORT/IMPORT
+  // ========================================================================
+
+  /**
+   * Export complete scene state to JSON
+   * Includes environment (camera, grids, UI) and instances
+   * @returns {Object} Complete state object
+   */
+  exportState() {
+    // Get camera state
+    const cameraState = {
+      position: {
+        x: this.camera.position.x,
+        y: this.camera.position.y,
+        z: this.camera.position.z,
+      },
+      rotation: {
+        x: this.camera.rotation.x,
+        y: this.camera.rotation.y,
+        z: this.camera.rotation.z,
+      },
+      zoom: this.camera.zoom || 1,
+    };
+
+    // Get grid states from UI
+    const quadrayVisible = document.getElementById("quadray-checkbox")?.checked || false;
+    const cartesianVisible = document.getElementById("cartesian-checkbox")?.checked || false;
+    const quadrayTess = parseInt(document.getElementById("quadrayTessSlider")?.value || 12);
+    const cartesianTess = parseInt(document.getElementById("cartesianTessSlider")?.value || 10);
+
+    // Get active form state
+    const formButtons = document.querySelectorAll(".form-btn");
+    const activeFormButton = Array.from(formButtons).find(btn =>
+      btn.classList.contains("active")
+    );
+    const activeForm = activeFormButton?.dataset.form || null;
+
+    // Get form visibility states
+    const formStates = {};
+    formButtons.forEach(btn => {
+      const formType = btn.dataset.form;
+      if (formType) {
+        formStates[formType] = {
+          visible: btn.classList.contains("active"),
+          scale: 1.0, // Could be extended to track scale
+        };
+      }
+    });
+
+    // Build complete state object
+    const stateData = {
+      version: "1.0",
+      timestamp: new Date().toISOString(),
+      timestampMs: Date.now(),
+
+      environment: {
+        camera: cameraState,
+        grids: {
+          quadray: {
+            visible: quadrayVisible,
+            tessellation: quadrayTess,
+          },
+          cartesian: {
+            visible: cartesianVisible,
+            tessellation: cartesianTess,
+          },
+        },
+        forms: formStates,
+        activeForm: activeForm,
+      },
+
+      instances: this.stateManager.state.instances.map(instance => ({
+        id: instance.id,
+        timestamp: instance.timestamp,
+        type: instance.type,
+        transform: instance.transform,
+        appearance: instance.appearance,
+        metadata: instance.metadata,
+      })),
+
+      metadata: {
+        depositedCount: this.stateManager.state.depositedCount,
+        instanceCount: this.stateManager.state.instances.length,
+      },
+    };
+
+    return stateData;
+  },
+
+  /**
+   * Export state to JSON file with download
+   * @param {string} filename - Optional custom filename
+   */
+  exportStateToFile(filename) {
+    const stateData = this.exportState();
+    const jsonString = JSON.stringify(stateData, null, 2);
+
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    const finalFilename = filename || `art-scene-${timestamp}.json`;
+
+    // Create download
+    this.downloadFile(jsonString, finalFilename, "application/json");
+
+    // Mark state as saved (resets modification counter)
+    this.stateManager.markAsSaved();
+
+    console.log(`✅ State exported to ${finalFilename}`);
+    return stateData;
+  },
+
+  /**
+   * Import state from JSON object
+   * @param {Object} stateData - State object to import
+   * @returns {boolean} Success status
+   */
+  importState(stateData) {
+    try {
+      // Validate state data
+      if (!stateData || !stateData.version) {
+        throw new Error("Invalid state data: missing version");
+      }
+
+      if (stateData.version !== "1.0") {
+        console.warn(`⚠️ State version mismatch: ${stateData.version} (expected 1.0)`);
+      }
+
+      // Clear existing scene
+      this.stateManager.clearAll(this.scene);
+
+      // Restore camera
+      if (stateData.environment?.camera) {
+        const cam = stateData.environment.camera;
+        this.camera.position.set(cam.position.x, cam.position.y, cam.position.z);
+        if (cam.rotation) {
+          this.camera.rotation.set(cam.rotation.x, cam.rotation.y, cam.rotation.z);
+        }
+        if (cam.zoom) {
+          this.camera.zoom = cam.zoom;
+          this.camera.updateProjectionMatrix();
+        }
+      }
+
+      // Restore grid states
+      if (stateData.environment?.grids) {
+        const grids = stateData.environment.grids;
+
+        if (grids.quadray) {
+          const checkbox = document.getElementById("quadray-checkbox");
+          const slider = document.getElementById("quadrayTessSlider");
+          if (checkbox) checkbox.checked = grids.quadray.visible;
+          if (slider) slider.value = grids.quadray.tessellation;
+        }
+
+        if (grids.cartesian) {
+          const checkbox = document.getElementById("cartesian-checkbox");
+          const slider = document.getElementById("cartesianTessSlider");
+          if (checkbox) checkbox.checked = grids.cartesian.visible;
+          if (slider) slider.value = grids.cartesian.tessellation;
+        }
+
+        // Trigger grid rebuild
+        const rebuildEvent = new Event("change");
+        document.getElementById("quadray-checkbox")?.dispatchEvent(rebuildEvent);
+        document.getElementById("cartesian-checkbox")?.dispatchEvent(rebuildEvent);
+      }
+
+      // Restore instances
+      if (stateData.instances && Array.isArray(stateData.instances)) {
+        // Note: This requires access to the polyhedron creation functions
+        // For now, just log what would be restored
+        console.log(`📦 Would restore ${stateData.instances.length} instances`);
+
+        // TODO: Implement instance restoration
+        // This requires integration with the main ARTexplorer polyhedron creation
+        // Each instance needs to be recreated with the correct geometry and transform
+      }
+
+      console.log("✅ State imported successfully");
+      return true;
+
+    } catch (error) {
+      console.error("❌ Failed to import state:", error);
+      return false;
+    }
+  },
+
+  /**
+   * Import state from JSON file
+   * @param {File} file - File object from input
+   * @returns {Promise<boolean>} Success status
+   */
+  async importStateFromFile(file) {
+    try {
+      const text = await file.text();
+      const stateData = JSON.parse(text);
+      return this.importState(stateData);
+    } catch (error) {
+      console.error("❌ Failed to parse JSON file:", error);
+      return false;
+    }
+  },
+
+  // ========================================================================
+  // GLTF EXPORT
+  // ========================================================================
+
+  /**
+   * Export scene to glTF format
+   * @param {Object} options - Export options
+   * @param {boolean} options.binary - Export as .glb (true) or .gltf (false)
+   * @param {boolean} options.includeGrids - Include grid geometry
+   * @param {boolean} options.includeGumball - Include gumball handles
+   * @param {string} options.filename - Optional custom filename
+   */
+  async exportGLTF(options = {}) {
+    const {
+      binary = true,
+      includeGrids = false,
+      includeGumball = false,
+      filename = null,
+    } = options;
+
+    try {
+      // Import GLTFExporter dynamically
+      const { GLTFExporter } = await import(
+        "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/exporters/GLTFExporter.js"
+      );
+
+      const exporter = new GLTFExporter();
+
+      // Collect objects to export
+      const exportGroup = new THREE.Group();
+
+      // Add all deposited instances
+      this.stateManager.state.instances.forEach(instance => {
+        if (instance.threeObject) {
+          const clone = instance.threeObject.clone();
+          exportGroup.add(clone);
+        }
+      });
+
+      // Optionally include grids
+      if (includeGrids) {
+        // Find grid objects in scene
+        const cartesianGrid = this.scene.getObjectByName("cartesianGrid");
+        const quadrayBasis = this.scene.getObjectByName("quadrayBasis");
+        const ivmPlanes = this.scene.getObjectByName("ivmPlanes");
+
+        if (cartesianGrid) exportGroup.add(cartesianGrid.clone());
+        if (quadrayBasis) exportGroup.add(quadrayBasis.clone());
+        if (ivmPlanes) exportGroup.add(ivmPlanes.clone());
+      }
+
+      // Export options
+      const exportOptions = {
+        binary: binary,
+        trs: true, // Export separate translate/rotate/scale
+        onlyVisible: true,
+        truncateDrawRange: true,
+        includeCustomExtensions: true,
+      };
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      const extension = binary ? "glb" : "gltf";
+      const finalFilename = filename || `art-scene-${timestamp}.${extension}`;
+
+      // Export
+      exporter.parse(
+        exportGroup,
+        (result) => {
+          if (binary) {
+            // Binary .glb format
+            const blob = new Blob([result], { type: "application/octet-stream" });
+            this.downloadBlob(blob, finalFilename);
+          } else {
+            // JSON .gltf format
+            const output = JSON.stringify(result, null, 2);
+            this.downloadFile(output, finalFilename, "application/json");
+          }
+
+          console.log(`✅ glTF exported to ${finalFilename}`);
+        },
+        (error) => {
+          console.error("❌ glTF export failed:", error);
+        },
+        exportOptions
+      );
+
+    } catch (error) {
+      console.error("❌ Failed to load GLTFExporter:", error);
+    }
+  },
+
+  // ========================================================================
+  // CSV EXPORT
+  // ========================================================================
+
+  /**
+   * Export instances to CSV file
+   * @param {string} filename - Optional custom filename
+   */
+  exportCSVToFile(filename) {
+    const csvString = this.stateManager.exportCSV();
+
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    const finalFilename = filename || `art-instances-${timestamp}.csv`;
+
+    // Create download
+    this.downloadFile(csvString, finalFilename, "text/csv");
+
+    console.log(`✅ CSV exported to ${finalFilename}`);
+  },
+
+  // ========================================================================
+  // AUTO-SAVE (LocalStorage - Modification-Based)
+  // ========================================================================
+
+  /**
+   * Save current state to localStorage (triggered by modifications)
+   */
+  autoSave() {
+    try {
+      const stateData = this.exportState();
+      const jsonString = JSON.stringify(stateData);
+
+      // Save to localStorage
+      localStorage.setItem(this.config.autoSaveKey, jsonString);
+      this.state.lastSaveTimestamp = Date.now();
+
+      // Maintain save history
+      this.addToSaveHistory(stateData);
+
+      // Mark state as saved in StateManager (resets modification counter)
+      this.stateManager.markAsSaved();
+
+      const unsavedCount = this.stateManager.getUnsavedChanges();
+      console.log(`💾 Auto-saved at ${new Date().toLocaleTimeString()} (${unsavedCount} unsaved changes)`);
+    } catch (error) {
+      console.error("❌ Auto-save failed:", error);
+    }
+  },
+
+  /**
+   * Load auto-saved state from localStorage
+   * @returns {boolean} Success status
+   */
+  loadAutoSave() {
+    try {
+      const jsonString = localStorage.getItem(this.config.autoSaveKey);
+      if (!jsonString) {
+        console.log("💾 No auto-save found");
+        return false;
+      }
+
+      const stateData = JSON.parse(jsonString);
+      return this.importState(stateData);
+    } catch (error) {
+      console.error("❌ Failed to load auto-save:", error);
+      return false;
+    }
+  },
+
+  /**
+   * Clear auto-save from localStorage
+   */
+  clearAutoSave() {
+    localStorage.removeItem(this.config.autoSaveKey);
+    console.log("💾 Auto-save cleared");
+  },
+
+  /**
+   * Add state to save history
+   * @param {Object} stateData - State to save
+   */
+  addToSaveHistory(stateData) {
+    try {
+      const historyKey = `${this.config.autoSaveKey}-history`;
+      const historyString = localStorage.getItem(historyKey);
+      const history = historyString ? JSON.parse(historyString) : [];
+
+      // Add new save
+      history.push({
+        timestamp: stateData.timestamp,
+        timestampMs: stateData.timestampMs,
+        instanceCount: stateData.instances.length,
+      });
+
+      // Keep only last N saves
+      if (history.length > this.config.maxAutoSaveHistory) {
+        history.shift();
+      }
+
+      localStorage.setItem(historyKey, JSON.stringify(history));
+    } catch (error) {
+      console.error("❌ Failed to save history:", error);
+    }
+  },
+
+  // ========================================================================
+  // PRESET SYSTEM
+  // ========================================================================
+
+  /**
+   * Save current state as a named preset
+   * @param {string} presetName - Name for the preset
+   * @returns {boolean} Success status
+   */
+  savePreset(presetName) {
+    try {
+      const stateData = this.exportState();
+      const presetKey = `${this.config.presetKeyPrefix}${presetName}`;
+      const jsonString = JSON.stringify(stateData);
+
+      localStorage.setItem(presetKey, jsonString);
+      console.log(`✅ Preset saved: ${presetName}`);
+      return true;
+    } catch (error) {
+      console.error(`❌ Failed to save preset "${presetName}":`, error);
+      return false;
+    }
+  },
+
+  /**
+   * Load a named preset
+   * @param {string} presetName - Name of the preset to load
+   * @returns {boolean} Success status
+   */
+  loadPreset(presetName) {
+    try {
+      const presetKey = `${this.config.presetKeyPrefix}${presetName}`;
+      const jsonString = localStorage.getItem(presetKey);
+
+      if (!jsonString) {
+        console.warn(`⚠️ Preset not found: ${presetName}`);
+        return false;
+      }
+
+      const stateData = JSON.parse(jsonString);
+      const success = this.importState(stateData);
+
+      if (success) {
+        console.log(`✅ Preset loaded: ${presetName}`);
+      }
+
+      return success;
+    } catch (error) {
+      console.error(`❌ Failed to load preset "${presetName}":`, error);
+      return false;
+    }
+  },
+
+  /**
+   * Delete a named preset
+   * @param {string} presetName - Name of the preset to delete
+   * @returns {boolean} Success status
+   */
+  deletePreset(presetName) {
+    try {
+      const presetKey = `${this.config.presetKeyPrefix}${presetName}`;
+      localStorage.removeItem(presetKey);
+      console.log(`✅ Preset deleted: ${presetName}`);
+      return true;
+    } catch (error) {
+      console.error(`❌ Failed to delete preset "${presetName}":`, error);
+      return false;
+    }
+  },
+
+  /**
+   * Get list of all saved presets
+   * @returns {Array<string>} Array of preset names
+   */
+  listPresets() {
+    const presets = [];
+    const prefix = this.config.presetKeyPrefix;
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(prefix)) {
+        const presetName = key.substring(prefix.length);
+        presets.push(presetName);
+      }
+    }
+
+    return presets;
+  },
+
+  // ========================================================================
+  // UTILITY FUNCTIONS
+  // ========================================================================
+
+  /**
+   * Download string as file
+   * @param {string} content - File content
+   * @param {string} filename - Filename
+   * @param {string} mimeType - MIME type
+   */
+  downloadFile(content, filename, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    this.downloadBlob(blob, filename);
+  },
+
+  /**
+   * Download blob as file
+   * @param {Blob} blob - Blob to download
+   * @param {string} filename - Filename
+   */
+  downloadBlob(blob, filename) {
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+
+    // Clean up
+    setTimeout(() => URL.revokeObjectURL(link.href), 100);
+  },
+
+  /**
+   * Create file input element for import
+   * @param {Function} callback - Callback function with file parameter
+   * @param {string} accept - File types to accept
+   */
+  createFileInput(callback, accept = ".json") {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = accept;
+    input.style.display = "none";
+
+    input.addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        callback(file);
+      }
+      input.remove();
+    });
+
+    document.body.appendChild(input);
+    input.click();
+  },
+
+  // ========================================================================
+  // UI HELPER METHODS
+  // ========================================================================
+
+  /**
+   * Show file import dialog
+   */
+  showImportDialog() {
+    this.createFileInput(
+      (file) => {
+        this.importStateFromFile(file);
+      },
+      ".json"
+    );
+  },
+
+  /**
+   * Show export dialog (prompts for format)
+   * @returns {Promise<void>}
+   */
+  async showExportDialog() {
+    const format = prompt(
+      "Export format:\n1. JSON (state)\n2. glTF (geometry)\n3. glB (binary)\n4. CSV (data)\n\nEnter 1-4:",
+      "1"
+    );
+
+    switch (format) {
+      case "1":
+        this.exportStateToFile();
+        break;
+      case "2":
+        await this.exportGLTF({ binary: false });
+        break;
+      case "3":
+        await this.exportGLTF({ binary: true });
+        break;
+      case "4":
+        this.exportCSVToFile();
+        break;
+      default:
+        console.log("Export cancelled");
+    }
+  },
+};
