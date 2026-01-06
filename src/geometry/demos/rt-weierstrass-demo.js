@@ -1,9 +1,9 @@
 /**
- * RT-Weierstrauss-Demo
- * Interactive demonstration of Weierstrauss parametrization of the circle
+ * RT-Weierstrass-Demo
+ * Interactive demonstration of Weierstrass parametrization of the circle
  * Shows how circular motion relates to X/Y vectors using rational functions
  *
- * Weierstrauss substitution:
+ * Weierstrass substitution:
  * Let t = tan(θ/2), then:
  * x = (1 - t²) / (1 + t²)
  * y = 2t / (1 + t²)
@@ -61,7 +61,7 @@ const snapPoints = [
 const SNAP_THRESHOLD = 0.08; // radians (~4.6°) - reduced magnetic zone for less aggressive snapping
 
 /**
- * Initialize the Weierstrauss demo
+ * Initialize the Weierstrass demo
  */
 export function initWeierstrassDemo() {
   const container = document.getElementById("weierstrass-demo-container");
@@ -545,7 +545,7 @@ function createFormulaDisplay() {
     text-shadow: 0 2px 4px rgba(0,0,0,0.8);
     pointer-events: none;
   `;
-  titleElement.textContent = "Weierstrauss Parametrization of the Circle";
+  titleElement.textContent = "Weierstrass Parametrization of the Circle";
   container.appendChild(titleElement);
 
   // Close button (now part of canvas overlay since we removed modal header)
@@ -597,7 +597,7 @@ function createFormulaDisplay() {
  * Update visualization based on current angle
  */
 function updateVisualization() {
-  // DOGFOODING: Use RT.circleParam (Weierstrauss parametrization)
+  // DOGFOODING: Use RT.circleParam (Weierstrass parametrization)
   // This demonstrates rational trigonometry: pure rational functions, no trig!
   // NOTE: We still need tan(θ/2) to convert from angle to parameter 't'
   // In a pure RT workflow, you'd work with 't' parameter directly
@@ -646,7 +646,7 @@ function updateVisualization() {
 
   // RT OPTIMIZATION: Calculate spread directly from coordinates (no trig!)
   // Spread: s = sin²(θ) = y²/r² (for unit circle, just y²)
-  // This is pure RT - extracting spread from Weierstrauss coordinates
+  // This is pure RT - extracting spread from Weierstrass coordinates
   const spread = (y / radius) * (y / radius); // Equivalent to: 1 - (x/radius)²
 
   // Calculate actual values for display
@@ -670,9 +670,9 @@ function updateVisualization() {
   // Horizontal masthead layout with formula columns
   formulaElement.innerHTML = `
     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; font-size: 12px;">
-      <!-- Column 1: Weierstrauss Method -->
+      <!-- Column 1: Weierstrass Method -->
       <div>
-        <strong style="color: #00ff88;">Weierstrauss (RT)</strong><br>
+        <strong style="color: #00ff88;">Weierstrass (RT)</strong><br>
         t = tan(θ/2) = <span style="color: #4a9eff">${t.toFixed(4)}</span><br>
         x = r·(1-t²)/(1+t²) = <span style="color: #ff0000">${x.toFixed(4)}</span><br>
         y = r·(2t)/(1+t²) = <span style="color: #66ff66">${y.toFixed(4)}</span><br>
@@ -709,7 +709,7 @@ function updateVisualization() {
       <div style="font-size: 10px; color: #aaa; margin-bottom: 4px;">Computational Complexity (GPU/Shader):</div>
       <div style="display: flex; gap: 15px; align-items: center;">
         <div style="flex: 1; display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 10px; color: #00ff88;">Weierstrauss:</span>
+          <span style="font-size: 10px; color: #00ff88;">Weierstrass:</span>
           <div style="flex: 1; background: #222; height: 8px; border-radius: 2px; overflow: hidden;">
             <div id="weierstrass-bar" style="width: 0%; background: linear-gradient(90deg, #00ff88, #00cc66); height: 100%; transition: width 0.15s;"></div>
           </div>
