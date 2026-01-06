@@ -53,14 +53,19 @@ export const RTFileHandler = {
 
     // Register for state modification events if auto-save enabled
     if (this.config.autoSaveEnabled) {
-      this.stateManager.onModification((modCount, changesSinceSave, action) => {
-        // Auto-save when threshold is reached
-        if (changesSinceSave >= this.config.autoSaveThreshold) {
-          this.autoSave();
-          console.log(`💾 Auto-save triggered after ${changesSinceSave} changes`);
-        }
-      });
-      console.log(`💾 Auto-save enabled (every ${this.config.autoSaveThreshold} modifications)`);
+      // Safari-safe: Check if onModification method exists before calling
+      if (typeof this.stateManager.onModification === 'function') {
+        this.stateManager.onModification((_modCount, changesSinceSave, _action) => {
+          // Auto-save when threshold is reached
+          if (changesSinceSave >= this.config.autoSaveThreshold) {
+            this.autoSave();
+            console.log(`💾 Auto-save triggered after ${changesSinceSave} changes`);
+          }
+        });
+        console.log(`💾 Auto-save enabled (every ${this.config.autoSaveThreshold} modifications)`);
+      } else {
+        console.warn('⚠️ StateManager.onModification not available - auto-save disabled');
+      }
     }
 
     console.log("✅ RTFileHandler initialized");
