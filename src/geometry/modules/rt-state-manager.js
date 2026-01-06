@@ -40,6 +40,19 @@ export const RTStateManager = {
       type: "geodesicOctahedron",
       name: "Geodesic Octahedron",
     },
+    // Matrix forms (IVM spatial arrays)
+    cubeMatrix: {
+      type: "cubeMatrix",
+      name: "Cube Matrix",
+    },
+    tetMatrix: {
+      type: "tetMatrix",
+      name: "Tet Matrix",
+    },
+    octaMatrix: {
+      type: "octaMatrix",
+      name: "Octa Matrix",
+    },
   },
 
   // ========================================================================
@@ -146,29 +159,66 @@ export const RTStateManager = {
     // Create lightweight clone that SHARES geometry/materials (memory efficient)
     const clonedGroup = new THREE.Group();
 
-    // Copy all children and CLONE their geometry (don't share)
-    // Sharing geometry causes corruption when instances have different transforms
-    polyhedronGroup.children.forEach(child => {
-      if (child.isMesh) {
-        // Clone geometry to prevent transform corruption
-        const clonedGeometry = child.geometry.clone();
-        const instanceMesh = new THREE.Mesh(clonedGeometry, child.material);
-        instanceMesh.position.copy(child.position);
-        instanceMesh.rotation.copy(child.rotation);
-        instanceMesh.scale.copy(child.scale);
-        clonedGroup.add(instanceMesh);
-      } else if (child.isLine || child.isLineSegments) {
-        // Clone line geometry too
-        const clonedGeometry = child.geometry.clone();
-        const instanceLine = child.isLineSegments
-          ? new THREE.LineSegments(clonedGeometry, child.material)
-          : new THREE.Line(clonedGeometry, child.material);
-        instanceLine.position.copy(child.position);
-        instanceLine.rotation.copy(child.rotation);
-        instanceLine.scale.copy(child.scale);
-        clonedGroup.add(instanceLine);
-      }
-    });
+    // Recursive function to clone entire group hierarchy
+    // Needed for matrix forms which have nested group structure
+    const cloneGroupHierarchy = (source, target) => {
+      source.children.forEach(child => {
+        if (child.isMesh) {
+          // Clone geometry to prevent transform corruption
+          const clonedGeometry = child.geometry.clone();
+
+          // Clone material to prevent shared highlight state
+          const clonedMaterial = child.material.clone();
+
+          // Reset any highlight state from material
+          // (instance should start unhighlighted even if form was selected)
+          if (child.userData.originalEmissive) {
+            // Form was highlighted - restore original emissive to cloned material
+            clonedMaterial.emissive.copy(child.userData.originalEmissive);
+            clonedMaterial.emissiveIntensity =
+              child.userData.originalEmissiveIntensity;
+          }
+
+          const instanceMesh = new THREE.Mesh(clonedGeometry, clonedMaterial);
+          instanceMesh.position.copy(child.position);
+          instanceMesh.rotation.copy(child.rotation);
+          instanceMesh.scale.copy(child.scale);
+          instanceMesh.renderOrder = child.renderOrder;
+          target.add(instanceMesh);
+        } else if (child.isLine || child.isLineSegments) {
+          // Clone line geometry too
+          const clonedGeometry = child.geometry.clone();
+
+          // Clone material to prevent shared line width state
+          const clonedMaterial = child.material.clone();
+
+          // Reset any highlight line width
+          if (child.userData.originalLineWidth !== undefined) {
+            clonedMaterial.linewidth = child.userData.originalLineWidth;
+          }
+
+          const instanceLine = child.isLineSegments
+            ? new THREE.LineSegments(clonedGeometry, clonedMaterial)
+            : new THREE.Line(clonedGeometry, clonedMaterial);
+          instanceLine.position.copy(child.position);
+          instanceLine.rotation.copy(child.rotation);
+          instanceLine.scale.copy(child.scale);
+          instanceLine.renderOrder = child.renderOrder;
+          target.add(instanceLine);
+        } else if (child.isGroup) {
+          // Recursively clone nested groups (for matrix forms)
+          const nestedGroup = new THREE.Group();
+          nestedGroup.position.copy(child.position);
+          nestedGroup.rotation.copy(child.rotation);
+          nestedGroup.scale.copy(child.scale);
+          cloneGroupHierarchy(child, nestedGroup);
+          target.add(nestedGroup);
+        }
+      });
+    };
+
+    // Clone entire hierarchy
+    cloneGroupHierarchy(polyhedronGroup, clonedGroup);
 
     // Copy current transform from Form
     clonedGroup.position.copy(polyhedronGroup.position);
@@ -402,6 +452,34 @@ export const RTStateManager = {
     formGroup.scale.set(1, 1, 1);
 
     const formType = formGroup.userData.type || "unknown";
+
+    // Reset matrix-specific properties to defaults
+    if (formType === "cubeMatrix") {
+      const sizeSlider = document.getElementById("cubeMatrixSizeSlider");
+      const rotateCheckbox = document.getElementById("cubeMatrixRotate45");
+      if (sizeSlider) {
+        sizeSlider.value = "1";
+        document.getElementById("cubeMatrixSizeValue").textContent = "1×1";
+      }
+      if (rotateCheckbox) rotateCheckbox.checked = false;
+    } else if (formType === "tetMatrix") {
+      const sizeSlider = document.getElementById("tetMatrixSizeSlider");
+      const rotateCheckbox = document.getElementById("tetMatrixRotate45");
+      if (sizeSlider) {
+        sizeSlider.value = "1";
+        document.getElementById("tetMatrixSizeValue").textContent = "1×1";
+      }
+      if (rotateCheckbox) rotateCheckbox.checked = false;
+    } else if (formType === "octaMatrix") {
+      const sizeSlider = document.getElementById("octaMatrixSizeSlider");
+      const rotateCheckbox = document.getElementById("octaMatrixRotate45");
+      if (sizeSlider) {
+        sizeSlider.value = "1";
+        document.getElementById("octaMatrixSizeValue").textContent = "1×1";
+      }
+      if (rotateCheckbox) rotateCheckbox.checked = false;
+    }
+
     console.log(`↩️  Form reset to origin: ${formType}`);
   },
 
