@@ -164,12 +164,12 @@ export const RTMatrix = {
   ) => {
     const matrixGroup = new THREE.Group();
 
-    // Tet edge length: e = 2 * halfSize * √2
-    const tetEdge = 2 * halfSize * Math.sqrt(2);
-
     // Spacing: Distance between tet centers in grid
-    // For vertex-to-vertex contact: spacing = tetEdge
-    const spacing = tetEdge;
+    // Tetrahedra inscribe in cubes (vertices at alternating cube vertices)
+    // Therefore spacing MUST match cube spacing for proper nesting
+    // Cube edge = 2 * halfSize (NOT tetEdge!)
+    // Note: Tet edge length = 2 * halfSize * √2 (NOT used for spacing)
+    const spacing = 2 * halfSize; // Same as cube matrix!
 
     // Get base tetrahedron geometry
     const tetGeom = Polyhedra.tetrahedron(halfSize);
@@ -297,11 +297,12 @@ export const RTMatrix = {
   ) => {
     const matrixGroup = new THREE.Group();
 
-    // Spacing: Distance between octahedra centers for face-to-face contact
-    // For octahedra with square faces touching: spacing = 2 * halfSize
-    // (The octahedron vertices lie at ±halfSize in each axis)
-    // Note: Octahedron edge length = halfSize * √2
-    const spacing = 2 * halfSize;
+    // Spacing: Distance between octahedra centers in grid
+    // Octahedra center in cubes (vertices at ±halfSize = cube face centers)
+    // Therefore spacing MUST match cube spacing for proper grid alignment
+    // Cube edge = 2 * halfSize (edge-to-edge when rotate45 enabled)
+    // Note: Octahedron edge length = halfSize * √2 (NOT used for spacing)
+    const spacing = 2 * halfSize; // Same as cube matrix!
 
     // Get base octahedron geometry
     const octaGeom = Polyhedra.octahedron(halfSize);

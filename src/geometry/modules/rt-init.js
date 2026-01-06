@@ -1031,14 +1031,11 @@ function startARTexplorer(
     const vertexPositions = new Set();
 
     // Calculate spacing based on polyhedron type
-    let spacing;
-    if (polyhedronType === "cube") {
-      spacing = scale * 2; // Cube edge = 2 * halfSize
-    } else if (polyhedronType === "tetrahedron") {
-      spacing = 2 * scale * Math.sqrt(2); // Tet edge = 2 * halfSize * √2
-    } else if (polyhedronType === "octahedron") {
-      spacing = 2 * scale; // Octa spacing for face-to-face contact
-    }
+    // ALL matrices use cube edge spacing for proper IVM alignment
+    // - Cube: edge-to-edge contact
+    // - Tet: inscribes in cube (vertices at cube vertices)
+    // - Octa: centers in cube (vertices at cube face centers)
+    const spacing = scale * 2; // Cube edge = 2 * halfSize (same for all!)
 
     // Generate polyhedron vertices at each grid position
     import("./rt-polyhedra.js").then(PolyModule => {
