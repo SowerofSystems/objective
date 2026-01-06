@@ -309,6 +309,38 @@
                 Hexahedron (Cube)
               </label>
             </div>
+
+            <!-- Cube Matrix Form (IVM Array) -->
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showCubeMatrix" />
+                Cube Matrix (IVM)
+              </label>
+              <div id="cube-matrix-controls" class="geodesic-options" style="display: none; margin-left: 20px; margin-top: 8px;">
+                <div class="control-item" style="margin-bottom: 8px;">
+                  <label style="font-size: 11px;">Matrix Size</label>
+                  <div class="slider-container">
+                    <input
+                      type="range"
+                      id="cubeMatrixSizeSlider"
+                      min="1"
+                      max="10"
+                      step="1"
+                      value="1"
+                    />
+                    <span class="slider-value" id="cubeMatrixSizeValue">1×1</span>
+                  </div>
+                </div>
+                <label class="checkbox-label" style="font-size: 11px; margin-left: 0;">
+                  <input type="checkbox" id="cubeMatrixRotate45" />
+                  Rotate 45° (grid align)
+                </label>
+                <p class="info-text" style="margin-left: 0; font-size: 10px;">
+                  N×N spatial array (spread = 0.5)
+                </p>
+              </div>
+            </div>
+
             <div class="control-item">
               <label class="checkbox-label">
                 <input type="checkbox" id="showTetrahedron" />
@@ -414,6 +446,39 @@
                 Dual Tetrahedron
               </label>
             </div>
+
+            <!-- Tet Matrix Form (IVM Array) - STUB -->
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showTetMatrix" disabled />
+                Tet Matrix (IVM) [Phase 2]
+              </label>
+              <div id="tet-matrix-controls" class="geodesic-options" style="display: none; margin-left: 20px; margin-top: 8px;">
+                <div class="control-item" style="margin-bottom: 8px;">
+                  <label style="font-size: 11px;">Matrix Size</label>
+                  <div class="slider-container">
+                    <input
+                      type="range"
+                      id="tetMatrixSizeSlider"
+                      min="1"
+                      max="10"
+                      step="1"
+                      value="1"
+                      disabled
+                    />
+                    <span class="slider-value" id="tetMatrixSizeValue">1×1</span>
+                  </div>
+                </div>
+                <label class="checkbox-label" style="font-size: 11px; margin-left: 0;">
+                  <input type="checkbox" id="tetMatrixRotate45" disabled />
+                  Rotate 45° (grid align)
+                </label>
+                <p class="info-text" style="margin-left: 0; font-size: 10px;">
+                  N×N tetrahedral array (coming soon)
+                </p>
+              </div>
+            </div>
+
             <div class="control-item">
               <label class="checkbox-label">
                 <input type="checkbox" id="showOctahedron" />
@@ -513,6 +578,39 @@
                 </div>
               </div>
             </div>
+
+            <!-- Octa Matrix Form (IVM Array) - STUB -->
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showOctaMatrix" disabled />
+                Octa Matrix (IVM) [Phase 3]
+              </label>
+              <div id="octa-matrix-controls" class="geodesic-options" style="display: none; margin-left: 20px; margin-top: 8px;">
+                <div class="control-item" style="margin-bottom: 8px;">
+                  <label style="font-size: 11px;">Matrix Size</label>
+                  <div class="slider-container">
+                    <input
+                      type="range"
+                      id="octaMatrixSizeSlider"
+                      min="1"
+                      max="10"
+                      step="1"
+                      value="1"
+                      disabled
+                    />
+                    <span class="slider-value" id="octaMatrixSizeValue">1×1</span>
+                  </div>
+                </div>
+                <label class="checkbox-label" style="font-size: 11px; margin-left: 0;">
+                  <input type="checkbox" id="octaMatrixRotate45" disabled />
+                  Rotate 45° (grid align)
+                </label>
+                <p class="info-text" style="margin-left: 0; font-size: 10px;">
+                  N×N octahedral array (coming soon)
+                </p>
+              </div>
+            </div>
+
             <div class="control-item">
               <label class="checkbox-label">
                 <input type="checkbox" id="showIcosahedron" />
@@ -998,34 +1096,6 @@
             <p class="info-text" style="font-size: 10px; margin-top: 5px">
               Linked sliders: rational units follow whichever you adjust
             </p>
-
-            <!-- Matrix Slider (IVM Array) -->
-            <div class="control-item" style="margin-top: 20px">
-              <label>Matrix Size (IVM Array)</label>
-              <div class="slider-container">
-                <input
-                  type="range"
-                  id="matrixSizeSlider"
-                  min="1"
-                  max="10"
-                  step="1"
-                  value="1"
-                />
-                <span class="slider-value" id="matrixSizeValue">1×1</span>
-              </div>
-              <p class="info-text">
-                Creates N×N array in X-Y plane (Fuller's IVM)
-              </p>
-
-              <!-- Matrix Rotation Toggle -->
-              <label class="checkbox-label">
-                <input type="checkbox" id="matrixRotate45" />
-                Rotate 45° (align to grid)
-              </label>
-              <p class="info-text" style="margin-left: 20px">
-                Aligns Tet/Octa edge-to-edge with X-Y grid (spread = 0.5)
-              </p>
-            </div>
           </div>
         </div>
         <!-- END SECTION 5: SCALE -->

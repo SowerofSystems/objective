@@ -128,6 +128,7 @@ function startARTexplorer(
   let geodesicIcosahedronGroup; // Phase 2.7a: Geodesic subdivision
   let geodesicTetrahedronGroup; // Phase 2.7c: Geodesic tetrahedron
   let geodesicOctahedronGroup; // Phase 2.7b: Geodesic octahedron
+  let cubeMatrixGroup, tetMatrixGroup, octaMatrixGroup; // Matrix forms (IVM arrays)
   let cartesianGrid, cartesianBasis, quadrayBasis, ivmPlanes;
 
   function initScene() {
@@ -226,6 +227,19 @@ function startARTexplorer(
     geodesicOctahedronGroup.userData.type = "geodesicOctahedron";
     geodesicOctahedronGroup.userData.isInstance = false;
 
+    // Matrix forms (IVM spatial arrays)
+    cubeMatrixGroup = new THREE.Group();
+    cubeMatrixGroup.userData.type = "cubeMatrix";
+    cubeMatrixGroup.userData.isInstance = false;
+
+    tetMatrixGroup = new THREE.Group();
+    tetMatrixGroup.userData.type = "tetMatrix";
+    tetMatrixGroup.userData.isInstance = false;
+
+    octaMatrixGroup = new THREE.Group();
+    octaMatrixGroup.userData.type = "octaMatrix";
+    octaMatrixGroup.userData.isInstance = false;
+
     scene.add(cubeGroup);
     scene.add(tetrahedronGroup);
     scene.add(dualTetrahedronGroup);
@@ -238,6 +252,9 @@ function startARTexplorer(
     scene.add(geodesicIcosahedronGroup);
     scene.add(geodesicTetrahedronGroup);
     scene.add(geodesicOctahedronGroup);
+    scene.add(cubeMatrixGroup);
+    scene.add(tetMatrixGroup);
+    scene.add(octaMatrixGroup);
 
     // Initialize PerformanceClock with all scene groups
     PerformanceClock.init([
@@ -253,6 +270,9 @@ function startARTexplorer(
       geodesicIcosahedronGroup,
       geodesicTetrahedronGroup,
       geodesicOctahedronGroup,
+      cubeMatrixGroup,
+      tetMatrixGroup,
+      octaMatrixGroup,
     ]);
 
     // Initial render
@@ -980,41 +1000,43 @@ function startARTexplorer(
     const scale = tetEdge / (2 * Math.sqrt(2)); // Convert tet edge to halfSize
     const opacity = parseFloat(document.getElementById("opacitySlider").value);
 
-    // Cube (Blue) - with Matrix support
+    // Cube (Blue)
     if (document.getElementById("showCube").checked) {
-      // Get matrix settings
-      const matrixSize = parseInt(
-        document.getElementById("matrixSizeSlider")?.value || "1"
-      );
-      const rotate45 = document.getElementById("matrixRotate45")?.checked || false;
-
-      // Clear existing cube group
-      while (cubeGroup.children.length > 0) {
-        cubeGroup.remove(cubeGroup.children[0]);
-      }
-
-      if (matrixSize > 1) {
-        // Use matrix generator for N×N array
-        import("./rt-matrix.js").then(MatrixModule => {
-          const { RTMatrix } = MatrixModule;
-          const cubeMatrix = RTMatrix.createCubeMatrix(
-            matrixSize,
-            scale,
-            rotate45,
-            opacity,
-            0x4a9eff,
-            THREE
-          );
-          cubeGroup.add(cubeMatrix);
-        });
-      } else {
-        // Single cube (original behavior)
-        const cube = Polyhedra.cube(scale);
-        renderPolyhedron(cubeGroup, cube, 0x4a9eff, opacity);
-      }
+      const cube = Polyhedra.cube(scale);
+      renderPolyhedron(cubeGroup, cube, 0x4a9eff, opacity);
       cubeGroup.visible = true;
     } else {
       cubeGroup.visible = false;
+    }
+
+    // Cube Matrix (IVM Array)
+    if (document.getElementById("showCubeMatrix").checked) {
+      const matrixSize = parseInt(
+        document.getElementById("cubeMatrixSizeSlider")?.value || "1"
+      );
+      const rotate45 = document.getElementById("cubeMatrixRotate45")?.checked || false;
+
+      // Clear existing cube matrix group
+      while (cubeMatrixGroup.children.length > 0) {
+        cubeMatrixGroup.remove(cubeMatrixGroup.children[0]);
+      }
+
+      // Generate cube matrix
+      import("./rt-matrix.js").then(MatrixModule => {
+        const { RTMatrix } = MatrixModule;
+        const cubeMatrix = RTMatrix.createCubeMatrix(
+          matrixSize,
+          scale,
+          rotate45,
+          opacity,
+          0x4a9eff,
+          THREE
+        );
+        cubeMatrixGroup.add(cubeMatrix);
+      });
+      cubeMatrixGroup.visible = true;
+    } else {
+      cubeMatrixGroup.visible = false;
     }
 
     // Tetrahedron (Yellow)
@@ -1574,6 +1596,32 @@ function startARTexplorer(
     .getElementById("showRhombicDodecahedron")
     .addEventListener("change", updateGeometry);
 
+  // Matrix forms (IVM Arrays)
+  const cubeMatrixCheckbox = document.getElementById("showCubeMatrix");
+  if (cubeMatrixCheckbox) {
+    cubeMatrixCheckbox.addEventListener("change", () => {
+      const cubeMatrixControls = document.getElementById("cube-matrix-controls");
+      if (cubeMatrixControls) {
+        cubeMatrixControls.style.display = cubeMatrixCheckbox.checked ? "block" : "none";
+      }
+      updateGeometry();
+    });
+  }
+
+  const cubeMatrixSizeSlider = document.getElementById("cubeMatrixSizeSlider");
+  if (cubeMatrixSizeSlider) {
+    cubeMatrixSizeSlider.addEventListener("input", e => {
+      const matrixSize = parseInt(e.target.value);
+      document.getElementById("cubeMatrixSizeValue").textContent = `${matrixSize}×${matrixSize}`;
+      updateGeometry();
+    });
+  }
+
+  const cubeMatrixRotate45 = document.getElementById("cubeMatrixRotate45");
+  if (cubeMatrixRotate45) {
+    cubeMatrixRotate45.addEventListener("change", updateGeometry);
+  }
+
   // Phase 2.7a, 2.7b, 2.7c: Geodesic controls
   document
     .getElementById("showGeodesicIcosahedron")
@@ -1660,24 +1708,6 @@ function startARTexplorer(
     document.getElementById("opacityValue").textContent = e.target.value;
     updateGeometry();
   });
-
-  // Matrix Size slider (IVM Array)
-  const matrixSlider = document.getElementById("matrixSizeSlider");
-  if (matrixSlider) {
-    matrixSlider.addEventListener("input", e => {
-      const matrixSize = parseInt(e.target.value);
-      document.getElementById("matrixSizeValue").textContent = `${matrixSize}×${matrixSize}`;
-      updateGeometry();
-    });
-  }
-
-  // Matrix Rotate 45° checkbox
-  const rotateCheckbox = document.getElementById("matrixRotate45");
-  if (rotateCheckbox) {
-    rotateCheckbox.addEventListener("change", () => {
-      updateGeometry();
-    });
-  }
 
   // Quadray Grid Tessellation Slider
   document.getElementById("quadrayTessSlider").addEventListener("input", e => {
