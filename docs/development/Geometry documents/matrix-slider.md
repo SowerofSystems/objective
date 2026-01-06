@@ -628,44 +628,283 @@ All tasks for full parity with base forms:
 
 **Implementation Summary:**
 
-Matrix forms integrate seamlessly with existing systems:
-- Selection: Added matrix groups to formGroups array in onCanvasClick
-- Instance creation: RTStateManager.createInstance clones any group (no matrix-specific code needed)
-- Node rendering: Created addMatrixNodes() to extract and deduplicate vertices
-- Form reset: Extended RTStateManager.resetForm to reset matrix UI controls
-- Now button: Added updateGeometry() call after matrix form reset
-- Gumball/Opacity/Save/Load: Work automatically via existing infrastructure
+Matrix forms integrate seamlessly with existing systems through minimal, targeted changes:
+
+1. **Selection System** (rt-init.js:3029-3031)
+   - Added matrix groups to formGroups array in onCanvasClick
+   - Existing raycaster and highlight system work automatically
+
+2. **Instance Creation** (rt-state-manager.js:162-221)
+   - Implemented recursive cloneGroupHierarchy() for nested group structures
+   - Clones geometry AND materials (prevents shared highlight state)
+   - Strips highlight from instance materials (originalEmissive restoration)
+   - No matrix-specific instance logic needed
+
+3. **Node Rendering** (rt-init.js:1000-1075)
+   - Created addMatrixNodes() function to extract all cube vertices
+   - Deduplicates vertices using position string keys
+   - Applies 45° rotation transform if enabled
+   - Integrates with existing getCachedNodeGeometry system
+
+4. **Form Reset** (rt-state-manager.js:420-444)
+   - Extended resetForm() to detect matrix form types
+   - Resets UI controls: matrixSize→1, rotate45→false
+   - Updates slider value displays
+
+5. **Now Button** (rt-init.js:2155-2200)
+   - Detects matrix forms and calls updateGeometry() after reset
+   - Ensures form regenerates at 1×1 after instance creation
+   - Existing deselection and gumball hiding work automatically
+
+6. **Automatic Integration**
+   - Gumball transforms: Attach to any selected group (no changes)
+   - Opacity controls: Passed to RTMatrix.createCubeMatrix (no changes)
+   - Save/Load: RTFileHandler serializes all instances (no changes)
+   - Delete/Undo/Redo: RTStateManager handles all groups (no changes)
+
+**Critical Fixes:**
+- **Recursive Cloning**: Flat children iteration missed nested groups → faces/edges missing from instances
+- **Material Cloning**: Shared materials caused instances to inherit highlight → couldn't be reselected
+- **Highlight Stripping**: Instances restore originalEmissive to avoid cyan glow on creation
 
 **Files Modified:**
 - [rt-init.js](../../../src/geometry/modules/rt-init.js): Selection array, Now button handler, addMatrixNodes function
-- [rt-state-manager.js](../../../src/geometry/modules/rt-state-manager.js): resetForm extended for matrix properties
+- [rt-state-manager.js](../../../src/geometry/modules/rt-state-manager.js): Recursive cloning, material cloning, highlight stripping, resetForm matrix support
+
+**Commits:**
+- `e72f213` - Part 1: UI & Basic Rendering
+- `c09c8ea` - Part 2: Instance System Integration (selection, Now button, nodes)
+- `f593d1a` - Fix: Recursive group cloning for nested matrix structure
+- `167bf11` - Fix: Clone materials and strip highlight state from instances
 
 **Validation Results:**
-- ✅ Click cubeMatrix → selects, shows outline
-- ✅ "Now" → creates instance, resets form to 1×1
-- ✅ Nodes toggle ON → matrix shows nodes at all vertices
+- ✅ Click cubeMatrix → selects with cyan highlight/thick edges
+- ✅ "Now" → creates instance, resets form to 1×1, instance unhighlighted
+- ✅ ESC → deselects instance
+- ✅ Click instance → reselects with highlight (full workflow)
+- ✅ Nodes toggle ON → matrix shows nodes at all vertices (deduplicated)
 - ✅ Gumball move/scale/rotate works on matrix
 - ✅ Opacity slider affects matrix transparency
-- ✅ Save/Load preserves matrix instances
+- ✅ Save/Load preserves matrix instances with full geometry
 - ✅ Delete key removes selected matrix instances
 - ✅ Multiple matrix instances coexist with independent transforms
+- ✅ Instances have complete geometry (faces, edges, nodes)
 
-**Phase 1.5b: Add Tet Matrix Form Type**
-1. Implement `RTMatrix.createTetrahedronMatrix()`
-2. Add "Tet Matrix" checkbox + controls
-3. Register 'tetrahedronMatrix' in RTStateManager
-4. Test Tet Matrix + Cube Matrix simultaneous display
+---
 
-**Phase 1.5c: Add Octa Matrix Form Type**
-1. Implement `RTMatrix.createOctahedronMatrix()`
-2. Add "Octa Matrix" checkbox + controls
-3. Register 'octahedronMatrix' in RTStateManager
-4. Test Tet + Octa Matrix composition (Octet Truss demo)
+**Phase 1.5b: Add Tet Matrix Form Type** (READY TO IMPLEMENT)
 
-**Phase 1.5d: Documentation & Polish**
-1. Update workplan with completed implementation
-2. Document multi-matrix composition workflows
-3. Add educational notes on Octet Truss structure
+**Status:** 🔜 Next Phase
+
+**Goal:** Create tetrahedron matrix following Cube Matrix pattern
+
+**Implementation Pattern (proven successful):**
+
+1. **Create Generator Function** (rt-matrix.js)
+   ```javascript
+   createTetrahedronMatrix: (matrixSize, halfSize, rotate45, opacity, color, THREE) => {
+     const matrixGroup = new THREE.Group();
+
+     // Get base tetrahedron geometry
+     const tetGeom = Polyhedra.tetrahedron(halfSize);
+     const { vertices, edges, faces } = tetGeom;
+
+     // Calculate spacing (vertex-to-vertex or edge-to-edge?)
+     const tetEdge = /* TBD: calculate from halfSize */;
+     const spacing = tetEdge; // Distance between tet centers
+
+     // Generate N×N grid with alternating orientations
+     for (let i = 0; i < matrixSize; i++) {
+       for (let j = 0; j < matrixSize; j++) {
+         const offset_x = (i - matrixSize / 2 + 0.5) * spacing;
+         const offset_y = (j - matrixSize / 2 + 0.5) * spacing;
+         const offset_z = 0;
+
+         // Determine orientation (up vs down)
+         const isUp = (i + j) % 2 === 0;
+
+         // Create tet at position with orientation
+         const tetGroup = new THREE.Group();
+         // ... build geometry like cubeMatrix ...
+
+         // Apply orientation rotation if needed
+         if (!isUp) {
+           tetGroup.rotation.z = Math.PI; // Flip 180°
+         }
+
+         matrixGroup.add(tetGroup);
+       }
+     }
+
+     // Apply 45° rotation if requested
+     if (rotate45) {
+       RT.applyRotation45(matrixGroup);
+     }
+
+     return matrixGroup;
+   }
+   ```
+
+2. **Add UI Controls** (index.html)
+   - Enable "Tet Matrix" checkbox (currently disabled)
+   - Controls already exist, just enable them
+   - Event listeners already wired (rt-init.js:1632-1655)
+
+3. **Add Rendering Logic** (rt-init.js:updateGeometry)
+   - Copy Cube Matrix pattern (lines 1012-1057)
+   - Replace with RTMatrix.createTetrahedronMatrix call
+   - Add nodes support via addMatrixNodes (already works!)
+
+4. **Extend resetForm** (rt-state-manager.js:428-435)
+   - Pattern already exists, just uncomment tetMatrix case
+
+**Key Decisions Needed:**
+- **Spacing**: Vertex-to-vertex (tightest) vs edge-to-edge vs face-to-face?
+- **Orientation**: Checkerboard (i+j % 2) or all same direction?
+- **Z-offset**: All in plane or stagger up/down for 3D packing?
+
+**Validation:**
+- Same criteria as Cube Matrix (all should work automatically)
+- Test Tet + Cube simultaneous display
+- Verify octahedral voids appear between tets
+
+**Estimated Effort:** 2-3 hours (generator function + testing)
+
+---
+
+**Phase 1.5c: Add Octa Matrix Form Type** (READY TO IMPLEMENT)
+
+**Status:** 🔜 After Phase 1.5b
+
+**Goal:** Create octahedron matrix following Cube Matrix pattern
+
+**Implementation Pattern:**
+
+1. **Create Generator Function** (rt-matrix.js)
+   ```javascript
+   createOctahedronMatrix: (matrixSize, halfSize, rotate45, opacity, color, THREE) => {
+     const matrixGroup = new THREE.Group();
+
+     // Get base octahedron geometry
+     const octaGeom = Polyhedra.octahedron(halfSize);
+     const { vertices, edges, faces } = octGeom;
+
+     // Calculate spacing (face-to-face contact?)
+     const octaEdge = /* TBD: calculate from halfSize */;
+     const spacing = /* Square packing distance */;
+
+     // Generate N×N grid
+     // (Octahedra pack in square array, no alternating orientation needed)
+     for (let i = 0; i < matrixSize; i++) {
+       for (let j = 0; j < matrixSize; j++) {
+         const offset_x = (i - matrixSize / 2 + 0.5) * spacing;
+         const offset_y = (j - matrixSize / 2 + 0.5) * spacing;
+         const offset_z = 0;
+
+         const octaGroup = new THREE.Group();
+         // ... build geometry like cubeMatrix ...
+         matrixGroup.add(octaGroup);
+       }
+     }
+
+     if (rotate45) {
+       RT.applyRotation45(matrixGroup);
+     }
+
+     return matrixGroup;
+   }
+   ```
+
+2. **Add UI Controls** (index.html)
+   - Enable "Octa Matrix" checkbox
+   - Controls already exist
+
+3. **Add Rendering Logic** (rt-init.js:updateGeometry)
+   - Copy Cube Matrix pattern
+   - Replace with RTMatrix.createOctahedronMatrix
+
+4. **Extend resetForm** (rt-state-manager.js:436-443)
+   - Pattern exists, uncomment octaMatrix case
+
+**Key Decisions Needed:**
+- **Spacing**: Face-to-face contact distance
+- **Orientation**: All octahedra point up, or alternating?
+- **Alignment**: With/without 45° rotation shows different grid relationships
+
+**Validation:**
+- All Cube Matrix criteria
+- Test Tet + Octa composition (Octet Truss!)
+- Verify IVM packing relationships visible
+
+**Estimated Effort:** 2-3 hours
+
+---
+
+**Phase 1.5d: Multi-Matrix Composition Testing**
+
+**Status:** 🔜 After 1.5b & 1.5c
+
+**Goal:** Validate Fuller's Octet Truss visualization
+
+**Test Scenarios:**
+
+1. **Tet + Octa Composition**
+   - Enable both Tet Matrix (5×5) and Octa Matrix (5×5)
+   - Set both rotate45 = true
+   - Set opacity = 0.5 for both
+   - Verify octets appear at vertices
+   - Verify tets fill octahedral voids
+
+2. **Independent Control**
+   - Tet Matrix size=3, Octa Matrix size=5
+   - Verify different sizes coexist
+   - Create instances of each
+   - Transform instances independently
+
+3. **Performance**
+   - 10×10 Tet Matrix (100 tets) - should render smoothly
+   - 10×10 Octa Matrix (100 octas)
+   - Both simultaneously (200 polyhedra)
+
+**Documentation:**
+- Educational notes on Octet Truss structure
+- Screenshots of Tet+Octa composition
+- Workflow guide for multi-matrix scenes
+
+**Estimated Effort:** 1-2 hours (testing + documentation)
+
+---
+
+**Phase 1.5 Summary: Successful Pattern Established**
+
+The Cube Matrix implementation established a **proven pattern** that Tet and Octa matrices can follow:
+
+**What Works Automatically:**
+- ✅ Selection (just add to formGroups array)
+- ✅ Instance creation (recursive cloning handles any nesting)
+- ✅ Material cloning (highlight stripping works for all materials)
+- ✅ Node rendering (addMatrixNodes extracts vertices from any polyhedron)
+- ✅ Gumball transforms (attaches to any group)
+- ✅ Save/Load (RTFileHandler serializes all instances)
+- ✅ Delete/Undo/Redo (RTStateManager handles all groups)
+
+**What Needs Per-Matrix Customization:**
+- ⚙️ Generator function (RTMatrix.createXMatrix) - geometry-specific
+- ⚙️ Spacing calculation - depends on polyhedron edge/face dimensions
+- ⚙️ Orientation logic - some matrices need alternating orientations
+- ⚙️ UI controls (already exist, just enable checkboxes)
+
+**Confidence Level:** Very High
+- Pattern proven with Cube Matrix
+- All fixes generalized (recursive cloning, material cloning work for any form)
+- No matrix-specific instance code needed
+- Tet and Octa will "just work" once generators are written
+
+**Next Steps:**
+1. Implement Tet Matrix generator (Phase 1.5b)
+2. Implement Octa Matrix generator (Phase 1.5c)
+3. Test multi-matrix compositions (Phase 1.5d)
+4. Document Octet Truss visualization workflow
 
 ### 1.5.8: Validation Criteria
 
