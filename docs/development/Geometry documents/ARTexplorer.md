@@ -3705,6 +3705,7 @@ The documented RT-based geometry system represents a **paradigm shift** in defen
 
 **Primary Development:**
 - Andy Thomson - Project lead, geometric vision, Fuller/Wildberger synthesis
+- Kieran Thomson - Project co-lead, mathematical fact-checking, electron-orbit modelling, physics review
 - Claude (Anthropic) - Implementation, RT mathematics, modularization architecture
 
 **Foundational Ideas:**
