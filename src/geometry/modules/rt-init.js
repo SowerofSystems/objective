@@ -152,7 +152,15 @@ function startARTexplorer(
     camera.lookAt(0, 0, 0);
 
     // Renderer
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    // Enable logarithmic depth buffer to resolve coplanar face flicker in matrix arrays.
+    // Logarithmic depth provides even precision distribution across depth range,
+    // eliminating floating-point instability during camera movement that causes
+    // visual flickering on shared faces between adjacent polyhedra.
+    // Zero cost GPU feature - see docs/development/Geometry documents/matrix-slider.md §7.1
+    renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      logarithmicDepthBuffer: true
+    });
     renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio);
     container.appendChild(renderer.domElement);

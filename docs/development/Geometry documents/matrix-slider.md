@@ -2309,7 +2309,47 @@ The Matrix Slider feature will be a powerful educational and visualization tool,
 
 ---
 
-**Document Version:** 1.0
-**Last Updated:** 2026-01-05
-**Status:** Ready for Implementation Approval
-**Estimated Completion:** Week of 2026-02-09 (5 weeks from start)
+## 7. Known Issues & Solutions
+
+### 7.1 Coplanar Face Flicker (RESOLVED)
+
+**Issue:** Visual flickering on shared faces between adjacent polyhedra during camera movement
+
+**Symptoms:**
+- Flickering visible when camera is moving
+- Flickering settles after camera becomes still (2-3 seconds)
+- Only affects shared/coplanar faces between adjacent matrix polyhedra
+- Most noticeable on larger matrices (6×6 and above)
+
+**Root Cause:**
+Floating-point precision issues in the standard linear depth buffer during camera transforms. When two faces are perfectly coplanar (shared between adjacent cubes/tets/octas), the depth buffer cannot reliably determine which face is "in front" due to limited precision, especially during camera movement when depth values are being recalculated.
+
+**Solution: Logarithmic Depth Buffer**
+
+Enable logarithmic depth buffer in the WebGL renderer initialization:
+
+```javascript
+// rt-init.js, line 154-159
+renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  logarithmicDepthBuffer: true  // Resolves coplanar face flicker
+});
+```
+
+**Why This Works:**
+- **Precision Distribution:** Logarithmic depth buffer distributes precision evenly across the entire depth range, unlike linear depth buffer which concentrates precision near the camera
+- **Stability During Transforms:** Eliminates floating-point instability when depth values are recalculated during camera movement
+- **Zero Cost:** GPU-native feature with no computational overhead
+- **Mathematically Sound:** Logarithmic scale is actually more appropriate for depth perception than linear scale
+- **Geometry Unchanged:** Pure rendering optimization - all RT-pure mathematics remain exact
+
+**Performance Impact:** None (GPU feature, same rendering cost as linear depth buffer)
+
+**Status:** ✅ Implemented and verified (2026-01-06)
+
+---
+
+**Document Version:** 1.1
+**Last Updated:** 2026-01-06
+**Status:** Phase 1.5c Complete (All three matrix forms implemented)
+**Completion Date:** 2026-01-06
