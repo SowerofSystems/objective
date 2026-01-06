@@ -558,9 +558,11 @@ export const Polyhedra = {
       return { vertices, edges, faces };
     }
 
-    // Class I geodesic subdivision: divide each edge into 2^frequency segments
-    // Each triangular face becomes 4^frequency smaller triangles
-    const divisions = Math.pow(2, frequency); // 2^freq edge segments
+    // Class I geodesic subdivision (Fuller frequency notation)
+    // Frequency = number of equal edge divisions (1 = base polyhedron, 2 = bisected edges, etc.)
+    // Each edge divided into 'frequency' segments (not 2^frequency)
+    // Each triangular face becomes frequency² smaller triangles
+    const divisions = frequency; // Edge segments = frequency (Fuller definition)
 
     const newVertices = [...vertices]; // Start with original vertices
     const vertexMap = new Map(); // Cache division points to avoid duplicates
@@ -703,8 +705,11 @@ export const Polyhedra = {
    * @param {number} frequency - Subdivision frequency (1-6)
    * @returns {Object} - {vertices, edges, faces}
    */
-  geodesicIcosahedron: (halfSize = 1, frequency = 2, projection = "out") => {
+  geodesicIcosahedron: (halfSize = 1, frequency = 1, projection = "out") => {
     // Phase 2.9: RT-Pure Geodesic with InSphere/MidSphere/OutSphere options
+    // Fuller frequency notation: 1 = base polyhedron (undivided edges)
+    //                            2 = each edge bisected (2 segments)
+    //                            3 = each edge trisected (3 segments), etc.
 
     // 1. Start with pure algebraic icosahedron
     const base = Polyhedra.icosahedron(halfSize);
@@ -716,9 +721,9 @@ export const Polyhedra = {
       `  Base vertices: ${base.vertices.length}, faces: ${base.faces.length}`
     );
 
-    // Frequency 0 = return base icosahedron (no subdivision, no sphere projection)
-    if (frequency === 0) {
-      console.log(`  Frequency 0: Returning base icosahedron (20 faces)`);
+    // Frequency 1 = return base icosahedron (no subdivision, no sphere projection)
+    if (frequency === 1) {
+      console.log(`  Frequency 1: Returning base icosahedron (20 faces, undivided edges)`);
       return base;
     }
 
@@ -821,8 +826,12 @@ export const Polyhedra = {
    * @param {number} frequency - Subdivision frequency (1-6)
    * @returns {Object} - {vertices, edges, faces}
    */
-  geodesicTetrahedron: (halfSize = 1, frequency = 2, projection = "out") => {
+  geodesicTetrahedron: (halfSize = 1, frequency = 1, projection = "out") => {
     // Phase 2.9: RT-Pure Geodesic with InSphere/MidSphere/OutSphere options
+    // Fuller frequency notation: 1 = base polyhedron (undivided edges)
+    //                            2 = each edge bisected (2 segments)
+    //                            3 = each edge trisected (3 segments), etc.
+
     // 1. Start with pure algebraic tetrahedron
     const base = Polyhedra.tetrahedron(halfSize);
 
@@ -833,9 +842,9 @@ export const Polyhedra = {
       `  Base vertices: ${base.vertices.length}, faces: ${base.faces.length}`
     );
 
-    // Frequency 0 = return base tetrahedron (no subdivision, no sphere projection)
-    if (frequency === 0) {
-      console.log(`  Frequency 0: Returning base tetrahedron (4 faces)`);
+    // Frequency 1 = return base tetrahedron (no subdivision, no sphere projection)
+    if (frequency === 1) {
+      console.log(`  Frequency 1: Returning base tetrahedron (4 faces, undivided edges)`);
       return base;
     }
 
@@ -923,8 +932,12 @@ export const Polyhedra = {
    * @param {number} frequency - Subdivision frequency (1-6)
    * @returns {Object} - {vertices, edges, faces}
    */
-  geodesicOctahedron: (halfSize = 1, frequency = 2, projection = "out") => {
+  geodesicOctahedron: (halfSize = 1, frequency = 1, projection = "out") => {
     // Phase 2.9: RT-Pure Geodesic with InSphere/MidSphere/OutSphere options
+    // Fuller frequency notation: 1 = base polyhedron (undivided edges)
+    //                            2 = each edge bisected (2 segments)
+    //                            3 = each edge trisected (3 segments), etc.
+
     // 1. Start with pure algebraic octahedron
     const base = Polyhedra.octahedron(halfSize);
 
@@ -935,9 +948,9 @@ export const Polyhedra = {
       `  Base vertices: ${base.vertices.length}, faces: ${base.faces.length}`
     );
 
-    // Frequency 0 = return base octahedron (no subdivision, no sphere projection)
-    if (frequency === 0) {
-      console.log(`  Frequency 0: Returning base octahedron (8 faces)`);
+    // Frequency 1 = return base octahedron (no subdivision, no sphere projection)
+    if (frequency === 1) {
+      console.log(`  Frequency 1: Returning base octahedron (8 faces, undivided edges)`);
       return base;
     }
 

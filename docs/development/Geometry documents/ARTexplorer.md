@@ -1147,13 +1147,14 @@ All RT purity enhancements successfully implemented:
    ☑ Icosahedron              ☐ Geodesic [freq: ▾2]
    ```
 
-   **Vertex Count by Frequency:**
-   - Freq 1: 12 vertices (original)
-   - Freq 2: 42 vertices
-   - Freq 3: 92 vertices
-   - Freq 4: 162 vertices
-   - Freq 5: 252 vertices
-   - Freq 6: 362 vertices (performance limit)
+   **Vertex Count by Frequency (Fuller notation):**
+   - Freq 1: 12 vertices (base polyhedron, undivided edges)
+   - Freq 2: 42 vertices (each edge bisected into 2 segments)
+   - Freq 3: 92 vertices (each edge trisected into 3 segments)
+   - Freq 4: 162 vertices (each edge divided into 4 segments)
+   - Freq 5: 252 vertices (each edge divided into 5 segments)
+   - Freq 6: 362 vertices (each edge divided into 6 segments)
+   - Freq 7: 482 vertices (each edge divided into 7 segments - performance limit)
 
 2. **Phase 2.7b: Geodesic Octahedron** (Priority 2)
    - Simpler than icosahedron (8 triangular faces)
@@ -1219,7 +1220,7 @@ Instead of traditional spherical great circles, use the **Quadray coordinate sys
 **Concept:**
 - Quadray basis: W, X, Y, Z axes pointing to tetrahedral vertices
 - Any **two axes define a coplanar polygon** through their sweep/spread
-- Use these **tetrahedral projection planes** for frequency subdivision, 3 (triangle) = Frequency 1, 6 (hexagon) = Frequency 2, 12 (dodecagon), F3, etc.
+- Use these **tetrahedral projection planes** for frequency subdivision using Fuller notation: Freq 1 = base polygon (triangle/3), Freq 2 = bisected edges (hexagon/6), Freq 3 = trisected edges (dodecagon/12), etc.
 - Resulting nodes define geodesic vertices in Quadray space
 
 **Advantages:**
@@ -3013,7 +3014,7 @@ The file handler will support exporting the current scene to glTF 2.0 format (.g
 
 **Question 4: Geometry Scope?**
 - **Answer:** Platonic solids + Rhombic Dodec, with geodesic subdivision for all
-- **Status:** ✅ Platonic solids complete, ✅ Geodesics for Tet/Icosa/Octa (frequency 0-6)
+- **Status:** ✅ Platonic solids complete, ✅ Geodesics for Tet/Icosa/Octa (frequency 1-7, Fuller notation)
 
 **Question 5: Dual Polyhedra Visualization?**
 - **Answer:** Yes, show dual as toggleable option starting with dual tetrahedra in cube
@@ -3415,7 +3416,7 @@ Result: Provably zero accumulation error over unlimited time
 
 **Geodesic Tracking Algorithm:**
 ```
-1. Subdivide tracking sphere using icosahedral geodesic (Freq 2-6)
+1. Subdivide tracking sphere using icosahedral geodesic (Freq 2-7, Fuller notation: bisected to 7× divided edges)
 2. Map target to nearest geodesic node (Quadray barycentric coords)
 3. Calculate spread to adjacent nodes (exact rational values)
 4. Update tracking gate using quadrance deltas (no square roots)
