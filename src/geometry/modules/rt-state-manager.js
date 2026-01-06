@@ -159,29 +159,44 @@ export const RTStateManager = {
     // Create lightweight clone that SHARES geometry/materials (memory efficient)
     const clonedGroup = new THREE.Group();
 
-    // Copy all children and CLONE their geometry (don't share)
-    // Sharing geometry causes corruption when instances have different transforms
-    polyhedronGroup.children.forEach(child => {
-      if (child.isMesh) {
-        // Clone geometry to prevent transform corruption
-        const clonedGeometry = child.geometry.clone();
-        const instanceMesh = new THREE.Mesh(clonedGeometry, child.material);
-        instanceMesh.position.copy(child.position);
-        instanceMesh.rotation.copy(child.rotation);
-        instanceMesh.scale.copy(child.scale);
-        clonedGroup.add(instanceMesh);
-      } else if (child.isLine || child.isLineSegments) {
-        // Clone line geometry too
-        const clonedGeometry = child.geometry.clone();
-        const instanceLine = child.isLineSegments
-          ? new THREE.LineSegments(clonedGeometry, child.material)
-          : new THREE.Line(clonedGeometry, child.material);
-        instanceLine.position.copy(child.position);
-        instanceLine.rotation.copy(child.rotation);
-        instanceLine.scale.copy(child.scale);
-        clonedGroup.add(instanceLine);
-      }
-    });
+    // Recursive function to clone entire group hierarchy
+    // Needed for matrix forms which have nested group structure
+    const cloneGroupHierarchy = (source, target) => {
+      source.children.forEach(child => {
+        if (child.isMesh) {
+          // Clone geometry to prevent transform corruption
+          const clonedGeometry = child.geometry.clone();
+          const instanceMesh = new THREE.Mesh(clonedGeometry, child.material);
+          instanceMesh.position.copy(child.position);
+          instanceMesh.rotation.copy(child.rotation);
+          instanceMesh.scale.copy(child.scale);
+          instanceMesh.renderOrder = child.renderOrder;
+          target.add(instanceMesh);
+        } else if (child.isLine || child.isLineSegments) {
+          // Clone line geometry too
+          const clonedGeometry = child.geometry.clone();
+          const instanceLine = child.isLineSegments
+            ? new THREE.LineSegments(clonedGeometry, child.material)
+            : new THREE.Line(clonedGeometry, child.material);
+          instanceLine.position.copy(child.position);
+          instanceLine.rotation.copy(child.rotation);
+          instanceLine.scale.copy(child.scale);
+          instanceLine.renderOrder = child.renderOrder;
+          target.add(instanceLine);
+        } else if (child.isGroup) {
+          // Recursively clone nested groups (for matrix forms)
+          const nestedGroup = new THREE.Group();
+          nestedGroup.position.copy(child.position);
+          nestedGroup.rotation.copy(child.rotation);
+          nestedGroup.scale.copy(child.scale);
+          cloneGroupHierarchy(child, nestedGroup);
+          target.add(nestedGroup);
+        }
+      });
+    };
+
+    // Clone entire hierarchy
+    cloneGroupHierarchy(polyhedronGroup, clonedGroup);
 
     // Copy current transform from Form
     clonedGroup.position.copy(polyhedronGroup.position);
