@@ -988,6 +988,93 @@ function startARTexplorer(
   }
 
   /**
+   * Add vertex nodes to matrix forms
+   * Extracts vertices from all cubes in the matrix and adds spherical nodes
+   * @param {THREE.Group} matrixGroup - Matrix group to add nodes to
+   * @param {number} matrixSize - Size of matrix (N×N)
+   * @param {number} scale - Cube halfSize
+   * @param {boolean} rotate45 - Whether matrix is rotated 45°
+   * @param {number} color - Node color
+   * @param {string} nodeSize - Node size ('sm', 'md', 'lg')
+   */
+  function addMatrixNodes(matrixGroup, matrixSize, scale, rotate45, color, nodeSize) {
+    // Get node geometry settings
+    const useRTNodeGeometry =
+      document.getElementById("useRTNodeGeometry")?.checked || false;
+    const useFlatShading =
+      document.getElementById("nodeFlatShading")?.checked || false;
+
+    // Get cached node geometry
+    const { geometry: nodeGeometry } = getCachedNodeGeometry(
+      useRTNodeGeometry,
+      nodeSize,
+      "cube",
+      scale
+    );
+
+    const nodeMaterial = new THREE.MeshStandardMaterial({
+      color: color,
+      emissive: color,
+      emissiveIntensity: 0.2,
+      flatShading: useFlatShading,
+    });
+
+    // Collect all unique vertex positions from matrix
+    const vertexPositions = new Set();
+    const cubeEdge = scale * 2;
+    const spacing = cubeEdge;
+
+    // Generate cube vertices at each grid position
+    import("./rt-polyhedra.js").then(PolyModule => {
+      const { Polyhedra } = PolyModule;
+      const cubeGeom = Polyhedra.cube(scale);
+      const { vertices } = cubeGeom;
+
+      // For each grid position, add transformed vertices
+      for (let i = 0; i < matrixSize; i++) {
+        for (let j = 0; j < matrixSize; j++) {
+          const offset_x = (i - matrixSize / 2 + 0.5) * spacing;
+          const offset_y = (j - matrixSize / 2 + 0.5) * spacing;
+          const offset_z = 0;
+
+          vertices.forEach(v => {
+            let x = v.x + offset_x;
+            let y = v.y + offset_y;
+            let z = v.z + offset_z;
+
+            // Apply 45° rotation if enabled
+            if (rotate45) {
+              const cos45 = Math.sqrt(0.5);
+              const sin45 = Math.sqrt(0.5);
+              const x_rot = cos45 * x - sin45 * y;
+              const y_rot = sin45 * x + cos45 * y;
+              x = x_rot;
+              y = y_rot;
+            }
+
+            // Use string key for deduplication
+            const key = `${x.toFixed(6)},${y.toFixed(6)},${z.toFixed(6)}`;
+            vertexPositions.add(key);
+          });
+        }
+      }
+
+      // Create nodes at unique positions
+      vertexPositions.forEach(key => {
+        const [x, y, z] = key.split(",").map(parseFloat);
+        const node = new THREE.Mesh(nodeGeometry, nodeMaterial.clone());
+        node.position.set(x, y, z);
+        node.renderOrder = 3;
+        matrixGroup.add(node);
+      });
+
+      console.log(
+        `[Matrix Nodes] Added ${vertexPositions.size} nodes to ${matrixSize}×${matrixSize} matrix`
+      );
+    });
+  }
+
+  /**
    * Update all geometry based on current settings
    */
   function updateGeometry() {
@@ -1014,7 +1101,8 @@ function startARTexplorer(
       const matrixSize = parseInt(
         document.getElementById("cubeMatrixSizeSlider")?.value || "1"
       );
-      const rotate45 = document.getElementById("cubeMatrixRotate45")?.checked || false;
+      const rotate45 =
+        document.getElementById("cubeMatrixRotate45")?.checked || false;
 
       // Clear existing cube matrix group
       while (cubeMatrixGroup.children.length > 0) {
@@ -1033,6 +1121,22 @@ function startARTexplorer(
           THREE
         );
         cubeMatrixGroup.add(cubeMatrix);
+
+        // Add vertex nodes if enabled
+        const nodeSizeBtn = document.querySelector(".node-size-btn.active");
+        const nodeSize = nodeSizeBtn ? nodeSizeBtn.dataset.nodeSize : "md";
+        const showNodes = nodeSize !== "off";
+
+        if (showNodes) {
+          addMatrixNodes(
+            cubeMatrixGroup,
+            matrixSize,
+            scale,
+            rotate45,
+            0x4a9eff,
+            nodeSize
+          );
+        }
       });
       cubeMatrixGroup.visible = true;
     } else {
@@ -2152,14 +2256,33 @@ function startARTexplorer(
       return;
     }
 
+    // Track if any matrix forms were deposited (need geometry update)
+    let matrixFormDeposited = false;
+
     // Deposit each selected polyhedron using StateManager
     selected.forEach(poly => {
+      const formType = poly.userData.type;
+
       // Create instance using RTStateManager
       const instance = RTStateManager.createInstance(poly, scene);
 
       // Reset Form to origin
       RTStateManager.resetForm(poly);
+
+      // Check if this was a matrix form
+      if (
+        formType === "cubeMatrix" ||
+        formType === "tetMatrix" ||
+        formType === "octaMatrix"
+      ) {
+        matrixFormDeposited = true;
+      }
     });
+
+    // If matrix form was deposited, regenerate geometry with reset properties
+    if (matrixFormDeposited) {
+      updateGeometry();
+    }
 
     // Hide editing basis after depositing (nothing selected)
     if (editingBasis) {
@@ -3012,7 +3135,7 @@ function startARTexplorer(
     // Collect all selectable polyhedra (Forms and Instances)
     const selectableObjects = [];
 
-    // Forms (including geodesics)
+    // Forms (including geodesics and matrix forms)
     const formGroups = [
       cubeGroup,
       tetrahedronGroup,
@@ -3026,6 +3149,9 @@ function startARTexplorer(
       geodesicIcosahedronGroup,
       geodesicTetrahedronGroup,
       geodesicOctahedronGroup,
+      cubeMatrixGroup,
+      tetMatrixGroup,
+      octaMatrixGroup,
     ];
 
     formGroups.forEach(group => {

@@ -415,6 +415,34 @@ export const RTStateManager = {
     formGroup.scale.set(1, 1, 1);
 
     const formType = formGroup.userData.type || "unknown";
+
+    // Reset matrix-specific properties to defaults
+    if (formType === "cubeMatrix") {
+      const sizeSlider = document.getElementById("cubeMatrixSizeSlider");
+      const rotateCheckbox = document.getElementById("cubeMatrixRotate45");
+      if (sizeSlider) {
+        sizeSlider.value = "1";
+        document.getElementById("cubeMatrixSizeValue").textContent = "1×1";
+      }
+      if (rotateCheckbox) rotateCheckbox.checked = false;
+    } else if (formType === "tetMatrix") {
+      const sizeSlider = document.getElementById("tetMatrixSizeSlider");
+      const rotateCheckbox = document.getElementById("tetMatrixRotate45");
+      if (sizeSlider) {
+        sizeSlider.value = "1";
+        document.getElementById("tetMatrixSizeValue").textContent = "1×1";
+      }
+      if (rotateCheckbox) rotateCheckbox.checked = false;
+    } else if (formType === "octaMatrix") {
+      const sizeSlider = document.getElementById("octaMatrixSizeSlider");
+      const rotateCheckbox = document.getElementById("octaMatrixRotate45");
+      if (sizeSlider) {
+        sizeSlider.value = "1";
+        document.getElementById("octaMatrixSizeValue").textContent = "1×1";
+      }
+      if (rotateCheckbox) rotateCheckbox.checked = false;
+    }
+
     console.log(`↩️  Form reset to origin: ${formType}`);
   },
 
