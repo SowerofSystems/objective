@@ -104,19 +104,38 @@ Similar to cube, but using octahedron geometry with square face alignment.
 - Creates vertex-to-vertex contact for tetrahedra
 - Cube matrices unaffected (already grid-aligned)
 
-**RT-Pure Implementation:**
+**RT-Pure Implementation (NO ANGLES!):**
 ```javascript
-// 45° rotation around Z-axis
-// Spread s = sin²(45°) = (√2/2)² = 1/2 = 0.5 (exact!)
-// Cross c = cos²(45°) = 1/2 = 0.5 (exact!)
-// Verify: s + c = 0.5 + 0.5 = 1 ✓
+// RT-PURE: Work in spread/cross space, not angles
+// "45°" is user-facing shorthand only - internal math uses exact rational values
+//
+// Spread s = sin²(45°) = (√2/2)² = 1/2 = 0.5 (EXACT RATIONAL)
+// Cross  c = cos²(45°) = 1/2 = 0.5 (EXACT RATIONAL)
+// Verify RT identity: s + c = 0.5 + 0.5 = 1.0 ✓
 
-const rotation_45_z = new THREE.Matrix4().makeRotationZ(Math.PI / 4);  // 45° = π/4
+// Extract sin/cos from spread/cross (only when needed for matrix)
+const s = 0.5;  // Spread (exact rational)
+const c = 0.5;  // Cross (exact rational)
+const sin_val = Math.sqrt(s);  // √(1/2) = √2/2 (deferred √ expansion)
+const cos_val = Math.sqrt(c);  // √(1/2) = √2/2
+
+// Construct rotation matrix manually (RT-pure approach)
+const rotationMatrix = new THREE.Matrix4();
+rotationMatrix.set(
+  cos_val, -sin_val, 0, 0,  // Row 1: [cos, -sin, 0, 0]
+  sin_val,  cos_val, 0, 0,  // Row 2: [sin,  cos, 0, 0]
+  0,        0,       1, 0,  // Row 3: [0,    0,   1, 0]
+  0,        0,       0, 1   // Row 4: [0,    0,   0, 1]
+);
 
 // Apply to entire matrix group
 if (matrixRotate45Enabled) {
-  matrixGroup.applyMatrix4(rotation_45_z);
+  matrixGroup.applyMatrix4(rotationMatrix);
 }
+
+// ALTERNATIVE: If Three.js makeRotationZ is used (pragmatic compromise):
+// const rotation_45_z = new THREE.Matrix4().makeRotationZ(Math.PI / 4);
+// NOTE: This uses π internally, but we've verified s=c=0.5 algebraically first
 ```
 
 **Use Cases:**
@@ -157,18 +176,24 @@ When user adjusts Cube Edge Length or Tetrahedron Edge Length sliders:
 **Location:** Scale section, after existing sliders
 
 ```html
-<!-- Existing sliders -->
+<!-- Existing sliders (from art.css) -->
 <div class="control-item">
   <label>Cube Edge Length</label>
-  <input type="range" id="cubeScaleSlider" ... />
+  <div class="slider-container">
+    <input type="range" id="cubeScaleSlider" ... />
+    <span class="slider-value" id="cubeScaleValue">1.4142</span>
+  </div>
 </div>
 
 <div class="control-item">
   <label>Tetrahedron Edge Length</label>
-  <input type="range" id="tetScaleSlider" ... />
+  <div class="slider-container">
+    <input type="range" id="tetScaleSlider" ... />
+    <span class="slider-value" id="tetScaleValue">2.0000</span>
+  </div>
 </div>
 
-<!-- NEW: Matrix Slider -->
+<!-- NEW: Matrix Slider (uses art.css classes) -->
 <div class="control-item">
   <label>Matrix Size (IVM Array)</label>
   <div class="slider-container">
@@ -179,30 +204,31 @@ When user adjusts Cube Edge Length or Tetrahedron Edge Length sliders:
       max="10"
       step="1"
       value="1"
-      style="width: 200px"
     />
     <span class="slider-value" id="matrixSizeValue">1×1</span>
   </div>
-  <div style="font-size: 10px; color: #888; margin-top: 3px">
-    Creates N×N array in X-Y plane (Fuller's IVM)
-  </div>
+  <p class="info-text">Creates N×N array in X-Y plane (Fuller's IVM)</p>
 
-  <!-- Matrix Rotation Toggle -->
-  <div style="margin-top: 8px">
-    <label style="display: flex; align-items: center; cursor: pointer">
-      <input
-        type="checkbox"
-        id="matrixRotate45"
-        style="margin-right: 6px"
-      />
-      <span style="font-size: 11px">Rotate 45° (align to grid)</span>
-    </label>
-    <div style="font-size: 9px; color: #666; margin-left: 20px; margin-top: 2px">
-      Aligns Tet/Octa edge-to-edge with X-Y grid (spread = 0.5)
-    </div>
-  </div>
+  <!-- Matrix Rotation Toggle (uses art.css .checkbox-label) -->
+  <label class="checkbox-label">
+    <input type="checkbox" id="matrixRotate45" />
+    Rotate 45° (align to grid)
+  </label>
+  <p class="info-text" style="margin-left: 20px">
+    Aligns Tet/Octa edge-to-edge with X-Y grid (spread = 0.5)
+  </p>
 </div>
 ```
+
+**CSS Classes Used (from art.css):**
+- `.control-item` - Standard control wrapper with bottom margin
+- `.slider-container` - Flex layout for slider + value display
+- `.slider-value` - Right-aligned value display (cyan color)
+- `.info-text` - Small italic helper text (gray)
+- `.checkbox-label` - Flex layout for checkbox + label text
+
+**No Inline Styles Needed:**
+All styling comes from existing art.css definitions, maintaining visual consistency with the rest of the ARTexplorer UI.
 
 **Visual Feedback:**
 - Display format: "N×N" (e.g., "5×5" for matrix size 5)
@@ -242,10 +268,13 @@ When user adjusts Cube Edge Length or Tetrahedron Edge Length sliders:
    - Apply 45° Z-rotation if rotate45 = true
    - Return combined THREE.Group containing all cubes
 
-3. **Rotation Implementation**
-   - Create rotation matrix: `rotationZ = makeRotationZ(Math.PI / 4)`
-   - Apply to matrix group: `matrixGroup.applyMatrix4(rotationZ)`
-   - Verify RT-pure: spread = 0.5, cross = 0.5 (exact)
+3. **Rotation Implementation (RT-PURE)**
+   - Define spread/cross: `s = 0.5, c = 0.5` (exact rational values, NO angles!)
+   - Extract sin/cos ONLY when needed: `sin = √s, cos = √c` (deferred √ expansion)
+   - Construct rotation matrix manually using spread/cross values
+   - Apply to matrix group: `matrixGroup.applyMatrix4(rotationMatrix)`
+   - Verify RT identity: `s + c = 1.0 ✓`
+   - Label "45°" is user-facing shorthand; internal math uses quadrance
    - Note: Cube matrix visually unchanged by rotation (cubic symmetry)
 
 4. **Integration with Existing Scale**
@@ -439,9 +468,32 @@ const offset_x = Math.sqrt(offset_Q_x);  // Only sqrt at final position
 const RT_Matrix = {
 
   // Core matrix generators
-  createCubeMatrix: (matrixSize, halfSize) => { /* ... */ },
-  createTetrahedronMatrix: (matrixSize, halfSize) => { /* ... */ },
-  createOctahedronMatrix: (matrixSize, halfSize) => { /* ... */ },
+  createCubeMatrix: (matrixSize, halfSize, rotate45) => { /* ... */ },
+  createTetrahedronMatrix: (matrixSize, halfSize, rotate45) => { /* ... */ },
+  createOctahedronMatrix: (matrixSize, halfSize, rotate45) => { /* ... */ },
+
+  // RT-Pure rotation helper (NO ANGLES!)
+  applyRotation45: (group) => {
+    // Work in spread/cross space, not angle space
+    const s = 0.5;  // Spread = sin²(45°) = 1/2 (exact rational!)
+    const c = 0.5;  // Cross = cos²(45°) = 1/2 (exact rational!)
+
+    // Extract sin/cos ONLY when constructing matrix (deferred √)
+    const sin_val = Math.sqrt(s);  // √(1/2) = √2/2
+    const cos_val = Math.sqrt(c);  // √(1/2) = √2/2
+
+    // Build rotation matrix from spread/cross values
+    const rotationMatrix = new THREE.Matrix4();
+    rotationMatrix.set(
+      cos_val, -sin_val, 0, 0,
+      sin_val,  cos_val, 0, 0,
+      0,        0,       1, 0,
+      0,        0,       0, 1
+    );
+
+    group.applyMatrix4(rotationMatrix);
+    console.log(`[RT] Matrix rotation applied: s=${s}, c=${c}, s+c=${s+c} ✓`);
+  },
 
   // Helper functions
   calculateGridPosition: (i, j, matrixSize, spacing) => { /* ... */ },
