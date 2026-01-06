@@ -1527,6 +1527,21 @@ function startARTexplorer(
       html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
     }
 
+    if (document.getElementById("showDualTetrahedron").checked) {
+      const tetra = Polyhedra.tetrahedron(1);
+      const eulerOK = RT.verifyEuler(
+        tetra.vertices.length,
+        tetra.edges.length,
+        tetra.faces.length
+      );
+      const triangles = countGroupTriangles(dualTetrahedronGroup);
+      html += `<div style="margin-top: 10px;"><strong>Dual Tetrahedron:</strong></div>`;
+      html += `<div>Schläfli: {3,3} (self-dual)</div>`;
+      html += `<div>V: ${tetra.vertices.length}, E: ${tetra.edges.length}, F: ${tetra.faces.length}</div>`;
+      html += `<div>Triangles: ${triangles}</div>`;
+      html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
+    }
+
     if (document.getElementById("showOctahedron").checked) {
       const octa = Polyhedra.octahedron(1);
       const eulerOK = RT.verifyEuler(
@@ -1552,6 +1567,21 @@ function startARTexplorer(
       const triangles = countGroupTriangles(icosahedronGroup);
       html += `<div style="margin-top: 10px;"><strong>Icosahedron:</strong></div>`;
       html += `<div>Schläfli: {3,5}</div>`;
+      html += `<div>V: ${icosa.vertices.length}, E: ${icosa.edges.length}, F: ${icosa.faces.length}</div>`;
+      html += `<div>Triangles: ${triangles}</div>`;
+      html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
+    }
+
+    if (document.getElementById("showDualIcosahedron").checked) {
+      const icosa = Polyhedra.icosahedron(1);
+      const eulerOK = RT.verifyEuler(
+        icosa.vertices.length,
+        icosa.edges.length,
+        icosa.faces.length
+      );
+      const triangles = countGroupTriangles(dualIcosahedronGroup);
+      html += `<div style="margin-top: 10px;"><strong>Dual Icosahedron:</strong></div>`;
+      html += `<div>Schläfli: {3,5} (self-dual)</div>`;
       html += `<div>V: ${icosa.vertices.length}, E: ${icosa.edges.length}, F: ${icosa.faces.length}</div>`;
       html += `<div>Triangles: ${triangles}</div>`;
       html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
@@ -1583,6 +1613,21 @@ function startARTexplorer(
       html += `<div style="margin-top: 10px;"><strong>Rhombic Dodecahedron:</strong></div>`;
       html += `<div>Catalan: V(3,4)</div>`;
       html += `<div>V: ${rhombicDodec.vertices.length}, E: ${rhombicDodec.edges.length}, F: ${rhombicDodec.faces.length}</div>`;
+      html += `<div>Triangles: ${triangles}</div>`;
+      html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
+    }
+
+    if (document.getElementById("showCuboctahedron").checked) {
+      const cubocta = Polyhedra.cuboctahedron(1);
+      const eulerOK = RT.verifyEuler(
+        cubocta.vertices.length,
+        cubocta.edges.length,
+        cubocta.faces.length
+      );
+      const triangles = countGroupTriangles(cuboctahedronGroup);
+      html += `<div style="margin-top: 10px;"><strong>Cuboctahedron:</strong></div>`;
+      html += `<div>Archimedean: (3,4,3,4)</div>`;
+      html += `<div>V: ${cubocta.vertices.length}, E: ${cubocta.edges.length}, F: ${cubocta.faces.length}</div>`;
       html += `<div>Triangles: ${triangles}</div>`;
       html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
     }
@@ -1804,18 +1849,85 @@ function startARTexplorer(
   document
     .getElementById("showCube")
     .addEventListener("change", updateGeometry);
-  document
-    .getElementById("showTetrahedron")
-    .addEventListener("change", updateGeometry);
+
+  // Tetrahedron with geodesic controls toggle
+  const tetrahedronCheckbox = document.getElementById("showTetrahedron");
+  const geodesicTetraCheckbox = document.getElementById("showGeodesicTetrahedron");
+  if (tetrahedronCheckbox) {
+    tetrahedronCheckbox.addEventListener("change", () => {
+      const geodesicTetraControls = document.getElementById("geodesic-tetra-all");
+      if (geodesicTetraControls) {
+        // Keep controls visible if geodesic variant is checked (preserve settings)
+        const shouldShow = tetrahedronCheckbox.checked || (geodesicTetraCheckbox && geodesicTetraCheckbox.checked);
+        geodesicTetraControls.style.display = shouldShow ? "block" : "none";
+      }
+      updateGeometry();
+    });
+  }
+  // Also listen to geodesic checkbox to control visibility
+  if (geodesicTetraCheckbox) {
+    geodesicTetraCheckbox.addEventListener("change", () => {
+      const geodesicTetraControls = document.getElementById("geodesic-tetra-all");
+      if (geodesicTetraControls && geodesicTetraCheckbox.checked) {
+        geodesicTetraControls.style.display = "block";
+      }
+      updateGeometry();
+    });
+  }
+
   document
     .getElementById("showDualTetrahedron")
     .addEventListener("change", updateGeometry);
-  document
-    .getElementById("showOctahedron")
-    .addEventListener("change", updateGeometry);
-  document
-    .getElementById("showIcosahedron")
-    .addEventListener("change", updateGeometry);
+
+  // Octahedron with geodesic controls toggle
+  const octahedronCheckbox = document.getElementById("showOctahedron");
+  const geodesicOctaCheckbox = document.getElementById("showGeodesicOctahedron");
+  if (octahedronCheckbox) {
+    octahedronCheckbox.addEventListener("change", () => {
+      const geodesicOctaControls = document.getElementById("geodesic-octa-all");
+      if (geodesicOctaControls) {
+        // Keep controls visible if geodesic variant is checked (preserve settings)
+        const shouldShow = octahedronCheckbox.checked || (geodesicOctaCheckbox && geodesicOctaCheckbox.checked);
+        geodesicOctaControls.style.display = shouldShow ? "block" : "none";
+      }
+      updateGeometry();
+    });
+  }
+  // Also listen to geodesic checkbox to control visibility
+  if (geodesicOctaCheckbox) {
+    geodesicOctaCheckbox.addEventListener("change", () => {
+      const geodesicOctaControls = document.getElementById("geodesic-octa-all");
+      if (geodesicOctaControls && geodesicOctaCheckbox.checked) {
+        geodesicOctaControls.style.display = "block";
+      }
+      updateGeometry();
+    });
+  }
+
+  // Icosahedron with geodesic controls toggle
+  const icosahedronCheckbox = document.getElementById("showIcosahedron");
+  const geodesicIcosaCheckbox = document.getElementById("showGeodesicIcosahedron");
+  if (icosahedronCheckbox) {
+    icosahedronCheckbox.addEventListener("change", () => {
+      const geodesicIcosaControls = document.getElementById("geodesic-icosa-all");
+      if (geodesicIcosaControls) {
+        // Keep controls visible if geodesic variant is checked (preserve settings)
+        const shouldShow = icosahedronCheckbox.checked || (geodesicIcosaCheckbox && geodesicIcosaCheckbox.checked);
+        geodesicIcosaControls.style.display = shouldShow ? "block" : "none";
+      }
+      updateGeometry();
+    });
+  }
+  // Also listen to geodesic checkbox to control visibility
+  if (geodesicIcosaCheckbox) {
+    geodesicIcosaCheckbox.addEventListener("change", () => {
+      const geodesicIcosaControls = document.getElementById("geodesic-icosa-all");
+      if (geodesicIcosaControls && geodesicIcosaCheckbox.checked) {
+        geodesicIcosaControls.style.display = "block";
+      }
+      updateGeometry();
+    });
+  }
   document
     .getElementById("showDodecahedron")
     .addEventListener("change", updateGeometry);
