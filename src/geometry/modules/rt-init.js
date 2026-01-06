@@ -1858,6 +1858,58 @@ function startARTexplorer(
     cubeMatrixRotate45.addEventListener("change", updateGeometry);
   }
 
+  // Tet Matrix (IVM Array)
+  const tetMatrixCheckbox = document.getElementById("showTetMatrix");
+  if (tetMatrixCheckbox) {
+    tetMatrixCheckbox.addEventListener("change", () => {
+      const tetMatrixControls = document.getElementById("tet-matrix-controls");
+      if (tetMatrixControls) {
+        tetMatrixControls.style.display = tetMatrixCheckbox.checked ? "block" : "none";
+      }
+      updateGeometry();
+    });
+  }
+
+  const tetMatrixSizeSlider = document.getElementById("tetMatrixSizeSlider");
+  if (tetMatrixSizeSlider) {
+    tetMatrixSizeSlider.addEventListener("input", e => {
+      const matrixSize = parseInt(e.target.value);
+      document.getElementById("tetMatrixSizeValue").textContent = `${matrixSize}×${matrixSize}`;
+      updateGeometry();
+    });
+  }
+
+  const tetMatrixRotate45 = document.getElementById("tetMatrixRotate45");
+  if (tetMatrixRotate45) {
+    tetMatrixRotate45.addEventListener("change", updateGeometry);
+  }
+
+  // Octa Matrix (IVM Array)
+  const octaMatrixCheckbox = document.getElementById("showOctaMatrix");
+  if (octaMatrixCheckbox) {
+    octaMatrixCheckbox.addEventListener("change", () => {
+      const octaMatrixControls = document.getElementById("octa-matrix-controls");
+      if (octaMatrixControls) {
+        octaMatrixControls.style.display = octaMatrixCheckbox.checked ? "block" : "none";
+      }
+      updateGeometry();
+    });
+  }
+
+  const octaMatrixSizeSlider = document.getElementById("octaMatrixSizeSlider");
+  if (octaMatrixSizeSlider) {
+    octaMatrixSizeSlider.addEventListener("input", e => {
+      const matrixSize = parseInt(e.target.value);
+      document.getElementById("octaMatrixSizeValue").textContent = `${matrixSize}×${matrixSize}`;
+      updateGeometry();
+    });
+  }
+
+  const octaMatrixRotate45 = document.getElementById("octaMatrixRotate45");
+  if (octaMatrixRotate45) {
+    octaMatrixRotate45.addEventListener("change", updateGeometry);
+  }
+
   // Phase 2.7a, 2.7b, 2.7c: Geodesic controls
   document
     .getElementById("showGeodesicIcosahedron")
