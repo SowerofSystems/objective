@@ -574,14 +574,93 @@ generateGeometry(formType, props) {
 ### 1.5.7: Implementation Tasks
 
 **Phase 1.5a: Refactor Cube Matrix to Form Type**
+
+**Status:** 🔄 Part 1 Complete, Part 2 In Progress
+
+**Part 1: UI & Basic Rendering** ✅ COMPLETED (commit `e72f213`)
 1. ✅ Remove matrix controls from Scale section
 2. ✅ Add "Cube Matrix" checkbox in Forms section
 3. ✅ Create cubeMatrixGroup (separate from cubeGroup)
 4. ✅ Add matrix-specific controls (matrixSize, rotate45) that appear only when Cube Matrix is checked
-5. ✅ Integrate with RTStateManager as 'cubeMatrix' form type
-6. ✅ Test "Now" button → instance creation
-7. ✅ Test gumball transforms on matrix instances
-8. ✅ Test RTFileHandler save/load with matrix instances
+5. ✅ Add Tet Matrix and Octa Matrix UI stubs (disabled)
+6. ✅ Register matrix forms in RTStateManager.forms registry
+7. ✅ Cube Matrix renders correctly with dynamic size/rotation
+
+**Part 2: Instance System Integration** 🔄 IN PROGRESS
+
+Remaining tasks for full parity with base forms:
+
+8. **Selection System**
+   - Add cubeMatrixGroup to selectable objects
+   - Clicking matrix should select it (highlight/outline)
+   - Selection state tracked in RTStateManager
+   - ESC deselects matrix
+
+9. **"Now" Button Integration**
+   - "Now" button creates instance from current cubeMatrixGroup state
+   - Instance captures: matrixSize, rotate45, opacity, scale, position, rotation
+   - Base cubeMatrixGroup resets to defaults after "Now"
+   - Instance deposited count increments
+
+10. **Node Rendering**
+    - Matrix forms should render vertex nodes when nodes toggle is ON
+    - Nodes appear at all cube vertices in the matrix
+    - Node rendering uses existing node generation system
+    - Nodes respect node size/style settings
+
+11. **Gumball Transforms**
+    - Selected matrix can be moved via gumball
+    - Selected matrix can be scaled via gumball
+    - Selected matrix can be rotated via gumball
+    - Transforms apply to entire matrix group as single unit
+
+12. **Opacity Controls**
+    - Opacity slider affects matrix face transparency
+    - Matrix edges maintain visibility at low opacity
+    - Opacity stored in instance state
+
+13. **Instance Management**
+    - Instances can be selected/deselected
+    - Instances can be deleted
+    - Undo/Redo works with matrix instances
+    - Save/Load preserves matrix instances
+
+**Implementation Plan for Part 2:**
+
+Given complexity, will document first, then implement:
+
+a) **Document Selection System**
+   - How current selection works (raycaster, currentSelection)
+   - Where to add cubeMatrixGroup to raycast targets
+   - How highlighting/outline works
+
+b) **Document Instance Creation**
+   - How RTStateManager.createInstance() works
+   - What properties need to be captured for matrix forms
+   - How form reset works
+
+c) **Document Node System**
+   - How nodes are currently generated
+   - Where to hook matrix node generation
+   - How to get all vertices from matrix
+
+d) **Implement All At Once**
+   - Code all systems together
+   - Test comprehensively
+   - Commit as Phase 1.5a Part 2
+
+**Files to Modify:**
+- rt-init.js: Selection system, node rendering
+- rt-state-manager.js: createInstance() for matrix forms
+- rt-controls.js: Gumball attachment (if needed)
+
+**Validation for Part 2:**
+- ✅ Click cubeMatrix → selects, shows outline
+- ✅ "Now" → creates instance, resets form
+- ✅ Nodes toggle ON → matrix shows nodes at vertices
+- ✅ Gumball move/scale/rotate works on matrix
+- ✅ Opacity slider affects matrix
+- ✅ Save/Load preserves matrix instances
 
 **Phase 1.5b: Add Tet Matrix Form Type**
 1. Implement `RTMatrix.createTetrahedronMatrix()`

@@ -40,6 +40,19 @@ export const RTStateManager = {
       type: "geodesicOctahedron",
       name: "Geodesic Octahedron",
     },
+    // Matrix forms (IVM spatial arrays)
+    cubeMatrix: {
+      type: "cubeMatrix",
+      name: "Cube Matrix",
+    },
+    tetMatrix: {
+      type: "tetMatrix",
+      name: "Tet Matrix",
+    },
+    octaMatrix: {
+      type: "octaMatrix",
+      name: "Octa Matrix",
+    },
   },
 
   // ========================================================================
