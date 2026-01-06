@@ -1527,6 +1527,21 @@ function startARTexplorer(
       html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
     }
 
+    if (document.getElementById("showDualTetrahedron").checked) {
+      const tetra = Polyhedra.tetrahedron(1);
+      const eulerOK = RT.verifyEuler(
+        tetra.vertices.length,
+        tetra.edges.length,
+        tetra.faces.length
+      );
+      const triangles = countGroupTriangles(dualTetrahedronGroup);
+      html += `<div style="margin-top: 10px;"><strong>Dual Tetrahedron:</strong></div>`;
+      html += `<div>Schläfli: {3,3} (self-dual)</div>`;
+      html += `<div>V: ${tetra.vertices.length}, E: ${tetra.edges.length}, F: ${tetra.faces.length}</div>`;
+      html += `<div>Triangles: ${triangles}</div>`;
+      html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
+    }
+
     if (document.getElementById("showOctahedron").checked) {
       const octa = Polyhedra.octahedron(1);
       const eulerOK = RT.verifyEuler(
@@ -1552,6 +1567,21 @@ function startARTexplorer(
       const triangles = countGroupTriangles(icosahedronGroup);
       html += `<div style="margin-top: 10px;"><strong>Icosahedron:</strong></div>`;
       html += `<div>Schläfli: {3,5}</div>`;
+      html += `<div>V: ${icosa.vertices.length}, E: ${icosa.edges.length}, F: ${icosa.faces.length}</div>`;
+      html += `<div>Triangles: ${triangles}</div>`;
+      html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
+    }
+
+    if (document.getElementById("showDualIcosahedron").checked) {
+      const icosa = Polyhedra.icosahedron(1);
+      const eulerOK = RT.verifyEuler(
+        icosa.vertices.length,
+        icosa.edges.length,
+        icosa.faces.length
+      );
+      const triangles = countGroupTriangles(dualIcosahedronGroup);
+      html += `<div style="margin-top: 10px;"><strong>Dual Icosahedron:</strong></div>`;
+      html += `<div>Schläfli: {3,5} (self-dual)</div>`;
       html += `<div>V: ${icosa.vertices.length}, E: ${icosa.edges.length}, F: ${icosa.faces.length}</div>`;
       html += `<div>Triangles: ${triangles}</div>`;
       html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
@@ -1583,6 +1613,21 @@ function startARTexplorer(
       html += `<div style="margin-top: 10px;"><strong>Rhombic Dodecahedron:</strong></div>`;
       html += `<div>Catalan: V(3,4)</div>`;
       html += `<div>V: ${rhombicDodec.vertices.length}, E: ${rhombicDodec.edges.length}, F: ${rhombicDodec.faces.length}</div>`;
+      html += `<div>Triangles: ${triangles}</div>`;
+      html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
+    }
+
+    if (document.getElementById("showCuboctahedron").checked) {
+      const cubocta = Polyhedra.cuboctahedron(1);
+      const eulerOK = RT.verifyEuler(
+        cubocta.vertices.length,
+        cubocta.edges.length,
+        cubocta.faces.length
+      );
+      const triangles = countGroupTriangles(cuboctahedronGroup);
+      html += `<div style="margin-top: 10px;"><strong>Cuboctahedron:</strong></div>`;
+      html += `<div>Archimedean: (3,4,3,4)</div>`;
+      html += `<div>V: ${cubocta.vertices.length}, E: ${cubocta.edges.length}, F: ${cubocta.faces.length}</div>`;
       html += `<div>Triangles: ${triangles}</div>`;
       html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
     }
