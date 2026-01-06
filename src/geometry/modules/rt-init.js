@@ -997,7 +997,15 @@ function startARTexplorer(
    * @param {number} color - Node color
    * @param {string} nodeSize - Node size ('sm', 'md', 'lg')
    */
-  function addMatrixNodes(matrixGroup, matrixSize, scale, rotate45, color, nodeSize) {
+  function addMatrixNodes(
+    matrixGroup,
+    matrixSize,
+    scale,
+    rotate45,
+    color,
+    nodeSize,
+    polyhedronType = "cube"
+  ) {
     // Get node geometry settings
     const useRTNodeGeometry =
       document.getElementById("useRTNodeGeometry")?.checked || false;
@@ -1008,7 +1016,7 @@ function startARTexplorer(
     const { geometry: nodeGeometry } = getCachedNodeGeometry(
       useRTNodeGeometry,
       nodeSize,
-      "cube",
+      polyhedronType,
       scale
     );
 
@@ -1021,14 +1029,32 @@ function startARTexplorer(
 
     // Collect all unique vertex positions from matrix
     const vertexPositions = new Set();
-    const cubeEdge = scale * 2;
-    const spacing = cubeEdge;
 
-    // Generate cube vertices at each grid position
+    // Calculate spacing based on polyhedron type
+    let spacing;
+    if (polyhedronType === "cube") {
+      spacing = scale * 2; // Cube edge = 2 * halfSize
+    } else if (polyhedronType === "tetrahedron") {
+      spacing = 2 * scale * Math.sqrt(2); // Tet edge = 2 * halfSize * √2
+    } else if (polyhedronType === "octahedron") {
+      spacing = 2 * scale; // Octa spacing for face-to-face contact
+    }
+
+    // Generate polyhedron vertices at each grid position
     import("./rt-polyhedra.js").then(PolyModule => {
       const { Polyhedra } = PolyModule;
-      const cubeGeom = Polyhedra.cube(scale);
-      const { vertices } = cubeGeom;
+
+      // Get the appropriate polyhedron geometry
+      let polyGeom;
+      if (polyhedronType === "cube") {
+        polyGeom = Polyhedra.cube(scale);
+      } else if (polyhedronType === "tetrahedron") {
+        polyGeom = Polyhedra.tetrahedron(scale);
+      } else if (polyhedronType === "octahedron") {
+        polyGeom = Polyhedra.octahedron(scale);
+      }
+
+      const { vertices } = polyGeom;
 
       // For each grid position, add transformed vertices
       for (let i = 0; i < matrixSize; i++) {
@@ -1037,10 +1063,20 @@ function startARTexplorer(
           const offset_y = (j - matrixSize / 2 + 0.5) * spacing;
           const offset_z = 0;
 
+          // For tetrahedra, handle alternating orientations
+          const isUp = polyhedronType === "tetrahedron" ? (i + j) % 2 === 0 : true;
+
           vertices.forEach(v => {
             let x = v.x + offset_x;
             let y = v.y + offset_y;
             let z = v.z + offset_z;
+
+            // Apply 180° rotation for down-facing tets
+            if (polyhedronType === "tetrahedron" && !isUp) {
+              // Rotate 180° around Z-axis
+              x = -(v.x + offset_x);
+              y = -(v.y + offset_y);
+            }
 
             // Apply 45° rotation if enabled
             if (rotate45) {
@@ -1069,7 +1105,7 @@ function startARTexplorer(
       });
 
       console.log(
-        `[Matrix Nodes] Added ${vertexPositions.size} nodes to ${matrixSize}×${matrixSize} matrix`
+        `[Matrix Nodes] Added ${vertexPositions.size} nodes to ${matrixSize}×${matrixSize} ${polyhedronType} matrix`
       );
     });
   }
@@ -1209,6 +1245,54 @@ function startARTexplorer(
       dualTetrahedronGroup.visible = false;
     }
 
+    // Tet Matrix (IVM Array)
+    if (document.getElementById("showTetMatrix").checked) {
+      const matrixSize = parseInt(
+        document.getElementById("tetMatrixSizeSlider")?.value || "1"
+      );
+      const rotate45 =
+        document.getElementById("tetMatrixRotate45")?.checked || false;
+
+      // Clear existing tet matrix group
+      while (tetMatrixGroup.children.length > 0) {
+        tetMatrixGroup.remove(tetMatrixGroup.children[0]);
+      }
+
+      // Generate tet matrix
+      import("./rt-matrix.js").then(MatrixModule => {
+        const { RTMatrix } = MatrixModule;
+        const tetMatrix = RTMatrix.createTetrahedronMatrix(
+          matrixSize,
+          scale,
+          rotate45,
+          opacity,
+          0xffff00,
+          THREE
+        );
+        tetMatrixGroup.add(tetMatrix);
+
+        // Add vertex nodes if enabled
+        const nodeSizeBtn = document.querySelector(".node-size-btn.active");
+        const nodeSize = nodeSizeBtn ? nodeSizeBtn.dataset.nodeSize : "md";
+        const showNodes = nodeSize !== "off";
+
+        if (showNodes) {
+          addMatrixNodes(
+            tetMatrixGroup,
+            matrixSize,
+            scale,
+            rotate45,
+            0xffff00,
+            nodeSize,
+            "tetrahedron"
+          );
+        }
+      });
+      tetMatrixGroup.visible = true;
+    } else {
+      tetMatrixGroup.visible = false;
+    }
+
     // Octahedron (Green)
     if (document.getElementById("showOctahedron").checked) {
       const octa = Polyhedra.octahedron(scale);
@@ -1241,6 +1325,54 @@ function startARTexplorer(
       geodesicOctahedronGroup.visible = true;
     } else {
       geodesicOctahedronGroup.visible = false;
+    }
+
+    // Octa Matrix (IVM Array)
+    if (document.getElementById("showOctaMatrix").checked) {
+      const matrixSize = parseInt(
+        document.getElementById("octaMatrixSizeSlider")?.value || "1"
+      );
+      const rotate45 =
+        document.getElementById("octaMatrixRotate45")?.checked || false;
+
+      // Clear existing octa matrix group
+      while (octaMatrixGroup.children.length > 0) {
+        octaMatrixGroup.remove(octaMatrixGroup.children[0]);
+      }
+
+      // Generate octa matrix
+      import("./rt-matrix.js").then(MatrixModule => {
+        const { RTMatrix } = MatrixModule;
+        const octaMatrix = RTMatrix.createOctahedronMatrix(
+          matrixSize,
+          scale,
+          rotate45,
+          opacity,
+          0xff6b6b,
+          THREE
+        );
+        octaMatrixGroup.add(octaMatrix);
+
+        // Add vertex nodes if enabled
+        const nodeSizeBtn = document.querySelector(".node-size-btn.active");
+        const nodeSize = nodeSizeBtn ? nodeSizeBtn.dataset.nodeSize : "md";
+        const showNodes = nodeSize !== "off";
+
+        if (showNodes) {
+          addMatrixNodes(
+            octaMatrixGroup,
+            matrixSize,
+            scale,
+            rotate45,
+            0xff6b6b,
+            nodeSize,
+            "octahedron"
+          );
+        }
+      });
+      octaMatrixGroup.visible = true;
+    } else {
+      octaMatrixGroup.visible = false;
     }
 
     // Icosahedron (Cyan)
