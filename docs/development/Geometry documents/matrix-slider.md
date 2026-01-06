@@ -1,10 +1,11 @@
 # Matrix Slider - IVM Spatial Array Feature
 
 **Feature Name:** Matrix Slider (Isotropic Vector Matrix Array)
-**Status:** Planning Phase
+**Status:** Phase 1 Complete, Phase 1.5 In Progress
 **Priority:** Medium
 **Created:** 2026-01-05
-**Related Systems:** Scale controls, Polyhedra rendering, IVM grids
+**Last Updated:** 2026-01-06
+**Related Systems:** Scale controls, Polyhedra rendering, IVM grids, Instance transforms
 
 ---
 
@@ -252,56 +253,210 @@ All styling comes from existing art.css definitions, maintaining visual consiste
 
 ## 4. Implementation Plan
 
-### Phase 1: Foundation (Cube Matrix Only)
+### Phase 1: Foundation (Cube Matrix Only) ✅ COMPLETED
 
 **Goal:** Proof-of-concept with simplest case
 
-**Tasks:**
-1. **UI Implementation**
-   - Add Matrix Size slider to Scale section (HTML)
-   - Add "Rotate 45°" checkbox below slider
-   - Add event listener for slider `input` or `change` event
-   - Add event listener for rotation checkbox `change` event
-   - Update display value (N×N format)
+**Status:** ✅ Complete (2026-01-06)
 
-2. **Cube Matrix Function**
-   - Create `createCubeMatrix(matrixSize, halfSize, rotate45)` function
-   - Calculate N×N grid positions centered at origin
-   - Generate cube instances at each grid point
-   - Apply 45° Z-rotation if rotate45 = true
-   - Return combined THREE.Group containing all cubes
+**Implementation Summary:**
+- Created [rt-matrix.js](../../../src/geometry/modules/rt-matrix.js) module with `RTMatrix.createCubeMatrix()` function
+- Added `RT.applyRotation45()` to [rt-math.js](../../../src/geometry/modules/rt-math.js) using RT-pure spread/cross methodology
+- Added Matrix Size slider (1-10) and Rotate 45° checkbox to [index.html](../../../src/geometry/index.html)
+- Integrated matrix rendering in [rt-init.js](../../../src/geometry/modules/rt-init.js) updateGeometry() function with dynamic import
+- Matrix uses edge-to-edge cube spacing, centered at origin, with N×N grid generation
 
-3. **Rotation Implementation (RT-PURE)**
-   - Add `RT.applyRotation45(group)` to rt-math.js module (see Section 6.1)
-   - Define spread/cross: `s = 0.5, c = 0.5` (exact rational values, NO angles!)
-   - Extract sin/cos ONLY when needed: `sin = √s, cos = √c` (deferred √ expansion)
-   - Construct rotation matrix manually using spread/cross values
-   - Apply to matrix group: `matrixGroup.applyMatrix4(rotationMatrix)`
-   - Verify RT identity: `s + c = 1.0 ✓`
+**Tasks Completed:**
+1. ✅ **UI Implementation**
+   - Matrix Size slider added to Scale section (HTML)
+   - "Rotate 45°" checkbox added below slider
+   - Event listeners added for slider `input` and checkbox `change` events
+   - Display value updates with N×N format
+
+2. ✅ **Cube Matrix Function**
+   - `createCubeMatrix(matrixSize, halfSize, rotate45, opacity, color, THREE)` created
+   - N×N grid positions calculated and centered at origin
+   - Cube instances generated at each grid point with offset positions
+   - 45° Z-rotation applied via RT.applyRotation45() if rotate45 = true
+   - Returns THREE.Group containing all cube instances
+
+3. ✅ **Rotation Implementation (RT-PURE)**
+   - `RT.applyRotation45(group)` added to rt-math.js module
+   - Spread/cross defined: `s = 0.5, c = 0.5` (exact rational values)
+   - Sin/cos extracted only when needed: `sin = √s, cos = √c` (deferred √ expansion)
+   - Rotation matrix constructed manually using spread/cross values
+   - Applied to matrix group: `matrixGroup.applyMatrix4(rotationMatrix)`
+   - RT identity verified: `s + c = 1.0 ✓`
    - Console log: `[RT] Matrix rotation applied: s=0.5, c=0.5, s+c=1.0 ✓`
-   - Label "45°" is user-facing shorthand; internal math uses spread
-   - Note: Cube matrix visually unchanged by rotation (cubic symmetry)
 
-4. **Integration with Existing Scale**
-   - Hook into `cubeScaleSlider` event
-   - Rebuild matrix when scale changes
-   - Ensure matrix remains centered and spacing adjusts
-   - Preserve rotation state during scale changes
+4. ✅ **Integration with Existing Scale**
+   - Hooked into `tetScaleSlider` event (via updateGeometry)
+   - Matrix rebuilds when scale changes
+   - Matrix remains centered and spacing adjusts correctly
+   - Rotation state preserved during scale changes
 
-5. **Rendering**
-   - Integrate matrix group into main scene
-   - Ensure visibility toggle works (hide/show entire matrix)
-   - Verify orbit controls work with larger matrix extents
-   - Test rotation toggle: matrix rotates/unrotates correctly
+5. ✅ **Rendering**
+   - Matrix group integrated into main scene via cubeGroup
+   - Visibility toggle works (hide/show entire matrix)
+   - Orbit controls work correctly with larger matrix extents
+   - Rotation toggle functions: matrix rotates/unrotates correctly
+
+**Validation Results:**
+- ✅ Matrix size 1 → single cube at origin
+- ✅ Matrix size 5 → 25 cubes in 5×5 grid
+- ✅ Matrix size 10 → 100 cubes in 10×10 grid
+- ✅ Scale adjustment → all cubes grow uniformly
+- ✅ Toggle cube visibility → entire matrix hides
+- ✅ Rotate 45° checkbox ON → matrix rotates (cube unchanged due to symmetry)
+- ✅ Rotate 45° checkbox OFF → matrix returns to default orientation
+- ✅ Rotation state persists during scale changes
+
+**Files Modified:**
+- [src/geometry/modules/rt-math.js](../../../src/geometry/modules/rt-math.js) - Added RT.applyRotation45()
+- [src/geometry/modules/rt-matrix.js](../../../src/geometry/modules/rt-matrix.js) - Created new module
+- [src/geometry/index.html](../../../src/geometry/index.html) - Added UI controls
+- [src/geometry/modules/rt-init.js](../../../src/geometry/modules/rt-init.js) - Added matrix rendering logic
+
+**Commits:**
+- `a9c14b8` - Initial matrix slider implementation
+- `f326461` - Fix: Implement cube matrix in correct updateGeometry function
+
+---
+
+### Phase 1.5: Instance Transform Support (Matrix Object Controls)
+
+**Goal:** Enable existing gumball transform controls (move, scale, rotate) to work with matrix objects
+
+**Status:** 🔄 Planning
+
+**Problem:**
+Currently, generated matrix objects are procedurally created groups that don't integrate with the existing instance system. The "move", "scale", "rotate", and "now" instance controls only work with individual polyhedra created via the instance system, not with matrix groups.
+
+**Objective:**
+Allow users to apply transformation controls to the entire matrix object as a single entity:
+- **Move:** Translate the entire N×N matrix in 3D space
+- **Scale:** Uniformly scale the entire matrix (in addition to per-cube scaling)
+- **Rotate:** Rotate the entire matrix around its center
+- **Now:** Capture current matrix state as an instance (snapshot)
+
+**Implementation Considerations:**
+
+1. **Matrix as Instance Integration**
+   - Current matrix is a procedural THREE.Group, not an "instance" in RTStateManager
+   - Options:
+     - A) Convert matrix group to instance when created
+     - B) Create special "matrix instance" type in RTStateManager
+     - C) Hybrid: matrix remains procedural until user interacts with gumball
+
+2. **Gumball Attachment**
+   - Gumball controls currently attach to RTStateManager instances
+   - Need to detect when matrix object is selected
+   - Attach gumball to matrix group's bounding box center
+   - Apply transformations to matrix group transform
+
+3. **Transform Persistence**
+   - Matrix rebuilds on slider change (matrixSize or rotate45)
+   - Need to preserve user-applied transforms during rebuilds
+   - Store transform state separately from matrix generation parameters
+
+4. **Scale Interaction**
+   - Existing: tetScaleSlider affects per-cube halfSize
+   - New: Gumball scale affects entire matrix group scale
+   - Both should compose: matrix.scale × cubeGroup.scale
+   - User should understand distinction: "cube size" vs "matrix spread"
+
+**Proposed Architecture:**
+
+```javascript
+// Pseudocode
+class MatrixInstance {
+  constructor(matrixSize, halfSize, rotate45, polyType) {
+    this.matrixSize = matrixSize;
+    this.halfSize = halfSize;
+    this.rotate45 = rotate45;
+    this.polyType = polyType; // 'cube', 'tetrahedron', 'octahedron'
+
+    // User-applied transforms (separate from generation)
+    this.position = new THREE.Vector3(0, 0, 0);
+    this.rotation = new THREE.Euler(0, 0, 0);
+    this.scale = new THREE.Vector3(1, 1, 1);
+
+    this.group = this.generate();
+  }
+
+  generate() {
+    // Call RTMatrix.createCubeMatrix() etc
+    const matrixGroup = RTMatrix.createCubeMatrix(
+      this.matrixSize,
+      this.halfSize,
+      this.rotate45,
+      /* ... */
+    );
+
+    // Apply user transforms
+    matrixGroup.position.copy(this.position);
+    matrixGroup.rotation.copy(this.rotation);
+    matrixGroup.scale.copy(this.scale);
+
+    return matrixGroup;
+  }
+
+  rebuild() {
+    // Preserve transforms, regenerate geometry
+    const oldPos = this.group.position.clone();
+    const oldRot = this.group.rotation.clone();
+    const oldScale = this.group.scale.clone();
+
+    this.group = this.generate();
+
+    this.group.position.copy(oldPos);
+    this.group.rotation.copy(oldRot);
+    this.group.scale.copy(oldScale);
+  }
+}
+```
+
+**Tasks:**
+1. **Matrix Instance Class**
+   - Create MatrixInstance class to wrap matrix generation
+   - Store generation parameters (matrixSize, halfSize, rotate45, polyType)
+   - Store user transform state (position, rotation, scale)
+   - Provide rebuild() method that preserves transforms
+
+2. **RTStateManager Integration**
+   - Register matrix as a special instance type
+   - Allow gumball to attach to matrix instances
+   - Serialize/deserialize matrix instances with RTFileHandler
+
+3. **Gumball Transform Application**
+   - Detect matrix instance selection
+   - Attach gumball to matrix bounding box
+   - Update MatrixInstance transform properties on gumball interaction
+   - Rebuild matrix geometry while preserving transforms
+
+4. **UI/UX Refinement**
+   - Visual feedback: highlight matrix when selected
+   - "Now" button creates snapshot of current matrix state
+   - Multiple matrix instances can coexist in scene
+
+5. **Transform Persistence During Regeneration**
+   - When matrixSize slider changes → rebuild geometry, keep transforms
+   - When rotate45 checkbox changes → rebuild geometry, keep transforms
+   - When tetScaleSlider changes → rebuild geometry with new halfSize, keep transforms
 
 **Validation Criteria:**
-- Matrix size 1 → single cube at origin ✓
-- Matrix size 5 → 25 cubes in 5×5 grid ✓
-- Scale adjustment → all cubes grow uniformly ✓
-- Toggle cube visibility → entire matrix hides ✓
-- Rotate 45° checkbox ON → matrix rotates (cube unchanged due to symmetry) ✓
-- Rotate 45° checkbox OFF → matrix returns to default orientation ✓
-- Rotation state persists during scale changes ✓
+- User can click matrix to select it
+- Gumball appears attached to matrix center
+- Move gumball → entire matrix translates
+- Scale gumball → entire matrix scales uniformly (multiplies with per-cube scale)
+- Rotate gumball → entire matrix rotates around center
+- Changing matrixSize slider → matrix rebuilds with new size, preserves position/rotation/scale
+- "Now" button → creates instance snapshot of current matrix configuration
+- Multiple matrix instances can exist simultaneously with independent transforms
+
+**Priority:** High (essential for matrix usability)
+
+---
 
 ### Phase 2: Tetrahedron Matrix
 
