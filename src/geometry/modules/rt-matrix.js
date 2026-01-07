@@ -161,6 +161,9 @@ export const RTMatrix = {
           linewidth: 1,
           depthTest: true,
           depthWrite: true,
+          polygonOffset: true,        // Prevent colinear edge z-fighting
+          polygonOffsetFactor: -1,    // Pull lines slightly toward camera
+          polygonOffsetUnits: -1,     // GPU depth buffer adjustment (no geometric change)
         });
 
         const edgeLines = new THREE.LineSegments(edgeGeometry, edgeMaterial);
@@ -289,6 +292,9 @@ export const RTMatrix = {
           linewidth: 1,
           depthTest: true,
           depthWrite: true,
+          polygonOffset: true,        // Prevent colinear edge z-fighting
+          polygonOffsetFactor: -1,    // Pull lines slightly toward camera
+          polygonOffsetUnits: -1,     // GPU depth buffer adjustment (no geometric change)
         });
 
         const edgeLines = new THREE.LineSegments(edgeGeometry, edgeMaterial);
@@ -419,6 +425,9 @@ export const RTMatrix = {
           linewidth: 1,
           depthTest: true,
           depthWrite: true,
+          polygonOffset: true,        // Prevent colinear edge z-fighting
+          polygonOffsetFactor: -1,    // Pull lines slightly toward camera
+          polygonOffsetUnits: -1,     // GPU depth buffer adjustment (no geometric change)
         });
 
         const edgeLines = new THREE.LineSegments(edgeGeometry, edgeMaterial);
