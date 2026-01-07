@@ -5,7 +5,7 @@ import { PerformanceClock } from "./performance-clock.js";
 import { RTPapercut } from "./rt-papercut.js";
 import { RT } from "./rt-math.js"; // For RT.Phi in edge quadrance calculations
 import { initQuadranceDemo } from "../demos/rt-quadrance-demo.js";
-import { initSpreadDemo } from "../demos/rt-spread-demo.js";
+import { initCrossDemo } from "../demos/rt-cross-demo.js";
 import { initWeierstrassDemo } from "../demos/rt-weierstrass-demo.js";
 import { openDemoModal } from "../demos/rt-demo-utils.js";
 
@@ -2482,7 +2482,7 @@ function startARTexplorer(
   // Initialize demo modals on first open
   let demosInitialized = {
     quadrance: false,
-    spread: false,
+    cross: false,
     weierstrass: false,
   };
 
@@ -2500,13 +2500,13 @@ function startARTexplorer(
       }
     });
 
-  document.getElementById("open-spread-demo").addEventListener("click", e => {
+  document.getElementById("open-cross-demo").addEventListener("click", e => {
     e.preventDefault();
-    openDemoModal("spread-modal");
-    if (!demosInitialized.spread) {
+    openDemoModal("cross-modal");
+    if (!demosInitialized.cross) {
       setTimeout(() => {
-        initSpreadDemo();
-        demosInitialized.spread = true;
+        initCrossDemo();
+        demosInitialized.cross = true;
       }, 50);
     }
   });
