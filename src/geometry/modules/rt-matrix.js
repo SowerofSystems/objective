@@ -160,7 +160,7 @@ export const RTMatrix = {
           color: color,
           linewidth: 1,
           depthTest: true,
-          depthWrite: true,
+          depthWrite: false,
         });
 
         const edgeLines = new THREE.LineSegments(edgeGeometry, edgeMaterial);
@@ -288,7 +288,7 @@ export const RTMatrix = {
           color: color,
           linewidth: 1,
           depthTest: true,
-          depthWrite: true,
+          depthWrite: false,
         });
 
         const edgeLines = new THREE.LineSegments(edgeGeometry, edgeMaterial);
@@ -418,7 +418,7 @@ export const RTMatrix = {
           color: color,
           linewidth: 1,
           depthTest: true,
-          depthWrite: true,
+          depthWrite: false,
         });
 
         const edgeLines = new THREE.LineSegments(edgeGeometry, edgeMaterial);
