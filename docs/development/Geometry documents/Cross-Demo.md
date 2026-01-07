@@ -458,7 +458,140 @@ function renderComplementaryRectangles(c, s) {
 
 ---
 
-**Document Version:** 1.0
-**Status:** Planning Complete - Ready for Implementation
+## 11. Mathematical Analysis: Spread Distribution & Telemetry Implications
+
+**Date Added:** 2026-01-07
+
+### Nonlinear Spread Distribution Problem
+
+**Observation:** Diamond snap points (hundredths intervals: 0.01, 0.02, ..., 0.99) appear **denser near horizontal and vertical axes** rather than uniformly distributed along the arc.
+
+**Mathematical Explanation:**
+
+```
+For uniform spread intervals: s = 0.01, 0.02, 0.03, ..., 0.99
+Position on unit circle: x = √c = √(1-s), y = √s
+
+Arc length differential:
+ds/dθ = 2·sin(θ)·cos(θ) = sin(2θ)
+
+This function:
+- Peaks at θ = 45° (where sin(2θ) = 1)
+- Approaches 0 near θ = 0° and θ = 90°
+```
+
+**What's Happening:**
+- **Near 0° (horizontal):** Small changes in spread → large changes in arc position
+- **Near 45°:** Spread changes map nearly linearly to arc position (optimal)
+- **Near 90° (vertical):** Small changes in spread → large changes in arc position
+
+**Visual Analogy:** Walking around the arc at constant angular speed causes spread values to change slowly at cardinal directions (0°, 90°) but rapidly in the middle (45° region).
+
+---
+
+### Telemetry Tracking System Implications
+
+**This IS a Problem for Time-Based Tracking Systems!**
+
+When using **uniform spread intervals** for telemetry tracking:
+
+#### 1. Angular Resolution Issues
+- **Near cardinal axes (0°, 90°):** Spread changes slowly → **poor angular discrimination**
+- **Example:** spread = 0.01 ≈ 5.7°, but spread = 0.50 = exactly 45°
+- If tracker locks to spread = 0.01 intervals, you get **coarse tracking near axes**
+
+#### 2. Tracking Window Distribution
+- 7-frequency geodesic windows are **NOT uniformly distributed** in spread space
+- Windows **cluster toward 45° region** when viewed as spread intervals
+- Could cause **missed acquisition opportunities** near cardinal directions (horizon/zenith)
+
+#### 3. Real-World Impact
+- **Satellite tracking:** Missing acquisition windows near zenith/horizon
+- **Antenna pointing:** Reduced precision at cardinal directions
+- **Geodesic frequency scheduling:** Uneven time slots
+
+---
+
+### Solution: Uniform Angular vs. Uniform Spread Intervals
+
+**Current Implementation (Uniform Spread) - POOR for Tracking:**
+```javascript
+// Non-uniform angular distribution
+for (let s = 0.01; s < 1.0; s += 0.01) {
+  const c = 1 - s;
+  // Clusters near 45°, sparse near 0°/90°
+}
+```
+
+**Better Alternative (Uniform Angle) - GOOD for Tracking:**
+```javascript
+// Uniform angular coverage
+for (let degrees = 1; degrees < 90; degrees += 1) {
+  const s = RT.degreesToSpread(degrees);
+  const c = 1 - s;
+  // Equal spacing along arc
+}
+```
+
+**Recommendation:** For **telemetry applications**, use uniform angular intervals. For **RT mathematical demonstrations** (like this demo), uniform spread intervals better illustrate the s + c = 1 identity.
+
+---
+
+### Arc Length vs. Spread Relationship
+
+| Angle (θ) | Spread (s) | ds/dθ   | Interpretation                        |
+|-----------|------------|---------|---------------------------------------|
+| 0°        | 0.000      | 0.000   | Spread changes **very slowly**        |
+| 15°       | 0.067      | 0.500   | Spread changes moderately             |
+| 30°       | 0.250      | 0.866   | Spread changes rapidly                |
+| 45°       | 0.500      | 1.000   | **Maximum spread change rate**        |
+| 60°       | 0.750      | 0.866   | Spread changes rapidly                |
+| 75°       | 0.933      | 0.500   | Spread changes moderately             |
+| 90°       | 1.000      | 0.000   | Spread changes **very slowly**        |
+
+**Key Insight:** The derivative ds/dθ = sin(2θ) explains why uniform spread intervals produce non-uniform arc spacing.
+
+---
+
+## 12. Sexagesimal Enhancement
+
+**Status:** Planned
+**Purpose:** Demonstrate exact fractioning advantages of base-60 over base-10
+
+### Why Sexagesimal?
+
+**Decimal (Base-10) Limitations:**
+- Factors: 2, 5 only
+- Common fractions inexact: 1/3 = 0.333..., 1/6 = 0.1666...
+
+**Sexagesimal (Base-60) Advantages:**
+- Factors: 2, 3, 4, 5, 6, 10, 12, 15, 20, 30
+- **Many more exact fractions:**
+  - 1/2 = 30/60 (exact)
+  - 1/3 = 20/60 (exact!)
+  - 1/4 = 15/60 (exact)
+  - 1/5 = 12/60 (exact)
+  - 1/6 = 10/60 (exact!)
+  - 1/12 = 5/60 (exact!)
+
+### Planned Implementation
+
+- Add `RT.Sexagesimal` namespace to `rt-math.js`
+- Degrees-Minutes-Seconds-Thirds (DMS) format
+- Convert between spread and sexagesimal representation
+- Toggle in Cross demo to compare decimal vs. sexagesimal display
+- Demonstrate exact geodesic angle representations in base-60
+
+### Educational Value
+
+- Shows why sexagesimal persists in astronomy/navigation
+- Demonstrates RT's algebraic purity works in ANY base
+- Historical connection to Babylonian mathematics
+- Superior divisibility for exact fractioning
+
+---
+
+**Document Version:** 1.1
+**Status:** Demo Implemented - Analysis Complete
 **Priority:** Medium (completes RT demo trilogy)
-**Estimated Completion:** 3 weeks from start
+**Last Updated:** 2026-01-07

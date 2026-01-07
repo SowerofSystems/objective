@@ -29,6 +29,7 @@ let snapMarkers = [];
 let crossRectangle, spreadRectangle;
 let crossRectangleFill, spreadRectangleFill;
 let trackingLines = [];
+let displayMode = "decimal"; // "decimal" or "sexagesimal"
 
 // Snappoints for exact rational cross/spread values
 const snapPoints = [
@@ -503,6 +504,38 @@ function createFormulaDisplay() {
   titleElement.textContent = "Cross (c) - The Complement of Spread";
   container.appendChild(titleElement);
 
+  // Sexagesimal toggle button (top-right, below close button)
+  const toggleButton = document.createElement("button");
+  toggleButton.style.cssText = `
+    position: absolute;
+    top: 50px;
+    right: 10px;
+    padding: 8px 12px;
+    background: rgba(26, 0, 26, 0.95);
+    border: 1px solid #cc00cc;
+    border-radius: 4px;
+    color: #ffffff;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 10;
+  `;
+  toggleButton.textContent = "Base-60 (Sexagesimal)";
+  toggleButton.onmouseover = () => {
+    toggleButton.style.background = "rgba(204, 0, 204, 0.3)";
+  };
+  toggleButton.onmouseout = () => {
+    toggleButton.style.background = "rgba(26, 0, 26, 0.95)";
+  };
+  toggleButton.onclick = () => {
+    displayMode = displayMode === "decimal" ? "sexagesimal" : "decimal";
+    toggleButton.textContent =
+      displayMode === "decimal" ? "Base-60 (Sexagesimal)" : "Base-10 (Decimal)";
+    updateVisualization();
+  };
+  container.appendChild(toggleButton);
+
   // Close button
   const closeButton = document.createElement("button");
   closeButton.className = "close-modal";
@@ -617,6 +650,29 @@ function updateVisualization() {
   const crossBarWidth = cross * 100;
   const spreadBarWidth = spread * 100;
 
+  // Sexagesimal conversion
+  let sexagesimalSection = "";
+  if (displayMode === "sexagesimal") {
+    const dmsFromSpread = RT.Sexagesimal.fromSpread(spread);
+    const dmsFromCross = RT.Sexagesimal.fromCross(cross);
+    const isExact = RT.Sexagesimal.isExact(degrees, 0);
+
+    sexagesimalSection = `
+    <!-- Sexagesimal (Base-60) -->
+    <div class="cross-section-divider">
+      <strong class="cross-section-title" style="color: #ffaa00;">Sexagesimal (Base-60)</strong><br>
+      <div class="cross-section-content">
+        <span class="cross-text-muted">From spread:</span><br>
+        <span style="color: #ffaa00; font-weight: bold;">${dmsFromSpread.toString(false)}</span><br>
+        <span class="cross-text-submuted">s = ${spread.toFixed(4)} → θ</span><br>
+        <span class="cross-text-muted" style="margin-top: 4px; display: block;">From cross:</span><br>
+        <span style="color: #ffaa00; font-weight: bold;">${dmsFromCross.toString(false)}</span><br>
+        <span class="cross-text-submuted">c = ${cross.toFixed(4)} → θ</span><br>
+        ${isExact ? '<span class="cross-color-success cross-text-muted" style="margin-top: 4px; display: block;">✓ Exact in Base-60!</span>' : '<span class="cross-text-submuted" style="margin-top: 4px; display: block;">~ Approximate</span>'}
+      </div>
+    </div>`;
+  }
+
   // Update formula display in right-side panel with vertical stacking
   formulaElement.innerHTML = `
     <!-- Position -->
@@ -650,6 +706,8 @@ function updateVisualization() {
       </div>
     </div>
 
+    ${sexagesimalSection}
+
     <!-- RT Identity -->
     <div style="margin-bottom: 8px;">
       <strong class="cross-section-title">RT Identity</strong><br>
@@ -664,6 +722,7 @@ function updateVisualization() {
 
     <div class="cross-principle-footer">
       <strong class="cross-section-title">RT Principle:</strong> Cross and Spread partition the radius quadrance. Cross measures horizontal alignment, Spread measures vertical alignment.
+      ${displayMode === "sexagesimal" ? '<br><br><span style="color: #ffaa00;">Sexagesimal (base-60) offers superior exact fractioning over decimal (base-10). Used in astronomy/navigation for millennia.</span>' : ''}
     </div>
   `;
 
