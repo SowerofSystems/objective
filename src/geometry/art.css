@@ -881,3 +881,151 @@ button:disabled {
   background: #fafafa;
   border-radius: 2px;
 }
+
+/* ========================================================================
+   RT CROSS DEMO STYLES
+   ======================================================================== */
+
+.cross-panel {
+  position: absolute;
+  background: rgba(26, 0, 26, 0.95);
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid #cc00cc;
+  box-shadow: 0 2px 8px rgba(255, 0, 255, 0.3);
+  color: #ffffff;
+  font-family: 'Courier New', monospace;
+}
+
+.cross-formula-panel {
+  top: 50px;
+  right: 10px;
+  width: 280px;
+  font-size: 14px;
+}
+
+.cross-identity-bar {
+  bottom: 50px;
+  left: 10px;
+  right: 10px;
+  padding: 6px 10px;
+}
+
+.cross-section-divider {
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #440044;
+}
+
+.cross-section-title {
+  color: #cc00cc;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.cross-section-content {
+  font-size: 12px;
+  line-height: 1.4;
+  margin-top: 3px;
+}
+
+.cross-color-x {
+  color: #ff6666;
+}
+
+.cross-color-y {
+  color: #66ff66;
+}
+
+.cross-color-cross {
+  color: #4a9eff;
+  font-weight: bold;
+}
+
+.cross-color-spread {
+  color: #ff6600;
+  font-weight: bold;
+}
+
+.cross-color-success {
+  color: #00ff88;
+  font-weight: bold;
+}
+
+.cross-color-error {
+  color: #ff4444;
+  font-weight: bold;
+}
+
+.cross-text-muted {
+  color: #888;
+  font-size: 11px;
+}
+
+.cross-text-submuted {
+  color: #666;
+  font-size: 10px;
+}
+
+.cross-text-small {
+  font-size: 10px;
+  color: #aaa;
+  line-height: 1.4;
+}
+
+.cross-highlight-box {
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  font-size: 11px;
+  line-height: 1.4;
+  border-left: 2px solid #cc00cc;
+}
+
+.cross-principle-footer {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #440044;
+  font-size: 10px;
+  color: #aaa;
+  line-height: 1.4;
+}
+
+.cross-identity-bar-content {
+  display: flex;
+  height: 12px;
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow: 0 0 4px rgba(255, 0, 255, 0.3);
+}
+
+.cross-identity-segment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cross-identity-label {
+  font-size: 9px;
+  color: white;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+}
+
+.cross-close-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  line-height: 1;
+  transition: color 0.2s;
+  z-index: 10;
+}

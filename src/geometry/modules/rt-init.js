@@ -5,7 +5,7 @@ import { PerformanceClock } from "./performance-clock.js";
 import { RTPapercut } from "./rt-papercut.js";
 import { RT } from "./rt-math.js"; // For RT.Phi in edge quadrance calculations
 import { initQuadranceDemo } from "../demos/rt-quadrance-demo.js";
-import { initSpreadDemo } from "../demos/rt-spread-demo.js";
+import { initCrossDemo } from "../demos/rt-cross-demo.js";
 import { initWeierstrassDemo } from "../demos/rt-weierstrass-demo.js";
 import { openDemoModal } from "../demos/rt-demo-utils.js";
 
@@ -152,7 +152,15 @@ function startARTexplorer(
     camera.lookAt(0, 0, 0);
 
     // Renderer
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    // Enable logarithmic depth buffer to resolve coplanar face flicker in matrix arrays.
+    // Logarithmic depth provides even precision distribution across depth range,
+    // eliminating floating-point instability during camera movement that causes
+    // visual flickering on shared faces between adjacent polyhedra.
+    // Zero cost GPU feature - see docs/development/Geometry documents/matrix-slider.md §7.1
+    renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      logarithmicDepthBuffer: true
+    });
     renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio);
     container.appendChild(renderer.domElement);
@@ -2474,7 +2482,7 @@ function startARTexplorer(
   // Initialize demo modals on first open
   let demosInitialized = {
     quadrance: false,
-    spread: false,
+    cross: false,
     weierstrass: false,
   };
 
@@ -2492,13 +2500,13 @@ function startARTexplorer(
       }
     });
 
-  document.getElementById("open-spread-demo").addEventListener("click", e => {
+  document.getElementById("open-cross-demo").addEventListener("click", e => {
     e.preventDefault();
-    openDemoModal("spread-modal");
-    if (!demosInitialized.spread) {
+    openDemoModal("cross-modal");
+    if (!demosInitialized.cross) {
       setTimeout(() => {
-        initSpreadDemo();
-        demosInitialized.spread = true;
+        initCrossDemo();
+        demosInitialized.cross = true;
       }, 50);
     }
   });

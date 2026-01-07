@@ -375,6 +375,242 @@ export const RT = {
     group.applyMatrix4(rotationMatrix);
     console.log(`[RT] 180° rotation applied: s=${s}, c=${c}, s+c=${s + c} ✓`);
   },
+
+  /**
+   * Sexagesimal (Base-60) Angular System
+   * Babylonian mathematical system superior to decimal for exact fractioning
+   *
+   * Base-60 advantages:
+   * - Factors: 2, 3, 4, 5, 6, 10, 12, 15, 20, 30 (vs. base-10: only 2, 5)
+   * - Exact representations: 1/2, 1/3, 1/4, 1/5, 1/6, 1/12, etc.
+   * - Historical: Used in astronomy/navigation for millennia
+   * - RT-compatible: Works algebraically with spread/cross values
+   *
+   * @namespace Sexagesimal
+   */
+  Sexagesimal: {
+    /**
+     * Sexagesimal angle class (Degrees-Minutes-Seconds-Thirds)
+     * Represents angles in base-60 notation
+     *
+     * Format: D° M' S" T'"
+     * - Degrees (D): 0-359
+     * - Minutes (M): 0-59 (1/60 of a degree)
+     * - Seconds (S): 0-59 (1/60 of a minute = 1/3600 of a degree)
+     * - Thirds (T): 0-59 (1/60 of a second = 1/216000 of a degree)
+     *
+     * @class SexagesimalAngle
+     */
+    SexagesimalAngle: class {
+      /**
+       * @param {number} degrees - 0-359
+       * @param {number} minutes - 0-59
+       * @param {number} seconds - 0-59
+       * @param {number} thirds - 0-59 (optional)
+       */
+      constructor(degrees, minutes, seconds, thirds = 0) {
+        this.degrees = Math.floor(degrees);
+        this.minutes = Math.floor(minutes);
+        this.seconds = Math.floor(seconds);
+        this.thirds = Math.floor(thirds);
+      }
+
+      /**
+       * Convert to decimal degrees
+       * @returns {number} Decimal degrees
+       */
+      toDecimal() {
+        return (
+          this.degrees +
+          this.minutes / 60 +
+          this.seconds / 3600 +
+          this.thirds / 216000
+        );
+      }
+
+      /**
+       * Convert to radians
+       * @returns {number} Radians
+       */
+      toRadians() {
+        return (this.toDecimal() * Math.PI) / 180;
+      }
+
+      /**
+       * Convert to spread (RT)
+       * s = sin²(θ)
+       * @returns {number} Spread value (0 to 1)
+       */
+      toSpread() {
+        const radians = this.toRadians();
+        const sinValue = Math.sin(radians);
+        return sinValue * sinValue;
+      }
+
+      /**
+       * Convert to cross (RT)
+       * c = cos²(θ)
+       * @returns {number} Cross value (0 to 1)
+       */
+      toCross() {
+        const radians = this.toRadians();
+        const cosValue = Math.cos(radians);
+        return cosValue * cosValue;
+      }
+
+      /**
+       * Format as string
+       * @param {boolean} includeThirds - Include thirds in output
+       * @returns {string} Formatted string
+       */
+      toString(includeThirds = true) {
+        if (includeThirds && this.thirds > 0) {
+          return `${this.degrees}° ${this.minutes}' ${this.seconds}" ${this.thirds}'"`;
+        }
+        return `${this.degrees}° ${this.minutes}' ${this.seconds}"`;
+      }
+    },
+
+    /**
+     * Convert decimal degrees to sexagesimal DMS
+     * @param {number} decimalDegrees - Decimal degrees
+     * @returns {SexagesimalAngle} Sexagesimal representation
+     *
+     * @example
+     * const dms = RT.Sexagesimal.fromDecimal(45.5);
+     * // 45° 30' 0" 0'"
+     */
+    fromDecimal: function (decimalDegrees) {
+      const d = Math.floor(decimalDegrees);
+      const minDecimal = (decimalDegrees - d) * 60;
+      const m = Math.floor(minDecimal);
+      const secDecimal = (minDecimal - m) * 60;
+      const s = Math.floor(secDecimal);
+      const t = Math.round((secDecimal - s) * 60);
+
+      return new this.SexagesimalAngle(d, m, s, t);
+    },
+
+    /**
+     * Convert spread to sexagesimal DMS
+     * s → θ (DMS format)
+     * @param {number} spread - Spread value (0 to 1)
+     * @returns {SexagesimalAngle} Sexagesimal representation
+     *
+     * @example
+     * const dms = RT.Sexagesimal.fromSpread(0.5);
+     * // 45° 0' 0" 0'" (exact!)
+     */
+    fromSpread: function (spread) {
+      const clampedSpread = Math.max(0, Math.min(1, spread));
+      const radians = Math.asin(Math.sqrt(clampedSpread));
+      const degrees = (radians * 180) / Math.PI;
+      return this.fromDecimal(degrees);
+    },
+
+    /**
+     * Convert cross to sexagesimal DMS
+     * c → θ (DMS format)
+     * @param {number} cross - Cross value (0 to 1)
+     * @returns {SexagesimalAngle} Sexagesimal representation
+     *
+     * @example
+     * const dms = RT.Sexagesimal.fromCross(0.5);
+     * // 45° 0' 0" 0'" (exact!)
+     */
+    fromCross: function (cross) {
+      const clampedCross = Math.max(0, Math.min(1, cross));
+      const radians = Math.acos(Math.sqrt(clampedCross));
+      const degrees = (radians * 180) / Math.PI;
+      return this.fromDecimal(degrees);
+    },
+
+    /**
+     * Generate exact sexagesimal divisions
+     * Common exact fractions in base-60
+     * @returns {Array} Array of {dms, degrees, label, exact}
+     *
+     * @example
+     * const divisions = RT.Sexagesimal.exactDivisions();
+     * // Returns 0°, 15°, 30°, 45°, 60°, 90° etc.
+     */
+    exactDivisions: function () {
+      const divisions = [
+        { d: 0, m: 0, s: 0, label: "0° (origin)", description: "Horizontal" },
+        {
+          d: 15,
+          m: 0,
+          s: 0,
+          label: "15° (1/24 circle)",
+          description: "Exact 1/6 of quadrant",
+        },
+        {
+          d: 30,
+          m: 0,
+          s: 0,
+          label: "30° (1/12 circle)",
+          description: "Exact 1/3 of quadrant",
+        },
+        {
+          d: 45,
+          m: 0,
+          s: 0,
+          label: "45° (1/8 circle)",
+          description: "Exact 1/2 of quadrant",
+        },
+        {
+          d: 60,
+          m: 0,
+          s: 0,
+          label: "60° (1/6 circle)",
+          description: "Exact 2/3 of quadrant",
+        },
+        {
+          d: 75,
+          m: 0,
+          s: 0,
+          label: "75° (5/24 circle)",
+          description: "Exact 5/6 of quadrant",
+        },
+        {
+          d: 90,
+          m: 0,
+          s: 0,
+          label: "90° (1/4 circle)",
+          description: "Vertical (full quadrant)",
+        },
+      ];
+
+      return divisions.map((div) => {
+        const dms = new this.SexagesimalAngle(div.d, div.m, div.s);
+        return {
+          dms,
+          degrees: div.d,
+          label: div.label,
+          description: div.description,
+          exact: true,
+        };
+      });
+    },
+
+    /**
+     * Check if a decimal degree value has exact sexagesimal representation
+     * @param {number} decimalDegrees - Decimal degrees
+     * @param {number} precision - Maximum thirds precision (default 0)
+     * @returns {boolean} True if exact in base-60
+     *
+     * @example
+     * RT.Sexagesimal.isExact(45.0);    // true (45° 0' 0")
+     * RT.Sexagesimal.isExact(45.5);    // true (45° 30' 0")
+     * RT.Sexagesimal.isExact(45.333);  // false (repeating)
+     */
+    isExact: function (decimalDegrees, precision = 0) {
+      const dms = this.fromDecimal(decimalDegrees);
+      const reconstructed = dms.toDecimal();
+      const tolerance = 1 / Math.pow(60, precision + 3); // Tolerance based on precision
+      return Math.abs(decimalDegrees - reconstructed) < tolerance;
+    },
+  },
 };
 
 /**
