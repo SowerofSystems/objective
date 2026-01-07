@@ -1015,8 +1015,7 @@ function startARTexplorer(
     polyhedronType = "cube"
   ) {
     // Get node geometry settings
-    const useRTNodeGeometry =
-      document.getElementById("useRTNodeGeometry")?.checked || false;
+    // useRTNodeGeometry is read from module-level variable set by button toggles
     const useFlatShading =
       document.getElementById("nodeFlatShading")?.checked || false;
 
