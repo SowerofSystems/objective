@@ -504,12 +504,13 @@ function createFormulaDisplay() {
   titleElement.textContent = "Cross (c) - The Complement of Spread";
   container.appendChild(titleElement);
 
-  // Sexagesimal toggle button (top-right, below close button)
+  // Sexagesimal toggle button (centered at top)
   const toggleButton = document.createElement("button");
   toggleButton.style.cssText = `
     position: absolute;
     top: 50px;
-    right: 10px;
+    left: 50%;
+    transform: translateX(-50%);
     width: 260px;
     padding: 8px 12px;
     background: rgba(26, 0, 26, 0.95);
