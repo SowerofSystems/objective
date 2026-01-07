@@ -1077,7 +1077,522 @@ fibonacciSphere: (samples = 1000, radius = 1.0) => {
 ---
 for improved canonical distribution wrt Fibonnaci sphere implementation see article: https://extremelearning.com.au/how-to-evenly-distribute-points-on-a-sphere-more-effectively-than-the-canonical-fibonacci-lattice/
 
-**Document Version:** 1.2
-**Status:** Demo Implemented - Analysis Complete
+---
+
+## 15. The Compound Eye Paradigm: Facet-Native Telemetry Tracking
+
+**Date Added:** 2026-01-07
+**Revolutionary Insight:** Why map to spherical projections at all? Work directly in geodesic facet space.
+
+### The Traditional Approach (Spherical Projection)
+
+**Standard telemetry tracking workflow:**
+```
+Object position (3D)
+  → Spherical projection (θ, φ)
+  → Angular calculations (sin, cos, tan)
+  → Tracking windows (angular bins)
+  → Arc distance prediction (great circles)
+  → [Transcendental functions throughout]
+```
+
+**Problems with this approach:**
+1. **Continuous spherical projection** required at every timestep
+2. **Transcendental functions** (sin, cos, atan2) dominate CPU time
+3. **Spread/cross nonlinearity** creates uneven angular resolution (Section 11)
+4. **Loss of RT-pure benefits** - can't use quadrance/spread algebra directly
+5. **Geodesic facets treated as approximation** to "true" sphere
+
+---
+
+### The Compound Eye Revolution: Facet-Native Tracking
+
+**Biological Inspiration:**
+- Insect compound eyes **don't project to continuous space**
+- Each ommatidium (facet) detects light **in its own reference frame**
+- Brain processes **discrete facet activations**, not continuous angles
+- Result: Fast, robust vision with minimal computation
+
+**Telemetry Analog:**
+- **7-frequency icosahedron = 980 facets = 980 discrete tracking windows**
+- Each facet is a **native coordinate system** (RT-pure, flat)
+- Track objects **by facet ID**, not angular coordinates
+- Ignore curvature locally (facets are ~4.85° subtends, nearly flat)
+- Convert to spherical **only for human display**, not for tracking
+
+---
+
+### Mathematical Foundation: Local Flatness
+
+**Key insight:** At 7-frequency subdivision, each icosahedron facet is small enough to treat as flat.
+
+#### Quantifying Flatness Error
+
+For a **7-frequency geodesic icosahedron** (980 triangular facets):
+
+```
+Solid angle per facet:
+  Ω_facet = 4π / 980 ≈ 0.01282 steradians
+
+Angular subtend (approximate edge-to-edge angle):
+  θ_subtend = √(Ω_facet) ≈ √(0.01282) ≈ 0.1132 rad ≈ 6.49°
+
+Actual edge length (from rt-cross-demo.js analysis):
+  α_edge ≈ 0.0840 to 0.0855 rad ≈ 4.81° to 4.90°
+  (1.8% variation, mean ~4.85°)
+```
+
+**Flatness error (ratio of spherical vs planar distance):**
+```
+For small angle α, spherical vs flat distance:
+  d_sphere = R × α           (arc length)
+  d_flat = R × tan(α)        (chord length)
+  d_flat ≈ R × α × (1 + α²/6)  (Taylor expansion)
+
+Relative error:
+  ε = (d_flat - d_sphere) / d_sphere = α²/6
+
+For α ≈ 0.085 rad (4.85°):
+  ε ≈ (0.085)² / 6 ≈ 0.0012 ≈ 0.12%
+
+For entire facet (corner to corner):
+  α_max ≈ √3 × 0.085 ≈ 0.147 rad (8.4°)
+  ε_max ≈ (0.147)² / 6 ≈ 0.0036 ≈ 0.36%
+```
+
+**Conclusion:** Treating each 7f facet as flat introduces **< 0.4% error** - negligible compared to atmospheric effects, tracking noise, and the geodesic's own 1.8% edge variation.
+
+---
+
+### Facet-Native Coordinate System
+
+**Within each facet, use RT-pure geometry:**
+
+```javascript
+class GeodesicFacet {
+  constructor(vertices, id) {
+    this.id = id;  // Facet number (0 to 979 for 7f icosa)
+    this.vertices = vertices;  // 3 vertices [v0, v1, v2]
+
+    // RT-pure quantities (computed once, cached)
+    this.edges = [
+      { quadrance: RT.quadrance(v0, v1), vector: sub(v1, v0) },
+      { quadrance: RT.quadrance(v1, v2), vector: sub(v2, v1) },
+      { quadrance: RT.quadrance(v2, v0), vector: sub(v0, v2) }
+    ];
+
+    // Barycentric coordinate system (flat triangle)
+    this.barycentricBasis = this.computeBarycentricBasis();
+
+    // Neighboring facets (pre-computed adjacency)
+    this.neighbors = [];  // [facet_id_a, facet_id_b, facet_id_c]
+  }
+
+  // Convert 3D position to barycentric coords within this facet
+  toBarycentric(point) {
+    // Uses RT.quadrance for distance comparisons
+    // NO spherical projection, NO trig functions
+    const [u, v, w] = computeBarycentric(point, this.vertices);
+    return { u, v, w };  // Barycentric coordinates
+  }
+
+  // Predict which edge object will cross (if any)
+  predictExit(position, velocity) {
+    const bary = this.toBarycentric(position);
+    const baryVel = this.velocityToBarycentric(velocity);
+
+    // Check which barycentric coordinate → 0 first
+    // This tells us which edge we'll cross
+    // Pure linear algebra, no trig
+    const exitEdge = this.findExitEdge(bary, baryVel);
+    return exitEdge;  // Edge index (0, 1, or 2)
+  }
+}
+```
+
+---
+
+### The Compound Eye Tracking Algorithm
+
+**Core idea:** Track by **facet ID transitions**, not angular coordinates.
+
+```javascript
+class CompoundEyeTracker {
+  constructor(frequency = 7) {
+    console.log(`[Compound Eye] Initializing ${frequency}f icosahedron tracker`);
+
+    // Generate geodesic (one-time setup)
+    this.geodesic = Polyhedra.geodesicIcosahedron(1.0, frequency);
+
+    // Wrap each triangular face as a facet object
+    this.facets = this.geodesic.faces.map((face, id) => {
+      const vertices = face.map(i => this.geodesic.vertices[i]);
+      return new GeodesicFacet(vertices, id);
+    });
+
+    // Pre-compute adjacency (which facets share edges)
+    this.computeAdjacency();
+
+    console.log(`  Facets: ${this.facets.length}`);
+    console.log(`  Working in facet-native space (RT-pure)`);
+    console.log(`  Spherical projection: display only`);
+  }
+
+  // Find which facet contains a given 3D point
+  findFacet(point) {
+    // Option 1: Brute force (980 facets, fast enough for real-time)
+    for (let facet of this.facets) {
+      if (facet.contains(point)) return facet;
+    }
+
+    // Option 2: Hierarchical search (if performance critical)
+    // Use icosahedron's 20 base faces as top-level buckets
+    // Then search subdivisions within that base face
+
+    return null;  // Point not on sphere (error condition)
+  }
+
+  // Predict next facet given current position and velocity
+  predictTransition(currentFacet, velocity) {
+    // Work entirely in flat facet space
+    // NO spherical great circle calculations
+    // NO transcendental functions
+
+    const exitEdge = currentFacet.predictExit(position, velocity);
+
+    if (exitEdge === null) {
+      return currentFacet;  // Staying in same facet
+    }
+
+    // Look up adjacent facet across this edge
+    const nextFacet = currentFacet.neighbors[exitEdge];
+    return nextFacet;
+  }
+
+  // Main tracking loop (called each timestep)
+  trackObject(position, velocity) {
+    const facet = this.findFacet(position);
+    const nextFacet = this.predictTransition(facet, velocity);
+
+    // RT-pure distance within facet (quadrance)
+    const entryPoint = facet.toBarycentric(position);
+    const pathQuadrance = this.computePathQuadrance(facet, nextFacet);
+
+    return {
+      current: facet.id,
+      next: nextFacet.id,
+      baryCoords: entryPoint,
+      pathQuadrance: pathQuadrance,
+      // NO angles stored - work entirely in facet IDs + barycentric coords
+    };
+  }
+
+  // Convert to spherical ONLY for display (user-facing)
+  toSpherical(facetID, baryCoords) {
+    const facet = this.facets[facetID];
+    const point3D = facet.fromBarycentric(baryCoords);
+
+    // Now we can use RT.spherical() for display
+    const { theta, phi } = RT.sphericalCoords(point3D);
+    return { theta, phi };
+  }
+}
+```
+
+---
+
+### Advantages of Facet-Native Tracking
+
+#### 1. **RT-Pure Throughout Pipeline**
+
+**Traditional approach:**
+```javascript
+// Tracking loop (every frame)
+const spherical = cartesianToSpherical(position);  // atan2, acos
+const theta = spherical.theta;
+const phi = spherical.phi;
+const spread = Math.sin(theta) * Math.sin(theta);  // sin (transcendental)
+const cross = Math.cos(theta) * Math.cos(theta);   // cos (transcendental)
+// [More trig functions for predictions, arc distances, etc.]
+```
+
+**Compound Eye approach:**
+```javascript
+// Tracking loop (every frame)
+const facet = tracker.findFacet(position);  // Dot products only
+const bary = facet.toBarycentric(position);  // Linear algebra
+const pathQ = tracker.computePathQuadrance(facet, nextFacet);  // Quadrance!
+// [Zero transcendental functions in tracking loop]
+```
+
+**Performance impact:**
+- Transcendental functions: ~10-50 CPU cycles each
+- Dot products: ~3-5 CPU cycles
+- Quadrance calculation: ~5-8 CPU cycles (3 multiplies, 2 adds)
+- **Estimated speedup: 5-10× faster tracking loop**
+
+---
+
+#### 2. **Natural Discrete Windows**
+
+**No need to artificially bin continuous angles:**
+```javascript
+// Traditional: artificial binning
+const angleResolution = 5.0;  // degrees
+const bin = Math.floor(theta / angleResolution);
+// [Bins have uneven solid angles near poles]
+
+// Compound Eye: facets ARE the windows
+const window = facet.id;  // That's it. Facet IS the window.
+// [All facets have similar solid angles by design]
+```
+
+**Benefits:**
+- No binning artifacts
+- Facets already ~uniformly distributed (1.8% variation)
+- Natural hierarchical structure (base icosahedron → subdivisions)
+
+---
+
+#### 3. **Predictable Arc Distances**
+
+**Each edge crossing = known arc distance (pre-computed):**
+
+```javascript
+// Pre-computed table (980 facets × 3 edges each)
+const edgeLengthTable = [
+  { facet: 0, edge: 0, arcLength: 0.0847 },  // rad
+  { facet: 0, edge: 1, arcLength: 0.0852 },
+  { facet: 0, edge: 2, arcLength: 0.0840 },
+  // ... (2940 entries total)
+];
+
+// Tracking prediction:
+function predictArcDistance(facetPath) {
+  let totalArc = 0;
+  for (let transition of facetPath) {
+    totalArc += edgeLengthTable[transition.facet][transition.edge];
+  }
+  return totalArc;  // Pure table lookup, no trig
+}
+```
+
+**Variation:** The 1.8% edge variation (Section 13) is **pre-known** - not a runtime uncertainty.
+
+---
+
+#### 4. **Eliminates Spread/Cross Nonlinearity Issues**
+
+**From Section 11:** Spread has nonlinear distribution (sparse near 0°/90°, dense near 45°).
+
+**In Compound Eye paradigm:** This doesn't matter.
+- Facets are distributed by **solid angle**, not by spread values
+- Tracking uses **facet IDs**, not spread intervals
+- Display can still show spread/cross (for human interpretation), but tracking logic ignores it
+
+**Result:** The nonlinearity becomes a display-only artifact, not a tracking limitation.
+
+---
+
+### Comparison Table: Spherical vs. Facet-Native
+
+| Aspect | Traditional (Spherical) | Compound Eye (Facet-Native) |
+|--------|-------------------------|------------------------------|
+| **Primary coordinates** | (θ, φ) continuous angles | Facet ID + barycentric (u, v, w) |
+| **Tracking windows** | Artificial angular bins | Natural geodesic facets |
+| **Distance measure** | Great circle arc (transcendental) | Pre-computed edge table + quadrance |
+| **Functions used** | sin, cos, atan2, acos | Dot products, quadrance, linear algebra |
+| **CPU cost per frame** | ~10-20 transcendental calls | ~0 transcendental calls |
+| **Uniformity** | Depends on binning strategy | Inherent (geodesic uniformity) |
+| **Spread nonlinearity** | Directly affects tracking resolution | Display-only artifact |
+| **Prediction method** | Great circle + Vincenty formula | Edge transition + table lookup |
+| **Memory footprint** | Minimal (just current θ, φ) | ~10 KB (facet table + adjacency) |
+| **Best use case** | Continuous smooth tracking | Discrete window telemetry |
+
+---
+
+### Practical Implementation Strategy
+
+#### Phase 1: Data Structure Setup (One-Time Cost)
+
+```javascript
+// 1. Generate 7f geodesic
+const geodesic = Polyhedra.geodesicIcosahedron(1.0, 7);
+
+// 2. Compute adjacency graph
+const adjacency = computeFacetAdjacency(geodesic);
+
+// 3. Pre-compute edge arc lengths
+const edgeTable = computeEdgeLengths(geodesic);
+
+// 4. Build spatial index (optional, for fast findFacet)
+const spatialIndex = buildOctree(geodesic.facets);
+
+// Memory: ~50-100 KB total (negligible)
+```
+
+---
+
+#### Phase 2: Runtime Tracking Loop
+
+```javascript
+// Called every frame (e.g., 60 Hz for real-time telemetry)
+function trackingUpdate(objectPosition, objectVelocity) {
+  // 1. Find current facet (O(1) with octree, O(980) brute force)
+  const facet = tracker.findFacet(objectPosition);
+
+  // 2. Predict next facet (O(1) - just check 3 neighbors)
+  const nextFacet = tracker.predictTransition(facet, objectVelocity);
+
+  // 3. Compute path quadrance (O(1) - table lookup)
+  const pathQ = edgeTable[facet.id][nextFacet.id];
+
+  // 4. Log telemetry (facet IDs, not angles!)
+  telemetry.log({
+    timestamp: Date.now(),
+    facet: facet.id,
+    next: nextFacet.id,
+    pathQuadrance: pathQ
+  });
+
+  // 5. Display conversion (ONLY if human needs to see angles)
+  if (displayEnabled) {
+    const spherical = tracker.toSpherical(facet.id, objectPosition);
+    ui.updateDisplay(spherical.theta, spherical.phi);
+  }
+}
+```
+
+**Key point:** Steps 1-4 use **zero transcendental functions**. Only step 5 (optional display) requires trig.
+
+---
+
+#### Phase 3: Hybrid System (Best of Both Worlds)
+
+**For maximum practicality:**
+
+```javascript
+class HybridTracker {
+  constructor(frequency = 7) {
+    // Compound Eye core (facet-native tracking)
+    this.compoundEye = new CompoundEyeTracker(frequency);
+
+    // Spherical display layer (on-demand)
+    this.sphericalProjection = new SphericalProjection();
+  }
+
+  // Internal tracking: facet-native (fast, RT-pure)
+  updateTracking(position, velocity) {
+    return this.compoundEye.trackObject(position, velocity);
+  }
+
+  // External API: spherical coordinates (for compatibility)
+  getSphericalPosition(facetID, baryCoords) {
+    return this.compoundEye.toSpherical(facetID, baryCoords);
+  }
+
+  // Logging: facet-native (efficient)
+  logTelemetry(data) {
+    // Store facet IDs, not angles
+    // Reduces log file size (uint16 vs float64)
+    telemetryDB.insert({
+      facet: data.facet,      // 2 bytes (0-979)
+      nextFacet: data.next,   // 2 bytes
+      pathQ: data.pathQ       // 4 bytes (float32)
+      // vs. traditional: 2× float64 = 16 bytes for θ, φ
+    });
+  }
+}
+```
+
+**Advantages:**
+- **Internal pipeline:** RT-pure, fast, algebraic
+- **External compatibility:** Can export to (θ, φ) if needed
+- **Data efficiency:** Facet IDs compress better than floating-point angles
+- **Future-proof:** Can switch geodesic frequency without changing API
+
+---
+
+### When to Use Each Approach
+
+**Use Compound Eye (Facet-Native) when:**
+- ✅ Tracking discrete objects through windows (satellites, aircraft)
+- ✅ Real-time performance critical (embedded systems, edge compute)
+- ✅ RT-purity valuable (exact rational calculations, no rounding errors)
+- ✅ Geodesic structure already present (antenna arrays, sensor grids)
+- ✅ Logging bandwidth constrained (facet IDs compress well)
+
+**Use Traditional Spherical when:**
+- ✅ Continuous smooth tracking (missile trajectories, smooth pans)
+- ✅ High angular precision required (< 0.1° resolution)
+- ✅ Legacy system integration (existing spherical APIs)
+- ✅ Simple codebase (fewer abstractions, standard math)
+
+**Hybrid approach (recommended):**
+- Use **Compound Eye internally** for tracking logic
+- Convert to **spherical externally** for display/compatibility
+- Get benefits of both: speed + RT-purity + standard interface
+
+---
+
+### Future Research Directions
+
+1. **Adaptive Frequency:**
+   - Use 4f near equator (larger facets, faster)
+   - Use 10f near poles (smaller facets, better resolution)
+   - Dynamic LOD (level of detail) based on object velocity
+
+2. **Hierarchical Tracking:**
+   - Coarse tracking: 20 base icosahedron faces
+   - Medium tracking: 1f or 2f subdivisions
+   - Fine tracking: Full 7f or 10f facets
+   - Cascade only when needed (most objects stay in coarse level)
+
+3. **Facet-Native Sensor Fusion:**
+   - Multiple sensors each report facet IDs
+   - Fuse by **facet probability distribution**, not angular PDFs
+   - Avoids spherical coordinate singularities (poles)
+
+4. **RT-Pure Kalman Filter:**
+   - State vector: [facet_id, barycentric_u, barycentric_v, velocity_components]
+   - Prediction step: facet transition model (algebraic)
+   - Update step: quadrance-based measurement model
+   - **Zero transcendental functions in filter loop**
+
+5. **Biological Validation:**
+   - Model insect compound eye exactly (e.g., dragonfly: ~30,000 ommatidia)
+   - Compare to faceted geodesic tracker
+   - Learn from nature's 400-million-year optimization
+
+---
+
+### Conclusion: A Paradigm Shift
+
+**The traditional view:**
+> "Spherical coordinates are fundamental. Geodesics are approximations to the true sphere. We tolerate their imperfections (edge variation, vertex irregularity) because they're convenient for physical construction."
+
+**The Compound Eye view:**
+> "Geodesic facets are fundamental. Spherical coordinates are a human interface layer. We work natively in facet space (RT-pure, discrete, fast) and project to spherical only for display."
+
+**Impact:**
+- **Faster tracking** (no transcendental functions in inner loop)
+- **RT-pure pipeline** (exact rational calculations where possible)
+- **Natural discretization** (facets ARE the tracking windows)
+- **Solves spread nonlinearity** (becomes display artifact, not tracking issue)
+- **Biologically inspired** (compound eyes, not continuous projection)
+
+**Recommendation:**
+For the telemetry tracking application, implement a **hybrid system**:
+- **Core tracking:** Compound Eye (facet-native, 7f icosahedron)
+- **Display layer:** Spherical projection (on-demand, for UI)
+- **Logging:** Facet IDs (compact, efficient)
+- **API:** Provide both facet and spherical interfaces
+
+This leverages the geodesic's inherent structure rather than fighting against it. **The 1.8% edge variation and 12 pentagonal defects are no longer "problems to minimize" - they're intrinsic features of a discrete tracking system that outperforms continuous spherical projection.**
+
+---
+
+**Document Version:** 1.3
+**Status:** Demo Implemented - Analysis Complete - Compound Eye Paradigm Documented
 **Priority:** Medium (completes RT demo trilogy)
 **Last Updated:** 2026-01-07
