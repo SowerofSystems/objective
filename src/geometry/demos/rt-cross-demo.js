@@ -28,6 +28,7 @@ let formulaElement;
 let snapMarkers = [];
 let crossRectangle, spreadRectangle;
 let crossRectangleFill, spreadRectangleFill;
+let trackingLines = [];
 
 // Snappoints for exact rational cross/spread values
 const snapPoints = [
@@ -64,7 +65,50 @@ const snapPoints = [
   },
 ];
 
+// Generate hundredths interval diamond snap points (0.01, 0.02, ... 0.99)
+const diamondSnapPoints = [];
+for (let i = 1; i < 100; i++) {
+  const spreadValue = i / 100;
+  const crossValue = 1 - spreadValue;
+
+  // Skip if already covered by main snapPoints
+  const isMainSnap = snapPoints.some(
+    snap => Math.abs(snap.s - spreadValue) < 0.001
+  );
+
+  if (!isMainSnap && spreadValue > 0 && spreadValue < 1) {
+    const y = Math.sqrt(spreadValue);
+    const x = Math.sqrt(crossValue);
+    diamondSnapPoints.push({
+      x,
+      y,
+      c: crossValue,
+      s: spreadValue,
+      type: "diamond",
+      label: null, // No label for these
+    });
+  }
+}
+
 const SNAP_THRESHOLD = 0.04; // radians (~2.3°)
+
+// RT-PURE: 7-frequency icosahedral geodesic tracking angles
+// Derived from spread values using RT methods (no transcendental functions)
+// Each entry: { s: spread, c: cross, x: cos(θ), y: sin(θ) }
+// For Q1 arc, we work directly with x = √c and y = √s on unit circle
+const geodesicTrackingAngles = [
+  { s: 0.000, c: 1.000, label: "0°" },     // 0° - horizontal (cardinal)
+  { s: 0.035, c: 0.965, label: "10.8°" },  // ~10.81° - Class I edge
+  { s: 0.127, c: 0.873, label: "20.9°" },  // ~20.90° - Class II
+  { s: 0.275, c: 0.725, label: "31.7°" },  // ~31.72° - Class I vertex
+  { s: 0.370, c: 0.630, label: "37.4°" },  // ~37.38° - Class II
+  { s: 0.500, c: 0.500, label: "45°" },    // 45° - diagonal (exact rational!)
+  { s: 0.630, c: 0.370, label: "52.6°" },  // ~52.62° - Class II
+  { s: 0.725, c: 0.275, label: "58.3°" },  // ~58.28° - Class I vertex
+  { s: 0.873, c: 0.127, label: "69.1°" },  // ~69.10° - Class II
+  { s: 0.965, c: 0.035, label: "79.2°" },  // ~79.19° - Class I edge
+  { s: 1.000, c: 0.000, label: "90°" },    // 90° - vertical (cardinal)
+];
 
 /**
  * Initialize the Cross demo
@@ -88,6 +132,7 @@ export function initCrossDemo() {
   // Create visual elements
   createAxes();
   createCircle();
+  createGeodesicTrackingLines();
   createSnapMarkers();
   createComplementaryRectangles();
   createRadiusLine();
@@ -141,6 +186,71 @@ function createAxes() {
 }
 
 /**
+ * Create geodesic tracking lines (hairline radius lines for tracking windows)
+ * RT-PURE: Uses spread (s) and cross (c) directly, no trigonometry!
+ */
+function createGeodesicTrackingLines() {
+  const container = document.getElementById("cross-demo-container");
+
+  geodesicTrackingAngles.forEach((angle, index) => {
+    // RT METHOD: Extract x and y from cross and spread
+    // For unit circle: x = √c, y = √s
+    // Only sqrt needed - deferred until final step (Wildberger principle)
+    const x = Math.sqrt(angle.c) * radius * 1.1; // Extend 10% past arc
+    const y = Math.sqrt(angle.s) * radius * 1.1;
+
+    const lineGeometry = new LineGeometry();
+    lineGeometry.setPositions([0, 0, 0, x, y, 0]);
+
+    const lineMaterial = new LineMaterial({
+      color: 0xbbbbbb, // Brighter gray (was 0x444444)
+      linewidth: 0.5,
+      transparent: true,
+      opacity: 0.5, // Increased from 0.3
+    });
+    lineMaterial.resolution.set(window.innerWidth, window.innerHeight);
+
+    const line = new Line2(lineGeometry, lineMaterial);
+    line.position.z = 0.005; // Behind other elements
+    scene.add(line);
+    trackingLines.push(line);
+
+    // Add label to one of the middle tracking lines (index 5 is 45°)
+    if (index === 5) {
+      const label = document.createElement("div");
+      const rect = container.getBoundingClientRect();
+      const aspect = rect.width / rect.height;
+      const cameraSize = 1.2;
+      const cameraOffsetX = radius * 0.45;
+      const cameraOffsetY = radius * 0.45;
+
+      // Position label along the 45° line, about 80% out
+      const labelX = x * 0.8;
+      const labelY = y * 0.8;
+
+      const screenX = 50 + ((labelX - cameraOffsetX) / (cameraSize * aspect)) * 50;
+      const screenY = 50 - ((labelY - cameraOffsetY) / cameraSize) * 50;
+
+      label.style.cssText = `
+        position: absolute;
+        left: ${screenX}%;
+        top: ${screenY}%;
+        transform: translate(-50%, -50%);
+        color: #bbbbbb;
+        font-family: 'Courier New', monospace;
+        font-size: 9px;
+        font-weight: normal;
+        pointer-events: none;
+        text-shadow: 0 0 3px rgba(0,0,0,0.8);
+        white-space: nowrap;
+      `;
+      label.textContent = "7f Icosahedral Geodesic Windows";
+      container.appendChild(label);
+    }
+  });
+}
+
+/**
  * Create the Q1 arc (0° to 90° only) using RT parametrization
  */
 function createCircle() {
@@ -172,6 +282,7 @@ function createCircle() {
 function createSnapMarkers() {
   const container = document.getElementById("cross-demo-container");
 
+  // Create main labeled snap points
   snapPoints.forEach((snap) => {
     const x = radius * snap.x;
     const y = radius * snap.y;
@@ -233,6 +344,33 @@ function createSnapMarkers() {
     `;
     label.textContent = snap.label;
     container.appendChild(label);
+  });
+
+  // Create diamond snap points for hundredths intervals
+  diamondSnapPoints.forEach((snap) => {
+    const x = radius * snap.x;
+    const y = radius * snap.y;
+
+    // Create diamond shape (rotated square)
+    const diamondShape = new THREE.Shape();
+    const size = 0.02;
+    diamondShape.moveTo(0, size);
+    diamondShape.lineTo(size, 0);
+    diamondShape.lineTo(0, -size);
+    diamondShape.lineTo(-size, 0);
+    diamondShape.lineTo(0, size);
+
+    const diamondGeometry = new THREE.ShapeGeometry(diamondShape);
+    const diamondMaterial = new THREE.MeshBasicMaterial({
+      color: 0x555555,
+      transparent: true,
+      opacity: 0.4,
+    });
+
+    const diamond = new THREE.Mesh(diamondGeometry, diamondMaterial);
+    diamond.position.set(x, y, 0.01);
+    scene.add(diamond);
+    snapMarkers.push(diamond);
   });
 }
 
@@ -329,12 +467,16 @@ function createRadiusLine() {
 }
 
 /**
- * Create draggable point on circle
+ * Create draggable point on circle (hollow ring/crosshair style)
  */
 function createDraggablePoint() {
-  const pointGeometry = new THREE.CircleGeometry(0.05, 32);
-  const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-  draggablePoint = new THREE.Mesh(pointGeometry, pointMaterial);
+  // Create hollow ring instead of solid circle
+  const ringGeometry = new THREE.RingGeometry(0.04, 0.05, 32);
+  const ringMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    side: THREE.DoubleSide
+  });
+  draggablePoint = new THREE.Mesh(ringGeometry, ringMaterial);
   draggablePoint.position.z = 0.02;
   scene.add(draggablePoint);
 }
@@ -365,21 +507,11 @@ function createFormulaDisplay() {
   const closeButton = document.createElement("button");
   closeButton.className = "close-modal";
   closeButton.innerHTML = "&times;";
-  closeButton.style.cssText = `
-    position: absolute;
-    top: 5px;
-    right: 10px;
-    background: transparent;
-    border: none;
-    font-size: 32px;
-    color: #888;
-    cursor: pointer;
-    line-height: 1;
-    padding: 0;
-    width: 32px;
-    height: 32px;
-    z-index: 10;
-  `;
+  closeButton.className = "cross-close-button";
+  closeButton.style.top = "5px";
+  closeButton.style.fontSize = "32px";
+  closeButton.style.width = "32px";
+  closeButton.style.height = "32px";
   closeButton.onmouseover = () => (closeButton.style.color = "#fff");
   closeButton.onmouseout = () => (closeButton.style.color = "#888");
   closeButton.onclick = () => {
@@ -387,24 +519,10 @@ function createFormulaDisplay() {
   };
   container.appendChild(closeButton);
 
-  // Formula display (bottom panel) - FIXED HEIGHT with tighter padding
+  // Formula display (right side panel) - next to diagram
   formulaElement = document.createElement("div");
-  formulaElement.style.cssText = `
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    right: 10px;
-    height: 180px;
-    background: rgba(26, 0, 26, 0.95);
-    padding: 6px 8px;
-    border-radius: 4px;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    border: 1px solid #cc00cc;
-    box-shadow: 0 2px 8px rgba(255,0,255,0.3);
-    color: #ffffff;
-    overflow: hidden;
-  `;
+  formulaElement.className = "cross-panel cross-formula-panel";
+  formulaElement.style.overflow = "visible";
   container.appendChild(formulaElement);
 }
 
@@ -462,6 +580,14 @@ function updateVisualization() {
   let degrees = (angle * 180) / Math.PI;
   if (degrees < 0) degrees += 360;
 
+  // Calculate arc-minutes and arc-seconds
+  const degreesWhole = Math.floor(degrees);
+  const minutesDecimal = (degrees - degreesWhole) * 60;
+  const minutesWhole = Math.floor(minutesDecimal);
+  const secondsDecimal = (minutesDecimal - minutesWhole) * 60;
+  const secondsWhole = Math.floor(secondsDecimal);
+  const milliarcseconds = Math.round((secondsDecimal - secondsWhole) * 1000);
+
   // Find matching snap point for special messages
   let snapInfo = "";
   const currentSnap = snapPoints.find((snap) => {
@@ -491,64 +617,76 @@ function updateVisualization() {
   const crossBarWidth = cross * 100;
   const spreadBarWidth = spread * 100;
 
-  // Update formula display with left-aligned titles and horizontal layout
+  // Update formula display in right-side panel with vertical stacking
   formulaElement.innerHTML = `
-    <div style="display: flex; gap: 15px; font-size: 13px; line-height: 1.3;">
-      <!-- Left column: Titles -->
-      <div style="display: flex; flex-direction: column; gap: 3px; padding-right: 10px; border-right: 1px solid #440044;">
-        <strong style="color: #cc00cc; font-size: 12px;">Position</strong>
-        <strong style="color: #4a9eff; font-size: 12px;">Cross (c)</strong>
-        <strong style="color: #ff6600; font-size: 12px;">Spread (s)</strong>
-        <strong style="color: #cc00cc; font-size: 12px;">RT Identity</strong>
-      </div>
-
-      <!-- Right side: Values in horizontal layout -->
-      <div style="flex: 1;">
-        <!-- Position values -->
-        <div style="margin-bottom: 3px;">
-          <span style="color: #ff6666">x = ${normX.toFixed(4)}</span> &nbsp;
-          <span style="color: #66ff66">y = ${normY.toFixed(4)}</span> &nbsp;
-          <span style="color: #888; font-size: 11px;">θ ≈ ${degrees.toFixed(1)}°</span>
-        </div>
-
-        <!-- Cross value -->
-        <div style="margin-bottom: 3px;">
-          c = x² = <span style="color: #4a9eff">${cross.toFixed(4)}</span> &nbsp;
-          <span style="color: #888; font-size: 11px;">Horizontal Q</span> &nbsp;
-          <span style="color: #888; font-size: 11px;">Parallelism</span>
-        </div>
-
-        <!-- Spread value -->
-        <div style="margin-bottom: 3px;">
-          s = y² = <span style="color: #ff6600">${spread.toFixed(4)}</span> &nbsp;
-          <span style="color: #888; font-size: 11px;">Vertical Q</span> &nbsp;
-          <span style="color: #888; font-size: 11px;">Perpendicularity</span>
-        </div>
-
-        <!-- RT Identity -->
-        <div>
-          s + c = <span style="color: ${Math.abs(identity - 1.0) < 0.0001 ? "#00ff88" : "#ff4444"}">${identity.toFixed(4)}</span> &nbsp;
-          ${Math.abs(identity - 1.0) < 0.0001 ? '<span style="color: #00ff88; font-size: 11px;">✓ Verified</span>' : '<span style="color: #ff4444; font-size: 11px;">✗ Error</span>'} &nbsp;
-          <span style="color: #888; font-size: 11px;">s + c = 1</span>
-        </div>
+    <!-- Position -->
+    <div class="cross-section-divider">
+      <strong class="cross-section-title">Position</strong><br>
+      <div class="cross-section-content">
+        <span class="cross-color-x">x = ${normX.toFixed(6)}</span><br>
+        <span class="cross-color-y">y = ${normY.toFixed(6)}</span><br>
+        <span class="cross-text-muted">θ ≈ ${degrees.toFixed(6)}°</span><br>
+        <span class="cross-text-submuted">${degreesWhole}° ${minutesWhole}' ${secondsWhole}.${milliarcseconds.toString().padStart(3, '0')}"</span>
       </div>
     </div>
 
-    <div style="margin-top: 5px; padding-top: 4px; border-top: 1px solid #440044;">
-      <div style="display: flex; height: 10px; border-radius: 2px; overflow: hidden; box-shadow: 0 0 4px rgba(255,0,255,0.3);">
-        <div style="width: ${crossBarWidth}%; background: linear-gradient(90deg, #4a9eff, #2a7edf); display: flex; align-items: center; justify-content: center;">
-          <span style="font-size: 8px; color: white; font-weight: bold;">${cross > 0.15 ? `c=${cross.toFixed(2)}` : ""}</span>
-        </div>
-        <div style="width: ${spreadBarWidth}%; background: linear-gradient(90deg, #ff6600, #dd4400); display: flex; align-items: center; justify-content: center;">
-          <span style="font-size: 8px; color: white; font-weight: bold;">${spread > 0.15 ? `s=${spread.toFixed(2)}` : ""}</span>
-        </div>
+    <!-- Cross (c) -->
+    <div class="cross-section-divider">
+      <strong class="cross-section-title" style="color: #4a9eff;">Cross (c)</strong><br>
+      <div class="cross-section-content">
+        c = x² = <span class="cross-color-cross">${cross.toFixed(4)}</span><br>
+        <span class="cross-text-muted">Horizontal Q</span><br>
+        <span class="cross-text-muted">Parallelism</span>
       </div>
     </div>
 
-    ${snapInfo ? `<div style="margin-top: 5px; padding: 5px 6px; background: rgba(255,255,255,0.05); border-radius: 2px; font-size: 11px; line-height: 1.35;">${snapInfo}</div>` : '<div style="height: 35px;"></div>'}
+    <!-- Spread (s) -->
+    <div class="cross-section-divider">
+      <strong class="cross-section-title" style="color: #ff6600;">Spread (s)</strong><br>
+      <div class="cross-section-content">
+        s = y² = <span class="cross-color-spread">${spread.toFixed(4)}</span><br>
+        <span class="cross-text-muted">Vertical Q</span><br>
+        <span class="cross-text-muted">Perpendicularity</span>
+      </div>
+    </div>
 
-    <div style="margin-top: 5px; font-size: 10px; color: #aaa; line-height: 1.4;">
-      <strong style="color: #cc00cc;">RT Principle:</strong> Cross and Spread partition the radius quadrance. Cross measures horizontal alignment (parallelism), Spread measures vertical alignment (perpendicularity).
+    <!-- RT Identity -->
+    <div style="margin-bottom: 8px;">
+      <strong class="cross-section-title">RT Identity</strong><br>
+      <div class="cross-section-content">
+        s + c = <span class="${Math.abs(identity - 1.0) < 0.0001 ? 'cross-color-success' : 'cross-color-error'}">${identity.toFixed(4)}</span><br>
+        ${Math.abs(identity - 1.0) < 0.0001 ? '<span class="cross-color-success cross-text-muted">✓ Verified</span>' : '<span class="cross-color-error cross-text-muted">✗ Error</span>'}
+        <span class="cross-text-muted"> (s + c = 1)</span>
+      </div>
+    </div>
+
+    ${snapInfo ? `<div class="cross-highlight-box">${snapInfo}</div>` : ''}
+
+    <div class="cross-principle-footer">
+      <strong class="cross-section-title">RT Principle:</strong> Cross and Spread partition the radius quadrance. Cross measures horizontal alignment, Spread measures vertical alignment.
+    </div>
+  `;
+
+  // Create/update identity bar at bottom of container
+  const identityBarContainer = document.getElementById("cross-demo-container");
+  let identityBar = document.getElementById("cross-identity-bar");
+
+  if (!identityBar) {
+    identityBar = document.createElement("div");
+    identityBar.id = "cross-identity-bar";
+    identityBar.className = "cross-panel cross-identity-bar";
+    identityBarContainer.appendChild(identityBar);
+  }
+
+  identityBar.innerHTML = `
+    <div class="cross-text-small" style="margin-bottom: 4px;">Identity Bar (s + c = 1):</div>
+    <div class="cross-identity-bar-content">
+      <div class="cross-identity-segment" style="width: ${crossBarWidth}%; background: linear-gradient(90deg, #4a9eff, #2a7edf);">
+        <span class="cross-identity-label">${cross > 0.15 ? `c=${cross.toFixed(2)}` : ""}</span>
+      </div>
+      <div class="cross-identity-segment" style="width: ${spreadBarWidth}%; background: linear-gradient(90deg, #ff6600, #dd4400);">
+        <span class="cross-identity-label">${spread > 0.15 ? `s=${spread.toFixed(2)}` : ""}</span>
+      </div>
     </div>
   `;
 }
@@ -618,15 +756,38 @@ function setupInteraction(container) {
     let snappedY = normY;
     const snapThresholdQ = SNAP_THRESHOLD * SNAP_THRESHOLD;
 
+    // Check main snap points first (priority) with adjusted thresholds
     for (const snap of snapPoints) {
       const dx = normX - snap.x;
       const dy = normY - snap.y;
       const quadrance = dx * dx + dy * dy;
 
-      if (quadrance < snapThresholdQ) {
+      // Tighter threshold for special/rational points to reduce "gravity"
+      let threshold = snapThresholdQ;
+      if (snap.type === "special" || snap.type === "rational") {
+        threshold = snapThresholdQ * 0.25; // Much tighter for 1/2 and 3/4 points
+      }
+
+      if (quadrance < threshold) {
         snappedX = snap.x;
         snappedY = snap.y;
         break;
+      }
+    }
+
+    // If no main snap, check diamond snap points
+    if (snappedX === normX && snappedY === normY) {
+      for (const snap of diamondSnapPoints) {
+        const dx = normX - snap.x;
+        const dy = normY - snap.y;
+        const quadrance = dx * dx + dy * dy;
+
+        if (quadrance < snapThresholdQ * 0.15) {
+          // Very tight threshold for diamonds
+          snappedX = snap.x;
+          snappedY = snap.y;
+          break;
+        }
       }
     }
 
