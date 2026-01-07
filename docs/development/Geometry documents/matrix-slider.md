@@ -2349,7 +2349,443 @@ renderer = new THREE.WebGLRenderer({
 
 ---
 
-**Document Version:** 1.1
-**Last Updated:** 2026-01-06
-**Status:** Phase 1.5c Complete (All three matrix forms implemented)
-**Completion Date:** 2026-01-06
+## 8. Future Work: Space-Filling Cuboctahedron & Rhombic Dodecahedron Matrices
+
+### 8.1 Overview
+
+Both the **cuboctahedron** (Vector Equilibrium) and **rhombic dodecahedron** can form space-filling matrices similar to the cube matrix. These are high-priority additions to complete the IVM space-filling polyhedra set.
+
+**Key Properties:**
+- Both tile 3D space completely (no gaps, like cube matrix)
+- Both exhibit **face coplanarity** between adjacent polyhedra (like cube matrix)
+- Cuboctahedron: Archimedean solid with mixed faces (triangles + squares)
+- Rhombic dodecahedron: Catalan solid, dual of cuboctahedron
+- Both are fundamental to IVM geometry and Fuller's Synergetics
+
+---
+
+### 8.2 Cuboctahedron Matrix (Vector Equilibrium Array)
+
+**Phase:** 1.6a (Next implementation priority)
+
+**Geometry:**
+- **Vertices:** 12
+- **Edges:** 24
+- **Faces:** 14 (8 triangular, 6 square)
+- **Schläfli Symbol:** (3.4)²
+- **Space-Filling Pattern:** Face-to-face contact (like cube matrix)
+
+**RT-Pure Specifications:**
+```javascript
+// Cuboctahedron edge length relationship to halfSize
+// For cube of halfSize s:
+// Cuboctahedron inscribed in cube has edge length = s√2
+// (Vertices at cube edge midpoints)
+
+const edgeLength = halfSize * Math.sqrt(2);
+const spacing = edgeLength;  // Face-to-face spacing in matrix
+```
+
+**Matrix Packing:**
+- **Contact Mode:** Square faces touch square faces (coplanar)
+- **Orientation:** Single orientation (no alternating like tetrahedra)
+- **Spacing:** `spacing = halfSize * sqrt(2)` (edge length)
+- **Grid Pattern:** Simple NxN array in XY plane
+
+**Coplanar Faces:**
+- Square faces (6 per cuboctahedron) are coplanar between adjacent polyhedra
+- **Solution:** Logarithmic depth buffer (already implemented) handles this perfectly
+- Same rendering approach as cube matrix (no special handling needed)
+
+**Implementation Pattern (duplicate from cube matrix):**
+
+```javascript
+// rt-matrix.js - New function to add
+
+/**
+ * Create N×N matrix of cuboctahedra in X-Y plane
+ * Face-to-face array (square faces coplanar)
+ *
+ * @param {number} matrixSize - Grid size (1 to 10)
+ * @param {number} halfSize - Half the cube edge length (cuboctahedron inscribed in cube)
+ * @param {boolean} rotate45 - Apply 45° Z-rotation for grid alignment
+ * @param {number} opacity - Opacity value (0.0 to 1.0)
+ * @param {number} color - Hex color value (default: 0x00ff88 lime-cyan)
+ * @param {Object} THREE - THREE.js library
+ * @returns {THREE.Group} Group containing all cuboctahedron instances
+ *
+ * Pattern: Face-to-face contact via square faces
+ * Vector Equilibrium (VE) is fundamental to IVM
+ */
+createCuboctahedronMatrix: (
+  matrixSize,
+  halfSize,
+  rotate45,
+  opacity,
+  color = 0x00ff88, // Lime-cyan (Vector Equilibrium color)
+  THREE
+) => {
+  const matrixGroup = new THREE.Group();
+
+  // Cuboctahedron geometry from rt-polyhedra.js
+  import('./rt-polyhedra.js').then((PolyModule) => {
+    const { Polyhedra } = PolyModule;
+    const cubocta = Polyhedra.cuboctahedron(halfSize);
+    const { vertices, edges, faces } = cubocta;
+
+    // Spacing: edge length = halfSize * sqrt(2)
+    const spacing = halfSize * Math.sqrt(2);
+
+    // Build NxN matrix
+    for (let i = 0; i < matrixSize; i++) {
+      for (let j = 0; j < matrixSize; j++) {
+        const cuboctaGroup = new THREE.Group();
+
+        // Calculate offset for this grid position
+        const offset_x = (i - matrixSize / 2 + 0.5) * spacing;
+        const offset_y = (j - matrixSize / 2 + 0.5) * spacing;
+        const offset_z = 0;
+
+        // Render faces (triangles and squares)
+        const positions = [];
+        const indices = [];
+
+        vertices.forEach((v) => {
+          positions.push(
+            v.x + offset_x,
+            v.y + offset_y,
+            v.z + offset_z
+          );
+        });
+
+        faces.forEach((faceIndices) => {
+          // Fan triangulation from first vertex
+          for (let k = 1; k < faceIndices.length - 1; k++) {
+            indices.push(faceIndices[0], faceIndices[k], faceIndices[k + 1]);
+          }
+        });
+
+        const faceGeometry = new THREE.BufferGeometry();
+        faceGeometry.setAttribute(
+          'position',
+          new THREE.Float32BufferAttribute(positions, 3)
+        );
+        faceGeometry.setIndex(indices);
+        faceGeometry.computeVertexNormals();
+
+        const faceMaterial = new THREE.MeshStandardMaterial({
+          color: color,
+          transparent: true,
+          opacity: opacity,
+          side: THREE.DoubleSide,
+          depthWrite: opacity >= 0.99,
+          flatShading: true,
+        });
+
+        const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);
+        faceMesh.renderOrder = 1;
+        cuboctaGroup.add(faceMesh);
+
+        // Render edges
+        const edgePositions = [];
+        edges.forEach(([i, j]) => {
+          const v1 = vertices[i];
+          const v2 = vertices[j];
+          edgePositions.push(
+            v1.x + offset_x, v1.y + offset_y, v1.z + offset_z,
+            v2.x + offset_x, v2.y + offset_y, v2.z + offset_z
+          );
+        });
+
+        const edgeGeometry = new THREE.BufferGeometry();
+        edgeGeometry.setAttribute(
+          'position',
+          new THREE.Float32BufferAttribute(edgePositions, 3)
+        );
+
+        const edgeMaterial = new THREE.LineBasicMaterial({
+          color: color,
+          linewidth: 1,
+          depthTest: true,
+          depthWrite: true,
+        });
+
+        const edgeLines = new THREE.LineSegments(edgeGeometry, edgeMaterial);
+        edgeLines.renderOrder = 2;
+        cuboctaGroup.add(edgeLines);
+
+        matrixGroup.add(cuboctaGroup);
+      }
+    }
+
+    // Apply 45° rotation if requested (RT-pure)
+    if (rotate45) {
+      RT.applyRotation45(matrixGroup);
+    }
+
+    console.log(
+      `[RTMatrix] Cuboctahedron matrix created: ${matrixSize}×${matrixSize} = ${matrixSize * matrixSize} VEs, rotate45=${rotate45}`
+    );
+  });
+
+  return matrixGroup;
+},
+```
+
+**UI Integration:**
+```javascript
+// rt-init.js - Add to updateGeometry()
+
+// Cuboctahedron Matrix (Vector Equilibrium Array)
+if (document.getElementById("showCuboctahedronMatrix").checked) {
+  requestAnimationFrame(() => {
+    while (cuboctaMatrixGroup.children.length > 0) {
+      cuboctaMatrixGroup.remove(cuboctaMatrixGroup.children[0]);
+    }
+
+    const matrixSize = parseInt(
+      document.getElementById("matrixSizeSlider").value
+    );
+    const rotate45 = document.getElementById("matrixRotate45").checked;
+
+    const cuboctaMatrix = RTMatrix.createCuboctahedronMatrix(
+      matrixSize,
+      scale,
+      rotate45,
+      opacity,
+      0x00ff88, // Lime-cyan
+      THREE
+    );
+    cuboctaMatrixGroup.add(cuboctaMatrix);
+
+    // Add nodes if enabled
+    const nodeSizeBtn = document.querySelector(".node-size-btn.active");
+    const nodeSize = nodeSizeBtn ? nodeSizeBtn.dataset.nodeSize : "md";
+    const showNodes = nodeSize !== "off";
+
+    if (showNodes) {
+      addMatrixNodes(
+        cuboctaMatrixGroup,
+        matrixSize,
+        scale,
+        rotate45,
+        0x00ff88,
+        nodeSize,
+        "cuboctahedron"
+      );
+    }
+  });
+  cuboctaMatrixGroup.visible = true;
+} else {
+  cuboctaMatrixGroup.visible = false;
+}
+```
+
+**Checkbox HTML:**
+```html
+<!-- Add to Visual Options section -->
+<label>
+  <input type="checkbox" id="showCuboctahedronMatrix" />
+  Cuboctahedron Matrix (VE Array)
+</label>
+```
+
+---
+
+### 8.3 Rhombic Dodecahedron Matrix
+
+**Phase:** 1.6b (After cuboctahedron matrix)
+
+**Geometry:**
+- **Vertices:** 14
+- **Edges:** 24
+- **Faces:** 12 (all rhombic/diamond-shaped)
+- **Catalan Solid:** Dual of cuboctahedron
+- **Space-Filling Pattern:** Face-to-face contact (all 12 rhombic faces)
+
+**RT-Pure Specifications:**
+```javascript
+// Rhombic dodecahedron relationship to cube
+// For cube of halfSize s:
+// Rhombic dodecahedron has:
+//   - 6 vertices at cube face centers (distance s from origin)
+//   - 8 vertices at cube vertices (distance s√3 from origin)
+//   - Edge length = s√2
+
+const edgeLength = halfSize * Math.sqrt(2);
+const spacing = 2 * halfSize;  // Face-to-face spacing (cube edge length)
+```
+
+**Matrix Packing:**
+- **Contact Mode:** Rhombic faces touch rhombic faces (coplanar)
+- **Orientation:** Single orientation
+- **Spacing:** `spacing = 2 * halfSize` (cube edge length, since rhombic dodec centers in cube cells)
+- **Grid Pattern:** Simple NxN array in XY plane
+
+**Coplanar Faces:**
+- All 12 rhombic faces are coplanar between adjacent polyhedra
+- **Solution:** Logarithmic depth buffer (already implemented) handles this
+- Same rendering approach as cube matrix
+
+**Implementation Pattern:**
+```javascript
+// rt-matrix.js - New function to add
+
+/**
+ * Create N×N matrix of rhombic dodecahedra in X-Y plane
+ * Face-to-face array (rhombic faces coplanar)
+ *
+ * @param {number} matrixSize - Grid size (1 to 10)
+ * @param {number} halfSize - Half the cube edge length
+ * @param {boolean} rotate45 - Apply 45° Z-rotation for grid alignment
+ * @param {number} opacity - Opacity value (0.0 to 1.0)
+ * @param {number} color - Hex color value (default: 0xff8800 orange)
+ * @param {Object} THREE - THREE.js library
+ * @returns {THREE.Group} Group containing all rhombic dodecahedron instances
+ *
+ * Pattern: Face-to-face contact via rhombic faces
+ * Dual of Vector Equilibrium, fundamental space-filler
+ */
+createRhombicDodecahedronMatrix: (
+  matrixSize,
+  halfSize,
+  rotate45,
+  opacity,
+  color = 0xff8800, // Orange (Rhombic Dodec color)
+  THREE
+) => {
+  const matrixGroup = new THREE.Group();
+
+  import('./rt-polyhedra.js').then((PolyModule) => {
+    const { Polyhedra } = PolyModule;
+    const rhombicDodec = Polyhedra.rhombicDodecahedron(halfSize);
+    const { vertices, edges, faces } = rhombicDodec;
+
+    // Spacing: cube edge length = 2 * halfSize
+    const spacing = 2 * halfSize;
+
+    // Build NxN matrix (same pattern as cube/cuboctahedron)
+    for (let i = 0; i < matrixSize; i++) {
+      for (let j = 0; j < matrixSize; j++) {
+        const rhombicGroup = new THREE.Group();
+
+        const offset_x = (i - matrixSize / 2 + 0.5) * spacing;
+        const offset_y = (j - matrixSize / 2 + 0.5) * spacing;
+        const offset_z = 0;
+
+        // [Same face/edge rendering code as cuboctahedron matrix]
+        // ... (duplicate pattern)
+
+        matrixGroup.add(rhombicGroup);
+      }
+    }
+
+    if (rotate45) {
+      RT.applyRotation45(matrixGroup);
+    }
+
+    console.log(
+      `[RTMatrix] Rhombic dodecahedron matrix created: ${matrixSize}×${matrixSize} = ${matrixSize * matrixSize} rhombic dodecs, rotate45=${rotate45}`
+    );
+  });
+
+  return matrixGroup;
+},
+```
+
+---
+
+### 8.4 Implementation Checklist
+
+**Phase 1.6a: Cuboctahedron Matrix**
+- [ ] Add `createCuboctahedronMatrix()` to rt-matrix.js
+- [ ] Add UI checkbox for Cuboctahedron Matrix
+- [ ] Add matrix rendering call in updateGeometry()
+- [ ] Add node support via addMatrixNodes() with polyhedronType="cuboctahedron"
+- [ ] Test with all node sizes (Off/Sm/Md/Lg/Packed)
+- [ ] Test with RT Geodesics vs Classical Spheres nodes
+- [ ] Verify coplanar face rendering (should work with existing log depth buffer)
+- [ ] Test 45° rotation option
+- [ ] Verify spacing validation with validateMatrixSpacing()
+
+**Phase 1.6b: Rhombic Dodecahedron Matrix**
+- [ ] Add `createRhombicDodecahedronMatrix()` to rt-matrix.js
+- [ ] Add UI checkbox for Rhombic Dodecahedron Matrix
+- [ ] Add matrix rendering call in updateGeometry()
+- [ ] Add node support via addMatrixNodes() with polyhedronType="rhombicDodecahedron"
+- [ ] Test with all node sizes
+- [ ] Test with RT Geodesics vs Classical Spheres nodes
+- [ ] Verify coplanar face rendering
+- [ ] Test 45° rotation option
+- [ ] Verify spacing validation
+
+**Validation Tests:**
+- [ ] Verify space-filling (no gaps between polyhedra)
+- [ ] Verify face coplanarity using logarithmic depth buffer
+- [ ] Performance test at Matrix Size = 10 (100 polyhedra each)
+- [ ] Node deduplication working correctly
+- [ ] RT-pure spacing calculations match theoretical values
+- [ ] Both matrices work with existing IVM grid overlays
+
+---
+
+### 8.5 Expected Behavior
+
+**Cuboctahedron Matrix:**
+- Forms complete space-filling array (like cube matrix)
+- Square faces are perfectly coplanar between adjacent VEs
+- No z-fighting due to logarithmic depth buffer
+- Visual appearance: "Honeycomb" of alternating triangles and squares
+- Color: Lime-cyan (0x00ff88) to distinguish from other matrices
+
+**Rhombic Dodecahedron Matrix:**
+- Forms complete space-filling array
+- All 12 rhombic faces coplanar between adjacent polyhedra
+- No z-fighting due to logarithmic depth buffer
+- Visual appearance: "Crystalline" array of diamond-faced polyhedra
+- Color: Orange (0xff8800) to distinguish from other matrices
+
+**Performance:**
+- Both should render smoothly at Matrix Size = 10 (same as existing matrices)
+- Cuboctahedron: 14 faces/poly × 100 polys = 1400 faces total
+- Rhombic Dodec: 12 faces/poly × 100 polys = 1200 faces total
+- Comparable to Cube (6 faces × 100 = 600) and Octa (8 faces × 100 = 800)
+
+---
+
+### 8.6 Notes on Coplanar Face Rendering
+
+**Important:** Both matrices will have extensive face coplanarity:
+
+**Cuboctahedron Matrix:**
+- 6 square faces per VE touch adjacent VEs
+- Each internal VE has all 6 square faces coplanar with neighbors
+- Edge VEs have partial coplanar faces
+
+**Rhombic Dodecahedron Matrix:**
+- All 12 rhombic faces touch adjacent rhombic dodecs
+- Complete face coplanarity throughout matrix
+
+**Solution: Already Implemented**
+The logarithmic depth buffer (enabled in rt-init.js line 154-159) completely resolves coplanar face z-fighting for these geometries. No special handling needed - just follow the cube matrix pattern.
+
+---
+
+### 8.7 Future Enhancements
+
+Once both matrices are implemented, consider:
+
+1. **Combined IVM Display:** Show cube + cuboctahedron + rhombic dodecahedron matrices simultaneously to demonstrate space-filling relationships
+
+2. **Transition Animation:** Morph between cube → cuboctahedron → rhombic dodecahedron to show geometric relationships
+
+3. **IVM Cell Visualization:** Highlight the fundamental IVM unit cell (tet + octa OR cube + cubocta + rhombic dodec)
+
+4. **Packing Density Analysis:** Compare packing efficiency and void ratios
+
+---
+
+**Document Version:** 1.2
+**Last Updated:** 2026-01-07
+**Status:** Phase 1.5c Complete | Phase 1.6a/b Planned (Cuboctahedron & Rhombic Dodecahedron matrices)
+**Completion Date:** 2026-01-06 (Phase 1.5c)
