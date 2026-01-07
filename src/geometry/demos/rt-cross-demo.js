@@ -510,6 +510,7 @@ function createFormulaDisplay() {
     position: absolute;
     top: 50px;
     right: 10px;
+    width: 260px;
     padding: 8px 12px;
     background: rgba(26, 0, 26, 0.95);
     border: 1px solid #cc00cc;
