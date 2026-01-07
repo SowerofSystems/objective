@@ -387,7 +387,7 @@ function createFormulaDisplay() {
   };
   container.appendChild(closeButton);
 
-  // Formula display (bottom panel) - FIXED HEIGHT
+  // Formula display (bottom panel) - FIXED HEIGHT with tighter padding
   formulaElement = document.createElement("div");
   formulaElement.style.cssText = `
     position: absolute;
@@ -396,7 +396,7 @@ function createFormulaDisplay() {
     right: 10px;
     height: 180px;
     background: rgba(26, 0, 26, 0.95);
-    padding: 12px;
+    padding: 6px 8px;
     border-radius: 4px;
     font-family: 'Courier New', monospace;
     font-size: 14px;
@@ -491,45 +491,51 @@ function updateVisualization() {
   const crossBarWidth = cross * 100;
   const spreadBarWidth = spread * 100;
 
-  // Update formula display with 4-column layout and narrower identity bar
+  // Update formula display with left-aligned titles and horizontal layout
   formulaElement.innerHTML = `
-    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; font-size: 11px;">
-      <!-- Column 1: Position -->
-      <div>
-        <strong style="color: #cc00cc; font-size: 11px;">Position</strong><br>
-        <span style="color: #ff6666">x = ${normX.toFixed(4)}</span><br>
-        <span style="color: #66ff66">y = ${normY.toFixed(4)}</span><br>
-        <span style="color: #888; font-size: 9px;">θ ≈ ${degrees.toFixed(1)}°</span>
+    <div style="display: flex; gap: 15px; font-size: 13px; line-height: 1.3;">
+      <!-- Left column: Titles -->
+      <div style="display: flex; flex-direction: column; gap: 3px; padding-right: 10px; border-right: 1px solid #440044;">
+        <strong style="color: #cc00cc; font-size: 12px;">Position</strong>
+        <strong style="color: #4a9eff; font-size: 12px;">Cross (c)</strong>
+        <strong style="color: #ff6600; font-size: 12px;">Spread (s)</strong>
+        <strong style="color: #cc00cc; font-size: 12px;">RT Identity</strong>
       </div>
 
-      <!-- Column 2: Cross (c) -->
-      <div>
-        <strong style="color: #4a9eff; font-size: 11px;">Cross (c)</strong><br>
-        c = x² = <span style="color: #4a9eff">${cross.toFixed(4)}</span><br>
-        <span style="color: #888; font-size: 9px;">Horizontal Q</span><br>
-        <span style="color: #888; font-size: 9px;">Parallelism</span>
-      </div>
+      <!-- Right side: Values in horizontal layout -->
+      <div style="flex: 1;">
+        <!-- Position values -->
+        <div style="margin-bottom: 3px;">
+          <span style="color: #ff6666">x = ${normX.toFixed(4)}</span> &nbsp;
+          <span style="color: #66ff66">y = ${normY.toFixed(4)}</span> &nbsp;
+          <span style="color: #888; font-size: 11px;">θ ≈ ${degrees.toFixed(1)}°</span>
+        </div>
 
-      <!-- Column 3: Spread (s) -->
-      <div>
-        <strong style="color: #ff6600; font-size: 11px;">Spread (s)</strong><br>
-        s = y² = <span style="color: #ff6600">${spread.toFixed(4)}</span><br>
-        <span style="color: #888; font-size: 9px;">Vertical Q</span><br>
-        <span style="color: #888; font-size: 9px;">Perpendicularity</span>
-      </div>
+        <!-- Cross value -->
+        <div style="margin-bottom: 3px;">
+          c = x² = <span style="color: #4a9eff">${cross.toFixed(4)}</span> &nbsp;
+          <span style="color: #888; font-size: 11px;">Horizontal Q</span> &nbsp;
+          <span style="color: #888; font-size: 11px;">Parallelism</span>
+        </div>
 
-      <!-- Column 4: RT Identity -->
-      <div>
-        <strong style="color: #cc00cc; font-size: 11px;">RT Identity</strong><br>
-        s + c = <span style="color: ${Math.abs(identity - 1.0) < 0.0001 ? "#00ff88" : "#ff4444"}">${identity.toFixed(4)}</span><br>
-        ${Math.abs(identity - 1.0) < 0.0001 ? '<span style="color: #00ff88; font-size: 10px;">✓ Verified</span>' : '<span style="color: #ff4444; font-size: 10px;">✗ Error</span>'}<br>
-        <span style="color: #888; font-size: 9px;">s + c = 1</span>
+        <!-- Spread value -->
+        <div style="margin-bottom: 3px;">
+          s = y² = <span style="color: #ff6600">${spread.toFixed(4)}</span> &nbsp;
+          <span style="color: #888; font-size: 11px;">Vertical Q</span> &nbsp;
+          <span style="color: #888; font-size: 11px;">Perpendicularity</span>
+        </div>
+
+        <!-- RT Identity -->
+        <div>
+          s + c = <span style="color: ${Math.abs(identity - 1.0) < 0.0001 ? "#00ff88" : "#ff4444"}">${identity.toFixed(4)}</span> &nbsp;
+          ${Math.abs(identity - 1.0) < 0.0001 ? '<span style="color: #00ff88; font-size: 11px;">✓ Verified</span>' : '<span style="color: #ff4444; font-size: 11px;">✗ Error</span>'} &nbsp;
+          <span style="color: #888; font-size: 11px;">s + c = 1</span>
+        </div>
       </div>
     </div>
 
-    <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid #440044;">
-      <div style="font-size: 9px; color: #aaa; margin-bottom: 3px;">Identity Bar (s + c = 1):</div>
-      <div style="display: flex; height: 16px; border-radius: 2px; overflow: hidden; box-shadow: 0 0 4px rgba(255,0,255,0.3);">
+    <div style="margin-top: 5px; padding-top: 4px; border-top: 1px solid #440044;">
+      <div style="display: flex; height: 10px; border-radius: 2px; overflow: hidden; box-shadow: 0 0 4px rgba(255,0,255,0.3);">
         <div style="width: ${crossBarWidth}%; background: linear-gradient(90deg, #4a9eff, #2a7edf); display: flex; align-items: center; justify-content: center;">
           <span style="font-size: 8px; color: white; font-weight: bold;">${cross > 0.15 ? `c=${cross.toFixed(2)}` : ""}</span>
         </div>
@@ -539,9 +545,9 @@ function updateVisualization() {
       </div>
     </div>
 
-    ${snapInfo ? `<div style="margin-top: 6px; padding: 6px; background: rgba(255,255,255,0.05); border-radius: 2px; font-size: 10px; line-height: 1.3;">${snapInfo}</div>` : '<div style="height: 38px;"></div>'}
+    ${snapInfo ? `<div style="margin-top: 5px; padding: 5px 6px; background: rgba(255,255,255,0.05); border-radius: 2px; font-size: 11px; line-height: 1.35;">${snapInfo}</div>` : '<div style="height: 35px;"></div>'}
 
-    <div style="margin-top: 6px; font-size: 9px; color: #aaa; line-height: 1.4;">
+    <div style="margin-top: 5px; font-size: 10px; color: #aaa; line-height: 1.4;">
       <strong style="color: #cc00cc;">RT Principle:</strong> Cross and Spread partition the radius quadrance. Cross measures horizontal alignment (parallelism), Spread measures vertical alignment (perpendicularity).
     </div>
   `;
