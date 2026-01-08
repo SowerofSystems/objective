@@ -1055,14 +1055,9 @@ function startARTexplorer(
     // - Cube: edge-to-edge contact (spacing = 2 * halfSize)
     // - Tet: inscribes in cube (vertices at cube vertices, spacing = 2 * halfSize)
     // - Octa: centers in cube (vertices at cube face centers, spacing = 2 * halfSize)
-    // - Cuboctahedron: face-to-face via square faces (spacing = edge length = halfSize * √2)
-    // - Rhombic Dodecahedron: face-to-face via rhombic faces (spacing = 2 * halfSize, same as cube)
-    let spacing;
-    if (polyhedronType === "cuboctahedron") {
-      spacing = scale * Math.sqrt(2); // Cuboctahedron edge length
-    } else {
-      spacing = scale * 2; // Cube edge = 2 * halfSize (cube, tet, octa, rhombic dodec)
-    }
+    // - Cuboctahedron: scaled by √2, edge length = (halfSize * √2) * √2 = 2 * halfSize
+    // - Rhombic Dodecahedron: space-filling tiling (spacing = 2 * halfSize, same as cube)
+    let spacing = scale * 2; // All matrices now use 2 * halfSize spacing
 
     // Generate polyhedron vertices at each grid position
     import("./rt-polyhedra.js").then(PolyModule => {
@@ -1077,9 +1072,11 @@ function startARTexplorer(
       } else if (polyhedronType === "octahedron") {
         polyGeom = Polyhedra.octahedron(scale);
       } else if (polyhedronType === "cuboctahedron") {
-        polyGeom = Polyhedra.cuboctahedron(scale);
+        // Scale by √2 to match matrix geometry (vertices at scale, not scale/√2)
+        polyGeom = Polyhedra.cuboctahedron(scale * Math.sqrt(2));
       } else if (polyhedronType === "rhombicDodecahedron") {
-        polyGeom = Polyhedra.rhombicDodecahedron(scale);
+        // Scale by √2 to match matrix geometry (rhombic dodec axial vertices at scale, not scale/√2)
+        polyGeom = Polyhedra.rhombicDodecahedron(scale * Math.sqrt(2));
       }
 
       const { vertices } = polyGeom;
@@ -1553,7 +1550,8 @@ function startARTexplorer(
 
     // Cuboctahedron (Lime green - Vector Equilibrium)
     if (document.getElementById("showCuboctahedron").checked) {
-      const cubocta = Polyhedra.cuboctahedron(scale);
+      // Scale by √2 to match matrix cuboctahedron and rhombic dodec midsphere
+      const cubocta = Polyhedra.cuboctahedron(scale * Math.sqrt(2));
       renderPolyhedron(cuboctahedronGroup, cubocta, 0x00ff88, opacity); // Bright lime-cyan
       cuboctahedronGroup.visible = true;
     } else {
@@ -1562,7 +1560,8 @@ function startARTexplorer(
 
     // Rhombic Dodecahedron (Orange)
     if (document.getElementById("showRhombicDodecahedron").checked) {
-      const rhombicDodec = Polyhedra.rhombicDodecahedron(scale);
+      // Scale by √2 to match matrix rhombic dodec size (axial vertices at scale, not scale/√2)
+      const rhombicDodec = Polyhedra.rhombicDodecahedron(scale * Math.sqrt(2));
       renderPolyhedron(
         rhombicDodecahedronGroup,
         rhombicDodec,

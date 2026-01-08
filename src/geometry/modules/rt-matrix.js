@@ -188,7 +188,7 @@ export const RTMatrix = {
    * Face-to-face array (square faces coplanar) - Vector Equilibrium array
    *
    * @param {number} matrixSize - Grid size (1 to 10)
-   * @param {number} halfSize - Half the cube edge length (cuboctahedron inscribed in cube)
+   * @param {number} halfSize - Half the cube edge length
    * @param {boolean} rotate45 - Apply 45° Z-rotation for grid alignment
    * @param {number} opacity - Opacity value (0.0 to 1.0)
    * @param {number} color - Hex color value (default: 0x00ff88 lime-cyan)
@@ -196,9 +196,9 @@ export const RTMatrix = {
    * @returns {THREE.Group} Group containing all cuboctahedron instances
    *
    * RT-PURE GEOMETRY:
-   * - Cuboctahedron inscribed in cube (vertices at cube edge midpoints)
-   * - Edge length = halfSize * √2
-   * - Spacing = edge length (face-to-face contact via square faces)
+   * - Cuboctahedron scaled by √2 (vertices at halfSize, matching rhombic dodec midsphere)
+   * - Edge length = 2 * halfSize
+   * - Spacing = 2 * halfSize (same as cube/rhombic dodec matrices)
    * - 6 square faces are coplanar between adjacent VEs
    * - Logarithmic depth buffer handles coplanar face rendering
    *
@@ -214,11 +214,14 @@ export const RTMatrix = {
     THREE
   ) => {
     const matrixGroup = new THREE.Group();
-    const edgeLength = halfSize * Math.sqrt(2); // Cuboctahedron edge length
+
+    // Scale by √2 to match rhombic dodec midsphere (vertices at halfSize, not halfSize/√2)
+    const scaledHalfSize = halfSize * Math.sqrt(2);
+    const edgeLength = scaledHalfSize * Math.sqrt(2); // = 2 * halfSize
     const spacing = edgeLength; // Face-to-face spacing
 
-    // Get base cuboctahedron geometry
-    const cuboctaGeom = Polyhedra.cuboctahedron(halfSize);
+    // Get base cuboctahedron geometry (scaled up)
+    const cuboctaGeom = Polyhedra.cuboctahedron(scaledHalfSize);
     const { vertices, edges, faces } = cuboctaGeom;
 
     // Generate N×N grid centered at origin
@@ -329,7 +332,7 @@ export const RTMatrix = {
    * RT-PURE GEOMETRY:
    * - Rhombic dodecahedron dual to cuboctahedron
    * - Face centers at cuboctahedron vertices
-   * - Spacing = cube edge (2 * halfSize, same as cube matrix)
+   * - Spacing = 2 * halfSize (cube edge - space-filling tiling)
    * - All 12 rhombic faces are coplanar between adjacent polyhedra
    * - Logarithmic depth buffer handles coplanar face rendering
    *
@@ -345,10 +348,11 @@ export const RTMatrix = {
     THREE
   ) => {
     const matrixGroup = new THREE.Group();
-    const spacing = 2 * halfSize; // Cube edge length (same as cube matrix)
+    const spacing = 2 * halfSize; // Cube edge - rhombic dodec is space-filling like cube
 
     // Get base rhombic dodecahedron geometry
-    const rhombicDodecGeom = Polyhedra.rhombicDodecahedron(halfSize);
+    // Scale by √2 because rhombicDodecahedron(s) has axial vertices at s/√2, but we need them at halfSize
+    const rhombicDodecGeom = Polyhedra.rhombicDodecahedron(halfSize * Math.sqrt(2));
     const { vertices, edges, faces } = rhombicDodecGeom;
 
     // Generate N×N grid centered at origin
