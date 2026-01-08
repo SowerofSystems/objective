@@ -143,6 +143,27 @@ export function initScene(THREE, OrbitControls, RT) {
     scene.add(cuboctaMatrixGroup);
     scene.add(rhombicDodecMatrixGroup);
 
+    // Initialize PerformanceClock with all scene groups
+    PerformanceClock.init([
+      cubeGroup,
+      tetrahedronGroup,
+      dualTetrahedronGroup,
+      octahedronGroup,
+      icosahedronGroup,
+      dodecahedronGroup,
+      dualIcosahedronGroup,
+      cuboctahedronGroup,
+      rhombicDodecahedronGroup,
+      geodesicIcosahedronGroup,
+      geodesicTetrahedronGroup,
+      geodesicOctahedronGroup,
+      cubeMatrixGroup,
+      tetMatrixGroup,
+      octaMatrixGroup,
+      cuboctaMatrixGroup,
+      rhombicDodecMatrixGroup,
+    ]);
+
     // Initial render
     updateGeometry();
 
@@ -1269,7 +1290,7 @@ export function initScene(THREE, OrbitControls, RT) {
     // Geodesic Icosahedron (Phase 2.7a - Orange-Red, complementary to Cyan)
     if (document.getElementById("showGeodesicIcosahedron").checked) {
       const frequency = parseInt(
-        document.getElementById("geodesicFrequency").value
+        document.getElementById("geodesicIcosaFrequency").value
       );
       const projectionRadio = document.querySelector(
         'input[name="geodesicIcosaProjection"]:checked'

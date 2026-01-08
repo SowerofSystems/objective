@@ -131,7 +131,11 @@ function startARTexplorer(
   // THREE.JS SCENE SETUP
   // ========================================================================
   let scene, camera, renderer, controls;
-  let updateGeometry, updateGeometryStats; // Functions from renderingAPI
+
+  // PHASE 6 EXTRACTION: Assign updateGeometry/updateGeometryStats EARLY so event listeners can reference them
+  // These functions must be available BEFORE event listeners are registered (line ~2271)
+  let updateGeometry = renderingAPI.updateGeometry;
+  let updateGeometryStats = renderingAPI.updateGeometryStats;
   let cubeGroup, tetrahedronGroup, dualTetrahedronGroup, octahedronGroup;
   let icosahedronGroup, dodecahedronGroup, dualIcosahedronGroup;
   let cuboctahedronGroup, rhombicDodecahedronGroup;
@@ -4329,10 +4333,8 @@ function startARTexplorer(
   renderer = renderingAPI.getRenderer();
   controls = renderingAPI.getControls();
 
-  // Expose updateGeometry and updateGeometryStats from renderingAPI for event handlers
-  // Event handlers in rt-init.js need access to these functions
-  updateGeometry = renderingAPI.updateGeometry;
-  updateGeometryStats = renderingAPI.updateGeometryStats;
+  // NOTE: updateGeometry and updateGeometryStats were assigned earlier (line ~137-138)
+  // so that event listeners registered earlier in the code can reference them
 
   initGumballEventListeners(); // Initialize gumball after scene is ready
 

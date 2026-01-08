@@ -769,6 +769,75 @@ Extraction plan updated. Must extract `initScene()` BEFORE attempting to extract
 
 ---
 
+### Success: Full Extraction Complete (2026-01-08)
+
+**Date:** 2026-01-08
+**Phase:** Phase 6 Complete - All functions extracted successfully
+
+**What succeeded:**
+Successfully extracted all core rendering functions from rt-init.js to rt-rendering.js module:
+- ✅ `initScene()` - Scene, camera, renderer, controls initialization
+- ✅ `animate()` - Animation loop with PerformanceClock
+- ✅ `onWindowResize()` - Responsive canvas resizing
+- ✅ `updateGeometry()` - Complete polyhedra rendering (850+ lines)
+- ✅ `updateGeometryStats()` - Statistics display
+
+**Key fixes applied:**
+
+1. **Factory pattern dependency injection** (lines 127-128):
+   - Added all required parameters: `THREE`, `OrbitControls`, `RT`
+   - Fixed multiple "not defined" errors iteratively
+
+2. **Getter functions for closure-scoped objects** (rt-rendering.js return statement):
+   - Added `getScene()`, `getCamera()`, `getRenderer()`, `getControls()`
+   - Enabled rt-init.js to access THREE.js objects after initialization
+
+3. **PerformanceClock initialization** (rt-rendering.js initScene()):
+   - Moved `PerformanceClock.init()` call to module version
+   - Eliminated 1500+ console warning messages
+
+4. **Event handler timing fix** (rt-init.js:137-138):
+   - **CRITICAL FIX**: Moved `updateGeometry` assignment BEFORE event listeners
+   - Event listeners were capturing `undefined` reference (registered at line ~2271)
+   - Assignment was happening too late (line 4334)
+   - Now assigned immediately after renderingAPI creation (line 137)
+   - **Result**: Geodesic frequency sliders and projection radios now trigger updates immediately
+
+5. **Element ID correction** (rt-rendering.js:1293):
+   - Fixed incorrect ID: `geodesicFrequency` → `geodesicIcosaFrequency`
+   - Matched pattern used by other geodesic controls
+
+**Current Status:**
+- ✅ All base polyhedra render correctly
+- ✅ All geodesic polyhedra render with correct frequency/projection controls
+- ✅ All matrix forms render correctly
+- ✅ Matrix nodes work for all options (Packed, RT Geodesic, Classical Sphere, Off)
+- ✅ UI controls respond immediately to changes
+- ✅ No console errors or warnings
+- ✅ PerformanceClock tracking properly
+
+**Remaining Known Issues:**
+
+**Node Rendering on Base Polyhedra:**
+- ❌ Base polyhedra (Cube, Tetrahedron, Octahedron, etc.) do NOT show nodes for:
+  - "Packed" node option
+  - "RT Geodesic" node option
+- ✅ Base polyhedra DO show nodes correctly for:
+  - "Classical Sphere" nodes (all sizes work)
+  - "Off" (no nodes)
+- ✅ Matrix polyhedra work correctly for ALL node options
+
+**Technical explanation:**
+The node rendering logic in `updateGeometry()` may have conditional checks that differentiate between base forms and matrix forms. Matrix forms are calling the node rendering correctly, but base forms are not rendering Packed or RT Geodesic node types.
+
+**Next steps:**
+1. Investigate node rendering logic in rt-rendering.js `updateGeometry()`
+2. Check if base polyhedra are passing correct parameters to node rendering
+3. Verify that Packed and RT Geodesic node geometries are being created for base forms
+4. Test with visual inspection of all base polyhedra with all node options
+
+---
+
 ## Next Steps After rt-rendering.js Extraction
 
 **If extraction succeeds:**
