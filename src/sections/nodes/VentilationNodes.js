@@ -141,6 +141,17 @@
       }
     });
 
+    // Latent load factor - from Cooling.js psychrometrics (h_122/i_122)
+    // Stored in StateManager as cooling_latentLoadFactor
+    graph.registerInput({
+      id: "cooling.latentLoadFactor",
+      legacyId: "cooling_latentLoadFactor",
+      section: "S13",
+      classification: "C",
+      label: "Latent Load Factor",
+      defaultValue: 1.0
+    });
+
     // Ventilation cooling load - d_122
     // Legacy formula from Section13.js lines 2956-2980
     graph.registerNode({
@@ -154,7 +165,8 @@
         "mechanical.cooling.systemType",
         "occupancy.occupiedHours",
         "occupancy.totalHours",
-        "mechanical.ventilation.summerBoost"
+        "mechanical.ventilation.summerBoost",
+        "cooling.latentLoadFactor"
       ],
       label: "Net Ventilation Heat Gain (kWh/yr)",
       compute: (inputs) => {
@@ -167,8 +179,8 @@
         const totalHours = parseNum(inputs["occupancy.totalHours"], 8760);
         const occupancyFactor = totalHours > 0 ? occupiedHours / totalHours : 0.5;
 
-        // Latent load factor (from Cooling.js) - default 1.0
-        const latentLoadFactor = 1.0;  // TODO: Add cooling.latentLoadFactor input
+        // Latent load factor from Cooling.js psychrometrics
+        const latentLoadFactor = parseNum(inputs["cooling.latentLoadFactor"], 1.0);
 
         // Summer boost factor (l_119)
         const summerBoost = parseNum(inputs["mechanical.ventilation.summerBoost"], 0);

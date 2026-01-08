@@ -44,6 +44,7 @@
     'ventilation.grossHeatLoss': 'd_121',
     'ventilation.netHeatLoss': 'm_121',
     'ventilation.energyRecovered': 'h_121',
+    'cooling.latentLoadFactor': 'cooling_latentLoadFactor',
     'ventilation.heatGain': 'd_122',
     'ventilation.energyRecoveredCooling': 'd_123',
     'cooling.freeCoolingLimit': 'h_124',
