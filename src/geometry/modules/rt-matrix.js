@@ -184,6 +184,137 @@ export const RTMatrix = {
   },
 
   /**
+   * Create N×N matrix of cuboctahedra in X-Y plane
+   * Face-to-face array (square faces coplanar) - Vector Equilibrium array
+   *
+   * @param {number} matrixSize - Grid size (1 to 10)
+   * @param {number} halfSize - Half the cube edge length (cuboctahedron inscribed in cube)
+   * @param {boolean} rotate45 - Apply 45° Z-rotation for grid alignment
+   * @param {number} opacity - Opacity value (0.0 to 1.0)
+   * @param {number} color - Hex color value (default: 0x00ff88 lime-cyan)
+   * @param {Object} THREE - THREE.js library
+   * @returns {THREE.Group} Group containing all cuboctahedron instances
+   *
+   * RT-PURE GEOMETRY:
+   * - Cuboctahedron inscribed in cube (vertices at cube edge midpoints)
+   * - Edge length = halfSize * √2
+   * - Spacing = edge length (face-to-face contact via square faces)
+   * - 6 square faces are coplanar between adjacent VEs
+   * - Logarithmic depth buffer handles coplanar face rendering
+   *
+   * SPACE-FILLING: Forms complete tiling (like cube matrix)
+   * Pattern: Face-to-face contact via square faces (single orientation)
+   */
+  createCuboctahedronMatrix: (
+    matrixSize,
+    halfSize,
+    rotate45,
+    opacity,
+    color = 0x00ff88, // Lime-cyan (Vector Equilibrium color)
+    THREE
+  ) => {
+    const matrixGroup = new THREE.Group();
+    const edgeLength = halfSize * Math.sqrt(2); // Cuboctahedron edge length
+    const spacing = edgeLength; // Face-to-face spacing
+
+    // Get base cuboctahedron geometry
+    const cuboctaGeom = Polyhedra.cuboctahedron(halfSize);
+    const { vertices, edges, faces } = cuboctaGeom;
+
+    // Generate N×N grid centered at origin
+    for (let i = 0; i < matrixSize; i++) {
+      for (let j = 0; j < matrixSize; j++) {
+        // Calculate position: centered at origin
+        const offset_x = (i - matrixSize / 2 + 0.5) * spacing;
+        const offset_y = (j - matrixSize / 2 + 0.5) * spacing;
+        const offset_z = 0; // Z-centered at origin
+
+        // Create cuboctahedron instance at this grid position
+        const cuboctaGroup = new THREE.Group();
+
+        // Build indexed face geometry
+        const positions = [];
+        const indices = [];
+
+        // Add all vertices to positions array (with offset)
+        vertices.forEach((v) => {
+          positions.push(v.x + offset_x, v.y + offset_y, v.z + offset_z);
+        });
+
+        // Build face indices (triangulate triangles and squares)
+        faces.forEach((faceIndices) => {
+          // Fan triangulation from first vertex
+          for (let k = 1; k < faceIndices.length - 1; k++) {
+            indices.push(faceIndices[0], faceIndices[k], faceIndices[k + 1]);
+          }
+        });
+
+        const faceGeometry = new THREE.BufferGeometry();
+        faceGeometry.setAttribute(
+          "position",
+          new THREE.Float32BufferAttribute(positions, 3)
+        );
+        faceGeometry.setIndex(indices);
+        faceGeometry.computeVertexNormals();
+
+        const faceMaterial = new THREE.MeshStandardMaterial({
+          color: color,
+          transparent: true,
+          opacity: opacity,
+          side: THREE.DoubleSide,
+          depthWrite: opacity >= 0.99,
+          flatShading: true,
+        });
+
+        const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);
+        faceMesh.renderOrder = 1;
+        cuboctaGroup.add(faceMesh);
+
+        // Render edges
+        const edgePositions = [];
+        edges.forEach(([vi, vj]) => {
+          const v1 = vertices[vi];
+          const v2 = vertices[vj];
+          edgePositions.push(v1.x + offset_x, v1.y + offset_y, v1.z + offset_z);
+          edgePositions.push(v2.x + offset_x, v2.y + offset_y, v2.z + offset_z);
+        });
+
+        const edgeGeometry = new THREE.BufferGeometry();
+        edgeGeometry.setAttribute(
+          "position",
+          new THREE.Float32BufferAttribute(edgePositions, 3)
+        );
+
+        const edgeMaterial = new THREE.LineBasicMaterial({
+          color: color,
+          linewidth: 1,
+          depthTest: true,
+          depthWrite: true,
+        });
+
+        const edgeLines = new THREE.LineSegments(edgeGeometry, edgeMaterial);
+        edgeLines.renderOrder = 2;
+        cuboctaGroup.add(edgeLines);
+
+        matrixGroup.add(cuboctaGroup);
+      }
+    }
+
+    // Apply 45° rotation if requested (RT-pure)
+    if (rotate45) {
+      RT.applyRotation45(matrixGroup);
+    }
+
+    console.log(
+      `[RTMatrix] Cuboctahedron matrix created: ${matrixSize}×${matrixSize} = ${
+        matrixSize * matrixSize
+      } VEs, rotate45=${rotate45}`
+    );
+
+    return matrixGroup;
+  },
+
+  /**
    * Create N×N matrix of tetrahedra in X-Y plane
    * Vertex-to-vertex array with octahedral voids (alternating orientations)
    *

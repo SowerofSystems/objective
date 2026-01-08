@@ -601,6 +601,37 @@
               </div>
             </div>
 
+            <!-- Cuboctahedron Matrix Form (Vector Equilibrium Array) -->
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showCuboctahedronMatrix" />
+                Cuboctahedron Matrix (VE)
+              </label>
+              <div id="cubocta-matrix-controls" class="geodesic-options" style="display: none; margin-left: 20px; margin-top: 8px;">
+                <div class="control-item" style="margin-bottom: 8px;">
+                  <label style="font-size: 11px;">Matrix Size</label>
+                  <div class="slider-container">
+                    <input
+                      type="range"
+                      id="cuboctaMatrixSizeSlider"
+                      min="1"
+                      max="10"
+                      step="1"
+                      value="1"
+                    />
+                    <span class="slider-value" id="cuboctaMatrixSizeValue">1×1</span>
+                  </div>
+                </div>
+                <label class="checkbox-label" style="font-size: 11px; margin-left: 0;">
+                  <input type="checkbox" id="cuboctaMatrixRotate45" />
+                  Rotate 45° (grid align)
+                </label>
+                <p class="info-text" style="margin-left: 0; font-size: 10px;">
+                  N×N Vector Equilibrium space-filling array
+                </p>
+              </div>
+            </div>
+
             <div class="control-item">
               <label class="checkbox-label">
                 <input type="checkbox" id="showIcosahedron" />
