@@ -341,7 +341,7 @@
       dependencies: [
         "mechanical.cooling.systemType",
         "mechanical.cooling.effectiveCop",
-        "energy.ced.unmitigated"
+        "energy.ced.mitigated"
       ],
       classification: "C",
       section: "S13",
@@ -350,7 +350,7 @@
       compute: (inputs) => {
         const coolingType = inputs["mechanical.cooling.systemType"];
         const cop = parseNum(inputs["mechanical.cooling.effectiveCop"], 1);
-        const coolingDemand = parseNum(inputs["energy.ced.unmitigated"], 0);
+        const coolingDemand = parseNum(inputs["energy.ced.mitigated"], 0);
 
         if (coolingType === "No Cooling" || cop === 0) return 0;
         return +(coolingDemand / cop).toFixed(2);

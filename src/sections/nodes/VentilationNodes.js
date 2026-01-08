@@ -187,6 +187,22 @@
       }
     });
 
+    // Ventilation energy recovered (cooling season) - d_123
+    // Formula: d_122 * (d_118 / 100) per Section13.js line 2983
+    graph.registerNode({
+      id: "ventilation.energyRecoveredCooling",
+      legacyId: "d_123",
+      section: "S13",
+      classification: "C",
+      dependencies: ["ventilation.heatGain", "mechanical.ventilation.efficiency"],
+      label: "Ventilation Energy Recovered Cooling (kWh/yr)",
+      compute: (inputs) => {
+        const d122 = parseNum(inputs["ventilation.heatGain"], 0);
+        const efficiency = parseNum(inputs["mechanical.ventilation.efficiency"], 89) / 100;
+        return d122 * efficiency;
+      }
+    });
+
     // ========================================================================
     // HEATING SYSTEM PERFORMANCE - from Section13 row 113-114
     // ========================================================================
