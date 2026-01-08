@@ -12,6 +12,7 @@
 
 import { Quadray } from "./rt-math.js";
 import { Polyhedra } from "./rt-polyhedra.js";
+import { PerformanceClock } from "./performance-clock.js";
 
 // Module-level cache for node geometries
 const nodeGeometryCache = new Map();
@@ -32,6 +33,9 @@ export function initScene(THREE) {
   let geodesicIcosahedronGroup; // Phase 2.7a: Geodesic subdivision
   let geodesicTetrahedronGroup; // Phase 2.7c: Geodesic tetrahedron
   let geodesicOctahedronGroup; // Phase 2.7b: Geodesic octahedron
+  let cubeMatrixGroup, tetMatrixGroup, octaMatrixGroup; // Matrix forms (IVM arrays)
+  let cuboctaMatrixGroup; // Cuboctahedron matrix (Vector Equilibrium array)
+  let rhombicDodecMatrixGroup; // Rhombic dodecahedron matrix (space-filling array)
   let cartesianGrid, cartesianBasis, quadrayBasis, ivmPlanes;
 
   function initScene() {
@@ -95,6 +99,27 @@ export function initScene(THREE) {
     geodesicTetrahedronGroup = new THREE.Group(); // Phase 2.7c
     geodesicOctahedronGroup = new THREE.Group(); // Phase 2.7b
 
+    // Matrix forms (IVM spatial arrays)
+    cubeMatrixGroup = new THREE.Group();
+    cubeMatrixGroup.userData.type = "cubeMatrix";
+    cubeMatrixGroup.userData.isInstance = false;
+
+    tetMatrixGroup = new THREE.Group();
+    tetMatrixGroup.userData.type = "tetMatrix";
+    tetMatrixGroup.userData.isInstance = false;
+
+    octaMatrixGroup = new THREE.Group();
+    octaMatrixGroup.userData.type = "octaMatrix";
+    octaMatrixGroup.userData.isInstance = false;
+
+    cuboctaMatrixGroup = new THREE.Group();
+    cuboctaMatrixGroup.userData.type = "cuboctaMatrix";
+    cuboctaMatrixGroup.userData.isInstance = false;
+
+    rhombicDodecMatrixGroup = new THREE.Group();
+    rhombicDodecMatrixGroup.userData.type = "rhombicDodecMatrix";
+    rhombicDodecMatrixGroup.userData.isInstance = false;
+
     scene.add(cubeGroup);
     scene.add(tetrahedronGroup);
     scene.add(dualTetrahedronGroup);
@@ -107,6 +132,11 @@ export function initScene(THREE) {
     scene.add(geodesicIcosahedronGroup);
     scene.add(geodesicTetrahedronGroup);
     scene.add(geodesicOctahedronGroup);
+    scene.add(cubeMatrixGroup);
+    scene.add(tetMatrixGroup);
+    scene.add(octaMatrixGroup);
+    scene.add(cuboctaMatrixGroup);
+    scene.add(rhombicDodecMatrixGroup);
 
     // Initial render
     updateGeometry();
@@ -677,6 +707,148 @@ export function initScene(THREE) {
   }
 
   /**
+   * Add vertex nodes to a matrix group
+   * Generates unique vertex positions for matrix arrays
+   * Supports alternating orientations for tetrahedra
+   */
+  function addMatrixNodes(
+    matrixGroup,
+    matrixSize,
+    scale,
+    rotate45,
+    color,
+    nodeSize,
+    polyhedronType = "cube"
+  ) {
+    // Get node geometry settings
+    // useRTNodeGeometry is read from module-level variable set by button toggles
+    const useFlatShading =
+      document.getElementById("nodeFlatShading")?.checked || false;
+
+    // Get cached node geometry
+    const { geometry: nodeGeometry } = getCachedNodeGeometry(
+      useRTNodeGeometry,
+      nodeSize,
+      polyhedronType,
+      scale
+    );
+
+    const nodeMaterial = new THREE.MeshStandardMaterial({
+      color: color,
+      emissive: color,
+      emissiveIntensity: 0.2,
+      flatShading: useFlatShading,
+    });
+
+    // Collect all unique vertex positions from matrix
+    const vertexPositions = new Set();
+
+    // Calculate spacing based on polyhedron type
+    // - Cube: edge-to-edge contact (spacing = 2 * halfSize)
+    // - Tet: inscribes in cube (vertices at cube vertices, spacing = 2 * halfSize)
+    // - Octa: centers in cube (vertices at cube face centers, spacing = 2 * halfSize)
+    // - Cuboctahedron: scaled by √2, edge length = (halfSize * √2) * √2 = 2 * halfSize
+    // - Rhombic Dodecahedron: space-filling tiling (spacing = 2 * halfSize, same as cube)
+    let spacing = scale * 2; // All matrices now use 2 * halfSize spacing
+
+    // Generate polyhedron vertices at each grid position
+    import("./rt-polyhedra.js").then(PolyModule => {
+      const { Polyhedra } = PolyModule;
+
+      // Get the appropriate polyhedron geometry
+      let polyGeom;
+      if (polyhedronType === "cube") {
+        polyGeom = Polyhedra.cube(scale);
+      } else if (polyhedronType === "tetrahedron") {
+        polyGeom = Polyhedra.tetrahedron(scale);
+      } else if (polyhedronType === "octahedron") {
+        polyGeom = Polyhedra.octahedron(scale);
+      } else if (polyhedronType === "cuboctahedron") {
+        // Scale by √2 to match matrix geometry (vertices at scale, not scale/√2)
+        polyGeom = Polyhedra.cuboctahedron(scale * Math.sqrt(2));
+      } else if (polyhedronType === "rhombicDodecahedron") {
+        // Scale by √2 to match matrix geometry (rhombic dodec axial vertices at scale, not scale/√2)
+        polyGeom = Polyhedra.rhombicDodecahedron(scale * Math.sqrt(2));
+      }
+
+      const { vertices } = polyGeom;
+
+      // For each grid position, add transformed vertices
+      for (let i = 0; i < matrixSize; i++) {
+        for (let j = 0; j < matrixSize; j++) {
+          const offset_x = (i - matrixSize / 2 + 0.5) * spacing;
+          const offset_y = (j - matrixSize / 2 + 0.5) * spacing;
+          const offset_z = 0;
+
+          // For tetrahedra, handle alternating orientations
+          const isUp =
+            polyhedronType === "tetrahedron" ? (i + j) % 2 === 0 : true;
+
+          vertices.forEach(v => {
+            let x = v.x + offset_x;
+            let y = v.y + offset_y;
+            let z = v.z + offset_z;
+
+            // Apply 180° rotation for down-facing tets
+            if (polyhedronType === "tetrahedron" && !isUp) {
+              // Rotate 180° around Z-axis
+              x = -(v.x + offset_x);
+              y = -(v.y + offset_y);
+            }
+
+            // Apply 45° rotation if enabled
+            if (rotate45) {
+              const cos45 = Math.sqrt(0.5);
+              const sin45 = Math.sqrt(0.5);
+              const x_rot = cos45 * x - sin45 * y;
+              const y_rot = sin45 * x + cos45 * y;
+              x = x_rot;
+              y = y_rot;
+            }
+
+            // Use string key for deduplication
+            const key = `${x.toFixed(6)},${y.toFixed(6)},${z.toFixed(6)}`;
+            vertexPositions.add(key);
+          });
+        }
+      }
+
+      // Create nodes at unique positions
+      vertexPositions.forEach(key => {
+        const [x, y, z] = key.split(",").map(parseFloat);
+        const node = new THREE.Mesh(nodeGeometry, nodeMaterial.clone());
+        node.position.set(x, y, z);
+        node.renderOrder = 3;
+        matrixGroup.add(node);
+      });
+
+      console.log(
+        `[Matrix Nodes] Added ${vertexPositions.size} nodes to ${matrixSize}×${matrixSize} ${polyhedronType} matrix`
+      );
+    });
+  }
+
+  /**
+   * Count total triangles in a group (including all children)
+   * Used for performance statistics
+   */
+  function countGroupTriangles(group) {
+    let triangles = 0;
+    if (group && group.visible) {
+      group.traverse(child => {
+        if (child.geometry) {
+          if (child.geometry.index) {
+            triangles += child.geometry.index.count / 3;
+          } else if (child.geometry.attributes.position) {
+            triangles += child.geometry.attributes.position.count / 3;
+          }
+        }
+      });
+    }
+    return Math.round(triangles);
+  }
+
+  /**
    * Render a polyhedron from vertices, edges, faces
    * Uses proper geometry with indexed faces for clean rendering
    */
@@ -810,6 +982,9 @@ export function initScene(THREE) {
    * Update all geometry based on current settings
    */
   function updateGeometry() {
+    // Start performance timing
+    PerformanceClock.startCalculation();
+
     // QUADRAY SYSTEM: Use tet edge length as primary unit
     // For tetrahedron edge length e: halfSize = e / (2√2)
     const tetEdge = parseFloat(document.getElementById("tetScaleSlider").value);
@@ -823,6 +998,53 @@ export function initScene(THREE) {
       cubeGroup.visible = true;
     } else {
       cubeGroup.visible = false;
+    }
+
+    // Cube Matrix (IVM Array)
+    if (document.getElementById("showCubeMatrix").checked) {
+      const matrixSize = parseInt(
+        document.getElementById("cubeMatrixSizeSlider")?.value || "1"
+      );
+      const rotate45 =
+        document.getElementById("cubeMatrixRotate45")?.checked || false;
+
+      // Clear existing cube matrix group
+      while (cubeMatrixGroup.children.length > 0) {
+        cubeMatrixGroup.remove(cubeMatrixGroup.children[0]);
+      }
+
+      // Generate cube matrix
+      import("./rt-matrix.js").then(MatrixModule => {
+        const { RTMatrix } = MatrixModule;
+        const cubeMatrix = RTMatrix.createCubeMatrix(
+          matrixSize,
+          scale,
+          rotate45,
+          opacity,
+          0x4a9eff,
+          THREE
+        );
+        cubeMatrixGroup.add(cubeMatrix);
+
+        // Add vertex nodes if enabled
+        const nodeSizeBtn = document.querySelector(".node-size-btn.active");
+        const nodeSize = nodeSizeBtn ? nodeSizeBtn.dataset.nodeSize : "md";
+        const showNodes = nodeSize !== "off";
+
+        if (showNodes) {
+          addMatrixNodes(
+            cubeMatrixGroup,
+            matrixSize,
+            scale,
+            rotate45,
+            0x4a9eff,
+            nodeSize
+          );
+        }
+      });
+      cubeMatrixGroup.visible = true;
+    } else {
+      cubeMatrixGroup.visible = false;
     }
 
     // Tetrahedron (Yellow)
@@ -891,6 +1113,54 @@ export function initScene(THREE) {
       dualTetrahedronGroup.visible = false;
     }
 
+    // Tet Matrix (IVM Array)
+    if (document.getElementById("showTetMatrix").checked) {
+      const matrixSize = parseInt(
+        document.getElementById("tetMatrixSizeSlider")?.value || "1"
+      );
+      const rotate45 =
+        document.getElementById("tetMatrixRotate45")?.checked || false;
+
+      // Clear existing tet matrix group
+      while (tetMatrixGroup.children.length > 0) {
+        tetMatrixGroup.remove(tetMatrixGroup.children[0]);
+      }
+
+      // Generate tet matrix
+      import("./rt-matrix.js").then(MatrixModule => {
+        const { RTMatrix } = MatrixModule;
+        const tetMatrix = RTMatrix.createTetrahedronMatrix(
+          matrixSize,
+          scale,
+          rotate45,
+          opacity,
+          0xffff00,
+          THREE
+        );
+        tetMatrixGroup.add(tetMatrix);
+
+        // Add vertex nodes if enabled
+        const nodeSizeBtn = document.querySelector(".node-size-btn.active");
+        const nodeSize = nodeSizeBtn ? nodeSizeBtn.dataset.nodeSize : "md";
+        const showNodes = nodeSize !== "off";
+
+        if (showNodes) {
+          addMatrixNodes(
+            tetMatrixGroup,
+            matrixSize,
+            scale,
+            rotate45,
+            0xffff00,
+            nodeSize,
+            "tetrahedron"
+          );
+        }
+      });
+      tetMatrixGroup.visible = true;
+    } else {
+      tetMatrixGroup.visible = false;
+    }
+
     // Octahedron (Green)
     if (document.getElementById("showOctahedron").checked) {
       const octa = Polyhedra.octahedron(scale);
@@ -923,6 +1193,54 @@ export function initScene(THREE) {
       geodesicOctahedronGroup.visible = true;
     } else {
       geodesicOctahedronGroup.visible = false;
+    }
+
+    // Octa Matrix (IVM Array)
+    if (document.getElementById("showOctaMatrix").checked) {
+      const matrixSize = parseInt(
+        document.getElementById("octaMatrixSizeSlider")?.value || "1"
+      );
+      const rotate45 =
+        document.getElementById("octaMatrixRotate45")?.checked || false;
+
+      // Clear existing octa matrix group
+      while (octaMatrixGroup.children.length > 0) {
+        octaMatrixGroup.remove(octaMatrixGroup.children[0]);
+      }
+
+      // Generate octa matrix
+      import("./rt-matrix.js").then(MatrixModule => {
+        const { RTMatrix } = MatrixModule;
+        const octaMatrix = RTMatrix.createOctahedronMatrix(
+          matrixSize,
+          scale,
+          rotate45,
+          opacity,
+          0xff6b6b,
+          THREE
+        );
+        octaMatrixGroup.add(octaMatrix);
+
+        // Add vertex nodes if enabled
+        const nodeSizeBtn = document.querySelector(".node-size-btn.active");
+        const nodeSize = nodeSizeBtn ? nodeSizeBtn.dataset.nodeSize : "md";
+        const showNodes = nodeSize !== "off";
+
+        if (showNodes) {
+          addMatrixNodes(
+            octaMatrixGroup,
+            matrixSize,
+            scale,
+            rotate45,
+            0xff6b6b,
+            nodeSize,
+            "octahedron"
+          );
+        }
+      });
+      octaMatrixGroup.visible = true;
+    } else {
+      octaMatrixGroup.visible = false;
     }
 
     // Icosahedron (Cyan)
@@ -986,6 +1304,54 @@ export function initScene(THREE) {
       cuboctahedronGroup.visible = false;
     }
 
+    // Cuboctahedron Matrix (Vector Equilibrium Array)
+    if (document.getElementById("showCuboctahedronMatrix").checked) {
+      const matrixSize = parseInt(
+        document.getElementById("cuboctaMatrixSizeSlider")?.value || "1"
+      );
+      const rotate45 =
+        document.getElementById("cuboctaMatrixRotate45")?.checked || false;
+
+      // Clear existing cubocta matrix group
+      while (cuboctaMatrixGroup.children.length > 0) {
+        cuboctaMatrixGroup.remove(cuboctaMatrixGroup.children[0]);
+      }
+
+      // Generate cuboctahedron matrix
+      import("./rt-matrix.js").then(MatrixModule => {
+        const { RTMatrix } = MatrixModule;
+        const cuboctaMatrix = RTMatrix.createCuboctahedronMatrix(
+          matrixSize,
+          scale,
+          rotate45,
+          opacity,
+          0x00ff88, // Lime-cyan (Vector Equilibrium color)
+          THREE
+        );
+        cuboctaMatrixGroup.add(cuboctaMatrix);
+
+        // Add vertex nodes if enabled
+        const nodeSizeBtn = document.querySelector(".node-size-btn.active");
+        const nodeSize = nodeSizeBtn ? nodeSizeBtn.dataset.nodeSize : "md";
+        const showNodes = nodeSize !== "off";
+
+        if (showNodes) {
+          addMatrixNodes(
+            cuboctaMatrixGroup,
+            matrixSize,
+            scale,
+            rotate45,
+            0x00ff88,
+            nodeSize,
+            "cuboctahedron"
+          );
+        }
+      });
+      cuboctaMatrixGroup.visible = true;
+    } else {
+      cuboctaMatrixGroup.visible = false;
+    }
+
     // Rhombic Dodecahedron (Orange)
     if (document.getElementById("showRhombicDodecahedron").checked) {
       const rhombicDodec = Polyhedra.rhombicDodecahedron(scale);
@@ -998,6 +1364,54 @@ export function initScene(THREE) {
       rhombicDodecahedronGroup.visible = true;
     } else {
       rhombicDodecahedronGroup.visible = false;
+    }
+
+    // Rhombic Dodecahedron Matrix (Space-Filling Array)
+    if (document.getElementById("showRhombicDodecMatrix").checked) {
+      const matrixSize = parseInt(
+        document.getElementById("rhombicDodecMatrixSizeSlider")?.value || "1"
+      );
+      const rotate45 =
+        document.getElementById("rhombicDodecMatrixRotate45")?.checked || false;
+
+      // Clear existing rhombic dodec matrix group
+      while (rhombicDodecMatrixGroup.children.length > 0) {
+        rhombicDodecMatrixGroup.remove(rhombicDodecMatrixGroup.children[0]);
+      }
+
+      // Generate rhombic dodecahedron matrix
+      import("./rt-matrix.js").then(MatrixModule => {
+        const { RTMatrix } = MatrixModule;
+        const rhombicDodecMatrix = RTMatrix.createRhombicDodecahedronMatrix(
+          matrixSize,
+          scale,
+          rotate45,
+          opacity,
+          0xff8800, // Orange (Rhombic Dodecahedron color)
+          THREE
+        );
+        rhombicDodecMatrixGroup.add(rhombicDodecMatrix);
+
+        // Add vertex nodes if enabled
+        const nodeSizeBtn = document.querySelector(".node-size-btn.active");
+        const nodeSize = nodeSizeBtn ? nodeSizeBtn.dataset.nodeSize : "md";
+        const showNodes = nodeSize !== "off";
+
+        if (showNodes) {
+          addMatrixNodes(
+            rhombicDodecMatrixGroup,
+            matrixSize,
+            scale,
+            rotate45,
+            0xff8800,
+            nodeSize,
+            "rhombicDodecahedron"
+          );
+        }
+      });
+      rhombicDodecMatrixGroup.visible = true;
+    } else {
+      rhombicDodecMatrixGroup.visible = false;
     }
 
     // Scale basis vectors to match current slider values
@@ -1018,6 +1432,10 @@ export function initScene(THREE) {
     }
 
     updateGeometryStats();
+
+    // End performance timing
+    PerformanceClock.endCalculation();
+    PerformanceClock.updateDisplay(useRTNodeGeometry);
   }
 
   /**
@@ -1141,6 +1559,87 @@ export function initScene(THREE) {
       html += `<div style="margin-top: 10px;"><strong>Cuboctahedron:</strong></div>`;
       html += `<div>Archimedean: (3.4)²</div>`;
       html += `<div>V: ${cubocta.vertices.length}, E: ${cubocta.edges.length}, F: ${cubocta.faces.length}</div>`;
+      html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
+    }
+
+    // Geodesic Tetrahedron
+    if (document.getElementById("showGeodesicTetrahedron").checked) {
+      const frequency = parseInt(
+        document.getElementById("geodesicTetraFrequency").value
+      );
+      const projectionRadio = document.querySelector(
+        'input[name="geodesicTetraProjection"]:checked'
+      );
+      const projection = projectionRadio ? projectionRadio.value : "out";
+      const geodesicTetra = Polyhedra.geodesicTetrahedron(
+        1,
+        isNaN(frequency) ? 1 : frequency,
+        projection
+      );
+      const eulerOK = RT.verifyEuler(
+        geodesicTetra.vertices.length,
+        geodesicTetra.edges.length,
+        geodesicTetra.faces.length
+      );
+      const triangles = countGroupTriangles(geodesicTetrahedronGroup);
+      html += `<div style="margin-top: 10px;"><strong>Geodesic Tetrahedron:</strong></div>`;
+      html += `<div>Freq: ${isNaN(frequency) ? 1 : frequency}, Proj: ${projection}</div>`;
+      html += `<div>V: ${geodesicTetra.vertices.length}, E: ${geodesicTetra.edges.length}, F: ${geodesicTetra.faces.length}</div>`;
+      html += `<div>Triangles: ${triangles}</div>`;
+      html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
+    }
+
+    // Geodesic Octahedron
+    if (document.getElementById("showGeodesicOctahedron").checked) {
+      const frequency = parseInt(
+        document.getElementById("geodesicOctaFrequency").value
+      );
+      const projectionRadio = document.querySelector(
+        'input[name="geodesicOctaProjection"]:checked'
+      );
+      const projection = projectionRadio ? projectionRadio.value : "out";
+      const geodesicOcta = Polyhedra.geodesicOctahedron(
+        1,
+        isNaN(frequency) ? 1 : frequency,
+        projection
+      );
+      const eulerOK = RT.verifyEuler(
+        geodesicOcta.vertices.length,
+        geodesicOcta.edges.length,
+        geodesicOcta.faces.length
+      );
+      const triangles = countGroupTriangles(geodesicOctahedronGroup);
+      html += `<div style="margin-top: 10px;"><strong>Geodesic Octahedron:</strong></div>`;
+      html += `<div>Freq: ${isNaN(frequency) ? 1 : frequency}, Proj: ${projection}</div>`;
+      html += `<div>V: ${geodesicOcta.vertices.length}, E: ${geodesicOcta.edges.length}, F: ${geodesicOcta.faces.length}</div>`;
+      html += `<div>Triangles: ${triangles}</div>`;
+      html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
+    }
+
+    // Geodesic Icosahedron
+    if (document.getElementById("showGeodesicIcosahedron").checked) {
+      const frequency = parseInt(
+        document.getElementById("geodesicIcosaFrequency").value
+      );
+      const projectionRadio = document.querySelector(
+        'input[name="geodesicIcosaProjection"]:checked'
+      );
+      const projection = projectionRadio ? projectionRadio.value : "out";
+      const geodesicIcosa = Polyhedra.geodesicIcosahedron(
+        1,
+        isNaN(frequency) ? 1 : frequency,
+        projection
+      );
+      const eulerOK = RT.verifyEuler(
+        geodesicIcosa.vertices.length,
+        geodesicIcosa.edges.length,
+        geodesicIcosa.faces.length
+      );
+      const triangles = countGroupTriangles(geodesicIcosahedronGroup);
+      html += `<div style="margin-top: 10px;"><strong>Geodesic Icosahedron:</strong></div>`;
+      html += `<div>Freq: ${isNaN(frequency) ? 1 : frequency}, Proj: ${projection}</div>`;
+      html += `<div>V: ${geodesicIcosa.vertices.length}, E: ${geodesicIcosa.edges.length}, F: ${geodesicIcosa.faces.length}</div>`;
+      html += `<div>Triangles: ${triangles}</div>`;
       html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
     }
 
