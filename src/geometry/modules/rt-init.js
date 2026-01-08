@@ -161,7 +161,7 @@ function startARTexplorer(
     // Zero cost GPU feature - see docs/development/Geometry documents/matrix-slider.md §7.1
     renderer = new THREE.WebGLRenderer({
       antialias: true,
-      logarithmicDepthBuffer: true
+      logarithmicDepthBuffer: true,
     });
     renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -760,10 +760,11 @@ function startARTexplorer(
 
       case "geodesicTetrahedron":
       case "geodesicOctahedron":
-      case "geodesicIcosahedron":
+      case "geodesicIcosahedron": {
         // Geodesics subdivide base edges - use base polyhedron quadrance
         const baseType = type.replace("geodesic", "").toLowerCase();
         return getPolyhedronEdgeQuadrance(baseType, scale);
+      }
 
       default:
         console.warn(
@@ -1089,7 +1090,8 @@ function startARTexplorer(
           const offset_z = 0;
 
           // For tetrahedra, handle alternating orientations
-          const isUp = polyhedronType === "tetrahedron" ? (i + j) % 2 === 0 : true;
+          const isUp =
+            polyhedronType === "tetrahedron" ? (i + j) % 2 === 0 : true;
 
           vertices.forEach(v => {
             let x = v.x + offset_x;
@@ -1978,13 +1980,18 @@ function startARTexplorer(
 
   // Tetrahedron with geodesic controls toggle
   const tetrahedronCheckbox = document.getElementById("showTetrahedron");
-  const geodesicTetraCheckbox = document.getElementById("showGeodesicTetrahedron");
+  const geodesicTetraCheckbox = document.getElementById(
+    "showGeodesicTetrahedron"
+  );
   if (tetrahedronCheckbox) {
     tetrahedronCheckbox.addEventListener("change", () => {
-      const geodesicTetraControls = document.getElementById("geodesic-tetra-all");
+      const geodesicTetraControls =
+        document.getElementById("geodesic-tetra-all");
       if (geodesicTetraControls) {
         // Keep controls visible if geodesic variant is checked (preserve settings)
-        const shouldShow = tetrahedronCheckbox.checked || (geodesicTetraCheckbox && geodesicTetraCheckbox.checked);
+        const shouldShow =
+          tetrahedronCheckbox.checked ||
+          (geodesicTetraCheckbox && geodesicTetraCheckbox.checked);
         geodesicTetraControls.style.display = shouldShow ? "block" : "none";
       }
       updateGeometry();
@@ -1993,7 +2000,8 @@ function startARTexplorer(
   // Also listen to geodesic checkbox to control visibility
   if (geodesicTetraCheckbox) {
     geodesicTetraCheckbox.addEventListener("change", () => {
-      const geodesicTetraControls = document.getElementById("geodesic-tetra-all");
+      const geodesicTetraControls =
+        document.getElementById("geodesic-tetra-all");
       if (geodesicTetraControls && geodesicTetraCheckbox.checked) {
         geodesicTetraControls.style.display = "block";
       }
@@ -2007,13 +2015,17 @@ function startARTexplorer(
 
   // Octahedron with geodesic controls toggle
   const octahedronCheckbox = document.getElementById("showOctahedron");
-  const geodesicOctaCheckbox = document.getElementById("showGeodesicOctahedron");
+  const geodesicOctaCheckbox = document.getElementById(
+    "showGeodesicOctahedron"
+  );
   if (octahedronCheckbox) {
     octahedronCheckbox.addEventListener("change", () => {
       const geodesicOctaControls = document.getElementById("geodesic-octa-all");
       if (geodesicOctaControls) {
         // Keep controls visible if geodesic variant is checked (preserve settings)
-        const shouldShow = octahedronCheckbox.checked || (geodesicOctaCheckbox && geodesicOctaCheckbox.checked);
+        const shouldShow =
+          octahedronCheckbox.checked ||
+          (geodesicOctaCheckbox && geodesicOctaCheckbox.checked);
         geodesicOctaControls.style.display = shouldShow ? "block" : "none";
       }
       updateGeometry();
@@ -2032,13 +2044,18 @@ function startARTexplorer(
 
   // Icosahedron with geodesic controls toggle
   const icosahedronCheckbox = document.getElementById("showIcosahedron");
-  const geodesicIcosaCheckbox = document.getElementById("showGeodesicIcosahedron");
+  const geodesicIcosaCheckbox = document.getElementById(
+    "showGeodesicIcosahedron"
+  );
   if (icosahedronCheckbox) {
     icosahedronCheckbox.addEventListener("change", () => {
-      const geodesicIcosaControls = document.getElementById("geodesic-icosa-all");
+      const geodesicIcosaControls =
+        document.getElementById("geodesic-icosa-all");
       if (geodesicIcosaControls) {
         // Keep controls visible if geodesic variant is checked (preserve settings)
-        const shouldShow = icosahedronCheckbox.checked || (geodesicIcosaCheckbox && geodesicIcosaCheckbox.checked);
+        const shouldShow =
+          icosahedronCheckbox.checked ||
+          (geodesicIcosaCheckbox && geodesicIcosaCheckbox.checked);
         geodesicIcosaControls.style.display = shouldShow ? "block" : "none";
       }
       updateGeometry();
@@ -2047,7 +2064,8 @@ function startARTexplorer(
   // Also listen to geodesic checkbox to control visibility
   if (geodesicIcosaCheckbox) {
     geodesicIcosaCheckbox.addEventListener("change", () => {
-      const geodesicIcosaControls = document.getElementById("geodesic-icosa-all");
+      const geodesicIcosaControls =
+        document.getElementById("geodesic-icosa-all");
       if (geodesicIcosaControls && geodesicIcosaCheckbox.checked) {
         geodesicIcosaControls.style.display = "block";
       }
@@ -2071,9 +2089,13 @@ function startARTexplorer(
   const cubeMatrixCheckbox = document.getElementById("showCubeMatrix");
   if (cubeMatrixCheckbox) {
     cubeMatrixCheckbox.addEventListener("change", () => {
-      const cubeMatrixControls = document.getElementById("cube-matrix-controls");
+      const cubeMatrixControls = document.getElementById(
+        "cube-matrix-controls"
+      );
       if (cubeMatrixControls) {
-        cubeMatrixControls.style.display = cubeMatrixCheckbox.checked ? "block" : "none";
+        cubeMatrixControls.style.display = cubeMatrixCheckbox.checked
+          ? "block"
+          : "none";
       }
       updateGeometry();
     });
@@ -2083,7 +2105,8 @@ function startARTexplorer(
   if (cubeMatrixSizeSlider) {
     cubeMatrixSizeSlider.addEventListener("input", e => {
       const matrixSize = parseInt(e.target.value);
-      document.getElementById("cubeMatrixSizeValue").textContent = `${matrixSize}×${matrixSize}`;
+      document.getElementById("cubeMatrixSizeValue").textContent =
+        `${matrixSize}×${matrixSize}`;
       updateGeometry();
     });
   }
@@ -2099,7 +2122,9 @@ function startARTexplorer(
     tetMatrixCheckbox.addEventListener("change", () => {
       const tetMatrixControls = document.getElementById("tet-matrix-controls");
       if (tetMatrixControls) {
-        tetMatrixControls.style.display = tetMatrixCheckbox.checked ? "block" : "none";
+        tetMatrixControls.style.display = tetMatrixCheckbox.checked
+          ? "block"
+          : "none";
       }
       updateGeometry();
     });
@@ -2109,7 +2134,8 @@ function startARTexplorer(
   if (tetMatrixSizeSlider) {
     tetMatrixSizeSlider.addEventListener("input", e => {
       const matrixSize = parseInt(e.target.value);
-      document.getElementById("tetMatrixSizeValue").textContent = `${matrixSize}×${matrixSize}`;
+      document.getElementById("tetMatrixSizeValue").textContent =
+        `${matrixSize}×${matrixSize}`;
       updateGeometry();
     });
   }
@@ -2123,9 +2149,13 @@ function startARTexplorer(
   const octaMatrixCheckbox = document.getElementById("showOctaMatrix");
   if (octaMatrixCheckbox) {
     octaMatrixCheckbox.addEventListener("change", () => {
-      const octaMatrixControls = document.getElementById("octa-matrix-controls");
+      const octaMatrixControls = document.getElementById(
+        "octa-matrix-controls"
+      );
       if (octaMatrixControls) {
-        octaMatrixControls.style.display = octaMatrixCheckbox.checked ? "block" : "none";
+        octaMatrixControls.style.display = octaMatrixCheckbox.checked
+          ? "block"
+          : "none";
       }
       updateGeometry();
     });
@@ -2135,7 +2165,8 @@ function startARTexplorer(
   if (octaMatrixSizeSlider) {
     octaMatrixSizeSlider.addEventListener("input", e => {
       const matrixSize = parseInt(e.target.value);
-      document.getElementById("octaMatrixSizeValue").textContent = `${matrixSize}×${matrixSize}`;
+      document.getElementById("octaMatrixSizeValue").textContent =
+        `${matrixSize}×${matrixSize}`;
       updateGeometry();
     });
   }
@@ -2146,53 +2177,74 @@ function startARTexplorer(
   }
 
   // Cuboctahedron Matrix (Vector Equilibrium Array)
-  const cuboctaMatrixCheckbox = document.getElementById("showCuboctahedronMatrix");
+  const cuboctaMatrixCheckbox = document.getElementById(
+    "showCuboctahedronMatrix"
+  );
   if (cuboctaMatrixCheckbox) {
     cuboctaMatrixCheckbox.addEventListener("change", () => {
-      const cuboctaMatrixControls = document.getElementById("cubocta-matrix-controls");
+      const cuboctaMatrixControls = document.getElementById(
+        "cubocta-matrix-controls"
+      );
       if (cuboctaMatrixControls) {
-        cuboctaMatrixControls.style.display = cuboctaMatrixCheckbox.checked ? "block" : "none";
+        cuboctaMatrixControls.style.display = cuboctaMatrixCheckbox.checked
+          ? "block"
+          : "none";
       }
       updateGeometry();
     });
   }
 
-  const cuboctaMatrixSizeSlider = document.getElementById("cuboctaMatrixSizeSlider");
+  const cuboctaMatrixSizeSlider = document.getElementById(
+    "cuboctaMatrixSizeSlider"
+  );
   if (cuboctaMatrixSizeSlider) {
     cuboctaMatrixSizeSlider.addEventListener("input", e => {
       const matrixSize = parseInt(e.target.value);
-      document.getElementById("cuboctaMatrixSizeValue").textContent = `${matrixSize}×${matrixSize}`;
+      document.getElementById("cuboctaMatrixSizeValue").textContent =
+        `${matrixSize}×${matrixSize}`;
       updateGeometry();
     });
   }
 
-  const cuboctaMatrixRotate45 = document.getElementById("cuboctaMatrixRotate45");
+  const cuboctaMatrixRotate45 = document.getElementById(
+    "cuboctaMatrixRotate45"
+  );
   if (cuboctaMatrixRotate45) {
     cuboctaMatrixRotate45.addEventListener("change", updateGeometry);
   }
 
   // Rhombic Dodecahedron Matrix (Space-Filling Array)
-  const rhombicDodecMatrixCheckbox = document.getElementById("showRhombicDodecMatrix");
+  const rhombicDodecMatrixCheckbox = document.getElementById(
+    "showRhombicDodecMatrix"
+  );
   if (rhombicDodecMatrixCheckbox) {
     rhombicDodecMatrixCheckbox.addEventListener("change", () => {
-      const rhombicDodecMatrixControls = document.getElementById("rhombic-dodec-matrix-controls");
+      const rhombicDodecMatrixControls = document.getElementById(
+        "rhombic-dodec-matrix-controls"
+      );
       if (rhombicDodecMatrixControls) {
-        rhombicDodecMatrixControls.style.display = rhombicDodecMatrixCheckbox.checked ? "block" : "none";
+        rhombicDodecMatrixControls.style.display =
+          rhombicDodecMatrixCheckbox.checked ? "block" : "none";
       }
       updateGeometry();
     });
   }
 
-  const rhombicDodecMatrixSizeSlider = document.getElementById("rhombicDodecMatrixSizeSlider");
+  const rhombicDodecMatrixSizeSlider = document.getElementById(
+    "rhombicDodecMatrixSizeSlider"
+  );
   if (rhombicDodecMatrixSizeSlider) {
     rhombicDodecMatrixSizeSlider.addEventListener("input", e => {
       const matrixSize = parseInt(e.target.value);
-      document.getElementById("rhombicDodecMatrixSizeValue").textContent = `${matrixSize}×${matrixSize}`;
+      document.getElementById("rhombicDodecMatrixSizeValue").textContent =
+        `${matrixSize}×${matrixSize}`;
       updateGeometry();
     });
   }
 
-  const rhombicDodecMatrixRotate45 = document.getElementById("rhombicDodecMatrixRotate45");
+  const rhombicDodecMatrixRotate45 = document.getElementById(
+    "rhombicDodecMatrixRotate45"
+  );
   if (rhombicDodecMatrixRotate45) {
     rhombicDodecMatrixRotate45.addEventListener("change", updateGeometry);
   }
@@ -4284,7 +4336,7 @@ function startARTexplorer(
   });
 
   // Keyboard shortcuts for file operations
-  document.addEventListener("keydown", (e) => {
+  document.addEventListener("keydown", e => {
     // Ctrl/Cmd + S - Save
     if ((e.ctrlKey || e.metaKey) && e.key === "s") {
       e.preventDefault();

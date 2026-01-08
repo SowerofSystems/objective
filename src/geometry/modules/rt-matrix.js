@@ -59,8 +59,8 @@
  * docs/development/Geometry documents/matrix-slider.md (Section 4.5)
  */
 
-import { RT } from './rt-math.js';
-import { Polyhedra } from './rt-polyhedra.js';
+import { RT } from "./rt-math.js";
+import { Polyhedra } from "./rt-polyhedra.js";
 
 /**
  * Matrix generation module for IVM spatial arrays
@@ -122,7 +122,7 @@ export const RTMatrix = {
 
         const faceGeometry = new THREE.BufferGeometry();
         faceGeometry.setAttribute(
-          'position',
+          "position",
           new THREE.Float32BufferAttribute(positions, 3)
         );
         faceGeometry.setIndex(indices);
@@ -152,7 +152,7 @@ export const RTMatrix = {
 
         const edgeGeometry = new THREE.BufferGeometry();
         edgeGeometry.setAttribute(
-          'position',
+          "position",
           new THREE.Float32BufferAttribute(edgePositions, 3)
         );
 
@@ -240,12 +240,12 @@ export const RTMatrix = {
         const indices = [];
 
         // Add all vertices to positions array (with offset)
-        vertices.forEach((v) => {
+        vertices.forEach(v => {
           positions.push(v.x + offset_x, v.y + offset_y, v.z + offset_z);
         });
 
         // Build face indices (triangulate triangles and squares)
-        faces.forEach((faceIndices) => {
+        faces.forEach(faceIndices => {
           // Fan triangulation from first vertex
           for (let k = 1; k < faceIndices.length - 1; k++) {
             indices.push(faceIndices[0], faceIndices[k], faceIndices[k + 1]);
@@ -352,7 +352,9 @@ export const RTMatrix = {
 
     // Get base rhombic dodecahedron geometry
     // Scale by √2 because rhombicDodecahedron(s) has axial vertices at s/√2, but we need them at halfSize
-    const rhombicDodecGeom = Polyhedra.rhombicDodecahedron(halfSize * Math.sqrt(2));
+    const rhombicDodecGeom = Polyhedra.rhombicDodecahedron(
+      halfSize * Math.sqrt(2)
+    );
     const { vertices, edges, faces } = rhombicDodecGeom;
 
     // Generate N×N grid centered at origin
@@ -371,12 +373,12 @@ export const RTMatrix = {
         const indices = [];
 
         // Add all vertices to positions array (with offset)
-        vertices.forEach((v) => {
+        vertices.forEach(v => {
           positions.push(v.x + offset_x, v.y + offset_y, v.z + offset_z);
         });
 
         // Build face indices (triangulate rhombic faces)
-        faces.forEach((faceIndices) => {
+        faces.forEach(faceIndices => {
           // Fan triangulation from first vertex
           for (let k = 1; k < faceIndices.length - 1; k++) {
             indices.push(faceIndices[0], faceIndices[k], faceIndices[k + 1]);
@@ -515,7 +517,7 @@ export const RTMatrix = {
 
         const faceGeometry = new THREE.BufferGeometry();
         faceGeometry.setAttribute(
-          'position',
+          "position",
           new THREE.Float32BufferAttribute(positions, 3)
         );
         faceGeometry.setIndex(indices);
@@ -545,7 +547,7 @@ export const RTMatrix = {
 
         const edgeGeometry = new THREE.BufferGeometry();
         edgeGeometry.setAttribute(
-          'position',
+          "position",
           new THREE.Float32BufferAttribute(edgePositions, 3)
         );
 
@@ -645,7 +647,7 @@ export const RTMatrix = {
 
         const faceGeometry = new THREE.BufferGeometry();
         faceGeometry.setAttribute(
-          'position',
+          "position",
           new THREE.Float32BufferAttribute(positions, 3)
         );
         faceGeometry.setIndex(indices);
@@ -675,7 +677,7 @@ export const RTMatrix = {
 
         const edgeGeometry = new THREE.BufferGeometry();
         edgeGeometry.setAttribute(
-          'position',
+          "position",
           new THREE.Float32BufferAttribute(edgePositions, 3)
         );
 

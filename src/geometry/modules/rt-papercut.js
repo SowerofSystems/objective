@@ -9,23 +9,23 @@
  * - SVG export via browser print
  */
 
-import { Line2 } from 'three/addons/lines/Line2.js';
-import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
-import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
+import { Line2 } from "three/addons/lines/Line2.js";
+import { LineMaterial } from "three/addons/lines/LineMaterial.js";
+import { LineGeometry } from "three/addons/lines/LineGeometry.js";
 
 export const RTPapercut = {
   // Module state (local, not persisted)
   state: {
     printModeEnabled: false,
     cutplaneEnabled: false,
-    cutplaneValue: 0,      // Current slider position
-    cutplaneAxis: 'z',     // 'x', 'y', or 'z'
-    cutplaneNormal: null,  // THREE.Vector3
+    cutplaneValue: 0, // Current slider position
+    cutplaneAxis: "z", // 'x', 'y', or 'z'
+    cutplaneNormal: null, // THREE.Vector3
     invertCutPlane: false, // Invert normal (for ground plane mode)
     lineWeightEnabled: true,
     lineWeightMin: 0.5,
     lineWeightMax: 3.0,
-    currentView: 'top'
+    currentView: "top",
   },
 
   // Store references to THREE.js objects
@@ -42,30 +42,31 @@ export const RTPapercut = {
    * @param {THREE.Camera} camera
    * @param {THREE.WebGLRenderer} renderer
    */
-  init: function(scene, camera, renderer) {
-
+  init: function (scene, camera, renderer) {
     // Store references
     RTPapercut._scene = scene;
     RTPapercut._camera = camera;
     RTPapercut._renderer = renderer;
 
     // Store original background color
-    RTPapercut._originalBackgroundColor = scene.background ? scene.background.clone() : new THREE.Color(0x000000);
+    RTPapercut._originalBackgroundColor = scene.background
+      ? scene.background.clone()
+      : new THREE.Color(0x000000);
 
     // 1. Print Mode checkbox
-    const printModeCheckbox = document.getElementById('enablePrintMode');
+    const printModeCheckbox = document.getElementById("enablePrintMode");
     if (printModeCheckbox) {
-      printModeCheckbox.addEventListener('change', (e) => {
+      printModeCheckbox.addEventListener("change", e => {
         RTPapercut.state.printModeEnabled = e.target.checked;
         RTPapercut.togglePrintMode(scene);
       });
     }
 
     // 2. Line Weight slider
-    const lineWeightSlider = document.getElementById('lineWeight');
-    const lineWeightValue = document.getElementById('lineWeightValue');
+    const lineWeightSlider = document.getElementById("lineWeight");
+    const lineWeightValue = document.getElementById("lineWeightValue");
     if (lineWeightSlider) {
-      lineWeightSlider.addEventListener('input', (e) => {
+      lineWeightSlider.addEventListener("input", e => {
         const value = parseFloat(e.target.value);
         RTPapercut.state.lineWeightMax = value;
         if (lineWeightValue) {
@@ -73,7 +74,7 @@ export const RTPapercut = {
         }
         // Update intersection line material if it exists
         if (RTPapercut._intersectionLines) {
-          RTPapercut._intersectionLines.traverse((child) => {
+          RTPapercut._intersectionLines.traverse(child => {
             if (child.material && child.material.isLineMaterial) {
               // LineMaterial uses linewidth property (scaled to world units)
               child.material.linewidth = value * 0.001;
@@ -85,19 +86,19 @@ export const RTPapercut = {
     }
 
     // 3. Enable Cutplane checkbox
-    const cutplaneCheckbox = document.getElementById('enableCutPlane');
+    const cutplaneCheckbox = document.getElementById("enableCutPlane");
     if (cutplaneCheckbox) {
       cutplaneCheckbox.disabled = false;
-      cutplaneCheckbox.addEventListener('change', (e) => {
+      cutplaneCheckbox.addEventListener("change", e => {
         RTPapercut.state.cutplaneEnabled = e.target.checked;
         RTPapercut.updateCutplane(RTPapercut.state.cutplaneValue, scene);
       });
     }
 
     // 3b. Invert Cutplane checkbox
-    const invertCutPlaneCheckbox = document.getElementById('invertCutPlane');
+    const invertCutPlaneCheckbox = document.getElementById("invertCutPlane");
     if (invertCutPlaneCheckbox) {
-      invertCutPlaneCheckbox.addEventListener('change', (e) => {
+      invertCutPlaneCheckbox.addEventListener("change", e => {
         RTPapercut.state.invertCutPlane = e.target.checked;
         RTPapercut.updateCutplane(RTPapercut.state.cutplaneValue, scene);
       });
@@ -107,11 +108,11 @@ export const RTPapercut = {
     RTPapercut._createCutplaneSlider();
 
     // 5. Wire up slider to cutplane updates
-    const cutplaneSlider = document.getElementById('cutplaneSlider');
-    const cutplaneValue = document.getElementById('cutplaneValue');
+    const cutplaneSlider = document.getElementById("cutplaneSlider");
+    const cutplaneValue = document.getElementById("cutplaneValue");
 
     if (cutplaneSlider) {
-      cutplaneSlider.addEventListener('input', (e) => {
+      cutplaneSlider.addEventListener("input", e => {
         RTPapercut.state.cutplaneValue = parseFloat(e.target.value);
         if (cutplaneValue) {
           cutplaneValue.textContent = e.target.value;
@@ -122,20 +123,20 @@ export const RTPapercut = {
 
     // 6. Listen to camera view changes to update cutplane axis
     const viewButtons = [
-      { id: 'viewTop', view: 'top' },
-      { id: 'viewBottom', view: 'bottom' },
-      { id: 'viewLeft', view: 'left' },
-      { id: 'viewRight', view: 'right' },
-      { id: 'viewFront', view: 'front' },
-      { id: 'viewBack', view: 'back' },
-      { id: 'viewAxo', view: 'axo' },
-      { id: 'viewPerspective', view: 'perspective' }
+      { id: "viewTop", view: "top" },
+      { id: "viewBottom", view: "bottom" },
+      { id: "viewLeft", view: "left" },
+      { id: "viewRight", view: "right" },
+      { id: "viewFront", view: "front" },
+      { id: "viewBack", view: "back" },
+      { id: "viewAxo", view: "axo" },
+      { id: "viewPerspective", view: "perspective" },
     ];
 
     viewButtons.forEach(({ id, view }) => {
       const button = document.getElementById(id);
       if (button) {
-        button.addEventListener('click', () => {
+        button.addEventListener("click", () => {
           RTPapercut._updateCutplaneAxisForView(view, scene);
         });
       }
@@ -145,9 +146,9 @@ export const RTPapercut = {
     RTPapercut._updateSliderRange();
 
     // 8. Listen to grid extent changes
-    const cartesianSlider = document.getElementById('cartesianTessSlider');
+    const cartesianSlider = document.getElementById("cartesianTessSlider");
     if (cartesianSlider) {
-      cartesianSlider.addEventListener('change', () => {
+      cartesianSlider.addEventListener("change", () => {
         RTPapercut._updateSliderRange();
       });
     }
@@ -157,21 +158,21 @@ export const RTPapercut = {
    * Create cutplane slider UI and inject into Papercut section
    * @private
    */
-  _createCutplaneSlider: function() {
-    const papercutSection = document.getElementById('papercut-section');
+  _createCutplaneSlider: function () {
+    const papercutSection = document.getElementById("papercut-section");
     if (!papercutSection) {
-      console.warn('⚠️ Papercut section not found in HTML');
+      console.warn("⚠️ Papercut section not found in HTML");
       return;
     }
 
     // Check if slider already exists
-    if (document.getElementById('cutplaneSlider')) {
+    if (document.getElementById("cutplaneSlider")) {
       return; // Already created
     }
 
     // Create slider container
-    const sliderContainer = document.createElement('div');
-    sliderContainer.className = 'control-item';
+    const sliderContainer = document.createElement("div");
+    sliderContainer.className = "control-item";
     sliderContainer.innerHTML = `
       <label class="label-subsection">Cut Plane Position</label>
       <div class="slider-container">
@@ -189,10 +190,13 @@ export const RTPapercut = {
     `;
 
     // Find the "Enable Cut Plane" checkbox and insert slider after it
-    const cutplaneCheckbox = document.getElementById('enableCutPlane');
+    const cutplaneCheckbox = document.getElementById("enableCutPlane");
     if (cutplaneCheckbox && cutplaneCheckbox.parentElement) {
       const checkboxContainer = cutplaneCheckbox.parentElement.parentElement;
-      checkboxContainer.parentNode.insertBefore(sliderContainer, checkboxContainer.nextSibling);
+      checkboxContainer.parentNode.insertBefore(
+        sliderContainer,
+        checkboxContainer.nextSibling
+      );
     } else {
       // Fallback: append to papercut section
       papercutSection.appendChild(sliderContainer);
@@ -205,8 +209,8 @@ export const RTPapercut = {
    * Update slider range based on current grid extent
    * @private
    */
-  _updateSliderRange: function() {
-    const slider = document.getElementById('cutplaneSlider');
+  _updateSliderRange: function () {
+    const slider = document.getElementById("cutplaneSlider");
     if (!slider) return;
 
     const range = RTPapercut._getCutplaneRange();
@@ -218,9 +222,9 @@ export const RTPapercut = {
     if (currentValue < range.min || currentValue > range.max) {
       slider.value = 0;
       RTPapercut.state.cutplaneValue = 0;
-      const valueDisplay = document.getElementById('cutplaneValue');
+      const valueDisplay = document.getElementById("cutplaneValue");
       if (valueDisplay) {
-        valueDisplay.textContent = '0.0';
+        valueDisplay.textContent = "0.0";
       }
     }
 
@@ -233,12 +237,12 @@ export const RTPapercut = {
    * @returns {{min: number, max: number}}
    * @private
    */
-  _getCutplaneRange: function() {
+  _getCutplaneRange: function () {
     // XYZ grid extent is fixed at ±10 units
     // Grid divisions control line spacing, not extent
     return {
       min: -10,
-      max: 10
+      max: 10,
     };
   },
 
@@ -247,10 +251,10 @@ export const RTPapercut = {
    * @param {number} value - Cutplane position along current axis
    * @param {THREE.Scene} scene
    */
-  updateCutplane: function(value, scene) {
+  updateCutplane: function (value, scene) {
     if (!RTPapercut.state.cutplaneEnabled) {
       // Remove clipping planes from all materials
-      scene.traverse((object) => {
+      scene.traverse(object => {
         if (object.material) {
           if (Array.isArray(object.material)) {
             object.material.forEach(mat => {
@@ -272,7 +276,7 @@ export const RTPapercut = {
       // Remove intersection lines
       if (RTPapercut._intersectionLines) {
         scene.remove(RTPapercut._intersectionLines);
-        RTPapercut._intersectionLines.traverse((child) => {
+        RTPapercut._intersectionLines.traverse(child => {
           if (child.geometry) child.geometry.dispose();
           if (child.material) child.material.dispose();
         });
@@ -289,17 +293,19 @@ export const RTPapercut = {
     const normal = new THREE.Vector3();
     const invert = RTPapercut.state.invertCutPlane ? 1 : -1; // Flip sign when inverted
 
-    if (RTPapercut.state.cutplaneAxis === 'x') {
+    if (RTPapercut.state.cutplaneAxis === "x") {
       normal.set(invert * 1, 0, 0);
-    } else if (RTPapercut.state.cutplaneAxis === 'y') {
+    } else if (RTPapercut.state.cutplaneAxis === "y") {
       normal.set(0, invert * 1, 0);
-    } else { // 'z'
+    } else {
+      // 'z'
       normal.set(0, 0, invert * 1);
     }
 
     // Add small epsilon when inverted and at origin to catch geometry sitting exactly on ground
     // This avoids floating-point precision issues at exactly 0.0
-    const epsilon = (RTPapercut.state.invertCutPlane && Math.abs(value) < 0.01) ? -0.001 : 0;
+    const epsilon =
+      RTPapercut.state.invertCutPlane && Math.abs(value) < 0.01 ? -0.001 : 0;
     const adjustedValue = value + epsilon;
 
     // THREE.Plane(normal, constant)
@@ -309,7 +315,7 @@ export const RTPapercut = {
 
     // 2. Apply clipping plane to all renderable objects
     let materialCount = 0;
-    scene.traverse((object) => {
+    scene.traverse(object => {
       if (object.material) {
         if (Array.isArray(object.material)) {
           object.material.forEach(mat => {
@@ -332,11 +338,11 @@ export const RTPapercut = {
     if (RTPapercut._renderer) {
       RTPapercut._renderer.localClippingEnabled = true;
     } else {
-      console.error('❌ Renderer reference not found!');
+      console.error("❌ Renderer reference not found!");
     }
 
     // 4. Update slider value display
-    const valueDisplay = document.getElementById('cutplaneValue');
+    const valueDisplay = document.getElementById("cutplaneValue");
     if (valueDisplay) {
       valueDisplay.textContent = value.toFixed(1);
     }
@@ -351,7 +357,7 @@ export const RTPapercut = {
    * Toggle print mode (B&W rendering)
    * @param {THREE.Scene} scene
    */
-  togglePrintMode: function(scene) {
+  togglePrintMode: function (scene) {
     if (RTPapercut.state.printModeEnabled) {
       // ENABLE PRINT MODE: White background, black/dark materials
 
@@ -359,23 +365,28 @@ export const RTPapercut = {
       scene.background = new THREE.Color(0xffffff);
 
       // 2. Store original colors and convert materials to black/dark gray
-      scene.traverse((object) => {
+      scene.traverse(object => {
         if (object.material) {
-          const materials = Array.isArray(object.material) ? object.material : [object.material];
+          const materials = Array.isArray(object.material)
+            ? object.material
+            : [object.material];
 
-          materials.forEach((mat) => {
+          materials.forEach(mat => {
             // Skip if already stored
             if (!RTPapercut._originalMaterialColors.has(mat.uuid)) {
               // Store original color
               if (mat.color) {
-                RTPapercut._originalMaterialColors.set(mat.uuid, mat.color.clone());
+                RTPapercut._originalMaterialColors.set(
+                  mat.uuid,
+                  mat.color.clone()
+                );
               }
             }
 
             // Set to black or dark gray for print
             if (mat.color) {
               // LineBasicMaterial and similar
-              if (mat.type.includes('Line')) {
+              if (mat.type.includes("Line")) {
                 mat.color.setHex(0x000000); // Black lines
               } else {
                 mat.color.setHex(0x303030); // Dark gray for mesh materials
@@ -388,14 +399,13 @@ export const RTPapercut = {
 
       // 3. Update intersection line color to black
       if (RTPapercut._intersectionLines) {
-        RTPapercut._intersectionLines.traverse((child) => {
+        RTPapercut._intersectionLines.traverse(child => {
           if (child.material) {
             child.material.color.setHex(0x000000);
             child.material.needsUpdate = true;
           }
         });
       }
-
     } else {
       // DISABLE PRINT MODE: Restore original colors
 
@@ -403,12 +413,16 @@ export const RTPapercut = {
       scene.background = RTPapercut._originalBackgroundColor.clone();
 
       // 2. Restore original material colors
-      scene.traverse((object) => {
+      scene.traverse(object => {
         if (object.material) {
-          const materials = Array.isArray(object.material) ? object.material : [object.material];
+          const materials = Array.isArray(object.material)
+            ? object.material
+            : [object.material];
 
-          materials.forEach((mat) => {
-            const originalColor = RTPapercut._originalMaterialColors.get(mat.uuid);
+          materials.forEach(mat => {
+            const originalColor = RTPapercut._originalMaterialColors.get(
+              mat.uuid
+            );
             if (originalColor && mat.color) {
               mat.color.copy(originalColor);
               mat.needsUpdate = true;
@@ -419,7 +433,7 @@ export const RTPapercut = {
 
       // 3. Restore intersection line color to red
       if (RTPapercut._intersectionLines) {
-        RTPapercut._intersectionLines.traverse((child) => {
+        RTPapercut._intersectionLines.traverse(child => {
           if (child.material) {
             child.material.color.setHex(0xff0000);
             child.material.needsUpdate = true;
@@ -435,11 +449,11 @@ export const RTPapercut = {
    * @param {THREE.Plane} plane - The cutplane
    * @private
    */
-  _generateIntersectionEdges: function(scene, plane) {
+  _generateIntersectionEdges: function (scene, plane) {
     // Remove previous intersection lines
     if (RTPapercut._intersectionLines) {
       scene.remove(RTPapercut._intersectionLines);
-      RTPapercut._intersectionLines.traverse((child) => {
+      RTPapercut._intersectionLines.traverse(child => {
         if (child.geometry) child.geometry.dispose();
         if (child.material) child.material.dispose();
       });
@@ -448,7 +462,7 @@ export const RTPapercut = {
 
     // Create new group for intersection lines
     const intersectionGroup = new THREE.Group();
-    intersectionGroup.name = 'CutplaneIntersectionEdges';
+    intersectionGroup.name = "CutplaneIntersectionEdges";
 
     // Material for intersection edges (thicker, color depends on print mode)
     // LineMaterial supports actual line thickness (unlike LineBasicMaterial)
@@ -458,7 +472,7 @@ export const RTPapercut = {
       linewidth: RTPapercut.state.lineWeightMax * 0.001, // Convert to world units (scaled down)
       worldUnits: true, // Use world units for consistent thickness
       opacity: 1.0,
-      transparent: false
+      transparent: false,
     });
 
     // Set resolution for proper line rendering
@@ -469,56 +483,85 @@ export const RTPapercut = {
     }
 
     // Process MESH objects (not line objects) to get face intersections
-    scene.traverse((object) => {
+    scene.traverse(object => {
       // Skip non-mesh objects
-      if (object.type !== 'Mesh' || !object.geometry) return;
+      if (object.type !== "Mesh" || !object.geometry) return;
 
       // Skip invisible/hidden meshes (check object, parent, and grandparent visibility)
       if (!object.visible) return;
       if (object.parent && !object.parent.visible) return;
-      if (object.parent && object.parent.parent && !object.parent.parent.visible) return;
+      if (
+        object.parent &&
+        object.parent.parent &&
+        !object.parent.parent.visible
+      )
+        return;
 
       // Skip grid-related meshes
-      if (object.parent && object.parent.name &&
-          (object.parent.name.includes('Grid') || object.parent.name.includes('grid'))) {
+      if (
+        object.parent &&
+        object.parent.name &&
+        (object.parent.name.includes("Grid") ||
+          object.parent.name.includes("grid"))
+      ) {
         return;
       }
 
       // Skip helper objects, lights, cameras, basis vectors, arrows
       // Skip objects that are part of control systems (gumball, handles, etc.)
-      const skipNames = ['Helper', 'Handle', 'Gumball', 'Basis', 'Arrow', 'Cone', 'basis'];
+      const skipNames = [
+        "Helper",
+        "Handle",
+        "Gumball",
+        "Basis",
+        "Arrow",
+        "Cone",
+        "basis",
+      ];
       if (object.name && skipNames.some(name => object.name.includes(name))) {
         return;
       }
 
       // Also check parent and grandparent names for basis/coordinate system objects
-      if (object.parent && object.parent.name &&
-          (object.parent.name.includes('Basis') ||
-           object.parent.name.includes('basis') ||
-           object.parent.name.includes('Cartesian') ||
-           object.parent.name.includes('Quadray'))) {
+      if (
+        object.parent &&
+        object.parent.name &&
+        (object.parent.name.includes("Basis") ||
+          object.parent.name.includes("basis") ||
+          object.parent.name.includes("Cartesian") ||
+          object.parent.name.includes("Quadray"))
+      ) {
         return;
       }
 
       // Check grandparent for basis/coordinate system objects (nested structure)
-      if (object.parent && object.parent.parent && object.parent.parent.name &&
-          (object.parent.parent.name.includes('Basis') ||
-           object.parent.parent.name.includes('basis') ||
-           object.parent.parent.name.includes('Cartesian') ||
-           object.parent.parent.name.includes('Quadray'))) {
+      if (
+        object.parent &&
+        object.parent.parent &&
+        object.parent.parent.name &&
+        (object.parent.parent.name.includes("Basis") ||
+          object.parent.parent.name.includes("basis") ||
+          object.parent.parent.name.includes("Cartesian") ||
+          object.parent.parent.name.includes("Quadray"))
+      ) {
         return;
       }
 
       // Skip if parent is a polyhedron group that's been hidden
-      if (object.parent && object.parent.name &&
-          object.parent.name.includes('Group') &&
-          !object.parent.visible) {
+      if (
+        object.parent &&
+        object.parent.name &&
+        object.parent.name.includes("Group") &&
+        !object.parent.visible
+      ) {
         return;
       }
 
       // Skip sphere geometries (gumball/control handles, scale mode spheres)
-      if (object.geometry.type === 'SphereGeometry' ||
-          (object.geometry.parameters && object.geometry.parameters.radius)) {
+      if (
+        object.geometry.type === "SphereGeometry" ||
+        (object.geometry.parameters && object.geometry.parameters.radius)
+      ) {
         return;
       }
 
@@ -543,8 +586,9 @@ export const RTPapercut = {
       }
 
       // Get index or create sequential indices
-      const indices = geometry.index ? geometry.index.array :
-                      Array.from({ length: positionAttr.count }, (_, i) => i);
+      const indices = geometry.index
+        ? geometry.index.array
+        : Array.from({ length: positionAttr.count }, (_, i) => i);
 
       // Process triangular faces (groups of 3 indices)
       for (let i = 0; i < indices.length; i += 3) {
@@ -553,7 +597,11 @@ export const RTPapercut = {
         const v3 = vertices[indices[i + 2]];
 
         // Check each edge of the triangle for intersection
-        const edges = [[v1, v2], [v2, v3], [v3, v1]];
+        const edges = [
+          [v1, v2],
+          [v2, v3],
+          [v3, v1],
+        ];
         const faceIntersections = [];
 
         edges.forEach(([p1, p2]) => {
@@ -565,7 +613,10 @@ export const RTPapercut = {
 
         // If exactly 2 intersections, we have a line segment crossing this face
         if (faceIntersections.length === 2) {
-          intersectionSegments.push([faceIntersections[0], faceIntersections[1]]);
+          intersectionSegments.push([
+            faceIntersections[0],
+            faceIntersections[1],
+          ]);
         }
       }
 
@@ -600,7 +651,7 @@ export const RTPapercut = {
    * @returns {THREE.Vector3|null} Intersection point or null if no intersection
    * @private
    */
-  _lineIntersectPlane: function(p1, p2, plane) {
+  _lineIntersectPlane: function (p1, p2, plane) {
     const line = new THREE.Line3(p1, p2);
     const intersection = new THREE.Vector3();
 
@@ -616,37 +667,37 @@ export const RTPapercut = {
    * @param {THREE.Scene} scene
    * @private
    */
-  _updateCutplaneAxisForView: function(view, scene) {
+  _updateCutplaneAxisForView: function (view, scene) {
     const axisMap = {
-      top: 'z',
-      bottom: 'z',
-      front: 'y',
-      back: 'y',
-      left: 'x',
-      right: 'x',
-      axo: 'z',      // Default to Z for axonometric
-      perspective: 'z'
+      top: "z",
+      bottom: "z",
+      front: "y",
+      back: "y",
+      left: "x",
+      right: "x",
+      axo: "z", // Default to Z for axonometric
+      perspective: "z",
     };
 
-    const newAxis = axisMap[view] || 'z';
+    const newAxis = axisMap[view] || "z";
 
     if (newAxis !== RTPapercut.state.cutplaneAxis) {
       RTPapercut.state.cutplaneAxis = newAxis;
       RTPapercut.state.currentView = view;
 
       // Update axis info display
-      const axisInfo = document.getElementById('cutplaneAxisInfo');
+      const axisInfo = document.getElementById("cutplaneAxisInfo");
       if (axisInfo) {
-        const axisNames = { x: 'X', y: 'Y', z: 'Z' };
+        const axisNames = { x: "X", y: "Y", z: "Z" };
         const viewNames = {
-          top: 'Top/Bottom',
-          bottom: 'Top/Bottom',
-          front: 'Front/Back',
-          back: 'Front/Back',
-          left: 'Left/Right',
-          right: 'Left/Right',
-          axo: 'Axonometric',
-          perspective: 'Perspective'
+          top: "Top/Bottom",
+          bottom: "Top/Bottom",
+          front: "Front/Back",
+          back: "Front/Back",
+          left: "Left/Right",
+          right: "Left/Right",
+          axo: "Axonometric",
+          perspective: "Perspective",
         };
         axisInfo.textContent = `Axis: ${axisNames[newAxis]} (${viewNames[view]} view)`;
       }
@@ -661,5 +712,5 @@ export const RTPapercut = {
 
       // Cutplane axis updated
     }
-  }
+  },
 };

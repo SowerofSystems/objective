@@ -9,8 +9,6 @@
  * @requires THREE.js
  */
 
-/* global THREE */
-
 export const RTStateManager = {
   // ========================================================================
   // FORMS REGISTRY (Templates - always at origin)
@@ -117,11 +115,16 @@ export const RTStateManager = {
    */
   trackModification(action) {
     this.state.modificationCount++;
-    const changesSinceSave = this.state.modificationCount - this.state.lastSaveModificationCount;
+    const changesSinceSave =
+      this.state.modificationCount - this.state.lastSaveModificationCount;
 
     // Trigger callback if registered
     if (this.callbacks.onModification) {
-      this.callbacks.onModification(this.state.modificationCount, changesSinceSave, action);
+      this.callbacks.onModification(
+        this.state.modificationCount,
+        changesSinceSave,
+        action
+      );
     }
   },
 

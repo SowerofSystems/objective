@@ -655,12 +655,23 @@ function createUnitRectangle() {
   // Create filled rectangle first (renders behind)
   const fillGeometry = new THREE.BufferGeometry();
   const fillVertices = new Float32Array([
-    0, 0, 0,  // origin
-    0, 0, 0,  // will be updated to (x, 0, 0)
-    0, 0, 0,  // will be updated to (x, y, 0)
-    0, 0, 0,  // will be updated to (0, y, 0)
+    0,
+    0,
+    0, // origin
+    0,
+    0,
+    0, // will be updated to (x, 0, 0)
+    0,
+    0,
+    0, // will be updated to (x, y, 0)
+    0,
+    0,
+    0, // will be updated to (0, y, 0)
   ]);
-  fillGeometry.setAttribute('position', new THREE.BufferAttribute(fillVertices, 3));
+  fillGeometry.setAttribute(
+    "position",
+    new THREE.BufferAttribute(fillVertices, 3)
+  );
   fillGeometry.setIndex([0, 1, 2, 0, 2, 3]); // Two triangles forming rectangle
 
   const fillMaterial = new THREE.MeshBasicMaterial({
