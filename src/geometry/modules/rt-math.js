@@ -581,7 +581,7 @@ export const RT = {
         },
       ];
 
-      return divisions.map((div) => {
+      return divisions.map(div => {
         const dms = new this.SexagesimalAngle(div.d, div.m, div.s);
         return {
           dms,

@@ -247,6 +247,10 @@ export default [
         getField: "readonly",
         calculateL34: "readonly",
         updateAllReferenceIndicators: "readonly",
+        // Geometry module globals (THREE.js + RT library)
+        THREE: "readonly",
+        RT: "readonly",
+        OrbitControls: "readonly",
       },
     },
     rules: {

@@ -13,8 +13,6 @@
  * @requires RTStateManager
  */
 
-/* global THREE */
-
 export const RTFileHandler = {
   // ========================================================================
   // CONFIGURATION
@@ -54,17 +52,25 @@ export const RTFileHandler = {
     // Register for state modification events if auto-save enabled
     if (this.config.autoSaveEnabled) {
       // Safari-safe: Check if onModification method exists before calling
-      if (typeof this.stateManager.onModification === 'function') {
-        this.stateManager.onModification((_modCount, changesSinceSave, _action) => {
-          // Auto-save when threshold is reached
-          if (changesSinceSave >= this.config.autoSaveThreshold) {
-            this.autoSave();
-            console.log(`💾 Auto-save triggered after ${changesSinceSave} changes`);
+      if (typeof this.stateManager.onModification === "function") {
+        this.stateManager.onModification(
+          (_modCount, changesSinceSave, _action) => {
+            // Auto-save when threshold is reached
+            if (changesSinceSave >= this.config.autoSaveThreshold) {
+              this.autoSave();
+              console.log(
+                `💾 Auto-save triggered after ${changesSinceSave} changes`
+              );
+            }
           }
-        });
-        console.log(`💾 Auto-save enabled (every ${this.config.autoSaveThreshold} modifications)`);
+        );
+        console.log(
+          `💾 Auto-save enabled (every ${this.config.autoSaveThreshold} modifications)`
+        );
       } else {
-        console.warn('⚠️ StateManager.onModification not available - auto-save disabled');
+        console.warn(
+          "⚠️ StateManager.onModification not available - auto-save disabled"
+        );
       }
     }
 
@@ -97,10 +103,16 @@ export const RTFileHandler = {
     };
 
     // Get grid states from UI
-    const quadrayVisible = document.getElementById("quadray-checkbox")?.checked || false;
-    const cartesianVisible = document.getElementById("cartesian-checkbox")?.checked || false;
-    const quadrayTess = parseInt(document.getElementById("quadrayTessSlider")?.value || 12);
-    const cartesianTess = parseInt(document.getElementById("cartesianTessSlider")?.value || 10);
+    const quadrayVisible =
+      document.getElementById("quadray-checkbox")?.checked || false;
+    const cartesianVisible =
+      document.getElementById("cartesian-checkbox")?.checked || false;
+    const quadrayTess = parseInt(
+      document.getElementById("quadrayTessSlider")?.value || 12
+    );
+    const cartesianTess = parseInt(
+      document.getElementById("cartesianTessSlider")?.value || 10
+    );
 
     // Get active form state
     const formButtons = document.querySelectorAll(".form-btn");
@@ -170,7 +182,10 @@ export const RTFileHandler = {
     const jsonString = JSON.stringify(stateData, null, 2);
 
     // Generate filename with timestamp
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")
+      .slice(0, 19);
     const finalFilename = filename || `art-scene-${timestamp}.json`;
 
     // Create download
@@ -196,7 +211,9 @@ export const RTFileHandler = {
       }
 
       if (stateData.version !== "1.0") {
-        console.warn(`⚠️ State version mismatch: ${stateData.version} (expected 1.0)`);
+        console.warn(
+          `⚠️ State version mismatch: ${stateData.version} (expected 1.0)`
+        );
       }
 
       // Clear existing scene
@@ -205,9 +222,17 @@ export const RTFileHandler = {
       // Restore camera
       if (stateData.environment?.camera) {
         const cam = stateData.environment.camera;
-        this.camera.position.set(cam.position.x, cam.position.y, cam.position.z);
+        this.camera.position.set(
+          cam.position.x,
+          cam.position.y,
+          cam.position.z
+        );
         if (cam.rotation) {
-          this.camera.rotation.set(cam.rotation.x, cam.rotation.y, cam.rotation.z);
+          this.camera.rotation.set(
+            cam.rotation.x,
+            cam.rotation.y,
+            cam.rotation.z
+          );
         }
         if (cam.zoom) {
           this.camera.zoom = cam.zoom;
@@ -235,8 +260,12 @@ export const RTFileHandler = {
 
         // Trigger grid rebuild
         const rebuildEvent = new Event("change");
-        document.getElementById("quadray-checkbox")?.dispatchEvent(rebuildEvent);
-        document.getElementById("cartesian-checkbox")?.dispatchEvent(rebuildEvent);
+        document
+          .getElementById("quadray-checkbox")
+          ?.dispatchEvent(rebuildEvent);
+        document
+          .getElementById("cartesian-checkbox")
+          ?.dispatchEvent(rebuildEvent);
       }
 
       // Restore instances
@@ -252,7 +281,6 @@ export const RTFileHandler = {
 
       console.log("✅ State imported successfully");
       return true;
-
     } catch (error) {
       console.error("❌ Failed to import state:", error);
       return false;
@@ -336,17 +364,22 @@ export const RTFileHandler = {
       };
 
       // Generate filename with timestamp
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-")
+        .slice(0, 19);
       const extension = binary ? "glb" : "gltf";
       const finalFilename = filename || `art-scene-${timestamp}.${extension}`;
 
       // Export
       exporter.parse(
         exportGroup,
-        (result) => {
+        result => {
           if (binary) {
             // Binary .glb format
-            const blob = new Blob([result], { type: "application/octet-stream" });
+            const blob = new Blob([result], {
+              type: "application/octet-stream",
+            });
             this.downloadBlob(blob, finalFilename);
           } else {
             // JSON .gltf format
@@ -356,12 +389,11 @@ export const RTFileHandler = {
 
           console.log(`✅ glTF exported to ${finalFilename}`);
         },
-        (error) => {
+        error => {
           console.error("❌ glTF export failed:", error);
         },
         exportOptions
       );
-
     } catch (error) {
       console.error("❌ Failed to load GLTFExporter:", error);
     }
@@ -379,7 +411,10 @@ export const RTFileHandler = {
     const csvString = this.stateManager.exportCSV();
 
     // Generate filename with timestamp
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")
+      .slice(0, 19);
     const finalFilename = filename || `art-instances-${timestamp}.csv`;
 
     // Create download
@@ -411,7 +446,9 @@ export const RTFileHandler = {
       this.stateManager.markAsSaved();
 
       const unsavedCount = this.stateManager.getUnsavedChanges();
-      console.log(`💾 Auto-saved at ${new Date().toLocaleTimeString()} (${unsavedCount} unsaved changes)`);
+      console.log(
+        `💾 Auto-saved at ${new Date().toLocaleTimeString()} (${unsavedCount} unsaved changes)`
+      );
     } catch (error) {
       console.error("❌ Auto-save failed:", error);
     }
@@ -603,7 +640,7 @@ export const RTFileHandler = {
     input.accept = accept;
     input.style.display = "none";
 
-    input.addEventListener("change", (event) => {
+    input.addEventListener("change", event => {
       const file = event.target.files[0];
       if (file) {
         callback(file);
@@ -623,12 +660,9 @@ export const RTFileHandler = {
    * Show file import dialog
    */
   showImportDialog() {
-    this.createFileInput(
-      (file) => {
-        this.importStateFromFile(file);
-      },
-      ".json"
-    );
+    this.createFileInput(file => {
+      this.importStateFromFile(file);
+    }, ".json");
   },
 
   /**

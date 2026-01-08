@@ -723,7 +723,9 @@ export const Polyhedra = {
 
     // Frequency 1 = return base icosahedron (no subdivision, no sphere projection)
     if (frequency === 1) {
-      console.log(`  Frequency 1: Returning base icosahedron (20 faces, undivided edges)`);
+      console.log(
+        `  Frequency 1: Returning base icosahedron (20 faces, undivided edges)`
+      );
       return base;
     }
 
@@ -844,7 +846,9 @@ export const Polyhedra = {
 
     // Frequency 1 = return base tetrahedron (no subdivision, no sphere projection)
     if (frequency === 1) {
-      console.log(`  Frequency 1: Returning base tetrahedron (4 faces, undivided edges)`);
+      console.log(
+        `  Frequency 1: Returning base tetrahedron (4 faces, undivided edges)`
+      );
       return base;
     }
 
@@ -950,7 +954,9 @@ export const Polyhedra = {
 
     // Frequency 1 = return base octahedron (no subdivision, no sphere projection)
     if (frequency === 1) {
-      console.log(`  Frequency 1: Returning base octahedron (8 faces, undivided edges)`);
+      console.log(
+        `  Frequency 1: Returning base octahedron (8 faces, undivided edges)`
+      );
       return base;
     }
 

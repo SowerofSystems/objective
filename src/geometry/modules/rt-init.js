@@ -129,6 +129,8 @@ function startARTexplorer(
   let geodesicTetrahedronGroup; // Phase 2.7c: Geodesic tetrahedron
   let geodesicOctahedronGroup; // Phase 2.7b: Geodesic octahedron
   let cubeMatrixGroup, tetMatrixGroup, octaMatrixGroup; // Matrix forms (IVM arrays)
+  let cuboctaMatrixGroup; // Cuboctahedron matrix (Vector Equilibrium array)
+  let rhombicDodecMatrixGroup; // Rhombic dodecahedron matrix (space-filling array)
   let cartesianGrid, cartesianBasis, quadrayBasis, ivmPlanes;
 
   function initScene() {
@@ -159,7 +161,7 @@ function startARTexplorer(
     // Zero cost GPU feature - see docs/development/Geometry documents/matrix-slider.md §7.1
     renderer = new THREE.WebGLRenderer({
       antialias: true,
-      logarithmicDepthBuffer: true
+      logarithmicDepthBuffer: true,
     });
     renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -248,6 +250,14 @@ function startARTexplorer(
     octaMatrixGroup.userData.type = "octaMatrix";
     octaMatrixGroup.userData.isInstance = false;
 
+    cuboctaMatrixGroup = new THREE.Group();
+    cuboctaMatrixGroup.userData.type = "cuboctaMatrix";
+    cuboctaMatrixGroup.userData.isInstance = false;
+
+    rhombicDodecMatrixGroup = new THREE.Group();
+    rhombicDodecMatrixGroup.userData.type = "rhombicDodecMatrix";
+    rhombicDodecMatrixGroup.userData.isInstance = false;
+
     scene.add(cubeGroup);
     scene.add(tetrahedronGroup);
     scene.add(dualTetrahedronGroup);
@@ -263,6 +273,8 @@ function startARTexplorer(
     scene.add(cubeMatrixGroup);
     scene.add(tetMatrixGroup);
     scene.add(octaMatrixGroup);
+    scene.add(cuboctaMatrixGroup);
+    scene.add(rhombicDodecMatrixGroup);
 
     // Initialize PerformanceClock with all scene groups
     PerformanceClock.init([
@@ -281,6 +293,8 @@ function startARTexplorer(
       cubeMatrixGroup,
       tetMatrixGroup,
       octaMatrixGroup,
+      cuboctaMatrixGroup,
+      rhombicDodecMatrixGroup,
     ]);
 
     // Initial render
@@ -746,10 +760,11 @@ function startARTexplorer(
 
       case "geodesicTetrahedron":
       case "geodesicOctahedron":
-      case "geodesicIcosahedron":
+      case "geodesicIcosahedron": {
         // Geodesics subdivide base edges - use base polyhedron quadrance
         const baseType = type.replace("geodesic", "").toLowerCase();
         return getPolyhedronEdgeQuadrance(baseType, scale);
+      }
 
       default:
         console.warn(
@@ -1015,8 +1030,7 @@ function startARTexplorer(
     polyhedronType = "cube"
   ) {
     // Get node geometry settings
-    const useRTNodeGeometry =
-      document.getElementById("useRTNodeGeometry")?.checked || false;
+    // useRTNodeGeometry is read from module-level variable set by button toggles
     const useFlatShading =
       document.getElementById("nodeFlatShading")?.checked || false;
 
@@ -1039,11 +1053,12 @@ function startARTexplorer(
     const vertexPositions = new Set();
 
     // Calculate spacing based on polyhedron type
-    // ALL matrices use cube edge spacing for proper IVM alignment
-    // - Cube: edge-to-edge contact
-    // - Tet: inscribes in cube (vertices at cube vertices)
-    // - Octa: centers in cube (vertices at cube face centers)
-    const spacing = scale * 2; // Cube edge = 2 * halfSize (same for all!)
+    // - Cube: edge-to-edge contact (spacing = 2 * halfSize)
+    // - Tet: inscribes in cube (vertices at cube vertices, spacing = 2 * halfSize)
+    // - Octa: centers in cube (vertices at cube face centers, spacing = 2 * halfSize)
+    // - Cuboctahedron: scaled by √2, edge length = (halfSize * √2) * √2 = 2 * halfSize
+    // - Rhombic Dodecahedron: space-filling tiling (spacing = 2 * halfSize, same as cube)
+    let spacing = scale * 2; // All matrices now use 2 * halfSize spacing
 
     // Generate polyhedron vertices at each grid position
     import("./rt-polyhedra.js").then(PolyModule => {
@@ -1057,6 +1072,12 @@ function startARTexplorer(
         polyGeom = Polyhedra.tetrahedron(scale);
       } else if (polyhedronType === "octahedron") {
         polyGeom = Polyhedra.octahedron(scale);
+      } else if (polyhedronType === "cuboctahedron") {
+        // Scale by √2 to match matrix geometry (vertices at scale, not scale/√2)
+        polyGeom = Polyhedra.cuboctahedron(scale * Math.sqrt(2));
+      } else if (polyhedronType === "rhombicDodecahedron") {
+        // Scale by √2 to match matrix geometry (rhombic dodec axial vertices at scale, not scale/√2)
+        polyGeom = Polyhedra.rhombicDodecahedron(scale * Math.sqrt(2));
       }
 
       const { vertices } = polyGeom;
@@ -1069,7 +1090,8 @@ function startARTexplorer(
           const offset_z = 0;
 
           // For tetrahedra, handle alternating orientations
-          const isUp = polyhedronType === "tetrahedron" ? (i + j) % 2 === 0 : true;
+          const isUp =
+            polyhedronType === "tetrahedron" ? (i + j) % 2 === 0 : true;
 
           vertices.forEach(v => {
             let x = v.x + offset_x;
@@ -1380,6 +1402,102 @@ function startARTexplorer(
       octaMatrixGroup.visible = false;
     }
 
+    // Cuboctahedron Matrix (Vector Equilibrium Array)
+    if (document.getElementById("showCuboctahedronMatrix").checked) {
+      const matrixSize = parseInt(
+        document.getElementById("cuboctaMatrixSizeSlider")?.value || "1"
+      );
+      const rotate45 =
+        document.getElementById("cuboctaMatrixRotate45")?.checked || false;
+
+      // Clear existing cubocta matrix group
+      while (cuboctaMatrixGroup.children.length > 0) {
+        cuboctaMatrixGroup.remove(cuboctaMatrixGroup.children[0]);
+      }
+
+      // Generate cuboctahedron matrix
+      import("./rt-matrix.js").then(MatrixModule => {
+        const { RTMatrix } = MatrixModule;
+        const cuboctaMatrix = RTMatrix.createCuboctahedronMatrix(
+          matrixSize,
+          scale,
+          rotate45,
+          opacity,
+          0x00ff88, // Lime-cyan (Vector Equilibrium color)
+          THREE
+        );
+        cuboctaMatrixGroup.add(cuboctaMatrix);
+
+        // Add vertex nodes if enabled
+        const nodeSizeBtn = document.querySelector(".node-size-btn.active");
+        const nodeSize = nodeSizeBtn ? nodeSizeBtn.dataset.nodeSize : "md";
+        const showNodes = nodeSize !== "off";
+
+        if (showNodes) {
+          addMatrixNodes(
+            cuboctaMatrixGroup,
+            matrixSize,
+            scale,
+            rotate45,
+            0x00ff88,
+            nodeSize,
+            "cuboctahedron"
+          );
+        }
+      });
+      cuboctaMatrixGroup.visible = true;
+    } else {
+      cuboctaMatrixGroup.visible = false;
+    }
+
+    // Rhombic Dodecahedron Matrix (Space-Filling Array)
+    if (document.getElementById("showRhombicDodecMatrix").checked) {
+      const matrixSize = parseInt(
+        document.getElementById("rhombicDodecMatrixSizeSlider")?.value || "1"
+      );
+      const rotate45 =
+        document.getElementById("rhombicDodecMatrixRotate45")?.checked || false;
+
+      // Clear existing rhombic dodec matrix group
+      while (rhombicDodecMatrixGroup.children.length > 0) {
+        rhombicDodecMatrixGroup.remove(rhombicDodecMatrixGroup.children[0]);
+      }
+
+      // Generate rhombic dodecahedron matrix
+      import("./rt-matrix.js").then(MatrixModule => {
+        const { RTMatrix } = MatrixModule;
+        const rhombicDodecMatrix = RTMatrix.createRhombicDodecahedronMatrix(
+          matrixSize,
+          scale,
+          rotate45,
+          opacity,
+          0xff8800, // Orange (Rhombic Dodecahedron color)
+          THREE
+        );
+        rhombicDodecMatrixGroup.add(rhombicDodecMatrix);
+
+        // Add vertex nodes if enabled
+        const nodeSizeBtn = document.querySelector(".node-size-btn.active");
+        const nodeSize = nodeSizeBtn ? nodeSizeBtn.dataset.nodeSize : "md";
+        const showNodes = nodeSize !== "off";
+
+        if (showNodes) {
+          addMatrixNodes(
+            rhombicDodecMatrixGroup,
+            matrixSize,
+            scale,
+            rotate45,
+            0xff8800,
+            nodeSize,
+            "rhombicDodecahedron"
+          );
+        }
+      });
+      rhombicDodecMatrixGroup.visible = true;
+    } else {
+      rhombicDodecMatrixGroup.visible = false;
+    }
+
     // Icosahedron (Cyan)
     if (document.getElementById("showIcosahedron").checked) {
       const icosa = Polyhedra.icosahedron(scale);
@@ -1434,7 +1552,8 @@ function startARTexplorer(
 
     // Cuboctahedron (Lime green - Vector Equilibrium)
     if (document.getElementById("showCuboctahedron").checked) {
-      const cubocta = Polyhedra.cuboctahedron(scale);
+      // Scale by √2 to match matrix cuboctahedron and rhombic dodec midsphere
+      const cubocta = Polyhedra.cuboctahedron(scale * Math.sqrt(2));
       renderPolyhedron(cuboctahedronGroup, cubocta, 0x00ff88, opacity); // Bright lime-cyan
       cuboctahedronGroup.visible = true;
     } else {
@@ -1443,7 +1562,8 @@ function startARTexplorer(
 
     // Rhombic Dodecahedron (Orange)
     if (document.getElementById("showRhombicDodecahedron").checked) {
-      const rhombicDodec = Polyhedra.rhombicDodecahedron(scale);
+      // Scale by √2 to match matrix rhombic dodec size (axial vertices at scale, not scale/√2)
+      const rhombicDodec = Polyhedra.rhombicDodecahedron(scale * Math.sqrt(2));
       renderPolyhedron(
         rhombicDodecahedronGroup,
         rhombicDodec,
@@ -1860,13 +1980,18 @@ function startARTexplorer(
 
   // Tetrahedron with geodesic controls toggle
   const tetrahedronCheckbox = document.getElementById("showTetrahedron");
-  const geodesicTetraCheckbox = document.getElementById("showGeodesicTetrahedron");
+  const geodesicTetraCheckbox = document.getElementById(
+    "showGeodesicTetrahedron"
+  );
   if (tetrahedronCheckbox) {
     tetrahedronCheckbox.addEventListener("change", () => {
-      const geodesicTetraControls = document.getElementById("geodesic-tetra-all");
+      const geodesicTetraControls =
+        document.getElementById("geodesic-tetra-all");
       if (geodesicTetraControls) {
         // Keep controls visible if geodesic variant is checked (preserve settings)
-        const shouldShow = tetrahedronCheckbox.checked || (geodesicTetraCheckbox && geodesicTetraCheckbox.checked);
+        const shouldShow =
+          tetrahedronCheckbox.checked ||
+          (geodesicTetraCheckbox && geodesicTetraCheckbox.checked);
         geodesicTetraControls.style.display = shouldShow ? "block" : "none";
       }
       updateGeometry();
@@ -1875,7 +2000,8 @@ function startARTexplorer(
   // Also listen to geodesic checkbox to control visibility
   if (geodesicTetraCheckbox) {
     geodesicTetraCheckbox.addEventListener("change", () => {
-      const geodesicTetraControls = document.getElementById("geodesic-tetra-all");
+      const geodesicTetraControls =
+        document.getElementById("geodesic-tetra-all");
       if (geodesicTetraControls && geodesicTetraCheckbox.checked) {
         geodesicTetraControls.style.display = "block";
       }
@@ -1889,13 +2015,17 @@ function startARTexplorer(
 
   // Octahedron with geodesic controls toggle
   const octahedronCheckbox = document.getElementById("showOctahedron");
-  const geodesicOctaCheckbox = document.getElementById("showGeodesicOctahedron");
+  const geodesicOctaCheckbox = document.getElementById(
+    "showGeodesicOctahedron"
+  );
   if (octahedronCheckbox) {
     octahedronCheckbox.addEventListener("change", () => {
       const geodesicOctaControls = document.getElementById("geodesic-octa-all");
       if (geodesicOctaControls) {
         // Keep controls visible if geodesic variant is checked (preserve settings)
-        const shouldShow = octahedronCheckbox.checked || (geodesicOctaCheckbox && geodesicOctaCheckbox.checked);
+        const shouldShow =
+          octahedronCheckbox.checked ||
+          (geodesicOctaCheckbox && geodesicOctaCheckbox.checked);
         geodesicOctaControls.style.display = shouldShow ? "block" : "none";
       }
       updateGeometry();
@@ -1914,13 +2044,18 @@ function startARTexplorer(
 
   // Icosahedron with geodesic controls toggle
   const icosahedronCheckbox = document.getElementById("showIcosahedron");
-  const geodesicIcosaCheckbox = document.getElementById("showGeodesicIcosahedron");
+  const geodesicIcosaCheckbox = document.getElementById(
+    "showGeodesicIcosahedron"
+  );
   if (icosahedronCheckbox) {
     icosahedronCheckbox.addEventListener("change", () => {
-      const geodesicIcosaControls = document.getElementById("geodesic-icosa-all");
+      const geodesicIcosaControls =
+        document.getElementById("geodesic-icosa-all");
       if (geodesicIcosaControls) {
         // Keep controls visible if geodesic variant is checked (preserve settings)
-        const shouldShow = icosahedronCheckbox.checked || (geodesicIcosaCheckbox && geodesicIcosaCheckbox.checked);
+        const shouldShow =
+          icosahedronCheckbox.checked ||
+          (geodesicIcosaCheckbox && geodesicIcosaCheckbox.checked);
         geodesicIcosaControls.style.display = shouldShow ? "block" : "none";
       }
       updateGeometry();
@@ -1929,7 +2064,8 @@ function startARTexplorer(
   // Also listen to geodesic checkbox to control visibility
   if (geodesicIcosaCheckbox) {
     geodesicIcosaCheckbox.addEventListener("change", () => {
-      const geodesicIcosaControls = document.getElementById("geodesic-icosa-all");
+      const geodesicIcosaControls =
+        document.getElementById("geodesic-icosa-all");
       if (geodesicIcosaControls && geodesicIcosaCheckbox.checked) {
         geodesicIcosaControls.style.display = "block";
       }
@@ -1953,9 +2089,13 @@ function startARTexplorer(
   const cubeMatrixCheckbox = document.getElementById("showCubeMatrix");
   if (cubeMatrixCheckbox) {
     cubeMatrixCheckbox.addEventListener("change", () => {
-      const cubeMatrixControls = document.getElementById("cube-matrix-controls");
+      const cubeMatrixControls = document.getElementById(
+        "cube-matrix-controls"
+      );
       if (cubeMatrixControls) {
-        cubeMatrixControls.style.display = cubeMatrixCheckbox.checked ? "block" : "none";
+        cubeMatrixControls.style.display = cubeMatrixCheckbox.checked
+          ? "block"
+          : "none";
       }
       updateGeometry();
     });
@@ -1965,7 +2105,8 @@ function startARTexplorer(
   if (cubeMatrixSizeSlider) {
     cubeMatrixSizeSlider.addEventListener("input", e => {
       const matrixSize = parseInt(e.target.value);
-      document.getElementById("cubeMatrixSizeValue").textContent = `${matrixSize}×${matrixSize}`;
+      document.getElementById("cubeMatrixSizeValue").textContent =
+        `${matrixSize}×${matrixSize}`;
       updateGeometry();
     });
   }
@@ -1981,7 +2122,9 @@ function startARTexplorer(
     tetMatrixCheckbox.addEventListener("change", () => {
       const tetMatrixControls = document.getElementById("tet-matrix-controls");
       if (tetMatrixControls) {
-        tetMatrixControls.style.display = tetMatrixCheckbox.checked ? "block" : "none";
+        tetMatrixControls.style.display = tetMatrixCheckbox.checked
+          ? "block"
+          : "none";
       }
       updateGeometry();
     });
@@ -1991,7 +2134,8 @@ function startARTexplorer(
   if (tetMatrixSizeSlider) {
     tetMatrixSizeSlider.addEventListener("input", e => {
       const matrixSize = parseInt(e.target.value);
-      document.getElementById("tetMatrixSizeValue").textContent = `${matrixSize}×${matrixSize}`;
+      document.getElementById("tetMatrixSizeValue").textContent =
+        `${matrixSize}×${matrixSize}`;
       updateGeometry();
     });
   }
@@ -2005,9 +2149,13 @@ function startARTexplorer(
   const octaMatrixCheckbox = document.getElementById("showOctaMatrix");
   if (octaMatrixCheckbox) {
     octaMatrixCheckbox.addEventListener("change", () => {
-      const octaMatrixControls = document.getElementById("octa-matrix-controls");
+      const octaMatrixControls = document.getElementById(
+        "octa-matrix-controls"
+      );
       if (octaMatrixControls) {
-        octaMatrixControls.style.display = octaMatrixCheckbox.checked ? "block" : "none";
+        octaMatrixControls.style.display = octaMatrixCheckbox.checked
+          ? "block"
+          : "none";
       }
       updateGeometry();
     });
@@ -2017,7 +2165,8 @@ function startARTexplorer(
   if (octaMatrixSizeSlider) {
     octaMatrixSizeSlider.addEventListener("input", e => {
       const matrixSize = parseInt(e.target.value);
-      document.getElementById("octaMatrixSizeValue").textContent = `${matrixSize}×${matrixSize}`;
+      document.getElementById("octaMatrixSizeValue").textContent =
+        `${matrixSize}×${matrixSize}`;
       updateGeometry();
     });
   }
@@ -2025,6 +2174,79 @@ function startARTexplorer(
   const octaMatrixRotate45 = document.getElementById("octaMatrixRotate45");
   if (octaMatrixRotate45) {
     octaMatrixRotate45.addEventListener("change", updateGeometry);
+  }
+
+  // Cuboctahedron Matrix (Vector Equilibrium Array)
+  const cuboctaMatrixCheckbox = document.getElementById(
+    "showCuboctahedronMatrix"
+  );
+  if (cuboctaMatrixCheckbox) {
+    cuboctaMatrixCheckbox.addEventListener("change", () => {
+      const cuboctaMatrixControls = document.getElementById(
+        "cubocta-matrix-controls"
+      );
+      if (cuboctaMatrixControls) {
+        cuboctaMatrixControls.style.display = cuboctaMatrixCheckbox.checked
+          ? "block"
+          : "none";
+      }
+      updateGeometry();
+    });
+  }
+
+  const cuboctaMatrixSizeSlider = document.getElementById(
+    "cuboctaMatrixSizeSlider"
+  );
+  if (cuboctaMatrixSizeSlider) {
+    cuboctaMatrixSizeSlider.addEventListener("input", e => {
+      const matrixSize = parseInt(e.target.value);
+      document.getElementById("cuboctaMatrixSizeValue").textContent =
+        `${matrixSize}×${matrixSize}`;
+      updateGeometry();
+    });
+  }
+
+  const cuboctaMatrixRotate45 = document.getElementById(
+    "cuboctaMatrixRotate45"
+  );
+  if (cuboctaMatrixRotate45) {
+    cuboctaMatrixRotate45.addEventListener("change", updateGeometry);
+  }
+
+  // Rhombic Dodecahedron Matrix (Space-Filling Array)
+  const rhombicDodecMatrixCheckbox = document.getElementById(
+    "showRhombicDodecMatrix"
+  );
+  if (rhombicDodecMatrixCheckbox) {
+    rhombicDodecMatrixCheckbox.addEventListener("change", () => {
+      const rhombicDodecMatrixControls = document.getElementById(
+        "rhombic-dodec-matrix-controls"
+      );
+      if (rhombicDodecMatrixControls) {
+        rhombicDodecMatrixControls.style.display =
+          rhombicDodecMatrixCheckbox.checked ? "block" : "none";
+      }
+      updateGeometry();
+    });
+  }
+
+  const rhombicDodecMatrixSizeSlider = document.getElementById(
+    "rhombicDodecMatrixSizeSlider"
+  );
+  if (rhombicDodecMatrixSizeSlider) {
+    rhombicDodecMatrixSizeSlider.addEventListener("input", e => {
+      const matrixSize = parseInt(e.target.value);
+      document.getElementById("rhombicDodecMatrixSizeValue").textContent =
+        `${matrixSize}×${matrixSize}`;
+      updateGeometry();
+    });
+  }
+
+  const rhombicDodecMatrixRotate45 = document.getElementById(
+    "rhombicDodecMatrixRotate45"
+  );
+  if (rhombicDodecMatrixRotate45) {
+    rhombicDodecMatrixRotate45.addEventListener("change", updateGeometry);
   }
 
   // Phase 2.7a, 2.7b, 2.7c: Geodesic controls
@@ -2574,7 +2796,9 @@ function startARTexplorer(
       if (
         formType === "cubeMatrix" ||
         formType === "tetMatrix" ||
-        formType === "octaMatrix"
+        formType === "octaMatrix" ||
+        formType === "cuboctaMatrix" ||
+        formType === "rhombicDodecMatrix"
       ) {
         matrixFormDeposited = true;
       }
@@ -3453,6 +3677,8 @@ function startARTexplorer(
       cubeMatrixGroup,
       tetMatrixGroup,
       octaMatrixGroup,
+      cuboctaMatrixGroup,
+      rhombicDodecMatrixGroup,
     ];
 
     formGroups.forEach(group => {
@@ -4110,7 +4336,7 @@ function startARTexplorer(
   });
 
   // Keyboard shortcuts for file operations
-  document.addEventListener("keydown", (e) => {
+  document.addEventListener("keydown", e => {
     // Ctrl/Cmd + S - Save
     if ((e.ctrlKey || e.metaKey) && e.key === "s") {
       e.preventDefault();

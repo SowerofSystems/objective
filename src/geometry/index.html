@@ -310,37 +310,6 @@
               </label>
             </div>
 
-            <!-- Cube Matrix Form (IVM Array) -->
-            <div class="control-item">
-              <label class="checkbox-label">
-                <input type="checkbox" id="showCubeMatrix" />
-                Cube Matrix (IVM)
-              </label>
-              <div id="cube-matrix-controls" class="geodesic-options" style="display: none; margin-left: 20px; margin-top: 8px;">
-                <div class="control-item" style="margin-bottom: 8px;">
-                  <label style="font-size: 11px;">Matrix Size</label>
-                  <div class="slider-container">
-                    <input
-                      type="range"
-                      id="cubeMatrixSizeSlider"
-                      min="1"
-                      max="10"
-                      step="1"
-                      value="1"
-                    />
-                    <span class="slider-value" id="cubeMatrixSizeValue">1×1</span>
-                  </div>
-                </div>
-                <label class="checkbox-label" style="font-size: 11px; margin-left: 0;">
-                  <input type="checkbox" id="cubeMatrixRotate45" />
-                  Rotate 45° (grid align)
-                </label>
-                <p class="info-text" style="margin-left: 0; font-size: 10px;">
-                  N×N spatial array (spread = 0.5)
-                </p>
-              </div>
-            </div>
-
             <div class="control-item">
               <label class="checkbox-label">
                 <input type="checkbox" id="showTetrahedron" />
@@ -439,39 +408,8 @@
             <div class="control-item">
               <label class="checkbox-label">
                 <input type="checkbox" id="showDualTetrahedron" checked />
-                Dual Tetrahedron
+                Tetrahedron Dual
               </label>
-            </div>
-
-            <!-- Tet Matrix Form (IVM Array) -->
-            <div class="control-item">
-              <label class="checkbox-label">
-                <input type="checkbox" id="showTetMatrix" />
-                Tet Matrix (IVM)
-              </label>
-              <div id="tet-matrix-controls" class="geodesic-options" style="display: none; margin-left: 20px; margin-top: 8px;">
-                <div class="control-item" style="margin-bottom: 8px;">
-                  <label style="font-size: 11px;">Matrix Size</label>
-                  <div class="slider-container">
-                    <input
-                      type="range"
-                      id="tetMatrixSizeSlider"
-                      min="1"
-                      max="10"
-                      step="1"
-                      value="1"
-                    />
-                    <span class="slider-value" id="tetMatrixSizeValue">1×1</span>
-                  </div>
-                </div>
-                <label class="checkbox-label" style="font-size: 11px; margin-left: 0;">
-                  <input type="checkbox" id="tetMatrixRotate45" />
-                  Rotate 45° (grid align)
-                </label>
-                <p class="info-text" style="margin-left: 0; font-size: 10px;">
-                  N×N tetrahedral array with alternating orientations
-                </p>
-              </div>
             </div>
 
             <div class="control-item">
@@ -567,37 +505,6 @@
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <!-- Octa Matrix Form (IVM Array) -->
-            <div class="control-item">
-              <label class="checkbox-label">
-                <input type="checkbox" id="showOctaMatrix" />
-                Octa Matrix (IVM)
-              </label>
-              <div id="octa-matrix-controls" class="geodesic-options" style="display: none; margin-left: 20px; margin-top: 8px;">
-                <div class="control-item" style="margin-bottom: 8px;">
-                  <label style="font-size: 11px;">Matrix Size</label>
-                  <div class="slider-container">
-                    <input
-                      type="range"
-                      id="octaMatrixSizeSlider"
-                      min="1"
-                      max="10"
-                      step="1"
-                      value="1"
-                    />
-                    <span class="slider-value" id="octaMatrixSizeValue">1×1</span>
-                  </div>
-                </div>
-                <label class="checkbox-label" style="font-size: 11px; margin-left: 0;">
-                  <input type="checkbox" id="octaMatrixRotate45" />
-                  Rotate 45° (grid align)
-                </label>
-                <p class="info-text" style="margin-left: 0; font-size: 10px;">
-                  N×N octahedral face-to-face array
-                </p>
               </div>
             </div>
 
@@ -705,7 +612,7 @@
             <div class="control-item">
               <label class="checkbox-label">
                 <input type="checkbox" id="showDualIcosahedron" />
-                Dual Icosahedron (Face Dual)
+                Icosahedron Dual (Face Dual)
               </label>
             </div>
             <div class="control-item">
@@ -720,6 +627,167 @@
                 Rhombic Dodecahedron
               </label>
             </div>
+
+            <!-- ========== MATRICES ========== -->
+            <div style="margin: 16px 0 12px 0; padding-top: 12px; border-top: 1px solid #333;">
+              <label class="label-subsection" style="font-size: 12px; color: #888; font-weight: 500;">Matrices</label>
+            </div>
+
+            <!-- Hexahedral Matrix (IVM) -->
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showCubeMatrix" />
+                Hexahedral Matrix (IVM)
+              </label>
+              <div id="cube-matrix-controls" class="geodesic-options" style="display: none; margin-left: 20px; margin-top: 8px;">
+                <div class="control-item" style="margin-bottom: 8px;">
+                  <label style="font-size: 11px;">Matrix Size</label>
+                  <div class="slider-container">
+                    <input
+                      type="range"
+                      id="cubeMatrixSizeSlider"
+                      min="1"
+                      max="10"
+                      step="1"
+                      value="1"
+                    />
+                    <span class="slider-value" id="cubeMatrixSizeValue">1×1</span>
+                  </div>
+                </div>
+                <label class="checkbox-label" style="font-size: 11px; margin-left: 0;">
+                  <input type="checkbox" id="cubeMatrixRotate45" />
+                  Rotate 45° (grid align)
+                </label>
+                <p class="info-text" style="margin-left: 0; font-size: 10px;">
+                  N×N spatial array (spread = 0.5)
+                </p>
+              </div>
+            </div>
+
+            <!-- Tetrahedral Matrix (IVM) -->
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showTetMatrix" />
+                Tetrahedral Matrix (IVM)
+              </label>
+              <div id="tet-matrix-controls" class="geodesic-options" style="display: none; margin-left: 20px; margin-top: 8px;">
+                <div class="control-item" style="margin-bottom: 8px;">
+                  <label style="font-size: 11px;">Matrix Size</label>
+                  <div class="slider-container">
+                    <input
+                      type="range"
+                      id="tetMatrixSizeSlider"
+                      min="1"
+                      max="10"
+                      step="1"
+                      value="1"
+                    />
+                    <span class="slider-value" id="tetMatrixSizeValue">1×1</span>
+                  </div>
+                </div>
+                <label class="checkbox-label" style="font-size: 11px; margin-left: 0;">
+                  <input type="checkbox" id="tetMatrixRotate45" />
+                  Rotate 45° (grid align)
+                </label>
+                <p class="info-text" style="margin-left: 0; font-size: 10px;">
+                  N×N tetrahedral array with alternating orientations
+                </p>
+              </div>
+            </div>
+
+            <!-- Octahedral Matrix (IVM) -->
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showOctaMatrix" />
+                Octahedral Matrix (IVM)
+              </label>
+              <div id="octa-matrix-controls" class="geodesic-options" style="display: none; margin-left: 20px; margin-top: 8px;">
+                <div class="control-item" style="margin-bottom: 8px;">
+                  <label style="font-size: 11px;">Matrix Size</label>
+                  <div class="slider-container">
+                    <input
+                      type="range"
+                      id="octaMatrixSizeSlider"
+                      min="1"
+                      max="10"
+                      step="1"
+                      value="1"
+                    />
+                    <span class="slider-value" id="octaMatrixSizeValue">1×1</span>
+                  </div>
+                </div>
+                <label class="checkbox-label" style="font-size: 11px; margin-left: 0;">
+                  <input type="checkbox" id="octaMatrixRotate45" />
+                  Rotate 45° (grid align)
+                </label>
+                <p class="info-text" style="margin-left: 0; font-size: 10px;">
+                  N×N octahedral face-to-face array
+                </p>
+              </div>
+            </div>
+
+            <!-- Cuboctahedral Matrix (VE) -->
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showCuboctahedronMatrix" />
+                Cuboctahedral Matrix (VE)
+              </label>
+              <div id="cubocta-matrix-controls" class="geodesic-options" style="display: none; margin-left: 20px; margin-top: 8px;">
+                <div class="control-item" style="margin-bottom: 8px;">
+                  <label style="font-size: 11px;">Matrix Size</label>
+                  <div class="slider-container">
+                    <input
+                      type="range"
+                      id="cuboctaMatrixSizeSlider"
+                      min="1"
+                      max="10"
+                      step="1"
+                      value="1"
+                    />
+                    <span class="slider-value" id="cuboctaMatrixSizeValue">1×1</span>
+                  </div>
+                </div>
+                <label class="checkbox-label" style="font-size: 11px; margin-left: 0;">
+                  <input type="checkbox" id="cuboctaMatrixRotate45" />
+                  Rotate 45° (grid align)
+                </label>
+                <p class="info-text" style="margin-left: 0; font-size: 10px;">
+                  N×N Vector Equilibrium space-filling array
+                </p>
+              </div>
+            </div>
+
+            <!-- Rhombic Dodecahedral Matrix -->
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="showRhombicDodecMatrix" />
+                Rhombic Dodecahedral Matrix
+              </label>
+              <div id="rhombic-dodec-matrix-controls" class="geodesic-options" style="display: none; margin-left: 20px; margin-top: 8px;">
+                <div class="control-item" style="margin-bottom: 8px;">
+                  <label style="font-size: 11px;">Matrix Size</label>
+                  <div class="slider-container">
+                    <input
+                      type="range"
+                      id="rhombicDodecMatrixSizeSlider"
+                      min="1"
+                      max="10"
+                      step="1"
+                      value="1"
+                    />
+                    <span class="slider-value" id="rhombicDodecMatrixSizeValue">1×1</span>
+                  </div>
+                </div>
+                <label class="checkbox-label" style="font-size: 11px; margin-left: 0;">
+                  <input type="checkbox" id="rhombicDodecMatrixRotate45" />
+                  Rotate 45° (grid align)
+                </label>
+                <p class="info-text" style="margin-left: 0; font-size: 10px;">
+                  N×N Rhombic Dodecahedron space-filling array
+                </p>
+              </div>
+            </div>
+
           </div>
         </div>
         <!-- END SECTION 3: FORMS -->

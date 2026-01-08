@@ -98,17 +98,17 @@ const SNAP_THRESHOLD = 0.04; // radians (~2.3°)
 // Each entry: { s: spread, c: cross, x: cos(θ), y: sin(θ) }
 // For Q1 arc, we work directly with x = √c and y = √s on unit circle
 const geodesicTrackingAngles = [
-  { s: 0.000, c: 1.000, label: "0°" },     // 0° - horizontal (cardinal)
-  { s: 0.035, c: 0.965, label: "10.8°" },  // ~10.81° - Class I edge
-  { s: 0.127, c: 0.873, label: "20.9°" },  // ~20.90° - Class II
-  { s: 0.275, c: 0.725, label: "31.7°" },  // ~31.72° - Class I vertex
-  { s: 0.370, c: 0.630, label: "37.4°" },  // ~37.38° - Class II
-  { s: 0.500, c: 0.500, label: "45°" },    // 45° - diagonal (exact rational!)
-  { s: 0.630, c: 0.370, label: "52.6°" },  // ~52.62° - Class II
-  { s: 0.725, c: 0.275, label: "58.3°" },  // ~58.28° - Class I vertex
-  { s: 0.873, c: 0.127, label: "69.1°" },  // ~69.10° - Class II
-  { s: 0.965, c: 0.035, label: "79.2°" },  // ~79.19° - Class I edge
-  { s: 1.000, c: 0.000, label: "90°" },    // 90° - vertical (cardinal)
+  { s: 0.0, c: 1.0, label: "0°" }, // 0° - horizontal (cardinal)
+  { s: 0.035, c: 0.965, label: "10.8°" }, // ~10.81° - Class I edge
+  { s: 0.127, c: 0.873, label: "20.9°" }, // ~20.90° - Class II
+  { s: 0.275, c: 0.725, label: "31.7°" }, // ~31.72° - Class I vertex
+  { s: 0.37, c: 0.63, label: "37.4°" }, // ~37.38° - Class II
+  { s: 0.5, c: 0.5, label: "45°" }, // 45° - diagonal (exact rational!)
+  { s: 0.63, c: 0.37, label: "52.6°" }, // ~52.62° - Class II
+  { s: 0.725, c: 0.275, label: "58.3°" }, // ~58.28° - Class I vertex
+  { s: 0.873, c: 0.127, label: "69.1°" }, // ~69.10° - Class II
+  { s: 0.965, c: 0.035, label: "79.2°" }, // ~79.19° - Class I edge
+  { s: 1.0, c: 0.0, label: "90°" }, // 90° - vertical (cardinal)
 ];
 
 /**
@@ -229,7 +229,8 @@ function createGeodesicTrackingLines() {
       const labelX = x * 0.8;
       const labelY = y * 0.8;
 
-      const screenX = 50 + ((labelX - cameraOffsetX) / (cameraSize * aspect)) * 50;
+      const screenX =
+        50 + ((labelX - cameraOffsetX) / (cameraSize * aspect)) * 50;
       const screenY = 50 - ((labelY - cameraOffsetY) / cameraSize) * 50;
 
       label.style.cssText = `
@@ -284,7 +285,7 @@ function createSnapMarkers() {
   const container = document.getElementById("cross-demo-container");
 
   // Create main labeled snap points
-  snapPoints.forEach((snap) => {
+  snapPoints.forEach(snap => {
     const x = radius * snap.x;
     const y = radius * snap.y;
 
@@ -328,7 +329,8 @@ function createSnapMarkers() {
     const labelX = x + (x / radius) * labelOffset;
     const labelY = y + (y / radius) * labelOffset;
 
-    const screenX = 50 + ((labelX - cameraOffsetX) / (cameraSize * aspect)) * 50;
+    const screenX =
+      50 + ((labelX - cameraOffsetX) / (cameraSize * aspect)) * 50;
     const screenY = 50 - ((labelY - cameraOffsetY) / cameraSize) * 50;
 
     label.style.cssText = `
@@ -348,7 +350,7 @@ function createSnapMarkers() {
   });
 
   // Create diamond snap points for hundredths intervals
-  diamondSnapPoints.forEach((snap) => {
+  diamondSnapPoints.forEach(snap => {
     const x = radius * snap.x;
     const y = radius * snap.y;
 
@@ -475,7 +477,7 @@ function createDraggablePoint() {
   const ringGeometry = new THREE.RingGeometry(0.04, 0.05, 32);
   const ringMaterial = new THREE.MeshBasicMaterial({
     color: 0xffffff,
-    side: THREE.DoubleSide
+    side: THREE.DoubleSide,
   });
   draggablePoint = new THREE.Mesh(ringGeometry, ringMaterial);
   draggablePoint.position.z = 0.02;
@@ -625,7 +627,7 @@ function updateVisualization() {
 
   // Find matching snap point for special messages
   let snapInfo = "";
-  const currentSnap = snapPoints.find((snap) => {
+  const currentSnap = snapPoints.find(snap => {
     const dx = normX - snap.x;
     const dy = normY - snap.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
@@ -684,7 +686,7 @@ function updateVisualization() {
         <span class="cross-color-x">x = ${normX.toFixed(6)}</span><br>
         <span class="cross-color-y">y = ${normY.toFixed(6)}</span><br>
         <span class="cross-text-muted">θ ≈ ${degrees.toFixed(6)}°</span><br>
-        <span class="cross-text-submuted">${degreesWhole}° ${minutesWhole}' ${secondsWhole}.${milliarcseconds.toString().padStart(3, '0')}"</span>
+        <span class="cross-text-submuted">${degreesWhole}° ${minutesWhole}' ${secondsWhole}.${milliarcseconds.toString().padStart(3, "0")}"</span>
       </div>
     </div>
 
@@ -714,17 +716,17 @@ function updateVisualization() {
     <div style="margin-bottom: 8px;">
       <strong class="cross-section-title">RT Identity</strong><br>
       <div class="cross-section-content">
-        s + c = <span class="${Math.abs(identity - 1.0) < 0.0001 ? 'cross-color-success' : 'cross-color-error'}">${identity.toFixed(4)}</span><br>
+        s + c = <span class="${Math.abs(identity - 1.0) < 0.0001 ? "cross-color-success" : "cross-color-error"}">${identity.toFixed(4)}</span><br>
         ${Math.abs(identity - 1.0) < 0.0001 ? '<span class="cross-color-success cross-text-muted">✓ Verified</span>' : '<span class="cross-color-error cross-text-muted">✗ Error</span>'}
         <span class="cross-text-muted"> (s + c = 1)</span>
       </div>
     </div>
 
-    ${snapInfo ? `<div class="cross-highlight-box">${snapInfo}</div>` : ''}
+    ${snapInfo ? `<div class="cross-highlight-box">${snapInfo}</div>` : ""}
 
     <div class="cross-principle-footer">
       <strong class="cross-section-title">RT Principle:</strong> Cross and Spread partition the radius quadrance. Cross measures horizontal alignment, Spread measures vertical alignment.
-      ${displayMode === "sexagesimal" ? '<br><br><span style="color: #ffaa00;">Sexagesimal (base-60) offers superior exact fractioning over decimal (base-10). Used in astronomy/navigation for millennia.</span>' : ''}
+      ${displayMode === "sexagesimal" ? '<br><br><span style="color: #ffaa00;">Sexagesimal (base-60) offers superior exact fractioning over decimal (base-10). Used in astronomy/navigation for millennia.</span>' : ""}
     </div>
   `;
 
@@ -758,7 +760,7 @@ function updateVisualization() {
 function setupInteraction(container) {
   const canvas = renderer.domElement;
 
-  const getMousePos = (event) => {
+  const getMousePos = event => {
     const rect = canvas.getBoundingClientRect();
     const clientX = event.touches ? event.touches[0].clientX : event.clientX;
     const clientY = event.touches ? event.touches[0].clientY : event.clientY;
@@ -774,7 +776,7 @@ function setupInteraction(container) {
     return { worldX, worldY };
   };
 
-  const handleStart = (event) => {
+  const handleStart = event => {
     const { worldX, worldY } = getMousePos(event);
     const dx = worldX - draggablePoint.position.x;
     const dy = worldY - draggablePoint.position.y;
@@ -788,7 +790,7 @@ function setupInteraction(container) {
     }
   };
 
-  const handleMove = (event) => {
+  const handleMove = event => {
     const { worldX, worldY } = getMousePos(event);
 
     if (!isDragging) {

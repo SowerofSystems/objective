@@ -3,7 +3,7 @@
  * Shared utilities for 2D math demonstrations using THREE.js
  */
 
-import * as THREE from 'three';
+import * as THREE from "three";
 
 /**
  * Creates a 2D THREE.js scene with orthographic camera
@@ -12,10 +12,7 @@ import * as THREE from 'three';
  * @returns {Object} Scene, camera, renderer, and utility functions
  */
 export function create2DScene(container, options = {}) {
-  const {
-    backgroundColor = 0xffffff,
-    cameraSize = 10
-  } = options;
+  const { backgroundColor = 0xffffff, cameraSize = 10 } = options;
 
   // Get actual container dimensions
   const width = container.clientWidth || 800;
@@ -43,9 +40,9 @@ export function create2DScene(container, options = {}) {
   renderer.setPixelRatio(window.devicePixelRatio);
 
   // Ensure canvas fills container
-  renderer.domElement.style.width = '100%';
-  renderer.domElement.style.height = '100%';
-  renderer.domElement.style.display = 'block';
+  renderer.domElement.style.width = "100%";
+  renderer.domElement.style.height = "100%";
+  renderer.domElement.style.display = "block";
 
   container.appendChild(renderer.domElement);
 
@@ -78,7 +75,7 @@ export function create2DScene(container, options = {}) {
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
-    }
+    },
   };
 }
 
@@ -121,7 +118,7 @@ export function create2DAxes(size = 10) {
 export function openDemoModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
-    modal.style.display = 'flex';
+    modal.style.display = "flex";
   }
 }
 
@@ -131,7 +128,7 @@ export function openDemoModal(modalId) {
 export function closeDemoModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
-    modal.style.display = 'none';
+    modal.style.display = "none";
   }
 }
 
@@ -140,14 +137,14 @@ export function closeDemoModal(modalId) {
  */
 export function initializeModalHandlers(modalId) {
   const modal = document.getElementById(modalId);
-  const closeBtn = modal?.querySelector('.close-modal');
+  const closeBtn = modal?.querySelector(".close-modal");
 
   if (closeBtn) {
-    closeBtn.addEventListener('click', () => closeDemoModal(modalId));
+    closeBtn.addEventListener("click", () => closeDemoModal(modalId));
   }
 
   if (modal) {
-    modal.addEventListener('click', (e) => {
+    modal.addEventListener("click", e => {
       if (e.target === modal) {
         closeDemoModal(modalId);
       }
