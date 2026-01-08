@@ -464,36 +464,43 @@ Copy blocks from rt-init.js:1624-1712 to rt-rendering.js:798-920
 
 ---
 
-## Testing Protocol: Comment-Out Method
+## Testing Protocol: Comment-Out Method (UPDATED 2026-01-08)
 
 **CRITICAL: Do NOT delete rt-init.js functions. Comment them out.**
 
 ### Step-by-Step Testing
 
-**Test 1: Verify rt-rendering.js imports correctly**
+**Test 1: Import rendering API factory and create API object**
 
 ```javascript
 // At top of rt-init.js (after existing imports)
-import { initScene, animate, updateGeometry } from "./rt-rendering.js";
+import { initScene as createRenderingAPI } from "./rt-rendering.js";
 
-// Check console for errors
-// If errors: fix imports/exports in rt-rendering.js
+// Inside startARTexplorer(), BEFORE any rendering functions are called:
+function startARTexplorer(THREE, OrbitControls, RT, ...) {
+  // Create rendering API object from factory
+  const renderingAPI = createRenderingAPI(THREE);
+
+  // Check console for errors
+  // If errors: fix rt-rendering.js exports
+}
 ```
 
-**Test 2: Comment out ONE function at a time**
+**Test 2: Comment out and replace functions ONE at a time**
 
 ```javascript
 // In rt-init.js startARTexplorer():
 
 // TEST: animate()
-// function animate() {  // ← Comment out
+// function animate() {  // ← Comment out inline function
 //   requestAnimationFrame(animate);
 //   controls.update();
 //   renderer.render(scene, camera);
 // }
 
-// Now using rt-rendering.js animate()
-animate(); // ← This should call the imported function
+// Replace direct call with API call:
+// animate(); // ← OLD: direct call to inline function
+renderingAPI.animate(); // ← NEW: call via API object
 
 // If works: ✅ animate() extraction successful
 // If breaks: ❌ revert (uncomment), debug rt-rendering.js
@@ -602,45 +609,56 @@ Before merging rt-rendering.js extraction:
 
 ---
 
-## Export/Import Structure
+## Export/Import Structure (UPDATED 2026-01-08)
 
-### rt-rendering.js exports:
+### rt-rendering.js ACTUAL architecture:
+
+**Factory Pattern with Closure Scope:**
 
 ```javascript
-export {
-  // Core scene
-  initScene,
-  animate,
-  onWindowResize,
+// rt-rendering.js exports ONE function that returns an API object
+export function initScene(THREE) {
+  // Closure-scoped variables (shared by all nested functions)
+  let scene, camera, renderer, controls;
+  let cubeGroup, tetrahedronGroup, /* ... all groups ... */;
 
-  // Grids & Basis
-  createCartesianGrid,
-  createQuadrayBasis,
-  createIVMGrid,
-  createIVMPlanes,
+  function initScene() { /* scene setup */ }
+  function animate() { /* animation loop */ }
+  function onWindowResize() { /* resize handler */ }
+  function updateGeometry() { /* rendering */ }
+  // ... all other functions as nested closures
 
-  // Rendering
-  renderPolyhedron,
-  updateGeometry,
-  updateGeometryStats,
-
-  // Utilities (for matrix rendering)
-  getPolyhedronEdgeQuadrance,
-  getClosePackedRadius,
-  getCachedNodeGeometry,
-  countGroupTriangles
-};
+  // Return public API
+  return {
+    initScene,
+    animate,
+    onWindowResize,
+    updateGeometry,
+    updateGeometryStats
+  };
+}
 ```
 
-### rt-init.js imports:
+### rt-init.js REQUIRED changes:
 
 ```javascript
-import {
-  initScene,
-  animate,
-  updateGeometry,
-  // ... others as needed
-} from "./rt-rendering.js";
+// Import the factory function
+import { initScene as createRenderingAPI } from "./rt-rendering.js";
+
+function startARTexplorer(THREE, OrbitControls, RT, Quadray, Polyhedra, ...) {
+  // Call factory to get rendering API
+  const renderingAPI = createRenderingAPI(THREE);
+
+  // Comment out inline functions, use API instead:
+  // function initScene() { ... } // ← COMMENT OUT
+  renderingAPI.initScene(); // ← Use module version
+
+  // function animate() { ... } // ← COMMENT OUT
+  renderingAPI.animate(); // ← Use module version
+
+  // function updateGeometry() { ... } // ← COMMENT OUT
+  // Called via UI: renderingAPI.updateGeometry()
+}
 ```
 
 ---
@@ -1269,7 +1287,22 @@ rt-rendering.js imports:
 - [ ] Check that THREE.js loads before rt-init.js
 - [ ] Check that RT library loads before rt-init.js
 
-**Phase 5 Status:** ⚠️ PENDING - Awaiting verification steps
+**Phase 5 Status:** ✅ COMPLETE (2026-01-08)
+
+### 5.6 Architecture Clarification (Added 2026-01-08)
+
+**Issue Identified:** Original plan showed standalone exports, but rt-rendering.js uses factory pattern.
+
+**Resolution:**
+- ✅ Updated plan documentation (Section "Export/Import Structure")
+- ✅ Clarified factory pattern: `export function initScene(THREE)` returns API object
+- ✅ Updated Testing Protocol to show correct usage: `const renderingAPI = createRenderingAPI(THREE)`
+- ✅ Fixed rt-rendering.js return statement to include `initScene` function
+- ✅ Updated Phase 6.2.1 with correct step-by-step instructions
+
+**Architecture Decision:** Keep factory pattern (closure-based), do NOT restructure to standalone exports.
+- Pros: Natural closure scope, matches existing rt-init.js pattern
+- Cons: Slightly more verbose import (`renderingAPI.animate()` vs `animate()`)
 
 ---
 
@@ -1296,9 +1329,21 @@ rt-rendering.js imports:
 
 **Comment out functions in this SAFE order:**
 
-#### 6.2.1 Test: animate() & onWindowResize() (SAFEST)
+#### 6.2.1 Test: animate() & onWindowResize() (SAFEST) - UPDATED 2026-01-08
 
-**Step 1:** Comment out in rt-init.js:
+**Step 0:** Add import and create rendering API at top of startARTexplorer():
+```javascript
+// At top of rt-init.js imports:
+import { initScene as createRenderingAPI } from "./rt-rendering.js";
+
+// Inside startARTexplorer(), FIRST thing:
+function startARTexplorer(THREE, OrbitControls, RT, Quadray, Polyhedra, ...) {
+  const renderingAPI = createRenderingAPI(THREE);
+  // ... rest of function
+}
+```
+
+**Step 1:** Comment out inline functions in rt-init.js:
 ```javascript
 // function animate() {
 //   requestAnimationFrame(animate);
@@ -1307,16 +1352,20 @@ rt-rendering.js imports:
 // }
 
 // function onWindowResize() {
-//   camera.aspect = window.innerWidth / window.innerHeight;
+//   const container = document.getElementById("canvas-container");
+//   camera.aspect = container.clientWidth / container.clientHeight;
 //   camera.updateProjectionMatrix();
-//   renderer.setSize(window.innerWidth, window.innerHeight);
+//   renderer.setSize(container.clientWidth, container.clientHeight);
 // }
 ```
 
-**Step 2:** Verify these calls still use imported functions:
+**Step 2:** Replace function calls with API calls:
 ```javascript
-animate(); // Should call rt-rendering.animate()
-window.addEventListener("resize", onWindowResize); // Should call rt-rendering.onWindowResize()
+// OLD: animate();
+renderingAPI.animate(); // ← NEW
+
+// OLD: window.addEventListener("resize", onWindowResize);
+window.addEventListener("resize", () => renderingAPI.onWindowResize()); // ← NEW (arrow function wrapper)
 ```
 
 **Step 3:** Test:

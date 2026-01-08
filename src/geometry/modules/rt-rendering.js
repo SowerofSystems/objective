@@ -1668,5 +1668,24 @@ export function initScene(THREE) {
     renderer.setSize(container.clientWidth, container.clientHeight);
   }
 
+  // Return public API from initScene() factory
+  return {
+    // Core scene initialization
+    initScene,
+    animate,
+    onWindowResize,
+
+    // Rendering functions
+    updateGeometry,
+    updateGeometryStats,
+
+    // Grid and basis functions (if needed by rt-init.js)
+    // These may not need to be exposed if only called from initScene()
+    // Uncomment if rt-init.js needs direct access:
+    // createCartesianGrid,
+    // createQuadrayBasis,
+    // createIVMPlanes,
+  };
+
   // ========================================================================
 }
