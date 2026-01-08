@@ -9,6 +9,9 @@ import { initCrossDemo } from "../demos/rt-cross-demo.js";
 import { initWeierstrassDemo } from "../demos/rt-weierstrass-demo.js";
 import { openDemoModal } from "../demos/rt-demo-utils.js";
 
+// PHASE 6 EXTRACTION: Import rendering API factory
+import { initScene as createRenderingAPI } from "./rt-rendering.js";
+
 // Make RTPolyhedra available globally for node geometry creation
 window.RTPolyhedra = Polyhedra;
 
@@ -118,6 +121,12 @@ function startARTexplorer(
   RTStateManager,
   RTFileHandler
 ) {
+  // ========================================================================
+  // PHASE 6 EXTRACTION: Create rendering API (TEST - does not replace inline functions yet)
+  // ========================================================================
+  const renderingAPI = createRenderingAPI(THREE);
+  console.log("[rt-init.js] ✅ Rendering API created:", renderingAPI);
+
   // ========================================================================
   // THREE.JS SCENE SETUP
   // ========================================================================
