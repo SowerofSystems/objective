@@ -700,15 +700,72 @@ function startARTexplorer(THREE, OrbitControls, RT, Quadray, Polyhedra, ...) {
 
 ## Failed Extraction Attempts
 
-*To be filled in if extraction fails*
+### Attempt 1: animate() Stack Overflow (2026-01-08)
 
-### Attempt 1: (If needed)
+**Date:** 2026-01-08
+**Phase:** Phase 6.2.1 Step 1 (Comment out animate() function)
 
-**Date:**
 **What failed:**
-**Error message:**
+Calling `renderingAPI.animate()` caused immediate stack overflow and canvas failed to render.
+
+**Actions taken:**
+1. Commented out inline `animate()` function in rt-init.js (line ~1865)
+2. Replaced `animate()` call with `renderingAPI.animate()` (line ~4411)
+3. Page loaded but stack overflow occurred, canvas blank
+
 **Root cause:**
+Factory pattern creates closure with uninitialized variables. When `renderingAPI.animate()` was called, the closure-scoped variables (`scene`, `camera`, `renderer`, `controls`) were **undefined** because `renderingAPI.initScene()` was never called to initialize them.
+
+**Technical explanation:**
+```javascript
+// rt-rendering.js factory creates closure with uninitialized vars
+export function initScene(THREE) {
+  let scene, camera, renderer, controls; // ← UNDEFINED initially
+
+  function initScene() {
+    scene = new THREE.Scene(); // ← Initializes variables
+    // ...
+  }
+
+  function animate() {
+    renderer.render(scene, camera); // ← Uses undefined vars if initScene() not called!
+  }
+
+  return { initScene, animate };
+}
+```
+
+**Error flow:**
+1. rt-init.js creates API: `const renderingAPI = createRenderingAPI(THREE)`
+2. rt-init.js immediately calls: `renderingAPI.animate()`
+3. BUT rt-init.js's own `initScene()` ran (initialized rt-init.js's scene/camera/renderer)
+4. NOT rt-rendering.js's `renderingAPI.initScene()` (would initialize rt-rendering.js's closure vars)
+5. Result: `animate()` tries to use undefined `scene`, `camera`, `renderer` → stack overflow
+
 **Lesson learned:**
+**CRITICAL: Factory pattern requires initialization before use!**
+
+Before calling `renderingAPI.animate()`, MUST call `renderingAPI.initScene()` to initialize closure-scoped variables.
+
+**Correct extraction order:**
+```javascript
+const renderingAPI = createRenderingAPI(THREE);
+
+// WRONG (causes stack overflow):
+// animate();
+// renderingAPI.animate(); // ← Variables undefined!
+
+// CORRECT:
+// Comment out rt-init.js's initScene()
+// renderingAPI.initScene(); // ← Initialize variables FIRST
+// Comment out rt-init.js's animate()
+// renderingAPI.animate(); // ← NOW variables are initialized
+```
+
+**Resolution:**
+Extraction plan updated. Must extract `initScene()` BEFORE attempting to extract `animate()`.
+
+**Next attempt:** Extract initScene() first, verify it works, THEN extract animate().
 
 ---
 

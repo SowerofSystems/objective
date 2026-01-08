@@ -1650,12 +1650,20 @@ export function initScene(THREE) {
   }
 
   /**
-   * Animation loop
+   * Animation loop with FPS tracking
    */
   function animate() {
     requestAnimationFrame(animate);
     controls.update(); // Required for damping
     renderer.render(scene, camera);
+
+    // Update FPS tracking and performance display
+    PerformanceClock.updateFPS();
+
+    // Update display every 10 frames (reduce overhead)
+    if (Math.floor(performance.now() / 100) % 10 === 0) {
+      PerformanceClock.updateDisplay(useRTNodeGeometry);
+    }
   }
 
   /**
