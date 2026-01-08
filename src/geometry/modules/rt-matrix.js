@@ -315,6 +315,136 @@ export const RTMatrix = {
   },
 
   /**
+   * Create N×N matrix of rhombic dodecahedra in X-Y plane
+   * Face-to-face array (rhombic faces coplanar) - space-filling array
+   *
+   * @param {number} matrixSize - Grid size (1 to 10)
+   * @param {number} halfSize - Half the cube edge length (rhombic dodec dual to cuboctahedron)
+   * @param {boolean} rotate45 - Apply 45° Z-rotation for grid alignment
+   * @param {number} opacity - Opacity value (0.0 to 1.0)
+   * @param {number} color - Hex color value (default: 0xff8800 orange)
+   * @param {Object} THREE - THREE.js library
+   * @returns {THREE.Group} Group containing all rhombic dodecahedron instances
+   *
+   * RT-PURE GEOMETRY:
+   * - Rhombic dodecahedron dual to cuboctahedron
+   * - Face centers at cuboctahedron vertices
+   * - Spacing = cube edge (2 * halfSize, same as cube matrix)
+   * - All 12 rhombic faces are coplanar between adjacent polyhedra
+   * - Logarithmic depth buffer handles coplanar face rendering
+   *
+   * SPACE-FILLING: Forms complete tiling (like cube matrix)
+   * Pattern: Face-to-face contact via rhombic faces (single orientation)
+   */
+  createRhombicDodecahedronMatrix: (
+    matrixSize,
+    halfSize,
+    rotate45,
+    opacity,
+    color = 0xff8800, // Orange (Rhombic Dodecahedron color)
+    THREE
+  ) => {
+    const matrixGroup = new THREE.Group();
+    const spacing = 2 * halfSize; // Cube edge length (same as cube matrix)
+
+    // Get base rhombic dodecahedron geometry
+    const rhombicDodecGeom = Polyhedra.rhombicDodecahedron(halfSize);
+    const { vertices, edges, faces } = rhombicDodecGeom;
+
+    // Generate N×N grid centered at origin
+    for (let i = 0; i < matrixSize; i++) {
+      for (let j = 0; j < matrixSize; j++) {
+        // Calculate position: centered at origin
+        const offset_x = (i - matrixSize / 2 + 0.5) * spacing;
+        const offset_y = (j - matrixSize / 2 + 0.5) * spacing;
+        const offset_z = 0; // Z-centered at origin
+
+        // Create rhombic dodecahedron instance at this grid position
+        const rhombicDodecGroup = new THREE.Group();
+
+        // Build indexed face geometry
+        const positions = [];
+        const indices = [];
+
+        // Add all vertices to positions array (with offset)
+        vertices.forEach((v) => {
+          positions.push(v.x + offset_x, v.y + offset_y, v.z + offset_z);
+        });
+
+        // Build face indices (triangulate rhombic faces)
+        faces.forEach((faceIndices) => {
+          // Fan triangulation from first vertex
+          for (let k = 1; k < faceIndices.length - 1; k++) {
+            indices.push(faceIndices[0], faceIndices[k], faceIndices[k + 1]);
+          }
+        });
+
+        const faceGeometry = new THREE.BufferGeometry();
+        faceGeometry.setAttribute(
+          "position",
+          new THREE.Float32BufferAttribute(positions, 3)
+        );
+        faceGeometry.setIndex(indices);
+        faceGeometry.computeVertexNormals();
+
+        const faceMaterial = new THREE.MeshStandardMaterial({
+          color: color,
+          transparent: true,
+          opacity: opacity,
+          side: THREE.DoubleSide,
+          depthWrite: opacity >= 0.99,
+          flatShading: true,
+        });
+
+        const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);
+        faceMesh.renderOrder = 1;
+        rhombicDodecGroup.add(faceMesh);
+
+        // Render edges
+        const edgePositions = [];
+        edges.forEach(([vi, vj]) => {
+          const v1 = vertices[vi];
+          const v2 = vertices[vj];
+          edgePositions.push(v1.x + offset_x, v1.y + offset_y, v1.z + offset_z);
+          edgePositions.push(v2.x + offset_x, v2.y + offset_y, v2.z + offset_z);
+        });
+
+        const edgeGeometry = new THREE.BufferGeometry();
+        edgeGeometry.setAttribute(
+          "position",
+          new THREE.Float32BufferAttribute(edgePositions, 3)
+        );
+
+        const edgeMaterial = new THREE.LineBasicMaterial({
+          color: color,
+          linewidth: 1,
+          depthTest: true,
+          depthWrite: true,
+        });
+
+        const edgeLines = new THREE.LineSegments(edgeGeometry, edgeMaterial);
+        edgeLines.renderOrder = 2;
+        rhombicDodecGroup.add(edgeLines);
+
+        matrixGroup.add(rhombicDodecGroup);
+      }
+    }
+
+    // Apply 45° rotation if requested (RT-pure)
+    if (rotate45) {
+      RT.applyRotation45(matrixGroup);
+    }
+
+    console.log(
+      `[RTMatrix] Rhombic dodecahedron matrix created: ${matrixSize}×${matrixSize} = ${
+        matrixSize * matrixSize
+      } rhombic dodecs, rotate45=${rotate45}`
+    );
+
+    return matrixGroup;
+  },
+
+  /**
    * Create N×N matrix of tetrahedra in X-Y plane
    * Vertex-to-vertex array with octahedral voids (alternating orientations)
    *

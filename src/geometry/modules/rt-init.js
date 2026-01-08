@@ -130,6 +130,7 @@ function startARTexplorer(
   let geodesicOctahedronGroup; // Phase 2.7b: Geodesic octahedron
   let cubeMatrixGroup, tetMatrixGroup, octaMatrixGroup; // Matrix forms (IVM arrays)
   let cuboctaMatrixGroup; // Cuboctahedron matrix (Vector Equilibrium array)
+  let rhombicDodecMatrixGroup; // Rhombic dodecahedron matrix (space-filling array)
   let cartesianGrid, cartesianBasis, quadrayBasis, ivmPlanes;
 
   function initScene() {
@@ -253,6 +254,10 @@ function startARTexplorer(
     cuboctaMatrixGroup.userData.type = "cuboctaMatrix";
     cuboctaMatrixGroup.userData.isInstance = false;
 
+    rhombicDodecMatrixGroup = new THREE.Group();
+    rhombicDodecMatrixGroup.userData.type = "rhombicDodecMatrix";
+    rhombicDodecMatrixGroup.userData.isInstance = false;
+
     scene.add(cubeGroup);
     scene.add(tetrahedronGroup);
     scene.add(dualTetrahedronGroup);
@@ -269,6 +274,7 @@ function startARTexplorer(
     scene.add(tetMatrixGroup);
     scene.add(octaMatrixGroup);
     scene.add(cuboctaMatrixGroup);
+    scene.add(rhombicDodecMatrixGroup);
 
     // Initialize PerformanceClock with all scene groups
     PerformanceClock.init([
@@ -288,6 +294,7 @@ function startARTexplorer(
       tetMatrixGroup,
       octaMatrixGroup,
       cuboctaMatrixGroup,
+      rhombicDodecMatrixGroup,
     ]);
 
     // Initial render
@@ -1049,11 +1056,12 @@ function startARTexplorer(
     // - Tet: inscribes in cube (vertices at cube vertices, spacing = 2 * halfSize)
     // - Octa: centers in cube (vertices at cube face centers, spacing = 2 * halfSize)
     // - Cuboctahedron: face-to-face via square faces (spacing = edge length = halfSize * √2)
+    // - Rhombic Dodecahedron: face-to-face via rhombic faces (spacing = 2 * halfSize, same as cube)
     let spacing;
     if (polyhedronType === "cuboctahedron") {
       spacing = scale * Math.sqrt(2); // Cuboctahedron edge length
     } else {
-      spacing = scale * 2; // Cube edge = 2 * halfSize (cube, tet, octa)
+      spacing = scale * 2; // Cube edge = 2 * halfSize (cube, tet, octa, rhombic dodec)
     }
 
     // Generate polyhedron vertices at each grid position
@@ -1070,6 +1078,8 @@ function startARTexplorer(
         polyGeom = Polyhedra.octahedron(scale);
       } else if (polyhedronType === "cuboctahedron") {
         polyGeom = Polyhedra.cuboctahedron(scale);
+      } else if (polyhedronType === "rhombicDodecahedron") {
+        polyGeom = Polyhedra.rhombicDodecahedron(scale);
       }
 
       const { vertices } = polyGeom;
@@ -1439,6 +1449,54 @@ function startARTexplorer(
       cuboctaMatrixGroup.visible = true;
     } else {
       cuboctaMatrixGroup.visible = false;
+    }
+
+    // Rhombic Dodecahedron Matrix (Space-Filling Array)
+    if (document.getElementById("showRhombicDodecMatrix").checked) {
+      const matrixSize = parseInt(
+        document.getElementById("rhombicDodecMatrixSizeSlider")?.value || "1"
+      );
+      const rotate45 =
+        document.getElementById("rhombicDodecMatrixRotate45")?.checked || false;
+
+      // Clear existing rhombic dodec matrix group
+      while (rhombicDodecMatrixGroup.children.length > 0) {
+        rhombicDodecMatrixGroup.remove(rhombicDodecMatrixGroup.children[0]);
+      }
+
+      // Generate rhombic dodecahedron matrix
+      import("./rt-matrix.js").then(MatrixModule => {
+        const { RTMatrix } = MatrixModule;
+        const rhombicDodecMatrix = RTMatrix.createRhombicDodecahedronMatrix(
+          matrixSize,
+          scale,
+          rotate45,
+          opacity,
+          0xff8800, // Orange (Rhombic Dodecahedron color)
+          THREE
+        );
+        rhombicDodecMatrixGroup.add(rhombicDodecMatrix);
+
+        // Add vertex nodes if enabled
+        const nodeSizeBtn = document.querySelector(".node-size-btn.active");
+        const nodeSize = nodeSizeBtn ? nodeSizeBtn.dataset.nodeSize : "md";
+        const showNodes = nodeSize !== "off";
+
+        if (showNodes) {
+          addMatrixNodes(
+            rhombicDodecMatrixGroup,
+            matrixSize,
+            scale,
+            rotate45,
+            0xff8800,
+            nodeSize,
+            "rhombicDodecahedron"
+          );
+        }
+      });
+      rhombicDodecMatrixGroup.visible = true;
+    } else {
+      rhombicDodecMatrixGroup.visible = false;
     }
 
     // Icosahedron (Cyan)
@@ -2114,6 +2172,32 @@ function startARTexplorer(
     cuboctaMatrixRotate45.addEventListener("change", updateGeometry);
   }
 
+  // Rhombic Dodecahedron Matrix (Space-Filling Array)
+  const rhombicDodecMatrixCheckbox = document.getElementById("showRhombicDodecMatrix");
+  if (rhombicDodecMatrixCheckbox) {
+    rhombicDodecMatrixCheckbox.addEventListener("change", () => {
+      const rhombicDodecMatrixControls = document.getElementById("rhombic-dodec-matrix-controls");
+      if (rhombicDodecMatrixControls) {
+        rhombicDodecMatrixControls.style.display = rhombicDodecMatrixCheckbox.checked ? "block" : "none";
+      }
+      updateGeometry();
+    });
+  }
+
+  const rhombicDodecMatrixSizeSlider = document.getElementById("rhombicDodecMatrixSizeSlider");
+  if (rhombicDodecMatrixSizeSlider) {
+    rhombicDodecMatrixSizeSlider.addEventListener("input", e => {
+      const matrixSize = parseInt(e.target.value);
+      document.getElementById("rhombicDodecMatrixSizeValue").textContent = `${matrixSize}×${matrixSize}`;
+      updateGeometry();
+    });
+  }
+
+  const rhombicDodecMatrixRotate45 = document.getElementById("rhombicDodecMatrixRotate45");
+  if (rhombicDodecMatrixRotate45) {
+    rhombicDodecMatrixRotate45.addEventListener("change", updateGeometry);
+  }
+
   // Phase 2.7a, 2.7b, 2.7c: Geodesic controls
   document
     .getElementById("showGeodesicIcosahedron")
@@ -2662,7 +2746,8 @@ function startARTexplorer(
         formType === "cubeMatrix" ||
         formType === "tetMatrix" ||
         formType === "octaMatrix" ||
-        formType === "cuboctaMatrix"
+        formType === "cuboctaMatrix" ||
+        formType === "rhombicDodecMatrix"
       ) {
         matrixFormDeposited = true;
       }
@@ -3542,6 +3627,7 @@ function startARTexplorer(
       tetMatrixGroup,
       octaMatrixGroup,
       cuboctaMatrixGroup,
+      rhombicDodecMatrixGroup,
     ];
 
     formGroups.forEach(group => {
