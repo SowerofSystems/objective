@@ -26,9 +26,11 @@ let useRTNodeGeometry = false;
 /**
  * Initialize THREE.js scene and return rendering context
  * @param {Object} THREE - THREE.js library
+ * @param {Object} OrbitControls - OrbitControls constructor
+ * @param {Object} RT - Rational Trigonometry library
  * @returns {Object} Scene management functions
  */
-export function initScene(THREE) {
+export function initScene(THREE, OrbitControls, RT) {
   let scene, camera, renderer, controls;
   let cubeGroup, tetrahedronGroup, dualTetrahedronGroup, octahedronGroup;
   let icosahedronGroup, dodecahedronGroup, dualIcosahedronGroup;
@@ -1686,6 +1688,12 @@ export function initScene(THREE) {
     // Rendering functions
     updateGeometry,
     updateGeometryStats,
+
+    // Getters for THREE.js objects (needed by rt-init.js)
+    getScene: () => scene,
+    getCamera: () => camera,
+    getRenderer: () => renderer,
+    getControls: () => controls,
 
     // Grid and basis functions (if needed by rt-init.js)
     // These may not need to be exposed if only called from initScene()

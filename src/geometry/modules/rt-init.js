@@ -124,13 +124,14 @@ function startARTexplorer(
   // ========================================================================
   // PHASE 6 EXTRACTION: Create rendering API (TEST - does not replace inline functions yet)
   // ========================================================================
-  const renderingAPI = createRenderingAPI(THREE);
+  const renderingAPI = createRenderingAPI(THREE, OrbitControls, RT);
   console.log("[rt-init.js] ✅ Rendering API created:", renderingAPI);
 
   // ========================================================================
   // THREE.JS SCENE SETUP
   // ========================================================================
   let scene, camera, renderer, controls;
+  let updateGeometry, updateGeometryStats; // Functions from renderingAPI
   let cubeGroup, tetrahedronGroup, dualTetrahedronGroup, octahedronGroup;
   let icosahedronGroup, dodecahedronGroup, dualIcosahedronGroup;
   let cuboctahedronGroup, rhombicDodecahedronGroup;
@@ -142,7 +143,9 @@ function startARTexplorer(
   let rhombicDodecMatrixGroup; // Rhombic dodecahedron matrix (space-filling array)
   let cartesianGrid, cartesianBasis, quadrayBasis, ivmPlanes;
 
-  function initScene() {
+  // PHASE 6 EXTRACTION: initScene() function commented out - using renderingAPI.initScene()
+  // BEGIN COMMENTED INITSCENE
+  /* function initScene() {
     // Scene
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a1a);
@@ -311,7 +314,8 @@ function startARTexplorer(
 
     // Handle window resize
     window.addEventListener("resize", onWindowResize);
-  }
+  } */
+  // END COMMENTED INITSCENE
 
   /**
    * Create Cartesian grid (XYZ) - grey hairlines
@@ -1146,9 +1150,9 @@ function startARTexplorer(
     });
   }
 
-  /**
-   * Update all geometry based on current settings
-   */
+  // PHASE 6 EXTRACTION: updateGeometry() function commented out - using renderingAPI.updateGeometry()
+  // BEGIN COMMENTED UPDATEGEOMETRY
+  /*
   function updateGeometry() {
     // Start performance timing
     PerformanceClock.startCalculation();
@@ -1607,6 +1611,8 @@ function startARTexplorer(
     PerformanceClock.endCalculation();
     PerformanceClock.updateDisplay(useRTNodeGeometry);
   }
+  */
+  // END COMMENTED UPDATEGEOMETRY
 
   /**
    * Count triangles in a THREE.js group
@@ -1627,9 +1633,9 @@ function startARTexplorer(
     return Math.round(triangles);
   }
 
-  /**
-   * Update geometry statistics display
-   */
+  // PHASE 6 EXTRACTION: updateGeometryStats() function commented out - using renderingAPI.updateGeometryStats()
+  // BEGIN COMMENTED UPDATEGEOMETRYSTATS
+  /*
   function updateGeometryStats() {
     const stats = document.getElementById("geometryStats");
     let html = "";
@@ -1852,6 +1858,8 @@ function startARTexplorer(
 
     stats.innerHTML = html || "Select a polyhedron to see stats";
   }
+  */
+  // END COMMENTED UPDATEGEOMETRYSTATS
 
   // ========================================================================
   // PERFORMANCE MONITORING INITIALIZATION
@@ -1859,9 +1867,9 @@ function startARTexplorer(
   // Initialize PerformanceClock with scene groups after they're created
   // (Happens in initScene() - see geodesicOctahedronGroup creation below)
 
-  /**
-   * Animation loop with FPS tracking
-   */
+  // PHASE 6 EXTRACTION: animate() function commented out - using renderingAPI.animate()
+  // BEGIN COMMENTED ANIMATE
+  /*
   function animate() {
     requestAnimationFrame(animate);
     controls.update(); // Required for damping
@@ -1875,6 +1883,8 @@ function startARTexplorer(
       PerformanceClock.updateDisplay(useRTNodeGeometry);
     }
   }
+  */
+  // END COMMENTED ANIMATE
 
   /**
    * Handle window resize
@@ -4310,7 +4320,20 @@ function startARTexplorer(
     ); // Capture phase to intercept before OrbitControls
   } // End initGumballEventListeners
 
-  initScene();
+  // PHASE 6 EXTRACTION: Use renderingAPI.initScene() instead of inline function
+  renderingAPI.initScene();
+
+  // Get THREE.js objects from renderingAPI for rt-init.js scope
+  scene = renderingAPI.getScene();
+  camera = renderingAPI.getCamera();
+  renderer = renderingAPI.getRenderer();
+  controls = renderingAPI.getControls();
+
+  // Expose updateGeometry and updateGeometryStats from renderingAPI for event handlers
+  // Event handlers in rt-init.js need access to these functions
+  updateGeometry = renderingAPI.updateGeometry;
+  updateGeometryStats = renderingAPI.updateGeometryStats;
+
   initGumballEventListeners(); // Initialize gumball after scene is ready
 
   // ========================================================================
@@ -4406,7 +4429,8 @@ function startARTexplorer(
     mouseMoved = false;
   });
 
-  animate();
+  // PHASE 6 EXTRACTION: Use renderingAPI.animate() instead of inline function
+  renderingAPI.animate();
 
   // ========================================================================
   // RT-PAPERCUT MODULE INITIALIZATION
