@@ -13,6 +13,12 @@
 import { Quadray } from "./rt-math.js";
 import { Polyhedra } from "./rt-polyhedra.js";
 
+// Module-level cache for node geometries
+const nodeGeometryCache = new Map();
+
+// Module-level variable to track RT vs classical node geometry
+let useRTNodeGeometry = false;
+
 /**
  * Initialize THREE.js scene and return rendering context
  * @param {Object} THREE - THREE.js library
@@ -468,6 +474,209 @@ export function initScene(THREE) {
   }
 
   /**
+   * Get edge quadrance (Q = a²) for a polyhedron type
+   * Uses RT-pure algebraic formulas (defers sqrt to last possible moment)
+   * @param {string} type - Polyhedron type (tetrahedron, cube, octahedron, etc.)
+   * @param {number} scale - halfSize parameter (s)
+   * @returns {number} Edge quadrance Q = a² (NOT edge length!)
+   */
+  function getPolyhedronEdgeQuadrance(type, scale) {
+    const s2 = scale * scale; // Pre-compute s² for RT calculations
+
+    switch (type) {
+      case "tetrahedron":
+        // Edge quadrance Q = 8s² (edge = 2s√2)
+        return 8 * s2;
+
+      case "dualTetrahedron":
+        // Edge quadrance Q = 8s² (edge = 2s√2, SAME as regular tetrahedron!)
+        // Vertices: (±s, ∓s, ∓s) - same as tet, just different vertex selection
+        // Edge: (s,-s,-s) → (-s,s,-s): Q = (2s)² + (2s)² + 0² = 8s²
+        return 8 * s2;
+
+      case "cube":
+        // Edge quadrance Q = 4s² (edge = 2s)
+        return 4 * s2;
+
+      case "octahedron":
+        // Edge quadrance Q = 2s² (edge = s√2)
+        return 2 * s2;
+
+      case "icosahedron": {
+        // RT-PURE: Edge quadrance using algebraic φ expression (NO hardcoded decimals!)
+        // Vertices: a = s/√(1 + φ²), edge Q = 4a² = 4s²/(1 + φ²)
+        // Since φ² = φ + 1 (from φ² - φ - 1 = 0):
+        // Q = 4s²/(φ + 2) = 4s²/((1+√5)/2 + 2) = 8s²/(5 + √5)
+        // This defers √5 expansion to RT.Phi.sqrt5() - algebraic until last step
+        const Q_coefficient = 8 / (5 + RT.Phi.sqrt5());
+        return Q_coefficient * s2;
+      }
+
+      case "dodecahedron": {
+        // RT-PURE: Dodecahedron edge quadrance using algebraic φ (NO decimals!)
+        // Vertices: cube corners (±s,±s,±s) + phi vertices (0,±s/φ,±sφ) and permutations
+        // Sample edge [0,8]: (s,s,s) → (0,s/φ,sφ)
+        // Q = s² + s²(1-1/φ)² + s²(1-φ)²
+        // Using 1/φ = φ-1 and φ² = φ+1:
+        //   = s²[1 + (2-φ)² + (1-φ)²] = s²[1 + (5-3φ) + (2-φ)] = s²(8-4φ)
+        //   = 4s²(2-φ) = 2s²(4-2φ) = 2s²(4-(1+√5)) = 2s²(3-√5)
+        const Q_coefficient = 2 * (3 - RT.Phi.sqrt5());
+        return Q_coefficient * s2;
+      }
+
+      case "dualIcosahedron": {
+        // RT-PURE: Dual icosa edge Q = base icosa Q × φ²
+        // dualRadius = φ × halfSize, so all quadrances scale by φ²
+        // Q_dual = Q_base × φ² = [8/(5+√5)] × (φ+1) using φ²=φ+1
+        const phi_squared = RT.Phi.squared(); // φ² = φ + 1 (algebraic!)
+        const Q_base_coefficient = 8 / (5 + RT.Phi.sqrt5());
+        return Q_base_coefficient * phi_squared * s2;
+      }
+
+      case "cuboctahedron":
+        // Edge quadrance Q = s² (NOT 0.5s²!)
+        // Vertices at t = s/√2: (±t,±t,0), (±t,0,±t), (0,±t,±t)
+        // Edge: (t,t,0) → (t,0,t): Q = 0² + t² + t² = 2t² = 2(s²/2) = s²
+        // rt-polyhedra.js line 1400: expectedQ = 2 * t * t where t = s/√2
+        return s2;
+
+      case "rhombicDodecahedron":
+        // Edge quadrance Q = 3s²/8 (RT-PURE: exact rational fraction, no decimals!)
+        // With u = t/2 where t = s/√2:
+        // Edge: (t,0,0) → (t/2,t/2,t/2): Q = (t/2)² + (t/2)² + (t/2)² = 3t²/4 = 3s²/8
+        return (3 / 8) * s2;
+
+      case "geodesicTetrahedron":
+      case "geodesicOctahedron":
+      case "geodesicIcosahedron": {
+        // Geodesics subdivide base edges - use base polyhedron quadrance
+        const baseType = type.replace("geodesic", "").toLowerCase();
+        return getPolyhedronEdgeQuadrance(baseType, scale);
+      }
+
+      default:
+        console.warn(
+          `Unknown polyhedron type: ${type}, using default cube Q=4s²`
+        );
+        return 4 * s2;
+    }
+  }
+
+  /**
+   * Calculate close-packed vertex sphere radius using RT-pure quadrance formula
+   *
+   * RATIONAL TRIGONOMETRY: Q_vertex = Q_edge / 4 (pure algebra!)
+   * Stay in quadrance space as long as possible, only sqrt at final step.
+   *
+   * UNIVERSAL FORMULA: When spheres at adjacent vertices are mutually tangent,
+   * the vertex sphere quadrance is exactly 1/4 of the edge quadrance.
+   * Classical equivalent: r = a/2, but we work with Q = a²/4 directly.
+   *
+   * @param {string} type - Polyhedron type
+   * @param {number} scale - halfSize parameter
+   * @returns {number} Vertex sphere radius for close-packing
+   */
+  function getClosePackedRadius(type, scale) {
+    // RT-PURE: Work in quadrance space (no sqrt until final step!)
+    const Q_edge = getPolyhedronEdgeQuadrance(type, scale);
+
+    // UNIVERSAL CLOSE-PACKING LAW (Rational Trigonometry form):
+    // Q_vertex = Q_edge / 4
+    // Pure algebraic relationship - no transcendental functions!
+    const Q_vertex = Q_edge / 4;
+
+    // Only NOW do we take sqrt for final radius (rendering requirement)
+    const radius = Math.sqrt(Q_vertex);
+
+    // DIAGNOSTIC: RT validation logging (matches rt-polyhedra.js pattern)
+    console.log(`🔵 Close-pack RT for ${type} (halfSize=${scale.toFixed(4)}):`);
+    console.log(`  Edge quadrance Q_edge: ${Q_edge.toFixed(6)}`);
+    console.log(
+      `  Vertex quadrance Q_vertex = Q_edge/4: ${Q_vertex.toFixed(6)}`
+    );
+    console.log(`  Vertex radius r = √Q_vertex: ${radius.toFixed(6)}`);
+    console.log(`  ✓ RT-PURE: Stayed in quadrance space until final sqrt`);
+
+    return radius;
+  }
+
+  /**
+   * Get cached node geometry (prevents repeated generation)
+   * @param {boolean} useRT - Use RT geodesic icosahedron (true) or classical sphere (false)
+   * @param {string} nodeSize - Size ('sm', 'md', 'lg', 'packed', 'off')
+   * @param {string} polyhedronType - Type for close-pack calculations
+   * @param {number} scale - halfSize for close-pack calculations
+   * @returns {Object} {geometry: THREE.BufferGeometry, triangles: number}
+   */
+  function getCachedNodeGeometry(useRT, nodeSize, polyhedronType, scale) {
+    const cacheKey = `${useRT ? "rt" : "classical"}-${nodeSize}-${polyhedronType || "default"}-${scale || 1}`;
+
+    if (nodeGeometryCache.has(cacheKey)) {
+      return nodeGeometryCache.get(cacheKey);
+    }
+
+    let nodeGeometry;
+    let trianglesPerNode = 0;
+    let radius;
+
+    if (nodeSize === "packed") {
+      // CLOSE-PACKED MODE: Calculate from edge length using universal formula
+      if (!polyhedronType || !scale) {
+        console.warn(
+          "⚠️ Packed mode requires polyhedronType and scale parameters"
+        );
+        radius = 0.04; // Fallback to medium size
+      } else {
+        radius = getClosePackedRadius(polyhedronType, scale);
+      }
+    } else {
+      // FIXED SIZE MODE: Use predefined sizes
+      const nodeSizes = {
+        sm: 0.02,
+        md: 0.04,
+        lg: 0.08,
+      };
+      radius = nodeSizes[nodeSize] || 0.04;
+    }
+
+    if (useRT) {
+      // RT Geodesic Icosahedron (freq-0 = base 20-triangle icosahedron)
+      const polyData = window.RTPolyhedra.geodesicIcosahedron(radius, 0, "out");
+
+      nodeGeometry = new THREE.BufferGeometry();
+      const positions = [];
+      const indices = [];
+
+      polyData.vertices.forEach(v => {
+        positions.push(v.x, v.y, v.z);
+      });
+
+      polyData.faces.forEach(faceIndices => {
+        for (let i = 1; i < faceIndices.length - 1; i++) {
+          indices.push(faceIndices[0], faceIndices[i], faceIndices[i + 1]);
+        }
+      });
+
+      nodeGeometry.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(positions, 3)
+      );
+      nodeGeometry.setIndex(indices);
+      nodeGeometry.computeVertexNormals();
+
+      trianglesPerNode = indices.length / 3;
+    } else {
+      // Classical THREE.js Sphere
+      nodeGeometry = new THREE.SphereGeometry(radius, 16, 16);
+      trianglesPerNode = 16 * 16 * 2; // 512 triangles
+    }
+
+    const result = { geometry: nodeGeometry, triangles: trianglesPerNode };
+    nodeGeometryCache.set(cacheKey, result);
+    return result;
+  }
+
+  /**
    * Render a polyhedron from vertices, edges, faces
    * Uses proper geometry with indexed faces for clean rendering
    */
@@ -552,29 +761,48 @@ export function initScene(THREE) {
     edgeLines.renderOrder = 2; // Render edges after faces
     group.add(edgeLines);
 
-    // Render vertex nodes using instanced geometry for efficiency
+    // Render vertex nodes using cached geometry for efficiency
     if (showNodes) {
-      // Node size mapping: sm = 0.02, md = 0.04 (half of original), lg = 0.08 (original)
-      const nodeSizes = {
-        sm: 0.02,
-        md: 0.04,
-        lg: 0.08,
-      };
-      const radius = nodeSizes[nodeSize];
+      // Start node generation timing
+      PerformanceClock.startNodeGeneration();
 
-      const nodeGeometry = new THREE.SphereGeometry(radius, 16, 16);
+      // Get polyhedron type and scale from group for close-pack calculations
+      const polyType = group.userData.type;
+      const tetEdge = parseFloat(
+        document.getElementById("tetScaleSlider").value
+      );
+      const scale = tetEdge / (2 * Math.sqrt(2)); // Convert tet edge to halfSize
+
+      // Get cached geometry (prevents repeated generation)
+      // Pass polyhedronType and scale for 'packed' mode calculations
+      const { geometry: nodeGeometry, triangles: trianglesPerNode } =
+        getCachedNodeGeometry(useRTNodeGeometry, nodeSize, polyType, scale);
+
+      // Get flatShading preference from checkbox
+      const useFlatShading =
+        document.getElementById("nodeFlatShading")?.checked || false;
+
       const nodeMaterial = new THREE.MeshStandardMaterial({
         color: color,
         emissive: color,
         emissiveIntensity: 0.2,
+        flatShading: useFlatShading, // User-controlled shading
       });
 
       vertices.forEach(vertex => {
-        const node = new THREE.Mesh(nodeGeometry, nodeMaterial);
+        // Clone material for each node to avoid shared material issues during selection
+        const node = new THREE.Mesh(nodeGeometry, nodeMaterial.clone());
         node.position.copy(vertex);
         node.renderOrder = 3; // Render nodes on top
         group.add(node);
       });
+
+      // End node generation timing and store triangle count
+      PerformanceClock.endNodeGeneration();
+      PerformanceClock.timings.lastNodeTriangles = Math.round(trianglesPerNode);
+    } else {
+      // Reset node triangle count when nodes are OFF
+      PerformanceClock.timings.lastNodeTriangles = 0;
     }
   }
 
