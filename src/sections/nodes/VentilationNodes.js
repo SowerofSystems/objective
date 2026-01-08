@@ -266,27 +266,30 @@
     });
 
     // ========================================================================
-    // FREE COOLING - from Section13 row 124
+    // FREE COOLING - from Cooling.js Stage 1 psychrometrics
     // ========================================================================
 
-    // Free cooling potential - m_124
-    graph.registerNode({
-      id: "cooling.freeCooling",
+    // Free cooling limit - h_124
+    // This is calculated by Cooling.js and stored in StateManager as cooling_h_124
+    // Formula: A33 × M19 (daily free cooling potential × cooling season days)
+    graph.registerInput({
+      id: "cooling.freeCoolingLimit",
+      legacyId: "h_124",
+      section: "S13",
+      classification: "C",
+      label: "Free Cooling Limit (kWh/yr)",
+      defaultValue: 0
+    });
+
+    // Days active cooling - m_124
+    // This is calculated by Cooling.js Stage 2 and stored in StateManager as cooling_m_124
+    graph.registerInput({
+      id: "cooling.daysActiveCooling",
       legacyId: "m_124",
       section: "S13",
       classification: "C",
-      dependencies: ["radiantGains.subtotal.coolingGain", "climate.cooling.degreedays"],
-      label: "Free Cooling Potential (kWh/yr)",
-      compute: (inputs) => {
-        const cdd = inputs["climate.cooling.degreedays"];
-        // Legacy returns 0 when CDD unavailable
-        if (isUnavailable(cdd)) return 0;
-
-        const coolingGain = parseNum(inputs["radiantGains.subtotal.coolingGain"]);
-        const cddNum = parseNum(cdd);
-        const freeCoolingFactor = cddNum < 500 ? 0.15 : cddNum < 1000 ? 0.10 : 0.05;
-        return coolingGain * freeCoolingFactor;
-      }
+      label: "Days Active Cooling",
+      defaultValue: 0
     });
 
     console.log("[VentilationNodes] Registered ventilation computed nodes");

@@ -44,6 +44,13 @@
     'ventilation.grossHeatLoss': 'd_121',
     'ventilation.netHeatLoss': 'm_121',
     'ventilation.energyRecovered': 'h_121',
+    'ventilation.heatGain': 'd_122',
+    'ventilation.energyRecoveredCooling': 'd_123',
+    'cooling.freeCoolingLimit': 'h_124',
+    'cooling.daysActiveCooling': 'm_124',
+
+    // Energy Demand (S14)
+    'energy.ced.mitigated': 'm_129',
 
     // Occupancy
     'occupancy.occupiedHours': 'i_63',

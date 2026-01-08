@@ -228,7 +228,7 @@
       legacyId: "m_129",
       dependencies: [
         "energy.ced.unmitigated",
-        "cooling.freeCooling",
+        "cooling.freeCoolingLimit",
         "ventilation.energyRecoveredCooling"
       ],
       classification: "C",
@@ -238,7 +238,7 @@
       compute: (inputs) => {
         // m_129 = MAX(0, d_129 - h_124 - d_123) per Section13.js line 3078
         const d129 = parseNum(inputs["energy.ced.unmitigated"], 0);
-        const h124 = parseNum(inputs["cooling.freeCooling"], 0);
+        const h124 = parseNum(inputs["cooling.freeCoolingLimit"], 0);
         const d123 = parseNum(inputs["ventilation.energyRecoveredCooling"], 0);
 
         return Math.max(0, d129 - h124 - d123);
