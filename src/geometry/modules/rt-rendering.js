@@ -14,7 +14,7 @@ import { Quadray } from "./rt-math.js";
 import { Polyhedra } from "./rt-polyhedra.js";
 import { PerformanceClock } from "./performance-clock.js";
 
-// Re-export PerformanceClock for testing module imports
+// Re-export PerformanceClock so rt-init.js can import it from here
 export { PerformanceClock };
 
 // Module-level cache for node geometries

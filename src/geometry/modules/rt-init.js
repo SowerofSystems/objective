@@ -1,22 +1,13 @@
 // MODULE IMPORTS
 // ========================================================================
 import { Polyhedra } from "./rt-polyhedra.js";
-// import { PerformanceClock } from "./performance-clock.js"; // COMMENTED OUT - now importing from rt-rendering.js
+import { PerformanceClock } from "./rt-rendering.js"; // Import from rt-rendering instead of performance-clock
 import { RTPapercut } from "./rt-papercut.js";
 import { RT } from "./rt-math.js"; // For RT.Phi in edge quadrance calculations
 import { initQuadranceDemo } from "../demos/rt-quadrance-demo.js";
 import { initCrossDemo } from "../demos/rt-cross-demo.js";
 import { initWeierstrassDemo } from "../demos/rt-weierstrass-demo.js";
 import { openDemoModal } from "../demos/rt-demo-utils.js";
-
-// TEST: Import PerformanceClock from rt-rendering.js instead of performance-clock.js
-import { PerformanceClock } from "./rt-rendering.js";
-
-// Verify module loaded
-console.log(
-  "[rt-init.js] ✅ PerformanceClock now imported from rt-rendering.js:",
-  PerformanceClock ? "Available" : "ERROR"
-);
 
 // Make RTPolyhedra available globally for node geometry creation
 window.RTPolyhedra = Polyhedra;
