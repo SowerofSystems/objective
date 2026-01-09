@@ -28,24 +28,106 @@
       </div>
     </div>
 
-    <div id="container">
-      <div id="canvas-container">
-        <div id="info-overlay">
-          <div>
-            <span class="coord-label">A.R.T.</span> - Algebraic Rational
-            Trigonometry Explorer
+    <!-- Info Modal - Shows on initialization -->
+    <div id="info-modal-overlay" class="hidden">
+      <div id="info-modal">
+        <h2>A.R.T. Explorer</h2>
+        <p class="modal-subtitle">Algebraic Rational Trigonometry Geometry Engine</p>
+
+        <div class="modal-content-grid">
+          <!-- Left Column -->
+          <div class="modal-column">
+            <div class="modal-section">
+              <h3>Keyboard Shortcuts</h3>
+              <div class="shortcuts-grid">
+                <div class="shortcut-row">
+                  <span class="shortcut-key">Left-click + drag</span>
+                  <span class="shortcut-desc">Orbit camera</span>
+                </div>
+                <div class="shortcut-row">
+                  <span class="shortcut-key">Right-click + drag</span>
+                  <span class="shortcut-desc">Pan camera</span>
+                </div>
+                <div class="shortcut-row">
+                  <span class="shortcut-key">Scroll wheel</span>
+                  <span class="shortcut-desc">Zoom</span>
+                </div>
+                <div class="shortcut-row">
+                  <span class="shortcut-key">ESC</span>
+                  <span class="shortcut-desc">Deselect</span>
+                </div>
+                <div class="shortcut-row">
+                  <span class="shortcut-key">Delete</span>
+                  <span class="shortcut-desc">Remove selected instance</span>
+                </div>
+                <div class="shortcut-row">
+                  <span class="shortcut-key">Cmd/Ctrl+Z</span>
+                  <span class="shortcut-desc">Undo</span>
+                </div>
+                <div class="shortcut-row">
+                  <span class="shortcut-key">Cmd/Ctrl+Shift+Z</span>
+                  <span class="shortcut-desc">Redo</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-section">
+              <h3>What is A.R.T. Explorer?</h3>
+              <p class="modal-text">
+                A.R.T. Explorer is a unique geometry engine combining
+                <strong>R. Buckminster Fuller's Synergetics</strong> with
+                <strong>N.J. Wildberger's Rational Trigonometry</strong>.
+              </p>
+              <p class="modal-text">
+                Unlike traditional Euclidean systems that rely on
+                transcendental functions (sin, cos, sqrt), A.R.T. uses
+                pure algebraic methods for exact geometric calculations.
+              </p>
+            </div>
           </div>
-          <div class="info-controls">
-            Orbit: Left-click + drag<br />
-            Pan: Right-click + drag<br />
-            Zoom: Scroll wheel<br />
-            <br />
-            ESC: Deselect<br />
-            Delete: Remove selected instance<br />
-            Cmd/Ctrl+Z: Undo<br />
-            Cmd/Ctrl+Shift+Z: Redo
+
+          <!-- Right Column -->
+          <div class="modal-column">
+            <div class="modal-section">
+              <h3>Key Innovations</h3>
+              <ul class="feature-list">
+                <li>
+                  <strong>Quadray Coordinates:</strong> Tetrahedral coordinate
+                  system (4 basis vectors) instead of Cartesian XYZ
+                </li>
+                <li>
+                  <strong>Rational Trigonometry:</strong> Quadrance (Q = a²)
+                  replaces distance, spread replaces angle
+                </li>
+                <li>
+                  <strong>IVM (Isotropic Vector Matrix):</strong> Space-filling
+                  octahedron-tetrahedron lattice
+                </li>
+                <li>
+                  <strong>Close-Packing:</strong> Vertex spheres calculated
+                  algebraically for perfect tangency
+                </li>
+              </ul>
+            </div>
+
+            <div class="modal-section">
+              <h3>Why This Matters</h3>
+              <p class="modal-text">
+                Traditional geometry engines accumulate floating-point errors.
+                A.R.T. maintains <strong>exact rational relationships</strong>
+                throughout calculations, enabling precision-critical applications
+                in architecture, crystallography, and computational geometry.
+              </p>
+            </div>
           </div>
         </div>
+
+        <button id="info-modal-close" class="modal-close-btn">Get Started</button>
+      </div>
+    </div>
+
+    <div id="container">
+      <div id="canvas-container">
       </div>
       <div id="controls-panel">
         <h2>A.R.T Explorer</h2>

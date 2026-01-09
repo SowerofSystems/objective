@@ -261,27 +261,9 @@ button:active {
   line-height: 1.5;
 }
 
-#info-overlay {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 12px 16px;
-  border-radius: 4px;
-  font-size: 12px;
-  line-height: 1.6;
-  max-width: 330px;
-  pointer-events: none;
-}
-
 .coord-label {
   color: #7ab8ff;
   font-weight: 600;
-}
-
-.info-controls {
-  margin-top: 8px;
-  font-size: 11px;
 }
 
 /* Section Toggle (for h3 main sections) */
@@ -805,6 +787,182 @@ button:disabled {
 
 .hidden {
   display: none !important;
+}
+
+/* ========================================================================
+   INFO MODAL
+   ======================================================================== */
+
+/* Modal overlay - semi-transparent to see app underneath */
+#info-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999; /* Below password modal (10000) */
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(3px);
+}
+
+#info-modal-overlay.hidden {
+  display: none;
+}
+
+/* Modal container - wider like math demos, semi-transparent */
+#info-modal {
+  background: rgba(42, 42, 42, 0.8);
+  padding: 30px 40px;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+  max-width: 1200px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  text-align: left;
+  border: 1px solid rgba(74, 158, 255, 0.3);
+}
+
+#info-modal h2 {
+  color: #ffffff;
+  margin-bottom: 10px;
+  font-size: 28px;
+  text-align: center;
+}
+
+.modal-subtitle {
+  color: #888;
+  margin-bottom: 25px;
+  font-size: 14px;
+  text-align: center;
+  font-style: italic;
+}
+
+/* Two-column grid layout */
+.modal-content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-bottom: 25px;
+}
+
+.modal-column {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+/* Section styling */
+.modal-section {
+  margin-bottom: 0;
+}
+
+.modal-section h3 {
+  color: #fff;
+  font-size: 16px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 6px;
+}
+
+/* Shortcuts grid */
+.shortcuts-grid {
+  display: grid;
+  gap: 4px;
+}
+
+.shortcut-row {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid #333;
+}
+
+.shortcut-row:last-child {
+  border-bottom: none;
+}
+
+.shortcut-key {
+  color: #4a9eff; /* Match app blue accent */
+  font-family: "Courier New", monospace;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.shortcut-desc {
+  color: #b0b0b0;
+  font-size: 11px;
+}
+
+/* Educational content styling */
+.modal-text {
+  color: #b0b0b0;
+  font-size: 12px;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.modal-text strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+.feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.feature-list li {
+  color: #b0b0b0;
+  font-size: 12px;
+  line-height: 1.5;
+  margin-bottom: 10px;
+  padding-left: 20px;
+  position: relative;
+}
+
+.feature-list li::before {
+  content: "▸";
+  position: absolute;
+  left: 0;
+  color: #4a9eff; /* App blue accent */
+  font-weight: bold;
+}
+
+.feature-list strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Close button - reuses password submit styling */
+.modal-close-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  background: linear-gradient(135deg, #4a9eff 0%, #357abd 100%);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 20px;
+}
+
+.modal-close-btn:hover {
+  background: linear-gradient(135deg, #357abd 0%, #2a5f8f 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 158, 255, 0.4);
+}
+
+.modal-close-btn:active {
+  transform: translateY(0);
 }
 
 /* ========================================================================
