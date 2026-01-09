@@ -1699,6 +1699,23 @@ export function initScene(THREE, OrbitControls, RT) {
     renderer.setSize(container.clientWidth, container.clientHeight);
   }
 
+  /**
+   * Set node geometry type (Classical Sphere vs RT Geodesic)
+   * @param {boolean} useRT - true for RT Geodesic, false for Classical Sphere
+   */
+  function setNodeGeometryType(useRT) {
+    useRTNodeGeometry = useRT;
+    nodeGeometryCache.clear();
+  }
+
+  /**
+   * Clear the node geometry cache
+   * Called when node rendering settings change
+   */
+  function clearNodeCache() {
+    nodeGeometryCache.clear();
+  }
+
   // Return public API from initScene() factory
   return {
     // Core scene initialization
@@ -1709,6 +1726,10 @@ export function initScene(THREE, OrbitControls, RT) {
     // Rendering functions
     updateGeometry,
     updateGeometryStats,
+
+    // Node configuration
+    setNodeGeometryType,
+    clearNodeCache,
 
     // Getters for THREE.js objects (needed by rt-init.js)
     getScene: () => scene,

@@ -699,7 +699,8 @@ function startARTexplorer(
   // ========================================================================
   // NODE GEOMETRY CACHE (prevent repeated generation)
   // ========================================================================
-  const nodeGeometryCache = new Map();
+  // NOTE: nodeGeometryCache removed - now managed by renderingAPI in rt-rendering.js
+  // const nodeGeometryCache = new Map(); // ← REMOVED: Now in rt-rendering.js
 
   /**
    * Calculate edge QUADRANCE for any polyhedron type
@@ -2680,7 +2681,7 @@ function startARTexplorer(
   document.querySelectorAll(".node-size-btn").forEach(btn => {
     btn.addEventListener("click", function () {
       // Clear geometry cache when size changes
-      nodeGeometryCache.clear();
+      renderingAPI.clearNodeCache();
       // Remove active from all buttons
       document
         .querySelectorAll(".node-size-btn")
@@ -2693,23 +2694,22 @@ function startARTexplorer(
   });
 
   // Node geometry type toggle (Classical vs RT)
-  let useRTNodeGeometry = false; // Default to classical THREE.js spheres
+  // NOTE: useRTNodeGeometry variable removed - now managed by renderingAPI
+  // let useRTNodeGeometry = false; // ← REMOVED: Now in rt-rendering.js
 
   document
     .getElementById("nodeGeomClassical")
     .addEventListener("click", function () {
-      useRTNodeGeometry = false;
-      // Clear geometry cache when switching node types
-      nodeGeometryCache.clear();
+      // Use rendering API to set node geometry type
+      renderingAPI.setNodeGeometryType(false);
       document.getElementById("nodeGeomClassical").classList.add("active");
       document.getElementById("nodeGeomRT").classList.remove("active");
       updateGeometry();
     });
 
   document.getElementById("nodeGeomRT").addEventListener("click", function () {
-    useRTNodeGeometry = true;
-    // Clear geometry cache when switching node types
-    nodeGeometryCache.clear();
+    // Use rendering API to set node geometry type
+    renderingAPI.setNodeGeometryType(true);
     document.getElementById("nodeGeomRT").classList.add("active");
     document.getElementById("nodeGeomClassical").classList.remove("active");
     updateGeometry();
