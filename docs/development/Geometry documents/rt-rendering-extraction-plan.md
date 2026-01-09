@@ -1036,50 +1036,41 @@ geodesicOctahedronGroup.userData.type = "geodesicOctahedron";
 
 ---
 
-### Cleanup Task: Comment Out Orphaned Functions in rt-init.js
+### Cleanup Task: Remove Orphaned Functions in rt-init.js
 
-**Status:** ✅ COMPLETE (2026-01-08)
+**Status:** ✅ COMPLETE (2026-01-09)
 
-The following functions in rt-init.js were orphaned (defined but never called) after extraction:
+**Summary:** Successfully removed 514 lines of orphaned code from rt-init.js (15.4% reduction: 3345→2831 lines)
 
-1. **`getCachedNodeGeometry()`** - Line 662
-   - Only called by orphaned `renderPolyhedron()` and `addMatrixNodes()`
-   - rt-rendering.js version is actually used
+**Orphaned functions removed:**
 
-2. **`renderPolyhedron()`** - Line 734
-   - Only called from commented-out `updateGeometry()`
-   - rt-rendering.js version is actually used
+1. **Rendering helpers** (~306 lines commented, Chunks 1-5)
+   - `getCachedNodeGeometry()` - ~45 lines
+   - `getPolyhedronEdgeQuadrance()` - ~80 lines
+   - `getClosePackedRadius()` - ~22 lines
+   - `renderPolyhedron()` - ~125 lines
+   - `addMatrixNodes()` - ~115 lines
+   - `onWindowResize()` - ~21 lines
 
-3. **`addMatrixNodes()`** - Line 870
-   - Only called from commented-out `updateGeometry()`
-   - rt-rendering.js version is actually used
+2. **Grid creation functions** (~370 lines deleted, Chunk 6)
+   - `createCartesianGrid()` - ~105 lines
+   - `createQuadrayBasis()` - ~48 lines
+   - `createIVMGrid()` - ~81 lines
+   - `createIVMPlanes()` - ~136 lines
 
-4. **`onWindowResize()`** - Line 1027
-   - Event listener uses rt-rendering.js version
-   - rt-init.js version is never called
+**Issues resolved:**
+- Duplicate grid generation eliminated
+- Added API methods: `rebuildQuadrayGrids()`, `rebuildCartesianGrids()`
+- Tessellation sliders now use rendering API instead of local functions
 
-**Why They're Not Breaking Anything:**
-- Active code path: User interaction → `renderingAPI.updateGeometry()` → rt-rendering.js helpers
-- rt-init.js helpers are dead code (never in call stack)
-- JavaScript doesn't care about unused function definitions
-
-**Action Required:**
-Comment out lines 832-1154 and 1896-1920 in rt-init.js with clear markers:
-```javascript
-// BEGIN COMMENTED HELPER FUNCTIONS (orphaned after rt-rendering.js extraction)
-/*
-function getCachedNodeGeometry(...) { ... }
-function renderPolyhedron(...) { ... }
-function addMatrixNodes(...) { ... }
-*/
-// END COMMENTED HELPER FUNCTIONS
-
-// BEGIN COMMENTED ONWINDOWRESIZE (orphaned after rt-rendering.js extraction)
-/*
-function onWindowResize() { ... }
-*/
-// END COMMENTED ONWINDOWRESIZE
-```
+**Commits:**
+- febb5ba: Comment out getCachedNodeGeometry
+- 4f063d5: Comment out renderPolyhedron
+- 9c56eb6: Comment out addMatrixNodes
+- 1818e95: Comment out onWindowResize
+- a8d0e61: Comment out RT helper functions
+- 04391f3: Add grid rebuild API methods
+- 14e2c02: Delete orphaned grid functions (syntax fix)
 
 ---
 
