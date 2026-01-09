@@ -79,11 +79,13 @@
                 <strong>N.J. Wildberger's Rational Trigonometry</strong>.
               </p>
               <p class="modal-text">
-                Unlike traditional Euclidean systems that rely on
-                transcendental functions (sin, cos, sqrt), A.R.T. uses
-                pure algebraic methods, working in symbolic and quadrance space and 
-                deferring division and expansion to the point of rendering in THREE.js 
-                for exact geometric calculations.
+                This app uses Rational Trigonometry to perform pure algebraic geometry calculations
+                in quadrance and spread space, avoiding transcendental functions (sin, cos, tan) entirely.
+                Working symbolically in quadrance space, square roots are deferred until the final rendering
+                stage when instantiating THREE.js Vector3 vertices, maintaining algebraic exactness throughout
+                intermediate calculations and only expanding to floating-point at the GPU boundary.
+                Golden ratio (φ) relationships are preserved algebraically using φ² = φ + 1, and rotations
+                employ Weierstrass substitution to convert trigonometric operations into pure rational expressions.
               </p>
             </div>
           </div>
