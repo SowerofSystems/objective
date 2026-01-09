@@ -705,66 +705,37 @@ function startARTexplorer(
   }
   */
 
-  /**
-   * Render a polyhedron from vertices, edges, faces
-   * Uses proper geometry with indexed faces for clean rendering
-   */
+  // PHASE 6 EXTRACTION: renderPolyhedron() function now in rt-rendering.js
+  // (Orphaned function - never called, using rt-rendering.js version)
+  /*
   function renderPolyhedron(group, geometry, color, opacity) {
-    // Clear existing geometry
-    while (group.children.length > 0) {
-      group.remove(group.children[0]);
-    }
-
+    while (group.children.length > 0) { group.remove(group.children[0]); }
     const { vertices, edges, faces } = geometry;
-
-    // Get selected node size from new button selector
     const nodeSizeBtn = document.querySelector(".node-size-btn.active");
     const nodeSize = nodeSizeBtn ? nodeSizeBtn.dataset.nodeSize : "md";
     const showNodes = nodeSize !== "off";
-    const showFaces = true; // Always render faces (use opacity slider to hide)
-
-    // Render faces first (back to front) using proper BufferGeometry
+    const showFaces = true;
     if (showFaces) {
-      // Build indexed face geometry
       const positions = [];
       const indices = [];
-
-      // Add all vertices to positions array
-      vertices.forEach(v => {
-        positions.push(v.x, v.y, v.z);
-      });
-
-      // Build face indices (triangulate quads if needed)
+      vertices.forEach(v => { positions.push(v.x, v.y, v.z); });
       faces.forEach(faceIndices => {
-        // Fan triangulation from first vertex
         for (let i = 1; i < faceIndices.length - 1; i++) {
           indices.push(faceIndices[0], faceIndices[i], faceIndices[i + 1]);
         }
       });
-
       const faceGeometry = new THREE.BufferGeometry();
-      faceGeometry.setAttribute(
-        "position",
-        new THREE.Float32BufferAttribute(positions, 3)
-      );
+      faceGeometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
       faceGeometry.setIndex(indices);
       faceGeometry.computeVertexNormals();
-
       const faceMaterial = new THREE.MeshStandardMaterial({
-        color: color,
-        transparent: true,
-        opacity: opacity,
-        side: THREE.DoubleSide,
-        depthWrite: opacity >= 0.99, // Only write depth for opaque faces
-        flatShading: true,
+        color: color, transparent: true, opacity: opacity,
+        side: THREE.DoubleSide, depthWrite: opacity >= 0.99, flatShading: true,
       });
-
       const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);
-      faceMesh.renderOrder = 1; // Render faces before edges
+      faceMesh.renderOrder = 1;
       group.add(faceMesh);
     }
-
-    // Render edges using LineSegments for efficiency
     const edgePositions = [];
     edges.forEach(([i, j]) => {
       const v1 = vertices[i];
@@ -772,68 +743,38 @@ function startARTexplorer(
       edgePositions.push(v1.x, v1.y, v1.z);
       edgePositions.push(v2.x, v2.y, v2.z);
     });
-
     const edgeGeometry = new THREE.BufferGeometry();
-    edgeGeometry.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(edgePositions, 3)
-    );
-
+    edgeGeometry.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
     const edgeMaterial = new THREE.LineBasicMaterial({
-      color: color,
-      linewidth: 1, // WebGL limitation
-      depthTest: true,
-      depthWrite: true,
+      color: color, linewidth: 1, depthTest: true, depthWrite: true,
     });
-
     const edgeLines = new THREE.LineSegments(edgeGeometry, edgeMaterial);
-    edgeLines.renderOrder = 2; // Render edges after faces
+    edgeLines.renderOrder = 2;
     group.add(edgeLines);
-
-    // Render vertex nodes using cached geometry for efficiency
     if (showNodes) {
-      // Start node generation timing
       PerformanceClock.startNodeGeneration();
-
-      // Get polyhedron type and scale from group for close-pack calculations
       const polyType = group.userData.type;
-      const tetEdge = parseFloat(
-        document.getElementById("tetScaleSlider").value
-      );
-      const scale = tetEdge / (2 * Math.sqrt(2)); // Convert tet edge to halfSize
-
-      // Get cached geometry (prevents repeated generation)
-      // Pass polyhedronType and scale for 'packed' mode calculations
+      const tetEdge = parseFloat(document.getElementById("tetScaleSlider").value);
+      const scale = tetEdge / (2 * Math.sqrt(2));
       const { geometry: nodeGeometry, triangles: trianglesPerNode } =
         getCachedNodeGeometry(useRTNodeGeometry, nodeSize, polyType, scale);
-
-      // Get flatShading preference from checkbox
-      const useFlatShading =
-        document.getElementById("nodeFlatShading")?.checked || false;
-
+      const useFlatShading = document.getElementById("nodeFlatShading")?.checked || false;
       const nodeMaterial = new THREE.MeshStandardMaterial({
-        color: color,
-        emissive: color,
-        emissiveIntensity: 0.2,
-        flatShading: useFlatShading, // User-controlled shading
+        color: color, emissive: color, emissiveIntensity: 0.2, flatShading: useFlatShading,
       });
-
       vertices.forEach(vertex => {
-        // Clone material for each node to avoid shared material issues during selection
         const node = new THREE.Mesh(nodeGeometry, nodeMaterial.clone());
         node.position.copy(vertex);
-        node.renderOrder = 3; // Render nodes on top
+        node.renderOrder = 3;
         group.add(node);
       });
-
-      // End node generation timing and store triangle count
       PerformanceClock.endNodeGeneration();
       PerformanceClock.timings.lastNodeTriangles = Math.round(trianglesPerNode);
     } else {
-      // Reset node triangle count when nodes are OFF
       PerformanceClock.timings.lastNodeTriangles = 0;
     }
   }
+  */
 
   /**
    * Add vertex nodes to matrix forms
