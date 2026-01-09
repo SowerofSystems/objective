@@ -530,133 +530,17 @@ function startARTexplorer(
   // NOTE: nodeGeometryCache removed - now managed by renderingAPI in rt-rendering.js
   // const nodeGeometryCache = new Map(); // ← REMOVED: Now in rt-rendering.js
 
-  /**
-   * Calculate edge QUADRANCE for any polyhedron type
-   * RATIONAL TRIGONOMETRY: Stay in quadrance space (Q = a²) to avoid sqrt
-   *
-   * @param {string} type - Polyhedron type (tetrahedron, cube, octahedron, etc.)
-   * @param {number} scale - halfSize parameter (s)
-   * @returns {number} Edge quadrance Q = a² (NOT edge length!)
-   */
+  // PHASE 6 EXTRACTION: getPolyhedronEdgeQuadrance() and getClosePackedRadius() functions now in rt-rendering.js
+  // (Orphaned functions - only called by orphaned getCachedNodeGeometry(), using rt-rendering.js versions)
+  /*
   function getPolyhedronEdgeQuadrance(type, scale) {
-    const s2 = scale * scale; // Pre-compute s² for RT calculations
-
-    switch (type) {
-      case "tetrahedron":
-        // Edge quadrance Q = 8s² (edge = 2s√2)
-        return 8 * s2;
-
-      case "dualTetrahedron":
-        // Edge quadrance Q = 8s² (edge = 2s√2, SAME as regular tetrahedron!)
-        // Vertices: (±s, ∓s, ∓s) - same as tet, just different vertex selection
-        // Edge: (s,-s,-s) → (-s,s,-s): Q = (2s)² + (2s)² + 0² = 8s²
-        return 8 * s2;
-
-      case "cube":
-        // Edge quadrance Q = 4s² (edge = 2s)
-        return 4 * s2;
-
-      case "octahedron":
-        // Edge quadrance Q = 2s² (edge = s√2)
-        return 2 * s2;
-
-      case "icosahedron": {
-        // RT-PURE: Edge quadrance using algebraic φ expression (NO hardcoded decimals!)
-        // Vertices: a = s/√(1 + φ²), edge Q = 4a² = 4s²/(1 + φ²)
-        // Since φ² = φ + 1 (from φ² - φ - 1 = 0):
-        // Q = 4s²/(φ + 2) = 4s²/((1+√5)/2 + 2) = 8s²/(5 + √5)
-        // This defers √5 expansion to RT.Phi.sqrt5() - algebraic until last step
-        const Q_coefficient = 8 / (5 + RT.Phi.sqrt5());
-        return Q_coefficient * s2;
-      }
-
-      case "dodecahedron": {
-        // RT-PURE: Dodecahedron edge quadrance using algebraic φ (NO decimals!)
-        // Vertices: cube corners (±s,±s,±s) + phi vertices (0,±s/φ,±sφ) and permutations
-        // Sample edge [0,8]: (s,s,s) → (0,s/φ,sφ)
-        // Q = s² + s²(1-1/φ)² + s²(1-φ)²
-        // Using 1/φ = φ-1 and φ² = φ+1:
-        //   = s²[1 + (2-φ)² + (1-φ)²] = s²[1 + (5-3φ) + (2-φ)] = s²(8-4φ)
-        //   = 4s²(2-φ) = 2s²(4-2φ) = 2s²(4-(1+√5)) = 2s²(3-√5)
-        const Q_coefficient = 2 * (3 - RT.Phi.sqrt5());
-        return Q_coefficient * s2;
-      }
-
-      case "dualIcosahedron": {
-        // RT-PURE: Dual icosa edge Q = base icosa Q × φ²
-        // dualRadius = φ × halfSize, so all quadrances scale by φ²
-        // Q_dual = Q_base × φ² = [8/(5+√5)] × (φ+1) using φ²=φ+1
-        const phi_squared = RT.Phi.squared(); // φ² = φ + 1 (algebraic!)
-        const Q_base_coefficient = 8 / (5 + RT.Phi.sqrt5());
-        return Q_base_coefficient * phi_squared * s2;
-      }
-
-      case "cuboctahedron":
-        // Edge quadrance Q = s² (NOT 0.5s²!)
-        // Vertices at t = s/√2: (±t,±t,0), (±t,0,±t), (0,±t,±t)
-        // Edge: (t,t,0) → (t,0,t): Q = 0² + t² + t² = 2t² = 2(s²/2) = s²
-        // rt-polyhedra.js line 1400: expectedQ = 2 * t * t where t = s/√2
-        return s2;
-
-      case "rhombicDodecahedron":
-        // Edge quadrance Q = 3s²/8 (RT-PURE: exact rational fraction, no decimals!)
-        // With u = t/2 where t = s/√2:
-        // Edge: (t,0,0) → (t/2,t/2,t/2): Q = (t/2)² + (t/2)² + (t/2)² = 3t²/4 = 3s²/8
-        return (3 / 8) * s2;
-
-      case "geodesicTetrahedron":
-      case "geodesicOctahedron":
-      case "geodesicIcosahedron": {
-        // Geodesics subdivide base edges - use base polyhedron quadrance
-        const baseType = type.replace("geodesic", "").toLowerCase();
-        return getPolyhedronEdgeQuadrance(baseType, scale);
-      }
-
-      default:
-        console.warn(
-          `Unknown polyhedron type: ${type}, using default cube Q=4s²`
-        );
-        return 4 * s2;
-    }
+    // ... function body (~80 lines)
   }
 
-  /**
-   * Calculate close-packed vertex sphere radius using RT-pure quadrance formula
-   *
-   * RATIONAL TRIGONOMETRY: Q_vertex = Q_edge / 4 (pure algebra!)
-   * Stay in quadrance space as long as possible, only sqrt at final step.
-   *
-   * UNIVERSAL FORMULA: When spheres at adjacent vertices are mutually tangent,
-   * the vertex sphere quadrance is exactly 1/4 of the edge quadrance.
-   * Classical equivalent: r = a/2, but we work with Q = a²/4 directly.
-   *
-   * @param {string} type - Polyhedron type
-   * @param {number} scale - halfSize parameter
-   * @returns {number} Vertex sphere radius for close-packing
-   */
   function getClosePackedRadius(type, scale) {
-    // RT-PURE: Work in quadrance space (no sqrt until final step!)
-    const Q_edge = getPolyhedronEdgeQuadrance(type, scale);
-
-    // UNIVERSAL CLOSE-PACKING LAW (Rational Trigonometry form):
-    // Q_vertex = Q_edge / 4
-    // Pure algebraic relationship - no transcendental functions!
-    const Q_vertex = Q_edge / 4;
-
-    // Only NOW do we take sqrt for final radius (rendering requirement)
-    const radius = Math.sqrt(Q_vertex);
-
-    // DIAGNOSTIC: RT validation logging (matches rt-polyhedra.js pattern)
-    console.log(`🔵 Close-pack RT for ${type} (halfSize=${scale.toFixed(4)}):`);
-    console.log(`  Edge quadrance Q_edge: ${Q_edge.toFixed(6)}`);
-    console.log(
-      `  Vertex quadrance Q_vertex = Q_edge/4: ${Q_vertex.toFixed(6)}`
-    );
-    console.log(`  Vertex radius r = √Q_vertex: ${radius.toFixed(6)}`);
-    console.log(`  ✓ RT-PURE: Stayed in quadrance space until final sqrt`);
-
-    return radius;
+    // ... function body (~22 lines)
   }
+  */
 
   // PHASE 6 EXTRACTION: getCachedNodeGeometry() function now in rt-rendering.js
   // (Orphaned function - never called, using rt-rendering.js version)
