@@ -3318,13 +3318,8 @@ function startARTexplorer(
   // PHASE 6 EXTRACTION: Use renderingAPI.initScene() instead of inline function
   renderingAPI.initScene();
 
-  // Get THREE.js objects from renderingAPI for rt-init.js scope
-  scene = renderingAPI.getScene();
-  camera = renderingAPI.getCamera();
-  renderer = renderingAPI.getRenderer();
-  controls = renderingAPI.getControls();
-
-  // NOTE: updateGeometry and updateGeometryStats were assigned earlier (line ~137-138)
+  // NOTE: scene, camera, renderer, controls already assigned from API at line ~139-142
+  // NOTE: updateGeometry and updateGeometryStats were assigned earlier (line ~135-136)
   // so that event listeners registered earlier in the code can reference them
 
   initGumballEventListeners(); // Initialize gumball after scene is ready
