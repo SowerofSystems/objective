@@ -776,102 +776,40 @@ function startARTexplorer(
   }
   */
 
-  /**
-   * Add vertex nodes to matrix forms
-   * Extracts vertices from all cubes in the matrix and adds spherical nodes
-   * @param {THREE.Group} matrixGroup - Matrix group to add nodes to
-   * @param {number} matrixSize - Size of matrix (N×N)
-   * @param {number} scale - Cube halfSize
-   * @param {boolean} rotate45 - Whether matrix is rotated 45°
-   * @param {number} color - Node color
-   * @param {string} nodeSize - Node size ('sm', 'md', 'lg')
-   */
-  function addMatrixNodes(
-    matrixGroup,
-    matrixSize,
-    scale,
-    rotate45,
-    color,
-    nodeSize,
-    polyhedronType = "cube"
-  ) {
-    // Get node geometry settings
-    // useRTNodeGeometry is read from module-level variable set by button toggles
-    const useFlatShading =
-      document.getElementById("nodeFlatShading")?.checked || false;
-
-    // Get cached node geometry
-    const { geometry: nodeGeometry } = getCachedNodeGeometry(
-      useRTNodeGeometry,
-      nodeSize,
-      polyhedronType,
-      scale
-    );
-
+  // PHASE 6 EXTRACTION: addMatrixNodes() function now in rt-rendering.js
+  // (Orphaned function - never called, using rt-rendering.js version)
+  /*
+  function addMatrixNodes(matrixGroup, matrixSize, scale, rotate45, color, nodeSize, polyhedronType = "cube") {
+    const useFlatShading = document.getElementById("nodeFlatShading")?.checked || false;
+    const { geometry: nodeGeometry } = getCachedNodeGeometry(useRTNodeGeometry, nodeSize, polyhedronType, scale);
     const nodeMaterial = new THREE.MeshStandardMaterial({
-      color: color,
-      emissive: color,
-      emissiveIntensity: 0.2,
-      flatShading: useFlatShading,
+      color: color, emissive: color, emissiveIntensity: 0.2, flatShading: useFlatShading,
     });
-
-    // Collect all unique vertex positions from matrix
     const vertexPositions = new Set();
-
-    // Calculate spacing based on polyhedron type
-    // - Cube: edge-to-edge contact (spacing = 2 * halfSize)
-    // - Tet: inscribes in cube (vertices at cube vertices, spacing = 2 * halfSize)
-    // - Octa: centers in cube (vertices at cube face centers, spacing = 2 * halfSize)
-    // - Cuboctahedron: scaled by √2, edge length = (halfSize * √2) * √2 = 2 * halfSize
-    // - Rhombic Dodecahedron: space-filling tiling (spacing = 2 * halfSize, same as cube)
-    let spacing = scale * 2; // All matrices now use 2 * halfSize spacing
-
-    // Generate polyhedron vertices at each grid position
+    let spacing = scale * 2;
     import("./rt-polyhedra.js").then(PolyModule => {
       const { Polyhedra } = PolyModule;
-
-      // Get the appropriate polyhedron geometry
       let polyGeom;
-      if (polyhedronType === "cube") {
-        polyGeom = Polyhedra.cube(scale);
-      } else if (polyhedronType === "tetrahedron") {
-        polyGeom = Polyhedra.tetrahedron(scale);
-      } else if (polyhedronType === "octahedron") {
-        polyGeom = Polyhedra.octahedron(scale);
-      } else if (polyhedronType === "cuboctahedron") {
-        // Scale by √2 to match matrix geometry (vertices at scale, not scale/√2)
-        polyGeom = Polyhedra.cuboctahedron(scale * Math.sqrt(2));
-      } else if (polyhedronType === "rhombicDodecahedron") {
-        // Scale by √2 to match matrix geometry (rhombic dodec axial vertices at scale, not scale/√2)
-        polyGeom = Polyhedra.rhombicDodecahedron(scale * Math.sqrt(2));
-      }
-
+      if (polyhedronType === "cube") { polyGeom = Polyhedra.cube(scale); }
+      else if (polyhedronType === "tetrahedron") { polyGeom = Polyhedra.tetrahedron(scale); }
+      else if (polyhedronType === "octahedron") { polyGeom = Polyhedra.octahedron(scale); }
+      else if (polyhedronType === "cuboctahedron") { polyGeom = Polyhedra.cuboctahedron(scale * Math.sqrt(2)); }
+      else if (polyhedronType === "rhombicDodecahedron") { polyGeom = Polyhedra.rhombicDodecahedron(scale * Math.sqrt(2)); }
       const { vertices } = polyGeom;
-
-      // For each grid position, add transformed vertices
       for (let i = 0; i < matrixSize; i++) {
         for (let j = 0; j < matrixSize; j++) {
           const offset_x = (i - matrixSize / 2 + 0.5) * spacing;
           const offset_y = (j - matrixSize / 2 + 0.5) * spacing;
           const offset_z = 0;
-
-          // For tetrahedra, handle alternating orientations
-          const isUp =
-            polyhedronType === "tetrahedron" ? (i + j) % 2 === 0 : true;
-
+          const isUp = polyhedronType === "tetrahedron" ? (i + j) % 2 === 0 : true;
           vertices.forEach(v => {
             let x = v.x + offset_x;
             let y = v.y + offset_y;
             let z = v.z + offset_z;
-
-            // Apply 180° rotation for down-facing tets
             if (polyhedronType === "tetrahedron" && !isUp) {
-              // Rotate 180° around Z-axis
               x = -(v.x + offset_x);
               y = -(v.y + offset_y);
             }
-
-            // Apply 45° rotation if enabled
             if (rotate45) {
               const cos45 = Math.sqrt(0.5);
               const sin45 = Math.sqrt(0.5);
@@ -880,15 +818,11 @@ function startARTexplorer(
               x = x_rot;
               y = y_rot;
             }
-
-            // Use string key for deduplication
             const key = `${x.toFixed(6)},${y.toFixed(6)},${z.toFixed(6)}`;
             vertexPositions.add(key);
           });
         }
       }
-
-      // Create nodes at unique positions
       vertexPositions.forEach(key => {
         const [x, y, z] = key.split(",").map(parseFloat);
         const node = new THREE.Mesh(nodeGeometry, nodeMaterial.clone());
@@ -896,12 +830,10 @@ function startARTexplorer(
         node.renderOrder = 3;
         matrixGroup.add(node);
       });
-
-      console.log(
-        `[Matrix Nodes] Added ${vertexPositions.size} nodes to ${matrixSize}×${matrixSize} ${polyhedronType} matrix`
-      );
+      console.log(`[Matrix Nodes] Added ${vertexPositions.size} nodes to ${matrixSize}×${matrixSize} ${polyhedronType} matrix`);
     });
   }
+  */
 
   // PHASE 6 EXTRACTION: updateGeometry() function commented out - using renderingAPI.updateGeometry()
   // PHASE 6 EXTRACTION: updateGeometry() function now in rt-rendering.js
