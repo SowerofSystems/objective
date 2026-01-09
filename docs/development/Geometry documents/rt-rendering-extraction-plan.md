@@ -1038,24 +1038,24 @@ geodesicOctahedronGroup.userData.type = "geodesicOctahedron";
 
 ### Cleanup Task: Comment Out Orphaned Functions in rt-init.js
 
-**Status:** 📋 PLANNED (non-urgent)
+**Status:** ✅ COMPLETE (2026-01-08)
 
-The following functions in rt-init.js are orphaned (defined but never called):
+The following functions in rt-init.js were orphaned (defined but never called) after extraction:
 
-1. **`getCachedNodeGeometry()`** - Line 832
+1. **`getCachedNodeGeometry()`** - Line 662
    - Only called by orphaned `renderPolyhedron()` and `addMatrixNodes()`
    - rt-rendering.js version is actually used
 
-2. **`renderPolyhedron()`** - Line 904
-   - Only called from commented-out `updateGeometry()` (lines 1158-1619)
+2. **`renderPolyhedron()`** - Line 734
+   - Only called from commented-out `updateGeometry()`
    - rt-rendering.js version is actually used
 
-3. **`addMatrixNodes()`** - Line 1040
-   - Only called from commented-out `updateGeometry()` (lines 1158-1619)
+3. **`addMatrixNodes()`** - Line 870
+   - Only called from commented-out `updateGeometry()`
    - rt-rendering.js version is actually used
 
-4. **`onWindowResize()`** - Line 1896
-   - Event listener uses rt-rendering.js version (registered in rt-rendering.js:171)
+4. **`onWindowResize()`** - Line 1027
+   - Event listener uses rt-rendering.js version
    - rt-init.js version is never called
 
 **Why They're Not Breaking Anything:**

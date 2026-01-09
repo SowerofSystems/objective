@@ -1120,11 +1120,11 @@ function startARTexplorer(
   document
     .getElementById("showCartesianBasis")
     .addEventListener("change", e => {
-      cartesianBasis.visible = e.target.checked;
+      renderingAPI.setCartesianBasisVisible(e.target.checked);
     });
 
   document.getElementById("showQuadray").addEventListener("change", e => {
-    quadrayBasis.visible = e.target.checked;
+    renderingAPI.setQuadrayBasisVisible(e.target.checked);
   });
 
   // Polyhedra toggles
@@ -1554,7 +1554,7 @@ function startARTexplorer(
 
   // Reset camera to default axo view
   document.getElementById("resetCamera").addEventListener("click", () => {
-    setCameraPreset("axo");
+    renderingAPI.setCameraPreset("axo");
   });
 
   // ========================================================================
@@ -1562,176 +1562,19 @@ function startARTexplorer(
   // ========================================================================
 
   let orthographicCamera = null;
+  // PHASE 6 EXTRACTION: switchCameraType() function now in rt-rendering.js
+  // (Camera switching logic moved to module)
+  /*
   let originalPerspectiveCamera = null; // Will be set after camera is initialized
   let isOrthographic = false;
 
-  /**
-   * Switch between Perspective and Orthographic camera
-   */
   function switchCameraType(toOrthographic) {
-    // CRITICAL: Store the original perspective camera on first call
-    if (!originalPerspectiveCamera && !isOrthographic) {
-      originalPerspectiveCamera = camera;
-      console.log("📸 Saved original perspective camera reference");
-    }
-
-    const container = document.getElementById("canvas-container");
-    const width = container.clientWidth || window.innerWidth;
-    const height = container.clientHeight || window.innerHeight;
-    const aspect = width / height;
-
-    if (toOrthographic && !isOrthographic) {
-      // Create orthographic camera matching current perspective view
-      const distance = camera.position.distanceTo(controls.target);
-      const frustumSize = distance * Math.tan((camera.fov * Math.PI) / 360) * 2;
-
-      orthographicCamera = new THREE.OrthographicCamera(
-        (frustumSize * aspect) / -2,
-        (frustumSize * aspect) / 2,
-        frustumSize / 2,
-        frustumSize / -2,
-        0.1,
-        1000
-      );
-
-      // Copy position and orientation from perspective camera
-      orthographicCamera.position.copy(camera.position);
-      orthographicCamera.rotation.copy(camera.rotation);
-      orthographicCamera.up.copy(camera.up);
-
-      // Switch to orthographic
-      camera = orthographicCamera;
-      controls.object = orthographicCamera;
-      isOrthographic = true;
-
-      console.log("✅ Switched to Orthographic camera (parallel projection)");
-    } else if (!toOrthographic && isOrthographic) {
-      // Switch back to perspective - use ORIGINAL perspective camera
-      if (!originalPerspectiveCamera) {
-        console.error("❌ Original perspective camera not found!");
-        return;
-      }
-
-      // Copy current position/rotation from orthographic camera to perspective camera
-      originalPerspectiveCamera.position.copy(camera.position);
-      originalPerspectiveCamera.rotation.copy(camera.rotation);
-      originalPerspectiveCamera.up.copy(camera.up);
-
-      // CRITICAL: Update perspective camera aspect ratio and projection matrix
-      originalPerspectiveCamera.aspect = aspect;
-      originalPerspectiveCamera.updateProjectionMatrix();
-
-      // Switch to perspective - use the ORIGINAL camera
-      camera = originalPerspectiveCamera;
-      controls.object = originalPerspectiveCamera;
-      isOrthographic = false;
-
-      console.log(
-        "✅ Switched to Perspective camera - TRUE perspective with view cone restored"
-      );
-      console.log(
-        `   Camera type: ${camera.isPerspectiveCamera ? "PerspectiveCamera" : camera.isOrthographicCamera ? "OrthographicCamera" : "Unknown"}`
-      );
-    }
-
-    controls.update();
+    // ... (function moved to rt-rendering.js)
   }
+  */
 
-  /**
-   * Set camera to preset view
-   * @param {string} view - View name (top, bottom, left, right, front, back, axo)
-   */
-  function setCameraPreset(view) {
-    const distance = 10; // Standard distance from origin
-
-    // Z-up coordinate system (CAD/BIM standard)
-    // Z = vertical, X-Y = horizontal ground plane
-    // Viewing convention: Standing on ground (X-Y plane), Z is up
-    switch (view) {
-      case "top":
-        // Top view: Looking DOWN from above (camera on +Z looking toward -Z)
-        camera.position.set(0, 0, distance);
-        camera.up.set(0, 1, 0); // Y axis points "north" in top view
-        break;
-
-      case "bottom":
-        // Bottom view: Looking UP from below (camera on -Z looking toward +Z)
-        camera.position.set(0, 0, -distance);
-        camera.up.set(0, -1, 0); // Flip Y to keep orientation consistent
-        break;
-
-      case "left": {
-        // Left view: Looking from LEFT side at 45° angle (camera on -X,-Y looking toward +X,+Y)
-        // At 45° from X-axis to see tetrahedral triangular profile
-        const leftDist = distance / Math.sqrt(2);
-        camera.position.set(-leftDist, -leftDist, 0);
-        camera.up.set(0, 0, 1); // Z points up
-        break;
-      }
-
-      case "right": {
-        // Right view: Looking from RIGHT side at 45° angle (camera on +X,+Y looking toward -X,-Y)
-        // At 45° from X-axis to see tetrahedral triangular profile
-        const rightDist = distance / Math.sqrt(2);
-        camera.position.set(rightDist, rightDist, 0);
-        camera.up.set(0, 0, 1); // Z points up
-        break;
-      }
-
-      case "front":
-        // Front view: Looking from FRONT (camera on -Y looking toward +Y)
-        // Standing on ground, looking forward (north) - see XZ plane (front elevation)
-        camera.position.set(0, -distance, 0);
-        camera.up.set(0, 0, 1); // Z points up
-        break;
-
-      case "back":
-        // Back view: Looking from BACK (camera on +Y looking toward -Y)
-        // Standing on ground, looking back (south) - see XZ plane (back elevation)
-        camera.position.set(0, distance, 0);
-        camera.up.set(0, 0, 1); // Z points up
-        break;
-
-      case "axo": {
-        // Axonometric/Isometric view (equal angles to X, Y, Z)
-        // Position: (1, 1, 1) direction scaled to distance
-        const axisoDistance = distance / Math.sqrt(3);
-        camera.position.set(
-          axisoDistance * Math.sqrt(3),
-          axisoDistance * Math.sqrt(3),
-          axisoDistance * Math.sqrt(3)
-        );
-        camera.up.set(0, 0, 1); // Z points up
-        break;
-      }
-
-      case "perspective":
-        // TRUE PERSPECTIVE view - return to initial app state
-        // CRITICAL: Switch to perspective camera FIRST, then set position
-        if (isOrthographic) {
-          orthoCheckbox.checked = false;
-          switchCameraType(false);
-        }
-        // Now set the perspective camera to initial position
-        camera.position.set(5, -5, 5);
-        camera.up.set(0, 0, 1); // Z points up
-        camera.lookAt(0, 0, 0);
-        controls.target.set(0, 0, 0);
-        controls.update();
-        console.log(
-          `✅ Camera preset: perspective (TRUE perspective mode restored)`
-        );
-        return; // Skip the common camera setup below
-    }
-
-    camera.lookAt(0, 0, 0);
-    controls.target.set(0, 0, 0);
-    controls.update();
-
-    console.log(
-      `✅ Camera preset: ${view} (${isOrthographic ? "Orthographic" : "Perspective"})`
-    );
-  }
+  // PHASE 6 EXTRACTION: setCameraPreset() function now in rt-rendering.js
+  // (Camera preset logic moved to module)
 
   // Enable view preset buttons and wire up event listeners
   const viewButtons = [
@@ -1748,14 +1591,14 @@ function startARTexplorer(
   viewButtons.forEach(({ id, view }) => {
     const btn = document.getElementById(id);
     btn.addEventListener("click", () => {
-      setCameraPreset(view);
+      renderingAPI.setCameraPreset(view);
     });
   });
 
   // Orthographic/Perspective toggle
   const orthoCheckbox = document.getElementById("orthoPerspective");
   orthoCheckbox.addEventListener("change", e => {
-    switchCameraType(e.target.checked);
+    renderingAPI.switchCameraType(e.target.checked);
   });
 
   // ========================================================================

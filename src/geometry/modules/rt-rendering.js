@@ -1739,6 +1739,195 @@ export function initScene(THREE, OrbitControls, RT) {
     nodeGeometryCache.clear();
   }
 
+  /**
+   * Set Cartesian basis visibility
+   * @param {boolean} visible - true to show, false to hide
+   */
+  function setCartesianBasisVisible(visible) {
+    if (cartesianBasis) {
+      cartesianBasis.visible = visible;
+    }
+  }
+
+  /**
+   * Set Quadray basis visibility
+   * @param {boolean} visible - true to show, false to hide
+   */
+  function setQuadrayBasisVisible(visible) {
+    if (quadrayBasis) {
+      quadrayBasis.visible = visible;
+    }
+  }
+
+  // Variables for camera switching
+  let orthographicCamera = null;
+  let originalPerspectiveCamera = null;
+  let isOrthographic = false;
+
+  /**
+   * Set camera to preset view
+   * @param {string} view - View name (top, bottom, left, right, front, back, axo, perspective)
+   */
+  function setCameraPreset(view) {
+    const distance = 10; // Standard distance from origin
+
+    // Z-up coordinate system (CAD/BIM standard)
+    // Z = vertical, X-Y = horizontal ground plane
+    // Viewing convention: Standing on ground (X-Y plane), Z is up
+    switch (view) {
+      case "top":
+        // Top view: Looking DOWN from above (camera on +Z looking toward -Z)
+        camera.position.set(0, 0, distance);
+        camera.up.set(0, 1, 0); // Y axis points "north" in top view
+        break;
+
+      case "bottom":
+        // Bottom view: Looking UP from below (camera on -Z looking toward +Z)
+        camera.position.set(0, 0, -distance);
+        camera.up.set(0, -1, 0); // Flip Y to keep orientation consistent
+        break;
+
+      case "left": {
+        // Left view: Looking from LEFT side at 45° angle (camera on -X,-Y looking toward +X,+Y)
+        // At 45° from X-axis to see tetrahedral triangular profile
+        const leftDist = distance / Math.sqrt(2);
+        camera.position.set(-leftDist, -leftDist, 0);
+        camera.up.set(0, 0, 1); // Z points up
+        break;
+      }
+
+      case "right": {
+        // Right view: Looking from RIGHT side at 45° angle (camera on +X,+Y looking toward -X,-Y)
+        // At 45° from X-axis to see tetrahedral triangular profile
+        const rightDist = distance / Math.sqrt(2);
+        camera.position.set(rightDist, rightDist, 0);
+        camera.up.set(0, 0, 1); // Z points up
+        break;
+      }
+
+      case "front":
+        // Front view: Looking from FRONT (camera on -Y looking toward +Y)
+        // Standing on ground, looking forward (north) - see XZ plane (front elevation)
+        camera.position.set(0, -distance, 0);
+        camera.up.set(0, 0, 1); // Z points up
+        break;
+
+      case "back":
+        // Back view: Looking from BACK (camera on +Y looking toward -Y)
+        // Standing on ground, looking back (south) - see XZ plane (back elevation)
+        camera.position.set(0, distance, 0);
+        camera.up.set(0, 0, 1); // Z points up
+        break;
+
+      case "axo": {
+        // Axonometric/Isometric view (equal angles to X, Y, Z)
+        // Position: (1, 1, 1) direction scaled to distance
+        const axisoDistance = distance / Math.sqrt(3);
+        camera.position.set(
+          axisoDistance * Math.sqrt(3),
+          axisoDistance * Math.sqrt(3),
+          axisoDistance * Math.sqrt(3)
+        );
+        camera.up.set(0, 0, 1); // Z points up
+        break;
+      }
+
+      case "perspective":
+        // TRUE PERSPECTIVE view - return to initial app state
+        // CRITICAL: Switch to perspective camera FIRST, then set position
+        if (isOrthographic) {
+          switchCameraType(false); // Switch to perspective internally
+          // Also update the checkbox in the UI
+          const orthoCheckbox = document.getElementById("orthoPerspective");
+          if (orthoCheckbox) {
+            orthoCheckbox.checked = false;
+          }
+        }
+        // Now set the perspective camera to initial position
+        camera.position.set(5, -5, 5);
+        camera.up.set(0, 0, 1); // Z points up
+        camera.lookAt(0, 0, 0);
+        controls.target.set(0, 0, 0);
+        controls.update();
+        console.log(
+          `✅ Camera preset: perspective (TRUE perspective mode restored)`
+        );
+        return; // Skip the common camera setup below
+    }
+
+    camera.lookAt(0, 0, 0);
+    controls.target.set(0, 0, 0);
+    controls.update();
+
+    console.log(
+      `✅ Camera preset: ${view} (${isOrthographic ? "Orthographic" : "Perspective"})`
+    );
+  }
+
+  /**
+   * Switch between Perspective and Orthographic camera
+   * @param {boolean} toOrthographic - true for orthographic, false for perspective
+   */
+  function switchCameraType(toOrthographic) {
+    // CRITICAL: Store the original perspective camera on first call
+    if (!originalPerspectiveCamera && !isOrthographic) {
+      originalPerspectiveCamera = camera;
+      console.log("📸 Saved original perspective camera reference");
+    }
+
+    const container = document.getElementById("canvas-container");
+    const width = container.clientWidth || window.innerWidth;
+    const height = container.clientHeight || window.innerHeight;
+    const aspect = width / height;
+
+    if (toOrthographic && !isOrthographic) {
+      // Create orthographic camera matching current perspective view
+      const distance = camera.position.distanceTo(controls.target);
+      const frustumSize = distance * Math.tan((camera.fov * Math.PI) / 360) * 2;
+
+      orthographicCamera = new THREE.OrthographicCamera(
+        (frustumSize * aspect) / -2,
+        (frustumSize * aspect) / 2,
+        frustumSize / 2,
+        frustumSize / -2,
+        0.1,
+        1000
+      );
+
+      // Copy position and orientation from perspective camera
+      orthographicCamera.position.copy(camera.position);
+      orthographicCamera.rotation.copy(camera.rotation);
+      orthographicCamera.up.copy(camera.up);
+
+      // Switch to orthographic
+      camera = orthographicCamera;
+      controls.object = orthographicCamera;
+      isOrthographic = true;
+
+      console.log("✅ Switched to Orthographic camera (parallel projection)");
+    } else if (!toOrthographic && isOrthographic) {
+      // Switch back to perspective - use ORIGINAL perspective camera
+      if (!originalPerspectiveCamera) {
+        console.error("❌ Original perspective camera not found!");
+        return;
+      }
+
+      // Copy current position/rotation back to perspective camera
+      originalPerspectiveCamera.position.copy(camera.position);
+      originalPerspectiveCamera.rotation.copy(camera.rotation);
+      originalPerspectiveCamera.up.copy(camera.up);
+
+      // Switch to perspective
+      camera = originalPerspectiveCamera;
+      controls.object = originalPerspectiveCamera;
+      isOrthographic = false;
+
+      console.log("✅ Switched to Perspective camera");
+    }
+
+    controls.update();
+  }
+
   // Return public API from initScene() factory
   return {
     // Core scene initialization
@@ -1753,6 +1942,14 @@ export function initScene(THREE, OrbitControls, RT) {
     // Node configuration
     setNodeGeometryType,
     clearNodeCache,
+
+    // Basis visibility controls
+    setCartesianBasisVisible,
+    setQuadrayBasisVisible,
+
+    // Camera controls
+    switchCameraType,
+    setCameraPreset,
 
     // Getters for THREE.js objects (needed by rt-init.js)
     getScene: () => scene,
