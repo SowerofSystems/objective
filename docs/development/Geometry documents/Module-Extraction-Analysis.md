@@ -757,3 +757,270 @@ The selection system is ~150 lines of well-organized, working code. Module extra
 - Need selection for other tools (measurement, annotations, etc.)
 - Have time for careful architectural work
 - Willing to implement global state pattern across entire codebase
+
+---
+
+## Update: Successful rt-rendering.js Extraction (2026-01-08)
+
+### Extraction Summary
+
+**Status:** ✅ **SUCCESSFUL** - Complete extraction of rendering functions from rt-init.js to rt-rendering.js module
+
+**Date:** 2026-01-08
+**Branch:** module-extraction
+**Commits:**
+- `29af2e8` - Fix: Add userData.type to base polyhedra (Packed nodes fix)
+- `a6d6fc0` - Fix: Add API methods for RT Geodesic node control
+- `66d2ff3` - Feat: Complete rt-rendering.js sync with production code
+- `efe833b` - Clean: Remove 835 lines of commented code blocks from rt-init.js
+- `e800bbb` - Fix: Restore UI controls broken by module extraction
+
+### Why This Succeeded (vs Gumball Failures)
+
+**Key Difference:** Rendering functions are **stateless and self-contained**, while gumball/selection are **stateful and interactive**.
+
+| Aspect | Rendering Functions | Gumball Functions |
+|--------|-------------------|------------------|
+| **State Management** | Minimal (closure-scoped only) | Heavy (isDragging, currentSelection) |
+| **Dependency Direction** | Call inward (same module) | Call outward (HTML scope) |
+| **DOM Interaction** | Read-only (checkboxes/sliders) | Read/write (events, classList) |
+| **Global Access** | THREE.js, RT library only | Scene groups, selection state |
+| **Closure Requirements** | Self-contained | Requires HTML-scope closure |
+
+### Extraction Strategy Used
+
+**Factory Pattern with API-Based State Management:**
+
+```javascript
+// rt-rendering.js exports ONE function that returns API object
+export function initScene(THREE, OrbitControls, RT, Quadray, Polyhedra) {
+  // Closure-scoped variables
+  let scene, camera, renderer, controls;
+  let cartesianBasis, quadrayBasis;
+  let useRTNodeGeometry = false;
+
+  function initScene() { /* ... */ }
+  function animate() { /* ... */ }
+  function updateGeometry() { /* ... */ }
+  function setNodeGeometryType(useRT) {
+    useRTNodeGeometry = useRT;
+    nodeGeometryCache.clear();
+  }
+
+  // Return public API
+  return {
+    initScene,
+    animate,
+    updateGeometry,
+    setNodeGeometryType, // API for external control
+    getCamera: () => camera, // Getter for closure variables
+  };
+}
+```
+
+**rt-init.js usage:**
+```javascript
+import { initScene as createRenderingAPI } from "./rt-rendering.js";
+
+const renderingAPI = createRenderingAPI(THREE, OrbitControls, RT, Quadray, Polyhedra);
+renderingAPI.initScene();
+renderingAPI.animate();
+
+// Event handlers use API methods
+document.getElementById("nodeGeomRT").addEventListener("click", () => {
+  renderingAPI.setNodeGeometryType(true); // API call, not direct variable access
+});
+```
+
+### Issues Encountered and Resolved
+
+#### Issue #1: RT Geodesic Nodes Not Rendering
+**Problem:** Variable scope isolation - rt-init.js event handlers modified `useRTNodeGeometry` in rt-init.js scope, but rt-rendering.js read its own separate copy.
+
+**Solution:** Added API methods:
+- `setNodeGeometryType(useRT)` - Set node type and clear cache
+- `clearNodeCache()` - Clear geometry cache
+
+**Result:** ✅ RT Geodesic nodes work on all polyhedra
+
+#### Issue #2: Packed Nodes on Base Polyhedra
+**Problem:** Base polyhedra groups created without `userData.type` property, causing `getClosePackedRadius()` to fail.
+
+**Solution:** Added `userData.type` to all 12 base polyhedra groups in `initScene()`:
+```javascript
+cubeGroup.userData.type = "cube";
+tetrahedronGroup.userData.type = "tetrahedron";
+// ... etc for all base forms
+```
+
+**Result:** ✅ Packed nodes work on all polyhedra
+
+#### Issue #3: UI Toggles Broken After Extraction
+**Problem:** Event handlers in rt-init.js couldn't access closure-scoped objects:
+- Cartesian/Quadray basis toggles → `cartesianBasis.visible`
+- Orthographic toggle → `camera`, `controls`, `isOrthographic`
+- View presets → `camera.position`, `controls.target`
+
+**Solution:** Added API methods and moved functions:
+- `setCartesianBasisVisible(visible)`
+- `setQuadrayBasisVisible(visible)`
+- `switchCameraType(toOrthographic)` - moved from rt-init.js
+- `setCameraPreset(view)` - moved from rt-init.js
+
+**Result:** ✅ All UI controls work in both Perspective and Orthographic modes
+
+### Code Metrics
+
+**rt-init.js:**
+- Before: 4,467 lines
+- After: ~3,632 lines
+- **Reduction: -835 lines (-18.7%)**
+
+**rt-rendering.js:**
+- Before: 942 lines (outdated stub)
+- After: 1,969 lines (fully synced)
+- **Addition: +1,027 lines**
+
+**Net Result:** Rendering logic properly isolated in module, rt-init.js significantly lighter.
+
+### Functions Extracted
+
+**Core Rendering:**
+- `initScene()` - Scene, camera, renderer setup
+- `animate()` - Animation loop with PerformanceClock
+- `onWindowResize()` - Responsive canvas resizing
+- `updateGeometry()` - All polyhedra rendering (850+ lines)
+- `updateGeometryStats()` - Statistics display
+
+**Helper Functions:**
+- `getPolyhedronEdgeQuadrance()` - Edge quadrance calculation
+- `getClosePackedRadius()` - Close-packed sphere radius
+- `getCachedNodeGeometry()` - Cached node generation
+- `addMatrixNodes()` - Matrix node generation
+- `countGroupTriangles()` - Triangle counting
+
+**Grid & Basis:**
+- `createCartesianGrid()` - XYZ grid planes
+- `createQuadrayBasis()` - WXYZ basis vectors
+- `createIVMGrid()` - Triangular grid tessellation
+- `createIVMPlanes()` - 6 Quadray planes
+
+**Camera Controls (moved from rt-init.js):**
+- `setCameraPreset(view)` - Set camera to preset views
+- `switchCameraType(toOrthographic)` - Toggle perspective/orthographic
+
+### API Methods Exposed
+
+**Core:**
+- `initScene()` - Initialize scene
+- `animate()` - Start animation loop
+- `onWindowResize()` - Handle window resize
+- `updateGeometry()` - Update all geometry
+- `updateGeometryStats()` - Update statistics display
+
+**Node Configuration:**
+- `setNodeGeometryType(useRT)` - Switch between RT Geodesic/Classical Sphere
+- `clearNodeCache()` - Clear node geometry cache
+
+**Basis Visibility:**
+- `setCartesianBasisVisible(visible)` - Show/hide Cartesian basis
+- `setQuadrayBasisVisible(visible)` - Show/hide Quadray basis
+
+**Camera Controls:**
+- `switchCameraType(toOrthographic)` - Toggle camera projection mode
+- `setCameraPreset(view)` - Set camera to preset view (top/bottom/left/right/front/back/axo/perspective)
+
+**Getters:**
+- `getScene()` - Get scene object
+- `getCamera()` - Get camera object
+- `getRenderer()` - Get renderer object
+- `getControls()` - Get OrbitControls object
+
+### Lessons Learned
+
+**What Made This Successful:**
+
+1. **Rendering is naturally modular** - Functions call inward to same module, not outward to HTML scope
+2. **Minimal shared state** - Most rendering logic is stateless or uses closure-scoped variables
+3. **API-based control** - External code uses API methods instead of direct variable access
+4. **Factory pattern** - Single initialization function returns API object with closure access
+5. **Incremental approach** - Synced functions one-by-one, tested at each step
+6. **Clear boundaries** - Rendering vs UI interaction naturally separates
+
+**Key Pattern: Scope Isolation via API**
+
+When module variables need external control:
+```javascript
+// ❌ DON'T: Let external code access closure variables directly
+let useRTNodeGeometry = false;
+export { useRTNodeGeometry }; // Won't work - can't export let from closure
+
+// ✅ DO: Provide API methods for external control
+function setNodeGeometryType(useRT) {
+  useRTNodeGeometry = useRT; // Modifies closure variable
+  nodeGeometryCache.clear();
+}
+return { setNodeGeometryType }; // Export method in API
+```
+
+**Why Gumball Can't Use This Pattern:**
+
+Gumball requires **bidirectional state synchronization**:
+- HTML sets `isDragging = true`
+- Module needs to read it
+- Module sets `isDragging = false`
+- HTML needs to read it
+- Can't use API methods for every frame of drag operation (performance)
+
+Rendering only requires **unidirectional control**:
+- User clicks button → API method called → Module updates internal state
+- No need for HTML to read module state during rendering
+
+### Remaining Work
+
+**Orphaned Code to Clean Up:**
+
+The following functions in rt-init.js are orphaned (defined but never called):
+1. `getCachedNodeGeometry()` - Line 662
+2. `renderPolyhedron()` - Line 734
+3. `addMatrixNodes()` - Line 870
+4. `onWindowResize()` - Line 1027
+5. `switchCameraType()` - Line 1565-1638 (commented)
+6. `setCameraPreset()` - Line 1576-1670 (commented)
+
+**Status:** Kept for reference, marked with "PHASE 6 EXTRACTION" comments. Can be removed once extraction is fully verified.
+
+**Selection System Issue:**
+
+Selection functions are still in rt-init.js (lines ~1658-1850):
+- `selectPolyhedron()`
+- `deselectAll()`
+- `onCanvasClick()`
+- Form/Instance selection management
+
+**Status:** ⚠️ **BROKEN** - Selection system not working, preventing gumball edit controls.
+
+**Next Priority:** Fix selection system to restore Form editing capabilities (Move/Scale/Rotate tools).
+
+### Success Criteria Met
+
+- ✅ All Forms render correctly (Cube, Tet, Octa, Icosa, Dodec, Cubocta, Rhombic Dodec, Duals)
+- ✅ All Matrices render correctly (Hexahedral, Tetrahedral, Octahedral, Cuboctahedral, Rhombic Dodecahedral)
+- ✅ All Geodesics render correctly (Tetra, Octa, Icosa) with projection options
+- ✅ Node rendering works (Packed, RT Geodesic, Classical Sphere, sm/md/lg/off)
+- ✅ Grid rendering works (Cartesian XY/XZ/YZ, Quadray 6 planes, tessellation)
+- ✅ Basis vectors scale correctly (Cartesian XYZ, Quadray WXYZ)
+- ✅ All UI controls respond correctly (checkboxes, sliders, toggles)
+- ✅ Camera controls work (Perspective/Orthographic, view presets, reset)
+- ✅ No console errors or warnings
+- ✅ rt-init.js reduced by 835 lines (-18.7%)
+
+### Conclusion
+
+**rt-rendering.js extraction is a complete success.** This demonstrates that:
+1. **Stateless, self-contained functions CAN be extracted successfully**
+2. **Factory pattern with API methods solves scope isolation**
+3. **Careful incremental approach prevents breakage**
+4. **Clear architectural boundaries make extraction feasible**
+
+**Next challenge:** Selection system is tightly coupled to HTML scope and requires different approach. Will revisit after establishing architectural prerequisites (global state object, event bus pattern).
