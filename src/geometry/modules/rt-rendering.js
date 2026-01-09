@@ -1928,6 +1928,32 @@ export function initScene(THREE, OrbitControls, RT) {
     controls.update();
   }
 
+  /**
+   * Get all form groups for selection system
+   * @returns {Object} Object containing all form group references
+   */
+  function getAllFormGroups() {
+    return {
+      cubeGroup,
+      tetrahedronGroup,
+      dualTetrahedronGroup,
+      octahedronGroup,
+      icosahedronGroup,
+      dodecahedronGroup,
+      dualIcosahedronGroup,
+      cuboctahedronGroup,
+      rhombicDodecahedronGroup,
+      geodesicIcosahedronGroup,
+      geodesicTetrahedronGroup,
+      geodesicOctahedronGroup,
+      cubeMatrixGroup,
+      tetMatrixGroup,
+      octaMatrixGroup,
+      cuboctaMatrixGroup,
+      rhombicDodecMatrixGroup,
+    };
+  }
+
   // Return public API from initScene() factory
   return {
     // Core scene initialization
@@ -1956,6 +1982,7 @@ export function initScene(THREE, OrbitControls, RT) {
     getCamera: () => camera,
     getRenderer: () => renderer,
     getControls: () => controls,
+    getAllFormGroups, // For selection system
 
     // Grid and basis functions (if needed by rt-init.js)
     // These may not need to be exposed if only called from initScene()

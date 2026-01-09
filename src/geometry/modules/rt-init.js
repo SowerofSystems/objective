@@ -21,7 +21,7 @@ window.RTPolyhedra = Polyhedra;
 // ========================================================================
 // PASSWORD PROTECTION
 // ========================================================================
-const PASSWORD = "enzyme2026";
+const PASSWORD = "enzyme2026!";
 const passwordOverlay = document.getElementById("password-overlay");
 const passwordInput = document.getElementById("password-input");
 const passwordSubmit = document.getElementById("password-submit");
@@ -130,21 +130,39 @@ function startARTexplorer(
   // ========================================================================
   // THREE.JS SCENE SETUP
   // ========================================================================
-  let scene, camera, renderer, controls;
-
   // PHASE 6 EXTRACTION: Assign updateGeometry/updateGeometryStats EARLY so event listeners can reference them
   // These functions must be available BEFORE event listeners are registered (line ~2271)
   let updateGeometry = renderingAPI.updateGeometry;
   let updateGeometryStats = renderingAPI.updateGeometryStats;
-  let cubeGroup, tetrahedronGroup, dualTetrahedronGroup, octahedronGroup;
-  let icosahedronGroup, dodecahedronGroup, dualIcosahedronGroup;
-  let cuboctahedronGroup, rhombicDodecahedronGroup;
-  let geodesicIcosahedronGroup; // Phase 2.7a: Geodesic subdivision
-  let geodesicTetrahedronGroup; // Phase 2.7c: Geodesic tetrahedron
-  let geodesicOctahedronGroup; // Phase 2.7b: Geodesic octahedron
-  let cubeMatrixGroup, tetMatrixGroup, octaMatrixGroup; // Matrix forms (IVM arrays)
-  let cuboctaMatrixGroup; // Cuboctahedron matrix (Vector Equilibrium array)
-  let rhombicDodecMatrixGroup; // Rhombic dodecahedron matrix (space-filling array)
+
+  // PHASE 6 EXTRACTION: Get references to closure-scoped objects from rendering module
+  const scene = renderingAPI.getScene();
+  const camera = renderingAPI.getCamera();
+  const renderer = renderingAPI.getRenderer();
+  const controls = renderingAPI.getControls();
+
+  // Get all form groups for selection system
+  const formGroups = renderingAPI.getAllFormGroups();
+  const {
+    cubeGroup,
+    tetrahedronGroup,
+    dualTetrahedronGroup,
+    octahedronGroup,
+    icosahedronGroup,
+    dodecahedronGroup,
+    dualIcosahedronGroup,
+    cuboctahedronGroup,
+    rhombicDodecahedronGroup,
+    geodesicIcosahedronGroup,
+    geodesicTetrahedronGroup,
+    geodesicOctahedronGroup,
+    cubeMatrixGroup,
+    tetMatrixGroup,
+    octaMatrixGroup,
+    cuboctaMatrixGroup,
+    rhombicDodecMatrixGroup,
+  } = formGroups;
+
   let cartesianGrid, cartesianBasis, quadrayBasis, ivmPlanes;
 
   // PHASE 6 EXTRACTION: initScene() function now in rt-rendering.js
