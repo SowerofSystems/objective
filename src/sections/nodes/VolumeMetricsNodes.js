@@ -396,6 +396,8 @@
     });
 
     // k_104: Total Envelope Heat Gain
+    // Excel: =IF(H21="Capacitance", K98, SUM(K101:K102))
+    // NOTE: k_103 (air leakage heat gain) is NOT included in this sum
     graph.registerNode({
       id: "envelope.total.heatGain",
       legacyId: "k_104",
@@ -404,15 +406,22 @@
       dependencies: [
         "transmissionLoss.airFacing.totalHeatGain",
         "transmissionLoss.groundFacing.totalHeatGain",
-        "airTightness.heatGain"
+        "transmissionLoss.components.subtotalHeatGain",
+        "climate.capacitance.setting"
       ],
       label: "Total Envelope Heat Gain (kWh/yr)",
       compute: (inputs) => {
-        // k_104 = k_101 + k_102 + k_103
-        const k101 = parseNum(inputs["transmissionLoss.airFacing.totalHeatGain"]);
-        const k102 = parseNum(inputs["transmissionLoss.groundFacing.totalHeatGain"]);
-        const k103 = parseNum(inputs["airTightness.heatGain"]);
-        return k101 + k102 + k103;
+        const capacitanceSetting = inputs["climate.capacitance.setting"] || "No Capacitance";
+
+        if (capacitanceSetting === "Capacitance") {
+          // Use k_98 from Section 11 (includes solar etc.)
+          return parseNum(inputs["transmissionLoss.components.subtotalHeatGain"]);
+        } else {
+          // k_104 = k_101 + k_102 (NOT including k_103 air leakage)
+          const k101 = parseNum(inputs["transmissionLoss.airFacing.totalHeatGain"]);
+          const k102 = parseNum(inputs["transmissionLoss.groundFacing.totalHeatGain"]);
+          return k101 + k102;
+        }
       }
     });
 

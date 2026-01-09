@@ -665,24 +665,8 @@
         );
       }
     },
-    {
-      id: "envelope.total.heatGain",
-      legacyId: "k_104",
-      dependencies: [
-        "envelope.airFacing.totalHeatGain",
-        "envelope.groundFacing.totalHeatGain"
-      ],
-      classification: "C",
-      section: "S12",
-      label: "Total Transmission Heat Gain",
-      unit: "kWh/yr",
-      compute: (inputs) => {
-        return (
-          parseNum(inputs["envelope.airFacing.totalHeatGain"], 0) +
-          parseNum(inputs["envelope.groundFacing.totalHeatGain"], 0)
-        );
-      }
-    }
+    // NOTE: k_104 (envelope.total.heatGain) is defined in VolumeMetricsNodes.js
+    // with the correct Capacitance conditional logic
   ];
 
   // ============================================================================
