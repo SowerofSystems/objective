@@ -588,6 +588,14 @@ function startARTexplorer(
     rhombicDodecMatrixRotate45.addEventListener("change", updateGeometry);
   }
 
+  // Rhombic Dodecahedron Matrix: Face Coplanarity checkbox
+  const rhombicDodecMatrixFaceCoplanar = document.getElementById(
+    "rhombicDodecMatrixFaceCoplanar"
+  );
+  if (rhombicDodecMatrixFaceCoplanar) {
+    rhombicDodecMatrixFaceCoplanar.addEventListener("change", updateGeometry);
+  }
+
   // Phase 2.7a, 2.7b, 2.7c: Geodesic controls
   document
     .getElementById("showGeodesicIcosahedron")

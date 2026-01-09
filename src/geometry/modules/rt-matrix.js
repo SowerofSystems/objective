@@ -343,11 +343,14 @@ export const RTMatrix = {
     matrixSize,
     halfSize,
     rotate45,
+    faceCoplanar,
     opacity,
     color = 0xff8800, // Orange (Rhombic Dodecahedron color)
     THREE
   ) => {
     const matrixGroup = new THREE.Group();
+
+    // Always use default cube-compatible spacing
     const spacing = 2 * halfSize; // Cube edge - rhombic dodec is space-filling like cube
 
     // Get base rhombic dodecahedron geometry
@@ -357,82 +360,101 @@ export const RTMatrix = {
     );
     const { vertices, edges, faces } = rhombicDodecGeom;
 
-    // Generate N×N grid centered at origin
+    // Helper function to create a single rhombic dodecahedron at given position
+    const createRhombicDodec = (offset_x, offset_y, offset_z) => {
+      const rhombicDodecGroup = new THREE.Group();
+
+      // Build indexed face geometry
+      const positions = [];
+      const indices = [];
+
+      // Add all vertices to positions array (with offset)
+      vertices.forEach(v => {
+        positions.push(v.x + offset_x, v.y + offset_y, v.z + offset_z);
+      });
+
+      // Build face indices (triangulate rhombic faces)
+      faces.forEach(faceIndices => {
+        // Fan triangulation from first vertex
+        for (let k = 1; k < faceIndices.length - 1; k++) {
+          indices.push(faceIndices[0], faceIndices[k], faceIndices[k + 1]);
+        }
+      });
+
+      const faceGeometry = new THREE.BufferGeometry();
+      faceGeometry.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(positions, 3)
+      );
+      faceGeometry.setIndex(indices);
+      faceGeometry.computeVertexNormals();
+
+      const faceMaterial = new THREE.MeshStandardMaterial({
+        color: color,
+        transparent: true,
+        opacity: opacity,
+        side: THREE.DoubleSide,
+        depthWrite: opacity >= 0.99,
+        flatShading: true,
+      });
+
+      const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);
+      faceMesh.renderOrder = 1;
+      rhombicDodecGroup.add(faceMesh);
+
+      // Render edges
+      const edgePositions = [];
+      edges.forEach(([vi, vj]) => {
+        const v1 = vertices[vi];
+        const v2 = vertices[vj];
+        edgePositions.push(v1.x + offset_x, v1.y + offset_y, v1.z + offset_z);
+        edgePositions.push(v2.x + offset_x, v2.y + offset_y, v2.z + offset_z);
+      });
+
+      const edgeGeometry = new THREE.BufferGeometry();
+      edgeGeometry.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(edgePositions, 3)
+      );
+
+      const edgeMaterial = new THREE.LineBasicMaterial({
+        color: color,
+        linewidth: 1,
+        depthTest: true,
+        depthWrite: true,
+      });
+
+      const edgeLines = new THREE.LineSegments(edgeGeometry, edgeMaterial);
+      edgeLines.renderOrder = 2;
+      rhombicDodecGroup.add(edgeLines);
+
+      matrixGroup.add(rhombicDodecGroup);
+    };
+
+    // Generate primary N×N grid centered at origin
+    let polyhedraCount = 0;
     for (let i = 0; i < matrixSize; i++) {
       for (let j = 0; j < matrixSize; j++) {
-        // Calculate position: centered at origin
         const offset_x = (i - matrixSize / 2 + 0.5) * spacing;
         const offset_y = (j - matrixSize / 2 + 0.5) * spacing;
-        const offset_z = 0; // Z-centered at origin
+        const offset_z = 0;
+        createRhombicDodec(offset_x, offset_y, offset_z);
+        polyhedraCount++;
+      }
+    }
 
-        // Create rhombic dodecahedron instance at this grid position
-        const rhombicDodecGroup = new THREE.Group();
-
-        // Build indexed face geometry
-        const positions = [];
-        const indices = [];
-
-        // Add all vertices to positions array (with offset)
-        vertices.forEach(v => {
-          positions.push(v.x + offset_x, v.y + offset_y, v.z + offset_z);
-        });
-
-        // Build face indices (triangulate rhombic faces)
-        faces.forEach(faceIndices => {
-          // Fan triangulation from first vertex
-          for (let k = 1; k < faceIndices.length - 1; k++) {
-            indices.push(faceIndices[0], faceIndices[k], faceIndices[k + 1]);
-          }
-        });
-
-        const faceGeometry = new THREE.BufferGeometry();
-        faceGeometry.setAttribute(
-          "position",
-          new THREE.Float32BufferAttribute(positions, 3)
-        );
-        faceGeometry.setIndex(indices);
-        faceGeometry.computeVertexNormals();
-
-        const faceMaterial = new THREE.MeshStandardMaterial({
-          color: color,
-          transparent: true,
-          opacity: opacity,
-          side: THREE.DoubleSide,
-          depthWrite: opacity >= 0.99,
-          flatShading: true,
-        });
-
-        const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);
-        faceMesh.renderOrder = 1;
-        rhombicDodecGroup.add(faceMesh);
-
-        // Render edges
-        const edgePositions = [];
-        edges.forEach(([vi, vj]) => {
-          const v1 = vertices[vi];
-          const v2 = vertices[vj];
-          edgePositions.push(v1.x + offset_x, v1.y + offset_y, v1.z + offset_z);
-          edgePositions.push(v2.x + offset_x, v2.y + offset_y, v2.z + offset_z);
-        });
-
-        const edgeGeometry = new THREE.BufferGeometry();
-        edgeGeometry.setAttribute(
-          "position",
-          new THREE.Float32BufferAttribute(edgePositions, 3)
-        );
-
-        const edgeMaterial = new THREE.LineBasicMaterial({
-          color: color,
-          linewidth: 1,
-          depthTest: true,
-          depthWrite: true,
-        });
-
-        const edgeLines = new THREE.LineSegments(edgeGeometry, edgeMaterial);
-        edgeLines.renderOrder = 2;
-        rhombicDodecGroup.add(edgeLines);
-
-        matrixGroup.add(rhombicDodecGroup);
+    // If faceCoplanar mode is enabled, add interstitial rhombic dodecahedra
+    // to fill the gaps and create true space-filling tessellation
+    if (faceCoplanar) {
+      // Add interstitial polyhedra offset by (halfSize, halfSize, 0)
+      for (let i = 0; i < matrixSize - 1; i++) {
+        for (let j = 0; j < matrixSize - 1; j++) {
+          const offset_x = (i - matrixSize / 2 + 1.0) * spacing;
+          const offset_y = (j - matrixSize / 2 + 1.0) * spacing;
+          const offset_z = 0;
+          createRhombicDodec(offset_x, offset_y, offset_z);
+          polyhedraCount++;
+        }
       }
     }
 
@@ -442,9 +464,9 @@ export const RTMatrix = {
     }
 
     console.log(
-      `[RTMatrix] Rhombic dodecahedron matrix created: ${matrixSize}×${matrixSize} = ${
-        matrixSize * matrixSize
-      } rhombic dodecs, rotate45=${rotate45}`
+      `[RTMatrix] Rhombic dodecahedron matrix created: ${matrixSize}×${matrixSize} primary grid${
+        faceCoplanar ? ` + ${(matrixSize - 1) * (matrixSize - 1)} interstitial` : ""
+      } = ${polyhedraCount} total rhombic dodecs, rotate45=${rotate45}, faceCoplanar=${faceCoplanar}`
     );
 
     return matrixGroup;
