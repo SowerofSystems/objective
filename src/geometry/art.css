@@ -894,7 +894,7 @@ button:disabled {
   border: 1px solid #cc00cc;
   box-shadow: 0 2px 8px rgba(255, 0, 255, 0.3);
   color: #ffffff;
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
 }
 
 .cross-formula-panel {
@@ -1010,7 +1010,7 @@ button:disabled {
   font-size: 9px;
   color: white;
   font-weight: bold;
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
 }
 
 .cross-close-button {
