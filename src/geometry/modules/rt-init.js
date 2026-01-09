@@ -159,198 +159,10 @@ function startARTexplorer(
   // NOTE: nodeGeometryCache removed - now managed by renderingAPI in rt-rendering.js
   // const nodeGeometryCache = new Map(); // ← REMOVED: Now in rt-rendering.js
 
-  // PHASE 6 EXTRACTION: getPolyhedronEdgeQuadrance() and getClosePackedRadius() functions now in rt-rendering.js
-  // (Orphaned functions - only called by orphaned getCachedNodeGeometry(), using rt-rendering.js versions)
-  /*
-  function getPolyhedronEdgeQuadrance(type, scale) {
-    // ... function body (~80 lines)
-  }
+  // PHASE 6 EXTRACTION: Helper functions now in rt-rendering.js
+  // Removed: getPolyhedronEdgeQuadrance(), getClosePackedRadius(), getCachedNodeGeometry(), renderPolyhedron(), addMatrixNodes()
 
-  function getClosePackedRadius(type, scale) {
-    // ... function body (~22 lines)
-  }
-  */
-
-  // PHASE 6 EXTRACTION: getCachedNodeGeometry() function now in rt-rendering.js
-  // (Orphaned function - never called, using rt-rendering.js version)
-  /*
-  function getCachedNodeGeometry(useRT, nodeSize, polyhedronType, scale) {
-    const cacheKey = `${useRT ? "rt" : "classical"}-${nodeSize}-${polyhedronType || "default"}-${scale || 1}`;
-    if (nodeGeometryCache.has(cacheKey)) {
-      return nodeGeometryCache.get(cacheKey);
-    }
-    let nodeGeometry;
-    let trianglesPerNode = 0;
-    let radius;
-    if (nodeSize === "packed") {
-      if (!polyhedronType || !scale) {
-        console.warn("⚠️ Packed mode requires polyhedronType and scale parameters");
-        radius = 0.04;
-      } else {
-        radius = getClosePackedRadius(polyhedronType, scale);
-      }
-    } else {
-      const nodeSizes = { sm: 0.02, md: 0.04, lg: 0.08 };
-      radius = nodeSizes[nodeSize] || 0.04;
-    }
-    if (useRT) {
-      const polyData = window.RTPolyhedra.geodesicIcosahedron(radius, 0, "out");
-      nodeGeometry = new THREE.BufferGeometry();
-      const positions = [];
-      const indices = [];
-      polyData.vertices.forEach(v => { positions.push(v.x, v.y, v.z); });
-      polyData.faces.forEach(faceIndices => {
-        for (let i = 1; i < faceIndices.length - 1; i++) {
-          indices.push(faceIndices[0], faceIndices[i], faceIndices[i + 1]);
-        }
-      });
-      nodeGeometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-      nodeGeometry.setIndex(indices);
-      nodeGeometry.computeVertexNormals();
-      trianglesPerNode = indices.length / 3;
-    } else {
-      nodeGeometry = new THREE.SphereGeometry(radius, 16, 16);
-      trianglesPerNode = 16 * 16 * 2;
-    }
-    const result = { geometry: nodeGeometry, triangles: trianglesPerNode };
-    nodeGeometryCache.set(cacheKey, result);
-    return result;
-  }
-  */
-
-  // PHASE 6 EXTRACTION: renderPolyhedron() function now in rt-rendering.js
-  // (Orphaned function - never called, using rt-rendering.js version)
-  /*
-  function renderPolyhedron(group, geometry, color, opacity) {
-    while (group.children.length > 0) { group.remove(group.children[0]); }
-    const { vertices, edges, faces } = geometry;
-    const nodeSizeBtn = document.querySelector(".node-size-btn.active");
-    const nodeSize = nodeSizeBtn ? nodeSizeBtn.dataset.nodeSize : "md";
-    const showNodes = nodeSize !== "off";
-    const showFaces = true;
-    if (showFaces) {
-      const positions = [];
-      const indices = [];
-      vertices.forEach(v => { positions.push(v.x, v.y, v.z); });
-      faces.forEach(faceIndices => {
-        for (let i = 1; i < faceIndices.length - 1; i++) {
-          indices.push(faceIndices[0], faceIndices[i], faceIndices[i + 1]);
-        }
-      });
-      const faceGeometry = new THREE.BufferGeometry();
-      faceGeometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-      faceGeometry.setIndex(indices);
-      faceGeometry.computeVertexNormals();
-      const faceMaterial = new THREE.MeshStandardMaterial({
-        color: color, transparent: true, opacity: opacity,
-        side: THREE.DoubleSide, depthWrite: opacity >= 0.99, flatShading: true,
-      });
-      const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);
-      faceMesh.renderOrder = 1;
-      group.add(faceMesh);
-    }
-    const edgePositions = [];
-    edges.forEach(([i, j]) => {
-      const v1 = vertices[i];
-      const v2 = vertices[j];
-      edgePositions.push(v1.x, v1.y, v1.z);
-      edgePositions.push(v2.x, v2.y, v2.z);
-    });
-    const edgeGeometry = new THREE.BufferGeometry();
-    edgeGeometry.setAttribute("position", new THREE.Float32BufferAttribute(edgePositions, 3));
-    const edgeMaterial = new THREE.LineBasicMaterial({
-      color: color, linewidth: 1, depthTest: true, depthWrite: true,
-    });
-    const edgeLines = new THREE.LineSegments(edgeGeometry, edgeMaterial);
-    edgeLines.renderOrder = 2;
-    group.add(edgeLines);
-    if (showNodes) {
-      PerformanceClock.startNodeGeneration();
-      const polyType = group.userData.type;
-      const tetEdge = parseFloat(document.getElementById("tetScaleSlider").value);
-      const scale = tetEdge / (2 * Math.sqrt(2));
-      const { geometry: nodeGeometry, triangles: trianglesPerNode } =
-        getCachedNodeGeometry(useRTNodeGeometry, nodeSize, polyType, scale);
-      const useFlatShading = document.getElementById("nodeFlatShading")?.checked || false;
-      const nodeMaterial = new THREE.MeshStandardMaterial({
-        color: color, emissive: color, emissiveIntensity: 0.2, flatShading: useFlatShading,
-      });
-      vertices.forEach(vertex => {
-        const node = new THREE.Mesh(nodeGeometry, nodeMaterial.clone());
-        node.position.copy(vertex);
-        node.renderOrder = 3;
-        group.add(node);
-      });
-      PerformanceClock.endNodeGeneration();
-      PerformanceClock.timings.lastNodeTriangles = Math.round(trianglesPerNode);
-    } else {
-      PerformanceClock.timings.lastNodeTriangles = 0;
-    }
-  }
-  */
-
-  // PHASE 6 EXTRACTION: addMatrixNodes() function now in rt-rendering.js
-  // (Orphaned function - never called, using rt-rendering.js version)
-  /*
-  function addMatrixNodes(matrixGroup, matrixSize, scale, rotate45, color, nodeSize, polyhedronType = "cube") {
-    const useFlatShading = document.getElementById("nodeFlatShading")?.checked || false;
-    const { geometry: nodeGeometry } = getCachedNodeGeometry(useRTNodeGeometry, nodeSize, polyhedronType, scale);
-    const nodeMaterial = new THREE.MeshStandardMaterial({
-      color: color, emissive: color, emissiveIntensity: 0.2, flatShading: useFlatShading,
-    });
-    const vertexPositions = new Set();
-    let spacing = scale * 2;
-    import("./rt-polyhedra.js").then(PolyModule => {
-      const { Polyhedra } = PolyModule;
-      let polyGeom;
-      if (polyhedronType === "cube") { polyGeom = Polyhedra.cube(scale); }
-      else if (polyhedronType === "tetrahedron") { polyGeom = Polyhedra.tetrahedron(scale); }
-      else if (polyhedronType === "octahedron") { polyGeom = Polyhedra.octahedron(scale); }
-      else if (polyhedronType === "cuboctahedron") { polyGeom = Polyhedra.cuboctahedron(scale * Math.sqrt(2)); }
-      else if (polyhedronType === "rhombicDodecahedron") { polyGeom = Polyhedra.rhombicDodecahedron(scale * Math.sqrt(2)); }
-      const { vertices } = polyGeom;
-      for (let i = 0; i < matrixSize; i++) {
-        for (let j = 0; j < matrixSize; j++) {
-          const offset_x = (i - matrixSize / 2 + 0.5) * spacing;
-          const offset_y = (j - matrixSize / 2 + 0.5) * spacing;
-          const offset_z = 0;
-          const isUp = polyhedronType === "tetrahedron" ? (i + j) % 2 === 0 : true;
-          vertices.forEach(v => {
-            let x = v.x + offset_x;
-            let y = v.y + offset_y;
-            let z = v.z + offset_z;
-            if (polyhedronType === "tetrahedron" && !isUp) {
-              x = -(v.x + offset_x);
-              y = -(v.y + offset_y);
-            }
-            if (rotate45) {
-              const cos45 = Math.sqrt(0.5);
-              const sin45 = Math.sqrt(0.5);
-              const x_rot = cos45 * x - sin45 * y;
-              const y_rot = sin45 * x + cos45 * y;
-              x = x_rot;
-              y = y_rot;
-            }
-            const key = `${x.toFixed(6)},${y.toFixed(6)},${z.toFixed(6)}`;
-            vertexPositions.add(key);
-          });
-        }
-      }
-      vertexPositions.forEach(key => {
-        const [x, y, z] = key.split(",").map(parseFloat);
-        const node = new THREE.Mesh(nodeGeometry, nodeMaterial.clone());
-        node.position.set(x, y, z);
-        node.renderOrder = 3;
-        matrixGroup.add(node);
-      });
-      console.log(`[Matrix Nodes] Added ${vertexPositions.size} nodes to ${matrixSize}×${matrixSize} ${polyhedronType} matrix`);
-    });
-  }
-  */
-
-  // PHASE 6 EXTRACTION: updateGeometry() function commented out - using renderingAPI.updateGeometry()
   // PHASE 6 EXTRACTION: updateGeometry() function now in rt-rendering.js
-  // (Commented code removed - using renderingAPI.updateGeometry())
 
   /**
    * Count triangles in a THREE.js group
@@ -386,27 +198,6 @@ function startARTexplorer(
   // (Commented code removed - using renderingAPI.animate())
 
   // PHASE 6 EXTRACTION: onWindowResize() function now in rt-rendering.js
-  // (Orphaned function - never called, event listener uses rt-rendering.js version)
-  /*
-  function onWindowResize() {
-    const container = document.getElementById("canvas-container");
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-    const aspect = width / height;
-    if (isOrthographic && orthographicCamera) {
-      const frustumSize = orthographicCamera.top * 2;
-      orthographicCamera.left = (frustumSize * aspect) / -2;
-      orthographicCamera.right = (frustumSize * aspect) / 2;
-      orthographicCamera.top = frustumSize / 2;
-      orthographicCamera.bottom = frustumSize / -2;
-      orthographicCamera.updateProjectionMatrix();
-    } else {
-      camera.aspect = aspect;
-      camera.updateProjectionMatrix();
-    }
-    renderer.setSize(width, height);
-  }
-  */
 
   // ========================================================================
   // EVENT HANDLERS
@@ -896,19 +687,7 @@ function startARTexplorer(
   // ========================================================================
 
   let orthographicCamera = null;
-  // PHASE 6 EXTRACTION: switchCameraType() function now in rt-rendering.js
-  // (Camera switching logic moved to module)
-  /*
-  let originalPerspectiveCamera = null; // Will be set after camera is initialized
-  let isOrthographic = false;
-
-  function switchCameraType(toOrthographic) {
-    // ... (function moved to rt-rendering.js)
-  }
-  */
-
-  // PHASE 6 EXTRACTION: setCameraPreset() function now in rt-rendering.js
-  // (Camera preset logic moved to module)
+  // PHASE 6 EXTRACTION: switchCameraType() and setCameraPreset() functions now in rt-rendering.js
 
   // Enable view preset buttons and wire up event listeners
   const viewButtons = [
