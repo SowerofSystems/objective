@@ -135,34 +135,15 @@ function startARTexplorer(
   let updateGeometry = renderingAPI.updateGeometry;
   let updateGeometryStats = renderingAPI.updateGeometryStats;
 
-  // PHASE 6 EXTRACTION: Get references to closure-scoped objects from rendering module
-  const scene = renderingAPI.getScene();
-  const camera = renderingAPI.getCamera();
-  const renderer = renderingAPI.getRenderer();
-  const controls = renderingAPI.getControls();
-
-  // Get all form groups for selection system
-  const formGroups = renderingAPI.getAllFormGroups();
-  const {
-    cubeGroup,
-    tetrahedronGroup,
-    dualTetrahedronGroup,
-    octahedronGroup,
-    icosahedronGroup,
-    dodecahedronGroup,
-    dualIcosahedronGroup,
-    cuboctahedronGroup,
-    rhombicDodecahedronGroup,
-    geodesicIcosahedronGroup,
-    geodesicTetrahedronGroup,
-    geodesicOctahedronGroup,
-    cubeMatrixGroup,
-    tetMatrixGroup,
-    octaMatrixGroup,
-    cuboctaMatrixGroup,
-    rhombicDodecMatrixGroup,
-  } = formGroups;
-
+  // PHASE 6 EXTRACTION: Declare variables that will be assigned AFTER initScene() is called
+  // These objects don't exist yet - they're created inside renderingAPI.initScene()
+  let scene, camera, renderer, controls;
+  let cubeGroup, tetrahedronGroup, dualTetrahedronGroup, octahedronGroup;
+  let icosahedronGroup, dodecahedronGroup, dualIcosahedronGroup;
+  let cuboctahedronGroup, rhombicDodecahedronGroup;
+  let geodesicIcosahedronGroup, geodesicTetrahedronGroup, geodesicOctahedronGroup;
+  let cubeMatrixGroup, tetMatrixGroup, octaMatrixGroup;
+  let cuboctaMatrixGroup, rhombicDodecMatrixGroup;
   let cartesianGrid, cartesianBasis, quadrayBasis, ivmPlanes;
 
   // PHASE 6 EXTRACTION: initScene() function now in rt-rendering.js
@@ -3318,7 +3299,34 @@ function startARTexplorer(
   // PHASE 6 EXTRACTION: Use renderingAPI.initScene() instead of inline function
   renderingAPI.initScene();
 
-  // NOTE: scene, camera, renderer, controls already assigned from API at line ~139-142
+  // PHASE 6 EXTRACTION: NOW get references from API (objects now exist after initScene())
+  scene = renderingAPI.getScene();
+  camera = renderingAPI.getCamera();
+  renderer = renderingAPI.getRenderer();
+  controls = renderingAPI.getControls();
+
+  // Get all form groups for selection system
+  const formGroups = renderingAPI.getAllFormGroups();
+  ({
+    cubeGroup,
+    tetrahedronGroup,
+    dualTetrahedronGroup,
+    octahedronGroup,
+    icosahedronGroup,
+    dodecahedronGroup,
+    dualIcosahedronGroup,
+    cuboctahedronGroup,
+    rhombicDodecahedronGroup,
+    geodesicIcosahedronGroup,
+    geodesicTetrahedronGroup,
+    geodesicOctahedronGroup,
+    cubeMatrixGroup,
+    tetMatrixGroup,
+    octaMatrixGroup,
+    cuboctaMatrixGroup,
+    rhombicDodecMatrixGroup,
+  } = formGroups);
+
   // NOTE: updateGeometry and updateGeometryStats were assigned earlier (line ~135-136)
   // so that event listeners registered earlier in the code can reference them
 
