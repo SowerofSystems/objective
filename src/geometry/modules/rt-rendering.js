@@ -12,13 +12,25 @@
 
 import { Quadray } from "./rt-math.js";
 import { Polyhedra } from "./rt-polyhedra.js";
+import { PerformanceClock } from "./performance-clock.js";
+
+// Re-export PerformanceClock so rt-init.js can import it from here
+export { PerformanceClock };
+
+// Module-level cache for node geometries
+const nodeGeometryCache = new Map();
+
+// Module-level variable to track RT vs classical node geometry
+let useRTNodeGeometry = false;
 
 /**
  * Initialize THREE.js scene and return rendering context
  * @param {Object} THREE - THREE.js library
+ * @param {Object} OrbitControls - OrbitControls constructor
+ * @param {Object} RT - Rational Trigonometry library
  * @returns {Object} Scene management functions
  */
-export function initScene(THREE) {
+export function initScene(THREE, OrbitControls, RT) {
   let scene, camera, renderer, controls;
   let cubeGroup, tetrahedronGroup, dualTetrahedronGroup, octahedronGroup;
   let icosahedronGroup, dodecahedronGroup, dualIcosahedronGroup;
@@ -26,6 +38,9 @@ export function initScene(THREE) {
   let geodesicIcosahedronGroup; // Phase 2.7a: Geodesic subdivision
   let geodesicTetrahedronGroup; // Phase 2.7c: Geodesic tetrahedron
   let geodesicOctahedronGroup; // Phase 2.7b: Geodesic octahedron
+  let cubeMatrixGroup, tetMatrixGroup, octaMatrixGroup; // Matrix forms (IVM arrays)
+  let cuboctaMatrixGroup; // Cuboctahedron matrix (Vector Equilibrium array)
+  let rhombicDodecMatrixGroup; // Rhombic dodecahedron matrix (space-filling array)
   let cartesianGrid, cartesianBasis, quadrayBasis, ivmPlanes;
 
   function initScene() {
@@ -77,17 +92,61 @@ export function initScene(THREE) {
 
     // Create polyhedra groups
     cubeGroup = new THREE.Group();
+    cubeGroup.userData.type = "cube";
+
     tetrahedronGroup = new THREE.Group();
+    tetrahedronGroup.userData.type = "tetrahedron";
+
     dualTetrahedronGroup = new THREE.Group();
+    dualTetrahedronGroup.userData.type = "dualTetrahedron";
+
     octahedronGroup = new THREE.Group();
+    octahedronGroup.userData.type = "octahedron";
+
     icosahedronGroup = new THREE.Group();
+    icosahedronGroup.userData.type = "icosahedron";
+
     dodecahedronGroup = new THREE.Group();
+    dodecahedronGroup.userData.type = "dodecahedron";
+
     dualIcosahedronGroup = new THREE.Group();
+    dualIcosahedronGroup.userData.type = "dualIcosahedron";
+
     cuboctahedronGroup = new THREE.Group();
+    cuboctahedronGroup.userData.type = "cuboctahedron";
+
     rhombicDodecahedronGroup = new THREE.Group();
+    rhombicDodecahedronGroup.userData.type = "rhombicDodecahedron";
+
     geodesicIcosahedronGroup = new THREE.Group(); // Phase 2.7a
+    geodesicIcosahedronGroup.userData.type = "geodesicIcosahedron";
+
     geodesicTetrahedronGroup = new THREE.Group(); // Phase 2.7c
+    geodesicTetrahedronGroup.userData.type = "geodesicTetrahedron";
+
     geodesicOctahedronGroup = new THREE.Group(); // Phase 2.7b
+    geodesicOctahedronGroup.userData.type = "geodesicOctahedron";
+
+    // Matrix forms (IVM spatial arrays)
+    cubeMatrixGroup = new THREE.Group();
+    cubeMatrixGroup.userData.type = "cubeMatrix";
+    cubeMatrixGroup.userData.isInstance = false;
+
+    tetMatrixGroup = new THREE.Group();
+    tetMatrixGroup.userData.type = "tetMatrix";
+    tetMatrixGroup.userData.isInstance = false;
+
+    octaMatrixGroup = new THREE.Group();
+    octaMatrixGroup.userData.type = "octaMatrix";
+    octaMatrixGroup.userData.isInstance = false;
+
+    cuboctaMatrixGroup = new THREE.Group();
+    cuboctaMatrixGroup.userData.type = "cuboctaMatrix";
+    cuboctaMatrixGroup.userData.isInstance = false;
+
+    rhombicDodecMatrixGroup = new THREE.Group();
+    rhombicDodecMatrixGroup.userData.type = "rhombicDodecMatrix";
+    rhombicDodecMatrixGroup.userData.isInstance = false;
 
     scene.add(cubeGroup);
     scene.add(tetrahedronGroup);
@@ -101,6 +160,32 @@ export function initScene(THREE) {
     scene.add(geodesicIcosahedronGroup);
     scene.add(geodesicTetrahedronGroup);
     scene.add(geodesicOctahedronGroup);
+    scene.add(cubeMatrixGroup);
+    scene.add(tetMatrixGroup);
+    scene.add(octaMatrixGroup);
+    scene.add(cuboctaMatrixGroup);
+    scene.add(rhombicDodecMatrixGroup);
+
+    // Initialize PerformanceClock with all scene groups
+    PerformanceClock.init([
+      cubeGroup,
+      tetrahedronGroup,
+      dualTetrahedronGroup,
+      octahedronGroup,
+      icosahedronGroup,
+      dodecahedronGroup,
+      dualIcosahedronGroup,
+      cuboctahedronGroup,
+      rhombicDodecahedronGroup,
+      geodesicIcosahedronGroup,
+      geodesicTetrahedronGroup,
+      geodesicOctahedronGroup,
+      cubeMatrixGroup,
+      tetMatrixGroup,
+      octaMatrixGroup,
+      cuboctaMatrixGroup,
+      rhombicDodecMatrixGroup,
+    ]);
 
     // Initial render
     updateGeometry();
@@ -302,11 +387,10 @@ export function initScene(THREE) {
       window.gridIntervalLogged = true;
     }
 
-    // Base triangle vertices:
-    // v0 = origin (0,0,0)
-    // v1 = basis1 * edgeLength
-    // v2 = basis2 * edgeLength
-    const v0 = new THREE.Vector3(0, 0, 0);
+    // Base triangle edge vectors:
+    // v1 = basis1 * edgeLength (from origin along basis1)
+    // v2 = basis2 * edgeLength (from origin along basis2)
+    // Origin (0,0,0) is implicit in tessellation calculation
     const v1 = basis1.clone().multiplyScalar(edgeLength);
     const v2 = basis2.clone().multiplyScalar(edgeLength);
 
@@ -468,6 +552,355 @@ export function initScene(THREE) {
   }
 
   /**
+   * Get edge quadrance (Q = a²) for a polyhedron type
+   * Uses RT-pure algebraic formulas (defers sqrt to last possible moment)
+   * @param {string} type - Polyhedron type (tetrahedron, cube, octahedron, etc.)
+   * @param {number} scale - halfSize parameter (s)
+   * @returns {number} Edge quadrance Q = a² (NOT edge length!)
+   */
+  function getPolyhedronEdgeQuadrance(type, scale) {
+    const s2 = scale * scale; // Pre-compute s² for RT calculations
+
+    switch (type) {
+      case "tetrahedron":
+        // Edge quadrance Q = 8s² (edge = 2s√2)
+        return 8 * s2;
+
+      case "dualTetrahedron":
+        // Edge quadrance Q = 8s² (edge = 2s√2, SAME as regular tetrahedron!)
+        // Vertices: (±s, ∓s, ∓s) - same as tet, just different vertex selection
+        // Edge: (s,-s,-s) → (-s,s,-s): Q = (2s)² + (2s)² + 0² = 8s²
+        return 8 * s2;
+
+      case "cube":
+        // Edge quadrance Q = 4s² (edge = 2s)
+        return 4 * s2;
+
+      case "octahedron":
+        // Edge quadrance Q = 2s² (edge = s√2)
+        return 2 * s2;
+
+      case "icosahedron": {
+        // RT-PURE: Edge quadrance using algebraic φ expression (NO hardcoded decimals!)
+        // Vertices: a = s/√(1 + φ²), edge Q = 4a² = 4s²/(1 + φ²)
+        // Since φ² = φ + 1 (from φ² - φ - 1 = 0):
+        // Q = 4s²/(φ + 2) = 4s²/((1+√5)/2 + 2) = 8s²/(5 + √5)
+        // This defers √5 expansion to RT.Phi.sqrt5() - algebraic until last step
+        const Q_coefficient = 8 / (5 + RT.Phi.sqrt5());
+        return Q_coefficient * s2;
+      }
+
+      case "dodecahedron": {
+        // RT-PURE: Dodecahedron edge quadrance using algebraic φ (NO decimals!)
+        // Vertices: cube corners (±s,±s,±s) + phi vertices (0,±s/φ,±sφ) and permutations
+        // Sample edge [0,8]: (s,s,s) → (0,s/φ,sφ)
+        // Q = s² + s²(1-1/φ)² + s²(1-φ)²
+        // Using 1/φ = φ-1 and φ² = φ+1:
+        //   = s²[1 + (2-φ)² + (1-φ)²] = s²[1 + (5-3φ) + (2-φ)] = s²(8-4φ)
+        //   = 4s²(2-φ) = 2s²(4-2φ) = 2s²(4-(1+√5)) = 2s²(3-√5)
+        const Q_coefficient = 2 * (3 - RT.Phi.sqrt5());
+        return Q_coefficient * s2;
+      }
+
+      case "dualIcosahedron": {
+        // RT-PURE: Dual icosa edge Q = base icosa Q × φ²
+        // dualRadius = φ × halfSize, so all quadrances scale by φ²
+        // Q_dual = Q_base × φ² = [8/(5+√5)] × (φ+1) using φ²=φ+1
+        const phi_squared = RT.Phi.squared(); // φ² = φ + 1 (algebraic!)
+        const Q_base_coefficient = 8 / (5 + RT.Phi.sqrt5());
+        return Q_base_coefficient * phi_squared * s2;
+      }
+
+      case "cuboctahedron":
+        // Edge quadrance Q = 2s² (scaled by √2 to match matrix geometry)
+        // UPDATED: Single and matrix polyhedra both use scale * √2
+        // Vertices at scale (not scale/√2): (±s,±s,0), (±s,0,±s), (0,±s,±s)
+        // Edge: (s,s,0) → (s,0,s): Q = 0² + s² + s² = 2s²
+        // Original formula was Q = s² for vertices at s/√2, now Q = 2s² for vertices at s
+        return 2 * s2;
+
+      case "rhombicDodecahedron":
+        // Edge quadrance Q = 3s²/4 (scaled by √2 to match matrix geometry)
+        // UPDATED: Single and matrix polyhedra both use scale * √2
+        // With vertices at scale (not scale/√2):
+        // Axial vertices at s: (±s,0,0), (0,±s,0), (0,0,±s)
+        // Octant vertices at s/2: (±s/2,±s/2,±s/2)
+        // Edge: (s,0,0) → (s/2,s/2,s/2): Q = (s/2)² + (s/2)² + (s/2)² = 3s²/4
+        // Original formula was Q = 3s²/8 for vertices at s/√2, now Q = 3s²/4 for vertices at s
+        return (3 / 4) * s2;
+
+      case "geodesicTetrahedron":
+      case "geodesicOctahedron":
+      case "geodesicIcosahedron": {
+        // Geodesics subdivide base edges - use base polyhedron quadrance
+        const baseType = type.replace("geodesic", "").toLowerCase();
+        return getPolyhedronEdgeQuadrance(baseType, scale);
+      }
+
+      default:
+        console.warn(
+          `Unknown polyhedron type: ${type}, using default cube Q=4s²`
+        );
+        return 4 * s2;
+    }
+  }
+
+  /**
+   * Calculate close-packed vertex sphere radius using RT-pure quadrance formula
+   *
+   * RATIONAL TRIGONOMETRY: Q_vertex = Q_edge / 4 (pure algebra!)
+   * Stay in quadrance space as long as possible, only sqrt at final step.
+   *
+   * UNIVERSAL FORMULA: When spheres at adjacent vertices are mutually tangent,
+   * the vertex sphere quadrance is exactly 1/4 of the edge quadrance.
+   * Classical equivalent: r = a/2, but we work with Q = a²/4 directly.
+   *
+   * @param {string} type - Polyhedron type
+   * @param {number} scale - halfSize parameter
+   * @returns {number} Vertex sphere radius for close-packing
+   */
+  function getClosePackedRadius(type, scale) {
+    // RT-PURE: Work in quadrance space (no sqrt until final step!)
+    const Q_edge = getPolyhedronEdgeQuadrance(type, scale);
+
+    // UNIVERSAL CLOSE-PACKING LAW (Rational Trigonometry form):
+    // Q_vertex = Q_edge / 4
+    // Pure algebraic relationship - no transcendental functions!
+    const Q_vertex = Q_edge / 4;
+
+    // Only NOW do we take sqrt for final radius (rendering requirement)
+    const radius = Math.sqrt(Q_vertex);
+
+    // DIAGNOSTIC: RT validation logging (matches rt-polyhedra.js pattern)
+    console.log(`🔵 Close-pack RT for ${type} (halfSize=${scale.toFixed(4)}):`);
+    console.log(`  Edge quadrance Q_edge: ${Q_edge.toFixed(6)}`);
+    console.log(
+      `  Vertex quadrance Q_vertex = Q_edge/4: ${Q_vertex.toFixed(6)}`
+    );
+    console.log(`  Vertex radius r = √Q_vertex: ${radius.toFixed(6)}`);
+    console.log(`  ✓ RT-PURE: Stayed in quadrance space until final sqrt`);
+
+    return radius;
+  }
+
+  /**
+   * Get cached node geometry (prevents repeated generation)
+   * @param {boolean} useRT - Use RT geodesic icosahedron (true) or classical sphere (false)
+   * @param {string} nodeSize - Size ('sm', 'md', 'lg', 'packed', 'off')
+   * @param {string} polyhedronType - Type for close-pack calculations
+   * @param {number} scale - halfSize for close-pack calculations
+   * @returns {Object} {geometry: THREE.BufferGeometry, triangles: number}
+   */
+  function getCachedNodeGeometry(useRT, nodeSize, polyhedronType, scale) {
+    const cacheKey = `${useRT ? "rt" : "classical"}-${nodeSize}-${polyhedronType || "default"}-${scale || 1}`;
+
+    if (nodeGeometryCache.has(cacheKey)) {
+      return nodeGeometryCache.get(cacheKey);
+    }
+
+    let nodeGeometry;
+    let trianglesPerNode = 0;
+    let radius;
+
+    if (nodeSize === "packed") {
+      // CLOSE-PACKED MODE: Calculate from edge length using universal formula
+      if (!polyhedronType || !scale) {
+        console.warn(
+          "⚠️ Packed mode requires polyhedronType and scale parameters"
+        );
+        radius = 0.04; // Fallback to medium size
+      } else {
+        radius = getClosePackedRadius(polyhedronType, scale);
+      }
+    } else {
+      // FIXED SIZE MODE: Use predefined sizes
+      const nodeSizes = {
+        sm: 0.02,
+        md: 0.04,
+        lg: 0.08,
+      };
+      radius = nodeSizes[nodeSize] || 0.04;
+    }
+
+    if (useRT) {
+      // RT Geodesic Icosahedron (freq-0 = base 20-triangle icosahedron)
+      const polyData = window.RTPolyhedra.geodesicIcosahedron(radius, 0, "out");
+
+      nodeGeometry = new THREE.BufferGeometry();
+      const positions = [];
+      const indices = [];
+
+      polyData.vertices.forEach(v => {
+        positions.push(v.x, v.y, v.z);
+      });
+
+      polyData.faces.forEach(faceIndices => {
+        for (let i = 1; i < faceIndices.length - 1; i++) {
+          indices.push(faceIndices[0], faceIndices[i], faceIndices[i + 1]);
+        }
+      });
+
+      nodeGeometry.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(positions, 3)
+      );
+      nodeGeometry.setIndex(indices);
+      nodeGeometry.computeVertexNormals();
+
+      trianglesPerNode = indices.length / 3;
+    } else {
+      // Classical THREE.js Sphere
+      nodeGeometry = new THREE.SphereGeometry(radius, 16, 16);
+      trianglesPerNode = 16 * 16 * 2; // 512 triangles
+    }
+
+    const result = { geometry: nodeGeometry, triangles: trianglesPerNode };
+    nodeGeometryCache.set(cacheKey, result);
+    return result;
+  }
+
+  /**
+   * Add vertex nodes to a matrix group
+   * Generates unique vertex positions for matrix arrays
+   * Supports alternating orientations for tetrahedra
+   */
+  function addMatrixNodes(
+    matrixGroup,
+    matrixSize,
+    scale,
+    rotate45,
+    color,
+    nodeSize,
+    polyhedronType = "cube"
+  ) {
+    // Get node geometry settings
+    // useRTNodeGeometry is read from module-level variable set by button toggles
+    const useFlatShading =
+      document.getElementById("nodeFlatShading")?.checked || false;
+
+    // Get cached node geometry AND triangle count
+    const { geometry: nodeGeometry, triangles: trianglesPerNode } =
+      getCachedNodeGeometry(useRTNodeGeometry, nodeSize, polyhedronType, scale);
+
+    // Update PerformanceClock with node triangle count (for matrix nodes)
+    PerformanceClock.timings.lastNodeTriangles = Math.round(trianglesPerNode);
+
+    const nodeMaterial = new THREE.MeshStandardMaterial({
+      color: color,
+      emissive: color,
+      emissiveIntensity: 0.2,
+      flatShading: useFlatShading,
+    });
+
+    // Collect all unique vertex positions from matrix
+    const vertexPositions = new Set();
+
+    // Calculate spacing based on polyhedron type
+    // - Cube: edge-to-edge contact (spacing = 2 * halfSize)
+    // - Tet: inscribes in cube (vertices at cube vertices, spacing = 2 * halfSize)
+    // - Octa: centers in cube (vertices at cube face centers, spacing = 2 * halfSize)
+    // - Cuboctahedron: scaled by √2, edge length = (halfSize * √2) * √2 = 2 * halfSize
+    // - Rhombic Dodecahedron: space-filling tiling (spacing = 2 * halfSize, same as cube)
+    let spacing = scale * 2; // All matrices now use 2 * halfSize spacing
+
+    // Generate polyhedron vertices at each grid position
+    import("./rt-polyhedra.js").then(PolyModule => {
+      const { Polyhedra } = PolyModule;
+
+      // Get the appropriate polyhedron geometry
+      let polyGeom;
+      if (polyhedronType === "cube") {
+        polyGeom = Polyhedra.cube(scale);
+      } else if (polyhedronType === "tetrahedron") {
+        polyGeom = Polyhedra.tetrahedron(scale);
+      } else if (polyhedronType === "octahedron") {
+        polyGeom = Polyhedra.octahedron(scale);
+      } else if (polyhedronType === "cuboctahedron") {
+        // Scale by √2 to match matrix geometry (vertices at scale, not scale/√2)
+        polyGeom = Polyhedra.cuboctahedron(scale * Math.sqrt(2));
+      } else if (polyhedronType === "rhombicDodecahedron") {
+        // Scale by √2 to match matrix geometry (rhombic dodec axial vertices at scale, not scale/√2)
+        polyGeom = Polyhedra.rhombicDodecahedron(scale * Math.sqrt(2));
+      }
+
+      const { vertices } = polyGeom;
+
+      // For each grid position, add transformed vertices
+      for (let i = 0; i < matrixSize; i++) {
+        for (let j = 0; j < matrixSize; j++) {
+          const offset_x = (i - matrixSize / 2 + 0.5) * spacing;
+          const offset_y = (j - matrixSize / 2 + 0.5) * spacing;
+          const offset_z = 0;
+
+          // For tetrahedra, handle alternating orientations
+          const isUp =
+            polyhedronType === "tetrahedron" ? (i + j) % 2 === 0 : true;
+
+          vertices.forEach(v => {
+            let x = v.x + offset_x;
+            let y = v.y + offset_y;
+            let z = v.z + offset_z;
+
+            // Apply 180° rotation for down-facing tets
+            if (polyhedronType === "tetrahedron" && !isUp) {
+              // Rotate 180° around Z-axis
+              x = -(v.x + offset_x);
+              y = -(v.y + offset_y);
+            }
+
+            // Apply 45° rotation if enabled
+            if (rotate45) {
+              const cos45 = Math.sqrt(0.5);
+              const sin45 = Math.sqrt(0.5);
+              const x_rot = cos45 * x - sin45 * y;
+              const y_rot = sin45 * x + cos45 * y;
+              x = x_rot;
+              y = y_rot;
+            }
+
+            // Use string key for deduplication
+            const key = `${x.toFixed(6)},${y.toFixed(6)},${z.toFixed(6)}`;
+            vertexPositions.add(key);
+          });
+        }
+      }
+
+      // Create nodes at unique positions
+      vertexPositions.forEach(key => {
+        const [x, y, z] = key.split(",").map(parseFloat);
+        const node = new THREE.Mesh(nodeGeometry, nodeMaterial.clone());
+        node.position.set(x, y, z);
+        node.renderOrder = 3;
+        matrixGroup.add(node);
+      });
+
+      console.log(
+        `[Matrix Nodes] Added ${vertexPositions.size} nodes to ${matrixSize}×${matrixSize} ${polyhedronType} matrix`
+      );
+    });
+  }
+
+  /**
+   * Count total triangles in a group (including all children)
+   * Used for performance statistics
+   */
+  function countGroupTriangles(group) {
+    let triangles = 0;
+    if (group && group.visible) {
+      group.traverse(child => {
+        if (child.geometry) {
+          if (child.geometry.index) {
+            triangles += child.geometry.index.count / 3;
+          } else if (child.geometry.attributes.position) {
+            triangles += child.geometry.attributes.position.count / 3;
+          }
+        }
+      });
+    }
+    return Math.round(triangles);
+  }
+
+  /**
    * Render a polyhedron from vertices, edges, faces
    * Uses proper geometry with indexed faces for clean rendering
    */
@@ -552,29 +985,48 @@ export function initScene(THREE) {
     edgeLines.renderOrder = 2; // Render edges after faces
     group.add(edgeLines);
 
-    // Render vertex nodes using instanced geometry for efficiency
+    // Render vertex nodes using cached geometry for efficiency
     if (showNodes) {
-      // Node size mapping: sm = 0.02, md = 0.04 (half of original), lg = 0.08 (original)
-      const nodeSizes = {
-        sm: 0.02,
-        md: 0.04,
-        lg: 0.08,
-      };
-      const radius = nodeSizes[nodeSize];
+      // Start node generation timing
+      PerformanceClock.startNodeGeneration();
 
-      const nodeGeometry = new THREE.SphereGeometry(radius, 16, 16);
+      // Get polyhedron type and scale from group for close-pack calculations
+      const polyType = group.userData.type;
+      const tetEdge = parseFloat(
+        document.getElementById("tetScaleSlider").value
+      );
+      const scale = tetEdge / (2 * Math.sqrt(2)); // Convert tet edge to halfSize
+
+      // Get cached geometry (prevents repeated generation)
+      // Pass polyhedronType and scale for 'packed' mode calculations
+      const { geometry: nodeGeometry, triangles: trianglesPerNode } =
+        getCachedNodeGeometry(useRTNodeGeometry, nodeSize, polyType, scale);
+
+      // Get flatShading preference from checkbox
+      const useFlatShading =
+        document.getElementById("nodeFlatShading")?.checked || false;
+
       const nodeMaterial = new THREE.MeshStandardMaterial({
         color: color,
         emissive: color,
         emissiveIntensity: 0.2,
+        flatShading: useFlatShading, // User-controlled shading
       });
 
       vertices.forEach(vertex => {
-        const node = new THREE.Mesh(nodeGeometry, nodeMaterial);
+        // Clone material for each node to avoid shared material issues during selection
+        const node = new THREE.Mesh(nodeGeometry, nodeMaterial.clone());
         node.position.copy(vertex);
         node.renderOrder = 3; // Render nodes on top
         group.add(node);
       });
+
+      // End node generation timing and store triangle count
+      PerformanceClock.endNodeGeneration();
+      PerformanceClock.timings.lastNodeTriangles = Math.round(trianglesPerNode);
+    } else {
+      // Reset node triangle count when nodes are OFF
+      PerformanceClock.timings.lastNodeTriangles = 0;
     }
   }
 
@@ -582,6 +1034,9 @@ export function initScene(THREE) {
    * Update all geometry based on current settings
    */
   function updateGeometry() {
+    // Start performance timing
+    PerformanceClock.startCalculation();
+
     // QUADRAY SYSTEM: Use tet edge length as primary unit
     // For tetrahedron edge length e: halfSize = e / (2√2)
     const tetEdge = parseFloat(document.getElementById("tetScaleSlider").value);
@@ -595,6 +1050,53 @@ export function initScene(THREE) {
       cubeGroup.visible = true;
     } else {
       cubeGroup.visible = false;
+    }
+
+    // Cube Matrix (IVM Array)
+    if (document.getElementById("showCubeMatrix").checked) {
+      const matrixSize = parseInt(
+        document.getElementById("cubeMatrixSizeSlider")?.value || "1"
+      );
+      const rotate45 =
+        document.getElementById("cubeMatrixRotate45")?.checked || false;
+
+      // Clear existing cube matrix group
+      while (cubeMatrixGroup.children.length > 0) {
+        cubeMatrixGroup.remove(cubeMatrixGroup.children[0]);
+      }
+
+      // Generate cube matrix
+      import("./rt-matrix.js").then(MatrixModule => {
+        const { RTMatrix } = MatrixModule;
+        const cubeMatrix = RTMatrix.createCubeMatrix(
+          matrixSize,
+          scale,
+          rotate45,
+          opacity,
+          0x4a9eff,
+          THREE
+        );
+        cubeMatrixGroup.add(cubeMatrix);
+
+        // Add vertex nodes if enabled
+        const nodeSizeBtn = document.querySelector(".node-size-btn.active");
+        const nodeSize = nodeSizeBtn ? nodeSizeBtn.dataset.nodeSize : "md";
+        const showNodes = nodeSize !== "off";
+
+        if (showNodes) {
+          addMatrixNodes(
+            cubeMatrixGroup,
+            matrixSize,
+            scale,
+            rotate45,
+            0x4a9eff,
+            nodeSize
+          );
+        }
+      });
+      cubeMatrixGroup.visible = true;
+    } else {
+      cubeMatrixGroup.visible = false;
     }
 
     // Tetrahedron (Yellow)
@@ -663,6 +1165,54 @@ export function initScene(THREE) {
       dualTetrahedronGroup.visible = false;
     }
 
+    // Tet Matrix (IVM Array)
+    if (document.getElementById("showTetMatrix").checked) {
+      const matrixSize = parseInt(
+        document.getElementById("tetMatrixSizeSlider")?.value || "1"
+      );
+      const rotate45 =
+        document.getElementById("tetMatrixRotate45")?.checked || false;
+
+      // Clear existing tet matrix group
+      while (tetMatrixGroup.children.length > 0) {
+        tetMatrixGroup.remove(tetMatrixGroup.children[0]);
+      }
+
+      // Generate tet matrix
+      import("./rt-matrix.js").then(MatrixModule => {
+        const { RTMatrix } = MatrixModule;
+        const tetMatrix = RTMatrix.createTetrahedronMatrix(
+          matrixSize,
+          scale,
+          rotate45,
+          opacity,
+          0xffff00,
+          THREE
+        );
+        tetMatrixGroup.add(tetMatrix);
+
+        // Add vertex nodes if enabled
+        const nodeSizeBtn = document.querySelector(".node-size-btn.active");
+        const nodeSize = nodeSizeBtn ? nodeSizeBtn.dataset.nodeSize : "md";
+        const showNodes = nodeSize !== "off";
+
+        if (showNodes) {
+          addMatrixNodes(
+            tetMatrixGroup,
+            matrixSize,
+            scale,
+            rotate45,
+            0xffff00,
+            nodeSize,
+            "tetrahedron"
+          );
+        }
+      });
+      tetMatrixGroup.visible = true;
+    } else {
+      tetMatrixGroup.visible = false;
+    }
+
     // Octahedron (Green)
     if (document.getElementById("showOctahedron").checked) {
       const octa = Polyhedra.octahedron(scale);
@@ -697,6 +1247,54 @@ export function initScene(THREE) {
       geodesicOctahedronGroup.visible = false;
     }
 
+    // Octa Matrix (IVM Array)
+    if (document.getElementById("showOctaMatrix").checked) {
+      const matrixSize = parseInt(
+        document.getElementById("octaMatrixSizeSlider")?.value || "1"
+      );
+      const rotate45 =
+        document.getElementById("octaMatrixRotate45")?.checked || false;
+
+      // Clear existing octa matrix group
+      while (octaMatrixGroup.children.length > 0) {
+        octaMatrixGroup.remove(octaMatrixGroup.children[0]);
+      }
+
+      // Generate octa matrix
+      import("./rt-matrix.js").then(MatrixModule => {
+        const { RTMatrix } = MatrixModule;
+        const octaMatrix = RTMatrix.createOctahedronMatrix(
+          matrixSize,
+          scale,
+          rotate45,
+          opacity,
+          0xff6b6b,
+          THREE
+        );
+        octaMatrixGroup.add(octaMatrix);
+
+        // Add vertex nodes if enabled
+        const nodeSizeBtn = document.querySelector(".node-size-btn.active");
+        const nodeSize = nodeSizeBtn ? nodeSizeBtn.dataset.nodeSize : "md";
+        const showNodes = nodeSize !== "off";
+
+        if (showNodes) {
+          addMatrixNodes(
+            octaMatrixGroup,
+            matrixSize,
+            scale,
+            rotate45,
+            0xff6b6b,
+            nodeSize,
+            "octahedron"
+          );
+        }
+      });
+      octaMatrixGroup.visible = true;
+    } else {
+      octaMatrixGroup.visible = false;
+    }
+
     // Icosahedron (Cyan)
     if (document.getElementById("showIcosahedron").checked) {
       const icosa = Polyhedra.icosahedron(scale);
@@ -718,7 +1316,7 @@ export function initScene(THREE) {
     // Geodesic Icosahedron (Phase 2.7a - Orange-Red, complementary to Cyan)
     if (document.getElementById("showGeodesicIcosahedron").checked) {
       const frequency = parseInt(
-        document.getElementById("geodesicFrequency").value
+        document.getElementById("geodesicIcosaFrequency").value
       );
       const projectionRadio = document.querySelector(
         'input[name="geodesicIcosaProjection"]:checked'
@@ -751,16 +1349,66 @@ export function initScene(THREE) {
 
     // Cuboctahedron (Lime green - Vector Equilibrium)
     if (document.getElementById("showCuboctahedron").checked) {
-      const cubocta = Polyhedra.cuboctahedron(scale);
+      // Scale by √2 to match matrix geometry (vertices at scale, not scale/√2)
+      const cubocta = Polyhedra.cuboctahedron(scale * Math.sqrt(2));
       renderPolyhedron(cuboctahedronGroup, cubocta, 0x00ff88, opacity); // Bright lime-cyan
       cuboctahedronGroup.visible = true;
     } else {
       cuboctahedronGroup.visible = false;
     }
 
+    // Cuboctahedron Matrix (Vector Equilibrium Array)
+    if (document.getElementById("showCuboctahedronMatrix").checked) {
+      const matrixSize = parseInt(
+        document.getElementById("cuboctaMatrixSizeSlider")?.value || "1"
+      );
+      const rotate45 =
+        document.getElementById("cuboctaMatrixRotate45")?.checked || false;
+
+      // Clear existing cubocta matrix group
+      while (cuboctaMatrixGroup.children.length > 0) {
+        cuboctaMatrixGroup.remove(cuboctaMatrixGroup.children[0]);
+      }
+
+      // Generate cuboctahedron matrix
+      import("./rt-matrix.js").then(MatrixModule => {
+        const { RTMatrix } = MatrixModule;
+        const cuboctaMatrix = RTMatrix.createCuboctahedronMatrix(
+          matrixSize,
+          scale,
+          rotate45,
+          opacity,
+          0x00ff88, // Lime-cyan (Vector Equilibrium color)
+          THREE
+        );
+        cuboctaMatrixGroup.add(cuboctaMatrix);
+
+        // Add vertex nodes if enabled
+        const nodeSizeBtn = document.querySelector(".node-size-btn.active");
+        const nodeSize = nodeSizeBtn ? nodeSizeBtn.dataset.nodeSize : "md";
+        const showNodes = nodeSize !== "off";
+
+        if (showNodes) {
+          addMatrixNodes(
+            cuboctaMatrixGroup,
+            matrixSize,
+            scale,
+            rotate45,
+            0x00ff88,
+            nodeSize,
+            "cuboctahedron"
+          );
+        }
+      });
+      cuboctaMatrixGroup.visible = true;
+    } else {
+      cuboctaMatrixGroup.visible = false;
+    }
+
     // Rhombic Dodecahedron (Orange)
     if (document.getElementById("showRhombicDodecahedron").checked) {
-      const rhombicDodec = Polyhedra.rhombicDodecahedron(scale);
+      // Scale by √2 to match matrix geometry (axial vertices at scale, not scale/√2)
+      const rhombicDodec = Polyhedra.rhombicDodecahedron(scale * Math.sqrt(2));
       renderPolyhedron(
         rhombicDodecahedronGroup,
         rhombicDodec,
@@ -770,6 +1418,54 @@ export function initScene(THREE) {
       rhombicDodecahedronGroup.visible = true;
     } else {
       rhombicDodecahedronGroup.visible = false;
+    }
+
+    // Rhombic Dodecahedron Matrix (Space-Filling Array)
+    if (document.getElementById("showRhombicDodecMatrix").checked) {
+      const matrixSize = parseInt(
+        document.getElementById("rhombicDodecMatrixSizeSlider")?.value || "1"
+      );
+      const rotate45 =
+        document.getElementById("rhombicDodecMatrixRotate45")?.checked || false;
+
+      // Clear existing rhombic dodec matrix group
+      while (rhombicDodecMatrixGroup.children.length > 0) {
+        rhombicDodecMatrixGroup.remove(rhombicDodecMatrixGroup.children[0]);
+      }
+
+      // Generate rhombic dodecahedron matrix
+      import("./rt-matrix.js").then(MatrixModule => {
+        const { RTMatrix } = MatrixModule;
+        const rhombicDodecMatrix = RTMatrix.createRhombicDodecahedronMatrix(
+          matrixSize,
+          scale,
+          rotate45,
+          opacity,
+          0xff8800, // Orange (Rhombic Dodecahedron color)
+          THREE
+        );
+        rhombicDodecMatrixGroup.add(rhombicDodecMatrix);
+
+        // Add vertex nodes if enabled
+        const nodeSizeBtn = document.querySelector(".node-size-btn.active");
+        const nodeSize = nodeSizeBtn ? nodeSizeBtn.dataset.nodeSize : "md";
+        const showNodes = nodeSize !== "off";
+
+        if (showNodes) {
+          addMatrixNodes(
+            rhombicDodecMatrixGroup,
+            matrixSize,
+            scale,
+            rotate45,
+            0xff8800,
+            nodeSize,
+            "rhombicDodecahedron"
+          );
+        }
+      });
+      rhombicDodecMatrixGroup.visible = true;
+    } else {
+      rhombicDodecMatrixGroup.visible = false;
     }
 
     // Scale basis vectors to match current slider values
@@ -790,6 +1486,10 @@ export function initScene(THREE) {
     }
 
     updateGeometryStats();
+
+    // End performance timing
+    PerformanceClock.endCalculation();
+    PerformanceClock.updateDisplay(useRTNodeGeometry);
   }
 
   /**
@@ -891,7 +1591,8 @@ export function initScene(THREE) {
     }
 
     if (document.getElementById("showRhombicDodecahedron").checked) {
-      const rhombicDodec = Polyhedra.rhombicDodecahedron(1);
+      // Use √2 scaling to match rendering (stats use scale=1 for display)
+      const rhombicDodec = Polyhedra.rhombicDodecahedron(Math.sqrt(2));
       const eulerOK = RT.verifyEuler(
         rhombicDodec.vertices.length,
         rhombicDodec.edges.length,
@@ -904,7 +1605,8 @@ export function initScene(THREE) {
     }
 
     if (document.getElementById("showCuboctahedron").checked) {
-      const cubocta = Polyhedra.cuboctahedron(1);
+      // Use √2 scaling to match rendering (stats use scale=1 for display)
+      const cubocta = Polyhedra.cuboctahedron(Math.sqrt(2));
       const eulerOK = RT.verifyEuler(
         cubocta.vertices.length,
         cubocta.edges.length,
@@ -916,16 +1618,105 @@ export function initScene(THREE) {
       html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
     }
 
+    // Geodesic Tetrahedron
+    if (document.getElementById("showGeodesicTetrahedron").checked) {
+      const frequency = parseInt(
+        document.getElementById("geodesicTetraFrequency").value
+      );
+      const projectionRadio = document.querySelector(
+        'input[name="geodesicTetraProjection"]:checked'
+      );
+      const projection = projectionRadio ? projectionRadio.value : "out";
+      const geodesicTetra = Polyhedra.geodesicTetrahedron(
+        1,
+        isNaN(frequency) ? 1 : frequency,
+        projection
+      );
+      const eulerOK = RT.verifyEuler(
+        geodesicTetra.vertices.length,
+        geodesicTetra.edges.length,
+        geodesicTetra.faces.length
+      );
+      const triangles = countGroupTriangles(geodesicTetrahedronGroup);
+      html += `<div style="margin-top: 10px;"><strong>Geodesic Tetrahedron:</strong></div>`;
+      html += `<div>Freq: ${isNaN(frequency) ? 1 : frequency}, Proj: ${projection}</div>`;
+      html += `<div>V: ${geodesicTetra.vertices.length}, E: ${geodesicTetra.edges.length}, F: ${geodesicTetra.faces.length}</div>`;
+      html += `<div>Triangles: ${triangles}</div>`;
+      html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
+    }
+
+    // Geodesic Octahedron
+    if (document.getElementById("showGeodesicOctahedron").checked) {
+      const frequency = parseInt(
+        document.getElementById("geodesicOctaFrequency").value
+      );
+      const projectionRadio = document.querySelector(
+        'input[name="geodesicOctaProjection"]:checked'
+      );
+      const projection = projectionRadio ? projectionRadio.value : "out";
+      const geodesicOcta = Polyhedra.geodesicOctahedron(
+        1,
+        isNaN(frequency) ? 1 : frequency,
+        projection
+      );
+      const eulerOK = RT.verifyEuler(
+        geodesicOcta.vertices.length,
+        geodesicOcta.edges.length,
+        geodesicOcta.faces.length
+      );
+      const triangles = countGroupTriangles(geodesicOctahedronGroup);
+      html += `<div style="margin-top: 10px;"><strong>Geodesic Octahedron:</strong></div>`;
+      html += `<div>Freq: ${isNaN(frequency) ? 1 : frequency}, Proj: ${projection}</div>`;
+      html += `<div>V: ${geodesicOcta.vertices.length}, E: ${geodesicOcta.edges.length}, F: ${geodesicOcta.faces.length}</div>`;
+      html += `<div>Triangles: ${triangles}</div>`;
+      html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
+    }
+
+    // Geodesic Icosahedron
+    if (document.getElementById("showGeodesicIcosahedron").checked) {
+      const frequency = parseInt(
+        document.getElementById("geodesicIcosaFrequency").value
+      );
+      const projectionRadio = document.querySelector(
+        'input[name="geodesicIcosaProjection"]:checked'
+      );
+      const projection = projectionRadio ? projectionRadio.value : "out";
+      const geodesicIcosa = Polyhedra.geodesicIcosahedron(
+        1,
+        isNaN(frequency) ? 1 : frequency,
+        projection
+      );
+      const eulerOK = RT.verifyEuler(
+        geodesicIcosa.vertices.length,
+        geodesicIcosa.edges.length,
+        geodesicIcosa.faces.length
+      );
+      const triangles = countGroupTriangles(geodesicIcosahedronGroup);
+      html += `<div style="margin-top: 10px;"><strong>Geodesic Icosahedron:</strong></div>`;
+      html += `<div>Freq: ${isNaN(frequency) ? 1 : frequency}, Proj: ${projection}</div>`;
+      html += `<div>V: ${geodesicIcosa.vertices.length}, E: ${geodesicIcosa.edges.length}, F: ${geodesicIcosa.faces.length}</div>`;
+      html += `<div>Triangles: ${triangles}</div>`;
+      html += `<div>Euler: ${eulerOK ? "✓" : "✗"} (V - E + F = 2)</div>`;
+    }
+
     stats.innerHTML = html || "Select a polyhedron to see stats";
   }
 
   /**
-   * Animation loop
+   * Animation loop with FPS tracking
    */
   function animate() {
     requestAnimationFrame(animate);
     controls.update(); // Required for damping
     renderer.render(scene, camera);
+
+    // Update FPS tracking and performance display
+    PerformanceClock.updateFPS();
+
+    // Update display every 10 frames (reduce overhead)
+    if (Math.floor(performance.now() / 100) % 10 === 0) {
+      PerformanceClock.updateDisplay(useRTNodeGeometry);
+    }
   }
 
   /**
@@ -937,6 +1728,466 @@ export function initScene(THREE) {
     camera.updateProjectionMatrix();
     renderer.setSize(container.clientWidth, container.clientHeight);
   }
+
+  /**
+   * Set node geometry type (Classical Sphere vs RT Geodesic)
+   * @param {boolean} useRT - true for RT Geodesic, false for Classical Sphere
+   */
+  function setNodeGeometryType(useRT) {
+    useRTNodeGeometry = useRT;
+    nodeGeometryCache.clear();
+  }
+
+  /**
+   * Clear the node geometry cache
+   * Called when node rendering settings change
+   */
+  function clearNodeCache() {
+    nodeGeometryCache.clear();
+  }
+
+  /**
+   * Set Cartesian basis visibility
+   * @param {boolean} visible - true to show, false to hide
+   */
+  function setCartesianBasisVisible(visible) {
+    if (cartesianBasis) {
+      cartesianBasis.visible = visible;
+    }
+  }
+
+  /**
+   * Set Quadray basis visibility
+   * @param {boolean} visible - true to show, false to hide
+   */
+  function setQuadrayBasisVisible(visible) {
+    if (quadrayBasis) {
+      quadrayBasis.visible = visible;
+    }
+  }
+
+  // Variables for camera switching
+  let orthographicCamera = null;
+  let originalPerspectiveCamera = null;
+  let isOrthographic = false;
+
+  /**
+   * Set camera to preset view
+   * @param {string} view - View name (top, bottom, left, right, front, back, axo, perspective)
+   */
+  function setCameraPreset(view) {
+    const distance = 10; // Standard distance from origin
+
+    // Z-up coordinate system (CAD/BIM standard)
+    // Z = vertical, X-Y = horizontal ground plane
+    // Viewing convention: Standing on ground (X-Y plane), Z is up
+    switch (view) {
+      case "top":
+        // Top view: Looking DOWN from above (camera on +Z looking toward -Z)
+        camera.position.set(0, 0, distance);
+        camera.up.set(0, 1, 0); // Y axis points "north" in top view
+        break;
+
+      case "bottom":
+        // Bottom view: Looking UP from below (camera on -Z looking toward +Z)
+        camera.position.set(0, 0, -distance);
+        camera.up.set(0, -1, 0); // Flip Y to keep orientation consistent
+        break;
+
+      case "left": {
+        // Left view: Looking from LEFT side at 45° angle (camera on -X,-Y looking toward +X,+Y)
+        // At 45° from X-axis to see tetrahedral triangular profile
+        const leftDist = distance / Math.sqrt(2);
+        camera.position.set(-leftDist, -leftDist, 0);
+        camera.up.set(0, 0, 1); // Z points up
+        break;
+      }
+
+      case "right": {
+        // Right view: Looking from RIGHT side at 45° angle (camera on +X,+Y looking toward -X,-Y)
+        // At 45° from X-axis to see tetrahedral triangular profile
+        const rightDist = distance / Math.sqrt(2);
+        camera.position.set(rightDist, rightDist, 0);
+        camera.up.set(0, 0, 1); // Z points up
+        break;
+      }
+
+      case "front":
+        // Front view: Looking from FRONT (camera on -Y looking toward +Y)
+        // Standing on ground, looking forward (north) - see XZ plane (front elevation)
+        camera.position.set(0, -distance, 0);
+        camera.up.set(0, 0, 1); // Z points up
+        break;
+
+      case "back":
+        // Back view: Looking from BACK (camera on +Y looking toward -Y)
+        // Standing on ground, looking back (south) - see XZ plane (back elevation)
+        camera.position.set(0, distance, 0);
+        camera.up.set(0, 0, 1); // Z points up
+        break;
+
+      case "axo": {
+        // Axonometric/Isometric view (equal angles to X, Y, Z)
+        // Position: (1, 1, 1) direction scaled to distance
+        const axisoDistance = distance / Math.sqrt(3);
+        camera.position.set(
+          axisoDistance * Math.sqrt(3),
+          axisoDistance * Math.sqrt(3),
+          axisoDistance * Math.sqrt(3)
+        );
+        camera.up.set(0, 0, 1); // Z points up
+        break;
+      }
+
+      case "perspective":
+        // TRUE PERSPECTIVE view - return to initial app state
+        // CRITICAL: Switch to perspective camera FIRST, then set position
+        if (isOrthographic) {
+          switchCameraType(false); // Switch to perspective internally
+          // Also update the checkbox in the UI
+          const orthoCheckbox = document.getElementById("orthoPerspective");
+          if (orthoCheckbox) {
+            orthoCheckbox.checked = false;
+          }
+        }
+        // Now set the perspective camera to initial position
+        camera.position.set(5, -5, 5);
+        camera.up.set(0, 0, 1); // Z points up
+        camera.lookAt(0, 0, 0);
+        controls.target.set(0, 0, 0);
+        controls.update();
+        console.log(
+          `✅ Camera preset: perspective (TRUE perspective mode restored)`
+        );
+        return; // Skip the common camera setup below
+    }
+
+    camera.lookAt(0, 0, 0);
+    controls.target.set(0, 0, 0);
+    controls.update();
+
+    console.log(
+      `✅ Camera preset: ${view} (${isOrthographic ? "Orthographic" : "Perspective"})`
+    );
+  }
+
+  /**
+   * Switch between Perspective and Orthographic camera
+   * @param {boolean} toOrthographic - true for orthographic, false for perspective
+   */
+  function switchCameraType(toOrthographic) {
+    // CRITICAL: Store the original perspective camera on first call
+    if (!originalPerspectiveCamera && !isOrthographic) {
+      originalPerspectiveCamera = camera;
+      console.log("📸 Saved original perspective camera reference");
+    }
+
+    const container = document.getElementById("canvas-container");
+    const width = container.clientWidth || window.innerWidth;
+    const height = container.clientHeight || window.innerHeight;
+    const aspect = width / height;
+
+    if (toOrthographic && !isOrthographic) {
+      // Create orthographic camera matching current perspective view
+      const distance = camera.position.distanceTo(controls.target);
+      const frustumSize = distance * Math.tan((camera.fov * Math.PI) / 360) * 2;
+
+      orthographicCamera = new THREE.OrthographicCamera(
+        (frustumSize * aspect) / -2,
+        (frustumSize * aspect) / 2,
+        frustumSize / 2,
+        frustumSize / -2,
+        0.1,
+        1000
+      );
+
+      // Copy position and orientation from perspective camera
+      orthographicCamera.position.copy(camera.position);
+      orthographicCamera.rotation.copy(camera.rotation);
+      orthographicCamera.up.copy(camera.up);
+
+      // Switch to orthographic
+      camera = orthographicCamera;
+      controls.object = orthographicCamera;
+      isOrthographic = true;
+
+      console.log("✅ Switched to Orthographic camera (parallel projection)");
+    } else if (!toOrthographic && isOrthographic) {
+      // Switch back to perspective - use ORIGINAL perspective camera
+      if (!originalPerspectiveCamera) {
+        console.error("❌ Original perspective camera not found!");
+        return;
+      }
+
+      // Copy current position/rotation back to perspective camera
+      originalPerspectiveCamera.position.copy(camera.position);
+      originalPerspectiveCamera.rotation.copy(camera.rotation);
+      originalPerspectiveCamera.up.copy(camera.up);
+
+      // Switch to perspective
+      camera = originalPerspectiveCamera;
+      controls.object = originalPerspectiveCamera;
+      isOrthographic = false;
+
+      console.log("✅ Switched to Perspective camera");
+    }
+
+    controls.update();
+  }
+
+  /**
+   * Get all form groups for selection system
+   * @returns {Object} Object containing all form group references
+   */
+  function getAllFormGroups() {
+    return {
+      cubeGroup,
+      tetrahedronGroup,
+      dualTetrahedronGroup,
+      octahedronGroup,
+      icosahedronGroup,
+      dodecahedronGroup,
+      dualIcosahedronGroup,
+      cuboctahedronGroup,
+      rhombicDodecahedronGroup,
+      geodesicIcosahedronGroup,
+      geodesicTetrahedronGroup,
+      geodesicOctahedronGroup,
+      cubeMatrixGroup,
+      tetMatrixGroup,
+      octaMatrixGroup,
+      cuboctaMatrixGroup,
+      rhombicDodecMatrixGroup,
+    };
+  }
+
+  /**
+   * Rebuild Quadray grids with new tessellation value
+   * @param {number} tessellations - Number of triangle copies in each direction
+   * @param {Object} visibilityState - Object mapping plane names to visibility state
+   */
+  function rebuildQuadrayGrids(tessellations, visibilityState = {}) {
+    // Remove existing grids
+    if (ivmPlanes) {
+      scene.remove(ivmPlanes);
+    }
+
+    // Recreate with new tessellation (updateIVMPlanes uses stored tessellation value)
+    ivmPlanes = new THREE.Group();
+
+    const halfSize = 1.0;
+
+    // WX plane
+    window.ivmWX = createIVMGrid(
+      Quadray.basisVectors[0],
+      Quadray.basisVectors[1],
+      halfSize,
+      tessellations,
+      0xffaa00
+    );
+    window.ivmWX.visible = visibilityState.ivmWX ?? true;
+    window.ivmWX.name = "CentralAngle_WX";
+    ivmPlanes.add(window.ivmWX);
+
+    // WY plane
+    window.ivmWY = createIVMGrid(
+      Quadray.basisVectors[0],
+      Quadray.basisVectors[2],
+      halfSize,
+      tessellations,
+      0xaaaaff
+    );
+    window.ivmWY.visible = visibilityState.ivmWY ?? true;
+    window.ivmWY.name = "CentralAngle_WY";
+    ivmPlanes.add(window.ivmWY);
+
+    // WZ plane
+    window.ivmWZ = createIVMGrid(
+      Quadray.basisVectors[0],
+      Quadray.basisVectors[3],
+      halfSize,
+      tessellations,
+      0xaaff00
+    );
+    window.ivmWZ.visible = visibilityState.ivmWZ ?? true;
+    window.ivmWZ.name = "CentralAngle_WZ";
+    ivmPlanes.add(window.ivmWZ);
+
+    // XY plane
+    window.ivmXY = createIVMGrid(
+      Quadray.basisVectors[1],
+      Quadray.basisVectors[2],
+      halfSize,
+      tessellations,
+      0xff00ff
+    );
+    window.ivmXY.visible = visibilityState.ivmXY ?? true;
+    window.ivmXY.name = "CentralAngle_XY";
+    ivmPlanes.add(window.ivmXY);
+
+    // XZ plane
+    window.ivmXZ = createIVMGrid(
+      Quadray.basisVectors[1],
+      Quadray.basisVectors[3],
+      halfSize,
+      tessellations,
+      0xffff00
+    );
+    window.ivmXZ.visible = visibilityState.ivmXZ ?? true;
+    window.ivmXZ.name = "CentralAngle_XZ";
+    ivmPlanes.add(window.ivmXZ);
+
+    // YZ plane
+    window.ivmYZ = createIVMGrid(
+      Quadray.basisVectors[2],
+      Quadray.basisVectors[3],
+      halfSize,
+      tessellations,
+      0x00ffff
+    );
+    window.ivmYZ.visible = visibilityState.ivmYZ ?? true;
+    window.ivmYZ.name = "CentralAngle_YZ";
+    ivmPlanes.add(window.ivmYZ);
+
+    scene.add(ivmPlanes);
+
+    console.log(
+      `✅ Rebuilt Central Angle grids with tessellation=${tessellations}`
+    );
+  }
+
+  /**
+   * Rebuild Cartesian grids with new tessellation value
+   * @param {number} divisions - Number of grid divisions
+   * @param {Object} visibilityState - Object with grid and basis visibility states
+   */
+  function rebuildCartesianGrids(divisions, visibilityState = {}) {
+    // Remove existing grids and basis
+    if (cartesianGrid) {
+      scene.remove(cartesianGrid);
+    }
+    if (cartesianBasis) {
+      scene.remove(cartesianBasis);
+    }
+
+    // Recreate grid
+    cartesianGrid = new THREE.Group();
+    const gridSize = divisions;
+    const gridColor = 0x444444;
+
+    // XY plane (Z = 0) - HORIZONTAL ground plane in Z-up
+    window.gridXY = new THREE.GridHelper(
+      gridSize,
+      divisions,
+      gridColor,
+      gridColor
+    );
+    window.gridXY.rotation.x = Math.PI / 2;
+    window.gridXY.visible = visibilityState.gridXY ?? false;
+    cartesianGrid.add(window.gridXY);
+
+    // XZ plane (Y = 0) - VERTICAL wall in Z-up (front/back)
+    window.gridXZ = new THREE.GridHelper(
+      gridSize,
+      divisions,
+      gridColor,
+      gridColor
+    );
+    window.gridXZ.visible = visibilityState.gridXZ ?? false;
+    cartesianGrid.add(window.gridXZ);
+
+    // YZ plane (X = 0) - VERTICAL wall in Z-up (left/right)
+    window.gridYZ = new THREE.GridHelper(
+      gridSize,
+      divisions,
+      gridColor,
+      gridColor
+    );
+    window.gridYZ.rotation.z = Math.PI / 2;
+    window.gridYZ.visible = visibilityState.gridYZ ?? false;
+    cartesianGrid.add(window.gridYZ);
+
+    scene.add(cartesianGrid);
+
+    // Recreate basis vectors
+    cartesianBasis = new THREE.Group();
+    const totalBasisLength = 2.0;
+    const headLength = 0.3;
+    const arrowLength = totalBasisLength;
+
+    // X-axis (Red)
+    const xAxis = new THREE.ArrowHelper(
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(0, 0, 0),
+      arrowLength,
+      0xff0000,
+      headLength,
+      0.2
+    );
+    cartesianBasis.add(xAxis);
+
+    // Y-axis (Green)
+    const yAxis = new THREE.ArrowHelper(
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, 0, 0),
+      arrowLength,
+      0x00ff00,
+      headLength,
+      0.2
+    );
+    cartesianBasis.add(yAxis);
+
+    // Z-axis (Blue)
+    const zAxis = new THREE.ArrowHelper(
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(0, 0, 0),
+      arrowLength,
+      0x0000ff,
+      headLength,
+      0.2
+    );
+    cartesianBasis.add(zAxis);
+
+    cartesianBasis.visible = visibilityState.cartesianBasis ?? false;
+    scene.add(cartesianBasis);
+
+    console.log(`✅ Rebuilt Cartesian grids with divisions=${divisions}`);
+  }
+
+  // Return public API from initScene() factory
+  return {
+    // Core scene initialization
+    initScene,
+    animate,
+    onWindowResize,
+
+    // Rendering functions
+    updateGeometry,
+    updateGeometryStats,
+
+    // Node configuration
+    setNodeGeometryType,
+    clearNodeCache,
+
+    // Basis visibility controls
+    setCartesianBasisVisible,
+    setQuadrayBasisVisible,
+
+    // Camera controls
+    switchCameraType,
+    setCameraPreset,
+
+    // Getters for THREE.js objects (needed by rt-init.js)
+    getScene: () => scene,
+    getCamera: () => camera,
+    getRenderer: () => renderer,
+    getControls: () => controls,
+    getAllFormGroups, // For selection system
+
+    // Grid rebuild methods (for tessellation slider controls)
+    rebuildQuadrayGrids,
+    rebuildCartesianGrids,
+  };
 
   // ========================================================================
 }
