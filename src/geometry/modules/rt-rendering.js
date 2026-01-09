@@ -612,17 +612,22 @@ export function initScene(THREE, OrbitControls, RT) {
       }
 
       case "cuboctahedron":
-        // Edge quadrance Q = s² (NOT 0.5s²!)
-        // Vertices at t = s/√2: (±t,±t,0), (±t,0,±t), (0,±t,±t)
-        // Edge: (t,t,0) → (t,0,t): Q = 0² + t² + t² = 2t² = 2(s²/2) = s²
-        // rt-polyhedra.js line 1400: expectedQ = 2 * t * t where t = s/√2
-        return s2;
+        // Edge quadrance Q = 2s² (scaled by √2 to match matrix geometry)
+        // UPDATED: Single and matrix polyhedra both use scale * √2
+        // Vertices at scale (not scale/√2): (±s,±s,0), (±s,0,±s), (0,±s,±s)
+        // Edge: (s,s,0) → (s,0,s): Q = 0² + s² + s² = 2s²
+        // Original formula was Q = s² for vertices at s/√2, now Q = 2s² for vertices at s
+        return 2 * s2;
 
       case "rhombicDodecahedron":
-        // Edge quadrance Q = 3s²/8 (RT-PURE: exact rational fraction, no decimals!)
-        // With u = t/2 where t = s/√2:
-        // Edge: (t,0,0) → (t/2,t/2,t/2): Q = (t/2)² + (t/2)² + (t/2)² = 3t²/4 = 3s²/8
-        return (3 / 8) * s2;
+        // Edge quadrance Q = 3s²/4 (scaled by √2 to match matrix geometry)
+        // UPDATED: Single and matrix polyhedra both use scale * √2
+        // With vertices at scale (not scale/√2):
+        // Axial vertices at s: (±s,0,0), (0,±s,0), (0,0,±s)
+        // Octant vertices at s/2: (±s/2,±s/2,±s/2)
+        // Edge: (s,0,0) → (s/2,s/2,s/2): Q = (s/2)² + (s/2)² + (s/2)² = 3s²/4
+        // Original formula was Q = 3s²/8 for vertices at s/√2, now Q = 3s²/4 for vertices at s
+        return (3 / 4) * s2;
 
       case "geodesicTetrahedron":
       case "geodesicOctahedron":
@@ -773,13 +778,12 @@ export function initScene(THREE, OrbitControls, RT) {
     const useFlatShading =
       document.getElementById("nodeFlatShading")?.checked || false;
 
-    // Get cached node geometry
-    const { geometry: nodeGeometry } = getCachedNodeGeometry(
-      useRTNodeGeometry,
-      nodeSize,
-      polyhedronType,
-      scale
-    );
+    // Get cached node geometry AND triangle count
+    const { geometry: nodeGeometry, triangles: trianglesPerNode } =
+      getCachedNodeGeometry(useRTNodeGeometry, nodeSize, polyhedronType, scale);
+
+    // Update PerformanceClock with node triangle count (for matrix nodes)
+    PerformanceClock.timings.lastNodeTriangles = Math.round(trianglesPerNode);
 
     const nodeMaterial = new THREE.MeshStandardMaterial({
       color: color,
@@ -1345,7 +1349,8 @@ export function initScene(THREE, OrbitControls, RT) {
 
     // Cuboctahedron (Lime green - Vector Equilibrium)
     if (document.getElementById("showCuboctahedron").checked) {
-      const cubocta = Polyhedra.cuboctahedron(scale);
+      // Scale by √2 to match matrix geometry (vertices at scale, not scale/√2)
+      const cubocta = Polyhedra.cuboctahedron(scale * Math.sqrt(2));
       renderPolyhedron(cuboctahedronGroup, cubocta, 0x00ff88, opacity); // Bright lime-cyan
       cuboctahedronGroup.visible = true;
     } else {
@@ -1402,7 +1407,8 @@ export function initScene(THREE, OrbitControls, RT) {
 
     // Rhombic Dodecahedron (Orange)
     if (document.getElementById("showRhombicDodecahedron").checked) {
-      const rhombicDodec = Polyhedra.rhombicDodecahedron(scale);
+      // Scale by √2 to match matrix geometry (axial vertices at scale, not scale/√2)
+      const rhombicDodec = Polyhedra.rhombicDodecahedron(scale * Math.sqrt(2));
       renderPolyhedron(
         rhombicDodecahedronGroup,
         rhombicDodec,
@@ -1585,7 +1591,8 @@ export function initScene(THREE, OrbitControls, RT) {
     }
 
     if (document.getElementById("showRhombicDodecahedron").checked) {
-      const rhombicDodec = Polyhedra.rhombicDodecahedron(1);
+      // Use √2 scaling to match rendering (stats use scale=1 for display)
+      const rhombicDodec = Polyhedra.rhombicDodecahedron(Math.sqrt(2));
       const eulerOK = RT.verifyEuler(
         rhombicDodec.vertices.length,
         rhombicDodec.edges.length,
@@ -1598,7 +1605,8 @@ export function initScene(THREE, OrbitControls, RT) {
     }
 
     if (document.getElementById("showCuboctahedron").checked) {
-      const cubocta = Polyhedra.cuboctahedron(1);
+      // Use √2 scaling to match rendering (stats use scale=1 for display)
+      const cubocta = Polyhedra.cuboctahedron(Math.sqrt(2));
       const eulerOK = RT.verifyEuler(
         cubocta.vertices.length,
         cubocta.edges.length,
