@@ -63,9 +63,15 @@ if (sessionStorage.getItem("artexplorer-auth") === "true") {
 function initInfoModal() {
   const infoModalOverlay = document.getElementById("info-modal-overlay");
   const infoModalCloseBtn = document.getElementById("info-modal-close");
+  const infoIconBtn = document.getElementById("info-icon-btn");
 
   // Show modal on first load (check sessionStorage)
   if (!sessionStorage.getItem("artexplorer-info-seen")) {
+    infoModalOverlay.classList.remove("hidden");
+  }
+
+  // Open modal handler
+  function openInfoModal() {
     infoModalOverlay.classList.remove("hidden");
   }
 
@@ -75,6 +81,10 @@ function initInfoModal() {
     sessionStorage.setItem("artexplorer-info-seen", "true");
   }
 
+  // Info icon button to reopen modal
+  infoIconBtn.addEventListener("click", openInfoModal);
+
+  // Close button
   infoModalCloseBtn.addEventListener("click", closeInfoModal);
 
   // ESC key closes modal

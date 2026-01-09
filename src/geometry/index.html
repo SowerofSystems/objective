@@ -81,7 +81,9 @@
               <p class="modal-text">
                 Unlike traditional Euclidean systems that rely on
                 transcendental functions (sin, cos, sqrt), A.R.T. uses
-                pure algebraic methods for exact geometric calculations.
+                pure algebraic methods, working in symbolic and quadrance space and 
+                deferring division and expansion to the point of rendering in THREE.js 
+                for exact geometric calculations.
               </p>
             </div>
           </div>
@@ -131,6 +133,7 @@
                 <li>Bonnie DeVarco, for her tireless preservation and active engagement with the original work</li>
                 <li>Mark Pavlidis, for teaching me how to navigate Git and the importance of clean code</li>
                 <li>Enzyme APD, for encouraging the pursuit of these ideas against all odds</li>
+                <li>Metatron — because nothing is noticed alone</li>
               </ul>
             </div>
           </div>
@@ -144,8 +147,18 @@
       <div id="canvas-container">
       </div>
       <div id="controls-panel">
-        <h2>A.R.T Explorer</h2>
-        <h5>by Andy Ross Thomson</h5>
+        <div class="panel-header">
+          <div>
+            <h2>A.R.T Explorer</h2>
+            <h5>by Andy Ross Thomson</h5>
+          </div>
+          <button id="info-icon-btn" class="info-icon-btn" title="About A.R.T. Explorer">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 16V12M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
         <br />
         <!-- ========================================
              SECTION 1: FILE

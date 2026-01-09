@@ -34,6 +34,44 @@ body {
   border-left: 1px solid #444;
 }
 
+/* Panel header with info icon */
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0;
+}
+
+.info-icon-btn {
+  background: transparent;
+  border: none;
+  color: #7ab8ff;
+  cursor: pointer;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.info-icon-btn:hover {
+  background: rgba(74, 158, 255, 0.1);
+  color: #4a9eff;
+  transform: scale(1.1);
+}
+
+.info-icon-btn:active {
+  transform: scale(0.95);
+}
+
+.info-icon-btn svg {
+  display: block;
+}
+
 h1 {
   font-size: 18px;
   margin-bottom: 10px;
