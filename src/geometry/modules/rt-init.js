@@ -658,73 +658,52 @@ function startARTexplorer(
     return radius;
   }
 
+  // PHASE 6 EXTRACTION: getCachedNodeGeometry() function now in rt-rendering.js
+  // (Orphaned function - never called, using rt-rendering.js version)
+  /*
   function getCachedNodeGeometry(useRT, nodeSize, polyhedronType, scale) {
     const cacheKey = `${useRT ? "rt" : "classical"}-${nodeSize}-${polyhedronType || "default"}-${scale || 1}`;
-
     if (nodeGeometryCache.has(cacheKey)) {
       return nodeGeometryCache.get(cacheKey);
     }
-
     let nodeGeometry;
     let trianglesPerNode = 0;
     let radius;
-
     if (nodeSize === "packed") {
-      // CLOSE-PACKED MODE: Calculate from edge length using universal formula
       if (!polyhedronType || !scale) {
-        console.warn(
-          "⚠️ Packed mode requires polyhedronType and scale parameters"
-        );
-        radius = 0.04; // Fallback to medium size
+        console.warn("⚠️ Packed mode requires polyhedronType and scale parameters");
+        radius = 0.04;
       } else {
         radius = getClosePackedRadius(polyhedronType, scale);
       }
     } else {
-      // FIXED SIZE MODE: Use predefined sizes
-      const nodeSizes = {
-        sm: 0.02,
-        md: 0.04,
-        lg: 0.08,
-      };
+      const nodeSizes = { sm: 0.02, md: 0.04, lg: 0.08 };
       radius = nodeSizes[nodeSize] || 0.04;
     }
-
     if (useRT) {
-      // RT Geodesic Icosahedron (freq-0 = base 20-triangle icosahedron)
       const polyData = window.RTPolyhedra.geodesicIcosahedron(radius, 0, "out");
-
       nodeGeometry = new THREE.BufferGeometry();
       const positions = [];
       const indices = [];
-
-      polyData.vertices.forEach(v => {
-        positions.push(v.x, v.y, v.z);
-      });
-
+      polyData.vertices.forEach(v => { positions.push(v.x, v.y, v.z); });
       polyData.faces.forEach(faceIndices => {
         for (let i = 1; i < faceIndices.length - 1; i++) {
           indices.push(faceIndices[0], faceIndices[i], faceIndices[i + 1]);
         }
       });
-
-      nodeGeometry.setAttribute(
-        "position",
-        new THREE.Float32BufferAttribute(positions, 3)
-      );
+      nodeGeometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
       nodeGeometry.setIndex(indices);
       nodeGeometry.computeVertexNormals();
-
       trianglesPerNode = indices.length / 3;
     } else {
-      // Classical THREE.js Sphere
       nodeGeometry = new THREE.SphereGeometry(radius, 16, 16);
-      trianglesPerNode = 16 * 16 * 2; // 512 triangles
+      trianglesPerNode = 16 * 16 * 2;
     }
-
     const result = { geometry: nodeGeometry, triangles: trianglesPerNode };
     nodeGeometryCache.set(cacheKey, result);
     return result;
   }
+  */
 
   /**
    * Render a polyhedron from vertices, edges, faces
