@@ -940,6 +940,32 @@ button:disabled {
   font-weight: 600;
 }
 
+/* Credits list */
+.credits-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.credits-list li {
+  color: #888;
+  font-size: 11px;
+  line-height: 1.4;
+  padding-left: 12px;
+  position: relative;
+}
+
+.credits-list li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #4a9eff;
+  font-weight: bold;
+}
+
 /* Close button - reuses password submit styling */
 .modal-close-btn {
   width: 100%;
