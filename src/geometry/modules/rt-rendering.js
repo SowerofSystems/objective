@@ -92,17 +92,40 @@ export function initScene(THREE, OrbitControls, RT) {
 
     // Create polyhedra groups
     cubeGroup = new THREE.Group();
+    cubeGroup.userData.type = "cube";
+
     tetrahedronGroup = new THREE.Group();
+    tetrahedronGroup.userData.type = "tetrahedron";
+
     dualTetrahedronGroup = new THREE.Group();
+    dualTetrahedronGroup.userData.type = "dualTetrahedron";
+
     octahedronGroup = new THREE.Group();
+    octahedronGroup.userData.type = "octahedron";
+
     icosahedronGroup = new THREE.Group();
+    icosahedronGroup.userData.type = "icosahedron";
+
     dodecahedronGroup = new THREE.Group();
+    dodecahedronGroup.userData.type = "dodecahedron";
+
     dualIcosahedronGroup = new THREE.Group();
+    dualIcosahedronGroup.userData.type = "dualIcosahedron";
+
     cuboctahedronGroup = new THREE.Group();
+    cuboctahedronGroup.userData.type = "cuboctahedron";
+
     rhombicDodecahedronGroup = new THREE.Group();
+    rhombicDodecahedronGroup.userData.type = "rhombicDodecahedron";
+
     geodesicIcosahedronGroup = new THREE.Group(); // Phase 2.7a
+    geodesicIcosahedronGroup.userData.type = "geodesicIcosahedron";
+
     geodesicTetrahedronGroup = new THREE.Group(); // Phase 2.7c
+    geodesicTetrahedronGroup.userData.type = "geodesicTetrahedron";
+
     geodesicOctahedronGroup = new THREE.Group(); // Phase 2.7b
+    geodesicOctahedronGroup.userData.type = "geodesicOctahedron";
 
     // Matrix forms (IVM spatial arrays)
     cubeMatrixGroup = new THREE.Group();

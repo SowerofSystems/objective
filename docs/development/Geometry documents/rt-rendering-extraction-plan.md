@@ -816,25 +816,270 @@ Successfully extracted all core rendering functions from rt-init.js to rt-render
 - ✅ No console errors or warnings
 - ✅ PerformanceClock tracking properly
 
-**Remaining Known Issues:**
+**All Node Rendering Issues Resolved! ✅**
 
-**Node Rendering on Base Polyhedra:**
-- ❌ Base polyhedra (Cube, Tetrahedron, Octahedron, etc.) do NOT show nodes for:
-  - "Packed" node option
-  - "RT Geodesic" node option
-- ✅ Base polyhedra DO show nodes correctly for:
-  - "Classical Sphere" nodes (all sizes work)
-  - "Off" (no nodes)
-- ✅ Matrix polyhedra work correctly for ALL node options
+**Final Status (2026-01-08):**
+- ✅ RT Geodesic nodes work correctly on ALL polyhedra (base and matrix)
+- ✅ Packed nodes work correctly on ALL polyhedra (base and matrix)
+- ✅ Classical Sphere nodes work correctly on ALL polyhedra
+- ✅ All node sizes (sm/md/lg) work correctly everywhere
+- ✅ No console warnings or errors
 
-**Technical explanation:**
-The node rendering logic in `updateGeometry()` may have conditional checks that differentiate between base forms and matrix forms. Matrix forms are calling the node rendering correctly, but base forms are not rendering Packed or RT Geodesic node types.
+**Issues Fixed:**
+1. ✅ **Issue #2 (RT Geodesic):** Added API-based state management (`setNodeGeometryType()`, `clearNodeCache()`) - Commit a6d6fc0
+2. ✅ **Issue #1 (Packed nodes):** Added `userData.type` to all base polyhedra groups - Commit pending
 
 **Next steps:**
-1. Investigate node rendering logic in rt-rendering.js `updateGeometry()`
-2. Check if base polyhedra are passing correct parameters to node rendering
-3. Verify that Packed and RT Geodesic node geometries are being created for base forms
-4. Test with visual inspection of all base polyhedra with all node options
+1. ✅ Document orphaned helper functions in rt-init.js (2026-01-08)
+2. ✅ Investigate and fix RT Geodesic issue (2026-01-08)
+3. ✅ Investigate and fix Packed nodes issue (2026-01-08)
+4. 🔄 **IN PROGRESS:** Clean up commented code blocks in rt-init.js
+5. 📋 **PENDING:** Identify and remove orphaned code from rt-init.js
+
+---
+
+### Investigation: Node Rendering Issues (2026-01-08)
+
+**Status:** 🔍 IN PROGRESS - Root cause identified
+
+**Issue 1: "Packed" Nodes on Base Polyhedra ONLY**
+- ❌ Base forms (Cube, Tetrahedron, Octahedron, Icosahedron, Dodecahedron) do NOT show "Packed" nodes
+- ✅ Matrix forms (Cube Matrix, Tetrahedron Matrix) DO show "Packed" nodes correctly
+- ✅ Node sizes (sm/md/lg) work on BOTH base and matrix forms
+- ✅ Classical Sphere nodes work on BOTH base and matrix forms
+
+**Issue 2: "RT Geodesic" Nodes on BOTH Base and Matrix**
+- ❌ Base forms do NOT show "RT Geodesic" nodes
+- ❌ Matrix forms do NOT show "RT Geodesic" nodes
+- ✅ Classical Sphere nodes work on BOTH base and matrix forms
+
+**Corrected Summary:**
+- "Packed" is broken ONLY for base polyhedra (works for matrices)
+- "RT Geodesic" is broken for EVERYTHING (both base and matrices)
+- Classical spheres work everywhere
+
+**Investigation Tasks:**
+- [x] Compare `renderPolyhedron()` vs `addMatrixNodes()` node rendering logic - IDENTICAL
+- [x] Check how `useRTNodeGeometry` variable is accessed in each function - **BUG FOUND**
+- [ ] ~~Verify `nodeSize === "packed"` conditional logic~~ - Logic is correct, scope issue
+- [ ] ~~Test with console.log~~ - Not needed, root cause identified
+
+**ROOT CAUSE IDENTIFIED:** Variable Scope Isolation
+
+**Critical Bug:**
+rt-init.js and rt-rendering.js each define their own separate copies of:
+1. `useRTNodeGeometry` (rt-init.js:2696, rt-rendering.js:24)
+2. `nodeGeometryCache` (rt-init.js:702, rt-rendering.js:21)
+
+**What's happening:**
+1. User clicks "RT Geodesic" node button
+2. Event handler (rt-init.js:2709-2716) sets rt-init.js's `useRTNodeGeometry = true`
+3. Event handler clears rt-init.js's `nodeGeometryCache`
+4. Calls `updateGeometry()` (which is now `renderingAPI.updateGeometry()`)
+5. rt-rendering.js's `updateGeometry()` runs
+6. rt-rendering.js's `renderPolyhedron()` reads rt-rendering.js's `useRTNodeGeometry` (still `false`!)
+7. Result: Node geometry generated as Classical Sphere instead of RT Geodesic
+
+**Why "Packed" works for matrices but NOT base polyhedra:**
+The "Packed" mode requires `polyhedronType` and `scale` parameters to calculate the close-packed radius. Matrix forms likely pass these parameters correctly, while base forms may not be setting `group.userData.type` properly.
+
+**Why "RT Geodesic" is completely broken:**
+The event handlers in rt-init.js modify rt-init.js's `useRTNodeGeometry` variable, but rt-rendering.js reads its own separate `useRTNodeGeometry` variable (which remains `false`). The two modules have isolated variable scopes.
+
+---
+
+### Solution: API-Based State Management for Node Configuration ✅ RESOLVED (2026-01-08)
+
+**Issue #2 Resolution: RT Geodesic Nodes**
+
+**Problem:** Variable scope isolation prevented rt-init.js event handlers from modifying rt-rendering.js's `useRTNodeGeometry` variable.
+
+**Solution Implemented:**
+
+1. **Added API methods to rt-rendering.js** (lines 1702-1717):
+   ```javascript
+   function setNodeGeometryType(useRT) {
+     useRTNodeGeometry = useRT;
+     nodeGeometryCache.clear();
+   }
+
+   function clearNodeCache() {
+     nodeGeometryCache.clear();
+   }
+   ```
+
+2. **Exposed methods in return statement** (lines 1720-1732):
+   ```javascript
+   return {
+     // Core scene initialization
+     initScene,
+     animate,
+     onWindowResize,
+     // Rendering functions
+     updateGeometry,
+     updateGeometryStats,
+     // Node configuration
+     setNodeGeometryType,
+     clearNodeCache,
+     // Getters for THREE.js objects
+     getScene: () => scene,
+     getCamera: () => camera,
+     getRenderer: () => renderer,
+     getControls: () => controls
+   };
+   ```
+
+3. **Updated event handlers in rt-init.js** (lines 2680-2716):
+   ```javascript
+   // Node size buttons
+   document.querySelectorAll(".node-size-btn").forEach(btn => {
+     btn.addEventListener("click", function () {
+       renderingAPI.clearNodeCache();  // ← Use API
+       // ... rest of handler
+     });
+   });
+
+   // Classical Sphere button
+   document.getElementById("nodeGeomClassical").addEventListener("click", function () {
+     renderingAPI.setNodeGeometryType(false);  // ← Use API
+     // ... rest of handler
+   });
+
+   // RT Geodesic button
+   document.getElementById("nodeGeomRT").addEventListener("click", function () {
+     renderingAPI.setNodeGeometryType(true);  // ← Use API
+     // ... rest of handler
+   });
+   ```
+
+4. **Removed orphaned variables from rt-init.js**:
+   - Removed `let useRTNodeGeometry = false;` (line 2696)
+   - Removed `const nodeGeometryCache = new Map();` (line 702)
+
+**Result:** ✅ Issue #2 (RT Geodesic) completely resolved
+- RT Geodesic nodes render correctly on all polyhedra (base and matrix)
+- Node sizes (sm/md/lg) work correctly everywhere
+- Classical Sphere nodes work correctly
+
+**Commit:** a6d6fc0 (2026-01-08)
+
+---
+
+### Issue #1: Packed Nodes on Base Polyhedra ✅ RESOLVED (2026-01-08)
+
+**Status:** ✅ FIXED
+
+**Problem:**
+- ❌ Base polyhedra (Cube, Tetrahedron, Octahedron, etc.) did NOT show "Packed" nodes
+- ✅ Matrix polyhedra showed "Packed" nodes correctly
+- Console warning: "⚠️ Packed mode requires polyhedronType and scale parameters" (rt-rendering.js:681)
+
+**Root Cause:**
+Base polyhedra groups were created **without** `userData.type` property in `initScene()` (rt-rendering.js lines 94-128), while matrix groups had this property set correctly. When `renderPolyhedron()` tried to get `polyType` from `group.userData.type` (line 968), it was `undefined` for base polyhedra, causing the warning and preventing Packed mode calculations.
+
+**Solution Implemented:**
+
+Added `userData.type` to all 12 base polyhedra groups in rt-rendering.js `initScene()` function:
+
+```javascript
+// Create polyhedra groups
+cubeGroup = new THREE.Group();
+cubeGroup.userData.type = "cube";
+
+tetrahedronGroup = new THREE.Group();
+tetrahedronGroup.userData.type = "tetrahedron";
+
+dualTetrahedronGroup = new THREE.Group();
+dualTetrahedronGroup.userData.type = "dualTetrahedron";
+
+octahedronGroup = new THREE.Group();
+octahedronGroup.userData.type = "octahedron";
+
+icosahedronGroup = new THREE.Group();
+icosahedronGroup.userData.type = "icosahedron";
+
+dodecahedronGroup = new THREE.Group();
+dodecahedronGroup.userData.type = "dodecahedron";
+
+dualIcosahedronGroup = new THREE.Group();
+dualIcosahedronGroup.userData.type = "dualIcosahedron";
+
+cuboctahedronGroup = new THREE.Group();
+cuboctahedronGroup.userData.type = "cuboctahedron";
+
+rhombicDodecahedronGroup = new THREE.Group();
+rhombicDodecahedronGroup.userData.type = "rhombicDodecahedron";
+
+geodesicIcosahedronGroup = new THREE.Group();
+geodesicIcosahedronGroup.userData.type = "geodesicIcosahedron";
+
+geodesicTetrahedronGroup = new THREE.Group();
+geodesicTetrahedronGroup.userData.type = "geodesicTetrahedron";
+
+geodesicOctahedronGroup = new THREE.Group();
+geodesicOctahedronGroup.userData.type = "geodesicOctahedron";
+```
+
+**Result:** ✅ Issue #1 (Packed nodes on base polyhedra) completely resolved
+- Packed nodes now render correctly on all base polyhedra
+- `getClosePackedRadius()` can calculate correct radius using edge quadrance formulas
+- All node modes (Packed, RT Geodesic, Classical Sphere, sm/md/lg) work on all polyhedra
+
+**Commit:** (pending - to be included with cleanup)
+
+**Files Investigated:**
+- [rt-rendering.js:888-1022](src/geometry/modules/rt-rendering.js#L888-L1022) - `renderPolyhedron()` function
+- [rt-rendering.js:735-849](src/geometry/modules/rt-rendering.js#L735-L849) - `addMatrixNodes()` function
+- [rt-rendering.js:667-733](src/geometry/modules/rt-rendering.js#L667-L733) - `getCachedNodeGeometry()` function
+- [rt-init.js:2696-2716](src/geometry/modules/rt-init.js#L2696-L2716) - Node type button event handlers
+- [rt-rendering.js:24](src/geometry/modules/rt-rendering.js#L24) - Module-level variable definition
+
+---
+
+### Cleanup Task: Comment Out Orphaned Functions in rt-init.js
+
+**Status:** 📋 PLANNED (non-urgent)
+
+The following functions in rt-init.js are orphaned (defined but never called):
+
+1. **`getCachedNodeGeometry()`** - Line 832
+   - Only called by orphaned `renderPolyhedron()` and `addMatrixNodes()`
+   - rt-rendering.js version is actually used
+
+2. **`renderPolyhedron()`** - Line 904
+   - Only called from commented-out `updateGeometry()` (lines 1158-1619)
+   - rt-rendering.js version is actually used
+
+3. **`addMatrixNodes()`** - Line 1040
+   - Only called from commented-out `updateGeometry()` (lines 1158-1619)
+   - rt-rendering.js version is actually used
+
+4. **`onWindowResize()`** - Line 1896
+   - Event listener uses rt-rendering.js version (registered in rt-rendering.js:171)
+   - rt-init.js version is never called
+
+**Why They're Not Breaking Anything:**
+- Active code path: User interaction → `renderingAPI.updateGeometry()` → rt-rendering.js helpers
+- rt-init.js helpers are dead code (never in call stack)
+- JavaScript doesn't care about unused function definitions
+
+**Action Required:**
+Comment out lines 832-1154 and 1896-1920 in rt-init.js with clear markers:
+```javascript
+// BEGIN COMMENTED HELPER FUNCTIONS (orphaned after rt-rendering.js extraction)
+/*
+function getCachedNodeGeometry(...) { ... }
+function renderPolyhedron(...) { ... }
+function addMatrixNodes(...) { ... }
+*/
+// END COMMENTED HELPER FUNCTIONS
+
+// BEGIN COMMENTED ONWINDOWRESIZE (orphaned after rt-rendering.js extraction)
+/*
+function onWindowResize() { ... }
+*/
+// END COMMENTED ONWINDOWRESIZE
+```
 
 ---
 
