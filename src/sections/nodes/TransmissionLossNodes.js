@@ -240,7 +240,7 @@
           `transmissionLoss.${id}.area`,
           `transmissionLoss.${id}.uValue`,
           "climate.groundFacing.cdd",
-          "climate.capacitance.percentage"
+          "building.capacitance.percentage"
         ],
         label: `${label} Heat Gain (kWh/yr)`,
         compute: (inputs) => {
@@ -248,7 +248,7 @@
           const area = parseNum(inputs[`transmissionLoss.${id}.area`]);
           const uValue = parseNum(inputs[`transmissionLoss.${id}.uValue`]);
           // Legacy Section11.js: capacitanceFactor = i_21 / 100, fallback to 0.5
-          let capacitanceFactor = parseNum(inputs["climate.capacitance.percentage"], 0) / 100;
+          let capacitanceFactor = parseNum(inputs["building.capacitance.percentage"], 0) / 100;
           if (capacitanceFactor === 0 || isNaN(capacitanceFactor)) {
             capacitanceFactor = 0.5;
           }

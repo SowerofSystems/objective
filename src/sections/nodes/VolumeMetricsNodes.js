@@ -407,11 +407,11 @@
         "transmissionLoss.airFacing.totalHeatGain",
         "transmissionLoss.groundFacing.totalHeatGain",
         "transmissionLoss.components.subtotalHeatGain",
-        "climate.capacitance.setting"
+        "building.capacitance.setting"
       ],
       label: "Total Envelope Heat Gain (kWh/yr)",
       compute: (inputs) => {
-        const capacitanceSetting = inputs["climate.capacitance.setting"] || "No Capacitance";
+        const capacitanceSetting = inputs["building.capacitance.setting"] || "No Capacitance";
 
         if (capacitanceSetting === "Capacitance") {
           // Use k_98 from Section 11 (includes solar etc.)

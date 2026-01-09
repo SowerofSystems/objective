@@ -104,7 +104,7 @@
       validate: (v) => ["Present", "Future"].includes(v)
     },
     {
-      id: "climate.capacitance.setting",
+      id: "building.capacitance.setting",
       legacyId: "h_21",
       defaultValue: "Capacitance",
       classification: "C",
@@ -112,7 +112,7 @@
       label: "Thermal Capacitance Setting"
     },
     {
-      id: "climate.capacitance.percentage",
+      id: "building.capacitance.percentage",
       legacyId: "i_21",
       defaultValue: 50,
       classification: "C",
@@ -461,8 +461,8 @@
       dependencies: [
         "climate.cooling.setpoint",
         "climate.coolingDays",
-        "climate.capacitance.setting",
-        "climate.capacitance.percentage"
+        "building.capacitance.setting",
+        "building.capacitance.percentage"
       ],
       classification: "G",
       section: "S03",
@@ -472,7 +472,7 @@
         // From Section03.js line 1832-1849: calculateGroundFacing()
         const coolingSetpoint = parseNum(inputs["climate.cooling.setpoint"], 24);
         const coolingDays = parseNum(inputs["climate.coolingDays"], 120);
-        const capacitanceSetting = inputs["climate.capacitance.setting"] || "Static";
+        const capacitanceSetting = inputs["building.capacitance.setting"] || "Static";
 
         // Ground temp is 10°C
         const groundTemp = 10;
