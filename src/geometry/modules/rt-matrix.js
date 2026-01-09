@@ -625,96 +625,112 @@ export const RTMatrix = {
     matrixSize,
     halfSize,
     rotate45,
+    colinearEdges,
     opacity,
     color,
     THREE
   ) => {
     const matrixGroup = new THREE.Group();
 
-    // Spacing: Distance between octahedra centers in grid
-    // Octahedra center in cubes (vertices at ±halfSize = cube face centers)
-    // Therefore spacing MUST match cube spacing for proper grid alignment
-    // Cube edge = 2 * halfSize (edge-to-edge when rotate45 enabled)
-    // Note: Octahedron edge length = halfSize * √2 (NOT used for spacing)
+    // Always use default cube-compatible spacing
     const spacing = 2 * halfSize; // Same as cube matrix!
 
     // Get base octahedron geometry
     const octaGeom = Polyhedra.octahedron(halfSize);
     const { vertices, edges, faces } = octaGeom;
 
-    // Generate N×N grid (all same orientation)
+    // Helper function to create a single octahedron at given position
+    const createOctahedron = (offset_x, offset_y, offset_z) => {
+      const octaGroup = new THREE.Group();
+
+      // Build indexed face geometry
+      const positions = [];
+      const indices = [];
+
+      // Add all vertices to positions array (with offset)
+      vertices.forEach(v => {
+        positions.push(v.x + offset_x, v.y + offset_y, v.z + offset_z);
+      });
+
+      // Build face indices (triangles)
+      faces.forEach(faceIndices => {
+        indices.push(faceIndices[0], faceIndices[1], faceIndices[2]);
+      });
+
+      const faceGeometry = new THREE.BufferGeometry();
+      faceGeometry.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(positions, 3)
+      );
+      faceGeometry.setIndex(indices);
+      faceGeometry.computeVertexNormals();
+
+      const faceMaterial = new THREE.MeshStandardMaterial({
+        color: color,
+        transparent: true,
+        opacity: opacity,
+        side: THREE.DoubleSide,
+        depthWrite: opacity >= 0.99,
+        flatShading: true,
+      });
+
+      const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);
+      faceMesh.renderOrder = 1;
+      octaGroup.add(faceMesh);
+
+      // Render edges
+      const edgePositions = [];
+      edges.forEach(([vi, vj]) => {
+        const v1 = vertices[vi];
+        const v2 = vertices[vj];
+        edgePositions.push(v1.x + offset_x, v1.y + offset_y, v1.z + offset_z);
+        edgePositions.push(v2.x + offset_x, v2.y + offset_y, v2.z + offset_z);
+      });
+
+      const edgeGeometry = new THREE.BufferGeometry();
+      edgeGeometry.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(edgePositions, 3)
+      );
+
+      const edgeMaterial = new THREE.LineBasicMaterial({
+        color: color,
+        linewidth: 1,
+        depthTest: true,
+        depthWrite: true,
+      });
+
+      const edgeLines = new THREE.LineSegments(edgeGeometry, edgeMaterial);
+      edgeLines.renderOrder = 2;
+      octaGroup.add(edgeLines);
+
+      matrixGroup.add(octaGroup);
+    };
+
+    // Generate primary N×N grid centered at origin
+    let polyhedraCount = 0;
     for (let i = 0; i < matrixSize; i++) {
       for (let j = 0; j < matrixSize; j++) {
-        // Calculate position: centered at origin
         const offset_x = (i - matrixSize / 2 + 0.5) * spacing;
         const offset_y = (j - matrixSize / 2 + 0.5) * spacing;
-        const offset_z = 0; // Z-centered at origin
+        const offset_z = 0;
+        createOctahedron(offset_x, offset_y, offset_z);
+        polyhedraCount++;
+      }
+    }
 
-        // Create octahedron instance at this grid position
-        const octaGroup = new THREE.Group();
-
-        // Build indexed face geometry
-        const positions = [];
-        const indices = [];
-
-        // Add all vertices to positions array (with offset)
-        vertices.forEach(v => {
-          positions.push(v.x + offset_x, v.y + offset_y, v.z + offset_z);
-        });
-
-        // Build face indices (triangles)
-        faces.forEach(faceIndices => {
-          indices.push(faceIndices[0], faceIndices[1], faceIndices[2]);
-        });
-
-        const faceGeometry = new THREE.BufferGeometry();
-        faceGeometry.setAttribute(
-          "position",
-          new THREE.Float32BufferAttribute(positions, 3)
-        );
-        faceGeometry.setIndex(indices);
-        faceGeometry.computeVertexNormals();
-
-        const faceMaterial = new THREE.MeshStandardMaterial({
-          color: color,
-          transparent: true,
-          opacity: opacity,
-          side: THREE.DoubleSide,
-          depthWrite: opacity >= 0.99,
-          flatShading: true,
-        });
-
-        const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);
-        faceMesh.renderOrder = 1;
-        octaGroup.add(faceMesh);
-
-        // Render edges
-        const edgePositions = [];
-        edges.forEach(([vi, vj]) => {
-          const v1 = vertices[vi];
-          const v2 = vertices[vj];
-          edgePositions.push(v1.x + offset_x, v1.y + offset_y, v1.z + offset_z);
-          edgePositions.push(v2.x + offset_x, v2.y + offset_y, v2.z + offset_z);
-        });
-
-        const edgeGeometry = new THREE.BufferGeometry();
-        edgeGeometry.setAttribute(
-          "position",
-          new THREE.Float32BufferAttribute(edgePositions, 3)
-        );
-
-        const edgeMaterial = new THREE.LineBasicMaterial({
-          color: color,
-          linewidth: 1,
-          depthTest: true,
-          depthWrite: true,
-        });
-
-        const edgeLines = new THREE.LineSegments(edgeGeometry, edgeMaterial);
-        edgeLines.renderOrder = 2;
-        octaGroup.add(edgeLines);
-
-        matrixGroup.add(octaGroup);
+    // If colinearEdges mode is enabled, add interstitial octahedra
+    // to fill the gaps and create true space-filling tessellation
+    if (colinearEdges) {
+      // Add interstitial octahedra offset by (halfSize, halfSize, 0)
+      for (let i = 0; i < matrixSize - 1; i++) {
+        for (let j = 0; j < matrixSize - 1; j++) {
+          const offset_x = (i - matrixSize / 2 + 1.0) * spacing;
+          const offset_y = (j - matrixSize / 2 + 1.0) * spacing;
+          const offset_z = 0;
+          createOctahedron(offset_x, offset_y, offset_z);
+          polyhedraCount++;
+        }
       }
     }
 
@@ -724,7 +740,9 @@ export const RTMatrix = {
     }
 
     console.log(
-      `[RTMatrix] Octahedron matrix created: ${matrixSize}×${matrixSize} = ${matrixSize * matrixSize} octahedra, rotate45=${rotate45}`
+      `[RTMatrix] Octahedron matrix created: ${matrixSize}×${matrixSize} primary grid${
+        colinearEdges ? ` + ${(matrixSize - 1) * (matrixSize - 1)} interstitial` : ""
+      } = ${polyhedraCount} total octahedra, rotate45=${rotate45}, colinearEdges=${colinearEdges}`
     );
 
     return matrixGroup;

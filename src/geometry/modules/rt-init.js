@@ -515,6 +515,14 @@ function startARTexplorer(
     octaMatrixRotate45.addEventListener("change", updateGeometry);
   }
 
+  // Octahedral Matrix: Colinear Edges checkbox
+  const octaMatrixColinearEdges = document.getElementById(
+    "octaMatrixColinearEdges"
+  );
+  if (octaMatrixColinearEdges) {
+    octaMatrixColinearEdges.addEventListener("change", updateGeometry);
+  }
+
   // Cuboctahedron Matrix (Vector Equilibrium Array)
   const cuboctaMatrixCheckbox = document.getElementById(
     "showCuboctahedronMatrix"

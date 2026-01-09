@@ -893,6 +893,37 @@ export function initScene(THREE, OrbitControls, RT) {
         }
       }
 
+      // For octahedra with colinearEdges mode, add interstitial vertices
+      if (polyhedronType === "octahedron" && faceCoplanar) {
+        for (let i = 0; i < matrixSize - 1; i++) {
+          for (let j = 0; j < matrixSize - 1; j++) {
+            const offset_x = (i - matrixSize / 2 + 1.0) * spacing;
+            const offset_y = (j - matrixSize / 2 + 1.0) * spacing;
+            const offset_z = 0;
+
+            vertices.forEach(v => {
+              let x = v.x + offset_x;
+              let y = v.y + offset_y;
+              let z = v.z + offset_z;
+
+              // Apply 45° rotation if enabled
+              if (rotate45) {
+                const cos45 = Math.sqrt(0.5);
+                const sin45 = Math.sqrt(0.5);
+                const x_rot = cos45 * x - sin45 * y;
+                const y_rot = sin45 * x + cos45 * y;
+                x = x_rot;
+                y = y_rot;
+              }
+
+              // Use string key for deduplication
+              const key = `${x.toFixed(6)},${y.toFixed(6)},${z.toFixed(6)}`;
+              vertexPositions.add(key);
+            });
+          }
+        }
+      }
+
       // Create nodes at unique positions
       vertexPositions.forEach(key => {
         const [x, y, z] = key.split(",").map(parseFloat);
@@ -1282,6 +1313,8 @@ export function initScene(THREE, OrbitControls, RT) {
       );
       const rotate45 =
         document.getElementById("octaMatrixRotate45")?.checked || false;
+      const colinearEdges =
+        document.getElementById("octaMatrixColinearEdges")?.checked || false;
 
       // Clear existing octa matrix group
       while (octaMatrixGroup.children.length > 0) {
@@ -1295,6 +1328,7 @@ export function initScene(THREE, OrbitControls, RT) {
           matrixSize,
           scale,
           rotate45,
+          colinearEdges,
           opacity,
           0xff6b6b,
           THREE
@@ -1314,7 +1348,8 @@ export function initScene(THREE, OrbitControls, RT) {
             rotate45,
             0xff6b6b,
             nodeSize,
-            "octahedron"
+            "octahedron",
+            colinearEdges
           );
         }
       });
