@@ -872,17 +872,15 @@ function startARTexplorer(
   // PHASE 6 EXTRACTION: animate() function now in rt-rendering.js
   // (Commented code removed - using renderingAPI.animate())
 
-  /**
-   * Handle window resize
-   */
+  // PHASE 6 EXTRACTION: onWindowResize() function now in rt-rendering.js
+  // (Orphaned function - never called, event listener uses rt-rendering.js version)
+  /*
   function onWindowResize() {
     const container = document.getElementById("canvas-container");
     const width = container.clientWidth;
     const height = container.clientHeight;
     const aspect = width / height;
-
     if (isOrthographic && orthographicCamera) {
-      // Update orthographic camera
       const frustumSize = orthographicCamera.top * 2;
       orthographicCamera.left = (frustumSize * aspect) / -2;
       orthographicCamera.right = (frustumSize * aspect) / 2;
@@ -890,13 +888,12 @@ function startARTexplorer(
       orthographicCamera.bottom = frustumSize / -2;
       orthographicCamera.updateProjectionMatrix();
     } else {
-      // Update perspective camera
       camera.aspect = aspect;
       camera.updateProjectionMatrix();
     }
-
     renderer.setSize(width, height);
   }
+  */
 
   // ========================================================================
   // EVENT HANDLERS
