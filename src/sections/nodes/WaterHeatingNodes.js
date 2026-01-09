@@ -9,7 +9,8 @@
  * - j_50: Calculated hot water energy demand
  * - d_51: System type (Heatpump, Gas, Oil, Electric)
  * - d_52: Efficiency %
- * - d_53: Fuel consumption
+ * - d_53: Drain Water Heat Recovery Efficiency (0-70%)
+ * - k_51: Net Electrical Demand (calculated)
  */
 (function () {
   "use strict";
@@ -43,6 +44,7 @@
       { id: "waterHeating.byEngineerKwh", legacyId: "e_50", section: "S07", classification: "C", label: "By Engineer Energy Demand (kWh/yr)", defaultValue: 10000 },
       { id: "waterHeating.systemType", legacyId: "d_51", section: "S07", classification: "C", label: "Water Heating System Type", defaultValue: "Heatpump" },
       { id: "waterHeating.efficiency", legacyId: "d_52", section: "S07", classification: "C", label: "Water Heating Efficiency (%)", defaultValue: 300 },
+      { id: "waterHeating.dwhrEfficiency", legacyId: "d_53", section: "S07", classification: "C", label: "Drain Water Heat Recovery Efficiency (%)", defaultValue: 0 },
     ];
 
     graph.registerInputs(inputs);
@@ -96,25 +98,32 @@
       },
     });
 
-    // Water heating fuel consumption (d_53)
+    // Net electrical demand (k_51) - only for Heatpump/Electric systems
     graph.registerNode({
-      id: "waterHeating.fuelConsumption",
-      legacyId: "d_53",
+      id: "waterHeating.netElectricalDemand",
+      legacyId: "k_51",
       section: "S07",
       classification: "C",
-      dependencies: ["waterHeating.energyDemand", "waterHeating.efficiency", "waterHeating.systemType"],
-      label: "Water Heating Fuel Consumption",
+      dependencies: ["waterHeating.energyDemand", "waterHeating.efficiency", "waterHeating.systemType", "waterHeating.dwhrEfficiency"],
+      label: "Net Electrical Demand (kWh/yr)",
       compute: (inputs) => {
-        const demand = parseFloat(inputs["waterHeating.energyDemand"]) || 0;
-        const efficiency = parseFloat(inputs["waterHeating.efficiency"]) || 95;
         const systemType = inputs["waterHeating.systemType"] || "Electric";
-        const factor = FUEL_FACTORS[systemType]?.factor || 1;
 
-        // Net thermal demand = energy / (efficiency/100)
+        // k_51 is only non-zero for Heatpump or Electric
+        if (systemType !== "Heatpump" && systemType !== "Electric") {
+          return 0;
+        }
+
+        const demand = parseFloat(inputs["waterHeating.energyDemand"]) || 0;
+        const efficiency = parseFloat(inputs["waterHeating.efficiency"]) || 100;
+        const dwhrEfficiency = parseFloat(inputs["waterHeating.dwhrEfficiency"]) || 0;
+
+        // Net thermal demand after efficiency
         const netThermalDemand = efficiency > 0 ? demand / (efficiency / 100) : demand;
 
-        // Convert to fuel units if not electric/heatpump
-        return factor !== 1 ? netThermalDemand / factor : netThermalDemand;
+        // Apply DWHR recovery
+        const energyRecovered = netThermalDemand * (dwhrEfficiency / 100);
+        return netThermalDemand - energyRecovered;
       },
     });
 

@@ -361,13 +361,24 @@
       legacyId: "l_116",
       dependencies: [
         "mechanical.cooling.electricalDemand",
-        "mechanical.cooling.effectiveCop"
+        "mechanical.cooling.effectiveCop",
+        "mechanical.heating.systemType",
+        "mechanical.cooling.systemType"
       ],
       classification: "C",
       section: "S13",
-      label: "Cooling Heat Sink",
+      label: "Cooling Heat Sink (Dedicated)",
       unit: "kWh/yr",
       compute: (inputs) => {
+        const heatingType = inputs["mechanical.heating.systemType"] || "";
+        const coolingType = inputs["mechanical.cooling.systemType"] || "No Cooling";
+
+        // l_116 is only for dedicated cooling, not heatpump cooling
+        // When heating is Heatpump, the sink goes to l_114 instead
+        if (heatingType === "Heatpump" || coolingType !== "Cooling") {
+          return 0;
+        }
+
         const demand = parseNum(inputs["mechanical.cooling.electricalDemand"], 0);
         const cop = parseNum(inputs["mechanical.cooling.effectiveCop"], 1);
 
