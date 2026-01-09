@@ -28,28 +28,137 @@
       </div>
     </div>
 
-    <div id="container">
-      <div id="canvas-container">
-        <div id="info-overlay">
-          <div>
-            <span class="coord-label">A.R.T.</span> - Algebraic Rational
-            Trigonometry Explorer
+    <!-- Info Modal - Shows on initialization -->
+    <div id="info-modal-overlay" class="hidden">
+      <div id="info-modal">
+        <h2>A.R.T. Explorer</h2>
+        <p class="modal-subtitle">Algebraic Rational Trigonometry Geometry Engine</p>
+
+        <div class="modal-content-grid">
+          <!-- Left Column -->
+          <div class="modal-column">
+            <div class="modal-section">
+              <h3>Keyboard Shortcuts</h3>
+              <div class="shortcuts-grid">
+                <div class="shortcut-row">
+                  <span class="shortcut-key">Left-click + drag</span>
+                  <span class="shortcut-desc">Orbit camera</span>
+                </div>
+                <div class="shortcut-row">
+                  <span class="shortcut-key">Right-click + drag</span>
+                  <span class="shortcut-desc">Pan camera</span>
+                </div>
+                <div class="shortcut-row">
+                  <span class="shortcut-key">Scroll wheel</span>
+                  <span class="shortcut-desc">Zoom</span>
+                </div>
+                <div class="shortcut-row">
+                  <span class="shortcut-key">ESC</span>
+                  <span class="shortcut-desc">Deselect</span>
+                </div>
+                <div class="shortcut-row">
+                  <span class="shortcut-key">Delete</span>
+                  <span class="shortcut-desc">Remove selected instance</span>
+                </div>
+                <div class="shortcut-row">
+                  <span class="shortcut-key">Cmd/Ctrl+Z</span>
+                  <span class="shortcut-desc">Undo</span>
+                </div>
+                <div class="shortcut-row">
+                  <span class="shortcut-key">Cmd/Ctrl+Shift+Z</span>
+                  <span class="shortcut-desc">Redo</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-section">
+              <h3>What is A.R.T. Explorer?</h3>
+              <p class="modal-text">
+                A.R.T. Explorer is a unique geometry engine combining
+                <strong>R. Buckminster Fuller's Synergetics</strong> with
+                <strong>N.J. Wildberger's Rational Trigonometry</strong>.
+              </p>
+              <p class="modal-text">
+                Unlike traditional Euclidean systems that rely on
+                transcendental functions (sin, cos, sqrt), A.R.T. uses
+                pure algebraic methods, working in symbolic and quadrance space and 
+                deferring division and expansion to the point of rendering in THREE.js 
+                for exact geometric calculations.
+              </p>
+            </div>
           </div>
-          <div class="info-controls">
-            Orbit: Left-click + drag<br />
-            Pan: Right-click + drag<br />
-            Zoom: Scroll wheel<br />
-            <br />
-            ESC: Deselect<br />
-            Delete: Remove selected instance<br />
-            Cmd/Ctrl+Z: Undo<br />
-            Cmd/Ctrl+Shift+Z: Redo
+
+          <!-- Right Column -->
+          <div class="modal-column">
+            <div class="modal-section">
+              <h3>Key Innovations</h3>
+              <ul class="feature-list">
+                <li>
+                  <strong>Quadray Coordinates:</strong> Tetrahedral coordinate
+                  system (4 basis vectors) instead of Cartesian XYZ
+                </li>
+                <li>
+                  <strong>Rational Trigonometry:</strong> Quadrance (Q = a²)
+                  replaces distance, spread replaces angle
+                </li>
+                <li>
+                  <strong>IVM (Isotropic Vector Matrix):</strong> Space-filling
+                  octahedron-tetrahedron lattice
+                </li>
+                <li>
+                  <strong>Close-Packing:</strong> Vertex spheres calculated
+                  algebraically for perfect tangency
+                </li>
+              </ul>
+            </div>
+
+            <div class="modal-section">
+              <h3>Why This Matters</h3>
+              <p class="modal-text">
+                Traditional geometry engines accumulate floating-point errors.
+                A.R.T. maintains <strong>exact rational relationships</strong>
+                throughout calculations, enabling precision-critical applications
+                in architecture, crystallography, and computational geometry.
+              </p>
+            </div>
+
+            <div class="modal-section">
+              <h3>Credits</h3>
+              <ul class="credits-list">
+                <li>Rudolf Dorenach, Bucky's German Associate and my first Synergetics mentor</li>
+                <li>Kirby Urner, for introducting me to Quadrays</li>
+                <li>Tom Ace, for his work on the basis vector conversion idea</li>
+                <li>Gerald DeJong, for introducing me to Wildberger</li>
+                <li>Dawn Danby and David McConville - for their moral support and enthusiasm</li>
+                <li>Bonnie DeVarco, for her tireless preservation and active engagement with the original work</li>
+                <li>Mark Pavlidis, for teaching me how to navigate Git and the importance of clean code</li>
+                <li>Enzyme APD, for encouraging the pursuit of these ideas against all odds</li>
+                <li>Metatron — because nothing is noticed alone</li>
+              </ul>
+            </div>
           </div>
         </div>
+
+        <button id="info-modal-close" class="modal-close-btn">Get Started</button>
+      </div>
+    </div>
+
+    <div id="container">
+      <div id="canvas-container">
       </div>
       <div id="controls-panel">
-        <h2>A.R.T Explorer</h2>
-        <h5>by Andy Ross Thomson</h5>
+        <div class="panel-header">
+          <div>
+            <h2>A.R.T Explorer</h2>
+            <h5>by Andy Ross Thomson</h5>
+          </div>
+          <button id="info-icon-btn" class="info-icon-btn" title="About A.R.T. Explorer">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 16V12M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
         <br />
         <!-- ========================================
              SECTION 1: FILE
