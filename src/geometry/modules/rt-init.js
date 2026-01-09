@@ -1,9 +1,9 @@
 // MODULE IMPORTS
 // ========================================================================
 import { Polyhedra } from "./rt-polyhedra.js";
-import { PerformanceClock } from "./rt-rendering.js"; // Import from rt-rendering instead of performance-clock
+// PerformanceClock removed - now used internally by rt-rendering.js
 import { RTPapercut } from "./rt-papercut.js";
-import { RT } from "./rt-math.js"; // For RT.Phi in edge quadrance calculations
+// RT removed - now used internally by rt-rendering.js (passed to createRenderingAPI)
 import { initQuadranceDemo } from "../demos/rt-quadrance-demo.js";
 import { initCrossDemo } from "../demos/rt-cross-demo.js";
 import { initWeierstrassDemo } from "../demos/rt-weierstrass-demo.js";
@@ -130,10 +130,10 @@ function startARTexplorer(
   // ========================================================================
   // THREE.JS SCENE SETUP
   // ========================================================================
-  // PHASE 6 EXTRACTION: Assign updateGeometry/updateGeometryStats EARLY so event listeners can reference them
-  // These functions must be available BEFORE event listeners are registered (line ~2271)
+  // PHASE 6 EXTRACTION: Assign updateGeometry EARLY so event listeners can reference it
+  // This function must be available BEFORE event listeners are registered (line ~2271)
   let updateGeometry = renderingAPI.updateGeometry;
-  let updateGeometryStats = renderingAPI.updateGeometryStats;
+  // updateGeometryStats removed - called internally by renderingAPI.updateGeometry()
 
   // PHASE 6 EXTRACTION: Declare variables that will be assigned AFTER initScene() is called
   // These objects don't exist yet - they're created inside renderingAPI.initScene()
@@ -141,10 +141,13 @@ function startARTexplorer(
   let cubeGroup, tetrahedronGroup, dualTetrahedronGroup, octahedronGroup;
   let icosahedronGroup, dodecahedronGroup, dualIcosahedronGroup;
   let cuboctahedronGroup, rhombicDodecahedronGroup;
-  let geodesicIcosahedronGroup, geodesicTetrahedronGroup, geodesicOctahedronGroup;
+  let geodesicIcosahedronGroup,
+    geodesicTetrahedronGroup,
+    geodesicOctahedronGroup;
   let cubeMatrixGroup, tetMatrixGroup, octaMatrixGroup;
   let cuboctaMatrixGroup, rhombicDodecMatrixGroup;
-  let cartesianGrid, cartesianBasis, quadrayBasis, ivmPlanes;
+  let cartesianGrid, ivmPlanes;
+  // cartesianBasis, quadrayBasis removed - managed internally by renderingAPI
 
   // PHASE 6 EXTRACTION: initScene() function now in rt-rendering.js
   // (Commented code removed - using renderingAPI.initScene())
@@ -160,31 +163,11 @@ function startARTexplorer(
   // const nodeGeometryCache = new Map(); // ← REMOVED: Now in rt-rendering.js
 
   // PHASE 6 EXTRACTION: Helper functions now in rt-rendering.js
-  // Removed: getPolyhedronEdgeQuadrance(), getClosePackedRadius(), getCachedNodeGeometry(), renderPolyhedron(), addMatrixNodes()
+  // Removed: getPolyhedronEdgeQuadrance(), getClosePackedRadius(), getCachedNodeGeometry(),
+  //          renderPolyhedron(), addMatrixNodes(), countGroupTriangles()
+  // All rendering logic now managed by renderingAPI
 
-  // PHASE 6 EXTRACTION: updateGeometry() function now in rt-rendering.js
-
-  /**
-   * Count triangles in a THREE.js group
-   */
-  function countGroupTriangles(group) {
-    let triangles = 0;
-    if (group && group.visible) {
-      group.traverse(child => {
-        if (child.geometry) {
-          if (child.geometry.index) {
-            triangles += child.geometry.index.count / 3;
-          } else if (child.geometry.attributes.position) {
-            triangles += child.geometry.attributes.position.count / 3;
-          }
-        }
-      });
-    }
-    return Math.round(triangles);
-  }
-
-  // PHASE 6 EXTRACTION: updateGeometryStats() function commented out - using renderingAPI.updateGeometryStats()
-  // PHASE 6 EXTRACTION: updateGeometry() function now in rt-rendering.js
+  // PHASE 6 EXTRACTION: updateGeometry() and updateGeometryStats() now in rt-rendering.js
   // (Commented code removed - using renderingAPI.updateGeometry())
 
   // ========================================================================
@@ -667,10 +650,20 @@ function startARTexplorer(
 
       // Collect current visibility state
       const visibilityState = {
-        gridXY: document.querySelector('[data-plane="XY"]')?.classList.contains("active") ?? false,
-        gridXZ: document.querySelector('[data-plane="XZ"]')?.classList.contains("active") ?? false,
-        gridYZ: document.querySelector('[data-plane="YZ"]')?.classList.contains("active") ?? false,
-        cartesianBasis: document.getElementById("showCartesianBasis")?.checked ?? false,
+        gridXY:
+          document
+            .querySelector('[data-plane="XY"]')
+            ?.classList.contains("active") ?? false,
+        gridXZ:
+          document
+            .querySelector('[data-plane="XZ"]')
+            ?.classList.contains("active") ?? false,
+        gridYZ:
+          document
+            .querySelector('[data-plane="YZ"]')
+            ?.classList.contains("active") ?? false,
+        cartesianBasis:
+          document.getElementById("showCartesianBasis")?.checked ?? false,
       };
 
       // Rebuild grids using rendering API

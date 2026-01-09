@@ -387,11 +387,10 @@ export function initScene(THREE, OrbitControls, RT) {
       window.gridIntervalLogged = true;
     }
 
-    // Base triangle vertices:
-    // v0 = origin (0,0,0)
-    // v1 = basis1 * edgeLength
-    // v2 = basis2 * edgeLength
-    const v0 = new THREE.Vector3(0, 0, 0);
+    // Base triangle edge vectors:
+    // v1 = basis1 * edgeLength (from origin along basis1)
+    // v2 = basis2 * edgeLength (from origin along basis2)
+    // Origin (0,0,0) is implicit in tessellation calculation
     const v1 = basis1.clone().multiplyScalar(edgeLength);
     const v2 = basis2.clone().multiplyScalar(edgeLength);
 
