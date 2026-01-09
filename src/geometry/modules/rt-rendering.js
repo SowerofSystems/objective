@@ -1954,6 +1954,199 @@ export function initScene(THREE, OrbitControls, RT) {
     };
   }
 
+  /**
+   * Rebuild Quadray grids with new tessellation value
+   * @param {number} tessellations - Number of triangle copies in each direction
+   * @param {Object} visibilityState - Object mapping plane names to visibility state
+   */
+  function rebuildQuadrayGrids(tessellations, visibilityState = {}) {
+    // Remove existing grids
+    if (ivmPlanes) {
+      scene.remove(ivmPlanes);
+    }
+
+    // Recreate with new tessellation (updateIVMPlanes uses stored tessellation value)
+    ivmPlanes = new THREE.Group();
+
+    const halfSize = 1.0;
+
+    // WX plane
+    window.ivmWX = createIVMGrid(
+      Quadray.basisVectors[0],
+      Quadray.basisVectors[1],
+      halfSize,
+      tessellations,
+      0xffaa00
+    );
+    window.ivmWX.visible = visibilityState.ivmWX ?? true;
+    window.ivmWX.name = "CentralAngle_WX";
+    ivmPlanes.add(window.ivmWX);
+
+    // WY plane
+    window.ivmWY = createIVMGrid(
+      Quadray.basisVectors[0],
+      Quadray.basisVectors[2],
+      halfSize,
+      tessellations,
+      0xaaaaff
+    );
+    window.ivmWY.visible = visibilityState.ivmWY ?? true;
+    window.ivmWY.name = "CentralAngle_WY";
+    ivmPlanes.add(window.ivmWY);
+
+    // WZ plane
+    window.ivmWZ = createIVMGrid(
+      Quadray.basisVectors[0],
+      Quadray.basisVectors[3],
+      halfSize,
+      tessellations,
+      0xaaff00
+    );
+    window.ivmWZ.visible = visibilityState.ivmWZ ?? true;
+    window.ivmWZ.name = "CentralAngle_WZ";
+    ivmPlanes.add(window.ivmWZ);
+
+    // XY plane
+    window.ivmXY = createIVMGrid(
+      Quadray.basisVectors[1],
+      Quadray.basisVectors[2],
+      halfSize,
+      tessellations,
+      0xff00ff
+    );
+    window.ivmXY.visible = visibilityState.ivmXY ?? true;
+    window.ivmXY.name = "CentralAngle_XY";
+    ivmPlanes.add(window.ivmXY);
+
+    // XZ plane
+    window.ivmXZ = createIVMGrid(
+      Quadray.basisVectors[1],
+      Quadray.basisVectors[3],
+      halfSize,
+      tessellations,
+      0xffff00
+    );
+    window.ivmXZ.visible = visibilityState.ivmXZ ?? true;
+    window.ivmXZ.name = "CentralAngle_XZ";
+    ivmPlanes.add(window.ivmXZ);
+
+    // YZ plane
+    window.ivmYZ = createIVMGrid(
+      Quadray.basisVectors[2],
+      Quadray.basisVectors[3],
+      halfSize,
+      tessellations,
+      0x00ffff
+    );
+    window.ivmYZ.visible = visibilityState.ivmYZ ?? true;
+    window.ivmYZ.name = "CentralAngle_YZ";
+    ivmPlanes.add(window.ivmYZ);
+
+    scene.add(ivmPlanes);
+
+    console.log(
+      `✅ Rebuilt Central Angle grids with tessellation=${tessellations}`
+    );
+  }
+
+  /**
+   * Rebuild Cartesian grids with new tessellation value
+   * @param {number} divisions - Number of grid divisions
+   * @param {Object} visibilityState - Object with grid and basis visibility states
+   */
+  function rebuildCartesianGrids(divisions, visibilityState = {}) {
+    // Remove existing grids and basis
+    if (cartesianGrid) {
+      scene.remove(cartesianGrid);
+    }
+    if (cartesianBasis) {
+      scene.remove(cartesianBasis);
+    }
+
+    // Recreate grid
+    cartesianGrid = new THREE.Group();
+    const gridSize = divisions;
+    const gridColor = 0x444444;
+
+    // XY plane (Z = 0) - HORIZONTAL ground plane in Z-up
+    window.gridXY = new THREE.GridHelper(
+      gridSize,
+      divisions,
+      gridColor,
+      gridColor
+    );
+    window.gridXY.rotation.x = Math.PI / 2;
+    window.gridXY.visible = visibilityState.gridXY ?? false;
+    cartesianGrid.add(window.gridXY);
+
+    // XZ plane (Y = 0) - VERTICAL wall in Z-up (front/back)
+    window.gridXZ = new THREE.GridHelper(
+      gridSize,
+      divisions,
+      gridColor,
+      gridColor
+    );
+    window.gridXZ.visible = visibilityState.gridXZ ?? false;
+    cartesianGrid.add(window.gridXZ);
+
+    // YZ plane (X = 0) - VERTICAL wall in Z-up (left/right)
+    window.gridYZ = new THREE.GridHelper(
+      gridSize,
+      divisions,
+      gridColor,
+      gridColor
+    );
+    window.gridYZ.rotation.z = Math.PI / 2;
+    window.gridYZ.visible = visibilityState.gridYZ ?? false;
+    cartesianGrid.add(window.gridYZ);
+
+    scene.add(cartesianGrid);
+
+    // Recreate basis vectors
+    cartesianBasis = new THREE.Group();
+    const totalBasisLength = 2.0;
+    const headLength = 0.3;
+    const arrowLength = totalBasisLength;
+
+    // X-axis (Red)
+    const xAxis = new THREE.ArrowHelper(
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(0, 0, 0),
+      arrowLength,
+      0xff0000,
+      headLength,
+      0.2
+    );
+    cartesianBasis.add(xAxis);
+
+    // Y-axis (Green)
+    const yAxis = new THREE.ArrowHelper(
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, 0, 0),
+      arrowLength,
+      0x00ff00,
+      headLength,
+      0.2
+    );
+    cartesianBasis.add(yAxis);
+
+    // Z-axis (Blue)
+    const zAxis = new THREE.ArrowHelper(
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(0, 0, 0),
+      arrowLength,
+      0x0000ff,
+      headLength,
+      0.2
+    );
+    cartesianBasis.add(zAxis);
+
+    cartesianBasis.visible = visibilityState.cartesianBasis ?? false;
+    scene.add(cartesianBasis);
+
+    console.log(`✅ Rebuilt Cartesian grids with divisions=${divisions}`);
+  }
+
   // Return public API from initScene() factory
   return {
     // Core scene initialization
@@ -1984,12 +2177,9 @@ export function initScene(THREE, OrbitControls, RT) {
     getControls: () => controls,
     getAllFormGroups, // For selection system
 
-    // Grid and basis functions (if needed by rt-init.js)
-    // These may not need to be exposed if only called from initScene()
-    // Uncomment if rt-init.js needs direct access:
-    // createCartesianGrid,
-    // createQuadrayBasis,
-    // createIVMPlanes,
+    // Grid rebuild methods (for tessellation slider controls)
+    rebuildQuadrayGrids,
+    rebuildCartesianGrids,
   };
 
   // ========================================================================

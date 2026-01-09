@@ -149,10 +149,9 @@ function startARTexplorer(
   // PHASE 6 EXTRACTION: initScene() function now in rt-rendering.js
   // (Commented code removed - using renderingAPI.initScene())
 
-  /**
-   * Create Cartesian grid (XYZ) - grey hairlines
-   * Z-up coordinate system: Z is vertical, XY is horizontal ground plane
-   */
+  // PHASE 6 EXTRACTION: Grid creation functions now in rt-rendering.js
+  // (Orphaned functions - tessellation sliders now call renderingAPI.rebuildQuadrayGrids/rebuildCartesianGrids)
+  /*
   function createCartesianGrid() {
     cartesianGrid = new THREE.Group();
 
@@ -255,10 +254,6 @@ function startARTexplorer(
     scene.add(cartesianBasis);
   }
 
-  /**
-   * Create Quadray basis vectors (WXYZ)
-   * 4 vectors pointing to tetrahedral vertices
-   */
   function createQuadrayBasis() {
     quadrayBasis = new THREE.Group();
 
@@ -523,6 +518,8 @@ function startARTexplorer(
 
     scene.add(ivmPlanes);
   }
+  // END PHASE 6 EXTRACTION: All grid creation functions (~370 lines)
+  */
 
   // ========================================================================
   // NODE GEOMETRY CACHE (prevent repeated generation)
@@ -1227,18 +1224,15 @@ function startARTexplorer(
     const tessValue = parseInt(e.target.value);
     document.getElementById("quadrayTessValue").textContent = tessValue;
 
-    // Rebuild Central Angle Grids with new tessellation
-    scene.remove(ivmPlanes);
-    createIVMPlanes();
-
-    // Restore visibility state from active toggles
+    // Collect current visibility state
+    const visibilityState = {};
     document.querySelectorAll('[data-plane^="ivm"]').forEach(toggle => {
       const planeName = toggle.dataset.plane;
-      const isActive = toggle.classList.contains("active");
-      if (window[planeName]) {
-        window[planeName].visible = isActive;
-      }
+      visibilityState[planeName] = toggle.classList.contains("active");
     });
+
+    // Rebuild grids using rendering API
+    renderingAPI.rebuildQuadrayGrids(tessValue, visibilityState);
   });
 
   // Cartesian Grid Tessellation Slider
@@ -1248,40 +1242,16 @@ function startARTexplorer(
       const tessValue = parseInt(e.target.value);
       document.getElementById("cartesianTessValue").textContent = tessValue;
 
-      // Save current cartesianBasis visibility state from checkbox
-      const basisCheckbox = document.getElementById("showCartesianBasis");
-      const basisWasVisible = basisCheckbox ? basisCheckbox.checked : false;
+      // Collect current visibility state
+      const visibilityState = {
+        gridXY: document.querySelector('[data-plane="XY"]')?.classList.contains("active") ?? false,
+        gridXZ: document.querySelector('[data-plane="XZ"]')?.classList.contains("active") ?? false,
+        gridYZ: document.querySelector('[data-plane="YZ"]')?.classList.contains("active") ?? false,
+        cartesianBasis: document.getElementById("showCartesianBasis")?.checked ?? false,
+      };
 
-      // Rebuild Cartesian Grids with new tessellation
-      // IMPORTANT: Remove BOTH cartesianGrid AND cartesianBasis to prevent duplicates
-      scene.remove(cartesianGrid);
-      scene.remove(cartesianBasis);
-      createCartesianGrid();
-
-      // Restore visibility state from active toggles
-      if (window.gridXY) {
-        const xyToggle = document.querySelector('[data-plane="XY"]');
-        window.gridXY.visible = xyToggle
-          ? xyToggle.classList.contains("active")
-          : false;
-      }
-      if (window.gridXZ) {
-        const xzToggle = document.querySelector('[data-plane="XZ"]');
-        window.gridXZ.visible = xzToggle
-          ? xzToggle.classList.contains("active")
-          : false;
-      }
-      if (window.gridYZ) {
-        const yzToggle = document.querySelector('[data-plane="YZ"]');
-        window.gridYZ.visible = yzToggle
-          ? yzToggle.classList.contains("active")
-          : false;
-      }
-
-      // Restore cartesianBasis visibility from checkbox state
-      if (cartesianBasis) {
-        cartesianBasis.visible = basisWasVisible;
-      }
+      // Rebuild grids using rendering API
+      renderingAPI.rebuildCartesianGrids(tessValue, visibilityState);
     });
 
   // Reset camera to default axo view
