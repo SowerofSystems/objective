@@ -487,15 +487,15 @@ export const RTPapercut = {
       // Skip non-mesh objects
       if (object.type !== "Mesh" || !object.geometry) return;
 
-      // Skip invisible/hidden meshes (check object, parent, and grandparent visibility)
+      // Skip invisible/hidden meshes - traverse FULL ancestor chain
+      // This is necessary because matrix polyhedra can be nested 4+ levels deep:
+      // scene → matrixGroup (visible=false) → RTMatrix group → polyhedron group → Mesh
       if (!object.visible) return;
-      if (object.parent && !object.parent.visible) return;
-      if (
-        object.parent &&
-        object.parent.parent &&
-        !object.parent.parent.visible
-      )
-        return;
+      let ancestor = object.parent;
+      while (ancestor) {
+        if (!ancestor.visible) return;
+        ancestor = ancestor.parent;
+      }
 
       // Skip grid-related meshes
       if (

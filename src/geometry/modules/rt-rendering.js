@@ -771,7 +771,8 @@ export function initScene(THREE, OrbitControls, RT) {
     rotate45,
     color,
     nodeSize,
-    polyhedronType = "cube"
+    polyhedronType = "cube",
+    faceCoplanar = false
   ) {
     // Get node geometry settings
     // useRTNodeGeometry is read from module-level variable set by button toggles
@@ -796,12 +797,8 @@ export function initScene(THREE, OrbitControls, RT) {
     const vertexPositions = new Set();
 
     // Calculate spacing based on polyhedron type
-    // - Cube: edge-to-edge contact (spacing = 2 * halfSize)
-    // - Tet: inscribes in cube (vertices at cube vertices, spacing = 2 * halfSize)
-    // - Octa: centers in cube (vertices at cube face centers, spacing = 2 * halfSize)
-    // - Cuboctahedron: scaled by √2, edge length = (halfSize * √2) * √2 = 2 * halfSize
-    // - Rhombic Dodecahedron: space-filling tiling (spacing = 2 * halfSize, same as cube)
-    let spacing = scale * 2; // All matrices now use 2 * halfSize spacing
+    // - All matrices use 2 * halfSize spacing (cube-compatible)
+    const spacing = scale * 2;
 
     // Generate polyhedron vertices at each grid position
     import("./rt-polyhedra.js").then(PolyModule => {
@@ -862,6 +859,68 @@ export function initScene(THREE, OrbitControls, RT) {
             const key = `${x.toFixed(6)},${y.toFixed(6)},${z.toFixed(6)}`;
             vertexPositions.add(key);
           });
+        }
+      }
+
+      // For rhombic dodecahedra with faceCoplanar mode, add interstitial vertices
+      if (polyhedronType === "rhombicDodecahedron" && faceCoplanar) {
+        for (let i = 0; i < matrixSize - 1; i++) {
+          for (let j = 0; j < matrixSize - 1; j++) {
+            const offset_x = (i - matrixSize / 2 + 1.0) * spacing;
+            const offset_y = (j - matrixSize / 2 + 1.0) * spacing;
+            const offset_z = 0;
+
+            vertices.forEach(v => {
+              let x = v.x + offset_x;
+              let y = v.y + offset_y;
+              let z = v.z + offset_z;
+
+              // Apply 45° rotation if enabled
+              if (rotate45) {
+                const cos45 = Math.sqrt(0.5);
+                const sin45 = Math.sqrt(0.5);
+                const x_rot = cos45 * x - sin45 * y;
+                const y_rot = sin45 * x + cos45 * y;
+                x = x_rot;
+                y = y_rot;
+              }
+
+              // Use string key for deduplication
+              const key = `${x.toFixed(6)},${y.toFixed(6)},${z.toFixed(6)}`;
+              vertexPositions.add(key);
+            });
+          }
+        }
+      }
+
+      // For octahedra with colinearEdges mode, add interstitial vertices
+      if (polyhedronType === "octahedron" && faceCoplanar) {
+        for (let i = 0; i < matrixSize - 1; i++) {
+          for (let j = 0; j < matrixSize - 1; j++) {
+            const offset_x = (i - matrixSize / 2 + 1.0) * spacing;
+            const offset_y = (j - matrixSize / 2 + 1.0) * spacing;
+            const offset_z = 0;
+
+            vertices.forEach(v => {
+              let x = v.x + offset_x;
+              let y = v.y + offset_y;
+              let z = v.z + offset_z;
+
+              // Apply 45° rotation if enabled
+              if (rotate45) {
+                const cos45 = Math.sqrt(0.5);
+                const sin45 = Math.sqrt(0.5);
+                const x_rot = cos45 * x - sin45 * y;
+                const y_rot = sin45 * x + cos45 * y;
+                x = x_rot;
+                y = y_rot;
+              }
+
+              // Use string key for deduplication
+              const key = `${x.toFixed(6)},${y.toFixed(6)},${z.toFixed(6)}`;
+              vertexPositions.add(key);
+            });
+          }
         }
       }
 
@@ -1254,6 +1313,8 @@ export function initScene(THREE, OrbitControls, RT) {
       );
       const rotate45 =
         document.getElementById("octaMatrixRotate45")?.checked || false;
+      const colinearEdges =
+        document.getElementById("octaMatrixColinearEdges")?.checked || false;
 
       // Clear existing octa matrix group
       while (octaMatrixGroup.children.length > 0) {
@@ -1267,6 +1328,7 @@ export function initScene(THREE, OrbitControls, RT) {
           matrixSize,
           scale,
           rotate45,
+          colinearEdges,
           opacity,
           0xff6b6b,
           THREE
@@ -1286,7 +1348,8 @@ export function initScene(THREE, OrbitControls, RT) {
             rotate45,
             0xff6b6b,
             nodeSize,
-            "octahedron"
+            "octahedron",
+            colinearEdges
           );
         }
       });
@@ -1427,6 +1490,8 @@ export function initScene(THREE, OrbitControls, RT) {
       );
       const rotate45 =
         document.getElementById("rhombicDodecMatrixRotate45")?.checked || false;
+      const faceCoplanar =
+        document.getElementById("rhombicDodecMatrixFaceCoplanar")?.checked || false;
 
       // Clear existing rhombic dodec matrix group
       while (rhombicDodecMatrixGroup.children.length > 0) {
@@ -1440,6 +1505,7 @@ export function initScene(THREE, OrbitControls, RT) {
           matrixSize,
           scale,
           rotate45,
+          faceCoplanar,
           opacity,
           0xff8800, // Orange (Rhombic Dodecahedron color)
           THREE
@@ -1459,7 +1525,8 @@ export function initScene(THREE, OrbitControls, RT) {
             rotate45,
             0xff8800,
             nodeSize,
-            "rhombicDodecahedron"
+            "rhombicDodecahedron",
+            faceCoplanar
           );
         }
       });
