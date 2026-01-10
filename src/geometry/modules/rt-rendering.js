@@ -1077,6 +1077,15 @@ export function initScene(THREE, OrbitControls, RT) {
       const { geometry: nodeGeometry, triangles: trianglesPerNode } =
         getCachedNodeGeometry(useRTNodeGeometry, nodeSize, polyType, scale);
 
+      // Calculate node radius for userData (same logic as getCachedNodeGeometry)
+      let nodeRadius;
+      if (nodeSize === "packed") {
+        nodeRadius = getClosePackedRadius(polyType, scale);
+      } else {
+        const nodeSizes = { sm: 0.02, md: 0.04, lg: 0.08 };
+        nodeRadius = nodeSizes[nodeSize] || 0.04;
+      }
+
       // Get flatShading preference from checkbox
       const useFlatShading =
         document.getElementById("nodeFlatShading")?.checked || false;
@@ -1097,7 +1106,7 @@ export function initScene(THREE, OrbitControls, RT) {
         // Mark as vertex node for Papercut section cut detection
         node.userData.isVertexNode = true;
         node.userData.nodeType = "sphere"; // "sphere" (current) vs "polyhedron" (future)
-        node.userData.nodeRadius = radius;
+        node.userData.nodeRadius = nodeRadius;
         node.userData.nodeGeometry = useRTNodeGeometry ? "rt" : "classical";
 
         group.add(node);
