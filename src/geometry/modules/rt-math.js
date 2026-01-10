@@ -218,7 +218,7 @@ export const RT = {
 
   /**
    * Golden Ratio (φ) - Symbolic operations to defer √5 expansion
-   * φ = (1 + √5)/2 ≈ 1.618033988749895
+   * φ = (1 + √5)/2 ≈ 1.618033988749895.....mantissa continues infinitely
    *
    * Key identities:
    * - φ² = φ + 1

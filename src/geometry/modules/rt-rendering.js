@@ -786,6 +786,15 @@ export function initScene(THREE, OrbitControls, RT) {
     // Update PerformanceClock with node triangle count (for matrix nodes)
     PerformanceClock.timings.lastNodeTriangles = Math.round(trianglesPerNode);
 
+    // Calculate node radius for userData (same logic as getCachedNodeGeometry)
+    let nodeRadius;
+    if (nodeSize === "packed") {
+      nodeRadius = getClosePackedRadius(polyhedronType, scale);
+    } else {
+      const nodeSizes = { sm: 0.02, md: 0.04, lg: 0.08 };
+      nodeRadius = nodeSizes[nodeSize] || 0.04;
+    }
+
     const nodeMaterial = new THREE.MeshStandardMaterial({
       color: color,
       emissive: color,
@@ -930,6 +939,13 @@ export function initScene(THREE, OrbitControls, RT) {
         const node = new THREE.Mesh(nodeGeometry, nodeMaterial.clone());
         node.position.set(x, y, z);
         node.renderOrder = 3;
+
+        // Mark as vertex node for Papercut section cut detection
+        node.userData.isVertexNode = true;
+        node.userData.nodeType = "sphere"; // "sphere" (current) vs "polyhedron" (future)
+        node.userData.nodeRadius = nodeRadius;
+        node.userData.nodeGeometry = useRTNodeGeometry ? "rt" : "classical";
+
         matrixGroup.add(node);
       });
 
@@ -1077,6 +1093,13 @@ export function initScene(THREE, OrbitControls, RT) {
         const node = new THREE.Mesh(nodeGeometry, nodeMaterial.clone());
         node.position.copy(vertex);
         node.renderOrder = 3; // Render nodes on top
+
+        // Mark as vertex node for Papercut section cut detection
+        node.userData.isVertexNode = true;
+        node.userData.nodeType = "sphere"; // "sphere" (current) vs "polyhedron" (future)
+        node.userData.nodeRadius = radius;
+        node.userData.nodeGeometry = useRTNodeGeometry ? "rt" : "classical";
+
         group.add(node);
       });
 

@@ -2786,7 +2786,411 @@ Once both matrices are implemented, consider:
 
 ---
 
-**Document Version:** 1.2
-**Last Updated:** 2026-01-07
-**Status:** Phase 1.5c Complete | Phase 1.6a/b Planned (Cuboctahedron & Rhombic Dodecahedron matrices)
-**Completion Date:** 2026-01-06 (Phase 1.5c)
+## 9. Papercut Node Section Cuts
+
+### 9.1 Overview
+
+**Feature Name:** Papercut Node Section Cuts
+**Status:** 🔄 PLANNED
+**Priority:** Medium-High
+**Branch:** Papercut-Nodes
+
+Currently, the Papercut module (`rt-papercut.js`) generates section cut lines for polyhedra faces but explicitly **excludes** all node geometries. This is problematic because:
+
+1. **Packed Nodes** demonstrate space-filling properties (vertex spheres at close-packing radius)
+2. **Matrix Nodes** show IVM vertex positions in matrix arrays
+3. **Single Polyhedra Nodes** highlight vertex positions for educational clarity
+
+When the cutplane intersects visible nodes, users expect to see section cut circles/ellipses representing the sphere intersections.
+
+### 9.2 Current Implementation (Problem)
+
+In `rt-papercut.js` line 560-566, spheres are explicitly skipped:
+
+```javascript
+// Skip sphere geometries (gumball/control handles, scale mode spheres)
+if (
+  object.geometry.type === "SphereGeometry" ||
+  (object.geometry.parameters && object.geometry.parameters.radius)
+) {
+  return;
+}
+```
+
+This was originally added to exclude UI control handles (gumball, scale mode spheres), but it also excludes:
+- **Classical nodes:** `THREE.SphereGeometry(radius, 16, 16)`
+- **RT nodes:** `THREE.BufferGeometry` (geodesic icosahedron) - NOT currently excluded, but produces poor section cuts
+
+### 9.3 Node Types and Geometry
+
+**Classical Nodes (useRT = false):**
+- Geometry: `THREE.SphereGeometry(radius, 16, 16)`
+- Triangles: 512 per node
+- Section cut: Should produce smooth circular intersection
+
+**RT Nodes (useRT = true):**
+- Geometry: `THREE.BufferGeometry` from `RTPolyhedra.geodesicIcosahedron(radius, 0, "out")`
+- Triangles: 20 per node (frequency-0 icosahedron)
+- Section cut: Produces polygonal intersection (icosahedral cross-section)
+
+**Node Sizes:**
+- `sm`: radius = 0.02
+- `md`: radius = 0.04
+- `lg`: radius = 0.08
+- `packed`: radius = `getClosePackedRadius(polyhedronType, scale)` (calculated from edge quadrance)
+
+### 9.4 Requirements
+
+**Functional Requirements:**
+1. Add "Section Nodes" checkbox to Papercut UI section (default: unchecked)
+2. When checkbox enabled AND nodes visible (`nodeSize !== "off"`), generate section cut lines for nodes
+3. Support both classical SphereGeometry and RT BufferGeometry nodes (spherical nodes)
+4. Maintain exclusion of UI controls (gumball handles, scale mode spheres)
+5. Work with single polyhedra nodes AND matrix nodes
+6. Respect visibility hierarchy (hidden matrix = hidden matrix nodes = no section cuts)
+7. **Future-proof:** Stub architecture for polyhedra-as-nodes (fall back to mesh intersection)
+
+**Visual Requirements:**
+1. Node section cuts should use the same line weight as polyhedra section cuts
+2. Node section cuts should use the same color scheme (red normal, black in print mode)
+3. Circles should be smooth (not polygonal) regardless of underlying geometry
+
+**UI Checkbox:**
+```html
+<!-- Add to papercut-section in index.html -->
+<div class="control-item">
+  <label class="checkbox-label">
+    <input type="checkbox" id="sectionNodes" />
+    Section Nodes
+  </label>
+</div>
+```
+
+**State Management:**
+```javascript
+// In RTPapercut.state
+state: {
+  printModeEnabled: false,
+  cutplaneEnabled: false,
+  cutplaneValue: 0,
+  cutplaneAxis: "z",
+  cutplaneNormal: null,
+  invertCutPlane: false,
+  lineWeightEnabled: true,
+  lineWeightMin: 0.5,
+  lineWeightMax: 3.0,
+  currentView: "top",
+  sectionNodesEnabled: false, // NEW: Section nodes checkbox state
+},
+```
+
+**Rationale for Opt-In:**
+- Node section cuts add visual complexity (potentially hundreds of circles in matrices)
+- Users may want clean polyhedra sections without node clutter
+- Explicit control allows flexibility for different use cases (pedagogical vs. analytical)
+- Default OFF maintains current behavior (no breaking changes)
+
+### 9.5 Implementation Approach
+
+**Option A: Analytical Circle Generation (Recommended)**
+
+For sphere-plane intersections, compute the analytical circle rather than using face-edge intersection:
+
+```javascript
+/**
+ * Generate circular intersection for sphere-plane cut
+ * @param {THREE.Vector3} sphereCenter - World position of sphere center
+ * @param {number} sphereRadius - Sphere radius
+ * @param {THREE.Plane} plane - Cutting plane
+ * @param {number} segments - Circle resolution (default: 32)
+ * @returns {Array<THREE.Vector3>|null} Array of points forming circle, or null if no intersection
+ */
+function spherePlaneIntersection(sphereCenter, sphereRadius, plane, segments = 32) {
+  // Distance from sphere center to plane
+  const distanceToPlane = plane.distanceToPoint(sphereCenter);
+
+  // No intersection if sphere doesn't reach plane
+  if (Math.abs(distanceToPlane) > sphereRadius) {
+    return null;
+  }
+
+  // Calculate intersection circle radius using Pythagorean theorem
+  // circleRadius² + distanceToPlane² = sphereRadius²
+  const circleRadius = Math.sqrt(sphereRadius * sphereRadius - distanceToPlane * distanceToPlane);
+
+  // Find circle center (closest point on plane to sphere center)
+  const circleCenter = new THREE.Vector3();
+  plane.projectPoint(sphereCenter, circleCenter);
+
+  // Generate circle points in plane coordinate system
+  // Need two perpendicular vectors in the plane
+  const normal = plane.normal.clone();
+
+  // Find first perpendicular vector (cross with any non-parallel vector)
+  const up = Math.abs(normal.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+  const tangent1 = new THREE.Vector3().crossVectors(normal, up).normalize();
+  const tangent2 = new THREE.Vector3().crossVectors(normal, tangent1).normalize();
+
+  // Generate circle points
+  const points = [];
+  for (let i = 0; i <= segments; i++) {
+    const angle = (i / segments) * Math.PI * 2;
+    const x = Math.cos(angle) * circleRadius;
+    const y = Math.sin(angle) * circleRadius;
+
+    const point = circleCenter.clone()
+      .add(tangent1.clone().multiplyScalar(x))
+      .add(tangent2.clone().multiplyScalar(y));
+
+    points.push(point);
+  }
+
+  return points;
+}
+```
+
+**Advantages:**
+- Perfect circles regardless of underlying geometry
+- Works for both classical and RT nodes
+- Computationally efficient (O(segments) vs O(triangles))
+- Consistent visual quality
+
+**Option B: Improved Mesh Intersection**
+
+Keep the existing face-edge intersection approach but:
+1. Increase sphere resolution for section cut computation
+2. Add post-processing to smooth polygonal intersections
+
+**Disadvantages:**
+- More complex implementation
+- Higher computational cost
+- Still produces artifacts for low-poly RT nodes
+
+### 9.6 Node Identification Strategy
+
+**Problem:** Distinguish vertex nodes from UI controls (both may use SphereGeometry)
+
+**Solution:** Use `userData` metadata with type discrimination:
+
+```javascript
+// In rt-rendering.js when creating nodes:
+const node = new THREE.Mesh(nodeGeometry, nodeMaterial.clone());
+node.userData.isVertexNode = true;      // Mark as vertex node
+node.userData.nodeType = "sphere";      // "sphere" for current nodes, "polyhedron" for future
+node.userData.nodeRadius = radius;      // Store radius for analytical section cut
+node.userData.nodeGeometry = "classical"; // "classical" or "rt" (for debugging/stats)
+node.position.copy(vertex);
+```
+
+Then in `rt-papercut.js` with future-proofing:
+
+```javascript
+// Check if "Section Nodes" checkbox is enabled
+if (!RTPapercut.state.sectionNodesEnabled) {
+  // Skip all node processing if feature disabled
+  // ... continue to next object ...
+}
+
+// Node detection and processing
+if (object.userData.isVertexNode) {
+  // CURRENT: Sphere nodes (analytical circle)
+  if (object.userData.nodeType === "sphere") {
+    const circle = RTPapercut._spherePlaneIntersection(
+      object.getWorldPosition(new THREE.Vector3()),
+      object.userData.nodeRadius,
+      plane,
+      32 // segments
+    );
+    if (circle) {
+      // Add circle as continuous line loop to intersection group
+      RTPapercut._addCircleToIntersectionGroup(circle, intersectionGroup, intersectionMaterial);
+    }
+  }
+
+  // FUTURE: Polyhedra-as-nodes (mesh intersection - fallback to existing logic)
+  else if (object.userData.nodeType === "polyhedron") {
+    // Fall through to standard mesh intersection code below
+    // This allows octahedra, tetrahedra, cubes, etc. as vertex markers
+    // Uses existing face-edge intersection logic (no special handling needed)
+  }
+} else if (
+  object.geometry.type === "SphereGeometry" ||
+  (object.geometry.parameters && object.geometry.parameters.radius)
+) {
+  // Skip UI controls (gumball, scale mode spheres without userData.isVertexNode)
+  return;
+}
+```
+
+### 9.7 Implementation Tasks
+
+**Phase 0: UI Setup (index.html + rt-papercut.js)**
+1. Add "Section Nodes" checkbox to Papercut UI section
+2. Wire up checkbox to `RTPapercut.state.sectionNodesEnabled`
+3. Add checkbox change listener in `RTPapercut.init()`
+
+**Phase 1: Node Marking (rt-rendering.js)**
+1. Add `userData.isVertexNode = true` to all vertex nodes (single polyhedra, line ~1077)
+2. Add `userData.nodeType = "sphere"` (current implementation, future: "polyhedron")
+3. Add `userData.nodeRadius = radius` to store the sphere radius for analytical cuts
+4. Add `userData.nodeGeometry = useRTNodeGeometry ? "rt" : "classical"` (for debugging)
+5. Apply same marking in `addMatrixNodes()` for matrix nodes (line ~930)
+
+**Phase 2: Analytical Circle Generation (rt-papercut.js)**
+1. Create `_spherePlaneIntersection(center, radius, plane, segments)` helper function
+2. Create `_addCircleToIntersectionGroup(points, group, material)` helper function
+3. Add node detection in `_generateIntersectionEdges()` BEFORE sphere exclusion logic
+4. Check `state.sectionNodesEnabled` early exit
+5. Generate analytical circles for `nodeType === "sphere"`
+6. Add stub/comment for `nodeType === "polyhedron"` (future: falls through to mesh intersection)
+7. Maintain UI control exclusion logic (skip non-vertex-node spheres)
+
+**Phase 3: Visual Integration**
+1. Use same `LineMaterial` as polyhedra section cuts (shared instance)
+2. Apply same line weight slider control (`lineWeightMax` property)
+3. Apply same print mode color switching (black vs red)
+4. Verify visibility hierarchy works correctly (ancestor chain check)
+5. Add console log for debugging: "Generated X node section circles"
+
+**Phase 4: Future-Proofing (Stubs)**
+1. Add comment block explaining polyhedra-as-nodes architecture
+2. Document `nodeType` enum values: `"sphere"` (current), `"polyhedron"` (future)
+3. Add TODO comment for LOD optimization (reduce segments when many nodes visible)
+
+### 9.8 Testing Checklist
+
+**Checkbox State:**
+- [ ] "Section Nodes" checkbox default state is unchecked
+- [ ] Checkbox disabled when cutplane disabled
+- [ ] Checkbox state persists when toggling cutplane on/off
+
+**Node Visibility:**
+- [ ] Section Nodes OFF + Nodes ON = no node section cuts (current behavior)
+- [ ] Section Nodes ON + Nodes OFF = no node section cuts (nothing to section)
+- [ ] Section Nodes ON + Nodes ON (single polyhedra) = node section cuts visible
+- [ ] Section Nodes ON + Nodes ON (matrix) = node section cuts visible
+
+**Matrix Visibility Hierarchy:**
+- [ ] Hidden matrix (checkbox unchecked) shows no node section cuts
+- [ ] Visible matrix shows node section cuts when Section Nodes enabled
+
+**Node Sizes:**
+- [ ] Small nodes (sm) produce correct circle sizes
+- [ ] Medium nodes (md) produce correct circle sizes
+- [ ] Large nodes (lg) produce correct circle sizes
+- [ ] Packed nodes produce correct close-packing circle sizes
+
+**Node Geometry Types:**
+- [ ] Classical nodes (THREE.SphereGeometry) produce smooth circles
+- [ ] RT nodes (BufferGeometry icosahedron) produce smooth circles (same quality as classical)
+
+**Visual Integration:**
+- [ ] Line weight slider affects node section cuts
+- [ ] Print mode colors node section cuts black
+- [ ] Normal mode colors node section cuts red
+- [ ] Node circles use same line thickness as polyhedra sections
+
+**UI Controls Exclusion:**
+- [ ] Gumball handles are NOT sectioned
+- [ ] Scale mode spheres are NOT sectioned
+- [ ] Other UI controls are NOT sectioned
+
+**Performance:**
+- [ ] Performance acceptable with 10×10 cube matrix + packed nodes
+- [ ] Performance acceptable with 10×10 tet matrix + packed nodes (worst case: ~2000 nodes)
+- [ ] No lag when dragging cutplane slider with many nodes visible
+
+### 9.9 Performance Considerations
+
+**Node Count Analysis:**
+- 10×10 Cube Matrix: ~500 unique vertices × 1 node each = 500 nodes
+- 10×10 Tet Matrix (with interstitial): ~2000 nodes
+- Each node generates O(32) points for circle = O(16,000-64,000) points total
+
+**Optimization:**
+- Use analytical circles (O(segments)) instead of mesh intersection (O(triangles))
+- Share `LineMaterial` instance across all node circles
+- Consider LOD: reduce circle segments when many nodes visible
+
+---
+
+### 9.10 Future: Polyhedra-as-Nodes
+
+**Feature:** Replace spherical nodes with polyhedra (tet, octa, cube, etc.) as vertex markers
+
+**Status:** 🔮 FUTURE ENHANCEMENT (post Phase 2.0)
+
+**Rationale:**
+- Pedagogical value: Show IVM geometry at vertices using IVM polyhedra
+- Aesthetic: Polyhedral nodes may be more visually interesting than spheres
+- Configurability: Different node types for different vertex types (e.g., tets at tet vertices)
+
+**Architecture (Pre-Planned):**
+
+The current implementation already includes stubs for this feature via `userData.nodeType`:
+
+```javascript
+// Current (Phase 2.0): Spherical nodes
+node.userData.nodeType = "sphere";  // Uses analytical circle generation
+
+// Future: Polyhedral nodes
+node.userData.nodeType = "polyhedron";  // Falls back to mesh intersection
+```
+
+**Implementation Notes:**
+
+1. **Node Creation (rt-rendering.js):**
+   - Add UI selector for node geometry type (sphere, tet, octa, cube, etc.)
+   - Generate polyhedra at vertex positions instead of spheres
+   - Set `userData.nodeType = "polyhedron"` for non-spherical nodes
+   - No need to store radius (use bounding sphere or skip analytical method)
+
+2. **Section Cut Generation (rt-papercut.js):**
+   - Node detection logic remains unchanged (check `userData.isVertexNode`)
+   - For `nodeType === "polyhedron"`, DO NOT use analytical circle generation
+   - Instead, fall through to standard mesh intersection code (existing face-edge algorithm)
+   - Result: Polygonal section cuts (triangular for tets, octagonal for octas, etc.)
+
+3. **No Code Rewrite Needed:**
+   - Mesh intersection code already handles arbitrary polyhedra
+   - Simply allow polyhedral nodes to be processed like regular meshes
+   - The `userData.isVertexNode` flag ensures they're not skipped
+
+**Example Visualization:**
+- Tetrahedron matrix with octahedral nodes at vertices
+- Cube matrix with tetrahedral nodes at vertices
+- Octahedron matrix with cubic nodes at vertices
+
+**Section Cut Appearance:**
+- Spheres → Perfect circles
+- Tetrahedra → Triangular cross-sections
+- Octahedra → Octagonal cross-sections
+- Cubes → Square/hexagonal cross-sections (depending on cut angle)
+
+**UI Design (Future):**
+```html
+<div class="control-item">
+  <label>Node Geometry</label>
+  <select id="nodeGeometryType">
+    <option value="sphere">Sphere (Classical)</option>
+    <option value="sphere-rt">Sphere (RT Geodesic)</option>
+    <option value="tetrahedron">Tetrahedron</option>
+    <option value="octahedron">Octahedron</option>
+    <option value="cube">Cube</option>
+    <option value="icosahedron">Icosahedron</option>
+  </select>
+</div>
+```
+
+**Why Pre-Plan This Now:**
+- Avoids future architectural conflicts
+- Minimal code overhead (one if/else branch)
+- Demonstrates forward-thinking design
+- Makes Phase 2.0 implementation cleaner (clear separation of concerns)
+
+---
+
+**Document Version:** 1.3
+**Last Updated:** 2026-01-09
+**Status:** Phase 1.5c Complete | Phase 1.6a/b Complete | Phase 2.0 Planned (Papercut Nodes)
+**Completion Date:** 2026-01-08 (Phase 1.6b)
