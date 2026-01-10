@@ -4697,9 +4697,535 @@ These items are documented in [Section 5.3: TODO: Future Enhancements](#53-todo-
 
 ### 8.4 User Paper List TODOs 📝
 
-**This section is reserved for TODOs from the user's desk notes.**
+**Source:** Andy Thomson's desk notes (2026-01-10)
 
-Once provided, items will be added here with appropriate categorization (Active/Deferred/Future) and priority assignment.
+These TODOs have been transcribed from paper notes and categorized by priority and implementation complexity.
+
+---
+
+#### 8.4.1 Tetrahelix Compound Polyhedron (BFI Research Request)
+**Status:** ⚠️ Active - Research & Implementation
+**Priority:** High (External Research Request)
+**Requested By:** Bonnie DeVarco (Buckminster Fuller Institute Archivist)
+
+Add Tetrahelix as a new Base Form in the UI with RT-pure construction method.
+
+**Description:**
+Tetrahedral helixes are formed by joining faces of tetrahedra which spiral into a complete twisting torus shape. This novel compound polyhedron is requested for Synergetics research and BFI archival study.
+
+**Research Questions:**
+1. **Construction Method:** Most efficient/performant approach for compound polyhedra?
+   - Option A: Chain tetrahedra face-to-face with rotation accumulation
+   - Option B: Parametric helix with tetrahedral units positioned along path
+   - Option C: Direct vertex calculation using helix equations + tetrahedral geometry
+
+2. **Closure Condition:** How many tetrahedra complete one full torus revolution?
+   - Related to dihedral angles and twist rate
+   - May require specific angle relationships for perfect closure
+
+3. **RT-Purity:** Can helix be constructed without sin/cos?
+   - Circular helix traditionally requires parametric (cos(t), sin(t), t)
+   - Explore rational circle parametrization (Weierstrass substitution)
+   - Or use polygonal approximation with exact algebraic coordinates
+
+**Technical Implementation:**
+- **Module:** `rt-polyhedra.js` - Add `Polyhedra.tetrahelix()` function
+- **UI:** Add "Tetrahelix" to Base Forms section
+- **Parameters:**
+  - Number of tetrahedra (affects torus size)
+  - Twist rate (controls helix pitch)
+  - Radius (torus major radius)
+
+**Performance Considerations:**
+- Compound geometry will have high triangle count
+- Consider geometry instancing for repeated tetrahedral units
+- May need LOD system for performance at high counts
+
+**References:**
+- Fuller's Synergetics: Tetrahedral helixes and spatial structures
+- BFI Archive: Historical tetrahelix studies
+- Related to: Boerdijk–Coxeter helix (face-bonded tetrahedra)
+
+**Next Steps:**
+1. Research tetrahedral helix closure conditions
+2. Prototype RT-pure construction algorithm
+3. Test performance with various unit counts
+4. Add UI controls and documentation
+
+---
+
+#### 8.4.2 Tetrahedral/Pentagonal Cone Basis Vector Arrowheads
+**Status:** ⚠️ Active
+**Priority:** Medium (Visual Enhancement)
+
+Change basis vector arrowheads from standard cones to pentagonal cones for XYZ and tetrahedral cones for WXYZ, aligned with grid symmetry.
+
+**Rationale:**
+- **XYZ Basis (Cartesian):** Pentagonal cone arrowheads (no particular symmetry preference)
+- **WXYZ Basis (Quadray):** Tetrahedral cone arrowheads (matches tetrahedral coordinate system)
+- Visual consistency: Arrowhead geometry reflects coordinate system geometry
+
+**Technical Implementation:**
+- **Module:** `rt-rendering.js` - Modify basis vector arrow creation
+- **Current:** Uses THREE.ConeGeometry with default radial segments (8)
+- **Update:**
+  - XYZ: `new THREE.ConeGeometry(radius, height, 5)` // Pentagonal
+  - WXYZ: `new THREE.ConeGeometry(radius, height, 3)` // Triangular (tetrahedral profile)
+
+**Benefits:**
+- Educational: Visual cue distinguishing coordinate systems
+- Aesthetic: Matches underlying geometric philosophy
+- Subtle but meaningful detail
+
+---
+
+#### 8.4.3 Reduce Default XYZ Grid Size
+**Status:** ⚠️ Active
+**Priority:** Medium (UI/Visual)
+
+Reduce default size of XYZ Grid from current >2.75 units to exactly 2.0 units tall/wide.
+
+**Problem:**
+- XYZ grid currently appears oversized (>2.75 XYZ grid units)
+- Clutters workspace
+- Disproportionate to geometry being studied
+
+**Solution:**
+- Change default grid size parameter to 2.0 units
+- Maintain existing Grid Interval slider functionality (user can still adjust)
+- Update default in `rt-rendering.js` grid initialization
+
+**Technical Details:**
+- **Module:** `rt-rendering.js`
+- **Current:** Grid size likely set to ~3.0 or calculated incorrectly
+- **Update:** Explicit `gridSize = 2.0` for XYZ Cartesian grids
+- **Verify:** WXYZ grids should remain at appropriate tetrahedral scale
+
+**Impact:**
+- Cleaner default workspace
+- Better visual proportion for polyhedra study
+- Users can still expand grid via slider if needed
+
+---
+
+#### 8.4.4 Temporary Basis Vector Hiding During Gumball Edits
+**Status:** ⚠️ Active
+**Priority:** High (UX Improvement - Reduces Visual Clutter)
+
+Temporarily hide general Basis Vectors DURING active Gumball edits (Move/Rotate/Scale modes) to reduce workspace clutter.
+
+**Problem:**
+- During Gumball edits, BOTH general basis vectors AND gumball edit handles appear simultaneously
+- Visual clutter makes precise manipulation difficult
+- Basis vectors can obstruct view of edit handles
+
+**Solution:**
+Implement auto-hide/restore logic for basis vectors during edit operations:
+
+1. **On Edit Start** (Move/Rotate/Scale mode activated):
+   - Store current basis vector visibility state (XYZ on/off, WXYZ on/off)
+   - Temporarily hide ALL basis vectors (set visible = false)
+   - Show only Gumball edit handles
+
+2. **During Edit:**
+   - Basis vectors remain hidden
+   - Only Gumball handles visible for clean workspace
+
+3. **On Edit Complete** (mode deactivated or selection cleared):
+   - Check stored visibility state
+   - IF basis vectors were ON before edit → restore visibility
+   - IF basis vectors were OFF before edit → keep hidden
+
+**Technical Implementation:**
+- **Module:** `rt-controls.js` (Gumball mode activation)
+- **State Storage:** Add to StateManager or local closure:
+  ```javascript
+  const basisVectorState = {
+    xyzVisible: false,
+    wxyzVisible: false
+  };
+  ```
+- **Hook Points:**
+  - Activate mode: Store state, hide basis vectors
+  - Deactivate mode: Restore state from storage
+
+**UI Integration:**
+- Works with existing Controls section basis vector toggles
+- User can still manually toggle basis vectors during edit (overrides auto-hide)
+- Preference could be added: "Auto-hide basis during edits" checkbox
+
+**Benefits:**
+- Cleaner editing experience
+- Reduces visual confusion
+- Focus on active edit handles only
+- Maintains user's basis vector preference after edit
+
+---
+
+#### 8.4.5 Comprehensive Triangle Counter (All Forms + Matrix)
+**Status:** ⚠️ Active
+**Priority:** Medium (Geometry Info Enhancement)
+
+Expand triangle counter in Geometry Info to count ALL triangles (polyhedra + matrix forms + nodes), excluding grids.
+
+**Current Behavior:**
+- Triangle counter only counts Node triangles
+- Polyhedral form triangles not included
+- Matrix form triangles not included
+- Incomplete geometry statistics
+
+**Proposed Solution:**
+Add comprehensive triangle counting with breakdown:
+
+```
+Geometry Info:
+━━━━━━━━━━━━━━━━━━━━━━━
+Total Triangles: 1,247
+  Forms: 420 (Icosahedron: 20, Cube: 12, etc.)
+  Matrix: 680 (5×5 Tetrahedron array: 100 tets × 4 tri × 2 faces = 800)
+  Nodes: 147 (49 nodes × 3f geodesic = 3 tri/node)
+```
+
+**Technical Implementation:**
+- **Module:** `rt-rendering.js` or performance monitoring section
+- **Counting Strategy:**
+  1. **Forms:** Iterate visible forms, sum `geometry.attributes.position.count / 3`
+  2. **Matrix:** Iterate matrix instances, sum triangle counts
+  3. **Nodes:** Already implemented, verify accuracy
+  4. **Exclude:** Grid geometry (flag with `userData.isGrid = true`)
+
+**Performance Considerations:**
+- **Question:** Would real-time counting add overhead?
+- **Analysis:**
+  - Counting once per frame during render loop: Minimal overhead (~1ms for 100 forms)
+  - Update only on scene change (form add/remove): Zero overhead, recommended
+  - Cache counts, invalidate on geometry changes
+
+**Recommendation:** Update triangle count only when scene changes (form visibility toggle, matrix update, node frequency change), not every frame.
+
+**Benefits:**
+- Accurate performance metrics
+- Understand triangle budget per feature
+- Debug geometry issues
+- Educational: see triangle cost of different forms
+
+---
+
+#### 8.4.6 Update Default Settings (Nodes + Opacity)
+**Status:** ⚠️ Active
+**Priority:** High (Improved Defaults for RT Philosophy)
+
+Update application defaults to emphasize RT-pure node geometry and appropriate transparency.
+
+**Changes Required:**
+
+1. **Polyhedra/Matrix Face Opacity:**
+   - Current: 0.25 ✓ (already correct)
+   - Keep as-is
+
+2. **Default Node Type:**
+   - Current: Classical THREE.SphereGeometry (non-RT)
+   - **New Default:** 3f Geodesic Icosahedron (RT-pure)
+   - Rationale: Demonstrates RT geodesic subdivision by default
+
+3. **Node Opacity:**
+   - Current: 1.0 (fully opaque)
+   - **New Default:** 0.35
+   - Rationale: Semi-transparent nodes reduce visual clutter, reveal internal structure
+
+4. **UI Dropdown Initialization:**
+   - **Issue:** Ensure Node Type dropdown shows "3f Geodesic" on load
+   - Must sync UI state with actual default geometry
+
+**Technical Implementation:**
+- **Module:** `rt-rendering.js` (initialization), `rt-controls.js` (UI sync)
+
+**Changes:**
+```javascript
+// rt-rendering.js - Default node configuration
+const defaultNodeConfig = {
+  type: 'geodesic',           // Changed from 'classical'
+  geodesicFrequency: 3,       // 3f Fuller frequency
+  opacity: 0.35               // Changed from 1.0
+};
+
+// rt-controls.js - UI initialization
+document.getElementById('nodeTypeDropdown').value = 'geodesic-3f';
+document.getElementById('nodeOpacitySlider').value = 0.35;
+```
+
+**Benefits:**
+- RT-pure geometry shown by default (aligns with project philosophy)
+- Better visual clarity with semi-transparent nodes
+- Educational: Users immediately see geodesic subdivision
+- Performance: 3f geodesic comparable to classical spheres
+
+---
+
+#### 8.4.7 Vertex/Edge/Face Snapping (Free Move Enhancement)
+**Status:** 🔮 Future Enhancement
+**Priority:** Medium (Advanced Interaction Feature)
+
+Implement intelligent snapping options for Gumball Move mode: vertex-to-vertex, edge-to-edge, and face-to-face alignment.
+
+**Feature Description:**
+Enable precise alignment of polyhedra by snapping geometric features during free move operations.
+
+**Snap Types:**
+
+1. **Vertex Snapping:**
+   - Snap moving form's nearest vertex to target form's nearest vertex
+   - Threshold: < 0.1 units proximity triggers snap
+   - Visual: Highlight snap candidate vertices
+
+2. **Edge Snapping:**
+   - Align moving form's edge to target form's edge
+   - Requires edge midpoint + edge direction alignment
+   - Useful for edge-to-edge polyhedra chains
+
+3. **Face Snapping:**
+   - Align moving form's face to target form's face (coplanar + center alignment)
+   - **Complex Case:** Face snapping cube to tetrahedron requires orientation rules
+   - **Rules Needed:**
+     - Face normal alignment (parallel or anti-parallel)
+     - Face center distance minimization
+     - Optional: Edge alignment for specific orientations
+
+**Technical Challenges:**
+
+**Challenge 1: Face-to-Face Rules**
+- Cube has square faces, tetrahedron has triangular faces
+- Cannot perfectly tile square onto triangle
+- **Solution:** Snap face centers + align face normals, accept geometric mismatch
+- **Alternative:** Snap closest vertex of moving face to target face center
+
+**Challenge 2: Performance**
+- Real-time snap candidate detection during drag
+- Iterate all visible forms × all vertices/edges/faces
+- **Optimization:** Spatial partitioning (octree) for proximity queries
+
+**Challenge 3: Snap Priority**
+- If multiple snap candidates within threshold, which wins?
+- **Solution:** Priority order: Vertex > Edge > Face (most specific first)
+
+**UI Controls:**
+- **Snap Toggle:** Checkbox "Enable Snapping" in Controls section
+- **Snap Mode Dropdown:** "Vertex" | "Edge" | "Face" | "All"
+- **Snap Threshold Slider:** 0.01 to 1.0 units
+
+**Technical Implementation:**
+- **Module:** `rt-controls.js` (snap logic during Gumball move)
+- **Algorithm:**
+  ```javascript
+  function checkSnapCandidates(movingForm, targetForms, snapMode, threshold) {
+    // 1. Extract geometric features from movingForm
+    // 2. Iterate targetForms, extract features
+    // 3. Calculate proximity for each feature pair
+    // 4. Return nearest candidate within threshold
+    // 5. Apply snap transformation
+  }
+  ```
+
+**Why Future Enhancement:**
+- Significant implementation complexity
+- Requires robust spatial query system
+- Face snapping rules need careful design
+- Should be prototyped after core features stable
+
+---
+
+#### 8.4.8 Rotation Snapping + Numeric Input Fix
+**Status:** ⚠️ Active (Part 1: Fix), 🔮 Future (Part 2: Snapping)
+**Priority:** High (Part 1 - Bug Fix), Medium (Part 2 - Feature)
+
+**Part 1: Fix Numeric Rotation Input (HIGH PRIORITY - BUG FIX)**
+
+**Problem:**
+- Numeric input fields for rotation values do not work
+- User cannot type exact rotation values
+- Forces reliance on circular handle dragging only
+
+**Investigation Needed:**
+1. Verify numeric input fields exist in UI
+2. Check event handlers (keyup, change, input)
+3. Confirm input → state → geometry update pipeline
+4. Test in both XYZ and WXYZ rotation modes
+
+**Technical Fix:**
+- **Module:** `rt-controls.js` - Rotation input handlers
+- **Likely Issue:**
+  - Missing event listeners on input fields
+  - Input value not parsed/applied to rotation state
+  - Rotation state not triggering geometry update
+
+**Expected Behavior:**
+```javascript
+// User types "45" in X-rotation input
+// → Parse value: 45 degrees
+// → Convert to radians or spread (depending on mode)
+// → Apply to selected form rotation
+// → Update 3D visualization
+```
+
+---
+
+**Part 2: Add Rotation Snapping (MEDIUM PRIORITY - FEATURE)**
+
+**Feature Description:**
+Add snap-to-increment functionality for rotation handles and numeric inputs.
+
+**Snap Modes:**
+
+1. **Angular Snapping (XYZ Cartesian Mode):**
+   - Common increments: 5°, 10°, 15°, 30°, 45°, 90°
+   - User-configurable via dropdown or slider
+   - Snap during circular handle drag
+
+2. **Spread Snapping (WXYZ Quadray Mode):**
+   - RT-pure spread increments: 0.0, 0.1, 0.2, ... 1.0
+   - Rational spread values for exact geometric relationships
+   - Aligns with RT philosophy
+
+**UI Controls:**
+- **Snap Toggle:** Checkbox "Enable Rotation Snapping"
+- **Snap Increment (XYZ):** Dropdown "5° | 10° | 15° | 30° | 45° | 90°"
+- **Snap Increment (WXYZ):** Dropdown "0.1 | 0.2 | 0.25 | 0.5"
+- **Visual Feedback:** Snap positions marked on circular handles
+
+**Technical Implementation:**
+- **Module:** `rt-controls.js` - Rotation calculation logic
+- **Snap Algorithm:**
+  ```javascript
+  function snapRotation(rawValue, snapIncrement, enabled) {
+    if (!enabled) return rawValue;
+    return Math.round(rawValue / snapIncrement) * snapIncrement;
+  }
+
+  // During drag:
+  const dragAngle = calculateDragAngle(mousePos, centerPos);
+  const snappedAngle = snapRotation(dragAngle, snapIncrement, snapEnabled);
+  ```
+
+**Benefits:**
+- Precise rotations (align forms at exact angles)
+- Educational: Demonstrates rational spread values
+- Faster workflow for common rotations (90°, etc.)
+
+**Implementation Priority:**
+1. **First:** Fix numeric input (critical bug)
+2. **Second:** Add angular snapping for XYZ mode
+3. **Third:** Add spread snapping for WXYZ mode
+
+---
+
+#### 8.4.9 Expand Base Forms: RT-Pure Prisms (Line/Cylinder + Cone Resolutions)
+**Status:** ⚠️ Active
+**Priority:** High (Expands RT-Pure Form Library)
+
+Add generalized primitive forms to enable full array of RT-pure prisms and pyramids.
+
+**New Base Forms:**
+
+**1. Line/Cylinder Line**
+- **Description:** Straight line segment or cylindrical edge
+- **Parameters:**
+  - Length: User-adjustable
+  - Radius: For cylinder representation (or zero-radius line)
+  - Resolution: Radial segments (3, 4, 5, 6, ... for prism creation)
+- **Use Cases:**
+  - Edge-only visualization
+  - Structural frameworks
+  - Basis for prism construction
+
+**RT-Pure Implementation:**
+```javascript
+Polyhedra.cylinderLine = (length, radius, resolution) => {
+  // Two endpoints: (0, 0, 0) and (0, 0, length)
+  const vertices = [
+    [0, 0, 0],
+    [0, 0, length]
+  ];
+
+  // If radius > 0, generate circular cross-section
+  if (radius > 0) {
+    const circleVertices = RT.circleParam(radius, resolution);
+    // Extrude circle along Z-axis for length
+    // Returns: vertices, edges, faces
+  }
+
+  return { vertices, edges, faces };
+};
+```
+
+---
+
+**2. Cone with Configurable Resolution**
+- **Description:** Pyramidal/conical form with adjustable base polygon
+- **Parameters:**
+  - Height: Apex to base distance
+  - Base Radius: Distance from center to base vertices
+  - **Resolution:** 3, 4, 5, 6, 8, 12, 16, 24, ... (defines base polygon)
+    - Resolution 3 → Triangular pyramid (tetrahedron)
+    - Resolution 4 → Square pyramid
+    - Resolution 5 → Pentagonal pyramid
+    - Resolution 6 → Hexagonal pyramid
+    - Resolution 8+ → Approximates cone
+
+**RT-Pure Implementation:**
+```javascript
+Polyhedra.cone = (height, baseRadius, resolution) => {
+  // Apex at (0, 0, height)
+  const apex = [0, 0, height];
+
+  // Base polygon using RT circle parametrization
+  const baseVertices = RT.circleParam(baseRadius, resolution).map(([x, y]) => [x, y, 0]);
+
+  // Edges: apex to each base vertex + base perimeter
+  // Faces: triangular sides (apex, base[i], base[i+1])
+
+  return { vertices: [apex, ...baseVertices], edges, faces };
+};
+```
+
+**Benefits of Resolution Parameter:**
+- **Resolution 3-6:** Creates exact RT-pure pyramids (Platonic/Archimedean)
+- **Resolution 12+:** Smooth circular cone approximation
+- **Educational:** Shows relationship between discrete polygons and continuous curves
+- **Unified API:** Single function replaces need for separate pyramid/cone types
+
+**UI Integration:**
+- **Forms Section:** Add "Line/Cylinder" and "Cone" to dropdown
+- **Resolution Slider:** 3 to 24 segments (integer steps)
+- **Height/Radius Sliders:** Adjust proportions
+
+**RT-Pure Prism Library Enabled:**
+With Line + Cone at various resolutions, users can construct:
+- Triangular prisms (resolution 3)
+- Square prisms (resolution 4) - verify vs. existing Cube
+- Pentagonal prisms (resolution 5)
+- Hexagonal prisms (resolution 6)
+- Octagonal prisms (resolution 8)
+- Any N-gonal prism (resolution N)
+
+**Implementation Priority:**
+1. Add `Polyhedra.cone()` with resolution parameter
+2. Add `Polyhedra.cylinderLine()` with optional radius
+3. Update UI Forms dropdown with new options
+4. Add resolution slider to UI (conditionally shown for cone/cylinder)
+5. Document RT-pure circle parametrization used
+
+**Performance:** Resolution 3-12 should be highly performant (low triangle count). Resolution 24+ may need caching.
+
+---
+
+**Status Summary (Updated):**
+- **9 items total** from desk notes (4 previous + 5 new)
+- **Active Items:** 7 (immediate implementation needed)
+- **Future Items:** 2 (vertex/edge/face snapping, rotation snapping Part 2)
+- **Priorities Breakdown:**
+  - High: 4 items (Defaults, Rotation fix, Prisms, Basis hiding)
+  - Medium: 4 items (Triangle counter, Snapping, Rotation snapping, Arrowheads)
+  - Research: 1 item (Tetrahelix)
 
 ---
 
