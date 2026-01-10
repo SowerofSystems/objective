@@ -4862,7 +4862,117 @@ Implement auto-hide/restore logic for basis vectors during edit operations:
 
 ---
 
-#### 8.4.5 Comprehensive Triangle Counter (All Forms + Matrix)
+#### 8.4.5 Complete rt-filehandler.md Documentation (DRAFT State Export/Import Spec)
+**Status:** ⚠️ Active
+**Priority:** High (Prevents ESLint Violations & Undeclared Variables)
+
+Complete the partially-finished rt-filehandler.md documentation to prevent undeclared/unused variable issues and provide complete state schema for future enhancements.
+
+**Current Status:**
+- ✅ Planning phase complete (5 phases documented)
+- ✅ Architecture analysis done
+- ✅ JSON state structure defined
+- ⏳ **INCOMPLETE:** Implementation sections are placeholders
+- ⏳ **INCOMPLETE:** Edge cases need formal specification
+- ⏳ **INCOMPLETE:** Testing plan needs execution tracking
+
+**Problem:**
+Previous incomplete documentation led to:
+- Undeclared variables in rt-filehandler.js
+- Unused variables flagged by ESLint
+- Incomplete state schema causing import/export issues
+- Missing factory function patterns
+
+**Documentation Location:**
+- [rt-filehandler.md](rt-filehandler.md) - Incomplete workplan (520 lines)
+
+**Required Sections to Complete:**
+
+1. **Phase 2: Extract Creation Logic** (Lines 201-253)
+   - DRAFT complete: Factory function options documented
+   - Need to mark chosen approach (Option A/B/C)
+   - Add implementation code snippets from actual rt-init.js
+
+2. **Phase 3: Instance Restoration** (Lines 255-308)
+   - DRAFT complete: Implementation pseudocode provided
+   - Need to verify against actual rt-filehandler.js implementation
+   - Add error handling patterns
+
+3. **Phase 4: Edge Cases** (Lines 310-357)
+   - Currently speculative proposals
+   - Need to formalize JSON schema extensions for:
+     - Geodesic parameters (frequency, projection)
+     - Appearance data (color, opacity, nodeSize)
+     - Unknown type handling
+     - Version compatibility strategy
+
+4. **Phase 5: Testing Plan** (Lines 359-393)
+   - Test cases defined but no execution tracking
+   - Add test results section
+   - Document known issues and workarounds
+
+**Immediate Actions:**
+
+1. **DRAFT State Schema v1.0** - Formalize complete JSON structure
+   ```json
+   {
+     "version": "1.0",
+     "timestamp": "ISO-8601",
+     "environment": { /* camera, grids, forms */ },
+     "instances": [
+       {
+         "id": "string",
+         "type": "cube|tetrahedron|...|geodesicIcosahedron",
+         "parameters": { /* type-specific: frequency, projection, etc. */ },
+         "transform": { /* position, rotation, scale */ },
+         "appearance": { /* visible, color, opacity, nodeSize */ },
+         "metadata": { /* label, tags, notes */ }
+       }
+     ]
+   }
+   ```
+
+2. **Document Factory Pattern Decision** - Which option (A/B/C) was implemented?
+   - Option A: Global exposure (window.createPolyhedronByType)
+   - Option B: Dependency injection (RTFileHandler.setPolyhedronFactory)
+   - Option C: Separate module (rt-polyhedron-factory.js)
+
+3. **Complete Edge Case Specifications**
+   - Geodesic type handling (frequency parameter)
+   - Matrix polyhedra handling (grid parameters)
+   - Unknown type fallback behavior
+   - Version migration strategy
+
+4. **Add Implementation Status Tracking**
+   - Update "Next Steps" checklist (lines 446-457)
+   - Mark completed items with ✅
+   - Add blockers and known issues
+
+**Benefits of Completion:**
+- Prevents ESLint violations from undeclared variables
+- Provides complete state schema for future features
+- Documents factory pattern for instance recreation
+- Establishes version compatibility strategy
+- Enables safe enhancement without breaking existing saves
+
+**Module Locations:**
+- **Document:** `docs/development/Geometry documents/rt-filehandler.md`
+- **Implementation:** `src/geometry/modules/rt-filehandler.js`
+- **Factory Source:** `src/geometry/modules/rt-init.js` (polyhedron creation)
+- **State Manager:** `src/geometry/modules/rt-state-manager.js`
+
+**Success Criteria:**
+- ✅ All 5 phases have "Status" and "Completion Date" headers
+- ✅ DRAFT JSON schema formalized with version 1.0 specification
+- ✅ Factory pattern decision documented with code references
+- ✅ Edge cases have formal specifications (not proposals)
+- ✅ Testing checklist has execution results
+- ✅ Known issues and workarounds documented
+- ✅ Future enhancement hooks clearly defined
+
+---
+
+#### 8.4.6 Comprehensive Triangle Counter (All Forms + Matrix)
 **Status:** ⚠️ Active
 **Priority:** Medium (Geometry Info Enhancement)
 
@@ -4911,7 +5021,7 @@ Total Triangles: 1,247
 
 ---
 
-#### 8.4.6 Update Default Settings (Nodes + Opacity)
+#### 8.4.7 Update Default Settings (Nodes + Opacity)
 **Status:** ⚠️ Active
 **Priority:** High (Improved Defaults for RT Philosophy)
 
@@ -4962,7 +5072,7 @@ document.getElementById('nodeOpacitySlider').value = 0.35;
 
 ---
 
-#### 8.4.7 Vertex/Edge/Face Snapping (Free Move Enhancement)
+#### 8.4.8 Vertex/Edge/Face Snapping (Free Move Enhancement)
 **Status:** 🔮 Future Enhancement
 **Priority:** Medium (Advanced Interaction Feature)
 
@@ -5034,7 +5144,7 @@ Enable precise alignment of polyhedra by snapping geometric features during free
 
 ---
 
-#### 8.4.8 Rotation Snapping + Numeric Input Fix
+#### 8.4.9 Rotation Snapping + Numeric Input Fix
 **Status:** ⚠️ Active (Part 1: Fix), 🔮 Future (Part 2: Snapping)
 **Priority:** High (Part 1 - Bug Fix), Medium (Part 2 - Feature)
 
@@ -5118,7 +5228,7 @@ Add snap-to-increment functionality for rotation handles and numeric inputs.
 
 ---
 
-#### 8.4.9 Expand Base Forms: RT-Pure Prisms (Line/Cylinder + Cone Resolutions)
+#### 8.4.10 Expand Base Forms: RT-Pure Prisms (Line/Cylinder + Cone Resolutions)
 **Status:** ⚠️ Active
 **Priority:** High (Expands RT-Pure Form Library)
 
@@ -5219,11 +5329,11 @@ With Line + Cone at various resolutions, users can construct:
 ---
 
 **Status Summary (Updated):**
-- **9 items total** from desk notes (4 previous + 5 new)
-- **Active Items:** 7 (immediate implementation needed)
+- **10 items total** from desk notes (4 initial + 5 batch 2 + 1 documentation)
+- **Active Items:** 8 (immediate implementation needed)
 - **Future Items:** 2 (vertex/edge/face snapping, rotation snapping Part 2)
 - **Priorities Breakdown:**
-  - High: 4 items (Defaults, Rotation fix, Prisms, Basis hiding)
+  - High: 5 items (rt-filehandler.md completion, Defaults, Rotation fix, Prisms, Basis hiding)
   - Medium: 4 items (Triangle counter, Snapping, Rotation snapping, Arrowheads)
   - Research: 1 item (Tetrahelix)
 
