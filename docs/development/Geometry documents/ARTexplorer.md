@@ -1,5 +1,46 @@
 # ThreeRT - Three.js + Rational Trigonometry Geometry Explorer
-- Credits and thanks: Co-developed from the ideas of R. Buckminster Fuller, Kirby Urner, Tom Ace, NJ Wildberger and Andy Thomson, witnessed silently by Metatron.
+
+**The definitive README for the ARTexplorer polyhedral geometry application.**
+
+> *"Geometry should be done with algebra, not transcendental functions."* — N.J. Wildberger
+
+## Project Philosophy: Rational Trigonometry for Geometry Generation
+
+This project implements a **RATIONAL approach to computational geometry** using N.J. Wildberger's Rational Trigonometry (RT) framework. While Three.js requires floating-point coordinates for rendering, all geometry *generation* uses pure algebraic methods:
+
+### Core RT Principles
+
+1. **Quadrance (Q) instead of Distance (d)**
+   - Classical: `d = √(Δx² + Δy² + Δz²)` (requires irrational √)
+   - RT-Pure: `Q = Δx² + Δy² + Δz²` (pure algebra, deferred √)
+
+2. **Spread (s) instead of Angle (θ)**
+   - Classical: `θ = arccos(v₁·v₂ / |v₁||v₂|)` (transcendental functions)
+   - RT-Pure: `s = 1 - (v₁·v₂)² / (Q₁·Q₂)` (pure algebra)
+
+3. **Deferred √ Expansion**
+   - Compute all relationships in quadrance space
+   - Only take √ at final THREE.Vector3 creation
+   - Preserves algebraic exactness throughout generation pipeline
+
+4. **Golden Ratio Identities**
+   - φ² = φ + 1 (eliminates multiplication)
+   - 1/φ = φ - 1 (eliminates division)
+   - All icosahedron/dodecahedron relationships use these algebraic identities
+
+### Why This Matters
+
+Three.js (and all GPU rendering) ultimately uses floating-point. Our RT advantage is in **geometry generation**:
+- Fewer numerical errors accumulate during construction
+- Algebraic relationships are preserved until final output
+- Educational value: demonstrates geometry without transcendental functions
+- Philosophical alignment: proves most "trigonometry" is unnecessary
+
+---
+
+**Credits:** Co-developed from the ideas of R. Buckminster Fuller, Kirby Urner, Tom Ace, N.J. Wildberger, and Andy Thomson, witnessed silently by Metatron.
+
+**Repository:** [QCQA Branch](https://github.com/openbuilding-ca/objective) | **Last Updated:** 2026-01-10
 
 ---
 
@@ -28,7 +69,12 @@
 - [3.9 Phase 2.10: Z-Up Coordinate Convention](#39-phase-210-z-up-coordinate-convention--complete)
 - [3.10 Phase 2.11: ART Gumball + StateManager](#310-phase-211-art-gumball--statemanager--complete)
 - [3.11 Interactive Mathematical Demos](#311-interactive-mathematical-demos)
-- [3.12 Mathematical Innovations & Discoveries](#312-mathematical-innovations--discoveries)
+  - [3.11.1 Quadrance Demo (Plimpton 322)](#3111-quadrance-demo-rt-quadrance-demojs)
+  - [3.11.2 Spread/Cross Demo (Sexagesimal)](#3112-spreadcross-demo-rt-cross-demojs)
+  - [3.11.3 Weierstrass Demo](#3113-weierstrass-circle-parametrization-demo-rt-weierstrass-demojs)
+- [3.12 Papercut Node Sectioning Enhancements](#312-papercut-node-sectioning-enhancements--complete-2026-01-10)
+- [3.13 Matrix Polyhedra & "Packed" Node Spheres](#313-matrix-polyhedra--packed-node-spheres--complete-2026-01-10)
+- [3.14 Mathematical Innovations & Discoveries](#314-mathematical-innovations--discoveries)
 
 ### 4. Technical Reference
 - [4.1 Rational Trigonometry Implementation](#41-rational-trigonometry-implementation)
@@ -44,6 +90,7 @@
 
 ### 6. Future Explorations
 - [6.1 Sexagesimal (Base-60) Arithmetic for Exact RT Calculations](#61-sexagesimal-base-60-arithmetic-for-exact-rt-calculations)
+- [6.2 Defense Industry Applications: Comprehensive Assessment](#62-defense-industry-applications-comprehensive-assessment)
 
 ### 7. Contributors & Acknowledgments
 
@@ -75,37 +122,160 @@ In physics, "dimension" means **degrees of freedom** - independent ways a system
 
 ### 1.4 File Structure
 
-**Modularized Architecture:**
+**Modularized Architecture (Updated 2026-01-10):**
+
+The codebase has been successfully refactored into a clean **Init/Html/Rendering** separation pattern for improved maintainability and modularity.
 
 ```
 src/geometry/
-├── ARTexplorer.html          # Main application (HTML structure + inline logic)
-├── art.css                   # Extracted stylesheet (UI panels, controls, buttons)
-└── modules/
-    ├── rt-math.js            # Quadray coordinate system & RT math library
-    ├── rt-polyhedra.js       # Polyhedra geometry definitions (vertices, faces, edges)
-    ├── rt-rendering.js       # Three.js rendering utilities (meshes, lines, nodes)
-    ├── rt-state-manager.js   # Forms/Instances state management + undo/redo
-    └── rt-controls.js        # Gumball editing controls (Move/Scale) [INLINE for now]
+├── index.html                # Main HTML structure (DOM containers, controls UI)
+├── art.css                   # Complete stylesheet (~21,500 lines - UI panels, controls, responsive design)
+├── favicon.ico               # Application icon
+├── robots.txt                # Search engine directives
+│
+└── modules/                  # ES6 Modules (9 core + 4 demos)
+    │
+    │  ─── CORE MODULES ───
+    ├── rt-init.js            # Application orchestration, password protection, module imports, event wiring
+    ├── rt-rendering.js       # THREE.js scene management, camera, lighting, all polyhedra rendering
+    ├── rt-math.js            # Core RT library: quadrance, spread, golden ratio, circle parameterization
+    ├── rt-polyhedra.js       # All polyhedra definitions (Platonic, Archimedean, Geodesic) using RT
+    ├── rt-matrix.js          # IVM spatial array generation for polyhedra matrices ("Packed" node spheres)
+    ├── rt-papercut.js        # Print mode, dynamic cutplane, node opacity, geodesic frequency controls
+    ├── rt-controls.js        # ART Gumball interactive transform controls (Move/Scale/Rotate)
+    ├── rt-state-manager.js   # Forms/Instances state management, undo/redo system
+    ├── rt-filehandler.js     # State import/export to JSON, glTF geometry export
+    └── performance-clock.js  # Performance monitoring (FPS, triangle counts, timing)
+    │
+    │  ─── DEMO MODULES ───
+    └── demos/
+        ├── rt-quadrance-demo.js    # Interactive quadrance (distance²) demonstration
+        ├── rt-cross-demo.js        # Spread/cross values and rational identities
+        ├── rt-weierstrass-demo.js  # Rational circle parameterization (Weierstrass substitution)
+        └── rt-demo-utils.js        # Shared demo utilities (modal dialogs, table rendering)
 
 docs/development/Geometry documents/
-├── ARTexplorer.md            # This file - Main documentation
-├── ART-Gumball.md           # Gumball interaction design specifications
+├── ARTexplorer.md            # This file - Complete project documentation & README
+├── ART-Gumball.md            # Gumball interaction design specifications
+├── RT-Papercut.md            # Papercut module documentation
+├── matrix-slider.md          # Matrix slider and IVM documentation
 ├── Module-Extraction-Analysis.md  # Analysis of module extraction attempts
-├── Quadray-Grid.md          # Central Angle Grid implementation details
-├── UI-Module.md             # UI/UX design patterns and controls
-└── Kieran-Math.md           # Mathematical foundations and RT formulas
+├── Quadray-Grid.md           # Central Angle Grid implementation details
+├── UI-Module.md              # UI/UX design patterns and controls
+└── Kieran-Math.md            # Mathematical foundations and RT formulas
 ```
 
-**Code Organization:**
-- **ARTexplorer.html**: ~3600 lines (reduced from ~3800 via modularization) - Main app, scene setup, inline gumball, event handlers
-- **art.css**: ~760 lines - All styling extracted for maintainability
-- **rt-math.js**: Quadray class, conversions (XYZ ↔ WXYZ), RT formulas
-- **rt-polyhedra.js**: All polyhedra definitions with RT-pure vertex calculations
-- **rt-rendering.js**: Three.js rendering abstraction (faces, edges, nodes)
-- **rt-state-manager.js**: Forms (templates) vs Instances (snapshots) architecture
-- **performance-clock.js**: Performance tracking module (Clock.js pattern from TEUI)
-- **rt-controls.js**: Gumball module (NOT currently active - see Module-Extraction-Analysis.md)
+### 1.4.1 Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          ThreeRT Application Architecture                        │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐           │
+│  │   index.html     │    │     art.css      │    │    rt-init.js    │           │
+│  │   (DOM Layer)    │◄──►│   (Styling)      │◄──►│  (Orchestrator)  │           │
+│  │                  │    │                  │    │                  │           │
+│  │ • Canvas target  │    │ • Panel layouts  │    │ • Module loader  │           │
+│  │ • Control panels │    │ • Button styles  │    │ • Event wiring   │           │
+│  │ • Modal dialogs  │    │ • Responsive     │    │ • Password auth  │           │
+│  └──────────────────┘    └──────────────────┘    └────────┬─────────┘           │
+│                                                           │                      │
+│                            ┌──────────────────────────────┼──────────────────┐  │
+│                            │                              ▼                  │  │
+│  ┌─────────────────────────┴───────────────────────────────────────────────┐│  │
+│  │                         rt-rendering.js (MAIN ENGINE)                    ││  │
+│  │                                                                          ││  │
+│  │  Factory Pattern: initScene(THREE, OrbitControls, RT) → Public API       ││  │
+│  │                                                                          ││  │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐          ││  │
+│  │  │  Scene Setup    │  │   Polyhedra     │  │   Rendering     │          ││  │
+│  │  │                 │  │   Groups        │  │   Updates       │          ││  │
+│  │  │ • Camera (Z-up) │  │ • 9 Regular     │  │ • updateGeom()  │          ││  │
+│  │  │ • Renderer      │  │ • 3 Geodesic    │  │ • visibility    │          ││  │
+│  │  │ • Lighting      │  │ • 5 Matrix      │  │ • wireframe     │          ││  │
+│  │  │ • OrbitControls │  │                 │  │ • node opacity  │          ││  │
+│  │  └─────────────────┘  └─────────────────┘  └─────────────────┘          ││  │
+│  └──────────────────────────────────────────────────────────────────────────┘│  │
+│                                         │                                     │  │
+│           ┌─────────────────────────────┼─────────────────────────────┐      │  │
+│           ▼                             ▼                             ▼      │  │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐               │  │
+│  │   rt-math.js    │  │ rt-polyhedra.js │  │   rt-matrix.js  │               │  │
+│  │  (RT Library)   │  │  (Geometry)     │  │  (IVM Arrays)   │               │  │
+│  │                 │  │                 │  │                 │               │  │
+│  │ • RT.quadrance  │  │ • cube()        │  │ • createCube    │               │  │
+│  │ • RT.spread     │  │ • tetrahedron() │  │   Matrix()      │               │  │
+│  │ • RT.Phi        │  │ • icosahedron() │  │ • createTet     │               │  │
+│  │ • RT.circleParam│  │ • geodesic*()   │  │   Matrix()      │               │  │
+│  │ • Quadray class │  │ • subdivide*()  │  │ • "Packed" node │               │  │
+│  └─────────────────┘  └─────────────────┘  │   spheres       │               │  │
+│                                            └─────────────────┘               │  │
+│                                                                              │  │
+│  ┌─────────────────────────────────────────────────────────────────────────┐│  │
+│  │                        Supporting Modules                                ││  │
+│  │                                                                          ││  │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ ││  │
+│  │  │rt-papercut.js│  │rt-controls.js│  │rt-state-mgr  │  │rt-filehandler│ ││  │
+│  │  │              │  │              │  │              │  │              │ ││  │
+│  │  │• Print mode  │  │• Gumball     │  │• Forms/Inst  │  │• JSON export │ ││  │
+│  │  │• Cutplane    │  │• Move/Scale  │  │• Undo/Redo   │  │• glTF export │ ││  │
+│  │  │• Node opacity│  │• Rotate      │  │• History     │  │• Import      │ ││  │
+│  │  │• Geo freq    │  │• Selection   │  │              │  │• Auto-save   │ ││  │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘ ││  │
+│  └─────────────────────────────────────────────────────────────────────────┘│  │
+│                                                                              │  │
+│  ┌─────────────────────────────────────────────────────────────────────────┐│  │
+│  │                         Demo Modules (Educational)                       ││  │
+│  │                                                                          ││  │
+│  │  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐             ││  │
+│  │  │rt-quadrance-   │  │  rt-cross-     │  │rt-weierstrass- │             ││  │
+│  │  │  demo.js       │  │   demo.js      │  │   demo.js      │             ││  │
+│  │  │                │  │                │  │                │             ││  │
+│  │  │ Distance²      │  │ Spread/Cross   │  │ Rational       │             ││  │
+│  │  │ calculations   │  │ visualization  │  │ circle param   │             ││  │
+│  │  └────────────────┘  └────────────────┘  └────────────────┘             ││  │
+│  └─────────────────────────────────────────────────────────────────────────┘│  │
+│                                                                              │  │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 1.4.2 Module Responsibilities
+
+**Layer 1: Initialization (rt-init.js)**
+- Password protection and session management
+- Dynamic ES6 module imports (nested promise chain)
+- UI event listeners for all controls
+- Scene initialization trigger
+- Modal dialog management for demos
+
+**Layer 2: HTML/DOM Structure (index.html)**
+- Canvas container for THREE.js renderer
+- Control panels (Polyhedra, Scale, Matrix, Papercut, Utility)
+- Modal containers for demos and dialogs
+- Inline help text and tooltips
+
+**Layer 3: Rendering (rt-rendering.js)**
+- THREE.js scene creation and management
+- Camera setup with Z-up convention
+- All 17 polyhedra groups (9 single + 5 matrix + 3 geodesic)
+- Public API via factory pattern closure
+- State synchronization with UI
+
+**Code Statistics:**
+| Module | Lines | Purpose |
+|--------|-------|---------|
+| rt-init.js | ~2,700 | Application orchestration |
+| rt-rendering.js | ~2,300 | THREE.js rendering engine |
+| rt-polyhedra.js | ~1,400 | Geometry definitions (RT-pure) |
+| rt-controls.js | ~1,100 | Gumball interaction |
+| rt-papercut.js | ~870 | Print mode & sectioning |
+| rt-matrix.js | ~830 | IVM spatial arrays |
+| rt-math.js | ~750 | Core RT library |
+| rt-state-manager.js | ~690 | State management |
+| rt-filehandler.js | ~700 | Import/Export operations |
+| art.css | ~21,500 | Complete UI styling |
+| **Total** | **~33,000** | **Complete application** |
 
 ### 1.5 Performance Monitoring & The "Fair Fight" Question
 
@@ -208,7 +378,38 @@ Gumball controls remain **inline** in ARTexplorer.html due to scope isolation is
 
 ## 2. Current Status
 
-### 2.1 Current Status (as of 2025-12-30)
+### 2.1 Current Status (as of 2026-01-10 - QCQA Branch)
+
+**Major Architectural Achievement: Init/Html/Rendering Separation ✅**
+
+The codebase has been successfully refactored into a clean three-layer architecture:
+- **rt-init.js** (Orchestration): Module loading, event wiring, authentication
+- **index.html** (DOM Layer): Pure HTML structure, control containers
+- **rt-rendering.js** (Engine): All THREE.js scene management via factory pattern
+
+This separation makes the code significantly more maintainable and modular.
+
+**QCQA Branch Accomplishments (January 2026):**
+
+1. ✅ **Papercut Node Sectioning Enhancements**
+   - Node opacity control (0.0-1.0 transparency slider)
+   - Geodesic frequency selector for all three geodesic types (1-6)
+   - Section node circles at cutplane-sphere intersections
+   - Adaptive node resolution (32 vs 64 segments for print quality)
+
+2. ✅ **Matrix Polyhedra Corrections**
+   - All matrix polyhedra (Cube, Tetrahedron, Octahedron, Cuboctahedron, Rhombic Dodecahedron) corrected for initial size
+   - "Packed" node spheres properly sized and positioned for any polyhedra type
+   - IVM spatial array generation validated for space-filling geometries
+
+3. ✅ **Regular Polyhedra Size Corrections**
+   - All 9 regular polyhedra corrected for consistent halfSize parameter
+   - Edge quadrance validation ensures RT-pure measurements
+   - Proper nested relationship scaling maintained
+
+---
+
+### 2.1.1 Legacy Status (2025-12-30)
 
 **Phase 1 & 2: ✅ COMPLETE**
 1. ✅ Load Three.js from CDN via ES modules (three@0.160.0)
@@ -762,11 +963,51 @@ The -90° rotation is **optimal RT math** because it uses exact integer values (
 
 ## 3.11 Interactive Mathematical Demos ✅
 
-### Weierstrass Circle Parametrization Demo (2026-01-03)
+**Location:** `src/geometry/demos/` directory
+
+The demos directory contains interactive educational modules that demonstrate Rational Trigonometry principles through visual exploration. All demos are accessible via the main application UI.
+
+### 3.11.1 Quadrance Demo (rt-quadrance-demo.js)
+
+**Purpose:** Interactive demonstration of quadrance (distance²) as the fundamental RT distance measure, featuring historical Plimpton 322 Babylonian mathematics.
+
+**Key Features:**
+- **Plimpton 322 Visualization**: All 15 Pythagorean triples from the ancient Babylonian tablet
+- **Sexagesimal Display**: Numbers shown in both decimal and base-60 notation
+- **Quadrance Calculations**: Real-time Q = Δx² + Δy² + Δz² computation
+- **Historical Context**: 3,800-year-old exact trigonometry predating Pythagoras by 1,000 years
+- **RT Validation**: Demonstrates how Babylonians used quadrance relationships without √
+
+**Plimpton 322 Triples Included:**
+| Row | Short Side | Long Side | Diagonal | Quadrance Ratio |
+|-----|------------|-----------|----------|-----------------|
+| 1 | 119 | 120 | 169 | (119² + 120²)/169² = 1 |
+| 2 | 3367 | 3456 | 4825 | Exact in base-60 |
+| ... | ... | ... | ... | All 15 rows |
+
+### 3.11.2 Spread/Cross Demo (rt-cross-demo.js)
+
+**Purpose:** Interactive visualization of spread (s = sin²θ) and cross (c = cos²θ) as RT angle measures, with sexagesimal angle conversion.
+
+**Key Features:**
+- **Spread/Cross Visualization**: Real-time calculation as user drags point on circle
+- **Sexagesimal Angles**: DMS (Degrees-Minutes-Seconds) display using `RT.Sexagesimal`
+- **RT Identity Verification**: Shows s + c = 1 at all positions
+- **Special Angle Highlighting**: Exact rational values at 30°, 45°, 60°, 90°
+- **Algebraic Formulas**: Side-by-side RT vs classical trig expressions
+
+**Sexagesimal Integration:**
+```javascript
+// Real-time conversion from spread to sexagesimal DMS
+const dms = RT.Sexagesimal.fromSpread(currentSpread);
+// Display: "45° 0' 0" 0'" for spread = 0.5
+```
+
+### 3.11.3 Weierstrass Circle Parametrization Demo (rt-weierstrass-demo.js)
 
 **Purpose:** Educational demonstration of Weierstrass parametrization as a rational alternative to classical trigonometric circle parametrization.
 
-**Location:** `src/geometry/demos/rt-Weierstrass-demo.js` (accessible via UI)
+**Location:** `src/geometry/demos/rt-weierstrass-demo.js`
 
 **Key Features:**
 - **Draggable Point**: Interactive exploration of circle parametrization
@@ -814,11 +1055,243 @@ The demo's performance visualization is therefore pedagogical rather than empiri
 
 ---
 
-## 3.12 Mathematical Innovations & Discoveries ✅
+## 3.12 Papercut Node Sectioning Enhancements ✅ COMPLETE (2026-01-10)
+
+### Deliverable: Enhanced Section Cut Visualization with Node Controls
+
+**Module:** `src/geometry/modules/rt-papercut.js`
+
+The Papercut module has been significantly enhanced with new features for controlling node sphere appearance and generating section node circles at cutplane intersections.
+
+### 3.12.1 Node Opacity Control
+
+**Feature:** Dynamic transparency control for all node spheres (vertex markers).
+
+**UI Control:** Range slider in Papercut panel (0.0 to 1.0)
+
+**Implementation:**
+```javascript
+// Module-level state
+state: {
+  nodeOpacity: 1.0,  // Default: fully opaque
+}
+
+// API function
+export function setNodeOpacity(opacity) {
+  state.nodeOpacity = opacity;
+  // Update all node materials in scene
+  scene.traverse(object => {
+    if (object.userData.isNode && object.material) {
+      object.material.transparent = opacity < 1;
+      object.material.opacity = opacity;
+      object.material.needsUpdate = true;
+    }
+  });
+}
+```
+
+**Use Cases:**
+- Reduce visual clutter when viewing complex nested polyhedra
+- Highlight edge/face structure without node distraction
+- Create layered transparency effects for printing
+
+### 3.12.2 Geodesic Frequency Selector
+
+**Feature:** Control geodesic subdivision level per polyhedron type.
+
+**UI Controls:** Three frequency sliders in Papercut panel:
+- Icosahedron Geodesic Frequency (1-6)
+- Tetrahedron Geodesic Frequency (1-6)
+- Octahedron Geodesic Frequency (1-6)
+
+**Fuller Notation (Frequency Definition):**
+| Frequency | Edges per Side | Triangles per Face | Node Count (Icosa) |
+|-----------|----------------|--------------------|--------------------|
+| 1 | 1 (undivided) | 1 | 12 |
+| 2 | 2 (bisected) | 4 | 42 |
+| 3 | 3 (trisected) | 9 | 92 |
+| 4 | 4 | 16 | 162 |
+| 5 | 5 | 25 | 252 |
+| 6 | 6 | 36 | 362 |
+
+**Implementation:**
+```javascript
+// Read frequency from UI and regenerate geometry
+function updateGeodesicFrequency(polyType) {
+  const frequency = parseInt(document.getElementById(`geodesic${polyType}Frequency`).value);
+  const projection = document.querySelector(`input[name="${polyType}Projection"]:checked`).value;
+
+  // RT-pure geodesic generation
+  const polyData = window.RTPolyhedra[`geodesic${polyType}`](halfSize, frequency, projection);
+
+  // Rebuild THREE.js geometry from RT data
+  rebuildPolyhedronGroup(polyType, polyData);
+}
+```
+
+### 3.12.3 Section Node Circles
+
+**Feature:** Display circles where cutplane intersects node spheres.
+
+**UI Control:** "Section Nodes" checkbox in Papercut panel
+
+**RT-Pure Mathematics:**
+```javascript
+// Sphere-plane intersection yields a circle
+// RT approach: work with quadrance (distance²)
+export function spherePlaneCircleRadius(sphereRadiusQ, distanceQ) {
+  // If sphere doesn't intersect plane, return null
+  if (distanceQ > sphereRadiusQ) return null;
+
+  // Circle radius² = sphere radius² - distance to plane²
+  const circleRadiusQ = sphereRadiusQ - distanceQ;
+
+  // Only expand √ at final step (deferred √ expansion)
+  return Math.sqrt(circleRadiusQ);
+}
+```
+
+**Rendering:**
+- Circles rendered using THREE.js Line2 with LineMaterial for depth-aware line weights
+- Circle center positioned at sphere center projected onto cutplane
+- Circle oriented perpendicular to cutplane normal
+
+### 3.12.4 Adaptive Node Resolution
+
+**Feature:** Toggle between standard (32 segments) and high resolution (64 segments) for section node circles.
+
+**UI Control:** "High Resolution Nodes" checkbox in Papercut panel
+
+**Purpose:**
+- Standard (32): Faster rendering, suitable for screen display
+- High (64): Smoother circles for print output at high DPI
+
+**Implementation:**
+```javascript
+const segments = state.adaptiveNodeResolution ? 64 : 32;
+
+// Generate circle vertices using RT.circleParam (Weierstrass)
+const circlePoints = [];
+for (let i = 0; i <= segments; i++) {
+  const t = Math.tan(Math.PI * i / segments);  // Parameter for Weierstrass
+  const point = RT.circleParam(t);  // Returns {x, y} on unit circle
+  circlePoints.push(new THREE.Vector3(
+    center.x + circleRadius * point.x,
+    center.y + circleRadius * point.y,
+    cutplaneZ
+  ));
+}
+```
+
+### 3.12.5 Complete Papercut State
+
+```javascript
+// Full state object in rt-papercut.js
+state: {
+  printModeEnabled: false,
+  cutplaneEnabled: false,
+  cutplaneValue: 0,           // Slider position [-10, +10]
+  cutplaneAxis: 'z',          // Aligned to current view
+  invertCutPlane: false,      // Ground plane mode toggle
+  lineWeightEnabled: false,
+  lineWeightMin: 0.5,
+  lineWeightMax: 3.0,
+  currentView: 'top',
+
+  // New in QCQA branch:
+  sectionNodesEnabled: false,       // Section node circles
+  adaptiveNodeResolution: false,    // High resolution (64 segments)
+  nodeOpacity: 1.0,                 // Node transparency
+  geodesicIcosaFrequency: 1,        // Icosahedron geodesic frequency
+  geodesicTetraFrequency: 1,        // Tetrahedron geodesic frequency
+  geodesicOctaFrequency: 1,         // Octahedron geodesic frequency
+}
+```
+
+---
+
+## 3.13 Matrix Polyhedra & "Packed" Node Spheres ✅ COMPLETE (2026-01-10)
+
+### Deliverable: Corrected IVM Spatial Arrays with Proper Node Sizing
+
+**Module:** `src/geometry/modules/rt-matrix.js`
+
+The matrix module generates N×N grids of polyhedra demonstrating space-filling properties (Isotropic Vector Matrix - IVM).
+
+### 3.13.1 Matrix Polyhedra Corrections
+
+All matrix polyhedra have been corrected for proper initial size and spacing:
+
+| Polyhedron | Matrix Function | Space-Filling Property |
+|------------|-----------------|------------------------|
+| Cube | `createCubeMatrix()` | Standard cubic lattice |
+| Tetrahedron | `createTetrahedronMatrix()` | Alternating orientation |
+| Octahedron | `createOctahedronMatrix()` | Dual of cube matrix |
+| Cuboctahedron | `createCuboctahedronMatrix()` | VE centers in IVM |
+| Rhombic Dodecahedron | `createRhombicDodecahedronMatrix()` | Face-centered cubic |
+
+### 3.13.2 "Packed" Node Spheres
+
+**Concept:** Node spheres sized so that adjacent nodes in a matrix exactly touch (tangent) without overlapping.
+
+**RT-Pure Calculation:**
+```javascript
+// For a matrix with edge length 'edge':
+// Node diameter = minimum distance between adjacent vertices
+// Node radius = half that distance
+
+// For tetrahedron matrix:
+const edgeQuadrance = edge * edge;
+const nodeRadiusQ = edgeQuadrance / 4;  // Half edge length
+const nodeRadius = Math.sqrt(nodeRadiusQ);  // Deferred √ expansion
+
+// Validate: adjacent nodes should be exactly tangent
+const separation = RT.quadrance(node1.position, node2.position);
+const expectedQ = 4 * nodeRadiusQ;  // 2r + 2r = 2 * diameter
+console.assert(Math.abs(separation - expectedQ) < 1e-10, 'Nodes not properly packed');
+```
+
+### 3.13.3 Spacing Algorithm (RT-Pure)
+
+```javascript
+// Generate N×N grid centered at origin
+function createMatrix(polyType, matrixSize, halfSize, rotate45, opacity, color) {
+  const spacing = calculateSpacing(polyType, halfSize);
+
+  for (let i = 0; i < matrixSize; i++) {
+    for (let j = 0; j < matrixSize; j++) {
+      // Center the grid at origin
+      const offset_x = (i - matrixSize / 2 + 0.5) * spacing;
+      const offset_y = (j - matrixSize / 2 + 0.5) * spacing;
+
+      // Apply 45° rotation using RT spread/cross (no sin/cos)
+      if (rotate45) {
+        // Exact rational: spread = 0.5 for 45°
+        const s = 0.5;  // sin²(45°) = 1/2
+        const c = 0.5;  // cos²(45°) = 1/2
+        const sin45 = Math.sqrt(s);  // √(1/2) = 1/√2
+        const cos45 = Math.sqrt(c);
+
+        // Rotation matrix (deferred √ expansion)
+        const x_rot = cos45 * offset_x - sin45 * offset_y;
+        const y_rot = sin45 * offset_x + cos45 * offset_y;
+        offset_x = x_rot;
+        offset_y = y_rot;
+      }
+
+      createPolyhedronInstance(offset_x, offset_y, 0, halfSize, polyType);
+    }
+  }
+}
+```
+
+---
+
+## 3.14 Mathematical Innovations & Discoveries ✅
 
 This section documents novel mathematical insights and relationships discovered during the development of the ART Explorer, particularly from the Papercut and Weierstrass parametrization explorations.
 
-### 3.12.1 Discovery: Axial Projections and Polygonal Relationships (2026-01-03)
+### 3.14.1 Discovery: Axial Projections and Polygonal Relationships (2026-01-03)
 
 **Context:** During development of the RT-Papercut tool and Weierstrass circle parametrization demo, a fundamental geometric principle emerged about the relationship between polyhedral sections and their projections.
 
@@ -2766,6 +3239,21 @@ ARTexplorer_State_2025-12-28_geodesic-icosa-freq4.csv
 
 ### 5.1 Completed Items ✅
 
+**2026-01-10 - QCQA Branch: Architecture & Papercut Enhancements:**
+- ✅ **Init/Html/Rendering Separation** - Clean three-layer architecture
+  - rt-init.js: Module loading, event wiring, authentication
+  - index.html: Pure DOM structure, control containers
+  - rt-rendering.js: All THREE.js scene management via factory pattern
+- ✅ **Papercut Node Sectioning Enhancements**
+  - Node opacity control (0.0-1.0 transparency slider)
+  - Geodesic frequency selector for all three geodesic types (1-6)
+  - Section node circles at cutplane-sphere intersections
+  - Adaptive node resolution (32 vs 64 segments for print quality)
+- ✅ **Matrix Polyhedra & "Packed" Node Spheres**
+  - All matrix polyhedra corrected for initial size
+  - "Packed" node spheres properly sized for any polyhedra type
+  - IVM spatial array generation validated
+
 **2025-12-30 - Gumball Interaction & Camera Views:**
 - ✅ Selection precision fix (raycaster threshold 1.0 → 0.1)
 - ✅ Gumball basis vector dynamic sizing (tetEdge-based)
@@ -3040,6 +3528,22 @@ The file handler will support exporting the current scene to glTF 2.0 format (.g
 ## 6. Future Explorations
 
 ### 6.1 Sexagesimal (Base-60) Arithmetic for Exact RT Calculations
+
+**Implementation Status: ✅ COMPLETE (2026-01-10)**
+
+Sexagesimal functions have been implemented in:
+- **rt-math.js** - `RT.Sexagesimal` namespace with full DMS (Degrees-Minutes-Seconds-Thirds) support
+- **rt-cross-demo.js** - Interactive visualization of sexagesimal angle conversions
+
+**Key Functions in RT.Sexagesimal:**
+```javascript
+RT.Sexagesimal.SexagesimalAngle  // Class for D° M' S" T'" representation
+RT.Sexagesimal.fromDecimal(deg)  // Convert decimal degrees to DMS
+RT.Sexagesimal.fromSpread(s)     // Convert spread to DMS
+RT.Sexagesimal.fromCross(c)      // Convert cross to DMS
+RT.Sexagesimal.exactDivisions()  // Generate exact base-60 fractions
+RT.Sexagesimal.isExact(deg)      // Check if value is exact in base-60
+```
 
 The sexagesimal (base-60) numeral system offers compelling advantages for Rational Trigonometry applications, particularly for exact representation of the Plimpton 322 triples and other geometric ratios. This section explores the mathematical foundations, practical implementation, and potential benefits for our geometry application.
 
