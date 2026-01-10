@@ -685,9 +685,17 @@ function startARTexplorer(
     updateGeometry();
   });
 
-  // Opacity slider
+  // Face Opacity slider
   document.getElementById("opacitySlider").addEventListener("input", e => {
     document.getElementById("opacityValue").textContent = e.target.value;
+    updateGeometry();
+  });
+
+  // Node Opacity slider
+  document.getElementById("nodeOpacitySlider").addEventListener("input", e => {
+    const opacity = parseFloat(e.target.value);
+    document.getElementById("nodeOpacityValue").textContent = opacity;
+    renderingAPI.setNodeOpacity(opacity);
     updateGeometry();
   });
 
@@ -852,11 +860,20 @@ function startARTexplorer(
       updateGeometry();
     });
 
-  document.getElementById("nodeGeomRT").addEventListener("click", function () {
-    // Use rendering API to set node geometry type
+  // RT Geodesic dropdown - handles both selection and frequency change
+  const rtGeodesicDropdown = document.getElementById("nodeGeomRT");
+
+  rtGeodesicDropdown.addEventListener("focus", function () {
+    // When dropdown is focused/clicked, switch to RT mode
     renderingAPI.setNodeGeometryType(true);
-    document.getElementById("nodeGeomRT").classList.add("active");
+    rtGeodesicDropdown.classList.add("active");
     document.getElementById("nodeGeomClassical").classList.remove("active");
+  });
+
+  rtGeodesicDropdown.addEventListener("change", function () {
+    // Update frequency when selection changes
+    const frequency = parseInt(this.value, 10);
+    renderingAPI.setGeodesicFrequency(frequency);
     updateGeometry();
   });
 

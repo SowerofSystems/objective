@@ -67,6 +67,54 @@ export const RT = {
   },
 
   /**
+   * Sphere-Plane Intersection Circle Radius (RT-Pure)
+   * Calculate intersection circle radius using quadrance-based Pythagorean theorem
+   * Defers sqrt expansion until final step
+   *
+   * Geometry:
+   * - Sphere center at distance d from plane
+   * - Intersection forms a circle in the plane
+   * - Circle radius² + d² = sphere radius² (Pythagorean theorem)
+   *
+   * RT-Pure Approach:
+   * - Work with quadrance (distance²) throughout calculation
+   * - Only expand sqrt once at the very end
+   * - Avoids compound sqrt errors from intermediate calculations
+   *
+   * @param {number} sphereRadiusQ - Sphere radius quadrance (R²)
+   * @param {number} distanceQ - Quadrance from sphere center to plane (d²)
+   * @returns {number|null} Circle radius, or null if no intersection
+   *
+   * @example
+   * // Sphere of radius 1.0 centered at (0, 0, 0.5)
+   * // Plane at z = 0
+   * const sphereRadiusQ = 1.0 * 1.0;  // R² = 1.0
+   * const distanceQ = 0.5 * 0.5;      // d² = 0.25
+   * const circleRadius = RT.spherePlaneCircleRadius(sphereRadiusQ, distanceQ);
+   * // circleRadius = √(1.0 - 0.25) = √0.75 ≈ 0.866
+   *
+   * @example
+   * // No intersection case (sphere too far from plane)
+   * const sphereRadiusQ = 1.0;  // R² = 1.0
+   * const distanceQ = 2.0;      // d² = 2.0 > R²
+   * const circleRadius = RT.spherePlaneCircleRadius(sphereRadiusQ, distanceQ);
+   * // circleRadius = null (no intersection)
+   */
+  spherePlaneCircleRadius: (sphereRadiusQ, distanceQ) => {
+    // Check for intersection: distance² must be ≤ radius²
+    if (distanceQ > sphereRadiusQ) {
+      return null; // No intersection
+    }
+
+    // RT-Pure: Calculate circle radius quadrance
+    // circleRadiusQ = sphereRadiusQ - distanceQ
+    const circleRadiusQ = sphereRadiusQ - distanceQ;
+
+    // Deferred sqrt expansion (single sqrt at final step)
+    return Math.sqrt(circleRadiusQ);
+  },
+
+  /**
    * Rational Circle Parameterization - Wildberger's alternative to sin/cos
    * Generates points on unit circle using only rational operations (no trig functions)
    *
@@ -170,7 +218,7 @@ export const RT = {
 
   /**
    * Golden Ratio (φ) - Symbolic operations to defer √5 expansion
-   * φ = (1 + √5)/2 ≈ 1.618033988749895
+   * φ = (1 + √5)/2 ≈ 1.618033988749895.....mantissa continues infinitely
    *
    * Key identities:
    * - φ² = φ + 1

@@ -1317,13 +1317,15 @@
                 >
                   Classical Spheres
                 </button>
-                <button
-                  class="toggle-btn variant-toggle"
+                <select
+                  class="toggle-btn variant-toggle geodesic-dropdown"
                   id="nodeGeomRT"
-                  data-node-geom="rt"
                 >
-                  RT Geodesics
-                </button>
+                  <option value="1">1f Geodesic</option>
+                  <option value="2">2f Geodesic</option>
+                  <option value="3">3f Geodesic</option>
+                  <option value="4">4f Geodesic</option>
+                </select>
               </div>
               <p class="info-text" style="font-size: 10px; margin-top: 5px">
                 Toggle between THREE.js spheres and RT-computed geodesic nodes
@@ -1351,6 +1353,20 @@
                   value="0.25"
                 />
                 <span class="slider-value" id="opacityValue">0.25</span>
+              </div>
+            </div>
+            <div class="control-item">
+              <label>Node Opacity</label>
+              <div class="slider-container">
+                <input
+                  type="range"
+                  id="nodeOpacitySlider"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value="1"
+                />
+                <span class="slider-value" id="nodeOpacityValue">1</span>
               </div>
             </div>
           </div>
@@ -1462,6 +1478,18 @@
               <label class="checkbox-label">
                 <input type="checkbox" id="invertCutPlane" />
                 Invert Cut Plane
+              </label>
+            </div>
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="sectionNodes" />
+                Section Nodes
+              </label>
+            </div>
+            <div class="control-item">
+              <label class="checkbox-label">
+                <input type="checkbox" id="adaptiveNodeResolution" />
+                High Resolution Nodes
               </label>
             </div>
             <div class="control-item">

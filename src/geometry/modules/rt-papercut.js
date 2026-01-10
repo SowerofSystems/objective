@@ -12,6 +12,7 @@
 import { Line2 } from "three/addons/lines/Line2.js";
 import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 import { LineGeometry } from "three/addons/lines/LineGeometry.js";
+import { RT } from "./rt-math.js";
 
 export const RTPapercut = {
   // Module state (local, not persisted)
@@ -26,6 +27,8 @@ export const RTPapercut = {
     lineWeightMin: 0.5,
     lineWeightMax: 3.0,
     currentView: "top",
+    sectionNodesEnabled: false, // Section Nodes checkbox state
+    adaptiveNodeResolution: false, // High resolution mode: 64 segments (unchecked: 32)
   },
 
   // Store references to THREE.js objects
@@ -101,6 +104,30 @@ export const RTPapercut = {
       invertCutPlaneCheckbox.addEventListener("change", e => {
         RTPapercut.state.invertCutPlane = e.target.checked;
         RTPapercut.updateCutplane(RTPapercut.state.cutplaneValue, scene);
+      });
+    }
+
+    // 3c. Section Nodes checkbox
+    const sectionNodesCheckbox = document.getElementById("sectionNodes");
+    if (sectionNodesCheckbox) {
+      sectionNodesCheckbox.addEventListener("change", e => {
+        RTPapercut.state.sectionNodesEnabled = e.target.checked;
+        // Regenerate intersection edges to include/exclude node circles
+        if (RTPapercut.state.cutplaneEnabled && RTPapercut.state.cutplaneNormal) {
+          RTPapercut.updateCutplane(RTPapercut.state.cutplaneValue, scene);
+        }
+      });
+    }
+
+    // 3d. Adaptive Node Resolution checkbox
+    const adaptiveResolutionCheckbox = document.getElementById("adaptiveNodeResolution");
+    if (adaptiveResolutionCheckbox) {
+      adaptiveResolutionCheckbox.addEventListener("change", e => {
+        RTPapercut.state.adaptiveNodeResolution = e.target.checked;
+        // Regenerate circles with new resolution
+        if (RTPapercut.state.cutplaneEnabled && RTPapercut.state.cutplaneNormal && RTPapercut.state.sectionNodesEnabled) {
+          RTPapercut.updateCutplane(RTPapercut.state.cutplaneValue, scene);
+        }
       });
     }
 
@@ -557,7 +584,50 @@ export const RTPapercut = {
         return;
       }
 
-      // Skip sphere geometries (gumball/control handles, scale mode spheres)
+      // NODE DETECTION: Check if this is a vertex node (for Section Nodes feature)
+      if (object.userData.isVertexNode) {
+        // Only process nodes if Section Nodes checkbox is enabled
+        if (!RTPapercut.state.sectionNodesEnabled) {
+          return; // Skip node processing if feature disabled
+        }
+
+        // CURRENT: Sphere nodes (analytical circle)
+        if (object.userData.nodeType === "sphere") {
+          const sphereCenter = object.getWorldPosition(new THREE.Vector3());
+          const sphereRadius = object.userData.nodeRadius;
+
+          // NOTE: Circle resolution (36/72) is intentionally higher than sphere node
+          // geometry (16x16 segments). Section circles are 2D curves optimized for
+          // print output, while 3D spheres balance performance with visual quality.
+          // Future: Match resolution when polyhedra-as-nodes feature is implemented.
+          const circle = RTPapercut._spherePlaneIntersection(
+            sphereCenter,
+            sphereRadius,
+            plane,
+            36 // segments (default, or 72 if High Resolution enabled)
+          );
+
+          if (circle) {
+            // Add circle as continuous line loop to intersection group
+            RTPapercut._addCircleToIntersectionGroup(
+              circle,
+              intersectionGroup,
+              intersectionMaterial
+            );
+          }
+
+          return; // Done processing this node
+        }
+
+        // FUTURE: Polyhedra-as-nodes (mesh intersection - fallback to existing logic)
+        // else if (object.userData.nodeType === "polyhedron") {
+        //   // Fall through to standard mesh intersection code below
+        //   // This allows octahedra, tetrahedra, cubes, etc. as vertex markers
+        //   // Uses existing face-edge intersection logic (no special handling needed)
+        // }
+      }
+
+      // Skip sphere geometries (gumball/control handles, scale mode spheres WITHOUT userData.isVertexNode)
       if (
         object.geometry.type === "SphereGeometry" ||
         (object.geometry.parameters && object.geometry.parameters.radius)
@@ -639,7 +709,6 @@ export const RTPapercut = {
     if (intersectionGroup.children.length > 0) {
       scene.add(intersectionGroup);
       RTPapercut._intersectionLines = intersectionGroup;
-      // Generated intersection segments
     }
   },
 
@@ -659,6 +728,86 @@ export const RTPapercut = {
     const result = plane.intersectLine(line, intersection);
 
     return result; // Returns Vector3 if intersection, null otherwise
+  },
+
+  /**
+   * Generate circular intersection for sphere-plane cut (RT-Pure)
+   * Uses analytical geometry with RT.spherePlaneCircleRadius() for radius calculation
+   *
+   * @param {THREE.Vector3} sphereCenter - World position of sphere center
+   * @param {number} sphereRadius - Sphere radius
+   * @param {THREE.Plane} plane - Cutting plane
+   * @param {number} segments - Circle resolution (default: 32, ignored if adaptive mode enabled)
+   * @returns {Array<THREE.Vector3>|null} Array of points forming circle, or null if no intersection
+   * @private
+   */
+  _spherePlaneIntersection: function (sphereCenter, sphereRadius, plane, segments = 32) {
+    // RT-Pure: Work with quadrance until final radius calculation
+    const distanceToPlane = plane.distanceToPoint(sphereCenter);
+    const distanceQ = distanceToPlane * distanceToPlane;
+    const sphereRadiusQ = sphereRadius * sphereRadius;
+
+    // Use RT helper for radius calculation (defers sqrt)
+    const circleRadius = RT.spherePlaneCircleRadius(sphereRadiusQ, distanceQ);
+
+    if (circleRadius === null) {
+      return null; // No intersection
+    }
+
+    // High resolution mode: 72 segments for smoother circles (default: 36)
+    if (RTPapercut.state.adaptiveNodeResolution) {
+      segments = 72;
+    }
+
+    // Find circle center (projection of sphere center onto plane)
+    const circleCenter = new THREE.Vector3();
+    plane.projectPoint(sphereCenter, circleCenter);
+
+    // Generate two perpendicular vectors in the plane
+    const normal = plane.normal.clone();
+
+    // Find first tangent vector (cross with any non-parallel vector)
+    const up = Math.abs(normal.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+    const tangent1 = new THREE.Vector3().crossVectors(normal, up).normalize();
+    const tangent2 = new THREE.Vector3().crossVectors(normal, tangent1).normalize();
+
+    // Generate circle points using parametric form
+    const points = [];
+    for (let i = 0; i <= segments; i++) {
+      const angle = (i / segments) * Math.PI * 2;
+      const x = Math.cos(angle) * circleRadius;
+      const y = Math.sin(angle) * circleRadius;
+
+      const point = circleCenter.clone()
+        .add(tangent1.clone().multiplyScalar(x))
+        .add(tangent2.clone().multiplyScalar(y));
+
+      points.push(point);
+    }
+
+    return points;
+  },
+
+  /**
+   * Add circle as continuous line loop to intersection group
+   * @param {Array<THREE.Vector3>} points - Circle points
+   * @param {THREE.Group} group - Intersection group
+   * @param {LineMaterial} material - Line material
+   * @private
+   */
+  _addCircleToIntersectionGroup: function (points, group, material) {
+    // Convert points to flat array for LineGeometry
+    const positions = [];
+    points.forEach(p => {
+      positions.push(p.x, p.y, p.z);
+    });
+
+    const lineGeometry = new LineGeometry();
+    lineGeometry.setPositions(positions);
+
+    const line = new Line2(lineGeometry, material);
+    line.computeLineDistances(); // Required for LineMaterial
+    group.add(line);
   },
 
   /**

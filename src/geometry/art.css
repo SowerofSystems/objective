@@ -525,6 +525,17 @@ button:disabled {
   color: white;
 }
 
+/* Geodesic dropdown styling */
+.toggle-btn.geodesic-dropdown {
+  cursor: pointer;
+}
+
+.toggle-btn.geodesic-dropdown option {
+  background: #1a1a1a;
+  color: #e0e0e0;
+  padding: 6px;
+}
+
 /* Label Variants */
 .label-section {
   font-size: 12px;
