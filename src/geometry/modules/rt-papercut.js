@@ -28,6 +28,7 @@ export const RTPapercut = {
     lineWeightMax: 3.0,
     currentView: "top",
     sectionNodesEnabled: false, // Section Nodes checkbox state
+    adaptiveNodeResolution: false, // High resolution mode: 64 segments (unchecked: 32)
   },
 
   // Store references to THREE.js objects
@@ -113,6 +114,18 @@ export const RTPapercut = {
         RTPapercut.state.sectionNodesEnabled = e.target.checked;
         // Regenerate intersection edges to include/exclude node circles
         if (RTPapercut.state.cutplaneEnabled && RTPapercut.state.cutplaneNormal) {
+          RTPapercut.updateCutplane(RTPapercut.state.cutplaneValue, scene);
+        }
+      });
+    }
+
+    // 3d. Adaptive Node Resolution checkbox
+    const adaptiveResolutionCheckbox = document.getElementById("adaptiveNodeResolution");
+    if (adaptiveResolutionCheckbox) {
+      adaptiveResolutionCheckbox.addEventListener("change", e => {
+        RTPapercut.state.adaptiveNodeResolution = e.target.checked;
+        // Regenerate circles with new resolution
+        if (RTPapercut.state.cutplaneEnabled && RTPapercut.state.cutplaneNormal && RTPapercut.state.sectionNodesEnabled) {
           RTPapercut.updateCutplane(RTPapercut.state.cutplaneValue, scene);
         }
       });
@@ -583,11 +596,15 @@ export const RTPapercut = {
           const sphereCenter = object.getWorldPosition(new THREE.Vector3());
           const sphereRadius = object.userData.nodeRadius;
 
+          // NOTE: Circle resolution (36/72) is intentionally higher than sphere node
+          // geometry (16x16 segments). Section circles are 2D curves optimized for
+          // print output, while 3D spheres balance performance with visual quality.
+          // Future: Match resolution when polyhedra-as-nodes feature is implemented.
           const circle = RTPapercut._spherePlaneIntersection(
             sphereCenter,
             sphereRadius,
             plane,
-            32 // segments
+            36 // segments (default, or 72 if High Resolution enabled)
           );
 
           if (circle) {
@@ -720,7 +737,7 @@ export const RTPapercut = {
    * @param {THREE.Vector3} sphereCenter - World position of sphere center
    * @param {number} sphereRadius - Sphere radius
    * @param {THREE.Plane} plane - Cutting plane
-   * @param {number} segments - Circle resolution (default: 32)
+   * @param {number} segments - Circle resolution (default: 32, ignored if adaptive mode enabled)
    * @returns {Array<THREE.Vector3>|null} Array of points forming circle, or null if no intersection
    * @private
    */
@@ -735,6 +752,11 @@ export const RTPapercut = {
 
     if (circleRadius === null) {
       return null; // No intersection
+    }
+
+    // High resolution mode: 72 segments for smoother circles (default: 36)
+    if (RTPapercut.state.adaptiveNodeResolution) {
+      segments = 72;
     }
 
     // Find circle center (projection of sphere center onto plane)
