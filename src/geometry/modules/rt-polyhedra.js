@@ -658,6 +658,9 @@ export const Polyhedra = {
       }
 
       // Create faces from grid
+      // TODO: Face winding order inconsistent - some faces wound clockwise, others counter-clockwise
+      // This causes normals to point inward/outward inconsistently, requiring THREE.DoubleSide material
+      // Fix: Ensure all faces use consistent CCW winding (right-hand rule) for outward normals
       for (let row = 0; row < divisions; row++) {
         for (let col = 0; col < divisions - row; col++) {
           // Upward-pointing triangle

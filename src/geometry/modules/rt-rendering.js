@@ -23,6 +23,12 @@ const nodeGeometryCache = new Map();
 // Module-level variable to track RT vs classical node geometry
 let useRTNodeGeometry = false;
 
+// Module-level variable to track geodesic frequency for RT nodes
+let geodesicFrequency = 1;
+
+// Module-level variable to track node opacity
+let nodeOpacity = 1.0;
+
 /**
  * Initialize THREE.js scene and return rendering context
  * @param {Object} THREE - THREE.js library
@@ -723,8 +729,8 @@ export function initScene(THREE, OrbitControls, RT) {
     }
 
     if (useRT) {
-      // RT Geodesic Icosahedron (freq-0 = base 20-triangle icosahedron)
-      const polyData = window.RTPolyhedra.geodesicIcosahedron(radius, 0, "out");
+      // RT Geodesic Icosahedron with user-selected frequency
+      const polyData = window.RTPolyhedra.geodesicIcosahedron(radius, geodesicFrequency, "out");
 
       nodeGeometry = new THREE.BufferGeometry();
       const positions = [];
@@ -800,6 +806,9 @@ export function initScene(THREE, OrbitControls, RT) {
       emissive: color,
       emissiveIntensity: 0.2,
       flatShading: useFlatShading,
+      transparent: nodeOpacity < 1,
+      opacity: nodeOpacity,
+      side: THREE.DoubleSide, // TODO: Geodesic face winding order inconsistent - fix in rt-polyhedra.js geodesicIcosahedron() to use FrontSide only
     });
 
     // Collect all unique vertex positions from matrix
@@ -1095,6 +1104,9 @@ export function initScene(THREE, OrbitControls, RT) {
         emissive: color,
         emissiveIntensity: 0.2,
         flatShading: useFlatShading, // User-controlled shading
+        transparent: nodeOpacity < 1,
+        opacity: nodeOpacity,
+        side: THREE.DoubleSide, // TODO: Geodesic face winding order inconsistent - fix in rt-polyhedra.js geodesicIcosahedron() to use FrontSide only
       });
 
       vertices.forEach(vertex => {
@@ -1838,6 +1850,23 @@ export function initScene(THREE, OrbitControls, RT) {
   }
 
   /**
+   * Set geodesic frequency for RT node geometry
+   * @param {number} frequency - Geodesic frequency (1-4)
+   */
+  function setGeodesicFrequency(frequency) {
+    geodesicFrequency = frequency;
+    nodeGeometryCache.clear();
+  }
+
+  /**
+   * Set node opacity
+   * @param {number} opacity - Opacity value (0-1)
+   */
+  function setNodeOpacity(opacity) {
+    nodeOpacity = opacity;
+  }
+
+  /**
    * Clear the node geometry cache
    * Called when node rendering settings change
    */
@@ -2266,6 +2295,8 @@ export function initScene(THREE, OrbitControls, RT) {
 
     // Node configuration
     setNodeGeometryType,
+    setGeodesicFrequency,
+    setNodeOpacity,
     clearNodeCache,
 
     // Basis visibility controls
