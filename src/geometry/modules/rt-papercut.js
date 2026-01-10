@@ -12,6 +12,7 @@
 import { Line2 } from "three/addons/lines/Line2.js";
 import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 import { LineGeometry } from "three/addons/lines/LineGeometry.js";
+import { RT } from "./rt-math.js";
 
 export const RTPapercut = {
   // Module state (local, not persisted)
@@ -495,9 +496,6 @@ export const RTPapercut = {
       intersectionMaterial.resolution.set(size.x, size.y);
     }
 
-    // Track statistics for debugging
-    let nodeCircleCount = 0;
-
     // Process MESH objects (not line objects) to get face intersections
     scene.traverse(object => {
       // Skip non-mesh objects
@@ -599,7 +597,6 @@ export const RTPapercut = {
               intersectionGroup,
               intersectionMaterial
             );
-            nodeCircleCount++;
           }
 
           return; // Done processing this node
@@ -695,11 +692,6 @@ export const RTPapercut = {
     if (intersectionGroup.children.length > 0) {
       scene.add(intersectionGroup);
       RTPapercut._intersectionLines = intersectionGroup;
-
-      // Log statistics
-      if (nodeCircleCount > 0) {
-        console.log(`[Papercut] Generated ${nodeCircleCount} node section circles`);
-      }
     }
   },
 
@@ -739,7 +731,7 @@ export const RTPapercut = {
     const sphereRadiusQ = sphereRadius * sphereRadius;
 
     // Use RT helper for radius calculation (defers sqrt)
-    const circleRadius = window.RT.spherePlaneCircleRadius(sphereRadiusQ, distanceQ);
+    const circleRadius = RT.spherePlaneCircleRadius(sphereRadiusQ, distanceQ);
 
     if (circleRadius === null) {
       return null; // No intersection
