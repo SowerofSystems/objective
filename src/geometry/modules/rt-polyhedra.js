@@ -127,33 +127,29 @@ export const Polyhedra = {
 
   /**
    * Dual Tetrahedron (opposite alternating vertices)
-   * Forms stella octangula when both tetrahedra shown together
+   * Forms stella octangula (compound of two tetrahedra) when overlaid with base
+   *
+   * DRY REFACTOR: Derives from base tetrahedron via inversion
+   * - Geometric relationship: Multiply all vertices by -1 (180° rotation)
+   * - Face winding: Reverse to maintain outward normals
+   * - Inherits geodesic subdivision capability from base
+   * - Color scheme: Uses reciprocal complementary colors
+   *   - Dual solid uses base's geodesic color
+   *   - Dual geodesic uses base's solid color
+   *   - Creates perfect visual symmetry in stella octangula display
    */
   dualTetrahedron: (halfSize = 1) => {
-    const s = halfSize;
-    const vertices = [
-      new THREE.Vector3(s, -s, -s), // 1: (+, -, -)
-      new THREE.Vector3(-s, s, -s), // 3: (-, +, -)
-      new THREE.Vector3(-s, -s, s), // 4: (-, -, +)
-      new THREE.Vector3(s, s, s), // 6: (+, +, +)
-    ];
+    // Get base tetrahedron geometry
+    const base = Polyhedra.tetrahedron(halfSize);
 
-    const edges = [
-      [0, 1],
-      [0, 2],
-      [0, 3],
-      [1, 2],
-      [1, 3],
-      [2, 3],
-    ];
+    // Invert all vertices (multiply by -1)
+    const vertices = base.vertices.map(v => v.clone().multiplyScalar(-1));
 
-    // 4 triangular faces (CCW winding for outward normals)
-    const faces = [
-      [0, 2, 1], // Face 0: FIXED (was [0,1,2])
-      [0, 1, 3], // Face 1: correct
-      [0, 3, 2], // Face 2: FIXED (was [0,2,3])
-      [1, 2, 3], // Face 3: correct
-    ];
+    // Reverse face winding to maintain outward normals after inversion
+    const faces = base.faces.map(face => [...face].reverse());
+
+    // Edges remain topologically identical
+    const edges = base.edges;
 
     // RT VALIDATION: Check edge quadrance uniformity
     const expectedQ = 8 * halfSize * halfSize; // Q = (2√2·s)² = 8s²
@@ -161,6 +157,36 @@ export const Polyhedra = {
     const maxError = validation.reduce((max, v) => Math.max(max, v.error), 0);
     console.log(
       `Dual Tetrahedron: Expected Q=${expectedQ.toFixed(6)}, Max error=${maxError.toExponential(2)}`
+    );
+
+    return { vertices, edges, faces };
+  },
+
+  /**
+   * Geodesic Dual Tetrahedron with projection options
+   * Derives from base tetrahedron via inversion, then applies geodesic subdivision
+   * Implements reciprocal complementary color scheme (uses base solid color for geodesic)
+   *
+   * @param {number} halfSize - Radius of geodesic sphere
+   * @param {number} frequency - Subdivision frequency (1-7)
+   * @param {string} projection - Projection mode: "off", "in", "mid", "out"
+   * @returns {Object} - {vertices, edges, faces}
+   */
+  geodesicDualTetrahedron: (halfSize = 1, frequency = 1, projection = "out") => {
+    // Get base geodesic tetrahedron (subdivided and projected)
+    const base = Polyhedra.geodesicTetrahedron(halfSize, frequency, projection);
+
+    // Invert all vertices (multiply by -1) to create dual
+    const vertices = base.vertices.map(v => v.clone().multiplyScalar(-1));
+
+    // Reverse face winding to maintain outward normals after inversion
+    const faces = base.faces.map(face => [...face].reverse());
+
+    // Edges remain topologically identical
+    const edges = base.edges;
+
+    console.log(
+      `[RT] Geodesic Dual Tetrahedron: frequency=${frequency}, projection=${projection}, vertices=${vertices.length}`
     );
 
     return { vertices, edges, faces };
@@ -374,27 +400,25 @@ export const Polyhedra = {
    * Vertices positioned at dodecahedron face centers
    * Each icosahedron vertex points to center of dodecahedron pentagonal face
    *
-   * RATIONAL TRIGONOMETRY: Face dual relationship in quadrance space
-   * - Dodecahedron inradius (face center) = φ × halfSize
-   * - Icosahedron vertices scaled to this radius for "kissing" configuration
-   * - Rotation applied using SPREAD (s = sin²θ), not angle
-   * - Edge quadrance scaled by φ²
+   * DRY REFACTOR: Derives from base icosahedron via scale + RT-pure rotation
+   * - Scale factor: φ (golden ratio) to align with dodecahedron face centers
+   * - RT-pure rotation: -90° Z-axis (spread s=1, cross c=0 - exact integers!)
+   * - Transformation: (x,y,z) → (y,-x,z) using only {-1, 0, 1} multiplication
+   * - Inherits geodesic subdivision capability from base
+   * - Color scheme: Uses reciprocal complementary colors
+   *   - Dual solid uses base's geodesic color
+   *   - Dual geodesic uses base's solid color
+   *   - Perfect visual symmetry when displayed with dodecahedron
    *
-   * This creates the canonical Platonic dual pair positioning
+   * This represents the GOLD STANDARD for RT: exact integer spread values
+   * eliminate ALL transcendental functions - pure algebraic geometry!
    */
   dualIcosahedron: (halfSize = 1) => {
-    // Standard icosahedron normalized to unit sphere
-    const sqrt5 = Math.sqrt(5);
     const phi = RT.Phi.value(); // φ = (1 + √5)/2
-    const phi_squared = phi * phi;
-    const normFactor = 1 / Math.sqrt(1 + phi_squared);
 
     // Dodecahedron face centers are at radius φ × halfSize from origin
     // Scale icosahedron to match this radius for face dual alignment
     const dualRadius = phi * halfSize;
-
-    const a = dualRadius * normFactor; // scaled to dual radius
-    const b = dualRadius * phi * normFactor; // φ times a
 
     console.log(`[ThreeRT] Dual Icosahedron RT construction:`);
     console.log(`  Dodecahedron halfSize: ${halfSize.toFixed(3)}`);
@@ -404,139 +428,69 @@ export const Polyhedra = {
     console.log(
       `  Icosahedron vertex radius: ${dualRadius.toFixed(6)} (matches dodec inradius)`
     );
-    console.log(`  a = ${a.toFixed(6)}, b = φ·a = ${b.toFixed(6)}`);
+    console.log(`  RT ROTATION: Spread s=1, Cross c=0 (exact integers!)`);
+    console.log(`  Transform: (x,y,z) → (y,-x,z) - pure integer matrix`);
 
-    // RATIONAL TRIGONOMETRY: Rotation using spread, not angles
-    // For icosa/dodec duality, need -π/2 (90° clockwise) rotation around Z-axis
-    // This aligns icosahedron vertices with dodecahedron face centers
-    //
-    // OPTIMAL RT MATH: This rotation uses EXACT INTEGER VALUES
-    // No trigonometric functions called - pure algebraic transformation!
-    //
-    // For -90° rotation (clockwise when viewed from +Z):
-    // sin(-π/2) = -1 (exact algebraic value)
-    // cos(-π/2) = 0 (exact algebraic value)
-    // Spread s = sin²(-π/2) = (-1)² = 1 (exact integer!)
-    // Cross c = cos²(-π/2) = 0² = 0 (exact integer!)
-    //
-    // This represents the GOLD STANDARD for RT: when rotation angles are
-    // "special" (multiples of 90°), spread and cross values are exact integers,
-    // eliminating ALL transcendental functions.
+    // Get base icosahedron geometry at dual scale
+    const base = Polyhedra.icosahedron(dualRadius);
 
-    const sin_neg_pi_2 = -1; // sin(-π/2) = -1 (exact!)
-    const cos_neg_pi_2 = 0; // cos(-π/2) = 0 (exact!)
-    const sin_neg_pi_2_sq = 1; // s = sin²(-π/2) = 1 (EXACT INTEGER!)
-    const cos_neg_pi_2_sq = 0; // c = cos²(-π/2) = 0 (EXACT INTEGER!)
-
-    console.log(`  RT ROTATION (Optimal - Integer Spread):`);
-    console.log(
-      `  Spread s = sin²(-π/2) = ${sin_neg_pi_2_sq} (exact integer!)`
+    // Apply RT-pure Z-rotation: -90° clockwise
+    // Spread s = sin²(-π/2) = 1 (exact integer!)
+    // Cross c = cos²(-π/2) = 0 (exact integer!)
+    // Transform: (x,y,z) → (y,-x,z) using ONLY multiplication by {-1, 0, 1}
+    const vertices = base.vertices.map(
+      v => new THREE.Vector3(v.y, -v.x, v.z)
     );
-    console.log(`  Cross c = cos²(-π/2) = ${cos_neg_pi_2_sq} (exact integer!)`);
-    console.log(`  Verify s + c = 1: ${sin_neg_pi_2_sq + cos_neg_pi_2_sq} ✓`);
-    console.log(`  Pure integer matrix - NO transcendental functions!`);
 
-    // Z-axis rotation matrix using spread (clockwise -90°)
-    // R_z(-π/2) = [cos, -sin, 0; sin, cos, 0; 0, 0, 1]
-    //           = [0, 1, 0; -1, 0, 0; 0, 0, 1]
-    // Pure integer matrix - transforms (x,y,z) → (y,-x,z) using ONLY
-    // multiplication by 0, 1, and -1
-    const rotateZ = v => {
-      return new THREE.Vector3(
-        cos_neg_pi_2 * v.x - sin_neg_pi_2 * v.y, // 0*x - (-1)*y = y
-        sin_neg_pi_2 * v.x + cos_neg_pi_2 * v.y, // -1*x + 0*y = -x
-        v.z // z unchanged
-      );
-    };
-
-    // Same vertex configuration as standard icosahedron, but scaled to dual radius
-    // Three orthogonal golden rectangles, THEN rotated by spread s=1 around Z
-    const verticesUnrotated = [
-      // Rectangle 1: XZ plane, y = ±a
-      new THREE.Vector3(0, a, b), // 0
-      new THREE.Vector3(0, a, -b), // 1
-      new THREE.Vector3(0, -a, b), // 2
-      new THREE.Vector3(0, -a, -b), // 3
-      // Rectangle 2: YZ plane, x = ±a
-      new THREE.Vector3(a, b, 0), // 4
-      new THREE.Vector3(a, -b, 0), // 5
-      new THREE.Vector3(-a, b, 0), // 6
-      new THREE.Vector3(-a, -b, 0), // 7
-      // Rectangle 3: XY plane, z = ±a
-      new THREE.Vector3(b, 0, a), // 8
-      new THREE.Vector3(b, 0, -a), // 9
-      new THREE.Vector3(-b, 0, a), // 10
-      new THREE.Vector3(-b, 0, -a), // 11
-    ];
-
-    // Apply RT-based Z-rotation to align with dodecahedron face normals
-    const vertices = verticesUnrotated.map(v => rotateZ(v));
-
-    // Same topology as standard icosahedron
-    const edges = [
-      [0, 2],
-      [0, 4],
-      [0, 6],
-      [0, 8],
-      [0, 10],
-      [1, 3],
-      [1, 4],
-      [1, 6],
-      [1, 9],
-      [1, 11],
-      [2, 5],
-      [2, 7],
-      [2, 8],
-      [2, 10],
-      [3, 5],
-      [3, 7],
-      [3, 9],
-      [3, 11],
-      [4, 6],
-      [4, 8],
-      [4, 9],
-      [5, 7],
-      [5, 8],
-      [5, 9],
-      [6, 10],
-      [6, 11],
-      [7, 10],
-      [7, 11],
-      [8, 9],
-      [10, 11],
-    ];
-
-    // Same face topology as base icosahedron (winding corrected 2026-01-10)
-    const faces = [
-      [8, 4, 0],
-      [4, 6, 0],
-      [6, 10, 0],
-      [2, 8, 0],
-      [10, 2, 0],
-      [9, 1, 4],
-      [8, 9, 4],
-      [4, 1, 6],
-      [1, 11, 6],
-      [11, 10, 6],
-      [5, 8, 2],
-      [5, 9, 8],
-      [7, 2, 10],
-      [7, 5, 2],
-      [11, 7, 10],
-      [1, 9, 3],
-      [9, 5, 3],
-      [7, 11, 3],
-      [5, 7, 3],
-      [11, 1, 3],
-    ];
+    // Topology remains identical (rotation preserves face winding)
+    const edges = base.edges;
+    const faces = base.faces;
 
     // RT VALIDATION: Check edge quadrance uniformity
-    // Dual icosahedron scaled by φ, so edge Q = 4a² × φ²
+    // Calculate expected Q from base icosahedron parameters
+    const phi_squared = phi * phi;
+    const normFactor = 1 / Math.sqrt(1 + phi_squared);
+    const a = dualRadius * normFactor;
     const expectedQ = 4 * a * a;
+
     const validation = RT.validateEdges(vertices, edges, expectedQ);
     const maxError = validation.reduce((max, v) => Math.max(max, v.error), 0);
     console.log(
       `Dual Icosahedron: Expected Q=${expectedQ.toFixed(6)}, Max error=${maxError.toExponential(2)}`
+    );
+
+    return { vertices, edges, faces };
+  },
+
+  /**
+   * Geodesic Dual Icosahedron with projection options
+   * Derives from base icosahedron via φ-scale + RT-pure rotation, then applies geodesic subdivision
+   * Implements reciprocal complementary color scheme (uses base solid color for geodesic)
+   *
+   * @param {number} halfSize - Base scale (dodecahedron halfSize)
+   * @param {number} frequency - Subdivision frequency (1-7)
+   * @param {string} projection - Projection mode: "off", "in", "mid", "out"
+   * @returns {Object} - {vertices, edges, faces}
+   */
+  geodesicDualIcosahedron: (halfSize = 1, frequency = 1, projection = "out") => {
+    const phi = RT.Phi.value(); // φ = (1 + √5)/2
+    const dualRadius = phi * halfSize;
+
+    // Get base geodesic icosahedron (subdivided and projected)
+    const base = Polyhedra.geodesicIcosahedron(dualRadius, frequency, projection);
+
+    // Apply RT-pure Z-rotation: -90° clockwise
+    // Transform: (x,y,z) → (y,-x,z) using ONLY multiplication by {-1, 0, 1}
+    const vertices = base.vertices.map(
+      v => new THREE.Vector3(v.y, -v.x, v.z)
+    );
+
+    // Topology remains identical (rotation preserves face winding)
+    const edges = base.edges;
+    const faces = base.faces;
+
+    console.log(
+      `[RT] Geodesic Dual Icosahedron: frequency=${frequency}, projection=${projection}, vertices=${vertices.length}`
     );
 
     return { vertices, edges, faces };

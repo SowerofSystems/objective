@@ -4286,23 +4286,19 @@ Consider adding full Geodesic implementation to Dual Icosahedron in UI and Funct
 ---
 
 #### 8.1.3 Backface Culling for Papercut Print Optimization
-**Status:** ⚠️ Active
+**Status:** ✅ Complete (2026-01-11)
 **Priority:** High (Print Quality)
 **Location:** [Section 3.13, Line 1231](#313-matrix-polyhedra--packed-node-spheres--complete-2026-01-10)
 
-Backface Culling for Papercut print optimization: UI checkbox already in place.
+Backface Culling for Papercut print optimization: **COMPLETED**
 
-**Technical Details:**
-- UI checkbox is implemented and ready
-- Needs backend implementation in rt-papercut.js
-- Would hide rear-facing faces in section views
-- Critical for clean print output (no visual confusion from back faces)
-- Improves print clarity for architectural/dome applications
-
-**Implementation:**
-- Wire UI checkbox to material.side property
-- Set `material.side = THREE.FrontSide` when enabled
-- Default: `THREE.DoubleSide` (current behavior)
+**Completion Summary:**
+- All polyhedra face winding orders corrected (Session Summary #101)
+- Backface culling now enabled by default in Papercut mode
+- UI checkbox fully functional and wired to material.side property
+- Default: `THREE.FrontSide` (backface culling ON)
+- All 7 Platonic/Archimedean solids validated with test suite
+- Clean print output achieved for architectural/dome applications
 
 ---
 
@@ -4779,32 +4775,34 @@ Change basis vector arrowheads from standard cones to pentagonal cones for XYZ a
 
 ---
 
-#### 8.4.3 Reduce Default XYZ Grid Size
+#### 8.4.3 Reduce XYZ Basis Vector Arrow Size
 **Status:** ⚠️ Active
 **Priority:** Medium (UI/Visual)
 
-Reduce default size of XYZ Grid from current >2.75 units to exactly 2.0 units tall/wide.
+Reduce the length/size of XYZ Cartesian basis vector arrows to match the proportions of WXYZ Quadray basis vectors.
 
 **Problem:**
-- XYZ grid currently appears oversized (>2.75 XYZ grid units)
-- Clutters workspace
-- Disproportionate to geometry being studied
+- XYZ basis vector arrows (red/green/blue) are disproportionately large
+- Arrow length appears >2.75 units, dwarfing the base cube geometry
+- Creates visual imbalance compared to appropriately-sized WXYZ basis vectors
+- Clutters workspace and distracts from geometry being studied
 
 **Solution:**
-- Change default grid size parameter to 2.0 units
-- Maintain existing Grid Interval slider functionality (user can still adjust)
-- Update default in `rt-rendering.js` grid initialization
+- Reduce XYZ basis vector arrow length to ~2.0 units (matching cube edge length)
+- Match visual proportion of WXYZ Quadray basis vectors
+- Update arrow creation in `rt-rendering.js` initialization
 
 **Technical Details:**
-- **Module:** `rt-rendering.js`
-- **Current:** Grid size likely set to ~3.0 or calculated incorrectly
-- **Update:** Explicit `gridSize = 2.0` for XYZ Cartesian grids
-- **Verify:** WXYZ grids should remain at appropriate tetrahedral scale
+- **Module:** `rt-rendering.js` (basis vector creation section)
+- **Current:** XYZ arrow length likely >2.75 units
+- **Update:** Set XYZ basis vector arrow length to 2.0 units
+- **Reference:** WXYZ basis vectors already properly scaled
+- **Components:** Both arrow shaft length and cone arrowhead should scale proportionally
 
 **Impact:**
-- Cleaner default workspace
-- Better visual proportion for polyhedra study
-- Users can still expand grid via slider if needed
+- Better visual balance between XYZ and WXYZ basis representations
+- Cleaner workspace with appropriately-scaled visual aids
+- XYZ arrows no longer dominate the viewport
 
 ---
 

@@ -521,6 +521,95 @@
                 <input type="checkbox" id="showDualTetrahedron" checked />
                 Tetrahedron Dual
               </label>
+              <div id="geodesic-dual-tetra-all" class="geodesic-options" style="display: none; margin-left: 20px; margin-top: 8px;">
+                <div style="margin-left: 20px; margin-top: 5px">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="showGeodesicDualTetrahedron" />
+                    Geodesic (Fuller)
+                  </label>
+                  <div style="margin-left: 20px; margin-top: 5px">
+                    <div class="slider-container">
+                      <label style="font-size: 11px">Freq:</label>
+                      <input
+                        type="number"
+                        id="geodesicDualTetraFrequency"
+                        min="1"
+                        max="7"
+                        value="1"
+                        style="width: 50px; margin-left: 5px"
+                      />
+                    </div>
+                    <div style="margin-top: 8px">
+                      <label
+                        style="
+                          font-size: 11px;
+                          display: block;
+                          margin-bottom: 3px;
+                          color: #b0b0b0;
+                        "
+                        >Project:</label
+                      >
+                      <label
+                        style="
+                          font-size: 10px;
+                          display: block;
+                          margin-left: 5px;
+                        "
+                      >
+                        <input
+                          type="radio"
+                          name="geodesicDualTetraProjection"
+                          value="off"
+                        />
+                        Off (flat)
+                      </label>
+                      <label
+                        style="
+                          font-size: 10px;
+                          display: block;
+                          margin-left: 5px;
+                        "
+                      >
+                        <input
+                          type="radio"
+                          name="geodesicDualTetraProjection"
+                          value="in"
+                        />
+                        InSphere
+                      </label>
+                      <label
+                        style="
+                          font-size: 10px;
+                          display: block;
+                          margin-left: 5px;
+                        "
+                      >
+                        <input
+                          type="radio"
+                          name="geodesicDualTetraProjection"
+                          value="mid"
+                        />
+                        MidSphere
+                      </label>
+                      <label
+                        style="
+                          font-size: 10px;
+                          display: block;
+                          margin-left: 5px;
+                        "
+                      >
+                        <input
+                          type="radio"
+                          name="geodesicDualTetraProjection"
+                          value="out"
+                          checked
+                        />
+                        OutSphere
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="control-item">
@@ -725,6 +814,95 @@
                 <input type="checkbox" id="showDualIcosahedron" />
                 Icosahedron Dual (Face Dual)
               </label>
+              <div id="geodesic-dual-icosa-all" class="geodesic-options" style="display: none; margin-left: 20px; margin-top: 8px;">
+                <div style="margin-left: 20px; margin-top: 5px">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="showGeodesicDualIcosahedron" />
+                    Geodesic (Fuller)
+                  </label>
+                  <div style="margin-left: 20px; margin-top: 5px">
+                    <div class="slider-container">
+                      <label style="font-size: 11px">Freq:</label>
+                      <input
+                        type="number"
+                        id="geodesicDualIcosaFrequency"
+                        min="1"
+                        max="7"
+                        value="1"
+                        style="width: 50px; margin-left: 5px"
+                      />
+                    </div>
+                    <div style="margin-top: 8px">
+                      <label
+                        style="
+                          font-size: 11px;
+                          display: block;
+                          margin-bottom: 3px;
+                          color: #b0b0b0;
+                        "
+                        >Project:</label
+                      >
+                      <label
+                        style="
+                          font-size: 10px;
+                          display: block;
+                          margin-left: 5px;
+                        "
+                      >
+                        <input
+                          type="radio"
+                          name="geodesicDualIcosaProjection"
+                          value="off"
+                        />
+                        Off (flat)
+                      </label>
+                      <label
+                        style="
+                          font-size: 10px;
+                          display: block;
+                          margin-left: 5px;
+                        "
+                      >
+                        <input
+                          type="radio"
+                          name="geodesicDualIcosaProjection"
+                          value="in"
+                        />
+                        InSphere
+                      </label>
+                      <label
+                        style="
+                          font-size: 10px;
+                          display: block;
+                          margin-left: 5px;
+                        "
+                      >
+                        <input
+                          type="radio"
+                          name="geodesicDualIcosaProjection"
+                          value="mid"
+                        />
+                        MidSphere
+                      </label>
+                      <label
+                        style="
+                          font-size: 10px;
+                          display: block;
+                          margin-left: 5px;
+                        "
+                      >
+                        <input
+                          type="radio"
+                          name="geodesicDualIcosaProjection"
+                          value="out"
+                          checked
+                        />
+                        OutSphere
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="control-item">
               <label class="checkbox-label">
@@ -1311,19 +1489,19 @@
               <label class="label-section">Node Geometry</label>
               <div class="toggle-btn-group">
                 <button
-                  class="toggle-btn variant-toggle active"
+                  class="toggle-btn variant-toggle"
                   id="nodeGeomClassical"
                   data-node-geom="classical"
                 >
                   Classical Spheres
                 </button>
                 <select
-                  class="toggle-btn variant-toggle geodesic-dropdown"
+                  class="toggle-btn variant-toggle geodesic-dropdown active"
                   id="nodeGeomRT"
                 >
                   <option value="1">1f Geodesic</option>
                   <option value="2">2f Geodesic</option>
-                  <option value="3">3f Geodesic</option>
+                  <option value="3" selected>3f Geodesic</option>
                   <option value="4">4f Geodesic</option>
                 </select>
               </div>
@@ -1364,9 +1542,9 @@
                   min="0"
                   max="1"
                   step="0.05"
-                  value="1"
+                  value="0.35"
                 />
-                <span class="slider-value" id="nodeOpacityValue">1</span>
+                <span class="slider-value" id="nodeOpacityValue">0.35</span>
               </div>
             </div>
           </div>
@@ -1374,7 +1552,7 @@
         <!-- END SECTION 6: VISUAL OPTIONS -->
 
         <!-- ========================================
-             SECTION 7: VIEW OPTIONS
+             SECTION 7: CAMERA
              ======================================== -->
         <div class="control-group">
           <h3>
@@ -1382,7 +1560,7 @@
               class="section-toggle collapsed"
               data-target="view-section"
             ></span>
-            View Options
+            Camera
           </h3>
           <div id="view-section" class="section-content collapsed">
             <div class="control-item">
@@ -1429,7 +1607,7 @@
             </p>
           </div>
         </div>
-        <!-- END SECTION 7: VIEW OPTIONS -->
+        <!-- END SECTION 7: CAMERA -->
 
         <!-- ========================================
              SECTION 8: PAPERCUT

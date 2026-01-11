@@ -21,13 +21,13 @@ export { PerformanceClock };
 const nodeGeometryCache = new Map();
 
 // Module-level variable to track RT vs classical node geometry
-let useRTNodeGeometry = false;
+let useRTNodeGeometry = true; // Default to RT geodesic nodes (3f)
 
 // Module-level variable to track geodesic frequency for RT nodes
-let geodesicFrequency = 1;
+let geodesicFrequency = 3; // Default to 3f Geodesic
 
 // Module-level variable to track node opacity
-let nodeOpacity = 1.0;
+let nodeOpacity = 0.35; // Default to 0.35 for better visibility
 
 /**
  * Initialize THREE.js scene and return rendering context
@@ -44,6 +44,8 @@ export function initScene(THREE, OrbitControls, RT) {
   let geodesicIcosahedronGroup; // Phase 2.7a: Geodesic subdivision
   let geodesicTetrahedronGroup; // Phase 2.7c: Geodesic tetrahedron
   let geodesicOctahedronGroup; // Phase 2.7b: Geodesic octahedron
+  let geodesicDualTetrahedronGroup; // Phase 3: Geodesic dual tetrahedron
+  let geodesicDualIcosahedronGroup; // Phase 3: Geodesic dual icosahedron
   let cubeMatrixGroup, tetMatrixGroup, octaMatrixGroup; // Matrix forms (IVM arrays)
   let cuboctaMatrixGroup; // Cuboctahedron matrix (Vector Equilibrium array)
   let rhombicDodecMatrixGroup; // Rhombic dodecahedron matrix (space-filling array)
@@ -133,6 +135,12 @@ export function initScene(THREE, OrbitControls, RT) {
     geodesicOctahedronGroup = new THREE.Group(); // Phase 2.7b
     geodesicOctahedronGroup.userData.type = "geodesicOctahedron";
 
+    geodesicDualTetrahedronGroup = new THREE.Group(); // Phase 3
+    geodesicDualTetrahedronGroup.userData.type = "geodesicDualTetrahedron";
+
+    geodesicDualIcosahedronGroup = new THREE.Group(); // Phase 3
+    geodesicDualIcosahedronGroup.userData.type = "geodesicDualIcosahedron";
+
     // Matrix forms (IVM spatial arrays)
     cubeMatrixGroup = new THREE.Group();
     cubeMatrixGroup.userData.type = "cubeMatrix";
@@ -166,6 +174,8 @@ export function initScene(THREE, OrbitControls, RT) {
     scene.add(geodesicIcosahedronGroup);
     scene.add(geodesicTetrahedronGroup);
     scene.add(geodesicOctahedronGroup);
+    scene.add(geodesicDualTetrahedronGroup);
+    scene.add(geodesicDualIcosahedronGroup);
     scene.add(cubeMatrixGroup);
     scene.add(tetMatrixGroup);
     scene.add(octaMatrixGroup);
@@ -186,6 +196,8 @@ export function initScene(THREE, OrbitControls, RT) {
       geodesicIcosahedronGroup,
       geodesicTetrahedronGroup,
       geodesicOctahedronGroup,
+      geodesicDualTetrahedronGroup,
+      geodesicDualIcosahedronGroup,
       cubeMatrixGroup,
       tetMatrixGroup,
       octaMatrixGroup,
@@ -263,20 +275,20 @@ export function initScene(THREE, OrbitControls, RT) {
     // Using ArrowHelper to match Quadray vector style (with arrowheads)
     cartesianBasis = new THREE.Group();
 
-    // Fundamental unit: cube edge = 2.0 (for halfSize = 1)
+    // Fundamental unit: Match default cube edge length (√2 ≈ 1.4142)
     // ArrowHelper 'length' parameter = TOTAL arrow length (shaft + head)
-    const totalBasisLength = 2.0; // Cube edge length at base scale
-    const headLength = 0.3;
-    const arrowLength = totalBasisLength; // Total visual length
+    const totalBasisLength = Math.sqrt(2); // Default cube edge length = √2
+    const headLength = 0.2; // Proportionally scaled head
+    const arrowLength = totalBasisLength; // Total visual length ≈ 1.414
 
     // X-axis (Red)
     const xAxis = new THREE.ArrowHelper(
       new THREE.Vector3(1, 0, 0), // Direction
       new THREE.Vector3(0, 0, 0), // Origin
-      arrowLength, // Total arrow length = 2.0
+      arrowLength, // Total arrow length ≈ 1.414 (matches default cube edge)
       0xff0000, // Red
-      headLength, // Head length = 0.3
-      0.2 // Head width (matching Quadray style)
+      headLength, // Head length = 0.2
+      0.15 // Head width (proportionally scaled)
     );
     cartesianBasis.add(xAxis);
 
@@ -284,10 +296,10 @@ export function initScene(THREE, OrbitControls, RT) {
     const yAxis = new THREE.ArrowHelper(
       new THREE.Vector3(0, 1, 0), // Direction
       new THREE.Vector3(0, 0, 0), // Origin
-      arrowLength, // Total arrow length = 2.0
+      arrowLength, // Total arrow length ≈ 1.414 (matches default cube edge)
       0x00ff00, // Green
-      headLength, // Head length = 0.3
-      0.2 // Head width
+      headLength, // Head length = 0.2
+      0.15 // Head width (proportionally scaled)
     );
     cartesianBasis.add(yAxis);
 
@@ -295,10 +307,10 @@ export function initScene(THREE, OrbitControls, RT) {
     const zAxis = new THREE.ArrowHelper(
       new THREE.Vector3(0, 0, 1), // Direction (up in Z-up)
       new THREE.Vector3(0, 0, 0), // Origin
-      arrowLength, // Total arrow length = 2.0
+      arrowLength, // Total arrow length ≈ 1.414 (matches default cube edge)
       0x0000ff, // Blue
-      headLength, // Head length = 0.3
-      0.2 // Head width
+      headLength, // Head length = 0.2
+      0.15 // Head width (proportionally scaled)
     );
     cartesianBasis.add(zAxis);
 
@@ -307,30 +319,102 @@ export function initScene(THREE, OrbitControls, RT) {
   }
 
   /**
-   * Create Quadray basis vectors (WXYZ)
+   * Create tetrahedral arrowhead for WXYZ basis vectors
+   * Uses dual tetrahedron geometry with one vertex pointing along the axis
+   * Distinguishes WXYZ (tetrahedral heads) from XYZ (cone heads)
+   *
+   * @param {THREE.Vector3} direction - Normalized direction vector
+   * @param {number} shaftLength - Length of arrow shaft
+   * @param {number} headSize - Scale of tetrahedral head
+   * @param {number} color - Hex color for the arrow
+   * @returns {THREE.Group} Arrow with shaft and tetrahedral head
+   */
+  function createTetrahedralArrow(direction, shaftLength, headSize, color) {
+    const arrowGroup = new THREE.Group();
+
+    // 1. Create cylindrical shaft (match XYZ ArrowHelper visual weight)
+    const shaftRadius = 0.005; // Match THREE.ArrowHelper default shaft radius
+    const shaftGeometry = new THREE.CylinderGeometry(shaftRadius, shaftRadius, shaftLength, 8);
+    const shaftMaterial = new THREE.MeshBasicMaterial({ color });
+    const shaft = new THREE.Mesh(shaftGeometry, shaftMaterial);
+
+    // Position shaft: cylinder default is Y-up, translate to point in direction
+    shaft.position.copy(direction.clone().multiplyScalar(shaftLength / 2));
+
+    // Orient shaft along direction vector
+    shaft.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+    arrowGroup.add(shaft);
+
+    // 2. Create tetrahedral arrowhead using dualTetrahedron
+    // The dual tetrahedron has vertices at (±1,±1,±1) normalized
+    // We want ONE vertex to point exactly along the direction vector
+    const tetraGeom = Polyhedra.dualTetrahedron(headSize);
+
+    // Find which vertex is closest to pointing in our direction
+    let bestVertex = 0;
+    let maxDot = -Infinity;
+    tetraGeom.vertices.forEach((v, idx) => {
+      const dot = v.clone().normalize().dot(direction);
+      if (dot > maxDot) {
+        maxDot = dot;
+        bestVertex = idx;
+      }
+    });
+
+    // Create mesh for tetrahedral head
+    const headGeometry = new THREE.BufferGeometry();
+    const positions = [];
+    const indices = [];
+
+    tetraGeom.vertices.forEach(v => {
+      positions.push(v.x, v.y, v.z);
+    });
+    tetraGeom.faces.forEach(face => {
+      indices.push(face[0], face[1], face[2]);
+    });
+
+    headGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    headGeometry.setIndex(indices);
+    headGeometry.computeVertexNormals();
+
+    const headMaterial = new THREE.MeshBasicMaterial({
+      color,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.8
+    });
+    const head = new THREE.Mesh(headGeometry, headMaterial);
+
+    // Position head at end of shaft
+    head.position.copy(direction.clone().multiplyScalar(shaftLength));
+
+    // Orient head so the identified vertex points along direction
+    const currentDir = tetraGeom.vertices[bestVertex].clone().normalize();
+    head.quaternion.setFromUnitVectors(currentDir, direction);
+
+    arrowGroup.add(head);
+
+    return arrowGroup;
+  }
+
+  /**
+   * Create Quadray basis vectors (WXYZ) with tetrahedral arrowheads
    * 4 vectors pointing to tetrahedral vertices
+   * Distinguished from XYZ (pentagonal cones) by tetrahedral geometry
    */
   function createQuadrayBasis() {
     quadrayBasis = new THREE.Group();
 
     // Fundamental unit: tetrahedron edge length = 2√2 (for halfSize = 1)
-    // ArrowHelper 'length' parameter = TOTAL arrow length (shaft + head)
     const totalBasisLength = 2 * Math.sqrt(2); // ≈ 2.828 (one tetrahedron edge)
-    const headLength = 0.3;
-    const arrowLength = totalBasisLength; // Total visual length
+    const shaftLength = totalBasisLength - 0.3; // Reserve space for head
+    const headSize = 0.15; // Scale of tetrahedral arrowhead
 
     const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00]; // R, G, B, Y
     const labels = ["A", "B", "C", "D"];
 
     Quadray.basisVectors.forEach((vec, i) => {
-      const arrow = new THREE.ArrowHelper(
-        vec,
-        new THREE.Vector3(0, 0, 0),
-        arrowLength, // Total arrow length = 2√2
-        colors[i],
-        headLength, // Head length = 0.3
-        0.2
-      );
+      const arrow = createTetrahedralArrow(vec, shaftLength, headSize, colors[i]);
       quadrayBasis.add(arrow);
     });
 
@@ -1134,6 +1218,45 @@ export function initScene(THREE, OrbitControls, RT) {
   }
 
   /**
+   * Helper function to render geodesic polyhedra with DRY pattern
+   * Consolidates ~25 lines of duplicated code per geodesic into single config call
+   *
+   * @param {Object} config - Configuration object
+   * @param {string} config.checkboxId - ID of visibility checkbox
+   * @param {string} config.frequencyId - ID of frequency input
+   * @param {string} config.projectionName - Name attribute of projection radio group
+   * @param {Function} config.polyhedronFn - Polyhedra function to call
+   * @param {THREE.Group} config.group - Scene group to render into
+   * @param {number} config.color - Hex color for polyhedron
+   * @param {number} config.scale - Scale parameter for polyhedron
+   * @param {number} config.opacity - Opacity for rendering
+   */
+  function renderGeodesicPolyhedron(config) {
+    const {
+      checkboxId,
+      frequencyId,
+      projectionName,
+      polyhedronFn,
+      group,
+      color,
+      scale,
+      opacity
+    } = config;
+
+    if (document.getElementById(checkboxId).checked) {
+      const frequency = parseInt(document.getElementById(frequencyId).value);
+      const projectionRadio = document.querySelector(`input[name="${projectionName}"]:checked`);
+      const projection = projectionRadio ? projectionRadio.value : "out";
+
+      const geometry = polyhedronFn(scale, isNaN(frequency) ? 1 : frequency, projection);
+      renderPolyhedron(group, geometry, color, opacity);
+      group.visible = true;
+    } else {
+      group.visible = false;
+    }
+  }
+
+  /**
    * Update all geometry based on current settings
    */
   function updateGeometry() {
@@ -1232,41 +1355,38 @@ export function initScene(THREE, OrbitControls, RT) {
       tetrahedronGroup.visible = false;
     }
 
-    // Geodesic Tetrahedron (Phase 2.7c - Cyan/Turquoise, complementary to Red)
-    // Geodesic Tetrahedron (Phase 2.9 - with projection options)
-    if (document.getElementById("showGeodesicTetrahedron").checked) {
-      const frequency = parseInt(
-        document.getElementById("geodesicTetraFrequency").value
-      );
-      const projectionRadio = document.querySelector(
-        'input[name="geodesicTetraProjection"]:checked'
-      );
-      const projection = projectionRadio ? projectionRadio.value : "out";
+    // Geodesic Tetrahedron (Cyan - complementary to base Yellow)
+    renderGeodesicPolyhedron({
+      checkboxId: "showGeodesicTetrahedron",
+      frequencyId: "geodesicTetraFrequency",
+      projectionName: "geodesicTetraProjection",
+      polyhedronFn: Polyhedra.geodesicTetrahedron,
+      group: geodesicTetrahedronGroup,
+      color: 0x00cccc, // Cyan/turquoise
+      scale,
+      opacity
+    });
 
-      const geodesicTetra = Polyhedra.geodesicTetrahedron(
-        scale,
-        isNaN(frequency) ? 1 : frequency,
-        projection
-      );
-      renderPolyhedron(
-        geodesicTetrahedronGroup,
-        geodesicTetra,
-        0x00cccc,
-        opacity
-      ); // Cyan/turquoise
-      geodesicTetrahedronGroup.visible = true;
-    } else {
-      geodesicTetrahedronGroup.visible = false;
-    }
-
-    // Dual Tetrahedron (Magenta)
+    // Dual Tetrahedron (Cyan - reciprocal complementary: matches base geodesic)
     if (document.getElementById("showDualTetrahedron").checked) {
       const dualTetra = Polyhedra.dualTetrahedron(scale);
-      renderPolyhedron(dualTetrahedronGroup, dualTetra, 0xff00ff, opacity);
+      renderPolyhedron(dualTetrahedronGroup, dualTetra, 0x00cccc, opacity);
       dualTetrahedronGroup.visible = true;
     } else {
       dualTetrahedronGroup.visible = false;
     }
+
+    // Geodesic Dual Tetrahedron (Yellow - reciprocal complementary: matches base solid)
+    renderGeodesicPolyhedron({
+      checkboxId: "showGeodesicDualTetrahedron",
+      frequencyId: "geodesicDualTetraFrequency",
+      projectionName: "geodesicDualTetraProjection",
+      polyhedronFn: Polyhedra.geodesicDualTetrahedron,
+      group: geodesicDualTetrahedronGroup,
+      color: 0xffff00, // Yellow (reciprocal complementary)
+      scale,
+      opacity
+    });
 
     // Tet Matrix (IVM Array)
     if (document.getElementById("showTetMatrix").checked) {
@@ -1325,30 +1445,17 @@ export function initScene(THREE, OrbitControls, RT) {
       octahedronGroup.visible = false;
     }
 
-    // Geodesic Octahedron (Phase 2.7b - Magenta/Pink, complementary to Green)
-    if (document.getElementById("showGeodesicOctahedron").checked) {
-      const frequency = parseInt(
-        document.getElementById("geodesicOctaFrequency").value
-      );
-      const projectionRadio = document.querySelector(
-        'input[name="geodesicOctaProjection"]:checked'
-      );
-      const projection = projectionRadio ? projectionRadio.value : "out";
-      const geodesicOcta = Polyhedra.geodesicOctahedron(
-        scale,
-        isNaN(frequency) ? 1 : frequency,
-        projection
-      );
-      renderPolyhedron(
-        geodesicOctahedronGroup,
-        geodesicOcta,
-        0xff00cc,
-        opacity
-      ); // Magenta/pink
-      geodesicOctahedronGroup.visible = true;
-    } else {
-      geodesicOctahedronGroup.visible = false;
-    }
+    // Geodesic Octahedron (Magenta/Pink - complementary to Green)
+    renderGeodesicPolyhedron({
+      checkboxId: "showGeodesicOctahedron",
+      frequencyId: "geodesicOctaFrequency",
+      projectionName: "geodesicOctaProjection",
+      polyhedronFn: Polyhedra.geodesicOctahedron,
+      group: geodesicOctahedronGroup,
+      color: 0xff00cc, // Magenta/pink
+      scale,
+      opacity
+    });
 
     // Octa Matrix (IVM Array)
     if (document.getElementById("showOctaMatrix").checked) {
@@ -1420,39 +1527,38 @@ export function initScene(THREE, OrbitControls, RT) {
       dodecahedronGroup.visible = false;
     }
 
-    // Geodesic Icosahedron (Phase 2.7a - Orange-Red, complementary to Cyan)
-    if (document.getElementById("showGeodesicIcosahedron").checked) {
-      const frequency = parseInt(
-        document.getElementById("geodesicIcosaFrequency").value
-      );
-      const projectionRadio = document.querySelector(
-        'input[name="geodesicIcosaProjection"]:checked'
-      );
-      const projection = projectionRadio ? projectionRadio.value : "out";
-      const geodesicIcosa = Polyhedra.geodesicIcosahedron(
-        scale,
-        isNaN(frequency) ? 1 : frequency,
-        projection
-      );
-      renderPolyhedron(
-        geodesicIcosahedronGroup,
-        geodesicIcosa,
-        0xff4400,
-        opacity
-      ); // Vibrant orange-red
-      geodesicIcosahedronGroup.visible = true;
-    } else {
-      geodesicIcosahedronGroup.visible = false;
-    }
+    // Geodesic Icosahedron (Orange - complementary to base Cyan)
+    renderGeodesicPolyhedron({
+      checkboxId: "showGeodesicIcosahedron",
+      frequencyId: "geodesicIcosaFrequency",
+      projectionName: "geodesicIcosaProjection",
+      polyhedronFn: Polyhedra.geodesicIcosahedron,
+      group: geodesicIcosahedronGroup,
+      color: 0xff4400, // Vibrant orange-red
+      scale,
+      opacity
+    });
 
-    // Dual Icosahedron (Magenta - Face dual of dodecahedron)
+    // Dual Icosahedron (Orange - reciprocal complementary: matches base geodesic)
     if (document.getElementById("showDualIcosahedron").checked) {
       const dualIcosa = Polyhedra.dualIcosahedron(scale);
-      renderPolyhedron(dualIcosahedronGroup, dualIcosa, 0xff00ff, opacity);
+      renderPolyhedron(dualIcosahedronGroup, dualIcosa, 0xff4400, opacity);
       dualIcosahedronGroup.visible = true;
     } else {
       dualIcosahedronGroup.visible = false;
     }
+
+    // Geodesic Dual Icosahedron (Cyan - reciprocal complementary: matches base solid)
+    renderGeodesicPolyhedron({
+      checkboxId: "showGeodesicDualIcosahedron",
+      frequencyId: "geodesicDualIcosaFrequency",
+      projectionName: "geodesicDualIcosaProjection",
+      polyhedronFn: Polyhedra.geodesicDualIcosahedron,
+      group: geodesicDualIcosahedronGroup,
+      color: 0x00ffff, // Cyan (reciprocal complementary)
+      scale,
+      opacity
+    });
 
     // Cuboctahedron (Lime green - Vector Equilibrium)
     if (document.getElementById("showCuboctahedron").checked) {
@@ -2081,6 +2187,8 @@ export function initScene(THREE, OrbitControls, RT) {
       geodesicIcosahedronGroup,
       geodesicTetrahedronGroup,
       geodesicOctahedronGroup,
+      geodesicDualTetrahedronGroup,
+      geodesicDualIcosahedronGroup,
       cubeMatrixGroup,
       tetMatrixGroup,
       octaMatrixGroup,
