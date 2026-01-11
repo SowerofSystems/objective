@@ -263,20 +263,20 @@ export function initScene(THREE, OrbitControls, RT) {
     // Using ArrowHelper to match Quadray vector style (with arrowheads)
     cartesianBasis = new THREE.Group();
 
-    // Fundamental unit: cube edge = 2.0 (for halfSize = 1)
+    // Fundamental unit: Match default cube edge length (√2 ≈ 1.4142)
     // ArrowHelper 'length' parameter = TOTAL arrow length (shaft + head)
-    const totalBasisLength = 2.0; // Cube edge length at base scale
-    const headLength = 0.3;
-    const arrowLength = totalBasisLength; // Total visual length
+    const totalBasisLength = Math.sqrt(2); // Default cube edge length = √2
+    const headLength = 0.2; // Proportionally scaled head
+    const arrowLength = totalBasisLength; // Total visual length ≈ 1.414
 
     // X-axis (Red)
     const xAxis = new THREE.ArrowHelper(
       new THREE.Vector3(1, 0, 0), // Direction
       new THREE.Vector3(0, 0, 0), // Origin
-      arrowLength, // Total arrow length = 2.0
+      arrowLength, // Total arrow length ≈ 1.414 (matches default cube edge)
       0xff0000, // Red
-      headLength, // Head length = 0.3
-      0.2 // Head width (matching Quadray style)
+      headLength, // Head length = 0.2
+      0.15 // Head width (proportionally scaled)
     );
     cartesianBasis.add(xAxis);
 
@@ -284,10 +284,10 @@ export function initScene(THREE, OrbitControls, RT) {
     const yAxis = new THREE.ArrowHelper(
       new THREE.Vector3(0, 1, 0), // Direction
       new THREE.Vector3(0, 0, 0), // Origin
-      arrowLength, // Total arrow length = 2.0
+      arrowLength, // Total arrow length ≈ 1.414 (matches default cube edge)
       0x00ff00, // Green
-      headLength, // Head length = 0.3
-      0.2 // Head width
+      headLength, // Head length = 0.2
+      0.15 // Head width (proportionally scaled)
     );
     cartesianBasis.add(yAxis);
 
@@ -295,10 +295,10 @@ export function initScene(THREE, OrbitControls, RT) {
     const zAxis = new THREE.ArrowHelper(
       new THREE.Vector3(0, 0, 1), // Direction (up in Z-up)
       new THREE.Vector3(0, 0, 0), // Origin
-      arrowLength, // Total arrow length = 2.0
+      arrowLength, // Total arrow length ≈ 1.414 (matches default cube edge)
       0x0000ff, // Blue
-      headLength, // Head length = 0.3
-      0.2 // Head width
+      headLength, // Head length = 0.2
+      0.15 // Head width (proportionally scaled)
     );
     cartesianBasis.add(zAxis);
 
