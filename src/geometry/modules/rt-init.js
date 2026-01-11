@@ -348,9 +348,36 @@ function startARTexplorer(
     });
   }
 
-  document
-    .getElementById("showDualTetrahedron")
-    .addEventListener("change", updateGeometry);
+  // Dual Tetrahedron with geodesic controls toggle
+  const dualTetrahedronCheckbox = document.getElementById("showDualTetrahedron");
+  const geodesicDualTetraCheckbox = document.getElementById(
+    "showGeodesicDualTetrahedron"
+  );
+  if (dualTetrahedronCheckbox) {
+    dualTetrahedronCheckbox.addEventListener("change", () => {
+      const geodesicDualTetraControls =
+        document.getElementById("geodesic-dual-tetra-all");
+      if (geodesicDualTetraControls) {
+        // Keep controls visible if geodesic variant is checked (preserve settings)
+        const shouldShow =
+          dualTetrahedronCheckbox.checked ||
+          (geodesicDualTetraCheckbox && geodesicDualTetraCheckbox.checked);
+        geodesicDualTetraControls.style.display = shouldShow ? "block" : "none";
+      }
+      updateGeometry();
+    });
+  }
+  // Also listen to geodesic checkbox to control visibility
+  if (geodesicDualTetraCheckbox) {
+    geodesicDualTetraCheckbox.addEventListener("change", () => {
+      const geodesicDualTetraControls =
+        document.getElementById("geodesic-dual-tetra-all");
+      if (geodesicDualTetraControls && geodesicDualTetraCheckbox.checked) {
+        geodesicDualTetraControls.style.display = "block";
+      }
+      updateGeometry();
+    });
+  }
 
   // Octahedron with geodesic controls toggle
   const octahedronCheckbox = document.getElementById("showOctahedron");
@@ -414,9 +441,38 @@ function startARTexplorer(
   document
     .getElementById("showDodecahedron")
     .addEventListener("change", updateGeometry);
-  document
-    .getElementById("showDualIcosahedron")
-    .addEventListener("change", updateGeometry);
+
+  // Dual Icosahedron with geodesic controls toggle
+  const dualIcosahedronCheckbox = document.getElementById("showDualIcosahedron");
+  const geodesicDualIcosaCheckbox = document.getElementById(
+    "showGeodesicDualIcosahedron"
+  );
+  if (dualIcosahedronCheckbox) {
+    dualIcosahedronCheckbox.addEventListener("change", () => {
+      const geodesicDualIcosaControls =
+        document.getElementById("geodesic-dual-icosa-all");
+      if (geodesicDualIcosaControls) {
+        // Keep controls visible if geodesic variant is checked (preserve settings)
+        const shouldShow =
+          dualIcosahedronCheckbox.checked ||
+          (geodesicDualIcosaCheckbox && geodesicDualIcosaCheckbox.checked);
+        geodesicDualIcosaControls.style.display = shouldShow ? "block" : "none";
+      }
+      updateGeometry();
+    });
+  }
+  // Also listen to geodesic checkbox to control visibility
+  if (geodesicDualIcosaCheckbox) {
+    geodesicDualIcosaCheckbox.addEventListener("change", () => {
+      const geodesicDualIcosaControls =
+        document.getElementById("geodesic-dual-icosa-all");
+      if (geodesicDualIcosaControls && geodesicDualIcosaCheckbox.checked) {
+        geodesicDualIcosaControls.style.display = "block";
+      }
+      updateGeometry();
+    });
+  }
+
   document
     .getElementById("showCuboctahedron")
     .addEventListener("change", updateGeometry);
@@ -623,6 +679,18 @@ function startARTexplorer(
     .forEach(radio => {
       radio.addEventListener("change", updateGeometry);
     });
+  // Geodesic Dual Tetrahedron controls
+  document
+    .getElementById("showGeodesicDualTetrahedron")
+    .addEventListener("change", updateGeometry);
+  document
+    .getElementById("geodesicDualTetraFrequency")
+    .addEventListener("change", updateGeometry);
+  document
+    .querySelectorAll('input[name="geodesicDualTetraProjection"]')
+    .forEach(radio => {
+      radio.addEventListener("change", updateGeometry);
+    });
   document
     .getElementById("showGeodesicOctahedron")
     .addEventListener("change", updateGeometry);
@@ -636,6 +704,18 @@ function startARTexplorer(
     });
   document
     .querySelectorAll('input[name="geodesicIcosaProjection"]')
+    .forEach(radio => {
+      radio.addEventListener("change", updateGeometry);
+    });
+  // Geodesic Dual Icosahedron controls
+  document
+    .getElementById("showGeodesicDualIcosahedron")
+    .addEventListener("change", updateGeometry);
+  document
+    .getElementById("geodesicDualIcosaFrequency")
+    .addEventListener("change", updateGeometry);
+  document
+    .querySelectorAll('input[name="geodesicDualIcosaProjection"]')
     .forEach(radio => {
       radio.addEventListener("change", updateGeometry);
     });

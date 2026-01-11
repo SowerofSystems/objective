@@ -44,6 +44,8 @@ export function initScene(THREE, OrbitControls, RT) {
   let geodesicIcosahedronGroup; // Phase 2.7a: Geodesic subdivision
   let geodesicTetrahedronGroup; // Phase 2.7c: Geodesic tetrahedron
   let geodesicOctahedronGroup; // Phase 2.7b: Geodesic octahedron
+  let geodesicDualTetrahedronGroup; // Phase 3: Geodesic dual tetrahedron
+  let geodesicDualIcosahedronGroup; // Phase 3: Geodesic dual icosahedron
   let cubeMatrixGroup, tetMatrixGroup, octaMatrixGroup; // Matrix forms (IVM arrays)
   let cuboctaMatrixGroup; // Cuboctahedron matrix (Vector Equilibrium array)
   let rhombicDodecMatrixGroup; // Rhombic dodecahedron matrix (space-filling array)
@@ -133,6 +135,12 @@ export function initScene(THREE, OrbitControls, RT) {
     geodesicOctahedronGroup = new THREE.Group(); // Phase 2.7b
     geodesicOctahedronGroup.userData.type = "geodesicOctahedron";
 
+    geodesicDualTetrahedronGroup = new THREE.Group(); // Phase 3
+    geodesicDualTetrahedronGroup.userData.type = "geodesicDualTetrahedron";
+
+    geodesicDualIcosahedronGroup = new THREE.Group(); // Phase 3
+    geodesicDualIcosahedronGroup.userData.type = "geodesicDualIcosahedron";
+
     // Matrix forms (IVM spatial arrays)
     cubeMatrixGroup = new THREE.Group();
     cubeMatrixGroup.userData.type = "cubeMatrix";
@@ -166,6 +174,8 @@ export function initScene(THREE, OrbitControls, RT) {
     scene.add(geodesicIcosahedronGroup);
     scene.add(geodesicTetrahedronGroup);
     scene.add(geodesicOctahedronGroup);
+    scene.add(geodesicDualTetrahedronGroup);
+    scene.add(geodesicDualIcosahedronGroup);
     scene.add(cubeMatrixGroup);
     scene.add(tetMatrixGroup);
     scene.add(octaMatrixGroup);
@@ -186,6 +196,8 @@ export function initScene(THREE, OrbitControls, RT) {
       geodesicIcosahedronGroup,
       geodesicTetrahedronGroup,
       geodesicOctahedronGroup,
+      geodesicDualTetrahedronGroup,
+      geodesicDualIcosahedronGroup,
       cubeMatrixGroup,
       tetMatrixGroup,
       octaMatrixGroup,
@@ -1259,13 +1271,39 @@ export function initScene(THREE, OrbitControls, RT) {
       geodesicTetrahedronGroup.visible = false;
     }
 
-    // Dual Tetrahedron (Magenta)
+    // Dual Tetrahedron (Cyan - reciprocal complementary: matches base geodesic)
     if (document.getElementById("showDualTetrahedron").checked) {
       const dualTetra = Polyhedra.dualTetrahedron(scale);
-      renderPolyhedron(dualTetrahedronGroup, dualTetra, 0xff00ff, opacity);
+      renderPolyhedron(dualTetrahedronGroup, dualTetra, 0x00cccc, opacity);
       dualTetrahedronGroup.visible = true;
     } else {
       dualTetrahedronGroup.visible = false;
+    }
+
+    // Geodesic Dual Tetrahedron (Yellow - reciprocal complementary: matches base solid)
+    if (document.getElementById("showGeodesicDualTetrahedron").checked) {
+      const frequency = parseInt(
+        document.getElementById("geodesicDualTetraFrequency").value
+      );
+      const projectionRadio = document.querySelector(
+        'input[name="geodesicDualTetraProjection"]:checked'
+      );
+      const projection = projectionRadio ? projectionRadio.value : "out";
+
+      const geodesicDualTetra = Polyhedra.geodesicDualTetrahedron(
+        scale,
+        isNaN(frequency) ? 1 : frequency,
+        projection
+      );
+      renderPolyhedron(
+        geodesicDualTetrahedronGroup,
+        geodesicDualTetra,
+        0xffff00,
+        opacity
+      ); // Yellow (matches base tetrahedron)
+      geodesicDualTetrahedronGroup.visible = true;
+    } else {
+      geodesicDualTetrahedronGroup.visible = false;
     }
 
     // Tet Matrix (IVM Array)
@@ -1445,13 +1483,39 @@ export function initScene(THREE, OrbitControls, RT) {
       geodesicIcosahedronGroup.visible = false;
     }
 
-    // Dual Icosahedron (Magenta - Face dual of dodecahedron)
+    // Dual Icosahedron (Orange - reciprocal complementary: matches base geodesic)
     if (document.getElementById("showDualIcosahedron").checked) {
       const dualIcosa = Polyhedra.dualIcosahedron(scale);
-      renderPolyhedron(dualIcosahedronGroup, dualIcosa, 0xff00ff, opacity);
+      renderPolyhedron(dualIcosahedronGroup, dualIcosa, 0xff4400, opacity);
       dualIcosahedronGroup.visible = true;
     } else {
       dualIcosahedronGroup.visible = false;
+    }
+
+    // Geodesic Dual Icosahedron (Cyan - reciprocal complementary: matches base solid)
+    if (document.getElementById("showGeodesicDualIcosahedron").checked) {
+      const frequency = parseInt(
+        document.getElementById("geodesicDualIcosaFrequency").value
+      );
+      const projectionRadio = document.querySelector(
+        'input[name="geodesicDualIcosaProjection"]:checked'
+      );
+      const projection = projectionRadio ? projectionRadio.value : "out";
+
+      const geodesicDualIcosa = Polyhedra.geodesicDualIcosahedron(
+        scale,
+        isNaN(frequency) ? 1 : frequency,
+        projection
+      );
+      renderPolyhedron(
+        geodesicDualIcosahedronGroup,
+        geodesicDualIcosa,
+        0x00ffff,
+        opacity
+      ); // Cyan (matches base icosahedron)
+      geodesicDualIcosahedronGroup.visible = true;
+    } else {
+      geodesicDualIcosahedronGroup.visible = false;
     }
 
     // Cuboctahedron (Lime green - Vector Equilibrium)
@@ -2081,6 +2145,8 @@ export function initScene(THREE, OrbitControls, RT) {
       geodesicIcosahedronGroup,
       geodesicTetrahedronGroup,
       geodesicOctahedronGroup,
+      geodesicDualTetrahedronGroup,
+      geodesicDualIcosahedronGroup,
       cubeMatrixGroup,
       tetMatrixGroup,
       octaMatrixGroup,

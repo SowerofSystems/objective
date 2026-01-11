@@ -65,23 +65,35 @@ dualIcosahedron: (halfSize = 1) => {
 
 ## Color Scheme
 
-**Important:** Dual polyhedra should use the **same complementary color** as their base polyhedra's geodesic subdivisions.
+**Important:** Dual polyhedra use **reciprocal complementary colors** - the color relationship is symmetric and reversible.
 
-- **Base Polyhedra:** Primary color for solid faces
-- **Geodesic Subdivisions:** Complementary color (exact complement)
-- **Dual Polyhedra:** Use the same complementary color as geodesic subdivisions
+### Color Relationship Rules
+- **Base Polyhedra:** Primary color (e.g., Color A)
+- **Base Geodesic Subdivisions:** Complementary color (e.g., Color B)
+- **Dual Polyhedra:** Use base's complementary color (Color B)
+- **Dual Geodesic Subdivisions:** Use base's primary color (Color A)
 
-This creates visual consistency where:
-- Base polyhedra and their geodesic versions share a color relationship
-- Dual polyhedra visually connect to the geodesic aesthetic
+**The symmetry:** Base and Dual swap their solid/geodesic color assignments.
+
+### Example: Tetrahedron Color Relationships
+```
+Base Tetrahedron (solid):          Color A (primary)
+Base Tetrahedron (geodesic):       Color B (complementary)
+
+Dual Tetrahedron (solid):          Color B (complementary - matches base geodesic)
+Dual Tetrahedron (geodesic):       Color A (primary - matches base solid)
+```
+
+**Stella Octangula Example:** When displaying both tetrahedra together:
+- Base solid + Dual solid = Colors A & B (complementary pair)
+- Base geodesic + Dual geodesic = Colors B & A (same complementary pair, reversed)
+- Perfect visual symmetry reflecting the geometric duality
+
+This approach ensures:
 - Color distinguishes base (primary) from dual (complementary)
-
-### Example Color Relationships
-- Base Tetrahedron: Primary color
-- Geodesic Tetrahedron: Complementary color
-- Dual Tetrahedron: Same complementary color as geodesic
-
-This approach ensures that when displaying base + dual together (e.g., stella octangula), the color scheme maintains the established geodesic visual language.
+- Geodesic versions complete the color swap
+- Visual consistency reflects the mathematical dual relationship
+- The complementary relationship works both ways (dual of dual returns to original colors)
 
 ## Benefits of Refactoring
 
@@ -113,12 +125,36 @@ This approach ensures that when displaying base + dual together (e.g., stella oc
 5. Verify RT edge quadrance validation at dual radius
 6. Commit: "Refactor: Derive dualIcosahedron from base via RT-pure rotation"
 
-### Phase 3: Documentation & Testing
+### Phase 3: UI Integration & Color Implementation
+1. **Update HTML UI** (`src/geometry/index.html`):
+   - Add geodesic frequency controls for Dual Tetrahedron
+   - Add geodesic frequency controls for Dual Icosahedron
+   - Mirror base polyhedra UI pattern (frequency dropdowns)
+   - Position controls near corresponding dual polyhedra toggles
+
+2. **Implement Reciprocal Complementary Color Scheme**:
+   - Identify where base polyhedra colors are defined (solid + geodesic)
+   - Apply reciprocal complementary color relationship to dual polyhedra:
+     - **Dual Solid:** Uses base's geodesic color (complementary)
+     - **Dual Geodesic:** Uses base's solid color (primary)
+   - Ensure color symmetry for all dual pairs:
+     - Base Tetrahedron (solid): Color A, (geodesic): Color B
+     - Dual Tetrahedron (solid): Color B, (geodesic): Color A
+     - Base Icosahedron (solid): Color C, (geodesic): Color D
+     - Dual Icosahedron (solid): Color D, (geodesic): Color C
+   - Verify color application in rendering module
+
+3. **Testing**:
+   - Test geodesic subdivision UI for both duals
+   - Verify complementary colors render correctly
+   - Test stella octangula display (overlapping dual tetrahedra with colors)
+   - Verify icosa/dodeca dual relationship preservation
+
+### Phase 4: Documentation & Finalization
 1. Update code comments to reference base polyhedra
 2. Update README.md with architectural notes
-3. Test geodesic subdivision on dual polyhedra (verify inheritance)
-4. Verify stella octangula display (overlapping dual tetrahedra)
-5. Verify icosa/dodeca dual relationship preservation
+3. Document UI changes for geodesic controls
+4. Document color scheme implementation
 
 ## RT Mathematical Details
 
@@ -140,14 +176,22 @@ This represents the **optimal RT approach**: when angles are multiples of 90°, 
 ## Dependencies
 
 ### Required Modules
-- `rt-polyhedra.js`: Source file for refactoring
-- `rt-math.js`: RT.Phi.value() for golden ratio calculation
+- `src/geometry/modules/rt-polyhedra.js`: Source file for refactoring (✅ Phase 1 & 2 complete)
+- `src/geometry/modules/rt-math.js`: RT.Phi.value() for golden ratio calculation
+- `src/geometry/index.html`: UI controls for geodesic frequency selection
+- `src/geometry/modules/rt-rendering.js`: Color scheme implementation and rendering
+
+### Files to Modify (Phase 3)
+- `src/geometry/index.html`: Add geodesic frequency dropdowns for dual polyhedra
+- `src/geometry/modules/rt-rendering.js` (or equivalent): Apply complementary colors to dual polyhedra
 
 ### Testing Requirements
-- Edge quadrance validation must pass for all duals
+- Edge quadrance validation must pass for all duals (✅ Validated in refactored code)
 - Stella octangula visualization (dual tetrahedra) must render correctly
 - Icosa/dodeca dual alignment must be preserved
 - Geodesic subdivision must work on dual polyhedra
+- UI controls for dual geodesics must function correctly
+- Complementary colors must match base polyhedra geodesic colors
 
 ## Future Work
 
@@ -173,16 +217,31 @@ After completing dual refactoring, this DRY approach enables:
 
 ## Success Criteria
 
-- ✅ Dual tetrahedron derives from base with 4 lines
-- ✅ Dual icosahedron derives from base with 12 lines
+### Phase 1 & 2: Geometry Refactoring
+- ✅ Dual tetrahedron derives from base with ~12 lines (66% reduction)
+- ✅ Dual icosahedron derives from base with ~47 lines (70% reduction)
 - ✅ RT edge quadrance validation passes for all duals
-- ✅ Geodesic subdivision works on dual polyhedra
-- ✅ Stella octangula renders correctly
-- ✅ No visual or geometric regressions
-- ✅ Code reduction: ~200 lines → ~16 lines (92% reduction)
+- ✅ Geodesic subdivision capability inherited from base polyhedra
+- ✅ Code reduction: ~140 lines removed
+
+### Phase 3: UI & Color Integration (Pending)
+- ⚠️ HTML UI includes geodesic frequency controls for Dual Tetrahedron
+- ⚠️ HTML UI includes geodesic frequency controls for Dual Icosahedron
+- ⚠️ Dual polyhedra render with complementary colors (matching base geodesics)
+- ⚠️ Stella octangula displays with correct complementary color scheme
+- ⚠️ Icosa/dodeca dual pair displays with correct colors
+
+### Phase 4: Documentation (Pending)
+- ⚠️ README.md updated with DRY architecture notes
+- ⚠️ UI changes documented
+- ⚠️ Color scheme implementation documented
+
+### Overall
+- ✅ No visual or geometric regressions in refactored geometry
+- ⚠️ Complete feature parity with UI controls and color scheme
 
 ---
 
-**Status:** Ready for implementation
+**Status:** Phase 1 & 2 Complete (Geometry Refactoring) | Phase 3 & 4 Pending (UI/Color/Docs)
 **Priority:** High (architectural improvement, enables future features)
-**Estimated Complexity:** Low (pure refactoring, no new features)
+**Estimated Complexity:** Low-Medium (geometry done, UI/color integration remaining)
