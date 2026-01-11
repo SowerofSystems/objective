@@ -1287,25 +1287,25 @@ export const Polyhedra = {
 
     // 12 rhombic faces (one per cuboctahedron vertex)
     // Each rhombus connects 2 square centers to 2 triangular centers
-    // Proper cyclic winding order ensures coplanarity
+    // Proper cyclic winding order ensures coplanarity (winding corrected 2026-01-11)
     const faces = [
       // Rhombi corresponding to cuboctahedron XY plane vertices (indices 0-3)
-      [0, 6, 2, 7], // Rhombus at cuboctahedron vertex 0 ( t, t, 0)
-      [0, 8, 3, 9], // Rhombus at cuboctahedron vertex 1 ( t,-t, 0)
-      [1, 10, 2, 11], // Rhombus at cuboctahedron vertex 2 (-t, t, 0)
-      [1, 12, 3, 13], // Rhombus at cuboctahedron vertex 3 (-t,-t, 0)
+      [7, 2, 6, 0], // Rhombus at cuboctahedron vertex 0 ( t, t, 0) - REVERSED (was [0, 6, 2, 7])
+      [0, 8, 3, 9], // Rhombus at cuboctahedron vertex 1 ( t,-t, 0) - CORRECT
+      [1, 10, 2, 11], // Rhombus at cuboctahedron vertex 2 (-t, t, 0) - CORRECT
+      [13, 3, 12, 1], // Rhombus at cuboctahedron vertex 3 (-t,-t, 0) - REVERSED (was [1, 12, 3, 13])
 
       // Rhombi corresponding to cuboctahedron XZ plane vertices (indices 4-7)
-      [0, 6, 4, 8], // Rhombus at cuboctahedron vertex 4 ( t, 0, t)
-      [0, 7, 5, 9], // Rhombus at cuboctahedron vertex 5 ( t, 0,-t)
-      [1, 10, 4, 12], // Rhombus at cuboctahedron vertex 6 (-t, 0, t)
-      [1, 11, 5, 13], // Rhombus at cuboctahedron vertex 7 (-t, 0,-t)
+      [0, 6, 4, 8], // Rhombus at cuboctahedron vertex 4 ( t, 0, t) - CORRECT
+      [9, 5, 7, 0], // Rhombus at cuboctahedron vertex 5 ( t, 0,-t) - REVERSED (was [0, 7, 5, 9])
+      [12, 4, 10, 1], // Rhombus at cuboctahedron vertex 6 (-t, 0, t) - REVERSED (was [1, 10, 4, 12])
+      [1, 11, 5, 13], // Rhombus at cuboctahedron vertex 7 (-t, 0,-t) - CORRECT
 
       // Rhombi corresponding to cuboctahedron YZ plane vertices (indices 8-11)
-      [2, 6, 4, 10], // Rhombus at cuboctahedron vertex 8 ( 0, t, t)
-      [2, 7, 5, 11], // Rhombus at cuboctahedron vertex 9 ( 0, t,-t)
-      [3, 8, 4, 12], // Rhombus at cuboctahedron vertex 10 ( 0,-t, t)
-      [3, 9, 5, 13], // Rhombus at cuboctahedron vertex 11 ( 0,-t,-t)
+      [10, 4, 6, 2], // Rhombus at cuboctahedron vertex 8 ( 0, t, t) - REVERSED (was [2, 6, 4, 10])
+      [2, 7, 5, 11], // Rhombus at cuboctahedron vertex 9 ( 0, t,-t) - CORRECT
+      [3, 8, 4, 12], // Rhombus at cuboctahedron vertex 10 ( 0,-t, t) - CORRECT
+      [13, 5, 9, 3], // Rhombus at cuboctahedron vertex 11 ( 0,-t,-t) - REVERSED (was [3, 9, 5, 13])
     ];
 
     // RT VALIDATION: All edges have uniform quadrance
@@ -1401,25 +1401,25 @@ export const Polyhedra = {
       [7, 11], // From vertex 7
     ];
 
-    // 14 faces: 8 triangular + 6 square
+    // 14 faces: 8 triangular + 6 square (winding corrected 2026-01-11)
     const faces = [
       // 6 square faces (corresponding to cube faces)
-      [0, 4, 1, 5], // +X face (x > 0)
-      [2, 6, 3, 7], // -X face (x < 0)
-      [0, 8, 2, 9], // +Y face (y > 0)
-      [1, 10, 3, 11], // -Y face (y < 0)
-      [4, 8, 6, 10], // +Z face (z > 0)
-      [5, 9, 7, 11], // -Z face (z < 0)
+      [0, 4, 1, 5], // +X face (x > 0) - CORRECT
+      [7, 3, 6, 2], // -X face (x < 0) - REVERSED (was [2, 6, 3, 7])
+      [9, 2, 8, 0], // +Y face (y > 0) - REVERSED (was [0, 8, 2, 9])
+      [1, 10, 3, 11], // -Y face (y < 0) - CORRECT
+      [4, 8, 6, 10], // +Z face (z > 0) - CORRECT
+      [11, 7, 9, 5], // -Z face (z < 0) - REVERSED (was [5, 9, 7, 11])
 
       // 8 triangular faces (corresponding to octahedron faces, one per octant)
-      [0, 4, 8], // (+,+,+) octant
-      [0, 5, 9], // (+,+,-) octant
-      [1, 4, 10], // (+,-,+) octant
-      [1, 5, 11], // (+,-,-) octant
-      [2, 6, 8], // (-,+,+) octant
-      [2, 7, 9], // (-,+,-) octant
-      [3, 6, 10], // (-,-,+) octant
-      [3, 7, 11], // (-,-,-) octant
+      [8, 4, 0], // (+,+,+) octant - REVERSED (was [0, 4, 8])
+      [0, 5, 9], // (+,+,-) octant - CORRECT
+      [1, 4, 10], // (+,-,+) octant - CORRECT
+      [11, 5, 1], // (+,-,-) octant - REVERSED (was [1, 5, 11])
+      [2, 6, 8], // (-,+,+) octant - CORRECT
+      [9, 7, 2], // (-,+,-) octant - REVERSED (was [2, 7, 9])
+      [10, 6, 3], // (-,-,+) octant - REVERSED (was [3, 6, 10])
+      [3, 7, 11], // (-,-,-) octant - CORRECT
     ];
 
     // RT VALIDATION: All edges should have same quadrance

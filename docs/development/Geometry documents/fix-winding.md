@@ -286,6 +286,7 @@ faces: [
 ```
 
 **Checklist:**
+- [ ] Create test-cuboctahedron-winding.html test file
 - [ ] Run validator
 - [ ] Check 8 triangular faces
 - [ ] Check 6 square faces
@@ -294,6 +295,9 @@ faces: [
 - [ ] Fix any reversed faces
 - [ ] Re-run validator
 - [ ] Test with FrontSide material
+
+**Status:** 🔄 IN PROGRESS (2026-01-10)
+**Test File:** test-cuboctahedron-winding.html
 
 **Expected Issues:** Medium (14 faces, mixed triangles and squares)
 
