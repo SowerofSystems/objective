@@ -105,12 +105,12 @@ export const Polyhedra = {
       [2, 3],
     ];
 
-    // 4 triangular faces
+    // 4 triangular faces (CCW winding for outward normals)
     const faces = [
-      [0, 1, 2],
-      [0, 1, 3],
-      [0, 2, 3],
-      [1, 2, 3],
+      [0, 1, 2], // Face 0: correct
+      [0, 3, 1], // Face 1: FIXED (was [0,1,3])
+      [0, 2, 3], // Face 2: correct
+      [1, 3, 2], // Face 3: FIXED (was [1,2,3])
     ];
 
     // RT VALIDATION: Check edge quadrance uniformity
@@ -146,11 +146,12 @@ export const Polyhedra = {
       [2, 3],
     ];
 
+    // 4 triangular faces (CCW winding for outward normals)
     const faces = [
-      [0, 1, 2],
-      [0, 1, 3],
-      [0, 2, 3],
-      [1, 2, 3],
+      [0, 2, 1], // Face 0: FIXED (was [0,1,2])
+      [0, 1, 3], // Face 1: correct
+      [0, 3, 2], // Face 2: FIXED (was [0,2,3])
+      [1, 2, 3], // Face 3: correct
     ];
 
     // RT VALIDATION: Check edge quadrance uniformity
@@ -1429,3 +1430,119 @@ export const Polyhedra = {
     return { vertices, edges, faces };
   },
 };
+
+/**
+ * Validate face winding order
+ * Check if all face normals point outward (away from center)
+ *
+ * @param {THREE.Vector3[]} vertices - Array of vertex positions
+ * @param {number[][]} faces - Array of face vertex indices
+ * @param {THREE.Vector3} center - Polyhedron center (default: origin)
+ * @returns {Object} Validation results with errors array
+ */
+export function validateFaceWinding(vertices, faces, center = new THREE.Vector3(0, 0, 0)) {
+  const errors = [];
+  const warnings = [];
+
+  faces.forEach((faceIndices, faceIdx) => {
+    // Need at least 3 vertices for a face
+    if (faceIndices.length < 3) {
+      errors.push({
+        faceIndex: faceIdx,
+        vertices: faceIndices,
+        error: 'Face has fewer than 3 vertices',
+      });
+      return;
+    }
+
+    // Get first 3 vertices of face
+    const v0 = vertices[faceIndices[0]];
+    const v1 = vertices[faceIndices[1]];
+    const v2 = vertices[faceIndices[2]];
+
+    // Compute face normal using cross product (right-hand rule)
+    const edge1 = new THREE.Vector3().subVectors(v1, v0);
+    const edge2 = new THREE.Vector3().subVectors(v2, v0);
+    const faceNormal = new THREE.Vector3().crossVectors(edge1, edge2);
+
+    const normalMagnitude = faceNormal.length();
+    if (normalMagnitude < 1e-10) {
+      warnings.push({
+        faceIndex: faceIdx,
+        vertices: faceIndices,
+        warning: 'Degenerate face (zero-area triangle)',
+      });
+      return;
+    }
+
+    faceNormal.normalize();
+
+    // Get face center (average of all vertices)
+    const faceCenter = new THREE.Vector3();
+    faceIndices.forEach(idx => {
+      if (vertices[idx]) {
+        faceCenter.add(vertices[idx]);
+      } else {
+        errors.push({
+          faceIndex: faceIdx,
+          vertices: faceIndices,
+          error: `Invalid vertex index ${idx}`,
+        });
+      }
+    });
+    faceCenter.divideScalar(faceIndices.length);
+
+    // Outward direction from polyhedron center to face center
+    const outwardDir = new THREE.Vector3().subVectors(faceCenter, center);
+    const outwardMagnitude = outwardDir.length();
+
+    if (outwardMagnitude < 1e-10) {
+      warnings.push({
+        faceIndex: faceIdx,
+        vertices: faceIndices,
+        warning: 'Face center coincides with polyhedron center',
+      });
+      return;
+    }
+
+    outwardDir.normalize();
+
+    // Dot product should be positive for correct winding (outward normal)
+    const dot = faceNormal.dot(outwardDir);
+
+    if (dot < -0.01) {
+      // Significantly inward-pointing (wrong winding)
+      errors.push({
+        faceIndex: faceIdx,
+        vertices: faceIndices,
+        dotProduct: dot,
+        faceNormal: faceNormal.clone(),
+        outwardDir: outwardDir.clone(),
+        message: `Face ${faceIdx} has INWARD-pointing normal (dot=${dot.toFixed(4)})`,
+      });
+    } else if (dot < 0.01) {
+      // Nearly perpendicular (suspicious)
+      warnings.push({
+        faceIndex: faceIdx,
+        vertices: faceIndices,
+        dotProduct: dot,
+        warning: `Face ${faceIdx} has nearly perpendicular normal (dot=${dot.toFixed(4)})`,
+      });
+    }
+  });
+
+  const totalFaces = faces.length;
+  const errorCount = errors.length;
+  const warningCount = warnings.length;
+  const correctCount = totalFaces - errorCount - warningCount;
+
+  return {
+    totalFaces,
+    correctCount,
+    errorCount,
+    warningCount,
+    errors,
+    warnings,
+    isValid: errorCount === 0,
+  };
+}

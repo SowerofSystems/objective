@@ -29,6 +29,7 @@ export const RTPapercut = {
     currentView: "top",
     sectionNodesEnabled: false, // Section Nodes checkbox state
     adaptiveNodeResolution: false, // High resolution mode: 64 segments (unchecked: 32)
+    backfaceCullingEnabled: false, // Backface culling for print optimization
   },
 
   // Store references to THREE.js objects
@@ -128,6 +129,16 @@ export const RTPapercut = {
         if (RTPapercut.state.cutplaneEnabled && RTPapercut.state.cutplaneNormal && RTPapercut.state.sectionNodesEnabled) {
           RTPapercut.updateCutplane(RTPapercut.state.cutplaneValue, scene);
         }
+      });
+    }
+
+    // 3e. Backface Culling checkbox
+    const backfaceCullingCheckbox = document.getElementById("backfaceCulling");
+    if (backfaceCullingCheckbox) {
+      backfaceCullingCheckbox.disabled = false; // Enable the checkbox
+      backfaceCullingCheckbox.addEventListener("change", e => {
+        RTPapercut.state.backfaceCullingEnabled = e.target.checked;
+        RTPapercut.toggleBackfaceCulling(scene);
       });
     }
 
@@ -468,6 +479,34 @@ export const RTPapercut = {
         });
       }
     }
+  },
+
+  /**
+   * Toggle backface culling for print optimization
+   * @param {THREE.Scene} scene
+   */
+  toggleBackfaceCulling: function (scene) {
+    scene.traverse(object => {
+      if (object.material) {
+        const materials = Array.isArray(object.material)
+          ? object.material
+          : [object.material];
+
+        materials.forEach(mat => {
+          // Only apply to mesh materials, not line materials
+          if (mat.type && !mat.type.includes("Line")) {
+            if (RTPapercut.state.backfaceCullingEnabled) {
+              // Enable backface culling (show only front faces)
+              mat.side = THREE.FrontSide;
+            } else {
+              // Disable backface culling (show both sides - default)
+              mat.side = THREE.DoubleSide;
+            }
+            mat.needsUpdate = true;
+          }
+        });
+      }
+    });
   },
 
   /**
