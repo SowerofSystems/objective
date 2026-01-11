@@ -1159,27 +1159,27 @@ export const Polyhedra = {
       [18, 19], // (-phi, 0, +invPhi) to (-phi, 0, -invPhi) - XZ group
     ];
 
-    // 12 pentagonal faces - standard dodecahedron topology
+    // 12 pentagonal faces - standard dodecahedron topology (winding corrected 2026-01-10)
     // Vertices: 0-7 (cube), 8-11 (YZ permutation), 12-15 (XY permutation), 16-19 (XZ permutation)
     // Each face verified to follow edge connectivity
     const faces = [
-      // Three faces meeting at vertex 0 (+,+,+)
-      [0, 8, 4, 14, 12], // 0→8→4→14→12→0
-      [0, 12, 1, 17, 16], // 0→12→1→17→16→0
-      [0, 16, 2, 10, 8], // 0→16→2→10→8→0
+      // Three faces meeting at vertex 0 (+,+,+) - REVERSED
+      [12, 14, 4, 8, 0], // was [0, 8, 4, 14, 12]
+      [16, 17, 1, 12, 0], // was [0, 12, 1, 17, 16]
+      [8, 10, 2, 16, 0], // was [0, 16, 2, 10, 8]
 
-      // Three faces meeting at vertex 7 (-,-,-)
+      // Three faces meeting at vertex 7 (-,-,-) - CORRECT (no change)
       [7, 11, 3, 13, 15], // 7→11→3→13→15→7
       [7, 15, 6, 18, 19], // 7→15→6→18→19→7
       [7, 19, 5, 9, 11], // 7→19→5→9→11→7
 
-      // Six remaining faces (belt)
-      [1, 12, 14, 5, 9], // 1→12→14→5→9→1
-      [1, 9, 11, 3, 17], // 1→9→11→3→17→1 (note: edge 9→11 exists)
-      [2, 16, 17, 3, 13], // 2→16→17→3→13→2 (note: edge 16→17 exists)
-      [2, 13, 15, 6, 10], // 2→13→15→6→10→2 (note: edge 13→15 exists)
-      [4, 8, 10, 6, 18], // 4→8→10→6→18→4 (note: edge 8→10 exists)
-      [4, 18, 19, 5, 14], // 4→18→19→5→14→4 (note: edge 18→19 exists)
+      // Six remaining faces (belt) - REVERSED
+      [9, 5, 14, 12, 1], // was [1, 12, 14, 5, 9]
+      [17, 3, 11, 9, 1], // was [1, 9, 11, 3, 17]
+      [13, 3, 17, 16, 2], // was [2, 16, 17, 3, 13]
+      [10, 6, 15, 13, 2], // was [2, 13, 15, 6, 10]
+      [18, 6, 10, 8, 4], // was [4, 8, 10, 6, 18]
+      [14, 5, 19, 18, 4], // was [4, 18, 19, 5, 14]
     ];
 
     // RT VALIDATION: Check edge quadrance uniformity
