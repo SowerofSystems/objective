@@ -224,24 +224,91 @@ After completing dual refactoring, this DRY approach enables:
 - ✅ Geodesic subdivision capability inherited from base polyhedra
 - ✅ Code reduction: ~140 lines removed
 
-### Phase 3: UI & Color Integration (Pending)
-- ⚠️ HTML UI includes geodesic frequency controls for Dual Tetrahedron
-- ⚠️ HTML UI includes geodesic frequency controls for Dual Icosahedron
-- ⚠️ Dual polyhedra render with complementary colors (matching base geodesics)
-- ⚠️ Stella octangula displays with correct complementary color scheme
-- ⚠️ Icosa/dodeca dual pair displays with correct colors
+### Phase 3: UI & Color Integration
+- ✅ HTML UI includes geodesic frequency controls for Dual Tetrahedron
+- ✅ HTML UI includes geodesic frequency controls for Dual Icosahedron
+- ✅ Dual polyhedra render with complementary colors (matching base geodesics)
+- ✅ Stella octangula displays with correct complementary color scheme
+- ✅ Icosa/dodeca dual pair displays with correct colors
+- ✅ Geodesic dual functions implemented (thin wrappers around base)
+- ✅ Event listeners wired up for all controls
 
-### Phase 4: Documentation (Pending)
+### Phase 4: Rendering & UI Consolidation (Planned)
+
+**Current Issue:** Geodesic rendering code is duplicated 6+ times in `rt-rendering.js`. Each geodesic polyhedron repeats ~25 lines of identical logic:
+- Get frequency from `getElementById`
+- Get projection from `querySelector`
+- Parse values with `isNaN` checks
+- Call polyhedron function
+- Call `renderPolyhedron`
+- Set visibility
+
+**Solution:** Create `renderGeodesicPolyhedron()` helper function:
+
+```javascript
+function renderGeodesicPolyhedron(config) {
+  const {
+    checkboxId,
+    frequencyId,
+    projectionName,
+    polyhedronFn,
+    group,
+    color,
+    scale,
+    opacity
+  } = config;
+
+  if (document.getElementById(checkboxId).checked) {
+    const frequency = parseInt(document.getElementById(frequencyId).value);
+    const projectionRadio = document.querySelector(`input[name="${projectionName}"]:checked`);
+    const projection = projectionRadio ? projectionRadio.value : "out";
+
+    const geometry = polyhedronFn(scale, isNaN(frequency) ? 1 : frequency, projection);
+    renderPolyhedron(group, geometry, color, opacity);
+    group.visible = true;
+  } else {
+    group.visible = false;
+  }
+}
+```
+
+**Usage Example:**
+```javascript
+renderGeodesicPolyhedron({
+  checkboxId: "showGeodesicDualTetrahedron",
+  frequencyId: "geodesicDualTetraFrequency",
+  projectionName: "geodesicDualTetraProjection",
+  polyhedronFn: Polyhedra.geodesicDualTetrahedron,
+  group: geodesicDualTetrahedronGroup,
+  color: 0xffff00,  // Reciprocal complementary (matches base solid)
+  scale, opacity
+});
+```
+
+**Benefits:**
+- Reduces ~150 lines of duplicated code to ~6 function calls
+- Single source of truth for geodesic rendering logic
+- Color scheme becomes explicit and centralized
+- Easier to maintain/update
+
+**UI/CSS Consolidation (Secondary):**
+After rendering consolidation, geodesic UI controls can be further consolidated:
+- All geodesic control sections share identical HTML structure
+- All geodesic controls share identical CSS classes
+- Only differences: IDs and data binding
+- Potential for template-based generation or shared components
+
+### Phase 5: Documentation (Pending)
 - ⚠️ README.md updated with DRY architecture notes
-- ⚠️ UI changes documented
-- ⚠️ Color scheme implementation documented
+- ⚠️ Final UI/rendering consolidation documented
 
 ### Overall
 - ✅ No visual or geometric regressions in refactored geometry
-- ⚠️ Complete feature parity with UI controls and color scheme
+- ✅ Complete feature parity with UI controls and color scheme
+- ⚠️ Rendering consolidation pending (DRY improvement)
 
 ---
 
-**Status:** Phase 1 & 2 Complete (Geometry Refactoring) | Phase 3 & 4 Pending (UI/Color/Docs)
+**Status:** Phase 1-3 Complete | Phase 4-5 Pending (Rendering Consolidation & Docs)
 **Priority:** High (architectural improvement, enables future features)
-**Estimated Complexity:** Low-Medium (geometry done, UI/color integration remaining)
+**Estimated Complexity:** Low (helper function pattern straightforward)
