@@ -396,7 +396,7 @@ function createComplementaryRectangles() {
     color: 0x4a9eff, // Blue for cross (horizontal/parallel)
     transparent: true,
     opacity: 0.3,
-    side: THREE.DoubleSide,
+    side: THREE.FrontSide, // Backface culling enabled (2026-01-11)
   });
 
   crossRectangleFill = new THREE.Mesh(crossFillGeometry, crossFillMaterial);
@@ -432,7 +432,7 @@ function createComplementaryRectangles() {
     color: 0xff6600, // Orange for spread (vertical/perpendicular)
     transparent: true,
     opacity: 0.3,
-    side: THREE.DoubleSide,
+    side: THREE.FrontSide, // Backface culling enabled (2026-01-11)
   });
 
   spreadRectangleFill = new THREE.Mesh(spreadFillGeometry, spreadFillMaterial);
@@ -477,7 +477,7 @@ function createDraggablePoint() {
   const ringGeometry = new THREE.RingGeometry(0.04, 0.05, 32);
   const ringMaterial = new THREE.MeshBasicMaterial({
     color: 0xffffff,
-    side: THREE.DoubleSide,
+    side: THREE.FrontSide, // Backface culling enabled (2026-01-11)
   });
   draggablePoint = new THREE.Mesh(ringGeometry, ringMaterial);
   draggablePoint.position.z = 0.02;

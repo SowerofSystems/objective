@@ -496,10 +496,10 @@ export const RTPapercut = {
           // Only apply to mesh materials, not line materials
           if (mat.type && !mat.type.includes("Line")) {
             if (RTPapercut.state.backfaceCullingEnabled) {
-              // Enable backface culling (show only front faces)
+              // Enable backface culling (show only front faces) - now default with corrected winding (2026-01-11)
               mat.side = THREE.FrontSide;
             } else {
-              // Disable backface culling (show both sides - default)
+              // Disable backface culling (show both sides - user override)
               mat.side = THREE.DoubleSide;
             }
             mat.needsUpdate = true;

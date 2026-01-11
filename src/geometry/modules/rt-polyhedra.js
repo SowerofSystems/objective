@@ -662,9 +662,9 @@ export const Polyhedra = {
       }
 
       // Create faces from grid
-      // TODO: Face winding order inconsistent - some faces wound clockwise, others counter-clockwise
-      // This causes normals to point inward/outward inconsistently, requiring THREE.DoubleSide material
-      // Fix: Ensure all faces use consistent CCW winding (right-hand rule) for outward normals
+      // ✅ RESOLVED (2026-01-11): All base polyhedra winding corrected - geodesics automatically inherit correct winding
+      // Geodesic faces now use consistent CCW winding (right-hand rule) for outward normals
+      // THREE.FrontSide backface culling now enabled across all materials
       for (let row = 0; row < divisions; row++) {
         for (let col = 0; col < divisions - row; col++) {
           // Upward-pointing triangle

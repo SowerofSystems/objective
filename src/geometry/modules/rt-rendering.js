@@ -808,7 +808,7 @@ export function initScene(THREE, OrbitControls, RT) {
       flatShading: useFlatShading,
       transparent: nodeOpacity < 1,
       opacity: nodeOpacity,
-      side: THREE.DoubleSide, // TODO: Geodesic face winding order inconsistent - fix in rt-polyhedra.js geodesicIcosahedron() to use FrontSide only
+      side: THREE.FrontSide, // Backface culling enabled - all polyhedra winding corrected (2026-01-11)
     });
 
     // Collect all unique vertex positions from matrix
@@ -1033,7 +1033,7 @@ export function initScene(THREE, OrbitControls, RT) {
         color: color,
         transparent: true,
         opacity: opacity,
-        side: THREE.DoubleSide,
+        side: THREE.FrontSide, // Backface culling enabled - all polyhedra winding corrected (2026-01-11)
         depthWrite: opacity >= 0.99, // Only write depth for opaque faces
         flatShading: true,
       });
@@ -1106,7 +1106,7 @@ export function initScene(THREE, OrbitControls, RT) {
         flatShading: useFlatShading, // User-controlled shading
         transparent: nodeOpacity < 1,
         opacity: nodeOpacity,
-        side: THREE.DoubleSide, // TODO: Geodesic face winding order inconsistent - fix in rt-polyhedra.js geodesicIcosahedron() to use FrontSide only
+        side: THREE.FrontSide, // Backface culling enabled - all polyhedra winding corrected (2026-01-11)
       });
 
       vertices.forEach(vertex => {
