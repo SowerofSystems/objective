@@ -1311,19 +1311,19 @@
               <label class="label-section">Node Geometry</label>
               <div class="toggle-btn-group">
                 <button
-                  class="toggle-btn variant-toggle active"
+                  class="toggle-btn variant-toggle"
                   id="nodeGeomClassical"
                   data-node-geom="classical"
                 >
                   Classical Spheres
                 </button>
                 <select
-                  class="toggle-btn variant-toggle geodesic-dropdown"
+                  class="toggle-btn variant-toggle geodesic-dropdown active"
                   id="nodeGeomRT"
                 >
                   <option value="1">1f Geodesic</option>
                   <option value="2">2f Geodesic</option>
-                  <option value="3">3f Geodesic</option>
+                  <option value="3" selected>3f Geodesic</option>
                   <option value="4">4f Geodesic</option>
                 </select>
               </div>
@@ -1364,9 +1364,9 @@
                   min="0"
                   max="1"
                   step="0.05"
-                  value="1"
+                  value="0.35"
                 />
-                <span class="slider-value" id="nodeOpacityValue">1</span>
+                <span class="slider-value" id="nodeOpacityValue">0.35</span>
               </div>
             </div>
           </div>
