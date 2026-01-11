@@ -50,8 +50,17 @@
     'cooling.freeCoolingLimit': 'h_124',
     'cooling.daysActiveCooling': 'm_124',
 
-    // Energy Demand (S14)
+    // Energy Demand (S14) - d_129 components: k_71 + k_79 + k_98 + d_122
+    'internal.coolingLoad.occupants': 'k_71',
+    'radiantGains.subtotal.coolingGain': 'k_79',
+    'transmissionLoss.components.subtotalHeatGain': 'k_98',
+    'energy.ced.unmitigated': 'd_129',
     'energy.ced.mitigated': 'm_129',
+
+    // Mechanical Cooling (S13)
+    'mechanical.cooling.electricalDemand': 'd_117',
+    'mechanical.cooling.intensity': 'f_117',
+    'mechanical.cooling.coolingSink': 'l_116',
 
     // Occupancy
     'occupancy.occupiedHours': 'i_63',
