@@ -59,12 +59,13 @@ export const Polyhedra = {
     ];
 
     // 6 square faces
+    // Winding order corrected to ensure all normals point outward (CCW from outside)
     const faces = [
-      [0, 1, 2, 3], // Bottom (Z = -s)
+      [0, 3, 2, 1], // Bottom (Z = -s) (corrected winding)
       [4, 5, 6, 7], // Top (Z = +s)
       [0, 1, 5, 4], // Back (Y = -s)
       [2, 3, 7, 6], // Front (Y = +s)
-      [0, 3, 7, 4], // Left (X = -s)
+      [0, 4, 7, 3], // Left (X = -s) (corrected winding)
       [1, 2, 6, 5], // Right (X = +s)
     ];
 
@@ -205,17 +206,18 @@ export const Polyhedra = {
     ];
 
     // 8 triangular faces (4 above XY-plane, 4 below)
+    // Winding order corrected to ensure all normals point outward (CCW from outside)
     const faces = [
       // Upper hemisphere (Z > 0)
       [0, 2, 4], // Right-Front-Top
-      [0, 3, 4], // Right-Back-Top
-      [1, 2, 4], // Left-Front-Top
+      [0, 4, 3], // Right-Back-Top (corrected winding)
+      [1, 4, 2], // Left-Front-Top (corrected winding)
       [1, 3, 4], // Left-Back-Top
       // Lower hemisphere (Z < 0)
-      [0, 2, 5], // Right-Front-Bottom
+      [0, 5, 2], // Right-Front-Bottom (corrected winding)
       [0, 3, 5], // Right-Back-Bottom
       [1, 2, 5], // Left-Front-Bottom
-      [1, 3, 5], // Left-Back-Bottom
+      [1, 5, 3], // Left-Back-Bottom (corrected winding)
     ];
 
     // RT VALIDATION: Check edge quadrance uniformity

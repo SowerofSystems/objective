@@ -127,12 +127,15 @@ faces: [
 ```
 
 **Checklist:**
-- [ ] Run validator on base tetrahedron
-- [ ] Check each face normal direction
-- [ ] Verify all faces use CCW winding when viewed from outside
-- [ ] Fix any reversed faces by swapping two vertices
-- [ ] Re-run validator to confirm fix
-- [ ] Test with `material.side = THREE.FrontSide`
+- [x] Run validator on base tetrahedron
+- [x] Check each face normal direction
+- [x] Verify all faces use CCW winding when viewed from outside
+- [x] Fix any reversed faces by swapping two vertices
+- [x] Re-run validator to confirm fix
+- [x] Test with `material.side = THREE.FrontSide`
+
+**Status:** ✅ COMPLETED (2026-01-10)
+**Result:** All 4 faces correctly wound (100%)
 
 **Expected Issues:** Low (4 faces, simple geometry)
 
@@ -143,23 +146,27 @@ faces: [
 **Current Face Definitions:**
 ```javascript
 faces: [
-  [0, 1, 2, 3],  // Bottom (Z-)
+  [0, 3, 2, 1],  // Bottom (Z-) (corrected)
   [4, 5, 6, 7],  // Top (Z+)
-  [0, 1, 5, 4],  // Front (Y+)
-  [2, 3, 7, 6],  // Back (Y-)
-  [0, 3, 7, 4],  // Left (X-)
+  [0, 1, 5, 4],  // Back (Y-)
+  [2, 3, 7, 6],  // Front (Y+)
+  [0, 4, 7, 3],  // Left (X-) (corrected)
   [1, 2, 6, 5],  // Right (X+)
 ]
 ```
 
 **Checklist:**
-- [ ] Run validator on cube
-- [ ] Verify bottom face CCW when viewed from below
-- [ ] Verify top face CCW when viewed from above
-- [ ] Verify all side faces CCW when viewed from outside
-- [ ] Fix any reversed faces
-- [ ] Re-run validator
-- [ ] Test with FrontSide material
+- [x] Run validator on cube
+- [x] Verify bottom face CCW when viewed from below
+- [x] Verify top face CCW when viewed from above
+- [x] Verify all side faces CCW when viewed from outside
+- [x] Fix any reversed faces
+- [x] Re-run validator
+- [x] Test with FrontSide material
+
+**Status:** ✅ COMPLETED (2026-01-10)
+**Result:** All 6 faces correctly wound (100%)
+**Fix Applied:** Reversed winding on faces 0 (bottom) and 4 (left)
 
 **Expected Issues:** Low (6 faces, axis-aligned)
 
@@ -171,20 +178,24 @@ faces: [
 ```javascript
 faces: [
   // Upper hemisphere (4 faces meeting at top vertex)
-  [0, 2, 4], [0, 3, 4], [1, 2, 4], [1, 3, 4],
+  [0, 2, 4], [0, 4, 3], [1, 4, 2], [1, 3, 4],
   // Lower hemisphere (4 faces meeting at bottom vertex)
-  [0, 2, 5], [0, 3, 5], [1, 2, 5], [1, 3, 5],
+  [0, 5, 2], [0, 3, 5], [1, 2, 5], [1, 5, 3],
 ]
 ```
 
 **Checklist:**
-- [ ] Run validator
-- [ ] Check upper hemisphere faces (vertex 4 at top)
-- [ ] Check lower hemisphere faces (vertex 5 at bottom)
-- [ ] Verify symmetry: corresponding upper/lower faces should have similar winding
-- [ ] Fix any reversed faces
-- [ ] Re-run validator
-- [ ] Test with FrontSide material
+- [x] Run validator
+- [x] Check upper hemisphere faces (vertex 4 at top)
+- [x] Check lower hemisphere faces (vertex 5 at bottom)
+- [x] Verify symmetry: corresponding upper/lower faces should have similar winding
+- [x] Fix any reversed faces
+- [x] Re-run validator
+- [x] Test with FrontSide material
+
+**Status:** ✅ COMPLETED (2026-01-10)
+**Result:** All 8 faces correctly wound (100%)
+**Fix Applied:** Reversed winding on faces 1, 2, 4, 7 (alternating pattern corrected)
 
 **Expected Issues:** Low-Medium (8 faces, symmetric structure)
 
@@ -302,11 +313,14 @@ faces: [
 **Construction Method:** Stella octangula companion (inverted tetrahedron)
 
 **Checklist:**
-- [ ] Run validator
-- [ ] Verify face winding matches base tetrahedron pattern
-- [ ] Check that inversion doesn't reverse winding
-- [ ] Fix any reversed faces
-- [ ] Re-run validator
+- [x] Run validator
+- [x] Verify face winding matches base tetrahedron pattern
+- [x] Check that inversion doesn't reverse winding
+- [x] Fix any reversed faces
+- [x] Re-run validator
+
+**Status:** ✅ COMPLETED (2026-01-10)
+**Result:** All 4 faces correctly wound (100%)
 
 **Expected Issues:** Low (inherits tetrahedron structure)
 
@@ -469,11 +483,17 @@ geodesicIcosahedron(halfSize = 1, frequency = 1)
 **Construction:** Same pattern as geodesic icosahedron
 
 **Checklist:**
-- [ ] Apply fixed `subdivideTriangles()` (from 4.1)
-- [ ] Test frequency=1,2,3
-- [ ] Run validator
-- [ ] Visual test
-- [ ] Test with FrontSide material
+- [x] Apply fixed `subdivideTriangles()` (from 4.1)
+- [x] Test frequency=1,2,3
+- [x] Run validator
+- [x] Visual test
+- [x] Test with FrontSide material
+
+**Status:** ✅ COMPLETED (2026-01-10)
+**Results:**
+- Frequency 1: 4/4 faces correct (100%)
+- Frequency 2: 16/16 faces correct (100%)
+- Frequency 3: 36/36 faces correct (100%)
 
 **Expected Issues:** Medium-High (shares subdivision algorithm)
 
@@ -484,11 +504,17 @@ geodesicIcosahedron(halfSize = 1, frequency = 1)
 **Construction:** Same pattern as geodesic icosahedron
 
 **Checklist:**
-- [ ] Apply fixed `subdivideTriangles()` (from 4.1)
-- [ ] Test frequency=1,2,3
-- [ ] Run validator
-- [ ] Visual test
-- [ ] Test with FrontSide material
+- [x] Apply fixed `subdivideTriangles()` (from 4.1)
+- [x] Test frequency=1,2,3
+- [x] Run validator
+- [x] Visual test
+- [x] Test with FrontSide material
+
+**Status:** ✅ COMPLETED (2026-01-10)
+**Results:**
+- Frequency 1: 8/8 faces correct (100%)
+- Frequency 2: 32/32 faces correct (100%)
+- Frequency 3: 72/72 faces correct (100%)
 
 **Expected Issues:** Medium-High (shares subdivision algorithm)
 
