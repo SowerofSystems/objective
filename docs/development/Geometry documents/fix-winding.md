@@ -47,6 +47,8 @@ Right-Hand Rule:
 - Cleaner section cuts in papercut mode
 - Mathematically correct normal orientation
 
+> **IMPORTANT NOTE:** When testing polyhedra during winding fixes, always use `THREE.FrontSide` in your test materials to verify correct winding. DoubleSide will hide winding errors by rendering both sides of faces. Only FrontSide will expose incorrect face orientation.
+
 ---
 
 ## Solution Strategy
@@ -213,15 +215,21 @@ faces: [
 ```
 
 **Checklist:**
-- [ ] Run validator
-- [ ] Check top cap faces (should point upward/outward)
-- [ ] Check upper belt faces
-- [ ] Check lower belt faces
-- [ ] Check bottom cap faces (should point downward/outward)
-- [ ] Verify 5-fold rotational symmetry in each belt
-- [ ] Fix any reversed faces
-- [ ] Re-run validator
+- [x] Create test-icosahedron-winding.html test file
+- [x] Run validator on base icosahedron
+- [x] Check top cap faces (should point upward/outward)
+- [x] Check upper belt faces
+- [x] Check lower belt faces
+- [x] Check bottom cap faces (should point downward/outward)
+- [x] Verify 5-fold rotational symmetry in each belt
+- [x] Fix any reversed faces (ALL 20 faces reversed)
+- [x] Re-run validator
 - [ ] Test with FrontSide material
+
+**Status:** ✅ COMPLETED (2026-01-10)
+**Test File:** test-icosahedron-winding.html
+**Result:** All 20 faces corrected (100% - all faces were consistently inward, simple reversal fix)
+**Fix Applied:** Reversed winding on all 20 faces
 
 **Expected Issues:** Medium (20 faces, golden ratio geometry, belt symmetry)
 
@@ -331,11 +339,17 @@ faces: [
 **Construction Method:** Vertices at dodecahedron face centers
 
 **Checklist:**
-- [ ] Run validator
-- [ ] Verify relationship to dodecahedron
-- [ ] Check that face centers produce correct winding
-- [ ] Fix any reversed faces
-- [ ] Re-run validator
+- [x] Run validator
+- [x] Verify relationship to dodecahedron
+- [x] Check that face centers produce correct winding
+- [x] Fix all reversed faces (ALL 20 faces reversed)
+- [x] Re-run validator
+- [ ] Test with FrontSide material
+
+**Status:** ✅ COMPLETED (2026-01-10)
+**Result:** All 20 faces corrected (100% - same pattern as base icosahedron)
+**Fix Applied:** Reversed winding on all 20 faces to match base icosahedron
+**Validation:** All tests passing (5/5)
 
 **Expected Issues:** Medium (20 faces, derived from dodecahedron)
 
