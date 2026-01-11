@@ -29,7 +29,7 @@ export const RTPapercut = {
     currentView: "top",
     sectionNodesEnabled: false, // Section Nodes checkbox state
     adaptiveNodeResolution: false, // High resolution mode: 64 segments (unchecked: 32)
-    backfaceCullingEnabled: false, // Backface culling for print optimization
+    backfaceCullingEnabled: true, // Backface culling enabled by default - all geometry corrected (2026-01-11)
   },
 
   // Store references to THREE.js objects
