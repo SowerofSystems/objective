@@ -685,6 +685,119 @@ button:disabled {
   background: #00bb66;
 }
 /* ========================================================================
+   GEODESIC CONTROLS (CONSOLIDATED)
+   ======================================================================== */
+
+/* Geodesic control wrapper - consistent spacing */
+.geodesic-control-wrapper {
+  margin-left: 20px;
+  margin-top: 8px;
+}
+
+/* Nested geodesic content */
+.geodesic-nested {
+  margin-left: 20px;
+  margin-top: 5px;
+}
+
+/* Frequency input container */
+.geodesic-frequency-container {
+  margin-bottom: 0;
+}
+
+.geodesic-frequency-label {
+  font-size: 11px;
+  display: inline-block;
+  margin-right: 5px;
+}
+
+.geodesic-frequency-input {
+  width: 50px;
+  margin-left: 5px;
+  padding: 4px 6px;
+  font-size: 11px;
+  background: #1a1a1a;
+  border: 1px solid #555;
+  color: #e0e0e0;
+  border-radius: 3px;
+}
+
+/* Projection options */
+.geodesic-projection-container {
+  margin-top: 8px;
+}
+
+.geodesic-projection-label {
+  font-size: 11px;
+  display: block;
+  margin-bottom: 3px;
+  color: #b0b0b0;
+}
+
+.geodesic-projection-option {
+  font-size: 10px;
+  display: block;
+  margin-left: 5px;
+  margin-bottom: 2px;
+  color: #b0b0b0;
+}
+
+.geodesic-projection-option input[type="radio"] {
+  margin-right: 6px;
+}
+
+/* ========================================================================
+   MATRIX CONTROLS (CONSOLIDATED)
+   ======================================================================== */
+
+/* Matrix control wrapper */
+.matrix-control-wrapper {
+  margin-left: 20px;
+  margin-top: 8px;
+}
+
+/* Matrix control item */
+.matrix-control-item {
+  margin-bottom: 8px;
+}
+
+/* Matrix size label */
+.matrix-size-label {
+  font-size: 11px;
+  display: block;
+  margin-bottom: 4px;
+  color: #b0b0b0;
+}
+
+/* Matrix checkbox label - smaller font */
+.matrix-checkbox-label {
+  font-size: 11px;
+  margin-left: 0;
+}
+
+/* Matrix info text */
+.matrix-info-text {
+  margin-left: 0;
+  font-size: 10px;
+  color: #888;
+  font-style: italic;
+  margin-top: 5px;
+}
+
+/* Matrix divider */
+.matrix-divider {
+  margin: 16px 0 12px 0;
+  padding-top: 12px;
+  border-top: 1px solid #333;
+}
+
+.matrix-divider-label {
+  font-size: 12px;
+  color: #888;
+  font-weight: 500;
+}
+
+/* ========================================================================
    TEXT SIZE UTILITIES
    ======================================================================== */
 
