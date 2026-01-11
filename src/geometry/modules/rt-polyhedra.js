@@ -59,12 +59,13 @@ export const Polyhedra = {
     ];
 
     // 6 square faces
+    // Winding order corrected to ensure all normals point outward (CCW from outside)
     const faces = [
-      [0, 1, 2, 3], // Bottom (Z = -s)
+      [0, 3, 2, 1], // Bottom (Z = -s) (corrected winding)
       [4, 5, 6, 7], // Top (Z = +s)
       [0, 1, 5, 4], // Back (Y = -s)
       [2, 3, 7, 6], // Front (Y = +s)
-      [0, 3, 7, 4], // Left (X = -s)
+      [0, 4, 7, 3], // Left (X = -s) (corrected winding)
       [1, 2, 6, 5], // Right (X = +s)
     ];
 
@@ -105,12 +106,12 @@ export const Polyhedra = {
       [2, 3],
     ];
 
-    // 4 triangular faces
+    // 4 triangular faces (CCW winding for outward normals)
     const faces = [
-      [0, 1, 2],
-      [0, 1, 3],
-      [0, 2, 3],
-      [1, 2, 3],
+      [0, 1, 2], // Face 0: correct
+      [0, 3, 1], // Face 1: FIXED (was [0,1,3])
+      [0, 2, 3], // Face 2: correct
+      [1, 3, 2], // Face 3: FIXED (was [1,2,3])
     ];
 
     // RT VALIDATION: Check edge quadrance uniformity
@@ -146,11 +147,12 @@ export const Polyhedra = {
       [2, 3],
     ];
 
+    // 4 triangular faces (CCW winding for outward normals)
     const faces = [
-      [0, 1, 2],
-      [0, 1, 3],
-      [0, 2, 3],
-      [1, 2, 3],
+      [0, 2, 1], // Face 0: FIXED (was [0,1,2])
+      [0, 1, 3], // Face 1: correct
+      [0, 3, 2], // Face 2: FIXED (was [0,2,3])
+      [1, 2, 3], // Face 3: correct
     ];
 
     // RT VALIDATION: Check edge quadrance uniformity
@@ -204,17 +206,18 @@ export const Polyhedra = {
     ];
 
     // 8 triangular faces (4 above XY-plane, 4 below)
+    // Winding order corrected to ensure all normals point outward (CCW from outside)
     const faces = [
       // Upper hemisphere (Z > 0)
       [0, 2, 4], // Right-Front-Top
-      [0, 3, 4], // Right-Back-Top
-      [1, 2, 4], // Left-Front-Top
+      [0, 4, 3], // Right-Back-Top (corrected winding)
+      [1, 4, 2], // Left-Front-Top (corrected winding)
       [1, 3, 4], // Left-Back-Top
       // Lower hemisphere (Z < 0)
-      [0, 2, 5], // Right-Front-Bottom
+      [0, 5, 2], // Right-Front-Bottom (corrected winding)
       [0, 3, 5], // Right-Back-Bottom
       [1, 2, 5], // Left-Front-Bottom
-      [1, 3, 5], // Left-Back-Bottom
+      [1, 5, 3], // Left-Back-Bottom (corrected winding)
     ];
 
     // RT VALIDATION: Check edge quadrance uniformity
@@ -326,32 +329,32 @@ export const Polyhedra = {
       [10, 11],
     ];
 
-    // 20 equilateral triangular faces
+    // 20 equilateral triangular faces (winding corrected 2026-01-10)
     const faces = [
       // Top cap (5 faces around +Y axis)
-      [0, 4, 8],
-      [0, 6, 4],
-      [0, 10, 6],
-      [0, 8, 2],
-      [0, 2, 10],
+      [8, 4, 0],
+      [4, 6, 0],
+      [6, 10, 0],
+      [2, 8, 0],
+      [10, 2, 0],
       // Upper belt (5 faces)
-      [4, 1, 9],
-      [4, 9, 8],
-      [6, 1, 4],
-      [6, 11, 1],
-      [6, 10, 11],
+      [9, 1, 4],
+      [8, 9, 4],
+      [4, 1, 6],
+      [1, 11, 6],
+      [11, 10, 6],
       // Lower belt (5 faces)
-      [2, 8, 5],
-      [8, 9, 5],
-      [10, 2, 7],
-      [2, 5, 7],
-      [10, 7, 11],
+      [5, 8, 2],
+      [5, 9, 8],
+      [7, 2, 10],
+      [7, 5, 2],
+      [11, 7, 10],
       // Bottom cap (5 faces around -Y axis)
-      [3, 9, 1],
-      [3, 5, 9],
-      [3, 11, 7],
-      [3, 7, 5],
-      [3, 1, 11],
+      [1, 9, 3],
+      [9, 5, 3],
+      [7, 11, 3],
+      [5, 7, 3],
+      [11, 1, 3],
     ];
 
     // RT VALIDATION: Check edge quadrance uniformity
@@ -503,27 +506,28 @@ export const Polyhedra = {
       [10, 11],
     ];
 
+    // Same face topology as base icosahedron (winding corrected 2026-01-10)
     const faces = [
-      [0, 4, 8],
-      [0, 6, 4],
-      [0, 10, 6],
-      [0, 8, 2],
-      [0, 2, 10],
-      [4, 1, 9],
-      [4, 9, 8],
-      [6, 1, 4],
-      [6, 11, 1],
-      [6, 10, 11],
-      [2, 8, 5],
-      [8, 9, 5],
-      [10, 2, 7],
-      [2, 5, 7],
-      [10, 7, 11],
-      [3, 9, 1],
-      [3, 5, 9],
-      [3, 11, 7],
-      [3, 7, 5],
-      [3, 1, 11],
+      [8, 4, 0],
+      [4, 6, 0],
+      [6, 10, 0],
+      [2, 8, 0],
+      [10, 2, 0],
+      [9, 1, 4],
+      [8, 9, 4],
+      [4, 1, 6],
+      [1, 11, 6],
+      [11, 10, 6],
+      [5, 8, 2],
+      [5, 9, 8],
+      [7, 2, 10],
+      [7, 5, 2],
+      [11, 7, 10],
+      [1, 9, 3],
+      [9, 5, 3],
+      [7, 11, 3],
+      [5, 7, 3],
+      [11, 1, 3],
     ];
 
     // RT VALIDATION: Check edge quadrance uniformity
@@ -658,9 +662,9 @@ export const Polyhedra = {
       }
 
       // Create faces from grid
-      // TODO: Face winding order inconsistent - some faces wound clockwise, others counter-clockwise
-      // This causes normals to point inward/outward inconsistently, requiring THREE.DoubleSide material
-      // Fix: Ensure all faces use consistent CCW winding (right-hand rule) for outward normals
+      // ✅ RESOLVED (2026-01-11): All base polyhedra winding corrected - geodesics automatically inherit correct winding
+      // Geodesic faces now use consistent CCW winding (right-hand rule) for outward normals
+      // THREE.FrontSide backface culling now enabled across all materials
       for (let row = 0; row < divisions; row++) {
         for (let col = 0; col < divisions - row; col++) {
           // Upward-pointing triangle
@@ -1155,27 +1159,27 @@ export const Polyhedra = {
       [18, 19], // (-phi, 0, +invPhi) to (-phi, 0, -invPhi) - XZ group
     ];
 
-    // 12 pentagonal faces - standard dodecahedron topology
+    // 12 pentagonal faces - standard dodecahedron topology (winding corrected 2026-01-10)
     // Vertices: 0-7 (cube), 8-11 (YZ permutation), 12-15 (XY permutation), 16-19 (XZ permutation)
     // Each face verified to follow edge connectivity
     const faces = [
-      // Three faces meeting at vertex 0 (+,+,+)
-      [0, 8, 4, 14, 12], // 0→8→4→14→12→0
-      [0, 12, 1, 17, 16], // 0→12→1→17→16→0
-      [0, 16, 2, 10, 8], // 0→16→2→10→8→0
+      // Three faces meeting at vertex 0 (+,+,+) - REVERSED
+      [12, 14, 4, 8, 0], // was [0, 8, 4, 14, 12]
+      [16, 17, 1, 12, 0], // was [0, 12, 1, 17, 16]
+      [8, 10, 2, 16, 0], // was [0, 16, 2, 10, 8]
 
-      // Three faces meeting at vertex 7 (-,-,-)
+      // Three faces meeting at vertex 7 (-,-,-) - CORRECT (no change)
       [7, 11, 3, 13, 15], // 7→11→3→13→15→7
       [7, 15, 6, 18, 19], // 7→15→6→18→19→7
       [7, 19, 5, 9, 11], // 7→19→5→9→11→7
 
-      // Six remaining faces (belt)
-      [1, 12, 14, 5, 9], // 1→12→14→5→9→1
-      [1, 9, 11, 3, 17], // 1→9→11→3→17→1 (note: edge 9→11 exists)
-      [2, 16, 17, 3, 13], // 2→16→17→3→13→2 (note: edge 16→17 exists)
-      [2, 13, 15, 6, 10], // 2→13→15→6→10→2 (note: edge 13→15 exists)
-      [4, 8, 10, 6, 18], // 4→8→10→6→18→4 (note: edge 8→10 exists)
-      [4, 18, 19, 5, 14], // 4→18→19→5→14→4 (note: edge 18→19 exists)
+      // Six remaining faces (belt) - REVERSED
+      [9, 5, 14, 12, 1], // was [1, 12, 14, 5, 9]
+      [17, 3, 11, 9, 1], // was [1, 9, 11, 3, 17]
+      [13, 3, 17, 16, 2], // was [2, 16, 17, 3, 13]
+      [10, 6, 15, 13, 2], // was [2, 13, 15, 6, 10]
+      [18, 6, 10, 8, 4], // was [4, 8, 10, 6, 18]
+      [14, 5, 19, 18, 4], // was [4, 18, 19, 5, 14]
     ];
 
     // RT VALIDATION: Check edge quadrance uniformity
@@ -1283,25 +1287,25 @@ export const Polyhedra = {
 
     // 12 rhombic faces (one per cuboctahedron vertex)
     // Each rhombus connects 2 square centers to 2 triangular centers
-    // Proper cyclic winding order ensures coplanarity
+    // Proper cyclic winding order ensures coplanarity (winding corrected 2026-01-11)
     const faces = [
       // Rhombi corresponding to cuboctahedron XY plane vertices (indices 0-3)
-      [0, 6, 2, 7], // Rhombus at cuboctahedron vertex 0 ( t, t, 0)
-      [0, 8, 3, 9], // Rhombus at cuboctahedron vertex 1 ( t,-t, 0)
-      [1, 10, 2, 11], // Rhombus at cuboctahedron vertex 2 (-t, t, 0)
-      [1, 12, 3, 13], // Rhombus at cuboctahedron vertex 3 (-t,-t, 0)
+      [7, 2, 6, 0], // Rhombus at cuboctahedron vertex 0 ( t, t, 0) - REVERSED (was [0, 6, 2, 7])
+      [0, 8, 3, 9], // Rhombus at cuboctahedron vertex 1 ( t,-t, 0) - CORRECT
+      [1, 10, 2, 11], // Rhombus at cuboctahedron vertex 2 (-t, t, 0) - CORRECT
+      [13, 3, 12, 1], // Rhombus at cuboctahedron vertex 3 (-t,-t, 0) - REVERSED (was [1, 12, 3, 13])
 
       // Rhombi corresponding to cuboctahedron XZ plane vertices (indices 4-7)
-      [0, 6, 4, 8], // Rhombus at cuboctahedron vertex 4 ( t, 0, t)
-      [0, 7, 5, 9], // Rhombus at cuboctahedron vertex 5 ( t, 0,-t)
-      [1, 10, 4, 12], // Rhombus at cuboctahedron vertex 6 (-t, 0, t)
-      [1, 11, 5, 13], // Rhombus at cuboctahedron vertex 7 (-t, 0,-t)
+      [0, 6, 4, 8], // Rhombus at cuboctahedron vertex 4 ( t, 0, t) - CORRECT
+      [9, 5, 7, 0], // Rhombus at cuboctahedron vertex 5 ( t, 0,-t) - REVERSED (was [0, 7, 5, 9])
+      [12, 4, 10, 1], // Rhombus at cuboctahedron vertex 6 (-t, 0, t) - REVERSED (was [1, 10, 4, 12])
+      [1, 11, 5, 13], // Rhombus at cuboctahedron vertex 7 (-t, 0,-t) - CORRECT
 
       // Rhombi corresponding to cuboctahedron YZ plane vertices (indices 8-11)
-      [2, 6, 4, 10], // Rhombus at cuboctahedron vertex 8 ( 0, t, t)
-      [2, 7, 5, 11], // Rhombus at cuboctahedron vertex 9 ( 0, t,-t)
-      [3, 8, 4, 12], // Rhombus at cuboctahedron vertex 10 ( 0,-t, t)
-      [3, 9, 5, 13], // Rhombus at cuboctahedron vertex 11 ( 0,-t,-t)
+      [10, 4, 6, 2], // Rhombus at cuboctahedron vertex 8 ( 0, t, t) - REVERSED (was [2, 6, 4, 10])
+      [2, 7, 5, 11], // Rhombus at cuboctahedron vertex 9 ( 0, t,-t) - CORRECT
+      [3, 8, 4, 12], // Rhombus at cuboctahedron vertex 10 ( 0,-t, t) - CORRECT
+      [13, 5, 9, 3], // Rhombus at cuboctahedron vertex 11 ( 0,-t,-t) - REVERSED (was [3, 9, 5, 13])
     ];
 
     // RT VALIDATION: All edges have uniform quadrance
@@ -1397,25 +1401,25 @@ export const Polyhedra = {
       [7, 11], // From vertex 7
     ];
 
-    // 14 faces: 8 triangular + 6 square
+    // 14 faces: 8 triangular + 6 square (winding corrected 2026-01-11)
     const faces = [
       // 6 square faces (corresponding to cube faces)
-      [0, 4, 1, 5], // +X face (x > 0)
-      [2, 6, 3, 7], // -X face (x < 0)
-      [0, 8, 2, 9], // +Y face (y > 0)
-      [1, 10, 3, 11], // -Y face (y < 0)
-      [4, 8, 6, 10], // +Z face (z > 0)
-      [5, 9, 7, 11], // -Z face (z < 0)
+      [0, 4, 1, 5], // +X face (x > 0) - CORRECT
+      [7, 3, 6, 2], // -X face (x < 0) - REVERSED (was [2, 6, 3, 7])
+      [9, 2, 8, 0], // +Y face (y > 0) - REVERSED (was [0, 8, 2, 9])
+      [1, 10, 3, 11], // -Y face (y < 0) - CORRECT
+      [4, 8, 6, 10], // +Z face (z > 0) - CORRECT
+      [11, 7, 9, 5], // -Z face (z < 0) - REVERSED (was [5, 9, 7, 11])
 
       // 8 triangular faces (corresponding to octahedron faces, one per octant)
-      [0, 4, 8], // (+,+,+) octant
-      [0, 5, 9], // (+,+,-) octant
-      [1, 4, 10], // (+,-,+) octant
-      [1, 5, 11], // (+,-,-) octant
-      [2, 6, 8], // (-,+,+) octant
-      [2, 7, 9], // (-,+,-) octant
-      [3, 6, 10], // (-,-,+) octant
-      [3, 7, 11], // (-,-,-) octant
+      [8, 4, 0], // (+,+,+) octant - REVERSED (was [0, 4, 8])
+      [0, 5, 9], // (+,+,-) octant - CORRECT
+      [1, 4, 10], // (+,-,+) octant - CORRECT
+      [11, 5, 1], // (+,-,-) octant - REVERSED (was [1, 5, 11])
+      [2, 6, 8], // (-,+,+) octant - CORRECT
+      [9, 7, 2], // (-,+,-) octant - REVERSED (was [2, 7, 9])
+      [10, 6, 3], // (-,-,+) octant - REVERSED (was [3, 6, 10])
+      [3, 7, 11], // (-,-,-) octant - CORRECT
     ];
 
     // RT VALIDATION: All edges should have same quadrance
@@ -1429,3 +1433,119 @@ export const Polyhedra = {
     return { vertices, edges, faces };
   },
 };
+
+/**
+ * Validate face winding order
+ * Check if all face normals point outward (away from center)
+ *
+ * @param {THREE.Vector3[]} vertices - Array of vertex positions
+ * @param {number[][]} faces - Array of face vertex indices
+ * @param {THREE.Vector3} center - Polyhedron center (default: origin)
+ * @returns {Object} Validation results with errors array
+ */
+export function validateFaceWinding(vertices, faces, center = new THREE.Vector3(0, 0, 0)) {
+  const errors = [];
+  const warnings = [];
+
+  faces.forEach((faceIndices, faceIdx) => {
+    // Need at least 3 vertices for a face
+    if (faceIndices.length < 3) {
+      errors.push({
+        faceIndex: faceIdx,
+        vertices: faceIndices,
+        error: 'Face has fewer than 3 vertices',
+      });
+      return;
+    }
+
+    // Get first 3 vertices of face
+    const v0 = vertices[faceIndices[0]];
+    const v1 = vertices[faceIndices[1]];
+    const v2 = vertices[faceIndices[2]];
+
+    // Compute face normal using cross product (right-hand rule)
+    const edge1 = new THREE.Vector3().subVectors(v1, v0);
+    const edge2 = new THREE.Vector3().subVectors(v2, v0);
+    const faceNormal = new THREE.Vector3().crossVectors(edge1, edge2);
+
+    const normalMagnitude = faceNormal.length();
+    if (normalMagnitude < 1e-10) {
+      warnings.push({
+        faceIndex: faceIdx,
+        vertices: faceIndices,
+        warning: 'Degenerate face (zero-area triangle)',
+      });
+      return;
+    }
+
+    faceNormal.normalize();
+
+    // Get face center (average of all vertices)
+    const faceCenter = new THREE.Vector3();
+    faceIndices.forEach(idx => {
+      if (vertices[idx]) {
+        faceCenter.add(vertices[idx]);
+      } else {
+        errors.push({
+          faceIndex: faceIdx,
+          vertices: faceIndices,
+          error: `Invalid vertex index ${idx}`,
+        });
+      }
+    });
+    faceCenter.divideScalar(faceIndices.length);
+
+    // Outward direction from polyhedron center to face center
+    const outwardDir = new THREE.Vector3().subVectors(faceCenter, center);
+    const outwardMagnitude = outwardDir.length();
+
+    if (outwardMagnitude < 1e-10) {
+      warnings.push({
+        faceIndex: faceIdx,
+        vertices: faceIndices,
+        warning: 'Face center coincides with polyhedron center',
+      });
+      return;
+    }
+
+    outwardDir.normalize();
+
+    // Dot product should be positive for correct winding (outward normal)
+    const dot = faceNormal.dot(outwardDir);
+
+    if (dot < -0.01) {
+      // Significantly inward-pointing (wrong winding)
+      errors.push({
+        faceIndex: faceIdx,
+        vertices: faceIndices,
+        dotProduct: dot,
+        faceNormal: faceNormal.clone(),
+        outwardDir: outwardDir.clone(),
+        message: `Face ${faceIdx} has INWARD-pointing normal (dot=${dot.toFixed(4)})`,
+      });
+    } else if (dot < 0.01) {
+      // Nearly perpendicular (suspicious)
+      warnings.push({
+        faceIndex: faceIdx,
+        vertices: faceIndices,
+        dotProduct: dot,
+        warning: `Face ${faceIdx} has nearly perpendicular normal (dot=${dot.toFixed(4)})`,
+      });
+    }
+  });
+
+  const totalFaces = faces.length;
+  const errorCount = errors.length;
+  const warningCount = warnings.length;
+  const correctCount = totalFaces - errorCount - warningCount;
+
+  return {
+    totalFaces,
+    correctCount,
+    errorCount,
+    warningCount,
+    errors,
+    warnings,
+    isValid: errorCount === 0,
+  };
+}

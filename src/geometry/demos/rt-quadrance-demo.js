@@ -678,7 +678,7 @@ function createUnitRectangle() {
     color: 0x00ffff, // Light cyan
     transparent: true,
     opacity: 0.15, // Very transparent fill
-    side: THREE.DoubleSide,
+    side: THREE.FrontSide, // Backface culling enabled (2026-01-11)
   });
 
   unitRectangleFill = new THREE.Mesh(fillGeometry, fillMaterial);

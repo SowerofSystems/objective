@@ -1,5 +1,46 @@
 # ThreeRT - Three.js + Rational Trigonometry Geometry Explorer
-- Credits and thanks: Co-developed from the ideas of R. Buckminster Fuller, Kirby Urner, Tom Ace, NJ Wildberger and Andy Thomson, witnessed silently by Metatron.
+
+**The definitive README for the ARTexplorer polyhedral geometry application.**
+
+> *"Geometry should be done with algebra, not transcendental functions."* — N.J. Wildberger
+
+## Project Philosophy: Rational Trigonometry for Geometry Generation
+
+This project implements a **RATIONAL approach to computational geometry** using N.J. Wildberger's Rational Trigonometry (RT) framework. While Three.js requires floating-point coordinates for rendering, all geometry *generation* uses pure algebraic methods:
+
+### Core RT Principles
+
+1. **Quadrance (Q) instead of Distance (d)**
+   - Classical: `d = √(Δx² + Δy² + Δz²)` (requires irrational √)
+   - RT-Pure: `Q = Δx² + Δy² + Δz²` (pure algebra, deferred √)
+
+2. **Spread (s) instead of Angle (θ)**
+   - Classical: `θ = arccos(v₁·v₂ / |v₁||v₂|)` (transcendental functions)
+   - RT-Pure: `s = 1 - (v₁·v₂)² / (Q₁·Q₂)` (pure algebra)
+
+3. **Deferred √ Expansion**
+   - Compute all relationships in quadrance space
+   - Only take √ at final THREE.Vector3 creation
+   - Preserves algebraic exactness throughout generation pipeline
+
+4. **Golden Ratio Identities**
+   - φ² = φ + 1 (eliminates multiplication)
+   - 1/φ = φ - 1 (eliminates division)
+   - All icosahedron/dodecahedron relationships use these algebraic identities
+
+### Why This Matters
+
+Three.js (and all GPU rendering) ultimately uses floating-point. Our RT advantage is in **geometry generation**:
+- Fewer numerical errors accumulate during construction
+- Algebraic relationships are preserved until final output
+- Educational value: demonstrates geometry without transcendental functions
+- Philosophical alignment: proves most "trigonometry" is unnecessary
+
+---
+
+**Credits:** Co-developed from the ideas of R. Buckminster Fuller, Kirby Urner, Tom Ace, N.J. Wildberger, and Andy Thomson, witnessed silently by Metatron.
+
+**Repository:** [QCQA Branch](https://github.com/openbuilding-ca/objective) | **Last Updated:** 2026-01-10
 
 ---
 
@@ -28,7 +69,12 @@
 - [3.9 Phase 2.10: Z-Up Coordinate Convention](#39-phase-210-z-up-coordinate-convention--complete)
 - [3.10 Phase 2.11: ART Gumball + StateManager](#310-phase-211-art-gumball--statemanager--complete)
 - [3.11 Interactive Mathematical Demos](#311-interactive-mathematical-demos)
-- [3.12 Mathematical Innovations & Discoveries](#312-mathematical-innovations--discoveries)
+  - [3.11.1 Quadrance Demo (Plimpton 322)](#3111-quadrance-demo-rt-quadrance-demojs)
+  - [3.11.2 Spread/Cross Demo (Sexagesimal)](#3112-spreadcross-demo-rt-cross-demojs)
+  - [3.11.3 Weierstrass Demo](#3113-weierstrass-circle-parametrization-demo-rt-weierstrass-demojs)
+- [3.12 Papercut Node Sectioning Enhancements](#312-papercut-node-sectioning-enhancements--complete-2026-01-10)
+- [3.13 Matrix Polyhedra & "Packed" Node Spheres](#313-matrix-polyhedra--packed-node-spheres--complete-2026-01-10)
+- [3.14 Mathematical Innovations & Discoveries](#314-mathematical-innovations--discoveries)
 
 ### 4. Technical Reference
 - [4.1 Rational Trigonometry Implementation](#41-rational-trigonometry-implementation)
@@ -44,8 +90,14 @@
 
 ### 6. Future Explorations
 - [6.1 Sexagesimal (Base-60) Arithmetic for Exact RT Calculations](#61-sexagesimal-base-60-arithmetic-for-exact-rt-calculations)
+- [6.2 Defense Industry Applications: Comprehensive Assessment](#62-defense-industry-applications-comprehensive-assessment)
 
 ### 7. Contributors & Acknowledgments
+
+### 8. TODO Master List
+- [8.1 Active TODOs](#81-active-todos)
+- [8.2 Deferred TODOs](#82-deferred-todos)
+- [8.3 Future Enhancement TODOs](#83-future-enhancement-todos)
 
 ---
 
@@ -67,45 +119,175 @@ The common assertion that "time is the 4th dimension" conflates three separate c
 In physics, "dimension" means **degrees of freedom** - independent ways a system can vary. In geometry, "dimension" refers to **coordinate axes** needed to naturally describe space. Fuller was correct: **spatial geometry is inherently 4-fold** (tetrahedral), and Cartesian reduction to 3 axes is a convenient but limiting convention that obscures the natural symmetry of space.
 
 ### 1.3 Core Philosophy
-- No Three.js preset forms (Box, Sphere, etc.)
-- Hand-coded geometry using Rational Trigonometry (Wildberger)
-- Quadrance (Q = distance²) and spread (s) instead of distance/angle
-- Nested polyhedra relationships
-- Pure algebraic solutions (no iteration, no trig functions)
+- DON'T use Three.js preset forms (Box, Sphere, etc.) for **polyhedra geometry**
+- DO use Hand-coded geometry using Rational Trigonometry (Wildberger)
+- DO use Quadrance (Q = distance²) and spread (s) instead of distance/angle
+- Initialize with precisely Nested polyhedra relationships (shared origin)
+- DO use pure algebraic solutions and Rational Trigonometry methods  (aka. RT-Pure in our codebase - no iteration, no classical trig functions)
+- Defer expansion of roots or proportions (e.g., φ) to mantissa decimals—work in symbolic algebraic space until the GPU boundary requires fixed-point floats for rendering (what WebGL expects)
+
+**Clarification on THREE.js Usage:**
+- **Polyhedra geometry**: 100% RT-pure (hand-coded vertices, edges, faces in `rt-polyhedra.js`)
+- **UI elements**: Gumball handles use THREE.js primitives (BoxGeometry, SphereGeometry)—these are interaction widgets, not geometric content
+- **Node spheres**: Default to RT geodesic icosahedra; classical THREE.SphereGeometry available as fallback for performance comparison
+- **GPU boundary**: All RT calculations produce standard `THREE.Vector3` coordinates at the final step—THREE.js and WebGL receive floating-point vertices like any other 3D application
 
 ### 1.4 File Structure
 
-**Modularized Architecture:**
+**Modularized Architecture (Updated 2026-01-10):**
+
+The codebase has been successfully refactored into a clean **Init/Html/Rendering** separation pattern for improved maintainability and modularity.
 
 ```
 src/geometry/
-├── ARTexplorer.html          # Main application (HTML structure + inline logic)
-├── art.css                   # Extracted stylesheet (UI panels, controls, buttons)
-└── modules/
-    ├── rt-math.js            # Quadray coordinate system & RT math library
-    ├── rt-polyhedra.js       # Polyhedra geometry definitions (vertices, faces, edges)
-    ├── rt-rendering.js       # Three.js rendering utilities (meshes, lines, nodes)
-    ├── rt-state-manager.js   # Forms/Instances state management + undo/redo
-    └── rt-controls.js        # Gumball editing controls (Move/Scale) [INLINE for now]
+├── index.html                # Main HTML structure (DOM containers, controls UI)
+├── art.css                   # Complete stylesheet (~21,500 lines - UI panels, controls, responsive design)
+├── favicon.ico               # Application icon
+├── robots.txt                # Search engine directives
+│
+└── modules/                  # ES6 Modules (9 core + 4 demos)
+    │
+    │  ─── CORE MODULES ───
+    ├── rt-init.js            # Application orchestration, password protection, module imports, event wiring
+    ├── rt-rendering.js       # THREE.js scene management, camera, lighting, all polyhedra rendering
+    ├── rt-math.js            # Core RT library: quadrance, spread, golden ratio, circle parameterization
+    ├── rt-polyhedra.js       # All polyhedra definitions (Platonic, Archimedean, Geodesic) using RT
+    ├── rt-matrix.js          # IVM spatial array generation for polyhedra matrices ("Packed" node spheres)
+    ├── rt-papercut.js        # Print mode, dynamic cutplane, node opacity, geodesic frequency controls
+    ├── rt-controls.js        # ART Gumball interactive transform controls (Move/Scale/Rotate)
+    ├── rt-state-manager.js   # Forms/Instances state management, undo/redo system
+    ├── rt-filehandler.js     # State import/export to JSON, glTF geometry export
+    └── performance-clock.js  # Performance monitoring (FPS, triangle counts, timing)
+    │
+    │  ─── DEMO MODULES ───
+    └── demos/
+        ├── rt-quadrance-demo.js    # Interactive quadrance (distance²) demonstration
+        ├── rt-cross-demo.js        # Spread/cross values and rational identities
+        ├── rt-weierstrass-demo.js  # Rational circle parameterization (Weierstrass substitution)
+        └── rt-demo-utils.js        # Shared demo utilities (modal dialogs, table rendering)
 
 docs/development/Geometry documents/
-├── ARTexplorer.md            # This file - Main documentation
-├── ART-Gumball.md           # Gumball interaction design specifications
-├── Module-Extraction-Analysis.md  # Analysis of module extraction attempts
-├── Quadray-Grid.md          # Central Angle Grid implementation details
-├── UI-Module.md             # UI/UX design patterns and controls
-└── Kieran-Math.md           # Mathematical foundations and RT formulas
+├── ARTexplorer.md            # This file - Complete project documentation & README
+├── ART-Gumball.md            # Gumball interaction design specifications (remains inline in rt-init.js)
+├── RT-Papercut.md            # Papercut module documentation
+├── matrix-slider.md          # Matrix slider and IVM documentation
+├── rt-rendering-extraction-plan.md  # Rendering extraction plan (✅ COMPLETE - supersedes Module-Extraction-Analysis.md)
+├── Quadray-Grid.md           # Central Angle Grid implementation details
+├── UI-Module.md              # UI/UX design patterns and controls
+└── Kieran-Math.md            # Mathematical foundations and RT formulas
 ```
 
-**Code Organization:**
-- **ARTexplorer.html**: ~3600 lines (reduced from ~3800 via modularization) - Main app, scene setup, inline gumball, event handlers
-- **art.css**: ~760 lines - All styling extracted for maintainability
-- **rt-math.js**: Quadray class, conversions (XYZ ↔ WXYZ), RT formulas
-- **rt-polyhedra.js**: All polyhedra definitions with RT-pure vertex calculations
-- **rt-rendering.js**: Three.js rendering abstraction (faces, edges, nodes)
-- **rt-state-manager.js**: Forms (templates) vs Instances (snapshots) architecture
-- **performance-clock.js**: Performance tracking module (Clock.js pattern from TEUI)
-- **rt-controls.js**: Gumball module (NOT currently active - see Module-Extraction-Analysis.md)
+### 1.4.1 Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          ThreeRT Application Architecture                        │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐           │
+│  │   index.html     │    │     art.css      │    │    rt-init.js    │           │
+│  │   (DOM Layer)    │◄──►│   (Styling)      │◄──►│  (Orchestrator)  │           │
+│  │                  │    │                  │    │                  │           │
+│  │ • Canvas target  │    │ • Panel layouts  │    │ • Module loader  │           │
+│  │ • Control panels │    │ • Button styles  │    │ • Event wiring   │           │
+│  │ • Modal dialogs  │    │ • Responsive     │    │ • Password auth  │           │
+│  └──────────────────┘    └──────────────────┘    └────────┬─────────┘           │
+│                                                           │                      │
+│                            ┌──────────────────────────────┼──────────────────┐  │
+│                            │                              ▼                  │  │
+│  ┌─────────────────────────┴───────────────────────────────────────────────┐│  │
+│  │                         rt-rendering.js (MAIN ENGINE)                    ││  │
+│  │                                                                          ││  │
+│  │  Factory Pattern: initScene(THREE, OrbitControls, RT) → Public API       ││  │
+│  │                                                                          ││  │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐          ││  │
+│  │  │  Scene Setup    │  │   Polyhedra     │  │   Rendering     │          ││  │
+│  │  │                 │  │   Groups        │  │   Updates       │          ││  │
+│  │  │ • Camera (Z-up) │  │ • 9 Regular     │  │ • updateGeom()  │          ││  │
+│  │  │ • Renderer      │  │ • 3 Geodesic    │  │ • visibility    │          ││  │
+│  │  │ • Lighting      │  │ • 5 Matrix      │  │ • wireframe     │          ││  │
+│  │  │ • OrbitControls │  │                 │  │ • node opacity  │          ││  │
+│  │  └─────────────────┘  └─────────────────┘  └─────────────────┘          ││  │
+│  └──────────────────────────────────────────────────────────────────────────┘│  │
+│                                         │                                     │  │
+│           ┌─────────────────────────────┼─────────────────────────────┐      │  │
+│           ▼                             ▼                             ▼      │  │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐               │  │
+│  │   rt-math.js    │  │ rt-polyhedra.js │  │   rt-matrix.js  │               │  │
+│  │  (RT Library)   │  │  (Geometry)     │  │  (IVM Arrays)   │               │  │
+│  │                 │  │                 │  │                 │               │  │
+│  │ • RT.quadrance  │  │ • cube()        │  │ • createCube    │               │  │
+│  │ • RT.spread     │  │ • tetrahedron() │  │   Matrix()      │               │  │
+│  │ • RT.Phi        │  │ • icosahedron() │  │ • createTet     │               │  │
+│  │ • RT.circleParam│  │ • geodesic*()   │  │   Matrix()      │               │  │
+│  │ • Quadray class │  │ • subdivide*()  │  │ • "Packed" node │               │  │
+│  └─────────────────┘  └─────────────────┘  │   spheres       │               │  │
+│                                            └─────────────────┘               │  │
+│                                                                              │  │
+│  ┌─────────────────────────────────────────────────────────────────────────┐│  │
+│  │                        Supporting Modules                                ││  │
+│  │                                                                          ││  │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ ││  │
+│  │  │rt-papercut.js│  │rt-controls.js│  │rt-state-mgr  │  │rt-filehandler│ ││  │
+│  │  │              │  │              │  │              │  │              │ ││  │
+│  │  │• Print mode  │  │• Gumball     │  │• Forms/Inst  │  │• JSON export │ ││  │
+│  │  │• Cutplane    │  │• Move/Scale  │  │• Undo/Redo   │  │• glTF export │ ││  │
+│  │  │• Node opacity│  │• Rotate      │  │• History     │  │• Import      │ ││  │
+│  │  │• Geo freq    │  │• Selection   │  │              │  │• Auto-save   │ ││  │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘ ││  │
+│  └─────────────────────────────────────────────────────────────────────────┘│  │
+│                                                                              │  │
+│  ┌─────────────────────────────────────────────────────────────────────────┐│  │
+│  │                         Demo Modules (Educational)                       ││  │
+│  │                                                                          ││  │
+│  │  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐             ││  │
+│  │  │rt-quadrance-   │  │  rt-cross-     │  │rt-weierstrass- │             ││  │
+│  │  │  demo.js       │  │   demo.js      │  │   demo.js      │             ││  │
+│  │  │                │  │                │  │                │             ││  │
+│  │  │ Distance²      │  │ Spread/Cross   │  │ Rational       │             ││  │
+│  │  │ calculations   │  │ visualization  │  │ circle param   │             ││  │
+│  │  └────────────────┘  └────────────────┘  └────────────────┘             ││  │
+│  └─────────────────────────────────────────────────────────────────────────┘│  │
+│                                                                              │  │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 1.4.2 Module Responsibilities
+
+**Layer 1: Initialization (rt-init.js)**
+- Password protection and session management
+- Dynamic ES6 module imports (nested promise chain)
+- UI event listeners for all controls
+- Scene initialization trigger
+- Modal dialog management for demos
+
+**Layer 2: HTML/DOM Structure (index.html)**
+- Canvas container for THREE.js renderer
+- Control panels (Polyhedra, Scale, Matrix, Papercut, Utility)
+- Modal containers for demos and dialogs
+- Inline help text and tooltips
+
+**Layer 3: Rendering (rt-rendering.js)**
+- THREE.js scene creation and management
+- Camera setup with Z-up convention
+- All 17 polyhedra groups (9 single + 5 matrix + 3 geodesic)
+- Public API via factory pattern closure
+- State synchronization with UI
+
+**Code Statistics:**
+| Module | Lines | Purpose |
+|--------|-------|---------|
+| rt-init.js | ~2,700 | Application orchestration |
+| rt-rendering.js | ~2,300 | THREE.js rendering engine |
+| rt-polyhedra.js | ~1,400 | Geometry definitions (RT-pure) |
+| rt-controls.js | ~1,100 | Gumball interaction |
+| rt-papercut.js | ~870 | Print mode & sectioning |
+| rt-matrix.js | ~830 | IVM spatial arrays |
+| rt-math.js | ~750 | Core RT library |
+| rt-state-manager.js | ~690 | State management |
+| rt-filehandler.js | ~700 | Import/Export operations |
+| art.css | ~21,500 | Complete UI styling |
+| **Total** | **~33,000** | **Complete application** |
 
 ### 1.5 Performance Monitoring & The "Fair Fight" Question
 
@@ -184,7 +366,7 @@ RT's computational advantage is **real** but **localized to generation**:
 The performance benefit we see is from **triangle reduction**, not runtime rational algebra. This is still valuable (fewer triangles = better performance), but it's important to be intellectually honest about what we're measuring.
 
 **Key Architectural Decision:**
-Gumball controls remain **inline** in ARTexplorer.html due to scope isolation issues. See [Module-Extraction-Analysis.md](Module-Extraction-Analysis.md) for detailed analysis of two extraction attempts and rationale for keeping inline implementation.
+Gumball controls remain **inline** in rt-init.js due to scope isolation issues. See [Module-Extraction-Analysis.md](Module-Extraction-Analysis.md) for detailed analysis of two extraction attempts and rationale for keeping inline implementation.
 
 ### 1.5 Related Documentation
 
@@ -208,7 +390,41 @@ Gumball controls remain **inline** in ARTexplorer.html due to scope isolation is
 
 ## 2. Current Status
 
-### 2.1 Current Status (as of 2025-12-30)
+### 2.1 Current Status (as of 2026-01-10 - QCQA Branch)
+
+**Major Architectural Achievement: Init/Html/Rendering Separation ✅**
+
+The codebase has been successfully refactored into a clean three-layer architecture:
+- **rt-init.js** (Orchestration): Module loading, event wiring, authentication
+- **index.html** (DOM Layer): Pure HTML structure, control containers
+- **rt-rendering.js** (Engine): All THREE.js scene management via factory pattern
+
+This separation makes the code significantly more maintainable and modular.
+
+**QCQA Branch Accomplishments (January 2026):**
+
+1. ✅ **Papercut Node Sectioning Enhancements**
+   - Node opacity control (0.0-1.0 transparency slider)
+   - Geodesic frequency selector in 'Visual Options' section for all three geodesic types (1-6)
+   - Section node circles at cutplane-sphere intersections
+   - Node resolution (36 vs 72 segments for print quality)
+
+2. ✅ **Matrix Polyhedra Corrections**
+   - All matrix polyhedra (Cube, Tetrahedron, Octahedron, Cuboctahedron, Rhombic Dodecahedron) corrected for initial size
+   - "Packed" node spheres properly sized and positioned for any polyhedra type
+   - IVM spatial array generation validated for space-filling geometries
+
+3. ✅ **Regular Polyhedra Size Corrections**
+   - All 9 regular polyhedra corrected for consistent halfSize parameter
+   - Edge quadrance validation ensures RT-pure measurements
+   - Proper nested relationship scaling maintained when origin is shared
+
+4. ⚠️ **TODO**
+   - For matrix polyhedra, add non-inverted plane epsilon offset so cuts at colinear edges show section lines as we have done for regular non-matrix polyhedra (ie. dome base - at grade) - so eplsilon must flip for cut-down vs. cut up directions. Currently applied only to cut-down direction. 
+
+---
+
+### 2.1.1 Legacy Status (2025-12-30)
 
 **Phase 1 & 2: ✅ COMPLETE**
 1. ✅ Load Three.js from CDN via ES modules (three@0.160.0)
@@ -228,13 +444,13 @@ Gumball controls remain **inline** in ARTexplorer.html due to scope isolation is
 - ✅ **Icosahedron** - 12 vertices, 30 edges, 20 faces - Schläfli {3,5}
 - ✅ **Dodecahedron** - 20 vertices, 30 edges, 12 faces - Schläfli {5,3}
 - ✅ **Cuboctahedron (Vector Equilibrium)** - 12 vertices, 24 edges, 14 faces (8 tri + 6 square) - Fuller's IVM foundation
-- ⚠️ **Rhombic Dodecahedron** - 14 vertices, 24 edges, 12 faces (dual of cuboctahedron) - *Requires rebuilding from cuboctahedron dual*
+- ✅  **Rhombic Dodecahedron** - 14 vertices, 24 edges, 12 faces (dual of cuboctahedron) - *rebuilt from cuboctahedron dual* now nests in standard Hexahedron, and is dual of Cuboctahedron. Importantly, the RD is THE most relevant single form for IVM spatial representation as all of its vertices fall on grid intersections. 
 
 **Visual Style (Implemented):**
 - Wireframe edges with LineSegments (efficient rendering)
-- Semi-transparent faces with configurable opacity slider
+- Semi-transparent faces with configurable opacity slider (default 0.25)
 - Vertex nodes (small spheres at corners) - toggleable
-- Color-coded by polyhedron type:
+- Colour-coded by polyhedron type (regular + geodesics = colour theory complementary colour):
   - Cube: Blue (0x4a9eff)
   - Tetrahedron: Red (0xff4444)
   - Dual Tetrahedron: Magenta (0xff00ff)
@@ -243,6 +459,7 @@ Gumball controls remain **inline** in ARTexplorer.html due to scope isolation is
   - Dodecahedron: Yellow (0xffff00)
   - Cuboctahedron (VE): Bright Lime-Cyan (0x00ff88)
   - Rhombic Dodecahedron: Orange (0xff8800)
+  - ⚠️ TODO: Explore more refined nesting colour theory approach akin to Regular/Geodesic complementary pairings, esp. for regular dual polyhedra. 
 
 ---
 
@@ -306,7 +523,7 @@ Following Wildberger's Rational Trigonometry principles:
    - YZ plane (X=0): 4 vertices at (0, ±t, ±t)
 
 **Edge Topology (24 total):**
-Critical lesson: Edges must be derived from actual face perimeters, not assumed from coordinate planes.
+*Critical lesson: Edges must be derived from actual face perimeters, not assumed from coordinate planes.
 - 16 edges connecting XY plane vertices to XZ/YZ plane vertices
 - 8 edges connecting XZ plane vertices to YZ plane vertices
 - All edges have uniform quadrance: Q = 2t² (validated via RT.validateEdges)
@@ -324,10 +541,10 @@ Critical lesson: Edges must be derived from actual face perimeters, not assumed 
 - No angle calculations - pure algebraic construction
 
 **Bug Fix History:**
-Initial implementation incorrectly included phantom edges for XY, XZ, YZ plane squares that don't exist in cuboctahedron geometry. These created diagonal "X" patterns on square faces. Fix: regenerated all 24 edges from the 14 face perimeter definitions, removing non-existent plane square edges.
+*Initial implementation incorrectly included phantom edges for XY, XZ, YZ plane squares that don't exist in cuboctahedron geometry. These created diagonal "X" patterns on square faces. Fix: regenerated all 24 edges from the 14 face perimeter definitions, removing non-existent plane square edges.
 
 **Significance:**
-The cuboctahedron is the proper foundation for constructing the Rhombic Dodecahedron as its dual (vertices ↔ face centers). This ensures coplanar faces and proper RT-pure construction.
+The cuboctahedron is the proper foundation for constructing the Rhombic Dodecahedron as its nested dual (constrained by vertices ↔ face centers). This ensures coplanar faces and proper RT-pure construction.
 
 **Visual Style:**
 - Color: Bright Lime-Cyan (0x00ff88)
@@ -433,12 +650,14 @@ The rhombic dodecahedron as the geometric dual of the cuboctahedron requires ver
 - Color gradients by 4D depth
 - Animation of 4D rotation
 - UI controls for W-axis manipulation
+- Present display assigns grids to 'central angle webs' of the Tetrahderon
+- ⚠️ TODO: Future IVM grid should spatialize per unit Rhombic Dodecahedron as vertices for all grid crossings
 
 ---
 
 ## Phase 4: Interactive Controls
 
-### Deliverable: Full-featured geometry explorer
+### Full-featured geometry explorer
 
 **Features:**
 1. **Polyhedra Selection**
@@ -450,12 +669,14 @@ The rhombic dodecahedron as the geometric dual of the cuboctahedron requires ver
    - Switch between 3D (XYZ) and 4D (WXYZ) views
    - Projection mode selector (orthographic/perspective)
    - 4D rotation controls (WX, WY, WZ planes)
+   - Basis vector toggles (controls editing methods) for XYZ and/or WXYZ
 
 3. **Geometry Info Panel**
    - Vertex count, edge count, face count
    - Total quadrance (sum of all edge quadrances)
    - Euler characteristic validation
    - Dual polyhedron relationship
+   - Performance clock (FPS) and Triangles per vertex count (nodes)
 
 4. **Export Options**
    - JSON export (vertex/edge/face data)
@@ -483,17 +704,16 @@ The rhombic dodecahedron as the geometric dual of the cuboctahedron requires ver
   <div id="canvas-container"></div>
   <div id="controls-panel"></div>
 
-  <script>
+  <script type="module">
     // === RATIONAL TRIGONOMETRY LIBRARY ===
-    const RT = {
-      quadrance: (p1, p2) => { /* Q = Δx² + Δy² + Δz² */ },
-      spread: (v1, v2) => { /* s = 1 - (v1·v2)² / (|v1|²|v2|²) */ },
-      // ... pure algebraic geometry functions
-    };
+    // Extracted to: src/geometry/modules/rt-math.js
+    import { RT } from './modules/rt-math.js';
+    // RT functions: quadrance, spread, Phi, circleParam, validateEdges, Sexagesimal, etc.
 
     // === POLYHEDRA GENERATORS ===
-    const Polyhedra = {
-      tetrahedron: () => { /* vertices from RT */ },
+    // Extracted to: src/geometry/modules/rt-polyhedra.js
+    import { Polyhedra } from './modules/rt-polyhedra.js';
+    // Polyhedra functions: cube, tetrahedron, icosahedron, geodesic*, subdivideTriangles, etc.
       cube: () => { /* vertices from RT */ },
       // ... other shapes
     };
@@ -758,15 +978,57 @@ The -90° rotation is **optimal RT math** because it uses exact integer values (
   - Scale sensitivity increased from 0.1 to 15.0 for meaningful interaction
   - Commits: fdbfbd5, fbd043f, 1d19d9c, 80bafc0
 
+  - **⚠️TODO**: SHIFT-DRAG scaling for uniform scaling, else, deform in direction of axial drag (COMPLICATED)
+
 ---
 
 ## 3.11 Interactive Mathematical Demos ✅
 
-### Weierstrass Circle Parametrization Demo (2026-01-03)
+**Location:** `src/geometry/demos/` directory
+
+The demos directory contains interactive educational modules that demonstrate Rational Trigonometry principles through visual exploration. All demos are accessible via the main application UI.
+
+### 3.11.1 Quadrance Demo (rt-quadrance-demo.js)
+
+**Purpose:** Interactive demonstration of quadrance (distance²) as the fundamental RT distance measure, featuring historical Plimpton 322 Babylonian mathematics.
+
+**Key Features:**
+- **Plimpton 322 Visualization**: All 15 Pythagorean triples from the ancient Babylonian tablet (scaled to fit R=1)
+- **Sexagesimal Display**: Numbers shown in both decimal and base-60 notation
+- **Quadrance Calculations**: Real-time Q = Δx² + Δy² + Δz² computation
+- **Historical Context**: 3,800-year-old exact trigonometry predating Pythagoras by 1,000 years
+- **RT Validation**: Demonstrates how Babylonians used quadrance relationships without √
+
+**Plimpton 322 Triples Included:**
+| Row | Short Side | Long Side | Diagonal | Quadrance Ratio |
+|-----|------------|-----------|----------|-----------------|
+| 1 | 119 | 120 | 169 | (119² + 120²)/169² = 1 |
+| 2 | 3367 | 3456 | 4825 | Exact in base-60 |
+| ... | ... | ... | ... | All 15 rows |
+
+### 3.11.2 Spread/Cross Demo (rt-cross-demo.js)
+
+**Purpose:** Interactive visualization of spread (s = sin²θ) and cross (c = cos²θ) as RT angle measures, with sexagesimal angle conversion.
+
+**Key Features:**
+- **Spread/Cross Visualization**: Real-time calculation as user drags point on circle
+- **Sexagesimal Angles**: DMS (Degrees-Minutes-Seconds) display using `RT.Sexagesimal`
+- **RT Identity Verification**: Shows s + c = 1 at all positions
+- **Special Angle Highlighting**: Exact rational values at 30°, 45°, 60°, 90°
+- **Algebraic Formulas**: Side-by-side RT vs classical trig expressions
+
+**Sexagesimal Integration:**
+```javascript
+// Real-time conversion from spread to sexagesimal DMS
+const dms = RT.Sexagesimal.fromSpread(currentSpread);
+// Display: "45° 0' 0" 0'" for spread = 0.5
+```
+
+### 3.11.3 Weierstrass Circle Parametrization Demo (rt-weierstrass-demo.js)
 
 **Purpose:** Educational demonstration of Weierstrass parametrization as a rational alternative to classical trigonometric circle parametrization.
 
-**Location:** `src/geometry/demos/rt-Weierstrass-demo.js` (accessible via UI)
+**Location:** `src/geometry/demos/rt-weierstrass-demo.js`
 
 **Key Features:**
 - **Draggable Point**: Interactive exploration of circle parametrization
@@ -814,19 +1076,252 @@ The demo's performance visualization is therefore pedagogical rather than empiri
 
 ---
 
-## 3.12 Mathematical Innovations & Discoveries ✅
+## 3.12 Papercut Node Sectioning Enhancements ✅ COMPLETE (2026-01-10)
+
+### Deliverable: Enhanced Section Cut Visualization with Node Controls
+
+**Module:** `src/geometry/modules/rt-papercut.js`
+
+The Papercut module has been significantly enhanced with new features for controlling node sphere appearance and generating section node circles at cutplane intersections.
+
+### 3.12.1 Node Opacity Control
+
+**Feature:** Dynamic transparency control for all node spheres (vertex markers).
+
+**UI Control:** Range slider in Papercut panel (0.0 to 1.0)
+
+**Implementation:**
+```javascript
+// Module-level state
+state: {
+  nodeOpacity: 1.0,  // Default: fully opaque
+}
+
+// API function
+export function setNodeOpacity(opacity) {
+  state.nodeOpacity = opacity;
+  // Update all node materials in scene
+  scene.traverse(object => {
+    if (object.userData.isNode && object.material) {
+      object.material.transparent = opacity < 1;
+      object.material.opacity = opacity;
+      object.material.needsUpdate = true;
+    }
+  });
+}
+```
+
+**Use Cases:**
+- Reduce visual clutter when viewing complex nested polyhedra
+- Highlight edge/face structure without node distraction
+- Create layered transparency effects for printing
+
+### 3.12.2 Geodesic Frequency Selector
+
+**Feature:** Control geodesic subdivision level per polyhedron type.
+
+**UI Controls:** Three frequency sliders in Papercut panel:
+- Icosahedron Geodesic Frequency (1-6)
+- Tetrahedron Geodesic Frequency (1-6)
+- Octahedron Geodesic Frequency (1-6)
+
+**Fuller Notation (Frequency Definition):**
+| Frequency | Edges per Side | Triangles per Face | Node Count (Icosa) |
+|-----------|----------------|--------------------|--------------------|
+| 1 | 1 (undivided) | 1 | 12 |
+| 2 | 2 (bisected) | 4 | 42 |
+| 3 | 3 (trisected) | 9 | 92 |
+| 4 | 4 | 16 | 162 |
+| 5 | 5 | 25 | 252 |
+| 6 | 6 | 36 | 362 |
+
+**Implementation:**
+```javascript
+// Read frequency from UI and regenerate geometry
+function updateGeodesicFrequency(polyType) {
+  const frequency = parseInt(document.getElementById(`geodesic${polyType}Frequency`).value);
+  const projection = document.querySelector(`input[name="${polyType}Projection"]:checked`).value;
+
+  // RT-pure geodesic generation
+  const polyData = window.RTPolyhedra[`geodesic${polyType}`](halfSize, frequency, projection);
+
+  // Rebuild THREE.js geometry from RT data
+  rebuildPolyhedronGroup(polyType, polyData);
+}
+```
+
+### 3.12.3 Section Node Circles
+
+**Feature:** Display circles where cutplane intersects node spheres.
+
+**UI Control:** "Section Nodes" checkbox in Papercut panel
+
+**RT-Pure Mathematics:**
+```javascript
+// Sphere-plane intersection yields a circle
+// RT approach: work with quadrance (distance²)
+export function spherePlaneCircleRadius(sphereRadiusQ, distanceQ) {
+  // If sphere doesn't intersect plane, return null
+  if (distanceQ > sphereRadiusQ) return null;
+
+  // Circle radius² = sphere radius² - distance to plane²
+  const circleRadiusQ = sphereRadiusQ - distanceQ;
+
+  // Only expand √ at final step (deferred √ expansion)
+  return Math.sqrt(circleRadiusQ);
+}
+```
+
+**Rendering:**
+- Circles rendered using THREE.js Line2 with LineMaterial for depth-aware line weights
+- Circle center positioned at sphere center projected onto cutplane
+- Circle oriented perpendicular to cutplane normal
+
+### 3.12.4 Adaptive Node Resolution
+
+**Feature:** Toggle between standard (36 segments) and high resolution (72 segments) for section node circles.
+
+**UI Control:** "High Resolution Nodes" checkbox in Papercut panel
+
+**Purpose:**
+- Standard (32): Faster rendering, suitable for screen display
+- High (64): Smoother circles for print output at high DPI
+
+**Implementation:**
+```javascript
+const segments = state.adaptiveNodeResolution ? 64 : 32;
+
+// Generate circle vertices using RT.circleParam (Weierstrass)
+const circlePoints = [];
+for (let i = 0; i <= segments; i++) {
+  const t = Math.tan(Math.PI * i / segments);  // Parameter for Weierstrass
+  const point = RT.circleParam(t);  // Returns {x, y} on unit circle
+  circlePoints.push(new THREE.Vector3(
+    center.x + circleRadius * point.x,
+    center.y + circleRadius * point.y,
+    cutplaneZ
+  ));
+}
+```
+
+### 3.12.5 Complete Papercut State
+
+```javascript
+// Full state object in rt-papercut.js
+state: {
+  printModeEnabled: false,
+  cutplaneEnabled: false,
+  cutplaneValue: 0,           // Slider position [-10, +10]
+  cutplaneAxis: 'z',          // Aligned to current view
+  invertCutPlane: false,      // Ground plane mode toggle
+  lineWeightEnabled: false,
+  lineWeightMin: 0.5,
+  lineWeightMax: 3.0,
+  currentView: 'top',
+
+  // New in QCQA branch:
+  sectionNodesEnabled: false,       // Section node circles
+  adaptiveNodeResolution: false,    // High resolution (64 segments)
+  nodeOpacity: 1.0,                 // Node transparency
+  geodesicIcosaFrequency: 1,        // Icosahedron geodesic frequency
+  geodesicTetraFrequency: 1,        // Tetrahedron geodesic frequency
+  geodesicOctaFrequency: 1,         // Octahedron geodesic frequency
+}
+```
+- To be added: Backface Culling for Papercut print optimization: UI checkbox already in place. 
+- Consider option of Lineweight depth per camera view as enhancement
+---
+
+## 3.13 Matrix Polyhedra & "Packed" Node Spheres ✅ COMPLETE (2026-01-10)
+
+### Deliverable: Corrected IVM Spatial Arrays with Proper Node Sizing
+
+**Module:** `src/geometry/modules/rt-matrix.js`
+
+The matrix module generates N×N grids of polyhedra demonstrating space-filling properties (Isotropic Vector Matrix - IVM).
+
+### 3.13.1 Matrix Polyhedra Corrections
+
+All matrix polyhedra have been corrected for proper initial size and spacing:
+
+| Polyhedron | Matrix Function | Space-Filling Property |
+|------------|-----------------|------------------------|
+| Cube | `createCubeMatrix()` | Standard cubic lattice |
+| Tetrahedron | `createTetrahedronMatrix()` | Alternating orientation |
+| Octahedron | `createOctahedronMatrix()` | Dual of cube matrix |
+| Cuboctahedron | `createCuboctahedronMatrix()` | VE centers in IVM |
+| Rhombic Dodecahedron | `createRhombicDodecahedronMatrix()` | Face-centered cubic |
+
+### 3.13.2 "Packed" Node Spheres
+
+**Concept:** Node spheres sized so that adjacent nodes in a matrix exactly touch (tangent/kissing) without overlapping.
+
+**RT-Pure Calculation:**
+```javascript
+// For a matrix with edge length 'edge':
+// Node diameter = minimum distance between adjacent vertices
+// Node radius = half that distance
+
+// For tetrahedron matrix:
+const edgeQuadrance = edge * edge;
+const nodeRadiusQ = edgeQuadrance / 4;  // Half edge length
+const nodeRadius = Math.sqrt(nodeRadiusQ);  // Deferred √ expansion
+
+// Validate: adjacent nodes should be exactly tangent
+const separation = RT.quadrance(node1.position, node2.position);
+const expectedQ = 4 * nodeRadiusQ;  // 2r + 2r = 2 * diameter
+console.assert(Math.abs(separation - expectedQ) < 1e-10, 'Nodes not properly packed');
+```
+
+### 3.13.3 Spacing Algorithm (RT-Pure)
+
+```javascript
+// Generate N×N grid centered at origin
+function createMatrix(polyType, matrixSize, halfSize, rotate45, opacity, color) {
+  const spacing = calculateSpacing(polyType, halfSize);
+
+  for (let i = 0; i < matrixSize; i++) {
+    for (let j = 0; j < matrixSize; j++) {
+      // Center the grid at origin
+      const offset_x = (i - matrixSize / 2 + 0.5) * spacing;
+      const offset_y = (j - matrixSize / 2 + 0.5) * spacing;
+
+      // Apply 45° rotation using RT spread/cross (no sin/cos)
+      if (rotate45) {
+        // Exact rational: spread = 0.5 for 45°
+        const s = 0.5;  // sin²(45°) = 1/2
+        const c = 0.5;  // cos²(45°) = 1/2
+        const sin45 = Math.sqrt(s);  // √(1/2) = 1/√2
+        const cos45 = Math.sqrt(c);
+
+        // Rotation matrix (deferred √ expansion)
+        const x_rot = cos45 * offset_x - sin45 * offset_y;
+        const y_rot = sin45 * offset_x + cos45 * offset_y;
+        offset_x = x_rot;
+        offset_y = y_rot;
+      }
+
+      createPolyhedronInstance(offset_x, offset_y, 0, halfSize, polyType);
+    }
+  }
+}
+```
+
+---
+
+## 3.14 Mathematical Innovations & Discoveries ✅
 
 This section documents novel mathematical insights and relationships discovered during the development of the ART Explorer, particularly from the Papercut and Weierstrass parametrization explorations.
 
-### 3.12.1 Discovery: Axial Projections and Polygonal Relationships (2026-01-03)
+### 3.14.1 Discovery: Axial Projections and Polygonal Relationships (2026-01-03)
 
 **Context:** During development of the RT-Papercut tool and Weierstrass circle parametrization demo, a fundamental geometric principle emerged about the relationship between polyhedral sections and their projections.
 
 #### The Rectangular Relationship Discovery
 
-**Observation:** When sectioning the complete group of nested polyhedra with a cutting plane perpendicular to the Z-axis (as in RT-Papercut), almost ALL intersection relationships revealed are **RECTANGULAR**.
+**Observation:** When sectioning the complete group of nested polyhedra with a cutting plane perpendicular to the Z-axis (as in RT-Papercut), almost ALL intersection relationships revealed are **RECTANGULAR** in essence, on the 2D projection plane.
 
-**Visual Evidence:** The red cut lines in the Papercut tool consistently reveal rectangular cross-sections rather than arbitrary polygons.
+**Visual Evidence:** The red cut lines in the Papercut tool consistently reveal numerous rectangular cross-sections rather than arbitrary polygons. (ie akin to Tibetan style mandalas)
 
 **RT Significance:**
 - Rectangular relationships have **clear rational and quadrance math relationships**
@@ -859,7 +1354,7 @@ predominantly rectangular relationships, enabling pure RT analysis.
 3. **Spread = 3/4**: Equilateral triangles have spread s = 3/4 (exact rational value)
 4. **Barycentric Coordinates**: Natural coordinate system for triangular sectioning
 
-**Expected Properties at WXYZ Axial Grid Intervals:**
+**Expected Properties (related) at WXYZ Axial Grid Intervals:**
 - Triangular cross-sections (equilateral or isosceles)
 - 60° and 120° angle relationships (spread s = 3/4)
 - Barycentric coordinate simplification
@@ -896,13 +1391,13 @@ The Weierstrass demo revealed that **algebraic parametrization** (using rational
 
 All three geometric families (√2, √3, φ) emerge naturally from **pure algebraic normalization** without trigonometric functions, suggesting a deep connection between Weierstrass parametrization and the axial projection discoveries.
 
-#### Implementation Opportunities
+#### Implementation Opportunities (Future)
 
 **Immediate (Phase 2.8 Enhancement):**
-- Create Papercut variation that slices along WXYZ axes
-- Visualize triangular cross-sections at tetrahedral grid intervals
+- Create Papercut and View Options variations for Camera presets that align with and slices along and with cutplane perpendicular-to WXYZ axes
+- Visualize triangular cross-sections at tetrahedral/IVM/Quadray grid intervals
 - Compare rectangular (XYZ) vs triangular (WXYZ) sectioning patterns
-- Document spread values and quadrance relationships
+- Document spread values and quadrance relationships at each interval
 
 **Future (Phase 3 - 4D Coordinates):**
 - Extend sectioning to 4D hypercube and tesseract projections
@@ -915,10 +1410,12 @@ All three geometric families (√2, √3, φ) emerge naturally from **pure algeb
 - Shows how coordinate system choice affects geometric relationships
 - Reveals "natural" sectioning patterns for different symmetry groups
 - Provides visual proof of RT principles through interactive exploration
+- Demonstrate wave patterns emergent from cutplane sweeps of nested geometry
+- Consider implications on helical geometries and generative algorithms 
 
 #### References & Related Work
 
-- **RT-Papercut Tool**: [src/geometry/art.js](src/geometry/art.js#L2800-L3200) (Z-axis perpendicular sectioning)
+- **RT-Papercut Tool**: [src/geometry/modules/rt-papercut.js](src/geometry/modules/rt-papercut.js) (Z-axis perpendicular sectioning)
 - **Weierstrass Demo**: [src/geometry/demos/rt-Weierstrass-demo.js](src/geometry/demos/rt-Weierstrass-demo.js) (algebraic circle parametrization)
 - **Phase 2.8 Quadray Planes**: Documentation section on tetrahedral coordinate grids
 - **Fuller's IVM**: Isotropic Vector Matrix tetrahedral space-filling geometry
@@ -930,13 +1427,13 @@ All three geometric families (√2, √3, φ) emerge naturally from **pure algeb
 
 ---
 
-## Phase 2.5: RT Purity Enhancements ✅ COMPLETE
+## Phase 2.5: RT-Pure Refinements ✅ COMPLETE
 
 ### Deliverable: Enhanced Rational Trigonometry Implementation
 
 **Objective:** Maximize RT purity by deferring square root expansion and working in quadrance space as long as possible.
 
-**RT Implementation Status (COMPLETED):**
+**RT-Pure Implementation Status (COMPLETED):**
 - ✅ **Excellent**: Using algebraic identities (φ² = φ + 1, 1/φ = φ - 1)
 - ✅ **Excellent**: No angle calculations anywhere (pure algebraic geometry)
 - ✅ **Excellent**: √ expansion deferred until final vertex creation
@@ -1030,7 +1527,7 @@ All three geometric families (√2, √3, φ) emerge naturally from **pure algeb
 - Angular validation of tetrahedral coordinates
 - Verifying vertex angle relationships
 
-**RT Principles Checklist:**
+**RT-Pure Principles Checklist:**
 - [x] Defer all √ expansions until final vertex creation ✓
 - [x] Use algebraic identities (φ² = φ + 1, 1/φ = φ - 1) ✓
 - [x] Validate geometry using quadrance, not distance ✓
@@ -1040,13 +1537,14 @@ All three geometric families (√2, √3, φ) emerge naturally from **pure algeb
 
 **Phase 2.5 Completion Summary:**
 
-All RT purity enhancements successfully implemented:
+All RT-Pure enhancements successfully implemented:
 
-1. **RT Library Enhanced** (ARTexplorer.html:354-430)
+1. **RT Library Enhanced** (src/geometry/modules/rt-math.js)
    - `RT.quadrance(p1, p2)` - Distance² without square roots
    - `RT.spread(v1, v2)` - Angular spread (sin²θ) for vector pairs
    - `RT.Phi` - Symbolic golden ratio with algebraic identities
    - `RT.validateEdges()` - Quadrance uniformity validation
+   - `RT.Sexagesimal` - Base-60 angle system with DMS conversion
 
 2. **Quadrance Validation Logging** (All polyhedra constructors)
    - Cube: Q = 4s², validates 12 edges
@@ -1166,6 +1664,9 @@ All RT purity enhancements successfully implemented:
    - Excellent for learning subdivision algorithms
    - Demonstrates RT principles clearly
 
+4. **TODO ⚠️ Geodesic Dual Icosahedron** 
+  - Consider adding full Geodesic implementation also to Dual Icosahedron in UI and Functions, identical implementation as base Icosahedron, consolidate functionality
+
 **Quadrance-Preserving Subdivision Algorithm:**
 ```javascript
 // RT-PURE GEODESIC SUBDIVISION
@@ -1188,7 +1689,7 @@ Polyhedra.geodesicIcosahedron = (halfSize = 1, frequency = 2) => {
 ```
 
 **Key Features:**
-- Individual checkbox per solid (can show both pure & geodesic simultaneously)
+- Individual checkbox per solid (can show both pure & geodesic simultaneously and/or independently)
 - Frequency slider (1-6) enabled only when geodesic checkbox active
 - Console logging shows subdivision stats and quadrance validation
 - Separate Three.js groups allow comparison of algebraic vs geodesic forms
@@ -1225,9 +1726,10 @@ Instead of traditional spherical great circles, use the **Quadray coordinate sys
 
 **Advantages:**
 1. **RT-Pure**: Works in algebraic tetrahedral space (no sphere needed!)
-2. **Uniform triangulation**: Coplanar projections avoid distortion
+2. **Uniform triangulation**: Coplanar projections avoid ALL distortion
 3. **Natural symmetry**: Tetrahedral basis provides inherent balance
-4. **Novel approach**: Not based on spherical geometry - genuinely new
+4. **Novel approach**: Not based on spherical geometry OR Geodesic projection - genuinely new
+5. **New Module** Generate new UI panel called 'Polygonal Projections' as a form of Geodesic-like Polyhedra generation. Test by resolution per great circle, what polygon does 3, 4, 5, 6, 7, etc. generate when great circles are 'polygonized' at WXYZ and then points joined and faces rendered (winding order always by right hand rule for correct face rendering with Z-normals pinting outward), Polygons can be generated by slider from 3 to 12.
 
 **Mathematical Foundation:**
 ```
@@ -1262,7 +1764,7 @@ Coplanar Polygon from axes i,j:
 
 ---
 
-## Phase 2.9: RT-Pure Geodesic Educational UI (InSphere/MidSphere/OutSphere)
+## Phase 2.9: RT-Pure Geodesic Educational UI (InSphere/MidSphere/OutSphere) - NOT YET DEPLOYED TO ALL BASE POLYHEDRA, ONLY A SELECTION (Tet/Oct/Icosa)
 
 ### Deliverable: Multi-Stage Geodesic Visualization ✅ COMPLETE (2025-12-26)
 
@@ -1519,7 +2021,7 @@ Polyhedra.geodesicTetrahedron = (halfSize = 1, frequency = 0, options = {
 7. ✅ **Console logging** showing Q_target validation for all projection modes
 8. ✅ **Event listeners** for all projection radio buttons
 
-**Future Extensions (Phase 4+):** PENDING
+**Future Extensions (Phase 4+):** PENDING (possible already per Papercut with Inverted Cutplane)
 - Cartesian cut-plane for geodesic dome "grades" (Fuller's truncated domes)
 - Class I/II/III subdivision patterns (different edge orientations)
 - Chirality options (left/right handed subdivision)
@@ -1537,14 +2039,14 @@ Polyhedra.geodesicTetrahedron = (halfSize = 1, frequency = 0, options = {
    - Implement dual generation algorithm
    - Validate duality relationships
 
-3. **Documentation**
-   - Add mathematical derivations for each polyhedron
-   - Document quadrance calculations
-   - Add more code comments explaining RT principles
+3. **Documentation** ✅ COMPLETE
+   - ✅ Mathematical derivations documented in rt-polyhedra.js
+   - ✅ Quadrance calculations fully documented in rt-math.js
+   - ✅ Comprehensive code comments explaining RT principles throughout codebase
 
 ---
 
-## TODO: RT Purity Enhancement - Eliminate Classical Trigonometry
+## TODO: RT Purity Enhancement - Eliminate Classical Trigonometry (COMPLETED?)
 
 **Status:** 📋 Deferred (Documented 2025-12-26)
 **Priority:** MEDIUM - Important for RT philosophical purity, but app currently functional
@@ -1623,7 +2125,7 @@ function createRTPureGrid(size, divisions, color, plane = 'XY') {
 - ✅ Clearer code - grid plane orientation is obvious from vertex coordinates
 
 #### Option 2: Exact Rational Rotation Values
-Replace π with exact algebraic rotation values (if Three.js supports quaternion-based rotations): RESEARCH NEEDED FOR LATER AI AGENT PROJECT
+TODO: Replace π with exact algebraic rotation values (if Three.js supports quaternion-based rotations): RESEARCH NEEDED FOR LATER AI AGENT PROJECT
 
 ```javascript
 // 90° rotation as quaternion: [sin(45°), 0, 0, cos(45°)] = [√2/2, 0, 0, √2/2]
@@ -1674,7 +2176,7 @@ Construct rotation matrices using deferred sqrt expansion (RT-acceptable):
 **Search for:**
 - `Math.sin`, `Math.cos`, `Math.tan`
 - `Math.asin`, `Math.acos`, `Math.atan`, `Math.atan2`
-- `Math.PI` (currently only in grid rotations ✅)
+- `Math.PI` (currently only in grid rotations, gumball controls ✅)
 
 **Status:** Preliminary audit shows:
 - ✅ Geodesic sphere projections: RT-pure (golden ratio φ only)
@@ -1695,15 +2197,30 @@ Construct rotation matrices using deferred sqrt expansion (RT-acceptable):
 
 ---
 
-## TODO: Quadray Coordinate Plane Visualization (WXYZ Planes)
+## Quadray Coordinate Plane Visualization: Status Update (2026-01-10)
 
-**Status:** 📋 Planned (Documented 2025-12-26)
-**Priority:** HIGH - Foundation for Phase 2.8 (Quadray Polygonal Frequency Projections)
-**Related to:** Phase 2.7 Geodesic subdivision, Phase 3 4D coordinate systems
+**Status:** ✅ **CENTRAL ANGLE GRIDS COMPLETE** | 🚧 **IVM GRIDS STUBBED (Future)**
 
-### Objective
+### Implementation Status
 
-Implement Quadray (WXYZ) coordinate plane visualization analogous to the existing Cartesian (XYZ) plane toggles, enabling users to visualize the tetrahedral basis of the 4D coordinate system.
+**✅ COMPLETE: Central Angle Grids (Tetrahedral Web)**
+- **Location**: Fully implemented in `rt-rendering.js` and UI
+- **Description**: Six triangular grid planes representing all pairwise combinations of WXYZ basis vectors
+- **UI**: Individual toggles for WX, WY, WZ, XY, XZ, YZ planes
+- **Grids**: Triangular tessellation aligned to tetrahedral symmetry
+- **Purpose**: Visualize the tetrahedral coordinate basis and spatial relationships
+- **Status**: Production-ready, actively used for geometric exploration
+
+**🚧 STUBBED: IVM Grids (Future Feature)**
+- **Location**: UI control present but not yet wired to implementation
+- **Description**: Isotropic Vector Matrix spatial lattice showing tetrahedral/octahedral close-packing
+- **Purpose**: Fuller's IVM space-filling geometry with cuboctahedron (VE) centers
+- **Status**: Placeholder in UI, implementation planned for future phase
+- **Note**: Current Central Angle Grids provide sufficient tetrahedral basis visualization
+
+### Objective (Original - Now Completed for Central Angle Grids)
+
+Implement Quadray (WXYZ) coordinate plane visualization analogous to the existing Cartesian (XYZ) plane toggles, enabling users to visualize the tetrahedral basis of the 4D coordinate system. **This has been achieved through the Central Angle Grid implementation.**
 
 ### Background: Quadray Coordinate System
 
@@ -2766,6 +3283,21 @@ ARTexplorer_State_2025-12-28_geodesic-icosa-freq4.csv
 
 ### 5.1 Completed Items ✅
 
+**2026-01-10 - QCQA Branch: Architecture & Papercut Enhancements:**
+- ✅ **Init/Html/Rendering Separation** - Clean three-layer architecture
+  - rt-init.js: Module loading, event wiring, authentication
+  - index.html: Pure DOM structure, control containers
+  - rt-rendering.js: All THREE.js scene management via factory pattern
+- ✅ **Papercut Node Sectioning Enhancements**
+  - Node opacity control (0.0-1.0 transparency slider)
+  - Geodesic frequency selector for all three geodesic types (1-6)
+  - Section node circles at cutplane-sphere intersections
+  - Adaptive node resolution (32 vs 64 segments for print quality)
+- ✅ **Matrix Polyhedra & "Packed" Node Spheres**
+  - All matrix polyhedra corrected for initial size
+  - "Packed" node spheres properly sized for any polyhedra type
+  - IVM spatial array generation validated
+
 **2025-12-30 - Gumball Interaction & Camera Views:**
 - ✅ Selection precision fix (raycaster threshold 1.0 → 0.1)
 - ✅ Gumball basis vector dynamic sizing (tetEdge-based)
@@ -3040,6 +3572,22 @@ The file handler will support exporting the current scene to glTF 2.0 format (.g
 ## 6. Future Explorations
 
 ### 6.1 Sexagesimal (Base-60) Arithmetic for Exact RT Calculations
+
+**Implementation Status: ✅ COMPLETE (2026-01-10)**
+
+Sexagesimal functions have been implemented in:
+- **rt-math.js** - `RT.Sexagesimal` namespace with full DMS (Degrees-Minutes-Seconds-Thirds) support
+- **rt-cross-demo.js** - Interactive visualization of sexagesimal angle conversions
+
+**Key Functions in RT.Sexagesimal:**
+```javascript
+RT.Sexagesimal.SexagesimalAngle  // Class for D° M' S" T'" representation
+RT.Sexagesimal.fromDecimal(deg)  // Convert decimal degrees to DMS
+RT.Sexagesimal.fromSpread(s)     // Convert spread to DMS
+RT.Sexagesimal.fromCross(c)      // Convert cross to DMS
+RT.Sexagesimal.exactDivisions()  // Generate exact base-60 fractions
+RT.Sexagesimal.isExact(deg)      // Check if value is exact in base-60
+```
 
 The sexagesimal (base-60) numeral system offers compelling advantages for Rational Trigonometry applications, particularly for exact representation of the Plimpton 322 triples and other geometric ratios. This section explores the mathematical foundations, practical implementation, and potential benefits for our geometry application.
 
@@ -3698,6 +4246,1096 @@ The documented RT-based geometry system represents a **paradigm shift** in defen
 **Reviewer:** Claude Sonnet 4.5 (Anthropic)
 **Reviewed By Request Of:** Andy Thomson (Project Lead)
 **Classification:** Technical Assessment (Unclassified)
+
+---
+
+## 8. TODO Master List
+
+This section consolidates all TODO items scattered throughout the documentation, organized by priority and status. Each entry includes a back-reference to its original location.
+
+### 8.1 Active TODOs 🎯
+
+These are high-priority items that are actively blocking features or require immediate attention:
+
+#### 8.1.1 Matrix Polyhedra Papercut Epsilon Offset
+**Status:** ⚠️ Active
+**Priority:** Medium
+**Location:** [Section 2.1, Line 417-418](#21-current-status-as-of-2025-12-30)
+
+For matrix polyhedra, add non-inverted plane epsilon offset so cuts at colinear edges show section lines as we have done for regular non-matrix polyhedra (i.e., dome base - at grade). Epsilon must flip for cut-down vs. cut-up directions. Currently applied only to cut-down direction.
+
+**Technical Details:**
+- Affects matrix polyhedra sectioning in RT-Papercut module
+- Similar to dome base cut implementation for regular polyhedra
+- Requires directional epsilon logic
+
+---
+
+#### 8.1.2 Geodesic Dual Icosahedron
+**Status:** ⚠️ Active
+**Priority:** Medium
+**Location:** [Section 3.7, Line 1662-1663](#37-phase-28-quadray-coordinate-planes-central-angle-grids--complete)
+
+Consider adding full Geodesic implementation to Dual Icosahedron in UI and Functions, identical implementation as base Icosahedron, consolidate functionality.
+
+**Technical Details:**
+- Would provide geodesic subdivision for dual icosahedron
+- Reuse existing icosahedron geodesic algorithm
+- Add frequency slider to dual icosahedron controls
+
+---
+
+#### 8.1.3 Backface Culling for Papercut Print Optimization
+**Status:** ⚠️ Active
+**Priority:** High (Print Quality)
+**Location:** [Section 3.13, Line 1231](#313-matrix-polyhedra--packed-node-spheres--complete-2026-01-10)
+
+Backface Culling for Papercut print optimization: UI checkbox already in place.
+
+**Technical Details:**
+- UI checkbox is implemented and ready
+- Needs backend implementation in rt-papercut.js
+- Would hide rear-facing faces in section views
+- Critical for clean print output (no visual confusion from back faces)
+- Improves print clarity for architectural/dome applications
+
+**Implementation:**
+- Wire UI checkbox to material.side property
+- Set `material.side = THREE.FrontSide` when enabled
+- Default: `THREE.DoubleSide` (current behavior)
+
+---
+
+#### 8.1.4 WXYZ Tetrahedral Basis Views (Novel Projection Method)
+**Status:** ⚠️ Active
+**Priority:** High (Novel Feature - "Happy Accident" Great Circle Projection)
+**Location:** Section 8.1.4 (New Feature Request - 2026-01-10)
+
+Add WXYZ tetrahedral basis views to the View Options UI section, complementing the existing Cartesian views (Top, Bottom, Left, Right, Front, Back, Axo, Perspective).
+
+**UI Specification:**
+- New "WXYZ Views" section in View Options dialogue
+- Visual divider line separating WXYZ views from XYZ views
+- Four new view buttons: **W View**, **X View**, **Y View**, **Z View**
+
+**Camera Positioning Logic:**
+For each WXYZ axis view:
+1. **Camera Position**: Place camera at farthest grid extent along the selected axis vector
+   - Distance determined by current Grid Interval slider value
+   - Example: W View camera at maximum W-axis grid extent
+2. **Look At**: Camera looks toward origin (0, 0, 0)
+3. **Cutplane**: Perpendicular to the axis vector, intersecting at origin
+   - Uses existing RT-Papercut cutplane system
+   - Automatically activates when WXYZ view selected
+
+**Technical Implementation:**
+- **Related to:** "Happy Accident" Polygonal Great Circle projection method
+- **Grid Integration:** Uses user-defined Grid Interval sliders to determine camera extent
+- **Cutplane Sync:** Activates RT-Papercut with plane perpendicular to viewing axis
+- **Color Coding:** Match existing WXYZ axis colors (W=red, X=green, Y=blue, Z=magenta)
+
+**Expected Workflow:**
+1. User selects "W View" button in WXYZ Views section
+2. Camera moves to farthest W-axis grid extent
+3. Camera orients to look at origin
+4. Cutplane activates perpendicular to W-axis
+5. Reveals polygonal great circle section pattern
+
+**Benefits:**
+- Symmetrical view system for tetrahedral coordinate basis
+- Reveals natural sectioning patterns aligned to Quadray coordinates
+- Demonstrates "Happy Accident" great circle projections
+- Complements Central Angle Grid visualization
+- Educational: shows geometric relationships in tetrahedral space
+
+**Module Location:**
+- UI: Add to View Options section in rt-controls.js
+- Camera Logic: Extend view presets in rt-rendering.js
+- Cutplane Integration: Link to rt-papercut.js activation
+
+---
+
+#### 8.1.5 Periodic Code Quality Audit (QC/QA)
+**Status:** 🔄 Recurring
+**Priority:** High (Quality Assurance)
+**Location:** Section 8.1.5 (New QC/QA Process - 2026-01-10)
+
+Establish periodic audit process for all codebase files to ensure quality, consistency, and RT-purity.
+
+**Audit Scope:**
+1. **Code Formatting & Linting**
+   - Prettier formatting compliance
+   - ESLint rule adherence
+   - Consistent style across all modules
+
+2. **Code Quality**
+   - Function consolidation (eliminate duplication)
+   - Logical ordering within files
+   - Verbosity reduction (remove excessive comments, console.logs)
+   - Performance optimization opportunities
+   - Dead code elimination
+
+3. **RT-Purity Verification**
+   - Identify remaining Math.PI, Math.sin/cos/tan usage
+   - Verify quadrance/spread usage throughout
+   - Ensure deferred √ expansion patterns
+   - Document any necessary classical trigonometry with rationale
+
+4. **Architecture Review**
+   - Module responsibility boundaries
+   - Import/export clarity
+   - API surface consistency
+   - State management patterns
+
+**Files to Audit:**
+```
+src/geometry/modules/
+├── rt-init.js
+├── rt-rendering.js
+├── rt-math.js
+├── rt-polyhedra.js
+├── rt-matrix.js
+├── rt-papercut.js
+├── rt-controls.js
+├── rt-state-manager.js
+├── rt-filehandler.js
+└── demos/
+    ├── rt-quadrance-demo.js
+    ├── rt-cross-demo.js
+    ├── rt-weierstrass-demo.js
+    └── rt-demo-utils.js
+```
+
+**Proposed Solution: Code Quality Subagent**
+
+Create dedicated documentation guide for AI-assisted code quality audits:
+
+**Option A: CODE-SIMPLIFIER.md** (Focus: Refactoring & Optimization)
+- Purpose: Simplify complex code, reduce verbosity, improve performance
+- Runs: On-demand when code becomes complex or after major feature additions
+- Output: Refactoring recommendations with before/after examples
+
+**Option B: CODE-QUALITY.md** (Focus: Standards & Consistency)
+- Purpose: Enforce coding standards, formatting, and architectural patterns
+- Runs: Periodic review (monthly or per release)
+- Output: Quality checklist with pass/fail criteria
+
+**Recommendation: Combine Both → CODE-QUALITY-AUDIT.md**
+
+Comprehensive guide covering:
+- **Section 1: Automated Checks** (Prettier, ESLint, performance profiling)
+- **Section 2: Manual Review Checklist** (RT-purity, architecture, duplication)
+- **Section 3: Refactoring Guidelines** (simplification patterns, optimization strategies)
+- **Section 4: RT-Specific Rules** (quadrance/spread enforcement, deferred √ patterns)
+
+**Implementation:**
+```bash
+docs/development/Geometry documents/
+└── CODE-QUALITY-AUDIT.md  # New subagent guide
+```
+
+**Audit Frequency:**
+- **Minor Audit:** After each feature completion
+- **Major Audit:** Monthly or before release milestones
+- **RT-Purity Audit:** Quarterly (deep dive on trigonometry elimination)
+
+**Subagent Task Prompt Template:**
+```markdown
+Review [filename] for code quality issues:
+1. Run Prettier formatting
+2. Check ESLint compliance
+3. Identify code duplication
+4. Find performance bottlenecks
+5. Verify RT-purity (no Math.PI/sin/cos except in comments)
+6. Suggest consolidation opportunities
+7. Flag verbose or unnecessary code
+```
+
+**Success Metrics:**
+- ✅ Zero ESLint errors/warnings
+- ✅ Consistent Prettier formatting
+- ✅ No duplicate function implementations
+- ✅ <5% code with classical trigonometry (with justification)
+- ✅ Performance budget maintained (60fps at default settings)
+
+**Next Actions:**
+1. Create CODE-QUALITY-AUDIT.md documentation guide
+2. Define specific quality gates for each module
+3. Establish audit schedule
+4. Document RT-purity exceptions with justification
+
+---
+
+#### 8.1.6 Gumball SHIFT-DRAG Scaling
+**Status:** ⚠️ Active
+**Priority:** Low
+**Location:** [Section 3.10, Line 976](#310-phase-211-art-gumball--statemanager--complete)
+
+SHIFT-DRAG scaling for uniform scaling, else deform in direction of axial drag (COMPLICATED).
+
+**Technical Details:**
+- Would enable non-uniform scaling along specific axes
+- SHIFT modifier for uniform vs. directional scaling
+- Complex interaction with current scaling system
+
+---
+
+### 8.2 Deferred TODOs 📋
+
+These items are documented but deferred to future phases, with clear rationale for deferral:
+
+#### 8.2.1 RT Purity Enhancement - Eliminate Math.PI Usage
+**Status:** 📋 Deferred
+**Priority:** Medium (RT philosophical purity)
+**Location:** [TODO Section, Lines 2044-2159](#todo-rt-purity-enhancement---eliminate-classical-trigonometry-completed)
+
+**Problem:** The app currently uses `Math.PI` in grid plane rotations (e.g., `rotation.x = Math.PI / 2`), which violates Rational Trigonometry principles.
+
+**Proposed Solution:** Replace THREE.GridHelper with custom RT-pure grid construction using explicit line segments:
+
+```javascript
+function createRTPureGrid(size, divisions, color, plane = 'XY') {
+  // Construct grid lines from explicit coordinates
+  // No rotation matrices, no π usage
+  // Grid plane orientation obvious from vertex coordinates
+}
+```
+
+**Why Deferred:**
+- App is currently functional
+- Not blocking any features
+- Requires careful refactoring of rendering layer
+- Performance validation needed
+
+**Implementation Plan:**
+1. Create custom grid geometry functions in rt-rendering.js
+2. Replace all THREE.GridHelper instances
+3. Validate visual appearance matches current grids
+4. Update documentation to claim "100% RT-pure"
+
+**Reference:** See full analysis in [TODO: RT Purity Enhancement section](#todo-rt-purity-enhancement---eliminate-classical-trigonometry-completed)
+
+---
+
+#### 8.2.2 Quaternion-Based Rotation Research
+**Status:** 📋 Research Needed
+**Priority:** Low
+**Location:** [TODO Section, Line 2123](#todo-rt-purity-enhancement---eliminate-classical-trigonometry-completed)
+
+Replace π with exact algebraic rotation values using quaternion-based rotations (if Three.js supports).
+
+**Research Questions:**
+- Can Three.js accept quaternion rotations without transcendental conversions?
+- Would quaternion approach be more RT-pure than explicit matrices?
+- Performance implications?
+
+**Note:** This is a research task for future AI agent project.
+
+---
+
+#### 8.2.3 Color Theory Refinement for Dual Polyhedra
+**Status:** ⚠️ TODO
+**Priority:** Low (Visual Polish)
+**Location:** [Section 2.1.1, Line 457](#211-legacy-status-2025-12-30)
+
+Explore more refined nesting color theory approach akin to Regular/Geodesic complementary pairings, especially for regular dual polyhedra.
+
+**Current State:**
+- Regular polyhedra have defined colors
+- Geodesics use complementary colors
+- Dual polyhedra need better color relationships
+
+**Goal:**
+- Visual harmony for nested dual pairs
+- Educational clarity (which forms are duals?)
+- Consistent color theory across all forms
+
+---
+
+#### 8.2.4 IVM Grid Implementation (Future Spatial Lattice)
+**Status:** 🚧 Stubbed (Future Feature)
+**Priority:** Low
+**Location:** [Quadray Grid Status, Line 649](#12-on-dimensions-and-coordinate-systems) | [Lines 2209-2214](#quadray-coordinate-plane-visualization-status-update-2026-01-10)
+
+Future IVM grid should spatialize per unit Rhombic Dodecahedron as vertices for all grid crossings.
+
+**Current State:**
+- UI control present but not wired to implementation
+- Central Angle Grids (WXYZ tetrahedral basis) are complete
+- IVM Grids planned for future phase
+
+**Description:**
+- Isotropic Vector Matrix spatial lattice
+- Tetrahedral/octahedral close-packing visualization
+- Fuller's IVM space-filling geometry with cuboctahedron (VE) centers
+- Rhombic Dodecahedron vertices at all lattice intersections
+
+**Why Deferred:**
+- Central Angle Grids provide sufficient tetrahedral basis visualization
+- Complex implementation requiring spatial lattice algorithms
+- Not blocking current features
+
+---
+
+#### 8.2.5 Lineweight Depth per Camera View (Papercut Enhancement)
+**Status:** 💡 Consideration
+**Priority:** Low (Visual Enhancement)
+**Location:** [Section 3.13, Line 1232](#313-matrix-polyhedra--packed-node-spheres--complete-2026-01-10)
+
+Consider option of Lineweight depth per camera view as enhancement.
+
+**Description:**
+- Variable line weights based on camera distance
+- Closer edges appear thicker, distant edges thinner
+- Would enhance depth perception in Papercut print mode
+- Similar to architectural drawing conventions
+
+**Why Deferred:**
+- Nice-to-have visual enhancement
+- Current uniform lineweights are functional
+- Requires camera distance calculations per edge
+- May increase rendering complexity
+
+---
+
+### 8.3 Future Enhancement TODOs 🔮
+
+These items are documented in [Section 5.3: TODO: Future Enhancements](#53-todo-future-enhancements) and represent long-term feature additions. Below is a categorized summary with back-references:
+
+#### 8.3.1 Performance & Node Geometry Enhancements
+**Location:** [Lines 3455-3476](#53-todo-future-enhancements)
+
+- [ ] **Dynamic LOD (Level of Detail) for RT Nodes** - Adaptive node complexity based on camera distance or vertex count
+  - Close: freq-2+ icosahedron (high detail)
+  - Medium: freq-0 icosahedron (base 20 triangles) - **CURRENT**
+  - Far: tetrahedron (minimal 4 triangles)
+
+- [ ] **Selection-Based Performance Tracking** - Track performance metrics for selected forms
+  - Display "Selected Form: Icosahedron, Triangles: 80" in Performance section
+  - Isolate FPS impact of individual polyhedra
+
+- [ ] **Performance History Graph** - Visual timeline of FPS and triangle counts
+  - Rolling 60-second window
+  - Before/after metrics when switching node types or forms
+  - SVG or canvas-based mini-graph in Geometry Info section
+
+---
+
+#### 8.3.2 Geodesic Improvements
+**Location:** [Lines 3477-3488](#53-todo-future-enhancements)
+
+- [ ] **Geodesic cutplane feature** - Horizontal slice for terrestrial dome structures
+  - Adjustable height slider (0-100% of geodesic height)
+  - Removes vertices and faces below cutplane
+  - Generates new base perimeter edges
+  - Useful for architectural dome applications (foundation level)
+
+- [ ] **Geodesic subdivision for remaining polyhedra** - Dodecahedron, Cube
+
+- [ ] **Alternative subdivision methods** - Class I, II, III (Fuller's classification)
+
+- [ ] **Edge length equalization for geodesic domes**
+
+---
+
+#### 8.3.3 Advanced Interaction
+**Location:** [Lines 3489-3496](#53-todo-future-enhancements)
+
+- [ ] Multi-selection (Shift+Click to select multiple forms/instances)
+- [ ] Copy/paste instances (Cmd/Ctrl+C, Cmd/Ctrl+V)
+- [ ] Group/ungroup instances
+- [ ] Snap-to-grid for Move mode
+- [ ] Snap-to-angle for Rotate mode
+- [ ] Measurement tool (distance, angle, area, volume)
+
+---
+
+#### 8.3.4 Visualization Enhancements
+**Location:** [Lines 3497-3504](#53-todo-future-enhancements)
+
+- [ ] Face normals visualization (arrows pointing outward)
+- [ ] Vertex labels (show coordinates in XYZ and WXYZ)
+- [ ] Edge labels (show lengths and quadrances)
+- [ ] Dihedral angle display (using spread, not angle)
+- [ ] Animation system (rotate polyhedra, morph between forms)
+- [ ] Multiple viewport modes (quad view: Top/Front/Right/Perspective)
+
+---
+
+#### 8.3.5 Export & Sharing
+**Location:** [Lines 3505-3512](#53-todo-future-enhancements)
+
+- [ ] glTF export for 3D model sharing
+- [ ] DWG export for CAD software integration
+- [ ] SVG export for 2D projections
+- [ ] PNG screenshot capture with transparent background
+- [ ] URL parameter state encoding for shareable links
+- [ ] Embed mode (iframe-friendly version for documentation)
+
+---
+
+#### 8.3.6 Performance Optimization
+**Location:** [Lines 3513-3519](#53-todo-future-enhancements)
+
+- [ ] Geometry instancing for repeated forms
+- [ ] Level-of-detail (LOD) system for high-frequency geodesics
+- [ ] WebGL2 optimization
+- [ ] Web Worker for geometry calculations
+- [ ] Progressive loading for complex tessellations
+
+---
+
+#### 8.3.7 Educational Features
+**Location:** [Lines 3520-3525](#53-todo-future-enhancements)
+
+- [ ] Tutorial mode (guided exploration of polyhedra relationships)
+- [ ] Formula display panel (show RT calculations for current geometry)
+- [ ] Comparison mode (side-by-side polyhedra with measurements)
+- [ ] Historical timeline (Fuller's discoveries, Wildberger's RT development)
+
+---
+
+### 8.4 User Paper List TODOs 📝
+
+**Source:** Andy Thomson's desk notes (2026-01-10)
+
+These TODOs have been transcribed from paper notes and categorized by priority and implementation complexity.
+
+---
+
+#### 8.4.1 Tetrahelix Compound Polyhedron (BFI Research Request)
+**Status:** ⚠️ Active - Research & Implementation
+**Priority:** High (External Research Request)
+**Requested By:** Bonnie DeVarco (Buckminster Fuller Institute Archivist)
+
+Add Tetrahelix as a new Base Form in the UI with RT-pure construction method.
+
+**Description:**
+Tetrahedral helixes are formed by joining faces of tetrahedra which spiral into a complete twisting torus shape. This novel compound polyhedron is requested for Synergetics research and BFI archival study.
+
+**Research Questions:**
+1. **Construction Method:** Most efficient/performant approach for compound polyhedra?
+   - Option A: Chain tetrahedra face-to-face with rotation accumulation
+   - Option B: Parametric helix with tetrahedral units positioned along path
+   - Option C: Direct vertex calculation using helix equations + tetrahedral geometry
+
+2. **Closure Condition:** How many tetrahedra complete one full torus revolution?
+   - Related to dihedral angles and twist rate
+   - May require specific angle relationships for perfect closure
+
+3. **RT-Purity:** Can helix be constructed without sin/cos?
+   - Circular helix traditionally requires parametric (cos(t), sin(t), t)
+   - Explore rational circle parametrization (Weierstrass substitution)
+   - Or use polygonal approximation with exact algebraic coordinates
+
+**Technical Implementation:**
+- **Module:** `rt-polyhedra.js` - Add `Polyhedra.tetrahelix()` function
+- **UI:** Add "Tetrahelix" to Base Forms section
+- **Parameters:**
+  - Number of tetrahedra (affects torus size)
+  - Twist rate (controls helix pitch)
+  - Radius (torus major radius)
+
+**Performance Considerations:**
+- Compound geometry will have high triangle count
+- Consider geometry instancing for repeated tetrahedral units
+- May need LOD system for performance at high counts
+
+**References:**
+- Fuller's Synergetics: Tetrahedral helixes and spatial structures
+- BFI Archive: Historical tetrahelix studies
+- Related to: Boerdijk–Coxeter helix (face-bonded tetrahedra)
+
+**Next Steps:**
+1. Research tetrahedral helix closure conditions
+2. Prototype RT-pure construction algorithm
+3. Test performance with various unit counts
+4. Add UI controls and documentation
+
+---
+
+#### 8.4.2 Tetrahedral/Pentagonal Cone Basis Vector Arrowheads
+**Status:** ⚠️ Active
+**Priority:** Medium (Visual Enhancement)
+
+Change basis vector arrowheads from standard cones to pentagonal cones for XYZ and tetrahedral cones for WXYZ, aligned with grid symmetry.
+
+**Rationale:**
+- **XYZ Basis (Cartesian):** Pentagonal cone arrowheads (no particular symmetry preference)
+- **WXYZ Basis (Quadray):** Tetrahedral cone arrowheads (matches tetrahedral coordinate system)
+- Visual consistency: Arrowhead geometry reflects coordinate system geometry
+
+**Technical Implementation:**
+- **Module:** `rt-rendering.js` - Modify basis vector arrow creation
+- **Current:** Uses THREE.ConeGeometry with default radial segments (8)
+- **Update:**
+  - XYZ: `new THREE.ConeGeometry(radius, height, 5)` // Pentagonal
+  - WXYZ: `new THREE.ConeGeometry(radius, height, 3)` // Triangular (tetrahedral profile)
+
+**Benefits:**
+- Educational: Visual cue distinguishing coordinate systems
+- Aesthetic: Matches underlying geometric philosophy
+- Subtle but meaningful detail
+
+---
+
+#### 8.4.3 Reduce Default XYZ Grid Size
+**Status:** ⚠️ Active
+**Priority:** Medium (UI/Visual)
+
+Reduce default size of XYZ Grid from current >2.75 units to exactly 2.0 units tall/wide.
+
+**Problem:**
+- XYZ grid currently appears oversized (>2.75 XYZ grid units)
+- Clutters workspace
+- Disproportionate to geometry being studied
+
+**Solution:**
+- Change default grid size parameter to 2.0 units
+- Maintain existing Grid Interval slider functionality (user can still adjust)
+- Update default in `rt-rendering.js` grid initialization
+
+**Technical Details:**
+- **Module:** `rt-rendering.js`
+- **Current:** Grid size likely set to ~3.0 or calculated incorrectly
+- **Update:** Explicit `gridSize = 2.0` for XYZ Cartesian grids
+- **Verify:** WXYZ grids should remain at appropriate tetrahedral scale
+
+**Impact:**
+- Cleaner default workspace
+- Better visual proportion for polyhedra study
+- Users can still expand grid via slider if needed
+
+---
+
+#### 8.4.4 Temporary Basis Vector Hiding During Gumball Edits
+**Status:** ⚠️ Active
+**Priority:** High (UX Improvement - Reduces Visual Clutter)
+
+Temporarily hide general Basis Vectors DURING active Gumball edits (Move/Rotate/Scale modes) to reduce workspace clutter.
+
+**Problem:**
+- During Gumball edits, BOTH general basis vectors AND gumball edit handles appear simultaneously
+- Visual clutter makes precise manipulation difficult
+- Basis vectors can obstruct view of edit handles
+
+**Solution:**
+Implement auto-hide/restore logic for basis vectors during edit operations:
+
+1. **On Edit Start** (Move/Rotate/Scale mode activated):
+   - Store current basis vector visibility state (XYZ on/off, WXYZ on/off)
+   - Temporarily hide ALL basis vectors (set visible = false)
+   - Show only Gumball edit handles
+
+2. **During Edit:**
+   - Basis vectors remain hidden
+   - Only Gumball handles visible for clean workspace
+
+3. **On Edit Complete** (mode deactivated or selection cleared):
+   - Check stored visibility state
+   - IF basis vectors were ON before edit → restore visibility
+   - IF basis vectors were OFF before edit → keep hidden
+
+**Technical Implementation:**
+- **Module:** `rt-controls.js` (Gumball mode activation)
+- **State Storage:** Add to StateManager or local closure:
+  ```javascript
+  const basisVectorState = {
+    xyzVisible: false,
+    wxyzVisible: false
+  };
+  ```
+- **Hook Points:**
+  - Activate mode: Store state, hide basis vectors
+  - Deactivate mode: Restore state from storage
+
+**UI Integration:**
+- Works with existing Controls section basis vector toggles
+- User can still manually toggle basis vectors during edit (overrides auto-hide)
+- Preference could be added: "Auto-hide basis during edits" checkbox
+
+**Benefits:**
+- Cleaner editing experience
+- Reduces visual confusion
+- Focus on active edit handles only
+- Maintains user's basis vector preference after edit
+
+---
+
+#### 8.4.5 Complete rt-filehandler.md Documentation (DRAFT State Export/Import Spec)
+**Status:** ⚠️ Active
+**Priority:** High (Prevents ESLint Violations & Undeclared Variables)
+
+Complete the partially-finished rt-filehandler.md documentation to prevent undeclared/unused variable issues and provide complete state schema for future enhancements.
+
+**Current Status:**
+- ✅ Planning phase complete (5 phases documented)
+- ✅ Architecture analysis done
+- ✅ JSON state structure defined
+- ⏳ **INCOMPLETE:** Implementation sections are placeholders
+- ⏳ **INCOMPLETE:** Edge cases need formal specification
+- ⏳ **INCOMPLETE:** Testing plan needs execution tracking
+
+**Problem:**
+Previous incomplete documentation led to:
+- Undeclared variables in rt-filehandler.js
+- Unused variables flagged by ESLint
+- Incomplete state schema causing import/export issues
+- Missing factory function patterns
+
+**Documentation Location:**
+- [rt-filehandler.md](rt-filehandler.md) - Incomplete workplan (520 lines)
+
+**Required Sections to Complete:**
+
+1. **Phase 2: Extract Creation Logic** (Lines 201-253)
+   - DRAFT complete: Factory function options documented
+   - Need to mark chosen approach (Option A/B/C)
+   - Add implementation code snippets from actual rt-init.js
+
+2. **Phase 3: Instance Restoration** (Lines 255-308)
+   - DRAFT complete: Implementation pseudocode provided
+   - Need to verify against actual rt-filehandler.js implementation
+   - Add error handling patterns
+
+3. **Phase 4: Edge Cases** (Lines 310-357)
+   - Currently speculative proposals
+   - Need to formalize JSON schema extensions for:
+     - Geodesic parameters (frequency, projection)
+     - Appearance data (color, opacity, nodeSize)
+     - Unknown type handling
+     - Version compatibility strategy
+
+4. **Phase 5: Testing Plan** (Lines 359-393)
+   - Test cases defined but no execution tracking
+   - Add test results section
+   - Document known issues and workarounds
+
+**Immediate Actions:**
+
+1. **DRAFT State Schema v1.0** - Formalize complete JSON structure
+   ```json
+   {
+     "version": "1.0",
+     "timestamp": "ISO-8601",
+     "environment": { /* camera, grids, forms */ },
+     "instances": [
+       {
+         "id": "string",
+         "type": "cube|tetrahedron|...|geodesicIcosahedron",
+         "parameters": { /* type-specific: frequency, projection, etc. */ },
+         "transform": { /* position, rotation, scale */ },
+         "appearance": { /* visible, color, opacity, nodeSize */ },
+         "metadata": { /* label, tags, notes */ }
+       }
+     ]
+   }
+   ```
+
+2. **Document Factory Pattern Decision** - Which option (A/B/C) was implemented?
+   - Option A: Global exposure (window.createPolyhedronByType)
+   - Option B: Dependency injection (RTFileHandler.setPolyhedronFactory)
+   - Option C: Separate module (rt-polyhedron-factory.js)
+
+3. **Complete Edge Case Specifications**
+   - Geodesic type handling (frequency parameter)
+   - Matrix polyhedra handling (grid parameters)
+   - Unknown type fallback behavior
+   - Version migration strategy
+
+4. **Add Implementation Status Tracking**
+   - Update "Next Steps" checklist (lines 446-457)
+   - Mark completed items with ✅
+   - Add blockers and known issues
+
+**Benefits of Completion:**
+- Prevents ESLint violations from undeclared variables
+- Provides complete state schema for future features
+- Documents factory pattern for instance recreation
+- Establishes version compatibility strategy
+- Enables safe enhancement without breaking existing saves
+
+**Module Locations:**
+- **Document:** `docs/development/Geometry documents/rt-filehandler.md`
+- **Implementation:** `src/geometry/modules/rt-filehandler.js`
+- **Factory Source:** `src/geometry/modules/rt-init.js` (polyhedron creation)
+- **State Manager:** `src/geometry/modules/rt-state-manager.js`
+
+**Success Criteria:**
+- ✅ All 5 phases have "Status" and "Completion Date" headers
+- ✅ DRAFT JSON schema formalized with version 1.0 specification
+- ✅ Factory pattern decision documented with code references
+- ✅ Edge cases have formal specifications (not proposals)
+- ✅ Testing checklist has execution results
+- ✅ Known issues and workarounds documented
+- ✅ Future enhancement hooks clearly defined
+
+---
+
+#### 8.4.6 Comprehensive Triangle Counter (All Forms + Matrix)
+**Status:** ⚠️ Active
+**Priority:** Medium (Geometry Info Enhancement)
+
+Expand triangle counter in Geometry Info to count ALL triangles (polyhedra + matrix forms + nodes), excluding grids.
+
+**Current Behavior:**
+- Triangle counter only counts Node triangles
+- Polyhedral form triangles not included
+- Matrix form triangles not included
+- Incomplete geometry statistics
+
+**Proposed Solution:**
+Add comprehensive triangle counting with breakdown:
+
+```
+Geometry Info:
+━━━━━━━━━━━━━━━━━━━━━━━
+Total Triangles: 1,247
+  Forms: 420 (Icosahedron: 20, Cube: 12, etc.)
+  Matrix: 680 (5×5 Tetrahedron array: 100 tets × 4 tri × 2 faces = 800)
+  Nodes: 147 (49 nodes × 3f geodesic = 3 tri/node)
+```
+
+**Technical Implementation:**
+- **Module:** `rt-rendering.js` or performance monitoring section
+- **Counting Strategy:**
+  1. **Forms:** Iterate visible forms, sum `geometry.attributes.position.count / 3`
+  2. **Matrix:** Iterate matrix instances, sum triangle counts
+  3. **Nodes:** Already implemented, verify accuracy
+  4. **Exclude:** Grid geometry (flag with `userData.isGrid = true`)
+
+**Performance Considerations:**
+- **Question:** Would real-time counting add overhead?
+- **Analysis:**
+  - Counting once per frame during render loop: Minimal overhead (~1ms for 100 forms)
+  - Update only on scene change (form add/remove): Zero overhead, recommended
+  - Cache counts, invalidate on geometry changes
+
+**Recommendation:** Update triangle count only when scene changes (form visibility toggle, matrix update, node frequency change), not every frame.
+
+**Benefits:**
+- Accurate performance metrics
+- Understand triangle budget per feature
+- Debug geometry issues
+- Educational: see triangle cost of different forms
+
+---
+
+#### 8.4.7 Update Default Settings (Nodes + Opacity)
+**Status:** ⚠️ Active
+**Priority:** High (Improved Defaults for RT Philosophy)
+
+Update application defaults to emphasize RT-pure node geometry and appropriate transparency.
+
+**Changes Required:**
+
+1. **Polyhedra/Matrix Face Opacity:**
+   - Current: 0.25 ✓ (already correct)
+   - Keep as-is
+
+2. **Default Node Type:**
+   - Current: Classical THREE.SphereGeometry (non-RT)
+   - **New Default:** 3f Geodesic Icosahedron (RT-pure)
+   - Rationale: Demonstrates RT geodesic subdivision by default
+
+3. **Node Opacity:**
+   - Current: 1.0 (fully opaque)
+   - **New Default:** 0.35
+   - Rationale: Semi-transparent nodes reduce visual clutter, reveal internal structure
+
+4. **UI Dropdown Initialization:**
+   - **Issue:** Ensure Node Type dropdown shows "3f Geodesic" on load
+   - Must sync UI state with actual default geometry
+
+**Technical Implementation:**
+- **Module:** `rt-rendering.js` (initialization), `rt-controls.js` (UI sync)
+
+**Changes:**
+```javascript
+// rt-rendering.js - Default node configuration
+const defaultNodeConfig = {
+  type: 'geodesic',           // Changed from 'classical'
+  geodesicFrequency: 3,       // 3f Fuller frequency
+  opacity: 0.35               // Changed from 1.0
+};
+
+// rt-controls.js - UI initialization
+document.getElementById('nodeTypeDropdown').value = 'geodesic-3f';
+document.getElementById('nodeOpacitySlider').value = 0.35;
+```
+
+**Benefits:**
+- RT-pure geometry shown by default (aligns with project philosophy)
+- Better visual clarity with semi-transparent nodes
+- Educational: Users immediately see geodesic subdivision
+- Performance: 3f geodesic comparable to classical spheres
+
+---
+
+#### 8.4.8 Vertex/Edge/Face Snapping (Free Move Enhancement)
+**Status:** 🔮 Future Enhancement
+**Priority:** Medium (Advanced Interaction Feature)
+
+Implement intelligent snapping options for Gumball Move mode: vertex-to-vertex, edge-to-edge, and face-to-face alignment.
+
+**Feature Description:**
+Enable precise alignment of polyhedra by snapping geometric features during free move operations.
+
+**Snap Types:**
+
+1. **Vertex Snapping:**
+   - Snap moving form's nearest vertex to target form's nearest vertex
+   - Threshold: < 0.1 units proximity triggers snap
+   - Visual: Highlight snap candidate vertices
+
+2. **Edge Snapping:**
+   - Align moving form's edge to target form's edge
+   - Requires edge midpoint + edge direction alignment
+   - Useful for edge-to-edge polyhedra chains
+
+3. **Face Snapping:**
+   - Align moving form's face to target form's face (coplanar + center alignment)
+   - **Complex Case:** Face snapping cube to tetrahedron requires orientation rules
+   - **Rules Needed:**
+     - Face normal alignment (parallel or anti-parallel)
+     - Face center distance minimization
+     - Optional: Edge alignment for specific orientations
+
+**Technical Challenges:**
+
+**Challenge 1: Face-to-Face Rules**
+- Cube has square faces, tetrahedron has triangular faces
+- Cannot perfectly tile square onto triangle
+- **Solution:** Snap face centers + align face normals, accept geometric mismatch
+- **Alternative:** Snap closest vertex of moving face to target face center
+
+**Challenge 2: Performance**
+- Real-time snap candidate detection during drag
+- Iterate all visible forms × all vertices/edges/faces
+- **Optimization:** Spatial partitioning (octree) for proximity queries
+
+**Challenge 3: Snap Priority**
+- If multiple snap candidates within threshold, which wins?
+- **Solution:** Priority order: Vertex > Edge > Face (most specific first)
+
+**UI Controls:**
+- **Snap Toggle:** Checkbox "Enable Snapping" in Controls section
+- **Snap Mode Dropdown:** "Vertex" | "Edge" | "Face" | "All"
+- **Snap Threshold Slider:** 0.01 to 1.0 units
+
+**Technical Implementation:**
+- **Module:** `rt-controls.js` (snap logic during Gumball move)
+- **Algorithm:**
+  ```javascript
+  function checkSnapCandidates(movingForm, targetForms, snapMode, threshold) {
+    // 1. Extract geometric features from movingForm
+    // 2. Iterate targetForms, extract features
+    // 3. Calculate proximity for each feature pair
+    // 4. Return nearest candidate within threshold
+    // 5. Apply snap transformation
+  }
+  ```
+
+**Why Future Enhancement:**
+- Significant implementation complexity
+- Requires robust spatial query system
+- Face snapping rules need careful design
+- Should be prototyped after core features stable
+
+---
+
+#### 8.4.9 Rotation Snapping + Numeric Input Fix
+**Status:** ⚠️ Active (Part 1: Fix), 🔮 Future (Part 2: Snapping)
+**Priority:** High (Part 1 - Bug Fix), Medium (Part 2 - Feature)
+
+**Part 1: Fix Numeric Rotation Input (HIGH PRIORITY - BUG FIX)**
+
+**Problem:**
+- Numeric input fields for rotation values do not work
+- User cannot type exact rotation values
+- Forces reliance on circular handle dragging only
+
+**Investigation Needed:**
+1. Verify numeric input fields exist in UI
+2. Check event handlers (keyup, change, input)
+3. Confirm input → state → geometry update pipeline
+4. Test in both XYZ and WXYZ rotation modes
+
+**Technical Fix:**
+- **Module:** `rt-controls.js` - Rotation input handlers
+- **Likely Issue:**
+  - Missing event listeners on input fields
+  - Input value not parsed/applied to rotation state
+  - Rotation state not triggering geometry update
+
+**Expected Behavior:**
+```javascript
+// User types "45" in X-rotation input
+// → Parse value: 45 degrees
+// → Convert to radians or spread (depending on mode)
+// → Apply to selected form rotation
+// → Update 3D visualization
+```
+
+---
+
+**Part 2: Add Rotation Snapping (MEDIUM PRIORITY - FEATURE)**
+
+**Feature Description:**
+Add snap-to-increment functionality for rotation handles and numeric inputs.
+
+**Snap Modes:**
+
+1. **Angular Snapping (XYZ Cartesian Mode):**
+   - Common increments: 5°, 10°, 15°, 30°, 45°, 90°
+   - User-configurable via dropdown or slider
+   - Snap during circular handle drag
+
+2. **Spread Snapping (WXYZ Quadray Mode):**
+   - RT-pure spread increments: 0.0, 0.1, 0.2, ... 1.0
+   - Rational spread values for exact geometric relationships
+   - Aligns with RT philosophy
+
+**UI Controls:**
+- **Snap Toggle:** Checkbox "Enable Rotation Snapping"
+- **Snap Increment (XYZ):** Dropdown "5° | 10° | 15° | 30° | 45° | 90°"
+- **Snap Increment (WXYZ):** Dropdown "0.1 | 0.2 | 0.25 | 0.5"
+- **Visual Feedback:** Snap positions marked on circular handles
+
+**Technical Implementation:**
+- **Module:** `rt-controls.js` - Rotation calculation logic
+- **Snap Algorithm:**
+  ```javascript
+  function snapRotation(rawValue, snapIncrement, enabled) {
+    if (!enabled) return rawValue;
+    return Math.round(rawValue / snapIncrement) * snapIncrement;
+  }
+
+  // During drag:
+  const dragAngle = calculateDragAngle(mousePos, centerPos);
+  const snappedAngle = snapRotation(dragAngle, snapIncrement, snapEnabled);
+  ```
+
+**Benefits:**
+- Precise rotations (align forms at exact angles)
+- Educational: Demonstrates rational spread values
+- Faster workflow for common rotations (90°, etc.)
+
+**Implementation Priority:**
+1. **First:** Fix numeric input (critical bug)
+2. **Second:** Add angular snapping for XYZ mode
+3. **Third:** Add spread snapping for WXYZ mode
+
+---
+
+#### 8.4.10 Expand Base Forms: RT-Pure Prisms (Line/Cylinder + Cone Resolutions)
+**Status:** ⚠️ Active
+**Priority:** High (Expands RT-Pure Form Library)
+
+Add generalized primitive forms to enable full array of RT-pure prisms and pyramids.
+
+**New Base Forms:**
+
+**1. Line/Cylinder Line**
+- **Description:** Straight line segment or cylindrical edge
+- **Parameters:**
+  - Length: User-adjustable
+  - Radius: For cylinder representation (or zero-radius line)
+  - Resolution: Radial segments (3, 4, 5, 6, ... for prism creation)
+- **Use Cases:**
+  - Edge-only visualization
+  - Structural frameworks
+  - Basis for prism construction
+
+**RT-Pure Implementation:**
+```javascript
+Polyhedra.cylinderLine = (length, radius, resolution) => {
+  // Two endpoints: (0, 0, 0) and (0, 0, length)
+  const vertices = [
+    [0, 0, 0],
+    [0, 0, length]
+  ];
+
+  // If radius > 0, generate circular cross-section
+  if (radius > 0) {
+    const circleVertices = RT.circleParam(radius, resolution);
+    // Extrude circle along Z-axis for length
+    // Returns: vertices, edges, faces
+  }
+
+  return { vertices, edges, faces };
+};
+```
+
+---
+
+**2. Cone with Configurable Resolution**
+- **Description:** Pyramidal/conical form with adjustable base polygon
+- **Parameters:**
+  - Height: Apex to base distance
+  - Base Radius: Distance from center to base vertices
+  - **Resolution:** 3, 4, 5, 6, 8, 12, 16, 24, ... (defines base polygon)
+    - Resolution 3 → Triangular pyramid (tetrahedron)
+    - Resolution 4 → Square pyramid
+    - Resolution 5 → Pentagonal pyramid
+    - Resolution 6 → Hexagonal pyramid
+    - Resolution 8+ → Approximates cone
+
+**RT-Pure Implementation:**
+```javascript
+Polyhedra.cone = (height, baseRadius, resolution) => {
+  // Apex at (0, 0, height)
+  const apex = [0, 0, height];
+
+  // Base polygon using RT circle parametrization
+  const baseVertices = RT.circleParam(baseRadius, resolution).map(([x, y]) => [x, y, 0]);
+
+  // Edges: apex to each base vertex + base perimeter
+  // Faces: triangular sides (apex, base[i], base[i+1])
+
+  return { vertices: [apex, ...baseVertices], edges, faces };
+};
+```
+
+**Benefits of Resolution Parameter:**
+- **Resolution 3-6:** Creates exact RT-pure pyramids (Platonic/Archimedean)
+- **Resolution 12+:** Smooth circular cone approximation
+- **Educational:** Shows relationship between discrete polygons and continuous curves
+- **Unified API:** Single function replaces need for separate pyramid/cone types
+
+**UI Integration:**
+- **Forms Section:** Add "Line/Cylinder" and "Cone" to dropdown
+- **Resolution Slider:** 3 to 24 segments (integer steps)
+- **Height/Radius Sliders:** Adjust proportions
+
+**RT-Pure Prism Library Enabled:**
+With Line + Cone at various resolutions, users can construct:
+- Triangular prisms (resolution 3)
+- Square prisms (resolution 4) - verify vs. existing Cube
+- Pentagonal prisms (resolution 5)
+- Hexagonal prisms (resolution 6)
+- Octagonal prisms (resolution 8)
+- Any N-gonal prism (resolution N)
+
+**Implementation Priority:**
+1. Add `Polyhedra.cone()` with resolution parameter
+2. Add `Polyhedra.cylinderLine()` with optional radius
+3. Update UI Forms dropdown with new options
+4. Add resolution slider to UI (conditionally shown for cone/cylinder)
+5. Document RT-pure circle parametrization used
+
+**Performance:** Resolution 3-12 should be highly performant (low triangle count). Resolution 24+ may need caching.
+
+---
+
+**Status Summary (Updated):**
+- **10 items total** from desk notes (4 initial + 5 batch 2 + 1 documentation)
+- **Active Items:** 8 (immediate implementation needed)
+- **Future Items:** 2 (vertex/edge/face snapping, rotation snapping Part 2)
+- **Priorities Breakdown:**
+  - High: 5 items (rt-filehandler.md completion, Defaults, Rotation fix, Prisms, Basis hiding)
+  - Medium: 4 items (Triangle counter, Snapping, Rotation snapping, Arrowheads)
+  - Research: 1 item (Tetrahelix)
 
 ---
 

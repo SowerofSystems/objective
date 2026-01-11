@@ -132,7 +132,7 @@ export const RTMatrix = {
           color: color,
           transparent: true,
           opacity: opacity,
-          side: THREE.DoubleSide,
+          side: THREE.FrontSide, // Backface culling enabled - all polyhedra winding corrected (2026-01-11)
           depthWrite: opacity >= 0.99,
           flatShading: true,
         });
@@ -264,7 +264,7 @@ export const RTMatrix = {
           color: color,
           transparent: true,
           opacity: opacity,
-          side: THREE.DoubleSide,
+          side: THREE.FrontSide, // Backface culling enabled - all polyhedra winding corrected (2026-01-11)
           depthWrite: opacity >= 0.99,
           flatShading: true,
         });
@@ -549,7 +549,7 @@ export const RTMatrix = {
           color: color,
           transparent: true,
           opacity: opacity,
-          side: THREE.DoubleSide,
+          side: THREE.FrontSide, // Backface culling enabled - all polyhedra winding corrected (2026-01-11)
           depthWrite: opacity >= 0.99,
           flatShading: true,
         });
