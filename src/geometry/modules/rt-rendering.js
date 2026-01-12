@@ -13,6 +13,7 @@
 import { Quadray } from "./rt-math.js";
 import { Polyhedra } from "./rt-polyhedra.js";
 import { PerformanceClock } from "./performance-clock.js";
+import { RTPapercut } from "./rt-papercut.js";
 
 // Re-export PerformanceClock so rt-init.js can import it from here
 export { PerformanceClock };
@@ -2093,6 +2094,50 @@ export function initScene(THREE, OrbitControls, RT) {
         break;
       }
 
+      // WXYZ Tetrahedral Basis Views
+      case "w":
+      case "x":
+      case "y":
+      case "z": {
+        // Initialize Quadray basis vectors if not already done
+        if (!Quadray.basisVectors) {
+          Quadray.init(THREE);
+        }
+
+        // Map view name to basis vector index
+        // W=0, X=1, Y=2, Z=3 (matches Quadray.basisVectors order)
+        const axisMap = { w: 0, x: 1, y: 2, z: 3 };
+        const axisIndex = axisMap[view];
+        const basisVector = Quadray.basisVectors[axisIndex];
+
+        // Camera positioned at grid extent along the basis vector
+        // Using distance parameter (typically 10) as the extent
+        const cameraPosition = basisVector.clone().multiplyScalar(distance);
+        camera.position.copy(cameraPosition);
+
+        // Calculate an appropriate "up" vector perpendicular to the viewing axis
+        // Use Z-up (0,0,1) as default, but adjust if looking along Z
+        let upVector = new THREE.Vector3(0, 0, 1);
+
+        // If viewing axis is nearly aligned with Z, use Y as up instead
+        if (Math.abs(basisVector.dot(new THREE.Vector3(0, 0, 1))) > 0.9) {
+          upVector = new THREE.Vector3(0, 1, 0);
+        }
+
+        camera.up.copy(upVector);
+
+        // TODO: Activate cutplane perpendicular to the viewing axis
+        // This requires integration with RT-Papercut module
+        // For now, log the basis vector for the cutplane normal
+        console.log(
+          `WXYZ View ${view.toUpperCase()}: Camera at basis vector`,
+          basisVector,
+          "\n(Cutplane activation: TODO)"
+        );
+
+        break;
+      }
+
       case "perspective":
         // TRUE PERSPECTIVE view - return to initial app state
         // CRITICAL: Switch to perspective camera FIRST, then set position
@@ -2119,6 +2164,34 @@ export function initScene(THREE, OrbitControls, RT) {
     camera.lookAt(0, 0, 0);
     controls.target.set(0, 0, 0);
     controls.update();
+
+    // Automatic cutplane axis mapping (Phase 2 WXYZ integration)
+    // Map camera view to appropriate cutplane axis
+    const cartesianAxisMap = {
+      top: "z",
+      bottom: "z",
+      front: "y",
+      back: "y",
+      left: "x",
+      right: "x",
+      axo: "z", // Default to Z for axonometric
+    };
+
+    const tetrahedralAxisMap = {
+      w: "w",
+      x: "x",
+      y: "y",
+      z: "z",
+    };
+
+    // Set cutplane axis based on view
+    if (tetrahedralAxisMap[view]) {
+      // WXYZ Tetrahedral views
+      RTPapercut.setCutplaneAxis("tetrahedral", view, scene);
+    } else if (cartesianAxisMap[view]) {
+      // XYZ Cartesian views
+      RTPapercut.setCutplaneAxis("cartesian", cartesianAxisMap[view], scene);
+    }
 
     console.log(
       `✅ Camera preset: ${view} (${isOrthographic ? "Orthographic" : "Perspective"})`

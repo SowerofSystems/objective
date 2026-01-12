@@ -850,16 +850,33 @@ function startARTexplorer(
     { id: "viewBack", view: "back" },
     { id: "viewAxo", view: "axo" },
     { id: "viewPerspective", view: "perspective" },
+    // WXYZ Tetrahedral Basis Views
+    { id: "viewW", view: "w" },
+    { id: "viewX", view: "x" },
+    { id: "viewY", view: "y" },
+    { id: "viewZ", view: "z" },
   ];
+
+  // Track active view button for persistent highlighting
+  let activeViewButton = null;
 
   viewButtons.forEach(({ id, view }) => {
     const btn = document.getElementById(id);
     btn.addEventListener("click", () => {
+      // Remove active class from previously active button
+      if (activeViewButton) {
+        activeViewButton.classList.remove("active");
+      }
+
+      // Add active class to clicked button
+      btn.classList.add("active");
+      activeViewButton = btn;
+
       renderingAPI.setCameraPreset(view);
     });
   });
 
-  // Orthographic/Perspective toggle
+  // Orthographic/Perspective toggle (works for both XYZ and WXYZ views)
   const orthoCheckbox = document.getElementById("orthoPerspective");
   orthoCheckbox.addEventListener("change", e => {
     renderingAPI.switchCameraType(e.target.checked);
@@ -2720,6 +2737,41 @@ function startARTexplorer(
   // ========================================================================
   RTPapercut.init(scene, camera, renderer);
   window.RTPapercut = RTPapercut; // Global access for debugging
+
+  // Wire up cutplane axis selector buttons
+  const cutplaneAxisButtons = [
+    // Cartesian basis
+    { id: "cutplaneAxisX", basis: "cartesian", axis: "x" },
+    { id: "cutplaneAxisY", basis: "cartesian", axis: "y" },
+    { id: "cutplaneAxisZ", basis: "cartesian", axis: "z" },
+    // Tetrahedral basis
+    { id: "cutplaneAxisW", basis: "tetrahedral", axis: "w" },
+    { id: "cutplaneAxisTetraX", basis: "tetrahedral", axis: "x" },
+    { id: "cutplaneAxisTetraY", basis: "tetrahedral", axis: "y" },
+    { id: "cutplaneAxisTetraZ", basis: "tetrahedral", axis: "z" },
+  ];
+
+  // Track active cutplane axis button for persistent highlighting
+  let activeCutplaneButton = document.getElementById("cutplaneAxisZ"); // Z is default
+
+  cutplaneAxisButtons.forEach(({ id, basis, axis }) => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.addEventListener("click", () => {
+        // Remove active class from previously active button
+        if (activeCutplaneButton) {
+          activeCutplaneButton.classList.remove("active");
+        }
+
+        // Add active class to clicked button
+        btn.classList.add("active");
+        activeCutplaneButton = btn;
+
+        // Update cutplane axis
+        RTPapercut.setCutplaneAxis(basis, axis, scene);
+      });
+    }
+  });
 
   // ========================================================================
   // KEYBOARD SHORTCUTS (ESC, Delete, Undo/Redo)

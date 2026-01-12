@@ -525,6 +525,27 @@ button:disabled {
   color: white;
 }
 
+/* Variant: Small (compact cutplane axis selectors) */
+.toggle-btn.variant-small {
+  background: #1a1a1a;
+  border-color: #555;
+  color: #b0b0b0;
+  padding: 3px 6px;
+  font-size: 10px;
+  min-width: 28px;
+}
+
+.toggle-btn.variant-small:hover {
+  border-color: #7ab8ff;
+  color: #e0e0e0;
+}
+
+.toggle-btn.variant-small.active {
+  background: #4a9eff;
+  border-color: #4a9eff;
+  color: white;
+}
+
 /* Geodesic dropdown styling */
 .toggle-btn.geodesic-dropdown {
   cursor: pointer;

@@ -4273,16 +4273,18 @@ For matrix polyhedra, add non-inverted plane epsilon offset so cuts at colinear 
 ---
 
 #### 8.1.2 Geodesic Dual Icosahedron
-**Status:** ⚠️ Active
+**Status:** ✅ Complete (2026-01-12)
 **Priority:** Medium
 **Location:** [Section 3.7, Line 1662-1663](#37-phase-28-quadray-coordinate-planes-central-angle-grids--complete)
 
-Consider adding full Geodesic implementation to Dual Icosahedron in UI and Functions, identical implementation as base Icosahedron, consolidate functionality.
+Full Geodesic implementation added to Dual Icosahedron: **COMPLETED**
 
-**Technical Details:**
-- Would provide geodesic subdivision for dual icosahedron
-- Reuse existing icosahedron geodesic algorithm
-- Add frequency slider to dual icosahedron controls
+**Completion Summary:**
+- Geodesic subdivision implemented for dual icosahedron (rt-polyhedra.js:475)
+- Reuses existing icosahedron geodesic algorithm with dual vertex positions
+- Frequency parameter and projection modes (in/mid/out) fully functional
+- Integrated into rendering pipeline (rt-rendering.js:1576-1578)
+- Color palette entry: 0x00FDFF (cyan - reciprocal complementary)
 
 ---
 
@@ -4311,11 +4313,34 @@ Backface Culling for Papercut print optimization: **COMPLETED**
 ---
 
 #### 8.1.4 WXYZ Tetrahedral Basis Views (Novel Projection Method)
-**Status:** ⚠️ Active
+**Status:** ✅ Complete (2026-01-12)
 **Priority:** High (Novel Feature - "Happy Accident" Great Circle Projection)
 **Location:** Section 8.1.4 (New Feature Request - 2026-01-10)
+**Branch:** `WXYZ-Basis-Views`
 
-Add WXYZ tetrahedral basis views to the View Options UI section, complementing the existing Cartesian views (Top, Bottom, Left, Right, Front, Back, Axo, Perspective).
+WXYZ tetrahedral basis views with integrated cutplane system fully implemented.
+
+**Completion Summary:**
+
+**Phase 1 - Core Views** ✅
+- ✅ Four WXYZ view buttons added to UI (W View, X View, Y View, Z View) - index.html:1290-1301
+- ✅ Visual divider line separating WXYZ from XYZ views - index.html:1287
+- ✅ Camera positioning logic along Quadray basis vectors - rt-rendering.js:2096-2138
+- ✅ Event wiring and integration with existing view system - rt-init.js:854-857
+- ✅ Orthographic mode works for both XYZ and WXYZ views (no separate checkbox needed)
+- ✅ Automatic "up" vector calculation perpendicular to viewing axis
+- ✅ Persistent active state highlighting for view buttons (solid blue fill)
+
+**Phase 2 - Cutplane Integration** ✅
+- ✅ Compact axis selector UI in Papercut section - index.html:1374-1389
+- ✅ Cartesian Basis buttons (X, Y, Z) with persistent active state
+- ✅ Tetrahedral Basis buttons (W, X, Y, Z) with persistent active state
+- ✅ .variant-small button style for compact selectors - art.css:528-547
+- ✅ Automatic view-to-cutplane axis mapping - rt-rendering.js:2168-2194
+- ✅ Tetrahedral cutplane support using Quadray basis vectors - rt-papercut.js:336-359
+- ✅ setCutplaneAxis() function for manual axis selection - rt-papercut.js:912-923
+
+**Key Discovery:** XYZ Cartesian cutplanes consistently reveal rectangular relationships across polyhedra, while WXYZ Tetrahedral cutplanes reveal triangular relationships for the same polyhedra groups
 
 **UI Specification:**
 - New "WXYZ Views" section in View Options dialogue

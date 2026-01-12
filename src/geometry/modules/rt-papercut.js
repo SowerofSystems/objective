@@ -12,7 +12,7 @@
 import { Line2 } from "three/addons/lines/Line2.js";
 import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 import { LineGeometry } from "three/addons/lines/LineGeometry.js";
-import { RT } from "./rt-math.js";
+import { RT, Quadray } from "./rt-math.js";
 
 export const RTPapercut = {
   // Module state (local, not persisted)
@@ -20,7 +20,8 @@ export const RTPapercut = {
     printModeEnabled: false,
     cutplaneEnabled: false,
     cutplaneValue: 0, // Current slider position
-    cutplaneAxis: "z", // 'x', 'y', or 'z'
+    cutplaneBasis: "cartesian", // 'cartesian' or 'tetrahedral'
+    cutplaneAxis: "z", // 'x', 'y', 'z' (Cartesian) or 'w', 'x', 'y', 'z' (Tetrahedral)
     cutplaneNormal: null, // THREE.Vector3
     invertCutPlane: false, // Invert normal (for ground plane mode)
     lineWeightEnabled: true,
@@ -325,19 +326,35 @@ export const RTPapercut = {
       return;
     }
 
-    // 1. Create clipping plane based on current axis
+    // 1. Create clipping plane based on current axis and basis
     // Default: Inverted normal for top-down (architectural) clipping
     // With invertCutPlane: Double invert = normal clipping (bottom-up, ground plane mode)
     const normal = new THREE.Vector3();
     const invert = RTPapercut.state.invertCutPlane ? 1 : -1; // Flip sign when inverted
 
-    if (RTPapercut.state.cutplaneAxis === "x") {
-      normal.set(invert * 1, 0, 0);
-    } else if (RTPapercut.state.cutplaneAxis === "y") {
-      normal.set(0, invert * 1, 0);
+    if (RTPapercut.state.cutplaneBasis === "tetrahedral") {
+      // Initialize Quadray basis vectors if not already done
+      if (!Quadray.basisVectors) {
+        Quadray.init(THREE);
+      }
+
+      // Map axis to Quadray basis vector
+      const axisMap = { w: 0, x: 1, y: 2, z: 3 };
+      const axisIndex = axisMap[RTPapercut.state.cutplaneAxis];
+      const basisVector = Quadray.basisVectors[axisIndex];
+
+      // Use the Quadray basis vector as the normal (with inversion)
+      normal.copy(basisVector).multiplyScalar(invert);
     } else {
-      // 'z'
-      normal.set(0, 0, invert * 1);
+      // Cartesian basis
+      if (RTPapercut.state.cutplaneAxis === "x") {
+        normal.set(invert * 1, 0, 0);
+      } else if (RTPapercut.state.cutplaneAxis === "y") {
+        normal.set(0, invert * 1, 0);
+      } else {
+        // 'z'
+        normal.set(0, 0, invert * 1);
+      }
     }
 
     // Add small epsilon when inverted and at origin to catch geometry sitting exactly on ground
@@ -899,6 +916,25 @@ export const RTPapercut = {
       }
 
       // Cutplane axis updated
+    }
+  },
+
+  /**
+   * Set cutplane axis manually (called from UI axis selector buttons)
+   * @param {string} basis - 'cartesian' or 'tetrahedral'
+   * @param {string} axis - 'x', 'y', 'z' (Cartesian) or 'w', 'x', 'y', 'z' (Tetrahedral)
+   * @param {THREE.Scene} scene
+   */
+  setCutplaneAxis: function (basis, axis, scene) {
+    RTPapercut.state.cutplaneBasis = basis;
+    RTPapercut.state.cutplaneAxis = axis;
+
+    // Update slider range based on grid extent
+    RTPapercut._updateSliderRange();
+
+    // Re-apply cutplane with new axis if enabled
+    if (RTPapercut.state.cutplaneEnabled) {
+      RTPapercut.updateCutplane(RTPapercut.state.cutplaneValue, scene);
     }
   },
 };

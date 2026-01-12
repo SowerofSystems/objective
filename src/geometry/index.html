@@ -1249,7 +1249,7 @@
           </h3>
           <div id="view-section" class="section-content collapsed">
             <div class="control-item">
-              <label class="label-section">Camera Presets</label>
+              <label class="label-section">XYZ Cartesian Views</label>
               <div class="button-grid-2col">
                 <button class="toggle-btn variant-standard" id="viewTop">
                   Top
@@ -1281,6 +1281,28 @@
                 <button id="resetCamera">Reset</button>
               </div>
             </div>
+
+            <!-- WXYZ Tetrahedral Basis Views -->
+            <div class="control-item spacing-top-large">
+              <hr style="border: none; border-top: 1px solid #444; margin: 20px 0;" />
+              <label class="label-section">WXYZ Tetrahedral Views</label>
+              <div class="button-grid-2col">
+                <button class="toggle-btn variant-standard" id="viewW">
+                  W View
+                </button>
+                <button class="toggle-btn variant-standard" id="viewX">
+                  X View
+                </button>
+                <button class="toggle-btn variant-standard" id="viewY">
+                  Y View
+                </button>
+                <button class="toggle-btn variant-standard" id="viewZ">
+                  Z View
+                </button>
+              </div>
+            </div>
+
+            <!-- Camera Projection Controls -->
             <div class="control-item spacing-top-large">
               <label class="checkbox-label">
                 <input type="checkbox" id="orthoPerspective" />
@@ -1348,12 +1370,30 @@
                 <input type="checkbox" id="sectionNodes" />
                 Section Nodes
               </label>
-            </div>
             <div class="control-item">
               <label class="checkbox-label">
                 <input type="checkbox" id="adaptiveNodeResolution" />
                 High Resolution Nodes
               </label>
+            </div>
+            </div>
+            <!-- Axial Cutplane Selections -->
+            <div class="control-item spacing-top-large">
+              <hr style="border: none; border-top: 1px solid #444; margin: 20px 0;" />
+              <label class="label-section">Axial Cutplane Selections</label>
+              <label class="label-subsection">Cartesian Basis</label>
+              <div style="display: flex; gap: 4px; margin-bottom: 8px;">
+                <button class="toggle-btn variant-small" id="cutplaneAxisX">X</button>
+                <button class="toggle-btn variant-small" id="cutplaneAxisY">Y</button>
+                <button class="toggle-btn variant-small active" id="cutplaneAxisZ">Z</button>
+              </div>
+              <label class="label-subsection">Tetrahedral Basis</label>
+              <div style="display: flex; gap: 4px;">
+                <button class="toggle-btn variant-small" id="cutplaneAxisW">W</button>
+                <button class="toggle-btn variant-small" id="cutplaneAxisTetraX">X</button>
+                <button class="toggle-btn variant-small" id="cutplaneAxisTetraY">Y</button>
+                <button class="toggle-btn variant-small" id="cutplaneAxisTetraZ">Z</button>
+              </div>
             </div>
             <div class="control-item">
               <label class="label-section">Print Extents</label>
