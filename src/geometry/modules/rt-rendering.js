@@ -27,7 +27,7 @@ let useRTNodeGeometry = true; // Default to RT geodesic nodes (3f)
 let geodesicFrequency = 3; // Default to 3f Geodesic
 
 // Module-level variable to track node opacity
-let nodeOpacity = 0.35; // Default to 0.35 for better visibility
+let nodeOpacity = 0.60; // Default to 0.60 for better visibility (increased from 0.35)
 
 /**
  * Initialize THREE.js scene and return rendering context
