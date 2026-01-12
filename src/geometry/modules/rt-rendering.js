@@ -1534,7 +1534,7 @@ export function initScene(THREE, OrbitControls, RT) {
       projectionName: "geodesicIcosaProjection",
       polyhedronFn: Polyhedra.geodesicIcosahedron,
       group: geodesicIcosahedronGroup,
-      color: 0xff4400, // Vibrant orange-red
+      color: 0xff8800, // Bright orange
       scale,
       opacity
     });
@@ -1542,7 +1542,7 @@ export function initScene(THREE, OrbitControls, RT) {
     // Dual Icosahedron (Orange - reciprocal complementary: matches base geodesic)
     if (document.getElementById("showDualIcosahedron").checked) {
       const dualIcosa = Polyhedra.dualIcosahedron(scale);
-      renderPolyhedron(dualIcosahedronGroup, dualIcosa, 0xff4400, opacity);
+      renderPolyhedron(dualIcosahedronGroup, dualIcosa, 0xff8800, opacity);
       dualIcosahedronGroup.visible = true;
     } else {
       dualIcosahedronGroup.visible = false;
@@ -1618,14 +1618,14 @@ export function initScene(THREE, OrbitControls, RT) {
       cuboctaMatrixGroup.visible = false;
     }
 
-    // Rhombic Dodecahedron (Orange)
+    // Rhombic Dodecahedron (Golden Orange)
     if (document.getElementById("showRhombicDodecahedron").checked) {
       // Scale by √2 to match matrix geometry (axial vertices at scale, not scale/√2)
       const rhombicDodec = Polyhedra.rhombicDodecahedron(scale * Math.sqrt(2));
       renderPolyhedron(
         rhombicDodecahedronGroup,
         rhombicDodec,
-        0xff8800,
+        0xff9900,
         opacity
       );
       rhombicDodecahedronGroup.visible = true;
@@ -1657,7 +1657,7 @@ export function initScene(THREE, OrbitControls, RT) {
           rotate45,
           faceCoplanar,
           opacity,
-          0xff8800, // Orange (Rhombic Dodecahedron color)
+          0xff9900, // Golden orange (Rhombic Dodecahedron color)
           THREE
         );
         rhombicDodecMatrixGroup.add(rhombicDodecMatrix);
@@ -1673,7 +1673,7 @@ export function initScene(THREE, OrbitControls, RT) {
             matrixSize,
             scale,
             rotate45,
-            0xff8800,
+            0xff9900,
             nodeSize,
             "rhombicDodecahedron",
             faceCoplanar

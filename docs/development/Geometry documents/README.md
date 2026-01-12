@@ -1228,7 +1228,8 @@ state: {
   geodesicOctaFrequency: 1,         // Octahedron geodesic frequency
 }
 ```
-- To be added: Backface Culling for Papercut print optimization: UI checkbox already in place. 
+- ~~To be added: Backface Culling for Papercut print optimization: UI checkbox already in place.~~ ✅ **COMPLETED** (2026-01-11) - All polyhedra face windings corrected, backface culling now enabled by default
+- **NEW TODO:** Color brightness adjustments to compensate for backface culling performance optimization - now that we render single-sided faces (vs. previous double-rendering overdraw), colors need to be intrinsically brighter to maintain visual "pop" and intensity
 - Consider option of Lineweight depth per camera view as enhancement
 ---
 
@@ -4299,6 +4300,13 @@ Backface Culling for Papercut print optimization: **COMPLETED**
 - Default: `THREE.FrontSide` (backface culling ON)
 - All 7 Platonic/Archimedean solids validated with test suite
 - Clean print output achieved for architectural/dome applications
+
+**Performance Impact & Color Adjustment Side-Effect:**
+- Backface culling eliminates overdraw (2× rendering reduced to 1×)
+- Previous double-rendering unintentionally boosted color brightness/intensity
+- New TODO: Adjust color values to compensate for lost "glow" effect
+- Goal: Maintain visual "pop" while keeping performance gains from proper culling
+- See: Color Theory branch (Colour-Theory) for brightness recalibration work
 
 ---
 
