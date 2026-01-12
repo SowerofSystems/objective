@@ -206,50 +206,11 @@ export class ColorTheoryModal {
     const body = document.createElement('div');
     body.className = 'color-theory-modal-body';
 
-    // Add info box
-    body.innerHTML += `
-      <div class="color-info-box">
-        <strong>Context:</strong> With backface culling enabled (proper single-sided rendering), we've eliminated the 30-40% brightness boost from accidental double-rendering (front + back faces overlapping). This tool helps calibrate color values to maintain visual "pop" and intensity.
-        <br><br>
-        <strong>How to Use:</strong> Click the colored square next to each hex input to open your system color picker. Select colors that work well at both full opacity (1.0) and the default (0.35). The hex values will update automatically.
-      </div>
-    `;
-
-    // Add global controls
-    body.innerHTML += `
-      <div class="color-global-controls">
-        <h3>Global Opacity Control</h3>
-        <div class="slider-group">
-          <label class="slider-label">Face Opacity (simulates 3D transparency)</label>
-          <div class="slider-container">
-            <input type="range" id="colorTheoryGlobalOpacity" min="0" max="1" step="0.01" value="0.35">
-            <span class="slider-value" id="colorTheoryGlobalOpacityValue">0.35</span>
-          </div>
-        </div>
-        <div class="slider-group">
-          <label class="slider-label">Brightness Multiplier (simulate backface culling loss)</label>
-          <div class="slider-container">
-            <input type="range" id="colorTheoryBrightnessMult" min="0.5" max="2" step="0.05" value="1">
-            <span class="slider-value" id="colorTheoryBrightnessMultValue">1.00×</span>
-          </div>
-        </div>
-      </div>
-    `;
-
     // Add color sections container
     const sectionsContainer = document.createElement('div');
     sectionsContainer.id = 'color-theory-sections';
     this.generateColorSections(sectionsContainer);
     body.appendChild(sectionsContainer);
-
-    // Add export section
-    body.innerHTML += `
-      <div class="color-export-section">
-        <h3>Export Updated Color Values</h3>
-        <button class="toggle-btn variant-standard" id="colorTheoryExportBtn">Generate rt-rendering.js Color Updates</button>
-        <div class="color-code-output" id="colorTheoryCodeOutput">Click "Generate" to see JavaScript code with updated color values...</div>
-      </div>
-    `;
 
     // Assemble modal
     modalContent.appendChild(header);
@@ -263,64 +224,52 @@ export class ColorTheoryModal {
   }
 
   /**
-   * Generate color sections HTML
+   * Generate color sections HTML - COMPACT MULTI-COLUMN LAYOUT
    * @param {HTMLElement} container - Container element for sections
    */
   generateColorSections(container) {
+    // Flatten all color items into a single list
+    const allColorItems = [];
+
     this.colorData.forEach(sectionData => {
+      sectionData.groups.forEach(group => {
+        group.pairs.forEach(pair => {
+          allColorItems.push({
+            id: pair.id,
+            label: pair.label,
+            groupName: group.name.split(' ↔')[0].split(' (')[0], // Extract short name
+            color: pair.color,
+            section: sectionData.section
+          });
+        });
+      });
+    });
+
+    // Group by section for organization
+    const sections = [...new Set(allColorItems.map(item => item.section))];
+
+    sections.forEach(sectionName => {
       const section = document.createElement('div');
       section.className = 'color-section';
-      section.innerHTML = `<h3>${sectionData.section}</h3>`;
+      section.innerHTML = `<h3>${sectionName}</h3>`;
 
-      sectionData.groups.forEach(group => {
-        const polyGroup = document.createElement('div');
-        polyGroup.className = 'color-polyhedron-group';
+      const itemsInSection = allColorItems.filter(item => item.section === sectionName);
 
-        let html = `<div class="color-polyhedron-name">${group.name}</div>`;
+      itemsInSection.forEach(item => {
+        const colorItem = document.createElement('div');
+        colorItem.className = 'color-item';
 
-        if (group.pairs.length === 1) {
-          // Single color
-          const pair = group.pairs[0];
-          html += `
-            <div class="color-swatch-container">
-              <div class="color-label">
-                <span class="type">${pair.label}</span>
-                <span class="value" id="${pair.id}-hex">—</span>
-              </div>
-              <div class="color-swatch" id="${pair.id}-swatch"></div>
-              <div class="color-input-group">
-                <div class="color-picker-btn">
-                  <input type="color" id="${pair.id}-picker" value="${this.hexToColor(pair.color)}">
-                </div>
-                <input type="text" class="color-input" id="${pair.id}-input" value="${pair.color}">
-              </div>
-            </div>
-          `;
-        } else {
-          // Pair of colors
-          html += '<div class="color-pair">';
-          group.pairs.forEach(pair => {
-            html += `
-              <div class="color-swatch-container">
-                <div class="color-label">
-                  <span class="type">${pair.label}</span>
-                  <span class="value" id="${pair.id}-hex">—</span>
-                </div>
-                <div class="color-swatch" id="${pair.id}-swatch"></div>
-                <div class="color-input-group">
-                  <div class="color-picker-btn">
-                    <input type="color" id="${pair.id}-picker" value="${this.hexToColor(pair.color)}">
-                  </div>
-                  <input type="text" class="color-input" id="${pair.id}-input" value="${pair.color}">
-                </div>
-              </div>
-            `;
-          });
-          html += '</div>';
-        }
+        colorItem.innerHTML = `
+          <div class="color-picker-btn" id="${item.id}-swatch">
+            <input type="color" id="${item.id}-picker" value="${this.hexToColor(item.color)}">
+          </div>
+          <div class="color-item-info">
+            <div class="color-item-label">${item.groupName} - ${item.label}</div>
+            <input type="text" class="color-hex-input" id="${item.id}-input" value="${item.color}" placeholder="0xFFFFFF">
+          </div>
+        `;
 
-        polyGroup.innerHTML = html;
-        section.appendChild(polyGroup);
+        section.appendChild(colorItem);
       });
 
       container.appendChild(section);
@@ -350,32 +299,6 @@ export class ColorTheoryModal {
         this.close();
       }
     });
-
-    // Global opacity slider
-    const opacitySlider = document.getElementById('colorTheoryGlobalOpacity');
-    const opacityValue = document.getElementById('colorTheoryGlobalOpacityValue');
-    if (opacitySlider && opacityValue) {
-      opacitySlider.addEventListener('input', () => {
-        opacityValue.textContent = parseFloat(opacitySlider.value).toFixed(2);
-        this.refreshAllSwatches();
-      });
-    }
-
-    // Brightness multiplier slider
-    const brightnessSlider = document.getElementById('colorTheoryBrightnessMult');
-    const brightnessValue = document.getElementById('colorTheoryBrightnessMultValue');
-    if (brightnessSlider && brightnessValue) {
-      brightnessSlider.addEventListener('input', () => {
-        brightnessValue.textContent = parseFloat(brightnessSlider.value).toFixed(2) + '×';
-        this.refreshAllSwatches();
-      });
-    }
-
-    // Export button
-    const exportBtn = document.getElementById('colorTheoryExportBtn');
-    if (exportBtn) {
-      exportBtn.addEventListener('click', () => this.exportColors());
-    }
 
     // Get all color IDs and attach listeners
     const colorIds = [];
@@ -441,38 +364,33 @@ export class ColorTheoryModal {
   }
 
   /**
-   * Update a single color swatch
-   * @param {string} id - Color swatch ID
+   * Update a single color (compact layout - no separate swatch)
+   * @param {string} id - Color ID
    */
   updateColor(id) {
     const inputEl = document.getElementById(`${id}-input`);
     const pickerEl = document.getElementById(`${id}-picker`);
-    const swatchEl = document.getElementById(`${id}-swatch`);
-    const hexEl = document.getElementById(`${id}-hex`);
+    const swatchBtnEl = document.getElementById(`${id}-swatch`);
 
-    if (!inputEl || !swatchEl || !hexEl) return;
+    if (!inputEl || !pickerEl || !swatchBtnEl) return;
 
     let colorValue = inputEl.value.trim();
 
     // Validate hex format
     if (!colorValue.match(/^0x[0-9a-fA-F]{6}$/)) {
-      hexEl.textContent = 'Invalid';
+      inputEl.style.borderColor = '#ff4444';
       return;
+    } else {
+      inputEl.style.borderColor = '#444';
     }
 
     const rgb = this.hexToRgb(colorValue);
-    const opacity = parseFloat(document.getElementById('colorTheoryGlobalOpacity').value);
-    const brightnessMult = parseFloat(document.getElementById('colorTheoryBrightnessMult').value);
 
-    const adjusted = this.applyBrightness(rgb.r, rgb.g, rgb.b, brightnessMult);
+    // Update picker button background to show the color
+    swatchBtnEl.style.backgroundColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
 
-    swatchEl.style.backgroundColor = `rgba(${adjusted.r}, ${adjusted.g}, ${adjusted.b}, ${opacity})`;
-    hexEl.textContent = `${colorValue} → rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
-
-    // Update picker if it exists
-    if (pickerEl) {
-      pickerEl.value = this.hexToColor(colorValue);
-    }
+    // Update picker input value
+    pickerEl.value = this.hexToColor(colorValue);
 
     // Apply color to scene in real-time via rendering API
     if (this.renderingAPI && this.colorIdToPolyType[id]) {
