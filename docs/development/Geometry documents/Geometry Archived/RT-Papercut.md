@@ -1135,6 +1135,405 @@ controls.addEventListener('change', () => {
 
 ---
 
-**Document Status**: ✅ READY FOR IMPLEMENTATION
-**Next Action**: Review with team, then create `Papercut` branch and begin Phase 1
+**Document Status**: ✅ Phase 1 Complete, Phase 2 (Cutplane Integration) In Design
+**Next Action**: Implement axis-aware cutplane with dynamic grid extent ranges
 **Estimated Total Effort**: 20-30 hours across 3 days
+
+---
+
+## 16. WXYZ Tetrahedral Basis Views Integration (2026-01-12)
+
+### 16.1 Phase 1: WXYZ Camera Views ✅ COMPLETE
+
+**Implementation Date**: 2026-01-12
+**Branch**: `WXYZ-Basis-Views`
+**Status**: Core views implemented, cutplane integration pending
+
+**What Was Implemented**:
+1. **Four WXYZ View Buttons** - W View, X View, Y View, Z View added to View Options UI
+2. **Camera Positioning Logic** - Camera placed at distance=10 along Quadray tetrahedral basis vectors
+3. **Orthographic Support** - Existing orthographic/perspective toggle works for all views
+4. **Event System Integration** - WXYZ views fully wired into existing view preset infrastructure
+
+**Files Modified**:
+- `index.html:1285-1303` - Added WXYZ view buttons with visual divider
+- `rt-rendering.js:2096-2138` - Camera preset logic for W/X/Y/Z views
+- `rt-init.js:854-857` - Event listener wiring for WXYZ views
+- `README.md:4315-4329` - Updated 8.1.4 status to Partial completion
+
+**Technical Details**:
+```javascript
+// Quadray basis vectors (from rt-math.js:695-700)
+Quadray.basisVectors = [
+  new THREE.Vector3(1, 1, 1).normalize(),    // W: (0.577, 0.577, 0.577)
+  new THREE.Vector3(1, -1, -1).normalize(),  // X: (0.577, -0.577, -0.577)
+  new THREE.Vector3(-1, 1, -1).normalize(),  // Y: (-0.577, 0.577, -0.577)
+  new THREE.Vector3(-1, -1, 1).normalize(),  // Z: (-0.577, -0.577, 0.577)
+];
+
+// Camera positioning (rt-rendering.js:2114)
+const cameraPosition = basisVector.clone().multiplyScalar(distance); // distance = 10
+camera.position.copy(cameraPosition);
+camera.lookAt(0, 0, 0);
+```
+
+---
+
+### 16.2 Phase 2: Axis-Aware Cutplane System (DESIGN PHASE)
+
+**Goal**: Integrate WXYZ tetrahedral views with RT-Papercut cutplane system, providing unified sectioning across both Cartesian and Quadray coordinate systems.
+
+#### 16.2.1 Core Design Principle
+
+**The cutplane orientation follows the selected view's coordinate system:**
+- **Cartesian Basis Views** (Top, Bottom, Left, Right, Front, Back) → Cutplane perpendicular to XYZ axes
+- **Tetrahedral Basis Views** (W, X, Y, Z) → Cutplane perpendicular to WXYZ basis vectors
+
+**The cutplane slider range dynamically matches the grid intervals:**
+- **XYZ Views** → Range follows "Grid Intervals" slider in Coordinate Systems (default ±10, scales to ±20, etc.)
+- **WXYZ Views** → Range follows "WXYZ Grid Intervals" slider (default ±10, same scaling behavior)
+
+#### 16.2.2 UI Specification: Cutplane Axis Selector
+
+**New UI Control**: Add to Papercut section in `index.html`
+
+```html
+<!-- Cutplane Axis Selector -->
+<div class="control-item">
+  <label class="label-subsection">Cutplane Basis</label>
+
+  <!-- Cartesian Basis Options -->
+  <div class="button-group">
+    <span class="basis-label">Cartesian:</span>
+    <button class="toggle-btn variant-small" id="cutplaneAxisX" data-axis="x" data-basis="cartesian">
+      X
+    </button>
+    <button class="toggle-btn variant-small" id="cutplaneAxisY" data-axis="y" data-basis="cartesian">
+      Y
+    </button>
+    <button class="toggle-btn variant-small active" id="cutplaneAxisZ" data-axis="z" data-basis="cartesian">
+      Z (default)
+    </button>
+  </div>
+
+  <!-- Tetrahedral Basis Options -->
+  <div class="button-group">
+    <span class="basis-label">Tetrahedral:</span>
+    <button class="toggle-btn variant-small" id="cutplaneAxisW" data-axis="w" data-basis="tetrahedral">
+      W
+    </button>
+    <button class="toggle-btn variant-small" id="cutplaneAxisQX" data-axis="qx" data-basis="tetrahedral">
+      X
+    </button>
+    <button class="toggle-btn variant-small" id="cutplaneAxisQY" data-axis="qy" data-basis="tetrahedral">
+      Y
+    </button>
+    <button class="toggle-btn variant-small" id="cutplaneAxisQZ" data-axis="qz" data-basis="tetrahedral">
+      Z
+    </button>
+  </div>
+
+  <p class="info-text">Cutplane perpendicular to selected axis</p>
+</div>
+```
+
+#### 16.2.3 Automatic Axis Selection Logic
+
+**When user clicks a camera view button, automatically select corresponding cutplane axis:**
+
+```javascript
+// View → Cutplane Axis Mapping
+const viewToCutplaneAxis = {
+  // Cartesian views → Cartesian axes
+  'top':    { basis: 'cartesian', axis: 'z' },
+  'bottom': { basis: 'cartesian', axis: 'z' },
+  'front':  { basis: 'cartesian', axis: 'y' },
+  'back':   { basis: 'cartesian', axis: 'y' },
+  'left':   { basis: 'cartesian', axis: 'x' },
+  'right':  { basis: 'cartesian', axis: 'x' },
+
+  // Tetrahedral views → Quadray axes
+  'w': { basis: 'tetrahedral', axis: 'w' },
+  'x': { basis: 'tetrahedral', axis: 'qx' }, // 'qx' to distinguish from Cartesian 'x'
+  'y': { basis: 'tetrahedral', axis: 'qy' },
+  'z': { basis: 'tetrahedral', axis: 'qz' },
+
+  // Special views default to Cartesian Z
+  'axo':        { basis: 'cartesian', axis: 'z' },
+  'perspective': { basis: 'cartesian', axis: 'z' }
+};
+
+// Implementation in rt-rendering.js setCameraPreset()
+function setCameraPreset(view) {
+  // ... existing camera positioning logic ...
+
+  // Auto-update cutplane axis based on view
+  const cutplaneConfig = viewToCutplaneAxis[view];
+  if (cutplaneConfig && RTPapercut) {
+    RTPapercut.setCutplaneAxis(cutplaneConfig.basis, cutplaneConfig.axis);
+    RTPapercut.updateCutplaneRange(); // Refresh slider range from grid intervals
+  }
+}
+```
+
+#### 16.2.4 Dynamic Range Calculation
+
+**Cutplane slider range expands to match grid extent settings:**
+
+```javascript
+// rt-papercut.js: Get cutplane range based on current basis and grid intervals
+RTPapercut.updateCutplaneRange = function() {
+  const state = RTPapercut.state;
+  let extent = 10; // Default
+
+  if (state.cutplaneBasis === 'cartesian') {
+    // Read from Cartesian Grid Intervals slider
+    const cartesianSlider = document.getElementById('cartesianTessSlider');
+    extent = cartesianSlider ? parseInt(cartesianSlider.value) : 10;
+  } else if (state.cutplaneBasis === 'tetrahedral') {
+    // Read from WXYZ Grid Intervals slider
+    const quadraySlider = document.getElementById('quadrayTessSlider');
+    extent = quadraySlider ? parseInt(quadraySlider.value) : 10;
+  }
+
+  // Update slider range: ±extent
+  const slider = document.getElementById('cutplaneSlider');
+  if (slider) {
+    slider.min = -extent;
+    slider.max = extent;
+    slider.value = 0; // Reset to center when range changes
+    state.cutplaneValue = 0;
+  }
+
+  console.log(`✂️ Cutplane range updated: ±${extent} (basis: ${state.cutplaneBasis})`);
+};
+
+// Listen to grid interval slider changes
+document.getElementById('cartesianTessSlider')?.addEventListener('input', () => {
+  if (RTPapercut.state.cutplaneBasis === 'cartesian') {
+    RTPapercut.updateCutplaneRange();
+  }
+});
+
+document.getElementById('quadrayTessSlider')?.addEventListener('input', () => {
+  if (RTPapercut.state.cutplaneBasis === 'tetrahedral') {
+    RTPapercut.updateCutplaneRange();
+  }
+});
+```
+
+#### 16.2.5 Tetrahedral Cutplane Implementation
+
+**For WXYZ views, cutplane normal = Quadray basis vector:**
+
+```javascript
+// rt-papercut.js: Update cutplane with tetrahedral basis support
+RTPapercut.updateCutplane = function(value, scene) {
+  if (!RTPapercut.state.cutplaneEnabled) {
+    // Remove clipping planes from all materials
+    scene.traverse(object => {
+      if (object.material) {
+        object.material.clippingPlanes = [];
+        object.material.needsUpdate = true;
+      }
+    });
+    return;
+  }
+
+  // 1. Determine cutplane normal based on basis and axis
+  let normal = new THREE.Vector3();
+  const invert = RTPapercut.state.invertCutPlane ? 1 : -1;
+
+  if (RTPapercut.state.cutplaneBasis === 'cartesian') {
+    // Cartesian axes (existing logic)
+    if (RTPapercut.state.cutplaneAxis === 'x') {
+      normal.set(invert * 1, 0, 0);
+    } else if (RTPapercut.state.cutplaneAxis === 'y') {
+      normal.set(0, invert * 1, 0);
+    } else { // 'z'
+      normal.set(0, 0, invert * 1);
+    }
+  } else if (RTPapercut.state.cutplaneBasis === 'tetrahedral') {
+    // Tetrahedral axes - use Quadray basis vectors
+    if (!Quadray.basisVectors) {
+      Quadray.init(THREE);
+    }
+
+    const axisMap = { w: 0, qx: 1, qy: 2, qz: 3 };
+    const axisIndex = axisMap[RTPapercut.state.cutplaneAxis];
+    normal.copy(Quadray.basisVectors[axisIndex]).multiplyScalar(invert);
+  }
+
+  // 2. Create clipping plane
+  const plane = new THREE.Plane(normal, -value);
+
+  // 3. Apply to all materials (existing logic continues...)
+  scene.traverse(object => {
+    if (object.material && !shouldExcludeFromCutplane(object)) {
+      if (Array.isArray(object.material)) {
+        object.material.forEach(mat => {
+          mat.clippingPlanes = [plane];
+          mat.needsUpdate = true;
+        });
+      } else {
+        object.material.clippingPlanes = [plane];
+        object.material.needsUpdate = true;
+      }
+    }
+  });
+
+  // 4. Enable renderer clipping
+  if (RTPapercut._renderer) {
+    RTPapercut._renderer.localClippingEnabled = true;
+  }
+
+  console.log(`✂️ Cutplane updated: ${RTPapercut.state.cutplaneBasis} ${RTPapercut.state.cutplaneAxis} = ${value.toFixed(1)}`);
+};
+```
+
+#### 16.2.6 State Management Updates
+
+**Add new state properties to rt-papercut.js:**
+
+```javascript
+export const RTPapercut = {
+  state: {
+    printModeEnabled: false,
+    cutplaneEnabled: false,
+    cutplaneValue: 0,
+
+    // NEW: Basis-aware cutplane properties
+    cutplaneBasis: 'cartesian',      // 'cartesian' or 'tetrahedral'
+    cutplaneAxis: 'z',                // 'x'|'y'|'z' (cartesian) or 'w'|'qx'|'qy'|'qz' (tetrahedral)
+    cutplaneNormal: null,             // THREE.Vector3
+
+    invertCutPlane: false,
+    lineWeightEnabled: true,
+    lineWeightMin: 0.5,
+    lineWeightMax: 3.0,
+    currentView: 'top',
+    sectionNodesEnabled: false,
+    adaptiveNodeResolution: false,
+    backfaceCullingEnabled: true,
+  },
+
+  // NEW: Public API for setting cutplane axis
+  setCutplaneAxis: function(basis, axis) {
+    RTPapercut.state.cutplaneBasis = basis;
+    RTPapercut.state.cutplaneAxis = axis;
+
+    // Update UI button active states
+    document.querySelectorAll('[data-basis]').forEach(btn => {
+      btn.classList.remove('active');
+    });
+
+    const activeBtn = document.querySelector(`[data-basis="${basis}"][data-axis="${axis}"]`);
+    if (activeBtn) {
+      activeBtn.classList.add('active');
+    }
+
+    console.log(`✂️ Cutplane axis set: ${basis} ${axis}`);
+  },
+
+  // ... rest of existing API ...
+};
+```
+
+#### 16.2.7 Implementation Phases
+
+**Phase 2A: UI & State Management** (1-2 hours)
+- [ ] Add cutplane axis selector buttons to Papercut UI section
+- [ ] Update RTPapercut.state with basis/axis properties
+- [ ] Implement setCutplaneAxis() and updateCutplaneRange() functions
+- [ ] Wire up button click listeners
+
+**Phase 2B: Automatic Axis Selection** (1-2 hours)
+- [ ] Add viewToCutplaneAxis mapping to rt-rendering.js
+- [ ] Call RTPapercut.setCutplaneAxis() in setCameraPreset()
+- [ ] Test automatic axis switching on view changes
+
+**Phase 2C: Tetrahedral Cutplane Logic** (2-3 hours)
+- [ ] Extend updateCutplane() to support tetrahedral basis
+- [ ] Calculate cutplane normal from Quadray basis vectors
+- [ ] Test WXYZ cutplanes with various polyhedra
+
+**Phase 2D: Dynamic Range Integration** (1-2 hours)
+- [ ] Listen to Cartesian Grid Intervals slider changes
+- [ ] Listen to WXYZ Grid Intervals slider changes
+- [ ] Update cutplane range when grid extent changes
+- [ ] Test slider range updates with various grid settings
+
+**Phase 2E: Testing & Refinement** (2-3 hours)
+- [ ] Test all 6 Cartesian views with XYZ cutplanes
+- [ ] Test all 4 Tetrahedral views with WXYZ cutplanes
+- [ ] Verify range scaling with grid interval changes
+- [ ] Ensure cutplane respects invert checkbox
+- [ ] Performance testing with complex scenes
+
+**Total Estimated Effort**: 8-12 hours
+
+---
+
+### 16.3 Expected Workflow: WXYZ Views + Cutplane
+
+**Example User Session**:
+
+1. User clicks **"W View"** button
+   - Camera moves to position along W-axis basis vector (0.577, 0.577, 0.577) at distance=10
+   - Cutplane axis auto-selects **Tetrahedral: W**
+   - Cutplane slider range updates to match WXYZ Grid Intervals (default ±10)
+
+2. User enables **"Enable Cut Plane"** checkbox
+   - Cutplane activates perpendicular to W-axis basis vector
+   - Geometry clips to show section through polyhedra
+
+3. User adjusts **cutplane slider** from 0 to +5
+   - Section plane moves 5 units along W-axis
+   - Real-time feedback as geometry clips
+
+4. User increases **WXYZ Grid Intervals** slider from 10 to 20
+   - Cutplane slider range automatically expands to ±20
+   - Allows deeper sectioning through larger grid extent
+
+5. User switches to **"Top View"** button
+   - Camera moves to orthographic top view (0, 0, 10)
+   - Cutplane axis auto-switches to **Cartesian: Z**
+   - Cutplane slider range updates to match XYZ Grid Intervals
+
+**Key Insight**: The cutplane system "follows" the view system, automatically adapting to the coordinate basis (Cartesian vs Tetrahedral) and scaling to match the visible grid extent.
+
+---
+
+### 16.4 Benefits of Integrated WXYZ Cutplane System
+
+1. **Unified Sectioning**: Single cutplane tool works across both coordinate systems
+2. **Educational Value**: Reveals how polyhedra section differently along tetrahedral vs Cartesian axes
+3. **Great Circle Visualization**: WXYZ cutplanes reveal "happy accident" polygonal great circle patterns
+4. **Dynamic Range Scaling**: Cutplane range automatically matches grid visualization extent
+5. **Intuitive Workflow**: Cutplane axis follows camera view, no manual axis selection needed (but available for advanced users)
+
+---
+
+### 16.5 Technical Notes
+
+**Why separate 'qx', 'qy', 'qz' from Cartesian 'x', 'y', 'z'?**
+- Distinguishes between Cartesian axis X (unit vector [1,0,0]) and Quadray axis X (basis vector [0.577,-0.577,-0.577])
+- Prevents confusion in code and UI
+- Allows both systems to coexist in same cutplane selector
+
+**Performance Considerations**:
+- Tetrahedral cutplane uses same THREE.Plane clipping as Cartesian (GPU-accelerated)
+- No performance penalty for using Quadray basis vectors as plane normals
+- Clipping updates only when slider moves (not every frame)
+
+**Future Enhancements** (Phase 3):
+- [ ] Dual cutplanes (top + bottom) for "sandwich" sectioning
+- [ ] Cutplane interpolation (animate section sweep)
+- [ ] Section edge highlighting (Line2 edges at cut boundary)
+- [ ] Export section views with cutplane indicator overlays
+
+---
+
+**Document Status**: ✅ Phase 1 Complete, Phase 2 Design Complete
+**Next Action**: Implement Phase 2A (UI & State Management) in `WXYZ-Basis-Views` branch
+**Estimated Phase 2 Effort**: 8-12 hours
