@@ -12,8 +12,7 @@
 import { Line2 } from "three/addons/lines/Line2.js";
 import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 import { LineGeometry } from "three/addons/lines/LineGeometry.js";
-import { RT } from "./rt-math.js";
-import { Quadray } from "./rt-quadray.js";
+import { RT, Quadray } from "./rt-math.js";
 
 export const RTPapercut = {
   // Module state (local, not persisted)
