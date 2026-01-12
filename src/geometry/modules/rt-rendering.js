@@ -28,26 +28,26 @@ let useRTNodeGeometry = true; // Default to RT geodesic nodes (3f)
 let geodesicFrequency = 3; // Default to 3f Geodesic
 
 // Module-level variable to track node opacity
-let nodeOpacity = 0.60; // Default to 0.60 for better visibility (increased from 0.35)
+let nodeOpacity = 0.6; // Default to 0.60 for better visibility (increased from 0.35)
 
 // Module-level color palette (source of truth for all polyhedron colors)
 const colorPalette = {
-  cube: 0x0433FF,
-  cubeMatrix: 0x00FDFF,
-  tetrahedron: 0xFFFB00,
-  geodesicTetrahedron: 0x00FDFF,
-  dualTetrahedron: 0xFF40FF,
-  geodesicDualTetrahedron: 0xFFFB00,
-  octahedron: 0x00F900,
-  geodesicOctahedron: 0xFF40FF,
+  cube: 0x0433ff,
+  cubeMatrix: 0x00fdff,
+  tetrahedron: 0xfffb00,
+  geodesicTetrahedron: 0x00fdff,
+  dualTetrahedron: 0xff40ff,
+  geodesicDualTetrahedron: 0xfffb00,
+  octahedron: 0x00f900,
+  geodesicOctahedron: 0xff40ff,
   octahedronMatrix: 0xff6b6b,
-  icosahedron: 0x00FDFF,
-  geodesicIcosahedron: 0xFF9300,
-  dodecahedron: 0xFFFB00,
-  dualIcosahedron: 0xFF9300,
-  geodesicDualIcosahedron: 0x00FDFF,
-  cuboctahedron: 0x00F900,
-  rhombicDodecahedron: 0xff9900
+  icosahedron: 0x00fdff,
+  geodesicIcosahedron: 0xff9300,
+  dodecahedron: 0xfffb00,
+  dualIcosahedron: 0xff9300,
+  geodesicDualIcosahedron: 0x00fdff,
+  cuboctahedron: 0x00f900,
+  rhombicDodecahedron: 0xff9900,
 };
 
 /**
@@ -355,7 +355,12 @@ export function initScene(THREE, OrbitControls, RT) {
 
     // 1. Create cylindrical shaft (match XYZ ArrowHelper visual weight)
     const shaftRadius = 0.005; // Match THREE.ArrowHelper default shaft radius
-    const shaftGeometry = new THREE.CylinderGeometry(shaftRadius, shaftRadius, shaftLength, 8);
+    const shaftGeometry = new THREE.CylinderGeometry(
+      shaftRadius,
+      shaftRadius,
+      shaftLength,
+      8
+    );
     const shaftMaterial = new THREE.MeshBasicMaterial({ color });
     const shaft = new THREE.Mesh(shaftGeometry, shaftMaterial);
 
@@ -394,7 +399,10 @@ export function initScene(THREE, OrbitControls, RT) {
       indices.push(face[0], face[1], face[2]);
     });
 
-    headGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    headGeometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(positions, 3)
+    );
     headGeometry.setIndex(indices);
     headGeometry.computeVertexNormals();
 
@@ -402,7 +410,7 @@ export function initScene(THREE, OrbitControls, RT) {
       color,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.8
+      opacity: 0.8,
     });
     const head = new THREE.Mesh(headGeometry, headMaterial);
 
@@ -435,7 +443,12 @@ export function initScene(THREE, OrbitControls, RT) {
     const labels = ["A", "B", "C", "D"];
 
     Quadray.basisVectors.forEach((vec, i) => {
-      const arrow = createTetrahedralArrow(vec, shaftLength, headSize, colors[i]);
+      const arrow = createTetrahedralArrow(
+        vec,
+        shaftLength,
+        headSize,
+        colors[i]
+      );
       quadrayBasis.add(arrow);
     });
 
@@ -835,7 +848,11 @@ export function initScene(THREE, OrbitControls, RT) {
 
     if (useRT) {
       // RT Geodesic Icosahedron with user-selected frequency
-      const polyData = window.RTPolyhedra.geodesicIcosahedron(radius, geodesicFrequency, "out");
+      const polyData = window.RTPolyhedra.geodesicIcosahedron(
+        radius,
+        geodesicFrequency,
+        "out"
+      );
 
       nodeGeometry = new THREE.BufferGeometry();
       const positions = [];
@@ -1261,15 +1278,21 @@ export function initScene(THREE, OrbitControls, RT) {
       group,
       color,
       scale,
-      opacity
+      opacity,
     } = config;
 
     if (document.getElementById(checkboxId).checked) {
       const frequency = parseInt(document.getElementById(frequencyId).value);
-      const projectionRadio = document.querySelector(`input[name="${projectionName}"]:checked`);
+      const projectionRadio = document.querySelector(
+        `input[name="${projectionName}"]:checked`
+      );
       const projection = projectionRadio ? projectionRadio.value : "out";
 
-      const geometry = polyhedronFn(scale, isNaN(frequency) ? 1 : frequency, projection);
+      const geometry = polyhedronFn(
+        scale,
+        isNaN(frequency) ? 1 : frequency,
+        projection
+      );
       renderPolyhedron(group, geometry, color, opacity);
       group.visible = true;
     } else {
@@ -1349,7 +1372,12 @@ export function initScene(THREE, OrbitControls, RT) {
     // Tetrahedron (Yellow)
     if (document.getElementById("showTetrahedron").checked) {
       const tetra = Polyhedra.tetrahedron(scale);
-      renderPolyhedron(tetrahedronGroup, tetra, colorPalette.tetrahedron, opacity);
+      renderPolyhedron(
+        tetrahedronGroup,
+        tetra,
+        colorPalette.tetrahedron,
+        opacity
+      );
       tetrahedronGroup.visible = true;
 
       // DIAGNOSTIC: Log OutSphere radius for edge lengths 1, 2, 3, 4, 5
@@ -1385,13 +1413,18 @@ export function initScene(THREE, OrbitControls, RT) {
       group: geodesicTetrahedronGroup,
       color: colorPalette.geodesicTetrahedron, // Cyan/turquoise
       scale,
-      opacity
+      opacity,
     });
 
     // Dual Tetrahedron (Magenta - reciprocal complementary: matches geodesic octahedron)
     if (document.getElementById("showDualTetrahedron").checked) {
       const dualTetra = Polyhedra.dualTetrahedron(scale);
-      renderPolyhedron(dualTetrahedronGroup, dualTetra, colorPalette.dualTetrahedron, opacity);
+      renderPolyhedron(
+        dualTetrahedronGroup,
+        dualTetra,
+        colorPalette.dualTetrahedron,
+        opacity
+      );
       dualTetrahedronGroup.visible = true;
     } else {
       dualTetrahedronGroup.visible = false;
@@ -1406,7 +1439,7 @@ export function initScene(THREE, OrbitControls, RT) {
       group: geodesicDualTetrahedronGroup,
       color: colorPalette.geodesicDualTetrahedron, // Yellow (reciprocal complementary)
       scale,
-      opacity
+      opacity,
     });
 
     // Tet Matrix (IVM Array)
@@ -1475,7 +1508,7 @@ export function initScene(THREE, OrbitControls, RT) {
       group: geodesicOctahedronGroup,
       color: colorPalette.geodesicOctahedron, // Magenta/pink
       scale,
-      opacity
+      opacity,
     });
 
     // Octa Matrix (IVM Array)
@@ -1533,7 +1566,12 @@ export function initScene(THREE, OrbitControls, RT) {
     // Icosahedron (Cyan)
     if (document.getElementById("showIcosahedron").checked) {
       const icosa = Polyhedra.icosahedron(scale);
-      renderPolyhedron(icosahedronGroup, icosa, colorPalette.icosahedron, opacity);
+      renderPolyhedron(
+        icosahedronGroup,
+        icosa,
+        colorPalette.icosahedron,
+        opacity
+      );
       icosahedronGroup.visible = true;
     } else {
       icosahedronGroup.visible = false;
@@ -1542,7 +1580,12 @@ export function initScene(THREE, OrbitControls, RT) {
     // Dodecahedron (Yellow)
     if (document.getElementById("showDodecahedron").checked) {
       const dodec = Polyhedra.dodecahedron(scale);
-      renderPolyhedron(dodecahedronGroup, dodec, colorPalette.dodecahedron, opacity);
+      renderPolyhedron(
+        dodecahedronGroup,
+        dodec,
+        colorPalette.dodecahedron,
+        opacity
+      );
       dodecahedronGroup.visible = true;
     } else {
       dodecahedronGroup.visible = false;
@@ -1557,13 +1600,18 @@ export function initScene(THREE, OrbitControls, RT) {
       group: geodesicIcosahedronGroup,
       color: colorPalette.geodesicIcosahedron, // Bright orange
       scale,
-      opacity
+      opacity,
     });
 
     // Dual Icosahedron (Orange - reciprocal complementary: matches base geodesic)
     if (document.getElementById("showDualIcosahedron").checked) {
       const dualIcosa = Polyhedra.dualIcosahedron(scale);
-      renderPolyhedron(dualIcosahedronGroup, dualIcosa, colorPalette.dualIcosahedron, opacity);
+      renderPolyhedron(
+        dualIcosahedronGroup,
+        dualIcosa,
+        colorPalette.dualIcosahedron,
+        opacity
+      );
       dualIcosahedronGroup.visible = true;
     } else {
       dualIcosahedronGroup.visible = false;
@@ -1578,14 +1626,19 @@ export function initScene(THREE, OrbitControls, RT) {
       group: geodesicDualIcosahedronGroup,
       color: colorPalette.geodesicDualIcosahedron, // Cyan (reciprocal complementary)
       scale,
-      opacity
+      opacity,
     });
 
     // Cuboctahedron (Lime green - Vector Equilibrium)
     if (document.getElementById("showCuboctahedron").checked) {
       // Scale by √2 to match matrix geometry (vertices at scale, not scale/√2)
       const cubocta = Polyhedra.cuboctahedron(scale * Math.sqrt(2));
-      renderPolyhedron(cuboctahedronGroup, cubocta, colorPalette.cuboctahedron, opacity); // Bright lime-cyan
+      renderPolyhedron(
+        cuboctahedronGroup,
+        cubocta,
+        colorPalette.cuboctahedron,
+        opacity
+      ); // Bright lime-cyan
       cuboctahedronGroup.visible = true;
     } else {
       cuboctahedronGroup.visible = false;
@@ -1662,7 +1715,8 @@ export function initScene(THREE, OrbitControls, RT) {
       const rotate45 =
         document.getElementById("rhombicDodecMatrixRotate45")?.checked || false;
       const faceCoplanar =
-        document.getElementById("rhombicDodecMatrixFaceCoplanar")?.checked || false;
+        document.getElementById("rhombicDodecMatrixFaceCoplanar")?.checked ||
+        false;
 
       // Clear existing rhombic dodec matrix group
       while (rhombicDodecMatrixGroup.children.length > 0) {
@@ -2498,7 +2552,7 @@ export function initScene(THREE, OrbitControls, RT) {
    * @param {number} color - Hex color (e.g., 0xFF9300)
    */
   function updatePolyhedronColor(polyhedronType, color) {
-    if (colorPalette.hasOwnProperty(polyhedronType)) {
+    if (Object.prototype.hasOwnProperty.call(colorPalette, polyhedronType)) {
       colorPalette[polyhedronType] = color;
       updateGeometry(); // Re-render with new color
     }

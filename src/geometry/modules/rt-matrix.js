@@ -465,7 +465,9 @@ export const RTMatrix = {
 
     console.log(
       `[RTMatrix] Rhombic dodecahedron matrix created: ${matrixSize}×${matrixSize} primary grid${
-        faceCoplanar ? ` + ${(matrixSize - 1) * (matrixSize - 1)} interstitial` : ""
+        faceCoplanar
+          ? ` + ${(matrixSize - 1) * (matrixSize - 1)} interstitial`
+          : ""
       } = ${polyhedraCount} total rhombic dodecs, rotate45=${rotate45}, faceCoplanar=${faceCoplanar}`
     );
 
@@ -741,7 +743,9 @@ export const RTMatrix = {
 
     console.log(
       `[RTMatrix] Octahedron matrix created: ${matrixSize}×${matrixSize} primary grid${
-        colinearEdges ? ` + ${(matrixSize - 1) * (matrixSize - 1)} interstitial` : ""
+        colinearEdges
+          ? ` + ${(matrixSize - 1) * (matrixSize - 1)} interstitial`
+          : ""
       } = ${polyhedraCount} total octahedra, rotate45=${rotate45}, colinearEdges=${colinearEdges}`
     );
 

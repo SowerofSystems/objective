@@ -278,16 +278,22 @@ export const RTFileHandler = {
         // Apply colors via rendering API if available
         if (window.renderingAPI) {
           Object.keys(colorPalette).forEach(polyType => {
-            window.renderingAPI.updatePolyhedronColor(polyType, colorPalette[polyType]);
+            window.renderingAPI.updatePolyhedronColor(
+              polyType,
+              colorPalette[polyType]
+            );
           });
           console.log("✅ Color palette restored from import");
         }
 
         // Save to localStorage for session persistence
         try {
-          localStorage.setItem('artexplorer-color-palette', JSON.stringify(colorPalette));
+          localStorage.setItem(
+            "artexplorer-color-palette",
+            JSON.stringify(colorPalette)
+          );
         } catch (e) {
-          console.warn('Could not save color palette to localStorage:', e);
+          console.warn("Could not save color palette to localStorage:", e);
         }
       }
 

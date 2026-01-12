@@ -172,7 +172,11 @@ export const Polyhedra = {
    * @param {string} projection - Projection mode: "off", "in", "mid", "out"
    * @returns {Object} - {vertices, edges, faces}
    */
-  geodesicDualTetrahedron: (halfSize = 1, frequency = 1, projection = "out") => {
+  geodesicDualTetrahedron: (
+    halfSize = 1,
+    frequency = 1,
+    projection = "out"
+  ) => {
     // Get base geodesic tetrahedron (subdivided and projected)
     const base = Polyhedra.geodesicTetrahedron(halfSize, frequency, projection);
 
@@ -438,9 +442,7 @@ export const Polyhedra = {
     // Spread s = sin²(-π/2) = 1 (exact integer!)
     // Cross c = cos²(-π/2) = 0 (exact integer!)
     // Transform: (x,y,z) → (y,-x,z) using ONLY multiplication by {-1, 0, 1}
-    const vertices = base.vertices.map(
-      v => new THREE.Vector3(v.y, -v.x, v.z)
-    );
+    const vertices = base.vertices.map(v => new THREE.Vector3(v.y, -v.x, v.z));
 
     // Topology remains identical (rotation preserves face winding)
     const edges = base.edges;
@@ -472,18 +474,24 @@ export const Polyhedra = {
    * @param {string} projection - Projection mode: "off", "in", "mid", "out"
    * @returns {Object} - {vertices, edges, faces}
    */
-  geodesicDualIcosahedron: (halfSize = 1, frequency = 1, projection = "out") => {
+  geodesicDualIcosahedron: (
+    halfSize = 1,
+    frequency = 1,
+    projection = "out"
+  ) => {
     const phi = RT.Phi.value(); // φ = (1 + √5)/2
     const dualRadius = phi * halfSize;
 
     // Get base geodesic icosahedron (subdivided and projected)
-    const base = Polyhedra.geodesicIcosahedron(dualRadius, frequency, projection);
+    const base = Polyhedra.geodesicIcosahedron(
+      dualRadius,
+      frequency,
+      projection
+    );
 
     // Apply RT-pure Z-rotation: -90° clockwise
     // Transform: (x,y,z) → (y,-x,z) using ONLY multiplication by {-1, 0, 1}
-    const vertices = base.vertices.map(
-      v => new THREE.Vector3(v.y, -v.x, v.z)
-    );
+    const vertices = base.vertices.map(v => new THREE.Vector3(v.y, -v.x, v.z));
 
     // Topology remains identical (rotation preserves face winding)
     const edges = base.edges;
@@ -1397,7 +1405,11 @@ export const Polyhedra = {
  * @param {THREE.Vector3} center - Polyhedron center (default: origin)
  * @returns {Object} Validation results with errors array
  */
-export function validateFaceWinding(vertices, faces, center = new THREE.Vector3(0, 0, 0)) {
+export function validateFaceWinding(
+  vertices,
+  faces,
+  center = new THREE.Vector3(0, 0, 0)
+) {
   const errors = [];
   const warnings = [];
 
@@ -1407,7 +1419,7 @@ export function validateFaceWinding(vertices, faces, center = new THREE.Vector3(
       errors.push({
         faceIndex: faceIdx,
         vertices: faceIndices,
-        error: 'Face has fewer than 3 vertices',
+        error: "Face has fewer than 3 vertices",
       });
       return;
     }
@@ -1427,7 +1439,7 @@ export function validateFaceWinding(vertices, faces, center = new THREE.Vector3(
       warnings.push({
         faceIndex: faceIdx,
         vertices: faceIndices,
-        warning: 'Degenerate face (zero-area triangle)',
+        warning: "Degenerate face (zero-area triangle)",
       });
       return;
     }
@@ -1457,7 +1469,7 @@ export function validateFaceWinding(vertices, faces, center = new THREE.Vector3(
       warnings.push({
         faceIndex: faceIdx,
         vertices: faceIndices,
-        warning: 'Face center coincides with polyhedron center',
+        warning: "Face center coincides with polyhedron center",
       });
       return;
     }

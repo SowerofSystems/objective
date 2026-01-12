@@ -116,19 +116,28 @@ export const RTPapercut = {
       sectionNodesCheckbox.addEventListener("change", e => {
         RTPapercut.state.sectionNodesEnabled = e.target.checked;
         // Regenerate intersection edges to include/exclude node circles
-        if (RTPapercut.state.cutplaneEnabled && RTPapercut.state.cutplaneNormal) {
+        if (
+          RTPapercut.state.cutplaneEnabled &&
+          RTPapercut.state.cutplaneNormal
+        ) {
           RTPapercut.updateCutplane(RTPapercut.state.cutplaneValue, scene);
         }
       });
     }
 
     // 3d. Adaptive Node Resolution checkbox
-    const adaptiveResolutionCheckbox = document.getElementById("adaptiveNodeResolution");
+    const adaptiveResolutionCheckbox = document.getElementById(
+      "adaptiveNodeResolution"
+    );
     if (adaptiveResolutionCheckbox) {
       adaptiveResolutionCheckbox.addEventListener("change", e => {
         RTPapercut.state.adaptiveNodeResolution = e.target.checked;
         // Regenerate circles with new resolution
-        if (RTPapercut.state.cutplaneEnabled && RTPapercut.state.cutplaneNormal && RTPapercut.state.sectionNodesEnabled) {
+        if (
+          RTPapercut.state.cutplaneEnabled &&
+          RTPapercut.state.cutplaneNormal &&
+          RTPapercut.state.sectionNodesEnabled
+        ) {
           RTPapercut.updateCutplane(RTPapercut.state.cutplaneValue, scene);
         }
       });
@@ -826,7 +835,12 @@ export const RTPapercut = {
    * @returns {Array<THREE.Vector3>|null} Array of points forming circle, or null if no intersection
    * @private
    */
-  _spherePlaneIntersection: function (sphereCenter, sphereRadius, plane, segments = 32) {
+  _spherePlaneIntersection: function (
+    sphereCenter,
+    sphereRadius,
+    plane,
+    segments = 32
+  ) {
     // RT-Pure: Work with quadrance until final radius calculation
     const distanceToPlane = plane.distanceToPoint(sphereCenter);
     const distanceQ = distanceToPlane * distanceToPlane;
@@ -852,9 +866,14 @@ export const RTPapercut = {
     const normal = plane.normal.clone();
 
     // Find first tangent vector (cross with any non-parallel vector)
-    const up = Math.abs(normal.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+    const up =
+      Math.abs(normal.y) < 0.9
+        ? new THREE.Vector3(0, 1, 0)
+        : new THREE.Vector3(1, 0, 0);
     const tangent1 = new THREE.Vector3().crossVectors(normal, up).normalize();
-    const tangent2 = new THREE.Vector3().crossVectors(normal, tangent1).normalize();
+    const tangent2 = new THREE.Vector3()
+      .crossVectors(normal, tangent1)
+      .normalize();
 
     // Generate circle points using parametric form
     const points = [];
@@ -863,7 +882,8 @@ export const RTPapercut = {
       const x = Math.cos(angle) * circleRadius;
       const y = Math.sin(angle) * circleRadius;
 
-      const point = circleCenter.clone()
+      const point = circleCenter
+        .clone()
         .add(tangent1.clone().multiplyScalar(x))
         .add(tangent2.clone().multiplyScalar(y));
 
