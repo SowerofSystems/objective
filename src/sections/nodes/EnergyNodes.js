@@ -179,8 +179,10 @@
 
     // ========================================================================
     // COOLING ENERGY DEMAND (Section 14)
-    // Formula from Section14.js line 1164:
-    // d_129 = k_71 + k_79 + k_98 + d_122
+    // Formula from Section13.js line 3055-3056 (calculateCEDUnmitigated):
+    // d_129 = k_71 + k_79 + k_97 + k_104 + k_103 + d_122
+    // Note: Section14.js line 1164 has an older formula (k_98 instead of k_97+k_104)
+    //       Section13.js is the authoritative source as it publishes to StateManager
     // ========================================================================
     {
       id: "energy.ced.unmitigated",
@@ -188,7 +190,9 @@
       dependencies: [
         "internal.coolingLoad.occupants",
         "radiantGains.subtotal.coolingGain",
-        "transmissionLoss.components.subtotalHeatGain",
+        "transmissionLoss.thermalBridgePenalty.heatGain",
+        "envelope.total.heatGain",
+        "airTightness.heatGain",
         "ventilation.heatGain"
       ],
       classification: "C",
@@ -196,15 +200,21 @@
       label: "Cooling Energy Demand Unmitigated",
       unit: "kWh/yr",
       compute: (inputs) => {
-        // CED = k_71 + k_79 + k_98 + d_122 (Section14.js line 1164)
-        // k_79 = radiantGains.subtotal.coolingGain, k_98 = transmissionLoss.components.subtotalHeatGain
-        // d_122 = ventilation.heatGain (from VentilationNodes)
+        // CED = k_71 + k_79 + k_97 + k_104 + k_103 + d_122 (Section13.js line 3056)
+        // k_71 = occupant cooling load
+        // k_79 = radiant gains cooling
+        // k_97 = thermal bridge penalty heat gain
+        // k_104 = envelope total heat gain (capacitance conditional)
+        // k_103 = air tightness heat gain
+        // d_122 = ventilation heat gain
         const k71 = parseNum(inputs["internal.coolingLoad.occupants"], 0);
         const k79 = parseNum(inputs["radiantGains.subtotal.coolingGain"], 0);
-        const k98 = parseNum(inputs["transmissionLoss.components.subtotalHeatGain"], 0);
+        const k97 = parseNum(inputs["transmissionLoss.thermalBridgePenalty.heatGain"], 0);
+        const k104 = parseNum(inputs["envelope.total.heatGain"], 0);
+        const k103 = parseNum(inputs["airTightness.heatGain"], 0);
         const d122 = parseNum(inputs["ventilation.heatGain"], 0);
 
-        return +(k71 + k79 + k98 + d122).toFixed(2);
+        return +(k71 + k79 + k97 + k104 + k103 + d122).toFixed(2);
       }
     },
     {
