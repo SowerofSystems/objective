@@ -122,13 +122,20 @@ export class ColorTheoryModal {
    */
   setRenderingAPI(api) {
     this.renderingAPI = api;
+    // Don't restore colors here - wait for explicit call after scene is ready
+  }
 
-    // Try to restore colors from localStorage on initialization
+  /**
+   * Initialize color restoration (called AFTER scene is fully set up)
+   * This should be called by rt-init.js after the first updateGeometry()
+   */
+  initializeAfterSceneReady() {
     this.restoreColorsFromLocalStorage();
   }
 
   /**
    * Restore colors from localStorage (if available)
+   * NOTE: This should only be called AFTER scene initialization
    */
   restoreColorsFromLocalStorage() {
     if (!this.renderingAPI) return;
@@ -138,6 +145,7 @@ export class ColorTheoryModal {
       console.log('✅ Restoring color palette from localStorage');
 
       // Apply each color from the saved palette
+      // This will trigger updateGeometry() which requires scene to be ready
       Object.keys(savedPalette).forEach(polyType => {
         this.renderingAPI.updatePolyhedronColor(polyType, savedPalette[polyType]);
       });

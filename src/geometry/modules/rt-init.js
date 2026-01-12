@@ -2616,6 +2616,9 @@ function startARTexplorer(
 
   initGumballEventListeners(); // Initialize gumball after scene is ready
 
+  // Initialize color restoration from localStorage (scene is now ready)
+  colorTheoryModal.initializeAfterSceneReady();
+
   // ========================================================================
   // FILE HANDLER INITIALIZATION
   // ========================================================================
