@@ -850,6 +850,11 @@ function startARTexplorer(
     { id: "viewBack", view: "back" },
     { id: "viewAxo", view: "axo" },
     { id: "viewPerspective", view: "perspective" },
+    // WXYZ Tetrahedral Basis Views
+    { id: "viewW", view: "w" },
+    { id: "viewX", view: "x" },
+    { id: "viewY", view: "y" },
+    { id: "viewZ", view: "z" },
   ];
 
   viewButtons.forEach(({ id, view }) => {
@@ -859,7 +864,7 @@ function startARTexplorer(
     });
   });
 
-  // Orthographic/Perspective toggle
+  // Orthographic/Perspective toggle (works for both XYZ and WXYZ views)
   const orthoCheckbox = document.getElementById("orthoPerspective");
   orthoCheckbox.addEventListener("change", e => {
     renderingAPI.switchCameraType(e.target.checked);
