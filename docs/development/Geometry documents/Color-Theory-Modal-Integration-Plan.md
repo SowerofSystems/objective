@@ -550,4 +550,46 @@ state: {
 
 ---
 
-**Git Commit**: `6f5fa17` - "Feat: Implement real-time color modal with state persistence"
+## Bug Fixes & Refinements (Post-Launch)
+
+### Page Refresh Crash Fix (2026-01-12)
+**Issue**: `TypeError: Cannot read properties of undefined (reading 'children')` on page refresh when localStorage had saved colors.
+
+**Root Cause**: `restoreColorsFromLocalStorage()` was calling `updatePolyhedronColor()` before scene and polyhedron groups were fully initialized.
+
+**Solution**: Explicit initialization sequence without race conditions:
+1. `setRenderingAPI(api)` - Stores API reference only, no restoration
+2. Scene completes full initialization in rt-init.js
+3. `initializeAfterSceneReady()` - Called explicitly after scene is ready
+4. Colors restore safely after all groups exist
+
+**Implementation**:
+- Added `initializeAfterSceneReady()` method to color-theory-modal.js
+- Called from rt-init.js:2620 (after `initGumballEventListeners()`)
+- No setTimeout() or arbitrary delays - deterministic execution order
+- **Commit**: `ce60f58`
+
+### Compact Layout Redesign (2026-01-12)
+**User Feedback**: Modal was too large and required scrolling, redundant color swatches.
+
+**Changes**:
+- Removed large 40px color display swatches (picker squares now serve dual purpose)
+- Removed global opacity/brightness sliders (not needed for real-time editing)
+- Removed export section (auto-save makes it redundant)
+- Multi-column responsive grid (2-3 columns based on screen width)
+- Compact single-line items: [Picker Square] + Label + Hex Input
+- Modal now fits without scrolling on most screens
+
+**Implementation**:
+- art.css: New `.color-item` compact layout, hide `.color-swatch`
+- color-theory-modal.js: Simplified `generateColorSections()` for flat list
+- Picker button background shows current color
+- **Commit**: `5cde770`
+
+---
+
+**Git Commits**:
+- `6f5fa17` - "Feat: Implement real-time color modal with state persistence"
+- `09d38ba` - "Docs: Mark color theory modal integration as completed"
+- `5cde770` - "Refactor: Simplify color modal to compact multi-column layout"
+- `ce60f58` - "Fix: Use explicit initialization sequence for localStorage color restoration"
