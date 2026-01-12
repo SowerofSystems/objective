@@ -13,6 +13,7 @@
 import { Quadray } from "./rt-math.js";
 import { Polyhedra } from "./rt-polyhedra.js";
 import { PerformanceClock } from "./performance-clock.js";
+import { RTPapercut } from "./rt-papercut.js";
 
 // Re-export PerformanceClock so rt-init.js can import it from here
 export { PerformanceClock };
@@ -2163,6 +2164,34 @@ export function initScene(THREE, OrbitControls, RT) {
     camera.lookAt(0, 0, 0);
     controls.target.set(0, 0, 0);
     controls.update();
+
+    // Automatic cutplane axis mapping (Phase 2 WXYZ integration)
+    // Map camera view to appropriate cutplane axis
+    const cartesianAxisMap = {
+      top: "z",
+      bottom: "z",
+      front: "y",
+      back: "y",
+      left: "x",
+      right: "x",
+      axo: "z", // Default to Z for axonometric
+    };
+
+    const tetrahedralAxisMap = {
+      w: "w",
+      x: "x",
+      y: "y",
+      z: "z",
+    };
+
+    // Set cutplane axis based on view
+    if (tetrahedralAxisMap[view]) {
+      // WXYZ Tetrahedral views
+      RTPapercut.setCutplaneAxis("tetrahedral", view, scene);
+    } else if (cartesianAxisMap[view]) {
+      // XYZ Cartesian views
+      RTPapercut.setCutplaneAxis("cartesian", cartesianAxisMap[view], scene);
+    }
 
     console.log(
       `✅ Camera preset: ${view} (${isOrthographic ? "Orthographic" : "Perspective"})`

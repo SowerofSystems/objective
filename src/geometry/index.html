@@ -1371,6 +1371,22 @@
                 Section Nodes
               </label>
             </div>
+            <!-- Cutplane Axis Selector -->
+            <div class="control-item">
+              <label class="label-subsection">Cartesian Basis</label>
+              <div style="display: flex; gap: 4px; margin-bottom: 8px;">
+                <button class="toggle-btn variant-small" id="cutplaneAxisX">X</button>
+                <button class="toggle-btn variant-small" id="cutplaneAxisY">Y</button>
+                <button class="toggle-btn variant-small active" id="cutplaneAxisZ">Z</button>
+              </div>
+              <label class="label-subsection">Tetrahedral Basis</label>
+              <div style="display: flex; gap: 4px;">
+                <button class="toggle-btn variant-small" id="cutplaneAxisW">W</button>
+                <button class="toggle-btn variant-small" id="cutplaneAxisTetraX">X</button>
+                <button class="toggle-btn variant-small" id="cutplaneAxisTetraY">Y</button>
+                <button class="toggle-btn variant-small" id="cutplaneAxisTetraZ">Z</button>
+              </div>
+            </div>
             <div class="control-item">
               <label class="checkbox-label">
                 <input type="checkbox" id="adaptiveNodeResolution" />
