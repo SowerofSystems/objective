@@ -24,6 +24,7 @@ export const RTPapercut = {
     cutplaneAxis: "z", // 'x', 'y', 'z' (Cartesian) or 'w', 'x', 'y', 'z' (Tetrahedral)
     cutplaneNormal: null, // THREE.Vector3
     invertCutPlane: false, // Invert normal (for ground plane mode)
+    intervalSnapEnabled: true, // Snap to grid intervals (step=1.0) vs fine control (step=0.1)
     lineWeightEnabled: true,
     lineWeightMin: 0.5,
     lineWeightMax: 3.0,
@@ -140,6 +141,16 @@ export const RTPapercut = {
       backfaceCullingCheckbox.addEventListener("change", e => {
         RTPapercut.state.backfaceCullingEnabled = e.target.checked;
         RTPapercut.toggleBackfaceCulling(scene);
+      });
+    }
+
+    // 3f. Interval Snap checkbox
+    const intervalSnapCheckbox = document.getElementById("intervalSnap");
+    if (intervalSnapCheckbox) {
+      intervalSnapCheckbox.addEventListener("change", e => {
+        RTPapercut.state.intervalSnapEnabled = e.target.checked;
+        // Update slider step size immediately
+        RTPapercut._updateSliderRange();
       });
     }
 
@@ -281,22 +292,24 @@ export const RTPapercut = {
    */
   _getCutplaneRange: function () {
     const basis = RTPapercut.state.cutplaneBasis;
+    const snapEnabled = RTPapercut.state.intervalSnapEnabled;
+
+    // Step size: 1.0 for interval snapping, 0.1 for fine control
+    const step = snapEnabled ? 1.0 : 0.1;
 
     if (basis === "tetrahedral") {
       // WXYZ Tetrahedral: Natural interval is 12 units
-      // Step size of 1.0 snaps to each Quadray grid interval
       return {
         min: -12,
         max: 12,
-        step: 1.0,
+        step: step,
       };
     } else {
       // XYZ Cartesian: Natural interval is 10 units
-      // Step size of 1.0 snaps to each Cartesian grid interval
       return {
         min: -10,
         max: 10,
-        step: 1.0,
+        step: step,
       };
     }
   },
