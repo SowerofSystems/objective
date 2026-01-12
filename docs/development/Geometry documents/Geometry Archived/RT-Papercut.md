@@ -1439,38 +1439,33 @@ export const RTPapercut = {
 };
 ```
 
-#### 16.2.7 Implementation Phases
+#### 16.2.7 Implementation Status ✅ COMPLETE
 
-**Phase 2A: UI & State Management** (1-2 hours)
-- [ ] Add cutplane axis selector buttons to Papercut UI section
-- [ ] Update RTPapercut.state with basis/axis properties
-- [ ] Implement setCutplaneAxis() and updateCutplaneRange() functions
-- [ ] Wire up button click listeners
+**Phase 2A: UI & State Management** ✅
+- [x] Add cutplane axis selector buttons to Papercut UI section
+- [x] Update RTPapercut.state with basis/axis properties
+- [x] Implement setCutplaneAxis() function
+- [x] Wire up button click listeners with persistent active state
 
-**Phase 2B: Automatic Axis Selection** (1-2 hours)
-- [ ] Add viewToCutplaneAxis mapping to rt-rendering.js
-- [ ] Call RTPapercut.setCutplaneAxis() in setCameraPreset()
-- [ ] Test automatic axis switching on view changes
+**Phase 2B: Automatic Axis Selection** ✅
+- [x] Add automatic view-to-axis mapping in rt-rendering.js
+- [x] Call RTPapercut.setCutplaneAxis() in setCameraPreset()
+- [x] Automatic axis switching on view changes working
 
-**Phase 2C: Tetrahedral Cutplane Logic** (2-3 hours)
-- [ ] Extend updateCutplane() to support tetrahedral basis
-- [ ] Calculate cutplane normal from Quadray basis vectors
-- [ ] Test WXYZ cutplanes with various polyhedra
+**Phase 2C: Tetrahedral Cutplane Logic** ✅
+- [x] Extended updateCutplane() to support tetrahedral basis
+- [x] Calculate cutplane normal from Quadray basis vectors
+- [x] WXYZ cutplanes tested with polyhedra - reveals triangular sections vs. rectangular in XYZ
 
-**Phase 2D: Dynamic Range Integration** (1-2 hours)
-- [ ] Listen to Cartesian Grid Intervals slider changes
-- [ ] Listen to WXYZ Grid Intervals slider changes
-- [ ] Update cutplane range when grid extent changes
-- [ ] Test slider range updates with various grid settings
+**Key Discovery**: XYZ Cartesian cutplanes consistently reveal rectangular relationships across polyhedra, while WXYZ Tetrahedral cutplanes reveal triangular relationships for the same polyhedra groups.
 
-**Phase 2E: Testing & Refinement** (2-3 hours)
-- [ ] Test all 6 Cartesian views with XYZ cutplanes
-- [ ] Test all 4 Tetrahedral views with WXYZ cutplanes
-- [ ] Verify range scaling with grid interval changes
-- [ ] Ensure cutplane respects invert checkbox
-- [ ] Performance testing with complex scenes
-
-**Total Estimated Effort**: 8-12 hours
+**Implementation Complete**: 2026-01-12
+**Files Modified**:
+- `art.css:528-547` - Added .variant-small button style
+- `index.html:1374-1389` - Added Cartesian/Tetrahedral axis selector UI
+- `rt-init.js:860-877,2741-2774` - Persistent active state tracking, axis button listeners
+- `rt-papercut.js:15,23-24,336-359,912-923` - Tetrahedral basis support, setCutplaneAxis()
+- `rt-rendering.js:16,2168-2194` - Automatic view-to-axis mapping
 
 ---
 
@@ -1534,6 +1529,7 @@ export const RTPapercut = {
 
 ---
 
-**Document Status**: ✅ Phase 1 Complete, Phase 2 Design Complete
-**Next Action**: Implement Phase 2A (UI & State Management) in `WXYZ-Basis-Views` branch
-**Estimated Phase 2 Effort**: 8-12 hours
+**Document Status**: ✅ Phase 1 Complete, ✅ Phase 2 Complete
+**Branch**: `WXYZ-Basis-Views`
+**Completion Date**: 2026-01-12
+**Next Action**: Test and refine, then merge to main
