@@ -220,10 +220,10 @@ export const RTPapercut = {
           id="cutplaneSlider"
           min="-10"
           max="10"
-          step="0.1"
+          step="1.0"
           value="0"
         />
-        <span class="slider-value" id="cutplaneValue">0.0</span>
+        <span class="slider-value" id="cutplaneValue">0</span>
       </div>
       <p class="info-text" id="cutplaneAxisInfo">Axis: Z (Top/Bottom view)</p>
     `;
@@ -245,7 +245,7 @@ export const RTPapercut = {
   },
 
   /**
-   * Update slider range based on current grid extent
+   * Update slider range and step size based on current grid extent and basis
    * @private
    */
   _updateSliderRange: function () {
@@ -255,6 +255,7 @@ export const RTPapercut = {
     const range = RTPapercut._getCutplaneRange();
     slider.min = range.min;
     slider.max = range.max;
+    slider.step = range.step;
 
     // Reset to center if current value is out of bounds
     const currentValue = parseFloat(slider.value);
@@ -263,26 +264,41 @@ export const RTPapercut = {
       RTPapercut.state.cutplaneValue = 0;
       const valueDisplay = document.getElementById("cutplaneValue");
       if (valueDisplay) {
-        valueDisplay.textContent = "0.0";
+        valueDisplay.textContent = "0";
       }
     }
 
-    // Cutplane range updated
+    console.log(
+      `✂️ Cutplane range: [${range.min}, ${range.max}] step=${range.step} (basis: ${RTPapercut.state.cutplaneBasis})`
+    );
   },
 
   /**
-   * Get cutplane range based on current grid extent
-   * XYZ grid is always -10 to +10 units (independent of grid divisions)
-   * @returns {{min: number, max: number}}
+   * Get cutplane range and step size based on current basis
+   * Returns extent and step that match the grid interval system
+   * @returns {{min: number, max: number, step: number}}
    * @private
    */
   _getCutplaneRange: function () {
-    // XYZ grid extent is fixed at ±10 units
-    // Grid divisions control line spacing, not extent
-    return {
-      min: -10,
-      max: 10,
-    };
+    const basis = RTPapercut.state.cutplaneBasis;
+
+    if (basis === "tetrahedral") {
+      // WXYZ Tetrahedral: Natural interval is 12 units
+      // Step size of 1.0 snaps to each Quadray grid interval
+      return {
+        min: -12,
+        max: 12,
+        step: 1.0,
+      };
+    } else {
+      // XYZ Cartesian: Natural interval is 10 units
+      // Step size of 1.0 snaps to each Cartesian grid interval
+      return {
+        min: -10,
+        max: 10,
+        step: 1.0,
+      };
+    }
   },
 
   /**
