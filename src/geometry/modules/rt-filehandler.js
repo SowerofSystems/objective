@@ -268,6 +268,29 @@ export const RTFileHandler = {
           ?.dispatchEvent(rebuildEvent);
       }
 
+      // Restore color palette (environment settings)
+      if (stateData.environment?.colorPalette) {
+        const colorPalette = stateData.environment.colorPalette;
+
+        // Save to StateManager
+        this.stateManager.setColorPalette(colorPalette);
+
+        // Apply colors via rendering API if available
+        if (window.renderingAPI) {
+          Object.keys(colorPalette).forEach(polyType => {
+            window.renderingAPI.updatePolyhedronColor(polyType, colorPalette[polyType]);
+          });
+          console.log("✅ Color palette restored from import");
+        }
+
+        // Save to localStorage for session persistence
+        try {
+          localStorage.setItem('artexplorer-color-palette', JSON.stringify(colorPalette));
+        } catch (e) {
+          console.warn('Could not save color palette to localStorage:', e);
+        }
+      }
+
       // Restore instances
       if (stateData.instances && Array.isArray(stateData.instances)) {
         // Note: This requires access to the polyhedron creation functions

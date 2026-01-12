@@ -83,6 +83,12 @@ export const RTStateManager = {
     // Modification tracking for auto-save
     modificationCount: 0,
     lastSaveModificationCount: 0,
+
+    // Environment settings (persisted across session)
+    environment: {
+      // Color palette (user customizations override defaults)
+      colorPalette: null, // null means use defaults from rt-rendering.js
+    },
   },
 
   // Callbacks for external systems (e.g., file handler auto-save)
@@ -600,6 +606,37 @@ export const RTStateManager = {
   },
 
   // ========================================================================
+  // ENVIRONMENT SETTINGS
+  // ========================================================================
+
+  /**
+   * Set custom color palette (user overrides)
+   * @param {Object} colorPalette - Color palette object
+   */
+  setColorPalette(colorPalette) {
+    this.state.environment.colorPalette = colorPalette;
+    this.trackModification("updateEnvironment");
+    console.log("✅ Color palette updated in StateManager");
+  },
+
+  /**
+   * Get custom color palette (or null if using defaults)
+   * @returns {Object|null} Color palette or null
+   */
+  getColorPalette() {
+    return this.state.environment.colorPalette;
+  },
+
+  /**
+   * Clear custom color palette (revert to defaults)
+   */
+  clearColorPalette() {
+    this.state.environment.colorPalette = null;
+    this.trackModification("updateEnvironment");
+    console.log("✅ Color palette cleared (reverted to defaults)");
+  },
+
+  // ========================================================================
   // EXPORT/IMPORT (Future)
   // ========================================================================
 
@@ -612,6 +649,9 @@ export const RTStateManager = {
       version: "1.0",
       timestamp: Date.now(),
       count: this.state.instances.length,
+      environment: {
+        colorPalette: this.state.environment.colorPalette, // Include custom colors
+      },
       instances: this.state.instances.map(instance => ({
         id: instance.id,
         timestamp: instance.timestamp,
