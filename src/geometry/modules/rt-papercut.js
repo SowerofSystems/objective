@@ -24,6 +24,7 @@ export const RTPapercut = {
     cutplaneAxis: "z", // 'x', 'y', 'z' (Cartesian) or 'w', 'x', 'y', 'z' (Tetrahedral)
     cutplaneNormal: null, // THREE.Vector3
     invertCutPlane: false, // Invert normal (for ground plane mode)
+    intervalSnapEnabled: true, // Snap to grid intervals (step=1.0) vs fine control (step=0.1)
     lineWeightEnabled: true,
     lineWeightMin: 0.5,
     lineWeightMax: 3.0,
@@ -115,19 +116,28 @@ export const RTPapercut = {
       sectionNodesCheckbox.addEventListener("change", e => {
         RTPapercut.state.sectionNodesEnabled = e.target.checked;
         // Regenerate intersection edges to include/exclude node circles
-        if (RTPapercut.state.cutplaneEnabled && RTPapercut.state.cutplaneNormal) {
+        if (
+          RTPapercut.state.cutplaneEnabled &&
+          RTPapercut.state.cutplaneNormal
+        ) {
           RTPapercut.updateCutplane(RTPapercut.state.cutplaneValue, scene);
         }
       });
     }
 
     // 3d. Adaptive Node Resolution checkbox
-    const adaptiveResolutionCheckbox = document.getElementById("adaptiveNodeResolution");
+    const adaptiveResolutionCheckbox = document.getElementById(
+      "adaptiveNodeResolution"
+    );
     if (adaptiveResolutionCheckbox) {
       adaptiveResolutionCheckbox.addEventListener("change", e => {
         RTPapercut.state.adaptiveNodeResolution = e.target.checked;
         // Regenerate circles with new resolution
-        if (RTPapercut.state.cutplaneEnabled && RTPapercut.state.cutplaneNormal && RTPapercut.state.sectionNodesEnabled) {
+        if (
+          RTPapercut.state.cutplaneEnabled &&
+          RTPapercut.state.cutplaneNormal &&
+          RTPapercut.state.sectionNodesEnabled
+        ) {
           RTPapercut.updateCutplane(RTPapercut.state.cutplaneValue, scene);
         }
       });
@@ -140,6 +150,16 @@ export const RTPapercut = {
       backfaceCullingCheckbox.addEventListener("change", e => {
         RTPapercut.state.backfaceCullingEnabled = e.target.checked;
         RTPapercut.toggleBackfaceCulling(scene);
+      });
+    }
+
+    // 3f. Interval Snap checkbox
+    const intervalSnapCheckbox = document.getElementById("intervalSnap");
+    if (intervalSnapCheckbox) {
+      intervalSnapCheckbox.addEventListener("change", e => {
+        RTPapercut.state.intervalSnapEnabled = e.target.checked;
+        // Update slider step size immediately
+        RTPapercut._updateSliderRange();
       });
     }
 
@@ -220,10 +240,10 @@ export const RTPapercut = {
           id="cutplaneSlider"
           min="-10"
           max="10"
-          step="0.1"
+          step="1.0"
           value="0"
         />
-        <span class="slider-value" id="cutplaneValue">0.0</span>
+        <span class="slider-value" id="cutplaneValue">0</span>
       </div>
       <p class="info-text" id="cutplaneAxisInfo">Axis: Z (Top/Bottom view)</p>
     `;
@@ -245,7 +265,7 @@ export const RTPapercut = {
   },
 
   /**
-   * Update slider range based on current grid extent
+   * Update slider range and step size based on current grid extent and basis
    * @private
    */
   _updateSliderRange: function () {
@@ -255,6 +275,7 @@ export const RTPapercut = {
     const range = RTPapercut._getCutplaneRange();
     slider.min = range.min;
     slider.max = range.max;
+    slider.step = range.step;
 
     // Reset to center if current value is out of bounds
     const currentValue = parseFloat(slider.value);
@@ -263,26 +284,43 @@ export const RTPapercut = {
       RTPapercut.state.cutplaneValue = 0;
       const valueDisplay = document.getElementById("cutplaneValue");
       if (valueDisplay) {
-        valueDisplay.textContent = "0.0";
+        valueDisplay.textContent = "0";
       }
     }
 
-    // Cutplane range updated
+    console.log(
+      `✂️ Cutplane range: [${range.min}, ${range.max}] step=${range.step} (basis: ${RTPapercut.state.cutplaneBasis})`
+    );
   },
 
   /**
-   * Get cutplane range based on current grid extent
-   * XYZ grid is always -10 to +10 units (independent of grid divisions)
-   * @returns {{min: number, max: number}}
+   * Get cutplane range and step size based on current basis
+   * Returns extent and step that match the grid interval system
+   * @returns {{min: number, max: number, step: number}}
    * @private
    */
   _getCutplaneRange: function () {
-    // XYZ grid extent is fixed at ±10 units
-    // Grid divisions control line spacing, not extent
-    return {
-      min: -10,
-      max: 10,
-    };
+    const basis = RTPapercut.state.cutplaneBasis;
+    const snapEnabled = RTPapercut.state.intervalSnapEnabled;
+
+    // Step size: 1.0 for interval snapping, 0.1 for fine control
+    const step = snapEnabled ? 1.0 : 0.1;
+
+    if (basis === "tetrahedral") {
+      // WXYZ Tetrahedral: Natural interval is 12 units
+      return {
+        min: -12,
+        max: 12,
+        step: step,
+      };
+    } else {
+      // XYZ Cartesian: Natural interval is 10 units
+      return {
+        min: -10,
+        max: 10,
+        step: step,
+      };
+    }
   },
 
   /**
@@ -797,7 +835,12 @@ export const RTPapercut = {
    * @returns {Array<THREE.Vector3>|null} Array of points forming circle, or null if no intersection
    * @private
    */
-  _spherePlaneIntersection: function (sphereCenter, sphereRadius, plane, segments = 32) {
+  _spherePlaneIntersection: function (
+    sphereCenter,
+    sphereRadius,
+    plane,
+    segments = 32
+  ) {
     // RT-Pure: Work with quadrance until final radius calculation
     const distanceToPlane = plane.distanceToPoint(sphereCenter);
     const distanceQ = distanceToPlane * distanceToPlane;
@@ -823,9 +866,14 @@ export const RTPapercut = {
     const normal = plane.normal.clone();
 
     // Find first tangent vector (cross with any non-parallel vector)
-    const up = Math.abs(normal.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+    const up =
+      Math.abs(normal.y) < 0.9
+        ? new THREE.Vector3(0, 1, 0)
+        : new THREE.Vector3(1, 0, 0);
     const tangent1 = new THREE.Vector3().crossVectors(normal, up).normalize();
-    const tangent2 = new THREE.Vector3().crossVectors(normal, tangent1).normalize();
+    const tangent2 = new THREE.Vector3()
+      .crossVectors(normal, tangent1)
+      .normalize();
 
     // Generate circle points using parametric form
     const points = [];
@@ -834,7 +882,8 @@ export const RTPapercut = {
       const x = Math.cos(angle) * circleRadius;
       const y = Math.sin(angle) * circleRadius;
 
-      const point = circleCenter.clone()
+      const point = circleCenter
+        .clone()
         .add(tangent1.clone().multiplyScalar(x))
         .add(tangent2.clone().multiplyScalar(y));
 

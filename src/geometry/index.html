@@ -32,7 +32,9 @@
     <div id="info-modal-overlay" class="hidden">
       <div id="info-modal">
         <h2>A.R.T. Explorer</h2>
-        <p class="modal-subtitle">Algebraic Rational Trigonometry Geometry Engine</p>
+        <p class="modal-subtitle">
+          Algebraic Rational Trigonometry Geometry Engine
+        </p>
 
         <div class="modal-content-grid">
           <!-- Left Column -->
@@ -79,13 +81,17 @@
                 <strong>N.J. Wildberger's Rational Trigonometry</strong>.
               </p>
               <p class="modal-text">
-                This app uses Rational Trigonometry to perform pure algebraic geometry calculations
-                in quadrance and spread space, avoiding transcendental functions (sin, cos, tan) entirely.
-                Working symbolically in quadrance space, square roots are deferred until the final rendering
-                stage when instantiating THREE.js Vector3 vertices, maintaining algebraic exactness throughout
-                intermediate calculations and only expanding to floating-point at the GPU boundary.
-                Golden ratio (φ) relationships are preserved algebraically using φ² = φ + 1, and rotations
-                employ Weierstrass substitution to convert trigonometric operations into pure rational expressions.
+                This app uses Rational Trigonometry to perform pure algebraic
+                geometry calculations in quadrance and spread space, avoiding
+                transcendental functions (sin, cos, tan) entirely. Working
+                symbolically in quadrance space, square roots are deferred until
+                the final rendering stage when instantiating THREE.js Vector3
+                vertices, maintaining algebraic exactness throughout
+                intermediate calculations and only expanding to floating-point
+                at the GPU boundary. Golden ratio (φ) relationships are
+                preserved algebraically using φ² = φ + 1, and rotations employ
+                Weierstrass substitution to convert trigonometric operations
+                into pure rational expressions.
               </p>
             </div>
           </div>
@@ -119,45 +125,85 @@
               <p class="modal-text">
                 Traditional geometry engines accumulate floating-point errors.
                 A.R.T. maintains <strong>exact rational relationships</strong>
-                throughout calculations, enabling precision-critical applications
-                in architecture, crystallography, and computational geometry.
+                throughout calculations, enabling precision-critical
+                applications in architecture, crystallography, and computational
+                geometry.
               </p>
             </div>
 
             <div class="modal-section">
               <h3>Credits</h3>
               <ul class="credits-list">
-                <li>Rudolf Dorenach, Bucky's German Associate and my first Synergetics mentor</li>
+                <li>
+                  Rudolf Dorenach, Bucky's German Associate and my first
+                  Synergetics mentor
+                </li>
                 <li>Kirby Urner, for introducting me to Quadrays</li>
-                <li>Tom Ace, for his work on the basis vector conversion idea</li>
+                <li>
+                  Tom Ace, for his work on the basis vector conversion idea
+                </li>
                 <li>Gerald DeJong, for introducing me to Wildberger</li>
-                <li>Dawn Danby and David McConville - for their moral support and enthusiasm</li>
-                <li>Bonnie DeVarco, for her tireless preservation and active engagement with the original work</li>
-                <li>Mark Pavlidis, for teaching me how to navigate Git and the importance of clean code</li>
-                <li>Enzyme APD, for encouraging the pursuit of these ideas against all odds</li>
+                <li>
+                  Dawn Danby and David McConville - for their moral support and
+                  enthusiasm
+                </li>
+                <li>
+                  Bonnie DeVarco, for her tireless preservation and active
+                  engagement with the original work
+                </li>
+                <li>
+                  Mark Pavlidis, for teaching me how to navigate Git and the
+                  importance of clean code
+                </li>
+                <li>
+                  Enzyme APD, for encouraging the pursuit of these ideas against
+                  all odds
+                </li>
                 <li>Metatron — because nothing is noticed alone</li>
               </ul>
             </div>
           </div>
         </div>
 
-        <button id="info-modal-close" class="modal-close-btn">Get Started</button>
+        <button id="info-modal-close" class="modal-close-btn">
+          Get Started
+        </button>
       </div>
     </div>
 
     <div id="container">
-      <div id="canvas-container">
-      </div>
+      <div id="canvas-container"></div>
       <div id="controls-panel">
         <div class="panel-header">
           <div>
             <h2>A.R.T Explorer</h2>
             <h5>by Andy Ross Thomson</h5>
           </div>
-          <button id="info-icon-btn" class="info-icon-btn" title="About A.R.T. Explorer">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-              <path d="M12 16V12M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <button
+            id="info-icon-btn"
+            class="info-icon-btn"
+            title="About A.R.T. Explorer"
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="2"
+              />
+              <path
+                d="M12 16V12M12 8H12.01"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
             </svg>
           </button>
         </div>
@@ -204,7 +250,10 @@
               <strong>Import:</strong> Load .json state file<br />
               <strong>Export:</strong> Choose format (JSON/glTF/glB/CSV)<br />
               <strong>Save:</strong> Quick save to timestamped JSON<br />
-              <span style="font-size: 10px; color: #666;">Keyboard: Ctrl/Cmd+S (Save) | Ctrl/Cmd+O (Import) | Ctrl/Cmd+E (Export)</span>
+              <span style="font-size: 10px; color: #666"
+                >Keyboard: Ctrl/Cmd+S (Save) | Ctrl/Cmd+O (Import) | Ctrl/Cmd+E
+                (Export)</span
+              >
             </p>
           </div>
         </div>
@@ -426,7 +475,11 @@
                 <input type="checkbox" id="showTetrahedron" />
                 Tetrahedron (Inscribed)
               </label>
-              <div id="geodesic-tetra-all" class="geodesic-options geodesic-control-wrapper" style="display: none;">
+              <div
+                id="geodesic-tetra-all"
+                class="geodesic-options geodesic-control-wrapper"
+                style="display: none"
+              >
                 <div class="geodesic-nested">
                   <label class="checkbox-label">
                     <input type="checkbox" id="showGeodesicTetrahedron" />
@@ -435,24 +488,48 @@
                   <div class="geodesic-nested">
                     <div class="geodesic-frequency-container">
                       <label class="geodesic-frequency-label">Freq:</label>
-                      <input type="number" id="geodesicTetraFrequency" min="1" max="7" value="1" class="geodesic-frequency-input" />
+                      <input
+                        type="number"
+                        id="geodesicTetraFrequency"
+                        min="1"
+                        max="7"
+                        value="1"
+                        class="geodesic-frequency-input"
+                      />
                     </div>
                     <div class="geodesic-projection-container">
                       <label class="geodesic-projection-label">Project:</label>
                       <label class="geodesic-projection-option">
-                        <input type="radio" name="geodesicTetraProjection" value="off" />
+                        <input
+                          type="radio"
+                          name="geodesicTetraProjection"
+                          value="off"
+                        />
                         Off (flat)
                       </label>
                       <label class="geodesic-projection-option">
-                        <input type="radio" name="geodesicTetraProjection" value="in" />
+                        <input
+                          type="radio"
+                          name="geodesicTetraProjection"
+                          value="in"
+                        />
                         InSphere
                       </label>
                       <label class="geodesic-projection-option">
-                        <input type="radio" name="geodesicTetraProjection" value="mid" />
+                        <input
+                          type="radio"
+                          name="geodesicTetraProjection"
+                          value="mid"
+                        />
                         MidSphere
                       </label>
                       <label class="geodesic-projection-option">
-                        <input type="radio" name="geodesicTetraProjection" value="out" checked />
+                        <input
+                          type="radio"
+                          name="geodesicTetraProjection"
+                          value="out"
+                          checked
+                        />
                         OutSphere
                       </label>
                     </div>
@@ -465,7 +542,11 @@
                 <input type="checkbox" id="showDualTetrahedron" checked />
                 Tetrahedron Dual
               </label>
-              <div id="geodesic-dual-tetra-all" class="geodesic-options geodesic-control-wrapper" style="display: none;">
+              <div
+                id="geodesic-dual-tetra-all"
+                class="geodesic-options geodesic-control-wrapper"
+                style="display: none"
+              >
                 <div class="geodesic-nested">
                   <label class="checkbox-label">
                     <input type="checkbox" id="showGeodesicDualTetrahedron" />
@@ -474,24 +555,48 @@
                   <div class="geodesic-nested">
                     <div class="geodesic-frequency-container">
                       <label class="geodesic-frequency-label">Freq:</label>
-                      <input type="number" id="geodesicDualTetraFrequency" min="1" max="7" value="1" class="geodesic-frequency-input" />
+                      <input
+                        type="number"
+                        id="geodesicDualTetraFrequency"
+                        min="1"
+                        max="7"
+                        value="1"
+                        class="geodesic-frequency-input"
+                      />
                     </div>
                     <div class="geodesic-projection-container">
                       <label class="geodesic-projection-label">Project:</label>
                       <label class="geodesic-projection-option">
-                        <input type="radio" name="geodesicDualTetraProjection" value="off" />
+                        <input
+                          type="radio"
+                          name="geodesicDualTetraProjection"
+                          value="off"
+                        />
                         Off (flat)
                       </label>
                       <label class="geodesic-projection-option">
-                        <input type="radio" name="geodesicDualTetraProjection" value="in" />
+                        <input
+                          type="radio"
+                          name="geodesicDualTetraProjection"
+                          value="in"
+                        />
                         InSphere
                       </label>
                       <label class="geodesic-projection-option">
-                        <input type="radio" name="geodesicDualTetraProjection" value="mid" />
+                        <input
+                          type="radio"
+                          name="geodesicDualTetraProjection"
+                          value="mid"
+                        />
                         MidSphere
                       </label>
                       <label class="geodesic-projection-option">
-                        <input type="radio" name="geodesicDualTetraProjection" value="out" checked />
+                        <input
+                          type="radio"
+                          name="geodesicDualTetraProjection"
+                          value="out"
+                          checked
+                        />
                         OutSphere
                       </label>
                     </div>
@@ -505,7 +610,11 @@
                 <input type="checkbox" id="showOctahedron" />
                 Octahedron (Dual of Cube)
               </label>
-              <div id="geodesic-octa-all" class="geodesic-options geodesic-control-wrapper" style="display: none;">
+              <div
+                id="geodesic-octa-all"
+                class="geodesic-options geodesic-control-wrapper"
+                style="display: none"
+              >
                 <div class="geodesic-nested">
                   <label class="checkbox-label">
                     <input type="checkbox" id="showGeodesicOctahedron" />
@@ -514,24 +623,48 @@
                   <div class="geodesic-nested">
                     <div class="geodesic-frequency-container">
                       <label class="geodesic-frequency-label">Freq:</label>
-                      <input type="number" id="geodesicOctaFrequency" min="1" max="7" value="1" class="geodesic-frequency-input" />
+                      <input
+                        type="number"
+                        id="geodesicOctaFrequency"
+                        min="1"
+                        max="7"
+                        value="1"
+                        class="geodesic-frequency-input"
+                      />
                     </div>
                     <div class="geodesic-projection-container">
                       <label class="geodesic-projection-label">Project:</label>
                       <label class="geodesic-projection-option">
-                        <input type="radio" name="geodesicOctaProjection" value="off" />
+                        <input
+                          type="radio"
+                          name="geodesicOctaProjection"
+                          value="off"
+                        />
                         Off (flat)
                       </label>
                       <label class="geodesic-projection-option">
-                        <input type="radio" name="geodesicOctaProjection" value="in" />
+                        <input
+                          type="radio"
+                          name="geodesicOctaProjection"
+                          value="in"
+                        />
                         InSphere
                       </label>
                       <label class="geodesic-projection-option">
-                        <input type="radio" name="geodesicOctaProjection" value="mid" />
+                        <input
+                          type="radio"
+                          name="geodesicOctaProjection"
+                          value="mid"
+                        />
                         MidSphere
                       </label>
                       <label class="geodesic-projection-option">
-                        <input type="radio" name="geodesicOctaProjection" value="out" checked />
+                        <input
+                          type="radio"
+                          name="geodesicOctaProjection"
+                          value="out"
+                          checked
+                        />
                         OutSphere
                       </label>
                     </div>
@@ -545,7 +678,11 @@
                 <input type="checkbox" id="showIcosahedron" />
                 Icosahedron (20 faces, φ)
               </label>
-              <div id="geodesic-icosa-all" class="geodesic-options geodesic-control-wrapper" style="display: none;">
+              <div
+                id="geodesic-icosa-all"
+                class="geodesic-options geodesic-control-wrapper"
+                style="display: none"
+              >
                 <div class="geodesic-nested">
                   <label class="checkbox-label">
                     <input type="checkbox" id="showGeodesicIcosahedron" />
@@ -554,24 +691,48 @@
                   <div class="geodesic-nested">
                     <div class="geodesic-frequency-container">
                       <label class="geodesic-frequency-label">Freq:</label>
-                      <input type="number" id="geodesicIcosaFrequency" min="1" max="7" value="1" class="geodesic-frequency-input" />
+                      <input
+                        type="number"
+                        id="geodesicIcosaFrequency"
+                        min="1"
+                        max="7"
+                        value="1"
+                        class="geodesic-frequency-input"
+                      />
                     </div>
                     <div class="geodesic-projection-container">
                       <label class="geodesic-projection-label">Project:</label>
                       <label class="geodesic-projection-option">
-                        <input type="radio" name="geodesicIcosaProjection" value="off" />
+                        <input
+                          type="radio"
+                          name="geodesicIcosaProjection"
+                          value="off"
+                        />
                         Off (flat)
                       </label>
                       <label class="geodesic-projection-option">
-                        <input type="radio" name="geodesicIcosaProjection" value="in" />
+                        <input
+                          type="radio"
+                          name="geodesicIcosaProjection"
+                          value="in"
+                        />
                         InSphere
                       </label>
                       <label class="geodesic-projection-option">
-                        <input type="radio" name="geodesicIcosaProjection" value="mid" />
+                        <input
+                          type="radio"
+                          name="geodesicIcosaProjection"
+                          value="mid"
+                        />
                         MidSphere
                       </label>
                       <label class="geodesic-projection-option">
-                        <input type="radio" name="geodesicIcosaProjection" value="out" checked />
+                        <input
+                          type="radio"
+                          name="geodesicIcosaProjection"
+                          value="out"
+                          checked
+                        />
                         OutSphere
                       </label>
                     </div>
@@ -590,7 +751,11 @@
                 <input type="checkbox" id="showDualIcosahedron" />
                 Icosahedron Dual (Face Dual)
               </label>
-              <div id="geodesic-dual-icosa-all" class="geodesic-options geodesic-control-wrapper" style="display: none;">
+              <div
+                id="geodesic-dual-icosa-all"
+                class="geodesic-options geodesic-control-wrapper"
+                style="display: none"
+              >
                 <div class="geodesic-nested">
                   <label class="checkbox-label">
                     <input type="checkbox" id="showGeodesicDualIcosahedron" />
@@ -599,24 +764,48 @@
                   <div class="geodesic-nested">
                     <div class="geodesic-frequency-container">
                       <label class="geodesic-frequency-label">Freq:</label>
-                      <input type="number" id="geodesicDualIcosaFrequency" min="1" max="7" value="1" class="geodesic-frequency-input" />
+                      <input
+                        type="number"
+                        id="geodesicDualIcosaFrequency"
+                        min="1"
+                        max="7"
+                        value="1"
+                        class="geodesic-frequency-input"
+                      />
                     </div>
                     <div class="geodesic-projection-container">
                       <label class="geodesic-projection-label">Project:</label>
                       <label class="geodesic-projection-option">
-                        <input type="radio" name="geodesicDualIcosaProjection" value="off" />
+                        <input
+                          type="radio"
+                          name="geodesicDualIcosaProjection"
+                          value="off"
+                        />
                         Off (flat)
                       </label>
                       <label class="geodesic-projection-option">
-                        <input type="radio" name="geodesicDualIcosaProjection" value="in" />
+                        <input
+                          type="radio"
+                          name="geodesicDualIcosaProjection"
+                          value="in"
+                        />
                         InSphere
                       </label>
                       <label class="geodesic-projection-option">
-                        <input type="radio" name="geodesicDualIcosaProjection" value="mid" />
+                        <input
+                          type="radio"
+                          name="geodesicDualIcosaProjection"
+                          value="mid"
+                        />
                         MidSphere
                       </label>
                       <label class="geodesic-projection-option">
-                        <input type="radio" name="geodesicDualIcosaProjection" value="out" checked />
+                        <input
+                          type="radio"
+                          name="geodesicDualIcosaProjection"
+                          value="out"
+                          checked
+                        />
                         OutSphere
                       </label>
                     </div>
@@ -648,21 +837,32 @@
                 <input type="checkbox" id="showCubeMatrix" />
                 Hexahedral Matrix (IVM)
               </label>
-              <div id="cube-matrix-controls" class="geodesic-options matrix-control-wrapper" style="display: none;">
+              <div
+                id="cube-matrix-controls"
+                class="geodesic-options matrix-control-wrapper"
+                style="display: none"
+              >
                 <div class="matrix-control-item">
                   <label class="matrix-size-label">Matrix Size</label>
                   <div class="slider-container">
-                    <input type="range" id="cubeMatrixSizeSlider" min="1" max="10" step="1" value="1" />
-                    <span class="slider-value" id="cubeMatrixSizeValue">1×1</span>
+                    <input
+                      type="range"
+                      id="cubeMatrixSizeSlider"
+                      min="1"
+                      max="10"
+                      step="1"
+                      value="1"
+                    />
+                    <span class="slider-value" id="cubeMatrixSizeValue"
+                      >1×1</span
+                    >
                   </div>
                 </div>
                 <label class="checkbox-label matrix-checkbox-label">
                   <input type="checkbox" id="cubeMatrixRotate45" />
                   Rotate 45° (grid align)
                 </label>
-                <p class="matrix-info-text">
-                  N×N spatial array (spread = 0.5)
-                </p>
+                <p class="matrix-info-text">N×N spatial array (spread = 0.5)</p>
               </div>
             </div>
 
@@ -672,12 +872,25 @@
                 <input type="checkbox" id="showTetMatrix" />
                 Tetrahedral Matrix (IVM)
               </label>
-              <div id="tet-matrix-controls" class="geodesic-options matrix-control-wrapper" style="display: none;">
+              <div
+                id="tet-matrix-controls"
+                class="geodesic-options matrix-control-wrapper"
+                style="display: none"
+              >
                 <div class="matrix-control-item">
                   <label class="matrix-size-label">Matrix Size</label>
                   <div class="slider-container">
-                    <input type="range" id="tetMatrixSizeSlider" min="1" max="10" step="1" value="1" />
-                    <span class="slider-value" id="tetMatrixSizeValue">1×1</span>
+                    <input
+                      type="range"
+                      id="tetMatrixSizeSlider"
+                      min="1"
+                      max="10"
+                      step="1"
+                      value="1"
+                    />
+                    <span class="slider-value" id="tetMatrixSizeValue"
+                      >1×1</span
+                    >
                   </div>
                 </div>
                 <label class="checkbox-label matrix-checkbox-label">
@@ -696,12 +909,25 @@
                 <input type="checkbox" id="showOctaMatrix" />
                 Octahedral Matrix (IVM)
               </label>
-              <div id="octa-matrix-controls" class="geodesic-options matrix-control-wrapper" style="display: none;">
+              <div
+                id="octa-matrix-controls"
+                class="geodesic-options matrix-control-wrapper"
+                style="display: none"
+              >
                 <div class="matrix-control-item">
                   <label class="matrix-size-label">Matrix Size</label>
                   <div class="slider-container">
-                    <input type="range" id="octaMatrixSizeSlider" min="1" max="10" step="1" value="1" />
-                    <span class="slider-value" id="octaMatrixSizeValue">1×1</span>
+                    <input
+                      type="range"
+                      id="octaMatrixSizeSlider"
+                      min="1"
+                      max="10"
+                      step="1"
+                      value="1"
+                    />
+                    <span class="slider-value" id="octaMatrixSizeValue"
+                      >1×1</span
+                    >
                   </div>
                 </div>
                 <label class="checkbox-label matrix-checkbox-label">
@@ -724,12 +950,25 @@
                 <input type="checkbox" id="showCuboctahedronMatrix" />
                 Cuboctahedral Matrix (VE)
               </label>
-              <div id="cubocta-matrix-controls" class="geodesic-options matrix-control-wrapper" style="display: none;">
+              <div
+                id="cubocta-matrix-controls"
+                class="geodesic-options matrix-control-wrapper"
+                style="display: none"
+              >
                 <div class="matrix-control-item">
                   <label class="matrix-size-label">Matrix Size</label>
                   <div class="slider-container">
-                    <input type="range" id="cuboctaMatrixSizeSlider" min="1" max="10" step="1" value="1" />
-                    <span class="slider-value" id="cuboctaMatrixSizeValue">1×1</span>
+                    <input
+                      type="range"
+                      id="cuboctaMatrixSizeSlider"
+                      min="1"
+                      max="10"
+                      step="1"
+                      value="1"
+                    />
+                    <span class="slider-value" id="cuboctaMatrixSizeValue"
+                      >1×1</span
+                    >
                   </div>
                 </div>
                 <label class="checkbox-label matrix-checkbox-label">
@@ -748,12 +987,25 @@
                 <input type="checkbox" id="showRhombicDodecMatrix" />
                 Rhombic Dodecahedral Matrix
               </label>
-              <div id="rhombic-dodec-matrix-controls" class="geodesic-options matrix-control-wrapper" style="display: none;">
+              <div
+                id="rhombic-dodec-matrix-controls"
+                class="geodesic-options matrix-control-wrapper"
+                style="display: none"
+              >
                 <div class="matrix-control-item">
                   <label class="matrix-size-label">Matrix Size</label>
                   <div class="slider-container">
-                    <input type="range" id="rhombicDodecMatrixSizeSlider" min="1" max="10" step="1" value="1" />
-                    <span class="slider-value" id="rhombicDodecMatrixSizeValue">1×1</span>
+                    <input
+                      type="range"
+                      id="rhombicDodecMatrixSizeSlider"
+                      min="1"
+                      max="10"
+                      step="1"
+                      value="1"
+                    />
+                    <span class="slider-value" id="rhombicDodecMatrixSizeValue"
+                      >1×1</span
+                    >
                   </div>
                 </div>
                 <label class="checkbox-label matrix-checkbox-label">
@@ -769,7 +1021,6 @@
                 </p>
               </div>
             </div>
-
           </div>
         </div>
         <!-- END SECTION 3: FORMS -->
@@ -1165,7 +1416,11 @@
                   Md
                 </button>
                 <button class="node-size-btn" data-node-size="lg">Lg</button>
-                <button class="node-size-btn" data-node-size="packed" title="Close-packed spheres: r = a/2 (kissing number)">
+                <button
+                  class="node-size-btn"
+                  data-node-size="packed"
+                  title="Close-packed spheres: r = a/2 (kissing number)"
+                >
                   Packed
                 </button>
               </div>
@@ -1284,7 +1539,9 @@
 
             <!-- WXYZ Tetrahedral Basis Views -->
             <div class="control-item spacing-top-large">
-              <hr style="border: none; border-top: 1px solid #444; margin: 20px 0;" />
+              <hr
+                style="border: none; border-top: 1px solid #444; margin: 20px 0"
+              />
               <label class="label-section">WXYZ Tetrahedral Views</label>
               <div class="button-grid-2col">
                 <button class="toggle-btn variant-standard" id="viewW">
@@ -1331,18 +1588,15 @@
             <div class="control-item">
               <label style="font-size: 12px; color: #b0b0b0">Line Weight</label>
               <div class="slider-container">
-                <input
-                  type="range"
-                  id="lineWeight"
-                  min="1"
-                  max="5"
-                  value="1"
-                />
+                <input type="range" id="lineWeight" min="1" max="5" value="1" />
                 <span class="slider-value" id="lineWeightValue">1</span>
               </div>
             </div>
             <div class="control-item">
-              <label class="checkbox-label" title="Hide back-facing polygons for better performance (~2x faster). All geometry is correctly wound.">
+              <label
+                class="checkbox-label"
+                title="Hide back-facing polygons for better performance (~2x faster). All geometry is correctly wound."
+              >
                 <input type="checkbox" id="backfaceCulling" checked />
                 Backface Culling
               </label>
@@ -1367,32 +1621,66 @@
             </div>
             <div class="control-item">
               <label class="checkbox-label">
+                <input type="checkbox" id="intervalSnap" checked />
+                Interval Snap
+              </label>
+            </div>
+            <div class="control-item">
+              <label class="checkbox-label">
                 <input type="checkbox" id="sectionNodes" />
                 Section Nodes
               </label>
+            </div>
             <div class="control-item">
               <label class="checkbox-label">
                 <input type="checkbox" id="adaptiveNodeResolution" />
                 High Resolution Nodes
               </label>
             </div>
-            </div>
             <!-- Axial Cutplane Selections -->
             <div class="control-item spacing-top-large">
-              <hr style="border: none; border-top: 1px solid #444; margin: 20px 0;" />
+              <hr
+                style="border: none; border-top: 1px solid #444; margin: 20px 0"
+              />
               <label class="label-section">Axial Cutplane Selections</label>
               <label class="label-subsection">Cartesian Basis</label>
-              <div style="display: flex; gap: 4px; margin-bottom: 8px;">
-                <button class="toggle-btn variant-small" id="cutplaneAxisX">X</button>
-                <button class="toggle-btn variant-small" id="cutplaneAxisY">Y</button>
-                <button class="toggle-btn variant-small active" id="cutplaneAxisZ">Z</button>
+              <div style="display: flex; gap: 4px; margin-bottom: 8px">
+                <button class="toggle-btn variant-small" id="cutplaneAxisX">
+                  X
+                </button>
+                <button class="toggle-btn variant-small" id="cutplaneAxisY">
+                  Y
+                </button>
+                <button
+                  class="toggle-btn variant-small active"
+                  id="cutplaneAxisZ"
+                >
+                  Z
+                </button>
               </div>
               <label class="label-subsection">Tetrahedral Basis</label>
-              <div style="display: flex; gap: 4px;">
-                <button class="toggle-btn variant-small" id="cutplaneAxisW">W</button>
-                <button class="toggle-btn variant-small" id="cutplaneAxisTetraX">X</button>
-                <button class="toggle-btn variant-small" id="cutplaneAxisTetraY">Y</button>
-                <button class="toggle-btn variant-small" id="cutplaneAxisTetraZ">Z</button>
+              <div style="display: flex; gap: 4px">
+                <button class="toggle-btn variant-small" id="cutplaneAxisW">
+                  W
+                </button>
+                <button
+                  class="toggle-btn variant-small"
+                  id="cutplaneAxisTetraX"
+                >
+                  X
+                </button>
+                <button
+                  class="toggle-btn variant-small"
+                  id="cutplaneAxisTetraY"
+                >
+                  Y
+                </button>
+                <button
+                  class="toggle-btn variant-small"
+                  id="cutplaneAxisTetraZ"
+                >
+                  Z
+                </button>
               </div>
             </div>
             <div class="control-item">
@@ -1459,38 +1747,75 @@
               trigonometry
             </p>
 
-            <div style="margin-top: 15px; padding-top: 12px; border-top: 1px solid #444">
+            <div
+              style="
+                margin-top: 15px;
+                padding-top: 12px;
+                border-top: 1px solid #444;
+              "
+            >
               <p style="font-size: 10px; color: #888; margin-bottom: 6px">
                 <strong style="color: #7ab8ff">Interactive Math Demos:</strong>
               </p>
-              <ul style="font-size: 10px; color: #7ab8ff; margin-left: 15px; line-height: 1.6">
+              <ul
+                style="
+                  font-size: 10px;
+                  color: #7ab8ff;
+                  margin-left: 15px;
+                  line-height: 1.6;
+                "
+              >
                 <li>
-                  <a href="#" id="open-quadrance-demo" style="color: #7ab8ff; text-decoration: none">
+                  <a
+                    href="#"
+                    id="open-quadrance-demo"
+                    style="color: #7ab8ff; text-decoration: none"
+                  >
                     Quadrance
                   </a>
                   <span style="color: #888"> - rational distance</span>
                 </li>
                 <li>
-                  <a href="#" id="open-cross-demo" style="color: #7ab8ff; text-decoration: none">
+                  <a
+                    href="#"
+                    id="open-cross-demo"
+                    style="color: #7ab8ff; text-decoration: none"
+                  >
                     Cross Product
                   </a>
-                  <span style="color: #888"> - vector relationships & spread</span>
+                  <span style="color: #888">
+                    - vector relationships & spread</span
+                  >
                 </li>
                 <li>
-                  <a href="#" id="open-weierstrass-demo" style="color: #7ab8ff; text-decoration: none">
+                  <a
+                    href="#"
+                    id="open-weierstrass-demo"
+                    style="color: #7ab8ff; text-decoration: none"
+                  >
                     Weierstrass
                   </a>
                   <span style="color: #888"> - circle parametrization</span>
                 </li>
                 <li>
-                  <a href="#" id="open-color-theory-modal" style="color: #7ab8ff; text-decoration: none">
+                  <a
+                    href="#"
+                    id="open-color-theory-modal"
+                    style="color: #7ab8ff; text-decoration: none"
+                  >
                     Color Theory
                   </a>
-                  <span style="color: #888"> - backface culling calibration</span>
+                  <span style="color: #888">
+                    - backface culling calibration</span
+                  >
                 </li>
               </ul>
-              <p class="info-text" style="font-size: 9px; margin-top: 6px; font-style: italic">
-                Explore the rational trigonometry foundations used for WXYZ and XYZ rotations
+              <p
+                class="info-text"
+                style="font-size: 9px; margin-top: 6px; font-style: italic"
+              >
+                Explore the rational trigonometry foundations used for WXYZ and
+                XYZ rotations
               </p>
             </div>
           </div>

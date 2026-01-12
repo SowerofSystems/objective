@@ -89,14 +89,14 @@ function initInfoModal() {
   infoModalCloseBtn.addEventListener("click", closeInfoModal);
 
   // ESC key closes modal
-  document.addEventListener("keydown", (e) => {
+  document.addEventListener("keydown", e => {
     if (e.key === "Escape" && !infoModalOverlay.classList.contains("hidden")) {
       closeInfoModal();
     }
   });
 
   // Click outside modal to close
-  infoModalOverlay.addEventListener("click", (e) => {
+  infoModalOverlay.addEventListener("click", e => {
     if (e.target === infoModalOverlay) {
       closeInfoModal();
     }
@@ -353,14 +353,17 @@ function startARTexplorer(
   }
 
   // Dual Tetrahedron with geodesic controls toggle
-  const dualTetrahedronCheckbox = document.getElementById("showDualTetrahedron");
+  const dualTetrahedronCheckbox = document.getElementById(
+    "showDualTetrahedron"
+  );
   const geodesicDualTetraCheckbox = document.getElementById(
     "showGeodesicDualTetrahedron"
   );
   if (dualTetrahedronCheckbox) {
     dualTetrahedronCheckbox.addEventListener("change", () => {
-      const geodesicDualTetraControls =
-        document.getElementById("geodesic-dual-tetra-all");
+      const geodesicDualTetraControls = document.getElementById(
+        "geodesic-dual-tetra-all"
+      );
       if (geodesicDualTetraControls) {
         // Keep controls visible if geodesic variant is checked (preserve settings)
         const shouldShow =
@@ -374,8 +377,9 @@ function startARTexplorer(
   // Also listen to geodesic checkbox to control visibility
   if (geodesicDualTetraCheckbox) {
     geodesicDualTetraCheckbox.addEventListener("change", () => {
-      const geodesicDualTetraControls =
-        document.getElementById("geodesic-dual-tetra-all");
+      const geodesicDualTetraControls = document.getElementById(
+        "geodesic-dual-tetra-all"
+      );
       if (geodesicDualTetraControls && geodesicDualTetraCheckbox.checked) {
         geodesicDualTetraControls.style.display = "block";
       }
@@ -447,14 +451,17 @@ function startARTexplorer(
     .addEventListener("change", updateGeometry);
 
   // Dual Icosahedron with geodesic controls toggle
-  const dualIcosahedronCheckbox = document.getElementById("showDualIcosahedron");
+  const dualIcosahedronCheckbox = document.getElementById(
+    "showDualIcosahedron"
+  );
   const geodesicDualIcosaCheckbox = document.getElementById(
     "showGeodesicDualIcosahedron"
   );
   if (dualIcosahedronCheckbox) {
     dualIcosahedronCheckbox.addEventListener("change", () => {
-      const geodesicDualIcosaControls =
-        document.getElementById("geodesic-dual-icosa-all");
+      const geodesicDualIcosaControls = document.getElementById(
+        "geodesic-dual-icosa-all"
+      );
       if (geodesicDualIcosaControls) {
         // Keep controls visible if geodesic variant is checked (preserve settings)
         const shouldShow =
@@ -468,8 +475,9 @@ function startARTexplorer(
   // Also listen to geodesic checkbox to control visibility
   if (geodesicDualIcosaCheckbox) {
     geodesicDualIcosaCheckbox.addEventListener("change", () => {
-      const geodesicDualIcosaControls =
-        document.getElementById("geodesic-dual-icosa-all");
+      const geodesicDualIcosaControls = document.getElementById(
+        "geodesic-dual-icosa-all"
+      );
       if (geodesicDualIcosaControls && geodesicDualIcosaCheckbox.checked) {
         geodesicDualIcosaControls.style.display = "block";
       }
