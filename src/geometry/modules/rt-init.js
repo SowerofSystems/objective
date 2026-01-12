@@ -8,6 +8,7 @@ import { initQuadranceDemo } from "../demos/rt-quadrance-demo.js";
 import { initCrossDemo } from "../demos/rt-cross-demo.js";
 import { initWeierstrassDemo } from "../demos/rt-weierstrass-demo.js";
 import { openDemoModal } from "../demos/rt-demo-utils.js";
+import { colorTheoryModal } from "./color-theory-modal.js";
 
 // PHASE 6 EXTRACTION: Import rendering API factory
 import { initScene as createRenderingAPI } from "./rt-rendering.js";
@@ -176,6 +177,9 @@ function startARTexplorer(
   // ========================================================================
   const renderingAPI = createRenderingAPI(THREE, OrbitControls, RT);
   console.log("[rt-init.js] ✅ Rendering API created:", renderingAPI);
+
+  // Make rendering API globally accessible for file handler color restoration
+  window.renderingAPI = renderingAPI;
 
   // ========================================================================
   // THREE.JS SCENE SETUP
@@ -1009,6 +1013,16 @@ function startARTexplorer(
           demosInitialized.weierstrass = true;
         }, 50);
       }
+    });
+
+  // Color Theory Modal - Set rendering API reference
+  colorTheoryModal.setRenderingAPI(renderingAPI);
+
+  document
+    .getElementById("open-color-theory-modal")
+    .addEventListener("click", e => {
+      e.preventDefault();
+      colorTheoryModal.open();
     });
 
   // ========================================================================
