@@ -292,15 +292,30 @@ export function initScene(THREE, OrbitControls, RT) {
 
     scene.add(cartesianGrid);
 
+    /**
+     * SYSTEM 2 OF 4: SYMBOLIC Cartesian basis vectors (XYZ)
+     *
+     * - Location: rt-rendering.js (this file)
+     * - Purpose: Non-interactive coordinate reference (user-toggleable visibility)
+     * - Scaling: Dynamic - scales with cube slider via updateGeometry()
+     * - Visual: Conical arrowheads (THREE.ArrowHelper) distinguish XYZ from WXYZ
+     * - Labels: X, Y, Z (orthogonal basis)
+     *
+     * See also: Editing Cartesian basis in rt-init.js (interactive gumball handles)
+     *
+     * RT-PURE ALIGNMENT: Base length calculated to align with cube grid
+     * - Grid spacing: cube edge length (default 2.0)
+     * - Scaling factor (applied in updateGeometry): cubeEdge
+     * - Base length: 1.0 (unit length, scaled to match cube edge)
+     */
     // Add Cartesian axes as separate object (can be toggled independently)
     // Using ArrowHelper to match Quadray vector style (with arrowheads)
     cartesianBasis = new THREE.Group();
 
-    // Fundamental unit: Match default cube edge length (√2 ≈ 1.4142)
-    // ArrowHelper 'length' parameter = TOTAL arrow length (shaft + head)
-    const totalBasisLength = Math.sqrt(2); // Default cube edge length = √2
+    // RT-PURE: Base length for unit scaling (will be scaled to cubeEdge in updateGeometry)
+    const totalBasisLength = 1.0; // Base length (unit), scaled by cubeEdge
     const headLength = 0.2; // Proportionally scaled head
-    const arrowLength = totalBasisLength; // Total visual length ≈ 1.414
+    const arrowLength = totalBasisLength;
 
     // X-axis (Red)
     const xAxis = new THREE.ArrowHelper(
@@ -427,20 +442,41 @@ export function initScene(THREE, OrbitControls, RT) {
   }
 
   /**
-   * Create Quadray basis vectors (WXYZ) with tetrahedral arrowheads
-   * 4 vectors pointing to tetrahedral vertices
-   * Distinguished from XYZ (pentagonal cones) by tetrahedral geometry
+   * Create SYMBOLIC Quadray basis vectors (WXYZ) with tetrahedral arrowheads
+   *
+   * SYSTEM 1 OF 4: Non-interactive coordinate reference (user-toggleable visibility)
+   * - Location: rt-rendering.js (this file)
+   * - Purpose: Always-on coordinate system reference
+   * - Scaling: Dynamic - scales with tetrahedron slider via updateGeometry()
+   * - Visual: Tetrahedral arrowheads distinguish WXYZ from XYZ
+   * - Labels: W, X, Y, Z (tetrahedral basis)
+   *
+   * See also: Editing Quadray basis in rt-init.js (interactive gumball handles)
+   *
+   * RT-PURE ALIGNMENT: Base length calculated to reach 3x grid intervals AFTER scaling
+   * - Grid interval: √6/4 ≈ 0.612 (centroid-to-vertex for unit tetrahedron)
+   * - Target after scaling: 3 × √6/4 ≈ 1.837 (reaches 3rd grid intersection)
+   * - Scaling factor (applied in updateGeometry): tetEdge / (2√2)
+   * - Base length (before scaling): targetLength / scaleFactor
    */
   function createQuadrayBasis() {
     quadrayBasis = new THREE.Group();
 
-    // Fundamental unit: tetrahedron edge length = 2√2 (for halfSize = 1)
-    const totalBasisLength = 2 * Math.sqrt(2); // ≈ 2.828 (one tetrahedron edge)
-    const shaftLength = totalBasisLength - 0.3; // Reserve space for head
+    // RT-PURE: Calculate base length to reach 3x grid intervals AFTER scaling
+    const targetLength = RT.PureRadicals.QUADRAY_GRID_INTERVAL * 3; // ≈ 1.837
+    // Note: updateGeometry() scales by tetEdge/(2√2), so we set base length for unit scaling
+    // At default tetEdge=2.828: scaling = 2.828/(2√2) ≈ 1.0, so base ≈ target
+    const totalBasisLength = targetLength; // Base length before scaling
+
     const headSize = 0.15; // Scale of tetrahedral arrowhead
 
+    // RT-PURE: Tetrahedral head tip extends headSize * √3 beyond its center
+    // Dual tetrahedron vertices at (±s,±s,±s) → distance s√3 from origin
+    const headTipExtension = headSize * Math.sqrt(3); // ≈ 0.260
+    const shaftLength = totalBasisLength - headTipExtension; // ≈ 1.577
+
     const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00]; // R, G, B, Y
-    const labels = ["A", "B", "C", "D"];
+    const labels = ["W", "X", "Y", "Z"];
 
     Quadray.basisVectors.forEach((vec, i) => {
       const arrow = createTetrahedralArrow(
