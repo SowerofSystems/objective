@@ -462,11 +462,29 @@ export function initScene(THREE, OrbitControls, RT) {
   function createQuadrayBasis() {
     quadrayBasis = new THREE.Group();
 
-    // RT-PURE: Calculate base length to reach 3x grid intervals AFTER scaling
-    const targetLength = RT.PureRadicals.QUADRAY_GRID_INTERVAL * 3; // ≈ 1.837
-    // Note: updateGeometry() scales by tetEdge/(2√2), so we set base length for unit scaling
-    // At default tetEdge=2.828: scaling = 2.828/(2√2) ≈ 1.0, so base ≈ target
-    const totalBasisLength = targetLength; // Base length before scaling
+    // RT-PURE: Basis vectors reach (tetEdge + 1) grid intervals
+    // tetEdge=2 → basis at 3 grid intervals, tetEdge=3 → basis at 4 grid intervals
+    //
+    // Scaling in updateGeometry(): arrow scaled by tetEdge / (2√2)
+    // Grid intervals are FIXED (not scaled), so:
+    //
+    // We want: finalLength = (tetEdge / gridInterval + 1) × gridInterval
+    // Example: tetEdge=2.0, gridInterval=0.612
+    //   tetEdge / gridInterval = 2.0 / 0.612 ≈ 3.27 grid intervals for tet
+    //   basis should reach: (3.27 + 1) × 0.612 ≈ 2.61
+    //
+    // Actually simpler: tetEdge is already in same units as grid, so:
+    // finalLength = tetEdge + gridInterval
+    // baseLength × (tetEdge / 2√2) = tetEdge + gridInterval
+    // baseLength = (tetEdge + gridInterval) × (2√2 / tetEdge)
+    //
+    // For DEFAULT tetEdge=2.0:
+    const gridInterval = RT.PureRadicals.QUADRAY_GRID_INTERVAL; // √6/4 ≈ 0.612
+    const defaultTetEdge = 2.0;
+    const scaleDenominator = 2 * Math.sqrt(2); // 2√2 ≈ 2.828
+
+    const totalBasisLength = (defaultTetEdge + gridInterval) * (scaleDenominator / defaultTetEdge);
+    // = 2.612 × 1.414 ≈ 3.69
 
     const headSize = 0.15; // Scale of tetrahedral arrowhead
 
@@ -1803,14 +1821,31 @@ export function initScene(THREE, OrbitControls, RT) {
       cartesianBasis.scale.set(cubeEdge, cubeEdge, cubeEdge);
     }
 
-    // Quadray basis vectors scale with tetrahedron edge length
+    // Quadray basis vectors: Recreate with correct length
+    // REQUIREMENT: tetEdge measured in grid intervals, basis = (tetEdge + 1) grid intervals
+    // tetEdge=2 → basis reaches 3 grid intervals (3 × 0.612 = 1.837)
+    // tetEdge=3 → basis reaches 4 grid intervals (4 × 0.612 = 2.448)
     // (tetEdge already declared at top of function)
     if (quadrayBasis) {
-      quadrayBasis.scale.set(
-        tetEdge / (2 * Math.sqrt(2)),
-        tetEdge / (2 * Math.sqrt(2)),
-        tetEdge / (2 * Math.sqrt(2))
-      );
+      // Clear existing basis
+      while (quadrayBasis.children.length > 0) {
+        quadrayBasis.remove(quadrayBasis.children[0]);
+      }
+
+      // Recreate with current tetEdge value
+      const gridInterval = RT.PureRadicals.QUADRAY_GRID_INTERVAL; // √6/4 ≈ 0.612
+      // tetEdge represents number of grid intervals, so basis = (tetEdge + 1) × gridInterval
+      const targetLength = (tetEdge + 1) * gridInterval;
+      const headSize = 0.15;
+      const headTipExtension = headSize * Math.sqrt(3);
+      const shaftLength = targetLength - headTipExtension;
+
+      const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00];
+
+      Quadray.basisVectors.forEach((vec, i) => {
+        const arrow = createTetrahedralArrow(vec, shaftLength, headSize, colors[i]);
+        quadrayBasis.add(arrow);
+      });
     }
 
     updateGeometryStats();

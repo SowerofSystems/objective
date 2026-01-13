@@ -18,76 +18,113 @@ The ART Explorer has **4 distinct basis vector systems** serving different purpo
 | Editing WXYZ | rt-init.js | Transform handles | Yes | Appears when Form selected | Conical arrowheads + hexagonal rotation handles |
 | Editing XYZ | rt-init.js | Transform handles | Yes | Appears when Form selected | Conical arrowheads + circular rotation handles |
 
-## Historical Context
+## ✅ FINAL SOLUTION - Dynamic Regeneration
 
-### Pre-Branch Behavior (Working Correctly)
-Before the `Basis-Vector-Symbols` branch:
-- ✅ Symbolic basis vectors scaled with geometry sliders
-- ✅ Editing basis vectors scaled with geometry sliders
-- ✅ All basis vectors reached grid intersections at all scales
-- ✅ WXYZ vectors used standard THREE.ArrowHelper (conical heads)
+### The Problem
+Initially tried to pre-calculate a base length that would reach the correct grid intervals after scaling. This approach failed because:
+1. The tetEdge value changes with slider input
+2. Pre-calculated base lengths couldn't adapt to runtime changes
+3. Complex scaling math was error-prone and hard to reason about
 
-### Branch Goal
-Align Quadray (WXYZ) basis vectors to grid intervals using `RT.PureRadicals.QUADRAY_GRID_INTERVAL * 3`
+### The Solution ✓
+**Regenerate the basis vectors in `updateGeometry()` with the exact target length**
 
-### Issues Introduced
-1. ❌ Symbolic WXYZ basis now FIXED at 3x grid intervals (no scaling)
-2. ❌ Cartesian basis vectors don't reach grid intersections
-3. ❌ Lost dynamic scaling relationship with geometry
-4. ✅ Successfully introduced tetrahedral arrowheads for WXYZ distinction
+Instead of:
+- Create arrows once with base length
+- Scale the entire group in updateGeometry()
+
+We now:
+- Clear and recreate arrows in updateGeometry()
+- Calculate exact length: `(tetEdge + 1) × QUADRAY_GRID_INTERVAL`
+- No scaling applied - arrows are exact length needed
+
+### Implementation (rt-rendering.js ~line 1824)
+
+```javascript
+// Quadray basis vectors: Recreate with correct length
+// REQUIREMENT: tetEdge measured in grid intervals, basis = (tetEdge + 1) grid intervals
+// tetEdge=2 → basis reaches 3 grid intervals (3 × 0.612 = 1.837)
+// tetEdge=3 → basis reaches 4 grid intervals (4 × 0.612 = 2.448)
+if (quadrayBasis) {
+  // Clear existing basis
+  while (quadrayBasis.children.length > 0) {
+    quadrayBasis.remove(quadrayBasis.children[0]);
+  }
+
+  // Recreate with current tetEdge value
+  const gridInterval = RT.PureRadicals.QUADRAY_GRID_INTERVAL; // √6/4 ≈ 0.612
+  const targetLength = (tetEdge + 1) * gridInterval;
+  const headSize = 0.15;
+  const headTipExtension = headSize * Math.sqrt(3);
+  const shaftLength = targetLength - headTipExtension;
+
+  const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00];
+
+  Quadray.basisVectors.forEach((vec, i) => {
+    const arrow = createTetrahedralArrow(vec, shaftLength, headSize, colors[i]);
+    quadrayBasis.add(arrow);
+  });
+}
+```
+
+### Why This Works
+
+1. **Direct calculation**: No complex scaling math - just calculate the exact length needed
+2. **Always accurate**: Length is calculated fresh each time with current tetEdge value
+3. **Simple to understand**: `targetLength = (tetEdge + 1) × gridInterval`
+4. **Performance**: Negligible - only 4 arrows recreated per update
+
+### Key Formula
+
+```javascript
+targetLength = (tetEdge + 1) × QUADRAY_GRID_INTERVAL
+```
+
+**Examples:**
+- tetEdge = 2.0: `(2 + 1) × 0.612 = 1.836` (exactly 3 grid intervals) ✓
+- tetEdge = 3.0: `(3 + 1) × 0.612 = 2.448` (exactly 4 grid intervals) ✓
+- tetEdge = 2.828: `(2.828 + 1) × 0.612 = 2.343` (exactly 3.828 grid intervals) ✓
+
+The basis vectors now **always extend exactly one grid interval beyond the tetrahedron edge** at any scale.
+
+## Tetrahedral Arrowhead Geometry
+
+### Success: Tip Extension Math ✓
+
+Dual tetrahedron vertices at `(±s, ±s, ±s)` where s = headSize:
+- Distance from center to tip: `s × √3`
+- Shaft must be shortened by this amount
+
+```javascript
+const headSize = 0.15;
+const headTipExtension = headSize * Math.sqrt(3); // ≈ 0.260
+const shaftLength = totalLength - headTipExtension;
+// Arrow tip reaches exactly: shaftLength + headTipExtension = totalLength ✓
+```
+
+This calculation is **geometrically correct** and preserved throughout.
 
 ## Grid Interval Mathematics
 
 ### Quadray Grid Interval (WXYZ)
 ```javascript
-// RT.PureRadicals.QUADRAY_GRID_INTERVAL
-// √6/4 ≈ 0.6123724356957945
-// For a unit tetrahedron: centroid-to-vertex distance
-
-// 3x grid intervals for visibility + alignment:
-const totalBasisLength = RT.PureRadicals.QUADRAY_GRID_INTERVAL * 3; // ≈ 1.837
+RT.PureRadicals.QUADRAY_GRID_INTERVAL = Math.sqrt(6) / 4; // ≈ 0.612
 ```
 
-**Tetrahedral Arrowhead Geometry:**
-- Dual tetrahedron vertices at `(±s, ±s, ±s)` where s = headSize
-- Tip extends `headSize * √3` from center
-- Shaft length calculation:
-  ```javascript
-  const headSize = 0.15;
-  const headTipExtension = headSize * Math.sqrt(3); // ≈ 0.260
-  const shaftLength = totalBasisLength - headTipExtension; // ≈ 1.577
-  // Arrow tip reaches exactly: 1.577 + 0.260 = 1.837 ✓
-  ```
+For a unit tetrahedron (halfSize = 1):
+- Edge length: `2√2`
+- Centroid-to-vertex distance: `√6/4` ✓
+
+This is the **fundamental unit** for tetrahedral grid spacing.
 
 ### Cartesian Grid Interval (XYZ)
 ```javascript
 // Cube edge length defines grid spacing
 // Default: cubeEdge = 2.0
 // Grid lines at integer intervals
-
-// Current issue: Arrows don't reach grid intersections
-// Need to align with cube edge length scaling
 ```
 
-## Desired Behavior
-
-### Symbolic Basis Vectors
-**Option A: Fixed Length (Current)**
-- Remain constant size regardless of geometry scale
-- Always visible coordinate reference at fixed 3x grid intervals
-- ⚠️ May appear too small/large relative to scaled geometry
-
-**Option B: Dynamic Scaling (Pre-Branch)**
-- Scale proportionally with geometry sliders
-- Maintain alignment with grid intersections at all scales
-- ✅ Consistent visual relationship with geometry
-
-### Editing Basis Vectors (Gumball)
-- **MUST scale with geometry** for effective interaction
-- Handle size should match form size for usability
-- Different scaling per coordinate system:
-  - WXYZ: Scale with `tetEdge` slider
-  - XYZ: Scale with `cubeEdge` slider
+Cartesian basis uses unit length (1.0) which scales by cubeEdge in updateGeometry().
 
 ## Code Locations
 
@@ -95,143 +132,59 @@ const totalBasisLength = RT.PureRadicals.QUADRAY_GRID_INTERVAL * 3; // ≈ 1.837
 **File:** `src/geometry/modules/rt-rendering.js`
 
 **Quadray (WXYZ):**
-- Function: `createQuadrayBasis()` (lines ~430-470)
-- Length: `RT.PureRadicals.QUADRAY_GRID_INTERVAL * 3`
-- Arrowheads: Custom tetrahedral via `createTetrahedralArrow()`
-- Scaling: Currently REMOVED (commented out at line ~1773)
+- Initial creation: `createQuadrayBasis()` (lines ~462-507)
+- Dynamic regeneration: `updateGeometry()` (lines ~1824-1845)
+- Arrowheads: Custom tetrahedral via `createTetrahedralArrow()` (lines ~353-427)
+- Length: `(tetEdge + 1) × QUADRAY_GRID_INTERVAL` (regenerated each update)
 
 **Cartesian (XYZ):**
-- Function: `createCartesianBasis()` (lines ~270-340)
-- Length: Needs investigation for grid alignment
+- Creation: Inline in `initScene()` (lines ~295-340)
+- Length: Unit length (1.0) scaled by cubeEdge
 - Arrowheads: THREE.ArrowHelper (conical)
-- Scaling: Active via `cartesianBasis.scale.set(cubeEdge, ...)` (line ~1768)
+- Scaling: `cartesianBasis.scale.set(cubeEdge, ...)` in updateGeometry()
 
 ### Editing Basis Creation
 **File:** `src/geometry/modules/rt-init.js`
 
-**Function:** `createEditingBasis(position, selectedObject)` (lines ~1507-1830)
+**Function:** `createEditingBasis(position, selectedObject)` (lines ~1507-1860)
 
-**Current Implementation:**
-```javascript
-const quadrayArrowLength = RT.PureRadicals.QUADRAY_GRID_INTERVAL * 3; // Fixed
-const cartesianArrowLength = tetEdge; // Slider-based
-```
+Creates interactive gumball handles that scale with tetEdge for optimal interaction.
 
-## Solution Strategy
+## Lessons Learned
 
-### Step 1: Document (Complete)
-Create this reference document explaining all 4 systems.
+### ❌ What Didn't Work
+1. **Pre-calculated base length with scaling**: Too complex, error-prone
+2. **Fixed 3x grid intervals**: Didn't scale with geometry
+3. **Complex scaling formulas**: Hard to debug when wrong
 
-### Step 2: Revert Branch
-```bash
-git stash  # Save Basis-Vector-Symbols.md
-git reset --hard 65af6b2  # Before branch changes
-git stash pop  # Restore documentation
-```
+### ✅ What Worked
+1. **Dynamic regeneration**: Simple, direct, always correct
+2. **Clear formula**: `(tetEdge + 1) × gridInterval`
+3. **Separation of concerns**: Creation vs. scaling handled separately
 
-### Step 3: Incremental Implementation
-Implement changes carefully without breaking scaling:
+### 🎯 Key Insight
 
-1. **Add tetrahedral arrowheads** to symbolic WXYZ basis
-   - Keep existing scaling behavior
-   - Use `createTetrahedralArrow()` function
+**When the relationship between values is dynamic, recalculate rather than pre-calculate.**
 
-2. **Align WXYZ to grid intervals**
-   - Calculate correct base length that reaches grid when scaled
-   - Test at multiple scale values
+The performance cost of recreating 4 arrows per update is negligible compared to the clarity and correctness gained.
 
-3. **Align XYZ to grid intervals**
-   - Investigate current grid spacing
-   - Calculate correct base length
+## Testing Checklist
 
-4. **Preserve scaling relationship**
-   - Ensure `quadrayBasis.scale.set()` remains active
-   - Ensure `cartesianBasis.scale.set()` remains active
-
-### Step 4: Test All Scales
-- Test cube edge: 0.5, 1.0, 2.0, 4.0
-- Test tet edge: 1.0, 2.0, 2.828, 4.0
-- Verify grid alignment at each scale
-- Verify editing basis scales correctly
-
-## Key Insights from Branch Work
-
-### Success: Tetrahedral Tip Extension Math
-```javascript
-// Dual tetrahedron vertices at (±s, ±s, ±s)
-// Distance from center: s * √3
-const headTipExtension = headSize * Math.sqrt(3);
-const shaftLength = totalLength - headTipExtension;
-// This calculation is CORRECT and should be preserved
-```
-
-### Success: Grid Interval Constant
-```javascript
-RT.PureRadicals.QUADRAY_GRID_INTERVAL = Math.sqrt(6) / 4;
-// This is the correct fundamental unit for tetrahedral grid
-```
-
-### Issue: Removed Scaling
-The line that was commented out was CRITICAL:
-```javascript
-// This should NOT have been removed:
-if (quadrayBasis) {
-  quadrayBasis.scale.set(
-    tetEdge / (2 * Math.sqrt(2)),
-    tetEdge / (2 * Math.sqrt(2)),
-    tetEdge / (2 * Math.sqrt(2))
-  );
-}
-```
-
-Instead, we need to calculate the BASE length that, when scaled by this factor, reaches exactly 3x grid intervals.
-
-## Correct Implementation Formula
-
-### Quadray Basis (WXYZ)
-```javascript
-// What we want: Arrow tip at 3x grid intervals AFTER scaling
-const targetLength = RT.PureRadicals.QUADRAY_GRID_INTERVAL * 3; // ≈ 1.837
-
-// Scaling factor applied by updateGeometry():
-const scaleFactor = tetEdge / (2 * Math.sqrt(2));
-
-// Base length BEFORE scaling:
-const baseLength = targetLength / scaleFactor;
-
-// Then scaling will bring it to exactly targetLength:
-// baseLength * scaleFactor = targetLength ✓
-```
-
-### Cartesian Basis (XYZ)
-```javascript
-// What we want: Arrow tip at cube edge AFTER scaling
-const targetLength = cubeEdge; // or multiple thereof for visibility
-
-// Scaling factor applied by updateGeometry():
-const scaleFactor = cubeEdge;
-
-// Base length BEFORE scaling:
-const baseLength = targetLength / scaleFactor;
-// For unit multiplier: baseLength = 1.0
-```
-
-## Next Steps
-
-1. ✅ Documentation complete
-2. ⏳ Stash documentation
-3. ⏳ Revert to pre-branch state
-4. ⏳ Re-implement with correct scaling-aware calculations
-5. ⏳ Test at multiple scales
-6. ⏳ Commit with clean history
+- [x] tetEdge = 2.0 → arrows reach 3rd grid interval exactly
+- [x] tetEdge = 3.0 → arrows reach 4th grid interval exactly
+- [x] tetEdge = 2.828 → arrows reach 3.828 grid intervals
+- [x] Tetrahedral arrowheads distinguish WXYZ from XYZ
+- [x] Basis vectors scale smoothly with slider
+- [x] Grid intervals remain fixed (not scaled)
+- [x] Editing basis (gumball) still functional
 
 ## References
 
-- **rt-math.js**: PureRadicals constants
+- **rt-math.js**: PureRadicals constants (`QUADRAY_GRID_INTERVAL`)
 - **rt-polyhedra.js**: Dual tetrahedron geometry (line 141)
 - **rt-rendering.js**: Symbolic basis creation & updateGeometry()
 - **rt-init.js**: Editing basis (gumball) creation
 
 ---
 
-*Document created during `Basis-Vector-Symbols` branch to explain the complexity before reverting and re-implementing correctly.*
+*Solution finalized 2026-01-13: Dynamic regeneration with direct length calculation.*
