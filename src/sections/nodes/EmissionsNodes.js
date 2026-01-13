@@ -47,12 +47,13 @@
       { id: "emissions.actual.oil", legacyId: "g_30", section: "S04", classification: "C", label: "Actual Oil Emissions (kg CO2e/yr)", defaultValue: 0 },
       { id: "emissions.actual.wood", legacyId: "g_31", section: "S04", classification: "C", label: "Actual Wood Emissions (kg CO2e/yr)", defaultValue: 0 },
 
-      // Target energy consumption (j_27 through j_31)
-      { id: "energy.target.electricity", legacyId: "j_27", section: "S04", classification: "C", label: "Target Electricity (kWh/yr)", defaultValue: 0 },
-      { id: "energy.target.gas", legacyId: "j_28", section: "S04", classification: "C", label: "Target Gas (kWh/yr)", defaultValue: 0 },
-      { id: "energy.target.propane", legacyId: "j_29", section: "S04", classification: "C", label: "Target Propane (kWh/yr)", defaultValue: 0 },
-      { id: "energy.target.oil", legacyId: "j_30", section: "S04", classification: "C", label: "Target Oil (kWh/yr)", defaultValue: 0 },
-      { id: "energy.target.wood", legacyId: "j_31", section: "S04", classification: "C", label: "Target Wood (kWh/yr)", defaultValue: 0 },
+      // Target energy inputs needed for computed j_27-j_31
+      // d_29: Propane actual usage (user utility bill input)
+      { id: "energy.actual.propane.kg", legacyId: "d_29", section: "S04", classification: "A", label: "Total Propane Use (kg/yr)", defaultValue: 0 },
+      // e_51: Water heating gas volume (calculated by Section07)
+      { id: "waterHeating.gasVolume", legacyId: "e_51", section: "S07", classification: "C", label: "Water Heating Gas Volume (m³/yr)", defaultValue: 0 },
+      // k_54: Water heating oil volume (calculated by Section07)
+      { id: "waterHeating.oilVolume", legacyId: "k_54", section: "S07", classification: "C", label: "Water Heating Oil Volume (L/yr)", defaultValue: 0 },
 
       // Target emissions (k_27 through k_31)
       { id: "emissions.target.electricity", legacyId: "k_27", section: "S04", classification: "C", label: "Target Electricity Emissions (kg CO2e/yr)", defaultValue: 0 },
@@ -66,6 +67,136 @@
     ];
 
     graph.registerInputs(inputs);
+
+    // ========================================================================
+    // TARGET ENERGY BY FUEL TYPE (j_27-j_31)
+    // Previously registered as inputs, now computed nodes with proper dependencies
+    // Section04.js lines 1206-1286
+    // ========================================================================
+
+    // j_27: Target Electricity = d_136 - d_43 - i_43
+    // Total energy minus PV and wind/offsite renewables
+    graph.registerNode({
+      id: "energy.target.electricity",
+      legacyId: "j_27",
+      section: "S04",
+      classification: "C",
+      dependencies: [
+        "energy.total.all",        // d_136
+        "renewable.onsiteTotal",   // d_43 (PV generation)
+        "renewable.offsiteTotal"   // i_43 (wind/offsite)
+      ],
+      label: "Target Electricity (kWh/yr)",
+      compute: (inputs) => {
+        // j_27 = h_27 - d_43 - i_43, where h_27 = d_136 (Section04.js line 1212)
+        const d136 = parseNum(inputs["energy.total.all"], 0);
+        const d43 = parseNum(inputs["renewable.onsiteTotal"], 0);
+        const i43 = parseNum(inputs["renewable.offsiteTotal"], 0);
+        return d136 - d43 - i43;
+      },
+    });
+
+    // j_28: Target Gas = h_28 * 0.0373 * 277.7778 (volume to kWh)
+    // h_28 = IF(AND(d_113="Gas", d_51="Gas"), e_51+h_115, IF(d_51="Gas", e_51, IF(d_113="Gas", h_115, 0)))
+    graph.registerNode({
+      id: "energy.target.gas",
+      legacyId: "j_28",
+      section: "S04",
+      classification: "C",
+      dependencies: [
+        "mechanical.heating.systemType",    // d_113
+        "waterHeating.systemType",          // d_51
+        "waterHeating.gasVolume",           // e_51
+        "mechanical.heating.gasConsumption" // h_115
+      ],
+      label: "Target Gas (kWh/yr)",
+      compute: (inputs) => {
+        // Section04.js lines 1220-1238
+        const spaceHeatingFuel = inputs["mechanical.heating.systemType"] || "";
+        const waterHeatingFuel = inputs["waterHeating.systemType"] || "";
+        const waterGasVolume = parseNum(inputs["waterHeating.gasVolume"], 0);
+        const spaceGasVolume = parseNum(inputs["mechanical.heating.gasConsumption"], 0);
+
+        let h_28 = 0;
+        if (spaceHeatingFuel === "Gas" && waterHeatingFuel === "Gas") {
+          h_28 = waterGasVolume + spaceGasVolume;
+        } else if (waterHeatingFuel === "Gas") {
+          h_28 = waterGasVolume;
+        } else if (spaceHeatingFuel === "Gas") {
+          h_28 = spaceGasVolume;
+        }
+
+        // Convert m³ to kWh: h_28 * 0.0373 * 277.7778
+        return h_28 * 0.0373 * 277.7778;
+      },
+    });
+
+    // j_29: Target Propane = d_29 * 14.019 (kg to kWh)
+    // Target mirrors actual for user-controlled fuel
+    graph.registerNode({
+      id: "energy.target.propane",
+      legacyId: "j_29",
+      section: "S04",
+      classification: "C",
+      dependencies: ["energy.actual.propane.kg"], // d_29
+      label: "Target Propane (kWh/yr)",
+      compute: (inputs) => {
+        // Section04.js line 1249: j_29 = h_29 * 14.019, where h_29 = d_29
+        const d29 = parseNum(inputs["energy.actual.propane.kg"], 0);
+        return d29 * 14.019;
+      },
+    });
+
+    // j_30: Target Oil = h_30 * 36.72 * 0.2777778 (litres to kWh)
+    // h_30 = IF(AND(d_113="Oil", d_51="Oil"), k_54+f_115, IF(d_51="Oil", k_54, IF(d_113="Oil", f_115, 0)))
+    graph.registerNode({
+      id: "energy.target.oil",
+      legacyId: "j_30",
+      section: "S04",
+      classification: "C",
+      dependencies: [
+        "mechanical.heating.systemType",     // d_113
+        "waterHeating.systemType",           // d_51
+        "waterHeating.oilVolume",            // k_54
+        "mechanical.heating.oilConsumption"  // f_115
+      ],
+      label: "Target Oil (kWh/yr)",
+      compute: (inputs) => {
+        // Section04.js lines 1256-1274
+        const spaceHeatingFuel = inputs["mechanical.heating.systemType"] || "";
+        const waterHeatingFuel = inputs["waterHeating.systemType"] || "";
+        const waterOilVolume = parseNum(inputs["waterHeating.oilVolume"], 0);
+        const spaceOilVolume = parseNum(inputs["mechanical.heating.oilConsumption"], 0);
+
+        let h_30 = 0;
+        if (spaceHeatingFuel === "Oil" && waterHeatingFuel === "Oil") {
+          h_30 = waterOilVolume + spaceOilVolume;
+        } else if (waterHeatingFuel === "Oil") {
+          h_30 = waterOilVolume;
+        } else if (spaceHeatingFuel === "Oil") {
+          h_30 = spaceOilVolume;
+        }
+
+        // Convert litres to kWh: h_30 * 36.72 * 0.2777778
+        return h_30 * 36.72 * 0.2777778;
+      },
+    });
+
+    // j_31: Target Wood = d_31 * 1000 (m³ to kWh)
+    // Target mirrors actual for user-controlled fuel
+    graph.registerNode({
+      id: "energy.target.wood",
+      legacyId: "j_31",
+      section: "S04",
+      classification: "C",
+      dependencies: ["forestry.woodVolume"], // d_31
+      label: "Target Wood (kWh/yr)",
+      compute: (inputs) => {
+        // Section04.js line 1285: j_31 = h_31 * 1000, where h_31 = d_31
+        const d31 = parseNum(inputs["forestry.woodVolume"], 0);
+        return d31 * 1000;
+      },
+    });
 
     // ========================================================================
     // ROW 32 SUBTOTALS (Critical for S01 dashboard)
