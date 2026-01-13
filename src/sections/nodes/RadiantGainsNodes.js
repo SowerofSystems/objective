@@ -257,7 +257,7 @@
         "radiantGains.totalGains",
         "transmissionLoss.thermalBridgePenalty.heatLoss",
         "airTightness.heatLoss",
-        "ventilation.grossHeatLoss",
+        "ventilation.netHeatLoss",
         "transmissionLoss.components.subtotalHeatLoss"
       ],
       label: "Gains Utilization Factor",
@@ -280,7 +280,7 @@
           const totalGains = parseNum(inputs["radiantGains.totalGains"], 0);
           const i97 = parseNum(inputs["transmissionLoss.thermalBridgePenalty.heatLoss"], 0);
           const i103 = parseNum(inputs["airTightness.heatLoss"], 0);
-          const m121 = parseNum(inputs["ventilation.grossHeatLoss"], 0);
+          const m121 = parseNum(inputs["ventilation.netHeatLoss"], 0);
           const i98 = parseNum(inputs["transmissionLoss.components.subtotalHeatLoss"], 0);
 
           const numerator = totalGains;
