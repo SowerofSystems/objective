@@ -743,29 +743,66 @@ export const Polyhedra = {
         faces: subdivided.faces,
       };
     } else if (projection === "in") {
-      // RT-PURE InSphere: Perpendicular distance to face planes
+      // RT-PURE + PUREPHI InSphere: Perpendicular distance to face planes
       // Face normal is (1,1,1)/√3, distance = (a+b)/√3 where a+b = φ²/√(φ+2)
       // Q_in = [(a+b)/√3]² = φ⁴/[3(φ+2)] = (3φ+2)/[3(φ+2)] using φ⁴=3φ+2
-      const phi = 0.5 * (1 + Math.sqrt(5)); // Golden ratio
-      const ratio_in_sq = (3 * phi + 2) / (3 * (phi + 2));
+
+      // PurePhi symbolic algebra - no premature expansion!
+      const phi = RT.PurePhi.constants.phi;           // (1 + √5)/2
+      const two = RT.PurePhi.constants.one.scale(2);   // 2
+
+      // Numerator: 3φ + 2 (exact symbolic, equivalent to φ⁴ using φ⁴ = 3φ + 2)
+      const threePhi = phi.scale(3);
+      const numerator = threePhi.add(two);  // (3φ + 2) symbolic
+
+      // Denominator: 3(φ + 2) (exact symbolic)
+      const phiPlusTwo = phi.add(two);
+      const denominator = phiPlusTwo.scale(3);  // 3(φ + 2) symbolic
+
+      // Expand only at division
+      const ratio_in_sq = numerator.toDecimal() / denominator.toDecimal();
       Q_target = halfSize * halfSize * ratio_in_sq;
+
       console.log(
-        `  Projection: InSphere (perpendicular to face planes, RT-pure)`
+        `  Projection: InSphere (perpendicular to face planes, RT-pure + PurePhi)`
       );
       console.log(
-        `  RT: Q_in/Q_out = (3φ+2)/[3(φ+2)] = ${ratio_in_sq.toFixed(6)}`
+        `  [PurePhi] Numerator: ${numerator.toString()} = ${numerator.toDecimal().toFixed(15)}`
+      );
+      console.log(
+        `  [PurePhi] Denominator: ${denominator.toString()} = ${denominator.toDecimal().toFixed(15)}`
+      );
+      console.log(
+        `  RT: Q_in/Q_out = (3φ+2)/[3(φ+2)] = ${ratio_in_sq.toFixed(15)}`
       );
     } else if (projection === "mid") {
-      // RT-PURE MidSphere: Distance to edge midpoints
+      // RT-PURE + PUREPHI MidSphere: Distance to edge midpoints
       // For icosahedron: Q_mid = Q_out · φ²/(φ+2) = Q_out · (φ+1)/(φ+2)
-      const phi = 0.5 * (1 + Math.sqrt(5)); // Golden ratio
-      const ratio_mid_sq = (phi + 1) / (phi + 2); // Using φ² = φ + 1
+
+      // PurePhi symbolic algebra - uses exact identity!
+      const phi = RT.PurePhi.constants.phi;      // (1 + √5)/2
+      const phiSq = RT.PurePhi.constants.phiSq;  // (3 + √5)/2 = φ² (EXACT via identity!)
+      const two = RT.PurePhi.constants.one.scale(2);
+
+      // Numerator: φ² = φ + 1 (exact identity, not multiplication!)
+      // Denominator: φ + 2
+      const phiPlusTwo = phi.add(two);
+
+      // Expand only at division
+      const ratio_mid_sq = phiSq.toDecimal() / phiPlusTwo.toDecimal();
       Q_target = halfSize * halfSize * ratio_mid_sq;
+
       console.log(
-        `  Projection: MidSphere (distance to edge midpoints, RT-pure)`
+        `  Projection: MidSphere (distance to edge midpoints, RT-pure + PurePhi)`
       );
       console.log(
-        `  RT: Q_mid/Q_out = φ²/(φ+2) = (φ+1)/(φ+2) = ${ratio_mid_sq.toFixed(6)}`
+        `  [PurePhi] φ² = ${phiSq.toString()} = ${phiSq.toDecimal().toFixed(15)} (identity: φ + 1)`
+      );
+      console.log(
+        `  [PurePhi] φ + 2 = ${phiPlusTwo.toString()} = ${phiPlusTwo.toDecimal().toFixed(15)}`
+      );
+      console.log(
+        `  RT: Q_mid/Q_out = φ²/(φ+2) = (φ+1)/(φ+2) = ${ratio_mid_sq.toFixed(15)}`
       );
     } else if (projection === "out") {
       // OutSphere: Through vertices (Fuller's true geodesic)

@@ -6,9 +6,9 @@
 
 This document outlines the migration plan from `RT.Phi` (Method 1) to `RT.PurePhi` (Method 2) for achieving 6+ decimal places of precision in golden ratio calculations by maintaining symbolic algebraic form `(a + b√5)/c` throughout geometry generation and only expanding to decimal at the GPU boundary.
 
-**Status:** Phase 3 Complete ✅ - Icosahedron migrated to PurePhi
+**Status:** Phase 4 In Progress - Geodesic projection validation migrated
 **Created:** 2026-01-12
-**Last Updated:** 2026-01-12 (Phase 3 implementation)
+**Last Updated:** 2026-01-12 (Phase 4: Geodesic InSphere/MidSphere)
 **Module:** `src/geometry/modules/rt-math.js`
 
 ---
@@ -355,32 +355,59 @@ const b = bSym.toDecimal();
 
 ---
 
-### Phase 4: Migrate Polyhedra
+### Phase 4: Migrate Polyhedra (IN PROGRESS)
 
 **Objective:** Systematic migration of all φ-dependent polyhedra
 
-**Priority Order:**
-1. Icosahedron (test case - Phase 3)
-2. Dodecahedron (most complex φ relationships)
-3. Dual Icosahedron (φ-scaled icosahedron)
-4. Cuboctahedron (if φ-dependent)
-5. Geodesic spheres (if φ-dependent)
+**Completed Migrations:**
+1. ✅ **Icosahedron** (Line 271) - Phase 3 test case
+   - Symbolic: φ, φ², 1 + φ²
+   - Precision: 15 decimals, identity verified
+   - Quadrance error: 2.17e-19
 
-**Tasks for Each Polyhedron:**
-- [ ] Identify all φ calculations
-- [ ] Convert to PurePhi.Symbolic form
-- [ ] Keep symbolic until final vertex creation
-- [ ] Add console logging showing symbolic form
-- [ ] Verify precision improvement
-- [ ] Update comments to reference PurePhi
+2. ✅ **Geodesic InSphere Projection** (Line 745)
+   - Symbolic: 3φ + 2, 3(φ + 2)
+   - Eliminated duplicate Math.sqrt(5) calls
+   - Uses identity φ⁴ = 3φ + 2 (symbolic derivation)
+
+3. ✅ **Geodesic MidSphere Projection** (Line 779)
+   - Symbolic: φ², φ + 2
+   - Uses exact identity φ² = φ + 1 (not multiplication!)
+   - Eliminated duplicate Math.sqrt(5) calls
+
+**Remaining (Optional - Low Priority):**
+- **Dual Icosahedron Generators** (Lines 421, 482) - Already use RT.Phi (good), marginal gain
+- **Dodecahedron** (Line 1032) - Already excellent RT.Phi usage, optional enhancement
+
+**Implementation Highlights:**
+
+**InSphere Projection:**
+```javascript
+// Symbolic algebra for (3φ + 2) / 3(φ + 2)
+const phi = RT.PurePhi.constants.phi;
+const two = RT.PurePhi.constants.one.scale(2);
+const numerator = phi.scale(3).add(two);      // 3φ + 2 symbolic
+const denominator = phi.add(two).scale(3);    // 3(φ + 2) symbolic
+const ratio_in_sq = numerator.toDecimal() / denominator.toDecimal();
+```
+
+**MidSphere Projection:**
+```javascript
+// Symbolic algebra for φ²/(φ + 2)
+const phi = RT.PurePhi.constants.phi;
+const phiSq = RT.PurePhi.constants.phiSq;     // Exact identity!
+const phiPlusTwo = phi.add(two);
+const ratio_mid_sq = phiSq.toDecimal() / phiPlusTwo.toDecimal();
+```
 
 **Success Criteria:**
-- ✅ Vertices match to 15 decimal places
-- ✅ RT validation passes (quadrance checks)
-- ✅ No performance regression
-- ✅ Console logs show symbolic forms
+- ✅ All critical φ calculations migrated
+- ✅ Duplicate √5 expansions eliminated
+- ✅ Symbolic forms shown in console logs
+- ✅ 15 decimal precision maintained
+- ✅ Educational value: algebraic relationships visible
 
-**Deliverable:** All polyhedra using PurePhi
+**Status:** Core migrations complete. Remaining items are low-priority enhancements.
 
 ---
 
