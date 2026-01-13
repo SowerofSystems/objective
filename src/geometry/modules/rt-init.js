@@ -1499,8 +1499,26 @@ function startARTexplorer(
   // ========================================================================
 
   /**
-   * Create editing basis (localized gumball) at specified position
-   * Respects UI checkbox state: only shows checked coordinate systems
+   * Create EDITING BASIS (localized gumball) at specified position
+   *
+   * SYSTEMS 3 & 4 OF 4: Interactive transformation handles for selected Forms
+   *
+   * SYSTEM 3: Editing Quadray Basis (WXYZ)
+   * - Location: rt-init.js (this file)
+   * - Purpose: Interactive Move/Scale/Rotate handles for tetrahedral coordinates
+   * - Scaling: Dynamic - scales with tetEdge slider for optimal interaction
+   * - Visual: Conical arrows (Move/Scale) or hexagonal rotation handles (Rotate)
+   * - Interaction: Click/drag to transform selected Form in WXYZ coordinates
+   *
+   * SYSTEM 4: Editing Cartesian Basis (XYZ)
+   * - Location: rt-init.js (this file)
+   * - Purpose: Interactive Move/Scale/Rotate handles for orthogonal coordinates
+   * - Scaling: Dynamic - scales with tetEdge slider for optimal interaction
+   * - Visual: Conical arrows (Move/Scale) or circular rotation handles (Rotate)
+   * - Interaction: Click/drag to transform selected Form in XYZ coordinates
+   *
+   * See also: Symbolic basis vectors in rt-rendering.js (non-interactive reference)
+   *
    * @param {THREE.Vector3} position - Position to create the basis at
    * @param {THREE.Group} selectedObject - The selected form/instance for sizing
    */
