@@ -439,19 +439,23 @@ export const Polyhedra = {
    * eliminate ALL transcendental functions - pure algebraic geometry!
    */
   dualIcosahedron: (halfSize = 1) => {
-    const phi = RT.Phi.value(); // φ = (1 + √5)/2
+    // PurePhi Method 2: High-precision symbolic constant for consistency
+    const phi = RT.PurePhi.constants.phi; // φ = (1 + √5)/2 - 15 decimal precision
 
     // Dodecahedron face centers are at radius φ × halfSize from origin
     // Scale icosahedron to match this radius for face dual alignment
     const dualRadius = phi * halfSize;
 
-    console.log(`[ThreeRT] Dual Icosahedron RT construction:`);
+    console.log(`[ThreeRT] Dual Icosahedron RT construction (PurePhi Method 2):`);
     console.log(`  Dodecahedron halfSize: ${halfSize.toFixed(3)}`);
     console.log(
-      `  Dodecahedron inradius (face center): φ·s = ${dualRadius.toFixed(6)}`
+      `  Dodecahedron inradius (face center): φ·s = ${dualRadius.toFixed(15)}`
     );
     console.log(
-      `  Icosahedron vertex radius: ${dualRadius.toFixed(6)} (matches dodec inradius)`
+      `  [PurePhi] φ = ${phi.toFixed(15)} (symbolic constant)`
+    );
+    console.log(
+      `  Icosahedron vertex radius: ${dualRadius.toFixed(15)} (matches dodec inradius)`
     );
     console.log(`  RT ROTATION: Spread s=1, Cross c=0 (exact integers!)`);
     console.log(`  Transform: (x,y,z) → (y,-x,z) - pure integer matrix`);
@@ -500,7 +504,8 @@ export const Polyhedra = {
     frequency = 1,
     projection = "out"
   ) => {
-    const phi = RT.Phi.value(); // φ = (1 + √5)/2
+    // PurePhi Method 2: High-precision symbolic constant for consistency
+    const phi = RT.PurePhi.constants.phi; // φ = (1 + √5)/2 - 15 decimal precision
     const dualRadius = phi * halfSize;
 
     // Get base geodesic icosahedron (subdivided and projected)
@@ -1087,14 +1092,15 @@ export const Polyhedra = {
     // Use RT.Phi library for symbolic golden ratio operations
     // φ = (1 + √5)/2, and 1/φ = φ - 1 (algebraic identity!)
 
-    const phi = RT.Phi.value(); // φ = (1 + √5)/2
-    const invPhi = RT.Phi.inverse(); // 1/φ = φ - 1 (NO division!)
+    // PurePhi Method 2: High-precision symbolic constants
+    const phi = RT.PurePhi.constants.phi; // φ = (1 + √5)/2 - 15 decimal precision
+    const invPhi = RT.PurePhi.constants.invPhi; // 1/φ = φ - 1 (algebraic identity!)
 
-    console.log(`[ThreeRT] Dodecahedron RT construction:`);
+    console.log(`[ThreeRT] Dodecahedron RT construction (PurePhi Method 2):`);
     console.log(`  Cube half-size: ${s.toFixed(3)}`);
-    console.log(`  φ = (1 + √5)/2 = ${phi.toFixed(6)} (from φ² - φ - 1 = 0)`);
+    console.log(`  [PurePhi] φ = (1 + √5)/2 = ${phi.toFixed(15)} (symbolic constant)`);
     console.log(
-      `  1/φ = φ - 1 = ${invPhi.toFixed(6)} (algebraic identity - no division!)`
+      `  [PurePhi] 1/φ = φ - 1 = ${invPhi.toFixed(15)} (algebraic identity - no division!)`
     );
 
     // 20 vertices: 8 at (±1, ±1, ±1) + 12 at permutations of (0, ±1/φ, ±φ)
