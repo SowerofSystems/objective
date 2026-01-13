@@ -106,6 +106,22 @@
         label: "Carbon Benchmarking Standard",
         defaultValue: "Self Reported",
       },
+      {
+        id: "building.typologyEmbodiedCarbon",
+        legacyId: "i_39",
+        section: "S04",
+        classification: "G",
+        label: "Typology Embodied Carbon (kgCO2e/m²)",
+        defaultValue: 0,
+      },
+      {
+        id: "building.userModelledEmbodiedCarbon",
+        legacyId: "i_41",
+        section: "S04",
+        classification: "A",
+        label: "User Modelled Embodied Carbon (kgCO2e/m²)",
+        defaultValue: 345.82,
+      },
     ];
 
     // Register all inputs
@@ -116,17 +132,41 @@
     // ========================================================================
 
     // Embodied Carbon Target (based on carbon standard selection)
+    // Uses i_39 (typology) for TGS4, i_41 (user modelled) for Self Reported
     graph.registerNode({
       id: "building.embodiedCarbonTarget",
       legacyId: "d_16",
       section: "S02",
       classification: "C",
-      dependencies: ["building.carbonStandard"],
+      dependencies: [
+        "building.carbonStandard",
+        "building.typologyEmbodiedCarbon",
+        "building.userModelledEmbodiedCarbon"
+      ],
       label: "Embodied Carbon Target (kgCO2e/m²)",
       compute: (inputs) => {
         const standard = inputs["building.carbonStandard"] || "Self Reported";
+        const typologyValue = parseFloat(inputs["building.typologyEmbodiedCarbon"]) || 0;
+        const userModelledValue = parseFloat(inputs["building.userModelledEmbodiedCarbon"]) || 345.82;
+
+        // Not Reported returns N/A
+        if (standard === "Not Reported") {
+          return "N/A";
+        }
+
+        // TGS4 uses typology value (i_39)
+        if (standard === "TGS4") {
+          return typologyValue;
+        }
+
+        // Check for fixed standard targets
         const target = CARBON_TARGETS[standard];
-        return target !== null ? target : 345.82; // Default for Self Reported
+        if (target !== null && target !== undefined) {
+          return target;
+        }
+
+        // Self Reported and default use user modelled value (i_41)
+        return userModelledValue;
       },
     });
 

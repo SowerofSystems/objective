@@ -632,6 +632,9 @@
     // Parallel mode
     onLegacyValueChange,
 
+    // Sync from StateManager (call after CSV import, file load, etc.)
+    syncFromStateManager,
+
     // Computation
     computeAll,
 

@@ -340,20 +340,24 @@
         const occupancy = inputs["metadata.occupancyType"] || "Other";
         const standard = inputs["metadata.referenceStandard"] || "OBC SB-10";
 
-        // Base setpoint from occupancy type
-        let setpoint;
-        if (occupancy === "Residential" || occupancy === "Care") {
-          setpoint = 21;
-        } else {
-          setpoint = 18;
+        // Check if Passive House standard (case-insensitive)
+        const isPH = standard && standard.toUpperCase().includes("PH");
+
+        // PH standards use 18°C regardless of occupancy
+        if (isPH) {
+          return 18;
         }
 
-        // Passive House uses 20°C for residential
-        if (standard === "PH" && (occupancy === "Residential" || occupancy === "Care")) {
-          setpoint = 20;
+        // Non-PH: Check for critical occupancy (Residential or Care)
+        // Use includes() to match values like "C-Residential", "D-Residential MURB", etc.
+        const isCriticalOccupancy =
+          occupancy.includes("Residential") || occupancy.includes("Care");
+
+        if (isCriticalOccupancy) {
+          return 22; // OBC requires 22°C for residential/care
         }
 
-        return setpoint;
+        return 18; // Default for other occupancies
       }
     },
     {
@@ -368,8 +372,12 @@
         const occupancy = inputs["metadata.occupancyType"] || "Other";
 
         // Building code baseline - no PH override
-        if (occupancy === "Residential" || occupancy === "Care") {
-          return 22; // OBC requires 22°C for residential
+        // Use includes() to match values like "C-Residential", "D-Residential MURB", etc.
+        const isCriticalOccupancy =
+          occupancy.includes("Residential") || occupancy.includes("Care");
+
+        if (isCriticalOccupancy) {
+          return 22; // OBC requires 22°C for residential/care
         }
         return 18;
       }

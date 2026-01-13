@@ -391,6 +391,7 @@
     });
 
     // m_6 = Lifetime Carbon percentage (complex formula based on carbon standard)
+    // Formula: IF(I40="N/A","N/A",IF(D15="BR18",((I41/H13)+K8)/12,IF(D15="IPCC EPC",3.39,IF(D15="IPCC EA",4.07,IF(D15="TGS4",I41/I39,"N/A")))))
     graph.registerNode({
       id: "keyValues.lifetimeCarbon.percent",
       legacyId: "m_6",
@@ -400,18 +401,27 @@
         "emissions.modelledEmbodied",
         "building.serviceLife",
         "building.carbonStandard",
+        "building.typologyEmbodiedCarbon",
         "keyValues.actual.annualCarbon",
         "keyValues.target.annualCarbon",
-        "keyValues.useType"
+        "keyValues.useType",
+        "emissions.typologyStatus"
       ],
       label: "Lifetime Carbon %",
       compute: (inputs) => {
         const d_15 = inputs["building.carbonStandard"] || "";
         const i_41 = parseNum(inputs["emissions.modelledEmbodied"]);
+        const i_39 = parseNum(inputs["building.typologyEmbodiedCarbon"]);
         const h_13 = parseNum(inputs["building.serviceLife"], 50);
         const k_8 = inputs["keyValues.actual.annualCarbon"];
         const h_8 = parseNum(inputs["keyValues.target.annualCarbon"]);
         const useType = inputs["keyValues.useType"] || "Targeted Use";
+        const i_40 = inputs["emissions.typologyStatus"] || "";
+
+        // If i_40 is N/A, return N/A
+        if (i_40 === "N/A") {
+          return "N/A";
+        }
 
         const k_8_calc = useType === "Utility Bills" && typeof k_8 === "number" ? k_8 : h_8;
 
@@ -422,10 +432,17 @@
             return `${Math.round(result * 100)}%`;
           }
         } else if (d_15 === "IPCC AR6 EPC") {
-          return "339%";
+          const result = 3.39;
+          return `${Math.round(result * 100)}%`;
         } else if (d_15 === "IPCC AR6 EA") {
-          return "407%";
+          const result = 4.07;
+          return `${Math.round(result * 100)}%`;
         } else if (d_15 === "TGS4") {
+          // TGS4: i_41 / i_39
+          if (i_39 > 0) {
+            const result = i_41 / i_39;
+            return `${Math.round(result * 100)}%`;
+          }
           return "N/A";
         }
 

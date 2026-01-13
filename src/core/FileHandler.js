@@ -520,6 +520,14 @@
           });
         }
 
+        // ✅ Sync ComputationGraph from StateManager after CSV import (Phase 4 validation)
+        if (window.TEUI?.ComputationIntegration?.syncFromStateManager) {
+          console.log("[FileHandler] 🔄 Syncing ComputationGraph from StateManager...");
+          window.TEUI.ComputationIntegration.syncFromStateManager();
+          window.TEUI.ComputationIntegration.computeAll();
+          console.log("[FileHandler] ✅ ComputationGraph synced and recomputed");
+        }
+
         this.showStatus(
           `Import successful. ${targetCount} target and ${refCount} reference fields imported. All calculations updated.`,
           "success"

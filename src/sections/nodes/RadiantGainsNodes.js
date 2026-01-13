@@ -246,25 +246,62 @@
     });
 
     // Utilization factor
+    // For PH Method, calculates PHPP utilization factor using gamma formula
     graph.registerNode({
       id: "radiantGains.utilizationFactor",
       legacyId: "g_80",
       section: "S10",
       classification: "C",
-      dependencies: ["radiantGains.utilizationMethod"],
+      dependencies: [
+        "radiantGains.utilizationMethod",
+        "radiantGains.totalGains",
+        "transmissionLoss.thermalBridgePenalty.heatLoss",
+        "airTightness.heatLoss",
+        "ventilation.grossHeatLoss",
+        "transmissionLoss.components.subtotalHeatLoss"
+      ],
       label: "Gains Utilization Factor",
       compute: (inputs) => {
         const method = inputs["radiantGains.utilizationMethod"] || "NRC 40%";
 
+        // Fixed NRC methods
         switch (method) {
           case "NRC 0%": return 0;
           case "NRC 40%": return 0.4;
+          case "NRC 50%": return 0.5;
           case "NRC 60%": return 0.6;
           case "NRC 80%": return 0.8;
           case "NRC 100%": return 1.0;
           case "Passive House": return 1.0;
-          default: return 0.4;
         }
+
+        // PH Method: Calculate PHPP utilization factor
+        if (method === "PH Method") {
+          const totalGains = parseNum(inputs["radiantGains.totalGains"], 0);
+          const i97 = parseNum(inputs["transmissionLoss.thermalBridgePenalty.heatLoss"], 0);
+          const i103 = parseNum(inputs["airTightness.heatLoss"], 0);
+          const m121 = parseNum(inputs["ventilation.grossHeatLoss"], 0);
+          const i98 = parseNum(inputs["transmissionLoss.components.subtotalHeatLoss"], 0);
+
+          const numerator = totalGains;
+          const denominator = i97 + i103 + m121 + i98;
+
+          if (denominator > 0) {
+            const gamma = numerator / denominator;
+            if (Math.abs(gamma - 1) < 1e-9) {
+              return 5 / 6; // ~0.833
+            }
+            const a = 5;
+            const gamma_a = Math.pow(gamma, a);
+            const gamma_a_plus_1 = Math.pow(gamma, a + 1);
+            const factor = (1 - gamma_a) / (1 - gamma_a_plus_1);
+            return Math.max(0, Math.min(1, factor));
+          }
+          return numerator > 0 ? 1 : 0;
+        }
+
+        // Default fallback
+        return 0.4;
       }
     });
 
