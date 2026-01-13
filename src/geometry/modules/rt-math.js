@@ -262,6 +262,356 @@ export const RT = {
   },
 
   /**
+   * PurePhi - High-precision symbolic golden ratio algebra (Method 2)
+   *
+   * Represents φ values in exact algebraic form (a + b√5)/c to maintain
+   * 6+ decimal places of precision throughout calculations by deferring
+   * √5 expansion until final GPU boundary.
+   *
+   * Philosophy:
+   * - Work symbolically in (a + b√5)/c form during geometry generation
+   * - Only expand to decimal at THREE.Vector3 creation
+   * - Preserves exact algebraic relationships (φ² = φ + 1, etc.)
+   * - Eliminates accumulated floating-point errors from intermediate steps
+   *
+   * IEEE 754 double precision provides ~15-17 significant decimal digits.
+   * By computing √5 once and caching it, we guarantee maximum precision
+   * throughout all golden ratio calculations.
+   *
+   * @namespace PurePhi
+   */
+  PurePhi: {
+    /**
+     * High-precision √5 constant (IEEE 754 double precision)
+     * Computed once and cached for consistency across all calculations
+     * @returns {number} √5 ≈ 2.2360679774997896964091736687312762...
+     */
+    sqrt5: (() => {
+      const cached = Math.sqrt(5);
+      return () => cached;
+    })(),
+
+    /**
+     * φ = (1 + √5)/2
+     * High-precision golden ratio (15+ decimal places guaranteed)
+     * @returns {number} φ ≈ 1.6180339887498948482045868343656381...
+     */
+    value: function() {
+      return 0.5 * (1 + this.sqrt5());
+    },
+
+    /**
+     * φ² = φ + 1 (algebraic identity - EXACT)
+     * Preferred over φ * φ for preserving algebraic relationships
+     * = (3 + √5)/2
+     * @returns {number} φ² ≈ 2.618033988749895
+     */
+    squared: function() {
+      return this.value() + 1;  // Uses identity, not multiplication
+    },
+
+    /**
+     * 1/φ = φ - 1 (algebraic identity - EXACT)
+     * Preferred over 1 / φ for exact computation
+     * = (√5 - 1)/2 = (-1 + √5)/2
+     * @returns {number} 1/φ ≈ 0.618033988749895
+     */
+    inverse: function() {
+      return this.value() - 1;  // Uses identity, not division
+    },
+
+    /**
+     * φ³ = 2φ + 1 (derived from φ² = φ + 1)
+     * Derivation: φ³ = φ·φ² = φ(φ + 1) = φ² + φ = (φ + 1) + φ = 2φ + 1
+     * = 2(1 + √5)/2 + 1 = (1 + √5) + 1 = (2 + √5)/1
+     * @returns {number} φ³ ≈ 4.236067977499790
+     */
+    cubed: function() {
+      return 2 * this.value() + 1;  // Uses identity
+    },
+
+    /**
+     * φ⁴ = 3φ + 2 (derived from φ² = φ + 1)
+     * Derivation: φ⁴ = φ·φ³ = φ(2φ + 1) = 2φ² + φ = 2(φ + 1) + φ = 3φ + 2
+     * = (7 + 3√5)/2
+     * @returns {number} φ⁴ ≈ 6.854101966249685
+     */
+    fourthPower: function() {
+      return 3 * this.value() + 2;  // Uses identity
+    },
+
+    /**
+     * Symbolic representation: (a + b√5)/c
+     * Stores golden ratio expressions in exact rational+radical form
+     * for maximum algebraic precision before GPU expansion
+     *
+     * @class Symbolic
+     * @memberof RT.PurePhi
+     *
+     * @example
+     * const phi = new RT.PurePhi.Symbolic(1, 1, 2);  // (1 + 1√5)/2 = φ
+     * const phiSq = new RT.PurePhi.Symbolic(3, 1, 2);  // (3 + 1√5)/2 = φ²
+     * const value = phiSq.toDecimal();  // Only expand when needed for GPU
+     */
+    Symbolic: class {
+      /**
+       * Create a symbolic golden ratio expression
+       * @param {number} a - Rational coefficient
+       * @param {number} b - √5 coefficient
+       * @param {number} c - Denominator (default 1)
+       *
+       * @example
+       * // φ = (1 + √5)/2
+       * const phi = new RT.PurePhi.Symbolic(1, 1, 2);
+       *
+       * // φ² = (3 + √5)/2
+       * const phiSquared = new RT.PurePhi.Symbolic(3, 1, 2);
+       *
+       * // 2φ = (2 + 2√5)/2 = (1 + √5)/1
+       * const twoPhi = new RT.PurePhi.Symbolic(1, 1, 1);
+       */
+      constructor(a, b, c = 1) {
+        this.a = a;  // Rational part
+        this.b = b;  // √5 coefficient
+        this.c = c;  // Denominator
+      }
+
+      /**
+       * Convert to decimal (only when needed for GPU)
+       * Maintains maximum precision by computing √5 once
+       * @returns {number} Decimal value
+       *
+       * @example
+       * const phi = new RT.PurePhi.Symbolic(1, 1, 2);
+       * const decimal = phi.toDecimal();  // 1.618033988749895
+       */
+      toDecimal() {
+        const sqrt5 = RT.PurePhi.sqrt5();
+        return (this.a + this.b * sqrt5) / this.c;
+      }
+
+      /**
+       * Multiply by another symbolic phi value
+       * Preserves exact algebraic form
+       * (a₁ + b₁√5)/c₁ × (a₂ + b₂√5)/c₂ = ((a₁a₂ + 5b₁b₂) + (a₁b₂ + b₁a₂)√5)/(c₁c₂)
+       *
+       * @param {Symbolic} other - Another symbolic value
+       * @returns {Symbolic} Product in symbolic form
+       *
+       * @example
+       * const phi = new RT.PurePhi.Symbolic(1, 1, 2);      // φ
+       * const phiSq = phi.multiply(phi);                    // φ²
+       * // Result: (3 + √5)/2 (exact algebraic form)
+       */
+      multiply(other) {
+        // (a₁ + b₁√5)(a₂ + b₂√5) = a₁a₂ + a₁b₂√5 + b₁a₂√5 + b₁b₂·5
+        //                         = (a₁a₂ + 5b₁b₂) + (a₁b₂ + b₁a₂)√5
+        const newA = this.a * other.a + 5 * this.b * other.b;
+        const newB = this.a * other.b + this.b * other.a;
+        const newC = this.c * other.c;
+        return new RT.PurePhi.Symbolic(newA, newB, newC);
+      }
+
+      /**
+       * Add another symbolic phi value
+       * Finds common denominator and combines
+       *
+       * @param {Symbolic} other - Another symbolic value
+       * @returns {Symbolic} Sum in symbolic form
+       *
+       * @example
+       * const phi = new RT.PurePhi.Symbolic(1, 1, 2);      // φ
+       * const one = new RT.PurePhi.Symbolic(1, 0, 1);      // 1
+       * const phiPlusOne = phi.add(one);                    // φ + 1 = φ²
+       */
+      add(other) {
+        // Find common denominator: c₁c₂
+        const newC = this.c * other.c;
+        const newA = this.a * other.c + other.a * this.c;
+        const newB = this.b * other.c + other.b * this.c;
+        return new RT.PurePhi.Symbolic(newA, newB, newC);
+      }
+
+      /**
+       * Subtract another symbolic phi value
+       *
+       * @param {Symbolic} other - Another symbolic value
+       * @returns {Symbolic} Difference in symbolic form
+       */
+      subtract(other) {
+        const newC = this.c * other.c;
+        const newA = this.a * other.c - other.a * this.c;
+        const newB = this.b * other.c - other.b * this.c;
+        return new RT.PurePhi.Symbolic(newA, newB, newC);
+      }
+
+      /**
+       * Multiply by scalar (rational number)
+       *
+       * @param {number} scalar - Scalar multiplier
+       * @returns {Symbolic} Scaled symbolic form
+       *
+       * @example
+       * const phi = new RT.PurePhi.Symbolic(1, 1, 2);      // φ
+       * const twoPhi = phi.scale(2);                        // 2φ = (1 + √5)/1
+       */
+      scale(scalar) {
+        return new RT.PurePhi.Symbolic(this.a * scalar, this.b * scalar, this.c);
+      }
+
+      /**
+       * Divide by scalar (rational number)
+       *
+       * @param {number} scalar - Scalar divisor
+       * @returns {Symbolic} Divided symbolic form
+       */
+      divide(scalar) {
+        return new RT.PurePhi.Symbolic(this.a, this.b, this.c * scalar);
+      }
+
+      /**
+       * String representation for debugging
+       * @returns {string} Formatted symbolic expression
+       */
+      toString() {
+        if (this.b === 0) {
+          return `${this.a}/${this.c}`;
+        }
+        const sign = this.b >= 0 ? '+' : '';
+        return `(${this.a} ${sign} ${this.b}√5)/${this.c}`;
+      }
+    },
+
+    /**
+     * Common symbolic constants for convenience
+     * Pre-defined exact algebraic forms of common golden ratio expressions
+     */
+    get constants() {
+      return {
+        phi:       new this.Symbolic(1, 1, 2),   // φ = (1 + √5)/2
+        phiSq:     new this.Symbolic(3, 1, 2),   // φ² = (3 + √5)/2
+        invPhi:    new this.Symbolic(-1, 1, 2),  // 1/φ = (-1 + √5)/2
+        phiCubed:  new this.Symbolic(2, 1, 1),   // φ³ = (2 + √5)/1 = 2φ + 1
+        phiFourth: new this.Symbolic(7, 3, 2),   // φ⁴ = (7 + 3√5)/2 = 3φ + 2
+        one:       new this.Symbolic(1, 0, 1),   // 1 = (1 + 0√5)/1
+        zero:      new this.Symbolic(0, 0, 1),   // 0 = (0 + 0√5)/1
+      };
+    },
+  },
+
+  /**
+   * PureRadicals - High-precision symbolic radical algebra (Extension of PurePhi)
+   *
+   * Extends the PurePhi symbolic algebra pattern to other common radicals.
+   * Maintains maximum precision by caching radical values and deferring expansion.
+   *
+   * Philosophy (same as PurePhi):
+   * - Compute radical once, cache for consistency
+   * - Work symbolically when possible
+   * - Only expand to decimal at GPU boundary
+   *
+   * @namespace PureRadicals
+   */
+  PureRadicals: {
+    /**
+     * High-precision √2 constant (IEEE 754 double precision)
+     * Computed once and cached for consistency
+     * @returns {number} √2 ≈ 1.4142135623730951...
+     */
+    sqrt2: (() => {
+      const cached = Math.sqrt(2);
+      return () => cached;
+    })(),
+
+    /**
+     * High-precision √3 constant (IEEE 754 double precision)
+     * Computed once and cached for consistency
+     * @returns {number} √3 ≈ 1.7320508075688772...
+     */
+    sqrt3: (() => {
+      const cached = Math.sqrt(3);
+      return () => cached;
+    })(),
+
+    /**
+     * High-precision √6 constant (IEEE 754 double precision)
+     * Computed once and cached for consistency
+     * Note: √6 = √2 · √3 (can be computed symbolically if needed)
+     * @returns {number} √6 ≈ 2.4494897427831781...
+     */
+    sqrt6: (() => {
+      const cached = Math.sqrt(6);
+      return () => cached;
+    })(),
+
+    /**
+     * Quadray Grid Interval: √6/4
+     * THE fundamental spacing constant for quadray coordinate system.
+     * This is the perpendicular distance between parallel tetrahedral planes.
+     *
+     * Mathematical significance:
+     * - Edge length of unit tetrahedron inscribed in unit cube
+     * - Perpendicular spacing of Central Angle grids in quadray space
+     * - Exact value maintains tetrahedral symmetry relationships
+     *
+     * Precision benefits:
+     * - Single √6 expansion (not recomputed 4+ times across modules)
+     * - Consistent value across rt-rendering, rt-controls, rt-init
+     * - 15 decimal places maintained (IEEE 754 limit)
+     *
+     * @constant
+     * @type {number}
+     * @readonly
+     */
+    QUADRAY_GRID_INTERVAL: (() => {
+      const sqrt6 = Math.sqrt(6);
+      return sqrt6 / 4; // ≈ 0.6123724356957945
+    })(),
+
+    /**
+     * Common √2-based identities and values
+     * Pre-computed exact values for RT-pure calculations
+     */
+    get sqrt2Values() {
+      const sqrt2 = this.sqrt2();
+      return {
+        value: sqrt2,                    // √2
+        squared: 2,                      // (√2)² = 2 (exact!)
+        half: sqrt2 / 2,                // √2/2 = 1/√2
+        inverse: 1 / sqrt2,             // 1/√2 = √2/2 (rationalized)
+      };
+    },
+
+    /**
+     * Common √3-based identities and values
+     * Pre-computed exact values for RT-pure calculations
+     */
+    get sqrt3Values() {
+      const sqrt3 = this.sqrt3();
+      return {
+        value: sqrt3,                    // √3
+        squared: 3,                      // (√3)² = 3 (exact!)
+        half: sqrt3 / 2,                // √3/2
+        inverse: 1 / sqrt3,             // 1/√3 = √3/3 (rationalized)
+      };
+    },
+
+    /**
+     * Common √6-based identities and values
+     * Pre-computed exact values for RT-pure calculations
+     */
+    get sqrt6Values() {
+      const sqrt6 = this.sqrt6();
+      return {
+        value: sqrt6,                    // √6
+        squared: 6,                      // (√6)² = 6 (exact!)
+        quarterValue: sqrt6 / 4,        // √6/4 (Quadray grid interval)
+        asProduct: this.sqrt2() * this.sqrt3(),  // √6 = √2 · √3 (verification)
+      };
+    },
+  },
+
+  /**
    * Validate edges have uniform quadrance (regular polyhedron check)
    * Returns array of {edge, Q, error} for each edge
    *

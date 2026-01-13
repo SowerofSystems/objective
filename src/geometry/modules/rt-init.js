@@ -2530,8 +2530,8 @@ function startARTexplorer(
                 const mean = (wxyz[0] + wxyz[1] + wxyz[2] + wxyz[3]) / 4;
                 wxyz = wxyz.map(c => c - mean);
 
-                // Snap each Quadray coordinate to grid
-                const quadrayGridSize = Math.sqrt(6) / 4; // ≈ 0.6124
+                // Snap each Quadray coordinate to grid (PureRadicals cached constant)
+                const quadrayGridSize = RT.PureRadicals.QUADRAY_GRID_INTERVAL; // ≈ 0.6124
                 wxyz = wxyz.map(
                   c => Math.round(c / quadrayGridSize) * quadrayGridSize
                 );
