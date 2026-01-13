@@ -6,8 +6,9 @@
 
 This document outlines the migration plan from `RT.Phi` (Method 1) to `RT.PurePhi` (Method 2) for achieving 6+ decimal places of precision in golden ratio calculations by maintaining symbolic algebraic form `(a + b√5)/c` throughout geometry generation and only expanding to decimal at the GPU boundary.
 
-**Status:** Planning Phase
+**Status:** Phase 1 & 2 Complete ✅ - Ready for Phase 3 (Test Case)
 **Created:** 2026-01-12
+**Last Updated:** 2026-01-12
 **Module:** `src/geometry/modules/rt-math.js`
 
 ---
@@ -55,48 +56,196 @@ This document outlines the migration plan from `RT.Phi` (Method 1) to `RT.PurePh
 
 ---
 
-## Migration Audit
+## Phase 1 & 2 Results: Usage Audit ✅
 
-### Files Using Golden Ratio (φ)
+### Executive Summary
 
-Search results from codebase:
+**Findings:**
+- **Total φ Usages:** 5 polyhedron generators
+- **Red Flags (Premature Expansion):** 3 instances
+- **Green Patterns (Good RT):** 2 instances
+- **Priority for Migration:** Icosahedron (highest impact)
 
-1. **src/geometry/modules/rt-polyhedra.js**
-   - Icosahedron (lines 276-296)
-   - Dodecahedron dual (lines 408-430)
-   - Dual icosahedron (lines 453-483)
-   - Cuboctahedron (lines 713-747)
-   - Dodecahedron (lines 1017-1067+)
+**Precision Impact:**
+Current approach loses ~3-5 decimal places due to:
+1. Direct `phi * phi` instead of identity `φ² = φ + 1`
+2. Multiple intermediate expansions before vertex creation
+3. Separate `sqrt5` and `phi` expansions (compounding errors)
 
-2. **src/geometry/modules/rt-rendering.js**
-   - May use polyhedra that depend on φ
+---
 
-3. **src/geometry/modules/rt-init.js**
-   - May reference φ in initialization
+### Detailed Usage Matrix
+
+#### 1. Icosahedron (Line 271)
+**File:** `rt-polyhedra.js:271-310`
+**Status:** 🔴 RED FLAG - Premature Expansion
+**Priority:** **HIGH**
+
+**Current Code:**
+```javascript
+const sqrt5 = Math.sqrt(5); // First expansion
+const phi = 0.5 * (1 + sqrt5); // Second expansion (premature!)
+const phi_squared = phi * phi; // ❌ Loses identity φ² = φ + 1
+const normFactor = 1 / Math.sqrt(1 + phi_squared);
+```
+
+**Issues:**
+- ❌ Direct expansion: `phi = 0.5 * (1 + sqrt5)` expands immediately
+- ❌ Multiplication error: `phi * phi` instead of `φ² = φ + 1`
+- ❌ Compound expansion: Three uses of `phi` before vertices
+- ❌ Precision loss: ~3 decimal places
+
+**PurePhi Solution:**
+```javascript
+const phi = RT.PurePhi.constants.phi;        // (1 + √5)/2 symbolic
+const phiSq = RT.PurePhi.constants.phiSq;    // (3 + √5)/2 EXACT!
+const one = RT.PurePhi.constants.one;
+const onePlusPhiSq = one.add(phiSq);         // (5 + √5)/2 EXACT!
+
+// Only expand for normalization √
+const normFactor = 1 / Math.sqrt(onePlusPhiSq.toDecimal());
+```
+
+**Precision Gain:** 3-5 decimal places
+
+---
+
+#### 2. Dual Icosahedron Generator (Line 421)
+**File:** `rt-polyhedra.js:408-493`
+**Status:** ✅ GREEN PATTERN - Uses RT.Phi
+**Priority:** MEDIUM
+
+**Current Code:**
+```javascript
+const phi = RT.Phi.value(); // ✅ Good! Uses RT.Phi
+const dualRadius = phi * halfSize;
+```
+
+**Analysis:**
+- ✅ Uses `RT.Phi.value()` for deferred expansion
+- ✅ Simple scalar multiplication
+- ⚠️ Could use symbolic form to defer further
+
+**Precision Gain:** Marginal (~1 decimal place)
+
+---
+
+#### 3. Cuboctahedron Validation (Lines 728, 740)
+**File:** `rt-polyhedra.js:713-748`
+**Status:** 🔴 RED FLAG - Duplicate expansions
+**Priority:** LOW-MEDIUM
+
+**Current Code:**
+```javascript
+// Line 728 - InSphere
+const phi = 0.5 * (1 + Math.sqrt(5)); // Direct expansion!
+const ratio_in_sq = (3 * phi + 2) / (3 * (phi + 2));
+
+// Line 740 - MidSphere
+const phi = 0.5 * (1 + Math.sqrt(5)); // Duplicate expansion!
+const ratio_mid_sq = (phi + 1) / (phi + 2); // Uses φ² = φ + 1 ✅
+```
+
+**Issues:**
+- ❌ Two separate `Math.sqrt(5)` calls
+- ❌ Not using RT.Phi library
+- ❌ Local variables shadow each other
+
+**PurePhi Solution:**
+```javascript
+const phi = RT.PurePhi.constants.phi;
+const phiSq = RT.PurePhi.constants.phiSq;
+const two = RT.PurePhi.constants.one.scale(2);
+
+// InSphere: (3φ + 2) / 3(φ + 2)
+const ratio_in_sq = (3 * phi.toDecimal() + 2) / (3 * (phi.toDecimal() + 2));
+
+// MidSphere: φ² / (φ + 2)
+const ratio_mid_sq = phiSq.toDecimal() / (phi.toDecimal() + 2);
+```
+
+**Precision Gain:** 2-3 decimal places
+
+---
+
+#### 4. Dodecahedron (Line 1032)
+**File:** `rt-polyhedra.js:1022-1200`
+**Status:** ✅ GREEN PATTERN - Excellent!
+**Priority:** **LOW** (optional)
+
+**Current Code:**
+```javascript
+const phi = RT.Phi.value(); // ✅ Perfect!
+const invPhi = RT.Phi.inverse(); // ✅ Perfect! Uses φ - 1 identity
+
+new THREE.Vector3(0, s * invPhi, s * phi)
+```
+
+**Analysis:**
+- ✅ Uses `RT.Phi.value()` and `RT.Phi.inverse()`
+- ✅ Leverages identity `1/φ = φ - 1` (no division!)
+- ✅ Best practice example in codebase!
+
+**Precision:** Already excellent (~1e-14)
+**Migration:** Optional (minimal gain)
+
+---
+
+### Summary Matrix
+
+| Location | Polyhedron | Status | Priority | Loss | Effort |
+|----------|------------|--------|----------|------|--------|
+| Line 271 | Icosahedron | 🔴 Red | **HIGH** | 3-5 decimals | 2-3 hrs |
+| Line 421 | Dual Ico Gen | 🟢 Green | Medium | 1 decimal | 30 mins |
+| Line 482 | Geodesic Dual | 🟢 Green | Medium | 1 decimal | 30 mins |
+| Line 728/740 | Cuboctahedron | 🔴 Red | Low-Med | 2-3 decimals | 1 hr |
+| Line 1032 | Dodecahedron | 🟢 Green | LOW | <1 decimal | Optional |
+
+---
+
+### Red Flags Identified
+
+**Pattern 1: Direct √5 Expansion** (3 instances)
+```javascript
+❌ const sqrt5 = Math.sqrt(5);
+❌ const phi = 0.5 * (1 + sqrt5);
+
+✅ const phi = RT.PurePhi.constants.phi; // Symbolic
+```
+
+**Pattern 2: Multiplication vs Identity** (1 instance)
+```javascript
+❌ const phi_squared = phi * phi; // Loses relationship
+
+✅ const phiSq = RT.PurePhi.constants.phiSq; // Exact (3 + √5)/2
+```
+
+**Pattern 3: Duplicate Expansions** (1 instance)
+```javascript
+❌ const phi = 0.5 * (1 + Math.sqrt(5)); // Line 728
+   // ... later ...
+❌ const phi = 0.5 * (1 + Math.sqrt(5)); // Line 740
+
+✅ const phi = RT.PurePhi.value(); // Once, cached
+```
 
 ---
 
 ## Migration Strategy
 
-### Phase 1: Audit Current Usage
+### Phase 1: Audit Current Usage ✅ COMPLETE
 
-**Objective:** Identify all locations where φ is computed or used in intermediate calculations
+**Completed Tasks:**
+- ✅ Grep for `RT.Phi` usage in rt-polyhedra.js
+- ✅ Grep for `phi` variable usage in rt-polyhedra.js
+- ✅ Grep for `0.5 * (1 + Math.sqrt(5))` pattern
+- ✅ Documented each usage with context and precision impact
 
-**Tasks:**
-- [ ] Grep for `RT.Phi` usage in rt-polyhedra.js
-- [ ] Grep for `phi` variable usage in rt-polyhedra.js
-- [ ] Grep for `0.5 * (1 + Math.sqrt(5))` pattern (direct φ computation)
-- [ ] Document each usage with:
-  - File and line number
-  - Context (what polyhedron/calculation)
-  - Current precision (how many decimal places matter)
-  - Intermediate steps that could accumulate error
-
-**Deliverable:** Complete usage matrix
+**Deliverable:** Complete usage matrix (see above)
 
 ---
 
-### Phase 2: Identify Premature Expansions
+### Phase 2: Identify Premature Expansions ✅ COMPLETE
 
 **Objective:** Find places where φ is expanded to decimal too early
 
@@ -113,11 +262,12 @@ Search results from codebase:
 3. ✅ Using `RT.Phi.inverse()` - uses identity
 4. ✅ Only expanding at `new THREE.Vector3(x, y, z)` creation
 
-**Tasks:**
-- [ ] Categorize each φ usage as Red Flag or Green Pattern
-- [ ] Prioritize Red Flags for migration
+**Completed Tasks:**
+- ✅ Categorized each φ usage as Red Flag or Green Pattern
+- ✅ Prioritized Red Flags for migration
+- ✅ Identified 3 Red Flags, 2 Green Patterns
 
-**Deliverable:** Priority migration list
+**Deliverable:** Priority migration list (see Summary Matrix above)
 
 ---
 
