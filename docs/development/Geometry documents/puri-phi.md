@@ -6,9 +6,9 @@
 
 This document outlines the migration plan from `RT.Phi` (Method 1) to `RT.PurePhi` (Method 2) for achieving 6+ decimal places of precision in golden ratio calculations by maintaining symbolic algebraic form `(a + b√5)/c` throughout geometry generation and only expanding to decimal at the GPU boundary.
 
-**Status:** Phase 4 Complete ✅ | Phase 5 In Progress - Documentation
+**Status:** ✅ ALL PHASES COMPLETE - All φ-dependent polyhedra migrated to PurePhi Method 2
 **Created:** 2026-01-12
-**Last Updated:** 2026-01-12 (Phase 5: Documentation updates)
+**Last Updated:** 2026-01-12 (Consistency Migration: Dodecahedron + Dual Icosahedron)
 **Module:** `src/geometry/modules/rt-math.js`
 
 ---
@@ -195,11 +195,11 @@ new THREE.Vector3(0, s * invPhi, s * phi)
 
 | Location | Polyhedron | Status | Priority | Loss | Effort |
 |----------|------------|--------|----------|------|--------|
-| Line 271 | Icosahedron | 🔴 Red | **HIGH** | 3-5 decimals | 2-3 hrs |
-| Line 421 | Dual Ico Gen | 🟢 Green | Medium | 1 decimal | 30 mins |
-| Line 482 | Geodesic Dual | 🟢 Green | Medium | 1 decimal | 30 mins |
+| Line 271 | Icosahedron | ✅ MIGRATED | **HIGH** | 3-5 decimals | 2-3 hrs |
+| Line 421 | Dual Ico Gen | ✅ MIGRATED | Medium | 1 decimal | 30 mins |
+| Line 482 | Geodesic Dual | ✅ MIGRATED | Medium | 1 decimal | 30 mins |
 | Line 728/740 | Cuboctahedron | 🔴 Red | Low-Med | 2-3 decimals | 1 hr |
-| Line 1032 | Dodecahedron | 🟢 Green | LOW | <1 decimal | Optional |
+| Line 1032 | Dodecahedron | ✅ MIGRATED | LOW | <1 decimal | Optional |
 
 ---
 
@@ -375,9 +375,22 @@ const b = bSym.toDecimal();
    - Uses exact identity φ² = φ + 1 (not multiplication!)
    - Eliminated duplicate Math.sqrt(5) calls
 
-**Remaining (Optional - Low Priority):**
-- **Dual Icosahedron Generators** (Lines 421, 482) - Already use RT.Phi (good), marginal gain
-- **Dodecahedron** (Line 1032) - Already excellent RT.Phi usage, optional enhancement
+4. ✅ **Dodecahedron** (Line 1090) - Consistency Migration (2026-01-12)
+   - Migrated from RT.Phi.value() to RT.PurePhi.constants.phi
+   - Migrated from RT.Phi.inverse() to RT.PurePhi.constants.invPhi
+   - 15 decimal precision (up from ~6 decimals)
+   - Console output shows [PurePhi] tag with 15 decimals
+
+5. ✅ **Dual Icosahedron** (Line 442) - Consistency Migration (2026-01-12)
+   - Migrated from RT.Phi.value() to RT.PurePhi.constants.phi
+   - 15 decimal precision for dual radius calculation
+   - Console output shows [PurePhi] tag with 15 decimals
+
+6. ✅ **Geodesic Dual Icosahedron** (Line 507) - Consistency Migration (2026-01-12)
+   - Migrated from RT.Phi.value() to RT.PurePhi.constants.phi
+   - Consistent with base dual implementation
+
+**STATUS: ALL φ-DEPENDENT POLYHEDRA NOW USE PUREPHI METHOD 2**
 
 **Implementation Highlights:**
 
