@@ -130,41 +130,43 @@ const dualRadius = phi * halfSize;
 
 ---
 
-#### 3. Cuboctahedron Validation (Lines 728, 740)
-**File:** `rt-polyhedra.js:713-748`
-**Status:** 🔴 RED FLAG - Duplicate expansions
-**Priority:** LOW-MEDIUM
+#### 3. Geodesic Projection Calculations (Former Cuboctahedron Validation)
+**File:** `rt-polyhedra.js` (geodesicIcosahedron function)
+**Status:** ✅ MIGRATED (Phase 4 - InSphere/MidSphere)
+**Priority:** HIGH (precision-critical)
 
-**Current Code:**
+**Historical Note:** These φ calculations were originally in "Cuboctahedron validation" code
+but were consolidated into the geodesicIcosahedron InSphere/MidSphere projection logic.
+
+**Before (Multiple Duplicate Expansions):**
 ```javascript
-// Line 728 - InSphere
+// InSphere calculation
 const phi = 0.5 * (1 + Math.sqrt(5)); // Direct expansion!
 const ratio_in_sq = (3 * phi + 2) / (3 * (phi + 2));
 
-// Line 740 - MidSphere
+// MidSphere calculation (elsewhere)
 const phi = 0.5 * (1 + Math.sqrt(5)); // Duplicate expansion!
-const ratio_mid_sq = (phi + 1) / (phi + 2); // Uses φ² = φ + 1 ✅
+const ratio_mid_sq = (phi + 1) / (phi + 2);
 ```
 
-**Issues:**
-- ❌ Two separate `Math.sqrt(5)` calls
-- ❌ Not using RT.Phi library
-- ❌ Local variables shadow each other
-
-**PurePhi Solution:**
+**After (PurePhi Symbolic Algebra - MIGRATED):**
 ```javascript
-const phi = RT.PurePhi.constants.phi;
-const phiSq = RT.PurePhi.constants.phiSq;
-const two = RT.PurePhi.constants.one.scale(2);
-
 // InSphere: (3φ + 2) / 3(φ + 2)
-const ratio_in_sq = (3 * phi.toDecimal() + 2) / (3 * (phi.toDecimal() + 2));
+const phi = RT.PurePhi.constants.phi;           // (1 + √5)/2
+const two = RT.PurePhi.constants.one.scale(2);
+const numerator = phi.scale(3).add(two);        // 3φ + 2 symbolic
+const denominator = phi.add(two).scale(3);      // 3(φ + 2) symbolic
+const ratio_in_sq = numerator.toDecimal() / denominator.toDecimal();
 
-// MidSphere: φ² / (φ + 2)
-const ratio_mid_sq = phiSq.toDecimal() / (phi.toDecimal() + 2);
+// MidSphere: φ²/(φ + 2)
+const phiSq = RT.PurePhi.constants.phiSq;       // (3 + √5)/2 EXACT!
+const phiPlusTwo = phi.add(two);
+const ratio_mid_sq = phiSq.toDecimal() / phiPlusTwo.toDecimal();
 ```
 
-**Precision Gain:** 2-3 decimal places
+**Result:** Duplicate √5 expansions eliminated, 15 decimal precision maintained
+
+**Note:** Base Cuboctahedron (line 1364) uses √2 (not φ) and was migrated to PureRadicals
 
 ---
 
@@ -198,8 +200,9 @@ new THREE.Vector3(0, s * invPhi, s * phi)
 | Line 271 | Icosahedron | ✅ MIGRATED | **HIGH** | 3-5 decimals | 2-3 hrs |
 | Line 421 | Dual Ico Gen | ✅ MIGRATED | Medium | 1 decimal | 30 mins |
 | Line 482 | Geodesic Dual | ✅ MIGRATED | Medium | 1 decimal | 30 mins |
-| Line 728/740 | Cuboctahedron | 🔴 Red | Low-Med | 2-3 decimals | 1 hr |
+| Lines 756/788 | Geodesic Projections (InSphere/MidSphere) | ✅ MIGRATED | HIGH | 2-3 decimals | 1 hr |
 | Line 1032 | Dodecahedron | ✅ MIGRATED | LOW | <1 decimal | Optional |
+| Line 1364 | Cuboctahedron (base) | ✅ PureRadicals | LOW | N/A (√2 not φ) | 30 mins |
 
 ---
 
