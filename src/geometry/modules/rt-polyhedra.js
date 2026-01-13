@@ -1231,8 +1231,8 @@ export const Polyhedra = {
   rhombicDodecahedron: (halfSize = 1) => {
     const s = halfSize;
 
-    // RT-PURE: Defer expansions until needed
-    const sqrt2 = Math.sqrt(2);
+    // RT-PURE + PureRadicals: Use cached √2 for consistency
+    const sqrt2 = RT.PureRadicals.sqrt2();
     const t = s / sqrt2; // Cuboctahedron vertex distance: s/√2
     const u = t / 2; // Rhombic dodec octant vertex distance: (s/√2)/2 = s/(2√2)
 
@@ -1240,7 +1240,7 @@ export const Polyhedra = {
       `[ThreeRT] Rhombic Dodecahedron RT construction (dual of cuboctahedron):`
     );
     console.log(`  HalfSize: s = ${s.toFixed(6)}`);
-    console.log(`  √2 = ${sqrt2.toFixed(6)} (deferred expansion)`);
+    console.log(`  √2 = ${sqrt2.toFixed(6)} (cached, PureRadicals)`);
     console.log(`  Cuboctahedron vertex distance: t = s/√2 = ${t.toFixed(6)}`);
     console.log(
       `  Rhombic dodec octant vertices: u = t/2 = s/(2√2) = ${u.toFixed(6)}`
@@ -1358,15 +1358,15 @@ export const Polyhedra = {
   cuboctahedron: (halfSize = 1) => {
     const s = halfSize;
 
-    // RT-PURE: Defer √2 expansion until needed
-    const sqrt2 = Math.sqrt(2); // Deferred until needed
+    // RT-PURE + PureRadicals: Use cached √2 for consistency
+    const sqrt2 = RT.PureRadicals.sqrt2();
     const t = s / sqrt2; // Edge midpoint distance from origin: s/√2
 
     console.log(
       `[ThreeRT] Cuboctahedron (Vector Equilibrium) RT construction:`
     );
     console.log(`  HalfSize: s = ${s.toFixed(6)}`);
-    console.log(`  √2 = ${sqrt2.toFixed(6)} (deferred expansion)`);
+    console.log(`  √2 = ${sqrt2.toFixed(6)} (cached, PureRadicals)`);
     console.log(
       `  Vertex distance from origin: s/√2 = ${t.toFixed(6)} (rationalized!)`
     );

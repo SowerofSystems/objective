@@ -500,6 +500,118 @@ export const RT = {
   },
 
   /**
+   * PureRadicals - High-precision symbolic radical algebra (Extension of PurePhi)
+   *
+   * Extends the PurePhi symbolic algebra pattern to other common radicals.
+   * Maintains maximum precision by caching radical values and deferring expansion.
+   *
+   * Philosophy (same as PurePhi):
+   * - Compute radical once, cache for consistency
+   * - Work symbolically when possible
+   * - Only expand to decimal at GPU boundary
+   *
+   * @namespace PureRadicals
+   */
+  PureRadicals: {
+    /**
+     * High-precision √2 constant (IEEE 754 double precision)
+     * Computed once and cached for consistency
+     * @returns {number} √2 ≈ 1.4142135623730951...
+     */
+    sqrt2: (() => {
+      const cached = Math.sqrt(2);
+      return () => cached;
+    })(),
+
+    /**
+     * High-precision √3 constant (IEEE 754 double precision)
+     * Computed once and cached for consistency
+     * @returns {number} √3 ≈ 1.7320508075688772...
+     */
+    sqrt3: (() => {
+      const cached = Math.sqrt(3);
+      return () => cached;
+    })(),
+
+    /**
+     * High-precision √6 constant (IEEE 754 double precision)
+     * Computed once and cached for consistency
+     * Note: √6 = √2 · √3 (can be computed symbolically if needed)
+     * @returns {number} √6 ≈ 2.4494897427831781...
+     */
+    sqrt6: (() => {
+      const cached = Math.sqrt(6);
+      return () => cached;
+    })(),
+
+    /**
+     * Quadray Grid Interval: √6/4
+     * THE fundamental spacing constant for quadray coordinate system.
+     * This is the perpendicular distance between parallel tetrahedral planes.
+     *
+     * Mathematical significance:
+     * - Edge length of unit tetrahedron inscribed in unit cube
+     * - Perpendicular spacing of Central Angle grids in quadray space
+     * - Exact value maintains tetrahedral symmetry relationships
+     *
+     * Precision benefits:
+     * - Single √6 expansion (not recomputed 4+ times across modules)
+     * - Consistent value across rt-rendering, rt-controls, rt-init
+     * - 15 decimal places maintained (IEEE 754 limit)
+     *
+     * @constant
+     * @type {number}
+     * @readonly
+     */
+    QUADRAY_GRID_INTERVAL: (() => {
+      const sqrt6 = Math.sqrt(6);
+      return sqrt6 / 4; // ≈ 0.6123724356957945
+    })(),
+
+    /**
+     * Common √2-based identities and values
+     * Pre-computed exact values for RT-pure calculations
+     */
+    get sqrt2Values() {
+      const sqrt2 = this.sqrt2();
+      return {
+        value: sqrt2,                    // √2
+        squared: 2,                      // (√2)² = 2 (exact!)
+        half: sqrt2 / 2,                // √2/2 = 1/√2
+        inverse: 1 / sqrt2,             // 1/√2 = √2/2 (rationalized)
+      };
+    },
+
+    /**
+     * Common √3-based identities and values
+     * Pre-computed exact values for RT-pure calculations
+     */
+    get sqrt3Values() {
+      const sqrt3 = this.sqrt3();
+      return {
+        value: sqrt3,                    // √3
+        squared: 3,                      // (√3)² = 3 (exact!)
+        half: sqrt3 / 2,                // √3/2
+        inverse: 1 / sqrt3,             // 1/√3 = √3/3 (rationalized)
+      };
+    },
+
+    /**
+     * Common √6-based identities and values
+     * Pre-computed exact values for RT-pure calculations
+     */
+    get sqrt6Values() {
+      const sqrt6 = this.sqrt6();
+      return {
+        value: sqrt6,                    // √6
+        squared: 6,                      // (√6)² = 6 (exact!)
+        quarterValue: sqrt6 / 4,        // √6/4 (Quadray grid interval)
+        asProduct: this.sqrt2() * this.sqrt3(),  // √6 = √2 · √3 (verification)
+      };
+    },
+  },
+
+  /**
    * Validate edges have uniform quadrance (regular polyhedron check)
    * Returns array of {edge, Q, error} for each edge
    *

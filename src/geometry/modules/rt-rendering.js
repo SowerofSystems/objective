@@ -497,11 +497,11 @@ export function initScene(THREE, OrbitControls, RT) {
     const geometry = new THREE.BufferGeometry();
     const vertices = [];
 
-    // RT-PURE: Unit tetrahedron grid interval
+    // RT-PURE + PureRadicals: Unit tetrahedron grid interval
     // For a unit tetrahedron (edge length = 1):
     // Centroid-to-vertex distance (OutSphere radius) = √6/4 ≈ 0.612
     // This provides meaningful intervals at edge lengths 1, 2, 3, 4...
-    const edgeLength = Math.sqrt(6) / 4;
+    const edgeLength = RT.PureRadicals.QUADRAY_GRID_INTERVAL;
 
     // DIAGNOSTIC: Log grid interval with full precision (first plane only)
     if (!window.gridIntervalLogged) {
@@ -1383,9 +1383,9 @@ export function initScene(THREE, OrbitControls, RT) {
       // DIAGNOSTIC: Log OutSphere radius for edge lengths 1, 2, 3, 4, 5
       // scale = halfSize (s), edge length = 2s√2, OutSphere = s√3
       const halfSize = scale;
-      const tetEdgeLength = 2 * halfSize * Math.sqrt(2);
-      const outSphereRadius = halfSize * Math.sqrt(3);
-      const gridInterval = Math.sqrt(6) / 4;
+      const tetEdgeLength = 2 * halfSize * RT.PureRadicals.sqrt2();
+      const outSphereRadius = halfSize * RT.PureRadicals.sqrt3();
+      const gridInterval = RT.PureRadicals.QUADRAY_GRID_INTERVAL;
       const difference = outSphereRadius - gridInterval;
       const percentDiff = (difference / gridInterval) * 100;
 
