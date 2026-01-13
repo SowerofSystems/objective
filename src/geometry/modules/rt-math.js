@@ -323,7 +323,7 @@ export const RT = {
     /**
      * φ³ = 2φ + 1 (derived from φ² = φ + 1)
      * Derivation: φ³ = φ·φ² = φ(φ + 1) = φ² + φ = (φ + 1) + φ = 2φ + 1
-     * = (1 + 3√5)/2
+     * = 2(1 + √5)/2 + 1 = (1 + √5) + 1 = (2 + √5)/1
      * @returns {number} φ³ ≈ 4.236067977499790
      */
     cubed: function() {
@@ -491,8 +491,8 @@ export const RT = {
         phi:       new this.Symbolic(1, 1, 2),   // φ = (1 + √5)/2
         phiSq:     new this.Symbolic(3, 1, 2),   // φ² = (3 + √5)/2
         invPhi:    new this.Symbolic(-1, 1, 2),  // 1/φ = (-1 + √5)/2
-        phiCubed:  new this.Symbolic(1, 3, 2),   // φ³ = (1 + 3√5)/2
-        phiFourth: new this.Symbolic(7, 3, 2),   // φ⁴ = (7 + 3√5)/2
+        phiCubed:  new this.Symbolic(2, 1, 1),   // φ³ = (2 + √5)/1 = 2φ + 1
+        phiFourth: new this.Symbolic(7, 3, 2),   // φ⁴ = (7 + 3√5)/2 = 3φ + 2
         one:       new this.Symbolic(1, 0, 1),   // 1 = (1 + 0√5)/1
         zero:      new this.Symbolic(0, 0, 1),   // 0 = (0 + 0√5)/1
       };
