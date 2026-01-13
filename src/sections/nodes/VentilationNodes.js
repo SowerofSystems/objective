@@ -170,8 +170,19 @@
       ],
       label: "Net Ventilation Heat Gain (kWh/yr)",
       compute: (inputs) => {
-        const cdd = inputs["climate.cooling.degreedays"];
-        if (isUnavailable(cdd)) return 0;
+        const cddRaw = inputs["climate.cooling.degreedays"];
+        // Check for undefined/null/unavailable CDD
+        if (cddRaw === undefined || cddRaw === null || isUnavailable(cddRaw)) {
+          console.warn(`[VentilationNodes] d_122: CDD is ${cddRaw}, returning 0. All inputs:`, inputs);
+          return 0;
+        }
+
+        const cdd = parseNum(cddRaw, 0);
+        // If CDD parses to 0, there's no cooling load
+        if (cdd === 0) {
+          console.warn(`[VentilationNodes] d_122: CDD parsed to 0 (raw: ${cddRaw}), returning 0`);
+          return 0;
+        }
 
         const volumeRate = parseNum(inputs["ventilation.volumetricRate"]);
         const coolingSystem = inputs["mechanical.cooling.systemType"] || "No Cooling";
@@ -187,7 +198,12 @@
         const summerBoostFactor = summerBoost > 0 ? summerBoost : 1.0;
 
         // Base formula: (1.21 * ventRate * cdd * 24) / 1000
-        const baseEnergy = (1.21 * volumeRate * parseNum(cdd) * 24) / 1000;
+        const baseEnergy = (1.21 * volumeRate * cdd * 24) / 1000;
+
+        // Debug: Log if result would be 0 with non-zero CDD
+        if (baseEnergy === 0 && cdd > 0) {
+          console.warn(`[VentilationNodes] d_122: baseEnergy=0 but CDD=${cdd}. volumeRate=${volumeRate}`);
+        }
 
         // Apply factors based on cooling system type
         if (coolingSystem === "Cooling") {
