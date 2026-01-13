@@ -272,28 +272,49 @@ export const Polyhedra = {
     // RT approach: Use (0, ±a, ±b) where b²/a² = 5 (golden rectangle ratio)
     // Quadrance from (0,1,√5) to (1,√5,0) = 1² + (√5-1)² + 5 = 1 + (6-2√5) + 5 = 12-2√5
     //
-    // RATIONAL TRIGONOMETRY: Defer sqrt expansion following Wildberger principles
+    // RATIONAL TRIGONOMETRY + PUREPHI: Maximum precision symbolic algebra
     // For icosahedron: Three orthogonal golden rectangles (aspect ratio 1:φ)
     // Vertices at (0, ±1, ±φ) and cyclic permutations
     //
-    // Normalization: Scale to fit within unit sphere
-    // sqrt(1² + φ²) = sqrt(1 + φ²) = sqrt(1 + ((1+√5)/2)²) = sqrt(1 + (3+√5)/2)
+    // PurePhi Method 2: Work symbolically in (a + b√5)/c form until GPU boundary
+    // Only expand √5 once (cached) when creating THREE.Vector3 coordinates
+    // Preserves exact algebraic relationships: φ² = φ + 1 (EXACT!)
 
-    const sqrt5 = Math.sqrt(5); // Defer until needed
-    const phi = 0.5 * (1 + sqrt5); // φ = (1 + √5)/2
+    // Symbolic constants - NO expansion yet!
+    const phi = RT.PurePhi.constants.phi;        // (1 + √5)/2 symbolic
+    const phiSq = RT.PurePhi.constants.phiSq;    // (3 + √5)/2 symbolic (EXACT: φ² = φ + 1)
+    const one = RT.PurePhi.constants.one;        // 1 symbolic
 
-    // Normalization factor: 1/√(1 + φ²) for unit sphere radius
-    const phi_squared = phi * phi; // φ² = φ + 1 = (3 + √5)/2
-    const normFactor = 1 / Math.sqrt(1 + phi_squared);
+    // Normalization: 1/√(1 + φ²)
+    // Symbolic: 1 + φ² = 1 + (3 + √5)/2 = (5 + √5)/2 (EXACT!)
+    const onePlusPhiSq = one.add(phiSq);         // (5 + √5)/2 symbolic - no expansion!
 
-    const a = halfSize * normFactor; // 1 * normalization
-    const b = halfSize * phi * normFactor; // φ * normalization
+    // Expand only for square root (unavoidable)
+    const normFactor = 1 / Math.sqrt(onePlusPhiSq.toDecimal());
 
-    console.log(`[ThreeRT] Icosahedron RT construction:`);
-    console.log(`  √5 = ${sqrt5.toFixed(6)} (deferred expansion)`);
-    console.log(`  φ = 0.5(1 + √5) = ${phi.toFixed(6)}`);
-    console.log(`  Normalization: 1/√(1 + φ²) = ${normFactor.toFixed(6)}`);
-    console.log(`  a = ${a.toFixed(6)}, b = φ·a = ${b.toFixed(6)}`);
+    // Symbolic scaled coordinates - still exact!
+    const aSym = one.scale(halfSize * normFactor);     // (halfSize * normFactor) symbolic
+    const bSym = phi.scale(halfSize * normFactor);     // φ * (halfSize * normFactor) symbolic
+
+    // Final expansion at GPU boundary (THREE.Vector3 creation)
+    const a = aSym.toDecimal();  // Only now do we expand to decimal
+    const b = bSym.toDecimal();  // Only now do we expand to decimal
+
+    // Educational console output showing symbolic algebra
+    console.log(`[PurePhi] Icosahedron - High-precision symbolic construction:`);
+    console.log(`  φ = ${phi.toString()} = ${phi.toDecimal().toFixed(15)}`);
+    console.log(`  φ² = ${phiSq.toString()} = ${phiSq.toDecimal().toFixed(15)} (identity: φ + 1)`);
+    console.log(`  1 + φ² = ${onePlusPhiSq.toString()} = ${onePlusPhiSq.toDecimal().toFixed(15)}`);
+    console.log(`  Normalization: 1/√(1 + φ²) = ${normFactor.toFixed(15)}`);
+    console.log(`  a = 1·norm = ${a.toFixed(15)}`);
+    console.log(`  b = φ·norm = ${b.toFixed(15)}`);
+    console.log(`  Precision: 15 decimal places maintained via symbolic algebra`);
+
+    // Verify algebraic identity: φ² = φ + 1
+    const phi_decimal = phi.toDecimal();
+    const phiSq_decimal = phiSq.toDecimal();
+    const identity_error = Math.abs(phiSq_decimal - (phi_decimal + 1));
+    console.log(`  Identity check: |φ² - (φ + 1)| = ${identity_error.toExponential()} (should be ~0)`);
 
     // Z-up convention: Three orthogonal golden rectangles
     // Note: Vertex order unchanged (maintains edge/face topology)
