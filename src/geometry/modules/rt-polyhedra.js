@@ -281,40 +281,50 @@ export const Polyhedra = {
     // Preserves exact algebraic relationships: φ² = φ + 1 (EXACT!)
 
     // Symbolic constants - NO expansion yet!
-    const phi = RT.PurePhi.constants.phi;        // (1 + √5)/2 symbolic
-    const phiSq = RT.PurePhi.constants.phiSq;    // (3 + √5)/2 symbolic (EXACT: φ² = φ + 1)
-    const one = RT.PurePhi.constants.one;        // 1 symbolic
+    const phi = RT.PurePhi.constants.phi; // (1 + √5)/2 symbolic
+    const phiSq = RT.PurePhi.constants.phiSq; // (3 + √5)/2 symbolic (EXACT: φ² = φ + 1)
+    const one = RT.PurePhi.constants.one; // 1 symbolic
 
     // Normalization: 1/√(1 + φ²)
     // Symbolic: 1 + φ² = 1 + (3 + √5)/2 = (5 + √5)/2 (EXACT!)
-    const onePlusPhiSq = one.add(phiSq);         // (5 + √5)/2 symbolic - no expansion!
+    const onePlusPhiSq = one.add(phiSq); // (5 + √5)/2 symbolic - no expansion!
 
     // Expand only for square root (unavoidable)
     const normFactor = 1 / Math.sqrt(onePlusPhiSq.toDecimal());
 
     // Symbolic scaled coordinates - still exact!
-    const aSym = one.scale(halfSize * normFactor);     // (halfSize * normFactor) symbolic
-    const bSym = phi.scale(halfSize * normFactor);     // φ * (halfSize * normFactor) symbolic
+    const aSym = one.scale(halfSize * normFactor); // (halfSize * normFactor) symbolic
+    const bSym = phi.scale(halfSize * normFactor); // φ * (halfSize * normFactor) symbolic
 
     // Final expansion at GPU boundary (THREE.Vector3 creation)
-    const a = aSym.toDecimal();  // Only now do we expand to decimal
-    const b = bSym.toDecimal();  // Only now do we expand to decimal
+    const a = aSym.toDecimal(); // Only now do we expand to decimal
+    const b = bSym.toDecimal(); // Only now do we expand to decimal
 
     // Educational console output showing symbolic algebra
-    console.log(`[PurePhi] Icosahedron - High-precision symbolic construction:`);
+    console.log(
+      `[PurePhi] Icosahedron - High-precision symbolic construction:`
+    );
     console.log(`  φ = ${phi.toString()} = ${phi.toDecimal().toFixed(15)}`);
-    console.log(`  φ² = ${phiSq.toString()} = ${phiSq.toDecimal().toFixed(15)} (identity: φ + 1)`);
-    console.log(`  1 + φ² = ${onePlusPhiSq.toString()} = ${onePlusPhiSq.toDecimal().toFixed(15)}`);
+    console.log(
+      `  φ² = ${phiSq.toString()} = ${phiSq.toDecimal().toFixed(15)} (identity: φ + 1)`
+    );
+    console.log(
+      `  1 + φ² = ${onePlusPhiSq.toString()} = ${onePlusPhiSq.toDecimal().toFixed(15)}`
+    );
     console.log(`  Normalization: 1/√(1 + φ²) = ${normFactor.toFixed(15)}`);
     console.log(`  a = 1·norm = ${a.toFixed(15)}`);
     console.log(`  b = φ·norm = ${b.toFixed(15)}`);
-    console.log(`  Precision: 15 decimal places maintained via symbolic algebra`);
+    console.log(
+      `  Precision: 15 decimal places maintained via symbolic algebra`
+    );
 
     // Verify algebraic identity: φ² = φ + 1
     const phi_decimal = phi.toDecimal();
     const phiSq_decimal = phiSq.toDecimal();
     const identity_error = Math.abs(phiSq_decimal - (phi_decimal + 1));
-    console.log(`  Identity check: |φ² - (φ + 1)| = ${identity_error.toExponential()} (should be ~0)`);
+    console.log(
+      `  Identity check: |φ² - (φ + 1)| = ${identity_error.toExponential()} (should be ~0)`
+    );
 
     // Z-up convention: Three orthogonal golden rectangles
     // Note: Vertex order unchanged (maintains edge/face topology)
@@ -442,17 +452,22 @@ export const Polyhedra = {
     // PurePhi Method 2: High-precision symbolic constant for consistency
     const phi = RT.PurePhi.constants.phi; // φ = (1 + √5)/2 - 15 decimal precision
 
+    // GPU boundary: expand symbolic constant to decimal for arithmetic
+    const phiVal = phi.toDecimal();
+
     // Dodecahedron face centers are at radius φ × halfSize from origin
     // Scale icosahedron to match this radius for face dual alignment
-    const dualRadius = phi * halfSize;
+    const dualRadius = phiVal * halfSize;
 
-    console.log(`[ThreeRT] Dual Icosahedron RT construction (PurePhi Method 2):`);
+    console.log(
+      `[ThreeRT] Dual Icosahedron RT construction (PurePhi Method 2):`
+    );
     console.log(`  Dodecahedron halfSize: ${halfSize.toFixed(3)}`);
     console.log(
       `  Dodecahedron inradius (face center): φ·s = ${dualRadius.toFixed(15)}`
     );
     console.log(
-      `  [PurePhi] φ = ${phi.toFixed(15)} (symbolic constant)`
+      `  [PurePhi] φ = ${phi.toString()} = ${phiVal.toFixed(15)} (symbolic constant)`
     );
     console.log(
       `  Icosahedron vertex radius: ${dualRadius.toFixed(15)} (matches dodec inradius)`
@@ -475,7 +490,8 @@ export const Polyhedra = {
 
     // RT VALIDATION: Check edge quadrance uniformity
     // Calculate expected Q from base icosahedron parameters
-    const phi_squared = phi * phi;
+    // Use identity φ² = φ + 1 (already expanded to decimal in phiVal)
+    const phi_squared = phiVal * phiVal;
     const normFactor = 1 / Math.sqrt(1 + phi_squared);
     const a = dualRadius * normFactor;
     const expectedQ = 4 * a * a;
@@ -506,7 +522,8 @@ export const Polyhedra = {
   ) => {
     // PurePhi Method 2: High-precision symbolic constant for consistency
     const phi = RT.PurePhi.constants.phi; // φ = (1 + √5)/2 - 15 decimal precision
-    const dualRadius = phi * halfSize;
+    // GPU boundary: expand to decimal for arithmetic
+    const dualRadius = phi.toDecimal() * halfSize;
 
     // Get base geodesic icosahedron (subdivided and projected)
     const base = Polyhedra.geodesicIcosahedron(
@@ -753,16 +770,16 @@ export const Polyhedra = {
       // Q_in = [(a+b)/√3]² = φ⁴/[3(φ+2)] = (3φ+2)/[3(φ+2)] using φ⁴=3φ+2
 
       // PurePhi symbolic algebra - no premature expansion!
-      const phi = RT.PurePhi.constants.phi;           // (1 + √5)/2
-      const two = RT.PurePhi.constants.one.scale(2);   // 2
+      const phi = RT.PurePhi.constants.phi; // (1 + √5)/2
+      const two = RT.PurePhi.constants.one.scale(2); // 2
 
       // Numerator: 3φ + 2 (exact symbolic, equivalent to φ⁴ using φ⁴ = 3φ + 2)
       const threePhi = phi.scale(3);
-      const numerator = threePhi.add(two);  // (3φ + 2) symbolic
+      const numerator = threePhi.add(two); // (3φ + 2) symbolic
 
       // Denominator: 3(φ + 2) (exact symbolic)
       const phiPlusTwo = phi.add(two);
-      const denominator = phiPlusTwo.scale(3);  // 3(φ + 2) symbolic
+      const denominator = phiPlusTwo.scale(3); // 3(φ + 2) symbolic
 
       // Expand only at division
       const ratio_in_sq = numerator.toDecimal() / denominator.toDecimal();
@@ -785,8 +802,8 @@ export const Polyhedra = {
       // For icosahedron: Q_mid = Q_out · φ²/(φ+2) = Q_out · (φ+1)/(φ+2)
 
       // PurePhi symbolic algebra - uses exact identity!
-      const phi = RT.PurePhi.constants.phi;      // (1 + √5)/2
-      const phiSq = RT.PurePhi.constants.phiSq;  // (3 + √5)/2 = φ² (EXACT via identity!)
+      const phi = RT.PurePhi.constants.phi; // (1 + √5)/2
+      const phiSq = RT.PurePhi.constants.phiSq; // (3 + √5)/2 = φ² (EXACT via identity!)
       const two = RT.PurePhi.constants.one.scale(2);
 
       // Numerator: φ² = φ + 1 (exact identity, not multiplication!)
@@ -1098,10 +1115,16 @@ export const Polyhedra = {
 
     console.log(`[ThreeRT] Dodecahedron RT construction (PurePhi Method 2):`);
     console.log(`  Cube half-size: ${s.toFixed(3)}`);
-    console.log(`  [PurePhi] φ = (1 + √5)/2 = ${phi.toFixed(15)} (symbolic constant)`);
     console.log(
-      `  [PurePhi] 1/φ = φ - 1 = ${invPhi.toFixed(15)} (algebraic identity - no division!)`
+      `  [PurePhi] φ = ${phi.toString()} = ${phi.toDecimal().toFixed(15)} (symbolic constant)`
     );
+    console.log(
+      `  [PurePhi] 1/φ = ${invPhi.toString()} = ${invPhi.toDecimal().toFixed(15)} (algebraic identity - no division!)`
+    );
+
+    // GPU boundary: expand symbolic constants to decimals for THREE.Vector3 creation
+    const phiVal = phi.toDecimal();
+    const invPhiVal = invPhi.toDecimal();
 
     // 20 vertices: 8 at (±1, ±1, ±1) + 12 at permutations of (0, ±1/φ, ±φ)
     // Scaled by s to fit cube of size ±s
@@ -1120,22 +1143,22 @@ export const Polyhedra = {
       // These form the "ridge" vertices of the hip roof pentagons
 
       // Permutation 1: (0, ±1/φ, ±φ) * s
-      new THREE.Vector3(0, s * invPhi, s * phi), // 8
-      new THREE.Vector3(0, s * invPhi, -s * phi), // 9
-      new THREE.Vector3(0, -s * invPhi, s * phi), // 10
-      new THREE.Vector3(0, -s * invPhi, -s * phi), // 11
+      new THREE.Vector3(0, s * invPhiVal, s * phiVal), // 8
+      new THREE.Vector3(0, s * invPhiVal, -s * phiVal), // 9
+      new THREE.Vector3(0, -s * invPhiVal, s * phiVal), // 10
+      new THREE.Vector3(0, -s * invPhiVal, -s * phiVal), // 11
 
       // Permutation 2: (±1/φ, ±φ, 0) * s
-      new THREE.Vector3(s * invPhi, s * phi, 0), // 12
-      new THREE.Vector3(s * invPhi, -s * phi, 0), // 13
-      new THREE.Vector3(-s * invPhi, s * phi, 0), // 14
-      new THREE.Vector3(-s * invPhi, -s * phi, 0), // 15
+      new THREE.Vector3(s * invPhiVal, s * phiVal, 0), // 12
+      new THREE.Vector3(s * invPhiVal, -s * phiVal, 0), // 13
+      new THREE.Vector3(-s * invPhiVal, s * phiVal, 0), // 14
+      new THREE.Vector3(-s * invPhiVal, -s * phiVal, 0), // 15
 
       // Permutation 3: (±φ, 0, ±1/φ) * s
-      new THREE.Vector3(s * phi, 0, s * invPhi), // 16
-      new THREE.Vector3(s * phi, 0, -s * invPhi), // 17
-      new THREE.Vector3(-s * phi, 0, s * invPhi), // 18
-      new THREE.Vector3(-s * phi, 0, -s * invPhi), // 19
+      new THREE.Vector3(s * phiVal, 0, s * invPhiVal), // 16
+      new THREE.Vector3(s * phiVal, 0, -s * invPhiVal), // 17
+      new THREE.Vector3(-s * phiVal, 0, s * invPhiVal), // 18
+      new THREE.Vector3(-s * phiVal, 0, -s * invPhiVal), // 19
     ];
 
     // 30 edges - standard dodecahedron topology
