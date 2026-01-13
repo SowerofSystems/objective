@@ -23,10 +23,15 @@ This project implements a **RATIONAL approach to computational geometry** using 
    - Only take √ at final THREE.Vector3 creation
    - Preserves algebraic exactness throughout generation pipeline
 
-4. **Golden Ratio Identities**
-   - φ² = φ + 1 (eliminates multiplication)
-   - 1/φ = φ - 1 (eliminates division)
-   - All icosahedron/dodecahedron relationships use these algebraic identities
+4. **Symbolic Algebra for Radicals (PurePhi Method)**
+   - **Philosophy:** Represent radicals in exact form `(a + b√n)/c` until GPU boundary
+   - **Golden Ratio (φ):** Work symbolically as `(a + b√5)/c` for 15-decimal precision
+     - φ = (1 + √5)/2 → symbolic constant
+     - φ² = (3 + √5)/2 using identity φ² = φ + 1 (not multiplication!)
+     - 1/φ = (-1 + √5)/2 using identity 1/φ = φ - 1 (not division!)
+   - **Achievements:** Identity error = 0e+0, quadrance error = 2.17e-19 (460× improvement)
+   - **Extension principle:** Apply to √2, √3, √6 wherever premature expansion loses precision
+   - See [puri-phi.md](puri-phi.md) for full migration details
 
 ### Why This Matters
 
@@ -468,7 +473,7 @@ This separation makes the code significantly more maintainable and modular.
   - Dodecahedron: Yellow (0xffff00)
   - Cuboctahedron (VE): Bright Lime-Cyan (0x00ff88)
   - Rhombic Dodecahedron: Orange (0xff8800)
-  - ⚠️ TODO: Explore more refined nesting colour theory approach akin to Regular/Geodesic complementary pairings, esp. for regular dual polyhedra. 
+  - ✅ COMPLETE: Explore more refined nesting colour theory approach akin to Regular/Geodesic complementary pairings, esp. for regular dual polyhedra. Color Theory modal integrated, user can select their own themes
 
 ---
 
@@ -1238,7 +1243,7 @@ state: {
 }
 ```
 - ~~To be added: Backface Culling for Papercut print optimization: UI checkbox already in place.~~ ✅ **COMPLETED** (2026-01-11) - All polyhedra face windings corrected, backface culling now enabled by default
-- **NEW TODO:** Color brightness adjustments to compensate for backface culling performance optimization - now that we render single-sided faces (vs. previous double-rendering overdraw), colors need to be intrinsically brighter to maintain visual "pop" and intensity
+- **NEW TODO:** Color brightness adjustments to compensate for backface culling performance optimization - now that we render single-sided faces (vs. previous double-rendering overdraw), colors need to be intrinsically brighter to maintain visual "pop" and intensity: ✅ COMPLETE with Color Theory modal, default colours and opacity were adjusted to return pre-backface culled brightness values
 - Consider option of Lineweight depth per camera view as enhancement
 ---
 
@@ -1674,7 +1679,7 @@ All RT-Pure enhancements successfully implemented:
    - Excellent for learning subdivision algorithms
    - Demonstrates RT principles clearly
 
-4. **TODO ⚠️ Geodesic Dual Icosahedron** 
+4. **✅ COMPLETE Geodesic Dual Icosahedron** 
   - Consider adding full Geodesic implementation also to Dual Icosahedron in UI and Functions, identical implementation as base Icosahedron, consolidate functionality
 
 **Quadrance-Preserving Subdivision Algorithm:**
@@ -2135,7 +2140,7 @@ function createRTPureGrid(size, divisions, color, plane = 'XY') {
 - ✅ Clearer code - grid plane orientation is obvious from vertex coordinates
 
 #### Option 2: Exact Rational Rotation Values
-TODO: Replace π with exact algebraic rotation values (if Three.js supports quaternion-based rotations): RESEARCH NEEDED FOR LATER AI AGENT PROJECT
+TODO: Replace π with exact algebraic rotation values (if Three.js supports quaternion-based rotations - IT DOES!!): RESEARCH NEEDED FOR LATER AI AGENT PROJECT
 
 ```javascript
 // 90° rotation as quaternion: [sin(45°), 0, 0, cos(45°)] = [√2/2, 0, 0, √2/2]
@@ -2893,7 +2898,7 @@ void  Quadray::RotateAboutA(const Quadray &QX,double Theta)
 }
 ---
 
-## TODO: Grid Tessellation Sliders + State Management - COMPLETED
+## TODO: Grid Tessellation Sliders + State Management - ✅ COMPLETE
 
 ### Grid Tessellation Controls (High Priority)
 
@@ -4749,7 +4754,7 @@ These are high-priority items that are actively blocking features or require imm
 
 #### 8.1.1 Matrix Polyhedra Papercut Epsilon Offset
 **Status:** ⚠️ Active
-**Priority:** Medium
+**Priority:** Low
 **Location:** [Section 2.1, Line 417-418](#21-current-status-as-of-2025-12-30)
 
 For matrix polyhedra, add non-inverted plane epsilon offset so cuts at colinear edges show section lines as we have done for regular non-matrix polyhedra (i.e., dome base - at grade). Epsilon must flip for cut-down vs. cut-up directions. Currently applied only to cut-down direction.
@@ -4795,7 +4800,7 @@ Backface Culling for Papercut print optimization: **COMPLETED**
 **Performance Impact & Color Adjustment Side-Effect:**
 - Backface culling eliminates overdraw (2× rendering reduced to 1×)
 - Previous double-rendering unintentionally boosted color brightness/intensity
-- New TODO: Adjust color values to compensate for lost "glow" effect
+- New TODO: Adjust color values to compensate for lost "glow" effect: ✅ COMPLETED
 - Goal: Maintain visual "pop" while keeping performance gains from proper culling
 - See: Color Theory branch (Colour-Theory) for brightness recalibration work
 
@@ -5052,7 +5057,7 @@ Replace π with exact algebraic rotation values using quaternion-based rotations
 ---
 
 #### 8.2.3 Color Theory Refinement for Dual Polyhedra
-**Status:** ⚠️ TODO
+**Status:** ✅ COMPLETE
 **Priority:** Low (Visual Polish)
 **Location:** [Section 2.1.1, Line 457](#211-legacy-status-2025-12-30)
 
@@ -5142,11 +5147,12 @@ These items are documented in [Section 5.3: TODO: Future Enhancements](#53-todo-
 #### 8.3.2 Geodesic Improvements
 **Location:** [Lines 3477-3488](#53-todo-future-enhancements)
 
-- [ ] **Geodesic cutplane feature** - Horizontal slice for terrestrial dome structures
+- [ ] **Geodesic cutplane feature** - Horizontal slice for terrestrial dome structures: 
   - Adjustable height slider (0-100% of geodesic height)
   - Removes vertices and faces below cutplane
   - Generates new base perimeter edges
   - Useful for architectural dome applications (foundation level)
+  - Already works in Papercut with inverted plane and epsilon offset
 
 - [ ] **Geodesic subdivision for remaining polyhedra** - Dodecahedron, Cube
 
@@ -5165,6 +5171,7 @@ These items are documented in [Section 5.3: TODO: Future Enhancements](#53-todo-
 - [ ] Snap-to-grid for Move mode
 - [ ] Snap-to-angle for Rotate mode
 - [ ] Measurement tool (distance, angle, area, volume)
+- [ ] Free Movement (unconstrained to axes)
 
 ---
 
@@ -5236,10 +5243,11 @@ Tetrahedral helixes are formed by joining faces of tetrahedra which spiral into 
    - Option A: Chain tetrahedra face-to-face with rotation accumulation
    - Option B: Parametric helix with tetrahedral units positioned along path
    - Option C: Direct vertex calculation using helix equations + tetrahedral geometry
+   - per Andy: Stepper algorithm, if Base = 3 points of previous tetrahedron in chain, then the next point is a known value
 
 2. **Closure Condition:** How many tetrahedra complete one full torus revolution?
    - Related to dihedral angles and twist rate
-   - May require specific angle relationships for perfect closure
+   - May require specific angle relationships - OR one-edge shortening for perfect closure
 
 3. **RT-Purity:** Can helix be constructed without sin/cos?
    - Circular helix traditionally requires parametric (cos(t), sin(t), t)
@@ -5273,7 +5281,7 @@ Tetrahedral helixes are formed by joining faces of tetrahedra which spiral into 
 ---
 
 #### 8.4.2 Tetrahedral/Pentagonal Cone Basis Vector Arrowheads
-**Status:** ⚠️ Active
+**Status:** ✅ COMPLETE
 **Priority:** Medium (Visual Enhancement)
 
 Change basis vector arrowheads from standard cones to pentagonal cones for XYZ and tetrahedral cones for WXYZ, aligned with grid symmetry.
@@ -5294,11 +5302,12 @@ Change basis vector arrowheads from standard cones to pentagonal cones for XYZ a
 - Educational: Visual cue distinguishing coordinate systems
 - Aesthetic: Matches underlying geometric philosophy
 - Subtle but meaningful detail
+- NOTE: Editing basis abandoned, added over 100 lines of code and was buggy, kept Tet basis arrowheads for symbol, but allow THREE>js arrow helper to do the work for editing. 
 
 ---
 
 #### 8.4.3 Reduce XYZ Basis Vector Arrow Size
-**Status:** ⚠️ Active
+**Status:** ✅ COMPLETE
 **Priority:** Medium (UI/Visual)
 
 Reduce the length/size of XYZ Cartesian basis vector arrows to match the proportions of WXYZ Quadray basis vectors.
@@ -5542,7 +5551,7 @@ Total Triangles: 1,247
 ---
 
 #### 8.4.7 Update Default Settings (Nodes + Opacity)
-**Status:** ⚠️ Active
+**Status:** ✅ COMPLETE
 **Priority:** High (Improved Defaults for RT Philosophy)
 
 Update application defaults to emphasize RT-pure node geometry and appropriate transparency.
