@@ -398,14 +398,16 @@
     // k_104: Total Envelope Heat Gain
     // Excel: =IF(H21="Capacitance", K98, SUM(K101:K102))
     // NOTE: k_103 (air leakage heat gain) is NOT included in this sum
+    // NOTE: k_101/k_102 are from Section 12 (envelope.*.totalHeatGain) using weighted U-values
+    //       k_98 is from Section 11 (transmissionLoss.components.subtotalHeatGain) using component sums
     graph.registerNode({
       id: "envelope.total.heatGain",
       legacyId: "k_104",
       section: "S12",
       classification: "C",
       dependencies: [
-        "transmissionLoss.airFacing.totalHeatGain",
-        "transmissionLoss.groundFacing.totalHeatGain",
+        "envelope.airFacing.totalHeatGain",
+        "envelope.groundFacing.totalHeatGain",
         "transmissionLoss.components.subtotalHeatGain",
         "building.capacitance.setting"
       ],
@@ -414,12 +416,12 @@
         const capacitanceSetting = inputs["building.capacitance.setting"] || "No Capacitance";
 
         if (capacitanceSetting === "Capacitance") {
-          // Use k_98 from Section 11 (includes solar etc.)
+          // Use k_98 from Section 11 (component sums)
           return parseNum(inputs["transmissionLoss.components.subtotalHeatGain"]);
         } else {
-          // k_104 = k_101 + k_102 (NOT including k_103 air leakage)
-          const k101 = parseNum(inputs["transmissionLoss.airFacing.totalHeatGain"]);
-          const k102 = parseNum(inputs["transmissionLoss.groundFacing.totalHeatGain"]);
+          // k_104 = k_101 + k_102 from Section 12 (weighted U-values × area)
+          const k101 = parseNum(inputs["envelope.airFacing.totalHeatGain"]);
+          const k102 = parseNum(inputs["envelope.groundFacing.totalHeatGain"]);
           return k101 + k102;
         }
       }
