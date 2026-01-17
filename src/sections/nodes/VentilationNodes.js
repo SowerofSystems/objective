@@ -173,14 +173,12 @@
         const cddRaw = inputs["climate.cooling.degreedays"];
         // Check for undefined/null/unavailable CDD
         if (cddRaw === undefined || cddRaw === null || isUnavailable(cddRaw)) {
-          console.warn(`[VentilationNodes] d_122: CDD is ${cddRaw}, returning 0. All inputs:`, inputs);
           return 0;
         }
 
         const cdd = parseNum(cddRaw, 0);
         // If CDD parses to 0, there's no cooling load
         if (cdd === 0) {
-          console.warn(`[VentilationNodes] d_122: CDD parsed to 0 (raw: ${cddRaw}), returning 0`);
           return 0;
         }
 
@@ -191,7 +189,10 @@
         const occupancyFactor = totalHours > 0 ? occupiedHours / totalHours : 0.5;
 
         // Latent load factor from Cooling.js psychrometrics
-        const latentLoadFactor = parseNum(inputs["cooling.latentLoadFactor"], 1.0);
+        // Valid latent load factors are always >= 1.0 (formula: 1 + A64/A55)
+        // If 0 or invalid (from NaN || 0 fallback in Cooling.js), use default 1.0
+        const rawLatent = parseNum(inputs["cooling.latentLoadFactor"], 1.0);
+        const latentLoadFactor = rawLatent > 0 ? rawLatent : 1.0;
 
         // Summer boost factor (l_119)
         const summerBoost = parseNum(inputs["mechanical.ventilation.summerBoost"], 0);
@@ -199,11 +200,6 @@
 
         // Base formula: (1.21 * ventRate * cdd * 24) / 1000
         const baseEnergy = (1.21 * volumeRate * cdd * 24) / 1000;
-
-        // Debug: Log if result would be 0 with non-zero CDD
-        if (baseEnergy === 0 && cdd > 0) {
-          console.warn(`[VentilationNodes] d_122: baseEnergy=0 but CDD=${cdd}. volumeRate=${volumeRate}`);
-        }
 
         // Apply factors based on cooling system type
         if (coolingSystem === "Cooling") {
