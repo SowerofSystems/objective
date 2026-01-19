@@ -163,7 +163,7 @@
 
         // COPheat = HSPF / 3.412 (only for heat pumps)
         if (systemType === "Heatpump" && hspf > 0) {
-          return +(hspf / 3.412).toFixed(2);
+          return +(hspf / 3.412).toFixed(4);
         }
         return 1; // Gas/Oil systems have effective COP of 1
       }
@@ -178,7 +178,7 @@
       compute: (inputs) => {
         const copHeat = parseNum(inputs["mechanical.heating.copHeat"], 1);
         // COPcool = max(1, COPheat - 1)
-        return +Math.max(1, copHeat - 1).toFixed(2);
+        return +Math.max(1, copHeat - 1).toFixed(4);
       }
     },
     {
