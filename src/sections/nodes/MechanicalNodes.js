@@ -217,9 +217,9 @@
         // For heat pump: demand = TED / COPheat
         // For gas/oil: demand = TED (electrical demand is minimal, tracked separately)
         if (systemType === "Heatpump" && copHeat > 0) {
-          return +(ted / copHeat).toFixed(2);
+          return +(ted / copHeat).toFixed(4);
         }
-        return +ted.toFixed(2);
+        return +ted.toFixed(4);
       }
     },
     {
@@ -241,7 +241,7 @@
 
         // Sink = demand × (COP - 1) for heat pumps only
         if (systemType === "Heatpump") {
-          return +(demand * (copHeat - 1)).toFixed(2);
+          return +(demand * (copHeat - 1)).toFixed(4);
         }
         return 0;
       }
@@ -353,7 +353,7 @@
         const coolingDemand = parseNum(inputs["energy.ced.mitigated"], 0);
 
         if (coolingType === "No Cooling" || cop === 0) return 0;
-        return +(coolingDemand / cop).toFixed(2);
+        return +(coolingDemand / cop).toFixed(4);
       }
     },
     {

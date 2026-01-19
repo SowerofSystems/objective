@@ -273,7 +273,7 @@
       unit: "W/m²·K",
       compute: (inputs) => {
         const rsi = parseNum(inputs["envelope.roof.rsi"], 8.81);
-        return rsi > 0 ? +(1 / rsi).toFixed(3) : 0;
+        return rsi > 0 ? +(1 / rsi).toFixed(4) : 0;
       }
     },
     {
@@ -286,7 +286,7 @@
       unit: "W/m²·K",
       compute: (inputs) => {
         const rsi = parseNum(inputs["envelope.walls.rsi"], 6.19);
-        return rsi > 0 ? +(1 / rsi).toFixed(3) : 0;
+        return rsi > 0 ? +(1 / rsi).toFixed(4) : 0;
       }
     },
     {
@@ -299,7 +299,7 @@
       unit: "W/m²·K",
       compute: (inputs) => {
         const rsi = parseNum(inputs["envelope.floorExposed.rsi"], 9.52);
-        return rsi > 0 ? +(1 / rsi).toFixed(3) : 0;
+        return rsi > 0 ? +(1 / rsi).toFixed(4) : 0;
       }
     },
     {
@@ -312,7 +312,7 @@
       unit: "W/m²·K",
       compute: (inputs) => {
         const rsi = parseNum(inputs["envelope.wallsBelowGrade.rsi"], 4.0);
-        return rsi > 0 ? +(1 / rsi).toFixed(3) : 0;
+        return rsi > 0 ? +(1 / rsi).toFixed(4) : 0;
       }
     },
     {
@@ -325,7 +325,7 @@
       unit: "W/m²·K",
       compute: (inputs) => {
         const rsi = parseNum(inputs["envelope.slabOnGrade.rsi"], 4.0);
-        return rsi > 0 ? +(1 / rsi).toFixed(3) : 0;
+        return rsi > 0 ? +(1 / rsi).toFixed(4) : 0;
       }
     },
 
@@ -458,7 +458,7 @@
         const baseU = totalUA / totalArea;
         const adjustedU = baseU * (1 + penalty / 100);
 
-        return +adjustedU.toFixed(3);
+        return +adjustedU.toFixed(4);
       }
     },
     {
@@ -491,7 +491,7 @@
         const baseU = totalUA / totalArea;
         const adjustedU = baseU * (1 + penalty / 100);
 
-        return +adjustedU.toFixed(3);
+        return +adjustedU.toFixed(4);
       }
     },
 
@@ -515,7 +515,7 @@
 
         const u = parseNum(inputs["envelope.airFacing.weightedUValue"], 0);
         // Heat loss = U × HDD × 24 / 1000
-        return +((u * parseNum(hdd) * 24) / 1000).toFixed(2);
+        return +((u * parseNum(hdd) * 24) / 1000).toFixed(4);
       }
     },
     {
@@ -529,7 +529,7 @@
       compute: (inputs) => {
         const rate = parseNum(inputs["envelope.airFacing.heatLossRate"], 0);
         const area = parseNum(inputs["envelope.airFacing.totalArea"], 0);
-        return +(rate * area).toFixed(2);
+        return +(rate * area).toFixed(4);
       }
     },
     {
@@ -549,7 +549,7 @@
 
         const u = parseNum(inputs["envelope.groundFacing.weightedUValue"], 0);
         // Heat loss = U × GF_HDD × 24 / 1000
-        return +((u * parseNum(gfhdd) * 24) / 1000).toFixed(2);
+        return +((u * parseNum(gfhdd) * 24) / 1000).toFixed(4);
       }
     },
     {
@@ -566,7 +566,7 @@
       compute: (inputs) => {
         const rate = parseNum(inputs["envelope.groundFacing.heatLossRate"], 0);
         const area = parseNum(inputs["envelope.groundFacing.totalArea"], 0);
-        return +(rate * area).toFixed(2);
+        return +(rate * area).toFixed(4);
       }
     },
 
@@ -591,7 +591,7 @@
 
         const u = parseNum(inputs["envelope.airFacing.weightedUValue"], 0);
         // Heat gain = U × CDD × 24 / 1000
-        return +((u * parseNum(cdd) * 24) / 1000).toFixed(2);
+        return +((u * parseNum(cdd) * 24) / 1000).toFixed(4);
       }
     },
     {
@@ -605,7 +605,7 @@
       compute: (inputs) => {
         const rate = parseNum(inputs["envelope.airFacing.heatGainRate"], 0);
         const area = parseNum(inputs["envelope.airFacing.totalArea"], 0);
-        return +(rate * area).toFixed(2);
+        return +(rate * area).toFixed(4);
       }
     },
     {
@@ -623,7 +623,7 @@
         const gfcdd = inputs["climate.groundFacing.cdd"];
         const u = parseNum(inputs["envelope.groundFacing.weightedUValue"], 0);
         // Heat gain = U × GF_CDD × 24 / 1000
-        return +((u * parseNum(gfcdd, 0) * 24) / 1000).toFixed(2);
+        return +((u * parseNum(gfcdd, 0) * 24) / 1000).toFixed(4);
       }
     },
     {
@@ -640,7 +640,7 @@
       compute: (inputs) => {
         const rate = parseNum(inputs["envelope.groundFacing.heatGainRate"], 0);
         const area = parseNum(inputs["envelope.groundFacing.totalArea"], 0);
-        return +(rate * area).toFixed(2);
+        return +(rate * area).toFixed(4);
       }
     },
 

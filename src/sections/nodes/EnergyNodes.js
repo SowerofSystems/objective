@@ -118,7 +118,7 @@
         const m121 = parseNum(inputs["ventilation.netHeatLoss"], 0);
         const i80 = parseNum(inputs["radiantGains.usableGains"], 0);
 
-        return +(i97 + i98 + i103 + m121 - i80).toFixed(2);
+        return +(i97 + i98 + i103 + m121 - i80).toFixed(4);
       }
     },
     {
@@ -157,7 +157,7 @@
         const i103 = parseNum(inputs["airTightness.heatLoss"], 0);
         const i80 = parseNum(inputs["radiantGains.usableGains"], 0);
 
-        return +(i97 + i98 + i103 - i80).toFixed(2);
+        return +(i97 + i98 + i103 - i80).toFixed(4);
       }
     },
     {
@@ -214,7 +214,7 @@
         const k103 = parseNum(inputs["airTightness.heatGain"], 0);
         const d122 = parseNum(inputs["ventilation.heatGain"], 0);
 
-        return +(k71 + k79 + k97 + k104 + k103 + d122).toFixed(2);
+        return +(k71 + k79 + k97 + k104 + k103 + d122).toFixed(4);
       }
     },
     {
@@ -294,7 +294,7 @@
         const m121 = parseNum(inputs["ventilation.netHeatLoss"], 0);
         const i80 = parseNum(inputs["radiantGains.usableGains"], 0);
 
-        return +(m43 + k51 + h70 + d117 + i104 + m121 - i80).toFixed(2);
+        return +(m43 + k51 + h70 + d117 + i104 + m121 - i80).toFixed(4);
       }
     },
     {
@@ -328,10 +328,10 @@
         if (primaryHeating === "Electricity") {
           return d135;
         } else if (primaryHeating === "Heatpump") {
-          return +(k51 + d117 + d114 + m43 + h70).toFixed(2);
+          return +(k51 + d117 + d114 + m43 + h70).toFixed(4);
         } else {
           // Gas or Oil - sum electrical loads only, exclude heating demand
-          return +(k51 + d117 + m43 + h70).toFixed(2);
+          return +(k51 + d117 + m43 + h70).toFixed(4);
         }
       }
     },
