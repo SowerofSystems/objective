@@ -1006,13 +1006,11 @@ window.TEUI.SectionModules.sect14 = (function () {
         "calculated"
       );
 
-      // d_129 and related cooling calculations
-      const ref_cedCoolingUnmitigated_d129 = k71 + k79 + k98 + d122;
-      window.TEUI?.StateManager?.setValue(
-        "ref_d_129",
-        ref_cedCoolingUnmitigated_d129.toString(),
-        "calculated"
-      );
+      // d_129: Read from S13 (authoritative source with correct formula)
+      // S13 uses: k71 + k79 + k97 + k104 + k103 + d122
+      // S14's old formula (k71 + k79 + k98 + d122) was missing k_97, k_103
+      const ref_cedCoolingUnmitigated_d129 =
+        parseFloat(window.TEUI?.StateManager?.getValue("ref_d_129")) || 0;
 
       // h_129: CEDI Unmitigated (kWh/m²/yr)
       const ref_cediUnmitigated_h129 =
@@ -1160,8 +1158,10 @@ window.TEUI.SectionModules.sect14 = (function () {
       const tediEnvelope_h128 = area > 0 ? tediEnvelope_d128 / area : 0;
       setCalculatedValue("h_128", tediEnvelope_h128);
 
-      // Calculate d_129 value needed for h_129, m_129, d_130
-      const cedCoolingUnmitigated_d129 = k71 + k79 + k98 + d122;
+      // d_129: Read from S13 (authoritative source with correct formula)
+      // S13 uses: k71 + k79 + k97 + k104 + k103 + d122
+      // S14's old formula (k71 + k79 + k98 + d122) was missing k_97, k_103
+      const cedCoolingUnmitigated_d129 = getNumericValue("d_129");
 
       // h_129: CEDI Unmitigated (kWh/m²/yr)
       const cediUnmitigated_h129 =
@@ -1171,9 +1171,7 @@ window.TEUI.SectionModules.sect14 = (function () {
       // ✅ PHASE 3: m_129 now calculated by S13 (hybrid architecture)
       // S13 calculates m_129 for immediate use in d_117, publishes to S14 for display
       // S14 no longer calculates m_129 to prevent conflicts
-
-      // Set d_129 display value now
-      setCalculatedValue("d_129", cedCoolingUnmitigated_d129);
+      // d_129 is also calculated by S13 - S14 only reads and displays it
 
       // d_130: CEDI Cooling Load W/m2 Unmitigated: =(D129/8760*1000)/H15
       const cediCoolingWm2_d130 =
