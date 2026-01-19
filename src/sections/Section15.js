@@ -1784,20 +1784,8 @@ window.TEUI.SectionModules.sect15 = (function () {
 
       // 🚨 DISABLED: S15 overriding S01's h_10 calculation causes race condition
       // S01 should be the sole owner of h_10, calculating from fresh j_32 via S04
-      /*
-      // Store in StateManager but let Section 01 handle the display
-      window.TEUI.StateManager?.setValue(
-        "h_10",
-        teui_h136.toString(),
-        "calculated",
-      );
-      */
-      // ✅ FIXED: Pattern A compliance - no target_ prefixes
-      window.TEUI.StateManager?.setValue(
-        "h_10",
-        teui_h136.toString(),
-        "calculated"
-      );
+      // h_10 = j_32 / h_15 (calculated by S01 using total target energy from S04)
+      // NOT d_136 / h_15 (HP/Gas/Oil specific calculation from S15)
 
       // 🚨 DISABLED: S15 overriding S01's h_10 calculation causes race condition
       // S01 should be the sole owner of h_10, calculating from fresh j_32 via S04
