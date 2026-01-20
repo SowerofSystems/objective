@@ -360,15 +360,49 @@
           return values;
         };
 
-        // Parse header row and extract field IDs
-        // Headers may be in format "fieldId: Label" (new) or just "fieldId" (legacy)
-        const fieldIds = parseCSVRow(headerRow).map(header => {
-          // Split on first colon and take the field ID part
+        // Parse header row and extract field IDs/paths
+        // Headers may be in format:
+        //   - "semanticPath: Label" (new semantic format, e.g., "building.conditionedFloorArea: Floor Area")
+        //   - "fieldId: Label" (legacy format with labels, e.g., "d_12: Building Name")
+        //   - "fieldId" or "semanticPath" (minimal format without labels)
+        const rawHeaders = parseCSVRow(headerRow).map(header => {
+          // Split on first colon and take the ID/path part
           const colonIndex = header.indexOf(":");
           return colonIndex !== -1
             ? header.substring(0, colonIndex).trim()
             : header.trim();
         });
+
+        // Detect format: semantic paths contain ".", legacy IDs contain "_"
+        const firstHeader = rawHeaders[0] || "";
+        const isSemanticFormat = firstHeader.includes(".");
+        const FieldRegistry = window.TEUI?.FieldRegistry;
+
+        // Convert headers to legacy field IDs for StateManager compatibility
+        // If semantic format, translate to legacy IDs
+        // If legacy format, use as-is
+        const fieldIds = rawHeaders.map(header => {
+          if (isSemanticFormat && FieldRegistry) {
+            // Semantic path → legacy ID
+            const legacyId = FieldRegistry.toLegacy(header);
+            if (legacyId) {
+              return legacyId;
+            }
+            // If no mapping found, warn and use original (might be already legacy)
+            if (header.includes("_")) {
+              return header; // Already looks like legacy ID
+            }
+            console.warn(`[FileHandler] No legacy ID found for semantic path: ${header}`);
+            return header;
+          }
+          return header; // Legacy format, use as-is
+        });
+
+        if (isSemanticFormat) {
+          console.log(`[FileHandler] Detected SEMANTIC format CSV (${rawHeaders.length} fields), translating to legacy IDs`);
+        } else {
+          console.log(`[FileHandler] Detected LEGACY format CSV (${rawHeaders.length} fields)`);
+        }
         const targetValues = parseCSVRow(targetValueRow);
         const referenceValues = referenceValueRow
           ? parseCSVRow(referenceValueRow)
@@ -1378,16 +1412,24 @@
         });
 
         // Construct CSV content:
-        // Row 1: Combined headers (fieldId: Natural Language Label)
+        // Row 1: Combined headers (semanticPath: Natural Language Label) - NEW FORMAT
         // Row 2: Target/Application values
         // Row 3: Reference values
         // Row 4+: [Future] OBC Matrix placeholder
+        //
+        // SEMANTIC PATH MIGRATION (Phase 3):
+        // Headers now use semantic paths (e.g., "building.conditionedFloorArea")
+        // instead of legacy IDs (e.g., "d_12") for better readability and maintainability.
+        // Import auto-detects format and translates legacy IDs if needed.
+        const FieldRegistry = window.TEUI?.FieldRegistry;
         const headerRow = userEditableFieldIds
           .map(fieldId => {
             const fieldDef = this.fieldManager.getField(fieldId);
             const label = fieldDef?.label || "";
-            // Format: "fieldId: Label" or just "fieldId" if no label
-            const combinedHeader = label ? `${fieldId}: ${label}` : fieldId;
+            // Try to get semantic path, fall back to legacy ID
+            const semanticPath = FieldRegistry?.toSemantic(fieldId) || fieldId;
+            // Format: "semanticPath: Label" or just "semanticPath" if no label
+            const combinedHeader = label ? `${semanticPath}: ${label}` : semanticPath;
             return escapeCSV(combinedHeader);
           })
           .join(",");
