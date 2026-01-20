@@ -19,7 +19,7 @@
 
   function parseNum(value, defaultVal = 0) {
     if (value === null || value === undefined || value === "N/A") return defaultVal;
-    if (value === "Unavailable") return "Unavailable";
+    if (value === "Unavailable") return defaultVal;
     const num = parseFloat(String(value).replace(/,/g, ""));
     return isNaN(num) ? defaultVal : num;
   }
@@ -388,9 +388,10 @@
       label: "Total Envelope Heat Loss (kWh/yr)",
       compute: (inputs) => {
         // i_104 = i_101 + i_102 + i_103
-        const i101 = parseNum(inputs["envelope.airFacing.totalHeatLoss"]);
-        const i102 = parseNum(inputs["envelope.groundFacing.totalHeatLoss"]);
-        const i103 = parseNum(inputs["airTightness.heatLoss"]);
+        // Use default 0 to handle "Unavailable" values gracefully
+        const i101 = parseNum(inputs["envelope.airFacing.totalHeatLoss"], 0);
+        const i102 = parseNum(inputs["envelope.groundFacing.totalHeatLoss"], 0);
+        const i103 = parseNum(inputs["airTightness.heatLoss"], 0);
         return i101 + i102 + i103;
       }
     });
@@ -417,11 +418,11 @@
 
         if (capacitanceSetting === "Capacitance") {
           // Use k_98 from Section 11 (component sums)
-          return parseNum(inputs["transmissionLoss.components.subtotalHeatGain"]);
+          return parseNum(inputs["transmissionLoss.components.subtotalHeatGain"], 0);
         } else {
           // k_104 = k_101 + k_102 from Section 12 (weighted U-values × area)
-          const k101 = parseNum(inputs["envelope.airFacing.totalHeatGain"]);
-          const k102 = parseNum(inputs["envelope.groundFacing.totalHeatGain"]);
+          const k101 = parseNum(inputs["envelope.airFacing.totalHeatGain"], 0);
+          const k102 = parseNum(inputs["envelope.groundFacing.totalHeatGain"], 0);
           return k101 + k102;
         }
       }

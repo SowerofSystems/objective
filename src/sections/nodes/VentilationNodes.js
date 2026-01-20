@@ -16,7 +16,7 @@
 
   function parseNum(value, defaultVal = 0) {
     if (value === null || value === undefined || value === "N/A") return defaultVal;
-    if (value === "Unavailable") return "Unavailable";
+    if (value === "Unavailable") return defaultVal;
     const num = parseFloat(String(value).replace(/,/g, ""));
     return isNaN(num) ? defaultVal : num;
   }
