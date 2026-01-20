@@ -889,6 +889,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         c: { label: "Doors" },
         d: {
           fieldId: "d_73",
+          semanticPath: "radiant.doors.area",
           type: "editable",
           value: "7.50",
           section: "envelopeRadiantGains",
@@ -898,6 +899,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         e: {
           fieldId: "e_73",
+          semanticPath: "radiant.doors.orientation",
           type: "dropdown",
           dropdownId: "dd_e_73",
           value: "Average",
@@ -920,6 +922,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         f: {
           fieldId: "f_73",
+          semanticPath: "radiant.doors.shgc",
           type: "coefficient_slider",
           value: "0.50",
           min: 0.2,
@@ -932,6 +935,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         g: {
           fieldId: "g_73",
+          semanticPath: "radiant.doors.winterShading",
           type: "percentage",
           value: "0",
           min: 0,
@@ -943,6 +947,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         h: {
           fieldId: "h_73",
+          semanticPath: "radiant.doors.summerShading",
           type: "percentage",
           value: "100",
           min: 0,
@@ -954,6 +959,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         i: {
           fieldId: "i_73",
+          semanticPath: "radiant.doors.heatingGain",
           type: "calculated",
           value: "225.00",
           section: "envelopeRadiantGains",
@@ -962,6 +968,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         j: {
           fieldId: "j_73",
+          semanticPath: "radiant.doors.heatingGainPercent",
           type: "calculated",
           value: "1.55%", // DEFAULTS ANTIPATTERN if values are calculated, why do we tell them what they should be here?
           section: "envelopeRadiantGains",
@@ -970,6 +977,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         k: {
           fieldId: "k_73",
+          semanticPath: "radiant.doors.coolingGain",
           type: "calculated",
           value: "0.00",
           section: "envelopeRadiantGains",
@@ -978,6 +986,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         l: {
           fieldId: "l_73",
+          semanticPath: "radiant.doors.coolingGainPercent",
           type: "calculated",
           value: "0.00%",
           section: "envelopeRadiantGains",
@@ -986,6 +995,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         m: {
           fieldId: "m_73",
+          semanticPath: "radiant.doors.gainFactor",
           type: "calculated",
           value: "50",
           section: "envelopeRadiantGains",
@@ -996,6 +1006,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         p: {
           fieldId: "p_73",
+          semanticPath: "radiant.doors.cost",
           type: "calculated",
           dependencies: ["l_12", "k_73", "i_73"],
         }, // Column P (Cost)
@@ -1011,6 +1022,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         c: { label: "Window Area North" },
         d: {
           fieldId: "d_74",
+          semanticPath: "radiant.windowNorth.area",
           type: "editable",
           value: "81.14",
           section: "envelopeRadiantGains",
@@ -1020,6 +1032,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         e: {
           fieldId: "e_74",
+          semanticPath: "radiant.windowNorth.orientation",
           type: "dropdown",
           dropdownId: "dd_e_74",
           value: "North",
@@ -1042,6 +1055,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         f: {
           fieldId: "f_74",
+          semanticPath: "radiant.windowNorth.shgc",
           type: "coefficient_slider",
           value: "0.50",
           min: 0.2,
@@ -1054,6 +1068,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         g: {
           fieldId: "g_74",
+          semanticPath: "radiant.windowNorth.winterShading",
           type: "percentage",
           value: "0",
           min: 0,
@@ -1065,6 +1080,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         h: {
           fieldId: "h_74",
+          semanticPath: "radiant.windowNorth.summerShading",
           type: "percentage",
           value: "100",
           min: 0,
@@ -1076,6 +1092,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         i: {
           fieldId: "i_74",
+          semanticPath: "radiant.windowNorth.heatingGain",
           type: "calculated",
           value: "106.29",
           section: "envelopeRadiantGains",
@@ -1084,6 +1101,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         j: {
           fieldId: "j_74",
+          semanticPath: "radiant.windowNorth.heatingGainPercent",
           type: "calculated",
           value: "0.73%",
           section: "envelopeRadiantGains",
@@ -1092,6 +1110,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         k: {
           fieldId: "k_74",
+          semanticPath: "radiant.windowNorth.coolingGain",
           type: "calculated",
           value: "0.00",
           section: "envelopeRadiantGains",
@@ -1100,6 +1119,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         l: {
           fieldId: "l_74",
+          semanticPath: "radiant.windowNorth.coolingGainPercent",
           type: "calculated",
           value: "0.00%",
           section: "envelopeRadiantGains",
@@ -1108,6 +1128,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         m: {
           fieldId: "m_74",
+          semanticPath: "radiant.windowNorth.gainFactor",
           type: "calculated",
           value: "1.31",
           section: "envelopeRadiantGains",
@@ -1117,6 +1138,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           label: "Window North: Gain Factor kWh/m²/yr",
           p: {
             fieldId: "p_74",
+            semanticPath: "radiant.windowNorth.cost",
             type: "calculated",
             dependencies: ["l_12", "k_74", "i_74"],
           },
@@ -1133,6 +1155,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         c: { label: "Window Area East" },
         d: {
           fieldId: "d_75",
+          semanticPath: "radiant.windowEast.area",
           type: "editable",
           value: "3.83",
           section: "envelopeRadiantGains",
@@ -1142,6 +1165,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         e: {
           fieldId: "e_75",
+          semanticPath: "radiant.windowEast.orientation",
           type: "dropdown",
           dropdownId: "dd_e_75",
           value: "East",
@@ -1163,6 +1187,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         f: {
           fieldId: "f_75",
+          semanticPath: "radiant.windowEast.shgc",
           type: "coefficient_slider",
           value: "0.50",
           min: 0.2,
@@ -1175,6 +1200,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         g: {
           fieldId: "g_75",
+          semanticPath: "radiant.windowEast.winterShading",
           type: "percentage",
           value: "0",
           min: 0,
@@ -1185,6 +1211,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         h: {
           fieldId: "h_75",
+          semanticPath: "radiant.windowEast.summerShading",
           type: "percentage",
           value: "100",
           min: 0,
@@ -1195,6 +1222,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         i: {
           fieldId: "i_75",
+          semanticPath: "radiant.windowEast.heatingGain",
           type: "calculated",
           value: "294.68",
           section: "envelopeRadiantGains",
@@ -1203,6 +1231,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         j: {
           fieldId: "j_75",
+          semanticPath: "radiant.windowEast.heatingGainPercent",
           type: "calculated",
           value: "2.04%",
           section: "envelopeRadiantGains",
@@ -1211,6 +1240,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         k: {
           fieldId: "k_75",
+          semanticPath: "radiant.windowEast.coolingGain",
           type: "calculated",
           value: "0.00",
           section: "envelopeRadiantGains",
@@ -1219,6 +1249,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         l: {
           fieldId: "l_75",
+          semanticPath: "radiant.windowEast.coolingGainPercent",
           type: "calculated",
           value: "0.00%",
           section: "envelopeRadiantGains",
@@ -1227,6 +1258,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         m: {
           fieldId: "m_75",
+          semanticPath: "radiant.windowEast.gainFactor",
           type: "calculated",
           value: "76.94",
           section: "envelopeRadiantGains",
@@ -1235,6 +1267,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           classes: ["reference-value"],
           p: {
             fieldId: "p_75",
+            semanticPath: "radiant.windowEast.cost",
             type: "calculated",
             dependencies: ["l_12", "k_75", "i_75"],
           },
@@ -1251,6 +1284,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         c: { label: "Window Area South" },
         d: {
           fieldId: "d_76",
+          semanticPath: "radiant.windowSouth.area",
           type: "editable",
           value: "159.00",
           section: "envelopeRadiantGains",
@@ -1260,6 +1294,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         e: {
           fieldId: "e_76",
+          semanticPath: "radiant.windowSouth.orientation",
           type: "dropdown",
           dropdownId: "dd_e_76",
           value: "South",
@@ -1281,6 +1316,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         f: {
           fieldId: "f_76",
+          semanticPath: "radiant.windowSouth.shgc",
           type: "coefficient_slider",
           value: "0.50",
           min: 0.2,
@@ -1293,6 +1329,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         g: {
           fieldId: "g_76",
+          semanticPath: "radiant.windowSouth.winterShading",
           type: "percentage",
           value: "0",
           min: 0,
@@ -1303,6 +1340,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         h: {
           fieldId: "h_76",
+          semanticPath: "radiant.windowSouth.summerShading",
           type: "percentage",
           value: "100",
           min: 0,
@@ -1313,6 +1351,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         i: {
           fieldId: "i_76",
+          semanticPath: "radiant.windowSouth.heatingGain",
           type: "calculated",
           value: "11,247.66",
           section: "envelopeRadiantGains",
@@ -1321,6 +1360,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         j: {
           fieldId: "j_76",
+          semanticPath: "radiant.windowSouth.heatingGainPercent",
           type: "calculated",
           value: "77.69%",
           section: "envelopeRadiantGains",
@@ -1329,6 +1369,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         k: {
           fieldId: "k_76",
+          semanticPath: "radiant.windowSouth.coolingGain",
           type: "calculated",
           value: "0.00",
           section: "envelopeRadiantGains",
@@ -1337,6 +1378,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         l: {
           fieldId: "l_76",
+          semanticPath: "radiant.windowSouth.coolingGainPercent",
           type: "calculated",
           value: "0.00%",
           section: "envelopeRadiantGains",
@@ -1345,6 +1387,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         m: {
           fieldId: "m_76",
+          semanticPath: "radiant.windowSouth.gainFactor",
           type: "calculated",
           value: "70.74",
           section: "envelopeRadiantGains",
@@ -1353,6 +1396,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           classes: ["reference-value"],
           p: {
             fieldId: "p_76",
+            semanticPath: "radiant.windowSouth.cost",
             type: "calculated",
             dependencies: ["l_12", "k_76", "i_76"],
           },
@@ -1369,6 +1413,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         c: { label: "Window Area West" },
         d: {
           fieldId: "d_77",
+          semanticPath: "radiant.windowWest.area",
           type: "editable",
           value: "100.66",
           section: "envelopeRadiantGains",
@@ -1378,6 +1423,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         e: {
           fieldId: "e_77",
+          semanticPath: "radiant.windowWest.orientation",
           type: "dropdown",
           dropdownId: "dd_e_77",
           value: "West",
@@ -1399,6 +1445,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         f: {
           fieldId: "f_77",
+          semanticPath: "radiant.windowWest.shgc",
           type: "coefficient_slider",
           value: "0.50",
           min: 0.2,
@@ -1411,6 +1458,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         g: {
           fieldId: "g_77",
+          semanticPath: "radiant.windowWest.winterShading",
           type: "percentage",
           value: "0",
           min: 0,
@@ -1421,6 +1469,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         h: {
           fieldId: "h_77",
+          semanticPath: "radiant.windowWest.summerShading",
           type: "percentage",
           value: "90",
           min: 0,
@@ -1431,6 +1480,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         i: {
           fieldId: "i_77",
+          semanticPath: "radiant.windowWest.heatingGain",
           type: "calculated",
           value: "2,603.07",
           section: "envelopeRadiantGains",
@@ -1439,6 +1489,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         j: {
           fieldId: "j_77",
+          semanticPath: "radiant.windowWest.heatingGainPercent",
           type: "calculated",
           value: "17.98%",
           section: "envelopeRadiantGains",
@@ -1447,6 +1498,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         k: {
           fieldId: "k_77",
+          semanticPath: "radiant.windowWest.coolingGain",
           type: "calculated",
           value: "130.15",
           section: "envelopeRadiantGains",
@@ -1455,6 +1507,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         l: {
           fieldId: "l_77",
+          semanticPath: "radiant.windowWest.coolingGainPercent",
           type: "calculated",
           value: "100.00%",
           section: "envelopeRadiantGains",
@@ -1463,6 +1516,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         m: {
           fieldId: "m_77",
+          semanticPath: "radiant.windowWest.gainFactor",
           type: "calculated",
           value: "25.86",
           section: "envelopeRadiantGains",
@@ -1471,6 +1525,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           classes: ["reference-value"],
           p: {
             fieldId: "p_77",
+            semanticPath: "radiant.windowWest.cost",
             type: "calculated",
             dependencies: ["l_12", "k_77", "i_77"],
           },
@@ -1487,6 +1542,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         c: { label: "Skylights" },
         d: {
           fieldId: "d_78",
+          semanticPath: "radiant.skylight.area",
           type: "editable",
           value: "0.00",
           section: "envelopeRadiantGains",
@@ -1496,6 +1552,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         e: {
           fieldId: "e_78",
+          semanticPath: "radiant.skylight.orientation",
           type: "dropdown",
           dropdownId: "dd_e_78",
           value: "Skylight",
@@ -1517,6 +1574,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         f: {
           fieldId: "f_78",
+          semanticPath: "radiant.skylight.shgc",
           type: "coefficient_slider",
           value: "0.50",
           min: 0.2,
@@ -1529,6 +1587,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         g: {
           fieldId: "g_78",
+          semanticPath: "radiant.skylight.winterShading",
           type: "percentage",
           value: "0",
           min: 0,
@@ -1539,6 +1598,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         h: {
           fieldId: "h_78",
+          semanticPath: "radiant.skylight.summerShading",
           type: "percentage",
           value: "80",
           min: 0,
@@ -1549,6 +1609,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         i: {
           fieldId: "i_78",
+          semanticPath: "radiant.skylight.heatingGain",
           type: "calculated",
           value: "0.00",
           section: "envelopeRadiantGains",
@@ -1557,6 +1618,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         j: {
           fieldId: "j_78",
+          semanticPath: "radiant.skylight.heatingGainPercent",
           type: "calculated",
           value: "0.00%",
           section: "envelopeRadiantGains",
@@ -1565,6 +1627,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         k: {
           fieldId: "k_78",
+          semanticPath: "radiant.skylight.coolingGain",
           type: "calculated",
           value: "0.00",
           section: "envelopeRadiantGains",
@@ -1573,6 +1636,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         l: {
           fieldId: "l_78",
+          semanticPath: "radiant.skylight.coolingGainPercent",
           type: "calculated",
           value: "0.00%",
           section: "envelopeRadiantGains",
@@ -1581,6 +1645,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         m: {
           fieldId: "m_78",
+          semanticPath: "radiant.skylight.gainFactor",
           type: "calculated",
           value: "75",
           section: "envelopeRadiantGains",
@@ -1589,6 +1654,7 @@ window.TEUI.SectionModules.sect10 = (function () {
           classes: ["reference-value"],
           p: {
             fieldId: "p_78",
+            semanticPath: "radiant.skylight.cost",
             type: "calculated",
             dependencies: ["l_12", "k_78", "i_78"],
           },
@@ -1610,6 +1676,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         h: { content: "" }, // Empty cell
         i: {
           fieldId: "i_79",
+          semanticPath: "radiant.subtotal.heatingGain",
           type: "calculated",
           value: "14,626.70",
           section: "radiantGains",
@@ -1618,6 +1685,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         j: {
           fieldId: "j_79",
+          semanticPath: "radiant.subtotal.heatingGainPercent",
           type: "calculated",
           value: "100%",
           section: "radiantGains",
@@ -1635,6 +1703,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         k: {
           fieldId: "k_79",
+          semanticPath: "radiant.subtotal.coolingGain",
           type: "calculated",
           value: "130.15",
           section: "radiantGains",
@@ -1643,6 +1712,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         l: {
           fieldId: "l_79",
+          semanticPath: "radiant.subtotal.coolingGainPercent",
           type: "calculated",
           value: "100%",
           section: "radiantGains",
@@ -1651,6 +1721,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         m: {
           fieldId: "m_79",
+          semanticPath: "radiant.subtotal.netCoolingFactor",
           type: "calculated",
           value: "14,626.70",
           section: "radiantGains",
@@ -1659,6 +1730,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         p: {
           fieldId: "p_79",
+          semanticPath: "radiant.subtotal.costImpact",
           type: "calculated",
           value: "14,626.70",
           section: "radiantGains",
@@ -1677,6 +1749,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         c: { label: "Gains Utilization Factor (n-Factor)" },
         d: {
           fieldId: "d_80",
+          semanticPath: "radiant.utilization.method",
           type: "dropdown",
           dropdownId: "dd_d_80",
           value: "NRC 40%",
@@ -1692,6 +1765,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         e: {
           fieldId: "e_80",
+          semanticPath: "radiant.utilization.totalGains",
           type: "calculated",
           value: "114,698.37",
           section: "radiantGains",
@@ -1701,6 +1775,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         f: { content: "Total Gains" },
         g: {
           fieldId: "g_80",
+          semanticPath: "radiant.utilization.nFactorPercent",
           type: "calculated",
           value: "40.00%",
           section: "radiantGains",
@@ -1711,6 +1786,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         h: { content: "" }, // Empty cell
         i: {
           fieldId: "i_80",
+          semanticPath: "radiant.utilization.netUsableGains",
           type: "calculated",
           value: "45,879.35",
           section: "radiantGains",
@@ -1738,6 +1814,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         e: {
           fieldId: "e_81",
+          semanticPath: "radiant.phppMethod.totalGains",
           type: "calculated",
           value: "114,698.37",
           section: "radiantGains",
@@ -1751,6 +1828,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         },
         g: {
           fieldId: "g_81",
+          semanticPath: "radiant.phppMethod.nFactorPercent",
           type: "calculated",
           value: "94.43%",
           section: "radiantGains",
@@ -1761,6 +1839,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         h: { content: "", classes: ["reference-value"] }, // Empty cell
         i: {
           fieldId: "i_81",
+          semanticPath: "radiant.phppMethod.netUsableGains",
           type: "calculated",
           value: "108,307.67",
           section: "radiantGains",
@@ -1785,6 +1864,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         c: { label: "Net UN-usable Htg. Gains" },
         i: {
           fieldId: "i_82",
+          semanticPath: "radiant.unusable.heatingGains",
           type: "calculated",
           value: "68,819.02",
           section: "radiantGains",
@@ -1829,6 +1909,7 @@ window.TEUI.SectionModules.sect10 = (function () {
               label: cell.label || row.label,
               defaultValue: cell.value || "",
               section: cell.section || "radiantGains",
+              semanticPath: cell.semanticPath || null, // Phase 5: Include semantic path
             };
 
             // Copy additional field properties if they exist
