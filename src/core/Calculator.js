@@ -484,6 +484,30 @@ TEUI.Calculator = (function () {
       window.TEUI.Clock.markCalculationStart();
     }
 
+    // ========================================================================
+    // NEW: Use ComputationGraph instead of legacy section calculations
+    // When enabled, this bypasses all legacy Section*.js calculateAll() calls
+    // and lets the ComputationGraph + DOMBridge handle everything
+    // ========================================================================
+    if (window.TEUI?.ComputationIntegration?.isInitialized?.() &&
+        window.TEUI.USE_COMPUTATION_GRAPH) {
+      console.log("[Calculator] 🚀 Using ComputationGraph (legacy bypassed)");
+
+      // Sync all current StateManager values to ComputationGraph before computing
+      // This ensures any UI changes are reflected in the new system
+      window.TEUI.ComputationIntegration.syncFromStateManager();
+
+      const result = window.TEUI.ComputationIntegration.computeAll();
+      if (result) {
+        console.log(`[Calculator] ✅ ComputationGraph complete: ${result.totalComputed} nodes in ${result.totalDuration?.toFixed(2)}ms`);
+      }
+      // End performance timing
+      if (window.TEUI?.Clock?.markCalculationEnd) {
+        window.TEUI.Clock.markCalculationEnd();
+      }
+      return;
+    }
+
     // Define a logical calculation order based on major dependencies
     const calcOrder = [
       "sect02", // Building Info
