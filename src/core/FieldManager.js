@@ -611,11 +611,19 @@ TEUI.FieldManager = (function () {
               const fieldId = cellDef.fieldId;
               cellElement.setAttribute("data-field-id", fieldId);
 
+              // Phase 5: Add semantic path attribute for migration
+              if (cellDef.semanticPath) {
+                cellElement.setAttribute("data-semantic", cellDef.semanticPath);
+              }
+
               if (cellDef.type === "dropdown" || cellDef.dropdownId) {
                 // Create a select element
                 const selectElement = document.createElement("select");
                 selectElement.className = "form-select form-select-sm";
                 selectElement.setAttribute("data-field-id", fieldId);
+                if (cellDef.semanticPath) {
+                  selectElement.setAttribute("data-semantic", cellDef.semanticPath);
+                }
 
                 if (cellDef.dropdownId) {
                   selectElement.setAttribute(
@@ -682,6 +690,9 @@ TEUI.FieldManager = (function () {
                 inputElement.className =
                   "form-control form-control-sm user-input"; // Keep the styling for blue cursor
                 inputElement.setAttribute("data-field-id", fieldId);
+                if (cellDef.semanticPath) {
+                  inputElement.setAttribute("data-semantic", cellDef.semanticPath);
+                }
                 inputElement.value = cellDef.value || "0.00";
 
                 // Add step attribute if defined in cellDef (optional)
