@@ -749,10 +749,67 @@
   ];
 
   // ============================================================================
+  // GRAPH POPULATION
+  // ============================================================================
+
+  /**
+   * Populate FieldRegistry from ComputationGraph nodes
+   * This auto-registers all fields that have legacyId defined
+   * @param {Object} graph - ComputationGraph instance
+   * @returns {number} Number of fields registered
+   */
+  FieldRegistry.populateFromGraph = function(graph) {
+    if (!graph) {
+      console.warn("[FieldRegistry] No graph provided for population");
+      return 0;
+    }
+
+    let count = 0;
+
+    // Register input nodes
+    const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
+    for (const semanticPath of inputIds) {
+      const node = graph.getInput(semanticPath);
+      if (node?.legacyId && !legacyToSemantic.has(node.legacyId)) {
+        this.register({
+          legacyId: node.legacyId,
+          semanticPath: semanticPath,
+          classification: node.classification || "C",
+          section: node.section || "",
+          label: node.label || semanticPath,
+          unit: node.unit || "",
+          defaultValue: node.defaultValue
+        });
+        count++;
+      }
+    }
+
+    // Register computed nodes
+    const nodeIds = graph.getAllNodeIds ? graph.getAllNodeIds() : [];
+    for (const semanticPath of nodeIds) {
+      const node = graph.getNode(semanticPath);
+      if (node?.legacyId && !legacyToSemantic.has(node.legacyId)) {
+        this.register({
+          legacyId: node.legacyId,
+          semanticPath: semanticPath,
+          classification: node.classification || "C",
+          section: node.section || "",
+          label: node.label || semanticPath,
+          unit: node.unit || ""
+        });
+        count++;
+      }
+    }
+
+    console.log(`[FieldRegistry] Populated ${count} fields from ComputationGraph`);
+    return count;
+  };
+
+  // ============================================================================
   // INITIALIZATION
   // ============================================================================
 
-  // Register initial fields
+  // Register initial fields (core fields always available)
   FieldRegistry.registerAll(INITIAL_FIELDS);
 
   // ============================================================================

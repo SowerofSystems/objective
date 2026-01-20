@@ -52,6 +52,45 @@
     // - d_113, d_114, d_116, d_117 are in MechanicalNodes
     // - m_43 is in RenewableNodes
 
+    // ==== Section 04: Actual Energy Use (User Inputs from Utility Bills) ====
+    // Note: h_27, h_28, h_30, h_33 are COMPUTED by legacy Section04.js, not registered here
+    {
+      id: "energy.actual.electricity",
+      legacyId: "d_27",
+      defaultValue: 0,
+      classification: "C",
+      section: "S04",
+      label: "Actual Total Electricity Use",
+      unit: "kWh/yr"
+    },
+    {
+      id: "energy.actual.gas",
+      legacyId: "d_28",
+      defaultValue: 0,
+      classification: "C",
+      section: "S04",
+      label: "Actual Total Gas Use",
+      unit: "m³/yr"
+    },
+    {
+      id: "energy.actual.oil",
+      legacyId: "d_30",
+      defaultValue: 0,
+      classification: "C",
+      section: "S04",
+      label: "Actual Total Oil Use",
+      unit: "L/yr"
+    },
+    {
+      id: "energy.actual.propane",
+      legacyId: "d_33",
+      defaultValue: 0,
+      classification: "C",
+      section: "S04",
+      label: "Actual Total Propane Use",
+      unit: "L/yr"
+    },
+
     // ==== Section 09: Occupant Cooling Load ====
     {
       id: "internal.coolingLoad.occupants",

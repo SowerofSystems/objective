@@ -84,6 +84,13 @@
         return false;
       }
 
+      // Step 1.5: Populate FieldRegistry from graph (enables semantic path lookups)
+      const FieldRegistry = window.TEUI.FieldRegistry;
+      if (FieldRegistry?.populateFromGraph) {
+        const fieldCount = FieldRegistry.populateFromGraph(graph);
+        log(`FieldRegistry populated with ${fieldCount} additional fields from graph`);
+      }
+
       // Step 2: Create multi-model state
       state = createState();
       if (!state) {
