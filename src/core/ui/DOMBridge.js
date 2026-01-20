@@ -198,6 +198,14 @@
       }
 
       // For display elements, set text content
+      // BUT first check if element contains inputs - don't destroy them!
+      const containedInput = element.querySelector("input, select, textarea");
+      if (containedInput) {
+        // Element contains an input - update the input instead of destroying it
+        setElementValue(containedInput, value);
+        return;
+      }
+
       if (value === undefined || value === null) {
         element.textContent = "";
       } else if (typeof value === "number") {
