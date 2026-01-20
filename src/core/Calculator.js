@@ -498,6 +498,10 @@ TEUI.Calculator = (function () {
       window.TEUI.ComputationIntegration.syncFromStateManager();
 
       const result = window.TEUI.ComputationIntegration.computeAll();
+
+      // Sync computed values back to StateManager so tests and exports work
+      window.TEUI.ComputationIntegration.syncToStateManager();
+
       if (result) {
         console.log(`[Calculator] ✅ ComputationGraph complete: ${result.totalComputed} nodes in ${result.totalDuration?.toFixed(2)}ms`);
       }

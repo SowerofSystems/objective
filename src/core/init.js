@@ -944,11 +944,11 @@ document.addEventListener("DOMContentLoaded", function () {
             if (bridgeEnabled) {
               console.log("[init.js] DOMBridge enabled - computed values will display in Key Values");
 
-              // EXPERIMENTAL: Enable ComputationGraph as primary calculation engine
-              // This bypasses legacy Section*.js calculateAll() calls
-              // To enable: run in console: TEUI.USE_COMPUTATION_GRAPH = true
-              window.TEUI.USE_COMPUTATION_GRAPH = false; // Disabled by default for testing
-              console.log("[init.js] USE_COMPUTATION_GRAPH = false (set to true in console to test)");
+              // ComputationGraph bypass is disabled by default pending investigation
+              // of cooling chain computation differences (d_116 mode handling, m_129 calculations)
+              // To enable manually: run in console: TEUI.USE_COMPUTATION_GRAPH = true
+              window.TEUI.USE_COMPUTATION_GRAPH = false;
+              console.log("[init.js] ComputationGraph bypass disabled (legacy is primary)");
             }
           }, 100);
         }

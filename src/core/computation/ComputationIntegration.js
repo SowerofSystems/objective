@@ -336,6 +336,58 @@
   }
 
   /**
+   * Sync computed values FROM ComputationGraph back TO StateManager
+   * This keeps StateManager in sync when bypassing legacy calculations
+   */
+  function syncToStateManager() {
+    const StateManager = window.TEUI.StateManager;
+    const FieldRegistry = window.TEUI.FieldRegistry;
+
+    if (!StateManager) {
+      warn("StateManager not available for sync");
+      return;
+    }
+
+    const targetId = state.getActiveModelId();
+    let syncCount = 0;
+
+    // Get all computed node IDs and sync their values to StateManager
+    const nodeIds = graph.getAllNodeIds ? graph.getAllNodeIds() : [];
+
+    for (const semanticPath of nodeIds) {
+      const node = graph.getNode(semanticPath);
+      const legacyId = node?.legacyId;
+
+      if (legacyId) {
+        const value = state.getValue(semanticPath);
+        if (value !== undefined && value !== null) {
+          // Don't trigger recalculation - just set the value
+          StateManager.setValue(legacyId, value, "computed");
+          syncCount++;
+        }
+      }
+    }
+
+    // Also sync input values that may have been normalized
+    const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
+
+    for (const semanticPath of inputIds) {
+      const inputNode = graph.getInput(semanticPath);
+      const legacyId = inputNode?.legacyId;
+
+      if (legacyId) {
+        const value = state.getValue(semanticPath);
+        if (value !== undefined && value !== null) {
+          StateManager.setValue(legacyId, value, "computed");
+          syncCount++;
+        }
+      }
+    }
+
+    log(`Synced ${syncCount} computed values to StateManager`);
+  }
+
+  /**
    * Get Reference model ID
    */
   function getRefModelId() {
@@ -646,6 +698,9 @@
 
     // Sync from StateManager (call after CSV import, file load, etc.)
     syncFromStateManager,
+
+    // Sync TO StateManager (call after computeAll when bypassing legacy)
+    syncToStateManager,
 
     // Computation
     computeAll,
