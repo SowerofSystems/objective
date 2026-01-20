@@ -24,8 +24,8 @@ module.exports = defineConfig({
   // Opt out of parallel tests on CI
   workers: process.env.CI ? 1 : undefined,
 
-  // Reporter to use
-  reporter: [["list"], ["html", { outputFolder: "playwright-report" }]],
+  // Reporter to use (open: 'never' prevents auto-opening browser)
+  reporter: [["list"], ["html", { outputFolder: "playwright-report", open: "never" }]],
 
   use: {
     // Base URL for all tests

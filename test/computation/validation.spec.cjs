@@ -11,15 +11,9 @@ const path = require('path');
 
 test.describe('Computation System Validation', () => {
   test('compare old vs new computation values', async ({ page }) => {
-    // Navigate to the main app (use localhost if server is running, otherwise file://)
-    const serverUrl = 'http://localhost:8765/index.html';
+    // Navigate to the main app using file:// URL
     const fileUrl = 'file://' + path.join(__dirname, '../../index.html');
-
-    try {
-      await page.goto(serverUrl, { timeout: 5000 });
-    } catch {
-      await page.goto(fileUrl);
-    }
+    await page.goto(fileUrl);
 
     // Wait for app to fully load (StateManager should exist and have values)
     await page.waitForFunction(() => {
