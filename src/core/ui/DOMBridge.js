@@ -90,6 +90,11 @@
 
     /**
      * Get field path from element
+     * Supports multiple attribute patterns for semantic path migration:
+     *   - data-semantic="envelope.roof.rsiValue" (preferred, explicit semantic)
+     *   - data-field-id="envelope.roof.rsiValue" (semantic path in field-id)
+     *   - data-field-id="d_85" (legacy ID, translated via FieldRegistry)
+     *
      * @param {HTMLElement} element
      * @returns {string|null}
      */
@@ -99,7 +104,15 @@
         return elementToPath.get(element);
       }
 
-      // Look for data attributes
+      // PHASE 4: Prefer data-semantic for explicit semantic paths
+      // This allows gradual migration: <input data-field-id="d_85" data-semantic="envelope.roof.rsiValue">
+      if (element.dataset.semantic) {
+        const path = element.dataset.semantic;
+        elementToPath.set(element, path);
+        return path;
+      }
+
+      // Look for data attributes (legacy or semantic in field-id)
       const fieldId =
         element.dataset.fieldId ||
         element.dataset.field ||
@@ -462,7 +475,7 @@
        * @param {HTMLElement|string} [container] - Container element (default: root)
        * @param {string} [selector] - CSS selector for elements to bind
        */
-      bindAll(container, selector = "[data-field-id], [data-field]") {
+      bindAll(container, selector = "[data-field-id], [data-field], [data-semantic]") {
         if (typeof container === "string") {
           container = root.querySelector(container);
         }
