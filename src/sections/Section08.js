@@ -503,6 +503,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         c: { label: "Radon (annual avg.)" },
         d: {
           fieldId: "d_56",
+          semanticPath: "airQuality.radon.target",
           type: "editable",
           value: "50",
           classes: ["user-input"],
@@ -511,6 +512,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         e: { content: "Bq/m³" },
         k: {
           fieldId: "k_56",
+          semanticPath: "airQuality.radon.limit",
           type: "calculated",
           value: "150",
           label: "Radon Reference Limit: Bq/m³",
@@ -518,6 +520,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         l: { content: "Bq/m³" },
         m: {
           fieldId: "m_56",
+          semanticPath: "airQuality.radon.compliance",
           type: "calculated",
           value: "0%",
           dependencies: ["d_56", "k_56"],
@@ -525,6 +528,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         },
         n: {
           fieldId: "n_56",
+          semanticPath: "airQuality.radon.status",
           type: "calculated",
           value: "✓",
           classes: ["checkmark"],
@@ -540,6 +544,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         c: { label: "CO2 (annual avg.)" },
         d: {
           fieldId: "d_57",
+          semanticPath: "airQuality.co2.target",
           type: "editable",
           value: "550",
           classes: ["user-input"],
@@ -548,6 +553,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         e: { content: "ppm" },
         k: {
           fieldId: "k_57",
+          semanticPath: "airQuality.co2.limit",
           type: "calculated",
           value: "1000",
           label: "CO2 Reference Limit: ppm",
@@ -555,6 +561,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         l: { content: "ppm" },
         m: {
           fieldId: "m_57",
+          semanticPath: "airQuality.co2.compliance",
           type: "calculated",
           value: "0%",
           dependencies: ["d_57", "k_57"],
@@ -562,6 +569,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         },
         n: {
           fieldId: "n_57",
+          semanticPath: "airQuality.co2.status",
           type: "calculated",
           value: "✓",
           classes: ["checkmark"],
@@ -577,6 +585,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         c: { label: "TVOC (annual avg.)" },
         d: {
           fieldId: "d_58",
+          semanticPath: "airQuality.tvoc.target",
           type: "editable",
           value: "100",
           classes: ["user-input"],
@@ -585,6 +594,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         e: { content: "ppm" },
         k: {
           fieldId: "k_58",
+          semanticPath: "airQuality.tvoc.limit",
           type: "calculated",
           value: "400",
           label: "TVOC Reference Limit: ppm",
@@ -592,6 +602,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         l: { content: "ppm" },
         m: {
           fieldId: "m_58",
+          semanticPath: "airQuality.tvoc.compliance",
           type: "calculated",
           value: "0%",
           dependencies: ["d_58", "k_58"],
@@ -599,6 +610,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         },
         n: {
           fieldId: "n_58",
+          semanticPath: "airQuality.tvoc.status",
           type: "calculated",
           value: "✓",
           classes: ["checkmark"],
@@ -614,6 +626,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         c: { label: "Indoor Heating Season Avg." },
         d: {
           fieldId: "d_59",
+          semanticPath: "airQuality.humidity.heatingTarget",
           type: "percentage",
           value: "45",
           min: 0,
@@ -629,6 +642,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         h: { content: "Indoor Heating Season Avg." },
         i: {
           fieldId: "i_59",
+          semanticPath: "airQuality.humidity.coolingTarget",
           type: "percentage",
           value: "45",
           min: 0,
@@ -641,6 +655,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         j: { content: "% RH" },
         k: {
           fieldId: "k_59",
+          semanticPath: "airQuality.humidity.limit",
           type: "calculated",
           value: "30-60",
           label: "RH Reference Range: %",
@@ -648,6 +663,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         l: { content: "%" },
         m: {
           fieldId: "m_59",
+          semanticPath: "airQuality.humidity.range",
           type: "calculated",
           value: "30-60%",
           dependencies: ["d_59", "i_59"],
@@ -655,6 +671,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         },
         n: {
           fieldId: "n_59",
+          semanticPath: "airQuality.humidity.status",
           type: "calculated",
           value: "✓",
           classes: ["checkmark"],
@@ -693,6 +710,7 @@ window.TEUI.SectionModules.sect08 = (function () {
             label: cell.label || cell.content || row.label, // ✅ Proper label resolution
             defaultValue: cell.value || "",
             section: "indoorAirQuality",
+            semanticPath: cell.semanticPath || null, // Phase 5: Include semantic path for migration
           };
           // Copy dependencies if present
           if (cell.dependencies) {
