@@ -270,15 +270,21 @@
 
         if (!semanticPath) {
           // Fall back to original StateManager if available
-          if (originalStateManager?.setValue) {
-            return originalStateManager.setValue.call(originalStateManager, fieldId, value, valueState);
+          if (originalStateManager?._original_setValue) {
+            return originalStateManager._original_setValue.call(originalStateManager, fieldId, value, valueState);
           }
           console.warn(`[LegacyAdapter] Unknown field: ${fieldId}`);
           return;
         }
 
-        // Schedule for batching (improves performance when multiple values change)
+        // DUAL-WRITE: Write to MultiModelState (primary) via batching
         scheduleChange(isRef, semanticPath, value);
+
+        // DUAL-WRITE: Also write to original StateManager (for backward compatibility)
+        // This ensures code reading from StateManager gets updated values during transition
+        if (originalStateManager?._original_setValue) {
+          originalStateManager._original_setValue.call(originalStateManager, fieldId, value, valueState);
+        }
       },
 
       /**
@@ -291,13 +297,23 @@
         const semanticPath = toSemanticPath(baseId);
 
         if (!semanticPath) {
+          // Fall back to original StateManager if available
+          if (originalStateManager?._original_setValue) {
+            return originalStateManager._original_setValue.call(originalStateManager, fieldId, value);
+          }
           console.warn(`[LegacyAdapter] Unknown field: ${fieldId}`);
           return;
         }
 
+        // DUAL-WRITE: Write to MultiModelState (primary)
         const modelId = isRef ? getReferenceModelId() : getTargetModelId();
         if (modelId) {
           engine.onValueChange(semanticPath, value, modelId);
+        }
+
+        // DUAL-WRITE: Also write to original StateManager (for backward compatibility)
+        if (originalStateManager?._original_setValue) {
+          originalStateManager._original_setValue.call(originalStateManager, fieldId, value);
         }
       },
 
