@@ -399,6 +399,7 @@ window.TEUI.SectionModules.sect14 = (function () {
         c: { label: "TED Targeted" },
         d: {
           fieldId: "d_127",
+          semanticPath: "tediSummary.ted.targeted",
           type: "calculated",
           value: "0.00",
           label: "TED Targeted: kWh/yr",
@@ -413,6 +414,7 @@ window.TEUI.SectionModules.sect14 = (function () {
         g: { content: "TEDI", classes: ["label-main", "text-left", "no-wrap"] },
         h: {
           fieldId: "h_127",
+          semanticPath: "tediSummary.tedi.targeted",
           type: "calculated",
           value: "0.00",
           label: "TEDI: kWh/m²/yr",
@@ -440,6 +442,7 @@ window.TEUI.SectionModules.sect14 = (function () {
         c: { label: "TED Envelope (Excludes Ventilation)" },
         d: {
           fieldId: "d_128",
+          semanticPath: "tediSummary.ted.envelope",
           type: "calculated",
           value: "0.00",
           label: "TED Envelope (Excludes Ventilation): kWh/yr",
@@ -457,6 +460,7 @@ window.TEUI.SectionModules.sect14 = (function () {
         },
         h: {
           fieldId: "h_128",
+          semanticPath: "tediSummary.tedi.envelope",
           type: "calculated",
           value: "0.00",
           label: "TEDI (Excludes Ventilation): kWh/m²/yr",
@@ -481,6 +485,7 @@ window.TEUI.SectionModules.sect14 = (function () {
         c: { label: "CED Cooling Load Unmitigated" },
         d: {
           fieldId: "d_129",
+          semanticPath: "tediSummary.ced.unmitigated",
           type: "calculated",
           value: "0.00",
           label: "CED Cooling Load Unmitigated: kWh/yr",
@@ -498,6 +503,7 @@ window.TEUI.SectionModules.sect14 = (function () {
         },
         h: {
           fieldId: "h_129",
+          semanticPath: "tediSummary.cedi.unmitigated",
           type: "calculated",
           value: "0.00",
           label: "CEDI Unmitigated: kWh/m²/yr",
@@ -516,6 +522,7 @@ window.TEUI.SectionModules.sect14 = (function () {
         l: { content: "" },
         m: {
           fieldId: "m_129",
+          semanticPath: "energy.ced.mitigated",
           type: "calculated",
           value: "0.00",
           label: "CED Mitigated: kWh/yr",
@@ -535,6 +542,7 @@ window.TEUI.SectionModules.sect14 = (function () {
         c: { label: "CEDI Cooling Load" },
         d: {
           fieldId: "d_130",
+          semanticPath: "tediSummary.cedi.loadUnmitigated",
           type: "calculated",
           value: "0.00",
           label: "CEDI Cooling Load Unmitigated: W/m²",
@@ -552,6 +560,7 @@ window.TEUI.SectionModules.sect14 = (function () {
         },
         h: {
           fieldId: "h_130",
+          semanticPath: "tediSummary.cedi.mitigated",
           type: "calculated",
           value: "0.00",
           label: "CEDI Mitigated: W/m²",
@@ -576,6 +585,7 @@ window.TEUI.SectionModules.sect14 = (function () {
         c: { label: "TEL Total Envelope Heatloss" },
         d: {
           fieldId: "d_131",
+          semanticPath: "tediSummary.tel.total",
           type: "calculated",
           value: "0.00",
           label: "TEL Total Envelope Heatloss: kWh/yr",
@@ -590,6 +600,7 @@ window.TEUI.SectionModules.sect14 = (function () {
         g: { content: "TELI", classes: ["label-main", "text-left", "no-wrap"] },
         h: {
           fieldId: "h_131",
+          semanticPath: "tediSummary.teli.value",
           type: "calculated",
           value: "0.00",
           label: "TELI: kWh/m²/yr",
@@ -608,6 +619,7 @@ window.TEUI.SectionModules.sect14 = (function () {
         l: { content: "" },
         m: {
           fieldId: "m_131",
+          semanticPath: "tediSummary.teliTediRatio",
           type: "calculated",
           value: "0.00",
           label: "TELI/TEDI Ratio",
@@ -627,6 +639,7 @@ window.TEUI.SectionModules.sect14 = (function () {
         c: { label: "CEG Cooling Envelope Heatgain" },
         d: {
           fieldId: "d_132",
+          semanticPath: "tediSummary.ceg.total",
           type: "calculated",
           value: "0.00",
           label: "CEG Cooling Envelope Heatgain: kWh/yr",
@@ -641,6 +654,7 @@ window.TEUI.SectionModules.sect14 = (function () {
         g: { content: "CEGI", classes: ["label-main", "text-left", "no-wrap"] },
         h: {
           fieldId: "h_132",
+          semanticPath: "tediSummary.cegi.value",
           type: "calculated",
           value: "0.00",
           label: "CEGI: kWh/m²/yr",
@@ -682,6 +696,7 @@ window.TEUI.SectionModules.sect14 = (function () {
             label: cell.label || row.label,
             defaultValue: cell.value || "",
             section: cell.section || "tediSummary",
+            semanticPath: cell.semanticPath || null, // Phase 5: Include semantic path
           };
 
           // Copy additional field properties if they exist
