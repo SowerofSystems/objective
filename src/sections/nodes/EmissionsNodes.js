@@ -55,12 +55,13 @@
       // k_54: Water heating oil volume (calculated by Section07)
       { id: "waterHeating.oilVolume", legacyId: "k_54", section: "S07", classification: "C", label: "Water Heating Oil Volume (L/yr)", defaultValue: 0 },
 
-      // Target emissions (k_27 through k_31)
-      { id: "emissions.target.electricity", legacyId: "k_27", section: "S04", classification: "C", label: "Target Electricity Emissions (kg CO2e/yr)", defaultValue: 0 },
-      { id: "emissions.target.gas", legacyId: "k_28", section: "S04", classification: "C", label: "Target Gas Emissions (kg CO2e/yr)", defaultValue: 0 },
-      { id: "emissions.target.propane", legacyId: "k_29", section: "S04", classification: "C", label: "Target Propane Emissions (kg CO2e/yr)", defaultValue: 0 },
-      { id: "emissions.target.oil", legacyId: "k_30", section: "S04", classification: "C", label: "Target Oil Emissions (kg CO2e/yr)", defaultValue: 0 },
-      { id: "emissions.target.wood", legacyId: "k_31", section: "S04", classification: "C", label: "Target Wood Emissions (kg CO2e/yr)", defaultValue: 0 },
+      // Emission factors (l_27 through l_31)
+      // All are user-editable with defaults (l_27 can be overridden per CSV)
+      { id: "emissions.factor.electricity", legacyId: "l_27", section: "S04", classification: "C", label: "Electricity Emission Factor (gCO2e/kWh)", defaultValue: 51 },
+      { id: "emissions.factor.gas", legacyId: "l_28", section: "S04", classification: "C", label: "Gas Emission Factor (gCO2e/m³)", defaultValue: 1921 },
+      { id: "emissions.factor.propane", legacyId: "l_29", section: "S04", classification: "C", label: "Propane Emission Factor (gCO2e/kg)", defaultValue: 2970 },
+      { id: "emissions.factor.oil", legacyId: "l_30", section: "S04", classification: "C", label: "Oil Emission Factor (gCO2e/litre)", defaultValue: 2753 },
+      { id: "emissions.factor.wood", legacyId: "l_31", section: "S04", classification: "C", label: "Wood Emission Factor (kgCO2e/m³)", defaultValue: 150 },
 
       // Embodied carbon inputs (S05)
       { id: "emissions.modelledEmbodied", legacyId: "i_41", section: "S05", classification: "C", label: "Modelled Embodied Carbon (kgCO2e/m²)", defaultValue: 350 },
@@ -195,6 +196,169 @@
         // Section04.js line 1285: j_31 = h_31 * 1000, where h_31 = d_31
         const d31 = parseNum(inputs["forestry.woodVolume"], 0);
         return d31 * 1000;
+      },
+    });
+
+    // ========================================================================
+    // GRID INTENSITY FACTORS (Reference for province-based defaults)
+    // These can be used by the UI layer to set l_27 default based on province
+    // When loading from CSV, l_27 is loaded as an input and overrides these
+    // Section04.js GRID_INTENSITY_FACTORS
+    // ========================================================================
+
+    // Province-based grid intensity factors (gCO2e/kWh)
+    const GRID_INTENSITY_FACTORS = {
+      ON: { default: 51 },
+      QC: { default: 1 },
+      BC: { default: 12 },
+      AB: { default: 650 },
+      SK: { default: 720 },
+      MB: { default: 3 },
+      NS: { default: 600 },
+      NB: { default: 340 },
+      NL: { default: 30 },
+      PE: { default: 12 },
+      NT: { default: 180 },
+      YT: { default: 2 },
+      NU: { default: 200 },
+    };
+
+    // Expose for external use (e.g., UI layer setting province-based defaults)
+    window.TEUI.EmissionsFactors = window.TEUI.EmissionsFactors || {};
+    window.TEUI.EmissionsFactors.GRID_INTENSITY = GRID_INTENSITY_FACTORS;
+
+    // Helper function to get province-based electricity factor
+    window.TEUI.EmissionsFactors.getElectricityFactor = function(province) {
+      const factors = GRID_INTENSITY_FACTORS[province] || GRID_INTENSITY_FACTORS["ON"];
+      return factors.default;
+    };
+
+    // ========================================================================
+    // TARGET EMISSIONS BY FUEL TYPE (k_27-k_31)
+    // Formulas: energy × emission_factor / 1000 (convert g to kg)
+    // Section04.js lines 1213, 1239, 1250, 1275, 1286
+    // ========================================================================
+
+    // k_27: Target Electricity Emissions = j_27 × l_27 / 1000
+    graph.registerNode({
+      id: "emissions.target.electricity",
+      legacyId: "k_27",
+      section: "S04",
+      classification: "C",
+      dependencies: ["energy.target.electricity", "emissions.factor.electricity"],
+      label: "Target Electricity Emissions (kg CO2e/yr)",
+      compute: (inputs) => {
+        // Section04.js line 1213: k_27 = (h_27 - d_43 - i_43) * l_27 / 1000 = j_27 * l_27 / 1000
+        const j27 = parseNum(inputs["energy.target.electricity"], 0);
+        const l27 = parseNum(inputs["emissions.factor.electricity"], 51);
+        return (j27 * l27) / 1000;
+      },
+    });
+
+    // k_28: Target Gas Emissions = h_28 × l_28 / 1000
+    // Note: Emissions calculated from VOLUME (h_28), not energy (j_28)
+    graph.registerNode({
+      id: "emissions.target.gas",
+      legacyId: "k_28",
+      section: "S04",
+      classification: "C",
+      dependencies: [
+        "mechanical.heating.systemType",
+        "waterHeating.systemType",
+        "waterHeating.gasVolume",
+        "mechanical.heating.gasConsumption",
+        "emissions.factor.gas"
+      ],
+      label: "Target Gas Emissions (kg CO2e/yr)",
+      compute: (inputs) => {
+        // Section04.js line 1239: k_28 = h_28 × 1921 / 1000
+        // h_28 = combined gas volume from space heating + water heating
+        const spaceHeatingFuel = inputs["mechanical.heating.systemType"] || "";
+        const waterHeatingFuel = inputs["waterHeating.systemType"] || "";
+        const waterGasVolume = parseNum(inputs["waterHeating.gasVolume"], 0);
+        const spaceGasVolume = parseNum(inputs["mechanical.heating.gasConsumption"], 0);
+        const l28 = parseNum(inputs["emissions.factor.gas"], 1921);
+
+        let h_28 = 0;
+        if (spaceHeatingFuel === "Gas" && waterHeatingFuel === "Gas") {
+          h_28 = waterGasVolume + spaceGasVolume;
+        } else if (waterHeatingFuel === "Gas") {
+          h_28 = waterGasVolume;
+        } else if (spaceHeatingFuel === "Gas") {
+          h_28 = spaceGasVolume;
+        }
+
+        return (h_28 * l28) / 1000;
+      },
+    });
+
+    // k_29: Target Propane Emissions = h_29 × l_29 / 1000
+    // Note: h_29 = d_29 (target mirrors actual for user-controlled fuel)
+    graph.registerNode({
+      id: "emissions.target.propane",
+      legacyId: "k_29",
+      section: "S04",
+      classification: "C",
+      dependencies: ["energy.actual.propane.kg", "emissions.factor.propane"],
+      label: "Target Propane Emissions (kg CO2e/yr)",
+      compute: (inputs) => {
+        // Section04.js line 1250: k_29 = h_29 × 2970 / 1000, where h_29 = d_29
+        const d29 = parseNum(inputs["energy.actual.propane.kg"], 0);
+        const l29 = parseNum(inputs["emissions.factor.propane"], 2970);
+        return (d29 * l29) / 1000;
+      },
+    });
+
+    // k_30: Target Oil Emissions = h_30 × l_30 / 1000
+    // Note: Emissions calculated from VOLUME (h_30), not energy (j_30)
+    graph.registerNode({
+      id: "emissions.target.oil",
+      legacyId: "k_30",
+      section: "S04",
+      classification: "C",
+      dependencies: [
+        "mechanical.heating.systemType",
+        "waterHeating.systemType",
+        "waterHeating.oilVolume",
+        "mechanical.heating.oilConsumption",
+        "emissions.factor.oil"
+      ],
+      label: "Target Oil Emissions (kg CO2e/yr)",
+      compute: (inputs) => {
+        // Section04.js line 1275: k_30 = h_30 × 2753 / 1000
+        // h_30 = combined oil volume from space heating + water heating
+        const spaceHeatingFuel = inputs["mechanical.heating.systemType"] || "";
+        const waterHeatingFuel = inputs["waterHeating.systemType"] || "";
+        const waterOilVolume = parseNum(inputs["waterHeating.oilVolume"], 0);
+        const spaceOilVolume = parseNum(inputs["mechanical.heating.oilConsumption"], 0);
+        const l30 = parseNum(inputs["emissions.factor.oil"], 2753);
+
+        let h_30 = 0;
+        if (spaceHeatingFuel === "Oil" && waterHeatingFuel === "Oil") {
+          h_30 = waterOilVolume + spaceOilVolume;
+        } else if (waterHeatingFuel === "Oil") {
+          h_30 = waterOilVolume;
+        } else if (spaceHeatingFuel === "Oil") {
+          h_30 = spaceOilVolume;
+        }
+
+        return (h_30 * l30) / 1000;
+      },
+    });
+
+    // k_31: Target Wood Emissions = h_31 × l_31 (no /1000, factor already in kgCO2e)
+    graph.registerNode({
+      id: "emissions.target.wood",
+      legacyId: "k_31",
+      section: "S04",
+      classification: "C",
+      dependencies: ["forestry.woodVolume", "emissions.factor.wood"],
+      label: "Target Wood Emissions (kg CO2e/yr)",
+      compute: (inputs) => {
+        // Section04.js line 1286: k_31 = h_31 × 150, where h_31 = d_31
+        const d31 = parseNum(inputs["forestry.woodVolume"], 0);
+        const l31 = parseNum(inputs["emissions.factor.wood"], 150);
+        return d31 * l31;  // No /1000, l_31 already in kgCO2e/m³
       },
     });
 

@@ -111,6 +111,13 @@ async function testIndex2() {
       'envelope.airFacing.totalHeatLoss (i_101)': state.getValue('envelope.airFacing.totalHeatLoss'),
       'envelope.groundFacing.totalHeatLoss (i_102)': state.getValue('envelope.groundFacing.totalHeatLoss'),
       'airTightness.heatLoss (i_103)': state.getValue('airTightness.heatLoss'),
+
+      // Climate and emissions (for Annual Carbon)
+      'climate.location.province': state.getValue('climate.location.province'),
+      'climate.location.city': state.getValue('climate.location.city'),
+      'climate.heating.degreeDays (HDD)': state.getValue('climate.heating.degreeDays'),
+      'emissions.electricity.factor': state.getValue('emissions.electricity.factor'),
+      'emissions.target.subtotal (k_32)': state.getValue('emissions.target.subtotal'),
     };
 
     const debugValues = chain;
