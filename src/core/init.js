@@ -936,7 +936,15 @@ document.addEventListener("DOMContentLoaded", function () {
         });
         if (success) {
           console.log("[init.js] New computation system initialized (parallel mode)");
-          // To migrate: rewrite Section*.js to use new ComputationGraph instead of setValue loops
+
+          // Enable DOMBridge for read-only display of computed values
+          // This binds elements with data-field-id to ComputationGraph values
+          setTimeout(function() {
+            const bridgeEnabled = window.TEUI.ComputationIntegration.enableDOMBridge();
+            if (bridgeEnabled) {
+              console.log("[init.js] DOMBridge enabled - computed values will display in Key Values");
+            }
+          }, 100);
         }
       }, 500);
     }

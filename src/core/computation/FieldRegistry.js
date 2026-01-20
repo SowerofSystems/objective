@@ -630,6 +630,121 @@
       section: "S15",
       label: "TEUI Summary",
       unit: "kWh/m²"
+    },
+
+    // ========================================================================
+    // Section 01: Key Values Dashboard (C-fields - calculated summaries)
+    // ========================================================================
+    // Reference values (e_ prefix)
+    {
+      legacyId: "e_6",
+      semanticPath: "keyValues.reference.lifetimeCarbon",
+      classification: "C",
+      section: "S01",
+      label: "Reference Lifetime Carbon",
+      unit: "kgCO2e/m²"
+    },
+    {
+      legacyId: "e_8",
+      semanticPath: "keyValues.reference.annualCarbon",
+      classification: "C",
+      section: "S01",
+      label: "Reference Annual Carbon",
+      unit: "kgCO2e/m²/yr"
+    },
+    {
+      legacyId: "e_10",
+      semanticPath: "keyValues.reference.teui",
+      classification: "C",
+      section: "S01",
+      label: "Reference TEUI",
+      unit: "kWh/m²/yr"
+    },
+    // Target values (h_ prefix)
+    {
+      legacyId: "h_6",
+      semanticPath: "keyValues.target.lifetimeCarbon",
+      classification: "C",
+      section: "S01",
+      label: "Target Lifetime Carbon",
+      unit: "kgCO2e/m²"
+    },
+    {
+      legacyId: "h_8",
+      semanticPath: "keyValues.target.annualCarbon",
+      classification: "C",
+      section: "S01",
+      label: "Target Annual Carbon",
+      unit: "kgCO2e/m²/yr"
+    },
+    {
+      legacyId: "h_10",
+      semanticPath: "keyValues.target.teui",
+      classification: "C",
+      section: "S01",
+      label: "Target TEUI",
+      unit: "kWh/m²/yr"
+    },
+    // Actual values (k_ prefix)
+    {
+      legacyId: "k_6",
+      semanticPath: "keyValues.actual.lifetimeCarbon",
+      classification: "C",
+      section: "S01",
+      label: "Actual Lifetime Carbon",
+      unit: "kgCO2e/m²"
+    },
+    {
+      legacyId: "k_8",
+      semanticPath: "keyValues.actual.annualCarbon",
+      classification: "C",
+      section: "S01",
+      label: "Actual Annual Carbon",
+      unit: "kgCO2e/m²/yr"
+    },
+    {
+      legacyId: "k_10",
+      semanticPath: "keyValues.actual.teui",
+      classification: "C",
+      section: "S01",
+      label: "Actual TEUI",
+      unit: "kWh/m²/yr"
+    },
+    // Percent reduction values (j_ and m_ prefix)
+    {
+      legacyId: "j_8",
+      semanticPath: "keyValues.annualCarbon.reductionPercent",
+      classification: "C",
+      section: "S01",
+      label: "Annual Carbon Reduction %"
+    },
+    {
+      legacyId: "j_10",
+      semanticPath: "keyValues.teui.reductionPercent",
+      classification: "C",
+      section: "S01",
+      label: "TEUI Reduction %"
+    },
+    {
+      legacyId: "m_6",
+      semanticPath: "keyValues.lifetimeCarbon.percent",
+      classification: "C",
+      section: "S01",
+      label: "Lifetime Carbon Remaining %"
+    },
+    {
+      legacyId: "m_8",
+      semanticPath: "keyValues.annualCarbon.remainingPercent",
+      classification: "C",
+      section: "S01",
+      label: "Annual Carbon Remaining %"
+    },
+    {
+      legacyId: "m_10",
+      semanticPath: "keyValues.teui.remainingPercent",
+      classification: "C",
+      section: "S01",
+      label: "TEUI Remaining %"
     }
   ];
 

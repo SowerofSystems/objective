@@ -398,9 +398,9 @@
 
   /**
    * Enable DOMBridge for automatic DOM synchronization
-   * @param {string} [containerSelector] - CSS selector for container
+   * @param {string} [containerSelector] - CSS selector for container (optional)
    */
-  function enableDOMBridge(containerSelector = "[data-render-section]") {
+  function enableDOMBridge(containerSelector) {
     if (!initialized) {
       error("Must initialize before enabling DOMBridge");
       return false;
@@ -420,20 +420,32 @@
     try {
       domBridge = DOMBridge.create({ state, engine });
 
-      // Find and bind all field elements
-      const containers = document.querySelectorAll(containerSelector);
+      // Bind ALL elements with data-field-id attribute (inputs, outputs, displays)
+      // This includes Key Values table cells, computed result displays, etc.
+      const allFieldElements = document.querySelectorAll("[data-field-id]");
       let boundCount = 0;
 
-      containers.forEach(container => {
-        const inputs = container.querySelectorAll("input, select");
-        inputs.forEach(el => {
-          const fieldId = el.id || el.dataset.fieldId;
-          if (fieldId) {
-            domBridge.bind(fieldId, el);
-            boundCount++;
-          }
-        });
+      allFieldElements.forEach(el => {
+        const fieldId = el.dataset.fieldId;
+        if (fieldId) {
+          domBridge.bind(el, fieldId);
+          boundCount++;
+        }
       });
+
+      // Also bind elements in specific containers if provided
+      if (containerSelector) {
+        const containers = document.querySelectorAll(containerSelector);
+        containers.forEach(container => {
+          const inputs = container.querySelectorAll("input[id], select[id]");
+          inputs.forEach(el => {
+            if (el.id && !el.dataset.fieldId) {
+              domBridge.bind(el, el.id);
+              boundCount++;
+            }
+          });
+        });
+      }
 
       domBridge.connect();
       log(`DOMBridge enabled - bound ${boundCount} elements`);
