@@ -886,6 +886,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         c: { label: "Primary Heating System", classes: ["flex-cell"] },
         d: {
           fieldId: "d_113",
+          semanticPath: "mechanical.heating.system",
           type: "dropdown",
           dropdownId: "dd_d_113",
           value: "Heatpump", // Default value - Should govern during Initialization
@@ -904,6 +905,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         f: {
           fieldId: "f_113",
+          semanticPath: "mechanical.heating.hspf",
           type: "coefficient_slider", // ✅ Fixed: was "coefficient" (no handler), now "coefficient_slider"
           value: "12.5", // Default value
           min: 3.5, // Min value
@@ -920,6 +922,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         h: {
           fieldId: "h_113",
+          semanticPath: "mechanical.heating.copHeat",
           type: "calculated",
           value: "3.66",
           section: "mechanicalLoads",
@@ -932,6 +935,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         j: {
           fieldId: "j_113",
+          semanticPath: "mechanical.heating.copCool",
           type: "calculated",
           value: "2.7",
           section: "mechanicalLoads",
@@ -944,6 +948,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         l: {
           fieldId: "l_113",
+          semanticPath: "mechanical.heating.sinkEnergy",
           type: "calculated",
           value: "86,642.65",
           section: "mechanicalLoads",
@@ -952,6 +957,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         m: {
           fieldId: "m_113",
+          semanticPath: "mechanical.heating.hspfComplianceRatio",
           type: "calculated",
           value: "176%",
           section: "mechanicalLoads",
@@ -960,6 +966,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         n: {
           fieldId: "n_113",
+          semanticPath: "mechanical.heating.hspfComplianceStatus",
           type: "calculated",
           value: "✓",
           section: "mechanicalLoads",
@@ -978,6 +985,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         c: { label: "Heating System Demand", classes: ["flex-cell"] },
         d: {
           fieldId: "d_114",
+          semanticPath: "mechanical.heating.demand",
           type: "calculated",
           value: "32,529.13",
           section: "mechanicalLoads",
@@ -991,6 +999,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         f: {
           fieldId: "f_114",
+          semanticPath: "mechanical.heating.netEmissions",
           type: "calculated",
           value: "0.00",
           section: "mechanicalLoads",
@@ -1009,6 +1018,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         j: {
           fieldId: "j_114",
+          semanticPath: "mechanical.heating.ceer",
           type: "calculated",
           value: "9.1",
           section: "mechanicalLoads",
@@ -1021,6 +1031,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         l: {
           fieldId: "l_114",
+          semanticPath: "mechanical.cooling.sinkEnergy",
           type: "calculated",
           value: "5,020.63",
           section: "mechanicalLoads",
@@ -1042,6 +1053,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         c: { label: "Heating Fuel Impact (ekWh/yr)", classes: ["flex-cell"] },
         d: {
           fieldId: "d_115",
+          semanticPath: "mechanical.heating.fuelImpact",
           type: "calculated",
           value: "0.00",
           section: "mechanicalLoads",
@@ -1054,6 +1066,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         f: {
           fieldId: "f_115",
+          semanticPath: "mechanical.heating.oilConsumption",
           type: "calculated",
           value: "0.00",
           section: "mechanicalLoads",
@@ -1066,6 +1079,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         h: {
           fieldId: "h_115",
+          semanticPath: "mechanical.heating.gasConsumption",
           type: "calculated",
           value: "0.00",
           section: "mechanicalLoads",
@@ -1078,6 +1092,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         j: {
           fieldId: "j_115",
+          semanticPath: "mechanical.heating.afue",
           type: "editable",
           value: "0.90",
           section: "mechanicalLoads",
@@ -1089,6 +1104,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         l: {
           fieldId: "l_115",
+          semanticPath: "mechanical.heating.exhaustEnergy",
           type: "calculated",
           value: "0.00",
           section: "mechanicalLoads",
@@ -1097,6 +1113,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         m: {
           fieldId: "m_115",
+          semanticPath: "mechanical.heating.afueComplianceRatio",
           type: "calculated",
           value: "109%",
           section: "mechanicalLoads",
@@ -1105,6 +1122,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         n: {
           fieldId: "n_115",
+          semanticPath: "mechanical.heating.afueComplianceStatus",
           type: "calculated",
           value: "✓",
           section: "mechanicalLoads",
@@ -1126,6 +1144,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         d: {
           fieldId: "d_116",
+          semanticPath: "mechanical.cooling.system",
           type: "dropdown",
           dropdownId: "dd_d_116",
           value: "Cooling",
@@ -1146,6 +1165,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         j: {
           fieldId: "j_116",
+          semanticPath: "mechanical.cooling.copCool",
           type: "editable",
           value: "2.66",
           section: "mechanicalLoads",
@@ -1158,6 +1178,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         l: {
           fieldId: "l_116",
+          semanticPath: "mechanical.cooling.dedicatedSinkEnergy",
           type: "calculated",
           value: "5,009.95",
           section: "mechanicalLoads",
@@ -1167,6 +1188,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         m: {
           fieldId: "m_116",
+          semanticPath: "mechanical.cooling.copComplianceRatio",
           type: "calculated",
           value: "124%",
           section: "mechanicalLoads",
@@ -1175,6 +1197,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         n: {
           fieldId: "n_116",
+          semanticPath: "mechanical.cooling.copComplianceStatus",
           type: "calculated",
           value: "✓",
           section: "mechanicalLoads",
@@ -1193,6 +1216,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         c: { label: "Heatpump Cool Elect. Load", classes: ["flex-cell"] },
         d: {
           fieldId: "d_117",
+          semanticPath: "mechanical.cooling.electricalDemand",
           type: "calculated",
           value: "3,018.04",
           section: "mechanicalLoads",
@@ -1203,6 +1227,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         e: {},
         f: {
           fieldId: "f_117",
+          semanticPath: "mechanical.cooling.intensityPerArea",
           type: "calculated",
           value: "2.11",
           section: "mechanicalLoads",
@@ -1220,6 +1245,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         j: {
           fieldId: "j_117",
+          semanticPath: "mechanical.cooling.ceer",
           type: "calculated",
           value: "9.1",
           section: "mechanicalLoads",
@@ -1230,6 +1256,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         l: {},
         m: {
           fieldId: "m_117",
+          semanticPath: "mechanical.cooling.intensityComplianceRatio",
           type: "calculated",
           value: "4%",
           section: "mechanicalLoads",
@@ -1238,6 +1265,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         n: {
           fieldId: "n_117",
+          semanticPath: "mechanical.cooling.intensityComplianceStatus",
           type: "calculated",
           value: "✓",
           section: "mechanicalLoads",
@@ -1256,6 +1284,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         c: { label: "HRV/ERV/MVHR Efficiency (SRE)", classes: ["flex-cell"] },
         d: {
           fieldId: "d_118",
+          semanticPath: "ventilation.hrvEfficiency",
           type: "editable",
           value: "89.00",
           classes: ["user-input"],
@@ -1270,6 +1299,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         g: {
           fieldId: "g_118",
+          semanticPath: "ventilation.method",
           type: "dropdown",
           dropdownId: "dd_g_118",
           value: "Volume by Schedule",
@@ -1295,6 +1325,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         k: {},
         l: {
           fieldId: "l_118",
+          semanticPath: "ventilation.ach",
           type: "editable",
           value: "3.00",
           section: "mechanicalLoads",
@@ -1303,6 +1334,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         m: {
           fieldId: "m_118",
+          semanticPath: "ventilation.hrvComplianceRatio",
           type: "calculated",
           value: "162%",
           section: "mechanicalLoads",
@@ -1311,6 +1343,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         n: {
           fieldId: "n_118",
+          semanticPath: "ventilation.hrvComplianceStatus",
           type: "calculated",
           value: "✓",
           section: "mechanicalLoads",
@@ -1329,6 +1362,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         c: { label: "Per Person Ventilation Rate", classes: ["flex-cell"] },
         d: {
           fieldId: "d_119",
+          semanticPath: "ventilation.perPersonRate",
           type: "editable",
           value: "14.00", // RESTORED default value
           section: "mechanicalLoads",
@@ -1341,6 +1375,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         f: {
           fieldId: "f_119",
+          semanticPath: "ventilation.perPersonRateCfm",
           type: "calculated",
           value: "29.66",
           section: "mechanicalLoads",
@@ -1353,6 +1388,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         h: {
           fieldId: "h_119",
+          semanticPath: "ventilation.perPersonRateM3h",
           type: "calculated",
           value: "50.40",
           section: "mechanicalLoads",
@@ -1370,6 +1406,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         l: {
           fieldId: "l_119",
+          semanticPath: "ventilation.summerBoost",
           type: "dropdown",
           dropdownId: "dd_l_119",
           value: "None",
@@ -1393,6 +1430,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         m: {
           fieldId: "m_119",
+          semanticPath: "ventilation.rateComplianceRatio",
           type: "calculated",
           value: "112%",
           section: "mechanicalLoads",
@@ -1401,6 +1439,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         n: {
           fieldId: "n_119",
+          semanticPath: "ventilation.rateComplianceStatus",
           type: "calculated",
           value: "✓",
           section: "mechanicalLoads",
@@ -1419,6 +1458,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         c: { label: "Volumetric Ventilation Rate", classes: ["flex-cell"] },
         d: {
           fieldId: "d_120",
+          semanticPath: "ventilation.volumetricRate",
           type: "calculated",
           value: "3,333.33",
           section: "mechanicalLoads",
@@ -1439,6 +1479,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         f: {
           fieldId: "f_120",
+          semanticPath: "ventilation.volumetricRateCfm",
           type: "calculated",
           value: "7,062.93",
           section: "mechanicalLoads",
@@ -1451,6 +1492,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         h: {
           fieldId: "h_120",
+          semanticPath: "ventilation.volumetricRateM3h",
           type: "calculated",
           value: "12,000.00",
           section: "mechanicalLoads",
@@ -1464,6 +1506,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         j: { content: "V.1.7", classes: ["label-prefix"] }, // Label for k_120 Unoccupied Ventilation Setback
         k: {
           fieldId: "k_120",
+          semanticPath: "ventilation.unoccupiedSetback",
           type: "percentage",
           value: "90",
           min: 0, // ADD min for standard slider behavior
@@ -1489,6 +1532,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         c: { label: "Ventilation Heating Load", classes: ["flex-cell"] },
         d: {
           fieldId: "d_121",
+          semanticPath: "ventilation.heatingLoad",
           type: "calculated",
           value: "445,280.00",
           section: "mechanicalLoads",
@@ -1507,6 +1551,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         g: {},
         h: {
           fieldId: "h_121",
+          semanticPath: "ventilation.heatingRecovered",
           type: "calculated",
           value: "396,299.20",
           section: "mechanicalLoads",
@@ -1525,6 +1570,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         l: {},
         m: {
           fieldId: "m_121",
+          semanticPath: "ventilation.netHeatingLoss",
           type: "calculated",
           value: "48,980.80",
           section: "mechanicalLoads",
@@ -1547,6 +1593,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         d: {
           fieldId: "d_122",
+          semanticPath: "ventilation.coolingLoad",
           type: "calculated",
           value: "30,257.37",
           section: "mechanicalLoads",
@@ -1573,6 +1620,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         g: {},
         h: {
           fieldId: "h_122",
+          semanticPath: "ventilation.latentLoadFactor",
           type: "calculated",
           value: "159%",
           section: "mechanicalLoads",
@@ -1600,6 +1648,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         d: {
           fieldId: "d_123",
+          semanticPath: "ventilation.heatRemoval",
           type: "calculated",
           value: "26,929.06",
           section: "mechanicalLoads",
@@ -1632,6 +1681,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         d: {
           fieldId: "d_124",
+          semanticPath: "ventilation.freeCoolingCapacity",
           type: "calculated",
           value: "54%",
           section: "mechanicalLoads",
@@ -1649,6 +1699,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         g: {},
         h: {
           fieldId: "h_124",
+          semanticPath: "ventilation.freeCoolingLimit",
           type: "calculated",
           value: "37,322.60",
           section: "mechanicalLoads",
@@ -1668,6 +1719,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         l: {},
         m: {
           fieldId: "m_124",
+          semanticPath: "ventilation.activeCoolingDays",
           type: "calculated",
           value: "96",
           section: "mechanicalLoads",
@@ -1677,6 +1729,7 @@ window.TEUI.SectionModules.sect13 = (function () {
         },
         n: {
           fieldId: "n_124",
+          semanticPath: "ventilation.coolingDaysStatus",
           type: "calculated",
           value: "✓",
           section: "mechanicalLoads",
@@ -1734,6 +1787,8 @@ window.TEUI.SectionModules.sect13 = (function () {
           };
 
           // Copy additional field properties if they exist
+          if (cell.semanticPath)
+            fields[cell.fieldId].semanticPath = cell.semanticPath;
           if (cell.dropdownId)
             fields[cell.fieldId].dropdownId = cell.dropdownId;
           if (cell.dependencies)
