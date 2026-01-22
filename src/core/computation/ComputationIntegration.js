@@ -159,10 +159,7 @@
       log("Registered BuildingInfoNodes");
     }
 
-    if (nodes.Envelope) {
-      nodes.Envelope.register(g);
-      log("Registered EnvelopeNodes");
-    }
+    // EnvelopeNodes removed - consolidated into TransmissionLossNodes + VolumeMetricsNodes
 
     if (nodes.Mechanical) {
       nodes.Mechanical.register(g);

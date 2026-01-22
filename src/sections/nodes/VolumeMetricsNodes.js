@@ -224,6 +224,76 @@
     });
 
     // ========================================================================
+    // ENVELOPE HEAT GAINS (Row 101, 102)
+    // Migrated from EnvelopeNodes.js during consolidation
+    // ========================================================================
+
+    // j_101: Heat Gain Rate (Air-Facing)
+    graph.registerNode({
+      id: "envelope.airFacing.heatGainRate",
+      legacyId: "j_101",
+      section: "S12",
+      classification: "C",
+      dependencies: ["envelope.airFacing.uValue", "climate.cooling.degreedays"],
+      label: "Heat Gain Rate (Ae) (kWh/m²)",
+      compute: (inputs) => {
+        const cdd = inputs["climate.cooling.degreedays"];
+        // Legacy returns 0 when CDD unavailable
+        if (isUnavailable(cdd)) return 0;
+
+        const u = parseNum(inputs["envelope.airFacing.uValue"], 0);
+        // Heat gain = U × CDD × 24 / 1000
+        return (u * parseNum(cdd) * 24) / 1000;
+      }
+    });
+
+    // k_101: Total Heat Gain (Air-Facing)
+    graph.registerNode({
+      id: "envelope.airFacing.totalHeatGain",
+      legacyId: "k_101",
+      section: "S12",
+      classification: "C",
+      dependencies: ["envelope.airFacing.heatGainRate", "envelope.airFacing.area"],
+      label: "Total Heat Gain (Ae) (kWh/yr)",
+      compute: (inputs) => {
+        const rate = parseNum(inputs["envelope.airFacing.heatGainRate"], 0);
+        const area = parseNum(inputs["envelope.airFacing.area"], 0);
+        return rate * area;
+      }
+    });
+
+    // j_102: Heat Gain Rate (Ground-Facing)
+    graph.registerNode({
+      id: "envelope.groundFacing.heatGainRate",
+      legacyId: "j_102",
+      section: "S12",
+      classification: "C",
+      dependencies: ["envelope.groundFacing.uValue", "climate.groundFacing.cdd"],
+      label: "Heat Gain Rate (Ag) (kWh/m²)",
+      compute: (inputs) => {
+        const gfcdd = inputs["climate.groundFacing.cdd"];
+        const u = parseNum(inputs["envelope.groundFacing.uValue"], 0);
+        // Heat gain = U × GF_CDD × 24 / 1000
+        return (u * parseNum(gfcdd, 0) * 24) / 1000;
+      }
+    });
+
+    // k_102: Total Heat Gain (Ground-Facing)
+    graph.registerNode({
+      id: "envelope.groundFacing.totalHeatGain",
+      legacyId: "k_102",
+      section: "S12",
+      classification: "C",
+      dependencies: ["envelope.groundFacing.heatGainRate", "envelope.groundFacing.area"],
+      label: "Total Heat Gain (Ag) (kWh/yr)",
+      compute: (inputs) => {
+        const rate = parseNum(inputs["envelope.groundFacing.heatGainRate"], 0);
+        const area = parseNum(inputs["envelope.groundFacing.area"], 0);
+        return rate * area;
+      }
+    });
+
+    // ========================================================================
     // AIR LEAKAGE - NRL50 and Heat Loss (Row 103, 108)
     // From Section12.js calculateACH50Target and calculateAirLeakageHeatLoss
     // ========================================================================

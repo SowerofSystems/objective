@@ -4,7 +4,7 @@
  * Part of the Multi-Model Architecture refactoring (Phase 2, Task 2.6)
  * See: docs/REFACTORING_PLAN.md
  *
- * Tests for: ClimateNodes, EnvelopeNodes, MechanicalNodes, EnergyNodes
+ * Tests for: ClimateNodes, MechanicalNodes, EnergyNodes
  */
 (function () {
   "use strict";
@@ -236,98 +236,9 @@
   });
 
   // ============================================================================
-  // ENVELOPE NODES TESTS
+  // NOTE: EnvelopeNodes tests removed - module consolidated into
+  // TransmissionLossNodes + VolumeMetricsNodes
   // ============================================================================
-
-  describe("EnvelopeNodes", function () {
-    test("module is loaded", function () {
-      assertDefined(window.TEUI.ComputationNodes.Envelope, "Envelope module not loaded");
-    });
-
-    test("has inputs and nodes arrays", function () {
-      const Envelope = window.TEUI.ComputationNodes.Envelope;
-      assertTrue(Array.isArray(Envelope.inputs), "inputs should be an array");
-      assertTrue(Array.isArray(Envelope.nodes), "nodes should be an array");
-      assertTrue(Envelope.inputs.length > 0, "inputs should not be empty");
-      assertTrue(Envelope.nodes.length > 0, "nodes should not be empty");
-    });
-
-    test("all nodes have required structure", function () {
-      const Envelope = window.TEUI.ComputationNodes.Envelope;
-      for (const node of Envelope.nodes) {
-        assertDefined(node.id, `Node missing id`);
-        assertDefined(node.legacyId, `Node ${node.id} missing legacyId`);
-        assertDefined(node.compute, `Node ${node.id} missing compute function`);
-        assertEqual(typeof node.compute, "function", `Node ${node.id} compute should be a function`);
-      }
-    });
-
-    test("RSI to U-value conversion: RSI 5 -> U 0.2", function () {
-      const Envelope = window.TEUI.ComputationNodes.Envelope;
-      const node = Envelope.nodes.find((n) => n.id === "envelope.roof.uValue");
-      assertDefined(node, "envelope.roof.uValue node not found");
-
-      const result = node.compute({ "envelope.roof.rsi": 5 });
-      assertClose(result, 0.2, 0.001, "RSI 5 should give U-value 0.2");
-    });
-
-    test("RSI to U-value conversion: RSI 8.81 -> U 0.114", function () {
-      const Envelope = window.TEUI.ComputationNodes.Envelope;
-      const node = Envelope.nodes.find((n) => n.id === "envelope.roof.uValue");
-
-      const result = node.compute({ "envelope.roof.rsi": 8.81 });
-      assertClose(result, 0.114, 0.001, "RSI 8.81 should give U-value ~0.114");
-    });
-
-    test("air-facing total area sums all components", function () {
-      const Envelope = window.TEUI.ComputationNodes.Envelope;
-      const node = Envelope.nodes.find((n) => n.id === "envelope.airFacing.totalArea");
-      assertDefined(node, "envelope.airFacing.totalArea node not found");
-
-      const inputs = {
-        "envelope.roof.area": 100,
-        "envelope.walls.area": 200,
-        "envelope.floorExposed.area": 50,
-        "envelope.doors.area": 10,
-        "envelope.windowsNorth.area": 20,
-        "envelope.windowsEast.area": 15,
-        "envelope.windowsSouth.area": 25,
-        "envelope.windowsWest.area": 20,
-        "envelope.skylights.area": 10
-      };
-
-      const result = node.compute(inputs);
-      assertEqual(result, 450, "Air-facing total should be sum of all components");
-    });
-
-    test("ground-facing total area sums below-grade components", function () {
-      const Envelope = window.TEUI.ComputationNodes.Envelope;
-      const node = Envelope.nodes.find((n) => n.id === "envelope.groundFacing.totalArea");
-      assertDefined(node, "envelope.groundFacing.totalArea node not found");
-
-      const inputs = {
-        "envelope.wallsBelowGrade.area": 100,
-        "envelope.slabOnGrade.area": 500
-      };
-
-      const result = node.compute(inputs);
-      assertEqual(result, 600, "Ground-facing total should be 100 + 500 = 600");
-    });
-
-    test("total envelope area combines air and ground", function () {
-      const Envelope = window.TEUI.ComputationNodes.Envelope;
-      const node = Envelope.nodes.find((n) => n.id === "envelope.total.area");
-      assertDefined(node, "envelope.total.area node not found");
-
-      const inputs = {
-        "envelope.airFacing.totalArea": 450,
-        "envelope.groundFacing.totalArea": 600
-      };
-
-      const result = node.compute(inputs);
-      assertEqual(result, 1050, "Total envelope should be 450 + 600 = 1050");
-    });
-  });
 
   // ============================================================================
   // MECHANICAL NODES TESTS

@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-01-21T14:08:14.487Z",
+  "timestamp": "2026-01-22T03:58:06.406Z",
   "summary": {
     "total": 12,
     "passed": 12,
@@ -9,74 +9,74 @@
   "byFile": [
     {
       "file": "01-ThreeFeathersTerrace.csv",
-      "matches": 343,
-      "close": 11,
-      "mismatches": 0
-    },
-    {
-      "file": "02-SolarQ.csv",
-      "matches": 352,
-      "close": 2,
-      "mismatches": 0
-    },
-    {
-      "file": "03-Meadow.csv",
-      "matches": 353,
-      "close": 1,
-      "mismatches": 0
-    },
-    {
-      "file": "04-OttawaApartments.csv",
-      "matches": 347,
-      "close": 7,
-      "mismatches": 0
-    },
-    {
-      "file": "05-TheOaksPhase01Apartments.csv",
-      "matches": 341,
-      "close": 13,
-      "mismatches": 0
-    },
-    {
-      "file": "06-BlossomParkApartments.csv",
-      "matches": 341,
-      "close": 13,
-      "mismatches": 0
-    },
-    {
-      "file": "07-DogwoodMURB.csv",
-      "matches": 341,
-      "close": 13,
-      "mismatches": 0
-    },
-    {
-      "file": "08-EmbassyCommonsMURB.csv",
-      "matches": 343,
-      "close": 11,
-      "mismatches": 0
-    },
-    {
-      "file": "09-RowingCentre.csv",
-      "matches": 343,
-      "close": 11,
-      "mismatches": 0
-    },
-    {
-      "file": "10-TheGreenwayResidence.csv",
-      "matches": 345,
+      "matches": 315,
       "close": 9,
       "mismatches": 0
     },
     {
+      "file": "02-SolarQ.csv",
+      "matches": 324,
+      "close": 0,
+      "mismatches": 0
+    },
+    {
+      "file": "03-Meadow.csv",
+      "matches": 324,
+      "close": 0,
+      "mismatches": 0
+    },
+    {
+      "file": "04-OttawaApartments.csv",
+      "matches": 319,
+      "close": 5,
+      "mismatches": 0
+    },
+    {
+      "file": "05-TheOaksPhase01Apartments.csv",
+      "matches": 315,
+      "close": 9,
+      "mismatches": 0
+    },
+    {
+      "file": "06-BlossomParkApartments.csv",
+      "matches": 315,
+      "close": 9,
+      "mismatches": 0
+    },
+    {
+      "file": "07-DogwoodMURB.csv",
+      "matches": 315,
+      "close": 9,
+      "mismatches": 0
+    },
+    {
+      "file": "08-EmbassyCommonsMURB.csv",
+      "matches": 315,
+      "close": 9,
+      "mismatches": 0
+    },
+    {
+      "file": "09-RowingCentre.csv",
+      "matches": 315,
+      "close": 9,
+      "mismatches": 0
+    },
+    {
+      "file": "10-TheGreenwayResidence.csv",
+      "matches": 317,
+      "close": 7,
+      "mismatches": 0
+    },
+    {
       "file": "11-CommunityCentre.csv",
-      "matches": 350,
-      "close": 4,
+      "matches": 322,
+      "close": 2,
       "mismatches": 0
     },
     {
       "file": "12-AberdeenHouse.csv",
-      "matches": 343,
-      "close": 11,
+      "matches": 317,
+      "close": 7,
       "mismatches": 0
     }
   ]
