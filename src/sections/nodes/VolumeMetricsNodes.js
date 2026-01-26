@@ -28,17 +28,46 @@
     return value === "Unavailable" || value === "N/A";
   }
 
+  // N-factor lookup table from Section12.js calculateNFactor()
+  // Indexed by [climateZone][shielding][stories]
+  const N_FACTOR_TABLE = {
+    1: {
+      Shielded: { 1: 18.6, 1.5: 16.7, 2: 14.8, 3: 13.0, 4: 11.2, 5: 9.4, 6: 7.6 },
+      Normal:   { 1: 15.5, 1.5: 14.0, 2: 12.4, 3: 10.9, 4: 9.4, 5: 7.9, 6: 6.4 },
+      Exposed:  { 1: 14.0, 1.5: 12.6, 2: 11.2, 3: 9.8, 4: 13.0, 5: 13.0, 6: 13.0 }
+    },
+    2: {
+      Shielded: { 1: 22.2, 1.5: 20.0, 2: 17.8, 3: 15.5, 4: 13.2, 5: 10.9, 6: 8.6 },
+      Normal:   { 1: 18.5, 1.5: 16.7, 2: 14.8, 3: 13.0, 4: 11.2, 5: 9.4, 6: 7.6 },
+      Exposed:  { 1: 16.7, 1.5: 15.0, 2: 13.3, 3: 11.7, 4: 10.1, 5: 8.5, 6: 6.9 }
+    },
+    3: {
+      Shielded: { 1: 25.8, 1.5: 23.1, 2: 20.6, 3: 18.1, 4: 15.6, 5: 13.1, 6: 10.6 },
+      Normal:   { 1: 21.5, 1.5: 19.4, 2: 17.2, 3: 15.1, 4: 13.0, 5: 10.9, 6: 8.8 },
+      Exposed:  { 1: 19.4, 1.5: 17.4, 2: 15.5, 3: 13.5, 4: 11.5, 5: 9.5, 6: 7.5 }
+    }
+  };
+
+  function getStoryKey(stories) {
+    if (stories <= 1) return 1;
+    if (stories <= 1.75) return 1.5;
+    if (stories < 2.5) return 2;
+    if (stories < 3.5) return 3;
+    if (stories < 4.5) return 4;
+    if (stories < 5.5) return 5;
+    return 6;
+  }
+
   function register(graph) {
     const inputs = [
-      // Volume inputs
-      { id: "volume.ceilingHeight", legacyId: "d_100", section: "S12", classification: "C", label: "Ceiling Height (m)", defaultValue: 2.7 },
-      { id: "volume.numStoreys", legacyId: "d_99", section: "S12", classification: "C", label: "Number of Storeys", defaultValue: 2 },
+      // Volume inputs (from Section12.js field mappings)
+      { id: "volume.floorToFloorHeight", legacyId: "g_106", section: "S12", classification: "C", label: "Floor-to-Floor Height (m)", defaultValue: 2.7 },
+      { id: "volume.numStoreys", legacyId: "d_103", section: "S12", classification: "C", label: "Number of Storeys", defaultValue: 1.5 },
+      { id: "airTightness.shielding", legacyId: "g_103", section: "S12", classification: "C", label: "Shielding", defaultValue: "Normal" },
 
       // Air tightness inputs
       { id: "airTightness.method", legacyId: "d_108", section: "S12", classification: "C", label: "Air Tightness Method", defaultValue: "AL-1B" },
       { id: "airTightness.measuredAch50", legacyId: "g_109", section: "S12", classification: "C", label: "Measured ACH50", defaultValue: 3.0 },
-      { id: "airTightness.ach50", legacyId: "d_103", section: "S12", classification: "C", label: "ACH50 (air changes/hour @ 50Pa)", defaultValue: 3.0 },
-      { id: "airTightness.nFactor", legacyId: "g_110", section: "S12", classification: "C", label: "N-Factor", defaultValue: 13 },
 
       // Conditioned volume (user input or from S02)
       { id: "volume.conditioned", legacyId: "d_105", section: "S12", classification: "C", label: "Conditioned Volume (m³)", defaultValue: 0 },
@@ -370,6 +399,45 @@
         const volume = parseNum(inputs["volume.conditioned"]);
         // ACH50 = NRL50 × (area / volume) × 3.6
         return volume > 0 && areaAir > 0 ? nrl50 * (areaAir / volume) * 3.6 : 0;
+      }
+    });
+
+    // g_110: N-Factor (calculated from climate zone, shielding, stories)
+    // From Section12.js calculateNFactor() lines 2219-2368
+    graph.registerNode({
+      id: "airTightness.nFactor",
+      legacyId: "g_110",
+      section: "S12",
+      classification: "C",
+      dependencies: [
+        "climate.zone",
+        "airTightness.shielding",
+        "volume.numStoreys"
+      ],
+      label: "N-Factor",
+      compute: (inputs) => {
+        const climateZone = parseNum(inputs["climate.zone"], 6);
+        const shielding = inputs["airTightness.shielding"] || "Normal";
+        const stories = parseNum(inputs["volume.numStoreys"], 1.5);
+
+        // Determine zone number from climate zone (1-3)
+        let zoneNum = 2;
+        if (climateZone <= 4) zoneNum = 1;
+        else if (climateZone >= 7) zoneNum = 3;
+
+        // Determine shielding key
+        const shieldingKey = shielding === "Shielded" ? "Shielded"
+          : shielding === "Exposed" ? "Exposed"
+          : "Normal";
+
+        // Get story key
+        const storyKey = getStoryKey(stories);
+
+        // Lookup N-factor, default to Normal zone 2, 1.5 stories
+        const nFactor = N_FACTOR_TABLE[zoneNum]?.[shieldingKey]?.[storyKey]
+          ?? N_FACTOR_TABLE[2]["Normal"][1.5];
+
+        return nFactor;
       }
     });
 

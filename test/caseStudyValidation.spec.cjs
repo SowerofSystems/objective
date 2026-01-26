@@ -96,6 +96,20 @@ test.describe("Case Study Validation", () => {
                 d_113_heatingType: { old: SM.getValue("d_113"), new: state.getValueForModel(targetId, "mechanical.heating.systemType") },
               };
 
+              // Debug i_103 (air leakage heat loss) chain
+              // Formula: i_103 = (1.21 × NRL50 × area × HDD × 24) / (N_factor × 1000)
+              const i103Debug = {
+                i_103: { old: parseFloat(SM.getValue("i_103")) || 0, new: parseFloat(state.getValueForModel(targetId, "airTightness.heatLoss")) || 0 },
+                g_108_nrl50: { old: parseFloat(SM.getValue("g_108")) || 0, new: parseFloat(state.getValueForModel(targetId, "airTightness.nrl50")) || 0 },
+                d_101_area: { old: parseFloat(SM.getValue("d_101")) || 0, new: parseFloat(state.getValueForModel(targetId, "envelope.airFacing.area")) || 0 },
+                g_110_nFactor: { old: parseFloat(SM.getValue("g_110")) || 0, new: parseFloat(state.getValueForModel(targetId, "airTightness.nFactor")) || 0 },
+                h_20_hdd: { old: parseFloat(SM.getValue("h_20")) || 0, new: parseFloat(state.getValueForModel(targetId, "climate.heating.degreedays")) || 0 },
+                // NRL50 inputs
+                d_108_method: { old: SM.getValue("d_108"), new: state.getValueForModel(targetId, "airTightness.method") },
+                g_109_measuredAch50: { old: parseFloat(SM.getValue("g_109")) || 0, new: parseFloat(state.getValueForModel(targetId, "airTightness.measuredAch50")) || 0 },
+                d_105_volume: { old: parseFloat(SM.getValue("d_105")) || 0, new: parseFloat(state.getValueForModel(targetId, "volume.conditioned")) || 0 },
+              };
+
               const result = {
                 matches: 0,
                 close: 0,
@@ -104,6 +118,7 @@ test.describe("Case Study Validation", () => {
                 mismatchDetails: [],
                 j27Debug,
                 climateDebug,
+                i103Debug,
               };
               const ABS_TOL = 0.01;
               const REL_TOL = 0.01;
@@ -260,6 +275,20 @@ test.describe("Case Study Validation", () => {
           console.log(`       k_104 (heat gain):   OLD=${d.k_104_heatGain.old.toFixed(2)} NEW=${d.k_104_heatGain.new.toFixed(2)}`);
           console.log(`     [Raw inputs]`);
           console.log(`       f_113 (HSPF):        OLD=${d.f_113.old.toFixed(2)} NEW=${d.f_113.new.toFixed(2)}`);
+        }
+        // Show i_103 debug if i_103 is a mismatch
+        if (result.mismatchDetails.some(m => m.legacyId === "i_103") && result.i103Debug) {
+          const a = result.i103Debug;
+          console.log(`     [i_103 Air Leakage Chain]`);
+          console.log(`       i_103 result:    OLD=${a.i_103.old.toFixed(2)} NEW=${a.i_103.new.toFixed(2)} diff=${(a.i_103.new - a.i_103.old).toFixed(2)}`);
+          console.log(`       g_108 NRL50:     OLD=${a.g_108_nrl50.old.toFixed(4)} NEW=${a.g_108_nrl50.new.toFixed(4)}`);
+          console.log(`       d_101 area:      OLD=${a.d_101_area.old.toFixed(2)} NEW=${a.d_101_area.new.toFixed(2)}`);
+          console.log(`       g_110 nFactor:   OLD=${a.g_110_nFactor.old.toFixed(2)} NEW=${a.g_110_nFactor.new.toFixed(2)}`);
+          console.log(`       h_20 HDD:        OLD=${a.h_20_hdd.old.toFixed(2)} NEW=${a.h_20_hdd.new.toFixed(2)}`);
+          console.log(`     [NRL50 Inputs]`);
+          console.log(`       d_108 method:    OLD="${a.d_108_method.old}" NEW="${a.d_108_method.new}"`);
+          console.log(`       g_109 measAch50: OLD=${a.g_109_measuredAch50.old.toFixed(2)} NEW=${a.g_109_measuredAch50.new.toFixed(2)}`);
+          console.log(`       d_105 volume:    OLD=${a.d_105_volume.old.toFixed(2)} NEW=${a.d_105_volume.new.toFixed(2)}`);
         }
         // Always show climate debug for mismatches
         if (result.climateDebug) {
