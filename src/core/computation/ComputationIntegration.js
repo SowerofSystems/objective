@@ -677,6 +677,174 @@
   }
 
   // ============================================================================
+  // REFERENCE MODEL POPULATION
+  // ============================================================================
+
+  /**
+   * Populate Reference model inputs from ReferenceValues.js
+   * This eliminates dependency on legacy Section calculations for Reference model
+   *
+   * Strategy:
+   * 1. G-fields (geometry/climate): Copy from Target model
+   * 2. C-fields (code/performance): Load from ReferenceValues.js based on selected standard
+   */
+  function populateReferenceModel() {
+    const StateManager = window.TEUI.StateManager;
+    const ReferenceValues = window.TEUI.ReferenceValues;
+
+    if (!StateManager || !ReferenceValues) {
+      warn("StateManager or ReferenceValues not available for Reference population");
+      return { gFieldsCopied: 0, cFieldsLoaded: 0 };
+    }
+
+    const refModelId = getRefModelId();
+    if (!refModelId) {
+      warn("No Reference model found");
+      return { gFieldsCopied: 0, cFieldsLoaded: 0 };
+    }
+
+    const targetId = state.getActiveModelId();
+
+    // Get selected reference standard (l_13 contains the standard name)
+    const standardName = StateManager.getValue("l_13") || "OBC SB12 3.1.1.2.C4";
+    const standardValues = ReferenceValues[standardName] || ReferenceValues["OBC SB12 3.1.1.2.C4"];
+
+    if (!standardValues) {
+      warn(`Reference standard "${standardName}" not found, using OBC SB12 default`);
+    }
+
+    log(`Populating Reference model from standard: ${standardName}`);
+
+    let gFieldsCopied = 0;
+    let cFieldsLoaded = 0;
+
+    // Get all registered inputs
+    const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
+
+    for (const semanticPath of inputIds) {
+      const inputNode = graph.getInput(semanticPath);
+      if (!inputNode) continue;
+
+      const legacyId = inputNode.legacyId;
+      const classification = inputNode.classification || "C";
+
+      if (classification === "G") {
+        // G-field: Copy value from Target model
+        const targetValue = state.getValueForModel(targetId, semanticPath);
+        if (targetValue !== undefined && targetValue !== null) {
+          state.setValueForModel(refModelId, semanticPath, targetValue);
+          gFieldsCopied++;
+        }
+      } else {
+        // C-field: Load from ReferenceValues.js if available, otherwise copy from Target
+        if (legacyId && standardValues && standardValues[legacyId] !== undefined) {
+          state.setValueForModel(refModelId, semanticPath, standardValues[legacyId]);
+          cFieldsLoaded++;
+        } else {
+          // Fallback: Use ref_legacyId from StateManager or copy from Target
+          const refLegacyId = "ref_" + legacyId;
+          const refValue = StateManager.getValue(refLegacyId);
+          if (refValue !== undefined && refValue !== null && refValue !== "") {
+            state.setValueForModel(refModelId, semanticPath, refValue);
+          } else {
+            // Last resort: copy from Target (shared input)
+            const targetValue = state.getValueForModel(targetId, semanticPath);
+            if (targetValue !== undefined && targetValue !== null) {
+              state.setValueForModel(refModelId, semanticPath, targetValue);
+            }
+          }
+        }
+      }
+    }
+
+    log(`Reference model populated: ${gFieldsCopied} G-fields copied, ${cFieldsLoaded} C-fields from standard`);
+    return { gFieldsCopied, cFieldsLoaded };
+  }
+
+  /**
+   * Compute both Target and Reference models
+   * Returns combined results
+   */
+  function computeAllWithReference() {
+    if (!initialized) {
+      error("Not initialized");
+      return null;
+    }
+
+    const targetId = state.getActiveModelId();
+    const refModelId = getRefModelId();
+
+    // Compute Target model
+    const targetResult = engine.computeAllForModel(targetId);
+
+    // Compute Reference model if it exists
+    let refResult = null;
+    if (refModelId) {
+      refResult = engine.computeAllForModel(refModelId);
+    }
+
+    return {
+      target: targetResult,
+      reference: refResult,
+      totalComputed: (targetResult?.computedNodes || 0) + (refResult?.computedNodes || 0),
+      totalDuration: (targetResult?.duration || 0) + (refResult?.duration || 0)
+    };
+  }
+
+  /**
+   * Sync Reference computed values back to StateManager
+   */
+  function syncReferenceToStateManager() {
+    const StateManager = window.TEUI.StateManager;
+
+    if (!StateManager) {
+      warn("StateManager not available for Reference sync");
+      return 0;
+    }
+
+    const refModelId = getRefModelId();
+    if (!refModelId) return 0;
+
+    let syncCount = 0;
+
+    // Sync computed nodes
+    const nodeIds = graph.getAllNodeIds ? graph.getAllNodeIds() : [];
+
+    for (const semanticPath of nodeIds) {
+      const node = graph.getNode(semanticPath);
+      const legacyId = node?.legacyId;
+
+      if (legacyId) {
+        const value = state.getValueForModel(refModelId, semanticPath);
+        if (value !== undefined && value !== null) {
+          // Reference values use ref_ prefix
+          StateManager.setValue("ref_" + legacyId, value, "computed");
+          syncCount++;
+        }
+      }
+    }
+
+    // Sync input values
+    const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
+
+    for (const semanticPath of inputIds) {
+      const inputNode = graph.getInput(semanticPath);
+      const legacyId = inputNode?.legacyId;
+
+      if (legacyId) {
+        const value = state.getValueForModel(refModelId, semanticPath);
+        if (value !== undefined && value !== null) {
+          StateManager.setValue("ref_" + legacyId, value, "computed");
+          syncCount++;
+        }
+      }
+    }
+
+    log(`Synced ${syncCount} Reference values to StateManager`);
+    return syncCount;
+  }
+
+  // ============================================================================
   // EXPORT
   // ============================================================================
 
@@ -706,8 +874,13 @@
     // Sync TO StateManager (call after computeAll when bypassing legacy)
     syncToStateManager,
 
+    // Reference model support
+    populateReferenceModel,
+    syncReferenceToStateManager,
+
     // Computation
     computeAll,
+    computeAllWithReference,
 
     // Configuration
     getConfig,

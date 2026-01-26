@@ -493,14 +493,24 @@ TEUI.Calculator = (function () {
         window.TEUI.USE_COMPUTATION_GRAPH) {
       console.log("[Calculator] 🚀 Using ComputationGraph (legacy bypassed)");
 
-      // Sync all current StateManager values to ComputationGraph before computing
-      // This ensures any UI changes are reflected in the new system
-      window.TEUI.ComputationIntegration.syncFromStateManager();
+      const CI = window.TEUI.ComputationIntegration;
 
-      const result = window.TEUI.ComputationIntegration.computeAll();
+      // Step 1: Sync Target inputs from StateManager
+      CI.syncFromStateManager();
 
-      // Sync computed values back to StateManager so tests and exports work
-      window.TEUI.ComputationIntegration.syncToStateManager();
+      // Step 2: Populate Reference model from ReferenceValues.js
+      // This eliminates dependency on legacy Section calculations for Reference
+      const refPopResult = CI.populateReferenceModel();
+      console.log(`[Calculator] 📋 Reference model: ${refPopResult.gFieldsCopied} G-fields, ${refPopResult.cFieldsLoaded} C-fields from standard`);
+
+      // Step 3: Compute both Target and Reference models
+      const result = CI.computeAllWithReference();
+
+      // Step 4: Sync Target computed values to StateManager
+      CI.syncToStateManager();
+
+      // Step 5: Sync Reference computed values to StateManager (ref_* prefix)
+      CI.syncReferenceToStateManager();
 
       if (result) {
         console.log(`[Calculator] ✅ ComputationGraph complete: ${result.totalComputed} nodes in ${result.totalDuration?.toFixed(2)}ms`);
