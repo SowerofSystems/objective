@@ -165,25 +165,44 @@ Section13 then transforms these values (e.g., applying ventilation setback) and 
 1. Run Cooling.js and Section13's freeCooling calculation before graph sync, OR
 2. Implement the transformation logic as computed nodes in the graph
 
-### Issue 2: Field Value Differences
+### Issue 2: h_124 Free Cooling Transformation (FIXED)
 
-Some fields show different values between legacy and graph:
-- `h_124`: Graph gets raw Cooling.js value instead of Section13-adjusted value
-- `d_114`, `d_117`: Downstream calculations affected by CED chain
+**Problem**: `h_124` (Free Cooling Limit) was registered as an input syncing from `h_124`, but legacy Section13 actually transforms the raw value from `cooling_h_124`.
 
-### Issue 3: COP Comparisons in Tests
+**Solution**: Changed `h_124` to a computed node (`cooling.freeCoolingLimit`) that:
+1. Syncs raw value from `cooling_h_124`
+2. Applies ventilation setback factor when ventilation method is "schedule"
+3. Outputs to `h_124` for downstream calculations
 
-The test script was comparing wrong field pairs:
-- `copHeat` compared j_113 (coolDerived) vs mechanical.heating.copHeat (h_113)
-- `copCool` compared k_116 (doesn't exist) vs effectiveCop
+### Issue 3: g_110 N-Factor (FIXED)
 
-This was fixed by updating test comparisons, but highlights the need for careful field mapping.
+**Problem**: `g_110` (N-Factor) was registered as an INPUT but is actually CALCULATED by Section12.js from climate zone, shielding, and number of storeys. When legacy was bypassed, stale values caused i_103 (air leakage heat loss) mismatches.
 
-### Current Status
+**Solution**: Changed `airTightness.nFactor` from input to computed node with full N-factor lookup table (climate zone × shielding × stories).
+
+Also fixed incorrect legacyId mappings:
+- `d_103` was incorrectly mapped to ACH50 (should be Number of Storeys)
+- Added `g_103` (Shielding) as input for N-factor calculation
+
+### Issue 4: Reference Model Values (REMAINING)
+
+**Problem**: When USE_COMPUTATION_GRAPH=true, Reference model values (e_10, e_8, e_6) don't match because:
+- `ref_j_32` (Reference Total Energy) is calculated by legacy Section04 in Reference mode
+- Without legacy sections running, Reference calculations don't happen
+
+**Impact**: e_10 (Reference TEUI), j_10/m_10 (Tier percentages) show mismatches.
+
+**Solution Required**: Either:
+1. Run legacy Reference calculations before graph sync, OR
+2. Implement full Reference model computation in the graph
+
+### Current Status (January 2025)
 
 - `USE_COMPUTATION_GRAPH = false` by default (12/12 tests pass)
-- Enabling cutover requires solving Cooling.js value flow
-- All other graph calculations match legacy when h_124/m_124 are correct
+- **h_124 transformation**: FIXED (implemented in graph)
+- **g_110 N-Factor**: FIXED (changed from input to computed node)
+- **Reference model**: REMAINING ISSUE for full cutover
+- With cutover enabled, most Target calculations pass (OttawaApartments passes fully)
 
 ## Path to UI Integration
 
