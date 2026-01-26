@@ -146,6 +146,45 @@ window.TEUI.ComputationIntegration.initialize({
 
 > Adapter CANNOT be enabled - old sections call setValue constantly during calculations, causing infinite recursion. Migration requires rewriting sections, not just interception.
 
+## USE_COMPUTATION_GRAPH Cutover Investigation (January 2025)
+
+When `USE_COMPUTATION_GRAPH = true` in `init.js`, Calculator.calculateAll() bypasses legacy Section*.js and relies entirely on the ComputationGraph. This revealed several issues:
+
+### Issue 1: Cooling.js Values Not Available
+
+The Cooling module (`Cooling.js`) computes psychrometric values and stores them as:
+- `cooling_h_124` - Free cooling potential (raw)
+- `cooling_m_124` - Days active cooling required
+- `cooling_latentLoadFactor` - Latent load multiplier
+
+Section13 then transforms these values (e.g., applying ventilation setback) and writes to the final fields (`h_124`, `m_124`). When legacy is bypassed, this transformation doesn't happen.
+
+**Impact**: `m_129` (CED mitigated) = 0 because `h_124` has wrong/missing value.
+
+**Solution Required**: Either:
+1. Run Cooling.js and Section13's freeCooling calculation before graph sync, OR
+2. Implement the transformation logic as computed nodes in the graph
+
+### Issue 2: Field Value Differences
+
+Some fields show different values between legacy and graph:
+- `h_124`: Graph gets raw Cooling.js value instead of Section13-adjusted value
+- `d_114`, `d_117`: Downstream calculations affected by CED chain
+
+### Issue 3: COP Comparisons in Tests
+
+The test script was comparing wrong field pairs:
+- `copHeat` compared j_113 (coolDerived) vs mechanical.heating.copHeat (h_113)
+- `copCool` compared k_116 (doesn't exist) vs effectiveCop
+
+This was fixed by updating test comparisons, but highlights the need for careful field mapping.
+
+### Current Status
+
+- `USE_COMPUTATION_GRAPH = false` by default (12/12 tests pass)
+- Enabling cutover requires solving Cooling.js value flow
+- All other graph calculations match legacy when h_124/m_124 are correct
+
 ## Path to UI Integration
 
 ### Option A: DOMBridge (Partial)

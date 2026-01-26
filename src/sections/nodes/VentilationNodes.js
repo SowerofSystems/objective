@@ -293,23 +293,54 @@
     // FREE COOLING - from Cooling.js Stage 1 psychrometrics
     // ========================================================================
 
-    // Free cooling limit - h_124
-    // This is calculated by Cooling.js and stored in StateManager as cooling_h_124
-    // Formula: A33 × M19 (daily free cooling potential × cooling season days)
+    // Raw free cooling potential - from Cooling.js (cooling_h_124)
+    // This is the unadjusted value before ventilation setback is applied
     graph.registerInput({
+      id: "cooling.freeCoolingRaw",
+      legacyId: "cooling_h_124",
+      section: "S13",
+      classification: "C",
+      label: "Free Cooling Potential (raw, kWh/yr)",
+      defaultValue: 0
+    });
+
+    // Free cooling limit - h_124 (after ventilation setback adjustment)
+    // Transformation logic from Section13.calculateFreeCooling():
+    // - If ventilation method is "constant" → use raw potential directly
+    // - If ventilation method is "schedule" → apply setback factor (k_120/100)
+    graph.registerNode({
       id: "cooling.freeCoolingLimit",
       legacyId: "h_124",
       section: "S13",
       classification: "C",
       label: "Free Cooling Limit (kWh/yr)",
-      defaultValue: 0
+      dependencies: [
+        "cooling.freeCoolingRaw",
+        "mechanical.ventilation.method",
+        "mechanical.ventilation.unoccupiedSetback"
+      ],
+      compute: (inputs) => {
+        const rawPotential = parseNum(inputs["cooling.freeCoolingRaw"], 0);
+        const ventMethod = (inputs["mechanical.ventilation.method"] || "").toLowerCase();
+        const setbackPercent = parseNum(inputs["mechanical.ventilation.unoccupiedSetback"], 0);
+
+        // Apply setback only for scheduled ventilation
+        if (ventMethod.includes("schedule")) {
+          // setbackPercent is 0-100, convert to factor 0-1
+          const setbackFactor = Math.min(1, Math.max(0, setbackPercent / 100));
+          return +(rawPotential * setbackFactor).toFixed(2);
+        }
+
+        // Constant ventilation or unclear method: use full potential
+        return +rawPotential.toFixed(2);
+      }
     });
 
     // Days active cooling - m_124
     // This is calculated by Cooling.js Stage 2 and stored in StateManager as cooling_m_124
     graph.registerInput({
       id: "cooling.daysActiveCooling",
-      legacyId: "m_124",
+      legacyId: "cooling_m_124",
       section: "S13",
       classification: "C",
       label: "Days Active Cooling",

@@ -65,17 +65,35 @@ test.describe("Case Study Validation", () => {
                 k_51: { old: parseFloat(SM.getValue("k_51")) || 0, new: parseFloat(state.getValueForModel(targetId, "energy.dhw.netElectrical")) || 0 },
                 d_117: { old: parseFloat(SM.getValue("d_117")) || 0, new: parseFloat(state.getValueForModel(targetId, "mechanical.cooling.electricalDemand")) || 0 },
                 d_114: { old: parseFloat(SM.getValue("d_114")) || 0, new: parseFloat(state.getValueForModel(targetId, "mechanical.heating.demand")) || 0 },
-                m_43: { old: parseFloat(SM.getValue("m_43")) || 0, new: parseFloat(state.getValueForModel(targetId, "renewable.exteriorLoads")) || 0 },
+                m_43: { old: parseFloat(SM.getValue("m_43")) || 0, new: parseFloat(state.getValueForModel(targetId, "renewable.onsiteTotal")) || 0 },
                 h_70: { old: parseFloat(SM.getValue("h_70")) || 0, new: parseFloat(state.getValueForModel(targetId, "energy.plugLoads.subtotal")) || 0 },
                 // d_114 inputs: TED / COPheat
                 d_127: { old: parseFloat(SM.getValue("d_127")) || 0, new: parseFloat(state.getValueForModel(targetId, "energy.ted.heating")) || 0 },
-                copHeat: { old: parseFloat(SM.getValue("j_113")) || 0, new: parseFloat(state.getValueForModel(targetId, "mechanical.heating.copHeat")) || 0 },
+                // FIX: Compare h_113 (legacy) vs h_113 (graph's mechanical.heating.copHeat)
+                copHeat_h113: { old: parseFloat(SM.getValue("h_113")) || 0, new: parseFloat(state.getValueForModel(targetId, "mechanical.heating.copHeat")) || 0 },
                 // d_117 inputs: m_129 / COP
                 m_129: { old: parseFloat(SM.getValue("m_129")) || 0, new: parseFloat(state.getValueForModel(targetId, "energy.ced.mitigated")) || 0 },
-                copCool: { old: parseFloat(SM.getValue("k_116")) || 0, new: parseFloat(state.getValueForModel(targetId, "mechanical.cooling.effectiveCop")) || 0 },
+                // FIX: The effective COP doesn't exist as a single field in legacy - show both components
+                j_113_coolDerived: { old: parseFloat(SM.getValue("j_113")) || 0, new: parseFloat(state.getValueForModel(targetId, "mechanical.heating.copCoolDerived")) || 0 },
+                j_116_coolDedicated: { old: parseFloat(SM.getValue("j_116")) || 0, new: parseFloat(state.getValueForModel(targetId, "mechanical.cooling.copDedicated")) || 0 },
                 // Raw HSPF input
                 f_113: { old: parseFloat(SM.getValue("f_113")) || 0, new: parseFloat(state.getValueForModel(targetId, "mechanical.heating.hspf")) || 0 },
-                h_113: { old: parseFloat(SM.getValue("h_113")) || 0, new: 0 }, // h_113 = copHeat in legacy
+                // CED chain: d_129 (unmitigated) - check heat gain components
+                d_129_ced_unmit: { old: parseFloat(SM.getValue("d_129")) || 0, new: parseFloat(state.getValueForModel(targetId, "energy.ced.unmitigated")) || 0 },
+                k_104_heatGain: { old: parseFloat(SM.getValue("k_104")) || 0, new: parseFloat(state.getValueForModel(targetId, "envelope.total.heatGain")) || 0 },
+                // m_129 = d_129 - h_124 - d_123
+                h_124_freeCool: { old: parseFloat(SM.getValue("h_124")) || 0, new: parseFloat(state.getValueForModel(targetId, "cooling.freeCoolingLimit")) || 0 },
+                d_123_ventRecov: { old: parseFloat(SM.getValue("d_123")) || 0, new: parseFloat(state.getValueForModel(targetId, "ventilation.energyRecoveredCooling")) || 0 },
+              };
+
+              // Debug climate and cooling inputs
+              const climateDebug = {
+                d_19_province: { old: SM.getValue("d_19"), new: state.getValueForModel(targetId, "climate.location.province") },
+                h_19_city: { old: SM.getValue("h_19"), new: state.getValueForModel(targetId, "climate.location.city") },
+                h_20_timeframe: { old: SM.getValue("h_20"), new: state.getValueForModel(targetId, "climate.timeframe") },
+                d_21_cdd: { old: SM.getValue("d_21"), new: state.getValueForModel(targetId, "climate.cooling.degreedays") },
+                d_116_coolingType: { old: SM.getValue("d_116"), new: state.getValueForModel(targetId, "mechanical.cooling.systemType") },
+                d_113_heatingType: { old: SM.getValue("d_113"), new: state.getValueForModel(targetId, "mechanical.heating.systemType") },
               };
 
               const result = {
@@ -85,6 +103,7 @@ test.describe("Case Study Validation", () => {
                 missing: 0,
                 mismatchDetails: [],
                 j27Debug,
+                climateDebug,
               };
               const ABS_TOL = 0.01;
               const REL_TOL = 0.01;
@@ -228,14 +247,30 @@ test.describe("Case Study Validation", () => {
           console.log(`       m_43:  OLD=${d.m_43.old.toFixed(2)} NEW=${d.m_43.new.toFixed(2)}`);
           console.log(`       h_70:  OLD=${d.h_70.old.toFixed(2)} NEW=${d.h_70.new.toFixed(2)}`);
           console.log(`     [d_114 = d_127 / copHeat]`);
-          console.log(`       d_127 (TED):    OLD=${d.d_127.old.toFixed(2)} NEW=${d.d_127.new.toFixed(2)} diff=${(d.d_127.new - d.d_127.old).toFixed(2)}`);
-          console.log(`       copHeat:        OLD=${d.copHeat.old.toFixed(4)} NEW=${d.copHeat.new.toFixed(4)}`);
+          console.log(`       d_127 (TED):         OLD=${d.d_127.old.toFixed(2)} NEW=${d.d_127.new.toFixed(2)} diff=${(d.d_127.new - d.d_127.old).toFixed(2)}`);
+          console.log(`       h_113 (copHeat):     OLD=${d.copHeat_h113.old.toFixed(4)} NEW=${d.copHeat_h113.new.toFixed(4)}`);
           console.log(`     [d_117 = m_129 / copCool]`);
-          console.log(`       m_129 (CED):    OLD=${d.m_129.old.toFixed(2)} NEW=${d.m_129.new.toFixed(2)} diff=${(d.m_129.new - d.m_129.old).toFixed(2)}`);
-          console.log(`       copCool:        OLD=${d.copCool.old.toFixed(4)} NEW=${d.copCool.new.toFixed(4)}`);
+          console.log(`       m_129 (CED mit):     OLD=${d.m_129.old.toFixed(2)} NEW=${d.m_129.new.toFixed(2)} diff=${(d.m_129.new - d.m_129.old).toFixed(2)}`);
+          console.log(`       j_113 (coolDerived): OLD=${d.j_113_coolDerived.old.toFixed(4)} NEW=${d.j_113_coolDerived.new.toFixed(4)}`);
+          console.log(`       j_116 (coolDedic):   OLD=${d.j_116_coolDedicated.old.toFixed(4)} NEW=${d.j_116_coolDedicated.new.toFixed(4)}`);
+          console.log(`     [CED chain: m_129 = d_129 - h_124 - d_123]`);
+          console.log(`       d_129 (CED unmit):   OLD=${d.d_129_ced_unmit.old.toFixed(2)} NEW=${d.d_129_ced_unmit.new.toFixed(2)}`);
+          console.log(`       h_124 (free cool):   OLD=${d.h_124_freeCool.old.toFixed(2)} NEW=${d.h_124_freeCool.new.toFixed(2)}`);
+          console.log(`       d_123 (vent recov):  OLD=${d.d_123_ventRecov.old.toFixed(2)} NEW=${d.d_123_ventRecov.new.toFixed(2)}`);
+          console.log(`       k_104 (heat gain):   OLD=${d.k_104_heatGain.old.toFixed(2)} NEW=${d.k_104_heatGain.new.toFixed(2)}`);
           console.log(`     [Raw inputs]`);
-          console.log(`       f_113 (HSPF):   OLD=${d.f_113.old.toFixed(2)} NEW=${d.f_113.new.toFixed(2)}`);
-          console.log(`       h_113 (copHeat):OLD=${d.h_113.old.toFixed(4)}`);
+          console.log(`       f_113 (HSPF):        OLD=${d.f_113.old.toFixed(2)} NEW=${d.f_113.new.toFixed(2)}`);
+        }
+        // Always show climate debug for mismatches
+        if (result.climateDebug) {
+          const c = result.climateDebug;
+          console.log(`     [Climate & Mechanical Inputs]`);
+          console.log(`       d_19 province:  OLD="${c.d_19_province.old}" NEW="${c.d_19_province.new}"`);
+          console.log(`       h_19 city:      OLD="${c.h_19_city.old}" NEW="${c.h_19_city.new}"`);
+          console.log(`       h_20 timeframe: OLD="${c.h_20_timeframe.old}" NEW="${c.h_20_timeframe.new}"`);
+          console.log(`       d_21 CDD:       OLD="${c.d_21_cdd.old}" NEW="${c.d_21_cdd.new}"`);
+          console.log(`       d_116 cooling:  OLD="${c.d_116_coolingType.old}" NEW="${c.d_116_coolingType.new}"`);
+          console.log(`       d_113 heating:  OLD="${c.d_113_heatingType.old}" NEW="${c.d_113_heatingType.new}"`);
         }
       } else {
         console.log(

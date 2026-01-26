@@ -5,7 +5,45 @@
 This document outlines the strategy for migrating legacy Section*.js files from the old `setValue` calculation pattern to the new ComputationGraph system.
 
 **Created:** January 2026
-**Status:** Planning Complete, Implementation Pending
+**Status:** Blockers Identified, Fixes Required
+
+---
+
+## Cutover Mechanism
+
+The cutover is controlled by a single flag in `src/core/init.js`:
+
+```javascript
+window.TEUI.USE_COMPUTATION_GRAPH = true;  // Enable cutover
+```
+
+When enabled:
+1. `Calculator.calculateAll()` bypasses all legacy Section*.js `calculateAll()` calls
+2. ComputationGraph computes all values
+3. `syncToStateManager()` writes values back to StateManager
+4. Section files become UI-only (event handlers, display)
+
+---
+
+## Blockers (Must Fix Before Cutover)
+
+Testing with `USE_COMPUTATION_GRAPH = true` revealed calculation mismatches:
+
+| Field | Description | Issue |
+|-------|-------------|-------|
+| `d_117` | Cooling Energy | copCool calculation differs from legacy |
+| `m_129` | CED (Cooling Energy Demand) | Mode handling differs |
+| `i_103` | Air Leakage Heat Loss | Calculation mismatch |
+| `k_103` | Air Leakage Heat Gain | Calculation mismatch |
+| `j_10` | TEUI Tier | Off by 1 in some cases |
+| `m_10` | Reduction % | Off by 1 in some cases |
+
+**Root cause:** The ComputationGraph nodes have subtle differences in:
+- COP (Coefficient of Performance) handling when copCool = 0
+- Air leakage calculations (ACH50 → NRL50 conversion)
+- Tier boundary rounding
+
+**Fix required in:** `MechanicalNodes.js`, `VolumeMetricsNodes.js`, `KeyValuesNodes.js`
 
 ---
 
