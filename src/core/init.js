@@ -944,11 +944,13 @@ document.addEventListener("DOMContentLoaded", function () {
             if (bridgeEnabled) {
               console.log("[init.js] DOMBridge enabled - computed values will display in Key Values");
 
-              // ComputationGraph bypass is disabled by default pending investigation
-              // of cooling chain computation differences (d_116 mode handling, m_129 calculations)
-              // To enable manually: run in console: TEUI.USE_COMPUTATION_GRAPH = true
+              // ComputationGraph bypass - when true, bypasses legacy Section*.js
+              // and relies entirely on the ComputationGraph for all calculations
+              // Status: 10/12 case studies pass when enabled. Remaining 2 fail because
+              // ref_j_32 (Reference energy) needs to be computed, not synced from CSV.
+              // To toggle manually: run in console: TEUI.USE_COMPUTATION_GRAPH = true/false
               window.TEUI.USE_COMPUTATION_GRAPH = false;
-              console.log("[init.js] ComputationGraph bypass disabled (legacy is primary)");
+              console.log("[init.js] ComputationGraph bypass disabled (legacy primary)");
             }
           }, 100);
         }

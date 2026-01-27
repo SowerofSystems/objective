@@ -323,7 +323,8 @@
 
         if (legacyId) {
           // Reference values use ref_ prefix
-          const refLegacyId = "ref_" + legacyId;
+          // Don't add ref_ prefix if legacyId already starts with ref_
+          const refLegacyId = legacyId.startsWith("ref_") ? legacyId : "ref_" + legacyId;
           const value = StateManager.getValue(refLegacyId);
           if (value !== undefined && value !== null && value !== "") {
             state.setValueForModel(refModelId, semanticPath, value);
@@ -694,19 +695,19 @@
 
     if (!StateManager || !ReferenceValues) {
       warn("StateManager or ReferenceValues not available for Reference population");
-      return { gFieldsCopied: 0, cFieldsLoaded: 0 };
+      return { gFieldsCopied: 0, cFieldsLoaded: 0, debug: null };
     }
 
     const refModelId = getRefModelId();
     if (!refModelId) {
       warn("No Reference model found");
-      return { gFieldsCopied: 0, cFieldsLoaded: 0 };
+      return { gFieldsCopied: 0, cFieldsLoaded: 0, debug: null };
     }
 
     const targetId = state.getActiveModelId();
 
-    // Get selected reference standard (l_13 contains the standard name)
-    const standardName = StateManager.getValue("l_13") || "OBC SB12 3.1.1.2.C4";
+    // Get selected reference standard (d_13 contains the standard name)
+    const standardName = StateManager.getValue("d_13") || "OBC SB12 3.1.1.2.C4";
     const standardValues = ReferenceValues[standardName] || ReferenceValues["OBC SB12 3.1.1.2.C4"];
 
     if (!standardValues) {
@@ -717,6 +718,16 @@
 
     let gFieldsCopied = 0;
     let cFieldsLoaded = 0;
+
+    // Debug tracking
+    const debug = {
+      standardName,
+      gFields: [],
+      cFieldsFromStandard: [],
+      cFieldsFromStateManager: [],
+      cFieldsCopiedFromTarget: [],
+      cFieldsMissing: []
+    };
 
     // Get all registered inputs
     const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
@@ -734,23 +745,31 @@
         if (targetValue !== undefined && targetValue !== null) {
           state.setValueForModel(refModelId, semanticPath, targetValue);
           gFieldsCopied++;
+          debug.gFields.push({ legacyId, semanticPath, value: targetValue });
         }
       } else {
         // C-field: Load from ReferenceValues.js if available, otherwise copy from Target
         if (legacyId && standardValues && standardValues[legacyId] !== undefined) {
-          state.setValueForModel(refModelId, semanticPath, standardValues[legacyId]);
+          const stdValue = standardValues[legacyId];
+          state.setValueForModel(refModelId, semanticPath, stdValue);
           cFieldsLoaded++;
+          debug.cFieldsFromStandard.push({ legacyId, semanticPath, value: stdValue });
         } else {
           // Fallback: Use ref_legacyId from StateManager or copy from Target
-          const refLegacyId = "ref_" + legacyId;
+          // Don't add ref_ prefix if legacyId already starts with ref_
+          const refLegacyId = legacyId.startsWith("ref_") ? legacyId : "ref_" + legacyId;
           const refValue = StateManager.getValue(refLegacyId);
           if (refValue !== undefined && refValue !== null && refValue !== "") {
             state.setValueForModel(refModelId, semanticPath, refValue);
+            debug.cFieldsFromStateManager.push({ legacyId, semanticPath, value: refValue });
           } else {
             // Last resort: copy from Target (shared input)
             const targetValue = state.getValueForModel(targetId, semanticPath);
             if (targetValue !== undefined && targetValue !== null) {
               state.setValueForModel(refModelId, semanticPath, targetValue);
+              debug.cFieldsCopiedFromTarget.push({ legacyId, semanticPath, value: targetValue });
+            } else {
+              debug.cFieldsMissing.push({ legacyId, semanticPath });
             }
           }
         }
@@ -758,7 +777,26 @@
     }
 
     log(`Reference model populated: ${gFieldsCopied} G-fields copied, ${cFieldsLoaded} C-fields from standard`);
-    return { gFieldsCopied, cFieldsLoaded };
+    log(`  - C-fields from StateManager: ${debug.cFieldsFromStateManager.length}`);
+    log(`  - C-fields copied from Target: ${debug.cFieldsCopiedFromTarget.length}`);
+    log(`  - C-fields missing: ${debug.cFieldsMissing.length}`);
+
+    // CRITICAL: Copy reference.* inputs to Target model state
+    // This allows nodes like keyValues.reference.teui to access Reference inputs
+    // when computing in the Target model context
+    let refInputsCopiedToTarget = 0;
+    for (const semanticPath of inputIds) {
+      if (semanticPath.startsWith("reference.")) {
+        const refValue = state.getValueForModel(refModelId, semanticPath);
+        if (refValue !== undefined && refValue !== null) {
+          state.setValueForModel(targetId, semanticPath, refValue);
+          refInputsCopiedToTarget++;
+        }
+      }
+    }
+    log(`  - reference.* inputs copied to Target: ${refInputsCopiedToTarget}`);
+
+    return { gFieldsCopied, cFieldsLoaded, refInputsCopiedToTarget, debug };
   }
 
   /**

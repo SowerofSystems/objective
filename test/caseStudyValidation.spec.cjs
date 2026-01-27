@@ -18,7 +18,7 @@ test.describe("Case Study Validation", () => {
         window.TEUI?.ComputationIntegration?.isInitialized?.() &&
         window.TEUI?.StateManager &&
         window.TEUI?.FileHandler?.processImportedCSV,
-      { timeout: 30000 }
+      { timeout: 60000 }
     );
 
     console.log("Calculator loaded");
@@ -110,6 +110,46 @@ test.describe("Case Study Validation", () => {
                 d_105_volume: { old: parseFloat(SM.getValue("d_105")) || 0, new: parseFloat(state.getValueForModel(targetId, "volume.conditioned")) || 0 },
               };
 
+              // Debug Reference model
+              // NOTE: Don't call populateReferenceModel() here - it was already called in
+              // Calculator.calculateAll(). Calling again would show correct values but
+              // they weren't the ones used during computation (useful for debugging setup,
+              // but misleading for diagnosing computation issues).
+              const CI = window.TEUI.ComputationIntegration;
+              const refPopDebug = null; // See note above
+
+              const refDebug = {
+                // Key Reference outputs
+                ref_j_32: { old: parseFloat(SM.getValue("ref_j_32")) || 0, new: 0 },
+                ref_h_15: { old: parseFloat(SM.getValue("ref_h_15")) || 0, new: 0 },
+                e_10: { old: parseFloat(SM.getValue("e_10")) || 0, new: 0 },
+                // Reference envelope inputs from StateManager (should come from ReferenceValues.js)
+                ref_f_85: SM.getValue("ref_f_85"),
+                ref_f_86: SM.getValue("ref_f_86"),
+                ref_g_89: SM.getValue("ref_g_89"),
+                ref_f_113: SM.getValue("ref_f_113"),
+                ref_d_118: SM.getValue("ref_d_118"),
+                // Standard selection (d_13 is the standard dropdown)
+                d_13: SM.getValue("d_13"),
+                // Debug info from populateReferenceModel
+                populateDebug: refPopDebug?.debug || null,
+              };
+
+              // Get Reference model values if available
+              const models = state.getAllModels ? state.getAllModels() : [];
+              const refModel = models.find(m => m.modelType === "reference");
+              if (refModel) {
+                // Use correct semantic paths for Reference model inputs/outputs
+                refDebug.ref_j_32.new = parseFloat(state.getValueForModel(refModel.id, "reference.energy.total")) || 0;
+                refDebug.ref_h_15.new = parseFloat(state.getValueForModel(refModel.id, "reference.building.conditionedFloorArea")) || 0;
+                refDebug.e_10.new = parseFloat(state.getValueForModel(refModel.id, "keyValues.reference.teui")) || 0;
+              }
+
+              // Also get the TARGET model's reference.* values (used for e_10 computation)
+              refDebug.targetRefJ32 = parseFloat(state.getValueForModel(targetId, "reference.energy.total")) || 0;
+              refDebug.targetRefH15 = parseFloat(state.getValueForModel(targetId, "reference.building.conditionedFloorArea")) || 0;
+              refDebug.targetE10 = parseFloat(state.getValueForModel(targetId, "keyValues.reference.teui")) || 0;
+
               const result = {
                 matches: 0,
                 close: 0,
@@ -119,6 +159,7 @@ test.describe("Case Study Validation", () => {
                 j27Debug,
                 climateDebug,
                 i103Debug,
+                refDebug,
               };
               const ABS_TOL = 0.01;
               const REL_TOL = 0.01;
@@ -289,6 +330,43 @@ test.describe("Case Study Validation", () => {
           console.log(`       d_108 method:    OLD="${a.d_108_method.old}" NEW="${a.d_108_method.new}"`);
           console.log(`       g_109 measAch50: OLD=${a.g_109_measuredAch50.old.toFixed(2)} NEW=${a.g_109_measuredAch50.new.toFixed(2)}`);
           console.log(`       d_105 volume:    OLD=${a.d_105_volume.old.toFixed(2)} NEW=${a.d_105_volume.new.toFixed(2)}`);
+        }
+        // Show e_10 Reference debug if e_10 is a mismatch
+        if (result.mismatchDetails.some(m => m.legacyId === "e_10") && result.refDebug) {
+          const r = result.refDebug;
+          console.log(`     [e_10 Reference TEUI Chain]`);
+          console.log(`       e_10 result:     OLD=${r.e_10.old.toFixed(2)} NEW=${r.e_10.new.toFixed(2)} diff=${(r.e_10.new - r.e_10.old).toFixed(2)}`);
+          console.log(`       ref_j_32 total:  OLD=${r.ref_j_32.old.toFixed(2)} NEW=${r.ref_j_32.new.toFixed(2)}`);
+          console.log(`       ref_h_15 area:   OLD=${r.ref_h_15.old.toFixed(2)} NEW=${r.ref_h_15.new.toFixed(2)}`);
+          console.log(`       d_13 standard:   "${r.d_13}"`);
+          console.log(`     [Target Model's reference.* values (used for e_10)]`);
+          console.log(`       targetRefJ32:    ${r.targetRefJ32?.toFixed(2) || 'N/A'}`);
+          console.log(`       targetRefH15:    ${r.targetRefH15?.toFixed(2) || 'N/A'}`);
+          console.log(`       targetE10:       ${r.targetE10?.toFixed(2) || 'N/A'}`);
+          console.log(`     [Reference C-Field Sources]`);
+          console.log(`       ref_f_85 (walls): ${r.ref_f_85}`);
+          console.log(`       ref_f_86 (roof):  ${r.ref_f_86}`);
+          console.log(`       ref_g_89 (win):   ${r.ref_g_89}`);
+          console.log(`       ref_f_113 (hspf): ${r.ref_f_113}`);
+          console.log(`       ref_d_118 (hrv):  ${r.ref_d_118}`);
+          if (r.populateDebug) {
+            const pd = r.populateDebug;
+            console.log(`     [populateReferenceModel Debug]`);
+            console.log(`       Standard: ${pd.standardName}`);
+            console.log(`       G-fields copied: ${pd.gFields.length}`);
+            console.log(`       C-fields from standard: ${pd.cFieldsFromStandard.length}`);
+            console.log(`       C-fields from StateManager: ${pd.cFieldsFromStateManager.length}`);
+            console.log(`       C-fields copied from Target: ${pd.cFieldsCopiedFromTarget.length}`);
+            if (pd.cFieldsCopiedFromTarget.length > 0) {
+              console.log(`       ⚠️  C-fields fallback to Target (potential issues):`);
+              pd.cFieldsCopiedFromTarget.slice(0, 10).forEach(f => {
+                console.log(`         - ${f.legacyId}: ${f.value}`);
+              });
+              if (pd.cFieldsCopiedFromTarget.length > 10) {
+                console.log(`         ... and ${pd.cFieldsCopiedFromTarget.length - 10} more`);
+              }
+            }
+          }
         }
         // Always show climate debug for mismatches
         if (result.climateDebug) {

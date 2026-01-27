@@ -184,7 +184,7 @@ Also fixed incorrect legacyId mappings:
 - `d_103` was incorrectly mapped to ACH50 (should be Number of Storeys)
 - Added `g_103` (Shielding) as input for N-factor calculation
 
-### Issue 4: Reference Model Values (REMAINING)
+### Issue 4: Reference Model Values (PARTIALLY FIXED)
 
 **Problem**: When USE_COMPUTATION_GRAPH=true, Reference model values (e_10, e_8, e_6) don't match because:
 - `ref_j_32` (Reference Total Energy) is calculated by legacy Section04 in Reference mode
@@ -192,17 +192,31 @@ Also fixed incorrect legacyId mappings:
 
 **Impact**: e_10 (Reference TEUI), j_10/m_10 (Tier percentages) show mismatches.
 
-**Solution Required**: Either:
-1. Run legacy Reference calculations before graph sync, OR
-2. Implement full Reference model computation in the graph
+**Fixes Applied (January 2025)**:
+1. Fixed `d_13` field used for Reference standard (was using wrong field `l_13`)
+2. Fixed `ref_` prefix handling in `syncFromStateManager()` - was adding `ref_ref_*` for inputs already having `ref_` prefix
+3. Fixed `ref_` prefix handling in `populateReferenceModel()` - same issue
+4. Added copy of `reference.*` inputs from Reference model to Target model (needed for cross-model node dependencies)
+5. Implemented `populateReferenceModel()` to load C-fields from ReferenceValues.js based on selected standard
+
+**Remaining Issue**: For non-default Reference standards (PH Classic, PH Low Energy), the `ref_j_32` value from CSV differs from freshly-computed value because legacy recalculates it from Reference envelope values, but the graph doesn't (yet).
+
+**Solution Required**: Implement full Reference energy computation (`ref_j_32`) as computed nodes in the graph, using Reference envelope values from ReferenceValues.js.
 
 ### Current Status (January 2025)
 
-- `USE_COMPUTATION_GRAPH = false` by default (12/12 tests pass)
+- `USE_COMPUTATION_GRAPH = false` by default (12/12 tests pass with legacy)
 - **h_124 transformation**: FIXED (implemented in graph)
 - **g_110 N-Factor**: FIXED (changed from input to computed node)
-- **Reference model**: REMAINING ISSUE for full cutover
-- With cutover enabled, most Target calculations pass (OttawaApartments passes fully)
+- **d_13 Reference standard**: FIXED (was using wrong field l_13)
+- **ref_ prefix handling**: FIXED (in syncFromStateManager and populateReferenceModel)
+- **Reference model population**: FIXED (loads from ReferenceValues.js)
+- **Reference energy computation**: REMAINING ISSUE
+
+With `USE_COMPUTATION_GRAPH = true`:
+- **10/12 case studies pass** (83%)
+- **2 fail**: Meadow (PH Classic) and AberdeenHouse (PH Low Energy)
+- These fail because `ref_j_32` needs to be computed fresh with Reference envelope values
 
 ## Path to UI Integration
 
