@@ -91,38 +91,9 @@
       unit: "L/yr"
     },
 
-    // ==== Section 09: Occupant Cooling Load ====
-    {
-      id: "internal.coolingLoad.occupants",
-      legacyId: "k_71",
-      defaultValue: 0,
-      classification: "C",
-      section: "S09",
-      label: "Occupant Cooling Load",
-      unit: "kWh/yr"
-    },
-
-    // ==== Section 05: DHW ====
-    {
-      id: "energy.dhw.netElectrical",
-      legacyId: "k_51",
-      defaultValue: 0,
-      classification: "C",
-      section: "S05",
-      label: "DHW Net Electrical Demand",
-      unit: "kWh/yr"
-    },
-
-    // ==== Section 07: Plug Loads ====
-    {
-      id: "energy.plugLoads.subtotal",
-      legacyId: "h_70",
-      defaultValue: 0,
-      classification: "C",
-      section: "S07",
-      label: "Plug/Light/Equipment Subtotals",
-      unit: "kWh/yr"
-    }
+    // ==== Section 09: k_71 (internal.coolingLoad.occupants) now computed in InternalGainsNodes ====
+    // ==== Section 07: k_51 (energy.dhw.netElectrical) now computed in WaterHeatingNodes as waterHeating.netElectricalDemand ====
+    // ==== Section 09: h_70 (energy.plugLoads.subtotal) now computed in InternalGainsNodes ====
   ];
 
   // ============================================================================
@@ -309,7 +280,7 @@
       legacyId: "d_135",
       dependencies: [
         "renewable.exteriorLoads",
-        "energy.dhw.netElectrical",
+        "waterHeating.netElectricalDemand",
         "energy.plugLoads.subtotal",
         "mechanical.cooling.electricalDemand",
         "mechanical.cooling.systemType",
@@ -325,7 +296,7 @@
         // d_135 = m_43 + k_51 + h_70 + d_117 + i_104 + m_121 - i_80
         // Note: d_117_effective = 0 if d_116 = "No Cooling"
         const m43 = parseNum(inputs["renewable.exteriorLoads"], 0);
-        const k51 = parseNum(inputs["energy.dhw.netElectrical"], 0);
+        const k51 = parseNum(inputs["waterHeating.netElectricalDemand"], 0);
         const h70 = parseNum(inputs["energy.plugLoads.subtotal"], 0);
         const coolingType = inputs["mechanical.cooling.systemType"] || "No Cooling";
         const d117 = coolingType === "No Cooling" ? 0 : parseNum(inputs["mechanical.cooling.electricalDemand"], 0);
@@ -346,7 +317,7 @@
         "mechanical.cooling.systemType",
         "mechanical.cooling.electricalDemand",
         "renewable.exteriorLoads",
-        "energy.dhw.netElectrical",
+        "waterHeating.netElectricalDemand",
         "energy.plugLoads.subtotal"
       ],
       classification: "C",
@@ -357,7 +328,7 @@
         // d_136 formula from Section15.js lines 1761-1769
         const primaryHeating = inputs["mechanical.heating.systemType"] || "Electricity";
         const d135 = parseNum(inputs["energy.total.targeted"], 0);
-        const k51 = parseNum(inputs["energy.dhw.netElectrical"], 0);
+        const k51 = parseNum(inputs["waterHeating.netElectricalDemand"], 0);
         const coolingType = inputs["mechanical.cooling.systemType"] || "No Cooling";
         const d117 = coolingType === "No Cooling" ? 0 : parseNum(inputs["mechanical.cooling.electricalDemand"], 0);
         const d114 = parseNum(inputs["mechanical.heating.demand"], 0);

@@ -74,10 +74,7 @@
       { id: "radiantGains.utilizationMethod", legacyId: "d_80", section: "S10", classification: "C", label: "Gains Utilization Method", defaultValue: "NRC 40%" }
     );
 
-    // Internal gains from S09 (heating season)
-    inputs.push(
-      { id: "internal.heatingGains", legacyId: "i_71", section: "S09", classification: "C", label: "Internal Gains - Heating Season (kWh/yr)", defaultValue: 0 }
-    );
+    // i_71 (internal.heatingGains) now computed in InternalGainsNodes
 
     graph.registerInputs(inputs);
 

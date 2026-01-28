@@ -127,6 +127,121 @@
       },
     });
 
+    // Efficiency as decimal (e_52)
+    graph.registerNode({
+      id: "waterHeating.efficiencyDecimal",
+      legacyId: "e_52",
+      section: "S07",
+      classification: "C",
+      dependencies: ["waterHeating.efficiency"],
+      label: "Water Heating Efficiency (decimal)",
+      compute: (inputs) => {
+        const efficiency = parseFloat(inputs["waterHeating.efficiency"]) || 100;
+        return efficiency / 100;
+      },
+    });
+
+    // Net thermal demand (j_51)
+    graph.registerNode({
+      id: "waterHeating.netThermalDemand",
+      legacyId: "j_51",
+      section: "S07",
+      classification: "C",
+      dependencies: ["waterHeating.energyDemand", "waterHeating.efficiencyDecimal"],
+      label: "Net Thermal Demand (kWh/yr)",
+      compute: (inputs) => {
+        const demand = parseFloat(inputs["waterHeating.energyDemand"]) || 0;
+        const effDecimal = parseFloat(inputs["waterHeating.efficiencyDecimal"]) || 1;
+        return effDecimal > 0 ? demand / effDecimal : demand;
+      },
+    });
+
+    // Energy recovered via DWHR (e_53)
+    graph.registerNode({
+      id: "waterHeating.energyRecovered",
+      legacyId: "e_53",
+      section: "S07",
+      classification: "C",
+      dependencies: ["waterHeating.netThermalDemand", "waterHeating.dwhrEfficiency"],
+      label: "Energy Recovered via DWHR (kWh/yr)",
+      compute: (inputs) => {
+        const netDemand = parseFloat(inputs["waterHeating.netThermalDemand"]) || 0;
+        const dwhrEff = parseFloat(inputs["waterHeating.dwhrEfficiency"]) || 0;
+        return netDemand * (dwhrEff / 100);
+      },
+    });
+
+    // Net demand after recovery (j_52)
+    graph.registerNode({
+      id: "waterHeating.netDemandAfterRecovery",
+      legacyId: "j_52",
+      section: "S07",
+      classification: "C",
+      dependencies: ["waterHeating.netThermalDemand", "waterHeating.energyRecovered"],
+      label: "Net Demand After Recovery (kWh/yr)",
+      compute: (inputs) => {
+        const netDemand = parseFloat(inputs["waterHeating.netThermalDemand"]) || 0;
+        const recovered = parseFloat(inputs["waterHeating.energyRecovered"]) || 0;
+        return netDemand - recovered;
+      },
+    });
+
+    // System losses (d_54)
+    graph.registerNode({
+      id: "waterHeating.systemLosses",
+      legacyId: "d_54",
+      section: "S07",
+      classification: "C",
+      dependencies: ["waterHeating.efficiencyDecimal", "waterHeating.energyDemand", "waterHeating.method"],
+      label: "Water Heating System Losses (kWh/yr)",
+      compute: (inputs) => {
+        const effDecimal = parseFloat(inputs["waterHeating.efficiencyDecimal"]) || 1;
+        const demand = parseFloat(inputs["waterHeating.energyDemand"]) || 0;
+        const method = inputs["waterHeating.method"] || "User Defined";
+        if (effDecimal <= 1) {
+          const factor = method === "PHPP Method" ? 0.25 : 0.1;
+          return demand * factor;
+        }
+        return 0;
+      },
+    });
+
+    // Gas volume (e_51)
+    graph.registerNode({
+      id: "waterHeating.gasVolume",
+      legacyId: "e_51",
+      section: "S07",
+      classification: "C",
+      dependencies: ["waterHeating.systemType", "waterHeating.netDemandAfterRecovery", "waterHeating.efficiencyDecimal"],
+      label: "Water Heating Gas Volume (m³/yr)",
+      compute: (inputs) => {
+        const type = inputs["waterHeating.systemType"] || "Electric";
+        if (type !== "Gas") return 0;
+        const netDemand = parseFloat(inputs["waterHeating.netDemandAfterRecovery"]) || 0;
+        const effDecimal = parseFloat(inputs["waterHeating.efficiencyDecimal"]) || 1;
+        const divisor = 0.0373 * 277.7778 * effDecimal;
+        return divisor > 0 ? netDemand / divisor : 0;
+      },
+    });
+
+    // Oil volume (k_54)
+    graph.registerNode({
+      id: "waterHeating.oilVolume",
+      legacyId: "k_54",
+      section: "S07",
+      classification: "C",
+      dependencies: ["waterHeating.systemType", "waterHeating.netDemandAfterRecovery", "waterHeating.efficiencyDecimal"],
+      label: "Water Heating Oil Volume (L/yr)",
+      compute: (inputs) => {
+        const type = inputs["waterHeating.systemType"] || "Electric";
+        if (type !== "Oil") return 0;
+        const netDemand = parseFloat(inputs["waterHeating.netDemandAfterRecovery"]) || 0;
+        const effDecimal = parseFloat(inputs["waterHeating.efficiencyDecimal"]) || 1;
+        const divisor = 10.18 * effDecimal;
+        return divisor > 0 ? netDemand / divisor : 0;
+      },
+    });
+
     console.log("[WaterHeatingNodes] Registered", inputs.length, "inputs");
   }
 

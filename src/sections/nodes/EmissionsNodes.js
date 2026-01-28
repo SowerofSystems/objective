@@ -50,10 +50,8 @@
       // Target energy inputs needed for computed j_27-j_31
       // d_29: Propane actual usage (user utility bill input)
       { id: "energy.actual.propane.kg", legacyId: "d_29", section: "S04", classification: "A", label: "Total Propane Use (kg/yr)", defaultValue: 0 },
-      // e_51: Water heating gas volume (calculated by Section07)
-      { id: "waterHeating.gasVolume", legacyId: "e_51", section: "S07", classification: "C", label: "Water Heating Gas Volume (m³/yr)", defaultValue: 0 },
-      // k_54: Water heating oil volume (calculated by Section07)
-      { id: "waterHeating.oilVolume", legacyId: "k_54", section: "S07", classification: "C", label: "Water Heating Oil Volume (L/yr)", defaultValue: 0 },
+      // e_51 (waterHeating.gasVolume) now computed in WaterHeatingNodes
+      // k_54 (waterHeating.oilVolume) now computed in WaterHeatingNodes
 
       // Emission factors (l_27 through l_31)
       // All are user-editable with defaults (l_27 can be overridden per CSV)

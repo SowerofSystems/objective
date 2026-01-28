@@ -204,6 +204,11 @@
       log("Registered OccupancyNodes");
     }
 
+    if (nodes.InternalGains) {
+      nodes.InternalGains.register(g);
+      log("Registered InternalGainsNodes");
+    }
+
     // Envelope gains and losses (S10, S11)
     if (nodes.RadiantGains) {
       nodes.RadiantGains.register(g);
