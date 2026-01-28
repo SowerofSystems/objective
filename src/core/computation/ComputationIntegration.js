@@ -226,6 +226,13 @@
       log("Registered VolumeMetricsNodes");
     }
 
+    // Cooling calculations (psychrometric, free cooling - formerly Cooling.js)
+    // Must register BEFORE VentilationNodes because ventilation.heatGain depends on cooling.latentLoadFactor
+    if (nodes.Cooling) {
+      nodes.Cooling.register(g);
+      log("Registered CoolingNodes");
+    }
+
     // Ventilation and mechanical (S13)
     if (nodes.Ventilation) {
       nodes.Ventilation.register(g);

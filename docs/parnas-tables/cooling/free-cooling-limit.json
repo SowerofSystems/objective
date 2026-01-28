@@ -1,0 +1,128 @@
+{
+  "id": "cooling.freeCoolingLimit",
+  "legacyId": "h_124",
+  "label": "Free Cooling Limit",
+  "section": "S13",
+  "classification": "C",
+  "_meta": {
+    "description": "Maximum annual cooling energy available from ventilation (night cooling). Based on mass air flow, temperature differential between indoor setpoint and outdoor night temperature, and cooling season length.",
+    "stage": "Stage 1 - Independent (no m_129 dependency)"
+  },
+  "signature": {
+    "inputs": [
+      {
+        "name": "ventilation.flowRate",
+        "type": "number",
+        "unit": "m³/hr",
+        "description": "Ventilation flow rate (h_120)"
+      },
+      {
+        "name": "climate.cooling.nightTemp",
+        "type": "number",
+        "unit": "°C",
+        "description": "Night-time outdoor temperature (l_20)"
+      },
+      {
+        "name": "mechanical.cooling.setpoint",
+        "type": "number",
+        "unit": "°C",
+        "description": "Indoor cooling setpoint temperature (h_24)"
+      },
+      {
+        "name": "climate.cooling.seasonDays",
+        "type": "number",
+        "unit": "days",
+        "description": "Cooling season length (m_19)"
+      }
+    ],
+    "output": {
+      "type": "number",
+      "unit": "kWh/yr",
+      "precision": 2
+    }
+  },
+  "constants": {
+    "airDensity": {
+      "value": 1.204,
+      "unit": "kg/m³",
+      "description": "Mass of air at standard conditions"
+    },
+    "specificHeatCapacity": {
+      "value": 1005,
+      "unit": "J/(kg·K)",
+      "description": "Specific heat capacity of air"
+    }
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "ventilation.flowRate >= 0",
+        "description": "Ventilation rate cannot be negative"
+      },
+      {
+        "condition": "climate.cooling.seasonDays > 0",
+        "description": "Must have cooling season for free cooling"
+      }
+    ],
+    "invariants": [
+      {
+        "condition": "output >= 0",
+        "description": "Free cooling capacity cannot be negative"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "setpoint > nightTemp",
+      "output": "massFlowRate × Cp × (setpoint - nightTemp) × 0.024 × seasonDays",
+      "note": "Free cooling works when indoor is warmer than outdoor night temp"
+    },
+    {
+      "condition": "setpoint <= nightTemp",
+      "output": "0",
+      "note": "No free cooling potential when outdoor is warmer than setpoint"
+    }
+  ],
+  "formula": {
+    "symbolic": "h_124 = (h_120/3600) × 1.204 × 1005 × (h_24 - l_20) × 0.024 × m_19",
+    "steps": [
+      "1. Convert flow rate: m³/s = h_120 / 3600",
+      "2. Mass flow rate: kg/s = m³/s × 1.204",
+      "3. Heat removal power: W = kg/s × 1005 × (T_indoor - T_night)",
+      "4. Daily energy: kWh/day = W × 0.024",
+      "5. Annual energy: kWh/yr = kWh/day × m_19"
+    ],
+    "legacy": "Cooling.js calculateFreeCoolingLimit() lines 302-341"
+  },
+  "tests": [
+    {
+      "name": "Typical residential (Meadow case)",
+      "inputs": {
+        "ventilation.flowRate": 288,
+        "climate.cooling.nightTemp": 20.43,
+        "mechanical.cooling.setpoint": 24,
+        "climate.cooling.seasonDays": 120
+      },
+      "expected": 348.35,
+      "tolerance": 1.0
+    },
+    {
+      "name": "No cooling potential (night warmer than setpoint)",
+      "inputs": {
+        "ventilation.flowRate": 500,
+        "climate.cooling.nightTemp": 26,
+        "mechanical.cooling.setpoint": 24,
+        "climate.cooling.seasonDays": 120
+      },
+      "expected": 0
+    }
+  ],
+  "references": [
+    {
+      "source": "Cooling.js:302-341 (calculateFreeCoolingLimit)"
+    },
+    {
+      "source": "COOLING-TARGET.csv cells A28-A33"
+    }
+  ]
+}

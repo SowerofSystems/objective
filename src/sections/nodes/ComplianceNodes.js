@@ -131,14 +131,14 @@
       label: "HSPF Compliance Ratio",
       compute: (inputs) => {
         // Parnas table: standard compliance ratio pattern
-        // Higher HSPF is better, so target/ref
+        // Higher HSPF is better, so target/ref * 100 for percentage
         const targetHSPF = parseNum(inputs["mechanical.heating.hspf"], 0);
         const refHSPF = parseNum(inputs["reference.mechanical.heating.hspf"], 0);
 
         if (refHSPF > 0) {
-          return +(targetHSPF / refHSPF).toFixed(4);
+          return +((targetHSPF / refHSPF) * 100).toFixed(0);
         }
-        return 1.0; // Default to 100% if no reference
+        return 100; // Default to 100% if no reference
       }
     },
     {
@@ -149,8 +149,8 @@
       section: "S13",
       label: "HSPF Compliance Status",
       compute: (inputs) => {
-        const ratio = parseNum(inputs["compliance.hspf.ratio"], 1);
-        return ratio >= 1.0 ? "✓" : "✗";
+        const ratio = parseNum(inputs["compliance.hspf.ratio"], 100);
+        return ratio >= 100 ? "✓" : "✗";
       }
     },
 
@@ -169,14 +169,14 @@
       label: "AFUE Compliance Ratio",
       compute: (inputs) => {
         // Parnas table: afue-compliance-ratio.json
-        // Higher AFUE is better, so target/ref
+        // Higher AFUE is better, so target/ref * 100 for percentage
         const targetAFUE = parseNum(inputs["mechanical.heating.afue"], 0);
         const refAFUE = parseNum(inputs["reference.mechanical.heating.afue"], 0);
 
         if (refAFUE > 0) {
-          return +(targetAFUE / refAFUE).toFixed(4);
+          return +((targetAFUE / refAFUE) * 100).toFixed(0);
         }
-        return 1.0; // Default to 100% if no reference
+        return 100; // Default to 100% if no reference
       }
     },
     {
@@ -187,8 +187,8 @@
       section: "S13",
       label: "AFUE Compliance Status",
       compute: (inputs) => {
-        const ratio = parseNum(inputs["compliance.afue.ratio"], 1);
-        return ratio >= 1.0 ? "✓" : "✗";
+        const ratio = parseNum(inputs["compliance.afue.ratio"], 100);
+        return ratio >= 100 ? "✓" : "✗";
       }
     },
 
@@ -207,14 +207,14 @@
       label: "Cooling COP Compliance Ratio",
       compute: (inputs) => {
         // Parnas table: copc-compliance-ratio.json
-        // Higher COP is better, so target/ref
+        // Higher COP is better, so target/ref * 100 for percentage
         const targetCOP = parseNum(inputs["mechanical.cooling.copDedicated"], 0);
         const refCOP = parseNum(inputs["reference.mechanical.cooling.copDedicated"], 0);
 
         if (refCOP > 0) {
-          return +(targetCOP / refCOP).toFixed(4);
+          return +((targetCOP / refCOP) * 100).toFixed(0);
         }
-        return 1.0; // Default to 100% if no reference
+        return 100; // Default to 100% if no reference
       }
     },
     {
@@ -225,8 +225,8 @@
       section: "S13",
       label: "Cooling COP Compliance Status",
       compute: (inputs) => {
-        const ratio = parseNum(inputs["compliance.copc.ratio"], 1);
-        return ratio >= 1.0 ? "✓" : "✗";
+        const ratio = parseNum(inputs["compliance.copc.ratio"], 100);
+        return ratio >= 100 ? "✓" : "✗";
       }
     },
 
@@ -245,14 +245,14 @@
       label: "Cooling Intensity Compliance Ratio",
       compute: (inputs) => {
         // Parnas table: cooling-intensity-compliance-ratio.json
-        // INVERTED: Lower intensity is better, so ref/target
+        // INVERTED: Lower intensity is better, so ref/target * 100 for percentage
         const targetIntensity = parseNum(inputs["mechanical.cooling.intensity"], 0);
         const refIntensity = parseNum(inputs["reference.mechanical.cooling.intensity"], 0);
 
         if (targetIntensity > 0) {
-          return +(refIntensity / targetIntensity).toFixed(4);
+          return +((refIntensity / targetIntensity) * 100).toFixed(0);
         }
-        return 1.0; // Default to 100% if no target intensity
+        return 100; // Default to 100% if no target intensity
       }
     },
     {
@@ -263,8 +263,8 @@
       section: "S13",
       label: "Cooling Intensity Compliance Status",
       compute: (inputs) => {
-        const ratio = parseNum(inputs["compliance.coolingIntensity.ratio"], 1);
-        return ratio >= 1.0 ? "✓" : "✗";
+        const ratio = parseNum(inputs["compliance.coolingIntensity.ratio"], 100);
+        return ratio >= 100 ? "✓" : "✗";
       }
     },
 
@@ -282,14 +282,14 @@
       section: "S13",
       label: "SRE Compliance Ratio",
       compute: (inputs) => {
-        // Higher SRE is better, so target/ref
+        // Higher SRE is better, so target/ref * 100 for percentage
         const targetSRE = parseNum(inputs["mechanical.ventilation.efficiency"], 0);
         const refSRE = parseNum(inputs["reference.mechanical.ventilation.efficiency"], 0);
 
         if (refSRE > 0) {
-          return +(targetSRE / refSRE).toFixed(4);
+          return +((targetSRE / refSRE) * 100).toFixed(0);
         }
-        return 1.0;
+        return 100;
       }
     },
     {
@@ -300,8 +300,8 @@
       section: "S13",
       label: "SRE Compliance Status",
       compute: (inputs) => {
-        const ratio = parseNum(inputs["compliance.sre.ratio"], 1);
-        return ratio >= 1.0 ? "✓" : "✗";
+        const ratio = parseNum(inputs["compliance.sre.ratio"], 100);
+        return ratio >= 100 ? "✓" : "✗";
       }
     },
 
@@ -319,14 +319,14 @@
       section: "S13",
       label: "Ventilation Rate Compliance Ratio",
       compute: (inputs) => {
-        // Higher ventilation rate is better, so target/ref
+        // Higher ventilation rate is better, so target/ref * 100 for percentage
         const targetRate = parseNum(inputs["mechanical.ventilation.ratePerPerson"], 0);
         const refRate = parseNum(inputs["reference.mechanical.ventilation.ratePerPerson"], 0);
 
         if (refRate > 0) {
-          return +(targetRate / refRate).toFixed(4);
+          return +((targetRate / refRate) * 100).toFixed(0);
         }
-        return 1.0;
+        return 100;
       }
     },
     {
@@ -337,8 +337,8 @@
       section: "S13",
       label: "Ventilation Rate Compliance Status",
       compute: (inputs) => {
-        const ratio = parseNum(inputs["compliance.ventRate.ratio"], 1);
-        return ratio >= 1.0 ? "✓" : "✗";
+        const ratio = parseNum(inputs["compliance.ventRate.ratio"], 100);
+        return ratio >= 100 ? "✓" : "✗";
       }
     },
 

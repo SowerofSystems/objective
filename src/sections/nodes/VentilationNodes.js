@@ -141,16 +141,8 @@
       }
     });
 
-    // Latent load factor - from Cooling.js psychrometrics (h_122/i_122)
-    // Stored in StateManager as cooling_latentLoadFactor
-    graph.registerInput({
-      id: "cooling.latentLoadFactor",
-      legacyId: "cooling_latentLoadFactor",
-      section: "S13",
-      classification: "C",
-      label: "Latent Load Factor",
-      defaultValue: 1.0
-    });
+    // NOTE: cooling.latentLoadFactor is now computed by CoolingNodes.js
+    // It uses psychrometric calculations (humidity ratios, wet bulb temp) to derive the factor
 
     // Ventilation cooling load - d_122
     // Legacy formula from Section13.js lines 2956-2980
@@ -290,62 +282,15 @@
     });
 
     // ========================================================================
-    // FREE COOLING - from Cooling.js Stage 1 psychrometrics
+    // FREE COOLING - Now computed by CoolingNodes.js
     // ========================================================================
-
-    // Raw free cooling potential - from Cooling.js (cooling_h_124)
-    // This is the unadjusted value before ventilation setback is applied
-    graph.registerInput({
-      id: "cooling.freeCoolingRaw",
-      legacyId: "cooling_h_124",
-      section: "S13",
-      classification: "C",
-      label: "Free Cooling Potential (raw, kWh/yr)",
-      defaultValue: 0
-    });
-
-    // Free cooling limit - h_124 (after ventilation setback adjustment)
-    // Transformation logic from Section13.calculateFreeCooling():
-    // - If ventilation method is "constant" → use raw potential directly
-    // - If ventilation method is "schedule" → apply setback factor (k_120/100)
-    graph.registerNode({
-      id: "cooling.freeCoolingLimit",
-      legacyId: "h_124",
-      section: "S13",
-      classification: "C",
-      label: "Free Cooling Limit (kWh/yr)",
-      dependencies: [
-        "cooling.freeCoolingRaw",
-        "mechanical.ventilation.method",
-        "mechanical.ventilation.unoccupiedSetback"
-      ],
-      compute: (inputs) => {
-        const rawPotential = parseNum(inputs["cooling.freeCoolingRaw"], 0);
-        const ventMethod = (inputs["mechanical.ventilation.method"] || "").toLowerCase();
-        const setbackPercent = parseNum(inputs["mechanical.ventilation.unoccupiedSetback"], 0);
-
-        // Apply setback only for scheduled ventilation
-        if (ventMethod.includes("schedule")) {
-          // setbackPercent is 0-100, convert to factor 0-1
-          const setbackFactor = Math.min(1, Math.max(0, setbackPercent / 100));
-          return +(rawPotential * setbackFactor).toFixed(2);
-        }
-
-        // Constant ventilation or unclear method: use full potential
-        return +rawPotential.toFixed(2);
-      }
-    });
-
-    // Days active cooling - m_124
-    // This is calculated by Cooling.js Stage 2 and stored in StateManager as cooling_m_124
-    graph.registerInput({
-      id: "cooling.daysActiveCooling",
-      legacyId: "cooling_m_124",
-      section: "S13",
-      classification: "C",
-      label: "Days Active Cooling",
-      defaultValue: 0
-    });
+    // NOTE: The following nodes are now computed by CoolingNodes.js:
+    // - cooling.freeCoolingLimit (h_124) - computed from ventilation flow, temps, season
+    // - cooling.daysActiveCooling (m_124) - depends on energy.ced.mitigated (m_129)
+    // - cooling.latentLoadFactor - from psychrometric calculations
+    //
+    // CoolingNodes.js should be registered BEFORE VentilationNodes.js so these
+    // dependencies are available for ventilation heat gain calculations.
 
     console.log("[VentilationNodes] Registered ventilation computed nodes");
   }

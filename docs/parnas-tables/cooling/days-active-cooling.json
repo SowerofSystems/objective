@@ -1,0 +1,118 @@
+{
+  "id": "cooling.daysActiveCooling",
+  "legacyId": "m_124",
+  "label": "Days of Active Cooling",
+  "section": "S13",
+  "classification": "C",
+  "_meta": {
+    "description": "Number of days requiring mechanical cooling after free cooling is applied. Negative values indicate oversized ventilation (more free cooling than needed).",
+    "stage": "Stage 2 - Dependent (requires m_129 from energy calculations)"
+  },
+  "signature": {
+    "inputs": [
+      {
+        "name": "energy.ced.mitigated",
+        "type": "number",
+        "unit": "kWh/yr",
+        "description": "Annual mitigated cooling energy demand (m_129)"
+      },
+      {
+        "name": "cooling.freeCoolingLimit",
+        "type": "number",
+        "unit": "kWh/yr",
+        "description": "Free cooling capacity (h_124)"
+      },
+      {
+        "name": "climate.cooling.degreedays",
+        "type": "number",
+        "unit": "CDD",
+        "description": "Cooling degree days (d_21)"
+      },
+      {
+        "name": "climate.cooling.seasonDays",
+        "type": "number",
+        "unit": "days",
+        "description": "Cooling season length (m_19)"
+      },
+      {
+        "name": "mechanical.cooling.systemType",
+        "type": "string",
+        "description": "Cooling system type (d_116) - 'Cooling' or 'No Cooling'"
+      }
+    ],
+    "output": {
+      "type": "number",
+      "unit": "days",
+      "precision": 1
+    }
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "climate.cooling.seasonDays > 0",
+        "description": "Must have cooling season"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "systemType == 'No Cooling'",
+      "output": "0",
+      "note": "No mechanical cooling system installed"
+    },
+    {
+      "condition": "m_19 > 0 AND d_21 > 0",
+      "output": "((m_129/d_21 - h_124/d_21) × d_21) / (m_19 × 24)",
+      "note": "Unmet cooling load divided by daily cooling capacity"
+    },
+    {
+      "condition": "otherwise",
+      "output": "0",
+      "note": "No cooling season"
+    }
+  ],
+  "rationale": {
+    "negativeValues": "Negative days indicate ventilation provides more free cooling than needed. Excel comment: 'the goal here is to get close to zero - anything less than zero is overkill ventilation-wise'"
+  },
+  "formula": {
+    "symbolic": "m_124 = (E50 - E51) / (m_19 × 24)",
+    "where": {
+      "E50": "Seasonal cooling load = (m_129 / d_21) × d_21",
+      "E51": "Seasonal free cooling = (h_124 / d_21) × d_21"
+    },
+    "legacy": "Cooling.js calculateDaysActiveCooling() lines 367-415"
+  },
+  "tests": [
+    {
+      "name": "Some mechanical cooling needed",
+      "inputs": {
+        "energy.ced.mitigated": 10000,
+        "cooling.freeCoolingLimit": 3000,
+        "climate.cooling.degreedays": 336,
+        "climate.cooling.seasonDays": 120,
+        "mechanical.cooling.systemType": "Cooling"
+      },
+      "expected": 2.43,
+      "tolerance": 0.1
+    },
+    {
+      "name": "No cooling system",
+      "inputs": {
+        "energy.ced.mitigated": 10000,
+        "cooling.freeCoolingLimit": 3000,
+        "climate.cooling.degreedays": 336,
+        "climate.cooling.seasonDays": 120,
+        "mechanical.cooling.systemType": "No Cooling"
+      },
+      "expected": 0
+    }
+  ],
+  "references": [
+    {
+      "source": "Cooling.js:367-415 (calculateDaysActiveCooling)"
+    },
+    {
+      "source": "COOLING-TARGET.csv cells E50-E55"
+    }
+  ]
+}
