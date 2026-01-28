@@ -263,9 +263,9 @@ The following legacy Section*.js calculations must be converted to graph nodes b
 |---------|---------------------|----------|
 | Section07 | d_51/d_52 population, DHW method selection | **FIXED** — d_51="Electric" added to all standards in ReferenceValues.js |
 | Section09 | d_65/d_67 lookup tables (see details below) | High |
-| Section06 | m_43 renewable energy values | Medium |
+| Section06 | m_43 renewable energy values | **OK** — All renewable fields are INPUTs that sync correctly |
 | Section04 | `ref_j_32` Reference total energy computation | **FIXED** — graph-computed for all 12 case studies |
-| Section13/Cooling.js | Full psychrometric calculation chain | High |
+| Section13/Cooling.js | Full psychrometric calculation chain | **PARALLEL OK** — Cooling.js outputs synced as INPUTs. Cutover requires implementing psychrometric calculations as graph nodes. |
 | All Sections | Reference model C-field overrides | **FIXED** — CSV ref_ values now take priority over ReferenceValues.js |
 
 **Section09 Details** (investigated 2026-01-28):
@@ -284,10 +284,13 @@ The following legacy Section*.js calculations must be converted to graph nodes b
 
 - `USE_COMPUTATION_GRAPH = false` (12/12 tests pass in parallel mode)
 - **Parallel mode**: Both systems run, graph validated against legacy, legacy authoritative
-- **ref_j_32**: FIXED — graph computes Reference model `ref_j_32` correctly for all 12 case studies (validated as pass/fail criterion)
-- **Root cause fix**: Changed C-field populate priority in `populateReferenceModel()`: CSV ref_ values from StateManager now take precedence over ReferenceValues.js defaults. This ensures project-specific Reference model values (l_118 ACH, d_119 vent rate, d_67 equipment density, etc.) match legacy.
-- **Cutover**: NOT READY — requires significant additional section coverage
-- **Path forward**: Continue converting section calculations to graph nodes until the graph can reproduce all legacy values independently
+- **ref_j_32**: FIXED — graph computes Reference model `ref_j_32` correctly for all 12 case studies
+- **Section07**: FIXED — added d_51="Electric" to all standards in ReferenceValues.js
+- **Section06**: OK — all renewable fields sync correctly as INPUTs
+- **Section13**: PARALLEL OK — Cooling.js outputs synced as INPUTs
+- **Section09**: Documented — needs Reference model g_67="Regular" override
+- **Cutover**: NOT READY — Section09 and Section13 need graph-native implementations
+- **Path forward**: Section09 needs special Reference model handling; Section13 needs psychrometric calculations as graph nodes
 
 ## Path to UI Integration
 
