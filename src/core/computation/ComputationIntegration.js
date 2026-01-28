@@ -895,6 +895,91 @@
   }
 
   /**
+   * Sync cross-model values after Reference model changes
+   * This is the incremental version of computeAllWithReference() Steps 3-4
+   * Call this after any Reference model value change to keep compliance ratios current
+   *
+   * @returns {Object} - Result with sync and recompute details
+   */
+  function syncCrossModelValues() {
+    if (!initialized) {
+      error("Not initialized");
+      return null;
+    }
+
+    const targetId = state.getActiveModelId();
+    const refModelId = getRefModelId();
+
+    if (!refModelId) {
+      return { synced: 0, recomputed: [] };
+    }
+
+    // Step 1: Copy Reference outputs to Target's reference.* inputs
+    const refMapping = getMergedRefOutputMapping();
+    const changedInputs = {};
+    let syncedCount = 0;
+
+    for (const [refPath, targetInputPath] of Object.entries(refMapping)) {
+      const refValue = state.getValueForModel(refModelId, refPath);
+      const currentValue = state.getValueForModel(targetId, targetInputPath);
+
+      // Only update if value changed
+      if (refValue !== undefined && refValue !== null && refValue !== currentValue) {
+        changedInputs[targetInputPath] = refValue;
+        syncedCount++;
+      }
+    }
+
+    if (syncedCount === 0) {
+      return { synced: 0, recomputed: [] };
+    }
+
+    // Step 2: Use batch change to update and recompute affected nodes
+    const result = engine.onBatchChange(changedInputs, targetId);
+
+    log(`Cross-model sync: ${syncedCount} values synced, ${result.computedNodes.length} nodes recomputed`);
+
+    return {
+      synced: syncedCount,
+      recomputed: result.computedNodes,
+      duration: result.duration
+    };
+  }
+
+  /**
+   * Handle Reference model value change with automatic cross-model sync
+   * Use this instead of engine.onValueChange() when changing Reference model values
+   *
+   * @param {string} fieldPath - The field that changed
+   * @param {*} newValue - The new value
+   * @returns {Object} - Combined result of Reference compute and Target sync
+   */
+  function onReferenceValueChange(fieldPath, newValue) {
+    if (!initialized) {
+      error("Not initialized");
+      return null;
+    }
+
+    const refModelId = getRefModelId();
+    if (!refModelId) {
+      warn("No Reference model available");
+      return null;
+    }
+
+    // Step 1: Update Reference model and recompute its downstream nodes
+    const refResult = engine.onValueChange(fieldPath, newValue, refModelId);
+
+    // Step 2: Sync cross-model values to Target
+    const syncResult = syncCrossModelValues();
+
+    return {
+      referenceUpdate: refResult,
+      crossModelSync: syncResult,
+      totalRecomputed: (refResult?.computedNodes?.length || 0) + (syncResult?.recomputed?.length || 0)
+    };
+  }
+
+  /**
    * Sync Reference computed values back to StateManager
    */
   function syncReferenceToStateManager() {
@@ -988,6 +1073,10 @@
     // Reference model support
     populateReferenceModel,
     syncReferenceToStateManager,
+
+    // Cross-model sync (for incremental Reference model changes)
+    syncCrossModelValues,
+    onReferenceValueChange,
 
     // Computation
     computeAll,
