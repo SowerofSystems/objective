@@ -12,7 +12,7 @@ Building a new ComputationGraph system to replace legacy StateManager calculatio
 | **Field Matches** | 329–338 exact matches per case study |
 | **Close Matches** | 0–9 within 0.02% (floating point precision) |
 | **Mismatches** | 0 |
-| **Computed Nodes** | 5 former INPUTs now graph-native COMPUTED |
+| **Computed Nodes** | 7 former INPUTs now graph-native COMPUTED (h_70, i_71, k_71, e_51, k_54, d_65, d_67) |
 | **Cutover Ready** | No — widespread failures when legacy bypassed |
 
 ### Performance Benchmarks
@@ -131,6 +131,8 @@ Converted 5 intermediate INPUTs from legacy-synced to graph-native COMPUTED node
 | `k_71` | `internal.coolingLoad.occupants` | INPUT in EnergyNodes | COMPUTED in InternalGainsNodes | S09 |
 | `e_51` | `waterHeating.gasVolume` | INPUT in EmissionsNodes | COMPUTED in WaterHeatingNodes | S07 |
 | `k_54` | `waterHeating.oilVolume` | INPUT in EmissionsNodes | COMPUTED in WaterHeatingNodes | S07 |
+| `d_65` | `internal.plugLoadDensity` | INPUT | COMPUTED with lookup (standard + building type) | S09 |
+| `d_67` | `internal.equipmentDensity` | INPUT | COMPUTED with lookup (building type × efficiency × elevators) | S09 |
 
 ## New Intermediate Computed Nodes
 
@@ -146,21 +148,23 @@ Converted 5 intermediate INPUTs from legacy-synced to graph-native COMPUTED node
 | `e_51` | `waterHeating.gasVolume` | (type=Gas) ? j_52 / (0.0373 × 277.78 × e_52) : 0 |
 | `k_54` | `waterHeating.oilVolume` | (type=Oil) ? j_52 / (10.18 × e_52) : 0 |
 
-### InternalGainsNodes.js (NEW FILE — 4 inputs + 8 computed)
+### InternalGainsNodes.js (4 inputs + 10 computed)
 
 **Inputs:**
 
 | Legacy ID | Semantic ID | Default |
 |-----------|-------------|---------|
 | `d_64` | `internal.activityLevel` | "Normal" (dropdown) |
-| `d_65` | `internal.plugLoadDensity` | 7 W/m² |
 | `d_66` | `internal.lightingDensity` | 1.5 W/m² |
-| `d_67` | `internal.equipmentDensity` | 3 W/m² |
+| `g_67` | `internal.efficiencySpec` | "Regular" (dropdown) |
+| `d_68` | `internal.elevators` | "No Elevators" (dropdown) |
 
-**Computed nodes:**
+**Computed nodes (including d_65/d_67 lookup tables):**
 
 | Legacy ID | Semantic ID | Formula |
 |-----------|-------------|---------|
+| `d_65` | `internal.plugLoadDensity` | Lookup by standard + building type |
+| `d_67` | `internal.equipmentDensity` | Lookup by building type × efficiency × elevators |
 | `g_64` | `internal.occupants.wattsPerPerson` | Activity level → watts lookup |
 | `h_64` | `internal.occupants.annual` | (g_64 × occupants × hours) / 1000 |
 | `h_65` | `internal.plugLoads.annual` | (d_65 × area × hours) / 1000 |
@@ -169,6 +173,16 @@ Converted 5 intermediate INPUTs from legacy-synced to graph-native COMPUTED node
 | `h_70` | `energy.plugLoads.subtotal` | h_65 + h_66 + h_67 |
 | `i_71` | `internal.heatingGains` | (h_70 + h_64 + d_54) × (365 − coolingDays) / 365 |
 | `k_71` | `internal.coolingLoad.occupants` | (h_70 + h_64 + d_54) × coolingDays / 365 |
+
+**d_65 Plug Load Density Logic:**
+- PH Classic/Plus/Premium → 2.1 W/m²
+- PHIUS/EnerPHit/PH Low Energy → 5 W/m²
+- Residential/Care occupancies (C-, B1-, B2-, B3-) → 5 W/m²
+- Otherwise → 7 W/m²
+
+**d_67 Equipment Density Lookup Table** (11 building types × 2 efficiency × 2 elevator):
+- Uses `equipmentLoadsTable` with fallback to 5.0 W/m²
+- Reference model always uses g_67="Regular" (via ReferenceValues.js)
 
 **Activity level mapping** (from SCHEDULES-3037.csv):
 ```
@@ -262,23 +276,18 @@ The following legacy Section*.js calculations must be converted to graph nodes b
 | Section | Missing Calculations | Priority |
 |---------|---------------------|----------|
 | Section07 | d_51/d_52 population, DHW method selection | **FIXED** — d_51="Electric" added to all standards in ReferenceValues.js |
-| Section09 | d_65/d_67 lookup tables (see details below) | High |
+| Section09 | d_65/d_67 lookup tables | **FIXED** — d_65/d_67 now COMPUTED with lookup tables, g_67/d_68 as INPUTs |
 | Section06 | m_43 renewable energy values | **OK** — All renewable fields are INPUTs that sync correctly |
 | Section04 | `ref_j_32` Reference total energy computation | **FIXED** — graph-computed for all 12 case studies |
 | Section13/Cooling.js | Full psychrometric calculation chain | **PARALLEL OK** — Cooling.js outputs synced as INPUTs. Cutover requires implementing psychrometric calculations as graph nodes. |
 | All Sections | Reference model C-field overrides | **FIXED** — CSV ref_ values now take priority over ReferenceValues.js |
 
-**Section09 Details** (investigated 2026-01-28):
-- d_65 (plug load density) and d_67 (equipment density) are computed by legacy from lookup tables
-- d_65: Residential (C-) = 4 W/m², all others = 7 W/m²
-- d_67: 3D lookup based on building type (d_12) × efficiency spec (g_67) × elevator status (d_68)
-- **Reference model complexity**: Legacy forces g_67="Regular" for Reference mode (line 168, 220 in Section09.js)
-- Converting d_65/d_67 to COMPUTED nodes requires:
-  1. Adding g_67 and d_68 as INPUTs (synced from StateManager)
-  2. Replicating equipmentLoadsTable lookup
-  3. Special handling for Reference model to force g_67="Regular"
-- Attempted conversion broke 9/12 case studies due to Reference model g_67 override not being replicated
-- For now: d_65/d_67 remain INPUTs, synced from legacy Section09.js calculations
+**Section09 Fix** (completed 2026-01-28):
+- d_65/d_67 converted from INPUTs to COMPUTED nodes with full lookup table logic
+- g_67 (efficiency spec) and d_68 (elevators) added as INPUTs
+- ReferenceValues.js updated: ALL standards now use g_67="Regular" (matching Section09.js legacy behavior)
+- Previous issue (9/12 failures) was caused by PH standards having g_67="Efficient" in ReferenceValues.js while Section09.js forces g_67="Regular" for Reference model
+- 12/12 case studies pass with d_65/d_67 computed natively
 
 ### Current Status (January 28, 2026)
 
@@ -287,10 +296,10 @@ The following legacy Section*.js calculations must be converted to graph nodes b
 - **ref_j_32**: FIXED — graph computes Reference model `ref_j_32` correctly for all 12 case studies
 - **Section07**: FIXED — added d_51="Electric" to all standards in ReferenceValues.js
 - **Section06**: OK — all renewable fields sync correctly as INPUTs
+- **Section09**: **FIXED** — d_65/d_67 now COMPUTED with lookup tables, g_67="Regular" for all Reference models
 - **Section13**: PARALLEL OK — Cooling.js outputs synced as INPUTs
-- **Section09**: Documented — needs Reference model g_67="Regular" override
-- **Cutover**: NOT READY — Section09 and Section13 need graph-native implementations
-- **Path forward**: Section09 needs special Reference model handling; Section13 needs psychrometric calculations as graph nodes
+- **Cutover**: NOT READY — Section13 needs psychrometric calculations as graph nodes
+- **Path forward**: Section13 is the only remaining cutover blocker requiring graph-native implementation
 
 ## Path to UI Integration
 

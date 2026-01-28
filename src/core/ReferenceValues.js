@@ -390,7 +390,7 @@ TEUI.ReferenceValues = {
     d_59: "45", // Ideal RH% averaged annually
     d_65: "2.1", // PH Specific Plug Loads in W/m²
     d_66: "1.1", // Max. Permissible Lighting Load
-    g_67: "Efficient", // Default Eppt Efficienct Spec.
+    g_67: "Regular", // REFERENCE OVERRIDE: Section09.js forces Regular for all Reference models
     //t_65: "5.0", // Reference Plug Load (W/m²)
     d_66: "1.1", // Reference Lighting Load (W/m²)
     f_73: "0.50", // SHGC of Glazing Max.
@@ -433,7 +433,7 @@ TEUI.ReferenceValues = {
     d_59: "45", // Ideal RH% averaged annually
     d_65: "2.1", // PH Specific Plug Loads in W/m²
     d_66: "1.1", // Max. Permissible Lighting Load
-    g_67: "Efficient", // Default Eppt Efficienct Spec.
+    g_67: "Regular", // REFERENCE OVERRIDE: Section09.js forces Regular for all Reference models
     t_65: "5.0", // Reference Plug Load (W/m²)
     d_66: "1.1", // Reference Lighting Load (W/m²)
     f_73: "0.50", // SHGC of Glazing Max.
@@ -476,7 +476,7 @@ TEUI.ReferenceValues = {
     d_59: "45", // Ideal RH% averaged annually
     d_65: "2.1", // PH Specific Plug Loads in W/m²
     d_66: "1.1", // Max. Permissible Lighting Load
-    g_67: "Efficient", // Default Eppt Efficienct Spec.
+    g_67: "Regular", // REFERENCE OVERRIDE: Section09.js forces Regular for all Reference models
     d_65: "5.0", // Reference Plug Load (W/m²)
     d_66: "1.1", // Reference Lighting Load (W/m²)
     // t_67: "5.0", // Reference Equipment Load (W/m²) - THIS IS ESTABLISHED BY OCCUPANCY AT D13
@@ -520,7 +520,7 @@ TEUI.ReferenceValues = {
     d_59: "45", // Ideal RH% averaged annually
     d_65: "2.1", // PH Specific Plug Loads in W/m²
     d_66: "2.0", // Max. Permissible Lighting Load
-    g_67: "Efficient", // Required Eppt Efficienct Spec.
+    g_67: "Regular", // REFERENCE OVERRIDE: Section09.js forces Regular for all Reference models
     t_65: "5.0", // Reference Occupant Load (W/m²)
     d_66: "2.0", // Reference Lighting Load (W/m²)
     // t_67: "2.0", // Reference Equipment Load (W/m²) THIS IS ESTABLISHED BY OCCUPANCY AT D13
@@ -564,7 +564,7 @@ TEUI.ReferenceValues = {
     d_59: "45", // Ideal RH% averaged annually
     d_65: "2.1", // PH Specific Plug Loads in W/m²
     d_66: "2.0", // Max. Permissible Lighting Load
-    g_67: "Efficient", // Required Eppt Efficienct Spec.
+    g_67: "Regular", // REFERENCE OVERRIDE: Section09.js forces Regular for all Reference models
     t_65: "5.0", // Reference Occupant Load (W/m²)
     d_66: "2.0", // Reference Lighting Load (W/m²)
     // t_67: "2.0", // Reference Equipment Load (W/m²) THIS IS ESTABLISHED BY OCCUPANCY AT D13
