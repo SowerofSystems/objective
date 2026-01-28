@@ -4,14 +4,16 @@
 
 Building a new ComputationGraph system to replace legacy StateManager calculations. The new system must be **standalone** - computing all values independently without syncing from legacy.
 
-## Current Status (January 2025)
+## Current Status (January 28, 2026)
 
 | Metric | Status |
 |--------|--------|
 | **Case Study Validation** | 12/12 passing (100%) |
-| **Field Matches** | ~340 exact matches per case study |
-| **Close Matches** | ~9 within 0.02% (floating point precision) |
+| **Field Matches** | 329–338 exact matches per case study |
+| **Close Matches** | 0–9 within 0.02% (floating point precision) |
 | **Mismatches** | 0 |
+| **Computed Nodes** | 5 former INPUTs now graph-native COMPUTED |
+| **Cutover Ready** | No — widespread failures when legacy bypassed |
 
 ### Performance Benchmarks
 
@@ -89,7 +91,9 @@ OLD SYSTEM (Legacy)                    NEW SYSTEM (ComputationGraph)
 | `KeyValuesNodes.js` | S01 | Summary metrics |
 | `EmissionsNodes.js` | S05 | Carbon calculations |
 | `RenewableNodes.js` | S06 | PV, wind, offsets |
-| `WaterHeatingNodes.js` | S07 | DHW calculations |
+| `WaterHeatingNodes.js` | S07 | DHW calculations + intermediates (e_52, j_51, e_53, j_52, d_54, e_51, k_54) |
+| `OccupancyNodes.js` | S08 | Occupants, occupied hours |
+| `InternalGainsNodes.js` | S09 | Internal gains (occupants, plugs, lighting, equipment), seasonal splits |
 
 ---
 
@@ -111,6 +115,79 @@ OLD SYSTEM (Legacy)                    NEW SYSTEM (ComputationGraph)
 | d_129 formula in Section14 | Fixed overwrite bug | Earlier |
 | Heat gain/loss rates | toFixed(2) → toFixed(4) | `7ca05dd` |
 | U-value conversions | toFixed(3) → toFixed(4) | `7ca05dd` |
+
+---
+
+# Phase 1.5: Intermediate Node Conversion (COMPLETE)
+
+Converted 5 intermediate INPUTs from legacy-synced to graph-native COMPUTED nodes, plus added 10 new intermediate computed nodes.
+
+## Converted Nodes (INPUT → COMPUTED)
+
+| Legacy ID | Semantic ID | Was | Now | Module |
+|-----------|-------------|-----|-----|--------|
+| `h_70` | `energy.plugLoads.subtotal` | INPUT in EnergyNodes | COMPUTED in InternalGainsNodes | S09 |
+| `i_71` | `internal.heatingGains` | INPUT in RadiantGainsNodes | COMPUTED in InternalGainsNodes | S09 |
+| `k_71` | `internal.coolingLoad.occupants` | INPUT in EnergyNodes | COMPUTED in InternalGainsNodes | S09 |
+| `e_51` | `waterHeating.gasVolume` | INPUT in EmissionsNodes | COMPUTED in WaterHeatingNodes | S07 |
+| `k_54` | `waterHeating.oilVolume` | INPUT in EmissionsNodes | COMPUTED in WaterHeatingNodes | S07 |
+
+## New Intermediate Computed Nodes
+
+### WaterHeatingNodes.js (7 new)
+
+| Legacy ID | Semantic ID | Formula |
+|-----------|-------------|---------|
+| `e_52` | `waterHeating.efficiencyDecimal` | d_52 / 100 |
+| `j_51` | `waterHeating.netThermalDemand` | j_50 / e_52 |
+| `e_53` | `waterHeating.energyRecovered` | j_51 × (d_53 / 100) |
+| `j_52` | `waterHeating.netDemandAfterRecovery` | j_51 − e_53 |
+| `d_54` | `waterHeating.systemLosses` | (e_52 ≤ 1) ? j_50 × factor : 0 |
+| `e_51` | `waterHeating.gasVolume` | (type=Gas) ? j_52 / (0.0373 × 277.78 × e_52) : 0 |
+| `k_54` | `waterHeating.oilVolume` | (type=Oil) ? j_52 / (10.18 × e_52) : 0 |
+
+### InternalGainsNodes.js (NEW FILE — 4 inputs + 8 computed)
+
+**Inputs:**
+
+| Legacy ID | Semantic ID | Default |
+|-----------|-------------|---------|
+| `d_64` | `internal.activityLevel` | "Normal" (dropdown) |
+| `d_65` | `internal.plugLoadDensity` | 7 W/m² |
+| `d_66` | `internal.lightingDensity` | 1.5 W/m² |
+| `d_67` | `internal.equipmentDensity` | 3 W/m² |
+
+**Computed nodes:**
+
+| Legacy ID | Semantic ID | Formula |
+|-----------|-------------|---------|
+| `g_64` | `internal.occupants.wattsPerPerson` | Activity level → watts lookup |
+| `h_64` | `internal.occupants.annual` | (g_64 × occupants × hours) / 1000 |
+| `h_65` | `internal.plugLoads.annual` | (d_65 × area × hours) / 1000 |
+| `h_66` | `internal.lighting.annual` | (d_66 × area × hours) / 1000 |
+| `h_67` | `internal.equipment.annual` | (d_67 × area × hours) / 1000 |
+| `h_70` | `energy.plugLoads.subtotal` | h_65 + h_66 + h_67 |
+| `i_71` | `internal.heatingGains` | (h_70 + h_64 + d_54) × (365 − coolingDays) / 365 |
+| `k_71` | `internal.coolingLoad.occupants` | (h_70 + h_64 + d_54) × coolingDays / 365 |
+
+**Activity level mapping** (from SCHEDULES-3037.csv):
+```
+Relaxed:     96.71 W/person
+Normal:     117.23 W/person
+Active:     219.81 W/person
+Hyperactive: 424.95 W/person
+```
+
+## Also Fixed
+
+| Issue | Fix |
+|-------|-----|
+| `k_51` duplicate INPUT | Removed from EnergyNodes (already computed in WaterHeatingNodes) |
+| `d_135`/`d_136` dependency | Changed from `energy.dhw.netElectrical` → `waterHeating.netElectricalDemand` |
+
+## Validation
+
+12/12 case studies passing, 0 mismatches. Commit: `aa74a2f`
 
 ## Running Validation
 
@@ -146,77 +223,56 @@ window.TEUI.ComputationIntegration.initialize({
 
 > Adapter CANNOT be enabled - old sections call setValue constantly during calculations, causing infinite recursion. Migration requires rewriting sections, not just interception.
 
-## USE_COMPUTATION_GRAPH Cutover Investigation (January 2025)
+## USE_COMPUTATION_GRAPH Cutover Investigation
 
-When `USE_COMPUTATION_GRAPH = true` in `init.js`, Calculator.calculateAll() bypasses legacy Section*.js and relies entirely on the ComputationGraph. This revealed several issues:
+When `USE_COMPUTATION_GRAPH = true` in `init.js`, Calculator.calculateAll() bypasses legacy Section*.js and relies entirely on the ComputationGraph.
 
-### Issue 1: Cooling.js Values Not Available
+### Previously Fixed Issues
 
-The Cooling module (`Cooling.js`) computes psychrometric values and stores them as:
-- `cooling_h_124` - Free cooling potential (raw)
-- `cooling_m_124` - Days active cooling required
-- `cooling_latentLoadFactor` - Latent load multiplier
+| Issue | Status | Details |
+|-------|--------|---------|
+| h_124 Free Cooling | FIXED | Computed node with ventilation setback transform |
+| g_110 N-Factor | FIXED | Changed from INPUT to computed with lookup table |
+| d_13 Reference standard | FIXED | Was using wrong field `l_13` |
+| `ref_` prefix handling | FIXED | In syncFromStateManager and populateReferenceModel |
+| Reference model population | FIXED | Loads from ReferenceValues.js |
 
-Section13 then transforms these values (e.g., applying ventilation setback) and writes to the final fields (`h_124`, `m_124`). When legacy is bypassed, this transformation doesn't happen.
+### Latest Cutover Test (January 28, 2026)
 
-**Impact**: `m_129` (CED mitigated) = 0 because `h_124` has wrong/missing value.
+Tested `USE_COMPUTATION_GRAPH = true` after Phase 1.5 intermediate node conversions. **Result: Widespread failures** — test timed out at case study 6 with many mismatches across all files.
 
-**Solution Required**: Either:
-1. Run Cooling.js and Section13's freeCooling calculation before graph sync, OR
-2. Implement the transformation logic as computed nodes in the graph
+**Failures observed:**
 
-### Issue 2: h_124 Free Cooling Transformation (FIXED)
+| Field | Problem | Root Cause |
+|-------|---------|------------|
+| `k_51` | = 0 | d_51/d_52 water heating inputs not populated without Section07 running |
+| `h_70` | Doubled values | d_65/d_67 energy densities wrong without Section09 lookup tables |
+| `h_124` | Exploded values | Cooling.js not running, psychrometric calculations missing |
+| `m_43` | Wrong | Renewable values not populated without Section06 |
+| `ref_j_32` | Wrong | Reference model energy not computed without legacy Section04 |
+| `d_127` (TED) | Cascading error | Wrong i_71 from wrong h_70, cascades through all energy totals |
 
-**Problem**: `h_124` (Free Cooling Limit) was registered as an input syncing from `h_124`, but legacy Section13 actually transforms the raw value from `cooling_h_124`.
+**Conclusion**: The graph cannot stand alone yet. Too many inputs depend on legacy Section*.js calculations that aren't yet implemented as graph nodes. The cutover is all-or-nothing — bypassing legacy sections means losing ALL their intermediate calculations.
 
-**Solution**: Changed `h_124` to a computed node (`cooling.freeCoolingLimit`) that:
-1. Syncs raw value from `cooling_h_124`
-2. Applies ventilation setback factor when ventilation method is "schedule"
-3. Outputs to `h_124` for downstream calculations
+### Cutover Blockers
 
-### Issue 3: g_110 N-Factor (FIXED)
+The following legacy Section*.js calculations must be converted to graph nodes before cutover:
 
-**Problem**: `g_110` (N-Factor) was registered as an INPUT but is actually CALCULATED by Section12.js from climate zone, shielding, and number of storeys. When legacy was bypassed, stale values caused i_103 (air leakage heat loss) mismatches.
+| Section | Missing Calculations | Priority |
+|---------|---------------------|----------|
+| Section07 | d_51/d_52 population, DHW method selection | High |
+| Section09 | d_65/d_67 lookup tables (building-type-dependent defaults) | High |
+| Section06 | m_43 renewable energy values | Medium |
+| Section04 | `ref_j_32` Reference total energy computation | Medium |
+| Section13/Cooling.js | Full psychrometric calculation chain | High |
+| All Sections | Reference model C-field overrides | Medium |
 
-**Solution**: Changed `airTightness.nFactor` from input to computed node with full N-factor lookup table (climate zone × shielding × stories).
+### Current Status (January 28, 2026)
 
-Also fixed incorrect legacyId mappings:
-- `d_103` was incorrectly mapped to ACH50 (should be Number of Storeys)
-- Added `g_103` (Shielding) as input for N-factor calculation
-
-### Issue 4: Reference Model Values (PARTIALLY FIXED)
-
-**Problem**: When USE_COMPUTATION_GRAPH=true, Reference model values (e_10, e_8, e_6) don't match because:
-- `ref_j_32` (Reference Total Energy) is calculated by legacy Section04 in Reference mode
-- Without legacy sections running, Reference calculations don't happen
-
-**Impact**: e_10 (Reference TEUI), j_10/m_10 (Tier percentages) show mismatches.
-
-**Fixes Applied (January 2025)**:
-1. Fixed `d_13` field used for Reference standard (was using wrong field `l_13`)
-2. Fixed `ref_` prefix handling in `syncFromStateManager()` - was adding `ref_ref_*` for inputs already having `ref_` prefix
-3. Fixed `ref_` prefix handling in `populateReferenceModel()` - same issue
-4. Added copy of `reference.*` inputs from Reference model to Target model (needed for cross-model node dependencies)
-5. Implemented `populateReferenceModel()` to load C-fields from ReferenceValues.js based on selected standard
-
-**Remaining Issue**: For non-default Reference standards (PH Classic, PH Low Energy), the `ref_j_32` value from CSV differs from freshly-computed value because legacy recalculates it from Reference envelope values, but the graph doesn't (yet).
-
-**Solution Required**: Implement full Reference energy computation (`ref_j_32`) as computed nodes in the graph, using Reference envelope values from ReferenceValues.js.
-
-### Current Status (January 2025)
-
-- `USE_COMPUTATION_GRAPH = false` by default (12/12 tests pass with legacy)
-- **h_124 transformation**: FIXED (implemented in graph)
-- **g_110 N-Factor**: FIXED (changed from input to computed node)
-- **d_13 Reference standard**: FIXED (was using wrong field l_13)
-- **ref_ prefix handling**: FIXED (in syncFromStateManager and populateReferenceModel)
-- **Reference model population**: FIXED (loads from ReferenceValues.js)
-- **Reference energy computation**: REMAINING ISSUE
-
-With `USE_COMPUTATION_GRAPH = true`:
-- **10/12 case studies pass** (83%)
-- **2 fail**: Meadow (PH Classic) and AberdeenHouse (PH Low Energy)
-- These fail because `ref_j_32` needs to be computed fresh with Reference envelope values
+- `USE_COMPUTATION_GRAPH = false` (12/12 tests pass in parallel mode)
+- **Parallel mode**: Both systems run, graph validated against legacy, legacy authoritative
+- **Cutover**: NOT READY — requires significant additional section coverage
+- **Path forward**: Continue converting section calculations to graph nodes until the graph can reproduce all legacy values independently
 
 ## Path to UI Integration
 

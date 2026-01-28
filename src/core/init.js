@@ -947,8 +947,8 @@ document.addEventListener("DOMContentLoaded", function () {
               // ComputationGraph bypass - when true, bypasses legacy Section*.js
               // and relies entirely on the ComputationGraph for all calculations
               // Status: 12/12 case studies validated (graph matches legacy output)
-              // Cutover blocked: graph has intermediate values (h_70, etc.) as inputs
-              // that need to be converted to computed nodes before full bypass
+              // Cutover blocked: many legacy-computed inputs (d_65, d_67, h_124,
+              // k_51, m_43) not yet graph-native. h_70/i_71/k_71/e_51/k_54 converted.
               // To toggle manually: run in console: TEUI.USE_COMPUTATION_GRAPH = true/false
               window.TEUI.USE_COMPUTATION_GRAPH = false;
               console.log("[init.js] ComputationGraph validated (legacy primary, graph parallel)");
