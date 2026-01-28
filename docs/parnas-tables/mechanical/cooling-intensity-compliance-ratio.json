@@ -1,0 +1,126 @@
+{
+  "id": "mechanical.coolingIntensityComplianceRatio",
+  "legacyId": "m_117",
+  "label": "Cooling Intensity Compliance Ratio",
+  "section": "S13",
+  "classification": "C",
+  "_meta": {
+    "description": "INVERTED ratio of reference cooling intensity to target cooling intensity. Unlike other compliance ratios, LOWER cooling intensity is better, so the formula is inverted. Values >= 100% indicate the target has equal or better (lower) cooling intensity than reference."
+  },
+  "signature": {
+    "inputs": [
+      {
+        "name": "cooling.targetIntensity",
+        "type": "number",
+        "unit": "kWh/m2",
+        "description": "Target model cooling intensity (f_117)"
+      },
+      {
+        "name": "cooling.referenceIntensity",
+        "type": "number",
+        "unit": "kWh/m2",
+        "description": "Reference model cooling intensity (ref_f_117)"
+      },
+      {
+        "name": "isReferenceCalculation",
+        "type": "boolean",
+        "description": "True when calculating for Reference model"
+      }
+    ],
+    "output": {
+      "type": "number",
+      "unit": "ratio",
+      "format": "percent-0dp"
+    }
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "targetIntensity > 0 OR isReferenceCalculation",
+        "description": "Target intensity must be positive for ratio calculation"
+      }
+    ],
+    "invariants": [
+      {
+        "condition": "output >= 0",
+        "description": "Ratio cannot be negative"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "isReferenceCalculation == true",
+      "output": "1.0",
+      "note": "Reference model always shows 100% (self-comparison)"
+    },
+    {
+      "condition": "targetIntensity > 0",
+      "output": "referenceIntensity / targetIntensity",
+      "note": "INVERTED: Lower target intensity = higher (better) ratio"
+    },
+    {
+      "condition": "targetIntensity == 0",
+      "output": "0",
+      "note": "Avoid division by zero"
+    }
+  ],
+  "rationale": {
+    "whyInverted": "For cooling intensity, lower values are better (less cooling needed). Standard ratio (target/ref) would show low % for good buildings. Inverting (ref/target) makes higher % = better, matching other compliance metrics.",
+    "contrastWithOthers": "AFUE, COPc, SRE use target/ref because higher values are better. Cooling intensity uses ref/target because lower values are better."
+  },
+  "compliance": {
+    "passCondition": "output >= 1.0",
+    "passSymbol": "✓",
+    "failSymbol": "✗",
+    "relatedField": "n_117"
+  },
+  "formula": {
+    "symbolic": "m_117 = IF(isRef, 1.0, ref_f_117 / f_117)",
+    "legacy": "Section13.js lines 3326-3337"
+  },
+  "tests": [
+    {
+      "name": "Target better than reference (lower intensity)",
+      "inputs": {
+        "cooling.targetIntensity": 10,
+        "cooling.referenceIntensity": 15,
+        "isReferenceCalculation": false
+      },
+      "expected": 1.5,
+      "note": "Target uses 33% less cooling energy, so compliance is 150%"
+    },
+    {
+      "name": "Target same as reference",
+      "inputs": {
+        "cooling.targetIntensity": 15,
+        "cooling.referenceIntensity": 15,
+        "isReferenceCalculation": false
+      },
+      "expected": 1.0
+    },
+    {
+      "name": "Target worse than reference",
+      "inputs": {
+        "cooling.targetIntensity": 20,
+        "cooling.referenceIntensity": 15,
+        "isReferenceCalculation": false
+      },
+      "expected": 0.75,
+      "note": "Target uses 33% more cooling energy, so compliance is only 75%"
+    },
+    {
+      "name": "Reference calculation",
+      "inputs": {
+        "cooling.targetIntensity": 10,
+        "cooling.referenceIntensity": 15,
+        "isReferenceCalculation": true
+      },
+      "expected": 1.0
+    }
+  ],
+  "references": [
+    {
+      "source": "Section13.js:3326-3337 (m_117_ratio IIFE)"
+    }
+  ]
+}

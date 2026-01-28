@@ -1,0 +1,121 @@
+{
+  "id": "internal.plugLoadDensity",
+  "legacyId": "d_65",
+  "label": "Plug Load Density",
+  "section": "S09",
+  "classification": "C",
+  "_meta": {
+    "description": "Plug load density based on reference standard and building type. Unlike equipment density (d_67), this is NOT a 3D lookup - it's based on energy standard requirements and occupancy patterns."
+  },
+  "signature": {
+    "inputs": [
+      {
+        "name": "building.referenceStandard",
+        "type": "string",
+        "description": "Reference standard (d_13) - e.g., 'OBC SB10', 'PH Classic', 'NECB T1'"
+      },
+      {
+        "name": "building.majorOccupancy",
+        "type": "string",
+        "description": "Building occupancy type (d_12) - e.g., 'C-Residential', 'A-Assembly'"
+      }
+    ],
+    "output": {
+      "type": "number",
+      "unit": "W/m2",
+      "precision": 1
+    }
+  },
+  "domain": {
+    "invariants": [
+      {
+        "condition": "output > 0",
+        "description": "Plug load density is always positive"
+      },
+      {
+        "condition": "output in [2.1, 5, 7]",
+        "description": "Only three possible output values"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "standard contains 'PH Classic' OR 'PH Plus' OR 'PH Premium'",
+      "output": "2.1",
+      "note": "Passive House certified standards have strictest plug load requirements"
+    },
+    {
+      "condition": "standard contains 'PHIUS' OR 'EnerPHit' OR 'PH Low Energy'",
+      "output": "5",
+      "note": "Other Passive House standards have moderate plug load requirements"
+    },
+    {
+      "condition": "buildingType contains 'C-Residential' OR 'C - Residential' OR 'B1-Detention' OR 'B2-Care' OR 'B3-Detention'",
+      "output": "5",
+      "note": "Residential and care occupancies have lower plug loads than commercial"
+    },
+    {
+      "condition": "otherwise",
+      "output": "7",
+      "note": "Default for commercial/assembly/industrial buildings"
+    }
+  ],
+  "rationale": {
+    "whyNotLookupTable": "Plug loads depend on usage patterns and energy standards, not equipment efficiency. PH standards mandate lower plug loads as part of certification. Residential buildings naturally have lower plug loads than offices. A 3D lookup (buildingType × efficiency × elevators) doesn't make sense because plug loads aren't affected by 'Efficient vs Regular' equipment specs.",
+    "contrastWithEquipment": "Equipment density (d_67) uses a 3D lookup because actual equipment installed varies by efficiency spec and elevator presence. Plug loads are about what users plug in, not building equipment."
+  },
+  "formula": {
+    "symbolic": "d_65 = CASE(standard, buildingType)",
+    "legacy": "Section09.js lines 2320-2349"
+  },
+  "tests": [
+    {
+      "name": "PH Classic residential (Meadow)",
+      "inputs": {
+        "building.referenceStandard": "PH Classic",
+        "building.majorOccupancy": "C-Residential"
+      },
+      "expected": 2.1
+    },
+    {
+      "name": "PH Low Energy residential (AberdeenHouse)",
+      "inputs": {
+        "building.referenceStandard": "PH Low Energy",
+        "building.majorOccupancy": "C-Residential"
+      },
+      "expected": 5
+    },
+    {
+      "name": "NECB residential (OttawaApartments)",
+      "inputs": {
+        "building.referenceStandard": "NECB T1 (Z6)",
+        "building.majorOccupancy": "C-Residential"
+      },
+      "expected": 5
+    },
+    {
+      "name": "OBC Assembly (ThreeFeathersTerrace)",
+      "inputs": {
+        "building.referenceStandard": "OBC SB10 5.5-6 Z6",
+        "building.majorOccupancy": "A-Assembly"
+      },
+      "expected": 7
+    },
+    {
+      "name": "NECB Assembly (RowingCentre)",
+      "inputs": {
+        "building.referenceStandard": "NECB T1 (Z6)",
+        "building.majorOccupancy": "A-Assembly"
+      },
+      "expected": 7
+    }
+  ],
+  "references": [
+    {
+      "source": "InternalGainsNodes.js:171-201"
+    },
+    {
+      "source": "Section09.js:2320-2349"
+    }
+  ]
+}

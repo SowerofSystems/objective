@@ -1,0 +1,115 @@
+{
+  "id": "mechanical.copcComplianceRatio",
+  "legacyId": "m_116",
+  "label": "COPc Compliance Ratio",
+  "section": "S13",
+  "classification": "C",
+  "_meta": {
+    "description": "Ratio of target cooling COP to reference cooling COP, expressed as percentage. Values >= 100% indicate compliance. COPc (Coefficient of Performance - Cooling) measures cooling system efficiency."
+  },
+  "signature": {
+    "inputs": [
+      {
+        "name": "cooling.targetCOPc",
+        "type": "number",
+        "unit": "ratio",
+        "description": "Target model cooling COP (j_116)"
+      },
+      {
+        "name": "cooling.referenceCOPc",
+        "type": "number",
+        "unit": "ratio",
+        "description": "Reference model cooling COP (ref_j_116)"
+      },
+      {
+        "name": "isReferenceCalculation",
+        "type": "boolean",
+        "description": "True when calculating for Reference model"
+      }
+    ],
+    "output": {
+      "type": "number",
+      "unit": "ratio",
+      "format": "percent-0dp"
+    }
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "referenceCOPc > 0 OR isReferenceCalculation",
+        "description": "Reference COPc must be positive for ratio calculation"
+      }
+    ],
+    "invariants": [
+      {
+        "condition": "output >= 0",
+        "description": "Ratio cannot be negative"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "isReferenceCalculation == true",
+      "output": "1.0",
+      "note": "Reference model always shows 100% (self-comparison)"
+    },
+    {
+      "condition": "referenceCOPc > 0",
+      "output": "targetCOPc / referenceCOPc",
+      "note": "Higher target COPc = better compliance ratio"
+    },
+    {
+      "condition": "referenceCOPc == 0",
+      "output": "0",
+      "note": "Avoid division by zero"
+    }
+  ],
+  "compliance": {
+    "passCondition": "output >= 1.0",
+    "passSymbol": "✓",
+    "failSymbol": "✗",
+    "relatedField": "n_116"
+  },
+  "formula": {
+    "symbolic": "m_116 = IF(isRef, 1.0, j_116 / ref_j_116)",
+    "legacy": "Section13.js lines 3324, 3307-3318"
+  },
+  "tests": [
+    {
+      "name": "Target exceeds reference (compliant)",
+      "inputs": {
+        "cooling.targetCOPc": 4.0,
+        "cooling.referenceCOPc": 3.5,
+        "isReferenceCalculation": false
+      },
+      "expected": 1.143,
+      "tolerance": 0.001
+    },
+    {
+      "name": "No cooling system",
+      "inputs": {
+        "cooling.targetCOPc": 0,
+        "cooling.referenceCOPc": 0,
+        "isReferenceCalculation": false
+      },
+      "expected": 0
+    },
+    {
+      "name": "Reference calculation",
+      "inputs": {
+        "cooling.targetCOPc": 4.0,
+        "cooling.referenceCOPc": 3.5,
+        "isReferenceCalculation": true
+      },
+      "expected": 1.0
+    }
+  ],
+  "references": [
+    {
+      "source": "Section13.js:3307-3318 (calculateComplianceRatio)"
+    },
+    {
+      "source": "Section13.js:3324 (m_116_ratio calculation)"
+    }
+  ]
+}

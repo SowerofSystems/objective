@@ -310,6 +310,43 @@
     },
 
     // ========================================================================
+    // SPACE HEATING EMISSIONS
+    // ========================================================================
+    {
+      id: "mechanical.heating.emissions",
+      legacyId: "f_114",
+      dependencies: [
+        "mechanical.heating.systemType",
+        "mechanical.heating.oilConsumption",
+        "mechanical.heating.gasConsumption",
+        "emissions.factor.oil",
+        "emissions.factor.gas"
+      ],
+      classification: "C",
+      section: "S13",
+      label: "Space Heating Emissions",
+      unit: "kg CO2e/yr",
+      compute: (inputs) => {
+        const systemType = inputs["mechanical.heating.systemType"];
+        const oilVolume = parseNum(inputs["mechanical.heating.oilConsumption"], 0);
+        const gasVolume = parseNum(inputs["mechanical.heating.gasConsumption"], 0);
+        const oilFactor = parseNum(inputs["emissions.factor.oil"], 2753);
+        const gasFactor = parseNum(inputs["emissions.factor.gas"], 1921);
+
+        // Parnas table: space-heating-emissions.json
+        // Oil systems: (oilVolume × oilFactor) / 1000
+        // Gas systems: (gasVolume × gasFactor) / 1000
+        // Electric/Heatpump/District: 0 (Scope 2 tracked separately)
+        if (systemType === "Oil") {
+          return +((oilVolume * oilFactor) / 1000).toFixed(2);
+        } else if (systemType === "Gas") {
+          return +((gasVolume * gasFactor) / 1000).toFixed(2);
+        }
+        return 0;
+      }
+    },
+
+    // ========================================================================
     // COOLING DEMAND
     // ========================================================================
     {

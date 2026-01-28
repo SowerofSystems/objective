@@ -1,0 +1,80 @@
+{
+  "id": "mechanical.freeCoolingCompliance",
+  "legacyId": "n_124",
+  "label": "Free Cooling Compliance Status",
+  "section": "S13",
+  "classification": "C",
+  "_meta": {
+    "description": "Compliance symbol for free cooling status. Shows checkmark if no mechanical cooling required (m_124 = 0 days), warning symbol if mechanical cooling is needed."
+  },
+  "signature": {
+    "inputs": [
+      {
+        "name": "cooling.mechanicalDays",
+        "type": "number",
+        "unit": "days",
+        "description": "Number of days requiring mechanical cooling (m_124)"
+      }
+    ],
+    "output": {
+      "type": "string",
+      "values": ["✓", "⚠"],
+      "description": "Compliance symbol"
+    }
+  },
+  "domain": {
+    "invariants": [
+      {
+        "condition": "output in ['✓', '⚠']",
+        "description": "Only two possible output values"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "mechanicalDays <= 0",
+      "output": "✓",
+      "note": "No mechanical cooling needed - building achieves free cooling"
+    },
+    {
+      "condition": "mechanicalDays > 0",
+      "output": "⚠",
+      "note": "Mechanical cooling required - not achieving full free cooling"
+    }
+  ],
+  "rationale": {
+    "whyWarningNotFail": "Some climates and building types genuinely require mechanical cooling. This is informational (⚠) rather than a hard failure (✗), unlike the efficiency-based compliance metrics."
+  },
+  "formula": {
+    "symbolic": "n_124 = IF(m_124 <= 0, '✓', '⚠')",
+    "legacy": "Section13.js lines 3413-3417"
+  },
+  "tests": [
+    {
+      "name": "No cooling days needed",
+      "inputs": {
+        "cooling.mechanicalDays": 0
+      },
+      "expected": "✓"
+    },
+    {
+      "name": "Some cooling days needed",
+      "inputs": {
+        "cooling.mechanicalDays": 45
+      },
+      "expected": "⚠"
+    },
+    {
+      "name": "Negative value (edge case)",
+      "inputs": {
+        "cooling.mechanicalDays": -5
+      },
+      "expected": "✓"
+    }
+  ],
+  "references": [
+    {
+      "source": "Section13.js:3413-3417"
+    }
+  ]
+}
