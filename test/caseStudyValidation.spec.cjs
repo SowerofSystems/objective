@@ -62,7 +62,7 @@ test.describe("Case Study Validation", () => {
                 d_43: { old: parseFloat(SM.getValue("d_43")) || 0, new: parseFloat(state.getValueForModel(targetId, "renewable.onsiteTotal")) || 0 },
                 i_43: { old: parseFloat(SM.getValue("i_43")) || 0, new: parseFloat(state.getValueForModel(targetId, "renewable.offsiteTotal")) || 0 },
                 // d_136 components (for Heatpump: k51 + d117 + d114 + m43 + h70)
-                k_51: { old: parseFloat(SM.getValue("k_51")) || 0, new: parseFloat(state.getValueForModel(targetId, "energy.dhw.netElectrical")) || 0 },
+                k_51: { old: parseFloat(SM.getValue("k_51")) || 0, new: parseFloat(state.getValueForModel(targetId, "waterHeating.netElectricalDemand")) || 0 },
                 d_117: { old: parseFloat(SM.getValue("d_117")) || 0, new: parseFloat(state.getValueForModel(targetId, "mechanical.cooling.electricalDemand")) || 0 },
                 d_114: { old: parseFloat(SM.getValue("d_114")) || 0, new: parseFloat(state.getValueForModel(targetId, "mechanical.heating.demand")) || 0 },
                 m_43: { old: parseFloat(SM.getValue("m_43")) || 0, new: parseFloat(state.getValueForModel(targetId, "renewable.onsiteTotal")) || 0 },

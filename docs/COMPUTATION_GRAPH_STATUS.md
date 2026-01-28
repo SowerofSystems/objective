@@ -261,7 +261,7 @@ The following legacy Section*.js calculations must be converted to graph nodes b
 
 | Section | Missing Calculations | Priority |
 |---------|---------------------|----------|
-| Section07 | d_51/d_52 population, DHW method selection | High |
+| Section07 | d_51/d_52 population, DHW method selection | **FIXED** — d_51="Electric" added to all standards in ReferenceValues.js |
 | Section09 | d_65/d_67 lookup tables (see details below) | High |
 | Section06 | m_43 renewable energy values | Medium |
 | Section04 | `ref_j_32` Reference total energy computation | **FIXED** — graph-computed for all 12 case studies |
