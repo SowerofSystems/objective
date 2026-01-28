@@ -946,11 +946,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
               // ComputationGraph bypass - when true, bypasses legacy Section*.js
               // and relies entirely on the ComputationGraph for all calculations
-              // Status: 10/12 case studies pass when enabled. Remaining 2 fail because
-              // ref_j_32 (Reference energy) needs to be computed, not synced from CSV.
+              // Status: 12/12 case studies validated (graph matches legacy output)
+              // Cutover blocked: graph has intermediate values (h_70, etc.) as inputs
+              // that need to be converted to computed nodes before full bypass
               // To toggle manually: run in console: TEUI.USE_COMPUTATION_GRAPH = true/false
               window.TEUI.USE_COMPUTATION_GRAPH = false;
-              console.log("[init.js] ComputationGraph bypass disabled (legacy primary)");
+              console.log("[init.js] ComputationGraph validated (legacy primary, graph parallel)");
             }
           }, 100);
         }

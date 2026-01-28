@@ -150,6 +150,22 @@ test.describe("Case Study Validation", () => {
               refDebug.targetRefH15 = parseFloat(state.getValueForModel(targetId, "reference.building.conditionedFloorArea")) || 0;
               refDebug.targetE10 = parseFloat(state.getValueForModel(targetId, "keyValues.reference.teui")) || 0;
 
+              // Reference model intermediate values (to diagnose computation differences)
+              if (refModel) {
+                const rid = refModel.id;
+                refDebug.refIntermediate = {
+                  d_127_ted: parseFloat(state.getValueForModel(rid, "energy.ted.heating")) || 0,
+                  d_114_heatDemand: parseFloat(state.getValueForModel(rid, "mechanical.heating.demand")) || 0,
+                  d_117_coolDemand: parseFloat(state.getValueForModel(rid, "mechanical.cooling.electricalDemand")) || 0,
+                  d_136_totalEnergy: parseFloat(state.getValueForModel(rid, "energy.total.all")) || 0,
+                  j_32_targetTotal: parseFloat(state.getValueForModel(rid, "energy.target.total")) || 0,
+                  i_98_transLoss: parseFloat(state.getValueForModel(rid, "transmissionLoss.components.subtotalHeatLoss")) || 0,
+                  i_103_airLeak: parseFloat(state.getValueForModel(rid, "airTightness.heatLoss")) || 0,
+                  m_121_ventLoss: parseFloat(state.getValueForModel(rid, "ventilation.netHeatLoss")) || 0,
+                  i_80_radGains: parseFloat(state.getValueForModel(rid, "radiantGains.usableGains")) || 0,
+                };
+              }
+
               const result = {
                 matches: 0,
                 close: 0,
@@ -343,6 +359,20 @@ test.describe("Case Study Validation", () => {
           console.log(`       targetRefJ32:    ${r.targetRefJ32?.toFixed(2) || 'N/A'}`);
           console.log(`       targetRefH15:    ${r.targetRefH15?.toFixed(2) || 'N/A'}`);
           console.log(`       targetE10:       ${r.targetE10?.toFixed(2) || 'N/A'}`);
+          if (r.refIntermediate) {
+            const ri = r.refIntermediate;
+            console.log(`     [Reference Model Intermediate Values]`);
+            console.log(`       d_127 TED:       ${ri.d_127_ted.toFixed(2)}`);
+            console.log(`       i_98 transLoss:  ${ri.i_98_transLoss.toFixed(2)}`);
+            console.log(`       i_103 airLeak:   ${ri.i_103_airLeak.toFixed(2)}`);
+            console.log(`       m_121 ventLoss:  ${ri.m_121_ventLoss.toFixed(2)}`);
+            console.log(`       i_80 radGains:   ${ri.i_80_radGains.toFixed(2)}`);
+            console.log(`       d_114 heatDemand:${ri.d_114_heatDemand.toFixed(2)}`);
+            console.log(`       d_117 coolDemand:${ri.d_117_coolDemand.toFixed(2)}`);
+            console.log(`       d_136 totalAll:  ${ri.d_136_totalEnergy.toFixed(2)}`);
+            console.log(`       j_32 total:      ${ri.j_32_targetTotal.toFixed(2)}`);
+            console.log(`       MAPPING: ref j_32=${ri.j_32_targetTotal.toFixed(2)} → tgt ref_j_32=${r.targetRefJ32?.toFixed(2)}`);
+          }
           console.log(`     [Reference C-Field Sources]`);
           console.log(`       ref_f_85 (walls): ${r.ref_f_85}`);
           console.log(`       ref_f_86 (roof):  ${r.ref_f_86}`);

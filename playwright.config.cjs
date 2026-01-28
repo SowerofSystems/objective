@@ -40,19 +40,14 @@ module.exports = defineConfig({
 
   // Configure projects for major browsers
   projects: [
+    // Chromium has SIGSEGV crashes on macOS - use webkit
+    // {
+    //   name: "chromium",
+    //   use: { ...devices["Desktop Chrome"] },
+    // },
     {
-      name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
     },
-
-    // Uncomment to test on Firefox and Safari
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
   ],
 });

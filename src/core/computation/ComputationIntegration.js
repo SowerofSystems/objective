@@ -803,6 +803,21 @@
    * Compute both Target and Reference models
    * Returns combined results
    */
+  /**
+   * Mapping from Reference model computed outputs to Target model reference.* inputs.
+   * After computing the Reference model, these computed values are copied to the
+   * Target model so that Key Values nodes (e_10, e_8, e_6) can use them.
+   *
+   * The CSV stores these as saved outputs (ref_j_32, ref_k_32, etc.) but they
+   * must be freshly computed from Reference envelope values to be accurate.
+   */
+  const REF_OUTPUT_TO_TARGET_INPUT = {
+    "energy.target.total":           "reference.energy.total",            // j_32 → ref_j_32
+    "emissions.target.subtotal":     "reference.emissions.subtotal",      // k_32 → ref_k_32
+    "building.conditionedFloorArea": "reference.building.conditionedFloorArea", // h_15 → ref_h_15
+    "building.serviceLife":          "reference.building.serviceLife",     // h_13 → ref_h_13
+  };
+
   function computeAllWithReference() {
     if (!initialized) {
       error("Not initialized");
@@ -812,13 +827,29 @@
     const targetId = state.getActiveModelId();
     const refModelId = getRefModelId();
 
-    // Compute Target model
+    // Step 1: Compute Target model
     const targetResult = engine.computeAllForModel(targetId);
 
-    // Compute Reference model if it exists
+    // Step 2: Compute Reference model if it exists
     let refResult = null;
     if (refModelId) {
       refResult = engine.computeAllForModel(refModelId);
+
+      // Step 3: Copy Reference computed outputs to Target's reference.* inputs
+      // This replaces stale CSV values with freshly computed Reference values
+      let refOutputsCopied = 0;
+      for (const [refPath, targetInputPath] of Object.entries(REF_OUTPUT_TO_TARGET_INPUT)) {
+        const refValue = state.getValueForModel(refModelId, refPath);
+        if (refValue !== undefined && refValue !== null) {
+          state.setValueForModel(targetId, targetInputPath, refValue);
+          refOutputsCopied++;
+        }
+      }
+      log(`Copied ${refOutputsCopied} Reference computed outputs to Target reference.* inputs`);
+
+      // Step 4: Recompute Target to pick up the fresh Reference values in Key Values
+      const targetRecompute = engine.computeAllForModel(targetId);
+      log(`Target recomputed with fresh Reference values: ${targetRecompute.computedNodes} nodes`);
     }
 
     return {
@@ -855,24 +886,32 @@
       if (legacyId) {
         const value = state.getValueForModel(refModelId, semanticPath);
         if (value !== undefined && value !== null) {
-          // Reference values use ref_ prefix
-          StateManager.setValue("ref_" + legacyId, value, "computed");
+          // Don't add ref_ prefix if legacyId already starts with ref_
+          const refLegacyId = legacyId.startsWith("ref_") ? legacyId : "ref_" + legacyId;
+          StateManager.setValue(refLegacyId, value, "computed");
           syncCount++;
         }
       }
     }
 
-    // Sync input values
+    // Sync input values (skip reference.* bridge inputs — those are Target model
+    // concepts whose computed equivalents were already synced in the computed nodes loop)
     const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
 
     for (const semanticPath of inputIds) {
+      // Skip reference.* inputs — they bridge Reference outputs to Target inputs
+      // and would overwrite freshly computed values with stale CSV data
+      if (semanticPath.startsWith("reference.")) continue;
+
       const inputNode = graph.getInput(semanticPath);
       const legacyId = inputNode?.legacyId;
 
       if (legacyId) {
         const value = state.getValueForModel(refModelId, semanticPath);
         if (value !== undefined && value !== null) {
-          StateManager.setValue("ref_" + legacyId, value, "computed");
+          // Don't add ref_ prefix if legacyId already starts with ref_
+          const refLegacyId = legacyId.startsWith("ref_") ? legacyId : "ref_" + legacyId;
+          StateManager.setValue(refLegacyId, value, "computed");
           syncCount++;
         }
       }

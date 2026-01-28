@@ -554,8 +554,11 @@
           });
         }
 
-        // ✅ Sync ComputationGraph from StateManager after CSV import (Phase 4 validation)
-        if (window.TEUI?.ComputationIntegration?.syncFromStateManager) {
+        // Sync ComputationGraph from StateManager after CSV import
+        // Only needed when legacy is primary (USE_COMPUTATION_GRAPH=false).
+        // When graph is primary, Calculator.calculateAll() already handles sync+compute.
+        if (window.TEUI?.ComputationIntegration?.syncFromStateManager &&
+            !window.TEUI.USE_COMPUTATION_GRAPH) {
           console.log("[FileHandler] 🔄 Syncing ComputationGraph from StateManager...");
           window.TEUI.ComputationIntegration.syncFromStateManager();
           window.TEUI.ComputationIntegration.computeAll();
