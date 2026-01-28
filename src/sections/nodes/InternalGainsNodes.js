@@ -11,6 +11,12 @@
  * - h_70: Plug/Light/Equipment subtotal (kWh/yr)
  * - i_71: Internal heating gains (kWh/yr)
  * - k_71: Internal cooling load (kWh/yr)
+ *
+ * CUTOVER NOTE: d_65 and d_67 are INPUTs that sync from legacy Section09.js
+ * calculations. In cutover mode (USE_COMPUTATION_GRAPH=true), these need to
+ * become COMPUTED nodes with lookup tables. See Section09.js for the
+ * equipmentLoadsTable and formatBuildingTypeForLookup() logic that must be
+ * replicated here for full cutover.
  */
 (function () {
   "use strict";

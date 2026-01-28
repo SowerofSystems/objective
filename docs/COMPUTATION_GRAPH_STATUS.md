@@ -262,11 +262,23 @@ The following legacy Section*.js calculations must be converted to graph nodes b
 | Section | Missing Calculations | Priority |
 |---------|---------------------|----------|
 | Section07 | d_51/d_52 population, DHW method selection | High |
-| Section09 | d_65/d_67 lookup tables (building-type-dependent defaults) | High |
+| Section09 | d_65/d_67 lookup tables (see details below) | High |
 | Section06 | m_43 renewable energy values | Medium |
 | Section04 | `ref_j_32` Reference total energy computation | **FIXED** — graph-computed for all 12 case studies |
 | Section13/Cooling.js | Full psychrometric calculation chain | High |
 | All Sections | Reference model C-field overrides | **FIXED** — CSV ref_ values now take priority over ReferenceValues.js |
+
+**Section09 Details** (investigated 2026-01-28):
+- d_65 (plug load density) and d_67 (equipment density) are computed by legacy from lookup tables
+- d_65: Residential (C-) = 4 W/m², all others = 7 W/m²
+- d_67: 3D lookup based on building type (d_12) × efficiency spec (g_67) × elevator status (d_68)
+- **Reference model complexity**: Legacy forces g_67="Regular" for Reference mode (line 168, 220 in Section09.js)
+- Converting d_65/d_67 to COMPUTED nodes requires:
+  1. Adding g_67 and d_68 as INPUTs (synced from StateManager)
+  2. Replicating equipmentLoadsTable lookup
+  3. Special handling for Reference model to force g_67="Regular"
+- Attempted conversion broke 9/12 case studies due to Reference model g_67 override not being replicated
+- For now: d_65/d_67 remain INPUTs, synced from legacy Section09.js calculations
 
 ### Current Status (January 28, 2026)
 
