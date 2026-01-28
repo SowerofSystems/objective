@@ -753,29 +753,33 @@
           debug.gFields.push({ legacyId, semanticPath, value: targetValue });
         }
       } else {
-        // C-field: Load from ReferenceValues.js if available, otherwise copy from Target
-        if (legacyId && standardValues && standardValues[legacyId] !== undefined) {
+        // C-field priority: StateManager ref_ (CSV import) > ReferenceValues.js > Target
+        // CSV ref_ values represent the actual Reference model state for the project,
+        // so they take precedence over ReferenceValues.js standard defaults.
+        // ReferenceValues.js provides defaults for new projects without CSV data.
+        const refLegacyId = legacyId
+          ? (legacyId.startsWith("ref_") ? legacyId : "ref_" + legacyId)
+          : null;
+        const refValue = refLegacyId ? StateManager.getValue(refLegacyId) : undefined;
+
+        if (refValue !== undefined && refValue !== null && refValue !== "") {
+          // Priority 1: CSV-imported ref_ value from StateManager
+          state.setValueForModel(refModelId, semanticPath, refValue);
+          debug.cFieldsFromStateManager.push({ legacyId, semanticPath, value: refValue });
+        } else if (legacyId && standardValues && standardValues[legacyId] !== undefined) {
+          // Priority 2: Standard default from ReferenceValues.js
           const stdValue = standardValues[legacyId];
           state.setValueForModel(refModelId, semanticPath, stdValue);
           cFieldsLoaded++;
           debug.cFieldsFromStandard.push({ legacyId, semanticPath, value: stdValue });
         } else {
-          // Fallback: Use ref_legacyId from StateManager or copy from Target
-          // Don't add ref_ prefix if legacyId already starts with ref_
-          const refLegacyId = legacyId.startsWith("ref_") ? legacyId : "ref_" + legacyId;
-          const refValue = StateManager.getValue(refLegacyId);
-          if (refValue !== undefined && refValue !== null && refValue !== "") {
-            state.setValueForModel(refModelId, semanticPath, refValue);
-            debug.cFieldsFromStateManager.push({ legacyId, semanticPath, value: refValue });
+          // Priority 3: Copy from Target (shared input)
+          const targetValue = state.getValueForModel(targetId, semanticPath);
+          if (targetValue !== undefined && targetValue !== null) {
+            state.setValueForModel(refModelId, semanticPath, targetValue);
+            debug.cFieldsCopiedFromTarget.push({ legacyId, semanticPath, value: targetValue });
           } else {
-            // Last resort: copy from Target (shared input)
-            const targetValue = state.getValueForModel(targetId, semanticPath);
-            if (targetValue !== undefined && targetValue !== null) {
-              state.setValueForModel(refModelId, semanticPath, targetValue);
-              debug.cFieldsCopiedFromTarget.push({ legacyId, semanticPath, value: targetValue });
-            } else {
-              debug.cFieldsMissing.push({ legacyId, semanticPath });
-            }
+            debug.cFieldsMissing.push({ legacyId, semanticPath });
           }
         }
       }

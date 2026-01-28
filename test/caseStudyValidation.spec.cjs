@@ -289,6 +289,97 @@ test.describe("Case Study Validation", () => {
                 }
               }
 
+              // After normal validation, test Reference model computation
+              if (CI?.computeAllWithReference) {
+                try {
+                  // Populate Reference model from ReferenceValues.js
+                  const popResult = CI.populateReferenceModel();
+                  // Compute both Target and Reference models
+                  CI.computeAllWithReference();
+
+                  // Get Reference model ID
+                  const models = state.getAllModels ? state.getAllModels() : [];
+                  const refModel = models.find(m => m.modelType === "reference");
+                  const rid = refModel?.id;
+
+                  // Read the graph-computed ref_j_32 (from Target model's reference.energy.total INPUT)
+                  const computedRefJ32 = parseFloat(
+                    state.getValueForModel(targetId, "reference.energy.total")
+                  ) || 0;
+                  // Compare against legacy ref_j_32
+                  const legacyRefJ32 = parseFloat(SM.getValue("ref_j_32")) || 0;
+
+                  // Capture Reference model intermediate values for diagnosis
+                  const refIntermediates = rid ? {
+                    d_113_heatingType: state.getValueForModel(rid, "mechanical.heating.systemType"),
+                    d_51_dhwType: state.getValueForModel(rid, "waterHeating.systemType"),
+                    d_65_plugLoad: state.getValueForModel(rid, "internal.plugLoadDensity"),
+                    d_67_equipLoad: state.getValueForModel(rid, "internal.equipmentDensity"),
+                    g_118_ventMethod: state.getValueForModel(rid, "mechanical.ventilation.method"),
+                    l_118_ventAch: state.getValueForModel(rid, "mechanical.ventilation.ach"),
+                    d_119_ventRate: state.getValueForModel(rid, "mechanical.ventilation.ratePerPerson"),
+                    d_120_ventVolumetric: parseFloat(state.getValueForModel(rid, "ventilation.volumetricRate")) || 0,
+                    d_121_ventGross: parseFloat(state.getValueForModel(rid, "ventilation.grossHeatLoss")) || 0,
+                    d_118_hrvEff: state.getValueForModel(rid, "mechanical.ventilation.efficiency"),
+                    d_127_ted: parseFloat(state.getValueForModel(rid, "energy.ted.heating")) || 0,
+                    d_114_heatDemand: parseFloat(state.getValueForModel(rid, "mechanical.heating.demand")) || 0,
+                    d_117_coolDemand: parseFloat(state.getValueForModel(rid, "mechanical.cooling.electricalDemand")) || 0,
+                    k_51_dhwElec: parseFloat(state.getValueForModel(rid, "waterHeating.netElectricalDemand")) || 0,
+                    h_70_plugLoads: parseFloat(state.getValueForModel(rid, "energy.plugLoads.subtotal")) || 0,
+                    d_136_totalEnergy: parseFloat(state.getValueForModel(rid, "energy.total.all")) || 0,
+                    j_32_targetTotal: parseFloat(state.getValueForModel(rid, "energy.target.total")) || 0,
+                    i_98_transLoss: parseFloat(state.getValueForModel(rid, "transmissionLoss.components.subtotalHeatLoss")) || 0,
+                    i_103_airLeak: parseFloat(state.getValueForModel(rid, "airTightness.heatLoss")) || 0,
+                    m_121_ventLoss: parseFloat(state.getValueForModel(rid, "ventilation.netHeatLoss")) || 0,
+                    d_43_onsiteRenew: parseFloat(state.getValueForModel(rid, "renewable.onsiteTotal")) || 0,
+                    i_43_offsiteRenew: parseFloat(state.getValueForModel(rid, "renewable.offsiteTotal")) || 0,
+                    m_43_extLoads: parseFloat(state.getValueForModel(rid, "renewable.exteriorLoads")) || 0,
+                  } : null;
+
+                  // Legacy Reference intermediate values for comparison
+                  const legacyRefIntermediates = {
+                    ref_d_113: SM.getValue("ref_d_113"),
+                    ref_d_51: SM.getValue("ref_d_51"),
+                    ref_g_118: SM.getValue("ref_g_118"),
+                    ref_l_118: SM.getValue("ref_l_118"),
+                    ref_d_119: SM.getValue("ref_d_119"),
+                    ref_d_120: parseFloat(SM.getValue("ref_d_120")) || 0,
+                    ref_d_121: parseFloat(SM.getValue("ref_d_121")) || 0,
+                    ref_d_118: SM.getValue("ref_d_118"),
+                    ref_d_127: parseFloat(SM.getValue("ref_d_127")) || 0,
+                    ref_d_114: parseFloat(SM.getValue("ref_d_114")) || 0,
+                    ref_d_117: parseFloat(SM.getValue("ref_d_117")) || 0,
+                    ref_k_51: parseFloat(SM.getValue("ref_k_51")) || 0,
+                    ref_h_70: parseFloat(SM.getValue("ref_h_70")) || 0,
+                    ref_d_136: parseFloat(SM.getValue("ref_d_136")) || 0,
+                    ref_d_43: parseFloat(SM.getValue("ref_d_43")) || 0,
+                    ref_i_43: parseFloat(SM.getValue("ref_i_43")) || 0,
+                    ref_m_43: parseFloat(SM.getValue("ref_m_43")) || 0,
+                    ref_i_98: parseFloat(SM.getValue("ref_i_98")) || 0,
+                    ref_i_103: parseFloat(SM.getValue("ref_i_103")) || 0,
+                    ref_m_121: parseFloat(SM.getValue("ref_m_121")) || 0,
+                  };
+
+                  result.refJ32 = {
+                    legacy: legacyRefJ32,
+                    computed: computedRefJ32,
+                    diff: Math.abs(legacyRefJ32 - computedRefJ32),
+                    match: Math.abs(legacyRefJ32 - computedRefJ32) < 5.0, // 5 kWh tolerance for floating-point precision
+                    refIntermediates,
+                    legacyRefIntermediates,
+                    populateDebug: popResult?.debug ? {
+                      standardName: popResult.debug.standardName,
+                      cFieldsFromStandard: popResult.debug.cFieldsFromStandard.length,
+                      cFieldsFromStateManager: popResult.debug.cFieldsFromStateManager.length,
+                      cFieldsCopiedFromTarget: popResult.debug.cFieldsCopiedFromTarget.length,
+                      cFieldsCopiedFromTargetList: popResult.debug.cFieldsCopiedFromTarget.slice(0, 15).map(f => `${f.legacyId}=${f.value}`),
+                    } : null,
+                  };
+                } catch (refErr) {
+                  result.refJ32 = { error: refErr.message };
+                }
+              }
+
               resolve(result);
             }, 500);
           } catch (err) {
@@ -299,6 +390,55 @@ test.describe("Case Study Validation", () => {
 
       result.file = csvFile;
       allResults.push(result);
+
+      // Always show ref_j_32 status
+      if (result.refJ32) {
+        if (result.refJ32.error) {
+          console.log(`  [ref_j_32] ERROR: ${result.refJ32.error}`);
+        } else if (result.refJ32.match) {
+          console.log(`  [ref_j_32] ✅ MATCH legacy=${result.refJ32.legacy.toFixed(2)} computed=${result.refJ32.computed.toFixed(2)} diff=${result.refJ32.diff.toFixed(2)}`);
+        } else {
+          console.log(`  [ref_j_32] ❌ MISMATCH legacy=${result.refJ32.legacy.toFixed(2)} computed=${result.refJ32.computed.toFixed(2)} diff=${result.refJ32.diff.toFixed(2)}`);
+          // Show diagnostic comparison
+          const ri = result.refJ32.refIntermediates;
+          const li = result.refJ32.legacyRefIntermediates;
+          if (ri && li) {
+            console.log(`     [Ref Model Inputs]`);
+            console.log(`       d_113 heat:    graph="${ri.d_113_heatingType}" legacy="${li.ref_d_113}"`);
+            console.log(`       d_51 dhw:      graph="${ri.d_51_dhwType}" legacy="${li.ref_d_51}"`);
+            console.log(`       d_65 plug:     graph="${ri.d_65_plugLoad}"`);
+            console.log(`       d_67 equip:    graph="${ri.d_67_equipLoad}"`);
+            console.log(`     [Ventilation Inputs]`);
+            console.log(`       g_118 method:  graph="${ri.g_118_ventMethod}" legacy="${li.ref_g_118}"`);
+            console.log(`       l_118 ACH:     graph="${ri.l_118_ventAch}" legacy="${li.ref_l_118}"`);
+            console.log(`       d_119 rate:    graph="${ri.d_119_ventRate}" legacy="${li.ref_d_119}"`);
+            console.log(`       d_118 HRV eff: graph="${ri.d_118_hrvEff}" legacy="${li.ref_d_118}"`);
+            console.log(`       d_120 ventRate: graph=${ri.d_120_ventVolumetric.toFixed(2)} legacy=${li.ref_d_120.toFixed(2)} diff=${(ri.d_120_ventVolumetric - li.ref_d_120).toFixed(2)}`);
+            console.log(`       d_121 grossHL:  graph=${ri.d_121_ventGross.toFixed(2)} legacy=${li.ref_d_121.toFixed(2)} diff=${(ri.d_121_ventGross - li.ref_d_121).toFixed(2)}`);
+            console.log(`     [Ref Model Intermediates vs Legacy]`);
+            console.log(`       i_98 transLoss:  graph=${ri.i_98_transLoss.toFixed(2)} legacy=${li.ref_i_98.toFixed(2)} diff=${(ri.i_98_transLoss - li.ref_i_98).toFixed(2)}`);
+            console.log(`       i_103 airLeak:   graph=${ri.i_103_airLeak.toFixed(2)} legacy=${li.ref_i_103.toFixed(2)} diff=${(ri.i_103_airLeak - li.ref_i_103).toFixed(2)}`);
+            console.log(`       m_121 ventLoss:  graph=${ri.m_121_ventLoss.toFixed(2)} legacy=${li.ref_m_121.toFixed(2)} diff=${(ri.m_121_ventLoss - li.ref_m_121).toFixed(2)}`);
+            console.log(`       d_127 TED:       graph=${ri.d_127_ted.toFixed(2)} legacy=${li.ref_d_127.toFixed(2)} diff=${(ri.d_127_ted - li.ref_d_127).toFixed(2)}`);
+            console.log(`       d_114 heatDemand: graph=${ri.d_114_heatDemand.toFixed(2)} legacy=${li.ref_d_114.toFixed(2)} diff=${(ri.d_114_heatDemand - li.ref_d_114).toFixed(2)}`);
+            console.log(`       d_117 coolDemand: graph=${ri.d_117_coolDemand.toFixed(2)} legacy=${li.ref_d_117.toFixed(2)} diff=${(ri.d_117_coolDemand - li.ref_d_117).toFixed(2)}`);
+            console.log(`       k_51 dhwElec:    graph=${ri.k_51_dhwElec.toFixed(2)} legacy=${li.ref_k_51.toFixed(2)} diff=${(ri.k_51_dhwElec - li.ref_k_51).toFixed(2)}`);
+            console.log(`       h_70 plugLoads:  graph=${ri.h_70_plugLoads.toFixed(2)} legacy=${li.ref_h_70.toFixed(2)} diff=${(ri.h_70_plugLoads - li.ref_h_70).toFixed(2)}`);
+            console.log(`       d_136 totalAll:  graph=${ri.d_136_totalEnergy.toFixed(2)} legacy=${li.ref_d_136.toFixed(2)} diff=${(ri.d_136_totalEnergy - li.ref_d_136).toFixed(2)}`);
+            console.log(`       d_43 onsiteRenew: graph=${ri.d_43_onsiteRenew.toFixed(2)} legacy=${li.ref_d_43.toFixed(2)}`);
+            console.log(`       i_43 offsiteRenew: graph=${ri.i_43_offsiteRenew.toFixed(2)} legacy=${li.ref_i_43.toFixed(2)}`);
+            console.log(`       m_43 extLoads:   graph=${ri.m_43_extLoads.toFixed(2)} legacy=${li.ref_m_43.toFixed(2)}`);
+            console.log(`       j_32 = d_136 - d_43 - i_43 = ${ri.j_32_targetTotal.toFixed(2)}`);
+          }
+          if (result.refJ32.populateDebug) {
+            const pd = result.refJ32.populateDebug;
+            console.log(`     [populate: std="${pd.standardName}" fromStd=${pd.cFieldsFromStandard} fromSM=${pd.cFieldsFromStateManager} fromTarget=${pd.cFieldsCopiedFromTarget}]`);
+            if (pd.cFieldsCopiedFromTargetList.length > 0) {
+              console.log(`       Target fallbacks: ${pd.cFieldsCopiedFromTargetList.join(', ')}`);
+            }
+          }
+        }
+      }
 
       if (result.mismatches > 0) {
         console.log(`  ❌ FAIL: ${result.mismatches} mismatches`);
@@ -422,12 +562,22 @@ test.describe("Case Study Validation", () => {
     }
 
     // Write results to file
+    // Summarize ref_j_32 results
+    const refJ32Summary = {
+      total: allResults.filter(r => r.refJ32 && !r.refJ32.error).length,
+      matched: allResults.filter(r => r.refJ32?.match).length,
+      mismatched: allResults.filter(r => r.refJ32 && !r.refJ32.error && !r.refJ32.match).length,
+      errors: allResults.filter(r => r.refJ32?.error).length,
+    };
+    console.log(`\nref_j_32 Summary: ${refJ32Summary.matched}/${refJ32Summary.total} matched, ${refJ32Summary.mismatched} mismatched, ${refJ32Summary.errors} errors`);
+
     const output = {
       timestamp: new Date().toISOString(),
       summary: {
         total: csvFiles.length,
         passed: allResults.filter((r) => !r.error && r.mismatches === 0).length,
         failed: allResults.filter((r) => r.error || r.mismatches > 0).length,
+        refJ32: refJ32Summary,
       },
       uniqueMismatches: collectUniqueMismatches(allResults),
       byFile: allResults.map((r) => ({
@@ -436,6 +586,7 @@ test.describe("Case Study Validation", () => {
         close: r.close,
         mismatches: r.mismatches,
         error: r.error,
+        refJ32: r.refJ32,
       })),
     };
 
@@ -448,6 +599,12 @@ test.describe("Case Study Validation", () => {
       0
     );
     expect(totalMismatches).toBe(0);
+
+    // Assert ref_j_32 matches for all case studies
+    const refJ32Mismatches = allResults.filter(r => r.refJ32 && !r.refJ32.error && !r.refJ32.match).length;
+    const refJ32Errors = allResults.filter(r => r.refJ32?.error).length;
+    expect(refJ32Mismatches).toBe(0);
+    expect(refJ32Errors).toBe(0);
   });
 });
 

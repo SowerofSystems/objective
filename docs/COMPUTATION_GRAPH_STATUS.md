@@ -236,6 +236,7 @@ When `USE_COMPUTATION_GRAPH = true` in `init.js`, Calculator.calculateAll() bypa
 | d_13 Reference standard | FIXED | Was using wrong field `l_13` |
 | `ref_` prefix handling | FIXED | In syncFromStateManager and populateReferenceModel |
 | Reference model population | FIXED | Loads from ReferenceValues.js |
+| `ref_j_32` Reference energy | FIXED | C-field priority: CSV ref_ values > ReferenceValues.js > Target fallback. 12/12 case studies match within 5 kWh. |
 
 ### Latest Cutover Test (January 28, 2026)
 
@@ -249,7 +250,7 @@ Tested `USE_COMPUTATION_GRAPH = true` after Phase 1.5 intermediate node conversi
 | `h_70` | Doubled values | d_65/d_67 energy densities wrong without Section09 lookup tables |
 | `h_124` | Exploded values | Cooling.js not running, psychrometric calculations missing |
 | `m_43` | Wrong | Renewable values not populated without Section06 |
-| `ref_j_32` | Wrong | Reference model energy not computed without legacy Section04 |
+| `ref_j_32` | **FIXED** | Reference model now computed via `computeAllWithReference()` with correct C-field priority |
 | `d_127` (TED) | Cascading error | Wrong i_71 from wrong h_70, cascades through all energy totals |
 
 **Conclusion**: The graph cannot stand alone yet. Too many inputs depend on legacy Section*.js calculations that aren't yet implemented as graph nodes. The cutover is all-or-nothing — bypassing legacy sections means losing ALL their intermediate calculations.
@@ -263,14 +264,16 @@ The following legacy Section*.js calculations must be converted to graph nodes b
 | Section07 | d_51/d_52 population, DHW method selection | High |
 | Section09 | d_65/d_67 lookup tables (building-type-dependent defaults) | High |
 | Section06 | m_43 renewable energy values | Medium |
-| Section04 | `ref_j_32` Reference total energy computation | Medium |
+| Section04 | `ref_j_32` Reference total energy computation | **FIXED** — graph-computed for all 12 case studies |
 | Section13/Cooling.js | Full psychrometric calculation chain | High |
-| All Sections | Reference model C-field overrides | Medium |
+| All Sections | Reference model C-field overrides | **FIXED** — CSV ref_ values now take priority over ReferenceValues.js |
 
 ### Current Status (January 28, 2026)
 
 - `USE_COMPUTATION_GRAPH = false` (12/12 tests pass in parallel mode)
 - **Parallel mode**: Both systems run, graph validated against legacy, legacy authoritative
+- **ref_j_32**: FIXED — graph computes Reference model `ref_j_32` correctly for all 12 case studies (validated as pass/fail criterion)
+- **Root cause fix**: Changed C-field populate priority in `populateReferenceModel()`: CSV ref_ values from StateManager now take precedence over ReferenceValues.js defaults. This ensures project-specific Reference model values (l_118 ACH, d_119 vent rate, d_67 equipment density, etc.) match legacy.
 - **Cutover**: NOT READY — requires significant additional section coverage
 - **Path forward**: Continue converting section calculations to graph nodes until the graph can reproduce all legacy values independently
 
