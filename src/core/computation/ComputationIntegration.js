@@ -238,6 +238,12 @@
       log("Registered KeyValuesNodes");
     }
 
+    // Cross-model compliance ratio nodes (depends on mechanical values)
+    if (nodes.Compliance) {
+      nodes.Compliance.register(g);
+      log("Registered ComplianceNodes");
+    }
+
     const stats = g.getStats();
     log(`Graph created: ${stats.nodeCount} nodes, ${stats.inputCount} inputs`);
 
@@ -821,11 +827,28 @@
    * must be freshly computed from Reference envelope values to be accurate.
    */
   const REF_OUTPUT_TO_TARGET_INPUT = {
+    // Energy and emissions (Key Values dashboard)
     "energy.target.total":           "reference.energy.total",            // j_32 → ref_j_32
     "emissions.target.subtotal":     "reference.emissions.subtotal",      // k_32 → ref_k_32
     "building.conditionedFloorArea": "reference.building.conditionedFloorArea", // h_15 → ref_h_15
     "building.serviceLife":          "reference.building.serviceLife",     // h_13 → ref_h_13
   };
+
+  /**
+   * Get merged REF_OUTPUT_TO_TARGET_INPUT including ComplianceNodes mappings
+   * This allows cross-model compliance ratio calculations
+   */
+  function getMergedRefOutputMapping() {
+    const nodes = window.TEUI.ComputationNodes || {};
+    const merged = { ...REF_OUTPUT_TO_TARGET_INPUT };
+
+    // Merge ComplianceNodes mapping if available
+    if (nodes.Compliance?.REF_OUTPUT_TO_TARGET_INPUT) {
+      Object.assign(merged, nodes.Compliance.REF_OUTPUT_TO_TARGET_INPUT);
+    }
+
+    return merged;
+  }
 
   function computeAllWithReference() {
     if (!initialized) {
@@ -846,8 +869,10 @@
 
       // Step 3: Copy Reference computed outputs to Target's reference.* inputs
       // This replaces stale CSV values with freshly computed Reference values
+      // Uses merged mapping to include both base and ComplianceNodes mappings
+      const refMapping = getMergedRefOutputMapping();
       let refOutputsCopied = 0;
-      for (const [refPath, targetInputPath] of Object.entries(REF_OUTPUT_TO_TARGET_INPUT)) {
+      for (const [refPath, targetInputPath] of Object.entries(refMapping)) {
         const refValue = state.getValueForModel(refModelId, refPath);
         if (refValue !== undefined && refValue !== null) {
           state.setValueForModel(targetId, targetInputPath, refValue);

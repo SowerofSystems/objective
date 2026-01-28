@@ -63,13 +63,33 @@ The mechanical section handles:
 ### Compliance Ratio Architecture
 
 Compliance ratios compare Target model values against Reference model values:
+- `m_113`: HSPF ratio (target_f_113 / ref_f_113)
 - `m_115`: AFUE ratio (target_j_115 / ref_j_115)
 - `m_116`: COPc ratio (target_j_116 / ref_j_116)
 - `m_117`: Cooling intensity ratio (INVERTED: ref_f_117 / target_f_117)
+- `m_118`: SRE ratio (target_d_118 / ref_d_118)
+- `m_119`: Ventilation rate ratio (target_d_119 / ref_d_119)
+- `n_124`: Free cooling compliance status (based on m_124 days)
 
-These are computed **after** both models run, requiring access to both value sets.
-The computation graph runs each model independently, so compliance ratios are
-calculated in a post-processing phase.
+#### Cross-Model Comparison Pattern
+
+The computation graph uses a **reference.* input injection** pattern:
+
+1. **Reference Inputs**: `ComplianceNodes.js` registers `reference.*` input nodes
+   (e.g., `reference.mechanical.heating.afue`)
+
+2. **REF_OUTPUT_TO_TARGET_INPUT Mapping**: After the Reference model computes,
+   its output values are copied to the Target model's `reference.*` inputs
+
+3. **Compliance Computation**: Compliance ratio nodes depend on both:
+   - Target values (e.g., `mechanical.heating.afue`)
+   - Reference inputs (e.g., `reference.mechanical.heating.afue`)
+
+4. **Recompute Target**: After copying Reference outputs, the Target model
+   is recomputed to calculate compliance ratios
+
+This pattern allows cross-model comparisons while keeping each model's
+computation independent and maintaining the incremental computation benefits.
 
 ## Code Generation
 
