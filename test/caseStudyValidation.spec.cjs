@@ -44,6 +44,19 @@ test.describe("Case Study Validation", () => {
 
       console.log(`Testing: ${csvFile}`);
 
+      // Reload page for each case study to ensure complete state isolation
+      await page.addInitScript(() => {
+        localStorage.setItem("disclaimerSeen", "true");
+      });
+      await page.goto(`file://${indexPath}`);
+      await page.waitForFunction(
+        () =>
+          window.TEUI?.ComputationIntegration?.isInitialized?.() &&
+          window.TEUI?.StateManager &&
+          window.TEUI?.FileHandler?.processImportedCSV,
+        { timeout: 60000 }
+      );
+
       // Import CSV and run validation
       const result = await page.evaluate(async (csv) => {
         return new Promise((resolve) => {

@@ -9,8 +9,8 @@ module.exports = defineConfig({
   testDir: "./test",
   testMatch: "**/*.spec.cjs",
 
-  // Maximum time one test can run
-  timeout: 30 * 1000,
+  // Maximum time one test can run (2 min for 12 case study reloads)
+  timeout: 120 * 1000,
 
   // Run tests in files in parallel
   fullyParallel: true,
