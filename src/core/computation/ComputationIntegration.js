@@ -371,9 +371,8 @@
       return;
     }
 
-    // In cutover mode, suppress listeners to prevent Section*.js cascade
-    const isCutover = window.TEUI.USE_COMPUTATION_GRAPH;
-    if (isCutover && StateManager.muteListeners) {
+    // Mute listeners during sync to prevent cascade
+    if (StateManager.muteListeners) {
       StateManager.muteListeners();
     }
 
@@ -416,7 +415,7 @@
     log(`Synced ${syncCount} computed values to StateManager`);
 
     // Unmute listeners after sync
-    if (isCutover && StateManager.unmuteListeners) {
+    if (StateManager.unmuteListeners) {
       StateManager.unmuteListeners();
     }
   }
@@ -1008,9 +1007,8 @@
       return 0;
     }
 
-    // In cutover mode, suppress listeners to prevent Section*.js cascade
-    const isCutover = window.TEUI.USE_COMPUTATION_GRAPH;
-    if (isCutover && StateManager.muteListeners) {
+    // Mute listeners during sync to prevent cascade
+    if (StateManager.muteListeners) {
       StateManager.muteListeners();
     }
 
@@ -1068,7 +1066,7 @@
     log(`Synced ${syncCount} Reference values to StateManager`);
 
     // Unmute listeners after sync
-    if (isCutover && StateManager.unmuteListeners) {
+    if (StateManager.unmuteListeners) {
       StateManager.unmuteListeners();
     }
 

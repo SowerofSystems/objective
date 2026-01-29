@@ -519,70 +519,21 @@
         ) {
           this.calculator.calculateAll();
 
-          // ✅ FIX (Oct 10): Refresh ALL Pattern A section UIs after calculateAll
-          // Pattern A sections use isolated state - DOM must be refreshed to show updated values
-          // Skip in cutover mode - graph handles all values, section refresh would overwrite
-          if (!window.TEUI.USE_COMPUTATION_GRAPH) {
-            console.log(
-              "[FileHandler] 🔄 Refreshing Pattern A section UIs after CSV import..."
-            );
-            const patternASections = [
-              "sect02",
-              "sect03",
-              "sect04",
-              "sect05",
-              "sect06",
-              "sect07",
-              "sect08",
-              "sect09",
-              "sect10",
-              "sect11",
-              "sect12",
-              "sect13",
-              "sect14",
-              "sect15",
-            ];
-
-            patternASections.forEach(sectionId => {
-              const section = window.TEUI?.SectionModules?.[sectionId];
-              if (section?.ModeManager?.refreshUI) {
-                section.ModeManager.refreshUI();
-                // ✅ Also update calculated display values (some sections need both calls)
-                if (section.ModeManager.updateCalculatedDisplayValues) {
-                  section.ModeManager.updateCalculatedDisplayValues();
-                }
-                console.log(`[FileHandler] ✅ ${sectionId} UI refreshed`);
+          // Refresh all section UIs after graph compute
+          const sectionIds = [
+            "sect01", "sect02", "sect03", "sect04", "sect05", "sect06",
+            "sect07", "sect08", "sect09", "sect10", "sect11", "sect12",
+            "sect13", "sect14", "sect15", "sect16", "sect17", "sect18"
+          ];
+          sectionIds.forEach(sectionId => {
+            const section = window.TEUI?.SectionModules?.[sectionId];
+            if (section?.ModeManager?.refreshUI) {
+              section.ModeManager.refreshUI();
+              if (section.ModeManager.updateCalculatedDisplayValues) {
+                section.ModeManager.updateCalculatedDisplayValues();
               }
-            });
-          } else {
-            // Cutover mode: Graph computed values, now refresh all section UIs
-            console.log("[FileHandler] ⚡ Cutover mode - refreshing all section UIs after graph compute");
-            const sectionIds = [
-              "sect01", "sect02", "sect03", "sect04", "sect05", "sect06",
-              "sect07", "sect08", "sect09", "sect10", "sect11", "sect12",
-              "sect13", "sect14", "sect15", "sect16", "sect17", "sect18"
-            ];
-            sectionIds.forEach(sectionId => {
-              const section = window.TEUI?.SectionModules?.[sectionId];
-              if (section?.ModeManager?.refreshUI) {
-                section.ModeManager.refreshUI();
-                if (section.ModeManager.updateCalculatedDisplayValues) {
-                  section.ModeManager.updateCalculatedDisplayValues();
-                }
-              }
-            });
-          }
-        }
-
-        // Sync ComputationGraph from StateManager after CSV import
-        // Only needed when legacy is primary (USE_COMPUTATION_GRAPH=false).
-        // When graph is primary, Calculator.calculateAll() already handles sync+compute.
-        if (window.TEUI?.ComputationIntegration?.syncFromStateManager &&
-            !window.TEUI.USE_COMPUTATION_GRAPH) {
-          console.log("[FileHandler] 🔄 Syncing ComputationGraph from StateManager...");
-          window.TEUI.ComputationIntegration.syncFromStateManager();
-          window.TEUI.ComputationIntegration.computeAll();
-          console.log("[FileHandler] ✅ ComputationGraph synced and recomputed");
+            }
+          });
         }
 
         this.showStatus(
