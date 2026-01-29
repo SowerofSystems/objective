@@ -512,6 +512,37 @@ TEUI.Calculator = (function () {
       // Step 5: Sync Reference computed values to StateManager (ref_* prefix)
       CI.syncReferenceToStateManager();
 
+      // Step 6: Sync DOM from graph state (since Section*.js listeners were muted)
+      const domBridge = CI.getDOMBridge();
+      if (domBridge) {
+        domBridge.syncFromState();
+        console.log("[Calculator] 🖥️ DOM synced from graph state");
+      }
+
+      // Step 7: Update all DOM elements via direct query (fallback for non-bound elements)
+      // This ensures computed values are displayed even if not bound to DOMBridge
+      const SM = window.TEUI.StateManager;
+      const FM = window.TEUI.FieldManager;
+      if (SM && FM) {
+        let domUpdates = 0;
+        document.querySelectorAll("[data-field-id]").forEach((el) => {
+          const fieldId = el.dataset.fieldId;
+          if (fieldId) {
+            const value = SM.getValue(fieldId);
+            if (value !== undefined && value !== null) {
+              // Update element content based on type
+              if (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
+                el.value = value;
+              } else {
+                el.textContent = value;
+              }
+              domUpdates++;
+            }
+          }
+        });
+        console.log(`[Calculator] 🖥️ Updated ${domUpdates} DOM elements from StateManager`);
+      }
+
       if (result) {
         console.log(`[Calculator] ✅ ComputationGraph complete: ${result.totalComputed} nodes in ${result.totalDuration?.toFixed(2)}ms`);
       }
