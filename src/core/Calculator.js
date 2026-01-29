@@ -512,15 +512,8 @@ TEUI.Calculator = (function () {
       // Step 5: Sync Reference computed values to StateManager (ref_* prefix)
       CI.syncReferenceToStateManager();
 
-      // Step 6: Sync DOM from graph state (since Section*.js listeners were muted)
-      const domBridge = CI.getDOMBridge();
-      if (domBridge) {
-        domBridge.syncFromState();
-        console.log("[Calculator] 🖥️ DOM synced from graph state");
-      }
-
-      // Step 7: Update all DOM elements via direct query (fallback for non-bound elements)
-      // This ensures computed values are displayed even if not bound to DOMBridge
+      // Step 6: Update all DOM elements directly from StateManager
+      // Since legacy Section*.js listeners were muted, we need to update DOM manually
       const SM = window.TEUI.StateManager;
       const FM = window.TEUI.FieldManager;
       if (SM && FM) {
