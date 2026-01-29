@@ -291,15 +291,35 @@ The following legacy Section*.js calculations must be converted to graph nodes b
 
 ### Current Status (January 28, 2026)
 
-- `USE_COMPUTATION_GRAPH = false` (12/12 tests pass in parallel mode)
+- `USE_COMPUTATION_GRAPH = false` (11/12 ref_j_32 pass in parallel mode)
 - **Parallel mode**: Both systems run, graph validated against legacy, legacy authoritative
-- **ref_j_32**: FIXED — graph computes Reference model `ref_j_32` correctly for all 12 case studies
-- **Section07**: FIXED — added d_51="Electric" to all standards in ReferenceValues.js
-- **Section06**: OK — all renewable fields sync correctly as INPUTs
-- **Section09**: **FIXED** — d_65/d_67 now COMPUTED with lookup tables, g_67="Regular" for all Reference models
-- **Section13**: PARALLEL OK — Cooling.js outputs synced as INPUTs
-- **Cutover**: NOT READY — Section13 needs psychrometric calculations as graph nodes
-- **Path forward**: Section13 is the only remaining cutover blocker requiring graph-native implementation
+- **ref_j_32**: 11/12 case studies match (AberdeenHouse has d_117 cooling demand difference)
+- **CoolingNodes.js**: IMPLEMENTED — psychrometric calculations, free cooling, m_124 as graph-native nodes
+- **Cooling.js guards**: ADDED — `USE_COMPUTATION_GRAPH` check skips initialization and listener registration
+- **Section09**: **FIXED** — d_65/d_67 now COMPUTED with lookup tables
+- **Cutover**: BLOCKED — times out at case 6, event loop blocked by Section*.js listeners
+
+### Cutover Investigation (January 28, 2026)
+
+Attempted `USE_COMPUTATION_GRAPH = true` with:
+1. CoolingNodes.js implementing h_124, m_124, latentLoadFactor as graph-native
+2. Cooling.js guards to skip initialization when cutover enabled
+
+**Result: Still times out at case 6**
+
+The timeout is NOT caused by:
+- Disclaimer modal (fixed with localStorage pre-set in test)
+- Cooling.js listeners (guarded with USE_COMPUTATION_GRAPH check)
+- Error in validation code (inner try/catch added, no error thrown)
+
+**Root cause hypothesis**: Section*.js listeners still fire when ComputationIntegration.syncToStateManager() writes values. These listeners call Section.calculateAll() which may:
+1. Wait for values that the graph doesn't produce in the expected order
+2. Trigger calculation cascades that overwhelm the event loop
+
+**Path forward options**:
+1. Add USE_COMPUTATION_GRAPH guards to all Section*.js calculateAll() functions
+2. Implement a "listener suppression" mode in StateManager during cutover sync
+3. Migrate remaining Section calculations to graph nodes incrementally
 
 ## Path to UI Integration
 

@@ -8,6 +8,11 @@ const RESULTS_FILE = path.join(__dirname, "case-study-results.json");
 
 test.describe("Case Study Validation", () => {
   test("validate all case study CSVs", async ({ page }) => {
+    // Set localStorage BEFORE page loads to prevent disclaimer modal
+    await page.addInitScript(() => {
+      localStorage.setItem("disclaimerSeen", "true");
+    });
+
     // Load the calculator
     const indexPath = path.join(__dirname, "..", "index.html");
     await page.goto(`file://${indexPath}`);
@@ -48,6 +53,7 @@ test.describe("Case Study Validation", () => {
 
             // Wait for calculations
             setTimeout(() => {
+              try {
               // Run validation
               const graph = window.TEUI.ComputationIntegration.getGraph();
               const state = window.TEUI.ComputationIntegration.getState();
@@ -381,6 +387,9 @@ test.describe("Case Study Validation", () => {
               }
 
               resolve(result);
+              } catch (innerErr) {
+                resolve({ error: `Inner error: ${innerErr.message}`, mismatches: 0, mismatchDetails: [] });
+              }
             }, 500);
           } catch (err) {
             resolve({ error: err.message, mismatches: 0, mismatchDetails: [] });

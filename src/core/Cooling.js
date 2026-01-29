@@ -797,6 +797,12 @@ window.TEUI.CoolingCalculations = (function () {
   function registerWithStateManager() {
     if (typeof window.TEUI.StateManager === "undefined") return;
 
+    // Skip listener registration in cutover mode - graph handles all calculations
+    if (window.TEUI.USE_COMPUTATION_GRAPH) {
+      console.log("[Cooling] Skipping listener registration - USE_COMPUTATION_GRAPH is true");
+      return;
+    }
+
     const sm = window.TEUI.StateManager;
 
     // Register dependencies on climate data
@@ -1026,6 +1032,13 @@ window.TEUI.CoolingCalculations = (function () {
   function initialize(params = {}) {
     // Already initialized - avoid duplicate initialization
     if (moduleState.initialized) return;
+
+    // Skip initialization in cutover mode - CoolingNodes.js handles all calculations
+    if (window.TEUI.USE_COMPUTATION_GRAPH) {
+      console.log("[Cooling] Skipping initialization - USE_COMPUTATION_GRAPH is true");
+      moduleState.initialized = true;
+      return;
+    }
 
     // Try to get values from StateManager if available
     if (typeof window.TEUI.StateManager !== "undefined") {
