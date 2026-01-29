@@ -348,14 +348,14 @@
     {
       id: "compliance.freeCooling.status",
       legacyId: "n_124",
-      dependencies: ["ventilation.freeCooling.mechanicalDays"],
+      dependencies: ["cooling.daysActiveCooling"],
       classification: "C",
       section: "S13",
       label: "Free Cooling Compliance Status",
       compute: (inputs) => {
         // Parnas table: free-cooling-compliance.json
         // m_124 is the number of days requiring mechanical cooling
-        const mechanicalDays = parseNum(inputs["ventilation.freeCooling.mechanicalDays"], 0);
+        const mechanicalDays = parseNum(inputs["cooling.daysActiveCooling"], 0);
         return mechanicalDays <= 0 ? "✓" : "⚠";
       }
     }
@@ -375,7 +375,7 @@
     "mechanical.cooling.intensity":       "reference.mechanical.cooling.intensity",
     "mechanical.ventilation.efficiency":  "reference.mechanical.ventilation.efficiency",
     "mechanical.ventilation.ratePerPerson": "reference.mechanical.ventilation.ratePerPerson",
-    "ventilation.freeCooling.mechanicalDays": "reference.mechanical.cooling.mechanicalDays"
+    "cooling.daysActiveCooling": "reference.mechanical.cooling.mechanicalDays"
   };
 
   // ============================================================================

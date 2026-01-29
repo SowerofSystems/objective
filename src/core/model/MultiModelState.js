@@ -57,11 +57,14 @@
      */
     function getClassification(fieldPath) {
       // G-fields: Geometry and location data (shared across models)
+      // Climate data is geographic - shared between Target and Reference models
       if (
         fieldPath.startsWith("geometry.") ||
         fieldPath.startsWith("climate.location.") ||
-        fieldPath === "climate.heating.degreedays" ||
-        fieldPath === "climate.cooling.degreedays"
+        fieldPath.startsWith("climate.heating.") ||
+        fieldPath.startsWith("climate.cooling.") ||
+        fieldPath === "climate.timeframe" ||
+        fieldPath === "climate.coolingDays"
       ) {
         return "G";
       }

@@ -102,6 +102,22 @@ test.describe("Case Study Validation", () => {
                 d_113_heatingType: { old: SM.getValue("d_113"), new: state.getValueForModel(targetId, "mechanical.heating.systemType") },
               };
 
+              // Debug ref_m_124 dependencies for Reference model
+              const allModels = state.getAllModels ? state.getAllModels() : [];
+              const refModelForM124 = allModels.find(m => m.modelType === "reference");
+              const ridForM124 = refModelForM124?.id;
+              const refM124Debug = ridForM124 ? {
+                m_124: { old: parseFloat(SM.getValue("ref_m_124")) || 0, new: parseFloat(state.getValueForModel(ridForM124, "cooling.daysActiveCooling")) || 0 },
+                m_129: { old: parseFloat(SM.getValue("ref_m_129")) || 0, new: parseFloat(state.getValueForModel(ridForM124, "energy.ced.mitigated")) || 0 },
+                dailyFreeCooling: { new: parseFloat(state.getValueForModel(ridForM124, "cooling.dailyFreeCoolingPotential")) || 0 },
+                d_21: { old: SM.getValue("ref_d_21") || SM.getValue("d_21"), new: state.getValueForModel(ridForM124, "climate.cooling.degreedays") },
+                m_19: { old: SM.getValue("ref_m_19") || SM.getValue("m_19"), new: state.getValueForModel(ridForM124, "climate.coolingDays") },
+                d_116: { old: SM.getValue("ref_d_116"), new: state.getValueForModel(ridForM124, "mechanical.cooling.systemType") },
+                d_129_unmitigated: { old: parseFloat(SM.getValue("ref_d_129")) || 0, new: parseFloat(state.getValueForModel(ridForM124, "energy.ced.unmitigated")) || 0 },
+                h_124_freeCoolingLimit: { old: parseFloat(SM.getValue("ref_h_124")) || 0, new: parseFloat(state.getValueForModel(ridForM124, "cooling.freeCoolingLimit")) || 0 },
+                d_120_ventVolumetric: { old: parseFloat(SM.getValue("ref_d_120")) || 0, new: parseFloat(state.getValueForModel(ridForM124, "ventilation.volumetricRate")) || 0 },
+              } : null;
+
               // Debug i_103 (air leakage heat loss) chain
               // Formula: i_103 = (1.21 × NRL50 × area × HDD × 24) / (N_factor × 1000)
               const i103Debug = {
@@ -181,6 +197,7 @@ test.describe("Case Study Validation", () => {
                 j27Debug,
                 climateDebug,
                 i103Debug,
+                refM124Debug,
                 refDebug,
               };
               const ABS_TOL = 0.01;
@@ -495,6 +512,20 @@ test.describe("Case Study Validation", () => {
           console.log(`       d_108 method:    OLD="${a.d_108_method.old}" NEW="${a.d_108_method.new}"`);
           console.log(`       g_109 measAch50: OLD=${a.g_109_measuredAch50.old.toFixed(2)} NEW=${a.g_109_measuredAch50.new.toFixed(2)}`);
           console.log(`       d_105 volume:    OLD=${a.d_105_volume.old.toFixed(2)} NEW=${a.d_105_volume.new.toFixed(2)}`);
+        }
+        // Show ref_m_124 debug if ref_m_124 is a mismatch
+        if (result.mismatchDetails.some(m => m.legacyId === "m_124" || m.legacyId === "ref_m_124") && result.refM124Debug) {
+          const d = result.refM124Debug;
+          console.log(`     [ref_m_124 Days Active Cooling Dependencies]`);
+          console.log(`       m_124:       OLD=${d.m_124.old.toFixed(2)} NEW=${d.m_124.new.toFixed(2)} diff=${(d.m_124.new - d.m_124.old).toFixed(2)}`);
+          console.log(`       m_129 (CED mitigated):  OLD=${d.m_129.old.toFixed(2)} NEW=${d.m_129.new.toFixed(2)} diff=${(d.m_129.new - d.m_129.old).toFixed(2)}`);
+          console.log(`       dailyFreeCooling:       NEW=${d.dailyFreeCooling.new.toFixed(4)}`);
+          console.log(`       d_21 CDD:    OLD=${d.d_21.old} NEW=${d.d_21.new}`);
+          console.log(`       m_19 days:   OLD=${d.m_19.old} NEW=${d.m_19.new}`);
+          console.log(`       d_116 cool:  OLD=${d.d_116.old} NEW=${d.d_116.new}`);
+          console.log(`       d_129 (CED unmitigated):  OLD=${d.d_129_unmitigated.old.toFixed(2)} NEW=${d.d_129_unmitigated.new.toFixed(2)} diff=${(d.d_129_unmitigated.new - d.d_129_unmitigated.old).toFixed(2)}`);
+          console.log(`       h_124 (free cool limit): OLD=${d.h_124_freeCoolingLimit.old.toFixed(2)} NEW=${d.h_124_freeCoolingLimit.new.toFixed(2)}`);
+          console.log(`       d_120 (vent rate):       OLD=${d.d_120_ventVolumetric.old.toFixed(2)} NEW=${d.d_120_ventVolumetric.new.toFixed(2)}`);
         }
         // Show e_10 Reference debug if e_10 is a mismatch
         if (result.mismatchDetails.some(m => m.legacyId === "e_10") && result.refDebug) {

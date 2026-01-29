@@ -521,37 +521,42 @@
 
           // ✅ FIX (Oct 10): Refresh ALL Pattern A section UIs after calculateAll
           // Pattern A sections use isolated state - DOM must be refreshed to show updated values
-          console.log(
-            "[FileHandler] 🔄 Refreshing Pattern A section UIs after CSV import..."
-          );
-          const patternASections = [
-            "sect02",
-            "sect03",
-            "sect04",
-            "sect05",
-            "sect06",
-            "sect07",
-            "sect08",
-            "sect09",
-            "sect10",
-            "sect11",
-            "sect12",
-            "sect13",
-            "sect14",
-            "sect15",
-          ];
+          // Skip in cutover mode - graph handles all values, section refresh would overwrite
+          if (!window.TEUI.USE_COMPUTATION_GRAPH) {
+            console.log(
+              "[FileHandler] 🔄 Refreshing Pattern A section UIs after CSV import..."
+            );
+            const patternASections = [
+              "sect02",
+              "sect03",
+              "sect04",
+              "sect05",
+              "sect06",
+              "sect07",
+              "sect08",
+              "sect09",
+              "sect10",
+              "sect11",
+              "sect12",
+              "sect13",
+              "sect14",
+              "sect15",
+            ];
 
-          patternASections.forEach(sectionId => {
-            const section = window.TEUI?.SectionModules?.[sectionId];
-            if (section?.ModeManager?.refreshUI) {
-              section.ModeManager.refreshUI();
-              // ✅ Also update calculated display values (some sections need both calls)
-              if (section.ModeManager.updateCalculatedDisplayValues) {
-                section.ModeManager.updateCalculatedDisplayValues();
+            patternASections.forEach(sectionId => {
+              const section = window.TEUI?.SectionModules?.[sectionId];
+              if (section?.ModeManager?.refreshUI) {
+                section.ModeManager.refreshUI();
+                // ✅ Also update calculated display values (some sections need both calls)
+                if (section.ModeManager.updateCalculatedDisplayValues) {
+                  section.ModeManager.updateCalculatedDisplayValues();
+                }
+                console.log(`[FileHandler] ✅ ${sectionId} UI refreshed`);
               }
-              console.log(`[FileHandler] ✅ ${sectionId} UI refreshed`);
-            }
-          });
+            });
+          } else {
+            console.log("[FileHandler] ⚡ Cutover mode - skipping Pattern A section refresh");
+          }
         }
 
         // Sync ComputationGraph from StateManager after CSV import
