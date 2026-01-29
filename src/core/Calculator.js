@@ -512,28 +512,9 @@ TEUI.Calculator = (function () {
       // Step 5: Sync Reference computed values to StateManager (ref_* prefix)
       CI.syncReferenceToStateManager();
 
-      // Step 6: Update all DOM elements directly from StateManager
-      // Since legacy Section*.js listeners were muted, we need to update DOM manually
-      const SM = window.TEUI.StateManager;
-      const FM = window.TEUI.FieldManager;
-      if (SM && FM) {
-        let domUpdates = 0;
-        document.querySelectorAll("[data-field-id]").forEach((el) => {
-          const fieldId = el.dataset.fieldId;
-          if (fieldId) {
-            const value = SM.getValue(fieldId);
-            if (value !== undefined && value !== null) {
-              // Update element content based on type
-              if (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
-                el.value = value;
-              } else {
-                el.textContent = value;
-              }
-              domUpdates++;
-            }
-          }
-        });
-        console.log(`[Calculator] 🖥️ Updated ${domUpdates} DOM elements from StateManager`);
+      // Step 6: Unmute listeners (UI refresh handled by caller if needed)
+      if (window.TEUI.StateManager?.unmuteListeners) {
+        window.TEUI.StateManager.unmuteListeners();
       }
 
       if (result) {

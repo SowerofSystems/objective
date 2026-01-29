@@ -555,7 +555,22 @@
               }
             });
           } else {
-            console.log("[FileHandler] ⚡ Cutover mode - skipping Pattern A section refresh");
+            // Cutover mode: Graph computed values, now refresh all section UIs
+            console.log("[FileHandler] ⚡ Cutover mode - refreshing all section UIs after graph compute");
+            const sectionIds = [
+              "sect01", "sect02", "sect03", "sect04", "sect05", "sect06",
+              "sect07", "sect08", "sect09", "sect10", "sect11", "sect12",
+              "sect13", "sect14", "sect15", "sect16", "sect17", "sect18"
+            ];
+            sectionIds.forEach(sectionId => {
+              const section = window.TEUI?.SectionModules?.[sectionId];
+              if (section?.ModeManager?.refreshUI) {
+                section.ModeManager.refreshUI();
+                if (section.ModeManager.updateCalculatedDisplayValues) {
+                  section.ModeManager.updateCalculatedDisplayValues();
+                }
+              }
+            });
           }
         }
 
