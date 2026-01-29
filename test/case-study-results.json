@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-01-29T00:59:22.388Z",
+  "timestamp": "2026-01-29T01:49:25.621Z",
   "summary": {
     "total": 12,
-    "passed": 11,
-    "failed": 1,
+    "passed": 12,
+    "failed": 0,
     "refJ32": {
       "total": 12,
       "matched": 12,
@@ -11,38 +11,13 @@
       "errors": 0
     }
   },
-  "uniqueMismatches": [
-    {
-      "legacyId": "m_124",
-      "path": "cooling.daysActiveCooling",
-      "occurrences": [
-        {
-          "file": "01-ThreeFeathersTerrace.csv",
-          "old": -21,
-          "new": -21.3,
-          "pctDiff": "1.43%"
-        }
-      ]
-    },
-    {
-      "legacyId": "ref_m_124",
-      "path": "reference.mechanical.cooling.mechanicalDays",
-      "occurrences": [
-        {
-          "file": "01-ThreeFeathersTerrace.csv",
-          "old": -23,
-          "new": -22.7,
-          "pctDiff": "1.30%"
-        }
-      ]
-    }
-  ],
+  "uniqueMismatches": [],
   "byFile": [
     {
       "file": "01-ThreeFeathersTerrace.csv",
-      "matches": 350,
+      "matches": 352,
       "close": 16,
-      "mismatches": 2,
+      "mismatches": 0,
       "refJ32": {
         "legacy": 278554.17841189646,
         "computed": 278553.7524,
