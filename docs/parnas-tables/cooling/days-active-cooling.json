@@ -17,10 +17,10 @@
         "description": "Annual mitigated cooling energy demand (m_129)"
       },
       {
-        "name": "cooling.freeCoolingLimit",
+        "name": "cooling.dailyFreeCoolingPotential",
         "type": "number",
-        "unit": "kWh/yr",
-        "description": "Free cooling capacity (h_124)"
+        "unit": "kWh/day",
+        "description": "Daily free cooling potential from ventilation"
       },
       {
         "name": "climate.cooling.degreedays",
@@ -29,7 +29,7 @@
         "description": "Cooling degree days (d_21)"
       },
       {
-        "name": "climate.cooling.seasonDays",
+        "name": "climate.coolingDays",
         "type": "number",
         "unit": "days",
         "description": "Cooling season length (m_19)"
@@ -41,15 +41,16 @@
       }
     ],
     "output": {
-      "type": "number",
+      "type": "integer",
       "unit": "days",
-      "precision": 1
+      "precision": 0,
+      "note": "Math.round() applied to match legacy Section13.js"
     }
   },
   "domain": {
     "preconditions": [
       {
-        "condition": "climate.cooling.seasonDays > 0",
+        "condition": "climate.coolingDays > 0",
         "description": "Must have cooling season"
       }
     ]
@@ -62,7 +63,7 @@
     },
     {
       "condition": "m_19 > 0 AND d_21 > 0",
-      "output": "((m_129/d_21 - h_124/d_21) × d_21) / (m_19 × 24)",
+      "output": "(m_129 - dailyFreeCooling × d_21) / (m_19 × 24)",
       "note": "Unmet cooling load divided by daily cooling capacity"
     },
     {
@@ -77,39 +78,54 @@
   "formula": {
     "symbolic": "m_124 = (E50 - E51) / (m_19 × 24)",
     "where": {
-      "E50": "Seasonal cooling load = (m_129 / d_21) × d_21",
-      "E51": "Seasonal free cooling = (h_124 / d_21) × d_21"
+      "E50": "Seasonal cooling load = m_129 (annual mitigated CED)",
+      "E51": "Seasonal free cooling = dailyFreeCoolingPotential × d_21",
+      "m_19": "Cooling season length in days",
+      "d_21": "Cooling degree days"
     },
-    "legacy": "Cooling.js calculateDaysActiveCooling() lines 367-415"
+    "simplified": "m_124 = (m_129 - dailyFreeCooling × CDD) / (coolingDays × 24)",
+    "legacy": "CoolingNodes.js lines 371-422"
   },
   "tests": [
     {
       "name": "Some mechanical cooling needed",
       "inputs": {
         "energy.ced.mitigated": 10000,
-        "cooling.freeCoolingLimit": 3000,
+        "cooling.dailyFreeCoolingPotential": 8.93,
         "climate.cooling.degreedays": 336,
-        "climate.cooling.seasonDays": 120,
+        "climate.coolingDays": 120,
         "mechanical.cooling.systemType": "Cooling"
       },
-      "expected": 2.43,
-      "tolerance": 0.1
+      "expected": 2,
+      "note": "Math.round((10000 - 8.93 × 336) / (120 × 24)) = 2"
     },
     {
       "name": "No cooling system",
       "inputs": {
         "energy.ced.mitigated": 10000,
-        "cooling.freeCoolingLimit": 3000,
+        "cooling.dailyFreeCoolingPotential": 8.93,
         "climate.cooling.degreedays": 336,
-        "climate.cooling.seasonDays": 120,
+        "climate.coolingDays": 120,
         "mechanical.cooling.systemType": "No Cooling"
       },
       "expected": 0
+    },
+    {
+      "name": "Oversized ventilation (negative days)",
+      "inputs": {
+        "energy.ced.mitigated": 2000,
+        "cooling.dailyFreeCoolingPotential": 10,
+        "climate.cooling.degreedays": 336,
+        "climate.coolingDays": 120,
+        "mechanical.cooling.systemType": "Cooling"
+      },
+      "expected": -1,
+      "note": "Free cooling exceeds load: Math.round((2000 - 10 × 336) / (120 × 24)) = -1"
     }
   ],
   "references": [
     {
-      "source": "Cooling.js:367-415 (calculateDaysActiveCooling)"
+      "source": "CoolingNodes.js:371-422 (cooling.daysActiveCooling)"
     },
     {
       "source": "COOLING-TARGET.csv cells E50-E55"

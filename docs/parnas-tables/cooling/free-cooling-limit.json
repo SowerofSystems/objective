@@ -5,16 +5,17 @@
   "section": "S13",
   "classification": "C",
   "_meta": {
-    "description": "Maximum annual cooling energy available from ventilation (night cooling). Based on mass air flow, temperature differential between indoor setpoint and outdoor night temperature, and cooling season length.",
-    "stage": "Stage 1 - Independent (no m_129 dependency)"
+    "description": "Maximum annual cooling energy available from ventilation (night cooling). Based on mass air flow, temperature differential between indoor setpoint and outdoor night temperature, and cooling season length. Adjusted for ventilation schedule setback.",
+    "stage": "Stage 1 - Independent (no m_129 dependency)",
+    "implementation": "Two-step: cooling.freeCoolingRaw (raw calculation) → cooling.freeCoolingLimit (with setback)"
   },
   "signature": {
     "inputs": [
       {
-        "name": "ventilation.flowRate",
+        "name": "ventilation.volumeRate",
         "type": "number",
         "unit": "m³/hr",
-        "description": "Ventilation flow rate (h_120)"
+        "description": "Ventilation volume flow rate (h_120)"
       },
       {
         "name": "climate.cooling.nightTemp",
@@ -23,16 +24,27 @@
         "description": "Night-time outdoor temperature (l_20)"
       },
       {
-        "name": "mechanical.cooling.setpoint",
+        "name": "climate.cooling.setpoint",
         "type": "number",
         "unit": "°C",
         "description": "Indoor cooling setpoint temperature (h_24)"
       },
       {
-        "name": "climate.cooling.seasonDays",
+        "name": "climate.coolingDays",
         "type": "number",
         "unit": "days",
         "description": "Cooling season length (m_19)"
+      },
+      {
+        "name": "mechanical.ventilation.method",
+        "type": "string",
+        "description": "Ventilation operation method - 'constant' or 'schedule'"
+      },
+      {
+        "name": "mechanical.ventilation.unoccupiedSetback",
+        "type": "number",
+        "unit": "%",
+        "description": "Setback percentage during unoccupied hours (k_120)"
       }
     ],
     "output": {
@@ -56,11 +68,11 @@
   "domain": {
     "preconditions": [
       {
-        "condition": "ventilation.flowRate >= 0",
+        "condition": "ventilation.volumeRate >= 0",
         "description": "Ventilation rate cannot be negative"
       },
       {
-        "condition": "climate.cooling.seasonDays > 0",
+        "condition": "climate.coolingDays > 0",
         "description": "Must have cooling season for free cooling"
       }
     ],
@@ -73,53 +85,84 @@
   },
   "behavior": [
     {
-      "condition": "setpoint > nightTemp",
-      "output": "massFlowRate × Cp × (setpoint - nightTemp) × 0.024 × seasonDays",
-      "note": "Free cooling works when indoor is warmer than outdoor night temp"
-    },
-    {
       "condition": "setpoint <= nightTemp",
       "output": "0",
       "note": "No free cooling potential when outdoor is warmer than setpoint"
+    },
+    {
+      "condition": "setpoint > nightTemp AND method == 'constant'",
+      "output": "freeCoolingRaw",
+      "note": "Constant ventilation uses full free cooling potential"
+    },
+    {
+      "condition": "setpoint > nightTemp AND method == 'schedule'",
+      "output": "freeCoolingRaw × (setbackPercent / 100)",
+      "note": "Scheduled ventilation applies setback reduction"
     }
   ],
   "formula": {
-    "symbolic": "h_124 = (h_120/3600) × 1.204 × 1005 × (h_24 - l_20) × 0.024 × m_19",
-    "steps": [
-      "1. Convert flow rate: m³/s = h_120 / 3600",
-      "2. Mass flow rate: kg/s = m³/s × 1.204",
-      "3. Heat removal power: W = kg/s × 1005 × (T_indoor - T_night)",
-      "4. Daily energy: kWh/day = W × 0.024",
-      "5. Annual energy: kWh/yr = kWh/day × m_19"
-    ],
-    "legacy": "Cooling.js calculateFreeCoolingLimit() lines 302-341"
+    "rawCalculation": {
+      "symbolic": "freeCoolingRaw = (h_120/3600) × 1.204 × 1005 × (h_24 - l_20) × 0.024 × m_19",
+      "steps": [
+        "1. Convert flow rate: m³/s = h_120 / 3600",
+        "2. Mass flow rate: kg/s = m³/s × 1.204",
+        "3. Heat removal power: W = kg/s × 1005 × (T_indoor - T_night)",
+        "4. Daily energy: kWh/day = W × 0.024",
+        "5. Annual energy: kWh/yr = kWh/day × m_19"
+      ]
+    },
+    "setbackAdjustment": {
+      "symbolic": "h_124 = freeCoolingRaw × setbackFactor",
+      "where": {
+        "setbackFactor": "1.0 for 'constant' ventilation, (k_120 / 100) for 'schedule' ventilation"
+      }
+    },
+    "legacy": "CoolingNodes.js:224-306 (freeCoolingRaw → freeCoolingLimit)"
   },
   "tests": [
     {
-      "name": "Typical residential (Meadow case)",
+      "name": "Constant ventilation (full potential)",
       "inputs": {
-        "ventilation.flowRate": 288,
+        "ventilation.volumeRate": 288,
         "climate.cooling.nightTemp": 20.43,
-        "mechanical.cooling.setpoint": 24,
-        "climate.cooling.seasonDays": 120
+        "climate.cooling.setpoint": 24,
+        "climate.coolingDays": 120,
+        "mechanical.ventilation.method": "constant",
+        "mechanical.ventilation.unoccupiedSetback": 0
       },
       "expected": 348.35,
       "tolerance": 1.0
     },
     {
+      "name": "Scheduled ventilation with 50% setback",
+      "inputs": {
+        "ventilation.volumeRate": 288,
+        "climate.cooling.nightTemp": 20.43,
+        "climate.cooling.setpoint": 24,
+        "climate.coolingDays": 120,
+        "mechanical.ventilation.method": "schedule",
+        "mechanical.ventilation.unoccupiedSetback": 50
+      },
+      "expected": 174.18,
+      "tolerance": 1.0,
+      "note": "348.35 × 0.5 = 174.18"
+    },
+    {
       "name": "No cooling potential (night warmer than setpoint)",
       "inputs": {
-        "ventilation.flowRate": 500,
+        "ventilation.volumeRate": 500,
         "climate.cooling.nightTemp": 26,
-        "mechanical.cooling.setpoint": 24,
-        "climate.cooling.seasonDays": 120
+        "climate.cooling.setpoint": 24,
+        "climate.coolingDays": 120,
+        "mechanical.ventilation.method": "constant",
+        "mechanical.ventilation.unoccupiedSetback": 0
       },
       "expected": 0
     }
   ],
   "references": [
     {
-      "source": "Cooling.js:302-341 (calculateFreeCoolingLimit)"
+      "source": "CoolingNodes.js:224-306 (freeCoolingRaw → freeCoolingLimit)"
     },
     {
       "source": "COOLING-TARGET.csv cells A28-A33"
