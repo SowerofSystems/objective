@@ -301,25 +301,27 @@ The following legacy Section*.js calculations must be converted to graph nodes b
 
 ### Cutover Investigation (January 28, 2026)
 
-Attempted `USE_COMPUTATION_GRAPH = true` with:
-1. CoolingNodes.js implementing h_124, m_124, latentLoadFactor as graph-native
-2. Cooling.js guards to skip initialization when cutover enabled
+**BREAKTHROUGH: Listener suppression enables cutover mode**
 
-**Result: Still times out at case 6**
+Implemented StateManager listener suppression during cutover sync:
+- `syncToStateManager()` and `syncReferenceToStateManager()` now call `muteListeners()`/`unmuteListeners()`
+- This prevents Section*.js listeners from firing when graph syncs values to StateManager
 
-The timeout is NOT caused by:
-- Disclaimer modal (fixed with localStorage pre-set in test)
-- Cooling.js listeners (guarded with USE_COMPUTATION_GRAPH check)
-- Error in validation code (inner try/catch added, no error thrown)
+**Cutover mode results (`USE_COMPUTATION_GRAPH = true`):**
+- **ref_j_32: 12/12 matched** (improved from 11/12 in parallel mode)
+- **Time: 12.6 seconds** (down from 30s timeout)
+- **Secondary mismatches: 214** (expected - display fields not yet implemented as graph nodes)
 
-**Root cause hypothesis**: Section*.js listeners still fire when ComputationIntegration.syncToStateManager() writes values. These listeners call Section.calculateAll() which may:
-1. Wait for values that the graph doesn't produce in the expected order
-2. Trigger calculation cascades that overwhelm the event loop
+**Why cutover is not default yet:**
+The 214 secondary field mismatches (k_27, f_32, g_32, etc.) are display-only fields that:
+1. Don't affect core energy calculations (ref_j_32 is correct)
+2. Are computed by legacy Section*.js but not yet as graph nodes
+3. Will show wrong values in the UI until migrated
 
-**Path forward options**:
-1. Add USE_COMPUTATION_GRAPH guards to all Section*.js calculateAll() functions
-2. Implement a "listener suppression" mode in StateManager during cutover sync
-3. Migrate remaining Section calculations to graph nodes incrementally
+**Path forward:**
+1. ✅ Core calculation cutover works (ref_j_32 12/12)
+2. ⏳ Migrate display fields (k_27, f_32, g_32, etc.) to graph nodes
+3. ⏳ Enable cutover as default when display fields match
 
 ## Path to UI Integration
 

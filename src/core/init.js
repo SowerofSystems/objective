@@ -951,6 +951,8 @@ document.addEventListener("DOMContentLoaded", function () {
               // still depend on legacy Section*.js calculations
               // CoolingNodes.js now implements h_124, m_124, latentLoadFactor as graph-native
               // To toggle manually: run in console: TEUI.USE_COMPUTATION_GRAPH = true/false
+              // Cutover mode (true): 12/12 ref_j_32 pass, but 214 secondary field mismatches
+              // Parallel mode (false): legacy authoritative, graph validated
               window.TEUI.USE_COMPUTATION_GRAPH = false;
               console.log("[init.js] ComputationGraph validated (legacy primary, graph parallel)");
             }

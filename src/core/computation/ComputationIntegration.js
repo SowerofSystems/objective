@@ -371,6 +371,12 @@
       return;
     }
 
+    // In cutover mode, suppress listeners to prevent Section*.js cascade
+    const isCutover = window.TEUI.USE_COMPUTATION_GRAPH;
+    if (isCutover && StateManager.muteListeners) {
+      StateManager.muteListeners();
+    }
+
     const targetId = state.getActiveModelId();
     let syncCount = 0;
 
@@ -408,6 +414,11 @@
     }
 
     log(`Synced ${syncCount} computed values to StateManager`);
+
+    // Unmute listeners after sync
+    if (isCutover && StateManager.unmuteListeners) {
+      StateManager.unmuteListeners();
+    }
   }
 
   /**
@@ -997,8 +1008,19 @@
       return 0;
     }
 
+    // In cutover mode, suppress listeners to prevent Section*.js cascade
+    const isCutover = window.TEUI.USE_COMPUTATION_GRAPH;
+    if (isCutover && StateManager.muteListeners) {
+      StateManager.muteListeners();
+    }
+
     const refModelId = getRefModelId();
-    if (!refModelId) return 0;
+    if (!refModelId) {
+      if (isCutover && StateManager.unmuteListeners) {
+        StateManager.unmuteListeners();
+      }
+      return 0;
+    }
 
     let syncCount = 0;
 
@@ -1044,6 +1066,12 @@
     }
 
     log(`Synced ${syncCount} Reference values to StateManager`);
+
+    // Unmute listeners after sync
+    if (isCutover && StateManager.unmuteListeners) {
+      StateManager.unmuteListeners();
+    }
+
     return syncCount;
   }
 
