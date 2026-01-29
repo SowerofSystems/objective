@@ -417,7 +417,8 @@
         const daysActiveCooling = E52 / (m_19 * 24);
 
         // Note: Can be negative (oversized ventilation)
-        return +daysActiveCooling.toFixed(1);
+        // Round to integer to match Section13.js line 3282: Math.round(activeCoolingDays)
+        return Math.round(daysActiveCooling);
       }
     },
 
