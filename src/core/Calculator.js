@@ -485,115 +485,53 @@ TEUI.Calculator = (function () {
     }
 
     // ========================================================================
-    // NEW: Use ComputationGraph instead of legacy section calculations
-    // When enabled, this bypasses all legacy Section*.js calculateAll() calls
-    // and lets the ComputationGraph + DOMBridge handle everything
+    // ComputationGraph is the single source of truth for all calculations
+    // Legacy Section*.js calculateAll() functions are no longer used
     // ========================================================================
-    if (window.TEUI?.ComputationIntegration?.isInitialized?.() &&
-        window.TEUI.USE_COMPUTATION_GRAPH) {
-      console.log("[Calculator] 🚀 Using ComputationGraph (legacy bypassed)");
-
-      const CI = window.TEUI.ComputationIntegration;
-
-      // Step 1: Sync Target inputs from StateManager
-      CI.syncFromStateManager();
-
-      // Step 2: Populate Reference model from ReferenceValues.js
-      // This eliminates dependency on legacy Section calculations for Reference
-      const refPopResult = CI.populateReferenceModel();
-      console.log(`[Calculator] 📋 Reference model: ${refPopResult.gFieldsCopied} G-fields, ${refPopResult.cFieldsLoaded} C-fields from standard`);
-
-      // Step 3: Compute both Target and Reference models
-      const result = CI.computeAllWithReference();
-
-      // Step 4: Sync Target computed values to StateManager
-      CI.syncToStateManager();
-
-      // Step 5: Sync Reference computed values to StateManager (ref_* prefix)
-      CI.syncReferenceToStateManager();
-
-      // Step 6: Unmute listeners
-      if (window.TEUI.StateManager?.unmuteListeners) {
-        window.TEUI.StateManager.unmuteListeners();
-      }
-
-      // Step 7: Update all section displays (since listeners were muted during sync)
-      // This ensures DOM reflects computed values - same as Tilt button behavior
-      Object.keys(window.TEUI.SectionModules || {}).forEach(sectionKey => {
-        const section = window.TEUI.SectionModules[sectionKey];
-        if (section?.ModeManager?.updateCalculatedDisplayValues) {
-          section.ModeManager.updateCalculatedDisplayValues();
-        }
-      });
-
-      if (result) {
-        console.log(`[Calculator] ✅ ComputationGraph complete: ${result.totalComputed} nodes in ${result.totalDuration?.toFixed(2)}ms`);
-      }
-      // End performance timing
-      if (window.TEUI?.Clock?.markCalculationEnd) {
-        window.TEUI.Clock.markCalculationEnd();
-      }
+    if (!window.TEUI?.ComputationIntegration?.isInitialized?.()) {
+      console.warn("[Calculator] ComputationIntegration not initialized - skipping calculation");
       return;
     }
 
-    // Define a logical calculation order based on major dependencies
-    const calcOrder = [
-      "sect02", // Building Info
-      "sect03", // Climate
-      "sect08", // IAQ
-      "sect09", // Internal Gains
-      "sect10", // Radiant Gains (i80 for S15)
-      "sect11", // Transmission Losses (writes ref_i_98 for S12)
-      "sect12", // Volume Metrics (reads ref_i_98 from S11, defines areas used in totals)
-      // "cooling", // MOVED: Now called directly by S13 to guarantee order
-      "sect07", // Water Use (k51 for S15)
-      "sect13", // Mechanical Loads (reads cooling values, calculates ventilation)
-      "sect06", // Renewable Energy (m43 for S15)
-      "sect14", // TEDI Summary (reads d_129, m_129 from cooling)
-      "sect04", // Actual/Target Energy (many inputs, but needs to calc before S05 consumes its outputs)
-      "sect05", // Emissions (consumes S04 outputs)
-      "sect15", // TEUI Summary (consumes S14, S04 and others)
-      "sect16", // Sankey Diagram (visualisation, should be late)
-      "sect17", // Dependency Graph (visualisation, should be late)
-      "sect01", // Key Values (consumes S15, S05)
-      // NOTE: sect18 (Parallel Coordinates) and sect19 (WOMBAT) are activation-only
-      // visualization sections - they don't participate in calculation order
-    ];
+    const CI = window.TEUI.ComputationIntegration;
 
-    // Explicitly call each section's calculateAll if it exists
-    calcOrder.forEach(sectionKey => {
-      if (sectionKey === "cooling") {
-        // Special handling for Cooling module
-        if (window.TEUI?.CoolingCalculations?.calculateAll) {
-          try {
-            console.log(
-              "[Calculator] 🌀 Calling CoolingCalculations module..."
-            );
-            // ✅ BUG #9 FIX: Pass "target" mode for default calculator run
-            window.TEUI.CoolingCalculations.calculateAll("target");
-            console.log("[Calculator] ✅ CoolingCalculations module finished.");
-          } catch (error) {
-            console.error("[Calculator] ❌ Error in Cooling module:", error);
-          }
-        } else {
-          console.warn("[Calculator] ⚠️ Cooling module not available");
-        }
-      } else {
-        const sectionModule = window.TEUI.SectionModules?.[sectionKey];
-        if (sectionModule && typeof sectionModule.calculateAll === "function") {
-          try {
-            sectionModule.calculateAll();
-          } catch (error) {
-            console.error(`Error calculating section ${sectionKey}:`, error);
-          }
-        } else {
-          // Section module not found or doesn't have calculateAll method
-        }
+    // Step 1: Sync Target inputs from StateManager
+    CI.syncFromStateManager();
+
+    // Step 2: Populate Reference model from ReferenceValues.js
+    const refPopResult = CI.populateReferenceModel();
+    console.log(`[Calculator] 📋 Reference model: ${refPopResult.gFieldsCopied} G-fields, ${refPopResult.cFieldsLoaded} C-fields from standard`);
+
+    // Step 3: Compute both Target and Reference models
+    const result = CI.computeAllWithReference();
+
+    // Step 4: Sync Target computed values to StateManager
+    CI.syncToStateManager();
+
+    // Step 5: Sync Reference computed values to StateManager (ref_* prefix)
+    CI.syncReferenceToStateManager();
+
+    // Step 6: Unmute listeners
+    if (window.TEUI.StateManager?.unmuteListeners) {
+      window.TEUI.StateManager.unmuteListeners();
+    }
+
+    // Step 7: Update all section displays (since listeners were muted during sync)
+    Object.keys(window.TEUI.SectionModules || {}).forEach(sectionKey => {
+      const section = window.TEUI.SectionModules[sectionKey];
+      if (section?.ModeManager?.updateCalculatedDisplayValues) {
+        section.ModeManager.updateCalculatedDisplayValues();
       }
     });
 
-    // Note: Performance timing ends in S01 after h_10 finalization
-    // Clock.markCalculationEnd() called from Section01.runAllCalculations()
+    if (result) {
+      console.log(`[Calculator] ✅ ComputationGraph complete: ${result.totalComputed} nodes in ${result.totalDuration?.toFixed(2)}ms`);
+    }
+
+    // End performance timing
+    if (window.TEUI?.Clock?.markCalculationEnd) {
+      window.TEUI.Clock.markCalculationEnd();
+    }
   }
 
   /**

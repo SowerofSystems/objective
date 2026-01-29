@@ -923,38 +923,25 @@ document.addEventListener("DOMContentLoaded", function () {
     // Initialize elegant user input behavior
     initializeElegantInputBehavior();
 
-    // Initialize new computation system (Multi-Model Architecture)
-    // Runs in parallel mode - old system drives UI, new system computes independently
-    // Adapter CANNOT be enabled - old sections call setValue constantly during calculations,
-    // causing infinite recursion. Migration requires rewriting sections, not just interception.
+    // ComputationGraph is the single source of truth for all calculations
+    // Legacy Section*.js calculateAll() functions are no longer used
+    window.TEUI.USE_COMPUTATION_GRAPH = true;
+
+    // Initialize ComputationGraph (Multi-Model Architecture)
     if (window.TEUI.ComputationIntegration) {
       setTimeout(function () {
         const success = window.TEUI.ComputationIntegration.initialize({
           enableLogging: true,
-          runInParallel: true,  // Both systems run independently
           autoSync: true
         });
         if (success) {
-          console.log("[init.js] New computation system initialized (parallel mode)");
+          console.log("[init.js] ComputationGraph initialized");
 
-          // Enable DOMBridge for read-only display of computed values
-          // This binds elements with data-field-id to ComputationGraph values
+          // Enable DOMBridge for reactive UI updates
           setTimeout(function() {
             const bridgeEnabled = window.TEUI.ComputationIntegration.enableDOMBridge();
             if (bridgeEnabled) {
-              console.log("[init.js] DOMBridge enabled - computed values will display in Key Values");
-
-              // ComputationGraph bypass - when true, bypasses legacy Section*.js
-              // and relies entirely on the ComputationGraph for all calculations
-              // Status: 11/12 ref_j_32 tests pass in parallel mode
-              // Cutover blocked: timeout at case 6, secondary fields (k_27, f_32, g_32)
-              // still depend on legacy Section*.js calculations
-              // CoolingNodes.js now implements h_124, m_124, latentLoadFactor as graph-native
-              // To toggle manually: run in console: TEUI.USE_COMPUTATION_GRAPH = true/false
-              // Cutover mode (true): 12/12 ref_j_32 pass, but 214 secondary field mismatches
-              // Parallel mode (false): legacy authoritative, graph validated
-              window.TEUI.USE_COMPUTATION_GRAPH = true;
-              console.log("[init.js] ComputationGraph CUTOVER MODE (graph primary)");
+              console.log("[init.js] DOMBridge enabled");
             }
           }, 100);
         }
