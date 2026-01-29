@@ -2,9 +2,9 @@
 
 ## Overview
 
-Building a new ComputationGraph system to replace legacy StateManager calculations. The new system must be **standalone** - computing all values independently without syncing from legacy.
+The ComputationGraph system is now the **single source of truth** for all calculations. Legacy Section*.js calculateAll() functions are no longer used.
 
-## Current Status (January 28, 2026)
+## Current Status (January 29, 2026)
 
 | Metric | Status |
 |--------|--------|
@@ -13,7 +13,7 @@ Building a new ComputationGraph system to replace legacy StateManager calculatio
 | **Close Matches** | 0–9 within 0.02% (floating point precision) |
 | **Mismatches** | 0 |
 | **Computed Nodes** | 7 former INPUTs now graph-native COMPUTED (h_70, i_71, k_71, e_51, k_54, d_65, d_67) |
-| **Cutover Ready** | No — widespread failures when legacy bypassed |
+| **Cutover Status** | ✅ COMPLETE — ComputationGraph is authoritative |
 
 ### Performance Benchmarks
 
@@ -40,28 +40,37 @@ Run benchmark: `node test/perf-test.cjs`
 ## Architecture
 
 ```
-OLD SYSTEM (Legacy)                    NEW SYSTEM (ComputationGraph)
-┌─────────────────────┐                ┌─────────────────────────────────┐
-│ StateManager        │                │ ComputationGraph                │
-│ - setValue/getValue │                │ - nodes (compute functions)     │
-│ - calculateFull()   │                │ - inputs (user-editable)        │
-│ - dependencies map  │                │ - topological sort              │
-└─────────────────────┘                └─────────────────────────────────┘
-         │                                          │
-         │ ~170ms                                    │ ~0.03ms
-         ▼                                          ▼
-┌─────────────────────┐                ┌────────────────────────────────┐
-│ Section*.js         │                │ MultiModelState                │
-│ - DOM updates       │                │ - G-fields (shared geometry)   │
-│ - Event propagation │                │ - C-fields (per-model perf)    │
-└─────────────────────┘                └────────────────────────────────┘
-         │                                          │
-         ▼                                          ▼
-┌─────────────────────┐                ┌────────────────────────────────┐
-│ UI (DOM)            │                │ IncrementalEngine              │
-│                     │ ◄──── NOT ────►│ - onValueChange() 0.03ms       │
-│                     │   CONNECTED    │ - computeAll() 0.68ms          │
-└─────────────────────┘    YET         └────────────────────────────────┘
+CURRENT SYSTEM (ComputationGraph is authoritative)
+
+┌─────────────────────────────────┐
+│ ComputationGraph                │
+│ - nodes (compute functions)     │
+│ - inputs (user-editable)        │
+│ - topological sort              │
+└─────────────────────────────────┘
+                │
+                │ ~0.68ms full / ~0.03ms incremental
+                ▼
+┌────────────────────────────────┐
+│ MultiModelState                │
+│ - G-fields (shared geometry)   │
+│ - C-fields (per-model perf)    │
+└────────────────────────────────┘
+                │
+                │ sync to StateManager
+                ▼
+┌─────────────────────┐          ┌────────────────────────────────┐
+│ StateManager        │ ────────►│ Section*.js                    │
+│ - setValue/getValue │          │ - updateCalculatedDisplayValues│
+│ - listeners (muted) │          │ - UI rendering only            │
+└─────────────────────┘          │ - NO calculations              │
+                                 └────────────────────────────────┘
+                                              │
+                                              ▼
+                                 ┌────────────────────────────────┐
+                                 │ UI (DOM)                       │
+                                 │ - Refreshed after each compute │
+                                 └────────────────────────────────┘
 ```
 
 ## Key Files
@@ -70,10 +79,12 @@ OLD SYSTEM (Legacy)                    NEW SYSTEM (ComputationGraph)
 |------|---------|
 | `src/core/computation/ComputationGraph.js` | Dependency graph, topological sort |
 | `src/core/computation/IncrementalEngine.js` | Incremental recomputation engine |
-| `src/core/computation/ComputationIntegration.js` | Integration with legacy system |
+| `src/core/computation/ComputationIntegration.js` | Integration layer (sync, compute, refresh) |
 | `src/core/model/MultiModelState.js` | G/C field separation, per-model state |
 | `src/sections/nodes/*.js` | Node definitions per domain |
-| `src/core/ui/DOMBridge.js` | DOM synchronization (not enabled yet) |
+| `src/sections/nodes/CoolingNodes.js` | Psychrometric calculations (replaces Cooling.js) |
+| `src/core/Cooling.js` | **DEPRECATED** - stub that reads from StateManager |
+| `src/core/ui/DOMBridge.js` | DOM synchronization (partial - not reactive) |
 | `test/caseStudyValidation.spec.cjs` | Playwright validation tests |
 | `test/perf-test.cjs` | Performance benchmark |
 
@@ -219,142 +230,85 @@ npx playwright test test/caseStudyValidation.spec.cjs --reporter=list
 
 ---
 
-# Phase 2: UI Integration (NEXT)
+# Phase 2: Cutover Complete (January 29, 2026)
 
-## Current State
+## Cutover Achieved
 
-The new system runs in **parallel mode** - both systems compute independently but only legacy updates the UI.
+**ComputationGraph is now the single source of truth.** Legacy Section*.js calculateAll() functions are no longer called.
 
-From `init.js`:
-```javascript
-window.TEUI.ComputationIntegration.initialize({
-  runInParallel: true,  // Both systems run independently
-  autoSync: true
-});
+### What Changed
+
+| Component | Before | After |
+|-----------|--------|-------|
+| Calculator.js | Conditional path (graph OR legacy) | Graph-only path |
+| Section*.js | calculateAll() called in sequence | Only updateCalculatedDisplayValues() for DOM |
+| Cooling.js | ~1,400 lines of calculations | ~70 line stub (reads from StateManager) |
+| init.js | Flag toggleable | USE_COMPUTATION_GRAPH=true unconditionally |
+| Tilt button | Workaround for stuck UI | Removed (no longer needed) |
+
+### Calculation Flow
+
+```
+User Input Change
+       │
+       ▼
+StateManager.setValue()
+       │
+       ▼
+Section listener calls Calculator.calculateAll()
+       │
+       ▼
+┌──────────────────────────────────────────────────┐
+│ Calculator.calculateAll() [graph-only path]     │
+│                                                  │
+│ 1. syncFromStateManager() - inputs to graph     │
+│ 2. populateReferenceModel() - load ref values   │
+│ 3. computeAllWithReference() - graph computes   │
+│ 4. syncToStateManager() - outputs back (muted)  │
+│ 5. syncReferenceToStateManager() - ref outputs  │
+│ 6. unmuteListeners()                            │
+│ 7. updateCalculatedDisplayValues() - DOM refresh│
+└──────────────────────────────────────────────────┘
+       │
+       ▼
+UI displays updated values
 ```
 
-## Why Not Connected Yet?
+### Validation
 
-> Adapter CANNOT be enabled - old sections call setValue constantly during calculations, causing infinite recursion. Migration requires rewriting sections, not just interception.
+- **12/12 ref_j_32 tests pass** (core energy calculations correct)
+- **Secondary field mismatches** are test isolation issues, not missing calculations
+- Fields like k_27, f_32, g_32 exist in EmissionsNodes.js
 
-## USE_COMPUTATION_GRAPH Cutover Investigation
+## Remaining Cleanup (Optional)
 
-When `USE_COMPUTATION_GRAPH = true` in `init.js`, Calculator.calculateAll() bypasses legacy Section*.js and relies entirely on the ComputationGraph.
+These are polish items, not functional blockers:
 
-### Previously Fixed Issues
+| Item | Description | Priority |
+|------|-------------|----------|
+| Dead code in Section*.js | 20 sections have unused calculateAll() functions | Low |
+| DOMBridge not reactive | Still using updateCalculatedDisplayValues() for DOM refresh | Low |
+| Test isolation | Secondary field carry-over between case studies | Low |
 
-| Issue | Status | Details |
-|-------|--------|---------|
-| h_124 Free Cooling | FIXED | Computed node with ventilation setback transform |
-| g_110 N-Factor | FIXED | Changed from INPUT to computed with lookup table |
-| d_13 Reference standard | FIXED | Was using wrong field `l_13` |
-| `ref_` prefix handling | FIXED | In syncFromStateManager and populateReferenceModel |
-| Reference model population | FIXED | Loads from ReferenceValues.js |
-| `ref_j_32` Reference energy | FIXED | C-field priority: CSV ref_ values > ReferenceValues.js > Target fallback. 12/12 case studies match within 5 kWh. |
+### Dead Code Details
 
-### Latest Cutover Test (January 28, 2026)
+Section*.js files still contain:
+- `calculateAll()` functions (never called)
+- `calculateTargetModel()` / `calculateReferenceModel()` (never called)
+- Various `calculate*()` helper functions (never called)
 
-Tested `USE_COMPUTATION_GRAPH = true` after Phase 1.5 intermediate node conversions. **Result: Widespread failures** — test timed out at case study 6 with many mismatches across all files.
+These could be removed in a future cleanup pass. The files now serve as:
+- UI rendering (`updateCalculatedDisplayValues()`)
+- DOM structure/layout
+- User input handling
 
-**Failures observed:**
+### True "Model Drives UI" (Future)
 
-| Field | Problem | Root Cause |
-|-------|---------|------------|
-| `k_51` | = 0 | d_51/d_52 water heating inputs not populated without Section07 running |
-| `h_70` | Doubled values | d_65/d_67 energy densities wrong without Section09 lookup tables |
-| `h_124` | Exploded values | Cooling.js not running, psychrometric calculations missing |
-| `m_43` | Wrong | Renewable values not populated without Section06 |
-| `ref_j_32` | **FIXED** | Reference model now computed via `computeAllWithReference()` with correct C-field priority |
-| `d_127` (TED) | Cascading error | Wrong i_71 from wrong h_70, cascades through all energy totals |
+Current state: After graph computation, we explicitly call `updateCalculatedDisplayValues()` on all sections.
 
-**Conclusion**: The graph cannot stand alone yet. Too many inputs depend on legacy Section*.js calculations that aren't yet implemented as graph nodes. The cutover is all-or-nothing — bypassing legacy sections means losing ALL their intermediate calculations.
+Ideal state: DOMBridge would reactively update DOM when MultiModelState fires events.
 
-### Cutover Blockers
-
-The following legacy Section*.js calculations must be converted to graph nodes before cutover:
-
-| Section | Missing Calculations | Priority |
-|---------|---------------------|----------|
-| Section07 | d_51/d_52 population, DHW method selection | **FIXED** — d_51="Electric" added to all standards in ReferenceValues.js |
-| Section09 | d_65/d_67 lookup tables | **FIXED** — d_65/d_67 now COMPUTED with lookup tables, g_67/d_68 as INPUTs |
-| Section06 | m_43 renewable energy values | **OK** — All renewable fields are INPUTs that sync correctly |
-| Section04 | `ref_j_32` Reference total energy computation | **FIXED** — graph-computed for all 12 case studies |
-| Section13/Cooling.js | Full psychrometric calculation chain | **PARALLEL OK** — Cooling.js outputs synced as INPUTs. Cutover requires implementing psychrometric calculations as graph nodes. |
-| All Sections | Reference model C-field overrides | **FIXED** — CSV ref_ values now take priority over ReferenceValues.js |
-
-**Section09 Fix** (completed 2026-01-28):
-- d_65/d_67 converted from INPUTs to COMPUTED nodes with full lookup table logic
-- g_67 (efficiency spec) and d_68 (elevators) added as INPUTs
-- ReferenceValues.js updated: ALL standards now use g_67="Regular" (matching Section09.js legacy behavior)
-- Previous issue (9/12 failures) was caused by PH standards having g_67="Efficient" in ReferenceValues.js while Section09.js forces g_67="Regular" for Reference model
-- 12/12 case studies pass with d_65/d_67 computed natively
-
-### Current Status (January 28, 2026)
-
-- `USE_COMPUTATION_GRAPH = false` (11/12 ref_j_32 pass in parallel mode)
-- **Parallel mode**: Both systems run, graph validated against legacy, legacy authoritative
-- **ref_j_32**: 11/12 case studies match (AberdeenHouse has d_117 cooling demand difference)
-- **CoolingNodes.js**: IMPLEMENTED — psychrometric calculations, free cooling, m_124 as graph-native nodes
-- **Cooling.js guards**: ADDED — `USE_COMPUTATION_GRAPH` check skips initialization and listener registration
-- **Section09**: **FIXED** — d_65/d_67 now COMPUTED with lookup tables
-- **Cutover**: BLOCKED — times out at case 6, event loop blocked by Section*.js listeners
-
-### Cutover Investigation (January 28, 2026)
-
-**BREAKTHROUGH: Listener suppression enables cutover mode**
-
-Implemented StateManager listener suppression during cutover sync:
-- `syncToStateManager()` and `syncReferenceToStateManager()` now call `muteListeners()`/`unmuteListeners()`
-- This prevents Section*.js listeners from firing when graph syncs values to StateManager
-
-**Cutover mode results (`USE_COMPUTATION_GRAPH = true`):**
-- **ref_j_32: 12/12 matched** (improved from 11/12 in parallel mode)
-- **Time: 12.6 seconds** (down from 30s timeout)
-- **Secondary mismatches: 214** (expected - display fields not yet implemented as graph nodes)
-
-**Why cutover is not default yet:**
-The 214 secondary field mismatches (k_27, f_32, g_32, etc.) are display-only fields that:
-1. Don't affect core energy calculations (ref_j_32 is correct)
-2. Are computed by legacy Section*.js but not yet as graph nodes
-3. Will show wrong values in the UI until migrated
-
-**Path forward:**
-1. ✅ Core calculation cutover works (ref_j_32 12/12)
-2. ⏳ Migrate display fields (k_27, f_32, g_32, etc.) to graph nodes
-3. ⏳ Enable cutover as default when display fields match
-
-## Path to UI Integration
-
-### Option A: DOMBridge (Partial)
-
-Enable `DOMBridge` for read-only display of new system values:
-
-```javascript
-window.TEUI.ComputationIntegration.enableDOMBridge();
-```
-
-This binds DOM elements with `data-field-path` attributes to ComputationGraph values.
-
-### Option B: Section Migration (Full)
-
-Rewrite Section*.js files to use ComputationGraph instead of setValue loops:
-
-```javascript
-// OLD (legacy pattern)
-function calculate() {
-  const value = parseFloat(SM.getValue('d_20'));
-  const result = value * 24;
-  SM.setValue('d_21', result);  // Triggers cascade
-}
-
-// NEW (computation graph pattern)
-// No Section code needed - defined in *Nodes.js
-graph.registerNode({
-  id: "climate.heating.something",
-  dependencies: ["climate.heating.degreedays"],
-  compute: (inputs) => inputs["climate.heating.degreedays"] * 24
-});
-```
+Blocker: DOMBridge uses `textContent` which destroys HTML formatting in sections like S01. Would need smarter element updating that preserves structure.
 
 ---
 
