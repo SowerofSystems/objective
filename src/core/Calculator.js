@@ -512,10 +512,19 @@ TEUI.Calculator = (function () {
       // Step 5: Sync Reference computed values to StateManager (ref_* prefix)
       CI.syncReferenceToStateManager();
 
-      // Step 6: Unmute listeners (UI refresh handled by caller if needed)
+      // Step 6: Unmute listeners
       if (window.TEUI.StateManager?.unmuteListeners) {
         window.TEUI.StateManager.unmuteListeners();
       }
+
+      // Step 7: Update all section displays (since listeners were muted during sync)
+      // This ensures DOM reflects computed values - same as Tilt button behavior
+      Object.keys(window.TEUI.SectionModules || {}).forEach(sectionKey => {
+        const section = window.TEUI.SectionModules[sectionKey];
+        if (section?.ModeManager?.updateCalculatedDisplayValues) {
+          section.ModeManager.updateCalculatedDisplayValues();
+        }
+      });
 
       if (result) {
         console.log(`[Calculator] ✅ ComputationGraph complete: ${result.totalComputed} nodes in ${result.totalDuration?.toFixed(2)}ms`);
