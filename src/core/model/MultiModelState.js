@@ -49,13 +49,22 @@
     // HELPER FUNCTIONS
     // ========================================================================
 
+    /** @type {Map<string, 'G'|'C'|'A'>} Cache for field classification results */
+    const classificationCache = new Map();
+
     /**
      * Get field classification (G, C, or A)
-     * Uses pattern matching to avoid circular dependency with FieldRegistry
+     * Uses pattern matching to avoid circular dependency with FieldRegistry.
+     * Results are cached — the classification rules are static.
      * @param {string} fieldPath
      * @returns {'G'|'C'|'A'}
      */
     function getClassification(fieldPath) {
+      const cached = classificationCache.get(fieldPath);
+      if (cached) return cached;
+
+      let result;
+
       // G-fields: Geometry and location data (shared across models)
       // Climate data is geographic - shared between Target and Reference models
       if (
@@ -66,22 +75,24 @@
         fieldPath === "climate.timeframe" ||
         fieldPath === "climate.coolingDays"
       ) {
-        return "G";
+        result = "G";
       }
-
       // C-fields: Code/performance values (model-specific)
       // Most envelope, mechanical, and energy fields are C
-      if (
+      else if (
         fieldPath.startsWith("envelope.") ||
         fieldPath.startsWith("mechanical.") ||
         fieldPath.startsWith("energy.") ||
         fieldPath.startsWith("internal.")
       ) {
-        return "C";
+        result = "C";
+      } else {
+        // Default: A-fields (model-specific metadata)
+        result = "A";
       }
 
-      // Default: A-fields (model-specific metadata)
-      return "A";
+      classificationCache.set(fieldPath, result);
+      return result;
     }
 
     /**
@@ -423,6 +434,24 @@
         });
 
         return affectedModels;
+      },
+
+      /**
+       * Set value for a specific model without notification or previous-value lookup.
+       * Used during bulk computation passes where listeners would cause overhead.
+       * @param {string} modelId
+       * @param {string} fieldPath
+       * @param {*} value
+       */
+      setValueForModelDirect(modelId, fieldPath, value) {
+        if (isSharedField(fieldPath)) {
+          sharedState.set(fieldPath, value);
+        } else {
+          const modelState = modelStates.get(modelId);
+          if (modelState) {
+            modelState.set(fieldPath, value);
+          }
+        }
       },
 
       // ======================================================================

@@ -277,6 +277,55 @@
       },
 
       /**
+       * Fast full computation for a model.
+       * Uses cached topological order and silent writes (no per-node notifications).
+       * Call state listeners manually after this if UI sync is needed.
+       * @param {string} modelId
+       * @returns {Object} - Result with computed values
+       */
+      computeAllForModelFast(modelId) {
+        const startTime = performance.now();
+
+        // Use cached order (avoids DFS on every call)
+        const computeOrder = graph.getFullComputationOrder();
+
+        let computedCount = 0;
+
+        for (let i = 0, len = computeOrder.length; i < len; i++) {
+          const nodeId = computeOrder[i];
+          const node = graph.getNode(nodeId);
+          if (!node || !node.compute) continue;
+
+          // Gather inputs inline (avoids creating intermediate object per node)
+          const deps = node.dependencies;
+          const inputs = {};
+          for (let d = 0, dlen = deps.length; d < dlen; d++) {
+            inputs[deps[d]] = state.getValueForModel(modelId, deps[d]);
+          }
+
+          try {
+            const value = node.compute(inputs);
+            if (value !== undefined) {
+              state.setValueForModelDirect(modelId, nodeId, value);
+              computedCount++;
+            }
+          } catch (e) {
+            // Silently skip — same as computeNode but avoids extra function call
+          }
+        }
+
+        updateStats(modelId, computedCount);
+        const duration = performance.now() - startTime;
+        stats.lastComputeTime = duration;
+
+        return {
+          modelId,
+          computedNodes: computedCount,
+          duration
+        };
+      },
+
+      /**
        * Compute all nodes for all models
        * @returns {Object} - Result with per-model computed values
        */

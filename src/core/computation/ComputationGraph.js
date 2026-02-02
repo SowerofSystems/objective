@@ -35,6 +35,9 @@
     /** @type {Map<string, Set<string>>} What this node depends on */
     const upstream = new Map();
 
+    /** @type {string[]|null} Cached full computation order (invalidated on graph mutation) */
+    let _cachedComputeOrder = null;
+
     return {
       // ========================================================================
       // REGISTRATION
@@ -59,6 +62,7 @@
         }
 
         nodes.set(node.id, node);
+        _cachedComputeOrder = null;
 
         // Initialize edge sets if not present
         if (!downstream.has(node.id)) {
@@ -130,6 +134,7 @@
         // Remove from nodes or inputs
         nodes.delete(nodeId);
         inputs.delete(nodeId);
+        _cachedComputeOrder = null;
 
         // Remove from all edge sets
         if (upstream.has(nodeId)) {
@@ -375,10 +380,14 @@
 
       /**
        * Get full computation order (all computation nodes)
+       * Cached after first call; invalidated by registerNode/removeNode.
        * @returns {string[]}
        */
       getFullComputationOrder() {
-        return this.topologicalSort(this.getAllNodeIds());
+        if (!_cachedComputeOrder) {
+          _cachedComputeOrder = this.topologicalSort(this.getAllNodeIds());
+        }
+        return _cachedComputeOrder;
       },
 
       // ========================================================================

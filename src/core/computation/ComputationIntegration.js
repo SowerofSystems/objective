@@ -877,38 +877,27 @@
     const targetId = state.getActiveModelId();
     const refModelId = getRefModelId();
 
-    // Step 1: Compute Target model
-    const targetResult = engine.computeAllForModel(targetId);
+    // Step 1: Compute Target model (fast path — cached order, silent writes)
+    const targetResult = engine.computeAllForModelFast(targetId);
 
     // Step 2: Compute Reference model if it exists
     let refResult = null;
+    let syncResult = null;
     if (refModelId) {
-      refResult = engine.computeAllForModel(refModelId);
+      refResult = engine.computeAllForModelFast(refModelId);
 
-      // Step 3: Copy Reference computed outputs to Target's reference.* inputs
-      // This replaces stale CSV values with freshly computed Reference values
-      // Uses merged mapping to include both base and ComplianceNodes mappings
-      const refMapping = getMergedRefOutputMapping();
-      let refOutputsCopied = 0;
-      for (const [refPath, targetInputPath] of Object.entries(refMapping)) {
-        const refValue = state.getValueForModel(refModelId, refPath);
-        if (refValue !== undefined && refValue !== null) {
-          state.setValueForModel(targetId, targetInputPath, refValue);
-          refOutputsCopied++;
-        }
-      }
-      log(`Copied ${refOutputsCopied} Reference computed outputs to Target reference.* inputs`);
-
-      // Step 4: Recompute Target to pick up the fresh Reference values in Key Values
-      const targetRecompute = engine.computeAllForModel(targetId);
-      log(`Target recomputed with fresh Reference values: ${targetRecompute.computedNodes} nodes`);
+      // Steps 3+4: Copy Reference outputs → Target reference.* inputs and
+      // incrementally recompute only the downstream nodes that depend on them
+      // (replaces a full 158-node Target recompute with ~16 node incremental)
+      syncResult = syncCrossModelValues();
+      log(`Incremental cross-model sync: ${syncResult.synced} values, ${syncResult.recomputed.length} nodes recomputed`);
     }
 
     return {
       target: targetResult,
       reference: refResult,
       totalComputed: (targetResult?.computedNodes || 0) + (refResult?.computedNodes || 0),
-      totalDuration: (targetResult?.duration || 0) + (refResult?.duration || 0)
+      totalDuration: (targetResult?.duration || 0) + (refResult?.duration || 0) + (syncResult?.duration || 0)
     };
   }
 
