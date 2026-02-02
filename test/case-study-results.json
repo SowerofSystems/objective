@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-01-29T16:42:10.592Z",
+  "timestamp": "2026-02-02T04:19:32.777Z",
   "summary": {
     "total": 12,
     "passed": 1,
@@ -973,66 +973,6 @@
       ]
     },
     {
-      "legacyId": "i_39",
-      "path": "building.typologyEmbodiedCarbon",
-      "occurrences": [
-        {
-          "file": "02-SolarQ.csv",
-          "old": 650,
-          "new": 350,
-          "pctDiff": "46.15%"
-        },
-        {
-          "file": "03-Meadow.csv",
-          "old": 120,
-          "new": 650,
-          "pctDiff": "441.67%"
-        },
-        {
-          "file": "04-OttawaApartments.csv",
-          "old": 550,
-          "new": 120,
-          "pctDiff": "78.18%"
-        },
-        {
-          "file": "06-BlossomParkApartments.csv",
-          "old": 350,
-          "new": 550,
-          "pctDiff": "57.14%"
-        },
-        {
-          "file": "08-EmbassyCommonsMURB.csv",
-          "old": 550,
-          "new": 350,
-          "pctDiff": "36.36%"
-        },
-        {
-          "file": "09-RowingCentre.csv",
-          "old": 350,
-          "new": 550,
-          "pctDiff": "57.14%"
-        },
-        {
-          "file": "10-TheGreenwayResidence.csv",
-          "old": 250,
-          "new": 350,
-          "pctDiff": "40.00%"
-        },
-        {
-          "file": "11-CommunityCentre.csv",
-          "old": 650,
-          "new": 250,
-          "pctDiff": "61.54%"
-        },
-        {
-          "file": "12-AberdeenHouse.csv",
-          "old": 125,
-          "new": 650,
-          "pctDiff": "420.00%"
-        }
-      ]
-    },
-    {
       "legacyId": "f_27",
       "path": "energy.actual.electricity",
       "occurrences": [
@@ -1285,42 +1225,6 @@
       ]
     },
     {
-      "legacyId": "d_16",
-      "path": "building.embodiedCarbonTarget",
-      "occurrences": [
-        {
-          "file": "04-OttawaApartments.csv",
-          "old": 550,
-          "new": 120,
-          "pctDiff": "78.18%"
-        },
-        {
-          "file": "10-TheGreenwayResidence.csv",
-          "old": 250,
-          "new": 350,
-          "pctDiff": "40.00%"
-        }
-      ]
-    },
-    {
-      "legacyId": "m_6",
-      "path": "keyValues.lifetimeCarbon.percent",
-      "occurrences": [
-        {
-          "file": "04-OttawaApartments.csv",
-          "old": 63,
-          "new": 288,
-          "pctDiff": "357.14%"
-        },
-        {
-          "file": "10-TheGreenwayResidence.csv",
-          "old": 100,
-          "new": 71,
-          "pctDiff": "29.00%"
-        }
-      ]
-    },
-    {
       "legacyId": "f_28",
       "path": "energy.actual.gas",
       "occurrences": [
@@ -1466,7 +1370,7 @@
         "populateDebug": {
           "standardName": "OBC SB10 5.5-6 Z6",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 144,
+          "cFieldsFromStateManager": 145,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -1474,9 +1378,9 @@
     },
     {
       "file": "02-SolarQ.csv",
-      "matches": 346,
+      "matches": 347,
       "close": 0,
-      "mismatches": 22,
+      "mismatches": 21,
       "refJ32": {
         "legacy": 54999.59909177023,
         "computed": 54999.5991,
@@ -1532,7 +1436,7 @@
         "populateDebug": {
           "standardName": "OBC SB12 3.1.1.2.C1",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 144,
+          "cFieldsFromStateManager": 145,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -1540,9 +1444,9 @@
     },
     {
       "file": "03-Meadow.csv",
-      "matches": 344,
+      "matches": 345,
       "close": 0,
-      "mismatches": 24,
+      "mismatches": 23,
       "refJ32": {
         "legacy": 43885.192786987835,
         "computed": 43885.1928,
@@ -1598,7 +1502,7 @@
         "populateDebug": {
           "standardName": "PH Classic",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 144,
+          "cFieldsFromStateManager": 145,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -1606,9 +1510,9 @@
     },
     {
       "file": "04-OttawaApartments.csv",
-      "matches": 342,
+      "matches": 345,
       "close": 0,
-      "mismatches": 26,
+      "mismatches": 23,
       "refJ32": {
         "legacy": 255334.19306666666,
         "computed": 255334.1931,
@@ -1664,7 +1568,7 @@
         "populateDebug": {
           "standardName": "NECB T1 (Z6)",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 144,
+          "cFieldsFromStateManager": 145,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -1730,7 +1634,7 @@
         "populateDebug": {
           "standardName": "NECB T1 (Z6)",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 144,
+          "cFieldsFromStateManager": 145,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -1738,9 +1642,9 @@
     },
     {
       "file": "06-BlossomParkApartments.csv",
-      "matches": 354,
+      "matches": 355,
       "close": 0,
-      "mismatches": 14,
+      "mismatches": 13,
       "refJ32": {
         "legacy": 627065.3922790124,
         "computed": 627065.3922790124,
@@ -1796,7 +1700,7 @@
         "populateDebug": {
           "standardName": "NECB T1 (Z6)",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 144,
+          "cFieldsFromStateManager": 145,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -1862,7 +1766,7 @@
         "populateDebug": {
           "standardName": "NECB T1 (Z6)",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 144,
+          "cFieldsFromStateManager": 145,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -1870,9 +1774,9 @@
     },
     {
       "file": "08-EmbassyCommonsMURB.csv",
-      "matches": 347,
+      "matches": 348,
       "close": 0,
-      "mismatches": 21,
+      "mismatches": 20,
       "refJ32": {
         "legacy": 1196545.045251852,
         "computed": 1196545.045251852,
@@ -1928,7 +1832,7 @@
         "populateDebug": {
           "standardName": "NECB T1 (Z6)",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 144,
+          "cFieldsFromStateManager": 145,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -1936,9 +1840,9 @@
     },
     {
       "file": "09-RowingCentre.csv",
-      "matches": 347,
+      "matches": 348,
       "close": 0,
-      "mismatches": 21,
+      "mismatches": 20,
       "refJ32": {
         "legacy": 178231.2193888889,
         "computed": 178231.2194,
@@ -1994,7 +1898,7 @@
         "populateDebug": {
           "standardName": "NECB T1 (Z6)",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 144,
+          "cFieldsFromStateManager": 145,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -2002,9 +1906,9 @@
     },
     {
       "file": "10-TheGreenwayResidence.csv",
-      "matches": 354,
+      "matches": 357,
       "close": 0,
-      "mismatches": 14,
+      "mismatches": 11,
       "refJ32": {
         "legacy": 126480.7021777778,
         "computed": 126480.7022,
@@ -2060,7 +1964,7 @@
         "populateDebug": {
           "standardName": "OBC SB12 3.1.1.2.C4",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 144,
+          "cFieldsFromStateManager": 145,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -2068,9 +1972,9 @@
     },
     {
       "file": "11-CommunityCentre.csv",
-      "matches": 354,
+      "matches": 355,
       "close": 0,
-      "mismatches": 14,
+      "mismatches": 13,
       "refJ32": {
         "legacy": 9467511.308413917,
         "computed": 9467511.308413917,
@@ -2126,7 +2030,7 @@
         "populateDebug": {
           "standardName": "OBC SB10 5.5-6 Z6",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 144,
+          "cFieldsFromStateManager": 145,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -2134,9 +2038,9 @@
     },
     {
       "file": "12-AberdeenHouse.csv",
-      "matches": 344,
+      "matches": 345,
       "close": 0,
-      "mismatches": 24,
+      "mismatches": 23,
       "refJ32": {
         "legacy": 82414.60525555555,
         "computed": 82414.6053,
@@ -2192,7 +2096,7 @@
         "populateDebug": {
           "standardName": "PH Low Energy",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 144,
+          "cFieldsFromStateManager": 145,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }

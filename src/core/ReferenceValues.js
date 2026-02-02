@@ -23,6 +23,7 @@ TEUI.ReferenceValues = {
   "OBC SB12 3.1.1.2.C4": {
     //"h_13": "OBC Prescriptive Path for HP"
     //"h_14": "Same as Application State B.2 Project Name Field Value" - should we show this in reference import/exports?
+    d_39: "Pt.9 Res. Stick Frame", // Reference Typology for Part 9 residential baseline
     d_51: "Electric", // DHW System Type for Reference model
     d_52: "90", // DWH System Efficiency when Electric
     k_52: "90", // DWH AFUE when Gas or Oil
@@ -62,6 +63,7 @@ TEUI.ReferenceValues = {
   },
   "OBC SB12 3.1.1.2.C1": {
     //"h_13": "OBC Prescriptive Path for Elect."
+    d_39: "Pt.9 Res. Stick Frame", // Reference Typology for Part 9 residential baseline
     d_51: "Electric", // DHW System Type for Reference model
     d_52: "90", // DWH System Efficiency when Electric
     k_52: "90", // DWH AFUE when Gas or Oil
@@ -101,6 +103,7 @@ TEUI.ReferenceValues = {
   },
   "OBC SB12 3.1.1.2.A3": {
     //"h_13": "OBC Prescriptive Path for AFUE >92%"
+    d_39: "Pt.9 Res. Stick Frame", // Reference Typology for Part 9 residential baseline
     d_51: "Electric", // DHW System Type for Reference model
     d_52: "92", // DWH System Efficiency when Electric
     k_52: "92", // DWH AFUE when Gas or Oil
@@ -141,6 +144,7 @@ TEUI.ReferenceValues = {
   },
   "OBC SB10 5.5-6 Z6": {
     //"h_13": "OBC Prescriptive Path Part 3"
+    d_39: "Pt.3 Steel", // Reference Typology for Part 3 building code baseline
     d_51: "Electric", // DHW System Type for Reference model
     d_52: "90", // DWH System Efficiency when Electric
     k_52: "90", // DWH AFUE when Gas or Oil
@@ -181,6 +185,7 @@ TEUI.ReferenceValues = {
   },
   "OBC SB10 5.5-6 Z5 (2010)": {
     //"h_13": "OBC Prescriptive Path Part 3"
+    d_39: "Pt.3 Steel", // Reference Typology for Part 3 building code baseline
     d_51: "Electric", // DHW System Type for Reference model
     d_52: "90", // DWH System Efficiency when Electric
     k_52: "90", // DWH AFUE when Gas or Oil
@@ -221,6 +226,7 @@ TEUI.ReferenceValues = {
   },
   "ADD YOUR OWN HERE": {
     //"h_13": "User Defined"
+    d_39: "Pt.3 Steel", // Reference Typology default for user-defined standard
     d_51: "Electric", // DHW System Type for Reference model
     d_52: "90", // DWH System Efficiency when Electric
     k_52: "90", // DWH AFUE when Gas or Oil
@@ -261,6 +267,7 @@ TEUI.ReferenceValues = {
   },
   "NBC T1": {
     //"h_13": "NBC 9.36 Prescriptive Path" with any possible measure - serves as a baseline
+    d_39: "Pt.9 Res. Stick Frame", // Reference Typology for Part 9 residential baseline
     d_51: "Electric", // DHW System Type for Reference model
     d_52: "92", // DWH System Efficiency when Electric
     k_52: "92", // DWH AFUE when Gas or Oil
@@ -301,6 +308,7 @@ TEUI.ReferenceValues = {
   },
   "NECB T1 (Z6)": {
     //"h_13": "Replacing SB10"
+    d_39: "Pt.3 Steel", // Reference Typology for Part 3 building code baseline
     d_51: "Electric", // DHW System Type for Reference model
     d_52: "90", // DWH System Efficiency when Electric
     k_52: "90", // DWH AFUE when Gas or Oil
@@ -340,6 +348,7 @@ TEUI.ReferenceValues = {
   },
   "CaGBC ZCB": {
     //"h_13": "Replacing SB10"
+    d_39: "Pt.3 Steel", // Reference Typology for Part 3 building code baseline
     d_51: "Electric", // DHW System Type for Reference model
     d_52: "90", // DWH System Efficiency when Electric
     k_52: "90", // DWH AFUE when Gas or Oil
@@ -379,6 +388,7 @@ TEUI.ReferenceValues = {
   },
   "PH Classic": {
     //"h_13": "90% less than NBC"
+    d_39: "Pt.3 Steel", // Reference Typology default for PH standard
     h_23: "18", // PH Tsetpoint in °C
     d_51: "Electric", // DHW System Type for Reference model
     d_52: "100", // DWH System Efficiency when Electric
@@ -422,6 +432,7 @@ TEUI.ReferenceValues = {
   },
   "PH Plus": {
     //"h_13": "90% less than NBC"
+    d_39: "Pt.3 Steel", // Reference Typology default for PH standard
     h_23: "18", // PH Tsetpoint in °C
     d_51: "Electric", // DHW System Type for Reference model
     d_52: "100", // DWH System Efficiency when Electric
@@ -465,6 +476,7 @@ TEUI.ReferenceValues = {
   },
   "PH Premium": {
     //"h_13": "90% less than NBC"
+    d_39: "Pt.3 Steel", // Reference Typology default for PH standard
     h_23: "18", // PH Tsetpoint in °C
     d_51: "Electric", // DHW System Type for Reference model
     d_52: "100", // DWH System Efficiency when Electric
@@ -509,6 +521,7 @@ TEUI.ReferenceValues = {
   },
   EnerPHit: {
     //"h_13": "PH Renovations"
+    d_39: "Pt.3 Steel", // Reference Typology default for PH standard
     h_23: "18", // PH Tsetpoint in °C
     d_51: "Electric", // DHW System Type for Reference model
     d_52: "100", // DWH System Efficiency when Electric
@@ -553,6 +566,7 @@ TEUI.ReferenceValues = {
   },
   "PH Low Energy": {
     //"h_13": "80% less than NBC"
+    d_39: "Pt.3 Steel", // Reference Typology default for PH standard
     h_23: "18", // PH Tsetpoint in °C
     d_51: "Electric", // DHW System Type for Reference model
     d_52: "100", // DWH System Efficiency when Electric

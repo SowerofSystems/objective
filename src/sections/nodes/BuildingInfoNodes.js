@@ -107,12 +107,12 @@
         defaultValue: "Self Reported",
       },
       {
-        id: "building.typologyEmbodiedCarbon",
-        legacyId: "i_39",
-        section: "S04",
-        classification: "G",
-        label: "Typology Embodied Carbon (kgCO2e/m²)",
-        defaultValue: 0,
+        id: "building.typologySelection",
+        legacyId: "d_39",
+        section: "S05",
+        classification: "A", // Model-specific: Reference can have different typology
+        label: "Typology Selection",
+        defaultValue: "Pt.3 Mass Timber",
       },
       {
         id: "building.userModelledEmbodiedCarbon",
@@ -130,6 +130,36 @@
     // ========================================================================
     // COMPUTED NODES
     // ========================================================================
+
+    // Typology Embodied Carbon (i_39): d_39 → embodied carbon lookup
+    // Replaces INPUT i_39 with COMPUTED node matching S05.calculateTypologyBasedCap()
+    const TYPOLOGY_CAPS = {
+      "Pt.9 Res. Stick Frame": 125,
+      "Pt.9 Small Mass Timber": 250,
+      "Pt.3 Mass Timber": 350,
+      "Pt.3 Concrete": 550,
+      "Pt.3 Steel": 650,
+      "Pt.3 Office": 600,
+    };
+
+    graph.registerNode({
+      id: "building.typologyEmbodiedCarbon",
+      legacyId: "i_39",
+      section: "S05",
+      classification: "C",
+      dependencies: [
+        "building.typologySelection",
+        "building.userModelledEmbodiedCarbon"
+      ],
+      label: "Typology Embodied Carbon (kgCO2e/m²)",
+      compute: (inputs) => {
+        const typology = inputs["building.typologySelection"] || "";
+        if (typology === "Modelled Value") {
+          return parseFloat(inputs["building.userModelledEmbodiedCarbon"]) || 0;
+        }
+        return TYPOLOGY_CAPS[typology] || 0;
+      },
+    });
 
     // Embodied Carbon Target (based on carbon standard selection)
     // Uses i_39 (typology) for TGS4, i_41 (user modelled) for Self Reported

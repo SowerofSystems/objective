@@ -849,6 +849,7 @@
     "emissions.target.subtotal":     "reference.emissions.subtotal",      // k_32 → ref_k_32
     "building.conditionedFloorArea": "reference.building.conditionedFloorArea", // h_15 → ref_h_15
     "building.serviceLife":          "reference.building.serviceLife",     // h_13 → ref_h_13
+    "building.typologyEmbodiedCarbon": "reference.emissions.embodied",   // i_39 → ref_i_41 (legacy: ref_i_41 = i_39)
   };
 
   /**
