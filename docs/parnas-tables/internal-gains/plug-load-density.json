@@ -50,9 +50,9 @@
       "note": "Other Passive House standards have moderate plug load requirements"
     },
     {
-      "condition": "buildingType contains 'C-Residential' OR 'C - Residential' OR 'B1-Detention' OR 'B2-Care' OR 'B3-Detention'",
+      "condition": "buildingType contains 'C-Residential' OR 'C - Residential' OR 'B1-Detention' OR 'B1 - Detention' OR 'B2-Care' OR 'B2 - Care' OR 'B3-Detention' OR 'B3 - Detention'",
       "output": "5",
-      "note": "Residential and care occupancies have lower plug loads than commercial"
+      "note": "Residential and care occupancies have lower plug loads than commercial. Both hyphenated (B1-Detention) and spaced (B1 - Detention) forms are matched."
     },
     {
       "condition": "otherwise",

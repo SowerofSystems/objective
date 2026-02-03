@@ -130,8 +130,9 @@
         "mechanical.ventilation.method": "constant",
         "mechanical.ventilation.unoccupiedSetback": 0
       },
-      "expected": 348.35,
-      "tolerance": 1.0
+      "expected": 995.28,
+      "tolerance": 1.0,
+      "note": "(288/3600) × 1.204 × 1005 × (24 − 20.43) × 0.024 × 120 = 995.28"
     },
     {
       "name": "Scheduled ventilation with 50% setback",
@@ -143,9 +144,9 @@
         "mechanical.ventilation.method": "schedule",
         "mechanical.ventilation.unoccupiedSetback": 50
       },
-      "expected": 174.18,
+      "expected": 497.64,
       "tolerance": 1.0,
-      "note": "348.35 × 0.5 = 174.18"
+      "note": "995.28 × 0.5 = 497.64"
     },
     {
       "name": "No cooling potential (night warmer than setpoint)",

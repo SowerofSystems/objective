@@ -114,13 +114,13 @@
       "name": "Oversized ventilation (negative days)",
       "inputs": {
         "energy.ced.mitigated": 2000,
-        "cooling.dailyFreeCoolingPotential": 10,
+        "cooling.dailyFreeCoolingPotential": 12,
         "climate.cooling.degreedays": 336,
         "climate.coolingDays": 120,
         "mechanical.cooling.systemType": "Cooling"
       },
       "expected": -1,
-      "note": "Free cooling exceeds load: Math.round((2000 - 10 × 336) / (120 × 24)) = -1"
+      "note": "Free cooling exceeds load: Math.round((2000 - 12 × 336) / (120 × 24)) = Math.round(-0.706) = -1"
     }
   ],
   "references": [

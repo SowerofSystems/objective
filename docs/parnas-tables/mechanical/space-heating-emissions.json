@@ -10,33 +10,33 @@
   "signature": {
     "inputs": [
       {
-        "name": "heating.systemType",
+        "name": "mechanical.heating.systemType",
         "type": "string",
         "description": "Heating system type (d_113) - 'Oil', 'Gas', 'Heatpump', 'Electric', 'District'"
       },
       {
-        "name": "heating.oilVolume",
+        "name": "mechanical.heating.oilConsumption",
         "type": "number",
         "unit": "L",
         "description": "Annual oil consumption (f_115)"
       },
       {
-        "name": "heating.gasVolume",
+        "name": "mechanical.heating.gasConsumption",
         "type": "number",
         "unit": "m3",
         "description": "Annual natural gas consumption (h_115)"
       },
       {
-        "name": "emissions.oilFactor",
+        "name": "emissions.factor.oil",
         "type": "number",
         "unit": "g CO2e/L",
-        "description": "Oil emissions factor (l_30) - typically ~2730"
+        "description": "Oil emissions factor (l_30) - default 2753"
       },
       {
-        "name": "emissions.gasFactor",
+        "name": "emissions.factor.gas",
         "type": "number",
         "unit": "g CO2e/m3",
-        "description": "Natural gas emissions factor (l_28) - typically ~1921"
+        "description": "Natural gas emissions factor (l_28) - default 1921"
       }
     ],
     "output": {
@@ -85,33 +85,34 @@
   ],
   "formula": {
     "symbolic": "f_114 = CASE(d_113, f_115 × l_30, h_115 × l_28) / 1000",
+    "implementation": "MechanicalNodes.js:316-347",
     "legacy": "Section13.js lines 2654-2668"
   },
   "tests": [
     {
       "name": "Oil heating system",
       "inputs": {
-        "heating.systemType": "Oil",
-        "heating.oilVolume": 1000,
-        "emissions.oilFactor": 2730
+        "mechanical.heating.systemType": "Oil",
+        "mechanical.heating.oilConsumption": 1000,
+        "emissions.factor.oil": 2753
       },
-      "expected": 2730
+      "expected": 2753
     },
     {
       "name": "Gas heating system",
       "inputs": {
-        "heating.systemType": "Gas",
-        "heating.gasVolume": 1000,
-        "emissions.gasFactor": 1921
+        "mechanical.heating.systemType": "Gas",
+        "mechanical.heating.gasConsumption": 1000,
+        "emissions.factor.gas": 1921
       },
       "expected": 1921
     },
     {
       "name": "Heatpump system (no fuel)",
       "inputs": {
-        "heating.systemType": "Heatpump",
-        "heating.oilVolume": 0,
-        "heating.gasVolume": 0
+        "mechanical.heating.systemType": "Heatpump",
+        "mechanical.heating.oilConsumption": 0,
+        "mechanical.heating.gasConsumption": 0
       },
       "expected": 0
     }
