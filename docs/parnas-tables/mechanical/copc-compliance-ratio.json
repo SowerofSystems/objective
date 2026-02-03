@@ -10,98 +10,85 @@
   "signature": {
     "inputs": [
       {
-        "name": "cooling.targetCOPc",
+        "name": "mechanical.cooling.copDedicated",
         "type": "number",
         "unit": "ratio",
         "description": "Target model cooling COP (j_116)"
       },
       {
-        "name": "cooling.referenceCOPc",
+        "name": "reference.mechanical.cooling.copDedicated",
         "type": "number",
         "unit": "ratio",
-        "description": "Reference model cooling COP (ref_j_116)"
-      },
-      {
-        "name": "isReferenceCalculation",
-        "type": "boolean",
-        "description": "True when calculating for Reference model"
+        "description": "Reference model cooling COP (ref_j_116), injected via cross-model sync"
       }
     ],
     "output": {
       "type": "number",
-      "unit": "ratio",
-      "format": "percent-0dp"
+      "unit": "percent",
+      "format": "integer"
     }
   },
   "domain": {
     "preconditions": [
       {
-        "condition": "referenceCOPc > 0 OR isReferenceCalculation",
+        "condition": "referenceCOPc > 0",
         "description": "Reference COPc must be positive for ratio calculation"
       }
     ],
     "invariants": [
       {
         "condition": "output >= 0",
-        "description": "Ratio cannot be negative"
+        "description": "Percentage cannot be negative"
       }
     ]
   },
   "behavior": [
     {
-      "condition": "isReferenceCalculation == true",
-      "output": "1.0",
-      "note": "Reference model always shows 100% (self-comparison)"
-    },
-    {
       "condition": "referenceCOPc > 0",
-      "output": "targetCOPc / referenceCOPc",
-      "note": "Higher target COPc = better compliance ratio"
+      "output": "round(targetCOPc / referenceCOPc × 100)",
+      "note": "Higher target COPc = higher compliance percentage"
     },
     {
       "condition": "referenceCOPc == 0",
-      "output": "0",
-      "note": "Avoid division by zero"
+      "output": "100",
+      "note": "Default to 100% (compliant) when no reference value available"
     }
   ],
+  "architectureNote": "Reference model self-comparison is not an explicit parameter. Compliance nodes always compute in the Target model context. Reference values arrive via cross-model sync (reference.* bridge inputs). When Reference model computes for itself, compliance nodes are not evaluated.",
   "compliance": {
-    "passCondition": "output >= 1.0",
+    "passCondition": "output >= 100",
     "passSymbol": "✓",
     "failSymbol": "✗",
     "relatedField": "n_116"
   },
   "formula": {
-    "symbolic": "m_116 = IF(isRef, 1.0, j_116 / ref_j_116)",
+    "symbolic": "m_116 = IF(ref_j_116 > 0, round(j_116 / ref_j_116 × 100), 100)",
     "legacy": "Section13.js lines 3324, 3307-3318"
   },
   "tests": [
     {
       "name": "Target exceeds reference (compliant)",
       "inputs": {
-        "cooling.targetCOPc": 4.0,
-        "cooling.referenceCOPc": 3.5,
-        "isReferenceCalculation": false
+        "mechanical.cooling.copDedicated": 4.0,
+        "reference.mechanical.cooling.copDedicated": 3.5
       },
-      "expected": 1.143,
-      "tolerance": 0.001
+      "expected": 114
     },
     {
-      "name": "No cooling system",
+      "name": "No cooling system (both zero)",
       "inputs": {
-        "cooling.targetCOPc": 0,
-        "cooling.referenceCOPc": 0,
-        "isReferenceCalculation": false
+        "mechanical.cooling.copDedicated": 0,
+        "reference.mechanical.cooling.copDedicated": 0
       },
-      "expected": 0
+      "expected": 100
     },
     {
-      "name": "Reference calculation",
+      "name": "Target below reference",
       "inputs": {
-        "cooling.targetCOPc": 4.0,
-        "cooling.referenceCOPc": 3.5,
-        "isReferenceCalculation": true
+        "mechanical.cooling.copDedicated": 3.0,
+        "reference.mechanical.cooling.copDedicated": 3.5
       },
-      "expected": 1.0
+      "expected": 86
     }
   ],
   "references": [

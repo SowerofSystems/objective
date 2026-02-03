@@ -10,98 +10,85 @@
   "signature": {
     "inputs": [
       {
-        "name": "heating.targetAFUE",
+        "name": "mechanical.heating.afue",
         "type": "number",
         "unit": "decimal",
         "description": "Target model AFUE (j_115) - e.g., 0.96 for 96% efficient"
       },
       {
-        "name": "heating.referenceAFUE",
+        "name": "reference.mechanical.heating.afue",
         "type": "number",
         "unit": "decimal",
-        "description": "Reference model AFUE (ref_j_115)"
-      },
-      {
-        "name": "isReferenceCalculation",
-        "type": "boolean",
-        "description": "True when calculating for Reference model"
+        "description": "Reference model AFUE (ref_j_115), injected via cross-model sync"
       }
     ],
     "output": {
       "type": "number",
-      "unit": "ratio",
-      "format": "percent-0dp"
+      "unit": "percent",
+      "format": "integer"
     }
   },
   "domain": {
     "preconditions": [
       {
-        "condition": "referenceAFUE > 0 OR isReferenceCalculation",
+        "condition": "referenceAFUE > 0",
         "description": "Reference AFUE must be positive for ratio calculation"
       }
     ],
     "invariants": [
       {
         "condition": "output >= 0",
-        "description": "Ratio cannot be negative"
+        "description": "Percentage cannot be negative"
       }
     ]
   },
   "behavior": [
     {
-      "condition": "isReferenceCalculation == true",
-      "output": "1.0",
-      "note": "Reference model always shows 100% (self-comparison)"
-    },
-    {
       "condition": "referenceAFUE > 0",
-      "output": "targetAFUE / referenceAFUE",
-      "note": "Higher target AFUE = better compliance ratio"
+      "output": "round(targetAFUE / referenceAFUE × 100)",
+      "note": "Higher target AFUE = higher compliance percentage"
     },
     {
       "condition": "referenceAFUE == 0",
-      "output": "0",
-      "note": "Avoid division by zero"
+      "output": "100",
+      "note": "Default to 100% (compliant) when no reference value available"
     }
   ],
+  "architectureNote": "Reference model self-comparison is not an explicit parameter. Compliance nodes always compute in the Target model context. Reference values arrive via cross-model sync (reference.* bridge inputs). When Reference model computes for itself, compliance nodes are not evaluated.",
   "compliance": {
-    "passCondition": "output >= 1.0",
+    "passCondition": "output >= 100",
     "passSymbol": "✓",
     "failSymbol": "✗",
     "relatedField": "n_115"
   },
   "formula": {
-    "symbolic": "m_115 = IF(isRef, 1.0, j_115 / ref_j_115)",
+    "symbolic": "m_115 = IF(ref_j_115 > 0, round(j_115 / ref_j_115 × 100), 100)",
     "legacy": "Section13.js lines 3323, 3307-3318"
   },
   "tests": [
     {
       "name": "Target exceeds reference (compliant)",
       "inputs": {
-        "heating.targetAFUE": 0.96,
-        "heating.referenceAFUE": 0.92,
-        "isReferenceCalculation": false
+        "mechanical.heating.afue": 0.96,
+        "reference.mechanical.heating.afue": 0.92
       },
-      "expected": 1.043,
-      "tolerance": 0.001
+      "expected": 104
     },
     {
       "name": "Target equals reference",
       "inputs": {
-        "heating.targetAFUE": 0.92,
-        "heating.referenceAFUE": 0.92,
-        "isReferenceCalculation": false
+        "mechanical.heating.afue": 0.92,
+        "reference.mechanical.heating.afue": 0.92
       },
-      "expected": 1.0
+      "expected": 100
     },
     {
-      "name": "Reference calculation",
+      "name": "No reference value available",
       "inputs": {
-        "heating.targetAFUE": 0.96,
-        "heating.referenceAFUE": 0.92,
-        "isReferenceCalculation": true
+        "mechanical.heating.afue": 0.96,
+        "reference.mechanical.heating.afue": 0
       },
-      "expected": 1.0
+      "expected": 100
     }
   ],
   "references": [
