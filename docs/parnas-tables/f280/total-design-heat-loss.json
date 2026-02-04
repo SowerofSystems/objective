@@ -1,0 +1,99 @@
+{
+  "id": "f280.totalDesignHeatLoss",
+  "legacyId": "f280_hl_total",
+  "label": "F280 Total Building Design Heat Loss",
+  "section": "SF280",
+  "classification": "C",
+  "_meta": {
+    "description": "Total building design heat loss at heating design conditions per CSA F280-12 Section 5.2.7. This is the PRIMARY F280 output value used for heating equipment sizing. It is the sum of peak envelope transmission losses, peak infiltration losses, and peak ventilation losses (net of HRV/ERV recovery). The installed heating capacity must be >= 100% of this value.",
+    "standard": "CSA F280-12 Section 5.2.7",
+    "codeReference": "NBC 9.33.5.1",
+    "formPage": "F280 Form Page 3 - Total Building Heat Loss"
+  },
+  "signature": {
+    "inputs": [
+      {
+        "name": "f280.peakEnvelopeHeatLoss",
+        "type": "number",
+        "unit": "W",
+        "description": "Peak envelope transmission heat loss at design conditions"
+      },
+      {
+        "name": "f280.peakInfiltrationHeatLoss",
+        "type": "number",
+        "unit": "W",
+        "description": "Peak infiltration heat loss at design conditions"
+      },
+      {
+        "name": "f280.peakVentilationHeatLoss",
+        "type": "number",
+        "unit": "W",
+        "description": "Peak ventilation heat loss (net of recovery) at design conditions"
+      }
+    ],
+    "output": {
+      "type": "number",
+      "unit": "W",
+      "precision": 0,
+      "note": "Total peak building heat loss - the F280 design heat loss value"
+    }
+  },
+  "domain": {
+    "preconditions": [],
+    "invariants": [
+      {
+        "condition": "output >= 0",
+        "description": "Total design heat loss cannot be negative"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "All three peak loss components available",
+      "output": "f280.peakEnvelopeHeatLoss + f280.peakInfiltrationHeatLoss + f280.peakVentilationHeatLoss",
+      "note": "Simple sum of all peak heat loss components at design conditions"
+    }
+  ],
+  "formula": {
+    "symbolic": "Q_total = Q_env + Q_inf + Q_vent",
+    "where": {
+      "Q_env": "Peak envelope heat loss (W) from f280.peakEnvelopeHeatLoss",
+      "Q_inf": "Peak infiltration heat loss (W) from f280.peakInfiltrationHeatLoss",
+      "Q_vent": "Peak ventilation heat loss net of recovery (W) from f280.peakVentilationHeatLoss"
+    },
+    "btu_conversion": "Q_total_BTU = Q_total × 3.412 (to convert W to BTU/h)"
+  },
+  "tests": [
+    {
+      "name": "Typical Toronto house",
+      "inputs": {
+        "f280.peakEnvelopeHeatLoss": 5153,
+        "f280.peakInfiltrationHeatLoss": 1684,
+        "f280.peakVentilationHeatLoss": 666
+      },
+      "expected": 7503,
+      "note": "5153 + 1684 + 666 = 7503W (25,600 BTU/h)"
+    },
+    {
+      "name": "Passive House (tight envelope, high recovery)",
+      "inputs": {
+        "f280.peakEnvelopeHeatLoss": 2500,
+        "f280.peakInfiltrationHeatLoss": 108,
+        "f280.peakVentilationHeatLoss": 333
+      },
+      "expected": 2941,
+      "note": "2500 + 108 + 333 = 2941W (10,035 BTU/h)"
+    }
+  ],
+  "references": [
+    {
+      "source": "CSA F280-12 Section 5.2.7 - Total Building Heat Loss"
+    },
+    {
+      "source": "F280 Form Page 3 - Total Building Heat Loss field"
+    },
+    {
+      "source": "NBC 9.33.5.1 - Required heating capacity"
+    }
+  ]
+}

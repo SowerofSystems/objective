@@ -1,0 +1,732 @@
+/**
+ * F280ComplianceNodes.js - CSA F280-12 Peak Load & Sizing Compliance
+ *
+ * Implements peak heating/cooling load calculations per CSA F280-12 for
+ * equipment sizing compliance. Converts the existing annual degree-day-based
+ * energy calculations to instantaneous peak loads (Watts) using design-day
+ * temperature differences.
+ *
+ * Parnas Tables: docs/parnas-tables/f280/
+ *   - peak-envelope-heat-loss.json
+ *   - peak-infiltration-heat-loss.json
+ *   - peak-ventilation-heat-loss.json
+ *   - total-design-heat-loss.json
+ *   - total-design-heat-loss-btu.json
+ *   - nominal-cooling-capacity.json
+ *   - heating-sizing-compliance.json
+ *   - cooling-sizing-compliance.json
+ *   - designer-certification.json
+ *   - f280-input-summary.json
+ *
+ * Key relationship to existing nodes:
+ *   Annual formula: Q_annual = U × A × HDD × 24 / 1000 (kWh/yr)
+ *   F280 peak formula: Q_peak = U × A × deltaT (Watts)
+ *
+ * References:
+ *   - CSA F280-12 (R2025) Sections 5.2, 6.3, 7.1
+ *   - NBC 9.33.5.1, 9.36.3.2, 9.36.5.15
+ */
+(function () {
+  "use strict";
+
+  window.TEUI = window.TEUI || {};
+  window.TEUI.ComputationNodes = window.TEUI.ComputationNodes || {};
+
+  function parseNum(value, defaultVal = 0) {
+    if (value === null || value === undefined || value === "N/A") return defaultVal;
+    if (value === "Unavailable") return defaultVal;
+    const num = parseFloat(String(value).replace(/,/g, ""));
+    return isNaN(num) ? defaultVal : num;
+  }
+
+  // Volumetric heat capacity of air: rho × Cp = 1.204 × 1005 / 1000 = 1.21 W·s/(L·K)
+  const AIR_HEAT_CAPACITY = 1.21;
+
+  // W to BTU/h conversion factor
+  const W_TO_BTU = 3.41214;
+
+  // Ground temperature constant (degC) per F280 methodology
+  const GROUND_TEMP = 10;
+
+  // Small cooling system threshold (W) - 6000W = 1.7 tons
+  const SMALL_SYSTEM_THRESHOLD = 6000;
+
+  // Small system allowable excess (W) - 1750W = 0.49 tons
+  const SMALL_SYSTEM_EXCESS = 1750;
+
+  function register(graph) {
+    // ========================================================================
+    // F280 INPUT NODES - Equipment capacity and designer certification
+    // ========================================================================
+
+    const inputs = [
+      // Equipment sizing inputs
+      {
+        id: "f280.installedHeatingCapacity",
+        legacyId: "f280_cap_heat",
+        section: "SF280",
+        classification: "C",
+        label: "Installed Heating Capacity (W)",
+        defaultValue: 0,
+        unit: "W"
+      },
+      {
+        id: "f280.installedCoolingCapacity",
+        legacyId: "f280_cap_cool",
+        section: "SF280",
+        classification: "C",
+        label: "Installed Cooling Capacity (W)",
+        defaultValue: 0,
+        unit: "W"
+      },
+
+      // Designer certification inputs
+      {
+        id: "f280.designer.name",
+        legacyId: "f280_dsgn_name",
+        section: "SF280",
+        classification: "A",
+        label: "Designer Name",
+        defaultValue: ""
+      },
+      {
+        id: "f280.designer.company",
+        legacyId: "f280_dsgn_co",
+        section: "SF280",
+        classification: "A",
+        label: "Designer Company",
+        defaultValue: ""
+      },
+      {
+        id: "f280.designer.certType",
+        legacyId: "f280_cert_type",
+        section: "SF280",
+        classification: "A",
+        label: "Certification Type",
+        defaultValue: "Other"
+      },
+      {
+        id: "f280.designer.certNumber",
+        legacyId: "f280_cert_num",
+        section: "SF280",
+        classification: "A",
+        label: "Certification Number",
+        defaultValue: ""
+      },
+      {
+        id: "f280.designer.serviceOrg",
+        legacyId: "f280_svc_org",
+        section: "SF280",
+        classification: "A",
+        label: "Service Organization",
+        defaultValue: ""
+      },
+      {
+        id: "f280.designer.attestation",
+        legacyId: "f280_attest",
+        section: "SF280",
+        classification: "A",
+        label: "Responsibility Declaration",
+        defaultValue: false
+      },
+
+      // F280 form metadata
+      {
+        id: "f280.projectNumber",
+        legacyId: "f280_proj_num",
+        section: "SF280",
+        classification: "A",
+        label: "F280 Project Number",
+        defaultValue: ""
+      },
+      {
+        id: "f280.complianceType",
+        legacyId: "f280_comp_type",
+        section: "SF280",
+        classification: "A",
+        label: "Compliance Type",
+        defaultValue: "Whole House"
+      },
+      {
+        id: "f280.codeReference",
+        legacyId: "f280_code_ref",
+        section: "SF280",
+        classification: "A",
+        label: "Code Reference",
+        defaultValue: "NBC 2020: 9.33.5.1, 9.36.3.2, 9.36.5.15(5), 9.36.8.9"
+      }
+    ];
+
+    graph.registerInputs(inputs);
+
+    // ========================================================================
+    // F280 PEAK ENVELOPE HEAT LOSS (CSA F280-12 Section 5.2)
+    // Parnas: docs/parnas-tables/f280/peak-envelope-heat-loss.json
+    //
+    // Converts annual U×A×HDD calculations to peak U×A×deltaT
+    // Air-facing: deltaT = setpoint - designTemp
+    // Ground-facing: deltaT = setpoint - groundTemp (10 degC)
+    // ========================================================================
+
+    graph.registerNode({
+      id: "f280.peakEnvelopeHeatLoss",
+      legacyId: "f280_hl_env",
+      section: "SF280",
+      classification: "C",
+      dependencies: [
+        // Air-facing component areas and U-values
+        "transmissionLoss.roof.area",
+        "transmissionLoss.roof.uValue",
+        "transmissionLoss.walls.area",
+        "transmissionLoss.walls.uValue",
+        "transmissionLoss.exposedFloor.area",
+        "transmissionLoss.exposedFloor.uValue",
+        "transmissionLoss.doors.area",
+        "transmissionLoss.doors.uValue",
+        "transmissionLoss.windowNorth.area",
+        "transmissionLoss.windowNorth.uValue",
+        "transmissionLoss.windowEast.area",
+        "transmissionLoss.windowEast.uValue",
+        "transmissionLoss.windowSouth.area",
+        "transmissionLoss.windowSouth.uValue",
+        "transmissionLoss.windowWest.area",
+        "transmissionLoss.windowWest.uValue",
+        "transmissionLoss.skylights.area",
+        "transmissionLoss.skylights.uValue",
+        // Ground-facing
+        "transmissionLoss.wallsBelowGrade.area",
+        "transmissionLoss.wallsBelowGrade.uValue",
+        "transmissionLoss.slabOnGrade.area",
+        "transmissionLoss.slabOnGrade.uValue",
+        // Thermal bridge penalty
+        "transmissionLoss.thermalBridgePenalty",
+        // Design conditions
+        "climate.heating.setpoint",
+        "climate.temperature.coldest"
+      ],
+      label: "F280 Peak Envelope Heat Loss (W)",
+      compute: (inputs) => {
+        const setpoint = parseNum(inputs["climate.heating.setpoint"], 22);
+        const designTemp = parseNum(inputs["climate.temperature.coldest"], -22);
+        const deltaT_air = setpoint - designTemp;
+        const deltaT_ground = setpoint - GROUND_TEMP;
+
+        if (deltaT_air <= 0) return 0;
+
+        // Sum air-facing components: Q = A × U × deltaT_air
+        const airFacingComponents = [
+          ["transmissionLoss.roof", "roof"],
+          ["transmissionLoss.walls", "walls"],
+          ["transmissionLoss.exposedFloor", "exposedFloor"],
+          ["transmissionLoss.doors", "doors"],
+          ["transmissionLoss.windowNorth", "windowN"],
+          ["transmissionLoss.windowEast", "windowE"],
+          ["transmissionLoss.windowSouth", "windowS"],
+          ["transmissionLoss.windowWest", "windowW"],
+          ["transmissionLoss.skylights", "skylights"]
+        ];
+
+        let airFacingLoss = 0;
+        for (const [prefix] of airFacingComponents) {
+          const area = parseNum(inputs[`${prefix}.area`]);
+          const uValue = parseNum(inputs[`${prefix}.uValue`]);
+          airFacingLoss += area * uValue * deltaT_air;
+        }
+
+        // Sum ground-facing components: Q = A × U × deltaT_ground
+        const groundFacingComponents = [
+          "transmissionLoss.wallsBelowGrade",
+          "transmissionLoss.slabOnGrade"
+        ];
+
+        let groundFacingLoss = 0;
+        for (const prefix of groundFacingComponents) {
+          const area = parseNum(inputs[`${prefix}.area`]);
+          const uValue = parseNum(inputs[`${prefix}.uValue`]);
+          groundFacingLoss += area * uValue * deltaT_ground;
+        }
+
+        // Apply thermal bridge penalty
+        const tbPenalty = parseNum(inputs["transmissionLoss.thermalBridgePenalty"], 5);
+        const tbFactor = 1 + tbPenalty / 100;
+
+        return Math.round((airFacingLoss + groundFacingLoss) * tbFactor);
+      }
+    });
+
+    // ========================================================================
+    // F280 PEAK INFILTRATION HEAT LOSS (CSA F280-12 Section 5.2.5)
+    // Parnas: docs/parnas-tables/f280/peak-infiltration-heat-loss.json
+    //
+    // Q_inf = 1.21 × NRL50 × Ae / N × deltaT
+    // ========================================================================
+
+    graph.registerNode({
+      id: "f280.peakInfiltrationHeatLoss",
+      legacyId: "f280_hl_inf",
+      section: "SF280",
+      classification: "C",
+      dependencies: [
+        "airTightness.nrl50",
+        "envelope.airFacing.area",
+        "airTightness.nFactor",
+        "climate.heating.setpoint",
+        "climate.temperature.coldest"
+      ],
+      label: "F280 Peak Infiltration Heat Loss (W)",
+      compute: (inputs) => {
+        const nrl50 = parseNum(inputs["airTightness.nrl50"]);
+        const areaAir = parseNum(inputs["envelope.airFacing.area"]);
+        const nFactor = parseNum(inputs["airTightness.nFactor"], 13);
+        const setpoint = parseNum(inputs["climate.heating.setpoint"], 22);
+        const designTemp = parseNum(inputs["climate.temperature.coldest"], -22);
+
+        if (nFactor <= 0 || areaAir <= 0) return 0;
+
+        const deltaT = setpoint - designTemp;
+        if (deltaT <= 0) return 0;
+
+        // Q_inf = 1.21 × NRL50 × area / N-factor × deltaT
+        const baseCoeff = (AIR_HEAT_CAPACITY * nrl50 * areaAir) / nFactor;
+        return Math.round(baseCoeff * deltaT);
+      }
+    });
+
+    // ========================================================================
+    // F280 PEAK VENTILATION HEAT LOSS (CSA F280-12 Section 5.2.6)
+    // Parnas: docs/parnas-tables/f280/peak-ventilation-heat-loss.json
+    //
+    // Q_vent = 1.21 × V_dot × (1 - ATRE/100) × deltaT
+    // ========================================================================
+
+    graph.registerNode({
+      id: "f280.peakVentilationHeatLoss",
+      legacyId: "f280_hl_vent",
+      section: "SF280",
+      classification: "C",
+      dependencies: [
+        "ventilation.volumeRate",
+        "mechanical.ventilation.efficiency",
+        "climate.heating.setpoint",
+        "climate.temperature.coldest"
+      ],
+      label: "F280 Peak Ventilation Heat Loss (W)",
+      compute: (inputs) => {
+        const ventRate = parseNum(inputs["ventilation.volumeRate"]);
+        const efficiency = parseNum(inputs["mechanical.ventilation.efficiency"]);
+        const setpoint = parseNum(inputs["climate.heating.setpoint"], 22);
+        const designTemp = parseNum(inputs["climate.temperature.coldest"], -22);
+
+        if (ventRate <= 0) return 0;
+
+        const deltaT = setpoint - designTemp;
+        if (deltaT <= 0) return 0;
+
+        // Net ventilation loss after heat recovery
+        const recoveryFactor = Math.max(0, Math.min(1, 1 - efficiency / 100));
+
+        // Q_vent = 1.21 × rate × (1 - ATRE/100) × deltaT
+        return Math.round(AIR_HEAT_CAPACITY * ventRate * recoveryFactor * deltaT);
+      }
+    });
+
+    // ========================================================================
+    // F280 TOTAL DESIGN HEAT LOSS (CSA F280-12 Section 5.2.7)
+    // Parnas: docs/parnas-tables/f280/total-design-heat-loss.json
+    //
+    // Q_total = Q_envelope + Q_infiltration + Q_ventilation
+    // This is THE primary F280 output for heating equipment sizing
+    // ========================================================================
+
+    graph.registerNode({
+      id: "f280.totalDesignHeatLoss",
+      legacyId: "f280_hl_total",
+      section: "SF280",
+      classification: "C",
+      dependencies: [
+        "f280.peakEnvelopeHeatLoss",
+        "f280.peakInfiltrationHeatLoss",
+        "f280.peakVentilationHeatLoss"
+      ],
+      label: "F280 Total Design Heat Loss (W)",
+      compute: (inputs) => {
+        const envelope = parseNum(inputs["f280.peakEnvelopeHeatLoss"]);
+        const infiltration = parseNum(inputs["f280.peakInfiltrationHeatLoss"]);
+        const ventilation = parseNum(inputs["f280.peakVentilationHeatLoss"]);
+
+        return Math.round(envelope + infiltration + ventilation);
+      }
+    });
+
+    // ========================================================================
+    // F280 TOTAL DESIGN HEAT LOSS IN BTU/h
+    // Parnas: docs/parnas-tables/f280/total-design-heat-loss-btu.json
+    // ========================================================================
+
+    graph.registerNode({
+      id: "f280.totalDesignHeatLossBTU",
+      legacyId: "f280_hl_btu",
+      section: "SF280",
+      classification: "C",
+      dependencies: ["f280.totalDesignHeatLoss"],
+      label: "F280 Total Design Heat Loss (BTU/h)",
+      compute: (inputs) => {
+        const watts = parseNum(inputs["f280.totalDesignHeatLoss"]);
+        return Math.round(watts * W_TO_BTU);
+      }
+    });
+
+    // ========================================================================
+    // F280 PEAK SOLAR HEAT GAIN (for cooling load calculation)
+    //
+    // Uses existing radiant gains subtotal as proxy for peak solar
+    // In a full F280 implementation, this would use peak-hour solar
+    // radiation values rather than seasonal totals
+    // ========================================================================
+
+    graph.registerNode({
+      id: "f280.peakSolarGain",
+      legacyId: "f280_sg_peak",
+      section: "SF280",
+      classification: "C",
+      dependencies: [
+        "radiantGains.subtotal.coolingGain",
+        "climate.coolingDays"
+      ],
+      label: "F280 Peak Solar Gain Estimate (W)",
+      compute: (inputs) => {
+        // Approximate peak from annual: divide by cooling season hours
+        // then multiply by peak-to-average ratio (~2.5 for solar)
+        const annualCoolingGain = parseNum(inputs["radiantGains.subtotal.coolingGain"]);
+        const coolingDays = parseNum(inputs["climate.coolingDays"], 120);
+        const coolingHours = coolingDays * 12; // ~12 effective sun-hours/day
+
+        if (coolingHours <= 0) return 0;
+
+        // Convert kWh/season to peak W using peak factor
+        const averageW = (annualCoolingGain * 1000) / coolingHours;
+        const peakFactor = 2.5; // Peak-to-average solar ratio
+        return Math.round(averageW * peakFactor);
+      }
+    });
+
+    // ========================================================================
+    // F280 PEAK INTERNAL GAINS (for cooling load calculation)
+    //
+    // Converts seasonal internal gains to peak instantaneous value
+    // ========================================================================
+
+    graph.registerNode({
+      id: "f280.peakInternalGain",
+      legacyId: "f280_ig_peak",
+      section: "SF280",
+      classification: "C",
+      dependencies: [
+        "internal.coolingLoad.occupants"
+      ],
+      label: "F280 Peak Internal Gain (W)",
+      compute: (inputs) => {
+        // Internal gains (k_71) are already available as a seasonal total
+        // Convert to peak: annual / coolingHours
+        // For occupied periods, internal gains are roughly constant
+        const annualCoolingGain = parseNum(inputs["internal.coolingLoad.occupants"]);
+
+        // During peak cooling, internal gains are at their maximum
+        // Use 8760 hours/yr as baseline, but peak is higher than average
+        if (annualCoolingGain <= 0) return 0;
+
+        // Approximate: kWh/yr / 8760 hr = average kW, peak ~ 1.5× average
+        const averageW = (annualCoolingGain * 1000) / 8760;
+        return Math.round(averageW * 1.5);
+      }
+    });
+
+    // ========================================================================
+    // F280 NOMINAL COOLING CAPACITY (CSA F280-12 Section 6.3.1)
+    // Parnas: docs/parnas-tables/f280/nominal-cooling-capacity.json
+    //
+    // Total sensible + latent cooling load at design conditions
+    // ========================================================================
+
+    graph.registerNode({
+      id: "f280.nominalCoolingCapacity",
+      legacyId: "f280_cl_total",
+      section: "SF280",
+      classification: "C",
+      dependencies: [
+        "envelope.airFacing.uValue",
+        "envelope.airFacing.area",
+        "climate.temperature.hottest",
+        "climate.cooling.setpoint",
+        "ventilation.volumeRate",
+        "mechanical.ventilation.efficiency",
+        "airTightness.nrl50",
+        "airTightness.nFactor",
+        "f280.peakSolarGain",
+        "f280.peakInternalGain",
+        "cooling.latentLoadFactor"
+      ],
+      label: "F280 Nominal Cooling Capacity (W)",
+      compute: (inputs) => {
+        const uAir = parseNum(inputs["envelope.airFacing.uValue"]);
+        const areaAir = parseNum(inputs["envelope.airFacing.area"]);
+        const hottest = parseNum(inputs["climate.temperature.hottest"], 34);
+        const setpoint = parseNum(inputs["climate.cooling.setpoint"], 24);
+
+        const deltaT_cool = hottest - setpoint;
+        if (deltaT_cool <= 0) return 0;
+
+        // Envelope sensible gain: Uw × Ae × deltaT
+        const envGain = uAir * areaAir * deltaT_cool;
+
+        // Ventilation sensible gain: 1.21 × rate × (1 - eff/100) × deltaT
+        const ventRate = parseNum(inputs["ventilation.volumeRate"]);
+        const ventEff = parseNum(inputs["mechanical.ventilation.efficiency"]);
+        const ventRecovery = Math.max(0, Math.min(1, 1 - ventEff / 100));
+        const ventGain = AIR_HEAT_CAPACITY * ventRate * ventRecovery * deltaT_cool;
+
+        // Infiltration sensible gain: 1.21 × NRL50 × Ae / N × deltaT
+        const nrl50 = parseNum(inputs["airTightness.nrl50"]);
+        const nFactor = parseNum(inputs["airTightness.nFactor"], 13);
+        const infGain = nFactor > 0
+          ? (AIR_HEAT_CAPACITY * nrl50 * areaAir / nFactor) * deltaT_cool
+          : 0;
+
+        // Solar + internal gains
+        const solarGain = parseNum(inputs["f280.peakSolarGain"]);
+        const internalGain = parseNum(inputs["f280.peakInternalGain"]);
+
+        // Total sensible gain
+        const sensible = envGain + ventGain + infGain + solarGain + internalGain;
+
+        // Apply latent load factor
+        const llf = parseNum(inputs["cooling.latentLoadFactor"], 1.15);
+        const llfClamped = Math.max(1.0, llf);
+
+        return Math.round(sensible * llfClamped);
+      }
+    });
+
+    // F280 Nominal Cooling in BTU/h
+    graph.registerNode({
+      id: "f280.nominalCoolingCapacityBTU",
+      legacyId: "f280_cl_btu",
+      section: "SF280",
+      classification: "C",
+      dependencies: ["f280.nominalCoolingCapacity"],
+      label: "F280 Nominal Cooling Capacity (BTU/h)",
+      compute: (inputs) => {
+        const watts = parseNum(inputs["f280.nominalCoolingCapacity"]);
+        return Math.round(watts * W_TO_BTU);
+      }
+    });
+
+    // ========================================================================
+    // F280 HEATING SIZING COMPLIANCE (CSA F280-12 Section 5.2.7)
+    // Parnas: docs/parnas-tables/f280/heating-sizing-compliance.json
+    //
+    // Installed capacity must be >= 100% of design heat loss
+    // ========================================================================
+
+    graph.registerNode({
+      id: "f280.heatingSizingRatio",
+      legacyId: "f280_sz_heat_ratio",
+      section: "SF280",
+      classification: "C",
+      dependencies: [
+        "f280.installedHeatingCapacity",
+        "f280.totalDesignHeatLoss"
+      ],
+      label: "F280 Heating Sizing Ratio (%)",
+      compute: (inputs) => {
+        const installed = parseNum(inputs["f280.installedHeatingCapacity"]);
+        const required = parseNum(inputs["f280.totalDesignHeatLoss"]);
+
+        if (required <= 0) return 100;
+        if (installed <= 0 && required > 0) return 0;
+
+        return Math.round((installed / required) * 100);
+      }
+    });
+
+    graph.registerNode({
+      id: "f280.heatingSizingCompliance",
+      legacyId: "f280_sz_heat",
+      section: "SF280",
+      classification: "C",
+      dependencies: ["f280.heatingSizingRatio"],
+      label: "F280 Heating Sizing Compliance",
+      compute: (inputs) => {
+        const ratio = parseNum(inputs["f280.heatingSizingRatio"]);
+        return ratio >= 100 ? "\u2713" : "\u2717";
+      }
+    });
+
+    // ========================================================================
+    // F280 COOLING SIZING COMPLIANCE (CSA F280-12 Section 6.3.1)
+    // Parnas: docs/parnas-tables/f280/cooling-sizing-compliance.json
+    //
+    // Installed must be 80-125% of nominal (small system exception applies)
+    // ========================================================================
+
+    graph.registerNode({
+      id: "f280.coolingSizingRatio",
+      legacyId: "f280_sz_cool_ratio",
+      section: "SF280",
+      classification: "C",
+      dependencies: [
+        "f280.installedCoolingCapacity",
+        "f280.nominalCoolingCapacity"
+      ],
+      label: "F280 Cooling Sizing Ratio (%)",
+      compute: (inputs) => {
+        const installed = parseNum(inputs["f280.installedCoolingCapacity"]);
+        const nominal = parseNum(inputs["f280.nominalCoolingCapacity"]);
+
+        if (nominal <= 0) return installed <= 0 ? 100 : 0;
+
+        return Math.round((installed / nominal) * 100);
+      }
+    });
+
+    graph.registerNode({
+      id: "f280.coolingSizingCompliance",
+      legacyId: "f280_sz_cool",
+      section: "SF280",
+      classification: "C",
+      dependencies: [
+        "f280.coolingSizingRatio",
+        "f280.installedCoolingCapacity",
+        "f280.nominalCoolingCapacity"
+      ],
+      label: "F280 Cooling Sizing Compliance",
+      compute: (inputs) => {
+        const ratio = parseNum(inputs["f280.coolingSizingRatio"]);
+        const installed = parseNum(inputs["f280.installedCoolingCapacity"]);
+        const nominal = parseNum(inputs["f280.nominalCoolingCapacity"]);
+
+        // No cooling system: compliant if no load
+        if (installed <= 0 && nominal <= 0) return "\u2713";
+        if (installed <= 0 && nominal > 0) return "\u2717";
+
+        // Small system exception: nominal < 6000W may exceed by up to 1750W
+        if (nominal > 0 && nominal < SMALL_SYSTEM_THRESHOLD) {
+          return installed <= (nominal + SMALL_SYSTEM_EXCESS) ? "\u2713" : "\u2717";
+        }
+
+        // Standard rule: 80% to 125%
+        return (ratio >= 80 && ratio <= 125) ? "\u2713" : "\u2717";
+      }
+    });
+
+    // ========================================================================
+    // F280 DESIGNER CERTIFICATION VALIDATION
+    // Parnas: docs/parnas-tables/f280/designer-certification.json
+    // ========================================================================
+
+    graph.registerNode({
+      id: "f280.certificationValid",
+      legacyId: "f280_cert_valid",
+      section: "SF280",
+      classification: "A",
+      dependencies: [
+        "f280.designer.name",
+        "f280.designer.certType",
+        "f280.designer.certNumber",
+        "f280.designer.serviceOrg",
+        "f280.designer.attestation"
+      ],
+      label: "F280 Certification Valid",
+      compute: (inputs) => {
+        const name = inputs["f280.designer.name"] || "";
+        const certType = inputs["f280.designer.certType"] || "";
+        const certNumber = inputs["f280.designer.certNumber"] || "";
+        const serviceOrg = inputs["f280.designer.serviceOrg"] || "";
+        const attestation = inputs["f280.designer.attestation"];
+
+        // Required: name, cert number, and attestation
+        if (!name.trim()) return "\u2717";
+        if (!certNumber.trim()) return "\u2717";
+        if (!attestation) return "\u2717";
+
+        // NRCan EA requires Service Organization
+        if (certType === "NRCan EA" && !serviceOrg.trim()) return "\u2717";
+
+        return "\u2713";
+      }
+    });
+
+    // ========================================================================
+    // F280 OVERALL COMPLIANCE STATUS
+    //
+    // Aggregates all F280 compliance checks into a single status
+    // ========================================================================
+
+    graph.registerNode({
+      id: "f280.overallCompliance",
+      legacyId: "f280_overall",
+      section: "SF280",
+      classification: "C",
+      dependencies: [
+        "f280.heatingSizingCompliance",
+        "f280.coolingSizingCompliance",
+        "f280.certificationValid"
+      ],
+      label: "F280 Overall Compliance Status",
+      compute: (inputs) => {
+        const heating = inputs["f280.heatingSizingCompliance"];
+        const cooling = inputs["f280.coolingSizingCompliance"];
+        const cert = inputs["f280.certificationValid"];
+
+        const allPass = heating === "\u2713" && cooling === "\u2713" && cert === "\u2713";
+        return allPass ? "\u2713" : "\u2717";
+      }
+    });
+
+    // ========================================================================
+    // F280 ENVELOPE COMPONENT BREAKDOWN (for F280 Form Page 2 output)
+    //
+    // Individual component peak heat losses for the input summary table
+    // ========================================================================
+
+    const componentBreakdown = [
+      { id: "roof", depArea: "transmissionLoss.roof.area", depU: "transmissionLoss.roof.uValue", label: "Roof", ground: false },
+      { id: "walls", depArea: "transmissionLoss.walls.area", depU: "transmissionLoss.walls.uValue", label: "Above-Grade Walls", ground: false },
+      { id: "exposedFloor", depArea: "transmissionLoss.exposedFloor.area", depU: "transmissionLoss.exposedFloor.uValue", label: "Exposed Floor", ground: false },
+      { id: "doors", depArea: "transmissionLoss.doors.area", depU: "transmissionLoss.doors.uValue", label: "Doors", ground: false },
+      { id: "windowN", depArea: "transmissionLoss.windowNorth.area", depU: "transmissionLoss.windowNorth.uValue", label: "Windows (North)", ground: false },
+      { id: "windowE", depArea: "transmissionLoss.windowEast.area", depU: "transmissionLoss.windowEast.uValue", label: "Windows (East)", ground: false },
+      { id: "windowS", depArea: "transmissionLoss.windowSouth.area", depU: "transmissionLoss.windowSouth.uValue", label: "Windows (South)", ground: false },
+      { id: "windowW", depArea: "transmissionLoss.windowWest.area", depU: "transmissionLoss.windowWest.uValue", label: "Windows (West)", ground: false },
+      { id: "skylights", depArea: "transmissionLoss.skylights.area", depU: "transmissionLoss.skylights.uValue", label: "Skylights", ground: false },
+      { id: "belowGradeWalls", depArea: "transmissionLoss.wallsBelowGrade.area", depU: "transmissionLoss.wallsBelowGrade.uValue", label: "Below-Grade Walls", ground: true },
+      { id: "slabOnGrade", depArea: "transmissionLoss.slabOnGrade.area", depU: "transmissionLoss.slabOnGrade.uValue", label: "Slab-on-Grade", ground: true }
+    ];
+
+    componentBreakdown.forEach(({ id, depArea, depU, label, ground }) => {
+      graph.registerNode({
+        id: `f280.component.${id}.peakLoss`,
+        section: "SF280",
+        classification: "C",
+        dependencies: [depArea, depU, "climate.heating.setpoint", "climate.temperature.coldest"],
+        label: `F280 ${label} Peak Heat Loss (W)`,
+        compute: (inputs) => {
+          const area = parseNum(inputs[depArea]);
+          const uValue = parseNum(inputs[depU]);
+          const setpoint = parseNum(inputs["climate.heating.setpoint"], 22);
+          const designTemp = parseNum(inputs["climate.temperature.coldest"], -22);
+
+          const deltaT = ground ? (setpoint - GROUND_TEMP) : (setpoint - designTemp);
+          if (deltaT <= 0) return 0;
+
+          return Math.round(area * uValue * deltaT);
+        }
+      });
+    });
+
+    console.log("[F280ComplianceNodes] Registered", inputs.length, "inputs and F280 peak load nodes");
+  }
+
+  window.TEUI.ComputationNodes.F280Compliance = { register };
+  console.log("[F280ComplianceNodes] Module loaded");
+})();

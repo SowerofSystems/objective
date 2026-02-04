@@ -46,7 +46,9 @@ parnas-tables/
 ├── README.md                 # This file
 ├── format.schema.json        # JSON Schema for table format
 ├── climate/                  # S03 - Climate calculations
+├── cooling/                  # S13 - Free cooling, active cooling days
 ├── energy/                   # S04/S14/S15 - Energy metrics
+├── f280/                     # SF280 - CSA F280-12 peak loads & compliance
 ├── internal-gains/           # S09 - Occupants, plugs, lighting, equipment
 ├── mechanical/               # S13 - Heating, cooling, ventilation, compliance
 └── transmission-loss/        # S11 - Envelope heat transfer
@@ -90,6 +92,61 @@ The computation graph uses a **reference.* input injection** pattern:
 
 This pattern allows cross-model comparisons while keeping each model's
 computation independent and maintaining the incremental computation benefits.
+
+## F280 Section (CSA F280-12 Peak Load Compliance)
+
+The F280 section implements CSA F280-12 peak load calculations for HVAC equipment
+sizing compliance. Unlike the annual energy calculations (kWh/yr using degree-days),
+F280 calculates **instantaneous peak loads** (Watts) using design-day temperatures.
+
+### Key Relationship to Existing Nodes
+
+| Annual Energy Formula | F280 Peak Load Formula |
+|---|---|
+| `Q = U × A × HDD × 24 / 1000` (kWh/yr) | `Q = U × A × ΔT` (Watts) |
+| `Q_inf = 1.21 × NRL50 × A/N × HDD × 24 / 1000` | `Q_inf = 1.21 × NRL50 × A/N × ΔT` |
+| `Q_vent = 1.21 × V × HDD × 24 / 1000` | `Q_vent = 1.21 × V × (1-ATRE) × ΔT` |
+
+### F280 Parnas Tables
+
+| File | ID | Description |
+|---|---|---|
+| `peak-envelope-heat-loss.json` | `f280.peakEnvelopeHeatLoss` | Peak heat loss through all envelope components |
+| `peak-infiltration-heat-loss.json` | `f280.peakInfiltrationHeatLoss` | Peak air leakage heat loss |
+| `peak-ventilation-heat-loss.json` | `f280.peakVentilationHeatLoss` | Peak ventilation heat loss (net of HRV/ERV recovery) |
+| `total-design-heat-loss.json` | `f280.totalDesignHeatLoss` | **Total building design heat loss** (primary F280 output) |
+| `total-design-heat-loss-btu.json` | `f280.totalDesignHeatLossBTU` | Design heat loss in BTU/h |
+| `nominal-cooling-capacity.json` | `f280.nominalCoolingCapacity` | Nominal cooling capacity (sensible + latent) |
+| `heating-sizing-compliance.json` | `f280.heatingSizingCompliance` | Heating capacity >= 100% of design loss |
+| `cooling-sizing-compliance.json` | `f280.coolingSizingCompliance` | Cooling capacity 80-125% of nominal |
+| `designer-certification.json` | `f280.designerCertification` | Designer credentials and attestation |
+| `f280-input-summary.json` | `f280.inputSummary` | Mapping to F280 Form Page 2 fields |
+
+### F280 Sizing Rules
+
+| Rule | Requirement | Standard Reference |
+|---|---|---|
+| Heating minimum | Installed capacity >= 100% of design heat loss | CSA F280-12 §5.2.7 |
+| Cooling minimum | Installed capacity >= 80% of nominal cooling | CSA F280-12 §6.3.1 |
+| Cooling maximum | Installed capacity <= 125% of nominal cooling | CSA F280-12 §6.3.1 |
+| Small system exception | Nominal < 6000W: may exceed by up to 1750W | CSA F280-12 |
+
+### Designer Certification Types
+
+| Type | Full Name | Required For |
+|---|---|---|
+| NRCan EA | NRCan-Registered Energy Advisor | EnerGuide evaluations, rebate programs |
+| TECA | Thermal Environmental Comfort Association | BC-recognized F280 calculations |
+| P.Eng | Professional Engineer | Engineering design submissions |
+| OAA | Ontario Association of Architects | Architectural submissions in Ontario |
+| BCIN | Building Code Identification Number | Ontario building code submissions |
+
+### Implementation
+
+The F280 calculations are implemented in `src/sections/nodes/F280ComplianceNodes.js`,
+which reuses existing computation graph inputs (envelope U×A values, climate design
+temperatures, ventilation rates, air tightness parameters) and derives peak loads
+from them.
 
 ## Code Generation
 

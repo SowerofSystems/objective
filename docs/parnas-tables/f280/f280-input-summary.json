@@ -1,0 +1,380 @@
+{
+  "id": "f280.inputSummary",
+  "legacyId": "f280_page2",
+  "label": "F280 Input Summary (Page 2)",
+  "section": "SF280",
+  "classification": "A",
+  "_meta": {
+    "description": "Maps existing TEUI calculator inputs to F280 Form Page 2 input summary fields per CSA F280-12 Section 7.1. This specification defines the complete mapping from the computation graph semantic paths to F280 form row numbers, enabling automatic generation of the F280 Input Summary page.",
+    "standard": "CSA F280-12 Section 7.1",
+    "formPage": "F280 Form Page 2 - CSA F280-12 INPUT SUMMARY"
+  },
+  "inputMapping": {
+    "buildingInformation": {
+      "f280Row": "1-5",
+      "fields": [
+        {
+          "f280Field": "Postal Code",
+          "source": "climate.location.postalCode",
+          "note": "New input needed - not currently in ClimateNodes"
+        },
+        {
+          "f280Field": "Indoor Design Temperature (Heating)",
+          "source": "climate.heating.setpoint",
+          "legacyId": "h_23",
+          "existing": true
+        },
+        {
+          "f280Field": "Indoor Design Temperature (Cooling)",
+          "source": "climate.cooling.setpoint",
+          "legacyId": "h_24",
+          "existing": true
+        },
+        {
+          "f280Field": "Conditioned Floor Area",
+          "source": "building.conditionedFloorArea",
+          "legacyId": "h_15",
+          "existing": true
+        },
+        {
+          "f280Field": "Conditioned Volume",
+          "source": "volume.conditioned",
+          "legacyId": "d_105",
+          "existing": true
+        },
+        {
+          "f280Field": "Number of Storeys",
+          "source": "volume.numStoreys",
+          "legacyId": "d_103",
+          "existing": true
+        }
+      ]
+    },
+    "heatingDesignConditions": {
+      "f280Row": "6-8",
+      "fields": [
+        {
+          "f280Field": "Outdoor Design Temperature (Heating)",
+          "source": "climate.temperature.coldest",
+          "legacyId": "d_23",
+          "existing": true
+        },
+        {
+          "f280Field": "Heating Degree Days",
+          "source": "climate.heating.degreedays",
+          "legacyId": "d_20",
+          "existing": true
+        },
+        {
+          "f280Field": "Mean Soil Temperature",
+          "source": "constant: 10 degC",
+          "existing": true,
+          "note": "Used as constant in ground-facing calculations"
+        }
+      ]
+    },
+    "coolingDesignConditions": {
+      "f280Row": "9-10",
+      "fields": [
+        {
+          "f280Field": "Outdoor Design Temperature (Cooling)",
+          "source": "climate.temperature.hottest",
+          "legacyId": "d_24",
+          "existing": true
+        },
+        {
+          "f280Field": "Cooling Degree Days",
+          "source": "climate.cooling.degreedays",
+          "legacyId": "d_21",
+          "existing": true
+        }
+      ]
+    },
+    "aboveGradeWalls": {
+      "f280Row": "11-14",
+      "fields": [
+        {
+          "f280Field": "Wall Area",
+          "source": "transmissionLoss.walls.area",
+          "legacyId": "d_86",
+          "existing": true
+        },
+        {
+          "f280Field": "Wall RSI / R-value",
+          "source": "transmissionLoss.walls.rsiValue",
+          "legacyId": "f_86",
+          "existing": true
+        },
+        {
+          "f280Field": "Wall U-value",
+          "source": "transmissionLoss.walls.uValue",
+          "legacyId": "g_86",
+          "existing": true
+        }
+      ]
+    },
+    "belowGradeWalls": {
+      "f280Row": "15-17",
+      "fields": [
+        {
+          "f280Field": "Below Grade Wall Area",
+          "source": "transmissionLoss.wallsBelowGrade.area",
+          "legacyId": "d_94",
+          "existing": true
+        },
+        {
+          "f280Field": "Below Grade Wall RSI",
+          "source": "transmissionLoss.wallsBelowGrade.rsiValue",
+          "legacyId": "f_94",
+          "existing": true
+        },
+        {
+          "f280Field": "Below Grade Wall U-value",
+          "source": "transmissionLoss.wallsBelowGrade.uValue",
+          "legacyId": "g_94",
+          "existing": true
+        }
+      ]
+    },
+    "ceilingRoof": {
+      "f280Row": "18-20",
+      "fields": [
+        {
+          "f280Field": "Roof/Ceiling Area",
+          "source": "transmissionLoss.roof.area",
+          "legacyId": "d_85",
+          "existing": true
+        },
+        {
+          "f280Field": "Roof RSI",
+          "source": "transmissionLoss.roof.rsiValue",
+          "legacyId": "f_85",
+          "existing": true
+        },
+        {
+          "f280Field": "Roof U-value",
+          "source": "transmissionLoss.roof.uValue",
+          "legacyId": "g_85",
+          "existing": true
+        }
+      ]
+    },
+    "windows": {
+      "f280Row": "21-28",
+      "fields": [
+        {
+          "f280Field": "North Windows Area",
+          "source": "transmissionLoss.windowNorth.area",
+          "legacyId": "d_89",
+          "existing": true
+        },
+        {
+          "f280Field": "North Windows U-value",
+          "source": "transmissionLoss.windowNorth.uValue",
+          "legacyId": "g_89",
+          "existing": true
+        },
+        {
+          "f280Field": "East Windows Area",
+          "source": "transmissionLoss.windowEast.area",
+          "legacyId": "d_89b",
+          "existing": true
+        },
+        {
+          "f280Field": "East Windows U-value",
+          "source": "transmissionLoss.windowEast.uValue",
+          "legacyId": "g_89b",
+          "existing": true
+        },
+        {
+          "f280Field": "South Windows Area",
+          "source": "transmissionLoss.windowSouth.area",
+          "legacyId": "d_89c",
+          "existing": true
+        },
+        {
+          "f280Field": "South Windows U-value",
+          "source": "transmissionLoss.windowSouth.uValue",
+          "legacyId": "g_89c",
+          "existing": true
+        },
+        {
+          "f280Field": "West Windows Area",
+          "source": "transmissionLoss.windowWest.area",
+          "legacyId": "d_89d",
+          "existing": true
+        },
+        {
+          "f280Field": "West Windows U-value",
+          "source": "transmissionLoss.windowWest.uValue",
+          "legacyId": "g_89d",
+          "existing": true
+        },
+        {
+          "f280Field": "Windows SHGC (by orientation)",
+          "source": "radiantGains.row74-77.shgc",
+          "legacyId": "f_74 to f_77",
+          "existing": true
+        }
+      ]
+    },
+    "doors": {
+      "f280Row": "29-30",
+      "fields": [
+        {
+          "f280Field": "Door Area",
+          "source": "transmissionLoss.doors.area",
+          "legacyId": "d_88",
+          "existing": true
+        },
+        {
+          "f280Field": "Door RSI / U-value",
+          "source": "transmissionLoss.doors.uValue",
+          "legacyId": "g_88",
+          "existing": true
+        }
+      ]
+    },
+    "skylights": {
+      "f280Row": "31-32",
+      "fields": [
+        {
+          "f280Field": "Skylight Area",
+          "source": "transmissionLoss.skylights.area",
+          "legacyId": "d_93",
+          "existing": true
+        },
+        {
+          "f280Field": "Skylight U-value",
+          "source": "transmissionLoss.skylights.uValue",
+          "legacyId": "g_93",
+          "existing": true
+        },
+        {
+          "f280Field": "Skylight SHGC",
+          "source": "radiantGains.row78.shgc",
+          "legacyId": "f_78",
+          "existing": true
+        }
+      ]
+    },
+    "slabOnGrade": {
+      "f280Row": "33-34",
+      "fields": [
+        {
+          "f280Field": "Slab Area / Perimeter",
+          "source": "transmissionLoss.slabOnGrade.area",
+          "legacyId": "d_95",
+          "existing": true
+        },
+        {
+          "f280Field": "Slab RSI / U-value",
+          "source": "transmissionLoss.slabOnGrade.uValue",
+          "legacyId": "g_95",
+          "existing": true
+        }
+      ]
+    },
+    "ventilation": {
+      "f280Row": "35-37",
+      "fields": [
+        {
+          "f280Field": "Ventilation System Type",
+          "source": "mechanical.ventilation.method",
+          "legacyId": "d_118_method",
+          "existing": true
+        },
+        {
+          "f280Field": "Ventilation Rate",
+          "source": "ventilation.volumeRate",
+          "legacyId": "d_120",
+          "existing": true
+        },
+        {
+          "f280Field": "HRV/ERV Efficiency (ATRE)",
+          "source": "mechanical.ventilation.efficiency",
+          "legacyId": "d_118",
+          "existing": true
+        }
+      ]
+    },
+    "airTightness": {
+      "f280Row": "38-39",
+      "fields": [
+        {
+          "f280Field": "Air Tightness Method",
+          "source": "airTightness.method",
+          "legacyId": "d_108",
+          "existing": true
+        },
+        {
+          "f280Field": "NRL50",
+          "source": "airTightness.nrl50",
+          "legacyId": "g_108",
+          "existing": true
+        },
+        {
+          "f280Field": "ACH50",
+          "source": "airTightness.ach50Target",
+          "legacyId": "d_109",
+          "existing": true
+        }
+      ]
+    }
+  },
+  "gapAnalysis": {
+    "existingInputs": {
+      "count": 39,
+      "coverage": "95%",
+      "description": "Nearly all F280 Page 2 inputs already exist as computation graph nodes in the TEUI calculator"
+    },
+    "newInputsNeeded": [
+      {
+        "field": "f280.building.postalCode",
+        "description": "Postal code of building location (F280 row 1)",
+        "priority": "high",
+        "note": "Currently climate lookup uses province+city, not postal code"
+      },
+      {
+        "field": "f280.building.lotNumber",
+        "description": "Lot number (F280 row 1)",
+        "priority": "medium"
+      },
+      {
+        "field": "f280.building.waterTableDepth",
+        "description": "Water table depth in meters (F280 row 2)",
+        "priority": "low",
+        "note": "Used for below-grade heat loss refinement"
+      },
+      {
+        "field": "f280.building.slabFluidTemp",
+        "description": "Slab fluid temperature in degC (F280 row 3)",
+        "priority": "low",
+        "note": "Used for radiant floor slab calculations"
+      },
+      {
+        "field": "f280.installedHeatingCapacity",
+        "description": "Rated output of installed heating equipment in W or BTU/h",
+        "priority": "high",
+        "note": "Required for F280 heating sizing compliance check"
+      },
+      {
+        "field": "f280.installedCoolingCapacity",
+        "description": "Rated output of installed cooling equipment in W or BTU/h",
+        "priority": "high",
+        "note": "Required for F280 cooling sizing compliance check"
+      }
+    ]
+  },
+  "references": [
+    {
+      "source": "CSA F280-12 Section 7.1 - Table of Inputs requirement"
+    },
+    {
+      "source": "F280 Form Page 2 - INPUT SUMMARY (FormSet v24.10)"
+    },
+    {
+      "source": "F280 Form Set Guide V24.07"
+    }
+  ]
+}
