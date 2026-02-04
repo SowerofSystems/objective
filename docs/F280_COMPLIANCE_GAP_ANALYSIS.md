@@ -15,9 +15,38 @@ referenced by NBC 9.33.5.1, 9.36.3.2, and 9.36.5.15.
 
 ## 1. What Already Existed (Pre-Implementation)
 
-The TEUI calculator already contained 95% of the building science inputs and annual
-energy calculations that map to F280 requirements. These are spread across 18
-computation node modules:
+The TEUI calculator already contained 95% of the building science inputs and
+calculations that map to F280 requirements, spread across 18 computation node
+modules **plus existing peak load calculations in the legacy Section15.js**.
+
+### 1.0 Existing Peak Load Calculations (Section15.js — Rows T.6.4 through T.6.8)
+
+Section15.js already computes peak instantaneous loads using design-day ΔT:
+
+| Row | T-ID | Legacy ID | Formula | Unit |
+|---|---|---|---|---|
+| 137 | T.6.4 | d_137 | `(G101×D101 + D102×G102) × (H23-D23) / 1000` | kW |
+| 137 | T.6.4 | l_137 | `d_137 × 3412.14245` | BTU/h |
+| 138 | T.6.5 | d_138 | `(G101×D101 + D102×G102) × (D24-H24) / 1000` | kW |
+| 138 | T.6.6 | h_138 | `d_138 × 0.2843451361` | Tons |
+| 138 | T.6.6 | l_138 | `d_138 × 3412.14245` | BTU/h |
+| 139 | T.6.7 | d_139 | enclosure cooling + internal gains + solar/vent/occ gains | kW |
+| 139 | T.6.9 | h_139 | `d_139 × 0.2843451361` | Tons |
+| 139 | T.6.9 | l_139 | `d_139 × 3412.14245` | BTU/h |
+| 140 | T.6.8 | d_140 | `d_137 × 1000 / H15` | W/m² |
+| 140 | T.6.8 | h_140 | `d_138 × 1000 / H15` | W/m² |
+
+Where:
+- G101/G102 = weighted U-values (air-facing / ground-facing)
+- D101/D102 = envelope areas (air-facing / ground-facing)
+- H23 = heating setpoint, D23 = coldest design temperature
+- D24 = hottest design temperature, H24 = cooling setpoint
+- D65+D66+D67 = plug load + lighting + equipment densities (W/m²)
+- K79 = cooling solar gains, D122 = cooling ventilation gains
+- K64 = cooling occupant gains, H124 = free cooling offset
+
+These are **enclosure-only** peak loads. F280 additionally requires separate
+infiltration and ventilation peak loads to arrive at the total design heat loss.
 
 ### 1.1 Building Envelope (TransmissionLossNodes.js — Section 11)
 
@@ -110,34 +139,37 @@ computation node modules:
 
 ---
 
-## 2. The Core Gap: Annual Energy vs Peak Loads
+## 2. The Remaining Gap: What Section15 Doesn't Cover
 
-The fundamental difference between the existing TEUI calculations and F280 requirements:
+Section15.js already performs peak envelope calculations (T.6.4-T.6.8) using
+design-day ΔT. The gap is narrower than a full annual-to-peak conversion —
+Section15 covers the **enclosure** peak loads, but F280 requires additional
+components that are not in Section15:
 
-| Aspect | Existing TEUI | F280 Required |
+| F280 Component | Section15 Status | What's Missing |
 |---|---|---|
-| **Metric** | Annual energy (kWh/yr) | Peak instantaneous load (Watts) |
-| **Temperature basis** | Degree-days (HDD/CDD) | Design-day temperature (ΔT) |
-| **Purpose** | Energy performance rating | Equipment sizing |
-| **Time scope** | Full year (8760 hours) | Single design-day condition |
+| Envelope peak heating | d_137 (T.6.4) — **exists** | — |
+| Envelope peak cooling | d_138 (T.6.5) — **exists** | — |
+| Cooling with gains | d_139 (T.6.7) — **exists** | — |
+| Load intensities | d_140/h_140 (T.6.8) — **exists** | — |
+| BTU/h conversions | l_137/l_138/l_139 — **exists** | — |
+| Tons conversions | h_138/h_139 — **exists** | — |
+| **Infiltration peak loss** | Not in Section15 | `1.21 × NRL50 × Ae/N × ΔT` |
+| **Ventilation peak loss (ATRE)** | Not in Section15 | `1.21 × V × (1-ATRE/100) × ΔT` |
+| **F280 total design heat loss** | Not in Section15 | envelope + infiltration + ventilation |
+| **Equipment sizing check (heating)** | Not in Section15 | installed >= 100% of total |
+| **Equipment sizing check (cooling)** | Not in Section15 | 80-125% of nominal |
+| **Small system exception** | Not in Section15 | < 6000W threshold |
+| **Designer certification** | Not in Section15 | NRCan EA, TECA, P.Eng, OAA, BCIN |
+| **F280 form output** | Not in Section15 | Pages 1-3 structured report |
 
-### Formula Conversion Pattern
+### Formula Reference
 
-Every existing annual calculation has an F280 analog. The conversion is systematic:
-
-| Component | Annual Formula | F280 Peak Formula |
+| Component | Annual Formula (existing) | Peak Formula (existing/new) |
 |---|---|---|
-| **Envelope** | `Q = U × A × HDD × 24 / 1000` (kWh/yr) | `Q = U × A × ΔT` (W) |
-| **Infiltration** | `Q = 1.21 × NRL50 × Ae/N × HDD × 24 / 1000` (kWh/yr) | `Q = 1.21 × NRL50 × Ae/N × ΔT` (W) |
-| **Ventilation** | `Q = 1.21 × V × (1-ATRE/100) × HDD × 24 / 1000` (kWh/yr) | `Q = 1.21 × V × (1-ATRE/100) × ΔT` (W) |
-
-Where:
-- `ΔT_heating = T_setpoint - T_outdoor_design` (heating)
-- `ΔT_cooling = T_outdoor_design - T_setpoint` (cooling)
-- `ΔT_ground = T_setpoint - 10°C` (ground-facing components)
-
-The inputs (`U`, `A`, `NRL50`, `Ae`, `N`, `V`, `ATRE`, `T_setpoint`, `T_outdoor_design`)
-are ALL already present in the computation graph. Only the peak load math layer was missing.
+| **Envelope** | `U × A × HDD × 24 / 1000` (kWh/yr) | `(Uw×Ae + Ug×Ag) × ΔT / 1000` (kW) — **exists as d_137** |
+| **Infiltration** | `1.21 × NRL50 × Ae/N × HDD × 24 / 1000` (kWh/yr) | `1.21 × NRL50 × Ae/N × ΔT` (W) — **new** |
+| **Ventilation** | `1.21 × V × (1-ATRE/100) × HDD × 24 / 1000` (kWh/yr) | `1.21 × V × (1-ATRE/100) × ΔT` (W) — **new** |
 
 ---
 
@@ -162,12 +194,22 @@ Located in `docs/parnas-tables/f280/`:
 
 ### 3.2 Computation Module (F280ComplianceNodes.js)
 
-Located in `src/sections/nodes/F280ComplianceNodes.js`:
+Located in `src/sections/nodes/F280ComplianceNodes.js`. Builds ON TOP of the existing
+Section15.js peak load calculations (d_137 through d_140) rather than recalculating
+the envelope peak loads.
 
-**Input Nodes (11):**
+**Relationship to Section15.js:**
+- `f280.peakEnvelopeHeatLoss` reads d_137 (T.6.4) and converts kW to W
+- `f280.nominalCoolingCapacity` reads d_139 (T.6.7) and adds infiltration + latent factor
+- Falls back to direct computation from weighted U-values if legacy values not yet available
+
+**New Input Nodes (14):**
 
 | Node ID | Purpose |
 |---|---|
+| `f280.legacy.peakHeatingKw` | Reads d_137 from Section15 T.6.4 (kW) |
+| `f280.legacy.peakCoolingEnclosureKw` | Reads d_138 from Section15 T.6.5 (kW) |
+| `f280.legacy.peakCoolingWithGainsKw` | Reads d_139 from Section15 T.6.7 (kW) |
 | `f280.installedHeatingCapacity` | Rated heating equipment output (W) |
 | `f280.installedCoolingCapacity` | Rated cooling equipment output (W) |
 | `f280.designer.name` | Designer's full name |
@@ -180,18 +222,16 @@ Located in `src/sections/nodes/F280ComplianceNodes.js`:
 | `f280.complianceType` | Whole House or Room-by-Room |
 | `f280.codeReference` | NBC code sections |
 
-**Computed Nodes (20+):**
+**Computed Nodes:**
 
 | Node ID | Dependencies | Output |
 |---|---|---|
-| `f280.peakEnvelopeHeatLoss` | 11 component areas + U-values, setpoint, design temp | W |
+| `f280.peakEnvelopeHeatLoss` | **d_137** (or fallback: Uw×Ae+Ug×Ag × ΔT) | W |
 | `f280.peakInfiltrationHeatLoss` | NRL50, Ae, N-factor, setpoint, design temp | W |
 | `f280.peakVentilationHeatLoss` | Vent rate, ATRE, setpoint, design temp | W |
 | `f280.totalDesignHeatLoss` | Sum of envelope + infiltration + ventilation | W |
 | `f280.totalDesignHeatLossBTU` | totalDesignHeatLoss × 3.41214 | BTU/h |
-| `f280.peakSolarGain` | Seasonal solar gain / cooling hours × peak factor | W |
-| `f280.peakInternalGain` | Seasonal internal gain / 8760 × peak factor | W |
-| `f280.nominalCoolingCapacity` | All cooling load components × latent load factor | W |
+| `f280.nominalCoolingCapacity` | **d_139** + infiltration peak + latent load factor | W |
 | `f280.nominalCoolingCapacityBTU` | nominalCoolingCapacity × 3.41214 | BTU/h |
 | `f280.heatingSizingRatio` | installed / designHeatLoss × 100 | % |
 | `f280.heatingSizingCompliance` | ratio >= 100% | ✓/✗ |
@@ -434,19 +474,21 @@ phone, fax, and email fields are not yet registered as computation graph inputs.
 
 | # | Requirement | Status | Implementation |
 |---|---|---|---|
-| 1 | Peak envelope heat loss calculation (§5.2) | DONE | `f280.peakEnvelopeHeatLoss` |
-| 2 | Peak infiltration heat loss (§5.2.5) | DONE | `f280.peakInfiltrationHeatLoss` |
-| 3 | Peak ventilation heat loss with ATRE (§5.2.6) | DONE | `f280.peakVentilationHeatLoss` |
-| 4 | Total design heat loss (§5.2.7) | DONE | `f280.totalDesignHeatLoss` |
-| 5 | Design heat loss in BTU/h | DONE | `f280.totalDesignHeatLossBTU` |
-| 6 | Nominal cooling capacity (§6.3.1) | DONE | `f280.nominalCoolingCapacity` |
-| 7 | Heating sizing compliance check | DONE | `f280.heatingSizingCompliance` |
-| 8 | Cooling sizing compliance check (80-125%) | DONE | `f280.coolingSizingCompliance` |
-| 9 | Small system exception (< 6000W) | DONE | Integrated in cooling compliance |
-| 10 | Designer certification validation | DONE | `f280.certificationValid` |
-| 11 | Overall compliance aggregation | DONE | `f280.overallCompliance` |
-| 12 | Per-component peak loss breakdown | DONE | `f280.component.*.peakLoss` (11 components) |
-| 13 | Input summary field mapping (§7.1) | DONE | `f280-input-summary.json` |
+| 1 | Peak envelope heat loss (§5.2) | EXISTED | d_137 (T.6.4) in Section15.js; bridged via `f280.peakEnvelopeHeatLoss` |
+| 2 | Peak envelope cooling (§6.3) | EXISTED | d_138/d_139 (T.6.5/T.6.7) in Section15.js |
+| 3 | Peak load intensities | EXISTED | d_140/h_140 (T.6.8) in Section15.js |
+| 4 | BTU/h and Tons conversions | EXISTED | l_137/l_138/l_139, h_138/h_139 in Section15.js |
+| 5 | Peak infiltration heat loss (§5.2.5) | ADDED | `f280.peakInfiltrationHeatLoss` |
+| 6 | Peak ventilation heat loss with ATRE (§5.2.6) | ADDED | `f280.peakVentilationHeatLoss` |
+| 7 | F280 total design heat loss (§5.2.7) | ADDED | `f280.totalDesignHeatLoss` (envelope+inf+vent) |
+| 8 | F280 total in BTU/h | ADDED | `f280.totalDesignHeatLossBTU` |
+| 9 | Nominal cooling with infiltration + LLF (§6.3.1) | ADDED | `f280.nominalCoolingCapacity` |
+| 10 | Heating sizing compliance check | ADDED | `f280.heatingSizingCompliance` |
+| 11 | Cooling sizing compliance check (80-125%) | ADDED | `f280.coolingSizingCompliance` |
+| 12 | Small system exception (< 6000W) | ADDED | Integrated in cooling compliance |
+| 13 | Designer certification validation | ADDED | `f280.certificationValid` |
+| 14 | Overall compliance aggregation | ADDED | `f280.overallCompliance` |
+| 15 | Input summary field mapping (§7.1) | ADDED | `f280-input-summary.json` |
 
 ### Required for Full F280 Production Use
 
@@ -466,37 +508,44 @@ phone, fax, and email fields are not yet registered as computation graph inputs.
 
 ## 8. Architecture Notes
 
-### 8.1 How Peak Loads Derive from Existing Nodes
+### 8.1 How F280 Builds on Section15 Peak Loads
 
-The F280 peak load calculations reuse existing computation graph values without
-duplicating the building model. The dependency chain is:
+F280ComplianceNodes.js builds ON TOP of the existing Section15.js peak calculations.
+It reads the legacy d_137/d_139 values and adds the missing components:
 
 ```
-Existing Inputs                    F280 Peak Loads
-─────────────────                  ────────────────
-transmissionLoss.*.area    ──┐
-transmissionLoss.*.uValue  ──┼──> f280.peakEnvelopeHeatLoss
-climate.heating.setpoint   ──┤
-climate.temperature.coldest──┘
+Section15.js (EXISTING)                 F280ComplianceNodes.js (ADDED)
+───────────────────────                 ────────────────────────────────
 
-airTightness.nrl50     ──┐
-envelope.airFacing.area──┼──> f280.peakInfiltrationHeatLoss
-airTightness.nFactor   ──┤
-climate.heating.setpoint──┤
-climate.temperature.coldest──┘
+G101, D101, G102, D102 ──┐
+H23, D23               ──┼──> d_137 (T.6.4) ──> f280.peakEnvelopeHeatLoss (kW→W)
+                          │
+                          │    airTightness.nrl50     ──┐
+                          │    envelope.airFacing.area──┼──> f280.peakInfiltrationHeatLoss
+                          │    airTightness.nFactor   ──┤    (NEW — not in Section15)
+                          │    H23, D23               ──┘
+                          │
+                          │    ventilation.volumeRate       ──┐
+                          │    mech.ventilation.efficiency  ──┼──> f280.peakVentilationHeatLoss
+                          │    H23, D23                     ──┘    (NEW — not in Section15)
+                          │
+                          │    f280.peakEnvelopeHeatLoss     ──┐
+                          └──> f280.peakInfiltrationHeatLoss ──┼──> f280.totalDesignHeatLoss
+                               f280.peakVentilationHeatLoss  ──┘    (F280 §5.2.7 total)
 
-ventilation.volumeRate         ──┐
-mechanical.ventilation.efficiency──┼──> f280.peakVentilationHeatLoss
-climate.heating.setpoint       ──┤
-climate.temperature.coldest    ──┘
-
-f280.peakEnvelopeHeatLoss     ──┐
-f280.peakInfiltrationHeatLoss ──┼──> f280.totalDesignHeatLoss
-f280.peakVentilationHeatLoss  ──┘
+G101, D101, G102, D102 ──┐
+D24, H24               ──┤
+D65, D66, D67, H15     ──┼──> d_139 (T.6.7) ──> f280.nominalCoolingCapacity
+K79, D122, K64, H124   ──┘                      + infiltration peak + LLF
+                                                  (F280 §6.3.1 total)
 
 f280.totalDesignHeatLoss      ──┐
 f280.installedHeatingCapacity ──┼──> f280.heatingSizingCompliance
                                ──┘
+
+f280.nominalCoolingCapacity    ──┐
+f280.installedCoolingCapacity  ──┼──> f280.coolingSizingCompliance
+                                ──┘
 ```
 
 ### 8.2 Incremental Recomputation
