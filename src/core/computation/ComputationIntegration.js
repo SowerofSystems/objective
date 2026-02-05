@@ -723,13 +723,13 @@
 
     if (!StateManager || !ReferenceValues) {
       warn("StateManager or ReferenceValues not available for Reference population");
-      return { gFieldsCopied: 0, cFieldsLoaded: 0, debug: null };
+      return { gFieldsCopied: 0, cFieldsLoaded: 0, computedCopied: 0, debug: null };
     }
 
     const refModelId = getRefModelId();
     if (!refModelId) {
       warn("No Reference model found");
-      return { gFieldsCopied: 0, cFieldsLoaded: 0, debug: null };
+      return { gFieldsCopied: 0, cFieldsLoaded: 0, computedCopied: 0, debug: null };
     }
 
     const targetId = state.getActiveModelId();
@@ -746,6 +746,7 @@
 
     let gFieldsCopied = 0;
     let cFieldsLoaded = 0;
+    let computedCopied = 0;
 
     // Debug tracking
     const debug = {
@@ -754,10 +755,26 @@
       cFieldsFromStandard: [],
       cFieldsFromStateManager: [],
       cFieldsCopiedFromTarget: [],
-      cFieldsMissing: []
+      cFieldsMissing: [],
+      computedFromTarget: []
     };
 
-    // Get all registered inputs
+    // STEP 1: Copy ALL computed values from Target to Reference as baseline
+    // This ensures the Reference model has all intermediate values needed
+    // to compute the full chain (envelope → energy → emissions)
+    const nodeIds = graph.getAllNodeIds ? graph.getAllNodeIds() : [];
+    for (const semanticPath of nodeIds) {
+      const targetValue = state.getValueForModel(targetId, semanticPath);
+      if (targetValue !== undefined && targetValue !== null) {
+        state.setValueForModel(refModelId, semanticPath, targetValue);
+        computedCopied++;
+        debug.computedFromTarget.push({ semanticPath, value: targetValue });
+      }
+    }
+    log(`  - Computed values copied from Target: ${computedCopied}`);
+
+    // STEP 2: Populate inputs - G-fields from Target, C-fields from ReferenceValues.js
+    // This overrides the baseline with Reference-specific input values
     const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
 
     for (const semanticPath of inputIds) {
@@ -780,6 +797,7 @@
         // CSV ref_ values represent the actual Reference model state for the project,
         // so they take precedence over ReferenceValues.js standard defaults.
         // ReferenceValues.js provides defaults for new projects without CSV data.
+
         const refLegacyId = legacyId
           ? (legacyId.startsWith("ref_") ? legacyId : "ref_" + legacyId)
           : null;
@@ -828,7 +846,7 @@
     }
     log(`  - reference.* inputs copied to Target: ${refInputsCopiedToTarget}`);
 
-    return { gFieldsCopied, cFieldsLoaded, refInputsCopiedToTarget, debug };
+    return { gFieldsCopied, cFieldsLoaded, computedCopied, refInputsCopiedToTarget, debug };
   }
 
   /**
@@ -877,14 +895,22 @@
     const targetId = state.getActiveModelId();
     const refModelId = getRefModelId();
 
-    // Step 1: Compute Target model (fast path — cached order, silent writes)
-    const targetResult = engine.computeAllForModelFast(targetId);
+    // Step 1: Compute Target model
+    const targetResult = engine.computeAllForModel(targetId);
 
     // Step 2: Compute Reference model if it exists
     let refResult = null;
     let syncResult = null;
     if (refModelId) {
-      refResult = engine.computeAllForModelFast(refModelId);
+      refResult = engine.computeAllForModel(refModelId);
+
+      // Step 2.5: Force wood offset = 0 for Reference model and recompute emissions
+      // Reference building gets wood emissions (k_31) but NO wood carbon credit (d_60).
+      // This matches main branch legacy behavior where Reference has full emissions impact.
+      state.setValueForModel(refModelId, "forestry.annualOffset", 0);
+      // Recompute emissions.target.subtotal with the forced d_60 = 0
+      const emissionsResult = engine.onValueChange("forestry.annualOffset", 0, refModelId);
+      log(`  - Forced forestry.annualOffset = 0 for Reference, recomputed ${emissionsResult.computedNodes.length} nodes`);
 
       // Steps 3+4: Copy Reference outputs → Target reference.* inputs and
       // incrementally recompute only the downstream nodes that depend on them

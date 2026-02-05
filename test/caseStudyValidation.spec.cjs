@@ -398,6 +398,42 @@ test.describe("Case Study Validation", () => {
                       cFieldsCopiedFromTargetList: popResult.debug.cFieldsCopiedFromTarget.slice(0, 15).map(f => `${f.legacyId}=${f.value}`),
                     } : null,
                   };
+
+                  // Validate ref_k_32 (Reference Emissions Subtotal)
+                  const computedRefK32 = parseFloat(
+                    state.getValueForModel(targetId, "reference.emissions.subtotal")
+                  ) || 0;
+                  const legacyRefK32 = parseFloat(SM.getValue("ref_k_32")) || 0;
+                  result.refK32 = {
+                    legacy: legacyRefK32,
+                    computed: computedRefK32,
+                    diff: Math.abs(legacyRefK32 - computedRefK32),
+                    match: Math.abs(legacyRefK32 - computedRefK32) < 1.0, // 1 kgCO2e tolerance
+                  };
+
+                  // Validate e_6 (Reference Lifetime Carbon)
+                  const computedE6 = parseFloat(
+                    state.getValueForModel(targetId, "keyValues.reference.lifetimeCarbon")
+                  ) || 0;
+                  const legacyE6 = parseFloat(SM.getValue("e_6")) || 0;
+                  result.e6 = {
+                    legacy: legacyE6,
+                    computed: computedE6,
+                    diff: Math.abs(legacyE6 - computedE6),
+                    match: Math.abs(legacyE6 - computedE6) < 0.2, // 0.2 kgCO2e/m²/yr tolerance
+                  };
+
+                  // Validate e_8 (Reference Annual Carbon)
+                  const computedE8 = parseFloat(
+                    state.getValueForModel(targetId, "keyValues.reference.annualCarbon")
+                  ) || 0;
+                  const legacyE8 = parseFloat(SM.getValue("e_8")) || 0;
+                  result.e8 = {
+                    legacy: legacyE8,
+                    computed: computedE8,
+                    diff: Math.abs(legacyE8 - computedE8),
+                    match: Math.abs(legacyE8 - computedE8) < 0.2, // 0.2 kgCO2e/m²/yr tolerance
+                  };
                 } catch (refErr) {
                   result.refJ32 = { error: refErr.message };
                 }
@@ -463,6 +499,33 @@ test.describe("Case Study Validation", () => {
               console.log(`       Target fallbacks: ${pd.cFieldsCopiedFromTargetList.join(', ')}`);
             }
           }
+        }
+      }
+
+      // Show ref_k_32 status
+      if (result.refK32) {
+        if (result.refK32.match) {
+          console.log(`  [ref_k_32] ✅ MATCH legacy=${result.refK32.legacy.toFixed(2)} computed=${result.refK32.computed.toFixed(2)} diff=${result.refK32.diff.toFixed(2)}`);
+        } else {
+          console.log(`  [ref_k_32] ❌ MISMATCH legacy=${result.refK32.legacy.toFixed(2)} computed=${result.refK32.computed.toFixed(2)} diff=${result.refK32.diff.toFixed(2)}`);
+        }
+      }
+
+      // Show e_6 (Reference Lifetime Carbon) status
+      if (result.e6) {
+        if (result.e6.match) {
+          console.log(`  [e_6]      ✅ MATCH legacy=${result.e6.legacy.toFixed(2)} computed=${result.e6.computed.toFixed(2)} diff=${result.e6.diff.toFixed(2)}`);
+        } else {
+          console.log(`  [e_6]      ❌ MISMATCH legacy=${result.e6.legacy.toFixed(2)} computed=${result.e6.computed.toFixed(2)} diff=${result.e6.diff.toFixed(2)}`);
+        }
+      }
+
+      // Show e_8 (Reference Annual Carbon) status
+      if (result.e8) {
+        if (result.e8.match) {
+          console.log(`  [e_8]      ✅ MATCH legacy=${result.e8.legacy.toFixed(2)} computed=${result.e8.computed.toFixed(2)} diff=${result.e8.diff.toFixed(2)}`);
+        } else {
+          console.log(`  [e_8]      ❌ MISMATCH legacy=${result.e8.legacy.toFixed(2)} computed=${result.e8.computed.toFixed(2)} diff=${result.e8.diff.toFixed(2)}`);
         }
       }
 
@@ -611,6 +674,30 @@ test.describe("Case Study Validation", () => {
     };
     console.log(`\nref_j_32 Summary: ${refJ32Summary.matched}/${refJ32Summary.total} matched, ${refJ32Summary.mismatched} mismatched, ${refJ32Summary.errors} errors`);
 
+    // Summarize ref_k_32 results
+    const refK32Summary = {
+      total: allResults.filter(r => r.refK32).length,
+      matched: allResults.filter(r => r.refK32?.match).length,
+      mismatched: allResults.filter(r => r.refK32 && !r.refK32.match).length,
+    };
+    console.log(`ref_k_32 Summary: ${refK32Summary.matched}/${refK32Summary.total} matched, ${refK32Summary.mismatched} mismatched`);
+
+    // Summarize e_6 (Reference Lifetime Carbon) results
+    const e6Summary = {
+      total: allResults.filter(r => r.e6).length,
+      matched: allResults.filter(r => r.e6?.match).length,
+      mismatched: allResults.filter(r => r.e6 && !r.e6.match).length,
+    };
+    console.log(`e_6 Summary:      ${e6Summary.matched}/${e6Summary.total} matched, ${e6Summary.mismatched} mismatched`);
+
+    // Summarize e_8 (Reference Annual Carbon) results
+    const e8Summary = {
+      total: allResults.filter(r => r.e8).length,
+      matched: allResults.filter(r => r.e8?.match).length,
+      mismatched: allResults.filter(r => r.e8 && !r.e8.match).length,
+    };
+    console.log(`e_8 Summary:      ${e8Summary.matched}/${e8Summary.total} matched, ${e8Summary.mismatched} mismatched`);
+
     const output = {
       timestamp: new Date().toISOString(),
       summary: {
@@ -639,6 +726,18 @@ test.describe("Case Study Validation", () => {
     const refJ32Errors = allResults.filter(r => r.refJ32?.error).length;
     expect(refJ32Mismatches).toBe(0);
     expect(refJ32Errors).toBe(0);
+
+    // Assert ref_k_32 (Reference Emissions) matches
+    const refK32Mismatches = allResults.filter(r => r.refK32 && !r.refK32.match).length;
+    expect(refK32Mismatches).toBe(0);
+
+    // Assert e_6 (Reference Lifetime Carbon) matches
+    const e6Mismatches = allResults.filter(r => r.e6 && !r.e6.match).length;
+    expect(e6Mismatches).toBe(0);
+
+    // Assert e_8 (Reference Annual Carbon) matches
+    const e8Mismatches = allResults.filter(r => r.e8 && !r.e8.match).length;
+    expect(e8Mismatches).toBe(0);
   });
 });
 
