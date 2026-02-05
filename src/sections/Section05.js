@@ -507,7 +507,7 @@ window.TEUI.SectionModules.sect05 = (function () {
         },
         e: { content: "", classes: ["spacer"] }, // Spacer
         f: { content: "E.3.2", classes: ["label-prefix"] },
-        g: { content: "Typology-Based Cap (TGS4)", classes: ["label-main"] },
+        g: { content: "Typology-Based Cap", classes: ["label-main"] },
         h: { content: "", classes: ["spacer"] }, // Spacer for alignment before value in col I
         i: {
           fieldId: "i_39", // Value displayed in Column I

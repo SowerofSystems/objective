@@ -271,7 +271,7 @@ window.TEUI.SectionModules.sect02 = (function () {
             { value: "BR18 (Denmark)", name: "BR18 (Denmark)" },
             { value: "IPCC AR6 EPC", name: "IPCC AR6 EPC" },
             { value: "IPCC AR6 EA", name: "IPCC AR6 EA" },
-            { value: "TGS4", name: "TGS4" },
+            { value: "TGS4", name: "Typical Values" },
             { value: "CaGBC ZCB D", name: "CaGBC ZCB D" },
             { value: "CaGBC ZCB P", name: "CaGBC ZCB P" },
             { value: "Self Reported", name: "Self Reported" },
