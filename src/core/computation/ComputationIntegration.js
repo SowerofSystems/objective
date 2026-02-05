@@ -856,18 +856,18 @@
   /**
    * Mapping from Reference model computed outputs to Target model reference.* inputs.
    * After computing the Reference model, these computed values are copied to the
-   * Target model so that Key Values nodes (e_10, e_8, e_6) can use them.
+   * Target model so that Key Values nodes can use them.
    *
-   * The CSV stores these as saved outputs (ref_j_32, ref_k_32, etc.) but they
-   * must be freshly computed from Reference envelope values to be accurate.
+   * The CSV stores these as saved outputs but they must be freshly computed
+   * from Reference envelope values to be accurate.
    */
   const REF_OUTPUT_TO_TARGET_INPUT = {
     // Energy and emissions (Key Values dashboard)
-    "energy.target.total":           "reference.energy.total",            // j_32 → ref_j_32
-    "emissions.target.subtotal":     "reference.emissions.subtotal",      // k_32 → ref_k_32
-    "building.conditionedFloorArea": "reference.building.conditionedFloorArea", // h_15 → ref_h_15
-    "building.serviceLife":          "reference.building.serviceLife",     // h_13 → ref_h_13
-    "building.typologyEmbodiedCarbon": "reference.emissions.embodied",   // i_39 → ref_i_41 (legacy: ref_i_41 = i_39)
+    "energy.target.total":           "reference.energy.total",
+    "emissions.target.subtotal":     "reference.emissions.subtotal",
+    "building.conditionedFloorArea": "reference.building.conditionedFloorArea",
+    "building.serviceLife":          "reference.building.serviceLife",
+    "building.typologyEmbodiedCarbon": "reference.emissions.embodied",
   };
 
   /**
@@ -905,10 +905,10 @@
       refResult = engine.computeAllForModel(refModelId);
 
       // Step 2.5: Force wood offset = 0 for Reference model and recompute emissions
-      // Reference building gets wood emissions (k_31) but NO wood carbon credit (d_60).
-      // This matches main branch legacy behavior where Reference has full emissions impact.
+      // Reference building gets wood emissions but NO wood carbon credit.
+      // This matches main branch behavior where Reference has full emissions impact.
       state.setValueForModel(refModelId, "forestry.annualOffset", 0);
-      // Recompute emissions.target.subtotal with the forced d_60 = 0
+      // Recompute emissions.target.subtotal with the forced forestry.annualOffset = 0
       const emissionsResult = engine.onValueChange("forestry.annualOffset", 0, refModelId);
       log(`  - Forced forestry.annualOffset = 0 for Reference, recomputed ${emissionsResult.computedNodes.length} nodes`);
 
