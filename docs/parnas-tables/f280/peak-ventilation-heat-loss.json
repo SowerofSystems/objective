@@ -1,0 +1,140 @@
+{
+  "id": "f280.peakVentilationHeatLoss",
+  "legacyId": "f280_hl_vent",
+  "label": "F280 Peak Ventilation Heat Loss",
+  "section": "SF280",
+  "classification": "C",
+  "_meta": {
+    "description": "Peak heat loss from mechanical ventilation at design conditions per CSA F280-12 Section 5.2.6. Accounts for heat recovery from HRV/ERV systems using ATRE (Apparent Temperature Recovery Efficiency). Converts the annual ventilation heat loss from VentilationNodes to peak instantaneous value.",
+    "standard": "CSA F280-12 Section 5.2.6",
+    "codeReference": "NBC 9.33.5.1"
+  },
+  "signature": {
+    "inputs": [
+      {
+        "name": "ventilation.volumeRate",
+        "type": "number",
+        "unit": "L/s",
+        "description": "Ventilation airflow rate (d_120)"
+      },
+      {
+        "name": "mechanical.ventilation.efficiency",
+        "type": "number",
+        "unit": "percent",
+        "description": "HRV/ERV heat recovery efficiency (ATRE) (d_118)"
+      },
+      {
+        "name": "climate.heating.setpoint",
+        "type": "number",
+        "unit": "degC",
+        "description": "Indoor heating setpoint (h_23)"
+      },
+      {
+        "name": "climate.temperature.coldest",
+        "type": "number",
+        "unit": "degC",
+        "description": "Outdoor heating design temperature (d_23)"
+      }
+    ],
+    "output": {
+      "type": "number",
+      "unit": "W",
+      "precision": 0,
+      "note": "Peak instantaneous ventilation heat loss at design conditions, net of recovery"
+    }
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "ventilation.volumeRate >= 0",
+        "description": "Ventilation rate cannot be negative"
+      },
+      {
+        "condition": "mechanical.ventilation.efficiency >= 0 AND mechanical.ventilation.efficiency <= 100",
+        "description": "Recovery efficiency must be between 0% and 100%"
+      }
+    ],
+    "invariants": [
+      {
+        "condition": "output >= 0",
+        "description": "Net ventilation heat loss cannot be negative (recovery cannot exceed gross)"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "volumeRate > 0 AND efficiency < 100",
+      "output": "1.21 × volumeRate × (1 - efficiency/100) × deltaT",
+      "note": "1.21 = volumetric heat capacity of air (W·s/L·K). Net loss accounts for heat recovery."
+    },
+    {
+      "condition": "volumeRate > 0 AND efficiency >= 100",
+      "output": "0",
+      "note": "100% recovery means no net ventilation heat loss"
+    },
+    {
+      "condition": "volumeRate == 0",
+      "output": "0",
+      "note": "No ventilation means no ventilation heat loss"
+    }
+  ],
+  "rationale": {
+    "conversionFromAnnual": "The annual formula in VentilationNodes d_121 is: grossLoss = (1.21 × ventRate × HDD × 24) / 1000 (kWh/yr). The F280 peak formula: peakGross = 1.21 × ventRate × deltaT (Watts). Net = peakGross × (1 - efficiency/100).",
+    "atre": "ATRE (Apparent Temperature Recovery Efficiency) is the efficiency of the HRV/ERV at recovering heat from exhaust air. CSA F280-12 requires using the rated ATRE at -25 degC for heating design calculations."
+  },
+  "formula": {
+    "symbolic": "Q_vent = 1.21 × V_dot × (1 - ATRE/100) × (T_setpoint - T_design)",
+    "where": {
+      "V_dot": "Ventilation volume rate (L/s) from d_120",
+      "ATRE": "HRV/ERV recovery efficiency (%) from d_118",
+      "T_setpoint": "Indoor heating setpoint (degC) from h_23",
+      "T_design": "Outdoor heating design temperature (degC) from d_23"
+    },
+    "legacy": "New peak calculation derived from VentilationNodes.js d_121/h_121 annual formulas"
+  },
+  "tests": [
+    {
+      "name": "Standard ventilation with 75% HRV, Toronto winter",
+      "inputs": {
+        "ventilation.volumeRate": 50,
+        "mechanical.ventilation.efficiency": 75,
+        "climate.heating.setpoint": 22,
+        "climate.temperature.coldest": -22
+      },
+      "expected": 666,
+      "note": "1.21 × 50 × (1-0.75) × 44 = 60.5 × 0.25 × 44 = 665.5W"
+    },
+    {
+      "name": "No heat recovery (exhaust only)",
+      "inputs": {
+        "ventilation.volumeRate": 50,
+        "mechanical.ventilation.efficiency": 0,
+        "climate.heating.setpoint": 22,
+        "climate.temperature.coldest": -22
+      },
+      "expected": 2662,
+      "note": "1.21 × 50 × 1.0 × 44 = 2662W"
+    },
+    {
+      "name": "No ventilation",
+      "inputs": {
+        "ventilation.volumeRate": 0,
+        "mechanical.ventilation.efficiency": 75,
+        "climate.heating.setpoint": 22,
+        "climate.temperature.coldest": -22
+      },
+      "expected": 0
+    }
+  ],
+  "references": [
+    {
+      "source": "CSA F280-12 Section 5.2.6 - Ventilation Heat Loss"
+    },
+    {
+      "source": "VentilationNodes.js d_120/d_121/h_121 - annual ventilation calculations"
+    },
+    {
+      "source": "CSA F280-12 Clause on ATRE at -25 degC rating conditions"
+    }
+  ]
+}
