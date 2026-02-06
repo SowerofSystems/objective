@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-02-02T04:19:32.777Z",
+  "timestamp": "2026-02-06T14:47:47.928Z",
   "summary": {
     "total": 12,
     "passed": 1,
@@ -336,9 +336,9 @@
         },
         {
           "file": "03-Meadow.csv",
-          "old": 0.3,
-          "new": 8.3,
-          "pctDiff": "2666.67%"
+          "old": 0.8,
+          "new": 8.8,
+          "pctDiff": "1000.00%"
         },
         {
           "file": "04-OttawaApartments.csv",
@@ -366,9 +366,9 @@
         },
         {
           "file": "03-Meadow.csv",
-          "old": 2.8,
-          "new": 10.8,
-          "pctDiff": "285.71%"
+          "old": 3.3,
+          "new": 11.3,
+          "pctDiff": "242.42%"
         },
         {
           "file": "04-OttawaApartments.csv",
@@ -696,9 +696,9 @@
         },
         {
           "file": "03-Meadow.csv",
-          "old": 67,
-          "new": 36,
-          "pctDiff": "46.27%"
+          "old": 88,
+          "new": 40,
+          "pctDiff": "54.55%"
         },
         {
           "file": "04-OttawaApartments.csv",
@@ -840,9 +840,9 @@
         },
         {
           "file": "03-Meadow.csv",
-          "old": 33,
-          "new": 64,
-          "pctDiff": "93.94%"
+          "old": 12,
+          "new": 60,
+          "pctDiff": "400.00%"
         },
         {
           "file": "04-OttawaApartments.csv",
@@ -1170,9 +1170,9 @@
         },
         {
           "file": "03-Meadow.csv",
-          "old": 43.38519278698783,
-          "new": 1258.1705912,
-          "pctDiff": "2800.00%"
+          "old": 118.38519278698783,
+          "new": 1333.1705912,
+          "pctDiff": "1026.13%"
         },
         {
           "file": "04-OttawaApartments.csv",
