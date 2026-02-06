@@ -4,15 +4,16 @@
 
 The ComputationGraph system is now the **single source of truth** for all calculations. Legacy Section*.js calculateAll() functions are no longer used.
 
-## Current Status (January 29, 2026)
+## Current Status (February 6, 2026)
 
 | Metric | Status |
 |--------|--------|
 | **Case Study Validation** | 12/12 passing (100%) |
-| **Field Matches** | 329–338 exact matches per case study |
+| **Field Matches** | 329–368 exact matches per case study |
 | **Close Matches** | 0–9 within 0.02% (floating point precision) |
 | **Mismatches** | 0 |
-| **Computed Nodes** | 7 former INPUTs now graph-native COMPUTED (h_70, i_71, k_71, e_51, k_54, d_65, d_67) |
+| **Computed Nodes** | ~158 nodes in dependency graph |
+| **Reference Model** | ✅ Correctly computes with wood offset = 0 |
 | **Cutover Status** | ✅ COMPLETE — ComputationGraph is authoritative |
 
 ### Performance Benchmarks
@@ -33,43 +34,105 @@ Run benchmark: `node test/perf-test.cjs`
 ### Why So Fast?
 
 1. **No DOM manipulation** during calculation
-2. **Topological sort** ensures each node computed once
+2. **Cached topological sort** - computed once at init, reused for all calculations
 3. **Incremental updates** only recompute downstream nodes
-4. **Pure JavaScript** vs jQuery/DOM event propagation
+4. **Classification cache** - `isSharedField()` results cached to avoid repeated string comparisons
+5. **Pure JavaScript** vs jQuery/DOM event propagation
+6. **No listener notifications during bulk operations** - listeners muted during sync
 
 ## Architecture
 
-```
-CURRENT SYSTEM (ComputationGraph is authoritative)
+### Dual Calculation Paths
 
+The system has TWO calculation paths optimized for different scenarios:
+
+#### 1. Incremental Updates (User Input Changes)
+
+When a user changes a single input, DOMBridge triggers incremental computation:
+
+```
+User Input Change (single field)
+       │
+       ▼
+┌──────────────────────────────────────────────────┐
+│ DOMBridge.handleValueChange()                    │
+│                                                  │
+│ 1. Capture input value                           │
+│ 2. Call engine.onValueChange(path, value, model) │
+└──────────────────────────────────────────────────┘
+       │
+       ▼
+┌──────────────────────────────────────────────────┐
+│ MultiModelEngine.onValueChange()                 │
+│                                                  │
+│ 1. Set value in MultiModelState                  │
+│ 2. Get downstream nodes from graph               │
+│ 3. Compute ONLY affected downstream nodes        │
+│ 4. Store computed values in MultiModelState      │
+│ 5. Notify listeners (DOMBridge updates DOM)      │
+└──────────────────────────────────────────────────┘
+       │
+       │ ~0.03ms (incremental - 5,631x faster than legacy)
+       ▼
+UI displays updated values
+```
+
+**Key Point**: Incremental updates bypass StateManager entirely. No wildcard listeners fire. Only affected downstream nodes are recomputed.
+
+#### 2. Full Recalculation (File Load, CSV Import)
+
+When loading a file or importing CSV, Calculator.calculateAll() runs:
+
+```
+File Load / CSV Import
+       │
+       ▼
+┌──────────────────────────────────────────────────┐
+│ Calculator.calculateAll()                        │
+│                                                  │
+│ 1. syncFromStateManager() - inputs to graph      │
+│ 2. populateReferenceModel() - load ref values    │
+│ 3. computeAllWithReference() - compute both      │
+│    ├─ Compute Target model (~158 nodes)          │
+│    ├─ Compute Reference model (~158 nodes)       │
+│    ├─ Force forestry.annualOffset = 0 for Ref    │
+│    └─ Sync Reference outputs → Target ref_*      │
+│ 4. syncToStateManager() - outputs back (muted)   │
+│ 5. syncReferenceToStateManager() - ref outputs   │
+│ 6. unmuteListeners()                             │
+│ 7. updateCalculatedDisplayValues() - DOM refresh │
+└──────────────────────────────────────────────────┘
+       │
+       │ ~0.68ms full recalc / ~20-30ms with DOM refresh
+       ▼
+UI displays all updated values
+```
+
+### System Components
+
+```
 ┌─────────────────────────────────┐
 │ ComputationGraph                │
-│ - nodes (compute functions)     │
-│ - inputs (user-editable)        │
-│ - topological sort              │
+│ - ~158 compute nodes            │
+│ - Cached topological sort       │
+│ - Dependency tracking           │
 └─────────────────────────────────┘
                 │
-                │ ~0.68ms full / ~0.03ms incremental
                 ▼
 ┌────────────────────────────────┐
 │ MultiModelState                │
 │ - G-fields (shared geometry)   │
 │ - C-fields (per-model perf)    │
+│ - Target + Reference models    │
 └────────────────────────────────┘
                 │
-                │ sync to StateManager
+                │ sync to StateManager (listeners muted)
                 ▼
 ┌─────────────────────┐          ┌────────────────────────────────┐
 │ StateManager        │ ────────►│ Section*.js                    │
-│ - setValue/getValue │          │ - updateCalculatedDisplayValues│
+│ - Legacy state      │          │ - updateCalculatedDisplayValues│
 │ - listeners (muted) │          │ - UI rendering only            │
 └─────────────────────┘          │ - NO calculations              │
-                                 └────────────────────────────────┘
-                                              │
-                                              ▼
-                                 ┌────────────────────────────────┐
-                                 │ UI (DOM)                       │
-                                 │ - Refreshed after each compute │
                                  └────────────────────────────────┘
 ```
 
@@ -77,14 +140,14 @@ CURRENT SYSTEM (ComputationGraph is authoritative)
 
 | File | Purpose |
 |------|---------|
-| `src/core/computation/ComputationGraph.js` | Dependency graph, topological sort |
-| `src/core/computation/IncrementalEngine.js` | Incremental recomputation engine |
-| `src/core/computation/ComputationIntegration.js` | Integration layer (sync, compute, refresh) |
+| `src/core/computation/ComputationGraph.js` | Dependency graph, cached topological sort |
+| `src/core/model/MultiModelEngine.js` | Incremental + full computation engine |
+| `src/core/computation/ComputationIntegration.js` | Integration layer (sync, compute, reference model) |
 | `src/core/model/MultiModelState.js` | G/C field separation, per-model state |
+| `src/core/ui/DOMBridge.js` | Input capture → engine.onValueChange() → DOM updates |
 | `src/sections/nodes/*.js` | Node definitions per domain |
 | `src/sections/nodes/CoolingNodes.js` | Psychrometric calculations (replaces Cooling.js) |
 | `src/core/Cooling.js` | **DEPRECATED** - stub that reads from StateManager |
-| `src/core/ui/DOMBridge.js` | DOM synchronization (partial - not reactive) |
 | `test/caseStudyValidation.spec.cjs` | Playwright validation tests |
 | `test/perf-test.cjs` | Performance benchmark |
 
@@ -95,16 +158,20 @@ CURRENT SYSTEM (ComputationGraph is authoritative)
 | `BuildingInfoNodes.js` | S02 | Building metadata, occupancy |
 | `ClimateNodes.js` | S03 | HDD, CDD, temperatures |
 | `EnergyNodes.js` | S04, S14, S15 | TED, CED, TEUI totals |
-| `EnvelopeNodes.js` | S10, S11, S12 | Transmission losses/gains |
+| `TransmissionLossNodes.js` | S11, S12 | Envelope transmission losses |
+| `VolumeMetricsNodes.js` | S12 | Volume/surface metrics |
 | `MechanicalNodes.js` | S13 | Heating/cooling systems, COP |
 | `VentilationNodes.js` | S13 | Ventilation heat loss/gain |
 | `RadiantGainsNodes.js` | S10 | Solar gains, SHGC |
 | `KeyValuesNodes.js` | S01 | Summary metrics |
 | `EmissionsNodes.js` | S05 | Carbon calculations |
+| `ForestryNodes.js` | S08 | Wood emissions + offset |
 | `RenewableNodes.js` | S06 | PV, wind, offsets |
-| `WaterHeatingNodes.js` | S07 | DHW calculations + intermediates (e_52, j_51, e_53, j_52, d_54, e_51, k_54) |
+| `WaterHeatingNodes.js` | S07 | DHW calculations + intermediates |
 | `OccupancyNodes.js` | S08 | Occupants, occupied hours |
 | `InternalGainsNodes.js` | S09 | Internal gains (occupants, plugs, lighting, equipment), seasonal splits |
+| `CoolingNodes.js` | S03 | Psychrometric calculations (wet bulb, humidity) |
+| `SpaceHeatingNodes.js` | S14 | Space heating demand calculations |
 
 ---
 
@@ -246,37 +313,41 @@ npx playwright test test/caseStudyValidation.spec.cjs --reporter=list
 | init.js | Flag toggleable | USE_COMPUTATION_GRAPH=true unconditionally |
 | Tilt button | Workaround for stuck UI | Removed (no longer needed) |
 
-### Calculation Flow
+### Reference Model Handling
 
-```
-User Input Change
-       │
-       ▼
-StateManager.setValue()
-       │
-       ▼
-Section listener calls Calculator.calculateAll()
-       │
-       ▼
-┌──────────────────────────────────────────────────┐
-│ Calculator.calculateAll() [graph-only path]     │
-│                                                  │
-│ 1. syncFromStateManager() - inputs to graph     │
-│ 2. populateReferenceModel() - load ref values   │
-│ 3. computeAllWithReference() - graph computes   │
-│ 4. syncToStateManager() - outputs back (muted)  │
-│ 5. syncReferenceToStateManager() - ref outputs  │
-│ 6. unmuteListeners()                            │
-│ 7. updateCalculatedDisplayValues() - DOM refresh│
-└──────────────────────────────────────────────────┘
-       │
-       ▼
-UI displays updated values
+The Reference model represents a code-minimum building for comparison. Key differences:
+
+| Aspect | Target Model | Reference Model |
+|--------|--------------|-----------------|
+| C-fields (envelope, mechanical) | User-specified | Loaded from ReferenceValues.js |
+| G-fields (geometry, climate) | Shared | Shared (copied from Target) |
+| Wood carbon offset (`forestry.annualOffset`) | User-specified | **Forced to 0** |
+
+**Why wood offset = 0 for Reference?**
+
+The Reference building represents a code-minimum baseline. It gets the emissions from wood usage (if applicable) but does NOT receive the carbon credit offset. This ensures:
+- Reference lifetime carbon (e_6) correctly shows higher emissions
+- Target building can show carbon reduction via wood offsets
+- Comparison metrics (j_6, j_8) are meaningful
+
+Implementation in `computeAllWithReference()`:
+```javascript
+// Step 2.5: Force wood offset = 0 for Reference model
+state.setValueForModel(refModelId, "forestry.annualOffset", 0);
+engine.onValueChange("forestry.annualOffset", 0, refModelId);
 ```
 
 ### Validation
 
-- **12/12 ref_j_32 tests pass** (core energy calculations correct)
+The following fields are validated across all 12 case studies:
+
+| Field | Description | Status |
+|-------|-------------|--------|
+| `ref_j_32` | Reference Total Actual Energy | ✅ 12/12 pass |
+| `ref_k_32` | Reference Total Emissions | ✅ 12/12 pass |
+| `e_6` | Target Lifetime Carbon (T.1) | ✅ 12/12 pass |
+| `e_8` | Target Annual Carbon (T.2) | ✅ 12/12 pass |
+
 - **Secondary field mismatches** are test isolation issues, not missing calculations
 - Fields like k_27, f_32, g_32 exist in EmissionsNodes.js
 
@@ -312,36 +383,47 @@ Blocker: DOMBridge uses `textContent` which destroys HTML formatting in sections
 
 ---
 
-# Phase 3: Multi-Model Architecture (FUTURE)
+# Phase 3: Multi-Model Architecture (COMPLETE)
 
-## Problem
+## Implementation
 
-KeyValuesNodes needs to compare Target vs Reference values, but compute functions only see one model.
+The multi-model architecture is now working with Target and Reference models computed separately.
 
-Current workaround:
+### How It Works
+
+1. **Two models exist**: Target (user's building) and Reference (code-minimum baseline)
+2. **G-fields shared**: Geometry and climate data identical between models
+3. **C-fields separate**: Envelope and mechanical values differ per model
+4. **Cross-model sync**: Reference outputs copied to Target's `reference.*` inputs
+
+### REF_OUTPUT_TO_TARGET_INPUT Mapping
+
+Reference model computed values are synced to Target model inputs for comparison:
+
 ```javascript
-// Uses actual values as "reference approximation"
+const REF_OUTPUT_TO_TARGET_INPUT = {
+  "energy.target.total": "reference.targetEnergy",
+  "energy.tedi.total": "reference.tedi",
+  "energy.teui.total": "reference.teui",
+  "emissions.target.subtotal": "reference.emissions",
+  // ... additional mappings
+};
+```
+
+### Cross-Model Value Access
+
+For nodes that need both Target and Reference values (like KeyValuesNodes), the Reference values are available as `reference.*` inputs after `syncCrossModelValues()` runs.
+
+```javascript
+// KeyValuesNodes can access both:
 compute: (inputs) => {
-  const refEnergy = inputs["energy.actual.total"];  // Workaround
+  const targetTEUI = inputs["energy.teui.total"];        // Target's TEUI
+  const refTEUI = inputs["reference.teui"];              // Reference's TEUI
+  return ((refTEUI - targetTEUI) / refTEUI) * 100;       // Reduction %
+}
 ```
 
-## Solution: Cross-Model Context
-
-Add optional `context` parameter for nodes needing multi-model access:
-
-```javascript
-graph.registerNode({
-  id: "keyValues.teui.reductionPercent",
-  crossModel: true,
-  compute: (inputs, context) => {
-    const target = context.getModelValue("target", "energy.teui");
-    const ref = context.getModelValue("reference", "energy.teui");
-    return (1 - target / ref) * 100;
-  }
-});
-```
-
-## Future Use Cases
+## Future Extensions
 
 - Compare Target vs OBC Reference
 - Compare Target vs NBC Reference
