@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Validation Test - Old vs New Computation System</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 20px; background: #f5f5f5; }
+    h1 { color: #333; }
+    .container { max-width: 1400px; margin: 0 auto; }
+    .section { background: white; border-radius: 8px; padding: 16px; margin: 16px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .section h2 { margin-top: 0; color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+    th, td { padding: 6px 10px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+    th { background: #f9fafb; font-weight: 600; }
+    .value { font-family: monospace; }
+    .match { background: #d1fae5; }
+    .mismatch { background: #fee2e2; }
+    .close { background: #fef3c7; }
+    .missing { background: #f3f4f6; color: #9ca3af; }
+    #summary { background: #1e40af; color: white; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
+    #summary h2 { color: white; border-color: white; }
+    .stats { display: flex; gap: 32px; flex-wrap: wrap; }
+    .stat { text-align: center; min-width: 100px; }
+    .stat-value { font-size: 2em; font-weight: bold; }
+    .stat-label { font-size: 0.9em; opacity: 0.9; }
+    .stat-match { color: #86efac; }
+    .stat-mismatch { color: #fca5a5; }
+    button { background: #2563eb; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 1em; margin-right: 8px; }
+    button:hover { background: #1d4ed8; }
+    #log { background: #1f2937; color: #d1d5db; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 0.85em; max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
+    .legend { display: flex; gap: 16px; margin: 16px 0; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-box { width: 20px; height: 20px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Validation Test - Old vs New Computation System</h1>
+    <p>This test compares computed values between the legacy StateManager system and the new ComputationGraph system.</p>
+
+    <div id="summary" class="section" style="display: none;">
+      <h2>Validation Summary</h2>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value" id="total-count">-</div>
+          <div class="stat-label">Fields Compared</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value stat-match" id="match-count">-</div>
+          <div class="stat-label">Exact Match</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="close-count">-</div>
+          <div class="stat-label">Close (&lt;1%)</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value stat-mismatch" id="mismatch-count">-</div>
+          <div class="stat-label">Mismatch</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="missing-count">-</div>
+          <div class="stat-label">Missing</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <button onclick="runValidation()">Run Validation</button>
+      <button onclick="clearResults()">Clear</button>
+      <p style="margin-top: 12px; color: #6b7280; font-size: 0.9em;">
+        <strong>Note:</strong> This test requires the full application to be loaded first (StateManager must be initialized).
+        Run this from the main app or ensure all legacy modules are loaded.
+      </p>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-box" style="background: #d1fae5;"></div> Exact Match</div>
+      <div class="legend-item"><div class="legend-box" style="background: #fef3c7;"></div> Close (&lt;1% diff)</div>
+      <div class="legend-item"><div class="legend-box" style="background: #fee2e2;"></div> Mismatch (&gt;1% diff)</div>
+      <div class="legend-item"><div class="legend-box" style="background: #f3f4f6;"></div> Missing/N/A</div>
+    </div>
+
+    <div id="results"></div>
+
+    <div class="section">
+      <h2>Console Log</h2>
+      <div id="log"></div>
+    </div>
+  </div>
+
+  <!-- Load computation infrastructure -->
+  <script src="../../src/core/computation/types.js"></script>
+  <script src="../../src/core/computation/ComputationGraph.js"></script>
+  <script src="../../src/core/computation/IncrementalEngine.js"></script>
+  <script src="../../src/core/computation/FieldRegistry.js"></script>
+  <script src="../../src/core/model/ModelMetadata.js"></script>
+  <script src="../../src/core/model/MultiModelState.js"></script>
+  <script src="../../src/core/model/MultiModelEngine.js"></script>
+
+  <!-- Load climate data -->
+  <script src="../../src/core/ClimateValues.js"></script>
+
+  <!-- Load ALL section nodes -->
+  <script src="../../src/sections/nodes/ClimateNodes.js"></script>
+  <script src="../../src/sections/nodes/BuildingInfoNodes.js"></script>
+  <script src="../../src/sections/nodes/MechanicalNodes.js"></script>
+  <script src="../../src/sections/nodes/SpaceHeatingNodes.js"></script>
+  <script src="../../src/sections/nodes/WaterHeatingNodes.js"></script>
+  <script src="../../src/sections/nodes/RenewableNodes.js"></script>
+  <script src="../../src/sections/nodes/EnergyNodes.js"></script>
+  <script src="../../src/sections/nodes/ForestryNodes.js"></script>
+  <script src="../../src/sections/nodes/EmissionsNodes.js"></script>
+  <script src="../../src/sections/nodes/OccupancyNodes.js"></script>
+  <script src="../../src/sections/nodes/RadiantGainsNodes.js"></script>
+  <script src="../../src/sections/nodes/TransmissionLossNodes.js"></script>
+  <script src="../../src/sections/nodes/VolumeMetricsNodes.js"></script>
+  <script src="../../src/sections/nodes/VentilationNodes.js"></script>
+  <script src="../../src/sections/nodes/KeyValuesNodes.js"></script>
+
+  <script>
+    const logEl = document.getElementById('log');
+    const resultsEl = document.getElementById('results');
+    const summaryEl = document.getElementById('summary');
+
+    function log(msg) {
+      logEl.textContent += msg + '\n';
+      console.log(msg);
+    }
+
+    function clearResults() {
+      logEl.textContent = '';
+      resultsEl.innerHTML = '';
+      summaryEl.style.display = 'none';
+    }
+
+    // Field mappings: semantic path -> legacy ID
+    // Only include fields that exist in both systems
+    const FIELD_MAPPINGS = {
+      // Climate (S03)
+      'climate.heating.degreedays': 'h_17',
+      'climate.cooling.degreedays': 'h_18',
+
+      // Building (S02)
+      'building.conditionedFloorArea': 'd_12',
+
+      // Envelope U-values
+      'envelope.roof.uValue': 'e_85',
+      'envelope.walls.uValue': 'e_86',
+
+      // Envelope heat loss
+      'envelope.roof.heatLoss': 'i_85',
+      'envelope.walls.heatLoss': 'i_86',
+      'envelope.total.heatLoss': 'i_97',
+
+      // Energy
+      'energy.teui': 'k_6',
+      'energy.tedi': 'h_6',
+
+      // Emissions
+      'emissions.ghgi': 'h_8',
+
+      // Key values
+      'keyValues.target.teui': 'e_6',
+      'keyValues.reference.teui': 'f_6',
+    };
+
+    function runValidation() {
+      clearResults();
+      log('=== Validation Test: Old vs New System ===\n');
+
+      // Check if StateManager exists
+      const StateManager = window.TEUI?.StateManager;
+      if (!StateManager) {
+        log('ERROR: StateManager not found!');
+        log('This test must be run with the full application loaded.');
+        log('Either:\n  1. Include this in the main app\n  2. Load StateManager modules first');
+        return;
+      }
+
+      try {
+        // Create new computation system
+        const graph = window.TEUI.ComputationGraph.create();
+        log('Created ComputationGraph');
+
+        // Register all section nodes
+        const nodes = window.TEUI.ComputationNodes || {};
+        const moduleOrder = [
+          'Climate', 'BuildingInfo', 'Envelope', 'Mechanical',
+          'SpaceHeating', 'WaterHeating', 'Renewable', 'Energy',
+          'Forestry', 'Emissions', 'Occupancy',
+          'RadiantGains', 'TransmissionLoss', 'VolumeMetrics', 'Ventilation',
+          'KeyValues'
+        ];
+
+        let moduleCount = 0;
+        for (const name of moduleOrder) {
+          if (nodes[name]) {
+            nodes[name].register(graph);
+            moduleCount++;
+          }
+        }
+        log(`Registered ${moduleCount} modules`);
+
+        // Create state
+        const state = window.TEUI.MultiModelState.create();
+        const targetMeta = window.TEUI.ModelMetadata.createTarget('Validation');
+        state.addModel(targetMeta);
+
+        // Sync from StateManager
+        const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
+        let syncCount = 0;
+
+        for (const semanticPath of inputIds) {
+          const inputNode = graph.getInput(semanticPath);
+          const legacyId = inputNode?.legacyId;
+
+          if (legacyId) {
+            const value = StateManager.getValue(legacyId);
+            if (value !== undefined && value !== null && value !== '') {
+              state.setValueForModel(targetMeta.id, semanticPath, value);
+              syncCount++;
+            }
+          }
+        }
+        log(`Synced ${syncCount} values from StateManager\n`);
+
+        // Compute
+        const engine = window.TEUI.MultiModelEngine.create({ state, graph });
+        const result = engine.computeAllForModel(targetMeta.id);
+        log(`Computed ${result.computedNodes} nodes in ${result.duration.toFixed(2)}ms\n`);
+
+        // Compare values
+        const comparisons = [];
+        let matchCount = 0;
+        let closeCount = 0;
+        let mismatchCount = 0;
+        let missingCount = 0;
+
+        for (const [semanticPath, legacyId] of Object.entries(FIELD_MAPPINGS)) {
+          const oldValue = StateManager.getValue(legacyId);
+          const newValue = state.getValue(semanticPath);
+
+          const comparison = {
+            semanticPath,
+            legacyId,
+            oldValue,
+            newValue,
+            status: 'missing',
+            diff: null
+          };
+
+          if (oldValue === undefined || oldValue === null || oldValue === '' || oldValue === 'N/A') {
+            comparison.status = 'missing';
+            missingCount++;
+          } else if (newValue === undefined || newValue === null) {
+            comparison.status = 'missing';
+            missingCount++;
+          } else {
+            const oldNum = parseFloat(String(oldValue).replace(/,/g, ''));
+            const newNum = parseFloat(String(newValue));
+
+            if (isNaN(oldNum) || isNaN(newNum)) {
+              // String comparison
+              if (String(oldValue) === String(newValue)) {
+                comparison.status = 'match';
+                matchCount++;
+              } else {
+                comparison.status = 'mismatch';
+                mismatchCount++;
+              }
+            } else {
+              // Numeric comparison
+              const diff = Math.abs(oldNum - newNum);
+              const relDiff = oldNum !== 0 ? (diff / Math.abs(oldNum)) * 100 : (diff === 0 ? 0 : 100);
+              comparison.diff = relDiff;
+
+              if (diff < 0.001 || relDiff < 0.01) {
+                comparison.status = 'match';
+                matchCount++;
+              } else if (relDiff < 1) {
+                comparison.status = 'close';
+                closeCount++;
+              } else {
+                comparison.status = 'mismatch';
+                mismatchCount++;
+              }
+            }
+          }
+
+          comparisons.push(comparison);
+        }
+
+        // Update summary
+        summaryEl.style.display = 'block';
+        document.getElementById('total-count').textContent = comparisons.length;
+        document.getElementById('match-count').textContent = matchCount;
+        document.getElementById('close-count').textContent = closeCount;
+        document.getElementById('mismatch-count').textContent = mismatchCount;
+        document.getElementById('missing-count').textContent = missingCount;
+
+        // Render results table
+        let html = `<div class="section"><h2>Field Comparison</h2>
+          <table>
+            <tr>
+              <th>Semantic Path</th>
+              <th>Legacy ID</th>
+              <th>Old Value</th>
+              <th>New Value</th>
+              <th>Diff %</th>
+              <th>Status</th>
+            </tr>`;
+
+        for (const c of comparisons) {
+          const oldDisplay = c.oldValue !== undefined && c.oldValue !== null ?
+            (typeof c.oldValue === 'number' ? c.oldValue.toFixed(2) : c.oldValue) : '-';
+          const newDisplay = c.newValue !== undefined && c.newValue !== null ?
+            (typeof c.newValue === 'number' ? c.newValue.toFixed(2) : c.newValue) : '-';
+          const diffDisplay = c.diff !== null ? c.diff.toFixed(2) + '%' : '-';
+
+          html += `<tr class="${c.status}">
+            <td>${c.semanticPath}</td>
+            <td class="value">${c.legacyId}</td>
+            <td class="value">${oldDisplay}</td>
+            <td class="value">${newDisplay}</td>
+            <td class="value">${diffDisplay}</td>
+            <td>${c.status.toUpperCase()}</td>
+          </tr>`;
+        }
+
+        html += '</table></div>';
+        resultsEl.innerHTML = html;
+
+        // Log summary
+        log('=== VALIDATION SUMMARY ===');
+        log(`Total fields: ${comparisons.length}`);
+        log(`Exact matches: ${matchCount}`);
+        log(`Close (<1%): ${closeCount}`);
+        log(`Mismatches: ${mismatchCount}`);
+        log(`Missing: ${missingCount}`);
+
+        if (mismatchCount === 0) {
+          log('\n✓ All computed values match or are within tolerance!');
+        } else {
+          log('\n✗ Some values do not match. Review mismatches above.');
+        }
+
+      } catch (e) {
+        log('ERROR: ' + e.message);
+        console.error(e);
+      }
+    }
+
+    // Auto-run if StateManager exists
+    window.addEventListener('load', function() {
+      if (window.TEUI?.StateManager) {
+        log('StateManager detected - ready for validation');
+      } else {
+        log('StateManager not loaded - this test requires the full application');
+      }
+    });
+  </script>
+</body>
+</html>

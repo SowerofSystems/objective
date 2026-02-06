@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Full Calculation Test - New Computation System</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 20px; background: #f5f5f5; }
+    h1 { color: #333; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .section { background: white; border-radius: 8px; padding: 16px; margin: 16px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .section h2 { margin-top: 0; color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 8px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+    th { background: #f9fafb; font-weight: 600; }
+    .value { font-family: monospace; font-weight: bold; }
+    .input-value { color: #059669; }
+    .computed-value { color: #2563eb; }
+    .key-metric { background: #fef3c7; }
+    .key-metric .value { color: #d97706; font-size: 1.1em; }
+    #summary { background: #1e40af; color: white; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
+    #summary h2 { color: white; border-color: white; }
+    .stats { display: flex; gap: 32px; }
+    .stat { text-align: center; }
+    .stat-value { font-size: 2em; font-weight: bold; }
+    .stat-label { font-size: 0.9em; opacity: 0.9; }
+    button { background: #2563eb; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 1em; margin-right: 8px; }
+    button:hover { background: #1d4ed8; }
+    #log { background: #1f2937; color: #d1d5db; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 0.85em; max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Full Calculation Test - New Computation System</h1>
+
+    <div id="summary" class="section" style="display: none;">
+      <h2>Computation Summary</h2>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value" id="node-count">-</div>
+          <div class="stat-label">Total Nodes</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="input-count">-</div>
+          <div class="stat-label">Inputs</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="computed-count">-</div>
+          <div class="stat-label">Computed</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="duration">-</div>
+          <div class="stat-label">Duration (ms)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <button onclick="runFullCalculation()">Run Full Calculation</button>
+      <button onclick="clearResults()">Clear</button>
+    </div>
+
+    <div id="results"></div>
+
+    <div class="section">
+      <h2>Console Log</h2>
+      <div id="log"></div>
+    </div>
+  </div>
+
+  <!-- Load computation infrastructure -->
+  <script src="../../src/core/computation/types.js"></script>
+  <script src="../../src/core/computation/ComputationGraph.js"></script>
+  <script src="../../src/core/computation/IncrementalEngine.js"></script>
+  <script src="../../src/core/computation/FieldRegistry.js"></script>
+  <script src="../../src/core/model/ModelMetadata.js"></script>
+  <script src="../../src/core/model/MultiModelState.js"></script>
+  <script src="../../src/core/model/MultiModelEngine.js"></script>
+
+  <!-- Load climate data -->
+  <script src="../../src/core/ClimateValues.js"></script>
+
+  <!-- Load ALL section nodes -->
+  <script src="../../src/sections/nodes/ClimateNodes.js"></script>
+  <script src="../../src/sections/nodes/BuildingInfoNodes.js"></script>
+  <script src="../../src/sections/nodes/MechanicalNodes.js"></script>
+  <script src="../../src/sections/nodes/SpaceHeatingNodes.js"></script>
+  <script src="../../src/sections/nodes/WaterHeatingNodes.js"></script>
+  <script src="../../src/sections/nodes/RenewableNodes.js"></script>
+  <script src="../../src/sections/nodes/EnergyNodes.js"></script>
+  <script src="../../src/sections/nodes/ForestryNodes.js"></script>
+  <script src="../../src/sections/nodes/EmissionsNodes.js"></script>
+  <script src="../../src/sections/nodes/OccupancyNodes.js"></script>
+  <script src="../../src/sections/nodes/RadiantGainsNodes.js"></script>
+  <script src="../../src/sections/nodes/TransmissionLossNodes.js"></script>
+  <script src="../../src/sections/nodes/VolumeMetricsNodes.js"></script>
+  <script src="../../src/sections/nodes/VentilationNodes.js"></script>
+  <script src="../../src/sections/nodes/KeyValuesNodes.js"></script>
+
+  <script>
+    const logEl = document.getElementById('log');
+    const resultsEl = document.getElementById('results');
+    const summaryEl = document.getElementById('summary');
+
+    function log(msg) {
+      logEl.textContent += msg + '\n';
+      console.log(msg);
+    }
+
+    function clearResults() {
+      logEl.textContent = '';
+      resultsEl.innerHTML = '';
+      summaryEl.style.display = 'none';
+    }
+
+    // Comprehensive test inputs for a realistic building
+    const TEST_INPUTS = {
+      // ========== S02: Building Info ==========
+      'building.conditionedFloorArea': 200,      // 200 m² house
+      'building.serviceLife': 50,                 // 50 year service life
+      'building.referenceStandard': 'OBC SB-10', // Ontario Building Code
+      'building.useType': 'Targeted Use',
+      'building.carbonStandard': 'TGS4',
+
+      // ========== S03: Climate ==========
+      'climate.location.province': 'ON',
+      'climate.location.city': 'Toronto (City Hall)',
+      'climate.timeframe': 'Current',
+
+      // ========== S10: Geometry ==========
+      'geometry.conditionedFloorArea': 200,
+      'geometry.numStoreys': 2,
+      'geometry.ceilingHeight': 2.7,
+
+      // ========== S10/S11: Envelope RSI ==========
+      'envelope.roof.rsi': 8.81,                  // R-50
+      'envelope.walls.rsi': 5.28,                 // R-30
+      'envelope.wallsBelowGrade.rsi': 3.52,       // R-20
+      'envelope.slabOnGrade.rsi': 1.76,           // R-10
+      'envelope.exposedFloor.rsi': 5.28,          // R-30
+
+      // Envelope U-values for glazing/doors
+      'envelope.doors.uValue': 1.6,
+      'envelope.windowsNorth.uValue': 1.2,
+      'envelope.windowsEast.uValue': 1.2,
+      'envelope.windowsSouth.uValue': 1.2,
+      'envelope.windowsWest.uValue': 1.2,
+      'envelope.skylights.uValue': 1.4,
+
+      // Envelope Areas (m²)
+      'envelope.roof.area': 100,
+      'envelope.walls.area': 180,
+      'envelope.wallsBelowGrade.area': 60,
+      'envelope.slabOnGrade.area': 100,
+      'envelope.exposedFloor.area': 0,
+      'envelope.doors.area': 4,
+      'envelope.windowsNorth.area': 8,
+      'envelope.windowsEast.area': 6,
+      'envelope.windowsSouth.area': 16,
+      'envelope.windowsWest.area': 6,
+      'envelope.skylights.area': 2,
+
+      // ========== S12: Mechanical ==========
+      'mechanical.ventilation.type': 'HRV',
+      'mechanical.ventilation.efficiency': 75,
+      'mechanical.ventilation.flowRate': 100,
+      'mechanical.heating.type': 'Heat Pump',
+      'mechanical.heating.hspf': 10,
+      'mechanical.heating.efficiency': 300,       // COP 3.0
+      'mechanical.cooling.cop': 4.0,
+
+      // ========== S13: Space Heating ==========
+      'spaceHeating.systemType': 'Heat Pump',
+      'spaceHeating.efficiency': 300,             // COP 3.0
+      'spaceHeating.secondaryType': 'None',
+      'spaceHeating.secondaryFraction': 0,
+
+      // ========== S07: Water Heating ==========
+      'waterHeating.systemType': 'Heat Pump',
+      'waterHeating.efficiency': 300,             // COP 3.0
+      'waterHeating.annualDemand': 150,           // L/day
+      'waterHeating.deltaT': 45,
+
+      // ========== S06: Renewables ==========
+      'renewable.pv.capacity': 5,                 // 5 kW PV system
+      'renewable.pv.annualOutput': 6000,          // kWh/yr
+      'renewable.solarThermal.output': 0,
+      'renewable.offsite.amount': 0,
+
+      // ========== S08: Forestry ==========
+      'forestry.woodVolume': 10,                  // 10 m³ wood in structure
+      'forestry.woodDensity': 500,
+      'forestry.carbonFraction': 0.5,
+
+      // ========== S09: Occupancy ==========
+      'occupancy.occupants': 4,
+      'occupancy.occupantDensity': 50,
+
+      // ========== S04: Energy Consumption (fuel units) ==========
+      'energy.electricity.consumption': 8000,     // kWh/yr
+      'energy.gas.consumption': 0,                // All-electric
+      'energy.propane.consumption': 0,
+      'energy.oil.consumption': 0,
+      'energy.wood.consumption': 0,
+
+      // ========== S05: Emissions ==========
+      'emissions.typology': 'Low-Rise Residential',
+      'emissions.modelledEmbodied': 350,          // kgCO2e/m²
+
+      // ========== S14/S15: Energy loads ==========
+      'energy.dhw': 3000,
+      'energy.lighting': 1500,
+      'energy.plugLoads': 2000,
+      'energy.fans': 500,
+
+      // Internal gains
+      'internal.occupantGains': 1200,
+      'internal.lightingGains': 800,
+      'internal.equipmentGains': 1000,
+
+      // ========== S10: Radiant Gains ==========
+      'radiantGains.north.shgc': 0.25,
+      'radiantGains.east.shgc': 0.25,
+      'radiantGains.south.shgc': 0.25,
+      'radiantGains.west.shgc': 0.25,
+      'radiantGains.skylights.shgc': 0.25,
+      'radiantGains.shading.winter': 0.1,
+      'radiantGains.shading.summer': 0.5,
+      'radiantGains.utilization.heatingFactor': 0.9,
+      'radiantGains.utilization.coolingFactor': 0.8,
+
+      // ========== S11: Transmission Loss (envelope component areas/values) ==========
+      'transmissionLoss.roof.area': 100,
+      'transmissionLoss.roof.rsi': 8.81,
+      'transmissionLoss.walls.area': 180,
+      'transmissionLoss.walls.rsi': 5.28,
+      'transmissionLoss.windows.area': 36,
+      'transmissionLoss.windows.uValue': 1.2,
+      'transmissionLoss.skylights.area': 2,
+      'transmissionLoss.skylights.uValue': 1.4,
+      'transmissionLoss.doors.area': 4,
+      'transmissionLoss.doors.uValue': 1.6,
+      'transmissionLoss.exposedFloor.area': 0,
+      'transmissionLoss.exposedFloor.rsi': 5.28,
+      'transmissionLoss.foundation.area': 60,
+      'transmissionLoss.foundation.rsi': 3.52,
+      'transmissionLoss.slab.area': 100,
+      'transmissionLoss.slab.rsi': 1.76,
+      'transmissionLoss.basement.area': 0,
+      'transmissionLoss.basement.rsi': 3.52,
+      'transmissionLoss.thermalBridge.penalty': 0.05,
+
+      // ========== S12: Volume Metrics ==========
+      'volume.ceilingHeight': 2.7,
+      'volume.numStoreys': 2,
+      'airTightness.ach50': 3.0,
+      'airTightness.method': 'LBL',
+
+      // ========== S13: Ventilation ==========
+      'ventilation.type': 'HRV',
+      'ventilation.efficiency': 75,
+      'ventilation.flowRate': 50,
+      'heating.systemType': 'Heat Pump',
+      'heating.hspf': 10,
+      'heating.afue': 95,
+      'cooling.systemType': 'Heat Pump',
+      'cooling.seer': 15,
+      'cooling.eer': 12,
+    };
+
+    function runFullCalculation() {
+      clearResults();
+      log('=== Full Calculation Test ===\n');
+
+      try {
+        // Create computation graph
+        const graph = window.TEUI.ComputationGraph.create();
+        log('Created ComputationGraph');
+
+        // Register all section nodes
+        const nodes = window.TEUI.ComputationNodes || {};
+        const registeredModules = [];
+
+        const moduleOrder = [
+          'Climate', 'BuildingInfo', 'Envelope', 'Mechanical',
+          'SpaceHeating', 'WaterHeating', 'Renewable', 'Energy',
+          'Forestry', 'Emissions', 'Occupancy',
+          'RadiantGains', 'TransmissionLoss', 'VolumeMetrics', 'Ventilation',
+          'KeyValues'
+        ];
+
+        for (const name of moduleOrder) {
+          if (nodes[name]) {
+            nodes[name].register(graph);
+            registeredModules.push(name);
+          }
+        }
+        log(`Registered ${registeredModules.length} modules: ${registeredModules.join(', ')}\n`);
+
+        const graphStats = graph.getStats();
+        log(`Graph: ${graphStats.nodeCount} nodes, ${graphStats.inputCount} inputs`);
+
+        // Create multi-model state
+        const state = window.TEUI.MultiModelState.create();
+        const targetMeta = window.TEUI.ModelMetadata.createTarget('Test Building');
+        state.addModel(targetMeta);
+        log(`Created model: ${targetMeta.id}`);
+
+        // Set all inputs
+        state.initializeModelState(targetMeta.id, TEST_INPUTS);
+        log(`Set ${Object.keys(TEST_INPUTS).length} input values\n`);
+
+        // Create engine and compute
+        const engine = window.TEUI.MultiModelEngine.create({ state, graph });
+        const result = engine.computeAllForModel(targetMeta.id);
+
+        log(`Computation complete!`);
+        log(`  Nodes computed: ${result.computedNodes}`);
+        log(`  Duration: ${result.duration.toFixed(2)} ms`);
+        log(`  Speed: ${(result.computedNodes / result.duration * 1000).toFixed(0)} nodes/sec\n`);
+
+        // Update summary
+        summaryEl.style.display = 'block';
+        document.getElementById('node-count').textContent = graphStats.nodeCount;
+        document.getElementById('input-count').textContent = graphStats.inputCount;
+        document.getElementById('computed-count').textContent = result.computedNodes;
+        document.getElementById('duration').textContent = result.duration.toFixed(2);
+
+        // Collect all values by section
+        const sections = {
+          'Climate (S03)': ['climate.heating.degreedays', 'climate.cooling.degreedays', 'climate.zone', 'climate.heating.setpoint'],
+          'Building (S02)': ['building.conditionedFloorArea', 'building.serviceLife'],
+          'Envelope U-Values': ['envelope.roof.uValue', 'envelope.walls.uValue', 'envelope.wallsBelowGrade.uValue', 'envelope.slabOnGrade.uValue'],
+          'Envelope Heat Loss': ['envelope.roof.heatLoss', 'envelope.walls.heatLoss', 'envelope.airFacing.totalHeatLoss', 'envelope.groundFacing.totalHeatLoss', 'envelope.total.heatLoss'],
+          'Radiant Gains (S10)': [
+            'radiantGains.north.heatingGain', 'radiantGains.south.heatingGain',
+            'radiantGains.subtotal.heatingGain', 'radiantGains.subtotal.coolingGain',
+            'radiantGains.utilized.heating', 'radiantGains.utilized.cooling'
+          ],
+          'Transmission Loss (S11)': [
+            'transmissionLoss.roof.heatLoss', 'transmissionLoss.walls.heatLoss',
+            'transmissionLoss.windows.heatLoss', 'transmissionLoss.airFacing.totalHeatLoss',
+            'transmissionLoss.groundFacing.totalHeatLoss', 'transmissionLoss.total.heatLoss',
+            'transmissionLoss.total.heatGain'
+          ],
+          'Volume Metrics (S12)': [
+            'volume.conditioned', 'volume.surfaceToVolumeRatio', 'volume.wwr',
+            'airTightness.nFactor', 'airTightness.achNatural', 'airTightness.heatLoss'
+          ],
+          'Ventilation (S13)': [
+            'ventilation.ach', 'ventilation.effectiveRecovery',
+            'ventilation.grossHeatLoss', 'ventilation.netHeatLoss',
+            'heating.cop', 'cooling.cop',
+            'heating.energyConsumption', 'cooling.energyConsumption',
+            'mechanical.totalEnergy'
+          ],
+          'Mechanical': ['mechanical.heating.cop', 'mechanical.cooling.cop', 'mechanical.ventilation.heatLoss'],
+          'Water Heating (S07)': ['waterHeating.energyDemand', 'waterHeating.fuelConsumption'],
+          'Forestry (S08)': ['forestry.carbonStorage', 'forestry.annualOffset'],
+          'Occupancy (S09)': ['occupancy.occupants', 'occupancy.calculatedOccupants'],
+          'Energy Demand (S14)': ['energy.ted', 'energy.tedi', 'energy.tel', 'energy.teli'],
+          'Total Energy (S15)': ['energy.total.heating', 'energy.total.cooling', 'energy.total.all', 'energy.teui'],
+          'Emissions (S04)': ['emissions.electricity', 'emissions.gas', 'emissions.actual.subtotal', 'emissions.target.subtotal'],
+          'Carbon Intensity (S05)': ['emissions.ghgi', 'emissions.lifetime.operational', 'emissions.lifetime.total'],
+          'Key Values (S01)': ['keyValues.reference.teui', 'keyValues.target.teui', 'keyValues.reference.annualCarbon', 'keyValues.target.annualCarbon'],
+        };
+
+        // Render results by section
+        for (const [sectionName, paths] of Object.entries(sections)) {
+          let html = `<div class="section"><h2>${sectionName}</h2><table><tr><th>Field</th><th>Value</th><th>Type</th></tr>`;
+
+          for (const path of paths) {
+            const value = state.getValue(path);
+            const isInput = TEST_INPUTS.hasOwnProperty(path);
+            const displayValue = value !== undefined && value !== null ?
+              (typeof value === 'number' ? value.toFixed(2) : value) :
+              '<em style="color:#999">not computed</em>';
+
+            const isKeyMetric = path.includes('teui') || path.includes('ghgi') || path.includes('total.all');
+
+            html += `<tr class="${isKeyMetric ? 'key-metric' : ''}">
+              <td>${path}</td>
+              <td class="value ${isInput ? 'input-value' : 'computed-value'}">${displayValue}</td>
+              <td>${isInput ? 'Input' : 'Computed'}</td>
+            </tr>`;
+          }
+
+          html += '</table></div>';
+          resultsEl.innerHTML += html;
+        }
+
+        // Log key metrics
+        log('\n=== KEY METRICS ===');
+        log(`TEUI: ${state.getValue('energy.teui')?.toFixed(1) || 'N/A'} kWh/m²/yr`);
+        log(`TEDI: ${state.getValue('energy.tedi')?.toFixed(1) || 'N/A'} kWh/m²/yr`);
+        log(`GHGI: ${state.getValue('emissions.ghgi')?.toFixed(1) || 'N/A'} kgCO2e/m²/yr`);
+        log(`Total Heat Loss: ${state.getValue('envelope.total.heatLoss')?.toFixed(0) || 'N/A'} kWh/yr`);
+        log(`Total Energy: ${state.getValue('energy.total.all')?.toFixed(0) || 'N/A'} kWh/yr`);
+
+      } catch (e) {
+        log('ERROR: ' + e.message);
+        console.error(e);
+      }
+    }
+  </script>
+</body>
+</html>

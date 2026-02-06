@@ -874,6 +874,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         c: { label: "Occupants per Building (declared)" },
         d: {
           fieldId: "d_63",
+          semanticPath: "internal.occupants.count",
           type: "editable",
           value: "126",
           section: "occupantInternalGains",
@@ -885,6 +886,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         f: { content: "Occupied Hrs/Day", classes: ["label-main"] },
         g: {
           fieldId: "g_63",
+          semanticPath: "internal.occupants.hoursPerDay",
           type: "dropdown",
           dropdownId: "dd_g_63",
           value: "12",
@@ -902,6 +904,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         i: {
           fieldId: "i_63",
+          semanticPath: "internal.occupants.hoursPerYear",
           type: "calculated",
           value: "4380",
           section: "occupantInternalGains",
@@ -922,6 +925,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         c: { label: "Occupant Activity" },
         d: {
           fieldId: "d_64",
+          semanticPath: "internal.occupants.activityLevel",
           type: "dropdown",
           dropdownId: "dd_d_64",
           value: "Normal",
@@ -939,6 +943,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         f: { content: "Watts/pp (S+L)", classes: ["label-main"] },
         g: {
           fieldId: "g_64",
+          semanticPath: "internal.occupants.wattsPerPerson",
           type: "calculated",
           value: "117",
           section: "occupantInternalGains",
@@ -947,6 +952,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         h: {
           fieldId: "h_64",
+          semanticPath: "internal.occupants.annualEnergy",
           type: "calculated",
           value: "64,696.02",
           section: "occupantInternalGains",
@@ -955,6 +961,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         i: {
           fieldId: "i_64",
+          semanticPath: "internal.occupants.heatingGain",
           type: "calculated",
           value: "43,426.10",
           section: "occupantInternalGains",
@@ -963,6 +970,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         j: {
           fieldId: "j_64",
+          semanticPath: "internal.occupants.heatingGainPercent",
           type: "calculated",
           value: "43.39%",
           section: "occupantInternalGains",
@@ -971,6 +979,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         k: {
           fieldId: "k_64",
+          semanticPath: "internal.occupants.coolingGain",
           type: "calculated",
           value: "21,269.93",
           section: "occupantInternalGains",
@@ -979,6 +988,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         l: {
           fieldId: "l_64",
+          semanticPath: "internal.occupants.coolingGainPercent",
           type: "calculated",
           value: "43.39%",
           section: "occupantInternalGains",
@@ -997,6 +1007,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         c: { label: "Plug Loads" },
         d: {
           fieldId: "d_65",
+          semanticPath: "internal.plugLoad.density",
           type: "calculated",
           value: "7",
           section: "occupantInternalGains",
@@ -1006,6 +1017,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         h: {
           fieldId: "h_65",
+          semanticPath: "internal.plugLoad.annualEnergy",
           type: "calculated",
           value: "43,757.95",
           section: "occupantInternalGains",
@@ -1014,6 +1026,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         i: {
           fieldId: "i_65",
+          semanticPath: "internal.plugLoad.heatingGain",
           type: "calculated",
           value: "29,371.78",
           section: "occupantInternalGains",
@@ -1022,6 +1035,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         j: {
           fieldId: "j_65",
+          semanticPath: "internal.plugLoad.heatingGainPercent",
           type: "calculated",
           value: "29.35%",
           section: "occupantInternalGains",
@@ -1030,6 +1044,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         k: {
           fieldId: "k_65",
+          semanticPath: "internal.plugLoad.coolingGain",
           type: "calculated",
           value: "14,386.18",
           section: "occupantInternalGains",
@@ -1038,6 +1053,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         l: {
           fieldId: "l_65",
+          semanticPath: "internal.plugLoad.coolingGainPercent",
           type: "calculated",
           value: "29.35%",
           section: "occupantInternalGains",
@@ -1046,6 +1062,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         m: {
           fieldId: "m_65",
+          semanticPath: "internal.plugLoad.compliance",
           type: "calculated",
           value: "100%",
           section: "occupantInternalGains",
@@ -1054,6 +1071,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         n: {
           fieldId: "n_65",
+          semanticPath: "internal.plugLoad.complianceStatus",
           type: "calculated",
           value: "✓",
           section: "occupantInternalGains",
@@ -1072,6 +1090,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         c: { label: "Lighting Loads" },
         d: {
           fieldId: "d_66",
+          semanticPath: "internal.lighting.density",
           type: "editable",
           value: "1.5",
           section: "occupantInternalGains",
@@ -1081,6 +1100,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         h: {
           fieldId: "h_66",
+          semanticPath: "internal.lighting.annualEnergy",
           type: "calculated",
           value: "9,376.70",
           section: "occupantInternalGains",
@@ -1089,6 +1109,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         i: {
           fieldId: "i_66",
+          semanticPath: "internal.lighting.heatingGain",
           type: "calculated",
           value: "6,293.95",
           section: "occupantInternalGains",
@@ -1097,6 +1118,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         j: {
           fieldId: "j_66",
+          semanticPath: "internal.lighting.heatingGainPercent",
           type: "calculated",
           value: "6.29%",
           section: "occupantInternalGains",
@@ -1105,6 +1127,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         k: {
           fieldId: "k_66",
+          semanticPath: "internal.lighting.coolingGain",
           type: "calculated",
           value: "3,082.75",
           section: "occupantInternalGains",
@@ -1113,6 +1136,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         l: {
           fieldId: "l_66",
+          semanticPath: "internal.lighting.coolingGainPercent",
           type: "calculated",
           value: "6.29%",
           section: "occupantInternalGains",
@@ -1121,6 +1145,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         m: {
           fieldId: "m_66",
+          semanticPath: "internal.lighting.compliance",
           type: "calculated",
           value: "133%",
           section: "occupantInternalGains",
@@ -1129,6 +1154,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         n: {
           fieldId: "n_66",
+          semanticPath: "internal.lighting.complianceStatus",
           type: "calculated",
           value: "✓",
           section: "occupantInternalGains",
@@ -1147,6 +1173,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         c: { label: "Equipment Loads" },
         d: {
           fieldId: "d_67",
+          semanticPath: "internal.equipment.density",
           type: "calculated",
           value: "5.00",
           section: "occupantInternalGains",
@@ -1158,6 +1185,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         f: { content: "Equipment Spec", classes: ["label-main"] },
         g: {
           fieldId: "g_67",
+          semanticPath: "internal.equipment.efficiencySpec",
           type: "dropdown",
           dropdownId: "dd_g_67",
           value: "Efficient",
@@ -1171,6 +1199,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         h: {
           fieldId: "h_67",
+          semanticPath: "internal.equipment.annualEnergy",
           type: "calculated",
           value: "31,255.68",
           section: "occupantInternalGains",
@@ -1179,6 +1208,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         i: {
           fieldId: "i_67",
+          semanticPath: "internal.equipment.heatingGain",
           type: "calculated",
           value: "20,979.84",
           section: "occupantInternalGains",
@@ -1187,6 +1217,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         j: {
           fieldId: "j_67",
+          semanticPath: "internal.equipment.heatingGainPercent",
           type: "calculated",
           value: "20.96%",
           section: "occupantInternalGains",
@@ -1195,6 +1226,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         k: {
           fieldId: "k_67",
+          semanticPath: "internal.equipment.coolingGain",
           type: "calculated",
           value: "10,275.84",
           section: "occupantInternalGains",
@@ -1203,6 +1235,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         l: {
           fieldId: "l_67",
+          semanticPath: "internal.equipment.coolingGainPercent",
           type: "calculated",
           value: "20.96%",
           section: "occupantInternalGains",
@@ -1211,6 +1244,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         m: {
           fieldId: "m_67",
+          semanticPath: "internal.equipment.compliance",
           type: "calculated",
           value: "100%",
           section: "occupantInternalGains",
@@ -1219,6 +1253,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         n: {
           fieldId: "n_67",
+          semanticPath: "internal.equipment.complianceStatus",
           type: "calculated",
           value: "✓",
           section: "occupantInternalGains",
@@ -1237,6 +1272,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         c: { label: "Elevator Loads (W/m² → Eqpt Gains)" },
         d: {
           fieldId: "d_68",
+          semanticPath: "internal.elevator.status",
           type: "dropdown",
           dropdownId: "dd_d_68",
           value: "No Elevators",
@@ -1260,6 +1296,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         c: { label: "DHW System Losses" },
         h: {
           fieldId: "h_69",
+          semanticPath: "internal.dhwLosses.annualEnergy",
           type: "calculated",
           value: "0.00",
           section: "occupantInternalGains",
@@ -1268,6 +1305,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         i: {
           fieldId: "i_69",
+          semanticPath: "internal.dhwLosses.heatingGain",
           type: "calculated",
           value: "0.00",
           section: "occupantInternalGains",
@@ -1276,6 +1314,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         j: {
           fieldId: "j_69",
+          semanticPath: "internal.dhwLosses.heatingGainPercent",
           type: "calculated",
           value: "0.00%",
           section: "occupantInternalGains",
@@ -1284,6 +1323,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         k: {
           fieldId: "k_69",
+          semanticPath: "internal.dhwLosses.coolingGain",
           type: "calculated",
           value: "0.00",
           section: "occupantInternalGains",
@@ -1292,6 +1332,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         l: {
           fieldId: "l_69",
+          semanticPath: "internal.dhwLosses.coolingGainPercent",
           type: "calculated",
           value: "0.00%",
           section: "occupantInternalGains",
@@ -1310,6 +1351,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         c: { label: "Plug/Light/Eqpt. Subtotals" },
         h: {
           fieldId: "h_70",
+          semanticPath: "internal.subtotal.annualEnergy",
           type: "calculated",
           value: "84,390.34",
           section: "occupantInternalGains",
@@ -1318,6 +1360,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         i: {
           fieldId: "i_70",
+          semanticPath: "internal.subtotal.heatingGain",
           type: "calculated",
           value: "56,645.57",
           section: "occupantInternalGains",
@@ -1326,6 +1369,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         k: {
           fieldId: "k_70",
+          semanticPath: "internal.subtotal.coolingGain",
           type: "calculated",
           value: "27,744.77",
           section: "occupantInternalGains",
@@ -1344,6 +1388,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         c: { label: "Internal Gains Totals" },
         h: {
           fieldId: "h_71",
+          semanticPath: "internal.total.annualEnergy",
           type: "calculated",
           value: "149,086.36",
           section: "occupantInternalGains",
@@ -1352,6 +1397,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         i: {
           fieldId: "i_71",
+          semanticPath: "internal.total.heatingGain",
           type: "calculated",
           value: "100,071.67",
           section: "occupantInternalGains",
@@ -1360,6 +1406,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         j: {
           fieldId: "j_71",
+          semanticPath: "internal.total.heatingGainPercent",
           type: "calculated",
           value: "100%",
           section: "occupantInternalGains",
@@ -1368,6 +1415,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         k: {
           fieldId: "k_71",
+          semanticPath: "internal.total.coolingGain",
           type: "calculated",
           value: "49,014.69",
           section: "occupantInternalGains",
@@ -1376,6 +1424,7 @@ window.TEUI.SectionModules.sect09 = (function () {
         },
         l: {
           fieldId: "l_71",
+          semanticPath: "internal.total.coolingGainPercent",
           type: "calculated",
           value: "100%",
           section: "occupantInternalGains",
@@ -1411,6 +1460,7 @@ window.TEUI.SectionModules.sect09 = (function () {
             label: cell.label || row.label,
             defaultValue: cell.value || "",
             section: cell.section || "occupantInternalGains",
+            semanticPath: cell.semanticPath || null, // Phase 5: Include semantic path
           };
 
           // Copy additional field properties if they exist

@@ -746,6 +746,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         c: { content: "Province", type: "label" },
         d: {
           fieldId: "d_19",
+          semanticPath: "climate.province",
           type: "dropdown",
           label: "Province",
           dropdownId: "dd_d_19",
@@ -765,6 +766,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         g: { content: "City", classes: ["label-main"] },
         h: {
           fieldId: "h_19",
+          semanticPath: "climate.city",
           type: "dropdown",
           label: "City",
           dropdownId: "dd_h_19",
@@ -791,6 +793,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         i: { content: "Climate Zone" },
         j: {
           fieldId: "j_19",
+          semanticPath: "climate.zone",
           type: "derived",
           label: "Climate Zone",
           value: "6.0",
@@ -801,6 +804,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         l: { content: "Days Cooling", classes: ["label-main"] },
         m: {
           fieldId: "m_19",
+          semanticPath: "climate.coolingDays",
           type: "editable",
           label: "Days Cooling",
           value: "120",
@@ -820,6 +824,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         c: { content: "Heating Degree Days (HDD)", type: "label" },
         d: {
           fieldId: "d_20",
+          semanticPath: "climate.hdd",
           type: "derived",
           label: "Heating Degree Days (HDD)",
           value: "4600",
@@ -830,6 +835,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         g: { content: "Current or Future Values", classes: ["label-main"] },
         h: {
           fieldId: "h_20",
+          semanticPath: "climate.timeframe",
           type: "dropdown",
           label: "Current or Future Weather Values",
           dropdownId: "dd_h_20",
@@ -848,6 +854,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         k: { content: "Summer Night Mean", classes: ["label-main"] }, // Mean Night-time Outdoor Temp
         l: {
           fieldId: "l_20",
+          semanticPath: "climate.summerNightTemp",
           type: "editable",
           label: "Summer Night (Seasonal Mean) ºC",
           value: "20.43", // Default: Alexandria, ON summer night temp
@@ -874,6 +881,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         },
         d: {
           fieldId: "d_21",
+          semanticPath: "climate.cdd",
           type: "editable", // ✅ Changed from "derived" - always editable like g_88
           label: "Cooling Degree Days (CDD)",
           value: "196",
@@ -885,6 +893,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         g: { content: "Capacitance", classes: ["label-main"] },
         h: {
           fieldId: "h_21",
+          semanticPath: "building.capacitanceMethod",
           type: "dropdown",
           label: "Capacitance Method",
           dropdownId: "dd_h_21",
@@ -898,6 +907,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         },
         i: {
           fieldId: "i_21",
+          semanticPath: "building.capacitanceFactor",
           type: "percentage",
           label: "Capacitance Factor %",
           value: "50",
@@ -916,6 +926,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         k: { content: "Summer Mean RH", classes: ["label-main"] },
         l: {
           fieldId: "l_21",
+          semanticPath: "climate.summerRelativeHumidity",
           type: "editable",
           label: "Summer Mean RH%",
           value: "55.85", // Default: Alexandria, ON cooling season mean RH at 15h00 LST
@@ -937,6 +948,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         c: { content: "Ground Facing GF HDD", type: "label" },
         d: {
           fieldId: "d_22",
+          semanticPath: "climate.groundFacingHdd",
           type: "derived",
           label: "Ground Facing GF HDD",
           value: "1960",
@@ -948,6 +960,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         g: { content: "GF CDD", classes: ["label-main"] },
         h: {
           fieldId: "h_22",
+          semanticPath: "climate.groundFacingCdd",
           type: "calculated",
           label: "Ground Facing CDD",
           value: "-1680",
@@ -959,6 +972,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         k: { content: "Elevation (ASL)", classes: ["label-main"] },
         l: {
           fieldId: "l_22",
+          semanticPath: "climate.elevation",
           type: "editable",
           label: "Elevation (ASL): metres",
           value: "80",
@@ -979,6 +993,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         c: { content: "Coldest Days (Location Specific)", type: "label" },
         d: {
           fieldId: "d_23",
+          semanticPath: "climate.coldestTemp",
           type: "derived",
           value: "-24",
           section: "climateCalculations",
@@ -986,6 +1001,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         },
         e: {
           fieldId: "e_23",
+          semanticPath: "climate.coldestTempF",
           type: "calculated",
           value: "-11",
           section: "climateCalculations",
@@ -995,12 +1011,14 @@ window.TEUI.SectionModules.sect03 = (function () {
         g: { content: "Tset Heating", classes: ["label-main"] },
         h: {
           fieldId: "h_23",
+          semanticPath: "building.heatingSetpoint",
           type: "calculated",
           section: "climateCalculations",
           dependencies: ["d_12"],
         },
         i: {
           fieldId: "i_23",
+          semanticPath: "building.heatingSetpointF",
           type: "calculated",
           value: "66",
           section: "climateCalculations",
@@ -1008,6 +1026,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         },
         m: {
           fieldId: "m_23",
+          semanticPath: "reference.heatingSetpointMin",
           type: "calculated",
           label: "OBC Required Heating Setpoint",
           value: "22",
@@ -1017,6 +1036,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         },
         n: {
           fieldId: "n_23",
+          semanticPath: "compliance.heatingSetpoint",
           type: "calculated",
           label: "Heating Setpoint Compliance",
           value: "✓",
@@ -1036,6 +1056,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         c: { content: "Hottest Days (Location Specific)", type: "label" },
         d: {
           fieldId: "d_24",
+          semanticPath: "climate.hottestTemp",
           type: "derived",
           value: "34",
           section: "climateCalculations",
@@ -1043,6 +1064,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         },
         e: {
           fieldId: "e_24",
+          semanticPath: "climate.hottestTempF",
           type: "calculated",
           value: "98",
           section: "climateCalculations",
@@ -1052,6 +1074,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         g: { content: "Tset Cooling", classes: ["label-main"] },
         h: {
           fieldId: "h_24",
+          semanticPath: "building.coolingSetpoint",
           type: "calculated",
           section: "climateCalculations",
           dependencies: ["d_12"],
@@ -1059,6 +1082,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         },
         i: {
           fieldId: "i_24",
+          semanticPath: "building.coolingSetpointF",
           type: "calculated",
           value: "78",
           section: "climateCalculations",
@@ -1068,6 +1092,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         k: { content: "Cooling Override", classes: ["label-main"] },
         l: {
           fieldId: "l_24",
+          semanticPath: "building.coolingOverride",
           type: "editable",
           label: "Cooling Override",
           value: "24",
@@ -1077,6 +1102,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         },
         m: {
           fieldId: "m_24",
+          semanticPath: "reference.coolingSetpointMax",
           type: "calculated",
           label: "NBC Upper Limit",
           value: "26",
@@ -1086,6 +1112,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         },
         n: {
           fieldId: "n_24",
+          semanticPath: "compliance.coolingSetpoint",
           type: "calculated",
           label: "Cooling Setpoint Compliance",
           value: "✓",
@@ -1109,6 +1136,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         },
         d: {
           fieldId: "d_25",
+          semanticPath: "climate.winterAverageTemp",
           type: "calculated",
           value: "0",
           section: "climateCalculations",
@@ -1117,6 +1145,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         },
         e: {
           fieldId: "e_25",
+          semanticPath: "climate.winterAverageTempF",
           type: "calculated",
           value: "32",
           section: "climateCalculations",
@@ -1152,6 +1181,8 @@ window.TEUI.SectionModules.sect03 = (function () {
           };
 
           // Copy additional field properties if they exist
+          if (cell.semanticPath)
+            fields[cell.fieldId].semanticPath = cell.semanticPath; // Phase 5: Include semantic path
           if (cell.dropdownId)
             fields[cell.fieldId].dropdownId = cell.dropdownId;
           if (cell.options) fields[cell.fieldId].options = cell.options;

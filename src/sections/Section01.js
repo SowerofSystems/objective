@@ -19,6 +19,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     // T.1 Lifetime Carbon
     e_6: {
       type: "calculated",
+      semanticPath: "keyValues.lifetimeCarbon.reference",
       label: "Lifetime Carbon Ref",
       defaultValue: "24.4",
       section: "keyValues",
@@ -26,6 +27,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     },
     h_6: {
       type: "calculated",
+      semanticPath: "keyValues.lifetimeCarbon.target",
       label: "Lifetime Carbon Target",
       defaultValue: "11.7",
       section: "keyValues",
@@ -33,6 +35,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     },
     k_6: {
       type: "calculated",
+      semanticPath: "keyValues.lifetimeCarbon.actual",
       label: "Lifetime Carbon Actual",
       defaultValue: "11.7",
       section: "keyValues",
@@ -41,6 +44,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     // T.2 Annual Carbon
     e_8: {
       type: "calculated",
+      semanticPath: "keyValues.annualCarbon.reference",
       label: "Annual Carbon Ref",
       defaultValue: "17.4",
       section: "keyValues",
@@ -48,6 +52,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     },
     h_8: {
       type: "calculated",
+      semanticPath: "keyValues.annualCarbon.target",
       label: "Annual Carbon Target",
       defaultValue: "4.7",
       section: "keyValues",
@@ -55,6 +60,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     },
     k_8: {
       type: "calculated",
+      semanticPath: "keyValues.annualCarbon.actual",
       label: "Annual Carbon Actual",
       defaultValue: "4.8",
       section: "keyValues",
@@ -62,6 +68,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     },
     j_8: {
       type: "calculated",
+      semanticPath: "keyValues.annualCarbon.reductionPercent",
       label: "Annual Carbon %",
       defaultValue: "14%",
       section: "keyValues",
@@ -70,6 +77,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     // T.3 TEUI
     e_10: {
       type: "calculated",
+      semanticPath: "keyValues.teui.reference",
       label: "TEUI Ref",
       defaultValue: "341.2",
       section: "keyValues",
@@ -77,6 +85,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     },
     f_10: {
       type: "calculated",
+      semanticPath: "keyValues.teui.referenceTier",
       label: "TEUI Ref Tier",
       defaultValue: "tier1",
       section: "keyValues",
@@ -84,6 +93,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     },
     h_10: {
       type: "calculated",
+      semanticPath: "keyValues.teui.target",
       label: "TEUI Target",
       defaultValue: "93.0",
       section: "keyValues",
@@ -91,6 +101,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     },
     i_10: {
       type: "calculated",
+      semanticPath: "keyValues.teui.targetTier",
       label: "TEUI Target Tier",
       defaultValue: "tier3",
       section: "keyValues",
@@ -98,6 +109,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     },
     j_10: {
       type: "calculated",
+      semanticPath: "keyValues.teui.reductionPercent",
       label: "TEUI %",
       defaultValue: "41%",
       section: "keyValues",
@@ -105,6 +117,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     },
     k_10: {
       type: "calculated",
+      semanticPath: "keyValues.teui.actual",
       label: "TEUI Actual",
       defaultValue: "93.1",
       section: "keyValues",
@@ -113,12 +126,14 @@ window.TEUI.SectionModules.sect01 = (function () {
     // Inputs (Placeholder definitions for clarity)
     f_32: {
       type: "calculated",
+      semanticPath: "keyValues.source.actualEnergy",
       label: "Source: Actual Energy",
       defaultValue: "0",
       section: "keyValues",
     },
     j_32: {
       type: "calculated",
+      semanticPath: "keyValues.source.targetEnergy",
       label: "Source: Target Energy",
       defaultValue: "0",
       section: "keyValues",
@@ -126,6 +141,7 @@ window.TEUI.SectionModules.sect01 = (function () {
 
     i_41: {
       type: "calculated",
+      semanticPath: "keyValues.source.embodiedCarbon",
       label: "Source: Embodied Carbon",
       defaultValue: "0",
       section: "keyValues",
@@ -133,18 +149,21 @@ window.TEUI.SectionModules.sect01 = (function () {
 
     k_32: {
       type: "calculated",
+      semanticPath: "keyValues.source.targetEmissions",
       label: "Source: Target Emissions",
       defaultValue: "0",
       section: "keyValues",
     },
     g_32: {
       type: "calculated",
+      semanticPath: "keyValues.source.actualEmissions",
       label: "Source: Actual Emissions",
       defaultValue: "0",
       section: "keyValues",
     },
     d_13: {
       type: "calculated",
+      semanticPath: "keyValues.source.referenceStandard",
       label: "Reference Standard",
       defaultValue: "",
       section: "keyValues",
@@ -152,6 +171,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     // Percentage fields (M column)
     m_6: {
       type: "calculated",
+      semanticPath: "keyValues.lifetimeCarbon.percentage",
       label: "Lifetime Carbon %",
       defaultValue: "N/A",
       section: "keyValues",
@@ -159,6 +179,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     },
     m_8: {
       type: "calculated",
+      semanticPath: "keyValues.annualCarbon.percentage",
       label: "Annual Carbon %",
       defaultValue: "14%",
       section: "keyValues",
@@ -166,6 +187,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     },
     m_10: {
       type: "calculated",
+      semanticPath: "keyValues.teui.percentage",
       label: "TEUI %",
       defaultValue: "41%",
       section: "keyValues",

@@ -23,6 +23,8 @@ TEUI.ReferenceValues = {
   "OBC SB12 3.1.1.2.C4": {
     //"h_13": "OBC Prescriptive Path for HP"
     //"h_14": "Same as Application State B.2 Project Name Field Value" - should we show this in reference import/exports?
+    d_39: "Pt.9 Res. Stick Frame", // Reference Typology for Part 9 residential baseline
+    d_51: "Electric", // DHW System Type for Reference model
     d_52: "90", // DWH System Efficiency when Electric
     k_52: "90", // DWH AFUE when Gas or Oil
     d_53: "42", // DWHR Efficiency if OBC
@@ -61,6 +63,8 @@ TEUI.ReferenceValues = {
   },
   "OBC SB12 3.1.1.2.C1": {
     //"h_13": "OBC Prescriptive Path for Elect."
+    d_39: "Pt.9 Res. Stick Frame", // Reference Typology for Part 9 residential baseline
+    d_51: "Electric", // DHW System Type for Reference model
     d_52: "90", // DWH System Efficiency when Electric
     k_52: "90", // DWH AFUE when Gas or Oil
     d_53: "42", // DWHR Efficiency if OBC
@@ -99,6 +103,8 @@ TEUI.ReferenceValues = {
   },
   "OBC SB12 3.1.1.2.A3": {
     //"h_13": "OBC Prescriptive Path for AFUE >92%"
+    d_39: "Pt.9 Res. Stick Frame", // Reference Typology for Part 9 residential baseline
+    d_51: "Electric", // DHW System Type for Reference model
     d_52: "92", // DWH System Efficiency when Electric
     k_52: "92", // DWH AFUE when Gas or Oil
     d_53: "42", // DWHR Efficiency if OBC
@@ -138,6 +144,8 @@ TEUI.ReferenceValues = {
   },
   "OBC SB10 5.5-6 Z6": {
     //"h_13": "OBC Prescriptive Path Part 3"
+    d_39: "Pt.3 Steel", // Reference Typology for Part 3 building code baseline
+    d_51: "Electric", // DHW System Type for Reference model
     d_52: "90", // DWH System Efficiency when Electric
     k_52: "90", // DWH AFUE when Gas or Oil
     d_53: "0", // DWHR Efficiency 0 when SB10
@@ -177,6 +185,8 @@ TEUI.ReferenceValues = {
   },
   "OBC SB10 5.5-6 Z5 (2010)": {
     //"h_13": "OBC Prescriptive Path Part 3"
+    d_39: "Pt.3 Steel", // Reference Typology for Part 3 building code baseline
+    d_51: "Electric", // DHW System Type for Reference model
     d_52: "90", // DWH System Efficiency when Electric
     k_52: "90", // DWH AFUE when Gas or Oil
     d_53: "0", // DWHR Efficiency 0 when SB10
@@ -216,6 +226,8 @@ TEUI.ReferenceValues = {
   },
   "ADD YOUR OWN HERE": {
     //"h_13": "User Defined"
+    d_39: "Pt.3 Steel", // Reference Typology default for user-defined standard
+    d_51: "Electric", // DHW System Type for Reference model
     d_52: "90", // DWH System Efficiency when Electric
     k_52: "90", // DWH AFUE when Gas or Oil
     d_53: "0.42", // DWHR Efficiency if OBC
@@ -255,6 +267,8 @@ TEUI.ReferenceValues = {
   },
   "NBC T1": {
     //"h_13": "NBC 9.36 Prescriptive Path" with any possible measure - serves as a baseline
+    d_39: "Pt.9 Res. Stick Frame", // Reference Typology for Part 9 residential baseline
+    d_51: "Electric", // DHW System Type for Reference model
     d_52: "92", // DWH System Efficiency when Electric
     k_52: "92", // DWH AFUE when Gas or Oil
     d_53: "0.42", // DWHR Efficiency if OBC
@@ -294,6 +308,8 @@ TEUI.ReferenceValues = {
   },
   "NECB T1 (Z6)": {
     //"h_13": "Replacing SB10"
+    d_39: "Pt.3 Steel", // Reference Typology for Part 3 building code baseline
+    d_51: "Electric", // DHW System Type for Reference model
     d_52: "90", // DWH System Efficiency when Electric
     k_52: "90", // DWH AFUE when Gas or Oil
     d_53: "0", // DWHR Efficiency 0 when SB10
@@ -332,6 +348,8 @@ TEUI.ReferenceValues = {
   },
   "CaGBC ZCB": {
     //"h_13": "Replacing SB10"
+    d_39: "Pt.3 Steel", // Reference Typology for Part 3 building code baseline
+    d_51: "Electric", // DHW System Type for Reference model
     d_52: "90", // DWH System Efficiency when Electric
     k_52: "90", // DWH AFUE when Gas or Oil
     d_53: "0", // DWHR Efficiency 0 when SB10
@@ -370,7 +388,9 @@ TEUI.ReferenceValues = {
   },
   "PH Classic": {
     //"h_13": "90% less than NBC"
+    d_39: "Pt.3 Steel", // Reference Typology default for PH standard
     h_23: "18", // PH Tsetpoint in °C
+    d_51: "Electric", // DHW System Type for Reference model
     d_52: "100", // DWH System Efficiency when Electric
     k_52: "92", // DWH AFUE when Gas or Oil
     d_53: "0.42", // DWHR Efficiency 0 when OBC
@@ -380,7 +400,7 @@ TEUI.ReferenceValues = {
     d_59: "45", // Ideal RH% averaged annually
     d_65: "2.1", // PH Specific Plug Loads in W/m²
     d_66: "1.1", // Max. Permissible Lighting Load
-    g_67: "Efficient", // Default Eppt Efficienct Spec.
+    g_67: "Regular", // REFERENCE OVERRIDE: Section09.js forces Regular for all Reference models
     //t_65: "5.0", // Reference Plug Load (W/m²)
     d_66: "1.1", // Reference Lighting Load (W/m²)
     f_73: "0.50", // SHGC of Glazing Max.
@@ -412,7 +432,9 @@ TEUI.ReferenceValues = {
   },
   "PH Plus": {
     //"h_13": "90% less than NBC"
+    d_39: "Pt.3 Steel", // Reference Typology default for PH standard
     h_23: "18", // PH Tsetpoint in °C
+    d_51: "Electric", // DHW System Type for Reference model
     d_52: "100", // DWH System Efficiency when Electric
     k_52: "92", // DWH AFUE when Gas or Oil
     d_53: "0.42", // DWHR Efficiency 0 when OBC
@@ -422,7 +444,7 @@ TEUI.ReferenceValues = {
     d_59: "45", // Ideal RH% averaged annually
     d_65: "2.1", // PH Specific Plug Loads in W/m²
     d_66: "1.1", // Max. Permissible Lighting Load
-    g_67: "Efficient", // Default Eppt Efficienct Spec.
+    g_67: "Regular", // REFERENCE OVERRIDE: Section09.js forces Regular for all Reference models
     t_65: "5.0", // Reference Plug Load (W/m²)
     d_66: "1.1", // Reference Lighting Load (W/m²)
     f_73: "0.50", // SHGC of Glazing Max.
@@ -454,7 +476,9 @@ TEUI.ReferenceValues = {
   },
   "PH Premium": {
     //"h_13": "90% less than NBC"
+    d_39: "Pt.3 Steel", // Reference Typology default for PH standard
     h_23: "18", // PH Tsetpoint in °C
+    d_51: "Electric", // DHW System Type for Reference model
     d_52: "100", // DWH System Efficiency when Electric
     k_52: "92", // DWH AFUE when Gas or Oil
     d_53: "0.42", // DWHR Efficiency 0 when OBC
@@ -464,7 +488,7 @@ TEUI.ReferenceValues = {
     d_59: "45", // Ideal RH% averaged annually
     d_65: "2.1", // PH Specific Plug Loads in W/m²
     d_66: "1.1", // Max. Permissible Lighting Load
-    g_67: "Efficient", // Default Eppt Efficienct Spec.
+    g_67: "Regular", // REFERENCE OVERRIDE: Section09.js forces Regular for all Reference models
     d_65: "5.0", // Reference Plug Load (W/m²)
     d_66: "1.1", // Reference Lighting Load (W/m²)
     // t_67: "5.0", // Reference Equipment Load (W/m²) - THIS IS ESTABLISHED BY OCCUPANCY AT D13
@@ -497,7 +521,9 @@ TEUI.ReferenceValues = {
   },
   EnerPHit: {
     //"h_13": "PH Renovations"
+    d_39: "Pt.3 Steel", // Reference Typology default for PH standard
     h_23: "18", // PH Tsetpoint in °C
+    d_51: "Electric", // DHW System Type for Reference model
     d_52: "100", // DWH System Efficiency when Electric
     k_52: "92", // DWH AFUE when Gas or Oil
     d_53: "0.42", // DWHR Efficiency 0 when OBC
@@ -507,7 +533,7 @@ TEUI.ReferenceValues = {
     d_59: "45", // Ideal RH% averaged annually
     d_65: "2.1", // PH Specific Plug Loads in W/m²
     d_66: "2.0", // Max. Permissible Lighting Load
-    g_67: "Efficient", // Required Eppt Efficienct Spec.
+    g_67: "Regular", // REFERENCE OVERRIDE: Section09.js forces Regular for all Reference models
     t_65: "5.0", // Reference Occupant Load (W/m²)
     d_66: "2.0", // Reference Lighting Load (W/m²)
     // t_67: "2.0", // Reference Equipment Load (W/m²) THIS IS ESTABLISHED BY OCCUPANCY AT D13
@@ -540,7 +566,9 @@ TEUI.ReferenceValues = {
   },
   "PH Low Energy": {
     //"h_13": "80% less than NBC"
+    d_39: "Pt.3 Steel", // Reference Typology default for PH standard
     h_23: "18", // PH Tsetpoint in °C
+    d_51: "Electric", // DHW System Type for Reference model
     d_52: "100", // DWH System Efficiency when Electric
     k_52: "92", // DWH AFUE when Gas or Oil
     d_53: "0.42", // DWHR Efficiency 0 when OBC
@@ -550,7 +578,7 @@ TEUI.ReferenceValues = {
     d_59: "45", // Ideal RH% averaged annually
     d_65: "2.1", // PH Specific Plug Loads in W/m²
     d_66: "2.0", // Max. Permissible Lighting Load
-    g_67: "Efficient", // Required Eppt Efficienct Spec.
+    g_67: "Regular", // REFERENCE OVERRIDE: Section09.js forces Regular for all Reference models
     t_65: "5.0", // Reference Occupant Load (W/m²)
     d_66: "2.0", // Reference Lighting Load (W/m²)
     // t_67: "2.0", // Reference Equipment Load (W/m²) THIS IS ESTABLISHED BY OCCUPANCY AT D13

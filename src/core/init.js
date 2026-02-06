@@ -922,6 +922,31 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Initialize elegant user input behavior
     initializeElegantInputBehavior();
+
+    // ComputationGraph is the single source of truth for all calculations
+    // Legacy Section*.js calculateAll() functions are no longer used
+    window.TEUI.USE_COMPUTATION_GRAPH = true;
+
+    // Initialize ComputationGraph (Multi-Model Architecture)
+    if (window.TEUI.ComputationIntegration) {
+      setTimeout(function () {
+        const success = window.TEUI.ComputationIntegration.initialize({
+          enableLogging: true,
+          autoSync: true
+        });
+        if (success) {
+          console.log("[init.js] ComputationGraph initialized");
+
+          // Enable DOMBridge for reactive UI updates
+          setTimeout(function() {
+            const bridgeEnabled = window.TEUI.ComputationIntegration.enableDOMBridge();
+            if (bridgeEnabled) {
+              console.log("[init.js] DOMBridge enabled");
+            }
+          }, 100);
+        }
+      }, 500);
+    }
   } else {
     console.error("Core TEUI modules (StateManager, FieldManager) not found!");
   }

@@ -426,6 +426,7 @@ window.TEUI.SectionModules.sect05 = (function () {
         c: { content: "GHGI Operational (B6) Emissions/yr", type: "label" },
         d: {
           fieldId: "d_38",
+          semanticPath: "emissions.operational.total",
           type: "calculated",
           value: "0.00",
           section: "emissions",
@@ -435,6 +436,7 @@ window.TEUI.SectionModules.sect05 = (function () {
         f: { content: "E.1.4", classes: ["label-prefix"] }, // Label for i_38 based on Excel G38 position
         g: {
           fieldId: "g_38", // Annual kgCO2e/m2 - This value should appear in this column per app screenshot
+          semanticPath: "emissions.operational.intensity",
           type: "calculated",
           value: "0.00",
           section: "emissions",
@@ -443,6 +445,7 @@ window.TEUI.SectionModules.sect05 = (function () {
         h: { content: "" }, // Unit for g_38 removed, now spacer
         i: {
           fieldId: "i_38", // Lifetime kgCO2e/m2 (g_38 * h_13) - This value appears in Excel I38
+          semanticPath: "emissions.operational.lifetime",
           type: "calculated",
           value: "0.00",
           section: "emissions",
@@ -457,6 +460,7 @@ window.TEUI.SectionModules.sect05 = (function () {
         l: { content: "", classes: ["spacer"] },
         m: {
           fieldId: "m_38",
+          semanticPath: "emissions.operational.complianceRatio",
           type: "calculated",
           value: "N/A",
           section: "emissions",
@@ -465,6 +469,7 @@ window.TEUI.SectionModules.sect05 = (function () {
         },
         n: {
           fieldId: "n_38",
+          semanticPath: "emissions.operational.complianceStatus",
           type: "calculated",
           value: "✓",
           section: "emissions",
@@ -483,6 +488,7 @@ window.TEUI.SectionModules.sect05 = (function () {
         c: { content: "Typology-Based Carbon Intensity (A1-3)", type: "label" },
         d: {
           fieldId: "d_39",
+          semanticPath: "emissions.typology",
           type: "dropdown",
           dropdownId: "dd_d_39",
           label: "Typology Selection",
@@ -501,10 +507,11 @@ window.TEUI.SectionModules.sect05 = (function () {
         },
         e: { content: "", classes: ["spacer"] }, // Spacer
         f: { content: "E.3.2", classes: ["label-prefix"] },
-        g: { content: "Typology-Based Cap (TGS4)", classes: ["label-main"] },
+        g: { content: "Typology-Based Cap", classes: ["label-main"] },
         h: { content: "", classes: ["spacer"] }, // Spacer for alignment before value in col I
         i: {
           fieldId: "i_39", // Value displayed in Column I
+          semanticPath: "emissions.typologyCap",
           type: "calculated",
           value: "350.00",
           section: "emissions",
@@ -517,6 +524,7 @@ window.TEUI.SectionModules.sect05 = (function () {
         l: { content: "", classes: ["spacer"] },
         m: {
           fieldId: "m_39",
+          semanticPath: "emissions.typology.complianceRatio",
           type: "calculated",
           value: "N/A",
           section: "emissions",
@@ -525,6 +533,7 @@ window.TEUI.SectionModules.sect05 = (function () {
         },
         n: {
           fieldId: "n_39",
+          semanticPath: "emissions.typology.complianceStatus",
           type: "calculated",
           value: "✓",
           section: "emissions",
@@ -543,6 +552,7 @@ window.TEUI.SectionModules.sect05 = (function () {
         c: { content: "Total Embedded Carbon Emitted (A1-3)", type: "label" },
         d: {
           fieldId: "d_40",
+          semanticPath: "emissions.embodied.total",
           type: "calculated",
           value: "0.00",
           section: "emissions",
@@ -555,6 +565,7 @@ window.TEUI.SectionModules.sect05 = (function () {
         h: { content: "", classes: ["spacer"] },
         i: {
           fieldId: "i_40", // Value displayed in Column I
+          semanticPath: "emissions.embodied.target",
           type: "calculated",
           value: "0.00",
           section: "emissions",
@@ -566,6 +577,7 @@ window.TEUI.SectionModules.sect05 = (function () {
         l: { content: "", classes: ["spacer"] },
         m: {
           fieldId: "m_40",
+          semanticPath: "emissions.embodied.complianceRatio",
           type: "calculated",
           value: "N/A",
           section: "emissions",
@@ -574,6 +586,7 @@ window.TEUI.SectionModules.sect05 = (function () {
         },
         n: {
           fieldId: "n_40",
+          semanticPath: "emissions.embodied.complianceStatus",
           type: "calculated",
           value: "✓",
           section: "emissions",
@@ -592,6 +605,7 @@ window.TEUI.SectionModules.sect05 = (function () {
         c: { content: "Lifetime Avoided (B6) Emissions", type: "label" },
         d: {
           fieldId: "d_41",
+          semanticPath: "emissions.avoided.lifetime",
           type: "calculated",
           value: "0.00",
           section: "emissions",
@@ -604,6 +618,7 @@ window.TEUI.SectionModules.sect05 = (function () {
         h: { content: "", classes: ["spacer"] },
         i: {
           fieldId: "i_41",
+          semanticPath: "emissions.embodied.modelledValue",
           type: "editable", // Target: user-editable, Reference: calculated (ghosted)
           value: "345.82",
           section: "emissions",
@@ -618,6 +633,7 @@ window.TEUI.SectionModules.sect05 = (function () {
         l: { content: "", classes: ["spacer"] },
         m: {
           fieldId: "m_41",
+          semanticPath: "emissions.modelled.complianceRatio",
           type: "calculated",
           value: "N/A",
           section: "emissions",
@@ -626,6 +642,7 @@ window.TEUI.SectionModules.sect05 = (function () {
         },
         n: {
           fieldId: "n_41",
+          semanticPath: "emissions.modelled.complianceStatus",
           type: "calculated",
           value: "✓",
           section: "emissions",
@@ -749,6 +766,8 @@ window.TEUI.SectionModules.sect05 = (function () {
           };
 
           // Copy additional field properties if they exist
+          if (cell.semanticPath)
+            fields[cell.fieldId].semanticPath = cell.semanticPath; // Phase 5: Include semantic path
           if (cell.dropdownId)
             fields[cell.fieldId].dropdownId = cell.dropdownId;
           if (cell.options) fields[cell.fieldId].options = cell.options;

@@ -640,6 +640,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         c: { label: "Total Area Exposed to Air (Ae)" },
         d: {
           fieldId: "d_101",
+          semanticPath: "geometry.airFacing.area",
           type: "calculated",
           value: "2476.62",
           section: "volumeSurfaceMetrics",
@@ -660,6 +661,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         f: { content: "U-Val. for Ae", classes: ["label-main"] },
         g: {
           fieldId: "g_101",
+          semanticPath: "geometry.airFacing.uValue",
           type: "calculated",
           value: "0.278",
           section: "volumeSurfaceMetrics",
@@ -689,6 +691,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         h: {
           fieldId: "h_101",
+          semanticPath: "geometry.airFacing.lossRate",
           type: "calculated",
           value: "30.73",
           section: "volumeSurfaceMetrics",
@@ -697,6 +700,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         i: {
           fieldId: "i_101",
+          semanticPath: "geometry.airFacing.heatLoss",
           type: "calculated",
           value: "76,103.69",
           section: "volumeSurfaceMetrics",
@@ -705,6 +709,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         j: {
           fieldId: "j_101",
+          semanticPath: "geometry.airFacing.gainRate",
           type: "calculated",
           value: "1.31",
           section: "volumeSurfaceMetrics",
@@ -713,6 +718,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         k: {
           fieldId: "k_101",
+          semanticPath: "geometry.airFacing.heatGain",
           type: "calculated",
           value: "3,242.68",
           section: "volumeSurfaceMetrics",
@@ -721,6 +727,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         l: {
           fieldId: "l_101",
+          semanticPath: "geometry.airFacing.lossPercent",
           type: "calculated",
           value: "65.57%",
           section: "volumeSurfaceMetrics",
@@ -732,6 +739,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         n: { content: "" },
         o: {
           fieldId: "o_101",
+          semanticPath: "geometry.airFacing.surfaceTemp",
           type: "calculated",
           value: "0.00",
           dependencies: ["g_101", "h_23", "d_25", "d_101"],
@@ -748,6 +756,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         c: { label: "Total Area Exposed to Ground (Ag)" },
         d: {
           fieldId: "d_102",
+          semanticPath: "geometry.groundFacing.area",
           type: "calculated",
           value: "1100.93",
           section: "volumeSurfaceMetrics",
@@ -758,6 +767,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         f: { content: "U-Val. for Ag", classes: ["label-main"] },
         g: {
           fieldId: "g_102",
+          semanticPath: "geometry.groundFacing.uValue",
           type: "calculated",
           value: "0.324",
           section: "volumeSurfaceMetrics",
@@ -768,6 +778,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         h: {
           fieldId: "h_102",
+          semanticPath: "geometry.groundFacing.lossRate",
           type: "calculated",
           value: "15.26",
           section: "volumeSurfaceMetrics",
@@ -776,6 +787,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         i: {
           fieldId: "i_102",
+          semanticPath: "geometry.groundFacing.heatLoss",
           type: "calculated",
           value: "16,788.25",
           section: "volumeSurfaceMetrics",
@@ -784,6 +796,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         j: {
           fieldId: "j_102",
+          semanticPath: "geometry.groundFacing.gainRate",
           type: "calculated",
           value: "-13.08",
           section: "volumeSurfaceMetrics",
@@ -792,6 +805,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         k: {
           fieldId: "k_102",
+          semanticPath: "geometry.groundFacing.heatGain",
           type: "calculated",
           value: "-14,389.92",
           section: "volumeSurfaceMetrics",
@@ -800,6 +814,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         l: {
           fieldId: "l_102",
+          semanticPath: "geometry.groundFacing.lossPercent",
           type: "calculated",
           value: "14.46%",
           section: "volumeSurfaceMetrics",
@@ -811,6 +826,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         n: { content: "" },
         o: {
           fieldId: "o_102",
+          semanticPath: "geometry.groundFacing.surfaceTemp",
           type: "calculated",
           value: "0.00",
           dependencies: ["g_102", "h_23", "d_102"],
@@ -827,6 +843,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         c: { label: "Heating Natural Air Leakage Heatloss" },
         d: {
           fieldId: "d_103",
+          semanticPath: "airLeakage.stories",
           type: "dropdown",
           dropdownId: "dd_d_103",
           value: "1.5",
@@ -846,6 +863,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         f: { content: "B.18.3 Shielding", classes: ["label-main"] },
         g: {
           fieldId: "g_103",
+          semanticPath: "airLeakage.shielding",
           type: "dropdown",
           dropdownId: "dd_g_103",
           value: "Normal",
@@ -860,6 +878,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         h: {},
         i: {
           fieldId: "i_103",
+          semanticPath: "airLeakage.heatingHeatLoss",
           type: "calculated",
           value: "23,178.39",
           section: "volumeSurfaceMetrics",
@@ -869,6 +888,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         j: {},
         k: {
           fieldId: "k_103",
+          semanticPath: "airLeakage.coolingHeatGain",
           type: "calculated",
           value: "987.60",
           section: "volumeSurfaceMetrics",
@@ -877,6 +897,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         l: {
           fieldId: "l_103",
+          semanticPath: "airLeakage.lossPercent",
           type: "calculated",
           value: "19.97%",
           section: "volumeSurfaceMetrics",
@@ -900,6 +921,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         d: {
           fieldId: "d_104",
+          semanticPath: "envelope.total.area",
           type: "calculated",
           value: "3577.04",
           section: "volumeSurfaceMetrics",
@@ -911,6 +933,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         f: {},
         g: {
           fieldId: "g_104",
+          semanticPath: "envelope.total.uValue",
           type: "calculated",
           value: "0.292",
           section: "volumeSurfaceMetrics",
@@ -921,6 +944,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         h: {},
         i: {
           fieldId: "i_104",
+          semanticPath: "envelope.total.heatLoss",
           type: "calculated",
           value: "116,070.33",
           section: "volumeSurfaceMetrics",
@@ -931,6 +955,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         j: {},
         k: {
           fieldId: "k_104",
+          semanticPath: "envelope.total.heatGain",
           type: "calculated",
           value: "-10,160.19",
           section: "volumeSurfaceMetrics",
@@ -941,6 +966,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         l: {
           fieldId: "l_104",
+          semanticPath: "envelope.total.lossPercent",
           type: "calculated",
           value: "100%",
           section: "volumeSurfaceMetrics",
@@ -951,6 +977,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         m: {
           fieldId: "m_104",
+          semanticPath: "envelope.total.complianceRatio",
           type: "calculated",
           value: "N/A",
           section: "volumeSurfaceMetrics",
@@ -959,6 +986,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         n: {
           fieldId: "n_104",
+          semanticPath: "envelope.total.complianceStatus",
           type: "calculated",
           value: "✓",
           section: "volumeSurfaceMetrics",
@@ -968,6 +996,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         o: {
           fieldId: "o_104",
+          semanticPath: "envelope.total.surfaceTemp",
           type: "calculated",
           value: "0.00",
           dependencies: ["g_104", "h_23", "d_25", "d_101", "d_102"],
@@ -985,6 +1014,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         c: { label: "Total Conditioned Volume" },
         d: {
           fieldId: "d_105",
+          semanticPath: "geometry.conditionedVolume",
           type: "editable",
           value: "8319.50", // Our only required Target default set here
           section: "volumeSurfaceMetrics",
@@ -995,6 +1025,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         f: { content: "Volume/Area", classes: ["label-main"] },
         g: {
           fieldId: "g_105",
+          semanticPath: "geometry.volumeToAreaRatio",
           type: "calculated",
           value: "3.23",
           section: "volumeSurfaceMetrics",
@@ -1004,6 +1035,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         h: { content: "Area/Volume", classes: ["text-center"] },
         i: {
           fieldId: "i_105",
+          semanticPath: "geometry.areaToVolumeRatio",
           type: "calculated",
           value: "0.31",
           section: "volumeSurfaceMetrics",
@@ -1025,6 +1057,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         c: { label: "Total Floor Area (Cond. + Uncond.)" },
         d: {
           fieldId: "d_106",
+          semanticPath: "geometry.totalFloorArea",
           type: "calculated",
           value: "1130.12",
           section: "volumeSurfaceMetrics",
@@ -1034,6 +1067,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         f: { content: "Typ. F2F Ht.", classes: ["label-main"] },
         g: {
           fieldId: "g_106",
+          semanticPath: "geometry.floorToFloorHeight",
           type: "editable",
           value: "5.15",
           section: "volumeSurfaceMetrics",
@@ -1057,6 +1091,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         c: { label: "Window:Wall Ratio (WWR)" },
         d: {
           fieldId: "d_107",
+          semanticPath: "geometry.windowWallRatio",
           type: "calculated",
           value: "0.33",
           section: "volumeSurfaceMetrics",
@@ -1074,6 +1109,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         f: { content: "Total Wall Area", classes: ["label-main"] },
         g: {
           fieldId: "g_107",
+          semanticPath: "geometry.totalWallArea",
           type: "calculated",
           value: "0.00",
           section: "volumeSurfaceMetrics",
@@ -1084,6 +1120,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         h: { content: "m²", classes: ["unit-label"] },
         i: {
           fieldId: "i_107",
+          semanticPath: "geometry.windowDoorHeatLoss",
           type: "calculated",
           value: "0.00",
           section: "volumeSurfaceMetrics",
@@ -1095,6 +1132,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         l: {},
         m: {
           fieldId: "m_107",
+          semanticPath: "geometry.wwrComplianceRatio",
           type: "calculated",
           value: "61%",
           section: "volumeSurfaceMetrics",
@@ -1104,6 +1142,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         n: {
           fieldId: "n_107",
+          semanticPath: "geometry.wwrComplianceStatus",
           type: "calculated",
           value: "✓",
           section: "volumeSurfaceMetrics",
@@ -1120,6 +1159,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         c: { label: "NRL₅₀ Target Method" },
         d: {
           fieldId: "d_108",
+          semanticPath: "airLeakage.nrl50Method",
           type: "dropdown",
           dropdownId: "dd_d_108",
           value: "AL-1B",
@@ -1147,6 +1187,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         f: { content: "B.18.1 Target", classes: ["label-main"] },
         g: {
           fieldId: "g_108",
+          semanticPath: "airLeakage.nrl50Target",
           type: "calculated",
           value: "1.17",
           section: "volumeSurfaceMetrics",
@@ -1170,6 +1211,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         c: { label: "ACH₅₀ Target (Converts B.18.1)" },
         d: {
           fieldId: "d_109",
+          semanticPath: "airLeakage.ach50Target",
           type: "calculated",
           value: "1.30",
           section: "volumeSurfaceMetrics",
@@ -1179,6 +1221,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         f: { content: "B.18.2 Measured", classes: ["label-main"] },
         g: {
           fieldId: "g_109",
+          semanticPath: "airLeakage.ach50Measured",
           type: "editable",
           value: "1.30",
           section: "volumeSurfaceMetrics",
@@ -1192,6 +1235,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         l: {},
         m: {
           fieldId: "m_109",
+          semanticPath: "airLeakage.ach50ComplianceRatio",
           type: "calculated",
           value: "115%",
           section: "volumeSurfaceMetrics",
@@ -1201,6 +1245,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         n: {
           fieldId: "n_109",
+          semanticPath: "airLeakage.ach50ComplianceStatus",
           type: "calculated",
           value: "✓",
           section: "volumeSurfaceMetrics",
@@ -1217,6 +1262,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         c: { label: "Ae₁₀ or ELA₁₀ (m²)" },
         d: {
           fieldId: "d_110",
+          semanticPath: "airLeakage.ela10",
           type: "calculated",
           value: "2.898",
           section: "volumeSurfaceMetrics",
@@ -1227,6 +1273,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         f: { content: "B.18.5.1 n-Factor", classes: ["label-main"] },
         g: {
           fieldId: "g_110",
+          semanticPath: "airLeakage.nFactor",
           type: "calculated",
           value: "16.7",
           section: "volumeSurfaceMetrics",
@@ -1237,6 +1284,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         h: { content: "B.18.3 Ae₁₀ Zone", classes: ["text-center"] },
         i: {
           fieldId: "i_110",
+          semanticPath: "airLeakage.climateZone",
           type: "calculated",
           value: "2",
           section: "volumeSurfaceMetrics",
@@ -1248,6 +1296,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         l: {},
         m: {
           fieldId: "m_110",
+          semanticPath: "airLeakage.elaComplianceRatio",
           type: "calculated",
           value: "173%",
           section: "volumeSurfaceMetrics",
@@ -1257,6 +1306,7 @@ window.TEUI.SectionModules.sect12 = (function () {
         },
         n: {
           fieldId: "n_110",
+          semanticPath: "airLeakage.elaComplianceStatus",
           type: "calculated",
           value: "✓",
           section: "volumeSurfaceMetrics",
@@ -1285,6 +1335,8 @@ window.TEUI.SectionModules.sect12 = (function () {
             section: cell.section || "volumeSurfaceMetrics",
             dependencies: cell.dependencies || [],
           };
+          if (cell.semanticPath)
+            fields[cell.fieldId].semanticPath = cell.semanticPath;
           if (cell.dropdownId)
             fields[cell.fieldId].dropdownId = cell.dropdownId;
           if (cell.options) fields[cell.fieldId].options = cell.options;

@@ -367,6 +367,7 @@ window.TEUI.SectionModules.sect06 = (function () {
         c: { label: "Onsite Energy Subtotals" },
         d: {
           fieldId: "d_43",
+          semanticPath: "renewable.onsiteTotal",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_44", "d_45", "d_46", "i_46"],
@@ -377,6 +378,7 @@ window.TEUI.SectionModules.sect06 = (function () {
         h: {},
         i: {
           fieldId: "i_43",
+          semanticPath: "renewable.offsiteTotal",
           type: "calculated",
           value: "0.00",
           dependencies: ["i_44", "i_46"],
@@ -386,6 +388,7 @@ window.TEUI.SectionModules.sect06 = (function () {
         k: { content: "Exterior/Site/Other Loads", classes: ["label-main"] },
         m: {
           fieldId: "m_43",
+          semanticPath: "renewable.exteriorLoads",
           type: "editable",
           value: "0.00",
           classes: ["user-input"],
@@ -402,6 +405,7 @@ window.TEUI.SectionModules.sect06 = (function () {
         c: { label: "Photovoltaics" },
         d: {
           fieldId: "d_44",
+          semanticPath: "renewable.pv",
           type: "editable",
           value: "0.00",
           classes: ["user-input"],
@@ -413,6 +417,7 @@ window.TEUI.SectionModules.sect06 = (function () {
         h: {},
         i: {
           fieldId: "i_44",
+          semanticPath: "renewable.wws",
           type: "editable",
           value: "0.00",
           classes: ["user-input"],
@@ -429,6 +434,7 @@ window.TEUI.SectionModules.sect06 = (function () {
         c: { label: "Wind" },
         d: {
           fieldId: "d_45",
+          semanticPath: "renewable.wind",
           type: "editable",
           value: "0.00",
           classes: ["user-input"],
@@ -440,6 +446,7 @@ window.TEUI.SectionModules.sect06 = (function () {
         h: {},
         i: {
           fieldId: "i_45",
+          semanticPath: "renewable.greenGasEnergy",
           type: "calculated",
           value: "0.00",
           dependencies: ["k_45"],
@@ -448,6 +455,7 @@ window.TEUI.SectionModules.sect06 = (function () {
         j: { content: "ekWh/yr" },
         k: {
           fieldId: "k_45",
+          semanticPath: "renewable.greenGas",
           type: "editable",
           value: "0.00",
           classes: ["user-input"],
@@ -465,6 +473,7 @@ window.TEUI.SectionModules.sect06 = (function () {
         c: { label: "Remove EV Charging from TEUI" },
         d: {
           fieldId: "d_46",
+          semanticPath: "renewable.evRemoval",
           type: "editable",
           value: "0.00",
           classes: ["user-input"],
@@ -476,6 +485,7 @@ window.TEUI.SectionModules.sect06 = (function () {
         h: {},
         i: {
           fieldId: "i_46",
+          semanticPath: "renewable.reserved",
           type: "editable",
           value: "0.00",
           classes: ["user-input"],
@@ -500,6 +510,7 @@ window.TEUI.SectionModules.sect06 = (function () {
             label: cell.label || row.label,
             defaultValue: cell.value || "",
             section: "onSiteEnergy",
+            semanticPath: cell.semanticPath || null, // Phase 5: Include semantic path for migration
           };
         }
       });

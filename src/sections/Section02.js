@@ -55,6 +55,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         c: { label: "Major Occupancy" },
         d: {
           fieldId: "d_12",
+          semanticPath: "building.majorOccupancy",
           type: "dropdown",
           dropdownId: "dd_d_12",
           value: "A-Assembly",
@@ -88,6 +89,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         },
         h: {
           fieldId: "h_12",
+          semanticPath: "building.reportingPeriod",
           type: "year_slider",
           label: "Reporting Period",
           value: "2022",
@@ -102,6 +104,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         k: { content: "Electricity", classes: ["text-end"] },
         l: {
           fieldId: "l_12",
+          semanticPath: "energy.price.electricity",
           type: "editable",
           value: "$0.1300",
           label: "Electricity Price: $/kWh Avg.", // Price per kWh
@@ -122,6 +125,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         c: { label: "Reference Standard" },
         d: {
           fieldId: "d_13",
+          semanticPath: "reference.standard",
           type: "dropdown",
           dropdownId: "dd_d_13",
           value: "OBC SB10 5.5-6 Z6",
@@ -165,6 +169,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         },
         h: {
           fieldId: "h_13",
+          semanticPath: "building.serviceLife",
           type: "year_slider",
           label: "Service Life: yrs.",
           value: "50",
@@ -179,6 +184,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         k: { content: "Gas", classes: ["text-end"] },
         l: {
           fieldId: "l_13",
+          semanticPath: "energy.price.gas",
           type: "editable",
           value: "$0.5070",
           label: "Gas Price: $/m³", // Price per m³
@@ -199,6 +205,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         c: { label: "Actual (Bills) or Targeted (Design) Use" },
         d: {
           fieldId: "d_14",
+          semanticPath: "reference.actualTargetUse",
           type: "dropdown",
           dropdownId: "dd_d_14",
           value: "Utility Bills",
@@ -220,6 +227,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         },
         h: {
           fieldId: "h_14",
+          semanticPath: "building.projectName",
           type: "editable",
           label: "Project Name",
           value: "Three Feathers Terrace",
@@ -232,6 +240,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         k: { content: "Propane", classes: ["text-end"] },
         l: {
           fieldId: "l_14",
+          semanticPath: "energy.price.propane",
           type: "editable",
           value: "$1.6200",
           label: "Propane Price: $/kg", // Price per kg
@@ -252,6 +261,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         c: { label: "Carbon Benchmarking Standard" },
         d: {
           fieldId: "d_15",
+          semanticPath: "reference.carbonBenchmark",
           type: "dropdown",
           dropdownId: "dd_d_15",
           value: "Self Reported",
@@ -261,7 +271,7 @@ window.TEUI.SectionModules.sect02 = (function () {
             { value: "BR18 (Denmark)", name: "BR18 (Denmark)" },
             { value: "IPCC AR6 EPC", name: "IPCC AR6 EPC" },
             { value: "IPCC AR6 EA", name: "IPCC AR6 EA" },
-            { value: "TGS4", name: "TGS4" },
+            { value: "TGS4", name: "Typical Values" },
             { value: "CaGBC ZCB D", name: "CaGBC ZCB D" },
             { value: "CaGBC ZCB P", name: "CaGBC ZCB P" },
             { value: "Self Reported", name: "Self Reported" },
@@ -279,6 +289,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         }, // validate as (Net m²)
         h: {
           fieldId: "h_15",
+          semanticPath: "building.conditionedFloorArea",
           type: "editable",
           label: "Conditioned Area: m²",
           value: "1427.20", // ✅ FIXED: Raw value without comma for calculation stability
@@ -291,6 +302,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         k: { content: "Wood", classes: ["text-end"] },
         l: {
           fieldId: "l_15",
+          semanticPath: "energy.price.wood",
           type: "editable",
           value: "$180.00",
           label: "Wood Price: $/m³", // Price per m³
@@ -311,6 +323,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         c: { label: "Embodied Carbon Target: kgCO₂e/m²" },
         d: {
           fieldId: "d_16",
+          semanticPath: "reference.embodiedCarbonTarget",
           type: "derived",
           value: "345.82",
           section: "buildingInfo",
@@ -329,6 +342,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         },
         h: {
           fieldId: "i_16",
+          semanticPath: "building.certifier",
           type: "editable",
           label: "Certifier",
           value: "Thomson Architecture, Inc.",
@@ -340,6 +354,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         k: { content: "Oil", classes: ["text-end"] },
         l: {
           fieldId: "l_16",
+          semanticPath: "energy.price.oil",
           type: "editable",
           value: "$1.5000",
           label: "Oil Price: $/litre", // Price per litre
@@ -370,6 +385,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         },
         h: {
           fieldId: "i_17",
+          semanticPath: "building.licenseNumber",
           type: "editable",
           label: "License Number",
           value: "8154",
@@ -414,6 +430,8 @@ window.TEUI.SectionModules.sect02 = (function () {
           };
 
           // Copy additional field properties if they exist
+          if (cell.semanticPath)
+            fields[cell.fieldId].semanticPath = cell.semanticPath; // Phase 5: Include semantic path
           if (cell.dropdownId)
             fields[cell.fieldId].dropdownId = cell.dropdownId;
           if (cell.options) fields[cell.fieldId].options = cell.options;

@@ -1,0 +1,134 @@
+{
+  "id": "cooling.daysActiveCooling",
+  "legacyId": "m_124",
+  "label": "Days of Active Cooling",
+  "section": "S13",
+  "classification": "C",
+  "_meta": {
+    "description": "Number of days requiring mechanical cooling after free cooling is applied. Negative values indicate oversized ventilation (more free cooling than needed).",
+    "stage": "Stage 2 - Dependent (requires m_129 from energy calculations)"
+  },
+  "signature": {
+    "inputs": [
+      {
+        "name": "energy.ced.mitigated",
+        "type": "number",
+        "unit": "kWh/yr",
+        "description": "Annual mitigated cooling energy demand (m_129)"
+      },
+      {
+        "name": "cooling.dailyFreeCoolingPotential",
+        "type": "number",
+        "unit": "kWh/day",
+        "description": "Daily free cooling potential from ventilation"
+      },
+      {
+        "name": "climate.cooling.degreedays",
+        "type": "number",
+        "unit": "CDD",
+        "description": "Cooling degree days (d_21)"
+      },
+      {
+        "name": "climate.coolingDays",
+        "type": "number",
+        "unit": "days",
+        "description": "Cooling season length (m_19)"
+      },
+      {
+        "name": "mechanical.cooling.systemType",
+        "type": "string",
+        "description": "Cooling system type (d_116) - 'Cooling' or 'No Cooling'"
+      }
+    ],
+    "output": {
+      "type": "integer",
+      "unit": "days",
+      "precision": 0,
+      "note": "Math.round() applied to match legacy Section13.js"
+    }
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "climate.coolingDays > 0",
+        "description": "Must have cooling season"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "systemType == 'No Cooling'",
+      "output": "0",
+      "note": "No mechanical cooling system installed"
+    },
+    {
+      "condition": "m_19 > 0 AND d_21 > 0",
+      "output": "(m_129 - dailyFreeCooling × d_21) / (m_19 × 24)",
+      "note": "Unmet cooling load divided by daily cooling capacity"
+    },
+    {
+      "condition": "otherwise",
+      "output": "0",
+      "note": "No cooling season"
+    }
+  ],
+  "rationale": {
+    "negativeValues": "Negative days indicate ventilation provides more free cooling than needed. Excel comment: 'the goal here is to get close to zero - anything less than zero is overkill ventilation-wise'"
+  },
+  "formula": {
+    "symbolic": "m_124 = (E50 - E51) / (m_19 × 24)",
+    "where": {
+      "E50": "Seasonal cooling load = m_129 (annual mitigated CED)",
+      "E51": "Seasonal free cooling = dailyFreeCoolingPotential × d_21",
+      "m_19": "Cooling season length in days",
+      "d_21": "Cooling degree days"
+    },
+    "simplified": "m_124 = (m_129 - dailyFreeCooling × CDD) / (coolingDays × 24)",
+    "legacy": "CoolingNodes.js lines 371-422"
+  },
+  "tests": [
+    {
+      "name": "Some mechanical cooling needed",
+      "inputs": {
+        "energy.ced.mitigated": 10000,
+        "cooling.dailyFreeCoolingPotential": 8.93,
+        "climate.cooling.degreedays": 336,
+        "climate.coolingDays": 120,
+        "mechanical.cooling.systemType": "Cooling"
+      },
+      "expected": 2,
+      "note": "Math.round((10000 - 8.93 × 336) / (120 × 24)) = 2"
+    },
+    {
+      "name": "No cooling system",
+      "inputs": {
+        "energy.ced.mitigated": 10000,
+        "cooling.dailyFreeCoolingPotential": 8.93,
+        "climate.cooling.degreedays": 336,
+        "climate.coolingDays": 120,
+        "mechanical.cooling.systemType": "No Cooling"
+      },
+      "expected": 0
+    },
+    {
+      "name": "Oversized ventilation (negative days)",
+      "inputs": {
+        "energy.ced.mitigated": 2000,
+        "cooling.dailyFreeCoolingPotential": 12,
+        "climate.cooling.degreedays": 336,
+        "climate.coolingDays": 120,
+        "mechanical.cooling.systemType": "Cooling"
+      },
+      "expected": -1,
+      "note": "Free cooling exceeds load: Math.round((2000 - 12 × 336) / (120 × 24)) = Math.round(-0.706) = -1"
+    }
+  ],
+  "references": [
+    {
+      "source": "CoolingNodes.js:371-422 (cooling.daysActiveCooling)"
+    },
+    {
+      "source": "COOLING-TARGET.csv cells E50-E55"
+    }
+  ]
+}

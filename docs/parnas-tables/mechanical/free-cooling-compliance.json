@@ -1,0 +1,81 @@
+{
+  "id": "mechanical.freeCoolingCompliance",
+  "legacyId": "n_124",
+  "label": "Free Cooling Compliance Status",
+  "section": "S13",
+  "classification": "C",
+  "_meta": {
+    "description": "Compliance symbol for free cooling status. Shows checkmark if no mechanical cooling required (m_124 = 0 days), warning symbol if mechanical cooling is needed."
+  },
+  "signature": {
+    "inputs": [
+      {
+        "name": "cooling.daysActiveCooling",
+        "type": "integer",
+        "unit": "days",
+        "description": "Number of days requiring mechanical cooling (m_124)"
+      }
+    ],
+    "output": {
+      "type": "string",
+      "values": ["✓", "⚠"],
+      "description": "Compliance symbol"
+    }
+  },
+  "domain": {
+    "invariants": [
+      {
+        "condition": "output in ['✓', '⚠']",
+        "description": "Only two possible output values"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "daysActiveCooling <= 0",
+      "output": "✓",
+      "note": "No mechanical cooling needed - building achieves free cooling"
+    },
+    {
+      "condition": "daysActiveCooling > 0",
+      "output": "⚠",
+      "note": "Mechanical cooling required - not achieving full free cooling"
+    }
+  ],
+  "rationale": {
+    "whyWarningNotFail": "Some climates and building types genuinely require mechanical cooling. This is informational (⚠) rather than a hard failure (✗), unlike the efficiency-based compliance metrics."
+  },
+  "formula": {
+    "symbolic": "n_124 = IF(daysActiveCooling <= 0, '✓', '⚠')",
+    "legacy": "ComplianceNodes.js:346-361"
+  },
+  "tests": [
+    {
+      "name": "No cooling days needed",
+      "inputs": {
+        "cooling.daysActiveCooling": 0
+      },
+      "expected": "✓"
+    },
+    {
+      "name": "Some cooling days needed",
+      "inputs": {
+        "cooling.daysActiveCooling": 45
+      },
+      "expected": "⚠"
+    },
+    {
+      "name": "Negative value (oversized ventilation)",
+      "inputs": {
+        "cooling.daysActiveCooling": -5
+      },
+      "expected": "✓",
+      "note": "Negative days means free cooling exceeds demand"
+    }
+  ],
+  "references": [
+    {
+      "source": "ComplianceNodes.js:346-361 (compliance.freeCooling.status)"
+    }
+  ]
+}

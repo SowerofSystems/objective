@@ -805,12 +805,14 @@ window.TEUI.SectionModules.sect11 = (function () {
         c: { label: "Roof" },
         d: {
           fieldId: "d_85",
+          semanticPath: "envelope.roof.area",
           type: "editable",
           value: "1411.52",
           label: "Roof: Area m²",
         },
         e: {
           fieldId: "e_85",
+          semanticPath: "envelope.roof.rValueImperial",
           type: "calculated",
           value: "0.00",
           dependencies: ["f_85"],
@@ -818,12 +820,14 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         f: {
           fieldId: "f_85",
+          semanticPath: "envelope.roof.rsiValue",
           type: "editable",
           value: "9.35",
           label: "Roof: RSI Value K·m²/W",
         },
         g: {
           fieldId: "g_85",
+          semanticPath: "envelope.roof.uValue",
           type: "calculated",
           value: "0.00",
           dependencies: ["f_85"],
@@ -831,6 +835,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         h: {
           fieldId: "h_85",
+          semanticPath: "envelope.roof.percentOfEnvelope",
           type: "calculated",
           value: "0%",
           dependencies: ["d_85", "d_101"],
@@ -838,6 +843,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         i: {
           fieldId: "i_85",
+          semanticPath: "envelope.roof.heatLoss",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_85", "d_20", "f_85"],
@@ -845,6 +851,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         j: {
           fieldId: "j_85",
+          semanticPath: "envelope.roof.heatLossPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["i_85", "i_98"],
@@ -852,6 +859,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         k: {
           fieldId: "k_85",
+          semanticPath: "envelope.roof.heatGain",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_85", "d_21", "f_85"],
@@ -859,6 +867,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         l: {
           fieldId: "l_85",
+          semanticPath: "envelope.roof.heatGainPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["k_85", "k_98"],
@@ -866,14 +875,16 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         m: {
           fieldId: "m_85",
+          semanticPath: "envelope.roof.complianceRatio",
           type: "calculated",
           value: "0%",
           dependencies: ["f_85", "t_85"],
           label: "Roof: Reference Compliance Ratio",
         },
-        n: { fieldId: "n_85", type: "calculated", value: "✓" },
+        n: { fieldId: "n_85", semanticPath: "envelope.roof.complianceStatus", type: "calculated", value: "✓" },
         o: {
           fieldId: "o_85",
+          semanticPath: "envelope.roof.surfaceTemperature",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_85", "g_85", "h_23", "d_25"],
@@ -890,12 +901,14 @@ window.TEUI.SectionModules.sect11 = (function () {
         c: { label: "Walls Above Grade (Exclude Openings!)" },
         d: {
           fieldId: "d_86",
+          semanticPath: "envelope.wallsAbove.area",
           type: "editable",
           value: "705.27",
           label: "Walls Above Grade: Area m²",
         },
         e: {
           fieldId: "e_86",
+          semanticPath: "envelope.wallsAbove.rValueImperial",
           type: "calculated",
           value: "0.00",
           dependencies: ["f_86"],
@@ -903,12 +916,14 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         f: {
           fieldId: "f_86",
+          semanticPath: "envelope.wallsAbove.rsiValue",
           type: "editable",
           value: "6.69",
           label: "Walls Above Grade: RSI Value K·m²/W",
         },
         g: {
           fieldId: "g_86",
+          semanticPath: "envelope.wallsAbove.uValue",
           type: "calculated",
           value: "0.00",
           dependencies: ["f_86"],
@@ -916,6 +931,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         h: {
           fieldId: "h_86",
+          semanticPath: "envelope.wallsAbove.percentOfEnvelope",
           type: "calculated",
           value: "0%",
           dependencies: ["d_86", "d_101"],
@@ -923,6 +939,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         i: {
           fieldId: "i_86",
+          semanticPath: "envelope.wallsAbove.heatLoss",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_86", "d_20", "f_86"],
@@ -930,6 +947,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         j: {
           fieldId: "j_86",
+          semanticPath: "envelope.wallsAbove.heatLossPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["i_86", "i_98"],
@@ -937,6 +955,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         k: {
           fieldId: "k_86",
+          semanticPath: "envelope.wallsAbove.heatGain",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_86", "d_21", "f_86"],
@@ -944,6 +963,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         l: {
           fieldId: "l_86",
+          semanticPath: "envelope.wallsAbove.heatGainPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["k_86", "k_98"],
@@ -951,14 +971,16 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         m: {
           fieldId: "m_86",
+          semanticPath: "envelope.wallsAbove.complianceRatio",
           type: "calculated",
           value: "0%",
           dependencies: ["f_86", "t_86"],
           label: "Walls Above Grade: Reference Compliance Ratio",
         },
-        n: { fieldId: "n_86", type: "calculated", value: "✓" },
+        n: { fieldId: "n_86", semanticPath: "envelope.wallsAbove.complianceStatus", type: "calculated", value: "✓" },
         o: {
           fieldId: "o_86",
+          semanticPath: "envelope.wallsAbove.surfaceTemperature",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_86", "g_86", "h_23", "d_25"],
@@ -975,12 +997,14 @@ window.TEUI.SectionModules.sect11 = (function () {
         c: { label: "Floor Exposed" },
         d: {
           fieldId: "d_87",
+          semanticPath: "envelope.floorExposed.area",
           type: "editable",
           value: "0.00",
           label: "Floor Exposed: Area m²",
         },
         e: {
           fieldId: "e_87",
+          semanticPath: "envelope.floorExposed.rValueImperial",
           type: "calculated",
           value: "0.00",
           dependencies: ["f_87"],
@@ -988,12 +1012,14 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         f: {
           fieldId: "f_87",
+          semanticPath: "envelope.floorExposed.rsiValue",
           type: "editable",
           value: "9.52",
           label: "Floor Exposed: RSI Value K·m²/W",
         },
         g: {
           fieldId: "g_87",
+          semanticPath: "envelope.floorExposed.uValue",
           type: "calculated",
           value: "0.00",
           dependencies: ["f_87"],
@@ -1001,6 +1027,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         h: {
           fieldId: "h_87",
+          semanticPath: "envelope.floorExposed.percentOfEnvelope",
           type: "calculated",
           value: "0%",
           dependencies: ["d_87", "d_101"],
@@ -1008,6 +1035,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         i: {
           fieldId: "i_87",
+          semanticPath: "envelope.floorExposed.heatLoss",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_87", "d_20", "f_87"],
@@ -1015,6 +1043,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         j: {
           fieldId: "j_87",
+          semanticPath: "envelope.floorExposed.heatLossPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["i_87", "i_98"],
@@ -1022,6 +1051,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         k: {
           fieldId: "k_87",
+          semanticPath: "envelope.floorExposed.heatGain",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_87", "d_21", "f_87"],
@@ -1029,6 +1059,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         l: {
           fieldId: "l_87",
+          semanticPath: "envelope.floorExposed.heatGainPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["k_87", "k_98"],
@@ -1036,14 +1067,16 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         m: {
           fieldId: "m_87",
+          semanticPath: "envelope.floorExposed.complianceRatio",
           type: "calculated",
           value: "0%",
           dependencies: ["f_87", "t_87"],
           label: "Floor Exposed: Reference Compliance Ratio",
         },
-        n: { fieldId: "n_87", type: "calculated", value: "✓" },
+        n: { fieldId: "n_87", semanticPath: "envelope.floorExposed.complianceStatus", type: "calculated", value: "✓" },
         o: {
           fieldId: "o_87",
+          semanticPath: "envelope.floorExposed.surfaceTemperature",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_87", "g_87", "h_23", "d_25"],
@@ -1060,6 +1093,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         c: { label: "Doors" },
         d: {
           fieldId: "d_88",
+          semanticPath: "envelope.doors.area",
           type: "calculated",
           value: "",
           dependencies: ["d_73"],
@@ -1067,6 +1101,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         }, // ✅ S10-S11 AREA SYNC: Will sync from S10 d_73
         e: {
           fieldId: "e_88",
+          semanticPath: "envelope.doors.rValueImperial",
           type: "calculated",
           value: "0.00",
           dependencies: ["f_88"],
@@ -1074,6 +1109,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         f: {
           fieldId: "f_88",
+          semanticPath: "envelope.doors.rsiValue",
           type: "calculated",
           value: "0.00",
           dependencies: ["g_88"],
@@ -1081,12 +1117,14 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         g: {
           fieldId: "g_88",
+          semanticPath: "envelope.doors.uValue",
           type: "editable",
           value: "1.990",
           label: "Doors: U-Value W/m²·K",
         },
         h: {
           fieldId: "h_88",
+          semanticPath: "envelope.doors.percentOfEnvelope",
           type: "calculated",
           value: "0%",
           dependencies: ["d_88", "d_101"],
@@ -1094,6 +1132,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         i: {
           fieldId: "i_88",
+          semanticPath: "envelope.doors.heatLoss",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_88", "d_20", "f_88"],
@@ -1101,6 +1140,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         j: {
           fieldId: "j_88",
+          semanticPath: "envelope.doors.heatLossPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["i_88", "i_98"],
@@ -1108,6 +1148,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         k: {
           fieldId: "k_88",
+          semanticPath: "envelope.doors.heatGain",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_88", "d_21", "f_88"],
@@ -1115,6 +1156,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         l: {
           fieldId: "l_88",
+          semanticPath: "envelope.doors.heatGainPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["k_88", "k_98"],
@@ -1122,14 +1164,16 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         m: {
           fieldId: "m_88",
+          semanticPath: "envelope.doors.complianceRatio",
           type: "calculated",
           value: "0%",
           dependencies: ["t_88", "g_88"],
           label: "Doors: Reference Compliance Ratio",
         },
-        n: { fieldId: "n_88", type: "calculated", value: "✓" },
+        n: { fieldId: "n_88", semanticPath: "envelope.doors.complianceStatus", type: "calculated", value: "✓" },
         o: {
           fieldId: "o_88",
+          semanticPath: "envelope.doors.surfaceTemperature",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_88", "g_88", "h_23", "d_25"],
@@ -1146,6 +1190,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         c: { label: "Window Area North" },
         d: {
           fieldId: "d_89",
+          semanticPath: "envelope.windowNorth.area",
           type: "calculated",
           value: "",
           dependencies: ["d_74"],
@@ -1153,6 +1198,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         }, // ✅ S10-S11 AREA SYNC: Will sync from S10 d_74
         e: {
           fieldId: "e_89",
+          semanticPath: "envelope.windowNorth.rValueImperial",
           type: "calculated",
           value: "0.00",
           dependencies: ["f_89"],
@@ -1160,6 +1206,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         f: {
           fieldId: "f_89",
+          semanticPath: "envelope.windowNorth.rsiValue",
           type: "calculated",
           value: "0.00",
           dependencies: ["g_89"],
@@ -1167,12 +1214,14 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         g: {
           fieldId: "g_89",
+          semanticPath: "envelope.windowNorth.uValue",
           type: "editable",
           value: "1.420",
           label: "Window Area North: U-Value W/m²·K",
         },
         h: {
           fieldId: "h_89",
+          semanticPath: "envelope.windowNorth.percentOfEnvelope",
           type: "calculated",
           value: "0%",
           dependencies: ["d_89", "d_101"],
@@ -1180,6 +1229,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         i: {
           fieldId: "i_89",
+          semanticPath: "envelope.windowNorth.heatLoss",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_89", "d_20", "f_89"],
@@ -1187,6 +1237,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         j: {
           fieldId: "j_89",
+          semanticPath: "envelope.windowNorth.heatLossPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["i_89", "i_98"],
@@ -1194,6 +1245,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         k: {
           fieldId: "k_89",
+          semanticPath: "envelope.windowNorth.heatGain",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_89", "d_21", "f_89"],
@@ -1201,6 +1253,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         l: {
           fieldId: "l_89",
+          semanticPath: "envelope.windowNorth.heatGainPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["k_89", "k_98"],
@@ -1208,14 +1261,16 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         m: {
           fieldId: "m_89",
+          semanticPath: "envelope.windowNorth.complianceRatio",
           type: "calculated",
           value: "0%",
           dependencies: ["t_89", "g_89"],
           label: "Window Area North: Reference Compliance Ratio",
         },
-        n: { fieldId: "n_89", type: "calculated", value: "✓" },
+        n: { fieldId: "n_89", semanticPath: "envelope.windowNorth.complianceStatus", type: "calculated", value: "✓" },
         o: {
           fieldId: "o_89",
+          semanticPath: "envelope.windowNorth.surfaceTemperature",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_89", "g_89", "h_23", "d_25"],
@@ -1232,6 +1287,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         c: { label: "Window Area East" },
         d: {
           fieldId: "d_90",
+          semanticPath: "envelope.windowEast.area",
           type: "calculated",
           value: "",
           dependencies: ["d_75"],
@@ -1239,6 +1295,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         }, // ✅ S10-S11 AREA SYNC: Will sync from S10 d_75
         e: {
           fieldId: "e_90",
+          semanticPath: "envelope.windowEast.rValueImperial",
           type: "calculated",
           value: "0.00",
           dependencies: ["f_90"],
@@ -1246,6 +1303,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         f: {
           fieldId: "f_90",
+          semanticPath: "envelope.windowEast.rsiValue",
           type: "calculated",
           value: "0.00",
           dependencies: ["g_90"],
@@ -1253,12 +1311,14 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         g: {
           fieldId: "g_90",
+          semanticPath: "envelope.windowEast.uValue",
           type: "editable",
           value: "1.420",
           label: "Window Area East: U-Value W/m²·K",
         },
         h: {
           fieldId: "h_90",
+          semanticPath: "envelope.windowEast.percentOfEnvelope",
           type: "calculated",
           value: "0%",
           dependencies: ["d_90", "d_101"],
@@ -1266,6 +1326,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         i: {
           fieldId: "i_90",
+          semanticPath: "envelope.windowEast.heatLoss",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_90", "d_20", "f_90"],
@@ -1273,6 +1334,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         j: {
           fieldId: "j_90",
+          semanticPath: "envelope.windowEast.heatLossPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["i_90", "i_98"],
@@ -1280,6 +1342,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         k: {
           fieldId: "k_90",
+          semanticPath: "envelope.windowEast.heatGain",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_90", "d_21", "f_90"],
@@ -1287,6 +1350,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         l: {
           fieldId: "l_90",
+          semanticPath: "envelope.windowEast.heatGainPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["k_90", "k_98"],
@@ -1294,14 +1358,16 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         m: {
           fieldId: "m_90",
+          semanticPath: "envelope.windowEast.complianceRatio",
           type: "calculated",
           value: "0%",
           dependencies: ["t_90", "g_90"],
           label: "Window Area East: Reference Compliance Ratio",
         },
-        n: { fieldId: "n_90", type: "calculated", value: "✓" },
+        n: { fieldId: "n_90", semanticPath: "envelope.windowEast.complianceStatus", type: "calculated", value: "✓" },
         o: {
           fieldId: "o_90",
+          semanticPath: "envelope.windowEast.surfaceTemperature",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_90", "g_90", "h_23", "d_25"],
@@ -1318,6 +1384,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         c: { label: "Window Area South" },
         d: {
           fieldId: "d_91",
+          semanticPath: "envelope.windowSouth.area",
           type: "calculated",
           value: "",
           dependencies: ["d_76"],
@@ -1325,6 +1392,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         }, // ✅ S10-S11 AREA SYNC: Will sync from S10 d_76
         e: {
           fieldId: "e_91",
+          semanticPath: "envelope.windowSouth.rValueImperial",
           type: "calculated",
           value: "0.00",
           dependencies: ["f_91"],
@@ -1332,6 +1400,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         f: {
           fieldId: "f_91",
+          semanticPath: "envelope.windowSouth.rsiValue",
           type: "calculated",
           value: "0.00",
           dependencies: ["g_91"],
@@ -1339,12 +1408,14 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         g: {
           fieldId: "g_91",
+          semanticPath: "envelope.windowSouth.uValue",
           type: "editable",
           value: "1.420",
           label: "Window Area South: U-Value W/m²·K",
         },
         h: {
           fieldId: "h_91",
+          semanticPath: "envelope.windowSouth.percentOfEnvelope",
           type: "calculated",
           value: "0%",
           dependencies: ["d_91", "d_101"],
@@ -1352,6 +1423,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         i: {
           fieldId: "i_91",
+          semanticPath: "envelope.windowSouth.heatLoss",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_91", "d_20", "f_91"],
@@ -1359,6 +1431,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         j: {
           fieldId: "j_91",
+          semanticPath: "envelope.windowSouth.heatLossPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["i_91", "i_98"],
@@ -1366,6 +1439,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         k: {
           fieldId: "k_91",
+          semanticPath: "envelope.windowSouth.heatGain",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_91", "d_21", "f_91"],
@@ -1373,6 +1447,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         l: {
           fieldId: "l_91",
+          semanticPath: "envelope.windowSouth.heatGainPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["k_91", "k_98"],
@@ -1380,14 +1455,16 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         m: {
           fieldId: "m_91",
+          semanticPath: "envelope.windowSouth.complianceRatio",
           type: "calculated",
           value: "0%",
           dependencies: ["t_91", "g_91"],
           label: "Window Area South: Reference Compliance Ratio",
         },
-        n: { fieldId: "n_91", type: "calculated", value: "✓" },
+        n: { fieldId: "n_91", semanticPath: "envelope.windowSouth.complianceStatus", type: "calculated", value: "✓" },
         o: {
           fieldId: "o_91",
+          semanticPath: "envelope.windowSouth.surfaceTemperature",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_91", "g_91", "h_23", "d_25"],
@@ -1404,6 +1481,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         c: { label: "Window Area West" },
         d: {
           fieldId: "d_92",
+          semanticPath: "envelope.windowWest.area",
           type: "calculated",
           value: "",
           dependencies: ["d_77"],
@@ -1411,6 +1489,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         }, // ✅ S10-S11 AREA SYNC: Will sync from S10 d_77
         e: {
           fieldId: "e_92",
+          semanticPath: "envelope.windowWest.rValueImperial",
           type: "calculated",
           value: "0.00",
           dependencies: ["f_92"],
@@ -1418,6 +1497,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         f: {
           fieldId: "f_92",
+          semanticPath: "envelope.windowWest.rsiValue",
           type: "calculated",
           value: "0.00",
           dependencies: ["g_92"],
@@ -1425,12 +1505,14 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         g: {
           fieldId: "g_92",
+          semanticPath: "envelope.windowWest.uValue",
           type: "editable",
           value: "1.420",
           label: "Window Area West: U-Value W/m²·K",
         },
         h: {
           fieldId: "h_92",
+          semanticPath: "envelope.windowWest.percentOfEnvelope",
           type: "calculated",
           value: "0%",
           dependencies: ["d_92", "d_101"],
@@ -1438,6 +1520,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         i: {
           fieldId: "i_92",
+          semanticPath: "envelope.windowWest.heatLoss",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_92", "d_20", "f_92"],
@@ -1445,6 +1528,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         j: {
           fieldId: "j_92",
+          semanticPath: "envelope.windowWest.heatLossPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["i_92", "i_98"],
@@ -1452,6 +1536,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         k: {
           fieldId: "k_92",
+          semanticPath: "envelope.windowWest.heatGain",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_92", "d_21", "f_92"],
@@ -1459,6 +1544,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         l: {
           fieldId: "l_92",
+          semanticPath: "envelope.windowWest.heatGainPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["k_92", "k_98"],
@@ -1466,14 +1552,16 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         m: {
           fieldId: "m_92",
+          semanticPath: "envelope.windowWest.complianceRatio",
           type: "calculated",
           value: "0%",
           dependencies: ["t_92", "g_92"],
           label: "Window Area West: Reference Compliance Ratio",
         },
-        n: { fieldId: "n_92", type: "calculated", value: "✓" },
+        n: { fieldId: "n_92", semanticPath: "envelope.windowWest.complianceStatus", type: "calculated", value: "✓" },
         o: {
           fieldId: "o_92",
+          semanticPath: "envelope.windowWest.surfaceTemperature",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_92", "g_92", "h_23", "d_25"],
@@ -1490,6 +1578,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         c: { label: "Skylights" },
         d: {
           fieldId: "d_93",
+          semanticPath: "envelope.skylight.area",
           type: "calculated",
           value: "",
           dependencies: ["d_78"],
@@ -1497,6 +1586,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         }, // ✅ S10-S11 AREA SYNC: Will sync from S10 d_78
         e: {
           fieldId: "e_93",
+          semanticPath: "envelope.skylight.rValueImperial",
           type: "calculated",
           value: "0.00",
           dependencies: ["f_93"],
@@ -1504,6 +1594,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         f: {
           fieldId: "f_93",
+          semanticPath: "envelope.skylight.rsiValue",
           type: "calculated",
           value: "0.00",
           dependencies: ["g_93"],
@@ -1511,12 +1602,14 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         g: {
           fieldId: "g_93",
+          semanticPath: "envelope.skylight.uValue",
           type: "editable",
           value: "1.420",
           label: "Skylights: U-Value W/m²·K",
         },
         h: {
           fieldId: "h_93",
+          semanticPath: "envelope.skylight.percentOfEnvelope",
           type: "calculated",
           value: "0%",
           dependencies: ["d_93", "d_101"],
@@ -1524,6 +1617,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         i: {
           fieldId: "i_93",
+          semanticPath: "envelope.skylight.heatLoss",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_93", "d_20", "f_93"],
@@ -1531,6 +1625,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         j: {
           fieldId: "j_93",
+          semanticPath: "envelope.skylight.heatLossPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["i_93", "i_98"],
@@ -1538,6 +1633,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         k: {
           fieldId: "k_93",
+          semanticPath: "envelope.skylight.heatGain",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_93", "d_21", "f_93"],
@@ -1545,6 +1641,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         l: {
           fieldId: "l_93",
+          semanticPath: "envelope.skylight.heatGainPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["k_93", "k_98"],
@@ -1552,14 +1649,16 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         m: {
           fieldId: "m_93",
+          semanticPath: "envelope.skylight.complianceRatio",
           type: "calculated",
           value: "0%",
           dependencies: ["t_93", "g_93"],
           label: "Skylights: Reference Compliance Ratio",
         },
-        n: { fieldId: "n_93", type: "calculated", value: "✓" },
+        n: { fieldId: "n_93", semanticPath: "envelope.skylight.complianceStatus", type: "calculated", value: "✓" },
         o: {
           fieldId: "o_93",
+          semanticPath: "envelope.skylight.surfaceTemperature",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_93", "g_93", "h_23", "d_25"],
@@ -1576,12 +1675,14 @@ window.TEUI.SectionModules.sect11 = (function () {
         c: { label: "Walls Below Grade (Conditioned Space)" },
         d: {
           fieldId: "d_94",
+          semanticPath: "envelope.wallsBelow.area",
           type: "editable",
           value: "0.00",
           label: "Walls Below Grade: Area m²",
         },
         e: {
           fieldId: "e_94",
+          semanticPath: "envelope.wallsBelow.rValueImperial",
           type: "calculated",
           value: "0.00",
           dependencies: ["f_94"],
@@ -1589,12 +1690,14 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         f: {
           fieldId: "f_94",
+          semanticPath: "envelope.wallsBelow.rsiValue",
           type: "editable",
           value: "4.00",
           label: "Walls Below Grade: RSI Value K·m²/W",
         },
         g: {
           fieldId: "g_94",
+          semanticPath: "envelope.wallsBelow.uValue",
           type: "calculated",
           value: "0.00",
           dependencies: ["f_94"],
@@ -1602,6 +1705,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         h: {
           fieldId: "h_94",
+          semanticPath: "envelope.wallsBelow.percentOfEnvelope",
           type: "calculated",
           value: "0%",
           dependencies: ["d_94", "d_102"],
@@ -1609,6 +1713,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         i: {
           fieldId: "i_94",
+          semanticPath: "envelope.wallsBelow.heatLoss",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_94", "d_22", "f_94"],
@@ -1616,6 +1721,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         j: {
           fieldId: "j_94",
+          semanticPath: "envelope.wallsBelow.heatLossPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["i_94", "i_98"],
@@ -1623,6 +1729,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         k: {
           fieldId: "k_94",
+          semanticPath: "envelope.wallsBelow.heatGain",
           type: "calculated",
           value: "0.00",
           dependencies: ["i_21", "d_94", "h_22", "f_94"],
@@ -1630,6 +1737,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         l: {
           fieldId: "l_94",
+          semanticPath: "envelope.wallsBelow.heatGainPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["k_94", "k_98"],
@@ -1637,14 +1745,16 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         m: {
           fieldId: "m_94",
+          semanticPath: "envelope.wallsBelow.complianceRatio",
           type: "calculated",
           value: "0%",
           dependencies: ["f_94", "t_94"],
           label: "Walls Below Grade: Reference Compliance Ratio",
         },
-        n: { fieldId: "n_94", type: "calculated", value: "✓" },
+        n: { fieldId: "n_94", semanticPath: "envelope.wallsBelow.complianceStatus", type: "calculated", value: "✓" },
         o: {
           fieldId: "o_94",
+          semanticPath: "envelope.wallsBelow.surfaceTemperature",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_94", "g_94", "h_23"],
@@ -1661,12 +1771,14 @@ window.TEUI.SectionModules.sect11 = (function () {
         c: { label: "Floor Slab (Conditioned Space)" },
         d: {
           fieldId: "d_95",
+          semanticPath: "envelope.slab.area",
           type: "editable",
           value: "1100.92",
           label: "Floor Slab: Area m²",
         },
         e: {
           fieldId: "e_95",
+          semanticPath: "envelope.slab.rValueImperial",
           type: "calculated",
           value: "0.00",
           dependencies: ["f_95"],
@@ -1674,12 +1786,14 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         f: {
           fieldId: "f_95",
+          semanticPath: "envelope.slab.rsiValue",
           type: "editable",
           value: "3.70",
           label: "Floor Slab: RSI Value K·m²/W",
         },
         g: {
           fieldId: "g_95",
+          semanticPath: "envelope.slab.uValue",
           type: "calculated",
           value: "0.00",
           dependencies: ["f_95"],
@@ -1687,6 +1801,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         h: {
           fieldId: "h_95",
+          semanticPath: "envelope.slab.percentOfEnvelope",
           type: "calculated",
           value: "100%",
           dependencies: ["d_95", "d_102"],
@@ -1694,6 +1809,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         i: {
           fieldId: "i_95",
+          semanticPath: "envelope.slab.heatLoss",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_95", "d_22", "f_95"],
@@ -1701,6 +1817,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         j: {
           fieldId: "j_95",
+          semanticPath: "envelope.slab.heatLossPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["i_95", "i_98"],
@@ -1708,6 +1825,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         k: {
           fieldId: "k_95",
+          semanticPath: "envelope.slab.heatGain",
           type: "calculated",
           value: "0.00",
           dependencies: ["i_21", "d_95", "h_22", "f_95"],
@@ -1715,6 +1833,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         l: {
           fieldId: "l_95",
+          semanticPath: "envelope.slab.heatGainPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["k_95", "k_98"],
@@ -1722,14 +1841,16 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         m: {
           fieldId: "m_95",
+          semanticPath: "envelope.slab.complianceRatio",
           type: "calculated",
           value: "0%",
           dependencies: ["f_95", "t_95"],
           label: "Floor Slab: Reference Compliance Ratio",
         },
-        n: { fieldId: "n_95", type: "calculated", value: "✓" },
+        n: { fieldId: "n_95", semanticPath: "envelope.slab.complianceStatus", type: "calculated", value: "✓" },
         o: {
           fieldId: "o_95",
+          semanticPath: "envelope.slab.surfaceTemperature",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_95", "g_95", "h_23"],
@@ -1746,6 +1867,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         c: { label: "B.11 Interior Floors (incl. garages)" },
         d: {
           fieldId: "d_96",
+          semanticPath: "envelope.interiorFloors.area",
           type: "editable",
           value: "29.70",
           tooltip: true,
@@ -1772,6 +1894,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         c: { label: "Thermal Bridge Penalty (%)" },
         d: {
           fieldId: "d_97",
+          semanticPath: "envelope.thermalBridge.penaltyFactor",
           type: "percentage", // Changed from editable to percentage
           value: "20", // Default value 20%
           min: 5, // **** CHANGED: Set min to 5 ****
@@ -1781,10 +1904,11 @@ window.TEUI.SectionModules.sect11 = (function () {
           section: "envelope",
           tooltip: true, // TB Penalty
         },
-        e: { fieldId: "e_97", type: "calculated", value: "0.200" }, // Placeholder for decimal equivalent
+        e: { fieldId: "e_97", semanticPath: "envelope.thermalBridge.penaltyDecimal", type: "calculated", value: "0.200" }, // Placeholder for decimal equivalent
         f: { content: "0.00", classes: ["label-prefix"] },
         i: {
           fieldId: "i_97",
+          semanticPath: "envelope.thermalBridge.heatLoss",
           type: "calculated",
           value: "0.00",
           section: "envelope",
@@ -1793,6 +1917,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         j: {
           fieldId: "j_97",
+          semanticPath: "envelope.thermalBridge.heatLossPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["i_97", "i_98"],
@@ -1800,6 +1925,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         k: {
           fieldId: "k_97",
+          semanticPath: "envelope.thermalBridge.heatGain",
           type: "calculated",
           value: "0.00",
           section: "envelope",
@@ -1808,6 +1934,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         l: {
           fieldId: "l_97",
+          semanticPath: "envelope.thermalBridge.heatGainPercent",
           type: "calculated",
           value: "0%",
           dependencies: ["k_97", "k_98"],
@@ -1815,12 +1942,13 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         m: {
           fieldId: "m_97",
+          semanticPath: "envelope.thermalBridge.costImpact",
           type: "calculated",
           value: "0%",
           dependencies: ["i_97", "l_12", "k_97"],
           label: "Penalty Cost Impact",
         },
-        n: { fieldId: "n_97", type: "calculated", value: "✓" },
+        n: { fieldId: "n_97", semanticPath: "envelope.thermalBridge.complianceStatus", type: "calculated", value: "✓" },
       },
     },
     98: {
@@ -1831,6 +1959,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         c: { label: "Envelope Totals" },
         d: {
           fieldId: "d_98",
+          semanticPath: "envelope.total.area",
           type: "calculated",
           value: "0.00",
           dependencies: [
@@ -1850,6 +1979,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         e: {
           fieldId: "e_98",
+          semanticPath: "envelope.total.avgRValueImperial",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_94", "d_95", "g_101", "g_102"],
@@ -1859,6 +1989,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         g: {},
         h: {
           fieldId: "h_98",
+          semanticPath: "envelope.total.percentOfEnvelope",
           type: "calculated",
           value: "100%",
           dependencies: [
@@ -1876,6 +2007,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         i: {
           fieldId: "i_98",
+          semanticPath: "envelope.total.heatLoss",
           type: "calculated",
           value: "0.00",
           section: "envelope",
@@ -1896,6 +2028,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         j: {
           fieldId: "j_98",
+          semanticPath: "envelope.total.heatLossPercent",
           type: "calculated",
           value: "100%",
           tooltip: true,
@@ -1916,6 +2049,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         k: {
           fieldId: "k_98",
+          semanticPath: "envelope.total.heatGain",
           type: "calculated",
           value: "0.00",
           section: "envelope",
@@ -1936,6 +2070,7 @@ window.TEUI.SectionModules.sect11 = (function () {
         },
         l: {
           fieldId: "l_98",
+          semanticPath: "envelope.total.heatGainPercent",
           type: "calculated",
           value: "100%",
           tooltip: true,

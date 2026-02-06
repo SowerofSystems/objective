@@ -471,6 +471,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         c: { label: "Total Hot+Cold Water Use (Method)" },
         d: {
           fieldId: "d_49",
+          semanticPath: "waterHeating.method",
           type: "dropdown",
           dropdownId: "d_49",
           value: "User Defined",
@@ -487,6 +488,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         e: {
           fieldId: "e_49",
+          semanticPath: "waterHeating.userDefinedLpppd",
           type: "editable",
           value: "40.00",
           classes: ["user-input"],
@@ -496,6 +498,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         f: { content: "lpppd (User Defined)", classes: ["text-left"] },
         h: {
           fieldId: "h_49",
+          semanticPath: "waterHeating.totalUse",
           type: "calculated",
           value: "40.00",
           dependencies: ["d_49", "e_49", "j_50", "d_63"],
@@ -504,6 +507,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         i: {
           fieldId: "i_49",
+          semanticPath: "waterHeating.annualUse",
           type: "calculated",
           value: "1,839,600",
           dependencies: ["d_63", "h_49"],
@@ -512,6 +516,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         j: { content: "Net Emissions", classes: ["text-left"] },
         k: {
           fieldId: "k_49",
+          semanticPath: "waterHeating.netEmissions",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_51", "k_54", "l_30", "e_51", "l_28"],
@@ -521,6 +526,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         l: { content: "kgCO2e/yr", classes: ["text-left"] },
         m: {
           fieldId: "m_49",
+          semanticPath: "waterHeating.compliance",
           type: "calculated",
           value: "15%",
           dependencies: ["h_49", "ref_h_49"],
@@ -528,6 +534,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         n: {
           fieldId: "n_49",
+          semanticPath: "waterHeating.status",
           type: "calculated",
           value: "✓",
           dependencies: ["m_49"],
@@ -543,6 +550,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         d: { content: "" },
         e: {
           fieldId: "e_50",
+          semanticPath: "waterHeating.byEngineerKwh",
           type: "editable",
           value: "10,000.00",
           classes: ["user-input"],
@@ -552,6 +560,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         f: { content: "kWh/yr (IF By Engineer)", classes: ["text-left"] },
         h: {
           fieldId: "h_50",
+          semanticPath: "waterHeating.dhwUse",
           type: "calculated",
           value: "16.00",
           dependencies: ["h_49"],
@@ -559,6 +568,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         i: {
           fieldId: "i_50",
+          semanticPath: "waterHeating.annualDhwUse",
           type: "calculated",
           value: "735,840",
           dependencies: ["d_63", "h_50"],
@@ -566,6 +576,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         j: {
           fieldId: "j_50",
+          semanticPath: "waterHeating.energyDemand",
           type: "calculated",
           value: "38,484.43",
           dependencies: ["d_49", "e_50", "h_50", "d_63"],
@@ -574,6 +585,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         m: {
           fieldId: "m_50",
+          semanticPath: "waterHeating.dhwCompliance",
           type: "calculated",
           value: "15%",
           dependencies: ["h_50", "ref_h_50"],
@@ -581,6 +593,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         n: {
           fieldId: "n_50",
+          semanticPath: "waterHeating.dhwStatus",
           type: "calculated",
           value: "✓",
           dependencies: ["m_50"],
@@ -595,6 +608,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         c: { label: "DHW or SHW Energy Source" },
         d: {
           fieldId: "d_51",
+          semanticPath: "waterHeating.systemType",
           type: "dropdown",
           dropdownId: "d_51",
           value: "Heatpump",
@@ -604,6 +618,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         e: {
           fieldId: "e_51",
+          semanticPath: "waterHeating.gasVolume",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_51", "j_52", "d_53", "e_52"],
@@ -615,6 +630,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         h: { content: "Net Thermal Demand", classes: ["text-left"] },
         j: {
           fieldId: "j_51",
+          semanticPath: "waterHeating.netThermalDemand",
           type: "calculated",
           value: "12,828.14",
           dependencies: ["d_51", "j_50", "e_52"],
@@ -623,6 +639,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         k: {
           fieldId: "k_51",
+          semanticPath: "waterHeating.netElectricalDemand",
           type: "calculated",
           value: "12,828.14",
           dependencies: ["d_51", "j_52"],
@@ -639,6 +656,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         c: { label: "DHW or SHW Efficiency Factor (EF)" },
         d: {
           fieldId: "d_52",
+          semanticPath: "waterHeating.efficiency",
           type: "percentage",
           value: "300",
           min: 50,
@@ -650,6 +668,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         e: {
           fieldId: "e_52",
+          semanticPath: "waterHeating.cop",
           type: "calculated",
           value: "3.00",
           dependencies: ["d_52"],
@@ -660,6 +679,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         h: { content: "Net Demand-Recovered", classes: ["text-left"] },
         j: {
           fieldId: "j_52",
+          semanticPath: "waterHeating.netDemandAfterRecovery",
           type: "calculated",
           value: "12,828.14",
           dependencies: ["j_51", "e_53"],
@@ -669,6 +689,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         l: { content: "", classes: ["text-left"] },
         m: {
           fieldId: "m_52",
+          semanticPath: "waterHeating.efficiencyCompliance",
           type: "calculated",
           value: "100%",
           dependencies: ["d_52", "ref_d_52"],
@@ -676,6 +697,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         n: {
           fieldId: "n_52",
+          semanticPath: "waterHeating.efficiencyComplianceStatus",
           type: "calculated",
           value: "✓",
           dependencies: ["m_52"],
@@ -690,6 +712,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         c: { label: "Drain Water Heat Recovery Efficiency" },
         d: {
           fieldId: "d_53",
+          semanticPath: "waterHeating.dwhrEfficiency",
           type: "percentage",
           value: "0",
           min: 0,
@@ -701,6 +724,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         e: {
           fieldId: "e_53",
+          semanticPath: "waterHeating.energyRecovered",
           type: "calculated",
           value: "0.00",
           dependencies: ["j_51", "d_53"],
@@ -711,6 +735,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         h: { content: "(W.2.W) SHW Wasted", classes: ["text-left"] },
         j: {
           fieldId: "j_53",
+          semanticPath: "waterHeating.shwWasted",
           type: "calculated",
           value: "12,828.14",
           dependencies: ["j_51", "e_53"],
@@ -718,6 +743,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         m: {
           fieldId: "m_53",
+          semanticPath: "waterHeating.dwhrCompliance",
           type: "calculated",
           value: "0%",
           dependencies: ["d_53", "ref_d_53"],
@@ -726,6 +752,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         n: {
           fieldId: "n_53",
+          semanticPath: "waterHeating.dwhrComplianceStatus",
           type: "calculated",
           value: "✓",
           dependencies: ["m_53"],
@@ -740,6 +767,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         c: { label: "System Losses (% → W.1.3 Eqpt Gains)" },
         d: {
           fieldId: "d_54",
+          semanticPath: "waterHeating.systemLosses",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_52", "d_49", "j_50"],
@@ -751,6 +779,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         h: { content: "Exhaust (if Gas or Oil)", classes: ["text-left"] },
         j: {
           fieldId: "j_54",
+          semanticPath: "waterHeating.exhaustLosses",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_51", "j_52", "e_52"],
@@ -759,6 +788,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         k: {
           fieldId: "k_54",
+          semanticPath: "waterHeating.netOilDemand",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_51", "j_52", "d_53", "e_52"],
@@ -785,6 +815,7 @@ window.TEUI.SectionModules.sect07 = (function () {
             label: cell.label || cell.content || row.label, // ✅ Standard label resolution pattern
             defaultValue: cell.value || "",
             section: "waterUse",
+            semanticPath: cell.semanticPath || null, // Phase 5: Include semantic path
           };
           // Add additional properties for dropdown fields
           if (cell.dropdownId)

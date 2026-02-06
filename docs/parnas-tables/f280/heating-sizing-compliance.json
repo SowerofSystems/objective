@@ -1,0 +1,135 @@
+{
+  "id": "f280.heatingSizingCompliance",
+  "legacyId": "f280_sz_heat",
+  "label": "F280 Heating Equipment Sizing Compliance",
+  "section": "SF280",
+  "classification": "C",
+  "_meta": {
+    "description": "Validates that installed heating equipment capacity meets or exceeds the F280 design heat loss per CSA F280-12 Section 5.2.7 and NBC 9.33.5.1. The installed heating capacity must be >= 100% of the total building design heat loss. This is a mandatory compliance check for building permit applications in all Canadian provinces.",
+    "standard": "CSA F280-12 Section 5.2.7",
+    "codeReference": "NBC 9.33.5.1"
+  },
+  "signature": {
+    "inputs": [
+      {
+        "name": "f280.installedHeatingCapacity",
+        "type": "number",
+        "unit": "W",
+        "description": "Rated output capacity of installed heating equipment"
+      },
+      {
+        "name": "f280.totalDesignHeatLoss",
+        "type": "number",
+        "unit": "W",
+        "description": "Total building design heat loss at heating design conditions"
+      }
+    ],
+    "output": {
+      "type": "object",
+      "properties": {
+        "ratio": {
+          "type": "number",
+          "unit": "percent",
+          "description": "Sizing ratio (installed/required × 100)"
+        },
+        "compliant": {
+          "type": "boolean",
+          "description": "True if ratio >= 100%"
+        },
+        "symbol": {
+          "type": "string",
+          "description": "Pass/fail symbol"
+        }
+      }
+    }
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "f280.totalDesignHeatLoss > 0",
+        "description": "Must have calculated design heat loss"
+      },
+      {
+        "condition": "f280.installedHeatingCapacity > 0",
+        "description": "Must specify installed equipment capacity"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "totalDesignHeatLoss > 0 AND installedCapacity > 0",
+      "output": "{ ratio: round(installedCapacity / totalDesignHeatLoss × 100), compliant: ratio >= 100, symbol: ratio >= 100 ? checkmark : X }",
+      "note": "Minimum 100% capacity required"
+    },
+    {
+      "condition": "totalDesignHeatLoss == 0",
+      "output": "{ ratio: 100, compliant: true, symbol: checkmark }",
+      "note": "No heat loss means any capacity is sufficient"
+    },
+    {
+      "condition": "installedCapacity == 0 AND totalDesignHeatLoss > 0",
+      "output": "{ ratio: 0, compliant: false, symbol: X }",
+      "note": "No equipment installed but heating required"
+    }
+  ],
+  "compliance": {
+    "passCondition": "ratio >= 100",
+    "passSymbol": "checkmark",
+    "failSymbol": "X",
+    "standard": "CSA F280-12 Section 5.2.7",
+    "nbcReference": "NBC 9.33.5.1"
+  },
+  "formula": {
+    "symbolic": "ratio = round(Q_installed / Q_design × 100)",
+    "where": {
+      "Q_installed": "Rated output capacity of heating equipment (W)",
+      "Q_design": "Total building design heat loss (W) from f280.totalDesignHeatLoss"
+    }
+  },
+  "tests": [
+    {
+      "name": "Equipment exceeds requirement (compliant)",
+      "inputs": {
+        "f280.installedHeatingCapacity": 10000,
+        "f280.totalDesignHeatLoss": 7503
+      },
+      "expected": {
+        "ratio": 133,
+        "compliant": true,
+        "symbol": "checkmark"
+      }
+    },
+    {
+      "name": "Equipment exactly meets requirement",
+      "inputs": {
+        "f280.installedHeatingCapacity": 7503,
+        "f280.totalDesignHeatLoss": 7503
+      },
+      "expected": {
+        "ratio": 100,
+        "compliant": true,
+        "symbol": "checkmark"
+      }
+    },
+    {
+      "name": "Equipment undersized (non-compliant)",
+      "inputs": {
+        "f280.installedHeatingCapacity": 5000,
+        "f280.totalDesignHeatLoss": 7503
+      },
+      "expected": {
+        "ratio": 67,
+        "compliant": false,
+        "symbol": "X"
+      }
+    }
+  ],
+  "references": [
+    {
+      "source": "CSA F280-12 Section 5.2.7"
+    },
+    {
+      "source": "NBC 9.33.5.1 - heating capacity shall be not less than the design heat loss"
+    }
+  ]
+}

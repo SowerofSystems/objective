@@ -1,0 +1,125 @@
+{
+  "id": "mechanical.spaceHeatingEmissions",
+  "legacyId": "f_114",
+  "label": "Space Heating Emissions",
+  "section": "S13",
+  "classification": "C",
+  "_meta": {
+    "description": "Annual GHG emissions from space heating fuel consumption. Calculated from fuel volume multiplied by emissions factor, converted to kg CO2e."
+  },
+  "signature": {
+    "inputs": [
+      {
+        "name": "mechanical.heating.systemType",
+        "type": "string",
+        "description": "Heating system type (d_113) - 'Oil', 'Gas', 'Heatpump', 'Electric', 'District'"
+      },
+      {
+        "name": "mechanical.heating.oilConsumption",
+        "type": "number",
+        "unit": "L",
+        "description": "Annual oil consumption (f_115)"
+      },
+      {
+        "name": "mechanical.heating.gasConsumption",
+        "type": "number",
+        "unit": "m3",
+        "description": "Annual natural gas consumption (h_115)"
+      },
+      {
+        "name": "emissions.factor.oil",
+        "type": "number",
+        "unit": "g CO2e/L",
+        "description": "Oil emissions factor (l_30) - default 2753"
+      },
+      {
+        "name": "emissions.factor.gas",
+        "type": "number",
+        "unit": "g CO2e/m3",
+        "description": "Natural gas emissions factor (l_28) - default 1921"
+      }
+    ],
+    "output": {
+      "type": "number",
+      "unit": "kg CO2e",
+      "precision": 2
+    }
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "heating.systemType in ['Oil', 'Gas', 'Heatpump', 'Electric', 'District']",
+        "description": "System type must be valid"
+      }
+    ],
+    "invariants": [
+      {
+        "condition": "output >= 0",
+        "description": "Emissions cannot be negative"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "systemType == 'Oil'",
+      "output": "(oilVolume * oilFactor) / 1000",
+      "note": "Oil systems: volume in L × factor in g/L, convert to kg"
+    },
+    {
+      "condition": "systemType == 'Gas'",
+      "output": "(gasVolume * gasFactor) / 1000",
+      "note": "Gas systems: volume in m3 × factor in g/m3, convert to kg"
+    },
+    {
+      "condition": "systemType in ['Heatpump', 'Electric', 'District']",
+      "output": "0",
+      "note": "No on-site fuel emissions for electric/district systems (Scope 2 emissions tracked separately)"
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "systemType unknown",
+      "handling": "Return 0",
+      "rationale": "Default to no emissions if system type unrecognized"
+    }
+  ],
+  "formula": {
+    "symbolic": "f_114 = CASE(d_113, f_115 × l_30, h_115 × l_28) / 1000",
+    "implementation": "MechanicalNodes.js:316-347",
+    "legacy": "Section13.js lines 2654-2668"
+  },
+  "tests": [
+    {
+      "name": "Oil heating system",
+      "inputs": {
+        "mechanical.heating.systemType": "Oil",
+        "mechanical.heating.oilConsumption": 1000,
+        "emissions.factor.oil": 2753
+      },
+      "expected": 2753
+    },
+    {
+      "name": "Gas heating system",
+      "inputs": {
+        "mechanical.heating.systemType": "Gas",
+        "mechanical.heating.gasConsumption": 1000,
+        "emissions.factor.gas": 1921
+      },
+      "expected": 1921
+    },
+    {
+      "name": "Heatpump system (no fuel)",
+      "inputs": {
+        "mechanical.heating.systemType": "Heatpump",
+        "mechanical.heating.oilConsumption": 0,
+        "mechanical.heating.gasConsumption": 0
+      },
+      "expected": 0
+    }
+  ],
+  "references": [
+    {
+      "source": "Section13.js:2654-2668"
+    }
+  ]
+}

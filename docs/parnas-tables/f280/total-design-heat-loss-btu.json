@@ -1,0 +1,72 @@
+{
+  "id": "f280.totalDesignHeatLossBTU",
+  "legacyId": "f280_hl_btu",
+  "label": "F280 Total Design Heat Loss (BTU/h)",
+  "section": "SF280",
+  "classification": "C",
+  "_meta": {
+    "description": "Total building design heat loss expressed in BTU/h for F280 form compatibility. The F280 form typically uses BTU/h as the primary unit for equipment sizing in the Canadian HVAC industry. Conversion factor: 1 Watt = 3.41214 BTU/h.",
+    "standard": "CSA F280-12 Section 5.2.7",
+    "formPage": "F280 Form Page 3"
+  },
+  "signature": {
+    "inputs": [
+      {
+        "name": "f280.totalDesignHeatLoss",
+        "type": "number",
+        "unit": "W",
+        "description": "Total building design heat loss in Watts"
+      }
+    ],
+    "output": {
+      "type": "number",
+      "unit": "BTU/h",
+      "precision": 0
+    }
+  },
+  "domain": {
+    "preconditions": [],
+    "invariants": [
+      {
+        "condition": "output >= 0",
+        "description": "BTU/h value cannot be negative"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "totalDesignHeatLoss available",
+      "output": "round(totalDesignHeatLoss × 3.41214)",
+      "note": "Standard W to BTU/h conversion"
+    }
+  ],
+  "formula": {
+    "symbolic": "Q_btu = Q_watts × 3.41214",
+    "where": {
+      "Q_watts": "Total design heat loss in Watts from f280.totalDesignHeatLoss"
+    }
+  },
+  "tests": [
+    {
+      "name": "Convert 7503W to BTU/h",
+      "inputs": {
+        "f280.totalDesignHeatLoss": 7503
+      },
+      "expected": 25597,
+      "note": "7503 × 3.41214 = 25597 BTU/h"
+    },
+    {
+      "name": "Convert 15000W to BTU/h",
+      "inputs": {
+        "f280.totalDesignHeatLoss": 15000
+      },
+      "expected": 51182,
+      "note": "15000 × 3.41214 = 51182 BTU/h"
+    }
+  ],
+  "references": [
+    {
+      "source": "CSA F280-12 - allows both metric and imperial units"
+    }
+  ]
+}

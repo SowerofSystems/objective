@@ -72,6 +72,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         c: { label: "Total Electricity Use" },
         d: {
           fieldId: "d_27",
+          semanticPath: "energy.actual.electricity",
           type: "editable",
           value: "132938", // Excel default (utility bill input)
           classes: ["user-input", "editable"],
@@ -81,6 +82,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         e: { content: "kWh/yr" },
         f: {
           fieldId: "f_27",
+          semanticPath: "energy.actual.electricityNet",
           type: "calculated",
           label: "Actual Total Electricity Use: ekWh",
           value: "0",
@@ -89,6 +91,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         g: {
           fieldId: "g_27",
+          semanticPath: "energy.actual.electricityEmissions",
           type: "calculated",
           label: "Actual Total Electricity Use: Emissions: kgCO2/yr",
           value: "0",
@@ -97,6 +100,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         h: {
           fieldId: "h_27",
+          semanticPath: "energy.target.electricity",
           type: "calculated",
           label: "Target Electricity Design Value",
           value: "0",
@@ -106,6 +110,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         i: { content: "kWh/yr" },
         j: {
           fieldId: "j_27",
+          semanticPath: "energy.target.electricityNet",
           type: "calculated",
           label: "Target Total Electricity Use: ekWh",
           value: "0",
@@ -114,6 +119,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         k: {
           fieldId: "k_27",
+          semanticPath: "energy.target.electricityEmissions",
           type: "calculated",
           label: "Target Total Electricity Use: Emissions: kgCO2/yr",
           value: "0",
@@ -122,6 +128,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         l: {
           fieldId: "l_27",
+          semanticPath: "energy.emissionFactor.electricity",
           type: "calculated",
           label: "Grid Intensity Factor",
           value: "51",
@@ -142,6 +149,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         c: { label: "Total Fossil Gas Use" },
         d: {
           fieldId: "d_28",
+          semanticPath: "energy.actual.gas",
           type: "editable",
           value: "0", // User utility bill input
           classes: ["user-input", "editable"],
@@ -151,6 +159,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         e: { content: "m³/yr" },
         f: {
           fieldId: "f_28",
+          semanticPath: "energy.actual.gasNet",
           type: "calculated",
           label: "Actual Total Fossil Gas Use: ekWh",
           value: "0",
@@ -159,6 +168,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         g: {
           fieldId: "g_28",
+          semanticPath: "energy.actual.gasEmissions",
           type: "calculated",
           label: "Actual Total Fossil Gas Use: Emissions: kgCO2/yr",
           value: "0",
@@ -167,6 +177,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         h: {
           fieldId: "h_28",
+          semanticPath: "energy.target.gas",
           type: "calculated",
           label: "Target Total Fossil Gas Use: m³/yr (Combined S07+S13)",
           value: "0",
@@ -177,6 +188,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         i: { content: "m³/yr" },
         j: {
           fieldId: "j_28",
+          semanticPath: "energy.target.gasNet",
           type: "calculated",
           label: "Target Total Fossil Gas Use: ekWh",
           value: "0",
@@ -185,6 +197,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         k: {
           fieldId: "k_28",
+          semanticPath: "energy.target.gasEmissions",
           type: "calculated",
           label: "Target Total Fossil Gas Use: Emissions: kgCO2/yr",
           value: "0",
@@ -193,6 +206,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         l: {
           fieldId: "l_28",
+          semanticPath: "energy.emissionFactor.gas",
           type: "editable",
           value: "1921",
           classes: ["user-input", "editable"],
@@ -213,6 +227,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         c: { label: "Total Propane Use" },
         d: {
           fieldId: "d_29",
+          semanticPath: "energy.actual.propane",
           type: "editable",
           value: "0", // User utility bill input
           classes: ["user-input", "editable"],
@@ -222,6 +237,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         e: { content: "kg/yr" },
         f: {
           fieldId: "f_29",
+          semanticPath: "energy.actual.propaneNet",
           type: "calculated",
           label: "Actual Total Propane Use: ekWh",
           value: "0",
@@ -230,6 +246,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         g: {
           fieldId: "g_29",
+          semanticPath: "energy.actual.propaneEmissions",
           type: "calculated",
           label: "Actual Total Propane Use: Emissions: kgCO2/yr",
           value: "0",
@@ -238,6 +255,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         h: {
           fieldId: "h_29",
+          semanticPath: "energy.target.propane",
           type: "calculated",
           label: "Target Total Propane Use: kg/yr",
           value: "0",
@@ -247,6 +265,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         i: { content: "kg/yr" },
         j: {
           fieldId: "j_29",
+          semanticPath: "energy.target.propaneNet",
           type: "calculated",
           label: "Target Total Propane Use: ekWh",
           value: "0",
@@ -255,6 +274,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         k: {
           fieldId: "k_29",
+          semanticPath: "energy.target.propaneEmissions",
           type: "calculated",
           label: "Target Total Propane Use: Emissions: kgCO2/yr",
           value: "0",
@@ -263,6 +283,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         l: {
           fieldId: "l_29",
+          semanticPath: "energy.emissionFactor.propane",
           type: "editable",
           value: "2970",
           classes: ["user-input", "editable"],
@@ -283,6 +304,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         c: { label: "Total Oil Use" },
         d: {
           fieldId: "d_30",
+          semanticPath: "energy.actual.oil",
           type: "editable",
           value: "0", // User utility bill input
           classes: ["user-input", "editable"],
@@ -292,6 +314,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         e: { content: "litres/yr" },
         f: {
           fieldId: "f_30",
+          semanticPath: "energy.actual.oilNet",
           type: "calculated",
           label: "Actual Total Oil Use: ekWh",
           value: "0",
@@ -300,6 +323,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         g: {
           fieldId: "g_30",
+          semanticPath: "energy.actual.oilEmissions",
           type: "calculated",
           label: "Actual Total Oil Use: Emissions: kgCO2/yr",
           value: "0",
@@ -308,6 +332,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         h: {
           fieldId: "h_30",
+          semanticPath: "energy.target.oil",
           type: "calculated",
           label: "Target Total Oil Use: litres/yr (Combined S07+S13)",
           value: "0",
@@ -318,6 +343,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         i: { content: "litres/yr" },
         j: {
           fieldId: "j_30",
+          semanticPath: "energy.target.oilNet",
           type: "calculated",
           label: "Target Total Oil Use: ekWh",
           value: "0",
@@ -326,6 +352,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         k: {
           fieldId: "k_30",
+          semanticPath: "energy.target.oilEmissions",
           type: "calculated",
           label: "Target Total Oil Use: Emissions: kgCO2/yr",
           value: "0",
@@ -334,6 +361,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         l: {
           fieldId: "l_30",
+          semanticPath: "energy.emissionFactor.oil",
           type: "editable",
           value: "2753",
           classes: ["user-input", "editable"],
@@ -354,6 +382,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         c: { label: "Total Wood Use" },
         d: {
           fieldId: "d_31",
+          semanticPath: "energy.actual.wood",
           type: "editable",
           value: "0", // User utility bill input
           classes: ["user-input", "editable"],
@@ -363,6 +392,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         e: { content: "m³/yr" },
         f: {
           fieldId: "f_31",
+          semanticPath: "energy.actual.woodNet",
           type: "calculated",
           label: "Actual Total Wood Use: ekWh",
           value: "0",
@@ -371,6 +401,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         g: {
           fieldId: "g_31",
+          semanticPath: "energy.actual.woodEmissions",
           type: "calculated",
           label: "Actual Total Wood Use: Emissions: kgCO2/yr",
           value: "0",
@@ -379,6 +410,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         h: {
           fieldId: "h_31",
+          semanticPath: "energy.target.wood",
           type: "calculated",
           label: "Target Total Wood Use: m³/yr",
           value: "0",
@@ -388,6 +420,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         i: { content: "m³/yr" },
         j: {
           fieldId: "j_31",
+          semanticPath: "energy.target.woodNet",
           type: "calculated",
           label: "Target Total Wood Use: ekWh",
           value: "0",
@@ -396,6 +429,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         k: {
           fieldId: "k_31",
+          semanticPath: "energy.target.woodEmissions",
           type: "calculated",
           label: "Target Total Wood Use: Emissions: kgCO2/yr",
           value: "0",
@@ -404,6 +438,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         l: {
           fieldId: "l_31",
+          semanticPath: "energy.emissionFactor.wood",
           type: "editable",
           value: "150",
           classes: ["user-input", "editable"],
@@ -426,6 +461,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         e: { content: "" },
         f: {
           fieldId: "f_32",
+          semanticPath: "energy.actual.totalNet",
           type: "calculated",
           value: "0",
           label: "∑ Actual Energy",
@@ -435,6 +471,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         g: {
           fieldId: "g_32",
+          semanticPath: "energy.actual.totalEmissions",
           type: "calculated",
           value: "0",
           label: "∑ Actual Emissions",
@@ -446,6 +483,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         i: { content: "" },
         j: {
           fieldId: "j_32",
+          semanticPath: "energy.target.totalNet",
           type: "calculated",
           value: "0",
           label: "∑ Target Energy",
@@ -455,6 +493,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         },
         k: {
           fieldId: "k_32",
+          semanticPath: "energy.target.totalEmissions",
           type: "calculated",
           value: "0",
           label: "∑ Target Emissions",
@@ -477,6 +516,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         c: { label: "Total Net Energy" },
         d: {
           fieldId: "d_33",
+          semanticPath: "energy.actual.totalGJ",
           type: "calculated",
           label: "Actual Total Net Energy",
           value: "0",
@@ -488,6 +528,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         g: { content: "" },
         h: {
           fieldId: "h_33",
+          semanticPath: "energy.target.totalGJ",
           type: "calculated",
           label: "Target Total Net Energy",
           value: "0",
@@ -499,6 +540,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         k: { content: "Nuclear Waste" },
         l: {
           fieldId: "l_33",
+          semanticPath: "energy.emissionFactor.nuclearWaste",
           type: "editable",
           value: "0.0096",
           classes: ["user-input", "editable"],
@@ -519,6 +561,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         c: { label: "Annual Percapita Energy" },
         d: {
           fieldId: "d_34",
+          semanticPath: "energy.actual.perCapita",
           type: "calculated",
           label: "Actual Annual Percapita Energy: kWh",
           value: "0",
@@ -528,6 +571,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         e: { content: "kWh Actual" },
         f: {
           fieldId: "f_34",
+          semanticPath: "energy.actual.perCapitaGJ",
           type: "calculated",
           label: "Actual Annual Percapita Energy: GJ",
           value: "0",
@@ -537,6 +581,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         g: { content: "GJ Actual" },
         h: {
           fieldId: "h_34",
+          semanticPath: "energy.target.perCapita",
           type: "calculated",
           label: "Target Annual Percapita Energy: kWh",
           value: "0",
@@ -546,6 +591,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         i: { content: "kWh Target" },
         j: {
           fieldId: "j_34",
+          semanticPath: "energy.target.perCapitaGJ",
           type: "calculated",
           label: "Target Annual Percapita Energy: GJ",
           value: "0",
@@ -555,6 +601,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         k: { content: "GJ Target" },
         l: {
           fieldId: "l_34",
+          semanticPath: "energy.nuclearWasteTotal",
           type: "calculated",
           label: "High Level Nuclear Waste (Ontario only)",
           value: "0",
@@ -576,6 +623,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         c: { label: "Primary Energy" },
         d: {
           fieldId: "d_35",
+          semanticPath: "energy.primary",
           type: "calculated",
           label: "Primary Energy: kWh/yr",
           value: "0",
@@ -586,6 +634,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         e: { content: "kWh/yr" },
         f: {
           fieldId: "f_35",
+          semanticPath: "energy.actual.teui",
           type: "calculated",
           label: "Actual TEUI: kWh/m²/yr",
           value: "0",
@@ -597,6 +646,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         i: { content: "" },
         j: {
           fieldId: "j_35",
+          semanticPath: "energy.target.teui",
           type: "calculated",
           label: "Target TEUI: kWh/m²/yr",
           value: "0",
@@ -606,6 +656,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         k: { content: "Target kWh/m2/yr" },
         l: {
           fieldId: "l_35",
+          semanticPath: "energy.perFactor",
           type: "calculated",
           label: "PER Factor",
           value: "1.00", // Calculated: PER (Primary Energy Renewable) - PH metric from PHPP 10.6
@@ -638,6 +689,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         e: {},
         f: {
           fieldId: "f_36",
+          semanticPath: "energy.actual.peri",
           type: "calculated",
           label: "Actual Primary Energy Intensity",
           value: "0",
@@ -649,6 +701,7 @@ window.TEUI.SectionModules.sect04 = (function () {
         i: {},
         j: {
           fieldId: "j_36",
+          semanticPath: "energy.target.peri",
           type: "calculated",
           label: "Target Primary Energy Intensity",
           value: "0",
@@ -1534,6 +1587,8 @@ window.TEUI.SectionModules.sect04 = (function () {
             defaultValue: cell.value || "",
             section: cell.section || "actualTargetEnergy",
           };
+          if (cell.semanticPath)
+            fields[cell.fieldId].semanticPath = cell.semanticPath; // Phase 5: Include semantic path
           if (cell.classes) fields[cell.fieldId].classes = cell.classes;
           if (cell.dependencies)
             fields[cell.fieldId].dependencies = cell.dependencies;
