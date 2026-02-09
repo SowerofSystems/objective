@@ -37,6 +37,7 @@ TEUI.FieldManager = (function () {
     parallelCoordinates: "sect18",
     wombat: "sect19",
     notes: "sect20",
+    f280Compliance: "sect21",
   };
 
   // Combined field registry (populated from section modules)
@@ -681,7 +682,7 @@ TEUI.FieldManager = (function () {
                 cellElement.textContent = cellDef.value || "0";
               } else if (cellDef.type === "editable") {
                 cellElement.classList.add("editable", "user-input");
-                cellElement.textContent = cellDef.value || "0";
+                cellElement.textContent = cellDef.value != null ? cellDef.value : "0";
                 cellElement.setAttribute("contenteditable", "true");
               } else if (cellDef.type === "number") {
                 // Create a number input element
