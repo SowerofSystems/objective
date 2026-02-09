@@ -47,6 +47,7 @@ parnas-tables/
 ├── format.schema.json        # JSON Schema for table format
 ├── climate/                  # S03 - Climate calculations
 ├── cooling/                  # S13 - Free cooling, active cooling days
+├── emissions/                # S02/S05 - Embodied carbon targets, TGS4 caps
 ├── energy/                   # S04/S14/S15 - Energy metrics
 ├── f280/                     # SF280 - CSA F280-12 peak loads & compliance
 ├── internal-gains/           # S09 - Occupants, plugs, lighting, equipment
@@ -147,6 +148,45 @@ The F280 calculations are implemented in `src/sections/nodes/F280ComplianceNodes
 which reuses existing computation graph inputs (envelope U×A values, climate design
 temperatures, ventilation rates, air tightness parameters) and derives peak loads
 from them.
+
+## Emissions Section (S02/S05) — Embodied Carbon
+
+The emissions section handles embodied carbon targets based on the selected carbon benchmarking standard.
+
+### TGS4 Embodied Carbon Caps
+
+The City of Toronto adopted embodied carbon caps that vary by **building category and tier**, NOT by material type. The material-specific values from "Figure 1" (created by Ryan Zizzo and Kelly Alvarez-Doran at Mantle Climate) were not adopted as-is.
+
+| File | ID | Description |
+|---|---|---|
+| `tgs4-building-category.json` | `emissions.tgs4.buildingCategory` | Maps occupancy + storeys to TGS4 category |
+| `embodied-carbon-target.json` | `building.embodiedCarbonTarget` | Embodied carbon cap by standard selection |
+
+### Category Determination
+
+The Part 9 vs Part 3 boundary for residential buildings is **3 storeys** (OBC threshold):
+
+| Occupancy | Storeys | Category |
+|---|---|---|
+| C-Residential | ≤3 | Part 9 Low-Rise Residential |
+| C-Residential | >3 | Part 3 Residential/Commercial |
+| D-Business, E-Mercantile | any | Part 3 Residential/Commercial |
+| A-Assembly, B-Institutional, F-Industrial | any | Part 3 Other |
+
+### Adopted TGS4 Caps (kgCO2e/m²)
+
+| Category | Tier 2 | Tier 3 |
+|---|---|---|
+| Part 9 Low-Rise Residential (A1-A3) | 250 | — |
+| Part 3 Residential/Commercial (A1-A5) | 350 | 250 |
+| Part 3 Other (A1-A5) | 400 | 275 |
+
+### Terminology
+
+Per Ryan Zizzo (Mantle Climate):
+- **"embodied"** — emissions released to atmosphere (kgCO2e/m²)
+- **"storage"** — carbon sequestered in materials
+- Do NOT use "embedded"
 
 ## Code Generation
 
