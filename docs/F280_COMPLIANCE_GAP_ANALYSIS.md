@@ -570,7 +570,122 @@ flag propagation). Changing a single U-value automatically propagates through to
 
 ---
 
-## 9. References
+## 9. F280 UI Section & Required Report Fields
+
+### 9.1 Section 21 Implementation
+
+The F280 Compliance UI section (`Section21.js`) is placed between Section 15 (TEUI
+Summary) and Section 16 (Sankey Diagram) in the calculator. It provides:
+
+- **User input fields** for F280-specific data not captured elsewhere
+- **Read-only summary** of all building parameters needed for the F280 report
+- **Compliance status indicators** fed by `F280ComplianceNodes.js`
+
+Module ID: `sect21` | HTML ID: `f280Compliance` | Tab Label: `F280`
+
+### 9.2 Required User Inputs (F280-Specific)
+
+These are the fields the user must enter directly in the F280 section. All other
+F280 report fields are pulled automatically from other sections.
+
+| # | Field | Field ID | Type | Default | Description |
+|---|---|---|---|---|---|
+| 1 | Project Number | `f280_proj_num` | Text | (empty) | Unique F280 project identifier |
+| 2 | Compliance Type | `f280_comp_type` | Fixed | Whole House | Fixed to Whole House (Room-by-Room not supported) |
+| 3 | Code Reference | `f280_code_ref` | Text | NBC 2020: 9.33.5.1, 9.36.3.2, 9.36.5.15(5), 9.36.8.9 | Applicable building code sections |
+| 4 | Installed Heating Capacity | `f280_cap_heat` | Numeric (W) | 0 | Rated output of installed heating equipment |
+| 5 | Installed Cooling Capacity | `f280_cap_cool` | Numeric (W) | 0 | Rated output of installed cooling equipment |
+| 6 | Designer Name | `f280_dsgn_name` | Text | (empty) | Designer's full name |
+| 7 | Designer Company | `f280_dsgn_co` | Text | (empty) | Designer's company name |
+| 8 | Certification Type | `f280_cert_type` | Dropdown | Other | NRCan EA, TECA, P.Eng, OAA, BCIN, or Other |
+| 9 | Certification Number | `f280_cert_num` | Text | (empty) | Certificate or license number |
+| 10 | Service Organization | `f280_svc_org` | Text | (empty) | NRCan Service Org (required only for NRCan EA) |
+| 11 | Responsibility Declaration | `f280_attest` | Dropdown | No | Designer attestation (Yes/No) |
+
+### 9.3 F280 Report Field Summary (All Pages)
+
+Complete catalog of all fields needed for the F280 report, organized by F280
+Form page section. Fields marked "Auto" are pulled from existing sections.
+
+#### Page 1: Designer & Project Information
+
+| F280 Form Field | Source | Field ID | Status |
+|---|---|---|---|
+| Project Number | User Input (S21) | `f280_proj_num` | Implemented |
+| Compliance Type | Fixed: Whole House | `f280_comp_type` | Implemented |
+| Code Reference | User Input (S21) | `f280_code_ref` | Implemented |
+| Designer Name | User Input (S21) | `f280_dsgn_name` | Implemented |
+| Designer Company | User Input (S21) | `f280_dsgn_co` | Implemented |
+| Certification Type | User Input (S21) | `f280_cert_type` | Implemented |
+| Certification Number | User Input (S21) | `f280_cert_num` | Implemented |
+| Service Organization | User Input (S21) | `f280_svc_org` | Implemented |
+| Responsibility Declaration | User Input (S21) | `f280_attest` | Implemented |
+| Designer Address | — | — | PENDING (6.7) |
+| Designer Phone/Email | — | — | PENDING (6.7) |
+
+#### Page 2: Input Summary (Building Parameters)
+
+| F280 Form Row | Parameter | Source Section | Legacy ID | Status |
+|---|---|---|---|---|
+| 1 | Postal Code | Climate (S03) | — | PENDING (6.1) |
+| 2 | Indoor Heating Setpoint | Climate (S03) | h_23 | Auto |
+| 3 | Indoor Cooling Setpoint | Climate (S03) | h_24 | Auto |
+| 4 | Outdoor Design Temp (Heating) | Climate (S03) | d_23 | Auto |
+| 5 | Outdoor Design Temp (Cooling) | Climate (S03) | d_24 | Auto |
+| 6 | Heating Degree Days | Climate (S03) | d_20 | Auto |
+| 7 | Cooling Degree Days | Climate (S03) | d_21 | Auto |
+| 8 | Conditioned Floor Area | Building Info (S02) | h_15 | Auto |
+| 9 | Conditioned Volume | Volume Metrics (S12) | d_105 | Auto |
+| 10 | Number of Storeys | Volume Metrics (S12) | d_103 | Auto |
+| 11-12 | Wall Area / U-value | Transmission Loss (S11) | d_86, g_86 | Auto |
+| 13-14 | Roof Area / U-value | Transmission Loss (S11) | d_85, g_85 | Auto |
+| 15-16 | Windows N Area / U-value | Transmission Loss (S11) | d_89, g_89 | Auto |
+| 17-18 | Windows E Area / U-value | Transmission Loss (S11) | d_89b, g_89b | Auto |
+| 19-20 | Windows S Area / U-value | Transmission Loss (S11) | d_89c, g_89c | Auto |
+| 21-22 | Windows W Area / U-value | Transmission Loss (S11) | d_89d, g_89d | Auto |
+| 23-24 | Door Area / U-value | Transmission Loss (S11) | d_88, g_88 | Auto |
+| 25-26 | Skylight Area / U-value | Transmission Loss (S11) | d_93, g_93 | Auto |
+| 27-28 | Below-Grade Wall Area / U-value | Transmission Loss (S11) | d_94, g_94 | Auto |
+| 29-30 | Slab Area / U-value | Transmission Loss (S11) | d_95, g_95 | Auto |
+| 31 | NRL50 | Volume Metrics (S12) | g_108 | Auto |
+| 32 | ACH50 | Volume Metrics (S12) | d_109 | Auto |
+| 33 | Ventilation Rate | Mechanical (S13) | d_120 | Auto |
+| 34 | HRV/ERV Efficiency (ATRE) | Mechanical (S13) | d_118 | Auto |
+
+#### Page 3: Results Summary
+
+| F280 Form Field | Source | Legacy ID | Status |
+|---|---|---|---|
+| Peak Envelope Heat Loss (W) | F280ComplianceNodes | f280_hl_env | Auto |
+| Peak Infiltration Heat Loss (W) | F280ComplianceNodes | f280_hl_inf | Auto |
+| Peak Ventilation Heat Loss (W) | F280ComplianceNodes | f280_hl_vent | Auto |
+| Total Design Heat Loss (W) | F280ComplianceNodes | f280_hl_total | Auto |
+| Total Design Heat Loss (BTU/h) | F280ComplianceNodes | f280_hl_btu | Auto |
+| Nominal Cooling Capacity (W) | F280ComplianceNodes | f280_cl_total | Auto |
+| Nominal Cooling Capacity (BTU/h) | F280ComplianceNodes | f280_cl_btu | Auto |
+| Installed Heating Capacity (W) | User Input (S21) | f280_cap_heat | Implemented |
+| Heating Sizing Ratio (%) | F280ComplianceNodes | f280_sz_heat_ratio | Auto |
+| Heating Sizing Compliance | F280ComplianceNodes | f280_sz_heat | Auto |
+| Installed Cooling Capacity (W) | User Input (S21) | f280_cap_cool | Implemented |
+| Cooling Sizing Ratio (%) | F280ComplianceNodes | f280_sz_cool_ratio | Auto |
+| Cooling Sizing Compliance | F280ComplianceNodes | f280_sz_cool | Auto |
+| Certification Valid | F280ComplianceNodes | f280_cert_valid | Auto |
+| Overall F280 Compliance | F280ComplianceNodes | f280_overall | Auto |
+| Room-by-Room Breakdown | — | — | PENDING (6.4) |
+
+### 9.4 Updated Implementation Status
+
+With the Section 21 UI implementation, the following gap items are now addressed:
+
+| # | Requirement | Previous Status | Updated Status |
+|---|---|---|---|
+| 14 | Equipment capacity UI inputs | PENDING | ADDRESSED — Section 21 provides editable fields connected to StateManager |
+| 18 | F280 Form PDF/print output (Pages 1-3) | PENDING | PARTIALLY ADDRESSED — Section 21 displays all field values; PDF generation still pending |
+| 19 | Designer contact fields (address, phone, email) | PENDING | PARTIALLY ADDRESSED — Name, company, cert type/number implemented; address/phone/email still pending |
+
+---
+
+## 10. References
 
 - CSA F280:12 (R2025) — Determining the Required Capacity of Residential Space
   Heating and Cooling Appliances (CSA Group)
