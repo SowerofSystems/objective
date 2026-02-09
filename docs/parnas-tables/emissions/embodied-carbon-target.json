@@ -103,9 +103,49 @@
       "note": "Backward compat: uses material-based TYPOLOGY_CAPS (Figure 1 values, not adopted by City)"
     },
     {
-      "condition": "standard in CARBON_TARGETS (LEED, Passive House, CaGBC, etc.)",
-      "output": "CARBON_TARGETS[standard]",
-      "note": "Fixed caps: LEED BD+C v4.1 = 500, LEED 40% = 300, ZCB = 250, PH = 200, CaGBC = 175"
+      "condition": "standard == 'BR18 (Denmark)'",
+      "output": "500",
+      "note": "Danish Building Regulations 2018 limit"
+    },
+    {
+      "condition": "standard == 'IPCC AR6 EPC'",
+      "output": "3.39",
+      "note": "IPCC AR6 Equal Per Capita pathway"
+    },
+    {
+      "condition": "standard == 'IPCC AR6 EA'",
+      "output": "0.17",
+      "note": "IPCC AR6 Equal Allocation pathway"
+    },
+    {
+      "condition": "standard == 'CaGBC ZCB D'",
+      "output": "425",
+      "note": "Canada Green Building Council Zero Carbon Building Design standard"
+    },
+    {
+      "condition": "standard == 'CaGBC ZCB P'",
+      "output": "425",
+      "note": "Canada Green Building Council Zero Carbon Building Performance standard"
+    },
+    {
+      "condition": "standard == 'LEED BD+C v4.1'",
+      "output": "500"
+    },
+    {
+      "condition": "standard == 'LEED BD+C v4.1 (40%)'",
+      "output": "300"
+    },
+    {
+      "condition": "standard == 'Zero Carbon Building'",
+      "output": "250"
+    },
+    {
+      "condition": "standard == 'Passive House'",
+      "output": "200"
+    },
+    {
+      "condition": "standard == 'CaGBC Zero Carbon'",
+      "output": "175"
     },
     {
       "condition": "standard == 'Self Reported'",
@@ -153,6 +193,11 @@
         "Pt.3 Office": 600
       },
       "CARBON_TARGETS": {
+        "BR18 (Denmark)": 500,
+        "IPCC AR6 EPC": 3.39,
+        "IPCC AR6 EA": 0.17,
+        "CaGBC ZCB D": 425,
+        "CaGBC ZCB P": 425,
         "LEED BD+C v4.1": 500,
         "LEED BD+C v4.1 (40%)": 300,
         "Zero Carbon Building": 250,
@@ -259,11 +304,74 @@
       "expected": "N/A"
     },
     {
+      "name": "BR18 (Denmark)",
+      "inputs": {
+        "building.carbonStandard": "BR18 (Denmark)"
+      },
+      "expected": 500
+    },
+    {
+      "name": "IPCC AR6 EPC",
+      "inputs": {
+        "building.carbonStandard": "IPCC AR6 EPC"
+      },
+      "expected": 3.39
+    },
+    {
+      "name": "IPCC AR6 EA",
+      "inputs": {
+        "building.carbonStandard": "IPCC AR6 EA"
+      },
+      "expected": 0.17
+    },
+    {
+      "name": "CaGBC ZCB D",
+      "inputs": {
+        "building.carbonStandard": "CaGBC ZCB D"
+      },
+      "expected": 425
+    },
+    {
+      "name": "CaGBC ZCB P",
+      "inputs": {
+        "building.carbonStandard": "CaGBC ZCB P"
+      },
+      "expected": 425
+    },
+    {
       "name": "LEED BD+C v4.1",
       "inputs": {
         "building.carbonStandard": "LEED BD+C v4.1"
       },
       "expected": 500
+    },
+    {
+      "name": "LEED BD+C v4.1 (40%)",
+      "inputs": {
+        "building.carbonStandard": "LEED BD+C v4.1 (40%)"
+      },
+      "expected": 300
+    },
+    {
+      "name": "Zero Carbon Building",
+      "inputs": {
+        "building.carbonStandard": "Zero Carbon Building"
+      },
+      "expected": 250
+    },
+    {
+      "name": "Passive House",
+      "inputs": {
+        "building.carbonStandard": "Passive House"
+      },
+      "expected": 200
+    },
+    {
+      "name": "CaGBC Zero Carbon",
+      "inputs": {
+        "building.carbonStandard": "CaGBC Zero Carbon"
+      },
+      "expected": 175
     }
   ],
   "references": [
