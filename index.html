@@ -144,6 +144,7 @@
     <script src="src/sections/nodes/VentilationNodes.js"></script>
     <script src="src/sections/nodes/CoolingNodes.js"></script>
     <script src="src/sections/nodes/ComplianceNodes.js"></script>
+    <script src="src/sections/nodes/F280ComplianceNodes.js"></script>
     <script src="src/sections/nodes/KeyValuesNodes.js"></script>
     <script src="src/core/model/ModelMetadata.js"></script>
     <script src="src/core/model/MultiModelState.js"></script>
@@ -184,6 +185,8 @@
     <script src="src/sections/Section19.js"></script>
     <!-- WOMBAT - 3D Thermal Topology Module -->
     <script src="src/sections/Section20.js"></script>
+    <!-- F280 Compliance Module -->
+    <script src="src/sections/Section21.js"></script>
     <!-- Notes & Debug Module -->
   </head>
   <body>
@@ -782,6 +785,17 @@
             </div>
             <div class="section-content">
               <div data-render-section="notes"></div>
+            </div>
+          </div>
+
+          <!-- Section 21: F280 Compliance (after Notes, last section) -->
+          <div id="f280Compliance" class="section">
+            <div class="section-header">
+              <span class="section-icon"><i class="bi bi-clipboard-check"></i></span>
+              SECTION 21. CSA F280
+            </div>
+            <div class="section-content">
+              <div data-render-section="f280Compliance"></div>
             </div>
           </div>
         </div>

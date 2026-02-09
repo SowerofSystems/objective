@@ -251,6 +251,12 @@
       log("Registered ComplianceNodes");
     }
 
+    // F280 peak load & equipment sizing compliance (builds on Section15 peak loads)
+    if (nodes.F280Compliance) {
+      nodes.F280Compliance.register(g);
+      log("Registered F280ComplianceNodes");
+    }
+
     const stats = g.getStats();
     log(`Graph created: ${stats.nodeCount} nodes, ${stats.inputCount} inputs`);
 

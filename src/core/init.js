@@ -84,6 +84,7 @@ document.addEventListener("DOMContentLoaded", function () {
     wombat: "bi-bounding-box",
     footer: "bi-info-square",
     notes: "bi-info-square",
+    f280Compliance: "bi-clipboard-check",
   };
 
   // Mapping of section IDs to short tab labels
@@ -107,6 +108,7 @@ document.addEventListener("DOMContentLoaded", function () {
     parallelCoordinates: "Optimize",
     wombat: "Wombat",
     notes: "Notes",
+    f280Compliance: "F280",
   };
 
   // Mapping of section IDs to full titles for tooltips
@@ -130,6 +132,7 @@ document.addEventListener("DOMContentLoaded", function () {
     parallelCoordinates: "Optimization Analysis",
     wombat: "WOMBAT - 3D Thermal Topology",
     notes: "Project Notes",
+    f280Compliance: "CSA F280 Compliance Report",
   };
 
   // State variables
