@@ -447,11 +447,23 @@ window.TEUI.SectionModules.sect01 = (function () {
       else if (d_15 === "IPCC AR6 EA") {
         m_6_result = 4.07;
       }
-      // IF(D15="TGS4",((I$41/I39)),"N/A")
+      // TGS4 Tier 2/3: i_41 / d_16 (modelled embodied carbon vs adopted cap)
+      else if (d_15 === "TGS4 Tier 2" || d_15 === "TGS4 Tier 3") {
+        const d_16 = window.TEUI?.parseNumeric?.(
+          window.TEUI?.StateManager?.getValue("d_16"), 0
+        ) ?? 0;
+        if (d_16 > 0) {
+          m_6_result = i_41 / d_16;
+          m_6_result = Math.round(m_6_result * 100) / 100;
+        } else {
+          m_6_result = "N/A";
+        }
+      }
+      // TGS4 "Typical Values": backward compat, i_41 / i_39
       else if (d_15 === "TGS4") {
         if (i_39 > 0) {
           m_6_result = i_41 / i_39;
-          m_6_result = Math.round(m_6_result * 100) / 100; // Round to 2 decimal places
+          m_6_result = Math.round(m_6_result * 100) / 100;
         } else {
           m_6_result = "N/A";
         }

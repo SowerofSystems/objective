@@ -402,6 +402,7 @@
         "building.serviceLife",
         "building.carbonStandard",
         "building.typologyEmbodiedCarbon",
+        "building.embodiedCarbonTarget",
         "keyValues.actual.annualCarbon",
         "keyValues.target.annualCarbon",
         "keyValues.useType",
@@ -437,8 +438,16 @@
         } else if (d_15 === "IPCC AR6 EA") {
           const result = 4.07;
           return `${Math.round(result * 100)}%`;
+        } else if (d_15 === "TGS4 Tier 2" || d_15 === "TGS4 Tier 3") {
+          // TGS4 Tier 2/3: i_41 / d_16 (modelled embodied carbon vs adopted cap)
+          const d_16 = parseNum(inputs["building.embodiedCarbonTarget"]);
+          if (d_16 > 0) {
+            const result = i_41 / d_16;
+            return `${Math.round(result * 100)}%`;
+          }
+          return "N/A";
         } else if (d_15 === "TGS4") {
-          // TGS4: i_41 / i_39
+          // TGS4 "Typical Values": backward compat, i_41 / i_39
           if (i_39 > 0) {
             const result = i_41 / i_39;
             return `${Math.round(result * 100)}%`;
