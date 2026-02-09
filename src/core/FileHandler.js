@@ -8,6 +8,24 @@
 (function (window) {
   "use strict";
 
+  const SAMPLE_PROJECTS = [
+    // Residences — progressively more complex
+    { id: "03", file: "03-residence-phi-classic.csv", name: "Residence: PHI Classic", type: "C-Residential", location: "QC, Hemmingford" },
+    { id: "12", file: "12-residence-phi-low-energy.csv", name: "Residence: PHI Low Energy", type: "C-Residential", location: "ON, Hawkesbury" },
+    { id: "02", file: "02-residence-sb12-net-zero.csv", name: "Residence: SB12 Net-Zero", type: "C-Residential", location: "ON, Collingwood" },
+    { id: "10", file: "10-residence-sb12-duplex.csv", name: "Residence: SB12 Duplex", type: "C-Residential", location: "ON, Mississauga" },
+    // MURBs / Apartments — progressively more complex
+    { id: "04", file: "04-apartment-necb-small.csv", name: "Apartment: NECB Small", type: "C-Residential", location: "ON, Hamilton" },
+    { id: "06", file: "06-apartment-necb-mid-rise.csv", name: "Apartment: NECB Mid-Rise", type: "C-Residential", location: "ON, Woodstock" },
+    { id: "05", file: "05-apartment-necb-large.csv", name: "Apartment: NECB Large", type: "C-Residential", location: "ON, Hamilton" },
+    { id: "07", file: "07-murb-necb-low-rise.csv", name: "MURB: NECB Low-Rise", type: "C-Residential", location: "ON, Simcoe" },
+    { id: "08", file: "08-murb-necb-mid-rise.csv", name: "MURB: NECB Mid-Rise", type: "C-Residential", location: "ON, London" },
+    // Assembly — progressively more complex
+    { id: "09", file: "09-assembly-necb-recreation.csv", name: "Assembly: NECB Recreation", type: "A-Assembly", location: "ON, St. Catharines" },
+    { id: "01", file: "01-assembly-obc-sb10.csv", name: "Assembly: OBC SB10", type: "A-Assembly", location: "ON, Alexandria" },
+    { id: "11", file: "11-assembly-community-centre.csv", name: "Assembly: Community Centre", type: "A-Assembly", location: "ON, Milton" },
+  ];
+
   // Define FileHandler class
   class FileHandler {
     constructor() {
@@ -50,6 +68,24 @@
       if (oldImportButton) oldImportButton.style.display = "none"; // Hide old button
       const oldExportButton = document.getElementById("export-excel");
       if (oldExportButton) oldExportButton.style.display = "none"; // Hide old button
+
+      // Populate sample project modal list
+      const sampleList = document.getElementById("sample-project-list");
+      if (sampleList) {
+        SAMPLE_PROJECTS.forEach(project => {
+          const link = document.createElement("a");
+          link.href = "#";
+          link.className = "list-group-item list-group-item-action d-flex justify-content-between align-items-center";
+          link.innerHTML =
+            `<span><strong>${project.name}</strong></span>` +
+            `<small class="text-muted">${project.type} &middot; ${project.location}</small>`;
+          link.addEventListener("click", e => {
+            e.preventDefault();
+            this.loadSampleProject(project);
+          });
+          sampleList.appendChild(link);
+        });
+      }
     }
 
     // --- IMPORT LOGIC ---
@@ -1103,6 +1139,33 @@
         console.error(
           "[FileHandler] Calculator.calculateAll() not available - calculations not triggered"
         );
+      }
+    }
+
+    // --- SAMPLE PROJECT LOADING ---
+
+    async loadSampleProject(project) {
+      if (!confirm(`Load "${project.name}"? This will replace all current data.`)) {
+        return;
+      }
+
+      // Close the modal
+      const modalEl = document.getElementById("sampleProjectModal");
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+
+      try {
+        this.showStatus(`Loading sample project: ${project.name}...`, "info");
+        const response = await fetch(`src/template/case-studies/${project.file}`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch ${project.file}: ${response.status}`);
+        }
+        const csvContent = await response.text();
+        this.processImportedCSV(csvContent);
+        this.showStatus(`Sample project "${project.name}" loaded successfully.`, "success");
+      } catch (error) {
+        console.error("[FileHandler] Error loading sample project:", error);
+        this.showStatus(`Error loading sample project: ${error.message}`, "error");
       }
     }
 
