@@ -3,74 +3,95 @@ const { test, expect } = require('@playwright/test');
 const path = require('path');
 
 /**
- * Validation Test - Compares old StateManager values to new ComputationGraph values
+ * Validation Test - Compares legacy StateManager values to ComputationGraph values
  *
- * This test loads the main application (which initializes StateManager with data)
- * then creates a new ComputationGraph and compares computed values.
+ * The computation graph must produce IDENTICAL results to the legacy Section code.
+ * Any mismatch means the graph cannot safely replace the legacy system.
+ *
+ * Field mappings use { semanticPath: legacyId } where:
+ * - semanticPath is the computation graph node ID
+ * - legacyId is the StateManager key set by legacy Section code
  */
 
-test.describe('Computation System Validation', () => {
-  test('compare old vs new computation values', async ({ page }) => {
-    // Navigate to the main app using file:// URL
+// All fields the graph must match against legacy
+const FIELD_MAPPINGS = {
+  // Climate (S03)
+  'climate.location.province': 'd_19',
+  'climate.heating.degreedays': 'd_20',
+  'climate.cooling.degreedays': 'd_21',
+  'climate.zone': 'j_19',
+
+  // Building (S02)
+  'building.conditionedFloorArea': 'h_15',
+  'building.majorOccupancy': 'd_12',
+  'building.serviceLife': 'h_13',
+
+  // Internal Gains (S09)
+  'internal.plugLoads.annual': 'h_65',
+  'internal.lighting.annual': 'h_66',
+  'internal.equipment.annual': 'h_67',
+  'energy.plugLoads.subtotal': 'h_70',
+  'internal.occupants.annual': 'h_64',
+
+  // Radiant Gains (S10)
+  'radiantGains.usableGains': 'i_80',
+
+  // Transmission Loss (S11)
+  'transmissionLoss.thermalBridgePenalty': 'd_97',
+  'transmissionLoss.components.subtotalHeatLoss': 'i_98',
+  'transmissionLoss.thermalBridgePenalty.heatLoss': 'i_97',
+
+  // Volume (S12)
+  'volume.conditioned': 'd_105',
+  'envelope.airFacing.area': 'd_101',
+  'envelope.groundFacing.area': 'd_102',
+  'envelope.airFacing.uValue': 'g_101',
+  'envelope.groundFacing.uValue': 'g_102',
+
+  // Ventilation (S13)
+  'ventilation.volumetricRate': 'd_120',
+  'ventilation.grossHeatLoss': 'd_121',
+  'ventilation.netHeatLoss': 'm_121',
+
+  // Energy (S14/S15)
+  'energy.ted.heating': 'd_127',
+  'mechanical.heating.demand': 'd_114',
+  'energy.total.all': 'd_136',
+
+  // Emissions (S04)
+  'energy.target.electricity': 'j_27',
+  'emissions.target.electricity': 'k_27',
+  'emissions.target.subtotal': 'k_32',
+
+  // Key Values (S01)
+  'keyValues.target.annualCarbon': 'h_8',
+  'keyValues.target.lifetimeCarbon': 'h_6',
+};
+
+test.describe('Computation Graph Parity', () => {
+  test('graph must exactly match legacy StateManager values', async ({ page }) => {
     const fileUrl = 'file://' + path.join(__dirname, '../../index.html');
     await page.goto(fileUrl);
 
-    // Wait for app to fully load (StateManager should exist and have values)
     await page.waitForFunction(() => {
       return window.TEUI?.StateManager?.getValue !== undefined;
     }, { timeout: 30000 });
 
-    // Wait a bit more for calculations to settle
+    // Wait for legacy calculations to settle
     await page.waitForTimeout(2000);
 
-    // Run validation comparison inside the browser
-    const results = await page.evaluate(async () => {
+    const results = await page.evaluate((fieldMappings) => {
       const StateManager = window.TEUI.StateManager;
 
-      // Field mappings to compare
-      const FIELD_MAPPINGS = {
-        // Climate (S03)
-        'climate.heating.degreedays': 'd_20',
-        'climate.cooling.degreedays': 'd_21',
-        'climate.zone': 'd_19',
-
-        // Building (S02)
-        'building.conditionedFloorArea': 'd_12',
-
-        // Volume (S12)
-        'volume.conditioned': 'd_105',
-        'envelope.airFacing.area': 'd_101',
-        'envelope.groundFacing.area': 'd_102',
-        'envelope.airFacing.uValue': 'g_101',
-        'envelope.groundFacing.uValue': 'g_102',
-
-        // Transmission Loss (S11)
-        'transmissionLoss.thermalBridgePenalty': 'd_97',
-        'transmissionLoss.components.subtotalHeatLoss': 'i_98',
-        'transmissionLoss.thermalBridgePenalty.heatLoss': 'i_97',
-
-        // Ventilation (S13)
-        'ventilation.volumetricRate': 'd_120',
-        'ventilation.grossHeatLoss': 'd_121',
-        'ventilation.netHeatLoss': 'm_121',
-
-        // Key Values
-        'energy.teui': 'k_6',
-        'energy.tedi': 'h_6',
-        'emissions.ghgi': 'h_8',
-      };
-
-      // Create computation system
+      // Create computation graph
       const graph = window.TEUI.ComputationGraph.create();
-
-      // Register all nodes
       const nodes = window.TEUI.ComputationNodes || {};
       const moduleOrder = [
         'Climate', 'BuildingInfo', 'Envelope', 'Mechanical',
         'SpaceHeating', 'WaterHeating', 'Renewable', 'Energy',
-        'Forestry', 'Emissions', 'Occupancy',
-        'RadiantGains', 'TransmissionLoss', 'VolumeMetrics', 'Ventilation',
-        'KeyValues'
+        'Forestry', 'Emissions', 'Occupancy', 'InternalGains',
+        'RadiantGains', 'TransmissionLoss', 'VolumeMetrics',
+        'Cooling', 'Ventilation', 'KeyValues'
       ];
 
       let moduleCount = 0;
@@ -81,29 +102,22 @@ test.describe('Computation System Validation', () => {
         }
       }
 
-      // Create state and sync from StateManager
+      // Create state and sync inputs from StateManager
       const state = window.TEUI.MultiModelState.create();
       const targetMeta = window.TEUI.ModelMetadata.createTarget('Validation');
       state.addModel(targetMeta);
 
-      // Sync inputs
       const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
       let syncCount = 0;
-      const syncedValues = {};
 
       for (const semanticPath of inputIds) {
         const inputNode = graph.getInput(semanticPath);
         const legacyId = inputNode?.legacyId;
-
         if (legacyId) {
           const value = StateManager.getValue(legacyId);
           if (value !== undefined && value !== null && value !== '') {
             state.setValueForModel(targetMeta.id, semanticPath, value);
             syncCount++;
-            // Track some key values for debugging
-            if (['d_97', 'd_101', 'd_102', 'd_120', 'd_20'].includes(legacyId)) {
-              syncedValues[legacyId] = value;
-            }
           }
         }
       }
@@ -112,113 +126,100 @@ test.describe('Computation System Validation', () => {
       const engine = window.TEUI.MultiModelEngine.create({ state, graph });
       const computeResult = engine.computeAllForModel(targetMeta.id);
 
-      // Compare values
-      const comparisons = [];
-      let matchCount = 0;
-      let closeCount = 0;
-      let mismatchCount = 0;
-      let missingCount = 0;
-
-      function parseNum(value, defaultVal = 0) {
+      // Compare
+      function parseNum(value, defaultVal = NaN) {
         if (value === null || value === undefined || value === 'N/A' || value === 'Unavailable') return defaultVal;
         const num = parseFloat(String(value).replace(/,/g, ''));
         return isNaN(num) ? defaultVal : num;
       }
 
-      for (const [semanticPath, legacyId] of Object.entries(FIELD_MAPPINGS)) {
-        const oldValue = StateManager.getValue(legacyId);
-        const newValue = state.getValue(semanticPath);
+      const comparisons = [];
 
-        const comparison = {
-          semanticPath,
-          legacyId,
-          oldValue: oldValue,
-          newValue: newValue,
-          status: 'missing',
-          diff: null
-        };
+      for (const [semanticPath, legacyId] of Object.entries(fieldMappings)) {
+        const legacyValue = StateManager.getValue(legacyId);
+        const graphValue = state.getValue(semanticPath);
 
-        if (oldValue === undefined || oldValue === null || oldValue === '' || oldValue === 'N/A') {
-          comparison.status = 'missing';
-          missingCount++;
-        } else if (newValue === undefined || newValue === null) {
-          comparison.status = 'missing';
-          missingCount++;
-        } else {
-          const oldNum = parseNum(oldValue);
-          const newNum = parseNum(newValue);
+        const c = { semanticPath, legacyId, legacyValue, graphValue, status: 'unknown' };
 
-          if (isNaN(oldNum) || isNaN(newNum)) {
-            if (String(oldValue) === String(newValue)) {
-              comparison.status = 'match';
-              matchCount++;
-            } else {
-              comparison.status = 'mismatch';
-              mismatchCount++;
-            }
-          } else {
-            const diff = Math.abs(oldNum - newNum);
-            const relDiff = oldNum !== 0 ? (diff / Math.abs(oldNum)) * 100 : (diff === 0 ? 0 : 100);
-            comparison.diff = relDiff;
-
-            if (diff < 0.001 || relDiff < 0.01) {
-              comparison.status = 'match';
-              matchCount++;
-            } else if (relDiff < 1) {
-              comparison.status = 'close';
-              closeCount++;
-            } else {
-              comparison.status = 'mismatch';
-              mismatchCount++;
-            }
-          }
+        // Both missing = skip
+        if ((legacyValue === undefined || legacyValue === null || legacyValue === '') &&
+            (graphValue === undefined || graphValue === null)) {
+          c.status = 'both_missing';
+          comparisons.push(c);
+          continue;
         }
 
-        comparisons.push(comparison);
+        // One missing
+        if (legacyValue === undefined || legacyValue === null || legacyValue === '') {
+          c.status = 'legacy_missing';
+          comparisons.push(c);
+          continue;
+        }
+        if (graphValue === undefined || graphValue === null) {
+          c.status = 'graph_missing';
+          comparisons.push(c);
+          continue;
+        }
+
+        // String comparison for non-numeric
+        const legacyNum = parseNum(legacyValue);
+        const graphNum = parseNum(graphValue);
+
+        if (isNaN(legacyNum) || isNaN(graphNum)) {
+          c.status = String(legacyValue) === String(graphValue) ? 'match' : 'mismatch';
+          comparisons.push(c);
+          continue;
+        }
+
+        // Numeric comparison: must match within 0.1% or absolute 0.01
+        const absDiff = Math.abs(legacyNum - graphNum);
+        const relDiff = legacyNum !== 0 ? (absDiff / Math.abs(legacyNum)) * 100 : (absDiff === 0 ? 0 : 100);
+        c.absDiff = absDiff;
+        c.relDiff = relDiff;
+
+        if (absDiff < 0.01 || relDiff < 0.1) {
+          c.status = 'match';
+        } else {
+          c.status = 'mismatch';
+        }
+
+        comparisons.push(c);
       }
 
-      return {
-        moduleCount,
-        syncCount,
-        syncedValues,
-        computedNodes: computeResult.computedNodes,
-        duration: computeResult.duration,
-        total: comparisons.length,
-        matchCount,
-        closeCount,
-        mismatchCount,
-        missingCount,
-        comparisons: comparisons.filter(c => c.status !== 'match') // Only return non-matches for brevity
-      };
-    });
+      return { moduleCount, syncCount, computeResult, comparisons };
+    }, FIELD_MAPPINGS);
 
-    // Log results
-    console.log('\n=== VALIDATION RESULTS ===');
-    console.log(`Modules loaded: ${results.moduleCount}`);
-    console.log(`Values synced: ${results.syncCount}`);
-    console.log(`Nodes computed: ${results.computedNodes} in ${results.duration.toFixed(2)}ms`);
-    console.log('\nSynced key values:', JSON.stringify(results.syncedValues, null, 2));
-    console.log('\n--- Comparison Summary ---');
-    console.log(`Total fields: ${results.total}`);
-    console.log(`✓ Exact match: ${results.matchCount}`);
-    console.log(`~ Close (<1%): ${results.closeCount}`);
-    console.log(`✗ Mismatch: ${results.mismatchCount}`);
-    console.log(`? Missing: ${results.missingCount}`);
+    // Report
+    const matches = results.comparisons.filter(c => c.status === 'match');
+    const mismatches = results.comparisons.filter(c => c.status === 'mismatch');
+    const graphMissing = results.comparisons.filter(c => c.status === 'graph_missing');
+    const bothMissing = results.comparisons.filter(c => c.status === 'both_missing');
 
-    if (results.comparisons.length > 0) {
-      console.log('\n--- Non-matching Fields ---');
-      for (const c of results.comparisons) {
-        const diffStr = c.diff !== null ? ` (${c.diff.toFixed(2)}% diff)` : '';
-        console.log(`[${c.status.toUpperCase()}] ${c.legacyId} (${c.semanticPath}): OLD=${c.oldValue} NEW=${c.newValue}${diffStr}`);
+    console.log(`\n=== COMPUTATION GRAPH PARITY ===`);
+    console.log(`Modules: ${results.moduleCount} | Inputs synced: ${results.syncCount} | Nodes computed: ${results.computeResult.computedNodes}`);
+    console.log(`Fields tested: ${results.comparisons.length}`);
+    console.log(`  Match: ${matches.length}`);
+    console.log(`  Mismatch: ${mismatches.length}`);
+    console.log(`  Graph missing: ${graphMissing.length}`);
+    console.log(`  Both missing: ${bothMissing.length}`);
+
+    if (mismatches.length > 0) {
+      console.log(`\n--- MISMATCHES (test will FAIL) ---`);
+      for (const c of mismatches) {
+        const diffStr = c.relDiff !== undefined ? ` (${c.relDiff.toFixed(1)}% / ${c.absDiff.toFixed(4)} abs)` : '';
+        console.log(`  ${c.legacyId} (${c.semanticPath}): legacy=${c.legacyValue} graph=${c.graphValue}${diffStr}`);
       }
     }
 
-    // Assertions
-    expect(results.moduleCount).toBeGreaterThan(10);
-    expect(results.syncCount).toBeGreaterThan(50);
+    if (graphMissing.length > 0) {
+      console.log(`\n--- GRAPH MISSING (test will FAIL) ---`);
+      for (const c of graphMissing) {
+        console.log(`  ${c.legacyId} (${c.semanticPath}): legacy=${c.legacyValue} graph=undefined`);
+      }
+    }
 
-    // Log match rate
-    const matchRate = ((results.matchCount + results.closeCount) / (results.total - results.missingCount) * 100).toFixed(1);
-    console.log(`\nMatch rate: ${matchRate}%`);
+    // STRICT: zero mismatches, zero missing
+    expect(mismatches.length, `${mismatches.length} fields mismatch between graph and legacy`).toBe(0);
+    expect(graphMissing.length, `${graphMissing.length} fields missing from graph`).toBe(0);
   });
 });
