@@ -571,14 +571,9 @@
             }
           });
 
-          // Re-sync graph values to SM after refreshUI. Some sections'
-          // refreshUI triggers listener cascades that overwrite SM values.
-          const CI = window.TEUI.ComputationIntegration;
-          if (CI?.syncToStateManager) {
-            window.TEUI.StateManager.muteListeners();
-            CI.syncToStateManager();
-            CI.syncReferenceToStateManager();
-            window.TEUI.StateManager.unmuteListeners();
+          // DOMBridge stamps graph truth to DOM (final authority)
+          if (window.TEUI.DOMBridge?.updateFromGraph) {
+            window.TEUI.DOMBridge.updateFromGraph();
           }
         }
 

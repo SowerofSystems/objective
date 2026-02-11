@@ -332,6 +332,11 @@ TEUI.ReferenceToggle = (function () {
     switchAllSectionsMode(mode);
     updateAllCalculatedDisplays();
 
+    // DOMBridge stamps graph truth to DOM (final authority)
+    if (window.TEUI.DOMBridge?.updateFromGraph) {
+      window.TEUI.DOMBridge.updateFromGraph();
+    }
+
     // Update main toggle button text if it exists
     const runRefBtn = document.getElementById(RUN_REFERENCE_BUTTON_ID);
     if (runRefBtn) {

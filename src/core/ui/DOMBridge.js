@@ -636,11 +636,149 @@
   }
 
   // ============================================================================
+  // GRAPH-TO-DOM STAMPER
+  // ============================================================================
+  //
+  // updateFromGraph() reads computed values from MultiModelState and stamps
+  // them directly to DOM elements. It runs LAST in the calculation pipeline,
+  // overwriting any corruption from legacy section code cascades.
+  //
+  // One-way: reads MultiModelState → writes DOM. Never touches StateManager.
+  // Mode-aware: reads Target or Reference model via isReferenceMode().
+  // Skips contenteditable: user-input fields untouched.
+  // ============================================================================
+
+  // Fields needing non-default format (default: "number-2dp-comma")
+  // Built from scanning each section's updateCalculatedDisplayValues()
+  // and cross-referencing with graph node compute() return types.
+  //
+  // "raw" = graph returns pre-formatted string (e.g. "52%", "tier3", "✓")
+  // "integer-percent" = graph returns whole number that IS a percentage (e.g. 176 → "176%")
+  const FORMAT_OVERRIDES = {
+    // S01 Key Values: 1 decimal place for numeric fields
+    e_10: "number-1dp", e_8: "number-1dp", e_6: "number-1dp",
+    h_10: "number-1dp", h_8: "number-1dp", h_6: "number-1dp",
+    k_10: "number-1dp", k_8: "number-1dp", k_6: "number-1dp",
+    i_10: "raw", f_10: "raw",       // tier labels (strings like "tier3")
+    m_6: "raw", m_8: "raw", m_10: "raw",  // graph returns "99%", "48%" strings
+    j_8: "raw", j_10: "raw",              // graph returns "52%" strings
+
+    // S03 Climate: integers
+    d_20: "integer", d_21: "integer",
+    d_22: "integer", h_22: "integer",
+    d_25: "integer", l_22: "integer", l_24: "integer",
+    e_23: "integer-nocomma", i_23: "integer-nocomma",
+    e_24: "integer-nocomma", i_24: "integer-nocomma",
+    e_25: "integer-nocomma",
+    j_19: "number-1dp",                // climate zone
+    m_23: "raw", m_24: "raw",          // graph returns formatted strings
+    n_23: "raw", n_24: "raw",          // graph returns "✓" / "✗"
+
+    // S04 Energy: emission factor integers, nuclear waste 4dp
+    l_27: "integer",
+    l_28: "integer", l_29: "integer", l_30: "integer", l_31: "integer",
+    l_33: "number-4dp",
+
+    // S13 Cooling: compliance ratios (graph returns whole numbers like 176 = 176%)
+    // and pass/fail checkmarks (graph returns "✓"/"✗" strings)
+    m_113: "integer-percent", m_115: "integer-percent", m_116: "integer-percent",
+    m_117: "integer-percent", m_118: "integer-percent", m_119: "integer-percent",
+    n_113: "raw", n_115: "raw", n_116: "raw",
+    n_117: "raw", n_118: "raw", n_119: "raw",
+    n_124: "raw",
+    m_124: "integer",
+  };
+
+  /**
+   * Read computed values from MultiModelState and write directly to DOM.
+   * Runs as final step after section updateCalculatedDisplayValues().
+   */
+  function updateFromGraph() {
+    const CI = window.TEUI.ComputationIntegration;
+    if (!CI?.isInitialized?.()) return;
+
+    const graph = CI.getGraph();
+    const state = CI.getState();
+    if (!graph || !state) return;
+
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode?.() || false;
+    const modelId = isRef ? CI.getRefModelId() : state.getActiveModelId();
+    if (!modelId) return;
+
+    const fmt = window.TEUI.formatNumber;
+    const parse = window.TEUI.parseNumeric;
+    if (!fmt || !parse) return;
+
+    // Process computed nodes
+    const nodeIds = graph.getAllNodeIds ? graph.getAllNodeIds() : [];
+    for (const nodeId of nodeIds) {
+      const node = graph.getNode(nodeId);
+      if (!node?.legacyId) continue;
+
+      stampField(node.legacyId, state.getValueForModel(modelId, nodeId), fmt, parse);
+    }
+
+    // Process input nodes (they also have computed values in the model)
+    const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
+    for (const inputId of inputIds) {
+      const input = graph.getInput(inputId);
+      if (!input?.legacyId) continue;
+
+      stampField(input.legacyId, state.getValueForModel(modelId, inputId), fmt, parse);
+    }
+  }
+
+  /**
+   * Stamp a single field value to the DOM element.
+   * @param {string} legacyId - The data-field-id attribute value
+   * @param {*} value - The raw value from MultiModelState
+   * @param {Function} fmt - window.TEUI.formatNumber
+   * @param {Function} parse - window.TEUI.parseNumeric
+   */
+  function stampField(legacyId, value, fmt, parse) {
+    const el = document.querySelector(`[data-field-id="${legacyId}"]`);
+    if (!el) return;
+
+    // Skip user-input elements
+    if (el.hasAttribute("contenteditable")) return;
+    const tag = el.tagName;
+    if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+
+    // Skip elements containing form controls (dropdowns rendered inside TD cells)
+    if (el.querySelector("input, select, textarea")) return;
+
+    if (value === undefined || value === null) return;
+
+    const formatType = FORMAT_OVERRIDES[legacyId] || "number-2dp-comma";
+
+    if (formatType === "raw") {
+      el.textContent = String(value);
+      return;
+    }
+
+    // "integer-percent": graph returns whole number (176) meaning 176%
+    if (formatType === "integer-percent") {
+      const n = parse(value, NaN);
+      if (!isNaN(n)) {
+        el.textContent = Math.round(n) + "%";
+      }
+      return;
+    }
+
+    const n = parse(value, NaN);
+    if (!isNaN(n)) {
+      el.textContent = fmt(n, formatType);
+    }
+  }
+
+  // ============================================================================
   // EXPORT
   // ============================================================================
 
   window.TEUI.DOMBridge = {
-    create: createDOMBridge
+    create: createDOMBridge,
+    updateFromGraph: updateFromGraph,
+    FORMAT_OVERRIDES: FORMAT_OVERRIDES
   };
 
   console.log("[DOMBridge] Module loaded");

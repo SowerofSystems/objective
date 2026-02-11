@@ -519,16 +519,9 @@ TEUI.Calculator = (function () {
       }
     });
 
-    // Step 7: Re-sync computed values to SM. Legacy listener cascades during
-    // display updates may have overwritten graph-computed values in SM.
-    // Mute to prevent triggering another cascade cycle.
-    if (window.TEUI.StateManager?.muteListeners) {
-      window.TEUI.StateManager.muteListeners();
-    }
-    CI.syncToStateManager();
-    CI.syncReferenceToStateManager();
-    if (window.TEUI.StateManager?.unmuteListeners) {
-      window.TEUI.StateManager.unmuteListeners();
+    // Step 7: DOMBridge stamps graph truth to DOM (final authority)
+    if (window.TEUI.DOMBridge?.updateFromGraph) {
+      window.TEUI.DOMBridge.updateFromGraph();
     }
 
     if (result) {

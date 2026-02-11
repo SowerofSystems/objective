@@ -1133,6 +1133,7 @@
     syncToStateManager,
 
     // Reference model support
+    getRefModelId,
     populateReferenceModel,
     syncReferenceToStateManager,
 
