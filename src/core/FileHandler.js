@@ -555,11 +555,7 @@
         ) {
           this.calculator.calculateAll();
 
-          // Refresh all section UIs after graph compute.
-          // Mute listeners during refresh — some sections' refreshUI writes to SM
-          // (e.g., Section03 writes d_19 via handleProvinceChange), which would
-          // trigger cascading listener chains that overwrite graph-computed values.
-          window.TEUI.StateManager.muteListeners();
+          // Refresh all section UIs after graph compute
           const sectionIds = [
             "sect01", "sect02", "sect03", "sect04", "sect05", "sect06",
             "sect07", "sect08", "sect09", "sect10", "sect11", "sect12",
@@ -574,7 +570,16 @@
               }
             }
           });
-          window.TEUI.StateManager.unmuteListeners();
+
+          // Re-sync graph values to SM after refreshUI. Some sections'
+          // refreshUI triggers listener cascades that overwrite SM values.
+          const CI = window.TEUI.ComputationIntegration;
+          if (CI?.syncToStateManager) {
+            window.TEUI.StateManager.muteListeners();
+            CI.syncToStateManager();
+            CI.syncReferenceToStateManager();
+            window.TEUI.StateManager.unmuteListeners();
+          }
         }
 
         this.showStatus(
