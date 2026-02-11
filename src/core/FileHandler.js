@@ -9,21 +9,21 @@
   "use strict";
 
   const SAMPLE_PROJECTS = [
-    // Residences — progressively more complex
-    { id: "03", file: "03-residence-phi-classic.csv", name: "Residence: PHI Classic", type: "C-Residential", location: "QC, Hemmingford" },
-    { id: "12", file: "12-residence-phi-low-energy.csv", name: "Residence: PHI Low Energy", type: "C-Residential", location: "ON, Hawkesbury" },
-    { id: "02", file: "02-residence-sb12-net-zero.csv", name: "Residence: SB12 Net-Zero", type: "C-Residential", location: "ON, Collingwood" },
-    { id: "10", file: "10-residence-sb12-duplex.csv", name: "Residence: SB12 Duplex", type: "C-Residential", location: "ON, Mississauga" },
-    // MURBs / Apartments — progressively more complex
-    { id: "04", file: "04-apartment-necb-small.csv", name: "Apartment: NECB Small", type: "C-Residential", location: "ON, Hamilton" },
-    { id: "06", file: "06-apartment-necb-mid-rise.csv", name: "Apartment: NECB Mid-Rise", type: "C-Residential", location: "ON, Woodstock" },
-    { id: "05", file: "05-apartment-necb-large.csv", name: "Apartment: NECB Large", type: "C-Residential", location: "ON, Hamilton" },
-    { id: "07", file: "07-murb-necb-low-rise.csv", name: "MURB: NECB Low-Rise", type: "C-Residential", location: "ON, Simcoe" },
-    { id: "08", file: "08-murb-necb-mid-rise.csv", name: "MURB: NECB Mid-Rise", type: "C-Residential", location: "ON, London" },
-    // Assembly — progressively more complex
-    { id: "09", file: "09-assembly-necb-recreation.csv", name: "Assembly: NECB Recreation", type: "A-Assembly", location: "ON, St. Catharines" },
-    { id: "01", file: "01-assembly-obc-sb10.csv", name: "Assembly: OBC SB10", type: "A-Assembly", location: "ON, Alexandria" },
-    { id: "11", file: "11-assembly-community-centre.csv", name: "Assembly: Community Centre", type: "A-Assembly", location: "ON, Milton" },
+    // Part 9 Residences
+    { id: "03", file: "03-residence-phi-classic.csv", name: "Part 9: Residence: PHI Classic", type: "C-Residential", location: "QC, Hemmingford" },
+    { id: "12", file: "12-residence-phi-low-energy.csv", name: "Part 9: Residence: PHI Low Energy", type: "C-Residential", location: "ON, Hawkesbury" },
+    { id: "02", file: "02-residence-sb12-net-zero.csv", name: "Part 9: Residence: SB12 Net-Zero", type: "C-Residential", location: "ON, Collingwood" },
+    { id: "10", file: "10-residence-sb12-duplex.csv", name: "Part 9: Residence: SB12 Net Zero Duplex", type: "C-Residential", location: "ON, Mississauga" },
+    // Part 3 MURBs (C-Occupancy)
+    { id: "04", file: "04-apartment-necb-small.csv", name: "Part 3: MURB (C-Occupancy): NECB PHIUS Small", type: "C-Residential", location: "ON, Hamilton" },
+    { id: "06", file: "06-apartment-necb-mid-rise.csv", name: "Part 3: MURB: (C-Occupancy) NECB PHIUS Mid-Rise", type: "C-Residential", location: "ON, Woodstock" },
+    { id: "05", file: "05-apartment-necb-large.csv", name: "Part 3: MURB: (C-Occupancy) NECB PHIUS Large", type: "C-Residential", location: "ON, Hamilton" },
+    { id: "07", file: "07-murb-necb-low-rise.csv", name: "Part 3: MURB: (C-Occupancy) NECB PHIUS Low-Rise C-Residential", type: "C-Residential", location: "ON, Simcoe" },
+    { id: "08", file: "08-murb-necb-mid-rise.csv", name: "Part 3: MURB: (C-Occupancy) NECB PHIUS Mid-Rise C-Residential", type: "C-Residential", location: "ON, London" },
+    // Part 3 Assembly (A2-Occupancy)
+    { id: "09", file: "09-assembly-necb-recreation.csv", name: "Part 3: Athletic Centre: (A2-Occupancy) NECB Net-Zero", type: "A-Assembly", location: "ON, St. Catharines" },
+    { id: "01", file: "01-assembly-obc-sb10.csv", name: "Part 3: Event Centre: (A2-Occupancy) OBC SB10 Zero-Emission", type: "A-Assembly", location: "ON, Alexandria" },
+    { id: "11", file: "11-assembly-community-centre.csv", name: "Part 3: Community Centre: (A2 Occupancy) OBC SB10", type: "A-Assembly", location: "ON, Milton" },
   ];
 
   // Define FileHandler class
