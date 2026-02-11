@@ -511,18 +511,26 @@ TEUI.Calculator = (function () {
     // Step 5: Sync Reference computed values to StateManager (ref_* prefix)
     CI.syncReferenceToStateManager();
 
-    // Step 6: Unmute listeners
-    if (window.TEUI.StateManager?.unmuteListeners) {
-      window.TEUI.StateManager.unmuteListeners();
+    // Step 6: Mute listeners during display updates.
+    // Some sections' refreshUI writes to SM (e.g., Section03 writes d_19),
+    // which triggers cascading listener chains (Section04 recalculates).
+    // The graph already computed all values — prevent legacy overwrites.
+    if (window.TEUI.StateManager?.muteListeners) {
+      window.TEUI.StateManager.muteListeners();
     }
 
-    // Step 7: Update all section displays (since listeners were muted during sync)
+    // Step 7: Update all section displays
     Object.keys(window.TEUI.SectionModules || {}).forEach(sectionKey => {
       const section = window.TEUI.SectionModules[sectionKey];
       if (section?.ModeManager?.updateCalculatedDisplayValues) {
         section.ModeManager.updateCalculatedDisplayValues();
       }
     });
+
+    // Step 8: Unmute listeners after all display updates are complete
+    if (window.TEUI.StateManager?.unmuteListeners) {
+      window.TEUI.StateManager.unmuteListeners();
+    }
 
     if (result) {
       console.log(`[Calculator] ✅ ComputationGraph complete: ${result.totalComputed} nodes in ${result.totalDuration?.toFixed(2)}ms`);

@@ -320,6 +320,12 @@
     const targetId = state.getActiveModelId();
     let syncCount = 0;
 
+    // Clear stale state before re-syncing. Without this, values from a
+    // previous CSV load remain in the graph state when the new CSV doesn't
+    // set them, causing downstream computations to use stale inputs.
+    state.clearSharedState();
+    state.clearModelState(targetId);
+
     // Get all registered input IDs and use their legacyId property
     const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
 
@@ -340,6 +346,7 @@
     // Also sync Reference model
     const refModelId = getRefModelId();
     if (refModelId) {
+      state.clearModelState(refModelId);
       let refSyncCount = 0;
       for (const semanticPath of inputIds) {
         const inputNode = graph.getInput(semanticPath);

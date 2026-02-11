@@ -44,118 +44,106 @@ test.describe('Case Study Graph Parity', () => {
       const csvContent = fs.readFileSync(path.join(CASE_STUDIES_DIR, csvFile), 'utf-8');
       const caseName = csvFile.replace('.csv', '');
 
-      const result = await page.evaluate(async (csv) => {
-        return new Promise((resolve) => {
-          try {
-            // Import CSV - triggers legacy recalculation
-            window.TEUI.FileHandler.processImportedCSV(csv);
+      const result = await page.evaluate((csv) => {
+        try {
+          // Import CSV - all calculations are synchronous
+          window.TEUI.FileHandler.processImportedCSV(csv);
 
-            // Wait for legacy calculations to settle
-            setTimeout(() => {
-              try {
-                const SM = window.TEUI.StateManager;
+          const SM = window.TEUI.StateManager;
 
-                // Create a FRESH computation graph (not the integration's)
-                const graph = window.TEUI.ComputationGraph.create();
-                const nodes = window.TEUI.ComputationNodes || {};
-                const moduleOrder = [
-                  'Climate', 'BuildingInfo', 'Envelope', 'Mechanical',
-                  'SpaceHeating', 'WaterHeating', 'Renewable', 'Energy',
-                  'Forestry', 'Emissions', 'Occupancy', 'InternalGains',
-                  'RadiantGains', 'TransmissionLoss', 'VolumeMetrics',
-                  'Cooling', 'Ventilation', 'KeyValues'
-                ];
+          // Create a FRESH computation graph (not the integration's)
+          const graph = window.TEUI.ComputationGraph.create();
+          const nodes = window.TEUI.ComputationNodes || {};
+          const moduleOrder = [
+            'Climate', 'BuildingInfo', 'Envelope', 'Mechanical',
+            'SpaceHeating', 'WaterHeating', 'Renewable', 'Energy',
+            'Forestry', 'Emissions', 'Occupancy', 'InternalGains',
+            'RadiantGains', 'TransmissionLoss', 'VolumeMetrics',
+            'Cooling', 'Ventilation', 'KeyValues'
+          ];
 
-                for (const name of moduleOrder) {
-                  if (nodes[name]) nodes[name].register(graph);
-                }
-
-                // Create fresh state
-                const state = window.TEUI.MultiModelState.create();
-                const meta = window.TEUI.ModelMetadata.createTarget('Parity');
-                state.addModel(meta);
-
-                // Sync ALL inputs from StateManager
-                const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
-                let syncCount = 0;
-                for (const sp of inputIds) {
-                  const inputNode = graph.getInput(sp);
-                  const lid = inputNode?.legacyId;
-                  if (lid) {
-                    const v = SM.getValue(lid);
-                    if (v !== undefined && v !== null && v !== '') {
-                      state.setValueForModel(meta.id, sp, v);
-                      syncCount++;
-                    }
-                  }
-                }
-
-                // Compute
-                const engine = window.TEUI.MultiModelEngine.create({ state, graph });
-                engine.computeAllForModel(meta.id);
-
-                // Compare EVERY computed node
-                const mismatches = [];
-                let matchCount = 0;
-                let skipCount = 0;
-
-                function parseNum(v) {
-                  if (v === null || v === undefined || v === 'N/A' || v === 'Unavailable' || v === '') return NaN;
-                  const n = parseFloat(String(v).replace(/,/g, ''));
-                  return n;
-                }
-
-                for (const nodePath of graph.getAllNodeIds()) {
-                  const node = graph.getNode(nodePath);
-                  if (!node?.legacyId) continue;
-
-                  const lid = node.legacyId;
-                  const legacyVal = SM.getValue(lid);
-                  const graphVal = state.getValueForModel(meta.id, nodePath);
-
-                  // Skip if legacy has no value
-                  if (legacyVal === undefined || legacyVal === null || legacyVal === '') {
-                    skipCount++;
-                    continue;
-                  }
-
-                  const legNum = parseNum(legacyVal);
-                  const graNum = parseNum(graphVal);
-
-                  // String comparison for non-numeric
-                  if (isNaN(legNum) || isNaN(graNum)) {
-                    if (String(legacyVal) === String(graphVal)) {
-                      matchCount++;
-                    } else {
-                      mismatches.push({ lid, path: nodePath, legacy: legacyVal, graph: graphVal });
-                    }
-                    continue;
-                  }
-
-                  const absDiff = Math.abs(legNum - graNum);
-                  const relDiff = legNum !== 0 ? absDiff / Math.abs(legNum) : (absDiff === 0 ? 0 : 1);
-
-                  if (absDiff < 0.01 || relDiff < 0.001) {
-                    matchCount++;
-                  } else {
-                    mismatches.push({
-                      lid, path: nodePath,
-                      legacy: legNum, graph: graNum,
-                      absDiff: absDiff.toFixed(4),
-                      pct: (relDiff * 100).toFixed(2) + '%'
-                    });
-                  }
-                }
-
-                resolve({ syncCount, matchCount, skipCount, mismatches });
-              } catch (e) {
-                resolve({ error: e.message, mismatches: [] });
-              }
-            }, 1000);
-          } catch (e) {
-            resolve({ error: e.message, mismatches: [] });
+          for (const name of moduleOrder) {
+            if (nodes[name]) nodes[name].register(graph);
           }
-        });
+
+          // Create fresh state
+          const state = window.TEUI.MultiModelState.create();
+          const meta = window.TEUI.ModelMetadata.createTarget('Parity');
+          state.addModel(meta);
+
+          // Sync ALL inputs from StateManager
+          const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
+          let syncCount = 0;
+          for (const sp of inputIds) {
+            const inputNode = graph.getInput(sp);
+            const lid = inputNode?.legacyId;
+            if (lid) {
+              const v = SM.getValue(lid);
+              if (v !== undefined && v !== null && v !== '') {
+                state.setValueForModel(meta.id, sp, v);
+                syncCount++;
+              }
+            }
+          }
+
+          // Compute
+          const engine = window.TEUI.MultiModelEngine.create({ state, graph });
+          engine.computeAllForModel(meta.id);
+
+          // Compare EVERY computed node
+          const mismatches = [];
+          let matchCount = 0;
+          let skipCount = 0;
+
+          function parseNum(v) {
+            if (v === null || v === undefined || v === 'N/A' || v === 'Unavailable' || v === '') return NaN;
+            return parseFloat(String(v).replace(/,/g, ''));
+          }
+
+          for (const nodePath of graph.getAllNodeIds()) {
+            const node = graph.getNode(nodePath);
+            if (!node?.legacyId) continue;
+
+            const lid = node.legacyId;
+            const legacyVal = SM.getValue(lid);
+            const graphVal = state.getValueForModel(meta.id, nodePath);
+
+            if (legacyVal === undefined || legacyVal === null || legacyVal === '') {
+              skipCount++;
+              continue;
+            }
+
+            const legNum = parseNum(legacyVal);
+            const graNum = parseNum(graphVal);
+
+            if (isNaN(legNum) || isNaN(graNum)) {
+              if (String(legacyVal) === String(graphVal)) {
+                matchCount++;
+              } else {
+                mismatches.push({ lid, path: nodePath, legacy: legacyVal, graph: graphVal });
+              }
+              continue;
+            }
+
+            const absDiff = Math.abs(legNum - graNum);
+            const relDiff = legNum !== 0 ? absDiff / Math.abs(legNum) : (absDiff === 0 ? 0 : 1);
+
+            if (absDiff < 0.01 || relDiff < 0.001) {
+              matchCount++;
+            } else {
+              mismatches.push({
+                lid, path: nodePath,
+                legacy: legNum, graph: graNum,
+                absDiff: absDiff.toFixed(4),
+                pct: (relDiff * 100).toFixed(2) + '%'
+              });
+            }
+          }
+
+          return { syncCount, matchCount, skipCount, mismatches };
+        } catch (e) {
+          return { error: e.message, mismatches: [] };
+        }
       }, csvContent);
 
       if (result.error) {

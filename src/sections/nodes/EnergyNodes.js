@@ -52,42 +52,34 @@
     // - d_113, d_114, d_116, d_117 are in MechanicalNodes
     // - m_43 is in RenewableNodes
 
-    // ==== Section 04: Actual Energy Use (User Inputs from Utility Bills) ====
-    // Note: h_27, h_28, h_30, h_33 are COMPUTED by legacy Section04.js, not registered here
+    // ==== Section 04: Raw Energy Use from Utility Bills (d_27, d_28, d_30) ====
+    // These are raw user inputs. The "actual" values (f_27..f_31) are computed
+    // in EmissionsNodes from these raw inputs + unit conversions + renewables.
     {
-      id: "energy.actual.electricity",
+      id: "energy.raw.electricity",
       legacyId: "d_27",
       defaultValue: 0,
       classification: "C",
       section: "S04",
-      label: "Actual Total Electricity Use",
+      label: "Raw Electricity from Bills",
       unit: "kWh/yr"
     },
     {
-      id: "energy.actual.gas",
+      id: "energy.raw.gas",
       legacyId: "d_28",
       defaultValue: 0,
       classification: "C",
       section: "S04",
-      label: "Actual Total Gas Use",
+      label: "Raw Gas from Bills",
       unit: "m³/yr"
     },
     {
-      id: "energy.actual.oil",
+      id: "energy.raw.oil",
       legacyId: "d_30",
       defaultValue: 0,
       classification: "C",
       section: "S04",
-      label: "Actual Total Oil Use",
-      unit: "L/yr"
-    },
-    {
-      id: "energy.actual.propane",
-      legacyId: "d_33",
-      defaultValue: 0,
-      classification: "C",
-      section: "S04",
-      label: "Actual Total Propane Use",
+      label: "Raw Oil from Bills",
       unit: "L/yr"
     },
 

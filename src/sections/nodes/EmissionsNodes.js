@@ -33,25 +33,12 @@
     // These are synced from StateManager for validation
     // ========================================================================
     const inputs = [
-      // Actual energy consumption (f_27 through f_31)
-      { id: "energy.actual.electricity", legacyId: "f_27", section: "S04", classification: "C", label: "Actual Electricity (kWh/yr)", defaultValue: 0 },
-      { id: "energy.actual.gas", legacyId: "f_28", section: "S04", classification: "C", label: "Actual Gas (kWh/yr)", defaultValue: 0 },
-      { id: "energy.actual.propane", legacyId: "f_29", section: "S04", classification: "C", label: "Actual Propane (kWh/yr)", defaultValue: 0 },
-      { id: "energy.actual.oil", legacyId: "f_30", section: "S04", classification: "C", label: "Actual Oil (kWh/yr)", defaultValue: 0 },
-      { id: "energy.actual.wood", legacyId: "f_31", section: "S04", classification: "C", label: "Actual Wood (kWh/yr)", defaultValue: 0 },
-
-      // Actual emissions (g_27 through g_31)
-      { id: "emissions.actual.electricity", legacyId: "g_27", section: "S04", classification: "C", label: "Actual Electricity Emissions (kg CO2e/yr)", defaultValue: 0 },
-      { id: "emissions.actual.gas", legacyId: "g_28", section: "S04", classification: "C", label: "Actual Gas Emissions (kg CO2e/yr)", defaultValue: 0 },
-      { id: "emissions.actual.propane", legacyId: "g_29", section: "S04", classification: "C", label: "Actual Propane Emissions (kg CO2e/yr)", defaultValue: 0 },
-      { id: "emissions.actual.oil", legacyId: "g_30", section: "S04", classification: "C", label: "Actual Oil Emissions (kg CO2e/yr)", defaultValue: 0 },
-      { id: "emissions.actual.wood", legacyId: "g_31", section: "S04", classification: "C", label: "Actual Wood Emissions (kg CO2e/yr)", defaultValue: 0 },
-
-      // Target energy inputs needed for computed j_27-j_31
+      // Raw inputs needed for actual energy/emissions computations
       // d_29: Propane actual usage (user utility bill input)
       { id: "energy.actual.propane.kg", legacyId: "d_29", section: "S04", classification: "A", label: "Total Propane Use (kg/yr)", defaultValue: 0 },
-      // e_51 (waterHeating.gasVolume) now computed in WaterHeatingNodes
-      // k_54 (waterHeating.oilVolume) now computed in WaterHeatingNodes
+      // d_27, d_28, d_30 are registered in EnergyNodes as energy.raw.*
+      // d_31 is registered in ForestryNodes as forestry.woodVolume
+      // d_43, i_43 are computed in RenewableNodes
 
       // Emission factors (l_27 through l_31)
       // All are user-editable with defaults (l_27 can be overridden per CSV)
@@ -66,6 +53,166 @@
     ];
 
     graph.registerInputs(inputs);
+
+    // ========================================================================
+    // COMPUTED: Actual energy consumption (f_27..f_31)
+    // Previously registered as inputs that read stale legacy values.
+    // Now computed from raw bill inputs + unit conversions.
+    // Formulas from Section04.js calculateRow27..calculateRow31.
+    // ========================================================================
+
+    // f_27: Net electricity = raw bills - onsite renewables - offsite renewables
+    graph.registerNode({
+      id: "energy.actual.electricity",
+      legacyId: "f_27",
+      section: "S04",
+      classification: "C",
+      dependencies: ["energy.raw.electricity", "renewable.onsiteTotal", "renewable.offsiteTotal"],
+      label: "Actual Electricity (kWh/yr)",
+      compute: (inputs) => {
+        const d27 = parseNum(inputs["energy.raw.electricity"]);
+        const d43 = parseNum(inputs["renewable.onsiteTotal"]);
+        const i43 = parseNum(inputs["renewable.offsiteTotal"]);
+        return d27 - d43 - i43;
+      },
+    });
+
+    // f_28: Gas m³ → kWh (Section04.js line 1288: =D28*0.0373*277.7778)
+    graph.registerNode({
+      id: "energy.actual.gas",
+      legacyId: "f_28",
+      section: "S04",
+      classification: "C",
+      dependencies: ["energy.raw.gas"],
+      label: "Actual Gas (kWh/yr)",
+      compute: (inputs) => {
+        const d28 = parseNum(inputs["energy.raw.gas"]);
+        return d28 * 0.0373 * 277.7778;
+      },
+    });
+
+    // f_29: Propane kg → kWh (Section04.js line 1299: =D29*14.019)
+    graph.registerNode({
+      id: "energy.actual.propane",
+      legacyId: "f_29",
+      section: "S04",
+      classification: "C",
+      dependencies: ["energy.actual.propane.kg"],
+      label: "Actual Propane (kWh/yr)",
+      compute: (inputs) => {
+        const d29 = parseNum(inputs["energy.actual.propane.kg"]);
+        return d29 * 14.019;
+      },
+    });
+
+    // f_30: Oil L → kWh (Section04.js line 1324: =D30*36.72*0.2777778)
+    graph.registerNode({
+      id: "energy.actual.oil",
+      legacyId: "f_30",
+      section: "S04",
+      classification: "C",
+      dependencies: ["energy.raw.oil"],
+      label: "Actual Oil (kWh/yr)",
+      compute: (inputs) => {
+        const d30 = parseNum(inputs["energy.raw.oil"]);
+        return d30 * 36.72 * 0.2777778;
+      },
+    });
+
+    // f_31: Wood m³ → kWh (Section04.js line 1335: =D31*1000)
+    graph.registerNode({
+      id: "energy.actual.wood",
+      legacyId: "f_31",
+      section: "S04",
+      classification: "C",
+      dependencies: ["forestry.woodVolume"],
+      label: "Actual Wood (kWh/yr)",
+      compute: (inputs) => {
+        const d31 = parseNum(inputs["forestry.woodVolume"]);
+        return d31 * 1000;
+      },
+    });
+
+    // ========================================================================
+    // COMPUTED: Actual emissions (g_27..g_31)
+    // g = raw_quantity × emission_factor / 1000
+    // Formulas from Section04.js calculateRow27..calculateRow31.
+    // ========================================================================
+
+    // g_27: Electricity emissions = f_27 × l_27 / 1000
+    graph.registerNode({
+      id: "emissions.actual.electricity",
+      legacyId: "g_27",
+      section: "S04",
+      classification: "C",
+      dependencies: ["energy.actual.electricity", "emissions.factor.electricity"],
+      label: "Actual Electricity Emissions (kg CO2e/yr)",
+      compute: (inputs) => {
+        const f27 = parseNum(inputs["energy.actual.electricity"]);
+        const l27 = parseNum(inputs["emissions.factor.electricity"], 51);
+        return (f27 * l27) / 1000;
+      },
+    });
+
+    // g_28: Gas emissions = d_28 × l_28 / 1000 (Section04.js line 1289)
+    graph.registerNode({
+      id: "emissions.actual.gas",
+      legacyId: "g_28",
+      section: "S04",
+      classification: "C",
+      dependencies: ["energy.raw.gas", "emissions.factor.gas"],
+      label: "Actual Gas Emissions (kg CO2e/yr)",
+      compute: (inputs) => {
+        const d28 = parseNum(inputs["energy.raw.gas"]);
+        const l28 = parseNum(inputs["emissions.factor.gas"], 1921);
+        return (d28 * l28) / 1000;
+      },
+    });
+
+    // g_29: Propane emissions = d_29 × l_29 / 1000 (Section04.js line 1300)
+    graph.registerNode({
+      id: "emissions.actual.propane",
+      legacyId: "g_29",
+      section: "S04",
+      classification: "C",
+      dependencies: ["energy.actual.propane.kg", "emissions.factor.propane"],
+      label: "Actual Propane Emissions (kg CO2e/yr)",
+      compute: (inputs) => {
+        const d29 = parseNum(inputs["energy.actual.propane.kg"]);
+        const l29 = parseNum(inputs["emissions.factor.propane"], 2970);
+        return (d29 * l29) / 1000;
+      },
+    });
+
+    // g_30: Oil emissions = d_30 × l_30 / 1000 (Section04.js line 1325)
+    graph.registerNode({
+      id: "emissions.actual.oil",
+      legacyId: "g_30",
+      section: "S04",
+      classification: "C",
+      dependencies: ["energy.raw.oil", "emissions.factor.oil"],
+      label: "Actual Oil Emissions (kg CO2e/yr)",
+      compute: (inputs) => {
+        const d30 = parseNum(inputs["energy.raw.oil"]);
+        const l30 = parseNum(inputs["emissions.factor.oil"], 2753);
+        return (d30 * l30) / 1000;
+      },
+    });
+
+    // g_31: Wood emissions = d_31 × l_31 (Section04.js line 1336)
+    graph.registerNode({
+      id: "emissions.actual.wood",
+      legacyId: "g_31",
+      section: "S04",
+      classification: "C",
+      dependencies: ["forestry.woodVolume", "emissions.factor.wood"],
+      label: "Actual Wood Emissions (kg CO2e/yr)",
+      compute: (inputs) => {
+        const d31 = parseNum(inputs["forestry.woodVolume"]);
+        const l31 = parseNum(inputs["emissions.factor.wood"], 150);
+        return d31 * l31;
+      },
+    });
 
     // ========================================================================
     // TARGET ENERGY BY FUEL TYPE (j_27-j_31)
