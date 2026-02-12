@@ -48,6 +48,18 @@
     m_38: "raw", m_39: "raw", m_40: "raw", m_41: "raw",
     n_38: "raw", n_39: "raw", n_40: "raw", n_41: "raw",
 
+    // S07 Water Heating: compliance ratios (pre-formatted strings)
+    m_49: "raw", m_50: "raw", m_52: "raw", m_53: "raw",
+    h_50: "number-1dp",
+
+    // S09 Internal Gains: compliance ratios and checkmarks
+    m_65: "raw", m_66: "raw", m_67: "raw",
+    n_65: "raw", n_66: "raw", n_67: "raw",
+
+    // S12 Volume Metrics: compliance text and checkmarks
+    m_104: "raw", n_104: "raw",
+    m_109: "raw", n_109: "raw",
+
     // S13 Cooling: compliance ratios and pass/fail checkmarks
     m_113: "integer-percent", m_115: "integer-percent", m_116: "integer-percent",
     m_117: "integer-percent", m_118: "integer-percent", m_119: "integer-percent",
@@ -55,6 +67,9 @@
     n_117: "raw", n_118: "raw", n_119: "raw",
     n_124: "raw",
     m_124: "integer",
+
+    // S15 TEUI Summary: GHG reduction percentage
+    d_145: "number-2dp-comma",
   };
 
   // S01 fields always read from Target model (S01 renders all 3 columns itself)

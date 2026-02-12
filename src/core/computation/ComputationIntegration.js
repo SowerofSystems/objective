@@ -249,6 +249,12 @@
       log("Registered ComplianceNodes");
     }
 
+    // Section-level compliance display nodes (S07, S09, S12, S15)
+    if (nodes.SectionCompliance) {
+      nodes.SectionCompliance.register(g);
+      log("Registered SectionComplianceNodes");
+    }
+
     // F280 peak load & equipment sizing compliance (builds on Section15 peak loads)
     if (nodes.F280Compliance) {
       nodes.F280Compliance.register(g);
@@ -816,6 +822,11 @@
     // Merge ComplianceNodes mapping if available
     if (nodes.Compliance?.REF_OUTPUT_TO_TARGET_INPUT) {
       Object.assign(merged, nodes.Compliance.REF_OUTPUT_TO_TARGET_INPUT);
+    }
+
+    // Merge SectionComplianceNodes mapping (S07, S09, S12, S15)
+    if (nodes.SectionCompliance?.REF_OUTPUT_TO_TARGET_INPUT) {
+      Object.assign(merged, nodes.SectionCompliance.REF_OUTPUT_TO_TARGET_INPUT);
     }
 
     return merged;
