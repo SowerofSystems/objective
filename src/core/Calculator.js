@@ -495,8 +495,10 @@ TEUI.Calculator = (function () {
 
     const CI = window.TEUI.ComputationIntegration;
 
-    // Step 1: Sync Target inputs from StateManager
-    CI.syncFromStateManager();
+    // Step 1 (removed): syncFromStateManager no longer needed.
+    // LegacyAdapter dual-writes every SM.setValue() to MultiModelState in real-time,
+    // so graph state is always current. Batch sync was causing timing fragility
+    // (e.g., Gas heating sample failing on first load due to sync order).
 
     // Step 2: Populate Reference model from ReferenceValues.js
     const refPopResult = CI.populateReferenceModel();
