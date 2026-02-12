@@ -948,6 +948,11 @@ document.addEventListener("DOMContentLoaded", function () {
         if (success) {
           console.log("[init.js] ComputationGraph initialized");
 
+          // Enable LegacyAdapter: intercepts SM.setValue() and dual-writes to graph state.
+          // Every SM write automatically flows to MultiModelState in real-time.
+          const CI = window.TEUI.ComputationIntegration;
+          CI.enableAdapter();
+
           // One-way data flow: SM input change → partial graph recompute → stamp to DOM
           // Registered here (after CI init) because the listener needs CI + graph to be ready.
           const SM = window.TEUI.StateManager;
