@@ -332,9 +332,12 @@ TEUI.ReferenceToggle = (function () {
     switchAllSectionsMode(mode);
     updateAllCalculatedDisplays();
 
-    // DOMBridge stamps graph truth to DOM (final authority)
-    if (window.TEUI.DOMBridge?.updateFromGraph) {
-      window.TEUI.DOMBridge.updateFromGraph();
+    // DOMBridge stamps graph values for the correct model (final authority)
+    if (window.TEUI.DOMBridge?.stampAll) {
+      window.TEUI.DOMBridge.stampAll();
+    }
+    if (window.TEUI.SectionModules?.sect01?.postStamp) {
+      window.TEUI.SectionModules.sect01.postStamp();
     }
 
     // Update main toggle button text if it exists

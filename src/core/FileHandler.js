@@ -261,40 +261,9 @@
         typeof this.calculator.calculateAll === "function"
       ) {
         this.calculator.calculateAll();
-
-        // ✅ FIX (Oct 10): Refresh ALL Pattern A section UIs after calculateAll
-        // Pattern A sections use isolated state - DOM must be refreshed to show updated values
-        console.log(
-          "[FileHandler] 🔄 Refreshing Pattern A section UIs after import..."
-        );
-        const patternASections = [
-          "sect02",
-          "sect03",
-          "sect04",
-          "sect05",
-          "sect06",
-          "sect07",
-          "sect08",
-          "sect09",
-          "sect10",
-          "sect11",
-          "sect12",
-          "sect13",
-          "sect14",
-          "sect15",
-        ];
-
-        patternASections.forEach(sectionId => {
-          const section = window.TEUI?.SectionModules?.[sectionId];
-          if (section?.ModeManager?.refreshUI) {
-            section.ModeManager.refreshUI();
-            // ✅ Also update calculated display values (some sections need both calls)
-            if (section.ModeManager.updateCalculatedDisplayValues) {
-              section.ModeManager.updateCalculatedDisplayValues();
-            }
-            console.log(`[FileHandler] ✅ ${sectionId} UI refreshed`);
-          }
-        });
+        // calculateAll() handles the complete pipeline:
+        // graph compute → syncToSM → DOMBridge.stampAll → postStamp
+        // No legacy section refreshUI/updateCalculatedDisplayValues needed.
       }
     }
 
@@ -554,27 +523,9 @@
           typeof this.calculator.calculateAll === "function"
         ) {
           this.calculator.calculateAll();
-
-          // Refresh all section UIs after graph compute
-          const sectionIds = [
-            "sect01", "sect02", "sect03", "sect04", "sect05", "sect06",
-            "sect07", "sect08", "sect09", "sect10", "sect11", "sect12",
-            "sect13", "sect14", "sect15", "sect16", "sect17", "sect18"
-          ];
-          sectionIds.forEach(sectionId => {
-            const section = window.TEUI?.SectionModules?.[sectionId];
-            if (section?.ModeManager?.refreshUI) {
-              section.ModeManager.refreshUI();
-              if (section.ModeManager.updateCalculatedDisplayValues) {
-                section.ModeManager.updateCalculatedDisplayValues();
-              }
-            }
-          });
-
-          // DOMBridge stamps graph truth to DOM (final authority)
-          if (window.TEUI.DOMBridge?.updateFromGraph) {
-            window.TEUI.DOMBridge.updateFromGraph();
-          }
+          // calculateAll() handles the complete pipeline:
+          // graph compute → syncToSM → DOMBridge.stampAll → postStamp
+          // No legacy section refreshUI/updateCalculatedDisplayValues needed.
         }
 
         this.showStatus(
@@ -1112,34 +1063,9 @@
         typeof this.calculator.calculateAll === "function"
       ) {
         this.calculator.calculateAll();
-
-        // ✅ PHASE 6: Final DOM refresh (show calculated results)
-        const allSections = [
-          "sect02",
-          "sect03",
-          "sect04",
-          "sect05",
-          "sect06",
-          "sect07",
-          "sect08",
-          "sect09",
-          "sect10",
-          "sect11",
-          "sect12",
-          "sect13",
-          "sect14",
-          "sect15",
-        ];
-
-        allSections.forEach(sectionId => {
-          const section = window.TEUI?.SectionModules?.[sectionId];
-          if (section?.ModeManager?.refreshUI) {
-            section.ModeManager.refreshUI();
-          }
-          if (section?.ModeManager?.updateCalculatedDisplayValues) {
-            section.ModeManager.updateCalculatedDisplayValues();
-          }
-        });
+        // calculateAll() handles the complete pipeline:
+        // graph compute → syncToSM → DOMBridge.stampAll → postStamp
+        // No legacy section refreshUI/updateCalculatedDisplayValues needed.
       } else {
         console.error(
           "[FileHandler] Calculator.calculateAll() not available - calculations not triggered"

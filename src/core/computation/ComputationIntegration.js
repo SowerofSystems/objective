@@ -29,7 +29,6 @@
   let state = null;
   let engine = null;
   let adapter = null;
-  let domBridge = null;
 
   // Configuration
   const config = {
@@ -122,8 +121,7 @@
         graph,
         state,
         engine,
-        getAdapter: () => adapter,
-        getDOMBridge: () => domBridge
+        getAdapter: () => adapter
       };
 
       return true;
@@ -491,81 +489,6 @@
   }
 
   // ============================================================================
-  // DOM BRIDGE
-  // ============================================================================
-
-  /**
-   * Enable DOMBridge for automatic DOM synchronization
-   * @param {string} [containerSelector] - CSS selector for container (optional)
-   */
-  function enableDOMBridge(containerSelector) {
-    if (!initialized) {
-      error("Must initialize before enabling DOMBridge");
-      return false;
-    }
-
-    if (domBridge) {
-      warn("DOMBridge already enabled");
-      return true;
-    }
-
-    const DOMBridge = window.TEUI.DOMBridge;
-    if (!DOMBridge) {
-      error("DOMBridge module not loaded");
-      return false;
-    }
-
-    try {
-      domBridge = DOMBridge.create({ state, engine });
-
-      // Bind ALL elements with data-field-id attribute (inputs, outputs, displays)
-      // This includes Key Values table cells, computed result displays, etc.
-      const allFieldElements = document.querySelectorAll("[data-field-id]");
-      let boundCount = 0;
-
-      allFieldElements.forEach(el => {
-        const fieldId = el.dataset.fieldId;
-        if (fieldId) {
-          domBridge.bind(el, fieldId);
-          boundCount++;
-        }
-      });
-
-      // Also bind elements in specific containers if provided
-      if (containerSelector) {
-        const containers = document.querySelectorAll(containerSelector);
-        containers.forEach(container => {
-          const inputs = container.querySelectorAll("input[id], select[id]");
-          inputs.forEach(el => {
-            if (el.id && !el.dataset.fieldId) {
-              domBridge.bind(el, el.id);
-              boundCount++;
-            }
-          });
-        });
-      }
-
-      domBridge.connect();
-      log(`DOMBridge enabled - bound ${boundCount} elements`);
-      return true;
-    } catch (e) {
-      error("Failed to enable DOMBridge:", e);
-      return false;
-    }
-  }
-
-  /**
-   * Disable DOMBridge
-   */
-  function disableDOMBridge() {
-    if (domBridge) {
-      domBridge.destroy();
-      domBridge = null;
-      log("DOMBridge disabled");
-    }
-  }
-
-  // ============================================================================
   // VALUE CHANGE HANDLING
   // ============================================================================
 
@@ -714,7 +637,6 @@
     console.log("State:", state.getStats());
     console.log("Engine:", engine.getStats());
     console.log("Adapter:", adapter ? "installed" : "not installed");
-    console.log("DOMBridge:", domBridge ? "enabled" : "not enabled");
     console.groupEnd();
   }
 
@@ -1118,10 +1040,6 @@
     // Adapter control
     enableAdapter,
     disableAdapter,
-
-    // DOM Bridge control
-    enableDOMBridge,
-    disableDOMBridge,
 
     // Parallel mode
     onLegacyValueChange,

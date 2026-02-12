@@ -948,13 +948,66 @@ document.addEventListener("DOMContentLoaded", function () {
         if (success) {
           console.log("[init.js] ComputationGraph initialized");
 
-          // Enable DOMBridge for reactive UI updates
-          setTimeout(function() {
-            const bridgeEnabled = window.TEUI.ComputationIntegration.enableDOMBridge();
-            if (bridgeEnabled) {
-              console.log("[init.js] DOMBridge enabled");
+          // One-way data flow: SM input change → partial graph recompute → stamp to DOM
+          // Registered here (after CI init) because the listener needs CI + graph to be ready.
+          const SM = window.TEUI.StateManager;
+          if (SM) {
+            let _recomputing = false;
+            let _legacyLookup = null;
+
+            function getLegacyLookup() {
+              if (_legacyLookup) return _legacyLookup;
+              const graph = window.TEUI.ComputationIntegration.getGraph();
+              if (!graph) return null;
+              _legacyLookup = new Map();
+              // ONLY inputs — computed node values synced back to SM must be ignored.
+              // This ensures the wildcard only reacts to user-changed inputs.
+              for (const id of (graph.getAllInputIds?.() || [])) {
+                const inp = graph.getInput(id);
+                if (inp?.legacyId) _legacyLookup.set(inp.legacyId, id);
+              }
+              return _legacyLookup;
             }
-          }, 100);
+
+            SM.addListener("*", function (newValue, oldValue, fieldId) {
+              if (_recomputing) return;
+
+              const CI = window.TEUI.ComputationIntegration;
+              if (!CI?.isInitialized?.()) return;
+
+              const lookup = getLegacyLookup();
+              const semanticPath = lookup?.get(fieldId);
+              if (!semanticPath) return;
+
+              _recomputing = true;
+              // Mute SM listeners to prevent cascading fires from legacy section code.
+              // Legacy sections have their own SM listeners that write values back to SM
+              // when inputs change — those writes would trigger more wildcard fires.
+              SM.muteListeners();
+              try {
+                const mState = CI.getState();
+                const modelId = mState.getActiveModelId();
+                if (modelId) {
+                  mState.setValueForModel(modelId, semanticPath, newValue);
+                  const engine = window.TEUI.ComputationSystem?.engine;
+                  if (engine) {
+                    engine.onValueChange(semanticPath, newValue, modelId);
+                  }
+                }
+
+                if (window.TEUI.DOMBridge?.stampAll) {
+                  window.TEUI.DOMBridge.stampAll();
+                }
+                if (window.TEUI.SectionModules?.sect01?.postStamp) {
+                  window.TEUI.SectionModules.sect01.postStamp();
+                }
+              } finally {
+                SM.unmuteListeners();
+                _recomputing = false;
+              }
+            });
+            console.log("[init.js] Wildcard SM listener registered for partial recompute");
+          }
         }
       }, 500);
     }

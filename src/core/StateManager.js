@@ -593,23 +593,30 @@ TEUI.StateManager = (function () {
   function notifyListeners(fieldId, newValue, oldValue, state) {
     // Check if listeners are muted (import quarantine)
     if (!listenersActive) {
-      console.log(
-        `[StateManager] Skipped listener for ${fieldId} (quarantine active)`
-      );
       return;
     }
 
-    // Original loop for other fieldIds
-    if (!listeners.has(fieldId)) {
-      return;
+    // Fire field-specific listeners
+    if (listeners.has(fieldId)) {
+      listeners.get(fieldId).forEach(callback => {
+        try {
+          callback(newValue, oldValue, fieldId, state);
+        } catch (error) {
+          console.error(`Error in listener for ${fieldId}:`, error);
+        }
+      });
     }
-    listeners.get(fieldId).forEach(callback => {
-      try {
-        callback(newValue, oldValue, fieldId, state);
-      } catch (error) {
-        console.error(`Error in listener for ${fieldId}:`, error);
-      }
-    });
+
+    // Fire wildcard listeners
+    if (listeners.has("*")) {
+      listeners.get("*").forEach(callback => {
+        try {
+          callback(newValue, oldValue, fieldId, state);
+        } catch (error) {
+          console.error(`Error in wildcard listener for ${fieldId}:`, error);
+        }
+      });
+    }
   }
 
   /**
@@ -2362,6 +2369,13 @@ TEUI.StateManager = (function () {
     getCurrentDisplayValue: getCurrentDisplayValue,
     getCorrespondingTCell: getCorrespondingTCell,
     getTCellValue: getTCellValue,
+
+    // Debug: expose listener counts
+    _getListenerCounts: function() {
+      const counts = {};
+      listeners.forEach((set, key) => { counts[key] = set.size; });
+      return counts;
+    },
   };
 })();
 

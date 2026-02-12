@@ -318,14 +318,10 @@ TEUI.SectionIntegrator = (function () {
       }
     }
 
-    // If Section 1 exists, trigger TEUI update there as well since it uses TEDI values
-    if (window.TEUI.SectionModules && window.TEUI.SectionModules.sect01) {
-      if (
-        typeof window.TEUI.SectionModules.sect01.updateTEUIDisplay ===
-        "function"
-      ) {
-        window.TEUI.SectionModules.sect01.updateTEUIDisplay();
-      }
+    // Stamp graph values to DOM (includes Section01)
+    if (window.TEUI.DOMBridge?.stampAll) window.TEUI.DOMBridge.stampAll();
+    if (window.TEUI.SectionModules?.sect01?.postStamp) {
+      window.TEUI.SectionModules.sect01.postStamp();
     }
   }
 
@@ -425,12 +421,9 @@ TEUI.SectionIntegrator = (function () {
     if (dropdown) {
       dropdown.addEventListener("change", function () {
         // Update the display in Section01
-        if (
-          window.TEUI.SectionModules.sect01 &&
-          typeof window.TEUI.SectionModules.sect01
-            .updateActualValuesBasedOnDropdown === "function"
-        ) {
-          window.TEUI.SectionModules.sect01.updateActualValuesBasedOnDropdown();
+        if (window.TEUI.DOMBridge?.stampAll) window.TEUI.DOMBridge.stampAll();
+        if (window.TEUI.SectionModules?.sect01?.postStamp) {
+          window.TEUI.SectionModules.sect01.postStamp();
         }
       });
     }
@@ -454,12 +447,10 @@ TEUI.SectionIntegrator = (function () {
       );
     }
 
-    // Always trigger display update regardless of calculation method
-    if (
-      window.TEUI.SectionModules.sect01 &&
-      typeof window.TEUI.SectionModules.sect01.updateTEUIDisplay === "function"
-    ) {
-      window.TEUI.SectionModules.sect01.updateTEUIDisplay();
+    // Stamp graph values to DOM (includes Section01)
+    if (window.TEUI.DOMBridge?.stampAll) window.TEUI.DOMBridge.stampAll();
+    if (window.TEUI.SectionModules?.sect01?.postStamp) {
+      window.TEUI.SectionModules.sect01.postStamp();
     }
   }
 
