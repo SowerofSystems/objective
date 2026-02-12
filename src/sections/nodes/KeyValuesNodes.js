@@ -75,10 +75,10 @@
 
     graph.registerInput({
       id: "reference.emissions.embodied",
-      legacyId: "ref_i_41",
+      legacyId: "ref_i_39",
       section: "S01",
       classification: "C",
-      label: "Reference Embodied Emissions (kgCO2e)",
+      label: "Reference Typology Embodied Carbon (kgCO2e/m²)",
       defaultValue: 0,
     });
 

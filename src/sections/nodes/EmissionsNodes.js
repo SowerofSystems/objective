@@ -40,9 +40,8 @@
       // d_31 is registered in ForestryNodes as forestry.woodVolume
       // d_43, i_43 are computed in RenewableNodes
 
-      // Emission factors (l_27 through l_31)
-      // All are user-editable with defaults (l_27 can be overridden per CSV)
-      { id: "emissions.factor.electricity", legacyId: "l_27", section: "S04", classification: "C", label: "Electricity Emission Factor (gCO2e/kWh)", defaultValue: 51 },
+      // Emission factors (l_28 through l_31)
+      // l_27 is a computed node (derived from province + year)
       { id: "emissions.factor.gas", legacyId: "l_28", section: "S04", classification: "C", label: "Gas Emission Factor (gCO2e/m³)", defaultValue: 1921 },
       { id: "emissions.factor.propane", legacyId: "l_29", section: "S04", classification: "C", label: "Propane Emission Factor (gCO2e/kg)", defaultValue: 2970 },
       { id: "emissions.factor.oil", legacyId: "l_30", section: "S04", classification: "C", label: "Oil Emission Factor (gCO2e/litre)", defaultValue: 2753 },
@@ -53,6 +52,60 @@
     ];
 
     graph.registerInputs(inputs);
+
+    // Reporting year (needed for province-based emission factor lookup)
+    graph.registerInput({
+      id: "building.reportingYear",
+      legacyId: "h_12",
+      section: "S02",
+      classification: "G",
+      label: "Reporting Year",
+      defaultValue: 2022,
+    });
+
+    // ========================================================================
+    // COMPUTED: Electricity Emission Factor (l_27)
+    // Province + year lookup matching Section04.js getElectricityEmissionFactor()
+    // ========================================================================
+    const GRID_INTENSITY_FACTORS = {
+      ON: {
+        2015: 46, 2016: 40, 2017: 18, 2018: 29, 2019: 29,
+        2020: 36, 2021: 44, 2022: 51, 2023: 67, 2024: 71,
+        2025: 75, 2026: 81, 2027: 124, 2028: 113, 2029: 113,
+        2030: 106, 2031: 98, 2032: 67, 2033: 54, 2034: 48,
+        2035: 44, 2036: 49, 2037: 50, 2038: 54, 2039: 65,
+        2040: 50, 2041: 44, 2042: 34.58, 2043: 28.66, 2044: 19.66,
+        2045: 17.32, 2046: 9.98, 2047: 4.94, 2048: 4.47, 2049: 3.23,
+        2050: 2.77, default: 51,
+      },
+      QC: { default: 1 },
+      BC: { default: 12 },
+      AB: { default: 650 },
+      SK: { default: 720 },
+      MB: { default: 3 },
+      NS: { default: 600 },
+      NB: { default: 340 },
+      NL: { default: 30 },
+      PE: { default: 12 },
+      NT: { default: 180 },
+      YT: { default: 2 },
+      NU: { default: 200 },
+    };
+
+    graph.registerNode({
+      id: "emissions.factor.electricity",
+      legacyId: "l_27",
+      section: "S04",
+      classification: "C",
+      dependencies: ["climate.location.province", "building.reportingYear"],
+      label: "Electricity Emission Factor (gCO2e/kWh)",
+      compute: (inputs) => {
+        const province = inputs["climate.location.province"] || "ON";
+        const year = parseNum(inputs["building.reportingYear"], 2022);
+        const provinceFactors = GRID_INTENSITY_FACTORS[province] || GRID_INTENSITY_FACTORS["ON"];
+        return provinceFactors[year] || provinceFactors.default;
+      },
+    });
 
     // ========================================================================
     // COMPUTED: Actual energy consumption (f_27..f_31)
@@ -344,31 +397,7 @@
       },
     });
 
-    // ========================================================================
-    // GRID INTENSITY FACTORS (Reference for province-based defaults)
-    // These can be used by the UI layer to set l_27 default based on province
-    // When loading from CSV, l_27 is loaded as an input and overrides these
-    // Section04.js GRID_INTENSITY_FACTORS
-    // ========================================================================
-
-    // Province-based grid intensity factors (gCO2e/kWh)
-    const GRID_INTENSITY_FACTORS = {
-      ON: { default: 51 },
-      QC: { default: 1 },
-      BC: { default: 12 },
-      AB: { default: 650 },
-      SK: { default: 720 },
-      MB: { default: 3 },
-      NS: { default: 600 },
-      NB: { default: 340 },
-      NL: { default: 30 },
-      PE: { default: 12 },
-      NT: { default: 180 },
-      YT: { default: 2 },
-      NU: { default: 200 },
-    };
-
-    // Expose for external use (e.g., UI layer setting province-based defaults)
+    // Expose GRID_INTENSITY_FACTORS for external use (e.g., UI layer)
     window.TEUI.EmissionsFactors = window.TEUI.EmissionsFactors || {};
     window.TEUI.EmissionsFactors.GRID_INTENSITY = GRID_INTENSITY_FACTORS;
 
