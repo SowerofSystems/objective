@@ -78,7 +78,7 @@
           link.className = "list-group-item list-group-item-action d-flex justify-content-between align-items-center";
           link.innerHTML =
             `<span>${project.name}</span>` +
-            `<small class="text-muted">${project.type} &middot; ${project.location}</small>`;
+            `<small class="text-muted">${project.location}</small>`;
           link.addEventListener("click", e => {
             e.preventDefault();
             this.loadSampleProject(project);

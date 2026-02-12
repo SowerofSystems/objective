@@ -295,32 +295,33 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // Toggle section collapse/expand when header is clicked (vertical layout only)
-  document.querySelectorAll(".section-header").forEach(header => {
-    header.addEventListener("click", function (event) {
-      // Skip if clicking on buttons in the header
-      if (
-        event.target.closest(".btn") ||
-        event.target.closest(".layout-toggle-btn")
-      ) {
-        return;
-      }
+  document.addEventListener("click", function (event) {
+    const header = event.target.closest(".section-header");
+    if (!header) return;
 
-      // Only toggle in vertical layout
-      if (!isVerticalLayout) return;
+    // Skip if clicking on buttons in the header
+    if (
+      event.target.closest(".btn") ||
+      event.target.closest(".layout-toggle-btn")
+    ) {
+      return;
+    }
 
-      // Skip Key Values section
-      if (header.closest(".section").id === "keyValues") return;
+    // Only toggle in vertical layout
+    if (!isVerticalLayout) return;
 
-      // Toggle collapsed class
-      header.classList.toggle("collapsed");
+    // Skip Key Values section
+    if (header.closest(".section").id === "keyValues") return;
 
-      // Add aria-expanded attribute for accessibility
-      const isCollapsed = header.classList.contains("collapsed");
-      header.setAttribute("aria-expanded", !isCollapsed);
+    // Toggle collapsed class
+    header.classList.toggle("collapsed");
 
-      // Save collapse state to localStorage
-      saveCollapsedState();
-    });
+    // Add aria-expanded attribute for accessibility
+    const isCollapsed = header.classList.contains("collapsed");
+    header.setAttribute("aria-expanded", !isCollapsed);
+
+    // Save collapse state to localStorage
+    saveCollapsedState();
   });
 
   // Expand/collapse all sections button
@@ -448,11 +449,12 @@ document.addEventListener("DOMContentLoaded", function () {
         const section = header.closest(".section");
         if (section.id === "keyValues") return;
 
-        // Special case: WOMBAT and Notes sections default to collapsed for cleaner UI
+        // Special case: WOMBAT, Notes, and F280 sections default to collapsed for cleaner UI
         const shouldBeCollapsed =
           collapsedSections[section.id] ||
           section.id === "wombat" ||
-          section.id === "notes";
+          section.id === "notes" ||
+          section.id === "f280Compliance";
 
         if (shouldBeCollapsed) {
           header.classList.add("collapsed");
@@ -583,6 +585,12 @@ document.addEventListener("DOMContentLoaded", function () {
   if (notesSection && !notesSection.classList.contains("collapsed")) {
     notesSection.classList.add("collapsed");
     notesSection.setAttribute("aria-expanded", "false");
+  }
+
+  const f280Section = document.querySelector("#f280Compliance .section-header");
+  if (f280Section && !f280Section.classList.contains("collapsed")) {
+    f280Section.classList.add("collapsed");
+    f280Section.setAttribute("aria-expanded", "false");
   }
 
   // Function to update tab display mode based on container width
