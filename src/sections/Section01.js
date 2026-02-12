@@ -439,13 +439,17 @@ window.TEUI.SectionModules.sect01 = (function () {
           m_6_result = Math.round(m_6_result * 100) / 100; // Round to 2 decimal places
         }
       }
-      // IF(D15="IPCC AR6 EPC", 3.39, ...)
-      else if (d_15 === "IPCC AR6 EPC") {
-        m_6_result = 3.39;
-      }
-      // IF(D15="IPCC AR6 EA", 4.07,...)
-      else if (d_15 === "IPCC AR6 EA") {
-        m_6_result = 4.07;
+      // IPCC AR6 EPC/EA: i_41 / d_16 (modelled embodied carbon vs target)
+      else if (d_15 === "IPCC AR6 EPC" || d_15 === "IPCC AR6 EA") {
+        const d_16 = window.TEUI?.parseNumeric?.(
+          window.TEUI?.StateManager?.getValue("d_16"), 0
+        ) ?? 0;
+        if (d_16 > 0) {
+          m_6_result = i_41 / d_16;
+          m_6_result = Math.round(m_6_result * 100) / 100;
+        } else {
+          m_6_result = "N/A";
+        }
       }
       // TGS4 Tier 2/3: i_41 / d_16 (modelled embodied carbon vs adopted cap)
       else if (d_15 === "TGS4 Tier 2" || d_15 === "TGS4 Tier 3") {
