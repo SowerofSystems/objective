@@ -22,8 +22,8 @@
   const CARBON_TARGETS = {
     "Self Reported": null,
     "BR18 (Denmark)": 500,
-    "IPCC AR6 EPC": 3.39,
-    "IPCC AR6 EA": 0.17,
+    "IPCC AR6 EPC": 169.49,
+    "IPCC AR6 EA": 8.69,
     "CaGBC ZCB D": 425,
     "CaGBC ZCB P": 425,
     "LEED BD+C v4.1": 500,

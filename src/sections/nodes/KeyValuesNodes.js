@@ -432,12 +432,13 @@
             const result = (i_41 / h_13 + k_8_calc) / 12;
             return `${Math.round(result * 100)}%`;
           }
-        } else if (d_15 === "IPCC AR6 EPC") {
-          const result = 3.39;
-          return `${Math.round(result * 100)}%`;
-        } else if (d_15 === "IPCC AR6 EA") {
-          const result = 4.07;
-          return `${Math.round(result * 100)}%`;
+        } else if (d_15 === "IPCC AR6 EPC" || d_15 === "IPCC AR6 EA") {
+          const d_16 = parseNum(inputs["building.embodiedCarbonTarget"]);
+          if (d_16 > 0) {
+            const result = i_41 / d_16;
+            return `${Math.round(result * 100)}%`;
+          }
+          return "N/A";
         } else if (d_15 === "TGS4 Tier 2" || d_15 === "TGS4 Tier 3") {
           // TGS4 Tier 2/3: i_41 / d_16 (modelled embodied carbon vs adopted cap)
           const d_16 = parseNum(inputs["building.embodiedCarbonTarget"]);
