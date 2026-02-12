@@ -117,8 +117,8 @@
       const el = document.querySelector(`[data-field-id="${legacyId}"]`);
       if (!el) continue;
 
-      // Skip user-input elements
-      if (el.hasAttribute("contenteditable")) continue;
+      // Skip user-input elements only if actively being edited
+      if (el.hasAttribute("contenteditable") && document.activeElement === el) continue;
       const tag = el.tagName;
       if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") continue;
       if (el.querySelector("input, select, textarea")) continue;
