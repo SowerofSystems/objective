@@ -1,0 +1,163 @@
+{
+  "id": "emissions.tgs4.buildingCategory",
+  "label": "TGS4 Building Category",
+  "section": "S02",
+  "classification": "C",
+  "_meta": {
+    "description": "Maps Major Occupancy and storey count to TGS4 building category. The Ontario Building Code Part 9 applies to residential buildings of 3 storeys or fewer; Part 3 applies to all other buildings. Within Part 3, residential and commercial occupancies have different embodied carbon caps than other occupancy types.",
+    "source": "City of Toronto, Toronto Green Standard Version 4",
+    "authority": "Ryan Zizzo, Mantle Climate (co-author of TGS4 guidelines with Kelly Alvarez-Doran)"
+  },
+  "signature": {
+    "inputs": [
+      {
+        "name": "building.majorOccupancy",
+        "type": "string",
+        "description": "OBC Major Occupancy classification (d_12)"
+      },
+      {
+        "name": "building.numStoreys",
+        "type": "number",
+        "description": "Number of storeys above grade (d_16_storeys)"
+      }
+    ],
+    "output": {
+      "type": "string",
+      "enum": [
+        "Part 9 Low-Rise Residential",
+        "Part 3 Residential/Commercial",
+        "Part 3 Other"
+      ]
+    }
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "building.majorOccupancy in ['A-Assembly', 'B1-Detention', 'B2-Care and Treatment', 'B3-Detention Care & Treatment', 'C-Residential', 'D-Business & Personal Services', 'E-Mercantile', 'F-Industrial']",
+        "description": "Must be a valid OBC Major Occupancy"
+      },
+      {
+        "condition": "building.numStoreys >= 1",
+        "description": "At least one storey"
+      }
+    ],
+    "invariants": [
+      {
+        "condition": "output is one of the three TGS4 categories",
+        "description": "Every valid input maps to exactly one category"
+      },
+      {
+        "condition": "non-residential occupancies always map to Part 3",
+        "description": "Part 9 applies only to C-Residential"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "occupancy == 'C-Residential' AND storeys <= 3",
+      "output": "Part 9 Low-Rise Residential",
+      "note": "OBC Part 9: residential, ≤3 storeys. LCA scope A1-A3."
+    },
+    {
+      "condition": "occupancy == 'C-Residential' AND storeys > 3",
+      "output": "Part 3 Residential/Commercial",
+      "note": "OBC Part 3: mid-to-high rise residential. LCA scope A1-A5."
+    },
+    {
+      "condition": "occupancy == 'D-Business & Personal Services'",
+      "output": "Part 3 Residential/Commercial",
+      "note": "Commercial office. LCA scope A1-A5."
+    },
+    {
+      "condition": "occupancy == 'E-Mercantile'",
+      "output": "Part 3 Residential/Commercial",
+      "note": "Commercial retail. LCA scope A1-A5."
+    },
+    {
+      "condition": "occupancy in ['A-Assembly', 'B1-Detention', 'B2-Care and Treatment', 'B3-Detention Care & Treatment', 'F-Industrial']",
+      "output": "Part 3 Other",
+      "note": "All other OBC occupancy types. LCA scope A1-A5."
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "occupancy is null or unrecognized",
+      "handling": "Default to 'Part 3 Other'",
+      "rationale": "Most conservative category (highest caps)"
+    },
+    {
+      "condition": "storeys is null or unparseable",
+      "handling": "Default to 2 storeys",
+      "rationale": "Default building.numStoreys value; puts residential in Part 9"
+    }
+  ],
+  "formula": {
+    "implementation": "BuildingInfoNodes.js: getTGS4Category()"
+  },
+  "tests": [
+    {
+      "name": "Low-rise residential (2 storeys)",
+      "inputs": { "building.majorOccupancy": "C-Residential", "building.numStoreys": 2 },
+      "expected": "Part 9 Low-Rise Residential"
+    },
+    {
+      "name": "Low-rise residential (3 storeys — boundary)",
+      "inputs": { "building.majorOccupancy": "C-Residential", "building.numStoreys": 3 },
+      "expected": "Part 9 Low-Rise Residential"
+    },
+    {
+      "name": "Mid-rise residential (4 storeys — boundary)",
+      "inputs": { "building.majorOccupancy": "C-Residential", "building.numStoreys": 4 },
+      "expected": "Part 3 Residential/Commercial"
+    },
+    {
+      "name": "High-rise residential (12 storeys)",
+      "inputs": { "building.majorOccupancy": "C-Residential", "building.numStoreys": 12 },
+      "expected": "Part 3 Residential/Commercial"
+    },
+    {
+      "name": "Commercial office",
+      "inputs": { "building.majorOccupancy": "D-Business & Personal Services", "building.numStoreys": 5 },
+      "expected": "Part 3 Residential/Commercial"
+    },
+    {
+      "name": "Commercial retail",
+      "inputs": { "building.majorOccupancy": "E-Mercantile", "building.numStoreys": 1 },
+      "expected": "Part 3 Residential/Commercial"
+    },
+    {
+      "name": "Assembly",
+      "inputs": { "building.majorOccupancy": "A-Assembly", "building.numStoreys": 2 },
+      "expected": "Part 3 Other"
+    },
+    {
+      "name": "Care facility",
+      "inputs": { "building.majorOccupancy": "B2-Care and Treatment", "building.numStoreys": 3 },
+      "expected": "Part 3 Other"
+    },
+    {
+      "name": "Industrial",
+      "inputs": { "building.majorOccupancy": "F-Industrial", "building.numStoreys": 1 },
+      "expected": "Part 3 Other"
+    },
+    {
+      "name": "Single storey residential",
+      "inputs": { "building.majorOccupancy": "C-Residential", "building.numStoreys": 1 },
+      "expected": "Part 9 Low-Rise Residential"
+    }
+  ],
+  "references": [
+    {
+      "source": "City of Toronto TGS Version 4 — Part 9 Low-Rise Residential",
+      "url": "https://www.toronto.ca/city-government/planning-development/official-plan-guidelines/toronto-green-standard/toronto-green-standard-version-4/low-rise-residential-version-4/buildings-energy-emissions/"
+    },
+    {
+      "source": "City of Toronto TGS Version 4 — Part 3 Mid-to-High Rise",
+      "url": "https://www.toronto.ca/city-government/planning-development/official-plan-guidelines/toronto-green-standard/toronto-green-standard-version-4/mid-to-high-rise-residential-non-residential-version-4/buildings-energy-emissions-resilience/"
+    },
+    {
+      "source": "Ontario Building Code — Part 9 vs Part 3 applicability",
+      "note": "Part 9 applies to buildings ≤3 storeys and ≤600 m² per floor; Part 3 applies to all others"
+    }
+  ]
+}

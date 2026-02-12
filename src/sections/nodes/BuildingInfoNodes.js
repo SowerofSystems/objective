@@ -21,12 +21,42 @@
   // Carbon targets by standard (kgCO2e/m²)
   const CARBON_TARGETS = {
     "Self Reported": null,
+    "BR18 (Denmark)": 500,
+    "IPCC AR6 EPC": 3.39,
+    "IPCC AR6 EA": 0.17,
+    "CaGBC ZCB D": 425,
+    "CaGBC ZCB P": 425,
     "LEED BD+C v4.1": 500,
     "LEED BD+C v4.1 (40%)": 300,
     "Zero Carbon Building": 250,
     "Passive House": 200,
     "CaGBC Zero Carbon": 175,
   };
+
+  // TGS4 Adopted Embodied Carbon Caps (kgCO2e/m²)
+  // Source: City of Toronto TGS Version 4 (adopted values, not Figure 1)
+  // Caps do NOT vary by material type — Ryan Zizzo, Mantle Climate
+  const TGS4_CAPS = {
+    "Part 9 Low-Rise Residential": { "TGS4 Tier 2": 250, "TGS4 Tier 3": null },
+    "Part 3 Residential/Commercial": { "TGS4 Tier 2": 350, "TGS4 Tier 3": 250 },
+    "Part 3 Other": { "TGS4 Tier 2": 400, "TGS4 Tier 3": 275 },
+  };
+
+  /**
+   * Maps Major Occupancy + storey count to TGS4 building category.
+   * Part 9: residential ≤3 storeys (OBC threshold).
+   * Part 3: everything else.
+   * See: docs/parnas-tables/emissions/tgs4-building-category.json
+   */
+  function getTGS4Category(occupancy, storeys) {
+    if (occupancy === "C-Residential") {
+      return storeys <= 3 ? "Part 9 Low-Rise Residential" : "Part 3 Residential/Commercial";
+    }
+    if (occupancy === "D-Business & Personal Services" || occupancy === "E-Mercantile") {
+      return "Part 3 Residential/Commercial";
+    }
+    return "Part 3 Other";
+  }
 
   /**
    * Register all Building Info nodes with the computation graph
@@ -162,7 +192,7 @@
     });
 
     // Embodied Carbon Target (based on carbon standard selection)
-    // Uses i_39 (typology) for TGS4, i_41 (user modelled) for Self Reported
+    // See: docs/parnas-tables/emissions/embodied-carbon-target.json
     graph.registerNode({
       id: "building.embodiedCarbonTarget",
       legacyId: "d_16",
@@ -171,7 +201,9 @@
       dependencies: [
         "building.carbonStandard",
         "building.typologyEmbodiedCarbon",
-        "building.userModelledEmbodiedCarbon"
+        "building.userModelledEmbodiedCarbon",
+        "building.majorOccupancy",
+        "building.numStoreys"
       ],
       label: "Embodied Carbon Target (kgCO2e/m²)",
       compute: (inputs) => {
@@ -179,17 +211,25 @@
         const typologyValue = parseFloat(inputs["building.typologyEmbodiedCarbon"]) || 0;
         const userModelledValue = parseFloat(inputs["building.userModelledEmbodiedCarbon"]) || 345.82;
 
-        // Not Reported returns N/A
         if (standard === "Not Reported") {
           return "N/A";
         }
 
-        // TGS4 uses typology value (i_39)
+        // TGS4 Tier 2/3: adopted caps by occupancy category
+        if (standard === "TGS4 Tier 2" || standard === "TGS4 Tier 3") {
+          const occupancy = inputs["building.majorOccupancy"] || "A-Assembly";
+          const storeys = parseFloat(inputs["building.numStoreys"]) || 2;
+          const category = getTGS4Category(occupancy, storeys);
+          const cap = TGS4_CAPS[category]?.[standard];
+          return cap ?? "N/A";
+        }
+
+        // TGS4 "Typical Values": backward compat, uses material-based typology
         if (standard === "TGS4") {
           return typologyValue;
         }
 
-        // Check for fixed standard targets
+        // Fixed standard targets (BR18, IPCC, CaGBC, LEED, etc.)
         const target = CARBON_TARGETS[standard];
         if (target !== null && target !== undefined) {
           return target;
@@ -254,6 +294,8 @@
   window.TEUI.ComputationNodes.BuildingInfo = {
     register,
     CARBON_TARGETS,
+    TGS4_CAPS,
+    getTGS4Category,
   };
 
   console.log("[BuildingInfoNodes] Module loaded");

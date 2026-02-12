@@ -1381,30 +1381,28 @@ window.TEUI.SectionModules.sect05 = (function () {
         const d_15_value = window.TEUI.StateManager.getValue(fieldId);
         let d_16_value;
 
-        // Excel formula logic: =IF(D15="BR18 (Denmark)",500,IF(D15="IPCC AR6 EPC"...
-        switch (d_15_value) {
-          case "BR18 (Denmark)":
-          case "TGS4":
-            d_16_value = 500;
-            break;
-          case "CaGBC ZCB D":
-          case "CaGBC ZCB P":
-            d_16_value = 425;
-            break;
-          case "IPCC AR6 EPC":
-            // TODO: Look up from S3-Carbon-Standards K7 when available
-            d_16_value = 400; // Placeholder
-            break;
-          case "IPCC AR6 EA":
-            // TODO: Look up from S3-Carbon-Standards L7 when available
-            d_16_value = 450; // Placeholder
-            break;
-          case "Self Reported":
-            // Use current i_41 value from S05
+        // TGS4 Tier 2/3: adopted caps by occupancy category
+        if (d_15_value === "TGS4 Tier 2" || d_15_value === "TGS4 Tier 3") {
+          const occField = isReference ? "ref_d_12" : "d_12";
+          const storField = isReference ? "ref_d_16_storeys" : "d_16_storeys";
+          const occupancy = window.TEUI.StateManager.getValue(occField) || "A-Assembly";
+          const storeys = parseFloat(window.TEUI.StateManager.getValue(storField) || "2") || 2;
+          const category = window.TEUI.ComputationNodes.BuildingInfo.getTGS4Category(occupancy, storeys);
+          const cap = window.TEUI.ComputationNodes.BuildingInfo.TGS4_CAPS[category]?.[d_15_value];
+          d_16_value = cap ?? "N/A";
+        } else if (d_15_value === "TGS4") {
+          // "Typical Values": backward compat, let Section02 handle via i_39 typology path
+          return;
+        } else {
+          // All other standards: use CARBON_TARGETS lookup
+          const fixedTarget = window.TEUI.ComputationNodes.BuildingInfo.CARBON_TARGETS[d_15_value];
+          if (fixedTarget !== null && fixedTarget !== undefined) {
+            d_16_value = fixedTarget;
+          } else if (d_15_value === "Self Reported") {
             d_16_value = getSectionValue("i_41", isReference);
-            break;
-          default:
+          } else {
             d_16_value = "N/A";
+          }
         }
 
         // Update S02's d_16 field

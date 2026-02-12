@@ -1,0 +1,395 @@
+{
+  "id": "building.embodiedCarbonTarget",
+  "legacyId": "d_16",
+  "label": "Embodied Carbon Target",
+  "section": "S02",
+  "classification": "C",
+  "_meta": {
+    "description": "Embodied carbon cap (kgCO2e/m²) determined by the selected carbon benchmarking standard. For TGS4 Tier 2/3, the cap is looked up from the adopted City of Toronto values by building category (occupancy + storeys). For the legacy TGS4 'Typical Values', the cap comes from the material-based typology. For other standards, fixed targets or user-modelled values are used.",
+    "terminology": "Use 'embodied' for emissions released to atmosphere. Use 'storage' for carbon sequestered in materials. Do not use 'embedded'. — Ryan Zizzo, Mantle Climate"
+  },
+  "signature": {
+    "inputs": [
+      {
+        "name": "building.carbonStandard",
+        "type": "string",
+        "description": "Carbon benchmarking standard selection (d_15)"
+      },
+      {
+        "name": "building.typologyEmbodiedCarbon",
+        "type": "number",
+        "unit": "kgCO2e/m²",
+        "description": "Material-based typology cap from TYPOLOGY_CAPS lookup (i_39)"
+      },
+      {
+        "name": "building.userModelledEmbodiedCarbon",
+        "type": "number",
+        "unit": "kgCO2e/m²",
+        "description": "User-entered modelled embodied carbon value (i_41)"
+      },
+      {
+        "name": "building.majorOccupancy",
+        "type": "string",
+        "description": "OBC Major Occupancy classification (d_12) — used for TGS4 Tier 2/3 only"
+      },
+      {
+        "name": "building.numStoreys",
+        "type": "number",
+        "description": "Number of storeys (d_16_storeys) — used for TGS4 Tier 2/3 only"
+      }
+    ],
+    "output": {
+      "type": "number | string",
+      "unit": "kgCO2e/m²",
+      "note": "Returns 'N/A' when standard is 'Not Reported' or when no cap exists (e.g., Part 9 + Tier 3)"
+    }
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "building.carbonStandard is a valid dropdown value",
+        "description": "Must be one of the supported standards"
+      }
+    ],
+    "invariants": [
+      {
+        "condition": "When output is numeric, output > 0",
+        "description": "Embodied carbon caps are always positive"
+      },
+      {
+        "condition": "TGS4 Tier 2/3 caps do NOT vary by material type",
+        "description": "The City of Toronto did not adopt the material-specific Figure 1 values"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "standard == 'Not Reported'",
+      "output": "N/A"
+    },
+    {
+      "condition": "standard == 'TGS4 Tier 2' AND category == 'Part 9 Low-Rise Residential'",
+      "output": "250",
+      "note": "LCA scope A1-A3. Structure and enclosure."
+    },
+    {
+      "condition": "standard == 'TGS4 Tier 2' AND category == 'Part 3 Residential/Commercial'",
+      "output": "350",
+      "note": "LCA scope A1-A5. Structure and envelope."
+    },
+    {
+      "condition": "standard == 'TGS4 Tier 2' AND category == 'Part 3 Other'",
+      "output": "400",
+      "note": "LCA scope A1-A5. Structure and envelope."
+    },
+    {
+      "condition": "standard == 'TGS4 Tier 3' AND category == 'Part 9 Low-Rise Residential'",
+      "output": "N/A",
+      "note": "Part 9 has no Tier 3 target in TGS4."
+    },
+    {
+      "condition": "standard == 'TGS4 Tier 3' AND category == 'Part 3 Residential/Commercial'",
+      "output": "250",
+      "note": "LCA scope A1-A5. Structure and envelope."
+    },
+    {
+      "condition": "standard == 'TGS4 Tier 3' AND category == 'Part 3 Other'",
+      "output": "275",
+      "note": "LCA scope A1-A5. Structure and envelope."
+    },
+    {
+      "condition": "standard == 'TGS4' (legacy 'Typical Values')",
+      "output": "building.typologyEmbodiedCarbon",
+      "note": "Backward compat: uses material-based TYPOLOGY_CAPS (Figure 1 values, not adopted by City)"
+    },
+    {
+      "condition": "standard == 'BR18 (Denmark)'",
+      "output": "500",
+      "note": "Danish Building Regulations 2018 limit"
+    },
+    {
+      "condition": "standard == 'IPCC AR6 EPC'",
+      "output": "3.39",
+      "note": "IPCC AR6 Equal Per Capita pathway"
+    },
+    {
+      "condition": "standard == 'IPCC AR6 EA'",
+      "output": "0.17",
+      "note": "IPCC AR6 Equal Allocation pathway"
+    },
+    {
+      "condition": "standard == 'CaGBC ZCB D'",
+      "output": "425",
+      "note": "Canada Green Building Council Zero Carbon Building Design standard"
+    },
+    {
+      "condition": "standard == 'CaGBC ZCB P'",
+      "output": "425",
+      "note": "Canada Green Building Council Zero Carbon Building Performance standard"
+    },
+    {
+      "condition": "standard == 'LEED BD+C v4.1'",
+      "output": "500"
+    },
+    {
+      "condition": "standard == 'LEED BD+C v4.1 (40%)'",
+      "output": "300"
+    },
+    {
+      "condition": "standard == 'Zero Carbon Building'",
+      "output": "250"
+    },
+    {
+      "condition": "standard == 'Passive House'",
+      "output": "200"
+    },
+    {
+      "condition": "standard == 'CaGBC Zero Carbon'",
+      "output": "175"
+    },
+    {
+      "condition": "standard == 'Self Reported'",
+      "output": "building.userModelledEmbodiedCarbon",
+      "note": "User-entered value from i_41 field"
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "TGS4 Tier 3 selected for Part 9 building",
+      "handling": "Return 'N/A'",
+      "rationale": "Part 9 Low-Rise Residential has no Tier 3 embodied carbon target in TGS4"
+    },
+    {
+      "condition": "Bare 'TGS4' from old saved state / CSV import",
+      "handling": "Falls through to legacy typology path (backward compat)",
+      "rationale": "Old files saved with 'TGS4' still work via material-based TYPOLOGY_CAPS"
+    },
+    {
+      "condition": "Occupancy changes while TGS4 Tier selected",
+      "handling": "Recompute via dependency on building.majorOccupancy",
+      "rationale": "Category changes when occupancy changes (e.g., residential → commercial)"
+    },
+    {
+      "condition": "Storey count changes while TGS4 Tier selected for C-Residential",
+      "handling": "Recompute via dependency on building.numStoreys",
+      "rationale": "Part 9 vs Part 3 boundary is at 3 storeys for residential"
+    }
+  ],
+  "formula": {
+    "implementation": "BuildingInfoNodes.js: building.embodiedCarbonTarget compute node",
+    "legacy": "Section02.js: calculateTargetModel(), calculateReferenceModel()",
+    "lookup_tables": {
+      "TGS4_CAPS": {
+        "Part 9 Low-Rise Residential": { "TGS4 Tier 2": 250, "TGS4 Tier 3": null },
+        "Part 3 Residential/Commercial": { "TGS4 Tier 2": 350, "TGS4 Tier 3": 250 },
+        "Part 3 Other": { "TGS4 Tier 2": 400, "TGS4 Tier 3": 275 }
+      },
+      "TYPOLOGY_CAPS (legacy Figure 1)": {
+        "Pt.9 Res. Stick Frame": 125,
+        "Pt.9 Small Mass Timber": 250,
+        "Pt.3 Mass Timber": 350,
+        "Pt.3 Concrete": 550,
+        "Pt.3 Steel": 650,
+        "Pt.3 Office": 600
+      },
+      "CARBON_TARGETS": {
+        "BR18 (Denmark)": 500,
+        "IPCC AR6 EPC": 3.39,
+        "IPCC AR6 EA": 0.17,
+        "CaGBC ZCB D": 425,
+        "CaGBC ZCB P": 425,
+        "LEED BD+C v4.1": 500,
+        "LEED BD+C v4.1 (40%)": 300,
+        "Zero Carbon Building": 250,
+        "Passive House": 200,
+        "CaGBC Zero Carbon": 175,
+        "Self Reported": null
+      }
+    }
+  },
+  "tests": [
+    {
+      "name": "TGS4 Tier 2 — Part 9 low-rise residential (2 storeys)",
+      "inputs": {
+        "building.carbonStandard": "TGS4 Tier 2",
+        "building.majorOccupancy": "C-Residential",
+        "building.numStoreys": 2
+      },
+      "expected": 250
+    },
+    {
+      "name": "TGS4 Tier 2 — Part 9 low-rise residential (3 storey boundary)",
+      "inputs": {
+        "building.carbonStandard": "TGS4 Tier 2",
+        "building.majorOccupancy": "C-Residential",
+        "building.numStoreys": 3
+      },
+      "expected": 250
+    },
+    {
+      "name": "TGS4 Tier 2 — Part 3 mid-rise residential (4 storey boundary)",
+      "inputs": {
+        "building.carbonStandard": "TGS4 Tier 2",
+        "building.majorOccupancy": "C-Residential",
+        "building.numStoreys": 4
+      },
+      "expected": 350
+    },
+    {
+      "name": "TGS4 Tier 2 — Part 3 commercial office",
+      "inputs": {
+        "building.carbonStandard": "TGS4 Tier 2",
+        "building.majorOccupancy": "D-Business & Personal Services",
+        "building.numStoreys": 5
+      },
+      "expected": 350
+    },
+    {
+      "name": "TGS4 Tier 2 — Part 3 other (assembly)",
+      "inputs": {
+        "building.carbonStandard": "TGS4 Tier 2",
+        "building.majorOccupancy": "A-Assembly",
+        "building.numStoreys": 2
+      },
+      "expected": 400
+    },
+    {
+      "name": "TGS4 Tier 3 — Part 9 (no target exists)",
+      "inputs": {
+        "building.carbonStandard": "TGS4 Tier 3",
+        "building.majorOccupancy": "C-Residential",
+        "building.numStoreys": 2
+      },
+      "expected": "N/A"
+    },
+    {
+      "name": "TGS4 Tier 3 — Part 3 mid-rise residential",
+      "inputs": {
+        "building.carbonStandard": "TGS4 Tier 3",
+        "building.majorOccupancy": "C-Residential",
+        "building.numStoreys": 4
+      },
+      "expected": 250
+    },
+    {
+      "name": "TGS4 Tier 3 — Part 3 other (assembly)",
+      "inputs": {
+        "building.carbonStandard": "TGS4 Tier 3",
+        "building.majorOccupancy": "A-Assembly",
+        "building.numStoreys": 2
+      },
+      "expected": 275
+    },
+    {
+      "name": "TGS4 legacy 'Typical Values' — mass timber",
+      "inputs": {
+        "building.carbonStandard": "TGS4",
+        "building.typologyEmbodiedCarbon": 350
+      },
+      "expected": 350
+    },
+    {
+      "name": "Self Reported",
+      "inputs": {
+        "building.carbonStandard": "Self Reported",
+        "building.userModelledEmbodiedCarbon": 345.82
+      },
+      "expected": 345.82
+    },
+    {
+      "name": "Not Reported",
+      "inputs": {
+        "building.carbonStandard": "Not Reported"
+      },
+      "expected": "N/A"
+    },
+    {
+      "name": "BR18 (Denmark)",
+      "inputs": {
+        "building.carbonStandard": "BR18 (Denmark)"
+      },
+      "expected": 500
+    },
+    {
+      "name": "IPCC AR6 EPC",
+      "inputs": {
+        "building.carbonStandard": "IPCC AR6 EPC"
+      },
+      "expected": 3.39
+    },
+    {
+      "name": "IPCC AR6 EA",
+      "inputs": {
+        "building.carbonStandard": "IPCC AR6 EA"
+      },
+      "expected": 0.17
+    },
+    {
+      "name": "CaGBC ZCB D",
+      "inputs": {
+        "building.carbonStandard": "CaGBC ZCB D"
+      },
+      "expected": 425
+    },
+    {
+      "name": "CaGBC ZCB P",
+      "inputs": {
+        "building.carbonStandard": "CaGBC ZCB P"
+      },
+      "expected": 425
+    },
+    {
+      "name": "LEED BD+C v4.1",
+      "inputs": {
+        "building.carbonStandard": "LEED BD+C v4.1"
+      },
+      "expected": 500
+    },
+    {
+      "name": "LEED BD+C v4.1 (40%)",
+      "inputs": {
+        "building.carbonStandard": "LEED BD+C v4.1 (40%)"
+      },
+      "expected": 300
+    },
+    {
+      "name": "Zero Carbon Building",
+      "inputs": {
+        "building.carbonStandard": "Zero Carbon Building"
+      },
+      "expected": 250
+    },
+    {
+      "name": "Passive House",
+      "inputs": {
+        "building.carbonStandard": "Passive House"
+      },
+      "expected": 200
+    },
+    {
+      "name": "CaGBC Zero Carbon",
+      "inputs": {
+        "building.carbonStandard": "CaGBC Zero Carbon"
+      },
+      "expected": 175
+    }
+  ],
+  "references": [
+    {
+      "source": "City of Toronto TGS Version 4 — Part 3 Mid-to-High Rise",
+      "url": "https://www.toronto.ca/city-government/planning-development/official-plan-guidelines/toronto-green-standard/toronto-green-standard-version-4/mid-to-high-rise-residential-non-residential-version-4/buildings-energy-emissions-resilience/"
+    },
+    {
+      "source": "City of Toronto TGS Version 4 — Part 9 Low-Rise Residential",
+      "url": "https://www.toronto.ca/city-government/planning-development/official-plan-guidelines/toronto-green-standard/toronto-green-standard-version-4/low-rise-residential-version-4/buildings-energy-emissions/"
+    },
+    {
+      "source": "City of Toronto TGS Version 4 — City-Owned Buildings",
+      "url": "https://www.toronto.ca/city-government/planning-development/official-plan-guidelines/toronto-green-standard/toronto-green-standard-version-4/city-agency-corporation-division-owned-facilities-version-4/buildings-energy-emissions-resilience/"
+    },
+    {
+      "source": "Ryan Zizzo, Mantle Climate — clarification on adopted vs Figure 1 values",
+      "note": "The caps do NOT vary by material type (ie: steel, concrete, wood)"
+    }
+  ]
+}

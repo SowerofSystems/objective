@@ -272,6 +272,8 @@ window.TEUI.SectionModules.sect02 = (function () {
             { value: "IPCC AR6 EPC", name: "IPCC AR6 EPC" },
             { value: "IPCC AR6 EA", name: "IPCC AR6 EA" },
             { value: "TGS4", name: "Typical Values" },
+            { value: "TGS4 Tier 2", name: "TGS4 Tier 2" },
+            { value: "TGS4 Tier 3", name: "TGS4 Tier 3" },
             { value: "CaGBC ZCB D", name: "CaGBC ZCB D" },
             { value: "CaGBC ZCB P", name: "CaGBC ZCB P" },
             { value: "Self Reported", name: "Self Reported" },
@@ -749,38 +751,33 @@ window.TEUI.SectionModules.sect02 = (function () {
         return;
       }
 
+      // TGS4 Tier 2/3: adopted caps by occupancy category
+      if (carbonStandard === "TGS4 Tier 2" || carbonStandard === "TGS4 Tier 3") {
+        const occupancy = ReferenceState.getValue("d_12") || "A-Assembly";
+        const storeys = parseFloat(getModeAwareGlobalValue("d_16_storeys") || "2") || 2;
+        const category = window.TEUI.ComputationNodes.BuildingInfo.getTGS4Category(occupancy, storeys);
+        const cap = window.TEUI.ComputationNodes.BuildingInfo.TGS4_CAPS[category]?.[carbonStandard];
+        setFieldValue("d_16", cap ?? "N/A", "calculated");
+        storeReferenceResults();
+        return;
+      }
+
+      // TGS4 "Typical Values": backward compat, uses material-based typology
       if (carbonStandard === "TGS4") {
         const tgs4Value =
           window.TEUI?.parseNumeric?.(getModeAwareGlobalValue("i_39"), 0) ?? 0;
         setFieldValue("d_16", tgs4Value, "calculated");
+        storeReferenceResults();
         return;
       }
 
-      const AR6_EPC_K5 = 3.39;
-      const AR6_EA_L5 = 0.17;
-
+      // Fixed standard targets from CARBON_TARGETS
+      const fixedTarget = window.TEUI.ComputationNodes.BuildingInfo.CARBON_TARGETS[carbonStandard];
       let targetValue;
-      switch (carbonStandard) {
-        case "BR18 (Denmark)":
-          targetValue = 500;
-          break;
-        case "IPCC AR6 EPC":
-          targetValue = AR6_EPC_K5;
-          break;
-        case "IPCC AR6 EA":
-          targetValue = AR6_EA_L5;
-          break;
-        case "CaGBC ZCB D":
-          targetValue = 425;
-          break;
-        case "CaGBC ZCB P":
-          targetValue = 425;
-          break;
-        case "Self Reported":
-          targetValue = modelledValueI41;
-          break;
-        default:
-          targetValue = modelledValueI41;
+      if (fixedTarget !== null && fixedTarget !== undefined) {
+        targetValue = fixedTarget;
+      } else {
+        targetValue = modelledValueI41;
       }
       setFieldValue("d_16", targetValue, "calculated");
 
@@ -852,6 +849,17 @@ window.TEUI.SectionModules.sect02 = (function () {
         return;
       }
 
+      // TGS4 Tier 2/3: adopted caps by occupancy category
+      if (carbonStandard === "TGS4 Tier 2" || carbonStandard === "TGS4 Tier 3") {
+        const occupancy = TargetState.getValue("d_12") || "A-Assembly";
+        const storeys = parseFloat(getModeAwareGlobalValue("d_16_storeys") || "2") || 2;
+        const category = window.TEUI.ComputationNodes.BuildingInfo.getTGS4Category(occupancy, storeys);
+        const cap = window.TEUI.ComputationNodes.BuildingInfo.TGS4_CAPS[category]?.[carbonStandard];
+        setFieldValue("d_16", cap ?? "N/A", "calculated");
+        return;
+      }
+
+      // TGS4 "Typical Values": backward compat, uses material-based typology
       if (carbonStandard === "TGS4") {
         const tgs4Value =
           window.TEUI?.parseNumeric?.(getModeAwareGlobalValue("i_39"), 0) ?? 0;
@@ -859,34 +867,14 @@ window.TEUI.SectionModules.sect02 = (function () {
         return;
       }
 
-      const AR6_EPC_K5 = 3.39;
-      const AR6_EA_L5 = 0.17;
-
+      // Fixed standard targets from CARBON_TARGETS
+      const fixedTarget = window.TEUI.ComputationNodes.BuildingInfo.CARBON_TARGETS[carbonStandard];
       let targetValue;
-      switch (carbonStandard) {
-        case "BR18 (Denmark)":
-          targetValue = 500;
-          break;
-        case "IPCC AR6 EPC":
-          targetValue = AR6_EPC_K5;
-          break;
-        case "IPCC AR6 EA":
-          targetValue = AR6_EA_L5;
-          break;
-        case "CaGBC ZCB D":
-          targetValue = 425;
-          break;
-        case "CaGBC ZCB P":
-          targetValue = 425;
-          break;
-        case "Self Reported":
-          targetValue = modelledValueI41;
-          break;
-        default:
-          targetValue = modelledValueI41;
+      if (fixedTarget !== null && fixedTarget !== undefined) {
+        targetValue = fixedTarget;
+      } else {
+        targetValue = modelledValueI41;
       }
-
-      // Since mode is 'target', this will update `target_d_16` AND the global `d_16` for the DOM.
       setFieldValue("d_16", targetValue, "calculated");
     } catch (error) {
       console.error("[Section02] Error in Target Model calculations:", error);
