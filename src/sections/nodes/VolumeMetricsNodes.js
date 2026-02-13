@@ -594,6 +594,58 @@
       }
     });
 
+    // ========================================================================
+    // d_107: Window-to-Wall Ratio (WWR)
+    // Excel: =SUM(D88:D92)/(D86+SUM(D88:D92))   excludes skylights d_93
+    // ========================================================================
+    graph.registerNode({
+      id: "envelope.wwr",
+      legacyId: "d_107",
+      section: "S12",
+      classification: "C",
+      dependencies: [
+        "transmissionLoss.walls.area",
+        "transmissionLoss.doors.area",
+        "transmissionLoss.windowNorth.area",
+        "transmissionLoss.windowEast.area",
+        "transmissionLoss.windowSouth.area",
+        "transmissionLoss.windowWest.area"
+      ],
+      label: "Window-to-Wall Ratio",
+      compute: (inputs) => {
+        const d86 = parseNum(inputs["transmissionLoss.walls.area"]);
+        const d88 = parseNum(inputs["transmissionLoss.doors.area"]);
+        const d89 = parseNum(inputs["transmissionLoss.windowNorth.area"]);
+        const d90 = parseNum(inputs["transmissionLoss.windowEast.area"]);
+        const d91 = parseNum(inputs["transmissionLoss.windowSouth.area"]);
+        const d92 = parseNum(inputs["transmissionLoss.windowWest.area"]);
+        const windowArea = d88 + d89 + d90 + d91 + d92;
+        const totalWallArea = d86 + windowArea;
+        return totalWallArea > 0 ? windowArea / totalWallArea : 0;
+      }
+    });
+
+    // ========================================================================
+    // d_110: Equivalent Leakage Area at 10 Pa (ELA10)
+    // Formula: ACH50 × Volume / 3600
+    // ========================================================================
+    graph.registerNode({
+      id: "airTightness.ela10",
+      legacyId: "d_110",
+      section: "S12",
+      classification: "C",
+      dependencies: [
+        "airTightness.ach50Target",
+        "volume.conditioned"
+      ],
+      label: "Equivalent Leakage Area at 10 Pa (m²)",
+      compute: (inputs) => {
+        const ach50 = parseNum(inputs["airTightness.ach50Target"]);
+        const volume = parseNum(inputs["volume.conditioned"]);
+        return volume > 0 ? (ach50 * volume) / 3600 : 0;
+      }
+    });
+
     console.log("[VolumeMetricsNodes] Registered", inputs.length, "inputs");
   }
 

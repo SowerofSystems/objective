@@ -56,9 +56,15 @@
     m_65: "raw", m_66: "raw", m_67: "raw",
     n_65: "raw", n_66: "raw", n_67: "raw",
 
-    // S12 Volume Metrics: compliance text and checkmarks
+    // S10 Radiant Gains: subtotal indicators
+    j_79: "integer", l_79: "integer",
+
+    // S12 Volume Metrics: WWR as percent, ELA10 as 3dp, compliance text and checkmarks
+    d_107: "percent-2dp", d_110: "number-3dp",
     m_104: "raw", n_104: "raw",
+    m_107: "raw", n_107: "raw",
     m_109: "raw", n_109: "raw",
+    m_110: "raw", n_110: "raw",
 
     // S13 Cooling: compliance ratios and pass/fail checkmarks
     m_113: "integer-percent", m_115: "integer-percent", m_116: "integer-percent",

@@ -223,6 +223,34 @@
       });
     });
 
+    // j_79: Heating gains indicator (1 if total > 0, else 0)
+    graph.registerNode({
+      id: "radiantGains.subtotal.heatingIndicator",
+      legacyId: "j_79",
+      section: "S10",
+      classification: "C",
+      dependencies: ["radiantGains.subtotal.heatingGain"],
+      label: "Heating Gains Indicator",
+      compute: (inputs) => {
+        const total = parseNum(inputs["radiantGains.subtotal.heatingGain"]);
+        return total > 0 ? 1 : 0;
+      }
+    });
+
+    // l_79: Cooling gains indicator (1 if total > 0, else 0)
+    graph.registerNode({
+      id: "radiantGains.subtotal.coolingIndicator",
+      legacyId: "l_79",
+      section: "S10",
+      classification: "C",
+      dependencies: ["radiantGains.subtotal.coolingGain"],
+      label: "Cooling Gains Indicator",
+      compute: (inputs) => {
+        const total = parseNum(inputs["radiantGains.subtotal.coolingGain"]);
+        return total > 0 ? 1 : 0;
+      }
+    });
+
     // ========================================================================
     // UTILIZATION FACTORS (rows 80-82)
     // ========================================================================

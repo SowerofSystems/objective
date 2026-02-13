@@ -41,8 +41,9 @@
     { id: "reference.internal.lightingDensity", legacyId: "ref_d_66", defaultValue: 1.5, classification: "C", section: "S09", label: "Reference Lighting Density (W/m²)" },
     { id: "reference.internal.equipmentDensity", legacyId: "ref_d_67", defaultValue: 3, classification: "C", section: "S09", label: "Reference Equipment Density (W/m²)" },
 
-    // S12: Volume Metrics (ACH50 reference for compliance)
+    // S12: Volume Metrics (ACH50 and ELA10 reference for compliance)
     { id: "reference.airTightness.ach50Target", legacyId: "ref_d_109", defaultValue: 1.5, classification: "C", section: "S12", label: "Reference ACH50" },
+    { id: "reference.airTightness.ela10", legacyId: "ref_d_110", defaultValue: 0, classification: "C", section: "S12", label: "Reference ELA10 (m²)" },
   ];
 
   // ==========================================================================
@@ -286,6 +287,67 @@
       }
     },
 
+    // m_107: WWR compliance — show d_107 as percentage with occupancy-based threshold
+    {
+      id: "compliance.wwr.ratio",
+      legacyId: "m_107",
+      section: "S12",
+      classification: "C",
+      dependencies: ["envelope.wwr"],
+      label: "WWR Compliance Value",
+      compute: (inputs) => {
+        const wwr = parseNum(inputs["envelope.wwr"]);
+        return Math.round(wwr * 100) + "%";
+      }
+    },
+    {
+      id: "compliance.wwr.pass",
+      legacyId: "n_107",
+      section: "S12",
+      classification: "C",
+      dependencies: ["envelope.wwr", "metadata.occupancyType"],
+      label: "WWR Compliance Status",
+      compute: (inputs) => {
+        const wwr = parseNum(inputs["envelope.wwr"]);
+        const occupancy = inputs["metadata.occupancyType"] || "";
+        // Residential: 22% threshold, all others: 40%
+        const threshold = occupancy === "C-Residential" ? 0.22 : 0.40;
+        return wwr <= threshold ? "✓" : "✗";
+      }
+    },
+
+    // m_110: ELA compliance (d_110 / ref_d_110) — lower is better
+    {
+      id: "compliance.ela10.ratio",
+      legacyId: "m_110",
+      section: "S12",
+      classification: "C",
+      dependencies: ["airTightness.ela10", "reference.airTightness.ela10"],
+      label: "ELA10 Compliance Ratio",
+      compute: (inputs) => {
+        const target = parseNum(inputs["airTightness.ela10"]);
+        const ref = parseNum(inputs["reference.airTightness.ela10"]);
+        if (ref > 0) {
+          return Math.round((target / ref) * 100) + "%";
+        }
+        return "100%";
+      }
+    },
+    {
+      id: "compliance.ela10.pass",
+      legacyId: "n_110",
+      section: "S12",
+      classification: "C",
+      dependencies: ["airTightness.ela10", "reference.airTightness.ela10"],
+      label: "ELA10 Compliance Status",
+      compute: (inputs) => {
+        const target = parseNum(inputs["airTightness.ela10"]);
+        const ref = parseNum(inputs["reference.airTightness.ela10"]);
+        // Pass if target/ref <= 1.005 (0.5% tolerance)
+        return ref > 0 && (target / ref) <= 1.005 ? "✓" : "✗";
+      }
+    },
+
     // ========================================================================
     // S15: GHG Reduction Percentage
     // ========================================================================
@@ -328,8 +390,9 @@
     "internal.lightingDensity":  "reference.internal.lightingDensity",
     "internal.equipmentDensity": "reference.internal.equipmentDensity",
 
-    // S12: ACH50
+    // S12: ACH50 and ELA10
     "airTightness.ach50Target":  "reference.airTightness.ach50Target",
+    "airTightness.ela10":        "reference.airTightness.ela10",
   };
 
   // ==========================================================================
