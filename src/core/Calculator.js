@@ -495,34 +495,25 @@ TEUI.Calculator = (function () {
 
     const CI = window.TEUI.ComputationIntegration;
 
-    // Step 1: Flush any pending adapter batches so graph state is current.
-    // LegacyAdapter dual-writes SM.setValue() to graph with a 10ms batch delay.
-    // During CSV import (muted listeners), calculateAll() runs synchronously
-    // before the batch timer fires — flush ensures nothing is lost.
-    const adapter = window.TEUI.ComputationSystem?.getAdapter?.();
-    if (adapter?.flush) {
-      adapter.flush();
-    }
-
-    // Step 2: Populate Reference model from ReferenceValues.js
+    // Step 1: Populate Reference model from ReferenceValues.js
     const refPopResult = CI.populateReferenceModel();
     console.log(`[Calculator] 📋 Reference model: ${refPopResult.gFieldsCopied} G-fields, ${refPopResult.cFieldsLoaded} C-fields from standard`);
 
-    // Step 3: Compute both Target and Reference models
+    // Step 2: Compute both Target and Reference models
     const result = CI.computeAllWithReference();
 
-    // Step 4: Sync Target computed values to StateManager
+    // Step 3: Sync Target computed values to StateManager
     CI.syncToStateManager();
 
-    // Step 5: Sync Reference computed values to StateManager (ref_* prefix)
+    // Step 4: Sync Reference computed values to StateManager (ref_* prefix)
     CI.syncReferenceToStateManager();
 
-    // Step 6: Stamp all graph-computed values to DOM
+    // Step 5: Stamp all graph-computed values to DOM
     if (window.TEUI.DOMBridge?.stampAll) {
       window.TEUI.DOMBridge.stampAll();
     }
 
-    // Step 7: Section01 supplementary display (explanation text, gauges, mode indicators)
+    // Step 6: Section01 supplementary display (explanation text, gauges, mode indicators)
     const sect01 = window.TEUI.SectionModules?.sect01;
     if (sect01?.postStamp) {
       sect01.postStamp();

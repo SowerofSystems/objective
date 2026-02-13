@@ -65,10 +65,7 @@
     let originalStateManager = null;
     let isInstalled = false;
 
-    // Track value changes for batching
-    let pendingChanges = new Map();
-    let batchTimeout = null;
-    const BATCH_DELAY = 10; // ms to wait for batching
+    // Write tracking (no batching — synchronous writes to graph)
 
     // ========================================================================
     // HELPER FUNCTIONS
@@ -147,55 +144,16 @@
     }
 
     /**
-     * Flush pending changes through the engine
-     */
-    function flushPendingChanges() {
-      if (pendingChanges.size === 0) return;
-
-      const changes = pendingChanges;
-      pendingChanges = new Map();
-      batchTimeout = null;
-
-      // Group by model
-      const targetChanges = {};
-      const refChanges = {};
-
-      for (const [, entry] of changes) {
-        const { isRef, semanticPath, value } = entry;
-        if (isRef) {
-          refChanges[semanticPath] = value;
-        } else {
-          targetChanges[semanticPath] = value;
-        }
-      }
-
-      // Apply target changes
-      if (Object.keys(targetChanges).length > 0) {
-        engine.onBatchChange(targetChanges, getTargetModelId());
-      }
-
-      // Apply reference changes
-      const refModelId = getReferenceModelId();
-      if (refModelId && Object.keys(refChanges).length > 0) {
-        engine.onBatchChange(refChanges, refModelId);
-      }
-    }
-
-    /**
-     * Schedule a change for batching
+     * Write a value directly to MultiModelState (synchronous, no batching).
      * @param {boolean} isRef
      * @param {string} semanticPath
      * @param {*} value
      */
-    function scheduleChange(isRef, semanticPath, value) {
-      const key = { isRef, semanticPath };
-      pendingChanges.set(JSON.stringify(key), { isRef, semanticPath, value });
-
-      // Reset batch timer
-      if (batchTimeout) {
-        clearTimeout(batchTimeout);
+    function writeToGraph(isRef, semanticPath, value) {
+      const modelId = isRef ? getReferenceModelId() : getTargetModelId();
+      if (modelId) {
+        state.setValueForModel(modelId, semanticPath, value);
       }
-      batchTimeout = setTimeout(flushPendingChanges, BATCH_DELAY);
     }
 
     // ========================================================================
@@ -277,43 +235,13 @@
           return;
         }
 
-        // DUAL-WRITE: Write to MultiModelState (primary) via batching
-        scheduleChange(isRef, semanticPath, value);
+        // DUAL-WRITE: Write to MultiModelState (synchronous)
+        writeToGraph(isRef, semanticPath, value);
 
         // DUAL-WRITE: Also write to original StateManager (for backward compatibility)
         // This ensures code reading from StateManager gets updated values during transition
         if (originalStateManager?._original_setValue) {
           originalStateManager._original_setValue.call(originalStateManager, fieldId, value, valueState);
-        }
-      },
-
-      /**
-       * Set value immediately without batching
-       * @param {string} fieldId
-       * @param {*} value
-       */
-      setValueImmediate(fieldId, value) {
-        const { isRef, baseId } = parseFieldId(fieldId);
-        const semanticPath = toSemanticPath(baseId);
-
-        if (!semanticPath) {
-          // Fall back to original StateManager if available
-          if (originalStateManager?._original_setValue) {
-            return originalStateManager._original_setValue.call(originalStateManager, fieldId, value);
-          }
-          console.warn(`[LegacyAdapter] Unknown field: ${fieldId}`);
-          return;
-        }
-
-        // DUAL-WRITE: Write to MultiModelState (primary)
-        const modelId = isRef ? getReferenceModelId() : getTargetModelId();
-        if (modelId) {
-          engine.onValueChange(semanticPath, value, modelId);
-        }
-
-        // DUAL-WRITE: Also write to original StateManager (for backward compatibility)
-        if (originalStateManager?._original_setValue) {
-          originalStateManager._original_setValue.call(originalStateManager, fieldId, value);
         }
       },
 
@@ -325,8 +253,6 @@
         for (const [fieldId, value] of Object.entries(values)) {
           this.setValue(fieldId, value);
         }
-        // Flush immediately for batch operations
-        flushPendingChanges();
       },
 
       // ======================================================================
@@ -456,7 +382,7 @@
       debug() {
         console.group("[LegacyAdapter] Debug");
         console.log("Installed:", isInstalled);
-        console.log("Pending changes:", pendingChanges.size);
+        console.log("Writes: synchronous (no batching)");
         console.log("Target model:", getTargetModelId());
         console.log("Reference model:", getReferenceModelId());
         console.log("State stats:", state.getStats());
@@ -491,14 +417,6 @@
         return registry;
       },
 
-      /**
-       * Flush all pending batched changes immediately.
-       * Must be called before synchronous calculateAll() to ensure
-       * the graph has all values that were set via SM.setValue().
-       */
-      flush() {
-        flushPendingChanges();
-      }
     };
 
     return adapter;
