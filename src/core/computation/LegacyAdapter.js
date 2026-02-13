@@ -160,8 +160,8 @@
       const targetChanges = {};
       const refChanges = {};
 
-      for (const [key, value] of changes) {
-        const { isRef, semanticPath } = key;
+      for (const [, entry] of changes) {
+        const { isRef, semanticPath, value } = entry;
         if (isRef) {
           refChanges[semanticPath] = value;
         } else {
