@@ -489,6 +489,15 @@
        */
       getRegistry() {
         return registry;
+      },
+
+      /**
+       * Flush all pending batched changes immediately.
+       * Must be called before synchronous calculateAll() to ensure
+       * the graph has all values that were set via SM.setValue().
+       */
+      flush() {
+        flushPendingChanges();
       }
     };
 
