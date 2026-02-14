@@ -629,6 +629,23 @@
   }
 
   /**
+   * Reset graph state for both Target and Reference models.
+   * Call before CSV import so stale inputs don't survive.
+   */
+  function resetGraphState() {
+    if (!initialized) return;
+
+    const targetId = state.getActiveModelId();
+    const refModelId = getRefModelId();
+
+    state.clearSharedState();
+    if (targetId) state.clearModelState(targetId);
+    if (refModelId) state.clearModelState(refModelId);
+
+    log("Graph state reset (Target + Reference cleared)");
+  }
+
+  /**
    * Debug output
    */
   function debug() {
@@ -1055,8 +1072,9 @@
     // Parallel mode
     onLegacyValueChange,
 
-    // Sync from StateManager (call after CSV import, file load, etc.)
+    // State management
     syncFromStateManager,
+    resetGraphState,
 
     // Sync TO StateManager (call after computeAll when bypassing legacy)
     syncToStateManager,

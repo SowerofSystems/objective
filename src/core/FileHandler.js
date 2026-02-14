@@ -492,6 +492,14 @@
         );
 
         try {
+          // Reset graph state so stale inputs don't survive the import.
+          // CSV only overwrites fields it contains; without this, graph
+          // inputs from a previous load or initialization persist.
+          const CI = window.TEUI.ComputationIntegration;
+          if (CI?.resetGraphState) {
+            CI.resetGraphState();
+          }
+
           // Import all data (target + reference)
           this.updateStateFromImportData(importedData, 0, false);
           console.log(
