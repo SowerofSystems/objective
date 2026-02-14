@@ -47,8 +47,7 @@
       { id: "emissions.factor.oil", legacyId: "l_30", section: "S04", classification: "C", label: "Oil Emission Factor (gCO2e/litre)", defaultValue: 2753 },
       { id: "emissions.factor.wood", legacyId: "l_31", section: "S04", classification: "C", label: "Wood Emission Factor (kgCO2e/m³)", defaultValue: 150 },
 
-      // Embodied carbon inputs (S05)
-      { id: "emissions.modelledEmbodied", legacyId: "i_41", section: "S05", classification: "C", label: "Modelled Embodied Carbon (kgCO2e/m²)", defaultValue: 350 },
+      // i_41: canonical input lives in BuildingInfoNodes (building.userModelledEmbodiedCarbon)
     ];
 
     graph.registerInputs(inputs);
@@ -692,11 +691,11 @@
       id: "emissions.lifetime.total",
       section: "S05",
       classification: "C",
-      dependencies: ["emissions.ghgi.lifetime", "emissions.modelledEmbodied"],
+      dependencies: ["emissions.ghgi.lifetime", "building.userModelledEmbodiedCarbon"],
       label: "Total Lifetime Carbon (kg CO2e/m²)",
       compute: (inputs) => {
         const operational = parseNum(inputs["emissions.ghgi.lifetime"]);
-        const embodied = parseNum(inputs["emissions.modelledEmbodied"]);
+        const embodied = parseNum(inputs["building.userModelledEmbodiedCarbon"]);
         return operational + embodied;
       },
     });

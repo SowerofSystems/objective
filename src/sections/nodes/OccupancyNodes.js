@@ -1,7 +1,8 @@
 /**
  * OccupancyNodes.js - Building Occupancy (Section 09)
  *
- * Occupant count for per-capita calculations
+ * Occupant count and occupied hours for per-capita calculations.
+ * g_63 (daily hours) is the CSV input; i_63 (annual hours) = g_63 × 365.
  */
 (function () {
   "use strict";
@@ -13,11 +14,25 @@
     const inputs = [
       { id: "occupancy.occupants", legacyId: "d_63", section: "S09", classification: "C", label: "Number of Occupants", defaultValue: 4 },
       { id: "occupancy.occupantDensity", legacyId: "h_63", section: "S09", classification: "C", label: "Occupant Density (m²/person)", defaultValue: 35 },
-      { id: "occupancy.occupiedHours", legacyId: "i_63", section: "S09", classification: "C", label: "Occupied Hours per Year", defaultValue: 4380 },
+      { id: "occupancy.occupiedHoursPerDay", legacyId: "g_63", section: "S09", classification: "C", label: "Occupied Hours per Day", defaultValue: 12 },
       { id: "occupancy.totalHours", legacyId: "j_63", section: "S09", classification: "C", label: "Total Hours per Year", defaultValue: 8760 },
     ];
 
     graph.registerInputs(inputs);
+
+    // i_63: Annual occupied hours = g_63 × 365
+    graph.registerNode({
+      id: "occupancy.occupiedHours",
+      legacyId: "i_63",
+      section: "S09",
+      classification: "C",
+      dependencies: ["occupancy.occupiedHoursPerDay"],
+      label: "Occupied Hours per Year",
+      compute: (inputs) => {
+        const dailyHours = parseFloat(inputs["occupancy.occupiedHoursPerDay"]) || 12;
+        return dailyHours * 365;
+      },
+    });
 
     // Calculate occupants from area and density if not directly input
     graph.registerNode({
@@ -33,7 +48,7 @@
       },
     });
 
-    console.log("[OccupancyNodes] Registered", inputs.length, "inputs");
+    console.log("[OccupancyNodes] Registered", inputs.length, "inputs and 2 computed nodes");
   }
 
   window.TEUI.ComputationNodes.Occupancy = { register };

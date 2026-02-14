@@ -638,7 +638,19 @@
     if (targetId) state.clearModelState(targetId);
     if (refModelId) state.clearModelState(refModelId);
 
-    log("Graph state reset (Target + Reference cleared)");
+    // Seed default values from graph input definitions so fields
+    // not overwritten by CSV import still have sensible values.
+    const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
+    let seeded = 0;
+    for (const sp of inputIds) {
+      const input = graph.getInput(sp);
+      if (input?.defaultValue !== undefined && input.defaultValue !== "") {
+        if (targetId) state.setValueForModel(targetId, sp, input.defaultValue);
+        seeded++;
+      }
+    }
+
+    log(`Graph state reset: cleared + seeded ${seeded} defaults`);
   }
 
   /**

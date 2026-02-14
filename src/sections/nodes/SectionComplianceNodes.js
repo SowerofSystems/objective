@@ -305,11 +305,11 @@
       legacyId: "n_107",
       section: "S12",
       classification: "C",
-      dependencies: ["envelope.wwr", "metadata.occupancyType"],
+      dependencies: ["envelope.wwr", "building.majorOccupancy"],
       label: "WWR Compliance Status",
       compute: (inputs) => {
         const wwr = parseNum(inputs["envelope.wwr"]);
-        const occupancy = inputs["metadata.occupancyType"] || "";
+        const occupancy = inputs["building.majorOccupancy"] || "";
         // Residential: 22% threshold, all others: 40%
         const threshold = occupancy === "C-Residential" ? 0.22 : 0.40;
         return wwr <= threshold ? "✓" : "✗";
