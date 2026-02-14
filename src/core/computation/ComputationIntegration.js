@@ -104,14 +104,10 @@
         return false;
       }
 
-      // Step 4: Sync initial values from StateManager
-      if (config.autoSync) {
-        syncFromStateManager();
-      }
-
-      // Step 5: Run initial computation
-      const result = engine.computeAllForModel(state.getActiveModelId());
-      log(`Initial computation complete: ${result.computedNodes} nodes in ${result.duration.toFixed(2)}ms`);
+      // Skip initial sync + compute — the first calculateAll() (after CSV
+      // import or page-level recalc) will populate the graph from scratch.
+      // Pre-loading defaults here just creates stale state that survives
+      // into sample project imports.
 
       initialized = true;
       log("Initialization complete");
