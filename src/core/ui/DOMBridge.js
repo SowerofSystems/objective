@@ -132,6 +132,11 @@
     "f_10", "i_10", "j_8", "j_10", "m_6", "m_8", "m_10",
   ]);
 
+  // S01 animated fields — skipped by stampAll, handled by postStamp with animation
+  const S01_ANIMATED = new Set([
+    "e_6", "e_8", "e_10", "h_6", "h_8", "h_10", "k_6", "k_8", "k_10",
+  ]);
+
   // Tier field → value field mapping (set data-tier attribute)
   const TIER_MAP = { e_10: "f_10", h_10: "i_10" };
 
@@ -176,6 +181,9 @@
     let stamped = 0;
 
     for (const [legacyId, semanticPath] of legacyToSemantic) {
+      // Skip animated S01 fields — postStamp handles them with animation
+      if (S01_ANIMATED.has(legacyId)) continue;
+
       // Choose model: S01 always Target, others depend on reference mode
       const modelId = S01_FIELDS.has(legacyId) ? targetModelId
         : (refModelId || targetModelId);

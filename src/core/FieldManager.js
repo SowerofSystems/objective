@@ -211,19 +211,6 @@ TEUI.FieldManager = (function () {
         console.log(
           `[FieldManager] Routed ${fieldId}=${value} through ${sectionId} ModeManager`
         );
-
-        // ✅ FIX: Call section's calculateAll() after slider changes
-        // This matches the pattern used for editable fields (handleFieldBlur)
-        // and eliminates the need for sections to have self-listeners (Anti-Pattern 7)
-        if (
-          sectionModule.calculateAll &&
-          typeof sectionModule.calculateAll === "function"
-        ) {
-          sectionModule.calculateAll();
-          console.log(
-            `[FieldManager] Called ${sectionId}.calculateAll() after ${fieldId} change`
-          );
-        }
       } else {
         // Fallback: section exists but no ModeManager - direct StateManager write
         // This is normal for display-only sections like sect01 that don't have calculations
