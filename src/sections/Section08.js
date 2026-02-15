@@ -767,12 +767,7 @@ window.TEUI.SectionModules.sect08 = (function () {
     setupS04Listeners();
 
     ModeManager.updateUIForMode();
-    calculateAll();
-
-    // ✅ Force calculation after a delay to catch S04 initialization
-    setTimeout(() => {
-      calculateWoodOffset();
-    }, 500);
+    // Graph handles all calculations including wood offset dependencies
 
     // Apply validation tooltips to fields
     if (window.TEUI.TooltipManager && window.TEUI.TooltipManager.initialized) {

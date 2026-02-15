@@ -2387,18 +2387,7 @@ window.TEUI.SectionModules.sect13 = (function () {
     calculateAll();
     ModeManager.updateCalculatedDisplayValues();
 
-    // 🔧 FIX (Oct 7, 2025): Force complete calculator cascade when g_118 changes
-    // Ventilation method affects d_121 → S14 d_127 → S13 d_114 → h_10 (TEUI)
-    // Problem: "calculated" values don't trigger downstream sections
-    // Solution: Force Calculator.js to run complete cascade (temporary until Orchestrator implemented)
-    // This eliminates the "Cooling Bump" workaround requirement
-    if (fieldId === "g_118") {
-      setTimeout(() => {
-        if (window.TEUI?.Calculator?.calculateAll) {
-          window.TEUI.Calculator.calculateAll();
-        }
-      }, 50); // Small delay ensures S13 values published first
-    }
+    // Graph handles g_118 cascade automatically via dependency tracking
   }
 
   /**

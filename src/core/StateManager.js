@@ -1917,26 +1917,7 @@ TEUI.StateManager = (function () {
         );
       }
 
-      // Also trigger reference model recalculation if in reference mode
-      if (
-        window.TEUI &&
-        window.TEUI.ReferenceToggle &&
-        window.TEUI.ReferenceToggle.isReferenceMode()
-      ) {
-        // Reload reference data to ensure consistency
-        const currentStandard = getValue("d_13") || "OBC SB10 5.5-6 Z6";
-        loadReferenceData(currentStandard);
-
-        // Trigger another calculation pass for reference values
-        setTimeout(() => {
-          if (
-            window.TEUI.Calculator &&
-            typeof window.TEUI.Calculator.calculateAll === "function"
-          ) {
-            window.TEUI.Calculator.calculateAll();
-          }
-        }, 100);
-      }
+      // Calculator.calculateAll() already handles both Target and Reference models
 
       if (
         window.TEUI &&
