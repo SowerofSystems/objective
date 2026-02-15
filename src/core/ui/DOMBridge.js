@@ -60,14 +60,21 @@
 
     // S07 Water Heating: compliance ratios (pre-formatted strings)
     m_49: "raw", m_50: "raw", m_52: "raw", m_53: "raw",
+    n_49: "raw", n_50: "raw", n_52: "raw", n_53: "raw",
     h_50: "number-1dp",
 
+    // S09 Internal Gains: seasonal split percentages
+    j_64: "percent-0dp", j_65: "percent-0dp", j_66: "percent-0dp", j_67: "percent-0dp",
+    j_69: "percent-0dp", j_71: "percent-0dp",
+    l_64: "percent-0dp", l_65: "percent-0dp", l_66: "percent-0dp", l_67: "percent-0dp",
+    l_69: "percent-0dp", l_71: "percent-0dp",
     // S09 Internal Gains: compliance ratios and checkmarks
     m_65: "raw", m_66: "raw", m_67: "raw",
     n_65: "raw", n_66: "raw", n_67: "raw",
 
-    // S10 Radiant Gains: subtotal indicators
+    // S10 Radiant Gains: subtotal indicators and utilization factor
     j_79: "integer", l_79: "integer",
+    g_81: "percent-2dp",
 
     // S12 Volume Metrics: WWR as percent, ELA10 as 3dp, compliance text and checkmarks
     d_107: "percent-2dp", d_110: "number-3dp",
