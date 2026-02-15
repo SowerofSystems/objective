@@ -536,12 +536,12 @@
     {
       id: "energy.teui.reductionPercent",
       legacyId: "d_144",
-      dependencies: ["energy.target.teui", "energy.reference.teui"],
+      dependencies: ["teuiSummary.target.teui", "energy.reference.teui"],
       classification: "C",
       section: "S15",
       label: "TEUI Reduction (%)",
       compute: (inputs) => {
-        const target = parseNum(inputs["energy.target.teui"], 0);
+        const target = parseNum(inputs["teuiSummary.target.teui"], 0);
         const ref = parseNum(inputs["energy.reference.teui"], 0);
         return ref > 0 ? 1 - (target / ref) : 0;
       }
@@ -627,7 +627,7 @@
 
     // h_143: Target TEUI = h_10
     {
-      id: "energy.target.teui",
+      id: "teuiSummary.target.teui",
       legacyId: "h_143",
       dependencies: ["keyValues.target.teui"],
       classification: "C",
@@ -640,13 +640,13 @@
     {
       id: "energy.targetActual.ratio",
       legacyId: "h_144",
-      dependencies: ["energy.target.teui", "energy.actual.teui"],
+      dependencies: ["teuiSummary.target.teui", "teuiSummary.actual.teui"],
       classification: "C",
       section: "S15",
       label: "Target/Actual TEUI Ratio",
       compute: (inputs) => {
-        const target = parseNum(inputs["energy.target.teui"], 0);
-        const actual = inputs["energy.actual.teui"];
+        const target = parseNum(inputs["teuiSummary.target.teui"], 0);
+        const actual = inputs["teuiSummary.actual.teui"];
         if (actual === "N/A" || actual === null || actual === undefined) return "N/A";
         const actualNum = parseNum(actual, 0);
         return actualNum > 0 ? target / actualNum : "N/A";
@@ -697,7 +697,7 @@
 
     // l_143: Actual TEUI (from Utility Bills) = k_10 if reporting mode = "Utility Bills"
     {
-      id: "energy.actual.teui",
+      id: "teuiSummary.actual.teui",
       legacyId: "l_143",
       dependencies: ["keyValues.actual.teui", "building.analysisMode"],
       classification: "C",
@@ -716,16 +716,57 @@
     {
       id: "energy.actualTarget.ratio",
       legacyId: "l_144",
-      dependencies: ["energy.actual.teui", "energy.target.teui"],
+      dependencies: ["teuiSummary.actual.teui", "teuiSummary.target.teui"],
       classification: "C",
       section: "S15",
       label: "Actual/Target TEUI Ratio",
       compute: (inputs) => {
-        const actual = inputs["energy.actual.teui"];
+        const actual = inputs["teuiSummary.actual.teui"];
         if (actual === "N/A") return "N/A";
         const actualNum = parseNum(actual, 0);
-        const target = parseNum(inputs["energy.target.teui"], 0);
+        const target = parseNum(inputs["teuiSummary.target.teui"], 0);
         return target > 0 ? actualNum / target : "N/A";
+      }
+    },
+
+    // h_135: TEUI = d_135 / h_15 (total targeted energy / conditioned floor area)
+    {
+      id: "energy.teui.targeted",
+      legacyId: "h_135",
+      dependencies: ["energy.total.targeted", "building.conditionedFloorArea"],
+      classification: "C",
+      section: "S15",
+      label: "TEUI (kWh/m²/yr)",
+      compute: (inputs) => {
+        const total = parseNum(inputs["energy.total.targeted"], 0);
+        const area = parseNum(inputs["building.conditionedFloorArea"], 0);
+        return area > 0 ? total / area : 0;
+      }
+    },
+
+    // l_141: Other Energy Cost = (L13*D28) + (D29*L14) + (L15*D31) + (L16*D30)
+    {
+      id: "energy.cost.otherFuel",
+      legacyId: "l_141",
+      dependencies: [
+        "energy.price.gas", "energy.raw.gas",
+        "energy.actual.propane.kg", "energy.price.propane",
+        "energy.price.wood", "forestry.woodVolume",
+        "energy.price.oil", "energy.raw.oil"
+      ],
+      classification: "C",
+      section: "S15",
+      label: "Other Energy Cost ($)",
+      compute: (inputs) => {
+        const l13 = parseNum(inputs["energy.price.gas"]);
+        const d28 = parseNum(inputs["energy.raw.gas"]);
+        const d29 = parseNum(inputs["energy.actual.propane.kg"]);
+        const l14 = parseNum(inputs["energy.price.propane"]);
+        const l15 = parseNum(inputs["energy.price.wood"]);
+        const d31 = parseNum(inputs["forestry.woodVolume"]);
+        const l16 = parseNum(inputs["energy.price.oil"]);
+        const d30 = parseNum(inputs["energy.raw.oil"]);
+        return (l13 * d28) + (d29 * l14) + (l15 * d31) + (l16 * d30);
       }
     }
   ];

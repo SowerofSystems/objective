@@ -44,6 +44,24 @@
     // S12: Volume Metrics (ACH50 and ELA10 reference for compliance)
     { id: "reference.airTightness.ach50Target", legacyId: "ref_d_109", defaultValue: 1.5, classification: "C", section: "S12", label: "Reference ACH50" },
     { id: "reference.airTightness.ela10", legacyId: "ref_d_110", defaultValue: 0, classification: "C", section: "S12", label: "Reference ELA10 (m²)" },
+
+    // S11: Envelope RSI reference values (for RSI components: higher is better)
+    { id: "reference.transmissionLoss.roof.rsi", legacyId: "ref_f_85", defaultValue: 5, classification: "C", section: "S11", label: "Reference Roof RSI" },
+    { id: "reference.transmissionLoss.walls.rsi", legacyId: "ref_f_86", defaultValue: 5, classification: "C", section: "S11", label: "Reference Walls RSI" },
+    { id: "reference.transmissionLoss.exposedFloor.rsi", legacyId: "ref_f_87", defaultValue: 5, classification: "C", section: "S11", label: "Reference Exposed Floor RSI" },
+    { id: "reference.transmissionLoss.wallsBelowGrade.rsi", legacyId: "ref_f_94", defaultValue: 5, classification: "C", section: "S11", label: "Reference Walls Below Grade RSI" },
+    { id: "reference.transmissionLoss.slabOnGrade.rsi", legacyId: "ref_f_95", defaultValue: 5, classification: "C", section: "S11", label: "Reference Slab on Grade RSI" },
+
+    // S11: Envelope U-value reference values (for U-value components: lower is better)
+    { id: "reference.transmissionLoss.doors.uValue", legacyId: "ref_g_88", defaultValue: 2, classification: "C", section: "S11", label: "Reference Doors U-Value" },
+    { id: "reference.transmissionLoss.windowNorth.uValue", legacyId: "ref_g_89", defaultValue: 2, classification: "C", section: "S11", label: "Reference Window North U-Value" },
+    { id: "reference.transmissionLoss.windowEast.uValue", legacyId: "ref_g_90", defaultValue: 2, classification: "C", section: "S11", label: "Reference Window East U-Value" },
+    { id: "reference.transmissionLoss.windowSouth.uValue", legacyId: "ref_g_91", defaultValue: 2, classification: "C", section: "S11", label: "Reference Window South U-Value" },
+    { id: "reference.transmissionLoss.windowWest.uValue", legacyId: "ref_g_92", defaultValue: 2, classification: "C", section: "S11", label: "Reference Window West U-Value" },
+    { id: "reference.transmissionLoss.skylights.uValue", legacyId: "ref_g_93", defaultValue: 2, classification: "C", section: "S11", label: "Reference Skylights U-Value" },
+
+    // S11: Thermal bridge penalty reference
+    { id: "reference.transmissionLoss.thermalBridgePenalty", legacyId: "ref_d_97", defaultValue: 20, classification: "C", section: "S11", label: "Reference Thermal Bridge Penalty (%)" },
   ];
 
   // ==========================================================================
@@ -223,6 +241,112 @@
     },
 
     // ========================================================================
+    // S11: Envelope Compliance — RSI components (higher is better)
+    // ========================================================================
+    ...[
+      { row: 85, id: "roof", prop: "rsi" },
+      { row: 86, id: "walls", prop: "rsi" },
+      { row: 87, id: "exposedFloor", prop: "rsi" },
+      { row: 94, id: "wallsBelowGrade", prop: "rsi" },
+      { row: 95, id: "slabOnGrade", prop: "rsi" },
+    ].flatMap(({ row, id, prop }) => [
+      {
+        id: `compliance.envelope.${id}.ratio`,
+        legacyId: `m_${row}`,
+        section: "S11",
+        classification: "C",
+        dependencies: [`transmissionLoss.${id}.${prop}`, `reference.transmissionLoss.${id}.${prop}`],
+        label: `${id} Compliance Ratio`,
+        compute: (inputs) => {
+          const target = parseNum(inputs[`transmissionLoss.${id}.${prop}`]);
+          const ref = parseNum(inputs[`reference.transmissionLoss.${id}.${prop}`]);
+          if (ref > 0) return Math.round((target / ref) * 100) + "%";
+          return "100%";
+        }
+      },
+      {
+        id: `compliance.envelope.${id}.pass`,
+        legacyId: `n_${row}`,
+        section: "S11",
+        classification: "C",
+        dependencies: [`transmissionLoss.${id}.${prop}`, `reference.transmissionLoss.${id}.${prop}`],
+        label: `${id} Compliance Status`,
+        compute: (inputs) => {
+          const target = parseNum(inputs[`transmissionLoss.${id}.${prop}`]);
+          const ref = parseNum(inputs[`reference.transmissionLoss.${id}.${prop}`]);
+          return target >= ref ? "✓" : "✗";
+        }
+      }
+    ]),
+
+    // S11: Envelope Compliance — U-value components (lower is better)
+    ...[
+      { row: 88, id: "doors" },
+      { row: 89, id: "windowNorth" },
+      { row: 90, id: "windowEast" },
+      { row: 91, id: "windowSouth" },
+      { row: 92, id: "windowWest" },
+      { row: 93, id: "skylights" },
+    ].flatMap(({ row, id }) => [
+      {
+        id: `compliance.envelope.${id}.ratio`,
+        legacyId: `m_${row}`,
+        section: "S11",
+        classification: "C",
+        dependencies: [`transmissionLoss.${id}.uValue`, `reference.transmissionLoss.${id}.uValue`],
+        label: `${id} Compliance Ratio`,
+        compute: (inputs) => {
+          const target = parseNum(inputs[`transmissionLoss.${id}.uValue`]);
+          const ref = parseNum(inputs[`reference.transmissionLoss.${id}.uValue`]);
+          if (target > 0) return Math.round((ref / target) * 100) + "%";
+          return "100%";
+        }
+      },
+      {
+        id: `compliance.envelope.${id}.pass`,
+        legacyId: `n_${row}`,
+        section: "S11",
+        classification: "C",
+        dependencies: [`transmissionLoss.${id}.uValue`, `reference.transmissionLoss.${id}.uValue`],
+        label: `${id} Compliance Status`,
+        compute: (inputs) => {
+          const target = parseNum(inputs[`transmissionLoss.${id}.uValue`]);
+          const ref = parseNum(inputs[`reference.transmissionLoss.${id}.uValue`]);
+          return target <= ref ? "✓" : "✗";
+        }
+      }
+    ]),
+
+    // S11: Thermal Bridge Penalty Compliance (lower penalty is better)
+    {
+      id: "compliance.envelope.thermalBridge.ratio",
+      legacyId: "m_97",
+      section: "S11",
+      classification: "C",
+      dependencies: ["transmissionLoss.thermalBridgePenalty", "reference.transmissionLoss.thermalBridgePenalty"],
+      label: "Thermal Bridge Compliance Ratio",
+      compute: (inputs) => {
+        const target = parseNum(inputs["transmissionLoss.thermalBridgePenalty"]) / 100;
+        const ref = parseNum(inputs["reference.transmissionLoss.thermalBridgePenalty"]) / 100;
+        if (target > 0) return Math.round((ref / target) * 100) + "%";
+        return "100%";
+      }
+    },
+    {
+      id: "compliance.envelope.thermalBridge.pass",
+      legacyId: "n_97",
+      section: "S11",
+      classification: "C",
+      dependencies: ["transmissionLoss.thermalBridgePenalty", "reference.transmissionLoss.thermalBridgePenalty"],
+      label: "Thermal Bridge Compliance Status",
+      compute: (inputs) => {
+        const targetPct = parseNum(inputs["transmissionLoss.thermalBridgePenalty"]) / 100;
+        const refPct = parseNum(inputs["reference.transmissionLoss.thermalBridgePenalty"]) / 100;
+        return targetPct <= refPct ? "✓" : "✗";
+      }
+    },
+
+    // ========================================================================
     // S12: Volume Metrics Compliance
     // ========================================================================
 
@@ -389,6 +513,24 @@
     "internal.plugLoadDensity":  "reference.internal.plugLoadDensity",
     "internal.lightingDensity":  "reference.internal.lightingDensity",
     "internal.equipmentDensity": "reference.internal.equipmentDensity",
+
+    // S11: Envelope RSI (for RSI components)
+    "transmissionLoss.roof.rsi":           "reference.transmissionLoss.roof.rsi",
+    "transmissionLoss.walls.rsi":          "reference.transmissionLoss.walls.rsi",
+    "transmissionLoss.exposedFloor.rsi":   "reference.transmissionLoss.exposedFloor.rsi",
+    "transmissionLoss.wallsBelowGrade.rsi":"reference.transmissionLoss.wallsBelowGrade.rsi",
+    "transmissionLoss.slabOnGrade.rsi":    "reference.transmissionLoss.slabOnGrade.rsi",
+
+    // S11: Envelope U-values (for U-value components)
+    "transmissionLoss.doors.uValue":       "reference.transmissionLoss.doors.uValue",
+    "transmissionLoss.windowNorth.uValue": "reference.transmissionLoss.windowNorth.uValue",
+    "transmissionLoss.windowEast.uValue":  "reference.transmissionLoss.windowEast.uValue",
+    "transmissionLoss.windowSouth.uValue": "reference.transmissionLoss.windowSouth.uValue",
+    "transmissionLoss.windowWest.uValue":  "reference.transmissionLoss.windowWest.uValue",
+    "transmissionLoss.skylights.uValue":   "reference.transmissionLoss.skylights.uValue",
+
+    // S11: Thermal bridge penalty
+    "transmissionLoss.thermalBridgePenalty":"reference.transmissionLoss.thermalBridgePenalty",
 
     // S12: ACH50 and ELA10
     "airTightness.ach50Target":  "reference.airTightness.ach50Target",

@@ -643,6 +643,20 @@
         const demand = parseNum(inputs["mechanical.heating.demand"], 0);
         return fuelImpact - demand;
       }
+    },
+
+    // h_122: Latent Load Factor (display echo of cooling.latentLoadFactor)
+    {
+      id: "mechanical.cooling.latentLoadDisplay",
+      legacyId: "h_122",
+      dependencies: ["cooling.latentLoadFactor"],
+      classification: "C",
+      section: "S13",
+      label: "Latent Load Factor (%)",
+      compute: (inputs) => {
+        const llf = parseNum(inputs["cooling.latentLoadFactor"], 1.0);
+        return llf;
+      }
     }
   ];
 

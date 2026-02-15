@@ -822,6 +822,88 @@
       },
     });
 
+    // ========================================================================
+    // AGGREGATE SURFACE TEMPERATURES (o_101, o_102, o_104)
+    // T_si = T_interior - (U × ΔT × R_si) using weighted U-values
+    // ========================================================================
+
+    // o_101: Air-facing aggregate surface temperature
+    graph.registerNode({
+      id: "envelope.airFacing.surfaceTemp",
+      legacyId: "o_101",
+      section: "S12",
+      classification: "C",
+      dependencies: [
+        "envelope.airFacing.area",
+        "envelope.airFacing.uValue",
+        "climate.heating.setpoint",
+        "climate.temperature.winterAverage"
+      ],
+      label: "Air-Facing Aggregate Surface Temp (°C)",
+      compute: (inputs) => {
+        const area = parseNum(inputs["envelope.airFacing.area"]);
+        if (area <= 0) return "";
+        const uValue = parseNum(inputs["envelope.airFacing.uValue"]);
+        const tInt = parseNum(inputs["climate.heating.setpoint"], 21);
+        const tExt = parseNum(inputs["climate.temperature.winterAverage"], -5);
+        const deltaT = tInt - tExt;
+        return Math.round((tInt - uValue * deltaT * 0.13) * 100) / 100;
+      }
+    });
+
+    // o_102: Ground-facing aggregate surface temperature
+    graph.registerNode({
+      id: "envelope.groundFacing.surfaceTemp",
+      legacyId: "o_102",
+      section: "S12",
+      classification: "C",
+      dependencies: [
+        "envelope.groundFacing.area",
+        "envelope.groundFacing.uValue",
+        "climate.heating.setpoint"
+      ],
+      label: "Ground-Facing Aggregate Surface Temp (°C)",
+      compute: (inputs) => {
+        const area = parseNum(inputs["envelope.groundFacing.area"]);
+        if (area <= 0) return "";
+        const uValue = parseNum(inputs["envelope.groundFacing.uValue"]);
+        const tInt = parseNum(inputs["climate.heating.setpoint"], 21);
+        const groundTemp = 10;
+        const deltaT = tInt - groundTemp;
+        return Math.round((tInt - uValue * deltaT * 0.17) * 100) / 100;
+      }
+    });
+
+    // o_104: Total building aggregate surface temperature (area-weighted ΔT)
+    graph.registerNode({
+      id: "envelope.total.surfaceTemp",
+      legacyId: "o_104",
+      section: "S12",
+      classification: "C",
+      dependencies: [
+        "envelope.airFacing.area",
+        "envelope.groundFacing.area",
+        "envelope.combined.uValue",
+        "climate.heating.setpoint",
+        "climate.temperature.winterAverage"
+      ],
+      label: "Total Aggregate Surface Temp (°C)",
+      compute: (inputs) => {
+        const d101 = parseNum(inputs["envelope.airFacing.area"]);
+        const d102 = parseNum(inputs["envelope.groundFacing.area"]);
+        const totalArea = d101 + d102;
+        if (totalArea <= 0) return "";
+        const g104 = parseNum(inputs["envelope.combined.uValue"]);
+        const tInt = parseNum(inputs["climate.heating.setpoint"], 21);
+        const tExtAir = parseNum(inputs["climate.temperature.winterAverage"], -5);
+        const groundTemp = 10;
+        const deltaTAir = tInt - tExtAir;
+        const deltaTGround = tInt - groundTemp;
+        const deltaTWeighted = (deltaTAir * d101 + deltaTGround * d102) / totalArea;
+        return Math.round((tInt - g104 * deltaTWeighted * 0.13) * 100) / 100;
+      }
+    });
+
     console.log("[VolumeMetricsNodes] Registered", inputs.length, "inputs");
   }
 

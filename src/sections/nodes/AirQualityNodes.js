@@ -178,7 +178,18 @@
       },
     });
 
-    console.log("[AirQualityNodes] Registered", inputs.length, "inputs and 11 nodes");
+    // k_59: Acceptable RH range guidance value (constant)
+    graph.registerNode({
+      id: "airQuality.humidity.guidanceRange",
+      legacyId: "k_59",
+      section: "S08",
+      classification: "C",
+      dependencies: [],
+      label: "Acceptable RH Guidance Range",
+      compute: () => "30-60",
+    });
+
+    console.log("[AirQualityNodes] Registered", inputs.length, "inputs and 12 nodes");
   }
 
   window.TEUI.ComputationNodes.AirQuality = { register };

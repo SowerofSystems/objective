@@ -76,6 +76,25 @@
     j_79: "integer", l_79: "integer",
     g_81: "percent-2dp",
 
+    // S11 Envelope: area percentages, thermal bridge decimal, heat loss/gain %
+    h_85: "percent-0dp", h_86: "percent-0dp", h_87: "percent-0dp",
+    h_88: "percent-0dp", h_89: "percent-0dp", h_90: "percent-0dp",
+    h_91: "percent-0dp", h_92: "percent-0dp", h_93: "percent-0dp",
+    h_94: "percent-0dp", h_95: "percent-0dp", h_98: "raw",
+    e_97: "number-3dp",
+    j_97: "percent-0dp", j_98: "percent-0dp",
+    l_97: "percent-0dp", l_98: "percent-0dp",
+    // S11 Envelope: compliance ratios and checkmarks
+    m_85: "raw", m_86: "raw", m_87: "raw", m_88: "raw",
+    m_89: "raw", m_90: "raw", m_91: "raw", m_92: "raw",
+    m_93: "raw", m_94: "raw", m_95: "raw", m_97: "raw",
+    n_85: "raw", n_86: "raw", n_87: "raw", n_88: "raw",
+    n_89: "raw", n_90: "raw", n_91: "raw", n_92: "raw",
+    n_93: "raw", n_94: "raw", n_95: "raw", n_97: "raw",
+
+    // S08 Humidity guidance
+    k_59: "raw",
+
     // S12 Volume Metrics: WWR as percent, ELA10 as 3dp, compliance text and checkmarks
     d_107: "percent-2dp", d_110: "number-3dp",
     i_110: "integer",
@@ -85,6 +104,8 @@
     m_109: "raw", n_109: "raw",
     m_110: "raw", n_110: "raw",
 
+    // S13 Cooling: latent load factor display
+    h_122: "percent-0dp",
     // S13 Cooling: compliance ratios and pass/fail checkmarks
     m_113: "integer-percent", m_115: "integer-percent", m_116: "integer-percent",
     m_117: "integer-percent", m_118: "integer-percent", m_119: "integer-percent",
@@ -97,6 +118,7 @@
     m_131: "number-2dp-comma",
 
     // S15 TEUI Summary: costs, loads, ratios
+    h_135: "number-2dp-comma", l_141: "number-2dp-comma",
     d_141: "number-2dp-comma", h_141: "number-2dp-comma",
     d_142: "number-2dp-comma", h_142: "number-2dp-comma",
     d_143: "number-1dp", h_143: "number-1dp", l_143: "number-1dp",
