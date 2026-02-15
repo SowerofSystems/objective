@@ -412,15 +412,7 @@ window.TEUI.PCOptimization = (function () {
       stateManager.setValue(fieldId, value, "user-modified");
     }
 
-    // Trigger recalculation
-    if (section?.calculateAll) {
-      section.calculateAll();
-    }
-
-    // Refresh UI
-    if (section?.ModeManager?.refreshUI) {
-      section.ModeManager.refreshUI();
-    }
+    // Graph handles recalculation via wildcard SM listener
   }
 
   // ══════════════════════════════════════════════════════════════════════
@@ -472,10 +464,7 @@ window.TEUI.PCOptimization = (function () {
 
       const section = window.TEUI?.SectionModules?.[update.section];
 
-      // If preCalc flag set, recalculate section first (for dropdown switches)
-      if (update.preCalc && section?.calculateAll) {
-        section.calculateAll();
-      }
+      // preCalc no longer needed — graph maintains consistent state
 
       // Apply visibility updates if specified (for dropdown field switching)
       if (update.visibilityUpdate) {
@@ -498,16 +487,10 @@ window.TEUI.PCOptimization = (function () {
       }
     }
 
-    // Force final recalculation for all modified sections
-    sectionsModified.forEach(sectionId => {
-      const section = window.TEUI?.SectionModules?.[sectionId];
-      if (section?.calculateAll) {
-        section.calculateAll();
-      }
-      if (section?.ModeManager?.refreshUI) {
-        section.ModeManager.refreshUI();
-      }
-    });
+    // Final graph recalculation + sync to SM + stamp all
+    if (window.TEUI?.Calculator?.calculateAll) {
+      window.TEUI.Calculator.calculateAll();
+    }
 
     // 🔍 DIAGNOSTIC: Capture state AFTER optimization (if debug enabled)
     if (debugEnabled && stateBefore) {

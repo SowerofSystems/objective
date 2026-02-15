@@ -2053,26 +2053,8 @@ TEUI.StateManager = (function () {
         "[StateManager] 🧮 Running calculateAll with synced states..."
       );
       window.TEUI.Calculator.calculateAll();
-
-      // Finally, refresh Pattern A section UIs to display calculated results
-      console.log(
-        "[StateManager] 🔄 Refreshing Pattern A section UIs after calculations..."
-      );
-      patternASections.forEach(sectionId => {
-        const section = window.TEUI?.SectionModules?.[sectionId];
-
-        // Refresh UI with calculated values
-        if (section?.ModeManager?.refreshUI) {
-          section.ModeManager.refreshUI();
-          // ✅ Also update calculated display values (some sections need both calls)
-          if (section.ModeManager.updateCalculatedDisplayValues) {
-            section.ModeManager.updateCalculatedDisplayValues();
-          }
-          console.log(
-            `[StateManager] ✅ ${sectionId} UI refreshed after calculations`
-          );
-        }
-      });
+      // Calculator.calculateAll() handles: graph compute → syncToSM → stampAll → postStamp
+      // No additional refreshUI/updateCalculatedDisplayValues needed
     } else {
       console.warn(
         "[StateManager] Calculator.calculateAll not available to trigger after reverting state."

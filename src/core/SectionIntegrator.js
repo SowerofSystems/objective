@@ -282,46 +282,9 @@ TEUI.SectionIntegrator = (function () {
    * Force update of TEDI/TELI calculations across all affected sections
    */
   function forceTEDITELIUpdate() {
-    // First try using Section 14's calculation function
-    if (window.TEUI.SectionModules && window.TEUI.SectionModules.sect14) {
-      if (
-        typeof window.TEUI.SectionModules.sect14.calculateValues === "function"
-      ) {
-        window.TEUI.SectionModules.sect14.calculateValues();
-      }
-
-      if (
-        typeof window.TEUI.SectionModules.sect14.updateDisplay === "function"
-      ) {
-        window.TEUI.SectionModules.sect14.updateDisplay();
-      }
-    }
-
-    // Then update Section 15 if available
-    if (window.TEUI.SectionModules && window.TEUI.SectionModules.sect15) {
-      if (
-        typeof window.TEUI.SectionModules.sect15.calculateAll === "function"
-      ) {
-        window.TEUI.SectionModules.sect15.calculateAll();
-      } else if (
-        typeof window.TEUI.SectionModules.sect15.calculateValues === "function"
-      ) {
-        // Fallback to calculateValues if calculateAll not available
-        window.TEUI.SectionModules.sect15.calculateValues();
-
-        // Also call updateDisplay separately if calculateAll not available
-        if (
-          typeof window.TEUI.SectionModules.sect15.updateDisplay === "function"
-        ) {
-          window.TEUI.SectionModules.sect15.updateDisplay();
-        }
-      }
-    }
-
-    // Stamp graph values to DOM (includes Section01)
-    if (window.TEUI.DOMBridge?.stampAll) window.TEUI.DOMBridge.stampAll();
-    if (window.TEUI.SectionModules?.sect01?.postStamp) {
-      window.TEUI.SectionModules.sect01.postStamp();
+    // Graph handles all cross-section dependencies via Calculator.calculateAll()
+    if (window.TEUI?.Calculator?.calculateAll) {
+      window.TEUI.Calculator.calculateAll();
     }
   }
 
@@ -639,24 +602,10 @@ TEUI.SectionIntegrator = (function () {
 
     // Debounce the update to prevent excessive calls
     volumeMetricsUpdateTimeout = setTimeout(() => {
-      // First try using Section 12's calculation function
-      if (window.TEUI.SectionModules && window.TEUI.SectionModules.sect12) {
-        if (
-          typeof window.TEUI.SectionModules.sect12.calculateAll === "function"
-        ) {
-          window.TEUI.SectionModules.sect12.calculateAll();
-        }
+      // Graph handles all cross-section dependencies
+      if (window.TEUI?.Calculator?.calculateAll) {
+        window.TEUI.Calculator.calculateAll();
       }
-      // Fallback to global function
-      else if (window.TEUI.forceSurfaceMetricsUpdate) {
-        window.TEUI.forceSurfaceMetricsUpdate("section-integrator");
-      }
-
-      // Update TEDI/TELI if available since it depends on volume metrics
-      if (window.TEUI.updateTEDITELIValues) {
-        window.TEUI.updateTEDITELIValues();
-      }
-
       volumeMetricsUpdateTimeout = null;
     }, 100); // 100ms debounce
   }
