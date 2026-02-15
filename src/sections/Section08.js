@@ -454,13 +454,8 @@ window.TEUI.SectionModules.sect08 = (function () {
       }
     });
 
-    // ✅ Listen to external dependencies via global StateManager
+    // Graph handles cross-section computation via wildcard listener.
     if (window.TEUI?.StateManager) {
-      const sm = window.TEUI.StateManager;
-      const dependencies = ["d_31", "k_31"];
-      dependencies.forEach(dep => {
-        sm.addListener(dep, calculateAll);
-      });
 
       // ✅ ANTI-PATTERN 7 FIX: S08 should NOT listen to its own input fields (i_59, ref_i_59)
       // - Slider changes: FieldManager now calls calculateAll() after ModeManager.setValue
@@ -791,21 +786,7 @@ window.TEUI.SectionModules.sect08 = (function () {
    * Setup listeners for S04 fields that affect d_60 (Wood Offset)
    */
   function setupS04Listeners() {
-    if (window.TEUI?.StateManager) {
-      // Listen for S04's actual wood use (d_31)
-      window.TEUI.StateManager.addListener("d_31", () => {
-        setTimeout(() => calculateAll(), 100); // Small delay to ensure S04 calculations complete
-      });
-
-      // Listen for S04's target wood emissions (k_31)
-      window.TEUI.StateManager.addListener("k_31", () => {
-        setTimeout(() => calculateAll(), 100); // Small delay to ensure S04 calculations complete
-      });
-
-      console.log("[S08] S04 listeners setup complete");
-    } else {
-      console.warn("[S08] StateManager not available for S04 listeners");
-    }
+    // Graph handles cross-section computation via wildcard listener.
   }
 
   function addStatusStyles() {

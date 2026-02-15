@@ -1155,13 +1155,7 @@ window.TEUI.SectionModules.sect02 = (function () {
         ModeManager.updateCalculatedDisplayValues();
       };
 
-      // When these external dependencies change, recalculate everything in this section.
-      window.TEUI.StateManager.addListener("i_39", calculateAndRefresh);
-      window.TEUI.StateManager.addListener("ref_i_39", calculateAndRefresh);
-      window.TEUI.StateManager.addListener("i_41", calculateAndRefresh);
-      window.TEUI.StateManager.addListener("ref_i_41", calculateAndRefresh);
-
-      // Add listeners for occupancy changes to update critical flag
+      // Graph handles cross-section computation — only keep UI-only listeners
       window.TEUI.StateManager.addListener("d_12", updateCriticalOccupancyFlag);
       window.TEUI.StateManager.addListener(
         "ref_d_12",

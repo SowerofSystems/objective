@@ -1779,16 +1779,7 @@ window.TEUI.SectionModules.sect07 = (function () {
       }
     });
 
-    // StateManager listeners for external dependencies
-    if (window.TEUI?.StateManager) {
-      // ✅ PATTERN A: Dual-mode listeners for ALL external dependencies
-      window.TEUI.StateManager.addListener("d_63", calculateAll); // Occupancy (Target)
-      window.TEUI.StateManager.addListener("ref_d_63", calculateAll); // Occupancy (Reference)
-      window.TEUI.StateManager.addListener("l_30", calculateAll); // Oil emissions factor (Target)
-      window.TEUI.StateManager.addListener("ref_l_30", calculateAll); // Oil emissions factor (Reference)
-      window.TEUI.StateManager.addListener("l_28", calculateAll); // Gas emissions factor (Target)
-      window.TEUI.StateManager.addListener("ref_l_28", calculateAll); // Gas emissions factor (Reference)
-    }
+    // Graph handles cross-section computation via wildcard listener.
   }
 
   //==========================================================================

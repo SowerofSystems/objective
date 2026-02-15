@@ -1953,24 +1953,9 @@ window.TEUI.SectionModules.sect13 = (function () {
     if (window.TEUI && window.TEUI.StateManager) {
       const sm = window.TEUI.StateManager; // Alias for brevity
 
-      // Add StateManager listener for d_113 to eliminate "cooling bump" requirement
-      // This ensures complete calculation cycle + downstream updates (A7 proven pattern)
-      sm.addListener("d_113", (newValue, oldValue) => {
-        // Apply ghosting for new heating system
+      // d_113 listener: ghosting UI only — graph handles computation
+      sm.addListener("d_113", (newValue) => {
         handleHeatingSystemChangeForGhosting(newValue);
-
-        // ✅ PATTERN 2: Run dual-engine calculations for proper Target/Reference state handling
-        calculateAll();
-        ModeManager.updateCalculatedDisplayValues(); // ✅ CRITICAL: Update DOM after calculations
-        if (
-          window.TEUI &&
-          window.TEUI.StateManager &&
-          typeof window.TEUI.StateManager.updateTEUICalculations === "function"
-        ) {
-          window.TEUI.StateManager.updateTEUICalculations(
-            "S13_d113_fuel_switch"
-          );
-        }
       });
 
       // ✅ Reference mode d_113 changes are now handled by ReferenceState.setValue()
@@ -2065,84 +2050,7 @@ window.TEUI.SectionModules.sect13 = (function () {
       // Direct slider event handlers (input/change) provide better performance control
       // sm.addListener("f_113", calculateCOPValues); // REMOVED - causes storms in Reference mode
 
-      // Listener for d_116 (Cooling System) changes
-      sm.addListener("d_116", () => {
-        // This listener ensures that changes to d_116 from any source
-        // (not just the dropdown) trigger a full recalculation.
-        calculateAll();
-        ModeManager.updateCalculatedDisplayValues();
-      });
-
-      // Listener for d_118 (Ventilation Efficiency) changes
-      sm.addListener("d_118", () => {
-        // Note: Direct slider handlers now provide the immediate calculation flow
-      });
-
-      // Dropdown handler already triggers calculateAll() properly with dual-engine
-      // sm.addListener("g_118", () => {
-      //   calculateVentilationValues(); // This was not mode-aware, causing contamination
-      //   calculateFreeCooling();
-      //   calculateMitigatedCED();
-      // });
-
-      // Listener for d_119 (Per Person Rate) changes
-      sm.addListener("d_119", calculateVentilationRates);
-
-      // Listener for l_119 (Summer Boost) changes
-      sm.addListener("l_119", calculateCoolingVentilation);
-
-      // --- Listeners for m_129 Dependencies --- Corrected in troubleshooting
-      // sm.addListener("d_129", calculateMitigatedCED); // Function moved to Cooling.js
-      // sm.addListener("h_124", calculateMitigatedCED); // Function moved to Cooling.js
-      // sm.addListener("d_123", calculateMitigatedCED); // Function moved to Cooling.js
-      // -----------------------------------------
-
-      // Helper function for external dependency changes - DUAL-STATE PATTERN COMPLIANT
-      const calculateAndRefresh = () => {
-        calculateAll();
-        ModeManager.updateCalculatedDisplayValues();
-      };
-
-      // Only essential S03 climate values that S13 actually needs
-      sm.addListener("d_20", calculateAndRefresh); // HDD - needed for heating calculations
-      sm.addListener("d_21", calculateAndRefresh); // CDD - needed for cooling calculations
-      // Removed: d_23, d_24, h_23, h_24 - S13 doesn't directly use these (S11/S12 handle them)
-      sm.addListener("i_104", () => {
-        calculateAndRefresh();
-      }); // Total Trans Loss
-      sm.addListener("ref_i_104", () => {
-        calculateAndRefresh();
-      }); // Reference Total Trans Loss (from S12)
-
-      sm.addListener("k_104", calculateAndRefresh); // Total Ground Loss
-      sm.addListener("ref_k_104", calculateAndRefresh); // Reference Total Ground Loss (from S12)
-
-      // ✅ FIX (Oct 27, 2025): Listen for volume changes from S12
-      // Volume affects ventilation calculations (d_120, d_122, etc.) when g_118 uses volumetric methods
-      sm.addListener("d_105", calculateAndRefresh); // Conditioned Volume (from S12)
-      sm.addListener("ref_d_105", calculateAndRefresh); // Reference Conditioned Volume (from S12)
-
-      sm.addListener("i_71", () => {
-        calculateAndRefresh();
-      }); // Total Occ Gains
-      sm.addListener("ref_i_71", () => {
-        calculateAndRefresh();
-      }); // Reference Total Occ Gains (from S09)
-
-      sm.addListener("i_79", calculateAndRefresh); // Total App Gains
-      sm.addListener("ref_i_79", calculateAndRefresh); // Reference Total App Gains (from S10)
-
-      sm.addListener("d_127", () => {
-        // ✅ PATTERN 2: Run dual-engine calculations for proper Target/Reference state handling
-        calculateAndRefresh();
-      }); // TED (from S14, for d_114)
-      sm.addListener("ref_d_127", () => {
-        calculateAndRefresh();
-      }); // Reference TED (from S14, for d_114) - CRITICAL for Reference flow
-
-      // ✅ Additional S14 listener
-      sm.addListener("l_128", calculateAndRefresh); // From S14
-      sm.addListener("ref_l_128", calculateAndRefresh); // Reference from S14
+      // All computational SM listeners removed — graph handles dependency tracking
     } else {
       console.error(
         "[Section13] ❌ StateManager not available to add listeners!"
@@ -2541,36 +2449,7 @@ window.TEUI.SectionModules.sect13 = (function () {
     // "Set Values" button now handles 100% of value application via FileHandler
     // FileHandler.applyReferenceValuesFromStandard() triggers calculateAll() after value sync
 
-    // Listen for Reference climate data changes to trigger recalculation
-    sm.addListener("ref_d_20", newValue => {
-      calculateAll();
-      ModeManager.updateCalculatedDisplayValues();
-    });
-    sm.addListener("ref_d_21", newValue => {
-      calculateAll();
-      ModeManager.updateCalculatedDisplayValues();
-    });
-    sm.addListener("ref_d_22", newValue => {
-      calculateAll();
-      ModeManager.updateCalculatedDisplayValues();
-    });
-    sm.addListener("ref_h_22", newValue => {
-      calculateAll();
-      ModeManager.updateCalculatedDisplayValues();
-    });
-
-    // Listen for Cooling.js results to trigger S13 recalculations
-    // ✅ MODE-AWARE: Listen to BOTH Target and Reference cooling values
-    sm.addListener("cooling_latentLoadFactor", calculateAndRefresh); // Target h_122 affects D122/D123
-    sm.addListener("ref_cooling_latentLoadFactor", calculateAndRefresh); // Reference h_122 affects ref_D122/ref_D123
-    sm.addListener("cooling_h_124", calculateAndRefresh); // Target free cooling capacity affects H124, D124
-    sm.addListener("ref_cooling_h_124", calculateAndRefresh); // Reference free cooling capacity
-    sm.addListener("cooling_m_124", calculateAndRefresh); // Target days active cooling affects M124
-    sm.addListener("ref_cooling_m_124", calculateAndRefresh); // Reference days active cooling
-
-    // Listen for S08 indoor RH% changes (affects cooling calculations)
-    sm.addListener("i_59", calculateAndRefresh); // Target indoor RH%
-    sm.addListener("ref_i_59", calculateAndRefresh); // Reference indoor RH%
+    // All registerWithStateManager computational listeners removed — graph handles dependency tracking
   }
 
   /**

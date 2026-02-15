@@ -1804,82 +1804,26 @@ window.TEUI.SectionModules.sect04 = (function () {
         "ref_f_115", // S13 space oil volume
       ];
 
-      dependencies.forEach(fieldId => {
-        window.TEUI.StateManager.addListener(fieldId, calculateAndRefresh);
-      });
+      // Graph handles cross-section computation via wildcard listener.
+      // Only keep domain-logic side effects (nuclear waste factor auto-set).
 
-      // ✅ PER CALCULATION: Listen for building standard changes (d_13)
-      // PER (h_35) depends on d_13 to determine if PH standard applies
-      window.TEUI.StateManager.addListener("d_13", calculateAndRefresh);
-      window.TEUI.StateManager.addListener("ref_d_13", calculateAndRefresh);
-
-      // ✅ NUCLEAR WASTE FACTOR: Auto-update l_33 when province changes
-      // Default to 0.0096 for Ontario, 0 for other provinces (user can override)
-      // Mode-aware: separate handling for Target and Reference
-
-      const updateNuclearWasteFactorTarget = () => {
+      // Auto-update l_33 when province changes (ON=0.0096, other=0)
+      window.TEUI.StateManager.addListener("d_19", () => {
         const province = window.TEUI.StateManager.getValue("d_19") || "";
-        const newValue = province === "ON" ? "0.0096" : "0";
-        const userEditedFlag =
-          window.TEUI.StateManager.getValue("_l_33_user_edited");
-
-        if (!userEditedFlag) {
-          // Update Target state
+        if (!window.TEUI.StateManager.getValue("_l_33_user_edited")) {
+          const newValue = province === "ON" ? "0.0096" : "0";
           TargetState.setValue("l_33", newValue, "calculated");
           window.TEUI.StateManager.setValue("l_33", newValue, "calculated");
-
-          // Update display if in Target mode
-          if (ModeManager.currentMode === "target") {
-            const element = document.querySelector('[data-field-id="l_33"]');
-            if (element) {
-              element.textContent = window.TEUI.formatNumber(
-                window.TEUI.parseNumeric(newValue),
-                "number-4dp"
-              );
-            }
-          }
-
-          calculateAll();
-          ModeManager.updateCalculatedDisplayValues();
         }
-      };
-
-      const updateNuclearWasteFactorReference = () => {
+      });
+      window.TEUI.StateManager.addListener("ref_d_19", () => {
         const province = window.TEUI.StateManager.getValue("ref_d_19") || "";
-        const newValue = province === "ON" ? "0.0096" : "0";
-        const userEditedFlag = window.TEUI.StateManager.getValue(
-          "_ref_l_33_user_edited"
-        );
-
-        if (!userEditedFlag) {
-          // Update Reference state
+        if (!window.TEUI.StateManager.getValue("_ref_l_33_user_edited")) {
+          const newValue = province === "ON" ? "0.0096" : "0";
           ReferenceState.setValue("l_33", newValue, "calculated");
           window.TEUI.StateManager.setValue("ref_l_33", newValue, "calculated");
-
-          // Update display if in Reference mode
-          if (ModeManager.currentMode === "reference") {
-            const element = document.querySelector('[data-field-id="l_33"]');
-            if (element) {
-              element.textContent = window.TEUI.formatNumber(
-                window.TEUI.parseNumeric(newValue),
-                "number-4dp"
-              );
-            }
-          }
-
-          calculateAll();
-          ModeManager.updateCalculatedDisplayValues();
         }
-      };
-
-      window.TEUI.StateManager.addListener(
-        "d_19",
-        updateNuclearWasteFactorTarget
-      );
-      window.TEUI.StateManager.addListener(
-        "ref_d_19",
-        updateNuclearWasteFactorReference
-      );
+      });
     }
   }
 

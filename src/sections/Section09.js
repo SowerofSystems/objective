@@ -2571,67 +2571,7 @@ window.TEUI.SectionModules.sect09 = (function () {
    * Add listeners for cross-section dependencies
    */
   function addStateManagerListeners() {
-    if (!window.TEUI?.StateManager) return;
-
-    const sm = window.TEUI.StateManager;
-
-    // ✅ PATTERN A DUAL-ENGINE LISTENERS: Complete Target/Reference pairs
-
-    // 1. Conditioned Area (h_15 / ref_h_15)
-    sm.addListener("h_15", () => {
-      calculateTargetModel();
-      ModeManager.updateCalculatedDisplayValues();
-    });
-    sm.addListener("ref_h_15", () => {
-      calculateReferenceModel();
-      ModeManager.updateCalculatedDisplayValues();
-    });
-
-    // 2. DHW System Losses (d_54 / ref_d_54)
-    sm.addListener("d_54", () => {
-      const dhwLosses =
-        window.TEUI.parseNumeric(getFieldValueModeAware("d_54")) || 0;
-      setCalculatedValue("h_69", dhwLosses, "number");
-      calculateTargetModel();
-      ModeManager.updateCalculatedDisplayValues();
-    });
-    sm.addListener("ref_d_54", () => {
-      // Reference DHW calculation
-      const dhwLosses = window.TEUI.parseNumeric(sm.getValue("ref_d_54")) || 0;
-      if (ModeManager.currentMode === "reference") {
-        setCalculatedValue("h_69", dhwLosses, "number");
-      }
-      calculateReferenceModel();
-      ModeManager.updateCalculatedDisplayValues();
-    });
-
-    // 3. Building Type (d_12 / ref_d_12)
-    sm.addListener("d_12", () => {
-      calculateTargetModel();
-      ModeManager.updateCalculatedDisplayValues();
-    });
-    sm.addListener("ref_d_12", () => {
-      // S02 Reference occupancy changed - recalculate affected values
-      calculateReferenceModel();
-      ModeManager.updateCalculatedDisplayValues();
-    });
-
-    // 4. Reference Standard (d_13 / ref_d_13)
-    // ✅ SMOOTH-MOVE-S02: d_13/ref_d_13 listeners REMOVED
-    // PH-specific plug load values (d_65, d_66) now come from ReferenceValues.js
-    // via "Set Values" button using Import Quarantine pattern
-    // This eliminates the 48-cycle cascade that generated 35,000+ log lines on d_13 change
-    // d_13 changes are now passive until user presses "Set Values"
-
-    // 5. Cooling Days (m_19 / ref_m_19)
-    sm.addListener("m_19", () => {
-      calculateTargetModel();
-      ModeManager.updateCalculatedDisplayValues();
-    });
-    sm.addListener("ref_m_19", () => {
-      calculateReferenceModel();
-      ModeManager.updateCalculatedDisplayValues();
-    });
+    // Graph handles cross-section computation via wildcard listener.
   }
 
   /**

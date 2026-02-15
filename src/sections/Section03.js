@@ -2568,54 +2568,11 @@ window.TEUI.SectionModules.sect03 = (function () {
     // No need for explicit updateWeatherData() call here
 
     // --- StateManager Listeners ---
+    // Graph handles cross-section computation via wildcard listener.
+    // Only keep UI-only listeners (critical occupancy flag display).
     if (window.TEUI && window.TEUI.StateManager) {
-      // ✅ ENHANCED: Listener for d_12 (Target Occupancy) changes
-      window.TEUI.StateManager.addListener(
-        "d_12",
-        function (newOccupancyValue) {
-          // console.log(`[S03] 🎯 Target occupancy changed: ${newOccupancyValue}`);
-
-          // ✅ NEW APPROACH: Trigger full recalculation of BOTH engines
-          // This ensures both Target and Reference models get updated with correct temperatures
-          // based on their respective occupancy values
-          calculateAll();
-
-          // ✅ CRITICAL FIX: Update critical flag display immediately (mode-aware)
-          updateCriticalOccupancyFlag();
-        }
-      );
-
-      // ✅ NEW: Listener for ref_d_12 (Reference Occupancy) changes
-      window.TEUI.StateManager.addListener(
-        "ref_d_12",
-        function (newRefOccupancyValue) {
-          // console.log(`[S03] 🔵 Reference occupancy changed: ${newRefOccupancyValue}`);
-
-          // ✅ NEW APPROACH: Trigger full recalculation of BOTH engines
-          // This ensures both Target and Reference models get updated with correct temperatures
-          // based on their respective occupancy values
-          calculateAll();
-
-          // ✅ CRITICAL FIX: Update critical flag display immediately (mode-aware)
-          updateCriticalOccupancyFlag();
-        }
-      );
-
-      // ✅ h_23 BUG FIX: Restore d_13 listeners for h_23 temperature calculation
-      // h_23 (Tset Heating) depends on BOTH d_12 (occupancy) AND d_13 (standard)
-      // - PH standards: h_23 = 18°C (regardless of occupancy)
-      // - Non-PH + Critical Occupancy: h_23 = 22°C
-      // - Non-PH + Other Occupancy: h_23 = 18°C
-      // Without these listeners, h_23 doesn't update when switching between PH and non-PH standards
-      window.TEUI.StateManager.addListener("d_13", function () {
-        calculateAll(); // Recalculates h_23 based on current d_13 and d_12 values
-        ModeManager.updateCalculatedDisplayValues();
-      });
-
-      window.TEUI.StateManager.addListener("ref_d_13", function () {
-        calculateAll(); // Recalculates ref_h_23 based on current ref_d_13 and ref_d_12 values
-        ModeManager.updateCalculatedDisplayValues();
-      });
+      window.TEUI.StateManager.addListener("d_12", updateCriticalOccupancyFlag);
+      window.TEUI.StateManager.addListener("ref_d_12", updateCriticalOccupancyFlag);
 
       // ✅ REMOVED: Self-listeners cause recursion anti-pattern per 4012-CHEATSHEET.md
       // ✅ ANTI-PATTERN 7 FIX: S03 should NOT listen to its own input fields

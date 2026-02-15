@@ -3564,236 +3564,38 @@ window.TEUI.SectionModules.sect12 = (function () {
 
   function addStateManagerListeners() {
     if (!window.TEUI?.StateManager) return;
-    if (s12ListenersAdded) {
-      console.log(
-        "[S12] ⚠️ Listeners already added, skipping duplicate registration"
-      );
-      return;
-    }
-    const externalDependencies = [
-      // Section 11 Inputs influencing U-Values (g_101, g_102) and Areas (d_101, d_102)
-      "d_85",
-      "f_85",
-      "g_85", // Roof
-      "d_86",
-      "f_86",
-      "g_86", // Walls AG
-      "d_87",
-      "f_87",
-      "g_87", // Floor Exp
-      "d_88",
-      "g_88", // Doors (Area d_88 comes from S10, listen to g_88 U-Value)
-      "d_89",
-      "g_89", // Win N (Area d_89 comes from S10, listen to g_89 U-Value)
-      "d_90",
-      "g_90", // Win E (Area d_90 comes from S10, listen to g_90 U-Value)
-      "d_91",
-      "g_91", // Win S (Area d_91 comes from S10, listen to g_91 U-Value)
-      "d_92",
-      "g_92", // Win W (Area d_92 comes from S10, listen to g_92 U-Value)
-      "d_93",
-      "g_93", // Skylights (Area d_93 comes from S10, listen to g_93 U-Value)
-      "d_94",
-      "f_94",
-      "g_94", // Walls BG
-      "d_95",
-      "f_95",
-      "g_95", // Floor Slab
-      "d_96", // Interior Floor Area (Used for d_106)
-      // Section 11 Thermal Bridge Penalty
-      "d_97",
-      // Section 3 Climate Data (removed d_20, d_21, d_22, h_22 - have explicit listeners)
-      "j_19", // Climate Zone (for N-Factor)
-      "h_21", // Capacitance Setting (for k_104)
-    ];
-    // ✅ OPTIMIZED: Listen to Reference U-values AND areas per g_101 formula needs
-    // Formula: g_101 = (SUMPRODUCT(g_85:g_95, d_85:d_95) / SUM(d_85:d_95)) × (1 + d_97/100)
-    // We read values from S11.ReferenceState (sovereign), so listen to published values for recalc trigger
-    const referenceUValueDeps = [
-      "ref_g_85",
-      "ref_g_86",
-      "ref_g_87",
-      "ref_g_88",
-      "ref_g_89",
-      "ref_g_90",
-      "ref_g_91",
-      "ref_g_92",
-      "ref_g_93",
-      "ref_g_94",
-      "ref_g_95",
-      // Note: ref_f_XX (RSI) listeners removed - S12 reads U-values directly from S11.ReferenceState
-      // S11 converts RSI→U internally, so we don't need to listen to both
-      "ref_d_97", // Reference TB% when stored with prefix
-    ];
+    if (s12ListenersAdded) return;
 
-    // ✅ FIX: Listen to Reference area changes (d_101, d_102, d_104 depend on these)
-    const referenceAreaDeps = [
-      "ref_d_85", // Roof area
-      "ref_d_86", // Walls AG area
-      "ref_d_87", // Floor Exp area
-      "ref_d_88", // Doors area
-      "ref_d_89", // Win N area
-      "ref_d_90", // Win E area
-      "ref_d_91", // Win S area
-      "ref_d_92", // Win W area
-      "ref_d_93", // Skylights area
-      "ref_d_94", // Walls BG area
-      "ref_d_95", // Floor Slab area
-      "ref_d_96", // Interior Floor area
-    ];
-    // Ensure both Target and Reference TB% changes trigger S12
-    window.TEUI.StateManager.addListener("d_97", newValue => {
-      // console.log(`[S12] Listener: d_97 changed → recalc`);
-      calculateAll();
-    });
-    window.TEUI.StateManager.addListener("ref_d_97", newValue => {
-      // console.log(`[S12] Listener: ref_d_97 changed → recalc`);
-      calculateAll();
-    });
+    // Graph handles cross-section computation via wildcard listener.
+    // Only keep WOMBAT mirror field sync (field ID bridging d_151→d_105, d_150→d_103).
+    const SM = window.TEUI.StateManager;
 
-    // Add other external dependency listeners
-    const otherDeps = externalDependencies.filter(dep => dep !== "d_97");
-    otherDeps.forEach(depId => {
-      window.TEUI.StateManager.addListener(
-        depId,
-        (newValue, oldValue, eventFieldId, state) => {
-          if (eventFieldId === depId) {
-            calculateAll();
-          }
-        }
-      );
-    });
-
-    // Add reference-prefixed U-value listeners
-    referenceUValueDeps.forEach(depId => {
-      window.TEUI.StateManager.addListener(
-        depId,
-        (newValue, oldValue, eventFieldId, state) => {
-          if (eventFieldId === depId) {
-            calculateAll();
-          }
-        }
-      );
-    });
-
-    // ✅ FIX: Add reference-prefixed area listeners (was missing - caused bug where ref_d_86 changes didn't update d_101)
-    // ✅ PERFORMANCE FIX: Explicit DOM refresh after calculateAll() for immediate UI update (S13 pattern)
-    referenceAreaDeps.forEach(depId => {
-      window.TEUI.StateManager.addListener(
-        depId,
-        (newValue, oldValue, eventFieldId, state) => {
-          if (eventFieldId === depId) {
-            calculateAll();
-            // ✅ CRITICAL: Explicit DOM refresh ensures immediate UI update in Reference mode
-            // Without this, updates lag behind by one calculation cycle
-            ModeManager.updateCalculatedDisplayValues?.();
-          }
-        }
-      );
-    });
-
-    // ✅ FIX: Add reference-prefixed heatloss listeners for i_107 calculation
-    // When Reference window/door heatloss values change in S11, recalculate WWR-related metrics
-    const referenceHeatlossDepsi_107 = [
-      "ref_i_88", // Doors heatloss
-      "ref_i_89", // Win N heatloss
-      "ref_i_90", // Win E heatloss
-      "ref_i_91", // Win S heatloss
-      "ref_i_92", // Win W heatloss
-    ];
-    referenceHeatlossDepsi_107.forEach(depId => {
-      window.TEUI.StateManager.addListener(
-        depId,
-        (newValue, oldValue, eventFieldId) => {
-          if (eventFieldId === depId) {
-            calculateAll();
-            // ✅ CRITICAL: Explicit DOM refresh ensures immediate UI update in Reference mode
-            ModeManager.updateCalculatedDisplayValues?.();
-          }
-        }
-      );
-    });
-
-    // ✅ PHASE 3 CLEANUP: d_13 listener removed
-    // "Set Values" button now handles 100% of value application via FileHandler
-    // FileHandler.applyReferenceValuesFromStandard() triggers calculateAll() after value sync
-
-    // ✅ CRITICAL: Listen for Target climate data changes to trigger recalculation
-    window.TEUI.StateManager.addListener("d_20", (newValue, oldValue) => {
-      calculateAll();
-    });
-    window.TEUI.StateManager.addListener("d_21", newValue => {
-      calculateAll();
-    });
-    window.TEUI.StateManager.addListener("d_22", newValue => {
-      calculateAll();
-    });
-    window.TEUI.StateManager.addListener("h_22", newValue => {
-      calculateAll();
-    });
-
-    // ✅ CRITICAL: Listen for Reference climate data changes to trigger recalculation
-    window.TEUI.StateManager.addListener("ref_d_20", newValue => {
-      calculateAll();
-    });
-    window.TEUI.StateManager.addListener("ref_d_21", newValue => {
-      calculateAll();
-    });
-    window.TEUI.StateManager.addListener("ref_d_22", newValue => {
-      calculateAll();
-    });
-    window.TEUI.StateManager.addListener("ref_h_22", newValue => {
-      calculateAll();
-    });
-
-    // ✅ S07 PATTERN: NO listeners for S12's own input fields
-    // User edits call handleFieldBlur → ModeManager.setValue → calculateAll
-    // ModeManager.setValue publishes to StateManager (both ref_ and unprefixed)
-    // No need for listeners to create double calculations
-
-    // ⚠️ MIRROR FIELD SYNC: WOMBAT → Section 12 (d_151→d_105, d_150→d_103)
-    // WOMBAT has mirror fields that display S12's volume/stories
-    // When edited in WOMBAT, sync back to S12's internal state and recalculate
-    window.TEUI.StateManager.addListener("d_151", newValue => {
+    SM.addListener("d_151", newValue => {
       if (TargetState.getValue("d_105") !== newValue) {
         TargetState.setValue("d_105", newValue, "external");
-        calculateAll(); // Trigger full recalculation and UI update
-        console.log(`[S12] Synced d_105 = ${newValue} from WOMBAT (d_151)`);
+        SM.setValue("d_105", newValue, "external");
       }
     });
-
-    window.TEUI.StateManager.addListener("ref_d_151", newValue => {
+    SM.addListener("ref_d_151", newValue => {
       if (ReferenceState.getValue("d_105") !== newValue) {
         ReferenceState.setValue("d_105", newValue, "external");
-        calculateAll(); // Trigger full recalculation and UI update
-        console.log(
-          `[S12] Synced ref_d_105 = ${newValue} from WOMBAT (ref_d_151)`
-        );
+        SM.setValue("ref_d_105", newValue, "external");
       }
     });
-
-    window.TEUI.StateManager.addListener("d_150", newValue => {
+    SM.addListener("d_150", newValue => {
       if (TargetState.getValue("d_103") !== newValue) {
         TargetState.setValue("d_103", newValue, "external");
-        calculateAll(); // Trigger full recalculation and UI update
-        console.log(`[S12] Synced d_103 = ${newValue} from WOMBAT (d_150)`);
+        SM.setValue("d_103", newValue, "external");
       }
     });
-
-    window.TEUI.StateManager.addListener("ref_d_150", newValue => {
+    SM.addListener("ref_d_150", newValue => {
       if (ReferenceState.getValue("d_103") !== newValue) {
         ReferenceState.setValue("d_103", newValue, "external");
-        calculateAll(); // Trigger full recalculation and UI update
-        console.log(
-          `[S12] Synced ref_d_103 = ${newValue} from WOMBAT (ref_d_150)`
-        );
+        SM.setValue("ref_d_103", newValue, "external");
       }
     });
 
     s12ListenersAdded = true;
-    console.log(
-      "[S12] ✅ CLIMATE LISTENERS ADDED - Ready for d_20/d_21 changes"
-    );
   }
 
   function addCheckmarkStyles() {

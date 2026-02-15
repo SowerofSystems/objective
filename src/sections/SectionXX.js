@@ -765,12 +765,7 @@ window.TEUI.SectionModules.sectXX = (function () {
       }
     });
 
-    // External dependencies (dual-mode listeners)
-    if (window.TEUI?.StateManager) {
-      window.TEUI.StateManager.addListener("d_20", calculateAll); // HDD (Target)
-      window.TEUI.StateManager.addListener("ref_d_20", calculateAll); // HDD (Reference)
-      // Add more external dependencies as needed
-    }
+    // All computational SM listeners removed — graph handles dependency tracking
   }
 
   //==========================================================================

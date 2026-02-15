@@ -1370,12 +1370,10 @@ window.TEUI.SectionModules.sect05 = (function () {
         ModeManager.updateCalculatedDisplayValues();
       };
 
-      dependencies.forEach(depId => {
-        window.TEUI.StateManager.removeListener(depId, calculateAndRefresh);
-        window.TEUI.StateManager.addListener(depId, calculateAndRefresh);
-      });
+      // Graph handles cross-section computation via wildcard listener.
+      // Only keep domain-logic side effects (carbon target auto-set).
 
-      // 4. ✅ S05→S02 RELATIONSHIP: Listen for Carbon Standard changes and update d_16
+      // S05→S02 RELATIONSHIP: Listen for Carbon Standard changes and update d_16
       const updateCarbonTarget = fieldId => {
         const isReference = fieldId === "ref_d_15";
         const d_15_value = window.TEUI.StateManager.getValue(fieldId);
@@ -1417,15 +1415,8 @@ window.TEUI.SectionModules.sect05 = (function () {
         );
       };
 
-      // Listen for both Target and Reference Carbon Standard changes
-      window.TEUI.StateManager.removeListener("d_15", () =>
-        updateCarbonTarget("d_15")
-      );
       window.TEUI.StateManager.addListener("d_15", () =>
         updateCarbonTarget("d_15")
-      );
-      window.TEUI.StateManager.removeListener("ref_d_15", () =>
-        updateCarbonTarget("ref_d_15")
       );
       window.TEUI.StateManager.addListener("ref_d_15", () =>
         updateCarbonTarget("ref_d_15")

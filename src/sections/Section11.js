@@ -3612,45 +3612,8 @@ window.TEUI.SectionModules.sect11 = (function () {
     }
     // *** END ADDED ***
 
-    // Add listeners for climate data changes from Section 3
-    if (window.TEUI?.StateManager?.addListener) {
-      window.TEUI.StateManager.addListener("d_20", calculateAll); // HDD
-      window.TEUI.StateManager.addListener("d_21", calculateAll); // CDD
-      window.TEUI.StateManager.addListener("h_22", calculateAll); // GF CDD (affects ground gain)
-      window.TEUI.StateManager.addListener("d_22", calculateAll); // GF HDD (affects ground loss)
-
-      // ✅ ADDED: Listeners for REFERENCE climate data to trigger Reference Model recalculation
-      window.TEUI.StateManager.addListener("ref_d_20", () => calculateAll());
-      window.TEUI.StateManager.addListener("ref_d_21", () => calculateAll());
-      window.TEUI.StateManager.addListener("ref_h_22", () => calculateAll());
-      window.TEUI.StateManager.addListener("ref_d_22", () => calculateAll());
-
-      // Listen for S03 Capacitance changes (Target and Reference)
-      window.TEUI.StateManager.addListener("h_21", calculateAll); // Capacitance Type
-      window.TEUI.StateManager.addListener("ref_h_21", calculateAll);
-      window.TEUI.StateManager.addListener("i_21", calculateAll); // Capacitance Factor (affects ground gain)
-      window.TEUI.StateManager.addListener("ref_i_21", calculateAll); // ✅ ADDED
-
-      window.TEUI.StateManager.addListener("d_97", (val, _old, _id, src) => {
-        console.log(
-          `[S11] Listener: d_97 changed → recalculating (src=${src})`
-        );
-        calculateAll();
-      });
-      // Reference-side TB% (if written as ref_d_97) should also trigger recalculation
-      window.TEUI.StateManager.addListener(
-        "ref_d_97",
-        (val, _old, _id, src) => {
-          console.log(
-            `[S11] Listener: ref_d_97 changed → recalculating (src=${src})`
-          );
-          calculateAll();
-        }
-      );
-      // console.log("Section 11 listeners for climate data added.");
-    } else {
-      // console.warn("Section 11: StateManager not available to add climate listeners.");
-    }
+    // Graph handles cross-section computation (climate, capacitance, thermal bridge)
+    // via wildcard listener. S10→S11 area sync kept (below) for field ID bridging.
 
     // ✅ S10-S11 AREA SYNC: Setup listeners for S10 area changes (commented out initially)
     setupS10AreaListeners();

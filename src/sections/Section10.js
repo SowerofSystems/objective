@@ -3026,50 +3026,7 @@ window.TEUI.SectionModules.sect10 = (function () {
    * Add listeners for StateManager changes (dual-state aware)
    */
   function addStateManagerListeners() {
-    try {
-      if (!window.TEUI?.StateManager) {
-        return;
-      }
-
-      // ✅ DUAL-STATE: Listen for both target_ and ref_ prefixed dependencies
-      const dependencies = [
-        "j_19", // Climate zone from S03 (CRITICAL for window gains calculation)
-        "i_71", // Internal gains from S09
-        "i_97", // Loss factors from S11 for PH Method
-        "i_103",
-        "m_121",
-        "i_98",
-      ];
-
-      dependencies.forEach(fieldId => {
-        // Listen for Target external dependencies
-        window.TEUI.StateManager.addListener(fieldId, function () {
-          console.log(
-            `S10: Target listener triggered by ${fieldId}, recalculating all.`
-          );
-          calculateAll();
-          ModeManager.updateCalculatedDisplayValues(); // ✅ ADD: Update DOM after calculations
-        });
-
-        // ✅ ADD: Listen for Reference external dependencies
-        window.TEUI.StateManager.addListener(`ref_${fieldId}`, function () {
-          calculateAll();
-          ModeManager.updateCalculatedDisplayValues(); // ✅ ADD: Update DOM after calculations
-        });
-      });
-
-      // ✅ FIX: REMOVED duplicate listeners for utilization factor dependencies
-      // These fields (i_97, i_103, m_121, i_98) are already in the main dependencies array above,
-      // which calls calculateAll() - the correct dual-engine function.
-      //
-      // The old code here called calculateUtilizationFactors() which is TARGET-ONLY,
-      // causing it to overwrite ReferenceState with Target-calculated values when in Reference mode.
-      // This created the "stuck g_81" bug where the second listener would contaminate the first's result.
-
-      console.log("S10: Simplified global StateManager listeners added");
-    } catch (_error) {
-      console.error("S10: Error in addStateManagerListeners:", _error);
-    }
+    // Graph handles cross-section computation via wildcard listener.
   }
 
   /**
