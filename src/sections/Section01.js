@@ -7,6 +7,10 @@ window.TEUI = window.TEUI || {};
 window.TEUI.SectionModules = window.TEUI.SectionModules || {};
 
 window.TEUI.SectionModules.sect01 = (function () {
+  // Animation state tracking
+  const activeAnimations = {};
+  const previousValues = {};
+
   //==========================================================================
   // PART 1: FIELD DEFINITIONS
   //==========================================================================
@@ -406,21 +410,83 @@ window.TEUI.SectionModules.sect01 = (function () {
   }
 
   //==========================================================================
-  // DISPLAY FUNCTIONS (simplified — no innerHTML, no animation)
+  // DISPLAY FUNCTIONS (with count-up/down animation for key values)
   //==========================================================================
 
-  function updateDisplayValue(fieldId, value, tierOverride = null) {
+  const fieldsToAnimate = [
+    "e_6", "e_8", "e_10", "h_6", "h_8", "h_10",
+    "k_6", "k_8", "k_10",
+  ];
+
+  function getCurrentNumericValue(element) {
+    if (!element) return NaN;
+    const numericSpan = element.querySelector(".numeric-value");
+    let textContent = numericSpan ? numericSpan.textContent : element.textContent;
+    if (!numericSpan) {
+      const clone = element.cloneNode(true);
+      clone.querySelectorAll(".tier-indicator, .checkmark").forEach(el => el.remove());
+      textContent = clone.textContent;
+    }
+    const cleanedText = textContent.replace(/[^\d.-]/g, "").trim();
+    return window.TEUI?.parseNumeric?.(cleanedText, NaN) ?? NaN;
+  }
+
+  function stampFieldValue(element, fieldId, formattedValue, tierOverride) {
+    if (fieldId === "h_10") {
+      const tierValue = tierOverride || window.TEUI.StateManager?.getValue("i_10") || "tier3";
+      const tierClass = tierValue.toLowerCase().replace(" ", "-") + "-tag";
+      element.innerHTML = `<span class="tier-indicator ${tierClass}">${tierValue}</span> ${formattedValue}`;
+    } else if (fieldId === "e_10") {
+      const numericSpan = element.querySelector(".numeric-value");
+      if (numericSpan) {
+        numericSpan.textContent = formattedValue;
+      } else {
+        element.innerHTML = `<span class="tier-indicator t1-tag">tier1</span> <span class="numeric-value">${formattedValue}</span>`;
+      }
+      element.classList.add("ref-value");
+    } else if (fieldId === "e_6" || fieldId === "e_8") {
+      element.textContent = formattedValue;
+      element.classList.add("ref-value");
+    } else {
+      element.textContent = formattedValue;
+    }
+  }
+
+  function updateDisplayValue(fieldId, value, tierOverride = null, fromValue = undefined) {
     const element = document.querySelector(`[data-field-id="${fieldId}"]`);
     if (!element) return;
 
-    // Set tier attribute for TEUI target field (CSS ::before renders the badge)
-    if (fieldId === "h_10") {
-      element.dataset.tier = tierOverride ||
-        window.TEUI.StateManager?.getValue("i_10") || "tier3";
+    if (fieldsToAnimate.includes(fieldId)) {
+      const startValue = fromValue !== undefined ? fromValue : getCurrentNumericValue(element);
+      const endValue = window.TEUI?.parseNumeric?.(value, 0) ?? 0;
+      const duration = 500;
+
+      if (!isNaN(startValue) && !isNaN(endValue) && Math.abs(startValue - endValue) > 0.01) {
+        if (activeAnimations[fieldId]) {
+          cancelAnimationFrame(activeAnimations[fieldId]);
+        }
+        const startTime = performance.now();
+        const animateStep = timestamp => {
+          const progress = Math.min(1, (timestamp - startTime) / duration);
+          const eased = 1 - Math.pow(1 - progress, 2);
+          const current = startValue + (endValue - startValue) * eased;
+          const formatted = window.TEUI?.formatNumber?.(current, "number-1dp") ?? current.toString();
+          stampFieldValue(element, fieldId, formatted, tierOverride);
+          if (progress < 1) {
+            activeAnimations[fieldId] = requestAnimationFrame(animateStep);
+          } else {
+            const final = window.TEUI?.formatNumber?.(endValue, "number-1dp") ?? endValue.toString();
+            stampFieldValue(element, fieldId, final, tierOverride);
+            delete activeAnimations[fieldId];
+          }
+        };
+        activeAnimations[fieldId] = requestAnimationFrame(animateStep);
+        return;
+      }
     }
 
-    // Stamp formatted value (::before pseudo-element content is unaffected)
-    element.textContent = value;
+    // Non-animated fallback
+    stampFieldValue(element, fieldId, value, tierOverride);
   }
 
   //==========================================================================
@@ -576,19 +642,18 @@ window.TEUI.SectionModules.sect01 = (function () {
 
     const useType = SM.getValue("d_14") || "Targeted Use";
 
-    // Read graph-computed values from StateManager
-    const e_6 = parse(SM.getValue("e_6"), 0);
-    const e_8 = parse(SM.getValue("e_8"), 0);
-    const e_10 = parse(SM.getValue("e_10"), 0);
-    const h_6 = parse(SM.getValue("h_6"), 0);
-    const h_8 = parse(SM.getValue("h_8"), 0);
-    const h_10 = parse(SM.getValue("h_10"), 0);
-    const k_6 = parse(SM.getValue("k_6"), 0);
-    const k_8 = parse(SM.getValue("k_8"), 0);
-    const k_10 = parse(SM.getValue("k_10"), 0);
+    // Read graph-computed values from StateManager and animate key fields
+    const vals = {};
+    for (const fid of ["e_6","e_8","e_10","h_6","h_8","h_10","k_6","k_8","k_10"]) {
+      vals[fid] = parse(SM.getValue(fid), 0);
+      const formatted = window.TEUI?.formatNumber?.(vals[fid], "number-1dp") ?? vals[fid].toString();
+      const prev = previousValues[fid];
+      updateDisplayValue(fid, formatted, null, prev);
+      previousValues[fid] = vals[fid];
+    }
+    const { e_6, e_8, e_10, h_6, h_8, h_10, k_6, k_8, k_10 } = vals;
 
-    // Update tier attributes (DOMBridge stampSection01Attributes handles this too,
-    // but postStamp is the authoritative source for h_10 tier)
+    // Update tier attributes
     const h10El = document.querySelector('[data-field-id="h_10"]');
     if (h10El) {
       h10El.dataset.tier = SM.getValue("i_10") || "tier3";
