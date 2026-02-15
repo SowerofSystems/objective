@@ -28,6 +28,10 @@
     j_8: "raw", j_10: "raw",
     i_10: "raw", f_10: "raw",
 
+    // S02 metadata/text fields
+    h_14: "raw", i_16: "raw", i_17: "raw",
+    l_12: "raw", l_13: "raw", l_14: "raw", l_15: "raw", l_16: "raw",
+
     // S03 Climate
     j_19: "number-1dp",
     d_20: "integer", d_21: "integer",
@@ -47,6 +51,12 @@
     // S05 Embodied Carbon - raw strings
     m_38: "raw", m_39: "raw", m_40: "raw", m_41: "raw",
     n_38: "raw", n_39: "raw", n_40: "raw", n_41: "raw",
+
+    // S08 Air Quality: compliance and status
+    k_56: "integer", k_57: "integer", k_58: "integer",
+    m_56: "integer-percent", m_57: "integer-percent", m_58: "integer-percent",
+    m_59: "raw",
+    n_56: "raw", n_57: "raw", n_58: "raw", n_59: "raw",
 
     // S07 Water Heating: compliance ratios (pre-formatted strings)
     m_49: "raw", m_50: "raw", m_52: "raw", m_53: "raw",

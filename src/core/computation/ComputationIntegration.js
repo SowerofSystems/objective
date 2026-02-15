@@ -181,6 +181,12 @@
       log("Registered EnergyNodes");
     }
 
+    // Air quality nodes (S08)
+    if (nodes.AirQuality) {
+      nodes.AirQuality.register(g);
+      log("Registered AirQualityNodes");
+    }
+
     // Emissions and carbon nodes
     if (nodes.Forestry) {
       nodes.Forestry.register(g);

@@ -152,6 +152,72 @@
         label: "User Modelled Embodied Carbon (kgCO2e/m²)",
         defaultValue: 345.82,
       },
+      // S02 metadata/text inputs
+      {
+        id: "building.projectName",
+        legacyId: "h_14",
+        section: "S02",
+        classification: "G",
+        label: "Project Name",
+        defaultValue: "Three Feathers Terrace",
+      },
+      {
+        id: "building.certifier",
+        legacyId: "i_16",
+        section: "S02",
+        classification: "G",
+        label: "Certifier Name",
+        defaultValue: "Thomson Architecture, Inc.",
+      },
+      {
+        id: "building.licenseNumber",
+        legacyId: "i_17",
+        section: "S02",
+        classification: "G",
+        label: "License Number",
+        defaultValue: "8154",
+      },
+      // S02 energy price inputs
+      {
+        id: "energy.price.electricity",
+        legacyId: "l_12",
+        section: "S02",
+        classification: "A",
+        label: "Electricity Price ($/kWh)",
+        defaultValue: "$0.1300",
+      },
+      {
+        id: "energy.price.gas",
+        legacyId: "l_13",
+        section: "S02",
+        classification: "A",
+        label: "Gas Price ($/m³)",
+        defaultValue: "$0.5070",
+      },
+      {
+        id: "energy.price.propane",
+        legacyId: "l_14",
+        section: "S02",
+        classification: "A",
+        label: "Propane Price ($/kg)",
+        defaultValue: "$1.6200",
+      },
+      {
+        id: "energy.price.wood",
+        legacyId: "l_15",
+        section: "S02",
+        classification: "A",
+        label: "Wood Price ($/m³)",
+        defaultValue: "$180.00",
+      },
+      {
+        id: "energy.price.oil",
+        legacyId: "l_16",
+        section: "S02",
+        classification: "A",
+        label: "Oil Price ($/litre)",
+        defaultValue: "$1.5000",
+      },
     ];
 
     // Register all inputs

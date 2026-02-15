@@ -139,6 +139,24 @@
     },
     // d_12, d_13: canonical inputs live in BuildingInfoNodes
     // (building.majorOccupancy, building.referenceStandard)
+    {
+      id: "climate.summerNightTemp",
+      legacyId: "l_20",
+      defaultValue: 20.43,
+      classification: "G",
+      section: "S03",
+      label: "Summer Night Mean Temperature (°C)",
+      unit: "°C"
+    },
+    {
+      id: "climate.summerRelativeHumidity",
+      legacyId: "l_21",
+      defaultValue: 55.85,
+      classification: "G",
+      section: "S03",
+      label: "Summer Mean Relative Humidity (%)",
+      unit: "%"
+    },
   ];
 
   // ============================================================================
@@ -524,6 +542,36 @@
         const celsius = parseNum(inputs["climate.temperature.winterAverage"], -7);
         // Note: e_25 is NOT rounded in legacy (unlike e_23/e_24)
         return (celsius * 9) / 5 + 32;
+      }
+    },
+
+    // ========================================================================
+    // SETPOINT FAHRENHEIT CONVERSIONS
+    // ========================================================================
+    {
+      id: "climate.heating.setpointF",
+      legacyId: "i_23",
+      dependencies: ["climate.heating.setpoint"],
+      classification: "C",
+      section: "S03",
+      label: "Heating Setpoint (Fahrenheit)",
+      unit: "°F",
+      compute: (inputs) => {
+        const celsius = parseNum(inputs["climate.heating.setpoint"], 21);
+        return Math.round((celsius * 9) / 5 + 32);
+      }
+    },
+    {
+      id: "climate.cooling.setpointF",
+      legacyId: "i_24",
+      dependencies: ["climate.cooling.setpoint"],
+      classification: "C",
+      section: "S03",
+      label: "Cooling Setpoint (Fahrenheit)",
+      unit: "°F",
+      compute: (inputs) => {
+        const celsius = parseNum(inputs["climate.cooling.setpoint"], 24);
+        return Math.round((celsius * 9) / 5 + 32);
       }
     }
   ];
