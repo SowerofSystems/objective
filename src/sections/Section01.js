@@ -610,6 +610,35 @@ window.TEUI.SectionModules.sect01 = (function () {
   //==========================================================================
 
   /**
+   * Build a Map of legacyId → graph-computed value for the Target model.
+   * Returns null if the graph is not available.
+   */
+  function buildGraphValueMap() {
+    const CI = window.TEUI?.ComputationIntegration;
+    if (!CI?.isInitialized?.()) return null;
+    const graph = CI.getGraph();
+    const gState = CI.getState();
+    if (!graph || !gState) return null;
+    const modelId = gState.getActiveModelId();
+    if (!modelId) return null;
+
+    const map = new Map();
+    for (const nodeId of (graph.getAllNodeIds?.() || [])) {
+      const node = graph.getNode(nodeId);
+      if (node?.legacyId) {
+        map.set(node.legacyId, gState.getValueForModel(modelId, nodeId));
+      }
+    }
+    for (const inputId of (graph.getAllInputIds?.() || [])) {
+      const input = graph.getInput(inputId);
+      if (input?.legacyId) {
+        map.set(input.legacyId, gState.getValueForModel(modelId, inputId));
+      }
+    }
+    return map;
+  }
+
+  /**
    * Called after DOMBridge.stampAll() stamps graph-computed values to DOM.
    * Handles supplementary display that DOMBridge doesn't cover:
    * - data-tier attributes for tier badges (CSS ::before)
@@ -617,19 +646,31 @@ window.TEUI.SectionModules.sect01 = (function () {
    * - Explanation text (reduction percentages)
    * - Gauges, mode indicators, warnings
    *
-   * No calculations — reads values from StateManager (already synced from graph).
+   * No calculations — reads values from graph state (MultiModelState), falling
+   * back to StateManager when graph is unavailable.
    */
   function postStamp() {
     const SM = window.TEUI?.StateManager;
     if (!SM) return;
     const parse = window.TEUI.parseNumeric;
 
-    const useType = SM.getValue("d_14") || "Targeted Use";
+    // Build graph value reader: legacyId → graph-computed value
+    const graphValues = buildGraphValueMap();
 
-    // Read graph-computed values from StateManager and animate key fields
+    function getValue(fid) {
+      if (graphValues && graphValues.has(fid)) {
+        const v = graphValues.get(fid);
+        if (v !== undefined && v !== null) return v;
+      }
+      return SM.getValue(fid);
+    }
+
+    const useType = getValue("d_14") || "Targeted Use";
+
+    // Read graph-computed values and animate key fields
     const vals = {};
     for (const fid of ["e_6","e_8","e_10","h_6","h_8","h_10","k_6","k_8","k_10"]) {
-      vals[fid] = parse(SM.getValue(fid), 0);
+      vals[fid] = parse(getValue(fid), 0);
       const formatted = window.TEUI?.formatNumber?.(vals[fid], "number-1dp") ?? vals[fid].toString();
       const prev = previousValues[fid];
       updateDisplayValue(fid, formatted, prev);
@@ -640,11 +681,11 @@ window.TEUI.SectionModules.sect01 = (function () {
     // Update tier attributes
     const h10El = document.querySelector('[data-field-id="h_10"]');
     if (h10El) {
-      h10El.dataset.tier = SM.getValue("i_10") || "tier3";
+      h10El.dataset.tier = getValue("i_10") || "tier3";
     }
     const e10El = document.querySelector('[data-field-id="e_10"]');
     if (e10El) {
-      e10El.dataset.tier = SM.getValue("f_10") || "tier1";
+      e10El.dataset.tier = getValue("f_10") || "tier1";
     }
 
     // Update status attributes for percentage fields
