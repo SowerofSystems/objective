@@ -78,6 +78,8 @@
 
     // S12 Volume Metrics: WWR as percent, ELA10 as 3dp, compliance text and checkmarks
     d_107: "percent-2dp", d_110: "number-3dp",
+    i_110: "integer",
+    l_101: "percent-2dp", l_102: "percent-2dp", l_103: "percent-2dp", l_104: "percent-0dp",
     m_104: "raw", n_104: "raw",
     m_107: "raw", n_107: "raw",
     m_109: "raw", n_109: "raw",
@@ -91,7 +93,14 @@
     n_124: "raw",
     m_124: "integer",
 
-    // S15 TEUI Summary: GHG reduction percentage
+    // S14 Energy breakdown
+    m_131: "number-2dp-comma",
+
+    // S15 TEUI Summary: costs, loads, ratios
+    d_141: "number-2dp-comma", h_141: "number-2dp-comma",
+    d_142: "number-2dp-comma", h_142: "number-2dp-comma",
+    d_143: "number-1dp", h_143: "number-1dp", l_143: "number-1dp",
+    d_144: "percent-0dp", h_144: "percent-0dp", l_144: "percent-0dp",
     d_145: "number-2dp-comma",
   };
 

@@ -646,6 +646,182 @@
       }
     });
 
+    // ========================================================================
+    // TOTAL FLOOR AREA + DISPLAY METRICS (S12 ungraphed)
+    // ========================================================================
+
+    // d_106: Total Floor Area (conditioned + unconditioned)
+    // = d_87 (exposed floor) + d_95 (slab) + d_96 (interior floor)
+    graph.registerNode({
+      id: "geometry.totalFloorArea",
+      legacyId: "d_106",
+      section: "S12",
+      classification: "C",
+      dependencies: [
+        "transmissionLoss.exposedFloor.area",
+        "transmissionLoss.slabOnGrade.area",
+        "transmissionLoss.interiorFloorArea"
+      ],
+      label: "Total Floor Area (m²)",
+      compute: (inputs) => {
+        const d87 = parseNum(inputs["transmissionLoss.exposedFloor.area"]);
+        const d95 = parseNum(inputs["transmissionLoss.slabOnGrade.area"]);
+        const d96 = parseNum(inputs["transmissionLoss.interiorFloorArea"]);
+        return d87 + d95 + d96;
+      },
+    });
+
+    // g_105: Volume to Area Ratio (m³/m²)
+    graph.registerNode({
+      id: "geometry.volumeToAreaRatio",
+      legacyId: "g_105",
+      section: "S12",
+      classification: "C",
+      dependencies: ["volume.conditioned", "envelope.airFacing.area"],
+      label: "Volume/Area Ratio (m³/m²)",
+      compute: (inputs) => {
+        const vol = parseNum(inputs["volume.conditioned"]);
+        const area = parseNum(inputs["envelope.airFacing.area"]);
+        return area > 0 ? vol / area : 0;
+      },
+    });
+
+    // i_105: Area to Volume Ratio (m²/m³)
+    graph.registerNode({
+      id: "geometry.areaToVolumeRatio",
+      legacyId: "i_105",
+      section: "S12",
+      classification: "C",
+      dependencies: ["envelope.airFacing.area", "volume.conditioned"],
+      label: "Area/Volume Ratio (m²/m³)",
+      compute: (inputs) => {
+        const area = parseNum(inputs["envelope.airFacing.area"]);
+        const vol = parseNum(inputs["volume.conditioned"]);
+        return vol > 0 ? area / vol : 0;
+      },
+    });
+
+    // g_107: Total Wall Area (opaque + windows, excludes skylights)
+    graph.registerNode({
+      id: "geometry.totalWallArea",
+      legacyId: "g_107",
+      section: "S12",
+      classification: "C",
+      dependencies: [
+        "transmissionLoss.walls.area",
+        "transmissionLoss.doors.area",
+        "transmissionLoss.windowNorth.area",
+        "transmissionLoss.windowEast.area",
+        "transmissionLoss.windowSouth.area",
+        "transmissionLoss.windowWest.area"
+      ],
+      label: "Total Wall Area (m²)",
+      compute: (inputs) => {
+        return parseNum(inputs["transmissionLoss.walls.area"])
+          + parseNum(inputs["transmissionLoss.doors.area"])
+          + parseNum(inputs["transmissionLoss.windowNorth.area"])
+          + parseNum(inputs["transmissionLoss.windowEast.area"])
+          + parseNum(inputs["transmissionLoss.windowSouth.area"])
+          + parseNum(inputs["transmissionLoss.windowWest.area"]);
+      },
+    });
+
+    // i_107: Total Window & Door Heat Loss
+    graph.registerNode({
+      id: "geometry.windowDoorHeatLoss",
+      legacyId: "i_107",
+      section: "S12",
+      classification: "C",
+      dependencies: [
+        "transmissionLoss.doors.heatLoss",
+        "transmissionLoss.windowNorth.heatLoss",
+        "transmissionLoss.windowEast.heatLoss",
+        "transmissionLoss.windowSouth.heatLoss",
+        "transmissionLoss.windowWest.heatLoss"
+      ],
+      label: "Window/Door Heat Loss (kWh/yr)",
+      compute: (inputs) => {
+        return parseNum(inputs["transmissionLoss.doors.heatLoss"])
+          + parseNum(inputs["transmissionLoss.windowNorth.heatLoss"])
+          + parseNum(inputs["transmissionLoss.windowEast.heatLoss"])
+          + parseNum(inputs["transmissionLoss.windowSouth.heatLoss"])
+          + parseNum(inputs["transmissionLoss.windowWest.heatLoss"]);
+      },
+    });
+
+    // i_110: Air Leakage Climate Zone Number (1/2/3 from climate zone)
+    graph.registerNode({
+      id: "airTightness.climateZoneNum",
+      legacyId: "i_110",
+      section: "S12",
+      classification: "C",
+      dependencies: ["climate.zone"],
+      label: "Air Leakage Climate Zone",
+      compute: (inputs) => {
+        const cz = parseNum(inputs["climate.zone"], 6);
+        if (cz <= 4) return 1;
+        if (cz < 7) return 2;
+        return 3;
+      },
+    });
+
+    // l_101-l_104: Heat loss percentages
+    graph.registerNode({
+      id: "envelope.airFacing.lossPercent",
+      legacyId: "l_101",
+      section: "S12",
+      classification: "C",
+      dependencies: ["envelope.airFacing.totalHeatLoss", "envelope.total.heatLoss"],
+      label: "Air-Facing Heat Loss %",
+      compute: (inputs) => {
+        const loss = parseNum(inputs["envelope.airFacing.totalHeatLoss"]);
+        const total = parseNum(inputs["envelope.total.heatLoss"]);
+        return total > 0 ? loss / total : 0;
+      },
+    });
+
+    graph.registerNode({
+      id: "envelope.groundFacing.lossPercent",
+      legacyId: "l_102",
+      section: "S12",
+      classification: "C",
+      dependencies: ["envelope.groundFacing.totalHeatLoss", "envelope.total.heatLoss"],
+      label: "Ground-Facing Heat Loss %",
+      compute: (inputs) => {
+        const loss = parseNum(inputs["envelope.groundFacing.totalHeatLoss"]);
+        const total = parseNum(inputs["envelope.total.heatLoss"]);
+        return total > 0 ? loss / total : 0;
+      },
+    });
+
+    graph.registerNode({
+      id: "airLeakage.lossPercent",
+      legacyId: "l_103",
+      section: "S12",
+      classification: "C",
+      dependencies: ["airTightness.heatLoss", "envelope.total.heatLoss"],
+      label: "Air Leakage Heat Loss %",
+      compute: (inputs) => {
+        const loss = parseNum(inputs["airTightness.heatLoss"]);
+        const total = parseNum(inputs["envelope.total.heatLoss"]);
+        return total > 0 ? loss / total : 0;
+      },
+    });
+
+    graph.registerNode({
+      id: "envelope.total.lossPercent",
+      legacyId: "l_104",
+      section: "S12",
+      classification: "C",
+      dependencies: ["envelope.airFacing.lossPercent", "envelope.groundFacing.lossPercent", "airLeakage.lossPercent"],
+      label: "Total Heat Loss % (checksum)",
+      compute: (inputs) => {
+        return parseNum(inputs["envelope.airFacing.lossPercent"])
+          + parseNum(inputs["envelope.groundFacing.lossPercent"])
+          + parseNum(inputs["airLeakage.lossPercent"]);
+      },
+    });
+
     console.log("[VolumeMetricsNodes] Registered", inputs.length, "inputs");
   }
 
