@@ -283,11 +283,7 @@ window.TEUI.SectionModules.sect01 = (function () {
           opacity: 0.5;
           vertical-align: baseline;
         }
-        .key-value[data-tier="tier1"]::before { color: #8B0000; }
-        .key-value[data-tier="tier2"]::before { color: #555; }
-        .key-value[data-tier="tier3"]::before { color: #333; }
-        .key-value[data-tier="tier4"]::before { color: #1a5276; }
-        .key-value[data-tier="tier5"]::before { color: #0b5345; }
+        .key-values-ref-cell .key-value[data-tier]::before { color: #8B0000; opacity: 0.9; }
 
         /* Checkmark/warning via data-status attribute + ::before pseudo-element */
         .percent-value[data-status="pass"]::before {
@@ -431,28 +427,16 @@ window.TEUI.SectionModules.sect01 = (function () {
     return window.TEUI?.parseNumeric?.(cleanedText, NaN) ?? NaN;
   }
 
-  function stampFieldValue(element, fieldId, formattedValue, tierOverride) {
-    if (fieldId === "h_10") {
-      const tierValue = tierOverride || window.TEUI.StateManager?.getValue("i_10") || "tier3";
-      const tierClass = tierValue.toLowerCase().replace(" ", "-") + "-tag";
-      element.innerHTML = `<span class="tier-indicator ${tierClass}">${tierValue}</span> ${formattedValue}`;
-    } else if (fieldId === "e_10") {
-      const numericSpan = element.querySelector(".numeric-value");
-      if (numericSpan) {
-        numericSpan.textContent = formattedValue;
-      } else {
-        element.innerHTML = `<span class="tier-indicator t1-tag">tier1</span> <span class="numeric-value">${formattedValue}</span>`;
-      }
+  function stampFieldValue(element, fieldId, formattedValue) {
+    // Tier badges are rendered by CSS ::before via data-tier attribute.
+    // Just set the numeric text content here.
+    element.textContent = formattedValue;
+    if (fieldId === "e_10" || fieldId === "e_6" || fieldId === "e_8") {
       element.classList.add("ref-value");
-    } else if (fieldId === "e_6" || fieldId === "e_8") {
-      element.textContent = formattedValue;
-      element.classList.add("ref-value");
-    } else {
-      element.textContent = formattedValue;
     }
   }
 
-  function updateDisplayValue(fieldId, value, tierOverride = null, fromValue = undefined) {
+  function updateDisplayValue(fieldId, value, fromValue) {
     const element = document.querySelector(`[data-field-id="${fieldId}"]`);
     if (!element) return;
 
@@ -471,12 +455,12 @@ window.TEUI.SectionModules.sect01 = (function () {
           const eased = 1 - Math.pow(1 - progress, 2);
           const current = startValue + (endValue - startValue) * eased;
           const formatted = window.TEUI?.formatNumber?.(current, "number-1dp") ?? current.toString();
-          stampFieldValue(element, fieldId, formatted, tierOverride);
+          stampFieldValue(element, fieldId, formatted);
           if (progress < 1) {
             activeAnimations[fieldId] = requestAnimationFrame(animateStep);
           } else {
             const final = window.TEUI?.formatNumber?.(endValue, "number-1dp") ?? endValue.toString();
-            stampFieldValue(element, fieldId, final, tierOverride);
+            stampFieldValue(element, fieldId, final);
             delete activeAnimations[fieldId];
           }
         };
@@ -486,7 +470,7 @@ window.TEUI.SectionModules.sect01 = (function () {
     }
 
     // Non-animated fallback
-    stampFieldValue(element, fieldId, value, tierOverride);
+    stampFieldValue(element, fieldId, value);
   }
 
   //==========================================================================
@@ -648,7 +632,7 @@ window.TEUI.SectionModules.sect01 = (function () {
       vals[fid] = parse(SM.getValue(fid), 0);
       const formatted = window.TEUI?.formatNumber?.(vals[fid], "number-1dp") ?? vals[fid].toString();
       const prev = previousValues[fid];
-      updateDisplayValue(fid, formatted, null, prev);
+      updateDisplayValue(fid, formatted, prev);
       previousValues[fid] = vals[fid];
     }
     const { e_6, e_8, e_10, h_6, h_8, h_10, k_6, k_8, k_10 } = vals;
