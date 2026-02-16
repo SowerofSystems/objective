@@ -1942,9 +1942,15 @@ TEUI.StateManager = (function () {
     console.log("[StateManager] 🔒 Muting listeners during restore...");
     muteListeners();
 
+    // Use the public API (window.TEUI.StateManager.setValue) so the LegacyAdapter
+    // routes values to both the computation graph AND the internal fields map.
+    // The closure-scoped setValue() only writes to the internal fields map,
+    // leaving the graph with stale values from the user's pre-undo changes.
+    const publicSetValue = window.TEUI?.StateManager?.setValue || setValue;
+
     Object.entries(lastImportedState).forEach(([fieldId, importedValue]) => {
-      // Set the value in the main application state
-      const valueChanged = setValue(
+      // Set the value in the main application state (via LegacyAdapter → graph + SM)
+      const valueChanged = publicSetValue(
         fieldId,
         importedValue,
         "system_reverted_to_import"

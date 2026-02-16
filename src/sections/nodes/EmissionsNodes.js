@@ -1085,7 +1085,8 @@
     });
 
     // S05 compliance ratios (m_38-m_41, n_38-n_41)
-    // These use reference.* inputs that will be populated by cross-model sync
+    // These use reference.* inputs populated by cross-model sync (REF_OUTPUT_TO_TARGET_INPUT)
+    // NOTE: reference.emissions.embodied (ref_i_39) is registered by KeyValuesNodes
     graph.registerInput({
       id: "reference.emissions.operational.mt",
       legacyId: "ref_d_38",
@@ -1101,14 +1102,6 @@
       classification: "C",
       label: "Reference GHGI (kgCO2e/m²/yr)",
       defaultValue: 0,
-    });
-    graph.registerInput({
-      id: "reference.emissions.typologyCarbon",
-      legacyId: "ref_i_39",
-      section: "S05",
-      classification: "C",
-      label: "Reference Typology EC (kgCO2e/m²)",
-      defaultValue: 350,
     });
     graph.registerInput({
       id: "reference.emissions.embodied.total",
@@ -1159,22 +1152,22 @@
       legacyId: "m_39",
       section: "S05",
       classification: "C",
-      dependencies: ["building.typologyEmbodiedCarbon", "reference.emissions.typologyCarbon"],
+      dependencies: ["building.typologyEmbodiedCarbon", "reference.emissions.embodied"],
       label: "Typology Compliance Ratio",
       compute: (inputs) => {
         const target = parseNum(inputs["building.typologyEmbodiedCarbon"]);
-        const ref = parseNum(inputs["reference.emissions.typologyCarbon"]);
+        const ref = parseNum(inputs["reference.emissions.embodied"]);
         if (ref > 0) return Math.round((target / ref) * 100) + "%";
         return "100%";
       },
     });
     graph.registerNode({
       id: "compliance.typology.pass", legacyId: "n_39", section: "S05", classification: "C",
-      dependencies: ["building.typologyEmbodiedCarbon", "reference.emissions.typologyCarbon"],
+      dependencies: ["building.typologyEmbodiedCarbon", "reference.emissions.embodied"],
       label: "Typology Compliance Status",
       compute: (inputs) => {
         const t = parseNum(inputs["building.typologyEmbodiedCarbon"]);
-        const r = parseNum(inputs["reference.emissions.typologyCarbon"]);
+        const r = parseNum(inputs["reference.emissions.embodied"]);
         return r > 0 && t / r <= 1.0 ? "✓" : "✗";
       },
     });

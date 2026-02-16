@@ -840,6 +840,12 @@
     "building.conditionedFloorArea": "reference.building.conditionedFloorArea",
     "building.serviceLife":          "reference.building.serviceLife",
     "building.typologyEmbodiedCarbon": "reference.emissions.embodied",
+
+    // S05 compliance ratio reference values
+    "emissions.operational.mt":      "reference.emissions.operational.mt",
+    "emissions.ghgi.annual":         "reference.emissions.ghgi.annual",
+    "emissions.embodied.total":      "reference.emissions.embodied.total",
+    "building.userModelledEmbodiedCarbon": "reference.emissions.userModelled",
   };
 
   /**

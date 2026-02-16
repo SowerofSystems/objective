@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-02-14T11:26:35.846Z",
+  "timestamp": "2026-02-16T21:33:10.527Z",
   "summary": {
     "total": 12,
     "passed": 12,
@@ -15,7 +15,7 @@
   "byFile": [
     {
       "file": "01-ThreeFeathersTerrace.csv",
-      "matches": 413,
+      "matches": 634,
       "close": 0,
       "mismatches": 0,
       "refJ32": {
@@ -73,7 +73,7 @@
         "populateDebug": {
           "standardName": "OBC SB10 5.5-6 Z6",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 153,
+          "cFieldsFromStateManager": 173,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -81,7 +81,7 @@
     },
     {
       "file": "02-SolarQ.csv",
-      "matches": 414,
+      "matches": 632,
       "close": 0,
       "mismatches": 0,
       "refJ32": {
@@ -139,7 +139,7 @@
         "populateDebug": {
           "standardName": "OBC SB12 3.1.1.2.C1",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 153,
+          "cFieldsFromStateManager": 173,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -147,7 +147,7 @@
     },
     {
       "file": "03-Meadow.csv",
-      "matches": 414,
+      "matches": 634,
       "close": 0,
       "mismatches": 0,
       "refJ32": {
@@ -205,7 +205,7 @@
         "populateDebug": {
           "standardName": "PH Classic",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 153,
+          "cFieldsFromStateManager": 173,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -213,7 +213,7 @@
     },
     {
       "file": "04-OttawaApartments.csv",
-      "matches": 413,
+      "matches": 632,
       "close": 0,
       "mismatches": 0,
       "refJ32": {
@@ -271,7 +271,7 @@
         "populateDebug": {
           "standardName": "NECB T1 (Z6)",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 153,
+          "cFieldsFromStateManager": 173,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -279,7 +279,7 @@
     },
     {
       "file": "05-TheOaksPhase01Apartments.csv",
-      "matches": 413,
+      "matches": 633,
       "close": 0,
       "mismatches": 0,
       "refJ32": {
@@ -337,7 +337,7 @@
         "populateDebug": {
           "standardName": "NECB T1 (Z6)",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 153,
+          "cFieldsFromStateManager": 173,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -345,7 +345,7 @@
     },
     {
       "file": "06-BlossomParkApartments.csv",
-      "matches": 413,
+      "matches": 632,
       "close": 0,
       "mismatches": 0,
       "refJ32": {
@@ -403,7 +403,7 @@
         "populateDebug": {
           "standardName": "NECB T1 (Z6)",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 153,
+          "cFieldsFromStateManager": 173,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -411,12 +411,12 @@
     },
     {
       "file": "07-DogwoodMURB.csv",
-      "matches": 413,
+      "matches": 632,
       "close": 0,
       "mismatches": 0,
       "refJ32": {
-        "legacy": 735736.5566259259,
-        "computed": 735736.5566259259,
+        "legacy": 819113.818725926,
+        "computed": 819113.818725926,
         "diff": 0,
         "match": true,
         "refIntermediates": {
@@ -430,13 +430,13 @@
           "d_120_ventVolumetric": 1205.3999999999999,
           "d_121_ventGross": 129517.81919999998,
           "d_118_hrvEff": "65.00",
-          "d_127_ted": 317971.2034,
-          "d_114_heatDemand": 169521.3538,
-          "d_117_coolDemand": 101457.8369,
+          "d_127_ted": 295354.5831,
+          "d_114_heatDemand": 157463.6579,
+          "d_117_coolDemand": 130115.3149,
           "k_51_dhwElec": 0,
-          "h_70_plugLoads": 200332.44,
-          "d_136_totalEnergy": 471311.6307,
-          "j_32_targetTotal": 735736.5566259259,
+          "h_70_plugLoads": 267109.92,
+          "d_136_totalEnergy": 554688.8928,
+          "j_32_targetTotal": 819113.818725926,
           "i_98_transLoss": 177066.30674143697,
           "i_103_airLeak": 80999.26153846153,
           "m_121_ventLoss": 45331.236719999986,
@@ -453,12 +453,12 @@
           "ref_d_120": 1205.3999999999999,
           "ref_d_121": 129517.81919999998,
           "ref_d_118": "65.00",
-          "ref_d_127": 317971.2034,
-          "ref_d_114": 169521.3538,
-          "ref_d_117": 101457.8369,
+          "ref_d_127": 295354.5831,
+          "ref_d_114": 157463.6579,
+          "ref_d_117": 130115.3149,
           "ref_k_51": 0,
-          "ref_h_70": 200332.44,
-          "ref_d_136": 471311.6307,
+          "ref_h_70": 267109.92,
+          "ref_d_136": 554688.8928,
           "ref_d_43": 0,
           "ref_i_43": 0,
           "ref_m_43": 0,
@@ -469,7 +469,7 @@
         "populateDebug": {
           "standardName": "NECB T1 (Z6)",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 153,
+          "cFieldsFromStateManager": 173,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -477,7 +477,7 @@
     },
     {
       "file": "08-EmbassyCommonsMURB.csv",
-      "matches": 413,
+      "matches": 632,
       "close": 0,
       "mismatches": 0,
       "refJ32": {
@@ -535,7 +535,7 @@
         "populateDebug": {
           "standardName": "NECB T1 (Z6)",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 153,
+          "cFieldsFromStateManager": 173,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -543,12 +543,12 @@
     },
     {
       "file": "09-RowingCentre.csv",
-      "matches": 413,
+      "matches": 633,
       "close": 0,
       "mismatches": 0,
       "refJ32": {
-        "legacy": 178231.2194,
-        "computed": 178231.2194,
+        "legacy": 158035.5861,
+        "computed": 158035.5861,
         "diff": 0,
         "match": true,
         "refIntermediates": {
@@ -562,13 +562,13 @@
           "d_120_ventVolumetric": 2111.111111111111,
           "d_121_ventGross": 186372.26666666663,
           "d_118_hrvEff": "65.00",
-          "d_127_ted": 152093.5024,
-          "d_114_heatDemand": 81086.2624,
-          "d_117_coolDemand": 26205.8281,
+          "d_127_ted": 161977.2924,
+          "d_114_heatDemand": 86355.6498,
+          "d_117_coolDemand": 13074.8874,
           "k_51_dhwElec": 33936.88888888888,
-          "h_70_plugLoads": 37002.24,
-          "d_136_totalEnergy": 178231.2194,
-          "j_32_targetTotal": 178231.2194,
+          "h_70_plugLoads": 24668.16,
+          "d_136_totalEnergy": 158035.5861,
+          "j_32_targetTotal": 158035.5861,
           "i_98_transLoss": 76478.95675797106,
           "i_103_airLeak": 8370.011976047905,
           "m_121_ventLoss": 65230.29333333332,
@@ -585,12 +585,12 @@
           "ref_d_120": 2111.111111111111,
           "ref_d_121": 186372.26666666663,
           "ref_d_118": "65.00",
-          "ref_d_127": 152093.5024,
-          "ref_d_114": 81086.2624,
-          "ref_d_117": 26205.8281,
+          "ref_d_127": 161977.2924,
+          "ref_d_114": 86355.6498,
+          "ref_d_117": 13074.8874,
           "ref_k_51": 33936.88888888888,
-          "ref_h_70": 37002.24,
-          "ref_d_136": 178231.2194,
+          "ref_h_70": 24668.16,
+          "ref_d_136": 158035.5861,
           "ref_d_43": 0,
           "ref_i_43": 0,
           "ref_m_43": 0,
@@ -601,7 +601,7 @@
         "populateDebug": {
           "standardName": "NECB T1 (Z6)",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 153,
+          "cFieldsFromStateManager": 173,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -609,12 +609,12 @@
     },
     {
       "file": "10-TheGreenwayResidence.csv",
-      "matches": 413,
+      "matches": 635,
       "close": 0,
       "mismatches": 0,
       "refJ32": {
-        "legacy": 126480.7022,
-        "computed": 126480.7022,
+        "legacy": 85225.384,
+        "computed": 85225.384,
         "diff": 0,
         "match": true,
         "refIntermediates": {
@@ -628,14 +628,14 @@
           "d_120_ventVolumetric": 1434.7763888888887,
           "d_121_ventGross": 157497.12593999997,
           "d_118_hrvEff": "55.00",
-          "d_127_ted": 184323.4363,
-          "d_114_heatDemand": 88578.7094,
-          "d_117_coolDemand": 7674.9574,
+          "d_127_ted": 113818.7553,
+          "d_114_heatDemand": 54696.8885,
+          "d_117_coolDemand": 301.4601,
           "k_51_dhwElec": 5412.933777777778,
           "h_70_plugLoads": 24814.1016,
-          "d_136_totalEnergy": 126480.7022,
-          "j_32_targetTotal": 126480.7022,
-          "i_98_transLoss": 79895.20326017751,
+          "d_136_totalEnergy": 85225.384,
+          "j_32_targetTotal": 85225.384,
+          "i_98_transLoss": 32892.082620177505,
           "i_103_airLeak": 4560.727585135134,
           "m_121_ventLoss": 70873.70667299998,
           "d_43_onsiteRenew": 0,
@@ -651,23 +651,23 @@
           "ref_d_120": 1434.7763888888887,
           "ref_d_121": 157497.12593999997,
           "ref_d_118": "55.00",
-          "ref_d_127": 184323.4363,
-          "ref_d_114": 88578.7094,
-          "ref_d_117": 7674.9574,
+          "ref_d_127": 113818.7553,
+          "ref_d_114": 54696.8885,
+          "ref_d_117": 301.4601,
           "ref_k_51": 5412.933777777778,
           "ref_h_70": 24814.1016,
-          "ref_d_136": 126480.7022,
+          "ref_d_136": 85225.384,
           "ref_d_43": 0,
           "ref_i_43": 0,
           "ref_m_43": 0,
-          "ref_i_98": 79895.20326017751,
+          "ref_i_98": 32892.082620177505,
           "ref_i_103": 4560.727585135134,
           "ref_m_121": 70873.70667299998
         },
         "populateDebug": {
           "standardName": "OBC SB12 3.1.1.2.C4",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 153,
+          "cFieldsFromStateManager": 173,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -675,12 +675,12 @@
     },
     {
       "file": "11-CommunityCentre.csv",
-      "matches": 414,
+      "matches": 633,
       "close": 0,
       "mismatches": 0,
       "refJ32": {
-        "legacy": 9467511.308413917,
-        "computed": 9467511.308413917,
+        "legacy": 9359603.7986712,
+        "computed": 9359603.7986712,
         "diff": 0,
         "match": true,
         "refIntermediates": {
@@ -691,19 +691,19 @@
           "g_118_ventMethod": "Volume by Schedule",
           "l_118_ventAch": "4.00",
           "d_119_ventRate": "12.50",
-          "d_120_ventVolumetric": 47400.61666666667,
-          "d_121_ventGross": 5395934.519359999,
+          "d_120_ventVolumetric": 39500.51388888889,
+          "d_121_ventGross": 4496612.0994666675,
           "d_118_hrvEff": "0.00",
-          "d_127_ted": 5865110.8942,
-          "d_114_heatDemand": 5865110.8942,
-          "d_117_coolDemand": 462454.9397,
+          "d_127_ted": 5942996.9953,
+          "d_114_heatDemand": 5942996.9953,
+          "d_117_coolDemand": 398428.6172,
           "k_51_dhwElec": 0,
-          "h_70_plugLoads": 782583.3599999999,
-          "d_136_totalEnergy": 2045038.2997,
-          "j_32_targetTotal": 9467511.308413917,
-          "i_98_transLoss": 508313.81021687994,
+          "h_70_plugLoads": 652152.7999999999,
+          "d_136_totalEnergy": 1850581.4172,
+          "j_32_targetTotal": 9359603.7986712,
+          "i_98_transLoss": 1067507.2668568802,
           "i_103_airLeak": 608564.0435368421,
-          "m_121_ventLoss": 5395934.519359999,
+          "m_121_ventLoss": 4496612.0994666675,
           "d_43_onsiteRenew": 0,
           "i_43_offsiteRenew": 0,
           "m_43_extLoads": 800000
@@ -714,26 +714,26 @@
           "ref_g_118": "Volume by Schedule",
           "ref_l_118": "4.00",
           "ref_d_119": "12.50",
-          "ref_d_120": 47400.61666666667,
-          "ref_d_121": 5395934.519359999,
+          "ref_d_120": 39500.51388888889,
+          "ref_d_121": 4496612.0994666675,
           "ref_d_118": "0.00",
-          "ref_d_127": 5865110.8942,
-          "ref_d_114": 5865110.8942,
-          "ref_d_117": 462454.9397,
+          "ref_d_127": 5942996.9953,
+          "ref_d_114": 5942996.9953,
+          "ref_d_117": 398428.6172,
           "ref_k_51": 0,
-          "ref_h_70": 782583.3599999999,
-          "ref_d_136": 2045038.2997,
+          "ref_h_70": 652152.7999999999,
+          "ref_d_136": 1850581.4172,
           "ref_d_43": 0,
           "ref_i_43": 0,
           "ref_m_43": 800000,
-          "ref_i_98": 508313.81021687994,
+          "ref_i_98": 1067507.2668568802,
           "ref_i_103": 608564.0435368421,
-          "ref_m_121": 5395934.519359999
+          "ref_m_121": 4496612.0994666675
         },
         "populateDebug": {
           "standardName": "OBC SB10 5.5-6 Z6",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 153,
+          "cFieldsFromStateManager": 173,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -741,12 +741,12 @@
     },
     {
       "file": "12-AberdeenHouse.csv",
-      "matches": 413,
+      "matches": 633,
       "close": 0,
       "mismatches": 0,
       "refJ32": {
-        "legacy": 82414.6053,
-        "computed": 82414.6053,
+        "legacy": 27416.7247,
+        "computed": 27416.7247,
         "diff": 0,
         "match": true,
         "refIntermediates": {
@@ -760,14 +760,14 @@
           "d_120_ventVolumetric": 43.733333333333334,
           "d_121_ventGross": 5854.77376,
           "d_118_hrvEff": "75.00",
-          "d_127_ted": 123813.4672,
-          "d_114_heatDemand": 59499.9602,
-          "d_117_coolDemand": 14322.6565,
+          "d_127_ted": 27599.1529,
+          "d_114_heatDemand": 13263.0847,
+          "d_117_coolDemand": 5561.6514,
           "k_51_dhwElec": 3686.394555555556,
           "h_70_plugLoads": 7692.593999999999,
-          "d_136_totalEnergy": 85201.6053,
-          "j_32_targetTotal": 82414.6053,
-          "i_98_transLoss": 82285.75818479322,
+          "d_136_totalEnergy": 30203.7247,
+          "j_32_targetTotal": 27416.7247,
+          "i_98_transLoss": 18142.882024793224,
           "i_103_airLeak": 2894.581621621621,
           "m_121_ventLoss": 1463.69344,
           "d_43_onsiteRenew": 2787,
@@ -783,23 +783,23 @@
           "ref_d_120": 43.733333333333334,
           "ref_d_121": 5854.77376,
           "ref_d_118": "75.00",
-          "ref_d_127": 123813.4672,
-          "ref_d_114": 59499.9602,
-          "ref_d_117": 14322.6565,
+          "ref_d_127": 27599.1529,
+          "ref_d_114": 13263.0847,
+          "ref_d_117": 5561.6514,
           "ref_k_51": 3686.394555555556,
           "ref_h_70": 7692.593999999999,
-          "ref_d_136": 85201.6053,
+          "ref_d_136": 30203.7247,
           "ref_d_43": 2787,
           "ref_i_43": 0,
           "ref_m_43": 0,
-          "ref_i_98": 82285.75818479322,
+          "ref_i_98": 18142.882024793224,
           "ref_i_103": 2894.581621621621,
           "ref_m_121": 1463.69344
         },
         "populateDebug": {
           "standardName": "PH Low Energy",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 153,
+          "cFieldsFromStateManager": 173,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
