@@ -1,5 +1,5 @@
 {
-  "id": "mechanical.afueComplianceRatio",
+  "id": "compliance.afue.ratio",
   "legacyId": "m_115",
   "label": "AFUE Compliance Ratio",
   "section": "S13",

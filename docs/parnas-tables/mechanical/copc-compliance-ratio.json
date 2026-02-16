@@ -1,5 +1,5 @@
 {
-  "id": "mechanical.copcComplianceRatio",
+  "id": "compliance.copc.ratio",
   "legacyId": "m_116",
   "label": "COPc Compliance Ratio",
   "section": "S13",
