@@ -46,22 +46,47 @@
     return value === "Unavailable" || value === "N/A";
   }
 
+  // S10→S11 area bridge: rows 88-93 in S11 mirror rows 73-78 from S10
+  const AREA_BRIDGE = {
+    88: 73,  // doors
+    89: 74,  // window north
+    90: 75,  // window east
+    91: 76,  // window south
+    92: 77,  // window west
+    93: 78   // skylights
+  };
+
   function register(graph) {
     const inputs = [];
+    const bridgeNodes = [];
 
     // ========================================================================
     // INPUTS - Component areas and thermal properties
     // ========================================================================
     ALL_COMPONENTS.forEach(({ row, id, label, input }) => {
-      // Area input
-      inputs.push({
-        id: `transmissionLoss.${id}.area`,
-        legacyId: `d_${row}`,
-        section: "S11",
-        classification: "C",
-        label: `${label} Area (m²)`,
-        defaultValue: 0
-      });
+      // Area: for rows with S10 bridge, register as computed node (not input)
+      if (AREA_BRIDGE[row]) {
+        const s10Row = AREA_BRIDGE[row];
+        bridgeNodes.push({
+          id: `transmissionLoss.${id}.area`,
+          legacyId: `d_${row}`,
+          section: "S11",
+          classification: "C",
+          label: `${label} Area (m²) [bridged from S10]`,
+          dependencies: [`radiantGains.row${s10Row}.area`],
+          compute: (deps) => parseNum(deps[`radiantGains.row${s10Row}.area`])
+        });
+      } else {
+        // Non-bridged areas remain as inputs
+        inputs.push({
+          id: `transmissionLoss.${id}.area`,
+          legacyId: `d_${row}`,
+          section: "S11",
+          classification: "C",
+          label: `${label} Area (m²)`,
+          defaultValue: 0
+        });
+      }
 
       // RSI input (for components that use RSI as primary input)
       if (input === "rsi") {
@@ -119,6 +144,9 @@
     });
 
     graph.registerInputs(inputs);
+
+    // Register S10→S11 area bridge nodes (d_73→d_88, d_74→d_89, etc.)
+    bridgeNodes.forEach(node => graph.registerNode(node));
 
     // ========================================================================
     // U-VALUE / RSI CONVERSIONS

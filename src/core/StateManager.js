@@ -1983,48 +1983,9 @@ TEUI.StateManager = (function () {
     console.log("[StateManager] 🔓 Unmuting listeners after restore complete");
     unmuteListeners();
 
-    // ✅ CRITICAL FIX (Nov 6, 2025): Sync Pattern A isolated states BEFORE calculateAll
-    // Pattern A sections must have their isolated TargetState/ReferenceState synced from
-    // global StateManager BEFORE calculations run, otherwise calculations use stale isolated state
-    console.log(
-      "[StateManager] 🔄 Syncing Pattern A isolated states from restored StateManager..."
-    );
-    const patternASections = [
-      "sect02",
-      "sect03",
-      "sect04",
-      "sect05",
-      "sect06",
-      "sect07",
-      "sect08",
-      "sect09",
-      "sect10",
-      "sect11",
-      "sect12",
-      "sect13",
-      "sect14",
-      "sect15",
-    ];
-
-    patternASections.forEach(sectionId => {
-      const section = window.TEUI?.SectionModules?.[sectionId];
-
-      // Sync isolated state FROM restored StateManager values
-      if (section?.TargetState?.syncFromGlobalState) {
-        section.TargetState.syncFromGlobalState();
-        console.log(
-          `[StateManager] 🔄 ${sectionId} TargetState synced from restored values`
-        );
-      }
-      if (section?.ReferenceState?.syncFromGlobalState) {
-        section.ReferenceState.syncFromGlobalState();
-        console.log(
-          `[StateManager] 🔄 ${sectionId} ReferenceState synced from restored values`
-        );
-      }
-    });
-
-    // NOW trigger calculations with correct synced isolated states
+    // syncFromGlobalState is now a stub — graph is source of truth.
+    // Calculator.calculateAll() below handles: graph compute → syncToSM → stampAll.
+    // Trigger calculations with restored values
     if (
       window.TEUI &&
       window.TEUI.Calculator &&

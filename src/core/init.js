@@ -1015,6 +1015,20 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         }
       }, 500);
+
+      // Auto-load sample project for testing (graph-parity branch only)
+      setTimeout(async function () {
+        try {
+          const resp = await fetch("src/template/case-studies/02-residence-sb12-net-zero.csv");
+          if (resp.ok) {
+            const csvText = await resp.text();
+            window.TEUI.FileHandler.processImportedCSV(csvText);
+            console.log("[init.js] Auto-loaded 02-residence-sb12-net-zero.csv");
+          }
+        } catch (e) {
+          console.warn("[init.js] Auto-load failed:", e);
+        }
+      }, 1500);
     }
   } else {
     console.error("Core TEUI modules (StateManager, FieldManager) not found!");
