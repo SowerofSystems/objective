@@ -5,7 +5,11 @@
 This document outlines the strategy for migrating legacy Section*.js files from the old `setValue` calculation pattern to the new ComputationGraph system.
 
 **Created:** January 2026
-**Status:** Blockers Identified, Fixes Required
+**Status:** ✅ COMPLETE (February 2026)
+
+> **All sections migrated.** ~15k lines of Pattern A legacy computation code stripped.
+> All 12 case studies pass with 632-635 exact matches and 0 mismatches.
+> The "Blockers" listed below were resolved during the graph parity work.
 
 ---
 
@@ -25,25 +29,18 @@ When enabled:
 
 ---
 
-## Blockers (Must Fix Before Cutover)
+## Blockers (All Resolved)
 
-Testing with `USE_COMPUTATION_GRAPH = true` revealed calculation mismatches:
+All calculation mismatches were fixed during the graph parity work:
 
-| Field | Description | Issue |
-|-------|-------------|-------|
-| `d_117` | Cooling Energy | copCool calculation differs from legacy |
-| `m_129` | CED (Cooling Energy Demand) | Mode handling differs |
-| `i_103` | Air Leakage Heat Loss | Calculation mismatch |
-| `k_103` | Air Leakage Heat Gain | Calculation mismatch |
-| `j_10` | TEUI Tier | Off by 1 in some cases |
-| `m_10` | Reduction % | Off by 1 in some cases |
-
-**Root cause:** The ComputationGraph nodes have subtle differences in:
-- COP (Coefficient of Performance) handling when copCool = 0
-- Air leakage calculations (ACH50 → NRL50 conversion)
-- Tier boundary rounding
-
-**Fix required in:** `MechanicalNodes.js`, `VolumeMetricsNodes.js`, `KeyValuesNodes.js`
+| Field | Description | Resolution |
+|-------|-------------|------------|
+| `d_117` | Cooling Energy | ✅ copCool calculation fixed in MechanicalNodes.js |
+| `m_129` | CED (Cooling Energy Demand) | ✅ Mode handling fixed |
+| `i_103` | Air Leakage Heat Loss | ✅ NRL50 formula implemented in VolumeMetricsNodes.js |
+| `k_103` | Air Leakage Heat Gain | ✅ Fixed |
+| `j_10` | TEUI Tier | ✅ Rounding fixed in KeyValuesNodes.js |
+| `m_10` | Reduction % | ✅ Fixed |
 
 ---
 
@@ -524,23 +521,25 @@ After each section migration:
 
 ## Progress Tracking
 
-| Phase | Section | Status | Date | Notes |
-|-------|---------|--------|------|-------|
-| 1.1 | Section06 | Pending | | Template migration |
-| 1.2 | Section08 | Pending | | |
-| 1.3 | Section20 | Pending | | |
-| 2.1 | Section02 | Pending | | |
-| 2.2 | Section03 | Pending | | |
-| 3.1 | Section11 | Pending | | |
-| 3.2 | Section12 | Pending | | |
-| 3.3 | Section10 | Pending | | |
-| 4.1 | Section09 | Pending | | Needs OccupancyNodes expansion |
-| 4.2 | Section07 | Pending | | |
-| 5.1 | Section13 | Pending | | |
-| 6.1 | Section14 | Pending | | |
-| 6.2 | Section15 | Pending | | |
-| 6.3 | Section04 | Pending | | |
-| 7.1 | Section05 | Pending | | Needs EmissionsNodes expansion |
-| 7.2 | Section19 | Pending | | |
-| 7.3 | SectionXX | Pending | | |
-| 7.4 | Section01 | Pending | | Final section |
+All sections completed in batch via Pattern A strip (February 2026).
+
+| Phase | Section | Status | Notes |
+|-------|---------|--------|-------|
+| 1.1 | Section06 | ✅ Done | |
+| 1.2 | Section08 | ✅ Done | |
+| 1.3 | Section20 | ✅ Done | |
+| 2.1 | Section02 | ✅ Done | |
+| 2.2 | Section03 | ✅ Done | |
+| 3.1 | Section11 | ✅ Done | |
+| 3.2 | Section12 | ✅ Done | |
+| 3.3 | Section10 | ✅ Done | |
+| 4.1 | Section09 | ✅ Done | OccupancyNodes expanded with InternalGainsNodes |
+| 4.2 | Section07 | ✅ Done | |
+| 5.1 | Section13 | ✅ Done | |
+| 6.1 | Section14 | ✅ Done | |
+| 6.2 | Section15 | ✅ Done | |
+| 6.3 | Section04 | ✅ Done | |
+| 7.1 | Section05 | ✅ Done | EmissionsNodes expanded |
+| 7.2 | Section19 | ✅ Done | |
+| 7.3 | SectionXX | ✅ Done | |
+| 7.4 | Section01 | ✅ Done | |
