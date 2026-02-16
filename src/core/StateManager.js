@@ -1985,6 +1985,13 @@ TEUI.StateManager = (function () {
       }
     });
 
+    // Sync Pattern A sections (cascading dropdowns, field locks) before unmuting.
+    // Same as CSV import path: province/city dropdown repopulation, S07/S13 field locks.
+    // Without this, changing province then undoing leaves the city dropdown empty.
+    if (window.TEUI?.FileHandler?.syncPatternASections) {
+      window.TEUI.FileHandler.syncPatternASections();
+    }
+
     // ✅ FIX (Nov 5, 2025): Unmute listeners after all values restored but BEFORE calculations
     console.log("[StateManager] 🔓 Unmuting listeners after restore complete");
     unmuteListeners();
