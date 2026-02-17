@@ -283,7 +283,7 @@ window.TEUI.SectionModules.sect01 = (function () {
           opacity: 0.5;
           vertical-align: baseline;
         }
-        .key-values-ref-cell .key-value[data-tier]::before { color: #8B0000; opacity: 0.9; }
+        .key-values-ref-cell .key-value[data-tier]::before { color: #8B0000; opacity: 0.5; }
 
         /* Checkmark/warning via data-status attribute + ::before pseudo-element */
         .percent-value[data-status="pass"]::before {
