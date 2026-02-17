@@ -839,12 +839,8 @@ window.TEUI.SectionModules.sect05 = (function () {
         );
       };
 
-      window.TEUI.StateManager.addListener("d_15", () =>
-        updateCarbonTarget("d_15")
-      );
-      window.TEUI.StateManager.addListener("ref_d_15", () =>
-        updateCarbonTarget("ref_d_15")
-      );
+      // d_15/ref_d_15 listeners removed — the graph's EmissionsNodes
+      // handles embodied carbon target (d_16/ref_d_16) computation.
     }
   }
 

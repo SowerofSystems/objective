@@ -199,14 +199,6 @@ TEUI.StateManager = (function () {
     registerTEUIFields();
     registerTEDITELIFields();
     registerVolumeMetricsFields();
-
-    // Add listeners for TEUI source fields
-    addListener("f_32", () => updateTEUICalculations("f_32"));
-    addListener("j_32", () => updateTEUICalculations("j_32"));
-    addListener("h_15", () => updateTEUICalculations("h_15"));
-
-    // Initial calculation
-    updateTEUICalculations("init");
   }
 
   /**

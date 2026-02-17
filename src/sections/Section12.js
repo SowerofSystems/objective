@@ -1224,108 +1224,7 @@ window.TEUI.SectionModules.sect12 = (function () {
     // Initialize conditional editability state
     handleConditionalEditability();
 
-    // ✅ BIDIRECTIONAL SYNC: S12 listens to WOMBAT (S19) mirror field changes
-    // Mirror relationships: d_105 (S12) ↔ d_151 (S19), d_103 (S12) ↔ d_150 (S19)
-    if (window.TEUI?.StateManager) {
-      // Target volume from WOMBAT
-      window.TEUI.StateManager.addListener("d_151", newValue => {
-        const currentValue = ModeManager.getValue("d_105");
-        if (currentValue !== newValue) {
-          console.log(
-            `[S12→WOMBAT] Syncing d_105 = ${newValue} from WOMBAT d_151`
-          );
-          ModeManager.setValue("d_105", newValue, "external");
-
-          // Update DOM for d_105
-          if (window.TEUI?.FieldManager) {
-            const fieldDef = window.TEUI.FieldManager.getField("d_105");
-            if (fieldDef) {
-              window.TEUI.FieldManager.updateFieldDisplay(
-                "d_105",
-                newValue,
-                fieldDef
-              );
-            }
-          }
-        }
-      });
-
-      // Target stories from WOMBAT
-      window.TEUI.StateManager.addListener("d_150", newValue => {
-        const currentValue = ModeManager.getValue("d_103");
-        if (currentValue !== newValue) {
-          console.log(
-            `[S12→WOMBAT] Syncing d_103 = ${newValue} from WOMBAT d_150`
-          );
-          ModeManager.setValue("d_103", newValue, "external");
-
-          // Update DOM for d_103 dropdown
-          const dropdown = document.querySelector(
-            'select[data-field-id="d_103"]'
-          );
-          if (dropdown) {
-            dropdown.value = newValue;
-          }
-        }
-      });
-
-      // Reference volume from WOMBAT
-      window.TEUI.StateManager.addListener("ref_d_151", newValue => {
-        const currentValue = ReferenceState.getValue("d_105");
-        if (currentValue !== newValue) {
-          console.log(
-            `[S12→WOMBAT] Syncing ref_d_105 = ${newValue} from WOMBAT ref_d_151`
-          );
-          ReferenceState.setValue("d_105", newValue);
-          window.TEUI.StateManager.setValue("ref_d_105", newValue, "external");
-
-          // ✅ FIX: Explicit DOM update for d_105 when in Reference mode
-          if (
-            ModeManager.currentMode === "reference" &&
-            window.TEUI?.FieldManager
-          ) {
-            const fieldDef = window.TEUI.FieldManager.getField("d_105");
-            if (fieldDef) {
-              window.TEUI.FieldManager.updateFieldDisplay(
-                "d_105",
-                newValue,
-                fieldDef
-              );
-              console.log(
-                `[S12→WOMBAT] Refreshed d_105 DOM = ${newValue} (Reference mode)`
-              );
-            }
-          }
-        }
-      });
-
-      // Reference stories from WOMBAT
-      window.TEUI.StateManager.addListener("ref_d_150", newValue => {
-        const currentValue = ReferenceState.getValue("d_103");
-        if (currentValue !== newValue) {
-          console.log(
-            `[S12→WOMBAT] Syncing ref_d_103 = ${newValue} from WOMBAT ref_d_150`
-          );
-          ReferenceState.setValue("d_103", newValue);
-          window.TEUI.StateManager.setValue("ref_d_103", newValue, "external");
-
-          // ✅ FIX: Explicit DOM update for d_103 dropdown when in Reference mode
-          if (ModeManager.currentMode === "reference") {
-            const dropdown = document.querySelector(
-              'select[data-field-id="d_103"]'
-            );
-            if (dropdown) {
-              dropdown.value = newValue;
-              console.log(
-                `[S12→WOMBAT] Refreshed d_103 DOM = ${newValue} (Reference mode)`
-              );
-            }
-          }
-        }
-      });
-
-      console.log("[S12] Bidirectional WOMBAT sync listeners initialized");
-    }
+    // Legacy SM listeners removed — graph handles all computation
   }
 
   // ✅ REMOVED: Now using S10's inline dropdown handler pattern
@@ -1508,34 +1407,7 @@ window.TEUI.SectionModules.sect12 = (function () {
     if (!window.TEUI?.StateManager) return;
     if (s12ListenersAdded) return;
 
-    // Graph handles cross-section computation via wildcard listener.
-    // Only keep WOMBAT mirror field sync (field ID bridging d_151→d_105, d_150→d_103).
-    const SM = window.TEUI.StateManager;
-
-    SM.addListener("d_151", newValue => {
-      if (TargetState.getValue("d_105") !== newValue) {
-        TargetState.setValue("d_105", newValue, "external");
-        SM.setValue("d_105", newValue, "external");
-      }
-    });
-    SM.addListener("ref_d_151", newValue => {
-      if (ReferenceState.getValue("d_105") !== newValue) {
-        ReferenceState.setValue("d_105", newValue, "external");
-        SM.setValue("ref_d_105", newValue, "external");
-      }
-    });
-    SM.addListener("d_150", newValue => {
-      if (TargetState.getValue("d_103") !== newValue) {
-        TargetState.setValue("d_103", newValue, "external");
-        SM.setValue("d_103", newValue, "external");
-      }
-    });
-    SM.addListener("ref_d_150", newValue => {
-      if (ReferenceState.getValue("d_103") !== newValue) {
-        ReferenceState.setValue("d_103", newValue, "external");
-        SM.setValue("ref_d_103", newValue, "external");
-      }
-    });
+    // Legacy SM listeners removed — graph handles all computation
 
     s12ListenersAdded = true;
   }

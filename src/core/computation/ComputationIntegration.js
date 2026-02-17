@@ -390,10 +390,8 @@
       return;
     }
 
-    // Mute listeners during sync to prevent cascade
-    if (StateManager.muteListeners) {
-      StateManager.muteListeners();
-    }
+    // NOTE: Caller (Calculator.calculateAll) is responsible for muting SM listeners.
+    // Do NOT mute/unmute here — nested boolean mute breaks the caller's mute scope.
 
     const targetId = state.getActiveModelId();
     let syncCount = 0;
@@ -409,34 +407,16 @@
         const value = state.getValue(semanticPath);
         if (value !== undefined && value !== null) {
           // Don't trigger recalculation - just set the value
-          StateManager.setValue(legacyId, value, "computed");
+          StateManager.setValue(legacyId, value, "calculated");
           syncCount++;
         }
       }
     }
 
-    // Also sync input values that may have been normalized
-    const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
-
-    for (const semanticPath of inputIds) {
-      const inputNode = graph.getInput(semanticPath);
-      const legacyId = inputNode?.legacyId;
-
-      if (legacyId) {
-        const value = state.getValue(semanticPath);
-        if (value !== undefined && value !== null) {
-          StateManager.setValue(legacyId, value, "computed");
-          syncCount++;
-        }
-      }
-    }
+    // Inputs are NOT synced here — they are already in StateManager from the
+    // user's setValue call (or file load). Only computed outputs need syncing.
 
     log(`Synced ${syncCount} computed values to StateManager`);
-
-    // Unmute listeners after sync
-    if (StateManager.unmuteListeners) {
-      StateManager.unmuteListeners();
-    }
   }
 
   /**
@@ -1006,16 +986,11 @@
       return 0;
     }
 
-    // Mute listeners during sync to prevent cascade
-    if (StateManager.muteListeners) {
-      StateManager.muteListeners();
-    }
+    // NOTE: Caller (Calculator.calculateAll) is responsible for muting SM listeners.
+    // Do NOT mute/unmute here — nested boolean mute breaks the caller's mute scope.
 
     const refModelId = getRefModelId();
     if (!refModelId) {
-      if (isCutover && StateManager.unmuteListeners) {
-        StateManager.unmuteListeners();
-      }
       return 0;
     }
 
@@ -1033,14 +1008,16 @@
         if (value !== undefined && value !== null) {
           // Don't add ref_ prefix if legacyId already starts with ref_
           const refLegacyId = legacyId.startsWith("ref_") ? legacyId : "ref_" + legacyId;
-          StateManager.setValue(refLegacyId, value, "computed");
+          StateManager.setValue(refLegacyId, value, "calculated");
           syncCount++;
         }
       }
     }
 
     // Sync input values (skip reference.* bridge inputs — those are Target model
-    // concepts whose computed equivalents were already synced in the computed nodes loop)
+    // concepts whose computed equivalents were already synced in the computed nodes loop).
+    // Unlike syncToStateManager(), ref_ inputs DO need syncing because they may not
+    // already be in StateManager (reference model inputs come from CSV, not user setValue).
     const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
 
     for (const semanticPath of inputIds) {
@@ -1056,7 +1033,7 @@
         if (value !== undefined && value !== null) {
           // Don't add ref_ prefix if legacyId already starts with ref_
           const refLegacyId = legacyId.startsWith("ref_") ? legacyId : "ref_" + legacyId;
-          StateManager.setValue(refLegacyId, value, "computed");
+          StateManager.setValue(refLegacyId, value, "calculated");
           syncCount++;
         }
       }
@@ -1064,12 +1041,125 @@
 
     log(`Synced ${syncCount} Reference values to StateManager`);
 
-    // Unmute listeners after sync
-    if (StateManager.unmuteListeners) {
-      StateManager.unmuteListeners();
+    return syncCount;
+  }
+
+  // ============================================================================
+  // DIAGNOSTICS
+  // ============================================================================
+
+  /**
+   * Validate that SM input values match graph state values.
+   * Call from browser console: TEUI.ComputationIntegration.validateGraphInputs()
+   *
+   * Reports mismatches where SM has a value but graph state differs.
+   * This catches issues where the LegacyAdapter fails to dual-write,
+   * or where values are written to the wrong model.
+   */
+  function validateGraphInputs() {
+    if (!initialized) { error("Not initialized"); return; }
+    const SM = window.TEUI.StateManager;
+    if (!SM) { error("No StateManager"); return; }
+
+    const targetId = state.getActiveModelId();
+    const refModelId = getRefModelId();
+    const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
+    const mismatches = [];
+
+    for (const semanticPath of inputIds) {
+      const inputNode = graph.getInput(semanticPath);
+      const legacyId = inputNode?.legacyId;
+      if (!legacyId) continue;
+
+      // Target model
+      const smVal = SM.getValue(legacyId);
+      const graphVal = state.getValueForModel(targetId, semanticPath);
+      if (smVal !== undefined && smVal !== null && smVal !== "" && String(smVal) !== String(graphVal)) {
+        mismatches.push({ legacyId, semanticPath, smVal, graphVal, model: "target" });
+      }
+
+      // Reference model
+      if (refModelId) {
+        const refLegacyId = legacyId.startsWith("ref_") ? legacyId : "ref_" + legacyId;
+        const refSmVal = SM.getValue(refLegacyId);
+        const refGraphVal = state.getValueForModel(refModelId, semanticPath);
+        if (refSmVal !== undefined && refSmVal !== null && refSmVal !== "" && String(refSmVal) !== String(refGraphVal)) {
+          mismatches.push({ legacyId: refLegacyId, semanticPath, smVal: refSmVal, graphVal: refGraphVal, model: "reference" });
+        }
+      }
     }
 
-    return syncCount;
+    if (mismatches.length === 0) {
+      console.log("%c[Validate] All SM inputs match graph state", "color: green; font-weight: bold");
+    } else {
+      console.warn(`[Validate] ${mismatches.length} SM↔Graph mismatches:`);
+      console.table(mismatches);
+    }
+    return mismatches;
+  }
+
+  /**
+   * Trace the full h_10 (Target TEUI) dependency chain.
+   * Call from browser console: TEUI.ComputationIntegration.traceH10()
+   *
+   * Shows the current value of every node in the chain from h_15 → h_10,
+   * reading from both graph state and SM for comparison.
+   */
+  function traceH10() {
+    if (!initialized) { error("Not initialized"); return; }
+    const SM = window.TEUI.StateManager;
+    const targetId = state.getActiveModelId();
+
+    // Key fields in the h_10 dependency chain
+    const chain = [
+      // Inputs
+      { id: "building.conditionedFloorArea", legacy: "h_15", type: "INPUT" },
+      { id: "internal.plugLoads.watts", legacy: "d_65", type: "INPUT" },
+      { id: "internal.lighting.watts", legacy: "d_66", type: "INPUT" },
+      { id: "internal.equipment.watts", legacy: "d_67", type: "INPUT" },
+      { id: "mechanical.heating.systemType", legacy: "d_113", type: "INPUT" },
+      // Computed: internal gains
+      { id: "internal.plugLoads.annual", legacy: "h_65", type: "COMPUTED" },
+      { id: "internal.lighting.annual", legacy: "h_66", type: "COMPUTED" },
+      { id: "internal.equipment.annual", legacy: "h_67", type: "COMPUTED" },
+      { id: "energy.plugLoads.subtotal", legacy: "h_70", type: "COMPUTED" },
+      // Computed: energy chain
+      { id: "energy.total.targeted", legacy: "d_135", type: "COMPUTED" },
+      { id: "energy.total.all", legacy: "d_136", type: "COMPUTED" },
+      { id: "energy.teui", legacy: "h_136", type: "COMPUTED" },
+      // Computed: emissions chain
+      { id: "energy.target.electricity", legacy: "j_27", type: "COMPUTED" },
+      { id: "energy.target.total", legacy: "j_32", type: "COMPUTED" },
+      // Final: key value
+      { id: "keyValues.target.teui", legacy: "h_10", type: "COMPUTED" },
+      { id: "keyValues.reference.teui", legacy: "e_10", type: "COMPUTED" },
+    ];
+
+    const rows = chain.map(item => {
+      const graphVal = state.getValueForModel(targetId, item.id);
+      const smVal = SM?.getValue(item.legacy);
+      const match = String(graphVal) === String(smVal) ? "✓" : "✗";
+      return {
+        field: item.legacy,
+        semantic: item.id,
+        type: item.type,
+        graphValue: graphVal,
+        smValue: smVal,
+        match
+      };
+    });
+
+    console.log("%c[TraceH10] h_10 dependency chain:", "color: #0af; font-weight: bold");
+    console.table(rows);
+
+    // Also compute h_10 manually for verification
+    const j32 = parseFloat(state.getValueForModel(targetId, "energy.target.total")) || 0;
+    const h15 = parseFloat(state.getValueForModel(targetId, "building.conditionedFloorArea")) || 1;
+    const expected = h15 > 0 ? Math.round((j32 / h15) * 10) / 10 : 0;
+    const actual = state.getValueForModel(targetId, "keyValues.target.teui");
+    console.log(`[TraceH10] Manual: ${j32} / ${h15} = ${expected}, graph says: ${actual}`);
+
+    return rows;
   }
 
   // ============================================================================
@@ -1118,7 +1208,9 @@
 
     // Debug
     getStats,
-    debug
+    debug,
+    validateGraphInputs,
+    traceH10
   };
 
   log("Module loaded");

@@ -494,38 +494,50 @@ TEUI.Calculator = (function () {
     }
 
     const CI = window.TEUI.ComputationIntegration;
+    const SM = window.TEUI.StateManager;
 
-    // Step 1: Populate Reference model from ReferenceValues.js
-    const refPopResult = CI.populateReferenceModel();
-    console.log(`[Calculator] 📋 Reference model: ${refPopResult.gFieldsCopied} G-fields, ${refPopResult.cFieldsLoaded} C-fields from standard`);
+    // Mute SM listeners for the entire pipeline to prevent legacy section
+    // listeners from firing during sync and corrupting state.
+    if (SM?.muteListeners) SM.muteListeners();
 
-    // Step 2: Compute both Target and Reference models
-    const result = CI.computeAllWithReference();
+    try {
+      // Step 1: Populate Reference model from ReferenceValues.js
+      const refPopResult = CI.populateReferenceModel();
+      console.log(`[Calculator] 📋 Reference model: ${refPopResult.gFieldsCopied} G-fields, ${refPopResult.cFieldsLoaded} C-fields from standard`);
 
-    // End performance timing (graph compute only, excludes sync/stamp/animation)
-    if (window.TEUI?.Clock?.markCalculationEnd) {
-      window.TEUI.Clock.markCalculationEnd();
-    }
+      // Step 2: Compute both Target and Reference models
+      const result = CI.computeAllWithReference();
 
-    // Step 3: Sync Target computed values to StateManager
-    CI.syncToStateManager();
+      // End performance timing (graph compute only, excludes sync/stamp/animation)
+      if (window.TEUI?.Clock?.markCalculationEnd) {
+        window.TEUI.Clock.markCalculationEnd();
+      }
 
-    // Step 4: Sync Reference computed values to StateManager (ref_* prefix)
-    CI.syncReferenceToStateManager();
+      // Step 3: Sync Target computed values to StateManager
+      CI.syncToStateManager();
 
-    // Step 5: Stamp all graph-computed values to DOM
-    if (window.TEUI.DOMBridge?.stampAll) {
-      window.TEUI.DOMBridge.stampAll();
-    }
+      // Step 4: Sync Reference computed values to StateManager (ref_* prefix)
+      CI.syncReferenceToStateManager();
 
-    // Step 6: Section01 supplementary display (explanation text, gauges, mode indicators)
-    const sect01 = window.TEUI.SectionModules?.sect01;
-    if (sect01?.postStamp) {
-      sect01.postStamp();
-    }
+      // Step 5: Stamp all graph-computed values to DOM
+      if (window.TEUI.DOMBridge?.stampAll) {
+        window.TEUI.DOMBridge.stampAll();
+      }
 
-    if (result) {
-      console.log(`[Calculator] ✅ ComputationGraph complete: ${result.totalComputed} nodes in ${result.totalDuration?.toFixed(2)}ms`);
+      // Step 6: Section01 supplementary display (explanation text, gauges, mode indicators)
+      const sect01 = window.TEUI.SectionModules?.sect01;
+      if (sect01?.postStamp) {
+        sect01.postStamp();
+      }
+
+      if (result) {
+        console.log(`[Calculator] ✅ ComputationGraph complete: ${result.totalComputed} nodes in ${result.totalDuration?.toFixed(2)}ms`);
+      }
+
+      // Diagnostic: trace h_10 chain after every calculation
+      if (CI.traceH10) CI.traceH10();
+    } finally {
+      if (SM?.unmuteListeners) SM.unmuteListeners();
     }
   }
 

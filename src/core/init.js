@@ -985,37 +985,13 @@ document.addEventListener("DOMContentLoaded", function () {
               if (!semanticPath) return;
 
               _recomputing = true;
-              // Mute SM listeners to prevent cascading fires from legacy section code.
-              // Legacy sections have their own SM listeners that write values back to SM
-              // when inputs change — those writes would trigger more wildcard fires.
-              SM.muteListeners();
               try {
-                if (window.TEUI?.Clock?.markCalculationStart) {
-                  window.TEUI.Clock.markCalculationStart();
-                }
-
-                const mState = CI.getState();
-                const modelId = mState.getActiveModelId();
-                if (modelId) {
-                  mState.setValueForModel(modelId, semanticPath, newValue);
-                  const engine = window.TEUI.ComputationSystem?.engine;
-                  if (engine) {
-                    engine.onValueChange(semanticPath, newValue, modelId);
-                  }
-                }
-
-                if (window.TEUI?.Clock?.markCalculationEnd) {
-                  window.TEUI.Clock.markCalculationEnd();
-                }
-
-                if (window.TEUI.DOMBridge?.stampAll) {
-                  window.TEUI.DOMBridge.stampAll();
-                }
-                if (window.TEUI.SectionModules?.sect01?.postStamp) {
-                  window.TEUI.SectionModules.sect01.postStamp();
-                }
+                // Full dual-model recalc: populates reference model, computes both
+                // models, syncs to SM, stamps DOM. This ensures shared inputs like
+                // conditioned area propagate to both models and compliance ratios
+                // stay correct. calculateAll() mutes SM listeners internally.
+                window.TEUI.Calculator.calculateAll();
               } finally {
-                SM.unmuteListeners();
                 _recomputing = false;
               }
             });

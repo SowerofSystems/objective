@@ -1167,26 +1167,7 @@ window.TEUI.SectionModules.sect04 = (function () {
       }
     });
 
-    // Domain-logic SM listeners (not computation — nuclear waste factor auto-set on province change)
-    if (window.TEUI?.StateManager?.addListener) {
-      // Auto-update l_33 when province changes (ON=0.0096, other=0)
-      window.TEUI.StateManager.addListener("d_19", () => {
-        const province = window.TEUI.StateManager.getValue("d_19") || "";
-        if (!window.TEUI.StateManager.getValue("_l_33_user_edited")) {
-          const newValue = province === "ON" ? "0.0096" : "0";
-          TargetState.setValue("l_33", newValue, "calculated");
-          window.TEUI.StateManager.setValue("l_33", newValue, "calculated");
-        }
-      });
-      window.TEUI.StateManager.addListener("ref_d_19", () => {
-        const province = window.TEUI.StateManager.getValue("ref_d_19") || "";
-        if (!window.TEUI.StateManager.getValue("_ref_l_33_user_edited")) {
-          const newValue = province === "ON" ? "0.0096" : "0";
-          ReferenceState.setValue("l_33", newValue, "calculated");
-          window.TEUI.StateManager.setValue("ref_l_33", newValue, "calculated");
-        }
-      });
-    }
+    // Legacy SM listeners removed — graph handles all computation
   }
 
   // Expose ModeManager globally
