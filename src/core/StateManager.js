@@ -2107,14 +2107,7 @@ TEUI.StateManager = (function () {
     console.log("[Reset Tier 3] Factory reset - all data cleared");
 
     setTimeout(() => {
-      // Safari fix: Force hard reload to bypass cache and rebuild stacking contexts
-      // This prevents z-index bugs where controls become unclickable after reset
-      // Use cache-busting URL redirect (preserves hash, cleans query params)
-      const cleanUrl =
-        window.location.origin +
-        window.location.pathname +
-        window.location.hash;
-      window.location.replace(cleanUrl + "?_=" + Date.now());
+      window.location.reload();
     }, 100);
   }
 
