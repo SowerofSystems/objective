@@ -74,9 +74,9 @@ window.TEUI.Clock = {
    * Update the visual display in Key Values header
    */
   updateDisplay() {
-    const feedbackArea = document.getElementById("feedback-area");
-    if (!feedbackArea) {
-      console.warn("[CLOCK] Feedback area not found - cannot display timing");
+    const clockArea = document.getElementById("clock-area");
+    if (!clockArea) {
+      console.warn("[CLOCK] Clock area not found - cannot display timing");
       return;
     }
 
@@ -96,12 +96,7 @@ window.TEUI.Clock = {
       displayText = `Loading: ${this.formatTime(elapsed)}...`;
     }
 
-    // Apply styling for white text and proper formatting
-    feedbackArea.innerHTML = displayText;
-    feedbackArea.style.color = "white";
-    feedbackArea.style.fontSize = "0.8rem";
-    feedbackArea.style.fontFamily = "monospace";
-    feedbackArea.style.whiteSpace = "nowrap";
+    clockArea.textContent = displayText;
   },
 
   /**

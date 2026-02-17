@@ -217,7 +217,8 @@ window.TEUI.SectionModules.sect01 = (function () {
             align-items: center;
             margin: 0 !important;
         }
-        #keyValues .section-header #feedback-area {
+        #keyValues .section-header #feedback-area,
+        #keyValues .section-header #clock-area {
             display: flex;
             align-items: center;
             line-height: 1;
