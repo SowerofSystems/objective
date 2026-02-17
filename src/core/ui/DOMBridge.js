@@ -52,18 +52,31 @@
     m_38: "raw", m_39: "raw", m_40: "raw", m_41: "raw",
     n_38: "raw", n_39: "raw", n_40: "raw", n_41: "raw",
 
-    // S08 Air Quality: compliance and status
+    // S06 Renewable Energy: integer kWh/yr and m³/yr
+    d_43: "integer", i_43: "integer", i_45: "integer",
+    d_44: "integer", d_45: "integer", d_46: "integer",
+    i_44: "integer", i_46: "integer", k_45: "integer",
+
+    // S07 Water Heating: integer occupancy, compliance ratios
+    h_49: "integer", i_49: "integer", k_49: "integer",
+    m_49: "raw", m_50: "raw", m_52: "raw", m_53: "raw",
+    n_49: "raw", n_50: "raw", n_52: "raw", n_53: "raw",
+    h_50: "number-1dp",
+
+    // S08 Air Quality: integer targets and compliance
+    d_56: "integer", d_57: "integer", d_58: "integer", d_59: "integer",
     k_56: "integer", k_57: "integer", k_58: "integer",
     m_56: "integer-percent", m_57: "integer-percent", m_58: "integer-percent",
     m_59: "raw",
     n_56: "raw", n_57: "raw", n_58: "raw", n_59: "raw",
 
-    // S07 Water Heating: compliance ratios (pre-formatted strings)
-    m_49: "raw", m_50: "raw", m_52: "raw", m_53: "raw",
-    n_49: "raw", n_50: "raw", n_52: "raw", n_53: "raw",
-    h_50: "number-1dp",
+    // S09 Occupancy: integer counts and hours
+    d_63: "integer", h_63: "integer",
+    g_63: "integer-nocomma", j_63: "integer-nocomma", i_63: "integer-nocomma",
 
-    // S09 Internal Gains: seasonal split percentages
+    // S09 Internal Gains: densities as 1dp, seasonal split percentages
+    d_65: "number-1dp", d_66: "number-1dp", d_67: "number-1dp",
+    g_64: "number-2dp",
     j_64: "percent-0dp", j_65: "percent-0dp", j_66: "percent-0dp", j_67: "percent-0dp",
     j_69: "percent-0dp", j_71: "percent-0dp",
     l_64: "percent-0dp", l_65: "percent-0dp", l_66: "percent-0dp", l_67: "percent-0dp",
