@@ -502,6 +502,11 @@ TEUI.Calculator = (function () {
     // Step 2: Compute both Target and Reference models
     const result = CI.computeAllWithReference();
 
+    // End performance timing (graph compute only, excludes sync/stamp/animation)
+    if (window.TEUI?.Clock?.markCalculationEnd) {
+      window.TEUI.Clock.markCalculationEnd();
+    }
+
     // Step 3: Sync Target computed values to StateManager
     CI.syncToStateManager();
 
@@ -521,11 +526,6 @@ TEUI.Calculator = (function () {
 
     if (result) {
       console.log(`[Calculator] ✅ ComputationGraph complete: ${result.totalComputed} nodes in ${result.totalDuration?.toFixed(2)}ms`);
-    }
-
-    // End performance timing
-    if (window.TEUI?.Clock?.markCalculationEnd) {
-      window.TEUI.Clock.markCalculationEnd();
     }
   }
 

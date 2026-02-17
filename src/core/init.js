@@ -990,6 +990,10 @@ document.addEventListener("DOMContentLoaded", function () {
               // when inputs change — those writes would trigger more wildcard fires.
               SM.muteListeners();
               try {
+                if (window.TEUI?.Clock?.markCalculationStart) {
+                  window.TEUI.Clock.markCalculationStart();
+                }
+
                 const mState = CI.getState();
                 const modelId = mState.getActiveModelId();
                 if (modelId) {
@@ -998,6 +1002,10 @@ document.addEventListener("DOMContentLoaded", function () {
                   if (engine) {
                     engine.onValueChange(semanticPath, newValue, modelId);
                   }
+                }
+
+                if (window.TEUI?.Clock?.markCalculationEnd) {
+                  window.TEUI.Clock.markCalculationEnd();
                 }
 
                 if (window.TEUI.DOMBridge?.stampAll) {
