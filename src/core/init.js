@@ -1027,7 +1027,7 @@ document.addEventListener("DOMContentLoaded", function () {
       // Auto-load sample project for testing (graph-parity branch only)
       setTimeout(async function () {
         try {
-          const resp = await fetch("src/template/case-studies/02-residence-sb12-net-zero.csv");
+          const resp = await fetch("src/template/case-studies/01-assembly-obc-sb10.csv");
           if (resp.ok) {
             const csvText = await resp.text();
             window.TEUI.FileHandler.processImportedCSV(csvText);
