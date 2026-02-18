@@ -174,21 +174,21 @@
       getValue(fieldId) {
         const { isRef, baseId } = parseFieldId(fieldId);
 
-        // Try full fieldId first — ref_* inputs have their own semantic paths
-        let semanticPath = toSemanticPath(fieldId);
-        if (!semanticPath) {
-          semanticPath = toSemanticPath(baseId);
-        }
-
-        // Try new system first for known semantic paths
+        // For ref_* fields, always read from reference model under the BASE path.
+        // The reference.* prefixed path is a target-model concept for compliance inputs.
+        // For non-ref fields, read from target model under the direct semantic path.
         let value;
-        if (semanticPath && semanticPath.includes(".")) {
-          if (isRef) {
+        if (isRef) {
+          const basePath = toSemanticPath(baseId);
+          if (basePath && basePath.includes(".")) {
             const refModelId = getReferenceModelId();
             if (refModelId) {
-              value = state.getValueForModel(refModelId, semanticPath);
+              value = state.getValueForModel(refModelId, basePath);
             }
-          } else {
+          }
+        } else {
+          const semanticPath = toSemanticPath(fieldId);
+          if (semanticPath && semanticPath.includes(".")) {
             value = state.getValue(semanticPath);
           }
         }
@@ -230,23 +230,13 @@
       setValue(fieldId, value, valueState) {
         const { isRef, baseId } = parseFieldId(fieldId);
 
-        // Try full fieldId first — ref_* inputs are registered with their own
-        // semantic paths (e.g. ref_f_85 → reference.transmissionLoss.roof.rsi).
-        // Only fall back to stripping the ref_ prefix for shared G-fields.
-        let semanticPath = toSemanticPath(fieldId);
-        let refHandled = false;
-        if (semanticPath && isRef) {
-          // Full ref_* path found — write to reference model directly
-          writeToGraph(true, semanticPath, value);
-          refHandled = true;
-          // Also dual-write to original SM below
-        }
-        if (!semanticPath) {
-          semanticPath = toSemanticPath(baseId);
-        }
+        // Look up semantic paths:
+        // - refPrefixedPath: ref_f_85 → reference.transmissionLoss.roof.rsi (compliance input path)
+        // - basePath: f_85 → transmissionLoss.roof.rsi (base computation path)
+        const refPrefixedPath = isRef ? toSemanticPath(fieldId) : null;
+        const basePath = toSemanticPath(isRef ? baseId : fieldId);
 
-        if (!semanticPath) {
-          // Fall back to original StateManager if available
+        if (!refPrefixedPath && !basePath) {
           if (originalStateManager?._original_setValue) {
             return originalStateManager._original_setValue.call(originalStateManager, fieldId, value, valueState);
           }
@@ -255,12 +245,27 @@
         }
 
         // DUAL-WRITE: Write to MultiModelState (synchronous)
-        if (!refHandled) {
-          writeToGraph(isRef, semanticPath, value);
+        if (isRef) {
+          // ref_* fields need writes to BOTH models:
+          // 1. Target model under reference.* path (compliance comparison input)
+          if (refPrefixedPath) {
+            const targetModelId = getTargetModelId();
+            if (targetModelId) {
+              state.setValueForModel(targetModelId, refPrefixedPath, value);
+            }
+          }
+          // 2. Reference model under base path (reference-side computation)
+          if (basePath) {
+            const refModelId = getReferenceModelId();
+            if (refModelId) {
+              state.setValueForModel(refModelId, basePath, value);
+            }
+          }
+        } else {
+          writeToGraph(false, basePath, value);
         }
 
         // DUAL-WRITE: Also write to original StateManager (for backward compatibility)
-        // This ensures code reading from StateManager gets updated values during transition
         if (originalStateManager?._original_setValue) {
           originalStateManager._original_setValue.call(originalStateManager, fieldId, value, valueState);
         }

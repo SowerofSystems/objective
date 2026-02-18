@@ -1078,8 +1078,10 @@
         mismatches.push({ legacyId, semanticPath, smVal, graphVal, model: "target" });
       }
 
-      // Reference model
-      if (refModelId) {
+      // Reference model — skip reference.* paths since those are target-model
+      // compliance inputs, not reference-model values. The reference model stores
+      // values under base paths (e.g. transmissionLoss.roof.rsi, not reference.transmissionLoss.roof.rsi).
+      if (refModelId && !semanticPath.startsWith("reference.")) {
         const refLegacyId = legacyId.startsWith("ref_") ? legacyId : "ref_" + legacyId;
         const refSmVal = SM.getValue(refLegacyId);
         const refGraphVal = state.getValueForModel(refModelId, semanticPath);
