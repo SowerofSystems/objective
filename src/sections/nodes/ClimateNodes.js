@@ -139,24 +139,8 @@
     },
     // d_12, d_13: canonical inputs live in BuildingInfoNodes
     // (building.majorOccupancy, building.referenceStandard)
-    {
-      id: "climate.summerNightTemp",
-      legacyId: "l_20",
-      defaultValue: 20.43,
-      classification: "G",
-      section: "S03",
-      label: "Summer Night Mean Temperature (°C)",
-      unit: "°C"
-    },
-    {
-      id: "climate.summerRelativeHumidity",
-      legacyId: "l_21",
-      defaultValue: 55.85,
-      classification: "G",
-      section: "S03",
-      label: "Summer Mean Relative Humidity (%)",
-      unit: "%"
-    },
+    // l_20, l_21: canonical inputs live in CoolingNodes
+    // (climate.cooling.nightTemp, climate.cooling.seasonMeanRH)
   ];
 
   // ============================================================================

@@ -516,17 +516,18 @@
           this.calculator &&
           typeof this.calculator.calculateAll === "function"
         ) {
-          // Validate SM→graph alignment BEFORE calculateAll to catch import issues
-          const CI = window.TEUI.ComputationIntegration;
-          if (CI?.validateGraphInputs) {
-            console.log("[FileHandler] Validating SM→Graph input alignment after import...");
-            CI.validateGraphInputs();
-          }
-
           this.calculator.calculateAll();
           // calculateAll() handles the complete pipeline:
           // graph compute → syncToSM → DOMBridge.stampAll → postStamp
           // No legacy section refreshUI/updateCalculatedDisplayValues needed.
+
+          // Validate SM→graph alignment AFTER calculateAll (which runs
+          // populateReferenceModel) so the reference model is fully populated
+          const CI = window.TEUI.ComputationIntegration;
+          if (CI?.validateGraphInputs) {
+            console.log("[FileHandler] Validating SM→Graph input alignment after calculation...");
+            CI.validateGraphInputs();
+          }
         }
 
         this.showStatus(

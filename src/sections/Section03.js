@@ -482,7 +482,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         k: { content: "Summer Night Mean", classes: ["label-main"] }, // Mean Night-time Outdoor Temp
         l: {
           fieldId: "l_20",
-          semanticPath: "climate.summerNightTemp",
+          semanticPath: "climate.cooling.nightTemp",
           type: "editable",
           label: "Summer Night (Seasonal Mean) ºC",
           value: "20.43", // Default: Alexandria, ON summer night temp
@@ -554,7 +554,7 @@ window.TEUI.SectionModules.sect03 = (function () {
         k: { content: "Summer Mean RH", classes: ["label-main"] },
         l: {
           fieldId: "l_21",
-          semanticPath: "climate.summerRelativeHumidity",
+          semanticPath: "climate.cooling.seasonMeanRH",
           type: "editable",
           label: "Summer Mean RH%",
           value: "55.85", // Default: Alexandria, ON cooling season mean RH at 15h00 LST
