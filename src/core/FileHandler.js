@@ -236,14 +236,7 @@
           "[FileHandler DEBUG] Returned from processImportedExcelReference"
         );
 
-        // ✅ CRITICAL: Sync Pattern A sections AFTER both Target and Reference imports
-        console.log(
-          "[FileHandler] 🔧 Syncing all Pattern A sections after BOTH imports complete..."
-        );
-        this.syncPatternASections();
-        console.log(
-          "[FileHandler] ✅ Pattern A sections synced with imported values"
-        );
+        this.syncPostImportUI();
       } finally {
         // 🔓 END IMPORT QUARANTINE - Always unmute, even if import fails
         window.TEUI.StateManager.unmuteListeners();
@@ -506,14 +499,7 @@
             `[FileHandler] Imported ${targetCount} target + ${refCount} reference values`
           );
 
-          // ✅ CRITICAL: Sync Pattern A sections AFTER import
-          console.log(
-            "[FileHandler] 🔧 Syncing all Pattern A sections after CSV import..."
-          );
-          this.syncPatternASections();
-          console.log(
-            "[FileHandler] ✅ Pattern A sections synced with imported values"
-          );
+          this.syncPostImportUI();
         } finally {
           // 🔓 END IMPORT QUARANTINE - Always unmute, even if import fails
           window.TEUI.StateManager.unmuteListeners();
@@ -639,7 +625,7 @@
 
             // Target fields: Validate and update DOM
             // ✅ CRITICAL: Skip validation for S03 location fields (d_19, h_19)
-            // These are Pattern A fields managed by S03's isolated state, not FieldManager
+            // These are S03 dropdown fields, not FieldManager-rendered fields
             const isS03LocationField = ["d_19", "h_19"].includes(fieldId);
 
             if (
@@ -768,7 +754,7 @@
 
             // Target fields: Validate and update DOM
             // ✅ CRITICAL: Skip validation for S03 location fields (d_19, h_19)
-            // These are Pattern A fields managed by S03's isolated state, not FieldManager
+            // These are S03 dropdown fields, not FieldManager-rendered fields
             const isS03LocationField = ["d_19", "h_19"].includes(fieldId);
 
             if (
@@ -870,8 +856,6 @@
         }
       }
 
-      // ✅ REMOVED: syncPatternASections() now called AFTER both Target and Reference imports
-      // See processImportedExcel() for the new location
 
       console.log(
         `[FileHandler] Target import complete. ${updatedCount} fields updated. ${csvSkippedCount + skippedValidationCount} rows/fields skipped.`
@@ -879,20 +863,10 @@
     }
 
     /**
-     * ✅ PHASE 2: Sync Pattern A sections from global StateManager after import
-     * Pattern A sections (S02, S03, S04, S05, S06, S08, S15) use isolated DualState
-     * for state sovereignty per CHEATSHEET.md. Import populates global StateManager,
-     * but isolated states need explicit sync to use imported values in calculations.
-     */
-    /**
-     * Post-import fixups for Pattern A sections.
-     * syncFromGlobalState/refreshUI are now stubs — graph is source of truth.
+     * Post-import UI fixups: repopulate dropdowns and update field lock states.
      * Calculator.calculateAll() after import handles: graph compute → syncToSM → stampAll.
      */
-    syncPatternASections() {
-
-      console.log("[FileHandler] ✅ PHASE 2: Pattern A section sync complete");
-
+    syncPostImportUI() {
       // Sync S03 province/city dropdowns after import
       // Import sets d_19/h_19 in StateManager but doesn't repopulate city dropdown options
       const sect03 = window.TEUI?.SectionModules?.sect03;
@@ -900,12 +874,9 @@
         sect03.syncLocationDropdowns();
       }
 
-      // ✅ FIX (Nov 29): Update field lock states after import (same as S18 Decarbonize fix)
-      // Import sets d_113/d_51 via StateManager.setValue() which bypasses UI event handlers
-      // Must explicitly call ghosting/visibility functions to enable/disable conditional fields
-      console.log(
-        "[FileHandler] 🔧 PHASE 2.5: Updating field lock states for imported system types..."
-      );
+      // Update field lock states after import — import sets d_113/d_51 via
+      // StateManager.setValue() which bypasses UI event handlers, so we must
+      // explicitly call ghosting/visibility functions.
 
       // Update S07 field locks based on imported d_51 (SHW system)
       const sect07 = window.TEUI?.SectionModules?.sect07;
@@ -934,7 +905,7 @@
         }
       }
 
-      console.log("[FileHandler] ✅ PHASE 2.5: Field lock states updated");
+      console.log("[FileHandler] Field lock states updated for imported system types");
       // S10→S11 area bridging now handled by ComputationGraph (TransmissionLossNodes bridge nodes)
     }
 
@@ -973,22 +944,18 @@
       window.TEUI.StateManager.muteListeners();
 
       try {
-        // ✅ PHASE 2: Use the PROVEN import method (writes directly to StateManager)
-        // ⚠️ CRITICAL: Pass skipRecalculation=true to prevent loadReferenceData() contamination
-        // We've already written the values with correct prefixes - no need for additional reference loading
+        // Write reference values to StateManager (skipRecalculation=true)
         this.updateStateFromImportData(importedData, 0, true);
         console.log(
           `[FileHandler] Applied ${Object.keys(importedData).length} values via updateStateFromImportData`
         );
 
-        // ✅ PHASE 3: Sync Pattern A sections FROM StateManager
-        this.syncPatternASections();
+        this.syncPostImportUI();
       } finally {
-        // 🔓 PHASE 4: IMPORT QUARANTINE END - Always unmute
         window.TEUI.StateManager.unmuteListeners();
       }
 
-      // ✅ PHASE 5: Trigger complete calculation cascade
+      // Trigger complete calculation cascade
       if (
         this.calculator &&
         typeof this.calculator.calculateAll === "function"
