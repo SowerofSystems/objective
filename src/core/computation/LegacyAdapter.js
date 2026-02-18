@@ -173,7 +173,12 @@
        */
       getValue(fieldId) {
         const { isRef, baseId } = parseFieldId(fieldId);
-        const semanticPath = toSemanticPath(baseId);
+
+        // Try full fieldId first — ref_* inputs have their own semantic paths
+        let semanticPath = toSemanticPath(fieldId);
+        if (!semanticPath) {
+          semanticPath = toSemanticPath(baseId);
+        }
 
         // Try new system first for known semantic paths
         let value;
@@ -224,7 +229,21 @@
        */
       setValue(fieldId, value, valueState) {
         const { isRef, baseId } = parseFieldId(fieldId);
-        const semanticPath = toSemanticPath(baseId);
+
+        // Try full fieldId first — ref_* inputs are registered with their own
+        // semantic paths (e.g. ref_f_85 → reference.transmissionLoss.roof.rsi).
+        // Only fall back to stripping the ref_ prefix for shared G-fields.
+        let semanticPath = toSemanticPath(fieldId);
+        let refHandled = false;
+        if (semanticPath && isRef) {
+          // Full ref_* path found — write to reference model directly
+          writeToGraph(true, semanticPath, value);
+          refHandled = true;
+          // Also dual-write to original SM below
+        }
+        if (!semanticPath) {
+          semanticPath = toSemanticPath(baseId);
+        }
 
         if (!semanticPath) {
           // Fall back to original StateManager if available
@@ -236,7 +255,9 @@
         }
 
         // DUAL-WRITE: Write to MultiModelState (synchronous)
-        writeToGraph(isRef, semanticPath, value);
+        if (!refHandled) {
+          writeToGraph(isRef, semanticPath, value);
+        }
 
         // DUAL-WRITE: Also write to original StateManager (for backward compatibility)
         // This ensures code reading from StateManager gets updated values during transition
