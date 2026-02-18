@@ -1783,7 +1783,7 @@ window.TEUI.SectionModules.sect13 = (function () {
 
   /**
    * Handles changes to d_113 to apply/remove ghosting styles.
-   * PRESERVED: Called from FileHandler.syncPatternASections
+   * PRESERVED: Called from FileHandler.syncPostImportUI
    */
   function handleHeatingSystemChangeForGhosting(newValue) {
     const systemType = newValue;

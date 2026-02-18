@@ -952,11 +952,11 @@ TEUI.ReferenceToggle = (function () {
         // ⚠️ CRITICAL: Copy operations must sync BOTH states (skipTargetSync=false, skipReferenceSync=false)
         // This is different from Set Values which is mode-aware. Copy explicitly writes ref_* fields
         // and needs both TargetState (unchanged) and ReferenceState (updated) to sync properly.
-        if (window.TEUI?.FileHandler?.syncPatternASections) {
-          window.TEUI.FileHandler.syncPatternASections(false, false, false); // skipAreaSync, skipTargetSync, skipReferenceSync
+        if (window.TEUI?.FileHandler?.syncPostImportUI) {
+          window.TEUI.FileHandler.syncPostImportUI(false, false, false); // skipAreaSync, skipTargetSync, skipReferenceSync
         } else {
           console.warn(
-            "[ReferenceToggle] FileHandler.syncPatternASections not available - UI may not update"
+            "[ReferenceToggle] FileHandler.syncPostImportUI not available - UI may not update"
           );
         }
       } finally {
@@ -1079,8 +1079,8 @@ TEUI.ReferenceToggle = (function () {
         // ⚠️ CRITICAL: Copy operations must sync BOTH states (skipTargetSync=false, skipReferenceSync=false)
         // This is different from Set Values which is mode-aware. Copy explicitly writes ref_* fields
         // and needs both TargetState (unchanged) and ReferenceState (updated) to sync properly.
-        if (window.TEUI?.FileHandler?.syncPatternASections) {
-          window.TEUI.FileHandler.syncPatternASections(false, false, false); // skipAreaSync, skipTargetSync, skipReferenceSync
+        if (window.TEUI?.FileHandler?.syncPostImportUI) {
+          window.TEUI.FileHandler.syncPostImportUI(false, false, false); // skipAreaSync, skipTargetSync, skipReferenceSync
         }
       } finally {
         // QUARANTINE END - Always unmute
@@ -1170,11 +1170,11 @@ TEUI.ReferenceToggle = (function () {
         // ⚠️ CRITICAL: Copy operations must sync BOTH states (skipTargetSync=false, skipReferenceSync=false)
         // This is different from Set Values which is mode-aware. Copy explicitly writes ref_* fields
         // and needs both TargetState (unchanged) and ReferenceState (updated) to sync properly.
-        if (window.TEUI?.FileHandler?.syncPatternASections) {
-          window.TEUI.FileHandler.syncPatternASections(false, false, false); // skipAreaSync, skipTargetSync, skipReferenceSync
+        if (window.TEUI?.FileHandler?.syncPostImportUI) {
+          window.TEUI.FileHandler.syncPostImportUI(false, false, false); // skipAreaSync, skipTargetSync, skipReferenceSync
         } else {
           console.warn(
-            "[ReferenceToggle] FileHandler.syncPatternASections not available - UI may not update"
+            "[ReferenceToggle] FileHandler.syncPostImportUI not available - UI may not update"
           );
         }
       } finally {

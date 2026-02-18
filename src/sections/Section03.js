@@ -1726,7 +1726,7 @@ window.TEUI.SectionModules.sect03 = (function () {
   /**
    * Sync province/city dropdowns after CSV/Excel import.
    * Import sets d_19/h_19 in StateManager but doesn't repopulate dropdown options.
-   * Called from FileHandler.syncPatternASections() after import.
+   * Called from FileHandler.syncPostImportUI() after import.
    */
   function syncLocationDropdowns() {
     const SM = window.TEUI?.StateManager;
