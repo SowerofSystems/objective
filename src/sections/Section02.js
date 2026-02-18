@@ -772,25 +772,7 @@ window.TEUI.SectionModules.sect02 = (function () {
       window.TEUI.sect02.initialized = true;
     }
 
-    // ✅ RACE CONDITION FIX: Area initialization moved to onSectionRendered() after init flag
-
-    // Area field blur event
-    const areaField = document.querySelector('[data-field-id="h_15"]');
-    if (areaField) {
-      areaField.addEventListener("blur", updateAreaValue);
-      areaField.addEventListener("keydown", function (e) {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          this.blur();
-        }
-      });
-      // Prevent ensureAllFieldsUseProperStyling from adding a SECOND blur handler.
-      // That duplicate causes: blur→handler1→calculateAll→stampAll reformats DOM→
-      // handler2 reads comma-formatted text→writes "1,427.0" to graph→parseFloat breaks.
-      areaField.hasEventListener = true;
-    }
-
-    // Area adjustment slider removed - now using direct numeric input
+    // Area field blur/keydown handled by ensureAllFieldsUseProperStyling()
 
     // ✅ PATTERN A: Year slider events (h_12 - reporting year)
     const yearSlider = document.querySelector('input[data-field-id="h_12"]');
@@ -955,8 +937,9 @@ window.TEUI.SectionModules.sect02 = (function () {
     // This prevents external listeners from triggering calculateAll() before we're ready
     initializeEventHandlers();
 
-    // Initialize area field AFTER initialization is complete
-    ensureAreaValueIsSet();
+    // Ensure all editable fields (h_14, h_15, i_16, i_17, l_12-l_16) have
+    // proper styling, contenteditable, and blur/keydown handlers.
+    ensureAllFieldsUseProperStyling();
 
     // Initialize critical occupancy flag
     updateCriticalOccupancyFlag();
@@ -968,49 +951,6 @@ window.TEUI.SectionModules.sect02 = (function () {
         window.TEUI.TooltipManager.applyTooltipsToSection(sectionRows);
       }, 300);
     }
-  }
-
-  /**
-   * Update the StateManager value for h_15 when conditioned area changes
-   */
-  function ensureAreaValueIsSet() {
-    // Find the conditioned area field
-    const areaField = document.querySelector('[data-field-id="h_15"]');
-    if (!areaField) {
-      return;
-    }
-
-    // Make sure it's editable
-    if (!areaField.hasAttribute("contenteditable")) {
-      areaField.setAttribute("contenteditable", "true");
-      areaField.classList.add("user-input", "editable");
-
-      // Add event listeners for editing
-      areaField.addEventListener("focus", function () {
-        this.classList.add("editing");
-        // Store original value to detect changes
-        this.dataset.originalValue = this.textContent.trim();
-      });
-
-      areaField.addEventListener("blur", function () {
-        this.classList.remove("editing");
-        updateAreaValue();
-      });
-
-      // Handle Enter key
-      areaField.addEventListener("keydown", function (e) {
-        if (e.key === "Enter") {
-          e.preventDefault(); // Prevent adding a newline
-          this.blur(); // Remove focus to trigger the blur event
-        }
-      });
-    }
-
-    // Get current value and update StateManager
-    updateAreaValue();
-
-    // Ensure all editable fields in this section use proper classes
-    ensureAllFieldsUseProperStyling();
   }
 
   /**
@@ -1106,26 +1046,6 @@ window.TEUI.SectionModules.sect02 = (function () {
    * Update area value in StateManager and trigger a full recalculation.
    * This is the correct pattern for a global input.
    */
-  function updateAreaValue() {
-    const areaField = document.querySelector('[data-field-id="h_15"]');
-    if (!areaField) return;
-
-    const areaValue =
-      window.TEUI?.parseNumeric?.(areaField.textContent, 0) ?? 0;
-
-    if (!isNaN(areaValue) && areaValue > 0) {
-      // ✅ PATTERN A: Save to current state (Target or Reference) via ModeManager
-      ModeManager.setValue("h_15", areaValue.toString(), "user-modified");
-
-      // ✅ RACE CONDITION FIX: Let StateManager listeners handle the calculation cascade
-      // S04 and S09 have h_15/ref_h_15 listeners that will trigger their calculateAll()
-      // S02 doesn't need to call calculateAll() - it just publishes the area change
-      console.log(
-        `[S02] Area updated to ${areaValue} - letting downstream sections handle calculations`
-      );
-    }
-  }
-
   // Area adjustment slider functions removed - now using direct numeric input
 
   /**
