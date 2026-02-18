@@ -1114,9 +1114,9 @@
     const chain = [
       // Inputs
       { id: "building.conditionedFloorArea", legacy: "h_15", type: "INPUT" },
-      { id: "internal.plugLoads.watts", legacy: "d_65", type: "INPUT" },
-      { id: "internal.lighting.watts", legacy: "d_66", type: "INPUT" },
-      { id: "internal.equipment.watts", legacy: "d_67", type: "INPUT" },
+      { id: "internal.plugLoadDensity", legacy: "d_65", type: "COMPUTED" },
+      { id: "internal.lightingDensity", legacy: "d_66", type: "INPUT" },
+      { id: "internal.equipmentDensity", legacy: "d_67", type: "COMPUTED" },
       { id: "mechanical.heating.systemType", legacy: "d_113", type: "INPUT" },
       // Computed: internal gains
       { id: "internal.plugLoads.annual", legacy: "h_65", type: "COMPUTED" },
@@ -1154,7 +1154,8 @@
 
     // Also compute h_10 manually for verification
     const j32 = parseFloat(state.getValueForModel(targetId, "energy.target.total")) || 0;
-    const h15 = parseFloat(state.getValueForModel(targetId, "building.conditionedFloorArea")) || 1;
+    const h15raw = state.getValueForModel(targetId, "building.conditionedFloorArea");
+    const h15 = parseFloat(String(h15raw).replace(/,/g, "")) || 1;
     const expected = h15 > 0 ? Math.round((j32 / h15) * 10) / 10 : 0;
     const actual = state.getValueForModel(targetId, "keyValues.target.teui");
     console.log(`[TraceH10] Manual: ${j32} / ${h15} = ${expected}, graph says: ${actual}`);

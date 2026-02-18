@@ -533,9 +533,6 @@ TEUI.Calculator = (function () {
       if (result) {
         console.log(`[Calculator] ✅ ComputationGraph complete: ${result.totalComputed} nodes in ${result.totalDuration?.toFixed(2)}ms`);
       }
-
-      // Diagnostic: trace h_10 chain after every calculation
-      if (CI.traceH10) CI.traceH10();
     } finally {
       if (SM?.unmuteListeners) SM.unmuteListeners();
     }

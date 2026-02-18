@@ -22,6 +22,12 @@
   window.TEUI = window.TEUI || {};
   window.TEUI.ComputationNodes = window.TEUI.ComputationNodes || {};
 
+  function parseNum(value, defaultVal = 0) {
+    if (value === null || value === undefined || value === "N/A") return defaultVal;
+    const num = parseFloat(String(value).replace(/,/g, ""));
+    return isNaN(num) ? defaultVal : num;
+  }
+
   // Activity level to watts/person mapping (from SCHEDULES-3037.csv G32:G43)
   const ACTIVITY_WATTS = {
     Relaxed: 96.71,
@@ -270,7 +276,7 @@
       label: "Plug Load Internal Gains (kWh/yr)",
       compute: (inputs) => {
         const watts = parseFloat(inputs["internal.plugLoadDensity"]) || 7;
-        const area = parseFloat(inputs["building.conditionedFloorArea"]) || 0;
+        const area = parseNum(inputs["building.conditionedFloorArea"]) || 0;
         const hours = parseFloat(inputs["occupancy.occupiedHours"]) || 4380;
         return (watts * area * hours) / 1000;
       },
@@ -286,7 +292,7 @@
       label: "Lighting Internal Gains (kWh/yr)",
       compute: (inputs) => {
         const watts = parseFloat(inputs["internal.lightingDensity"]) || 1.5;
-        const area = parseFloat(inputs["building.conditionedFloorArea"]) || 0;
+        const area = parseNum(inputs["building.conditionedFloorArea"]) || 0;
         const hours = parseFloat(inputs["occupancy.occupiedHours"]) || 4380;
         return (watts * area * hours) / 1000;
       },
@@ -302,7 +308,7 @@
       label: "Equipment Internal Gains (kWh/yr)",
       compute: (inputs) => {
         const watts = parseFloat(inputs["internal.equipmentDensity"]) || 3;
-        const area = parseFloat(inputs["building.conditionedFloorArea"]) || 0;
+        const area = parseNum(inputs["building.conditionedFloorArea"]) || 0;
         const hours = parseFloat(inputs["occupancy.occupiedHours"]) || 4380;
         return (watts * area * hours) / 1000;
       },

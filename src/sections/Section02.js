@@ -784,6 +784,10 @@ window.TEUI.SectionModules.sect02 = (function () {
           this.blur();
         }
       });
+      // Prevent ensureAllFieldsUseProperStyling from adding a SECOND blur handler.
+      // That duplicate causes: blur→handler1→calculateAll→stampAll reformats DOM→
+      // handler2 reads comma-formatted text→writes "1,427.0" to graph→parseFloat breaks.
+      areaField.hasEventListener = true;
     }
 
     // Area adjustment slider removed - now using direct numeric input

@@ -10,6 +10,12 @@
   window.TEUI = window.TEUI || {};
   window.TEUI.ComputationNodes = window.TEUI.ComputationNodes || {};
 
+  function parseNum(value, defaultVal = 0) {
+    if (value === null || value === undefined || value === "N/A") return defaultVal;
+    const num = parseFloat(String(value).replace(/,/g, ""));
+    return isNaN(num) ? defaultVal : num;
+  }
+
   function register(graph) {
     const inputs = [
       { id: "occupancy.occupants", legacyId: "d_63", section: "S09", classification: "C", label: "Number of Occupants", defaultValue: 4 },
@@ -42,7 +48,7 @@
       dependencies: ["building.conditionedFloorArea", "occupancy.occupantDensity"],
       label: "Calculated Occupants",
       compute: (inputs) => {
-        const area = parseFloat(inputs["building.conditionedFloorArea"]) || 0;
+        const area = parseNum(inputs["building.conditionedFloorArea"]) || 0;
         const density = parseFloat(inputs["occupancy.occupantDensity"]) || 35;
         return density > 0 ? Math.ceil(area / density) : 1;
       },

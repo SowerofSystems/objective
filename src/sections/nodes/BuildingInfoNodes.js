@@ -58,6 +58,12 @@
     return "Part 3 Other";
   }
 
+  function parseNum(value, defaultVal = 0) {
+    if (value === null || value === undefined || value === "N/A") return defaultVal;
+    const num = parseFloat(String(value).replace(/,/g, ""));
+    return isNaN(num) ? defaultVal : num;
+  }
+
   /**
    * Register all Building Info nodes with the computation graph
    * @param {ComputationGraph} graph
@@ -317,7 +323,7 @@
       ],
       label: "Building Volume (m³)",
       compute: (inputs) => {
-        const area = parseFloat(inputs["building.conditionedFloorArea"]) || 0;
+        const area = parseNum(inputs["building.conditionedFloorArea"]) || 0;
         const height = parseFloat(inputs["building.ceilingHeight"]) || 2.7;
         return area * height;
       },
@@ -334,7 +340,7 @@
       ],
       label: "Floor Area per Storey (m²)",
       compute: (inputs) => {
-        const area = parseFloat(inputs["building.conditionedFloorArea"]) || 0;
+        const area = parseNum(inputs["building.conditionedFloorArea"]) || 0;
         const storeys = parseFloat(inputs["building.numStoreys"]) || 1;
         return storeys > 0 ? area / storeys : area;
       },
