@@ -35,11 +35,7 @@
     // ========================================================================
     // INPUTS - User selections affecting display
     // ========================================================================
-    const inputs = [
-      { id: "keyValues.useType", legacyId: "d_14", section: "S01", classification: "G", label: "Use Type", defaultValue: "Targeted Use" },
-    ];
-
-    graph.registerInputs(inputs);
+    // d_14: canonical input lives in BuildingInfoNodes (building.analysisMode)
 
     // ========================================================================
     // REFERENCE MODEL INPUTS - Needed for reference column calculations
@@ -75,10 +71,10 @@
 
     graph.registerInput({
       id: "reference.emissions.embodied",
-      legacyId: "ref_i_41",
+      legacyId: "ref_i_39",
       section: "S01",
       classification: "C",
-      label: "Reference Embodied Emissions (kgCO2e)",
+      label: "Reference Typology Embodied Carbon (kgCO2e/m²)",
       defaultValue: 0,
     });
 
@@ -183,10 +179,10 @@
       legacyId: "h_6",
       section: "S01",
       classification: "C",
-      dependencies: ["emissions.modelledEmbodied", "building.serviceLife", "keyValues.target.annualCarbon"],
+      dependencies: ["building.userModelledEmbodiedCarbon", "building.serviceLife", "keyValues.target.annualCarbon"],
       label: "Target Lifetime Carbon (kgCO2e/m²)",
       compute: (inputs) => {
-        const embodied = parseNum(inputs["emissions.modelledEmbodied"]);
+        const embodied = parseNum(inputs["building.userModelledEmbodiedCarbon"]);
         const serviceLife = parseNum(inputs["building.serviceLife"], 50);
         const h_8 = parseNum(inputs["keyValues.target.annualCarbon"]);
         return serviceLife > 0
@@ -205,10 +201,10 @@
       legacyId: "k_10",
       section: "S01",
       classification: "C",
-      dependencies: ["energy.actual.total", "building.conditionedFloorArea", "keyValues.useType"],
+      dependencies: ["energy.actual.total", "building.conditionedFloorArea", "building.analysisMode"],
       label: "Actual TEUI (kWh/m²/yr)",
       compute: (inputs) => {
-        const useType = inputs["keyValues.useType"] || "Targeted Use";
+        const useType = inputs["building.analysisMode"] || "Targeted Use";
         if (useType !== "Utility Bills") return "N/A";
 
         const actualEnergy = parseNum(inputs["energy.actual.total"]);
@@ -223,10 +219,10 @@
       legacyId: "k_8",
       section: "S01",
       classification: "C",
-      dependencies: ["emissions.actual.subtotal", "building.conditionedFloorArea", "keyValues.useType"],
+      dependencies: ["emissions.actual.subtotal", "building.conditionedFloorArea", "building.analysisMode"],
       label: "Actual Annual Carbon (kgCO2e/m²/yr)",
       compute: (inputs) => {
-        const useType = inputs["keyValues.useType"] || "Targeted Use";
+        const useType = inputs["building.analysisMode"] || "Targeted Use";
         if (useType !== "Utility Bills") return "N/A";
 
         const actualEmissions = parseNum(inputs["emissions.actual.subtotal"]);
@@ -241,13 +237,13 @@
       legacyId: "k_6",
       section: "S01",
       classification: "C",
-      dependencies: ["emissions.modelledEmbodied", "building.serviceLife", "keyValues.actual.annualCarbon", "keyValues.useType"],
+      dependencies: ["building.userModelledEmbodiedCarbon", "building.serviceLife", "keyValues.actual.annualCarbon", "building.analysisMode"],
       label: "Actual Lifetime Carbon (kgCO2e/m²)",
       compute: (inputs) => {
-        const useType = inputs["keyValues.useType"] || "Targeted Use";
+        const useType = inputs["building.analysisMode"] || "Targeted Use";
         if (useType !== "Utility Bills") return "N/A";
 
-        const embodied = parseNum(inputs["emissions.modelledEmbodied"]);
+        const embodied = parseNum(inputs["building.userModelledEmbodiedCarbon"]);
         const serviceLife = parseNum(inputs["building.serviceLife"], 50);
         const k_8 = parseNum(inputs["keyValues.actual.annualCarbon"]);
 
@@ -322,13 +318,13 @@
       legacyId: "j_8",
       section: "S01",
       classification: "C",
-      dependencies: ["keyValues.reference.annualCarbon", "keyValues.target.annualCarbon", "keyValues.actual.annualCarbon", "keyValues.useType"],
+      dependencies: ["keyValues.reference.annualCarbon", "keyValues.target.annualCarbon", "keyValues.actual.annualCarbon", "building.analysisMode"],
       label: "Annual Carbon Reduction %",
       compute: (inputs) => {
         const e_8 = parseNum(inputs["keyValues.reference.annualCarbon"]);
         const h_8 = parseNum(inputs["keyValues.target.annualCarbon"]);
         const k_8 = inputs["keyValues.actual.annualCarbon"];
-        const useType = inputs["keyValues.useType"] || "Targeted Use";
+        const useType = inputs["building.analysisMode"] || "Targeted Use";
 
         if (e_8 === 0) return "0%";
 
@@ -344,13 +340,13 @@
       legacyId: "j_10",
       section: "S01",
       classification: "C",
-      dependencies: ["keyValues.reference.teui", "keyValues.target.teui", "keyValues.actual.teui", "keyValues.useType"],
+      dependencies: ["keyValues.reference.teui", "keyValues.target.teui", "keyValues.actual.teui", "building.analysisMode"],
       label: "TEUI Reduction %",
       compute: (inputs) => {
         const e_10 = parseNum(inputs["keyValues.reference.teui"]);
         const h_10 = parseNum(inputs["keyValues.target.teui"]);
         const k_10 = inputs["keyValues.actual.teui"];
-        const useType = inputs["keyValues.useType"] || "Targeted Use";
+        const useType = inputs["building.analysisMode"] || "Targeted Use";
 
         if (e_10 === 0) return "0%";
 
@@ -398,25 +394,25 @@
       section: "S01",
       classification: "C",
       dependencies: [
-        "emissions.modelledEmbodied",
+        "building.userModelledEmbodiedCarbon",
         "building.serviceLife",
         "building.carbonStandard",
         "building.typologyEmbodiedCarbon",
         "building.embodiedCarbonTarget",
         "keyValues.actual.annualCarbon",
         "keyValues.target.annualCarbon",
-        "keyValues.useType",
+        "building.analysisMode",
         "emissions.typologyStatus"
       ],
       label: "Lifetime Carbon %",
       compute: (inputs) => {
         const d_15 = inputs["building.carbonStandard"] || "";
-        const i_41 = parseNum(inputs["emissions.modelledEmbodied"]);
+        const i_41 = parseNum(inputs["building.userModelledEmbodiedCarbon"]);
         const i_39 = parseNum(inputs["building.typologyEmbodiedCarbon"]);
         const h_13 = parseNum(inputs["building.serviceLife"], 50);
         const k_8 = inputs["keyValues.actual.annualCarbon"];
         const h_8 = parseNum(inputs["keyValues.target.annualCarbon"]);
-        const useType = inputs["keyValues.useType"] || "Targeted Use";
+        const useType = inputs["building.analysisMode"] || "Targeted Use";
         const i_40 = inputs["emissions.typologyStatus"] || "";
 
         // If i_40 is N/A, return N/A
@@ -460,7 +456,7 @@
       },
     });
 
-    console.log("[KeyValuesNodes] Registered", inputs.length, "inputs");
+    console.log("[KeyValuesNodes] Registered (d_14 input in BuildingInfoNodes)");
   }
 
   window.TEUI.ComputationNodes.KeyValues = { register };
