@@ -1084,7 +1084,11 @@
         sect01.postStamp();
       }
 
-      log(`recomputeForInput(${legacyFieldId}): class=${classification}, ref=${isRef}`);
+      // Diagnostic: log S01 key values to trace n=1 vs n=2 staleness
+      const h10 = state.getValueForModel(targetId, "keyValues.target.teui");
+      const e6 = state.getValueForModel(targetId, "keyValues.reference.teui");
+      const m10 = state.getValueForModel(targetId, "keyValues.teui.percent");
+      console.log(`[recomputeForInput] ${legacyFieldId} (class=${classification}) → h_10=${h10}, e_6=${e6}, m_10=${m10}`);
     } finally {
       if (SM?.unmuteListeners) SM.unmuteListeners();
     }

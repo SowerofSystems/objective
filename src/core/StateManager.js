@@ -454,10 +454,6 @@ TEUI.StateManager = (function () {
     // Update the existing field
     const field = fields.get(fieldId);
 
-    if (field.value === value && field.state === state) {
-      return false;
-    }
-
     field.value = value;
     field.state = state;
 
