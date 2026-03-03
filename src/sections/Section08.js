@@ -11,147 +11,11 @@ window.TEUI.SectionModules = window.TEUI.SectionModules || {};
 window.TEUI.sect08 = window.TEUI.sect08 || {};
 
 window.TEUI.SectionModules.sect08 = (function () {
-  //==========================================================================
-  // DUAL-STATE ARCHITECTURE (Self-Contained Module Pattern)
-  //==========================================================================
-
-  const TargetState = {
-    state: {},
-    initialize: function () {
-      this.setDefaults();
-    },
-    setDefaults: function () {
-      const defaults = {};
-      const fields = getFields();
-      for (const fieldId in fields) {
-        if (fields[fieldId].defaultValue) {
-          defaults[fieldId] = fields[fieldId].defaultValue;
-        }
-      }
-      this.state = defaults;
-    },
-    /**
-     * ✅ PHASE 2: Sync from global StateManager after import
-     * Bridges global StateManager → isolated TargetState for imported values
-     */
-    syncFromGlobalState: function () { /* graph is source of truth */ },
-    setValue: function (fieldId, value) {
-      this.state[fieldId] = value;
-    },
-    getValue: function (fieldId) {
-      return this.state[fieldId];
-    },
-  };
-
-  const ReferenceState = {
-    state: {},
-    initialize: function () {
-      this.setDefaults();
-    },
-    setDefaults: function () {
-      const defaults = {};
-      const fields = getFields();
-      for (const fieldId in fields) {
-        if (fields[fieldId].defaultValue) {
-          defaults[fieldId] = fields[fieldId].defaultValue;
-        }
-      }
-      // Apply Reference-specific overrides - IS THIS CAUSING PROBLEMS??
-      defaults["d_56"] = "150";
-      defaults["d_57"] = "1000";
-      defaults["d_58"] = "400";
-      defaults["d_59"] = "45";
-      defaults["i_59"] = "45";
-      this.state = defaults;
-    },
-    /**
-     * ✅ PHASE 2: Sync from global StateManager after import
-     * Bridges global StateManager → isolated ReferenceState for imported values
-     */
-    syncFromGlobalState: function () { /* graph is source of truth */ },
-    setValue: function (fieldId, value) {
-      this.state[fieldId] = value;
-    },
-    getValue: function (fieldId) {
-      return this.state[fieldId];
-    },
-  };
-
-  const ModeManager = {
-    currentMode: "target",
-    initialize: function () {
-      TargetState.initialize();
-      ReferenceState.initialize();
-
-      // ✅ CSV EXPORT FIX: Publish ALL Reference defaults to StateManager
-      if (window.TEUI?.StateManager) {
-        ["d_56", "d_57", "d_58", "d_59", "i_59"].forEach(id => {
-          const refId = `ref_${id}`;
-          const val = ReferenceState.getValue(id);
-          if (
-            !window.TEUI.StateManager.getValue(refId) &&
-            val != null &&
-            val !== ""
-          ) {
-            window.TEUI.StateManager.setValue(refId, val, "calculated");
-          }
-        });
-      }
-    },
-    switchMode: function (newMode) {
-      if (
-        this.currentMode === newMode ||
-        (newMode !== "target" && newMode !== "reference")
-      )
-        return;
-      this.currentMode = newMode;
-      console.log(`S08: Switched to ${this.currentMode.toUpperCase()} mode.`);
-
-      // Sync visual toggle UI when mode changes (from global or local toggle)
-      this.syncToggleUI(newMode);
-    },
-
-    // ✅ NEW: Sync visual toggle switch and indicator to match current mode
-    // Called both when user clicks local toggle AND when global toggle switches mode
-    syncToggleUI: function (mode) {
-      // Use centralized ToggleUISync utility
-      window.TEUI.ToggleUISync.syncToggleUI(this._toggleElements, mode, "S08");
-    },
-    updateUIForMode: function () { /* DOMBridge.stampAll() handles display */ },
-
-    updateCalculatedDisplayValues: function () { /* DOMBridge.stampAll() handles display */ },
-
-    getCurrentState: function () {
-      return this.currentMode === "target" ? TargetState : ReferenceState;
-    },
-    setValue: function (fieldId, value) {
-      this.getCurrentState().setValue(fieldId, value);
-      // Bridge to global StateManager for backward compatibility
-      if (this.currentMode === "target") {
-        window.TEUI.StateManager.setValue(fieldId, value, "user-modified");
-      } else if (this.currentMode === "reference") {
-        window.TEUI.StateManager.setValue(
-          `ref_${fieldId}`,
-          value,
-          "user-modified"
-        );
-      }
-    },
-    getValue: function (fieldId) {
-      return this.getCurrentState().getValue(fieldId);
-    },
-  };
-
-  // Expose ModeManager for the local toggle to use
-  window.TEUI.sect08.ModeManager = ModeManager;
+  // TargetState/ReferenceState/ModeManager removed — graph + SM is the single source of truth.
 
   //==========================================================================
-  // HELPER FUNCTIONS (Simplified to use the new DualState pattern)
+  // HELPER FUNCTIONS
   //==========================================================================
-  function getNumericValue(fieldId, defaultValue = 0) {
-    const rawValue = ModeManager.getValue(fieldId);
-    return window.TEUI?.parseNumeric?.(rawValue, defaultValue) ?? defaultValue;
-  }
 
   // getFieldFormat and setElementClass remain largely the same, but ensure they respect the current mode
   function getFieldFormat(fieldId) {
@@ -196,59 +60,13 @@ window.TEUI.SectionModules.sect08 = (function () {
   function calculateAirQualityStatus() { /* graph computes */ }
 
   //==========================================================================
-  // EVENT HANDLING (Simplified to use the new DualState pattern)
+  // EVENT HANDLING
+  // FieldManager handles all user input (sliders, editables, dropdowns)
+  // and routes through writeUserInput → SM → graph → DOMBridge.
   //==========================================================================
-  function handleUserInput(event) {
-    const target = event.target;
-    const fieldElement = target.closest("[data-field-id]");
-    if (!fieldElement) return;
-
-    const fieldId = fieldElement.getAttribute("data-field-id");
-    const value = target.matches('input[type="range"]')
-      ? target.value
-      : target.textContent.trim();
-
-    ModeManager.setValue(fieldId, value); // Let the ModeManager handle state
-
-    if (target.matches('input[type="range"]')) {
-      const display = target.nextElementSibling;
-      if (display) display.textContent = `${value}%`;
-    }
-  }
-
   function initializeEventHandlers() {
-    const sectionElement = document.getElementById("indoorAirQuality");
-    if (!sectionElement) return;
-
-    sectionElement.addEventListener("input", e => {
-      if (e.target.matches('input[type="range"]')) handleUserInput(e);
-    });
-
-    sectionElement.addEventListener(
-      "blur",
-      e => {
-        if (e.target.matches('[contenteditable="true"]')) handleUserInput(e);
-      },
-      true
-    );
-
-    sectionElement.addEventListener("keydown", e => {
-      if (e.target.matches('[contenteditable="true"]') && e.key === "Enter") {
-        e.preventDefault();
-        e.target.blur();
-      }
-    });
-
-    // Graph handles cross-section computation via wildcard listener.
-    if (window.TEUI?.StateManager) {
-
-      // ✅ ANTI-PATTERN 7 FIX: S08 should NOT listen to its own input fields (i_59, ref_i_59)
-      // - Slider changes: FieldManager now calls calculateAll() after ModeManager.setValue
-      // - ModeManager.setValue automatically syncs to TargetState/ReferenceState
-      //
-      // Removed ref_i_59 self-listener that caused state mixing by not calling calculateAll().
-      // The clean pattern is: FieldManager → ModeManager.setValue → calculateAll → publish results
-    }
+    // FieldManager already handles slider input/change and editable blur
+    // for all sections. No section-level delegation needed.
   }
 
   //==========================================================================
@@ -544,7 +362,6 @@ window.TEUI.SectionModules.sect08 = (function () {
   }
 
   function onSectionRendered() {
-    ModeManager.initialize();
     addStatusStyles();
     initializeEventHandlers();
 
@@ -586,9 +403,5 @@ window.TEUI.SectionModules.sect08 = (function () {
     getLayout,
     onSectionRendered,
     calculateAll,
-    ModeManager, // Expose for external control if needed
-    // ✅ PHASE 2: Expose state objects for import sync
-    TargetState: TargetState,
-    ReferenceState: ReferenceState,
   };
 })();

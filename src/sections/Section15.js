@@ -15,206 +15,9 @@ window.TEUI.SectionModules.sect15 = (function () {
 
   // Legacy helpers removed — graph computes all values
 
-  //==========================================================================
-  // PATTERN A DUAL-STATE ARCHITECTURE
-  //==========================================================================
+  // TargetState/ReferenceState/ModeManager removed — graph + SM is the single source of truth.
 
-  /**
-   * TargetState: Manages Target (user's design) state with persistence
-   */
-  const TargetState = {
-    data: {},
-    storageKey: "S15_TARGET_STATE",
-
-    // Load saved state from localStorage
-    loadState: function () {
-      try {
-        const saved = localStorage.getItem(this.storageKey);
-        if (saved) {
-          this.data = JSON.parse(saved);
-        }
-      } catch (error) {
-        console.warn(`S15: Error loading Target state:`, error);
-        this.data = {};
-      }
-    },
-
-    // Save current state to localStorage
-    saveState: function () {
-      try {
-        localStorage.setItem(this.storageKey, JSON.stringify(this.data));
-      } catch (error) {
-        console.warn(`S15: Error saving Target state:`, error);
-      }
-    },
-
-    // Get value from internal state
-    getValue: function (fieldId) {
-      return this.data[fieldId];
-    },
-
-    // Set value and optionally save state
-    setValue: function (fieldId, value, source = "calculated") {
-      this.data[fieldId] = value;
-      if (source === "user" || source === "user-modified") {
-        this.saveState();
-      }
-    },
-
-    // Set default values for Target calculations
-    setDefaults: function () {
-      // S15 is mostly calculated values, minimal defaults needed
-    },
-  };
-
-  /**
-   * ReferenceState: Manages Reference (building code minimums) state with persistence
-   */
-  const ReferenceState = {
-    data: {},
-    storageKey: "S15_REFERENCE_STATE",
-
-    // Load saved state from localStorage
-    loadState: function () {
-      try {
-        const saved = localStorage.getItem(this.storageKey);
-        if (saved) {
-          this.data = JSON.parse(saved);
-          // Re-publish to StateManager even when loading from localStorage
-          // This ensures values are available for CSV export after page refresh
-          this.publishToStateManager();
-        }
-      } catch (error) {
-        console.warn(`S15: Error loading Reference state:`, error);
-        this.data = {};
-      }
-    },
-
-    // Save current state to localStorage
-    saveState: function () {
-      try {
-        localStorage.setItem(this.storageKey, JSON.stringify(this.data));
-      } catch (error) {
-        console.warn(`S15: Error saving Reference state:`, error);
-      }
-    },
-
-    // Get value from internal state
-    getValue: function (fieldId) {
-      return this.data[fieldId];
-    },
-
-    // Set value and optionally save state
-    setValue: function (fieldId, value, source = "calculated") {
-      this.data[fieldId] = value;
-      if (source === "user" || source === "user-modified") {
-        this.saveState();
-      }
-    },
-
-    // Set default values for Reference calculations
-    setDefaults: function () {
-      // d_142: Capital cost premium for heatpump (user input field)
-      this.data.d_142 = "30000.00"; // Default heatpump cost premium
-
-      // Publish to StateManager
-      this.publishToStateManager();
-    },
-    publishToStateManager: function () {
-      // CSV EXPORT FIX: Publish d_142 Reference default to StateManager
-      if (window.TEUI?.StateManager && this.data.d_142) {
-        window.TEUI.StateManager.setValue(
-          "ref_d_142",
-          this.data.d_142,
-          "default"
-        );
-      }
-    },
-  };
-
-  /**
-   * ModeManager: Handles UI mode switching and state coordination
-   */
-  const ModeManager = {
-    currentMode: "target", // "target" or "reference"
-
-    // Initialize the mode manager
-    initialize: function () {
-      TargetState.loadState();
-      ReferenceState.loadState();
-      TargetState.setDefaults();
-      ReferenceState.setDefaults();
-    },
-
-    // Switch between Target and Reference modes
-    switchMode: function (mode) {
-      if (mode !== "target" && mode !== "reference") {
-        console.warn(`S15: Invalid mode: ${mode}`);
-        return;
-      }
-
-      this.currentMode = mode;
-
-      this.refreshUI();
-      this.updateCalculatedDisplayValues();
-
-      // Sync visual toggle UI when mode changes (from global or local toggle)
-      this.syncToggleUI(mode);
-    },
-
-    // Refresh UI based on current mode
-    refreshUI: function () {
-      /* DOMBridge.stampAll() handles display */
-    },
-
-    // Update calculated field displays based on current mode
-    updateCalculatedDisplayValues: function () {
-      /* DOMBridge.stampAll() handles display */
-    },
-
-    // Reset current mode's state to defaults
-    resetCurrentState: function () {
-      const currentState =
-        this.currentMode === "target" ? TargetState : ReferenceState;
-      currentState.data = {};
-      currentState.setDefaults();
-      currentState.saveState();
-
-      this.refreshUI();
-
-      console.log(`S15: ${this.currentMode} state reset to defaults`);
-    },
-
-    // Get current value based on active mode
-    getValue: function (fieldId) {
-      const currentState =
-        this.currentMode === "target" ? TargetState : ReferenceState;
-      return currentState.getValue(fieldId);
-    },
-
-    // Set value in current mode's state
-    setValue: function (fieldId, value, source = "calculated") {
-      const currentState =
-        this.currentMode === "target" ? TargetState : ReferenceState;
-      currentState.setValue(fieldId, value, source);
-    },
-
-    getCurrentState: function () {
-      return this.currentMode === "target" ? TargetState : ReferenceState;
-    },
-
-    // Sync visual toggle switch and indicator to match current mode
-    syncToggleUI: function (mode) {
-      // Use centralized ToggleUISync utility
-      window.TEUI.ToggleUISync.syncToggleUI(this._toggleElements, mode, "S15");
-    },
-  };
-
-  // MANDATORY: Global exposure for cross-section communication
   window.TEUI.sect15 = window.TEUI.sect15 || {};
-  window.TEUI.sect15.ModeManager = ModeManager;
-  window.TEUI.sect15.TargetState = TargetState;
-  window.TEUI.sect15.ReferenceState = ReferenceState;
 
   //==========================================================================
   // HEADER CONTROLS INJECTION
@@ -963,8 +766,7 @@ window.TEUI.SectionModules.sect15 = (function () {
     let numValue = window.TEUI.parseNumeric(valueStr, NaN);
 
     if (!isNaN(numValue)) {
-      // Store in both local state and global StateManager to trigger dependencies
-      ModeManager.setValue(fieldId, numValue.toString(), "user-modified");
+      // Store in StateManager to trigger dependencies
       window.TEUI.StateManager.setValue(
         fieldId,
         numValue.toString(),
@@ -972,7 +774,7 @@ window.TEUI.SectionModules.sect15 = (function () {
       );
     } else {
       // Invalid input - revert to stored value or default
-      const storedValue = ModeManager.getValue(fieldId) || "30000.00";
+      const storedValue = window.TEUI.StateManager?.getValue(fieldId) || "30000.00";
       fieldElement.textContent = storedValue;
     }
   }
@@ -1029,20 +831,13 @@ window.TEUI.SectionModules.sect15 = (function () {
    * Called when section is rendered
    */
   function onSectionRendered() {
-    // Initialize Pattern A Dual-State Module
-    ModeManager.initialize();
-
-    // Inject header controls for local testing and troubleshooting
-
     // Register dependencies first
-    // Dependencies might rely on other sections being registered, so ensure StateManager is ready
     if (window.TEUI.StateManager) {
       registerDependencies();
     } else {
       console.warn(
         "StateManager not ready during sect15 onSectionRendered dependency registration."
       );
-      // Optionally, retry registration later or listen for a StateManager ready event
     }
 
     // Initialize event handlers AFTER dependencies are registered
@@ -1054,9 +849,6 @@ window.TEUI.SectionModules.sect15 = (function () {
         window.TEUI.TooltipManager.applyTooltipsToSection(sectionRows);
       }, 300);
     }
-
-    // Initial calculation should now be triggered by the central Calculator.calculateAll
-    // or by listeners responding to dependency updates.
   }
 
   //==========================================================================
@@ -1072,17 +864,9 @@ window.TEUI.SectionModules.sect15 = (function () {
     // Calculations
     calculateAll: calculateAll,
 
-    // Pattern A Mode management
-    switchMode: function (mode) {
-      ModeManager.switchMode(mode);
-    },
-
     // Event handling and initialization - REQUIRED
     initializeEventHandlers: initializeEventHandlers,
     onSectionRendered: onSectionRendered,
-
-    // Expose ModeManager for global toggle integration
-    ModeManager: ModeManager,
   };
 })();
 

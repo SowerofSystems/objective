@@ -66,313 +66,20 @@ window.TEUI.SectionModules.sect11 = (function () {
     "d_97", // Thermal Bridge Penalty slider
   ];
 
-  //==========================================================================
-  // DUAL-STATE ARCHITECTURE (Self-Contained State Module)
-  //==========================================================================
+  // TargetState/ReferenceState/ModeManager removed — graph + SM is the single source of truth.
 
-  // PATTERN 1: Internal State Objects (Self-Contained + Persistent)
-  const TargetState = {
-    state: {},
-    listeners: {},
-    initialize: function () {
-      const savedState = localStorage.getItem("S11_TARGET_STATE");
-      if (savedState) {
-        this.state = JSON.parse(savedState);
-      } else {
-        this.setDefaults();
-      }
-    },
-    setDefaults: function () {
-      // These defaults MUST match the 'value' properties in the sectionRows definition
-      this.state = {
-        d_85: "1411.52",
-        f_85: "9.35", // Roof
-        d_86: "705.27",
-        f_86: "6.69", // Walls Above Grade
-        d_87: "0.00",
-        f_87: "9.52", // Floor Exposed
-        // ✅ DRY CLEANUP: Area defaults d_88-d_93 removed - populated by syncAreasFromS10() only
-        // d_88: "7.50", // Door area (matches S10 Target default)
-        g_88: "1.500", // Doors U-value (Target default, not ReferenceValues)
-        // d_89: "81.14", // Window North area (matches S10 Target default)
-        g_89: "0.900", // Window North U-value (Target default, not ReferenceValues)
-        // d_90: "3.83", // Window East area (matches S10 Target default)
-        g_90: "0.900", // Window East U-value (Target default, not ReferenceValues)
-        // d_91: "159.00", // Window South area (matches S10 Target default)
-        g_91: "0.900", // Window South U-value (Target default, not ReferenceValues)
-        // d_92: "100.66", // Window West area (matches S10 Target default)
-        g_92: "0.900", // Window West U-value (Target default, not ReferenceValues)
-        // d_93: "0.00", // Skylights area (matches S10 Target default)
-        g_93: "0.900", // Skylights U-value (Target default, not ReferenceValues)
-        d_94: "0.00",
-        f_94: "4.00", // Walls Below Grade
-        d_95: "1100.92",
-        f_95: "3.70", // Floor Slab
-        d_96: "29.70", // Interior Floors
-        d_97: "20", // Thermal Bridge Penalty %
-      };
-    },
-    /**
-     * ✅ PHASE 2: Sync from global StateManager after import
-     */
-    syncFromGlobalState: function () { /* graph is source of truth */ },
+  function getModeValue(fieldId) {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    return window.TEUI.StateManager?.getValue(isRef ? `ref_${fieldId}` : fieldId);
+  }
 
-    /**
-     * ✅ PHASE 6: Apply code-minimum baseline values from ReferenceValues
-     * Called by "Set Values" button to overlay reference values onto Target model
-     * ⚠️ STATE ISOLATION SAFEGUARD: Only writes to unprefixed fields (Target model)
-     */
-    applyReferenceValues: function (standard) {
-      const referenceValues = window.TEUI?.ReferenceValues?.[standard] || {};
-
-      console.log(
-        `[S11 TargetState] Applying code-minimum values from "${standard}"`
-      );
-
-      Object.keys(referenceValues).forEach(fieldId => {
-        if (referenceValues[fieldId] !== undefined) {
-          // ✅ Writes to d_85, f_85, etc., NOT ref_d_85
-          this.state[fieldId] = referenceValues[fieldId];
-          console.log(
-            `[S11 TargetState] ${fieldId} = ${referenceValues[fieldId]} (from ${standard})`
-          );
-        }
-      });
-
-      this.saveState();
-      console.log(
-        `[S11 TargetState] Code-minimum values from "${standard}" applied to Target model`
-      );
-    },
-
-    saveState: function () {
-      localStorage.setItem("S11_TARGET_STATE", JSON.stringify(this.state));
-    },
-    setValue: function (fieldId, value) {
-      this.state[fieldId] = value;
-      this.saveState();
-    },
-    getValue: function (fieldId) {
-      return this.state[fieldId];
-    },
-  };
-
-  const ReferenceState = {
-    state: {},
-    listeners: {},
-    initialize: function () {
-      const savedState = localStorage.getItem("S11_REFERENCE_STATE");
-      if (savedState) {
-        this.state = JSON.parse(savedState);
-      } else {
-        this.setDefaults();
-      }
-    },
-    setDefaults: function () {
-      // ✅ DYNAMIC LOADING: Get current reference standard from dropdown ref_d_13
-      const currentStandard =
-        window.TEUI?.StateManager?.getValue?.("ref_d_13") ||
-        "OBC SB10 5.5-6 Z6";
-      const referenceValues =
-        window.TEUI?.ReferenceValues?.[currentStandard] || {};
-
-      // Apply reference values to this section's fields, with fallbacks for missing values
-      this.state = {
-        // Area values (d_) - Reference defaults are Target +1 for clear differentiation
-        d_85: "1411.52",
-        f_85: referenceValues.f_85 || "5.30", // Roof
-        d_86: "705.27",
-        f_86: referenceValues.f_86 || "4.10", // Walls Above Grade
-        d_87: "0.00",
-        f_87: referenceValues.f_87 || "6.60", // Floor Exposed
-        // ✅ S10-S11 AREA SYNC: d_88-d_93 areas will sync from S10 (no independent Reference defaults)
-        // d_88, d_89, d_90, d_91, d_92, d_93 removed - will be populated by syncAreasFromS10()
-        g_88: referenceValues.g_88 || "1.990", // Doors U-value (from ReferenceValues)
-        g_89: referenceValues.g_89 || "1.420", // Window North U-value (from ReferenceValues)
-        g_90: referenceValues.g_90 || "1.420", // Window East U-value (from ReferenceValues)
-        g_91: referenceValues.g_91 || "1.420", // Window South U-value (from ReferenceValues)
-        g_92: referenceValues.g_92 || "1.420", // Window West U-value (from ReferenceValues)
-        g_93: referenceValues.g_93 || "1.420", // Skylights U-value (from ReferenceValues)
-        d_94: "0.00",
-        f_94: referenceValues.f_94 || "1.80", // Walls Below Grade
-        d_95: "1100.92",
-        f_95: referenceValues.f_95 || "3.50", // Floor Slab
-        d_96: "29.70", // Interior Floors (not in codes)
-        d_97: referenceValues.d_97 || "50", // Thermal Bridge Penalty %
-      };
-
-      // ✅ CRITICAL: Publish Reference defaults to StateManager (S10 pattern)
-      // This fixes the QC violations: ref_d_85, ref_d_86, ref_d_89-d_92, ref_d_95 UNDEFINED_FIELD
-      if (window.TEUI?.StateManager) {
-        const referenceFields = [
-          "d_85",
-          "d_86",
-          "d_87",
-          // d_88-d_93 removed - will be synced from S10 via syncAreasFromS10()
-          "d_94",
-          "d_95",
-          "d_96",
-          "d_97", // Area and component fields
-          "f_85",
-          "f_86",
-          "f_87",
-          "f_94",
-          "f_95", // RSI values
-          "g_88",
-          "g_89",
-          "g_90",
-          "g_91",
-          "g_92",
-          "g_93", // U-values
-        ];
-        referenceFields.forEach(fieldId => {
-          const value = this.state[fieldId];
-          if (value !== null && value !== undefined) {
-            window.TEUI.StateManager.setValue(
-              `ref_${fieldId}`,
-              value,
-              "default"
-            );
-            console.log(
-              `[S11 REF DEFAULTS] Published ref_${fieldId}=${value} to StateManager`
-            );
-          }
-        });
-      }
-
-      console.log(
-        `S11: Reference defaults loaded from standard: ${currentStandard}`
-      );
-    },
-
-    // Listen for changes to the reference standard and reload defaults
-    onReferenceStandardChange: function () {
-      console.log("S11: Reference standard changed, reloading defaults");
-
-      // Preserve user-modified area values (design choices, not code requirements)
-      const preservedAreas = {};
-      const areaFields = ["d_85", "d_86", "d_87", "d_94", "d_95", "d_96"];
-
-      areaFields.forEach(fieldId => {
-        // For Reference mode, always preserve current values
-        if (ModeManager.currentMode === "reference") {
-          preservedAreas[fieldId] = this.state[fieldId];
-        }
-        // For Target mode, preserve areas from TargetState
-        else {
-          preservedAreas[fieldId] = TargetState.getValue(fieldId);
-        }
-      });
-
-      // Load new reference values (this updates RSI/U-values from ReferenceValues.js)
-      this.setDefaults();
-
-      // Restore preserved area values
-      Object.assign(this.state, preservedAreas);
-      this.saveState();
-
-      console.log(
-        "S11: Reference standard updated, areas preserved, performance values updated"
-      );
-
-      // Graph handles recalculation when reference standard changes
-    },
-
-    saveState: function () {
-      localStorage.setItem("S11_REFERENCE_STATE", JSON.stringify(this.state));
-    },
-    syncFromGlobalState: function () { /* graph is source of truth */ },
-    setValue: function (fieldId, value) {
-      this.state[fieldId] = value;
-      this.saveState();
-    },
-    getValue: function (fieldId) {
-      return this.state[fieldId];
-    },
-  };
-
-  // PATTERN 2: The ModeManager Facade
-  const ModeManager = {
-    currentMode: "target",
-    initialize: function () {
-      TargetState.initialize();
-      ReferenceState.initialize();
-
-      // Listen for reference standard changes
-      // ✅ PHASE 3 CLEANUP: d_13 listeners removed - FileHandler handles value application
-      // "Set Values" button in Section02 delegates to FileHandler.applyReferenceValuesFromStandard()
-      // which applies ReferenceValues using Import Quarantine pattern
-    },
-    switchMode: function (mode) {
-      if (
-        this.currentMode === mode ||
-        (mode !== "target" && mode !== "reference")
-      )
-        return;
-      this.currentMode = mode;
-      console.log(`S11: Switched to ${mode.toUpperCase()} mode`);
-
-      this.refreshUI();
-
-      // ✅ NEW: Sync visual toggle UI when mode changes (from global or local toggle)
-      this.syncToggleUI(mode);
-    },
-    resetState: function () {
-      console.log(
-        "S11: Resetting state and clearing localStorage for Section 11."
-      );
-      TargetState.setDefaults();
-      TargetState.saveState();
-      ReferenceState.setDefaults(); // This will reload from current d_13 selection
-      ReferenceState.saveState();
-      console.log("S11: States have been reset to defaults.");
-    },
-    getCurrentState: function () {
-      return this.currentMode === "target" ? TargetState : ReferenceState;
-    },
-    getValue: function (fieldId) {
-      return this.getCurrentState().getValue(fieldId);
-    },
-    setValue: function (fieldId, value, source = "user") {
-      this.getCurrentState().setValue(fieldId, value, source);
-
-      // Bridge to StateManager for cross-section propagation
-      if (this.currentMode === "target") {
-        const writeSource =
-          source === "user-modified" || source === "user"
-            ? "user-modified"
-            : source || "calculated";
-        window.TEUI.StateManager.setValue(fieldId, value, writeSource);
-        // Graph handles S12 recalculation via dependency chain
-      } else if (this.currentMode === "reference") {
-        // Write Reference-side updates with ref_ prefix
-        const writeSource =
-          source === "user-modified" || source === "user"
-            ? "user-modified"
-            : source || "calculated";
-        if (fieldId === "d_97") {
-          console.log(
-            `[S11] ModeManager REF write: ref_d_97=${value} (src=${writeSource})`
-          );
-        }
-        window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, writeSource);
-        // Graph handles S12 recalculation via dependency chain
-      }
-    },
-    refreshUI: function () { /* DOMBridge.stampAll() handles display */ },
-    updateCalculatedDisplayValues: function () { /* DOMBridge.stampAll() handles display */ },
-
-    // ✅ NEW: Sync visual toggle switch and indicator to match current mode
-    // Called both when user clicks local toggle AND when global toggle switches mode
-    syncToggleUI: function (mode) {
-      // Use centralized ToggleUISync utility
-      window.TEUI.ToggleUISync.syncToggleUI(this._toggleElements, mode, "S11");
-    },
-  };
-
-  // Expose globally for cross-section communication
-  window.TEUI.sect11 = window.TEUI.sect11 || {};
-  window.TEUI.sect11.ModeManager = ModeManager;
+  function setModeValue(fieldId, value, source = "user-modified") {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    const key = isRef ? `ref_${fieldId}` : fieldId;
+    if (window.TEUI.StateManager?.setValue) {
+      window.TEUI.StateManager.setValue(key, value, source);
+    }
+  }
 
   //==========================================================================
   // LAYOUT DEFINITION (sectionRows)
@@ -1869,17 +1576,17 @@ window.TEUI.SectionModules.sect11 = (function () {
     isSyncingFromS10 = true;
 
     try {
-      const currentMode = ModeManager.currentMode; // "target" or "reference"
+      const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+      const currentMode = isRef ? "reference" : "target";
 
-      // ✅ FIX: Detect if this is initial/import sync requiring dual-state population
-      // Check if ReferenceState areas are unpopulated OR don't match StateManager
-      // This handles BOTH initialization (undefined) AND import (stale values)
-      const refArea_d88 = ReferenceState.getValue("d_88");
+      // Detect if this is initial/import sync requiring dual-state population
+      // Check if ref areas in StateManager are unpopulated
+      const refArea_d88 = window.TEUI.StateManager?.getValue("ref_d_88");
       const stateManager_refArea =
         window.TEUI.StateManager.getValue("ref_d_73");
 
       const needsDualSync =
-        (isInitializationPhase || isImportActive) && // ✅ FIX: During initialization OR import, not user edits
+        (isInitializationPhase || isImportActive) &&
         currentMode === "target" &&
         (refArea_d88 === undefined || refArea_d88 !== stateManager_refArea);
 
@@ -1888,15 +1595,13 @@ window.TEUI.SectionModules.sect11 = (function () {
           `[S11 Area Sync] DUAL-STATE SYNC - populating BOTH Target and Reference states`
         );
         console.log(
-          `[S11 Area Sync] Reason: d_88=${refArea_d88}, ref_d_73 in StateManager=${stateManager_refArea}`
+          `[S11 Area Sync] Reason: ref_d_88=${refArea_d88}, ref_d_73 in StateManager=${stateManager_refArea}`
         );
       } else {
         console.log(`[S11 Area Sync] Starting sync in ${currentMode} mode`);
       }
 
-      // ✅ PERFORMANCE (2025.12.07): Batch state updates to prevent listener cascade
-      // Baseline: 234ms init, 360ms S10 area change | Optimized: 227ms init, 352ms S10 area change
-      // Collect all updates first, then apply them in one pass
+      // PERFORMANCE: Batch state updates to prevent listener cascade
       const targetUpdates = [];
       const refUpdates = [];
       const domUpdates = [];
@@ -1911,7 +1616,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           window.TEUI.StateManager.getValue(targetSourceField);
         const refValue = window.TEUI.StateManager.getValue(refSourceField);
 
-        // ✅ FIX: During dual-state sync, populate BOTH states
+        // During dual-state sync, populate BOTH states
         if (needsDualSync) {
           // Queue Target state update
           if (targetValue !== null && targetValue !== undefined) {
@@ -1932,7 +1637,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           const areaValue = window.TEUI.StateManager.getValue(sourceFieldId);
 
           if (areaValue !== null && areaValue !== undefined) {
-            // Queue state update
+            // Queue state update — write to appropriate SM key
             if (currentMode === "target") {
               targetUpdates.push({ field: s11Field, value: areaValue });
             } else {
@@ -1949,20 +1654,20 @@ window.TEUI.SectionModules.sect11 = (function () {
         }
       });
 
-      // ✅ PERFORMANCE: Apply all state updates silently (no StateManager publication yet)
+      // PERFORMANCE: Apply all state updates via StateManager
       console.log(
         `[S11 Area Sync] Applying ${targetUpdates.length} target updates, ${refUpdates.length} reference updates`
       );
 
       targetUpdates.forEach(({ field, value }) => {
-        TargetState.setValue(field, value, "calculated");
+        window.TEUI.StateManager.setValue(field, value, "calculated");
       });
 
       refUpdates.forEach(({ field, value }) => {
-        ReferenceState.setValue(field, value, "calculated");
+        window.TEUI.StateManager.setValue(`ref_${field}`, value, "calculated");
       });
 
-      // ✅ PERFORMANCE: Update DOM elements directly without triggering ModeManager.setValue
+      // PERFORMANCE: Update DOM elements directly
       domUpdates.forEach(({ field, value }) => {
         const formattedValue = formatNumber(value, "number");
         const element = document.querySelector(`[data-field-id="${field}"]`);
@@ -2010,7 +1715,7 @@ window.TEUI.SectionModules.sect11 = (function () {
     s10AreaFields.forEach(fieldId => {
       window.TEUI.StateManager.addListener(fieldId, newValue => {
         // GUARD: Only fire if Target mode active
-        if (ModeManager.currentMode !== "target") return;
+        if (window.TEUI.ReferenceToggle?.isReferenceMode()) return;
         // GUARD: Only fire if S11 initialized
         if (!isS11Initialized) return;
 
@@ -2109,8 +1814,8 @@ window.TEUI.SectionModules.sect11 = (function () {
     }
     fieldElement.textContent = displayValue;
 
-    // ✅ DUAL-STATE: Store value using the ModeManager facade.
-    ModeManager.setValue(currentFieldId, rawValueToStore, "user-modified");
+    // Store value via mode-aware helper.
+    setModeValue(currentFieldId, rawValueToStore, "user-modified");
     // Graph handles recalculation via dependency chain
   }
 
@@ -2156,11 +1861,12 @@ window.TEUI.SectionModules.sect11 = (function () {
             displaySpan.textContent = percentageValue.toFixed(0) + "%";
           }
 
-          // ✅ DUAL-STATE: Update via ModeManager (handles both state and StateManager sync)
+          // Store via mode-aware helper (handles both state and StateManager sync)
           const src = "user-modified";
-          ModeManager.setValue("d_97", percentageValue.toString(), src);
+          setModeValue("d_97", percentageValue.toString(), src);
+          const mode = window.TEUI.ReferenceToggle?.isReferenceMode() ? "reference" : "target";
           console.log(
-            `[S11] Slider input d_97=${percentageValue} (localMode=${ModeManager.currentMode})`
+            `[S11] Slider input d_97=${percentageValue} (localMode=${mode})`
           );
           // Graph handles recalculation via dependency chain
         });
@@ -2170,11 +1876,12 @@ window.TEUI.SectionModules.sect11 = (function () {
           const percentageValue = parseFloat(this.value);
           if (isNaN(percentageValue)) return;
 
-          // ✅ DUAL-STATE: Final value goes through ModeManager - handles state and dependency chain
+          // Final value goes through mode-aware helper - handles state and dependency chain
           const src = "user-modified";
-          ModeManager.setValue("d_97", percentageValue.toString(), src);
+          setModeValue("d_97", percentageValue.toString(), src);
+          const mode = window.TEUI.ReferenceToggle?.isReferenceMode() ? "reference" : "target";
           console.log(
-            `[S11] Slider change d_97=${percentageValue} (localMode=${ModeManager.currentMode})`
+            `[S11] Slider change d_97=${percentageValue} (localMode=${mode})`
           );
           // Graph handles recalculation via dependency chain
         });
@@ -2194,26 +1901,12 @@ window.TEUI.SectionModules.sect11 = (function () {
   }
 
   function onSectionRendered() {
-    console.log(
-      "S11: Section rendered - initializing Self-Contained State Module."
-    );
+    console.log("S11: Section rendered.");
 
-    // 1. Initialize the ModeManager and its internal states
-    ModeManager.initialize();
-
-    // 2. Initialize event handlers for this section
+    // Initialize event handlers for this section
     initializeEventHandlers();
 
-    // Expose ModeManager globally for cross-section communication (e.g., global toggle)
-    if (window.TEUI) {
-      window.TEUI.sect11 = window.TEUI.sect11 || {};
-      window.TEUI.sect11.ModeManager = ModeManager;
-      console.log(
-        "S11: ModeManager exposed globally for cross-section integration."
-      );
-    }
-
-    // ✅ S10-S11 AREA SYNC: Mark S11 as initialized (CRITICAL for crash prevention)
+    // S10-S11 AREA SYNC: Mark S11 as initialized (CRITICAL for crash prevention)
     isS11Initialized = true;
     console.log(
       "[S11 Area Sync] S11 initialization complete - sync functions now enabled"
@@ -2222,7 +1915,7 @@ window.TEUI.SectionModules.sect11 = (function () {
     // Graph handles initial calculations via dependency chain
     isInitializationPhase = false;
 
-    // 6. Apply validation tooltips to fields
+    // Apply validation tooltips to fields
     if (window.TEUI.TooltipManager && window.TEUI.TooltipManager.initialized) {
       setTimeout(() => {
         window.TEUI.TooltipManager.applyTooltipsToSection(sectionRows);
@@ -2243,14 +1936,7 @@ window.TEUI.SectionModules.sect11 = (function () {
     onSectionRendered,
     calculateAll,
 
-    // ✅ CRITICAL FIX: Export ModeManager for dual-state field routing
-    ModeManager: ModeManager,
-
-    // ✅ PHASE 2: Expose state objects for import sync
-    TargetState: TargetState,
-    ReferenceState: ReferenceState,
-
-    // ✅ FIX (Oct 10): Expose S10 area sync for FileHandler post-import call
+    // S10 area sync for FileHandler post-import call
     syncAreasFromS10: syncAreasFromS10,
 
     // ✅ FIX (Nov 2): Expose import flag control for FileHandler

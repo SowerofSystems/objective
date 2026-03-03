@@ -9,222 +9,22 @@ window.TEUI.SectionModules = window.TEUI.SectionModules || {};
 
 // Section 6: Renewable Energy Module
 window.TEUI.SectionModules.sect06 = (function () {
-  //==========================================================================
-  // DUAL-STATE ARCHITECTURE (Self-Contained State Module - Pattern A)
-  //==========================================================================
+  // TargetState/ReferenceState/ModeManager removed — graph + SM is the single source of truth.
 
-  // PATTERN 1: Internal State Objects (Self-Contained + Persistent)
-  const TargetState = {
-    state: {},
-    listeners: {},
-    initialize: function () {
-      const savedState = localStorage.getItem("S06_TARGET_STATE");
-      if (savedState) {
-        this.state = JSON.parse(savedState);
-      } else {
-        this.setDefaults();
-      }
-    },
-    setDefaults: function () {
-      this.state = {
-        // Editable renewable energy fields - all default to 0
-        d_44: "0.00", // Photovoltaics (kWh/yr)
-        d_45: "0.00", // Wind (kWh/yr)
-        d_46: "0.00", // Remove EV Charging from TEUI (kWh/yr)
-        i_44: "0.00", // WWS Electricity (kWh/yr)
-        i_46: "0.00", // Reserved other removals (kWh/yr)
-        k_45: "0.00", // Green Natural Gas (m³)
-        m_43: "0.00", // Exterior/Site/Other Loads (kWh/yr)
-      };
-    },
-    saveState: function () {
-      localStorage.setItem("S06_TARGET_STATE", JSON.stringify(this.state));
-    },
-    setValue: function (fieldId, value, source = "user") {
-      this.state[fieldId] = value;
-      this.saveState();
-    },
-    getValue: function (fieldId) {
-      return this.state[fieldId];
-    },
+  function getModeValue(fieldId) {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    return window.TEUI.StateManager?.getValue(isRef ? `ref_${fieldId}` : fieldId);
+  }
 
-    /**
-     * ✅ PHASE 2: Sync from global StateManager after import
-     * Bridges global StateManager → isolated TargetState for imported values
-     */
-    syncFromGlobalState: function () { /* graph is source of truth */ },
+  function setModeValue(fieldId, value, source = "user-modified") {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    const key = isRef ? `ref_${fieldId}` : fieldId;
+    if (window.TEUI.StateManager?.setValue) {
+      window.TEUI.StateManager.setValue(key, value, source);
+    }
+  }
 
-    /**
-     * ✅ PHASE 6: Apply code-minimum baseline values from ReferenceValues
-     * Called by "Set Values" button to overlay reference values onto Target model
-     * ⚠️ STATE ISOLATION SAFEGUARD: Only writes to unprefixed fields (Target model)
-     */
-    applyReferenceValues: function (standard) {
-      const referenceValues = window.TEUI?.ReferenceValues?.[standard] || {};
-
-      console.log(
-        `[S06 TargetState] Applying code-minimum values from "${standard}"`
-      );
-
-      Object.keys(referenceValues).forEach(fieldId => {
-        if (referenceValues[fieldId] !== undefined) {
-          // ✅ Writes to d_44, d_45, etc., NOT ref_d_44
-          this.state[fieldId] = referenceValues[fieldId];
-          console.log(
-            `[S06 TargetState] ${fieldId} = ${referenceValues[fieldId]} (from ${standard})`
-          );
-        }
-      });
-
-      this.saveState();
-      console.log(
-        `[S06 TargetState] Code-minimum values from "${standard}" applied to Target model`
-      );
-    },
-  };
-
-  const ReferenceState = {
-    state: {},
-    listeners: {},
-    initialize: function () {
-      const savedState = localStorage.getItem("S06_REFERENCE_STATE");
-      if (savedState) {
-        this.state = JSON.parse(savedState);
-      } else {
-        this.setDefaults();
-      }
-    },
-    setDefaults: function () {
-      // ✅ DYNAMIC LOADING: Get current reference standard from dropdown ref_d_13
-      const currentStandard =
-        window.TEUI?.StateManager?.getValue?.("ref_d_13") ||
-        "OBC SB10 5.5-6 Z6";
-      const referenceValues =
-        window.TEUI?.ReferenceValues?.[currentStandard] || {};
-
-      // Apply reference values with fallbacks - renewable energy typically 0 for reference
-      this.state = {
-        d_44: referenceValues.d_44 || "0.00", // Photovoltaics
-        d_45: referenceValues.d_45 || "0.00", // Wind
-        d_46: referenceValues.d_46 || "0.00", // Remove EV Charging
-        i_44: referenceValues.i_44 || "0.00", // WWS Electricity
-        i_46: referenceValues.i_46 || "0.00", // Reserved removals
-        k_45: referenceValues.k_45 || "0.00", // Green Natural Gas
-        m_43: referenceValues.m_43 || "0.00", // Exterior/Site loads
-      };
-
-      console.log(
-        `S06: Reference defaults loaded from standard: ${currentStandard}`
-      );
-    },
-    // Listen for changes to the reference standard and reload defaults
-    onReferenceStandardChange: function () {
-      console.log("S06: Reference standard changed, reloading defaults");
-      this.setDefaults();
-      this.saveState();
-    },
-    saveState: function () {
-      localStorage.setItem("S06_REFERENCE_STATE", JSON.stringify(this.state));
-    },
-    setValue: function (fieldId, value, source = "user") {
-      this.state[fieldId] = value;
-      this.saveState();
-    },
-    getValue: function (fieldId) {
-      return this.state[fieldId];
-    },
-
-    /**
-     * ✅ PHASE 2: Sync from global StateManager after import
-     * Bridges global StateManager → isolated ReferenceState for imported values
-     */
-    syncFromGlobalState: function () { /* graph is source of truth */ },
-  };
-
-  // PATTERN 2: ModeManager Facade (Unified Interface)
-  const ModeManager = {
-    currentMode: "target",
-
-    initialize: function () {
-      TargetState.initialize();
-      ReferenceState.initialize();
-
-      // ✅ CSV EXPORT FIX: Publish ALL Reference defaults to StateManager
-      if (window.TEUI?.StateManager) {
-        ["d_44", "d_45", "d_46", "i_44", "k_45", "i_46", "m_43"].forEach(id => {
-          const refId = `ref_${id}`;
-          const val = ReferenceState.getValue(id);
-          if (
-            !window.TEUI.StateManager.getValue(refId) &&
-            val != null &&
-            val !== ""
-          ) {
-            window.TEUI.StateManager.setValue(refId, val, "calculated");
-          }
-        });
-      }
-
-      // Listen for reference standard changes
-      // ✅ PHASE 3 CLEANUP: d_13 listeners removed - FileHandler handles value application
-      // "Set Values" button in Section02 delegates to FileHandler.applyReferenceValuesFromStandard()
-      // which applies ReferenceValues using Import Quarantine pattern
-    },
-
-    getCurrentState: function () {
-      return this.currentMode === "target" ? TargetState : ReferenceState;
-    },
-
-    getValue: function (fieldId) {
-      return this.getCurrentState().getValue(fieldId);
-    },
-
-    setValue: function (fieldId, value, source = "user") {
-      this.getCurrentState().setValue(fieldId, value, source);
-
-      // ✅ CRITICAL STATE MIXING FIX: Proper dual-state publication
-      if (this.currentMode === "target") {
-        // Target changes to StateManager for downstream sections (unprefixed)
-        window.TEUI.StateManager.setValue(fieldId, value, "user-modified");
-      } else if (this.currentMode === "reference") {
-        // ✅ MISSING: Reference changes must be published with ref_ prefix
-        window.TEUI.StateManager.setValue(
-          `ref_${fieldId}`,
-          value,
-          "user-modified"
-        );
-      }
-    },
-
-    switchMode: function (mode) {
-      if (this.currentMode === mode) return;
-      this.currentMode = mode;
-      console.log(`S06: Switched to ${mode.toUpperCase()} mode`);
-
-      // ✅ NEW: Sync visual toggle UI when mode changes (from global or local toggle)
-      this.syncToggleUI(mode);
-    },
-
-    // ✅ NEW: Sync visual toggle switch and indicator to match current mode
-    // Called both when user clicks local toggle AND when global toggle switches mode
-    syncToggleUI: function (mode) {
-      // Use centralized ToggleUISync utility
-      window.TEUI.ToggleUISync.syncToggleUI(this._toggleElements, mode, "S06");
-    },
-
-    refreshUI: function () { /* DOMBridge.stampAll() handles display */ },
-
-    updateCalculatedDisplayValues: function () { /* DOMBridge.stampAll() handles display */ },
-
-    resetState: function () { /* graph handles state */ },
-  };
-
-  // Expose ModeManager for debugging and cross-section communication
-  window.TEUI.SectionModules = window.TEUI.SectionModules || {};
-  window.TEUI.SectionModules.sect06 = window.TEUI.SectionModules.sect06 || {};
-  window.TEUI.SectionModules.sect06.ModeManager = ModeManager;
-
-  // ✅ PATTERN A: Expose ModeManager for ReferenceToggle global switching
-  window.TEUI.sect06 = { ModeManager: ModeManager };
+  window.TEUI.sect06 = window.TEUI.sect06 || {};
 
   //==========================================================================
   // FIELD DEFINITIONS AND LAYOUT
@@ -513,8 +313,8 @@ window.TEUI.SectionModules.sect06 = (function () {
         field.addEventListener("blur", () => {
           const newValue = field.textContent.trim();
 
-          // ✅ CLEAN: Update via ModeManager
-          ModeManager.setValue(fieldId, newValue, "user-modified");
+          // ✅ CLEAN: Update via setModeValue
+          setModeValue(fieldId, newValue, "user-modified");
         });
         field.hasEditableListeners = true;
       }
@@ -528,10 +328,7 @@ window.TEUI.SectionModules.sect06 = (function () {
   function onSectionRendered() {
     console.log("S06: Pattern A initialization starting...");
 
-    // 1. Initialize dual-state architecture
-    ModeManager.initialize();
-
-    // 2. Initialize event handlers
+    // 1. Initialize event handlers
     initializeEventHandlers();
 
     // 7. Apply validation tooltips to fields
@@ -560,12 +357,5 @@ window.TEUI.SectionModules.sect06 = (function () {
 
     // Section-specific utility functions - OPTIONAL
     calculateAll: calculateAll,
-
-    // ✅ PATTERN A: Expose ModeManager for cross-section communication
-    ModeManager: ModeManager,
-
-    // ✅ PHASE 2: Expose state objects for import sync
-    TargetState: TargetState,
-    ReferenceState: ReferenceState,
   };
 })();

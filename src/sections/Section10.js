@@ -12,263 +12,20 @@ window.TEUI.SectionModules = window.TEUI.SectionModules || {};
 
 // Section 10: Radiant Gains Module
 window.TEUI.SectionModules.sect10 = (function () {
-  //==========================================================================
-  // DUAL-STATE ARCHITECTURE (Self-Contained State Module)
-  //==========================================================================
+  // TargetState/ReferenceState/ModeManager removed — graph + SM is the single source of truth.
 
-  // PATTERN 1: Internal State Objects (Self-Contained + Persistent)
-  const TargetState = {
-    state: {},
-    listeners: {},
-    initialize: function () {
-      const savedState = localStorage.getItem("S10_TARGET_STATE");
-      if (savedState) {
-        this.state = JSON.parse(savedState);
-      } else {
-        this.setDefaults();
-      }
-    },
-    setDefaults: function () {
-      // ✅ SINGLE SOURCE OF TRUTH: Read defaults from field definitions only
-      // This prevents data corruption from duplicate defaults
-      this.state = {};
+  function getModeValue(fieldId) {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    return window.TEUI.StateManager?.getValue(isRef ? `ref_${fieldId}` : fieldId);
+  }
 
-      // Get all field definitions
-      const fields = getFields();
-
-      // Only populate defaults that exist in field definitions
-      Object.keys(fields).forEach(fieldId => {
-        const defaultValue = getFieldDefault(fieldId);
-        if (defaultValue !== "") {
-          this.state[fieldId] = defaultValue;
-        }
-      });
-    },
-    /**
-     * ✅ PHASE 2: Sync from global StateManager after import
-     * Bridges global StateManager → isolated TargetState for imported values
-     */
-    syncFromGlobalState: function () { /* graph is source of truth */ },
-    saveState: function () {
-      localStorage.setItem("S10_TARGET_STATE", JSON.stringify(this.state));
-    },
-    setValue: function (fieldId, value) {
-      this.state[fieldId] = value;
-      this.saveState();
-    },
-    getValue: function (fieldId) {
-      return this.state[fieldId];
-    },
-  };
-
-  const ReferenceState = {
-    state: {},
-    listeners: {},
-    initialize: function () {
-      const savedState = localStorage.getItem("S10_REFERENCE_STATE");
-      if (savedState) {
-        this.state = JSON.parse(savedState);
-        // ✅ CRITICAL: Re-publish to StateManager even when loading from localStorage
-        // This ensures values are available for CSV export after page refresh
-        this.publishToStateManager();
-      } else {
-        this.setDefaults();
-      }
-    },
-    setDefaults: function () {
-      // ✅ SINGLE SOURCE OF TRUTH: Read defaults from field definitions only
-      // This prevents data corruption from duplicate/different defaults
-      this.state = {};
-
-      // Get all field definitions
-      const fields = getFields();
-
-      // Start with field definition defaults
-      Object.keys(fields).forEach(fieldId => {
-        const defaultValue = getFieldDefault(fieldId);
-        if (defaultValue !== "") {
-          this.state[fieldId] = defaultValue;
-        }
-      });
-
-      // ✅ REFERENCE MODE OVERRIDES: Only values that should differ from Target
-      // These represent building code reference values vs actual building values
-      //this.state.d_73 = "5.00"; // Reference: Smaller window area (test, commented out for now)
-      // ✅ REFERENCE ORIENTATION DEFAULTS: Match FieldDefinition defaults for 100% user flexibility
-      this.state.e_73 = "Average"; // Reference: Row 73 - Average (matches FieldDefinition)
-      this.state.e_74 = "North"; // Reference: Row 74 - North (matches FieldDefinition)
-      this.state.e_75 = "East"; // Reference: Row 75 - East (matches FieldDefinition)
-      this.state.e_76 = "South"; // Reference: Row 76 - South (matches FieldDefinition)
-      this.state.e_77 = "West"; // Reference: Row 77 - West (matches FieldDefinition)
-      this.state.e_78 = "Skylight"; // Reference: Row 78 - Skylight (matches FieldDefinition)
-
-      // ✅ REFERENCE PERFORMANCE OVERRIDES: Lower performance for Reference model represents code minimums
-      // Row 73 (Average)
-      this.state.f_73 = "0.35"; // SHGC
-      this.state.g_73 = "0"; // Winter shading %
-      this.state.h_73 = "0"; // Summer shading %
-
-      // Row 74 (North)
-      this.state.f_74 = "0.35"; // SHGC
-      this.state.g_74 = "0"; // Winter shading %
-      this.state.h_74 = "0"; // Summer shading %
-
-      // Row 75 (East)
-      this.state.f_75 = "0.35"; // SHGC
-      this.state.g_75 = "0"; // Winter shading %
-      this.state.h_75 = "0"; // Summer shading %
-
-      // Row 76 (South)
-      this.state.f_76 = "0.35"; // SHGC
-      this.state.g_76 = "0"; // Winter shading %
-      this.state.h_76 = "0"; // Summer shading %
-
-      // Row 77 (West)
-      this.state.f_77 = "0.35"; // SHGC
-      this.state.g_77 = "0"; // Winter shading %
-      this.state.h_77 = "0"; // Summer shading %
-
-      // Row 78 (Skylight)
-      this.state.f_78 = "0.35"; // SHGC
-      this.state.g_78 = "0"; // Winter shading %
-      this.state.h_78 = "0"; // Summer shading %
-
-      // Row 80 (nGains utilization)
-      this.state.d_80 = "NRC 40%"; // Reference: NRC 40% utilization method
-
-      // Publish to StateManager
-      this.publishToStateManager();
-    },
-    publishToStateManager: function () {
-      // ✅ CRITICAL: Publish Reference defaults to StateManager (S02 pattern)
-      // This enables S11 to read Reference area values during initialization and mode switching
-      // ✅ CSV EXPORT FIX: Include ALL 25 fields (areas, orientations, SHGCs, shading, nGains)
-      if (window.TEUI?.StateManager) {
-        const referenceFields = [
-          "d_73",
-          "d_74",
-          "d_75",
-          "d_76",
-          "d_77",
-          "d_78", // Area fields
-          "e_73",
-          "e_74",
-          "e_75",
-          "e_76",
-          "e_77",
-          "e_78", // Orientation dropdowns
-          "f_73",
-          "f_74",
-          "f_75",
-          "f_76",
-          "f_77",
-          "f_78", // SHGC values
-          "g_73",
-          "g_74",
-          "g_75",
-          "g_76",
-          "g_77",
-          "g_78", // Winter shading %
-          "h_73",
-          "h_74",
-          "h_75",
-          "h_76",
-          "h_77",
-          "h_78", // Summer shading %
-          "d_80", // nGains dropdown
-        ];
-        referenceFields.forEach(fieldId => {
-          const value = this.state[fieldId];
-          if (value !== null && value !== undefined) {
-            window.TEUI.StateManager.setValue(
-              `ref_${fieldId}`,
-              value,
-              "default"
-            );
-          }
-        });
-      }
-    },
-    syncFromGlobalState: function () { /* graph is source of truth */ },
-    saveState: function () {
-      localStorage.setItem("S10_REFERENCE_STATE", JSON.stringify(this.state));
-    },
-    setValue: function (fieldId, value) {
-      this.state[fieldId] = value;
-      this.saveState();
-    },
-    getValue: function (fieldId) {
-      return this.state[fieldId];
-    },
-  };
-
-  // PATTERN 2: The ModeManager Facade
-  const ModeManager = {
-    currentMode: "target",
-    initialize: function () {
-      TargetState.initialize();
-      ReferenceState.initialize();
-    },
-    switchMode: function (mode) {
-      if (
-        this.currentMode === mode ||
-        (mode !== "target" && mode !== "reference")
-      )
-        return;
-      const oldMode = this.currentMode;
-      this.currentMode = mode;
-
-      // ✅ PATTERN A: UI toggle only switches display, values should already be calculated
-      this.refreshUI();
-      this.updateCalculatedDisplayValues(); // ✅ ADD: Update calculated field displays for new mode
-
-      // ✅ NEW: Sync visual toggle UI when mode changes (from global or local toggle)
-      this.syncToggleUI(mode);
-    },
-    resetState: function () {
-      console.log(
-        "S10: Resetting state and clearing localStorage for Section 10."
-      );
-      TargetState.setDefaults();
-      TargetState.saveState();
-      ReferenceState.setDefaults();
-      ReferenceState.saveState();
-      console.log("S10: States have been reset to defaults.");
-
-      // After resetting, refresh the UI
-      this.refreshUI();
-    },
-    getCurrentState: function () {
-      return this.currentMode === "target" ? TargetState : ReferenceState;
-    },
-    getValue: function (fieldId) {
-      return this.getCurrentState().getValue(fieldId);
-    },
-    setValue: function (fieldId, value, source = "user") {
-      this.getCurrentState().setValue(fieldId, value, source);
-
-      // BRIDGE: Sync changes to global StateManager for downstream sections
-      if (this.currentMode === "target") {
-        window.TEUI.StateManager.setValue(fieldId, value, source);
-      } else if (this.currentMode === "reference") {
-        window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, source);
-      }
-    },
-    refreshUI: function () { /* DOMBridge.stampAll() handles display */ },
-
-    updateCalculatedDisplayValues: function () { /* DOMBridge.stampAll() handles display */ },
-
-    // ✅ NEW: Sync visual toggle switch and indicator to match current mode
-    // Called both when user clicks local toggle AND when global toggle switches mode
-    syncToggleUI: function (mode) {
-      // Use centralized ToggleUISync utility
-      window.TEUI.ToggleUISync.syncToggleUI(this._toggleElements, mode, "S10");
-    },
-  };
-
-  // Expose globally for cross-section communication
-  window.TEUI.sect10 = window.TEUI.sect10 || {};
-  window.TEUI.sect10.ModeManager = ModeManager;
+  function setModeValue(fieldId, value, source = "user-modified") {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    const key = isRef ? `ref_${fieldId}` : fieldId;
+    if (window.TEUI.StateManager?.setValue) {
+      window.TEUI.StateManager.setValue(key, value, source);
+    }
+  }
 
   //==========================================================================
   // HELPER FUNCTIONS (Refactored for Self-Contained State Module)
@@ -379,8 +136,8 @@ window.TEUI.SectionModules.sect10 = (function () {
     }
     fieldElement.textContent = displayValue; // Update DOM display
 
-    // Store value using the ModeManager facade
-    ModeManager.setValue(currentFieldId, rawValueToStore, "user-modified");
+    // Store value via mode-aware helper
+    setModeValue(currentFieldId, rawValueToStore, "user-modified");
   }
 
   //==========================================================================
@@ -1663,7 +1420,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         const fieldId = this.getAttribute("data-field-id");
         if (!fieldId) return;
 
-        ModeManager.setValue(fieldId, this.value, "user-modified");
+        setModeValue(fieldId, this.value, "user-modified");
       });
     });
 
@@ -1674,7 +1431,7 @@ window.TEUI.SectionModules.sect10 = (function () {
         const fieldId = this.getAttribute("data-field-id");
         if (!fieldId) return;
 
-        ModeManager.setValue(fieldId, this.value, "user-modified");
+        setModeValue(fieldId, this.value, "user-modified");
 
         // CORRECTED PATTERN: Use the direct nextElementSibling property for the input handler as well.
         const displayElement = this.nextElementSibling;
@@ -1776,35 +1533,16 @@ window.TEUI.SectionModules.sect10 = (function () {
    * This is a good place to initialize values and run initial calculations
    */
   function onSectionRendered() {
-    console.log(
-      "S10: Section rendered - initializing Self-Contained State Module."
-    );
+    console.log("S10: Section rendered.");
 
-    // 1. Initialize the ModeManager and its internal states
-    ModeManager.initialize();
-
-    // 2. Setup the section-specific toggle switch in the header
-
-    // 3. Initialize event handlers for this section
+    // Initialize event handlers for this section
     initializeEventHandlers();
-
-    // 4. Sync UI to the default (Target) state
-    ModeManager.refreshUI();
 
     // Register this section with StateManager and add listeners
     registerWithStateManager();
     addStateManagerListeners();
 
-    // Expose ModeManager globally for cross-section communication (e.g., global toggle)
-    if (window.TEUI) {
-      window.TEUI.sect10 = window.TEUI.sect10 || {};
-      window.TEUI.sect10.ModeManager = ModeManager;
-      console.log(
-        "S10: ModeManager exposed globally for cross-section integration."
-      );
-    }
-
-    // 5. Apply validation tooltips to fields
+    // Apply validation tooltips to fields
     if (window.TEUI.TooltipManager && window.TEUI.TooltipManager.initialized) {
       setTimeout(() => {
         window.TEUI.TooltipManager.applyTooltipsToSection(sectionRows);
@@ -1827,10 +1565,6 @@ window.TEUI.SectionModules.sect10 = (function () {
 
     onSectionRendered: onSectionRendered,
 
-    // ✅ PHASE 2: Expose state objects for import sync
-    TargetState: TargetState,
-    ReferenceState: ReferenceState,
-
     calculateAll: calculateAll,
     calculateUtilizationFactors: calculateUtilizationFactors,
     setupDropdownDefaults: setupDropdownDefaults,
@@ -1846,9 +1580,6 @@ window.TEUI.SectionModules.sect10 = (function () {
         return 50.0; // Default value in case of error
       }
     },
-
-    // ✅ CRITICAL FIX: Export ModeManager for dual-state field routing
-    ModeManager: ModeManager,
   };
 })();
 

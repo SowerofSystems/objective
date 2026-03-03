@@ -11,219 +11,40 @@ window.TEUI = window.TEUI || {};
 window.TEUI.SectionModules = window.TEUI.SectionModules || {};
 
 window.TEUI.SectionModules.sect07 = (function () {
+  // TargetState/ReferenceState/ModeManager removed — graph + SM is the single source of truth.
+
   //==========================================================================
-  // PATTERN A: DUAL-STATE ARCHITECTURE
+  // MODE-AWARE STATE HELPERS (read/write SM with ref_ prefix in reference mode)
   //==========================================================================
 
-  // State objects for Target and Reference models
-  const TargetState = {
-    values: {},
-    getValue: function (fieldId) {
-      return this.values[fieldId] || null;
-    },
-    setValue: function (fieldId, value) {
-      this.values[fieldId] = value;
-    },
+  function getModeValue(fieldId) {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    return window.TEUI.StateManager?.getValue(isRef ? `ref_${fieldId}` : fieldId);
+  }
 
-    /**
-     * ✅ PHASE 2: Sync from global StateManager after import
-     * Bridges global StateManager → isolated TargetState for imported values
-     */
-    syncFromGlobalState: function () { /* graph is source of truth */ },
+  function setModeValue(fieldId, value, source = "user-modified") {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    const key = isRef ? `ref_${fieldId}` : fieldId;
+    if (window.TEUI.StateManager?.setValue) {
+      window.TEUI.StateManager.setValue(key, value, source);
+    }
+  }
 
-    // ✅ DUAL-STATE-CHEATSHEET.md COMPLIANCE: Initialize from FieldDefinitions (single source of truth)
-    setDefaults: function () {
-      console.log(
-        `🔧 [S07] TargetState.setDefaults: Initializing from FieldDefinitions`
-      );
-      this.values.d_49 = ModeManager.getFieldDefault("d_49") || "User Defined";
-      this.values.d_51 = ModeManager.getFieldDefault("d_51") || "Heatpump";
-      console.log(
-        `✅ [S07] TargetState.setDefaults: d_49="${this.values.d_49}", d_51="${this.values.d_51}"`
-      );
-
-      // ✅ CRITICAL: Publish defaults to StateManager for cross-section communication
-      if (window.TEUI?.StateManager) {
-        window.TEUI.StateManager.setValue("d_49", this.values.d_49, "default");
-        window.TEUI.StateManager.setValue("d_51", this.values.d_51, "default");
-        console.log(
-          `🌐 [S07] TargetState.setDefaults: Published to StateManager`
-        );
-      }
-    },
-    getNumericValue: function (fieldId, defaultValue = 0) {
-      const value = this.getValue(fieldId);
-      if (value === null || value === undefined || value === "")
-        return defaultValue;
-      const parsed =
-        window.TEUI?.parseNumeric?.(value, defaultValue) ?? parseFloat(value);
-      return isNaN(parsed) ? defaultValue : parsed;
-    },
-  };
-
-  const ReferenceState = {
-    values: {},
-    getValue: function (fieldId) {
-      return this.values[fieldId] || null;
-    },
-    setValue: function (fieldId, value) {
-      this.values[fieldId] = value;
-    },
-
-    /**
-     * ✅ PHASE 2: Sync from global StateManager after import
-     * Bridges global StateManager → isolated ReferenceState for imported values
-     */
-    syncFromGlobalState: function () { /* graph is source of truth */ },
-
-    // ✅ DUAL-STATE-CHEATSHEET.md COMPLIANCE: Initialize from FieldDefinitions (single source of truth)
-    setDefaults: function () {
-      console.log(
-        `🔧 [S07] ReferenceState.setDefaults: Initializing Reference-specific defaults`
-      );
-      this.values.d_49 = ModeManager.getFieldDefault("d_49") || "User Defined";
-      this.values.e_49 = ModeManager.getFieldDefault("e_49") || "40.00";
-      this.values.e_50 = ModeManager.getFieldDefault("e_50") || "10000.00";
-      this.values.d_51 = "Electric"; // Reference default: Electric system
-      this.values.d_52 = "90"; // Reference default: 90% efficiency
-      this.values.d_53 = ModeManager.getFieldDefault("d_53") || "0";
-      console.log(
-        `✅ [S07] ReferenceState.setDefaults: All 6 field defaults loaded`
-      );
-
-      // ✅ CRITICAL: Publish Reference defaults to StateManager with ref_ prefix
-      if (window.TEUI?.StateManager) {
-        window.TEUI.StateManager.setValue(
-          "ref_d_49",
-          this.values.d_49,
-          "default"
-        );
-        window.TEUI.StateManager.setValue(
-          "ref_e_49",
-          this.values.e_49,
-          "default"
-        );
-        window.TEUI.StateManager.setValue(
-          "ref_e_50",
-          this.values.e_50,
-          "default"
-        );
-        window.TEUI.StateManager.setValue(
-          "ref_d_51",
-          this.values.d_51,
-          "default"
-        );
-        window.TEUI.StateManager.setValue(
-          "ref_d_52",
-          this.values.d_52,
-          "default"
-        );
-        window.TEUI.StateManager.setValue(
-          "ref_d_53",
-          this.values.d_53,
-          "default"
-        );
-        console.log(
-          `🔗 [S07] ReferenceState.setDefaults: Published all 6 Reference defaults with ref_ prefix`
-        );
-      }
-    },
-    getNumericValue: function (fieldId, defaultValue = 0) {
-      const value = this.getValue(fieldId);
-      if (value === null || value === undefined || value === "")
-        return defaultValue;
-      const parsed =
-        window.TEUI?.parseNumeric?.(value, defaultValue) ?? parseFloat(value);
-      return isNaN(parsed) ? defaultValue : parsed;
-    },
-  };
-
-  // Mode manager for UI state switching (display-only)
-  const ModeManager = {
-    currentMode: "target", // "target" or "reference"
-
-    switchMode: function (mode) {
-      console.log(
-        `🔄 [S07] switchMode: Switching from "${this.currentMode}" to "${mode}"`
-      );
-      this.currentMode = mode;
-      // DOMBridge.stampAll() handles display
-
-      // ✅ NEW: Sync visual toggle UI when mode changes (from global or local toggle)
-      this.syncToggleUI(mode);
-
-      console.log(`✅ [S07] switchMode: Switch to "${mode}" completed`);
-    },
-
-    // ✅ NEW: Sync visual toggle switch and indicator to match current mode
-    // Called both when user clicks local toggle AND when global toggle switches mode
-    syncToggleUI: function (mode) {
-      // Use centralized ToggleUISync utility
-      window.TEUI.ToggleUISync.syncToggleUI(this._toggleElements, mode, "S07");
-    },
-
-    refreshUI: function () { /* DOMBridge.stampAll() handles display */ },
-
-    // Helper function to get field defaults from sectionRows definition
-    getFieldDefault: function (fieldId) {
-      // console.log(
-      //   `🔍 [S07] getFieldDefault: Looking for default for fieldId=${fieldId}`
-      // );
-      for (const rowKey in sectionRows) {
-        const row = sectionRows[rowKey];
-        if (row.cells) {
-          for (const cellKey in row.cells) {
-            const cell = row.cells[cellKey];
-            if (cell.fieldId === fieldId && cell.value !== undefined) {
-              // console.log(
-              //   `✅ [S07] getFieldDefault: Found default for ${fieldId} = "${cell.value}"`
-              // );
-              return cell.value;
-            }
+  // Helper to get field defaults from sectionRows definition
+  function getFieldDefault(fieldId) {
+    for (const rowKey in sectionRows) {
+      const row = sectionRows[rowKey];
+      if (row.cells) {
+        for (const cellKey in row.cells) {
+          const cell = row.cells[cellKey];
+          if (cell.fieldId === fieldId && cell.value !== undefined) {
+            return cell.value;
           }
         }
       }
-      // console.log(`❌ [S07] getFieldDefault: No default found for ${fieldId}`);
-      return null;
-    },
-
-    updateCalculatedDisplayValues: function () { /* DOMBridge.stampAll() handles display */ },
-
-    getValue: function (fieldId) {
-      const currentState =
-        this.currentMode === "target" ? TargetState : ReferenceState;
-      const value = currentState.getValue(fieldId);
-      console.log(
-        `📖 [S07] ModeManager.getValue: ${fieldId} = "${value}" (mode=${this.currentMode})`
-      );
-      return value;
-    },
-
-    setValue: function (fieldId, value, source = "user-modified") {
-      console.log(
-        `💾 [S07] ModeManager.setValue: Setting ${fieldId} = "${value}" (mode=${this.currentMode}, source=${source})`
-      );
-      const currentState =
-        this.currentMode === "target" ? TargetState : ReferenceState;
-      currentState.setValue(fieldId, value);
-
-      // ✅ CRITICAL BRIDGE: Sync Target changes to StateManager for downstream sections (S02 pattern)
-      if (this.currentMode === "target") {
-        console.log(
-          `🌐 [S07] ModeManager.setValue: Also storing to global StateManager: ${fieldId} = "${value}"`
-        );
-        window.TEUI?.StateManager?.setValue(fieldId, value, source);
-      }
-
-      // ✅ CRITICAL BRIDGE: Sync Reference changes to StateManager with ref_ prefix (S02 pattern)
-      if (this.currentMode === "reference" && window.TEUI?.StateManager) {
-        console.log(
-          `🔗 [S07] ModeManager.setValue: Also storing to global StateManager: ref_${fieldId} = "${value}"`
-        );
-        window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, source);
-      }
-    },
-  };
+    }
+    return null;
+  }
 
   //==========================================================================
   // CONSOLIDATED FIELD DEFINITIONS AND LAYOUT
@@ -669,8 +490,7 @@ window.TEUI.SectionModules.sect07 = (function () {
     return rowDef;
   }
 
-  // ✅ PATTERN A: Expose ModeManager to global namespace for ComponentBridge compatibility
-  window.TEUI.sect07 = { ModeManager: ModeManager };
+  window.TEUI.sect07 = window.TEUI.sect07 || {};
 
   //==========================================================================
   // HELPER FUNCTIONS (Stripped — graph computes all values)
@@ -754,7 +574,7 @@ window.TEUI.SectionModules.sect07 = (function () {
       parseFloat(rawTextValue.replace(/[$,%]/g, ""));
 
     if (isNaN(numericValue)) {
-      const previousValue = ModeManager.getValue(fieldId) || "0";
+      const previousValue = getModeValue(fieldId) || "0";
       numericValue = window.TEUI?.parseNumeric?.(previousValue, 0) ?? 0;
     }
 
@@ -764,10 +584,9 @@ window.TEUI.SectionModules.sect07 = (function () {
       window.TEUI?.formatNumber?.(numericValue, formatType) ?? valueToStore;
     fieldElement.textContent = formattedDisplay;
 
-    // ✅ PATTERN A: Use ModeManager.setValue for proper state separation
-    const currentValue = ModeManager.getValue(fieldId);
+    const currentValue = getModeValue(fieldId);
     if (currentValue !== valueToStore) {
-      ModeManager.setValue(fieldId, valueToStore, "user-modified");
+      setModeValue(fieldId, valueToStore, "user-modified");
     }
   }
 
@@ -777,24 +596,13 @@ window.TEUI.SectionModules.sect07 = (function () {
       e.target.getAttribute("data-dropdown-id");
     const value = e.target.value;
 
-    console.log(
-      `🔽 [S07] handleGenericDropdownChange: fieldId=${fieldId}, value="${value}", mode=${ModeManager.currentMode}`
-    );
-
     if (fieldId) {
-      // ✅ PATTERN A: Use ModeManager.setValue for proper state separation
-      console.log(
-        `💾 [S07] handleGenericDropdownChange: Storing ${fieldId}="${value}" in ${ModeManager.currentMode} mode`
-      );
-      ModeManager.setValue(fieldId, value, "user-modified");
+      setModeValue(fieldId, value, "user-modified");
 
       if (fieldId === "d_51") handleDHWSourceChange(e);
 
-      const currentWaterMethod = ModeManager.getValue("d_49") || "User Defined";
-      const currentSystemType = ModeManager.getValue("d_51") || "Heatpump";
-      console.log(
-        `🔍 [S07] handleGenericDropdownChange: Read back values - waterMethod="${currentWaterMethod}", systemType="${currentSystemType}"`
-      );
+      const currentWaterMethod = getModeValue("d_49") || "User Defined";
+      const currentSystemType = getModeValue("d_51") || "Heatpump";
       updateSection7Visibility(currentWaterMethod, currentSystemType);
     }
   }
@@ -809,12 +617,10 @@ window.TEUI.SectionModules.sect07 = (function () {
     if (displaySpan) displaySpan.textContent = value + "%";
 
     if (fieldId && (e.type === "change" || e.type === "input")) {
-      // ✅ NEW: Validate Gas/Oil limits for d_52 slider
       if (fieldId === "d_52") {
-        const systemType = ModeManager.getValue("d_51") || "Heatpump";
+        const systemType = getModeValue("d_51") || "Heatpump";
         const numValue = parseFloat(value);
 
-        // ✅ Enforce Gas/Oil limits (defensive validation - slider already constrained by min/max)
         if (
           (systemType === "Gas" || systemType === "Oil") &&
           (numValue < 50 || numValue > 98)
@@ -825,8 +631,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         }
       }
 
-      // ✅ PATTERN A: Use ModeManager.setValue for proper state separation
-      ModeManager.setValue(fieldId, value, "user-modified");
+      setModeValue(fieldId, value, "user-modified");
     }
   }
 
@@ -845,8 +650,7 @@ window.TEUI.SectionModules.sect07 = (function () {
       newStep = 2,
       newValue = 300;
 
-    // ✅ FIX (Nov 4, 2025): Preserve existing imported/user-modified values when switching system types
-    // Check if there's an existing value that should be preserved
+    // Preserve existing imported/user-modified values when switching system types
     let preservedValue = null;
 
     if (selectedSource === "Gas" || selectedSource === "Oil") {
@@ -854,15 +658,13 @@ window.TEUI.SectionModules.sect07 = (function () {
       newMaxValue = 98;
       newStep = 1;
 
-      // Check for existing d_52 value from user input or import
-      const existingD52 = ModeManager.getValue("d_52");
+      const existingD52 = getModeValue("d_52");
       if (existingD52) {
         preservedValue = parseInt(existingD52);
       }
 
-      newValue = preservedValue || 90; // Use preserved value or default to 90
+      newValue = preservedValue || 90;
 
-      // ✅ NEW: Validate preserved value is within Gas/Oil range
       if (preservedValue && (preservedValue < 50 || preservedValue > 98)) {
         console.warn(
           `[S07] Preserved value ${preservedValue}% outside Gas/Oil range (50-98%), resetting to 90%`
@@ -875,38 +677,25 @@ window.TEUI.SectionModules.sect07 = (function () {
       newStep = 1;
       newValue = 100;
     } else {
-      // For Heatpump, check if d_52 already has a user/imported value
-      const existingCOP = ModeManager.getValue("d_52");
+      const existingCOP = getModeValue("d_52");
       if (existingCOP) {
         preservedValue = parseInt(existingCOP);
-        console.log(`[S07] Preserving existing COP value: ${existingCOP}%`);
       }
 
       newMinValue = 100;
       newMaxValue = 450;
       newStep = 10;
-      newValue = preservedValue || 300; // Use preserved value or default to 300
+      newValue = preservedValue || 300;
     }
 
     console.log(
       `[S07] Setting d_52 slider: min=${newMinValue}, max=${newMaxValue}, value=${newValue}`
     );
 
-    // ✅ PHASE 7: No k_52 publication needed - all system types use d_52 → e_52 flow
+    // Write to both target and reference SM keys for d_52
     if (window.TEUI?.StateManager) {
-      window.TEUI.StateManager.setValue(
-        "d_52",
-        newValue.toString(),
-        "system-update"
-      );
-      window.TEUI.StateManager.setValue(
-        `ref_d_52`,
-        newValue.toString(),
-        "system-update"
-      );
-      console.log(
-        `[S07] Updated ${selectedSource}: d_52=${newValue}% (efficiency unified for all fuel types)`
-      );
+      window.TEUI.StateManager.setValue("d_52", newValue.toString(), "system-update");
+      window.TEUI.StateManager.setValue("ref_d_52", newValue.toString(), "system-update");
     }
     if (d52Slider) {
       d52Slider.min = newMinValue;
@@ -914,19 +703,10 @@ window.TEUI.SectionModules.sect07 = (function () {
       d52Slider.step = newStep;
       d52Slider.value = newValue;
 
-      // Find display element (use nextElementSibling - confirmed working)
       let displayElement = d52Display || d52Slider.nextElementSibling;
       if (displayElement) {
         displayElement.textContent = `${newValue}%`;
-        console.log(
-          `[S07] Updated slider display: ${selectedSource} → d_52=${newValue}%`
-        );
       }
-
-      // ✅ PHASE 7: Update local state with d_52 for all fuel types
-      ModeManager.setValue("d_52", newValue.toString(), "system-update");
-    } else {
-      console.log(`[S07] ERROR: d_52 slider not found in DOM!`);
     }
   }
 
@@ -987,28 +767,30 @@ window.TEUI.SectionModules.sect07 = (function () {
   //==========================================================================
 
   function onSectionRendered() {
-    // 1. ✅ CRITICAL: Initialize state defaults from FieldDefinitions (DUAL-STATE-CHEATSHEET.md compliance)
-    console.log(
-      `🚀 [S07] onSectionRendered: Initializing state defaults from FieldDefinitions`
-    );
-    TargetState.setDefaults();
-    ReferenceState.setDefaults();
-
-    // 2. Initialize event handlers
+    // Initialize event handlers
     initializeEventHandlers();
 
-    // 3. Initialize visibility based on current values (now properly initialized from FieldDefinitions)
-    const initialWaterMethod =
-      ModeManager.getFieldDefault("d_49") || "User Defined";
-    const initialSystemType = ModeManager.getFieldDefault("d_51") || "Heatpump";
+    // Initialize visibility based on field defaults
+    const initialWaterMethod = getFieldDefault("d_49") || "User Defined";
+    const initialSystemType = getFieldDefault("d_51") || "Heatpump";
     updateSection7Visibility(initialWaterMethod, initialSystemType);
 
-    // 4. Apply validation tooltips to fields
+    // Apply validation tooltips to fields
     if (window.TEUI.TooltipManager && window.TEUI.TooltipManager.initialized) {
       setTimeout(() => {
         window.TEUI.TooltipManager.applyTooltipsToSection(sectionRows);
       }, 300);
     }
+  }
+
+  /**
+   * Called by ReferenceToggle when mode switches.
+   * Updates visibility/ghosting based on current mode's values.
+   */
+  function onModeSwitch(mode) {
+    const waterMethod = getModeValue("d_49") || getFieldDefault("d_49") || "User Defined";
+    const systemType = getModeValue("d_51") || getFieldDefault("d_51") || "Heatpump";
+    updateSection7Visibility(waterMethod, systemType);
   }
 
   //==========================================================================
@@ -1020,6 +802,7 @@ window.TEUI.SectionModules.sect07 = (function () {
     getLayout,
     initializeEventHandlers,
     onSectionRendered,
+    onModeSwitch,
     calculateAll,
     calculateWaterUse,
     calculateHeatingSystem,
@@ -1028,12 +811,6 @@ window.TEUI.SectionModules.sect07 = (function () {
     handleGenericDropdownChange,
     handleSliderChange,
     handleDHWSourceChange,
-    // ✅ PATTERN A: Expose state objects for external access
-    ModeManager: ModeManager,
-
-    // ✅ PHASE 2: Expose state objects for import sync
-    TargetState: TargetState,
-    ReferenceState: ReferenceState,
   };
 })();
 

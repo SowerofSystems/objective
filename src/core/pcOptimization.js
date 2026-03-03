@@ -7,7 +7,7 @@
  *
  * This module provides:
  * - OPTIMIZATION_PRESETS: Configuration for 4 optimization strategies
- * - updateField(): Helper to update TargetState + StateManager + recalculate
+ * - updateField(): Helper to update StateManager + recalculate
  * - applyOptimizationPreset(): Unified handler that applies any preset
  * - 4 wrapper functions: handleDecarbonize, handleOptimize, handleSuperOptimize, handlePassivHausIfy
  */
@@ -391,23 +391,15 @@ window.TEUI.PCOptimization = (function () {
   // ══════════════════════════════════════════════════════════════════════
 
   /**
-   * Update a field in both TargetState and StateManager
-   * Follows the standard pattern used across all optimization handlers
+   * Update a field in StateManager (single source of truth)
    *
    * @param {string} sectionId - Section module ID (e.g., "sect07")
    * @param {string} fieldId - Field ID to update (e.g., "d_52")
    * @param {string} value - Value to set
    */
   function updateField(sectionId, fieldId, value) {
-    const section = window.TEUI?.SectionModules?.[sectionId];
     const stateManager = window.TEUI?.StateManager;
 
-    // Update section's TargetState
-    if (section?.TargetState) {
-      section.TargetState.setValue(fieldId, value);
-    }
-
-    // Update global StateManager
     if (stateManager) {
       stateManager.setValue(fieldId, value, "user-modified");
     }
@@ -487,10 +479,8 @@ window.TEUI.PCOptimization = (function () {
       }
     }
 
-    // Final graph recalculation + sync to SM + stamp all
-    if (window.TEUI?.Calculator?.calculateAll) {
-      window.TEUI.Calculator.calculateAll();
-    }
+    // Graph recalculation handled by wildcard SM listener → recomputeForInput
+    // (triggered by each SM.setValue in updateField above)
 
     // 🔍 DIAGNOSTIC: Capture state AFTER optimization (if debug enabled)
     if (debugEnabled && stateBefore) {

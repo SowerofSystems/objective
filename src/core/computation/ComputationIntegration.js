@@ -975,6 +975,121 @@
     };
   }
 
+  // ============================================================================
+  // TARGETED RECOMPUTE (replaces calculateAll for user input changes)
+  // ============================================================================
+
+  /**
+   * Lazy-cached map from legacy field IDs to semantic paths.
+   * Built once from graph input nodes.
+   */
+  let _legacyToSemanticCache = null;
+
+  function getLegacyToSemanticMap() {
+    if (_legacyToSemanticCache) return _legacyToSemanticCache;
+    _legacyToSemanticCache = new Map();
+    const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
+    for (const semanticPath of inputIds) {
+      const inputNode = graph.getInput(semanticPath);
+      if (inputNode?.legacyId) {
+        _legacyToSemanticCache.set(inputNode.legacyId, semanticPath);
+      }
+    }
+    return _legacyToSemanticCache;
+  }
+
+  /**
+   * Targeted recompute for a single user input change.
+   *
+   * Unlike Calculator.calculateAll(), this does NOT call populateReferenceModel(),
+   * which prevents cross-model contamination (target values leaking to reference
+   * for non-G inputs that aren't in ReferenceValues.js).
+   *
+   * Routing:
+   * - G-fields (geometry/climate): copies value to Reference model, computes BOTH
+   * - Target C/A-fields: computes Target only
+   * - Reference C/A-fields: computes Reference only
+   * Always syncs cross-model values for compliance ratios, syncs to SM, stamps DOM.
+   *
+   * @param {string} legacyFieldId - SM field key (e.g., "d_59" or "ref_d_59")
+   */
+  function recomputeForInput(legacyFieldId) {
+    if (!initialized) return;
+
+    // Performance timing
+    if (window.TEUI?.Clock?.markCalculationStart) {
+      window.TEUI.Clock.markCalculationStart();
+    }
+
+    const SM = window.TEUI.StateManager;
+    if (SM?.muteListeners) SM.muteListeners();
+
+    try {
+      // Determine which model was changed
+      const isRef = legacyFieldId.startsWith("ref_");
+      const baseId = isRef ? legacyFieldId.slice(4) : legacyFieldId;
+
+      // Find the graph input
+      const lookupMap = getLegacyToSemanticMap();
+      const semanticPath = lookupMap.get(baseId);
+      const inputNode = semanticPath ? graph.getInput(semanticPath) : null;
+      const classification = inputNode?.classification || "C";
+
+      const targetId = state.getActiveModelId();
+      const refModelId = getRefModelId();
+
+      if (classification === "G" && refModelId) {
+        // G-field: shared input — copy to reference model and compute both
+        const value = state.getValueForModel(targetId, semanticPath);
+        if (value !== undefined && value !== null) {
+          state.setValueForModel(refModelId, semanticPath, value);
+        }
+        engine.computeAllForModel(targetId);
+        engine.computeAllForModel(refModelId);
+        // Force wood offset = 0 for Reference model
+        state.setValueForModel(refModelId, "forestry.annualOffset", 0);
+        engine.onValueChange("forestry.annualOffset", 0, refModelId);
+        syncCrossModelValues();
+      } else if (isRef && refModelId) {
+        // Reference C/A-field: recompute Reference only
+        engine.computeAllForModel(refModelId);
+        state.setValueForModel(refModelId, "forestry.annualOffset", 0);
+        engine.onValueChange("forestry.annualOffset", 0, refModelId);
+        syncCrossModelValues();
+      } else {
+        // Target C/A-field: recompute Target only + cross-model sync
+        engine.computeAllForModel(targetId);
+        if (refModelId) {
+          syncCrossModelValues();
+        }
+      }
+
+      if (window.TEUI?.Clock?.markCalculationEnd) {
+        window.TEUI.Clock.markCalculationEnd();
+      }
+
+      // Sync to StateManager and stamp DOM
+      syncToStateManager();
+      if (refModelId) {
+        syncReferenceToStateManager();
+      }
+
+      if (window.TEUI.DOMBridge?.stampAll) {
+        window.TEUI.DOMBridge.stampAll();
+      }
+
+      // Section01 supplementary display
+      const sect01 = window.TEUI.SectionModules?.sect01;
+      if (sect01?.postStamp) {
+        sect01.postStamp();
+      }
+
+      log(`recomputeForInput(${legacyFieldId}): class=${classification}, ref=${isRef}`);
+    } finally {
+      if (SM?.unmuteListeners) SM.unmuteListeners();
+    }
+  }
+
   /**
    * Sync Reference computed values back to StateManager
    */
@@ -1200,6 +1315,9 @@
     // Cross-model sync (for incremental Reference model changes)
     syncCrossModelValues,
     onReferenceValueChange,
+
+    // Targeted recompute (replaces calculateAll for user input changes)
+    recomputeForInput,
 
     // Computation
     computeAll,

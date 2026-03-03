@@ -1967,45 +1967,7 @@ window.TEUI.SectionModules.sect16 = (function () {
     fetchDataAndRenderSankey(true);
   }
 
-  // ========================================
-  // MODE MANAGER: Target/Reference Toggle
-  // ========================================
-
-  const ModeManager = {
-    currentMode: "target",
-    _toggleElements: null,
-
-    switchMode: function (mode) {
-      if (this.currentMode === mode) return;
-
-      this.currentMode = mode;
-
-      // Update toggle UI to match new mode (do this FIRST)
-      this.syncToggleUI(mode);
-
-      // Re-fetch data and re-render Sankey with new mode's values
-      // getModeAwareValue() reads ref_ prefixed values when currentMode === "reference"
-      if (window.TEUI.sect16.isActive && window.TEUI.sect16.sankeyInstance) {
-        fetchDataAndRenderSankey(false);
-      }
-    },
-
-    syncToggleUI: function (mode) {
-      // Use centralized ToggleUISync utility
-      window.TEUI.ToggleUISync.syncToggleUI(this._toggleElements, mode, "S16");
-    },
-
-    /**
-     * Required by ReferenceToggle.switchAllSectionsMode()
-     * S16 is visualization-only, so this just ensures Sankey renders with current mode's data
-     */
-    updateCalculatedDisplayValues: function () {
-      // If Sankey is active, re-render with current mode's data
-      if (window.TEUI.sect16.isActive && window.TEUI.sect16.sankeyInstance) {
-        fetchDataAndRenderSankey(false);
-      }
-    },
-  };
+  // TargetState/ReferenceState/ModeManager removed — graph + SM is the single source of truth.
 
   // ========================================
   // HEADER CONTROLS INJECTION
@@ -2046,20 +2008,15 @@ window.TEUI.SectionModules.sect16 = (function () {
 
   /**
    * Mode-aware getValue helper - reads ref_ prefixed values when in Reference mode
-   * This follows the same pattern as S02-S15 for explicit state isolation
-   *
-   * IMPORTANT: S16 uses the LOCAL ModeManager.currentMode (not global ReferenceToggle)
-   * because S16's ModeManager.switchMode() synchronizes with the global toggle.
-   * This ensures S16 reads the correct data based on its current display state.
+   * Uses global ReferenceToggle as the single source of truth for mode state.
    */
   function getModeAwareValue(fieldId) {
     if (!window.TEUI?.StateManager) return null;
 
-    if (ModeManager.currentMode === "reference") {
-      // Reference mode: Read ONLY ref_ prefixed values for perfect state isolation
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    if (isRef) {
       return window.TEUI.StateManager.getValue(`ref_${fieldId}`);
     } else {
-      // Target mode: Read unprefixed (standard) values
       return window.TEUI.StateManager.getValue(fieldId);
     }
   }
@@ -2336,17 +2293,10 @@ window.TEUI.SectionModules.sect16 = (function () {
       fetchDataAndRenderSankey(false);
     },
     activateSankey: activateSankey,
-    ModeManager: ModeManager, // Expose ModeManager for global Reference toggle
   };
 })();
 
-// CRITICAL: Expose ModeManager on window.TEUI.sect16 for ReferenceToggle compatibility
-// This dual-namespace exposure is REQUIRED for global Reference toggle to work:
-// - This module returns to: window.TEUI.SectionModules.sect16 (line 24)
-// - ReferenceToggle expects: window.TEUI.sect16.ModeManager (ReferenceToggle.js:53)
-// Without this line, S16 is invisible to the global toggle system (only 14 sections found instead of 15)
-// See commit 6bc0daa for the bug fix that discovered this requirement
-window.TEUI.sect16.ModeManager = window.TEUI.SectionModules.sect16.ModeManager;
+// ModeManager removed — graph + SM is the single source of truth.
 
 // Remove the custom teui-section-rendered listener for Section 16
 // document.addEventListener('teui-section-rendered', function(event) { ... });

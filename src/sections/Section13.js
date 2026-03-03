@@ -14,288 +14,24 @@ window.TEUI.sect13.userInteracted = false;
 
 // Section 13: Mechanical Loads Module
 window.TEUI.SectionModules.sect13 = (function () {
+  // TargetState/ReferenceState/ModeManager removed — graph + SM is the single source of truth.
+
   //==========================================================================
-  // DUAL-STATE ARCHITECTURE (Self-Contained State Module)
+  // MODE-AWARE STATE HELPERS
   //==========================================================================
 
-  // PATTERN A: Internal State Objects (Self-Contained + Persistent)
-  const TargetState = {
-    state: {},
-    listeners: {},
-    initialize: function () {
-      const savedState = localStorage.getItem("S13_TARGET_STATE");
-      if (savedState) {
-        this.state = JSON.parse(savedState);
-      } else {
-        this.setDefaults();
-      }
-    },
-    setDefaults: function () {
-      // SINGLE SOURCE OF TRUTH: Field definitions in sectionRows (per CHEATSHEET)
-      // Initialize empty state - values read from field definitions via getFieldDefault()
-      this.state = {};
-    },
-    saveState: function () {
-      localStorage.setItem("S13_TARGET_STATE", JSON.stringify(this.state));
-    },
-    setValue: function (fieldId, value, source = "user") {
-      this.state[fieldId] = value;
+  function getModeValue(fieldId) {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    return window.TEUI.StateManager?.getValue(isRef ? `ref_${fieldId}` : fieldId);
+  }
 
-      // Mark fields as user-modified to preserve during d_13 changes
-      // CRITICAL: Treat "imported" values as user-modified to preserve them across mode switches
-      if (
-        (source === "user-modified" || source === "imported") &&
-        (fieldId === "f_113" || fieldId === "j_115" || fieldId === "j_116")
-      ) {
-        this.state[`${fieldId}_userModified`] = true;
-      }
-
-      if (source === "user" || source === "user-modified") {
-        this.saveState();
-        /* graph computes — no calculateAll() or updateCalculatedDisplayValues() calls */
-      }
-    },
-    getValue: function (fieldId) {
-      // CHEATSHEET PATTERN: Fallback to field definitions (single source of truth)
-      return this.state[fieldId] !== undefined
-        ? this.state[fieldId]
-        : getFieldDefault(fieldId);
-    },
-    syncFromGlobalState: function () {
-      /* graph is source of truth */
-    },
-
-    /**
-     * Apply code-minimum baseline values from ReferenceValues
-     * Called by "Set Values" button to overlay reference values onto Target model
-     */
-    applyReferenceValues: function (standard) {
-      const referenceValues = window.TEUI?.ReferenceValues?.[standard] || {};
-
-      console.log(
-        `[S13 TargetState] Applying code-minimum values from "${standard}"`
-      );
-
-      Object.keys(referenceValues).forEach(fieldId => {
-        if (referenceValues[fieldId] !== undefined) {
-          this.state[fieldId] = referenceValues[fieldId];
-          console.log(
-            `[S13 TargetState] ${fieldId} = ${referenceValues[fieldId]} (from ${standard})`
-          );
-        }
-      });
-
-      this.saveState();
-      console.log(
-        `[S13 TargetState] Code-minimum values from "${standard}" applied to Target model`
-      );
-    },
-  };
-
-  const ReferenceState = {
-    state: {},
-    listeners: {},
-    initialize: function () {
-      const savedState = localStorage.getItem("S13_REFERENCE_STATE");
-      if (savedState) {
-        this.state = JSON.parse(savedState);
-      } else {
-        this.setDefaults();
-      }
-    },
-    setDefaults: function () {
-      // CHEATSHEET PATTERN: Initialize from field definitions, then apply Reference overrides
-      const currentStandard =
-        window.TEUI?.StateManager?.getValue?.("ref_d_13") ||
-        "OBC SB10 5.5-6 Z6";
-      const referenceValues =
-        window.TEUI?.ReferenceValues?.[currentStandard] || {};
-
-      // Step 1: Initialize empty (values come from field definitions via getFieldDefault)
-      this.state = {};
-
-      // Step 2: Apply Reference-specific overrides set to run on initialization
-      this.state.d_113 = "Heatpump";
-      this.state.f_113 = referenceValues.f_113 || "7.1";
-      this.state.d_116 = "Cooling";
-      this.state.d_118 = referenceValues.d_118 || "81";
-      this.state.d_119 = referenceValues.d_119 || "8.33";
-      this.state.g_118 = "Volume by Schedule";
-      this.state.j_115 = referenceValues.j_115 || "0.90";
-      this.state.j_116 = referenceValues.j_116 || "2.66";
-      this.state.l_118 = referenceValues.l_118 || "3.50";
-    },
-    // MANDATORY: Include onReferenceStandardChange for ref_d_13 changes
-    onReferenceStandardChange: function () {
-      const currentStandard =
-        window.TEUI?.StateManager?.getValue?.("ref_d_13") ||
-        "OBC SB10 5.5-6 Z6";
-      const referenceValues =
-        window.TEUI?.ReferenceValues?.[currentStandard] || {};
-
-      // Only update system defaults, preserve user-modified slider values
-      if (!this.state.f_113_userModified) {
-        this.state.f_113 = referenceValues.f_113 || "7.1";
-      }
-      if (!this.state.j_115_userModified) {
-        this.state.j_115 = referenceValues.j_115 || "0.90";
-      }
-      // Update system type: use reference value if defined, otherwise revert to default
-      this.state.d_113 = referenceValues.d_113 || "Heatpump";
-
-      this.saveState();
-
-      // Only refresh UI if currently in reference mode
-      if (ModeManager.currentMode === "reference") {
-        ModeManager.refreshUI();
-        /* graph computes — no calculateAll() or updateCalculatedDisplayValues() calls */
-      }
-    },
-    saveState: function () {
-      localStorage.setItem("S13_REFERENCE_STATE", JSON.stringify(this.state));
-    },
-    setValue: function (fieldId, value, source = "user") {
-      this.state[fieldId] = value;
-
-      // Mark fields as user-modified to preserve during d_13 changes
-      // CRITICAL: Treat "imported" values as user-modified to preserve them across mode switches
-      if (
-        (source === "user-modified" || source === "imported") &&
-        (fieldId === "f_113" || fieldId === "j_115" || fieldId === "j_116")
-      ) {
-        this.state[`${fieldId}_userModified`] = true;
-      }
-
-      if (source === "user" || source === "user-modified") {
-        this.saveState();
-        /* graph computes — no calculateAll() or updateCalculatedDisplayValues() calls */
-      }
-    },
-    getValue: function (fieldId) {
-      // CHEATSHEET PATTERN: Check state first (Reference overrides), then field definitions
-      return this.state[fieldId] !== undefined
-        ? this.state[fieldId]
-        : getFieldDefault(fieldId);
-    },
-    syncFromGlobalState: function () {
-      /* graph is source of truth */
-    },
-  };
-
-  // PATTERN 2: The ModeManager Facade
-  const ModeManager = {
-    currentMode: "target",
-    _isRefreshing: false,
-    initialize: function () {
-      TargetState.initialize();
-      ReferenceState.initialize();
-
-      // CSV EXPORT FIX: Publish ALL Reference defaults to StateManager
-      if (window.TEUI?.StateManager) {
-        [
-          "d_113",
-          "f_113",
-          "j_115",
-          "d_116",
-          "d_118",
-          "g_118",
-          "l_118",
-          "d_119",
-          "l_119",
-          "k_120",
-        ].forEach(id => {
-          const refId = `ref_${id}`;
-          const val = ReferenceState.getValue(id);
-          if (
-            !window.TEUI.StateManager.getValue(refId) &&
-            val != null &&
-            val !== ""
-          ) {
-            window.TEUI.StateManager.setValue(refId, val, "calculated");
-          }
-        });
-      }
-    },
-    switchMode: function (mode) {
-      if (
-        this.currentMode === mode ||
-        (mode !== "target" && mode !== "reference")
-      )
-        return;
-      this.currentMode = mode;
-
-      this.refreshUI();
-      // Update ghosting classes to match new mode's d_113/d_116 values
-      this.updateConditionalUI();
-
-      // UI toggle is for DISPLAY ONLY - values are already calculated
-      this.updateCalculatedDisplayValues();
-
-      // Sync visual toggle UI when mode changes
-      this.syncToggleUI(mode);
-    },
-
-    // Update displayed calculated values based on current mode
-    updateCalculatedDisplayValues: function () {
-      /* DOMBridge.stampAll() handles display */
-    },
-    resetState: function () {
-      delete TargetState.state.f_113_userModified;
-      delete TargetState.state.j_115_userModified;
-      delete ReferenceState.state.f_113_userModified;
-      delete ReferenceState.state.j_115_userModified;
-
-      TargetState.setDefaults();
-      TargetState.saveState();
-      ReferenceState.setDefaults();
-      ReferenceState.saveState();
-
-      this.refreshUI();
-      this.updateConditionalUI();
-      /* graph computes — no calculateAll() or updateCalculatedDisplayValues() calls */
-    },
-    getCurrentState: function () {
-      return this.currentMode === "target" ? TargetState : ReferenceState;
-    },
-    getValue: function (fieldId) {
-      return this.getCurrentState().getValue(fieldId);
-    },
-    setValue: function (fieldId, value, source = "user") {
-      this.getCurrentState().setValue(fieldId, value, source);
-
-      // Mode-aware StateManager publication
-      if (this.currentMode === "target") {
-        // Target mode: Store unprefixed for downstream consumption
-        window.TEUI.StateManager.setValue(fieldId, value, "user-modified");
-      } else if (this.currentMode === "reference") {
-        // Reference mode writes with ref_ prefix
-        window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, source);
-      }
-    },
-    refreshUI: function () {
-      /* DOMBridge.stampAll() handles display */
-    },
-
-    // CRITICAL: Mode-aware conditional UI updates
-    updateConditionalUI: function () {
-      const currentHeatingSystem = this.getValue("d_113");
-      if (currentHeatingSystem) {
-        handleHeatingSystemChangeForGhosting(currentHeatingSystem);
-      }
-    },
-
-    // Sync visual toggle switch and indicator to match current mode
-    syncToggleUI: function (mode) {
-      // Use centralized ToggleUISync utility
-      window.TEUI.ToggleUISync.syncToggleUI(this._toggleElements, mode, "S13");
-    },
-  };
-
-  // MANDATORY: Global exposure
-  window.TEUI.sect13 = window.TEUI.sect13 || {};
-  window.TEUI.sect13.ModeManager = ModeManager;
-  window.TEUI.sect13.TargetState = TargetState;
-  window.TEUI.sect13.ReferenceState = ReferenceState;
+  function setModeValue(fieldId, value, source = "user-modified") {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    const key = isRef ? `ref_${fieldId}` : fieldId;
+    if (window.TEUI.StateManager?.setValue) {
+      window.TEUI.StateManager.setValue(key, value, source);
+    }
+  }
 
   //==========================================================================
   // CONSOLIDATED FIELD DEFINITIONS AND LAYOUT
@@ -1427,7 +1163,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           const hspfValue = parseFloat(this.value);
           if (isNaN(hspfValue)) return;
 
-          ModeManager.setValue("f_113", hspfValue.toString(), "user-modified");
+          setModeValue("f_113", hspfValue.toString(), "user-modified");
           /* graph computes */
         });
 
@@ -1448,7 +1184,7 @@ window.TEUI.SectionModules.sect13 = (function () {
             displaySpan.textContent = efficiencyValue.toFixed(0) + "%";
           }
 
-          ModeManager.setValue(
+          setModeValue(
             "d_118",
             efficiencyValue.toString(),
             "user-modified"
@@ -1460,7 +1196,7 @@ window.TEUI.SectionModules.sect13 = (function () {
           const efficiencyValue = parseFloat(this.value);
           if (isNaN(efficiencyValue)) return;
 
-          ModeManager.setValue(
+          setModeValue(
             "d_118",
             efficiencyValue.toString(),
             "user-modified"
@@ -1544,21 +1280,10 @@ window.TEUI.SectionModules.sect13 = (function () {
 
       if (window.TEUI.StateManager) {
         const valueToStore = numericValue.toString();
-        if (ModeManager && typeof ModeManager.setValue === "function") {
-          ModeManager.setValue(fieldId, valueToStore, "user-modified");
-        } else {
-          window.TEUI.StateManager.setValue(
-            fieldId,
-            valueToStore,
-            "user-modified"
-          );
-        }
-
-        /* graph computes — no calculateAll() or updateCalculatedDisplayValues() calls */
+        setModeValue(fieldId, valueToStore, "user-modified");
 
         if (fieldId === "j_116") {
-          // Surgical DOM update: Re-apply formatted value from state after graph computes
-          const currentStateValue = ModeManager.getValue("j_116");
+          const currentStateValue = getModeValue("j_116");
           if (currentStateValue) {
             const numVal = window.TEUI.parseNumeric(currentStateValue);
             if (!isNaN(numVal)) {
@@ -1591,9 +1316,6 @@ window.TEUI.SectionModules.sect13 = (function () {
    * Called when the section is rendered
    */
   function onSectionRendered() {
-    // 1. Initialize the ModeManager and its internal states
-    ModeManager.initialize();
-
     // 3. Initialize event handlers for this section
     initializeEventHandlers();
 
@@ -1652,7 +1374,7 @@ window.TEUI.SectionModules.sect13 = (function () {
     }
 
     // 5. Update conditional UI (ghosting) for current mode
-    ModeManager.updateConditionalUI();
+    updateConditionalUI();
 
     // Set initial ghosting state after calculations might have populated values
     setTimeout(() => {
@@ -1680,20 +1402,12 @@ window.TEUI.SectionModules.sect13 = (function () {
    * Handle dropdown changes (following S09 pattern)
    */
   function handleDropdownChange(e) {
-    // Ignore dropdown events during refreshUI() to prevent state contamination
-    if (ModeManager._isRefreshing) {
-      return;
-    }
-
     const fieldId = e.target.getAttribute("data-field-id");
     if (!fieldId) return;
 
     const newValue = e.target.value;
 
-    // Store via ModeManager (dual-state aware)
-    if (ModeManager && typeof ModeManager.setValue === "function") {
-      ModeManager.setValue(fieldId, newValue, "user-modified");
-    }
+    setModeValue(fieldId, newValue, "user-modified");
 
     // Special handling for heating system changes
     if (fieldId === "d_113") {
@@ -1702,13 +1416,13 @@ window.TEUI.SectionModules.sect13 = (function () {
 
     // Special handling for cooling system changes (d_116)
     if (fieldId === "d_116") {
-      const currentHeatingSystem = ModeManager.getValue("d_113") || "Heatpump";
+      const currentHeatingSystem = getModeValue("d_113") || "Heatpump";
       handleHeatingSystemChangeForGhosting(currentHeatingSystem);
     }
 
     // Special handling for ventilation method changes
     if (fieldId === "g_118") {
-      const currentACH = ModeManager.getValue("l_118");
+      const currentACH = getModeValue("l_118");
 
       if (newValue === "Volume Constant") {
         const expectedACH = getFieldDefault("l_118") || "3";
@@ -1817,7 +1531,6 @@ window.TEUI.SectionModules.sect13 = (function () {
 
     // --- ROW 116 GHOSTING: Dedicated Cooling System Logic ---
     const currentCoolingSystem =
-      window.TEUI?.sect13?.ModeManager?.getValue("d_116") ||
       window.TEUI?.StateManager?.getValue("d_116");
     const isCoolingActive = currentCoolingSystem === "Cooling";
 
@@ -1850,6 +1563,23 @@ window.TEUI.SectionModules.sect13 = (function () {
     }
   }
 
+  /**
+   * Standalone conditional UI update - reads current mode's d_113 to set ghosting.
+   */
+  function updateConditionalUI() {
+    const currentHeatingSystem = getModeValue("d_113") || getFieldDefault("d_113") || "Heatpump";
+    if (currentHeatingSystem) {
+      handleHeatingSystemChangeForGhosting(currentHeatingSystem);
+    }
+  }
+
+  /**
+   * Called by ReferenceToggle when mode switches.
+   */
+  function onModeSwitch(mode) {
+    updateConditionalUI();
+  }
+
   //==========================================================================
   // PUBLIC API
   //==========================================================================
@@ -1870,11 +1600,7 @@ window.TEUI.SectionModules.sect13 = (function () {
     calculateVentilationValues: function () { /* graph computes */ },
     calculateFreeCooling: function () { /* graph computes */ },
 
-    ModeManager: ModeManager,
-
-    // State objects for import sync
-    TargetState: TargetState,
-    ReferenceState: ReferenceState,
+    onModeSwitch: onModeSwitch,
 
     // Ghosting functions
     setFieldGhosted: setFieldGhosted,

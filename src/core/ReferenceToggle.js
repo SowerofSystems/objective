@@ -188,84 +188,66 @@ TEUI.ReferenceToggle = (function () {
    * Pattern A Compatible: Get all sections with dual-state ModeManager
    * FIXED: Updated for current dual-state architecture
    */
-  function getAllDualStateSections() {
+  /**
+   * Sync per-section toggle UI visuals (the local target/reference toggle switches).
+   * Iterates SectionModules that still have _toggleElements stored.
+   */
+  function syncAllToggleUI(mode) {
     const sectionIds = [
-      "sect02",
-      "sect03",
-      "sect04",
-      "sect05",
-      "sect06",
-      "sect07",
-      "sect08",
-      "sect09",
-      "sect10",
-      "sect11",
-      "sect12",
-      "sect13",
-      "sect14",
-      "sect15",
-      "sect16",
-      "sect19", // WOMBAT - 3D Thermal Topology
+      "sect02", "sect03", "sect04", "sect05", "sect06", "sect07",
+      "sect08", "sect09", "sect10", "sect11", "sect12", "sect13",
+      "sect14", "sect15", "sect16", "sect19",
     ];
 
-    const dualStateSections = sectionIds
-      .map(id => ({
-        id,
-        module: window.TEUI?.[id],
-        modeManager: window.TEUI?.[id]?.ModeManager,
-      }))
-      .filter(s => s.modeManager);
-
-    console.log(
-      `[ReferenceToggle] Found ${dualStateSections.length} dual-state sections:`,
-      dualStateSections.map(s => s.id)
-    );
-    return dualStateSections;
-  }
-
-  // Track which sections have been warned about missing methods to avoid spam
-  const warnedSections = new Set();
-
-  /**
-   * PHASE 3: Master Display Toggle - Switch ALL sections with coordinated styling
-   * UPDATED: Now applies existing CSS classes for global Reference styling
-   */
-  function switchAllSectionsMode(mode) {
-    const sections = getAllDualStateSections();
-    let switchedCount = 0;
-
-    // Switch all section ModeManagers
-    sections.forEach(section => {
+    sectionIds.forEach(id => {
       try {
-        if (
-          section.modeManager &&
-          typeof section.modeManager.switchMode === "function"
-        ) {
-          section.modeManager.switchMode(mode);
-          switchedCount++;
+        const mod = window.TEUI?.SectionModules?.[id];
+        if (mod?._toggleElements) {
+          window.TEUI.ToggleUISync.syncToggleUI(mod._toggleElements, mode, id);
         }
-      } catch (error) {
-        console.error(
-          `[ReferenceToggle] Error switching ${section.id}:`,
-          error
-        );
+      } catch (e) {
+        // Skip sections without toggle elements
       }
     });
+  }
 
-    // Apply existing CSS classes for global Reference styling
+  /**
+   * Notify sections that expose an onModeSwitch callback.
+   * Sections use this to update conditional UI (ghosting, editability).
+   */
+  function notifySectionsOfModeChange(mode) {
+    const modules = window.TEUI?.SectionModules || {};
+    Object.keys(modules).forEach(id => {
+      try {
+        if (typeof modules[id]?.onModeSwitch === "function") {
+          modules[id].onModeSwitch(mode);
+        }
+      } catch (e) {
+        console.error(`[ReferenceToggle] Error notifying ${id}:`, e);
+      }
+    });
+  }
+
+  /**
+   * Master Display Toggle - Switch ALL sections with coordinated styling.
+   * No longer iterates ModeManagers — just applies CSS classes and notifies sections.
+   */
+  function switchAllSectionsMode(mode) {
+    // Apply CSS classes for global Reference styling
     const isReference = mode === "reference";
     document.body.classList.toggle("viewing-reference-inputs", isReference);
     document.body.classList.toggle("viewing-reference-values", isReference);
     document.body.classList.toggle("reference-mode", isReference);
     document.documentElement.classList.toggle("reference-mode", isReference);
 
-    // ✅ NEW: Update Key Values header toggle UI to match global mode
-    updateKeyValuesToggleUI(mode);
+    // Sync per-section toggle UI visuals
+    syncAllToggleUI(mode);
 
-    console.log(
-      `🎨 Master Toggle: Switched ${switchedCount}/${sections.length} sections to ${mode.toUpperCase()} mode with global styling`
-    );
-    return switchedCount;
+    // Update conditional UI (ghosting/editability) for sections that need it
+    notifySectionsOfModeChange(mode);
+
+    // Update Key Values header toggle UI to match global mode
+    updateKeyValuesToggleUI(mode);
   }
 
   /**
@@ -430,49 +412,18 @@ TEUI.ReferenceToggle = (function () {
     isShowingReference = !isShowingReference;
     const targetMode = isShowingReference ? "reference" : "target";
 
-    console.log(
-      `[ReferenceToggle] Switching ALL sections to ${targetMode.toUpperCase()} display mode`
-    );
+    // Switch all sections (CSS classes, toggle UI, conditional UI)
+    switchAllSectionsMode(targetMode);
 
-    // Switch all dual-state sections to the target mode
-    const switchedCount = switchAllSectionsMode(targetMode);
+    // Update all calculated display values
+    updateAllCalculatedDisplays();
 
-    if (switchedCount > 0) {
-      // Update all calculated display values
-      updateAllCalculatedDisplays();
-
-      // Update button text
-      const runRefBtn = document.getElementById(RUN_REFERENCE_BUTTON_ID);
-      if (runRefBtn) {
-        runRefBtn.textContent = isShowingReference
-          ? BUTTON_TEXT_SHOW_TARGET
-          : BUTTON_TEXT_SHOW_REFERENCE;
-      }
-
-      // 🎨 CRITICAL: Apply RED Reference mode styling to entire UI
-      // Use the SAME CSS class that "Highlight Reference Values" uses
-      document.body.classList.toggle(
-        "viewing-reference-inputs",
-        isShowingReference
-      );
-      document.body.classList.toggle(
-        "viewing-reference-values",
-        isShowingReference
-      );
-
-      // Also apply additional classes for comprehensive styling
-      document.body.classList.toggle("reference-mode", isShowingReference);
-      const htmlElement = document.documentElement;
-      htmlElement.classList.toggle("reference-mode", isShowingReference);
-
-      console.log(
-        `[ReferenceToggle] Successfully toggled to ${targetMode.toUpperCase()} display mode with UI styling`
-      );
-    } else {
-      console.warn(
-        "[ReferenceToggle] No sections were switched - reverting toggle"
-      );
-      isShowingReference = !isShowingReference; // Revert if nothing was switched
+    // Update button text
+    const runRefBtn = document.getElementById(RUN_REFERENCE_BUTTON_ID);
+    if (runRefBtn) {
+      runRefBtn.textContent = isShowingReference
+        ? BUTTON_TEXT_SHOW_TARGET
+        : BUTTON_TEXT_SHOW_REFERENCE;
     }
   }
 
@@ -493,26 +444,8 @@ TEUI.ReferenceToggle = (function () {
         "user-modified"
       );
 
-      // Notify all sections with ReferenceValues.js dependencies
-      const dualStateSections = getAllDualStateSections();
-      dualStateSections.forEach(section => {
-        try {
-          // Look for sections that have onReferenceStandardChange method in their ReferenceState
-          if (section.module.ReferenceState?.onReferenceStandardChange) {
-            section.module.ReferenceState.onReferenceStandardChange(
-              newStandardKey
-            );
-            console.log(
-              `[ReferenceToggle] Updated ${section.id} for new reference standard`
-            );
-          }
-        } catch (error) {
-          console.error(
-            `[ReferenceToggle] Error updating ${section.id} for standard change:`,
-            error
-          );
-        }
-      });
+      // Reference standard changes are handled by ComputationIntegration.populateReferenceModel()
+      // which reads from ReferenceValues.js and writes to the reference model in MultiModelState.
 
       // Trigger recalculations
       if (window.TEUI?.Calculator?.calculateAll) {
@@ -1212,74 +1145,33 @@ TEUI.ReferenceToggle = (function () {
   /**
    * LEGACY: Mirror Target - Copy all Target values to Reference state
    * @deprecated Use mirrorAllInputs() instead
-   * CORRECTED: Uses proper ModeManager facade pattern
+   * Reads target values from SM and writes them as ref_ keys.
    */
   function mirrorTarget() {
     try {
-      const sections = getAllDualStateSections();
-      console.log(
-        `[ReferenceToggle] Mirror Target: Processing ${sections.length} sections`
-      );
+      const SM = window.TEUI?.StateManager;
+      if (!SM) return;
 
       let totalFieldsCopied = 0;
+      const sectionIds = [
+        "sect02", "sect03", "sect04", "sect05", "sect06", "sect07",
+        "sect08", "sect09", "sect10", "sect11", "sect12", "sect13",
+        "sect14", "sect15", "sect16", "sect19",
+      ];
 
-      sections.forEach((section, index) => {
-        console.log(`[ReferenceToggle] Processing ${section.id}...`);
-
-        // Get field IDs for this section
-        const fieldIds = getFieldIdsForSection(section.id);
-        console.log(
-          `[ReferenceToggle] Found ${fieldIds.length} fields for ${section.id}`
-        );
-
-        if (fieldIds.length === 0) {
-          console.warn(
-            `[ReferenceToggle] No fields found for ${section.id} - skipping`
-          );
-          return;
-        }
-
-        // Save current mode
-        const originalMode = section.modeManager.currentMode;
-
-        // Switch to target mode to read values
-        section.modeManager.switchMode("target");
-
-        // Read all Target values using ModeManager facade
-        const targetValues = {};
+      sectionIds.forEach(id => {
+        const fieldIds = getFieldIdsForSection(id);
         fieldIds.forEach(fieldId => {
-          const value = section.modeManager.getValue(fieldId);
+          const value = SM.getValue(fieldId);
           if (value !== null && value !== undefined && value !== "") {
-            targetValues[fieldId] = value;
+            SM.setValue(`ref_${fieldId}`, value, "mirrored");
+            totalFieldsCopied++;
           }
         });
-
-        console.log(
-          `[ReferenceToggle] Read ${Object.keys(targetValues).length} Target values from ${section.id}`
-        );
-
-        // Switch to reference mode to write values
-        section.modeManager.switchMode("reference");
-
-        // Copy Target values to Reference state
-        Object.entries(targetValues).forEach(([fieldId, value]) => {
-          section.modeManager.setValue(fieldId, value, "mirrored");
-          totalFieldsCopied++;
-        });
-
-        // Restore original mode
-        section.modeManager.switchMode(originalMode);
-
-        console.log(
-          `[ReferenceToggle] Copied ${Object.keys(targetValues).length} values to Reference state for ${section.id}`
-        );
       });
 
       console.log(
-        `🔗 Mirror Target: Successfully copied ${totalFieldsCopied} total fields across ${sections.length} sections`
-      );
-      console.log(
-        "🎯 Test: Switch to Reference mode to verify e_10 (Reference TEUI) equals h_10 (Target TEUI)"
+        `Mirror Target: Copied ${totalFieldsCopied} fields to ref_ keys`
       );
     } catch (error) {
       console.error("[ReferenceToggle] Mirror Target failed:", error);
@@ -1292,62 +1184,35 @@ TEUI.ReferenceToggle = (function () {
    */
   function mirrorTargetWithReference() {
     try {
-      const standard =
-        window.TEUI?.StateManager?.getValue("d_13") || "OBC SB12 3.1.1.2.C1";
-      const refValues = window.TEUI?.ReferenceValues?.[standard] || {};
+      const SM = window.TEUI?.StateManager;
+      if (!SM) return;
 
-      console.log(
-        `[ReferenceToggle] Mirror Target + Reference: Using standard "${standard}"`
-      );
-      console.log(
-        `[ReferenceToggle] Found ${Object.keys(refValues).length} reference values for this standard`
-      );
+      const standard = SM.getValue("d_13") || "OBC SB12 3.1.1.2.C1";
+      const refValues = window.TEUI?.ReferenceValues?.[standard] || {};
 
       // First execute Mirror Target to copy all Target values
       mirrorTarget();
 
       // Then overlay ReferenceValues subset for building code compliance
-      const sections = getAllDualStateSections();
       let totalOverlayFields = 0;
+      const sectionIds = [
+        "sect02", "sect03", "sect04", "sect05", "sect06", "sect07",
+        "sect08", "sect09", "sect10", "sect11", "sect12", "sect13",
+        "sect14", "sect15", "sect16", "sect19",
+      ];
 
-      sections.forEach(section => {
-        console.log(
-          `[ReferenceToggle] Applying ReferenceValues overlay to ${section.id}...`
-        );
-
-        // Save current mode
-        const originalMode = section.modeManager.currentMode;
-
-        // Switch to reference mode to apply overlay
-        section.modeManager.switchMode("reference");
-
-        // Apply ReferenceValues overlay (building code minimums)
-        const appliedFields = [];
+      sectionIds.forEach(id => {
+        const fieldIds = getFieldIdsForSection(id);
         Object.entries(refValues).forEach(([fieldId, value]) => {
-          // Only apply if this section manages this field
-          const fieldIds = getFieldIdsForSection(section.id);
           if (fieldIds.includes(fieldId)) {
-            section.modeManager.setValue(fieldId, value, "reference-standard");
-            appliedFields.push(fieldId);
+            SM.setValue(`ref_${fieldId}`, value, "reference-standard");
             totalOverlayFields++;
           }
         });
-
-        // Restore original mode
-        section.modeManager.switchMode(originalMode);
-
-        if (appliedFields.length > 0) {
-          console.log(
-            `[ReferenceToggle] Applied ${appliedFields.length} reference standard values to ${section.id}: [${appliedFields.join(", ")}]`
-          );
-        }
       });
 
       console.log(
-        `🔗 Mirror Target + Reference: Applied ${totalOverlayFields} reference standard values across all sections`
-      );
-      console.log(
-        `📋 Standard: "${standard}" - building code minimums now overlay Target inputs`
+        `Mirror Target + Reference: Applied ${totalOverlayFields} reference standard values`
       );
     } catch (error) {
       console.error(
@@ -1373,7 +1238,6 @@ TEUI.ReferenceToggle = (function () {
     getCompareValue,
     toggleReferenceDisplay,
     switchAllSectionsMode, // Expose for external use
-    getAllDualStateSections, // Expose for debugging
     // ✅ NEW: Three mirror functions (2025-11-27)
     mirrorGeometry, // Copy geometry/configuration only
     mirrorGeometryPlusCode, // Copy geometry + overlay ReferenceValues.js

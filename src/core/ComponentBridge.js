@@ -482,27 +482,11 @@ TEUI.ComponentBridge = (function () {
   }
 
   /**
-   * Get the current mode from dual-state sections
+   * Get the current mode from ReferenceToggle
    * @returns {string} 'target' or 'reference'
    */
   function getCurrentMode() {
-    // Check for dual-state sections and their ModeManagers
-    const dualStateSections = [
-      window.TEUI?.SectionModules?.sect03?.ModeManager,
-      window.TEUI?.SectionModules?.sect05?.ModeManager, // ✅ NEW: Include S05!
-      window.TEUI?.SectionModules?.sect06?.ModeManager, // ✅ CRITICAL: Include S06!
-      window.TEUI?.SectionModules?.sect10?.ModeManager,
-      window.TEUI?.SectionModules?.sect13?.ModeManager, // ✅ CRITICAL: Include S13!
-      // Add other dual-state sections as they're implemented
-    ].filter(Boolean);
-
-    // Return the mode from the first available dual-state section
-    if (dualStateSections.length > 0) {
-      return dualStateSections[0].currentMode || "target";
-    }
-
-    // Default to target mode if no dual-state sections are available
-    return "target";
+    return window.TEUI?.ReferenceToggle?.isReferenceMode() ? "reference" : "target";
   }
 
   /**

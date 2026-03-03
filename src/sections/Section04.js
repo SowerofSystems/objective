@@ -720,235 +720,20 @@ window.TEUI.SectionModules.sect04 = (function () {
   // IMPLEMENTATION COMPLETE ✅ (September 25, 2025)
   //==========================================================================
 
-  //==========================================================================
-  // PATTERN A DUAL-STATE ARCHITECTURE (Clean S02/S03 Pattern)
-  //==========================================================================
+  // TargetState/ReferenceState/ModeManager removed — graph + SM is the single source of truth.
 
-  /**
-   * TargetState: Self-contained state object for Target model
-   */
-  const TargetState = {
-    data: {},
-    storageKey: "S04_TARGET_STATE",
+  function getModeValue(fieldId) {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    return window.TEUI.StateManager?.getValue(isRef ? `ref_${fieldId}` : fieldId);
+  }
 
-    initialize: function () {
-      this.setDefaults();
-      this.loadState();
-    },
-
-    setDefaults: function () {
-      // ✅ ANTI-PATTERN FIX: Field definitions are single source of truth - no hardcoded fallbacks
-      this.data = {
-        // User input fields - utility bill data (D27-D31) + emission factors (L28-L31) + nuclear waste factor (L33)
-        d_27: getFieldDefault("d_27"), // Electricity kWh/yr
-        d_28: getFieldDefault("d_28"), // Gas m³/yr
-        d_29: getFieldDefault("d_29"), // Propane kg/yr
-        d_30: getFieldDefault("d_30"), // Oil litres/yr
-        d_31: getFieldDefault("d_31"), // Wood m³/yr
-        l_28: getFieldDefault("l_28"), // Gas Emission Factor (optional override)
-        l_29: getFieldDefault("l_29"), // Propane Emission Factor (optional override)
-        l_30: getFieldDefault("l_30"), // Oil Emission Factor (optional override)
-        l_31: getFieldDefault("l_31"), // Wood Emission Factor (optional override)
-        l_33: getFieldDefault("l_33"), // Nuclear Waste Factor (optional override)
-        // Note: l_35 (PER Factor) is now calculated, not user input
-      };
-    },
-
-    loadState: function () {
-      try {
-        const saved = localStorage.getItem(this.storageKey);
-        if (saved) {
-          const savedData = JSON.parse(saved);
-          this.data = { ...this.data, ...savedData };
-        }
-      } catch (error) {
-        console.warn("S04-RF: Error loading Target state:", error);
-      }
-    },
-
-    saveState: function () {
-      try {
-        localStorage.setItem(this.storageKey, JSON.stringify(this.data));
-      } catch (error) {
-        console.warn("S04-RF: Error saving Target state:", error);
-      }
-    },
-
-    setValue: function (fieldId, value, source = "calculated") {
-      this.data[fieldId] = value;
-      if (source === "user" || source === "user-modified") {
-        this.saveState();
-      }
-    },
-
-    getValue: function (fieldId) {
-      return this.data[fieldId] || "";
-    },
-
-    /**
-     * ✅ PHASE 2: Sync from global StateManager after import
-     * Bridges global StateManager → isolated TargetState for imported values
-     */
-    syncFromGlobalState: function () { /* graph is source of truth */ },
-  };
-
-  /**
-   * ReferenceState: Self-contained state object for Reference model
-   */
-  const ReferenceState = {
-    data: {},
-    storageKey: "S04_REFERENCE_STATE",
-
-    initialize: function () {
-      this.setDefaults();
-      this.loadState();
-    },
-
-    setDefaults: function () {
-      // ✅ ANTI-PATTERN FIX: Field definitions are single source of truth - no hardcoded fallbacks
-      this.data = {
-        // Utility bills + emission factors - same defaults for both Target and Reference (state isolated, editable independently)
-        d_27: getFieldDefault("d_27"), // Electricity kWh/yr
-        d_28: getFieldDefault("d_28"), // Gas m³/yr
-        d_29: getFieldDefault("d_29"), // Propane kg/yr
-        d_30: getFieldDefault("d_30"), // Oil litres/yr
-        d_31: getFieldDefault("d_31"), // Wood m³/yr
-        l_28: getFieldDefault("l_28"), // Gas Emission Factor (optional override)
-        l_29: getFieldDefault("l_29"), // Propane Emission Factor (optional override)
-        l_30: getFieldDefault("l_30"), // Oil Emission Factor (optional override)
-        l_31: getFieldDefault("l_31"), // Wood Emission Factor (optional override)
-        l_33: getFieldDefault("l_33"), // Nuclear Waste Factor (optional override)
-        // Note: l_35 (PER Factor) is now calculated, not user input
-      };
-    },
-
-    loadState: function () {
-      try {
-        const saved = localStorage.getItem(this.storageKey);
-        if (saved) {
-          const savedData = JSON.parse(saved);
-          this.data = { ...this.data, ...savedData };
-        }
-      } catch (error) {
-        console.warn("S04-RF: Error loading Reference state:", error);
-      }
-    },
-
-    saveState: function () {
-      try {
-        localStorage.setItem(this.storageKey, JSON.stringify(this.data));
-      } catch (error) {
-        console.warn("S04-RF: Error saving Reference state:", error);
-      }
-    },
-
-    setValue: function (fieldId, value, source = "calculated") {
-      this.data[fieldId] = value;
-      if (source === "user" || source === "user-modified") {
-        this.saveState();
-      }
-    },
-
-    getValue: function (fieldId) {
-      return this.data[fieldId] || "";
-    },
-
-    /**
-     * ✅ PHASE 2: Sync from global StateManager after import
-     * Bridges global StateManager → isolated ReferenceState for imported values
-     */
-    syncFromGlobalState: function () { /* graph is source of truth */ },
-  };
-
-  /**
-   * ModeManager: Pattern A facade for dual-state coordination
-   */
-  const ModeManager = {
-    currentMode: "target",
-
-    initialize: function () {
-      TargetState.initialize();
-      ReferenceState.initialize();
-
-      // ✅ CSV EXPORT FIX: Publish ALL Reference defaults to StateManager
-      // Without this, CSV export shows empty Reference values (missing S04 fields)
-      // FileHandler.exportToCSV() reads from StateManager, not from internal ReferenceState
-      // Pattern: Conditionally publish if value doesn't exist (import-safe, non-destructive)
-      if (window.TEUI?.StateManager) {
-        [
-          "d_27",
-          "d_28",
-          "d_29",
-          "d_30",
-          "d_31",
-          "l_28",
-          "l_29",
-          "l_30",
-          "l_31",
-          "l_33",
-          // Note: h_35 removed - PER Factor moved to l_35 (calculated, not user input)
-        ].forEach(id => {
-          const refId = `ref_${id}`;
-          const val = ReferenceState.getValue(id);
-          if (
-            !window.TEUI.StateManager.getValue(refId) &&
-            val != null &&
-            val !== ""
-          ) {
-            window.TEUI.StateManager.setValue(refId, val, "calculated");
-          }
-        });
-      }
-    },
-
-    switchMode: function (mode) {
-      if (mode !== "target" && mode !== "reference") {
-        console.warn(`S04-RF: Invalid mode: ${mode}`);
-        return;
-      }
-      this.currentMode = mode;
-
-      // ✅ PATTERN A: UI toggle only switches display, values should already be calculated
-      this.refreshUI();
-      this.updateCalculatedDisplayValues();
-
-      // ✅ NEW: Sync visual toggle UI when mode changes (from global or local toggle)
-      this.syncToggleUI(mode);
-    },
-
-    // ✅ NEW: Sync visual toggle switch and indicator to match current mode
-    // Called both when user clicks local toggle AND when global toggle switches mode
-    syncToggleUI: function (mode) {
-      // Use centralized ToggleUISync utility
-      window.TEUI.ToggleUISync.syncToggleUI(this._toggleElements, mode, "S04");
-    },
-
-    getCurrentState: function () {
-      return this.currentMode === "target" ? TargetState : ReferenceState;
-    },
-
-    getValue: function (fieldId) {
-      return this.getCurrentState().getValue(fieldId);
-    },
-
-    setValue: function (fieldId, value, source = "calculated") {
-      this.getCurrentState().setValue(fieldId, value, source);
-
-      // ✅ CRITICAL BRIDGE: Sync Target changes to StateManager (NO PREFIX)
-      if (this.currentMode === "target" && window.TEUI?.StateManager) {
-        window.TEUI.StateManager.setValue(fieldId, value, source);
-      }
-
-      // ✅ CRITICAL BRIDGE: Sync Reference changes to StateManager with ref_ prefix
-      if (this.currentMode === "reference" && window.TEUI?.StateManager) {
-        window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, source);
-      }
-    },
-
-    refreshUI: function () { /* DOMBridge.stampAll() handles display */ },
-
-    updateCalculatedDisplayValues: function () { /* DOMBridge.stampAll() handles display */ },
-  };
+  function setModeValue(fieldId, value, source = "user-modified") {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    const key = isRef ? `ref_${fieldId}` : fieldId;
+    if (window.TEUI.StateManager?.setValue) {
+      window.TEUI.StateManager.setValue(key, value, source);
+    }
+  }
 
   //==========================================================================
   // CALCULATION FUNCTIONS (graph computes)
@@ -1058,7 +843,6 @@ window.TEUI.SectionModules.sect04 = (function () {
   }
 
   function onSectionRendered() {
-    ModeManager.initialize();
     initializeEventHandlers();
 
     // Apply validation tooltips to fields
@@ -1116,7 +900,7 @@ window.TEUI.SectionModules.sect04 = (function () {
                 formatType
               );
               this.textContent = formattedValue;
-              ModeManager.setValue(
+              setModeValue(
                 fieldId,
                 numericValue.toString(),
                 "user-modified"
@@ -1125,7 +909,7 @@ window.TEUI.SectionModules.sect04 = (function () {
               // Track that l_33 has been manually edited (prevents auto-update on province change)
               // Mode-aware: separate flags for Target and Reference
               if (fieldId === "l_33") {
-                if (ModeManager.currentMode === "target") {
+                if (!window.TEUI.ReferenceToggle?.isReferenceMode()) {
                   window.TEUI.StateManager.setValue(
                     "_l_33_user_edited",
                     "true",
@@ -1142,7 +926,7 @@ window.TEUI.SectionModules.sect04 = (function () {
 
             } else {
               // Revert to previous value
-              const previousValue = ModeManager.getValue(fieldId) || "0";
+              const previousValue = getModeValue(fieldId) || "0";
               const prevNumericValue = window.TEUI.parseNumeric(
                 previousValue,
                 0
@@ -1170,9 +954,7 @@ window.TEUI.SectionModules.sect04 = (function () {
     // Legacy SM listeners removed — graph handles all computation
   }
 
-  // Expose ModeManager globally
   window.TEUI.sect04 = window.TEUI.sect04 || {};
-  window.TEUI.sect04.ModeManager = ModeManager;
 
   //==========================================================================
   // PUBLIC API (MINIMAL INTERFACE)
@@ -1192,10 +974,5 @@ window.TEUI.SectionModules.sect04 = (function () {
 
     // Calculations
     calculateAll: calculateAll,
-
-    // Dual-state management (✅ Phase 2: Export state objects for import sync)
-    ModeManager: ModeManager,
-    TargetState: TargetState,
-    ReferenceState: ReferenceState,
   };
 })();

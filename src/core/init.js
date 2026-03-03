@@ -980,17 +980,19 @@ document.addEventListener("DOMContentLoaded", function () {
               const CI = window.TEUI.ComputationIntegration;
               if (!CI?.isInitialized?.()) return;
 
+              // Strip ref_ prefix for lookup (ref_d_59 → d_59)
+              // so reference-mode input changes also trigger recompute
+              const baseId = fieldId.startsWith("ref_") ? fieldId.slice(4) : fieldId;
               const lookup = getLegacyLookup();
-              const semanticPath = lookup?.get(fieldId);
+              const semanticPath = lookup?.get(baseId);
               if (!semanticPath) return;
 
               _recomputing = true;
               try {
-                // Full dual-model recalc: populates reference model, computes both
-                // models, syncs to SM, stamps DOM. This ensures shared inputs like
-                // conditioned area propagate to both models and compliance ratios
-                // stay correct. calculateAll() mutes SM listeners internally.
-                window.TEUI.Calculator.calculateAll();
+                // Targeted recompute: only recomputes the affected model
+                // (target or reference) based on the field. Does NOT call
+                // populateReferenceModel(), preventing cross-model contamination.
+                CI.recomputeForInput(fieldId);
               } finally {
                 _recomputing = false;
               }

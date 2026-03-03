@@ -643,7 +643,7 @@ window.TEUI.SectionModules.sect02 = (function () {
 
   /**
    * Handle Carbon Standard dropdown change
-   * ✅ PATTERN A: Use ModeManager.setValue() to save to current state
+   * ✅ PATTERN A: Use setModeValue() to save to current state
    */
   function handleCarbonStandardChange(e) {
     const selectedValue = e.target.value;
@@ -653,13 +653,13 @@ window.TEUI.SectionModules.sect02 = (function () {
       window.TEUI.sect02.userInteracted = true;
     }
 
-    // Save to current state (Target or Reference) via ModeManager
-    ModeManager.setValue(fieldId, selectedValue, "user-modified");
+    // Save to current state (Target or Reference) via setModeValue
+    setModeValue(fieldId, selectedValue, "user-modified");
   }
 
   /**
    * Handle Major Occupancy dropdown change (d_12)
-   * Saves to current state (Target or Reference) via ModeManager
+   * Saves to current state (Target or Reference) via setModeValue
    */
   function handleMajorOccupancyChange(e) {
     const selectedValue = e.target.value;
@@ -669,12 +669,12 @@ window.TEUI.SectionModules.sect02 = (function () {
       window.TEUI.sect02.userInteracted = true;
     }
 
-    ModeManager.setValue(fieldId, selectedValue, "user-modified");
+    setModeValue(fieldId, selectedValue, "user-modified");
   }
 
   /**
    * Handle Actual/Target Use dropdown change (d_14)
-   * Saves to current state (Target or Reference) via ModeManager
+   * Saves to current state (Target or Reference) via setModeValue
    */
   function handleActualTargetChange(e) {
     const selectedValue = e.target.value;
@@ -684,12 +684,12 @@ window.TEUI.SectionModules.sect02 = (function () {
       window.TEUI.sect02.userInteracted = true;
     }
 
-    ModeManager.setValue(fieldId, selectedValue, "user-modified");
+    setModeValue(fieldId, selectedValue, "user-modified");
   }
 
   /**
    * Handle Building Code dropdown change (d_13)
-   * Saves to current state (Target or Reference) via ModeManager
+   * Saves to current state (Target or Reference) via setModeValue
    */
   function handleBuildingCodeChange(e) {
     const selectedValue = e.target.value;
@@ -699,7 +699,7 @@ window.TEUI.SectionModules.sect02 = (function () {
       window.TEUI.sect02.userInteracted = true;
     }
 
-    ModeManager.setValue(fieldId, selectedValue, "user-modified");
+    setModeValue(fieldId, selectedValue, "user-modified");
   }
 
   /**
@@ -708,7 +708,7 @@ window.TEUI.SectionModules.sect02 = (function () {
    * No need to duplicate that logic here - Section02 handles UI events only
    */
   function applyReferenceValuesOverlay() {
-    const currentMode = ModeManager.currentMode || "target";
+    const currentMode = window.TEUI.ReferenceToggle?.isReferenceMode() ? "reference" : "target";
 
     // Get the selected standard for current mode
     const standard =
@@ -742,7 +742,7 @@ window.TEUI.SectionModules.sect02 = (function () {
     if (setValuesBtn) {
       setValuesBtn.addEventListener("click", () => {
         console.log(
-          `[S02] "Set Values" button clicked in ${ModeManager.currentMode.toUpperCase()} mode`
+          `[S02] "Set Values" button clicked in ${window.TEUI.ReferenceToggle?.isReferenceMode() ? "REFERENCE" : "TARGET"} mode`
         );
         applyReferenceValuesOverlay();
       });
@@ -788,8 +788,8 @@ window.TEUI.SectionModules.sect02 = (function () {
 
       yearSlider.addEventListener("change", function (e) {
         const newYear = e.target.value;
-        // Save to current state (Target or Reference) via ModeManager
-        ModeManager.setValue("h_12", newYear, "user-modified");
+        // Save to current state (Target or Reference) via setModeValue
+        setModeValue("h_12", newYear, "user-modified");
       });
     }
 
@@ -809,8 +809,8 @@ window.TEUI.SectionModules.sect02 = (function () {
 
       serviceLifeSlider.addEventListener("change", function (e) {
         const newServiceLife = e.target.value;
-        // Save to current state (Target or Reference) via ModeManager
-        ModeManager.setValue("h_13", newServiceLife, "user-modified");
+        // Save to current state (Target or Reference) via setModeValue
+        setModeValue("h_13", newServiceLife, "user-modified");
       });
     }
 
@@ -857,7 +857,7 @@ window.TEUI.SectionModules.sect02 = (function () {
     // ✅ PHASE 6 FIX: Eliminate fallback contamination pattern (same fix as S15 m_43)
     // Reference calculations must ONLY read ref_ prefixed values for perfect state isolation
     const occupancyType =
-      ModeManager.currentMode === "reference"
+      window.TEUI.ReferenceToggle?.isReferenceMode()
         ? window.TEUI.StateManager?.getValue("ref_d_12") || "" // ✅ FIXED: No fallback to Target values
         : window.TEUI.StateManager?.getValue("d_12") || "";
     const sectionHeader = document.querySelector(
@@ -923,14 +923,6 @@ window.TEUI.SectionModules.sect02 = (function () {
    * Standard implementation from SectionXX template
    */
   function onSectionRendered() {
-    // Initialize Pattern A Dual-State Module
-    ModeManager.initialize();
-
-    // ✅ G-REF-ONLY: Removed injectHeaderControls() call - using global toggle only
-
-    // ✅ PATTERN A: Defaults are now handled by TargetState.setDefaults() and ReferenceState.setDefaults()
-    // No need to set defaults in StateManager - the dual-state architecture handles this
-
     isSect02Initialized = true; // ✅ RACE CONDITION FIX: Set flag BEFORE external listeners
 
     // ✅ RACE CONDITION FIX: Initialize event handlers AFTER initialization flag is set
@@ -1005,9 +997,9 @@ window.TEUI.SectionModules.sect02 = (function () {
               }
             }
 
-            // ✅ CRITICAL FIX: Save to current state (Target or Reference) via ModeManager
-            // ModeManager.setValue handles mode-aware publishing to StateManager
-            ModeManager.setValue(fieldId, valueToSave, "user-modified");
+            // ✅ CRITICAL FIX: Save to current state (Target or Reference) via setModeValue
+            // setModeValue handles mode-aware publishing to StateManager
+            setModeValue(fieldId, valueToSave, "user-modified");
           });
 
           field.addEventListener("keydown", function (e) {
@@ -1101,282 +1093,20 @@ window.TEUI.SectionModules.sect02 = (function () {
     });
   }
 
-  //==========================================================================
-  // DUAL-STATE MODE MANAGEMENT
-  //==========================================================================
+  // TargetState/ReferenceState/ModeManager removed — graph + SM is the single source of truth.
 
-  /**
-   * TargetState: Manages Target (user's design) state with persistence
-   */
-  const TargetState = {
-    data: {},
-    storageKey: "S02_TARGET_STATE",
+  function getModeValue(fieldId) {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    return window.TEUI.StateManager?.getValue(isRef ? `ref_${fieldId}` : fieldId);
+  }
 
-    loadState: function () {
-      try {
-        const saved = localStorage.getItem(this.storageKey);
-        if (saved) {
-          const savedData = JSON.parse(saved);
-          // ✅ CRITICAL FIX: Merge saved data with defaults, don't replace defaults
-          this.data = { ...this.data, ...savedData };
-          console.log(`S02: Loaded and merged Target state from localStorage`);
-        }
-      } catch (error) {
-        console.warn(`S02: Error loading Target state:`, error);
-        // ✅ CRITICAL FIX: Don't wipe defaults on error, keep existing defaults
-        console.log(`S02: Keeping Target defaults due to localStorage error`);
-      }
-    },
-
-    saveState: function () {
-      try {
-        localStorage.setItem(this.storageKey, JSON.stringify(this.data));
-        // console.log(`S02: Saved Target state to localStorage`);
-      } catch (error) {
-        console.warn(`S02: Error saving Target state:`, error);
-      }
-    },
-
-    getValue: function (fieldId) {
-      return this.data[fieldId] || "";
-    },
-
-    setValue: function (fieldId, value, source = "calculated") {
-      this.data[fieldId] = value;
-      if (source === "user" || source === "user-modified") {
-        this.saveState();
-      }
-    },
-
-    setDefaults: function () {
-      // ✅ ANTI-PATTERN FIX: Field definitions are single source of truth - no hardcoded fallbacks
-      this.data = {
-        d_12: getFieldDefault("d_12"),
-        d_13: getFieldDefault("d_13"),
-        d_14: getFieldDefault("d_14"),
-        d_15: getFieldDefault("d_15"),
-        h_12: getFieldDefault("h_12"),
-        h_13: getFieldDefault("h_13"),
-        h_14: getFieldDefault("h_14"),
-        h_15: getFieldDefault("h_15"), // No fallback - field definition is source of truth
-        i_16: getFieldDefault("i_16"),
-        i_17: getFieldDefault("i_17"),
-        l_12: getFieldDefault("l_12"),
-        l_13: getFieldDefault("l_13"),
-        l_14: getFieldDefault("l_14"),
-        l_15: getFieldDefault("l_15"),
-        l_16: getFieldDefault("l_16"),
-      };
-      console.log(
-        `S02: Target defaults set from field definitions - single source of truth`
-      );
-    },
-
-    syncFromGlobalState: function () { /* graph is source of truth */ },
-  };
-
-  /**
-   * ReferenceState: Manages Reference (building code minimums) state with persistence
-   */
-  const ReferenceState = {
-    data: {},
-    storageKey: "S02_REFERENCE_STATE",
-
-    loadState: function () {
-      try {
-        const saved = localStorage.getItem(this.storageKey);
-        if (saved) {
-          const savedData = JSON.parse(saved);
-          // ✅ CRITICAL FIX: Merge saved data with defaults, don't replace defaults
-          this.data = { ...this.data, ...savedData };
-          console.log(
-            `S02: Loaded and merged Reference state from localStorage`
-          );
-        }
-      } catch (error) {
-        console.warn(`S02: Error loading Reference state:`, error);
-        // ✅ CRITICAL FIX: Don't wipe defaults on error, keep existing defaults
-        console.log(
-          `S02: Keeping Reference defaults due to localStorage error`
-        );
-      }
-    },
-
-    saveState: function () {
-      try {
-        localStorage.setItem(this.storageKey, JSON.stringify(this.data));
-        // console.log(`S02: Saved Reference state to localStorage`);
-      } catch (error) {
-        console.warn(`S02: Error saving Reference state:`, error);
-      }
-    },
-
-    getValue: function (fieldId) {
-      return this.data[fieldId] || "";
-    },
-
-    setValue: function (fieldId, value, source = "calculated") {
-      this.data[fieldId] = value;
-      if (source === "user" || source === "user-modified") {
-        this.saveState();
-      }
-    },
-
-    setDefaults: function () {
-      // ✅ ANTI-PATTERN FIX: Field definitions are single source of truth - no hardcoded fallbacks
-      this.data = {
-        // 1. Initialize with base defaults from field definitions only
-        d_12: getFieldDefault("d_12"),
-        d_14: getFieldDefault("d_14"),
-        d_15: getFieldDefault("d_15"),
-        h_13: getFieldDefault("h_13"),
-        h_14: getFieldDefault("h_14"),
-        h_15: getFieldDefault("h_15"), // No fallback - field definition is source of truth
-        i_16: getFieldDefault("i_16"),
-        i_17: getFieldDefault("i_17"),
-        l_12: getFieldDefault("l_12"),
-        l_13: getFieldDefault("l_13"),
-        l_14: getFieldDefault("l_14"),
-        l_15: getFieldDefault("l_15"),
-        l_16: getFieldDefault("l_16"),
-
-        // 2. Apply Reference State overrides (mode-specific values only)
-        d_13: getFieldDefault("d_13"), // Same standard as Target for S02
-        h_12: getFieldDefault("h_12"), // Same reporting period as Target for S02
-      };
-      console.log(
-        `S02: Reference defaults set from field definitions - single source of truth with mode overrides`
-      );
-    },
-
-    syncFromGlobalState: function () { /* graph is source of truth */ },
-  };
-
-  const ModeManager = {
-    currentMode: "target", // "target" or "reference"
-
-    // Initialize the mode manager
-    initialize: function () {
-      // Properly initialize both Target and Reference states
-      try {
-        TargetState.setDefaults();
-        TargetState.loadState();
-        ReferenceState.setDefaults();
-        ReferenceState.loadState();
-
-        // ✅ STATE SYNC FIX: Sync both Target AND Reference states to StateManager on initialization
-        // This ensures downstream sections (like Section03) read correct values immediately
-        // Root cause of h_23 bug: StateManager had stale/undefined values while internal state was correct
-        if (window.TEUI?.StateManager) {
-          const fieldsToSync = [
-            "d_12",
-            "d_13",
-            "d_14",
-            "d_15",
-            "h_12",
-            "h_13",
-            "h_14",
-            "h_15",
-            "i_16",
-            "i_17",
-            "l_12",
-            "l_13",
-            "l_14",
-            "l_15",
-            "l_16",
-          ];
-
-          // Sync Target values (unprefixed)
-          fieldsToSync.forEach(id => {
-            const val = TargetState.getValue(id);
-            if (val != null && val !== "") {
-              window.TEUI.StateManager.setValue(id, val, "default");
-            }
-          });
-
-          // Sync Reference values (ref_ prefixed)
-          fieldsToSync.forEach(id => {
-            const refId = `ref_${id}`;
-            const val = ReferenceState.getValue(id);
-            if (val != null && val !== "") {
-              window.TEUI.StateManager.setValue(refId, val, "default");
-            }
-          });
-        }
-      } catch (e) {
-        console.warn("[S02] initialize: state initialization error", e);
-      }
-    },
-
-    // Switch between Target and Reference modes with UI refresh only
-    switchMode: function (mode) {
-      if (mode !== "target" && mode !== "reference") {
-        console.warn(`[S02] Invalid mode: ${mode}`);
-        return;
-      }
-      this.currentMode = mode;
-      console.log(`[S02] Switched to ${mode.toUpperCase()} mode`);
-
-      // ✅ CRITICAL FIX: UI toggle is for DISPLAY ONLY - values are already calculated
-      this.refreshUI(); // Update input fields from state
-      this.updateCalculatedDisplayValues(); // Update calculated fields from StateManager
-
-      // ✅ NEW: Sync visual toggle UI when mode changes (from global or local toggle)
-      this.syncToggleUI(mode);
-
-      // ✅ CRITICAL FIX: Update critical occupancy flag when mode changes
-      updateCriticalOccupancyFlag();
-
-      // ❌ REMOVED: calculateAll() - this is a UI action, not a data change
-    },
-
-    // ✅ NEW: Sync visual toggle switch and indicator to match current mode
-    // Called both when user clicks local toggle AND when global toggle switches mode
-    syncToggleUI: function (mode) {
-      // Use centralized ToggleUISync utility
-      window.TEUI.ToggleUISync.syncToggleUI(this._toggleElements, mode, "S02");
-    },
-
-    getValue: function (fieldId) {
-      const currentState =
-        this.currentMode === "target" ? TargetState : ReferenceState;
-      return currentState.getValue(fieldId);
-    },
-
-    setValue: function (fieldId, value, source = "calculated") {
-      const currentState =
-        this.currentMode === "target" ? TargetState : ReferenceState;
-      currentState.setValue(fieldId, value, source);
-
-      // ✅ CRITICAL BRIDGE: Sync Target changes to StateManager for downstream sections
-      if (this.currentMode === "target" && window.TEUI?.StateManager) {
-        // 🔍 DIAGNOSTIC: Log d_12 writes to StateManager
-        if (fieldId === "d_12") {
-          console.log(
-            `[S02 ModeManager] 🔵 Writing TARGET d_12="${value}" to StateManager (source: ${source})`
-          );
-        }
-        window.TEUI.StateManager.setValue(fieldId, value, source);
-      }
-
-      // ✅ CRITICAL BRIDGE: Sync Reference changes to StateManager with ref_ prefix
-      if (this.currentMode === "reference" && window.TEUI?.StateManager) {
-        // 🔍 DIAGNOSTIC: Log d_12 writes to StateManager
-        if (fieldId === "d_12") {
-          console.log(
-            `[S02 ModeManager] 🔵 Writing REFERENCE ref_d_12="${value}" to StateManager (source: ${source})`
-          );
-        }
-        window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, source);
-      }
-    },
-
-    refreshUI: function () { /* DOMBridge.stampAll() handles display */ },
-
-    updateCalculatedDisplayValues: function () { /* DOMBridge.stampAll() handles display */ },
-  };
-  // Expose ModeManager for debugging and cross-section communication
-  window.TEUI.sect02.ModeManager = ModeManager;
+  function setModeValue(fieldId, value, source = "user-modified") {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    const key = isRef ? `ref_${fieldId}` : fieldId;
+    if (window.TEUI.StateManager?.setValue) {
+      window.TEUI.StateManager.setValue(key, value, source);
+    }
+  }
 
   //==========================================================================
   // PUBLIC API
@@ -1394,12 +1124,5 @@ window.TEUI.SectionModules.sect02 = (function () {
 
     // Public API for cost field formatting
     syncCostFieldDisplays: syncCostFieldDisplays,
-
-    // ✅ PATTERN A: Expose ModeManager for dual-state routing
-    ModeManager: ModeManager,
-
-    // ✅ PHASE 2: Expose state objects for import sync
-    TargetState: TargetState,
-    ReferenceState: ReferenceState,
   };
 })();

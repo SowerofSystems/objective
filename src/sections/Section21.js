@@ -1582,268 +1582,49 @@ window.TEUI.SectionModules.sect21 = (function () {
     f280_d_overall: "f280_overall",
   };
 
-  const TargetState = {
-    values: {},
+  // TargetState/ReferenceState/ModeManager removed — graph + SM is the single source of truth.
 
-    getValue: function (fieldId) {
-      return this.values[fieldId] !== undefined ? this.values[fieldId] : null;
-    },
-
-    setValue: function (fieldId, value) {
-      this.values[fieldId] = value;
-    },
-
-    getNumericValue: function (fieldId, defaultValue) {
-      defaultValue = defaultValue === undefined ? 0 : defaultValue;
-      const value = this.getValue(fieldId);
-      if (value === null || value === undefined || value === "")
-        return defaultValue;
-      const parsed =
-        window.TEUI?.parseNumeric?.(value, defaultValue) ?? parseFloat(value);
-      return isNaN(parsed) ? defaultValue : parsed;
-    },
-
-    setDefaults: function () {
-      console.log("[S21] TargetState: Initializing from FieldDefinitions");
-      this.values.f280_proj_num =
-        ModeManager.getFieldDefault("f280_proj_num") || "";
-      this.values.f280_comp_type = "Whole House";
-      this.values.f280_code_ref =
-        ModeManager.getFieldDefault("f280_code_ref") ||
-        "NBC 2020: 9.33.5.1, 9.36.3.2, 9.36.5.15(5), 9.36.8.9";
-      this.values.f280_cap_heat =
-        ModeManager.getFieldDefault("f280_cap_heat") || "0";
-      this.values.f280_cap_cool =
-        ModeManager.getFieldDefault("f280_cap_cool") || "0";
-      this.values.f280_dsgn_name =
-        ModeManager.getFieldDefault("f280_dsgn_name") || "";
-      this.values.f280_dsgn_co =
-        ModeManager.getFieldDefault("f280_dsgn_co") || "";
-      this.values.f280_cert_type =
-        ModeManager.getFieldDefault("f280_cert_type") || "Other";
-      this.values.f280_cert_num =
-        ModeManager.getFieldDefault("f280_cert_num") || "";
-      this.values.f280_svc_org =
-        ModeManager.getFieldDefault("f280_svc_org") || "";
-      this.values.f280_attest =
-        ModeManager.getFieldDefault("f280_attest") || "No";
-
-      // Publish to StateManager
-      if (window.TEUI?.StateManager) {
-        EDITABLE_FIELDS.forEach(fieldId => {
-          if (this.values[fieldId] !== undefined) {
-            window.TEUI.StateManager.setValue(
-              fieldId,
-              this.values[fieldId],
-              "default"
-            );
-          }
-        });
-        console.log("[S21] TargetState: Published defaults to StateManager");
-      }
-    },
-  };
-
-  const ReferenceState = {
-    values: {},
-
-    getValue: function (fieldId) {
-      return this.values[fieldId] !== undefined ? this.values[fieldId] : null;
-    },
-
-    setValue: function (fieldId, value) {
-      this.values[fieldId] = value;
-    },
-
-    getNumericValue: function (fieldId, defaultValue) {
-      defaultValue = defaultValue === undefined ? 0 : defaultValue;
-      const value = this.getValue(fieldId);
-      if (value === null || value === undefined || value === "")
-        return defaultValue;
-      const parsed =
-        window.TEUI?.parseNumeric?.(value, defaultValue) ?? parseFloat(value);
-      return isNaN(parsed) ? defaultValue : parsed;
-    },
-
-    setDefaults: function () {
-      console.log("[S21] ReferenceState: Initializing defaults");
-      // Reference model uses same defaults for F280
-      this.values.f280_proj_num = "";
-      this.values.f280_comp_type = "Whole House";
-      this.values.f280_code_ref =
-        "NBC 2020: 9.33.5.1, 9.36.3.2, 9.36.5.15(5), 9.36.8.9";
-      this.values.f280_cap_heat = "0";
-      this.values.f280_cap_cool = "0";
-      this.values.f280_dsgn_name = "";
-      this.values.f280_dsgn_co = "";
-      this.values.f280_cert_type = "Other";
-      this.values.f280_cert_num = "";
-      this.values.f280_svc_org = "";
-      this.values.f280_attest = "No";
-
-      // Publish to StateManager with ref_ prefix
-      if (window.TEUI?.StateManager) {
-        EDITABLE_FIELDS.forEach(fieldId => {
-          if (this.values[fieldId] !== undefined) {
-            window.TEUI.StateManager.setValue(
-              `ref_${fieldId}`,
-              this.values[fieldId],
-              "default"
-            );
-          }
-        });
-        console.log("[S21] ReferenceState: Published defaults to StateManager");
-      }
-    },
-  };
-
-  //==========================================================================
-  // 4. MODE MANAGER (Facade Coordination)
-  //==========================================================================
-
-  const ModeManager = {
-    currentMode: "target",
-
-    switchMode: function (mode) {
-      console.log(`[S21] switchMode: ${this.currentMode} -> ${mode}`);
-      this.currentMode = mode;
-      this.refreshUI();
-      this.updateCalculatedDisplayValues();
-      this.syncToggleUI(mode);
-    },
-
-    syncToggleUI: function (mode) {
-      window.TEUI.ToggleUISync?.syncToggleUI(
-        this._toggleElements,
-        mode,
-        "S21"
-      );
-    },
-
-    refreshUI: function () {
-      console.log(`[S21] refreshUI: mode=${this.currentMode}`);
-      const fields = getFields();
-      const currentState =
-        this.currentMode === "target" ? TargetState : ReferenceState;
-
-      Object.keys(fields).forEach(fieldId => {
-        const storedValue = currentState.getValue(fieldId);
-        const element = document.querySelector(
-          `[data-field-id="${fieldId}"]`
-        );
-        if (!element) return;
-
-        const fieldDefault = this.getFieldDefault(fieldId);
-        const valueToShow = storedValue !== null ? storedValue : fieldDefault;
-
-        let targetElement = element;
-        if (element.tagName === "TD") {
-          targetElement =
-            element.querySelector("select") ||
-            element.querySelector('[contenteditable="true"]') ||
-            element;
-        }
-
-        if (targetElement.hasAttribute("contenteditable")) {
-          targetElement.textContent = valueToShow || "";
-        } else if (targetElement.matches("select")) {
-          targetElement.value = valueToShow || "";
-          if (storedValue === null && fieldDefault) {
-            currentState.setValue(fieldId, fieldDefault);
-          }
-        }
-      });
-    },
-
-    updateCalculatedDisplayValues: function () {
-      const mode = this.currentMode;
-
-      DISPLAY_FIELDS.forEach(displayFieldId => {
-        const sourceFieldId = SOURCE_MAP[displayFieldId];
-        if (!sourceFieldId) return;
-
-        const smKey =
-          mode === "reference" ? `ref_${sourceFieldId}` : sourceFieldId;
-        const value = window.TEUI?.StateManager?.getValue(smKey);
-
-        const element = document.querySelector(
-          `[data-field-id="${displayFieldId}"]`
-        );
-        if (!element) return;
-
-        let displayValue = value;
-        if (displayValue === "" || displayValue === null || displayValue === undefined) {
-          element.textContent = "";
-          return;  // Don't format empty values as "0"
-        }
-
-        // Format numeric values, leave checkmarks and text as-is
-        if (displayValue === "\u2713" || displayValue === "\u2717") {
-          element.textContent = displayValue;
-          // Apply green/red CSS classes like other sections (S07/S13 pattern)
-          element.classList.remove("checkmark", "warning");
-          element.classList.add(displayValue === "\u2713" ? "checkmark" : "warning");
-        } else {
-          const num = parseFloat(String(displayValue).replace(/,/g, ""));
-          if (!isNaN(num)) {
-            element.textContent =
-              window.TEUI?.formatNumber?.(num, "number-2dp-comma") ??
-              displayValue;
-          } else {
-            element.textContent = displayValue;
-          }
-        }
-      });
-    },
-
-    getValue: function (fieldId) {
-      const currentState =
-        this.currentMode === "target" ? TargetState : ReferenceState;
-      return currentState.getValue(fieldId);
-    },
-
-    setValue: function (fieldId, value, source) {
-      source = source || "user-modified";
-      console.log(
-        `[S21] ModeManager.setValue: ${fieldId} = "${value}" (mode=${this.currentMode})`
-      );
-      const currentState =
-        this.currentMode === "target" ? TargetState : ReferenceState;
-      currentState.setValue(fieldId, value);
-
-      // Sync to StateManager
-      if (this.currentMode === "target") {
-        window.TEUI?.StateManager?.setValue(fieldId, value, source);
-      } else {
-        window.TEUI?.StateManager?.setValue(`ref_${fieldId}`, value, source);
-      }
-    },
-
-    getFieldDefault: function (fieldId) {
-      for (var rowKey in sectionRows) {
-        var row = sectionRows[rowKey];
-        if (row.cells) {
-          for (var cellKey in row.cells) {
-            var cell = row.cells[cellKey];
-            if (cell.fieldId === fieldId && cell.value !== undefined) {
-              return cell.value;
-            }
+  function getFieldDefault(fieldId) {
+    for (const rowKey in sectionRows) {
+      const row = sectionRows[rowKey];
+      if (row.cells) {
+        for (const cellKey in row.cells) {
+          const cell = row.cells[cellKey];
+          if (cell.fieldId === fieldId && cell.value !== undefined) {
+            return cell.value;
           }
         }
       }
-      return null;
-    },
-  };
+    }
+    return null;
+  }
 
   // Expose for ComponentBridge compatibility
-  window.TEUI.sect21 = { ModeManager: ModeManager };
+  window.TEUI.sect21 = window.TEUI.sect21 || {};
+
+  //==========================================================================
+  // MODE-AWARE STATE HELPERS
+  //==========================================================================
+
+  function getModeValue(fieldId) {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    return window.TEUI.StateManager?.getValue(isRef ? `ref_${fieldId}` : fieldId);
+  }
+
+  function setModeValue(fieldId, value, source = "user-modified") {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    const key = isRef ? `ref_${fieldId}` : fieldId;
+    if (window.TEUI.StateManager?.setValue) {
+      window.TEUI.StateManager.setValue(key, value, source);
+    }
+  }
 
   //==========================================================================
   // 5. HELPER FUNCTIONS
   //==========================================================================
 
   function updateServiceOrgVisibility() {
-    var certType = ModeManager.getValue("f280_cert_type") || "Other";
+    var certType = getModeValue("f280_cert_type") || "Other";
     var shouldGhost = certType !== "NRCan EA";
     setFieldGhosted("f280_svc_org", shouldGhost);
   }
@@ -1896,34 +1677,36 @@ window.TEUI.SectionModules.sect21 = (function () {
     var modelId = graphState.getActiveModelId();
 
     // Equipment capacity (numeric)
-    var heatCap = TargetState.getNumericValue("f280_cap_heat", 0);
+    var heatCapRaw = getModeValue("f280_cap_heat") || "0";
+    var heatCap = window.TEUI?.parseNumeric?.(heatCapRaw, 0) ?? parseFloat(heatCapRaw) || 0;
     graphState.setValueForModel(modelId, "f280.installedHeatingCapacity", heatCap);
 
-    var coolCap = TargetState.getNumericValue("f280_cap_cool", 0);
+    var coolCapRaw = getModeValue("f280_cap_cool") || "0";
+    var coolCap = window.TEUI?.parseNumeric?.(coolCapRaw, 0) ?? parseFloat(coolCapRaw) || 0;
     graphState.setValueForModel(modelId, "f280.installedCoolingCapacity", coolCap);
 
     // Designer fields (string, except attestation which is boolean)
     graphState.setValueForModel(modelId, "f280.designer.name",
-      TargetState.getValue("f280_dsgn_name") || "");
+      getModeValue("f280_dsgn_name") || "");
     graphState.setValueForModel(modelId, "f280.designer.company",
-      TargetState.getValue("f280_dsgn_co") || "");
+      getModeValue("f280_dsgn_co") || "");
     graphState.setValueForModel(modelId, "f280.designer.certType",
-      TargetState.getValue("f280_cert_type") || "Other");
+      getModeValue("f280_cert_type") || "Other");
     graphState.setValueForModel(modelId, "f280.designer.certNumber",
-      TargetState.getValue("f280_cert_num") || "");
+      getModeValue("f280_cert_num") || "");
     graphState.setValueForModel(modelId, "f280.designer.serviceOrg",
-      TargetState.getValue("f280_svc_org") || "");
+      getModeValue("f280_svc_org") || "");
 
-    var attestVal = TargetState.getValue("f280_attest");
+    var attestVal = getModeValue("f280_attest");
     graphState.setValueForModel(modelId, "f280.designer.attestation",
       attestVal === "Yes" ? true : false);
 
     // Form metadata
     graphState.setValueForModel(modelId, "f280.projectNumber",
-      TargetState.getValue("f280_proj_num") || "");
+      getModeValue("f280_proj_num") || "");
     graphState.setValueForModel(modelId, "f280.complianceType", "Whole House");
     graphState.setValueForModel(modelId, "f280.codeReference",
-      TargetState.getValue("f280_code_ref") || "");
+      getModeValue("f280_code_ref") || "");
   }
 
   function calculateReferenceModel() {
@@ -1934,9 +1717,6 @@ window.TEUI.SectionModules.sect21 = (function () {
   function calculateAll() {
     calculateReferenceModel();
     calculateTargetModel();
-
-    // Refresh display with newly computed values
-    ModeManager.updateCalculatedDisplayValues();
   }
 
   //==========================================================================
@@ -1952,11 +1732,10 @@ window.TEUI.SectionModules.sect21 = (function () {
 
     if (TEXT_FIELDS.has(fieldId)) {
       // Text field: store raw string value, no numeric parsing
-      var currentValue = ModeManager.getValue(fieldId);
+      var currentValue = getModeValue(fieldId);
       if (currentValue !== rawValue) {
-        ModeManager.setValue(fieldId, rawValue, "user-modified");
+        setModeValue(fieldId, rawValue, "user-modified");
         calculateAll();
-        ModeManager.updateCalculatedDisplayValues();
       }
     } else {
       // Numeric field: parse and format
@@ -1965,7 +1744,7 @@ window.TEUI.SectionModules.sect21 = (function () {
         parseFloat(rawValue.replace(/[$,%]/g, ""));
 
       if (isNaN(numericValue)) {
-        var previousValue = ModeManager.getValue(fieldId) || "0";
+        var previousValue = getModeValue(fieldId) || "0";
         numericValue =
           window.TEUI?.parseNumeric?.(previousValue, 0) ?? 0;
       }
@@ -1976,11 +1755,10 @@ window.TEUI.SectionModules.sect21 = (function () {
         valueToStore;
       fieldElement.textContent = formattedDisplay;
 
-      var currentVal = ModeManager.getValue(fieldId);
+      var currentVal = getModeValue(fieldId);
       if (currentVal !== valueToStore) {
-        ModeManager.setValue(fieldId, valueToStore, "user-modified");
+        setModeValue(fieldId, valueToStore, "user-modified");
         calculateAll();
-        ModeManager.updateCalculatedDisplayValues();
       }
     }
   }
@@ -1994,7 +1772,7 @@ window.TEUI.SectionModules.sect21 = (function () {
     console.log('[S21] Dropdown changed: ' + fieldId + ' = "' + value + '"');
 
     if (fieldId) {
-      ModeManager.setValue(fieldId, value, "user-modified");
+      setModeValue(fieldId, value, "user-modified");
 
       // Update Service Org visibility when cert type changes
       if (fieldId === "f280_cert_type") {
@@ -2002,7 +1780,6 @@ window.TEUI.SectionModules.sect21 = (function () {
       }
 
       calculateAll();
-      ModeManager.updateCalculatedDisplayValues();
     }
   }
 
@@ -2065,7 +1842,7 @@ window.TEUI.SectionModules.sect21 = (function () {
 
       sourceFields.forEach(function (sourceId) {
         window.TEUI.StateManager.addListener(sourceId, function () {
-          ModeManager.updateCalculatedDisplayValues();
+          // DOMBridge.stampAll() handles display updates
         });
       });
     }
@@ -2078,18 +1855,21 @@ window.TEUI.SectionModules.sect21 = (function () {
   function onSectionRendered() {
     console.log("[S21] Section rendered - initializing F280 Compliance module");
 
-    // Initialize state defaults
-    TargetState.setDefaults();
-    ReferenceState.setDefaults();
+    // Publish field defaults to StateManager
+    if (window.TEUI?.StateManager) {
+      EDITABLE_FIELDS.forEach(fieldId => {
+        const defaultVal = getFieldDefault(fieldId);
+        if (defaultVal != null) {
+          window.TEUI.StateManager.setValue(fieldId, defaultVal, "default");
+        }
+      });
+    }
 
     // Initialize event handlers
     initializeEventHandlers();
 
     // Initial calculations
     calculateAll();
-
-    // Update display
-    ModeManager.updateCalculatedDisplayValues();
 
     // Apply Service Org ghosting
     updateServiceOrgVisibility();
@@ -2104,6 +1884,13 @@ window.TEUI.SectionModules.sect21 = (function () {
     console.log("[S21] Initialization complete");
   }
 
+  /**
+   * Called by ReferenceToggle when mode switches.
+   */
+  function onModeSwitch(mode) {
+    updateServiceOrgVisibility();
+  }
+
   return {
     getFields: getFields,
     getDropdownOptions: getDropdownOptions,
@@ -2111,11 +1898,6 @@ window.TEUI.SectionModules.sect21 = (function () {
     initializeEventHandlers: initializeEventHandlers,
     onSectionRendered: onSectionRendered,
     calculateAll: calculateAll,
-
-    // Pattern A exports
-    ModeManager: ModeManager,
-    TargetState: TargetState,
-    ReferenceState: ReferenceState,
   };
 })();
 

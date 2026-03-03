@@ -15,169 +15,9 @@ window.TEUI.SectionModules = window.TEUI.SectionModules || {};
 
 // Section 14: TEDI & TELI Module
 window.TEUI.SectionModules.sect14 = (function () {
-  //==========================================================================
-  // DUAL-STATE ARCHITECTURE (Self-Contained State Module)
-  //==========================================================================
+  // TargetState/ReferenceState/ModeManager removed — graph + SM is the single source of truth.
 
-  // PATTERN A: Internal State Objects (Self-Contained + Persistent)
-  const TargetState = {
-    state: {},
-    listeners: {},
-    initialize: function () {
-      const savedState = localStorage.getItem("S14_TARGET_STATE");
-      if (savedState) {
-        this.state = JSON.parse(savedState);
-      } else {
-        this.setDefaults();
-      }
-    },
-    setDefaults: function () {
-      // S14-specific Target defaults - minimal user inputs
-      this.state = {
-        d_142: "0", // Capital cost premium for HP equipment (only user input)
-        // Most other fields are calculated from upstream sections
-      };
-    },
-    saveState: function () {
-      localStorage.setItem("S14_TARGET_STATE", JSON.stringify(this.state));
-    },
-    setValue: function (fieldId, value, source = "user") {
-      this.state[fieldId] = value;
-      if (source === "user-modified") {
-        this.saveState();
-      }
-    },
-    getValue: function (fieldId) {
-      return this.state[fieldId];
-    },
-  };
-
-  const ReferenceState = {
-    state: {},
-    listeners: {},
-    initialize: function () {
-      const savedState = localStorage.getItem("S14_REFERENCE_STATE");
-      if (savedState) {
-        this.state = JSON.parse(savedState);
-      } else {
-        this.setDefaults();
-      }
-    },
-    setDefaults: function () {
-      // ✅ DYNAMIC LOADING: Get current reference standard from dropdown ref_d_13
-      const currentStandard =
-        window.TEUI?.StateManager?.getValue?.("ref_d_13") ||
-        "OBC SB10 5.5-6 Z6";
-      const referenceValues =
-        window.TEUI?.ReferenceValues?.[currentStandard] || {};
-
-      // Apply reference values to S14 fields with fallbacks
-      this.state = {
-        d_142: referenceValues.d_142 || "0", // Capital cost premium (typically 0 for reference)
-        // Most S14 values are calculated from upstream Reference sections
-      };
-
-      console.log(
-        `S14: Reference defaults loaded from standard: ${currentStandard}`
-      );
-    },
-    // MANDATORY: Include onReferenceStandardChange for d_13 changes
-    onReferenceStandardChange: function () {
-      console.log("S14: Reference standard changed, reloading defaults");
-      this.setDefaults();
-      this.saveState();
-      // Only refresh UI if currently in reference mode
-      if (ModeManager.currentMode === "reference") {
-        ModeManager.refreshUI();
-      }
-    },
-    saveState: function () {
-      localStorage.setItem("S14_REFERENCE_STATE", JSON.stringify(this.state));
-    },
-    setValue: function (fieldId, value, source = "user") {
-      this.state[fieldId] = value;
-      if (source === "user-modified") {
-        this.saveState();
-      }
-    },
-    getValue: function (fieldId) {
-      return this.state[fieldId];
-    },
-  };
-
-  // PATTERN 2: The ModeManager Facade
-  const ModeManager = {
-    currentMode: "target",
-    initialize: function () {
-      TargetState.initialize();
-      ReferenceState.initialize();
-
-      // ✅ PHASE 3 CLEANUP: PASSIVE d_13/ref_d_13 listeners removed
-      // "Set Values" button handles value application via FileHandler
-      // Note: CRITICAL d_13 listener at line ~1475 will also be removed
-    },
-    switchMode: function (mode) {
-      if (
-        this.currentMode === mode ||
-        (mode !== "target" && mode !== "reference")
-      )
-        return;
-      this.currentMode = mode;
-      console.log(`S14: Switched to ${mode.toUpperCase()} mode`);
-
-      this.refreshUI();
-      // ✅ CORRECTED: Only refresh UI, don't re-run calculations.
-      this.updateCalculatedDisplayValues();
-
-      // ✅ NEW: Sync visual toggle UI when mode changes (from global or local toggle)
-      this.syncToggleUI(mode);
-    },
-
-    // Update displayed calculated values based on current mode
-    updateCalculatedDisplayValues: function () {
-      /* DOMBridge.stampAll() handles display */
-    },
-    resetState: function () {
-      console.log("S14: Resetting state and clearing localStorage.");
-      TargetState.setDefaults();
-      TargetState.saveState();
-      ReferenceState.setDefaults();
-      ReferenceState.saveState();
-      console.log("S14: States have been reset to defaults.");
-
-      this.refreshUI();
-    },
-    getCurrentState: function () {
-      return this.currentMode === "target" ? TargetState : ReferenceState;
-    },
-    getValue: function (fieldId) {
-      return this.getCurrentState().getValue(fieldId);
-    },
-    setValue: function (fieldId, value, source = "user") {
-      this.getCurrentState().setValue(fieldId, value, source);
-
-      // BRIDGE: For backward compatibility, sync Target changes to global StateManager
-      if (this.currentMode === "target") {
-        window.TEUI.StateManager.setValue(fieldId, value, "user-modified");
-      }
-    },
-    refreshUI: function () {
-      /* DOMBridge.stampAll() handles display */
-    },
-
-    // ✅ NEW: Sync visual toggle switch and indicator to match current mode
-    // Called both when user clicks local toggle AND when global toggle switches mode
-    syncToggleUI: function (mode) {
-      // Use centralized ToggleUISync utility
-      window.TEUI.ToggleUISync.syncToggleUI(this._toggleElements, mode, "S14");
-    },
-  };
-
-  // MANDATORY: Global exposure
   window.TEUI.sect14 = window.TEUI.sect14 || {};
-  window.TEUI.sect14.ModeManager = ModeManager;
-  window.TEUI.sect14.TargetState = TargetState;
-  window.TEUI.sect14.ReferenceState = ReferenceState;
 
   //==========================================================================
   // CONSOLIDATED FIELD DEFINITIONS AND LAYOUT (Update Defaults)
@@ -691,20 +531,12 @@ window.TEUI.SectionModules.sect14 = (function () {
    * Called when section is rendered
    */
   function onSectionRendered() {
-    console.log(
-      "S14: Section rendered - initializing Pattern A Dual-State Module."
-    );
+    console.log("S14: Section rendered.");
 
-    // 1. Initialize the ModeManager and its internal states
-    ModeManager.initialize();
-
-    // 2. Initialize event handlers
+    // Initialize event handlers
     initializeEventHandlers();
 
-    // 3. Sync UI to the default (Target) state
-    ModeManager.refreshUI();
-
-    console.log("S14: Pattern A initialization complete.");
+    console.log("S14: Initialization complete.");
   }
 
   //==========================================================================
@@ -723,9 +555,6 @@ window.TEUI.SectionModules.sect14 = (function () {
     // Event handling and initialization - REQUIRED
     initializeEventHandlers: initializeEventHandlers,
     onSectionRendered: onSectionRendered,
-
-    // ✅ CRITICAL: Export ModeManager for FieldManager routing
-    ModeManager: ModeManager,
   };
 })();
 

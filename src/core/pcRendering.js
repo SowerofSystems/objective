@@ -977,17 +977,6 @@ window.TEUI.PCRendering = (function () {
         const dropdownFieldIdWithPrefix = isTarget
           ? dropdownFieldId
           : axisConfig.refDropdownField;
-        const stateToUpdate = isTarget
-          ? owningSection.TargetState
-          : owningSection.ReferenceState;
-
-        if (stateToUpdate) {
-          stateToUpdate.setValue(dropdownFieldId, "MEASURED");
-          console.log(
-            `[pcRendering] Set ${isTarget ? "Target" : "Reference"}State.${dropdownFieldId} = "MEASURED"`
-          );
-        }
-
         if (window.TEUI?.StateManager) {
           window.TEUI.StateManager.setValue(
             dropdownFieldIdWithPrefix,
@@ -1014,17 +1003,6 @@ window.TEUI.PCRendering = (function () {
         );
 
         if (currentFuelType === "Gas" || currentFuelType === "Oil") {
-          const stateToUpdate = isTarget
-            ? owningSection.TargetState
-            : owningSection.ReferenceState;
-
-          if (stateToUpdate) {
-            stateToUpdate.setValue(selectorFieldId, "Heatpump");
-            console.log(
-              `[HEAT% Auto-Switch] ${currentFuelType} → Heatpump (${clampedValue}% > 100%)`
-            );
-          }
-
           if (window.TEUI?.StateManager) {
             window.TEUI.StateManager.setValue(
               selectorFieldIdWithPrefix,
@@ -1032,7 +1010,7 @@ window.TEUI.PCRendering = (function () {
               "user-modified"
             );
             console.log(
-              `[pcRendering] Set StateManager.${selectorFieldIdWithPrefix} = "Heatpump"`
+              `[HEAT% Auto-Switch] ${currentFuelType} → Heatpump (${clampedValue}% > 100%)`
             );
           }
 
@@ -1044,18 +1022,7 @@ window.TEUI.PCRendering = (function () {
         }
       }
 
-      // Update state
-      const stateToUpdate = isTarget
-        ? owningSection.TargetState
-        : owningSection.ReferenceState;
-      if (stateToUpdate) {
-        stateToUpdate.setValue(fieldToWrite, valueToStore);
-        console.log(
-          `[pcRendering] Updated ${isTarget ? "Target" : "Reference"}State.${fieldToWrite} = ${valueToStore}`
-        );
-      }
-
-      // Update StateManager
+      // Update StateManager (single source of truth)
       if (window.TEUI?.StateManager) {
         window.TEUI.StateManager.setValue(
           fieldToWriteWithPrefix,
@@ -1067,10 +1034,8 @@ window.TEUI.PCRendering = (function () {
         );
       }
 
-      // Graph handles recalculation via Calculator.calculateAll()
-      if (window.TEUI?.Calculator?.calculateAll) {
-        window.TEUI.Calculator.calculateAll();
-      }
+      // Graph handles recalculation via wildcard SM listener →
+      // recomputeForInput (triggered by each SM.setValue above)
     }
 
     // Refresh S18 graph

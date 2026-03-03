@@ -16,232 +16,20 @@ window.TEUI.SectionModules = window.TEUI.SectionModules || {};
 
 // Section 3: Climate Calculations Module with DualState Architecture
 window.TEUI.SectionModules.sect03 = (function () {
-  //==========================================================================
-  // DUAL-STATE ARCHITECTURE (Self-Contained State Module - Pattern A)
-  //==========================================================================
+  // TargetState/ReferenceState/ModeManager removed — graph + SM is the single source of truth.
 
-  // PATTERN 1: Internal State Objects (Self-Contained + Persistent)
-  const TargetState = {
-    state: {},
-    listeners: {},
-    initialize: function () {
-      const savedState = localStorage.getItem("S03_TARGET_STATE");
-      if (savedState) {
-        try {
-          this.state = JSON.parse(savedState);
-          // console.log("S03 TARGET STATE: Restored from localStorage", this.state);
-        } catch (e) {
-          this.setDefaults();
-        }
-      } else {
-        this.setDefaults();
-      }
-    },
-    setDefaults: function () {
-      // ✅ ANTI-PATTERN FIX: Field definitions are single source of truth - no hardcoded fallbacks
-      this.state = {
-        d_19: getFieldDefault("d_19"), // Province
-        h_19: getFieldDefault("h_19"), // City
-        h_20: getFieldDefault("h_20"), // Timeframe
-        h_21: getFieldDefault("h_21"), // Capacitance setting
-        m_19: getFieldDefault("m_19"), // Cooling days
-        l_20: getFieldDefault("l_20"), // Summer night temp (NEW - Cooling Refactor)
-        l_21: getFieldDefault("l_21"), // Summer RH% (NEW - Cooling Refactor)
-        l_22: getFieldDefault("l_22"), // Elevation
-        l_24: getFieldDefault("l_24"), // Cooling override
-        i_21: getFieldDefault("i_21"), // Capacitance percentage
-        d_21: getFieldDefault("d_21"), // ✅ CDD (user-editable with climate defaults)
-        // ✅ CALCULATED FIELDS REMOVED: h_23, h_24 are calculated, not defaults
-        // Climate data populated by calculation engines from ClimateValues.js
-        // NOTE: l_23 (Seasonal outdoor RH%) will be added in future phase
-      };
-      console.log(
-        "S03: Target defaults set from field definitions - single source of truth"
-      );
-    },
-    saveState: function () {
-      try {
-        localStorage.setItem("S03_TARGET_STATE", JSON.stringify(this.state));
-      } catch (e) {
-        console.log("S03 TARGET STATE: Error saving", e);
-      }
-    },
-    setValue: function (fieldId, value, source = "user") {
-      this.state[fieldId] = value;
-      this.notifyListeners(fieldId, value);
-      this.saveState();
-      // console.log(`S03 TARGET setValue: ${fieldId} = ${value} (${source})`);
-    },
-    getValue: function (fieldId) {
-      return this.state[fieldId];
-    },
-    addListener: function (fieldId, callback) {
-      if (!this.listeners[fieldId]) {
-        this.listeners[fieldId] = [];
-      }
-      this.listeners[fieldId].push(callback);
-    },
-    notifyListeners: function (fieldId, value) {
-      if (this.listeners[fieldId]) {
-        this.listeners[fieldId].forEach(callback => callback(value));
-      }
-    },
-    syncFromGlobalState: function () {
-      /* graph is source of truth */
-    },
-  };
+  function getModeValue(fieldId) {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    return window.TEUI.StateManager?.getValue(isRef ? `ref_${fieldId}` : fieldId);
+  }
 
-  // Reference State Management (with dynamic defaults based on d_13)
-  const ReferenceState = {
-    state: {},
-    listeners: {},
-    initialize: function () {
-      const savedState = localStorage.getItem("S03_REFERENCE_STATE");
-      if (savedState) {
-        try {
-          this.state = JSON.parse(savedState);
-          // console.log("S03 REFERENCE STATE: Restored from localStorage", this.state);
-        } catch (e) {
-          this.setDefaults();
-        }
-      } else {
-        this.setDefaults();
-      }
-    },
-    setDefaults: function () {
-      // ✅ ANTI-PATTERN FIX: Field definitions are single source of truth - no hardcoded fallbacks
-      this.state = {
-        // 1. Base defaults from field definitions (single source of truth)
-        d_19: getFieldDefault("d_19"), // Province
-        h_19: getFieldDefault("h_19"), // City
-        h_20: getFieldDefault("h_20"), // Timeframe
-        h_21: getFieldDefault("h_21"), // Capacitance setting
-        m_19: getFieldDefault("m_19"), // Cooling days
-        l_20: getFieldDefault("l_20"), // Summer night temp (NEW - Cooling Refactor)
-        l_21: getFieldDefault("l_21"), // Summer RH% (NEW - Cooling Refactor)
-        l_22: getFieldDefault("l_22"), // Elevation
-        l_24: getFieldDefault("l_24"), // Cooling override
-        i_21: getFieldDefault("i_21"), // Capacitance percentage
-        d_21: getFieldDefault("d_21"), // ✅ CDD (user-editable with climate defaults)
-
-        // 2. Reference-specific overrides (same as Target for S03 Excel compliance)
-        // Both Target and Reference use Ontario/Alexandria for Excel baseline
-        // ✅ CALCULATED FIELDS REMOVED: h_23, h_24 are calculated, not defaults
-        // Climate data populated by calculation engines from ClimateValues.js
-        // NOTE: l_23 (Seasonal outdoor RH%) will be added in future phase
-      };
-      console.log(
-        "S03: Reference defaults set from field definitions - single source of truth"
-      );
-    },
-    saveState: function () {
-      try {
-        localStorage.setItem("S03_REFERENCE_STATE", JSON.stringify(this.state));
-      } catch (e) {
-        console.log("S03 REFERENCE STATE: Error saving", e);
-      }
-    },
-    setValue: function (fieldId, value, source = "user") {
-      this.state[fieldId] = value;
-      this.notifyListeners(fieldId, value);
-      this.saveState();
-      // console.log(`S03 REFERENCE setValue: ${fieldId} = ${value} (${source})`);
-    },
-    getValue: function (fieldId) {
-      return this.state[fieldId];
-    },
-    addListener: function (fieldId, callback) {
-      if (!this.listeners[fieldId]) {
-        this.listeners[fieldId] = [];
-      }
-      this.listeners[fieldId].push(callback);
-    },
-    notifyListeners: function (fieldId, value) {
-      if (this.listeners[fieldId]) {
-        this.listeners[fieldId].forEach(callback => callback(value));
-      }
-    },
-    syncFromGlobalState: function () {
-      /* graph is source of truth */
-    },
-  };
-
-  // PATTERN 2: The ModeManager Facade (Standardized Pattern A)
-  const ModeManager = {
-    currentMode: "target",
-    initialize: function () {
-      TargetState.initialize();
-      ReferenceState.initialize();
-      // console.log("S03 MODE MANAGER: Both states initialized");
-    },
-    switchMode: function (mode) {
-      if (
-        this.currentMode === mode ||
-        (mode !== "target" && mode !== "reference")
-      )
-        return;
-      this.currentMode = mode;
-
-      this.refreshUI();
-      this.updateCalculatedDisplayValues();
-
-      // Sync visual toggle UI when mode changes (from global or local toggle)
-      this.syncToggleUI(mode);
-    },
-
-    // ✅ NEW: Sync visual toggle switch and indicator to match current mode
-    // Called both when user clicks local toggle AND when global toggle switches mode
-    syncToggleUI: function (mode) {
-      // Use centralized ToggleUISync utility
-      window.TEUI.ToggleUISync.syncToggleUI(this._toggleElements, mode, "S03");
-    },
-    resetState: function () {
-      console.log(
-        "S03: Resetting state and clearing localStorage for Section 3."
-      );
-      TargetState.setDefaults();
-      TargetState.saveState();
-      ReferenceState.setDefaults();
-      ReferenceState.saveState();
-      console.log("S03: States have been reset to defaults.");
-    },
-    getCurrentState: function () {
-      return this.currentMode === "target" ? TargetState : ReferenceState;
-    },
-    getValue: function (fieldId) {
-      return this.getCurrentState().getValue(fieldId);
-    },
-    setValue: function (fieldId, value, source = "user") {
-      this.getCurrentState().setValue(fieldId, value, source);
-
-      // BRIDGE: For backward compatibility, sync Target changes to global StateManager.
-      if (this.currentMode === "target") {
-        window.TEUI.StateManager.setValue(fieldId, value, "user-modified");
-      } else if (this.currentMode === "reference") {
-        window.TEUI.StateManager.setValue(
-          `ref_${fieldId}`,
-          value,
-          "user-modified"
-        );
-      }
-    },
-    refreshUI: function () {
-      /* DOMBridge.stampAll() handles display */
-    },
-
-    updateCalculatedDisplayValues: function () {
-      /* DOMBridge.stampAll() handles display */
-    },
-  };
-
-  // Expose globally for cross-section communication
-  window.TEUI.sect03 = window.TEUI.sect03 || {};
-  window.TEUI.sect03.ModeManager = ModeManager;
-
-  // Compatibility alias for existing code
-  const DualState = ModeManager;
-
-  // Legacy helper functions removed — graph handles all computation
+  function setModeValue(fieldId, value, source = "user-modified") {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    const key = isRef ? `ref_${fieldId}` : fieldId;
+    if (window.TEUI.StateManager?.setValue) {
+      window.TEUI.StateManager.setValue(key, value, source);
+    }
+  }
 
   //==========================================================================
   // CLIMATE DATA SERVICE - Direct ClimateValues.js Access
@@ -406,7 +194,7 @@ window.TEUI.SectionModules.sect03 = (function () {
           getOptions: function (provinceValue) {
             if (!provinceValue) {
               provinceValue =
-                DualState.getValue("d_19") ||
+                getModeValue("d_19") ||
                 document.querySelector('[data-dropdown-id="dd_d_19"]')?.value;
             }
 
@@ -983,8 +771,8 @@ window.TEUI.SectionModules.sect03 = (function () {
 
     console.log("Section03: Province selected:", provinceValue);
 
-    // Update state using ModeManager (handles mode-aware StateManager sync)
-    ModeManager.setValue("d_19", provinceValue, "user-modified");
+    // Update state (mode-aware StateManager sync)
+    setModeValue("d_19", provinceValue, "user-modified");
 
     // Update city dropdown for this province (UI only)
     updateCityDropdown(provinceValue);
@@ -1028,18 +816,18 @@ window.TEUI.SectionModules.sect03 = (function () {
     cityDropdown.disabled = false;
 
     // Auto-select city from current state if it exists in this province
-    const currentCity = DualState.getValue("h_19");
+    const currentCity = getModeValue("h_19");
     if (currentCity && cities.includes(currentCity)) {
       cityDropdown.value = currentCity;
-      DualState.setValue("h_19", currentCity, "init");
+      setModeValue("h_19", currentCity, "init");
     } else if (provinceValue === "ON" && cities.includes("Alexandria")) {
       // Default to Alexandria for Ontario
       cityDropdown.value = "Alexandria";
-      DualState.setValue("h_19", "Alexandria", "init");
+      setModeValue("h_19", "Alexandria", "init");
     } else if (cities.length > 0) {
       // Default to first city
       cityDropdown.value = cities[0];
-      DualState.setValue("h_19", cities[0], "init");
+      setModeValue("h_19", cities[0], "init");
     }
 
     console.log(
@@ -1075,10 +863,10 @@ window.TEUI.SectionModules.sect03 = (function () {
    */
   function showWeatherData() {
     const provinceValue =
-      DualState.getValue("d_19") ||
+      getModeValue("d_19") ||
       getElement(['[data-dropdown-id="dd_d_19"]'])?.value;
     const cityValue =
-      DualState.getValue("h_19") ||
+      getModeValue("h_19") ||
       getElement(['[data-dropdown-id="dd_h_19"]'])?.value;
 
     if (!provinceValue || !cityValue) {
@@ -1503,7 +1291,7 @@ window.TEUI.SectionModules.sect03 = (function () {
       newCityDropdown.addEventListener("change", function () {
         const selectedCity = this.value;
         console.log("Section03: City selected:", selectedCity);
-        ModeManager.setValue("h_19", selectedCity, "user-modified");
+        setModeValue("h_19", selectedCity, "user-modified");
       });
     }
 
@@ -1521,7 +1309,7 @@ window.TEUI.SectionModules.sect03 = (function () {
       newTimeframeDropdown.addEventListener("change", function () {
         const selectedTimeframe = this.value;
         console.log("S03: Timeframe selected:", selectedTimeframe);
-        ModeManager.setValue("h_20", selectedTimeframe, "user-modified");
+        setModeValue("h_20", selectedTimeframe, "user-modified");
       });
     }
 
@@ -1539,11 +1327,11 @@ window.TEUI.SectionModules.sect03 = (function () {
       newCapacitanceDropdown.addEventListener("change", function () {
         const selectedCapacitance = this.value;
         console.log("S03: Capacitance setting changed:", selectedCapacitance);
-        ModeManager.setValue("h_21", selectedCapacitance, "user");
+        setModeValue("h_21", selectedCapacitance, "user");
 
         // If "Static" is chosen, force the percentage to 0
         if (selectedCapacitance === "Static") {
-          ModeManager.setValue("i_21", "0", "system");
+          setModeValue("i_21", "0", "system");
         }
       });
     }
@@ -1610,12 +1398,11 @@ window.TEUI.SectionModules.sect03 = (function () {
         : "number-2dp"; // Default format
       this.textContent = window.TEUI.formatNumber(numericValue, formatType);
 
-      // MODE-AWARE: Update BOTH internal state (TargetState/ReferenceState) AND StateManager
-      // Use ModeManager.setValue() which handles both automatically
-      ModeManager.setValue(fieldId, numericValue.toString(), "user-modified");
+      // MODE-AWARE: Update StateManager
+      setModeValue(fieldId, numericValue.toString(), "user-modified");
     } else {
       // Revert to previous value if input is invalid
-      const previousValue = ModeManager.getValue(fieldId) || "0"; // Read from internal state
+      const previousValue = getModeValue(fieldId) || "0";
       const prevNumericValue = window.TEUI.parseNumeric(previousValue, 0);
       const formatType = Number.isInteger(prevNumericValue)
         ? "integer"
@@ -1650,17 +1437,14 @@ window.TEUI.SectionModules.sect03 = (function () {
     // console.log("S03: Populated province dropdown with options:", provinces);
 
     // Set default province from current state
-    const defaultProvince = DualState.getValue("d_19") || "ON";
+    const defaultProvince = getModeValue("d_19") || "ON";
     provinceSelect.value = defaultProvince;
 
     if (provinceSelect.value) {
-      DualState.setValue("d_19", provinceSelect.value, "init");
+      setModeValue("d_19", provinceSelect.value, "init");
 
-      // ✅ CRITICAL FIX: Sync to global StateManager for cross-section communication (MODE-AWARE)
+      // Sync dd_d_19 for cross-section communication
       if (window.TEUI?.StateManager) {
-        const key =
-          ModeManager.currentMode === "reference" ? "ref_d_19" : "d_19";
-        window.TEUI.StateManager.setValue(key, provinceSelect.value, "default");
         window.TEUI.StateManager.setValue(
           "dd_d_19",
           provinceSelect.value,
@@ -1684,22 +1468,10 @@ window.TEUI.SectionModules.sect03 = (function () {
       "S03: Section rendered - initializing Self-Contained State Module."
     );
 
-    // 1. Initialize the ModeManager and its internal states
-    ModeManager.initialize();
-
-    // 2. Setup the section-specific toggle switch in the header
+    // 1. Setup the section-specific toggle switch in the header
     injectHeaderControls();
 
-    // 3. Expose ModeManager globally for cross-section communication
-    if (window.TEUI) {
-      window.TEUI.sect03 = window.TEUI.sect03 || {};
-      window.TEUI.sect03.ModeManager = ModeManager;
-      console.log(
-        "S03: ModeManager exposed globally for cross-section integration."
-      );
-    }
-
-    // 4. Ensure ClimateData is available before proceeding
+    // 2. Ensure ClimateData is available before proceeding
     ClimateDataService.ensureAvailable(function () {
       // console.log("S03: ClimateData available - initializing dropdowns");
 
@@ -1736,9 +1508,9 @@ window.TEUI.SectionModules.sect03 = (function () {
     const city = SM.getValue("h_19");
     if (!province) return;
 
-    // Sync to DualState internal state
-    DualState.getCurrentState().state.d_19 = province;
-    if (city) DualState.getCurrentState().state.h_19 = city;
+    // Sync to StateManager
+    setModeValue("d_19", province, "init");
+    if (city) setModeValue("h_19", city, "init");
 
     // Set province dropdown value
     const provinceDropdown = getElement(['[data-dropdown-id="dd_d_19"]']);
@@ -1755,7 +1527,7 @@ window.TEUI.SectionModules.sect03 = (function () {
       if (cityDropdown) {
         cityDropdown.value = city;
       }
-      DualState.getCurrentState().state.h_19 = city;
+      setModeValue("h_19", city, "init");
     }
 
     console.log(`S03: Location dropdowns synced - ${province}/${city}`);
@@ -1780,10 +1552,5 @@ window.TEUI.SectionModules.sect03 = (function () {
     calculateAll: calculateAll,
     syncLocationDropdowns: syncLocationDropdowns,
 
-    // DualState functionality
-    DualState: DualState,
-    ModeManager: ModeManager,
-    TargetState: TargetState,
-    ReferenceState: ReferenceState,
   };
 })();
