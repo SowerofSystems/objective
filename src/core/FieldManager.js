@@ -943,16 +943,9 @@ TEUI.FieldManager = (function () {
 
         // 'change' event: Calculate on thumb release - fires when user releases slider
         rangeInput.addEventListener("change", function () {
-          const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
-          const smKey = isRef ? `ref_${fieldId}` : fieldId;
           writeUserInput(fieldId, this.value, "user-modified");
-          // Slider 'input' events during drag may have written the same value,
-          // so SM deduplication can block notifyListeners. Explicitly trigger
-          // recalculation to ensure all sections update.
-          // Use targeted recompute to avoid cross-model contamination.
-          if (TEUI.ComputationIntegration?.recomputeForInput) {
-            TEUI.ComputationIntegration.recomputeForInput(smKey);
-          }
+          // SM.setValue triggers wildcard listener → recomputeForInput.
+          // No explicit recompute needed (SM dedup was removed).
         });
 
         // Set initial display value

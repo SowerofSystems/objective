@@ -448,6 +448,12 @@ window.TEUI.PCOptimization = (function () {
     const changes = [];
     const sectionsModified = new Set();
 
+    // Mute SM listeners during batch writes to prevent N separate recomputes.
+    // LegacyAdapter still writes each value to the graph (it wraps SM.setValue,
+    // not a listener). After all values are in the graph, one calculateAll()
+    // recomputes everything correctly.
+    if (stateManager?.muteListeners) stateManager.muteListeners();
+
     for (const update of preset.fields) {
       // Skip if condition not met
       if (update.condition && !update.condition(stateManager)) {
@@ -479,8 +485,12 @@ window.TEUI.PCOptimization = (function () {
       }
     }
 
-    // Graph recalculation handled by wildcard SM listener → recomputeForInput
-    // (triggered by each SM.setValue in updateField above)
+    if (stateManager?.unmuteListeners) stateManager.unmuteListeners();
+
+    // Single recalculation after all values are written to graph
+    if (window.TEUI?.Calculator?.calculateAll) {
+      window.TEUI.Calculator.calculateAll();
+    }
 
     // 🔍 DIAGNOSTIC: Capture state AFTER optimization (if debug enabled)
     if (debugEnabled && stateBefore) {

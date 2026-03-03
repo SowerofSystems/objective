@@ -971,14 +971,20 @@ window.TEUI.PCRendering = (function () {
       window.TEUI?.SectionModules?.[axisConfig.owningSection];
 
     if (owningSection) {
+      const SM = window.TEUI?.StateManager;
+
+      // Mute SM listeners during multi-value writes to prevent intermediate
+      // recomputes. LegacyAdapter still writes to graph (it wraps SM.setValue).
+      if (SM?.muteListeners) SM.muteListeners();
+
       // ACH50 special case: Set dropdown to MEASURED
       if (axisConfig.dropdownField) {
         const dropdownFieldId = axisConfig.dropdownField;
         const dropdownFieldIdWithPrefix = isTarget
           ? dropdownFieldId
           : axisConfig.refDropdownField;
-        if (window.TEUI?.StateManager) {
-          window.TEUI.StateManager.setValue(
+        if (SM) {
+          SM.setValue(
             dropdownFieldIdWithPrefix,
             "MEASURED",
             "user-modified"
@@ -998,13 +1004,11 @@ window.TEUI.PCRendering = (function () {
         const selectorFieldIdWithPrefix = isTarget
           ? selectorFieldId
           : "ref_d_113";
-        const currentFuelType = window.TEUI?.StateManager?.getValue(
-          selectorFieldIdWithPrefix
-        );
+        const currentFuelType = SM?.getValue(selectorFieldIdWithPrefix);
 
         if (currentFuelType === "Gas" || currentFuelType === "Oil") {
-          if (window.TEUI?.StateManager) {
-            window.TEUI.StateManager.setValue(
+          if (SM) {
+            SM.setValue(
               selectorFieldIdWithPrefix,
               "Heatpump",
               "user-modified"
@@ -1023,8 +1027,8 @@ window.TEUI.PCRendering = (function () {
       }
 
       // Update StateManager (single source of truth)
-      if (window.TEUI?.StateManager) {
-        window.TEUI.StateManager.setValue(
+      if (SM) {
+        SM.setValue(
           fieldToWriteWithPrefix,
           valueToStore,
           "user-modified"
@@ -1034,8 +1038,12 @@ window.TEUI.PCRendering = (function () {
         );
       }
 
-      // Graph handles recalculation via wildcard SM listener →
-      // recomputeForInput (triggered by each SM.setValue above)
+      if (SM?.unmuteListeners) SM.unmuteListeners();
+
+      // Single recalculation after all values are written to graph
+      if (window.TEUI?.Calculator?.calculateAll) {
+        window.TEUI.Calculator.calculateAll();
+      }
     }
 
     // Refresh S18 graph
