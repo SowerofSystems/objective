@@ -56,9 +56,10 @@ TEUI.Calculator = (function () {
         window.TEUI.DOMBridge.stampAll();
       }
 
-      const sect01 = window.TEUI.SectionModules?.sect01;
-      if (sect01?.postStamp) {
-        sect01.postStamp();
+      // Section postStamp hooks (display mirrors, key values)
+      const modules = window.TEUI.SectionModules || {};
+      for (const key of ["sect01", "sect21"]) {
+        if (modules[key]?.postStamp) modules[key].postStamp();
       }
 
       if (result) {

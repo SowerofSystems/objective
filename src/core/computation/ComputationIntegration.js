@@ -1083,10 +1083,14 @@
         window.TEUI.DOMBridge.stampAll();
       }
 
-      // Section01 supplementary display
+      // Section supplementary display stamps
       const sect01 = window.TEUI.SectionModules?.sect01;
       if (sect01?.postStamp) {
         sect01.postStamp();
+      }
+      const sect21 = window.TEUI.SectionModules?.sect21;
+      if (sect21?.postStamp) {
+        sect21.postStamp();
       }
 
       // Diagnostic: log S01 key values to trace n=1 vs n=2 staleness

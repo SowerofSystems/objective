@@ -23,14 +23,89 @@ window.TEUI.SectionModules.sect21 = (function () {
   // 1. FIELD DEFINITIONS (Single Source of Truth)
   //==========================================================================
 
+  // Semantic field IDs — keys match graph node names from F280ComplianceNodes.js
+  const FIELDS = {
+    // === F280 OWN INPUTS (editable) ===
+    // Project metadata
+    projectNumber:                "f280_proj_num",
+    complianceType:               "f280_comp_type",
+    codeReference:                "f280_code_ref",
+    // Equipment capacity
+    installedHeatingCapacity:     "f280_cap_heat",
+    installedCoolingCapacity:     "f280_cap_cool",
+    // Designer certification
+    designerName:                 "f280_dsgn_name",
+    designerCompany:              "f280_dsgn_co",
+    certType:                     "f280_cert_type",
+    certNumber:                   "f280_cert_num",
+    serviceOrg:                   "f280_svc_org",
+    attestation:                  "f280_attest",
+
+    // === DISPLAY MIRRORS (read-only, sourced from other sections) ===
+    // Design conditions (S03)
+    tsetHeating:                  "f280_d_h23",      // h_23 — climate.heating.setpoint
+    tsetCooling:                  "f280_d_h24",      // h_24 — climate.cooling.setpoint
+    temperatureColdest:           "f280_d_d23",      // d_23 — climate.temperature.coldest
+    temperatureHottest:           "f280_d_d24",      // d_24 — climate.temperature.hottest
+    heatingDegreeDays:            "f280_d_d20",      // d_20 — climate.heating.degreedays
+    coolingDegreeDays:            "f280_d_d21",      // d_21 — climate.cooling.degreedays
+    conditionedFloorArea:         "f280_d_h15",      // h_15 — building.conditionedFloorArea
+    conditionedVolume:            "f280_d_d105",     // d_105 — volume.conditioned
+    numStoreys:                   "f280_d_d103",     // d_103 — volume.numStoreys
+    // Envelope areas (S11: d_85..d_95)
+    wallAreaAboveGrade:           "f280_d_d86",      // d_86
+    ceilingRoofArea:              "f280_d_d85",      // d_85
+    windowAreaNorth:              "f280_d_d89",      // d_89
+    windowAreaEast:               "f280_d_d89b",     // d_90
+    windowAreaSouth:              "f280_d_d89c",     // d_91
+    windowAreaWest:               "f280_d_d89d",     // d_92
+    doorArea:                     "f280_d_d88",      // d_88
+    skylightArea:                 "f280_d_d93",      // d_93
+    wallAreaBelowGrade:           "f280_d_d94",      // d_94
+    slabArea:                     "f280_d_d95",      // d_95
+    // Envelope U-values (S11: g_85..g_95)
+    uWallAboveGrade:              "f280_h_g86",      // g_86
+    uCeilingRoof:                 "f280_h_g85",      // g_85
+    uWindowNorth:                 "f280_h_g89",      // g_89
+    uWindowEast:                  "f280_h_g89b",     // g_90
+    uWindowSouth:                 "f280_h_g89c",     // g_91
+    uWindowWest:                  "f280_h_g89d",     // g_92
+    uDoor:                        "f280_h_g88",      // g_88
+    uSkylight:                    "f280_h_g93",      // g_93
+    uWallBelowGrade:              "f280_h_g94",      // g_94
+    uSlab:                        "f280_h_g95",      // g_95
+    // Air tightness & ventilation (S13/S14)
+    nrl50:                        "f280_d_g108",     // g_108 — airTightness.nrl50
+    ach50Target:                  "f280_d_d109",     // d_109 — airTightness.ach50Target
+    ventilationVolumetricRate:    "f280_d_d120",     // d_120 — ventilation.volumetricRate
+    ventilationEfficiency:        "f280_d_d118",     // d_118 — mechanical.ventilation.efficiency
+
+    // === F280 COMPUTED RESULTS (read-only) ===
+    // Peak loads
+    peakEnvelopeHeatLoss:         "f280_d_hl_env",
+    peakInfiltrationHeatLoss:     "f280_d_hl_inf",
+    peakVentilationHeatLoss:      "f280_d_hl_vent",
+    totalDesignHeatLoss:          "f280_d_hl_total",
+    totalDesignHeatLossBTU:       "f280_h_hl_btu",
+    nominalCoolingCapacity:       "f280_d_cl_total",
+    nominalCoolingCapacityBTU:    "f280_h_cl_btu",
+    // Equipment sizing
+    heatingSizingRatio:           "f280_d_sz_heat_ratio",
+    heatingSizingCompliance:      "f280_d_sz_heat",
+    coolingSizingRatio:           "f280_d_sz_cool_ratio",
+    coolingSizingCompliance:      "f280_d_sz_cool",
+    // Overall compliance
+    overallCompliance:            "f280_d_overall",
+  };
+
   // Text-type fields that should NOT be parsed as numeric on blur
   const TEXT_FIELDS = new Set([
-    "f280_proj_num",
-    "f280_code_ref",
-    "f280_dsgn_name",
-    "f280_dsgn_co",
-    "f280_cert_num",
-    "f280_svc_org",
+    FIELDS.projectNumber,
+    FIELDS.codeReference,
+    FIELDS.designerName,
+    FIELDS.designerCompany,
+    FIELDS.certNumber,
+    FIELDS.serviceOrg,
   ]);
 
   const sectionRows = {
@@ -1458,128 +1533,111 @@ window.TEUI.SectionModules.sect21 = (function () {
 
   // Editable field IDs owned by this section
   const EDITABLE_FIELDS = [
-    "f280_proj_num",
-    "f280_code_ref",
-    "f280_cap_heat",
-    "f280_cap_cool",
-    "f280_dsgn_name",
-    "f280_dsgn_co",
-    "f280_cert_type",
-    "f280_cert_num",
-    "f280_svc_org",
-    "f280_attest",
+    FIELDS.projectNumber,
+    FIELDS.codeReference,
+    FIELDS.installedHeatingCapacity,
+    FIELDS.installedCoolingCapacity,
+    FIELDS.designerName,
+    FIELDS.designerCompany,
+    FIELDS.certType,
+    FIELDS.certNumber,
+    FIELDS.serviceOrg,
+    FIELDS.attestation,
   ];
 
   // Display-only field IDs (read from StateManager, rendered in section)
   const DISPLAY_FIELDS = [
     // Design conditions
-    "f280_d_h23",
-    "f280_d_h24",
-    "f280_d_d23",
-    "f280_d_d24",
-    "f280_d_d20",
-    "f280_d_d21",
-    "f280_d_h15",
-    "f280_d_d105",
-    "f280_d_d103",
-    // Envelope area
-    "f280_d_d86",
-    "f280_d_d85",
-    "f280_d_d89",
-    "f280_d_d89b",
-    "f280_d_d89c",
-    "f280_d_d89d",
-    "f280_d_d88",
-    "f280_d_d93",
-    "f280_d_d94",
-    "f280_d_d95",
+    FIELDS.tsetHeating, FIELDS.tsetCooling,
+    FIELDS.temperatureColdest, FIELDS.temperatureHottest,
+    FIELDS.heatingDegreeDays, FIELDS.coolingDegreeDays,
+    FIELDS.conditionedFloorArea, FIELDS.conditionedVolume, FIELDS.numStoreys,
+    // Envelope areas
+    FIELDS.wallAreaAboveGrade, FIELDS.ceilingRoofArea,
+    FIELDS.windowAreaNorth, FIELDS.windowAreaEast,
+    FIELDS.windowAreaSouth, FIELDS.windowAreaWest,
+    FIELDS.doorArea, FIELDS.skylightArea,
+    FIELDS.wallAreaBelowGrade, FIELDS.slabArea,
     // Envelope U-values
-    "f280_h_g86",
-    "f280_h_g85",
-    "f280_h_g89",
-    "f280_h_g89b",
-    "f280_h_g89c",
-    "f280_h_g89d",
-    "f280_h_g88",
-    "f280_h_g93",
-    "f280_h_g94",
-    "f280_h_g95",
+    FIELDS.uWallAboveGrade, FIELDS.uCeilingRoof,
+    FIELDS.uWindowNorth, FIELDS.uWindowEast,
+    FIELDS.uWindowSouth, FIELDS.uWindowWest,
+    FIELDS.uDoor, FIELDS.uSkylight,
+    FIELDS.uWallBelowGrade, FIELDS.uSlab,
     // Air tightness & ventilation
-    "f280_d_g108",
-    "f280_d_d109",
-    "f280_d_d120",
-    "f280_d_d118",
+    FIELDS.nrl50, FIELDS.ach50Target, FIELDS.ventilationVolumetricRate, FIELDS.ventilationEfficiency,
     // F280 peak load results
-    "f280_d_hl_env",
-    "f280_d_hl_inf",
-    "f280_d_hl_vent",
-    "f280_d_hl_total",
-    "f280_h_hl_btu",
-    "f280_d_cl_total",
-    "f280_h_cl_btu",
+    FIELDS.peakEnvelopeHeatLoss, FIELDS.peakInfiltrationHeatLoss,
+    FIELDS.peakVentilationHeatLoss, FIELDS.totalDesignHeatLoss,
+    FIELDS.totalDesignHeatLossBTU, FIELDS.nominalCoolingCapacity,
+    FIELDS.nominalCoolingCapacityBTU,
     // Equipment sizing results
-    "f280_d_sz_heat_ratio",
-    "f280_d_sz_heat",
-    "f280_d_sz_cool_ratio",
-    "f280_d_sz_cool",
+    FIELDS.heatingSizingRatio, FIELDS.heatingSizingCompliance,
+    FIELDS.coolingSizingRatio, FIELDS.coolingSizingCompliance,
     // Compliance
-    "f280_d_overall",
+    FIELDS.overallCompliance,
   ];
 
   // Mapping from section display field IDs to StateManager source field IDs
+  // Maps S21 display field → { semantic, legacy } for graph-first reads with SM fallback.
+  // Semantic paths from graph nodes (ClimateNodes, VolumeMetricsNodes, F280ComplianceNodes).
+  // S11 envelope fields use semanticPath annotations (not yet graph nodes) so legacy key is required.
+  // SOURCE_MAP: display fieldId → semantic path
+  // Paths match the data-semantic attributes on source section cells.
+  // Values resolved via graph state or SM (reverse-lookup at runtime).
   const SOURCE_MAP = {
-    // Design conditions
-    f280_d_h23: "h_23",
-    f280_d_h24: "h_24",
-    f280_d_d23: "d_23",
-    f280_d_d24: "d_24",
-    f280_d_d20: "d_20",
-    f280_d_d21: "d_21",
-    f280_d_h15: "h_15",
-    f280_d_d105: "d_105",
-    f280_d_d103: "d_103",
-    // Envelope areas
-    f280_d_d86: "d_86",
-    f280_d_d85: "d_85",
-    f280_d_d89: "d_89",
-    f280_d_d89b: "d_89b",
-    f280_d_d89c: "d_89c",
-    f280_d_d89d: "d_89d",
-    f280_d_d88: "d_88",
-    f280_d_d93: "d_93",
-    f280_d_d94: "d_94",
-    f280_d_d95: "d_95",
-    // Envelope U-values
-    f280_h_g86: "g_86",
-    f280_h_g85: "g_85",
-    f280_h_g89: "g_89",
-    f280_h_g89b: "g_89b",
-    f280_h_g89c: "g_89c",
-    f280_h_g89d: "g_89d",
-    f280_h_g88: "g_88",
-    f280_h_g93: "g_93",
-    f280_h_g94: "g_94",
-    f280_h_g95: "g_95",
-    // Air tightness & ventilation
-    f280_d_g108: "g_108",
-    f280_d_d109: "d_109",
-    f280_d_d120: "d_120",
-    f280_d_d118: "d_118",
-    // F280 computed values (legacy IDs from F280ComplianceNodes.js)
-    f280_d_hl_env: "f280_hl_env",
-    f280_d_hl_inf: "f280_hl_inf",
-    f280_d_hl_vent: "f280_hl_vent",
-    f280_d_hl_total: "f280_hl_total",
-    f280_h_hl_btu: "f280_hl_btu",
-    f280_d_cl_total: "f280_cl_total",
-    f280_h_cl_btu: "f280_cl_btu",
-    // Equipment sizing compliance
-    f280_d_sz_heat_ratio: "f280_sz_heat_ratio",
-    f280_d_sz_heat: "f280_sz_heat",
-    f280_d_sz_cool_ratio: "f280_sz_cool_ratio",
-    f280_d_sz_cool: "f280_sz_cool",
-    // Overall compliance
-    f280_d_overall: "f280_overall",
+    // Design conditions (S03)
+    [FIELDS.tsetHeating]:             "building.heatingSetpoint",
+    [FIELDS.tsetCooling]:             "building.coolingSetpoint",
+    [FIELDS.temperatureColdest]:      "climate.coldestTemp",
+    [FIELDS.temperatureHottest]:      "climate.hottestTemp",
+    [FIELDS.heatingDegreeDays]:       "climate.hdd",
+    [FIELDS.coolingDegreeDays]:       "climate.cdd",
+    [FIELDS.conditionedFloorArea]:    "building.conditionedFloorArea",
+    [FIELDS.conditionedVolume]:       "geometry.conditionedVolume",
+    [FIELDS.numStoreys]:              "airLeakage.stories",
+    // Envelope areas (S11)
+    [FIELDS.wallAreaAboveGrade]:      "envelope.wallsAbove.area",
+    [FIELDS.ceilingRoofArea]:         "envelope.roof.area",
+    [FIELDS.windowAreaNorth]:         "envelope.windowNorth.area",
+    [FIELDS.windowAreaEast]:          "envelope.windowEast.area",
+    [FIELDS.windowAreaSouth]:         "envelope.windowSouth.area",
+    [FIELDS.windowAreaWest]:          "envelope.windowWest.area",
+    [FIELDS.doorArea]:                "envelope.doors.area",
+    [FIELDS.skylightArea]:            "envelope.skylight.area",
+    [FIELDS.wallAreaBelowGrade]:      "envelope.wallsBelow.area",
+    [FIELDS.slabArea]:                "envelope.slab.area",
+    // Envelope U-values (S11)
+    [FIELDS.uWallAboveGrade]:         "envelope.wallsAbove.uValue",
+    [FIELDS.uCeilingRoof]:            "envelope.roof.uValue",
+    [FIELDS.uWindowNorth]:            "envelope.windowNorth.uValue",
+    [FIELDS.uWindowEast]:             "envelope.windowEast.uValue",
+    [FIELDS.uWindowSouth]:            "envelope.windowSouth.uValue",
+    [FIELDS.uWindowWest]:             "envelope.windowWest.uValue",
+    [FIELDS.uDoor]:                   "envelope.doors.uValue",
+    [FIELDS.uSkylight]:              "envelope.skylight.uValue",
+    [FIELDS.uWallBelowGrade]:         "envelope.wallsBelow.uValue",
+    [FIELDS.uSlab]:                   "envelope.slab.uValue",
+    // Air tightness & ventilation (S12/S13)
+    [FIELDS.nrl50]:                   "airLeakage.nrl50Target",
+    [FIELDS.ach50Target]:             "airLeakage.ach50Target",
+    [FIELDS.ventilationVolumetricRate]: "ventilation.volumetricRate",
+    [FIELDS.ventilationEfficiency]:   "ventilation.hrvEfficiency",
+    // F280 computed results (graph nodes)
+    [FIELDS.peakEnvelopeHeatLoss]:    "f280.peakEnvelopeHeatLoss",
+    [FIELDS.peakInfiltrationHeatLoss]: "f280.peakInfiltrationHeatLoss",
+    [FIELDS.peakVentilationHeatLoss]: "f280.peakVentilationHeatLoss",
+    [FIELDS.totalDesignHeatLoss]:     "f280.totalDesignHeatLoss",
+    [FIELDS.totalDesignHeatLossBTU]:  "f280.totalDesignHeatLossBTU",
+    [FIELDS.nominalCoolingCapacity]:  "f280.nominalCoolingCapacity",
+    [FIELDS.nominalCoolingCapacityBTU]: "f280.nominalCoolingCapacityBTU",
+    // Equipment sizing compliance (graph nodes)
+    [FIELDS.heatingSizingRatio]:      "f280.heatingSizingRatio",
+    [FIELDS.heatingSizingCompliance]: "f280.heatingSizingCompliance",
+    [FIELDS.coolingSizingRatio]:      "f280.coolingSizingRatio",
+    [FIELDS.coolingSizingCompliance]: "f280.coolingSizingCompliance",
+    // Overall compliance (graph node)
+    [FIELDS.overallCompliance]:       "f280.overallCompliance",
   };
 
   // TargetState/ReferenceState/ModeManager removed — graph + SM is the single source of truth.
@@ -1624,9 +1682,9 @@ window.TEUI.SectionModules.sect21 = (function () {
   //==========================================================================
 
   function updateServiceOrgVisibility() {
-    var certType = getModeValue("f280_cert_type") || "Other";
+    var certType = getModeValue(FIELDS.certType) || "Other";
     var shouldGhost = certType !== "NRCan EA";
-    setFieldGhosted("f280_svc_org", shouldGhost);
+    setFieldGhosted(FIELDS.serviceOrg, shouldGhost);
   }
 
   function setFieldGhosted(fieldId, shouldBeGhosted) {
@@ -1648,79 +1706,79 @@ window.TEUI.SectionModules.sect21 = (function () {
     }
   }
 
-  //==========================================================================
-  // 6. CALCULATION ENGINES (Simplified - reads from StateManager)
-  //==========================================================================
+  /**
+   * Build a reverse lookup: semanticPath → legacy fieldId from all section
+   * cell definitions. Cached after first call.
+   */
+  var _semanticToFieldId = null;
+  function getSemanticToFieldId() {
+    if (_semanticToFieldId) return _semanticToFieldId;
+    _semanticToFieldId = {};
+    var modules = window.TEUI?.SectionModules || {};
+    for (var key in modules) {
+      var mod = modules[key];
+      if (!mod?.getFields) continue;
+      try {
+        var fields = mod.getFields();
+        for (var fieldId in fields) {
+          var field = fields[fieldId];
+          if (field.semanticPath) {
+            _semanticToFieldId[field.semanticPath] = fieldId;
+          }
+        }
+      } catch (_) { /* skip */ }
+    }
+    return _semanticToFieldId;
+  }
 
-  // Map from Section21 field IDs to computation graph semantic paths
-  var SEMANTIC_MAP = {
-    f280_cap_heat: "f280.installedHeatingCapacity",
-    f280_cap_cool: "f280.installedCoolingCapacity",
-    f280_dsgn_name: "f280.designer.name",
-    f280_dsgn_co: "f280.designer.company",
-    f280_cert_type: "f280.designer.certType",
-    f280_cert_num: "f280.designer.certNumber",
-    f280_svc_org: "f280.designer.serviceOrg",
-    f280_attest: "f280.designer.attestation",
-    f280_proj_num: "f280.projectNumber",
-    f280_comp_type: "f280.complianceType",
-    f280_code_ref: "f280.codeReference",
-  };
+  /**
+   * Stamp display-only fields from graph state or SM (via semantic reverse-lookup).
+   * Called on render, after each graph recompute (postStamp), and on mode switch.
+   *
+   * Resolution order:
+   * 1. Graph state (MultiModelState) — for values stored as graph nodes
+   * 2. SM via reverse-lookup (semanticPath → fieldId) — for values computed
+   *    by section calculateAll but not yet registered as graph nodes
+   */
+  function stampDisplayFields() {
+    var section = document.getElementById("f280Compliance");
+    if (!section) return;
 
-  function calculateTargetModel() {
-    // Write F280 user inputs directly to the computation graph state
-    // using semantic paths — no legacy StateManager intermediary
     var ci = window.TEUI?.ComputationIntegration;
-    if (!ci?.isInitialized?.()) return;
+    var graphState = ci?.isInitialized?.() ? ci.getState() : null;
+    var modelId = graphState?.getActiveModelId?.();
+    var sm = window.TEUI?.StateManager;
+    var lookup = getSemanticToFieldId();
 
-    var graphState = ci.getState();
-    var modelId = graphState.getActiveModelId();
+    Object.entries(SOURCE_MAP).forEach(function ([displayId, semanticPath]) {
+      var value = null;
 
-    // Equipment capacity (numeric)
-    var heatCapRaw = getModeValue("f280_cap_heat") || "0";
-    var heatCap = window.TEUI?.parseNumeric?.(heatCapRaw, 0) ?? parseFloat(heatCapRaw) || 0;
-    graphState.setValueForModel(modelId, "f280.installedHeatingCapacity", heatCap);
+      // 1. Try graph state
+      if (graphState && modelId) {
+        value = graphState.getValueForModel(modelId, semanticPath);
+      }
 
-    var coolCapRaw = getModeValue("f280_cap_cool") || "0";
-    var coolCap = window.TEUI?.parseNumeric?.(coolCapRaw, 0) ?? parseFloat(coolCapRaw) || 0;
-    graphState.setValueForModel(modelId, "f280.installedCoolingCapacity", coolCap);
+      // 2. Fallback: SM via semantic → fieldId reverse lookup
+      if ((value == null || value === "") && sm) {
+        var fieldId = lookup[semanticPath];
+        if (fieldId) {
+          value = sm.getValue(fieldId);
+        }
+      }
 
-    // Designer fields (string, except attestation which is boolean)
-    graphState.setValueForModel(modelId, "f280.designer.name",
-      getModeValue("f280_dsgn_name") || "");
-    graphState.setValueForModel(modelId, "f280.designer.company",
-      getModeValue("f280_dsgn_co") || "");
-    graphState.setValueForModel(modelId, "f280.designer.certType",
-      getModeValue("f280_cert_type") || "Other");
-    graphState.setValueForModel(modelId, "f280.designer.certNumber",
-      getModeValue("f280_cert_num") || "");
-    graphState.setValueForModel(modelId, "f280.designer.serviceOrg",
-      getModeValue("f280_svc_org") || "");
+      if (value == null || value === "") return;
 
-    var attestVal = getModeValue("f280_attest");
-    graphState.setValueForModel(modelId, "f280.designer.attestation",
-      attestVal === "Yes" ? true : false);
-
-    // Form metadata
-    graphState.setValueForModel(modelId, "f280.projectNumber",
-      getModeValue("f280_proj_num") || "");
-    graphState.setValueForModel(modelId, "f280.complianceType", "Whole House");
-    graphState.setValueForModel(modelId, "f280.codeReference",
-      getModeValue("f280_code_ref") || "");
-  }
-
-  function calculateReferenceModel() {
-    // Reference model mirrors target for F280 (same equipment, same designer)
-    // No separate reference calculations needed for F280 compliance
-  }
-
-  function calculateAll() {
-    calculateReferenceModel();
-    calculateTargetModel();
+      var el = section.querySelector('[data-field-id="' + displayId + '"]');
+      if (el) {
+        el.textContent = value;
+        if (value === "\u2713") el.dataset.status = "pass";
+        else if (value === "\u2717") el.dataset.status = "fail";
+      }
+    });
   }
 
   //==========================================================================
-  // 7. EVENT HANDLING
+  // 6. EVENT HANDLING
   //==========================================================================
 
   function handleEditableBlur(event) {
@@ -1735,7 +1793,6 @@ window.TEUI.SectionModules.sect21 = (function () {
       var currentValue = getModeValue(fieldId);
       if (currentValue !== rawValue) {
         setModeValue(fieldId, rawValue, "user-modified");
-        calculateAll();
       }
     } else {
       // Numeric field: parse and format
@@ -1758,7 +1815,6 @@ window.TEUI.SectionModules.sect21 = (function () {
       var currentVal = getModeValue(fieldId);
       if (currentVal !== valueToStore) {
         setModeValue(fieldId, valueToStore, "user-modified");
-        calculateAll();
       }
     }
   }
@@ -1775,11 +1831,9 @@ window.TEUI.SectionModules.sect21 = (function () {
       setModeValue(fieldId, value, "user-modified");
 
       // Update Service Org visibility when cert type changes
-      if (fieldId === "f280_cert_type") {
+      if (fieldId === FIELDS.certType) {
         updateServiceOrgVisibility();
       }
-
-      calculateAll();
     }
   }
 
@@ -1789,14 +1843,10 @@ window.TEUI.SectionModules.sect21 = (function () {
 
     // Editable text and numeric fields
     var editableFieldIds = [
-      "f280_proj_num",
-      "f280_code_ref",
-      "f280_cap_heat",
-      "f280_cap_cool",
-      "f280_dsgn_name",
-      "f280_dsgn_co",
-      "f280_cert_num",
-      "f280_svc_org",
+      FIELDS.projectNumber, FIELDS.codeReference,
+      FIELDS.installedHeatingCapacity, FIELDS.installedCoolingCapacity,
+      FIELDS.designerName, FIELDS.designerCompany,
+      FIELDS.certNumber, FIELDS.serviceOrg,
     ];
 
     editableFieldIds.forEach(function (fieldId) {
@@ -1832,24 +1882,11 @@ window.TEUI.SectionModules.sect21 = (function () {
       }
     });
 
-    // External dependency listeners (update display when source values change)
-    if (window.TEUI?.StateManager) {
-      // Unique source field IDs to listen to
-      var sourceFields = new Set();
-      Object.values(SOURCE_MAP).forEach(function (sourceId) {
-        sourceFields.add(sourceId);
-      });
-
-      sourceFields.forEach(function (sourceId) {
-        window.TEUI.StateManager.addListener(sourceId, function () {
-          // DOMBridge.stampAll() handles display updates
-        });
-      });
-    }
+    // Display field updates handled by DOMBridge.stampAll() via graph recomputation
   }
 
   //==========================================================================
-  // 8. LIFECYCLE & PUBLIC API
+  // 7. LIFECYCLE & PUBLIC API
   //==========================================================================
 
   function onSectionRendered() {
@@ -1865,11 +1902,11 @@ window.TEUI.SectionModules.sect21 = (function () {
       });
     }
 
+    // Stamp display fields with current SM source values
+    stampDisplayFields();
+
     // Initialize event handlers
     initializeEventHandlers();
-
-    // Initial calculations
-    calculateAll();
 
     // Apply Service Org ghosting
     updateServiceOrgVisibility();
@@ -1888,6 +1925,7 @@ window.TEUI.SectionModules.sect21 = (function () {
    * Called by ReferenceToggle when mode switches.
    */
   function onModeSwitch(mode) {
+    stampDisplayFields();
     updateServiceOrgVisibility();
   }
 
@@ -1897,29 +1935,8 @@ window.TEUI.SectionModules.sect21 = (function () {
     getLayout: getLayout,
     initializeEventHandlers: initializeEventHandlers,
     onSectionRendered: onSectionRendered,
-    calculateAll: calculateAll,
+    onModeSwitch: onModeSwitch,
+    postStamp: stampDisplayFields,
   };
 })();
 
-// Global namespace exposure
-document.addEventListener("DOMContentLoaded", function () {
-  var module = window.TEUI.SectionModules.sect21;
-  if (module) {
-    window.TEUI.sect21.calculateAll = module.calculateAll;
-  }
-});
-
-// Safe global wrapper
-window.calculateSection21 = function () {
-  if (window.section21CalculationRunning) return;
-  window.section21CalculationRunning = true;
-  try {
-    if (window.TEUI?.SectionModules?.sect21?.calculateAll) {
-      window.TEUI.SectionModules.sect21.calculateAll();
-    }
-  } catch (e) {
-    console.error("Error in Section21 calculation wrapper:", e);
-  } finally {
-    window.section21CalculationRunning = false;
-  }
-};

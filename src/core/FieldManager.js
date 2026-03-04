@@ -1119,6 +1119,7 @@ TEUI.FieldManager = (function () {
         }
 
         // Add options to select element
+        const defaultVal = field.defaultValue ?? field.value;
         options.forEach(option => {
           const optionEl = document.createElement("option");
 
@@ -1131,12 +1132,15 @@ TEUI.FieldManager = (function () {
           optionEl.textContent = text;
 
           // Select default value if it matches
-          if (value === field.defaultValue) {
+          if (value === defaultVal) {
             optionEl.selected = true;
           }
 
           selectElement.appendChild(optionEl);
         });
+
+        // Publish initial selected value to SM
+        writeUserInput(fieldId, selectElement.value, "default");
 
         // Add change listener to update state
         selectElement.addEventListener("change", function () {
