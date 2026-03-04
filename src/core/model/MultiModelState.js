@@ -293,12 +293,21 @@
        * @returns {*}
        */
       getValueForModel(modelId, fieldPath) {
+        // Check model-specific state first — allows per-model G-field overrides
+        // (e.g., Reference city stays "Alexandria" while Target city changes)
+        const modelState = modelStates.get(modelId);
+        const modelValue = modelState?.get(fieldPath);
+        if (modelValue !== undefined) {
+          return modelValue;
+        }
+
+        // Fall back to shared state for G-fields (initial defaults before
+        // populateReferenceModel writes per-model copies)
         if (isSharedField(fieldPath)) {
           return sharedState.get(fieldPath);
         }
 
-        const modelState = modelStates.get(modelId);
-        return modelState?.get(fieldPath);
+        return undefined;
       },
 
       /**
@@ -368,20 +377,20 @@
        */
       setValueForModel(modelId, fieldPath, value) {
         const previousValue = this.getValueForModel(modelId, fieldPath);
-        let affectedModels;
 
-        if (isSharedField(fieldPath)) {
-          // G-field: Update shared state, affects ALL models
-          sharedState.set(fieldPath, value);
-          affectedModels = Array.from(models.keys());
-        } else {
-          // C/A-field: Update only this model
-          const modelState = modelStates.get(modelId);
-          if (modelState) {
-            modelState.set(fieldPath, value);
-          }
-          affectedModels = [modelId];
+        // Always write to model-specific state for per-model independence
+        // (e.g., Target city can differ from Reference city)
+        const modelState = modelStates.get(modelId);
+        if (modelState) {
+          modelState.set(fieldPath, value);
         }
+
+        // Also update shared state for G-fields (backward compat: export, comparison)
+        if (isSharedField(fieldPath)) {
+          sharedState.set(fieldPath, value);
+        }
+
+        const affectedModels = [modelId];
 
         notifyListeners({
           type: "valueChanged",
@@ -444,13 +453,14 @@
        * @param {*} value
        */
       setValueForModelDirect(modelId, fieldPath, value) {
+        // Always write to model-specific state for per-model independence
+        const modelState = modelStates.get(modelId);
+        if (modelState) {
+          modelState.set(fieldPath, value);
+        }
+        // Also update shared state for G-fields (backward compat)
         if (isSharedField(fieldPath)) {
           sharedState.set(fieldPath, value);
-        } else {
-          const modelState = modelStates.get(modelId);
-          if (modelState) {
-            modelState.set(fieldPath, value);
-          }
         }
       },
 
@@ -473,10 +483,11 @@
           : Object.entries(state);
 
         for (const [fieldPath, value] of entries) {
+          // Always write to model-specific state for per-model independence
+          modelStates.get(modelId).set(fieldPath, value);
+          // Also update shared state for G-fields (backward compat)
           if (isSharedField(fieldPath)) {
             sharedState.set(fieldPath, value);
-          } else {
-            modelStates.get(modelId).set(fieldPath, value);
           }
         }
       },
