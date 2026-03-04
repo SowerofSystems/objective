@@ -736,25 +736,6 @@ window.TEUI.SectionModules.sect15 = (function () {
   }
 
   /**
-   * Calculate all values — graph computes
-   */
-  function calculateAll() {
-    /* graph computes */
-  }
-
-  function calculateReferenceModel() {
-    /* graph computes */
-  }
-
-  function calculateTargetModel() {
-    /* graph computes */
-  }
-
-  function calculateValues() {
-    /* graph computes */
-  }
-
-  /**
    * Handle editable field blur events (for d_142 cost premium input)
    */
   function handleEditableBlur(event) {
@@ -860,9 +841,6 @@ window.TEUI.SectionModules.sect15 = (function () {
     getFields: getFields,
     getDropdownOptions: getDropdownOptions,
     getLayout: getLayout,
-
-    // Calculations
-    calculateAll: calculateAll,
 
     // Event handling and initialization - REQUIRED
     initializeEventHandlers: initializeEventHandlers,

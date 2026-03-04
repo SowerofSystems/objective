@@ -252,36 +252,7 @@ window.TEUI.SectionModules.sect06 = (function () {
   }
 
   //==========================================================================
-  // EXTERNAL DEPENDENCIES (Clean Interface - Pattern A)
-  //==========================================================================
-
-  function getSectionValue(fieldId, isReferenceCalculation = false) { return null; /* graph computes */ }
-
-  //==========================================================================
-  // DUAL-ENGINE CALCULATIONS (Clean Pattern A - Preserve Excel Formulas)
-  //==========================================================================
-
-  function calculateOnSiteSubtotal(isReferenceCalculation = false) { /* graph computes */ }
-
-  function calculateOffsiteRenewable(isReferenceCalculation = false) { /* graph computes */ }
-
-  function calculateGreenNaturalGasEnergy(isReferenceCalculation = false) { /* graph computes */ }
-
-  //==========================================================================
-  // DUAL-ENGINE ARCHITECTURE (Clean Pattern A)
-  //==========================================================================
-
-  /**
-   * REFERENCE MODEL ENGINE: Calculate all values using Reference state
-   */
-  function calculateReferenceModel() { /* graph computes */ }
-
-  function calculateTargetModel() { /* graph computes */ }
-
-  function calculateAll() { /* graph computes */ }
-
-  //==========================================================================
-  // EVENT HANDLERS (Clean Pattern A)
+  // EVENT HANDLERS
   //==========================================================================
 
   /**
@@ -355,7 +326,5 @@ window.TEUI.SectionModules.sect06 = (function () {
     initializeEventHandlers: initializeEventHandlers,
     onSectionRendered: onSectionRendered,
 
-    // Section-specific utility functions - OPTIONAL
-    calculateAll: calculateAll,
   };
 })();

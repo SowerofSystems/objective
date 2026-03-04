@@ -739,21 +739,6 @@ window.TEUI.SectionModules.sect04 = (function () {
   // CALCULATION FUNCTIONS (graph computes)
   //==========================================================================
 
-  function calculateRow27() { /* graph computes */ }
-  function calculateRow28() { /* graph computes */ }
-  function calculateRow29() { /* graph computes */ }
-  function calculateRow30() { /* graph computes */ }
-  function calculateRow31() { /* graph computes */ }
-  function calculateRow32() { /* graph computes */ }
-  function calculateRow33() { /* graph computes */ }
-  function calculateRow34() { /* graph computes */ }
-  function calculateRow34NuclearWaste() { /* graph computes */ }
-  function calculatePER() { /* graph computes */ }
-  function calculateRow35() { /* graph computes */ }
-  function calculateRow36() { /* graph computes */ }
-  function calculateAll() { /* graph computes */ }
-  function calculateTargetModel() { /* graph computes */ }
-  function calculateReferenceModel() { /* graph computes */ }
 
   function getFieldDefault(fieldId) {
     for (const row of Object.values(sectionRows)) {
@@ -972,7 +957,5 @@ window.TEUI.SectionModules.sect04 = (function () {
     onSectionRendered: onSectionRendered,
     initializeEventHandlers: initializeEventHandlers,
 
-    // Calculations
-    calculateAll: calculateAll,
   };
 })();

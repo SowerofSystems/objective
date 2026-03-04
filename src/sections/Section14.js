@@ -505,13 +505,6 @@ window.TEUI.SectionModules.sect14 = (function () {
     /* graph computes */
   }
 
-  /**
-   * Calculate all values for this section
-   */
-  function calculateAll() {
-    /* graph computes */
-  }
-
   //==========================================================================
   // EVENT HANDLING AND INITIALIZATION
   //==========================================================================
@@ -548,9 +541,6 @@ window.TEUI.SectionModules.sect14 = (function () {
     getFields: getFields,
     getDropdownOptions: getDropdownOptions,
     getLayout: getLayout,
-
-    // Calculations
-    calculateAll: calculateAll,
 
     // Event handling and initialization - REQUIRED
     initializeEventHandlers: initializeEventHandlers,

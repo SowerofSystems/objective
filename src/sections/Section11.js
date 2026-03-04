@@ -1747,12 +1747,6 @@ window.TEUI.SectionModules.sect11 = (function () {
   }
 
   // Legacy helpers removed — graph computes surface temperatures + condensation risk (cr_85-cr_95)
-  // calculateComponentRow, calculateThermalBridgePenalty removed — graph computes
-  // getFieldFormat, updateReferenceIndicators removed — graph handles indicators
-  // calculateReferenceModel, calculateTargetModel removed — graph computes
-
-  function calculateAll() { /* graph computes */ }
-
   //==========================================================================
   // EVENT HANDLING & INITIALIZATION
   //==========================================================================
@@ -1934,8 +1928,6 @@ window.TEUI.SectionModules.sect11 = (function () {
     getLayout,
     initializeEventHandlers,
     onSectionRendered,
-    calculateAll,
-
     // S10 area sync for FileHandler post-import call
     syncAreasFromS10: syncAreasFromS10,
 

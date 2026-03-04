@@ -863,14 +863,6 @@ window.TEUI.SectionModules.sect12 = (function () {
   // Reference indicator configuration removed – graph handles compliance
 
   //==========================================================================
-  // CALCULATION STUBS (graph computes all ~608 fields)
-  //==========================================================================
-
-  function calculateAll() { /* graph computes */ }
-  function calculateTargetModel() { /* graph computes */ }
-  function calculateReferenceModel() { /* graph computes */ }
-
-  //==========================================================================
   // MODE-AWARE STATE HELPERS
   //==========================================================================
 
@@ -1170,9 +1162,6 @@ window.TEUI.SectionModules.sect12 = (function () {
     getLayout: getLayout,
     initializeEventHandlers: initializeEventHandlers,
     onSectionRendered: onSectionRendered,
-    calculateAll: calculateAll,
-    calculateTargetModel: calculateTargetModel,
-    calculateReferenceModel: calculateReferenceModel,
     onModeSwitch: onModeSwitch,
     get isInitialized() {
       return isInitialized;

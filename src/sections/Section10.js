@@ -1380,10 +1380,6 @@ window.TEUI.SectionModules.sect10 = (function () {
   //==========================================================================
 
 
-  function calculateAll() { /* graph computes */ }
-  function calculateUtilizationFactors() { /* graph computes */ }
-  function calculateGainFactor(orientation, climateZone = 6) { /* graph computes */ }
-
   /**
    * Initialize event handlers for this section
    */
@@ -1565,51 +1561,10 @@ window.TEUI.SectionModules.sect10 = (function () {
 
     onSectionRendered: onSectionRendered,
 
-    calculateAll: calculateAll,
-    calculateUtilizationFactors: calculateUtilizationFactors,
     setupDropdownDefaults: setupDropdownDefaults,
     registerWithStateManager: registerWithStateManager,
     addStateManagerListeners: addStateManagerListeners,
     registerWithIntegrator: registerWithIntegrator,
 
-    calculateGainFactor: function (orientation, climateZone) {
-      try {
-        return calculateGainFactor(orientation, climateZone);
-      } catch (_error) {
-        // console.error('Error in Section10 calculateGainFactor:', _error);
-        return 50.0; // Default value in case of error
-      }
-    },
   };
 })();
-
-// Export key functions to the global namespace for cross-section access
-document.addEventListener("DOMContentLoaded", function () {
-  // Create section namespace
-  window.TEUI = window.TEUI || {};
-  window.TEUI.sect10 = window.TEUI.sect10 || {};
-
-  // Export critical functions
-  const module = window.TEUI.SectionModules.sect10;
-  window.TEUI.sect10.calculateAll = module.calculateAll;
-  window.TEUI.sect10.calculateUtilizationFactors =
-    module.calculateUtilizationFactors;
-
-  // Create a safe global function for radiant gains recalculation
-  window.recalculateRadiantGains = function () {
-    if (window.recalculateRadiantGainsRunning) return;
-
-    window.recalculateRadiantGainsRunning = true;
-    try {
-      if (window.TEUI?.SectionModules?.sect10?.calculateAll) {
-        window.TEUI.SectionModules.sect10.calculateAll();
-      } else if (window.TEUI?.sect10?.calculateAll) {
-        window.TEUI.sect10.calculateAll();
-      }
-    } catch (_e) {
-      // Error in global recalculateRadiantGains was previously logged here
-    } finally {
-      window.recalculateRadiantGainsRunning = false;
-    }
-  };
-});

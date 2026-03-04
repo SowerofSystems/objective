@@ -450,52 +450,8 @@ window.TEUI.SectionModules.sect05 = (function () {
   // DUAL-ENGINE CALCULATIONS (Clean Pattern A)
   //==========================================================================
 
-  function calculateGHGI(isReferenceCalculation = false) {
-    /* graph computes */
-  }
-
-  function calculateTypologyBasedCap(typology, isReferenceCalculation = false) {
-    /* graph computes */
-  }
-
-  function calculate_i_38(isReferenceCalculation = false) {
-    /* graph computes */
-  }
-
-  function calculate_i_40(isReferenceCalculation = false) {
-    /* graph computes */
-  }
-
-  function calculate_d_40(isReferenceCalculation = false) {
-    /* graph computes */
-  }
-
-  function calculate_d_41(isReferenceCalculation = false) {
-    /* graph computes */
-  }
-
-  function calculatePercentages(isReferenceCalculation = false) {
-    /* graph computes */
-  }
-
   //==========================================================================
-  // DUAL-ENGINE ARCHITECTURE (Clean Pattern A)
-  //==========================================================================
-
-  function calculateReferenceModel() {
-    /* graph computes */
-  }
-
-  function calculateTargetModel() {
-    /* graph computes */
-  }
-
-  function calculateAll() {
-    /* graph computes */
-  }
-
-  //==========================================================================
-  // EVENT HANDLERS (Clean Pattern A)
+  // EVENT HANDLERS
   //==========================================================================
 
   /**
@@ -625,7 +581,5 @@ window.TEUI.SectionModules.sect05 = (function () {
     initializeEventHandlers: initializeEventHandlers,
     onSectionRendered: onSectionRendered,
 
-    // Section-specific utility functions - OPTIONAL
-    calculateAll: calculateAll,
   };
 })();

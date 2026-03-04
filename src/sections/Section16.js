@@ -2252,12 +2252,6 @@ window.TEUI.SectionModules.sect16 = (function () {
     }
   }
 
-  function calculateAll() {
-    // Sankey now only refreshes manually via refresh button
-    // No automatic re-rendering on calculations for better performance
-    // console.log("[sect16] calculateAll called. Sankey will only refresh manually via button.");
-  }
-
   // --- Public API ---
   return {
     getFields: getFields,
@@ -2265,7 +2259,6 @@ window.TEUI.SectionModules.sect16 = (function () {
     getLayout: getLayout,
     initializeEventHandlers: initializeEventHandlers,
     onSectionRendered: onSectionRendered,
-    calculateAll: calculateAll,
     activateAndRender: function () {
       if (!document.getElementById("s16ControlsContainer")) {
         if (!setupSection16DOM()) return;

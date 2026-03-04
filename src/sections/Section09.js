@@ -807,42 +807,6 @@ window.TEUI.SectionModules.sect09 = (function () {
   // EVENT HANDLING (calculations handled by ComputationGraph)
   //==========================================================================
 
-  function calculateActivityWatts() {
-    /* graph computes */
-  }
-
-  function calculateOccupiedHoursRatio() {
-    /* graph computes */
-  }
-
-  function calculateHeatingCoolingSplit() {
-    /* graph computes */
-  }
-
-  function calculateOccupantEnergy() {
-    /* graph computes */
-  }
-
-  function calculatePlugLoads() {
-    /* graph computes */
-  }
-
-  function calculateLightingLoads() {
-    /* graph computes */
-  }
-
-  function calculateEquipmentLoads() {
-    /* graph computes */
-  }
-
-  function calculateTotals() {
-    /* graph computes */
-  }
-
-  function calculateAll() {
-    /* graph computes */
-  }
-
   /**
    * Initialize all event handlers for this section
    */
@@ -1189,9 +1153,6 @@ window.TEUI.SectionModules.sect09 = (function () {
     // Event handling and initialization - REQUIRED
     initializeEventHandlers: initializeEventHandlers,
     onSectionRendered: onSectionRendered,
-
-    // Stubbed calculation entry points (graph computes)
-    calculateAll: calculateAll,
 
     // Registration functions
     registerWithStateManager: registerWithStateManager,

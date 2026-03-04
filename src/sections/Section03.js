@@ -1158,69 +1158,6 @@ window.TEUI.SectionModules.sect03 = (function () {
     if (modal) new bootstrap.Modal(modal).show();
   }
 
-  function calculateTemperatures() {
-    /* graph computes */
-  }
-
-  function calculateGroundFacing() {
-    /* graph computes */
-  }
-
-  function calculateAll() {
-    /* graph computes */
-  }
-
-  function calculateTargetModel() {
-    /* graph computes */
-  }
-
-  function calculateReferenceModel() {
-    /* graph computes */
-  }
-
-  function storeReferenceResults() {
-    /* graph computes */
-  }
-
-  function storeTargetResults() {
-    /* graph computes */
-  }
-
-  function calculateHeatingSetpoint() {
-    /* graph computes */
-  }
-
-  function calculateOBCHeatingSetpoint() {
-    /* graph computes */
-  }
-
-  function calculateCoolingSetpoint_h24() {
-    /* graph computes */
-  }
-
-  function determineEffectiveCoolingSetpoint() {
-    /* graph computes */
-  }
-
-  function calculateNBCCoolingLimit() {
-    /* graph computes */
-  }
-
-  function calculateHeatingCompliance() {
-    /* graph computes */
-  }
-
-  function calculateCoolingCompliance() {
-    /* graph computes */
-  }
-
-  function updateCoolingDependents() {
-    /* graph computes */
-  }
-
-  function updateCriticalOccupancyFlag() {
-    /* graph computes */
-  }
 
   /**
    * Creates and injects the Weather Data button into the section header.
@@ -1549,7 +1486,6 @@ window.TEUI.SectionModules.sect03 = (function () {
 
     // Utility functions
     showWeatherData: showWeatherData,
-    calculateAll: calculateAll,
     syncLocationDropdowns: syncLocationDropdowns,
 
   };

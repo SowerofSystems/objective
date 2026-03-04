@@ -493,23 +493,7 @@ window.TEUI.SectionModules.sect07 = (function () {
   window.TEUI.sect07 = window.TEUI.sect07 || {};
 
   //==========================================================================
-  // HELPER FUNCTIONS (Stripped — graph computes all values)
-  //==========================================================================
-
-  //==========================================================================
-  // CALCULATION FUNCTIONS (Stripped — graph computes all values)
-  //==========================================================================
-  function calculateWaterUse(isReferenceCalculation = false) { /* graph computes */ }
-
-  function calculateHeatingSystem(isReferenceCalculation = false) { /* graph computes */ }
-  function calculateEmissionsAndLosses(isReferenceCalculation = false) { /* graph computes */ }
-  function calculateCompliance(isReferenceCalculation = false) { /* graph computes */ }
-  function calculateTargetModel() { /* graph computes */ }
-  function calculateReferenceModel() { /* graph computes */ }
-  function calculateAll() { /* graph computes */ }
-
-  //==========================================================================
-  // UI MANAGEMENT FUNCTIONS (From Original Code)
+  // UI MANAGEMENT FUNCTIONS
   //==========================================================================
   function updateSection7Visibility(waterMethod, systemType) {
     const isUserDefined = waterMethod === "User Defined";
@@ -803,9 +787,6 @@ window.TEUI.SectionModules.sect07 = (function () {
     initializeEventHandlers,
     onSectionRendered,
     onModeSwitch,
-    calculateAll,
-    calculateWaterUse,
-    calculateHeatingSystem,
     updateSection7Visibility,
     setFieldGhosted,
     handleGenericDropdownChange,
@@ -814,31 +795,11 @@ window.TEUI.SectionModules.sect07 = (function () {
   };
 })();
 
-// Expose critical functions to global namespace for cross-module access
+// Expose UI functions to global namespace for cross-module access
 document.addEventListener("DOMContentLoaded", function () {
   const module = window.TEUI.SectionModules.sect07;
   if (module) {
-    window.TEUI.sect07.calculateWaterUse = module.calculateWaterUse;
-    window.TEUI.sect07.calculateHeatingSystem = module.calculateHeatingSystem;
-    window.TEUI.sect07.calculateAll = module.calculateAll;
     window.TEUI.sect07.updateSection7Visibility =
       module.updateSection7Visibility;
   }
 });
-
-// Create a globally accessible safe version of calculateAll
-window.calculateWaterUse = function () {
-  if (window.waterUseCalculationRunning) return;
-  window.waterUseCalculationRunning = true;
-  try {
-    if (window.TEUI?.SectionModules?.sect07?.calculateAll) {
-      window.TEUI.SectionModules.sect07.calculateAll();
-    } else if (window.TEUI?.sect07?.calculateAll) {
-      window.TEUI.sect07.calculateAll();
-    }
-  } catch (e) {
-    console.error("Error in water use calculation wrapper:", e);
-  } finally {
-    window.waterUseCalculationRunning = false;
-  }
-};

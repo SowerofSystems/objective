@@ -51,15 +51,6 @@ window.TEUI.SectionModules.sect08 = (function () {
   }
 
   //==========================================================================
-  // CALCULATION LOGIC - Dual Engine Pattern (calculate BOTH Target and Reference)
-  //==========================================================================
-  function calculateAll() { /* graph computes */ }
-
-  function calculateWoodOffset() { /* graph computes */ }
-
-  function calculateAirQualityStatus() { /* graph computes */ }
-
-  //==========================================================================
   // EVENT HANDLING
   // FieldManager handles all user input (sliders, editables, dropdowns)
   // and routes through writeUserInput → SM → graph → DOMBridge.
@@ -402,6 +393,5 @@ window.TEUI.SectionModules.sect08 = (function () {
     getDropdownOptions,
     getLayout,
     onSectionRendered,
-    calculateAll,
   };
 })();

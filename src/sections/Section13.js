@@ -1436,14 +1436,6 @@ window.TEUI.SectionModules.sect13 = (function () {
   }
 
   //==========================================================================
-  // STUB: calculateAll (graph computes all fields)
-  //==========================================================================
-
-  function calculateAll() {
-    /* graph computes */
-  }
-
-  //==========================================================================
   // GHOSTING FUNCTIONS
   //==========================================================================
 
@@ -1594,12 +1586,6 @@ window.TEUI.SectionModules.sect13 = (function () {
     initializeEventHandlers: initializeEventHandlers,
     onSectionRendered: onSectionRendered,
 
-    // Stub: external callers won't break
-    calculateAll: calculateAll,
-    calculateCoolingSystem: function () { /* graph computes */ },
-    calculateVentilationValues: function () { /* graph computes */ },
-    calculateFreeCooling: function () { /* graph computes */ },
-
     onModeSwitch: onModeSwitch,
 
     // Ghosting functions
@@ -1609,7 +1595,3 @@ window.TEUI.SectionModules.sect13 = (function () {
   };
 })();
 
-// Ensure global access point for calculateAll remains (stub)
-window.TEUI.sect13.calculateAll = function () {
-  /* graph computes */
-};
