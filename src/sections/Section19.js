@@ -35,14 +35,6 @@ window.TEUI.SectionModules.sect19 = (function () {
 
   // TargetState/ReferenceState/ModeManager removed — graph + SM is the single source of truth.
 
-  /**
-   * Mode-aware getValue helper for S19 — reads from StateManager with ref_ prefix when in reference mode.
-   */
-  function getModeValue(fieldId) {
-    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
-    return window.TEUI.StateManager?.getValue(isRef ? `ref_${fieldId}` : fieldId);
-  }
-
   //==========================================================================
   // FIELD DEFINITIONS (Section 20 - 200 series)
   //==========================================================================
@@ -1311,7 +1303,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     // PHASE 3: CALCULATE WALL HEIGHT
     // Start with g_106 reference, compress if volume exceeded
     // ========================================================================
-    const storiesDeclared = parseFloat(currentState.getValue("d_150")) || 1.0;
+    const storiesDeclared = parseFloat(getModeAwareValue("d_150", isReferenceCalculation)) || 1.0;
 
     // Get reference wall height per storey (g_106)
     const g_106_raw = getModeAwareValue("g_106", isReferenceCalculation);
@@ -1513,10 +1505,8 @@ window.TEUI.SectionModules.sect19 = (function () {
       );
     }
 
-    // Store calculated footprint dimensions in state for display
-    currentState.setValue("h_155", width.toFixed(2)); // Footprint width (from aspect ratio)
-    currentState.setValue("h_157", length.toFixed(2)); // Footprint length (from aspect ratio)
-    currentState.setValue("h_156", storyHeightActual.toFixed(2)); // Actual storey height (may be compressed)
+    // Footprint dimensions are published to SM by calculateTargetModel/calculateReferenceModel
+    // after solveGeometry returns (with correct ref_ prefix).
 
     const volumeDifference = calculatedVolume - targetVolume;
 
@@ -1980,9 +1970,20 @@ window.TEUI.SectionModules.sect19 = (function () {
     // ⚠️ CRITICAL: WOMBAT owns d_151 and d_150 - must publish to StateManager on user edit
     // Per 4012-CHEATSHEET Anti-Pattern 6: Only listen to OWN input fields via DOM
 
-    // ✅ ARCHITECTURAL COMPLIANCE: d_150 dropdown handled by FieldManager
-    // FieldManager already has change listener that publishes to StateManager
-    // No custom listener needed (removed non-standard double listener)
+    // Dropdowns: FieldManager publishes to SM on change, but we need to
+    // trigger recalculation so the visualization updates immediately.
+    const dropdownIds = ["d_150", "d_158", "d_159", "d_160"];
+    dropdownIds.forEach(fieldId => {
+      const select = sectionElement.querySelector(`[data-dropdown-id="dd_${fieldId}"]`);
+      if (select && !select.hasWombatListener) {
+        select.addEventListener("change", () => {
+          if (isActivated) {
+            calculateAll();
+          }
+        });
+        select.hasWombatListener = true;
+      }
+    });
 
     // ✅ STEP 3: d_151 volume field now uses standard "editable" type
     // Add blur and keydown handlers (matches S12 pattern for editable fields)
@@ -2205,6 +2206,15 @@ window.TEUI.SectionModules.sect19 = (function () {
     console.log(`[WOMBAT calculateAll] Complete`);
   }
 
+  /**
+   * Called by ReferenceToggle when mode switches.
+   */
+  function onModeSwitch(mode) {
+    if (isActivated) {
+      updateVisualization(mode);
+    }
+  }
+
   //==========================================================================
   // PUBLIC API
   //==========================================================================
@@ -2215,7 +2225,7 @@ window.TEUI.SectionModules.sect19 = (function () {
     getLayout,
     initializeEventHandlers,
     onSectionRendered,
-    calculateAll,
+    onModeSwitch,
 
     // WOMBAT-specific exports
     solveGeometry,
@@ -2225,12 +2235,3 @@ window.TEUI.SectionModules.sect19 = (function () {
   };
 })();
 
-// Global namespace exposure
-window.TEUI.sect19 = window.TEUI.sect19 || {};
-document.addEventListener("DOMContentLoaded", function () {
-  const module = window.TEUI.SectionModules.sect19;
-  if (module) {
-    window.TEUI.sect19.calculateAll = module.calculateAll;
-    window.TEUI.sect19.solveGeometry = module.solveGeometry;
-  }
-});
