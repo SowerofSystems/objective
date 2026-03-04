@@ -161,6 +161,19 @@ TEUI.FieldManager = (function () {
    * @param {string} fieldId - Field ID (e.g., "h_13")
    * @returns {string|null} - Section internal ID (e.g., "sect02") or null if not found
    */
+  function findSectionForField(fieldId) {
+    for (const [, moduleSectionId] of Object.entries(sections)) {
+      const mod = TEUI.SectionModules[moduleSectionId];
+      if (mod?.getFields) {
+        try {
+          const fields = mod.getFields();
+          if (fields && fieldId in fields) return moduleSectionId;
+        } catch (_) { /* skip */ }
+      }
+    }
+    return null;
+  }
+
   /**
    * Write user input directly to StateManager with mode awareness.
    * In reference mode, writes with ref_ prefix so the graph sees it
@@ -1467,6 +1480,7 @@ TEUI.FieldManager = (function () {
     getAllFields,
     getFieldsBySection,
     getField,
+    findSectionForField,
     getDropdownOptions,
     getAllUserEditableFields,
 
