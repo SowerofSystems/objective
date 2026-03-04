@@ -330,11 +330,59 @@
     }
   }
 
+  /**
+   * Stamp input elements (dropdowns, sliders, editable fields) for the current mode.
+   * Called on mode switch so user-input fields reflect the correct model's values.
+   * stampAll() skips INPUT/SELECT/TEXTAREA elements to avoid overwriting during edits;
+   * this function explicitly updates them when the mode changes.
+   */
+  function stampInputsForMode() {
+    const CI = window.TEUI.ComputationIntegration;
+    if (!CI?.isInitialized?.()) return;
+
+    const graph = CI.getGraph();
+    const state = CI.getState();
+    if (!graph || !state) return;
+
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode?.() || false;
+    const targetModelId = state.getActiveModelId();
+    const refModelId = isRef ? CI.getRefModelId() : null;
+    const modelId = refModelId || targetModelId;
+    if (!modelId) return;
+
+    const FM = window.TEUI.FieldManager;
+    const allFields = FM?.getAllFields?.();
+    if (!allFields) return;
+
+    const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
+    let stamped = 0;
+
+    for (const semanticPath of inputIds) {
+      // Skip reference.* bridge inputs — not user-visible fields
+      if (semanticPath.startsWith("reference.")) continue;
+
+      const inputNode = graph.getInput(semanticPath);
+      const legacyId = inputNode?.legacyId;
+      if (!legacyId) continue;
+
+      const fieldDef = allFields[legacyId];
+      if (!fieldDef) continue;
+
+      const value = state.getValueForModel(modelId, semanticPath);
+      if (value === undefined || value === null) continue;
+
+      FM.updateFieldDisplay(legacyId, String(value), fieldDef);
+      stamped++;
+    }
+
+    console.log(`[DOMBridge] Stamped ${stamped} inputs for ${isRef ? "reference" : "target"} mode`);
+  }
+
   // ==========================================================================
   // EXPORT
   // ==========================================================================
 
-  window.TEUI.DOMBridge = { stampAll };
+  window.TEUI.DOMBridge = { stampAll, stampInputsForMode };
 
   console.log("[DOMBridge] Module loaded");
 })();

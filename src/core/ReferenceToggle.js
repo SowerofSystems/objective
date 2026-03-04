@@ -298,9 +298,14 @@ TEUI.ReferenceToggle = (function () {
     isShowingReference = mode === "reference";
     switchAllSectionsMode(mode);
 
-    // Graph stamps values for the correct model
+    // Graph stamps computed values for the correct model
     if (window.TEUI?.Calculator?.calculateAll) {
       window.TEUI.Calculator.calculateAll();
+    }
+
+    // Stamp input elements (dropdowns, sliders, editable fields) for the new mode
+    if (window.TEUI?.DOMBridge?.stampInputsForMode) {
+      window.TEUI.DOMBridge.stampInputsForMode();
     }
 
     // Update main toggle button text if it exists
@@ -364,6 +369,7 @@ TEUI.ReferenceToggle = (function () {
         e.preventDefault();
         switchAllSectionsMode("reference");
         if (window.TEUI?.Calculator?.calculateAll) window.TEUI.Calculator.calculateAll();
+        if (window.TEUI?.DOMBridge?.stampInputsForMode) window.TEUI.DOMBridge.stampInputsForMode();
       });
     }
 
@@ -373,6 +379,7 @@ TEUI.ReferenceToggle = (function () {
         e.preventDefault();
         switchAllSectionsMode("target");
         if (window.TEUI?.Calculator?.calculateAll) window.TEUI.Calculator.calculateAll();
+        if (window.TEUI?.DOMBridge?.stampInputsForMode) window.TEUI.DOMBridge.stampInputsForMode();
       });
     }
 
@@ -418,6 +425,11 @@ TEUI.ReferenceToggle = (function () {
     // Update all calculated display values
     updateAllCalculatedDisplays();
 
+    // Stamp input elements for the new mode
+    if (window.TEUI?.DOMBridge?.stampInputsForMode) {
+      window.TEUI.DOMBridge.stampInputsForMode();
+    }
+
     // Update button text
     const runRefBtn = document.getElementById(RUN_REFERENCE_BUTTON_ID);
     if (runRefBtn) {
@@ -450,6 +462,9 @@ TEUI.ReferenceToggle = (function () {
       // Trigger recalculations
       if (window.TEUI?.Calculator?.calculateAll) {
         window.TEUI.Calculator.calculateAll();
+      }
+      if (window.TEUI?.DOMBridge?.stampInputsForMode) {
+        window.TEUI.DOMBridge.stampInputsForMode();
       }
 
       console.log(`[ReferenceToggle] Reference standard update complete`);
@@ -901,6 +916,9 @@ TEUI.ReferenceToggle = (function () {
       if (window.TEUI?.Calculator?.calculateAll) {
         window.TEUI.Calculator.calculateAll();
       }
+      if (window.TEUI?.DOMBridge?.stampInputsForMode) {
+        window.TEUI.DOMBridge.stampInputsForMode();
+      }
 
       // Refresh Pattern A section UIs
       refreshPatternAUIs();
@@ -1024,6 +1042,9 @@ TEUI.ReferenceToggle = (function () {
       if (window.TEUI?.Calculator?.calculateAll) {
         window.TEUI.Calculator.calculateAll();
       }
+      if (window.TEUI?.DOMBridge?.stampInputsForMode) {
+        window.TEUI.DOMBridge.stampInputsForMode();
+      }
 
       // Refresh Pattern A section UIs
       refreshPatternAUIs();
@@ -1118,6 +1139,9 @@ TEUI.ReferenceToggle = (function () {
       // Clean recalculation
       if (window.TEUI?.Calculator?.calculateAll) {
         window.TEUI.Calculator.calculateAll();
+      }
+      if (window.TEUI?.DOMBridge?.stampInputsForMode) {
+        window.TEUI.DOMBridge.stampInputsForMode();
       }
 
       // Refresh Pattern A section UIs
