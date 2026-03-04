@@ -29,6 +29,16 @@ window.TEUI.SectionModules.sect19 = (function () {
   let threejsLoaded = false; // Future implementation for flatShader, orbit, zoom, ground plane generation, etc.
   let currentModel = null;
 
+  // Semantic field IDs for WOMBAT-owned dropdowns
+  const FIELDS = {
+    STORIES:    "d_150",
+    VOLUME:     "d_151",
+    ASPECT:     "d_154",
+    FLOORPLATE: "d_158",
+    ROOF_TYPE:  "d_159",
+    WINDOWS:    "d_160",
+  };
+
   // BIM-STYLE COORDINATE CONVENTION: Y+ = North (for future window orientation per facade)
   // X+ = East, Y+ = North, Z+ = Up (right-handed coordinate system)
   // Config moved to wombatRender.js
@@ -1972,7 +1982,7 @@ window.TEUI.SectionModules.sect19 = (function () {
 
     // Dropdowns: FieldManager publishes to SM on change, but we need to
     // trigger recalculation so the visualization updates immediately.
-    const dropdownIds = ["d_150", "d_158", "d_159", "d_160"];
+    const dropdownIds = [FIELDS.STORIES, FIELDS.FLOORPLATE, FIELDS.ROOF_TYPE, FIELDS.WINDOWS];
     dropdownIds.forEach(fieldId => {
       const select = sectionElement.querySelector(`[data-dropdown-id="dd_${fieldId}"]`);
       if (select && !select.hasWombatListener) {
