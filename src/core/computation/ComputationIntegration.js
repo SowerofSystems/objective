@@ -737,13 +737,22 @@
       const classification = inputNode.classification || "C";
 
       if (classification === "G") {
-        // G-field: Copy value from Target model
-        const targetValue = state.getValueForModel(targetId, semanticPath);
-        if (targetValue !== undefined && targetValue !== null) {
-          state.setValueForModel(refModelId, semanticPath, targetValue);
-          gFieldsCopied++;
-          debug.gFields.push({ legacyId, semanticPath, value: targetValue });
+        // G-field: prefer ref_ value from SM (CSV import / user edit), fall back to Target
+        const refLegacyId = legacyId
+          ? (legacyId.startsWith("ref_") ? legacyId : "ref_" + legacyId)
+          : null;
+        const refValue = refLegacyId ? StateManager.getValue(refLegacyId) : undefined;
+
+        if (refValue !== undefined && refValue !== null && refValue !== "") {
+          state.setValueForModel(refModelId, semanticPath, refValue);
+        } else {
+          const targetValue = state.getValueForModel(targetId, semanticPath);
+          if (targetValue !== undefined && targetValue !== null) {
+            state.setValueForModel(refModelId, semanticPath, targetValue);
+          }
         }
+        gFieldsCopied++;
+        debug.gFields.push({ legacyId, semanticPath, value: state.getValueForModel(refModelId, semanticPath) });
       } else {
         // C-field priority: StateManager ref_ (CSV import) > ReferenceValues.js > Target
         // CSV ref_ values represent the actual Reference model state for the project,
@@ -1039,11 +1048,7 @@
       const refModelId = getRefModelId();
 
       if (classification === "G" && refModelId) {
-        // G-field: shared input — copy to reference model and compute both
-        const value = state.getValueForModel(targetId, semanticPath);
-        if (value !== undefined && value !== null) {
-          state.setValueForModel(refModelId, semanticPath, value);
-        }
+        // G-field: recompute both models (each keeps its own input values)
         engine.computeAllForModel(targetId);
         engine.computeAllForModel(refModelId);
         // Force wood offset = 0 for Reference model
