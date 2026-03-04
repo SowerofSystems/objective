@@ -43,59 +43,59 @@ window.TEUI.SectionModules.sect21 = (function () {
 
     // === DISPLAY MIRRORS (read-only, sourced from other sections) ===
     // Design conditions (S03)
-    tsetHeating:                  "f280_d_h23",      // h_23 — climate.heating.setpoint
-    tsetCooling:                  "f280_d_h24",      // h_24 — climate.cooling.setpoint
-    temperatureColdest:           "f280_d_d23",      // d_23 — climate.temperature.coldest
-    temperatureHottest:           "f280_d_d24",      // d_24 — climate.temperature.hottest
-    heatingDegreeDays:            "f280_d_d20",      // d_20 — climate.heating.degreedays
-    coolingDegreeDays:            "f280_d_d21",      // d_21 — climate.cooling.degreedays
-    conditionedFloorArea:         "f280_d_h15",      // h_15 — building.conditionedFloorArea
-    conditionedVolume:            "f280_d_d105",     // d_105 — volume.conditioned
-    numStoreys:                   "f280_d_d103",     // d_103 — volume.numStoreys
-    // Envelope areas (S11: d_85..d_95)
-    wallAreaAboveGrade:           "f280_d_d86",      // d_86
-    ceilingRoofArea:              "f280_d_d85",      // d_85
-    windowAreaNorth:              "f280_d_d89",      // d_89
-    windowAreaEast:               "f280_d_d89b",     // d_90
-    windowAreaSouth:              "f280_d_d89c",     // d_91
-    windowAreaWest:               "f280_d_d89d",     // d_92
-    doorArea:                     "f280_d_d88",      // d_88
-    skylightArea:                 "f280_d_d93",      // d_93
-    wallAreaBelowGrade:           "f280_d_d94",      // d_94
-    slabArea:                     "f280_d_d95",      // d_95
-    // Envelope U-values (S11: g_85..g_95)
-    uWallAboveGrade:              "f280_h_g86",      // g_86
-    uCeilingRoof:                 "f280_h_g85",      // g_85
-    uWindowNorth:                 "f280_h_g89",      // g_89
-    uWindowEast:                  "f280_h_g89b",     // g_90
-    uWindowSouth:                 "f280_h_g89c",     // g_91
-    uWindowWest:                  "f280_h_g89d",     // g_92
-    uDoor:                        "f280_h_g88",      // g_88
-    uSkylight:                    "f280_h_g93",      // g_93
-    uWallBelowGrade:              "f280_h_g94",      // g_94
-    uSlab:                        "f280_h_g95",      // g_95
-    // Air tightness & ventilation (S13/S14)
-    nrl50:                        "f280_d_g108",     // g_108 — airTightness.nrl50
-    ach50Target:                  "f280_d_d109",     // d_109 — airTightness.ach50Target
-    ventilationVolumetricRate:    "f280_d_d120",     // d_120 — ventilation.volumetricRate
-    ventilationEfficiency:        "f280_d_d118",     // d_118 — mechanical.ventilation.efficiency
+    tsetHeating:                  "f280.building.heatingSetpoint",
+    tsetCooling:                  "f280.building.coolingSetpoint",
+    temperatureColdest:           "f280.climate.coldestTemp",
+    temperatureHottest:           "f280.climate.hottestTemp",
+    heatingDegreeDays:            "f280.climate.hdd",
+    coolingDegreeDays:            "f280.climate.cdd",
+    conditionedFloorArea:         "f280.building.conditionedFloorArea",
+    conditionedVolume:            "f280.geometry.conditionedVolume",
+    numStoreys:                   "f280.airLeakage.stories",
+    // Envelope areas (S11)
+    wallAreaAboveGrade:           "f280.envelope.wallsAbove.area",
+    ceilingRoofArea:              "f280.envelope.roof.area",
+    windowAreaNorth:              "f280.envelope.windowNorth.area",
+    windowAreaEast:               "f280.envelope.windowEast.area",
+    windowAreaSouth:              "f280.envelope.windowSouth.area",
+    windowAreaWest:               "f280.envelope.windowWest.area",
+    doorArea:                     "f280.envelope.doors.area",
+    skylightArea:                 "f280.envelope.skylight.area",
+    wallAreaBelowGrade:           "f280.envelope.wallsBelow.area",
+    slabArea:                     "f280.envelope.slab.area",
+    // Envelope U-values (S11)
+    uWallAboveGrade:              "f280.envelope.wallsAbove.uValue",
+    uCeilingRoof:                 "f280.envelope.roof.uValue",
+    uWindowNorth:                 "f280.envelope.windowNorth.uValue",
+    uWindowEast:                  "f280.envelope.windowEast.uValue",
+    uWindowSouth:                 "f280.envelope.windowSouth.uValue",
+    uWindowWest:                  "f280.envelope.windowWest.uValue",
+    uDoor:                        "f280.envelope.doors.uValue",
+    uSkylight:                    "f280.envelope.skylight.uValue",
+    uWallBelowGrade:              "f280.envelope.wallsBelow.uValue",
+    uSlab:                        "f280.envelope.slab.uValue",
+    // Air tightness & ventilation (S12/S13)
+    nrl50:                        "f280.airLeakage.nrl50",
+    ach50Target:                  "f280.airLeakage.ach50Target",
+    ventilationVolumetricRate:    "f280.ventilation.volumetricRate",
+    ventilationEfficiency:        "f280.ventilation.hrvEfficiency",
 
     // === F280 COMPUTED RESULTS (read-only) ===
     // Peak loads
-    peakEnvelopeHeatLoss:         "f280_d_hl_env",
-    peakInfiltrationHeatLoss:     "f280_d_hl_inf",
-    peakVentilationHeatLoss:      "f280_d_hl_vent",
-    totalDesignHeatLoss:          "f280_d_hl_total",
-    totalDesignHeatLossBTU:       "f280_h_hl_btu",
-    nominalCoolingCapacity:       "f280_d_cl_total",
-    nominalCoolingCapacityBTU:    "f280_h_cl_btu",
+    peakEnvelopeHeatLoss:         "f280.peakEnvelopeHeatLoss",
+    peakInfiltrationHeatLoss:     "f280.peakInfiltrationHeatLoss",
+    peakVentilationHeatLoss:      "f280.peakVentilationHeatLoss",
+    totalDesignHeatLoss:          "f280.totalDesignHeatLoss",
+    totalDesignHeatLossBTU:       "f280.totalDesignHeatLossBTU",
+    nominalCoolingCapacity:       "f280.nominalCoolingCapacity",
+    nominalCoolingCapacityBTU:    "f280.nominalCoolingCapacityBTU",
     // Equipment sizing
-    heatingSizingRatio:           "f280_d_sz_heat_ratio",
-    heatingSizingCompliance:      "f280_d_sz_heat",
-    coolingSizingRatio:           "f280_d_sz_cool_ratio",
-    coolingSizingCompliance:      "f280_d_sz_cool",
+    heatingSizingRatio:           "f280.heatingSizingRatio",
+    heatingSizingCompliance:      "f280.heatingSizingCompliance",
+    coolingSizingRatio:           "f280.coolingSizingRatio",
+    coolingSizingCompliance:      "f280.coolingSizingCompliance",
     // Overall compliance
-    overallCompliance:            "f280_d_overall",
+    overallCompliance:            "f280.overallCompliance",
   };
 
   // Text-type fields that should NOT be parsed as numeric on blur
@@ -163,7 +163,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Project Number" },
         d: {
-          fieldId: "f280_proj_num",
+          fieldId: FIELDS.projectNumber,
           type: "editable",
           value: "",
           classes: ["user-input"],
@@ -190,7 +190,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Compliance Type" },
         d: {
-          fieldId: "f280_comp_type",
+          fieldId: FIELDS.complianceType,
           type: "calculated",
           value: "Whole House",
           label: "Compliance Type (Whole House only)",
@@ -215,7 +215,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Code Reference" },
         d: {
-          fieldId: "f280_code_ref",
+          fieldId: FIELDS.codeReference,
           type: "editable",
           value: "NBC 2020: 9.33.5.1, 9.36.3.2, 9.36.5.15(5), 9.36.8.9",
           classes: ["user-input"],
@@ -266,7 +266,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Indoor Heating Setpoint" },
         d: {
-          fieldId: "f280_d_h23",
+          fieldId: FIELDS.tsetHeating,
           type: "calculated",
           value: "0",
           label: "Indoor Heating Setpoint",
@@ -291,7 +291,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Indoor Cooling Setpoint" },
         d: {
-          fieldId: "f280_d_h24",
+          fieldId: FIELDS.tsetCooling,
           type: "calculated",
           value: "0",
           label: "Indoor Cooling Setpoint",
@@ -316,7 +316,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Outdoor Design Temp (Heating)" },
         d: {
-          fieldId: "f280_d_d23",
+          fieldId: FIELDS.temperatureColdest,
           type: "calculated",
           value: "0",
           label: "Outdoor Design Temperature - Heating",
@@ -341,7 +341,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Outdoor Design Temp (Cooling)" },
         d: {
-          fieldId: "f280_d_d24",
+          fieldId: FIELDS.temperatureHottest,
           type: "calculated",
           value: "0",
           label: "Outdoor Design Temperature - Cooling",
@@ -366,7 +366,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Heating Degree Days" },
         d: {
-          fieldId: "f280_d_d20",
+          fieldId: FIELDS.heatingDegreeDays,
           type: "calculated",
           value: "0",
           label: "Heating Degree Days",
@@ -391,7 +391,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Cooling Degree Days" },
         d: {
-          fieldId: "f280_d_d21",
+          fieldId: FIELDS.coolingDegreeDays,
           type: "calculated",
           value: "0",
           label: "Cooling Degree Days",
@@ -416,7 +416,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Conditioned Floor Area" },
         d: {
-          fieldId: "f280_d_h15",
+          fieldId: FIELDS.conditionedFloorArea,
           type: "calculated",
           value: "0",
           label: "Conditioned Floor Area",
@@ -441,7 +441,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Conditioned Volume" },
         d: {
-          fieldId: "f280_d_d105",
+          fieldId: FIELDS.conditionedVolume,
           type: "calculated",
           value: "0",
           label: "Conditioned Volume",
@@ -466,7 +466,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Number of Storeys" },
         d: {
-          fieldId: "f280_d_d103",
+          fieldId: FIELDS.numStoreys,
           type: "calculated",
           value: "0",
           label: "Number of Storeys",
@@ -518,7 +518,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Walls (Above Grade)" },
         d: {
-          fieldId: "f280_d_d86",
+          fieldId: FIELDS.wallAreaAboveGrade,
           type: "calculated",
           value: "0",
           label: "Wall Area",
@@ -527,7 +527,7 @@ window.TEUI.SectionModules.sect21 = (function () {
         f: { content: "m\u00B2", classes: ["text-left"] },
         g: {},
         h: {
-          fieldId: "f280_h_g86",
+          fieldId: FIELDS.uWallAboveGrade,
           type: "calculated",
           value: "0",
           label: "Wall U-value",
@@ -548,7 +548,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Roof / Ceiling" },
         d: {
-          fieldId: "f280_d_d85",
+          fieldId: FIELDS.ceilingRoofArea,
           type: "calculated",
           value: "0",
           label: "Roof Area",
@@ -557,7 +557,7 @@ window.TEUI.SectionModules.sect21 = (function () {
         f: { content: "m\u00B2", classes: ["text-left"] },
         g: {},
         h: {
-          fieldId: "f280_h_g85",
+          fieldId: FIELDS.uCeilingRoof,
           type: "calculated",
           value: "0",
           label: "Roof U-value",
@@ -578,7 +578,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Windows North" },
         d: {
-          fieldId: "f280_d_d89",
+          fieldId: FIELDS.windowAreaNorth,
           type: "calculated",
           value: "0",
           label: "North Window Area",
@@ -587,7 +587,7 @@ window.TEUI.SectionModules.sect21 = (function () {
         f: { content: "m\u00B2", classes: ["text-left"] },
         g: {},
         h: {
-          fieldId: "f280_h_g89",
+          fieldId: FIELDS.uWindowNorth,
           type: "calculated",
           value: "0",
           label: "North Window U-value",
@@ -608,7 +608,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Windows East" },
         d: {
-          fieldId: "f280_d_d89b",
+          fieldId: FIELDS.windowAreaEast,
           type: "calculated",
           value: "0",
           label: "East Window Area",
@@ -617,7 +617,7 @@ window.TEUI.SectionModules.sect21 = (function () {
         f: { content: "m\u00B2", classes: ["text-left"] },
         g: {},
         h: {
-          fieldId: "f280_h_g89b",
+          fieldId: FIELDS.uWindowEast,
           type: "calculated",
           value: "0",
           label: "East Window U-value",
@@ -638,7 +638,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Windows South" },
         d: {
-          fieldId: "f280_d_d89c",
+          fieldId: FIELDS.windowAreaSouth,
           type: "calculated",
           value: "0",
           label: "South Window Area",
@@ -647,7 +647,7 @@ window.TEUI.SectionModules.sect21 = (function () {
         f: { content: "m\u00B2", classes: ["text-left"] },
         g: {},
         h: {
-          fieldId: "f280_h_g89c",
+          fieldId: FIELDS.uWindowSouth,
           type: "calculated",
           value: "0",
           label: "South Window U-value",
@@ -668,7 +668,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Windows West" },
         d: {
-          fieldId: "f280_d_d89d",
+          fieldId: FIELDS.windowAreaWest,
           type: "calculated",
           value: "0",
           label: "West Window Area",
@@ -677,7 +677,7 @@ window.TEUI.SectionModules.sect21 = (function () {
         f: { content: "m\u00B2", classes: ["text-left"] },
         g: {},
         h: {
-          fieldId: "f280_h_g89d",
+          fieldId: FIELDS.uWindowWest,
           type: "calculated",
           value: "0",
           label: "West Window U-value",
@@ -698,7 +698,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Doors" },
         d: {
-          fieldId: "f280_d_d88",
+          fieldId: FIELDS.doorArea,
           type: "calculated",
           value: "0",
           label: "Door Area",
@@ -707,7 +707,7 @@ window.TEUI.SectionModules.sect21 = (function () {
         f: { content: "m\u00B2", classes: ["text-left"] },
         g: {},
         h: {
-          fieldId: "f280_h_g88",
+          fieldId: FIELDS.uDoor,
           type: "calculated",
           value: "0",
           label: "Door U-value",
@@ -728,7 +728,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Skylights" },
         d: {
-          fieldId: "f280_d_d93",
+          fieldId: FIELDS.skylightArea,
           type: "calculated",
           value: "0",
           label: "Skylight Area",
@@ -737,7 +737,7 @@ window.TEUI.SectionModules.sect21 = (function () {
         f: { content: "m\u00B2", classes: ["text-left"] },
         g: {},
         h: {
-          fieldId: "f280_h_g93",
+          fieldId: FIELDS.uSkylight,
           type: "calculated",
           value: "0",
           label: "Skylight U-value",
@@ -758,7 +758,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Below-Grade Walls" },
         d: {
-          fieldId: "f280_d_d94",
+          fieldId: FIELDS.wallAreaBelowGrade,
           type: "calculated",
           value: "0",
           label: "Below-Grade Wall Area",
@@ -767,7 +767,7 @@ window.TEUI.SectionModules.sect21 = (function () {
         f: { content: "m\u00B2", classes: ["text-left"] },
         g: {},
         h: {
-          fieldId: "f280_h_g94",
+          fieldId: FIELDS.uWallBelowGrade,
           type: "calculated",
           value: "0",
           label: "Below-Grade Wall U-value",
@@ -788,7 +788,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Slab-on-Grade" },
         d: {
-          fieldId: "f280_d_d95",
+          fieldId: FIELDS.slabArea,
           type: "calculated",
           value: "0",
           label: "Slab Area",
@@ -797,7 +797,7 @@ window.TEUI.SectionModules.sect21 = (function () {
         f: { content: "m\u00B2", classes: ["text-left"] },
         g: {},
         h: {
-          fieldId: "f280_h_g95",
+          fieldId: FIELDS.uSlab,
           type: "calculated",
           value: "0",
           label: "Slab U-value",
@@ -842,7 +842,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "NRL50 (Normalized Leakage)" },
         d: {
-          fieldId: "f280_d_g108",
+          fieldId: FIELDS.nrl50,
           type: "calculated",
           value: "0",
           label: "NRL50",
@@ -867,7 +867,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "ACH50 (Air Changes at 50Pa)" },
         d: {
-          fieldId: "f280_d_d109",
+          fieldId: FIELDS.ach50Target,
           type: "calculated",
           value: "0",
           label: "ACH50",
@@ -892,7 +892,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Ventilation Rate" },
         d: {
-          fieldId: "f280_d_d120",
+          fieldId: FIELDS.ventilationVolumetricRate,
           type: "calculated",
           value: "0",
           label: "Ventilation Rate",
@@ -917,7 +917,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "HRV/ERV Efficiency (ATRE)" },
         d: {
-          fieldId: "f280_d_d118",
+          fieldId: FIELDS.ventilationEfficiency,
           type: "calculated",
           value: "0",
           label: "HRV/ERV Efficiency",
@@ -966,7 +966,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Peak Envelope Heat Loss" },
         d: {
-          fieldId: "f280_d_hl_env",
+          fieldId: FIELDS.peakEnvelopeHeatLoss,
           type: "calculated",
           value: "0",
           label: "Peak Envelope Heat Loss",
@@ -991,7 +991,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Peak Infiltration Heat Loss" },
         d: {
-          fieldId: "f280_d_hl_inf",
+          fieldId: FIELDS.peakInfiltrationHeatLoss,
           type: "calculated",
           value: "0",
           label: "Peak Infiltration Heat Loss",
@@ -1016,7 +1016,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Peak Ventilation Heat Loss" },
         d: {
-          fieldId: "f280_d_hl_vent",
+          fieldId: FIELDS.peakVentilationHeatLoss,
           type: "calculated",
           value: "0",
           label: "Peak Ventilation Heat Loss",
@@ -1041,7 +1041,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Total Design Heat Loss" },
         d: {
-          fieldId: "f280_d_hl_total",
+          fieldId: FIELDS.totalDesignHeatLoss,
           type: "calculated",
           value: "0",
           label: "Total Design Heat Loss (W)",
@@ -1050,7 +1050,7 @@ window.TEUI.SectionModules.sect21 = (function () {
         f: { content: "W", classes: ["text-left"] },
         g: {},
         h: {
-          fieldId: "f280_h_hl_btu",
+          fieldId: FIELDS.totalDesignHeatLossBTU,
           type: "calculated",
           value: "0",
           label: "Total Design Heat Loss (BTU/h)",
@@ -1071,7 +1071,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Nominal Cooling Capacity" },
         d: {
-          fieldId: "f280_d_cl_total",
+          fieldId: FIELDS.nominalCoolingCapacity,
           type: "calculated",
           value: "0",
           label: "Nominal Cooling Capacity (W)",
@@ -1080,7 +1080,7 @@ window.TEUI.SectionModules.sect21 = (function () {
         f: { content: "W", classes: ["text-left"] },
         g: {},
         h: {
-          fieldId: "f280_h_cl_btu",
+          fieldId: FIELDS.nominalCoolingCapacityBTU,
           type: "calculated",
           value: "0",
           label: "Nominal Cooling Capacity (BTU/h)",
@@ -1125,7 +1125,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Installed Heating Capacity" },
         d: {
-          fieldId: "f280_cap_heat",
+          fieldId: FIELDS.installedHeatingCapacity,
           type: "editable",
           value: "0",
           classes: ["user-input"],
@@ -1136,7 +1136,7 @@ window.TEUI.SectionModules.sect21 = (function () {
         f: { content: "W", classes: ["text-left"] },
         g: {},
         h: {
-          fieldId: "f280_d_sz_heat_ratio",
+          fieldId: FIELDS.heatingSizingRatio,
           type: "calculated",
           value: "0",
           label: "Heating Sizing Ratio",
@@ -1147,7 +1147,7 @@ window.TEUI.SectionModules.sect21 = (function () {
         l: {},
         m: {},
         n: {
-          fieldId: "f280_d_sz_heat",
+          fieldId: FIELDS.heatingSizingCompliance,
           type: "calculated",
           value: "",
           label: "Heating Sizing Compliance",
@@ -1162,7 +1162,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Installed Cooling Capacity" },
         d: {
-          fieldId: "f280_cap_cool",
+          fieldId: FIELDS.installedCoolingCapacity,
           type: "editable",
           value: "0",
           classes: ["user-input"],
@@ -1173,7 +1173,7 @@ window.TEUI.SectionModules.sect21 = (function () {
         f: { content: "W", classes: ["text-left"] },
         g: {},
         h: {
-          fieldId: "f280_d_sz_cool_ratio",
+          fieldId: FIELDS.coolingSizingRatio,
           type: "calculated",
           value: "0",
           label: "Cooling Sizing Ratio",
@@ -1184,7 +1184,7 @@ window.TEUI.SectionModules.sect21 = (function () {
         l: {},
         m: {},
         n: {
-          fieldId: "f280_d_sz_cool",
+          fieldId: FIELDS.coolingSizingCompliance,
           type: "calculated",
           value: "",
           label: "Cooling Sizing Compliance",
@@ -1223,7 +1223,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Designer Name" },
         d: {
-          fieldId: "f280_dsgn_name",
+          fieldId: FIELDS.designerName,
           type: "editable",
           value: "",
           classes: ["user-input"],
@@ -1250,7 +1250,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Designer Company" },
         d: {
-          fieldId: "f280_dsgn_co",
+          fieldId: FIELDS.designerCompany,
           type: "editable",
           value: "",
           classes: ["user-input"],
@@ -1277,7 +1277,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Certification Type" },
         d: {
-          fieldId: "f280_cert_type",
+          fieldId: FIELDS.certType,
           type: "dropdown",
           dropdownId: "f280_cert_type",
           value: "Other",
@@ -1312,7 +1312,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Certification Number" },
         d: {
-          fieldId: "f280_cert_num",
+          fieldId: FIELDS.certNumber,
           type: "editable",
           value: "",
           classes: ["user-input"],
@@ -1339,7 +1339,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Service Organization" },
         d: {
-          fieldId: "f280_svc_org",
+          fieldId: FIELDS.serviceOrg,
           type: "editable",
           value: "",
           classes: ["user-input"],
@@ -1366,7 +1366,7 @@ window.TEUI.SectionModules.sect21 = (function () {
       cells: {
         c: { label: "Responsibility Declaration" },
         d: {
-          fieldId: "f280_attest",
+          fieldId: FIELDS.attestation,
           type: "dropdown",
           dropdownId: "f280_attest",
           value: "No",
@@ -1428,7 +1428,7 @@ window.TEUI.SectionModules.sect21 = (function () {
         l: {},
         m: {},
         n: {
-          fieldId: "f280_d_overall",
+          fieldId: FIELDS.overallCompliance,
           type: "calculated",
           value: "",
           label: "F280 Overall Compliance",
