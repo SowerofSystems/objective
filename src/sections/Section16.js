@@ -564,26 +564,6 @@ window.TEUI.SectionModules.sect16 = (function () {
         isEmissions: link.isEmissions,
       }));
 
-      // Debug checks (commented out to reduce log spam)
-      // console.log("Rendering Sankey links, count:", links.length);
-
-      // Check a sample link to verify data
-      // if (links.length > 0) {
-      //   const sampleLink = links[0];
-      //   console.log("Sample link:", {
-      //     source:
-      //       typeof sampleLink.source === "object"
-      //         ? sampleLink.source.name
-      //         : "index:" + sampleLink.source,
-      //     target:
-      //       typeof sampleLink.target === "object"
-      //         ? sampleLink.target.name
-      //         : "index:" + sampleLink.target,
-      //     value: sampleLink.value,
-      //     width: sampleLink.width || "not set",
-      //   });
-      // }
-
       // Select and bind links with consistent key function
       const link = this.linkGroup.selectAll(".link").data(processedLinks, d => {
         const sourceIndex = d.source.index;

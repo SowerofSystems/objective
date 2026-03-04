@@ -892,8 +892,6 @@ window.TEUI.SectionModules.sect09 = (function () {
     // Add special handling for equipment dropdowns
     setupEquipmentDropdownListeners();
 
-    // Add cross-section dependency updates
-    addStateManagerListeners();
   }
 
   /**
@@ -921,13 +919,6 @@ window.TEUI.SectionModules.sect09 = (function () {
     setModeValue(fieldId, newValue, "user-modified");
 
     // Graph handles recalculation via StateManager listener
-  }
-
-  /**
-   * Add listeners for cross-section dependencies
-   */
-  function addStateManagerListeners() {
-    // Graph handles cross-section computation via wildcard listener.
   }
 
   /**
@@ -962,8 +953,6 @@ window.TEUI.SectionModules.sect09 = (function () {
 
     // 4. Register with state manager and integrator
     registerWithStateManager();
-    registerWithSectionIntegrator();
-
     // Initialize default dropdown values
     if (
       !(window.TEUI.sect09.initialized && window.TEUI.sect09.userInteracted)
@@ -998,59 +987,6 @@ window.TEUI.SectionModules.sect09 = (function () {
       setTimeout(() => {
         window.TEUI.TooltipManager.applyTooltipsToSection(sectionRows);
       }, 300);
-    }
-  }
-
-  /**
-   * Register with SectionIntegrator
-   */
-  function registerWithSectionIntegrator() {
-    if (!window.TEUI?.SectionIntegrator) return;
-
-    // Create the integration registration
-    const internalGainsIntegration = {
-      name: "Internal Gains",
-      sections: ["sect09", "sect11", "sect14"],
-      description: "Internal heat gains for TEDI and energy calculations",
-      values: [
-        {
-          fieldId: "h_71",
-          name: "Total Internal Gains",
-          unit: "kWh/yr",
-          type: "energy-internal",
-        },
-        {
-          fieldId: "i_71",
-          name: "Heating Internal Gains",
-          unit: "kWh/yr",
-          type: "energy-heating",
-        },
-        {
-          fieldId: "k_71",
-          name: "Cooling Internal Gains",
-          unit: "kWh/yr",
-          type: "energy-cooling",
-        },
-      ],
-      initialize: function () {
-        // Graph handles initial computation
-      },
-    };
-
-    // Register with SectionIntegrator if it has a registry
-    if (
-      typeof window.TEUI.SectionIntegrator.getRegisteredIntegrations ===
-      "function"
-    ) {
-      const integrations =
-        window.TEUI.SectionIntegrator.getRegisteredIntegrations();
-      if (!integrations.internalGains) {
-        // If the SectionIntegrator has a registeredIntegrations property
-        if (window.TEUI.SectionIntegrator.registeredIntegrations) {
-          window.TEUI.SectionIntegrator.registeredIntegrations.internalGains =
-            internalGainsIntegration;
-        }
-      }
     }
   }
 
@@ -1156,7 +1092,6 @@ window.TEUI.SectionModules.sect09 = (function () {
 
     // Registration functions
     registerWithStateManager: registerWithStateManager,
-    registerWithSectionIntegrator: registerWithSectionIntegrator,
     setupEquipmentDropdownListeners: setupEquipmentDropdownListeners,
   };
 })();

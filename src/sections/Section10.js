@@ -1504,27 +1504,6 @@ window.TEUI.SectionModules.sect10 = (function () {
   }
 
   /**
-   * Add listeners for StateManager changes (dual-state aware)
-   */
-  function addStateManagerListeners() {
-    // Graph handles cross-section computation via wildcard listener.
-  }
-
-  /**
-   * Register with the SectionIntegrator
-   */
-  function registerWithIntegrator() {
-    try {
-      // If the integrator exists, register dependencies
-      if (window.TEUI?.SectionIntegrator) {
-        // Example: window.TEUI.SectionIntegrator.addDependency('sect10_someOutput', 'sectXX_someInput');
-      }
-    } catch (_error) {
-      // Error in registerWithIntegrator was previously logged here
-    }
-  }
-
-  /**
    * Called when the section is rendered
    * This is a good place to initialize values and run initial calculations
    */
@@ -1534,9 +1513,7 @@ window.TEUI.SectionModules.sect10 = (function () {
     // Initialize event handlers for this section
     initializeEventHandlers();
 
-    // Register this section with StateManager and add listeners
     registerWithStateManager();
-    addStateManagerListeners();
 
     // Apply validation tooltips to fields
     if (window.TEUI.TooltipManager && window.TEUI.TooltipManager.initialized) {
@@ -1563,8 +1540,6 @@ window.TEUI.SectionModules.sect10 = (function () {
 
     setupDropdownDefaults: setupDropdownDefaults,
     registerWithStateManager: registerWithStateManager,
-    addStateManagerListeners: addStateManagerListeners,
-    registerWithIntegrator: registerWithIntegrator,
 
   };
 })();

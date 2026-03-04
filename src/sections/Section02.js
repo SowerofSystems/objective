@@ -604,27 +604,6 @@ window.TEUI.SectionModules.sect02 = (function () {
   //==========================================================================
 
   /**
-   * Register calculations with StateManager
-   * Graph handles all computation; this just registers metadata dependencies
-   */
-  function registerCalculations() { /* graph computes */ }
-
-  //==========================================================================
-  // DUAL-ENGINE ARCHITECTURE
-  //==========================================================================
-
-  // ✅ G-REF-ONLY: Removed injectHeaderControls() - Section02 now uses global toggle only
-
-  /** Graph handles all computation */
-  function calculateReferenceModel() { /* graph computes */ }
-
-  /** Graph handles all computation */
-  function calculateTargetModel() { /* graph computes */ }
-
-  /** Graph handles all computation */
-  function calculateAll() { /* graph computes */ }
-
-  /**
    * Setup Carbon Standard dropdown event handler
    * Follows the dropdown handler pattern from the framework
    */

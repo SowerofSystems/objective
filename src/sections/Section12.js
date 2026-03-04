@@ -8,8 +8,6 @@ window.TEUI.SectionModules = window.TEUI.SectionModules || {};
 
 window.TEUI.SectionModules.sect12 = (function () {
   let isInitialized = false;
-  let s12ListenersAdded = false;
-  // lastReferenceResults removed – graph handles Reference storage
 
   // TargetState/ReferenceState/ModeManager removed — graph + SM is the single source of truth.
 
@@ -1069,10 +1067,7 @@ window.TEUI.SectionModules.sect12 = (function () {
     // 3. Initialize event handlers for this section
     initializeEventHandlers();
 
-    // 4. Add StateManager listeners
-    addStateManagerListeners();
-
-    // 5. Apply validation tooltips to fields
+    // 4. Apply validation tooltips to fields
     if (window.TEUI.TooltipManager && window.TEUI.TooltipManager.initialized) {
       setTimeout(() => {
         window.TEUI.TooltipManager.applyTooltipsToSection(sectionRows);
@@ -1126,14 +1121,6 @@ window.TEUI.SectionModules.sect12 = (function () {
     });
   }
 
-  function addStateManagerListeners() {
-    if (!window.TEUI?.StateManager) return;
-    if (s12ListenersAdded) return;
-
-    // Legacy SM listeners removed — graph handles all computation
-
-    s12ListenersAdded = true;
-  }
 
   function addCheckmarkStyles() {
     let styleElement = document.getElementById("sect12-styles");
