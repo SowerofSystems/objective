@@ -256,6 +256,22 @@
       if (!isNaN(n)) {
         el.textContent = fmt(n, formatType);
         stamped++;
+      } else if (typeof value === "string" && value !== "") {
+        // Non-numeric computed values (e.g., "Unavailable" for CDD)
+        el.textContent = value;
+        stamped++;
+      }
+
+      // Computed nodes in contenteditable fields: gray when climate-derived,
+      // blue when user override is active
+      if (el.hasAttribute("contenteditable") && graph.getNode(semanticPath)?.compute) {
+        const overridePath = semanticPath + ".userOverride";
+        const overrideVal = state.getValueForModel(modelId, overridePath);
+        if (overrideVal !== null && overrideVal !== undefined && overrideVal !== "") {
+          el.classList.add("user-modified");
+        } else {
+          el.classList.remove("user-modified");
+        }
       }
     }
 

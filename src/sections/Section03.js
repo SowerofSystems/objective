@@ -1337,6 +1337,9 @@ window.TEUI.SectionModules.sect03 = (function () {
 
       // MODE-AWARE: Update StateManager
       setModeValue(fieldId, numericValue.toString(), "user-modified");
+    } else if (newValue === "" && fieldId === "d_21") {
+      // CDD cleared: remove user override, fall back to climate data lookup
+      setModeValue(fieldId, "", "user-modified");
     } else {
       // Revert to previous value if input is invalid
       const previousValue = getModeValue(fieldId) || "0";

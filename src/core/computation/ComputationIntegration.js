@@ -1023,6 +1023,14 @@
         _legacyToSemanticCache.set(inputNode.legacyId, semanticPath);
       }
     }
+    // Include computed nodes so editable-computed fields (e.g., CDD d_21) resolve
+    const nodeIds = graph.getAllNodeIds ? graph.getAllNodeIds() : [];
+    for (const semanticPath of nodeIds) {
+      const node = graph.getNode(semanticPath);
+      if (node?.legacyId && !_legacyToSemanticCache.has(node.legacyId)) {
+        _legacyToSemanticCache.set(node.legacyId, semanticPath);
+      }
+    }
     return _legacyToSemanticCache;
   }
 
@@ -1057,35 +1065,52 @@
       const isRef = legacyFieldId.startsWith("ref_");
       const baseId = isRef ? legacyFieldId.slice(4) : legacyFieldId;
 
+      // Find the graph input
+      const lookupMap = getLegacyToSemanticMap();
+      const semanticPath = lookupMap.get(baseId);
+      const inputNode = semanticPath ? graph.getInput(semanticPath) : null;
+
+      const targetId = state.getActiveModelId();
+      const refModelId = getRefModelId();
+
       // Editable-computed fields: user can type into a field whose value is
       // normally graph-computed (e.g., CDD is computed from province/city but
       // many cities have CDD=unavailable so users need to enter it manually).
       // Route the SM value to the graph override input before recomputation.
       const EDITABLE_COMPUTED = {
-        "d_21": "climate.cooling.degreedays.userOverride"
+        "climate.cooling.degreedays": "climate.cooling.degreedays.userOverride"
       };
 
-      const targetId = state.getActiveModelId();
-      const refModelId = getRefModelId();
+      // Location/timeframe changes clear CDD overrides (fresh lookup for new city)
+      const CLEARS_OVERRIDES = {
+        "climate.location.province": ["climate.cooling.degreedays.userOverride"],
+        "climate.location.city": ["climate.cooling.degreedays.userOverride"],
+        "climate.timeframe": ["climate.cooling.degreedays.userOverride"]
+      };
 
-      if (EDITABLE_COMPUTED[baseId]) {
-        const overridePath = EDITABLE_COMPUTED[baseId];
-        const rawValue = SM?._original_getValue
-          ? SM._original_getValue.call(SM, legacyFieldId)
-          : SM?.getValue(legacyFieldId);
-        // C-field: write override to the edited model only
-        const editModelId = isRef ? refModelId : targetId;
-        if (editModelId) {
-          state.setValueForModel(editModelId, overridePath, rawValue);
+      if (semanticPath && CLEARS_OVERRIDES[semanticPath]) {
+        for (const path of CLEARS_OVERRIDES[semanticPath]) {
+          state.setValueForModel(targetId, path, null);
+          if (refModelId) state.setValueForModel(refModelId, path, null);
         }
       }
 
-      // Find the graph input
-      const lookupMap = getLegacyToSemanticMap();
-      const semanticPath = lookupMap.get(baseId);
-      const inputNode = semanticPath ? graph.getInput(semanticPath) : null;
+      if (semanticPath && EDITABLE_COMPUTED[semanticPath]) {
+        const overridePath = EDITABLE_COMPUTED[semanticPath];
+        const rawValue = SM?._original_getValue
+          ? SM._original_getValue.call(SM, legacyFieldId)
+          : SM?.getValue(legacyFieldId);
+        // Empty/null means "clear override, use computed default"
+        const overrideValue = (rawValue === "" || rawValue === null || rawValue === undefined) ? null : rawValue;
+        // C-field: write override to the edited model only
+        const editModelId = isRef ? refModelId : targetId;
+        if (editModelId) {
+          state.setValueForModel(editModelId, overridePath, overrideValue);
+        }
+      }
+
       // Editable-computed overrides are C-class (per-model)
-      const classification = EDITABLE_COMPUTED[baseId]
+      const classification = EDITABLE_COMPUTED[semanticPath]
         ? "C"
         : (inputNode?.classification || "C");
 
