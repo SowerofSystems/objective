@@ -404,14 +404,14 @@
       label: "City"
     },
     {
-      legacyId: "d_20",
-      semanticPath: "climate.climateZone",
+      legacyId: "j_19",
+      semanticPath: "climate.zone",
       classification: "G",
       section: "S03",
       label: "Climate Zone"
     },
     {
-      legacyId: "d_21",
+      legacyId: "d_20",
       semanticPath: "climate.heating.degreedays",
       classification: "G",
       section: "S03",
@@ -419,12 +419,20 @@
       unit: "HDD"
     },
     {
-      legacyId: "i_21",
+      legacyId: "d_21",
       semanticPath: "climate.cooling.degreedays",
       classification: "G",
       section: "S03",
       label: "Cooling Degree Days",
       unit: "CDD"
+    },
+    {
+      legacyId: "i_21",
+      semanticPath: "building.capacitance.percentage",
+      classification: "C",
+      section: "S03",
+      label: "Capacitance Percentage",
+      unit: "%"
     },
     {
       legacyId: "h_23",

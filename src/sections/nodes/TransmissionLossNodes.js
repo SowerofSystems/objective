@@ -112,15 +112,7 @@
         });
       }
 
-      // R-improvement input (for components that can have added insulation)
-      inputs.push({
-        id: `transmissionLoss.${id}.rImprovement`,
-        legacyId: `e_${row}`,
-        section: "S11",
-        classification: "C",
-        label: `${label} R-Improvement`,
-        defaultValue: 0
-      });
+      // R-imperial is computed after inputs are registered (see below)
     });
 
     // Interior floor area input (d_96)
@@ -181,6 +173,24 @@
           }
         });
       }
+    });
+
+    // ========================================================================
+    // R-IMPERIAL = RSI × 5.678
+    // ========================================================================
+    ALL_COMPONENTS.forEach(({ row, id, label }) => {
+      graph.registerNode({
+        id: `transmissionLoss.${id}.rImperial`,
+        legacyId: `e_${row}`,
+        section: "S11",
+        classification: "C",
+        dependencies: [`transmissionLoss.${id}.rsi`],
+        label: `${label} R-Imperial (ft²·°F·hr/Btu)`,
+        compute: (inputs) => {
+          const rsi = parseNum(inputs[`transmissionLoss.${id}.rsi`]);
+          return rsi * 5.678;
+        }
+      });
     });
 
     // ========================================================================

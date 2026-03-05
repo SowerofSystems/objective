@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-03-04T21:55:21.742Z",
+  "timestamp": "2026-03-05T02:20:18.309Z",
   "summary": {
     "total": 12,
     "passed": 12,
@@ -73,7 +73,7 @@
         "populateDebug": {
           "standardName": "OBC SB10 5.5-6 Z6",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 173,
+          "cFieldsFromStateManager": 162,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -139,7 +139,7 @@
         "populateDebug": {
           "standardName": "OBC SB12 3.1.1.2.C1",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 173,
+          "cFieldsFromStateManager": 162,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -205,7 +205,7 @@
         "populateDebug": {
           "standardName": "PH Classic",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 173,
+          "cFieldsFromStateManager": 162,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -271,7 +271,7 @@
         "populateDebug": {
           "standardName": "NECB T1 (Z6)",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 173,
+          "cFieldsFromStateManager": 162,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -337,7 +337,7 @@
         "populateDebug": {
           "standardName": "NECB T1 (Z6)",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 173,
+          "cFieldsFromStateManager": 162,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -403,7 +403,7 @@
         "populateDebug": {
           "standardName": "NECB T1 (Z6)",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 173,
+          "cFieldsFromStateManager": 162,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -469,7 +469,7 @@
         "populateDebug": {
           "standardName": "NECB T1 (Z6)",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 173,
+          "cFieldsFromStateManager": 162,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -535,7 +535,7 @@
         "populateDebug": {
           "standardName": "NECB T1 (Z6)",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 173,
+          "cFieldsFromStateManager": 162,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -601,7 +601,7 @@
         "populateDebug": {
           "standardName": "NECB T1 (Z6)",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 173,
+          "cFieldsFromStateManager": 162,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -667,7 +667,7 @@
         "populateDebug": {
           "standardName": "OBC SB12 3.1.1.2.C4",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 173,
+          "cFieldsFromStateManager": 162,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -733,7 +733,7 @@
         "populateDebug": {
           "standardName": "OBC SB10 5.5-6 Z6",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 173,
+          "cFieldsFromStateManager": 162,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
@@ -799,7 +799,7 @@
         "populateDebug": {
           "standardName": "PH Low Energy",
           "cFieldsFromStandard": 0,
-          "cFieldsFromStateManager": 173,
+          "cFieldsFromStateManager": 162,
           "cFieldsCopiedFromTarget": 0,
           "cFieldsCopiedFromTargetList": []
         }
