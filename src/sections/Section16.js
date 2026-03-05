@@ -2266,6 +2266,11 @@ window.TEUI.SectionModules.sect16 = (function () {
       fetchDataAndRenderSankey(false);
     },
     activateSankey: activateSankey,
+    postStamp: function () {
+      if (window.TEUI.sect16.isActive) {
+        fetchDataAndRenderSankey(false);
+      }
+    },
   };
 })();
 

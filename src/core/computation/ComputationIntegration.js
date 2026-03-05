@@ -1151,13 +1151,9 @@
       }
 
       // Section supplementary display stamps
-      const sect01 = window.TEUI.SectionModules?.sect01;
-      if (sect01?.postStamp) {
-        sect01.postStamp();
-      }
-      const sect21 = window.TEUI.SectionModules?.sect21;
-      if (sect21?.postStamp) {
-        sect21.postStamp();
+      const modules = window.TEUI.SectionModules || {};
+      for (const key of ["sect01", "sect16", "sect21"]) {
+        if (modules[key]?.postStamp) modules[key].postStamp();
       }
 
       // Diagnostic: log S01 key values to trace n=1 vs n=2 staleness
