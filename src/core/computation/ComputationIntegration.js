@@ -640,6 +640,21 @@
   }
 
   /**
+   * Clear editable-computed overrides so batch operations (CSV import,
+   * mode switch) use fresh climate-lookup values.
+   */
+  function clearEditableComputedOverrides() {
+    if (!initialized) return;
+    const overrides = ["climate.cooling.degreedays.userOverride"];
+    const targetId = state.getActiveModelId();
+    const refModelId = getRefModelId();
+    for (const path of overrides) {
+      state.setValueForModel(targetId, path, null);
+      if (refModelId) state.setValueForModel(refModelId, path, null);
+    }
+  }
+
+  /**
    * Debug output
    */
   function debug() {
@@ -1038,14 +1053,36 @@
       const isRef = legacyFieldId.startsWith("ref_");
       const baseId = isRef ? legacyFieldId.slice(4) : legacyFieldId;
 
+      // Editable-computed fields: user can type into a field whose value is
+      // normally graph-computed (e.g., CDD is computed from province/city but
+      // many cities have CDD=unavailable so users need to enter it manually).
+      // Route the SM value to the graph override input before recomputation.
+      const EDITABLE_COMPUTED = {
+        "d_21": "climate.cooling.degreedays.userOverride"
+      };
+
+      const targetId = state.getActiveModelId();
+      const refModelId = getRefModelId();
+
+      if (EDITABLE_COMPUTED[baseId]) {
+        const overridePath = EDITABLE_COMPUTED[baseId];
+        const rawValue = SM?._original_getValue
+          ? SM._original_getValue.call(SM, legacyFieldId)
+          : SM?.getValue(legacyFieldId);
+        state.setValueForModel(targetId, overridePath, rawValue);
+        if (refModelId) {
+          state.setValueForModel(refModelId, overridePath, rawValue);
+        }
+      }
+
       // Find the graph input
       const lookupMap = getLegacyToSemanticMap();
       const semanticPath = lookupMap.get(baseId);
       const inputNode = semanticPath ? graph.getInput(semanticPath) : null;
-      const classification = inputNode?.classification || "C";
-
-      const targetId = state.getActiveModelId();
-      const refModelId = getRefModelId();
+      // Editable-computed fields are G-class (affect both models)
+      const classification = EDITABLE_COMPUTED[baseId]
+        ? "G"
+        : (inputNode?.classification || "C");
 
       if (classification === "G" && refModelId) {
         // G-field: recompute both models (each keeps its own input values)
@@ -1316,6 +1353,7 @@
     // State management
     syncFromStateManager,
     resetGraphState,
+    clearEditableComputedOverrides,
 
     // Sync TO StateManager (call after computeAll when bypassing legacy)
     syncToStateManager,

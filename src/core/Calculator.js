@@ -40,6 +40,10 @@ TEUI.Calculator = (function () {
     if (SM?.muteListeners) SM.muteListeners();
 
     try {
+      // Clear editable-computed overrides so batch operations (CSV import,
+      // mode switch) use fresh climate lookup values instead of stale user edits
+      CI.clearEditableComputedOverrides?.();
+
       const refPopResult = CI.populateReferenceModel();
       console.log(`[Calculator] Reference model: ${refPopResult.gFieldsCopied} G-fields, ${refPopResult.cFieldsLoaded} C-fields from standard`);
 

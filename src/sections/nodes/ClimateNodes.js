@@ -137,6 +137,16 @@
       label: "Cooling Setpoint Override",
       unit: "°C"
     },
+    // Editable-computed override: CDD is computed from climate lookup but
+    // user can type a value (many Canadian cities have CDD24=666=unavailable).
+    // No legacyId — routing from d_21 is handled in recomputeForInput.
+    {
+      id: "climate.cooling.degreedays.userOverride",
+      defaultValue: null,
+      classification: "G",
+      section: "S03",
+      label: "CDD User Override"
+    },
     // d_12, d_13: canonical inputs live in BuildingInfoNodes
     // (building.majorOccupancy, building.referenceStandard)
     // l_20, l_21: canonical inputs live in CoolingNodes
@@ -185,13 +195,22 @@
       dependencies: [
         "climate.location.province",
         "climate.location.city",
-        "climate.timeframe"
+        "climate.timeframe",
+        "climate.cooling.degreedays.userOverride"
       ],
       classification: "G",
       section: "S03",
       label: "Cooling Degree Days (CDD)",
       unit: "°C·days",
       compute: (inputs) => {
+        // User override takes priority (many cities have CDD=unavailable)
+        const override = inputs["climate.cooling.degreedays.userOverride"];
+        if (override !== null && override !== undefined && override !== "") {
+          const num = parseFloat(override);
+          if (!isNaN(num) && num > 0) return num;
+        }
+
+        // Fall back to climate data lookup
         const province = inputs["climate.location.province"];
         const city = inputs["climate.location.city"];
         const timeframe = inputs["climate.timeframe"];
