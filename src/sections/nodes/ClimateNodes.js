@@ -143,7 +143,7 @@
     {
       id: "climate.cooling.degreedays.userOverride",
       defaultValue: null,
-      classification: "G",
+      classification: "C",
       section: "S03",
       label: "CDD User Override"
     },

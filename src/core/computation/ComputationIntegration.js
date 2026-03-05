@@ -789,6 +789,10 @@
           state.setValueForModel(refModelId, semanticPath, stdValue);
           cFieldsLoaded++;
           debug.cFieldsFromStandard.push({ legacyId, semanticPath, value: stdValue });
+        } else if (!legacyId && inputNode.defaultValue !== undefined) {
+          // No legacyId means no CSV/standard path — use declared default
+          // (e.g., CDD user override defaults to null, not Target's value)
+          state.setValueForModel(refModelId, semanticPath, inputNode.defaultValue);
         } else {
           // Priority 3: Copy from Target (shared input)
           const targetValue = state.getValueForModel(targetId, semanticPath);
@@ -1069,9 +1073,10 @@
         const rawValue = SM?._original_getValue
           ? SM._original_getValue.call(SM, legacyFieldId)
           : SM?.getValue(legacyFieldId);
-        state.setValueForModel(targetId, overridePath, rawValue);
-        if (refModelId) {
-          state.setValueForModel(refModelId, overridePath, rawValue);
+        // C-field: write override to the edited model only
+        const editModelId = isRef ? refModelId : targetId;
+        if (editModelId) {
+          state.setValueForModel(editModelId, overridePath, rawValue);
         }
       }
 
@@ -1079,9 +1084,9 @@
       const lookupMap = getLegacyToSemanticMap();
       const semanticPath = lookupMap.get(baseId);
       const inputNode = semanticPath ? graph.getInput(semanticPath) : null;
-      // Editable-computed fields are G-class (affect both models)
+      // Editable-computed overrides are C-class (per-model)
       const classification = EDITABLE_COMPUTED[baseId]
-        ? "G"
+        ? "C"
         : (inputNode?.classification || "C");
 
       if (classification === "G" && refModelId) {
