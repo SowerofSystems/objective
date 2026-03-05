@@ -1,20 +1,20 @@
 /**
  * F280ComplianceNodes.js - CSA F280-12 Peak Load & Sizing Compliance
  *
- * Extends the existing peak load calculations in Section15.js (rows T.6.4-T.6.8)
- * with F280-specific requirements: infiltration/ventilation peak loads, equipment
- * sizing compliance checks, and designer certification validation.
+ * Builds on peak load values computed in EnergyNodes.js (d_137-d_140)
+ * with F280-specific requirements: infiltration/ventilation peak loads,
+ * equipment sizing compliance checks, and designer certification validation.
  *
- * EXISTING PEAK LOADS (Section15.js):
- *   d_137 = (G101×D101 + D102×G102) × (H23-D23) / 1000  -- Peak Heating (kW), enclosure only
- *   d_138 = (G101×D101 + D102×G102) × (D24-H24) / 1000  -- Peak Cooling (kW), enclosure only
- *   d_139 = enclosure + internal gains + solar/vent/occ   -- Peak Cooling (kW), with gains
- *   d_140 = d_137 × 1000 / H15                           -- Max Heating Intensity (W/m²)
+ * Peak loads from EnergyNodes.js:
+ *   energy.peakHeating.enclosureKw  (d_137) — envelope heating peak (kW)
+ *   energy.peakCooling.enclosureKw  (d_138) — envelope cooling peak (kW)
+ *   energy.peakCooling.totalKw      (d_139) — cooling + gains peak (kW)
+ *   energy.peakHeating.intensity    (d_140) — max heating intensity (W/m²)
  *
- * F280 ADDITIONS (this module):
+ * F280 additions (this module):
  *   - Peak infiltration heat loss:  Q_inf  = 1.21 × NRL50 × Ae/N × deltaT
  *   - Peak ventilation heat loss:   Q_vent = 1.21 × V × (1-ATRE/100) × deltaT
- *   - F280 total design heat loss:  Q_total = d_137(envelope) + Q_inf + Q_vent
+ *   - F280 total design heat loss:  Q_total = envelope + Q_inf + Q_vent
  *   - Equipment sizing compliance:  heating >= 100%, cooling 80-125%
  *   - Designer certification validation (NRCan EA, TECA, P.Eng, OAA, BCIN)
  *
@@ -161,60 +161,20 @@
     // F280 PEAK ENVELOPE HEAT LOSS (CSA F280-12 Section 5.2)
     // Parnas: docs/parnas-tables/f280/peak-envelope-heat-loss.json
     //
-    // REUSES existing d_137 from Section15.js T.6.4:
-    //   d_137 = (G101×D101 + D102×G102) × (H23-D23) / 1000 (kW)
-    //
-    // This node reads that legacy value (kW) and converts to Watts.
-    // If the legacy value is not yet available, it falls back to
-    // computing from the weighted U-values directly.
+    // Uses energy.peakHeating.enclosureKw (d_137) from EnergyNodes.js,
+    // converted from kW to Watts.
     // ========================================================================
-
-    // Register d_137 as an input so it can be read from Section15's calculation
-    graph.registerInput({
-      id: "f280.legacy.peakHeatingKw",
-      legacyId: "d_137",
-      section: "SF280",
-      classification: "C",
-      label: "Peak Heating Load from Section15 T.6.4 (kW)",
-      defaultValue: 0
-    });
 
     graph.registerNode({
       id: "f280.peakEnvelopeHeatLoss",
       legacyId: "f280_hl_env",
       section: "SF280",
       classification: "C",
-      dependencies: [
-        "f280.legacy.peakHeatingKw",
-        // Fallback dependencies for when legacy value is not available
-        "envelope.airFacing.uValue",
-        "envelope.airFacing.area",
-        "envelope.groundFacing.uValue",
-        "envelope.groundFacing.area",
-        "climate.heating.setpoint",
-        "climate.temperature.coldest"
-      ],
+      dependencies: ["energy.peakHeating.enclosureKw"],
       label: "F280 Peak Envelope Heat Loss (W)",
       compute: (inputs) => {
-        // Prefer existing d_137 from Section15.js T.6.4
-        const legacyKw = parseNum(inputs["f280.legacy.peakHeatingKw"]);
-        if (legacyKw > 0) {
-          return Math.round(legacyKw * 1000); // kW to W
-        }
-
-        // Fallback: compute from weighted U-values × areas × deltaT
-        // Same formula as Section15: (G101×D101 + D102×G102) × (H23-D23)
-        const g101 = parseNum(inputs["envelope.airFacing.uValue"]);
-        const d101 = parseNum(inputs["envelope.airFacing.area"]);
-        const g102 = parseNum(inputs["envelope.groundFacing.uValue"]);
-        const d102 = parseNum(inputs["envelope.groundFacing.area"]);
-        const setpoint = parseNum(inputs["climate.heating.setpoint"], 22);
-        const designTemp = parseNum(inputs["climate.temperature.coldest"], -22);
-
-        const deltaT = setpoint - designTemp;
-        if (deltaT <= 0) return 0;
-
-        return Math.round((g101 * d101 + d102 * g102) * deltaT);
+        const kw = parseNum(inputs["energy.peakHeating.enclosureKw"]);
+        return Math.round(kw * 1000);
       }
     });
 
@@ -344,34 +304,10 @@
     // F280 NOMINAL COOLING CAPACITY (CSA F280-12 Section 6.3.1)
     // Parnas: docs/parnas-tables/f280/nominal-cooling-capacity.json
     //
-    // REUSES existing d_139 from Section15.js T.6.7:
-    //   d_139 = enclosure cooling + internal gains + solar/vent/occ gains (kW)
-    //
-    // This already includes envelope, internal gains (D65+D66+D67),
-    // solar gains (K79), ventilation cooling (D122), occupant gains (K64),
-    // and free cooling offset (H124).
-    //
-    // F280 additionally needs infiltration peak and latent load factor.
+    // Uses energy.peakCooling.totalKw (d_139) from EnergyNodes.js
+    // (envelope + internal gains + solar/vent/occ − free cooling).
+    // F280 additionally adds infiltration peak and latent load factor.
     // ========================================================================
-
-    // Register d_138 and d_139 as inputs from Section15's calculation
-    graph.registerInput({
-      id: "f280.legacy.peakCoolingEnclosureKw",
-      legacyId: "d_138",
-      section: "SF280",
-      classification: "C",
-      label: "Peak Cooling Load (Enclosure) from Section15 T.6.5 (kW)",
-      defaultValue: 0
-    });
-
-    graph.registerInput({
-      id: "f280.legacy.peakCoolingWithGainsKw",
-      legacyId: "d_139",
-      section: "SF280",
-      classification: "C",
-      label: "Peak Cooling Load (Encl.+Gains) from Section15 T.6.7 (kW)",
-      defaultValue: 0
-    });
 
     graph.registerNode({
       id: "f280.nominalCoolingCapacity",
@@ -379,7 +315,7 @@
       section: "SF280",
       classification: "C",
       dependencies: [
-        "f280.legacy.peakCoolingWithGainsKw",
+        "energy.peakCooling.totalKw",
         // Infiltration terms (not in Section15's d_139)
         "airTightness.nrl50",
         "envelope.airFacing.area",
@@ -391,11 +327,10 @@
       ],
       label: "F280 Nominal Cooling Capacity (W)",
       compute: (inputs) => {
-        // Use existing d_139 from Section15 T.6.7 (already includes envelope,
-        // internal gains, solar, ventilation cooling, occupant gains)
-        const legacyKw = parseNum(inputs["f280.legacy.peakCoolingWithGainsKw"]);
+        // Peak cooling with gains from EnergyNodes (envelope + internal + solar/vent/occ)
+        const peakCoolingKw = parseNum(inputs["energy.peakCooling.totalKw"]);
 
-        // Add infiltration peak gain (not included in Section15's d_139)
+        // Add infiltration peak gain (F280-specific, not in d_139)
         const nrl50 = parseNum(inputs["airTightness.nrl50"]);
         const areaAir = parseNum(inputs["envelope.airFacing.area"]);
         const nFactor = parseNum(inputs["airTightness.nFactor"], 13);
@@ -409,7 +344,7 @@
           infGainKw = (AIR_HEAT_CAPACITY * nrl50 * areaAir / nFactor) * deltaT_cool / 1000;
         }
 
-        const totalKw = legacyKw + infGainKw;
+        const totalKw = peakCoolingKw + infGainKw;
 
         // Apply latent load factor per F280 §6.3.1
         const llf = parseNum(inputs["cooling.latentLoadFactor"], 1.15);
@@ -595,30 +530,7 @@
       }
     });
 
-    // ========================================================================
-    // SECTION15 LEGACY PEAK LOAD CROSS-REFERENCE
-    //
-    // The envelope peak loads are already calculated in Section15.js:
-    //   d_137 (T.6.4) = Peak Heating Load (Enclosure Only), kW
-    //   l_137 (T.6.4) = Peak Heating BTU/h
-    //   d_138 (T.6.5) = Peak Cooling Load (Enclosure Only), kW
-    //   h_138 (T.6.6) = Peak Cooling Tons
-    //   l_138 (T.6.6) = Peak Cooling BTU/h
-    //   d_139 (T.6.7) = Peak Cooling Load (Encl.+Gains), kW
-    //   h_139 (T.6.9) = Peak Cooling (Encl.+Gains) Tons
-    //   l_139 (T.6.9) = Peak Cooling (Encl.+Gains) BTU/h
-    //   d_140 (T.6.8) = Max Heating Load Intensity, W/m²
-    //   h_140 (T.6.8) = Max Cooling Load Intensity, W/m²
-    //
-    // This F280 module builds ON TOP of those values, adding:
-    //   - Peak infiltration loss (not in Section15)
-    //   - Peak ventilation loss with ATRE (not in Section15)
-    //   - F280 total = envelope + infiltration + ventilation
-    //   - Equipment sizing compliance checks
-    //   - Designer certification validation
-    // ========================================================================
-
-    console.log("[F280ComplianceNodes] Registered", inputs.length, "inputs and F280 peak load nodes");
+    console.log("[F280ComplianceNodes] Registered F280 peak load and compliance nodes");
   }
 
   window.TEUI.ComputationNodes.F280Compliance = { register };

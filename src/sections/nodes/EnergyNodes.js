@@ -479,16 +479,116 @@
     // S15: PEAK LOADS + COSTS + TEUI COMPARISON
     // ========================================================================
 
+    // d_137: Peak Heating Load (Enclosure Only) = (G101×D101 + D102×G102) × (H23−D23) / 1000
+    {
+      id: "energy.peakHeating.enclosureKw",
+      legacyId: "d_137",
+      dependencies: [
+        "envelope.airFacing.uValue",
+        "envelope.airFacing.area",
+        "envelope.groundFacing.uValue",
+        "envelope.groundFacing.area",
+        "climate.heating.setpoint",
+        "climate.temperature.coldest"
+      ],
+      classification: "C",
+      section: "S15",
+      label: "Peak Heating Load - Enclosure Only (kW)",
+      compute: (inputs) => {
+        const g101 = parseNum(inputs["envelope.airFacing.uValue"], 0);
+        const d101 = parseNum(inputs["envelope.airFacing.area"], 0);
+        const g102 = parseNum(inputs["envelope.groundFacing.uValue"], 0);
+        const d102 = parseNum(inputs["envelope.groundFacing.area"], 0);
+        const setpoint = parseNum(inputs["climate.heating.setpoint"], 22);
+        const coldest = parseNum(inputs["climate.temperature.coldest"], -22);
+        const deltaT = setpoint - coldest;
+        if (deltaT <= 0) return 0;
+        return (g101 * d101 + d102 * g102) * deltaT / 1000;
+      }
+    },
+
+    // d_138: Peak Cooling Load (Enclosure Only) = (G101×D101 + D102×G102) × (D24−H24) / 1000
+    {
+      id: "energy.peakCooling.enclosureKw",
+      legacyId: "d_138",
+      dependencies: [
+        "envelope.airFacing.uValue",
+        "envelope.airFacing.area",
+        "envelope.groundFacing.uValue",
+        "envelope.groundFacing.area",
+        "climate.temperature.hottest",
+        "climate.cooling.setpoint"
+      ],
+      classification: "C",
+      section: "S15",
+      label: "Peak Cooling Load - Enclosure Only (kW)",
+      compute: (inputs) => {
+        const g101 = parseNum(inputs["envelope.airFacing.uValue"], 0);
+        const d101 = parseNum(inputs["envelope.airFacing.area"], 0);
+        const g102 = parseNum(inputs["envelope.groundFacing.uValue"], 0);
+        const d102 = parseNum(inputs["envelope.groundFacing.area"], 0);
+        const hottest = parseNum(inputs["climate.temperature.hottest"], 34);
+        const coolSetpoint = parseNum(inputs["climate.cooling.setpoint"], 24);
+        const deltaT = hottest - coolSetpoint;
+        if (deltaT <= 0) return 0;
+        return (g101 * d101 + d102 * g102) * deltaT / 1000;
+      }
+    },
+
+    // d_139: Peak Cooling Load (Enclosure + Gains)
+    // = ((G101×D101+D102×G102)×(D24−H24) + (D65+D66+D67)×H15) / 1000
+    //   + (K79 + D122 + K64 − H124) / (M19×24)
+    {
+      id: "energy.peakCooling.totalKw",
+      legacyId: "d_139",
+      dependencies: [
+        "energy.peakCooling.enclosureKw",
+        "internal.plugLoadDensity",
+        "internal.lightingDensity",
+        "internal.equipmentDensity",
+        "building.conditionedFloorArea",
+        "radiantGains.subtotal.coolingGain",
+        "ventilation.heatGain",
+        "internal.occupants.coolingGain",
+        "cooling.freeCoolingLimit",
+        "climate.coolingDays"
+      ],
+      classification: "C",
+      section: "S15",
+      label: "Peak Cooling Load - Enclosure + Gains (kW)",
+      compute: (inputs) => {
+        // Enclosure cooling in kW (already computed)
+        const enclosureKw = parseNum(inputs["energy.peakCooling.enclosureKw"], 0);
+        // Internal gains density (W/m²) × area → kW
+        const d65 = parseNum(inputs["internal.plugLoadDensity"], 0);
+        const d66 = parseNum(inputs["internal.lightingDensity"], 0);
+        const d67 = parseNum(inputs["internal.equipmentDensity"], 0);
+        const area = parseNum(inputs["building.conditionedFloorArea"], 1);
+        const internalGainsKw = (d65 + d66 + d67) * area / 1000;
+        // Annual kWh gains → average kW during cooling season
+        const k79 = parseNum(inputs["radiantGains.subtotal.coolingGain"], 0);
+        const d122 = parseNum(inputs["ventilation.heatGain"], 0);
+        const k64 = parseNum(inputs["internal.occupants.coolingGain"], 0);
+        const h124 = parseNum(inputs["cooling.freeCoolingLimit"], 0);
+        const coolingDays = parseNum(inputs["climate.coolingDays"], 120);
+        let result = enclosureKw + internalGainsKw;
+        if (coolingDays > 0) {
+          result += (k79 + d122 + k64 - h124) / (coolingDays * 24);
+        }
+        return result;
+      }
+    },
+
     // d_140: Maximum Heating Load Intensity = (d_137 × 1000) / h_15
     {
       id: "energy.peakHeating.intensity",
       legacyId: "d_140",
-      dependencies: ["f280.legacy.peakHeatingKw", "building.conditionedFloorArea"],
+      dependencies: ["energy.peakHeating.enclosureKw", "building.conditionedFloorArea"],
       classification: "C",
       section: "S15",
       label: "Peak Heating Load Intensity (W/m²)",
       compute: (inputs) => {
-        const d137 = parseNum(inputs["f280.legacy.peakHeatingKw"], 0);
+        const d137 = parseNum(inputs["energy.peakHeating.enclosureKw"], 0);
         const area = parseNum(inputs["building.conditionedFloorArea"], 1);
         return area > 0 ? (d137 * 1000) / area : 0;
       }
@@ -551,12 +651,12 @@
     {
       id: "energy.peakCooling.tons",
       legacyId: "h_138",
-      dependencies: ["f280.legacy.peakCoolingEnclosureKw"],
+      dependencies: ["energy.peakCooling.enclosureKw"],
       classification: "C",
       section: "S15",
       label: "Peak Cooling Load (Tons)",
       compute: (inputs) => {
-        const d138 = parseNum(inputs["f280.legacy.peakCoolingEnclosureKw"], 0);
+        const d138 = parseNum(inputs["energy.peakCooling.enclosureKw"], 0);
         return d138 * 0.2843451361;
       }
     },
@@ -565,12 +665,12 @@
     {
       id: "energy.peakCoolingGains.tons",
       legacyId: "h_139",
-      dependencies: ["f280.legacy.peakCoolingWithGainsKw"],
+      dependencies: ["energy.peakCooling.totalKw"],
       classification: "C",
       section: "S15",
       label: "Peak Cooling with Gains (Tons)",
       compute: (inputs) => {
-        const d139 = parseNum(inputs["f280.legacy.peakCoolingWithGainsKw"], 0);
+        const d139 = parseNum(inputs["energy.peakCooling.totalKw"], 0);
         return d139 * 0.2843451361;
       }
     },
@@ -579,12 +679,12 @@
     {
       id: "energy.peakCooling.intensity",
       legacyId: "h_140",
-      dependencies: ["f280.legacy.peakCoolingEnclosureKw", "building.conditionedFloorArea"],
+      dependencies: ["energy.peakCooling.enclosureKw", "building.conditionedFloorArea"],
       classification: "C",
       section: "S15",
       label: "Peak Cooling Load Intensity (W/m²)",
       compute: (inputs) => {
-        const d138 = parseNum(inputs["f280.legacy.peakCoolingEnclosureKw"], 0);
+        const d138 = parseNum(inputs["energy.peakCooling.enclosureKw"], 0);
         const area = parseNum(inputs["building.conditionedFloorArea"], 1);
         return area > 0 ? (d138 * 1000) / area : 0;
       }
@@ -657,12 +757,12 @@
     {
       id: "energy.peakHeating.btu",
       legacyId: "l_137",
-      dependencies: ["f280.legacy.peakHeatingKw"],
+      dependencies: ["energy.peakHeating.enclosureKw"],
       classification: "C",
       section: "S15",
       label: "Peak Heating Load (BTU)",
       compute: (inputs) => {
-        const d137 = parseNum(inputs["f280.legacy.peakHeatingKw"], 0);
+        const d137 = parseNum(inputs["energy.peakHeating.enclosureKw"], 0);
         return d137 * 3412.14245;
       }
     },
@@ -671,12 +771,12 @@
     {
       id: "energy.peakCooling.btu",
       legacyId: "l_138",
-      dependencies: ["f280.legacy.peakCoolingEnclosureKw"],
+      dependencies: ["energy.peakCooling.enclosureKw"],
       classification: "C",
       section: "S15",
       label: "Peak Cooling Load (BTU)",
       compute: (inputs) => {
-        const d138 = parseNum(inputs["f280.legacy.peakCoolingEnclosureKw"], 0);
+        const d138 = parseNum(inputs["energy.peakCooling.enclosureKw"], 0);
         return d138 * 3412.14245;
       }
     },
@@ -685,12 +785,12 @@
     {
       id: "energy.peakCoolingGains.btu",
       legacyId: "l_139",
-      dependencies: ["f280.legacy.peakCoolingWithGainsKw"],
+      dependencies: ["energy.peakCooling.totalKw"],
       classification: "C",
       section: "S15",
       label: "Peak Cooling with Gains (BTU)",
       compute: (inputs) => {
-        const d139 = parseNum(inputs["f280.legacy.peakCoolingWithGainsKw"], 0);
+        const d139 = parseNum(inputs["energy.peakCooling.totalKw"], 0);
         return d139 * 3412.14245;
       }
     },

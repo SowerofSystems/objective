@@ -62,7 +62,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         c: { label: "TEU Targeted Electricity" },
         d: {
           fieldId: "d_135",
-          semanticPath: "teuiSummary.teu.targeted",
+          semanticPath: "energy.total.targeted",
           type: "calculated",
           value: "0.00", // Default to 0.00, will be calculated
           label: "TEU Targeted Electricity: ekWh/yr",
@@ -77,7 +77,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         g: { content: "TEUI", classes: ["label-main", "text-left", "no-wrap"] },
         h: {
           fieldId: "h_135",
-          semanticPath: "teuiSummary.teui.targeted",
+          semanticPath: "energy.teui.targeted",
           type: "calculated",
           value: "0.00", // Default to 0.00
           label: "TEUI: kWh/m\u00B2/yr",
@@ -105,7 +105,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         c: { label: "TEU Targeted Electricity if HP/Gas/Oil Bldg." },
         d: {
           fieldId: "d_136",
-          semanticPath: "teuiSummary.teu.hpGasOil",
+          semanticPath: "energy.total.all",
           type: "calculated",
           value: "0.00", // Default to 0.00
           label: "TEU if HP/Gas/Oil: kWh/yr",
@@ -120,7 +120,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         g: { content: "TEUI", classes: ["label-main", "text-left", "no-wrap"] },
         h: {
           fieldId: "h_136",
-          semanticPath: "teuiSummary.teui.hpGasOil",
+          semanticPath: "energy.teui",
           type: "calculated",
           value: "0.00", // Default to 0.00
           label: "TEUI if HP/Gas/Oil: kWh/m\u00B2/yr",
@@ -148,7 +148,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         c: { label: "Peak Heating Load (Enclosure Only)" },
         d: {
           fieldId: "d_137",
-          semanticPath: "teuiSummary.peakHeating.enclosureKw",
+          semanticPath: "energy.peakHeating.enclosureKw",
           type: "calculated",
           value: "0.00", // Default to 0.00
           label: "Peak Heating Load (Enclosure): kW",
@@ -170,7 +170,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         k: { content: "" },
         l: {
           fieldId: "l_137",
-          semanticPath: "teuiSummary.peakHeating.enclosureBtu",
+          semanticPath: "energy.peakHeating.btu",
           type: "calculated",
           value: "0", // Default to 0
           label: "Peak Heating Load (Enclosure): BTU/hr",
@@ -191,7 +191,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         c: { label: "Peak Cooling Load (Enclosure Only)" },
         d: {
           fieldId: "d_138",
-          semanticPath: "teuiSummary.peakCooling.enclosureKw",
+          semanticPath: "energy.peakCooling.enclosureKw",
           type: "calculated",
           value: "0.00", // Default to 0.00
           label: "Peak Cooling Load (Enclosure): kW",
@@ -209,7 +209,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         },
         h: {
           fieldId: "h_138",
-          semanticPath: "teuiSummary.peakCooling.enclosureTons",
+          semanticPath: "energy.peakCooling.tons",
           type: "calculated",
           value: "0.00", // Default to 0.00
           label: "Peak Cooling (Enclosure): Tons",
@@ -221,7 +221,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         k: { content: "" },
         l: {
           fieldId: "l_138",
-          semanticPath: "teuiSummary.peakCooling.enclosureBtu",
+          semanticPath: "energy.peakCooling.btu",
           type: "calculated",
           value: "0", // Default to 0
           label: "Peak Cooling Load (Enclosure): BTU/hr",
@@ -242,7 +242,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         c: { label: "Peak Cooling Load (Enclosure + Gains)" },
         d: {
           fieldId: "d_139",
-          semanticPath: "teuiSummary.peakCooling.totalKw",
+          semanticPath: "energy.peakCooling.totalKw",
           type: "calculated",
           value: "0.00", // Default to 0.00
           label: "Peak Cooling Load (Encl.+Gains): kW",
@@ -260,7 +260,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         },
         h: {
           fieldId: "h_139",
-          semanticPath: "teuiSummary.peakCooling.totalTons",
+          semanticPath: "energy.peakCoolingGains.tons",
           type: "calculated",
           value: "0.00", // Default to 0.00
           label: "Peak Cooling (Encl.+Gains): Tons",
@@ -272,7 +272,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         k: { content: "" },
         l: {
           fieldId: "l_139",
-          semanticPath: "teuiSummary.peakCooling.totalBtu",
+          semanticPath: "energy.peakCoolingGains.btu",
           type: "calculated",
           value: "0", // Default to 0
           label: "Peak Cooling Load (Encl.+Gains): BTU/hr",
@@ -293,7 +293,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         c: { label: "Max. Heating Load Intensity" },
         d: {
           fieldId: "d_140",
-          semanticPath: "teuiSummary.maxIntensity.heating",
+          semanticPath: "energy.peakHeating.intensity",
           type: "calculated",
           value: "0.00", // Default to 0.00
           label: "Max. Heating Load Intensity: W/m\u00B2",
@@ -311,7 +311,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         },
         h: {
           fieldId: "h_140",
-          semanticPath: "teuiSummary.maxIntensity.cooling",
+          semanticPath: "energy.peakCooling.intensity",
           type: "calculated",
           value: "0.00", // Default to 0.00 - Max Cool Intsty in W/m\u00B2 (Enclosure Only)
           label: "Max. Cooling Load Intensity: W/m\u00B2",
@@ -336,7 +336,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         c: { label: "Annual Cost of Electricity" },
         d: {
           fieldId: "d_141",
-          semanticPath: "teuiSummary.annualCost.preHeatpump",
+          semanticPath: "energy.cost.preHP",
           type: "calculated",
           value: "$0.00", // Default to $0.00
           label: "Annual Cost of Electricity (pre-HP): $",
@@ -354,7 +354,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         },
         h: {
           fieldId: "h_141",
-          semanticPath: "teuiSummary.annualCost.postHeatpump",
+          semanticPath: "energy.cost.postHP",
           type: "calculated",
           value: "$0.00", // Default to $0.00
           label: "Annual Cost of Electricity (post-HP): $",
@@ -366,7 +366,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         k: { content: "\u2211 Other Energy" },
         l: {
           fieldId: "l_141",
-          semanticPath: "teuiSummary.annualCost.otherEnergy",
+          semanticPath: "energy.cost.otherFuel",
           type: "calculated",
           value: "$0.00", // Default to $0.00
           label: "\u2211 Other Energy Costs: $",
@@ -388,7 +388,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         d: {
           // This seems like an input, not calculated. Assuming it's an editable field for now.
           fieldId: "d_142",
-          semanticPath: "teuiSummary.capitalCost.heatpumpPremium",
+          semanticPath: "energy.cost.heatpumpPremium",
           type: "editable",
           value: "30000.00", // Default value from CSV example
           label: "Cost Premium of HP Equipment: $",
@@ -404,7 +404,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         g: { content: "ROI", classes: ["label-main", "text-left", "no-wrap"] },
         h: {
           fieldId: "h_142",
-          semanticPath: "teuiSummary.capitalCost.roiYears",
+          semanticPath: "energy.roi.heatpump",
           type: "calculated",
           value: "0.00", // Default to 0.00
           label: "Heatpump ROI: Years",
@@ -429,7 +429,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         c: { label: "TEUI Reference (Performance Gap)" },
         d: {
           fieldId: "d_143",
-          semanticPath: "teuiSummary.performanceGap.reference",
+          semanticPath: "energy.reference.teui",
           type: "calculated",
           value: "0.00", // Default to 0.00
           label: "TEUI Reference: kWh/m\u00B2/yr",
@@ -447,7 +447,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         },
         h: {
           fieldId: "h_143",
-          semanticPath: "teuiSummary.performanceGap.targeted",
+          semanticPath: "teuiSummary.target.teui",
           type: "calculated",
           value: "0.00", // Default to 0.00
           label: "TEUI Targeted: kWh/m\u00B2/yr",
@@ -459,7 +459,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         k: { content: "Actual" },
         l: {
           fieldId: "l_143",
-          semanticPath: "teuiSummary.performanceGap.actual",
+          semanticPath: "teuiSummary.actual.teui",
           type: "calculated",
           value: "0.00", // Default to 0.00
           label: "TEUI Actual: kWh/m\u00B2/yr",
@@ -480,7 +480,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         c: { label: "TEUI Energy Reduction from Reference" },
         d: {
           fieldId: "d_144",
-          semanticPath: "teuiSummary.reduction.fromReference",
+          semanticPath: "energy.teui.reductionPercent",
           type: "calculated",
           value: "0%", // Default to 0%
           label: "TEUI Reduction from Reference: %",
@@ -498,7 +498,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         },
         h: {
           fieldId: "h_144",
-          semanticPath: "teuiSummary.reduction.targetOfUtility",
+          semanticPath: "energy.targetActual.ratio",
           type: "calculated",
           value: "0%", // Default to 0%
           label: "Target % of Utility Data: %",
@@ -510,7 +510,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         k: { content: "Actual" },
         l: {
           fieldId: "l_144",
-          semanticPath: "teuiSummary.reduction.actualOfTargeted",
+          semanticPath: "energy.actualTarget.ratio",
           type: "calculated",
           value: "0%", // Default to 0%
           label: "Actual % of Targeted Design: %",
@@ -531,7 +531,7 @@ window.TEUI.SectionModules.sect15 = (function () {
         c: { label: "GHGe Reduction from Reference" },
         d: {
           fieldId: "d_145",
-          semanticPath: "teuiSummary.ghgeReduction",
+          semanticPath: "compliance.ghgReduction",
           type: "calculated",
           value: "0%", // Default to 0%
           label: "GHGe Reduction from Reference: %",
