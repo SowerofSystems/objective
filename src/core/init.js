@@ -985,7 +985,10 @@ document.addEventListener("DOMContentLoaded", function () {
               const baseId = fieldId.startsWith("ref_") ? fieldId.slice(4) : fieldId;
               const lookup = getLegacyLookup();
               const semanticPath = lookup?.get(baseId);
-              if (!semanticPath) return;
+              // Editable-computed fields (e.g., CDD d_21) aren't graph inputs
+              // but still need recomputation when user edits them
+              const EDITABLE_COMPUTED = { "d_21": true };
+              if (!semanticPath && !EDITABLE_COMPUTED[baseId]) return;
 
               _recomputing = true;
               try {
