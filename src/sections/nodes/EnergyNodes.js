@@ -86,6 +86,16 @@
     // ==== Section 09: k_71 (internal.coolingLoad.occupants) now computed in InternalGainsNodes ====
     // ==== Section 07: k_51 (energy.dhw.netElectrical) now computed in WaterHeatingNodes as waterHeating.netElectricalDemand ====
     // ==== Section 09: h_70 (energy.plugLoads.subtotal) now computed in InternalGainsNodes ====
+
+    // ==== Section 15: Heatpump Cost Premium (user-editable) ====
+    {
+      id: "energy.cost.heatpumpPremium",
+      legacyId: "d_142",
+      defaultValue: 30000,
+      classification: "G",
+      section: "S15",
+      label: "Heatpump Cost Premium ($)",
+    },
   ];
 
   // ============================================================================
@@ -610,16 +620,7 @@
       }
     },
 
-    // d_142: Heatpump Cost Premium (user input)
-    {
-      id: "energy.cost.heatpumpPremium",
-      legacyId: "d_142",
-      dependencies: [],
-      classification: "C",
-      section: "S15",
-      label: "Heatpump Cost Premium ($)",
-      compute: () => 30000,
-    },
+    // d_142: Heatpump Cost Premium — now an input (moved to EnergyInputs)
 
     // d_143: Reference TEUI = e_10
     {
