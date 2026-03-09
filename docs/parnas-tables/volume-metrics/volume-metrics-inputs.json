@@ -1,109 +1,170 @@
 {
   "_meta": {
-    "description": "Volume metrics section registered input nodes. These user-editable values define air tightness and building perimeter parameters. ACH@50Pa and NRL50 are C-classified (model-specific, different for Target vs Reference), while perimeter is G-classified (shared geometry).",
+    "description": "Volume metrics section registered input nodes. 6 inputs defining building volume geometry and air tightness parameters. All are C-classified (model-specific). Note: these are in S12 (not S11 as previously documented).",
     "instances": [
       {
-        "id": "volumeMetrics.airtightness.ach",
+        "id": "volume.floorToFloorHeight",
         "legacyId": "g_106",
-        "label": "Air Changes per Hour at 50 Pa",
+        "label": "Floor-to-Floor Height",
+        "type": "number",
+        "unit": "m",
+        "classification": "C",
+        "default": 2.7,
+        "note": "Height between floors. Used in volume calculations."
+      },
+      {
+        "id": "volume.numStoreys",
+        "legacyId": "d_103",
+        "label": "Number of Storeys",
+        "type": "number",
+        "classification": "C",
+        "default": 1.5,
+        "note": "Number of storeys for volume calculations. Default 1.5 (typical for Part 9 with basement)."
+      },
+      {
+        "id": "airTightness.shielding",
+        "legacyId": "g_103",
+        "label": "Shielding",
+        "type": "string",
+        "classification": "C",
+        "default": "Normal",
+        "note": "Wind shielding class for N-factor lookup. Used with climate zone and storeys to determine infiltration N-factor from N_FACTOR_TABLE."
+      },
+      {
+        "id": "airTightness.method",
+        "legacyId": "d_108",
+        "label": "Air Tightness Method",
+        "type": "string",
+        "classification": "C",
+        "default": "AL-1B",
+        "note": "Air leakage class or test method. Presets: AL-1A=0.89, AL-1B=1.17, AL-2A=0.71, AL-2B=0.94, AL-3A=0.53, AL-3B=0.70, AL-4A=0.35, AL-4B=0.47. Or MEASURED/PH_CLASSIC/PH_LOW/PH_PLUS for special calculations."
+      },
+      {
+        "id": "airTightness.measuredAch50",
+        "legacyId": "g_109",
+        "label": "Measured ACH50",
         "type": "number",
         "unit": "ACH@50Pa",
         "classification": "C",
-        "default": 3.5,
-        "note": "Blower door test result. NBC 9.36 default = 3.5 ACH@50Pa if no test performed."
+        "default": 3.0,
+        "note": "Blower door test result. Only used when airTightness.method = 'MEASURED'. Converted to NRL50 via achToNrl()."
       },
       {
-        "id": "volumeMetrics.airtightness.nrl50",
-        "legacyId": "d_103",
-        "label": "Normalized Leakage Rate at 75 Pa",
+        "id": "volume.conditioned",
+        "legacyId": "d_105",
+        "label": "Conditioned Volume",
         "type": "number",
-        "unit": "L/s/m²@75Pa",
+        "unit": "m3",
         "classification": "C",
-        "default": 0.25,
-        "note": "Commercial air tightness metric (Part 3 buildings). Expressed per unit envelope area."
-      },
-      {
-        "id": "volumeMetrics.envelope.perimeter",
-        "legacyId": "g_103",
-        "label": "Building Perimeter",
-        "type": "number",
-        "unit": "m",
-        "classification": "G",
         "default": 0,
-        "note": "Perimeter length of the building footprint. Used for slab edge loss calculations and envelope area computation."
+        "note": "Total conditioned volume of the building. Used in ACH50 target, ELA10, and volume-to-area ratio calculations."
       }
     ]
   },
-  "section": "S11",
+  "section": "S12",
   "signature": {
     "inputs": "These ARE the inputs (registered via graph.registerInput in VolumeMetricsNodes.js)",
-    "output": "Values stored in MultiModelState, consumed by volume, envelope area, infiltration, and ventilation calculations"
+    "output": "Values stored in MultiModelState, consumed by envelope area/U-value, air tightness NRL50/ACH50, infiltration heat loss/gain, and geometry ratio calculations"
   },
   "domain": {
     "preconditions": [
       {
-        "condition": "ach >= 0",
+        "condition": "floorToFloorHeight > 0",
+        "description": "Floor height must be positive"
+      },
+      {
+        "condition": "numStoreys > 0",
+        "description": "Must have at least partial storey"
+      },
+      {
+        "condition": "measuredAch50 >= 0",
         "description": "Air changes per hour cannot be negative"
       },
       {
-        "condition": "nrl50 >= 0",
-        "description": "Normalized leakage rate cannot be negative"
-      },
-      {
-        "condition": "perimeter >= 0",
-        "description": "Building perimeter cannot be negative"
+        "condition": "conditioned volume >= 0",
+        "description": "Volume cannot be negative"
       }
     ],
-    "invariants": []
+    "invariants": [
+      {
+        "condition": "NRL50 presets map to specific air leakage rates",
+        "description": "AL-1A through AL-4B correspond to NBC air leakage classifications"
+      }
+    ]
   },
   "behavior": [
     {
-      "condition": "g_106 (ACH@50Pa) changes",
-      "output": "Triggers recomputation of flow rate at 50Pa (h_106), leakage area (d_106), natural ACH (d_104), volumetric infiltration rate (h_104)",
-      "note": "C-classified, model-specific. Key air tightness metric for Part 9 residential."
+      "condition": "g_106 (floor-to-floor height) changes",
+      "output": "Affects volume-dependent calculations downstream",
+      "note": "C-classified, model-specific"
     },
     {
-      "condition": "d_103 (NRL50) changes",
-      "output": "Triggers recomputation of infiltration annual rate (h_103) and per-area rate (g_103_calc)",
-      "note": "C-classified, model-specific. Key air tightness metric for Part 3 commercial."
+      "condition": "d_103 (storeys) changes",
+      "output": "Affects N-factor lookup and volume calculations",
+      "note": "N-factor uses getStoryKey() to map storey count"
     },
     {
-      "condition": "g_103 (perimeter) changes",
-      "output": "Triggers recomputation of envelope total area (d_102) and downstream surface-to-volume ratio (g_101)",
-      "note": "G-classified, affects all models."
+      "condition": "g_103 (shielding) changes",
+      "output": "Triggers recomputation of N-factor (g_110) and infiltration heat loss (i_103)",
+      "note": "N-factor from N_FACTOR_TABLE[climateZone][shielding][storeyKey]"
+    },
+    {
+      "condition": "d_108 (method) changes",
+      "output": "Triggers recomputation of NRL50 (g_108), ACH50 target (d_109), ELA10 (d_110), and infiltration heat loss/gain",
+      "note": "Preset methods use fixed NRL50 values; MEASURED converts from ACH50 input"
+    },
+    {
+      "condition": "g_109 (measured ACH50) changes",
+      "output": "Triggers NRL50 recomputation only when method = 'MEASURED'",
+      "note": "achToNrl formula: (ach * volume) / (airFacingArea * 3.6)"
+    },
+    {
+      "condition": "d_105 (conditioned volume) changes",
+      "output": "Triggers recomputation of ACH50 target (d_109), ELA10 (d_110), volume/area ratios (g_105, i_105), and NRL50 when method=MEASURED",
+      "note": "Central to many downstream calculations"
     }
   ],
   "edgeCases": [
     {
-      "condition": "ACH@50Pa = 0",
-      "handling": "Flow rate = 0, leakage area = 0, natural ACH = 0",
-      "rationale": "Perfectly sealed building (theoretical). Ventilation still operates mechanically."
+      "condition": "Conditioned volume = 0",
+      "handling": "ACH50 target = 0, ELA10 = 0, volume ratios = 0",
+      "rationale": "Guard divisions by zero"
     },
     {
-      "condition": "Perimeter = 0",
-      "handling": "Envelope area = 2 × floorArea (no walls), surface-to-volume ratio based only on floor/ceiling",
-      "rationale": "Edge case for underground or fully interior spaces"
+      "condition": "Unknown air tightness method",
+      "handling": "NRL50 defaults to 1.17 (AL-1B preset)",
+      "rationale": "Fallback to least restrictive common classification"
+    },
+    {
+      "condition": "N-factor lookup fails",
+      "handling": "Falls back to N_FACTOR_TABLE[2]['Normal'][1.5] = 16.7",
+      "rationale": "Zone 2, Normal shielding, 1.5 storeys is typical default"
     }
   ],
   "tests": [
     {
-      "name": "Default ACH at 50Pa",
+      "name": "Default floor-to-floor height",
       "inputs": {},
-      "expected": "volumeMetrics.airtightness.ach = 3.5"
+      "expected": "volume.floorToFloorHeight = 2.7"
     },
     {
-      "name": "Default NRL50",
+      "name": "Default storeys",
       "inputs": {},
-      "expected": "volumeMetrics.airtightness.nrl50 = 0.25"
+      "expected": "volume.numStoreys = 1.5"
     },
     {
-      "name": "Default perimeter",
+      "name": "Default air tightness method",
       "inputs": {},
-      "expected": "volumeMetrics.envelope.perimeter = 0"
+      "expected": "airTightness.method = 'AL-1B'"
+    },
+    {
+      "name": "Default measured ACH50",
+      "inputs": {},
+      "expected": "airTightness.measuredAch50 = 3.0"
     }
   ],
   "references": [
-    { "source": "VolumeMetricsNodes.js:12-42 (input registration)" },
-    { "source": "VolumeMetricsNodes.js (computed nodes consume these inputs for volume, envelope, and infiltration)" }
+    { "source": "VolumeMetricsNodes.js (input registration)" },
+    { "source": "VolumeMetricsNodes.js (NRL50_PRESETS, N_FACTOR_TABLE)" }
   ]
 }

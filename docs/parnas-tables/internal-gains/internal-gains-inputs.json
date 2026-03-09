@@ -1,133 +1,122 @@
 {
   "_meta": {
-    "description": "Internal gains section registered input nodes. These user-editable values define metabolic rate, plug load density, lighting density, and equipment gains. All are C-classified (model-specific) and feed into total internal gains, annual energy, and per-area intensity calculations.",
+    "description": "Internal gains section registered input nodes. 4 inputs defining occupant activity level, lighting density, equipment efficiency spec, and elevator presence. Note: plug load density (d_65) and equipment density (d_67) are NOT inputs -- they are computed nodes derived from building type and reference standard.",
     "instances": [
       {
-        "id": "internalGains.occupant.metabolicRate",
+        "id": "internal.activityLevel",
         "legacyId": "d_64",
-        "label": "Occupant Metabolic Rate",
-        "type": "number",
-        "unit": "W/person",
+        "label": "Occupant Activity Level",
+        "type": "string",
         "classification": "C",
-        "default": 120,
-        "note": "Metabolic heat gain per occupant. Typical: 60W (sleeping) to 120W (light office work) to 300W (heavy activity)."
+        "default": "Normal",
+        "note": "Dropdown selection mapped to watts/person via ACTIVITY_WATTS lookup: Relaxed=96.71, Normal=117.23, Active=219.81, Hyperactive=424.95. Drives internal.occupants.wattsPerPerson (g_64)."
       },
       {
-        "id": "internalGains.plugLoads.density",
+        "id": "internal.lightingDensity",
         "legacyId": "d_66",
-        "label": "Plug Load Density",
+        "label": "Lighting Density",
         "type": "number",
-        "unit": "W/m²",
+        "unit": "W/m2",
         "classification": "C",
-        "default": 5,
-        "note": "Electrical plug load density. Typical range: 2.5-15 W/m² depending on building type."
+        "default": 1.5,
+        "note": "Lighting power density. Used in annual lighting energy: (density * floorArea * occupiedHours) / 1000."
       },
       {
-        "id": "internalGains.lighting.density",
+        "id": "internal.efficiencySpec",
         "legacyId": "g_67",
-        "label": "Lighting Power Density",
-        "type": "number",
-        "unit": "W/m²",
+        "label": "Equipment Efficiency Spec",
+        "type": "string",
         "classification": "C",
-        "default": 5,
-        "note": "Lighting power density. Code minimum varies by occupancy type (NBC Table 9.36.3.12)."
+        "default": "Regular",
+        "note": "Dropdown for equipment efficiency level. Used with building type and elevator status to look up equipment density from EQUIPMENT_LOADS_TABLE."
       },
       {
-        "id": "internalGains.equipment.total",
+        "id": "internal.elevators",
         "legacyId": "d_68",
-        "label": "Equipment Internal Gains",
-        "type": "number",
-        "unit": "W",
+        "label": "Elevator Presence",
+        "type": "string",
         "classification": "C",
-        "default": 0,
-        "note": "Additional equipment heat gains not captured in plug loads. Typically zero for residential."
+        "default": "No Elevators",
+        "note": "Dropdown for elevator configuration. Used with building type and efficiency spec to look up equipment density from EQUIPMENT_LOADS_TABLE."
       }
     ]
   },
   "section": "S09",
   "signature": {
-    "inputs": "These ARE the inputs (registered via graph.registerInput in InternalGainsNodes.js)",
+    "inputs": "These ARE the inputs (registered via graph.registerInput in InternalGainsNodes.js). Note: d_65 (plugLoadDensity) and d_67 (equipmentDensity) are computed nodes, not inputs.",
     "output": "Values stored in MultiModelState, consumed by internal gains computed nodes and section compliance ratios"
   },
   "domain": {
     "preconditions": [
       {
-        "condition": "metabolicRate >= 0",
-        "description": "Metabolic rate cannot be negative"
+        "condition": "activityLevel is valid ACTIVITY_WATTS key",
+        "description": "Must be one of: Relaxed, Normal, Active, Hyperactive"
       },
       {
-        "condition": "plugLoads.density >= 0",
-        "description": "Plug load density cannot be negative"
-      },
-      {
-        "condition": "lighting.density >= 0",
+        "condition": "lightingDensity >= 0",
         "description": "Lighting density cannot be negative"
-      },
-      {
-        "condition": "equipment.total >= 0",
-        "description": "Equipment gains cannot be negative"
       }
     ],
     "invariants": []
   },
   "behavior": [
     {
-      "condition": "d_64 (metabolic rate) changes",
-      "output": "Triggers recomputation of occupant total gains (h_64), per-area occupant gains (g_64), subtotal (h_69), annual energy (h_70)",
-      "note": "C-classified, model-specific. Also triggers S09 compliance ratio (m_64)"
+      "condition": "d_64 (activity level) changes",
+      "output": "Triggers recomputation of watts/person (g_64), annual occupant gains (h_64), heating/cooling gains (i_64, k_64), subtotals",
+      "note": "C-classified, model-specific"
     },
     {
-      "condition": "d_66 (plug load density) changes",
-      "output": "Triggers recomputation of plug load total (h_66), subtotal (h_69), annual energy (h_70)",
-      "note": "C-classified. Also triggers S09 compliance ratio (m_66)"
+      "condition": "d_66 (lighting density) changes",
+      "output": "Triggers recomputation of annual lighting energy (h_66), PLE subtotal (h_70), heating/cooling gains",
+      "note": "C-classified"
     },
     {
-      "condition": "g_67 (lighting density) changes",
-      "output": "Triggers recomputation of lighting total (h_67), subtotal (h_69), annual energy (h_70)",
-      "note": "C-classified. Also triggers S09 compliance ratio (m_67)"
+      "condition": "g_67 (efficiency spec) changes",
+      "output": "Triggers recomputation of equipment density (d_67), annual equipment energy (h_67), PLE subtotal",
+      "note": "C-classified. Equipment density is looked up from EQUIPMENT_LOADS_TABLE[buildingType][efficiencySpec][elevatorStatus]"
     },
     {
-      "condition": "d_68 (equipment total) changes",
-      "output": "Triggers recomputation of equipment per-area (g_68), subtotal (h_69), annual energy (h_70)",
-      "note": "C-classified. Also triggers S09 compliance ratio (m_68)"
+      "condition": "d_68 (elevators) changes",
+      "output": "Triggers recomputation of equipment density (d_67), annual equipment energy (h_67), PLE subtotal",
+      "note": "C-classified"
     }
   ],
   "edgeCases": [
     {
-      "condition": "All internal gain inputs are 0",
-      "handling": "Subtotal = 0, annual energy = 0",
-      "rationale": "Valid for unoccupied or minimal-gain buildings"
+      "condition": "Unknown activity level",
+      "handling": "Falls back to 117.23 W/person (Normal)",
+      "rationale": "ACTIVITY_WATTS lookup returns default for unknown keys"
     },
     {
-      "condition": "Equipment total entered in W while plug loads in W/m²",
-      "handling": "Equipment uses total watts (not density), per-area is computed as total/floorArea",
-      "rationale": "Equipment may not scale linearly with floor area (e.g., a single elevator motor)"
+      "condition": "Unknown building type or efficiency spec combination",
+      "handling": "Equipment density falls back to DEFAULT_EQUIPMENT_LOAD = 5.0 W/m2",
+      "rationale": "EQUIPMENT_LOADS_TABLE may not have entry for all combinations"
     }
   ],
   "tests": [
     {
-      "name": "Default metabolic rate",
+      "name": "Default activity level",
       "inputs": {},
-      "expected": "internalGains.occupant.metabolicRate = 120"
-    },
-    {
-      "name": "Default plug load density",
-      "inputs": {},
-      "expected": "internalGains.plugLoads.density = 5"
+      "expected": "internal.activityLevel = 'Normal'"
     },
     {
       "name": "Default lighting density",
       "inputs": {},
-      "expected": "internalGains.lighting.density = 5"
+      "expected": "internal.lightingDensity = 1.5"
     },
     {
-      "name": "Default equipment total",
+      "name": "Default efficiency spec",
       "inputs": {},
-      "expected": "internalGains.equipment.total = 0"
+      "expected": "internal.efficiencySpec = 'Regular'"
+    },
+    {
+      "name": "Default elevators",
+      "inputs": {},
+      "expected": "internal.elevators = 'No Elevators'"
     }
   ],
   "references": [
-    { "source": "InternalGainsNodes.js:12-54 (input registration)" },
-    { "source": "SectionComplianceNodes.js (consumes d_64, d_66, g_67, d_68 for S09 compliance ratios)" }
+    { "source": "InternalGainsNodes.js (input registration)" },
+    { "source": "InternalGainsNodes.js (ACTIVITY_WATTS lookup, EQUIPMENT_LOADS_TABLE)" }
   ]
 }
