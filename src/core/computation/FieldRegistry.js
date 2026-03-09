@@ -564,7 +564,7 @@
     // ========================================================================
     {
       legacyId: "d_113",
-      semanticPath: "mechanical.heating.type",
+      semanticPath: "mechanical.heating.systemType",
       classification: "C",
       section: "S13",
       label: "Heating System Type"

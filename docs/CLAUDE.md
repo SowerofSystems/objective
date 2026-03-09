@@ -79,8 +79,9 @@ User Input → DOMBridge → MultiModelEngine → ComputationGraph → MultiMode
 |------|------|
 | `StateManager.js` | Legacy key-value store (bridged via LegacyAdapter, not authoritative) |
 | `Calculator.js` | Calls `ComputationIntegration.calculateAll()` — no longer does calculations itself |
-| `FieldManager.js` | Creates DOM elements (rows, cells, inputs) from section layout definitions |
-| `FileHandler.js` | CSV import/export, syncPatternASections for cascading dropdowns |
+| `FieldManager.js` | Creates DOM elements (rows, cells, inputs); `writeUserInput()` routes user input to SM with ref_ prefix awareness |
+| `FileHandler.js` | CSV import/export, syncPostImportUI for cascading dropdowns |
+| `ReferenceToggle.js` | Target/Reference mode switching, mirror functions, `isReferenceMode()` |
 | `Dependency.js` | Legacy dependency graph (visualized in Section 17) |
 | `ReferenceValues.js` | Building code minimum values by standard |
 | `ClimateValues.js` | Climate data (HDD, CDD, temperatures) by province/city |
@@ -95,13 +96,12 @@ User Input → DOMBridge → MultiModelEngine → ComputationGraph → MultiMode
 | `ClimateNodes.js` | HDD, CDD, temperatures, design conditions |
 | `BuildingInfoNodes.js` | Storeys, floor area, building type, standards |
 | `VolumeMetricsNodes.js` | Volume, ACH, NRL50, air leakage |
-| `EnvelopeNodes.js` | U-values, R-values, wall/roof/window areas |
-| `TransmissionLossNodes.js` | Weighted U-values, heat loss coefficients |
+| `TransmissionLossNodes.js` | U-values, R-values, weighted heat loss coefficients |
 | `VentilationNodes.js` | Ventilation rates, HRV efficiency, schedule factors |
 | `InternalGainsNodes.js` | Occupant/lighting/equipment loads |
 | `RadiantGainsNodes.js` | Solar gains, utilization factors |
 | `SpaceHeatingNodes.js` | Annual space heating energy |
-| `CoolingNodes.js` | Cooling energy, capacitance, CDD-based |
+| `CoolingNodes.js` | Psychrometric calculations, wet bulb, humidity |
 | `MechanicalNodes.js` | HVAC equipment, COP/HSPF, electrical demand |
 | `WaterHeatingNodes.js` | DHW energy |
 | `EnergyNodes.js` | TED, CED, TEDI, CEDI, EUI intensity metrics |
@@ -113,17 +113,20 @@ User Input → DOMBridge → MultiModelEngine → ComputationGraph → MultiMode
 | `OccupancyNodes.js` | Occupancy schedules and counts |
 | `RenewableNodes.js` | Renewable energy generation |
 | `ForestryNodes.js` | Wood carbon storage |
+| `SectionComplianceNodes.js` | Per-section compliance pass/fail (S08, S09, S11) |
 
 Each node module is formally documented in `docs/parnas-tables/` (127 JSON files specifying inputs, outputs, secrets, preconditions, and effects).
 
 ### Sections (`src/sections/Section*.js`)
 
-18 UI sections (S02–S21) define **layout only** — row definitions, cell configurations, dropdown options. Computation logic has been stripped out (Pattern A removal, ~15k lines removed). Sections use:
+18 UI sections (S02–S21) define **layout only** — row definitions, cell configurations, dropdown options. All computation logic and the ModeManager/TargetState/ReferenceState dual-state pattern ("Pattern A") have been fully removed. Sections use:
 
 - `sectionRows` object with cells keyed by column letter (c through n)
 - `ROW_ORDER` array for explicit row ordering
 - `createLayoutRow()` to convert to array format for FieldManager
 - `section-subheader` CSS class triggers gray background via `:has()` selector
+- `getModeAwareValue(fieldId)` utility to read mode-aware values from SM
+- Optional `onModeSwitch(mode)` callback for sections needing UI updates on mode switch (S07, S12, S13, S21)
 
 ### Dual-Model System
 
@@ -132,6 +135,10 @@ The calculator runs two models simultaneously:
 - **Reference model**: Code minimum values (auto-derived from `d_13` building standard selection)
 
 Field IDs: target uses base ID (`d_12`), reference uses `ref_` prefix (`ref_d_12`).
+
+**User input routing**: `FieldManager.writeUserInput()` checks `ReferenceToggle.isReferenceMode()` and prefixes `ref_` when in reference mode. LegacyAdapter dual-writes `ref_*` fields to both the target model (under `reference.*` path) and the reference model (under base path).
+
+**G-field independence**: G-fields (geometry) are stored per-model in MultiModelState. `populateReferenceModel()` copies from target but `ref_*` SM values (from CSV import or user edit) override.
 
 `REF_OUTPUT_TO_TARGET_INPUT` in ComputationIntegration.js maps reference model outputs to target model `reference.*` inputs for compliance ratio calculations.
 

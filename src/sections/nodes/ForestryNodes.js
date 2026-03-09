@@ -39,34 +39,19 @@
 
     graph.registerInputs(inputs);
 
-    // Wood emissions (intermediate calculation matching k_31)
-    // From Section04.js line 1286: k_31 = h_31 * 150
-    graph.registerNode({
-      id: "forestry.woodEmissions",
-      legacyId: "k_31",
-      section: "S04",
-      classification: "C",
-      dependencies: ["forestry.woodVolume"],
-      label: "Wood Emissions (kg CO2/yr)",
-      compute: (inputs) => {
-        const volume = parseNum(inputs["forestry.woodVolume"]);
-        // k_31 = d_31 * 150 (wood volume * emissions factor)
-        return volume * 150;
-      },
-    });
-
     // Annual wood offset (d_60) - used to offset emissions in S04
     // This is subtracted from emissions totals in Row 32
+    // k_31 (wood emissions) is registered in EmissionsNodes as emissions.target.wood
     graph.registerNode({
       id: "forestry.annualOffset",
       legacyId: "d_60",
       section: "S08",
       classification: "C",
-      dependencies: ["forestry.woodVolume", "forestry.woodEmissions"],
+      dependencies: ["forestry.woodVolume", "emissions.target.wood"],
       label: "Annual Wood Offset (MT CO2/yr)",
       compute: (inputs) => {
         const volume = parseNum(inputs["forestry.woodVolume"]);
-        const emissions = parseNum(inputs["forestry.woodEmissions"]);
+        const emissions = parseNum(inputs["emissions.target.wood"]);
         // d_60 = k_31 / 1000 (if d_31 > 0)
         return volume > 0 ? emissions / 1000 : 0;
       },

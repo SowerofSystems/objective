@@ -4,7 +4,7 @@
 
 The ComputationGraph system is now the **single source of truth** for all calculations. Legacy Section*.js calculateAll() functions are no longer used.
 
-## Current Status (February 16, 2026)
+## Current Status (March 9, 2026)
 
 | Metric | Status |
 |--------|--------|
@@ -12,10 +12,12 @@ The ComputationGraph system is now the **single source of truth** for all calcul
 | **Field Matches** | 632–635 exact matches per case study |
 | **Close Matches** | 0 |
 | **Mismatches** | 0 |
-| **Computed Nodes** | ~158 nodes in dependency graph |
+| **Node Modules** | 21 modules, ~290 registered inputs/nodes |
 | **Reference Model** | ✅ Correctly computes with wood offset = 0 |
 | **Cutover Status** | ✅ COMPLETE — ComputationGraph is authoritative |
-| **Legacy Code Strip** | ✅ ~15k lines of Pattern A computation removed |
+| **Legacy Code Strip** | ✅ Pattern A fully removed (~15k+ lines stripped) |
+| **Pattern A Purge** | ✅ ModeManager/TargetState/ReferenceState removed from all 18 sections |
+| **G-field Independence** | ✅ Per-model storage in MultiModelState |
 | **Undo/Revert** | ✅ Graph-aware (routes through LegacyAdapter) |
 
 ### Performance Benchmarks
@@ -44,58 +46,42 @@ Run benchmark: `node test/perf-test.cjs`
 
 ## Architecture
 
-### Dual Calculation Paths
+### User Input Flow (Post-Pattern A Purge)
 
-The system has TWO calculation paths optimized for different scenarios:
-
-#### 1. Incremental Updates (User Input Changes)
-
-When a user changes a single input, DOMBridge triggers incremental computation:
+User inputs flow directly from FieldManager through StateManager (bridged by LegacyAdapter) to the graph:
 
 ```
-User Input Change (single field)
+User Input (number, slider, dropdown)
        │
        ▼
 ┌──────────────────────────────────────────────────┐
-│ DOMBridge.handleValueChange()                    │
+│ FieldManager.writeUserInput()                    │
 │                                                  │
-│ 1. Capture input value                           │
-│ 2. Call engine.onValueChange(path, value, model) │
+│ 1. Check ReferenceToggle.isReferenceMode()       │
+│ 2. Prefix ref_ if in reference mode              │
+│ 3. SM.setValue(key, value, "user-modified")       │
 └──────────────────────────────────────────────────┘
        │
        ▼
 ┌──────────────────────────────────────────────────┐
-│ MultiModelEngine.onValueChange()                 │
+│ LegacyAdapter (intercepts SM.setValue)            │
 │                                                  │
-│ 1. Set value in MultiModelState                  │
-│ 2. Get downstream nodes from graph               │
-│ 3. Compute ONLY affected downstream nodes        │
-│ 4. Store computed values in MultiModelState      │
-│ 5. Notify listeners (DOMBridge updates DOM)      │
+│ 1. Map legacy fieldId → semantic path            │
+│ 2. Write to MultiModelState                      │
+│    ├─ ref_* → Target reference.* path            │
+│    │        + Reference base path (dual-write)   │
+│    └─ base  → Target base path                   │
+│ 3. Pass through to original SM.setValue           │
 └──────────────────────────────────────────────────┘
-       │
-       │ ~0.03ms (incremental - 5,631x faster than legacy)
-       ▼
-UI displays updated values
-```
-
-**Key Point**: Incremental updates bypass StateManager entirely. No wildcard listeners fire. Only affected downstream nodes are recomputed.
-
-#### 2. Full Recalculation (File Load, CSV Import)
-
-When loading a file or importing CSV, Calculator.calculateAll() runs:
-
-```
-File Load / CSV Import
        │
        ▼
 ┌──────────────────────────────────────────────────┐
-│ Calculator.calculateAll()                        │
+│ SM.notifyListeners → wildcard → calculateAll()   │
 │                                                  │
 │ 1. populateReferenceModel() - load ref values    │
 │ 2. computeAllWithReference() - compute both      │
-│    ├─ Compute Target model (~158 nodes)          │
-│    ├─ Compute Reference model (~158 nodes)       │
+│    ├─ Compute Target model (~290 nodes)          │
+│    ├─ Compute Reference model (~290 nodes)       │
 │    ├─ Force forestry.annualOffset = 0 for Ref    │
 │    └─ syncCrossModelValues() → Target ref_*      │
 │ 3. syncToStateManager() - outputs to SM          │
@@ -106,15 +92,23 @@ File Load / CSV Import
        │
        │ ~0.68ms full recalc / ~20-30ms with DOM stamp
        ▼
-UI displays all updated values
+UI displays updated values
 ```
+
+**Key changes from pre-purge architecture:**
+- No ModeManager/TargetState/ReferenceState intermediaries
+- `writeUserInput()` handles ref_ prefixing centrally (was per-section ModeManager.setValue)
+- `getModeAwareValue(fieldId)` utility reads mode-aware values from SM (replaces ModeManager.getValue)
+- ReferenceToggle mode switch notifies sections via `onModeSwitch()` callbacks (S07, S12, S13, S21)
+- G-fields stored independently per-model in MultiModelState (not shared/copied)
 
 ### System Components
 
 ```
 ┌─────────────────────────────────┐
 │ ComputationGraph                │
-│ - ~158 compute nodes            │
+│ - 21 node modules               │
+│ - ~290 registered inputs/nodes  │
 │ - Cached topological sort       │
 │ - Dependency tracking           │
 └─────────────────────────────────┘
@@ -122,20 +116,25 @@ UI displays all updated values
                 ▼
 ┌────────────────────────────────┐
 │ MultiModelState                │
-│ - G-fields (shared geometry)   │
+│ - G-fields (per-model since    │
+│   independence fix)             │
 │ - C-fields (per-model perf)    │
 │ - Target + Reference models    │
 └────────────────────────────────┘
                 │
                 │ sync to StateManager (listeners muted)
                 ▼
-┌─────────────────────┐          ┌────────────────────────────────┐
-│ StateManager        │          │ DOMBridge                      │
-│ - Legacy state      │          │ - stampAll() writes to DOM     │
-│ - LegacyAdapter     │          │ - Input capture → engine       │
-│   routes to graph   │          │ - NO calculations              │
-└─────────────────────┘          └────────────────────────────────┘
+┌─────────────────────────┐      ┌────────────────────────────────┐
+│ StateManager            │      │ DOMBridge                      │
+│ - Legacy state store    │      │ - stampAll() writes to DOM     │
+│ - LegacyAdapter         │      │ - stampInputsForMode() swaps   │
+│   routes to graph       │      │   input values on mode switch  │
+│ - writeUserInput()      │      │ - NO calculations              │
+│   handles ref_ prefix   │      │                                │
+└─────────────────────────┘      └────────────────────────────────┘
 ```
+
+**Post-Pattern A Purge:** Sections define UI layout only. No ModeManager, no TargetState/ReferenceState. User input routing and reference mode awareness are handled centrally by FieldManager (`writeUserInput`) and ReferenceToggle (`isReferenceMode`). Sections needing mode-switch UI updates expose an `onModeSwitch(mode)` callback.
 
 ## Key Files
 
@@ -157,22 +156,26 @@ UI displays all updated values
 | Module | Fields | Purpose |
 |--------|--------|---------|
 | `BuildingInfoNodes.js` | S02 | Building metadata, occupancy |
-| `ClimateNodes.js` | S03 | HDD, CDD, temperatures |
-| `EnergyNodes.js` | S04, S14, S15 | TED, CED, TEUI totals |
+| `ClimateNodes.js` | S03 | HDD, CDD, temperatures, CDD user override |
+| `CoolingNodes.js` | S03 | Psychrometric calculations (wet bulb, humidity) |
+| `EnergyNodes.js` | S04, S14, S15 | TED, CED, TEUI totals, peak loads |
+| `EmissionsNodes.js` | S05 | Carbon calculations |
+| `RenewableNodes.js` | S06 | PV, wind, offsets |
+| `WaterHeatingNodes.js` | S07 | DHW calculations + intermediates |
+| `AirQualityNodes.js` | S08 | Indoor air quality metrics |
+| `ForestryNodes.js` | S08 | Wood emissions + offset |
+| `OccupancyNodes.js` | S08 | Occupants, occupied hours |
+| `InternalGainsNodes.js` | S09 | Internal gains (occupants, plugs, lighting, equipment), seasonal splits |
+| `RadiantGainsNodes.js` | S10 | Solar gains, SHGC |
 | `TransmissionLossNodes.js` | S11, S12 | Envelope transmission losses |
 | `VolumeMetricsNodes.js` | S12 | Volume/surface metrics |
 | `MechanicalNodes.js` | S13 | Heating/cooling systems, COP |
 | `VentilationNodes.js` | S13 | Ventilation heat loss/gain |
-| `RadiantGainsNodes.js` | S10 | Solar gains, SHGC |
-| `KeyValuesNodes.js` | S01 | Summary metrics |
-| `EmissionsNodes.js` | S05 | Carbon calculations |
-| `ForestryNodes.js` | S08 | Wood emissions + offset |
-| `RenewableNodes.js` | S06 | PV, wind, offsets |
-| `WaterHeatingNodes.js` | S07 | DHW calculations + intermediates |
-| `OccupancyNodes.js` | S08 | Occupants, occupied hours |
-| `InternalGainsNodes.js` | S09 | Internal gains (occupants, plugs, lighting, equipment), seasonal splits |
-| `CoolingNodes.js` | S03 | Psychrometric calculations (wet bulb, humidity) |
 | `SpaceHeatingNodes.js` | S14 | Space heating demand calculations |
+| `KeyValuesNodes.js` | S01 | Summary metrics |
+| `ComplianceNodes.js` | S01 | Target vs reference compliance ratios |
+| `SectionComplianceNodes.js` | S08,S09,S11 | Per-section compliance pass/fail |
+| `F280ComplianceNodes.js` | S21 | CSA F280 peak load sizing, ROI |
 
 ---
 
@@ -358,6 +361,11 @@ The following fields are validated across all 12 case studies:
 | ~~Dead code in Section*.js~~ | ~~20 sections have unused calculateAll() functions~~ | ✅ Done — ~15k lines stripped |
 | ~~Test isolation~~ | ~~Secondary field carry-over between case studies~~ | ✅ Done — cross-model mapping fixed |
 | ~~Undo bug~~ | ~~Revert bypassed computation graph~~ | ✅ Done — routes through LegacyAdapter |
+| ~~Pattern A purge~~ | ~~ModeManager/TargetState/ReferenceState removal~~ | ✅ Done — all 18 sections |
+| ~~G-field independence~~ | ~~Per-model G-field storage in MultiModelState~~ | ✅ Done |
+| ~~S15 peak loads~~ | ~~Move S15 peak load calculations to graph~~ | ✅ Done |
+| ~~F280 legacy inputs~~ | ~~All F280 fields registered in F280ComplianceNodes~~ | ✅ Done |
+| ~~CDD override~~ | ~~User override for cities without CDD data~~ | ✅ Done — per-model |
 | DOMBridge reactive | Still using DOMBridge.stampAll() for DOM refresh | Future |
 | Computation caching | Cache node results for unchanged inputs | Future |
 | Semantic ID migration | Replace legacy d_XX IDs with semantic paths | Future |
@@ -381,7 +389,7 @@ The multi-model architecture is now working with Target and Reference models com
 ### How It Works
 
 1. **Two models exist**: Target (user's building) and Reference (code-minimum baseline)
-2. **G-fields shared**: Geometry and climate data identical between models
+2. **G-fields per-model**: Geometry and climate stored independently per model (since independence fix). `populateReferenceModel()` copies from target but `ref_*` SM values override (from CSV import or user edit)
 3. **C-fields separate**: Envelope and mechanical values differ per model
 4. **Cross-model sync**: Reference outputs copied to Target's `reference.*` inputs
 

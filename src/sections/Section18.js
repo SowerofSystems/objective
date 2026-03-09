@@ -24,24 +24,8 @@ window.TEUI.SectionModules.sect18 = (function () {
     };
   }
 
-  function calculateAll() {
-    console.log("[S18] calculateAll called - Parallel Coordinates refresh");
-    // Refresh parallel coordinates visualization
-    if (window.TEUI?.ParallelCoordinates?.refresh) {
-      window.TEUI.ParallelCoordinates.refresh();
-    }
-  }
-
-  function initializeEventHandlers() {
-    console.log("[S18] initializeEventHandlers called");
-    // ParallelCoordinates.js handles its own initialization via DOMContentLoaded
-    // (Similar pattern to Section17.js + Dependency.js)
-  }
-
   return {
     getFields: getFields,
     getLayout: getLayout,
-    calculateAll: calculateAll,
-    initializeEventHandlers: initializeEventHandlers,
   };
 })();
