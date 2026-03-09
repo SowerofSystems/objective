@@ -1,0 +1,231 @@
+{
+  "_meta": {
+    "description": "Transmission loss section registered input nodes. These user-editable values define U-values and areas for each envelope component. U-values are C-classified (model-specific) while areas are G-classified (shared geometry). Together they feed UA computation, R-Imperial conversion, and condensation risk nodes.",
+    "instances": [
+      {
+        "id": "transmissionLoss.walls.uValue",
+        "legacyId": "d_85",
+        "label": "Walls U-value",
+        "type": "number",
+        "unit": "W/m²K",
+        "classification": "C",
+        "default": 0.247
+      },
+      {
+        "id": "transmissionLoss.walls.area",
+        "legacyId": "g_85",
+        "label": "Walls Area (Gross)",
+        "type": "number",
+        "unit": "m²",
+        "classification": "G",
+        "default": 0
+      },
+      {
+        "id": "transmissionLoss.exposedFloors.uValue",
+        "legacyId": "d_86",
+        "label": "Exposed Floors U-value",
+        "type": "number",
+        "unit": "W/m²K",
+        "classification": "C",
+        "default": 0
+      },
+      {
+        "id": "transmissionLoss.exposedFloors.area",
+        "legacyId": "g_86",
+        "label": "Exposed Floors Area",
+        "type": "number",
+        "unit": "m²",
+        "classification": "G",
+        "default": 0
+      },
+      {
+        "id": "transmissionLoss.ceilings.uValue",
+        "legacyId": "d_87",
+        "label": "Ceilings U-value",
+        "type": "number",
+        "unit": "W/m²K",
+        "classification": "C",
+        "default": 0
+      },
+      {
+        "id": "transmissionLoss.ceilings.area",
+        "legacyId": "g_87",
+        "label": "Ceilings Area",
+        "type": "number",
+        "unit": "m²",
+        "classification": "G",
+        "default": 0
+      },
+      {
+        "id": "transmissionLoss.windows.uValue",
+        "legacyId": "d_88",
+        "label": "Windows U-value",
+        "type": "number",
+        "unit": "W/m²K",
+        "classification": "C",
+        "default": 0
+      },
+      {
+        "id": "transmissionLoss.windows.area",
+        "legacyId": "g_88",
+        "label": "Windows Area",
+        "type": "number",
+        "unit": "m²",
+        "classification": "G",
+        "default": 0
+      },
+      {
+        "id": "transmissionLoss.doors.uValue",
+        "legacyId": "d_89",
+        "label": "Doors U-value",
+        "type": "number",
+        "unit": "W/m²K",
+        "classification": "C",
+        "default": 0
+      },
+      {
+        "id": "transmissionLoss.doors.area",
+        "legacyId": "g_89",
+        "label": "Doors Area",
+        "type": "number",
+        "unit": "m²",
+        "classification": "G",
+        "default": 0
+      },
+      {
+        "id": "transmissionLoss.belowGradeWalls.uValue",
+        "legacyId": "d_90",
+        "label": "Below Grade Walls U-value",
+        "type": "number",
+        "unit": "W/m²K",
+        "classification": "C",
+        "default": 0
+      },
+      {
+        "id": "transmissionLoss.belowGradeWalls.area",
+        "legacyId": "g_90",
+        "label": "Below Grade Walls Area",
+        "type": "number",
+        "unit": "m²",
+        "classification": "G",
+        "default": 0
+      },
+      {
+        "id": "transmissionLoss.slabsOnGrade.uValue",
+        "legacyId": "d_91",
+        "label": "Slabs on Grade U-value",
+        "type": "number",
+        "unit": "W/m²K",
+        "classification": "C",
+        "default": 0
+      },
+      {
+        "id": "transmissionLoss.slabsOnGrade.area",
+        "legacyId": "g_91",
+        "label": "Slabs on Grade Area",
+        "type": "number",
+        "unit": "m²",
+        "classification": "G",
+        "default": 0
+      },
+      {
+        "id": "transmissionLoss.other.uValue",
+        "legacyId": "d_92",
+        "label": "Other U-value",
+        "type": "number",
+        "unit": "W/m²K",
+        "classification": "C",
+        "default": 0
+      },
+      {
+        "id": "transmissionLoss.other.area",
+        "legacyId": "g_92",
+        "label": "Other Area",
+        "type": "number",
+        "unit": "m²",
+        "classification": "G",
+        "default": 0
+      },
+      {
+        "id": "transmissionLoss.thermalBridging.uValue",
+        "legacyId": "d_95",
+        "label": "Thermal Bridging U-value",
+        "type": "number",
+        "unit": "W/m²K",
+        "classification": "C",
+        "default": 0
+      },
+      {
+        "id": "transmissionLoss.thermalBridging.area",
+        "legacyId": "g_95",
+        "label": "Thermal Bridging Area",
+        "type": "number",
+        "unit": "m²",
+        "classification": "G",
+        "default": 0
+      }
+    ]
+  },
+  "section": "S11",
+  "signature": {
+    "inputs": "These ARE the inputs (registered via graph.registerInput in TransmissionLossNodes.js)",
+    "output": "Values stored in MultiModelState, consumed by UA, R-Imperial, condensation risk, and F280 peak load calculations"
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "U-values >= 0",
+        "description": "Thermal transmittance cannot be negative"
+      },
+      {
+        "condition": "Areas >= 0",
+        "description": "Envelope component areas cannot be negative"
+      }
+    ],
+    "invariants": [
+      {
+        "condition": "U-values are C-classified, areas are G-classified",
+        "description": "U-values can differ between Target and Reference models; areas are shared geometry"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "Any U-value (d_85–d_92, d_95) changes",
+      "output": "Triggers recomputation of corresponding UA (h_*), R-Imperial (e_*), and condensation risk (cr_*) nodes",
+      "note": "C-classified, model-specific. Also affects downstream totals (h_93, h_94, h_96) and effective U-values (d_93, d_94, d_96)"
+    },
+    {
+      "condition": "Any area (g_85–g_92, g_95) changes",
+      "output": "Triggers recomputation of corresponding UA (h_*) and total area nodes (g_93, g_94, g_96)",
+      "note": "G-classified, affects all models. Also affects F280 peak envelope heat loss"
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "U-value is 0 for a component",
+      "handling": "UA = 0, R-Imperial = 0, condensation risk = 0",
+      "rationale": "Component not present or perfectly insulated (theoretical)"
+    },
+    {
+      "condition": "Area is 0 for a component",
+      "handling": "UA = 0, component contributes nothing to totals",
+      "rationale": "Component not present in building envelope"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Default walls U-value",
+      "inputs": {},
+      "expected": "transmissionLoss.walls.uValue = 0.247"
+    },
+    {
+      "name": "Default areas are zero",
+      "inputs": {},
+      "expected": "All area inputs = 0"
+    }
+  ],
+  "references": [
+    { "source": "TransmissionLossNodes.js:16-142 (input registration)" }
+  ]
+}

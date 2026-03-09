@@ -1,0 +1,133 @@
+{
+  "_meta": {
+    "description": "Internal gains section registered input nodes. These user-editable values define metabolic rate, plug load density, lighting density, and equipment gains. All are C-classified (model-specific) and feed into total internal gains, annual energy, and per-area intensity calculations.",
+    "instances": [
+      {
+        "id": "internalGains.occupant.metabolicRate",
+        "legacyId": "d_64",
+        "label": "Occupant Metabolic Rate",
+        "type": "number",
+        "unit": "W/person",
+        "classification": "C",
+        "default": 120,
+        "note": "Metabolic heat gain per occupant. Typical: 60W (sleeping) to 120W (light office work) to 300W (heavy activity)."
+      },
+      {
+        "id": "internalGains.plugLoads.density",
+        "legacyId": "d_66",
+        "label": "Plug Load Density",
+        "type": "number",
+        "unit": "W/m²",
+        "classification": "C",
+        "default": 5,
+        "note": "Electrical plug load density. Typical range: 2.5-15 W/m² depending on building type."
+      },
+      {
+        "id": "internalGains.lighting.density",
+        "legacyId": "g_67",
+        "label": "Lighting Power Density",
+        "type": "number",
+        "unit": "W/m²",
+        "classification": "C",
+        "default": 5,
+        "note": "Lighting power density. Code minimum varies by occupancy type (NBC Table 9.36.3.12)."
+      },
+      {
+        "id": "internalGains.equipment.total",
+        "legacyId": "d_68",
+        "label": "Equipment Internal Gains",
+        "type": "number",
+        "unit": "W",
+        "classification": "C",
+        "default": 0,
+        "note": "Additional equipment heat gains not captured in plug loads. Typically zero for residential."
+      }
+    ]
+  },
+  "section": "S09",
+  "signature": {
+    "inputs": "These ARE the inputs (registered via graph.registerInput in InternalGainsNodes.js)",
+    "output": "Values stored in MultiModelState, consumed by internal gains computed nodes and section compliance ratios"
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "metabolicRate >= 0",
+        "description": "Metabolic rate cannot be negative"
+      },
+      {
+        "condition": "plugLoads.density >= 0",
+        "description": "Plug load density cannot be negative"
+      },
+      {
+        "condition": "lighting.density >= 0",
+        "description": "Lighting density cannot be negative"
+      },
+      {
+        "condition": "equipment.total >= 0",
+        "description": "Equipment gains cannot be negative"
+      }
+    ],
+    "invariants": []
+  },
+  "behavior": [
+    {
+      "condition": "d_64 (metabolic rate) changes",
+      "output": "Triggers recomputation of occupant total gains (h_64), per-area occupant gains (g_64), subtotal (h_69), annual energy (h_70)",
+      "note": "C-classified, model-specific. Also triggers S09 compliance ratio (m_64)"
+    },
+    {
+      "condition": "d_66 (plug load density) changes",
+      "output": "Triggers recomputation of plug load total (h_66), subtotal (h_69), annual energy (h_70)",
+      "note": "C-classified. Also triggers S09 compliance ratio (m_66)"
+    },
+    {
+      "condition": "g_67 (lighting density) changes",
+      "output": "Triggers recomputation of lighting total (h_67), subtotal (h_69), annual energy (h_70)",
+      "note": "C-classified. Also triggers S09 compliance ratio (m_67)"
+    },
+    {
+      "condition": "d_68 (equipment total) changes",
+      "output": "Triggers recomputation of equipment per-area (g_68), subtotal (h_69), annual energy (h_70)",
+      "note": "C-classified. Also triggers S09 compliance ratio (m_68)"
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "All internal gain inputs are 0",
+      "handling": "Subtotal = 0, annual energy = 0",
+      "rationale": "Valid for unoccupied or minimal-gain buildings"
+    },
+    {
+      "condition": "Equipment total entered in W while plug loads in W/m²",
+      "handling": "Equipment uses total watts (not density), per-area is computed as total/floorArea",
+      "rationale": "Equipment may not scale linearly with floor area (e.g., a single elevator motor)"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Default metabolic rate",
+      "inputs": {},
+      "expected": "internalGains.occupant.metabolicRate = 120"
+    },
+    {
+      "name": "Default plug load density",
+      "inputs": {},
+      "expected": "internalGains.plugLoads.density = 5"
+    },
+    {
+      "name": "Default lighting density",
+      "inputs": {},
+      "expected": "internalGains.lighting.density = 5"
+    },
+    {
+      "name": "Default equipment total",
+      "inputs": {},
+      "expected": "internalGains.equipment.total = 0"
+    }
+  ],
+  "references": [
+    { "source": "InternalGainsNodes.js:12-54 (input registration)" },
+    { "source": "SectionComplianceNodes.js (consumes d_64, d_66, g_67, d_68 for S09 compliance ratios)" }
+  ]
+}

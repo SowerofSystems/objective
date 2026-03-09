@@ -1,0 +1,141 @@
+{
+  "_meta": {
+    "description": "Radiant gains section registered input nodes. 31 inputs organized by direction (N/E/S/W) across 7 categories: SHGC, window area, solar radiation, shading factor, heating utilization, cooling utilization, and directional heating gains. Plus season fractions and window-to-wall ratio.",
+    "instances": {
+      "shgc": [
+        { "id": "radiantGains.shgc.north", "legacyId": "d_71", "label": "SHGC North", "type": "number", "unit": "ratio", "classification": "C", "default": 0.25 },
+        { "id": "radiantGains.shgc.east", "legacyId": "d_72", "label": "SHGC East", "type": "number", "unit": "ratio", "classification": "C", "default": 0.25 },
+        { "id": "radiantGains.shgc.south", "legacyId": "d_73", "label": "SHGC South", "type": "number", "unit": "ratio", "classification": "C", "default": 0.25 },
+        { "id": "radiantGains.shgc.west", "legacyId": "d_74", "label": "SHGC West", "type": "number", "unit": "ratio", "classification": "C", "default": 0.25 }
+      ],
+      "windowArea": [
+        { "id": "radiantGains.windowArea.north", "legacyId": "g_71", "label": "Window Area North", "type": "number", "unit": "m²", "classification": "G", "default": 0 },
+        { "id": "radiantGains.windowArea.east", "legacyId": "g_72", "label": "Window Area East", "type": "number", "unit": "m²", "classification": "G", "default": 0 },
+        { "id": "radiantGains.windowArea.south", "legacyId": "g_73", "label": "Window Area South", "type": "number", "unit": "m²", "classification": "G", "default": 0 },
+        { "id": "radiantGains.windowArea.west", "legacyId": "g_74", "label": "Window Area West", "type": "number", "unit": "m²", "classification": "G", "default": 0 }
+      ],
+      "solarRadiation": [
+        { "id": "radiantGains.solarRadiation.north", "legacyId": "h_71", "label": "Solar Radiation North", "type": "number", "unit": "kWh/m²·yr", "classification": "G", "default": 0 },
+        { "id": "radiantGains.solarRadiation.east", "legacyId": "h_72", "label": "Solar Radiation East", "type": "number", "unit": "kWh/m²·yr", "classification": "G", "default": 0 },
+        { "id": "radiantGains.solarRadiation.south", "legacyId": "h_73", "label": "Solar Radiation South", "type": "number", "unit": "kWh/m²·yr", "classification": "G", "default": 0 },
+        { "id": "radiantGains.solarRadiation.west", "legacyId": "h_74", "label": "Solar Radiation West", "type": "number", "unit": "kWh/m²·yr", "classification": "G", "default": 0 }
+      ],
+      "shadingFactor": [
+        { "id": "radiantGains.shadingFactor.north", "legacyId": "j_71", "label": "Shading Factor North", "type": "number", "unit": "ratio", "classification": "C", "default": 1 },
+        { "id": "radiantGains.shadingFactor.east", "legacyId": "j_72", "label": "Shading Factor East", "type": "number", "unit": "ratio", "classification": "C", "default": 1 },
+        { "id": "radiantGains.shadingFactor.south", "legacyId": "j_73", "label": "Shading Factor South", "type": "number", "unit": "ratio", "classification": "C", "default": 1 },
+        { "id": "radiantGains.shadingFactor.west", "legacyId": "j_74", "label": "Shading Factor West", "type": "number", "unit": "ratio", "classification": "C", "default": 1 }
+      ],
+      "heatingUtilization": [
+        { "id": "radiantGains.heatingUtilization.north", "legacyId": "l_71", "label": "Heating Utilization North", "type": "number", "unit": "ratio", "classification": "C", "default": 1 },
+        { "id": "radiantGains.heatingUtilization.east", "legacyId": "l_72", "label": "Heating Utilization East", "type": "number", "unit": "ratio", "classification": "C", "default": 1 },
+        { "id": "radiantGains.heatingUtilization.south", "legacyId": "l_73", "label": "Heating Utilization South", "type": "number", "unit": "ratio", "classification": "C", "default": 1 },
+        { "id": "radiantGains.heatingUtilization.west", "legacyId": "l_74", "label": "Heating Utilization West", "type": "number", "unit": "ratio", "classification": "C", "default": 1 }
+      ],
+      "coolingUtilization": [
+        { "id": "radiantGains.coolingUtilization.north", "legacyId": "n_71", "label": "Cooling Utilization North", "type": "number", "unit": "ratio", "classification": "C", "default": 1 },
+        { "id": "radiantGains.coolingUtilization.east", "legacyId": "n_72", "label": "Cooling Utilization East", "type": "number", "unit": "ratio", "classification": "C", "default": 1 },
+        { "id": "radiantGains.coolingUtilization.south", "legacyId": "n_73", "label": "Cooling Utilization South", "type": "number", "unit": "ratio", "classification": "C", "default": 1 },
+        { "id": "radiantGains.coolingUtilization.west", "legacyId": "n_74", "label": "Cooling Utilization West", "type": "number", "unit": "ratio", "classification": "C", "default": 1 }
+      ],
+      "seasonFractions": [
+        { "id": "radiantGains.heatingSeasonFraction", "legacyId": "l_75", "label": "Heating Season Radiation Fraction", "type": "number", "unit": "ratio", "classification": "G", "default": 0.7, "note": "Fraction of annual solar radiation occurring during heating season" },
+        { "id": "radiantGains.coolingSeasonFraction", "legacyId": "n_75", "label": "Cooling Season Radiation Fraction", "type": "number", "unit": "ratio", "classification": "G", "default": 0.3, "note": "Typically 1 - heatingSeasonFraction" }
+      ],
+      "directionalHeatingGains": [
+        { "id": "radiantGains.heatingGain.north", "legacyId": "l_76_n", "label": "North Heating Season Solar Gain", "type": "number", "unit": "kWh/yr", "classification": "C", "default": 0 },
+        { "id": "radiantGains.heatingGain.east", "legacyId": "l_76_e", "label": "East Heating Season Solar Gain", "type": "number", "unit": "kWh/yr", "classification": "C", "default": 0 },
+        { "id": "radiantGains.heatingGain.south", "legacyId": "l_76_s", "label": "South Heating Season Solar Gain", "type": "number", "unit": "kWh/yr", "classification": "C", "default": 0 },
+        { "id": "radiantGains.heatingGain.west", "legacyId": "l_76_w", "label": "West Heating Season Solar Gain", "type": "number", "unit": "kWh/yr", "classification": "C", "default": 0 }
+      ],
+      "windowToWallRatio": [
+        { "id": "radiantGains.windowToWallRatio", "legacyId": "g_79", "label": "Window-to-Wall Ratio", "type": "number", "unit": "ratio", "classification": "G", "default": 0, "note": "User override. If 0, computed from window areas and wall areas." }
+      ]
+    }
+  },
+  "section": "S10",
+  "signature": {
+    "inputs": "These ARE the inputs (registered via graph.registerInput in RadiantGainsNodes.js)",
+    "output": "Values stored in MultiModelState, consumed by directional gain, total solar gain, utilized gain, and WWR calculations"
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "SHGC in [0, 1]",
+        "description": "Solar heat gain coefficient is a ratio from 0 (opaque) to 1 (fully transparent)"
+      },
+      {
+        "condition": "Window areas >= 0",
+        "description": "Window areas cannot be negative"
+      },
+      {
+        "condition": "Shading factors in [0, 1]",
+        "description": "1 = no shading, 0 = fully shaded"
+      },
+      {
+        "condition": "Utilization factors in [0, 1]",
+        "description": "Fraction of solar gains usefully captured"
+      },
+      {
+        "condition": "heatingSeasonFraction + coolingSeasonFraction = 1",
+        "description": "Season fractions should sum to 1"
+      }
+    ],
+    "invariants": []
+  },
+  "behavior": [
+    {
+      "condition": "SHGC or window area or radiation or shading changes",
+      "output": "Triggers recomputation of directional gain (k_71-k_74), total solar gain (k_75), season gains (l_75_calc, n_75_calc)",
+      "note": "Directional gain = SHGC × area × radiation × shading"
+    },
+    {
+      "condition": "Utilization factors change",
+      "output": "Triggers recomputation of heating/cooling utilized gains (l_76, n_76)",
+      "note": "Utilized = sum(directional × utilization) × seasonFraction"
+    },
+    {
+      "condition": "Season fractions change",
+      "output": "Triggers recomputation of heating/cooling season gains and utilized gains",
+      "note": "G-classified, affects all models"
+    },
+    {
+      "condition": "Window-to-wall ratio override (g_79) changes",
+      "output": "Triggers recomputation of effective WWR (g_79_eff)",
+      "note": "If 0, falls back to computed WWR from window areas / wall area"
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "All window areas are 0",
+      "handling": "All solar gains = 0, computed WWR = 0",
+      "rationale": "Building has no glazing"
+    },
+    {
+      "condition": "WWR override = 0",
+      "handling": "Uses computed WWR from directional window areas / gross wall area",
+      "rationale": "0 is sentinel for 'not overridden'"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Default SHGC values",
+      "inputs": {},
+      "expected": "All SHGC = 0.25"
+    },
+    {
+      "name": "Default shading factors",
+      "inputs": {},
+      "expected": "All shading factors = 1 (no shading)"
+    },
+    {
+      "name": "Default season fractions",
+      "inputs": {},
+      "expected": "heatingSeasonFraction = 0.7, coolingSeasonFraction = 0.3"
+    }
+  ],
+  "references": [
+    { "source": "RadiantGainsNodes.js:12-273 (input registration)" },
+    { "source": "SectionComplianceNodes.js (consumes ref_k_75, ref_l_76, ref_n_76 for S10 compliance)" }
+  ]
+}

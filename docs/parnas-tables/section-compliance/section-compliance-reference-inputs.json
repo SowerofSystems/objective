@@ -1,0 +1,204 @@
+{
+  "_meta": {
+    "description": "Section compliance reference input nodes. These 18 inputs are injected from the Reference model via the REF_OUTPUT_TO_TARGET_INPUT mapping pattern. They enable per-section compliance ratio calculations (S07, S08, S09, S10, S11, S12, S21) by comparing Target model values against Reference model values.",
+    "instances": {
+      "s08_airQuality": [
+        {
+          "id": "reference.airQuality.ashrae622.rate",
+          "legacyId": "ref_h_55",
+          "label": "Reference ASHRAE 62.2 Rate",
+          "type": "number",
+          "classification": "C",
+          "default": 0
+        },
+        {
+          "id": "reference.airQuality.nbcMinRate",
+          "legacyId": "ref_h_56",
+          "label": "Reference NBC Minimum Rate",
+          "type": "number",
+          "classification": "C",
+          "default": 0
+        }
+      ],
+      "s09_internalGains": [
+        {
+          "id": "reference.internalGains.occupant.metabolicRate",
+          "legacyId": "ref_d_64",
+          "label": "Reference Occupant Metabolic Rate",
+          "type": "number",
+          "classification": "C",
+          "default": 0
+        },
+        {
+          "id": "reference.internalGains.plugLoads.density",
+          "legacyId": "ref_d_66",
+          "label": "Reference Plug Load Density",
+          "type": "number",
+          "classification": "C",
+          "default": 0
+        },
+        {
+          "id": "reference.internalGains.lighting.density",
+          "legacyId": "ref_g_67",
+          "label": "Reference Lighting Power Density",
+          "type": "number",
+          "classification": "C",
+          "default": 0
+        },
+        {
+          "id": "reference.internalGains.equipment.total",
+          "legacyId": "ref_d_68",
+          "label": "Reference Equipment Internal Gains",
+          "type": "number",
+          "classification": "C",
+          "default": 0
+        }
+      ],
+      "s11_transmissionLoss": [
+        {
+          "id": "reference.transmissionLoss.totalUA.overall",
+          "legacyId": "ref_h_96",
+          "label": "Reference Overall Total UA",
+          "type": "number",
+          "classification": "C",
+          "default": 0
+        },
+        {
+          "id": "reference.transmissionLoss.effectiveUValue.overall",
+          "legacyId": "ref_d_96",
+          "label": "Reference Overall Effective U-value",
+          "type": "number",
+          "classification": "C",
+          "default": 0
+        }
+      ],
+      "s07_waterHeating": [
+        {
+          "id": "reference.waterHeating.annualDhwDemand",
+          "legacyId": "ref_h_48",
+          "label": "Reference Annual DHW Demand",
+          "type": "number",
+          "classification": "C",
+          "default": 0
+        },
+        {
+          "id": "reference.waterHeating.warmWaterFraction",
+          "legacyId": "ref_h_50",
+          "label": "Reference Warm Water Fraction",
+          "type": "number",
+          "classification": "C",
+          "default": 0
+        }
+      ],
+      "s12_ventilation": [
+        {
+          "id": "reference.ventilation.totalRate",
+          "legacyId": "ref_d_100",
+          "label": "Reference Total Ventilation Rate",
+          "type": "number",
+          "classification": "C",
+          "default": 0
+        },
+        {
+          "id": "reference.ventilation.hrvEfficiency",
+          "legacyId": "ref_h_100",
+          "label": "Reference HRV Efficiency",
+          "type": "number",
+          "classification": "C",
+          "default": 0
+        }
+      ],
+      "s10_radiantGains": [
+        {
+          "id": "reference.radiantGains.totalSolarGain",
+          "legacyId": "ref_k_75",
+          "label": "Reference Total Solar Gain",
+          "type": "number",
+          "classification": "C",
+          "default": 0
+        },
+        {
+          "id": "reference.radiantGains.heatingUtilizedGain",
+          "legacyId": "ref_l_76",
+          "label": "Reference Heating Utilized Gain",
+          "type": "number",
+          "classification": "C",
+          "default": 0
+        },
+        {
+          "id": "reference.radiantGains.coolingUtilizedGain",
+          "legacyId": "ref_n_76",
+          "label": "Reference Cooling Utilized Gain",
+          "type": "number",
+          "classification": "C",
+          "default": 0
+        }
+      ],
+      "s21_energyCompliance": [
+        {
+          "id": "reference.energy.tedi.annual",
+          "legacyId": "ref_h_127",
+          "label": "Reference Annual TEDI",
+          "type": "number",
+          "classification": "C",
+          "default": 0
+        },
+        {
+          "id": "reference.energy.cedi",
+          "legacyId": "ref_h_128",
+          "label": "Reference CEDI",
+          "type": "number",
+          "classification": "C",
+          "default": 0
+        },
+        {
+          "id": "reference.energy.eui",
+          "legacyId": "ref_f_133",
+          "label": "Reference EUI",
+          "type": "number",
+          "classification": "C",
+          "default": 0
+        }
+      ]
+    }
+  },
+  "section": "S08/S09/S10/S11/S12/S07/S21",
+  "signature": {
+    "inputs": "These ARE the inputs (registered via graph.registerInput in SectionComplianceNodes.js). Populated by REF_OUTPUT_TO_TARGET_INPUT mapping.",
+    "output": "Values stored in Target model's MultiModelState, consumed by per-section compliance ratio computations"
+  },
+  "domain": {
+    "preconditions": [],
+    "invariants": [
+      {
+        "condition": "Values are always 0 until Reference model computes",
+        "description": "Reference inputs start at default 0 and are populated after Reference model computation completes"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "Reference model computes and REF_OUTPUT_TO_TARGET_INPUT copies values",
+      "output": "Target model recomputes section compliance ratios comparing target values to these reference inputs",
+      "note": "All ratios follow pattern: refValue > 0 ? targetValue / refValue : 1"
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "Reference value is 0",
+      "handling": "Compliance ratio defaults to 1",
+      "rationale": "Avoid division by zero; 1 means compliant when reference has no value"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Default values are all zero",
+      "inputs": {},
+      "expected": "All reference.* inputs = 0"
+    }
+  ],
+  "references": [
+    { "source": "SectionComplianceNodes.js:15-168 (input registration)" },
+    { "source": "ComputationIntegration.js (REF_OUTPUT_TO_TARGET_INPUT mapping)" }
+  ]
+}

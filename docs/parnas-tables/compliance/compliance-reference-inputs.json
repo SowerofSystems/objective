@@ -1,0 +1,109 @@
+{
+  "_meta": {
+    "description": "Compliance section reference input nodes. These 7 inputs are injected from the Reference model via the REF_OUTPUT_TO_TARGET_INPUT mapping pattern. After the Reference model computes, its output values are copied to these Target model inputs, enabling cross-model compliance ratio calculations.",
+    "instances": [
+      {
+        "id": "reference.mechanical.heating.hspf",
+        "legacyId": "ref_f_113",
+        "label": "Reference HSPF",
+        "type": "number",
+        "classification": "C",
+        "default": 0,
+        "note": "Reference model's heating seasonal performance factor. Mapped from Reference output mechanical.heating.hspf."
+      },
+      {
+        "id": "reference.mechanical.heating.afue",
+        "legacyId": "ref_j_115",
+        "label": "Reference AFUE",
+        "type": "number",
+        "classification": "C",
+        "default": 0,
+        "note": "Reference model's annual fuel utilization efficiency. Mapped from Reference output mechanical.heating.afue."
+      },
+      {
+        "id": "reference.mechanical.cooling.cop",
+        "legacyId": "ref_j_116",
+        "label": "Reference Cooling COP",
+        "type": "number",
+        "classification": "C",
+        "default": 0,
+        "note": "Reference model's cooling coefficient of performance. Mapped from Reference output mechanical.cooling.cop."
+      },
+      {
+        "id": "reference.mechanical.cooling.intensity",
+        "legacyId": "ref_f_117",
+        "label": "Reference Cooling Intensity",
+        "type": "number",
+        "classification": "C",
+        "default": 0,
+        "note": "Reference model's cooling energy intensity. Used INVERTED in compliance ratio (ref/target instead of target/ref)."
+      },
+      {
+        "id": "reference.mechanical.ventilation.sre",
+        "legacyId": "ref_d_118",
+        "label": "Reference SRE",
+        "type": "number",
+        "classification": "C",
+        "default": 0,
+        "note": "Reference model's sensible recovery efficiency. Mapped from Reference output mechanical.ventilation.sre."
+      },
+      {
+        "id": "reference.mechanical.ventilation.rate",
+        "legacyId": "ref_d_119",
+        "label": "Reference Ventilation Rate",
+        "type": "number",
+        "classification": "C",
+        "default": 0,
+        "note": "Reference model's ventilation rate. Mapped from Reference output mechanical.ventilation.rate."
+      },
+      {
+        "id": "reference.mechanical.cooling.freeCoolingDays",
+        "legacyId": "ref_m_124",
+        "label": "Reference Free Cooling Days",
+        "type": "number",
+        "classification": "C",
+        "default": 0,
+        "note": "Reference model's free cooling days. Used in pass/fail compliance check (target >= ref)."
+      }
+    ]
+  },
+  "section": "S13",
+  "signature": {
+    "inputs": "These ARE the inputs (registered via graph.registerInput in ComplianceNodes.js). Populated by REF_OUTPUT_TO_TARGET_INPUT mapping.",
+    "output": "Values stored in Target model's MultiModelState, consumed by compliance ratio computations"
+  },
+  "domain": {
+    "preconditions": [],
+    "invariants": [
+      {
+        "condition": "Values are always 0 until Reference model computes",
+        "description": "Reference inputs start at default 0 and are populated after Reference model computation completes"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "Reference model computes and REF_OUTPUT_TO_TARGET_INPUT copies values",
+      "output": "Target model is recomputed with reference values, enabling compliance ratio calculation",
+      "note": "This is the cross-model comparison pattern described in README.md"
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "Reference value is 0 (equipment not specified in reference)",
+      "handling": "Compliance ratio defaults to 1 (ref > 0 ? target/ref : 1)",
+      "rationale": "Avoid division by zero; ratio of 1 means compliant when reference has no value"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Default values are all zero",
+      "inputs": {},
+      "expected": "All reference.* inputs = 0"
+    }
+  ],
+  "references": [
+    { "source": "ComplianceNodes.js:15-72 (input registration)" },
+    { "source": "ComputationIntegration.js (REF_OUTPUT_TO_TARGET_INPUT mapping)" }
+  ]
+}

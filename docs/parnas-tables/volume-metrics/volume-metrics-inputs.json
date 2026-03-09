@@ -1,0 +1,109 @@
+{
+  "_meta": {
+    "description": "Volume metrics section registered input nodes. These user-editable values define air tightness and building perimeter parameters. ACH@50Pa and NRL50 are C-classified (model-specific, different for Target vs Reference), while perimeter is G-classified (shared geometry).",
+    "instances": [
+      {
+        "id": "volumeMetrics.airtightness.ach",
+        "legacyId": "g_106",
+        "label": "Air Changes per Hour at 50 Pa",
+        "type": "number",
+        "unit": "ACH@50Pa",
+        "classification": "C",
+        "default": 3.5,
+        "note": "Blower door test result. NBC 9.36 default = 3.5 ACH@50Pa if no test performed."
+      },
+      {
+        "id": "volumeMetrics.airtightness.nrl50",
+        "legacyId": "d_103",
+        "label": "Normalized Leakage Rate at 75 Pa",
+        "type": "number",
+        "unit": "L/s/m²@75Pa",
+        "classification": "C",
+        "default": 0.25,
+        "note": "Commercial air tightness metric (Part 3 buildings). Expressed per unit envelope area."
+      },
+      {
+        "id": "volumeMetrics.envelope.perimeter",
+        "legacyId": "g_103",
+        "label": "Building Perimeter",
+        "type": "number",
+        "unit": "m",
+        "classification": "G",
+        "default": 0,
+        "note": "Perimeter length of the building footprint. Used for slab edge loss calculations and envelope area computation."
+      }
+    ]
+  },
+  "section": "S11",
+  "signature": {
+    "inputs": "These ARE the inputs (registered via graph.registerInput in VolumeMetricsNodes.js)",
+    "output": "Values stored in MultiModelState, consumed by volume, envelope area, infiltration, and ventilation calculations"
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "ach >= 0",
+        "description": "Air changes per hour cannot be negative"
+      },
+      {
+        "condition": "nrl50 >= 0",
+        "description": "Normalized leakage rate cannot be negative"
+      },
+      {
+        "condition": "perimeter >= 0",
+        "description": "Building perimeter cannot be negative"
+      }
+    ],
+    "invariants": []
+  },
+  "behavior": [
+    {
+      "condition": "g_106 (ACH@50Pa) changes",
+      "output": "Triggers recomputation of flow rate at 50Pa (h_106), leakage area (d_106), natural ACH (d_104), volumetric infiltration rate (h_104)",
+      "note": "C-classified, model-specific. Key air tightness metric for Part 9 residential."
+    },
+    {
+      "condition": "d_103 (NRL50) changes",
+      "output": "Triggers recomputation of infiltration annual rate (h_103) and per-area rate (g_103_calc)",
+      "note": "C-classified, model-specific. Key air tightness metric for Part 3 commercial."
+    },
+    {
+      "condition": "g_103 (perimeter) changes",
+      "output": "Triggers recomputation of envelope total area (d_102) and downstream surface-to-volume ratio (g_101)",
+      "note": "G-classified, affects all models."
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "ACH@50Pa = 0",
+      "handling": "Flow rate = 0, leakage area = 0, natural ACH = 0",
+      "rationale": "Perfectly sealed building (theoretical). Ventilation still operates mechanically."
+    },
+    {
+      "condition": "Perimeter = 0",
+      "handling": "Envelope area = 2 × floorArea (no walls), surface-to-volume ratio based only on floor/ceiling",
+      "rationale": "Edge case for underground or fully interior spaces"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Default ACH at 50Pa",
+      "inputs": {},
+      "expected": "volumeMetrics.airtightness.ach = 3.5"
+    },
+    {
+      "name": "Default NRL50",
+      "inputs": {},
+      "expected": "volumeMetrics.airtightness.nrl50 = 0.25"
+    },
+    {
+      "name": "Default perimeter",
+      "inputs": {},
+      "expected": "volumeMetrics.envelope.perimeter = 0"
+    }
+  ],
+  "references": [
+    { "source": "VolumeMetricsNodes.js:12-42 (input registration)" },
+    { "source": "VolumeMetricsNodes.js (computed nodes consume these inputs for volume, envelope, and infiltration)" }
+  ]
+}

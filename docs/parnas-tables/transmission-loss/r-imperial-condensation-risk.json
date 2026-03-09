@@ -1,0 +1,171 @@
+{
+  "_meta": {
+    "description": "R-Imperial (RSI to R-value) conversion and condensation risk assessment nodes. Each envelope component has both an R-Imperial node (converting metric U-value to imperial R-value) and a condensation risk node (estimating surface condensation probability based on TBS guidelines). Total/effective values also have corresponding R-Imperial and condensation risk nodes.",
+    "instances": {
+      "rImperial": [
+        { "id": "transmissionLoss.walls.rImperial", "legacyId": "e_85", "label": "Walls R-Imperial" },
+        { "id": "transmissionLoss.exposedFloors.rImperial", "legacyId": "e_86", "label": "Exposed Floors R-Imperial" },
+        { "id": "transmissionLoss.ceilings.rImperial", "legacyId": "e_87", "label": "Ceilings R-Imperial" },
+        { "id": "transmissionLoss.windows.rImperial", "legacyId": "e_88", "label": "Windows R-Imperial" },
+        { "id": "transmissionLoss.doors.rImperial", "legacyId": "e_89", "label": "Doors R-Imperial" },
+        { "id": "transmissionLoss.belowGradeWalls.rImperial", "legacyId": "e_90", "label": "Below Grade Walls R-Imperial" },
+        { "id": "transmissionLoss.slabsOnGrade.rImperial", "legacyId": "e_91", "label": "Slabs on Grade R-Imperial" },
+        { "id": "transmissionLoss.other.rImperial", "legacyId": "e_92", "label": "Other R-Imperial" },
+        { "id": "transmissionLoss.thermalBridging.rImperial", "legacyId": "e_95", "label": "Thermal Bridging R-Imperial" },
+        { "id": "transmissionLoss.totalRImperial.opaque", "legacyId": "e_93", "label": "Opaque Total R-Imperial" },
+        { "id": "transmissionLoss.totalRImperial.fenestration", "legacyId": "e_94", "label": "Fenestration Total R-Imperial" },
+        { "id": "transmissionLoss.totalRImperial.overall", "legacyId": "e_96", "label": "Overall Total R-Imperial" }
+      ],
+      "condensationRisk": [
+        { "id": "transmissionLoss.walls.condensationRisk", "legacyId": "cr_85", "label": "Walls Condensation Risk" },
+        { "id": "transmissionLoss.exposedFloors.condensationRisk", "legacyId": "cr_86", "label": "Exposed Floors Condensation Risk" },
+        { "id": "transmissionLoss.ceilings.condensationRisk", "legacyId": "cr_87", "label": "Ceilings Condensation Risk" },
+        { "id": "transmissionLoss.windows.condensationRisk", "legacyId": "cr_88", "label": "Windows Condensation Risk" },
+        { "id": "transmissionLoss.doors.condensationRisk", "legacyId": "cr_89", "label": "Doors Condensation Risk" },
+        { "id": "transmissionLoss.belowGradeWalls.condensationRisk", "legacyId": "cr_90", "label": "Below Grade Walls Condensation Risk" },
+        { "id": "transmissionLoss.slabsOnGrade.condensationRisk", "legacyId": "cr_91", "label": "Slabs on Grade Condensation Risk" },
+        { "id": "transmissionLoss.other.condensationRisk", "legacyId": "cr_92", "label": "Other Condensation Risk" },
+        { "id": "transmissionLoss.thermalBridging.condensationRisk", "legacyId": "cr_95", "label": "Thermal Bridging Condensation Risk" },
+        { "id": "transmissionLoss.totalCondensationRisk.opaque", "legacyId": "cr_93", "label": "Opaque Total Condensation Risk" },
+        { "id": "transmissionLoss.totalCondensationRisk.fenestration", "legacyId": "cr_94", "label": "Fenestration Total Condensation Risk" },
+        { "id": "transmissionLoss.totalCondensationRisk.overall", "legacyId": "cr_96", "label": "Overall Total Condensation Risk" }
+      ]
+    }
+  },
+  "section": "S11",
+  "classification": "C",
+  "signature": {
+    "inputs": [
+      {
+        "name": "transmissionLoss.{component}.uValue",
+        "type": "number",
+        "unit": "W/m²K",
+        "description": "U-value of the envelope component (for individual nodes)"
+      },
+      {
+        "name": "transmissionLoss.effectiveUValue.{category}",
+        "type": "number",
+        "unit": "W/m²K",
+        "description": "Effective U-value for opaque/fenestration/overall (for total nodes)"
+      }
+    ],
+    "output": {
+      "rImperial": { "type": "number", "unit": "ft²·°F·h/BTU" },
+      "condensationRisk": { "type": "number", "unit": "%" }
+    }
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "U-value >= 0",
+        "description": "Thermal transmittance cannot be negative"
+      }
+    ],
+    "invariants": [
+      {
+        "condition": "R-Imperial conversion factor = 5.678",
+        "description": "Standard RSI to R-value conversion: R = (1/U) × 5.678"
+      },
+      {
+        "condition": "Condensation risk RSI threshold = 3.53",
+        "description": "TBS guideline RSI threshold for condensation risk assessment (m²K/W)"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "R-Imperial: U-value > 0",
+      "output": "(1 / uValue) × 5.678",
+      "note": "Converts metric RSI (1/U) to imperial R-value"
+    },
+    {
+      "condition": "R-Imperial: U-value = 0",
+      "output": "0",
+      "note": "Avoids division by zero; component not present"
+    },
+    {
+      "condition": "Condensation Risk: U-value > 0",
+      "output": "(1 - (1 / ((uValue × 3.53) + 1))) × 100",
+      "note": "Percentage risk of surface condensation based on RSI threshold of 3.53 m²K/W (TBS guideline)"
+    },
+    {
+      "condition": "Condensation Risk: U-value = 0",
+      "output": "0",
+      "note": "No risk when component not present"
+    },
+    {
+      "condition": "Total R-Imperial nodes (e_93, e_94, e_96)",
+      "output": "Uses effective U-value (d_93/d_94/d_96) instead of component U-value",
+      "note": "Effective U = totalUA / totalArea for each category"
+    },
+    {
+      "condition": "Total Condensation Risk nodes (cr_93, cr_94, cr_96)",
+      "output": "Uses effective U-value (d_93/d_94/d_96) in condensation risk formula",
+      "note": "Risk assessment based on area-weighted average insulation level"
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "Very low U-value (highly insulated)",
+      "handling": "R-Imperial becomes very high, condensation risk approaches 0%",
+      "rationale": "Well-insulated components have warm interior surfaces, low condensation risk"
+    },
+    {
+      "condition": "Very high U-value (poorly insulated)",
+      "handling": "R-Imperial near 0, condensation risk approaches 100%",
+      "rationale": "Cold interior surfaces promote condensation"
+    },
+    {
+      "condition": "Thermal bridging U-value higher than base component",
+      "handling": "Separate condensation risk reported for thermal bridges",
+      "rationale": "Thermal bridges are typically the highest-risk condensation points"
+    }
+  ],
+  "formula": {
+    "symbolic": {
+      "rImperial": "R = (1 / U) × 5.678, where U > 0; else 0",
+      "condensationRisk": "CR = (1 - 1/((U × RSI_threshold) + 1)) × 100, where RSI_threshold = 3.53"
+    },
+    "implementation": "TransmissionLossNodes.js:257-780"
+  },
+  "tests": [
+    {
+      "name": "Walls R-Imperial typical",
+      "inputs": { "transmissionLoss.walls.uValue": 0.247 },
+      "expected": 22.99,
+      "tolerance": 0.01,
+      "note": "(1/0.247) × 5.678 = 22.99"
+    },
+    {
+      "name": "Windows R-Imperial (low insulation)",
+      "inputs": { "transmissionLoss.windows.uValue": 1.6 },
+      "expected": 3.55,
+      "tolerance": 0.01,
+      "note": "(1/1.6) × 5.678 = 3.549"
+    },
+    {
+      "name": "Zero U-value returns zero",
+      "inputs": { "transmissionLoss.walls.uValue": 0 },
+      "expected": { "rImperial": 0, "condensationRisk": 0 }
+    },
+    {
+      "name": "Condensation risk for well-insulated wall",
+      "inputs": { "transmissionLoss.walls.uValue": 0.15 },
+      "expected": 34.6,
+      "tolerance": 0.5,
+      "note": "(1 - 1/((0.15 × 3.53) + 1)) × 100 = 34.6%"
+    },
+    {
+      "name": "Condensation risk for poorly insulated window",
+      "inputs": { "transmissionLoss.windows.uValue": 2.0 },
+      "expected": 87.6,
+      "tolerance": 0.5,
+      "note": "(1 - 1/((2.0 × 3.53) + 1)) × 100 = 87.6%"
+    }
+  ],
+  "references": [
+    { "source": "TransmissionLossNodes.js:257-394 (R-Imperial component nodes)" },
+    { "source": "TransmissionLossNodes.js:396-562 (condensation risk component nodes)" },
+    { "source": "TransmissionLossNodes.js:702-780 (total R-Imperial and condensation risk nodes)" }
+  ]
+}
