@@ -10,7 +10,8 @@
       {
         "id": "energy.cost.heatpumpPremium",
         "legacyId": "d_142",
-        "label": "Heatpump Cost Premium"
+        "label": "Heatpump Cost Premium",
+        "note": "Now a registered graph INPUT (migrated from static cell value). Edits trigger live ROI recalculation. See energy-inputs.json."
       },
       {
         "id": "energy.cost.postHP",
@@ -49,7 +50,7 @@
         "name": "energy.cost.heatpumpPremium",
         "type": "number",
         "unit": "$",
-        "description": "User-input heatpump cost premium (d_142), default 30000"
+        "description": "User-input heatpump cost premium (d_142), default 30000. Now a registered graph input \u2014 edits trigger live ROI update."
       },
       {
         "name": "climate.electricity.price",
@@ -65,7 +66,7 @@
       {
         "name": "energy.actual.gas",
         "type": "number",
-        "unit": "m³/yr",
+        "unit": "m\u00b3/yr",
         "description": "Actual gas consumption (d_28)"
       },
       {
@@ -83,13 +84,13 @@
       {
         "name": "energy.actual.wood",
         "type": "number",
-        "unit": "m³/yr",
+        "unit": "m\u00b3/yr",
         "description": "Actual wood consumption (d_31)"
       },
       {
         "name": "climate.gas.price",
         "type": "number",
-        "unit": "$/m³",
+        "unit": "$/m\u00b3",
         "description": "Gas unit price (l_13)"
       },
       {
@@ -101,7 +102,7 @@
       {
         "name": "climate.wood.price",
         "type": "number",
-        "unit": "$/m³",
+        "unit": "$/m\u00b3",
         "description": "Wood unit price (l_15)"
       },
       {
@@ -129,7 +130,7 @@
   "behavior": [
     {
       "condition": "d_141 (pre-HP cost)",
-      "output": "d_135 × l_12",
+      "output": "d_135 \u00d7 l_12",
       "note": "Targeted electricity total times electricity price"
     },
     {
@@ -139,7 +140,7 @@
     },
     {
       "condition": "h_141 (post-HP cost)",
-      "output": "d_136 × l_12",
+      "output": "d_136 \u00d7 l_12",
       "note": "Actual electricity use (by system type) times electricity price"
     },
     {
@@ -154,7 +155,7 @@
     },
     {
       "condition": "l_141 (other fuel cost)",
-      "output": "(l_13 × d_28) + (d_29 × l_14) + (l_15 × d_31) + (l_16 × d_30)",
+      "output": "(l_13 \u00d7 d_28) + (d_29 \u00d7 l_14) + (l_15 \u00d7 d_31) + (l_16 \u00d7 d_30)",
       "note": "Sum of gas, propane, wood, and oil costs from actual consumption"
     }
   ],
@@ -171,8 +172,8 @@
     }
   ],
   "formula": {
-    "symbolic": "d_141 = d_135 × l_12; h_141 = d_136 × l_12; h_142 = IF(d_113='Heatpump' AND d_141>h_141, d_142/(d_141-h_141), 0); l_141 = (l_13×d_28) + (d_29×l_14) + (l_15×d_31) + (l_16×d_30)",
-    "implementation": "Section15.js:1886-1903"
+    "symbolic": "d_141 = d_135 \u00d7 l_12; h_141 = d_136 \u00d7 l_12; h_142 = IF(d_113='Heatpump' AND d_141>h_141, d_142/(d_141-h_141), 0); l_141 = (l_13\u00d7d_28) + (d_29\u00d7l_14) + (l_15\u00d7d_31) + (l_16\u00d7d_30)",
+    "implementation": "EnergyNodes.js:607-727"
   },
   "tests": [
     {
@@ -182,7 +183,7 @@
         "climate.electricity.price": 0.12
       },
       "expected": 2400.0,
-      "note": "d_141 = 20000 × 0.12 = $2400"
+      "note": "d_141 = 20000 \u00d7 0.12 = $2400"
     },
     {
       "name": "Post-HP electricity cost",
@@ -191,7 +192,7 @@
         "climate.electricity.price": 0.12
       },
       "expected": 1500.0,
-      "note": "h_141 = 12500 × 0.12 = $1500"
+      "note": "h_141 = 12500 \u00d7 0.12 = $1500"
     },
     {
       "name": "Heatpump ROI",
@@ -222,14 +223,14 @@
         "energy.actual.gas": 1000,
         "climate.gas.price": 0.35,
         "energy.actual.propane": 500,
-        "climate.propane.price": 0.80,
+        "climate.propane.price": 0.8,
         "energy.actual.wood": 10,
         "climate.wood.price": 120,
         "energy.actual.oil": 800,
-        "climate.oil.price": 1.20
+        "climate.oil.price": 1.2
       },
       "expected": 2910.0,
-      "note": "l_141 = (0.35×1000) + (500×0.80) + (120×10) + (1.20×800) = 350 + 400 + 1200 + 960 = 2910"
+      "note": "l_141 = (0.35\u00d71000) + (500\u00d70.80) + (120\u00d710) + (1.20\u00d7800) = 350 + 400 + 1200 + 960 = 2910"
     }
   ],
   "references": [

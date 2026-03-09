@@ -45,14 +45,27 @@ Each calculation is specified with:
 parnas-tables/
 ├── README.md                 # This file
 ├── format.schema.json        # JSON Schema for table format
-├── climate/                  # S03 - Climate calculations
-├── cooling/                  # S13 - Free cooling, active cooling days
+├── air-quality/              # S08 - Indoor air quality compliance
+├── building-info/            # S02 - Building info, geometry, prices, metadata
+├── climate/                  # S03 - Climate calculations, inputs, degree days
+├── compliance/               # Cross-section compliance ratios
+├── cooling/                  # S13 - Free cooling, active cooling days, psychrometrics
 ├── emissions/                # S02/S05 - Embodied carbon targets, TGS4 caps
-├── energy/                   # S04/S14/S15 - Energy metrics
+├── energy/                   # S04/S14/S15 - Energy metrics, peak loads, costs
 ├── f280/                     # SF280 - CSA F280-12 peak loads & compliance
+├── forestry/                 # Wood carbon storage
 ├── internal-gains/           # S09 - Occupants, plugs, lighting, equipment
+├── key-values/               # S01 - Dashboard summary KPIs
 ├── mechanical/               # S13 - Heating, cooling, ventilation, compliance
-└── transmission-loss/        # S11 - Envelope heat transfer
+├── occupancy/                # S09 - Occupancy inputs, hours, density
+├── radiant-gains/            # S10 - Solar gains, utilization factors
+├── renewable/                # S06 - Onsite/offsite renewable energy
+├── section-compliance/       # Per-section pass/fail (S08, S09, S11, S21)
+├── space-heating/            # S13 - Annual space heating demand
+├── transmission-loss/        # S11 - Envelope heat transfer
+├── ventilation/              # S12 - Ventilation rates, heat recovery
+├── volume-metrics/           # S11 - Air tightness, envelope areas
+└── water-heating/            # S07 - DHW energy, fuel volumes
 ```
 
 ## Mechanical Section (S13)
@@ -122,6 +135,7 @@ F280 calculates **instantaneous peak loads** (Watts) using design-day temperatur
 | `cooling-sizing-compliance.json` | `f280.coolingSizingCompliance` | Cooling capacity 80-125% of nominal |
 | `designer-certification.json` | `f280.designerCertification` | Designer credentials and attestation |
 | `f280-input-summary.json` | `f280.inputSummary` | Mapping to F280 Form Page 2 fields |
+| `f280-overall-compliance.json` | `f280.overallCompliance` | Aggregated pass/fail + cooling BTU conversion |
 
 ### F280 Sizing Rules
 

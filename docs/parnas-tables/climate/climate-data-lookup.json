@@ -16,7 +16,8 @@
         "label": "Cooling Degree Days (CDD)",
         "unit": "deg-C-days",
         "lookupKey": "Present=CDD24, Future=CDD24_2021_2050",
-        "default": "Unavailable"
+        "default": "Unavailable",
+        "note": "User override (climate.cooling.degreedays.userOverride) takes priority when set. See climate-inputs.json."
       },
       {
         "id": "climate.temperature.coldest",
@@ -56,16 +57,43 @@
   "classification": "G",
   "signature": {
     "inputs": [
-      { "name": "climate.location.province", "type": "string", "description": "Province code (d_19)" },
-      { "name": "climate.location.city", "type": "string", "description": "City name (h_19)" },
-      { "name": "climate.timeframe", "type": "string", "description": "Present or Future (h_20) -- used by HDD/CDD only" },
-      { "name": "metadata.occupancyType", "type": "string", "description": "Occupancy type (d_12) -- used by coldest day only" }
+      {
+        "name": "climate.location.province",
+        "type": "string",
+        "description": "Province code (d_19)"
+      },
+      {
+        "name": "climate.location.city",
+        "type": "string",
+        "description": "City name (h_19)"
+      },
+      {
+        "name": "climate.timeframe",
+        "type": "string",
+        "description": "Present or Future (h_20) -- used by HDD/CDD only"
+      },
+      {
+        "name": "metadata.occupancyType",
+        "type": "string",
+        "description": "Occupancy type (d_12) -- used by coldest day only"
+      },
+      {
+        "name": "climate.cooling.degreedays.userOverride",
+        "type": "number | null",
+        "description": "Manual CDD override (no legacyId) -- takes priority over lookup when non-null and > 0. See climate-inputs.json."
+      }
     ],
-    "output": { "type": "number | string", "unit": "varies by instance" }
+    "output": {
+      "type": "number | string",
+      "unit": "varies by instance"
+    }
   },
   "domain": {
     "preconditions": [
-      { "condition": "province and city are non-empty", "description": "Climate data requires valid location" }
+      {
+        "condition": "province and city are non-empty",
+        "description": "Climate data requires valid location"
+      }
     ],
     "invariants": []
   },
@@ -84,6 +112,11 @@
       "condition": "HDD: timeframe=Future",
       "output": "data.HDD18_2021_2050",
       "note": "Returns 'Unavailable' if value is null or 666"
+    },
+    {
+      "condition": "CDD: userOverride is set (non-null, > 0)",
+      "output": "userOverride value (bypasses climate data lookup)",
+      "note": "Added for cities where CDD=666 (unavailable). Override takes priority regardless of timeframe."
     },
     {
       "condition": "CDD: timeframe=Present",
@@ -141,41 +174,80 @@
       "condition": "City name case mismatch",
       "handling": "Case-insensitive fallback lookup",
       "rationale": "getClimateData tries exact match, then trimmed, then case-insensitive"
+    },
+    {
+      "condition": "CDD user override is set but CDD climate data also exists",
+      "handling": "User override wins -- designed for cities where official data unavailable",
+      "rationale": "User may have site-specific CDD from energy modelling software"
     }
   ],
   "formula": {
     "symbolic": "value = ClimateData[province][city][lookupKey] || default",
-    "implementation": "ClimateNodes.js:163-301"
+    "implementation": "ClimateNodes.js:160-231"
   },
   "tests": [
     {
       "name": "HDD Present for valid city",
-      "inputs": { "climate.location.province": "ON", "climate.location.city": "Toronto", "climate.timeframe": "Present" },
+      "inputs": {
+        "climate.location.province": "ON",
+        "climate.location.city": "Toronto",
+        "climate.timeframe": "Present"
+      },
       "expected": "data.HDD18 value from ClimateValues"
     },
     {
       "name": "HDD with 666 sentinel",
-      "inputs": { "climate.location.province": "ON", "climate.location.city": "CityWith666", "climate.timeframe": "Present" },
+      "inputs": {
+        "climate.location.province": "ON",
+        "climate.location.city": "CityWith666",
+        "climate.timeframe": "Present"
+      },
       "expected": "Unavailable"
     },
     {
       "name": "CDD Future falls back to Present",
-      "inputs": { "climate.location.province": "ON", "climate.location.city": "CityWithNullFutureCDD", "climate.timeframe": "Future" },
+      "inputs": {
+        "climate.location.province": "ON",
+        "climate.location.city": "CityWithNullFutureCDD",
+        "climate.timeframe": "Future"
+      },
       "expected": "data.CDD24 (present value)"
     },
     {
       "name": "Coldest day for Care occupancy",
-      "inputs": { "climate.location.province": "ON", "climate.location.city": "Ottawa", "metadata.occupancyType": "Care" },
+      "inputs": {
+        "climate.location.province": "ON",
+        "climate.location.city": "Ottawa",
+        "metadata.occupancyType": "Care"
+      },
       "expected": "data.January_1 (1% design temp)"
     },
     {
       "name": "Winter average allows zero",
-      "inputs": { "climate.location.province": "BC", "climate.location.city": "Vancouver" },
+      "inputs": {
+        "climate.location.province": "BC",
+        "climate.location.city": "Vancouver"
+      },
       "expected": "data.Winter_Tdb_Avg even if 0"
+    },
+    {
+      "name": "CDD user override takes priority",
+      "inputs": {
+        "climate.location.province": "ON",
+        "climate.location.city": "Toronto",
+        "climate.timeframe": "Present",
+        "climate.cooling.degreedays.userOverride": 200
+      },
+      "expected": 200,
+      "note": "Override wins even when climate data has valid CDD"
     }
   ],
   "references": [
-    { "source": "ClimateNodes.js:163-301" },
-    { "source": "ClimateValues.js (lookup data)" }
+    {
+      "source": "ClimateNodes.js:163-301"
+    },
+    {
+      "source": "ClimateValues.js (lookup data)"
+    }
   ]
 }

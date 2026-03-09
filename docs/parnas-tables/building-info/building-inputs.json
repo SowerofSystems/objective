@@ -1,0 +1,253 @@
+{
+  "_meta": {
+    "description": "Building information section registered input nodes. These are the foundational inputs from Section 02 (and S05) that all other sections depend on. Includes building geometry (floor area, storeys, ceiling height), building classification (occupancy, reference standard, analysis mode), carbon benchmarking selection, typology selection, user-modelled embodied carbon, project metadata, and energy fuel prices. G-classified fields are shared across all models; A-classified fields are model-specific.",
+    "instances": [
+      {
+        "id": "building.conditionedFloorArea",
+        "legacyId": "h_15",
+        "label": "Conditioned Floor Area (m²)",
+        "type": "number",
+        "unit": "m²",
+        "classification": "G",
+        "default": 1427.2,
+        "validation": { "min": 1, "max": 1000000 }
+      },
+      {
+        "id": "building.serviceLife",
+        "legacyId": "h_13",
+        "label": "Service Life (years)",
+        "type": "number",
+        "unit": "years",
+        "classification": "A",
+        "default": 50,
+        "validation": { "min": 1, "max": 100 }
+      },
+      {
+        "id": "building.numStoreys",
+        "legacyId": "d_16_storeys",
+        "label": "Number of Storeys",
+        "type": "number",
+        "classification": "G",
+        "default": 2,
+        "validation": { "min": 1, "max": 100 },
+        "note": "Used by TGS4 category determination (Part 9 vs Part 3 boundary at 3 storeys)"
+      },
+      {
+        "id": "building.ceilingHeight",
+        "legacyId": "h_17",
+        "label": "Ceiling Height (m)",
+        "type": "number",
+        "unit": "m",
+        "classification": "G",
+        "default": 2.7,
+        "validation": { "min": 2, "max": 10 },
+        "note": "Used in building.volume computation (area × height)"
+      },
+      {
+        "id": "building.majorOccupancy",
+        "legacyId": "d_12",
+        "label": "Major Occupancy",
+        "type": "string",
+        "classification": "A",
+        "default": "A-Assembly",
+        "note": "Drives heating setpoint (22°C for Residential/Care), coldest day design temp, TGS4 category, and water use defaults"
+      },
+      {
+        "id": "building.referenceStandard",
+        "legacyId": "d_13",
+        "label": "Reference Standard",
+        "type": "string",
+        "classification": "A",
+        "default": "OBC SB10 5.5-6 Z6",
+        "note": "Selects reference model code minimum values. PH variants override heating setpoint to 18°C."
+      },
+      {
+        "id": "building.analysisMode",
+        "legacyId": "d_14",
+        "label": "Analysis Mode (Utility Bills / Target)",
+        "type": "string",
+        "classification": "A",
+        "default": "Utility Bills",
+        "note": "Controls whether Actual column in S01 shows utility bill TEUI or N/A"
+      },
+      {
+        "id": "building.carbonStandard",
+        "legacyId": "d_15",
+        "label": "Carbon Benchmarking Standard",
+        "type": "string",
+        "classification": "A",
+        "default": "Self Reported",
+        "note": "Selects embodied carbon target value via CARBON_TARGETS or TGS4_CAPS lookup"
+      },
+      {
+        "id": "building.typologySelection",
+        "legacyId": "d_39",
+        "label": "Typology Selection",
+        "type": "string",
+        "classification": "A",
+        "default": "Pt.3 Mass Timber",
+        "section": "S05",
+        "note": "Drives typology-based embodied carbon lookup (i_39). Options: Pt.9 Res. Stick Frame, Pt.9 Small Mass Timber, Pt.3 Mass Timber, Pt.3 Concrete, Pt.3 Steel, Pt.3 Office, Modelled Value"
+      },
+      {
+        "id": "building.userModelledEmbodiedCarbon",
+        "legacyId": "i_41",
+        "label": "User Modelled Embodied Carbon (kgCO2e/m²)",
+        "type": "number",
+        "unit": "kgCO2e/m²",
+        "classification": "A",
+        "default": 345.82,
+        "section": "S04",
+        "note": "User-editable embodied carbon value. Used when typology='Modelled Value' or standard='Self Reported'."
+      },
+      {
+        "id": "building.projectName",
+        "legacyId": "h_14",
+        "label": "Project Name",
+        "type": "string",
+        "classification": "G",
+        "default": "Three Feathers Terrace"
+      },
+      {
+        "id": "building.certifier",
+        "legacyId": "i_16",
+        "label": "Certifier Name",
+        "type": "string",
+        "classification": "G",
+        "default": "Thomson Architecture, Inc."
+      },
+      {
+        "id": "building.licenseNumber",
+        "legacyId": "i_17",
+        "label": "License Number",
+        "type": "string",
+        "classification": "G",
+        "default": "8154"
+      },
+      {
+        "id": "energy.price.electricity",
+        "legacyId": "l_12",
+        "label": "Electricity Price ($/kWh)",
+        "type": "string",
+        "unit": "$/kWh",
+        "classification": "A",
+        "default": "$0.1300",
+        "note": "Used in S15 energy cost calculations (d_141, h_141)"
+      },
+      {
+        "id": "energy.price.gas",
+        "legacyId": "l_13",
+        "label": "Gas Price ($/m³)",
+        "type": "string",
+        "unit": "$/m³",
+        "classification": "A",
+        "default": "$0.5070",
+        "note": "Used in S15 other fuel cost calculation (l_141)"
+      },
+      {
+        "id": "energy.price.propane",
+        "legacyId": "l_14",
+        "label": "Propane Price ($/kg)",
+        "type": "string",
+        "unit": "$/kg",
+        "classification": "A",
+        "default": "$1.6200"
+      },
+      {
+        "id": "energy.price.wood",
+        "legacyId": "l_15",
+        "label": "Wood Price ($/m³)",
+        "type": "string",
+        "unit": "$/m³",
+        "classification": "A",
+        "default": "$180.00"
+      },
+      {
+        "id": "energy.price.oil",
+        "legacyId": "l_16",
+        "label": "Oil Price ($/litre)",
+        "type": "string",
+        "unit": "$/L",
+        "classification": "A",
+        "default": "$1.5000"
+      }
+    ]
+  },
+  "section": "S02",
+  "signature": {
+    "inputs": "These ARE the inputs (registered via graph.registerInputs in BuildingInfoNodes.js)",
+    "output": "Values stored in MultiModelState, consumed by downstream computation nodes"
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "conditionedFloorArea > 0",
+        "description": "Floor area is used as divisor in intensity calculations throughout"
+      }
+    ],
+    "invariants": [
+      {
+        "condition": "serviceLife in [1, 100]",
+        "description": "Bounded by slider range"
+      },
+      {
+        "condition": "numStoreys >= 1",
+        "description": "Building must have at least one storey"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "conditionedFloorArea changes",
+      "output": "Triggers recomputation of all intensity metrics (TEUI, TEDI, CEDI, GHGI, per-m² values)",
+      "note": "G-classified, affects all models"
+    },
+    {
+      "condition": "majorOccupancy changes",
+      "output": "Affects heating setpoint, coldest day temperature, TGS4 category, water use defaults",
+      "note": "A-classified, model-specific"
+    },
+    {
+      "condition": "referenceStandard changes",
+      "output": "Switches reference model code minimum values, may override heating setpoint for PH",
+      "note": "A-classified, model-specific"
+    },
+    {
+      "condition": "carbonStandard changes to TGS4 Tier 2/3",
+      "output": "Embodied carbon target derived from TGS4_CAPS by occupancy category and storeys",
+      "note": "Cap does NOT vary by material type"
+    },
+    {
+      "condition": "typologySelection = 'Modelled Value'",
+      "output": "i_39 uses userModelledEmbodiedCarbon instead of TYPOLOGY_CAPS lookup",
+      "note": "Allows user to input their own modelled embodied carbon value"
+    },
+    {
+      "condition": "Energy prices change",
+      "output": "S15 cost calculations (d_141, h_141, l_141) recompute",
+      "note": "Prices are stored as strings with $ prefix, parsed via parseNum"
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "Energy prices stored as strings ('$0.1300')",
+      "handling": "parseNum strips non-numeric characters before parsing",
+      "rationale": "UI displays dollar-formatted values"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Default floor area",
+      "inputs": {},
+      "expected": "building.conditionedFloorArea = 1427.2"
+    },
+    {
+      "name": "Default occupancy",
+      "inputs": {},
+      "expected": "building.majorOccupancy = 'A-Assembly'"
+    }
+  ],
+  "references": [
+    { "source": "BuildingInfoNodes.js:76-227 (input registration)" }
+  ]
+}

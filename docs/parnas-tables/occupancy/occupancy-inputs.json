@@ -1,0 +1,123 @@
+{
+  "_meta": {
+    "description": "Occupancy section registered input nodes. These user-editable values define the building's occupancy parameters used throughout ventilation, internal gains, and per-capita calculations. The totalHours input provides the annual hours for time-based ventilation calculations.",
+    "instances": [
+      {
+        "id": "occupancy.occupants",
+        "legacyId": "d_63",
+        "label": "Number of Occupants",
+        "type": "number",
+        "classification": "G",
+        "default": 0,
+        "note": "User-entered number of building occupants. If 0, occupancy.calculatedOccupants derives from occupancy density and floor area."
+      },
+      {
+        "id": "occupancy.occupantDensity",
+        "legacyId": "h_63",
+        "label": "Occupant Density",
+        "type": "number",
+        "unit": "m²/person",
+        "classification": "C",
+        "default": 0,
+        "note": "Floor area per occupant. Used in calculatedOccupants when d_63 = 0."
+      },
+      {
+        "id": "occupancy.occupiedHoursPerDay",
+        "legacyId": "g_63",
+        "label": "Occupied Hours per Day",
+        "type": "number",
+        "unit": "hours/day",
+        "classification": "C",
+        "default": 16,
+        "note": "Daily occupied hours. Multiplied by 365 to get annual occupied hours (i_63)."
+      },
+      {
+        "id": "occupancy.totalHours",
+        "legacyId": "j_63",
+        "label": "Total Annual Hours",
+        "type": "number",
+        "unit": "hours/yr",
+        "classification": "G",
+        "default": 8760,
+        "note": "Total hours in a year. Used as divisor in ventilation rate calculations and annual energy conversions. Default 8760 = 365 × 24."
+      }
+    ]
+  },
+  "section": "S09",
+  "signature": {
+    "inputs": "These ARE the inputs (registered via graph.registerInput in OccupancyNodes.js)",
+    "output": "Values stored in MultiModelState, consumed by ventilation, internal gains, and per-capita calculations"
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "occupants >= 0",
+        "description": "Cannot have negative occupants"
+      },
+      {
+        "condition": "occupantDensity >= 0",
+        "description": "Floor area per person must be non-negative"
+      }
+    ],
+    "invariants": [
+      {
+        "condition": "totalHours = 8760",
+        "description": "Typically constant at 365 × 24 hours per year"
+      },
+      {
+        "condition": "occupiedHoursPerDay in [0, 24]",
+        "description": "Cannot exceed hours in a day"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "d_63 (occupants) changes",
+      "output": "Triggers recomputation of per-capita metrics, ventilation rates, internal gains",
+      "note": "G-classified, affects all models"
+    },
+    {
+      "condition": "h_63 (density) changes",
+      "output": "Triggers recomputation of calculatedOccupants (when d_63 = 0)",
+      "note": "C-classified, model-specific"
+    },
+    {
+      "condition": "g_63 (hours/day) changes",
+      "output": "Triggers recomputation of annual occupied hours (i_63 = g_63 × 365)",
+      "note": "C-classified, model-specific"
+    },
+    {
+      "condition": "j_63 (total hours) changes",
+      "output": "Triggers recomputation of ventilation volumetric rate and energy calculations",
+      "note": "G-classified, affects ventilation rate calculations. Typically remains at 8760."
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "Both d_63 and h_63 are 0",
+      "handling": "calculatedOccupants returns 0",
+      "rationale": "No occupancy data provided"
+    },
+    {
+      "condition": "totalHours set to non-standard value",
+      "handling": "Accepted as-is, used in ventilation calculations",
+      "rationale": "Allows for partial-year analysis if needed"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Default total hours",
+      "inputs": {},
+      "expected": "occupancy.totalHours = 8760"
+    },
+    {
+      "name": "Default occupied hours",
+      "inputs": {},
+      "expected": "occupancy.occupiedHoursPerDay = 16"
+    }
+  ],
+  "references": [
+    { "source": "OccupancyNodes.js (input registration)" },
+    { "source": "VentilationNodes.js (consumes j_63 in volumetric rate)" }
+  ]
+}
