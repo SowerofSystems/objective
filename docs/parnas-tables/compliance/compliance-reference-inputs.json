@@ -1,109 +1,127 @@
 {
   "_meta": {
-    "description": "Compliance section reference input nodes. These 7 inputs are injected from the Reference model via the REF_OUTPUT_TO_TARGET_INPUT mapping pattern. After the Reference model computes, its output values are copied to these Target model inputs, enabling cross-model compliance ratio calculations.",
+    "description": "Compliance section reference input nodes (S13 Mechanical). 7 inputs injected from the Reference model via REF_OUTPUT_TO_TARGET_INPUT mapping. These have non-zero defaults representing code minimum values for HVAC equipment performance.",
     "instances": [
-      {
-        "id": "reference.mechanical.heating.hspf",
-        "legacyId": "ref_f_113",
-        "label": "Reference HSPF",
-        "type": "number",
-        "classification": "C",
-        "default": 0,
-        "note": "Reference model's heating seasonal performance factor. Mapped from Reference output mechanical.heating.hspf."
-      },
       {
         "id": "reference.mechanical.heating.afue",
         "legacyId": "ref_j_115",
         "label": "Reference AFUE",
         "type": "number",
         "classification": "C",
-        "default": 0,
-        "note": "Reference model's annual fuel utilization efficiency. Mapped from Reference output mechanical.heating.afue."
+        "default": 0.92,
+        "note": "Annual fuel utilization efficiency code minimum. Mapped from Reference output mechanical.heating.afue."
       },
       {
-        "id": "reference.mechanical.cooling.cop",
+        "id": "reference.mechanical.heating.hspf",
+        "legacyId": "ref_f_113",
+        "label": "Reference HSPF",
+        "type": "number",
+        "classification": "C",
+        "default": 12.5,
+        "note": "Heating seasonal performance factor code minimum. Mapped from Reference output mechanical.heating.hspf."
+      },
+      {
+        "id": "reference.mechanical.cooling.copDedicated",
         "legacyId": "ref_j_116",
         "label": "Reference Cooling COP",
         "type": "number",
         "classification": "C",
-        "default": 0,
-        "note": "Reference model's cooling coefficient of performance. Mapped from Reference output mechanical.cooling.cop."
+        "default": 2.66,
+        "note": "Cooling coefficient of performance code minimum. Mapped from Reference output mechanical.cooling.copDedicated."
       },
       {
         "id": "reference.mechanical.cooling.intensity",
         "legacyId": "ref_f_117",
         "label": "Reference Cooling Intensity",
         "type": "number",
+        "unit": "kWh/m2",
         "classification": "C",
         "default": 0,
-        "note": "Reference model's cooling energy intensity. Used INVERTED in compliance ratio (ref/target instead of target/ref)."
+        "note": "Reference cooling energy intensity. Used INVERTED in compliance ratio (ref/target)."
       },
       {
-        "id": "reference.mechanical.ventilation.sre",
+        "id": "reference.mechanical.ventilation.efficiency",
         "legacyId": "ref_d_118",
         "label": "Reference SRE",
         "type": "number",
+        "unit": "%",
         "classification": "C",
-        "default": 0,
-        "note": "Reference model's sensible recovery efficiency. Mapped from Reference output mechanical.ventilation.sre."
+        "default": 55,
+        "note": "Sensible recovery efficiency code minimum (%). Mapped from Reference output mechanical.ventilation.efficiency."
       },
       {
-        "id": "reference.mechanical.ventilation.rate",
+        "id": "reference.mechanical.ventilation.ratePerPerson",
         "legacyId": "ref_d_119",
         "label": "Reference Ventilation Rate",
         "type": "number",
+        "unit": "L/s/person",
         "classification": "C",
-        "default": 0,
-        "note": "Reference model's ventilation rate. Mapped from Reference output mechanical.ventilation.rate."
+        "default": 10,
+        "note": "Ventilation rate per person code minimum. Mapped from Reference output mechanical.ventilation.ratePerPerson."
       },
       {
-        "id": "reference.mechanical.cooling.freeCoolingDays",
+        "id": "reference.mechanical.cooling.mechanicalDays",
         "legacyId": "ref_m_124",
-        "label": "Reference Free Cooling Days",
+        "label": "Reference Mechanical Cooling Days",
         "type": "number",
+        "unit": "days",
         "classification": "C",
         "default": 0,
-        "note": "Reference model's free cooling days. Used in pass/fail compliance check (target >= ref)."
+        "note": "Reference mechanical cooling days. Used in free cooling compliance check."
       }
     ]
   },
   "section": "S13",
   "signature": {
     "inputs": "These ARE the inputs (registered via graph.registerInput in ComplianceNodes.js). Populated by REF_OUTPUT_TO_TARGET_INPUT mapping.",
-    "output": "Values stored in Target model's MultiModelState, consumed by compliance ratio computations"
+    "output": "Values stored in Target model's MultiModelState, consumed by compliance ratio computations (m_113-m_119, n_124)"
   },
   "domain": {
     "preconditions": [],
     "invariants": [
       {
-        "condition": "Values are always 0 until Reference model computes",
-        "description": "Reference inputs start at default 0 and are populated after Reference model computation completes"
+        "condition": "Non-zero defaults represent code minimum values",
+        "description": "AFUE=0.92, HSPF=12.5, COP=2.66, SRE=55%, ventRate=10 L/s/person are typical code baselines"
+      },
+      {
+        "condition": "Compliance ratios are (target/ref)*100 except cooling intensity which is INVERTED (ref/target)*100",
+        "description": "Lower cooling intensity is better, so ratio is inverted"
       }
     ]
   },
   "behavior": [
     {
       "condition": "Reference model computes and REF_OUTPUT_TO_TARGET_INPUT copies values",
-      "output": "Target model is recomputed with reference values, enabling compliance ratio calculation",
-      "note": "This is the cross-model comparison pattern described in README.md"
+      "output": "Target model recomputes compliance ratios and pass/fail status nodes",
+      "note": "Each ratio has a companion pass/fail node (n_113, n_115, etc.)"
     }
   ],
   "edgeCases": [
     {
-      "condition": "Reference value is 0 (equipment not specified in reference)",
-      "handling": "Compliance ratio defaults to 1 (ref > 0 ? target/ref : 1)",
-      "rationale": "Avoid division by zero; ratio of 1 means compliant when reference has no value"
+      "condition": "Reference value is 0",
+      "handling": "Compliance ratio defaults to 100 (compliant)",
+      "rationale": "ref > 0 ? round((target/ref)*100) : 100"
     }
   ],
   "tests": [
     {
-      "name": "Default values are all zero",
+      "name": "Default AFUE reference",
       "inputs": {},
-      "expected": "All reference.* inputs = 0"
+      "expected": "reference.mechanical.heating.afue = 0.92"
+    },
+    {
+      "name": "Default HSPF reference",
+      "inputs": {},
+      "expected": "reference.mechanical.heating.hspf = 12.5"
+    },
+    {
+      "name": "Default COP reference",
+      "inputs": {},
+      "expected": "reference.mechanical.cooling.copDedicated = 2.66"
     }
   ],
   "references": [
-    { "source": "ComplianceNodes.js:15-72 (input registration)" },
-    { "source": "ComputationIntegration.js (REF_OUTPUT_TO_TARGET_INPUT mapping)" }
+    { "source": "ComplianceNodes.js (input registration)" },
+    { "source": "ComplianceNodes.js (REF_OUTPUT_TO_TARGET_INPUT_MECHANICAL mapping)" }
   ]
 }

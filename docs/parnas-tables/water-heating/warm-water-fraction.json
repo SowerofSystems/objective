@@ -1,11 +1,11 @@
 {
   "_meta": {
-    "description": "Warm water fraction — the ratio of annual DHW demand to total hot water load. This computed node determines what percentage of total hot water usage goes to domestic hot water versus space heating hydronic loops. Used in S07 section compliance calculations.",
+    "description": "Warm water fraction computed node. Registered as a standalone graph.registerNode() in SectionComplianceNodes.js (NOT WaterHeatingNodes.js). Computes warm water fraction as lpppd * 0.4. Used in S07 water heating compliance calculations.",
     "instances": [
       {
         "id": "waterHeating.warmWaterFraction",
         "legacyId": "h_50",
-        "label": "Warm Water Fraction"
+        "label": "Warm Water Fraction (L/person/day × 0.4)"
       }
     ]
   },
@@ -14,97 +14,70 @@
   "signature": {
     "inputs": [
       {
-        "name": "waterHeating.annualDhwDemand",
+        "name": "waterHeating.lpppd",
         "type": "number",
-        "unit": "kWh/yr",
-        "description": "Annual domestic hot water demand (h_48)"
-      },
-      {
-        "name": "waterHeating.totalHotWaterLoad",
-        "type": "number",
-        "unit": "kWh/yr",
-        "description": "Total hot water load including space heating hydronic contribution (h_49)"
+        "unit": "L/person/day",
+        "description": "Litres per person per day water use (h_49). Registered as input in WaterHeatingNodes.js."
       }
     ],
     "output": {
       "type": "number",
-      "unit": "ratio"
+      "unit": "L/person/day",
+      "description": "Warm water fraction = lpppd * 0.4"
     }
   },
   "domain": {
     "preconditions": [
       {
-        "condition": "annualDhwDemand >= 0",
-        "description": "DHW demand cannot be negative"
-      },
-      {
-        "condition": "totalHotWaterLoad >= annualDhwDemand",
-        "description": "Total load includes DHW plus any hydronic space heating"
+        "condition": "lpppd >= 0",
+        "description": "Water use cannot be negative"
       }
     ],
     "invariants": [
       {
-        "condition": "warmWaterFraction in [0, 1]",
-        "description": "DHW fraction cannot exceed total load"
+        "condition": "warmWaterFraction = lpppd * 0.4",
+        "description": "Fixed 40% multiplier applied to litres per person per day"
       }
     ]
   },
   "behavior": [
     {
-      "condition": "totalHotWaterLoad > 0",
-      "output": "annualDhwDemand / totalHotWaterLoad",
-      "note": "Fraction of total hot water going to DHW"
-    },
-    {
-      "condition": "totalHotWaterLoad = 0",
-      "output": "0",
-      "note": "No hot water load, no fraction"
+      "condition": "lpppd changes",
+      "output": "lpppd * 0.4",
+      "note": "Simple linear scaling — 40% of daily per-person water use is warm water"
     }
   ],
   "edgeCases": [
     {
-      "condition": "No hydronic space heating",
-      "handling": "warmWaterFraction = 1.0 (all hot water is DHW)",
-      "rationale": "totalHotWaterLoad = annualDhwDemand when no hydronic heating"
-    },
-    {
-      "condition": "Both inputs are 0",
+      "condition": "lpppd = 0",
       "handling": "warmWaterFraction = 0",
-      "rationale": "Division guard returns 0"
+      "rationale": "No water use means no warm water"
     }
   ],
   "formula": {
-    "symbolic": "warmWaterFraction = totalLoad > 0 ? annualDhwDemand / totalHotWaterLoad : 0",
-    "implementation": "WaterHeatingNodes.js"
+    "symbolic": "warmWaterFraction = lpppd * 0.4",
+    "implementation": "SectionComplianceNodes.js (standalone graph.registerNode call)"
   },
   "tests": [
     {
-      "name": "All DHW, no hydronic",
-      "inputs": {
-        "waterHeating.annualDhwDemand": 5000,
-        "waterHeating.totalHotWaterLoad": 5000
-      },
-      "expected": 1.0
+      "name": "Default warm water fraction",
+      "inputs": { "waterHeating.lpppd": 40 },
+      "expected": 16
     },
     {
-      "name": "Half DHW, half hydronic",
-      "inputs": {
-        "waterHeating.annualDhwDemand": 3000,
-        "waterHeating.totalHotWaterLoad": 6000
-      },
-      "expected": 0.5
-    },
-    {
-      "name": "Zero total load",
-      "inputs": {
-        "waterHeating.annualDhwDemand": 0,
-        "waterHeating.totalHotWaterLoad": 0
-      },
+      "name": "Zero water use",
+      "inputs": { "waterHeating.lpppd": 0 },
       "expected": 0
+    },
+    {
+      "name": "High water use",
+      "inputs": { "waterHeating.lpppd": 100 },
+      "expected": 40
     }
   ],
   "references": [
-    { "source": "WaterHeatingNodes.js (warmWaterFraction computed node)" },
-    { "source": "SectionComplianceNodes.js (consumes h_50 for S07 compliance via m_50)" }
+    { "source": "SectionComplianceNodes.js:556-567 (standalone graph.registerNode call)" },
+    { "source": "WaterHeatingNodes.js (provides waterHeating.lpppd input)" },
+    { "source": "SectionComplianceNodes.js (compliance.waterEnergy.ratio m_50 consumes this)" }
   ]
 }

@@ -1,204 +1,346 @@
 {
   "_meta": {
-    "description": "Section compliance reference input nodes. These 18 inputs are injected from the Reference model via the REF_OUTPUT_TO_TARGET_INPUT mapping pattern. They enable per-section compliance ratio calculations (S07, S08, S09, S10, S11, S12, S21) by comparing Target model values against Reference model values.",
+    "description": "Section compliance reference input nodes. 21 inputs injected from the Reference model via REF_OUTPUT_TO_TARGET_INPUT mapping in SectionComplianceNodes.js. These enable per-section compliance ratio calculations by comparing Target model values against Reference model values. Grouped by section: S07 water heating (4), S09 internal gains (3), S12 air tightness (2), S11 envelope RSI (5), S11 envelope U-values (6), S11 thermal bridge (1).",
     "instances": {
-      "s08_airQuality": [
-        {
-          "id": "reference.airQuality.ashrae622.rate",
-          "legacyId": "ref_h_55",
-          "label": "Reference ASHRAE 62.2 Rate",
-          "type": "number",
-          "classification": "C",
-          "default": 0
-        },
-        {
-          "id": "reference.airQuality.nbcMinRate",
-          "legacyId": "ref_h_56",
-          "label": "Reference NBC Minimum Rate",
-          "type": "number",
-          "classification": "C",
-          "default": 0
-        }
-      ],
-      "s09_internalGains": [
-        {
-          "id": "reference.internalGains.occupant.metabolicRate",
-          "legacyId": "ref_d_64",
-          "label": "Reference Occupant Metabolic Rate",
-          "type": "number",
-          "classification": "C",
-          "default": 0
-        },
-        {
-          "id": "reference.internalGains.plugLoads.density",
-          "legacyId": "ref_d_66",
-          "label": "Reference Plug Load Density",
-          "type": "number",
-          "classification": "C",
-          "default": 0
-        },
-        {
-          "id": "reference.internalGains.lighting.density",
-          "legacyId": "ref_g_67",
-          "label": "Reference Lighting Power Density",
-          "type": "number",
-          "classification": "C",
-          "default": 0
-        },
-        {
-          "id": "reference.internalGains.equipment.total",
-          "legacyId": "ref_d_68",
-          "label": "Reference Equipment Internal Gains",
-          "type": "number",
-          "classification": "C",
-          "default": 0
-        }
-      ],
-      "s11_transmissionLoss": [
-        {
-          "id": "reference.transmissionLoss.totalUA.overall",
-          "legacyId": "ref_h_96",
-          "label": "Reference Overall Total UA",
-          "type": "number",
-          "classification": "C",
-          "default": 0
-        },
-        {
-          "id": "reference.transmissionLoss.effectiveUValue.overall",
-          "legacyId": "ref_d_96",
-          "label": "Reference Overall Effective U-value",
-          "type": "number",
-          "classification": "C",
-          "default": 0
-        }
-      ],
       "s07_waterHeating": [
         {
-          "id": "reference.waterHeating.annualDhwDemand",
-          "legacyId": "ref_h_48",
-          "label": "Reference Annual DHW Demand",
+          "id": "reference.waterHeating.lpppd",
+          "legacyId": "ref_h_49",
+          "label": "Reference Water Use (L/person/day)",
           "type": "number",
+          "unit": "L/person/day",
           "classification": "C",
-          "default": 0
+          "default": 40,
+          "note": "Reference litres per person per day for DHW demand. Mapped from Reference output waterHeating.lpppd."
         },
         {
           "id": "reference.waterHeating.warmWaterFraction",
           "legacyId": "ref_h_50",
           "label": "Reference Warm Water Fraction",
           "type": "number",
+          "unit": "L/person/day",
           "classification": "C",
-          "default": 0
+          "default": 16,
+          "note": "Reference warm water fraction (lpppd * 0.4). Mapped from Reference output waterHeating.warmWaterFraction."
+        },
+        {
+          "id": "reference.waterHeating.efficiency",
+          "legacyId": "ref_d_52",
+          "label": "Reference Water Heating Efficiency (%)",
+          "type": "number",
+          "unit": "%",
+          "classification": "C",
+          "default": 300,
+          "note": "Reference water heating efficiency. 300% indicates heat pump baseline. Mapped from Reference output waterHeating.efficiency."
+        },
+        {
+          "id": "reference.waterHeating.dwhrEfficiency",
+          "legacyId": "ref_d_53",
+          "label": "Reference DWHR Efficiency (%)",
+          "type": "number",
+          "unit": "%",
+          "classification": "C",
+          "default": 0,
+          "note": "Reference drain water heat recovery efficiency. Default 0 = no DWHR in reference. Mapped from Reference output waterHeating.dwhrEfficiency."
         }
       ],
-      "s12_ventilation": [
+      "s09_internalGains": [
         {
-          "id": "reference.ventilation.totalRate",
-          "legacyId": "ref_d_100",
-          "label": "Reference Total Ventilation Rate",
+          "id": "reference.internal.plugLoadDensity",
+          "legacyId": "ref_d_65",
+          "label": "Reference Plug Load Density (W/m²)",
           "type": "number",
+          "unit": "W/m²",
           "classification": "C",
-          "default": 0
+          "default": 7,
+          "note": "Reference plug load power density. Mapped from Reference output internal.plugLoadDensity."
         },
         {
-          "id": "reference.ventilation.hrvEfficiency",
-          "legacyId": "ref_h_100",
-          "label": "Reference HRV Efficiency",
+          "id": "reference.internal.lightingDensity",
+          "legacyId": "ref_d_66",
+          "label": "Reference Lighting Density (W/m²)",
           "type": "number",
+          "unit": "W/m²",
           "classification": "C",
-          "default": 0
+          "default": 1.5,
+          "note": "Reference lighting power density. Mapped from Reference output internal.lightingDensity."
+        },
+        {
+          "id": "reference.internal.equipmentDensity",
+          "legacyId": "ref_d_67",
+          "label": "Reference Equipment Density (W/m²)",
+          "type": "number",
+          "unit": "W/m²",
+          "classification": "C",
+          "default": 3,
+          "note": "Reference equipment power density. Mapped from Reference output internal.equipmentDensity."
         }
       ],
-      "s10_radiantGains": [
+      "s12_airTightness": [
         {
-          "id": "reference.radiantGains.totalSolarGain",
-          "legacyId": "ref_k_75",
-          "label": "Reference Total Solar Gain",
+          "id": "reference.airTightness.ach50Target",
+          "legacyId": "ref_d_109",
+          "label": "Reference ACH50",
           "type": "number",
+          "unit": "ACH@50Pa",
           "classification": "C",
-          "default": 0
+          "default": 1.5,
+          "note": "Reference air changes per hour at 50Pa. Mapped from Reference output airTightness.ach50Target."
         },
         {
-          "id": "reference.radiantGains.heatingUtilizedGain",
-          "legacyId": "ref_l_76",
-          "label": "Reference Heating Utilized Gain",
+          "id": "reference.airTightness.ela10",
+          "legacyId": "ref_d_110",
+          "label": "Reference ELA10 (m²)",
           "type": "number",
+          "unit": "m²",
           "classification": "C",
-          "default": 0
-        },
-        {
-          "id": "reference.radiantGains.coolingUtilizedGain",
-          "legacyId": "ref_n_76",
-          "label": "Reference Cooling Utilized Gain",
-          "type": "number",
-          "classification": "C",
-          "default": 0
+          "default": 0,
+          "note": "Reference equivalent leakage area at 10Pa. Mapped from Reference output airTightness.ela10."
         }
       ],
-      "s21_energyCompliance": [
+      "s11_envelopeRSI": [
         {
-          "id": "reference.energy.tedi.annual",
-          "legacyId": "ref_h_127",
-          "label": "Reference Annual TEDI",
+          "id": "reference.transmissionLoss.roof.rsi",
+          "legacyId": "ref_f_85",
+          "label": "Reference Roof RSI",
           "type": "number",
+          "unit": "m²K/W",
           "classification": "C",
-          "default": 0
+          "default": 5,
+          "note": "Reference roof/ceiling thermal resistance. Mapped from Reference output transmissionLoss.roof.rsi."
         },
         {
-          "id": "reference.energy.cedi",
-          "legacyId": "ref_h_128",
-          "label": "Reference CEDI",
+          "id": "reference.transmissionLoss.walls.rsi",
+          "legacyId": "ref_f_86",
+          "label": "Reference Walls RSI",
           "type": "number",
+          "unit": "m²K/W",
           "classification": "C",
-          "default": 0
+          "default": 5,
+          "note": "Reference walls above grade thermal resistance. Mapped from Reference output transmissionLoss.walls.rsi."
         },
         {
-          "id": "reference.energy.eui",
-          "legacyId": "ref_f_133",
-          "label": "Reference EUI",
+          "id": "reference.transmissionLoss.exposedFloor.rsi",
+          "legacyId": "ref_f_87",
+          "label": "Reference Exposed Floor RSI",
           "type": "number",
+          "unit": "m²K/W",
           "classification": "C",
-          "default": 0
+          "default": 5,
+          "note": "Reference exposed floor thermal resistance. Mapped from Reference output transmissionLoss.exposedFloor.rsi."
+        },
+        {
+          "id": "reference.transmissionLoss.wallsBelowGrade.rsi",
+          "legacyId": "ref_f_94",
+          "label": "Reference Walls Below Grade RSI",
+          "type": "number",
+          "unit": "m²K/W",
+          "classification": "C",
+          "default": 5,
+          "note": "Reference walls below grade thermal resistance. Mapped from Reference output transmissionLoss.wallsBelowGrade.rsi."
+        },
+        {
+          "id": "reference.transmissionLoss.slabOnGrade.rsi",
+          "legacyId": "ref_f_95",
+          "label": "Reference Slab on Grade RSI",
+          "type": "number",
+          "unit": "m²K/W",
+          "classification": "C",
+          "default": 5,
+          "note": "Reference slab on grade thermal resistance. Mapped from Reference output transmissionLoss.slabOnGrade.rsi."
+        }
+      ],
+      "s11_envelopeUValues": [
+        {
+          "id": "reference.transmissionLoss.doors.uValue",
+          "legacyId": "ref_g_88",
+          "label": "Reference Doors U-Value",
+          "type": "number",
+          "unit": "W/m²K",
+          "classification": "C",
+          "default": 2,
+          "note": "Reference doors thermal transmittance. Mapped from Reference output transmissionLoss.doors.uValue."
+        },
+        {
+          "id": "reference.transmissionLoss.windowNorth.uValue",
+          "legacyId": "ref_g_89",
+          "label": "Reference Window North U-Value",
+          "type": "number",
+          "unit": "W/m²K",
+          "classification": "C",
+          "default": 2,
+          "note": "Reference north window thermal transmittance. Mapped from Reference output transmissionLoss.windowNorth.uValue."
+        },
+        {
+          "id": "reference.transmissionLoss.windowEast.uValue",
+          "legacyId": "ref_g_90",
+          "label": "Reference Window East U-Value",
+          "type": "number",
+          "unit": "W/m²K",
+          "classification": "C",
+          "default": 2,
+          "note": "Reference east window thermal transmittance. Mapped from Reference output transmissionLoss.windowEast.uValue."
+        },
+        {
+          "id": "reference.transmissionLoss.windowSouth.uValue",
+          "legacyId": "ref_g_91",
+          "label": "Reference Window South U-Value",
+          "type": "number",
+          "unit": "W/m²K",
+          "classification": "C",
+          "default": 2,
+          "note": "Reference south window thermal transmittance. Mapped from Reference output transmissionLoss.windowSouth.uValue."
+        },
+        {
+          "id": "reference.transmissionLoss.windowWest.uValue",
+          "legacyId": "ref_g_92",
+          "label": "Reference Window West U-Value",
+          "type": "number",
+          "unit": "W/m²K",
+          "classification": "C",
+          "default": 2,
+          "note": "Reference west window thermal transmittance. Mapped from Reference output transmissionLoss.windowWest.uValue."
+        },
+        {
+          "id": "reference.transmissionLoss.skylights.uValue",
+          "legacyId": "ref_g_93",
+          "label": "Reference Skylights U-Value",
+          "type": "number",
+          "unit": "W/m²K",
+          "classification": "C",
+          "default": 2,
+          "note": "Reference skylights thermal transmittance. Mapped from Reference output transmissionLoss.skylights.uValue."
+        }
+      ],
+      "s11_thermalBridge": [
+        {
+          "id": "reference.transmissionLoss.thermalBridgePenalty",
+          "legacyId": "ref_d_97",
+          "label": "Reference Thermal Bridge Penalty (%)",
+          "type": "number",
+          "unit": "%",
+          "classification": "C",
+          "default": 20,
+          "note": "Reference thermal bridge penalty percentage. Mapped from Reference output transmissionLoss.thermalBridgePenalty."
         }
       ]
     }
   },
-  "section": "S08/S09/S10/S11/S12/S07/S21",
+  "section": "S07/S09/S11/S12",
   "signature": {
-    "inputs": "These ARE the inputs (registered via graph.registerInput in SectionComplianceNodes.js). Populated by REF_OUTPUT_TO_TARGET_INPUT mapping.",
-    "output": "Values stored in Target model's MultiModelState, consumed by per-section compliance ratio computations"
+    "inputs": "These ARE the inputs (21 total, registered via graph.registerInput loop over ReferenceInputs array in SectionComplianceNodes.js). Populated by REF_OUTPUT_TO_TARGET_INPUT mapping.",
+    "output": "Values stored in Target model's MultiModelState, consumed by per-section compliance ratio and pass/fail computations"
   },
   "domain": {
     "preconditions": [],
     "invariants": [
       {
-        "condition": "Values are always 0 until Reference model computes",
-        "description": "Reference inputs start at default 0 and are populated after Reference model computation completes"
+        "condition": "Non-zero defaults represent code minimum baselines",
+        "description": "lpppd=40, warmWaterFraction=16, efficiency=300%, plugLoad=7, lighting=1.5, equipment=3, ach50=1.5, RSI=5, U-value=2, thermalBridge=20%"
+      },
+      {
+        "condition": "RSI compliance: target/ref (higher RSI = better insulation = pass when ratio >= 100%)",
+        "description": "RSI ratio nodes use target/ref pattern; pass when target >= ref"
+      },
+      {
+        "condition": "U-value compliance: ref/target INVERTED (lower U-value = better insulation = pass when ratio >= 100%)",
+        "description": "U-value ratio nodes use ref/target pattern; pass when target <= ref"
+      },
+      {
+        "condition": "Thermal bridge compliance: ref/target INVERTED (lower penalty = better = pass when ratio >= 100%)",
+        "description": "Thermal bridge ratio uses ref/target; pass when target <= ref"
       }
     ]
   },
   "behavior": [
     {
       "condition": "Reference model computes and REF_OUTPUT_TO_TARGET_INPUT copies values",
-      "output": "Target model recomputes section compliance ratios comparing target values to these reference inputs",
-      "note": "All ratios follow pattern: refValue > 0 ? targetValue / refValue : 1"
+      "output": "Target model recomputes section compliance ratios and pass/fail nodes",
+      "note": "21 reference inputs drive 40+ compliance ratio (m_*) and pass/fail (n_*) computed nodes"
+    },
+    {
+      "condition": "S07 water heating compliance",
+      "output": "4 ratio nodes: m_49 (water use), m_50 (warm water), m_52 (efficiency), m_53 (DWHR)",
+      "note": "m_53 returns 'N/A' when ref DWHR=0; others use target/ref pattern"
+    },
+    {
+      "condition": "S09 internal gains compliance",
+      "output": "3 ratio + 3 pass/fail nodes: m/n_65 (plugLoad), m/n_66 (lighting), m/n_67 (equipment)",
+      "note": "Pass when target/ref <= 1.0 (lower density is better)"
+    },
+    {
+      "condition": "S11 envelope RSI compliance",
+      "output": "5 ratio + 5 pass/fail nodes: m/n_85 (roof), m/n_86 (walls), m/n_87 (exposedFloor), m/n_94 (wallsBelowGrade), m/n_95 (slabOnGrade)",
+      "note": "Pass when target RSI >= ref RSI (more insulation is better)"
+    },
+    {
+      "condition": "S11 envelope U-value compliance",
+      "output": "6 ratio + 6 pass/fail nodes: m/n_88 (doors), m/n_89-92 (windowN/E/S/W), m/n_93 (skylights)",
+      "note": "INVERTED ratio: ref/target. Pass when target U-value <= ref U-value (less heat loss is better)"
+    },
+    {
+      "condition": "S11 thermal bridge compliance",
+      "output": "1 ratio + 1 pass/fail: m/n_97",
+      "note": "INVERTED ratio: ref/target. Pass when target penalty <= ref penalty"
+    },
+    {
+      "condition": "S12 air tightness compliance",
+      "output": "2 ratio + 2 pass/fail: m/n_109 (ACH50), m/n_110 (ELA10)",
+      "note": "ACH50: INVERTED ref/target with 0.5% tolerance. ELA10: target/ref with 0.5% tolerance."
     }
   ],
   "edgeCases": [
     {
       "condition": "Reference value is 0",
-      "handling": "Compliance ratio defaults to 1",
-      "rationale": "Avoid division by zero; 1 means compliant when reference has no value"
+      "handling": "Most ratios return '100%' or '0%'; DWHR ratio (m_53) returns 'N/A'",
+      "rationale": "Guard against division by zero; N/A for DWHR because ref=0 means no DWHR requirement"
+    },
+    {
+      "condition": "Non-zero defaults differ from other reference input files",
+      "handling": "These defaults are code minimum baselines (lpppd=40, efficiency=300%, ach50=1.5, etc.) not zero",
+      "rationale": "Enables meaningful compliance comparison even before Reference model computes"
     }
   ],
   "tests": [
     {
-      "name": "Default values are all zero",
+      "name": "Default water heating lpppd",
       "inputs": {},
-      "expected": "All reference.* inputs = 0"
+      "expected": "reference.waterHeating.lpppd = 40"
+    },
+    {
+      "name": "Default water heating efficiency",
+      "inputs": {},
+      "expected": "reference.waterHeating.efficiency = 300"
+    },
+    {
+      "name": "Default plug load density",
+      "inputs": {},
+      "expected": "reference.internal.plugLoadDensity = 7"
+    },
+    {
+      "name": "Default ACH50",
+      "inputs": {},
+      "expected": "reference.airTightness.ach50Target = 1.5"
+    },
+    {
+      "name": "Default roof RSI",
+      "inputs": {},
+      "expected": "reference.transmissionLoss.roof.rsi = 5"
+    },
+    {
+      "name": "Default doors U-value",
+      "inputs": {},
+      "expected": "reference.transmissionLoss.doors.uValue = 2"
+    },
+    {
+      "name": "Default thermal bridge penalty",
+      "inputs": {},
+      "expected": "reference.transmissionLoss.thermalBridgePenalty = 20"
     }
   ],
   "references": [
-    { "source": "SectionComplianceNodes.js:15-168 (input registration)" },
-    { "source": "ComputationIntegration.js (REF_OUTPUT_TO_TARGET_INPUT mapping)" }
+    { "source": "SectionComplianceNodes.js (ReferenceInputs array, 21 entries registered via loop)" },
+    { "source": "SectionComplianceNodes.js (REF_OUTPUT_TO_TARGET_INPUT mapping object)" },
+    { "source": "SectionComplianceNodes.js (ComplianceNodes array, 40+ ratio/pass nodes)" }
   ]
 }
