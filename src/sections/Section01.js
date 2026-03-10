@@ -280,7 +280,7 @@ window.TEUI.SectionModules.sect01 = (function () {
           font-size: 2rem;
           font-weight: 900;
           color: #777;
-          margin-right: 8px;
+          margin-right: 20px;
           opacity: 0.5;
           vertical-align: baseline;
         }
