@@ -353,7 +353,7 @@
       label: "Water Use Compliance Status",
       compute: (inputs) => {
         const ratio = inputs["compliance.waterUse.ratio"];
-        if (ratio === "N/A") return "N/A";
+        if (ratio === "N/A") return "✓";
         const n = parseFloat(String(ratio).replace(/[%,]/g, "")) || 0;
         return n <= 100 ? "✓" : "✗";
       },
@@ -369,7 +369,7 @@
       label: "DHW Compliance Status",
       compute: (inputs) => {
         const ratio = inputs["compliance.waterEnergy.ratio"];
-        if (ratio === "N/A") return "N/A";
+        if (ratio === "N/A") return "✓";
         const n = parseFloat(String(ratio).replace(/[%,]/g, "")) || 0;
         return n <= 100 ? "✓" : "✗";
       },
@@ -385,7 +385,7 @@
       label: "Efficiency Compliance Status",
       compute: (inputs) => {
         const ratio = inputs["compliance.waterEfficiency.ratio"];
-        if (ratio === "N/A") return "N/A";
+        if (ratio === "N/A") return "✓";
         const n = parseFloat(String(ratio).replace(/[%,]/g, "")) || 0;
         return n >= 100 ? "✓" : "✗";
       },
@@ -401,7 +401,7 @@
       label: "DWHR Compliance Status",
       compute: (inputs) => {
         const ratio = inputs["compliance.waterDWHR.ratio"];
-        if (ratio === "N/A") return "N/A";
+        if (ratio === "N/A") return "✓";
         const n = parseFloat(String(ratio).replace(/[%,]/g, "")) || 0;
         return n >= 100 ? "✓" : "✗";
       },
