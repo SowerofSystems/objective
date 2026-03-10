@@ -79,7 +79,7 @@
       compute: (inputs) => {
         const target = parseNum(inputs["airQuality.radon.target"], 50);
         const limit = parseNum(inputs["airQuality.radon.limit"], 150);
-        return limit > 0 ? target / limit : 0;
+        return limit > 0 ? (target / limit) * 100 : 0;
       },
     });
 
@@ -93,7 +93,7 @@
       compute: (inputs) => {
         const target = parseNum(inputs["airQuality.co2.target"], 550);
         const limit = parseNum(inputs["airQuality.co2.limit"], 1000);
-        return limit > 0 ? target / limit : 0;
+        return limit > 0 ? (target / limit) * 100 : 0;
       },
     });
 
@@ -107,7 +107,7 @@
       compute: (inputs) => {
         const target = parseNum(inputs["airQuality.tvoc.target"], 100);
         const limit = parseNum(inputs["airQuality.tvoc.limit"], 400);
-        return limit > 0 ? target / limit : 0;
+        return limit > 0 ? (target / limit) * 100 : 0;
       },
     });
 
@@ -132,8 +132,8 @@
       dependencies: ["airQuality.radon.compliance"],
       label: "Radon Status",
       compute: (inputs) => {
-        const ratio = parseNum(inputs["airQuality.radon.compliance"], 0);
-        return ratio <= 1.0 ? "✓" : "✗";
+        const pct = parseNum(inputs["airQuality.radon.compliance"], 0);
+        return pct <= 100 ? "✓" : "✗";
       },
     });
 
@@ -145,8 +145,8 @@
       dependencies: ["airQuality.co2.compliance"],
       label: "CO2 Status",
       compute: (inputs) => {
-        const ratio = parseNum(inputs["airQuality.co2.compliance"], 0);
-        return ratio <= 1.0 ? "✓" : "✗";
+        const pct = parseNum(inputs["airQuality.co2.compliance"], 0);
+        return pct <= 100 ? "✓" : "✗";
       },
     });
 
@@ -158,8 +158,8 @@
       dependencies: ["airQuality.tvoc.compliance"],
       label: "TVOC Status",
       compute: (inputs) => {
-        const ratio = parseNum(inputs["airQuality.tvoc.compliance"], 0);
-        return ratio <= 1.0 ? "✓" : "✗";
+        const pct = parseNum(inputs["airQuality.tvoc.compliance"], 0);
+        return pct <= 100 ? "✓" : "✗";
       },
     });
 
