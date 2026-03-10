@@ -30,17 +30,19 @@
 
     // S02 metadata/text fields
     h_14: "raw", i_16: "raw", i_17: "raw",
-    l_12: "raw", l_13: "raw", l_14: "raw", l_15: "raw", l_16: "raw",
+    l_12: "cad-4dp", l_13: "cad-4dp", l_14: "cad-4dp", l_15: "cad-2dp", l_16: "cad-4dp",
 
     // S03 Climate
-    j_19: "number-1dp",
+    j_19: "number-1dp", m_19: "integer",
     d_20: "integer", d_21: "integer",
     d_22: "integer", h_22: "integer",
+    d_23: "integer", h_23: "integer",
+    d_24: "integer", h_24: "integer",
     d_25: "integer", l_22: "integer", l_24: "integer",
     e_23: "integer-nocomma", i_23: "integer-nocomma",
     e_24: "integer-nocomma", i_24: "integer-nocomma",
     e_25: "integer-nocomma",
-    m_23: "raw", m_24: "raw",
+    m_23: "integer", m_24: "integer",
     n_23: "raw", n_24: "raw",
 
     // S04 Energy: emission factor integers, nuclear waste 4dp
@@ -58,10 +60,10 @@
     i_44: "integer", i_46: "integer", k_45: "integer",
 
     // S07 Water Heating: integer occupancy, compliance ratios
-    h_49: "integer", i_49: "integer", k_49: "integer",
+    h_49: "number-2dp", i_49: "integer", k_49: "integer",
+    h_50: "number-2dp", i_50: "integer", j_50: "number-2dp", e_50: "number-2dp",
     m_49: "raw", m_50: "raw", m_52: "raw", m_53: "raw",
     n_49: "raw", n_50: "raw", n_52: "raw", n_53: "raw",
-    h_50: "number-1dp",
 
     // S08 Air Quality: integer targets and compliance
     d_56: "integer", d_57: "integer", d_58: "integer", d_59: "integer",
