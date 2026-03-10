@@ -1,0 +1,122 @@
+{
+  "_meta": {
+    "description": "Internal gains section registered input nodes. 4 inputs defining occupant activity level, lighting density, equipment efficiency spec, and elevator presence. Note: plug load density (d_65) and equipment density (d_67) are NOT inputs -- they are computed nodes derived from building type and reference standard.",
+    "instances": [
+      {
+        "id": "internal.activityLevel",
+        "legacyId": "d_64",
+        "label": "Occupant Activity Level",
+        "type": "string",
+        "classification": "C",
+        "default": "Normal",
+        "note": "Dropdown selection mapped to watts/person via ACTIVITY_WATTS lookup: Relaxed=96.71, Normal=117.23, Active=219.81, Hyperactive=424.95. Drives internal.occupants.wattsPerPerson (g_64)."
+      },
+      {
+        "id": "internal.lightingDensity",
+        "legacyId": "d_66",
+        "label": "Lighting Density",
+        "type": "number",
+        "unit": "W/m2",
+        "classification": "C",
+        "default": 1.5,
+        "note": "Lighting power density. Used in annual lighting energy: (density * floorArea * occupiedHours) / 1000."
+      },
+      {
+        "id": "internal.efficiencySpec",
+        "legacyId": "g_67",
+        "label": "Equipment Efficiency Spec",
+        "type": "string",
+        "classification": "C",
+        "default": "Regular",
+        "note": "Dropdown for equipment efficiency level. Used with building type and elevator status to look up equipment density from EQUIPMENT_LOADS_TABLE."
+      },
+      {
+        "id": "internal.elevators",
+        "legacyId": "d_68",
+        "label": "Elevator Presence",
+        "type": "string",
+        "classification": "C",
+        "default": "No Elevators",
+        "note": "Dropdown for elevator configuration. Used with building type and efficiency spec to look up equipment density from EQUIPMENT_LOADS_TABLE."
+      }
+    ]
+  },
+  "section": "S09",
+  "signature": {
+    "inputs": "These ARE the inputs (registered via graph.registerInput in InternalGainsNodes.js). Note: d_65 (plugLoadDensity) and d_67 (equipmentDensity) are computed nodes, not inputs.",
+    "output": "Values stored in MultiModelState, consumed by internal gains computed nodes and section compliance ratios"
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "activityLevel is valid ACTIVITY_WATTS key",
+        "description": "Must be one of: Relaxed, Normal, Active, Hyperactive"
+      },
+      {
+        "condition": "lightingDensity >= 0",
+        "description": "Lighting density cannot be negative"
+      }
+    ],
+    "invariants": []
+  },
+  "behavior": [
+    {
+      "condition": "d_64 (activity level) changes",
+      "output": "Triggers recomputation of watts/person (g_64), annual occupant gains (h_64), heating/cooling gains (i_64, k_64), subtotals",
+      "note": "C-classified, model-specific"
+    },
+    {
+      "condition": "d_66 (lighting density) changes",
+      "output": "Triggers recomputation of annual lighting energy (h_66), PLE subtotal (h_70), heating/cooling gains",
+      "note": "C-classified"
+    },
+    {
+      "condition": "g_67 (efficiency spec) changes",
+      "output": "Triggers recomputation of equipment density (d_67), annual equipment energy (h_67), PLE subtotal",
+      "note": "C-classified. Equipment density is looked up from EQUIPMENT_LOADS_TABLE[buildingType][efficiencySpec][elevatorStatus]"
+    },
+    {
+      "condition": "d_68 (elevators) changes",
+      "output": "Triggers recomputation of equipment density (d_67), annual equipment energy (h_67), PLE subtotal",
+      "note": "C-classified"
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "Unknown activity level",
+      "handling": "Falls back to 117.23 W/person (Normal)",
+      "rationale": "ACTIVITY_WATTS lookup returns default for unknown keys"
+    },
+    {
+      "condition": "Unknown building type or efficiency spec combination",
+      "handling": "Equipment density falls back to DEFAULT_EQUIPMENT_LOAD = 5.0 W/m2",
+      "rationale": "EQUIPMENT_LOADS_TABLE may not have entry for all combinations"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Default activity level",
+      "inputs": {},
+      "expected": "internal.activityLevel = 'Normal'"
+    },
+    {
+      "name": "Default lighting density",
+      "inputs": {},
+      "expected": "internal.lightingDensity = 1.5"
+    },
+    {
+      "name": "Default efficiency spec",
+      "inputs": {},
+      "expected": "internal.efficiencySpec = 'Regular'"
+    },
+    {
+      "name": "Default elevators",
+      "inputs": {},
+      "expected": "internal.elevators = 'No Elevators'"
+    }
+  ],
+  "references": [
+    { "source": "InternalGainsNodes.js (input registration)" },
+    { "source": "InternalGainsNodes.js (ACTIVITY_WATTS lookup, EQUIPMENT_LOADS_TABLE)" }
+  ]
+}

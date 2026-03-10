@@ -1,0 +1,173 @@
+{
+  "_meta": {
+    "description": "Climate section registered input nodes. These are user-editable values that drive all climate calculations in the computation graph. Province and city select the climate data source. Timeframe toggles present vs future climate projections. Capacitance settings affect ground-facing CDD calculation. Cooling days sets the cooling season length. Cooling setpoint override allows raising the cooling setpoint above 24°C. CDD user override allows manual entry of cooling degree days when the climate database returns 'Unavailable' (sentinel value 666).",
+    "instances": [
+      {
+        "id": "climate.location.province",
+        "legacyId": "d_19",
+        "label": "Province",
+        "type": "string",
+        "classification": "G",
+        "default": "ON"
+      },
+      {
+        "id": "climate.location.city",
+        "legacyId": "h_19",
+        "label": "City",
+        "type": "string",
+        "classification": "G",
+        "default": "Alexandria"
+      },
+      {
+        "id": "climate.timeframe",
+        "legacyId": "h_20",
+        "label": "Climate Timeframe",
+        "type": "string",
+        "classification": "G",
+        "default": "Present",
+        "validation": "Must be 'Present' or 'Future'"
+      },
+      {
+        "id": "building.capacitance.setting",
+        "legacyId": "h_21",
+        "label": "Thermal Capacitance Setting",
+        "type": "string",
+        "classification": "C",
+        "default": "Capacitance",
+        "note": "Controls ground-facing CDD calculation method: 'Static' floors GF-CDD at zero, 'Capacitance' allows negative values"
+      },
+      {
+        "id": "building.capacitance.percentage",
+        "legacyId": "i_21",
+        "label": "Capacitance Percentage",
+        "type": "number",
+        "unit": "%",
+        "classification": "C",
+        "default": 50,
+        "note": "Used as capacitance factor (i_21/100) with fallback to 0.5 in ground-facing heat gain calculations"
+      },
+      {
+        "id": "climate.coolingDays",
+        "legacyId": "m_19",
+        "label": "Cooling Season Days",
+        "type": "number",
+        "unit": "days",
+        "classification": "G",
+        "default": 120,
+        "note": "Number of days in the cooling season; heating days = 365 - coolingDays"
+      },
+      {
+        "id": "climate.cooling.override",
+        "legacyId": "l_24",
+        "label": "Cooling Setpoint Override",
+        "type": "number",
+        "unit": "°C",
+        "classification": "C",
+        "default": 24,
+        "note": "User can raise cooling setpoint above 24°C; values ≤24 are floored to 24 in climate.cooling.setpoint"
+      },
+      {
+        "id": "climate.cooling.degreedays.userOverride",
+        "legacyId": null,
+        "label": "CDD User Override",
+        "type": "number | null",
+        "unit": "°C·days",
+        "classification": "C",
+        "default": null,
+        "note": "Manual CDD entry for cities where climate database returns 'Unavailable' (sentinel 666). When non-null and > 0, takes priority over climate data lookup in climate.cooling.degreedays (d_21)."
+      }
+    ]
+  },
+  "section": "S03",
+  "signature": {
+    "inputs": "These ARE the inputs (registered via graph.registerInput)",
+    "output": "Values stored in MultiModelState, consumed by downstream computation nodes"
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "province is a valid Canadian province code",
+        "description": "Must match keys in ClimateValues.js (ON, BC, AB, etc.)"
+      },
+      {
+        "condition": "city exists in the selected province's climate data",
+        "description": "City must be in ClimateData[province] lookup"
+      }
+    ],
+    "invariants": [
+      {
+        "condition": "timeframe in {'Present', 'Future'}",
+        "description": "Only two valid timeframes for climate data selection"
+      },
+      {
+        "condition": "coolingDays in [0, 365]",
+        "description": "Cooling season cannot exceed total year"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "Province/city change",
+      "output": "Triggers recomputation of all climate lookup nodes (HDD, CDD, temperatures, elevation)",
+      "note": "G-classified inputs affect all models when changed"
+    },
+    {
+      "condition": "Timeframe changes between Present and Future",
+      "output": "HDD and CDD switch between present and future climate projection keys",
+      "note": "Affects HDD18 vs HDD18_2021_2050, CDD24 vs CDD24_2021_2050"
+    },
+    {
+      "condition": "CDD user override set to a positive number",
+      "output": "climate.cooling.degreedays returns the override value instead of climate data lookup",
+      "note": "Overrides the 'Unavailable' sentinel for cities without CDD data"
+    },
+    {
+      "condition": "CDD user override is null, empty, or non-positive",
+      "output": "climate.cooling.degreedays falls back to climate data lookup",
+      "note": "Default behavior when no manual override is provided"
+    },
+    {
+      "condition": "Capacitance setting = 'Static'",
+      "output": "Ground-facing CDD calculation uses MAX(0, ...) to floor at zero",
+      "note": "Static mode prevents negative ground-facing CDD"
+    },
+    {
+      "condition": "Capacitance setting = 'Capacitance'",
+      "output": "Ground-facing CDD can be negative (representing ground heat sink effect)",
+      "note": "More physically accurate model allowing ground to absorb heat"
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "City not found in climate database",
+      "handling": "getClimateData returns null; downstream nodes use their respective defaults",
+      "rationale": "Graceful fallback when location data unavailable"
+    },
+    {
+      "condition": "CDD user override clears to empty after being set",
+      "handling": "Reverts to climate data lookup (null/empty treated as unset)",
+      "rationale": "Clear-to-default behavior for editable-computed fields"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Default province/city resolves",
+      "inputs": { "climate.location.province": "ON", "climate.location.city": "Alexandria" },
+      "expected": "Climate data found for ON/Alexandria"
+    },
+    {
+      "name": "CDD override takes priority over lookup",
+      "inputs": { "climate.cooling.degreedays.userOverride": 150 },
+      "expected": "climate.cooling.degreedays returns 150 regardless of city"
+    },
+    {
+      "name": "CDD override null falls back to lookup",
+      "inputs": { "climate.cooling.degreedays.userOverride": null, "climate.location.province": "ON", "climate.location.city": "Toronto" },
+      "expected": "climate.cooling.degreedays returns ClimateData.CDD24 value"
+    }
+  ],
+  "references": [
+    { "source": "ClimateNodes.js:80-154 (ClimateInputs array)" },
+    { "source": "ClimateNodes.js:193-231 (CDD computation with user override)" }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "_meta": {
+    "description": "Warm water fraction computed node. Registered as a standalone graph.registerNode() in SectionComplianceNodes.js (NOT WaterHeatingNodes.js). Computes warm water fraction as lpppd * 0.4. Used in S07 water heating compliance calculations.",
+    "instances": [
+      {
+        "id": "waterHeating.warmWaterFraction",
+        "legacyId": "h_50",
+        "label": "Warm Water Fraction (L/person/day × 0.4)"
+      }
+    ]
+  },
+  "section": "S07",
+  "classification": "C",
+  "signature": {
+    "inputs": [
+      {
+        "name": "waterHeating.lpppd",
+        "type": "number",
+        "unit": "L/person/day",
+        "description": "Litres per person per day water use (h_49). Registered as input in WaterHeatingNodes.js."
+      }
+    ],
+    "output": {
+      "type": "number",
+      "unit": "L/person/day",
+      "description": "Warm water fraction = lpppd * 0.4"
+    }
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "lpppd >= 0",
+        "description": "Water use cannot be negative"
+      }
+    ],
+    "invariants": [
+      {
+        "condition": "warmWaterFraction = lpppd * 0.4",
+        "description": "Fixed 40% multiplier applied to litres per person per day"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "lpppd changes",
+      "output": "lpppd * 0.4",
+      "note": "Simple linear scaling — 40% of daily per-person water use is warm water"
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "lpppd = 0",
+      "handling": "warmWaterFraction = 0",
+      "rationale": "No water use means no warm water"
+    }
+  ],
+  "formula": {
+    "symbolic": "warmWaterFraction = lpppd * 0.4",
+    "implementation": "SectionComplianceNodes.js (standalone graph.registerNode call)"
+  },
+  "tests": [
+    {
+      "name": "Default warm water fraction",
+      "inputs": { "waterHeating.lpppd": 40 },
+      "expected": 16
+    },
+    {
+      "name": "Zero water use",
+      "inputs": { "waterHeating.lpppd": 0 },
+      "expected": 0
+    },
+    {
+      "name": "High water use",
+      "inputs": { "waterHeating.lpppd": 100 },
+      "expected": 40
+    }
+  ],
+  "references": [
+    { "source": "SectionComplianceNodes.js:556-567 (standalone graph.registerNode call)" },
+    { "source": "WaterHeatingNodes.js (provides waterHeating.lpppd input)" },
+    { "source": "SectionComplianceNodes.js (compliance.waterEnergy.ratio m_50 consumes this)" }
+  ]
+}

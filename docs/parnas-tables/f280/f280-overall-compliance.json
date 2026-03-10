@@ -1,0 +1,121 @@
+{
+  "_meta": {
+    "description": "F280 overall compliance status and nominal cooling capacity BTU conversion. The overall compliance node aggregates all F280 checks (heating sizing, cooling sizing, designer certification) into a single pass/fail indicator. The BTU conversion provides the nominal cooling capacity in imperial units for HVAC equipment specifications.",
+    "instances": [
+      {
+        "id": "f280.overallCompliance",
+        "legacyId": "f280_overall",
+        "label": "F280 Overall Compliance Status"
+      },
+      {
+        "id": "f280.nominalCoolingCapacityBTU",
+        "legacyId": "f280_cl_btu",
+        "label": "F280 Nominal Cooling Capacity (BTU/h)"
+      }
+    ]
+  },
+  "section": "SF280",
+  "classification": "C",
+  "signature": {
+    "inputs": [
+      {
+        "name": "f280.heatingSizingCompliance",
+        "type": "string",
+        "description": "Heating sizing pass/fail (✓/✗)"
+      },
+      {
+        "name": "f280.coolingSizingCompliance",
+        "type": "string",
+        "description": "Cooling sizing pass/fail (✓/✗)"
+      },
+      {
+        "name": "f280.certificationValid",
+        "type": "string",
+        "description": "Designer certification pass/fail (✓/✗)"
+      },
+      {
+        "name": "f280.nominalCoolingCapacity",
+        "type": "number",
+        "unit": "W",
+        "description": "Nominal cooling capacity in Watts"
+      }
+    ],
+    "output": {
+      "type": "string or number",
+      "unit": "✓/✗ or BTU/h"
+    }
+  },
+  "domain": {
+    "preconditions": [],
+    "invariants": [
+      {
+        "condition": "f280.overallCompliance is ✓ only when ALL sub-checks pass",
+        "description": "Single failing check causes overall failure"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "f280_overall: all three sub-checks are ✓",
+      "output": "✓",
+      "note": "Overall compliance passes only when heating sizing, cooling sizing, AND certification all pass"
+    },
+    {
+      "condition": "f280_overall: any sub-check is ✗",
+      "output": "✗",
+      "note": "Any single failure causes overall failure"
+    },
+    {
+      "condition": "f280_cl_btu: nominal cooling capacity conversion",
+      "output": "f280.nominalCoolingCapacity × 3.41214",
+      "note": "Standard W to BTU/h conversion factor"
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "No equipment installed (both capacities = 0, no cooling load)",
+      "handling": "Individual checks may still pass (heating: ratio=100, cooling: compliant if no load)",
+      "rationale": "Building may not need mechanical cooling"
+    }
+  ],
+  "formula": {
+    "symbolic": {
+      "f280_overall": "IF(heating=✓ AND cooling=✓ AND cert=✓, ✓, ✗)",
+      "f280_cl_btu": "f280_cl_total × 3.41214"
+    },
+    "implementation": "F280ComplianceNodes.js:512-536"
+  },
+  "tests": [
+    {
+      "name": "All checks pass",
+      "inputs": {
+        "f280.heatingSizingCompliance": "✓",
+        "f280.coolingSizingCompliance": "✓",
+        "f280.certificationValid": "✓"
+      },
+      "expected": "✓"
+    },
+    {
+      "name": "One check fails",
+      "inputs": {
+        "f280.heatingSizingCompliance": "✓",
+        "f280.coolingSizingCompliance": "✗",
+        "f280.certificationValid": "✓"
+      },
+      "expected": "✗"
+    },
+    {
+      "name": "Cooling BTU conversion",
+      "inputs": {
+        "f280.nominalCoolingCapacity": 5000
+      },
+      "expected": 17061,
+      "tolerance": 1,
+      "note": "5000 × 3.41214 = 17060.7 BTU/h"
+    }
+  ],
+  "references": [
+    { "source": "F280ComplianceNodes.js:357-369 (BTU conversion)" },
+    { "source": "F280ComplianceNodes.js:512-531 (overall compliance)" }
+  ]
+}

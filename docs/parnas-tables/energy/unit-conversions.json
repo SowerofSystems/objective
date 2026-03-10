@@ -24,22 +24,22 @@
   "signature": {
     "inputs": [
       {
-        "name": "f280.peakHeatingLoad",
+        "name": "energy.peakHeating.enclosureKw",
         "type": "number",
         "unit": "kW",
-        "description": "Peak heating load (d_137)"
+        "description": "Peak heating load (d_137) - from peak-load-base-computations.json"
       },
       {
-        "name": "f280.peakCoolingLoad",
+        "name": "energy.peakCooling.enclosureKw",
         "type": "number",
         "unit": "kW",
-        "description": "Peak cooling load (d_138)"
+        "description": "Peak cooling load (d_138) - from peak-load-base-computations.json"
       },
       {
-        "name": "f280.peakCoolingLoadGains",
+        "name": "energy.peakCooling.totalKw",
         "type": "number",
         "unit": "kW",
-        "description": "Peak cooling load including internal gains (d_139)"
+        "description": "Peak cooling load including internal gains (d_139) - from peak-load-base-computations.json"
       }
     ],
     "output": {
@@ -67,57 +67,57 @@
   "behavior": [
     {
       "condition": "l_137 (peak heating BTU)",
-      "output": "d_137 × 3412.14245",
+      "output": "d_137 \u00d7 3412.14245",
       "note": "Peak heating load in BTU/hr"
     },
     {
       "condition": "l_138 (peak cooling BTU)",
-      "output": "d_138 × 3412.14245",
+      "output": "d_138 \u00d7 3412.14245",
       "note": "Peak cooling load in BTU/hr"
     },
     {
       "condition": "l_139 (peak cooling + gains BTU)",
-      "output": "d_139 × 3412.14245",
+      "output": "d_139 \u00d7 3412.14245",
       "note": "Peak cooling load with internal gains in BTU/hr"
     }
   ],
   "edgeCases": [],
   "formula": {
-    "symbolic": "l_137 = d_137 × 3412.14245; l_138 = d_138 × 3412.14245; l_139 = d_139 × 3412.14245",
-    "implementation": "Section15.js:1839-1873"
+    "symbolic": "l_137 = d_137 \u00d7 3412.14245; l_138 = d_138 \u00d7 3412.14245; l_139 = d_139 \u00d7 3412.14245",
+    "implementation": "EnergyNodes.js:757-797"
   },
   "tests": [
     {
       "name": "Peak heating BTU conversion",
       "inputs": {
-        "f280.peakHeatingLoad": 10.0
+        "energy.peakHeating.enclosureKw": 10.0
       },
       "expected": 34121.42,
       "tolerance": 0.01,
-      "note": "l_137 = 10.0 × 3412.14245 = 34121.42 BTU/hr"
+      "note": "l_137 = 10.0 \u00d7 3412.14245 = 34121.42 BTU/hr"
     },
     {
       "name": "Peak cooling BTU conversion",
       "inputs": {
-        "f280.peakCoolingLoad": 7.0
+        "energy.peakCooling.enclosureKw": 7.0
       },
       "expected": 23885.0,
       "tolerance": 0.1,
-      "note": "l_138 = 7.0 × 3412.14245 = 23885.0 BTU/hr"
+      "note": "l_138 = 7.0 \u00d7 3412.14245 = 23885.0 BTU/hr"
     },
     {
       "name": "Peak cooling + gains BTU conversion",
       "inputs": {
-        "f280.peakCoolingLoadGains": 12.0
+        "energy.peakCooling.totalKw": 12.0
       },
       "expected": 40945.71,
       "tolerance": 0.01,
-      "note": "l_139 = 12.0 × 3412.14245 = 40945.71 BTU/hr"
+      "note": "l_139 = 12.0 \u00d7 3412.14245 = 40945.71 BTU/hr"
     },
     {
       "name": "Zero load",
       "inputs": {
-        "f280.peakHeatingLoad": 0
+        "energy.peakHeating.enclosureKw": 0
       },
       "expected": 0,
       "note": "0 kW = 0 BTU/hr"

@@ -1,0 +1,115 @@
+{
+  "_meta": {
+    "description": "Energy section registered input nodes. These are user-editable values for raw energy consumption from utility bills (Section 04) and the heatpump cost premium (Section 15). The raw bill inputs feed into EmissionsNodes for unit conversion, renewable subtraction, and emissions calculations. The heatpump cost premium was migrated from a static cell value to a graph input so that edits trigger live ROI recalculation.",
+    "instances": [
+      {
+        "id": "energy.raw.electricity",
+        "legacyId": "d_27",
+        "label": "Raw Electricity from Bills",
+        "type": "number",
+        "unit": "kWh/yr",
+        "classification": "C",
+        "section": "S04",
+        "default": 0,
+        "note": "User-entered actual electricity consumption from utility bills. Fed into EmissionsNodes for actual energy calculations (f_27)."
+      },
+      {
+        "id": "energy.raw.gas",
+        "legacyId": "d_28",
+        "label": "Raw Gas from Bills",
+        "type": "number",
+        "unit": "m³/yr",
+        "classification": "C",
+        "section": "S04",
+        "default": 0,
+        "note": "User-entered actual gas consumption from utility bills. Converted to kWh via emission factor (10.33 kWh/m³)."
+      },
+      {
+        "id": "energy.raw.oil",
+        "legacyId": "d_30",
+        "label": "Raw Oil from Bills",
+        "type": "number",
+        "unit": "L/yr",
+        "classification": "C",
+        "section": "S04",
+        "default": 0,
+        "note": "User-entered actual oil consumption from utility bills. Converted to kWh via emission factor (10.74 kWh/L)."
+      },
+      {
+        "id": "energy.cost.heatpumpPremium",
+        "legacyId": "d_142",
+        "label": "Heatpump Cost Premium ($)",
+        "type": "number",
+        "unit": "$",
+        "classification": "G",
+        "section": "S15",
+        "default": 30000,
+        "note": "User-editable cost premium for heatpump installation over conventional system. Used in ROI calculation: h_142 = d_142 / (d_141 - h_141). Migrated from static cell to graph input so edits trigger live ROI update."
+      }
+    ]
+  },
+  "section": "S04/S15",
+  "signature": {
+    "inputs": "These ARE the inputs (registered via graph.registerInput in EnergyNodes.js)",
+    "output": "Values stored in MultiModelState, consumed by EmissionsNodes and EnergyNodes"
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "Raw energy values >= 0",
+        "description": "Consumption values cannot be negative"
+      }
+    ],
+    "invariants": []
+  },
+  "behavior": [
+    {
+      "condition": "d_27 (raw electricity) changes",
+      "output": "Triggers recomputation of actual energy net (f_27), actual emissions (g_27), subtotals (f_32, g_32)",
+      "note": "C-classified, model-specific"
+    },
+    {
+      "condition": "d_28 (raw gas) changes",
+      "output": "Triggers recomputation of actual gas energy (f_28), actual gas emissions (g_28), subtotals",
+      "note": "Also affects S15 other fuel cost (l_141)"
+    },
+    {
+      "condition": "d_30 (raw oil) changes",
+      "output": "Triggers recomputation of actual oil energy (f_30), actual oil emissions (g_30), subtotals",
+      "note": "Also affects S15 other fuel cost (l_141)"
+    },
+    {
+      "condition": "d_142 (HP premium) changes",
+      "output": "Triggers recomputation of h_142 (heatpump ROI)",
+      "note": "G-classified, affects all models. Only meaningful when heating system = 'Heatpump'."
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "All raw energy inputs are 0",
+      "handling": "Actual column shows zero energy/emissions",
+      "rationale": "Valid state when no utility bill data is available (Targeted Use mode)"
+    },
+    {
+      "condition": "Heatpump premium is 0",
+      "handling": "ROI = 0 (no premium to pay back)",
+      "rationale": "Edge case for subsidized installations"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Default heatpump premium",
+      "inputs": {},
+      "expected": "energy.cost.heatpumpPremium = 30000"
+    },
+    {
+      "name": "Raw electricity default",
+      "inputs": {},
+      "expected": "energy.raw.electricity = 0"
+    }
+  ],
+  "references": [
+    { "source": "EnergyNodes.js:45-99 (EnergyInputs array)" },
+    { "source": "EmissionsNodes.js (consumes d_27, d_28, d_30 for actual energy calculations)" }
+  ]
+}
