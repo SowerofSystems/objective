@@ -621,6 +621,30 @@ TEUI.FieldManager = (function () {
                 cellElement.classList.add("editable", "user-input");
                 cellElement.textContent = cellDef.value != null ? cellDef.value : "0";
                 cellElement.setAttribute("contenteditable", "true");
+
+                // Generic blur handler: sync edited value to SM → graph
+                cellElement.addEventListener("blur", function () {
+                  const fid = this.getAttribute("data-field-id");
+                  if (!fid) return;
+                  const raw = this.textContent.trim();
+                  const num = window.TEUI.parseNumeric(raw, NaN);
+                  if (!isNaN(num)) {
+                    writeUserInput(fid, num.toString(), "user-modified");
+                  } else if (raw === "") {
+                    // Cleared: restore default from field definition
+                    const def = allFields[fid];
+                    const defaultVal = def?.defaultValue || cellDef.value || "0";
+                    this.textContent = defaultVal;
+                    writeUserInput(fid, defaultVal, "user-modified");
+                  }
+                });
+                // Prevent Enter from inserting newlines
+                cellElement.addEventListener("keydown", function (e) {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    this.blur();
+                  }
+                });
               } else if (cellDef.type === "number") {
                 // Create a number input element
                 const inputElement = document.createElement("input");
