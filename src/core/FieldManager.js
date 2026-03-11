@@ -627,8 +627,10 @@ TEUI.FieldManager = (function () {
                   const fid = this.getAttribute("data-field-id");
                   if (!fid) return;
                   const raw = this.textContent.trim();
-                  const num = window.TEUI.parseNumeric(raw, NaN);
-                  if (!isNaN(num)) {
+                  // Check if value is purely numeric (not text starting with digits)
+                  const isNumeric = raw !== "" && !isNaN(Number(raw.replace(/[$£€¥,]/g, "")));
+                  if (isNumeric) {
+                    const num = window.TEUI.parseNumeric(raw, NaN);
                     writeUserInput(fid, num.toString(), "user-modified");
                   } else if (raw === "") {
                     // Cleared: restore default from field definition
@@ -636,6 +638,9 @@ TEUI.FieldManager = (function () {
                     const defaultVal = def?.defaultValue || cellDef.value || "0";
                     this.textContent = defaultVal;
                     writeUserInput(fid, defaultVal, "user-modified");
+                  } else {
+                    // Non-numeric text (e.g. project name): write as-is
+                    writeUserInput(fid, raw, "user-modified");
                   }
                 });
                 // Prevent Enter from inserting newlines
