@@ -54,10 +54,10 @@
     m_38: "raw", m_39: "raw", m_40: "raw", m_41: "raw",
     n_38: "raw", n_39: "raw", n_40: "raw", n_41: "raw",
 
-    // S06 Renewable Energy: integer kWh/yr and m³/yr
+    // S06 Renewable Energy: subtotals as integer, inputs without commas
     d_43: "integer", i_43: "integer", i_45: "integer",
-    d_44: "integer", d_45: "integer", d_46: "integer",
-    i_44: "integer", i_46: "integer", k_45: "integer",
+    d_44: "integer-nocomma", d_45: "integer-nocomma", d_46: "integer-nocomma",
+    i_44: "integer-nocomma", i_46: "integer-nocomma", k_45: "integer-nocomma",
 
     // S07 Water Heating: integer occupancy, compliance ratios
     h_49: "number-2dp", i_49: "integer", k_49: "integer",
