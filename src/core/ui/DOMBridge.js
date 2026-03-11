@@ -140,6 +140,10 @@
     m_109: "raw", n_109: "raw",
     m_110: "raw", n_110: "raw",
 
+    // S13 Ventilation: SRE, ACH, per-person rate and unit conversions
+    d_118: "number-2dp", l_118: "number-2dp",
+    d_119: "number-2dp", f_119: "number-2dp", h_119: "number-2dp",
+
     // S13 Cooling: latent load factor display
     h_122: "percent-0dp",
     // S13 Cooling: compliance ratios and pass/fail checkmarks
@@ -154,9 +158,9 @@
     m_131: "number-2dp-comma",
 
     // S15 TEUI Summary: costs, loads, ratios
-    h_135: "number-2dp-comma", l_141: "number-2dp-comma",
-    d_141: "number-2dp-comma", h_141: "number-2dp-comma",
-    d_142: "number-2dp-comma", h_142: "number-2dp-comma",
+    h_135: "number-2dp-comma",
+    d_141: "cad-2dp", h_141: "cad-2dp", l_141: "cad-2dp",
+    d_142: "cad-2dp", h_142: "number-2dp-comma",
     d_143: "number-1dp", h_143: "number-1dp", l_143: "number-1dp",
     d_144: "percent-0dp", h_144: "percent-0dp", l_144: "percent-0dp",
     d_145: "number-2dp-comma",
