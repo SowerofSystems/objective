@@ -183,6 +183,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           type: "calculated",
           value: "0%",
           dependencies: ["d_85", "d_101"],
+          classes: ["text-air-facing"],
           label: "Roof: % of Total Envelope Area",
         },
         i: {
@@ -279,6 +280,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           type: "calculated",
           value: "0%",
           dependencies: ["d_86", "d_101"],
+          classes: ["text-air-facing"],
           label: "Walls Above Grade: % of Total Envelope Area",
         },
         i: {
@@ -375,6 +377,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           type: "calculated",
           value: "0%",
           dependencies: ["d_87", "d_101"],
+          classes: ["text-air-facing"],
           label: "Floor Exposed: % of Total Envelope Area",
         },
         i: {
@@ -472,6 +475,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           type: "calculated",
           value: "0%",
           dependencies: ["d_88", "d_101"],
+          classes: ["text-air-facing"],
           label: "Doors: % of Total Envelope Area",
         },
         i: {
@@ -569,6 +573,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           type: "calculated",
           value: "0%",
           dependencies: ["d_89", "d_101"],
+          classes: ["text-air-facing"],
           label: "Window Area North: % of Total Envelope Area",
         },
         i: {
@@ -666,6 +671,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           type: "calculated",
           value: "0%",
           dependencies: ["d_90", "d_101"],
+          classes: ["text-air-facing"],
           label: "Window Area East: % of Total Envelope Area",
         },
         i: {
@@ -763,6 +769,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           type: "calculated",
           value: "0%",
           dependencies: ["d_91", "d_101"],
+          classes: ["text-air-facing"],
           label: "Window Area South: % of Total Envelope Area",
         },
         i: {
@@ -860,6 +867,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           type: "calculated",
           value: "0%",
           dependencies: ["d_92", "d_101"],
+          classes: ["text-air-facing"],
           label: "Window Area West: % of Total Envelope Area",
         },
         i: {
@@ -957,6 +965,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           type: "calculated",
           value: "0%",
           dependencies: ["d_93", "d_101"],
+          classes: ["text-air-facing"],
           label: "Skylights: % of Total Envelope Area",
         },
         i: {
@@ -1053,6 +1062,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           type: "calculated",
           value: "0%",
           dependencies: ["d_94", "d_102"],
+          classes: ["text-ground-facing"],
           label: "Walls Below Grade: % of Total Envelope Area",
         },
         i: {
@@ -1149,6 +1159,7 @@ window.TEUI.SectionModules.sect11 = (function () {
           type: "calculated",
           value: "100%",
           dependencies: ["d_95", "d_102"],
+          classes: ["text-ground-facing"],
           label: "Floor Slab: % of Total Envelope Area",
         },
         i: {

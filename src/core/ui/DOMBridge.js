@@ -77,28 +77,44 @@
     g_63: "integer-nocomma", j_63: "integer-nocomma", i_63: "integer-nocomma",
 
     // S09 Internal Gains: densities as 1dp, seasonal split percentages
-    d_65: "number-1dp", d_66: "number-1dp", d_67: "number-1dp",
+    d_65: "number-1dp", d_66: "number-2dp", d_67: "number-1dp",
     g_64: "number-2dp",
-    j_64: "percent-0dp", j_65: "percent-0dp", j_66: "percent-0dp", j_67: "percent-0dp",
-    j_69: "percent-0dp", j_71: "percent-0dp",
-    l_64: "percent-0dp", l_65: "percent-0dp", l_66: "percent-0dp", l_67: "percent-0dp",
-    l_69: "percent-0dp", l_71: "percent-0dp",
+    j_64: "percent-2dp", j_65: "percent-2dp", j_66: "percent-2dp", j_67: "percent-2dp",
+    j_69: "percent-2dp", j_71: "percent-2dp",
+    l_64: "percent-2dp", l_65: "percent-2dp", l_66: "percent-2dp", l_67: "percent-2dp",
+    l_69: "percent-2dp", l_71: "percent-2dp",
     // S09 Internal Gains: compliance ratios and checkmarks
     m_65: "raw", m_66: "raw", m_67: "raw",
     n_65: "raw", n_66: "raw", n_67: "raw",
 
-    // S10 Radiant Gains: subtotal indicators and utilization factor
+    // S10 Radiant Gains: percentages and subtotal indicators
+    j_73: "percent-2dp", j_74: "percent-2dp", j_75: "percent-2dp",
+    j_76: "percent-2dp", j_77: "percent-2dp", j_78: "percent-2dp",
+    l_73: "percent-2dp", l_74: "percent-2dp", l_75: "percent-2dp",
+    l_76: "percent-2dp", l_77: "percent-2dp", l_78: "percent-2dp",
     j_79: "integer", l_79: "integer",
     g_81: "percent-2dp",
 
     // S11 Envelope: area percentages, thermal bridge decimal, heat loss/gain %
-    h_85: "percent-0dp", h_86: "percent-0dp", h_87: "percent-0dp",
-    h_88: "percent-0dp", h_89: "percent-0dp", h_90: "percent-0dp",
-    h_91: "percent-0dp", h_92: "percent-0dp", h_93: "percent-0dp",
-    h_94: "percent-0dp", h_95: "percent-0dp", h_98: "raw",
+    h_85: "percent-2dp", h_86: "percent-2dp", h_87: "percent-2dp",
+    h_88: "percent-2dp", h_89: "percent-2dp", h_90: "percent-2dp",
+    h_91: "percent-2dp", h_92: "percent-2dp", h_93: "percent-2dp",
+    h_94: "percent-2dp", h_95: "percent-2dp", h_98: "raw",
+    g_85: "number-3dp", g_86: "number-3dp", g_87: "number-3dp",
+    g_88: "number-3dp", g_89: "number-3dp", g_90: "number-3dp",
+    g_91: "number-3dp", g_92: "number-3dp", g_93: "number-3dp",
+    g_94: "number-3dp", g_95: "number-3dp",
     e_97: "number-3dp",
-    j_97: "percent-0dp", j_98: "percent-0dp",
-    l_97: "percent-0dp", l_98: "percent-0dp",
+    j_85: "percent-2dp", j_86: "percent-2dp", j_87: "percent-2dp",
+    j_88: "percent-2dp", j_89: "percent-2dp", j_90: "percent-2dp",
+    j_91: "percent-2dp", j_92: "percent-2dp", j_93: "percent-2dp",
+    j_94: "percent-2dp", j_95: "percent-2dp",
+    l_85: "percent-2dp", l_86: "percent-2dp", l_87: "percent-2dp",
+    l_88: "percent-2dp", l_89: "percent-2dp", l_90: "percent-2dp",
+    l_91: "percent-2dp", l_92: "percent-2dp", l_93: "percent-2dp",
+    l_94: "percent-2dp", l_95: "percent-2dp",
+    j_97: "percent-2dp", j_98: "percent-2dp",
+    l_97: "percent-2dp", l_98: "percent-2dp",
     // S11 Envelope: compliance ratios and checkmarks
     m_85: "raw", m_86: "raw", m_87: "raw", m_88: "raw",
     m_89: "raw", m_90: "raw", m_91: "raw", m_92: "raw",
@@ -163,7 +179,8 @@
   // S11 surface temperature → condensation risk companion node (cr_ fields)
   const CONDENSATION_FIELDS = [
     "o_85", "o_86", "o_87", "o_88", "o_89",
-    "o_90", "o_91", "o_92", "o_93", "o_94", "o_95"
+    "o_90", "o_91", "o_92", "o_93", "o_94", "o_95",
+    "o_101", "o_102"
   ];
 
   // ==========================================================================
@@ -283,6 +300,9 @@
     // Stamp S11 condensation risk indicators (🌵/💧 + surface temp)
     stampCondensationIndicators(state, refModelId || targetModelId, legacyToSemantic, parse, fmt);
 
+    // Stamp gain/loss indicator dots for S09, S10, S11
+    stampGainLossIndicators();
+
     console.log(`[DOMBridge] Stamped ${stamped} values`);
   }
 
@@ -394,6 +414,87 @@
     }
 
     console.log(`[DOMBridge] Stamped ${stamped} inputs for ${isRef ? "reference" : "target"} mode`);
+  }
+
+  // ==========================================================================
+  // GAIN/LOSS INDICATOR DOTS (S09, S10, S11)
+  // ==========================================================================
+
+  const GAIN_CLASSES = ["gain-high", "gain-medium", "gain-low"];
+  const LOSS_CLASSES = ["loss-high", "loss-medium", "loss-low"];
+
+  function setIndicator(fieldId, colorClass, baseClass) {
+    const el = document.querySelector(`[data-field-id="${fieldId}"]`);
+    if (!el) return;
+    el.classList.remove(...GAIN_CLASSES, ...LOSS_CLASSES, "gain-indicator", "loss-indicator");
+    if (colorClass) {
+      el.classList.add(baseClass, colorClass, "text-left-indicator");
+    }
+  }
+
+  // Heating gain: higher % is better (green ≥30, yellow ≥10, red <10)
+  function heatingGainClass(pct) {
+    const v = Math.abs(pct);
+    if (v >= 30) return "gain-high";
+    if (v >= 10) return "gain-medium";
+    return "gain-low";
+  }
+
+  // Cooling gain: lower % is better (green <5, yellow <15, red ≥15)
+  function coolingGainClass(pct) {
+    const v = Math.abs(pct);
+    if (v >= 15) return "gain-low";
+    if (v >= 5) return "gain-medium";
+    return "gain-high";
+  }
+
+  // S10 heating: green ≥33, yellow ≥10, red <10
+  function heatingGainClassS10(pct) {
+    const v = Math.abs(pct);
+    if (v >= 33) return "gain-high";
+    if (v >= 10) return "gain-medium";
+    return "gain-low";
+  }
+
+  // Heat loss contribution: red ≥15, yellow ≥5, green <5
+  function lossContribClass(pct) {
+    const v = Math.abs(pct);
+    if (v >= 15) return "loss-high";
+    if (v >= 5) return "loss-medium";
+    return "loss-low";
+  }
+
+  function readPct(fieldId) {
+    const el = document.querySelector(`[data-field-id="${fieldId}"]`);
+    if (!el) return 0;
+    return parseFloat(String(el.textContent).replace(/[%,]/g, "")) || 0;
+  }
+
+  function stampGainLossIndicators() {
+    // S09: Occupant + Internal Gains (rows 64-67, 69)
+    for (const row of [64, 65, 66, 67, 69]) {
+      const jPct = readPct(`j_${row}`);
+      const lPct = readPct(`l_${row}`);
+      setIndicator(`j_${row}`, heatingGainClass(jPct), "gain-indicator");
+      setIndicator(`l_${row}`, coolingGainClass(lPct), "gain-indicator");
+    }
+
+    // S10: Radiant Gains (rows 73-78)
+    for (const row of [73, 74, 75, 76, 77, 78]) {
+      const jPct = readPct(`j_${row}`);
+      const lPct = readPct(`l_${row}`);
+      setIndicator(`j_${row}`, heatingGainClassS10(jPct), "gain-indicator");
+      setIndicator(`l_${row}`, coolingGainClass(lPct), "gain-indicator");
+    }
+
+    // S11: Transmission Losses (rows 85-95, 97)
+    for (const row of [85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 97]) {
+      const jPct = readPct(`j_${row}`);
+      const lPct = readPct(`l_${row}`);
+      setIndicator(`j_${row}`, lossContribClass(jPct), "loss-indicator");
+      setIndicator(`l_${row}`, coolingGainClass(lPct), "gain-indicator");
+    }
+
   }
 
   // ==========================================================================

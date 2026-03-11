@@ -874,6 +874,48 @@
       }
     });
 
+    // ========================================================================
+    // CONDENSATION RISK INDICATORS (cr_101, cr_102)
+    // Same Passivhaus threshold as S11: risk when T_surface < T_interior - 4.2°C
+    // ========================================================================
+    const RISK_THRESHOLD = 4.2;
+
+    graph.registerNode({
+      id: "envelope.airFacing.condensationRisk",
+      legacyId: "cr_101",
+      section: "S12",
+      classification: "C",
+      dependencies: [
+        "envelope.airFacing.surfaceTemp",
+        "climate.heating.setpoint"
+      ],
+      label: "Air-Facing Condensation Risk",
+      compute: (inputs) => {
+        const surfaceTemp = inputs["envelope.airFacing.surfaceTemp"];
+        if (surfaceTemp === "" || surfaceTemp === null || surfaceTemp === undefined) return "";
+        const tInterior = parseNum(inputs["climate.heating.setpoint"], 21);
+        return parseNum(surfaceTemp) < (tInterior - RISK_THRESHOLD) ? "risk" : "safe";
+      }
+    });
+
+    graph.registerNode({
+      id: "envelope.groundFacing.condensationRisk",
+      legacyId: "cr_102",
+      section: "S12",
+      classification: "C",
+      dependencies: [
+        "envelope.groundFacing.surfaceTemp",
+        "climate.heating.setpoint"
+      ],
+      label: "Ground-Facing Condensation Risk",
+      compute: (inputs) => {
+        const surfaceTemp = inputs["envelope.groundFacing.surfaceTemp"];
+        if (surfaceTemp === "" || surfaceTemp === null || surfaceTemp === undefined) return "";
+        const tInterior = parseNum(inputs["climate.heating.setpoint"], 21);
+        return parseNum(surfaceTemp) < (tInterior - RISK_THRESHOLD) ? "risk" : "safe";
+      }
+    });
+
     // o_104: Total building aggregate surface temperature (area-weighted ΔT)
     graph.registerNode({
       id: "envelope.total.surfaceTemp",
