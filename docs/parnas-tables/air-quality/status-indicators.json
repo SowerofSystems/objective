@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "description": "Pass/fail status indicators for each air quality metric. Pollutants check if compliance ratio <= 1.0. Humidity checks if both heating and cooling season RH are within 30-60% range.",
+    "description": "Pass/fail status indicators for each air quality metric. Pollutants check if compliance percentage <= 100. Humidity checks if both heating and cooling season RH are within 30-60% range.",
     "instances": [
       {
         "id": "airQuality.radon.status",
@@ -53,12 +53,12 @@
   },
   "behavior": [
     {
-      "condition": "pollutant compliance ratio <= 1.0",
+      "condition": "pollutant compliance percentage <= 100",
       "output": "checkmark",
       "note": "Target is within guideline limit"
     },
     {
-      "condition": "pollutant compliance ratio > 1.0",
+      "condition": "pollutant compliance percentage > 100",
       "output": "X mark",
       "note": "Target exceeds guideline limit"
     },
@@ -75,7 +75,7 @@
   ],
   "edgeCases": [
     {
-      "condition": "compliance ratio exactly 1.0",
+      "condition": "compliance percentage exactly 100",
       "handling": "Pass (checkmark)",
       "rationale": "At the limit is considered acceptable"
     },
@@ -86,21 +86,21 @@
     }
   ],
   "formula": {
-    "symbolic": "n_56/57/58 = m_{N} <= 1.0 ? pass : fail; n_59 = d_59 in [30,60] AND i_59 in [30,60]",
+    "symbolic": "n_56/57/58 = m_{N} <= 100 ? pass : fail; n_59 = d_59 in [30,60] AND i_59 in [30,60]",
     "implementation": "AirQualityNodes.js:127-179"
   },
   "tests": [
     {
       "name": "Radon passes",
       "inputs": {
-        "airQuality.radon.compliance": 0.33
+        "airQuality.radon.compliance": 33
       },
       "expected": "checkmark"
     },
     {
       "name": "CO2 fails",
       "inputs": {
-        "airQuality.co2.compliance": 1.5
+        "airQuality.co2.compliance": 150
       },
       "expected": "X mark"
     },

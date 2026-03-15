@@ -171,8 +171,8 @@
     },
     {
       "condition": "n_49/n_50/n_52/n_53: ratio == 'N/A'",
-      "output": "'N/A'",
-      "note": "No reference value available for comparison"
+      "output": "'checkmark'",
+      "note": "No reference value available — default to pass"
     }
   ],
   "edgeCases": [
@@ -183,8 +183,8 @@
     },
     {
       "condition": "ratio is 'N/A'",
-      "handling": "Return 'N/A' directly",
-      "rationale": "No reference model value available for this metric"
+      "handling": "Return checkmark (pass)",
+      "rationale": "No reference model value available — absence of reference means no violation"
     },
     {
       "condition": "n_49/n_50 threshold direction",
@@ -272,11 +272,11 @@
       "expected": "X mark"
     },
     {
-      "name": "DWHR status - N/A",
+      "name": "DWHR status - N/A defaults to pass",
       "inputs": {
         "compliance.waterDWHR.ratio": "N/A"
       },
-      "expected": "N/A"
+      "expected": "checkmark"
     },
     {
       "name": "DWHR status - compliant",

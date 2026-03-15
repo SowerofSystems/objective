@@ -16,6 +16,16 @@
         "id": "envelope.total.surfaceTemp",
         "legacyId": "o_104",
         "label": "Total Aggregate Surface Temperature"
+      },
+      {
+        "id": "envelope.airFacing.condensationRisk",
+        "legacyId": "cr_101",
+        "label": "Air-Facing Condensation Risk"
+      },
+      {
+        "id": "envelope.groundFacing.condensationRisk",
+        "legacyId": "cr_102",
+        "label": "Ground-Facing Condensation Risk"
       }
     ]
   },
@@ -106,6 +116,21 @@
       "condition": "area <= 0",
       "output": "\"\"",
       "note": "Empty string when no area exists"
+    },
+    {
+      "condition": "cr_101 (airFacing.condensationRisk) with surfaceTemp available",
+      "output": "surfaceTemp < (T_int - 4.2) ? 'risk' : 'safe'",
+      "note": "Passivhaus threshold: 4.2°C below setpoint indicates condensation risk. DOMBridge renders 💧 (risk) or 🌵 (safe)"
+    },
+    {
+      "condition": "cr_102 (groundFacing.condensationRisk) with surfaceTemp available",
+      "output": "surfaceTemp < (T_int - 4.2) ? 'risk' : 'safe'",
+      "note": "Same Passivhaus threshold applied to ground-facing surfaces"
+    },
+    {
+      "condition": "cr_101/cr_102: surfaceTemp is empty/null/undefined",
+      "output": "\"\"",
+      "note": "No risk assessment when surface temp cannot be computed"
     }
   ],
   "edgeCases": [
@@ -121,8 +146,8 @@
     }
   ],
   "formula": {
-    "symbolic": "o_101 = T_int - (g_101 * (T_int - T_ext) * 0.13); o_102 = T_int - (g_102 * (T_int - 10) * 0.17); o_104 = T_int - (g_104 * deltaT_weighted * 0.13)",
-    "implementation": "VolumeMetricsNodes.js:831-905",
+    "symbolic": "o_101 = T_int - (g_101 * (T_int - T_ext) * 0.13); o_102 = T_int - (g_102 * (T_int - 10) * 0.17); o_104 = T_int - (g_104 * deltaT_weighted * 0.13); cr_101 = o_101 < (T_int - 4.2) ? risk : safe; cr_102 = o_102 < (T_int - 4.2) ? risk : safe",
+    "implementation": "VolumeMetricsNodes.js:831-917",
     "legacy": "Section12.js"
   },
   "tests": [
@@ -168,6 +193,41 @@
         "climate.temperature.winterAverage": -5
       },
       "expected": ""
+    },
+    {
+      "name": "Air-facing condensation risk - safe (well insulated)",
+      "inputs": {
+        "envelope.airFacing.surfaceTemp": 20.19,
+        "climate.heating.setpoint": 21
+      },
+      "expected": "safe",
+      "note": "20.19 >= (21 - 4.2 = 16.8) → safe"
+    },
+    {
+      "name": "Air-facing condensation risk - at risk (poor insulation)",
+      "inputs": {
+        "envelope.airFacing.surfaceTemp": 15.5,
+        "climate.heating.setpoint": 21
+      },
+      "expected": "risk",
+      "note": "15.5 < (21 - 4.2 = 16.8) → risk"
+    },
+    {
+      "name": "Ground-facing condensation risk - safe",
+      "inputs": {
+        "envelope.groundFacing.surfaceTemp": 20.48,
+        "climate.heating.setpoint": 21
+      },
+      "expected": "safe",
+      "note": "20.48 >= (21 - 4.2 = 16.8) → safe"
+    },
+    {
+      "name": "Condensation risk - empty surface temp returns empty",
+      "inputs": {
+        "envelope.airFacing.surfaceTemp": "",
+        "climate.heating.setpoint": 21
+      },
+      "expected": ""
     }
   ],
   "references": [
@@ -179,6 +239,12 @@
     },
     {
       "source": "VolumeMetricsNodes.js:877-905 (o_104 total)"
+    },
+    {
+      "source": "VolumeMetricsNodes.js:884-899 (cr_101 air-facing condensation risk)"
+    },
+    {
+      "source": "VolumeMetricsNodes.js:902-917 (cr_102 ground-facing condensation risk)"
     }
   ]
 }

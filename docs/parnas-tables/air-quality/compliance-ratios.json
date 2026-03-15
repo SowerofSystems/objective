@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "description": "Ratio of user target to guidance limit for each pollutant. Values <= 1.0 indicate the target is within (better than or equal to) the guideline. Values > 1.0 indicate the target exceeds the guideline.",
+    "description": "Percentage of user target relative to guidance limit for each pollutant. Values <= 100 indicate the target is within (better than or equal to) the guideline. Values > 100 indicate the target exceeds the guideline.",
     "instances": [
       {
         "id": "airQuality.radon.compliance",
@@ -36,8 +36,8 @@
     ],
     "output": {
       "type": "number",
-      "unit": "ratio",
-      "precision": 4
+      "unit": "percent",
+      "precision": 0
     }
   },
   "domain": {
@@ -57,8 +57,8 @@
   "behavior": [
     {
       "condition": "limit > 0",
-      "output": "target / limit",
-      "note": "Simple ratio"
+      "output": "(target / limit) * 100",
+      "note": "Percentage of limit"
     },
     {
       "condition": "limit == 0",
@@ -67,7 +67,7 @@
     }
   ],
   "formula": {
-    "symbolic": "m_{N} = d_{N} / k_{N}",
+    "symbolic": "m_{N} = (d_{N} / k_{N}) * 100",
     "implementation": "AirQualityNodes.js:72-112"
   },
   "tests": [
@@ -77,7 +77,7 @@
         "airQuality.radon.target": 50,
         "airQuality.radon.limit": 150
       },
-      "expected": 0.3333
+      "expected": 33.33
     },
     {
       "name": "CO2 target at limit",
@@ -85,7 +85,7 @@
         "airQuality.co2.target": 1000,
         "airQuality.co2.limit": 1000
       },
-      "expected": 1.0
+      "expected": 100
     },
     {
       "name": "TVOC target exceeds limit",
@@ -93,7 +93,7 @@
         "airQuality.tvoc.target": 500,
         "airQuality.tvoc.limit": 400
       },
-      "expected": 1.25
+      "expected": 125
     }
   ],
   "references": [
