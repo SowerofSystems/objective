@@ -1,0 +1,251 @@
+{
+  "id": "f280.peakEnvelopeHeatLoss",
+  "legacyId": "f280_hl_env",
+  "label": "F280 Peak Envelope Heat Loss",
+  "section": "SF280",
+  "classification": "C",
+  "_meta": {
+    "description": "Total peak heat loss through building envelope at design conditions per CSA F280-12 Section 5.2. Converts annual degree-day-based U\u00d7A products to instantaneous peak loads using heating design temperature difference. Each component's contribution: Q_component = Area \u00d7 U-value \u00d7 deltaT (Watts). Includes air-facing components (roof, walls, windows, doors, skylights, exposed floor) and ground-facing components (below-grade walls, slab-on-grade) with ground temperature adjustment.",
+    "standard": "CSA F280-12 Section 5.2",
+    "codeReference": "NBC 9.33.5.1",
+    "implementationNote": "The node's PRIMARY path reads d_137 from Section15 (already computed in kW, converted to W). The granular formula in this Parnas table documents the full decomposition but the node delegates to Section15 for the primary calculation, with a simplified fallback using 4 aggregated inputs (envelope.airFacing.uValue, envelope.airFacing.area, envelope.groundFacing.uValue, envelope.groundFacing.area)."
+  },
+  "signature": {
+    "inputs": [
+      {
+        "name": "transmissionLoss.roof.area",
+        "type": "number",
+        "unit": "m2",
+        "description": "Roof area (d_85)"
+      },
+      {
+        "name": "transmissionLoss.roof.uValue",
+        "type": "number",
+        "unit": "W/m2K",
+        "description": "Roof U-value (g_85)"
+      },
+      {
+        "name": "transmissionLoss.walls.area",
+        "type": "number",
+        "unit": "m2",
+        "description": "Above-grade wall area (d_86)"
+      },
+      {
+        "name": "transmissionLoss.walls.uValue",
+        "type": "number",
+        "unit": "W/m2K",
+        "description": "Above-grade wall U-value (g_86)"
+      },
+      {
+        "name": "transmissionLoss.exposedFloor.area",
+        "type": "number",
+        "unit": "m2",
+        "description": "Exposed floor area (d_87)"
+      },
+      {
+        "name": "transmissionLoss.exposedFloor.uValue",
+        "type": "number",
+        "unit": "W/m2K",
+        "description": "Exposed floor U-value (g_87)"
+      },
+      {
+        "name": "transmissionLoss.doors.area",
+        "type": "number",
+        "unit": "m2",
+        "description": "Door area (d_88)"
+      },
+      {
+        "name": "transmissionLoss.doors.uValue",
+        "type": "number",
+        "unit": "W/m2K",
+        "description": "Door U-value (g_88)"
+      },
+      {
+        "name": "transmissionLoss.windowNorth.area",
+        "type": "number",
+        "unit": "m2",
+        "description": "North window area (d_89)"
+      },
+      {
+        "name": "transmissionLoss.windowNorth.uValue",
+        "type": "number",
+        "unit": "W/m2K",
+        "description": "North window U-value (g_89)"
+      },
+      {
+        "name": "transmissionLoss.windowEast.area",
+        "type": "number",
+        "unit": "m2",
+        "description": "East window area (d_89b)"
+      },
+      {
+        "name": "transmissionLoss.windowEast.uValue",
+        "type": "number",
+        "unit": "W/m2K",
+        "description": "East window U-value (g_89b)"
+      },
+      {
+        "name": "transmissionLoss.windowSouth.area",
+        "type": "number",
+        "unit": "m2",
+        "description": "South window area (d_89c)"
+      },
+      {
+        "name": "transmissionLoss.windowSouth.uValue",
+        "type": "number",
+        "unit": "W/m2K",
+        "description": "South window U-value (g_89c)"
+      },
+      {
+        "name": "transmissionLoss.windowWest.area",
+        "type": "number",
+        "unit": "m2",
+        "description": "West window area (d_89d)"
+      },
+      {
+        "name": "transmissionLoss.windowWest.uValue",
+        "type": "number",
+        "unit": "W/m2K",
+        "description": "West window U-value (g_89d)"
+      },
+      {
+        "name": "transmissionLoss.skylights.area",
+        "type": "number",
+        "unit": "m2",
+        "description": "Skylight area (d_93)"
+      },
+      {
+        "name": "transmissionLoss.skylights.uValue",
+        "type": "number",
+        "unit": "W/m2K",
+        "description": "Skylight U-value (g_93)"
+      },
+      {
+        "name": "transmissionLoss.wallsBelowGrade.area",
+        "type": "number",
+        "unit": "m2",
+        "description": "Below-grade wall area (d_94)"
+      },
+      {
+        "name": "transmissionLoss.wallsBelowGrade.uValue",
+        "type": "number",
+        "unit": "W/m2K",
+        "description": "Below-grade wall U-value (g_94)"
+      },
+      {
+        "name": "transmissionLoss.slabOnGrade.area",
+        "type": "number",
+        "unit": "m2",
+        "description": "Slab-on-grade area (d_95)"
+      },
+      {
+        "name": "transmissionLoss.slabOnGrade.uValue",
+        "type": "number",
+        "unit": "W/m2K",
+        "description": "Slab-on-grade U-value (g_95)"
+      },
+      {
+        "name": "transmissionLoss.thermalBridgePenalty",
+        "type": "number",
+        "unit": "percent",
+        "description": "Thermal bridge penalty as percentage (d_97)"
+      },
+      {
+        "name": "climate.heating.setpoint",
+        "type": "number",
+        "unit": "degC",
+        "description": "Indoor heating setpoint (h_23)"
+      },
+      {
+        "name": "climate.temperature.coldest",
+        "type": "number",
+        "unit": "degC",
+        "description": "Outdoor heating design temperature (d_23)"
+      }
+    ],
+    "output": {
+      "type": "number",
+      "unit": "W",
+      "precision": 0,
+      "note": "Peak instantaneous heat loss through building envelope at design conditions"
+    }
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "climate.heating.setpoint > climate.temperature.coldest",
+        "description": "Indoor setpoint must exceed outdoor design temp for heating load"
+      }
+    ],
+    "invariants": [
+      {
+        "condition": "output >= 0",
+        "description": "Peak heat loss cannot be negative"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "All component areas and U-values available",
+      "output": "SUM(component_area \u00d7 component_U \u00d7 deltaT_heating) \u00d7 (1 + thermalBridgePenalty/100)",
+      "note": "Air-facing components use deltaT = setpoint - designTemp. Ground-facing components use deltaT = setpoint - groundTemp (10 degC). Total includes thermal bridge penalty factor."
+    },
+    {
+      "condition": "No envelope components defined",
+      "output": "0",
+      "note": "No envelope means no transmission heat loss"
+    }
+  ],
+  "formula": {
+    "symbolic": "Q_env = (SUM_airFacing(A_i \u00d7 U_i) + SUM_groundFacing(A_j \u00d7 U_j \u00d7 deltaT_ground/deltaT_air)) \u00d7 deltaT_air \u00d7 (1 + TB/100)",
+    "where": {
+      "deltaT_air": "h_23 - d_23 (heating setpoint minus outdoor design temperature)",
+      "deltaT_ground": "h_23 - 10 (heating setpoint minus ground temperature 10 degC)",
+      "A_i": "Component area (m2)",
+      "U_i": "Component U-value (W/m2K)",
+      "TB": "Thermal bridge penalty percentage (d_97)"
+    },
+    "legacy": "New calculation - derives peak loads from existing TransmissionLossNodes U\u00d7A values"
+  },
+  "tests": [
+    {
+      "name": "Simple house: walls + windows + roof, Toronto winter",
+      "inputs": {
+        "transmissionLoss.roof.area": 100,
+        "transmissionLoss.roof.uValue": 0.15,
+        "transmissionLoss.walls.area": 200,
+        "transmissionLoss.walls.uValue": 0.25,
+        "transmissionLoss.windowNorth.area": 10,
+        "transmissionLoss.windowNorth.uValue": 1.6,
+        "transmissionLoss.windowSouth.area": 15,
+        "transmissionLoss.windowSouth.uValue": 1.6,
+        "transmissionLoss.wallsBelowGrade.area": 60,
+        "transmissionLoss.wallsBelowGrade.uValue": 0.4,
+        "transmissionLoss.thermalBridgePenalty": 5,
+        "climate.heating.setpoint": 22,
+        "climate.temperature.coldest": -22
+      },
+      "expected": 5665,
+      "note": "Air-facing: (100*0.15 + 200*0.25 + 10*1.6 + 15*1.6)*44 = (15+50+16+24)*44 = 105*44 = 4620W. Ground: 60*0.4*(22-10) = 288W. Subtotal = 4908. With 5% TB: 4908*1.05 = 5153W. Rounded."
+    },
+    {
+      "name": "No components defined",
+      "inputs": {
+        "climate.heating.setpoint": 22,
+        "climate.temperature.coldest": -22
+      },
+      "expected": 0
+    }
+  ],
+  "references": [
+    {
+      "source": "CSA F280-12 Section 5.2 - Heat Loss Calculations"
+    },
+    {
+      "source": "TransmissionLossNodes.js - provides component areas and U-values"
+    },
+    {
+      "source": "ClimateNodes.js d_23 - provides outdoor design temperature"
+    }
+  ]
+}

@@ -37,6 +37,7 @@ TEUI.FieldManager = (function () {
     parallelCoordinates: "sect18",
     wombat: "sect19",
     notes: "sect20",
+    f280Compliance: "sect21",
   };
 
   // Combined field registry (populated from section modules)
@@ -161,91 +162,28 @@ TEUI.FieldManager = (function () {
    * @returns {string|null} - Section internal ID (e.g., "sect02") or null if not found
    */
   function findSectionForField(fieldId) {
-    // Search through all sections to find which one contains this field
-    for (const [uiSectionId, internalSectionId] of Object.entries(sections)) {
-      try {
-        if (TEUI.SectionModules[internalSectionId]?.getFields) {
-          const sectionFields =
-            TEUI.SectionModules[internalSectionId].getFields();
-          if (sectionFields && sectionFields[fieldId]) {
-            return internalSectionId;
-          }
-        }
-      } catch (e) {
-        // Continue searching other sections
+    for (const [, moduleSectionId] of Object.entries(sections)) {
+      const mod = TEUI.SectionModules[moduleSectionId];
+      if (mod?.getFields) {
+        try {
+          const fields = mod.getFields();
+          if (fields && fieldId in fields) return moduleSectionId;
+        } catch (_) { /* skip */ }
       }
     }
     return null;
   }
 
   /**
-   * Route user input to appropriate section's ModeManager (dual-state aware)
-   * @param {string} fieldId - Field ID
-   * @param {*} value - Field value
-   * @param {string} source - Source of the change (default: "user-modified")
+   * Write user input directly to StateManager with mode awareness.
+   * In reference mode, writes with ref_ prefix so the graph sees it
+   * as a reference-model value.
    */
-  function routeToSectionModeManager(fieldId, value, source = "user-modified") {
-    const sectionId = findSectionForField(fieldId);
-
-    if (!sectionId) {
-      // Fallback to legacy direct StateManager write if section not found
-      console.warn(
-        `[FieldManager] Field ${fieldId} not found in any section - using legacy direct write`
-      );
-      if (TEUI.StateManager && TEUI.StateManager.setValue) {
-        TEUI.StateManager.setValue(fieldId, value, source);
-      }
-      return;
-    }
-
-    try {
-      // Try to route through section's ModeManager (Pattern A dual-state aware)
-      const sectionModule = TEUI.SectionModules[sectionId];
-      if (
-        sectionModule &&
-        sectionModule.ModeManager &&
-        sectionModule.ModeManager.setValue
-      ) {
-        sectionModule.ModeManager.setValue(fieldId, value, source);
-        console.log(
-          `[FieldManager] Routed ${fieldId}=${value} through ${sectionId} ModeManager`
-        );
-
-        // ✅ FIX: Call section's calculateAll() after slider changes
-        // This matches the pattern used for editable fields (handleFieldBlur)
-        // and eliminates the need for sections to have self-listeners (Anti-Pattern 7)
-        if (
-          sectionModule.calculateAll &&
-          typeof sectionModule.calculateAll === "function"
-        ) {
-          sectionModule.calculateAll();
-          console.log(
-            `[FieldManager] Called ${sectionId}.calculateAll() after ${fieldId} change`
-          );
-        }
-      } else {
-        // Fallback: section exists but no ModeManager - direct StateManager write
-        // This is normal for display-only sections like sect01 that don't have calculations
-        // Only log for non-display sections to reduce noise
-        const displayOnlySections = ["sect01"];
-        if (!displayOnlySections.includes(sectionId)) {
-          console.warn(
-            `[FieldManager] Section ${sectionId} has no ModeManager - using direct write for ${fieldId}`
-          );
-        }
-        if (TEUI.StateManager && TEUI.StateManager.setValue) {
-          TEUI.StateManager.setValue(fieldId, value, source);
-        }
-      }
-    } catch (e) {
-      console.error(
-        `[FieldManager] Error routing ${fieldId} to ${sectionId}:`,
-        e
-      );
-      // Final fallback to legacy direct write
-      if (TEUI.StateManager && TEUI.StateManager.setValue) {
-        TEUI.StateManager.setValue(fieldId, value, source);
-      }
+  function writeUserInput(fieldId, value, source = "user-modified") {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    const key = isRef ? `ref_${fieldId}` : fieldId;
+    if (TEUI.StateManager?.setValue) {
+      TEUI.StateManager.setValue(key, value, source);
     }
   }
 
@@ -611,11 +549,19 @@ TEUI.FieldManager = (function () {
               const fieldId = cellDef.fieldId;
               cellElement.setAttribute("data-field-id", fieldId);
 
+              // Phase 5: Add semantic path attribute for migration
+              if (cellDef.semanticPath) {
+                cellElement.setAttribute("data-semantic", cellDef.semanticPath);
+              }
+
               if (cellDef.type === "dropdown" || cellDef.dropdownId) {
                 // Create a select element
                 const selectElement = document.createElement("select");
                 selectElement.className = "form-select form-select-sm";
                 selectElement.setAttribute("data-field-id", fieldId);
+                if (cellDef.semanticPath) {
+                  selectElement.setAttribute("data-semantic", cellDef.semanticPath);
+                }
 
                 if (cellDef.dropdownId) {
                   selectElement.setAttribute(
@@ -673,8 +619,37 @@ TEUI.FieldManager = (function () {
                 cellElement.textContent = cellDef.value || "0";
               } else if (cellDef.type === "editable") {
                 cellElement.classList.add("editable", "user-input");
-                cellElement.textContent = cellDef.value || "0";
+                cellElement.textContent = cellDef.value != null ? cellDef.value : "0";
                 cellElement.setAttribute("contenteditable", "true");
+
+                // Generic blur handler: sync edited value to SM → graph
+                cellElement.addEventListener("blur", function () {
+                  const fid = this.getAttribute("data-field-id");
+                  if (!fid) return;
+                  const raw = this.textContent.trim();
+                  // Check if value is purely numeric (not text starting with digits)
+                  const isNumeric = raw !== "" && !isNaN(Number(raw.replace(/[$£€¥,]/g, "")));
+                  if (isNumeric) {
+                    const num = window.TEUI.parseNumeric(raw, NaN);
+                    writeUserInput(fid, num.toString(), "user-modified");
+                  } else if (raw === "") {
+                    // Cleared: restore default from field definition
+                    const def = allFields[fid];
+                    const defaultVal = def?.defaultValue || cellDef.value || "0";
+                    this.textContent = defaultVal;
+                    writeUserInput(fid, defaultVal, "user-modified");
+                  } else {
+                    // Non-numeric text (e.g. project name): write as-is
+                    writeUserInput(fid, raw, "user-modified");
+                  }
+                });
+                // Prevent Enter from inserting newlines
+                cellElement.addEventListener("keydown", function (e) {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    this.blur();
+                  }
+                });
               } else if (cellDef.type === "number") {
                 // Create a number input element
                 const inputElement = document.createElement("input");
@@ -682,6 +657,9 @@ TEUI.FieldManager = (function () {
                 inputElement.className =
                   "form-control form-control-sm user-input"; // Keep the styling for blue cursor
                 inputElement.setAttribute("data-field-id", fieldId);
+                if (cellDef.semanticPath) {
+                  inputElement.setAttribute("data-semantic", cellDef.semanticPath);
+                }
                 inputElement.value = cellDef.value || "0.00";
 
                 // Add step attribute if defined in cellDef (optional)
@@ -698,12 +676,7 @@ TEUI.FieldManager = (function () {
 
                 // Simple change handler to update state manager
                 inputElement.addEventListener("change", function () {
-                  // ✅ DUAL-STATE AWARE: Route through section ModeManager
-                  routeToSectionModeManager(
-                    fieldId,
-                    this.value,
-                    "user-modified"
-                  );
+                  writeUserInput(fieldId, this.value, "user-modified");
                 });
 
                 cellElement.appendChild(inputElement);
@@ -1012,9 +985,9 @@ TEUI.FieldManager = (function () {
 
         // 'change' event: Calculate on thumb release - fires when user releases slider
         rangeInput.addEventListener("change", function () {
-          const value = this.value;
-          // ✅ DUAL-STATE AWARE: Route through section ModeManager
-          routeToSectionModeManager(fieldId, value, "user-modified");
+          writeUserInput(fieldId, this.value, "user-modified");
+          // SM.setValue triggers wildcard listener → recomputeForInput.
+          // No explicit recompute needed (SM dedup was removed).
         });
 
         // Set initial display value
@@ -1175,6 +1148,7 @@ TEUI.FieldManager = (function () {
         }
 
         // Add options to select element
+        const defaultVal = field.defaultValue ?? field.value;
         options.forEach(option => {
           const optionEl = document.createElement("option");
 
@@ -1187,17 +1161,19 @@ TEUI.FieldManager = (function () {
           optionEl.textContent = text;
 
           // Select default value if it matches
-          if (value === field.defaultValue) {
+          if (value === defaultVal) {
             optionEl.selected = true;
           }
 
           selectElement.appendChild(optionEl);
         });
 
+        // Publish initial selected value to SM
+        writeUserInput(fieldId, selectElement.value, "default");
+
         // Add change listener to update state
         selectElement.addEventListener("change", function () {
-          // ✅ DUAL-STATE AWARE: Route through section ModeManager
-          routeToSectionModeManager(fieldId, this.value, "user-modified");
+          writeUserInput(fieldId, this.value, "user-modified");
 
           // Update dependent dropdowns if needed
           updateDependentDropdowns(fieldId);
@@ -1418,18 +1394,20 @@ TEUI.FieldManager = (function () {
           let formattedSliderValue = displayValue;
           if (window.TEUI && window.TEUI.formatNumber) {
             if (fieldDef.type === "percentage") {
-              // Assuming displayValue is '20' for 20% for the input, but formatNumber expects 0.20 for 'percent'
-              // This part might need adjustment based on how slider values are stored/passed.
-              // For now, let's assume displayValue is ready for direct display or needs simple formatting.
               formattedSliderValue = window.TEUI.formatNumber(
                 parseFloat(displayValue) / 100,
                 "percent-0dp"
-              ); // Example: 20 -> 20%
+              );
+            } else if (fieldDef.type === "year_slider") {
+              formattedSliderValue = window.TEUI.formatNumber(
+                parseFloat(displayValue),
+                "integer-nocomma"
+              );
             } else {
               formattedSliderValue = window.TEUI.formatNumber(
                 parseFloat(displayValue),
                 "number-2dp"
-              ); // Default for others
+              );
             }
           }
           if (displaySpan.textContent !== formattedSliderValue) {
@@ -1461,18 +1439,20 @@ TEUI.FieldManager = (function () {
           let formattedSliderValue = displayValue;
           if (window.TEUI && window.TEUI.formatNumber) {
             if (fieldDef.type === "percentage") {
-              // Assuming displayValue is '20' for 20% for the input, but formatNumber expects 0.20 for 'percent'
-              // This part might need adjustment based on how slider values are stored/passed.
-              // For now, let's assume displayValue is ready for direct display or needs simple formatting.
               formattedSliderValue = window.TEUI.formatNumber(
                 parseFloat(displayValue) / 100,
                 "percent-0dp"
-              ); // Example: 20 -> 20%
+              );
+            } else if (fieldDef.type === "year_slider") {
+              formattedSliderValue = window.TEUI.formatNumber(
+                parseFloat(displayValue),
+                "integer-nocomma"
+              );
             } else {
               formattedSliderValue = window.TEUI.formatNumber(
                 parseFloat(displayValue),
                 "number-2dp"
-              ); // Default for others
+              );
             }
           }
           if (displaySpan.textContent !== formattedSliderValue) {
@@ -1533,6 +1513,7 @@ TEUI.FieldManager = (function () {
     getAllFields,
     getFieldsBySection,
     getField,
+    findSectionForField,
     getDropdownOptions,
     getAllUserEditableFields,
 
@@ -1540,7 +1521,6 @@ TEUI.FieldManager = (function () {
     getSections: function () {
       return sections;
     },
-    findSectionForField,
     getLayoutForSection,
 
     // Rendering

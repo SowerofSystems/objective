@@ -1,0 +1,55 @@
+{
+  "_meta": {
+    "description": "Forestry section registered input node. User-editable wood volume used to calculate annual carbon storage offset from wood products in the building.",
+    "instances": [
+      {
+        "id": "forestry.woodVolume",
+        "legacyId": "d_31",
+        "label": "Wood Volume",
+        "type": "number",
+        "unit": "m³/yr",
+        "classification": "G",
+        "default": 0,
+        "note": "Volume of wood products used in building construction. G-classified — shared across all models."
+      }
+    ]
+  },
+  "section": "S04",
+  "signature": {
+    "inputs": "This IS the input (registered via graph.registerInput in ForestryNodes.js)",
+    "output": "Value stored in MultiModelState, consumed by forestry.annualOffset calculation"
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "woodVolume >= 0",
+        "description": "Wood volume cannot be negative"
+      }
+    ],
+    "invariants": []
+  },
+  "behavior": [
+    {
+      "condition": "d_31 (wood volume) changes",
+      "output": "Triggers recomputation of forestry.annualOffset (wood carbon storage offset)",
+      "note": "G-classified, affects all models"
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "Wood volume = 0",
+      "handling": "No carbon storage offset applied",
+      "rationale": "Building uses no wood products"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Default wood volume",
+      "inputs": {},
+      "expected": "forestry.woodVolume = 0"
+    }
+  ],
+  "references": [
+    { "source": "ForestryNodes.js (input registration)" }
+  ]
+}

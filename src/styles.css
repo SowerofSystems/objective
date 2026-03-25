@@ -2383,10 +2383,10 @@ textarea.mirror-highlight {
   padding-right: 12px;
 }
 
-.checkmark {
+.checkmark, [data-status="pass"] {
   color: #28a745;
 }
-.warning {
+.warning, [data-status="fail"] {
   color: #dc3545;
 }
 .yellow-checkmark {
@@ -2541,7 +2541,6 @@ body.dev-environment {
   button,
   #help-button,
   #reference-toggle,
-  #tilt-button,
   #import-export-dropdown,
   #obc-matrix-btn,
   .dropdown,

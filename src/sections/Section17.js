@@ -25,45 +25,8 @@ window.TEUI.SectionModules.sect17 = (function () {
   // No specific event handlers or calculations needed in this module
   // Initialization logic is primarily in 4011-Dependency.js
 
-  function calculateAll() {
-    // console.log("[sect17] calculateAll called. Attempting to refresh Dependency Graph.");
-    if (
-      window.TEUI &&
-      typeof window.TEUI.initializeGraphInstanceAndUI === "function"
-    ) {
-      try {
-        window.TEUI.initializeGraphInstanceAndUI();
-      } catch (error) {
-        console.error(
-          "[sect17] Error calling window.TEUI.initializeGraphInstanceAndUI:",
-          error
-        );
-      }
-    } else if (
-      window.TEUI &&
-      typeof window.TEUI.initializeDependencyGraph === "function"
-    ) {
-      // Fallback if the more specific function isn't found
-      // console.log("[sect17] initializeGraphInstanceAndUI not found, trying initializeDependencyGraph.");
-      try {
-        window.TEUI.initializeDependencyGraph();
-      } catch (error) {
-        console.error(
-          "[sect17] Error calling window.TEUI.initializeDependencyGraph:",
-          error
-        );
-      }
-    } else {
-      console.warn(
-        "[sect17] Could not find initializeGraphInstanceAndUI or initializeDependencyGraph function in window.TEUI to refresh a D3 graph. Graph may be stale."
-      );
-    }
-  }
-
   return {
     getFields: getFields,
     getLayout: getLayout,
-    calculateAll: calculateAll, // Expose the new method
-    // No onSectionRendered or initializeEventHandlers needed here
   };
 })();

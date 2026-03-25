@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TEUI 4.012 - Computation Graph Demo</title>
+
+    <!-- CSS Resources -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        background: #1a1a2e;
+        color: #eee;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      .demo-header {
+        background: linear-gradient(135deg, #16213e 0%, #0f3460 100%);
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+      }
+      .demo-header h1 {
+        color: #e94560;
+        margin: 0;
+      }
+      .demo-header p {
+        color: #a0a0a0;
+        margin: 5px 0 0 0;
+      }
+      .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .status-ready { background: #28a745; color: white; }
+      .status-pending { background: #ffc107; color: black; }
+      .status-error { background: #dc3545; color: white; }
+
+      .section-card {
+        background: #16213e;
+        border: 1px solid #0f3460;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        overflow: hidden;
+      }
+      .section-card-header {
+        background: #0f3460;
+        padding: 12px 16px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .section-card-body {
+        padding: 16px;
+      }
+
+      /* Key Values styling */
+      .key-values-grid {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr 1fr 1fr 0.5fr;
+        gap: 1px;
+        background: #0f3460;
+      }
+      .key-values-grid > div {
+        background: #16213e;
+        padding: 12px;
+      }
+      .kv-header {
+        background: #0f3460 !important;
+        font-weight: 600;
+        text-align: center;
+      }
+      .kv-label {
+        display: flex;
+        flex-direction: column;
+      }
+      .kv-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #e94560;
+      }
+      .kv-subtitle {
+        font-size: 0.75rem;
+        color: #a0a0a0;
+      }
+      .kv-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        text-align: right;
+      }
+      .kv-value.ref { color: #ffc107; }
+      .kv-value.target { color: #28a745; }
+      .kv-value.actual { color: #17a2b8; }
+      .kv-percent {
+        font-size: 1.2rem;
+        font-weight: 600;
+        text-align: center;
+        color: #6c757d;
+      }
+
+      /* Input fields */
+      .input-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 12px;
+      }
+      .input-field {
+        display: flex;
+        flex-direction: column;
+      }
+      .input-field label {
+        font-size: 0.75rem;
+        color: #a0a0a0;
+        margin-bottom: 4px;
+      }
+      .input-field input, .input-field select {
+        background: #1a1a2e;
+        border: 1px solid #0f3460;
+        color: #eee;
+        padding: 8px;
+        border-radius: 4px;
+      }
+      .input-field input:focus, .input-field select:focus {
+        outline: none;
+        border-color: #e94560;
+      }
+
+      /* Debug console */
+      .debug-console {
+        background: #0d0d14;
+        border: 1px solid #0f3460;
+        border-radius: 4px;
+        padding: 12px;
+        font-family: monospace;
+        font-size: 12px;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+      .debug-line { margin: 2px 0; }
+      .debug-time { color: #6c757d; }
+      .debug-msg { color: #28a745; }
+      .debug-warn { color: #ffc107; }
+      .debug-error { color: #dc3545; }
+
+      /* File import */
+      .file-drop-zone {
+        border: 2px dashed #0f3460;
+        border-radius: 8px;
+        padding: 40px;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.2s;
+      }
+      .file-drop-zone:hover {
+        border-color: #e94560;
+      }
+      .file-drop-zone.dragover {
+        border-color: #28a745;
+        background: rgba(40, 167, 69, 0.1);
+      }
+    </style>
+
+    <!-- Core Computation System Only (no legacy sections) -->
+    <script src="src/core/computation/types.js"></script>
+    <script src="src/core/computation/ComputationGraph.js"></script>
+    <script src="src/core/computation/IncrementalEngine.js"></script>
+    <script src="src/core/computation/FieldRegistry.js"></script>
+
+    <!-- Data files needed for lookups -->
+    <script src="src/core/ClimateValues.js"></script>
+
+    <!-- Node Definitions -->
+    <script src="src/sections/nodes/ClimateNodes.js"></script>
+    <script src="src/sections/nodes/BuildingInfoNodes.js"></script>
+    <script src="src/sections/nodes/MechanicalNodes.js"></script>
+    <script src="src/sections/nodes/SpaceHeatingNodes.js"></script>
+    <script src="src/sections/nodes/WaterHeatingNodes.js"></script>
+    <script src="src/sections/nodes/RenewableNodes.js"></script>
+    <script src="src/sections/nodes/EnergyNodes.js"></script>
+    <script src="src/sections/nodes/ForestryNodes.js"></script>
+    <script src="src/sections/nodes/EmissionsNodes.js"></script>
+    <script src="src/sections/nodes/OccupancyNodes.js"></script>
+    <script src="src/sections/nodes/RadiantGainsNodes.js"></script>
+    <script src="src/sections/nodes/TransmissionLossNodes.js"></script>
+    <script src="src/sections/nodes/VolumeMetricsNodes.js"></script>
+    <script src="src/sections/nodes/VentilationNodes.js"></script>
+    <script src="src/sections/nodes/KeyValuesNodes.js"></script>
+
+    <!-- Multi-Model State -->
+    <script src="src/core/model/ModelMetadata.js"></script>
+    <script src="src/core/model/MultiModelState.js"></script>
+    <script src="src/core/model/MultiModelEngine.js"></script>
+
+    <!-- UI Bridge -->
+    <script src="src/core/ui/DOMBridge.js"></script>
+  </head>
+  <body>
+    <div class="container py-4">
+      <!-- Header -->
+      <div class="demo-header">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h1>ComputationGraph Demo</h1>
+            <p>Phase 2: UI Integration Test - Standalone computation without legacy system</p>
+          </div>
+          <div>
+            <span id="systemStatus" class="status-badge status-pending">Initializing...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- File Import -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <i class="bi bi-upload"></i>
+          Import CSV
+        </div>
+        <div class="section-card-body">
+          <div id="fileDropZone" class="file-drop-zone">
+            <i class="bi bi-file-earmark-arrow-up" style="font-size: 2rem; color: #6c757d;"></i>
+            <p class="mb-0 mt-2">Drop a case study CSV file here or click to browse</p>
+            <input type="file" id="fileInput" accept=".csv" style="display: none;" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Key Values Section -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <i class="bi bi-key-fill"></i>
+          Key Values (Computed by Graph)
+        </div>
+        <div class="section-card-body">
+          <div class="key-values-grid">
+            <!-- Header Row -->
+            <div class="kv-header">Metric</div>
+            <div class="kv-header">Reference</div>
+            <div class="kv-header">Target</div>
+            <div class="kv-header">Actual</div>
+            <div class="kv-header">%</div>
+
+            <!-- T.1 Lifetime Carbon -->
+            <div class="kv-label">
+              <span class="kv-title">T.1 Lifetime Carbon</span>
+              <span class="kv-subtitle">kgCO2e/m2/Service Life</span>
+            </div>
+            <div class="kv-value ref" data-field-id="keyValues.reference.lifetimeCarbon">--</div>
+            <div class="kv-value target" data-field-id="keyValues.target.lifetimeCarbon">--</div>
+            <div class="kv-value actual" data-field-id="keyValues.actual.lifetimeCarbon">--</div>
+            <div class="kv-percent" data-field-id="keyValues.lifetimeCarbon.percent">--%</div>
+
+            <!-- T.2 Annual Carbon -->
+            <div class="kv-label">
+              <span class="kv-title">T.2 Annual Carbon</span>
+              <span class="kv-subtitle">kgCO2e/m2/yr</span>
+            </div>
+            <div class="kv-value ref" data-field-id="keyValues.reference.annualCarbon">--</div>
+            <div class="kv-value target" data-field-id="keyValues.target.annualCarbon">--</div>
+            <div class="kv-value actual" data-field-id="keyValues.actual.annualCarbon">--</div>
+            <div class="kv-percent" data-field-id="keyValues.annualCarbon.remainingPercent">--%</div>
+
+            <!-- T.3 TEUI -->
+            <div class="kv-label">
+              <span class="kv-title">T.3 TEUI</span>
+              <span class="kv-subtitle">kWh/m2/yr</span>
+            </div>
+            <div class="kv-value ref" data-field-id="keyValues.reference.teui">--</div>
+            <div class="kv-value target" data-field-id="keyValues.target.teui">--</div>
+            <div class="kv-value actual" data-field-id="keyValues.actual.teui">--</div>
+            <div class="kv-percent" data-field-id="keyValues.teui.remainingPercent">--%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Building Info Inputs -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <i class="bi bi-building"></i>
+          Building Info (User Inputs)
+        </div>
+        <div class="section-card-body">
+          <div class="input-grid">
+            <div class="input-field">
+              <label>Conditioned Floor Area (m2)</label>
+              <input type="number" data-field-id="building.conditionedFloorArea" value="1427.2" />
+            </div>
+            <div class="input-field">
+              <label>Service Life (years)</label>
+              <input type="number" data-field-id="building.serviceLife" value="50" />
+            </div>
+            <div class="input-field">
+              <label>Heating Degree Days</label>
+              <input type="number" data-field-id="climate.heating.degreeDays" value="4000" />
+            </div>
+            <div class="input-field">
+              <label>Cooling Degree Days</label>
+              <input type="number" data-field-id="climate.cooling.degreeDays" value="200" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Panel -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <i class="bi bi-speedometer2"></i>
+          Performance Stats
+        </div>
+        <div class="section-card-body">
+          <div class="row">
+            <div class="col-md-3 text-center">
+              <div style="font-size: 2rem; font-weight: 700; color: #28a745;" id="statNodes">0</div>
+              <div style="color: #a0a0a0;">Nodes</div>
+            </div>
+            <div class="col-md-3 text-center">
+              <div style="font-size: 2rem; font-weight: 700; color: #17a2b8;" id="statInputs">0</div>
+              <div style="color: #a0a0a0;">Inputs</div>
+            </div>
+            <div class="col-md-3 text-center">
+              <div style="font-size: 2rem; font-weight: 700; color: #ffc107;" id="statCompute">0ms</div>
+              <div style="color: #a0a0a0;">Compute Time</div>
+            </div>
+            <div class="col-md-3 text-center">
+              <div style="font-size: 2rem; font-weight: 700; color: #e94560;" id="statBound">0</div>
+              <div style="color: #a0a0a0;">Bound Elements</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Debug Console -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <i class="bi bi-terminal"></i>
+          Debug Console
+          <button class="btn btn-sm btn-outline-light ms-auto" onclick="clearConsole()">Clear</button>
+        </div>
+        <div class="section-card-body">
+          <div id="debugConsole" class="debug-console"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ============================================================================
+      // Debug Console
+      // ============================================================================
+
+      function logToConsole(msg, type = 'msg') {
+        const console = document.getElementById('debugConsole');
+        const time = new Date().toLocaleTimeString();
+        const line = document.createElement('div');
+        line.className = 'debug-line';
+        line.innerHTML = `<span class="debug-time">[${time}]</span> <span class="debug-${type}">${msg}</span>`;
+        console.appendChild(line);
+        console.scrollTop = console.scrollHeight;
+      }
+
+      function clearConsole() {
+        document.getElementById('debugConsole').innerHTML = '';
+      }
+
+      // ============================================================================
+      // System Initialization
+      // ============================================================================
+
+      let graph = null;
+      let state = null;
+      let engine = null;
+      let domBridge = null;
+
+      function initializeSystem() {
+        logToConsole('Initializing ComputationGraph system...', 'msg');
+
+        try {
+          // Step 1: Create graph
+          graph = window.TEUI.ComputationGraph.create();
+          logToConsole('Created computation graph', 'msg');
+
+          // Step 2: Register all nodes
+          const nodes = window.TEUI.ComputationNodes || {};
+          const nodeModules = [
+            'Climate', 'BuildingInfo', 'Envelope', 'Mechanical',
+            'SpaceHeating', 'WaterHeating', 'Renewable', 'Energy',
+            'Forestry', 'Emissions', 'Occupancy', 'RadiantGains',
+            'TransmissionLoss', 'VolumeMetrics', 'Ventilation', 'KeyValues'
+          ];
+
+          nodeModules.forEach(name => {
+            if (nodes[name]) {
+              nodes[name].register(graph);
+              logToConsole(`Registered ${name}Nodes`, 'msg');
+            }
+          });
+
+          const graphStats = graph.getStats();
+          logToConsole(`Graph has ${graphStats.nodeCount} nodes, ${graphStats.inputCount} inputs`, 'msg');
+
+          // Step 3: Create state
+          const MultiModelState = window.TEUI.MultiModelState;
+          const ModelMetadata = window.TEUI.ModelMetadata;
+
+          state = MultiModelState.create();
+          state.addModel(ModelMetadata.createTarget('Target'));
+          state.addModel(ModelMetadata.createReference('Reference'));
+          logToConsole('Created Target and Reference models', 'msg');
+
+          // Step 4: Create engine
+          engine = window.TEUI.MultiModelEngine.create({ state, graph });
+          logToConsole('Created computation engine', 'msg');
+
+          // Step 5: Create and enable DOMBridge
+          domBridge = window.TEUI.DOMBridge.create({ state, engine });
+          domBridge.bindAll(document.body);
+          domBridge.connect();
+
+          const boundCount = domBridge.getBoundCount();
+          logToConsole(`DOMBridge bound ${boundCount} elements`, 'msg');
+
+          // Step 6: Run initial computation
+          const start = performance.now();
+          const result = engine.computeAll();
+          const duration = performance.now() - start;
+          logToConsole(`Initial computation: ${result.totalComputed} nodes in ${duration.toFixed(2)}ms`, 'msg');
+
+          // Step 7: Sync DOM with computed values
+          domBridge.syncFromState();
+          logToConsole('DOM synced with computed values', 'msg');
+
+          // Update stats display
+          document.getElementById('statNodes').textContent = graphStats.nodeCount;
+          document.getElementById('statInputs').textContent = graphStats.inputCount;
+          document.getElementById('statCompute').textContent = duration.toFixed(2) + 'ms';
+          document.getElementById('statBound').textContent = boundCount;
+
+          // Update status
+          document.getElementById('systemStatus').className = 'status-badge status-ready';
+          document.getElementById('systemStatus').textContent = 'Ready';
+
+          logToConsole('System initialized successfully!', 'msg');
+
+          // Expose for debugging
+          window.demo = { graph, state, engine, domBridge };
+
+        } catch (e) {
+          logToConsole('Initialization failed: ' + e.message, 'error');
+          document.getElementById('systemStatus').className = 'status-badge status-error';
+          document.getElementById('systemStatus').textContent = 'Error';
+          console.error(e);
+        }
+      }
+
+      // ============================================================================
+      // File Import
+      // ============================================================================
+
+      function setupFileImport() {
+        const dropZone = document.getElementById('fileDropZone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+          dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dropZone.classList.remove('dragover');
+          const file = e.dataTransfer.files[0];
+          if (file) processFile(file);
+        });
+
+        fileInput.addEventListener('change', () => {
+          if (fileInput.files[0]) processFile(fileInput.files[0]);
+        });
+      }
+
+      function processFile(file) {
+        logToConsole(`Loading file: ${file.name}`, 'msg');
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const csvContent = e.target.result;
+          parseAndLoadCSV(csvContent);
+        };
+        reader.readAsText(file);
+      }
+
+      function parseAndLoadCSV(csvContent) {
+        const lines = csvContent.split('\n').filter(l => l.trim());
+        if (lines.length < 2) {
+          logToConsole('CSV must have header row and at least one data row', 'error');
+          return;
+        }
+
+        // Parse header row - format: "d_12: Major Occupancy,d_13: Reference Standard,..."
+        const headers = parseCSVLine(lines[0]);
+        const legacyIds = headers.map(h => {
+          const match = h.match(/^([a-z]_\d+):/i);
+          return match ? match[1] : null;
+        });
+
+        logToConsole(`Parsed ${headers.length} headers, found ${legacyIds.filter(Boolean).length} legacy IDs`, 'msg');
+
+        // Build mapping from legacy ID to semantic path
+        const legacyToSemantic = new Map();
+        const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
+        inputIds.forEach(semanticPath => {
+          const inputNode = graph.getInput(semanticPath);
+          if (inputNode?.legacyId) {
+            legacyToSemantic.set(inputNode.legacyId, semanticPath);
+          }
+        });
+
+        // Use first data row (Target model data)
+        const targetId = state.getActiveModelId();
+        const refModelId = getRefModelId();
+        const dataValues = parseCSVLine(lines[1]);
+        let loadedCount = 0;
+
+        dataValues.forEach((value, idx) => {
+          const legacyId = legacyIds[idx];
+          if (!legacyId || !value.trim()) return;
+
+          const semanticPath = legacyToSemantic.get(legacyId);
+          if (semanticPath) {
+            state.setValueForModel(targetId, semanticPath, value.trim());
+            loadedCount++;
+          }
+        });
+
+        logToConsole(`Loaded ${loadedCount} values for Target model`, 'msg');
+
+        // If there's a reference data row (line 3), load it too
+        if (lines.length >= 3 && refModelId) {
+          const refValues = parseCSVLine(lines[2]);
+          let refCount = 0;
+
+          refValues.forEach((value, idx) => {
+            const legacyId = legacyIds[idx];
+            if (!legacyId || !value.trim()) return;
+
+            const semanticPath = legacyToSemantic.get(legacyId);
+            if (semanticPath) {
+              state.setValueForModel(refModelId, semanticPath, value.trim());
+              refCount++;
+            }
+          });
+
+          logToConsole(`Loaded ${refCount} values for Reference model`, 'msg');
+        }
+
+        // Recompute
+        const start = performance.now();
+        const result = engine.computeAll();
+        const duration = performance.now() - start;
+
+        logToConsole(`Recomputed ${result.totalComputed} nodes in ${duration.toFixed(2)}ms`, 'msg');
+        document.getElementById('statCompute').textContent = duration.toFixed(2) + 'ms';
+
+        // Sync DOM
+        domBridge.syncFromState();
+        logToConsole('DOM synced from state', 'msg');
+      }
+
+      function parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current);
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        result.push(current);
+        return result;
+      }
+
+      function getRefModelId() {
+        if (!state) return null;
+        const models = state.getAllModels();
+        const refModel = models.find(m => m.modelType === 'reference');
+        return refModel?.id || null;
+      }
+
+      // ============================================================================
+      // Initialize on load
+      // ============================================================================
+
+      // Expose for testing
+      window.parseAndLoadCSV = parseAndLoadCSV;
+
+      document.addEventListener('DOMContentLoaded', () => {
+        setupFileImport();
+        initializeSystem();
+      });
+    </script>
+  </body>
+</html>

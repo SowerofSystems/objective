@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Case Study Validation Test</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #1a1a2e;
+      color: #eee;
+    }
+    h1 { color: #00d4aa; margin-bottom: 10px; }
+    .subtitle { color: #888; margin-bottom: 20px; }
+
+    .controls {
+      background: #252540;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .controls label {
+      display: block;
+      margin-bottom: 10px;
+      color: #00d4aa;
+    }
+    input[type="file"] {
+      padding: 10px;
+      background: #1a1a2e;
+      border: 1px solid #444;
+      border-radius: 4px;
+      color: #eee;
+      width: 100%;
+      margin-bottom: 15px;
+    }
+    button {
+      background: #00d4aa;
+      color: #1a1a2e;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    button:hover { background: #00b894; }
+    button:disabled { background: #444; color: #888; cursor: not-allowed; }
+
+    .status {
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+      font-family: monospace;
+    }
+    .status.running { background: #2d3748; border-left: 4px solid #f6e05e; }
+    .status.success { background: #1a4731; border-left: 4px solid #48bb78; }
+    .status.error { background: #4a1a1a; border-left: 4px solid #f56565; }
+
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    .results-table th, .results-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #333;
+    }
+    .results-table th {
+      background: #252540;
+      color: #00d4aa;
+      position: sticky;
+      top: 0;
+    }
+    .results-table tr:hover { background: #252540; }
+    .pass { color: #48bb78; }
+    .fail { color: #f56565; }
+    .close { color: #f6e05e; }
+
+    .output-section {
+      background: #0d0d1a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    .output-section h3 { color: #00d4aa; margin-top: 0; }
+    .output-section pre {
+      background: #1a1a2e;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .copy-btn {
+      background: #444;
+      color: #eee;
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+    .copy-btn:hover { background: #555; }
+
+    .mismatch-detail {
+      background: #1a1a2e;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Case Study Validation Test</h1>
+  <p class="subtitle">Tests ComputationGraph vs StateManager parity across multiple CSV imports</p>
+
+  <div class="controls">
+    <label>Select CSV files from test/computation/case-studies/</label>
+    <input type="file" id="csvFiles" multiple accept=".csv">
+    <div>
+      <button id="runTests" disabled>Run All Tests</button>
+      <button id="copyOutput" class="copy-btn" style="display:none">Copy Output for Claude</button>
+    </div>
+  </div>
+
+  <div id="status" class="status" style="display:none"></div>
+
+  <table class="results-table" id="resultsTable" style="display:none">
+    <thead>
+      <tr>
+        <th>File</th>
+        <th>Matches</th>
+        <th>Close</th>
+        <th>Mismatches</th>
+        <th>Missing</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="resultsBody"></tbody>
+  </table>
+
+  <div class="output-section" id="outputSection" style="display:none">
+    <h3>Detailed Output (for debugging)</h3>
+    <pre id="detailedOutput"></pre>
+  </div>
+
+  <!-- Load calculator dependencies -->
+  <script src="../../src/core/computation/types.js"></script>
+  <script src="../../src/core/computation/ComputationGraph.js"></script>
+  <script src="../../src/core/computation/IncrementalEngine.js"></script>
+  <script src="../../src/core/computation/FieldRegistry.js"></script>
+  <script src="../../src/core/model/ModelMetadata.js"></script>
+  <script src="../../src/core/model/MultiModelState.js"></script>
+  <script src="../../src/core/model/MultiModelEngine.js"></script>
+  <script src="../../src/sections/nodes/ClimateNodes.js"></script>
+  <script src="../../src/sections/nodes/BuildingInfoNodes.js"></script>
+  <script src="../../src/sections/nodes/MechanicalNodes.js"></script>
+  <script src="../../src/sections/nodes/SpaceHeatingNodes.js"></script>
+  <script src="../../src/sections/nodes/WaterHeatingNodes.js"></script>
+  <script src="../../src/sections/nodes/RenewableNodes.js"></script>
+  <script src="../../src/sections/nodes/EnergyNodes.js"></script>
+  <script src="../../src/sections/nodes/ForestryNodes.js"></script>
+  <script src="../../src/sections/nodes/EmissionsNodes.js"></script>
+  <script src="../../src/sections/nodes/OccupancyNodes.js"></script>
+  <script src="../../src/sections/nodes/RadiantGainsNodes.js"></script>
+  <script src="../../src/sections/nodes/TransmissionLossNodes.js"></script>
+  <script src="../../src/sections/nodes/VolumeMetricsNodes.js"></script>
+  <script src="../../src/sections/nodes/VentilationNodes.js"></script>
+  <script src="../../src/sections/nodes/KeyValuesNodes.js"></script>
+  <script src="../../src/core/computation/ComputationIntegration.js"></script>
+
+  <script>
+    /**
+     * Case Study Validation Test Runner
+     *
+     * This test harness:
+     * 1. Loads multiple CSV files
+     * 2. For each CSV, simulates import and runs validation
+     * 3. Compares ComputationGraph values against imported CSV values
+     * 4. Outputs structured results for debugging
+     */
+
+    const csvFilesInput = document.getElementById('csvFiles');
+    const runTestsBtn = document.getElementById('runTests');
+    const copyOutputBtn = document.getElementById('copyOutput');
+    const statusDiv = document.getElementById('status');
+    const resultsTable = document.getElementById('resultsTable');
+    const resultsBody = document.getElementById('resultsBody');
+    const outputSection = document.getElementById('outputSection');
+    const detailedOutput = document.getElementById('detailedOutput');
+
+    let loadedFiles = [];
+    let allResults = [];
+
+    // Enable run button when files selected
+    csvFilesInput.addEventListener('change', (e) => {
+      loadedFiles = Array.from(e.target.files);
+      runTestsBtn.disabled = loadedFiles.length === 0;
+      if (loadedFiles.length > 0) {
+        showStatus(`${loadedFiles.length} files selected. Click "Run All Tests" to begin.`, 'running');
+      }
+    });
+
+    // Run tests button
+    runTestsBtn.addEventListener('click', runAllTests);
+
+    // Copy output button
+    copyOutputBtn.addEventListener('click', () => {
+      const output = detailedOutput.textContent;
+      navigator.clipboard.writeText(output).then(() => {
+        copyOutputBtn.textContent = 'Copied!';
+        setTimeout(() => { copyOutputBtn.textContent = 'Copy Output for Claude'; }, 2000);
+      });
+    });
+
+    function showStatus(message, type) {
+      statusDiv.style.display = 'block';
+      statusDiv.className = 'status ' + type;
+      statusDiv.textContent = message;
+    }
+
+    async function runAllTests() {
+      allResults = [];
+      resultsBody.innerHTML = '';
+      resultsTable.style.display = 'table';
+      outputSection.style.display = 'block';
+      copyOutputBtn.style.display = 'inline-block';
+      runTestsBtn.disabled = true;
+
+      showStatus('Running tests...', 'running');
+
+      for (let i = 0; i < loadedFiles.length; i++) {
+        const file = loadedFiles[i];
+        showStatus(`Testing ${i + 1}/${loadedFiles.length}: ${file.name}...`, 'running');
+
+        try {
+          const csvContent = await readFile(file);
+          const result = await runSingleTest(file.name, csvContent);
+          allResults.push(result);
+          addResultRow(result);
+        } catch (error) {
+          const errorResult = {
+            file: file.name,
+            error: error.message,
+            matches: 0,
+            close: 0,
+            mismatches: 0,
+            missing: 0,
+            mismatchDetails: []
+          };
+          allResults.push(errorResult);
+          addResultRow(errorResult);
+        }
+
+        // Small delay between tests for stability
+        await sleep(100);
+      }
+
+      // Generate summary
+      const summary = generateSummary(allResults);
+      detailedOutput.textContent = summary;
+
+      const totalMismatches = allResults.reduce((sum, r) => sum + (r.mismatches || 0), 0);
+      if (totalMismatches === 0) {
+        showStatus(`All ${loadedFiles.length} tests passed!`, 'success');
+      } else {
+        showStatus(`Completed with ${totalMismatches} total mismatches across ${loadedFiles.length} files`, 'error');
+      }
+
+      runTestsBtn.disabled = false;
+    }
+
+    function readFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsText(file);
+      });
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function runSingleTest(filename, csvContent) {
+      // Parse CSV to get field values
+      const parsedData = parseCSV(csvContent);
+
+      // Initialize computation system fresh for each test
+      // Reset by creating new graph
+      if (!window.TEUI.ComputationGraph) {
+        throw new Error('ComputationGraph not loaded');
+      }
+
+      const graph = window.TEUI.ComputationGraph.create();
+      const nodes = window.TEUI.ComputationNodes || {};
+
+      // Register all nodes
+      const nodeModules = ['Climate', 'BuildingInfo', 'Envelope', 'Mechanical',
+        'SpaceHeating', 'WaterHeating', 'Renewable', 'Energy', 'Forestry',
+        'Emissions', 'Occupancy', 'RadiantGains', 'TransmissionLoss',
+        'VolumeMetrics', 'Ventilation', 'KeyValues'];
+
+      for (const name of nodeModules) {
+        if (nodes[name]?.register) {
+          nodes[name].register(graph);
+        }
+      }
+
+      // Create state and engine
+      const MultiModelState = window.TEUI.MultiModelState;
+      const MultiModelEngine = window.TEUI.MultiModelEngine;
+      const ModelMetadata = window.TEUI.ModelMetadata;
+
+      const state = MultiModelState.create();
+      const targetMeta = ModelMetadata.createTarget('Test Target');
+      state.addModel(targetMeta);
+
+      const engine = MultiModelEngine.create({ state, graph });
+
+      // Sync input values from parsed CSV
+      const targetId = state.getActiveModelId();
+      const inputIds = graph.getAllInputIds ? graph.getAllInputIds() : [];
+
+      for (const semanticPath of inputIds) {
+        const inputNode = graph.getInput(semanticPath);
+        const legacyId = inputNode?.legacyId;
+
+        if (legacyId && parsedData.target[legacyId] !== undefined) {
+          const value = parsedData.target[legacyId];
+          state.setValueForModel(targetId, semanticPath, value);
+        }
+      }
+
+      // Run computation
+      engine.computeAllForModel(targetId);
+
+      // Now validate: compare computed values against CSV values
+      const result = {
+        file: filename,
+        matches: 0,
+        close: 0,
+        mismatches: 0,
+        missing: 0,
+        mismatchDetails: []
+      };
+
+      // Get all nodes with legacyIds and compare
+      const allNodeIds = graph.getAllNodeIds();
+
+      for (const semanticPath of allNodeIds) {
+        const node = graph.getNode(semanticPath);
+        if (!node?.legacyId) continue;
+
+        const legacyId = node.legacyId;
+        const csvValue = parsedData.target[legacyId];
+
+        if (csvValue === undefined || csvValue === '') {
+          result.missing++;
+          continue;
+        }
+
+        const computedValue = state.getValueForModel(targetId, semanticPath);
+
+        // Compare values
+        const csvNum = parseFloat(csvValue);
+        const computedNum = parseFloat(computedValue);
+
+        if (isNaN(csvNum) || isNaN(computedNum)) {
+          // String comparison
+          if (String(csvValue) === String(computedValue)) {
+            result.matches++;
+          } else {
+            result.mismatches++;
+            result.mismatchDetails.push({
+              legacyId,
+              semanticPath,
+              expected: csvValue,
+              computed: computedValue
+            });
+          }
+        } else {
+          // Numeric comparison
+          const diff = Math.abs(csvNum - computedNum);
+          const relativeDiff = csvNum !== 0 ? diff / Math.abs(csvNum) : diff;
+
+          if (diff < 0.01) {
+            result.matches++;
+          } else if (relativeDiff < 0.01) {
+            result.close++;
+          } else {
+            result.mismatches++;
+            result.mismatchDetails.push({
+              legacyId,
+              semanticPath,
+              expected: csvNum,
+              computed: computedNum,
+              diff: diff.toFixed(4),
+              pctDiff: (relativeDiff * 100).toFixed(2) + '%'
+            });
+          }
+        }
+      }
+
+      return result;
+    }
+
+    function parseCSV(csvString) {
+      const rows = csvString.trim().split('\n');
+      if (rows.length < 2) {
+        throw new Error('CSV must have at least header and data rows');
+      }
+
+      const parseRow = (rowString) => {
+        const values = [];
+        let current = '';
+        let inQuotes = false;
+
+        for (const char of rowString) {
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            values.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        values.push(current.trim());
+        return values;
+      };
+
+      // Parse headers - extract field IDs (format: "fieldId: Label" or just "fieldId")
+      const headerRow = parseRow(rows[0]);
+      const fieldIds = headerRow.map(h => {
+        const colonIdx = h.indexOf(':');
+        return colonIdx !== -1 ? h.substring(0, colonIdx).trim() : h.trim();
+      });
+
+      // Parse target values (row 2)
+      const targetRow = parseRow(rows[1]);
+      const target = {};
+      fieldIds.forEach((id, i) => {
+        if (id && targetRow[i] !== undefined) {
+          target[id] = targetRow[i];
+        }
+      });
+
+      // Parse reference values if present (row 3)
+      const reference = {};
+      if (rows.length >= 3) {
+        const refRow = parseRow(rows[2]);
+        fieldIds.forEach((id, i) => {
+          if (id && refRow[i] !== undefined) {
+            reference[`ref_${id}`] = refRow[i];
+          }
+        });
+      }
+
+      return { target, reference };
+    }
+
+    function addResultRow(result) {
+      const row = document.createElement('tr');
+      const statusClass = result.error ? 'fail' :
+                         result.mismatches > 0 ? 'fail' :
+                         result.close > 0 ? 'close' : 'pass';
+      const statusText = result.error ? 'ERROR' :
+                        result.mismatches > 0 ? 'FAIL' :
+                        result.close > 0 ? 'CLOSE' : 'PASS';
+
+      row.innerHTML = `
+        <td>${result.file}</td>
+        <td>${result.matches || 0}</td>
+        <td class="close">${result.close || 0}</td>
+        <td class="fail">${result.mismatches || 0}</td>
+        <td>${result.missing || 0}</td>
+        <td class="${statusClass}">${statusText}</td>
+      `;
+      resultsBody.appendChild(row);
+    }
+
+    function generateSummary(results) {
+      const output = {
+        timestamp: new Date().toISOString(),
+        summary: {
+          totalFiles: results.length,
+          passed: results.filter(r => !r.error && r.mismatches === 0).length,
+          failed: results.filter(r => r.error || r.mismatches > 0).length,
+          totalMatches: results.reduce((s, r) => s + (r.matches || 0), 0),
+          totalClose: results.reduce((s, r) => s + (r.close || 0), 0),
+          totalMismatches: results.reduce((s, r) => s + (r.mismatches || 0), 0)
+        },
+        failedTests: results
+          .filter(r => r.error || r.mismatches > 0)
+          .map(r => ({
+            file: r.file,
+            error: r.error,
+            mismatches: r.mismatchDetails || []
+          }))
+      };
+
+      return JSON.stringify(output, null, 2);
+    }
+  </script>
+</body>
+</html>

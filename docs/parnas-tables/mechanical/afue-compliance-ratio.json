@@ -1,0 +1,102 @@
+{
+  "id": "compliance.afue.ratio",
+  "legacyId": "m_115",
+  "label": "AFUE Compliance Ratio",
+  "section": "S13",
+  "classification": "C",
+  "_meta": {
+    "description": "Ratio of target AFUE to reference AFUE, expressed as percentage. Values >= 100% indicate compliance. AFUE (Annual Fuel Utilization Efficiency) measures furnace/boiler efficiency."
+  },
+  "signature": {
+    "inputs": [
+      {
+        "name": "mechanical.heating.afue",
+        "type": "number",
+        "unit": "decimal",
+        "description": "Target model AFUE (j_115) - e.g., 0.96 for 96% efficient"
+      },
+      {
+        "name": "reference.mechanical.heating.afue",
+        "type": "number",
+        "unit": "decimal",
+        "description": "Reference model AFUE (ref_j_115), injected via cross-model sync"
+      }
+    ],
+    "output": {
+      "type": "number",
+      "unit": "percent",
+      "format": "integer"
+    }
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "referenceAFUE > 0",
+        "description": "Reference AFUE must be positive for ratio calculation"
+      }
+    ],
+    "invariants": [
+      {
+        "condition": "output >= 0",
+        "description": "Percentage cannot be negative"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "referenceAFUE > 0",
+      "output": "round(targetAFUE / referenceAFUE × 100)",
+      "note": "Higher target AFUE = higher compliance percentage"
+    },
+    {
+      "condition": "referenceAFUE == 0",
+      "output": "100",
+      "note": "Default to 100% (compliant) when no reference value available"
+    }
+  ],
+  "architectureNote": "Reference model self-comparison is not an explicit parameter. Compliance nodes always compute in the Target model context. Reference values arrive via cross-model sync (reference.* bridge inputs). When Reference model computes for itself, compliance nodes are not evaluated.",
+  "compliance": {
+    "passCondition": "output >= 100",
+    "passSymbol": "✓",
+    "failSymbol": "✗",
+    "relatedField": "n_115"
+  },
+  "formula": {
+    "symbolic": "m_115 = IF(ref_j_115 > 0, round(j_115 / ref_j_115 × 100), 100)",
+    "legacy": "Section13.js lines 3323, 3307-3318"
+  },
+  "tests": [
+    {
+      "name": "Target exceeds reference (compliant)",
+      "inputs": {
+        "mechanical.heating.afue": 0.96,
+        "reference.mechanical.heating.afue": 0.92
+      },
+      "expected": 104
+    },
+    {
+      "name": "Target equals reference",
+      "inputs": {
+        "mechanical.heating.afue": 0.92,
+        "reference.mechanical.heating.afue": 0.92
+      },
+      "expected": 100
+    },
+    {
+      "name": "No reference value available",
+      "inputs": {
+        "mechanical.heating.afue": 0.96,
+        "reference.mechanical.heating.afue": 0
+      },
+      "expected": 100
+    }
+  ],
+  "references": [
+    {
+      "source": "Section13.js:3307-3318 (calculateComplianceRatio)"
+    },
+    {
+      "source": "Section13.js:3323 (m_115_ratio calculation)"
+    }
+  ]
+}

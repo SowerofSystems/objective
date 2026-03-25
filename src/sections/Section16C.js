@@ -107,9 +107,8 @@ window.TEUI.CoolingSankey = (function () {
     const getStateValue = key => {
       let rawValue;
 
-      // Check if Section 16 is in Reference mode
-      const sect16ModeManager = window.TEUI?.sect16?.ModeManager;
-      if (sect16ModeManager && sect16ModeManager.currentMode === "reference") {
+      // Check if in Reference mode
+      if (window.TEUI?.ReferenceToggle?.isReferenceMode()) {
         // Reference mode: Read ref_ prefixed values
         rawValue = teuiState.getValue(`ref_${key}`);
       } else {
@@ -262,8 +261,7 @@ window.TEUI.CoolingSankey = (function () {
       let rawValue;
 
       // MODE AWARE: Same pattern as getStateValue
-      const sect16ModeManager = window.TEUI?.sect16?.ModeManager;
-      if (sect16ModeManager && sect16ModeManager.currentMode === "reference") {
+      if (window.TEUI?.ReferenceToggle?.isReferenceMode()) {
         rawValue = teuiState.getValue(`ref_${key}`);
       } else {
         rawValue = teuiState.getValue(key);

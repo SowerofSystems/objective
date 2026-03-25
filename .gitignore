@@ -38,6 +38,9 @@ yarn-error.log*
 *.swo
 *~
 
+# Generated build info
+src/build-info.js
+
 # Old structure (to be removed after migration)
 OBJECTIVE 4011RF/
 gh-pages-local/

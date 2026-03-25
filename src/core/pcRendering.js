@@ -971,25 +971,20 @@ window.TEUI.PCRendering = (function () {
       window.TEUI?.SectionModules?.[axisConfig.owningSection];
 
     if (owningSection) {
+      const SM = window.TEUI?.StateManager;
+
+      // Mute SM listeners during multi-value writes to prevent intermediate
+      // recomputes. LegacyAdapter still writes to graph (it wraps SM.setValue).
+      if (SM?.muteListeners) SM.muteListeners();
+
       // ACH50 special case: Set dropdown to MEASURED
       if (axisConfig.dropdownField) {
         const dropdownFieldId = axisConfig.dropdownField;
         const dropdownFieldIdWithPrefix = isTarget
           ? dropdownFieldId
           : axisConfig.refDropdownField;
-        const stateToUpdate = isTarget
-          ? owningSection.TargetState
-          : owningSection.ReferenceState;
-
-        if (stateToUpdate) {
-          stateToUpdate.setValue(dropdownFieldId, "MEASURED");
-          console.log(
-            `[pcRendering] Set ${isTarget ? "Target" : "Reference"}State.${dropdownFieldId} = "MEASURED"`
-          );
-        }
-
-        if (window.TEUI?.StateManager) {
-          window.TEUI.StateManager.setValue(
+        if (SM) {
+          SM.setValue(
             dropdownFieldIdWithPrefix,
             "MEASURED",
             "user-modified"
@@ -1009,30 +1004,17 @@ window.TEUI.PCRendering = (function () {
         const selectorFieldIdWithPrefix = isTarget
           ? selectorFieldId
           : "ref_d_113";
-        const currentFuelType = window.TEUI?.StateManager?.getValue(
-          selectorFieldIdWithPrefix
-        );
+        const currentFuelType = SM?.getValue(selectorFieldIdWithPrefix);
 
         if (currentFuelType === "Gas" || currentFuelType === "Oil") {
-          const stateToUpdate = isTarget
-            ? owningSection.TargetState
-            : owningSection.ReferenceState;
-
-          if (stateToUpdate) {
-            stateToUpdate.setValue(selectorFieldId, "Heatpump");
-            console.log(
-              `[HEAT% Auto-Switch] ${currentFuelType} → Heatpump (${clampedValue}% > 100%)`
-            );
-          }
-
-          if (window.TEUI?.StateManager) {
-            window.TEUI.StateManager.setValue(
+          if (SM) {
+            SM.setValue(
               selectorFieldIdWithPrefix,
               "Heatpump",
               "user-modified"
             );
             console.log(
-              `[pcRendering] Set StateManager.${selectorFieldIdWithPrefix} = "Heatpump"`
+              `[HEAT% Auto-Switch] ${currentFuelType} → Heatpump (${clampedValue}% > 100%)`
             );
           }
 
@@ -1044,20 +1026,9 @@ window.TEUI.PCRendering = (function () {
         }
       }
 
-      // Update state
-      const stateToUpdate = isTarget
-        ? owningSection.TargetState
-        : owningSection.ReferenceState;
-      if (stateToUpdate) {
-        stateToUpdate.setValue(fieldToWrite, valueToStore);
-        console.log(
-          `[pcRendering] Updated ${isTarget ? "Target" : "Reference"}State.${fieldToWrite} = ${valueToStore}`
-        );
-      }
-
-      // Update StateManager
-      if (window.TEUI?.StateManager) {
-        window.TEUI.StateManager.setValue(
+      // Update StateManager (single source of truth)
+      if (SM) {
+        SM.setValue(
           fieldToWriteWithPrefix,
           valueToStore,
           "user-modified"
@@ -1067,20 +1038,11 @@ window.TEUI.PCRendering = (function () {
         );
       }
 
-      // Recalculate
-      if (owningSection.calculateAll) {
-        owningSection.calculateAll();
-        console.log(
-          `[pcRendering] Called ${axisConfig.owningSection}.calculateAll()`
-        );
-      }
+      if (SM?.unmuteListeners) SM.unmuteListeners();
 
-      // Refresh UI
-      if (owningSection.ModeManager) {
-        owningSection.ModeManager.refreshUI();
-        console.log(
-          `[pcRendering] Called ${axisConfig.owningSection}.ModeManager.refreshUI()`
-        );
+      // Single recalculation after all values are written to graph
+      if (window.TEUI?.Calculator?.calculateAll) {
+        window.TEUI.Calculator.calculateAll();
       }
     }
 

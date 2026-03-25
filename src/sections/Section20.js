@@ -1299,14 +1299,6 @@ ${formatViolationsByType(filteredReport.violations)}`;
     window.copyQCReportToClipboard = copyQCReportToClipboard;
   }
 
-  /**
-   * Calculate all (no automatic QC reports)
-   */
-  function calculateAll() {
-    // No calculations needed for Notes section
-    // QC reports are now generated only on-demand via "Generate QC Report" button
-  }
-
   // Public API
   return {
     getFields,
@@ -1314,7 +1306,6 @@ ${formatViolationsByType(filteredReport.violations)}`;
     getLayout,
     initializeEventHandlers,
     onSectionRendered,
-    calculateAll,
 
     // QC-specific methods
     generateQCReport: generateAndDisplayQCReport,

@@ -1,0 +1,279 @@
+{
+  "_meta": {
+    "description": "Transmission loss section registered input nodes. 18 inputs total: 5 RSI inputs for opaque components, 5 area inputs for opaque components, 6 U-value inputs for fenestration components (whose areas are bridged from S10 RadiantGains as computed nodes), plus interior floor area and thermal bridge penalty. All are C-classified.",
+    "instances": {
+      "opaqueAreas": [
+        {
+          "id": "transmissionLoss.roof.area",
+          "legacyId": "d_85",
+          "label": "Roof/Ceiling Area",
+          "type": "number",
+          "unit": "m2",
+          "classification": "C",
+          "default": 0
+        },
+        {
+          "id": "transmissionLoss.walls.area",
+          "legacyId": "d_86",
+          "label": "Walls Above Grade Area",
+          "type": "number",
+          "unit": "m2",
+          "classification": "C",
+          "default": 0
+        },
+        {
+          "id": "transmissionLoss.exposedFloor.area",
+          "legacyId": "d_87",
+          "label": "Exposed Floor Area",
+          "type": "number",
+          "unit": "m2",
+          "classification": "C",
+          "default": 0
+        },
+        {
+          "id": "transmissionLoss.wallsBelowGrade.area",
+          "legacyId": "d_94",
+          "label": "Walls Below Grade Area",
+          "type": "number",
+          "unit": "m2",
+          "classification": "C",
+          "default": 0
+        },
+        {
+          "id": "transmissionLoss.slabOnGrade.area",
+          "legacyId": "d_95",
+          "label": "Slab on Grade Area",
+          "type": "number",
+          "unit": "m2",
+          "classification": "C",
+          "default": 0
+        }
+      ],
+      "opaqueRSI": [
+        {
+          "id": "transmissionLoss.roof.rsi",
+          "legacyId": "f_85",
+          "label": "Roof/Ceiling RSI",
+          "type": "number",
+          "unit": "m2K/W",
+          "classification": "C",
+          "default": 5.0,
+          "note": "User enters RSI (thermal resistance). U-value (g_85) computed as 1/RSI."
+        },
+        {
+          "id": "transmissionLoss.walls.rsi",
+          "legacyId": "f_86",
+          "label": "Walls Above Grade RSI",
+          "type": "number",
+          "unit": "m2K/W",
+          "classification": "C",
+          "default": 5.0
+        },
+        {
+          "id": "transmissionLoss.exposedFloor.rsi",
+          "legacyId": "f_87",
+          "label": "Exposed Floor RSI",
+          "type": "number",
+          "unit": "m2K/W",
+          "classification": "C",
+          "default": 5.0
+        },
+        {
+          "id": "transmissionLoss.wallsBelowGrade.rsi",
+          "legacyId": "f_94",
+          "label": "Walls Below Grade RSI",
+          "type": "number",
+          "unit": "m2K/W",
+          "classification": "C",
+          "default": 5.0
+        },
+        {
+          "id": "transmissionLoss.slabOnGrade.rsi",
+          "legacyId": "f_95",
+          "label": "Slab on Grade RSI",
+          "type": "number",
+          "unit": "m2K/W",
+          "classification": "C",
+          "default": 5.0
+        }
+      ],
+      "fenestrationUValues": [
+        {
+          "id": "transmissionLoss.doors.uValue",
+          "legacyId": "g_88",
+          "label": "Doors U-Value",
+          "type": "number",
+          "unit": "W/m2K",
+          "classification": "C",
+          "default": 2.0,
+          "note": "User enters U-value directly. RSI (f_88) computed as 1/U. Area (d_88) bridged from S10 radiantGains.row73.area."
+        },
+        {
+          "id": "transmissionLoss.windowNorth.uValue",
+          "legacyId": "g_89",
+          "label": "Window North U-Value",
+          "type": "number",
+          "unit": "W/m2K",
+          "classification": "C",
+          "default": 2.0,
+          "note": "Area (d_89) bridged from S10 radiantGains.row74.area."
+        },
+        {
+          "id": "transmissionLoss.windowEast.uValue",
+          "legacyId": "g_90",
+          "label": "Window East U-Value",
+          "type": "number",
+          "unit": "W/m2K",
+          "classification": "C",
+          "default": 2.0,
+          "note": "Area (d_90) bridged from S10 radiantGains.row75.area."
+        },
+        {
+          "id": "transmissionLoss.windowSouth.uValue",
+          "legacyId": "g_91",
+          "label": "Window South U-Value",
+          "type": "number",
+          "unit": "W/m2K",
+          "classification": "C",
+          "default": 2.0,
+          "note": "Area (d_91) bridged from S10 radiantGains.row76.area."
+        },
+        {
+          "id": "transmissionLoss.windowWest.uValue",
+          "legacyId": "g_92",
+          "label": "Window West U-Value",
+          "type": "number",
+          "unit": "W/m2K",
+          "classification": "C",
+          "default": 2.0,
+          "note": "Area (d_92) bridged from S10 radiantGains.row77.area."
+        },
+        {
+          "id": "transmissionLoss.skylights.uValue",
+          "legacyId": "g_93",
+          "label": "Skylights U-Value",
+          "type": "number",
+          "unit": "W/m2K",
+          "classification": "C",
+          "default": 2.0,
+          "note": "Area (d_93) bridged from S10 radiantGains.row78.area."
+        }
+      ],
+      "standalone": [
+        {
+          "id": "transmissionLoss.interiorFloorArea",
+          "legacyId": "d_96",
+          "label": "Interior Floor Area",
+          "type": "number",
+          "unit": "m2",
+          "classification": "C",
+          "default": 0
+        },
+        {
+          "id": "transmissionLoss.thermalBridgePenalty",
+          "legacyId": "d_97",
+          "label": "Thermal Bridge Penalty",
+          "type": "number",
+          "unit": "%",
+          "classification": "C",
+          "default": 20,
+          "note": "Percentage added to subtotal heat loss/gain. Default 20%. Some compute functions use fallback of 5% if value is 0/NaN."
+        }
+      ]
+    }
+  },
+  "section": "S11",
+  "signature": {
+    "inputs": "These ARE the inputs (registered via graph.registerInput in TransmissionLossNodes.js). Fenestration areas (d_88-d_93) are NOT inputs -- they are computed nodes bridged from S10 RadiantGains.",
+    "output": "Values stored in MultiModelState, consumed by heat loss/gain, R-Imperial, condensation risk, surface temperature, and F280 peak load calculations"
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "RSI values > 0",
+        "description": "Thermal resistance must be positive for U-value conversion (1/RSI)"
+      },
+      {
+        "condition": "U-values >= 0",
+        "description": "Thermal transmittance cannot be negative"
+      },
+      {
+        "condition": "Areas >= 0",
+        "description": "Envelope component areas cannot be negative"
+      },
+      {
+        "condition": "Thermal bridge penalty in [0, 100]",
+        "description": "Penalty is a percentage of component subtotal"
+      }
+    ],
+    "invariants": [
+      {
+        "condition": "All inputs are C-classified",
+        "description": "All transmission loss inputs can differ between Target and Reference models"
+      },
+      {
+        "condition": "Opaque components use RSI input -> computed U-value; fenestration uses U-value input -> computed RSI",
+        "description": "Two different input patterns for insulation specification"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "RSI input (f_85-f_87, f_94-f_95) changes",
+      "output": "Triggers recomputation of U-value (g_*), R-Imperial (e_*), heat loss (i_*), heat gain (k_*), surface temperature (o_*), condensation risk (cr_*)",
+      "note": "U-value = 1/RSI; RSI > 0 required to avoid division by zero"
+    },
+    {
+      "condition": "U-value input (g_88-g_93) changes",
+      "output": "Triggers recomputation of RSI (f_*), R-Imperial (e_*), heat loss (i_*), heat gain (k_*), surface temperature (o_*), condensation risk (cr_*)",
+      "note": "RSI = 1/U-value"
+    },
+    {
+      "condition": "Area input (d_85-d_87, d_94-d_95) changes",
+      "output": "Triggers recomputation of heat loss (i_*), heat gain (k_*), area percentages (h_*), and subtotals",
+      "note": "C-classified, model-specific"
+    },
+    {
+      "condition": "Thermal bridge penalty (d_97) changes",
+      "output": "Triggers recomputation of penalty heat loss (i_97), penalty heat gain (k_97), and totals",
+      "note": "Applied as percentage of component subtotal: i_97 = subtotal * (penalty/100)"
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "RSI = 0 for an opaque component",
+      "handling": "U-value = 0, heat loss = 0",
+      "rationale": "Guard: rsi > 0 ? 1/rsi : 0"
+    },
+    {
+      "condition": "Thermal bridge penalty default (20) vs compute fallback (5)",
+      "handling": "Input default is 20%, but several compute functions use parseNum(..., 5) fallback",
+      "rationale": "Known inconsistency between registered default and compute-time fallback"
+    },
+    {
+      "condition": "Fenestration areas are 0 (no S10 data)",
+      "handling": "Computed area nodes (d_88-d_93) return 0, no heat loss/gain for those components",
+      "rationale": "Areas bridged from RadiantGains -- must be entered in S10 first"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Default RSI for opaque components",
+      "inputs": {},
+      "expected": "All RSI inputs = 5.0 (m2K/W)"
+    },
+    {
+      "name": "Default U-value for fenestration",
+      "inputs": {},
+      "expected": "All fenestration U-value inputs = 2.0 (W/m2K)"
+    },
+    {
+      "name": "Default thermal bridge penalty",
+      "inputs": {},
+      "expected": "transmissionLoss.thermalBridgePenalty = 20"
+    }
+  ],
+  "references": [
+    { "source": "TransmissionLossNodes.js (input registration, ALL_COMPONENTS loop)" }
+  ]
+}

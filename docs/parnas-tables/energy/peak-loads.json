@@ -1,0 +1,166 @@
+{
+  "_meta": {
+    "description": "Peak heating and cooling load calculations for equipment sizing. Peak loads are instantaneous maximum values at design conditions, derived from envelope U-values, areas, and design temperature differentials. Cooling loads with internal gains add plug/light/equipment densities and solar/ventilation/occupant gains averaged over the cooling season. Intensities normalize by floor area. Tonnage uses refrigeration ton conversion factor.",
+    "instances": [
+      {
+        "id": "energy.peakHeating.intensity",
+        "legacyId": "d_140",
+        "label": "Peak Heating Intensity (W/m\u00b2)"
+      },
+      {
+        "id": "energy.peakCooling.tons",
+        "legacyId": "h_138",
+        "label": "Peak Cooling Load (Tons)"
+      },
+      {
+        "id": "energy.peakCoolingGains.tons",
+        "legacyId": "h_139",
+        "label": "Peak Cooling + Gains Load (Tons)"
+      },
+      {
+        "id": "energy.peakCooling.intensity",
+        "legacyId": "h_140",
+        "label": "Peak Cooling Intensity (W/m\u00b2)"
+      }
+    ]
+  },
+  "section": "S15",
+  "classification": "C",
+  "signature": {
+    "inputs": [
+      {
+        "name": "energy.peakHeating.enclosureKw",
+        "type": "number",
+        "unit": "kW",
+        "description": "Peak heating load at design conditions (d_137) - from peak-load-base-computations.json"
+      },
+      {
+        "name": "energy.peakCooling.enclosureKw",
+        "type": "number",
+        "unit": "kW",
+        "description": "Peak cooling load at design conditions (d_138) - from peak-load-base-computations.json"
+      },
+      {
+        "name": "energy.peakCooling.totalKw",
+        "type": "number",
+        "unit": "kW",
+        "description": "Peak cooling load including internal gains (d_139) - from peak-load-base-computations.json"
+      },
+      {
+        "name": "building.conditionedFloorArea",
+        "type": "number",
+        "unit": "m\u00b2",
+        "description": "Conditioned floor area (h_15)"
+      }
+    ],
+    "output": {
+      "type": "number",
+      "unit": "W/m\u00b2 or tons",
+      "precision": 2
+    }
+  },
+  "constants": {
+    "kWtoTons": {
+      "value": 0.2843451361,
+      "description": "Conversion factor from kW to refrigeration tons (1 ton = 3.5168525 kW)"
+    }
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "building.conditionedFloorArea > 0",
+        "description": "Floor area must be positive for intensity calculations"
+      }
+    ],
+    "invariants": [
+      {
+        "condition": "d_140 >= 0",
+        "description": "Peak heating intensity cannot be negative when setpoint > design temp"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "d_140 (peak heating intensity)",
+      "output": "(d_137 \u00d7 1000) / h_15",
+      "note": "Converts kW to W (\u00d71000) then normalizes by floor area"
+    },
+    {
+      "condition": "h_138 (peak cooling tons)",
+      "output": "d_138 \u00d7 0.2843451361",
+      "note": "Converts peak cooling kW to refrigeration tons"
+    },
+    {
+      "condition": "h_139 (peak cooling + gains tons)",
+      "output": "d_139 \u00d7 0.2843451361",
+      "note": "Converts peak cooling with internal gains kW to refrigeration tons"
+    },
+    {
+      "condition": "h_140 (peak cooling intensity)",
+      "output": "(d_138 \u00d7 1000) / h_15",
+      "note": "Converts kW to W then normalizes by floor area"
+    },
+    {
+      "condition": "area = 0",
+      "output": "0 for d_140 and h_140",
+      "note": "Division guard"
+    }
+  ],
+  "edgeCases": [],
+  "formula": {
+    "symbolic": "d_140 = (d_137 \u00d7 1000) / h_15; h_138 = d_138 \u00d7 0.2843451361; h_139 = d_139 \u00d7 0.2843451361; h_140 = (d_138 \u00d7 1000) / h_15",
+    "implementation": "EnergyNodes.js:592-692"
+  },
+  "tests": [
+    {
+      "name": "Peak heating intensity",
+      "inputs": {
+        "building.conditionedFloorArea": 200,
+        "energy.peakHeating.enclosureKw": 10
+      },
+      "expected": 50.0,
+      "note": "d_140 = (10 \u00d7 1000) / 200 = 50.0 W/m\u00b2"
+    },
+    {
+      "name": "Peak cooling in tons",
+      "inputs": {
+        "energy.peakCooling.enclosureKw": 7.0
+      },
+      "expected": 1.99,
+      "tolerance": 0.01,
+      "note": "h_138 = 7.0 \u00d7 0.2843451361 = 1.990 tons"
+    },
+    {
+      "name": "Peak cooling + gains in tons",
+      "inputs": {
+        "energy.peakCooling.totalKw": 12.0
+      },
+      "expected": 3.41,
+      "tolerance": 0.01,
+      "note": "h_139 = 12.0 \u00d7 0.2843451361 = 3.412 tons"
+    },
+    {
+      "name": "Peak cooling intensity",
+      "inputs": {
+        "building.conditionedFloorArea": 200,
+        "energy.peakCooling.enclosureKw": 7.0
+      },
+      "expected": 35.0,
+      "note": "h_140 = (7.0 \u00d7 1000) / 200 = 35.0 W/m\u00b2"
+    }
+  ],
+  "references": [
+    {
+      "source": "Section15.js lines 1834-1883"
+    },
+    {
+      "source": "d_137 = (g_101 \u00d7 d_101 + d_102 \u00d7 g_102) \u00d7 (h_23 - d_23) / 1000"
+    },
+    {
+      "source": "d_138 = (g_101 \u00d7 d_101 + d_102 \u00d7 g_102) \u00d7 (d_24 - h_24) / 1000"
+    },
+    {
+      "source": "d_139 = (enclosure + internal gains W) / 1000 + (solar+vent+occ-freeCool) / (m_19 \u00d7 24)"
+    }
+  ]
+}

@@ -9,8 +9,8 @@ module.exports = defineConfig({
   testDir: "./test",
   testMatch: "**/*.spec.cjs",
 
-  // Maximum time one test can run
-  timeout: 30 * 1000,
+  // Maximum time one test can run (2 min for 12 case study reloads)
+  timeout: 120 * 1000,
 
   // Run tests in files in parallel
   fullyParallel: true,
@@ -24,8 +24,8 @@ module.exports = defineConfig({
   // Opt out of parallel tests on CI
   workers: process.env.CI ? 1 : undefined,
 
-  // Reporter to use
-  reporter: [["list"], ["html", { outputFolder: "playwright-report" }]],
+  // Reporter to use (open: 'never' prevents auto-opening browser)
+  reporter: [["list"], ["html", { outputFolder: "playwright-report", open: "never" }]],
 
   use: {
     // Base URL for all tests
@@ -40,19 +40,14 @@ module.exports = defineConfig({
 
   // Configure projects for major browsers
   projects: [
+    // Chromium has SIGSEGV crashes on macOS - use webkit
+    // {
+    //   name: "chromium",
+    //   use: { ...devices["Desktop Chrome"] },
+    // },
     {
-      name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
     },
-
-    // Uncomment to test on Firefox and Safari
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
   ],
 });

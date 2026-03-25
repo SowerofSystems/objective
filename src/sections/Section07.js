@@ -11,435 +11,40 @@ window.TEUI = window.TEUI || {};
 window.TEUI.SectionModules = window.TEUI.SectionModules || {};
 
 window.TEUI.SectionModules.sect07 = (function () {
+  // TargetState/ReferenceState/ModeManager removed — graph + SM is the single source of truth.
+
   //==========================================================================
-  // PATTERN A: DUAL-STATE ARCHITECTURE
+  // MODE-AWARE STATE HELPERS (read/write SM with ref_ prefix in reference mode)
   //==========================================================================
 
-  // State objects for Target and Reference models
-  const TargetState = {
-    values: {},
-    getValue: function (fieldId) {
-      return this.values[fieldId] || null;
-    },
-    setValue: function (fieldId, value) {
-      this.values[fieldId] = value;
-    },
+  function getModeValue(fieldId) {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    return window.TEUI.StateManager?.getValue(isRef ? `ref_${fieldId}` : fieldId);
+  }
 
-    /**
-     * ✅ PHASE 2: Sync from global StateManager after import
-     * Bridges global StateManager → isolated TargetState for imported values
-     */
-    syncFromGlobalState: function (
-      fieldIds = ["d_49", "e_49", "e_50", "d_51", "d_52", "d_53"]
-    ) {
-      fieldIds.forEach(fieldId => {
-        const globalValue = window.TEUI.StateManager.getValue(fieldId);
-        if (globalValue !== null && globalValue !== undefined) {
-          this.setValue(fieldId, globalValue);
-          console.log(
-            `S07 TargetState: Synced ${fieldId} = ${globalValue} from global StateManager`
-          );
-        }
-      });
-    },
+  function setModeValue(fieldId, value, source = "user-modified") {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    const key = isRef ? `ref_${fieldId}` : fieldId;
+    if (window.TEUI.StateManager?.setValue) {
+      window.TEUI.StateManager.setValue(key, value, source);
+    }
+  }
 
-    // ✅ DUAL-STATE-CHEATSHEET.md COMPLIANCE: Initialize from FieldDefinitions (single source of truth)
-    setDefaults: function () {
-      console.log(
-        `🔧 [S07] TargetState.setDefaults: Initializing from FieldDefinitions`
-      );
-      this.values.d_49 = ModeManager.getFieldDefault("d_49") || "User Defined";
-      this.values.d_51 = ModeManager.getFieldDefault("d_51") || "Heatpump";
-      console.log(
-        `✅ [S07] TargetState.setDefaults: d_49="${this.values.d_49}", d_51="${this.values.d_51}"`
-      );
-
-      // ✅ CRITICAL: Publish defaults to StateManager for cross-section communication
-      if (window.TEUI?.StateManager) {
-        window.TEUI.StateManager.setValue("d_49", this.values.d_49, "default");
-        window.TEUI.StateManager.setValue("d_51", this.values.d_51, "default");
-        console.log(
-          `🌐 [S07] TargetState.setDefaults: Published to StateManager`
-        );
-      }
-    },
-    getNumericValue: function (fieldId, defaultValue = 0) {
-      const value = this.getValue(fieldId);
-      if (value === null || value === undefined || value === "")
-        return defaultValue;
-      const parsed =
-        window.TEUI?.parseNumeric?.(value, defaultValue) ?? parseFloat(value);
-      return isNaN(parsed) ? defaultValue : parsed;
-    },
-  };
-
-  const ReferenceState = {
-    values: {},
-    getValue: function (fieldId) {
-      return this.values[fieldId] || null;
-    },
-    setValue: function (fieldId, value) {
-      this.values[fieldId] = value;
-    },
-
-    /**
-     * ✅ PHASE 2: Sync from global StateManager after import
-     * Bridges global StateManager → isolated ReferenceState for imported values
-     */
-    syncFromGlobalState: function (
-      fieldIds = ["d_49", "e_49", "e_50", "d_51", "d_52", "d_53"]
-    ) {
-      fieldIds.forEach(fieldId => {
-        const refFieldId = `ref_${fieldId}`;
-        const globalValue = window.TEUI.StateManager.getValue(refFieldId);
-        if (globalValue !== null && globalValue !== undefined) {
-          this.setValue(fieldId, globalValue);
-          console.log(
-            `S07 ReferenceState: Synced ${fieldId} = ${globalValue} from global StateManager (${refFieldId})`
-          );
-        }
-      });
-    },
-
-    // ✅ DUAL-STATE-CHEATSHEET.md COMPLIANCE: Initialize from FieldDefinitions (single source of truth)
-    setDefaults: function () {
-      console.log(
-        `🔧 [S07] ReferenceState.setDefaults: Initializing Reference-specific defaults`
-      );
-      this.values.d_49 = ModeManager.getFieldDefault("d_49") || "User Defined";
-      this.values.e_49 = ModeManager.getFieldDefault("e_49") || "40.00";
-      this.values.e_50 = ModeManager.getFieldDefault("e_50") || "10000.00";
-      this.values.d_51 = "Electric"; // Reference default: Electric system
-      this.values.d_52 = "90"; // Reference default: 90% efficiency
-      this.values.d_53 = ModeManager.getFieldDefault("d_53") || "0";
-      console.log(
-        `✅ [S07] ReferenceState.setDefaults: All 6 field defaults loaded`
-      );
-
-      // ✅ CRITICAL: Publish Reference defaults to StateManager with ref_ prefix
-      if (window.TEUI?.StateManager) {
-        window.TEUI.StateManager.setValue(
-          "ref_d_49",
-          this.values.d_49,
-          "default"
-        );
-        window.TEUI.StateManager.setValue(
-          "ref_e_49",
-          this.values.e_49,
-          "default"
-        );
-        window.TEUI.StateManager.setValue(
-          "ref_e_50",
-          this.values.e_50,
-          "default"
-        );
-        window.TEUI.StateManager.setValue(
-          "ref_d_51",
-          this.values.d_51,
-          "default"
-        );
-        window.TEUI.StateManager.setValue(
-          "ref_d_52",
-          this.values.d_52,
-          "default"
-        );
-        window.TEUI.StateManager.setValue(
-          "ref_d_53",
-          this.values.d_53,
-          "default"
-        );
-        console.log(
-          `🔗 [S07] ReferenceState.setDefaults: Published all 6 Reference defaults with ref_ prefix`
-        );
-      }
-    },
-    getNumericValue: function (fieldId, defaultValue = 0) {
-      const value = this.getValue(fieldId);
-      if (value === null || value === undefined || value === "")
-        return defaultValue;
-      const parsed =
-        window.TEUI?.parseNumeric?.(value, defaultValue) ?? parseFloat(value);
-      return isNaN(parsed) ? defaultValue : parsed;
-    },
-  };
-
-  // Mode manager for UI state switching (display-only)
-  const ModeManager = {
-    currentMode: "target", // "target" or "reference"
-
-    switchMode: function (mode) {
-      console.log(
-        `🔄 [S07] switchMode: Switching from "${this.currentMode}" to "${mode}"`
-      );
-      this.currentMode = mode;
-      this.refreshUI();
-      this.updateCalculatedDisplayValues(); // ✅ DOM update without calculations
-
-      // ✅ NEW: Sync visual toggle UI when mode changes (from global or local toggle)
-      this.syncToggleUI(mode);
-
-      console.log(`✅ [S07] switchMode: Switch to "${mode}" completed`);
-    },
-
-    // ✅ NEW: Sync visual toggle switch and indicator to match current mode
-    // Called both when user clicks local toggle AND when global toggle switches mode
-    syncToggleUI: function (mode) {
-      // Use centralized ToggleUISync utility
-      window.TEUI.ToggleUISync.syncToggleUI(this._toggleElements, mode, "S07");
-    },
-
-    refreshUI: function () {
-      console.log(
-        `🔄 [S07] refreshUI: Starting refresh for mode=${this.currentMode}`
-      );
-
-      // Update input fields to show current mode's values
-      const fields = getFields();
-      Object.keys(fields).forEach(fieldId => {
-        const currentState =
-          this.currentMode === "target" ? TargetState : ReferenceState;
-        const storedValue = currentState.getValue(fieldId);
-        const element = document.querySelector(`[data-field-id="${fieldId}"]`);
-
-        console.log(
-          `🔍 [S07] refreshUI: fieldId=${fieldId}, storedValue=${storedValue}, elementFound=${!!element}`
-        );
-
-        if (element) {
-          // ✅ PATTERN A: Get field default from sectionRows definition
-          const fieldDefault = this.getFieldDefault(fieldId);
-          const valueToShow = storedValue !== null ? storedValue : fieldDefault;
-
-          // ✅ CRITICAL FIX: Look for SELECT inside TD if element is a table cell
-          let targetElement = element;
-          let elementType = element.tagName || element.type;
-
-          if (element.tagName === "TD") {
-            // Look for SELECT or INPUT inside the TD
-            const selectInside = element.querySelector("select");
-            const inputInside = element.querySelector('input[type="range"]');
-            const editableInside = element.querySelector(
-              '[contenteditable="true"]'
-            );
-
-            if (selectInside) {
-              targetElement = selectInside;
-              elementType = "SELECT";
-            } else if (inputInside) {
-              targetElement = inputInside;
-              elementType = "range";
-            } else if (editableInside) {
-              targetElement = editableInside;
-              elementType = "contenteditable";
-            }
-          }
-
-          console.log(
-            `📋 [S07] refreshUI: fieldId=${fieldId}, default=${fieldDefault}, valueToShow=${valueToShow}, elementType=${elementType}`
-          );
-
-          if (
-            elementType === "contenteditable" ||
-            targetElement.hasAttribute("contenteditable")
-          ) {
-            console.log(
-              `✏️ [S07] refreshUI: Setting contenteditable ${fieldId} = "${valueToShow || ""}"`
-            );
-            targetElement.textContent = valueToShow || "";
-          } else if (elementType === "SELECT") {
-            console.log(
-              `🔽 [S07] refreshUI: Setting dropdown ${fieldId} from "${targetElement.value}" to "${valueToShow || ""}" (mode=${this.currentMode})`
-            );
-            targetElement.value = valueToShow || "";
-            console.log(
-              `🔽 [S07] refreshUI: Dropdown ${fieldId} now shows "${targetElement.value}"`
-            );
-            // Store the default if no value was stored yet
-            if (storedValue === null && fieldDefault) {
-              console.log(
-                `💾 [S07] refreshUI: Storing default ${fieldId} = "${fieldDefault}" to ${this.currentMode} state`
-              );
-              currentState.setValue(fieldId, fieldDefault);
-            }
-          } else if (
-            elementType === "range" ||
-            targetElement.type === "range"
-          ) {
-            console.log(
-              `🎚️ [S07] refreshUI: Setting slider ${fieldId} = "${valueToShow || ""}"`
-            );
-
-            // ✅ CRITICAL FIX: Update d_52 slider range based on d_51 system type (Bug #8 fix)
-            if (fieldId === "d_52") {
-              const systemType = currentState.getValue("d_51") || "Heatpump";
-              console.log(
-                `🎚️ [S07] refreshUI: Updating d_52 slider range for system="${systemType}"`
-              );
-
-              // Update range based on system type (following S10 pattern)
-              if (systemType === "Electric") {
-                targetElement.min = 90;
-                targetElement.max = 100;
-                targetElement.step = 1;
-              } else if (systemType === "Gas" || systemType === "Oil") {
-                targetElement.min = 50;
-                targetElement.max = 98;
-                targetElement.step = 1;
-              } else {
-                // Heatpump
-                targetElement.min = 100;
-                targetElement.max = 450;
-                targetElement.step = 10;
-              }
-              console.log(
-                `🎚️ [S07] refreshUI: d_52 slider range updated to min=${targetElement.min}, max=${targetElement.max}, step=${targetElement.step}`
-              );
-            }
-
-            // ✅ S10/S11 PATTERN: Parse to numeric, set as number, use nextElementSibling
-            const numericValue =
-              window.TEUI?.parseNumeric?.(valueToShow, 0) ?? 0;
-            targetElement.value = numericValue; // Set as NUMBER, not string
-
-            const display = targetElement.nextElementSibling; // Use nextElementSibling like S10/S11
-            if (display) {
-              display.textContent = `${numericValue}%`;
-            }
-
-            // Store the default if no value was stored yet
-            if (storedValue === null && fieldDefault) {
-              currentState.setValue(fieldId, fieldDefault);
-            }
-          }
-        }
-      });
-
-      console.log(
-        `✅ [S07] refreshUI: Completed refresh for mode=${this.currentMode}`
-      );
-    },
-
-    // Helper function to get field defaults from sectionRows definition
-    getFieldDefault: function (fieldId) {
-      // console.log(
-      //   `🔍 [S07] getFieldDefault: Looking for default for fieldId=${fieldId}`
-      // );
-      for (const rowKey in sectionRows) {
-        const row = sectionRows[rowKey];
-        if (row.cells) {
-          for (const cellKey in row.cells) {
-            const cell = row.cells[cellKey];
-            if (cell.fieldId === fieldId && cell.value !== undefined) {
-              // console.log(
-              //   `✅ [S07] getFieldDefault: Found default for ${fieldId} = "${cell.value}"`
-              // );
-              return cell.value;
-            }
+  // Helper to get field defaults from sectionRows definition
+  function getFieldDefault(fieldId) {
+    for (const rowKey in sectionRows) {
+      const row = sectionRows[rowKey];
+      if (row.cells) {
+        for (const cellKey in row.cells) {
+          const cell = row.cells[cellKey];
+          if (cell.fieldId === fieldId && cell.value !== undefined) {
+            return cell.value;
           }
         }
       }
-      // console.log(`❌ [S07] getFieldDefault: No default found for ${fieldId}`);
-      return null;
-    },
-
-    updateCalculatedDisplayValues: function () {
-      // Update calculated display fields in DOM based on current mode
-      const mode = this.currentMode;
-
-      // Get calculated values from appropriate state
-      const calculatedFields = [
-        "h_49",
-        "h_50",
-        "i_49",
-        "i_50",
-        "j_50",
-        "j_51",
-        "j_52",
-        "j_53",
-        "j_54",
-        "k_49",
-        "k_51",
-        "k_54",
-        "e_51",
-        "e_52",
-        "e_53",
-        "d_54",
-        "m_49", // M column: percentage compliance
-        "m_50",
-        "m_52",
-        "m_53",
-        "n_49", // N column: checkmark status
-        "n_50",
-        "n_52",
-        "n_53",
-      ];
-
-      calculatedFields.forEach(fieldId => {
-        const targetValue = TargetState.getValue(fieldId);
-        const referenceValue = ReferenceState.getValue(fieldId);
-
-        let displayValue;
-        if (mode === "reference") {
-          // In Reference mode, show Reference values or fallback to 0 if null
-          displayValue = referenceValue !== null ? referenceValue : "0";
-        } else {
-          // In Target mode, show Target values
-          displayValue = targetValue !== null ? targetValue : "0";
-        }
-
-        const element = document.querySelector(`[data-field-id="${fieldId}"]`);
-        if (element) {
-          // M and N columns are already formatted, don't re-format
-          let formattedValue;
-          if (fieldId.startsWith("m_") || fieldId.startsWith("n_")) {
-            formattedValue = displayValue; // Already formatted percentages or checkmarks
-          } else {
-            const formatType = getFieldFormat(fieldId);
-            formattedValue =
-              window.TEUI?.formatNumber?.(displayValue, formatType) ??
-              displayValue;
-          }
-          element.textContent = formattedValue;
-          element.classList.toggle("negative-value", Number(displayValue) < 0);
-        }
-      });
-    },
-
-    getValue: function (fieldId) {
-      const currentState =
-        this.currentMode === "target" ? TargetState : ReferenceState;
-      const value = currentState.getValue(fieldId);
-      console.log(
-        `📖 [S07] ModeManager.getValue: ${fieldId} = "${value}" (mode=${this.currentMode})`
-      );
-      return value;
-    },
-
-    setValue: function (fieldId, value, source = "user-modified") {
-      console.log(
-        `💾 [S07] ModeManager.setValue: Setting ${fieldId} = "${value}" (mode=${this.currentMode}, source=${source})`
-      );
-      const currentState =
-        this.currentMode === "target" ? TargetState : ReferenceState;
-      currentState.setValue(fieldId, value);
-
-      // ✅ CRITICAL BRIDGE: Sync Target changes to StateManager for downstream sections (S02 pattern)
-      if (this.currentMode === "target") {
-        console.log(
-          `🌐 [S07] ModeManager.setValue: Also storing to global StateManager: ${fieldId} = "${value}"`
-        );
-        window.TEUI?.StateManager?.setValue(fieldId, value, source);
-      }
-
-      // ✅ CRITICAL BRIDGE: Sync Reference changes to StateManager with ref_ prefix (S02 pattern)
-      if (this.currentMode === "reference" && window.TEUI?.StateManager) {
-        console.log(
-          `🔗 [S07] ModeManager.setValue: Also storing to global StateManager: ref_${fieldId} = "${value}"`
-        );
-        window.TEUI.StateManager.setValue(`ref_${fieldId}`, value, source);
-      }
-    },
-  };
+    }
+    return null;
+  }
 
   //==========================================================================
   // CONSOLIDATED FIELD DEFINITIONS AND LAYOUT
@@ -471,6 +76,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         c: { label: "Total Hot+Cold Water Use (Method)" },
         d: {
           fieldId: "d_49",
+          semanticPath: "waterHeating.method",
           type: "dropdown",
           dropdownId: "d_49",
           value: "User Defined",
@@ -487,6 +93,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         e: {
           fieldId: "e_49",
+          semanticPath: "waterHeating.userDefinedLpppd",
           type: "editable",
           value: "40.00",
           classes: ["user-input"],
@@ -496,6 +103,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         f: { content: "lpppd (User Defined)", classes: ["text-left"] },
         h: {
           fieldId: "h_49",
+          semanticPath: "waterHeating.totalUse",
           type: "calculated",
           value: "40.00",
           dependencies: ["d_49", "e_49", "j_50", "d_63"],
@@ -504,6 +112,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         i: {
           fieldId: "i_49",
+          semanticPath: "waterHeating.annualUse",
           type: "calculated",
           value: "1,839,600",
           dependencies: ["d_63", "h_49"],
@@ -512,6 +121,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         j: { content: "Net Emissions", classes: ["text-left"] },
         k: {
           fieldId: "k_49",
+          semanticPath: "waterHeating.netEmissions",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_51", "k_54", "l_30", "e_51", "l_28"],
@@ -521,6 +131,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         l: { content: "kgCO2e/yr", classes: ["text-left"] },
         m: {
           fieldId: "m_49",
+          semanticPath: "waterHeating.compliance",
           type: "calculated",
           value: "15%",
           dependencies: ["h_49", "ref_h_49"],
@@ -528,6 +139,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         n: {
           fieldId: "n_49",
+          semanticPath: "waterHeating.status",
           type: "calculated",
           value: "✓",
           dependencies: ["m_49"],
@@ -543,6 +155,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         d: { content: "" },
         e: {
           fieldId: "e_50",
+          semanticPath: "waterHeating.byEngineerKwh",
           type: "editable",
           value: "10,000.00",
           classes: ["user-input"],
@@ -552,6 +165,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         f: { content: "kWh/yr (IF By Engineer)", classes: ["text-left"] },
         h: {
           fieldId: "h_50",
+          semanticPath: "waterHeating.dhwUse",
           type: "calculated",
           value: "16.00",
           dependencies: ["h_49"],
@@ -559,6 +173,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         i: {
           fieldId: "i_50",
+          semanticPath: "waterHeating.annualDhwUse",
           type: "calculated",
           value: "735,840",
           dependencies: ["d_63", "h_50"],
@@ -566,6 +181,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         j: {
           fieldId: "j_50",
+          semanticPath: "waterHeating.energyDemand",
           type: "calculated",
           value: "38,484.43",
           dependencies: ["d_49", "e_50", "h_50", "d_63"],
@@ -574,6 +190,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         m: {
           fieldId: "m_50",
+          semanticPath: "waterHeating.dhwCompliance",
           type: "calculated",
           value: "15%",
           dependencies: ["h_50", "ref_h_50"],
@@ -581,6 +198,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         n: {
           fieldId: "n_50",
+          semanticPath: "waterHeating.dhwStatus",
           type: "calculated",
           value: "✓",
           dependencies: ["m_50"],
@@ -595,6 +213,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         c: { label: "DHW or SHW Energy Source" },
         d: {
           fieldId: "d_51",
+          semanticPath: "waterHeating.systemType",
           type: "dropdown",
           dropdownId: "d_51",
           value: "Heatpump",
@@ -604,6 +223,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         e: {
           fieldId: "e_51",
+          semanticPath: "waterHeating.gasVolume",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_51", "j_52", "d_53", "e_52"],
@@ -615,6 +235,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         h: { content: "Net Thermal Demand", classes: ["text-left"] },
         j: {
           fieldId: "j_51",
+          semanticPath: "waterHeating.netThermalDemand",
           type: "calculated",
           value: "12,828.14",
           dependencies: ["d_51", "j_50", "e_52"],
@@ -623,6 +244,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         k: {
           fieldId: "k_51",
+          semanticPath: "waterHeating.netElectricalDemand",
           type: "calculated",
           value: "12,828.14",
           dependencies: ["d_51", "j_52"],
@@ -639,6 +261,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         c: { label: "DHW or SHW Efficiency Factor (EF)" },
         d: {
           fieldId: "d_52",
+          semanticPath: "waterHeating.efficiency",
           type: "percentage",
           value: "300",
           min: 50,
@@ -650,6 +273,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         e: {
           fieldId: "e_52",
+          semanticPath: "waterHeating.cop",
           type: "calculated",
           value: "3.00",
           dependencies: ["d_52"],
@@ -660,6 +284,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         h: { content: "Net Demand-Recovered", classes: ["text-left"] },
         j: {
           fieldId: "j_52",
+          semanticPath: "waterHeating.netDemandAfterRecovery",
           type: "calculated",
           value: "12,828.14",
           dependencies: ["j_51", "e_53"],
@@ -669,6 +294,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         l: { content: "", classes: ["text-left"] },
         m: {
           fieldId: "m_52",
+          semanticPath: "waterHeating.efficiencyCompliance",
           type: "calculated",
           value: "100%",
           dependencies: ["d_52", "ref_d_52"],
@@ -676,6 +302,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         n: {
           fieldId: "n_52",
+          semanticPath: "waterHeating.efficiencyComplianceStatus",
           type: "calculated",
           value: "✓",
           dependencies: ["m_52"],
@@ -690,6 +317,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         c: { label: "Drain Water Heat Recovery Efficiency" },
         d: {
           fieldId: "d_53",
+          semanticPath: "waterHeating.dwhrEfficiency",
           type: "percentage",
           value: "0",
           min: 0,
@@ -701,6 +329,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         e: {
           fieldId: "e_53",
+          semanticPath: "waterHeating.energyRecovered",
           type: "calculated",
           value: "0.00",
           dependencies: ["j_51", "d_53"],
@@ -711,6 +340,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         h: { content: "(W.2.W) SHW Wasted", classes: ["text-left"] },
         j: {
           fieldId: "j_53",
+          semanticPath: "waterHeating.shwWasted",
           type: "calculated",
           value: "12,828.14",
           dependencies: ["j_51", "e_53"],
@@ -718,6 +348,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         m: {
           fieldId: "m_53",
+          semanticPath: "waterHeating.dwhrCompliance",
           type: "calculated",
           value: "0%",
           dependencies: ["d_53", "ref_d_53"],
@@ -726,6 +357,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         n: {
           fieldId: "n_53",
+          semanticPath: "waterHeating.dwhrComplianceStatus",
           type: "calculated",
           value: "✓",
           dependencies: ["m_53"],
@@ -740,6 +372,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         c: { label: "System Losses (% → W.1.3 Eqpt Gains)" },
         d: {
           fieldId: "d_54",
+          semanticPath: "waterHeating.systemLosses",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_52", "d_49", "j_50"],
@@ -751,6 +384,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         h: { content: "Exhaust (if Gas or Oil)", classes: ["text-left"] },
         j: {
           fieldId: "j_54",
+          semanticPath: "waterHeating.exhaustLosses",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_51", "j_52", "e_52"],
@@ -759,6 +393,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         },
         k: {
           fieldId: "k_54",
+          semanticPath: "waterHeating.netOilDemand",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_51", "j_52", "d_53", "e_52"],
@@ -785,6 +420,7 @@ window.TEUI.SectionModules.sect07 = (function () {
             label: cell.label || cell.content || row.label, // ✅ Standard label resolution pattern
             defaultValue: cell.value || "",
             section: "waterUse",
+            semanticPath: cell.semanticPath || null, // Phase 5: Include semantic path
           };
           // Add additional properties for dropdown fields
           if (cell.dropdownId)
@@ -854,600 +490,10 @@ window.TEUI.SectionModules.sect07 = (function () {
     return rowDef;
   }
 
-  // ✅ PATTERN A: Expose ModeManager to global namespace for ComponentBridge compatibility
-  window.TEUI.sect07 = { ModeManager: ModeManager };
+  window.TEUI.sect07 = window.TEUI.sect07 || {};
 
   //==========================================================================
-  // HELPER FUNCTIONS (Standardized)
-  //==========================================================================
-  // ✅ PATTERN A: Helper functions using explicit state access
-  function getSectionValue(fieldId, isReferenceCalculation = false) {
-    if (isReferenceCalculation) {
-      return ReferenceState.getValue(fieldId);
-    } else {
-      return TargetState.getValue(fieldId);
-    }
-  }
-
-  function getSectionNumericValue(
-    fieldId,
-    defaultValue = 0,
-    isReferenceCalculation = false
-  ) {
-    if (isReferenceCalculation) {
-      return ReferenceState.getNumericValue(fieldId, defaultValue);
-    } else {
-      return TargetState.getNumericValue(fieldId, defaultValue);
-    }
-  }
-
-  function setSectionValue(fieldId, value, isReferenceCalculation = false) {
-    if (isReferenceCalculation) {
-      ReferenceState.setValue(fieldId, value);
-      // ✅ FIX (Oct 27, 2025): Publish Reference values to StateManager with ref_ prefix
-      // This fixes FALLBACK_READ violations for ref_e_51, ref_k_54
-      window.TEUI?.StateManager?.setValue(
-        `ref_${fieldId}`,
-        value.toString(),
-        "calculated"
-      );
-    } else {
-      TargetState.setValue(fieldId, value);
-      // ✅ Store Target values to StateManager for cross-section communication
-      window.TEUI?.StateManager?.setValue(
-        fieldId,
-        value.toString(),
-        "calculated"
-      );
-    }
-  }
-
-  function getFieldFormat(fieldId) {
-    const formatMap = {
-      h_49: "number-2dp",
-      i_49: "integer-comma",
-      h_50: "number-2dp",
-      i_50: "integer-comma",
-      j_50: "number-2dp-comma",
-      e_52: "number-2dp",
-      j_51: "number-2dp-comma",
-      e_53: "number-2dp-comma",
-      j_52: "number-2dp-comma",
-      j_53: "number-2dp-comma",
-      e_51: "number-2dp-comma",
-      k_51: "number-2dp-comma",
-      d_54: "number-2dp-comma",
-      j_54: "number-2dp-comma",
-      k_54: "number-2dp-comma",
-      k_49: "number-2dp-comma",
-      // M columns: already formatted as percentages, return as-is
-      m_49: "raw",
-      m_50: "raw",
-      m_52: "raw",
-      m_53: "raw",
-      // N columns: checkmarks/warnings, no formatting needed
-      n_49: "raw",
-      n_50: "raw",
-      n_52: "raw",
-      n_53: "raw",
-    };
-    return formatMap[fieldId] || "number-2dp-comma";
-  }
-
-  //==========================================================================
-  // CALCULATION FUNCTIONS
-  //==========================================================================
-  function calculateWaterUse(isReferenceCalculation = false) {
-    // ✅ PATTERN A: Explicit state access while preserving Excel formulas
-    const method =
-      getSectionValue("d_49", isReferenceCalculation) || "User Defined";
-
-    // 🔧 STRATEGIC FALLBACK LOGGING: External dependency with fallback tracking
-    let occupants;
-    if (isReferenceCalculation) {
-      const refValue = window.TEUI?.StateManager?.getValue("ref_d_63");
-      if (refValue !== null && refValue !== undefined) {
-        occupants = parseFloat(refValue) || 126;
-      } else {
-        // Use S09's default occupancy (126) if ref_d_63 not yet published
-        // This prevents errors during initial load before S09 renders
-        occupants = 126;
-      }
-    } else {
-      occupants =
-        parseFloat(window.TEUI?.StateManager?.getValue("d_63")) || 126;
-    }
-
-    const userDefinedValue = getSectionNumericValue(
-      "e_49",
-      40,
-      isReferenceCalculation
-    );
-    const engineerValue = getSectionNumericValue(
-      "e_50",
-      10000,
-      isReferenceCalculation
-    );
-
-    let litersPerPersonDay = 0;
-    let hotWaterEnergyDemand = 0;
-
-    // ✅ PRESERVE: Exact Excel formula logic unchanged
-    switch (method) {
-      case "User Defined":
-        litersPerPersonDay = userDefinedValue;
-        break;
-      case "By Engineer":
-        hotWaterEnergyDemand = engineerValue;
-        break;
-      case "PHPP Method":
-        litersPerPersonDay = 62.5;
-        break;
-      case "NBC Method":
-        litersPerPersonDay = 220;
-        break;
-      case "OBC Method":
-        litersPerPersonDay = 275;
-        break;
-      case "Luxury":
-        litersPerPersonDay = 400;
-        break;
-      default:
-        litersPerPersonDay = 40;
-    }
-
-    // ✅ PRESERVE: Exact Excel calculation formulas unchanged
-    if (method !== "By Engineer") {
-      hotWaterEnergyDemand =
-        litersPerPersonDay * 0.4 * occupants * 0.0523 * 365;
-    } else {
-      const waterHeatFactor = 0.0524;
-      litersPerPersonDay =
-        occupants > 0
-          ? engineerValue / (365 * waterHeatFactor * occupants * 0.4)
-          : 0;
-    }
-
-    // ✅ PATTERN A: Store to appropriate state
-    setSectionValue("h_49", litersPerPersonDay, isReferenceCalculation);
-    setSectionValue(
-      "i_49",
-      litersPerPersonDay * occupants * 365,
-      isReferenceCalculation
-    );
-    setSectionValue("h_50", litersPerPersonDay * 0.4, isReferenceCalculation);
-    setSectionValue(
-      "i_50",
-      litersPerPersonDay * 0.4 * occupants * 365,
-      isReferenceCalculation
-    );
-    setSectionValue("j_50", hotWaterEnergyDemand, isReferenceCalculation);
-  }
-
-  function calculateHeatingSystem(isReferenceCalculation = false) {
-    // ✅ PATTERN A: Explicit state access while preserving Excel formulas
-    const hotWaterEnergyDemand = getSectionNumericValue(
-      "j_50",
-      0,
-      isReferenceCalculation
-    );
-    // 🔧 STRATEGIC FALLBACK LOGGING: Track when fallbacks are used
-    let systemType;
-    if (isReferenceCalculation) {
-      const refValue = window.TEUI?.StateManager?.getValue("ref_d_51");
-      if (refValue) {
-        systemType = refValue;
-      } else {
-        console.warn(
-          `[S07] 🚨 CRITICAL: ref_d_51 missing, using default "Heatpump" for Reference calculation`
-        );
-        systemType = "Heatpump";
-      }
-    } else {
-      systemType = window.TEUI?.StateManager?.getValue("d_51") || "Heatpump";
-    }
-    const efficiencyInput = getSectionNumericValue(
-      "d_52",
-      300,
-      isReferenceCalculation
-    );
-    const recoveryPercent =
-      getSectionNumericValue("d_53", 0, isReferenceCalculation) / 100;
-
-    // ✅ PRESERVE: Exact Excel calculation formulas unchanged
-    const efficiency = efficiencyInput / 100;
-    setSectionValue("e_52", efficiency, isReferenceCalculation);
-
-    // ✅ CONSOLIDATED: All system types now use e_52 (efficiency/COP/AFUE unified)
-    const netThermalDemand = hotWaterEnergyDemand / efficiency;
-    setSectionValue("j_51", netThermalDemand, isReferenceCalculation);
-
-    const energyRecovered = netThermalDemand * recoveryPercent;
-    setSectionValue("e_53", energyRecovered, isReferenceCalculation);
-
-    const netDemandAfterRecovery = netThermalDemand - energyRecovered;
-    setSectionValue("j_52", netDemandAfterRecovery, isReferenceCalculation);
-    setSectionValue("j_53", netDemandAfterRecovery, isReferenceCalculation);
-
-    const netElectricalDemand =
-      systemType === "Heatpump" || systemType === "Electric"
-        ? netDemandAfterRecovery
-        : 0;
-    setSectionValue("k_51", netElectricalDemand, isReferenceCalculation);
-  }
-
-  function calculateEmissionsAndLosses(isReferenceCalculation = false) {
-    // ✅ PATTERN A: Explicit state access while preserving Excel formulas
-    // 🔧 STRATEGIC FALLBACK LOGGING: Track when fallbacks are used
-    let systemType;
-    if (isReferenceCalculation) {
-      const refValue = window.TEUI?.StateManager?.getValue("ref_d_51");
-      if (refValue) {
-        systemType = refValue;
-      } else {
-        console.warn(
-          `[S07] 🚨 CRITICAL: ref_d_51 missing, using default "Heatpump" for Reference calculation`
-        );
-        systemType = "Heatpump";
-      }
-    } else {
-      systemType = window.TEUI?.StateManager?.getValue("d_51") || "Heatpump";
-    }
-
-    // console.log(
-    //   `[S07] calculateEmissionsAndLosses: systemType="${systemType}" (${isReferenceCalculation ? "REF" : "TGT"})`
-    // );
-    const netDemandAfterRecovery = getSectionNumericValue(
-      "j_52",
-      0,
-      isReferenceCalculation
-    );
-    const efficiency = getSectionNumericValue(
-      "e_52",
-      1,
-      isReferenceCalculation
-    );
-    const hotWaterEnergyDemand = getSectionNumericValue(
-      "j_50",
-      0,
-      isReferenceCalculation
-    );
-    const waterUseMethod =
-      getSectionValue("d_49", isReferenceCalculation) || "User Defined";
-
-    // ✅ PRESERVE: Exact Excel calculation formulas unchanged
-    let gasVolume = 0;
-    let oilVolume = 0;
-    if (systemType === "Gas") {
-      // ✅ Excel parity: E51=J52*(1-D53)/(0.0373*277.7778*E52)
-      // 0.0373 GJ/m³ × 277.7778 kWh/GJ = 10.357 kWh/m³
-      const conversionFactor = 0.0373 * 277.7778;
-      gasVolume =
-        efficiency > 0
-          ? netDemandAfterRecovery / (conversionFactor * efficiency)
-          : 0;
-      console.log(
-        `[S07] 🔥 Gas calc: demand=${netDemandAfterRecovery}, efficiency=${efficiency} → e_51=${gasVolume}, k_54=0 (cleared)`
-      );
-    } else if (systemType === "Oil") {
-      const conversionFactor = 10.18; // 36.72 * 0.2777778
-      oilVolume =
-        efficiency > 0
-          ? netDemandAfterRecovery / (conversionFactor * efficiency)
-          : 0;
-      // console.log(
-      //   `[S07] 🛢️ Oil calc: demand=${netDemandAfterRecovery}, efficiency=${efficiency} → k_54=${oilVolume}, e_51=0 (cleared)`
-      // );
-    } // else {
-    // console.log(
-    //   `[S07] ⚡ Non-fossil fuel: ${systemType} → e_51=0, k_54=0 (both cleared)`
-    // );
-    // }
-
-    // 🔧 CRITICAL: Always set BOTH values - zero out the non-selected fuel to prevent contamination
-    setSectionValue("e_51", gasVolume, isReferenceCalculation);
-    setSectionValue("k_54", oilVolume, isReferenceCalculation);
-
-    // ✅ PATTERN A: External dependencies - read from upstream sections with mode awareness
-    const oilEmissionsFactor = isReferenceCalculation
-      ? window.TEUI?.StateManager?.getValue("ref_l_30") || 2753
-      : window.TEUI?.StateManager?.getValue("l_30") || 2753;
-    const gasEmissionsFactor = isReferenceCalculation
-      ? window.TEUI?.StateManager?.getValue("ref_l_28") || 1921
-      : window.TEUI?.StateManager?.getValue("l_28") || 1921;
-
-    const dhwEmissions =
-      (systemType === "Oil"
-        ? oilVolume * oilEmissionsFactor
-        : systemType === "Gas"
-          ? gasVolume * gasEmissionsFactor
-          : 0) / 1000;
-    setSectionValue("k_49", dhwEmissions, isReferenceCalculation);
-
-    const exhaustLosses =
-      systemType === "Gas" || systemType === "Oil"
-        ? netDemandAfterRecovery * (1 - efficiency)
-        : 0;
-    setSectionValue("j_54", exhaustLosses, isReferenceCalculation);
-
-    const systemLosses =
-      efficiency <= 1
-        ? hotWaterEnergyDemand * (waterUseMethod === "PHPP Method" ? 0.25 : 0.1)
-        : 0;
-    setSectionValue("d_54", systemLosses, isReferenceCalculation);
-
-    // ✅ PATTERN A: Store to StateManager for cross-section communication (S10 dependency)
-    if (!isReferenceCalculation) {
-      window.TEUI?.StateManager?.setValue(
-        "h_69",
-        systemLosses.toString(),
-        "calculated"
-      );
-    }
-  }
-
-  /**
-   * Helper function to calculate compliance ratio with proper dual-mode handling
-   * @param {string} targetField - The Target field ID (e.g., "h_49")
-   * @param {string} refField - The Reference field ID (e.g., "ref_h_49")
-   * @param {boolean} isReferenceCalculation - True if calculating Reference mode
-   * @returns {number} - Ratio (1.0 for Reference mode = 100%, actual ratio for Target mode)
-   */
-  function calculateComplianceRatio(
-    targetField,
-    refField,
-    isReferenceCalculation
-  ) {
-    if (isReferenceCalculation) {
-      return 1.0; // Reference mode: Always 100% (self-comparison)
-    } else {
-      const targetValue =
-        window.TEUI.parseNumeric(
-          window.TEUI.StateManager.getValue(targetField)
-        ) || 0;
-      const refValue =
-        window.TEUI.parseNumeric(window.TEUI.StateManager.getValue(refField)) ||
-        0;
-      return refValue > 0 ? targetValue / refValue : 0;
-    }
-  }
-
-  function calculateCompliance(isReferenceCalculation = false) {
-    // ✅ S05 PATTERN: Target/Reference comparison with M (percentage) and N (checkmark) columns
-    // Reference mode: Always shows 100% (comparing to itself)
-    // Target mode: Shows actual Target/Reference ratio
-
-    // Check if ref_d_53 exists (for m_53 N/A handling)
-    const ref_d_53 =
-      window.TEUI.parseNumeric(window.TEUI.StateManager.getValue("ref_d_53")) ||
-      0;
-
-    // Calculate percentages using helper (Reference mode = 100%, Target mode = actual ratio)
-    const m_49_percent = calculateComplianceRatio(
-      "h_49",
-      "ref_h_49",
-      isReferenceCalculation
-    );
-    const m_50_percent = calculateComplianceRatio(
-      "h_50",
-      "ref_h_50",
-      isReferenceCalculation
-    );
-    const m_52_percent = calculateComplianceRatio(
-      "d_52",
-      "ref_d_52",
-      isReferenceCalculation
-    );
-    const m_53_percent =
-      ref_d_53 !== 0
-        ? calculateComplianceRatio("d_53", "ref_d_53", isReferenceCalculation)
-        : 0;
-
-    // Format percentage results for M columns
-    const m_49_formatted =
-      window.TEUI?.formatNumber?.(m_49_percent, "percent-0dp") ?? "0%";
-    const m_50_formatted =
-      window.TEUI?.formatNumber?.(m_50_percent, "percent-0dp") ?? "0%";
-    const m_52_formatted =
-      window.TEUI?.formatNumber?.(m_52_percent, "percent-0dp") ?? "100%";
-    const m_53_formatted =
-      ref_d_53 === 0
-        ? "N/A"
-        : (window.TEUI?.formatNumber?.(m_53_percent, "percent-0dp") ?? "0%");
-
-    // Store M column percentages (to both StateManager and local state)
-    if (isReferenceCalculation) {
-      window.TEUI.StateManager.setValue(
-        "ref_m_49",
-        m_49_formatted,
-        "calculated"
-      );
-      window.TEUI.StateManager.setValue(
-        "ref_m_50",
-        m_50_formatted,
-        "calculated"
-      );
-      window.TEUI.StateManager.setValue(
-        "ref_m_52",
-        m_52_formatted,
-        "calculated"
-      );
-      window.TEUI.StateManager.setValue(
-        "ref_m_53",
-        m_53_formatted,
-        "calculated"
-      );
-    } else {
-      window.TEUI.StateManager.setValue("m_49", m_49_formatted, "calculated");
-      window.TEUI.StateManager.setValue("m_50", m_50_formatted, "calculated");
-      window.TEUI.StateManager.setValue("m_52", m_52_formatted, "calculated");
-      window.TEUI.StateManager.setValue("m_53", m_53_formatted, "calculated");
-    }
-    setSectionValue("m_49", m_49_formatted, isReferenceCalculation);
-    setSectionValue("m_50", m_50_formatted, isReferenceCalculation);
-    setSectionValue("m_52", m_52_formatted, isReferenceCalculation);
-    setSectionValue("m_53", m_53_formatted, isReferenceCalculation);
-
-    // Set checkmarks/warnings for N columns based on M column percentages
-    // ✓ (pass) if ≤100%, ✗ (fail) if >100% (for water/energy, lower is better)
-    const statusChecks = [
-      { field: "n_49", percentField: "m_49", higherIsBetter: false },
-      { field: "n_50", percentField: "m_50", higherIsBetter: false },
-      { field: "n_52", percentField: "m_52", higherIsBetter: true }, // Efficiency: higher is better
-      { field: "n_53", percentField: "m_53", higherIsBetter: true }, // DWHR: any recovery is good
-    ];
-
-    statusChecks.forEach(({ field, percentField, higherIsBetter }) => {
-      // Get the percentage field value to check pass/fail
-      const percentValue = isReferenceCalculation
-        ? window.TEUI.StateManager.getValue(`ref_${percentField}`)
-        : window.TEUI.StateManager.getValue(percentField);
-
-      // Determine pass/fail based on percentage
-      let status, isCompliant;
-      if (
-        percentValue === "N/A" ||
-        percentValue === null ||
-        percentValue === undefined
-      ) {
-        status = "✓"; // Pass by default if N/A
-        isCompliant = true;
-      } else {
-        // Parse percentage (remove % sign AND commas, then convert to number)
-        const numericPercent = parseFloat(
-          String(percentValue).replace("%", "").replace(/,/g, "")
-        );
-        if (higherIsBetter) {
-          isCompliant = numericPercent >= 100; // For efficiency, ≥100% is good
-        } else {
-          isCompliant = numericPercent <= 100; // For water/energy use, ≤100% is good
-        }
-        status = isCompliant ? "✓" : "✗";
-      }
-
-      if (isReferenceCalculation) {
-        window.TEUI.StateManager.setValue(`ref_${field}`, status, "calculated");
-      } else {
-        window.TEUI.StateManager.setValue(field, status, "calculated");
-        // Apply CSS class for visual styling (only in Target mode per M-N-COMPLIANCE.md)
-        setElementClass(field, isCompliant);
-      }
-
-      // Also store to local state for display
-      setSectionValue(field, status, isReferenceCalculation);
-    });
-  }
-
-  /**
-   * Apply CSS class to DOM element for compliance indicators (M-N-COMPLIANCE.md pattern)
-   * Only applies in Target mode - Reference mode should not override Target's visual indicators
-   * @param {string} fieldId - The field ID to target
-   * @param {boolean} isCompliant - True for checkmark (green), false for warning (red)
-   */
-  function setElementClass(fieldId, isCompliant) {
-    // ⚠️ CRITICAL: Only apply styling in Target mode
-    if (ModeManager.currentMode !== "target") return;
-
-    const element = document.querySelector(`[data-field-id="${fieldId}"]`);
-    if (element) {
-      element.classList.remove("checkmark", "warning");
-      element.classList.add(isCompliant ? "checkmark" : "warning");
-    }
-  }
-
-  // ✅ PATTERN A: Dual-engine calculations with explicit state access
-  function calculateTargetModel() {
-    try {
-      calculateWaterUse(false); // false = Target calculation
-      calculateHeatingSystem(false);
-      calculateEmissionsAndLosses(false);
-      calculateCompliance(false);
-
-      // ✅ PATTERN A: Store Target results to StateManager for downstream sections
-      const targetFields = [
-        "h_49",
-        "h_50",
-        "i_49",
-        "i_50",
-        "j_50",
-        "j_51",
-        "j_52",
-        "j_53",
-        "j_54",
-        "k_49",
-        "k_51",
-        "k_54",
-        "e_51",
-        "e_52",
-        "e_53",
-        "d_54",
-      ];
-
-      targetFields.forEach(fieldId => {
-        const value = TargetState.getValue(fieldId);
-        if (value !== null) {
-          window.TEUI?.StateManager?.setValue(
-            fieldId,
-            value.toString(),
-            "calculated"
-          );
-        }
-      });
-    } catch (error) {
-      console.error("[S07] Error in Target Model calculations:", error);
-    }
-  }
-
-  function calculateReferenceModel() {
-    try {
-      calculateWaterUse(true); // true = Reference calculation
-      calculateHeatingSystem(true);
-      calculateEmissionsAndLosses(true);
-      calculateCompliance(true);
-
-      // ✅ PATTERN A: Store Reference results to StateManager for downstream sections
-      const referenceFields = [
-        "h_49",
-        "h_50",
-        "i_49",
-        "i_50",
-        "j_50",
-        "j_51",
-        "j_52",
-        "j_53",
-        "j_54",
-        "k_49",
-        "k_51",
-        "k_54",
-        "e_51",
-        "e_52",
-        "e_53",
-        "d_54",
-      ];
-
-      referenceFields.forEach(fieldId => {
-        const value = ReferenceState.getValue(fieldId);
-        if (value !== null) {
-          window.TEUI?.StateManager?.setValue(
-            `ref_${fieldId}`,
-            value.toString(),
-            "calculated"
-          );
-        }
-      });
-    } catch (error) {
-      console.error("[S07] Error in Reference Model calculations:", error);
-    }
-  }
-
-  function calculateAll() {
-    // ✅ S11 PATTERN: Calculate Reference first so ref_* values exist before Target compliance runs
-    calculateReferenceModel();
-    calculateTargetModel();
-  }
-
-  //==========================================================================
-  // UI MANAGEMENT FUNCTIONS (From Original Code)
+  // UI MANAGEMENT FUNCTIONS
   //==========================================================================
   function updateSection7Visibility(waterMethod, systemType) {
     const isUserDefined = waterMethod === "User Defined";
@@ -1512,7 +558,7 @@ window.TEUI.SectionModules.sect07 = (function () {
       parseFloat(rawTextValue.replace(/[$,%]/g, ""));
 
     if (isNaN(numericValue)) {
-      const previousValue = ModeManager.getValue(fieldId) || "0";
+      const previousValue = getModeValue(fieldId) || "0";
       numericValue = window.TEUI?.parseNumeric?.(previousValue, 0) ?? 0;
     }
 
@@ -1522,12 +568,9 @@ window.TEUI.SectionModules.sect07 = (function () {
       window.TEUI?.formatNumber?.(numericValue, formatType) ?? valueToStore;
     fieldElement.textContent = formattedDisplay;
 
-    // ✅ PATTERN A: Use ModeManager.setValue for proper state separation
-    const currentValue = ModeManager.getValue(fieldId);
+    const currentValue = getModeValue(fieldId);
     if (currentValue !== valueToStore) {
-      ModeManager.setValue(fieldId, valueToStore, "user-modified");
-      calculateAll();
-      ModeManager.updateCalculatedDisplayValues(); // ✅ DOM update after calculations
+      setModeValue(fieldId, valueToStore, "user-modified");
     }
   }
 
@@ -1537,27 +580,14 @@ window.TEUI.SectionModules.sect07 = (function () {
       e.target.getAttribute("data-dropdown-id");
     const value = e.target.value;
 
-    console.log(
-      `🔽 [S07] handleGenericDropdownChange: fieldId=${fieldId}, value="${value}", mode=${ModeManager.currentMode}`
-    );
-
     if (fieldId) {
-      // ✅ PATTERN A: Use ModeManager.setValue for proper state separation
-      console.log(
-        `💾 [S07] handleGenericDropdownChange: Storing ${fieldId}="${value}" in ${ModeManager.currentMode} mode`
-      );
-      ModeManager.setValue(fieldId, value, "user-modified");
+      setModeValue(fieldId, value, "user-modified");
 
       if (fieldId === "d_51") handleDHWSourceChange(e);
 
-      const currentWaterMethod = ModeManager.getValue("d_49") || "User Defined";
-      const currentSystemType = ModeManager.getValue("d_51") || "Heatpump";
-      console.log(
-        `🔍 [S07] handleGenericDropdownChange: Read back values - waterMethod="${currentWaterMethod}", systemType="${currentSystemType}"`
-      );
+      const currentWaterMethod = getModeValue("d_49") || "User Defined";
+      const currentSystemType = getModeValue("d_51") || "Heatpump";
       updateSection7Visibility(currentWaterMethod, currentSystemType);
-      calculateAll();
-      ModeManager.updateCalculatedDisplayValues(); // ✅ DOM update after calculations
     }
   }
 
@@ -1571,12 +601,10 @@ window.TEUI.SectionModules.sect07 = (function () {
     if (displaySpan) displaySpan.textContent = value + "%";
 
     if (fieldId && (e.type === "change" || e.type === "input")) {
-      // ✅ NEW: Validate Gas/Oil limits for d_52 slider
       if (fieldId === "d_52") {
-        const systemType = ModeManager.getValue("d_51") || "Heatpump";
+        const systemType = getModeValue("d_51") || "Heatpump";
         const numValue = parseFloat(value);
 
-        // ✅ Enforce Gas/Oil limits (defensive validation - slider already constrained by min/max)
         if (
           (systemType === "Gas" || systemType === "Oil") &&
           (numValue < 50 || numValue > 98)
@@ -1587,13 +615,7 @@ window.TEUI.SectionModules.sect07 = (function () {
         }
       }
 
-      // ✅ PATTERN A: Use ModeManager.setValue for proper state separation
-      ModeManager.setValue(fieldId, value, "user-modified");
-
-      if (e.type === "change") {
-        calculateAll();
-        ModeManager.updateCalculatedDisplayValues(); // ✅ DOM update after calculations
-      }
+      setModeValue(fieldId, value, "user-modified");
     }
   }
 
@@ -1612,8 +634,7 @@ window.TEUI.SectionModules.sect07 = (function () {
       newStep = 2,
       newValue = 300;
 
-    // ✅ FIX (Nov 4, 2025): Preserve existing imported/user-modified values when switching system types
-    // Check if there's an existing value that should be preserved
+    // Preserve existing imported/user-modified values when switching system types
     let preservedValue = null;
 
     if (selectedSource === "Gas" || selectedSource === "Oil") {
@@ -1621,15 +642,13 @@ window.TEUI.SectionModules.sect07 = (function () {
       newMaxValue = 98;
       newStep = 1;
 
-      // Check for existing d_52 value from user input or import
-      const existingD52 = ModeManager.getValue("d_52");
+      const existingD52 = getModeValue("d_52");
       if (existingD52) {
         preservedValue = parseInt(existingD52);
       }
 
-      newValue = preservedValue || 90; // Use preserved value or default to 90
+      newValue = preservedValue || 90;
 
-      // ✅ NEW: Validate preserved value is within Gas/Oil range
       if (preservedValue && (preservedValue < 50 || preservedValue > 98)) {
         console.warn(
           `[S07] Preserved value ${preservedValue}% outside Gas/Oil range (50-98%), resetting to 90%`
@@ -1642,38 +661,25 @@ window.TEUI.SectionModules.sect07 = (function () {
       newStep = 1;
       newValue = 100;
     } else {
-      // For Heatpump, check if d_52 already has a user/imported value
-      const existingCOP = ModeManager.getValue("d_52");
+      const existingCOP = getModeValue("d_52");
       if (existingCOP) {
         preservedValue = parseInt(existingCOP);
-        console.log(`[S07] Preserving existing COP value: ${existingCOP}%`);
       }
 
       newMinValue = 100;
       newMaxValue = 450;
       newStep = 10;
-      newValue = preservedValue || 300; // Use preserved value or default to 300
+      newValue = preservedValue || 300;
     }
 
     console.log(
       `[S07] Setting d_52 slider: min=${newMinValue}, max=${newMaxValue}, value=${newValue}`
     );
 
-    // ✅ PHASE 7: No k_52 publication needed - all system types use d_52 → e_52 flow
+    // Write to both target and reference SM keys for d_52
     if (window.TEUI?.StateManager) {
-      window.TEUI.StateManager.setValue(
-        "d_52",
-        newValue.toString(),
-        "system-update"
-      );
-      window.TEUI.StateManager.setValue(
-        `ref_d_52`,
-        newValue.toString(),
-        "system-update"
-      );
-      console.log(
-        `[S07] Updated ${selectedSource}: d_52=${newValue}% (efficiency unified for all fuel types)`
-      );
+      window.TEUI.StateManager.setValue("d_52", newValue.toString(), "system-update");
+      window.TEUI.StateManager.setValue("ref_d_52", newValue.toString(), "system-update");
     }
     if (d52Slider) {
       d52Slider.min = newMinValue;
@@ -1681,21 +687,10 @@ window.TEUI.SectionModules.sect07 = (function () {
       d52Slider.step = newStep;
       d52Slider.value = newValue;
 
-      // Find display element (use nextElementSibling - confirmed working)
       let displayElement = d52Display || d52Slider.nextElementSibling;
       if (displayElement) {
         displayElement.textContent = `${newValue}%`;
-        console.log(
-          `[S07] Updated slider display: ${selectedSource} → d_52=${newValue}%`
-        );
       }
-
-      // ✅ PHASE 7: Update local state with d_52 for all fuel types
-      ModeManager.setValue("d_52", newValue.toString(), "system-update");
-      calculateAll();
-      ModeManager.updateCalculatedDisplayValues();
-    } else {
-      console.log(`[S07] ERROR: d_52 slider not found in DOM!`);
     }
   }
 
@@ -1748,16 +743,7 @@ window.TEUI.SectionModules.sect07 = (function () {
       }
     });
 
-    // StateManager listeners for external dependencies
-    if (window.TEUI?.StateManager) {
-      // ✅ PATTERN A: Dual-mode listeners for ALL external dependencies
-      window.TEUI.StateManager.addListener("d_63", calculateAll); // Occupancy (Target)
-      window.TEUI.StateManager.addListener("ref_d_63", calculateAll); // Occupancy (Reference)
-      window.TEUI.StateManager.addListener("l_30", calculateAll); // Oil emissions factor (Target)
-      window.TEUI.StateManager.addListener("ref_l_30", calculateAll); // Oil emissions factor (Reference)
-      window.TEUI.StateManager.addListener("l_28", calculateAll); // Gas emissions factor (Target)
-      window.TEUI.StateManager.addListener("ref_l_28", calculateAll); // Gas emissions factor (Reference)
-    }
+    // Graph handles cross-section computation via wildcard listener.
   }
 
   //==========================================================================
@@ -1765,34 +751,30 @@ window.TEUI.SectionModules.sect07 = (function () {
   //==========================================================================
 
   function onSectionRendered() {
-    // 1. ✅ CRITICAL: Initialize state defaults from FieldDefinitions (DUAL-STATE-CHEATSHEET.md compliance)
-    console.log(
-      `🚀 [S07] onSectionRendered: Initializing state defaults from FieldDefinitions`
-    );
-    TargetState.setDefaults();
-    ReferenceState.setDefaults();
-
-    // 2. Initialize event handlers
+    // Initialize event handlers
     initializeEventHandlers();
 
-    // 3. Initialize visibility based on current values (now properly initialized from FieldDefinitions)
-    const initialWaterMethod =
-      ModeManager.getFieldDefault("d_49") || "User Defined";
-    const initialSystemType = ModeManager.getFieldDefault("d_51") || "Heatpump";
+    // Initialize visibility based on field defaults
+    const initialWaterMethod = getFieldDefault("d_49") || "User Defined";
+    const initialSystemType = getFieldDefault("d_51") || "Heatpump";
     updateSection7Visibility(initialWaterMethod, initialSystemType);
 
-    // 4. Run initial calculations
-    calculateAll();
-
-    // 5. Update DOM display
-    ModeManager.updateCalculatedDisplayValues();
-
-    // 6. Apply validation tooltips to fields
+    // Apply validation tooltips to fields
     if (window.TEUI.TooltipManager && window.TEUI.TooltipManager.initialized) {
       setTimeout(() => {
         window.TEUI.TooltipManager.applyTooltipsToSection(sectionRows);
       }, 300);
     }
+  }
+
+  /**
+   * Called by ReferenceToggle when mode switches.
+   * Updates visibility/ghosting based on current mode's values.
+   */
+  function onModeSwitch(mode) {
+    const waterMethod = getModeValue("d_49") || getFieldDefault("d_49") || "User Defined";
+    const systemType = getModeValue("d_51") || getFieldDefault("d_51") || "Heatpump";
+    updateSection7Visibility(waterMethod, systemType);
   }
 
   //==========================================================================
@@ -1804,48 +786,20 @@ window.TEUI.SectionModules.sect07 = (function () {
     getLayout,
     initializeEventHandlers,
     onSectionRendered,
-    calculateAll,
-    calculateWaterUse,
-    calculateHeatingSystem,
+    onModeSwitch,
     updateSection7Visibility,
     setFieldGhosted,
     handleGenericDropdownChange,
     handleSliderChange,
     handleDHWSourceChange,
-    // ✅ PATTERN A: Expose state objects for external access
-    ModeManager: ModeManager,
-
-    // ✅ PHASE 2: Expose state objects for import sync
-    TargetState: TargetState,
-    ReferenceState: ReferenceState,
   };
 })();
 
-// Expose critical functions to global namespace for cross-module access
+// Expose UI functions to global namespace for cross-module access
 document.addEventListener("DOMContentLoaded", function () {
   const module = window.TEUI.SectionModules.sect07;
   if (module) {
-    window.TEUI.sect07.calculateWaterUse = module.calculateWaterUse;
-    window.TEUI.sect07.calculateHeatingSystem = module.calculateHeatingSystem;
-    window.TEUI.sect07.calculateAll = module.calculateAll;
     window.TEUI.sect07.updateSection7Visibility =
       module.updateSection7Visibility;
   }
 });
-
-// Create a globally accessible safe version of calculateAll
-window.calculateWaterUse = function () {
-  if (window.waterUseCalculationRunning) return;
-  window.waterUseCalculationRunning = true;
-  try {
-    if (window.TEUI?.SectionModules?.sect07?.calculateAll) {
-      window.TEUI.SectionModules.sect07.calculateAll();
-    } else if (window.TEUI?.sect07?.calculateAll) {
-      window.TEUI.sect07.calculateAll();
-    }
-  } catch (e) {
-    console.error("Error in water use calculation wrapper:", e);
-  } finally {
-    window.waterUseCalculationRunning = false;
-  }
-};

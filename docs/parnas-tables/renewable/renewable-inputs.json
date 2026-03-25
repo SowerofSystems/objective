@@ -1,0 +1,141 @@
+{
+  "_meta": {
+    "description": "Renewable energy section registered input nodes. These user-editable values define onsite and offsite renewable energy generation. All are C-classified (model-specific) and feed into net energy and emissions calculations by subtracting from total energy consumption.",
+    "instances": [
+      {
+        "id": "renewable.pv",
+        "legacyId": "d_44",
+        "label": "Photovoltaics",
+        "type": "number",
+        "unit": "kWh/yr",
+        "classification": "C",
+        "default": 0,
+        "note": "Annual onsite photovoltaic generation. Subtracted from electricity consumption."
+      },
+      {
+        "id": "renewable.wind",
+        "legacyId": "d_45",
+        "label": "Wind",
+        "type": "number",
+        "unit": "kWh/yr",
+        "classification": "C",
+        "default": 0,
+        "note": "Annual onsite wind generation. Subtracted from electricity consumption."
+      },
+      {
+        "id": "renewable.evRemoval",
+        "legacyId": "d_46",
+        "label": "EV Charging Removal",
+        "type": "number",
+        "unit": "kWh/yr",
+        "classification": "C",
+        "default": 0,
+        "note": "Energy attributed to EV charging, removed from building energy total."
+      },
+      {
+        "id": "renewable.wws",
+        "legacyId": "i_44",
+        "label": "WWS Electricity",
+        "type": "number",
+        "unit": "kWh/yr",
+        "classification": "C",
+        "default": 0,
+        "note": "Wind, water, solar offsite renewable electricity procurement."
+      },
+      {
+        "id": "renewable.reserved",
+        "legacyId": "i_46",
+        "label": "Reserved",
+        "type": "number",
+        "unit": "kWh/yr",
+        "classification": "C",
+        "default": 0,
+        "note": "Reserved for future renewable category."
+      },
+      {
+        "id": "renewable.greenGas",
+        "legacyId": "k_45",
+        "label": "Green Gas",
+        "type": "number",
+        "unit": "m³/yr",
+        "classification": "C",
+        "default": 0,
+        "note": "Renewable natural gas (RNG) volume. Subtracted from gas consumption."
+      },
+      {
+        "id": "renewable.exteriorLoads",
+        "legacyId": "m_43",
+        "label": "Exterior/Site Loads",
+        "type": "number",
+        "unit": "kWh/yr",
+        "classification": "C",
+        "default": 0,
+        "note": "Exterior and site energy loads (parking, landscaping, etc.). Removed from building total."
+      }
+    ]
+  },
+  "section": "S06",
+  "signature": {
+    "inputs": "These ARE the inputs (registered via graph.registerInput in RenewableNodes.js)",
+    "output": "Values stored in MultiModelState, consumed by renewable subtotal, net energy, and emissions calculations"
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "All values >= 0",
+        "description": "Renewable generation and removals cannot be negative"
+      }
+    ],
+    "invariants": []
+  },
+  "behavior": [
+    {
+      "condition": "Any onsite renewable (d_44, d_45) changes",
+      "output": "Triggers recomputation of onsite renewable subtotal and net electricity",
+      "note": "Reduces grid electricity consumption"
+    },
+    {
+      "condition": "Offsite renewable (i_44) changes",
+      "output": "Triggers recomputation of offsite renewable subtotal",
+      "note": "Does not affect onsite generation metrics"
+    },
+    {
+      "condition": "Green gas (k_45) changes",
+      "output": "Triggers recomputation of net gas consumption and gas emissions",
+      "note": "Reduces fossil gas volume"
+    },
+    {
+      "condition": "EV removal (d_46) or exterior loads (m_43) change",
+      "output": "Triggers recomputation of adjusted building energy total",
+      "note": "Non-building loads removed from total"
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "Renewable generation exceeds consumption",
+      "handling": "Net consumption can go negative (net exporter)",
+      "rationale": "Building produces more energy than it consumes"
+    },
+    {
+      "condition": "All renewable inputs are 0",
+      "handling": "No renewable offset applied, gross = net energy",
+      "rationale": "Building fully reliant on grid/fossil energy"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Default PV",
+      "inputs": {},
+      "expected": "renewable.pv = 0"
+    },
+    {
+      "name": "Default green gas",
+      "inputs": {},
+      "expected": "renewable.greenGas = 0"
+    }
+  ],
+  "references": [
+    { "source": "RenewableNodes.js (input registration and computed subtotals)" },
+    { "source": "EmissionsNodes.js (consumes renewable values for net energy calculations)" }
+  ]
+}

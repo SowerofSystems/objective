@@ -84,6 +84,7 @@ document.addEventListener("DOMContentLoaded", function () {
     wombat: "bi-bounding-box",
     footer: "bi-info-square",
     notes: "bi-info-square",
+    f280Compliance: "bi-clipboard-check",
   };
 
   // Mapping of section IDs to short tab labels
@@ -107,6 +108,7 @@ document.addEventListener("DOMContentLoaded", function () {
     parallelCoordinates: "Optimize",
     wombat: "Wombat",
     notes: "Notes",
+    f280Compliance: "F280",
   };
 
   // Mapping of section IDs to full titles for tooltips
@@ -130,6 +132,7 @@ document.addEventListener("DOMContentLoaded", function () {
     parallelCoordinates: "Optimization Analysis",
     wombat: "WOMBAT - 3D Thermal Topology",
     notes: "Project Notes",
+    f280Compliance: "CSA F280 Compliance Report",
   };
 
   // State variables
@@ -292,32 +295,33 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // Toggle section collapse/expand when header is clicked (vertical layout only)
-  document.querySelectorAll(".section-header").forEach(header => {
-    header.addEventListener("click", function (event) {
-      // Skip if clicking on buttons in the header
-      if (
-        event.target.closest(".btn") ||
-        event.target.closest(".layout-toggle-btn")
-      ) {
-        return;
-      }
+  document.addEventListener("click", function (event) {
+    const header = event.target.closest(".section-header");
+    if (!header) return;
 
-      // Only toggle in vertical layout
-      if (!isVerticalLayout) return;
+    // Skip if clicking on buttons in the header
+    if (
+      event.target.closest(".btn") ||
+      event.target.closest(".layout-toggle-btn")
+    ) {
+      return;
+    }
 
-      // Skip Key Values section
-      if (header.closest(".section").id === "keyValues") return;
+    // Only toggle in vertical layout
+    if (!isVerticalLayout) return;
 
-      // Toggle collapsed class
-      header.classList.toggle("collapsed");
+    // Skip Key Values section
+    if (header.closest(".section").id === "keyValues") return;
 
-      // Add aria-expanded attribute for accessibility
-      const isCollapsed = header.classList.contains("collapsed");
-      header.setAttribute("aria-expanded", !isCollapsed);
+    // Toggle collapsed class
+    header.classList.toggle("collapsed");
 
-      // Save collapse state to localStorage
-      saveCollapsedState();
-    });
+    // Add aria-expanded attribute for accessibility
+    const isCollapsed = header.classList.contains("collapsed");
+    header.setAttribute("aria-expanded", !isCollapsed);
+
+    // Save collapse state to localStorage
+    saveCollapsedState();
   });
 
   // Expand/collapse all sections button
@@ -445,11 +449,12 @@ document.addEventListener("DOMContentLoaded", function () {
         const section = header.closest(".section");
         if (section.id === "keyValues") return;
 
-        // Special case: WOMBAT and Notes sections default to collapsed for cleaner UI
+        // Special case: WOMBAT, Notes, and F280 sections default to collapsed for cleaner UI
         const shouldBeCollapsed =
           collapsedSections[section.id] ||
           section.id === "wombat" ||
-          section.id === "notes";
+          section.id === "notes" ||
+          section.id === "f280Compliance";
 
         if (shouldBeCollapsed) {
           header.classList.add("collapsed");
@@ -580,6 +585,12 @@ document.addEventListener("DOMContentLoaded", function () {
   if (notesSection && !notesSection.classList.contains("collapsed")) {
     notesSection.classList.add("collapsed");
     notesSection.setAttribute("aria-expanded", "false");
+  }
+
+  const f280Section = document.querySelector("#f280Compliance .section-header");
+  if (f280Section && !f280Section.classList.contains("collapsed")) {
+    f280Section.classList.add("collapsed");
+    f280Section.setAttribute("aria-expanded", "false");
   }
 
   // Function to update tab display mode based on container width
@@ -922,6 +933,92 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Initialize elegant user input behavior
     initializeElegantInputBehavior();
+
+    // ComputationGraph is the single source of truth for all calculations
+    // Legacy Section*.js calculateAll() functions are no longer used
+    window.TEUI.USE_COMPUTATION_GRAPH = true;
+
+    // Initialize ComputationGraph (Multi-Model Architecture)
+    if (window.TEUI.ComputationIntegration) {
+      setTimeout(function () {
+        const success = window.TEUI.ComputationIntegration.initialize({
+          enableLogging: true,
+          autoSync: true
+        });
+        if (success) {
+          console.log("[init.js] ComputationGraph initialized");
+
+          // Enable LegacyAdapter: intercepts SM.setValue() and dual-writes to graph state.
+          // Every SM write automatically flows to MultiModelState in real-time.
+          const CI = window.TEUI.ComputationIntegration;
+          CI.enableAdapter();
+
+          // One-way data flow: SM input change → partial graph recompute → stamp to DOM
+          // Registered here (after CI init) because the listener needs CI + graph to be ready.
+          const SM = window.TEUI.StateManager;
+          if (SM) {
+            let _recomputing = false;
+            let _legacyLookup = null;
+
+            function getLegacyLookup() {
+              if (_legacyLookup) return _legacyLookup;
+              const graph = window.TEUI.ComputationIntegration.getGraph();
+              if (!graph) return null;
+              _legacyLookup = new Map();
+              // ONLY inputs — computed node values synced back to SM must be ignored.
+              // This ensures the wildcard only reacts to user-changed inputs.
+              for (const id of (graph.getAllInputIds?.() || [])) {
+                const inp = graph.getInput(id);
+                if (inp?.legacyId) _legacyLookup.set(inp.legacyId, id);
+              }
+              return _legacyLookup;
+            }
+
+            SM.addListener("*", function (newValue, oldValue, fieldId) {
+              if (_recomputing) return;
+
+              const CI = window.TEUI.ComputationIntegration;
+              if (!CI?.isInitialized?.()) return;
+
+              // Strip ref_ prefix for lookup (ref_d_59 → d_59)
+              // so reference-mode input changes also trigger recompute
+              const baseId = fieldId.startsWith("ref_") ? fieldId.slice(4) : fieldId;
+              const lookup = getLegacyLookup();
+              const semanticPath = lookup?.get(baseId);
+              // Editable-computed fields (e.g., CDD d_21) aren't graph inputs
+              // but still need recomputation when user edits them
+              const EDITABLE_COMPUTED = { "d_21": true };
+              if (!semanticPath && !EDITABLE_COMPUTED[baseId]) return;
+
+              _recomputing = true;
+              try {
+                // Targeted recompute: only recomputes the affected model
+                // (target or reference) based on the field. Does NOT call
+                // populateReferenceModel(), preventing cross-model contamination.
+                CI.recomputeForInput(fieldId);
+              } finally {
+                _recomputing = false;
+              }
+            });
+            console.log("[init.js] Wildcard SM listener registered for partial recompute");
+          }
+        }
+      }, 500);
+
+      // Auto-load sample project for testing (graph-parity branch only)
+      setTimeout(async function () {
+        try {
+          const resp = await fetch("src/template/case-studies/01-assembly-obc-sb10.csv");
+          if (resp.ok) {
+            const csvText = await resp.text();
+            window.TEUI.FileHandler.processImportedCSV(csvText);
+            console.log("[init.js] Auto-loaded 02-residence-sb12-net-zero.csv");
+          }
+        } catch (e) {
+          console.warn("[init.js] Auto-load failed:", e);
+        }
+      }, 1500);
+    }
   } else {
     console.error("Core TEUI modules (StateManager, FieldManager) not found!");
   }

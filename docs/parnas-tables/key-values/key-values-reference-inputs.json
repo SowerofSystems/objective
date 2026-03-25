@@ -1,0 +1,101 @@
+{
+  "_meta": {
+    "description": "Key values section reference input nodes. These 5 inputs are injected from the Reference model via the REF_OUTPUT_TO_TARGET_INPUT mapping pattern. They enable the S01 dashboard KPI comparisons between Target and Reference models.",
+    "instances": [
+      {
+        "id": "reference.energy.total",
+        "legacyId": "ref_j_32",
+        "label": "Reference Total Energy",
+        "type": "number",
+        "unit": "kWh/yr",
+        "classification": "C",
+        "default": 0,
+        "note": "Reference model's total energy consumption. Used in dashboard energy comparison KPIs."
+      },
+      {
+        "id": "reference.emissions.subtotal",
+        "legacyId": "ref_k_32",
+        "label": "Reference Emissions Subtotal",
+        "type": "number",
+        "unit": "kgCO2e/yr",
+        "classification": "C",
+        "default": 0,
+        "note": "Reference model's emissions subtotal. Used in dashboard emissions comparison KPIs."
+      },
+      {
+        "id": "reference.building.conditionedFloorArea",
+        "legacyId": "ref_h_15",
+        "label": "Reference Floor Area",
+        "type": "number",
+        "unit": "m²",
+        "classification": "C",
+        "default": 1,
+        "note": "Reference model's conditioned floor area. Default 1 (not 0) to avoid division by zero in per-area calculations."
+      },
+      {
+        "id": "reference.emissions.embodied",
+        "legacyId": "ref_i_39",
+        "label": "Reference Typology Embodied Carbon",
+        "type": "number",
+        "unit": "kgCO2e/m²",
+        "classification": "C",
+        "default": 0,
+        "note": "Reference model's typology embodied carbon intensity. Used in embodied carbon comparison."
+      },
+      {
+        "id": "reference.building.serviceLife",
+        "legacyId": "ref_h_13",
+        "label": "Reference Service Life",
+        "type": "number",
+        "unit": "years",
+        "classification": "C",
+        "default": 50,
+        "note": "Reference model's building service life. Used in lifetime emissions calculations."
+      }
+    ]
+  },
+  "section": "S01",
+  "signature": {
+    "inputs": "These ARE the inputs (registered via graph.registerInput in KeyValuesNodes.js). Populated by REF_OUTPUT_TO_TARGET_INPUT mapping.",
+    "output": "Values stored in Target model's MultiModelState, consumed by dashboard KPI comparison nodes"
+  },
+  "domain": {
+    "preconditions": [],
+    "invariants": [
+      {
+        "condition": "reference.building.conditionedFloorArea defaults to 1, not 0",
+        "description": "Prevents division by zero in per-area intensity calculations"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "Reference model computes and REF_OUTPUT_TO_TARGET_INPUT copies values",
+      "output": "Target model recomputes KPI comparison nodes using reference values",
+      "note": "Enables dashboard to show target vs reference side by side"
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "Reference floor area defaulting to 1",
+      "handling": "Per-area calculations return inflated values until actual area is set",
+      "rationale": "Better than division by zero; typically populated immediately on model init"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Default reference floor area is 1 not 0",
+      "inputs": {},
+      "expected": "reference.building.conditionedFloorArea = 1"
+    },
+    {
+      "name": "Default reference service life",
+      "inputs": {},
+      "expected": "reference.building.serviceLife = 50"
+    }
+  ],
+  "references": [
+    { "source": "KeyValuesNodes.js (input registration)" },
+    { "source": "ComputationIntegration.js (REF_OUTPUT_TO_TARGET_INPUT mapping)" }
+  ]
+}

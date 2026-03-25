@@ -1,0 +1,156 @@
+{
+  "id": "f280.coolingSizingCompliance",
+  "legacyId": "f280_sz_cool",
+  "label": "F280 Cooling Equipment Sizing Compliance",
+  "section": "SF280",
+  "classification": "C",
+  "_meta": {
+    "description": "Validates that installed cooling equipment capacity falls within the acceptable range per CSA F280-12 Section 6.3.1. Installed cooling capacity must be between 80% and 125% of the nominal cooling capacity. A small system exception allows units < 6000W (1.7 tons) to exceed by up to 1750W (0.49 tons).",
+    "standard": "CSA F280-12 Section 6.3.1",
+    "codeReference": "NBC 9.33.5.1"
+  },
+  "signature": {
+    "inputs": [
+      {
+        "name": "f280.installedCoolingCapacity",
+        "type": "number",
+        "unit": "W",
+        "description": "Rated output capacity of installed cooling equipment"
+      },
+      {
+        "name": "f280.nominalCoolingCapacity",
+        "type": "number",
+        "unit": "W",
+        "description": "Calculated nominal cooling capacity from F280"
+      }
+    ],
+    "output": {
+      "type": "object",
+      "properties": {
+        "ratio": {
+          "type": "number",
+          "unit": "percent",
+          "description": "Sizing ratio (installed/nominal × 100)"
+        },
+        "compliant": {
+          "type": "boolean",
+          "description": "True if ratio between 80% and 125% (or small system exception applies)"
+        },
+        "symbol": {
+          "type": "string",
+          "description": "Pass/fail symbol"
+        },
+        "smallSystemException": {
+          "type": "boolean",
+          "description": "True if small system exception applies"
+        }
+      }
+    }
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "f280.nominalCoolingCapacity >= 0",
+        "description": "Nominal capacity must be non-negative"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "nominalCapacity > 0 AND nominalCapacity >= 6000",
+      "output": "{ ratio: round(installed/nominal × 100), compliant: ratio >= 80 AND ratio <= 125 }",
+      "note": "Standard sizing rule: 80% to 125% of nominal"
+    },
+    {
+      "condition": "nominalCapacity > 0 AND nominalCapacity < 6000",
+      "output": "{ ratio: round(installed/nominal × 100), compliant: installed <= nominal + 1750, smallSystemException: true }",
+      "note": "Small system exception: nominal < 6000W (1.7 tons) may exceed by up to 1750W (0.49 tons)"
+    },
+    {
+      "condition": "nominalCapacity == 0",
+      "output": "{ ratio: 0, compliant: installed == 0 }",
+      "note": "If no cooling load, no cooling equipment should be installed"
+    }
+  ],
+  "compliance": {
+    "passCondition": "(ratio >= 80 AND ratio <= 125) OR (smallSystemException AND installed <= nominal + 1750)",
+    "passSymbol": "checkmark",
+    "failSymbol": "X",
+    "standard": "CSA F280-12 Section 6.3.1"
+  },
+  "formula": {
+    "symbolic": "ratio = round(Q_installed_cool / Q_nominal × 100)",
+    "where": {
+      "Q_installed_cool": "Rated output capacity of cooling equipment (W)",
+      "Q_nominal": "Nominal cooling capacity (W) from f280.nominalCoolingCapacity"
+    },
+    "smallSystemRule": "IF Q_nominal < 6000W THEN Q_installed_cool <= Q_nominal + 1750W"
+  },
+  "tests": [
+    {
+      "name": "Properly sized cooling (within 80-125%)",
+      "inputs": {
+        "f280.installedCoolingCapacity": 9000,
+        "f280.nominalCoolingCapacity": 8000
+      },
+      "expected": {
+        "ratio": 113,
+        "compliant": true,
+        "symbol": "checkmark",
+        "smallSystemException": false
+      }
+    },
+    {
+      "name": "Oversized cooling (non-compliant)",
+      "inputs": {
+        "f280.installedCoolingCapacity": 12000,
+        "f280.nominalCoolingCapacity": 8000
+      },
+      "expected": {
+        "ratio": 150,
+        "compliant": false,
+        "symbol": "X",
+        "smallSystemException": false
+      }
+    },
+    {
+      "name": "Small system exception applies",
+      "inputs": {
+        "f280.installedCoolingCapacity": 7000,
+        "f280.nominalCoolingCapacity": 5500
+      },
+      "expected": {
+        "ratio": 127,
+        "compliant": true,
+        "symbol": "checkmark",
+        "smallSystemException": true
+      },
+      "note": "5500 < 6000W threshold. 7000 <= 5500 + 1750 = 7250. Compliant."
+    },
+    {
+      "name": "Small system exception exceeded",
+      "inputs": {
+        "f280.installedCoolingCapacity": 8000,
+        "f280.nominalCoolingCapacity": 5500
+      },
+      "expected": {
+        "ratio": 145,
+        "compliant": false,
+        "symbol": "X",
+        "smallSystemException": true
+      },
+      "note": "8000 > 5500 + 1750 = 7250. Non-compliant even with exception."
+    }
+  ],
+  "references": [
+    {
+      "source": "CSA F280-12 Section 6.3.1 - Cooling Equipment Sizing"
+    },
+    {
+      "source": "CSA F280-12 Small System Exception"
+    },
+    {
+      "source": "NBC 9.33.5.1 - cooling capacity requirements"
+    }
+  ]
+}

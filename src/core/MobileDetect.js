@@ -82,6 +82,7 @@
       document.getElementById("import-data-btn"),
       document.getElementById("export-data-btn"),
       document.getElementById("export-excel"),
+      document.getElementById("load-sample-btn"),
     ];
 
     excelButtons.forEach(btn => {

@@ -11,276 +11,11 @@ window.TEUI.SectionModules = window.TEUI.SectionModules || {};
 window.TEUI.sect08 = window.TEUI.sect08 || {};
 
 window.TEUI.SectionModules.sect08 = (function () {
-  //==========================================================================
-  // DUAL-STATE ARCHITECTURE (Self-Contained Module Pattern)
-  //==========================================================================
-
-  const TargetState = {
-    state: {},
-    initialize: function () {
-      this.setDefaults();
-    },
-    setDefaults: function () {
-      const defaults = {};
-      const fields = getFields();
-      for (const fieldId in fields) {
-        if (fields[fieldId].defaultValue) {
-          defaults[fieldId] = fields[fieldId].defaultValue;
-        }
-      }
-      this.state = defaults;
-    },
-    /**
-     * ✅ PHASE 2: Sync from global StateManager after import
-     * Bridges global StateManager → isolated TargetState for imported values
-     */
-    syncFromGlobalState: function (
-      fieldIds = ["d_56", "d_57", "d_58", "d_59"]
-    ) {
-      fieldIds.forEach(fieldId => {
-        const globalValue = window.TEUI.StateManager.getValue(fieldId);
-        if (globalValue !== null && globalValue !== undefined) {
-          this.setValue(fieldId, globalValue);
-          console.log(
-            `S08 TargetState: Synced ${fieldId} = ${globalValue} from global StateManager`
-          );
-        }
-      });
-    },
-    setValue: function (fieldId, value) {
-      this.state[fieldId] = value;
-    },
-    getValue: function (fieldId) {
-      return this.state[fieldId];
-    },
-  };
-
-  const ReferenceState = {
-    state: {},
-    initialize: function () {
-      this.setDefaults();
-    },
-    setDefaults: function () {
-      const defaults = {};
-      const fields = getFields();
-      for (const fieldId in fields) {
-        if (fields[fieldId].defaultValue) {
-          defaults[fieldId] = fields[fieldId].defaultValue;
-        }
-      }
-      // Apply Reference-specific overrides - IS THIS CAUSING PROBLEMS??
-      defaults["d_56"] = "150";
-      defaults["d_57"] = "1000";
-      defaults["d_58"] = "400";
-      defaults["d_59"] = "45";
-      defaults["i_59"] = "45";
-      this.state = defaults;
-    },
-    /**
-     * ✅ PHASE 2: Sync from global StateManager after import
-     * Bridges global StateManager → isolated ReferenceState for imported values
-     */
-    syncFromGlobalState: function (
-      fieldIds = ["d_56", "d_57", "d_58", "d_59"]
-    ) {
-      fieldIds.forEach(fieldId => {
-        const refFieldId = `ref_${fieldId}`;
-        const globalValue = window.TEUI.StateManager.getValue(refFieldId);
-        if (globalValue !== null && globalValue !== undefined) {
-          this.setValue(fieldId, globalValue);
-          console.log(
-            `S08 ReferenceState: Synced ${fieldId} = ${globalValue} from global StateManager (${refFieldId})`
-          );
-        }
-      });
-    },
-    setValue: function (fieldId, value) {
-      this.state[fieldId] = value;
-    },
-    getValue: function (fieldId) {
-      return this.state[fieldId];
-    },
-  };
-
-  const ModeManager = {
-    currentMode: "target",
-    initialize: function () {
-      TargetState.initialize();
-      ReferenceState.initialize();
-
-      // ✅ CSV EXPORT FIX: Publish ALL Reference defaults to StateManager
-      if (window.TEUI?.StateManager) {
-        ["d_56", "d_57", "d_58", "d_59", "i_59"].forEach(id => {
-          const refId = `ref_${id}`;
-          const val = ReferenceState.getValue(id);
-          if (
-            !window.TEUI.StateManager.getValue(refId) &&
-            val != null &&
-            val !== ""
-          ) {
-            window.TEUI.StateManager.setValue(refId, val, "calculated");
-          }
-        });
-      }
-    },
-    switchMode: function (newMode) {
-      if (
-        this.currentMode === newMode ||
-        (newMode !== "target" && newMode !== "reference")
-      )
-        return;
-      this.currentMode = newMode;
-      console.log(`S08: Switched to ${this.currentMode.toUpperCase()} mode.`);
-
-      // Both Target and Reference values are pre-computed during initialization
-      // Just update the UI to display the current mode's values
-      this.updateUIForMode();
-      this.updateCalculatedDisplayValues();
-
-      // Sync visual toggle UI when mode changes (from global or local toggle)
-      this.syncToggleUI(newMode);
-    },
-
-    // ✅ NEW: Sync visual toggle switch and indicator to match current mode
-    // Called both when user clicks local toggle AND when global toggle switches mode
-    syncToggleUI: function (mode) {
-      // Use centralized ToggleUISync utility
-      window.TEUI.ToggleUISync.syncToggleUI(this._toggleElements, mode, "S08");
-    },
-    updateUIForMode: function () {
-      const sectionElement = document.getElementById("indoorAirQuality");
-      if (!sectionElement) return;
-
-      const currentState = this.getCurrentState();
-      const fieldsToSync = ["d_56", "d_57", "d_58", "d_59", "i_59"];
-
-      fieldsToSync.forEach(fieldId => {
-        const element = sectionElement.querySelector(
-          `[data-field-id="${fieldId}"]`
-        );
-        const stateValue = currentState.getValue(fieldId);
-
-        if (!element || stateValue === undefined || stateValue === null) return;
-
-        let slider =
-          element.querySelector('input[type="range"]') ||
-          (element.matches('input[type="range"]') ? element : null);
-
-        if (slider) {
-          slider.value = stateValue;
-          const display = slider.nextElementSibling;
-          if (display) display.textContent = `${stateValue}%`;
-        } else if (element.isContentEditable) {
-          element.textContent = stateValue;
-        }
-      });
-    },
-
-    updateCalculatedDisplayValues: function () {
-      const calculatedFields = [
-        "d_60",
-        "k_56",
-        "k_57",
-        "k_58",
-        "k_59",
-        "m_56",
-        "m_57",
-        "m_58",
-        "m_59",
-        "n_56",
-        "n_57",
-        "n_58",
-        "n_59",
-      ];
-
-      calculatedFields.forEach(fieldId => {
-        const element = document.querySelector(`[data-field-id="${fieldId}"]`);
-        if (element) {
-          let value;
-          // For this section, Target and Reference values are calculated from different inputs
-          // but stored with the same fieldId in their respective state objects.
-          if (this.currentMode === "reference") {
-            value = ReferenceState.getValue(fieldId) || "0";
-          } else {
-            value = TargetState.getValue(fieldId) || "0";
-          }
-
-          const formatType = getFieldFormat(fieldId);
-          // Skip formatting for "raw" type fields (checkmarks, symbols)
-          const formattedValue =
-            formatType === "raw"
-              ? value
-              : (window.TEUI?.formatNumber?.(value, formatType) ?? value);
-          element.textContent = formattedValue;
-
-          // ✅ FIX: Reapply CSS classes for status fields (n_56, n_57, n_58, n_59)
-          if (fieldId.startsWith("n_") && formatType === "raw") {
-            element.classList.remove("checkmark", "warning");
-            element.classList.add(value === "✓" ? "checkmark" : "warning");
-          }
-        }
-      });
-    },
-
-    getCurrentState: function () {
-      return this.currentMode === "target" ? TargetState : ReferenceState;
-    },
-    setValue: function (fieldId, value) {
-      this.getCurrentState().setValue(fieldId, value);
-      // Bridge to global StateManager for backward compatibility
-      if (this.currentMode === "target") {
-        window.TEUI.StateManager.setValue(fieldId, value, "user-modified");
-      } else if (this.currentMode === "reference") {
-        window.TEUI.StateManager.setValue(
-          `ref_${fieldId}`,
-          value,
-          "user-modified"
-        );
-      }
-    },
-    getValue: function (fieldId) {
-      return this.getCurrentState().getValue(fieldId);
-    },
-  };
-
-  // Expose ModeManager for the local toggle to use
-  window.TEUI.sect08.ModeManager = ModeManager;
+  // TargetState/ReferenceState/ModeManager removed — graph + SM is the single source of truth.
 
   //==========================================================================
-  // HELPER FUNCTIONS (Simplified to use the new DualState pattern)
+  // HELPER FUNCTIONS
   //==========================================================================
-  function getNumericValue(fieldId, defaultValue = 0) {
-    const rawValue = ModeManager.getValue(fieldId);
-    return window.TEUI?.parseNumeric?.(rawValue, defaultValue) ?? defaultValue;
-  }
-
-  function setCalculatedValue(fieldId, rawValue) {
-    // ✅ FIX: Allow non-numeric values (like "✓" and "✗" symbols) to pass through
-    // Only use "N/A" for truly invalid numeric calculations (undefined, null, NaN)
-    let valueToStore;
-    if (typeof rawValue === "string") {
-      // String values (symbols, text) pass through as-is
-      valueToStore = rawValue;
-    } else if (
-      rawValue == null ||
-      (typeof rawValue === "number" && !isFinite(rawValue))
-    ) {
-      // Only null/undefined/NaN/Infinity become "N/A"
-      valueToStore = "N/A";
-    } else {
-      // Valid numbers get converted to strings
-      valueToStore = rawValue.toString();
-    }
-
-    // The calculation functions will be run for both models, so we need to know
-    // which state to write to. We'll check the current UI mode for simplicity,
-    // assuming calculations are triggered appropriately.
-    if (ModeManager.currentMode === "reference") {
-      ReferenceState.setValue(fieldId, valueToStore);
-    } else {
-      TargetState.setValue(fieldId, valueToStore);
-    }
-  }
 
   // getFieldFormat and setElementClass remain largely the same, but ensure they respect the current mode
   function getFieldFormat(fieldId) {
@@ -316,159 +51,13 @@ window.TEUI.SectionModules.sect08 = (function () {
   }
 
   //==========================================================================
-  // CALCULATION LOGIC - Dual Engine Pattern (calculate BOTH Target and Reference)
+  // EVENT HANDLING
+  // FieldManager handles all user input (sliders, editables, dropdowns)
+  // and routes through writeUserInput → SM → graph → DOMBridge.
   //==========================================================================
-  function calculateAll() {
-    // Save current mode
-    const originalMode = ModeManager.currentMode;
-
-    // Calculate Target model
-    ModeManager.currentMode = "target";
-    calculateWoodOffset();
-    calculateAirQualityStatus();
-
-    // Calculate Reference model
-    ModeManager.currentMode = "reference";
-    calculateWoodOffset();
-    calculateAirQualityStatus();
-
-    // Restore original mode
-    ModeManager.currentMode = originalMode;
-
-    // Update DOM to show current mode's values
-    ModeManager.updateCalculatedDisplayValues();
-  }
-
-  function calculateWoodOffset() {
-    // ✅ Read from StateManager (S04's calculated values)
-    const d31_actualWoodUse = window.TEUI?.StateManager?.getValue("d_31") || 0;
-    const k31_targetWoodEmissions =
-      window.TEUI?.StateManager?.getValue("k_31") || 0;
-
-    const d31_parsed = window.TEUI?.parseNumeric?.(d31_actualWoodUse, 0) ?? 0;
-    const k31_parsed =
-      window.TEUI?.parseNumeric?.(k31_targetWoodEmissions, 0) ?? 0;
-
-    // Excel formula: =IF(D31 > 0, K31/1000, 0)
-    const woodOffset = d31_parsed > 0 ? k31_parsed / 1000 : 0;
-
-    setCalculatedValue("d_60", woodOffset);
-
-    // ✅ CRITICAL: Store in StateManager for S04 to consume
-    if (window.TEUI?.StateManager) {
-      window.TEUI.StateManager.setValue("d_60", woodOffset, "calculated");
-    }
-
-    return woodOffset;
-  }
-
-  function calculateAirQualityStatus() {
-    // Set hardcoded guidance limits (k columns)
-    setCalculatedValue("k_56", 150);
-    setCalculatedValue("k_57", 1000);
-    setCalculatedValue("k_58", 400);
-    setCalculatedValue("k_59", "30-60");
-
-    // Get current user input values (d columns)
-    const radonValue = getNumericValue("d_56");
-    const co2Value = getNumericValue("d_57");
-    const tvocValue = getNumericValue("d_58");
-    const heatingHumidity = getNumericValue("d_59");
-    const coolingHumidity = getNumericValue("i_59");
-
-    // Row 56: Radon (m_56 = d_56/k_56, pass if ≤100%)
-    const radonPercent = radonValue / 150;
-    setCalculatedValue("m_56", radonPercent); // Store raw ratio, updateCalculatedDisplayValues will format it
-    const radonPass = radonPercent <= 1.0; // ≤100%
-    setCalculatedValue("n_56", radonPass ? "✓" : "✗");
-    setElementClass("n_56", radonPass);
-
-    // Row 57: CO2 (m_57 = d_57/k_57, pass if ≤100%)
-    const co2Percent = co2Value / 1000;
-    setCalculatedValue("m_57", co2Percent);
-    const co2Pass = co2Percent <= 1.0;
-    setCalculatedValue("n_57", co2Pass ? "✓" : "✗");
-    setElementClass("n_57", co2Pass);
-
-    // Row 58: TVOC (m_58 = d_58/k_58, pass if ≤100%)
-    const tvocPercent = tvocValue / 400;
-    setCalculatedValue("m_58", tvocPercent);
-    const tvocPass = tvocPercent <= 1.0;
-    setCalculatedValue("n_58", tvocPass ? "✓" : "✗");
-    setElementClass("n_58", tvocPass);
-
-    // Row 59: Humidity (m_59 shows acceptable range, n_59 checks BOTH d_59 and i_59 within 30-60%)
-    setCalculatedValue("m_59", "30-60%");
-    const isInRange =
-      heatingHumidity >= 30 &&
-      heatingHumidity <= 60 &&
-      coolingHumidity >= 30 &&
-      coolingHumidity <= 60;
-    setCalculatedValue("n_59", isInRange ? "✓" : "✗");
-    setElementClass("n_59", isInRange);
-  }
-
-  //==========================================================================
-  // EVENT HANDLING (Simplified to use the new DualState pattern)
-  //==========================================================================
-  function handleUserInput(event) {
-    const target = event.target;
-    const fieldElement = target.closest("[data-field-id]");
-    if (!fieldElement) return;
-
-    const fieldId = fieldElement.getAttribute("data-field-id");
-    const value = target.matches('input[type="range"]')
-      ? target.value
-      : target.textContent.trim();
-
-    ModeManager.setValue(fieldId, value); // Let the ModeManager handle state
-
-    if (target.matches('input[type="range"]')) {
-      const display = target.nextElementSibling;
-      if (display) display.textContent = `${value}%`;
-    }
-
-    calculateAll();
-  }
-
   function initializeEventHandlers() {
-    const sectionElement = document.getElementById("indoorAirQuality");
-    if (!sectionElement) return;
-
-    sectionElement.addEventListener("input", e => {
-      if (e.target.matches('input[type="range"]')) handleUserInput(e);
-    });
-
-    sectionElement.addEventListener(
-      "blur",
-      e => {
-        if (e.target.matches('[contenteditable="true"]')) handleUserInput(e);
-      },
-      true
-    );
-
-    sectionElement.addEventListener("keydown", e => {
-      if (e.target.matches('[contenteditable="true"]') && e.key === "Enter") {
-        e.preventDefault();
-        e.target.blur();
-      }
-    });
-
-    // ✅ Listen to external dependencies via global StateManager
-    if (window.TEUI?.StateManager) {
-      const sm = window.TEUI.StateManager;
-      const dependencies = ["d_31", "k_31"];
-      dependencies.forEach(dep => {
-        sm.addListener(dep, calculateAll);
-      });
-
-      // ✅ ANTI-PATTERN 7 FIX: S08 should NOT listen to its own input fields (i_59, ref_i_59)
-      // - Slider changes: FieldManager now calls calculateAll() after ModeManager.setValue
-      // - ModeManager.setValue automatically syncs to TargetState/ReferenceState
-      //
-      // Removed ref_i_59 self-listener that caused state mixing by not calling calculateAll().
-      // The clean pattern is: FieldManager → ModeManager.setValue → calculateAll → publish results
-    }
+    // FieldManager already handles slider input/change and editable blur
+    // for all sections. No section-level delegation needed.
   }
 
   //==========================================================================
@@ -503,6 +92,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         c: { label: "Radon (annual avg.)" },
         d: {
           fieldId: "d_56",
+          semanticPath: "airQuality.radon.target",
           type: "editable",
           value: "50",
           classes: ["user-input"],
@@ -511,6 +101,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         e: { content: "Bq/m³" },
         k: {
           fieldId: "k_56",
+          semanticPath: "airQuality.radon.limit",
           type: "calculated",
           value: "150",
           label: "Radon Reference Limit: Bq/m³",
@@ -518,6 +109,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         l: { content: "Bq/m³" },
         m: {
           fieldId: "m_56",
+          semanticPath: "airQuality.radon.compliance",
           type: "calculated",
           value: "0%",
           dependencies: ["d_56", "k_56"],
@@ -525,6 +117,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         },
         n: {
           fieldId: "n_56",
+          semanticPath: "airQuality.radon.status",
           type: "calculated",
           value: "✓",
           classes: ["checkmark"],
@@ -540,6 +133,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         c: { label: "CO2 (annual avg.)" },
         d: {
           fieldId: "d_57",
+          semanticPath: "airQuality.co2.target",
           type: "editable",
           value: "550",
           classes: ["user-input"],
@@ -548,6 +142,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         e: { content: "ppm" },
         k: {
           fieldId: "k_57",
+          semanticPath: "airQuality.co2.limit",
           type: "calculated",
           value: "1000",
           label: "CO2 Reference Limit: ppm",
@@ -555,6 +150,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         l: { content: "ppm" },
         m: {
           fieldId: "m_57",
+          semanticPath: "airQuality.co2.compliance",
           type: "calculated",
           value: "0%",
           dependencies: ["d_57", "k_57"],
@@ -562,6 +158,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         },
         n: {
           fieldId: "n_57",
+          semanticPath: "airQuality.co2.status",
           type: "calculated",
           value: "✓",
           classes: ["checkmark"],
@@ -577,6 +174,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         c: { label: "TVOC (annual avg.)" },
         d: {
           fieldId: "d_58",
+          semanticPath: "airQuality.tvoc.target",
           type: "editable",
           value: "100",
           classes: ["user-input"],
@@ -585,6 +183,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         e: { content: "ppm" },
         k: {
           fieldId: "k_58",
+          semanticPath: "airQuality.tvoc.limit",
           type: "calculated",
           value: "400",
           label: "TVOC Reference Limit: ppm",
@@ -592,6 +191,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         l: { content: "ppm" },
         m: {
           fieldId: "m_58",
+          semanticPath: "airQuality.tvoc.compliance",
           type: "calculated",
           value: "0%",
           dependencies: ["d_58", "k_58"],
@@ -599,6 +199,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         },
         n: {
           fieldId: "n_58",
+          semanticPath: "airQuality.tvoc.status",
           type: "calculated",
           value: "✓",
           classes: ["checkmark"],
@@ -614,6 +215,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         c: { label: "Indoor Heating Season Avg." },
         d: {
           fieldId: "d_59",
+          semanticPath: "airQuality.humidity.heatingTarget",
           type: "percentage",
           value: "45",
           min: 0,
@@ -629,6 +231,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         h: { content: "Indoor Heating Season Avg." },
         i: {
           fieldId: "i_59",
+          semanticPath: "airQuality.humidity.coolingTarget",
           type: "percentage",
           value: "45",
           min: 0,
@@ -641,6 +244,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         j: { content: "% RH" },
         k: {
           fieldId: "k_59",
+          semanticPath: "airQuality.humidity.limit",
           type: "calculated",
           value: "30-60",
           label: "RH Reference Range: %",
@@ -648,6 +252,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         l: { content: "%" },
         m: {
           fieldId: "m_59",
+          semanticPath: "airQuality.humidity.range",
           type: "calculated",
           value: "30-60%",
           dependencies: ["d_59", "i_59"],
@@ -655,6 +260,7 @@ window.TEUI.SectionModules.sect08 = (function () {
         },
         n: {
           fieldId: "n_59",
+          semanticPath: "airQuality.humidity.status",
           type: "calculated",
           value: "✓",
           classes: ["checkmark"],
@@ -693,6 +299,7 @@ window.TEUI.SectionModules.sect08 = (function () {
             label: cell.label || cell.content || row.label, // ✅ Proper label resolution
             defaultValue: cell.value || "",
             section: "indoorAirQuality",
+            semanticPath: cell.semanticPath || null, // Phase 5: Include semantic path for migration
           };
           // Copy dependencies if present
           if (cell.dependencies) {
@@ -746,20 +353,13 @@ window.TEUI.SectionModules.sect08 = (function () {
   }
 
   function onSectionRendered() {
-    ModeManager.initialize();
     addStatusStyles();
     initializeEventHandlers();
 
     // ✅ CRITICAL: Setup S04 listeners for wood offset calculation
     setupS04Listeners();
 
-    ModeManager.updateUIForMode();
-    calculateAll();
-
-    // ✅ Force calculation after a delay to catch S04 initialization
-    setTimeout(() => {
-      calculateWoodOffset();
-    }, 500);
+    // Graph handles all calculations including wood offset dependencies
 
     // Apply validation tooltips to fields
     if (window.TEUI.TooltipManager && window.TEUI.TooltipManager.initialized) {
@@ -773,21 +373,7 @@ window.TEUI.SectionModules.sect08 = (function () {
    * Setup listeners for S04 fields that affect d_60 (Wood Offset)
    */
   function setupS04Listeners() {
-    if (window.TEUI?.StateManager) {
-      // Listen for S04's actual wood use (d_31)
-      window.TEUI.StateManager.addListener("d_31", () => {
-        setTimeout(() => calculateAll(), 100); // Small delay to ensure S04 calculations complete
-      });
-
-      // Listen for S04's target wood emissions (k_31)
-      window.TEUI.StateManager.addListener("k_31", () => {
-        setTimeout(() => calculateAll(), 100); // Small delay to ensure S04 calculations complete
-      });
-
-      console.log("[S08] S04 listeners setup complete");
-    } else {
-      console.warn("[S08] StateManager not available for S04 listeners");
-    }
+    // Graph handles cross-section computation via wildcard listener.
   }
 
   function addStatusStyles() {
@@ -807,10 +393,5 @@ window.TEUI.SectionModules.sect08 = (function () {
     getDropdownOptions,
     getLayout,
     onSectionRendered,
-    calculateAll,
-    ModeManager, // Expose for external control if needed
-    // ✅ PHASE 2: Expose state objects for import sync
-    TargetState: TargetState,
-    ReferenceState: ReferenceState,
   };
 })();

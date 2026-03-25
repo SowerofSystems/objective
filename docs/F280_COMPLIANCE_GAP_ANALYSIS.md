@@ -1,0 +1,698 @@
+# F280 Compliance Gap Analysis & Implementation
+
+## Overview
+
+This document identifies what is required for the TEUI Objective calculator to achieve
+full CSA F280-12 compliance for residential HVAC equipment sizing, certification, and
+licensing. The analysis maps every F280 requirement against the existing computation
+graph architecture and identifies gaps that have been addressed or still remain.
+
+CSA F280-12 (R2025) — "Determining the Required Capacity of Residential Space Heating
+and Cooling Appliances" — is the Canadian standard for Part 9 building HVAC sizing,
+referenced by NBC 9.33.5.1, 9.36.3.2, and 9.36.5.15.
+
+---
+
+## 1. What Already Existed (Pre-Implementation)
+
+The TEUI calculator already contained 95% of the building science inputs and
+calculations that map to F280 requirements, spread across 18 computation node
+modules **plus existing peak load calculations in the legacy Section15.js**.
+
+### 1.0 Existing Peak Load Calculations (Section15.js — Rows T.6.4 through T.6.8)
+
+Section15.js already computes peak instantaneous loads using design-day ΔT:
+
+| Row | T-ID | Legacy ID | Formula | Unit |
+|---|---|---|---|---|
+| 137 | T.6.4 | d_137 | `(G101×D101 + D102×G102) × (H23-D23) / 1000` | kW |
+| 137 | T.6.4 | l_137 | `d_137 × 3412.14245` | BTU/h |
+| 138 | T.6.5 | d_138 | `(G101×D101 + D102×G102) × (D24-H24) / 1000` | kW |
+| 138 | T.6.6 | h_138 | `d_138 × 0.2843451361` | Tons |
+| 138 | T.6.6 | l_138 | `d_138 × 3412.14245` | BTU/h |
+| 139 | T.6.7 | d_139 | enclosure cooling + internal gains + solar/vent/occ gains | kW |
+| 139 | T.6.9 | h_139 | `d_139 × 0.2843451361` | Tons |
+| 139 | T.6.9 | l_139 | `d_139 × 3412.14245` | BTU/h |
+| 140 | T.6.8 | d_140 | `d_137 × 1000 / H15` | W/m² |
+| 140 | T.6.8 | h_140 | `d_138 × 1000 / H15` | W/m² |
+
+Where:
+- G101/G102 = weighted U-values (air-facing / ground-facing)
+- D101/D102 = envelope areas (air-facing / ground-facing)
+- H23 = heating setpoint, D23 = coldest design temperature
+- D24 = hottest design temperature, H24 = cooling setpoint
+- D65+D66+D67 = plug load + lighting + equipment densities (W/m²)
+- K79 = cooling solar gains, D122 = cooling ventilation gains
+- K64 = cooling occupant gains, H124 = free cooling offset
+
+These are **enclosure-only** peak loads. F280 additionally requires separate
+infiltration and ventilation peak loads to arrive at the total design heat loss.
+
+### 1.1 Building Envelope (TransmissionLossNodes.js — Section 11)
+
+| F280 Requirement | Existing Node | Legacy ID | Status |
+|---|---|---|---|
+| Roof area and U-value | `transmissionLoss.roof.area/uValue` | d_85, g_85 | Exists |
+| Above-grade walls area and U-value | `transmissionLoss.walls.area/uValue` | d_86, g_86 | Exists |
+| Exposed floor area and U-value | `transmissionLoss.exposedFloor.area/uValue` | d_87, g_87 | Exists |
+| Doors area and U-value | `transmissionLoss.doors.area/uValue` | d_88, g_88 | Exists |
+| Windows N/E/S/W areas and U-values | `transmissionLoss.window{N/E/S/W}.area/uValue` | d_89–d_92, g_89–g_92 | Exists |
+| Skylights area and U-value | `transmissionLoss.skylights.area/uValue` | d_93, g_93 | Exists |
+| Below-grade walls area and U-value | `transmissionLoss.wallsBelowGrade.area/uValue` | d_94, g_94 | Exists |
+| Slab-on-grade area and U-value | `transmissionLoss.slabOnGrade.area/uValue` | d_95, g_95 | Exists |
+| Thermal bridge penalty (%) | `transmissionLoss.thermalBridgePenalty` | d_97 | Exists |
+| Annual heat loss per component | `transmissionLoss.*.heatLoss` | i_85–i_95 | Exists (annual only) |
+| Annual heat gain per component | `transmissionLoss.*.heatGain` | k_85–k_95 | Exists (annual only) |
+
+### 1.2 Climate Design Conditions (ClimateNodes.js — Section 03)
+
+| F280 Requirement | Existing Node | Legacy ID | Status |
+|---|---|---|---|
+| Heating Degree Days (HDD) | `climate.heating.degreedays` | d_20 | Exists |
+| Cooling Degree Days (CDD) | `climate.cooling.degreedays` | d_21 | Exists |
+| Outdoor design temp, heating (1% or 2.5%) | `climate.temperature.coldest` | d_23 | Exists |
+| Outdoor design temp, cooling (July 2.5%) | `climate.temperature.hottest` | d_24 | Exists |
+| Indoor heating setpoint | `climate.heating.setpoint` | h_23 | Exists |
+| Indoor cooling setpoint | `climate.cooling.setpoint` | h_24 | Exists |
+| Climate zone (HDD-based) | `climate.zone` | j_19 | Exists |
+| Ground-facing HDD | `climate.groundFacing.hdd` | d_22 | Exists |
+| Ground-facing CDD | `climate.groundFacing.cdd` | h_22 | Exists |
+| Elevation | `climate.elevation` | l_22 | Exists |
+| Winter average temperature | `climate.temperature.winterAverage` | d_25 | Exists |
+
+### 1.3 Air Tightness / Infiltration (VolumeMetricsNodes.js — Section 12)
+
+| F280 Requirement | Existing Node | Legacy ID | Status |
+|---|---|---|---|
+| NRL50 (normalized leakage rate at 50Pa) | `airTightness.nrl50` | g_108 | Exists |
+| ACH50 target | `airTightness.ach50Target` | d_109 | Exists |
+| N-factor (climate zone, shielding, stories) | `airTightness.nFactor` | g_110 | Exists |
+| Air leakage heat loss (annual) | `airTightness.heatLoss` | i_103 | Exists (annual only) |
+| Air-facing envelope area (Ae) | `envelope.airFacing.area` | d_101 | Exists |
+| Conditioned volume | `volume.conditioned` | d_105 | Exists |
+| Number of storeys | `volume.numStoreys` | d_103 | Exists |
+| NRL50 presets (AL-1A through AL-4B) | Lookup table in VolumeMetricsNodes | — | Exists |
+| N-factor 3D lookup (zone, shielding, stories) | `N_FACTOR_TABLE` in VolumeMetricsNodes | — | Exists |
+
+### 1.4 Ventilation (VentilationNodes.js — Section 13)
+
+| F280 Requirement | Existing Node | Legacy ID | Status |
+|---|---|---|---|
+| Volumetric ventilation rate (L/s) | `ventilation.volumeRate` | d_120 | Exists |
+| HRV/ERV efficiency (ATRE) | `mechanical.ventilation.efficiency` | d_118 | Exists |
+| Gross ventilation heat loss (annual) | `ventilation.grossHeatLoss` | d_121 | Exists (annual only) |
+| Energy recovered (annual) | `ventilation.energyRecovered` | h_121 | Exists (annual only) |
+| Net ventilation heat loss (annual) | `ventilation.netHeatLoss` | m_121 | Exists (annual only) |
+| Ventilation method (Vol Const, Occ, etc.) | `mechanical.ventilation.method` | d_118_method | Exists |
+
+### 1.5 Solar Gains (RadiantGainsNodes.js — Section 10)
+
+| F280 Requirement | Existing Node | Legacy ID | Status |
+|---|---|---|---|
+| SHGC by orientation | `radiantGains.row74-78.shgc` | f_74–f_78 | Exists |
+| Winter/summer shading factors | `radiantGains.row74-78.winterShading/summerShading` | g_74–h_78 | Exists |
+| Orientation-based gain factors | `radiantGains.row74-78.gainFactor` | m_74–m_78 | Exists |
+| Heating season solar gains (seasonal) | `radiantGains.subtotal.heatingGain` | i_79 | Exists (seasonal only) |
+| Cooling season solar gains (seasonal) | `radiantGains.subtotal.coolingGain` | k_79 | Exists (seasonal only) |
+| Utilization factor (PHPP/NRC method) | `radiantGains.utilizationFactor` | g_80 | Exists |
+
+### 1.6 Internal Gains (InternalGainsNodes.js — Section 09)
+
+| F280 Requirement | Existing Node | Legacy ID | Status |
+|---|---|---|---|
+| Occupant gains (W/person activity levels) | `internal.heatingGains` | i_71 | Exists (seasonal) |
+| Plug load density (W/m2) | `internal.plugLoadDensity` | d_65 | Exists |
+| Lighting gains | Component of i_71 | — | Exists |
+| Equipment gains | Component of i_71 | — | Exists |
+| DHW system losses | `waterHeating.systemLosses` | d_54 | Exists |
+
+### 1.7 Mechanical Systems (MechanicalNodes.js — Section 13)
+
+| F280 Requirement | Existing Node | Legacy ID | Status |
+|---|---|---|---|
+| Heating system type | `mechanical.heating.systemType` | d_113 | Exists |
+| HSPF (heat pump) | `mechanical.heating.hspf` | f_113 | Exists |
+| AFUE (combustion) | `mechanical.heating.afue` | j_115 | Exists |
+| Cooling system type | `mechanical.cooling.systemType` | d_116 | Exists |
+| Cooling COP | `mechanical.cooling.cop` | j_116 | Exists |
+| COP derived from HSPF | `mechanical.heating.cop` | — | Exists |
+
+---
+
+## 2. The Remaining Gap: What Section15 Doesn't Cover
+
+Section15.js already performs peak envelope calculations (T.6.4-T.6.8) using
+design-day ΔT. The gap is narrower than a full annual-to-peak conversion —
+Section15 covers the **enclosure** peak loads, but F280 requires additional
+components that are not in Section15:
+
+| F280 Component | Section15 Status | What's Missing |
+|---|---|---|
+| Envelope peak heating | d_137 (T.6.4) — **exists** | — |
+| Envelope peak cooling | d_138 (T.6.5) — **exists** | — |
+| Cooling with gains | d_139 (T.6.7) — **exists** | — |
+| Load intensities | d_140/h_140 (T.6.8) — **exists** | — |
+| BTU/h conversions | l_137/l_138/l_139 — **exists** | — |
+| Tons conversions | h_138/h_139 — **exists** | — |
+| **Infiltration peak loss** | Not in Section15 | `1.21 × NRL50 × Ae/N × ΔT` |
+| **Ventilation peak loss (ATRE)** | Not in Section15 | `1.21 × V × (1-ATRE/100) × ΔT` |
+| **F280 total design heat loss** | Not in Section15 | envelope + infiltration + ventilation |
+| **Equipment sizing check (heating)** | Not in Section15 | installed >= 100% of total |
+| **Equipment sizing check (cooling)** | Not in Section15 | 80-125% of nominal |
+| **Small system exception** | Not in Section15 | < 6000W threshold |
+| **Designer certification** | Not in Section15 | NRCan EA, TECA, P.Eng, OAA, BCIN |
+| **F280 form output** | Not in Section15 | Pages 1-3 structured report |
+
+### Formula Reference
+
+| Component | Annual Formula (existing) | Peak Formula (existing/new) |
+|---|---|---|
+| **Envelope** | `U × A × HDD × 24 / 1000` (kWh/yr) | `(Uw×Ae + Ug×Ag) × ΔT / 1000` (kW) — **exists as d_137** |
+| **Infiltration** | `1.21 × NRL50 × Ae/N × HDD × 24 / 1000` (kWh/yr) | `1.21 × NRL50 × Ae/N × ΔT` (W) — **new** |
+| **Ventilation** | `1.21 × V × (1-ATRE/100) × HDD × 24 / 1000` (kWh/yr) | `1.21 × V × (1-ATRE/100) × ΔT` (W) — **new** |
+
+---
+
+## 3. What Was Added
+
+### 3.1 Parnas Table Specifications (10 files)
+
+Located in `docs/parnas-tables/f280/`:
+
+| File | Semantic ID | CSA Reference | Description |
+|---|---|---|---|
+| `peak-envelope-heat-loss.json` | `f280.peakEnvelopeHeatLoss` | §5.2 | Peak heat loss through all 11 envelope components, with separate ΔT for air-facing (setpoint - design temp) and ground-facing (setpoint - 10°C), including thermal bridge penalty |
+| `peak-infiltration-heat-loss.json` | `f280.peakInfiltrationHeatLoss` | §5.2.5 | Peak air leakage loss: `1.21 × NRL50 × Ae/N × ΔT`, using N-factor from 3D lookup (climate zone × shielding × stories) |
+| `peak-ventilation-heat-loss.json` | `f280.peakVentilationHeatLoss` | §5.2.6 | Peak ventilation loss net of ATRE recovery: `1.21 × V × (1 - ATRE/100) × ΔT` |
+| `total-design-heat-loss.json` | `f280.totalDesignHeatLoss` | §5.2.7 | **Primary F280 output**: sum of envelope + infiltration + ventilation peak losses. This is the value that heating equipment must meet or exceed. |
+| `total-design-heat-loss-btu.json` | `f280.totalDesignHeatLossBTU` | §5.2.7 | BTU/h conversion (`W × 3.41214`) for HVAC industry compatibility |
+| `nominal-cooling-capacity.json` | `f280.nominalCoolingCapacity` | §6.3.1 | Total cooling load: envelope sensible + ventilation + infiltration + solar + internal gains, multiplied by latent load factor |
+| `heating-sizing-compliance.json` | `f280.heatingSizingCompliance` | §5.2.7 | Installed heating capacity must be >= 100% of total design heat loss |
+| `cooling-sizing-compliance.json` | `f280.coolingSizingCompliance` | §6.3.1 | Installed cooling capacity must be 80-125% of nominal, with small system exception (< 6000W may exceed by up to 1750W) |
+| `designer-certification.json` | `f280.designerCertification` | §7.1 | Validates designer credentials (5 certification types), attestation, and NRCan Service Organization requirement |
+| `f280-input-summary.json` | `f280.inputSummary` | §7.1 | Complete mapping from computation graph nodes to F280 Form Page 2 input summary fields (39 existing, 6 new needed) |
+
+### 3.2 Computation Module (F280ComplianceNodes.js)
+
+Located in `src/sections/nodes/F280ComplianceNodes.js`. Builds ON TOP of the existing
+Section15.js peak load calculations (d_137 through d_140) rather than recalculating
+the envelope peak loads.
+
+**Relationship to Section15.js:**
+- `f280.peakEnvelopeHeatLoss` reads d_137 (T.6.4) and converts kW to W
+- `f280.nominalCoolingCapacity` reads d_139 (T.6.7) and adds infiltration + latent factor
+- Falls back to direct computation from weighted U-values if legacy values not yet available
+
+**New Input Nodes (14):**
+
+| Node ID | Purpose |
+|---|---|
+| `f280.legacy.peakHeatingKw` | Reads d_137 from Section15 T.6.4 (kW) |
+| `f280.legacy.peakCoolingEnclosureKw` | Reads d_138 from Section15 T.6.5 (kW) |
+| `f280.legacy.peakCoolingWithGainsKw` | Reads d_139 from Section15 T.6.7 (kW) |
+| `f280.installedHeatingCapacity` | Rated heating equipment output (W) |
+| `f280.installedCoolingCapacity` | Rated cooling equipment output (W) |
+| `f280.designer.name` | Designer's full name |
+| `f280.designer.company` | Designer's company name |
+| `f280.designer.certType` | Certification type (NRCan EA, TECA, P.Eng, OAA, BCIN, Other) |
+| `f280.designer.certNumber` | Certificate/license number |
+| `f280.designer.serviceOrg` | NRCan Service Organization (required for NRCan EA) |
+| `f280.designer.attestation` | Responsibility declaration (boolean) |
+| `f280.projectNumber` | F280 project identifier |
+| `f280.complianceType` | Whole House or Room-by-Room |
+| `f280.codeReference` | NBC code sections |
+
+**Computed Nodes:**
+
+| Node ID | Dependencies | Output |
+|---|---|---|
+| `f280.peakEnvelopeHeatLoss` | **d_137** (or fallback: Uw×Ae+Ug×Ag × ΔT) | W |
+| `f280.peakInfiltrationHeatLoss` | NRL50, Ae, N-factor, setpoint, design temp | W |
+| `f280.peakVentilationHeatLoss` | Vent rate, ATRE, setpoint, design temp | W |
+| `f280.totalDesignHeatLoss` | Sum of envelope + infiltration + ventilation | W |
+| `f280.totalDesignHeatLossBTU` | totalDesignHeatLoss × 3.41214 | BTU/h |
+| `f280.nominalCoolingCapacity` | **d_139** + infiltration peak + latent load factor | W |
+| `f280.nominalCoolingCapacityBTU` | nominalCoolingCapacity × 3.41214 | BTU/h |
+| `f280.heatingSizingRatio` | installed / designHeatLoss × 100 | % |
+| `f280.heatingSizingCompliance` | ratio >= 100% | ✓/✗ |
+| `f280.coolingSizingRatio` | installed / nominalCooling × 100 | % |
+| `f280.coolingSizingCompliance` | 80% <= ratio <= 125% (with small system exception) | ✓/✗ |
+| `f280.certificationValid` | name + certNumber + attestation (+ serviceOrg for NRCan EA) | ✓/✗ |
+| `f280.overallCompliance` | All three compliance checks pass | ✓/✗ |
+| `f280.component.{id}.peakLoss` | Per-component peak heat loss (11 components) | W |
+
+---
+
+## 4. F280 Certification & Licensing Requirements
+
+### 4.1 Who Can Perform F280 Calculations
+
+CSA F280-12 requires calculations to be completed by a **"competent person"** — defined
+as a person, firm, or corporation knowledgeable and experienced in the application of
+NBC Section 9.36 and the F280 methodology.
+
+### 4.2 Recognized Certification Types
+
+| Type | Full Name | Issuing Body | Scope | Key Requirements |
+|---|---|---|---|---|
+| **NRCan EA** | NRCan-Registered Energy Advisor | Natural Resources Canada | EnerGuide evaluations, federal/provincial rebate programs | Foundation exam + EA exam + probationary period + Service Organization affiliation + 3-year requalification |
+| **TECA** | Thermal Environmental Comfort Association | TECA | BC-recognized F280 calculations, HVAC design | Active TECA membership, F280 software proficiency |
+| **P.Eng** | Professional Engineer | Provincial engineering associations (PEO, APEGA, etc.) | Engineering design submissions, Part 3 buildings | Provincial P.Eng license in applicable jurisdiction |
+| **OAA** | Ontario Association of Architects | OAA | Architectural submissions in Ontario | Current OAA membership and licence |
+| **BCIN** | Building Code Identification Number | Ontario Ministry of Municipal Affairs | Ontario building code submissions | Valid BCIN with building science qualification category |
+
+### 4.3 NRCan Energy Advisor Certification Path
+
+The most common F280 certification path involves:
+
+1. **Foundation Level Exam** — Building science principles, construction technology
+2. **Energy Advisor (House) Exam** — EnerGuide Rating System, HOT2000 software,
+   technical procedures, quality assurance
+3. **Probationary Period** — Supervised file reviews with a Service Organization
+4. **Service Organization Affiliation** — Must affiliate with an NRCan-licensed SO that
+   has 2+ years of energy efficiency experience and is incorporated/registered in Canada
+5. **Requalification** — Every three years
+
+### 4.4 F280 Software Verification
+
+Calculations must use CSA F280-12 verified software. Recognized programs include:
+- **TECA Quality First** Heat Loss & Heat Gain Calculator
+- **Right-F280** (Wrightsoft)
+- **LoopCAD / HeatCAD** (Professional and MJ8 editions)
+- **HOT2000** (NRCan's modeling software)
+- **HRAI Excel spreadsheets** supplied with the CSA F280-12 standard
+
+### 4.5 Designer Attestation Requirements (F280 Form Page 1)
+
+The F280 form requires the following on Page 1:
+
+| Field | Description | Implemented |
+|---|---|---|
+| Project Number | Unique project identifier | `f280.projectNumber` |
+| Building Location | Full address of the building | Via `climate.location.*` |
+| Model Name | Building model name/identifier | Via `building.*` |
+| Compliance Type | "Whole House" or "Room-by-Room" | `f280.complianceType` |
+| Units | Imperial or Metric | Default: Metric |
+| Code Reference | NBC section numbers | `f280.codeReference` |
+| Designer Name | Full name of designer | `f280.designer.name` |
+| Company | Company name | `f280.designer.company` |
+| Address/Contact | Full company address, phone, email | Partially (needs UI) |
+| Signature/Stamp | Designer's attestation mark | `f280.designer.attestation` |
+| Certification Mark | Professional certification display | `f280.designer.certType` + `certNumber` |
+| Responsibility Declaration | Statement of review and responsibility | `f280.designer.attestation` |
+
+---
+
+## 5. F280 Sizing Rules
+
+### 5.1 Heating Equipment Sizing (CSA F280-12 §5.2.7)
+
+```
+RULE: Installed heating capacity >= Total design heat loss
+
+  Total Design Heat Loss = Q_envelope + Q_infiltration + Q_ventilation
+
+  Where:
+    Q_envelope   = SUM(A_i × U_i × ΔT_i) × (1 + TB/100)   for all 11 components
+    Q_infiltration = 1.21 × NRL50 × Ae / N × ΔT
+    Q_ventilation  = 1.21 × V_dot × (1 - ATRE/100) × ΔT
+
+  ΔT (air-facing)    = T_setpoint - T_outdoor_design
+  ΔT (ground-facing) = T_setpoint - 10°C
+```
+
+**Compliance**: `heatingSizingRatio = (installedCapacity / totalDesignHeatLoss) × 100`
+- PASS: ratio >= 100%
+- FAIL: ratio < 100%
+
+### 5.2 Cooling Equipment Sizing (CSA F280-12 §6.3.1)
+
+```
+RULE: 80% <= (installed / nominal) × 100 <= 125%
+
+  Nominal Cooling = (Q_env + Q_vent + Q_inf + Q_solar + Q_internal) × LLF
+
+  Where:
+    Q_env     = U_air × A_air × ΔT_cool
+    Q_vent    = 1.21 × V_dot × (1 - ATRE/100) × ΔT_cool
+    Q_inf     = 1.21 × NRL50 × Ae / N × ΔT_cool
+    Q_solar   = Peak solar gain estimate (orientation × SHGC × shading)
+    Q_internal = Peak internal gains (occupants + plugs + lighting + equipment)
+    LLF       = Latent load factor (>= 1.0, from psychrometric calculations)
+
+  ΔT_cool = T_outdoor_design_cooling - T_setpoint_cooling
+
+  EXCEPTION: If nominal < 6000 W (1.7 tons), installed may exceed
+             nominal by up to 1750 W (0.49 tons)
+```
+
+**Compliance**: `coolingSizingRatio = (installedCapacity / nominalCooling) × 100`
+- PASS: 80% <= ratio <= 125%
+- PASS (small system): nominal < 6000W AND installed <= nominal + 1750W
+- FAIL: ratio < 80% OR ratio > 125%
+
+### 5.3 Room-by-Room Requirements (F280 §5.2.6)
+
+For Room-by-Room compliance type:
+- Heating delivery to each room must be >= 100% of that room's design heat loss
+- This requires room-level area/U-value/ventilation allocation (not yet implemented)
+
+---
+
+## 6. Remaining Gaps for Full F280 Compliance
+
+### 6.1 New Input Fields Needed (6 fields)
+
+These inputs are defined in `f280-input-summary.json` as needed but not yet connected to UI:
+
+| Field | Description | Priority | Note |
+|---|---|---|---|
+| `f280.building.postalCode` | Postal code of building | High | Currently climate uses province+city, not postal code |
+| `f280.building.lotNumber` | Lot identification number | Medium | Administrative field for form output |
+| `f280.building.waterTableDepth` | Water table depth (m) | Low | Refines below-grade heat loss; rarely affects sizing significantly |
+| `f280.building.slabFluidTemp` | Slab fluid temperature (°C) | Low | Only for radiant floor slab systems |
+| `f280.installedHeatingCapacity` | Rated heating output (W) | High | Input exists in graph, needs UI connection |
+| `f280.installedCoolingCapacity` | Rated cooling output (W) | High | Input exists in graph, needs UI connection |
+
+### 6.2 Peak Solar Gain Refinement
+
+**Current**: The peak solar gain is approximated by dividing seasonal solar gains by
+cooling season hours and applying a 2.5x peak factor. This is a reasonable estimate
+but not the exact F280 method.
+
+**F280 Method**: Uses hourly peak solar radiation values by orientation from ASHRAE
+tables or weather data. For each glazing orientation, the peak-hour solar radiation
+(W/m2) is multiplied by area × SHGC × shading factor.
+
+**Recommendation**: Add peak solar radiation lookup table by orientation per
+climate region, sourced from ASHRAE Fundamentals or CWEC weather files.
+
+### 6.3 Peak Internal Gains Refinement
+
+**Current**: Approximated from seasonal internal gains divided by 8760 hours with
+a 1.5x peak factor.
+
+**F280 Method**: Uses instantaneous occupant + equipment + lighting loads at peak
+conditions. The existing `InternalGainsNodes.js` already has activity-level wattages
+per person (96.71W relaxed to 424.95W hyperactive) and equipment load tables — these
+could be used directly for peak values.
+
+**Recommendation**: Wire the existing per-person wattage and equipment load values
+directly into the F280 peak gain calculation, bypassing the seasonal integration.
+
+### 6.4 Room-by-Room Calculations
+
+**Current**: Only "Whole House" compliance type is supported.
+
+**F280 Requirement**: Room-by-Room mode (F280 Form Page 3) requires:
+- Individual room definitions (up to 40 rooms)
+- Per-room envelope component allocation (wall area, window area, etc.)
+- Per-room infiltration allocation
+- Per-room ventilation allocation
+- Per-room heat loss subtotals
+- Room-level equipment sizing check: delivery >= 100% of room heat loss
+
+**Recommendation**: This is a substantial feature requiring a room-level data model.
+It would involve:
+1. Room definition input array (name, area, volume)
+2. Component-to-room allocation matrix
+3. Per-room peak load calculations (reusing the component-level formulas)
+4. Per-room equipment delivery inputs
+5. Per-room sizing compliance checks
+
+### 6.5 F280 Form Output Generation (Pages 1-3)
+
+**Current**: Parnas tables and computation nodes calculate all values but no
+PDF/print-ready F280 form output exists.
+
+**F280 Requirement**: The output must match the official F280 Form Set (v24.10)
+format with three pages:
+- **Page 1**: Designer info, project details, certification marks
+- **Page 2**: Input summary table (all building parameters)
+- **Page 3**: Results summary (total heat loss, room breakdown if applicable)
+
+**Recommendation**: Add an F280 form renderer that:
+1. Pulls all values from the computation graph via semantic paths
+2. Formats them into the official F280 form layout
+3. Generates a printable/PDF output matching the FormSet v24.10 format
+4. Includes designer attestation and certification marks
+
+### 6.6 Verified Software Compliance
+
+**Current**: The TEUI calculator is not listed as CSA F280-12 verified software.
+
+**F280 Requirement**: Calculations must be conducted using CSA F280-12 verified
+software. The verification process involves submitting test cases to CSA Group
+for validation.
+
+**Recommendation**: This is a business/certification process, not a code change:
+1. Prepare standardized test cases per CSA F280-12 Annex D
+2. Validate calculator outputs against reference implementations (HOT2000, TECA QF)
+3. Submit for CSA verification through the HVAC Designers of Canada process
+4. Until verified, F280 outputs should be clearly labeled as "FOR REFERENCE ONLY"
+
+### 6.7 Designer Contact Information
+
+**Current**: Designer name, company, and certification are captured. Full address,
+phone, fax, and email fields are not yet registered as computation graph inputs.
+
+**F280 Requirement**: Page 1 requires complete designer contact information.
+
+**Recommendation**: Add the following input nodes:
+- `f280.designer.address` — Street address
+- `f280.designer.city` — City
+- `f280.designer.province` — Province
+- `f280.designer.postalCode` — Postal code
+- `f280.designer.phone` — Phone number
+- `f280.designer.email` — Email address
+
+---
+
+## 7. F280 Compliance Checklist
+
+### Required for Basic F280 Compliance
+
+| # | Requirement | Status | Implementation |
+|---|---|---|---|
+| 1 | Peak envelope heat loss (§5.2) | EXISTED | d_137 (T.6.4) in Section15.js; bridged via `f280.peakEnvelopeHeatLoss` |
+| 2 | Peak envelope cooling (§6.3) | EXISTED | d_138/d_139 (T.6.5/T.6.7) in Section15.js |
+| 3 | Peak load intensities | EXISTED | d_140/h_140 (T.6.8) in Section15.js |
+| 4 | BTU/h and Tons conversions | EXISTED | l_137/l_138/l_139, h_138/h_139 in Section15.js |
+| 5 | Peak infiltration heat loss (§5.2.5) | ADDED | `f280.peakInfiltrationHeatLoss` |
+| 6 | Peak ventilation heat loss with ATRE (§5.2.6) | ADDED | `f280.peakVentilationHeatLoss` |
+| 7 | F280 total design heat loss (§5.2.7) | ADDED | `f280.totalDesignHeatLoss` (envelope+inf+vent) |
+| 8 | F280 total in BTU/h | ADDED | `f280.totalDesignHeatLossBTU` |
+| 9 | Nominal cooling with infiltration + LLF (§6.3.1) | ADDED | `f280.nominalCoolingCapacity` |
+| 10 | Heating sizing compliance check | ADDED | `f280.heatingSizingCompliance` |
+| 11 | Cooling sizing compliance check (80-125%) | ADDED | `f280.coolingSizingCompliance` |
+| 12 | Small system exception (< 6000W) | ADDED | Integrated in cooling compliance |
+| 13 | Designer certification validation | ADDED | `f280.certificationValid` |
+| 14 | Overall compliance aggregation | ADDED | `f280.overallCompliance` |
+| 15 | Input summary field mapping (§7.1) | ADDED | `f280-input-summary.json` |
+
+### Required for Full F280 Production Use
+
+| # | Requirement | Status | Priority |
+|---|---|---|---|
+| 14 | Equipment capacity UI inputs | PENDING | High — inputs exist, need UI |
+| 15 | Building postal code input | PENDING | High |
+| 16 | Peak solar radiation lookup tables | PENDING | Medium — currently approximated |
+| 17 | Direct peak internal gain wiring | PENDING | Medium — currently approximated |
+| 18 | F280 Form PDF/print output (Pages 1-3) | PENDING | High |
+| 19 | Designer contact fields (address, phone, email) | PENDING | Medium |
+| 20 | Room-by-Room mode (F280 Page 3) | PENDING | Low — Whole House sufficient for most use cases |
+| 21 | CSA software verification submission | PENDING | High for regulatory acceptance |
+| 22 | Test case validation against HOT2000/TECA QF | PENDING | High |
+
+---
+
+## 8. Architecture Notes
+
+### 8.1 How F280 Builds on Section15 Peak Loads
+
+F280ComplianceNodes.js builds ON TOP of the existing Section15.js peak calculations.
+It reads the legacy d_137/d_139 values and adds the missing components:
+
+```
+Section15.js (EXISTING)                 F280ComplianceNodes.js (ADDED)
+───────────────────────                 ────────────────────────────────
+
+G101, D101, G102, D102 ──┐
+H23, D23               ──┼──> d_137 (T.6.4) ──> f280.peakEnvelopeHeatLoss (kW→W)
+                          │
+                          │    airTightness.nrl50     ──┐
+                          │    envelope.airFacing.area──┼──> f280.peakInfiltrationHeatLoss
+                          │    airTightness.nFactor   ──┤    (NEW — not in Section15)
+                          │    H23, D23               ──┘
+                          │
+                          │    ventilation.volumeRate       ──┐
+                          │    mech.ventilation.efficiency  ──┼──> f280.peakVentilationHeatLoss
+                          │    H23, D23                     ──┘    (NEW — not in Section15)
+                          │
+                          │    f280.peakEnvelopeHeatLoss     ──┐
+                          └──> f280.peakInfiltrationHeatLoss ──┼──> f280.totalDesignHeatLoss
+                               f280.peakVentilationHeatLoss  ──┘    (F280 §5.2.7 total)
+
+G101, D101, G102, D102 ──┐
+D24, H24               ──┤
+D65, D66, D67, H15     ──┼──> d_139 (T.6.7) ──> f280.nominalCoolingCapacity
+K79, D122, K64, H124   ──┘                      + infiltration peak + LLF
+                                                  (F280 §6.3.1 total)
+
+f280.totalDesignHeatLoss      ──┐
+f280.installedHeatingCapacity ──┼──> f280.heatingSizingCompliance
+                               ──┘
+
+f280.nominalCoolingCapacity    ──┐
+f280.installedCoolingCapacity  ──┼──> f280.coolingSizingCompliance
+                                ──┘
+```
+
+### 8.2 Incremental Recomputation
+
+Because F280 nodes are registered in the same computation graph as all other nodes,
+they benefit from the existing incremental recomputation (topological sort + dirty
+flag propagation). Changing a single U-value automatically propagates through to:
+1. The annual heat loss (existing)
+2. The F280 peak heat loss (new)
+3. The F280 total design heat loss (new)
+4. The F280 heating sizing compliance (new)
+5. The F280 overall compliance status (new)
+
+### 8.3 Provincial Code Reference Mapping
+
+| Province | Code Section | F280 Requirement |
+|---|---|---|
+| Ontario | OBC 9.33.2.2 | Mandatory for residential heating/cooling capacity |
+| British Columbia | BCBC 9.33.5 | Required for building permits; Step Code checklists |
+| Alberta | NBC 2023 Alberta 9.33.5.1 | Referenced for mechanical system sizing |
+| National | NBC 9.33.5.1, 9.36.3.2, 9.36.5.15 | F280 is the referenced standard for Part 9 HVAC |
+
+---
+
+## 9. F280 UI Section & Required Report Fields
+
+### 9.1 Section 21 Implementation
+
+The F280 Compliance UI section (`Section21.js`) is placed between Section 15 (TEUI
+Summary) and Section 16 (Sankey Diagram) in the calculator. It provides:
+
+- **User input fields** for F280-specific data not captured elsewhere
+- **Read-only summary** of all building parameters needed for the F280 report
+- **Compliance status indicators** fed by `F280ComplianceNodes.js`
+
+Module ID: `sect21` | HTML ID: `f280Compliance` | Tab Label: `F280`
+
+### 9.2 Required User Inputs (F280-Specific)
+
+These are the fields the user must enter directly in the F280 section. All other
+F280 report fields are pulled automatically from other sections.
+
+| # | Field | Field ID | Type | Default | Description |
+|---|---|---|---|---|---|
+| 1 | Project Number | `f280_proj_num` | Text | (empty) | Unique F280 project identifier |
+| 2 | Compliance Type | `f280_comp_type` | Fixed | Whole House | Fixed to Whole House (Room-by-Room not supported) |
+| 3 | Code Reference | `f280_code_ref` | Text | NBC 2020: 9.33.5.1, 9.36.3.2, 9.36.5.15(5), 9.36.8.9 | Applicable building code sections |
+| 4 | Installed Heating Capacity | `f280_cap_heat` | Numeric (W) | 0 | Rated output of installed heating equipment |
+| 5 | Installed Cooling Capacity | `f280_cap_cool` | Numeric (W) | 0 | Rated output of installed cooling equipment |
+| 6 | Designer Name | `f280_dsgn_name` | Text | (empty) | Designer's full name |
+| 7 | Designer Company | `f280_dsgn_co` | Text | (empty) | Designer's company name |
+| 8 | Certification Type | `f280_cert_type` | Dropdown | Other | NRCan EA, TECA, P.Eng, OAA, BCIN, or Other |
+| 9 | Certification Number | `f280_cert_num` | Text | (empty) | Certificate or license number |
+| 10 | Service Organization | `f280_svc_org` | Text | (empty) | NRCan Service Org (required only for NRCan EA) |
+| 11 | Responsibility Declaration | `f280_attest` | Dropdown | No | Designer attestation (Yes/No) |
+
+### 9.3 F280 Report Field Summary (All Pages)
+
+Complete catalog of all fields needed for the F280 report, organized by F280
+Form page section. Fields marked "Auto" are pulled from existing sections.
+
+#### Page 1: Designer & Project Information
+
+| F280 Form Field | Source | Field ID | Status |
+|---|---|---|---|
+| Project Number | User Input (S21) | `f280_proj_num` | Implemented |
+| Compliance Type | Fixed: Whole House | `f280_comp_type` | Implemented |
+| Code Reference | User Input (S21) | `f280_code_ref` | Implemented |
+| Designer Name | User Input (S21) | `f280_dsgn_name` | Implemented |
+| Designer Company | User Input (S21) | `f280_dsgn_co` | Implemented |
+| Certification Type | User Input (S21) | `f280_cert_type` | Implemented |
+| Certification Number | User Input (S21) | `f280_cert_num` | Implemented |
+| Service Organization | User Input (S21) | `f280_svc_org` | Implemented |
+| Responsibility Declaration | User Input (S21) | `f280_attest` | Implemented |
+| Designer Address | — | — | PENDING (6.7) |
+| Designer Phone/Email | — | — | PENDING (6.7) |
+
+#### Page 2: Input Summary (Building Parameters)
+
+| F280 Form Row | Parameter | Source Section | Legacy ID | Status |
+|---|---|---|---|---|
+| 1 | Postal Code | Climate (S03) | — | PENDING (6.1) |
+| 2 | Indoor Heating Setpoint | Climate (S03) | h_23 | Auto |
+| 3 | Indoor Cooling Setpoint | Climate (S03) | h_24 | Auto |
+| 4 | Outdoor Design Temp (Heating) | Climate (S03) | d_23 | Auto |
+| 5 | Outdoor Design Temp (Cooling) | Climate (S03) | d_24 | Auto |
+| 6 | Heating Degree Days | Climate (S03) | d_20 | Auto |
+| 7 | Cooling Degree Days | Climate (S03) | d_21 | Auto |
+| 8 | Conditioned Floor Area | Building Info (S02) | h_15 | Auto |
+| 9 | Conditioned Volume | Volume Metrics (S12) | d_105 | Auto |
+| 10 | Number of Storeys | Volume Metrics (S12) | d_103 | Auto |
+| 11-12 | Wall Area / U-value | Transmission Loss (S11) | d_86, g_86 | Auto |
+| 13-14 | Roof Area / U-value | Transmission Loss (S11) | d_85, g_85 | Auto |
+| 15-16 | Windows N Area / U-value | Transmission Loss (S11) | d_89, g_89 | Auto |
+| 17-18 | Windows E Area / U-value | Transmission Loss (S11) | d_89b, g_89b | Auto |
+| 19-20 | Windows S Area / U-value | Transmission Loss (S11) | d_89c, g_89c | Auto |
+| 21-22 | Windows W Area / U-value | Transmission Loss (S11) | d_89d, g_89d | Auto |
+| 23-24 | Door Area / U-value | Transmission Loss (S11) | d_88, g_88 | Auto |
+| 25-26 | Skylight Area / U-value | Transmission Loss (S11) | d_93, g_93 | Auto |
+| 27-28 | Below-Grade Wall Area / U-value | Transmission Loss (S11) | d_94, g_94 | Auto |
+| 29-30 | Slab Area / U-value | Transmission Loss (S11) | d_95, g_95 | Auto |
+| 31 | NRL50 | Volume Metrics (S12) | g_108 | Auto |
+| 32 | ACH50 | Volume Metrics (S12) | d_109 | Auto |
+| 33 | Ventilation Rate | Mechanical (S13) | d_120 | Auto |
+| 34 | HRV/ERV Efficiency (ATRE) | Mechanical (S13) | d_118 | Auto |
+
+#### Page 3: Results Summary
+
+| F280 Form Field | Source | Legacy ID | Status |
+|---|---|---|---|
+| Peak Envelope Heat Loss (W) | F280ComplianceNodes | f280_hl_env | Auto |
+| Peak Infiltration Heat Loss (W) | F280ComplianceNodes | f280_hl_inf | Auto |
+| Peak Ventilation Heat Loss (W) | F280ComplianceNodes | f280_hl_vent | Auto |
+| Total Design Heat Loss (W) | F280ComplianceNodes | f280_hl_total | Auto |
+| Total Design Heat Loss (BTU/h) | F280ComplianceNodes | f280_hl_btu | Auto |
+| Nominal Cooling Capacity (W) | F280ComplianceNodes | f280_cl_total | Auto |
+| Nominal Cooling Capacity (BTU/h) | F280ComplianceNodes | f280_cl_btu | Auto |
+| Installed Heating Capacity (W) | User Input (S21) | f280_cap_heat | Implemented |
+| Heating Sizing Ratio (%) | F280ComplianceNodes | f280_sz_heat_ratio | Auto |
+| Heating Sizing Compliance | F280ComplianceNodes | f280_sz_heat | Auto |
+| Installed Cooling Capacity (W) | User Input (S21) | f280_cap_cool | Implemented |
+| Cooling Sizing Ratio (%) | F280ComplianceNodes | f280_sz_cool_ratio | Auto |
+| Cooling Sizing Compliance | F280ComplianceNodes | f280_sz_cool | Auto |
+| Certification Valid | F280ComplianceNodes | f280_cert_valid | Auto |
+| Overall F280 Compliance | F280ComplianceNodes | f280_overall | Auto |
+| Room-by-Room Breakdown | — | — | PENDING (6.4) |
+
+### 9.4 Updated Implementation Status
+
+With the Section 21 UI implementation, the following gap items are now addressed:
+
+| # | Requirement | Previous Status | Updated Status |
+|---|---|---|---|
+| 14 | Equipment capacity UI inputs | PENDING | ADDRESSED — Section 21 provides editable fields connected to StateManager |
+| 18 | F280 Form PDF/print output (Pages 1-3) | PENDING | PARTIALLY ADDRESSED — Section 21 displays all field values; PDF generation still pending |
+| 19 | Designer contact fields (address, phone, email) | PENDING | PARTIALLY ADDRESSED — Name, company, cert type/number implemented; address/phone/email still pending |
+
+---
+
+## 10. References
+
+- CSA F280:12 (R2025) — Determining the Required Capacity of Residential Space
+  Heating and Cooling Appliances (CSA Group)
+- F280 Form Set v24.10 (HVAC Designers of Canada, hvacdc.ca)
+- F280 Form Set Guide V24.07 (HVAC Designers of Canada)
+- F280 Checklist V24.7 (SRD)
+- NBC 2020 National Building Code of Canada, Part 9
+- HRAI Residential Heat Loss and Heat Gain Calculations Manual
+- NRCan Energy Advisor Certification Requirements
+- TECA Quality First Heat Loss & Heat Gain Calculator documentation

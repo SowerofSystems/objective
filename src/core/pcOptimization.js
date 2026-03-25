@@ -7,7 +7,7 @@
  *
  * This module provides:
  * - OPTIMIZATION_PRESETS: Configuration for 4 optimization strategies
- * - updateField(): Helper to update TargetState + StateManager + recalculate
+ * - updateField(): Helper to update StateManager + recalculate
  * - applyOptimizationPreset(): Unified handler that applies any preset
  * - 4 wrapper functions: handleDecarbonize, handleOptimize, handleSuperOptimize, handlePassivHausIfy
  */
@@ -391,36 +391,20 @@ window.TEUI.PCOptimization = (function () {
   // ══════════════════════════════════════════════════════════════════════
 
   /**
-   * Update a field in both TargetState and StateManager
-   * Follows the standard pattern used across all optimization handlers
+   * Update a field in StateManager (single source of truth)
    *
    * @param {string} sectionId - Section module ID (e.g., "sect07")
    * @param {string} fieldId - Field ID to update (e.g., "d_52")
    * @param {string} value - Value to set
    */
   function updateField(sectionId, fieldId, value) {
-    const section = window.TEUI?.SectionModules?.[sectionId];
     const stateManager = window.TEUI?.StateManager;
 
-    // Update section's TargetState
-    if (section?.TargetState) {
-      section.TargetState.setValue(fieldId, value);
-    }
-
-    // Update global StateManager
     if (stateManager) {
       stateManager.setValue(fieldId, value, "user-modified");
     }
 
-    // Trigger recalculation
-    if (section?.calculateAll) {
-      section.calculateAll();
-    }
-
-    // Refresh UI
-    if (section?.ModeManager?.refreshUI) {
-      section.ModeManager.refreshUI();
-    }
+    // Graph handles recalculation via wildcard SM listener
   }
 
   // ══════════════════════════════════════════════════════════════════════
@@ -464,6 +448,12 @@ window.TEUI.PCOptimization = (function () {
     const changes = [];
     const sectionsModified = new Set();
 
+    // Mute SM listeners during batch writes to prevent N separate recomputes.
+    // LegacyAdapter still writes each value to the graph (it wraps SM.setValue,
+    // not a listener). After all values are in the graph, one calculateAll()
+    // recomputes everything correctly.
+    if (stateManager?.muteListeners) stateManager.muteListeners();
+
     for (const update of preset.fields) {
       // Skip if condition not met
       if (update.condition && !update.condition(stateManager)) {
@@ -472,10 +462,7 @@ window.TEUI.PCOptimization = (function () {
 
       const section = window.TEUI?.SectionModules?.[update.section];
 
-      // If preCalc flag set, recalculate section first (for dropdown switches)
-      if (update.preCalc && section?.calculateAll) {
-        section.calculateAll();
-      }
+      // preCalc no longer needed — graph maintains consistent state
 
       // Apply visibility updates if specified (for dropdown field switching)
       if (update.visibilityUpdate) {
@@ -498,16 +485,12 @@ window.TEUI.PCOptimization = (function () {
       }
     }
 
-    // Force final recalculation for all modified sections
-    sectionsModified.forEach(sectionId => {
-      const section = window.TEUI?.SectionModules?.[sectionId];
-      if (section?.calculateAll) {
-        section.calculateAll();
-      }
-      if (section?.ModeManager?.refreshUI) {
-        section.ModeManager.refreshUI();
-      }
-    });
+    if (stateManager?.unmuteListeners) stateManager.unmuteListeners();
+
+    // Single recalculation after all values are written to graph
+    if (window.TEUI?.Calculator?.calculateAll) {
+      window.TEUI.Calculator.calculateAll();
+    }
 
     // 🔍 DIAGNOSTIC: Capture state AFTER optimization (if debug enabled)
     if (debugEnabled && stateBefore) {

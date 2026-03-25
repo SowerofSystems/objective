@@ -1,0 +1,219 @@
+{
+  "_meta": {
+    "description": "R-Imperial conversion, surface temperature, and condensation risk nodes. R-Imperial converts RSI to imperial R-value (RSI * 5.678). Surface temperature estimates interior surface temp using U-value and design temperatures. Condensation risk compares surface temp against dew point threshold.",
+    "instances": {
+      "rImperial": [
+        { "id": "transmissionLoss.roof.rImperial", "legacyId": "e_85", "label": "Roof R-Imperial" },
+        { "id": "transmissionLoss.walls.rImperial", "legacyId": "e_86", "label": "Walls R-Imperial" },
+        { "id": "transmissionLoss.exposedFloor.rImperial", "legacyId": "e_87", "label": "Exposed Floor R-Imperial" },
+        { "id": "transmissionLoss.doors.rImperial", "legacyId": "e_88", "label": "Doors R-Imperial" },
+        { "id": "transmissionLoss.windowNorth.rImperial", "legacyId": "e_89", "label": "Window North R-Imperial" },
+        { "id": "transmissionLoss.windowEast.rImperial", "legacyId": "e_90", "label": "Window East R-Imperial" },
+        { "id": "transmissionLoss.windowSouth.rImperial", "legacyId": "e_91", "label": "Window South R-Imperial" },
+        { "id": "transmissionLoss.windowWest.rImperial", "legacyId": "e_92", "label": "Window West R-Imperial" },
+        { "id": "transmissionLoss.skylights.rImperial", "legacyId": "e_93", "label": "Skylights R-Imperial" },
+        { "id": "transmissionLoss.wallsBelowGrade.rImperial", "legacyId": "e_94", "label": "Walls Below Grade R-Imperial" },
+        { "id": "transmissionLoss.slabOnGrade.rImperial", "legacyId": "e_95", "label": "Slab on Grade R-Imperial" }
+      ],
+      "surfaceTemperature": [
+        { "id": "transmissionLoss.roof.surfaceTemp", "legacyId": "o_85", "label": "Roof Interior Surface Temp" },
+        { "id": "transmissionLoss.walls.surfaceTemp", "legacyId": "o_86", "label": "Walls Interior Surface Temp" },
+        { "id": "transmissionLoss.exposedFloor.surfaceTemp", "legacyId": "o_87", "label": "Exposed Floor Interior Surface Temp" },
+        { "id": "transmissionLoss.doors.surfaceTemp", "legacyId": "o_88", "label": "Doors Interior Surface Temp" },
+        { "id": "transmissionLoss.windowNorth.surfaceTemp", "legacyId": "o_89", "label": "Window North Interior Surface Temp" },
+        { "id": "transmissionLoss.windowEast.surfaceTemp", "legacyId": "o_90", "label": "Window East Interior Surface Temp" },
+        { "id": "transmissionLoss.windowSouth.surfaceTemp", "legacyId": "o_91", "label": "Window South Interior Surface Temp" },
+        { "id": "transmissionLoss.windowWest.surfaceTemp", "legacyId": "o_92", "label": "Window West Interior Surface Temp" },
+        { "id": "transmissionLoss.skylights.surfaceTemp", "legacyId": "o_93", "label": "Skylights Interior Surface Temp" },
+        { "id": "transmissionLoss.wallsBelowGrade.surfaceTemp", "legacyId": "o_94", "label": "Walls Below Grade Interior Surface Temp" },
+        { "id": "transmissionLoss.slabOnGrade.surfaceTemp", "legacyId": "o_95", "label": "Slab on Grade Interior Surface Temp" }
+      ],
+      "condensationRisk": [
+        { "id": "transmissionLoss.roof.condensationRisk", "legacyId": "cr_85", "label": "Roof Condensation Risk" },
+        { "id": "transmissionLoss.walls.condensationRisk", "legacyId": "cr_86", "label": "Walls Condensation Risk" },
+        { "id": "transmissionLoss.exposedFloor.condensationRisk", "legacyId": "cr_87", "label": "Exposed Floor Condensation Risk" },
+        { "id": "transmissionLoss.doors.condensationRisk", "legacyId": "cr_88", "label": "Doors Condensation Risk" },
+        { "id": "transmissionLoss.windowNorth.condensationRisk", "legacyId": "cr_89", "label": "Window North Condensation Risk" },
+        { "id": "transmissionLoss.windowEast.condensationRisk", "legacyId": "cr_90", "label": "Window East Condensation Risk" },
+        { "id": "transmissionLoss.windowSouth.condensationRisk", "legacyId": "cr_91", "label": "Window South Condensation Risk" },
+        { "id": "transmissionLoss.windowWest.condensationRisk", "legacyId": "cr_92", "label": "Window West Condensation Risk" },
+        { "id": "transmissionLoss.skylights.condensationRisk", "legacyId": "cr_93", "label": "Skylights Condensation Risk" },
+        { "id": "transmissionLoss.wallsBelowGrade.condensationRisk", "legacyId": "cr_94", "label": "Walls Below Grade Condensation Risk" },
+        { "id": "transmissionLoss.slabOnGrade.condensationRisk", "legacyId": "cr_95", "label": "Slab on Grade Condensation Risk" }
+      ]
+    }
+  },
+  "section": "S11",
+  "classification": "C",
+  "signature": {
+    "inputs": [
+      {
+        "name": "transmissionLoss.{component}.rsi",
+        "type": "number",
+        "unit": "m2K/W",
+        "description": "RSI value for the component (input or computed)"
+      },
+      {
+        "name": "transmissionLoss.{component}.uValue",
+        "type": "number",
+        "unit": "W/m2K",
+        "description": "U-value for the component (for surface temp calculation)"
+      },
+      {
+        "name": "transmissionLoss.{component}.area",
+        "type": "number",
+        "unit": "m2",
+        "description": "Area of the component (surface temp returns empty if 0)"
+      },
+      {
+        "name": "climate.heating.setpoint",
+        "type": "number",
+        "unit": "deg-C",
+        "description": "Interior temperature setpoint (default 21). Used in surface temp and condensation risk."
+      },
+      {
+        "name": "climate.temperature.winterAverage",
+        "type": "number",
+        "unit": "deg-C",
+        "description": "Winter average exterior temperature (air-facing components only)"
+      }
+    ],
+    "output": {
+      "rImperial": { "type": "number", "unit": "ft2.degF.h/BTU" },
+      "surfaceTemp": { "type": "number", "unit": "deg-C" },
+      "condensationRisk": { "type": "string", "values": ["risk", "safe", ""] }
+    }
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "RSI >= 0",
+        "description": "Thermal resistance cannot be negative"
+      }
+    ],
+    "invariants": [
+      {
+        "condition": "R-Imperial conversion factor = 5.678",
+        "description": "Standard RSI to R-value conversion: R = RSI * 5.678"
+      },
+      {
+        "condition": "Condensation risk threshold = 4.2 deg-C",
+        "description": "RISK_THRESHOLD constant: if surfaceTemp < (tInterior - 4.2), risk"
+      },
+      {
+        "condition": "Ground temperature = 10 deg-C (hardcoded)",
+        "description": "Ground-facing surface temp uses fixed ground temp of 10 instead of winter average"
+      },
+      {
+        "condition": "R_si values vary by component type",
+        "description": "Interior surface resistance: roof=0.10, walls/doors/windows=0.13, floor=0.17, skylights=0.10, slabOnGrade=0.17"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "R-Imperial: any component",
+      "output": "RSI * 5.678",
+      "note": "Directly multiplies RSI by conversion factor. Formula: rsi * 5.678"
+    },
+    {
+      "condition": "Surface temp (air-facing): area > 0",
+      "output": "T_interior - (uValue * (T_interior - T_winterAvg) * R_si)",
+      "note": "R_si is interior surface resistance constant per component type. Rounded to 2 decimal places."
+    },
+    {
+      "condition": "Surface temp (ground-facing): area > 0",
+      "output": "T_interior - (uValue * (T_interior - 10) * R_si)",
+      "note": "Uses hardcoded ground temperature of 10 deg-C instead of winter average"
+    },
+    {
+      "condition": "Surface temp: area = 0",
+      "output": "empty string",
+      "note": "Component not present, no surface temperature to compute"
+    },
+    {
+      "condition": "Condensation risk: surfaceTemp < (T_interior - 4.2)",
+      "output": "\"risk\"",
+      "note": "Surface temperature below dew point threshold indicates condensation risk"
+    },
+    {
+      "condition": "Condensation risk: surfaceTemp >= (T_interior - 4.2)",
+      "output": "\"safe\"",
+      "note": "Surface temperature above threshold, no condensation expected"
+    },
+    {
+      "condition": "Condensation risk: surfaceTemp is empty/null/undefined",
+      "output": "empty string",
+      "note": "Component not present (area = 0)"
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "RSI = 0",
+      "handling": "R-Imperial = 0 (0 * 5.678 = 0)",
+      "rationale": "Component has no thermal resistance"
+    },
+    {
+      "condition": "High U-value (poorly insulated window)",
+      "handling": "Surface temp drops significantly, likely triggers condensation risk",
+      "rationale": "Cold interior surfaces promote condensation"
+    },
+    {
+      "condition": "Ground-facing components use fixed 10 deg-C",
+      "handling": "Not climate-dependent for ground temperature",
+      "rationale": "Ground temp is relatively stable compared to air temp"
+    }
+  ],
+  "formula": {
+    "symbolic": {
+      "rImperial": "R = RSI * 5.678",
+      "surfaceTemp_airFacing": "T_si = T_interior - (U * (T_interior - T_winterAvg) * R_si)",
+      "surfaceTemp_groundFacing": "T_si = T_interior - (U * (T_interior - 10) * R_si)",
+      "condensationRisk": "T_si < (T_interior - 4.2) ? 'risk' : 'safe'"
+    },
+    "implementation": "TransmissionLossNodes.js"
+  },
+  "tests": [
+    {
+      "name": "R-Imperial for default RSI 5.0",
+      "inputs": { "transmissionLoss.roof.rsi": 5.0 },
+      "expected": 28.39,
+      "tolerance": 0.01,
+      "note": "5.0 * 5.678 = 28.39"
+    },
+    {
+      "name": "R-Imperial for fenestration RSI 0.5 (U=2.0)",
+      "inputs": { "transmissionLoss.doors.rsi": 0.5 },
+      "expected": 2.839,
+      "tolerance": 0.001,
+      "note": "0.5 * 5.678 = 2.839"
+    },
+    {
+      "name": "Condensation risk safe for well-insulated wall",
+      "inputs": {
+        "transmissionLoss.walls.uValue": 0.2,
+        "transmissionLoss.walls.area": 100,
+        "climate.heating.setpoint": 21,
+        "climate.temperature.winterAverage": -5
+      },
+      "expected": "safe",
+      "note": "T_si = 21 - (0.2 * 26 * 0.13) = 21 - 0.676 = 20.32 > 16.8 threshold"
+    },
+    {
+      "name": "Condensation risk for single-pane window",
+      "inputs": {
+        "transmissionLoss.windowNorth.uValue": 5.0,
+        "transmissionLoss.windowNorth.area": 10,
+        "climate.heating.setpoint": 21,
+        "climate.temperature.winterAverage": -15
+      },
+      "expected": "risk",
+      "note": "T_si = 21 - (5.0 * 36 * 0.13) = 21 - 23.4 = -2.4 < 16.8 threshold"
+    }
+  ],
+  "references": [
+    { "source": "TransmissionLossNodes.js (R-Imperial nodes, e_85-e_95)" },
+    { "source": "TransmissionLossNodes.js (surface temperature nodes, o_85-o_95)" },
+    { "source": "TransmissionLossNodes.js (condensation risk nodes, cr_85-cr_95, RISK_THRESHOLD=4.2)" }
+  ]
+}

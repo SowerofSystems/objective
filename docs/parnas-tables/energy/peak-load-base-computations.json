@@ -1,0 +1,271 @@
+{
+  "_meta": {
+    "description": "Base peak load computation nodes for Section 15 equipment sizing. These calculate instantaneous maximum heating and cooling loads at design conditions using envelope U×A products and design temperature differentials. d_137 and d_138 compute enclosure-only peaks. d_139 adds internal gains, solar gains, ventilation gains, and occupant gains, averaged over the cooling season. These values feed into F280 compliance calculations and are converted to BTU/hr in unit-conversions.json.",
+    "instances": [
+      {
+        "id": "energy.peakHeating.enclosureKw",
+        "legacyId": "d_137",
+        "label": "Peak Heating Load - Enclosure Only (kW)"
+      },
+      {
+        "id": "energy.peakCooling.enclosureKw",
+        "legacyId": "d_138",
+        "label": "Peak Cooling Load - Enclosure Only (kW)"
+      },
+      {
+        "id": "energy.peakCooling.totalKw",
+        "legacyId": "d_139",
+        "label": "Peak Cooling Load - Enclosure + Gains (kW)"
+      }
+    ]
+  },
+  "section": "S15",
+  "classification": "C",
+  "signature": {
+    "inputs": [
+      {
+        "name": "envelope.airFacing.uValue",
+        "type": "number",
+        "unit": "W/m²K",
+        "description": "Weighted U-value for air-facing envelope (g_101)"
+      },
+      {
+        "name": "envelope.airFacing.area",
+        "type": "number",
+        "unit": "m²",
+        "description": "Total air-facing envelope area (d_101)"
+      },
+      {
+        "name": "envelope.groundFacing.uValue",
+        "type": "number",
+        "unit": "W/m²K",
+        "description": "Weighted U-value for ground-facing envelope (g_102)"
+      },
+      {
+        "name": "envelope.groundFacing.area",
+        "type": "number",
+        "unit": "m²",
+        "description": "Total ground-facing envelope area (d_102)"
+      },
+      {
+        "name": "climate.heating.setpoint",
+        "type": "number",
+        "unit": "°C",
+        "description": "Indoor heating setpoint (h_23)"
+      },
+      {
+        "name": "climate.temperature.coldest",
+        "type": "number",
+        "unit": "°C",
+        "description": "Outdoor heating design temperature - coldest day (d_23)"
+      },
+      {
+        "name": "climate.temperature.hottest",
+        "type": "number",
+        "unit": "°C",
+        "description": "Outdoor cooling design temperature - hottest day (d_24)"
+      },
+      {
+        "name": "climate.cooling.setpoint",
+        "type": "number",
+        "unit": "°C",
+        "description": "Indoor cooling setpoint (h_24)"
+      },
+      {
+        "name": "internal.plugLoadDensity",
+        "type": "number",
+        "unit": "W/m²",
+        "description": "Plug load density (d_65) - d_139 only"
+      },
+      {
+        "name": "internal.lightingDensity",
+        "type": "number",
+        "unit": "W/m²",
+        "description": "Lighting density (d_66) - d_139 only"
+      },
+      {
+        "name": "internal.equipmentDensity",
+        "type": "number",
+        "unit": "W/m²",
+        "description": "Equipment density (d_67) - d_139 only"
+      },
+      {
+        "name": "building.conditionedFloorArea",
+        "type": "number",
+        "unit": "m²",
+        "description": "Conditioned floor area (h_15) - d_139 only"
+      },
+      {
+        "name": "radiantGains.subtotal.coolingGain",
+        "type": "number",
+        "unit": "kWh/yr",
+        "description": "Solar cooling gain annual total (k_79) - d_139 only"
+      },
+      {
+        "name": "ventilation.heatGain",
+        "type": "number",
+        "unit": "kWh/yr",
+        "description": "Ventilation heat gain annual (d_122) - d_139 only"
+      },
+      {
+        "name": "internal.occupants.coolingGain",
+        "type": "number",
+        "unit": "kWh/yr",
+        "description": "Occupant cooling gain annual (k_64) - d_139 only"
+      },
+      {
+        "name": "cooling.freeCoolingLimit",
+        "type": "number",
+        "unit": "kWh/yr",
+        "description": "Free cooling capacity (h_124) - d_139 only"
+      },
+      {
+        "name": "climate.coolingDays",
+        "type": "number",
+        "unit": "days",
+        "description": "Cooling season days (m_19) - d_139 only"
+      }
+    ],
+    "output": {
+      "type": "number",
+      "unit": "kW",
+      "precision": 4
+    }
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "deltaT > 0 for heating (setpoint > coldest)",
+        "description": "Heating peak load requires positive temperature differential"
+      },
+      {
+        "condition": "deltaT > 0 for cooling (hottest > setpoint)",
+        "description": "Cooling peak load requires positive temperature differential"
+      }
+    ],
+    "invariants": [
+      {
+        "condition": "d_137 >= 0, d_138 >= 0, d_139 >= 0",
+        "description": "Peak loads are non-negative (guarded by deltaT check)"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "d_137 (peak heating enclosure kW)",
+      "output": "(g_101 × d_101 + d_102 × g_102) × (h_23 - d_23) / 1000",
+      "note": "Sum of (U×A) products times heating deltaT, converted from W to kW"
+    },
+    {
+      "condition": "d_137: deltaT <= 0",
+      "output": "0",
+      "note": "No heating peak when setpoint at or below design temp"
+    },
+    {
+      "condition": "d_138 (peak cooling enclosure kW)",
+      "output": "(g_101 × d_101 + d_102 × g_102) × (d_24 - h_24) / 1000",
+      "note": "Sum of (U×A) products times cooling deltaT, converted from W to kW"
+    },
+    {
+      "condition": "d_138: deltaT <= 0",
+      "output": "0",
+      "note": "No cooling peak when hottest day at or below setpoint"
+    },
+    {
+      "condition": "d_139 (peak cooling with gains kW)",
+      "output": "d_138 + (d_65 + d_66 + d_67) × h_15 / 1000 + (k_79 + d_122 + k_64 - h_124) / (m_19 × 24)",
+      "note": "Enclosure cooling + instantaneous internal gains (W→kW) + annual gains averaged to kW over cooling season hours"
+    },
+    {
+      "condition": "d_139: coolingDays = 0",
+      "output": "d_138 + internal gains only",
+      "note": "Annual seasonal gains term excluded when cooling season is zero days"
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "Ground-facing U×A is zero (no below-grade surfaces)",
+      "handling": "Only air-facing term contributes",
+      "rationale": "Many buildings have no ground-facing envelope"
+    },
+    {
+      "condition": "No internal gains densities (all zero)",
+      "handling": "d_139 reduces to d_138 + seasonal gain averaging",
+      "rationale": "Buildings with no plug/lighting/equipment loads"
+    }
+  ],
+  "formula": {
+    "symbolic": {
+      "d_137": "(G101 × D101 + D102 × G102) × (H23 - D23) / 1000",
+      "d_138": "(G101 × D101 + D102 × G102) × (D24 - H24) / 1000",
+      "d_139": "D138 + (D65 + D66 + D67) × H15 / 1000 + (K79 + D122 + K64 - H124) / (M19 × 24)"
+    },
+    "implementation": "EnergyNodes.js:492-589"
+  },
+  "tests": [
+    {
+      "name": "Peak heating enclosure",
+      "inputs": {
+        "envelope.airFacing.uValue": 0.35,
+        "envelope.airFacing.area": 400,
+        "envelope.groundFacing.uValue": 0.20,
+        "envelope.groundFacing.area": 100,
+        "climate.heating.setpoint": 22,
+        "climate.temperature.coldest": -22
+      },
+      "expected": 7.08,
+      "tolerance": 0.01,
+      "note": "d_137 = (0.35×400 + 100×0.20) × (22-(-22)) / 1000 = (140+20)×44/1000 = 7.04 kW"
+    },
+    {
+      "name": "Peak cooling enclosure",
+      "inputs": {
+        "envelope.airFacing.uValue": 0.35,
+        "envelope.airFacing.area": 400,
+        "envelope.groundFacing.uValue": 0.20,
+        "envelope.groundFacing.area": 100,
+        "climate.temperature.hottest": 34,
+        "climate.cooling.setpoint": 24
+      },
+      "expected": 1.60,
+      "tolerance": 0.01,
+      "note": "d_138 = (0.35×400 + 100×0.20) × (34-24) / 1000 = 160×10/1000 = 1.60 kW"
+    },
+    {
+      "name": "No heating peak when warm location",
+      "inputs": {
+        "envelope.airFacing.uValue": 0.35,
+        "envelope.airFacing.area": 400,
+        "envelope.groundFacing.uValue": 0,
+        "envelope.groundFacing.area": 0,
+        "climate.heating.setpoint": 20,
+        "climate.temperature.coldest": 20
+      },
+      "expected": 0,
+      "note": "d_137 = 0 when deltaT <= 0"
+    },
+    {
+      "name": "Peak cooling with gains",
+      "inputs": {
+        "energy.peakCooling.enclosureKw": 1.6,
+        "internal.plugLoadDensity": 5,
+        "internal.lightingDensity": 10,
+        "internal.equipmentDensity": 5,
+        "building.conditionedFloorArea": 200,
+        "radiantGains.subtotal.coolingGain": 2000,
+        "ventilation.heatGain": 500,
+        "internal.occupants.coolingGain": 300,
+        "cooling.freeCoolingLimit": 800,
+        "climate.coolingDays": 120
+      },
+      "expected": 6.29,
+      "tolerance": 0.01,
+      "note": "d_139 = 1.6 + (5+10+5)×200/1000 + (2000+500+300-800)/(120×24) = 1.6 + 4.0 + 0.694 = 6.294 kW"
+    }
+  ],
+  "references": [
+    { "source": "EnergyNodes.js:492-589" },
+    { "source": "Section15.js lines 1834-1869 (legacy implementation)" },
+    { "source": "F280ComplianceNodes.js (consumes d_137, d_138, d_139 for F280 peak load sizing)" }
+  ]
+}

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Section Nodes Tests</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      background: #1a1a1a;
+      color: #e0e0e0;
+    }
+    h1 {
+      color: #fff;
+      border-bottom: 2px solid #333;
+      padding-bottom: 0.5rem;
+    }
+    .controls {
+      margin: 1rem 0;
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      background: #333;
+      color: #fff;
+      border: 1px solid #444;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #444;
+    }
+    button.primary {
+      background: #2563eb;
+      border-color: #1d4ed8;
+    }
+    button.primary:hover {
+      background: #1d4ed8;
+    }
+    #results {
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 1rem;
+      margin-top: 1rem;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .summary {
+      font-size: 1.2rem;
+      margin: 1rem 0;
+      padding: 0.75rem;
+      border-radius: 4px;
+    }
+    .summary.pass {
+      background: #064e3b;
+      border: 1px solid #059669;
+    }
+    .summary.fail {
+      background: #7f1d1d;
+      border: 1px solid #dc2626;
+    }
+    .pass { color: #22c55e; }
+    .fail { color: #ef4444; }
+    .info {
+      color: #888;
+      font-size: 0.9rem;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Section Nodes Tests</h1>
+
+  <p class="info">
+    Phase 2 of the Multi-Model Architecture refactoring.<br>
+    Tests for: ClimateNodes, MechanicalNodes, EnergyNodes
+  </p>
+
+  <div class="controls">
+    <button class="primary" onclick="runAllTests()">Run All Tests</button>
+    <button onclick="runSuite('ClimateNodes')">Climate</button>
+    <button onclick="runSuite('MechanicalNodes')">Mechanical</button>
+    <button onclick="runSuite('EnergyNodes')">Energy</button>
+    <button onclick="runSuite('Integration')">Integration</button>
+  </div>
+
+  <div id="summary" class="summary" style="display: none;"></div>
+  <div id="results"></div>
+
+  <!-- Load computation infrastructure (Phase 1) -->
+  <script src="../../src/core/computation/types.js"></script>
+  <script src="../../src/core/computation/ComputationGraph.js"></script>
+  <script src="../../src/core/computation/IncrementalEngine.js"></script>
+  <script src="../../src/core/computation/FieldRegistry.js"></script>
+
+  <!-- Load section nodes (Phase 2) -->
+  <script src="../../src/sections/nodes/ClimateNodes.js"></script>
+  <script src="../../src/sections/nodes/BuildingInfoNodes.js"></script>
+  <script src="../../src/sections/nodes/MechanicalNodes.js"></script>
+  <script src="../../src/sections/nodes/SpaceHeatingNodes.js"></script>
+  <script src="../../src/sections/nodes/WaterHeatingNodes.js"></script>
+  <script src="../../src/sections/nodes/RenewableNodes.js"></script>
+  <script src="../../src/sections/nodes/EnergyNodes.js"></script>
+  <script src="../../src/sections/nodes/ForestryNodes.js"></script>
+  <script src="../../src/sections/nodes/EmissionsNodes.js"></script>
+  <script src="../../src/sections/nodes/OccupancyNodes.js"></script>
+  <script src="../../src/sections/nodes/KeyValuesNodes.js"></script>
+
+  <!-- Load tests -->
+  <script src="sectionNodes.test.js"></script>
+
+  <script>
+    const resultsEl = document.getElementById('results');
+    const summaryEl = document.getElementById('summary');
+
+    // Capture console output
+    const originalLog = console.log;
+    const originalWarn = console.warn;
+    const originalError = console.error;
+
+    function captureConsole() {
+      resultsEl.textContent = '';
+
+      console.log = function(...args) {
+        originalLog.apply(console, args);
+        const text = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ');
+        const span = document.createElement('span');
+
+        if (text.includes('✓')) {
+          span.className = 'pass';
+        } else if (text.includes('✗')) {
+          span.className = 'fail';
+        }
+
+        span.textContent = text.replace(/%c/g, '') + '\n';
+        resultsEl.appendChild(span);
+      };
+
+      console.warn = function(...args) {
+        originalWarn.apply(console, args);
+        const span = document.createElement('span');
+        span.style.color = '#f59e0b';
+        span.textContent = 'WARN: ' + args.join(' ') + '\n';
+        resultsEl.appendChild(span);
+      };
+
+      console.error = function(...args) {
+        originalError.apply(console, args);
+        const span = document.createElement('span');
+        span.className = 'fail';
+        span.textContent = 'ERROR: ' + args.join(' ') + '\n';
+        resultsEl.appendChild(span);
+      };
+    }
+
+    function showSummary(passed, failed) {
+      summaryEl.style.display = 'block';
+      summaryEl.className = 'summary ' + (failed > 0 ? 'fail' : 'pass');
+      summaryEl.textContent = `${passed} passed, ${failed} failed`;
+    }
+
+    async function runAllTests() {
+      captureConsole();
+      const result = await TEUI.SectionNodeTests.runAll();
+      showSummary(result.passed, result.failed);
+    }
+
+    async function runSuite(name) {
+      captureConsole();
+      const result = await TEUI.SectionNodeTests.runSuite(name);
+      showSummary(result.passed, result.failed);
+    }
+
+    // Show initial info
+    resultsEl.textContent = `Loaded ${TEUI.SectionNodeTests.getTestCount()} tests.\nSuites: ${TEUI.SectionNodeTests.getSuites().join(', ')}\n\nClick a button above to run tests.`;
+  </script>
+</body>
+</html>

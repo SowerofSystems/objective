@@ -1,0 +1,216 @@
+{
+  "_meta": {
+    "description": "Emissions section registered input nodes. Includes propane consumption, fuel emission factors, reporting year, nuclear waste factor, and reference model inputs for cross-model emissions comparison. Emission factors are C-classified and can differ between Target and Reference models.",
+    "instances": [
+      {
+        "id": "energy.actual.propane.kg",
+        "legacyId": "d_29",
+        "label": "Total Propane Use",
+        "type": "number",
+        "unit": "kg/yr",
+        "classification": "A",
+        "section": "S04",
+        "default": 0,
+        "note": "User-entered actual propane consumption from utility bills."
+      },
+      {
+        "id": "emissions.factor.gas",
+        "legacyId": "l_28",
+        "label": "Gas Emission Factor",
+        "type": "number",
+        "unit": "gCO2e/m³",
+        "classification": "C",
+        "section": "S04",
+        "default": 1921,
+        "note": "CO2-equivalent emissions per cubic metre of natural gas."
+      },
+      {
+        "id": "emissions.factor.propane",
+        "legacyId": "l_29",
+        "label": "Propane Emission Factor",
+        "type": "number",
+        "unit": "gCO2e/kg",
+        "classification": "C",
+        "section": "S04",
+        "default": 2970,
+        "note": "CO2-equivalent emissions per kilogram of propane."
+      },
+      {
+        "id": "emissions.factor.oil",
+        "legacyId": "l_30",
+        "label": "Oil Emission Factor",
+        "type": "number",
+        "unit": "gCO2e/litre",
+        "classification": "C",
+        "section": "S04",
+        "default": 2753,
+        "note": "CO2-equivalent emissions per litre of heating oil."
+      },
+      {
+        "id": "emissions.factor.wood",
+        "legacyId": "l_31",
+        "label": "Wood Emission Factor",
+        "type": "number",
+        "unit": "kgCO2e/m³",
+        "classification": "C",
+        "section": "S04",
+        "default": 150,
+        "note": "CO2-equivalent emissions per cubic metre of wood fuel."
+      },
+      {
+        "id": "building.reportingYear",
+        "legacyId": "h_12",
+        "label": "Reporting Year",
+        "type": "number",
+        "unit": "year",
+        "classification": "G",
+        "section": "S02",
+        "default": 2022,
+        "note": "Calendar year for the energy report. G-classified — shared across all models."
+      },
+      {
+        "id": "emissions.factor.nuclear",
+        "legacyId": "l_33",
+        "label": "Nuclear Waste Factor",
+        "type": "number",
+        "unit": "g/kWh",
+        "classification": "C",
+        "section": "S04",
+        "default": 0.0096,
+        "note": "High-level nuclear waste generation factor per kWh of nuclear electricity. Consumed by emissions.nuclearWaste (l_34)."
+      },
+      {
+        "id": "reference.emissions.operational.mt",
+        "legacyId": "ref_d_38",
+        "label": "Reference Operational Emissions",
+        "type": "number",
+        "unit": "MT CO2e/yr",
+        "classification": "C",
+        "section": "S05",
+        "default": 0,
+        "note": "Reference model's operational emissions in megatonnes. Injected via REF_OUTPUT_TO_TARGET_INPUT."
+      },
+      {
+        "id": "reference.emissions.ghgi.annual",
+        "legacyId": "ref_g_38",
+        "label": "Reference GHGI",
+        "type": "number",
+        "unit": "kgCO2e/m²/yr",
+        "classification": "C",
+        "section": "S05",
+        "default": 0,
+        "note": "Reference model's annual greenhouse gas intensity. Injected via REF_OUTPUT_TO_TARGET_INPUT."
+      },
+      {
+        "id": "reference.emissions.embodied.total",
+        "legacyId": "ref_d_40",
+        "label": "Reference Total Embodied Emissions",
+        "type": "number",
+        "unit": "MT CO2e",
+        "classification": "C",
+        "section": "S05",
+        "default": 0,
+        "note": "Reference model's total embodied carbon. Injected via REF_OUTPUT_TO_TARGET_INPUT."
+      },
+      {
+        "id": "reference.emissions.userModelled",
+        "legacyId": "ref_i_41",
+        "label": "Reference User Modelled Embodied Carbon",
+        "type": "number",
+        "unit": "kgCO2e/m²",
+        "classification": "C",
+        "section": "S05",
+        "default": 345.82,
+        "note": "Reference model's user-modelled embodied carbon intensity. Non-zero default from standard reference value. Injected via REF_OUTPUT_TO_TARGET_INPUT."
+      }
+    ]
+  },
+  "section": "S04/S05",
+  "signature": {
+    "inputs": "These ARE the inputs (registered via graph.registerInput in EmissionsNodes.js)",
+    "output": "Values stored in MultiModelState, consumed by emissions calculations, nuclear waste, and cross-model compliance comparisons"
+  },
+  "domain": {
+    "preconditions": [
+      {
+        "condition": "Emission factors > 0",
+        "description": "Emission factors must be positive for meaningful emissions calculation"
+      },
+      {
+        "condition": "Propane consumption >= 0",
+        "description": "Cannot have negative fuel consumption"
+      }
+    ],
+    "invariants": [
+      {
+        "condition": "Emission factor defaults match national average values",
+        "description": "Gas=1921, Propane=2970, Oil=2753, Wood=150 are Canadian averages"
+      }
+    ]
+  },
+  "behavior": [
+    {
+      "condition": "Emission factor changes",
+      "output": "Triggers recomputation of corresponding fuel emissions (g_28, g_29, g_30, g_31)",
+      "note": "C-classified, allows different factors for Target vs Reference"
+    },
+    {
+      "condition": "Propane consumption changes",
+      "output": "Triggers recomputation of propane emissions and energy subtotals",
+      "note": "A-classified"
+    },
+    {
+      "condition": "Reporting year changes",
+      "output": "Updates year display in reports",
+      "note": "G-classified, affects all models"
+    },
+    {
+      "condition": "Nuclear waste factor changes",
+      "output": "Triggers recomputation of emissions.nuclearWaste (l_34)",
+      "note": "C-classified"
+    },
+    {
+      "condition": "Reference emissions inputs populated via REF_OUTPUT_TO_TARGET_INPUT",
+      "output": "Enables S05 emissions compliance comparison between Target and Reference",
+      "note": "All reference.* inputs start at defaults until Reference model computes"
+    }
+  ],
+  "edgeCases": [
+    {
+      "condition": "Nuclear waste factor default is very small (0.0096)",
+      "handling": "Produces very small nuclear waste values, which is expected",
+      "rationale": "Nuclear waste per kWh is inherently tiny"
+    },
+    {
+      "condition": "Reference user modelled EC has non-zero default (345.82)",
+      "handling": "Provides baseline comparison even before Reference model computes",
+      "rationale": "Standard reference value for embodied carbon comparison"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Default gas emission factor",
+      "inputs": {},
+      "expected": "emissions.factor.gas = 1921"
+    },
+    {
+      "name": "Default nuclear waste factor",
+      "inputs": {},
+      "expected": "emissions.factor.nuclear = 0.0096"
+    },
+    {
+      "name": "Default reporting year",
+      "inputs": {},
+      "expected": "building.reportingYear = 2022"
+    },
+    {
+      "name": "Default reference user modelled EC",
+      "inputs": {},
+      "expected": "reference.emissions.userModelled = 345.82"
+    }
+  ],
+  "references": [
+    { "source": "EmissionsNodes.js (input registration)" },
+    { "source": "ComputationIntegration.js (REF_OUTPUT_TO_TARGET_INPUT mapping for reference.* inputs)" }
+  ]
+}

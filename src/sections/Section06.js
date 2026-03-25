@@ -9,331 +9,22 @@ window.TEUI.SectionModules = window.TEUI.SectionModules || {};
 
 // Section 6: Renewable Energy Module
 window.TEUI.SectionModules.sect06 = (function () {
-  //==========================================================================
-  // DUAL-STATE ARCHITECTURE (Self-Contained State Module - Pattern A)
-  //==========================================================================
+  // TargetState/ReferenceState/ModeManager removed — graph + SM is the single source of truth.
 
-  // PATTERN 1: Internal State Objects (Self-Contained + Persistent)
-  const TargetState = {
-    state: {},
-    listeners: {},
-    initialize: function () {
-      const savedState = localStorage.getItem("S06_TARGET_STATE");
-      if (savedState) {
-        this.state = JSON.parse(savedState);
-      } else {
-        this.setDefaults();
-      }
-    },
-    setDefaults: function () {
-      this.state = {
-        // Editable renewable energy fields - all default to 0
-        d_44: "0.00", // Photovoltaics (kWh/yr)
-        d_45: "0.00", // Wind (kWh/yr)
-        d_46: "0.00", // Remove EV Charging from TEUI (kWh/yr)
-        i_44: "0.00", // WWS Electricity (kWh/yr)
-        i_46: "0.00", // Reserved other removals (kWh/yr)
-        k_45: "0.00", // Green Natural Gas (m³)
-        m_43: "0.00", // Exterior/Site/Other Loads (kWh/yr)
-      };
-    },
-    saveState: function () {
-      localStorage.setItem("S06_TARGET_STATE", JSON.stringify(this.state));
-    },
-    setValue: function (fieldId, value, source = "user") {
-      this.state[fieldId] = value;
-      this.saveState();
-    },
-    getValue: function (fieldId) {
-      return this.state[fieldId];
-    },
+  function getModeValue(fieldId) {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    return window.TEUI.StateManager?.getValue(isRef ? `ref_${fieldId}` : fieldId);
+  }
 
-    /**
-     * ✅ PHASE 2: Sync from global StateManager after import
-     * Bridges global StateManager → isolated TargetState for imported values
-     */
-    syncFromGlobalState: function (
-      fieldIds = ["d_44", "d_45", "d_46", "i_45", "k_45", "i_46", "m_43"]
-    ) {
-      fieldIds.forEach(fieldId => {
-        const globalValue = window.TEUI.StateManager.getValue(fieldId);
-        if (globalValue !== null && globalValue !== undefined) {
-          this.setValue(fieldId, globalValue, "imported");
-          console.log(
-            `S06 TargetState: Synced ${fieldId} = ${globalValue} from global StateManager`
-          );
-        }
-      });
-    },
+  function setModeValue(fieldId, value, source = "user-modified") {
+    const isRef = window.TEUI.ReferenceToggle?.isReferenceMode();
+    const key = isRef ? `ref_${fieldId}` : fieldId;
+    if (window.TEUI.StateManager?.setValue) {
+      window.TEUI.StateManager.setValue(key, value, source);
+    }
+  }
 
-    /**
-     * ✅ PHASE 6: Apply code-minimum baseline values from ReferenceValues
-     * Called by "Set Values" button to overlay reference values onto Target model
-     * ⚠️ STATE ISOLATION SAFEGUARD: Only writes to unprefixed fields (Target model)
-     */
-    applyReferenceValues: function (standard) {
-      const referenceValues = window.TEUI?.ReferenceValues?.[standard] || {};
-
-      console.log(
-        `[S06 TargetState] Applying code-minimum values from "${standard}"`
-      );
-
-      Object.keys(referenceValues).forEach(fieldId => {
-        if (referenceValues[fieldId] !== undefined) {
-          // ✅ Writes to d_44, d_45, etc., NOT ref_d_44
-          this.state[fieldId] = referenceValues[fieldId];
-          console.log(
-            `[S06 TargetState] ${fieldId} = ${referenceValues[fieldId]} (from ${standard})`
-          );
-        }
-      });
-
-      this.saveState();
-      console.log(
-        `[S06 TargetState] Code-minimum values from "${standard}" applied to Target model`
-      );
-    },
-  };
-
-  const ReferenceState = {
-    state: {},
-    listeners: {},
-    initialize: function () {
-      const savedState = localStorage.getItem("S06_REFERENCE_STATE");
-      if (savedState) {
-        this.state = JSON.parse(savedState);
-      } else {
-        this.setDefaults();
-      }
-    },
-    setDefaults: function () {
-      // ✅ DYNAMIC LOADING: Get current reference standard from dropdown ref_d_13
-      const currentStandard =
-        window.TEUI?.StateManager?.getValue?.("ref_d_13") ||
-        "OBC SB10 5.5-6 Z6";
-      const referenceValues =
-        window.TEUI?.ReferenceValues?.[currentStandard] || {};
-
-      // Apply reference values with fallbacks - renewable energy typically 0 for reference
-      this.state = {
-        d_44: referenceValues.d_44 || "0.00", // Photovoltaics
-        d_45: referenceValues.d_45 || "0.00", // Wind
-        d_46: referenceValues.d_46 || "0.00", // Remove EV Charging
-        i_44: referenceValues.i_44 || "0.00", // WWS Electricity
-        i_46: referenceValues.i_46 || "0.00", // Reserved removals
-        k_45: referenceValues.k_45 || "0.00", // Green Natural Gas
-        m_43: referenceValues.m_43 || "0.00", // Exterior/Site loads
-      };
-
-      console.log(
-        `S06: Reference defaults loaded from standard: ${currentStandard}`
-      );
-    },
-    // Listen for changes to the reference standard and reload defaults
-    onReferenceStandardChange: function () {
-      console.log("S06: Reference standard changed, reloading defaults");
-      this.setDefaults();
-      this.saveState();
-      // Only refresh UI if currently in reference mode
-      if (ModeManager.currentMode === "reference") {
-        ModeManager.refreshUI();
-        calculateAll();
-        // ✅ PHASE 3 FIX: Update DOM after calculations (DUAL-STATE-CHEATSHEET requirement)
-        ModeManager.updateCalculatedDisplayValues();
-      }
-    },
-    saveState: function () {
-      localStorage.setItem("S06_REFERENCE_STATE", JSON.stringify(this.state));
-    },
-    setValue: function (fieldId, value, source = "user") {
-      this.state[fieldId] = value;
-      this.saveState();
-    },
-    getValue: function (fieldId) {
-      return this.state[fieldId];
-    },
-
-    /**
-     * ✅ PHASE 2: Sync from global StateManager after import
-     * Bridges global StateManager → isolated ReferenceState for imported values
-     */
-    syncFromGlobalState: function (
-      fieldIds = ["d_44", "d_45", "d_46", "i_45", "k_45", "i_46", "m_43"]
-    ) {
-      fieldIds.forEach(fieldId => {
-        const refFieldId = `ref_${fieldId}`;
-        const globalValue = window.TEUI.StateManager.getValue(refFieldId);
-        if (globalValue !== null && globalValue !== undefined) {
-          this.setValue(fieldId, globalValue, "imported");
-          console.log(
-            `S06 ReferenceState: Synced ${fieldId} = ${globalValue} from global StateManager (${refFieldId})`
-          );
-        }
-      });
-    },
-  };
-
-  // PATTERN 2: ModeManager Facade (Unified Interface)
-  const ModeManager = {
-    currentMode: "target",
-
-    initialize: function () {
-      TargetState.initialize();
-      ReferenceState.initialize();
-
-      // ✅ CSV EXPORT FIX: Publish ALL Reference defaults to StateManager
-      if (window.TEUI?.StateManager) {
-        ["d_44", "d_45", "d_46", "i_44", "k_45", "i_46", "m_43"].forEach(id => {
-          const refId = `ref_${id}`;
-          const val = ReferenceState.getValue(id);
-          if (
-            !window.TEUI.StateManager.getValue(refId) &&
-            val != null &&
-            val !== ""
-          ) {
-            window.TEUI.StateManager.setValue(refId, val, "calculated");
-          }
-        });
-      }
-
-      // Listen for reference standard changes
-      // ✅ PHASE 3 CLEANUP: d_13 listeners removed - FileHandler handles value application
-      // "Set Values" button in Section02 delegates to FileHandler.applyReferenceValuesFromStandard()
-      // which applies ReferenceValues using Import Quarantine pattern
-    },
-
-    getCurrentState: function () {
-      return this.currentMode === "target" ? TargetState : ReferenceState;
-    },
-
-    getValue: function (fieldId) {
-      return this.getCurrentState().getValue(fieldId);
-    },
-
-    setValue: function (fieldId, value, source = "user") {
-      this.getCurrentState().setValue(fieldId, value, source);
-
-      // ✅ CRITICAL STATE MIXING FIX: Proper dual-state publication
-      if (this.currentMode === "target") {
-        // Target changes to StateManager for downstream sections (unprefixed)
-        window.TEUI.StateManager.setValue(fieldId, value, "user-modified");
-      } else if (this.currentMode === "reference") {
-        // ✅ MISSING: Reference changes must be published with ref_ prefix
-        window.TEUI.StateManager.setValue(
-          `ref_${fieldId}`,
-          value,
-          "user-modified"
-        );
-      }
-    },
-
-    switchMode: function (mode) {
-      if (this.currentMode === mode) return;
-      this.currentMode = mode;
-      console.log(`S06: Switched to ${mode.toUpperCase()} mode`);
-
-      // ✅ CORRECTED: Only refresh UI, don't re-run calculations
-      // Both engines should already have calculated values stored in StateManager
-      this.refreshUI();
-      this.updateCalculatedDisplayValues(); // Update calculated field displays only
-
-      // ✅ NEW: Sync visual toggle UI when mode changes (from global or local toggle)
-      this.syncToggleUI(mode);
-    },
-
-    // ✅ NEW: Sync visual toggle switch and indicator to match current mode
-    // Called both when user clicks local toggle AND when global toggle switches mode
-    syncToggleUI: function (mode) {
-      // Use centralized ToggleUISync utility
-      window.TEUI.ToggleUISync.syncToggleUI(this._toggleElements, mode, "S06");
-    },
-
-    refreshUI: function () {
-      const sectionElement = document.getElementById("onSiteEnergy");
-      if (!sectionElement) return;
-
-      const currentState = this.getCurrentState();
-      const fieldsToSync = [
-        "d_44",
-        "d_45",
-        "d_46",
-        "i_44",
-        "i_46",
-        "k_45",
-        "m_43",
-      ]; // All editable fields
-
-      fieldsToSync.forEach(fieldId => {
-        const stateValue = currentState.getValue(fieldId);
-        if (stateValue === undefined || stateValue === null) return;
-
-        const element = sectionElement.querySelector(
-          `[data-field-id="${fieldId}"]`
-        );
-        if (!element) return;
-
-        // ✅ PATTERN A: Simple contenteditable pattern (like S05)
-        if (element.hasAttribute("contenteditable")) {
-          element.textContent = stateValue;
-        }
-      });
-    },
-
-    updateCalculatedDisplayValues: function () {
-      // Update all calculated fields to show values for current mode
-      const calculatedFields = ["d_43", "i_43", "i_45"];
-      console.log(
-        `🔄 [S06] updateCalculatedDisplayValues: mode=${this.currentMode}`
-      );
-
-      calculatedFields.forEach(fieldId => {
-        const element = document.querySelector(`[data-field-id="${fieldId}"]`);
-        if (element) {
-          // ✅ FIXED: No fallback to Target values - Reference should show Reference values only
-          let value;
-          if (this.currentMode === "reference") {
-            value = window.TEUI.StateManager.getValue(`ref_${fieldId}`);
-            // If Reference value doesn't exist, default to 0 (not Target value)
-            if (value === null || value === undefined) {
-              value = 0;
-            }
-          } else {
-            value = window.TEUI.StateManager.getValue(fieldId) || 0;
-          }
-
-          const formattedValue = window.TEUI.formatNumber
-            ? window.TEUI.formatNumber(value, "number-2dp-comma")
-            : value;
-          element.textContent = formattedValue;
-        }
-      });
-    },
-
-    resetState: function () {
-      console.log("S06: Resetting state and clearing localStorage.");
-
-      // Reset both states to their current dynamic defaults
-      TargetState.setDefaults();
-      TargetState.saveState();
-      ReferenceState.setDefaults();
-      ReferenceState.saveState();
-
-      console.log("S06: States have been reset to defaults.");
-
-      // After resetting, refresh the UI and recalculate
-      this.refreshUI();
-      calculateAll();
-      this.updateCalculatedDisplayValues(); // Update DOM with calculated values
-    },
-  };
-
-  // Expose ModeManager for debugging and cross-section communication
-  window.TEUI.SectionModules = window.TEUI.SectionModules || {};
-  window.TEUI.SectionModules.sect06 = window.TEUI.SectionModules.sect06 || {};
-  window.TEUI.SectionModules.sect06.ModeManager = ModeManager;
-
-  // ✅ PATTERN A: Expose ModeManager for ReferenceToggle global switching
-  window.TEUI.sect06 = { ModeManager: ModeManager };
+  window.TEUI.sect06 = window.TEUI.sect06 || {};
 
   //==========================================================================
   // FIELD DEFINITIONS AND LAYOUT
@@ -367,6 +58,7 @@ window.TEUI.SectionModules.sect06 = (function () {
         c: { label: "Onsite Energy Subtotals" },
         d: {
           fieldId: "d_43",
+          semanticPath: "renewable.onsiteTotal",
           type: "calculated",
           value: "0.00",
           dependencies: ["d_44", "d_45", "d_46", "i_46"],
@@ -377,6 +69,7 @@ window.TEUI.SectionModules.sect06 = (function () {
         h: {},
         i: {
           fieldId: "i_43",
+          semanticPath: "renewable.offsiteTotal",
           type: "calculated",
           value: "0.00",
           dependencies: ["i_44", "i_46"],
@@ -386,6 +79,7 @@ window.TEUI.SectionModules.sect06 = (function () {
         k: { content: "Exterior/Site/Other Loads", classes: ["label-main"] },
         m: {
           fieldId: "m_43",
+          semanticPath: "renewable.exteriorLoads",
           type: "editable",
           value: "0.00",
           classes: ["user-input"],
@@ -402,6 +96,7 @@ window.TEUI.SectionModules.sect06 = (function () {
         c: { label: "Photovoltaics" },
         d: {
           fieldId: "d_44",
+          semanticPath: "renewable.pv",
           type: "editable",
           value: "0.00",
           classes: ["user-input"],
@@ -413,6 +108,7 @@ window.TEUI.SectionModules.sect06 = (function () {
         h: {},
         i: {
           fieldId: "i_44",
+          semanticPath: "renewable.wws",
           type: "editable",
           value: "0.00",
           classes: ["user-input"],
@@ -429,6 +125,7 @@ window.TEUI.SectionModules.sect06 = (function () {
         c: { label: "Wind" },
         d: {
           fieldId: "d_45",
+          semanticPath: "renewable.wind",
           type: "editable",
           value: "0.00",
           classes: ["user-input"],
@@ -440,6 +137,7 @@ window.TEUI.SectionModules.sect06 = (function () {
         h: {},
         i: {
           fieldId: "i_45",
+          semanticPath: "renewable.greenGasEnergy",
           type: "calculated",
           value: "0.00",
           dependencies: ["k_45"],
@@ -448,6 +146,7 @@ window.TEUI.SectionModules.sect06 = (function () {
         j: { content: "ekWh/yr" },
         k: {
           fieldId: "k_45",
+          semanticPath: "renewable.greenGas",
           type: "editable",
           value: "0.00",
           classes: ["user-input"],
@@ -465,6 +164,7 @@ window.TEUI.SectionModules.sect06 = (function () {
         c: { label: "Remove EV Charging from TEUI" },
         d: {
           fieldId: "d_46",
+          semanticPath: "renewable.evRemoval",
           type: "editable",
           value: "0.00",
           classes: ["user-input"],
@@ -476,6 +176,7 @@ window.TEUI.SectionModules.sect06 = (function () {
         h: {},
         i: {
           fieldId: "i_46",
+          semanticPath: "renewable.reserved",
           type: "editable",
           value: "0.00",
           classes: ["user-input"],
@@ -500,6 +201,7 @@ window.TEUI.SectionModules.sect06 = (function () {
             label: cell.label || row.label,
             defaultValue: cell.value || "",
             section: "onSiteEnergy",
+            semanticPath: cell.semanticPath || null, // Phase 5: Include semantic path for migration
           };
         }
       });
@@ -550,153 +252,7 @@ window.TEUI.SectionModules.sect06 = (function () {
   }
 
   //==========================================================================
-  // EXTERNAL DEPENDENCIES (Clean Interface - Pattern A)
-  //==========================================================================
-
-  function getSectionValue(fieldId, isReferenceCalculation = false) {
-    // ✅ DUAL-ENGINE PATTERN: Get section-local values based on calculation context
-    if (isReferenceCalculation) {
-      return ReferenceState.getValue(fieldId);
-    } else {
-      return TargetState.getValue(fieldId);
-    }
-  }
-
-  //==========================================================================
-  // DUAL-ENGINE CALCULATIONS (Clean Pattern A - Preserve Excel Formulas)
-  //==========================================================================
-
-  /**
-   * ✅ EXCEL FORMULA PRESERVED: d_43 = SUM(D44:D46) + I46
-   */
-  function calculateOnSiteSubtotal(isReferenceCalculation = false) {
-    const d_44_value =
-      window.TEUI.parseNumeric(
-        getSectionValue("d_44", isReferenceCalculation)
-      ) || 0;
-    const d_45_value =
-      window.TEUI.parseNumeric(
-        getSectionValue("d_45", isReferenceCalculation)
-      ) || 0;
-    const d_46_value =
-      window.TEUI.parseNumeric(
-        getSectionValue("d_46", isReferenceCalculation)
-      ) || 0;
-    const i_46_value =
-      window.TEUI.parseNumeric(
-        getSectionValue("i_46", isReferenceCalculation)
-      ) || 0;
-
-    // ✅ EXACT EXCEL FORMULA: Sum of all onsite renewable inputs plus reserved removals
-    const d_43_result = d_44_value + d_45_value + d_46_value + i_46_value;
-
-    if (isReferenceCalculation) {
-      console.log(
-        `🔵 [S06-REF] Storing ref_d_43 = ${d_43_result} (from d_44=${d_44_value}, d_45=${d_45_value}, d_46=${d_46_value}, i_46=${i_46_value})`
-      );
-      window.TEUI.StateManager.setValue("ref_d_43", d_43_result, "calculated");
-    } else {
-      console.log(
-        `🟢 [S06-TAR] Storing d_43 = ${d_43_result} (from d_44=${d_44_value}, d_45=${d_45_value}, d_46=${d_46_value}, i_46=${i_46_value})`
-      );
-      window.TEUI.StateManager.setValue("d_43", d_43_result, "calculated");
-    }
-
-    // 🚨 TODO: Ensure S06 publishes m_43 (exterior/site loads) to StateManager for downstream sections
-    // Currently m_43 is only stored in local state, but S15 needs both m_43 and ref_m_43 for calculations
-  }
-
-  /**
-   * ✅ EXCEL FORMULA PRESERVED: i_43 = i_44 + i_46 (Offsite Renewable subtotal)
-   */
-  function calculateOffsiteRenewable(isReferenceCalculation = false) {
-    const i_44_value =
-      window.TEUI.parseNumeric(
-        getSectionValue("i_44", isReferenceCalculation)
-      ) || 0;
-    const i_46_value =
-      window.TEUI.parseNumeric(
-        getSectionValue("i_46", isReferenceCalculation)
-      ) || 0;
-
-    // ✅ EXACT EXCEL FORMULA: Sum of offsite renewable inputs
-    const i_43_result = i_44_value + i_46_value;
-
-    if (isReferenceCalculation) {
-      window.TEUI.StateManager.setValue("ref_i_43", i_43_result, "calculated");
-    } else {
-      window.TEUI.StateManager.setValue("i_43", i_43_result, "calculated");
-    }
-  }
-
-  /**
-   * ✅ EXCEL FORMULA PRESERVED: i_45 = k_45 * 10.3321 (Green Natural Gas energy conversion)
-   * 10.3321 is the regulatory-approved conversion factor from m³ to kWh
-   */
-  function calculateGreenNaturalGasEnergy(isReferenceCalculation = false) {
-    const k_45_value =
-      window.TEUI.parseNumeric(
-        getSectionValue("k_45", isReferenceCalculation)
-      ) || 0;
-
-    // ✅ EXACT EXCEL FORMULA: Gas volume * conversion factor
-    const i_45_result = k_45_value * 10.3321;
-
-    if (isReferenceCalculation) {
-      window.TEUI.StateManager.setValue("ref_i_45", i_45_result, "calculated");
-    } else {
-      window.TEUI.StateManager.setValue("i_45", i_45_result, "calculated");
-    }
-  }
-
-  //==========================================================================
-  // DUAL-ENGINE ARCHITECTURE (Clean Pattern A)
-  //==========================================================================
-
-  /**
-   * REFERENCE MODEL ENGINE: Calculate all values using Reference state
-   */
-  function calculateReferenceModel() {
-    try {
-      // Run all calculations in Reference context
-      calculateOnSiteSubtotal(true);
-      calculateGreenNaturalGasEnergy(true);
-      calculateOffsiteRenewable(true);
-
-      // console.log("[S06] Reference model calculations complete");
-    } catch (error) {
-      console.error("[S06] Error in Reference Model calculations:", error);
-    }
-  }
-
-  /**
-   * TARGET MODEL ENGINE: Calculate all values using Target state
-   */
-  function calculateTargetModel() {
-    try {
-      // Run all calculations in Target context
-      calculateOnSiteSubtotal(false);
-      calculateGreenNaturalGasEnergy(false);
-      calculateOffsiteRenewable(false);
-
-      // console.log("[S06] Target model calculations complete");
-    } catch (error) {
-      console.error("[S06] Error in Target Model calculations:", error);
-    }
-  }
-
-  /**
-   * ✅ DUAL-ENGINE: Always run both engines in parallel
-   */
-  function calculateAll() {
-    // console.log("[S06] Running dual-engine calculations...");
-    calculateTargetModel(); // Stores unprefixed values in StateManager
-    calculateReferenceModel(); // Stores ref_ prefixed values in StateManager
-    // console.log("[S06] Dual-engine calculations complete");
-  }
-
-  //==========================================================================
-  // EVENT HANDLERS (Clean Pattern A)
+  // EVENT HANDLERS
   //==========================================================================
 
   /**
@@ -728,10 +284,8 @@ window.TEUI.SectionModules.sect06 = (function () {
         field.addEventListener("blur", () => {
           const newValue = field.textContent.trim();
 
-          // ✅ CLEAN: Update via ModeManager
-          ModeManager.setValue(fieldId, newValue, "user-modified");
-          calculateAll(); // Trigger both engines
-          ModeManager.updateCalculatedDisplayValues(); // Update DOM with new calculated values
+          // ✅ CLEAN: Update via setModeValue
+          setModeValue(fieldId, newValue, "user-modified");
         });
         field.hasEditableListeners = true;
       }
@@ -745,20 +299,8 @@ window.TEUI.SectionModules.sect06 = (function () {
   function onSectionRendered() {
     console.log("S06: Pattern A initialization starting...");
 
-    // 1. Initialize dual-state architecture
-    ModeManager.initialize();
-
-    // 2. Initialize event handlers
+    // 1. Initialize event handlers
     initializeEventHandlers();
-
-    // 3. Sync initial UI state
-    ModeManager.refreshUI();
-
-    // 5. Perform initial calculations for this section
-    calculateAll();
-
-    // 6. Update DOM with calculated values
-    ModeManager.updateCalculatedDisplayValues();
 
     // 7. Apply validation tooltips to fields
     if (window.TEUI.TooltipManager && window.TEUI.TooltipManager.initialized) {
@@ -784,14 +326,5 @@ window.TEUI.SectionModules.sect06 = (function () {
     initializeEventHandlers: initializeEventHandlers,
     onSectionRendered: onSectionRendered,
 
-    // Section-specific utility functions - OPTIONAL
-    calculateAll: calculateAll,
-
-    // ✅ PATTERN A: Expose ModeManager for cross-section communication
-    ModeManager: ModeManager,
-
-    // ✅ PHASE 2: Expose state objects for import sync
-    TargetState: TargetState,
-    ReferenceState: ReferenceState,
   };
 })();
