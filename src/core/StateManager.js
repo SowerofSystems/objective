@@ -463,6 +463,14 @@ TEUI.StateManager = (function () {
 
     notifyListeners(fieldId, value, oldValue, state);
 
+    // EEM Integration: Write user-modified values to the active EEM state
+    if (state === VALUE_STATES.USER_MODIFIED && window.TEUI?.EEMTreeManager) {
+      const eemManager = window.TEUI._eemInstance;
+      if (eemManager) {
+        eemManager.setValueForActiveEEM(fieldId, value);
+      }
+    }
+
     // Auto-save state for user-modified and imported values (not defaults)
     if (
       state === VALUE_STATES.USER_MODIFIED ||

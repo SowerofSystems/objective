@@ -160,6 +160,10 @@
     <script src="src/core/computation/ComputationIntegration.js"></script>
     <script src="src/core/DevTools.js"></script>
 
+    <!-- EEM Tree Management -->
+    <script src="src/core/model/EEMTreeManager.js"></script>
+    <script src="src/core/ui/EEMTreeView.js"></script>
+
     <!-- Initialize everything AFTER core scripts are loaded -->
     <script src="src/core/init.js"></script>
 
@@ -468,6 +472,8 @@
 
       <!-- App wrapper - this is the new wrapper div -->
       <div id="app-wrapper">
+        <!-- EEM Treeview panel (left sidebar) -->
+        <div id="eem-tree-container"></div>
         <!-- Calculator container -->
         <div id="calculator-container">
           <!-- The HTML for the Key Values section should be: -->

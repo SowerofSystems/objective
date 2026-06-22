@@ -235,7 +235,18 @@
       const modelId = S01_FIELDS.has(legacyId) ? targetModelId
         : (refModelId || targetModelId);
 
-      const value = state.getValueForModel(modelId, semanticPath);
+      // EEM override: if an active EEM has a value for this field, prefer it
+      let value = state.getValueForModel(modelId, semanticPath);
+      const eemManager = window.TEUI._eemInstance;
+      if (eemManager) {
+        const activeEEM = eemManager.getActiveEEM();
+        if (activeEEM) {
+          const eemValue = activeEEM.getValue(legacyId);
+          if (eemValue !== null && eemValue !== undefined) {
+            value = eemValue;
+          }
+        }
+      }
       if (value === undefined || value === null) continue;
 
       const el = document.querySelector(`[data-field-id="${legacyId}"]`);
