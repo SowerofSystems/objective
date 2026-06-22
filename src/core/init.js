@@ -931,6 +931,26 @@ document.addEventListener("DOMContentLoaded", function () {
     // Initialize other UI handlers
     initializeUIHandlers();
 
+    // Initialize EEM Tree Manager and Treeview UI
+    if (window.TEUI.EEMTreeManager && window.TEUI.EEMTreeView) {
+      const treeContainer = document.getElementById("eem-tree-container");
+      if (treeContainer) {
+        const treeManager = window.TEUI.EEMTreeManager.create();
+        treeManager.initRoot("Base Building");
+        window.TEUI.eemTreeManager = treeManager;
+
+        const treeView = window.TEUI.EEMTreeView.create({
+          container: treeContainer,
+          treeManager: treeManager
+        });
+        if (treeView) {
+          treeView.init();
+          window.TEUI.eemTreeView = treeView;
+        }
+        console.log("[init.js] EEM Tree initialized");
+      }
+    }
+
     // Initialize elegant user input behavior
     initializeElegantInputBehavior();
 
